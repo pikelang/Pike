@@ -2,22 +2,38 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort_template.h,v 1.14 2003/01/02 22:40:39 grubba Exp $
+|| $Id: fsort_template.h,v 1.15 2003/04/26 16:12:53 mast Exp $
 */
+
+#ifdef SORT_BY_INDEX
+/* Sort by index. */
+
+#ifndef SWAP
+#error SWAP required when SORT_BY_INDEX is defined.
+#endif
+
+#define PTYPE ptrdiff_t
+
+#else  /* !SORT_BY_INDEX */
+/* Sort by pointer. */
 
 #ifndef SWAP
 #define UNDEF_SWAP
-#define SWAP(X,Y) { tmp=*(X); *(X)=*(Y); *(Y)=tmp; }
+#define SWAP(X,Y) { TYPE tmp=*(X); *(X)=*(Y); *(Y)=tmp; }
 #endif
+
+#define PTYPE TYPE *
+
+#endif	/* !SORT_BY_INDEX */
 
 #ifndef STEP
 #define UNDEF_STEP
-#define STEP(X,Y) (&((X)[(Y)]))
+#define STEP(X,Y) ((X) + (Y))
 #endif
 
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
-#define SIZE (((char *)STEP((TYPE *)0,1))-((char *)0))
+#define SIZE (((char *)STEP((PTYPE)0,1))-((char *)0))
 
 #define PARENT(X) (((X)-1)>>1)
 #define CHILD1(X) (((X)<<1)+1)
@@ -25,8 +41,8 @@
 #define MKNAME(X) MKNAME2(ID,X)
 #define MKNAME2(X,Y) PIKE_CONCAT(X,Y)
 
-static void MKNAME(_do_sort)(register TYPE *bas,
-			       register TYPE *last,
+static void MKNAME(_do_sort)(register PTYPE bas,
+			       register PTYPE last,
 			       int max_recursion
 #ifdef EXTRA_ARGS
 			       EXTRA_ARGS
@@ -36,7 +52,11 @@ static void MKNAME(_do_sort)(register TYPE *bas,
 #endif
   )
 {
-  register TYPE *a, *b, tmp;
+  register PTYPE a;
+  register PTYPE b;
+#ifdef EXTRA_LOCALS
+  EXTRA_LOCALS
+#endif
 
   while(bas < last)
   {
@@ -151,8 +171,8 @@ static void MKNAME(_do_sort)(register TYPE *bas,
   }
 }
 
-void ID(register TYPE *bas,
-	register TYPE *last
+void ID(register PTYPE bas,
+	register PTYPE last
 #ifdef EXTRA_ARGS
 	EXTRA_ARGS
 #endif
@@ -162,6 +182,7 @@ void ID(register TYPE *bas,
 }
 
 
+#undef PTYPE
 #undef INC
 #undef DEC
 #undef PARENT
