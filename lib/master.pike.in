@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.230 2002/11/28 02:12:25 mast Exp $
+// $Id: master.pike.in,v 1.231 2002/11/28 20:11:14 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -754,19 +754,6 @@ object new(string|program prog, mixed ... args)
   return prog(@args);
 }
 
-//! @decl object clone(string|program prog, mixed ... args)
-//! @appears clone
-//!
-//!   Alternate name for the function @[new()].
-//!
-//! @note
-//!   Considered obsolete.
-//!
-//! @seealso
-//! @[new()]
-
-function clone = new;
-
 /* This array contains the names of the functions
  * that a replacing master-object may want to override.
  */
@@ -788,7 +775,6 @@ constant master_efuns = ({
   "describe_backtrace",
   "describe_error",
   "new",
-  "clone",
   "normalize_path",
   "getenv",
   "putenv",
@@ -807,14 +793,11 @@ void create()
 {
   object o = this_object();
 
-  foreach(master_efuns, string e) {
-    if (o[e]) {
+  foreach(master_efuns, string e)
+    if (o[e])
       add_constant(e, o[e]);
-    } else {
-      throw(({ sprintf("Function %O is missing from master.pike.\n", e),
-	       backtrace() }));
-    }
-  }
+    else
+      error("Function %O is missing from master.pike.\n", e);
 
   add_constant("strlen", sizeof);
   add_constant("write", _static_modules.files()->_stdout->write);
