@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.98 2004/09/26 15:12:24 marcus Exp $
+|| $Id: global.h,v 1.99 2004/09/26 15:14:58 marcus Exp $
 */
 
 #ifndef GLOBAL_H
@@ -141,6 +141,13 @@ void *alloca();
 /* We are running NT */
 #undef FD_SETSIZE
 #define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
+#endif
+
+#ifdef HAVE_DEVICES_TIMER_H
+/* On AmigaOS, struct timeval is defined in a variety of places
+   and a variety of ways.  Making sure <devices/timer.h> is included
+   first brings some amount of order to the chaos. */
+#include <devices/timer.h>
 #endif
 
 #include <stdio.h>
