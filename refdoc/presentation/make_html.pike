@@ -349,9 +349,6 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
 }
 
 string parse_text(Node n, void|String.Buffer ret) {
-  if(!n)
-    return "";
-
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
     if(ret)
       ret->add(quote(n->get_test()));
@@ -442,10 +439,11 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "mapping":
       build_box(c, ret, "group", "member",
 		lambda(Node n) {
-		  return "<font color='green'>" + parse_text(n->get_first_element
-							     ("index")) +
-		    "</font> : " + parse_type(get_first_element(n->get_first_element
-								("type"))); } );
+		  return "<font color='green'>" +
+		    parse_text(n->get_first_element("index")) +
+		    "</font> : " +
+		    parse_type(get_first_element(n->get_first_element("type")));
+		});
       break;
 
     case "array":
@@ -487,8 +485,10 @@ string parse_text(Node n, void|String.Buffer ret) {
 	ret->add("<tt>", c->get_attributes()->name, "</tt> can have any of the following types:<br />");
       rows = ({});
       foreach(c->get_elements("group"), Node d)
-	rows += ({ ({ ({ parse_type(get_first_element(d->get_first_element("type"))) }),
-		      parse_text(d->get_first_element("text")) }) });
+	rows += ({ ({
+	  ({ parse_type(get_first_element(d->get_first_element("type"))) }),
+	  parse_text(d->get_first_element("text"))
+	}) });
       nicebox(rows, ret);
       break;
 
@@ -561,7 +561,8 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "matrix":
-      ret->add( layout_matrix( map(c->get_elements("r")->get_elements("c"), map, parse_text) ) );
+      ret->add( layout_matrix( map(c->get_elements("r")->get_elements("c"),
+				   map, parse_text) ) );
       break;
 
     case "fixme":
@@ -580,7 +581,8 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "td":
     case "tr":
     case "th":
-      ret->add( sprintf("<%s%{ %s='%s'%}>%s</%s>", c->get_any_name(), (array)c->get_attributes(),
+      ret->add( sprintf("<%s%{ %s='%s'%}>%s</%s>",
+			c->get_any_name(), (array)c->get_attributes(),
 			parse_text(c), c->get_any_name()) );
       break;
 
@@ -595,8 +597,6 @@ string parse_text(Node n, void|String.Buffer ret) {
 
   if(cast)
     return ret->get();
-    
-  return "";
 }
 
 string parse_doc(Node n, void|int no_text) {
@@ -613,18 +613,25 @@ string parse_doc(Node n, void|int no_text) {
     case "param":
       foreach(c->get_elements("param"), Node d)
 	ret += lay->dochead + "Parameter " + lay->parameter +
-	  quote(d->get_attributes()->name) + lay->_parameter + lay->_dochead + "<dd></dd>";
-      ret += lay->docbody + parse_text(c->get_first_element("text")) + lay->_docbody;
+	  quote(d->get_attributes()->name) + lay->_parameter + lay->_dochead +
+	  "<dd></dd>";
+      if (c = c->get_first_element("text")) {
+	ret += lay->docbody + parse_text(c) + lay->_docbody;
+      }
       break;
 
     case "seealso":
-      ret += lay->dochead + "See also" + lay->_dochead +
-	lay->docbody + parse_text(c->get_first_element("text")) + lay->_docbody;
+      ret += lay->dochead + "See also" + lay->_dochead;
+      if (c = c->get_first_element("text")) {
+	ret += lay->docbody + parse_text(c) + lay->_docbody;
+      }
       break;
 
     case "fixme":
-      ret += lay->fixmehead + "FIXME" + lay->_fixmehead +
-	lay->fixmebody + parse_text(c->get_first_element("text")) + lay->_fixmebody;
+      ret += lay->fixmehead + "FIXME" + lay->_fixmehead;
+      if (c = c->get_first_element("text")) {
+	ret += 	lay->fixmebody + parse_text(c) + lay->_fixmebody;
+      }
       break;
 
     case "deprecated":
@@ -632,13 +639,17 @@ string parse_doc(Node n, void|int no_text) {
     case "note":
     case "returns":
     case "throws":
-      ret += lay->dochead + String.capitalize(name) + lay->_dochead +
-	lay->docbody + parse_text(c->get_first_element("text")) + lay->_docbody;
+      ret += lay->dochead + String.capitalize(name) + lay->_dochead;
+      if (c = c->get_first_element("text")) {
+	ret += lay->docbody + parse_text(c) + lay->_docbody;
+      }
       break;
 
     case "example":
-      ret += lay->dochead + "Example" + lay->_dochead +
-	lay->example + parse_text(c->get_first_element("text")) + lay->_example;
+      ret += lay->dochead + "Example" + lay->_dochead;
+      if (c = c->get_first_element("text")) {
+	ret += lay->example + parse_text(c) + lay->_example;
+      }
       break;
 
     default:
