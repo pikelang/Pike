@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.38 1999/02/22 22:36:58 grubba Exp $
+ * $Id: cpp.c,v 1.39 1999/02/23 00:49:37 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -2117,15 +2117,15 @@ void f_cpp(INT32 args)
      *       0 |       0 | 32bit wide string.
      *       0 |      >0 | 16bit Unicode string.
      *      >0 |       0 | 16bit Unicode string reverse byte order.
-     *    0xff |    0xfe | 16bit Unicode string.
-     *    0xfe |    0xff | 16bit Unicode string reverse byte order.
+     *    0xfe |    0xff | 16bit Unicode string.
+     *    0xff |    0xfe | 16bit Unicode string reverse byte order.
      *    0x7b |    0x83 | EBCDIC-US ("#c").
      *    0x7b |    0x40 | EBCDIC-US ("# ").
      *    0x7b |    0x09 | EBCDIC-US ("#\t").
      * --------+---------+------------------------------------------
      *   Other |   Other | 8bit standard string.
      */
-    /* NOTE:
+    /* Notes on EBCDIC:
      *
      * * EBCDIC conversion needs to first convert the first line
      *   according to EBCDIC-US, and then the rest of the string
@@ -2140,7 +2140,13 @@ void f_cpp(INT32 args)
      *   another encoding than EBCDIC.
      */
   }
-  
+  if (sp[-args].u.string->size_shift) {
+    /* More notes:
+     *
+     * * Character 0xfeff (ZERO WIDTH NO-BREAK SPACE = BYTE ORDER MARK = BOM)
+     *   needs to be filtered away before processing continues.
+     */
+  }
   init_string_builder(&this.buf, 0);
   this.current_line=1;
   this.compile_errors=0;
