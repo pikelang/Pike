@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.79 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: colortable.c,v 1.80 2000/08/06 17:15:10 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.79 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: colortable.c,v 1.80 2000/08/06 17:15:10 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.79 2000/07/28 07:12:44 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.80 2000/08/06 17:15:10 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -1637,15 +1637,15 @@ static void dither_floyd_steinberg_got(struct nct_dither *dith,
 				       rgb_group s,
 				       rgb_group d)
 {
-   int cd=dith->u.floyd_steinberg.currentdir;
+   int cd = dith->u.floyd_steinberg.currentdir;
 
    rgbd_group *ner=dith->u.floyd_steinberg.nexterrors;
    rgbd_group *er=dith->u.floyd_steinberg.errors;
    rgbd_group err;
 
-   err.r=(float)((int)d.r-(int)s.r)+er[rowpos].r+0.5;
-   err.g=(float)((int)d.g-(int)s.g)+er[rowpos].g+0.5;
-   err.b=(float)((int)d.b-(int)s.b)+er[rowpos].b+0.5;
+   err.r = (float)(DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r))+er[rowpos].r+0.5;
+   err.g = (float)(DOUBLE_TO_INT(d.g)-DOUBÖE_TO_INT(s.g))+er[rowpos].g+0.5;
+   err.b = (float)(DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b))+er[rowpos].b+0.5;
  
    ner[rowpos].r+=err.r*dith->u.floyd_steinberg.down;
    ner[rowpos].g+=err.g*dith->u.floyd_steinberg.down;
@@ -3733,8 +3733,8 @@ void image_colortable_spacefactors(INT32 args)
 
 void image_colortable_floyd_steinberg(INT32 args)
 {
-   float forward=7.0,downforward=1.0,down=5.0,downback=3.0,sum;
-   float factor=0.95;
+   double forward=7.0,downforward=1.0,down=5.0,downback=3.0,sum;
+   double factor=0.95;
    THIS->dither_type=NCTD_NONE;
 
    if (args>=1) 
@@ -3747,39 +3747,39 @@ void image_colortable_floyd_steinberg(INT32 args)
       THIS->du.floyd_steinberg.dir=0;
    if (args>=6) 
       if (sp[5-args].type==T_FLOAT)
-	 factor=(float)sp[5-args].u.float_number;
+	 factor = sp[5-args].u.float_number;
       else if (sp[5-args].type==T_INT)
-	 factor=(float)sp[5-args].u.integer;
+	 factor = (double)sp[5-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
    if (args>=5)
    {
       if (sp[1-args].type==T_FLOAT)
-	 forward=(float)sp[1-args].u.float_number;
+	 forward = sp[1-args].u.float_number;
       else if (sp[1-args].type==T_INT)
-	 forward=(float)sp[1-args].u.integer;
+	 forward = (double)sp[1-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
       if (sp[2-args].type==T_FLOAT)
-	 downforward=(float)sp[2-args].u.float_number;
+	 downforward = sp[2-args].u.float_number;
       else if (sp[2-args].type==T_INT)
-	 downforward=(float)sp[2-args].u.integer;
+	 downforward = (double)sp[2-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
       if (sp[3-args].type==T_FLOAT)
-	 down=(float)sp[3-args].u.float_number;
+	 down = sp[3-args].u.float_number;
       else if (sp[3-args].type==T_INT)
-	 down=(float)sp[3-args].u.integer;
+	 down = (double)sp[3-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
       if (sp[4-args].type==T_FLOAT)
-	 downback=(float)sp[4-args].u.float_number;
+	 downback = sp[4-args].u.float_number;
       else if (sp[4-args].type==T_INT)
-	 downback=(float)sp[4-args].u.integer;
+	 downback = (double)sp[4-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
