@@ -79,14 +79,17 @@ char *low_do_rl_complete(char *string, int state)
 
     if(sp[-1].type == T_STRING)
       return my_copy_string(sp[-1].u.string);
-    // Note that we do _not_ pop the stack here...
-    // All strings will be pop()ed when f_readline returns.
+    /* Note that we do _not_ pop the stack here...
+     * All strings will be pop()ed when f_readline returns.
+     * DO NOT USE // as comments!!! // Hubbe
+     */
   }
   return 0;
 }
 
 char *my_rl_complete(char *text, int status)
 {
+#ifdef _REENTRANT
   struct thread_state *state;
   char *res;
   if((state = thread_state_for_id(th_self()))!=NULL)
@@ -107,6 +110,9 @@ char *my_rl_complete(char *text, int status)
   } else
     fatal("Bad idea!\n");
   return res;
+#else
+  return low_do_rl_comlete(text,status);
+#endif
 }
 
 static void f_readline(INT32 args)

@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.36 1998/03/13 12:37:50 mirar Exp $ */
+/* $Id: gif.c,v 1.37 1998/03/26 03:12:00 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.36 1998/03/13 12:37:50 mirar Exp $
+**!	$Id: gif.c,v 1.37 1998/03/26 03:12:00 hubbe Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -25,13 +25,13 @@
 **!
 **! see also: Image, Image.image, Image.colortable
 */
+#include "global.h"
 
 #include <math.h>
 #include <ctype.h>
 
 #include "stralloc.h"
-#include "global.h"
-RCSID("$Id: gif.c,v 1.36 1998/03/13 12:37:50 mirar Exp $");
+RCSID("$Id: gif.c,v 1.37 1998/03/26 03:12:00 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

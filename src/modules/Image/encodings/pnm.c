@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.13 1998/02/27 23:36:50 mirar Exp $ */
+/* $Id: pnm.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.13 1998/02/27 23:36:50 mirar Exp $
+**!	$Id: pnm.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -43,13 +43,13 @@
 **!
 **! see also: Image, Image.image, Image.GIF
 */
+#include "global.h"
 
 #include <math.h>
 #include <ctype.h>
 
 #include "stralloc.h"
-#include "global.h"
-RCSID("$Id: pnm.c,v 1.13 1998/02/27 23:36:50 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,3 +1,4 @@
+#include "global.h"
 #include "config.h"
 
 #if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
@@ -18,7 +19,6 @@
 
 #include "stralloc.h"
 #include "error.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

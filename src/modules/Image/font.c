@@ -1,4 +1,5 @@
-/* $Id: font.c,v 1.32 1998/02/24 20:36:17 per Exp $ */
+/* $Id: font.c,v 1.33 1998/03/26 03:11:19 hubbe Exp $ */
+#include "global.h"
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.32 1998/02/24 20:36:17 per Exp $
+**!	$Id: font.c,v 1.33 1998/03/26 03:11:19 hubbe Exp $
 **! class font
 **!
 **! note
@@ -139,7 +140,6 @@ Kerningtable types:
 
 
 
-#include "global.h"
 #include "fdlib.h"
 
 #include <sys/types.h>

@@ -3,12 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \ */
-#define _FILE_OFFSET_BITS 64
-#define _LARGEFILE_SOURCE
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.81 1998/03/25 22:39:40 grubba Exp $");
+RCSID("$Id: file.c,v 1.82 1998/03/26 03:12:39 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
