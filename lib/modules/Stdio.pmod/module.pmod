@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.191 2004/03/13 10:42:07 agehall Exp $
+// $Id: module.pmod,v 1.192 2004/03/13 10:44:37 agehall Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1224,8 +1224,8 @@ class Port
   int bind(int|string port, void|function accept_callback, void|string ip) {
     // Needed to fix _sprintf().
     debug_ip = (ip||"ANY");
-    debug_port = p;
-    ::bind(port, accept_callback, ip);
+    debug_port = port;
+    return ::bind(port, accept_callback, ip);
   }
 
   //! This function completes a connection made from a remote machine to
