@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.154 2002/06/17 16:44:31 grubba Exp $");
+RCSID("$Id: operators.c,v 1.155 2002/06/17 17:35:20 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -757,6 +757,19 @@ static node *optimize_not(node *n)
   return 0;
 }
 
+static node *may_have_side_effects(node *n)
+{
+  node **arg;
+  int argno;
+  for (argno = 0; (arg = my_get_arg(&_CDR(n), argno)); argno++) {
+    if (match_types(object_type_string, (*arg)->type)) {
+      n->node_info |= OPT_SIDE_EFFECT;
+      n->tree_info |= OPT_SIDE_EFFECT;
+      return NULL;
+    }
+  }
+  return NULL;
+}
 
 static node *optimize_binary(node *n)
 {
@@ -3756,8 +3769,10 @@ multiset & mapping -> mapping
        tFuncV(tInt,tInt,tInt),						\
        tFuncV(tStr,tInt,tStr))
 
-  ADD_EFUN2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
-  ADD_EFUN2("`>>",f_rsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_rsh);
+  ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
+	    may_have_side_effects, generate_lsh);
+  ADD_EFUN2("`>>", f_rsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
+	    may_have_side_effects, generate_rsh);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
 	    "function(array(array(1=mixed)),array(1=mixed):array(1))|"
