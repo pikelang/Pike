@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.79 1999/11/25 20:06:17 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.80 1999/11/26 01:08:02 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1974,7 +1974,10 @@ static int low_pike_types_le2(char *a,char *b)
     b+=type_length(b);
 
     /* check the returntype */
-    if(!low_pike_types_le(a,b)) return 0;
+    if (EXTRACT_UCHAR(b) != T_VOID) {
+      /* FIXME: Check if a has type void here? */
+      if(!low_pike_types_le(a,b)) return 0;
+    }
     break;
 
   case T_MAPPING:
