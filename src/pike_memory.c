@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.41 1999/08/16 23:55:49 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.42 1999/08/17 02:46:22 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -922,6 +922,11 @@ static void add_location(struct memhdr *mh, int locnum)
   struct memloc *ml;
   unsigned long l;
 
+#ifndef __NT__
+  if(!mt_trylock(& debug_malloc_mutex))
+    fatal("add_location running unlocked!\n");
+#endif
+  
 #if DEBUG_MALLOC - 0 < 2
   if(find_location(&no_leak_memlocs, locnum)) return;
 #endif
@@ -986,11 +991,8 @@ void dmalloc_accept_leak(void *p)
   if(p)
   {
     struct memhdr *mh;
-
     mt_lock(&debug_malloc_mutex);
-
     if((mh=my_find_memhdr(p,0))) add_location(mh, 0);
-
     mt_unlock(&debug_malloc_mutex);
   }
 }
@@ -1011,14 +1013,11 @@ static int low_dmalloc_unregister(void *p, int already_gone)
 
 int dmalloc_unregister(void *p, int already_gone)
 {
-  int res;
-
+  int ret;
   mt_lock(&debug_malloc_mutex);
-
-  res = low_dmalloc_unregister(p, already_gone);
-
+  ret=low_dmalloc_unregister(p,already_gone);
   mt_unlock(&debug_malloc_mutex);
-  return res;
+  return ret;
 }
 
 void *debug_malloc(size_t s, const char *fn, int line)
@@ -1309,9 +1308,7 @@ void * debug_malloc_update_location(void *p,const char *fn, int line)
   if(p)
   {
     struct memhdr *mh;
-
     mt_lock(&debug_malloc_mutex);
-
     if((mh=my_find_memhdr(p,0)))
       add_location(mh, location_number(fn,line));
 
