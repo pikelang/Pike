@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.234 2004/08/13 13:05:35 grubba Exp $");
+RCSID("$Id: program.c,v 1.235 2004/09/27 15:11:58 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1336,11 +1336,11 @@ struct program *end_first_pass(int finish)
 
   exit_type_stack();
 
+  free_all_nodes();
+
   compilation_depth--;
 
   exit_threads_disable(NULL);
-
-  free_all_nodes();
 
   return prog;
 }
