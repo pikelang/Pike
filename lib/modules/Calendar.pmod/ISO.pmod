@@ -22,14 +22,14 @@ class Month
 {
    inherit Gregorian::Month;
 
-   string name()
+   string iso_name()
    {
       return sprintf("%04d-%02d",
 		     (int)this->year(),
 		     (int)this);
    }
   
-   string short_name()
+   string iso_short_name()
    {
       return name()-"-";
    }
@@ -51,14 +51,14 @@ class Week
        return ({1,2,3,4,5,6,7});
    }
   
-   string name()
+   string iso_name()
    {
       return sprintf("%04d-W%02d",
 		     (int)this->year(),
 		     (int)this);
    }
   
-   string short_name()
+   string iso_short_name()
    {
       return name()-"-";
    }
@@ -102,7 +102,7 @@ class Day
       return week_day_names[(this->week_day()+6)%7];
    }
 
-   string name()
+   string iso_name()
    {
       return sprintf("%04d-%02d-%02d",
 		     (int)this->year(),
@@ -110,12 +110,12 @@ class Day
 		     (int)this->month_day());
    }
 
-   string short_name()
+   string iso_short_name()
    {
-      return name()-"-";
+      return iso_name()-"-";
    }
 
-   string name_by_week()
+   string iso_name_by_week()
    {
       return sprintf("%04d-W%02d-%d",
 		     (int)this->year(),
@@ -123,16 +123,16 @@ class Day
 		     (int)this->week_day());
    }
   
-   string name_by_yearday()
+   string iso_name_by_yearday()
    {
       return sprintf("%04d-%03d",
 		     (int)this->year(),
 		     (int)this->year_day());
    }
   
-   string short_name_by_yearday()
+   string iso_short_name_by_yearday()
    {
-      return name_by_yearday()-"-";
+      return iso_name_by_yearday()-"-";
    }
   
    object week()
@@ -162,29 +162,29 @@ static private class Name
 {
    object this = this_object();
 
-   string name()
+   string iso_name()
    {
-      return this->day()->name()+this->_name();
+      return this->day()->iso_name()+this->_iso_name();
    }
   
-   string short_name()
+   string iso_short_name()
    {
-      return this->day()->short_name()+this->_short_name();
+      return this->day()->iso_short_name()+this->_iso_short_name();
    }
   
-   string name_by_week()
+   string iso_name_by_week()
    {
-      return this->day()->name_by_week()+this->_name();
+      return this->day()->iso_name_by_week()+this->_iso_name();
    }
   
-   string name_by_yearday()
+   string iso_name_by_yearday()
    {
-      return this->day()->name_by_yearday()+this->_name();
+      return this->day()->iso_name_by_yearday()+this->_iso_name();
    }
   
-   string short_name_by_yearday()
+   string iso_short_name_by_yearday()
    {
-      return this->day()->short_name_by_yearday()+this->_short_name();
+      return this->day()->iso_short_name_by_yearday()+this->_iso_short_name();
    }
 }
 
@@ -193,15 +193,15 @@ class Hour
    inherit Gregorian::Hour;
    inherit Name;
 
-   string _name()
+   string _iso_name()
    {
       return sprintf("T%02d",
 		     (int)this);
    }
 
-   string _short_name()
+   string _iso_short_name()
    {
-      return _name();
+      return _iso_name();
    }
 }
 
@@ -211,16 +211,16 @@ class Minute
    inherit Gregorian::Minute;
    inherit Name;
 
-   string _name()
+   string _iso_name()
    {
       return sprintf("T%02d:%02d",
 		     (int)this->hour(),
 		     (int)this);
    }
 
-   string _short_name()
+   string _iso_short_name()
    {
-      return _name()-":";
+      return _iso_name()-":";
    }
 }
 
@@ -230,7 +230,7 @@ class Second
    inherit Gregorian::Second;
    inherit Name;
 
-   string _name()
+   string _iso_name()
    {
       return sprintf("T%02d:%02d:%02d",
 		     (int)this->hour(),
@@ -238,8 +238,8 @@ class Second
 		     (int)this);
    }
 
-   string _short_name()
+   string _iso_short_name()
    {
-      return _name()-":";
+      return _iso_name()-":";
    }
 }
