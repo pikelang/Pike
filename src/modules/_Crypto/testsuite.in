@@ -68,7 +68,9 @@ test_eq([[Crypto.des()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef")
 	[["Now is t"]])
 
 // RIJNDAEL
-test_true([[objectp(Crypto.rijndael()) && objectp(Crypto.aes())]])
+test_true([[
+#pike 7.4
+objectp(Crypto.rijndael()) && objectp(Crypto.aes())]])
 test_tests(
   array(int) a() {
     string r = Process.popen(RUNPIKE+" \"SRCDIR/rijndaeltest.pike\" --quick");
@@ -308,6 +310,8 @@ Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
 // CRYPT_MD5
 test_eq([[Crypto.crypt_md5("","")]],
         [["$1$$qRPK7m23GJusamGpoGLby/"]])
+test_eq([[Crypto.crypt_md5("","$xyz")]],
+        [["$1$$qRPK7m23GJusamGpoGLby/"]])
 test_eq([[Crypto.crypt_md5("Hello","sl5hO7j4")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
 test_eq([[Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
@@ -345,7 +349,8 @@ test_eq(
 #pike 7.4
 Crypto.aes()->query_key_length(),32)
 cond([[ Crypto["AES"] ]],[[
-  test_eq(Crypto.AES()->key_size(),32)
+  test_eq(Crypto.AES.key_size(),32)
+  test_eq(Crypto.AES()->key_size(),0)
 ]])
 test_eq(Crypto.idea()->query_key_length(),16)
 test_eq(Crypto.cast()->query_key_length(),16)
