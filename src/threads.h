@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.97 2000/07/07 15:36:53 grubba Exp $
+ * $Id: threads.h,v 1.98 2000/07/12 05:57:39 neotron Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -618,7 +618,7 @@ void th_farm(void (*fun)(void *), void *here);
 #define mt_lock(X)
 #define mt_unlock(X)
 #define mt_destroy(X)
-#define THREAS_ALLOW()
+#define THREADS_ALLOW()
 #define THREADS_DISALLOW()
 #define THREADS_ALLOW_UID()
 #define THREADS_DISALLOW_UID()
