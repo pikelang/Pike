@@ -57,8 +57,8 @@ wmml.html: .DUMMY wmml.wmml
 manpages: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml manpages man/man
 
-mirar_tutorial.html: .DUMMY $(SRCFILES)
-	$(pike) ./wmmltohtml2 tutorial.wmml mirar_html mirar_tutorial
+mirar_tutorial: .DUMMY $(SRCFILES)
+	$(pike) ./wmmltohtml2 tutorial.wmml mirar_html tutorial
 
 the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
@@ -80,6 +80,6 @@ export:
 mirar_www: Image.wmml the_image_module.html
 	ln -f `cat the_image_module.files` /home/mirar/www/image
 
-mirar_www_tutorial: mirar_tutorial.html
-	ln -f `cat mirar_tutorial.files` /home/mirar/www/pike_tutorial
+mirar_www_tutorial: mirar_tutorial
+	ln -f `cat tutorial.files` /home/mirar/www/pike_tutorial
 

@@ -44,9 +44,10 @@ TAG mkimgtag(string file, mapping params)
   if(params->align) p->align=params->align;
   if(params->alt) p->align=params->alt;
   add_file_to_export_list(file);
-  object o=Image.load(file);
-  p->xsize=(string)o->xsize();
-  p->ysize=(string)o->ysize();
+  object o;
+  if (catch { o=Image.load(file); }) return "<!-- error -->";
+  p->width=(string)o->xsize();
+  p->height=(string)o->ysize();
   return Sgml.Tag("img",p,0);
 }
 
@@ -505,7 +506,8 @@ SGML convert(SGML data)
 		  break;
 	       }
 	    }
-	    data->params->href=mklinkname(link_to_page[to])+"#"+to;
+	    data->params->href=mklinkname(link_to_page[to])+"#"+
+	       replace(to,({"`",">","<","?"}),({"BQ-","GT","LT","QM"}));
 	    break;
 	 }
 	
@@ -561,12 +563,18 @@ SGML convert(SGML data)
 	    else
 	       data->data=({"unknown"});
 	    data->tag="a";
-	    data->params->href=mklinkname(link_to_page[to])+"#"+to;
+	    data->params->href=mklinkname(link_to_page[to])+"#"+
+	       replace(to,({"`",">","<","?"}),({"BQ-","GT","LT","QM"}));
 	    break;
 	 }
 	
 	 case "anchor":
 	    data->tag="a";
+	    if (!data->params->name)
+	       werror("Warning: anchor without name (near "+data->location()+")\n");
+	    data->params->name=
+	       replace(data->params->name||"unnamed",
+		       ({"`",">","<","?"}),({"BQ-","GT","LT","QM"}));
 	    break;
 	
 	 case "ex_identifier":

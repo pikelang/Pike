@@ -774,12 +774,16 @@ SGML low_make_concrete_wmml(SGML data)
         case "constant":
 	{
 	   array anchors=({}),fullnames=({});
+	   string last;
 
-	   foreach (replace(tag->params->name,"&gt;",">")/",",
-		    string name)
+	   foreach (replace(tag->params->name,
+			    ({"&gt;","&lt;"}),({">","<"}))/",",
+                    string name)
 	   {
 	      string fullname;
-	      if (name[0..strlen(classbase->query())-1]==
+	      if (name!="" && name[0]=='.')
+		 fullname=last+name[1..];
+	      else if (name[0..strlen(classbase->query())-1]==
 		  classbase->query() ||
 		  tag->params->fullpath)
 		 fullname=name;
@@ -787,7 +791,7 @@ SGML low_make_concrete_wmml(SGML data)
 	      {
 		 case "method":
 	         case "variable":
-		    fullname=classbase->query()+"->"+name;
+		    fullname=classbase->query()+"."+name; // -> ?
 		    break;
 		 case "function":
 	         case "constant":
@@ -795,7 +799,10 @@ SGML low_make_concrete_wmml(SGML data)
 		    break;
 	      }
 	      anchors+=({name_to_link(fullname)});
+	      string tlast=
+		 reverse(array_sscanf(reverse(fullname),"%*[^.>]%s")[0]);
 	      fullnames+=({fullname});
+	      last=reverse(array_sscanf(reverse(fullname),"%*[^.>]%s")[0]);
 	   }
 	   array res=
 		    ({Tag("dl",([]),tag->pos,
@@ -812,14 +819,17 @@ SGML low_make_concrete_wmml(SGML data)
 				     :"")}))
 			  }) + tag->data ) });
 		   
+	   res=
+	      ({Tag(tag->tag,(["name":fullnames*", ",
+			       "title":tag->params->title]),tag->pos,
+		    low_make_concrete_wmml(res))});
+
 	   foreach (anchors,string anchor)
 	      res=({Tag("anchor",(["name":anchor]),
 			tag->pos,res)});
 
-	   ret+=
-	      ({Tag(tag->tag,(["name":fullnames*",",
-			       "title":tag->params->title]),tag->pos,
-		    low_make_concrete_wmml(res))});
+	   ret+=res;
+
 	   continue;
 	}
 
@@ -1083,7 +1093,7 @@ array execute_contents(Tag tag)
 
       array dat=data/"\n";
       
-      int i,mx=min(max(@column(cerrs,0))+4,sizeof(dat));
+      int i,mx=min(max(@column(cerrs,0))+5,sizeof(dat));
       for (i=max(0,min(@column(cerrs,0))-1);i<mx; i++)
 	 werror("%5d: %s\n",i+offs+1,dat[i]);
 

@@ -106,7 +106,7 @@ SGML lex(string data, string file)
       if(sscanf(s,"%[^ \t\r\n>=]%s",string key,s) && strlen(key))
       {
 	key=lower_case(key);
-	if(s[0]=='=')
+	if(s!="" && s[0]=='=')
 	{
 	  string val;
 	  switch(s[1])
