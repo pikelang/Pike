@@ -1,5 +1,19 @@
 #define BEGIN 32
 
+/*
+ * Implode an array of strings to an english 'list'
+ * ie. ({"foo","bar","gazonk"}) beomces "foo, bar and gazonk"
+ */
+string implode_nicely(string *foo, string|void and)
+{
+  if(!and) and="and";
+  switch(sizeof(foo))
+  {
+  case 0: return "";
+  case 1: return foo[0];
+  default: return foo[0..sizeof(foo)-2]*", "+" "+and+" "+foo[-1];
+  }
+}
 
 string strmult(string str, int num)
 {
@@ -16,6 +30,7 @@ string strmult(string str, int num)
 void create()
 {
   add_constant("strmult",strmult);
+  add_constant("implode_nicely",implode_nicely);
 
   master()->add_precompiled_program("/precompiled/string_buffer", class {
     string *buffer=allocate(BEGIN);
