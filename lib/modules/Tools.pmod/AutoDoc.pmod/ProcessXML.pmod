@@ -568,7 +568,7 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
               dirs += ({ attr["name"] });
             break;
           default:
-            splitError("Unknown structure tag <" + n->get_any_name() + ">");
+            werror("Skipping unknown structure tag: <%s>\n", n->get_any_name());
         }
       }
     },
