@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.210 2001/02/03 03:43:35 hubbe Exp $");
+RCSID("$Id: file.c,v 1.211 2001/02/15 18:48:24 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -116,6 +116,12 @@ RCSID("$Id: file.c,v 1.210 2001/02/03 03:43:35 hubbe Exp $");
 
 struct program *file_program;
 struct program *file_ref_program;
+
+/*! @module Stdio
+ */
+
+/*! @class File
+ */
 
 static void file_read_callback(int fd, void *data);
 static void file_write_callback(int fd, void *data);
@@ -651,6 +657,27 @@ static struct pike_string *do_read_oob(int fd,
 }
 #endif /* WITH_OOB */
 
+/*! @decl string read()
+ *! @decl string read(int len)
+ *! @decl string read(int len, int(0..1) not_all)
+ *!
+ *! Read data from a file or a string.
+ *!
+ *! Attempts to read @[len] bytes from the file, and return it as a
+ *! string. If something goes wrong, zero is returned.
+ *!
+ *! If a one is given as the second argument to @[read()], it will not try
+ *! its best to read as many bytes as you have asked for, but will
+ *! merely try to read as many bytes as the system read function will
+ *! return. This mainly useful with stream devices which can return
+ *! exactly one row or packet at a time.
+ *!
+ *! If no arguments are given, @[read()] will read to the
+ *! end of the file/stream.
+ *!
+ *! @seealso
+ *!   @[read_oob()], @[write()]
+ */
 static void file_read(INT32 args)
 {
   struct pike_string *tmp;
@@ -705,6 +732,17 @@ static void file_read(INT32 args)
 #endif
 
 #ifndef __NT__
+/*! @decl int(-1..1) peek()
+ *!
+ *! Check if there is data available to read.
+ *!
+ *! Returns @tt{1@} if there is data available to read,
+ *! @tt{0@} (zero) if there is no data available, and
+ *! @tt{-1@} if something went wrong.
+ *!
+ *! @seealso
+ *!   @[errno()], @[read()]
+ */
 static void file_peek(INT32 args)
 {
 #ifdef HAVE_AND_USE_POLL
@@ -755,6 +793,33 @@ static void file_peek(INT32 args)
 #endif
 
 #ifdef WITH_OOB
+/*! @decl string read_oob()
+ *! @decl string read_oob(int len)
+ *! @decl string read_oob(int len, int(0..1) not_all)
+ *!
+ *! Read out-of-band data from a stream.
+ *!
+ *! Attempts to read @[len] bytes of out-of-band data from the stream,
+ *! and returns it as a string. If something goes wrong, zero is returned.
+ *!
+ *! If a one is given as the second argument to @[read_oob()], only
+ *! as many bytes of out-of-band data as are currently available will be
+ *! returned.
+ *!
+ *! If no arguments are given, @[read_oob()] will read to the end of
+ *! the stream.
+ *!
+ *! @note
+ *!   This function is only available if the option @tt{'--without-oob'@}
+ *!   was not specified when the Pike runtime was compiled.
+ *!
+ *!   It is not guaranteed that all out-of-band data sent from the other end
+ *!   will be received. Most streams only allow for a single byte of
+ *!   out-of-band data at a time.
+ *!
+ *! @seealso
+ *!   @[read()], @[write_oob()]
+ */
 static void file_read_oob(INT32 args)
 {
   struct pike_string *tmp;
@@ -883,6 +948,32 @@ DO_DISABLE(write_oob_callback)
 }
 
 
+/*! @decl int write(string data)
+ *! @decl int write(string format, mixed ... extras)
+ *! @decl int write(array(string) data)
+ *! @decl int write(array(string) format, mixed ... extras)
+ *!
+ *! Write data to a file or a stream.
+ *!
+ *! Writes @[data] and returns the number of bytes that were
+ *! actually written.
+ *!
+ *! If more than one argument is given, @[efun::sprintf()] will be
+ *! used to format them.
+ *!
+ *! If @[data] is an array, it will be concatenated, and then written.
+ *!
+ *! 0 is returned in nonblocking mode if it was not possible to write
+ *! anything without blocking.
+ *!
+ *! -1 is returned if something went wrong and no bytes were written.
+ *!
+ *! @note
+ *!   Writing of wide strings is not supported.
+ *!
+ *! @seealso
+ *!   @[read()], @[write_oob()]
+ */
 static void file_write(INT32 args)
 {
   ptrdiff_t written, i;
@@ -1097,6 +1188,31 @@ static void file_write(INT32 args)
 }
 
 #ifdef WITH_OOB
+/*! @decl int write_oob(string data)
+ *! @decl int write_oob(string format, mixed ... extras)
+ *!
+ *! Write out-of-band data to a stream.
+ *!
+ *! Writes out-of-band data to a stream and returns how many bytes that were
+ *! actually written.
+ *!
+ *! If more than one argument is given, @[efun::sprintf()] will be
+ *! used to format them.
+ *!
+ *! -1 is returned if something went wrong and no bytes were written.
+ *!
+ *! @note
+ *!   This function is only available if the option @tt{'--without-oob'@}
+ *!   was not specified when the Pike runtime was compiled.
+ *!
+ *!   It is not guaranteed that all out-of-band data sent from the other end
+ *!   will be received. Most streams only allow for a single byte of
+ *!   out-of-band data at a time. Some streams will send the rest of the data
+ *!   as ordinary data.
+ *!
+ *! @seealso
+ *!   @[read_oob()], @[write()]
+ */
 static void file_write_oob(INT32 args)
 {
   ptrdiff_t written, i;
@@ -1227,6 +1343,17 @@ static int do_close(int flags)
   }
 }
 
+/*! @decl int close()
+ *! @decl int close(string direction)
+ *!
+ *! Close a file or stream.
+ *!
+ *! If direction is not specified, both the read and the write direction
+ *! will be closed. Otherwise only the directions specified will be closed.
+ *!
+ *! @seealso
+ *!   @[open()], @[open_socket()]
+ */
 static void file_close(INT32 args)
 {
   int flags;
@@ -1256,6 +1383,17 @@ static void file_close(INT32 args)
   push_int(flags);
 }
 
+/*! @decl int open(string filename, string mode)
+ *! @decl int open(string filename, string mode, int access)
+ *! @decl int open(int fd, string mode)
+ *!
+ *! Open a file or fd.
+ *!
+ *! If @[access] is not specified, it will default to @tt{00666@}.
+ *!
+ *! @seealso
+ *!   @[close()]
+ */
 static void file_open(INT32 args)
 {
   int flags,fd;
@@ -1413,6 +1551,28 @@ static void file_open(INT32 args)
   push_int(fd>=0);
 }
 
+/*! @decl int seek(int pos)
+ *! @decl int seek(int unit, int mult)
+ *! @decl int seek(int unit, int mult, int add)
+ *!
+ *! Seek to a specified offset in a file.
+ *!
+ *! If @[mult] or @[add] are specified, @[pos] will be claculated as
+ *! @code{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *!
+ *! If @[pos] is negative it will be relative to the start of the file,
+ *! otherwise it will be an absolute offset from the start of the file.
+ *!
+ *! @returns
+ *!   Returns the new offset, or @tt{-1@} on failure.
+ *!
+ *! @note
+ *!   The arguments @[mult] and @[add] are considered obsolete, and
+ *!   should not be used.
+ *!
+ *! @seealso
+ *!   @[tell()]
+ */
 static void file_seek(INT32 args)
 {
 #ifdef HAVE_LSEEK64
@@ -1462,6 +1622,13 @@ static void file_seek(INT32 args)
   push_int64(to);
 }
 
+/*! @decl int tell()
+ *!
+ *! Returns the current offset in the file.
+ *!
+ *! @seealso
+ *!   @[seek()]
+ */
 static void file_tell(INT32 args)
 {
 #ifdef HAVE_LSEEK64
@@ -1486,6 +1653,18 @@ static void file_tell(INT32 args)
   push_int64(to);
 }
 
+/*! @decl int(0..1) truncate(int length)
+ *!
+ *! Truncate a file.
+ *!
+ *! Truncates the file to the specified length @[length].
+ *!
+ *! @returns
+ *!   Returns @tt{1@} on success, and @tt{0@} (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[open()]
+ */
 static void file_truncate(INT32 args)
 {
 #ifdef HAVE_LSEEK64
@@ -1514,6 +1693,24 @@ static void file_truncate(INT32 args)
   push_int(!res);
 }
 
+/*! @decl Stat stat()
+ *!
+ *! Get status for an open file.
+ *!
+ *! This function returns the same information as the function @[file_stat()],
+ *! but for the file it is called in. If file is not an open file, @tt{0@}
+ *! (zero) will be returned. Zero is also returned if file is a pipe or
+ *! socket.
+ *!
+ *! @returns
+ *!   See @[file_stat()] for a description of the return value.
+ *!
+ *! @note
+ *!   Prior to Pike 7.1 this function returned an array(int).
+ *!
+ *! @seealso
+ *!   @[file_stat()]
+ */
 static void file_stat(INT32 args)
 {
   int fd;
@@ -1546,18 +1743,36 @@ static void file_stat(INT32 args)
   }
 }
 
+/*! @decl int errno()
+ *!
+ *! Return the errno for the latest failed file operation.
+ */
 static void file_errno(INT32 args)
 {
   pop_n_elems(args);
   push_int(ERRNO);
 }
 
+/*! @decl int mode()
+ *!
+ *! Returns the open mode for the file.
+ *!
+ *! @seealso
+ *!   @[open()]
+ */
 static void file_mode(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->open_mode);
 }
 
+/*! @decl void set_nonblocking()
+ *!
+ *! Sets this file to nonblocking operation.
+ *!
+ *! @seealso
+ *!   @[set_blocking()]
+ */
 static void file_set_nonblocking(INT32 args)
 {
   if(FD < 0) Pike_error("File not open.\n");
@@ -1572,9 +1787,19 @@ static void file_set_nonblocking(INT32 args)
   }
 
   THIS->open_mode |= FILE_NONBLOCKING;
+
+  /* FIXME: Shouldn't the stack be cleaned up here? */
 }
 
-
+/*! @decl void set_blocking()
+ *!
+ *! Sets this file to blocking operation.
+ *!
+ *! This is the inverse operation of @[set_nonblocking()].
+ *!
+ *! @seealso
+ *!   @[set_nonblocking()]
+ */
 static void file_set_blocking(INT32 args)
 {
   if(FD >= 0)
@@ -1585,6 +1810,19 @@ static void file_set_blocking(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl void set_close_on_exec(int(0..1) yes_no)
+ *!
+ *! Marks the file as to be closed in spawned processes.
+ *!
+ *! This function determines whether this file will be closed when
+ *! calling exec().
+ *!
+ *! Default is that the file WILL be closed on exec except for
+ *! stdin, stdout and stderr.
+ *!
+ *! @seealso
+ *!   @[Process.create_process()], @[exec()]
+ */
 static void file_set_close_on_exec(INT32 args)
 {
   if(args < 0)
@@ -1601,6 +1839,10 @@ static void file_set_close_on_exec(INT32 args)
   pop_n_elems(args-1);
 }
 
+/*! @decl int query_fd()
+ *!
+ *! Returns the file descriptor number associated with this object.
+ */
 static void file_query_fd(INT32 args)
 {
   if(FD < 0)
@@ -1619,6 +1861,23 @@ struct object *file_make_object_from_fd(int fd, int mode, int guess)
   return o;
 }
 
+/*! @decl void set_buffer(int bufsize, string mode)
+ *! @decl void set_buffer(int bufsize)
+ *!
+ *! Set internal socket buffer.
+ *!
+ *! This function sets the internal buffer size of a socket or stream.
+ *!
+ *! The second argument allows you to set the read or write buffer by
+ *! specifying @tt{"r"@} or @tt{"w"@}.
+ *!
+ *! @note
+ *!   It is not guaranteed that this function actually does anything,
+ *!   but it certainly helps to increase data transfer speed when it does.
+ *!
+ *! @seealso
+ *!   @[open_socket()], @[accept()]
+ */
 static void file_set_buffer(INT32 args)
 {
   INT32 bufsize;
@@ -1894,6 +2153,9 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 #define socketpair socketpair_ultra
 #endif
 
+/*! @decl Stdio.File pipe()
+ *! @decl Stdio.File pipe(int flags)
+ */
 static void file_pipe(INT32 args)
 {
   int inout[2] = { -1, -1 };
@@ -2058,6 +2320,17 @@ static void low_dup(struct object *toob,
   check_internal_reference(to);
 }
 
+/*! @decl int dup2(object(Stdio.File) to)
+ *!
+ *! Duplicate a file over another.
+ *!
+ *! This function works similarly to @[assign()], but instead of making
+ *! the argument a reference to the same file, it creates a new file
+ *! with the same properties and places it in the argument.
+ *!
+ *! @seealso
+ *!   @[assign()], @[dup()]
+ */
 static void file_dup2(INT32 args)
 {
   struct object *o;
@@ -2101,6 +2374,8 @@ static void file_dup2(INT32 args)
   push_int(1);
 }
 
+/*! @decl Stdio.File dup()
+ */
 static void file_dup(INT32 args)
 {
   int f;
@@ -2127,7 +2402,8 @@ static void file_dup(INT32 args)
   push_object(o);
 }
 
-/* file->open_socket(int|void port, string|void addr) */
+/*! @decl int(0..1) open_socket(int|void port, string|void addr)
+ */
 static void file_open_socket(INT32 args)
 {
   int fd;
@@ -2189,6 +2465,8 @@ static void file_open_socket(INT32 args)
   push_int(1);
 }
 
+/*! @decl int(0..1) set_keepalive(int(0..1) on_off)
+ */
 static void file_set_keepalive(INT32 args)
 {
   int tmp, i;
@@ -2222,6 +2500,10 @@ static void file_set_keepalive(INT32 args)
   push_int(!i);
 }
 
+/*! @decl int(0..1) connect(string dest_addr, int dest_port)
+ *! @decl int(0..1) connect(string dest_addr, int dest_port, @
+ *!                         string src_addr, int src_port)
+ */
 static void file_connect(INT32 args)
 {
   struct sockaddr_in addr;
@@ -2300,6 +2582,24 @@ static int isipnr(char *s)
   return 1;
 }
 
+/*! @decl string query_address()
+ *! @decl string query_address(int(0..1) local)
+ *!
+ *! Get address and port of a socket end-point.
+ *!
+ *! This function returns the remote or local address of a socket on the
+ *! form "x.x.x.x port".
+ *!
+ *! If the argument @[local] is not specified, or is @tt{0@} (zero),
+ *! the remote address will be returned. Otherwise, if @[local] is
+ *! @tt{1@}, the local address will be returned.
+ *!
+ *! If the file is not a socket, not connected, or some other error
+ *! occurrs, @tt{0@} (zero) will be returned.
+ *!
+ *! @seealso
+ *!   @[connect()]
+ */
 static void file_query_address(INT32 args)
 {
   struct sockaddr_in addr;
@@ -2336,6 +2636,20 @@ static void file_query_address(INT32 args)
   push_string(make_shared_string(buffer));
 }
 
+/*! @decl Stdio.File `<<(string data)
+ *! @decl Stdio.File `<<(mixed data)
+ *!
+ *! Write some data to a file.
+ *!
+ *! If @[data] is not a string, it will be casted to string, and then
+ *! written to the file.
+ *!
+ *! @note
+ *!   Throws an error if not all data could be written.
+ *!
+ *! @seealso
+ *!   @[write()]
+ */
 static void file_lsh(INT32 args)
 {
   ptrdiff_t len;
@@ -2357,6 +2671,17 @@ static void file_lsh(INT32 args)
   push_object(this_object());
 }
 
+/*! @decl void create(string filename)
+ *! @decl void create(string filename, string mode)
+ *! @decl void create(string filename, string mode, in access)
+ *! @decl void create(int fd)
+ *! @decl void create(int fd, string mode)
+ *!
+ *! See @[open()].
+ *!
+ *! @seealso
+ *!   @[open()]
+ */
 static void file_create(INT32 args)
 {
   if(!args) return;
@@ -2418,6 +2743,14 @@ static TH_RETURN_TYPE proxy_thread(void * data)
   return 0;
 }
 
+/*! @decl void proxy(Stdio.File from)
+ *!
+ *! Starts a thread that asynchronously copies data from @[from]
+ *! to this file.
+ *!
+ *! @seealso
+ *!   @[Stdio.sendfile()]
+ */
 void file_proxy(INT32 args)
 {
   struct my_file *f;
@@ -2560,11 +2893,27 @@ static void low_file_lock(INT32 args, int flags)
   }
 }
 
+/*! @decl Stdio.FileLockKey lock()
+ *! @decl Stdio.FileLockKey lock(int(0..1) is_recursive)
+ *!
+ *! Makes an exclusive file lock on this file.
+ *!
+ *! @seealso
+ *!   @[trylock()]
+ */
 static void file_lock(INT32 args)
 {
   low_file_lock(args, fd_LOCK_EX);
 }
 
+/*! @decl Stdio.FileLockKey trylock()
+ *! @decl Stdio.FileLockKey trylock(int(0..1) is_recursive)
+ *!
+ *! Attempts to place a file lock on this file.
+ *!
+ *! @seealso
+ *!   @[lock()]
+ */
 /* If (fd_LOCK_EX | fd_LOCK_NB) is used with lockf, the result will be
  * F_TEST, which only tests for the existance of a lock on the file.
  */
@@ -2626,6 +2975,12 @@ static void exit_file_lock_key(struct object *o)
     THIS_KEY->f = 0;
   }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 static void init_file_locking(void)
 {
