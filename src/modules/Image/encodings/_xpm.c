@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.3 1999/04/09 04:11:36 per Exp $");
+RCSID("$Id: _xpm.c,v 1.4 1999/04/09 23:18:21 per Exp $");
 
 #include "config.h"
 
@@ -90,6 +90,11 @@ static rgba_group decode_color( struct buffer *s )
        break;
     }
     return res;
+  } 
+  if(s->len==4&&(!strncmp(s->str,"None",4)||!strncmp(s->str,"none",4)))
+  {
+    res.alpha = 0;
+    return res;
   }
   if(!parse_color)
   {
@@ -97,16 +102,17 @@ static rgba_group decode_color( struct buffer *s )
     push_int(0);
     SAFE_APPLY_MASTER( "resolv", 2 );
     if(IS_ZERO(sp-1)) error("Internal error: No Image module!\n");
-    push_text("`[]");
+    push_text("color");
     f_index(2);
     if(IS_ZERO(sp-1)) error("Internal error: No Image[] function!\n");
     _parse_color = sp[-1];
     parse_color = &_parse_color;
     sp--;
   }
+  push_svalue( parse_color );
   push_string(make_shared_binary_string(s->str,s->len));
-  apply_svalue( parse_color, 1 );
-  push_text( "array" );
+  f_index( 2 );
+  push_constant_text( "array" );
   apply( sp[-2].u.object, "cast", 1 );
   if(sp[-1].type == T_ARRAY && sp[-1].u.array->size == 3)
   {
@@ -185,7 +191,12 @@ static rgba_group qsearch( char *s,int sl, struct array *c )
   }
 }
 
-void f__xpm_write_rows(  INT32 args )
+unsigned short extract_short( unsigned char *b )
+{
+  return (b[0]<<8)|b[1];
+}
+
+void f__xpm_write_rows( INT32 args )
 {
   struct object *img;
   struct object *alpha;
@@ -216,15 +227,72 @@ void f__xpm_write_rows(  INT32 args )
       for(x = 0; x<iimg->xsize; x++)
       {
         rgba_group color=qsearch(ss,bpc,colors);  ss+=bpc;
-        dst->r = color.r;
-        dst->g = color.g;
-        (dst++)->b = color.b;
-        if(!color.alpha)
-          adst->r = adst->g = adst->b = color.alpha;
-        adst++;
+        if(color.alpha)
+        {
+          dst->r = color.r;
+          dst->g = color.g;
+          (dst++)->b = color.b;
+          adst++;
+        } else {
+          dst++;
+          adst->r = adst->g = (adst++)->b = color.alpha;
+        }
       }
     }
     break;
+   case 3: 
+   {
+     rgba_group **p_colors;
+     int i;
+     p_colors = (rgba_group **)xalloc(sizeof(rgba_group *)*65536);
+     MEMSET(p_colors, 0, sizeof(rgba_group *)*65536);
+     for(i=0; i<colors->size; i++)
+     {
+       struct pike_string *c = colors->item[i].u.string;
+       unsigned char ind = ((unsigned char *)(c->str))[2];
+       unsigned short id = extract_short((unsigned char *)c->str);
+       if(!p_colors[id])
+       {
+         p_colors[id] = (rgba_group *)xalloc(sizeof(rgba_group)*128);
+         MEMSET(p_colors[id],0,sizeof(rgba_group)*128);
+       }
+       if(ind > 127) 
+       {
+         p_colors[id] = (rgba_group *)realloc(p_colors[id],sizeof(rgba_group)*256);
+         MEMSET(p_colors[id]+sizeof(rgba_group)*128,0,sizeof(rgba_group)*128);
+       }
+       p_colors[id][ind]=parse_color_line( c, bpc );
+     }
+     for(y = 0; y<iimg->ysize; y++)
+     {
+       unsigned char *ss = (unsigned char *)pixels->item[y+colors->size+1].
+         u.string->str;
+       rgba_group *color, colorp;
+       for(x = 0; x<iimg->xsize; x++)
+       {
+         color=p_colors[extract_short(ss)];
+         if(color)
+           colorp = color[((unsigned char *)ss+2)[0]];
+         else
+           colorp.alpha = 0;
+         if(colorp.alpha)
+         {
+           dst->r = colorp.r;
+           dst->g = colorp.g;
+           (dst++)->b = colorp.b;
+           adst++;
+         } else {
+           adst->r = adst->g = adst->b = 0;
+           dst++;
+         }
+         ss+=bpc;
+       }
+     }
+     for(i=0; i<65536; i++)
+       if(p_colors[i]) free(p_colors[i]);
+     free(p_colors);
+     break;
+   }
    case 2:
    {
      rgba_group p_colors[65536];
@@ -232,15 +300,17 @@ void f__xpm_write_rows(  INT32 args )
 
      for(i=0; i<colors->size; i++)
      {
-       short id = *((short *)colors->item[i].u.string->str);
+       unsigned short id = 
+         extract_short((unsigned char*)colors->item[i].u.string->str);
        p_colors[id] = parse_color_line( colors->item[i].u.string, bpc );
      }
      for(y = 0; y<iimg->ysize; y++)
      {
-       char *ss = (char *)pixels->item[y+colors->size+1].u.string->str;
+       unsigned char *ss = (unsigned char *)pixels->item[y+colors->size+1].
+         u.string->str;
        for(x = 0; x<iimg->xsize; x++)
        {
-         rgba_group color=p_colors[*((short *)ss)];
+         rgba_group color=p_colors[extract_short(ss)];
          dst->r = color.r;
          dst->g = color.g;
          (dst++)->b = color.b;
@@ -264,10 +334,11 @@ void f__xpm_write_rows(  INT32 args )
      }
      for(y = 0; y<iimg->ysize; y++)
      {
-       char *ss=(unsigned char *)pixels->item[y+colors->size+1].u.string->str;
+       unsigned char *ss=(unsigned char *)
+         pixels->item[y+colors->size+1].u.string->str;
        for(x = 0; x<iimg->xsize; x++)
        {
-         rgba_group color=p_colors[*((short *)ss)];
+         rgba_group color=p_colors[*ss];
          dst->r = color.r;
          dst->g = color.g;
          (dst++)->b = color.b;
@@ -294,6 +365,8 @@ void f__xpm_trim_rows( INT32 args )
     char *ns;
     int len,start;
     struct pike_string *s = a->item[i].u.string;
+    if(a->item[i].type != T_STRING)
+      error("Ajabaja\n");
     if(s->len > 4)
     {
       for(start=0; start<s->len; start++)
@@ -306,11 +379,11 @@ void f__xpm_trim_rows( INT32 args )
           break;
       if(len>=s->len || s->str[len] != '"')
         continue;
-      a->item[j].u.string=make_shared_binary_string(s->str+start+1,len-start-1);
-      free_string(s);
-      j++;
+      free_string(a->item[j].u.string);
+      a->item[j++].u.string=make_shared_binary_string(s->str+start+1,len-start-1);
     }
   }
+  pop_n_elems(args-1);
 }
 
 static struct program *image_encoding__xpm_program=NULL;
