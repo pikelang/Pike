@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.8 2001/07/04 20:42:20 nilsson Exp $
+// $Id: Utils.pmod,v 1.9 2001/07/05 02:14:15 nilsson Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -86,10 +86,14 @@ class Logger {
   }
 
   void log_notice( int code, void|string extra ) {
-    log_event( code, "notices", extra );
+    log_event( code, "notice", extra );
   }
 
   private mapping codes = ([
+    100 : "Started %s with %s",
+    101 : "Exiting %s due to signal",
+    102 : "Connecting %s to %s",
+    103 : "%s failed to set up pipe",
     404 : "File %s not found",
   ]);
 
@@ -113,10 +117,12 @@ class Logger {
     Sql.Sql db = get_db();
     if(!db) return ({});
 
-    return map(db->query("SELECT unix_timestamp(at) as at,profile,code,type,extra FROM eventlog"+sql),
+    return map(db->query("SELECT unix_timestamp(at) as at,profile,code,type,extra FROM eventlog" +
+			 sql + " ORDER BY event DESC"),
 	       lambda(mapping in) {
 		 return ({ (int)in->at, (int)in->profile, in->type,
-			   in->extra?sprintf(codes[(int)in->code], in->extra):codes[(int)in->code] });
+			   in->extra?sprintf(codes[(int)in->code], @(in->extra/"\n")):
+			   codes[(int)in->code] });
 	       } );
   }
 }
