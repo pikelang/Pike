@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.42 1997/05/07 06:25:35 per Exp $");
+RCSID("$Id: language.yacc,v 1.43 1997/06/07 01:16:26 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1297,7 +1297,12 @@ typeof: F_TYPEOF '(' expr0 ')'
   {
     node *tmp;
     tmp=mknode(F_ARG_LIST,$3,0);
-    $$=mkstrnode(describe_type($3->type));
+    if($3 && $3->type)
+    {
+       $$=mkstrnode(describe_type($3->type));
+    }else{
+       $$=mkstrnode(describe_type(mixed_type_string));
+    }
     free_node(tmp);
   } ;
  

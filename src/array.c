@@ -381,21 +381,24 @@ INT32 array_search(struct array *v, struct svalue *s,INT32 start)
 
   /* Why search for something that is not there? */
 #ifdef DEBUG
-    if(d_flag > 1)  array_check_type_field(v);
+  if(d_flag > 1)  array_check_type_field(v);
 #endif
-
   if(v->type_field & (1 << s->type))
   {
-    TYPE_FIELD t=0;
-    for(e=start;e<v->size;e++)
+    if(start)
     {
-      if(is_eq(ITEM(v)+e,s)) return e;
-      t |= 1<<ITEM(v)[e].type;
+      for(e=start;e<v->size;e++)
+	if(is_eq(ITEM(v)+e,s)) return e;
+    }else{
+      TYPE_FIELD t=0;
+      for(e=0;e<v->size;e++)
+      {
+	if(is_eq(ITEM(v)+e,s)) return e;
+	t |= 1<<ITEM(v)[e].type;
+      }
+      v->type_field=t;
     }
-    v->type_field=t;
-    return -1;
   }
-
   return -1;
 }
 
