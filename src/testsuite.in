@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.539 2002/09/21 18:24:36 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.540 2002/09/24 10:56:15 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9202,7 +9202,7 @@ test_true([[
 test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(10); return p->wait()]],2)
 test_eq([[
 #ifdef __NT__
-  Process.popen(RUNPIKE+" -e write(\"test\");")
+  Process.popen(RUNPIKE+" -e \"write(\\\"test\\\");\"")
 #else /* !__NT__ */
   Process.popen(RUNPIKE+" -e 'write(\"test\");'")
 #endif /* __NT__ */
