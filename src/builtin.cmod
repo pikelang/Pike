@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.24 2001/07/11 17:57:22 mast Exp $
+ * $Id: builtin.cmod,v 1.25 2001/09/21 17:57:55 grubba Exp $
  */
 
 #include "global.h"
@@ -490,16 +490,32 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS;
     int j;
-    struct pike_string *a;
+
+    if (!str->str.s && args) {
+      int sum = 0;
+      int shift = 0;
+      for (j=0; j < args; j++) {
+	struct pike_string *a = Pike_sp[j-args].u.string;
+	sum += a->len;
+	shift |= a->size_shift;
+      }
+      if (sum < str->initial) {
+	sum = str->initial;
+      }
+      init_string_builder_alloc(&str->str, sum, shift & ~(shift>>1));
+    }
 
     for( j = 0; j<args; j++ )
     {
-      a = Pike_sp[-args+j].u.string;
-      if( !str->str.s )
-	init_string_builder_alloc( &str->str, str->initial, a->size_shift );
+      struct pike_string *a = Pike_sp[j-args].u.string;
       string_builder_shared_strcat( &str->str, a );
     }
-    RETURN  str->str.s->len;
+
+    if (str->str.s) {
+      RETURN str->str.s->len;
+    } else {
+      RETURN 0;
+    }
   }
 
   PIKEFUN string get_copy()
