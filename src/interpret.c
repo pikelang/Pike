@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.357 2004/10/22 23:23:51 nilsson Exp $
+|| $Id: interpret.c,v 1.358 2004/10/30 11:38:25 mast Exp $
 */
 
 #include "global.h"
@@ -295,7 +295,7 @@ use_malloc:
       SET_INSTR_ADDRESS(F_CAST,			f_cast);
       SET_INSTR_ADDRESS(F_CAST_TO_INT,		o_cast_to_int);
       SET_INSTR_ADDRESS(F_CAST_TO_STRING,	o_cast_to_string);
-      SET_INSTR_ADDRESS(F_RANGE,		o_range);
+      SET_INSTR_ADDRESS(F_RANGE,		o_range2);
       SET_INSTR_ADDRESS(F_SSCANF,		o_sscanf);
 #endif /* PIKE_USE_MACHINE_CODE && !PIKE_DEBUG */
       tables_need_init=0;

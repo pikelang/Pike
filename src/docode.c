@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.180 2004/10/28 20:13:47 mast Exp $
+|| $Id: docode.c,v 1.181 2004/10/30 11:38:25 mast Exp $
 */
 
 #include "global.h"
@@ -593,6 +593,52 @@ static void emit_builtin_svalue(char *func)
   free_node(n);
 }
 
+static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
+{
+  node *low = CADR (n), *high = CDDR (n);
+  int bound_types;
+
+  switch (low->token) {
+    case F_RANGE_FROM_BEG: bound_types = RANGE_LOW_FROM_BEG; break;
+    case F_RANGE_FROM_END: bound_types = RANGE_LOW_FROM_END; break;
+    case F_RANGE_OPEN:     bound_types = RANGE_LOW_OPEN; break;
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unexpected node %d as range lower bound.\n", low->token);
+#endif
+  }
+
+  switch (high->token) {
+    case F_RANGE_FROM_BEG: bound_types |= RANGE_HIGH_FROM_BEG; break;
+    case F_RANGE_FROM_END: bound_types |= RANGE_HIGH_FROM_END; break;
+    case F_RANGE_OPEN:     bound_types |= RANGE_HIGH_OPEN; break;
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unexpected node %d as range upper bound.\n", high->token);
+#endif
+  }
+
+#ifdef PIKE_DEBUG
+  {
+    int expected_args;
+    switch (bound_types & (RANGE_LOW_OPEN|RANGE_HIGH_OPEN)) {
+      case 0:
+	expected_args = 2; break;
+      case RANGE_LOW_OPEN:
+      case RANGE_HIGH_OPEN:
+	expected_args = 1; break;
+      case RANGE_LOW_OPEN|RANGE_HIGH_OPEN:
+	expected_args = 0; break;
+    }
+    if (num_args != expected_args)
+      Pike_fatal ("Wrong number of args to o_range opcode. Expected %d, got %d.\n",
+		  expected_args, num_args);
+  }
+#endif
+
+  emit1 (F_RANGE, bound_types);
+}
+
 static int do_docode2(node *n, int flags)
 {
   ptrdiff_t tmp1,tmp2,tmp3;
@@ -936,6 +982,7 @@ static int do_docode2(node *n, int flags)
     case F_MULTIPLY:
       if(node_is_eq(CDR(n),CAAR(n)))
       {
+	int num_args;
 	tmp1=do_docode(CDR(n),DO_LVALUE);
 	if(match_types(CDR(n)->type, array_type_string) ||
 	   match_types(CDR(n)->type, string_type_string) ||
@@ -943,8 +990,10 @@ static int do_docode2(node *n, int flags)
 	   match_types(CDR(n)->type, multiset_type_string) ||
 	   match_types(CDR(n)->type, mapping_type_string))
 	{
-	  switch(do_docode(check_node_hash(CDAR(n)), 0))
+	  num_args = do_docode(check_node_hash(CDAR(n)), 0);
+	  switch (num_args)
 	  {
+	    case 0: emit0(F_LTOSVAL1); break;
 	    case 1: emit0(F_LTOSVAL2); break;
 	    case 2: emit0(F_LTOSVAL3); break;
 #ifdef PIKE_DEBUG
@@ -954,10 +1003,13 @@ static int do_docode2(node *n, int flags)
 	  }
 	}else{
 	  emit0(F_LTOSVAL);
-	  do_docode(check_node_hash(CDAR(n)), 0);
+	  num_args = do_docode(check_node_hash(CDAR(n)), 0);
 	}
 
-	emit0(CAR(n)->token);
+	if (CAR (n)->token == F_RANGE)
+	  emit_range (CAR (n) DO_IF_DEBUG (COMMA num_args));
+	else
+	  emit0(CAR(n)->token);
 
 	emit0(n->token);
 	return n->token==F_ASSIGN;
@@ -1055,10 +1107,23 @@ static int do_docode2(node *n, int flags)
 
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY_TOPLEVEL);
-    if(do_docode(CDR(n),DO_NOT_COPY)!=2)
-      Pike_fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
-    emit0(n->token);
-    return DO_NOT_WARN((INT32)tmp1);
+    {
+#ifdef PIKE_DEBUG
+      int num_args =
+#endif
+	do_docode (CDR (n), DO_NOT_COPY);
+      emit_range (n DO_IF_DEBUG (COMMA num_args));
+      return DO_NOT_WARN((INT32)tmp1);
+    }
+
+    /* The special bound type nodes are simply ignored when the
+     * arglist to the range operator is coded. emit_range looks at
+     * them later on instead. */
+  case F_RANGE_FROM_BEG:
+  case F_RANGE_FROM_END:
+    return do_docode (CAR (n), flags);
+  case F_RANGE_OPEN:
+    return 0;
 
   case F_INC:
   case F_POST_INC:
@@ -1278,17 +1343,16 @@ static int do_docode2(node *n, int flags)
     if(CAR(arr) && CAR(arr)->token==F_RANGE)
     {
       node *range = CAR(arr);
-      node **a1=my_get_arg(&_CDR(range),0);
-      node **a2=my_get_arg(&_CDR(range),1);
-      if(a2[0]->token==F_CONSTANT &&
-	 a2[0]->u.sval.type==T_INT &&
-	 a2[0]->u.sval.u.integer==MAX_INT_TYPE &&
-	 match_types (a1[0]->type, int_type_string))
+      node *low = CADR(range);
+      node *high = CDDR(range);
+      if(high->token == F_RANGE_OPEN &&
+	 low->token == F_RANGE_FROM_BEG &&
+	 match_types (low->type, int_type_string))
       {
 	/* Optimize foreach(x[start..],y). */
 	do_docode (CAR(range), DO_NOT_COPY_TOPLEVEL);
 	do_docode (CDR(arr), DO_NOT_COPY|DO_LVALUE);
-	do_docode (*a1, DO_NOT_COPY);
+	do_docode (CAR(low), DO_NOT_COPY);
 	goto foreach_arg_pushed;
       }
     }
@@ -1567,6 +1631,7 @@ static int do_docode2(node *n, int flags)
 
   case F_ARG_LIST:
   case F_COMMA_EXPR:
+  case ':':
     {
       node *root = n;
       node *parent = n->parent;

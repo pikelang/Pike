@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.73 2003/02/08 03:49:23 mast Exp $
+// $Id: treeopt.in,v 1.74 2004/10/30 11:38:29 mast Exp $
 //
 // The tree optimizer
 //
@@ -348,15 +348,17 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 // 	   $0;
 
 
-F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[$$->u.sval.type == T_INT]
-                                   [$$->u.sval.u.integer < 0])):
+F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[$$->u.sval.type == T_INT]
+					      [$$->u.sval.u.integer < 0],
+				    *))):
 {
   yywarning("Range end is negative.");
 }
 ;
 
-F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[$$->u.sval.type == T_FLOAT]
-				   [$$->u.sval.u.float_number < 0.0])):
+F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[$$->u.sval.type == T_FLOAT]
+					      [$$->u.sval.u.float_number < 0.0],
+				    *))):
 {
   yywarning("Range end is negative.");
 }

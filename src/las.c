@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.350 2004/10/16 07:27:29 agehall Exp $
+|| $Id: las.c,v 1.351 2004/10/30 11:38:26 mast Exp $
 */
 
 #include "global.h"
@@ -287,6 +287,12 @@ INT32 count_args(node *n)
        n->type == void_type_string)
       return 0;
     return 1;
+
+  case F_RANGE_FROM_BEG:
+  case F_RANGE_FROM_END:
+    return 1;
+  case F_RANGE_OPEN:
+    return 0;
 
   default:
     if(n->type == void_type_string) return 0;
@@ -1117,7 +1123,14 @@ node *debug_mknode(int token, node *a, node *b)
       res->tree_info |= a->tree_info;
     }
     break;
-    
+
+  case ':':
+  case F_RANGE_FROM_BEG:
+  case F_RANGE_FROM_END:
+  case F_RANGE_OPEN:
+    res->node_info |= OPT_FLAG_NODE;
+    break;
+
   default:
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
@@ -3361,6 +3374,8 @@ static int depend2_p(node *n, node *lval)
   return ret;
 }
 
+#if 0
+/* Not used anywhere. */
 /* FIXME: Ought to use parent pointer to avoid recursion. */
 static int cntargs(node *n)
 {
@@ -3393,6 +3408,7 @@ static int cntargs(node *n)
   default: return 1;
   }
 }
+#endif
 
 static int function_type_max=0;
 
@@ -3643,32 +3659,22 @@ void fix_type_field(node *n)
       n->type=index_type(type_a, type_b,n);
     }
     break;
+
   case F_RANGE:
-    {
-      node **nptr = my_get_arg(&_CDR(n), 0);
-
-      if (!CAR(n)) {
-	/* Unlikely to occurr, and if it does, it has probably
-	 * already been complained about.
-	 */
-	copy_pike_type(n->type, mixed_type_string);
-	break;
-      }
-
-      if (nptr) {
-	node *arg1 = *nptr;
-
-	if ((nptr = my_get_arg(&_CDR(n), 1))) {
-	  node *arg2 = *nptr;
-
-	  n->type = range_type(CAR(n)->type, arg1->type, arg2->type);
-	  break;
-	}
-      }
-      /* Fewer than 2 arguments to F_RANGE. */
-      Pike_fatal("Bad number of arguments to F_RANGE.\n");
+    if (!CAR(n)) {
+      /* Unlikely to occur, and if it does, it has probably
+       * already been complained about.
+       */
+      copy_pike_type(n->type, mixed_type_string);
+    }
+    else {
+      node *low = CADR (n), *high = CDDR (n);
+      n->type = range_type(CAR(n)->type,
+			   low->token == F_RANGE_OPEN ? NULL : CAR (low)->type,
+			   high->token == F_RANGE_OPEN ? NULL : CAR (high)->type);
     }
     break;
+
   case F_AUTO_MAP_MARKER:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Indexing a void expression.");
@@ -5208,16 +5214,17 @@ static void optimize(node *n)
 		       OPT_SIDE_EFFECT|
 		       OPT_EXTERNAL_DEPEND|
 		       OPT_ASSIGNMENT|
-		       OPT_RETURN))
+		       OPT_RETURN|
+		       OPT_FLAG_NODE))
     {
       if(car_is_node(n) &&
 	 !(CAR(n)->tree_info & (OPT_NOT_CONST|
 				OPT_SIDE_EFFECT|
 				OPT_EXTERNAL_DEPEND|
 				OPT_ASSIGNMENT|
-				OPT_RETURN)) &&
+				OPT_RETURN|
+				OPT_FLAG_NODE)) &&
 	 (CAR(n)->tree_info & OPT_TRY_OPTIMIZE) &&
-	 CAR(n)->token != ':' &&
 	 CAR(n)->token != F_VAL_LVAL)
       {
 #ifdef SHARED_NODES
@@ -5240,9 +5247,9 @@ static void optimize(node *n)
 				OPT_SIDE_EFFECT|
 				OPT_EXTERNAL_DEPEND|
 				OPT_ASSIGNMENT|
-				OPT_RETURN)) &&
-	 (CDR(n)->tree_info & OPT_TRY_OPTIMIZE) &&
-	 CDR(n)->token != ':')
+				OPT_RETURN|
+				OPT_FLAG_NODE)) &&
+	 (CDR(n)->tree_info & OPT_TRY_OPTIMIZE))
       {
 #ifdef SHARED_NODES
 	sub_node(n);
@@ -5491,7 +5498,8 @@ static node *eval(node *n)
 {
   node *new;
   ptrdiff_t args;
-  if(!is_const(n) || n->token==':')
+
+  if(!is_const(n) || n->node_info & OPT_FLAG_NODE)
     return n;
   
   args=eval_low(n,0);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.175 2004/10/06 18:35:02 mast Exp $
+|| $Id: interpret_functions.h,v 1.176 2004/10/30 11:38:25 mast Exp $
 */
 
 /*
@@ -656,6 +656,7 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   dmalloc_touch_svalue(Pike_sp-3);
   dmalloc_touch_svalue(Pike_sp-2);
   dmalloc_touch_svalue(Pike_sp-1);
+
   move_svalue (Pike_sp, Pike_sp - 1);
   Pike_sp[-1].type = PIKE_T_INT;
   Pike_sp++;
@@ -679,6 +680,11 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
 });
 
 OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
+  dmalloc_touch_svalue(Pike_sp-4);
+  dmalloc_touch_svalue(Pike_sp-3);
+  dmalloc_touch_svalue(Pike_sp-2);
+  dmalloc_touch_svalue(Pike_sp-1);
+
   move_svalue (Pike_sp, Pike_sp - 1);
   move_svalue (Pike_sp - 1, Pike_sp - 2);
   Pike_sp[-2].type = PIKE_T_INT;
@@ -699,6 +705,26 @@ OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
     tmp.subtype = NUMBER_NUMBER;
     tmp.u.integer = 0;
     assign_lvalue(Pike_sp-5, &tmp);
+  }
+});
+
+OPCODE0(F_LTOSVAL1, "ltosval1", I_UPDATE_SP, {
+  dmalloc_touch_svalue(Pike_sp-2);
+  dmalloc_touch_svalue(Pike_sp-1);
+
+  lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2);
+  Pike_sp++;
+
+  /* See ltosval3. This opcode is used e.g. in foo = foo[..] where no
+   * bound arguments are pushed on the stack. */
+  if( (1 << Pike_sp[-1].type) &
+      (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
+  {
+    LOCAL_VAR(struct svalue tmp);
+    tmp.type = PIKE_T_INT;
+    tmp.subtype = NUMBER_NUMBER;
+    tmp.u.integer = 0;
+    assign_lvalue(Pike_sp-3, &tmp);
   }
 });
 
@@ -1813,7 +1839,7 @@ OPCODE0(F_SOFT_CAST, "soft cast", I_UPDATE_SP, {
   pop_stack();
 });
 
-OPCODE0_ALIAS(F_RANGE, "range", I_UPDATE_SP, o_range);
+OPCODE1_ALIAS(F_RANGE, "range", I_UPDATE_SP, o_range2);
 
 OPCODE0(F_COPY_VALUE, "copy_value", 0, {
   LOCAL_VAR(struct svalue tmp);

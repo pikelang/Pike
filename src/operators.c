@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.197 2004/09/20 14:59:58 grubba Exp $
+|| $Id: operators.c,v 1.198 2004/10/30 11:38:27 mast Exp $
 */
 
 #include "global.h"
@@ -1067,18 +1067,16 @@ COMPARISON(f_ge,"`>=",!is_lt)
 
 
 #define CALL_OPERATOR(OP, args) do {					\
+    struct object *o_ = sp[-args].u.object;				\
     int i;								\
-    if(!sp[-args].u.object->prog)					\
+    if(!o_->prog)							\
       bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
 		    "Called in destructed object.\n");			\
-    if((i = FIND_LFUN(sp[-args].u.object->prog,OP)) == -1)		\
+    if((i = FIND_LFUN(o_->prog,OP)) == -1)				\
       bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
 		    "Operator not in object.\n");			\
-    apply_low(sp[-args].u.object, i, args-1);				\
-    free_svalue(sp-2);							\
-    sp[-2]=sp[-1];							\
-    sp--;								\
-    dmalloc_touch_svalue(sp);						\
+    apply_low(o_, i, args-1);						\
+    stack_pop_keep_top();						\
   } while (0)
 
 /*! @decl mixed `+(mixed arg)
@@ -1649,46 +1647,55 @@ static node *optimize_eq(node *n)
 
     if (((*second_arg)->token == F_CONSTANT) &&
 	((*second_arg)->u.sval.type == T_STRING) &&
-	((*first_arg)->token == F_RANGE) &&
-	(CADR(*first_arg)->token == F_CONSTANT) &&
-	(CADR(*first_arg)->u.sval.type == T_INT) &&
-	(!(CADR(*first_arg)->u.sval.u.integer)) &&
-	(CDDR(*first_arg)->token == F_CONSTANT) &&
-	(CDDR(*first_arg)->u.sval.type == T_INT)) {
-      /* str[..c] == "foo" */
-      INT_TYPE c = CDDR(*first_arg)->u.sval.u.integer;
+	((*first_arg)->token == F_RANGE)) {
+      node *low = CADR (*first_arg), *high = CDDR (*first_arg);
+      INT_TYPE c;
+      if ((low->token == F_RANGE_OPEN ||
+	   (low->token == F_RANGE_FROM_BEG &&
+	    (CAR (low)->token == F_CONSTANT) &&
+	    (CAR (low)->u.sval.type == T_INT) &&
+	    (!(CAR (low)->u.sval.u.integer)))) &&
+	  (high->token == F_RANGE_OPEN ||
+	   (high->token == F_RANGE_FROM_BEG &&
+	    (CAR (high)->token == F_CONSTANT) &&
+	    (CAR (high)->u.sval.type == T_INT) &&
+	    (c = CAR (high)->u.sval.u.integer, 1)))) {
+	/* str[..c] == "foo" or str[0..c] == "foo" or
+	 * str[..] == "foo" or str[0..] == "foo" */
 
-      if ((*second_arg)->u.sval.u.string->len == c+1) {
-	/* str[..2] == "foo"
-	 *   ==>
-	 * has_prefix(str, "foo");
-	 */
-	ADD_NODE_REF2(CAR(*first_arg),
-	ADD_NODE_REF2(*second_arg,
-	  ret = mkopernode("has_prefix", CAR(*first_arg), *second_arg);
-	));
-	return ret;
-      } else if ((*second_arg)->u.sval.u.string->len <= c) {
-	/* str[..4] == "foo"
-	 *   ==>
-	 * str == "foo"
-	 */
-	/* FIXME: Warn? */
-	ADD_NODE_REF2(CAR(*first_arg),
-	ADD_NODE_REF2(*second_arg,
-	  ret = mkopernode("`==", CAR(*first_arg), *second_arg);
-	));
-	return ret;
-      } else {
-	/* str[..1] == "foo"
-	 *   ==>
-	 * (str, 0)
-	 */
-	/* FIXME: Warn? */
-	ADD_NODE_REF2(CAR(*first_arg),
-	  ret = mknode(F_COMMA_EXPR, CAR(*first_arg), mkintnode(0));
-	);
-	return ret;
+	if (high->token == F_RANGE_OPEN ||
+	    (*second_arg)->u.sval.u.string->len <= c) {
+	  /* str[..4] == "foo"
+	   *   ==>
+	   * str == "foo"
+	   */
+	  /* FIXME: Warn? */
+	  ADD_NODE_REF2(CAR(*first_arg),
+	  ADD_NODE_REF2(*second_arg,
+	    ret = mkopernode("`==", CAR(*first_arg), *second_arg);
+	  ));
+	  return ret;
+	} else if ((*second_arg)->u.sval.u.string->len == c+1) {
+	  /* str[..2] == "foo"
+	   *   ==>
+	   * has_prefix(str, "foo");
+	   */
+	  ADD_NODE_REF2(CAR(*first_arg),
+	  ADD_NODE_REF2(*second_arg,
+	    ret = mkopernode("has_prefix", CAR(*first_arg), *second_arg);
+	  ));
+	  return ret;
+	} else {
+	  /* str[..1] == "foo"
+	   *   ==>
+	   * (str, 0)
+	   */
+	  /* FIXME: Warn? */
+	  ADD_NODE_REF2(CAR(*first_arg),
+	    ret = mknode(F_COMMA_EXPR, CAR(*first_arg), mkintnode(0));
+	  );
+	  return ret;
+	}
       }
     }
   }
@@ -4153,135 +4160,546 @@ PMOD_EXPORT void o_negate(void)
   }
 }
 
-PMOD_EXPORT void o_range(void)
+static void string_or_array_range (int bound_types,
+				   struct svalue *ind,
+				   INT_TYPE low,
+				   INT_TYPE high)
+/* ind is modified to point to the range. low and high are INT_TYPE to
+ * avoid truncation problems when they come from int svalues. */
 {
-  INT_TYPE from, to;
+  INT32 from, to, len;		/* to and len are not inclusive. */
 
-  if(sp[-3].type==T_OBJECT)
-  {
-    CALL_OPERATOR(LFUN_INDEX, 3);
-    return;
-  }
-
-  if(sp[-2].type != T_INT)
-    PIKE_ERROR("`[]", "Bad argument 2 to [ .. ]\n", sp, 3);
-
-  if(sp[-1].type != T_INT)
-    PIKE_ERROR("`[]", "Bad argument 3 to [ .. ]\n", sp, 3);
-
-  from = sp[-2].u.integer;
-  if(from<0) from = 0;
-  to = sp[-1].u.integer;
-  if(to<from-1) to = from-1;
-  dmalloc_touch_svalue(Pike_sp-1);
-  dmalloc_touch_svalue(Pike_sp-2);
-  sp-=2;
-
-  switch(sp[-1].type)
-  {
-  case T_STRING:
-  {
-    struct pike_string *s;
-    if(to >= sp[-1].u.string->len-1)
-    {
-      if(from==0) return;
-      to = sp[-1].u.string->len-1;
-
-      if(from>to+1) from=to+1;
-    }
+  if (ind->type == T_STRING)
+    len = ind->u.string->len;
+  else {
 #ifdef PIKE_DEBUG
-    if(from < 0 || (to-from+1) < 0)
-      Pike_fatal("Error in o_range.\n");
+    if (!ind || ind->type != T_ARRAY) Pike_fatal ("Invalid ind svalue.\n");
 #endif
-
-    s=string_slice(sp[-1].u.string, from, to-from+1);
-    free_string(sp[-1].u.string);
-    sp[-1].u.string=s;
-    break;
+    len = ind->u.array->size;
   }
 
-  case T_ARRAY:
-  {
-    struct array *a;
-    if(to >= sp[-1].u.array->size-1)
-    {
-      to = sp[-1].u.array->size-1;
+  if (bound_types & RANGE_LOW_OPEN)
+    from = 0;
+  else {
+    if (bound_types & RANGE_LOW_FROM_END) low = len - 1 - low;
+    if (low < 0) from = 0;
+    else if (low > len) from = len;
+    else from = low;
+  }
 
-      if(from>to+1) from=to+1;
+  if (bound_types & RANGE_HIGH_OPEN)
+    to = len;
+  else {
+    if (bound_types & RANGE_HIGH_FROM_END) high = len - high;
+    else high++;
+    if (high < from) to = from;
+    else if (high > len) to = len;
+    else to = high;
+  }
+
+  if (ind->type == T_STRING) {
+    struct pike_string *s;
+    if (from == 0 && to == len) return;
+
+    s=string_slice(ind->u.string, from, to-from);
+    free_string(ind->u.string);
+    ind->u.string=s;
+  }
+
+  else {
+    struct array *a;
+    a = slice_array(ind->u.array, from, to);
+    free_array(ind->u.array);
+    ind->u.array=a;
+  }
+}
+
+static int call_old_range_lfun (int bound_types, struct object *o,
+				struct svalue *low, struct svalue *high)
+/* Returns nonzero on errors to let the caller format the appropriate
+ * messages to throw. o is assumed to be undestructed on entry. One
+ * ref each is consumed to low and high when they're in use. */
+{
+  struct svalue end_pos;
+  ONERROR uwp;
+  int f;
+
+  if ((f = FIND_LFUN (o->prog, LFUN_INDEX)) == -1)
+    return 1;
+
+  /* FIXME: Check if the `[] lfun accepts at least two arguments. */
+
+  /* o[a..b]    =>  o->`[] (a, b)
+   * o[a..<b]   =>  o->`[] (a, o->_sizeof()-1-b)
+   * o[a..]     =>  o->`[] (a, Pike.NATIVE_MAX)
+   * o[<a..b]   =>  o->`[] (o->_sizeof()-1-a, b)
+   * o[<a..<b]  =>  o->`[] (o->_sizeof()-1-a, o->_sizeof()-1-b)
+   * o[<a..]    =>  o->`[] (o->_sizeof()-1-a, Pike.NATIVE_MAX)
+   * o[..b]     =>  o->`[] (0, b)
+   * o[..<b]    =>  o->`[] (0, o->_sizeof()-1-b)
+   * o[..]      =>  o->`[] (0, Pike.NATIVE_MAX)
+   */
+
+  if (bound_types & (RANGE_LOW_FROM_END|RANGE_HIGH_FROM_END)) {
+    int f2 = FIND_LFUN (o->prog, LFUN__SIZEOF);
+    if (f2 == -1)
+      return 2;
+    apply_low (o, f2, 0);
+    push_int (1);
+    o_subtract();
+    move_svalue (&end_pos, --sp);
+    SET_ONERROR (uwp, do_free_svalue, &end_pos);
+  }
+
+  switch (bound_types & (RANGE_LOW_FROM_BEG|RANGE_LOW_FROM_END|RANGE_LOW_OPEN)) {
+    case RANGE_LOW_FROM_BEG:
+      move_svalue (sp++, low);
+      break;
+    case RANGE_LOW_OPEN:
+      push_int (0);
+      break;
+    default:
+      push_svalue (&end_pos);
+      move_svalue (sp++, low);
+      o_subtract();
+      break;
+  }
+
+  switch (bound_types & (RANGE_HIGH_FROM_BEG|RANGE_HIGH_FROM_END|RANGE_HIGH_OPEN)) {
+    case RANGE_HIGH_FROM_BEG:
+      move_svalue (sp++, high);
+      break;
+    case RANGE_HIGH_OPEN:
+      push_int (MAX_INT_TYPE);
+      break;
+    default:
+      push_svalue (&end_pos);
+      move_svalue (sp++, high);
+      o_subtract();
+      break;
+  }
+
+  if (bound_types & (RANGE_LOW_FROM_END|RANGE_HIGH_FROM_END)) {
+    UNSET_ONERROR (uwp);
+    free_svalue (&end_pos);
+    /* Anything might have happened during the calls to
+     * LFUN__SIZEOF and o_subtract above. */
+    if (!o->prog)
+      return 3;
+  }
+
+  apply_low (o, f, 2);
+  return 0;
+}
+
+static const char *range_func_name (int bound_types)
+{
+  /* Since the number of arguments on the stack depend on bound_types
+   * we have to make some effort to make it show in the backtrace. */
+  switch (bound_types) {
+    case RANGE_LOW_FROM_BEG|RANGE_HIGH_FROM_BEG: return "arg1[arg2..arg3]";
+    case RANGE_LOW_FROM_BEG|RANGE_HIGH_FROM_END: return "arg1[arg2..<arg3]";
+    case RANGE_LOW_FROM_BEG|RANGE_HIGH_OPEN:     return "arg1[arg2..]";
+    case RANGE_LOW_FROM_END|RANGE_HIGH_FROM_BEG: return "arg1[<arg2..arg3]";
+    case RANGE_LOW_FROM_END|RANGE_HIGH_FROM_END: return "arg1[<arg2..<arg3]";
+    case RANGE_LOW_FROM_END|RANGE_HIGH_OPEN:     return "arg1[<arg2..]";
+    case RANGE_LOW_OPEN|RANGE_HIGH_FROM_BEG:     return "arg1[..arg2]";
+    case RANGE_LOW_OPEN|RANGE_HIGH_FROM_END:     return "arg1[..<arg2]";
+    case RANGE_LOW_OPEN|RANGE_HIGH_OPEN:         return "arg1[..]";
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unexpected bound_types.\n");
+#endif
+  }
+}
+
+PMOD_EXPORT void o_range2 (int bound_types)
+/* This takes between one and three args depending on whether
+ * RANGE_LOW_OPEN and/or RANGE_HIGH_OPEN is set in bound_types. */
+{
+  struct svalue *ind, *low, *high;
+
+  high = bound_types & RANGE_HIGH_OPEN ? sp : sp - 1;
+  low = bound_types & RANGE_LOW_OPEN ? high : high - 1;
+  ind = low - 1;
+
+  switch (ind->type) {
+    case T_OBJECT: {
+      struct object *o = ind->u.object;
+      int f;
+      if (!o->prog)
+	bad_arg_error (range_func_name (bound_types),
+		       ind, sp - ind, 1, "object", ind,
+		       "Cannot call `[..] in destructed object.\n");
+
+      if ((f = FIND_LFUN (o->prog, LFUN_RANGE)) != -1) {
+	struct svalue h;
+	if (!(bound_types & RANGE_HIGH_OPEN)) {
+	  move_svalue (&h, high);
+	  sp = high;
+	}
+
+	if (bound_types & RANGE_LOW_FROM_BEG)
+	  push_int (INDEX_FROM_BEG);
+	else if (bound_types & RANGE_LOW_OPEN) {
+	  push_int (0);
+	  push_int (OPEN_BOUND);
+	}
+	else
+	  push_int (INDEX_FROM_END);
+
+	if (bound_types & RANGE_HIGH_FROM_BEG) {
+	  move_svalue (sp++, &h);
+	  push_int (INDEX_FROM_BEG);
+	}
+	else if (bound_types & RANGE_HIGH_OPEN) {
+	  push_int (0);
+	  push_int (OPEN_BOUND);
+	}
+	else {
+	  move_svalue (sp++, &h);
+	  push_int (INDEX_FROM_END);
+	}
+
+	apply_low (o, f, 4);
+	stack_pop_keep_top();
+      }
+
+      else
+	switch (call_old_range_lfun (bound_types, o, low, high)) {
+	  case 1:
+	    bad_arg_error (range_func_name (bound_types),
+			   ind, sp - ind, 1, "object", ind,
+			   "Object got neither `[..] nor `[].\n");
+	  case 2:
+	    bad_arg_error (range_func_name (bound_types),
+			   ind, sp - ind, 1, "object", ind,
+			   "Object got no `[..] and there is no _sizeof to "
+			   "translate the from-the-end index to use `[].\n");
+	  case 3:
+	    bad_arg_error (range_func_name (bound_types),
+			   ind, 3, 1, "object", ind,
+			   "Cannot call `[..] in destructed object.\n");
+	  default:
+	    free_svalue (ind);
+	    move_svalue (ind, sp - 1);
+	    /* low and high have lost their refs in call_old_range_lfun. */
+	    sp = ind + 1;
+	}
+
+      break;
     }
 
-    a = slice_array(sp[-1].u.array, from, to+1);
-    free_array(sp[-1].u.array);
-    sp[-1].u.array=a;
-    break;
+    case T_STRING:
+    case T_ARRAY: {
+      INT_TYPE l, h;
+      if (!(bound_types & RANGE_LOW_OPEN)) {
+	if (low->type != T_INT)
+	  bad_arg_error (range_func_name (bound_types),
+			 ind, sp - ind, 2, "int", low,
+			 "Bad lower bound. Expected int, got %s.\n",
+			 get_name_of_type (low->type));
+	l = low->u.integer;
+      }
+      if (!(bound_types & RANGE_HIGH_OPEN)) {
+	if (high->type != T_INT)
+	  bad_arg_error (range_func_name (bound_types),
+			 ind, sp - ind, high - ind + 1, "int", high,
+			 "Bad upper bound. Expected int, got %s.\n",
+			 get_name_of_type (high->type));
+	h = high->u.integer;
+      }
+
+      /* Can pop off the bounds without fuzz since they're simple integers. */
+      sp = ind + 1;
+
+      string_or_array_range (bound_types, ind, l, h);
+      break;
+    }
+
+    default:
+      bad_arg_error (range_func_name (bound_types),
+		     ind, sp - ind, 1, "string|array|object", ind,
+		     "Cannot use [..] on a %s. Expected string, array or object.\n",
+		     get_name_of_type (ind->type));
   }
-    
-  default:
-    PIKE_ERROR("`[]", "[ .. ] on non-scalar type.\n", sp, 3);
+}
+
+/*! @decl mixed `[..](object arg, mixed start, int start_type, mixed end, int end_type)
+ *! @decl string `[..](string arg, int start, int start_type, int end, int end_type)
+ *! @decl array `[..](array arg, int start, int start_type, int end, int end_type)
+ *!
+ *!   Extracts a subrange.
+ *!
+ *!   This is the function form of expressions with the @expr{[..]@}
+ *!   operator. @[arg] is the thing from which the subrange is to be
+ *!   extracted. @[start] is the lower bound of the subrange and
+ *!   @[end] the upper bound.
+ *!
+ *!   @[start_type] and @[end_type] specifies how the @[start] and
+ *!   @[end] indices, respectively, are to be interpreted. The types
+ *!   are either @[Pike.INDEX_FROM_BEG], @[Pike.INDEX_FROM_END] or
+ *!   @[Pike.OPEN_BOUND]. In the last case, the index value is
+ *!   insignificant.
+ *!
+ *!   The relation between @expr{[..]@} expressions and this function
+ *!   is therefore as follows:
+ *!
+ *!   @code
+ *!     a[i..j]    <=>	`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_BEG)
+ *!     a[i..<j]   <=>	`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_END)
+ *!     a[i..]     <=>	`[..] (a, i, Pike.INDEX_FROM_BEG, 0, Pike.OPEN_BOUND)
+ *!     a[<i..j]   <=>	`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_BEG)
+ *!     a[<i..<j]  <=>	`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_END)
+ *!     a[<i..]    <=>	`[..] (a, i, Pike.INDEX_FROM_END, 0, Pike.OPEN_BOUND)
+ *!     a[..j]     <=>	`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_BEG)
+ *!     a[..<j]    <=>	`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_END)
+ *!     a[..]      <=>	`[..] (a, 0, Pike.OPEN_BOUND, 0, Pike.OPEN_BOUND)
+ *!   @endcode
+ *!
+ *!   The subrange is specified as follows by the two bounds:
+ *!
+ *!   @ul
+ *!     @item
+ *!       If the lower bound refers to an index before the lowest
+ *!       allowable (typically zero) then it's taken as an open bound
+ *!       which starts at the first index (without any error).
+ *!
+ *!     @item
+ *!       Correspondingly, if the upper bound refers to an index past
+ *!       the last allowable then it's taken as an open bound which
+ *!       ends at the last index (without any error).
+ *!
+ *!     @item
+ *!       If the lower bound is less than or equal to the upper bound,
+ *!       then the subrange is the inclusive range between them, i.e.
+ *!       from and including the element at the lower bound and up to
+ *!       and including the element at the upper bound.
+ *!
+ *!     @item
+ *!       If the lower bound is greater than the upper bound then the
+ *!       result is an empty subrange (without any error).
+ *!   @endul
+ *!
+ *! @returns
+ *!   The returned value depends on the type of @[arg]:
+ *!
+ *!   @mixed arg
+ *!   	@type string
+ *!   	  A string with the characters in the range is returned.
+ *!
+ *!   	@type array
+ *!   	  An array with the elements in the range is returned.
+ *!
+ *!   	@type object
+ *!       If the object implements @[lfun::`[..]], that function is
+ *!       called with the four remaining arguments.
+ *!
+ *!       As a compatibility measure, if the object does not implement
+ *!       @[lfun::`[..]] but @[lfun::`[]] then the latter is called
+ *!       with the bounds transformed to normal from-the-beginning
+ *!       indices in array-like fashion:
+ *!
+ *!       @dl
+ *!         @item `[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_BEG)
+ *!           Calls @expr{a->`[] (i, j)@}
+ *!         @item `[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_END)
+ *!           Calls @expr{a->`[] (i, a->_sizeof()-1-j)@}
+ *!         @item `[..] (a, i, Pike.INDEX_FROM_BEG, 0, Pike.OPEN_BOUND)
+ *!           Calls @expr{a->`[] (i, @[Int.NATIVE_MAX])@}
+ *!         @item `[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_BEG)
+ *!           Calls @expr{a->`[] (a->_sizeof()-1-i, j)@}
+ *!         @item `[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_END)
+ *!           Calls @expr{a->`[] (a->_sizeof()-1-i, a->_sizeof()-1-j)@},
+ *!           except that @expr{a->_sizeof()@} is called only once.
+ *!         @item `[..] (a, i, Pike.INDEX_FROM_END, 0, Pike.OPEN_BOUND)
+ *!           Calls @expr{a->`[] (a->_sizeof()-1-i, @[Int.NATIVE_MAX])@}
+ *!         @item `[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_BEG)
+ *!           Calls @expr{a->`[] (0, j)@}
+ *!         @item `[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_END)
+ *!           Calls @expr{a->`[] (0, a->_sizeof()-1-j)@}
+ *!         @item `[..] (a, 0, Pike.OPEN_BOUND, 0, Pike.OPEN_BOUND)
+ *!           Calls @expr{a->`[] (0, @[Int.NATIVE_MAX])@}
+ *!       @enddl
+ *!
+ *!       Note that @[Int.NATIVE_MAX] might be replaced with an even
+ *!       larger integer in the future.
+ *!   @endmixed
+ *!
+ *! @seealso
+ *!   @[lfun::`[..]], @[`[]]
+ */
+PMOD_EXPORT void f_range(INT32 args)
+{
+  struct svalue *ind;
+  if (args != 5)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("predef::`[..]", 5);
+  ind = sp - 5;
+
+#define CALC_BOUND_TYPES(bound_types) do {				\
+    if (ind[2].type != T_INT)						\
+      SIMPLE_ARG_TYPE_ERROR ("predef::`[..]", 3, "int");		\
+    switch (ind[2].u.integer) {						\
+      case INDEX_FROM_BEG: bound_types = RANGE_LOW_FROM_BEG; break;	\
+      case INDEX_FROM_END: bound_types = RANGE_LOW_FROM_END; break;	\
+      case OPEN_BOUND:     bound_types = RANGE_LOW_OPEN; break;		\
+      default:								\
+	SIMPLE_ARG_ERROR ("predef::`[..]", 3, "Unrecognized bound type."); \
+    }									\
+									\
+    if (ind[4].type != T_INT)						\
+      SIMPLE_ARG_TYPE_ERROR ("predef::`[..]", 5, "int");		\
+    switch (ind[4].u.integer) {						\
+      case INDEX_FROM_BEG: bound_types |= RANGE_HIGH_FROM_BEG; break;	\
+      case INDEX_FROM_END: bound_types |= RANGE_HIGH_FROM_END; break;	\
+      case OPEN_BOUND:     bound_types |= RANGE_HIGH_OPEN; break;	\
+      default:								\
+	SIMPLE_ARG_ERROR ("predef::`[..]", 5, "Unrecognized bound type."); \
+    }									\
+  } while (0)
+
+  switch (ind->type) {
+    case T_OBJECT: {
+      struct object *o = ind->u.object;
+      int f;
+      if (!o->prog)
+	SIMPLE_ARG_ERROR ("predef::`[..]", 1,
+			  "Cannot call `[..] in destructed object.\n");
+
+      if ((f = FIND_LFUN (o->prog, LFUN_RANGE)) != -1) {
+	apply_low (o, f, 4);
+	stack_pop_keep_top();
+      }
+
+      else {
+	int bound_types;
+	CALC_BOUND_TYPES (bound_types);
+	switch (call_old_range_lfun (bound_types, o, ind + 1, ind + 3)) {
+	  case 1:
+	    SIMPLE_ARG_ERROR ("predef::`[..]", 1,
+			      "Object got neither `[..] nor `[].\n");
+	  case 2:
+	    SIMPLE_ARG_ERROR ("predef::`[..]", 1,
+			      "Object got no `[..] and there is no _sizeof to "
+			      "translate the from-the-end index to use `[].\n");
+	  case 3:
+	    SIMPLE_ARG_ERROR ("predef::`[..]", 1,
+			      "Cannot call `[..] in destructed object.\n");
+	  default:
+	    free_svalue (ind);
+	    move_svalue (ind, sp - 1);
+	    /* The bound types are simple integers and the bounds
+	     * themselves have lost their refs in call_old_range_lfun. */
+	    sp = ind + 1;
+	}
+      }
+
+      break;
+    }
+
+    case T_STRING:
+    case T_ARRAY: {
+      INT_TYPE l, h;
+      int bound_types;
+      CALC_BOUND_TYPES (bound_types);
+
+      if (!(bound_types & RANGE_LOW_OPEN)) {
+	if (ind[1].type != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR ("predef::`[..]", 2, "int");
+	l = ind[1].u.integer;
+      }
+      if (!(bound_types & RANGE_HIGH_OPEN)) {
+	if (ind[3].type != T_INT)
+	  SIMPLE_ARG_TYPE_ERROR ("predef::`[..]", 4, "int");
+	h = ind[3].u.integer;
+      }
+
+      pop_n_elems (4);
+      string_or_array_range (bound_types, ind, l, h);
+      break;
+    }
+
+    default:
+      SIMPLE_ARG_TYPE_ERROR ("predef::`[..]", 1, "string|array|object");
   }
 }
 
 /*! @decl mixed `[](object arg, mixed index)
  *! @decl mixed `[](object arg, string index)
- *! @decl mixed `[](int arg, string index)
+ *! @decl function `[](int arg, string index)
+ *! @decl int `[](string arg, int index)
  *! @decl mixed `[](array arg, int index)
  *! @decl mixed `[](array arg, mixed index)
  *! @decl mixed `[](mapping arg, mixed index)
  *! @decl int(0..1) `[](multiset arg, mixed index)
- *! @decl int `[](string arg, int index)
  *! @decl mixed `[](program arg, string index)
  *! @decl mixed `[](object arg, mixed start, mixed end)
  *! @decl string `[](string arg, int start, int end)
  *! @decl array `[](array arg, int start, int end)
  *!
- *!   Index/subrange.
+ *!   Indexing.
  *!
- *!   Every non-lvalue expression with the @expr{[]@} operator becomes
- *!   a call to this function, i.e. @expr{a[i]@} is the same as
- *!   @expr{predef::`[](a,i)@} and @expr{a[i..j]@} is the same as
- *!   @expr{predef::`[](a,i,j)@}. If the lower limit @expr{i@} is left
- *!   out, @expr{0@} is passed to the function. If the upper limit
- *!   @expr{j@} is left out, @[Int.NATIVE_MAX] is passed to the
- *!   function, but that might be changed to an even larger number in
- *!   the future.
+ *!   This is the function form of expressions with the @expr{[]@}
+ *!   operator, i.e. @expr{a[i]@} is the same as
+ *!   @expr{predef::`[](a,i)@}.
  *!
  *! @returns
- *!   If @[arg] is an object that implements @[lfun::`[]()], that function
- *!   will be called with the rest of the arguments.
+ *!   If @[arg] is an object that implements @[lfun::`[]()], that
+ *!   function is called with the @[index] argument.
  *!
- *!   If there are 2 arguments the result will be as follows:
+ *!   Otherwise, the action depends on the type of @[arg]:
+ *!
  *!   @mixed arg
  *!   	@type object
- *!   	  The non-static (ie public) symbol named @[index] will be looked up
- *!   	  in @[arg].
+ *!   	  The non-static (i.e. public) symbol named @[index] is looked
+ *!   	  up in @[arg].
+ *!
  *!   	@type int
- *!   	  The bignum function named @[index] will be looked up in @[arg].
- *!   	@type array
- *!   	  If @[index] is an int, index number @[index] of @[arg] will be
- *!   	  returned. Otherwise an array of all elements in @[arg] indexed
- *!   	  with @[index] will be returned.
- *!   	@type mapping
- *!   	  If @[index] exists in @[arg] the corresponding value will be
- *!       returned. Otherwise @expr{UNDEFINED@} will be returned.
- *!   	@type multiset
- *!   	  If @[index] exists in @[arg], @expr{1@} will be returned.
- *!   	  Otherwise @expr{UNDEFINED@} will be returned.
+ *!   	  The bignum function named @[index] is looked up in @[arg].
+ *!   	  The bignum functions are the same as those in the @[Gmp.mpz]
+ *!   	  class.
+ *!
  *!   	@type string
- *!   	  The character (int) at index @[index] in @[arg] will be returned.
+ *!   	  The character at index @[index] in @[arg] is returned as an
+ *!   	  integer. The first character in the string is at index
+ *!   	  @expr{0@} and the highest allowed index is therefore
+ *!   	  @expr{sizeof(@[arg])-1@}. A negative index number accesses
+ *!   	  the string from the end instead, from @expr{-1@} for the
+ *!   	  last char back to @expr{-sizeof(@[arg])@} for the first.
+ *!
+ *!   	@type array
+ *!   	  If @[index] is an int, index number @[index] of @[arg] is
+ *!   	  returned. Allowed index number are in the range
+ *!   	  @expr{[-sizeof(@[arg])..sizeof(@[arg])-1]@}; see the string
+ *!   	  case above for details.
+ *!
+ *!   	  If @[index] is not an int, an array of all elements in
+ *!   	  @[arg] indexed with @[index] are returned. I.e. it's the
+ *!   	  same as doing @expr{column(@[arg], @[index])@}.
+ *!
+ *!   	@type mapping
+ *!   	  If @[index] exists in @[arg] the corresponding value is
+ *!       returned. Otherwise @expr{UNDEFINED@} is returned.
+ *!
+ *!   	@type multiset
+ *!   	  If @[index] exists in @[arg], @expr{1@} is returned.
+ *!   	  Otherwise @expr{UNDEFINED@} is returned.
+ *!
  *!   	@type program
- *!   	  The non-static (ie public) constant symbol @[index] will be
+ *!   	  The non-static (i.e. public) constant symbol @[index] is
  *!   	  looked up in @[arg].
+ *!
  *!   @endmixed
  *!
- *!   Otherwise if there are 3 arguments the result will be as follows:
- *!   @mixed arg
- *!   	@type string
- *!   	  A string with the characters between @[start] and @[end] (inclusive)
- *!   	  in @[arg] will be returned.
- *!   	@type array
- *!   	  An array with the elements between @[start] and @[end] (inclusive)
- *!   	  in @[arg] will be returned.
- *!   @endmixed
+ *!   As a compatibility measure, this function also performs range
+ *!   operations if it's called with three arguments. In that case it
+ *!   becomes equivalent to:
+ *!
+ *!   @code
+ *!     @[`[..]] (arg, start, @[Pike.INDEX_FROM_BEG], end, @[Pike.INDEX_FROM_BEG])
+ *!   @endcode
+ *!
+ *!   See @[`[..]] for further details.
  *!
  *! @note
  *!   An indexing expression in an lvalue context, i.e. where the
@@ -4289,25 +4707,27 @@ PMOD_EXPORT void o_range(void)
  *!   this function.
  *!
  *! @seealso
- *!   @[`->()], @[lfun::`[]()], @[`[]=]
+ *!   @[`->()], @[lfun::`[]()], @[`[]=], @[`[..]]
  */
 PMOD_EXPORT void f_index(INT32 args)
 {
   switch(args)
   {
-  case 0:
-  case 1:
-    PIKE_ERROR("`[]", "Too few arguments.\n", sp, args);
-    break;
   case 2:
     if(sp[-1].type==T_STRING) sp[-1].subtype=0;
     o_index();
     break;
   case 3:
-    o_range();
+    move_svalue (sp, sp - 1);
+    sp += 2;
+    sp[-3].type = sp[-1].type = T_INT;
+    sp[-3].subtype = sp[-1].subtype = NUMBER_NUMBER;
+    sp[-3].u.integer = sp[-1].u.integer = INDEX_FROM_BEG;
+    f_range (5);
     break;
   default:
-    PIKE_ERROR("`[]", "Too many arguments.\n", sp, args);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("predef::`[]", args);
+    break;
   }
 }
 
@@ -4318,7 +4738,7 @@ PMOD_EXPORT void f_index(INT32 args)
  *! @decl int(0..1) `->(multiset arg, string index)
  *! @decl mixed `->(program arg, string index)
  *!
- *!   Arrow index.
+ *!   Arrow indexing.
  *!
  *!   Every non-lvalue expression with the @expr{->@} operator becomes
  *!   a call to this function. @expr{a->b@} is the same as
@@ -4717,8 +5137,27 @@ static void exit_string_assignment_storage(struct object *o)
 
 void init_operators(void)
 {
-  /* function(string,int:int)|function(object,string:mixed)|function(array(0=mixed),int:0)|function(mapping(mixed:1=mixed),mixed:1)|function(multiset,mixed:int)|function(string,int,int:string)|function(array(2=mixed),int,int:array(2))|function(program:mixed) */
-  ADD_EFUN2("`[]",f_index,tOr7(tFunc(tStr tInt,tInt),tFunc(tObj tStr,tMix),tFunc(tArr(tSetvar(0,tMix)) tInt,tVar(0)),tFunc(tMap(tMix,tSetvar(1,tMix)) tMix,tVar(1)),tFunc(tMultiset tMix,tInt),tFunc(tStr tInt tInt,tStr),tOr(tFunc(tArr(tSetvar(2,tMix)) tInt tInt,tArr(tVar(2))),tFunc(tPrg(tObj),tMix))),OPT_TRY_OPTIMIZE,0,0);
+  ADD_EFUN ("`[..]", f_range,
+	    tOr3(tFunc(tStr tInt tRangeBound tInt tRangeBound, tStr),
+		 tFunc(tArr(tSetvar(0,tMix)) tInt tRangeBound tInt tRangeBound, tArr(tVar(0))),
+		 tFunc(tObj tMix tRangeBound tMix tRangeBound, tMix)),
+	    OPT_TRY_OPTIMIZE);
+
+  ADD_INT_CONSTANT ("INDEX_FROM_BEG", INDEX_FROM_BEG, 0);
+  ADD_INT_CONSTANT ("INDEX_FROM_END", INDEX_FROM_END, 0);
+  ADD_INT_CONSTANT ("OPEN_BOUND", OPEN_BOUND, 0);
+
+  ADD_EFUN ("`[]", f_index,
+	    tOr9(tFunc(tObj tMix tOr(tVoid,tMix), tMix),
+		 tFunc(tInt tString, tFunction),
+		 tFunc(tStr tInt, tInt),
+		 tFunc(tArr(tSetvar(0,tMix)) tMix, tVar(0)),
+		 tFunc(tMap(tMix,tSetvar(1,tMix)) tMix, tVar(1)),
+		 tFunc(tMultiset tMix, tInt01),
+		 tFunc(tPrg(tObj) tString, tMix),
+		 tFunc(tStr tInt tInt, tStr),
+		 tFunc(tArr(tSetvar(2,tMix)) tInt tInt, tArr(tVar(2)))),
+	    OPT_TRY_OPTIMIZE);
 
   /* function(array(object|mapping|multiset|array),string:array(mixed))|function(object|mapping|multiset|program,string:mixed) */
   ADD_EFUN2("`->",f_arrow,tOr(tFunc(tArr(tOr4(tObj,tMapping,tMultiset,tArray)) tStr,tArr(tMix)),tFunc(tOr4(tObj,tMapping,tMultiset,tPrg(tObj)) tStr,tMix)),OPT_TRY_OPTIMIZE,0,0);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.50 2004/10/22 23:24:15 nilsson Exp $
+|| $Id: lexer.h,v 1.51 2004/10/30 11:38:27 mast Exp $
 */
 
 /*
@@ -926,7 +926,11 @@ static int low_yylex(YYSTYPE *yylval)
 	  if(GOBBLE('=')) tmp="```[]=";
 	  break;
 	}
-	yyerror("Illegal ` identifier. Expected `[].");
+	if (GOBBLE ('.') && GOBBLE ('.') && GOBBLE (']')) {
+	  tmp = "```[..]";
+	  break;
+	}
+	yyerror("Illegal ` identifier. Expected `[], `[]= or `[..].");
 	break;
 
       default:

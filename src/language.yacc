@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.346 2004/10/26 17:27:31 grubba Exp $
+|| $Id: language.yacc,v 1.347 2004/10/30 11:38:26 mast Exp $
 */
 
 %pure_parser
@@ -296,8 +296,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> safe_comma_expr
 %type <n> comma_expr
 %type <n> comma_expr2
-%type <n> comma_expr_or_maxint
-%type <n> comma_expr_or_zero
+%type <n> range_bound
 %type <n> cond
 %type <n> continue
 %type <n> default
@@ -3253,9 +3252,9 @@ expr4: string
     free_node ($2);
   }
   | expr4 open_bracket_with_line_info
-    comma_expr_or_zero expected_dot_dot comma_expr_or_maxint ']'
+    range_bound expected_dot_dot range_bound ']'
   {
-    $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
+    $$=mknode(F_RANGE,$1,mknode(':',$3,$5));
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
@@ -3663,14 +3662,23 @@ low_idents: TOK_IDENTIFIER
   }
   ;
 
-comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
+range_bound:
+  /* empty */
+  {$$ = mknode (F_RANGE_OPEN, NULL, NULL);}
   | comma_expr
-  | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
-  ;
-
-comma_expr_or_maxint: /* empty */ { $$=mkintnode(MAX_INT_TYPE); }
-  | comma_expr
-  | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(MAX_INT_TYPE); }
+  {$$ = mknode (F_RANGE_FROM_BEG, $1, NULL);}
+  | '<' comma_expr
+  {$$ = mknode (F_RANGE_FROM_END, $2, NULL);}
+  | TOK_LEX_EOF
+  {
+    yyerror("Unexpected end of file.");
+    $$ = mknode (F_RANGE_OPEN, NULL, NULL);
+  }
+  | '<' TOK_LEX_EOF
+  {
+    yyerror("Unexpected end of file.");
+    $$ = mknode (F_RANGE_OPEN, NULL, NULL);
+  }
   ;
 
 gauge: TOK_GAUGE catch_arg
