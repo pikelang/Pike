@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.22 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_threadlib.h,v 1.23 2003/01/08 18:11:07 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -480,8 +480,8 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
 
 #ifdef THREAD_TRACE
 PMOD_EXPORT extern int t_flag;
-#define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->status.t_flag = t_flag; } while(0)
-#define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->status.t_flag; } while(0)
+#define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->state.t_flag = t_flag; } while(0)
+#define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->state.t_flag; } while(0)
 #else /* !THREAD_TRACE */
 #define SWAP_OUT_TRACE(_tmp)
 #define SWAP_IN_TRACE(_tmp)
@@ -490,12 +490,14 @@ PMOD_EXPORT extern int t_flag;
 #define SWAP_OUT_THREAD(_tmp) do {				\
        (_tmp)->state=Pike_interpreter;				\
        (_tmp)->swapped=1;					\
+       SWAP_OUT_TRACE(_tmp);					\
        DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )	\
       } while(0)
 
 #define SWAP_IN_THREAD(_tmp) do {					\
        (_tmp)->swapped=0;						\
        Pike_interpreter=(_tmp)->state;					\
+       SWAP_IN_TRACE(_tmp);						\
        DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
        DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime();)	\
      } while(0)
