@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.27 1997/09/01 14:14:30 per Exp $");
+RCSID("$Id: threads.c,v 1.28 1997/09/02 22:18:07 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -42,15 +42,13 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
 void *new_thread_func(void * data)
 {
-/*  static int dbt;*/
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
   INT32 tmp;
 
-/*  fprintf(stderr, "Thread create[%d]...",dbt++);*/
   if((tmp=mt_lock( & interpreter_lock)))
     fatal("Failed to lock interpreter, errno %d\n",tmp);
-/*  fprintf(stderr,"Created[%d]...",dbt);*/
+  THREADS_FPRINTF((stderr,"THREADS_DISALLOW() Thread created...\n"));
   init_interpreter();
 
   thread_id=arg.id;
@@ -86,7 +84,7 @@ void *new_thread_func(void * data)
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
-/*  fprintf(stderr,"Done[%d]\n",dbt--);*/
+  THREADS_FPRINTF((stderr,"THREADS_ALLOW() Thread done\n"));
   mt_unlock(& interpreter_lock);
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
@@ -181,27 +179,35 @@ void f_mutex_lock(INT32 args)
 
   pop_n_elems(args);
   m=THIS_MUTEX;
+  /* Needs to be cloned here, since create()
+   * might use threads.
+   */
   o=clone_object(mutex_key,0);
   mt_lock(& mutex_kluge);
   if(m->key && OB2KEY(m->key)->owner == thread_id)
   {
-    m->key->refs++;
-    push_object(m->key);
+    THREADS_FPRINTF((stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
+		     (unsigned int)OB2KEY(m->key),
+		     (unsigned int)m,
+		     (unsigned int)OB2KEY(m->key)->mut,
+		     (unsigned int) thread_id));
     mt_unlock(&mutex_kluge);
-    return;
-
-    mt_unlock(&mutex_kluge);
+    free_object(o);
     error("Recursive mutex locks!\n");
   }
 
   THREADS_ALLOW();
   while(m->key) co_wait(& m->condition, & mutex_kluge);
-  OB2KEY(o)->mut=m;
-  OB2KEY(o)->owner=thread_id;
   m->key=o;
+  OB2KEY(o)->mut=m;
   
   mt_unlock(&mutex_kluge);
   THREADS_DISALLOW();
+  THREADS_FPRINTF((stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
+		   (unsigned int)OB2KEY(o),
+		   (unsigned int)m,
+		   (unsigned int)OB2KEY(m->key)->mut,
+		   (unsigned int)thread_id));
   push_object(o);
 }
 
@@ -217,21 +223,23 @@ void f_mutex_trylock(INT32 args)
 
   mt_lock(& mutex_kluge);
 
+  /* No reason to release the interpreter lock here
+   * since we aren't calling any functions that take time.
+   */
+
   if(m->key && OB2KEY(m->key)->owner == thread_id)
   {
     mt_unlock(&mutex_kluge);
+    free_object(o);
     error("Recursive mutex locks!\n");
   }
-  THREADS_ALLOW();
   if(!m->key)
   {
     OB2KEY(o)->mut=m;
-    OB2KEY(o)->owner=thread_id;
     m->key=o;
     i=1;
   }
   mt_unlock(&mutex_kluge);
-  THREADS_DISALLOW();
   
   if(i)
   {
@@ -258,13 +266,21 @@ void exit_mutex_obj(struct object *o)
 #define THIS_KEY ((struct key_storage *)(fp->current_storage))
 void init_mutex_key_obj(struct object *o)
 {
+  THREADS_FPRINTF((stderr, "KEY k:%08x, o:%08x\n",
+		   (unsigned int)THIS_KEY, (unsigned int)thread_id));
   THIS_KEY->mut=0;
-  THIS_KEY->owner=0;
+  THIS_KEY->owner=thread_id;
+  thread_id->refs++;
   THIS_KEY->initialized=1;
 }
 
 void exit_mutex_key_obj(struct object *o)
 {
+  THREADS_FPRINTF((stderr, "UNLOCK k:%08x m:(%08x) t:%08x o:%08x\n",
+		   (unsigned int)THIS_KEY,
+		   (unsigned int)THIS_KEY->mut,
+		   (unsigned int)thread_id,
+		   (unsigned int)THIS_KEY->owner));
   mt_lock(& mutex_kluge);
   if(THIS_KEY->mut)
   {
@@ -273,7 +289,10 @@ void exit_mutex_key_obj(struct object *o)
       fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
 #endif
     THIS_KEY->mut->key=0;
-    THIS_KEY->owner=0;
+    if (THIS_KEY->owner) {
+      free_object(THIS_KEY->owner);
+      THIS_KEY->owner=0;
+    }
     co_signal(& THIS_KEY->mut->condition);
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
@@ -342,6 +361,7 @@ void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 void th_init(void)
 {
   struct program *tmp;
+  INT32 mutex_key_offset;
 
 #ifdef SGI_SPROC_THREADS
 #error /* Need to specify a filename */
@@ -375,7 +395,12 @@ void th_init(void)
   end_class("mutex", 0);
 
   start_new_program();
-  add_storage(sizeof(struct key_storage));
+  mutex_key_offset = add_storage(sizeof(struct key_storage));
+  /* This is needed to allow the gc to find the possible circular reference.
+   * It also allows a process to take over ownership of a key.
+   */
+  map_variable("_owner", "object", 0,
+	       mutex_key_offset + OFFSETOF(key_storage, owner), T_OBJECT);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=end_program();
