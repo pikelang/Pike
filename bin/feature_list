@@ -11,9 +11,11 @@ int main(int argc, string *argv)
   write("threads ");
 #endif
 
-  catch { if(master()->resolv("Gdbm")->gdbm) write("Gdbm "); };
-  catch { if(master()->resolv("Gmp")->mpz)   write("Gmp ");  };
-  catch { if(master()->resolv("Gz")->deflate)write("Gz ");   };
+  catch { if(master()->resolv("Gdbm")->gdbm)   write("Gdbm "); };
+  catch { if(master()->resolv("Gmp")->mpz)     write("Gmp ");  };
+  catch { if(master()->resolv("Gz")->deflate)  write("Gz ");   };
+  catch { if(master()->resolv("Odbc")->odbc)   write("Odbc ");   };
+  catch { if(master()->resolv("Mysql")->mysql) write("Mysql ");   };
 
   write("\n");
 }
