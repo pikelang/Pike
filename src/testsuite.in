@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.461 2001/10/06 09:23:17 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.462 2001/10/06 09:24:48 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1062,7 +1062,6 @@ test_any([[
  class handler
  { void compile_error(string file, int line, string err) { } };
 
-	werror("foo\n");
  catch {
    compile_string("import \".\"; "
 	"int foo() { testsuite_test_dir.a(); }",
