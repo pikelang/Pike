@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.69 2003/10/29 18:21:57 mast Exp $
+|| $Id: backend.cmod,v 1.70 2003/10/29 19:01:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.69 2003/10/29 18:21:57 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.70 2003/10/29 19:01:53 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1083,8 +1083,8 @@ PIKECLASS Backend
 		      &me->active_set.rset,
 		      &me->active_set.wset, 
 		      &me->active_set.eset,
-		      /* select_timeout.tv_sec >= 100000000 ?
-			 NULL : */ &select_timeout);
+		      select_timeout.tv_sec >= 100000000 ?
+		      NULL : &select_timeout);
 #endif	/* HAVE_POLL */
 
 	THREADS_DISALLOW();
