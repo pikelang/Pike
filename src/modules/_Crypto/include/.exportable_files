@@ -1,2 +1,0 @@
-# $Id: .exportable_files,v 1.4 2001/10/16 18:07:20 nilsson Exp $
-crypto_types.h md2.h md5.h sha.h RCSID.h

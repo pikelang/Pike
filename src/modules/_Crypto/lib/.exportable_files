@@ -1,2 +1,0 @@
-# $Id: .exportable_files,v 1.4 2001/10/16 18:44:27 nilsson Exp $
-configure.in md2.c md5.c sha.c crypt_md5.c

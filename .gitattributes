@@ -618,7 +618,6 @@ testfont binary
 /src/modules/_Crypto/crypto.h foreign_ident
 /src/modules/_Crypto/des.c foreign_ident
 /src/modules/_Crypto/idea.c foreign_ident
-/src/modules/_Crypto/include/.exportable_files foreign_ident
 /src/modules/_Crypto/include/RCSID.h foreign_ident
 /src/modules/_Crypto/include/arcfour.h foreign_ident
 /src/modules/_Crypto/include/cast.h foreign_ident
@@ -631,7 +630,6 @@ testfont binary
 /src/modules/_Crypto/include/rc4.h foreign_ident
 /src/modules/_Crypto/include/rijndael.h foreign_ident
 /src/modules/_Crypto/include/sha.h foreign_ident
-/src/modules/_Crypto/lib/.exportable_files foreign_ident
 /src/modules/_Crypto/lib/Makefile.in foreign_ident
 /src/modules/_Crypto/lib/arcfour.c foreign_ident
 /src/modules/_Crypto/lib/cast.c foreign_ident
