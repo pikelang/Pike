@@ -54,6 +54,8 @@ union anything *object_get_item_ptr(struct object *o,
 void verify_all_objects(int pass);
 int object_equal_p(struct object *a, struct object *b, struct processing *p);
 void cleanup_objects();
+struct array *object_indices(struct object *o);
+struct array *object_values(struct object *o);
 /* Prototypes end here */
 
 #endif /* OBJECT_H */
