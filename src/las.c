@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.125 1999/11/21 18:54:01 grubba Exp $");
+RCSID("$Id: las.c,v 1.126 1999/11/22 14:56:13 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2306,6 +2306,9 @@ void fix_type_field(node *n)
   if (old_type) {
     free_string(old_type);
   }
+#ifdef PIKE_DEBUG
+  check_type_string(n->type);
+#endif /* PIKE_DEBUG */
 }
 
 static void zapp_try_optimize(node *n)
