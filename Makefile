@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.107 2002/12/02 20:19:18 nilsson Exp $
+# $Id: Makefile,v 1.108 2002/12/12 21:21:03 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -179,7 +179,7 @@ tinstall: bin/pike
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=tinstall"
 
 testsuites:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=module_testsuites"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=testsuites"
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=testsuite"
 
 just_verify:

@@ -10,6 +10,6 @@ linker_options
 make_variables
 modlist_headers
 modlist_segment
-module_testsuite
+testsuite
 stamp-h
 stamp-h.in

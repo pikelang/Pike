@@ -7,6 +7,6 @@
 /make_variables
 /modlist_headers
 /modlist_segment
-/module_testsuite
+/testsuite
 /msql_config.h
 /remake

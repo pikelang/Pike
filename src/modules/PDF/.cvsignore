@@ -9,7 +9,7 @@ make_variables
 modlist_headers
 modlist_segment
 module.pmod
-module_testsuite
+testsuite
 pdf_machine.h
 pdf_machine.h.in
 remake

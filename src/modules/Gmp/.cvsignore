@@ -9,7 +9,7 @@ linker_options
 make_variables
 modlist_headers
 modlist_segment
-module_testsuite
+testsuite
 prime_table
 prime_table.out
 prime_table_no

@@ -1,4 +1,4 @@
-# $Id: module_makefile,v 1.3 1998/03/28 14:52:48 grubba Exp $
+# $Id: module_makefile,v 1.4 2002/12/12 21:19:57 nilsson Exp $
 PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I.
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
@@ -9,17 +9,17 @@ depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 
 #verify / debug
-module_testsuite: $(SRCDIR)/testsuite.in
-	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR) 
+testsuite: $(SRCDIR)/testsuite.in
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite -DSRCDIR=$(SRCDIR)
 
-verify: module_testsuite
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
+verify: testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
 
-verbose_verify: module_testsuite
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
+verbose_verify: testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
 
-gdb_verify: module_testsuite
+gdb_verify: testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -m $(SRCDIR)/../../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
+	@echo >>.gdbinit run -m $(SRCDIR)/../../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike testsuite -v -v -f
 	gdb ../../pike
 	@rm .gdbinit

@@ -10,7 +10,7 @@ make_variables
 modlist_headers
 modlist_segment
 module.pmod
-module_testsuite
+testsuite
 remake
 stamp-h
 stamp-h.in

@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.100 2002/11/05 16:52:05 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.101 2002/12/12 21:19:57 nilsson Exp $
 #
 
 
@@ -131,7 +131,7 @@ module.so: $(OBJS)  $(MODULE_ARCHIVES)
 $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
 clean:
-	-rm -f *.o *.fail *.obj *.a *.so module.so linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
+	-rm -f *.o *.fail *.obj *.a *.so module.so linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA)
 	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 
@@ -152,30 +152,30 @@ depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
 	done
 
 #verify / debug
-module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE) $(TMP_BINDIR)/mktestsuite
+testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE) $(TMP_BINDIR)/mktestsuite
 	@if test "x$(REAL_TESTSUITE)" != x ; then \
-	  cp $(SRCDIR)/$(REAL_TESTSUITE) module_testsuite; \
+	  cp $(SRCDIR)/$(REAL_TESTSUITE) testsuite; \
 	else \
 	  if test "$$PIKE_PATH_TRANSLATE" = ""; then \
-	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
 	      -DSRCDIR=$(SRCDIR); \
 	  else \
-	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
 	      -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE`"; \
 	  fi; \
 	fi
 
 extra_tests: $(MODULE_TESTS)
 
-verify: module_testsuite  $(MODULE_TESTS)
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
+verify: testsuite  $(MODULE_TESTS)
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
 
-verbose_verify: module_testsuite  $(MODULE_TESTS)
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
+verbose_verify: testsuite  $(MODULE_TESTS)
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
 
-gdb_verify: module_testsuite
+gdb_verify: testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -DNOT_INSTALLED -m $(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike module_testsuite -v -v -f
+	@echo >>.gdbinit run -DNOT_INSTALLED -m $(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f
 	gdb $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.340 2002/12/06 20:01:45 nilsson Exp $
+# $Id: Makefile.in,v 1.341 2002/12/12 21:20:46 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -483,13 +483,13 @@ TAGS:
 	etags -t *.h *.c
 
 # verify / debug
-module_testsuites:
+testsuites:
 	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( $(TMP_BINDIR)/mklibtests.sh --srcdir=$(LIBDIR_SRC) \
 	  --destdir=$(TMP_BUILDDIR)/tlib --bindir=$(TMP_BINDIR) )
 
-just_verify: module_testsuites testsuite master-stamp
+just_verify: testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
@@ -515,7 +515,7 @@ just-tinstall: master-stamp
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 
-verify: module_testsuites testsuite tinstall
+verify: testsuites testsuite tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
@@ -532,7 +532,7 @@ bench: tinstall
 	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
 	fi
 
-verify_installed: module_testsuites testsuite master-stamp
+verify_installed: testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	$(exec_prefix)/pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args
@@ -542,12 +542,12 @@ check: verify
 sure: verify
 
 # verify / debug verbose
-verbose_verify: module_testsuites testsuite master-stamp
+verbose_verify: testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike -v -v $$args
 
 # verify & debug VERBOSE
-gdb_verify: module_testsuites testsuite master-stamp
+gdb_verify: testsuites testsuite master-stamp
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass

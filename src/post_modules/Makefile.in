@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 2002/05/04 15:19:04 mast Exp $
+# $Id: Makefile.in,v 1.10 2002/12/12 21:20:25 nilsson Exp $
 
 @make_variables@
 
@@ -112,14 +112,14 @@ fdtestsuites:
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    echo $$a ; \
-	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
 	  fi; \
 	done	
 
 testsuites:
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
-	    (cd $$a && $(MAKE) module_testsuite) ; \
+	    (cd $$a && $(MAKE) testsuite) ; \
 	  fi; \
 	done
 
