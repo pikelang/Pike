@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.73 1998/01/13 22:59:23 hubbe Exp $ */
+/* $Id: image.c,v 1.74 1998/01/16 04:04:43 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.73 1998/01/13 22:59:23 hubbe Exp $
+**!	$Id: image.c,v 1.74 1998/01/16 04:04:43 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.73 1998/01/13 22:59:23 hubbe Exp $");
+RCSID("$Id: image.c,v 1.74 1998/01/16 04:04:43 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2772,10 +2772,38 @@ void init_image_gif(void);
 void exit_image_gif(void);
 void init_image_pnm(void);
 void exit_image_pnm(void);
+void init_image_x(void);
+void exit_image_x(void);
+void init_image_png(void);
+void exit_image_png(void);
+
+static struct pike_string *magic_JPEG;
+
+static void image_index_magic(INT32 args)
+{
+   struct svalue tmp;
+   if (args!=1) 
+      error("Image.`[]: Too few or too many arguments\n");
+   if (sp[-1].type!=T_STRING)
+      error("Image.`[]: Illegal type of argument\n");
+   if (sp[-1].u.string==magic_JPEG)
+   {
+      pop_stack();
+      push_string(make_shared_string("_Image_JPEG"));
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      return;
+   }
+   push_object(THISOBJ); THISOBJ->refs++;
+   tmp=sp[-1], sp[-1]=sp[-2], sp[-2]=tmp;
+   f_arrow(2);
+}
 
 void pike_module_init(void)
 {
    int i;
+
+   magic_JPEG=make_shared_string("JPEG");
 
    image_noise_init();
 
@@ -2982,6 +3010,9 @@ void pike_module_init(void)
    init_font_programs();
    init_colortable_programs();
 
+   add_function("`[]",image_index_magic,
+		"function(string:object)",0);
+
    init_image_gif();
    init_image_pnm();
    init_image_png();
@@ -3002,6 +3033,8 @@ void pike_module_exit(void)
   exit_image_pnm();
   exit_image_png();
   exit_image_x();
+
+  free_string(magic_JPEG);
 }
 
 
