@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.124 2001/08/24 16:29:22 mast Exp $
+// $Id: module.pmod,v 1.125 2001/08/24 16:33:38 mast Exp $
 #pike __REAL_VERSION__
 
 
@@ -1505,7 +1505,7 @@ int write_file(string filename, string str, int|void access)
   }
 
   if(!f->open(filename, "twc", access))
-    error("Couldn't open file "+filename+".\n");
+    error("Couldn't open file "+filename+": " + strerror(f->errno()) + "\n");
   
   ret=f->write(str);
   f->close();
@@ -1530,8 +1530,8 @@ int append_file(string filename, string what, int|void access)
   }
 
   if(!f->open(filename, "awc", access))
-    error("Couldn't open file "+filename+".\n");
-  
+    error("Couldn't open file "+filename+": " + strerror(f->errno()) + "\n");
+
   ret=f->write(what);
   f->close();
   return ret;
