@@ -35,26 +35,49 @@ static int valid_creds_object(struct object *o)
     OBJ2CREDS(o)->user;
 }
 
-static void f_set_current_creds(INT32 args)
+static void f_call_with_creds(INT32 args)
 {
   struct object *o;
 
-  if(!args)
+  switch(sp[-args].type)
   {
-    /* We might want allocate a bit for this so that we can
-     * disallow this
-     */
-    SET_CURRENT_CREDS(fp->current_object->prot);
-  }else{
-    CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("set_current_creds: permission denied.\n"));
+    case T_INT:
+      /* We might want allocate a bit for this so that we can
+       * disallow this
+       */
+      o=fp->current_object->prot;
+      break;
 
-    get_all_args("set_current_creds",args,"%o",&o);
-    if(!valid_creds_object(o))
-      error("set_current_creds: Not a valid creds object.\n");
-    
-    SET_CURRENT_CREDS(o);
-    pop_n_elems(args);
+    case T_OBJECT:
+      o=sp[-args].u.object;
+      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY) &&
+	 !(fp->current_object->prot && 
+	   (OBJ2CREDS(fp->current_object->prot)->may_always & SECURITY_BIT_SECURITY)))
+	error("call_with_creds: permission denied.\n");
+      
+      break;
+
+    default:
+      error("Bad argument 1 to call_with_creds.\n");
   }
+    
+  if(!valid_creds_object(o))
+    error("call_with_creds: Not a valid creds object.\n");
+  SET_CURRENT_CREDS(o);
+
+  f_call_function(args-1);
+  free_svalue(sp-2);
+  sp[-2]=sp[-1];
+  sp--;
+}
+
+static void f_get_current_creds(INT32 args)
+{
+  pop_n_elems(args);
+  if(current_creds)
+    ref_push_object(current_creds);
+  else
+    push_int(0);
 }
 
 /* Should be no need for special security for these. obj->creds
@@ -83,21 +106,76 @@ static void set_default_creds(INT32 args)
   pop_n_elems(args);
 }
 
-static void init_creds(INT32 args)
+static void creds_create(INT32 args)
 {
   struct object *o;
   INT_TYPE may,data;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("init_creds: permission denied.\n"));
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("creds_create: permission denied.\n"));
 
   get_all_args("init_creds",args,"%o%i%i",&o,&may,&data);
   if(THIS->user)
-    error("You may only call init_creds once.\n");
+    error("You may only call creds_create once.\n");
   
   add_ref(THIS->user=o);
   THIS->may_always=may;
   THIS->data_bits=data;
   pop_n_elems(args);
+}
+
+static void creds_get_user(INT32 args)
+{
+  pop_n_elems(args);
+  if(THIS->user)
+    ref_push_object(THIS->user);
+  else
+    push_int(0);
+}
+
+static void creds_get_allow_bits(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS->may_always);
+}
+
+static void creds_get_data_bits(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS->data_bits);
+}
+
+static void creds_apply(INT32 args)
+{
+  if(args < 0 || sp[-args].type > MAX_COMPLEX)
+    error("Bad argument 1 to creds->apply()\n");
+
+  if( CHECK_SECURITY(SECURITY_BIT_SECURITY) ||
+      (sp[-args].u.array->prot && 
+       OBJ2CREDS(sp[-args].u.array->prot)->user == THIS->user))
+  {
+    if(sp[-args].u.array->prot)
+      free_object(sp[-args].u.array->prot);
+    add_ref( sp[-args].u.array->prot=fp->current_object );
+  }else{
+    error("creds->apply(): permission denied.\n");
+  }
+  pop_n_elems(args);
+}
+
+static void f_get_object_creds(INT32 args)
+{
+  struct object *o;
+  if(args < 0 || sp[-args].type > MAX_COMPLEX)
+    error("Bad argument 1 to get_object_creds\n");
+  if((o=sp[-args].u.array->prot))
+  {
+    add_ref(o);
+    pop_n_elems(args);
+    push_object(o);
+  }else{
+    pop_n_elems(args);
+    push_int(0);
+  }
 }
 
 static void init_creds_object(struct object *o)
@@ -137,21 +215,30 @@ static void exit_creds_object(struct object *o)
 
 void init_pike_security(void)
 {
+  struct program *tmpp;
+  struct object *tmpo;
+
   start_new_program();
 
   start_new_program();
   ADD_STORAGE(struct pike_creds);
   add_function("set_default_creds",set_default_creds,"function(object:void)",0);
   add_function("get_default_creds",get_default_creds,"function(:object)",0);
-  add_function("init_creds",init_creds,"function(object,int,int:void)",0);
-  /* add_function("apply_creds",apply_creds,"function(object:void)",0); */
+  add_function("get_user",creds_get_user,"function(:object)",0);
+  add_function("get_allow_bits",creds_get_allow_bits,"function(:int)",0);
+  add_function("get_data_bits",creds_get_data_bits,"function(:int)",0);
+  add_function("create",creds_create,"function(object,int,int:void)",0);
+  add_function("apply",creds_apply,"function(mixed:void)",0);
   set_init_callback(init_creds_object);
   set_exit_callback(exit_creds_object);
   set_gc_check_callback(creds_gc_check);
   set_gc_mark_callback(creds_gc_mark);
   creds_program=end_program();
+  add_program_constant("Creds",creds_program, 0);
 
-  add_efun("set_current_creds",f_set_current_creds,"function(object:void)",OPT_SIDE_EFFECT);
+  add_efun("call_with_creds",f_call_with_creds,"function(object,mixed...:mixed)",OPT_SIDE_EFFECT);
+  add_efun("get_current_creds",f_get_current_creds,"function(:object)",OPT_EXTERNAL_DEPEND);
+  add_efun("get_object_creds",f_get_object_creds,"function(mixed:object)",OPT_EXTERNAL_DEPEND);
 
 #define CONST(X) add_integer_constant("BIT_" #X,SECURITY_BIT_##X,0)
   CONST(INDEX);
@@ -161,7 +248,10 @@ void init_pike_security(void)
   CONST(NOT_SETUID);
   CONST(CONDITIONAL_IO);
 
-  end_class("security",0);
+  tmpp=end_program();
+  add_object_constant("security",tmpo=clone_object(tmpp,0),0);
+  free_object(tmpo);
+  free_program(tmpp);
 }
 
 #endif

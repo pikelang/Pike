@@ -8,7 +8,7 @@
 
 #define SECURITY_BIT_INDEX 1      /* index read-only */
 #define SECURITY_BIT_SET_INDEX 2  /* set index */
-#define SECURITY_BIT_CALL 4       /* call functions (and clone) */
+#define SECURITY_BIT_CALL 4       /* call functions (and clone?) */
 #define SECURITY_BIT_SECURITY 8   /* Do anything :) */
 #define SECURITY_BIT_NOT_SETUID 16
 #define SECURITY_BIT_CONDITIONAL_IO 32
@@ -35,7 +35,7 @@ struct pike_creds
 
 #define CHECK_DATA_SECURITY(DATA,BIT) (\
    CHECK_SECURITY(BIT) || \
-   (OBJ2CREDS((DATA)->prot)->data_bits & (BIT)) || \
+   !(DATA)->prot || (OBJ2CREDS((DATA)->prot)->data_bits & (BIT)) || \
    (OBJ2CREDS((DATA)->prot)->user == OBJ2CREDS(current_creds)->user) )
 
 #define CHECK_DATA_SECURITY_OR_ERROR(DATA,BIT,ERR) do {	\
@@ -49,7 +49,7 @@ struct pike_creds
  }while(0)
 
 #define SET_CURRENT_CREDS(O) do {		\
-   free_object(current_creds);			\
+   if(current_creds)  free_object(current_creds);		\
    add_ref(current_creds=CHECK_VALID_UID((O)));	\
  }while(0)
 

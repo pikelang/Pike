@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.138 1999/02/01 03:13:39 grubba Exp $");
+RCSID("$Id: file.c,v 1.139 1999/02/01 09:49:12 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1111,7 +1111,7 @@ static void file_open(INT32 args)
     if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
       error("Permission denied.\n");
 
-    if(flags && (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
+    if(flags & (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
     {
       push_text("write");
     }else{
