@@ -6,7 +6,7 @@ import Stdio;
 #define strerror(X) ("errno="+X)
 #endif
 
-program create_process = _static_modules.Builtin()->create_process;
+program create_process = __builtin.create_process;
 
 int exec(string file,string ... foo)
 {
