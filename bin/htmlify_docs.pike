@@ -6,7 +6,7 @@
 #include <simulate.h>
 #include <string.h>
 
-mapping efuns = all_efuns();
+multiset efuns = mklist(indices(all_efuns())) | (<"sscanf","gauge","catch">);
 mapping pages = ([]);
 mapping short_descs = ([]);
 mapping keywords = ([]);
@@ -89,7 +89,7 @@ string even_more_magic(string block, int indent)
       tmp[e]=implode3("<td> ",tmp[e]," </td>");
 
     return "<table border=0 cellpadding=0 cellspacing=0>\n"+
-      implode3("<tr valign=top>",tmp,"<br></tr>\n")+
+      implode3("<tr valign=top>",tmp,/* "<br>" */ "</tr>\n")+
 	"</table>\n";
   }
 }
@@ -276,6 +276,9 @@ string mkindex(string topic, int usehead)
     {
       if(a[0]!='/') continue;
       done(a);
+      if(sscanf(a,"/precompiled/%s",string tmp))
+	done(capitalize(tmp));
+	
       ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+short(a)+"\n";
     }
     
@@ -298,8 +301,8 @@ string mkindex(string topic, int usehead)
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
-    perror(sprintf("all pages: %O\n",sort(m_indices(pages))));
-    perror(sprintf("pages done: %O\n",sort(m_indices(pages_done))));
+//    perror(sprintf("all pages: %O\n",sort(m_indices(pages))));
+//    perror(sprintf("pages done: %O\n",sort(m_indices(pages_done))));
     foreach(my_sort(m_indices(pages) - indices(pages_done) ),a)
     {
       if(a[0..4]=="index") continue;
@@ -311,7 +314,7 @@ string mkindex(string topic, int usehead)
   case "efuns":
     head="<b>All builtin functions:</b>\n";
     ret="<ul>\n";
-    foreach(my_sort(m_indices(all_efuns())),a)
+    foreach(my_sort(m_indices(efuns)),a)
     {
       a=html_quote(a);
       done(a);
@@ -342,7 +345,6 @@ string mkindex(string topic, int usehead)
     foreach(my_sort(keywords[prefix+topic]),a)
     {
       a=html_quote(a);
-      done(a);
       ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+ short(a) +"\n";
     }
     ret+="</ul></a>\n";
@@ -483,6 +485,7 @@ string convert_page(string path, string fname)
 
 	case "SYNTAX":
 	case "SYNTAX EXAMPLE":
+	  if(search(rest,name+"(")) efuns[name]=1;
 	  rest=syntax_magic(rest);
 	  break;
 
@@ -798,6 +801,8 @@ int main(int argc, string *argv)
   new_path=argv[1];
 
   write("Scanning pages for links and keywords.\n");
+  writepages=0;
+  for(e=2;e<sizeof(argv);e++) dodocs(argv[e],e-2);
   writepages=0;
   for(e=2;e<sizeof(argv);e++) dodocs(argv[e],e-2);
 

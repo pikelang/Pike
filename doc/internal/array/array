@@ -12,7 +12,6 @@ DESCRIPTION
 	type_field	a bitfield indicating what types the array contains
 	item    	the array of svalues
 
-
 SEE ALSO
 	type_field
 
