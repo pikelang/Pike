@@ -32,6 +32,16 @@ object set_private_key(bignum priv)
   return this_object();
 }
 
+bignum get_prime(int bits, function r)
+{
+  int len = (bits + 7) / 8;
+  int bit_to_set = 1 << ( (bits - 1) % 8);
+  
+  string s = r(len);
+  return BIGNUM(sprintf("%c%s", (s[0] & (bit_to_set - 1)) | bit_to_set, s[1..]),
+		256)->next_prime();
+}
+
 int query_blocksize() { return size - 3; }
 
 bignum rsa_pad(string message, int type, mixed|void random)
@@ -46,7 +56,7 @@ bignum rsa_pad(string message, int type, mixed|void random)
 		backtrace() }) );
 
   if (random)
-    cookie = replace(random->read(len), "\0", "\1");
+    cookie = replace(random(len), "\0", "\1");
   else
     cookie = sprintf("%@c", Array.map(allocate(len), lambda(int dummy)
 				      {
@@ -87,6 +97,43 @@ int sha_verify(string message, string signature)
   s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
 
   return s == rsa_unpad(BIGNUM(signature, 256)->powm(e, n), 1);
+}
+
+object generate_key(int bits, function|void r)
+{
+  if (!r)
+    r = Crypto.randomness.really_random()->read;
+  if (bits < 128)
+    throw( ({ "Crypto.rsa->generate_key: ridicously small key\n",
+		backtrace() }) );
+  bits /= 2; /* Size of each of the primes */
+
+  string msg = "This is a valid RSA key pair\n";
+  
+  do
+  {
+    bignum p = get_prime(bits, r);
+    bignum q = get_prime(bits, r);
+    bignum phi = (p-1)*(q-1);
+
+    array gs; /* gcd(pub, phi), and pub^-1 mod phi */
+    bignum pub = Gmp.mpz(random(1 << 30) | 0x10001);
+
+    while ((gs = pub->gcdext2(phi))[0] != 1)
+      pub += 1;
+
+    werror(sprintf("p = %s\nq = %s\ne = %s\nd = %s\n",
+		   p->digits(), q->digits(), pub->digits(), gs[1]->digits()));
+    if (gs[1] < 0)
+      gs[1] += phi;
+    
+    set_public_key(p * q, pub);
+    set_private_key(gs[1]);
+
+    werror(sprintf("p = %s\nq = %s\ne = %s\nd = %s\n",
+		   p->digits(), q->digits(), pub->digits(), gs[1]->digits()));
+  } while (!sha_verify(msg, sha_sign(msg, r)));
+  return this_object();
 }
 
 string encrypt(string s, mixed|void r)
