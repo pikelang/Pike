@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.154 1998/01/28 00:31:14 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.155 1998/01/30 01:56:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -97,6 +97,7 @@ AC_ARG_WITH(threads,   [  --without-threads      no threads support],[],[with_th
 AC_ARG_WITH(zlib,      [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,    [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 AC_ARG_WITH(mysql,     [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(dmalloc,   [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC)],[])
 AC_ARG_WITH(profiling, [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
 
 #
@@ -270,9 +271,11 @@ if test $cflags_is_set = no; then
   # -n32 moved to smartlink so it will affekt cc as well as linker
   # this way the user can override it by setting LDFLAGS and/or CFLAGS
   # AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32,CFLAGS)
-  AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn,WARN)
   if test x$with_cdebug = xyes ; then
+    AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3,OPTIMIZE)
+  fi
+  if test x$with_rtldebug = xyes ; then
     AC_SYS_OS_COMPILER_FLAG(IRIX,-trapuw,trapuw,WARN)
   fi
 
