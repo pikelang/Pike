@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.523 2002/06/12 19:31:48 jhs Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.524 2002/07/27 20:41:45 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3211,10 +3211,10 @@ test_any([[
 ]],[[this_object()]])
   
 
-test_compile_error(class c { object(Stdio.File) foo=class {} ();})
-test_compile_error(class c { object(Stdio.File) foo=class {} ();})
-test_compile_error(class c { object(Stdio.File) foo=class {} ();})
-test_compile_error(class c { object(Stdio.File) foo=class foobar {} ();})
+test_compile(class c { object(Stdio.File) foo=class foobar {} ();})
+test_compile(class c { object(Stdio.File) foo=class {} ();})
+test_compile_error(class c { object(Stdio.File) foo=class {float is_file;} ();})
+test_compile(class c { object(Stdio.File) foo=class { int is_file;} ();})
 test_do(class c { object foo; object(Regexp) bar=foo; })
 test_do(class c { object(Stdio.File) foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
