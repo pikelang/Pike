@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.129 1998/10/15 15:49:30 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.130 1998/10/15 18:40:47 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2404,7 +2404,7 @@ test_eq(string_to_unicode("blä"), "\0b\0l\0ä")
 test_eq(string_to_unicode("\77077"), "\176\77")
 test_eq(string_to_unicode("\777077"), "\330\277\336\77")
 // Enable when unicode_to_string() understands surrogates.
-// test_eq(unicode_to_string("\330\277\336\77"), "\777077")
+dnl test_eq(unicode_to_string("\330\277\336\77"), "\777077")
 // Disable when unicode_to_string() understands surrogates.
 test_eq(unicode_to_string("\330\277\336\77"), "\154277\157077")
 test_eq(unicode_to_string("\176\77"), "\77077")
