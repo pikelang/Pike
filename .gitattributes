@@ -43,6 +43,9 @@ testfont binary
 /lib/modules/Protocols.pmod/Ident.pmod foreign_ident
 /lib/modules/Protocols.pmod/LPD.pmod foreign_ident
 /lib/modules/Protocols.pmod/Line.pmod foreign_ident
+/lib/modules/Protocols.pmod/LysKOM.pmod/Connection.pike foreign_ident
+/lib/modules/Protocols.pmod/LysKOM.pmod/Request.pmod foreign_ident
+/lib/modules/Protocols.pmod/LysKOM.pmod/Session.pike foreign_ident
 /lib/modules/Protocols.pmod/Ports.pmod foreign_ident
 /lib/modules/Protocols.pmod/TELNET.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/Atom.pmod foreign_ident
