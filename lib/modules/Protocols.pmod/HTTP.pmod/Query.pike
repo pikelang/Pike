@@ -229,14 +229,20 @@ static void connect(string server,int port,int blocking)
 
 #if constant(SSL.sslfile) 
    if(https) {
-     //Gör en context
+    
      SSL.context context = SSL.context();
-     // Allow only strong crypto
+     
      context->preferred_suites = ({
-       SSL_rsa_with_idea_cbc_sha,
+       
+       //Strong ciphersuites.
        SSL_rsa_with_rc4_128_sha,
        SSL_rsa_with_rc4_128_md5,
        SSL_rsa_with_3des_ede_cbc_sha,
+       SSL_rsa_with_idea_cbc_sha,
+       //Weaker ciphersuites.
+       SSL_rsa_export_with_rc4_40_md5,
+       SSL_rsa_export_with_rc2_cbc_40_md5,
+       SSL_rsa_export_with_des40_cbc_sha
      });
      string ref;
      context->random = Crypto.randomness.reasonably_random()->read;

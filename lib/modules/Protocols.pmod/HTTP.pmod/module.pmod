@@ -115,6 +115,7 @@ object do_method(string method,
   string path=url->path;
   if(path=="") path="/";
 
+
   con->sync_request(url->host,url->port,
 		    method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
 		    request_headers, data);
