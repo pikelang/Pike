@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.26 2004/02/03 13:53:02 nilsson Exp $
+ * $Id: X509.pmod,v 1.27 2004/02/04 20:07:32 bill Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -19,6 +19,24 @@ import Standards.PKCS;
 #else
 #define X509_WERR
 #endif
+
+//!
+constant CERT_TOO_OLD = 1;
+
+//!
+constant CERT_TOO_NEW = 2;
+
+//!
+constant CERT_INVALID = 3;
+
+//!
+constant CERT_CHAIN_BROKEN = 4;
+
+//!
+constant CERT_ROOT_UNTRUSTED = 5;
+
+//!
+constant CERT_BAD_SIGNATURE = 6;
 
 //! Creates a @[Standards.ASN1.Types.UTC] object from the posix
 //! time @[t].
@@ -511,11 +529,21 @@ TBSCertificate verify_certificate(string s, mapping authorities)
     && tbs;
 }
 
-//! Decodes a certificate chain, checks the signatures. Returns a mapping
-//! with the following contents, depending on the verification of the
-//! certificate chain:
+//! Decodes a certificate chain, checks the signatures. Verifies that the
+//! chain is unbroken, and that all certificates are in effect  
+//! (time-wise.) 
+//!
+//! Returns a mapping with the following contents, depending 
+//! on the verification of the certificate chain:
 //!
 //! @mapping
+//!   @member int "error_code"
+//!     Error describing type of verification failure, if verification failed.
+//!     May be one of the following: @[CERT_TOO_NEW], @[CERT_TOO_OLD],
+//!       @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID]
+//!       or @[CERT_CHAIN_BROKEN]
+//!   @member int "error_cert"
+//!     Index number of the certificate that caused the verification failure.
 //!   @member int(0..1) "self_signed"
 //!     Non-zero if the certificate is self-signed.
 //!   @member int(0..1) "verified"
@@ -542,11 +570,16 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
   array chain_obj = ({});
   array chain_cert = ({});
  
-  foreach(cert_chain, string c)
+  foreach(cert_chain; int idx; string c)
   {
      object cert = Standards.ASN1.Decode.simple_der_decode(c);
      TBSCertificate tbs = decode_certificate(cert);
-     if(!tbs) return m;
+     if(!tbs)
+     { 
+       m->error_code = CERT_INVALID;
+       m->error_cert = idx;
+       return m;
+     }
      chain_cert += ({cert});
      chain_obj += ({tbs});
   }
@@ -563,6 +596,8 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
       if(!v && require_trust)
       {
          X509_WERR("we require trust, but haven't got it.\n");
+        m->error_code = CERT_ROOT_UNTRUSTED;
+        m->error_cert = idx;
         return m;
       }
 
@@ -581,10 +616,34 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
 
     else // otherwise, we make sure the chain is unbroken.
     {
+      // is the certificate in effect (time-wise)?
+      int my_time = time();
+
+      // first check not_before. we want the current time to be later.
+      if(my_time < mktime(tbs->not_before))
+      {
+        m->verified = 0;
+        m->error_code = CERT_TOO_NEW;
+        m->error_cert = idx;
+        return m;
+      }
+
+      // first check not_after. we want the current time to be earlier.
+      if(my_time > mktime(tbs->not_after))
+      {
+        m->verified = 0;
+        m->error_code = CERT_TOO_OLD;
+        m->error_cert = idx;
+        return m;
+      }
+
       // is the issuer of this certificate the subject of the previous (more rootward) certificate?
       if(tbs->issuer->get_der() != chain_obj[idx-1]->subject->get_der())
       {
         X509_WERR("issuer chain is broken!\n");
+        m->verified = 0;
+        m->error_code = CERT_CHAIN_BROKEN;
+        m->error_cert = idx;
         return m;
       }
       // the verifier for this certificate should be the public key of the previous certificate in the chain.
@@ -607,6 +666,8 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
     else
     {
       X509_WERR("signature _not_ verified...\n");
+      m->error_code = CERT_BAD_SIGNATURE;
+      m->error_cert = idx;
       m->verified = 0;
       return m;
     }
