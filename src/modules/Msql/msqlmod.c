@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.4 1997/11/24 21:32:15 grubba Exp $
+ * $Id: msqlmod.c,v 1.5 1997/12/07 21:45:30 grubba Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -21,21 +21,21 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <global.h>
-#include <threads.h>
-#include <machine.h>
-#include <interpret.h>
-#include <builtin_functions.h>
-#include <module_support.h>
-#include <svalue.h>
-#include <program.h>
-#include <array.h>
-#include <mapping.h>
-#include <stralloc.h>
+#include "global.h"
+#include "threads.h"
+#include "machine.h"
+#include "interpret.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+#include "svalue.h"
+#include "program.h"
+#include "array.h"
+#include "mapping.h"
+#include "stralloc.h"
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.4 1997/11/24 21:32:15 grubba Exp $");
+RCSID("$Id: msqlmod.c,v 1.5 1997/12/07 21:45:30 grubba Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT

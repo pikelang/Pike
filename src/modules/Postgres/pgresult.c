@@ -52,14 +52,14 @@
 #include <libpq-fe.h>
 
 /* Pike includes */
-#include <global.h>
-#include <stralloc.h>
-#include <object.h>
-#include <threads.h>
-#include <array.h>
-#include <mapping.h>
-#include <builtin_functions.h>
-#include <module_support.h>
+#include "global.h"
+#include "stralloc.h"
+#include "object.h"
+#include "threads.h"
+#include "array.h"
+#include "mapping.h"
+#include "builtin_functions.h"
+#include "module_support.h"
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex;

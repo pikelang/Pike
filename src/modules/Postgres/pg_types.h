@@ -1,8 +1,8 @@
 #ifndef _PG_TYPES_H_
 #define _PG_TYPES_H_
 
-#include <program.h>
-#include <svalue.h>
+#include "program.h"
+#include "svalue.h"
 
 struct postgres_result_object_data {
   PGresult * result;

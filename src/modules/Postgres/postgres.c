@@ -20,16 +20,16 @@
 #include <string.h>
 
 /* Pike includes */
-#include <global.h>
-#include <las.h>
-#include <machine.h>
-#include <pike_memory.h>
-#include <svalue.h>
-#include <threads.h>
-#include <stralloc.h>
-#include <object.h>
-#include <module_support.h>
-#include <operators.h>
+#include "global.h"
+#include "las.h"
+#include "machine.h"
+#include "pike_memory.h"
+#include "svalue.h"
+#include "threads.h"
+#include "stralloc.h"
+#include "object.h"
+#include "module_support.h"
+#include "operators.h"
 
 /* Postgres includes */
 /* A hack, because DEBUG is defined both in pike's machine.h and in postgres */
@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.2 1997/11/25 20:57:59 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.3 1997/12/07 21:49:14 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
