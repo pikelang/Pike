@@ -356,7 +356,10 @@ void handleAppears(Node root) {
       continue;
     }
     if (type == "docgroup") {
-      if (newName)
+      if (newName) {
+	mapping m = n->get_attributes();
+	if(m["homogen-name"])
+	  m["homogen-name"] = newName;
         foreach (n->get_children(), Node child)
           if (child->get_node_type() == XML_ELEMENT) {
             mapping attributes = child->get_attributes();
@@ -364,6 +367,7 @@ void handleAppears(Node root) {
               // this ought to happen only once in this loop...
               attributes["name"] = newName;
           }
+      }
     }
     else if (type == "class" || type == "module") {
       if (newName)
