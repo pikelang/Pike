@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.27 1997/11/29 22:47:39 mirar Exp $ */
+/* $Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.27 1997/11/29 22:47:39 mirar Exp $
+**!	$Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.27 1997/11/29 22:47:39 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -522,7 +522,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
       n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type);
       if (n!=oldn)
 	 if (n<oldn) /* i certainly hope so */
-	    memmove(dest+n,dest+oldn,sizeof(struct nct_flat_entry)*m);
+	    MEMMOVE(dest+n,dest+oldn,sizeof(struct nct_flat_entry)*m);
 	 else /* huh? */
 	    /* this is the only case we don't have them already */
 	    m=reduce_recurse(src+left,dest+n,src_size-left,
