@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.27 1997/11/08 01:34:40 hubbe Exp $");
+RCSID("$Id: main.c,v 1.28 1997/12/28 09:29:10 hubbe Exp $");
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -65,12 +65,14 @@ void main(int argc, char **argv, char **env)
 
   ARGV=argv;
 
+#ifndef __NT__
   /* Close extra fds (if any) */
   for (e=3; e < MAX_OPEN_FILEDESCRIPTORS; e++) {
     do {
       num = close(e);
     } while ((num < 0) && (errno == EINTR));
   }
+#endif
 
 #ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC

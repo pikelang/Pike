@@ -22,6 +22,10 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_SYS_ERRNO_H
+#include <sys/socket.h>
+#endif
+
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -36,7 +40,7 @@
 #include <sys/sockio.h>
 #endif
 
-static void low_set_nonblocking(int fd,int which)
+void set_nonblocking(int fd,int which)
 {
 #ifdef DEBUG
   if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
@@ -116,6 +120,7 @@ int main()
 #else
 
 #include <signal.h>
+#include <errno.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -129,6 +134,12 @@ RETSIGTYPE sigalrm_handler1(int tmp) { exit(1); }
 extern int errno;
 #endif /* !errno */
 
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
+
+
 int my_socketpair(int family, int type, int protocol, int sv[2])
 {
   static int fd=-1;
@@ -136,7 +147,8 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   struct sockaddr_in addr,addr2;
   int len;
 
-  MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
+  for(len=0;len<sizeof(struct sockaddr_in);len++)
+    ((char *)&addr)[len]=0;
 
   /* We lie, we actually create an AF_INET socket... */
   if(family != AF_UNIX || type != SOCK_STREAM)

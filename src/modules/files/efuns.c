@@ -96,12 +96,13 @@ void f_file_stat(INT32 args)
   s = sp[-args].u.string->str;
   l = (args>1 && !IS_ZERO(sp-1-args))?1:0;
   THREADS_ALLOW();
+#ifdef HAVE_LSTAT
   if(l)
-  {
     i=lstat(s, &st);
-  }else{
+  else
+#endif
     i=stat(s, &st);
-  }
+
   THREADS_DISALLOW();
   pop_n_elems(args);
   if(i==-1)
@@ -312,7 +313,11 @@ void f_rm(INT32 args)
   s = sp[-args].u.string->str;
   
   THREADS_ALLOW();
+#ifdef HAVE_LSTAT
   i=lstat(s, &st) != -1;
+#else
+  i=stat(s, &st) != -1;
+#endif
   if(i)
   {
     if(S_IFDIR == (S_IFMT & st.st_mode))
@@ -557,6 +562,7 @@ void f_getcwd(INT32 args)
   free(e);
 }
 
+#ifdef HAVE_FORK
 void f_fork(INT32 args)
 {
   int res;
@@ -579,7 +585,7 @@ void f_fork(INT32 args)
   }
 #endif
 }
-
+#endif
 
 void f_exece(INT32 args)
 {
@@ -743,7 +749,9 @@ void init_files_efuns(void)
   add_efun("get_dir",f_get_dir,"function(string:string *)",OPT_EXTERNAL_DEPEND);
   add_efun("cd",f_cd,"function(string:int)",OPT_SIDE_EFFECT);
   add_efun("getcwd",f_getcwd,"function(:string)",OPT_EXTERNAL_DEPEND);
+#ifdef HAVE_FORK
   add_efun("fork",f_fork,"function(:int)",OPT_SIDE_EFFECT);
+#endif
   add_efun("exece",f_exece,"function(string,mixed*,void|mapping(string:string):int)",OPT_SIDE_EFFECT); 
 
 #ifdef HAVE_STRERROR

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.32 1997/12/23 06:26:14 hubbe Exp $
+ * $Id: system.c,v 1.33 1997/12/28 09:30:05 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.32 1997/12/23 06:26:14 hubbe Exp $");
+RCSID("$Id: system.c,v 1.33 1997/12/28 09:30:05 hubbe Exp $");
 #include "module_support.h"
 #include "las.h"
 #include "interpret.h"
@@ -255,6 +255,7 @@ void f_chmod(INT32 args)
   pop_n_elems(args);
 }
 
+#ifdef HAVE_CHOWN
 void f_chown(INT32 args)
 {
   char *path;
@@ -273,6 +274,7 @@ void f_chown(INT32 args)
   }
   pop_n_elems(args);
 }
+#endif
 
 #ifdef HAVE_INITGROUPS
 /* void initgroups(string name, int gid) */
@@ -802,7 +804,9 @@ void pike_module_init(void)
   add_efun("readlink", f_readlink, "function(string:string)", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
   add_efun("chmod", f_chmod, "function(string, int:void)", OPT_SIDE_EFFECT);
+#ifdef HAVE_CHOWN
   add_efun("chown", f_chown, "function(string, int, int:void)", OPT_SIDE_EFFECT);
+#endif
 #ifdef HAVE_INITGROUPS
   add_efun("initgroups", f_initgroups, "function(string, int:void)", OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */

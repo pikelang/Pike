@@ -45,6 +45,12 @@ struct svalue;
 #define GC2
 #endif
 
+#if defined(i386)
+#ifndef HANDLES_UNALIGNED_MEMORY_ACCESS
+#define HANDLES_UNALIGNED_MEMORY_ACCESS
+#endif
+#endif
+
 /* AIX requires this to be the first thing in the file.  */
 #ifdef __GNUC__
 # ifdef alloca
@@ -70,6 +76,11 @@ char *alloca ();
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #undef HAVE_STDLIB_H
+#endif
+
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#undef HAVE_MALLOC_H
 #endif
 
 #ifdef HAVE_UNISTD_H

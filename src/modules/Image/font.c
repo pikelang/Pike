@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.22 1997/12/22 23:26:46 hubbe Exp $ */
+/* $Id: font.c,v 1.23 1997/12/28 09:29:32 hubbe Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.22 1997/12/22 23:26:46 hubbe Exp $
+**!	$Id: font.c,v 1.23 1997/12/28 09:29:32 hubbe Exp $
 **! class font
 **!
 **! note
@@ -110,6 +110,10 @@ Kerningtable types:
 #include <netinet/in.h>
 #endif
 
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
 #include <errno.h>
 
 #include "config.h"
@@ -133,6 +137,7 @@ Kerningtable types:
 static struct program *font_program;
 extern struct program *image_program;
 
+#undef THIS
 #define THIS (*(struct font **)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

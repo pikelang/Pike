@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.143 1997/12/23 06:26:05 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.144 1997/12/28 09:29:08 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -174,7 +174,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   AC_CACHE_VAL(pike_cv_option_$2,
   [
     CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no)
+    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no,pike_cv_option_$2=no)
   ])
   
   CFLAGS="[$]OLD_CFLAGS"
@@ -531,7 +531,7 @@ EOF
     if $YACC -d conftest.y 1>&5 2>&5; then
       AC_TRY_RUN([
 #include "y.tab.c"
-],pure_parser_works=yes,pure_parser_works=no)
+],pure_parser_works=yes,pure_parser_works=no,pure_parser_works=no)
       if test "$pure_parser_works" = "yes"; then
         break
       fi
@@ -619,14 +619,14 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
 thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
-sys/ioct.h sys/socket.h)
+sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h)
 
-AC_SIZEOF_TYPE(char *)
-AC_SIZEOF_TYPE(long)
-AC_SIZEOF_TYPE(int)
-AC_SIZEOF_TYPE(short)
-AC_SIZEOF_TYPE(float)
-AC_SIZEOF_TYPE(double)
+AC_CHECK_SIZEOF(char *,4)
+AC_CHECK_SIZEOF(long,4)
+AC_CHECK_SIZEOF(int,4)
+AC_CHECK_SIZEOF(short,2)
+AC_CHECK_SIZEOF(float,4)
+AC_CHECK_SIZEOF(double,8)
 
 AC_TYPE_SIZE_T
 AC_TYPE_PID_T
@@ -643,8 +643,6 @@ AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(dld, dld_link)
-
-AC_HAVE_FUNCS(strdup)
 
 
 if test "${pike_cv_sys_os}" = "Linux"; then
@@ -708,7 +706,7 @@ int main()
   thr_join(gazonk,0,&sune);
   exit(0);
 }
-    ],pike_cv_unix_threads=yes,pike_cv_unix_threads=no)
+    ],pike_cv_unix_threads=yes,pike_cv_unix_threads=no,pike_cv_unix_threads=no)
   ])
 
   if test x$pike_cv_unix_threads = xyes ; then
@@ -761,7 +759,7 @@ int main()
   pthread_join(gazonk,&sune);
   exit(0);
 }
-      ],pike_cv_posix_threads=yes,pike_cv_posix_threads=no)
+      ],pike_cv_posix_threads=yes,pike_cv_posix_threads=no,pike_cv_posix_threads=no)
     ])
 
     if test $pike_cv_posix_threads = yes ; then
@@ -879,7 +877,7 @@ LIBOBJS="${OLD_LIBOBJS}"
 
 AC_FUNC_MMAP
 
-AC_CHECK_FUNCS(
+AC_CHECK_FUNCS( \
  _crypt \
  bcopy \
  bzero \
@@ -921,6 +919,9 @@ AC_CHECK_FUNCS(
  dld_link \
  dld_get_func \
  pipe \
+ strdup \
+ kill \
+ alarm \
 )
 
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
@@ -947,7 +948,7 @@ int main()
        strcoll("*^#", "*^#") != 0 ||
        strcoll("123", "456") >= 0);
 }
-],pike_cv_func_strcoll=yes,pike_cv_func_strcoll=no)
+],pike_cv_func_strcoll=yes,pike_cv_func_strcoll=no,pike_cv_func_strcoll=no)
 ])
 
 if test $pike_cv_func_strcoll = yes; then
@@ -1014,6 +1015,7 @@ int main() {
 }
 ],
 pike_cv_func_gettimeofday_has_two_args=yes,
+pike_cv_func_gettimeofday_has_two_args=no,
 pike_cv_func_gettimeofday_has_two_args=no)])
 
 if test $pike_cv_func_gettimeofday_has_two_args = yes; then
@@ -1183,6 +1185,8 @@ int main()
 pike_cv_hardware_byteorder=`cat conftest.out.2`
 ,
 pike_cv_hardware_byteorder=0
+,
+pike_cv_hardware_byteorder=0
 )])
 
 AC_MSG_RESULT($pike_cv_hardware_byteorder)
@@ -1193,7 +1197,7 @@ dnl#####################################################################
 define(MY_CHECK_FUNCTION,[
 AC_MSG_CHECKING(for working $1)
 AC_CACHE_VAL(pike_cv_func_$1,[
-AC_TRY_RUN([$2],pike_cv_func_$1=yes,pike_cv_func_$1=no)
+AC_TRY_RUN([$2],pike_cv_func_$1=yes,pike_cv_func_$1=no,pike_cv_func_$1=no)
 ])
 AC_MSG_RESULT([$]pike_cv_func_$1)
 if test [$]pike_cv_func_$1 = yes; then
@@ -1318,6 +1322,7 @@ int main()
   exit(0);
 }
 ],pike_cv_method_extract_uchar=by_cast,
+pike_cv_method_extract_uchar=not_by_cast,
 pike_cv_method_extract_uchar=not_by_cast)])
 
 if test "$pike_cv_method_extract_uchar" = by_cast; then
@@ -1342,6 +1347,7 @@ int main()
   exit(0);
 }
 ],pike_cv_method_extract_char=by_cast,
+pike_cv_method_extract_char=not_by_cast,
 pike_cv_method_extract_char=not_by_cast)])
 
 if test "$pike_cv_method_extract_char" = by_cast; then
@@ -1399,7 +1405,7 @@ int main()
   sigrun=0;
   exit(0);
 }
-],pike_cv_sys_signal_oneshot=no,pike_cv_sys_signal_oneshot=yes)])
+],pike_cv_sys_signal_oneshot=no,pike_cv_sys_signal_oneshot=yes,pike_cv_sys_signal_oneshot=yes)])
 
 if test "$pike_cv_sys_signal_oneshot" = yes; then
   AC_MSG_RESULT(yes)
@@ -1462,6 +1468,8 @@ int main()
 }
 ],
 pike_cv_max_open_fd=`cat conftest.out.2`
+,
+pike_cv_max_open_fd=256
 ,
 pike_cv_max_open_fd=256
 )])
@@ -1579,7 +1587,7 @@ void fatal(char *foo,...)
 }
 main() {  exit(0); }
 
-], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no)])
+], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, pike_cv_gcc_attributes=no)])
 
 AC_MSG_RESULT($pike_cv_gcc_attributes)
 if test "$pike_cv_gcc_attributes" = yes; then
@@ -1648,8 +1656,12 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 #define USE_IOCTLSOCKET_FIONBIO
 #include "$srcdir/fd_control.c"
 ], pike_cv_sys_nonblock=USE_IOCTLSOCKET_FIONBIO,
-unset pike_cv_sys_nonblock
-    )))))
+unset pike_cv_sys_nonblock,
+unset pike_cv_sys_nonblock),
+unset pike_cv_sys_nonblock),
+unset pike_cv_sys_nonblock),
+unset pike_cv_sys_nonblock),
+unset pike_cv_sys_nonblock)
   fi
 ])
 
@@ -1715,8 +1727,8 @@ then
            LDSHARED="ld -expect_unresolved '*' -shared -msym -O3"
         ;;
 	DYNIX/ptx*) LDSHARED="ld -G";;
-	next) LDSHARED='$(CC) $(CFLAGS) -nostdlib -r';;
-	Linux*) LDSHARED="gcc -shared";;
+	next) LDSHARED="$CC $CFLAGS -nostdlib -r";;
+	Linux*) LDSHARED="$CC -shared";;
         GNU*) LDSHARED="ld -Bshareable";;
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
@@ -1777,7 +1789,7 @@ fi
    OLD_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $LINKFORSHARED"
    AC_TRY_RUN([int main() { exit(0); }],
- pike_cv_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='')
+ pike_cv_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='', pike_cv_sys_linkforshared='')
    CFLAGS="$OLD_CFLAGS"
 ])
 
@@ -1815,8 +1827,10 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 #define TESTING
 #include "$srcdir/dynamic_load.c"
 void testfunc2(void) { exit(0); }
-], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no)
+], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
+  else
+    pike_cv_sys_dynamic_loading=no
   fi
   rm -f myconftest.so >/dev/null 2>/dev/null
 ])

@@ -11,11 +11,13 @@
 #include "pike_memory.h"
 #include "error.h"
 #include "gc.h"
+#include "stuff.h"
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
 
 unsigned INT32 htable_size=0;
+static unsigned int hashprimes_entry=0;
 static struct pike_string **base_table=0;
 static unsigned INT32 full_hash_value;
 unsigned INT32 num_strings=0;
@@ -108,7 +110,7 @@ static void rehash(void)
   old=htable_size;
   old_base=base_table;
 
-  htable_size=htable_size*2 +1;
+  htable_size=hashprimes[++hashprimes_entry];
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 
@@ -574,7 +576,8 @@ struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-  htable_size=BEGIN_HASH_SIZE;
+  for(hashprimes_entry;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
+  htable_size=hashprimes[hashprimes_entry];
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 }

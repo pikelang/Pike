@@ -14,4 +14,6 @@ int count_bits(unsigned INT32 x);
 int is_more_than_one_bit(unsigned INT32 x);
 /* Prototypes end here */
 
+extern INT32 hashprimes[32];
+
 #endif

@@ -410,6 +410,7 @@ static void f_signame(int args)
     push_int(0);
 }
 
+#ifdef HAVE_KILL
 static void f_kill(INT32 args)
 {
   if(args < 2)
@@ -422,6 +423,7 @@ static void f_kill(INT32 args)
   sp[-args].u.integer=!kill(sp[-args].u.integer,sp[1-args].u.integer);
   pop_n_elems(args-1);
 }
+#endif
 
 static void f_getpid(INT32 args)
 {
@@ -429,6 +431,7 @@ static void f_getpid(INT32 args)
   push_int(getpid());
 }
 
+#ifdef HAVE_ALARM
 static void f_alarm(INT32 args)
 {
   long seconds;
@@ -444,6 +447,7 @@ static void f_alarm(INT32 args)
   pop_n_elems(args);
   push_int(alarm(seconds));
 }
+#endif
 
 #ifdef HAVE_UALARM
 static void f_ualarm(INT32 args)
@@ -485,11 +489,15 @@ void init_signals(void)
   firstsig=lastsig=0;
 
   add_efun("signal",f_signal,"function(int,mixed|void:void)",OPT_SIDE_EFFECT);
+#ifdef HAVE_KILL
   add_efun("kill",f_kill,"function(int,int:int)",OPT_SIDE_EFFECT);
+#endif
   add_efun("signame",f_signame,"function(int:string)",0);
   add_efun("signum",f_signum,"function(string:int)",0);
   add_efun("getpid",f_getpid,"function(:int)",0);
+#ifdef HAVE_ALARM
   add_efun("alarm",f_alarm,"function(int:int)",OPT_SIDE_EFFECT);
+#endif
 #ifdef HAVE_UALARM
   add_efun("ualarm",f_ualarm,"function(int:int)",OPT_SIDE_EFFECT);
 #endif

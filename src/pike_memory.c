@@ -128,7 +128,22 @@ unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
   unsigned INT32 ret;
 
   ret=9248339*len;
-  if(len<mlen) mlen=len;
+  if(len<mlen)
+    mlen=len;
+  else
+  {
+    switch(len-mlen)
+    {
+      default: ret^=(ret<<6) + a[len-7];
+      case 7:
+      case 6: ret^=(ret<<7) + a[len-5];
+      case 5:
+      case 4: ret^=(ret<<4) + a[len-4];
+      case 3: ret^=(ret<<3) + a[len-3];
+      case 2: ret^=(ret<<3) + a[len-2];
+      case 1: ret^=(ret<<3) + a[len-1];
+    }
+  }
   switch(mlen&7)
   {
     case 7: ret^=*(a++);
@@ -154,10 +169,19 @@ unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
 #else
   for(mlen>>=3;--mlen>=0;)
   {
-    ret^=(ret<<7)+((((((*(a++)<<3)+*(a++))<<4)+*(a++))<<5)+*(a++));
-    ret^=(ret>>6)+((((((*(a++)<<3)+*(a++))<<4)+*(a++))<<5)+*(a++));
+    register unsigned int t1,t2;
+    t1= *(a++);
+    t2= *(a++);
+    t1=(t1<<5) + *(a++);
+    t2=(t2<<4) + *(a++);
+    t1=(t1<<7) + *(a++);
+    t2=(t2<<5) + *(a++);
+    t1=(t1<<3) + *(a++);
+    t2=(t2<<4) + *(a++);
+    ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);
   }
 #endif
+
   return ret;
 }
 
