@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.339 2001/02/06 15:07:14 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.340 2001/02/06 15:43:01 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6162,7 +6162,7 @@ PMOD_EXPORT void f__describe(INT32 args)
  *! @note
  *!   This function has been deprecated in favour of @[map()].
  *!
- *! @see_also
+ *! @seealso
  *!   @[map()]
  */
 PMOD_EXPORT void f_map_array(INT32 args)
@@ -6197,16 +6197,17 @@ PMOD_EXPORT void f_map_array(INT32 args)
   push_array(ret);
 }
 
-/*! @decl array map(array arr, function|program|object|array fun, mixed ... extra)
+/*! @decl array map(array arr, function|program|object|array fun, @
+ *!                 mixed ... extra)
  *! @decl array map(array arr, multiset|mapping fun)
  *! @decl array map(array arr, string fun, mixed ... extra)
- *! @decl array map(array arr, void|zero, mixed ... extra)
+ *! @decl array map(array arr, void|zero null, mixed ... extra)
  *! @decl mapping map(mapping|program|function arr, mixed fun, mixed ... extra)
  *! @decl multiset map(multiset arr, mixed fun, mixed ... extra)
  *! @decl string map(string arr, mixed fun, mixed ... extra)
- *! @decl mixed map(object arr, mixed fun, mixewd ... extra)
+ *! @decl mixed map(object arr, mixed fun, mixed ... extra)
  *!
- *! Map a function over eleemnts.
+ *! Map a function over elements.
  *!
  *! @section Basic use
  *!   map() loops over all elements in arr and call the
@@ -6223,31 +6224,31 @@ PMOD_EXPORT void f_map_array(INT32 args)
  *!     @type array
  *!     @mixed @[fun]
  *!       @type function|program|object|array
- *!         @code{array ret; ret[i]=fun(arr[i],@extra);@}
+ *!         @code{array ret; ret[i]=fun(arr[i],@@extra);@}
  *!       @type multiset|mapping
  *!         @code{array ret = rows(fun,arr);@}
  *!       @type string
- *!         @code{array ret = arr[fun](@extra);@}
+ *!         @code{array ret = arr[fun](@@extra);@}
  *!       @type void|zero
- *!         @code{array ret = arr(@extra);@}
+ *!         @code{array ret = arr(@@extra);@}
  *!     @endmixed
  *!     @type mapping|program|function
  *!       @code{mapping ret = mkmapping(indices(arr),
- *!                                     map(values(arr),fun,@extra));@}
+ *!                                     map(values(arr),fun,@@extra));@}
  *!     @type multiset
- *!       @code{multiset ret = (multiset)(map(indices(arr),fun,@extra));@}
+ *!       @code{multiset ret = (multiset)(map(indices(arr),fun,@@extra));@}
  *!     @type string
- *!       @code{string ret = (string)map((array)arr,fun,@extra);@}
+ *!       @code{string ret = (string)map((array)arr,fun,@@extra);@}
  *!     @type object
  *!       If @[arr] implements @[_cast()], try casting in turn
- *!       @list
+ *!       @dl
  *!         @item
- *!           @code{map((array)arr,fun,@extra);@}
+ *!           @code{map((array)arr,fun,@@extra);@}
  *!         @item
- *!           @code{map((mapping)arr,fun,@extra);@}
+ *!           @code{map((mapping)arr,fun,@@extra);@}
  *!         @item
- *!           @code{map((multiset)arr,fun,@extra);@}
- *!       @endlist
+ *!           @code{map((multiset)arr,fun,@@extra);@}
+ *!       @enddl
  *!       If @[arr] implements both @[_sizeof()], and @[`[]()], 
  *!       assume @[arr] simulates an array.
  *!   @endmixed
@@ -6821,7 +6822,7 @@ static node *fix_map_node_info(node *n)
 }
 
 /*! @decl array(int) enumerate(int n)
- *! @decl array enumerate(int n, void|mixed step, void|mixed start,
+ *! @decl array enumerate(int n, void|mixed step, void|mixed start, @
  *!                       void|function operator)
  *!
  *! Create an array with an enumeration, useful for initializing arrays
@@ -6830,19 +6831,20 @@ static node *fix_map_node_info(node *n)
  *! The defaults are: @[step] = 1, @[start] = 0, @[operator] = @[`+]
  *!
  *! @section Advanced use
- *! The resulting array is calculated like this:
- *! @code{
- *!   array enumerate(int n, mixed step, mixed start, function operator)
- *!   {
- *!     array res = allocate(n);
- *!     for (int i=0; i < n; i++)
+ *!   The resulting array is calculated like this:
+ *!   @code{
+ *!     array enumerate(int n, mixed step, mixed start, function operator)
  *!     {
- *!       res[i] = start;
- *!       start = operator(start, step);
+ *!       array res = allocate(n);
+ *!       for (int i=0; i < n; i++)
+ *!       {
+ *!         res[i] = start;
+ *!         start = operator(start, step);
+ *!       }
+ *!       return res;
  *!     }
- *!     return res;
- *!   }
- *! @}
+ *!   @}
+ *! @endsection
  *!
  *! @seealso
  *! @[map()], @[foreach()]
@@ -7273,7 +7275,7 @@ static void f_buf_add( INT32 args )
 
 
 static void f_buf_get( INT32 args )
-/*! @method string get( )
+/*! @decl string get()
  *!
  *!   Get the data from the buffer.
  *!
@@ -7337,8 +7339,13 @@ static void f_buf_free()
   struct buffer_str *str = THB;
   if( str->data ) xfree( str->data );
 }
+
+/*! @endclass
+ */
+
 /*! @endmodule
  */
+
 #undef THB
 
 void init_builtin_efuns(void)
