@@ -107,24 +107,24 @@ OBJ= \
 all: $(OBJ) module_objects
 	$(MAKE) $(MAKE_FLAGS) pike
 
-pike: $(OBJ) modules/linker_options
+pike: $(OBJ) modules/linker_options modules/lib_dirs
 	-mv pike pike.old
-	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
 
 # purify
 pure: $(OBJ) module_objects
 	-mv pike pike.old
-	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) module_objects
 	-mv pike pike.old
-	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) module_objects
 	-mv pike pike.old
-	quantify $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	quantify $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
 
 # install
 install:

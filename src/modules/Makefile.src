@@ -9,12 +9,18 @@ all: modules
 
 modules:
 	for a in $(MODULES) ; do ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; done
-	$(MAKE) linker_options
+	$(MAKE) linker_options lib_dirs
 
 linker_options: $(MODULE_OBJS)
 	( for a in $(MODULES) ; do echo modules/$$a/$$a.a ; \
 	if test -f $$a/linker_options ; then cat $$a/linker_options ; else : ; fi ; \
 	done ; ) >linker_options
+
+lib_dirs: $(MODULE_OBJS)
+	( ( for a in $(MODULES) ; do \
+	      if test -f $$a/lib_dirs ; then cat $$a/lib_dirs ; else : ; fi ; \
+	    done ; ) | sort | uniq | tr '\012' ':'; echo "" )| \
+	sed -e 's/:$$//' -e 's/^/-R/' -e 's/^-R$$//' >lib_dirs
 
 depend:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done

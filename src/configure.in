@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.34 1996/12/09 06:10:33 neotron Exp $")
+AC_REVISION("$Id: configure.in,v 1.35 1997/01/11 22:35:38 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -30,6 +30,7 @@ AC_ARG_WITH(debug,   [  --without-debug        disable run time self tests],[],[
 AC_ARG_WITH(threads, [  --without-threads      no threads support],[],[with_threads=yes])
 AC_ARG_WITH(zlib,    [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
+AC_ARG_WITH(mysql,   [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
 
 if test x$with_debug = xyes ; then
   AC_DEFINE(DEBUG)
@@ -142,6 +143,25 @@ else
       AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],[CC="$OLD_CC"])
     ])
   fi
+fi
+
+AC_MSG_CHECKING(ld accepts setting te run-path with -R)
+AC_CACHE_VAL(pike_cv_ld_accepts_r,
+[
+  OLD_CFLAGS="$CFLAGS"
+  
+  CFLAGS="$CFLAGS -R."
+  AC_TRY_LINK([],[ exit(0); ],[
+    pike_cv_ld_accepts_r=yes
+  ],[ pike_cv_ld_accepts_r=no ])
+  CFLAGS="$OLD_CFLAGS"
+])
+AC_MSG_RESULT($pike_cv_ld_accepts_r)
+
+if test x$pike_cv_ld_accepts_r ; then
+  SET_RUN_PATH='`cat modules/lib_dirs`'
+else
+  :
 fi
 
 #
@@ -1148,6 +1168,7 @@ AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
 AC_SUBST(DOCDIR)
 AC_SUBST(DEBUGDEF)
+AC_SUBST(SET_RUN_PATH)
 
 AC_OUTPUT(Makefile,[echo foo >stamp-h])
 
