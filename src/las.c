@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.121 1999/11/20 21:16:39 grubba Exp $");
+RCSID("$Id: las.c,v 1.122 1999/11/21 00:50:30 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2004,8 +2004,7 @@ void fix_type_field(node *n)
     {
       copy_shared_string(n->type,CAR(n)->type);
     }else{
-      /* FIXME: Shouldn't it be an or? */
-      copy_shared_string(n->type,mixed_type_string);
+      n->type = or_pike_types(CAR(n)->type, CDR(n)->type);
     }
     break;
 
@@ -2023,7 +2022,7 @@ void fix_type_field(node *n)
 	my_yyerror("Bad type in assignment.");
       }
     }
-    copy_shared_string(n->type, CAR(n)->type);
+    n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
     break;
 
   case F_INDEX:
@@ -2144,8 +2143,7 @@ void fix_type_field(node *n)
       break;
     }
 
-    /* FIXME: Should be type_a|type_b */
-    copy_shared_string(n->type,mixed_type_string);
+    n->type = or_pike_types(CADR(n)->type, CDDR(n)->type);
     break;
 
   case F_RETURN:
