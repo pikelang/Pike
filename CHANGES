@@ -600,10 +600,10 @@ o default_yp_domain
     The EFUN default_yp_domain is now only available as
     Yp.default_domain.
 
-o clone
-    The function clone has been removed. Instead of doing clone(x), do
-    x() in the future if x is a program or ((program)x)() if x is a
-    string.
+o clone/new
+    The functions clone and new has been removed. Instead of doing
+    clone(x) or new(x), do x() in the future if x is a program or
+    ((program)x)() if x is a string.
 
 o LR
     LR has been moved to Parser.LR and the API has been changed
