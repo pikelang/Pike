@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.33 1998/04/24 00:59:15 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.34 1998/04/29 23:11:10 grubba Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -202,7 +202,7 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
       s->str[0] = 0;
     } else {
       mp_limb_t *src = mpz->_mp_d;
-      unsigned char *dst = s->str+s->len;
+      unsigned char *dst = (unsigned char *)s->str+s->len;
 
       while (len > 0)
       {
