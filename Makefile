@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.53 2002/02/03 22:38:30 nilsson Exp $
+# $Id: Makefile,v 1.54 2002/02/25 13:31:42 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -172,7 +172,7 @@ export:
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" compile
 
 
-small_export:
+autobuild_export:
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=small_export" compile
 
