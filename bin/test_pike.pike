@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.106 2004/10/22 13:10:01 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.107 2004/10/22 13:14:55 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -1067,23 +1067,23 @@ constant doc = #"
 Usage: test_pike [args] [testfiles]
 
 --no-watchdog       Watchdog will not be used.
---watchdog=pid      Run only the watchdog and monitor the process with the given
-                    pid.
+--watchdog=pid      Run only the watchdog and monitor the process with
+                    the given pid.
 -h, --help          Prints this message.
 -v[level],
---verbose[=level]   Select the level of verbosity. Every verbose level includes
-                    the printouts from the levels below.
+--verbose[=level]   Select the level of verbosity. Every verbosity level
+                    includes the printouts from the levels below.
                     0  No extra printouts.
                     1  Some additional information printed out after every
                        finished block of tests.
-                    2  Some extra information about test that will or won't be
+                    2  Some extra information about tests that will or won't be
                        run.
                     3  Every test is printed out.
-                    4  Time spent in individual tests are printed out.
+                    4  Time spent in individual tests is printed out.
                     10 The actual Pike code compiled, including wrappers, is
                        printed.
 -p, --prompt        The user will be asked before every test is run.
--sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
+-sX, --start-test=X Where in the testsuite testing should start, i.e. ignores X
                     tests in every testsuite.
 -eX, --end-after=X  How many tests should be run.
 -f, --fail          If set, the test program exits on first failure.
@@ -1100,7 +1100,7 @@ Usage: test_pike [args] [testfiles]
                     X<0 For values below zero, _verify_internals will be run
                         before every n:th test, where n=abs(X).
 -m, --mem, --memory Print out memory allocations after the tests.
--a, --auto[=dir]    Let the test program find the testsuits self.
+-a, --auto[=dir]    Let the test program find the testsuites automatically.
 -T, --notty         Format output for non-tty.
 -d, --debug         Opens a debug port.
 ";
