@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.49 2004/10/16 07:27:29 agehall Exp $
+|| $Id: charsetmod.c,v 1.50 2005/04/02 22:48:55 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -139,16 +139,17 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
   return 0;
 }
 
-#define REPLACE_CHAR(ch, func, ctx, pos)	       \
-          if(repcb != NULL && call_repcb(repcb, ch)) { \
-	    func(ctx, sb, sp[-1].u.string, rep, NULL); \
-            pop_stack(); \
-	  } else if(rep != NULL) \
-            func(ctx, sb, rep, NULL, NULL); \
-	  else \
-	    Pike_error("Character %lu at position %"PRINTPTRDIFFT"d "	\
-		       "unsupported by encoding.\n",			\
-		       (unsigned long) ch, (pos));
+#define REPLACE_CHAR(ch, func, ctx, pos) do {				\
+    if(repcb != NULL && call_repcb(repcb, ch)) {			\
+      func(ctx, sb, sp[-1].u.string, rep, NULL);			\
+      pop_stack();							\
+    } else if(rep != NULL)						\
+      func(ctx, sb, rep, NULL, NULL);					\
+    else								\
+      Pike_error("Character 0x%x at position %"PRINTPTRDIFFT"d "	\
+		 "unsupported by encoding.\n",				\
+		 ch, (pos));						\
+  } while (0)
 
 #define MKREPCB(c) ((c).type == T_FUNCTION? &(c):NULL)
 
@@ -210,7 +211,7 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
 						     struct std_cs_stor *))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
-  struct pike_string *str, *tmpstr = NULL;
+  struct pike_string *str;
   ptrdiff_t l;
 
   get_all_args("feed()", args, "%W", &str);
@@ -219,19 +220,19 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
     Pike_error("Can't feed on wide strings!\n");
 
   if(s->retain != NULL) {
-    tmpstr = add_shared_strings(s->retain, str);
-    free_string(s->retain);
-    s->retain = NULL;
-    str = tmpstr;
+    str = add_shared_strings(s->retain, str);
+    push_string (str);
+    args++;
   }
 
   l = func(STR0(str), str->len, s);
 
+  if (s->retain) {
+    free_string(s->retain);
+    s->retain = NULL;
+  }
   if(l>0)
     s->retain = make_shared_binary_string((char *)STR0(str)+str->len-l, l);
-
-  if(tmpstr != NULL)
-    free_string(tmpstr);
 
   pop_n_elems(args);
   push_object(this_object());
@@ -241,33 +242,67 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
 static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
 			   struct std_cs_stor *s)
 {
-  static const int utf8len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0,
-				 0, 0, 0, 0, 0, 0, 0, 0,
-				 1, 1, 1, 1, 1, 1, 1, 1,
-				 2, 2, 2, 2, 3, 3, 4, 5 };
-  static const unsigned INT32 utf8of[] = { 0ul, 0x3080ul, 0xe2080ul,
-					   0x3c82080ul, 0xfa082080ul,
-					   0x82082080ul };
-  while(l>0) {
-    unsigned INT32 ch = 0;
-    int cl = utf8len[(*p)>>2];
-    if(cl>--l)
-      return l+1;
-    switch(cl) {
-    case 5: ch = *p++<<6;
-    case 4: ch += *p++; ch<<=6;
-    case 3: ch += *p++; ch<<=6;
-    case 2: ch += *p++; ch<<=6;
-    case 1: ch += *p++; ch<<=6;
-    case 0: ch += *p++;
+  static const int utf8cont[] = { 0, 0, 0, 0, 0, 0, 0, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0,
+				  1, 1, 1, 1, 1, 1, 1, 1,
+				  1, 1, 1, 1, 1, 1, 1, 1,
+				  2, 2, 2, 2, 2, 2, 2, 2,
+				  3, 3, 3, 3, 0, 0, 0, 0 };
+  static const unsigned int first_char_mask[] = {0x1f, 0x0f, 0x07, 0x03, 0x01};
+
+  const p_wchar0 *start = p;
+  for (; l > 0; l--) {
+    unsigned int ch = *p++;
+
+    if (ch & 0x80) {
+      int cl = utf8cont[(ch>>1) - 64], i;
+      if (!cl)
+	Pike_error ("Got invalid byte 0x%x at position %"PRINTPTRDIFFT"d.\n",
+		    ch, p - start - 1 - (s->retain ? s->retain->len : 0));
+
+      ch &= first_char_mask[cl - 1];
+
+      for (i = cl >= l ? l - 1 : cl; i--;) {
+	unsigned int c = *p++;
+	if ((c & 0xc0) != 0x80)
+	  Pike_error ("Got invalid UTF-8 sequence continuation byte 0x%x "
+		      "at position %"PRINTPTRDIFFT"d.\n",
+		      c, p - start - 1 - (s->retain ? s->retain->len : 0));
+	ch = (ch << 6) | (c & 0x3f);
+      }
+
+      if(cl >= l)
+	return l;
+      l -= cl;
+
+      switch (cl) {
+	case 1: if (ch >= (1 << 7)) break;
+	case 2: if (ch >= (1 << 11)) break;
+	case 3: if (ch >= (1 << 16)) break;
+	  {
+	    ptrdiff_t errpos =
+	      p - start - cl - 1 - (s->retain ? s->retain->len : 0);
+	    if (errpos < 0) errpos = 0;
+	    Pike_error ("Got non-shortest form of char 0x%x "
+			"at position %"PRINTPTRDIFFT"d.\n",
+			ch, errpos);
+	  }
+      }
+
+      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff) {
+	ptrdiff_t errpos =
+	  p - start - cl - 1 - (s->retain ? s->retain->len : 0);
+	if (errpos < 0) errpos = 0;
+	Pike_error ("Char 0x%x at position %"PRINTPTRDIFFT"d "
+		    "is outside the valid range.\n", ch, errpos);
+      }
     }
-    l-=cl;
-    string_builder_putchar(&s->strbuild, (ch-utf8of[cl])&0x7fffffffl);
+
+    string_builder_putchar(&s->strbuild, ch);
   }
+
   return l;
 }
 
@@ -1033,46 +1068,42 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	else if(c<=0x7ff) {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
-	} else {
+	} else if (c <= 0xd7ff || c >= 0xe000) {
       	  string_builder_putchar(sb, 0xe0|(c>>12));
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
-	}
+	} else
+	  REPLACE_CHAR(c, feed_utf8e, cs, p - STR1(str) - 1);
     }
     break;
   case 2:
     {
       p_wchar2 c, *p = STR2(str);
-      while(l--)
-	if((c=*p++)<=0x7f)
+      while(l--) {
+	if((c=*p++)<=0x7f) {
 	  string_builder_putchar(sb, c);
+	  continue;
+	}
 	else if(c<=0x7ff) {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  continue;
 	} else if(c<=0xffff) {
-	  string_builder_putchar(sb, 0xe0|(c>>12));
-	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
-	} else if(c<=0x1fffff) {
+	  if (c <= 0xd7ff || c >= 0xe000) {
+	    string_builder_putchar(sb, 0xe0|(c>>12));
+	    string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
+	    string_builder_putchar(sb, 0x80|(c&0x3f));
+	    continue;
+	  }
+	} else if(c<=0x10ffff) {
 	  string_builder_putchar(sb, 0xf0|(c>>18));
 	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
-	} else if(c<=0x3ffffff) {
-	  string_builder_putchar(sb, 0xf8|(c>>24));
-	  string_builder_putchar(sb, 0x80|((c>>18)&0x3f));
-	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
-	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
-	} else if(c<=0x7fffffff) {
-	  string_builder_putchar(sb, 0xfc|(c>>30));
-	  string_builder_putchar(sb, 0x80|((c>>24)&0x3f));
-	  string_builder_putchar(sb, 0x80|((c>>18)&0x3f));
-	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
-	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
-	} else
-	  REPLACE_CHAR(c, feed_utf8e, cs, p - STR2(str) - 1);
+	  continue;
+	}
+	REPLACE_CHAR(c, feed_utf8e, cs, p - STR2(str) - 1);
+      }
     }
     break;
   default:
@@ -1380,7 +1411,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8, p - STR0(str) - 1)
+	  REPLACE_CHAR(c, feed_std8e, s8, p - STR0(str) - 1);
     }
     break;
   case 1:
