@@ -186,7 +186,7 @@ void assign_svalues_no_free(struct svalue *to,
 
   if(((type_hint & (BIT_INT | BIT_FLOAT))==0))
   {
-    while(--num > 0)
+    while(--num >= 0)
     {
       struct svalue tmp;
       tmp=*(from++);
