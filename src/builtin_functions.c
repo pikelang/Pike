@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.483 2003/04/07 17:28:55 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.484 2003/04/14 15:04:41 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.483 2003/04/07 17:28:55 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.484 2003/04/14 15:04:41 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2023,7 +2023,7 @@ void f__exit(INT32 args)
  *! @decl int time(int(1..1) one)
  *! @decl float time(int(2..) t)
  *!
- *!   This function returns the number of seconds since 1 Jan 1970.
+ *!   This function returns the number of seconds since 00:00:00 UTC, 1 Jan 1970.
  *!
  *!   The second syntax does not call the system call @[time()] as often,
  *!   but is only updated in the backed (when Pike code isn't running).
@@ -4005,7 +4005,7 @@ static void encode_struct_tm(struct tm *tm)
 #ifdef HAVE_GMTIME
 /*! @decl mapping(string:int) gmtime(int timestamp)
  *!
- *!   Convert seconds since 1970 into components.
+ *!   Convert seconds since 00:00:00 UTC, Jan 1, 1970 into components.
  *!
  *!   This function works like @[localtime()] but the result is
  *!   not adjusted for the local time zone.
@@ -4037,7 +4037,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 #ifdef HAVE_LOCALTIME
 /*! @decl mapping(string:int) localtime(int timestamp)
  *!
- *!   Convert seconds since 1970 into components.
+ *!   Convert seconds since 00:00:00 UTC, 1 Jan 1970 into components.
  *!
  *! @returns
  *!   This function returns a mapping with the following components:
@@ -4117,7 +4117,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
  *!                  int isdst, int tz)
  *!
  *!   This function converts information about date and time into an integer
- *!   which contains the number of seconds since the beginning of 1970.
+ *!   which contains the number of seconds since 00:00:00 UTC, Jan 1, 1970.
  *!
  *!   You can either call this function with a mapping containing the
  *!   following elements:
@@ -4144,8 +4144,8 @@ PMOD_EXPORT void f_localtime(INT32 args)
  *!   Or you can just send them all on one line as the second syntax suggests.
  *!
  *! @note
- *!   On some operating systems (notably AIX), dates before Jan 1, 1970
- *!   00:00:00 UTC are not supported.
+ *!   On some operating systems (notably AIX), dates before 00:00:00
+ *!   UTC, Jan 1, 1970 are not supported.
  *!
  *!   On most systems, the supported range of dates are Dec 13, 1901
  *!   20:45:52 UTC through Jan 19, 2038 03:14:07 UTC (inclusive).
