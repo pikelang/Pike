@@ -183,7 +183,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.134 1999/11/18 02:46:02 mast Exp $");
+RCSID("$Id: language.yacc,v 1.135 1999/11/21 18:52:12 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -915,9 +915,9 @@ opt_int_range: /* Empty */
       push_type_int(MAX_INT32);
     }
 
-    if($4->token == F_CONSTANT && $4->u.sval.type == T_INT)
+    if($2->token == F_CONSTANT && $2->u.sval.type == T_INT)
     {
-      push_type_int($4->u.sval.u.integer);
+      push_type_int($2->u.sval.u.integer);
     }else{
       push_type_int(MIN_INT32);
     }
@@ -1077,7 +1077,7 @@ new_name: optional_stars F_IDENTIFIER
 
 
 new_local_name: optional_stars F_IDENTIFIER
-  {
+  {    
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
     add_local_name($2->u.sval.u.string, compiler_pop_type());
