@@ -74,4 +74,7 @@
 
 /* 1000 - 2000 reserved for GTK. */
 
+/* Start for dynamically allocated program ids. */
+#define PROG_DYNAMIC_ID_START		0x10000
+
 #endif

@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.99 2001/05/14 03:26:57 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.100 2001/07/01 14:27:08 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -365,7 +365,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       if(t->cdr)
       {
 	int id = (int)(ptrdiff_t)t->cdr;
-	if( id >= 65536 )
+	if( id >= PROG_DYNAMIC_ID_START )
 	{
 	  struct program *p=id_to_program((ptrdiff_t)t->cdr);
 	  if(p)
@@ -457,7 +457,7 @@ one_more_type:
       addchar(EXTRACT_UCHAR(t++));
       x=EXTRACT_INT(t);
       t+=sizeof(INT32);
-      if(x >= 65536)
+      if(x >= PROG_DYNAMIC_ID_START)
       {
 	struct program *p=id_to_program(x);
 	if(p)
@@ -784,6 +784,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     case T_PROGRAM:
     {
       int d;
+      if (val->u.program->id < PROG_DYNAMIC_ID_START) {
+	code_entry(type_to_tag(val->type), 3, data);
+	push_int(val->u.program->id);
+	encode_value2(Pike_sp-1, data);
+	pop_stack();
+	break;
+      }
       if (data->canonic)
 	Pike_error("Canonical encoding of programs not supported.\n");
       check_stack(1);
@@ -2004,6 +2011,23 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  if(data->pickyness && Pike_sp[-1].type != T_PROGRAM)
 	    Pike_error("Failed to decode program.\n");
+	  break;
+
+        case 3:
+	  decode_value2(data);
+	  if ((Pike_sp[-1].type == T_INT) &&
+	      (Pike_sp[-1].u.integer < PROG_DYNAMIC_ID_START) &&
+	      (Pike_sp[-1].u.integer > 0)) {
+	    struct program *p = id_to_program(Pike_sp[-1].u.integer);
+	    if (!p) {
+	      Pike_error("Failed to decode program %d\n",
+			 Pike_sp[-1].u.integer);
+	    }
+	    pop_stack();
+	    push_program(p);
+	  } else {
+	    Pike_error("Failed to decode program.\n");
+	  }
 	  break;
 
 	default:
