@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.57 1999/10/05 05:31:36 hubbe Exp $
+/* $Id: master.pike.in,v 1.58 1999/10/06 14:26:30 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -1238,8 +1238,12 @@ string describe_backtrace(mixed trace)
   if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
      (objectp(trace) && trace->is_generic_error))
   {
-    ret=trace[0];
-    trace=trace[1];
+    if (catch {
+      ret = trace[0];
+      trace = trace[1];
+    }) {
+      return "Error indexing backtrace!\n";
+    }
   }else{
     ret="";
   }
@@ -1248,53 +1252,59 @@ string describe_backtrace(mixed trace)
   {
     ret+="No backtrace.\n";
   }else{
-    for(e=sizeof(trace)-1;e>=0;e--)
+    for(e = sizeof(trace)-1; e>=0; e--)
     {
       mixed tmp;
       string row;
 
-      tmp=trace[e];
-      if(stringp(tmp))
-      {
-	row=tmp;
-      }
-      else if(arrayp(tmp))
-      {
-	row="";
-	if(sizeof(tmp)>=3)
+      if (catch {
+	tmp = trace[e];
+	if(stringp(tmp))
 	{
-	  if(functionp(tmp[2]))
-	    row=function_name(tmp[2]);
-	  else if (stringp(tmp[2])) {
-	    row = tmp[2];
-	  } else
-	    row="unknown function";
-	    
-	  row+="("+
-	    stupid_describe_comma_list(tmp[3..], BT_MAX_STRING_LEN)+
-	    ") in ";
+	  row = tmp;
 	}
-
-	if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
+	else if(arrayp(tmp))
 	{
-	  row+="line "+tmp[1]+" in "+trim_file_name(tmp[0]);
-	}else{
-	  mixed desc="Unknown program";
-	  if(sizeof(tmp)>=3 && functionp(tmp[2]))
+	  row="";
+	  if(sizeof(tmp)>=3)
 	  {
-	    if(mixed tmp=function_object(tmp[2]))
-	      if(tmp=object_program(tmp))
-		if(tmp=describe_program(tmp))
-		  desc=tmp;
+	    if(functionp(tmp[2]))
+	      row = function_name(tmp[2]);
+	    else if (stringp(tmp[2])) {
+	      row = tmp[2];
+	    } else
+	      row="unknown function";
+	    
+	    row+="("+
+	      stupid_describe_comma_list(tmp[3..], BT_MAX_STRING_LEN)+
+	      ") in ";
 	  }
-	  row+=desc;
+	  
+	  if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
+	  {
+	    row+="line "+tmp[1]+" in "+trim_file_name(tmp[0]);
+	  }else{
+	    mixed desc="Unknown program";
+	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
+	    {
+	      catch {
+		if(mixed tmp=function_object(tmp[2]))
+		  if(tmp=object_program(tmp))
+		    if(tmp=describe_program(tmp))
+		      desc=tmp;
+	      };
+	    }
+	    row+=desc;
+	  }
 	}
+	else
+	{
+	  row="Destructed object";
+	}
+      }) {
+	row = sprintf("Error indexing backtrace line %d!", e);
       }
-      else
-      {
-	row="Destructed object";
-      }
-      ret+=row+"\n";
+      ret += row + "\n";
     }
   }
 
