@@ -86,7 +86,9 @@ class table {
 
   int `==(object t)
   {
-    return equal(fields, indices(t)) && equal(table, values(t));
+    return (equal(Array.map(fields, lower_case),
+		  Array.map(indices(t), lower_case)) &&
+	    equal(table, values(t)));
   }
 
   object append_bottom(object t)
@@ -193,7 +195,7 @@ class table {
   {
     if(!sizeof(cs))
       return sum();
-    array f = Array.map(fields, lower_case) - Array.map(cs, lower_case);
+    array f = remap(fields) - remap(cs);
     mapping m = mkmapping(f, Array.map(f, lambda()
 					  { return lambda(mixed x1,
 							  mixed x2)
