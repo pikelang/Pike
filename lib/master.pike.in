@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.20 1998/04/29 00:18:38 hubbe Exp $
+/* $Id: master.pike.in,v 1.21 1998/04/29 03:08:25 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -317,34 +317,62 @@ object new(mixed prog, mixed ... args)
   return prog(@args);
 }
 
+multiset mkmultiset(array a)
+{
+  return aggregate_multiset(@a);
+}
+
+function clone = new;
+
+/* This array contains the names of the functions
+ * that a replacing master-object may want to override.
+ */
+constant master_efuns = ({
+  "basename",
+  "dirname",
+  "is_absolute_path",
+  "explode_path",
+
+  "compile_string",
+  "compile_file",
+  "add_include_path",
+  "remove_include_path",
+  "add_module_path",
+  "remove_module_path",
+  "add_program_path",
+  "remove_program_path",
+  "describe_backtrace",
+  "mkmultiset",
+  "new",
+  "clone",
+
+  "getenv",
+  "putenv",
+
+#ifdef GETCWD_CACHE
+  "cd",
+  "getcwd",
+#endif
+});
+
 /* Note that create is called before add_precompiled_program
  */
 void create()
 {
-  add_constant("basename",basename);
-  add_constant("dirname",dirname);
-  add_constant("is_absolute_path",is_absolute_path);
-  add_constant("explode_path",explode_path);
+  object o = this_object();
 
-  add_constant("compile_string",compile_string);
-  add_constant("compile_file",compile_file);
-  add_constant("add_include_path",add_include_path);
-  add_constant("remove_include_path",remove_include_path);
-  add_constant("add_module_path",add_module_path);
-  add_constant("remove_module_path",remove_module_path);
-  add_constant("add_program_path",add_program_path);
-  add_constant("remove_program_path",remove_program_path);
-  add_constant("describe_backtrace",describe_backtrace);
-  add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
-  add_constant("strlen",sizeof);
-  add_constant("new",new);
-  add_constant("clone",new);
-  add_constant("UNDEFINED",UNDEFINED);
+  foreach(master_efuns, string e) {
+    if (o[e]) {
+      add_constant(e, o[e]);
+    } else {
+      throw(({ sprintf("Function %O is missing from master.pike.\n", e),
+	       backtrace() }));
+    }
+  }
 
-#ifdef GETCWD_CACHE
-  add_constant("cd",cd);
-  add_constant("getcwd",getcwd);
-#endif
+  add_constant("strlen", sizeof);
+  add_constant("UNDEFINED", UNDEFINED);
+  add_constant("write", _static_modules.files()->_stdout->write);
 
   random_seed(time() + (getpid() * 0x11111111));
 }
@@ -508,10 +536,6 @@ void _main(string *orig_argv, string *env)
   mixed *q;
 
   foreach(env,a) if(sscanf(a,"%s=%s",a,b)) environment[a]=b;
-  add_constant("getenv",getenv);
-  add_constant("putenv",putenv);
-
-  add_constant("write",_static_modules.files()->_stdout->write);
 
   // add path for architecture-shared files
   add_include_path("¤share_prefix¤/include");
@@ -537,31 +561,38 @@ void _main(string *orig_argv, string *env)
     
     q=tmp->find_all_options(argv,({
       ({"version",tmp->NO_ARG,({"-v","--version"})}),
-	({"help",tmp->NO_ARG,({"-h","--help"})}),
-	  ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
-	    ({"preprocess",tmp->HAS_ARG,({"-E","--preprocess"})}),
-	      ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
-		({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
-		  ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
-		    ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
-		      ({"ignore",tmp->HAS_ARG,"-ms"}),
-			({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
-			  ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
-			    ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1})
-			      }), 1);
+      ({"help",tmp->NO_ARG,({"-h","--help"})}),
+      ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
+      ({"preprocess",tmp->HAS_ARG,({"-E","--preprocess"})}),
+      ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
+      ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
+      ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
+      ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
+      ({"ignore",tmp->HAS_ARG,"-ms"}),
+      ({"compiler_trace",tmp->NO_ARG,"--compiler-trace"}),
+      ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
+      ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
+      ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1})
+    }), 1);
     
     /* Parse -M and -I backwards */
     for(i=sizeof(q)-1;i>=0;i--)
     {
       switch(q[i][0])
       {
-	case "debug":
-	  debug+=(int)q[i][1];
-	  break;
+      case "debug":
+	debug+=(int)q[i][1];
+	break;
 
-	case "trace":
-	  trace+=(int)q[i][1];
-	  break;
+#if constant(_compiler_trace)
+      case "compiler_trace":
+	_compiler_trace(1);
+	break;
+#endif /* constant(_compiler_trace) */
+
+      case "trace":
+	trace+=(int)q[i][1];
+	break;
 
       case "modpath":
 	add_module_path(q[i][1]);
@@ -575,7 +606,7 @@ void _main(string *orig_argv, string *env)
 	add_program_path(q[i][1]);
 	break;
 
-	case "warnings":
+      case "warnings":
 	want_warnings++;
 	break;
       }
@@ -612,9 +643,9 @@ void _main(string *orig_argv, string *env)
 	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
 	exit(0);
 
-	case "preprocess":
-	  _static_modules.files()->_stdout->write(cpp(_static_modules.files()->Fd(opts[1],"r")->read(),opts[1]));
-	  exit(0);
+      case "preprocess":
+	_static_modules.files()->_stdout->write(cpp(_static_modules.files()->Fd(opts[1],"r")->read(),opts[1]));
+	exit(0);
       }
     }
 
