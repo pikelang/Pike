@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.152 1999/05/02 08:12:48 hubbe Exp $");
+RCSID("$Id: file.c,v 1.153 1999/05/09 10:28:00 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2549,7 +2549,8 @@ void check_static_file_data(struct callback *a, void *b, void *c)
 #if defined(HAVE_TERMIOS_H)
 void file_tcgetattr(INT32 args);
 void file_tcsetattr(INT32 args);
-/* void file_tcsendbreak(INT32 args); */
+void file_tcsendbreak(INT32 args); 
+void file_tcflush(INT32 args); 
 /* void file_tcdrain(INT32 args); */
 /* void file_tcflow(INT32 args); */
 /* void file_tcgetpgrp(INT32 args); */

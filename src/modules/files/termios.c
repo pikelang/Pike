@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.3 1998/12/18 17:26:55 mirar Exp $");
+RCSID("$Id: termios.c,v 1.4 1999/05/09 10:28:02 mirar Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -303,6 +303,43 @@ void file_tcsetattr(INT32 args)
    push_int(!tcsetattr(FD,optional_actions,&ti));
 }
 
+void file_tcflush(INT32 args)                               
+{                                                           
+  int action=TCIOFLUSH;                                     
+
+  if(args)                                                  
+    {                                                         
+      struct pike_string *a, *s_tciflush, *s_tcoflush, *s_tcioflush;
+      MAKE_CONSTANT_SHARED_STRING( s_tciflush, "TCIFLUSH" );  
+      MAKE_CONSTANT_SHARED_STRING( s_tcoflush, "TCOFLUSH" );  
+      MAKE_CONSTANT_SHARED_STRING( s_tcioflush, "TCIOFLUSH" );
+      get_all_args( "tcflush", args, "%S", &a );              
+      if(a == s_tciflush )                                    
+	action=TCIFLUSH;                                      
+      else if(a == s_tcoflush )                               
+	action=TCOFLUSH;                                      
+      
+#ifdef TCIOFLUSH                                            
+      else if(a == s_tcioflush )                              
+	action=TCIOFLUSH;                                     
+#endif                                                      
+      free_string( s_tcoflush );                              
+      free_string( s_tciflush );                              
+      free_string( s_tcioflush );                             
+      pop_stack();
+    }                                                         
+  push_int(!tcflush(FD, action));                           
+}                                                           
+
+void file_tcsendbreak(INT32 args)
+{
+  int len=0;
+
+  get_all_args("tcsendbreak", args, "%d", &len);
+  pop_stack();
+  push_int(!tcsendbreak(FD, len));
+}
+  
 
 /* end of termios stuff */
 #endif 
