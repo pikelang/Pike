@@ -130,10 +130,6 @@ static int do_jump(int token,INT32 lbl)
 
 static int do_docode2(node *n,int flags);
 
-#define DO_LVALUE 1
-#define DO_NOT_COPY 2
-#define DO_POP 4
-
 #define ins_label(L) do_jump(F_LABEL, L)
 
 static void do_pop(int x)
@@ -266,6 +262,8 @@ static int do_docode2(node *n,int flags)
 
   case '?':
   {
+    int adroppings , bdroppings;
+
     if(!CDDR(n))
     {
       tmp1=do_jump_when_zero(CAR(n), -1);
@@ -282,28 +280,29 @@ static int do_docode2(node *n,int flags)
       return 0;
     }
 
-    tmp1=count_args(CDDR(n));
-    tmp2=count_args(CADR(n));
+    tmp1=do_jump_when_zero(CAR(n),-1);
 
-    if(tmp2 < tmp1) tmp1=tmp2;
+    adroppings=do_docode(CADR(n), flags);
+    tmp3=emit(F_POP_N_ELEMS,0);
 
-    if(tmp1 == -1)
-      fatal("Unknown number of args in ? :\n");
+    /* Else */
+    tmp2=do_jump(F_BRANCH,-1);
+    emit(F_LABEL, tmp1);
 
-    tmp2=do_jump_when_zero(CAR(n),-1);
+    bdroppings=do_docode(CDDR(n), flags);
+    if(adroppings < bdroppings)
+    {
+      do_pop(bdroppings - adroppings);
+    }
 
-    tmp3=do_docode(CADR(n), flags);
-    if(tmp3 < tmp1) fatal("Count arguments was wrong.\n");
-    do_pop(tmp3 - tmp1);
+    if(adroppings > bdroppings)
+    {
+      update_arg(tmp3,adroppings-bdroppings);
+      adroppings=bdroppings;
+    }
 
-    tmp3=do_jump(F_BRANCH,-1);
     emit(F_LABEL, tmp2);
-
-    tmp2=do_docode(CDDR(n), flags);
-    if(tmp2 < tmp1) fatal("Count arguments was wrong.\n");
-    do_pop(tmp2 - tmp1);
-    emit(F_LABEL, tmp3);
-    return tmp1;
+    return adroppings;
   }
       
   case F_AND_EQ:
@@ -499,14 +498,13 @@ static int do_docode2(node *n,int flags)
 
     if(CDR(n))
     {
-      tmp1=do_jump(F_BRANCH,-1);
+      do_jump_when_zero(CAR(n),current_break);
       tmp2=ins_label(-1);
-      if(CDR(n)) DO_CODE_BLOCK(CADR(n));
+      DO_CODE_BLOCK(CADR(n));
       ins_label(current_continue);
-      if(CDR(n)) DO_CODE_BLOCK(CDDR(n));
-      emit(F_LABEL,tmp1);
+      DO_CODE_BLOCK(CDDR(n));
     }else{
-      tmp2=PC;
+      tmp2=ins_label(-1);
     }
     do_jump_when_non_zero(CAR(n),tmp2);
     ins_label(current_break);
@@ -882,8 +880,8 @@ static int do_docode2(node *n,int flags)
     DO_CODE_BLOCK(CAR(n));
     ins_label(current_continue);
     ins_label(current_break);
-    emit2(F_DUMB_RETURN);
-    emit(F_LABEL,tmp1);
+    emit2(F_THROW_ZERO);
+    ins_label(tmp1);
 
     current_break=break_save;
     current_continue=continue_save;
