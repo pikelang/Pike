@@ -208,6 +208,7 @@ void clear()
 
 void remove_uri(string|Standards.URI uri)
 {
+  hascache[(string)uri]=0;
   db->query("delete from "+table+" where uri_md5=%s", to_md5((string)uri));
 }
 
