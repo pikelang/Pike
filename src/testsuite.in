@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.686 2003/10/10 15:45:23 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.687 2003/10/11 14:26:13 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5517,7 +5517,10 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_false([[ objectp(-0x80000000) ]])
   test_false([[ objectp(-0x7fffffff) ]])
   test_false([[ objectp( 0x7fffffff) ]])
-    
+]])
+
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
   // Test incrementations (FIXME: More cases?).
   test_eq("2147483648",
    [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffff) ]])
@@ -5612,7 +5615,10 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("9223372036854775808", [[ (string)abs(0x8000000000000000) ]])
   test_eq("9223372036854775809", [[ (string)abs(0x8000000000000001) ]])
   test_eq("9223372036854775809", [[ (string)abs(-0x8000000000000001) ]])
+]])
 
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
   // - Add.
   test_eq("2147483648", [[ (string)(0x7fffffff + 1) ]])
   test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
@@ -5632,12 +5638,16 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-2147483648", [[ (string)(-0x7fffffff - 1) ]])
   test_eq("-2147483649", [[ (string)(-0x80000000 - 1) ]])
   test_eq("2147483647", [[ (string)(0x80000000 - 1) ]])
+  test_eq("-9223372036854775808", [[ (string)(-0x7fffffffffffffff - 1) ]])
+  test_eq("-9223372036854775809", [[ (string)(-0x8000000000000000 - 1) ]])
+  test_eq("9223372036854775807", [[ (string)(0x8000000000000000 - 1) ]])
   test_false([[ objectp(0x80000000 - 1) ]])
 
   // - Multiplication.
   test_eq("6442450941", [[ (string)(0x7fffffff * 3) ]])
   test_eq("-6442450941", [[ (string)(0x7fffffff * -3) ]])
   test_eq(-2147483648*-1,2147483648)
+  test_eq(-9223372036854775808*-1,9223372036854775808)
 
   // Division.
   test_eq("1073741824", [[ (string)((int)"2147483648" / 2) ]])
