@@ -274,9 +274,9 @@ typedef enum { STATE_DONE=0, STATE_WAIT, STATE_REREAD, STATE_REPARSE } newstate;
 static struct pike_string *empty_string;
 
 static void tag_name(struct parser_html_storage *this,
-		     struct piece *feed,int c, int skip_tag_start);
+		     struct piece *feed, ptrdiff_t c, int skip_tag_start);
 static void tag_args(struct parser_html_storage *this,
-		     struct piece *feed,int c,struct svalue *def,
+		     struct piece *feed, ptrdiff_t c,struct svalue *def,
 		     int skip_name, int to_tag_end);
 
 static int quote_tag_lookup (struct parser_html_storage *this,
