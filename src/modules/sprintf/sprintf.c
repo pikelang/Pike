@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.102 2003/03/02 15:11:04 mast Exp $
+|| $Id: sprintf.c,v 1.103 2003/05/09 14:36:18 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.102 2003/03/02 15:11:04 mast Exp $");
+RCSID("$Id: sprintf.c,v 1.103 2003/05/09 14:36:18 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1418,9 +1418,29 @@ static void low_pike_sprintf(struct format_stack *fs,
 	if (fs->fsp->precision==SPRINTF_UNDECIDED) fs->fsp->precision=3;
 
 	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
+	fs->fsp->fi_free_string=x;
 	fs->fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
+
+	/* Special casing for infinity and not a number,
+	 * since many libc's forget about them...
+	 */
+	if (tf && ((tf*2.0 == tf) || (tf != tf))) {
+	  /* Infinity or NaN. */
+	  if (tf > 0.0) {
+	    if (tf < 0.0) {
+	      sprintf(x, "nan");
+	    } else {
+	      sprintf(x, "inf");
+	    }
+	  } else if (tf < 0.0) {
+	    sprintf(x, "-inf");
+	  } else {
+	    sprintf(x, "nan");
+	  }
+	  break;
+	}
 
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);
@@ -1450,9 +1470,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	      break;
 	    }
 	}
-	debug_malloc_touch(x);
-
-	fs->fsp->fi_free_string=x;
 	break;
       }
 
