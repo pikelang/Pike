@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.c,v 1.5 2001/05/01 23:53:19 mast Exp $
+ * $Id: rbtree.c,v 1.6 2001/05/02 11:07:15 mast Exp $
  */
 
 #include "global.h"
@@ -36,6 +36,8 @@ DECLSPEC(noreturn) static void debug_rb_indval_fatal (struct rb_node_indval *tre
 #endif
 
 #define HDR(node) ((struct rb_node_hdr *) (node))
+#define IND(node) ((struct rb_node_ind *) (node))
+#define INDVAL(node) ((struct rb_node_indval *) (node))
 
 /* The default compare function for ind and indval. */
 PMOD_EXPORT int rb_ind_default_cmp (struct svalue *key, union rb_node *node)
@@ -98,37 +100,39 @@ PMOD_EXPORT struct rb_node_ind *rb_ind_insert (struct rb_node_ind **tree,
 					       struct svalue *ind,
 					       struct svalue *cmp_less)
 {
-  struct rb_node_ind *node;
+  struct rb_node_hdr *node;
   struct svalue tmp;
 
   if (cmp_less) {
     struct svalue_cmp_data data;
     data.cmp_less = cmp_less;
     data.key = ind;
-    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, node, { /* Compare. */
       cmp_res = svalue_cmp_eq (&data, (union rb_node *) node);
     }, {			/* Insert. */
-      node = alloc_rb_node_ind();
-      assign_svalue_no_free (&node->ind, ind);
-      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+      struct rb_node_ind *new = alloc_rb_node_ind();
+      node = HDR (new);
+      assign_svalue_no_free (&new->ind, ind);
+      DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
     }, {			/* Replace. */
       node = 0;
     });
   }
 
   else {
-    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      cmp_res = set_svalue_cmpfun (ind, use_rb_node_ind (node, tmp));
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, node, { /* Compare. */
+      cmp_res = set_svalue_cmpfun (ind, use_rb_node_ind (IND (node), tmp));
     }, {			/* Insert. */
-      node = alloc_rb_node_ind();
-      assign_svalue_no_free (&node->ind, ind);
-      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+      struct rb_node_ind *new = alloc_rb_node_ind();
+      node = HDR (new);
+      assign_svalue_no_free (&new->ind, ind);
+      DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
     }, {			/* Replace. */
       node = 0;
     });
   }
 
-  return node;
+  return IND (node);
 }
 
 PMOD_EXPORT struct rb_node_ind *rb_ind_add (struct rb_node_ind **tree,
@@ -164,14 +168,14 @@ PMOD_EXPORT int rb_ind_delete (struct rb_node_ind **tree,
     struct svalue_cmp_data data;
     data.cmp_less = cmp_less;
     data.key = ind;
-    HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
-			       (low_rb_cmp_fn *) svalue_cmp_eq, &data,
-			       sizeof (struct rb_node_ind));
+    old = IND (low_rb_delete ((struct rb_node_hdr **) tree,
+			      (low_rb_cmp_fn *) svalue_cmp_eq, &data,
+			      sizeof (struct rb_node_ind)));
   }
   else
-    HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
-			       (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
-			       sizeof (struct rb_node_ind));
+    old = IND (low_rb_delete ((struct rb_node_hdr **) tree,
+			      (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
+			      sizeof (struct rb_node_ind)));
   if (old) {
     struct svalue tmp;
     free_svalue (use_rb_node_ind (old, tmp));
@@ -192,18 +196,18 @@ static struct rb_node_ind *copy_ind_node (struct rb_node_ind *node)
 
 PMOD_EXPORT struct rb_node_ind *rb_ind_copy (struct rb_node_ind *tree)
 {
-  return (struct rb_node_ind *)
-    low_rb_copy (HDR (tree), (low_rb_copy_fn *) copy_ind_node);
+  return IND (low_rb_copy (HDR (tree), (low_rb_copy_fn *) copy_ind_node));
 }
 
 PMOD_EXPORT void rb_ind_free (struct rb_node_ind *tree)
 {
+  struct rb_node_hdr *node = HDR (tree);
   RBSTACK_INIT (rbstack);
-  LOW_RB_TRAVERSE (1, rbstack, HDR (tree), ;, ;, ;, ;, ;, ;, {
+  LOW_RB_TRAVERSE (1, rbstack, node, ;, ;, ;, ;, ;, ;, {
     /* Pop. */
-    tree->ind.type &= ~RB_IND_FLAG_MASK;
-    free_svalue (&tree->ind);
-    really_free_rb_node_ind (tree);
+    IND (node)->ind.type &= ~RB_IND_FLAG_MASK;
+    free_svalue (&IND (node)->ind);
+    really_free_rb_node_ind (IND (node));
   });
 }
 
@@ -216,39 +220,41 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_insert (struct rb_node_indval **tre
 						     struct svalue *val,
 						     struct svalue *cmp_less)
 {
-  struct rb_node_indval *node;
+  struct rb_node_hdr *node;
   struct svalue tmp;
 
   if (cmp_less) {
     struct svalue_cmp_data data;
     data.cmp_less = cmp_less;
     data.key = ind;
-    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, node, { /* Compare. */
       cmp_res = svalue_cmp_eq (&data, (union rb_node *) node);
     }, {			/* Insert. */
-      node = alloc_rb_node_indval();
-      assign_svalue_no_free (&node->ind, ind);
-      assign_svalue_no_free (&node->val, val);
-      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+      struct rb_node_indval *new = alloc_rb_node_indval();
+      node = HDR (new);
+      assign_svalue_no_free (&new->ind, ind);
+      assign_svalue_no_free (&new->val, val);
+      DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
     }, {			/* Replace. */
       node = 0;
     });
   }
 
   else {
-    LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      cmp_res = set_svalue_cmpfun (ind, use_rb_node_ind (node, tmp));
+    LOW_RB_INSERT ((struct rb_node_hdr **) tree, node, { /* Compare. */
+      cmp_res = set_svalue_cmpfun (ind, use_rb_node_ind (INDVAL (node), tmp));
     }, {			/* Insert. */
-      node = alloc_rb_node_indval();
-      assign_svalue_no_free (&node->ind, ind);
-      assign_svalue_no_free (&node->val, val);
-      DO_IF_DEBUG (node->ind.type |= RB_FLAG_MARKER);
+      struct rb_node_indval *new = alloc_rb_node_indval();
+      node = HDR (new);
+      assign_svalue_no_free (&new->ind, ind);
+      assign_svalue_no_free (&new->val, val);
+      DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
     }, {			/* Replace. */
       node = 0;
     });
   }
 
-  return node;
+  return INDVAL (node);
 }
 
 PMOD_EXPORT struct rb_node_indval *rb_indval_add (struct rb_node_indval **tree,
@@ -411,19 +417,19 @@ static struct rb_node_indval *copy_indval_node (struct rb_node_indval *node)
 
 PMOD_EXPORT struct rb_node_indval *rb_indval_copy (struct rb_node_indval *tree)
 {
-  return (struct rb_node_indval *)
-    low_rb_copy (HDR (tree), (low_rb_copy_fn *) copy_indval_node);
+  return INDVAL (low_rb_copy (HDR (tree), (low_rb_copy_fn *) copy_indval_node));
 }
 
 PMOD_EXPORT void rb_indval_free (struct rb_node_indval *tree)
 {
+  struct rb_node_hdr *node = HDR (tree);
   RBSTACK_INIT (rbstack);
-  LOW_RB_TRAVERSE (1, rbstack, HDR (tree), ;, ;, ;, ;, ;, ;, {
+  LOW_RB_TRAVERSE (1, rbstack, node, ;, ;, ;, ;, ;, ;, {
     /* Pop. */
-    tree->ind.type &= ~RB_IND_FLAG_MASK;
-    free_svalue (&tree->ind);
-    free_svalue (&tree->val);
-    really_free_rb_node_indval (tree);
+    INDVAL (node)->ind.type &= ~RB_IND_FLAG_MASK;
+    free_svalue (&INDVAL (node)->ind);
+    free_svalue (&INDVAL (node)->val);
+    really_free_rb_node_indval (INDVAL (node));
   });
 }
 
@@ -524,41 +530,6 @@ PMOD_EXPORT struct rb_node_hdr *rb_next (struct rb_node_hdr *node)
 }
 
 /* The low level stuff. */
-
-PMOD_EXPORT void rbstack_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node)
-{
-  struct rbstack_slice *new = ALLOC_STRUCT (rbstack_slice);
-  new->up = rbstack->slice;
-  new->stack[0] = node;
-  rbstack->slice = new;
-  rbstack->ssp = 1;
-}
-
-PMOD_EXPORT void rbstack_pop (struct rbstack_ptr *rbstack)
-{
-  struct rbstack_slice *old = rbstack->slice;
-  rbstack->slice = old->up;
-  xfree (old);
-  rbstack->ssp = STACK_SLICE_SIZE;
-}
-
-PMOD_EXPORT void rbstack_up (struct rbstack_ptr *rbstack)
-{
-  rbstack->slice = rbstack->slice->up;
-  rbstack->ssp = STACK_SLICE_SIZE;
-}
-
-PMOD_EXPORT void rbstack_free (struct rbstack_ptr *rbstack)
-{
-  struct rbstack_slice *ptr = rbstack->slice;
-  do {
-    struct rbstack_slice *old = ptr;
-    ptr = ptr->up;
-    xfree (old);
-  } while (ptr->up);
-  rbstack->slice = ptr;
-  rbstack->ssp = 0;
-}
 
 /* Sets the pointer in parent that points to child. */
 #define SET_PTR_TO_CHILD(parent, child, prev_val, next_val)		\
@@ -1586,7 +1557,7 @@ static void debug_dump_rb_tree (struct rb_node_hdr *tree, dump_data_fn *dump_dat
       while (n) {
 	if (n == tree) {
 	  fprintf (stderr, "[Circular! %p]", tree);
-	  goto skip_1;
+	  goto skip_node;
 	}
 	RBSTACK_UP (p, n);
       }
@@ -1615,6 +1586,7 @@ static void debug_dump_rb_tree (struct rb_node_hdr *tree, dump_data_fn *dump_dat
       }
     }, {			/* Pop. */
       fputc (')', stderr);
+    skip_node:
     });
     fputc ('\n', stderr);
   }

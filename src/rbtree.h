@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.h,v 1.4 2001/05/01 23:53:19 mast Exp $
+ * $Id: rbtree.h,v 1.5 2001/05/02 11:07:16 mast Exp $
  */
 
 #ifndef RBTREE_H
@@ -22,7 +22,7 @@
  * The longest possible path in a given tree thus have alternating red
  * and black nodes, and the shortest possible path in it have only
  * black nodes. Therefore it's guaranteed that the longest path is at
- * most twice the length as the shortest one.
+ * most twice as long as the shortest one.
  */
 
 struct rb_node_hdr {
@@ -275,11 +275,43 @@ struct rbstack_ptr
   size_t ssp;			/* Only zero when the stack is empty. */
 };
 
-PMOD_EXPORT void rbstack_push (struct rbstack_ptr *rbstack,
-			       struct rb_node_hdr *node);
-PMOD_EXPORT void rbstack_pop (struct rbstack_ptr *rbstack);
-PMOD_EXPORT void rbstack_up (struct rbstack_ptr *rbstack);
-PMOD_EXPORT void rbstack_free (struct rbstack_ptr *rbstack);
+/* Small functions to contain the lesser used branches of the
+ * RBSTACK_* macros, to cut down the size of the generated code. */
+
+static void rbstack_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node)
+{
+  struct rbstack_slice *new = ALLOC_STRUCT (rbstack_slice);
+  new->up = rbstack->slice;
+  new->stack[0] = node;
+  rbstack->slice = new;
+  rbstack->ssp = 1;
+}
+
+static void rbstack_pop (struct rbstack_ptr *rbstack)
+{
+  struct rbstack_slice *old = rbstack->slice;
+  rbstack->slice = old->up;
+  xfree (old);
+  rbstack->ssp = STACK_SLICE_SIZE;
+}
+
+static void rbstack_up (struct rbstack_ptr *rbstack)
+{
+  rbstack->slice = rbstack->slice->up;
+  rbstack->ssp = STACK_SLICE_SIZE;
+}
+
+static void rbstack_free (struct rbstack_ptr *rbstack)
+{
+  struct rbstack_slice *ptr = rbstack->slice;
+  do {
+    struct rbstack_slice *old = ptr;
+    ptr = ptr->up;
+    xfree (old);
+  } while (ptr->up);
+  rbstack->slice = ptr;
+  rbstack->ssp = 0;
+}
 
 #define RBSTACK_INIT(rbstack)						\
   struct rbstack_slice PIKE_CONCAT3 (_, rbstack, _top_);		\
@@ -335,14 +367,15 @@ PMOD_EXPORT void rbstack_free (struct rbstack_ptr *rbstack);
 } while (0)
 
 /* Traverses the tree in depth-first order:
- * push		Run when entering a node.
+ * push		Run when entering a node. Preceded by an enter_* label.
  * p_leaf	Run when the nodes prev pointer isn't a subtree.
  * p_sub	Run when the nodes prev pointer is a subtree.
  * between	Run after the prev subtree has been recursed and before
- *		the next subtree is examined.
+ *		the next subtree is examined. Preceded by a between_*
+ *		label.
  * n_leaf	Run when the nodes next pointer isn't a subtree.
  * n_sub	Run when the nodes next pointer is a subtree.
- * pop		Run when leaving a node.
+ * pop		Run when leaving a node. Preceded by a leave_* label.
  */
 #define LOW_RB_TRAVERSE(label, rbstack, node, push, p_leaf, p_sub, between, n_leaf, n_sub, pop) \
 do {									\
@@ -368,10 +401,9 @@ do {									\
       (node) = (node)->next;						\
       goto PIKE_CONCAT (enter_, label);					\
     }									\
-    PIKE_CONCAT (leave_, label):					\
     while (1) {								\
+      PIKE_CONCAT (leave_, label):					\
       {pop;}								\
-      PIKE_CONCAT (skip_, label):					\
       low_rb_last_ = (node);						\
       RBSTACK_POP (rbstack, node);					\
       if (!(node)) break;						\
