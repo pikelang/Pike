@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.6 2001/07/22 21:09:11 grubba Exp $
+ * $Id: ia32.c,v 1.7 2001/07/22 21:31:07 grubba Exp $
  *
  * Machine code generator for IA32.
  *
@@ -137,6 +137,6 @@ void ia32_decode_program(struct program *p)
   INT32 delta = (INT32)prog;
   size_t rel = p->num_relocations;
   while (rel--) {
-    *(INT32*)(prog + p->relocations[rel]) += delta;
+    *(INT32*)(prog + p->relocations[rel]) -= delta;
   }
 }
