@@ -8,18 +8,12 @@ mapping(int:mapping) links=([]);
 
 string p1(string data);
 
-
-
+/* Note: destructive ! */
 string *srt(string *foo)
 {
-  return sort_array(foo,
-		    lambda(string a,string b)
-		    {
-		      return lower_case(a) > lower_case(b);
-		    });
+  sort(map(foo,lower_case),foo);
+  return foo;
 }
-
-
 
 string code_params(mapping s)
 {
@@ -27,11 +21,6 @@ string code_params(mapping s)
   foreach(indices(s), string data)
     ret+=" "+data+"=\""+s[data]+"\"";
   return ret;
-}
-
-string leavetag(string x, mapping y, string data)
-{
-  return "<"+x+code_params(y)+">"+data+"</"+x+">";
 }
 
 /* Index handling */
@@ -67,7 +56,6 @@ string anchor(mixed a, mixed b, mixed c)
 {
   if(b->name)
   {
-//    werror("Anchor: "+b->name+".\n");
     if(c[strlen(c)-10..]=="<!--END-->")
       werror("Warning: Anchor not ended "+b->name+".\n");
 
@@ -76,8 +64,7 @@ string anchor(mixed a, mixed b, mixed c)
     for(int e=1;e<sizeof(foo);e++)
       add_to(foo[e], foo[..e]*".");
   }
-//  return leavetag(a,b,parse_html(c,([]),(["a":anchor])));
-//  return leavetag(a,b,c);
+
   return 0;
 }
 
@@ -123,11 +110,14 @@ string appendixes(string tag, mapping params, string data);
   (["chapter":chapter,"section":section,\
    "appendix":appendix,"appendixes":appendixes])
 
+mapping aliases=([]);
+
 string rtag(string name,
 	    string title,
 	    string outtitle,
 	    string xlink,
 	    string sectionname,
+	    mapping params,
 	    string data)
 {
   if(data[strlen(data)-10..]=="<!--END-->")
@@ -141,6 +131,17 @@ string rtag(string name,
   data=parse_html(data,([]),TAGS);
   prefix=save_prefix;
   tod=save+({prefix+xlink,sectionname||(prefix+xlink),title,tod});
+
+  if(params->alias)
+    {
+      aliases[params->alias]=
+	({
+	  prefix+xlink, 
+	  sectionname || ( name + " " + prefix+xlink )
+	})
+	;
+    }
+
 
   if(data[strlen(data)-10..]=="<!--END-->")
     data=data[..strlen(data)-11];
@@ -165,32 +166,35 @@ string rtag(string name,
 string section(string tag, mapping params, string data)
 {
   int c = sizeof(tod)/4 +1;
-  return rtag("Section",
+  return rtag("section",
 	      params->title,
 	      prefix+c+" "+params->title,
 	      (string)c,
 	      0,
+	      params,
 	      data);
 }
 
 string chapter(string tag, mapping params, string data)
 {
   int c = sizeof(tod)/4+1;
-  return rtag("Chapter",
+  return rtag("chapter",
 	      params->title,
 	      "Chapter "+prefix+c+", "+params->title,
 	      (string)c,
 	      0,
+	      params,
 	      data);
 }
 
 string appendixes(string tag, mapping params, string data)
 {
-  return rtag("Appendixes",
+  return rtag("appendixes",
 	      "",
 	      "Appendixes",
 	      "Appendix",
 	      "Appendixes",
+	      params,
 	      data);
 
 }
@@ -200,11 +204,12 @@ int appnum = 'A';
 string appendix(string tag, mapping params, string data)
 {
   string c=sprintf("%c",appnum++);
-  return rtag("Appendix",
+  return rtag("appendix",
 	      params->title,
 	      "Appendix "+c+", "+params->title,
 	      c,
 	      "Appendix "+c,
+	      params,
 	      data);
 }
 
@@ -233,23 +238,48 @@ string do_replace(string what)
   return replacements[lower_case(what)];
 }
 
+string encaps1(string word)
+{
+  return "<font size=+1>"+word[0..0]+"</font><font size=-1>"+word[1..]+"</font>";
+}
+
+string encaps(string tag, mapping params, string data)
+{
+  return "<b>"+map((data/" ")-({""}),encaps1)*" "+"</b>";
+}
+
+string link(string tag, mapping params, string data)
+{
+  mixed tmp=aliases[params->to];
+  if(!tmp)
+    {
+      werror("Unlinked <link> :"+params->to+"\n");
+      return 0;
+    }
+
+  return "<a href=#"+tmp[0]+">"+tmp[1]+"</a>";
+}
+
+string box(string tag, mapping params, string data)
+{
+  return "<center><table border=1>\n"+
+    data+
+    "</table></center>\n";
+}
+
 int main()
 {
   string data=stdin->read(0x7fffffff);
 
   data+="\n<!--END-->";
 
-  string data=parse_html(data,
-			 ([]) ,
-			 ([
-			   "a":anchor
-			   ]));
+  /* Pass 1, find links for the index */
+  string data=parse_html(data, ([]) , (["a":anchor]));
 
+  /* Pass 2, parse chapters and sections */
+  string data=parse_html(data, ([]) , TAGS);
 
-  string data=parse_html(data,
-			 ([]) ,
-			 TAGS);
-
+  /* Build index */
   string index="<dl>\n";
   foreach(sort(indices(links)), int letter)
   {
@@ -261,14 +291,21 @@ int main()
   
   replacements->index=index;
 
+  /* Build table of contents */
   replacements["table-of-contents"]=gencontents(tod);
 
+
+  /* Pass 3, insert generated data */
   write(parse_html(data,
 		   ([
 		     "index":do_replace,
 		     "table-of-contents":do_replace,
+		     "link":link,
 		     ]),
-		   ([])));
+		   ([
+		     "box":box,
+		     "encaps":encaps,
+		     ])));
 }
 
 
