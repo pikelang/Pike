@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.29 2004/03/13 16:43:16 jonasw Exp $
+|| $Id: pike_threadlib.h,v 1.30 2004/04/21 17:57:20 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -429,6 +429,7 @@ PMOD_EXPORT extern clock_t thread_start_clock;
 #ifndef VERBOSE_THREADS_DEBUG
 #define THREADS_FPRINTF(L,X)
 #else
+#include <errno.h>
 #define THREADS_FPRINTF(L,X)	do { \
     if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) {				\
       /* E.g. THREADS_DISALLOW is used in numerous places where the */	\
@@ -578,7 +579,7 @@ extern void dumpmem(char *desc, void *x, int size);
 
 #define SWAP_IN_CURRENT_THREAD()					      \
    THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		       __FILE__, __LINE__, (unsigned int)_tmp->thread_id));   \
+		       __FILE__, __LINE__, (unsigned int)_tmp->id));	\
    DO_IF_DEBUG(								      \
    {									      \
      THREAD_T self=th_self();						      \
