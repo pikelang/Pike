@@ -80,7 +80,7 @@ object spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 	     function|void cleanup, mixed ... args)
 {
 #if 1
-  mapping data=([]);
+  mapping data=(["env":getenv()]);
   if(stdin) data->stdin=stdin;
   if(stdout) data->stdout=stdout;
   if(stderr) data->stderr=stderr;
