@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.48 2001/12/16 02:49:42 mast Exp $
+ * $Id: preprocessor.h,v 1.49 2002/05/22 16:15:40 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -28,6 +28,7 @@
 
 #define lower_cpp		lower_cpp0
 #define find_end_parenthesis	find_end_parenthesis0
+#define find_end_brace		find_end_brace0
 #define PUSH_STRING		PUSH_STRING0
 #define WC_BINARY_FINDSTRING(X, Y)	binary_findstring((char *)X, Y)
 
@@ -62,6 +63,7 @@
 
 #define lower_cpp		lower_cpp1
 #define find_end_parenthesis	find_end_parenthesis1
+#define find_end_brace		find_end_brace1
 #define PUSH_STRING		PUSH_STRING1
 #define WC_BINARY_FINDSTRING	binary_findstring1
 
@@ -90,6 +92,7 @@
 
 #define lower_cpp		lower_cpp2
 #define find_end_parenthesis	find_end_parenthesis2
+#define find_end_brace		find_end_brace2
 #define PUSH_STRING		PUSH_STRING2
 #define WC_BINARY_FINDSTRING	binary_findstring2
 
@@ -309,6 +312,48 @@ static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
     case '"':  FIND_END_OF_STRING();  break;
     case '(':  pos=find_end_parenthesis(this, data, len, pos); break;
     case ')':  return pos;
+    case '/':
+      if (data[pos] == '*') {
+	pos++;
+	SKIPCOMMENT();
+      } else if (data[pos] == '/') {
+	pos++;
+	FIND_EOL();
+      }
+    }
+  }
+}
+
+static INLINE ptrdiff_t find_end_brace(struct cpp *this,
+				       WCHAR *data,
+				       ptrdiff_t len,
+				       ptrdiff_t pos)/* pos of first " */
+{
+  INT32 start_line = this->current_line;
+  while(1)
+  {
+    if(pos+1>=len)
+    {
+      INT32 save_line = this->current_line;
+      this->current_line = start_line;
+      cpp_error(this, "End of file while looking for end brace.");
+      this->current_line = save_line;
+      return pos;
+    }
+
+    switch(data[pos++])
+    {
+    case '\n': PUTNL(); this->current_line++; break;
+    case '\'': FIND_END_OF_CHAR();  break;
+    case '"':  FIND_END_OF_STRING();  break;
+    case '{':  pos=find_end_brace(this, data, len, pos); break;
+    case '}':  return pos;
+    case '/':
+      if (data[pos] == '*') {
+	SKIPCOMMENT();
+      } else if (data[pos] == '/') {
+	FIND_EOL();
+      }
     }
   }
 }
@@ -965,6 +1010,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  
 		case '(':
 		  pos=find_end_parenthesis(this, data, len, pos);
+		  continue;
+
+		case '{':
+		  pos=find_end_brace(this, data, len, pos);
 		  continue;
 		  
 		case ',':
@@ -2096,6 +2145,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
 #undef lower_cpp
 #undef find_end_parenthesis
+#undef find_end_brace
 
 #undef calc
 #undef calc1
