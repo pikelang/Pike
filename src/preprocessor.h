@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.63 2004/02/27 12:41:47 nilsson Exp $
+|| $Id: preprocessor.h,v 1.64 2004/04/22 15:43:51 grubba Exp $
 */
 
 /*
@@ -995,6 +995,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		default: continue;
 		  
 		case '"':
+		  /* Note: Strings may contain \-escaped newlines.
+		   *       They must be removed on insertion to
+		   *       avoid being counted twice.
+		   */
 		  if(data[pos-2]!='#') {
 		    FIND_END_OF_STRING();
 		  }else{
@@ -1136,6 +1140,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		}else{
 		  struct string_builder save;
 		  INT32 line=this->current_line;
+		  /* FIXME: Shouldn't we save current_file too? */
 		  save=this->buf;
 		  this->buf=tmp;
 		  d->inside = 2;
@@ -1157,10 +1162,24 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    }
 	  }
 	  
-	  /* FIXME */
-	  for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
-	    if(tmp.s->str[e]=='\n')
-	      tmp.s->str[e]=' ';
+	  /* Remove any newlines from the completed expression. */
+	  switch (tmp.s->size_shift) {
+	  case 0:
+	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
+	      if(STR0(tmp.s)[e]=='\n')
+		STR0(tmp.s)[e]=' ';
+	    break;
+	  case 1:
+	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
+	      if(STR1(tmp.s)[e]=='\n')
+		STR1(tmp.s)[e]=' ';
+	    break;
+	  case 2:
+	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
+	      if(STR2(tmp.s)[e]=='\n')
+		STR2(tmp.s)[e]=' ';
+	    break;
+	  }
 
 	  if(s) d->inside=1;
 	  
