@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.6 2003/03/12 09:58:18 agehall Exp $
+// $Id: Session.pike,v 1.7 2003/03/13 07:52:20 mirar Exp $
 
 import Protocols.HTTP;
 
@@ -20,6 +20,13 @@ typedef string|Standards.URI|SessionURL URL;
 //!	@[Request.follow_redirects]
 
 int follow_redirects=20;
+
+//! Default HTTP headers. 
+
+mapping default_headers = ([
+   "user-agent":"Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
+   " Pike/"+__REAL_MAJOR__+"."+__REAL_MINOR__+"."+__REAL_BUILD__,
+]);
 
 class Request
 {
@@ -67,16 +74,13 @@ class Request
       string method,
       URL url,
       void|mapping query_variables,
-      void|mapping request_headers,
+      void|mapping extra_headers,
       void|string data)
    {
       if(stringp(url))
 	 url=Standards.URI(url);
       url_requested=url;
 
-      if(!request_headers)
-	 request_headers = ([]);
-  
 #if constant(SSL.sslfile) 	
       if(url->scheme!="http" && url->scheme!="https")
 	 error("Protocols.HTTP can't handle %O or any other "
@@ -90,27 +94,25 @@ class Request
 	       "protocol than HTTP\n",
 	       url->scheme);
 #endif
-  
-      if(!request_headers)
-	 request_headers = ([]);
-      mapping default_headers = ([
-	 "user-agent":"Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
-	    " Pike/"+__REAL_MAJOR__+"."+__REAL_MINOR__+"."+__REAL_BUILD__,
-	 "host":url->host,
-	 "connection":
-	    (time_to_keep_unused_connections<=0)?"Close":"Keep-Alive",
-      ]);
+      mapping request_headers = default_headers;
       if (url->referer)
 	 request_headers->referer=(string)url->referer;
 
       if(url->user || url->passwd)
-	 default_headers->authorization = "Basic "
+	 request_headers->authorization = "Basic "
 	    + MIME.encode_base64(url->user + ":" +
 				 (url->password || ""));
-      request_headers = default_headers | request_headers;
+
+      request_headers->connection=
+	 (time_to_keep_unused_connections<=0)?"Close":"Keep-Alive";
+
+      request_headers->host=url->host;
+  
+      if (extra_headers)
+	 request_headers|=extra_headers;
 
       array v=get_cookies(url_requested);
-      if (v)
+      if (v && sizeof(v))
 	 if (request_headers->cookie)
 	    if (!arrayp(request_headers->cookie))
 	       request_headers->cookie=
@@ -437,7 +439,10 @@ class Cookie
 	 switch (lower_case(what))
 	 {
 	    case "expires":
-	       expires=Calendar.ISO.parse("%e, %D %M %Y %h:%m:%s %z",value)
+	       werror("%O\n",value);
+	       expires=
+		  (Calendar.ISO.parse("%e, %D %M %Y %h:%m:%s %z",value)||
+		   Calendar.ISO.parse("%e, %D-%M-%y %h:%m:%s %z",value) )
 		  ->unix_time();
 	       break;
 
@@ -746,64 +751,22 @@ void return_connection(Standards.URI url,Query query)
 
 // ================================================================
 
-Request do_method(string method,
-		  string url,
-		  void|mapping query_variables,
-		  void|string data)
+Request do_method_url(string method,
+		      string url,
+		      void|mapping query_variables,
+		      void|string data,
+		      void|mapping extra_headers)
 {
-   mapping extra_headers=0;
    if (method=="POST")
-      extra_headers=(["content-type":"application/x-www-form-urlencoded"]);
+      extra_headers=
+	 (extra_headers||([]))|
+	 (["content-type":"application/x-www-form-urlencoded"]);
    
    Request p=Request();
    p->do_sync(p->prepare_method(method,url,query_variables,
 				extra_headers,data));
    return p;
 }
-
-// Request|array(string) generic_do_method(
-//    string method,
-//    string mode,
-//    URL url,
-//    string|mapping|function ...misc)
-// {
-//    array args;
-//    mapping query_variables=0;
-//    mapping extra_headers=0;
-//    string data=0;
-// 
-//    misc+=({0,0,0,0});
-// 
-//    switch (lower_case(method))
-//    {
-//       case "get":
-//       case "delete":
-// 	 query_variables=misc[0];
-// 	 misc=misc[1..];
-// 	 break;
-//       case "put":
-// 	 query_variables=misc[0];
-// 	 data=misc[1];
-// 	 if (data && !stringp(data))
-// 	    error("Bad argument 5 to Session.put*, expected string\n");
-// 	 misc=misc[2..];
-// 	 break;
-//       case "post":
-// 	 if (!mappingp(misc[0]))
-// 	    error("Bad argument 4 to Session.put*, expected mapping\n");
-// 	 data=http_encode_query(misc[0]);
-// 	 extra_headers=(["content-type":"application/x-www-form-urlencoded"]);
-// 	 break;
-//       default:
-// 	 error("unknown HTTP method %O (expected get, post, put or delete)\n");
-//    }
-//    if (query_variables && !mappingp(query_variables))
-//       error("Bad argument 4 to Session."+method+"*, "
-// 	    "expected mapping or void\n");
-// 
-//    args=p->prepare_method(upper_case(method),url,query_variables,
-// 			  extra_headers,data);
-// }
 
 //! @decl Request get_url(URL url, @
 //!                       void|mapping query_variables)
@@ -820,27 +783,27 @@ Request do_method(string method,
 Request get_url(URL url,
 		void|mapping query_variables)
 {
-   return do_method("GET", url, query_variables);
+   return do_method_url("GET", url, query_variables);
 }
 
 Request put_url(URL url,
 		void|string file,
 		void|mapping query_variables)
 {
-   return do_method("PUT", url, query_variables, file);
+   return do_method_url("PUT", url, query_variables, file);
 }
 
 Request delete_url(URL url,
 		   void|mapping query_variables)
 {
-   return do_method("DELETE", url, query_variables);
+   return do_method_url("DELETE", url, query_variables);
 }
 
 Request post_url(URL url,
 		 mapping query_variables)
 {
-   return do_method("POST", url, 0,
-		    http_encode_query(query_variables));
+   return do_method_url("POST", url, 0,
+			http_encode_query(query_variables));
 }
 
 
@@ -894,14 +857,15 @@ string post_url_data(URL url,
 // ================================================================
 // async operation
 
-Request async_do_method(string method,
-			URL url,
-			void|mapping query_variables,
-			void|string data,
-			function callback_headers_ok,
-			function callback_data_ok,
-			function callback_fail,
-			array callback_arguments)
+Request async_do_method_url(string method,
+			    URL url,
+			    void|mapping query_variables,
+			    void|string data,
+			    void|mapping extra_headers,
+			    function callback_headers_ok,
+			    function callback_data_ok,
+			    function callback_fail,
+			    array callback_arguments)
 {
    if(stringp(url)) url=Standards.URI(url);
 
@@ -912,9 +876,10 @@ Request async_do_method(string method,
 		    callback_fail,
 		    p,@callback_arguments);
 
-   mapping extra_headers=0;
    if (method=="POST")
-      extra_headers=(["content-type":"application/x-www-form-urlencoded"]);
+      extra_headers=
+	 (extra_headers||([]))|
+	 (["content-type":"application/x-www-form-urlencoded"]);
 
    p->do_async(p->prepare_method(method,url,query_variables,
 				 extra_headers,data));
@@ -972,9 +937,9 @@ Request async_get_url(URL url,
 		      function callback_fail,
 		      mixed ...callback_arguments)
 {
-   return async_do_method("GET", url, query_variables,0,
-			  callback_headers_ok,callback_data_ok,
-			  callback_fail,callback_arguments);
+   return async_do_method_url("GET", url, query_variables,0,0,
+			      callback_headers_ok,callback_data_ok,
+			      callback_fail,callback_arguments);
 }
 
 Request async_put_url(URL url,
@@ -985,9 +950,9 @@ Request async_put_url(URL url,
 		      function callback_fail,
 		      mixed ...callback_arguments)
 {
-   return async_do_method("PUT", url, query_variables, file,
-			  callback_headers_ok,callback_data_ok,
-			  callback_fail,callback_arguments);
+   return async_do_method_url("PUT", url, query_variables, file,0,
+			      callback_headers_ok,callback_data_ok,
+			      callback_fail,callback_arguments);
 }
 
 Request async_delete_url(URL url,
@@ -997,9 +962,9 @@ Request async_delete_url(URL url,
 			 function callback_fail,
 			 mixed ...callback_arguments)
 {
-   return async_do_method("DELETE", url, query_variables, 0,
-			  callback_headers_ok,callback_data_ok,
-			  callback_fail,callback_arguments);
+   return async_do_method_url("DELETE", url, query_variables, 0,0,
+			      callback_headers_ok,callback_data_ok,
+			      callback_fail,callback_arguments);
 }
 
 Request async_post_url(URL url,
@@ -1009,12 +974,14 @@ Request async_post_url(URL url,
 		       function callback_fail,
 		       mixed ...callback_arguments)
 {
-   return async_do_method("POST", url, 0,
-			  http_encode_query(query_variables),
-			  callback_headers_ok,callback_data_ok,
-			  callback_fail,callback_arguments);
+   return async_do_method_url("POST", url, 0,
+			      http_encode_query(query_variables),0,
+			      callback_headers_ok,callback_data_ok,
+			      callback_fail,callback_arguments);
 }
 
+// ----------------------------------------------------------------
+//
 //! Class to store URL+referer
 
 class SessionURL
