@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.106 1997/08/28 01:28:33 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.107 1997/08/28 02:04:06 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -203,6 +203,7 @@ esac
 
   case "${CFLAGS-}" in
      *-O*) ;;
+     *-fast*) ;;
      *)
       AC_SYS_COMPILER_FLAG(-O,O)
      ;;
