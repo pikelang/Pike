@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.365 2000/04/12 16:52:52 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.366 2000/04/19 17:58:02 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -545,8 +545,10 @@ AC_ARG_WITH(shared-nodes,[  --with-shared-nodes    enable the SHARED_NODES mode 
 
 # This makes configure default to --without-Perl
 # Remove this when the Perl module stops crashing and hanging. -Hubbe
-AC_ARG_WITH(with-Perl,   [  --with-Perl            enable the embedded Perl module (EXPERIMENTAL)],[],
-[ac_configure_args="$ac_configure_args --without-Perl"]
+AC_ARG_WITH(perl,        [  --with-perl            enable the embedded Perl module (EXPERIMENTAL)],[],
+[ac_configure_args="$ac_configure_args --without-perl"
+ with_perl="no"
+]
 )
 
 if test "x$with_bignums" = xyes; then
