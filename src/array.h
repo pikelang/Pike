@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.36 2001/06/07 08:26:46 hubbe Exp $
+ * $Id: array.h,v 1.37 2001/08/31 06:53:36 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -92,7 +92,6 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
 PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
 PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags);
-PMOD_EXPORT void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index);
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind);
@@ -226,6 +225,44 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 #define END_AGGREGATE_ARRAY						\
   DO_AGGREGATE_ARRAY(0);						\
 } while (0)
+
+
+/*
+ * Extract an svalue from an array
+ */
+#define array_index_no_free(S,A,I) do {				\
+  INT32 ind_=(I);						\
+  struct array *v_=(A);						\
+  DO_IF_DEBUG(							\
+    if(ind_<0 || ind_>=v_->size)				\
+    fatal("Illegal index in low level index routine.\n");	\
+    )								\
+								\
+  assign_svalue_no_free((S), ITEM(v_) + ind_);			\
+}while(0)
+
+
+/*
+ * Set an index in an array
+ */
+#define array_set_index(V,I,S) do {					 \
+  struct array *v_=(V);							 \
+  INT32 index_=(I);							 \
+  struct svalue *s_=(S);						 \
+  struct svalue tmp_;							 \
+									 \
+  DO_IF_DEBUG(								 \
+  if(index_<0 || index_>v_->size)					 \
+    fatal("Illegal index in low level array set routine.\n");		 \
+    )									 \
+									 \
+  check_destructed(s_);							 \
+  tmp_=ITEM(v_)[index_];						 \
+									 \
+  v_->type_field = (v_->type_field & ~BIT_UNFINISHED) | (1 << s_->type); \
+  assign_svalue_no_free( ITEM(v_) + index_, s_);			 \
+  free_svalue(&tmp_);							 \
+}while(0)
 
 
 #endif /* ARRAY_H */
