@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.59 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: mysql.c,v 1.60 2002/10/20 22:05:07 marcus Exp $
 */
 
 /*
@@ -58,12 +58,6 @@
 #endif /* HAVE_ERRMGS_H */
 
 
-/* dynamic_buffer.h contains a conflicting typedef for string
- * we don't use any dynamic buffers, so we have this work-around
- */
-#define DYNAMIC_BUFFER_H
-typedef struct dynamic_buffer_s dynamic_buffer;
-
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
@@ -100,7 +94,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.59 2002/10/11 01:39:47 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.60 2002/10/20 22:05:07 marcus Exp $");
 
 /*! @module Mysql
  *!

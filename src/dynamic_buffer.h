@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_buffer.h,v 1.16 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: dynamic_buffer.h,v 1.17 2002/10/20 22:05:07 marcus Exp $
 */
 
 #ifndef DYNAMIC_BUFFER_H
@@ -10,17 +10,17 @@
 
 #define BUFFER_BEGIN_SIZE 4080
 
-struct string_s
+struct dynbuf_string_s
 {
   char *str;
   SIZE_T len;
 };
 
-typedef struct string_s string;
+typedef struct dynbuf_string_s dynbuf_string;
 
 struct dynamic_buffer_s
 {
-  string s;
+  dynbuf_string s;
   SIZE_T bufsize;
 };
 
@@ -32,8 +32,8 @@ PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf);
 PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l, dynamic_buffer *buf);
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf);
 PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf);
-PMOD_EXPORT void low_init_buf_with_string(string s, dynamic_buffer *buf);
-PMOD_EXPORT string complex_free_buf(void);
+PMOD_EXPORT void low_init_buf_with_string(dynbuf_string s, dynamic_buffer *buf);
+PMOD_EXPORT dynbuf_string complex_free_buf(void);
 PMOD_EXPORT void toss_buffer(dynamic_buffer *buf);
 PMOD_EXPORT char *simple_free_buf(void);
 PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
@@ -44,7 +44,7 @@ PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l);
 PMOD_EXPORT void my_strcat(const char *b);
 PMOD_EXPORT void initialize_global_buf(void);
 PMOD_EXPORT void init_buf(void);
-PMOD_EXPORT void init_buf_with_string(string s);
+PMOD_EXPORT void init_buf_with_string(dynbuf_string s);
 PMOD_EXPORT char *debug_return_buf(void);
 /* Prototypes end here */
 

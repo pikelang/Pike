@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.27 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: result.c,v 1.28 2002/10/20 22:05:07 marcus Exp $
 */
 
 /*
@@ -47,11 +47,6 @@
 #endif
 #endif
 
-/* dynamic_buffer.h contains a conflicting typedef for string
- * we don't use any dynamic buffers, so we have this work-around
- */
-#define DYNAMIC_BUFFER_H
-typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* From the Pike-dist */
 #include "svalue.h"
@@ -92,7 +87,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.27 2002/10/11 01:39:47 nilsson Exp $");
+RCSID("$Id: result.c,v 1.28 2002/10/20 22:05:07 marcus Exp $");
 
 struct program *mysql_result_program = NULL;
 

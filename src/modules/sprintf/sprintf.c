@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.97 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: sprintf.c,v 1.98 2002/10/20 22:05:08 marcus Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.97 2002/10/11 01:39:55 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.98 2002/10/20 22:05:08 marcus Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1513,7 +1513,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 
       case 'O':
       {
-	string s;
+	dynbuf_string s;
 	struct svalue *t;
 	DO_OP();
 	/* No need to do CHECK_OBJECT_SPRINTF() here,
@@ -1627,9 +1627,14 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 
 /* An C-callable pike_sprintf
-string pike_sprintf(char *format,struct svalue *argp,int num_arg)
+
+** This doesn't seem to work at all.  The prototype for
+** low_pike_sprintf has changed _a lot_ since this code was
+** written.  It should probably be removed.  // Marcus
+
+dynbuf_string pike_sprintf(char *format,struct svalue *argp,int num_arg)
 {
-  string prefix;
+  dynbuf_string prefix;
   prefix.str=0;
   prefix.len=0;
 
