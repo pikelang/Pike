@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.13 2003/05/12 14:26:34 grubba Exp $
+# $Id: configure.in,v 1.14 2003/05/12 15:17:10 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -72,7 +72,7 @@ else
   AC_MSG_CHECKING(for glutSolidTeapot in GLUT.framework)
   AC_CACHE_VAL(pike_cv_framework_GLUT, [
     oldLIBS="$LIBS"
-    LIBS="-framework GLUT -lobjc $LIBS"
+    LIBS="-framework GLUT $LIBS"
     AC_TRY_LINK([
 #ifdef HAVE_GL_GLUT_H
 #include <GL/glut.h>
