@@ -1,0 +1,12 @@
+#
+# $Id: Makefile.in,v 1.1 1997/02/11 08:36:33 hubbe Exp $
+#
+
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+OBJS=mysql.o result.o
+MODULE_LDFLAGS=@LDFLAGS@ @MYSQL_LIBS@
+
+@dynamic_module_makefile@
+@dependencies@

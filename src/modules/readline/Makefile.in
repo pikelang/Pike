@@ -1,0 +1,8 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_CPPFLAGS=@CPPFLAGS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+OBJS=readlinemod.o
+
+@dynamic_module_makefile@
+@dependencies@

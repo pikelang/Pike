@@ -1,0 +1,9 @@
+/.pure
+/Makefile
+/config.log
+/config.status
+/configure
+/dependencies
+/linker_options
+/stamp-h
+/zlib_machine.h

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.6 1997/02/07 01:39:27 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.7 1997/02/11 08:39:34 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -32,10 +32,19 @@ struct call_out_s
 
 typedef struct call_out_s call_out;
 
-call_out **pending_calls=0;      /* pointer to first busy pointer */
 int num_pending_calls;           /* no of busy pointers in buffer */
-static call_out **call_buffer=0; /* pointer to buffer */
+static call_out *call_buffer=0;  /* pointer to buffer */
 static int call_buffer_size;     /* no of pointers in buffer */
+
+#undef CAR
+#undef CDR
+
+#define CAR(X) (((X)<<1)+1)
+#define CDR(X) (((X)<<1)+2)
+#define PARENT(X) (((X)-1)>>1)
+#define CALL(X) call_buffer[(X)]
+#define CMP(X,Y) my_timercmp(& CALL(X).tv, <, & CALL(Y).tv)
+#define SWAP(X,Y) do{ call_out _tmp=CALL(X); CALL(X)=CALL(Y); CALL(Y)=_tmp; } while(0)
 
 static void verify_call_outs()
 {
@@ -49,18 +58,15 @@ static void verify_call_outs()
   if(num_pending_calls<0 || num_pending_calls>call_buffer_size)
     fatal("Error in call out tables.\n");
 
-  if(pending_calls+num_pending_calls!=call_buffer+call_buffer_size)
-    fatal("Error in call out tables.\n");
-
   for(e=0;e<num_pending_calls;e++)
   {
     if(e)
     {
-      if(my_timercmp(&pending_calls[e-1]->tv,>,&pending_calls[e]->tv))
-	fatal("Error in call out order.\n");
+      if(CMP(e, PARENT(e)))
+	fatal("Error in call out heap.\n");
     }
     
-    if(!(v=pending_calls[e]->args))
+    if(!(v=CALL(e).args))
       fatal("No arguments to call\n");
 
     if(v->refs < 1)
@@ -72,6 +78,54 @@ static void verify_call_outs()
 #endif
 }
 
+static void adjust_down(int pos)
+{
+  while(1)
+  {
+    int a=CAR(pos), b=CDR(pos);
+    if(a >= num_pending_calls) break;
+    if(b < num_pending_calls)
+      if(CMP(b, a))
+	a=b;
+
+    if(CMP(pos, a)) break;
+    SWAP(pos, a);
+    pos=a;
+  }
+}
+
+static int adjust_up(int pos)
+{
+  int parent=PARENT(pos);
+  int from;
+  if(!pos) return 0;
+
+  if(CMP(pos, parent))
+  {
+    SWAP(pos, parent);
+    from=pos;
+    pos=parent;
+    while(pos && CMP(pos, parent=PARENT(pos)))
+    {
+      SWAP(pos, parent);
+      from=pos;
+      pos=parent;
+    }
+    from^=1;
+    if(from < num_pending_calls && CMP(from, pos))
+    {
+      SWAP(from, pos);
+      adjust_down(from);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+static void adjust(int pos)
+{
+  if(!adjust_up(pos)) adjust_down(pos);
+}
 
 /* start a new call out, return 1 for success */
 static struct array * new_call_out(int num_arg,struct svalue *argp)
@@ -79,40 +133,31 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
   int e,c;
   call_out *new,**p,**pos;
 
-  if(!call_buffer)
-  {
-    call_buffer_size=20;
-    call_buffer=(call_out **)xalloc(sizeof(call_out *)*call_buffer_size);
-    if(!call_buffer) return 0;
-    pending_calls=call_buffer+call_buffer_size;
-    num_pending_calls=0;
-  }
-
   if(num_pending_calls==call_buffer_size)
   {
     /* here we need to allocate space for more pointers */
-    call_out **new_buffer;
+    call_out *new_buffer;
 
-    new_buffer=(call_out **)xalloc(sizeof(call_out *)*call_buffer_size*2);
-    if(!new_buffer)
-      return 0;
-
-    MEMCPY((char *)(new_buffer+call_buffer_size),
-	   (char *)call_buffer,
-	   sizeof(call_out *)*call_buffer_size);
-    free((char *)call_buffer);
-    call_buffer=new_buffer;
-    pending_calls=call_buffer+call_buffer_size;
-    call_buffer_size*=2;
+    if(!call_buffer)
+    {
+      call_buffer_size=128;
+      call_buffer=(call_out *)xalloc(sizeof(call_out)*call_buffer_size);
+      if(!call_buffer) return 0;
+      num_pending_calls=0;
+    }else{
+      new_buffer=(call_out *)realloc((char *)call_buffer, sizeof(call_out)*call_buffer_size*2);
+      if(!new_buffer)
+	error("Not enough memorry for another call_out\n");
+      call_buffer_size*=2;
+      call_buffer=new_buffer;
+    }
   }
 
   /* time to allocate a new call_out struct */
   f_aggregate(num_arg-1);
 
-  new=(call_out *)xalloc(sizeof(call_out));
+  new=&CALL(num_pending_calls);
 
-  if(!new) return 0;
-  
   if(argp[0].type==T_INT)
   {
     new->tv.tv_sec=argp[0].u.integer;
@@ -142,29 +187,9 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
   new->args=sp[-1].u.array;
   sp -= 2;
 
-  /* time to link it into the buffer using binsearch */
-  pos=pending_calls;
-
-  e=num_pending_calls;
-  while(e>0)
-  {
-    c=e/2;
-    if(my_timercmp(& new->tv,>,& pos[c]->tv))
-    {
-      pos+=c+1;
-      e-=c+1;
-    }else{
-      e=c;
-    }
-  }
-  pos--;
-  pending_calls--;
-  for(p=pending_calls;p<pos;p++) p[0]=p[1];
-  *pos=new;
   num_pending_calls++;
-
+  adjust_up(num_pending_calls-1);
   verify_call_outs();
-
   return new->args;
 }
 
@@ -223,18 +248,18 @@ void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
   {
     tmp=(time_t)TIME(0);
     while(num_pending_calls &&
-	  my_timercmp(&pending_calls[0]->tv,<=,&current_time))
+	  my_timercmp(&CALL(0).tv,<=,&current_time))
     {
       /* unlink call out */
-      c=pending_calls[0];
-      pending_calls++;
-      num_pending_calls--;
+      call_out c;
+      c=CALL(0);
+      CALL(0)=CALL(--num_pending_calls);
+      adjust_down(0);
 
-      if(c->caller) free_object(c->caller);
+      if(c.caller) free_object(c.caller);
 
-      args=c->args->size;
-      push_array_items(c->args);
-      free((char *)c);
+      args=c.args->size;
+      push_array_items(c.args);
       check_destructed(sp-args);
       if(sp[-args].type!=T_INT)
       {
@@ -252,15 +277,15 @@ void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
   {
     if(num_pending_calls)
     {
-      if(my_timercmp(& pending_calls[0]->tv, < , &next_timeout))
+      if(my_timercmp(& CALL(0).tv, < , &next_timeout))
       {
-	next_timeout = pending_calls[0]->tv;
+	next_timeout = CALL(0).tv;
       }
     }else{
       if(call_out_backend_callback)
       {
 	/* There are no call outs queued, let's remove
-	 * the taxing backend callback...
+	 * the "taxing" backend callback...
 	 */
 	remove_callback(call_out_backend_callback);
 	call_out_backend_callback=0;
@@ -275,11 +300,11 @@ static int find_call_out(struct svalue *fun)
 
   if(fun->type == T_ARRAY)
     for(e=0;e<num_pending_calls;e++)
-      if(pending_calls[e]->args == fun->u.array)
+      if(CALL(e).args == fun->u.array)
 	return e;
 
   for(e=0;e<num_pending_calls;e++)
-    if(is_eq(fun, ITEM(pending_calls[e]->args)))
+    if(is_eq(fun, ITEM(CALL(e).args)))
       return e;
 
   return -1;
@@ -298,7 +323,7 @@ void f_find_call_out(INT32 args)
     sp->u.integer=-1;
     sp++;
   }else{
-    push_int(pending_calls[e]->tv.tv_sec - current_time.tv_sec);
+    push_int(CALL(e).tv.tv_sec - current_time.tv_sec);
   }
   verify_call_outs();
 }
@@ -311,15 +336,12 @@ void f_remove_call_out(INT32 args)
   if(e!=-1)
   {
     pop_n_elems(args);
-    push_int(pending_calls[e]->tv.tv_sec - current_time.tv_sec);
-    free_array(pending_calls[e]->args);
-    if(pending_calls[e]->caller)
-      free_object(pending_calls[e]->caller);
-    free((char*)(pending_calls[e]));
-    for(;e>0;e--)
-      pending_calls[e]=pending_calls[e-1];
-    pending_calls++;
-    num_pending_calls--;
+    push_int(CALL(e).tv.tv_sec - current_time.tv_sec);
+    free_array(CALL(e).args);
+    if(CALL(e).caller)
+      free_object(CALL(e).caller);
+    CALL(e)=CALL(--num_pending_calls);
+    adjust(e);
   }else{
     pop_n_elems(args);
     sp->type=T_INT;
@@ -343,22 +365,23 @@ struct array *get_all_call_outs()
   for(e=0;e<num_pending_calls;e++)
   {
     struct array *v;
-    v=allocate_array_no_init(pending_calls[e]->args->size+2, 0);
+    v=allocate_array_no_init(CALL(e).args->size+2, 0);
     ITEM(v)[0].type=T_INT;
     ITEM(v)[0].subtype=NUMBER_NUMBER;
-    ITEM(v)[0].u.integer=pending_calls[e]->tv.tv_sec - current_time.tv_sec;
+    ITEM(v)[0].u.integer=CALL(e).tv.tv_sec - current_time.tv_sec;
 
-    if(pending_calls[e]->caller)
+    if(CALL(e).caller)
     {
       ITEM(v)[1].type=T_OBJECT;
-      (ITEM(v)[1].u.object=pending_calls[e]->caller) ->refs++;
+      ITEM(v)[1].u.object=CALL(e).caller;
+      CALL(e).caller->refs++;
     }else{
       ITEM(v)[1].type=T_INT;
       ITEM(v)[1].subtype=NUMBER_NUMBER;
       ITEM(v)[1].u.integer=0;
     }
 
-    assign_svalues_no_free(ITEM(v)+2,ITEM(pending_calls[e]->args),pending_calls[e]->args->size,BIT_MIXED);
+    assign_svalues_no_free(ITEM(v)+2,ITEM(CALL(e).args),CALL(e).args->size,BIT_MIXED);
 
     ITEM(ret)[e].type=T_ARRAY;
     ITEM(ret)[e].u.array=v;
@@ -378,14 +401,12 @@ void free_all_call_outs()
   verify_call_outs();
   for(e=0;e<num_pending_calls;e++)
   {
-    free_array(pending_calls[e]->args);
-    if(pending_calls[e]->caller) free_object(pending_calls[e]->caller);
-    free((char*)(pending_calls[e]));
+    free_array(CALL(e).args);
+    if(CALL(e).caller) free_object(CALL(e).caller);
   }
   if(call_buffer) free((char*)call_buffer);
   num_pending_calls=0;
   call_buffer=NULL;
-  pending_calls=NULL;
 }
 
 #ifdef DEBUG

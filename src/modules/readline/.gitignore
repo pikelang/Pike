@@ -1,0 +1,10 @@
+/.pure
+/Makefile
+/config.log
+/config.status
+/configure
+/dependencies
+/lib_dirs
+/linker_options
+/readline_machine.h
+/stamp-h
