@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.10 2004/02/23 18:21:04 nilsson Exp $
+|| $Id: unicode_module.cmod,v 1.11 2004/04/11 18:51:10 per Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.10 2004/02/23 18:21:04 nilsson Exp $");
+RCSID("$Id: unicode_module.cmod,v 1.11 2004/04/11 18:51:10 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -26,11 +26,11 @@ RCSID("$Id: unicode_module.cmod,v 1.10 2004/02/23 18:21:04 nilsson Exp $");
 /*! @module Unicode
  */
 
-static void push_words( int *d, struct words *w )
+static void push_words( struct buffer *data, struct words *w )
 {
+  int *d = data->data;
   struct array *r = allocate_array( w->size );
   unsigned int i;
-  
   for( i=0; i<w->size; i++ )
   {
     r->item[i].type = PIKE_T_STRING;
@@ -39,9 +39,31 @@ static void push_words( int *d, struct words *w )
 				  w->words[i].size );
   }
   r->type_field = BIT_STRING;
+  pop_stack();
+  push_array( r );
+  uc_buffer_free( data );
+  uc_words_free( w );
+}
+
+static void push_words0( struct pike_string *ds, struct words *w )
+{
+  /*    push_object( clone_object( words_program, 0 ) ); */
+  struct array *r = allocate_array( w->size );
+  unsigned char *d = ds->str;
+  unsigned int i;
+  for( i=0; i<w->size; i++ )
+  {
+    r->item[i].type = PIKE_T_STRING;
+    r->item[i].u.string =
+      make_shared_binary_string( d+w->words[i].start,
+				 w->words[i].size );
+  }
+  r->type_field = BIT_STRING;
+  pop_stack();
   push_array( r );
   uc_words_free( w );
 }
+
 
 /*! @decl array(string) split_words(string input)
  *! Splits the input string into an array of words, on the boundaries between
@@ -57,8 +79,7 @@ PIKEFUN array(string) split_words( string input )
   data = uc_buffer_from_pikestring( input );
   res = unicode_split_words_buffer( data );
   pop_n_elems( args );
-  push_words( data->data, res );
-  uc_buffer_free( data );
+  push_words( data, res );
 }
 
 /*! @decl array(string) split_words_and_normalize(string input)
@@ -69,11 +90,17 @@ PIKEFUN array(string) split_words_and_normalize( string input )
 {
   struct words *res;
   struct buffer *data;
-  data = unicode_decompose_buffer(uc_buffer_from_pikestring(input), COMPAT_BIT);
-  res = unicode_split_words_buffer( data );
-  pop_n_elems( args );
-  push_words( data->data, res );
-  uc_buffer_free( data );
+  if( !input->size_shift && (res = unicode_split_words_pikestr0( input )) )
+  {
+    push_words0( input, res );
+  }
+  else
+  {
+    data = unicode_decompose_buffer(uc_buffer_from_pikestring(input), COMPAT_BIT);
+    pop_n_elems( args );
+    res = unicode_split_words_buffer( data );
+    push_words( data, res );
+  }
 }
 
 /*! @decl string normalize( string data, string method );
