@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pre.pike,v 1.4 1997/01/14 15:45:08 grubba Exp $
+ * $Id: sql.pre.pike,v 1.5 1997/01/14 17:08:24 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -127,8 +127,6 @@ class sql {
 	    }
 	    return;
 	  };
-	  werror(err[0]);
-	  describe_backtrace(err[1]);
 	}
       }
     }
