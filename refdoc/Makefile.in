@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.6 2001/04/22 17:13:13 nilsson Exp $
+# $Id: Makefile.in,v 1.7 2001/04/25 19:44:47 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -37,7 +37,7 @@ extract: xml recurse
 	  mv -f "$@.new" "$@"
 
 xml:
-	$(MAKE) PIKE="$(PIKE)" `(cd $(SRCDIR) && ls *.c *.pike *.pmod.in 2>/dev/null)|sed -e 's/\.c$$/\.xml/' -e 's/\.pike$$/\.xml/' -e 's/\.pond\.in$$/\.xml/' ` xml_dummy
+	$(MAKE) PIKE="$(PIKE)" `(cd $(SRCDIR) && ls *.c *.pike *.pmod *.pmod.in 2>/dev/null)|sed -e 's/\.c$$/\.xml/' -e 's/\.pike$$/\.xml/' -e 's/\.pmod\.in$$/\.xml/' -e 's/\.pmod$$/\.xml/' ` xml_dummy
 
 xml_dummy:
 
