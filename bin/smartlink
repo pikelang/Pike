@@ -109,8 +109,8 @@ if test x$# != x0 ; then
 fi
 
 if test "x$NO_ULIMIT" = "x"; then
-  # Limit virtual memory usage to 64MB.
-  ulimit -v 65536 >/dev/null 2>&1
+  # Limit data segment size to 48MB.
+  ulimit -d 49152 >/dev/null 2>&1
 fi
 
 # Used to be exec, but Digital-Unix's stupid sh has buggy variable-expansion.
