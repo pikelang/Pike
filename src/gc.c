@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.129 2000/09/03 23:11:29 mast Exp $");
+RCSID("$Id: gc.c,v 1.130 2000/09/03 23:56:17 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2096,14 +2096,14 @@ int do_gc(void)
      * doesn't occur very often; only when something have both
      * external weak refs and nonweak cyclic refs from internal
      * things. */
-    gc_zap_ext_weak_refs_in_arrays();
-    /* Multisets handled as arrays. */
+    gc_zap_ext_weak_refs_in_mappings();
     if (gc_ext_weak_refs) {
-      gc_zap_ext_weak_refs_in_mappings();
+      gc_zap_ext_weak_refs_in_arrays();
+      /* Multisets handled as arrays. */
       if (gc_ext_weak_refs) {
-	gc_zap_ext_weak_refs_in_programs();
+	gc_zap_ext_weak_refs_in_objects();
 	if (gc_ext_weak_refs)
-	  gc_zap_ext_weak_refs_in_objects();
+	  gc_zap_ext_weak_refs_in_programs();
       }
     }
     GC_VERBOSE_DO(
