@@ -533,7 +533,7 @@ int lyskom_sort_func(string a,string b)
    sscanf(a,"%[^ \t]%*[ \t](%*[^)])%*[ \t]%s",a,a0);
    sscanf(b,"%[^ \t]%*[ \t](%*[^)])%*[ \t]%s",b,b0);
    if (a>b) return 1;
-   if (a<b) return 0;
+   if (a<b) return -1;
    if (a0==b0) return 0;
    return lyskom_sort_func(a0,b0);
 }
