@@ -92,6 +92,10 @@ DECLARE_ERROR(resource,
   ERR_VAR(INT_TYPE, int, T_INT, howmuch)
 )
 
+DECLARE_ERROR(permission,
+	      ERR_INHERIT(generic),
+  ERR_VAR(struct pike_string *,string,T_STRING,permission_type)
+)
 #undef DECLARE_ERROR
 #undef ERR_INHERIT
 #undef ERR_VAR

@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.33 1999/04/15 19:12:49 hubbe Exp $");
+RCSID("$Id: error.c,v 1.34 1999/04/17 13:47:16 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -476,6 +476,18 @@ void resource_error(
   INIT_ERROR(resource);
   ERROR_COPY(resource,howmuch);
   ERROR_STRUCT(resource,o)->resource_type=make_shared_string(resource_type);
+  ERROR_DONE(generic);
+}
+
+void permission_error(
+  char *func,
+  struct svalue *base_sp, int args,
+  char *permission_type,
+  char *desc, ...) ATTRIBUTE((noreturn, format(printf, 2, 3)))
+{
+  INIT_ERROR(permission);
+  ERROR_STRUCT(permission,o)->permission_type=
+    make_shared_string(permission_type);
   ERROR_DONE(generic);
 }
 
