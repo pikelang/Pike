@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.98 1999/06/03 06:10:03 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.99 1999/06/08 21:07:55 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -378,7 +378,12 @@ void thread_table_insert(struct object *o)
   if(h>=THREAD_TABLE_SIZE)
     fatal("thread_table_hash failed miserably!\n");
   if(thread_state_for_id(s->id))
-    fatal("Registring thread twice!\n");
+  {
+    if(thread_state_for_id(s->id) == s)
+      fatal("Registring thread twice!\n");
+    else
+      fatal("Forgot to unregister thread!\n");
+  }
 /*  dumpmem("thread_table_insert",&s->id, sizeof(THREAD_T)); */
 #endif
   mt_lock( & thread_table_lock );
