@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.200 2000/08/06 18:37:35 grubba Exp $
+# $Id: Makefile.in,v 1.201 2000/08/06 21:42:40 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -305,7 +305,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	  if $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
 	    err=$$?; \
 	    if test "x$(FALLBACK_CC)" = "x"; then \
-	      exit $err; \
+	      exit $$err; \
 	    else \
 	      echo "WARNING: Compiler failure! Trying fallback compiler!" >&2;\
 	      echo "echo $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
