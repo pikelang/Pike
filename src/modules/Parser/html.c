@@ -20,9 +20,9 @@
 extern struct program *parser_html_program;
 
 /*
-#define DEBUG
 #define SCAN_DEBUG
 */
+#define DEBUG
 
 #ifdef DEBUG
 #undef DEBUG
@@ -2244,10 +2244,8 @@ new_arg:
       DEBUG_MARK_SPOT("html_tag_args value start",s1,c1);
 
       /* scan the argument value */
-      scan_forward_arg(this,s2,c2,&s1,&c2,1);
-      
-      s1=s2;
-      c1=c2;
+      scan_forward_arg(this,s2,c2,&s1,&c1,1);
+
       /* next argument in the loop */
    }
 
@@ -2467,6 +2465,16 @@ static void html_clone(INT32 args)
    /* all copied, object on stack */
 }
 
+/****** setup ***************************************/
+
+static void html_set_extra(INT32 args)
+{
+   f_aggregate(args);
+   if (THIS->extra_args) free_array(THIS->extra_args);
+   THIS->extra_args=sp[-1].u.array;
+   ref_push_object(THISOBJ);
+}
+
 /****** module init *********************************/
 
 #define tCbret tOr3(tInt0,tStr,tArr(tStr))
@@ -2491,7 +2499,7 @@ void init_parser_html(void)
    /* feed control */
 
    ADD_FUNCTION("feed",html_feed,tOr(tFunc(tNone,tObj),tFunc(tStr tOr(tVoid,tInt),tObj)),0);
-   ADD_FUNCTION("finish",html_finish,tFunc(tNone,tObj),0);
+   ADD_FUNCTION("finish",html_finish,tFunc(tOr(tVoid,tStr),tObj),0);
    ADD_FUNCTION("read",html_read,tFunc(tOr(tVoid,tInt),tStr),0);
 
    ADD_FUNCTION("write_out",html_write_out,tFunc(tStr,tObj),0);
@@ -2532,6 +2540,10 @@ void init_parser_html(void)
    ADD_FUNCTION("entities",html_entities,
 		tFunc(tNone,tMap(tStr,tTodo( "" ))),0);
 
+   /* setup */
+
+   ADD_FUNCTION("set_extra",html_set_extra,
+		tFuncV(tNone,tMix,tObj),0);
 
    /* special callbacks */
 
