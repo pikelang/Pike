@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.58 2002/10/27 21:18:49 grubba Exp $
+|| $Id: dlopen.c,v 1.59 2002/10/27 21:27:42 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.58 2002/10/27 21:18:49 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.59 2002/10/27 21:27:42 grubba Exp $");
 
 #endif
 
@@ -2507,12 +2507,14 @@ static void init_dlopen(void)
     EXPORT(fread);
     EXPORT(strtol);
   }
+#if 0
 #ifdef _M_IA64
   {
     extern void *_gp[];
     EXPORT(_gp);
   }
 #endif
+#endif /* 0 */
 
 #define EXPORT_AS(X,Y) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s = %s\n",#X,#Y); ) \
@@ -2790,12 +2792,14 @@ int main(int argc, char ** argv)
       EXPORT(rand);
       EXPORT(srand);
     }
+#if 0
 #ifdef _M_IA64
     {
       extern void *_gp[];
       EXPORT(_gp);
     }
 #endif
+#endif /* 0 */
   }
   
   /* FIXME: open argv[0] and check what dlls is it is linked
