@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.168 2003/10/24 18:09:38 mast Exp $
+// $Id: module.pmod,v 1.169 2004/06/22 13:08:57 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1856,7 +1856,14 @@ int is_link(string path)
 //!
 int exist(string path)
 {
-   return !!file_stat(path);
+  // NOTE: file_stat() may fail with eg EFBIG if the file exists,
+  //       but the filesystem, doesn't support the file size.
+  return !!file_stat(path) || !(<
+#ifdef __NT__
+    System.WSAENOTSUPP,
+#endif /* __NT__ */
+    System.ENOENT,
+  >)[errno()];
 }
 
 mixed `[](string index)
