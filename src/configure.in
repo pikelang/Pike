@@ -1,6 +1,18 @@
-AC_REVISION("$Id: configure.in,v 1.65 1997/03/25 02:04:00 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.66 1997/04/01 00:42:51 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
+
+# We want an absolute path to the source-dir.
+case "$srcdir" in
+    /*)
+    ;;
+    *)
+	oldsrcdir="$srcdir"
+	srcdir="`cd \"$srcdir\";pwd`"
+	AC_MSG_WARN([ Converted $oldsrcdir to $srcdir,
+If this does not work, please use an absolute path to the configure script. ])
+    ;;
+esac
 
 if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
