@@ -4504,10 +4504,10 @@ This function does the same as Stdio.Port-&gt;bind, except that instead
 of creating a new socket and bind it to a port, it expects that
 the file descriptor <i>fd</i> is an already open port.
 </man_description>
-<man_nb>
+<man_note>
 This function is only for the advanced user, and is generally used
 when sockets are passed to Pike at exec time.
-</man_nb>
+</man_note>
 <man_see>Stdio.Port-&gt;bind, Stdio.Port-&gt;accept</man_see>
 </method>
 
@@ -5071,9 +5071,9 @@ a function at the same time from different threads will not corrupt
 any internal data in the Pike process. The returned value will be
 the same as the return value of this_thread() for the new thread.
 </man_description>
-<man_nb>
+<man_note>
 This function is only available on systems with POSIX or UNIX threads support.
-</man_nb>
+</man_note>
 <man_see>Thread.Mutex, Thread.Condition, Thread.this_thread</man_see>
 </function>
 
@@ -8904,9 +8904,11 @@ string encode_qp(string <i>data</i>, void|int <i>no_linebreaks</i>);
 <man_description>
 This function encodes data using the <tt>quoted-printable</tt>
 (a.k.a. quoted-unreadable) transfer encoding.  If a nonzero value is passed as <i>no_linebreaks</i>, the result string will not contain any linebreaks.
-<strong>Please do not use this function.  QP is evil, and there's no
-excuse for using it.</strong>
 </man_description>
+<man_note>
+Please do not use this function.  QP is evil, and there's no
+excuse for using it.
+</man_note>
 <man_see>
 MIME.decode_qp
 </man_see>
@@ -10770,8 +10772,10 @@ float ceil(float <I>f</I>);
 </man_syntax>
 <man_description>
 Return the closest integer value higher or equal to <i>f</i>.
-Note that <tt>ceil()</tt> does <strong>not</strong> return an int, merely an integer value stored in a float.
 </man_description>
+<man_note>
+<tt>ceil()</tt> does <b>not</b> return an int, merely an integer value stored in a float.
+</man_note>
 <man_see>
 floor
 </man_see>
@@ -11194,18 +11198,20 @@ array(int) file-&gt;stat();
 <man_description>
 file_stat returns an array of integers describing some properties<br>
 about the file. Currently file_stat returns 7 entries:<br>
-<tt>
-({<br>
-<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td> mode, </td><td> /* file mode, protection bits etc. etc. */ </td></tr>
-<tr valign=top><td> size, </td><td> /* file size for regular files,            -2 for dirs,            -3 for links,            -4 for otherwise */ </td></tr>
-<tr valign=top><td> atime, </td><td> /* last access time */ </td></tr>
-<tr valign=top><td> mtime, </td><td> /* last modify time */ </td></tr>
-<tr valign=top><td> ctime, </td><td> /* last status time change */ </td></tr>
-<tr valign=top><td> uid,   </td><td> /* The user who owns this file */ </td></tr>
-<tr valign=top><td> gid    </td><td> /* The group this file belongs to */ </td></tr>
-</table>
-</dl>})<br>
+<pre>
+<data_description type=array(int)>
+<elem value=mode>file mode, protection bits etc. etc. </elem>
+<elem value=size>file size for regular files, <br>
+      	    -2 for dirs,<br>
+      	    -3 for links,<br>
+      	    -4 for otherwise </elem>
+<elem value=atime>last access time </elem>
+<elem value=mtime>last modify time </elem>
+<elem value=ctime>last status time change </elem>
+<elem value=uid>The user who owns this file</elem>
+<elem value=gid>The group this file belongs to</elem>
+</data_description>
+</pre>
 </tt>
 If you give 1 as a second argument, file_stat does not follow links.<br>
 You can never get -3 as size if you don't give a second argument.<br>
@@ -11271,8 +11277,10 @@ float floor(float <I>f</I>);
 </man_syntax>
 <man_description>
 Return the closest integer value lower or equal to <i>f</i>.
-Note that floor() does <strong>not</strong> return an int, merely an integer value stored in a float.
 </man_description>
+<man_note>
+floor() does <b>not</b> return an int, merely an integer value stored in a float.
+</man_note>
 <man_see>
 ceil
 </man_see>
@@ -11748,12 +11756,14 @@ multiset mkmultiset(array a);
 This function creates a multiset from an array.
 </man_description>
 <man_example>
-&gt; mkmultiset( ({1,2,3}) );<br>
-Result: (&lt; /* 3 elements */<br>
-<dl><dt><dd>1,<br>
-2,<br>
-3<br>
-</dl>&gt;)<br>
+<pre>
+&gt; mkmultiset( ({1,2,3}) );
+Result: (&lt; /* 3 elements */
+         1,
+         2,
+         3
+        &gt;)
+</pre>
 </man_example>
 <man_see>
 aggregate_multiset
@@ -11835,15 +11845,20 @@ first object in this list, and next_object(o) the next object in the
 list after o.
 </man_description>
 <man_example>
-/* This example calls shutting_down() in all cloned objects */<br>
-object o;<br>
-for(o=next_object();o;o=next_object(o))<br>
-<dl><dt><dd>o-&gt;shutting_down();<br>
+<pre>
+/* This example calls shutting_down() in all cloned objects */
+object o;
+for(o=next_object();o;o=next_object(o))
+o-&gt;shutting_down();<br>
+</pre>
 </dl>
 </man_example>
 <man_see>
 clone, destruct
 </man_see>
+<man_note>	
+This function is not recommended to use.
+</man_note>
 </function>
 
 <HR NEWPAGE>
@@ -12071,23 +12086,20 @@ mapping replace(mapping <I>a</I>, mixed <I>from</I>, mixed <I>to</I>);
 <man_description>
 This function can do several kinds replacement operations, the
 different syntaxes do different things as follow:
-<p>string replace(string s, string from, string to);
-<p><dl><dt><dd>When given strings as second and third argument, a copy of<br>
-s with every occurrence of 'from' replaced with 'to' is returned.<br>
-</dl>
-<p>string replace(string s, array(string) from, array(string) to);
-<p><dl><dt><dd>When given arrays of strings as second and third argument,<br>
-every occurrence of from[0] in s is replaced by to[0],<br>
-from[1] is replaced by to[1] and so on...<br>
-</dl>
-<p><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td> array replace(array a, mixed from, mixed to); </td><td>  </td></tr>
-<tr valign=top><td> mapping replace(mapping a, mixed from, mixed to); </td></tr>
-</table>
+<dl>
+<dt>string replace(string s, string from, string to);
+<dd>When given strings as second and third argument, a copy of
+s with every occurrence of 'from' replaced with 'to' is returned.
 
-<p><dl><dt><dd>When the first argument is an array or mapping, the values in<br>
-a are searched for values equal to from, which are replaced by<br>
-to destructively.<br>
+<dt>string replace(string s, array(string) from, array(string) to);
+<dd>When given arrays of strings as second and third argument,
+every occurrence of from[0] in s is replaced by to[0],
+from[1] is replaced by to[1] and so on...
+<dt>array replace(array a, mixed from, mixed to); 
+<dt>mapping replace(mapping a, mixed from, mixed to);
+<dd>When the first argument is an array or mapping, the values in
+a are searched for values equal to from, which are replaced by
+to destructively.
 </dl>
 </man_description>
 </function>
