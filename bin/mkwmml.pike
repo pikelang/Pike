@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.11 1999/04/09 10:17:08 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.12 1999/04/12 11:34:21 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -532,6 +532,7 @@ int main(int ac,string *files)
 	 }
 	 else 
 	 {
+	    sscanf(s[i+3..],"%*[ \t]!%s",s);
 //	    if (search(s,"$Id")!=-1) report("Id: "+s);
 	    if (!descM) descM=methodM;
 	    if (!descM)
