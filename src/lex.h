@@ -12,6 +12,7 @@ struct keyword
 {
   char *word;
   int token;
+  int hasarg;
 };
 
 struct instr
@@ -20,6 +21,7 @@ struct instr
   long runs;
   long compiles;
 #endif
+  int hasarg;
   char *name;
 };
 

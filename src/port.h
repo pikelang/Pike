@@ -149,7 +149,7 @@ int VSPRINTF(char *buf,char *fmt,va_list args);
 #ifdef EXTRACT_UCHAR_BY_CAST
 #  define EXTRACT_UCHAR(p) (*(unsigned char *)(p))
 #else
-static INLINE int EXTRACT_UCHAR(char *p) { return *p < 0 ? *p + 0x100 : *p; }
+#  define EXTRACT_UCHAR(p) (0xff & (int)*(p))
 #endif
 
 #ifdef EXTRACT_CHAR_BY_CAST

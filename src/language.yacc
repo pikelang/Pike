@@ -9,11 +9,11 @@
  * These values are used by the stack machine, and can not be directly
  * called from Pike.
  */
-%token F_ADD_256 F_ADD_512 F_ADD_768 F_ADD_1024 F_ADD_256X
 %token F_PREFIX_256 F_PREFIX_512 F_PREFIX_768 F_PREFIX_1024
 %token F_PREFIX_CHARX256 F_PREFIX_WORDX256 F_PREFIX_24BITX256
 %token F_POP_VALUE F_POP_N_ELEMS F_MARK F_MARK2
 %token F_CALL_LFUN F_CALL_LFUN_AND_POP
+%token F_APPLY F_APPLY_AND_POP
 
 %token F_BRANCH F_BRANCH_WHEN_ZERO F_BRANCH_WHEN_NON_ZERO
 %token F_BRANCH_WHEN_LT F_BRANCH_WHEN_GT
@@ -31,9 +31,9 @@
 /*
  * Basic value pushing
  */
-%token F_LFUN F_GLOBAL F_LOCAL
+%token F_LFUN F_GLOBAL F_LOCAL F_2_LOCALS F_MARK_AND_LOCAL
 %token F_GLOBAL_LVALUE F_LOCAL_LVALUE
-%token F_CLEAR_LOCAL F_CLEAR_STRING_SUBTYPE
+%token F_CLEAR_LOCAL F_CLEAR_2_LOCAL F_CLEAR_STRING_SUBTYPE
 %token F_CONSTANT F_FLOAT F_STRING F_ARROW_STRING
 %token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 F_BIGNUM
 /*
@@ -71,7 +71,6 @@
 %token F_MAX_OPCODE
 %token F_ADD_EQ
 %token F_AND_EQ
-%token F_APPLY
 %token F_ARG_LIST
 %token F_ARRAY_ID
 %token F_BREAK
@@ -133,6 +132,7 @@
 %token F_ALIGN
 %token F_POINTER
 %token F_LABEL
+%token F_BYTE
 
 %token F_MAX_INSTR
 
@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.20 1997/01/29 01:05:58 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.21 1997/01/30 03:51:33 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

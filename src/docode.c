@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.9 1997/01/29 00:31:12 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.10 1997/01/30 03:51:32 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -959,7 +959,9 @@ static int do_docode2(node *n,int flags)
       tmp1=do_docode(CAR(n), 0);
       if(do_docode(CDR(n),0) != 1)
 	fatal("Internal compiler error, please report this (1).");
-      if(CDR(n)->token != F_CONSTANT) emit2(F_CLEAR_STRING_SUBTYPE);
+      if(CDR(n)->token != F_CONSTANT &&
+	match_types(CDR(n)->type, string_type_string))
+	emit2(F_CLEAR_STRING_SUBTYPE);
       return 2;
     }else{
       tmp1=do_docode(CAR(n), DO_NOT_COPY);

@@ -22,78 +22,7 @@ typedef struct p_instr_s p_instr;
 
 dynamic_buffer instrbuf;
 
-static int hasarg(int opcode)
-{
-  switch(opcode)
-  {
-  case F_NUMBER:
-  case F_NEG_NUMBER:
-  case F_CALL_LFUN:
-  case F_CALL_LFUN_AND_POP:
-  case F_SSCANF:
-  case F_POP_N_ELEMS:
-
-  case F_SIZEOF_LOCAL:
-
-  case F_ASSIGN_GLOBAL:
-  case F_ASSIGN_GLOBAL_AND_POP:
-  case F_ASSIGN_LOCAL:
-  case F_ASSIGN_LOCAL_AND_POP:
-  case F_GLOBAL_LVALUE:
-  case F_LOCAL_LVALUE:
-  case F_CLEAR_LOCAL:
-  case F_LOCAL:
-  case F_GLOBAL:
-
-  case F_INC_LOCAL:
-  case F_DEC_LOCAL:
-  case F_POST_INC_LOCAL:
-  case F_POST_DEC_LOCAL:
-  case F_INC_LOCAL_AND_POP:
-  case F_DEC_LOCAL_AND_POP:
-
-  case F_LFUN:
-  case F_STRING:
-  case F_ARROW:
-  case F_ARROW_STRING:
-  case F_STRING_INDEX:
-  case F_LOCAL_INDEX:
-  case F_POS_INT_INDEX:
-  case F_NEG_INT_INDEX:
-  case F_CONSTANT:
-  case F_SWITCH:
-  case F_APPLY:
-  case F_CATCH:
-
-  case F_BRANCH:
-  case F_BRANCH_WHEN_ZERO:
-  case F_BRANCH_WHEN_NON_ZERO:
-
-  case F_BRANCH_WHEN_EQ:
-  case F_BRANCH_WHEN_NE:
-  case F_BRANCH_WHEN_LT:
-  case F_BRANCH_WHEN_LE:
-  case F_BRANCH_WHEN_GT:
-  case F_BRANCH_WHEN_GE:
-
-  case F_FOREACH:
-  case F_INC_LOOP:
-  case F_DEC_LOOP:
-  case F_INC_NEQ_LOOP:
-  case F_DEC_NEQ_LOOP:
-
-  case F_LAND:
-  case F_LOR:
-
-  case F_ALIGN:
-  case F_POINTER:
-  case F_LABEL:
-    return 1;
-    
-  default:
-    return 0;
-  }
-}
+static int hasarg(int opcode) { return instrs[opcode-F_OFFSET].hasarg; }
 
 void init_bytecode()
 {
@@ -170,20 +99,10 @@ void ins_f_byte(unsigned int b)
     ADD_COMPILED(b);
 
   b-=F_OFFSET;
+#ifdef DEBUG
   if(b>255)
-  {
-    switch(b >> 8)
-    {
-    case 1: ins_f_byte(F_ADD_256); break;
-    case 2: ins_f_byte(F_ADD_512); break;
-    case 3: ins_f_byte(F_ADD_768); break;
-    case 4: ins_f_byte(F_ADD_1024); break;
-    default:
-      ins_f_byte(F_ADD_256X);
-      ins_byte(b/256,A_PROGRAM);
-    }
-    b&=255;
-  }
+    error("Instruction too big %d\n",b);
+#endif
   ins_byte((unsigned char)b,A_PROGRAM);
 }
 
@@ -260,6 +179,10 @@ void assemble()
       while(PC % c->arg) ins_byte(0, A_PROGRAM);
       break;
 
+    case F_BYTE:
+      ins_byte(c->arg, A_PROGRAM);
+      break;
+
     case F_LABEL:
 #ifdef DEBUG
       if(c->arg > max_label || c->arg < 0)
@@ -307,10 +230,6 @@ void assemble()
       tmp=PC;
       ins_int(jumps[c->arg],A_PROGRAM);
       jumps[c->arg]=tmp;
-      break;
-
-    case F_APPLY:
-      ins_f_byte(c->arg + F_MAX_OPCODE);
       break;
 
     default:

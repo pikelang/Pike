@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.22 1997/01/29 01:02:03 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.23 1997/01/30 03:51:32 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -469,29 +469,28 @@ static void eval_instruction(unsigned char *pc)
     fp->pc = pc;
     instr=EXTRACT_UCHAR(pc++);
 
-  again:
 #ifdef DEBUG
-#ifdef _REENTRANT
-    if(!mt_trylock(& interpreter_lock))
-      fatal("Interpreter running unlocked!\n");
-#endif
-    sp[0].type=99; /* an invalid type */
-    sp[1].type=99;
-    sp[2].type=99;
-    sp[3].type=99;
-
-    if(sp<evaluator_stack || mark_sp < mark_stack || fp->locals>sp)
-      fatal("Stack error (generic).\n");
-
-    if(sp > evaluator_stack+stack_size)
-      fatal("Stack error (overflow).\n");
-
-    if(fp->fun>=0 && fp->current_object->prog &&
-	fp->locals+fp->num_locals > sp)
-      fatal("Stack error (stupid!).\n");
-
     if(d_flag)
     {
+#ifdef _REENTRANT
+      if(!mt_trylock(& interpreter_lock))
+	fatal("Interpreter running unlocked!\n");
+#endif
+      sp[0].type=99; /* an invalid type */
+      sp[1].type=99;
+      sp[2].type=99;
+      sp[3].type=99;
+      
+      if(sp<evaluator_stack || mark_sp < mark_stack || fp->locals>sp)
+	fatal("Stack error (generic).\n");
+      
+      if(sp > evaluator_stack+stack_size)
+	fatal("Stack error (overflow).\n");
+      
+      if(fp->fun>=0 && fp->current_object->prog &&
+	 fp->locals+fp->num_locals > sp)
+	fatal("Stack error (stupid!).\n");
+      
       if(d_flag > 9) check_threads_etc();
 
       backlogp++;
@@ -514,6 +513,7 @@ static void eval_instruction(unsigned char *pc)
       if((nonblock=query_nonblocking(2)))
 	set_nonblocking(2,0);
 
+
       file=get_line(pc-1,fp->context.prog,&linep);
       while((f=STRCHR(file,'/'))) file=f+1;
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
@@ -532,13 +532,6 @@ static void eval_instruction(unsigned char *pc)
 
     switch(instr)
     {
-      /* Support for large instructions */
-      CASE(F_ADD_256); instr=EXTRACT_UCHAR(pc++)+256; goto again;
-      CASE(F_ADD_512); instr=EXTRACT_UCHAR(pc++)+512; goto again;
-      CASE(F_ADD_768); instr=EXTRACT_UCHAR(pc++)+768; goto again;
-      CASE(F_ADD_1024);instr=EXTRACT_UCHAR(pc++)+1024;goto again;
-      CASE(F_ADD_256X); instr=EXTRACT_UWORD(pc); pc+=sizeof(INT16); goto again;
-
       /* Support to allow large arguments */
       CASE(F_PREFIX_256); prefix+=256; break;
       CASE(F_PREFIX_512); prefix+=512; break;
@@ -605,16 +598,36 @@ static void eval_instruction(unsigned char *pc)
       print_return_value();
       break;
 
+      CASE(F_MARK_AND_LOCAL); *(mark_sp++)=sp;
       CASE(F_LOCAL);
       assign_svalue_no_free(sp++,fp->locals+GET_ARG());
       print_return_value();
       break;
+
+      CASE(F_2_LOCALS);
+      assign_svalue_no_free(sp++,fp->locals+GET_ARG());
+      print_return_value();
+      assign_svalue_no_free(sp++,fp->locals+GET_ARG());
+      print_return_value();
+      break;
+      
 
       CASE(F_LOCAL_LVALUE);
       sp[0].type=T_LVALUE;
       sp[0].u.lval=fp->locals+GET_ARG();
       sp[1].type=T_VOID;
       sp+=2;
+      break;
+
+      CASE(F_CLEAR_2_LOCAL);
+      instr=GET_ARG();
+      free_svalues(fp->locals + instr, 2, -1);
+      fp->locals[instr].type=T_INT;
+      fp->locals[instr].subtype=0;
+      fp->locals[instr].u.integer=0;
+      fp->locals[instr+1].type=T_INT;
+      fp->locals[instr+1].subtype=0;
+      fp->locals[instr+1].u.integer=0;
       break;
 
       CASE(F_CLEAR_LOCAL);
@@ -1012,6 +1025,8 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_LOCAL_INDEX);
       assign_svalue_no_free(sp++,fp->locals+GET_ARG());
+      if(sp[-1].type == T_STRING)
+	sp[-1].subtype=0;
       print_return_value();
       goto do_index;
 
@@ -1084,16 +1099,17 @@ static void eval_instruction(unsigned char *pc)
       pop_stack();
       break;
 
+    CASE(F_APPLY);
+      strict_apply_svalue(fp->context.prog->constants + GET_ARG(), sp - *--mark_sp );
+      break;
+
+    CASE(F_APPLY_AND_POP);
+      strict_apply_svalue(fp->context.prog->constants + GET_ARG(), sp - *--mark_sp );
+      pop_stack();
+      break;
+
     default:
-      instr -= F_MAX_OPCODE - F_OFFSET;
-#ifdef DEBUG
-      if(instr >= fp->context.prog->num_constants)
-      {
-	instr += F_MAX_OPCODE - F_OFFSET;
-	fatal("Strange instruction %ld\n",(long)instr);
-      }
-#endif      
-      strict_apply_svalue(fp->context.prog->constants + instr, sp - *--mark_sp );
+      fatal("Strange instruction %ld\n",(long)instr);
     }
   }
 }

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.24 1997/01/29 00:06:23 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.25 1997/01/30 03:51:31 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -1714,7 +1714,7 @@ void init_builtin_efuns()
   add_efun("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
   add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("throw",f_throw,"function(mixed:void)",0);
+  add_efun("throw",f_throw,"function(mixed:void)",OPT_SIDE_EFFECT);
   add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);
   add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
   add_efun("upper_case",f_upper_case,"function(string:string)",0);

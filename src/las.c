@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.15 1997/01/28 03:04:31 hubbe Exp $");
+RCSID("$Id: las.c,v 1.16 1997/01/30 03:51:34 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -39,7 +39,7 @@ int num_parse_error;
 int cumulative_parse_error=0;
 extern char *get_type_name(int);
 
-#define MAX_GLOBAL 256
+#define MAX_GLOBAL 2048
 
 int car_is_node(node *n)
 {
@@ -537,8 +537,10 @@ node *mkconstantsvaluenode(struct svalue *s)
   node *res = mkemptynode();
   res->token = F_CONSTANT;
   assign_svalue_no_free(& res->u.sval, s);
-  if(s->type == T_OBJECT || s->type==T_FUNCTION)
+  if(s->type == T_OBJECT || (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
+  {
     res->node_info|=OPT_EXTERNAL_DEPEND;
+  }
   res->type = get_type_of_svalue(s);
   return res;
 }
@@ -860,6 +862,7 @@ void print_tree(node *n)
 /* The following routines needs much better commenting */
 struct used_vars
 {
+  int err;
   char locals[MAX_LOCAL];
   char globals[MAX_GLOBAL];
 };
@@ -873,6 +876,7 @@ static void do_and_vars(struct used_vars *a,struct used_vars *b)
   int e;
   for(e=0;e<MAX_LOCAL;e++) a->locals[e]|=b->locals[e];
   for(e=0;e<MAX_GLOBAL;e++) a->globals[e]|=b->globals[e];
+  a->err|=b->err;
   free((char *)b);
 }
 
@@ -901,6 +905,11 @@ static int find_used_variables(node *n,
 
   case F_IDENTIFIER:
     q=p->globals+n->u.number;
+    if(n->u.number > MAX_GLOBAL)
+    {
+      p->err=1;
+      return 0;
+    }
 
   set_pointer:
     if(overwrite)
@@ -909,7 +918,7 @@ static int find_used_variables(node *n,
     }
     else
     {
-      if(*q != VAR_UNUSED) *q = VAR_USED;
+      if(*q == VAR_UNUSED) *q = VAR_USED;
     }
     break;
 
@@ -973,7 +982,20 @@ static void find_written_vars(node *n,
     break;
 
   case F_GLOBAL:
-    if(lvalue) p->globals[n->u.number]=VAR_USED;
+     if(lvalue)
+     {
+       if(n->u.number>=MAX_GLOBAL)
+       {
+	 p->err=1;
+	 return;
+       }
+       p->globals[n->u.number]=VAR_USED;
+     }
+    break;
+
+  case F_APPLY:
+    if(n->tree_info & OPT_SIDE_EFFECT)
+      MEMSET(p->globals, MAX_GLOBAL, VAR_USED);
     break;
 
   case F_INDEX:
@@ -1028,6 +1050,8 @@ static int depend_p2(node *a,node *b)
   find_used_variables(a,&aa,0,0);
   find_written_vars(b,&bb,0);
 
+  if(aa.err || bb.err) return 1;
+
   for(e=0;e<MAX_LOCAL;e++)
     if(aa.locals[e]==VAR_USED && bb.locals[e]!=VAR_UNUSED)
       return 1;
@@ -1041,9 +1065,13 @@ static int depend_p2(node *a,node *b)
 static int depend_p(node *a,node *b)
 {
   if(!b) return 0;
+#if 0
   if(!(b->tree_info & OPT_SIDE_EFFECT) && 
      (b->tree_info & OPT_EXTERNAL_DEPEND))
     return 1;
+#endif
+
+  if((a->tree_info & OPT_EXTERNAL_DEPEND)) return 1;
     
   return depend_p2(a,b);
 }
