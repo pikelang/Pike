@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.43 2001/06/20 01:13:00 per Exp $
+ * $Id: builtin.cmod,v 1.44 2001/06/20 13:01:57 grubba Exp $
  */
 
 #include "global.h"
@@ -891,12 +891,26 @@ PIKEFUN array(mixed) backtrace()
 {
   struct pike_frame *f;
   int size = 0;
+  struct array *res = NULL;
 
   for (f = Pike_fp; f; f = f->next) {
+    size++;
+  }
+
+  res = allocate_array_no_init(size, 0);
+  push_array(res);
+
+  for (f = Pike_fp; f && size; f = f->next) {
     struct object *o = low_clone(backtrace_frame_program);
     struct backtrace_frame_struct *bf;
 
     call_c_initializers(o);
+
+    size--;
+
+    res->item[size].u.object = o;
+    res->item[size].type = PIKE_T_OBJECT;
+    res->item[size].subtype = 0;
 
     bf = OBJ2_BACKTRACE_FRAME(o);
 
@@ -927,13 +941,8 @@ PIKEFUN array(mixed) backtrace()
 	assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
       }
     }
-
-    push_object(o);
-    size++;
   }
-
-  f_aggregate(size);
-  f_reverse(1);
+  /* NOTE: res has already been pushed on the stack. */
 }
 
 #define INITIAL_BUF_LEN 4096
