@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.82 2003/10/31 11:42:09 grubba Exp $
+dnl $Id: aclocal.m4,v 1.83 2003/11/07 21:05:56 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -351,7 +351,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.82 2003/10/31 11:42:09 grubba Exp $
+  # $Id: aclocal.m4,v 1.83 2003/11/07 21:05:56 mast Exp $
 
   MY_AC_PROG_CC
 
@@ -723,10 +723,14 @@ int main() {
 ])
 
 dnl PIKE_MSG_WARN(message) 
-dnl == AC_MSG_WARN but adds to config.info
+dnl == AC_MSG_WARN but prints with a bit more emphasis and adds to config.info.
 define(PIKE_MSG_WARN, [
-  AC_MSG_WARN($1)
-  cat >>config.warnings <<EOF
+  AC_MSG_WARN([
+
 $1
+])
+  cat >>config.warnings <<EOF
+WARNING: $1
+
 EOF
 ])

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.743 2003/11/07 17:53:15 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.744 2003/11/07 21:05:56 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -26,10 +26,8 @@ case "$srcdir" in
     *)
 	oldsrcdir="$srcdir"
 	srcdir="`cd \"$srcdir\";pwd`"
-	AC_MSG_WARN([
-Converted $oldsrcdir to $srcdir,
-If this does not work, please use an absolute path to the configure script. 
-])
+	AC_MSG_WARN([Converted $oldsrcdir to $srcdir,
+If this does not work, please use an absolute path to the configure script.])
     ;;
 esac
 
@@ -59,11 +57,9 @@ fi
 if test "x$CONFIG_SHELL" = "x"; then 
   AC_PATH_PROG(bash_prog, bash, no)
   if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
-    AC_MSG_WARN([
-Found bash as $ac_cv_path_bash_prog.
+    AC_MSG_WARN([Found bash as $ac_cv_path_bash_prog.
 Will attempt to restart configure with bash for performance.
-If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.
-])
+If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.])
     CONFIG_SHELL="$ac_cv_path_bash_prog"
     export CONFIG_SHELL
     echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
@@ -162,20 +158,16 @@ AC_ARG_ENABLE(binary, MY_DESCR([--disable-binary],
 	      [], [enable_binary=yes])
 
 if test "x$enable_binary" = "xno"; then
-  PIKE_MSG_WARN([
-
-Short-circuiting configure tests for binary building. Only some
+  PIKE_MSG_WARN([Short-circuiting configure tests for binary building. Only some
 targets in the Makefile can be used, typically those that only
-operates on the source directory, e.g. depend.
-
-])
+operates on the source directory, e.g. depend.])
   AC_DEFINE(DISABLE_BINARY)
 else
 
   if test ! -z "$pike_cv_prog_CC_save" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC_save"
   then
     PIKE_MSG_WARN([CC is different than last time Pike was compiled,
-  It is probably best to delete ./config.cache before proceeding])
+It is probably best to delete ./config.cache before proceeding.])
   fi
 
   pike_cv_prog_CC_save="$CC"
@@ -938,8 +930,8 @@ if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" && test "`uname -p`" = "
   if test "x$gcc_ld_path" = "x"; then :; else
     if test -d "$gcc_ld_path/."; then
       if "$gcc_ld_path/ld" -v 2>&1 | grep -i GNU >/dev/null; then
-        PIKE_MSG_WARN([GNU ld found on Solaris sparc system ($gcc_ld_path/ld).])
-        PIKE_MSG_WARN([This may cause the dynamic module support to fail.])
+        PIKE_MSG_WARN([GNU ld found on Solaris sparc system ($gcc_ld_path/ld).
+This may cause the dynamic module support to fail.])
       else :; fi
     else :; fi
   fi
@@ -1000,33 +992,31 @@ string:
     ])
     AC_MSG_RESULT($pike_cv_ac_r_sparc_ua32)
     if test "$pike_cv_ac_r_sparc_ua32" = "yes"; then
-      PIKE_MSG_WARN([Your gcc/as combo may generate R_SPARC_UA32 relocations.])
-      PIKE_MSG_WARN([R_SPARC_UA32 relocations are unsupported in Solaris >= 2.3,])
-      PIKE_MSG_WARN([and have broken support in Solaris 7.])
+      PIKE_MSG_WARN([Your gcc/as combo may generate R_SPARC_UA32 relocations.
+R_SPARC_UA32 relocations are unsupported in Solaris >= 2.3,
+and have broken support in Solaris 7.])
 
       if test "x$with_patch_gcc$with_force_ua32" = "xnono"; then
   	if test -d "/var/sadm/patch/107058-01/."; then
-  	  PIKE_MSG_WARN([Back out patch 107058-01, or])
-  	  PIKE_MSG_WARN([recompile gcc with a modified config/sparc/sol2.h.])
+  	  PIKE_MSG_WARN([Back out patch 107058-01, or
+recompile gcc with a modified config/sparc/sol2.h.])
   	else
   	  PIKE_MSG_WARN([Recompile gcc with a modified config/sparc/sol2.h.])
   	fi
 
-	PIKE_MSG_WARN([])
-	PIKE_MSG_WARN([You may want to try binary patching gcc.])
-	PIKE_MSG_WARN([In that case rerun configure with --with-patch-gcc.])
-	PIKE_MSG_WARN([NOTE: Binary patching is highly experimental and risky,])
-	PIKE_MSG_WARN([      and may break your existing gcc even more.])
-	PIKE_MSG_WARN([])
-	PIKE_MSG_WARN([R_SPARC_UA32 relocations are supported on some versions])
-	PIKE_MSG_WARN([of Solaris. If you want to try a binary with R_SPARC_UA32])
-	PIKE_MSG_WARN([relocations, rerun configure with --with-force-ua32.])
-	PIKE_MSG_WARN([])
+	PIKE_MSG_WARN([You may want to try binary patching gcc.
+In that case rerun configure with --with-patch-gcc.
+NOTE: Binary patching is highly experimental and risky,
+      and may break your existing gcc even more.
+
+R_SPARC_UA32 relocations are supported on some versions
+of Solaris. If you want to try a binary with R_SPARC_UA32
+relocations, rerun configure with --with-force-ua32.])
         exit 1
       fi
 
       if test "x$with_patch_gcc" = "xno"; then :; else
-        PIKE_MSG_WARN([Will attempt to patch gcc.])
+        AC_MSG_WARN([Will attempt to patch gcc.])
 
         AC_MSG_CHECKING([for cc1])
         if test "x$with_patch_gcc" = "xyes"; then
@@ -1091,24 +1081,24 @@ Please move it out of the way.])
 
               AC_MSG_RESULT(yes)
 
-	      PIKE_MSG_WARN(Activating the patched cc1.)
-	      PIKE_MSG_WARN(NOTE: Entering critical section.)
-	      PIKE_MSG_WARN(If configure fails at this point a broken gcc my result.)
+	      AC_MSG_WARN(Activating the patched cc1.
+NOTE: Entering critical section.
+If configure fails at this point a broken gcc my result.)
 	      if /usr/bin/mv -f "$cc1" "$cc1.orig"; then
 
-	        PIKE_MSG_WARN(Moved $cc1 to $cc1.orig.)
+	        AC_MSG_WARN(Moved $cc1 to $cc1.orig.)
 
 	        if /usr/bin/mv -f "$cc1.patched" "$cc1"; then
-	          PIKE_MSG_WARN(Patching seems to have succeeded.)
-		  PIKE_MSG_WARN(Please rerun configure.)
+	          AC_MSG_WARN(Patching seems to have succeeded.
+Please rerun configure.)
 		  exit 1
 	        fi
 
-	        PIKE_MSG_WARN(Moving the patched cc1 into place failed.)
-	        PIKE_MSG_WARN(Will try to restore the old cc1.)
+	        AC_MSG_WARN(Moving the patched cc1 into place failed.
+Will try to restore the old cc1.)
 
 	        if /usr/bin/mv -f "$cc1.orig" "$cc1"; then
-	          PIKE_MSG_WARN(The old cc1 has been restored.)
+	          AC_MSG_WARN(The old cc1 has been restored.)
 	          exit 1
 	        fi
 
@@ -1243,20 +1233,16 @@ AC_ARG_WITH(threads, MY_DESCR([--without-threads], [disable threads support]),
    case "x$pike_cv_sys_os" in
      xFreeBSD*)
         if test "`uname -r|sed -e 's/\([[0-9]]*\).*/\1/'`" -lt 4; then
-           PIKE_MSG_WARN([
-FreeBSD <= 3.x detected, disabling threads.
-Use --with-threads to force threads support.
-])
+           PIKE_MSG_WARN([FreeBSD <= 3.x detected, disabling threads.
+Use --with-threads to force threads support.])
            with_threads=no
         fi
      ;;
      xOpenBSD*)
         if test "`uname -r|sed -e 's/\([[0-9]]*\).*/\1/'`" -lt 4 \
              -a "x`uname -m`" = "xalpha"; then
-           PIKE_MSG_WARN([
-OpenBSD/alpha <= 3.x detected, disabling threads.
-Use --with-threads to force threads support.
-])
+           PIKE_MSG_WARN([OpenBSD/alpha <= 3.x detected, disabling threads.
+Use --with-threads to force threads support.])
            with_threads=no
         fi
      ;;
@@ -1350,7 +1336,7 @@ AC_ARG_WITH(security, MY_DESCR([--with-security],
 			       [enable internal pike security system]),
 	    [AC_DEFINE(PIKE_SECURITY)])
 AC_ARG_WITH(bignums, MY_DESCR([--without-bignums],
-			      [disable internal conversion to bignums]),
+			      [disable internal conversion to bignums (not recommended)]),
 	    [],[with_bignums=yes])
 dnl Shared nodes has been disabled in an ugly way. To enable it you
 dnl need to remove the line that sets the OPT_NOT_SHARED flag at the
@@ -1402,12 +1388,14 @@ It is highly recommended that you install a working GMP
 library on your system as that will add features to Pike
 required by many applications (such as Roxen).  However,
 if you know that you do not need GMP, you may re-run configure
-with the option --without-bignums instead.
-])
+with the option --without-bignums instead.])
   else :; fi
-else :; fi
+else
+  PIKE_MSG_WARN([Compiling without bignum support. This is discouraged. Many
+Pike applications might not work correctly.])
+fi
 
-if test "x$with_shared_nodes" != xno; then
+if test "x$with_shared_nodes" = xyes; then
   echo 'Enabling the SHARED_NODES mode of the optimizer.'
   AC_DEFINE(SHARED_NODES)
 else :; fi
@@ -1884,7 +1872,7 @@ if test "$cflags_is_set" = "no"; then
     else :; fi
 
     if test x$with_dynamic_modules = xno ; then :; else
-      PIKE_MSG_WARN([Enabling dynamic modules for Win32])
+      PIKE_MSG_WARN([Enabling dynamic modules for Win32.])
 #      EXTRA_MODULE_REQUIREMENTS="${EXTRA_MODULE_REQUIREMENTS} import_functions.h"
       EXTRA_OBJS="${EXTRA_OBJS} dlopen.o"
       pike_cv_sys_dynamic_loading=yes
@@ -2116,8 +2104,7 @@ To do this, please type the following at an sh prompt:
 	\$ rm ./config.cache
 	\$ CONFIG_SHELL=/path/to/bash
 	\$ export CONFIG_SHELL
-	\$ $CONFIG_SHELL ./configure
-])
+	\$ $CONFIG_SHELL ./configure])
 fi
 
 #############################################################################
@@ -2336,7 +2323,7 @@ EOF
 ])
 if test "x$pike_cv___yy_memcpy_count_type" = "xunknown"; then
   AC_MSG_RESULT($pike_cv___yy_memcpy_count_type)
-  PIKE_MSG_WARN([Defaulting to unsigned int.])
+  AC_MSG_WARN([Defaulting to unsigned int.])
   YY_COUNT_TYPE="unsigned int"
   YY_FROM_CONST=""
 else
@@ -2542,7 +2529,6 @@ if test "x$with_long_long_int" = x -a \
 	"x$with_int_int" = x -a \
 	"x$with_short_int" = x ; then
   # Choose the longest available integer that fits in a pointer.
-# Turn this on when it works and the typing is corrected everywhere.
 #  if test $ac_cv_sizeof_long_long != 0 -a \
 #	   $ac_cv_sizeof_long_long -le $ac_cv_sizeof_char_p ; then
 #    # This isn't a good idea on architectures where
@@ -2649,7 +2635,7 @@ AC_CHECK_LIB(dld, dld_link)
 
 if test "${pike_cv_sys_os}" = "Linux"; then
   if test "${ac_cv_lib_m_floor}" = "no"; then
-    PIKE_MSG_WARN(I will compensate for this by adding -lc -lm)
+    AC_MSG_WARN(I will compensate for this by adding -lc -lm.)
     LIBS="${LIBS} -lc -lm"
   fi
 
@@ -2671,7 +2657,7 @@ if test "${pike_cv_sys_os}" = "Linux"; then
     ])
     AC_MSG_RESULT($pike_cv_broken_sched_h)
     if test "$pike_cv_broken_sched_h" = "yes"; then
-      PIKE_MSG_WARN(Applying workaround)
+      PIKE_MSG_WARN(Applying workaround for sched.h typo.)
       CPPFLAGS="$CPPFLAGS -D_P=__P"
     fi
   fi
@@ -4044,7 +4030,7 @@ int main() { void *bar; exit( find_stack_direction(&bar) > 0); }
   ], [ pike_cv_hardware_stack_direction=down
   ], [ pike_cv_hardware_stack_direction=up
   ], [
-    PIKE_MSG_WARN([defaulting to down.])
+    AC_MSG_WARN([Defaulting to down.])
     pike_cv_hardware_stack_direction=down
   ])
 ])
@@ -4940,7 +4926,7 @@ EOF
 	  fi
 	fi
       else
-        PIKE_MSG_WARN([Object file not found.])
+        AC_MSG_WARN([Object file not found - using default.])
 	pike_cv_float_type=not_ieee
       fi
     else
@@ -4993,7 +4979,7 @@ EOF
 	  fi
 	fi
       else
-        PIKE_MSG_WARN([Object file not found.])
+        AC_MSG_WARN([Object file not found - using default.])
 	pike_cv_float_type=not_ieee
       fi
     else
@@ -6132,10 +6118,8 @@ int main()
       if test -f confdefs.out.2; then
         pike_cv_thread_local_cpu_time=`cat confdefs.out.2`
       else
-        AC_MSG_WARN([
-Test failed to compile.
-Problems in port.c, rusage.c or threads.c with CONFIGURE_TEST is defined?
-])
+        AC_MSG_WARN([Test failed to compile.
+Problems in port.c, rusage.c or threads.c with CONFIGURE_TEST is defined?])
         # Don't set pike_cv_thread_local_cpu_time here so that the
         # failure doesn't get cached.
         result="unknown (compilation failed)"
@@ -6598,7 +6582,7 @@ do
 	            "x$with_machine_code" = xyes; then
 	       INTERPRET_DEOPTIMIZE=-fno-omit-frame-pointer
 	       PIKE_MSG_WARN([-fno-omit-frame-pointer used for interpret.c,
-since the use of machine code is broken by -fomit-frame-pointer])
+since the use of machine code is broken by -fomit-frame-pointer.])
 	    fi
 
 	    if test "x$with_copt" != xno; then 
@@ -6926,6 +6910,7 @@ ls -1 post_modules/*/pike_*.feature modules/*/pike_*.feature 2>/dev/null |  xarg
 if test -f config.warnings; then
   echo >>config.info
   echo 'Warnings and notes summary:' >>config.info
+  echo >>config.info
   cat config.warnings >>config.info
 fi
 
