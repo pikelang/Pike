@@ -125,6 +125,60 @@ void emit(string what)
     buffer += what;
 }
 
+string make_c_string( string from )
+{
+  string line = "\"";
+  string res = "";
+  for( int i=0; i<strlen( from ); i++ )
+  {
+    switch( from[i] )
+    {
+     case 'a'..'z':
+     case 'A'..'Z':
+     case '0'..'9':
+     case 0300..0377:
+     case '_': case ' ':
+       line += from[i..i];
+       break;
+     default:
+       line += sprintf("\\%o", from[i] );
+       break;
+    }
+    if( strlen( line ) > 75 )
+    {
+      res += line+"\"\n";
+      line="\"";
+    }
+  }
+  return res+line+"\"";
+}
+
+string function_type( string what )
+{
+  what = reverse( what ); sscanf( what, "%*[ \t\n\r\"]%s", what );
+  what = reverse( what ); sscanf( what, "%*[ \t\n\r\"]%s", what );
+  return __parse_pike_type( what );
+}
+
+string data = "";
+
+int data_offset( string what )
+{
+  int off;
+  if( (off = search( data, what )) != -1 )
+    return off;
+  data += what;
+  return data_offset( what );
+}
+
+string emit_function_def( string fun, string cfun, string type, int opt )
+{
+  type = function_type( type );
+  emit_nl( "  quick_add_function(_data+"+data_offset(fun)+","+
+           strlen(fun)+","+cfun+",_data+"+data_offset( type )+
+           ","+strlen(type)+",0,0);\n");
+}
+
 int _num_functions;
 void emit_program_block(mapping block, string cl)
 {
@@ -132,69 +186,35 @@ void emit_program_block(mapping block, string cl)
   foreach(sort(indices(block)), string f)
   {
     _num_functions++;
-
-    // TODO: Add real type parser here, and generade ADD_FUNCTION instead
-    // of add function
-    if( search( block[f], "()" ) != -1 ||
-        search( block[f], "(:" ) != -1 ||
-        search( block[f], ":)" ) != -1 ||
-        search( block[f], " " ) != -1 ||
-        (sizeof(block[f]/")") != sizeof( block[f] / "(" )) ||
-        ((sizeof(block[f]/")") != sizeof( block[f] / ":" )+
-          sizeof(block[f]/"array")-1) &&
-         (sizeof(block[f]/")") != sizeof( block[f] / ":" )) ) ||
-        search( block[f], "function" ) == -1)
-      if( block[f] != "\"function(array:object)\"" )
-        werror(lines[cl+f]+": Warning: suspicious type "+block[f]+"\n");
-
+    string cfun = "pgtk_"+cl+"_"+f;
     switch(f)
     {
-     case "union":
-       emit_nl("   add_function(\"`|\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
-       emit_nl("   add_function(\"`+\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+     case "union": 
+       emit_function_def("`|",cfun,block[f],1);  
        break;
      case "intersection":
-       emit_nl("   add_function(\"`&\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+       emit_function_def("`&",cfun,block[f],1);
        break;
      case "subtract":
-       emit_nl("   add_function(\"`-\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+       emit_function_def("`-",cfun,block[f],1);
        break;
      case "equal":
-       emit_nl("   add_function(\"`==\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+       emit_function_def("`==",cfun,block[f],1);
        break;
      case "lt":
-       emit_nl("   add_function(\"`<\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+       emit_function_def("`<",cfun,block[f],1);
        break;
      case "xor":
-       emit_nl("   add_function(\"`^\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+       emit_function_def("`^",cfun,block[f],1);
        break;
      case "not":
-       emit_nl("   add_function(\"`~\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+       emit_function_def("`~",cfun,block[f],1);
        break;
      case "gt":
-       emit_nl("   add_function(\"`>\", pgtk_"+cl+"_"+f+",\n"
-               "               "+block[f]+", 0);\n");
-    _num_functions++;
+       emit_function_def("`>",cfun,block[f],1);
        break;
     }
-    emit_nl("   add_function(\""+f+"\", pgtk_"+cl+"_"+f+",\n"
-	    "               "+block[f]+", 0);\n");
+    emit_function_def(f,cfun,block[f],0);
   }
 }
 
@@ -777,7 +797,7 @@ int main(int argc, array argv)
       emit("/* "+oline+" */\n");
       emit_proto("void pgtk_"+progname+"_get_"+line+"(int args)\n");
       emit("{\n");
-      emit("  pop_n_elems(args);\n");
+      emit("  my_pop_n_elems(args);\n");
       emit("  push_"+(type=="string"?"text":type)+"( GTK_"+upper_case( progname )+"( THIS->obj )->"+line+");\n");
       emit("}\n");
     }
@@ -827,7 +847,7 @@ int main(int argc, array argv)
       emit("/* "+oline+" */\n");
       emit_proto("void pgtk_"+progname+"_"+line+"(int args)\n");
       emit("{\n");
-      emit("  pop_n_elems(args);\n");
+      emit("  my_pop_n_elems(args);\n");
       emit("  push_gtkobjectclass( GTK_"+upper_case( progname )+"( THIS->obj )->"+line+", pgtk_"+type+"_program );\n");
       emit("}\n");
     } 
@@ -950,37 +970,22 @@ int main(int argc, array argv)
 	   break;
 	 case "int":
 	   argument_list += ", int";
-#if __VERSION__ >= 0.7
 	   fundef += ",mixed";
 	   format_string += "%D";
-#else
-	   fundef += ","+t;
-	   format_string += "%d";
-#endif
 	   args += "  int arg"+na+";\n";
 	   sargs += ", &arg"+na;
 	   break;
 	 case "intp":
 	   argument_list += ", int";
-#if __VERSION__ >= 0.7
 	   fundef += ",mixed";
 	   format_string += "%D";
-#else
-	   fundef += ",int";
-	   format_string += "%d";
-#endif
 	   args += "  int _arg"+na+", *arg"+na+"=&_arg"+na+";\n";
 	   sargs += ", _arg"+na;
 	   break;
 	 case "float":
 	   argument_list += ", float";
-#if __VERSION__ >= 0.7
 	   fundef += ",mixed";
 	   format_string += "%F";
-#else
-	   fundef += ",float";
-	   format_string += "%f";
-#endif
 	   args += "  float arg"+na+";\n";
 	   sargs += ", &arg"+na;
 	   break;
@@ -1017,7 +1022,7 @@ int main(int argc, array argv)
 	   }
 
            int star = sscanf(t, "*%s", t);
-           int optional = sscanf(t, "?%s", t) && __VERSION__ >= 0.7;
+           int optional = sscanf(t, "?%s", t);
 	   fundef += ",object|int";
 	   argument_list+=", "+classname(String.capitalize(lower_case(t)));
            if(optional) 
@@ -1108,10 +1113,10 @@ int main(int argc, array argv)
       }
       if(strlen(fin)) 
         emit(fin+"\n");
-      emit("  pop_n_elems(args);\n");
+      emit("  my_pop_n_elems(args);\n");
       if(!rest)
       {
-        emit("  ref_push_object( fp->current_object );\n");
+        emit("  my_ref_push_object( fp->current_object );\n");
       } else {
         switch(rest)
         {
@@ -1166,11 +1171,7 @@ int main(int argc, array argv)
 	 true_types[progname+fn] = ({ classname(progname), "int" });
 	 emit("  if(!THIS->obj)\n"
 	      "    error(\"Calling function in unitiated object\\n\");\n");
-#if __VERSION__ >= 0.7
 	 emit("  get_all_args(\""+progname+"->"+fn+"\",args, \"%D\", &i);\n");
-#else
-	 emit("  get_all_args(\""+progname+"->"+fn+"\",args, \"%d\", &i);\n");
-#endif
 	 emit("  gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+
 	      "( THIS->obj ), i );\n");
 	 break;
@@ -1191,8 +1192,8 @@ int main(int argc, array argv)
 	 emit("  gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+"( THIS->obj ), GTK_"+upper_case(line)+"( f ) );\n");
       }
 
-      emit("  pop_n_elems(args);\n");
-      emit("  ref_push_object( fp->current_object );\n");
+      emit("  my_pop_n_elems(args);\n");
+      emit("  my_ref_push_object( fp->current_object );\n");
       emit("}\n");
     } else if(sscanf(line, "ARGS(%s);", line)==1) {
       true_types[progname+last_function][1] = line;
@@ -1336,9 +1337,9 @@ int main(int argc, array argv)
     }
   }
 
-//   werror(sizeof(struct)+" classes\n");
-//   werror(sizeof(constants/"\n")+" constants\n");
-//   werror(sizeof(signals)+" signal constants (strings)\n");
+// werror(sizeof(struct)+" classes\n");
+// werror(sizeof(constants/"\n")+" constants\n");
+// werror(sizeof(signals)+" signal constants (strings)\n");
 
   string to_free="";
   foreach(sort_dependencies(indices(struct),struct), string w)
@@ -1352,13 +1353,8 @@ int main(int argc, array argv)
       m_delete(q, "inherit");
     }
     else
-    {
-#if __VERSION__ > 0.6
       emit_nl("  ADD_STORAGE(struct object_wrapper);\n");
-#else
-      emit_nl("  add_storage(sizeof(struct object_wrapper));\n");
-#endif
-    }
+
     emit_nl("   set_init_callback(clear_obj_struct);\n");
     emit_program_block( q, w );
     emit_nl("  add_program_constant(\""+String.capitalize(w)+"\",\n"
@@ -1366,16 +1362,19 @@ int main(int argc, array argv)
 	    "\n");
     pre += "/*ext*/ struct program *pgtk_"+w+"_program;\n";
   }
-//   werror(_num_functions+" functions\n");
+
   emit_nl("}\n\n");
   emit_nl("\nvoid pike_module_exit()\n{\n"+to_free+"}\n\n");
   files += "pgtk.c ";
   if(!do_docs)
   {
-    string q =replace(Stdio.read_bytes(dir+"/pgtk.c.head"), "PROTOTYPES", 
-                      replace(pre, "/*ext*/ ", ""));
+    string q =replace(Stdio.read_bytes(dir+"/pgtk.c.head"), 
+                      "PROTOTYPES", 
+                      replace(pre, "/*ext*/ ", "")+
+                      "\nstatic char _data[] =\n"+make_c_string( data )+";");
     pre = replace(pre, "/*ext*/", "extern");
-    if(!equal(sort((Stdio.read_bytes("prototypes.h") || "")/"\n"), sort(pre/"\n")))
+    if(!equal(sort((Stdio.read_bytes("prototypes.h")||"")/"\n"), 
+              sort(pre/"\n")))
     {
       rm("prototypes.h");
       werror("prototypes.h was modified\n");

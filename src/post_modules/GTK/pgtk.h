@@ -21,6 +21,9 @@ struct my_pixel
 
 extern int pigtk_is_setup;
 
+void my_pop_n_elems( int n );
+void my_ref_push_object( struct object *o );
+
 int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b );
 
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
@@ -63,8 +66,8 @@ struct object *pikeimage_from_gdkimage( GdkImage *img );
 #define GTK_STYLE(X) ((void *)X)
 
 #define RETURN_THIS()   do{			\
-  pop_n_elems(args);				\
-  ref_push_object( fp->current_object );	\
+  my_pop_n_elems(args);				\
+  my_ref_push_object( fp->current_object );	\
 } while(0)
 
 struct my_pixel pgtk_pixel_from_xpixel( unsigned int pix, GdkImage *i );

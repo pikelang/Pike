@@ -1,4 +1,7 @@
-/* This is very much -*- c -*- code */
+/* This is -*- c -*- code */
+/* Sort of unnessesary, and decreases code-size with 140Kb */
+#define GTK_NO_CHECK_CASTS
+
 #include "config.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
