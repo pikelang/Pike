@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.325 2002/09/22 15:54:08 marcus Exp $
+# $Id: Makefile.in,v 1.326 2002/09/23 15:56:28 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -477,7 +477,7 @@ TAGS:
 module_testsuites:
 	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
-	( $(LIBDIR_SRC)/mklibtests.sh --srcdir=$(LIBDIR_SRC) \
+	( $(TMP_BINDIR)/mklibtests.sh --srcdir=$(LIBDIR_SRC) \
 	  --destdir=$(TMP_BUILDDIR)/tlib --bindir=$(TMP_BINDIR) )
 
 just_verify: module_testsuites testsuite master-stamp

@@ -3,7 +3,7 @@
 #
 # Creates testsuit files form the testsuit.in files
 # found in the lib directory.
-# $Id: mklibtests.sh,v 1.2 2002/09/22 16:42:55 marcus Exp $
+# $Id: mklibtests.sh,v 1.1 2002/09/23 15:56:28 marcus Exp $
 #
 
 src_dir=
