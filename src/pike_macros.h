@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.8 1998/05/05 22:01:41 grubba Exp $
+ * $Id: pike_macros.h,v 1.9 1998/05/17 22:59:18 grubba Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -47,6 +47,10 @@
 			 "1111111011111111"[((unsigned)(X))&0xff] == '1')
   
 #define isidchar(X) is8bitalnum(X)
+
+#ifndef HAVE_ISGRAPH
+#define isgraph(X)	(ispunct(X) || isupper(X) || islower(X) || isdigit(X))
+#endif /* !HAVE_ISGRAPH */
 
 #define ALIGN_BOUND sizeof(char *)
 
