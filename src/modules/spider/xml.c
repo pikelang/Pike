@@ -1172,6 +1172,7 @@ static int read_smeg_pereference(struct xmldata *data)
 	PUSH(s);
 	READ(0); /* autopop empty strings */
 	pop_stack();
+	CALL_AND_UNSET_ONERROR(tmp3);
 	return 1;
       }
 
