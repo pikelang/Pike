@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.39 2001/02/17 15:49:21 grubba Exp $");
+RCSID("$Id: port.c,v 1.40 2001/02/17 17:02:51 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -656,7 +656,7 @@ PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p)
 }
 #endif
 
-#ifdef HAVE_BROKEN_STKCHK
+#ifdef HAVE_BROKEN_CHKSTK
 /* Intels ecl compiler adds calls to _stkchk() in the prologue,
  * MicroSoft seems to have renamed it to __stkchk() in later
  * versions of their SDK. This kludge attempts to workaround
