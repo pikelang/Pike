@@ -115,93 +115,140 @@ Image.Image errimg=Image.image(10,10)->test();
 mapping read_image(string file, float|void wanted_dpi)
 {
   if(!file) return 0;
-
+  
 //  werror("Reading %s ",file);
   if(file[0]!='_' && srccache[file])
   {
 //    werror("(cached) ");
     return srccache[file];
   }
-
-  if( (file/".")[-1]=="fig" )
-  {
-    Process.create_process(({"fig2dev","-L","ps",file,"___tmp.ps"}))->wait();
-    Stdio.File("___tmp.ps","aw")->write("showpage\n");
-    
-    int res;
-    int scale;
-    switch(wanted_dpi)
-    {
-      case 0:
-      case 0.0..: scale=3; wanted_dpi=75.0; break;
-      case 10.0..:  scale=5; break;
-      case 50.0..:  scale=3; break;
-      case 150.0..: scale=2; break;
-      case 300.0..: scale=1; break;
-    }
-
-    res=(int)(scale * wanted_dpi);
-    int maxsize=11*res; // Max size = 11x11 inch
-
-    rm("___tmp.ppm");
-    werror("[rendering at %dx%d dpi] ",(int)wanted_dpi,scale);
-#if 0
-    Process.system("/bin/sh -c 'gs -q -sDEVICE=pbmraw -r"+res+" -g"+maxsize+"x"+maxsize+" -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null'");
-#else
-    int r=Process.create_process(({"gs","-q","-sDEVICE=pbmraw",
-				   "-r"+res,sprintf("-g%dx%d",maxsize,maxsize),
-				   "-sOutputFile=___tmp.ppm","___tmp.ps"}),
-				 (["stdin":Stdio.File("/dev/null","r"),
-				  "stdout":Stdio.File("/dev/null","w")]))->wait();
-
-    if(r)
-    {
-      werror("Gs exited with return code %d.\n",r);
-      exit(1);
-    }
-#endif
-    object o=read_image("___tmp.ppm")->image;
-    m_delete(srccache,"___tmp.ppm");
-    o=o->autocrop()->scale(2.0/3/scale); //->rotate(-90);
-    o=Image.image(o->xsize()+40, o->ysize()+40, PAPER_COLOUR)->paste(o,20,20);
-    rm("___tmp.ps");
-    rm("___tmp.ppm");
-    // Not cached, too big..
-    return (["image":o,"dpi":wanted_dpi]);
-//    if(o!=errimg) srccache[file]=tmp;
-//    return tmp;
-  }
-
+  
   string data=Stdio.read_file(file);
   if(!data || !strlen(data))
   {
     werror("\nFailed to read image %s\n\n",file);
     return srccache[file]=(["image":errimg]);
   }
-    
-  catch  {
-    catch {
-      Image.Image i,a;
-      array chunks = Image.GIF._decode( data );
-      
-      // If there is more than one render chunk, the image is probably
-      // an animation. Handling animations is left as an exercise for
-      // the reader. :-)
-      foreach(chunks, mixed chunk)
-	if(arrayp(chunk) && chunk[0] == Image.GIF.RENDER )
-	  [i,a] = chunk[3..4];
-      if(i) return (["image":i,"alpha":a]);
-    };
-  };
-  catch { return srccache[file]=(["image":Image.JPEG.decode(data)]); };
-  catch  { return srccache[file]=(["image":Image.PNM.decode(data)]); };
-  catch  { return srccache[file]=Image.PNG._decode(data); };
-  werror("\nFailed to decode image %s\n\n",file);
-  return srccache[file]=(["image":errimg]);
-}
 
-string write_image(string fmt, mapping opts)
-{
+  mixed err;
+  
+  switch( (file/".")[-1])
+  {
+    case "fig":
+    {
+      int ret=Process.create_process(({"fig2dev","-L","ps",file,"___tmp.ps"}))->wait();
+      
+      if(ret)
+      {
+	werror("\nFig2dev failed with return code %d\n",ret);
+	return (["image":errimg,"dpi":50.0]);
+      }
+      Stdio.File("___tmp.ps","aw")->write("showpage\n");
+      
+      int res;
+      int scale;
+      switch(wanted_dpi)
+      {
+	case 0:
+	case 0.0..: scale=3; wanted_dpi=75.0; break;
+	case 10.0..:  scale=5; break;
+	case 50.0..:  scale=3; break;
+	case 150.0..: scale=2; break;
+	case 300.0..: scale=1; break;
+      }
+
+      object o;
+
+      while(1)
+      {
+	res=(int)(scale * wanted_dpi);
+	int maxsize=11*res; // Max size = 11x11 inch
+	
+	rm("___tmp.ppm");
+	werror("[rendering at %dx%d dpi] ",(int)wanted_dpi,scale);
+#if 0
+	Process.system("/bin/sh -c 'gs -q -sDEVICE=pbmraw -r"+res+" -g"+maxsize+"x"+maxsize+" -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null'");
+#else
+	int r=Process.create_process(({"gs","-q","-sDEVICE=pbmraw",
+				       "-r"+res,sprintf("-g%dx%d",maxsize,maxsize),
+				       "-sOutputFile=___tmp.ppm","___tmp.ps"}),
+				     (["stdin":Stdio.File("/dev/null","r"),
+				      "stdout":Stdio.File("/dev/null","w")]))->wait();
+	
+	if(r)
+	{
+	  werror("Gs exited with return code %d.\n",r);
+	}
+#endif
+	o=read_image("___tmp.ppm")->image;
+
+	if(o != errimg) break;
+
+	if(o == errimg)
+	{
+	  werror("WARNING: Rendering of %s failed\n",file);
+	  if(scale > 1)
+	  {
+	    werror("Retrying at smaller scale... ");
+	    scale--;
+	  }else{
+	    break;
+	  }
+	}
+      }
+	
+      m_delete(srccache,"___tmp.ppm");
+      o=o->autocrop()->scale(2.0/3/scale); //->rotate(-90);
+      o=Image.image(o->xsize()+40, o->ysize()+40, PAPER_COLOUR)->paste(o,20,20);
+      rm("___tmp.ps");
+      rm("___tmp.ppm");
+      // Not cached, too big..
+      return (["image":o,"dpi":wanted_dpi]);
+    }
+    break;
+    
+    case "gif":
+      err=catch  {
+	catch {
+	  Image.Image i,a;
+	  array chunks = Image.GIF._decode( data );
+	  
+	  // If there is more than one render chunk, the image is probably
+	  // an animation. Handling animations is left as an exercise for
+	  // the reader. :-)
+	  foreach(chunks, mixed chunk)
+	    if(arrayp(chunk) && chunk[0] == Image.GIF.RENDER )
+	      [i,a] = chunk[3..4];
+	  if(i) return (["image":i,"alpha":a]);
+	};
+      };
+      break;
+      
+    case "jpg":
+    case "jpeg":
+      err=catch { return srccache[file]=(["image":Image.JPEG.decode(data)]); };
+      break;
+      
+    case "ppm":
+    case "pnm":
+    case "pgm":
+    case "pbm":
+      err=catch  { return srccache[file]=(["image":Image.PNM.decode(data)]); };
+      if(err)
+      {
+	/* possibly out of memory, try again */
+	srccache=([]);
+	gc();
+	err=catch  { return srccache[file]=(["image":Image.PNM.decode(data)]); };
+      }
+      break;
+
+    case "png":
+      err=catch  { return srccache[file]=Image.PNG._decode(data); };
+      break;
+  }
+  werror("\nFailed to decode image %s\n%s\n",file,master()->describe_backtrace(err));
+  return (["image":errimg,"dpi":50.0]);
 }
 
 string gettext(string s)
@@ -214,10 +261,13 @@ string gettext(string s)
 
 array convret(string key,
 	      string ret,
-	      float dpi)
+	      float dpi,
+	      void|object o)
 {
   array tmp=({ret, dpi});
-  illustration_cache[key]=tmp;
+  if(!objectp(o) || !objectp(errimg) || o != errimg)
+    illustration_cache[key]=tmp;
+
   return tmp;
 }
 
@@ -426,7 +476,7 @@ array convert(mapping params,
       if(ret) break;
     }
 
-  return convret(key, ret, o->dpi);
+  return convret(key, ret, o->dpi, o->image);
 }
 
 
