@@ -2897,7 +2897,10 @@ cDay dwim_day(string day,void|TimeRange context)
       else return (d->week()+1)->place(d);
    }
 
-   if (sizeof(day)==4) catch { return parse("%M/%D",day/2*"/",context); };
+   if (sizeof(day)==4)
+     catch {
+       if (d = parse("%M/%D",day/2*"/",context)) return d;
+     };
 
    if (day=="today") return t;
    if (day=="tomorrow") return t+1;
