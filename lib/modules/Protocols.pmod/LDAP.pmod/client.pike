@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.64 2004/10/14 00:20:47 bill Exp $
+// $Id: client.pike,v 1.65 2004/10/14 20:01:52 bill Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.64 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.65 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -519,10 +519,8 @@ import SSL.Constants;
       THROW(({"LDAP: Unknown/unsupported protocol version.\n",backtrace()}));
       return -ldap_errno;
     }
-    if(intp(raw = send_starttls_op(context||UNDEFINED))) {
-      THROW(({error_string()+"\n",backtrace()}));
-      return -ldap_errno;
-    }
+
+    return send_starttls_op(context||UNDEFINED);
 
     return 1;
   } // start_tls
