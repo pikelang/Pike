@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.228 2000/01/10 00:46:26 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.229 2000/01/20 23:10:59 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -460,6 +460,108 @@ void f_search(INT32 args)
 
   default:
     SIMPLE_BAD_ARG_ERROR("search", 1, "string|array|mapping");
+  }
+}
+
+void f_has_index(INT32 args)
+{
+  int t = 0;
+  
+  if(args != 2)
+    PIKE_ERROR("has_index", "Bad number of arguments.\n", sp, args);
+
+  switch(sp[-2].type)
+  {
+    case T_STRING:
+      if(sp[-1].type == T_INT)
+	t = (0 <= sp[-1].u.integer && sp[-1].u.integer < sp[-2].u.string->len);
+  
+      pop_n_elems(args);
+      push_int(t);
+      break;
+      
+    case T_ARRAY:
+      if(sp[-1].type == T_INT)
+	t = (0 <= sp[-1].u.integer && sp[-1].u.integer < sp[-2].u.array->size);
+      
+      pop_n_elems(args);
+      push_int(t);
+      break;
+      
+    case T_MULTISET:
+    case T_MAPPING:
+      f_index(2);
+      f_zero_type(1);
+      
+      if(sp[-1].type == T_INT)
+	sp[-1].u.integer = !sp[-1].u.integer;
+      else
+	PIKE_ERROR("has_index",
+		   "Function `zero_type' gave incorrect result.\n", sp, args);
+      break;
+      
+    case T_OBJECT:
+      /* FIXME: If the object behaves like an array, it will
+	 throw an error for non-valid indices. Maybe this is
+	 the way to go (faster)?
+	 /Noring */
+
+      /* Fall-through. */
+      
+    default:
+      stack_swap();
+      f_indices(1);
+      stack_swap();
+      f_search(2);
+      
+      if(sp[-1].type == T_INT)
+	sp[-1].u.integer = (sp[-1].u.integer != -1);
+      else
+	PIKE_ERROR("has_index",
+		   "Function `search' gave incorrect result.\n", sp, args);
+  }
+}
+
+void f_has_value(INT32 args)
+{
+  if(args != 2)
+    PIKE_ERROR("has_value", "Bad number of arguments.\n", sp, args);
+
+  switch(sp[-2].type)
+  {
+    case T_MAPPING:
+      f_search(2);
+      f_zero_type(1);
+      
+      if(sp[-1].type == T_INT)
+	sp[-1].u.integer = !sp[-1].u.integer;
+      else
+	PIKE_ERROR("has_value",
+		   "Function `zero_type' gave incorrect result.\n", sp, args);
+      break;
+      
+    case T_OBJECT:
+      /* FIXME: It's very sad that we always have to do linear search
+	 with `values' in case of objects. The problem is that we cannot
+	 use `search' directly since it's undefined weather it returns
+	 -1 (array) or 0 (mapping) during e.g. some data type emulation.
+	 /Noring */
+
+      /* Fall-through. */
+      
+    case T_STRING:   /* Strings are odd. /Noring */
+    default:
+      stack_swap();
+      f_values(1);
+      stack_swap();
+
+    case T_ARRAY:
+      f_search(2);
+
+      if(sp[-1].type == T_INT)
+	sp[-1].u.integer = (sp[-1].u.integer != -1);
+      else
+	PIKE_ERROR("has_value", "Search gave incorrect result.\n", sp, args);
   }
 }
 
@@ -5608,6 +5710,46 @@ void init_builtin_efuns(void)
 		    tFunc( tOr(tMapping,tArray) tMix tOr(tVoid,tMix), tZero)))),
 	   0);
   
+  /* Same prototype as search, except it only has two arguments. */
+  ADD_EFUN("has_index",f_has_index,
+	   tOr5(tFunc(tStr tStr tOr(tVoid,tInt),
+		      tInt),
+		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
+		      tInt),
+		tFunc(tMultiset,
+		      tInt),
+		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
+		      tInt),
+
+		tIfnot(
+		  tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
+			tInt),
+		  tIfnot(
+		    tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
+			  tInt),
+		    tFunc( tOr(tMapping,tArray) tMix tOr(tVoid,tMix), tZero)))),
+	   0);
+
+  /* Same prototype as search, except it only has two arguments. */
+  ADD_EFUN("has_value",f_has_value,
+	   tOr5(tFunc(tStr tStr tOr(tVoid,tInt),
+		      tInt),
+		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
+		      tInt),
+		tFunc(tMultiset,
+		      tInt),
+		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
+		      tInt),
+
+		tIfnot(
+		  tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
+			tInt),
+		  tIfnot(
+		    tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
+			  tInt),
+		    tFunc( tOr(tMapping,tArray) tMix tOr(tVoid,tMix), tZero)))),
+	   0);
+
 /* function(float|int,int|void:void) */
   ADD_EFUN("sleep", f_sleep,
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);

@@ -13291,7 +13291,7 @@ time
 
 
 
-<function name=search title="search for a value in a string or array">
+<function name=search title="search for a value in a string, array or mapping">
 <man_syntax>
 int search(string <I>haystack</I>, string <I>needle</I>, [ int <I>start</I> ]);<br>
 int search(array <I>haystack</I>, mixed <I>needle</I>, [ int <I>start</I> ]);<br>
@@ -13314,6 +13314,49 @@ and zero_type() will return 1 for this zero.
 indices, values, zero_type
 </man_see>
 </function>
+
+
+
+<function name=has_index title="does the index exist?">
+<man_syntax>
+int has_index(string <I>haystack</I>, int <I>index</I>, [ int <I>start</I> ]);<br>
+int has_index(array <I>haystack</I>, int <I>index</I>, [ int <I>start</I> ]);<br>
+int has_index(mapping <I>haystack</I>, mixed <I>index</I>, [ mixed <I>start</I> ]);
+</man_syntax>
+<man_description>
+<p>Search for <i>index</i> in <i>haystack</i>. Returns 1 if the <i>index</i>
+is in the index domain of the <i>haystack</i> or 0 if not found. If the
+optional argument <i>start</i> is present search is started at this
+position.</p>
+<p>The has_index function is equivalent to
+search(indices(haystack), index, [start]) != -1.</p>
+</man_description>
+<man_see>
+indices, values, zero_type, search, has_value
+</man_see>
+</function>
+
+
+
+<function name=has_value title="does the value exist?">
+<man_syntax>
+int has_value(string <I>haystack</I>, int <I>value</I>, [ int <I>start</I> ]);<br>
+int has_value(array <I>haystack</I>, int <I>value</I>, [ int <I>start</I> ]);<br>
+int has_value(mapping <I>haystack</I>, mixed <I>value</I>, [ mixed <I>start</I> ]);
+</man_syntax>
+<man_description>
+<p>Search for <i>value</i> in <i>haystack</i>. Returns 1 if the <i>value</i>
+is in value domain of the <i>haystack</i> or 0 if not found. If the optional
+argument <i>start</i> is present search is started at this position.</p>
+<p>The has_value function is equivalent to
+search(values(haystack), value, [start]) != -1.</p>
+</man_description>
+<man_see>
+indices, values, zero_type, search, has_index
+</man_see>
+</function>
+
+
 
 <function name=sgn title="check the sign of a value">
 <man_syntax>
