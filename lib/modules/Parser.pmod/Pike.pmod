@@ -61,11 +61,18 @@ array(string) split(string data)
 	break;
 
       case '.':
-	if(data[start..start+2]=="...")
+        if(data[start..start+2]=="...")
 	{
-	  pos+=2;
+          pos+=3;
 	  break;
 	}
+        if(data[start..start+1]=="..")
+        {
+          pos+=2;
+          break;
+        }
+        pos++;
+        break;
 
       case '0'..'9':
 	if(data[pos]=='0' && (data[pos+1]=='x' || data[pos+1]=='X'))
@@ -86,7 +93,7 @@ array(string) split(string data)
 	  break;
 	}
 	while(data[pos]>='0' && data[pos]<='9') pos++;
-	if(data[pos]=='.')
+        if(data[pos]=='.' && data[pos+1]>='0' && data[pos+1]<='9')
 	{
 	  pos++;
 	  while(data[pos]>='0' && data[pos]<='9') pos++;
