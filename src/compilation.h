@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.13 1998/11/22 11:02:37 hubbe Exp $
+ * $Id: compilation.h,v 1.14 1999/12/29 21:11:38 mast Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -7,7 +7,7 @@
  */
 
 /*
- * IMEMBER: do not reset this member when popping
+ * IMEMBER: do not reset this member when pushing
  * DMEMBER: This member should be the same when popping as when pushing.
  * ZMEMBER: reset this member to zero when pushing
  * STACKMEMBER: Like IMEMBER, but is not allowed to become more when popping
