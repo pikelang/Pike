@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.33 1998/10/11 22:33:11 hubbe Exp $
+ * $Id: acconfig.h,v 1.34 1998/11/18 20:16:09 marcus Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -57,6 +57,9 @@
 
 /* Solaris has rusage as an ioctl on procfs */
 #undef GETRUSAGE_THROUGH_PROCFS
+
+/* Define if you have fork */
+#undef HAVE_FORK
 
 /* Define if you have isspace */
 #undef HAVE_ISSPACE

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.252 1998/11/17 05:13:19 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.253 1998/11/18 20:16:11 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1199,7 +1199,6 @@ AC_CHECK_FUNCS( \
  strdup \
  kill \
  alarm \
- fork \
  fork1 \
  flock \
  lockf \
@@ -1587,6 +1586,21 @@ if test [$]pike_cv_func_$1 = yes; then
 AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
 fi])
 
+########################################################################
+MY_CHECK_FUNCTION(fork,
+[
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+int main()
+{
+  exit(fork()==-1);
+}
+]);
 ########################################################################
 MY_CHECK_FUNCTION(fpsetmask,
 [
