@@ -129,6 +129,9 @@ void main(int argc, char **argv, char **env)
 #if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
+#ifndef RLIM_INFINITY 
+#define RLIM_INFINITY 0x7fffffff
+#endif
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
   {
