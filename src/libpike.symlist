@@ -1,0 +1,11 @@
+add_exit_callback
+init_pike
+init_pike_runtime
+load_pike_master
+pike_do_exit
+pike_push_argv
+pike_push_env
+pike_set_default_master
+pike_set_master_file
+set_pike_debug_options
+set_pike_evaluator_limit
