@@ -56,8 +56,14 @@ PIKECLASS ResObj
     RETURN THIS->eof;
   }
 
-  PIKEFUN mapping fetch_fields() {
-    Pike_error("Sql.SQLite: Not implemented.\n");
+  PIKEFUN array(mapping(string:mixed)) fetch_fields() {
+    int i;
+    for(i=0; i<THIS->columns; i++) {
+      push_constant_text("name");
+      push_text(sqlite3_column_name(THIS->stmt, i));
+      f_aggregate_mapping(2);
+    }
+    f_aggregate(THIS->columns);
   }
 
   PIKEFUN void seek(int skip) {
@@ -141,6 +147,51 @@ PIKECLASS SQLite
     apply_low(res, f_ResObj_create_fun_num, 0);
     push_object(res);
   }
+
+  PIKEFUN int changes() {
+    RETURN sqlite3_changes(THIS->db);
+  }
+
+  PIKEFUN int total_changes() {
+    RETURN sqlite3_total_changes(THIS->db);
+  }
+
+  PIKEFUN void interrupt() {
+    sqlite3_interrupt(THIS->db);
+  }
+
+  PIKEFUN string server_info() {
+    push_constant_text(sqlite3_libversion());
+  }
+
+  PIKEFUN int last_insert_rowid() {
+    RETURN sqlite3_last_insert_rowid(THIS->db);
+  }
+
+  PIKEFUN string error() {
+    push_text(sqlite3_errmsg(THIS->db));
+  }
+
+  PIKEFUN void select_db(string db) {
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  PIKEFUN void create_db(string db) {
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  PIKEFUN void drop_db(string db) {
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  PIKEFUN array(string) list_dbs() {
+    Pike_error("This operation is not possible with SQLite.\n");
+  }
+
+  /* List tables */
+  /* List fields */
+  /* Compile query */
+
 }
 
 
