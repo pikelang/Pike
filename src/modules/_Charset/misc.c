@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: misc.c,v 1.14 2003/06/30 17:11:19 mast Exp $
+|| $Id: misc.c,v 1.15 2004/06/30 09:17:24 grubba Exp $
 */
 
 #include "global.h"
@@ -1959,6 +1959,7 @@ static const struct {
   { "decmcs", map_DEC_MCS, 160, 255 },                                /* :: dec-mcs */
   { "dk", map_DS_2089, 91, 127 },                                     /* :: dk */
   { "ds2089", map_DS_2089, 91, 127 },                                 /* :: ds_2089 */
+  { "ebcdic", map_EBCDIC_US, 32, 255 },                               /* :: ebcdic */
   { "ebcdicatde", map_EBCDIC_AT_DE, 32, 255 },                        /* :: ebcdic-at-de */
   { "ebcdicatdea", map_EBCDIC_AT_DE_A, 32, 255 },                     /* :: ebcdic-at-de-a */
   { "ebcdicbe", map_IBM274, 32, 255 },                                /* :: ebcdic-be */
