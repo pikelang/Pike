@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.11 2002/10/07 10:40:54 kiwi Exp $
+# $Id: configure.in,v 1.12 2002/10/07 10:50:49 kiwi Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   JDIMENSION block_test;
   jpeg_component_info *compptr;
 
-  block_test = compptr->heigh_in_blocks;
+  block_test = compptr->height_in_blocks;
       ],[
         pike_cv_jpeg_height_in_blocks=yes
       ],[
