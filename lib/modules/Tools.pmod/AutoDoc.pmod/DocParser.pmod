@@ -39,6 +39,7 @@ mapping(string : int) keywordtype =
   "endmodule" : METAKEYWORD,
   "decl" : METAKEYWORD,
 
+  "b" : BRACEKEYWORD,
   "i" : BRACEKEYWORD,
   "tt" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
@@ -111,6 +112,7 @@ mapping(string : multiset(string)) allowGrouping =
   "type" : (< "type" >),
   "value" : (< "value" >),
   "constant" : (< "constant" >),
+  "item" : (< "item" >),
 ]);
 
 multiset(string) allowOnlyOne =
