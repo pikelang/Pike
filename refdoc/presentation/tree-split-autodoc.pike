@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.33 2002/11/26 16:57:35 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.34 2002/11/27 17:38:39 grubba Exp $
  *
  */
 
@@ -272,7 +272,7 @@ class Node
       return "<font face='courier'>" + _reference + "</font>";
 
     if (!vars["resolution-failure"]) {
-      foreach (resolved, string resolution) {
+      foreach (resolved||({}), string resolution) {
 	Node res_obj;
 
 	if(res_obj = refs[resolution]) {
@@ -293,12 +293,12 @@ class Node
 
 	if (!zero_type(refs[resolution])) {
 	  werror("Reference %O (%O) is %O!\n",
-		 _reference, resolution, refs[resolved]);
+		 _reference, resolution, refs[resolution]);
 	}
       }
-      if (!missing[resolved] && !has_prefix(_reference, "lfun::")) {
+      if (!missing[vars->resolved] && !has_prefix(_reference, "lfun::")) {
 	werror("Missed reference %O (%{%O, %}) in %s\n",
-	       _reference, resolved, make_class_path());
+	       _reference, resolved||({}), make_class_path());
 #if 0
 	werror("Potential refs:%O\n",
 	       sort(map(resolved,
