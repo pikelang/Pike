@@ -50,6 +50,7 @@ void mapping_index_no_free(struct svalue *dest,
 			   struct svalue *key);
 struct array *mapping_indices(struct mapping *m);
 struct array *mapping_values(struct mapping *m);
+struct array *mapping_to_array(struct mapping *m);
 void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
 struct mapping *mkmapping(struct array *ind, struct array *val);
 struct mapping *copy_mapping(struct mapping *m);
