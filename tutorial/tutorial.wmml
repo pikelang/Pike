@@ -744,7 +744,7 @@ Now, it would be better and more general if we could enter more records into our
 
 <section title="add_record()">
 
-Using the builtin function <tt>readline()</tt> we wait for input which will be put into the variable <tt>record_name</tt>. The argument to <tt>readline()</tt> is printed as a prompt in front of the user's input. Readline takes everything up to a newline character.
+Using the method <tt>Stdio.Readline()->read()</tt> we wait for input which will be put into the variable <tt>record_name</tt>. The argument to <tt>->read()</tt> is printed as a prompt in front of the user's input. Readline takes everything up to a newline character.
 Now we use the control structure <tt>while</tt> to check whether we should continue inputting songs.
 The <tt>while(1)</tt> means "loop forever", because 1 is always <b>true</b>.
 This program does not in fact loop forever, because it uses <tt>return</tt>
@@ -757,14 +757,14 @@ Note the <tt>+=</tt> operator. It is the same as saying
 <example language=pike>
 void add_record()
 {
-  string record_name=readline("Record name: ");
+  string record_name=Stdio.Readline()->read("Record name: ");
   records[record_name]=({});
   write("Input song names, one per line. End with '.' on its own line.\n");
   while(1)
   {
     string song;
-    song=readline(sprintf("Song %2d: ",
-                          sizeof(records[record_name])+1));
+    song=Stdio.Readline()->read(sprintf("Song %2d: ",
+                                sizeof(records[record_name])+1));
     if(song==".")
        return;
     if (strlen(song))
@@ -777,7 +777,7 @@ void add_record()
 
 <section title="main()">
 The main function now does not care about any command line arguments.
-Instead we use <tt>readline()</tt> to prompt the user for instructions
+Instead we use <tt>Stdio.Readline()->read()</tt> to prompt the user for instructions
 and arguments. The available instructions are "add", "list" and "quit".
 What you enter into the variables <tt>cmd</tt> and <tt>args</tt> is checked in the
 <tt>switch()</tt> block. If you enter something that is not covered
@@ -796,7 +796,7 @@ If the command given is "quit" the <tt>exit(0)</tt> statement stops the executio
 int main(int argc, array(string) argv)
 {
   string cmd;
-  while(cmd=readline("Command: "))
+  while(cmd=Stdio.Readline()->read("Command: "))
   {
     string args;
     sscanf(cmd,"%s %s",cmd,args);
@@ -1283,7 +1283,7 @@ construct command parsing loops for instance:
 <example language=pike>
 while(1)
 {
-  string command=readline("&gt; ");
+  string command=Stdio.Readline()->read("&gt; ");
   if(command=="quit") break;
   do_command(command);
 }
@@ -1301,7 +1301,7 @@ like this:
 <example language=pike>
 while(1)
 {
-  string command=readline("&gt; ");
+  string command=Stdio.Readline()->read("&gt; ");
   if(strlen(command) == 0) continue;
   if(command=="quit") break;
   do_command(command);
@@ -4922,10 +4922,7 @@ the whole file is read.
 string readline(string <I>prompt</I>);<br>
 </man_syntax>
 <man_description>
-This function writes the string <i>prompt</i> and then waits until the
-user has entered a line from the keyboard. If the readline library
-was available when Pike was compiled the user will have history and
-line editing at his/her disposal when entering the line.
+This function is gone. Use Stdio.Readline()->read instead.
 </man_description>
 <man_see>Stdio.File</man_see>
 </function>
@@ -14390,13 +14387,14 @@ void show_record(int num)
 
 void add_record()
 {
-  string record_name=readline("Record name: ");
+  string record_name=Stdio.Readline()->read("Record name: ");
   records[record_name]=({});
   write("Input song names, one per line. End with '.' on its own line.\n");
   while(1)
   {
     string song;
-    song=readline(sprintf("Song %2d: ",sizeof(records[record_name])+1));
+    song=Stdio.Readline()->read(sprintf("Song %2d: ",
+                                        sizeof(records[record_name])+1));
     if(song==".") return;
     records[record_name]+=({song});
   }
@@ -14493,7 +14491,7 @@ void find_song(string title)
 int main(int argc, array(string)  argv)
 {
   string cmd;
-  while(cmd=readline("Command: "))
+  while(cmd=Stdio.Readline()->read("Command: "))
   {
     string args;
     sscanf(cmd,"%s %s",cmd,args);
@@ -14699,7 +14697,8 @@ an old Pike to a new one, not the other way around.
 the Simulate-module.
 
 <dt> Stdio.readline
-<dd> See Stdio.Readline.
+<dd> See Stdio.Readline. You can replace readline with 
+Stdio.Readline()->read generally.
 
 <dt> varargs
 <dd> The former keyword varargs is now removed. The syntax now is like
