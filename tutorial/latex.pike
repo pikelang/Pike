@@ -196,11 +196,11 @@ string convert_table(TAG table)
 string convert_gfx(Sgml.Tag tag)
 {
   string file=Gfx.convert( tag->params,
-			   "tex|eps",
+			   "eps",
 			   300.0,
 			   tag->data && Sgml.get_text(tag->data));
 
-  switch( (file/".")[-1]=="." )
+  switch( (file/".")[-1] )
   {
     case "tex": return "\\input{"+file+"}";
     case "eps": return "\\epsfbox{"+file+"}";
@@ -402,7 +402,6 @@ string convert_to_latex(SGML data, void|int flags)
 	      "\n\\end{center}\n";
 	    break;
 
-	  case "firstpage":
 	  case "variable":
 	  case "constant":
 	  case "method":
@@ -411,6 +410,12 @@ string convert_to_latex(SGML data, void|int flags)
 	  case "module":
             // FIXME: but how?
 	    ret+=convert_to_latex(tag->data);
+	    break;
+
+	  case "firstpage":
+	    ret+="\\begin{titlepage}\n"+
+	      convert_to_latex(tag->data)+
+	      "\n\\end{titlepage}\n";
 	    break;
 
 	  case "table-of-contents":
@@ -680,7 +685,3 @@ Sgml.Tag illustration(object o,void|mapping options)
   return Sgml.Tag("image",(["src":Gfx.mkeps(o,options)]),0);
 }
 
-Sgml.Tag illustration_jpeg(object o,void|mapping options)
-{
-  return Sgml.Tag("image",(["src":Gfx.mkeps(o,options)]),0);
-}

@@ -24,7 +24,9 @@ int main(int argc, string *argv)
     if (!out->output) error("%O doesn't have an output method",argv[2]);
 
     add_constant("illustration",out->illustration);
-    add_constant("illustration_jpeg",out->illustration_jpeg);
+    add_constant("illustration_jpeg",
+		 out->illustration_jpeg ||
+		 out->illustration);
 
     werror("Reading ");
     string input=Stdio.read_file(argv[1]);

@@ -84,7 +84,19 @@ string mkjpg(mixed o,void|mapping options)
 
 string mkeps(mixed o,void|mapping options)
 {
+  if(stringp(o))
+  {
+    // Possible GIF animation (#*@&(*#&$
+    return "error.eps";
+  }
   if(!options) options=([]);
+  if(options->alpha)
+  {
+//    werror("\nFLALKAJF:LAKJF\n\n");
+    object x=Image.Image( o->xsize(), o->ysize(), 255,255,255);
+    x->paste_mask(o,options->alpha);
+    o=x;
+  }
   string g=Image.PS.encode(o, options);
   return cached_write(g,"eps");
 }
@@ -92,14 +104,14 @@ string mkeps(mixed o,void|mapping options)
 string mkpng(mixed o,void|mapping options)
 {
   if(!options) options=([]);
-  string g=Image.PNG.encode(o);
+  string g=Image.PNG.encode(o,options);
   return cached_write(g,"png");
 }
 
-mapping(string:Image.Image) srccache=([]);
+mapping(string:mapping) srccache=([]);
 Image.Image errimg=Image.image(10,10)->test();
 
-Image.Image read_image(string file)
+mapping read_image(string file)
 {
   if(!file) return 0;
 
@@ -121,36 +133,41 @@ Image.Image read_image(string file)
     o=Image.image(o->xsize()+40, o->ysize()+40, 255,255,255)->paste(o,20,20);
     rm("___tmp.ps");
     rm("___tmp.ppm");
-    if(o!=errimg) srccache[file]=o;
-    return o;
+    mapping tmp=(["image":o,"dpi":75.0]);
+    if(o!=errimg) srccache[file]=tmp;
+    return tmp;
   }
 
   string data=Stdio.read_file(file);
   if(!data || !strlen(data))
   {
     werror("\nFailed to read image %s\n\n",file);
-    return srccache[file]=errimg;
+    return srccache[file]=(["image":errimg]);
   }
     
-  catch  { return srccache[file]=Image.GIF.decode(data); };
-  catch { return srccache[file]=Image.JPEG.decode(data); };
-  catch  { return srccache[file]=Image.PNM.decode(data); };
-  catch  { return srccache[file]=Image.PNG.decode(data); };
+  catch  {
+    catch {
+      Image.Image i,a;
+      array chunks = Image.GIF._decode( data );
+      
+      // If there is more than one render chunk, the image is probably
+      // an animation. Handling animations is left as an exercise for
+      // the reader. :-)
+      foreach(chunks, mixed chunk)
+	if(arrayp(chunk) && chunk[0] == Image.GIF.RENDER )
+	  [i,a] = chunk[3..4];
+      if(i) return (["image":i,"alpha":a]);
+    };
+  };
+  catch { return srccache[file]=(["image":Image.JPEG.decode(data)]); };
+  catch  { return srccache[file]=(["image":Image.PNM.decode(data)]); };
+  catch  { return srccache[file]=Image.PNG._decode(data); };
   werror("\nFailed to decode image %s\n\n",file);
-  return srccache[file]=errimg;
+  return srccache[file]=(["image":errimg]);
 }
 
-string write_image(string fmt, Image.Image o, void|float pic_dpi)
+string write_image(string fmt, mapping opts)
 {
-  switch(fmt)
-  {
-    case "gif": return mkgif(o);
-    case "jpg": return mkjpg(o);
-    case "eps": return mkeps(o, (["dpi":pic_dpi ]));
-    case "png": return mkpng(o);
-    default:
-      error("Unknown output format.\n");
-  }
 }
 
 string gettext(string s)
@@ -181,6 +198,8 @@ string convert(mapping params,
   mapping(string:string) ext_to_input=mkmapping(Array.map(tmp,gettext),tmp);
   mapping(string:float) ext_to_dpi=mkmapping(Array.map(tmp,gettext),dpi);
 
+//  werror("GNAPP: %O\n",params);
+
   if(!filter)
   {
     string best;
@@ -199,7 +218,11 @@ string convert(mapping params,
 	  }
 	}
       }
-    if(best) return best;
+    if(best)
+    {
+      werror("convert not required: %s\n",best);
+      return best;
+    }
   }
 
   array(int) mtimes=column(Array.map(tmp, file_stat)-({0}), 3);
@@ -225,7 +248,7 @@ string convert(mapping params,
     case "eps":
       if(ext_to_input->fig)
       {
-	Process.create_process( ({"fig2dev","-L","ps","-m","0.6666666666",ext_to_input->xfig,"___tmp.eps" }))->wait();
+	Process.create_process( ({"fig2dev","-L","ps","-m","0.6666666666",ext_to_input->fig,"___tmp.eps" }))->wait();
 	return illustration_cache[key]=
 	  cached_write(Stdio.read_file("___tmp.eps"),"eps");
       }
@@ -234,20 +257,19 @@ string convert(mapping params,
     case "tex":
       if(ext_to_input->fig)
       {
-	Process.create_process( ({"fig2dev","-L","latex",ext_to_input->xfig,"___tmp.tex" }))->wait();
+	Process.create_process( ({"fig2dev","-L","latex",ext_to_input->fig,"___tmp.tex" }))->wait();
 	return illustration_cache[key]=
 	  cached_write(Stdio.read_file("___tmp.tex"),"tex");
       }
   }
 
-  float pic_dpi=0.0;
-  Image.Image o;
+  mapping o;
   for(int e=0;e<sizeof(tmp);e++)
   {
     if(dpi[e]<wanted_dpi) continue;
     if(o=read_image(tmp[e]))
     {
-      pic_dpi=dpi[e];
+      if(!o->dpi) o->dpi=dpi[e];
       break;
     }
   }
@@ -262,24 +284,23 @@ string convert(mapping params,
     {
       if(o=read_image(tmp[e]))
       {
-	pic_dpi=dpi[e];
+	if(!o->dpi) o->dpi=dpi[e];
 	break;
       }
     }
   }
 
-  if(!o)
+  if(!o || !o->image)
   {
     error("Failed to read image!\n");
   }
 
 
-
   if(filter)
   {
     mixed err=catch {
-      o=compile_string("import Image;\n"
-		       "mixed `()(object src) { "+filter+" ;}")()(o);
+      o=(["image":compile_string("import Image;\n"
+		       "mixed `()(object src) { "+filter+" ;}")()(o->image)]);
     };
     if(err)
     {
@@ -289,14 +310,23 @@ string convert(mapping params,
   }
 
   string ret;
-  foreach(wanted_formats/"|", string tmp)
+  foreach(wanted_formats/"|", string fmt)
     {
-      if(!catch {
-	string ret=write_image(tmp, o, pic_dpi);
-	}) break;
+      mixed err=catch {
+	switch(fmt)
+	{
+	  case "gif": ret=mkgif(o->image,o); break;
+	  case "jpg": ret=mkjpg(o->image,o); break;
+	  case "eps": ret=mkeps(o->image,o); break;
+	  case "png": ret=mkpng(o->image,o); break;
+	}
+      };
+      if(err) werror(master()->describe_backtrace(err));
+      if(ret) break;
     }
   illustration_cache[key]=ret;
   save_image_cache();
+//  werror("--> %s\n",ret);
   return ret;
 }
 
