@@ -3,12 +3,45 @@ inherit "split";
 
 // Output pike refdoc-style documentation from the full code-tree.
 // Also generates nice readable 'source-code' as a bonus. :-)
+static string make_example_image( string data, int toplevel )
+{
+  Stdio.File pipe = Stdio.File();
+  Stdio.File pipe2 = pipe->pipe();
+  Process.create_process( ({"pike",
+                            combine_path(__FILE__,
+                                         "../../make_example_image.pike"),
+                            data,
+                            toplevel?"TOP":"SUB", }),
+                          ([ "stdout":pipe ]));
+  destruct( pipe );
+  return pipe2->read();
+}
+
+static string fix_images( string data )
+{
+  string res = "";
+  foreach( data /"\n", string d )
+  {
+    if( sscanf( d, "%*sTIMG:%s", d ) )
+      res += make_example_image( d,1 )+"\n";
+    else if( sscanf( d, "%*sIMG:%s", d ) )
+      res += make_example_image( d,0 )+"\n";
+    else
+      res += d+"\n";
+  }
+  return res;
+}
+
 
 static string make_pike_refdoc( string pgtkdoc,
                               mapping|void signals )
 {
   if( !pgtkdoc || !strlen(pgtkdoc) )
     return "";
+
+
+  pgtkdoc = fix_images( pgtkdoc );
+  
   string res =  "//! "+(pgtkdoc/"\n"*"\n//! ")+"\n";
   if( signals && sizeof(signals) )
   {
