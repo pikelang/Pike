@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.28 2002/12/03 13:41:08 jhs Exp $
+// $Id: RCS.pike,v 1.29 2002/12/03 16:08:30 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -551,8 +551,9 @@ class Revision
   //! the state of the revision - typically "Exp" or "dead"
   string state;
 
-  //! the (UTC) date and time when the revision was committed
-  object/* Calendar.ISO.Second */ time;
+  //! the (UTC) date and time when the revision was committed (second
+  //! precision)
+  Calendar.TimeRange time;
 
   //! the branch name on which this revision was committed (calculated
   //! according to how cvs manages branches)
