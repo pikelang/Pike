@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.25 2002/02/20 00:19:00 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.26 2002/02/20 01:11:15 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -11,7 +11,7 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Hilfe can not handle enums.
 - Hilfe can not handle typedefs.
 - Hilfe can not handle generated types, e.g.
-  constant boolean = typeof(0)|typeof(1); booleab flag = 1;
+  constant boolean = typeof(0)|typeof(1); boolean flag = 1;
 - Hilfe should possibly handle imports better, e.g. overwrite the
   local variables/constants/functions/programs.
 - Some preprocessor stuff works. Some doesn't. They should be
@@ -42,7 +42,7 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 private void|string command_exit(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(intp(e)) return "Exit Hilfe.";
-  write("Exiting.\n");
+  e->write("Exiting.\n");
   destruct(e);
   exit(0);
 }
@@ -50,6 +50,7 @@ private void|string command_exit(int|Evaluator e, void|string line, void|array(s
 private void|string command_help(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(intp(e)) return "Show help text.";
   line = tokens[2..sizeof(tokens)-2]*"";
+  function write = e->write;
 
   if(line == "me more") {
     write( #"Some commands has extended help available. This can be displayed by
@@ -75,6 +76,14 @@ started the history is imported.
 You can put a .hilferc file at the directory set in your
 environment variable $HOME or $USERPROFILE. The contents of this
 file will be evaulated in hilfe during each startup.
+
+Note that there are a few symbols that you can not define, since
+they are used by Hilfe. They are:
+
+___hilfe         A mapping containing all defined symbols.
+___Hilfe         The Hilfe object.
+___HilfeWrapper  A wrapper around the entered expression.
+
 
 Type \"help hilfe todo\" to get a list of known Hilfe bugs/lackings.
 ");
@@ -116,6 +125,8 @@ Enter \"help me more\" for further Hilfe help.
 }
 
 private object command_dump = class {
+
+    private function write;
 
     private string help() {
       return #"dump
@@ -190,6 +201,7 @@ dump wrapper
 
     void|string `()(int|Evaluator e, void|string line, void|array(string) tokens) {
       if(!e) return "Dump variables and other info.";
+      write = e->write;
       if(e==1) return help();
 
       line = tokens[2..sizeof(tokens)-2]*"";
@@ -238,7 +250,7 @@ private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 //! entered in one end and complete expressions is outputted in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
 private class ParserState {
-  private array(string) pstack = ({ });
+  private ADT.Stack pstack = ADT.Stack();
   private constant starts = ([ ")":"(", "}":"{", "]":"[",
 			       ">)":"(<", "})":"({", "])":"([" ]);
   private array(string) pipeline = ({ });
@@ -252,38 +264,38 @@ private class ParserState {
       if(sizeof(token)>1 && (token[0..1]=="//" || token[0..1]=="/*")) continue; // comments
 
       // If we start a block at the uppermost level, what kind of block is it?
-      if(token=="{" && !sizeof(pstack) && !block)
+      if(token=="{" && !pstack->ptr && !block)
 	block = last;
-      if( (token=="lambda" || token=="class") && !sizeof(pstack))
+      if( (token=="lambda" || token=="class") && !pstack->ptr)
 	block = token;
 
       // Do we begin any kind of parenthesis level?
       if(token=="(" || token=="{" || token=="[" ||
 	 token=="(<" || token=="({" || token=="([")
-	pstack += ({ token });
+	pstack->push(token);
 
       // Do we end any king of parenthesis level?
       if(token==")" || token=="}" || token=="]" ||
 	 token==">)" || token=="})" || token=="])" ) {
-	if(!sizeof(pstack))
+	if(!pstack->ptr)
 	   throw(sprintf("%O end parenthesis without start parenthesis.", token));
-	if(pstack[-1]!=starts[token])
+	if(pstack->top()!=starts[token])
 	   throw(sprintf("%O end parenthesis does not match closest start parenthesis %O.",
-			 token, pstack[-1]));
-	pstack = pstack[..sizeof(pstack)-2];
+			 token, pstack->top()));
+	pstack->pop();
       }
 
       pipeline += ({ token });
 
       // expressions
-      if(token==";" && !sizeof(pstack)) {
+      if(token==";" && !pstack->ptr) {
 	ready += ({ pipeline });
 	pipeline = ({});
       }
 
       // If we end a block at the uppermost level, and it doesn't need a ";",
       // then we can move out that block of the pipeline.
-      if(token=="}" && !sizeof(pstack) && !termblock[block]) {
+      if(token=="}" && !pstack->ptr && !termblock[block]) {
 	ready += ({ pipeline });
 	pipeline = ({});
 	block = 0;
@@ -311,7 +323,7 @@ private class ParserState {
   //! Are we in the middle of an expression. Used e.g. for chaning the
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
-    if(sizeof(pstack)) return 0;
+    if(pstack->ptr) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
       pipeline = ({});
@@ -322,7 +334,7 @@ private class ParserState {
 
   //! Clear the current state.
   void flush() {
-    pstack = ({});
+    pstack->reset();
     pipeline = ({});
     ready = ({});
     last = 0;
@@ -332,7 +344,7 @@ private class ParserState {
   //! Show the current parser state. Used by "dump state".
   void show_state() {
     write("Current parser state\n");
-    write("Parenthesis stack: %s\n", pstack*" ");
+    write("Parenthesis stack: %s\n", pstack->arr[..pstack->ptr]*" ");
     write("Current pipline: %O\n", pipeline);
     write("Last token: %O\n", last);
     write("Current block: %O\n", block);
@@ -831,6 +843,12 @@ class Evaluator {
       write("Hilfe Warning: Command %O no longer reachable. Use %O instead.\n",
 	    new_var, "."+new_var);
 
+    if(new_var=="___hilfe" || new_var=="___Hilfe" || new_var=="___HilfeWrapper" ) {
+      write("Hilfe Error: Symbol %O must not be defined.\n"
+	    "             It is used internally by Hilfe.\n", new_var);
+      return 0;
+    }
+
     mapping symbols = constants + functions + programs;
 
     if(new_var=="__")
@@ -946,7 +964,7 @@ class Evaluator {
   }
 }
 
-//! This is a wrapper containing a "GUI" to the Hilfe @[Evaluator]
+//! This is a wrapper containing a user interface to the Hilfe @[Evaluator]
 //! so that it can actually be used. This wrapper uses the @[Stdio.Readline]
 //! module to interface with the user. All input history is handled by
 //! that module, and as a consequence loading and saving .hilfe_history is
