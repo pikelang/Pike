@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.17 1999/01/28 22:02:23 grubba Exp $
+ * $Id: requests.pmod,v 1.18 1999/02/02 21:49:40 grubba Exp $
  */
 
 import .types;
@@ -87,8 +87,6 @@ class request
       case "any":
 	/* A single atom or string or a list of atoms (with
 	 * options), lists. Used for fetch. */
-	// FIXME: Are the arguments correct?
-	//	/grubba 1999-01-28
 	return parser->get_any(arg_info[argc][1], 0, 0, append_arg);
 
       case "varargs":
@@ -255,164 +253,165 @@ class fetch
   constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
 
   mapping easy_process(object message_set, mapping request)
+  {
+    array fetch_attrs = 0;
+    switch(request->type)
     {
-      array fetch_attrs = 0;
-      switch(request->type)
-      {
-      case "atom":
-	/* Short hands */
-	if (!request->options)
-	  /* No attributes except BODY and BODY.PEEK can take any options */
-	  switch(lower_case(request->atom))
-	  {
+    case "atom":
+      /* Short hands */
+      if (!request->options)
+	/* No attributes except BODY and BODY.PEEK can take any options */
+	switch(lower_case(request->atom))
+	{
 #define ATTR(x) ([ "wanted" : (x) ])
-	  case "all":
-	    fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
-			     ATTR("rfc822.size"), ATTR("envelope") });
-	    break;
-	  case "fast":
-	    fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
-			     ATTR("rfc822.size"), });
-	    break;
-	  case "full":
-	    fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
-			     ATTR("rfc822.size"), ATTR("envelope"),
-			     ([ "wanted" : "bodystructure",
-				"no_extention_data" : 1 ]) });
-	    break;
+	case "all":
+	  fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
+			   ATTR("rfc822.size"), ATTR("envelope") });
+	  break;
+	case "fast":
+	  fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
+			   ATTR("rfc822.size"), });
+	  break;
+	case "full":
+	  fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
+			   ATTR("rfc822.size"), ATTR("envelope"),
+			   ([ "wanted" : "bodystructure",
+			      "no_extention_data" : 1 ]) });
+	  break;
 #undef ATTR
-	  default:
-	    /* Handled below */
-	  }
-	if (!fetch_attrs)
-	{
-	  mixed f = process_fetch_attr(request);
-	  if (!f)
-	  {
-	    return bad("Invalid fetch");
-	  }
-	  fetch_attrs = ({ f });
+	default:
+	  /* Handled below */
 	}
-      case "list":
-	fetch_attrs = allocate(sizeof(request->list));
-
-	for(int i = 0; i<sizeof(fetch_attrs); i++)
-	{
-	  if (!(fetch_attrs[i] = process_fetch_attr(request->list[i])))
-	  {
-	    return bad("Invalid fetch");
-	  }
-	}
-	break;
-      default:
-	throw( ({ "Internal error!\n", backtrace() }) );
-      }
-
-      array info;
-
-      /* If the arguments are invalid, fetch() can throw a string,
-       * which is returned to the client as an error message. */
-      mixed e = catch {
-	info = server->fetch(session, message_set, fetch_attrs);
-      };
-
-      if (e)
+      if (!fetch_attrs)
       {
-	if (stringp(e))
+	mixed f = process_fetch_attr(request);
+	if (!f)
 	{
-	  return bad(e);
+	  return bad("Invalid fetch");
 	}
-	else throw(e);
+	fetch_attrs = ({ f });
       }
-      if (info)
+      break;	/* FIXME: Was FALL_THROUGH */
+    case "list":
+      fetch_attrs = allocate(sizeof(request->list));
+      
+      for(int i = 0; i<sizeof(fetch_attrs); i++)
       {
-	foreach(info, array a)
-	  send("*", @a);
-	send(tag, "OK");
-      } else 
-	send(tag, "NO");
-
-      return ([ "action" : "finished" ]);
+	if (!(fetch_attrs[i] = process_fetch_attr(request->list[i])))
+	{
+	  return bad("Invalid fetch");
+	}
+      }
+      break;
+    default:
+      throw( ({ "Internal error!\n", backtrace() }) );
     }
+
+    array info;
+
+    /* If the arguments are invalid, fetch() can throw a string,
+     * which is returned to the client as an error message. */
+    mixed e = catch {
+      info = server->fetch(session, message_set, fetch_attrs);
+    };
+
+    if (e)
+    {
+      if (stringp(e))
+      {
+	return bad(e);
+      }
+      else throw(e);
+    }
+    if (info)
+    {
+      foreach(info, array a)
+	send("*", @a);
+      send(tag, "OK");
+    } else 
+      send(tag, "NO");
+
+    return ([ "action" : "finished" ]);
+  }
 
   mapping process_fetch_attr(mapping atom)
+  {
+    if (atom->type != atom)
+      return 0;
+
+    string wanted = lower_case(atom->atom);
+    mapping res = ([ "wanted" : wanted ]);
+
+    /* Should requesting any part of the body really count as reading it? */
+    if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
+      res->mark_as_read = 1;
+
+    switch(wanted)
     {
-      if (atom->type != atom)
+    case "body":
+      if (!atom->options)
+      {
+	res->wanted = "bodystructure";
+	res->raw_wanted = "body";  // What to say in the response
+	res->no_extention_data = 1;
+	return res;
+      }
+      /* Fall through */
+    case "body.peek":
+      if (!atom->options)
 	return 0;
 
-      string wanted = lower_case(atom->atom);
-      mapping res = ([ "wanted" : wanted ]);
-
-      /* Should requesting any part of the body really count as reading it? */
-      if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
-	res->mark_as_read = 1;
-
-      switch(wanted)
-      {
-      case "body":
-	if (!atom->options)
-	{
-	  res->wanted = "bodystructure";
-	  res->raw_wanted = "body";  // What to say in the response
-	  res->no_extention_data = 1;
-	  return res;
-	}
-	/* Fall through */
-      case "body.peek":
-	if (!atom->options)
-	  return 0;
-
-	if (sizeof(atom->options)
-	    && ( (atom->options[0]->type != atom)
-		 || (atom->options[0]->options)))
-	  return 0;
+      if (sizeof(atom->options)
+	  && ( (atom->options[0]->type != atom)
+	       || (atom->options[0]->options)))
+	return 0;
 	
-	array path = atom->options[0]->atom / ".";
+      array path = atom->options[0]->atom / ".";
 
-	/* Extract numeric prefix */
-	array part_number = ({ });
-	int i;
+      /* Extract numeric prefix */
+      array part_number = ({ });
+      int i;
 
-	for(i = 0; i<sizeof(path); i++)
-	{
-	  int n = string_to_number(path[i]);
-	  if (n<0)
-	    break;
-	  part_number += ({ n });
-	}
-
-	res->raw_options = atom->options;
-	res->section = path[i..];
-	res->part = part_number;
-	res->options = atom->options[1..];
-	res->partial = atom->range;
-
-	return res;
-      default:
-	/* Handle below */
+      for(i = 0; i<sizeof(path); i++)
+      {
+	int n = string_to_number(path[i]);
+	if (n<0)
+	  break;
+	part_number += ({ n });
       }
 
-      /* No commands except BODY[.PEEK] accepts any options */
-      if (atom->options)
-	return 0;
+      res->raw_options = atom->options;
+      res->section = path[i..];
+      res->part = part_number;
+      res->options = atom->options[1..];
+      res->partial = atom->range;
 
-      array path = wanted / ".";
-
-      if (sizeof(path) == 1)
-	return (< "envelope",
-		  "flags",
-		  "internaldate",
-		  // "rfc822.header", "rfc822.size", "rfc822.text",
-		  "bodystructure",
-		  "uid" >)[wanted]
-	  && res;
-
-      res->raw_wanted = wanted;
-      
-      res->wanted = path[0];
-      res->section = path[1..];
-      return (res->wanted == "rfc822") && res;
+      return res;
+    default:
+      /* Handle below */
     }
+
+    /* No commands except BODY[.PEEK] accepts any options */
+    if (atom->options)
+      return 0;
+
+    array path = wanted / ".";
+
+    if (sizeof(path) == 1)
+      return (< "envelope",
+		"flags",
+		"internaldate",
+		// "rfc822.header", "rfc822.size", "rfc822.text",
+		"bodystructure",
+		"uid" >)[wanted]
+	&& res;
+
+    res->raw_wanted = wanted;
+      
+    res->wanted = path[0];
+    res->section = path[1..];
+    return (res->wanted == "rfc822") && res;
+  }
 }
   
 class search
