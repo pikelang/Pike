@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.9 2003/01/05 05:52:17 nilsson Exp $
+dnl $Id: testsuite.in,v 1.10 2003/01/05 15:40:51 nilsson Exp $
 
 define(exarg,[[test_any([[
   function x=$1;
@@ -154,6 +154,7 @@ test_any([[
   object a=class { int `<() { return 1; } int `-() { return 7; } }();
   return abs(a);
 ]],7)
+dnl exarg(abs)
 
 dnl - sgn
 test_eq(sgn(1),1)
@@ -168,3 +169,4 @@ test_eq(sgn(6,7),-1)
 test_eq(sgn("bar","foo"),-1)
 test_eq(sgn("foo","foo"),0)
 test_eq(sgn("gazonk","foo"),1)
+exarg(sgn)
