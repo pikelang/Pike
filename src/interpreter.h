@@ -266,7 +266,7 @@ static int eval_instruction(unsigned char *pc)
 #endif /* DEBUG_MALLOC */
 
 #ifdef PIKE_DEBUG
-	  if(i < 0 || i > p->num_identifiers)
+	  if(i < 0 || i > p->num_identifiers_references)
 	    fatal("Identifier out of range!\n");
 #endif
 
