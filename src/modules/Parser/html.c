@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.172 2004/04/15 00:09:31 nilsson Exp $
+|| $Id: html.c,v 1.173 2004/06/23 09:47:34 mirar Exp $
 */
 
 #include "global.h"
@@ -792,9 +792,9 @@ static void exit_html_struct(struct object *o)
 
 /****** setup callbacks *****************************/
 
-/*! @decl Parser.HTML _set_tag_callback(function to_call)
- *! @decl Parser.HTML _set_entity_callback(function to_call)
- *! @decl Parser.HTML _set_data_callback(function to_call)
+/*! @decl Parser.HTML _set_tag_callback(function|string|array to_call)
+ *! @decl Parser.HTML _set_entity_callback(function|string|array to_call)
+ *! @decl Parser.HTML _set_data_callback(function|string|array to_call)
  *!
  *! These functions set up the parser object to call the given
  *! callbacks upon tags, entities and/or data. The callbacks will
@@ -814,6 +814,10 @@ static void exit_html_struct(struct object *o)
  *! longest possible string, as long as it doesn't get called out of
  *! order with any other callback. It will never be called with a zero
  *! length string.
+ *!
+ *! If a string or array is given instead of a function, it
+ *! will act as the return value from the function. Arrays 
+ *! or empty strings is probably preferable to avoid recursion.
  *!
  *! @returns
  *!   Returns the object being called.
@@ -2510,6 +2514,14 @@ static void do_callback(struct parser_html_storage *this,
 			ptrdiff_t cend)
 {
    ONERROR uwp;
+
+   if (callback_function->type!=T_FUNCTION &&
+       callback_function->type!=T_PROGRAM)
+   {
+      push_svalue(callback_function);
+      this->start=NULL;
+      return;
+   }
 
    this->start=start;
    this->cstart=cstart;
@@ -5252,6 +5264,8 @@ static void html_ignore_comments(INT32 args)
 #define tTodo(X) tOr4(tZero,tStr,tCbfunc(X),tArray)
 #define tTagargs tMap(tStr,tStr)
 
+#define t_Todo tOr3(tStr,tArr(tMixed),tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret))
+
 void init_parser_html(void)
 {
    size_t offset;
@@ -5411,13 +5425,13 @@ void init_parser_html(void)
    /* special callbacks */
 
    ADD_FUNCTION("_set_tag_callback",html__set_tag_callback,
-		tFunc(tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		tFunc(t_Todo,
 		      tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("_set_data_callback",html__set_data_callback,
-		tFunc(tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		tFunc(t_Todo,
 		      tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("_set_entity_callback",html__set_entity_callback,
-		tFunc(tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
+		tFunc(t_Todo,
 		      tObjImpl_PARSER_HTML),0);
 
    /* debug, whatever */
