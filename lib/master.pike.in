@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.249 2003/01/15 23:55:21 mast Exp $
+// $Id: master.pike.in,v 1.250 2003/01/20 17:38:52 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -813,6 +813,14 @@ constant master_efuns = ({
 
 string include_prefix;
 
+//! @appears strlen
+//! Alias for @[sizeof].
+//! @deprecated sizeof
+
+//! @appears write
+//! Writes a string on stdout. Works just like @[Stdio.File.write]
+//! on @[Stdio.stdout].
+
 /* Note that create is called before add_precompiled_program
  */
 void create()
@@ -907,7 +915,6 @@ class dirnode
     {
 #ifdef MODULE_TRACE
       werror("%*ndirnode(%O,%O);\n",sizeof(backtrace())-1,d,h);
-//      werror(describe_backtrace( ({"HERE\n",backtrace()})));
 #endif
       dirname=d;
       handler=h;
@@ -916,12 +923,21 @@ class dirnode
 	fc[dirname[..sizeof(dirname)-6]]=this_object();
     }
 
+  void get_files() {
+    if (!(files = get_dir(fakeroot(dirname)))) {
+      werror ("Error listing module directory %O: %s\n",
+	      dirname, strerror (errno()));
+      files = ({});
+    }
+  }
+
   class module_checker
   {
     int `!()
     {
 #ifdef MODULE_TRACE
-      werror("%*ndirnode(%O)->module_checker()->`!()\n",sizeof(backtrace()),dirname);
+      werror("%*ndirnode(%O)->module_checker()->`!()\n",
+	     sizeof(backtrace()),dirname);
 #endif
       if(module=findmodule(dirname+"/module", handler))
       {
@@ -942,7 +958,8 @@ class dirnode
     mixed `[](string index)
       {
 #ifdef MODULE_TRACE
-	werror("%*ndirnode(%O)->module_checker()[%O]\n",sizeof(backtrace()),dirname,index);
+	werror("%*ndirnode(%O)->module_checker()[%O]\n",
+	       sizeof(backtrace()),dirname,index);
 #endif
 	if(module) return module[index];
       }
@@ -953,42 +970,39 @@ class dirnode
   static mixed ind(string index)
   {
 #ifdef MODULE_TRACE
-    werror("%*nDirnode(%O) ind[%O] -> ???\n",sizeof(backtrace()),dirname,index);
+    werror("%*nDirnode(%O) ind[%O] -> ???\n",
+	   sizeof(backtrace()),dirname,index);
 #endif
     if(module) 
     {
 #ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) module[%O] -> ???\n",sizeof(backtrace()),dirname,index);
+      werror("%*nDirnode(%O) module[%O] -> ???\n",
+	     sizeof(backtrace()),dirname,index);
 #endif
       mixed o;
 //      _describe(module);
       if(!zero_type(o=module[index]))
       {
 #ifdef MODULE_TRACE
-	werror("%*nDirnode(%O) module[%O] -> %O\n",sizeof(backtrace()),dirname,index, o);
+	werror("%*nDirnode(%O) module[%O] -> %O\n",
+	       sizeof(backtrace()),dirname,index, o);
 #endif
 	return o;
       }
     }
 
-    if( !files )
-      if (!(files = get_dir(fakeroot(dirname)))) {
-	werror ("Error listing module directory %O: %s\n",
-		dirname, strerror (errno()));
-	files = ({});
-      }
+    if(!files) get_files();
 
-    int ret;
+    int(0..1) ret;
     foreach( files, string s )
-    {
       if( has_value(s, index) || has_value(index,s) )
       {
         ret=1;
         break;
       }
-    }
     if(!ret)
       return UNDEFINED;
+
     index = dirname+"/"+index;
 #ifdef MODULE_TRACE
     werror("%*nDirnode(%O) findmodule(%O)\n",
@@ -1001,10 +1015,8 @@ class dirnode
     }
     if (program p=cast_to_program( index, 0, handler ))
     {
-//      werror("dirnode(%O)[%O] -> %O\n",dirname,index,p);
       return p;
     }
-//    werror("Returning UNDEFINED for %s\n",ind);
     return UNDEFINED;
   }
 
@@ -1012,12 +1024,14 @@ class dirnode
   {
     mixed ret;
 #ifdef MODULE_TRACE
-    werror("%*nDirnode(%O) cache[%O] ?????\n",sizeof(backtrace()),dirname,index);
+    werror("%*nDirnode(%O) cache[%O] ?????\n",
+	   sizeof(backtrace()),dirname,index);
 #endif
     if(!zero_type(ret=cache[index]))
     {
 #ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) cache[%O] -> %O\n",sizeof(backtrace()),dirname,index, ret);
+      werror("%*nDirnode(%O) cache[%O] -> %O\n",
+	     sizeof(backtrace()),dirname,index, ret);
 #endif
       if (ret != ZERO_TYPE) return ret;
       return UNDEFINED;
@@ -1032,7 +1046,7 @@ class dirnode
     return ret;
   }
 
-  static int _cache_full;
+  static int(0..1) _cache_full;
   void fill_cache()
   {
 #ifdef RESOLV_DEBUG
@@ -1050,12 +1064,7 @@ class dirnode
       }
     }
 
-    if( !files )
-      if (!(files = get_dir(fakeroot(dirname)))) {
-	werror ("Error listing module directory %O: %s\n",
-		dirname, strerror (errno()));
-	files = ({});
-      }
+    if(!files) get_files();
 
     foreach(files, string fname) {
       mixed err = catch {
@@ -1076,15 +1085,17 @@ class dirnode
     }
     _cache_full = 1;
   }
-  array(string) _indices()
+
+  static array(string) _indices()
   {
-    // werror("indices(%O) called\n", dirname);
     fill_cache();
-    return indices(filter(cache, lambda(mixed x) {return cache[x] != ZERO_TYPE;}));
+    return indices(filter(cache, lambda(mixed x) {
+				   return cache[x] != ZERO_TYPE;
+				 } ));
   }
-  array(mixed) _values()
+
+  static array(mixed) _values()
   {
-    // werror("values(%O) called\n", dirname);
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
   }
@@ -1095,12 +1106,15 @@ class dirnode
       m_delete (cache, name);
   }
 
-  string _sprintf(int as)
-    {
-      return as=='O' && sprintf("master()->dirnode(%O)",dirname);
-    }
-  
-};
+  static int(0..) _sizeof() {
+    return sizeof(_values());
+  }
+
+  static string _sprintf(int as)
+  {
+    return as=='O' && sprintf("master()->dirnode(%O)",dirname);
+  }
+}
 
 static class ZERO_TYPE {};
 
