@@ -2,6 +2,62 @@
 
 inherit Stdio.Port;
 
+// Bugfix for some older versions of Pike..
+string combine_path(string s, string ... rest)
+{
+  for(int e=0;e<sizeof(rest);e++)
+  {
+    if(sscanf(rest[e],"%*[a-zA-Z]:%*s")==2)
+    {
+      s=rest[e];
+    }else{
+      s=predef::combine_path(s,rest[e]);
+    }
+  }
+  return s;
+}
+
+// Bugfix for some older versions of Pike..
+#define BLOCK 65536
+int cp(string from, string to)
+{
+  if(!Stdio.cp(from,to))
+  {
+    werror("Backup cp function in effect.\n");
+
+    string data;
+    object tmp=Stdio.File();
+    if(!tmp->open(from,"r"))
+    {
+      werror(sprintf("Open %s failed.\n",from));
+      return 0;
+    }
+    function r=tmp->read;
+    tmp=Stdio.File();
+    if(!tmp->open(to,"wct"))
+    {
+      werror(sprintf("Open %s failed.\n",to));
+      return 0;
+    }
+    function w=tmp->write;
+    do
+    {
+      data=r(BLOCK);
+      if(!data)
+      {
+	werror("Read failed.\n");
+	return 0;
+      }
+      if(w(data)!=strlen(data))
+      {
+	werror("Write failed.\n");
+	return 0;
+      }
+    }while(strlen(data) == BLOCK);
+  }
+  return 1;
+}
+
 void monitor(object(Stdio.File) io, object proc)
 {
   proc->wait();
@@ -59,7 +115,7 @@ void handle_incoming_connection(object(Stdio.File) io)
       }
 
 
-      int ret=Stdio.cp(from,to);
+      int ret=cp(from,to);
       if(!ret)
       {
 	string x=sprintf("Errno is %d\n"
@@ -152,7 +208,7 @@ int main(int argc, string *argv)
     hosts+=tmp[1];
   }
 
-  write("Ready.\n");
+  write("Ready ("+version()+").\n");
   while(1)
   {
     if(object io=accept())
