@@ -2,31 +2,9 @@
  */
 
 
-int image_num;
-mapping(string:array(string)) image_cache=([]);
-mapping(string:array) illustration_cache=([]);
+object image_cache=.Cache("illustration_cache");
+object illustration_cache=.Cache("image_cache");
 
-
-void save_image_cache()
-{
-  rm("illustration_cache");
-  Stdio.write_file("illustration_cache",
-		   encode_value( ({
-		     image_num,
-		     image_cache,
-		     illustration_cache,
-		     })));
-}
-
-void create()
-{
-  if(file_stat("illustration_cache"))
-  {
-    [image_num,image_cache,illustration_cache]=
-      decode_value(Stdio.read_file("illustration_cache"));
-  }
-  werror("Illustration caches: %d %d\n",sizeof(image_cache), sizeof(illustration_cache));
-}
 
 
 string cached_write(string data, string ext)
@@ -44,8 +22,8 @@ string cached_write(string data, string ext)
 	return file;
       }
     }
-
-  image_num++;
+ 
+  int image_num=image_cache[0]++;
   mkdir("gfx");
   string filename="gfx/i"+image_num+"."+ext;
   rm(filename);
@@ -56,8 +34,6 @@ string cached_write(string data, string ext)
     image_cache[key]+=({filename});
   else
     image_cache[key]=({filename});
-
-  save_image_cache();
 
   return filename;
 }
@@ -242,7 +218,6 @@ array convret(string key,
 {
   array tmp=({ret, dpi});
   illustration_cache[key]=tmp;
-  save_image_cache();
   return tmp;
 }
 
