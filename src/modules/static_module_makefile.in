@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.85 2002/05/04 15:19:34 mast Exp $
+# $Id: static_module_makefile.in,v 1.86 2002/05/13 19:03:07 mast Exp $
 #
 
 
@@ -178,8 +178,8 @@ verbose_verify: module_testsuite $(MODULE_TESTS)
 
 gdb_verify: module_testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -DNOT_INSTALLED -m ../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
-	gdb ../../pike
+	@echo >>.gdbinit run -DNOT_INSTALLED -m $(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike module_testsuite -v -v -f
+	gdb $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
 
 install: $(MODULE_INSTALL)
