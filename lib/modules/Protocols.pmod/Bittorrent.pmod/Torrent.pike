@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.22 2004/01/11 12:19:15 jhs Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.23 2004/01/11 13:47:01 jhs Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -88,12 +88,13 @@ int downloaded=0; // bytes
 int downloading=0; // flag
 int we_are_completed=0; // set when no more to download
 
-//! function to determine if we should strangle this peer
-//! default is to allow 100kbyte of data over the ratio,
-//! which is 2:1 per default, upload twice as much as we get
+//! Function to determine if we should strangle this peer.
+//! Default is to allow 100000 bytes of data over the ratio,
+//! which is 2:1 per default; upload twice as much as we get.
 //!
 //! Arguments are the peer, bytes in (downloaded) and bytes out
-//! (uploaded).
+//! (uploaded). Return 1 to strangle and 0 to allow the peer to
+//! proceed downloading again.
 function(.Peer,int,int:int(0..1)) do_we_strangle=
    lambda(.Peer peer,int bytes_in,int bytes_out)
    {
