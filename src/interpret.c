@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.305 2003/06/06 13:04:56 nilsson Exp $
+|| $Id: interpret.c,v 1.306 2003/06/07 13:28:39 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.305 2003/06/06 13:04:56 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.306 2003/06/07 13:28:39 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1812,11 +1812,23 @@ PMOD_EXPORT void call_handle_error(void)
   }
 }
 
+/* NOTE: This function may only be called from the compiler! */
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
   JMP_BUF tmp;
   struct pike_frame *new_frame=alloc_pike_frame();
   int ret;
+  int use_dummy_reference = !o->prog->num_identifier_references;
+
+  /* This is needed for opcodes that use INHERIT_FROM_*
+   * (eg F_EXTERN) to work.
+   */
+  if (use_dummy_reference) {
+    struct reference dummy_ref = {
+      0, 0, ID_HIDDEN,
+    };
+    add_to_identifier_references(dummy_ref);
+  }
 
   /* FIXME: Is this up-to-date with mega_apply? */
   new_frame->next = Pike_fp;
@@ -1827,7 +1839,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame->args = 0;
   new_frame->num_args=0;
   new_frame->num_locals=0;
-  new_frame->fun = o->prog->num_identifier_references?o->prog->num_identifier_references-1:0;
+  new_frame->fun = o->prog->num_identifier_references-1;
   new_frame->pc = 0;
   new_frame->current_storage=o->storage;
   new_frame->context.parent=0;
@@ -1853,6 +1865,10 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     ret=0;
   }
   UNSETJMP(tmp);
+
+  if (use_dummy_reference) {
+    Pike_compiler->new_program->num_identifier_references--;
+  }
 
   POP_PIKE_FRAME();
 
