@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.518 2003/08/20 19:40:09 mast Exp $
+|| $Id: program.c,v 1.519 2003/08/20 21:42:35 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.518 2003/08/20 19:40:09 mast Exp $");
+RCSID("$Id: program.c,v 1.519 2003/08/20 21:42:35 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3622,7 +3622,9 @@ void compiler_do_inherit(node *n,
   continue_inherit:
 
       if(numid != IDREF_MAGIC_THIS &&
-	 (i=ID_FROM_INT(p, numid), IDENTIFIER_IS_CONSTANT(i->identifier_flags)))
+	 (IDENTIFIER_IS_CONSTANT((i=ID_FROM_INT(p, numid))->
+				 identifier_flags)) &&
+	 (i->func.offset != -1))
       {
 	struct svalue *s=&PROG_FROM_INT(p, numid)->
 	  constants[i->func.offset].sval;
@@ -4029,12 +4031,14 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   }
 #endif
 
+#if 0
   if (!c) {
     zero.type = T_INT;
     zero.subtype = 0;
     zero.u.integer = 0;
     c = &zero;
   }
+#endif
 
 #ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
@@ -4042,7 +4046,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #endif
 
   do {
-    if(/* c && */
+    if(
+#if 1
+       c &&
+#endif
        c->type == T_FUNCTION &&
        c->subtype != FUNCTION_BUILTIN &&
        c->u.object->prog)
@@ -4070,7 +4077,11 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       }
     }
     
-    if(/* c && */ !svalues_are_constant(c,1,BIT_MIXED,0))
+    if(
+#if 1
+       c &&
+#endif
+       !svalues_are_constant(c,1,BIT_MIXED,0))
       yyerror("Constant values may not have references to this.");
     
   }while(0);
@@ -4079,7 +4090,11 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
   if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {
-    if(n==-1)
+    if(n==-1
+#if 1
+       || !c
+#endif
+       )
     {
       yyerror("Pass2: Constant disappeared!");
     }else{
@@ -4104,7 +4119,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	id->type=s;
       }
       else {
-#if 0
+#if 1
 #ifdef PIKE_DEBUG
 	if (!c) Pike_fatal("Can't declare constant during second compiler pass\n");
 #endif
@@ -4134,7 +4149,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   copy_shared_string(dummy.name, name);
   dummy.identifier_flags = IDENTIFIER_CONSTANT;
 
-#if 0
+#if 1
   if (c) {
 #endif
     dummy.type = get_type_of_svalue(c);
@@ -4143,7 +4158,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
     if(c->type == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
        dummy.opt_flags=0;
-#if 0
+#if 1
   }
   else {
     copy_pike_type(dummy.type, mixed_type_string);
@@ -4932,10 +4947,16 @@ struct array *program_indices(struct program *p)
     }
     id = ID_FROM_INT(p, e);
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-      struct program *p2 = PROG_FROM_INT(p, e);
-      struct svalue *val = &p2->constants[id->func.offset].sval;
-      if ((val->type != T_PROGRAM) ||
-	  !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+      if (id->func.offset >= 0) {
+	struct program *p2 = PROG_FROM_INT(p, e);
+	struct svalue *val = &p2->constants[id->func.offset].sval;
+	if ((val->type != T_PROGRAM) ||
+	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	  ref_push_string(ID_FROM_INT(p, e)->name);
+	  n++;
+	}
+      } else {
+	/* Prototype constant. */
 	ref_push_string(ID_FROM_INT(p, e)->name);
 	n++;
       }
@@ -4960,11 +4981,17 @@ struct array *program_values(struct program *p)
     }
     id = ID_FROM_INT(p, e);
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-      struct program *p2 = PROG_FROM_INT(p, e);
-      struct svalue *val = &p2->constants[id->func.offset].sval;
-      if ((val->type != T_PROGRAM) ||
-	  !(val->u.program->flags & PROGRAM_USES_PARENT)) {
-	push_svalue(val);
+      if (id->func.offset >= 0) {
+	struct program *p2 = PROG_FROM_INT(p, e);
+	struct svalue *val = &p2->constants[id->func.offset].sval;
+	if ((val->type != T_PROGRAM) ||
+	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	  push_svalue(val);
+	  n++;
+	}
+      } else {
+	/* Prototype constant. */
+	push_int(0);
 	n++;
       }
     }
@@ -4993,9 +5020,16 @@ void program_index_no_free(struct svalue *to, struct program *p,
     struct identifier *id;
     id=ID_FROM_INT(p, e);
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-      struct program *p2 = PROG_FROM_INT(p, e);
-      struct svalue *val = &p2->constants[id->func.offset].sval;
-      assign_svalue_no_free(to, val);
+      if (id->func.offset >= 0) {
+	struct program *p2 = PROG_FROM_INT(p, e);
+	struct svalue *val = &p2->constants[id->func.offset].sval;
+	assign_svalue_no_free(to, val);
+      } else {
+	/* Prototype constant. */
+	to->type = T_INT;
+	to->subtype = 0;
+	to->u.integer = 0;
+      }
       return;
     }
   }
