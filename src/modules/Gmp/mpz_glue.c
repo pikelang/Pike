@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.142 2003/04/03 01:54:15 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.143 2003/04/07 19:42:31 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.142 2003/04/03 01:54:15 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.143 2003/04/07 19:42:31 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -221,7 +221,7 @@ overflow:
  */
 
 /*! @class mpz
- *! Gmp.mpz implementslarge, very large integers. In fact,
+ *! Gmp.mpz implements very large integers. In fact,
  *! the only limitation on these integers is the available memory.
  *! The mpz object implements all the normal integer operations.
  */
@@ -459,6 +459,8 @@ static void mpzmod_create(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl int cast_to_int()
+ */
 static void mpzmod_get_int(INT32 args)
 {
   pop_n_elems(args);
@@ -470,12 +472,16 @@ static void mpzmod_get_int(INT32 args)
 #endif /* AUTO_BIGNUM */
 }
 
+/*! @decl int __hash()
+ */
 static void mpzmod___hash(INT32 args)
 {
   pop_n_elems(args);
   push_int(mpz_get_si(THIS));
 }
 
+/*! @decl float cast_to_float()
+ */
 static void mpzmod_get_float(INT32 args)
 {
   pop_n_elems(args);
@@ -550,6 +556,8 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   return s;
 }
 
+/*! @decl string cast_to_string()
+ */
 static void mpzmod_get_string(INT32 args)
 {
   pop_n_elems(args);
@@ -585,6 +593,8 @@ static void mpzmod_digits(INT32 args)
   push_string(s);
 }
 
+/*! @decl string _sprintf(int ind, mapping opt)
+ */
 static void mpzmod__sprintf(INT32 args)
 {
   INT_TYPE precision, width, width_undecided, base = 0, mask_shift = 0;
@@ -778,6 +788,8 @@ static void mpzmod__sprintf(INT32 args)
   }
 }
 
+/*! @decl int(0..1) _is_type(string type)
+ */
 static void mpzmod__is_type(INT32 args)
 {
   if(args < 1)
@@ -1071,10 +1083,24 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
 }
 
 #define STRINGCONV(X) X
+
+/*! @decl Gmp.mpz `+(int|float|Gmp.mpz ... x)
+ */
+/*! @decl Gmp.mpz ``+(int|float|Gmp.mpz ... x)
+ */
+/*! @decl Gmp.mpz `+=(int|float|Gmp.mpz ... x)
+ */
 BINFUN2(mpzmod_add, "+", mpz_add, +);
 
 #undef STRINGCONV
 #define STRINGCONV(X)
+
+/*! @decl Gmp.mpz `*(int|float|Gmp.mpz ... x)
+ */
+/*! @decl Gmp.mpz ``*(int|float|Gmp.mpz ... x)
+ */
+/*! @decl Gmp.mpz `*=(int|float|Gmp.mpz ... x)
+ */
 BINFUN2(mpzmod_mul, "*", mpz_mul, *);
 
 /*! @decl Gmp.mpz gcd(object|int|float|string arg)
@@ -1099,6 +1125,8 @@ static void mpzmod_gcd(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz `-(int|float|Gmp.mpz ... x)
+ */
 static void mpzmod_sub(INT32 args)
 {
   INT32 e;
@@ -1123,6 +1151,8 @@ static void mpzmod_sub(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz ``-(int|float|Gmp.mpz ... x)
+ */
 static void mpzmod_rsub(INT32 args)
 {
   struct object *res = NULL;
@@ -1140,6 +1170,8 @@ static void mpzmod_rsub(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz `/(int|float|Gmp.mpz ... x)
+ */
 static void mpzmod_div(INT32 args)
 {
   INT32 e;
@@ -1166,6 +1198,8 @@ static void mpzmod_div(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz ``/(int|float|Gmp.mpz ... x)
+ */
 static void mpzmod_rdiv(INT32 args)
 {
   MP_INT *a;
@@ -1185,6 +1219,8 @@ static void mpzmod_rdiv(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz `%(int|float|Gmp.mpz ... x)
+ */
 static void mpzmod_mod(INT32 args)
 {
   INT32 e;
@@ -1203,6 +1239,8 @@ static void mpzmod_mod(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz ``%(int|float|Gmp.mpz ... x)
+ */
 static void mpzmod_rmod(INT32 args)
 {
   MP_INT *a;
@@ -1222,7 +1260,8 @@ static void mpzmod_rmod(INT32 args)
   PUSH_REDUCED(res);
 }
 
-
+/*! @decl array(Gmp.mpz) gcdext(int|float|Gmp.mpz x)
+ */
 static void mpzmod_gcdext(INT32 args)
 {
   struct object *g, *s, *t;
@@ -1243,6 +1282,8 @@ static void mpzmod_gcdext(INT32 args)
   f_aggregate(3);
 }
 
+/*! @decl array(Gmp.mpz) gcdext2(int|float|Gmp.mpz x)
+ */
 static void mpzmod_gcdext2(INT32 args)
 {
   struct object *g, *s;
@@ -1262,6 +1303,8 @@ static void mpzmod_gcdext2(INT32 args)
   f_aggregate(2);
 }
 
+/*! @decl Gmp.mpz invert(int|float|Gmp.mpz x)
+ */
 static void mpzmod_invert(INT32 args)
 {
   MP_INT *modulo;
@@ -1299,10 +1342,20 @@ static void name(INT32 args)				\
   PUSH_REDUCED(res);					\
 }
 
+/*! @decl Gmp.mpz `&(int|float|Gmp.mpz ... x)
+ */
 BINFUN(mpzmod_and, "Gmp.mpz->`&", mpz_and);
+
+/*! @decl Gmp.mpz `|(int|float|Gmp.mpz ... x)
+ */
 BINFUN(mpzmod_or, "Gmp.mpz->`|", mpz_ior);
+
+/*! @decl Gmp.mpz `^(int|float|Gmp.mpz ... x)
+ */
 BINFUN(mpzmod_xor, "Gmp.mpz->`^", mpz_xor);
 
+/*! @decl Gmp.mpz `~()
+ */
 static void mpzmod_compl(INT32 args)
 {
   struct object *o;
@@ -1328,12 +1381,28 @@ static void name(INT32 args)				\
 
 #define RET_UNDEFINED do{pop_n_elems(args);push_undefined();return;}while(0)
 
+/*! @decl int(0..1) `>(mixed with)
+ */
 CMPEQU(mpzmod_gt, "Gmp.mpz->`>", >, RET_UNDEFINED);
+
+/*! @decl int(0..1) `<(mixed with)
+ */
 CMPEQU(mpzmod_lt, "Gmp.mpz->`<", <, RET_UNDEFINED);
+
+/*! @decl int(0..1) `>=(mixed with)
+ */
 CMPEQU(mpzmod_ge, "Gmp.mpz->`>=", >=, RET_UNDEFINED);
+
+/*! @decl int(0..1) `<=(mixed with)
+ */
 CMPEQU(mpzmod_le, "Gmp.mpz->`<=", <=, RET_UNDEFINED);
 
+/*! @decl int(0..1) `==(mixed with)
+ */
 CMPEQU(mpzmod_eq, "Gmp.mpz->`==", ==, RET_UNDEFINED);
+
+/*! @decl int(0..1) `!=(mixed with)
+ */
 CMPEQU(mpzmod_nq, "Gmp.mpz->`!=", !=, i=1);
 
 /*! @decl int(0..1) probably_prime_p()
@@ -1357,6 +1426,8 @@ static void mpzmod_probably_prime_p(INT32 args)
   push_int(mpz_probab_prime_p(THIS, count));
 }
 
+/*! @decl int small_factor(void|int(1..) limit)
+ */
 static void mpzmod_small_factor(INT32 args)
 {
   INT_TYPE limit;
@@ -1376,6 +1447,8 @@ static void mpzmod_small_factor(INT32 args)
   push_int(mpz_small_factor(THIS, limit));
 }
 
+/*! @decl Gmp.mpz next_prime(void|int count, void|int limit)
+ */
 static void mpzmod_next_prime(INT32 args)
 {
   INT_TYPE count = 25;
@@ -1401,6 +1474,8 @@ static void mpzmod_next_prime(INT32 args)
   PUSH_REDUCED(o);
 }
 
+/*! @decl int sgn()
+ */
 static void mpzmod_sgn(INT32 args)
 {
   pop_n_elems(args);
@@ -1423,6 +1498,8 @@ static void mpzmod_sqrt(INT32 args)
   PUSH_REDUCED(o);
 }
 
+/*! @decl array(Gmp.mpz) sqrtrem()
+ */
 static void mpzmod_sqrtrem(INT32 args)
 {
   struct object *root = 0, *rem = 0;   /* Make gcc happy. */
@@ -1438,6 +1515,8 @@ static void mpzmod_sqrtrem(INT32 args)
   f_aggregate(2);
 }
 
+/*! @decl Gmp.mpz `<<(int|float|Gmp.mpz x)
+ */
 static void mpzmod_lsh(INT32 args)
 {
   struct object *res = NULL;
@@ -1478,6 +1557,8 @@ static void mpzmod_lsh(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz `>>(int|float|Gmp.mpz x)
+ */
 static void mpzmod_rsh(INT32 args)
 {
   struct object *res = NULL;
@@ -1521,6 +1602,8 @@ static void mpzmod_rsh(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz ``<<(int|float|Gmp.mpz x)
+ */
 static void mpzmod_rlsh(INT32 args)
 {
   struct object *res = NULL;
@@ -1549,6 +1632,8 @@ static void mpzmod_rlsh(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz ``>>(int|float|Gmp.mpz x)
+ */
 static void mpzmod_rrsh(INT32 args)
 {
   struct object *res = NULL;
@@ -1596,6 +1681,8 @@ static void mpzmod_powm(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz pow(int|float|Gmp.mpz x)
+ */
 static void mpzmod_pow(INT32 args)
 {
   struct object *res = NULL;
@@ -1652,12 +1739,16 @@ too_large:
   PUSH_REDUCED(res);
 }
 
+/*! @decl int(0..1) `!()
+ */
 static void mpzmod_not(INT32 args)
 {
   pop_n_elems(args);
   push_int(!mpz_sgn(THIS));
 }
 
+/*! @decl int popcount()
+ */
 static void mpzmod_popcount(INT32 args)
 {
   pop_n_elems(args);
@@ -1692,6 +1783,27 @@ static void mpzmod_popcount(INT32 args)
 #endif
 }
 
+/*! @decl Gmp.mpz _random()
+ */
+static void mpzmod_random(INT32 args)
+{
+  struct object *res = 0;   /* Make gcc happy. */
+  pop_n_elems(args);
+  if(mpz_sgn(THIS) <= 0)
+    Pike_error("Random on negative number.\n");
+
+  res=fast_clone_object(THIS_PROGRAM);
+  /* We add two to assure reasonably uniform randomness */
+  mpz_random(OBTOMPZ(res), DO_NOT_WARN((int)(mpz_size(THIS) + 2)));
+  mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
+  PUSH_REDUCED(res);
+}
+  
+/*! @endclass
+ */
+
+/*! @decl Gmp.mpz fac(int x)
+ */
 static void gmp_fac(INT32 args)
 {
   struct object *res = NULL;
@@ -1707,20 +1819,6 @@ static void gmp_fac(INT32 args)
   PUSH_REDUCED(res);
 }
 
-static void mpzmod_random(INT32 args)
-{
-  struct object *res = 0;   /* Make gcc happy. */
-  pop_n_elems(args);
-  if(mpz_sgn(THIS) <= 0)
-    Pike_error("Random on negative number.\n");
-
-  res=fast_clone_object(THIS_PROGRAM);
-  /* We add two to assure reasonably uniform randomness */
-  mpz_random(OBTOMPZ(res), DO_NOT_WARN((int)(mpz_size(THIS) + 2)));
-  mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
-  PUSH_REDUCED(res);
-}
-  
 static void init_mpz_glue(struct object *o)
 {
 #ifdef PIKE_DEBUG
@@ -1820,15 +1918,17 @@ PIKE_MODULE_EXIT
   ADD_FUNCTION("`==",mpzmod_eq,tMpz_cmpop_type, ID_STATIC);		\
   ADD_FUNCTION("`!=",mpzmod_nq,tMpz_cmpop_type, ID_STATIC);		\
 									\
-  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt), ID_STATIC);		\
+  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt01), ID_STATIC);		\
 									\
   ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt), ID_STATIC);	\
   ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_STATIC);		\
 									\
-  ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), ID_STATIC);\
+  ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt01),         \
+               ID_STATIC);                                              \
   									\
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
-  ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), ID_STATIC);\
+  ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
+               ID_STATIC);                                              \
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
 									\
   ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\
@@ -1940,9 +2040,6 @@ PIKE_MODULE_INIT
   pike_init_mpq_module();
   pike_init_mpf_module();
 }
-
-/*! @endclass
- */
 
 /*! @endmodule
  */
