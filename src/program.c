@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.407 2002/03/04 21:48:50 mast Exp $");
+RCSID("$Id: program.c,v 1.408 2002/04/07 15:24:11 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3077,6 +3077,9 @@ void simple_do_inherit(struct pike_string *s,
 int isidentifier(struct pike_string *s)
 {
   INT32 e;
+  return really_low_find_shared_string_identifier(s,
+						  Pike_compiler->new_program,
+						  SEE_STATIC);
   for(e=Pike_compiler->new_program->num_identifier_references-1;e>=0;e--)
   {
     if(Pike_compiler->new_program->identifier_references[e].id_flags & ID_HIDDEN) continue;
@@ -3891,7 +3894,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 {
   struct reference *funp;
   struct identifier *fun;
-  int i,t;
+  int id, i, depth;
 
 #if 0
   CDFPRINTF((stderr,"th(%ld) Trying to find %s flags=%d\n",
@@ -3905,7 +3908,10 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   }
 #endif /* PIKE_DEBUG */
 
-  for(i=0;i<(int)prog->num_identifier_references;i++)
+  id = -1;
+  depth = 0;
+  i = (int)prog->num_identifier_references;
+  while(i--)
   {
     funp = prog->identifier_references + i;
     if(funp->id_flags & ID_HIDDEN) continue;
@@ -3917,28 +3923,17 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
     if(!is_same_string(fun->name,name)) continue;
     if(funp->id_flags & ID_INHERITED)
     {
+      struct inherit *inh = INHERIT_FROM_PTR(prog, funp);
       if(funp->id_flags & ID_PRIVATE) continue;
-      for(t=0; t>=0 && t<(int)prog->num_identifier_references; t++)
-      {
-	struct reference *funpb;
-	struct identifier *funb;
-
-	if(t==i) continue;
-	funpb=prog->identifier_references+t;
-	if(funpb->id_flags & ID_HIDDEN) continue;
-	if(funpb->id_flags & ID_STATIC)
-	  if(!(flags & SEE_STATIC))
-	    continue;
-	if((funpb->id_flags & ID_INHERITED) && t<i) continue;
-	funb=ID_FROM_PTR(prog,funpb);
-	/* if(funb->func.offset == -1) continue; * prototype */
-	if(fun->name==funb->name) t=-10;
+      if (!depth || (depth > inh->inherit_level)) {
+	depth = inh->inherit_level;
+	id = i;
       }
-      if(t < 0) continue;
+    } else {
+      return i;
     }
-    return i;
   }
-  return -1;
+  return id;
 }
 
 int low_find_lfun(struct program *p, ptrdiff_t lfun)
