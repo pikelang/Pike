@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.22 2003/07/03 16:05:43 grubba Exp $
+|| $Id: acconfig.h,v 1.23 2004/04/15 10:52:34 grubba Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -10,6 +10,9 @@
 
 @TOP@
 @BOTTOM@
+
+/* Define this if your <sys/sendfile.h> is broken. */
+#undef HAVE_BROKEN_SYS_SENDFILE_H
 
 /* Define this if you have a FreeBSD-style (7 args) sendfile(). */
 #undef HAVE_FREEBSD_SENDFILE

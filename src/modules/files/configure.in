@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.96 2004/04/14 12:20:36 grubba Exp $
+# $Id: configure.in,v 1.97 2004/04/15 10:52:34 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -13,6 +13,26 @@ AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h \
  direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
  termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
  sys/sendfile.h)
+
+if test "x$ac_cv_header_sys_sendfile_h" = "xyes"; then
+  AC_MSG_CHECKING([if <sys/sendfile.h> supports _FILE_OFFSET_BITS=64])
+  AC_CACHE_VAL(pike_cv_header_sys_sendfile_h, [
+    AC_TRY_CPP([
+#define _FILE_OFFSET_BITS 64
+#include <sys/sendfile.h>
+    ], [
+      pike_cv_header_sys_sendfile_h=yes
+    ], [
+      pike_cv_header_sys_sendfile_h=no
+    ])
+  ])
+  AC_MSG_RESULT($pike_cv_header_sys_sendfile_h)
+  if test "x$pike_cv_header_sys_sendfile_h" = "xno"; then
+    AC_DEFINE(HAVE_BROKEN_SYS_SENDFILE_H)
+  fi
+fi
+    
+
 AC_HEADER_DIRENT
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)

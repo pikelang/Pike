@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.68 2004/04/14 12:20:48 grubba Exp $
+|| $Id: sendfile.c,v 1.69 2004/04/15 10:52:34 grubba Exp $
 */
 
 /*
@@ -64,7 +64,9 @@
 #endif /* HAVE_NETINET_TCP_H */
 
 #ifdef HAVE_SYS_SENDFILE_H
+#ifndef HAVE_BROKEN_SYS_SENDFILE_H
 #include <sys/sendfile.h>
+#endif /* !HAVE_BROKEN_SYS_SENDFILE_H */
 #endif /* HAVE_SYS_SENDFILE_H */
 
 #if 0
