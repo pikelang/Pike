@@ -31,7 +31,7 @@ fi
 
 old_method="${method-}"
 
-while test "$retries" != .......... ; do
+while test "$retries" != ............. ; do
 
 RUNPIKE=
 case $method in
@@ -57,7 +57,7 @@ case $method in
     IFS=" :"
     for dir in $PATH
     do
-      for p in pike pike7 pike07 pike06
+      for p in pike pike7 pike70 pike71 pike07 pike06 pike-mirar
       do
         if [ -x $dir/$p ]; then
           if [ "x$LAST_PIKE" = xpike ] ; then
