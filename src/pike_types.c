@@ -243,7 +243,7 @@ static void internal_parse_typeA(char **_s)
 	type_stack_mark();
 	type_stack_mark();
 	type_stack_mark();
-	internal_parse_type((char **)s);
+	internal_parse_type(_s);
 	type_stack_reverse();
 	if(**s==',')
 	{
@@ -265,7 +265,7 @@ static void internal_parse_typeA(char **_s)
       }
       ++*s;
       type_stack_mark();
-      internal_parse_type((char **)s);  /* return type */
+      internal_parse_type(_s);  /* return type */
       type_stack_reverse();
       if(**s != ')') error("Missing ')' in function type.\n");
       ++*s;
@@ -285,12 +285,12 @@ static void internal_parse_typeA(char **_s)
       type_stack_mark();
       ++*s;
       type_stack_mark();
-      internal_parse_type((char **)s);
+      internal_parse_type(_s);
       type_stack_reverse();
       if(**s != ':') error("Expecting ':'.\n");
       ++*s;
       type_stack_mark();
-      internal_parse_type((char **)s);
+      internal_parse_type(_s);
       type_stack_reverse();
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
@@ -307,7 +307,7 @@ static void internal_parse_typeA(char **_s)
     if(**s == '(')
     {
       ++*s;
-      internal_parse_type((char **)s);
+      internal_parse_type(_s);
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
     }else{
@@ -321,7 +321,7 @@ static void internal_parse_typeA(char **_s)
     if(**s == '(')
     {
       ++*s;
-      internal_parse_type((char **)s);
+      internal_parse_type(_s);
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
     }else{
