@@ -1,7 +1,7 @@
 // SQL index database without fragments
 // Copyright © 2000, Roxen IS.
 //
-// $Id: MySQL.pike,v 1.12 2001/03/28 12:07:27 js Exp $
+// $Id: MySQL.pike,v 1.13 2001/04/05 10:26:27 js Exp $
 
 // inherit Search.Database.Base;
 
@@ -188,63 +188,11 @@ string create_temp_table(Sql.sql db, int num)
 
 class Node
 {
-  mapping build_sql_components(mapping(string:int) ref);
 }
 
 class GroupNode
 {
   inherit Node;
-
-  static private string build_sql_part(string what, array params, string delimit)
-  {
-    return sprintf("%-6s %s\n",what,Array.uniq(params)*delimit);
-  }
-
-  string build_sql(void|int limit, void|mapping(string:array(string)) extra_select_items)
-  {
-    mapping ref=(["ref":0]);
-    if(!extra_select_items) extra_select_items=([]);
-    mapping sub_res=build_sql_components(ref);
-    
-    array tmp=({});
-    foreach(indices(extra_select_items), string tablename)
-      tmp+=map(extra_select_items[tablename],
-	       lambda(string field){return tablename+"."+field;});
-    if(sizeof(sub_res->ranking))
-      tmp+=({sub_res->ranking*" +\n       "+"as ranking"});
-    
-    string res="";
-    res+=build_sql_part("SELECT",
-			({ "distinct document.id as document_id",
-			   "concat(uri.uri_first,uri.uri_rest) as doc_uri"})+tmp,
-			",\n       ");
-
-    res+=build_sql_part("FROM",
-			sub_res->from+indices(extra_select_items)+({"document", "uri"}),
-			",\n       ");
-
-    tmp=({});
-    if(ref->ref>1)
-    {
-      tmp=allocate(ref->ref-1);
-      for(int i=1;i<ref->ref; i++)
-	tmp[i-1]=sprintf("t0.document_id=t%d.document_id",i);
-      tmp+=({"t0.document_id=document.id"});
-    }
-    
-    res+=build_sql_part("WHERE",
-			({"document.uri_id=uri.id",sub_res->where})+tmp,
-			" and\n       ");
-
-    res+="group by document.id";
-
-    if(sizeof(sub_res->ranking))
-      res+=" order by ranking desc";
-
-    if(limit)
-      res+=sprintf(" limit %d",limit);
-    return res+"\n";
-  }
 }
 
 class LeafNode
@@ -262,13 +210,33 @@ class And
     children=_children;
   }
   
-//   mapping build_sql_components(mapping(string:int) ref)
-//   {
-//     array(mapping) children_tmp=children->build_sql_components(ref);
-//     return ([ "from": Array.flatten(children_tmp->from),
-// 	      "ranking": Array.flatten(children_tmp->ranking),
-// 	      "where": "("+children_tmp->where*" AND\n       "+")"]);
-//   }
+  string do_sql(Sql.sql db, mapping ref)
+  {
+    string temp_table=create_temp_table(db,ref->ref++);
+    array tables=children->do_sql(db, ref);
+    
+    // FIXME: Optimization for NOT nodes
+    
+    // AND(t0,t1,t2,NOT(t3))
+    //   join t0,t1,t2
+    //   sub t3
+    //
+    // select t0.document_id as document_id, MIN(t0.ranking,t1.ranking,t2.ranking) as ranking
+    // from t0,t1,t2
+    // where t0.document_id=t1.document_id and t0.document_id=t2.document_id
+    string s=sprintf("insert into %s (document_id,ranking) "
+		     "select %s.document_id as document_id, MIN(%s) as ranking "
+		     "from %s where %s",
+		     temp_table,
+		     tables[0],
+		     map(tables,`+,".ranking")*",",
+		     tables*",",
+		     map(tables[1..],`+,sprintf("=%s.document_id",tables[0])) * " and ");
+    foreach(tables, string table)
+      db->query("drop table "+table);
+
+    return temp_table;
+  }
 }
 
 class Or
@@ -281,41 +249,49 @@ class Or
     children=_children;
   }
   
-//   mapping build_sql_components(mapping(string:int) ref)
-//   {
-//     array(mapping) children_tmp=children->build_sql_components(ref);
-//     return ([ "from": Array.flatten(children_tmp->from),
-// 	      "ranking": Array.flatten(children_tmp->ranking),
-// 	      "where": "("+children_tmp->where*" OR\n       "+")"]);
-//   }
+  string do_sql(Sql.sql db, mapping ref)
+  {
+    // FIXME: Optimization for NOT nodes (?)
+    string temp_table=create_temp_table(db,ref->ref++);
+    array tables=children->do_sql(db, ref);
+
+    foreach(tables, string table)
+      db->query("insert into "+temp_table+" (document_id, ranking) "
+		"select document_id,ranking from "+table);
+
+    string temp_table2=create_temp_table(db,ref->ref++);
+
+    db->query("insert into "+temp_table2+" (document_id, ranking) "
+	      "select document_id,max(ranking) from "+temp_table+
+	      " group by document_id");
+
+    db->query("drop table "+temp_table);
+    
+    return temp_table2;
+  }
 }
 
 class Not(Node child)
 {
   inherit GroupNode;
-
-//   mapping build_sql_components(mapping(string:int) ref)
-//   {
-//     mapping child_tmp=child->build_sql_components(ref);
-//     child_tmp->where="not "+child_tmp->where;
-//     return child_tmp;
-//   }
+  
+  string do_sql(Sql.sql db, mapping ref)
+  {
+    child->do_sql(db,ref);
+  }
 }
 
 class Contains(string field, string word)
 {
   inherit LeafNode;
 
-//   mapping build_sql_components(mapping(string:int) ref)
-//   {
-//     return (["from": ({"field", sprintf("occurance t%d",ref->ref)}),
-// 	     "ranking": ({/*sprintf("sum((t%d.tf * t%d.idf * t%d.idf)/document.length)",
-// 			    ref->ref,ref->ref,ref->ref)*/}),
-// 	     "where":  sprintf("t%d.field_id=field.id and field.name="
-// 			       "'%s' and t%d.word='%d'",
-// 			       ref->ref, db->quote(field), ref->ref++,
-// 			       hash_word(word)) ]);
-//   }
+  void do_sql(Sql.sql db, mapping ref)
+  {
+    string temp_table=create_temp_table(db,ref->ref++);
+    db->query("insert into "+temp_table+" (document_id,ranking) "
+	      "select document_id, count(document_id) as ranking "
+	      "from occurance where word=%s group by document_id",hash_word(wword));
+  }
 }
 
 
@@ -338,7 +314,7 @@ class Phrase
       return "to"+num;
   }
   
-  void do_sql(Sql.sql db, mapping ref, void|int window_size)
+  string do_sql(Sql.sql db, mapping ref, void|int window_size)
   {
     if(sizeof(words)<2)
       return Contains(field, @words)->do_sql(db,ref);
@@ -371,6 +347,7 @@ class Phrase
     
     foreach(offset_tables, string offset_table)
       db->query("drop table "+offset_table);
+    return temp_table;
   }
 }
 
@@ -399,12 +376,13 @@ class URIPrefix(string prefix)
 {
   inherit LeafNode;
   
-  void do_sql(Sql.sql db, mapping ref)
+  string do_sql(Sql.sql db, mapping ref)
   {
     string temp_table=create_temp_table(db,ref->ref++);
     db->query("insert into "+temp_table+" (document_id,ranking) "
 	      "select document.id as document_id, 0.0 as ranking "
-	      "from document,uri where document.uri_id=uri.id and uri.first like %s",prefix)
+	      "from document,uri where document.uri_id=uri.id and uri.first like %s",prefix);
+    return temp_table;
   }
 }
 
@@ -412,12 +390,13 @@ class Language(string language)
 {
   inherit LeafNode;
 
-  void do_sql(Sql.sql db, mapping ref)
+  string do_sql(Sql.sql db, mapping ref)
   {
     string temp_table=create_temp_table(db,ref->ref++);
     db->query("insert into "+temp_table+" (document_id,ranking) "
 	      "select id as document_id, 0.0 as ranking "
 	      "from document where language_code=%s",language);
+    return temp_table;
   }
 }
 
