@@ -1,5 +1,5 @@
-/* $Id: master.pike.in,v 1.16 1998/04/20 02:34:03 hubbe Exp $
- *
+/* $Id: master.pike.in,v 1.17 1998/04/21 03:54:01 per Exp $
+ * 
  * Master-file for Pike.
  *
  * Based on master.pike 1.67.
@@ -498,6 +498,8 @@ void _main(string *orig_argv, string *env)
   add_constant("putenv",putenv);
 
   add_constant("write",_static_modules.files()->_stdout->write);
+
+  add_program_path(getcwd()); // Rather important /Per
 
   // add path for architecture-shared files
   add_include_path("¤share_prefix¤/include");
