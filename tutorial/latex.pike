@@ -29,6 +29,8 @@ string packages =
 \\usepackage{colortbl}
 ";
 
+string latex = "latex";
+
 
 
 object wcache=.Cache("latex_wcache");
@@ -64,7 +66,7 @@ array(float) find_line_width(array(SGML) data)
     
     rm("___tmp.tex");
     Stdio.write_file("___tmp.tex",x);
-    string tmp=Process.popen("latex '\\scrollmode\\input ___tmp.tex'");
+    string tmp=Process.popen(latex+" '\\scrollmode\\input ___tmp.tex'");
     
     sscanf(tmp,"%{%*slength=%f%}",array lengths);
 //	  werror("%O\n",lengths);
@@ -502,6 +504,12 @@ string convert_table(TAG table)
     table[row]+=({Cell(Sgml.Tag("td",0,0,({})),1)})*
       ( columns - sizeof(table[row]));
   }
+
+  werror("Converting table %02dx%02d %s.\n",columns,sizeof(table),
+	 String.implode_nicely(( nicer? ({ "nicer" }) : ({}) ) +
+			       ( framed? ({ "framed" }) : ({}) ) +
+			       ( border? ({ "border" }) : ({}) ) +
+			       ( spaced? ({ "spaced" }) : ({})) ));
   
 
   array(SGML) tmp=(table * ({}))->tag->data;

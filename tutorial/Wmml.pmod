@@ -787,12 +787,14 @@ SGML low_make_concrete_wmml(SGML data)
 	    {
 	      title="see also";
 	      SGML tmp=({});
-	      string *tmp=(replace(get_text(args),
+	      string *tmp2=(replace(get_text(args),
 				   ({" ","\n"}),({"",""}))/",")-({""});
-	      if(!sizeof(tmp))
+	      if(!sizeof(tmp2))
 		continue;
 		
-	      foreach(tmp,string name)
+	      array(string) tmp=({});
+
+	      foreach(tmp2,string name)
 		{
 		  tmp+=({
 		    Tag("link",(["to":

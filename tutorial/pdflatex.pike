@@ -22,6 +22,8 @@ string packages=
 \\usepackage{colortbl}
 ";
 
+string latex="pdflatex";
+
 string convert_gfx(TAG tag)
 {
   string file;
