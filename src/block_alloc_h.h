@@ -11,7 +11,7 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num, INT32 *size);	\
 #define PTR_HASH_ALLOC(DATA,BSIZE)				\
 BLOCK_ALLOC(DATA,BSIZE)						\
 extern struct DATA **PIKE_CONCAT(DATA,_hash_table);		\
-extern ptrdiff_t PIKE_CONCAT(DATA,_hash_table_size);		\
+extern size_t PIKE_CONCAT(DATA,_hash_table_size);		\
 struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr);		\
 struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr);			\
 int PIKE_CONCAT3(check_,DATA,_semafore)(void *ptr);		\
