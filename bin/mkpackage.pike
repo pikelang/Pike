@@ -46,23 +46,23 @@ class Package
 
   static private mapping(array(string):string) options;
   
-  static void create(string my_name_,
-		     string pike_filename_, 
-		     string install_filename_, 
-		     string extra_help_, 
-		     string extra_advanced_help_, 
-		     string extra_flags_,
-		     string extra_license_,
-		     string extra_version_)
+  static void create(string _my_name,
+		     string _pike_filename,
+		     string _install_filename,
+		     string _extra_help,
+		     string _extra_advanced_help,
+		     string _extra_flags,
+		     string _extra_license,
+		     string _extra_version)
   {
-    my_name = my_name_;
-    pike_filename_;
-    install_filename = install_filename_;
-    extra_help = extra_help_;
-    extra_advanced_help = extra_advanced_help_;
-    extra_flags_ = extra_flags;
-    extra_license = extra_license;
-    extra_version = extra_version_;
+    my_name             = _my_name;
+    pike_filename       = _pike_filename;
+    install_filename    = _install_filename;
+    extra_help          = _extra_help;
+    extra_advanced_help = _extra_advanced_help;
+    extra_flags         = _extra_flags;
+    extra_license       = _extra_license;
+    extra_version       = _extra_version;
 
     options =
   ([ ({ "-h", "--help" }):
