@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.189 1999/12/27 15:26:36 grubba Exp $");
+RCSID("$Id: program.c,v 1.190 1999/12/27 20:26:41 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2946,7 +2946,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
 
   p=end_first_pass(0);
   
-  if(p && !num_parse_error)
+  if(p)
   {
 #ifdef PIKE_DEBUG
     if (compilation_depth != -1) {
