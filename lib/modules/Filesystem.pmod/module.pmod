@@ -326,18 +326,21 @@ class Traversion {
   }
 
   void `+=(int steps) {
+    if (steps < 0) error ("Cannot step backwards.\n");
     add(steps);
   }
 
   string index() {
     if(current && current->is_traversion)
       return current->index();
+    if( pos >= sizeof(files) ) return UNDEFINED;
     return path;
   }
 
   string value() {
     if(current && current->is_traversion)
       return current->value();
+    if( pos >= sizeof(files) ) return UNDEFINED;
     return files[pos];
   }
 }
