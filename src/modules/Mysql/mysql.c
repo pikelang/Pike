@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.65 2003/10/13 23:20:24 mast Exp $
+|| $Id: mysql.c,v 1.66 2003/10/13 23:36:46 mast Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.65 2003/10/13 23:20:24 mast Exp $");
+RCSID("$Id: mysql.c,v 1.66 2003/10/13 23:36:46 mast Exp $");
 
 /*! @module Mysql
  *!
@@ -166,7 +166,7 @@ static MUTEX_T stupid_port_lock;
 #define CHECK_8BIT_STRING(FUNC, ARG) do {				\
     if (sp[ARG-1-args].type != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift)				\
-      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (nonbinary 8bit)");	\
+      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (8bit)");		\
   } while (0)
 
 
