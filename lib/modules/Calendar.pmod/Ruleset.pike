@@ -81,6 +81,11 @@ mapping(string:string) abbr2zone=
    "Central Standard Time":"CST",
    "Eastern Daylight Time":"EDT",
    "Eastern Standard Time":"EST",
+
+// local languages
+
+   "MEZ":"CET",
+   "MESZ":"CEST",
 ]);
 
 this_program set_timezone(string|Timezone t)
