@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.47 1999/10/19 22:14:02 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.48 1999/10/21 11:16:45 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -31,6 +31,7 @@ RCSID("$Id: mpz_glue.c,v 1.47 1999/10/19 22:14:02 noring Exp $");
 #include "opcodes.h"
 #include "module_support.h"
 #include "bignum.h"
+#include "operators.h"
 
 #include "my_gmp.h"
 
@@ -268,6 +269,44 @@ static void mpzmod_digits(INT32 args)
   pop_n_elems(args);
 
   push_string(s);
+}
+
+static void mpzmod__sprintf(INT32 args)
+{
+  struct pike_string *s = 0;
+  
+  if(args < 1 || sp[-args].type != T_INT)
+    error("Bad argument 1 for Mpz->_sprintf().\n");
+
+  switch(sp[-args].u.integer)
+  {
+  case 'o': s = low_get_digits(THIS,  8); break;
+  case 'd': s = low_get_digits(THIS, 10); break;
+  case 'u': s = low_get_digits(THIS, 10); break;
+  case 'x': s = low_get_digits(THIS, 16); break;
+  case 'X': s = low_get_digits(THIS, 16); break;
+    
+  case 'O': s = low_get_digits(THIS, 10); break;
+  }
+
+  pop_n_elems(args);
+
+  if(s)
+    push_string(s);
+  else
+    push_int(0);   /* Push false? */
+}
+
+static void mpzmod__is_type(INT32 args)
+{
+  INT32 r = 0;
+  
+  if(args < 1 || sp[-args].type != T_STRING)
+    error("Bad argument 1 for Mpz->_is_type().\n");
+
+  pop_n_elems(args-1);
+  push_constant_text("int");
+  f_eq(2);
 }
 
 static void mpzmod_size(INT32 args)
@@ -1015,8 +1054,13 @@ void pike_module_init(void)
   /* function(string:mixed) */
   ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix),0);
 
+  /* function(int:string) */
+  ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), 0);
+  
   /* function(void|int:string) */
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);
+  /* function(int:string) */
+  ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), 0);
   /* function(void|int:int) */
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);
 

@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.46 1999/10/19 22:21:31 noring Exp $");
+RCSID("$Id: svalue.c,v 1.47 1999/10/21 11:16:44 noring Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -840,24 +840,34 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
       break;
 
     case T_OBJECT:
-#ifdef AUTO_BIGNUM
-      if(is_bignum_object(s->u.object))
+      /* FIXME: Check that the stack and reference operations are correct. */
+      ref_push_object(s->u.object);
+      push_constant_text("_sprintf");
+      f_index(2);
+      if(sp[-1].type == T_FUNCTION || sp[-1].type == T_OBJECT)
       {
-	struct pike_string *str;
-	int i;
-	
-	str = string_from_bignum(s->u.object, 10);
-	for(i = 0; i < str->len; i++)
-	  my_putchar(str->str[i]);
-	free_string(str);
+	push_int('O');
+	apply_svalue(sp-2, 1);   /* FIXME: lfun optimisation? */
+
+	if(sp[-1].type == T_STRING)
+	{
+	  struct pike_string *str = sp[-1].u.string;
+	  int i;
+
+	  /* FIXME: Is this the way to copy a string? /Noring */
+	  for(i = 0; i < str->len; i++)
+	    my_putchar(INDEX_CHARP(str->str, i, str->size_shift));
+
+	  pop_n_elems(2); 
+	  break;
+	}
+
+	pop_stack();
       }
-      else
-	my_strcat("object");
-      break;
-#else
+      pop_stack();
+      
       my_strcat("object");
       break;
-#endif /* AUTO_BIGNUM */
 
     case T_PROGRAM:
       my_strcat("program");

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.188 1999/10/19 22:21:28 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.189 1999/10/21 11:16:42 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2052,6 +2052,37 @@ void f_gc(INT32 args)
 #undef TYPEP
 #endif
 
+#ifdef AUTO_BIGNUM
+#define TYPEP(ID,NAME,TYPE,TYPE_NAME)                                      \
+void ID(INT32 args)                                                        \
+{                                                                          \
+  int t;                                                                   \
+  if(args<1)                                                               \
+    SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);                                    \
+  if(sp[-args].type == T_OBJECT)                                           \
+  {                                                                        \
+    pop_n_elems(args-1);                                                   \
+    args = 1;                                                              \
+    stack_dup();                                                           \
+    push_constant_text("_is_type");                                        \
+    f_index(2);                                                            \
+    if(sp[-1].type == T_FUNCTION || sp[-1].type == T_OBJECT)               \
+    {                                                                      \
+      struct svalue val;                                                   \
+      push_constant_text(TYPE_NAME);                                       \
+      apply_svalue(&sp[-2], 1);                                            \
+      val = *--sp;                                                         \
+      pop_n_elems(2);                                                      \
+      *sp++ = val;                                                         \
+      return;                                                              \
+    }                                                                      \
+    pop_stack();                                                           \
+  }                                                                        \
+  t=sp[-args].type == TYPE;                                                \
+  pop_n_elems(args);                                                       \
+  push_int(t);                                                             \
+}
+#else
 #define TYPEP(ID,NAME,TYPE) \
 void ID(INT32 args) \
 { \
@@ -2061,7 +2092,7 @@ void ID(INT32 args) \
   pop_n_elems(args); \
   push_int(t); \
 }
-
+#endif /* AUTO_BIGNUM */
 
 void f_programp(INT32 args)
 {
@@ -2089,27 +2120,21 @@ void f_programp(INT32 args)
 }
 
 #ifdef AUTO_BIGNUM
-void f_intp(INT32 args)
-{
-  int t;
-  
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("intp", 1);
-  
-  t = (sp[-args].type == T_INT) || is_bignum_object_in_svalue(&sp[-args]);
-  pop_n_elems(args);
-  push_int(t);
-}
+TYPEP(f_intp, "intp", T_INT, "int")
+TYPEP(f_mappingp, "mappingp", T_MAPPING, "mapping")
+TYPEP(f_arrayp, "arrayp", T_ARRAY, "array")
+TYPEP(f_multisetp, "multisetp", T_MULTISET, "multiset")
+TYPEP(f_stringp, "stringp", T_STRING, "string")
+TYPEP(f_floatp, "floatp", T_FLOAT, "float")
 #else
 TYPEP(f_intp, "intp", T_INT)
-#endif /* AUTO_BIGNUM */
-     
 TYPEP(f_mappingp, "mappingp", T_MAPPING)
 TYPEP(f_arrayp, "arrayp", T_ARRAY)
 TYPEP(f_multisetp, "multisetp", T_MULTISET)
 TYPEP(f_stringp, "stringp", T_STRING)
 TYPEP(f_floatp, "floatp", T_FLOAT)
-
+#endif /* AUTO_BIGNUM */
+     
 void f_sort(INT32 args)
 {
   INT32 e,*order;
