@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.140 2004/06/29 21:18:19 nilsson Exp $
+|| $Id: cpp.c,v 1.141 2004/06/29 21:25:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -451,8 +451,8 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
       free_svalue (&throw_value);
       throw_value.type = T_INT;
     }
-    else {
-      cpp_handle_exception (this, "Error indexing module with %S.", s);
+    else if(this->warn_if_constant_throws) {
+      cpp_warning (this, "Error indexing module with %S.", s);
     }
     res = 0;
     push_undefined();
@@ -552,8 +552,9 @@ void cpp_func_constant(struct cpp *this, INT32 args)
 	free_svalue(&throw_value);
 	throw_value.type = T_INT;
 	res = 0;
-      } else {
-	cpp_handle_exception (this, "Error resolving %S.", str);
+      } else if(this->warn_if_constant_throws) {
+	cpp_warning (this, "Error resolving %S.", str);
+	res = 0;
       }
     }
   } else {
