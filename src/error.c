@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.68 2001/01/12 02:15:56 mast Exp $");
+RCSID("$Id: error.c,v 1.69 2002/01/24 16:40:58 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -507,6 +507,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   }
 
   (void)VFPRINTF(stderr, fmt, args);
+
+  va_end(args);
 
   d_flag=t_flag=0;
   if(Pike_sp && Pike_interpreter.evaluator_stack)
