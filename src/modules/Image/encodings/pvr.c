@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.4 2000/02/27 14:01:31 marcus Exp $");
+RCSID("$Id: pvr.c,v 1.5 2000/02/27 14:48:13 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -15,6 +15,7 @@ RCSID("$Id: pvr.c,v 1.4 2000/02/27 14:01:31 marcus Exp $");
 #include "mapping.h"
 #include "error.h"
 #include "operators.h"
+#include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 
@@ -63,6 +64,7 @@ extern struct program *image_program;
 **!	options is a mapping with optional values:
 **!	<pre>
 **!	   "alpha":object            - alpha channel
+**!	   "global_index":int	     - global index
 **!	</pre>
 */
 
@@ -98,9 +100,104 @@ static void init_twiddletab()
   twiddleinited=1;
 }
 
+static void pvr_encode_rect(INT32 attr, rgb_group *src, unsigned char *dst,
+			    INT32 stride, unsigned int h, unsigned int w)
+{
+  INT32 cnt = h * w;
+  switch(attr&0xff) {
+   case MODE_RGB565:
+     while(cnt--) {
+       unsigned int p =
+	 ((src->r&0xf8)<<8)|((src->g&0xfc)<<3)|((src->b&0xf8)>>3);
+       *dst++=p&0xff;
+       *dst++=(p&0xff00)>>8;
+       src++;
+     }
+     break;
+  }
+}
+
 void image_pvr_f_encode(INT32 args)
 {
-   error("not implemented\n");
+  struct object *imgo;
+  struct mapping *optm = NULL;
+  struct image *alpha = NULL, *img;
+  INT32 gbix, sz, attr;
+  int has_gbix=0;
+  struct pike_string *res;
+  unsigned char *dst;
+
+  get_all_args("Image.PVR.encode", args, (args>1 && !IS_ZERO(&sp[1-args])?
+					  "%o%m":"%o"), &imgo, &optm);
+
+  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+    error("Image.PVR.encode: illegal argument 1\n");
+
+  if(optm != NULL) {
+    struct svalue *s;
+    if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !IS_ZERO(s))
+      if(s->type != T_OBJECT ||
+	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
+	error("Image.PVR.encode: option (arg 2) \"alpha\" has illegal type\n");
+    if((s = simple_mapping_string_lookup(optm, "global_index"))!=NULL &&
+       !IS_UNDEFINED(s))
+      if(s->type == T_INT) {
+	gbix = s->u.integer;
+	has_gbix=1;
+      }
+      else
+	error("Image.PVR.encode: option (arg 2) \"global_index\" has illegal type\n");
+  }
+
+  if (!img->img)
+    error("Image.PVR.encode: no image\n");
+  if (alpha && !alpha->img)
+    error("Image.PVR.encode: no alpha image\n");
+
+  if (alpha && (alpha->xsize != img->xsize || alpha->ysize != img->ysize))
+    error("Image.PVR.encode: alpha and image size differ\n");
+
+  res = begin_shared_string(8+(sz=8+2*img->xsize*img->ysize)+(has_gbix? 12:0));
+  dst = STR0(res);
+
+  attr = MODE_RECTANGLE|MODE_RGB565;
+
+  if(has_gbix) {
+    *dst++ = 'G';
+    *dst++ = 'B';
+    *dst++ = 'I';
+    *dst++ = 'X';
+    *dst++ = 4;
+    *dst++ = 0;
+    *dst++ = 0;
+    *dst++ = 0;
+    *dst++ = (gbix&0x000000ff);
+    *dst++ = (gbix&0x0000ff00)>>8;
+    *dst++ = (gbix&0x00ff0000)>>16;
+    *dst++ = (gbix&0xff000000)>>24;
+  }
+
+  *dst++ = 'P';
+  *dst++ = 'V';
+  *dst++ = 'R';
+  *dst++ = 'T';
+  *dst++ = (sz&0x000000ff);
+  *dst++ = (sz&0x0000ff00)>>8;
+  *dst++ = (sz&0x00ff0000)>>16;
+  *dst++ = (sz&0xff000000)>>24;
+  *dst++ = (attr&0x000000ff);
+  *dst++ = (attr&0x0000ff00)>>8;
+  *dst++ = (attr&0x00ff0000)>>16;
+  *dst++ = (attr&0xff000000)>>24;
+  *dst++ = (img->xsize&0x00ff);
+  *dst++ = (img->xsize&0xff00)>>8;
+  *dst++ = (img->ysize&0x00ff);
+  *dst++ = (img->ysize&0xff00)>>8;
+
+  pvr_encode_rect(attr, img->img, dst, 0, img->ysize, img->xsize);
+
+  pop_n_elems(args);
+  push_string(end_shared_string(res));
 }
 
 static void pvr_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
@@ -362,7 +459,7 @@ void img_pvr_decode(INT32 args,int header_only)
 	error("unknown PVR color mode\n");
      }
 
-     if(mipmap)
+     if(mipmap) /* Just skip everything except the largest version */
        for(x=w; x>>=1;)
 	 mipmap += x*x;
 
@@ -454,7 +551,7 @@ void init_image_pvr()
   ADD_FUNCTION( "decode",  image_pvr_f_decode,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "decode_alpha",  image_pvr_f_decode_alpha,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "_decode", image_pvr_f__decode, tFunc(tStr,tMapping), 0);
-  ADD_FUNCTION( "encode",  image_pvr_f_encode,  tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "encode",  image_pvr_f_encode,  tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
   ADD_FUNCTION( "decode_header", image_pvr_f_decode_header, tFunc(tStr,tMapping), 0);
 }
 
