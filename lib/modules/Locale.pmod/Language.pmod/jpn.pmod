@@ -4,7 +4,7 @@
 
 //! Japanese language locale.
 
-// $Id: jpn.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id: jpn.pmod,v 1.2 2004/05/16 10:06:36 nilsson Exp $
 
 inherit "abstract";
 
@@ -122,8 +122,18 @@ string month(int num)
   return mknumber(num)+"月";
 }
 
+string short_month(int num)
+{
+  return month(num);
+}
+
 string day(int num)
 {
   return ({ "日", "月", "火", "水", "木", "金", "土" })[ num - 1 ]+
 	    "曜日";
+}
+
+string short_day(int num)
+{
+  return ({ "日", "月", "火", "水", "木", "金", "土" })[ num - 1 ];
 }
