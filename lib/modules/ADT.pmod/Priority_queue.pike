@@ -5,7 +5,7 @@ inherit .Heap;
 class elem {
   int pri;
   mixed value;
-  
+
   void create(int a, mixed b) { pri=a; value=b; }
 
   void set_pri(int p)
@@ -15,7 +15,7 @@ class elem {
     }
 
   int get_pri() { return pri; }
-  
+
   int `<(object o) { return pri<o->pri; }
   int `>(object o) { return pri>o->pri; }
   int `==(object o) { return pri==o->pri; }
@@ -26,7 +26,7 @@ class elem {
 mixed push(int pri, mixed val)
 {
   mixed handle;
-  
+
   handle=elem(pri, val);
   ::push(handle);
   return handle;
@@ -42,4 +42,4 @@ void adjust_pri(mixed handle, int new_pri)
 
 //! @fixme
 //!   Document this function
-mixed pop() { return top()->value; }
+mixed pop() { return ::pop()->value; }
