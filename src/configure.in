@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.263 1999/04/23 01:10:03 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.264 1999/04/29 10:44:26 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2634,22 +2634,30 @@ AC_MSG_RESULT($LDSHARED)
 # CCSHARED are the C *flags* used to create objects to go into a shared
 # library -- this is only needed for a few systems
 AC_MSG_CHECKING(CCSHARED)
-if test -z "$CCSHARED" ; then
-  if test "$GCC" = yes ; then
-    case $pike_cv_sys_os in
-      BSD/OS*) CCSHARED="";;
-      *) CCSHARED="-fpic";;
-    esac
-  else
-    case $pike_cv_sys_os in
-      hp*|HP*) CCSHARED="+z"; ;;
-      FreeBSD*) CCSHARED="-fpic";;
-      SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
-      Solaris*) CCSHARED="-KPIC -Bdynamic";;
-      Windows_NT*) CCSHARED="-shared" ;;
-    esac
+AC_CACHE_VAL(pike_cv_sys_ccshared,[
+  if test -z "$CCSHARED" ; then
+    if test "$GCC" = yes ; then
+      case $pike_cv_sys_os in
+	BSD/OS*) CCSHARED="";;
+	*) CCSHARED="-fpic";;
+      esac
+    else
+      case $pike_cv_sys_os in
+	hp*|HP*) CCSHARED="+z"; ;;
+	FreeBSD*) CCSHARED="-fpic";;
+	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
+	Solaris*) CCSHARED="-KPIC -Bdynamic";;
+	Windows_NT*) CCSHARED="-shared" ;;
+      esac
+    fi
   fi
-fi
+  OLD_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $CCSHARED"
+  AC_TRY_COMPILE([], [int main() { exit(0); }],
+    pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
+  CFLAGS="$OLD_CFLAGS"
+])
+CCSHARED="$pike_cv_sys_ccshared"
 AC_MSG_RESULT($CCSHARED)
 
 AC_MSG_CHECKING(LINKFORSHARED)
