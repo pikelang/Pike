@@ -1,7 +1,8 @@
+
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Indexer.pmod,v 1.17 2004/08/07 15:26:57 js Exp $
+// $Id: Indexer.pmod,v 1.18 2004/08/08 14:22:53 js Exp $
 
 //!
 void index_document(Search.Database.Base db,
@@ -11,7 +12,6 @@ void index_document(Search.Database.Base db,
 {
   db->remove_document( uri, language );
   int mtime = (int)fields->mtime;
-  werror("mtime: %O\n", mtime);
   foreach(indices(fields), string field)
   {
     string f;
@@ -32,7 +32,6 @@ void index_document(Search.Database.Base db,
 //      db->insert_words(link_uri, 0, "anchor", words, source_hash);
 //    }
 }
-
 
 //!
 string extension_to_type(string extension)

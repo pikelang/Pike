@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.77 2004/08/07 15:26:59 js Exp $
+// $Id: MySQL.pike,v 1.78 2004/08/08 14:22:53 js Exp $
 
 inherit .Base;
 
@@ -15,20 +15,24 @@ static
 // This is the database object that all queries will be made to.
   Sql.sql db;
   string host;
+  mapping options;
   string mergefile_path;
   int mergefile_counter = 0;
   int init_done = 0;
 };
 
-void create(string db_url, void|string _mergefile_path)
+void create(string db_url, void|mapping _options)
 {
   db=Sql.sql(host=db_url);
-  mergefile_path = _mergefile_path;
+  options = _options || ([]);
+  mergefile_path = options->mergefiles;
+  
   if(!mergefile_path)
     mergefile_path = "/tmp/";
 
-  foreach(get_mergefiles(), string fn)
-    rm(fn);
+  if(options->mergefiles)
+    foreach(get_mergefiles(), string fn)
+      rm(fn);
 }
 
 string _sprintf()
@@ -327,7 +331,7 @@ void safe_remove_field(string field)
 
 static _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 
-#define MAXMEM 50*1024*1024
+#define MAXMEM 64*1024*1024
 
 void insert_words(Standards.URI|string uri, void|string language,
 		  string field, array(string) words)
@@ -341,17 +345,20 @@ void insert_words(Standards.URI|string uri, void|string language,
   blobs->add_words( doc_id, words, field_id );
   
   if(blobs->memsize() > MAXMEM)
-    mergefile_sync();
+    if(options->mergefiles)
+      mergefile_sync();
+    else
+      sync();
 }
 
 array(string) expand_word_glob(string g, void|int max_hits)
 {
   g = replace( string_to_utf8(g), ({ "*", "?" }), ({ "%", "_" }) );
   if(max_hits)
-      return map(db->query("select distinct word from word_hit where word like %s limit %d",
-			       g, max_hits)->word,utf8_to_string);
+    return map(db->query("select distinct word from word_hit where word like %s limit %d",
+			 g, max_hits)->word,utf8_to_string);
   else
-      return map(db->query("select distinct word from word_hit where word like %s",g)->word,utf8_to_string);
+    return map(db->query("select distinct word from word_hit where word like %s",g)->word,utf8_to_string);
 }
 
 static int blobs_per_select = 40;
@@ -562,7 +569,7 @@ void add_links(Standards.URI|string uri,
     return;
   
   int doc_id = get_document_id((string)uri, language);
-
+  
   array(int) to_ids = map(links,
 			  lambda(Standards.URI|string uri)
 			  {
@@ -637,15 +644,12 @@ static array(array(int|string)) split_blobs(int blob_size, string blob,
   return blobs;
 }
 
-static void store_to_db( string mergedfilename )
+static void store_to_db( void|string mergedfilename )
 {
-  Search.MergeFile mergedfile =
-    Search.MergeFile(Stdio.File(mergedfilename, "r"));
+  Search.MergeFile mergedfile;
 
-  //  mergedfile->test();
-
-  mergedfile =
-    Search.MergeFile(Stdio.File(mergedfilename, "r"));
+  if(mergedfilename)
+    mergedfile = Search.MergeFile(Stdio.File(mergedfilename, "r"));
   
   int s = time();
   int q;
@@ -656,15 +660,22 @@ static void store_to_db( string mergedfilename )
   db->query("LOCK TABLES word_hit WRITE");
   String.Buffer multi_query = String.Buffer();
 
-
   do
   {
-    array a = mergedfile->get_next_word_blob();
-    if( !a )
-      break;
-    [string word, string blob] = a;
-
-    //    werror("%O %d\n", word, sizeof(blob));
+    string word, blob;
+    if(mergedfilename)
+    {
+      array a = mergedfile->get_next_word_blob();
+      if( !a )
+	break;
+      [word, blob] = a;
+    }
+    else
+    {
+      [word, blob] = blobs->read();
+      if(!word)
+	break;
+    }
 
     q++;
 
@@ -675,10 +686,9 @@ static void store_to_db( string mergedfilename )
     }
 
     int first_doc_id;
-//     word = word ;
-    array old=db->query( "SELECT first_doc_id,length(hits) as l "+
-			 "FROM word_hit WHERE word=%s ORDER BY first_doc_id",
-			 word );
+    array old=db->query("SELECT first_doc_id,length(hits) as l "+
+			"FROM word_hit WHERE word=%s ORDER BY first_doc_id",
+			word );
     if( sizeof( old ) )
     {
       int blob_size = (int)old[-1]->l;
@@ -715,12 +725,13 @@ static void store_to_db( string mergedfilename )
 	if( sizeof(multi_query) )
 	  multi_query->add( ",",qu );
 	else
-	  multi_query->add(  "INSERT INTO word_hit "
-			     "(word,first_doc_id,hits) VALUES ",
-			     qu );
+	  multi_query->add( "INSERT INTO word_hit "
+			    "(word,first_doc_id,hits) VALUES ",
+			    qu );
       }
     }
- } while( 1 );
+  } while( 1 );
+  
   if( sizeof( multi_query ) )
     db->query( multi_query->get());
     
@@ -728,9 +739,12 @@ static void store_to_db( string mergedfilename )
   
   if( sync_callback )
     sync_callback();
-
-  mergedfile->close();
-  rm(mergedfilename);
+  
+  if(mergedfilename)
+  {
+    mergedfile->close();
+    rm(mergedfilename);
+  }
 #ifdef SEARCH_DEBUG
   werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 #endif
@@ -751,7 +765,6 @@ static void mergefile_sync()
   Search.MergeFile mergefile = Search.MergeFile(
     Stdio.File(get_mergefilename(), "wct"));
 
-
   mergefile->write_blobs(blobs);
 
   if( sync_callback )
@@ -762,7 +775,6 @@ static void mergefile_sync()
 	 file_stat(get_mergefilename())->size/(1024.0*1024.0));
 #endif
 
-  //  Search.MergeFile(Stdio.File(get_mergefilename(), "r"))->test();
   mergefile_counter++;
   blobs = _WhiteFish.Blobs();
 }
@@ -807,9 +819,16 @@ static string merge_mergefiles(array(string) mergefiles)
 
 void sync()
 {
-  mergefile_sync();
-  string mergedfile = merge_mergefiles(sort(get_mergefiles()));
-  store_to_db(mergedfile);
+  if(options->mergefiles)
+  {
+    mergefile_sync();
+    store_to_db(merge_mergefiles(sort(get_mergefiles())));
+  }
+  else
+  {
+    store_to_db();
+    blobs = _WhiteFish.Blobs();
+  }
   docs = 0;
 }
 
