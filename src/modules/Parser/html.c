@@ -21,8 +21,8 @@ extern struct program *parser_html_program;
 
 /*
 #define SCAN_DEBUG
-*/
 #define DEBUG
+*/
 
 #ifdef DEBUG
 #undef DEBUG
@@ -1267,7 +1267,21 @@ static void do_callback(struct parser_html_storage *this,
       push_feed_range(start,cstart,end,cend);
    else 
       ref_push_string(empty_string);
-   apply_svalue(callback_function,2);  
+
+   if (this->extra_args)
+   {
+      this->extra_args->refs++;
+      push_array_items(this->extra_args);
+
+      DEBUG((stderr,"_-callback args=%d\n",2+this->extra_args->size));
+
+      apply_svalue(callback_function,2+this->extra_args->size);  
+   }
+   else
+   {
+      DEBUG((stderr,"_-callback args=%d\n",2));
+      apply_svalue(callback_function,2);  
+   }
 }
 
 static newstate entity_callback(struct parser_html_storage *this,
