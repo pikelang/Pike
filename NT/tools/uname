@@ -5,6 +5,7 @@
 M=no
 N=no
 S=no
+P=no
 
 for a in "$@"
 do
@@ -15,14 +16,15 @@ do
     ;;
 
     --help)
-      echo "Usage: uname [-a] [-m] [-n] [-r] [-s] [-v]"
+      echo "Usage: uname [-a] [-m] [-n] [-p] [-r] [-s] [-v]"
       exit 0
     ;;
 
-    --all)  M=yes ; N=yes ; S=yes ;;
+    --all)  M=yes ; N=yes ; S=yes ; P=yes ;;
     --machine) M=yes ;;
     --nodename) N=yes ;;
     --sysname) S=yes ;;
+    --processor) P=yes ;;
 
     --*)
       echo "Unknown option $a"
@@ -39,6 +41,10 @@ do
       esac
 
       case "$a" in
+        *p*) P=yes ;;
+      esac
+
+      case "$a" in
         *s*) S=yes ;;
       esac
 
@@ -50,7 +56,7 @@ do
   esac
 done
 
-if [ $M$N$S = nonono ]; then
+if [ $M$N$S$P = nononono ]; then
   S=yes
 fi
 
@@ -66,6 +72,10 @@ if [ $N = yes ]; then
 fi
 
 if [ $M = yes ]; then
+  OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
+fi
+
+if [ $P = yes ]; then
   OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
 fi
 
