@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.119 1998/08/05 22:50:11 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.120 1998/08/10 23:33:30 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -70,6 +70,7 @@ test_compile([[Stdio.File foo=Stdio.FILE();]])
 dnl this should really work...
 dnl test_compile_any([[void foo(int,string,...);]])
 
+test_eval_error([[class X { int create() { create(); } }();]])
 test_compile_error([[ int float; ]])
 test_compile_error([[ int array; ]])
 test_compile_error([[ int function; ]])

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.229 1998/08/09 14:43:06 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.230 1998/08/10 23:33:28 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1406,35 +1406,35 @@ esac
 OLD_LIBOBJS="${LIBOBJS}"
 
 ########################################################################
-dnl AC_MSG_CHECKING(stack direction)
-dnl AC_CACHE_VAL(pike_cv_hardware_stack_direction,
-dnl [
-dnl AC_TRY_RUN([
-dnl static int find_stack_direction ()
-dnl {
-dnl   static char	*addr = NULL;
-dnl   char dummy;
-dnl   if (addr == NULL)
-dnl   {
-dnl       addr = &dummy;
-dnl       return find_stack_direction();
-dnl   }
-dnl   else
-dnl   {
-dnl     if (&dummy > addr) return 1; else return -1;
-dnl   }
-dnl }
-dnl 
-dnl int main() { exit( find_stack_direction() < 0); }
-dnl ],pike_cv_hardware_stack_direction=up,pike_cv_hardware_stack_direction=down)
-dnl ])
-dnl 
-dnl AC_MSG_RESULT($pike_cv_hardware_stack_direction)
-dnl if test x$pike_cv_hardware_stack_direction = up ; then
-dnl   AC_DEFINE(STACK_DIRECTION, 1)
-dnl else
-dnl   AC_DEFINE(STACK_DIRECTION, -1)
-dnl fi
+AC_MSG_CHECKING(stack direction)
+AC_CACHE_VAL(pike_cv_hardware_stack_direction,
+[
+AC_TRY_RUN([
+static int find_stack_direction ()
+{
+  static char	*addr = NULL;
+  char dummy;
+  if (addr == NULL)
+  {
+      addr = &dummy;
+      return find_stack_direction();
+  }
+  else
+  {
+    if (&dummy > addr) return 1; else return -1;
+  }
+}
+
+int main() { exit( find_stack_direction() < 0); }
+],pike_cv_hardware_stack_direction=up,pike_cv_hardware_stack_direction=down)
+])
+
+AC_MSG_RESULT($pike_cv_hardware_stack_direction)
+if test x$pike_cv_hardware_stack_direction = up ; then
+  AC_DEFINE(STACK_DIRECTION, 1)
+else
+  AC_DEFINE(STACK_DIRECTION, -1)
+fi
 
 ########################################################################
 

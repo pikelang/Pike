@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.79 1998/07/17 22:37:11 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.80 1998/08/10 23:33:31 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -19,6 +19,7 @@ int threads_disabled = 0;
 int live_threads = 0;
 COND_T live_threads_change;
 COND_T threads_disabled_change;
+size_t thread_stack_size=1024 * 1204;
 
 #ifdef __NT__
 
@@ -450,6 +451,7 @@ void *new_thread_func(void * data)
   thread_id=arg.id;
   SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
   ((struct thread_state *)thread_id->storage)->swapped=0;
+  stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION 
 #ifdef THREAD_TRACE
   {
     t_flag = default_t_flag;
@@ -881,7 +883,7 @@ void low_th_init(void)
 #ifdef POSIX_THREADS
   pthread_attr_init(&pattr);
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&pattr, 1024 * 1204);
+  pthread_attr_setstacksize(&pattr, thread_stack_size);
 #endif
   pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
 

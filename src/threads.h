@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.47 1998/08/06 19:46:56 grubba Exp $
+ * $Id: threads.h,v 1.48 1998/08/10 23:33:31 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -50,6 +50,7 @@
 extern int num_threads;
 extern int live_threads;
 struct object;
+extern size_t thread_stack_size;
 extern struct object *thread_id;
 
 #define DEFINE_MUTEX(X) MUTEX_T X
@@ -117,7 +118,7 @@ extern pthread_attr_t small_pattr;
 
 #define th_setconcurrency(X) thr_setconcurrency(X)
 
-#define th_create(ID,fun,arg) thr_create(NULL,0,fun,arg,THR_DAEMON|THR_DETACHED,ID)
+#define th_create(ID,fun,arg) thr_create(NULL,thread_stack_size,fun,arg,THR_DAEMON|THR_DETACHED,ID)
 #define th_create_small(ID,fun,arg) thr_create(NULL,32768,fun,arg,THR_DAEMON|THR_DETACHED,ID)
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
@@ -281,6 +282,7 @@ struct thread_state {
   int mark_stack_malloced;
   JMP_BUF *recoveries;
   struct object * thread_id;
+  char *stack_top;
 #ifdef THREAD_TRACE
   int t_flag;
 #endif /* THREAD_TRACE */
@@ -332,6 +334,7 @@ struct thread_state {
        (_tmp)->mark_stack_malloced=mark_stack_malloced;\
        (_tmp)->recoveries=recoveries;\
        (_tmp)->sp=sp; \
+       (_tmp)->stack_top=stack_top; \
        (_tmp)->thread_id=thread_id;\
        SWAP_OUT_TRACE(_tmp); \
       } while(0)
@@ -346,6 +349,7 @@ struct thread_state {
        mark_stack_malloced=(_tmp)->mark_stack_malloced;\
        recoveries=(_tmp)->recoveries;\
        sp=(_tmp)->sp;\
+       stack_top=(_tmp)->stack_top;\
        thread_id=(_tmp)->thread_id;\
        SWAP_IN_TRACE(_tmp); \
      } while(0)

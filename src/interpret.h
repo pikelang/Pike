@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.21 1998/06/06 03:25:37 hubbe Exp $
+ * $Id: interpret.h,v 1.22 1998/08/10 23:33:29 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -155,6 +155,7 @@ extern struct svalue **mark_sp;
 extern struct svalue *evaluator_stack;
 extern struct svalue **mark_stack;
 extern struct frame *fp; /* frame pointer */
+extern char *stack_top;
 extern int stack_size;
 extern int evaluator_stack_malloced, mark_stack_malloced;
 struct callback;
