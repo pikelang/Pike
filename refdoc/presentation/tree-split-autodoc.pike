@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.7 2001/07/28 07:47:36 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.8 2001/07/28 07:52:42 nilsson Exp $
  *
  */
 
@@ -13,9 +13,11 @@ string image_prefix()
   return extra_prefix + ::image_prefix();
 }
 
+int unresolved;
 mapping profiling = ([]);
 #define PROFILE int profilet=gethrtime
 #define ENDPROFILE(X) profiling[(X)] += gethrtime()-profilet;
+
 
 class Node
 {
@@ -165,6 +167,7 @@ class Node
     }
 
     werror("Missed reference: %O\n", _reference);
+    unresolved++;
     return "<font face='courier'>" + _reference + "</font>";
   }
 
@@ -469,6 +472,7 @@ int main(int argc, array(string) argv)
 
   foreach(sort(indices(profiling)), string f)
     werror("%s: %.1f\n", f, profiling[f]/1000000.0);
+  werror("%d unresolved references.\n", unresolved);
 
   return 0;
 }
