@@ -1,9 +1,15 @@
 #!/bin/sh
 
-# Arguments:
-#   SRCDIR
-#   PIKE_SRC_DIR
-#   BUILD_BASE
+if [ "$1" = "--help" ] ; then
+cat <<EOF
+  Creates the dependency file "dependencies". This script is
+  called by "make depend". Usage:
+
+    fixdepends.sh SRCDIR PIKE_SRC_DIR BUILD_BASE
+EOF
+exit 0
+fi
+
 
 # The following transforms are done:
 
