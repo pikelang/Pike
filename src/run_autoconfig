@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.32 2001/09/23 21:21:16 grubba Exp $
+# $Id: run_autoconfig,v 1.33 2002/02/13 20:26:43 nilsson Exp $
 #
 # Bootstrap script
 
@@ -34,13 +34,16 @@ fi
 autoconf_version="`autoconf --version|head -1|awk '{ print $NF }'`"
 
 if [ "`echo $autoconf_version|awk -F. '{ print $1 }'`" -ne "2" -o \
+     "`echo $autoconf_version|awk -F. '{ print $2 }'`" -le "10" -o \
      "`echo $autoconf_version|awk -F. '{ print $2 }'`" -ge "50" ]; then
-  # Autoconf 2.50 and later is seriously broken.
-  echo "Autoconf version $autoconf_version is not supported." >&2
-  echo >&2
-  echo "Get and install autoconf 2.13." >&2
-  # Abort
-  exit 1
+  if [ "`echo $autoconf_version|awk -F. '{ print $2 ]'`" -le "51" ]; then
+    # Autoconf 2.50 and later is seriously broken.
+    echo "Autoconf version $autoconf_version is not supported." >&2
+    echo >&2
+    echo "Get and install autoconf 2.14, 2.52 or later." >&2
+    # Abort
+    exit 1
+  else:; fi;
 else :; fi
 
 IFS=''
