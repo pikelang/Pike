@@ -119,10 +119,11 @@ class Colormap
     req->red = r;
     req->green = g;
     req->blue = b;
-    return (alloced[sprintf("%2c%2c%2c", r, g, b)]=
-	    display->blocking_request( req ));
-  }
 
+    array a = display->blocking_request( req );
+    return a[0] && (alloced[sprintf("%2c%2c%2c", r, g, b)]=
+		    a[1]);
+  }
 
   void create(object disp, int i, object vis)
   {
@@ -479,7 +480,6 @@ class Window
     display->send_request(Configure_req(m));
   }
 
-
   void set_event_callback(string type, function f)
   {
     event_callbacks[type] = f;
@@ -538,7 +538,32 @@ class Window
     display->send_request(Map_req());
   }
 
+  object ListProperties_req()
+  {
+    object req = Requests.ListProperties();
+    req->window = id;
+    return req;
+  }
 
+  array ListProperties()
+  {
+    object req = ListProperties_req();
+    array a = display->blocking_request(req);
+
+    if (!a[0])
+      return 0;
+    
+    a = a[1];
+    for(int i = 0; i<sizeof(a); i++)
+      {
+	object atom = display->lookup_atom(a[i]);
+	if (!atom)
+	  return 0;
+	a[i] = atom;
+      }
+    return a;
+  }
+  
   // Shape extension
   void ShapeRectangles( string kind, int xo, int yo, string operation,
 			array (object(Rectangle)) rectangles )
