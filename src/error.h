@@ -82,8 +82,11 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn));
 void exit_on_error(void *msg);
 void fatal_on_error(void *msg);
 void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
-void fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 /* Prototypes end here */
+
+#define fatal \
+ fprintf(stderr,"Fatal error at %s:%d\n",__FILE__,__LINE__),debug_fatal
 
 #endif
 

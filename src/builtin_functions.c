@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.65 1998/01/30 06:19:50 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.66 1998/02/01 02:07:22 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -356,7 +356,8 @@ void f_add_constant(INT32 args)
 #define IS_ABS(X) (IS_SEP((X)[0])?1:0)
 #else   
 #define IS_SEP(X) ( (X) == '/' || (X) == '\\' )
-#define IS_ABS(X) (IS_SEP((X)[0])?1:(isalpha((X)[0]) && (X)[1]==':' && IS_SEP((X)[2]))?3:0)
+#define IS_ABS(X) ((isalpha((X)[0]) && (X)[1]==':' && IS_SEP((X)[2]))?3:0)
+#define IS_ROOT(X) (IS_SEP((X)[0])?1:0)
 #endif
 
 static char *combine_path(char *cwd,char *file)
@@ -369,13 +370,28 @@ static char *combine_path(char *cwd,char *file)
   my_cwd=0;
   
 
-  if(IS_ABS(file))
+  if(IS_ABS(file)
+#ifdef IS_ROOT
+     || ( IS_ROOT(file) && !IS_ABS(cwd))
+#endif
+    )
   {
     MEMCPY(cwdbuf,file,IS_ABS(file));
     cwdbuf[IS_ABS(file)]=0;
     cwd=cwdbuf;
     file+=IS_ABS(file);
   }
+
+#ifdef IS_ROOT
+  else if(IS_ROOT(file) && IS_ABS(cwd))
+  {
+    MEMCPY(cwdbuf,cwd,IS_ABS(cwd));
+    cwdbuf[IS_ABS(cwd)]=0;
+    cwd=cwdbuf;
+    file+=IS_ROOT(file);
+  }
+#endif
+
 #ifdef DEBUG    
   if(!cwd)
     fatal("No cwd in combine_path!\n");

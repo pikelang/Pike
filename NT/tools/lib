@@ -48,3 +48,4 @@ do_cmd() {
   echo "DOING $*" >&2
   silent_do_cmd "$@"
 }
+

@@ -1,42 +1,9 @@
 #!/usr/local/bin/pike
 
-inherit Stdio.File;
+inherit "lib.pike";
 
-string handle_input()
-{
-  object stdin=Stdio.File("stdin");
-  while(string s=stdin->read(1000,1))
-    write(s);
-}
-
-
-#if !constant(strerror)
-#define strerror(X) X
-#endif
 
 int main(int argc, string *cmd)
 {
-  if(!connect(getenv("NTHOST"),(int)getenv("NTPORT")))
-  {
-    werror("Failed to connect "+strerror(errno())+".\n");
-    exit(1);
-  }
-
-  string tmp=getcwd();
-  string mnt=getenv("NTMOUNT");
-  if(mnt && strlen(mnt)) tmp=replace(tmp,mnt,"");
-  cmd[0]=getenv("NTDRIVE")+replace(tmp,"/","\\");
-  write(sprintf("%4c",sizeof(cmd)));
-  for(int e=0;e<sizeof(cmd);e++)
-    write(sprintf("%4c%s",strlen(cmd[e]),cmd[e]));
-
-  thread_create(handle_input);
-  while(1)
-  {
-    sscanf(read(4),"%4c",int len);
-    if(!len) break;
-    predef::write(read(len));
-  }
-  sscanf(read(4),"%4c",int code);
-  exit(code);
+  exit(silent_do_cmd(cmd[1..]));
 }

@@ -51,7 +51,7 @@ typedef int FD;
 
 /* Prototypes begin here */
 char *fd_info(int fd);
-int fd_query_query_properties(int fd, int guess);
+int fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
 FD fd_open(char *file, int open_mode, int create_mode);
@@ -94,6 +94,9 @@ struct fd_data_hash_block;
 int get_fd_data_key(void);
 void store_fd_data(FD fd, int key, void *data);
 void *get_fd_data(FD fd, int key);
+struct event;
+struct fd_waitor;
+void fd_waitor_set_customer(struct fd_waitor *x, FD customer, int flags);
 /* Prototypes end here */
 
 #undef SOCKFUN1

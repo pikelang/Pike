@@ -1,12 +1,15 @@
-#!/bin/sh
+#!/usr/local/bin/pike
 
+inherit "lib.pike";
 
-case "x$1" in
-  x[a-zA-Z]:*)
-    . $NTTOOLS
-    do_cmd mkdir `fixpath $1`
-    exit 0
-  ;;
-esac
-
-exec /bin/mkdir "$@"
+int main(int argc, string *argv)
+{
+  if(sscanf(argv[-1],"%*[a-zA-Z]:%*s"))
+  {
+    argv[0]="mkdir";
+    exit(do_cmd( Array.map(argv,fixpath)));
+  }else{
+    exece("/bin/mkdir",argv[1..]);
+    exit(69);
+  }
+}

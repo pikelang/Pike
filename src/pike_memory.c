@@ -788,6 +788,7 @@ static void cleanup_memhdrs()
 int main(int argc, char *argv[])
 {
   extern int dbm_main(int, char **);
+  mt_init(&debug_malloc_mutex);
   atexit(cleanup_memhdrs);
   return dbm_main(argc, argv);
 }

@@ -1,227 +1,230 @@
-#!/bin/sh
+#!/usr/local/bin/pike
 
-. $NTTOOLS
+inherit "lib.pike";
 
-OPTS=""
-CFLAGS=""
-SOURCES=""
-OBJECTS=""
-OUTPUT=
-OPERATION=linking
-INCLUDE_PATH=
-LDOPTS="OPTION STACK=8m"
-LIBRARIES=""
-NTCC=wcc386
+int compile(string *sources,
+	     string dest,
+	     string errorfile,
+	     string *cflags)
+{
+  int ret;
+  if(!dest)
+  {
+    string tmp=reverse(sources[0]);
+    sscanf(tmp,"%*s.%s",tmp);
+    dest=reverse(tmp)+".o";
+  }
 
-DEBUG=no
-OPTIMIZE=no
-
-check_linker_error() {
-  ERROR=ok
-  sed -e 's/\\/\\\\/g' | while read line
-  do
-    echo "$line" >&2
-    case "x$line" in
-      *\ W1008:*)
-        ERROR=failed
-      ;;
-    esac
-  done
-
-  echo $ERROR
-  exit 0
+  sources=Array.map(sources,fixpath);
+  if(lower_case(sources[0][strlen(sources[0])-3..])==".s")
+  {
+    ret=do_cmd(({ "wasm", "-fe"+errorfile, "-fo"+dest,})+ sources );
+  }else{
+    ret=do_cmd(({ "wcc386" }) + cflags + ({"-fr"+errorfile, "-fo"+dest}) + sources );
+  }
+  return ret;
 }
 
-while test "$#" != 0; do
-  case $1 in
-    -shared) ;;
-    -E)  OPERATION=preprocessing ;;
-    -c)  OPERATION=compiling  ;;
-    -g*)
-       CFLAGS="$CFLAGS -d2 "
-       LDOPTS="$LDOPTS DEBUG WATCOM ALL"
-       DEBUG=yes
-     ;;
-#    -O*) ;;
-    -O)
-      CFLAGS="$CFLAGS -ox"
-      OPTIMIZE=yes
-    ;;
-    -O2)
-      CFLAGS="$CFLAGS -otexan"
-      OPTIMIZE=yes
-    ;;
-    *.c | *.s | *.S) SOURCES="$SOURCES $1" ;;
-    *.o | *.a) OBJECTS="$OBJECTS $1" ;;
-     -o) OUTPUT="$2" ; shift ;;
-
-    -I*)
-       if test x$1 = x-I ; then
-         tmp="$2"
-         shift
-       else
-         tmp=`echo $1 | sed -e 's/^-I//g'`
-       fi
-
-       case $tmp in
-         /usr/include/* | /usr/local/include*)
-          ;;
-         *)
-           CFLAGS="$CFLAGS -i`fixpath $tmp`"
-         ;;
-       esac
-     ;;
-
-    -traditional-cpp | -lc | -lm) ;;
-
-    -R | -L) shift ;;
-    -R* | -L* | -Wl*)  ;;
-
-    -W)
-      CFLAGS="$CFLAGS -w2"
-    ;;
-
-    -Wall)
-      CFLAGS="$CFLAGS -wx"
-    ;;
-
-    -D*)
-      CFLAGS="$CFLAGS `echo $1 | sed -e 's/^-D/-d/g'`"
-    ;;
-
-    -U*)
-      CFLAGS="$CFLAGS `echo $1 | sed -e 's/^-U/-u/g'`"
-    ;;
-
-    -l*)
-      tmp=`echo $1 | sed -e 's/^-l//'`
-      LIBRARIES="$LIBRARIES LIBRARY $tmp"
-    ;;
-
-    -*)
-      echo "Unrecognized option $1"
-      exit 1
-    ;;
-
-    *)
-      SOURCES="$SOURCES $1"
-    ;;
-  esac
-  shift
-done
-
-#if [ x$DEBUG$OPTIMIZE = xyesyes ]; then
-#  echo Debug and optimization not supported at the same time
-#  exit 1
-#else
-#  :
-#fi
-
-rm $OUTPUT 2>/dev/null 1>/dev/null || :
-
-OLDIFS="$IFS"
-IFS=:
-set dummy $INCLUDE_PATH
-shift
-IFS="$OLDIFS"
-
-IPATH=.
-IPATHS=":.:"
-
-for a in "$@"
-do
-  case $IPATHS in
-    *:$a:*) ;;
-    *)
-     IPATH="$IPATH;`fixpath $a`"
-     IPATHS="$IPATHS:$a:"
-    ;;
-  esac
-done
-
-
-ERRORFILE=TMP$$.err
-rm $ERRORFILE 2>/dev/null 1>/dev/null || :
-
-CFLAGS="$CFLAGS -bm -zq -hw -fr$ERRORFILE"
-
-
-compile() {
-  if [ "x$2" != x ]; then
-    OFLAGS="$OFLAGS -fo$2"
-  else
-    OFLAGS="$OFLAGS -fo`echo $1 | sed -e 's/\.[^.]$//'`.o"
-  fi
-
-  case $1 in
-    *.s | *.S)
-      do_cmd wasm -fe$ERRORFILE $OFLAGS `fixpath $1`
-    ;;
-
-    *)
-     do_cmd $NTCC $CFLAGS $OFLAGS `fixpath $1`
-    ;;
-  esac
+string check_errorfile(string errorfile)
+{
+  object f=Stdio.File();
+  if(f->open(errorfile,"r"))
+  {
+    string data;
+    write(data=f->read());
+    f->close();
+    data=replace(data,"\r","");
+    rm(errorfile);
+    foreach(data/"\n", string line)
+      {
+	if(!strlen(line)) continue;
+	if(search(line,"Warning")!=-1) continue;
+	werror("Error in compilation detected. "+line+"\n");
+	exit(1);
+      }
+  }
 }
 
-case $OPERATION in
-  compiling)
-    compile $SOURCES $OUTPUT
-    TARGET=$OUTPUT
-  ;;
+int main(int argc, string *argv)
+{
+  string target;
+  string operation="link";
+  string *cflags=({});
+  string *ldopts=({"OPTION","STACK=8m"});
+  string *libraries=({});
+  string *objects=({});
+  string *sources=({});
+  int debug,optimize;
+  string output;
 
-  preprocessing)
-    silent_do_cmd $NTCC -p $CFLAGS `fixpath $SOURCES`
-  ;;
+  mixed *opts=Getopt.find_all_options(argv, ({
+    ({"oper_pre",Getopt.NO_ARG, ({"-E"}) }),
+      ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),
+	({"debug",Getopt.MAY_HAVE_ARG, ({"-g"}) }),
+	  ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
+	    ({"include",Getopt.HAS_ARG, ({"-I"}) }),
+	      ({"link",Getopt.HAS_ARG, ({"-l"}) }),
+		({"ignore",Getopt.MAY_HAVE_ARG, ({"-t","-s"}) }),
+		  ({"ignore",Getopt.HAS_ARG, ({"-R","-L"}) }),
+		    ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
+		      ({"define",Getopt.HAS_ARG, ({"-D"}) }),
+			({"undefine",Getopt.HAS_ARG, ({"-U"})}),
+			    ({"output",Getopt.HAS_ARG, ({"-o"}) })
+			      }));
+  foreach(opts, mixed *option)
+    {
+      switch(option[0])
+      {
+	case "oper_pre": operation="preprocess"; break;
+	case "oper_comp": operation="compile"; break;
+	case "debug":
+	cflags+=({"-d2"});
+	ldopts+=({"DEBUG","WATCOM","ALL"});
+	debug=1;
+	break;
+	
+	case "optimize":
+	  if(!option[1]) option[1]=1;
+	  switch(optimize=(int)option[1])
+	  {
+	    case 0: optimize=0; break;
+	    case 1: cflags+=({"-ox"}); break;
+	    case 2..: cflags+=({"-otexan"}); break;
+	  }
+	  break;
+	  
+	case "include":
+	  if(sscanf(option[1],"/usr/include/%*s") ||
+	     sscanf(option[1],"/usr/local/%*s"))
+	    break;
+	  
+	  cflags+=({"-i"+fixpath(option[1])});
+	  break;
+	  
+	case "link":
+	  if(option[1]=="m" || option[1]=="c") break;
+	  
+	  libraries+=({"LIBRARY",option[1]});
+	  break;
+	  
+	  case "warn":
+	  if(option[1] && sscanf(option[1],"l,%*s")) break;
+	  switch(option[1])
+	  {
+	    case "all": cflags+=({"-wx"}); break;
+	    default: cflags+=({"-w2"}); break;
+	  }
+	  break;
+	  
+	case "define": cflags+=({"-d"+option[1]}); break;
+	case "undefine": cflags+=({"-u"+option[1]}); break;
+	case "output":
+	  output=option[1];
+	  break;
+      }
+    }
 
-  linking)
-    for a in `fixpath $SOURCES`
-    do
-      BASE=`echo $a | sed -e 's/\.[^.]$//'`
-      compile $a $BASE.obj
-      OBJECTS="$OBJECTS $BASE.obj"
-    done
+  argv=Getopt.get_args(argv);
+  foreach(argv[1..], string tmp)
+  {
+    string ext;
+    if(tmp[0]=='-')
+    {
+      werror("Unrecognized option "+tmp+".\n");
+      exit(1);
+    }
+    sscanf(reverse(tmp),"%s.",ext);
+    switch(ext)
+    {
+      case "o":
+      case "a":
+	objects+=({tmp});
+	break;
+	
+      default:
+	sources+=({tmp});
+    }
+  }
 
-    LDFILE=TMP$$.lk
-    if [ "x$OUTPUT" = "x" ]; then
-      OUTPUT=a.out
-    fi
-    echo "name $OUTPUT.exe $LDOPTS FIL `fixpath $OBJECTS | sed -e 's/ /,/g'` $LIBRARIES" >$LDFILE
-    OK=`do_cmd wlink @$LDFILE | check_linker_error`
-    if [ x$OK != xok ]; then
-      exit 1
-    fi
-    TARGET=$OUTPUT.exe
-    if [ $CLEANUP = yes ]; then
-       if [ "x$LDFILE" != x ]; then
-         rm $LDFILE || :
-       fi
-    fi
-  ;;
-esac
+  if(output) rm(output);
 
-if [ -f $ERRORFILE ]; then
-  cat $ERRORFILE 1>&2
-  if grep -iv 'Warning' <$ERRORFILE >/dev/null 2>/dev/null; then
-    rm $ERRORFILE
-    exit 1
-  fi
-  rm $ERRORFILE
-fi
+  string errorfile="TMP"+getpid()+".err";
+  rm(errorfile);
 
-if [ "x$TARGET" != x ]; then
-  if [ ! -f "$TARGET" ]; then
-    echo "RNTCC: output file not generated"
-    exit 1
-  fi
-fi
+  cflags+=({"-bm","-zq","-hw"});
 
-if [ $OPERATION = linking ]; then
-  PWD=`pwd`
-  echo  >$OUTPUT "#!/bin/sh"
-  echo >>$OUTPUT ". \$NTTOOLS"
-  echo >>$OUTPUT "set -e"
-  echo >>$OUTPUT "silent_do_cmd '`fixpath $NTDRIVE$PWD/$TARGET`' \"\$@\""
-  echo >>$OUTPUT "exit \$?"
-  chmod +x $OUTPUT
-fi
+  switch(operation)
+  {
+    default:
+    werror("Unknown operation "+operation+".\n");
+    exit(1);
+
+    case "compile":
+      compile(sources,output,errorfile,cflags);
+      break;
+
+    case "preprocess":
+    {
+      int ret=silent_do_cmd( ({"wcc386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
+      break;
+    }
+
+    case "link":
+      foreach(sources, string source)
+	{
+	  string obj=reverse(source);
+	  sscanf(obj,"%*s.%s",obj);
+	  obj=reverse(obj)+".obj";
+
+	  compile( ({source}), obj, errorfile, cflags);
+	  objects+=({obj});
+	  check_errorfile(errorfile);
+	}
+
+      string ldfile="TMP"+getpid()+".lk";
+      if(!output) output="a.out";
+      rm(ldfile);
+      Stdio.write_file(ldfile,
+		 "NAME "+output+".exe "
+		    +ldopts*" "+" "+
+		    "FIL "+Array.map(objects,fixpath)*","+" "+
+		    libraries*" "+" ");
+
+      do_cmd( ({"wlink","@"+ldfile }), lambda(string data)
+      {
+	if(search(data," W1008:")!=-1)
+	  exit(1);
+      });
+
+      target=output+".exe";
+
+      if(getenv("CLEANUP")!="no")
+	rm(ldfile);
+  }
+
+  check_errorfile(errorfile);
+    
+  if(target)
+  {
+    if(!file_stat(target))
+    {
+      werror("RNTCC: output file not generated.\n");
+      exit(1);
+    }
+  }
+
+  if(operation == "link")
+  {
+    rm(output);
+    Stdio.write_file(output,
+		     "#!/usr/local/bin/pike\n"
+		     "inherit \""+find_lib_location()+"\";\n"
+		     "int main(int argc, string *argv) {\n"
+		     "argv[0]+=\".exe\";\n"
+		     "argv[0]=getenv(\"NTDRIVE\")+fixpath(combine_path(getcwd(),argv[0]));\n"
+		     "  exit(silent_do_cmd(argv));\n"
+		     "}\n");
+    chmod(output,0755);
+  }
+  exit(0);
+}

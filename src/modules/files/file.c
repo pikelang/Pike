@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.72 1998/01/30 06:20:54 hubbe Exp $");
+RCSID("$Id: file.c,v 1.73 1998/02/01 02:08:24 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1116,6 +1116,8 @@ retry_connect:
   retry_accept:
     sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len);
 
+    set_nonblocking(sv[0],0);
+
     if(sv[0] < 0) {
       if(errno==EINTR) goto retry_accept;
       fd_close(sv[1]);
@@ -1616,10 +1618,14 @@ static void *proxy_thread(void * data)
   char buffer[READ_BUFFER];
   struct new_thread_data *p=(struct new_thread_data *)data;
 
+/*  fprintf(stderr,"new proxy thread, from %d to %d.\n",p->fromfd,p->tofd); */
+/*  fprintf(stderr,"Thread started %p.\n",p); */
   while(1)
   {
     long len, w;
+/*     fprintf(stderr,"reading from %d.\n",p->fromfd); */
     len=fd_read(p->fromfd, buffer, READ_BUFFER);
+    if(len==0) break;
     if(len<0)
     {
       if(errno==EINTR) continue;
@@ -1627,17 +1633,24 @@ static void *proxy_thread(void * data)
     }
 
     w=0;
+/*    fprintf(stderr,"writing to %d.\n",p->tofd); */
     while(w<len)
     {
       long wl=fd_write(p->tofd, buffer+w, len-w);
-      if(wl<0) if(errno==EINTR) continue;
+      if(wl<0)
+      {
+	if(errno==EINTR) continue;
+	break;
+      }
       w+=wl;
     }
   }
 
+/*  fprintf(stderr,"Proxy thread (%d - %d) done.\n",p->fromfd,p->tofd); */
   mt_lock(&interpreter_lock);
   free_object(p->from);
   free_object(p->to);
+  num_threads--;
   mt_unlock(&interpreter_lock);
   free((char *)p);
   return 0;
@@ -1648,7 +1661,7 @@ void file_proxy(INT32 args)
   struct file_struct *f;
   struct new_thread_data *p;
   THREAD_T id;
-  check_all_args("Stdio.File->proxy",args, T_OBJECT,0);
+  check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
   f=(struct file_struct *)get_storage(sp[-args].u.object, file_program);
   if(!f)
     error("Bad argument 1 to Stdio.File->proxy, not a Stdio.File object.\n");
@@ -1660,7 +1673,8 @@ void file_proxy(INT32 args)
   p->fromfd=f->fd;
   p->to->refs++;
   p->from->refs++;
-  if(th_create_small(&id,new_thread_func,p))
+  num_threads++;
+  if(th_create_small(&id,proxy_thread,p))
   {
     free((char *)p);
     error("Failed to create thread.\n");
@@ -1677,6 +1691,7 @@ void create_proxy_pipe(struct object *o, int for_reading)
   push_int(fd_INTERPROCESSABLE);
   apply(n,"pipe",1);
   n2=sp[-1].u.object;
+  /* Stack is now: pipe(read), pipe(write) */
   if(for_reading)
   {
     ref_push_object(o);

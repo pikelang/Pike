@@ -555,12 +555,12 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
       apply(tmp->u.object,"query_fd",0);
       if(sp[-1].type == T_INT)
       {
-	if(!(fd_query_properties(sp[-1].u.integer) & fd_INTERPROCESSABLE))
+	if(!(fd_query_properties(sp[-1].u.integer, 0) & fd_INTERPROCESSABLE))
 	{
 	  void create_proxy_pipe(struct object *o, int for_reading);
-	  
+
 	  create_proxy_pipe(tmp->u.object, for_reading);
-	    apply(sp[-1].u.object, "query_fd", 0);
+	  apply(sp[-1].u.object, "query_fd", 0);
 	}
 	
 	  
@@ -669,13 +669,13 @@ void f_create_process(INT32 args)
 	if(tmp->type == T_STRING)
 	  dir=convert_string(tmp->u.string->str, tmp->u.string->len);
 
-      t1=get_inheritable_handle(optional, "stdin",0);
+      t1=get_inheritable_handle(optional, "stdin",1);
       if(t1!=INVALID_HANDLE_VALUE) info.hStdInput=t1;
 
-      t2=get_inheritable_handle(optional, "stdout",1);
+      t2=get_inheritable_handle(optional, "stdout",0);
       if(t2!=INVALID_HANDLE_VALUE) info.hStdOutput=t2;
 
-      t3=get_inheritable_handle(optional, "stderr",1);
+      t3=get_inheritable_handle(optional, "stderr",0);
       if(t3!=INVALID_HANDLE_VALUE) info.hStdError=t3;
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))

@@ -1,24 +1,17 @@
-#!/bin/sh
+#!/usr/local/bin/pike
 
-dest=`eval echo '$'$#`
+inherit "lib.pike";
 
-
-case "x$dest" in
-  x[a-zA-Z]:*)
-    . $NTTOOLS
-
-   if test "x$1" = "x-c" ; then
-     shift
-   fi
-
-   if test -f "$1.exe" ; then
-     set -- "$1.exe" "$2"
-   fi
-    
-    do_cmd copy `fixpath $*`
-    exit $?
-  ;;
-esac
-
-exec /usr/bin/install "$@"
-
+int main(int argc, string *argv)
+{
+  if(sscanf(argv[-1],"%*[a-zA-Z]:%*s"))
+  {
+    argv[0]="copy";
+    if(argv[1]=="-c") argv=argv[..0]+argv[2..];
+    if(file_stat(argv[1]+".exe")) argv[1]+=".exe";
+    exit(do_cmd( Array.map(argv,fixpath)));
+  }else{
+    exece("/usr/bin/install",argv[1..]);
+    exit(69);
+  }
+}

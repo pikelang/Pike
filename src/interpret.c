@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.64 1998/01/30 20:04:32 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.65 1998/02/01 02:07:24 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1081,6 +1081,24 @@ static int eval_instruction(unsigned char *pc)
 	}
       }
       break;
+
+#ifdef F_ASSIGN_ARRAY
+      CASE(F_ASSIGN_ARRAY);
+      {
+	struct svalue *base=*--mark_sp;
+	INT32 e,args=(sp-base)>>1
+	if(sp[-1].type != T_ARRAY)
+	  error("Bad argument to multiple assign, not an array.\n");
+	if(sp[-1].u.array->size < args)
+	  error("Not enough elements in array for multiple assign.\n");
+
+	for(e=0;e<args;e++)
+	  assign_lvalue(base+e*2,sp[-1].u.array->item+e);
+
+	pop_n_elems(sp-base);
+	break;
+      }
+#endif
 
       /* Stack machine stuff */
       CASE(F_POP_VALUE); pop_stack(); break;

@@ -29,7 +29,7 @@ JMP_BUF *init_recovery(JMP_BUF *r)
   return r;
 }
 
-void pike_throw() ATTRIBUTE((noreturn))
+void pike_throw(void) ATTRIBUTE((noreturn))
 {
   while(recoveries && throw_severity > recoveries->severity)
   {
@@ -143,7 +143,7 @@ void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 }
 
 
-void fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   static int in_fatal = 0;

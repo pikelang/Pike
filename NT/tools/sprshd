@@ -22,7 +22,11 @@ void handle_incoming_connection(object(Stdio.File) io)
   }
 
   object pi=Stdio.File();
+#if constant(Stdio.PROP_IPC)
+  object p2=pi->pipe(Stdio.PROP_IPC);
+#else
   object p2=pi->pipe();
+#endif
   string dir=cmd[0];
   cmd=cmd[1..];
 
@@ -44,11 +48,31 @@ void handle_incoming_connection(object(Stdio.File) io)
       string to=combine_path(combine_path(getcwd(),dir),cmd[2]);
 
       if(mixed stat=file_stat(to))
+      {
 	if(stat[1]==-2)
-	  to=combine_path(to,cmd[1]);
+	{
+	  to=combine_path(to,basename(cmd[1]));
+	}
+      }
 
+
+      int ret=Stdio.cp(from,to);
+      if(!ret)
+      {
+	string x=sprintf("Errno is %d\n"
+			 "CWD=%s\n"
+			 "from=%s\n"
+			 "to=%s\n"
+			 "dir=%s (%s)\n",
+			 errno(),
+			 getcwd(),
+			 from,
+			 to,
+			 dir, combine_path(getcwd(),dir));
+	io->write(sprintf("%4c%s",strlen(x),x));
+      }
       io->write(sprintf("%4c",0));
-      io->write(sprintf("%4c",!Stdio.cp(from,to)));
+      io->write(sprintf("%4c",!ret));
       break;
     }
     case "getenv":
@@ -74,7 +98,9 @@ void handle_incoming_connection(object(Stdio.File) io)
       
       if(!err)
       {
+#if !constant(Process.PROP_IPC)
 	thread_create(monitor,p2,p);
+#endif
 	while(1)
 	{
 	  string s=pi->read(1000,1);
@@ -93,7 +119,6 @@ void handle_incoming_connection(object(Stdio.File) io)
   io->close("w");
   destruct(io);
 }
-
 
 int main(int argc, string *argv)
 {

@@ -170,7 +170,7 @@ struct inherit
 #define PROGRAM_PASS_1_DONE 8
 
 /* Program will be destructed as soon at it runs out of references. */
-#define PROGRAM_DESTRUCT_IMMEDIATE 15
+#define PROGRAM_DESTRUCT_IMMEDIATE 16
 
 struct program
 {

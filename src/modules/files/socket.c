@@ -370,12 +370,11 @@ static void socket_query_address(INT32 args)
 static void init_port_struct(struct object *o)
 {
   THIS->fd=-1;
-  THIS->id.type=T_OBJECT;
+  THIS->id.type=T_INT;
 #ifdef __CHECKER__
   THIS->id.subtype=0;
 #endif
-  THIS->id.u.object=o;
-  o->refs++;
+  THIS->id.u.integer=0;
   THIS->accept_callback.type=T_INT;
   THIS->my_errno=0;
 }
