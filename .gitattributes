@@ -184,6 +184,7 @@ testfont binary
 /src/modules/Image/encodings/gif_lzw.h foreign_ident
 /src/modules/Image/encodings/png.c foreign_ident
 /src/modules/Image/encodings/pnm.c foreign_ident
+/src/modules/Image/encodings/tga.c foreign_ident
 /src/modules/Image/encodings/x.c foreign_ident
 /src/modules/Image/encodings/xwd.c foreign_ident
 /src/modules/Image/font.c foreign_ident
