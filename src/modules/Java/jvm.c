@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.9 1999/12/17 21:20:13 marcus Exp $
+ * $Id: jvm.c,v 1.10 1999/12/19 18:23:58 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.9 1999/12/17 21:20:13 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.10 1999/12/19 18:23:58 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -596,15 +596,18 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
     case T_INT:
       switch(*sig++) {
       case 'L':
-	while(*sig && *sig++!=';');
+	if(i+1<args)
+	  while(*sig && *sig++!=';');
 	if(sv->u.integer!=0)
 	  jargs_error(jvm, env);
 	jargs->l = 0;
 	break;
       case '[':
-	while(*sig=='[') sig++;
-	if(*sig && *sig++=='L')
-	  while(*sig && *sig++!=';');
+	if(i+1<args) {
+	  while(*sig=='[') sig++;
+	  if(*sig && *sig++=='L')
+	    while(*sig && *sig++!=';');
+	}
 	if(sv->u.integer!=0)
 	  jargs_error(jvm, env);
 	jargs->l = 0;
@@ -670,7 +673,8 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
     case T_STRING:
       if(*sig++!='L')
 	jargs_error(jvm, env);
-      while(*sig && *sig++!=';');
+      if(i+1<args)
+	while(*sig && *sig++!=';');
       switch(sv->u.string->size_shift) {
       case 0:
 	{
@@ -704,9 +708,11 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
 	if(!(jo=(struct jobj_storage *)get_storage(sv->u.object,jobj_program)))
 	  jargs_error(jvm, env);
 	else {
-	  while(*sig=='[') sig++;
-	  if(*sig && *sig++=='L')
-	    while(*sig && *sig++!=';');
+	  if(i+1<args) {
+	    while(*sig=='[') sig++;
+	    if(*sig && *sig++=='L')
+	      while(*sig && *sig++!=';');
+	  }
 	  jargs->l = jo->jobj;
 	}
       } else {
@@ -714,7 +720,8 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
 	   !(jo=(struct jobj_storage *)get_storage(sv->u.object,jobj_program)))
 	  jargs_error(jvm, env);
 	else {
-	  while(*sig && *sig++!=';');
+	  if(i+1<args)
+	    while(*sig && *sig++!=';');
 	  jargs->l = jo->jobj;
 	}
       }
@@ -2039,6 +2046,38 @@ static void f_alloc(INT32 args)
   } else push_int(0);
 }
 
+static void f_new_array(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  struct object *o;
+  JNIEnv *env;
+  jvalue i;
+  jarray a;
+  INT_TYPE n;
+
+  if(args==1) {
+    push_int(0);
+    args++;
+  }
+
+  get_all_args("new_array", args, "%i%O", &n, &o);
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    make_jargs(&i, -1, "L", jo->jvm, env);
+    a = (*env)->NewObjectArray(env, n, jo->jobj, i.l);
+    pop_n_elems(args);
+    push_java_array(a, jo->jvm, env,
+		    ((*env)->CallBooleanMethod(env, jo->jobj,
+					       j->method_isarray)? '[':'L'));
+    jvm_vacate_env(jo->jvm, env);
+  } else {
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
+
 static void f_get_method(INT32 args)
 {
   struct object *oo;
@@ -2317,6 +2356,74 @@ static void f_javaarray_getelt(INT32 args)
     jvm_vacate_env(jo->jvm, env);
   } else
     push_int(0);
+}
+
+static void f_javaarray_setelt(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  struct jarray_storage *ja = THIS_JARRAY;
+  JNIEnv *env;
+  INT32 n;
+  jvalue jjv;
+  char ty2;
+
+  if(args<2 || sp[-args].type != T_INT)
+    error("Bad args to `[]=.");
+
+  if(args>2)
+    pop_n_elems(args-2);
+
+  n = sp[-2].u.integer;
+
+  if((env = jvm_procure_env(jo->jvm))==NULL) {
+    pop_n_elems(2);
+    push_int(0);
+    return;
+  }
+
+  ty2 = ja->ty;
+  make_jargs(&jjv, -1, &ty2, jo->jvm, env);
+
+  assign_svalue(&sp[-2], &sp[-1]);
+  pop_n_elems(1);
+
+  if(n<0) {
+    /* Count backwards... */
+    n += (*env)->GetArrayLength(env, jo->jobj);
+  }
+
+  switch(ja->ty) {
+   case 'Z':
+     (*env)->SetBooleanArrayRegion(env, jo->jobj, n, 1, &jjv.z);
+     break;
+   case 'B':
+     (*env)->SetByteArrayRegion(env, jo->jobj, n, 1, &jjv.b);
+     break;
+   case 'C':
+     (*env)->SetCharArrayRegion(env, jo->jobj, n, 1, &jjv.c);
+     break;
+   case 'S':
+     (*env)->SetShortArrayRegion(env, jo->jobj, n, 1, &jjv.s);
+     break;
+   case 'I':
+     (*env)->SetIntArrayRegion(env, jo->jobj, n, 1, &jjv.i);
+     break;
+   case 'J':
+     (*env)->SetLongArrayRegion(env, jo->jobj, n, 1, &jjv.j);
+     break;
+   case 'F':
+     (*env)->SetFloatArrayRegion(env, jo->jobj, n, 1, &jjv.f);
+     break;
+   case 'D':
+     (*env)->SetDoubleArrayRegion(env, jo->jobj, n, 1, &jjv.d);
+     break;
+   case 'L':
+   case '[':
+     (*env)->SetObjectArrayElement(env, jo->jobj, n, jjv.l);
+     break;
+  }
+
+  jvm_vacate_env(jo->jvm, env);
 }
 
 static void f_javaarray_indices(INT32 args)
@@ -2975,6 +3082,7 @@ void pike_module_init(void)
 	       "function(object:int)", 0);
   add_function("throw_new", f_throw_new, "function(string:void)", 0);
   add_function("alloc", f_alloc, "function(:object)", 0);
+  add_function("new_array", f_new_array, "function(int,object|void:object)", 0);
   add_function("get_method", f_get_method, "function(string,string:object)", 0);
   add_function("get_static_method", f_get_static_method, "function(string,string:object)", 0);
   add_function("get_field", f_get_field, "function(string,string:object)", 0);
@@ -2995,7 +3103,8 @@ void pike_module_init(void)
   do_inherit(&prog, 0, NULL);
   jarray_stor_offs = ADD_STORAGE(struct jarray_storage);
   add_function("_sizeof", f_javaarray_sizeof, "function(:int)", 0);
-  add_function("`[]", f_javaarray_getelt, "function(int:mixed)", 0);
+  add_function("`[]", f_javaarray_getelt, "function(int,int|void:mixed)", 0);
+  add_function("`[]=", f_javaarray_setelt, "function(int,mixed:mixed)", 0);
   add_function("_indices", f_javaarray_indices, "function(:array(int))", 0);
   add_function("_values", f_javaarray_values, "function(:array(mixed))", 0);
   jarray_program = end_program();
