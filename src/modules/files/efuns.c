@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.149 2004/10/15 15:13:41 grubba Exp $
+|| $Id: efuns.c,v 1.150 2004/10/23 22:00:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -787,10 +787,11 @@ void f_mkdir(INT32 args)
 #define HAVE_READDIR_R
 #endif
 
-/*! @decl array(string) get_dir(string dirname)
+/*! @decl array(string) get_dir(void|string dirname)
  *!
  *! Returns an array of all filenames in the directory @[dirname], or
- *! @expr{0@} (zero) if the directory does not exist.
+ *! @expr{0@} (zero) if the directory does not exist. When no
+ *! @[dirname] is given, current work directory is used.
  *!
  *! @seealso
  *!   @[mkdir()], @[cd()]
@@ -798,11 +799,19 @@ void f_mkdir(INT32 args)
 void f_get_dir(INT32 args)
 {
   DIR *dir;
-  struct pike_string *str;
+  struct pike_string *str=0;
 
   VALID_FILE_IO("get_dir","read");
 
-  get_all_args("get_dir",args,"%S",&str);
+  get_all_args("get_dir",args,".%S",&str);
+
+  if(!str) {
+#if defined(__amigaos4__) || defined(__NT__)
+    str = make_shared_string("");
+#else
+    str = make_shared_string(".");
+#endif
+  }
 
   if (strlen(str->str) != (size_t)str->len) {
     /* Filenames with NUL are not supported. */
@@ -1528,7 +1537,7 @@ void init_files_efuns(void)
   ADD_EFUN("mv", f_mv,tFunc(tStr tStr,tInt), OPT_SIDE_EFFECT);
   
 /* function(string:string *) */
-  ADD_EFUN("get_dir",f_get_dir,tFunc(tStr,tArr(tStr)),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN("get_dir",f_get_dir,tFunc(tOr(tVoid,tStr),tArr(tStr)),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
   
 /* function(string:int) */
   ADD_EFUN("cd",f_cd,tFunc(tStr,tInt),OPT_SIDE_EFFECT);

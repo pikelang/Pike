@@ -212,6 +212,7 @@ dnl - perror
 dnl - rm
 dnl - mkdir
 dnl - get_dir
+test_true(arrayp(get_dir()))
 test_true(arrayp(get_dir(".")))
 
 dnl - cd
