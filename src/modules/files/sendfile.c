@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.65 2003/12/08 17:35:31 grubba Exp $
+|| $Id: sendfile.c,v 1.66 2004/03/30 11:55:07 grubba Exp $
 */
 
 /*
@@ -59,6 +59,10 @@
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
 
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif /* HAVE_NETINET_TCP_H */
+
 #if 0
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -113,25 +117,27 @@
 #define THIS	((struct pike_sendfile *)(Pike_fp->current_storage))
 
 /*
+ * We assume sendfile(2) has been fixed on all OS's by now.
+ * FIXME: Configure tests?
+ *	/grubba 2004-03-30
+ */
+#if 0
+/*
  * All known versions of sendfile(2) are broken.
+ *	/grubba 2000-10-19
  */
 #ifndef HAVE_BROKEN_SENDFILE
 #define HAVE_BROKEN_SENDFILE
 #endif /* !HAVE_BROKEN_SENDFILE */
+#endif /* 0 */
 
 /*
  * Disable any use of sendfile(2) if HAVE_BROKEN_SENDFILE is defined.
  */
 #ifdef HAVE_BROKEN_SENDFILE
-#ifdef HAVE_SENDFILE
 #undef HAVE_SENDFILE
-#endif /* HAVE_SENDFILE */
-#ifdef HAVE_FREEBSD_SENDFILE
 #undef HAVE_FREEBSD_SENDFILE
-#endif /* HAVE_FREEBSD_SENDFILE */
-#ifdef HAVE_HPUX_SENDFILE
 #undef HAVE_HPUX_SENDFILE
-#endif /* HAVE_HPUX_SENDFILE */
 #endif /* HAVE_BROKEN_SENDFILE */
 
 /*
@@ -340,8 +346,48 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
 
 void low_do_sendfile(struct pike_sendfile *this)
 {
+#if defined(SOL_TCP) && (defined(TCP_CORK) || defined(TCP_NODELAY))
+  int old_val = -1;
+#ifdef TCP_CORK
+  int new_val = 1;
+#else /* !TCP_CORK */
+  int new_val = 0;
+#endif /* TCP_CORK */
+#endif /* SOL_TCP && (TCP_CORK || TCP_NODELAY) */
+
   /* Make sure we're using blocking I/O */
   set_nonblocking(this->to_fd, 0);
+
+#ifdef SOL_TCP
+#ifdef TCP_CORK
+  /* Attempt to set the out socket into cork mode.
+   * FIXME: Do we need to adjust TCP_NODELAY here?
+   */
+  while ((getsockopt(this->to_fd, SOL_TCP, TCP_CORK,
+		     &old_val, sizeof(old_val))<0) &&
+	 (errno == EINTR))
+    ;
+  if (!old_val) {
+    while ((setsockopt(this->to_fd, SOL_TCP, TCP_CORK,
+		       &new_val, sizeof(new_val))<0) &&
+	   (errno == EINTR))
+      ;
+  }
+#elif defined(TCP_NODELAY)
+  /* Attempt to set the out socket into nagle mode.
+   */
+  while ((getsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
+		     &old_val, sizeof(old_val))<0) &&
+	 (errno == EINTR))
+    ;
+  if (old_val == 1) {
+    while ((setsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
+		       &new_val, sizeof(new_val))<0) &&
+	   (errno == EINTR))
+      ;
+  }  
+#endif /* TCP_CORK || TCP_NODELAY */
+#endif /* SOL_TCP */
 
   SF_DFPRINTF((stderr, "sendfile: Worker started\n"));
 
@@ -391,6 +437,7 @@ void low_do_sendfile(struct pike_sendfile *this)
     res = sendfile(this->from_fd, this->to_fd, this->offset, len,
 		   &hdtr, &sent, 0);
 #else /* !HAVE_FREEBSD_SENDFILE */
+    /* HPUX_SENDFILE */
     res = sendfile(this->to_fd, this->from_fd, this->offset, len,
 		   hdtr, 0);
 #endif /* HAVE_FREEBSD_SENDFILE */
@@ -410,6 +457,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 #ifdef HAVE_FREEBSD_SENDFILE
 	Pike_fatal("FreeBSD style sendfile(): EFAULT\n");
 #else /* !HAVE_FREEBSD_SENDFILE */
+	/* HPUX_SENDFILE */
 	Pike_fatal("HP/UX style sendfile(): EFAULT\n");
 #endif /* HAVE_FREEBSD_SENDFILE */
 	break;
@@ -422,6 +470,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 	break;
       }
 #ifndef HAVE_FREEBSD_SENDFILE
+      /* HPUX_SENDFILE */
     } else {
       sent = res;
 #endif /* !HAVE_FREEBSD_SENDFILE */
@@ -606,9 +655,29 @@ void low_do_sendfile(struct pike_sendfile *this)
  done:
 #endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE */
 
+#ifdef SOL_TCP
+#ifdef TCP_CORK
+  /* Restore the cork mode for the socket. */
+  if (!old_val) {
+    while((setsockopt(this->to_fd, SOL_TCP, TCP_CORK,
+		      &old_val, sizeof(old_val))<0) && (errno == EINTR))
+      ;
+  }
+#elif defined(TCP_NODELAY)
+  /* Restore the nagle mode for the socket. */
+  if (old_val == 1) {
+    while((setsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
+		      &old_val, sizeof(old_val))<0) && (errno == EINTR))
+      ;
+  }
+#endif /* TCP_CORK || TCP_NODELAY */
+#endif /* SOL_TCP */
+
   SF_DFPRINTF((stderr,
 	      "sendfile: Done. Setting up callback\n"
 	      "%d bytes sent\n", this->sent));
+
+  /* FIXME: Restore non-blocking mode here? */
 }
 
 static void worker(void *this_)
