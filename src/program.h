@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.182 2003/06/03 18:03:26 mast Exp $
+|| $Id: program.h,v 1.183 2003/08/02 01:07:18 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -145,7 +145,22 @@ struct object;
 
 union idptr
 {
+  /* C function pointer. */
   void (*c_fun)(INT32);
+
+  /* For variables: Offset of the variable in the storage pointed to
+   * by inherit.storage_offset in the struct inherit that corresponds
+   * to the identifier. See LOW_GET_GLOBAL and GET_GLOBAL. The stored
+   * variable may be either a normal or a short svalue, depending on
+   * identifier.run_time_type.
+   *
+   * For constants: Offset of the struct program_constant in
+   * program.constants in the program pointed to by prog in the struct
+   * inherit that corresponds to the identifier.
+   *
+   * For pike functions: Offset to the start of the function in
+   * program.program in the program pointed to by prog in the struct
+   * inherit that corresponds to the identifier. */
   ptrdiff_t offset;
 };
 
@@ -231,13 +246,30 @@ struct program_constant
  * need to have a 'struct reference' in this
  * program. When we overload a function, we simply
  * change the reference to point to the new 'struct identifier'.
+ *
+ * When an identifier is represented as an integer, it's typically the
+ * offset of the corresponding struct reference in
+ * program.identifier_references.
  */
 struct reference
 {
+  /* Offset of the struct inherit in program.inherits for the program
+   * that the struct identifier is in. See INHERIT_FROM_PTR and
+   * INHERIT_FROM_INT. */
   unsigned INT16 inherit_offset;
+
+  /* Offset of the struct identifier in program.identifiers in the
+   * program pointed to by the struct inherit through inherit_offset
+   * above. See ID_FROM_PTR and ID_FROM_INT. */
   unsigned INT16 identifier_offset;
-  INT16 id_flags; /* static, private etc.. */
+
+  /* ID_* flags - static, private etc.. */
+  INT16 id_flags;
 };
+
+/* Magic values in inherit.parent_offset; see below. */
+#define OBJECT_PARENT -18
+#define INHERIT_PARENT -17
 
 /*
  * Each program has an array of these,
@@ -250,14 +282,93 @@ struct reference
  */
 struct inherit
 {
+  /* The depth of the inherited program in this program. I.e. the
+   * number of times the program has been inherited, directly or
+   * indirectly.
+   *
+   * Note that the struct inherit for the program that directly
+   * inherited the program represented by this struct inherit can be
+   * found by going backwards in program.inherits from this struct
+   * until one is found with an inherit_level less than this one. */
   INT16 inherit_level;
+
+  /* All the identifier references in the inherited program has been
+   * copied to this program with the first one at this offset. */
   INT16 identifier_level;
+
+  /* The index of the identifier reference in the parent program for
+   * the identifier from which this inherit was done. -1 if there's no
+   * such thing. It's always -1 in the inherit struct for the top
+   * level program. */
   INT16 parent_identifier;
+
+  /* Describes how to find the parent object for the external
+   * identifier references associated with this inherit:
+   *
+   * OBJECT_PARENT: Follow the object parent, providing
+   *   PROGRAM_USES_PARENT is set in the program containing this
+   *   inherit. See PARENT_INFO. This is used for external references
+   *   in the top level program (i.e. the one containing the inherit
+   *   table).
+   *
+   * INHERIT_PARENT: Follow the parent pointer in this inherit. This
+   *   is used when finished programs with parent objects are
+   *   inherited.
+   *
+   * A non-negative integer: The parent is found by following this
+   *   number of parent pointers in the program that directly
+   *   inherited the program in this inherit, i.e. in the closest
+   *   lower level inherit. This is used when a program is inherited
+   *   whose parent is still being compiled, so it's parent object is
+   *   fake. That implies that that program also contains the current
+   *   program on some level, and that level is stored here. An
+   *   example:
+   *
+   *  	 class A {
+   *  	   class B {}
+   *  	   class C {
+   *  	     class D {
+   *  	       inherit B;
+   *  	     }
+   *  	   }
+   *  	 }
+   *
+   *   The parent program of B is A, which is still being compiled
+   *   when B is inherited in D, so it has a fake object. A is also
+   *   the parent of D, but two levels out, and hence 2 is stored in
+   *   parent_offset.
+   *
+   *   Note that parent_offset can be 0:
+   *
+   *     class A {
+   *       class B {}
+   *       inherit B;
+   *     }
+   */
   INT16 parent_offset;
+
+  /* The offset of the first entry in prog->identifier_references that
+   * comes from the program in this inherit. prog is in this case the
+   * program that directly inherited it, and not the top level
+   * program. I.e. for inherits on level 1, this is always the same as
+   * identifier_level.
+   *
+   * Are both really necessary? /mast */
   size_t identifier_ref_offset;
+
+  /* Offset in object->storage to the start of the storage for the
+   * variables from the program in this inherit. */
   ptrdiff_t storage_offset;
+
+  /* The parent object for the program in this inherit, or NULL if
+   * there isn't any. */
   struct object *parent;
+
+  /* The program for this inherit. */
   struct program *prog;
+
+  /* The name of the inherit, if there is any. For nested inherits,
+   * this can be a string on the form "A::B::C". */
   struct pike_string *name;
 };
 
@@ -299,7 +410,8 @@ struct pike_trampoline
 /* Objects created from this program are constant and shareable */
 #define PROGRAM_CONSTANT 0x40
 
-/* */
+/* Objects have pointers to the parent object. Use LOW_PARENT_INFO or
+ * PARENT_INFO to extract it. */
 #define PROGRAM_USES_PARENT 0x80
 
 /* Objects should not be destructed even when they only have weak
@@ -315,7 +427,8 @@ struct pike_trampoline
 /* Program has not yet been used for compilation */
 #define PROGRAM_VIRGIN 0x800
 
-/* */
+/* Don't allow the program to be inherited or cloned if there's no
+ * parent object. Only set if PROGRAM_USES_PARENT is. */
 #define PROGRAM_NEEDS_PARENT 0x1000
 
 /* Using define instead of enum allows for ifdefs - Hubbe */
