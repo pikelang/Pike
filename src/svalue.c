@@ -149,24 +149,25 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
   case BIT_FLOAT | BIT_INT:
     return;
 
-#define DOTYPE(X,Y,Z) case X:while(--num>=0)if(s->u.refs--==0) Y(s->u.Z); return
-    DOTYPE(BIT_STRING, really_free_string, string);
-    DOTYPE(BIT_ARRAY, really_free_array, array);
-    DOTYPE(BIT_MAPPING, really_free_mapping, mapping);
-    DOTYPE(BIT_LIST, really_free_list, list);
-    DOTYPE(BIT_OBJECT, really_free_object, object);
-    DOTYPE(BIT_PROGRAM, really_free_program, program);
+#define DOTYPE(X,Y,Z) case X:while(--num>=0) { Y(s->u.Z); s++; }return
+    DOTYPE(BIT_STRING, free_string, string);
+    DOTYPE(BIT_ARRAY, free_array, array);
+    DOTYPE(BIT_MAPPING, free_mapping, mapping);
+    DOTYPE(BIT_LIST, free_list, list);
+    DOTYPE(BIT_OBJECT, free_object, object);
+    DOTYPE(BIT_PROGRAM, free_program, program);
 
   case BIT_FUNCTION:
     while(--num>=0)
     {
-      if(s->u.refs--==0)
+      if(s->u.refs[0]--==0)
       {
 	if(s->subtype == -1)
 	  really_free_callable(s->u.efun);
 	else
 	  really_free_object(s->u.object);
       }
+      s++;
     }
     return;
 
@@ -634,11 +635,14 @@ void check_svalue(struct svalue *s)
 #endif
 
 #ifdef GC2
-void gc_check_svalues(struct svalue *s, int num)
+TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
 {
   INT32 e;
+  TYPE_FIELD f;
+  f=0;
   for(e=0;e<num;e++,s++)
   {
+    f|= 1 << s->type;
     switch(s->type)
     {
     case T_FUNCTION:
@@ -661,6 +665,8 @@ void gc_check_svalues(struct svalue *s, int num)
       break;
     }
   }
+
+  return f;
 }
 
 void gc_check_short_svalue(union anything *u, TYPE_T type)

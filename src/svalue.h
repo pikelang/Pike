@@ -175,8 +175,10 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct processing *p);
 void check_short_svalue(union anything *u,TYPE_T type);
 void check_svalue(struct svalue *s);
-void gc_check_svalues(struct svalue *s, int num);
+TYPE_FIELD gc_check_svalues(struct svalue *s, int num);
 void gc_check_short_svalue(union anything *u, TYPE_T type);
+void gc_mark_svalues(struct svalue *s, int num);
+void gc_mark_short_svalue(union anything *u, TYPE_T type);
 /* Prototypes end here */
 
 #endif
