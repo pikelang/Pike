@@ -61,7 +61,7 @@ class client
 
     if(!connect(server,25))
     {
-      throw(({"Failed to connect to news server.\n",backtrace()}));
+      throw(({"Failed to connect to mail server.\n",backtrace()}));
     }
 
     if(readreturncode()/100 != 2)
@@ -73,9 +73,9 @@ class client
   
   void send_message(string from, string *to, string body)
   {
-    cmd("MAIL FROM:"+from);
+    cmd("MAIL FROM: "+from);
     foreach(to, string t)
-      cmd("RCPT TO:"+t);
+      cmd("RCPT TO: "+t);
     cmd("DATA");
     cmd(body+"\r\n.");
     cmd("QUIT");
@@ -84,12 +84,13 @@ class client
   void simple_mail(string to, string subject, string from, string msg)
   {
     send_message(from, ({ to }),
-		 (string)MIME.Message(0, (["mime-version":"1.0",
-					   "subject":subject,
-					   "from":from,
-					   "to":to]),
-	    ({ MIME.Message(msg,
-			    (["content-type":"text/plain;charset=iso-8859-1",
-			      "content-transfer-encoding":"8bit"])) })));
+		 (string)MIME.Message(msg, (["mime-version":"1.0",
+					     "subject":subject,
+					     "from":from,
+					     "to":to,
+					     "content-type":
+					      "text/plain;charset=iso-8859-1",
+					     "content-transfer-encoding":
+					      "8bit"])));
   }
 }
