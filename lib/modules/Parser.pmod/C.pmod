@@ -30,15 +30,18 @@ array(string) split(string data)
 
       case 'a'..'z':
       case 'A'..'Z':
+      case 128..65536: // Lets simplify things for now...
       case '_':
 	while(1)
 	{
 	  switch(data[pos])
 	  {
-	    case 'a'..'z':
-	    case 'A'..'Z':
-	    case '0'..'9':
-	    case '_':
+           case '$': // allowed in some C (notably digital)
+           case 'a'..'z':
+           case 'A'..'Z':
+           case '0'..'9':
+           case 128..65536: // Lets simplify things for now...
+           case '_':
 	      pos++;
 	      continue;
 	  }
@@ -48,6 +51,11 @@ array(string) split(string data)
 
       case '.':
 	if(data[start..start+2]=="...")
+	{
+	  pos+=3;
+	  break;
+	}
+	if(data[start..start+1]=="..")
 	{
 	  pos+=3;
 	  break;
@@ -105,6 +113,7 @@ array(string) split(string data)
       case '&': case '|': case '^':
       case '!': case '~':
       case '=':
+      case '@':
       case '+':
       case '-':
       case '<': case '>':
