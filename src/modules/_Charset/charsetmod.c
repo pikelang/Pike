@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.15 1999/06/19 20:25:51 hubbe Exp $");
+RCSID("$Id: charsetmod.c,v 1.16 1999/07/26 22:11:28 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -99,6 +99,27 @@ static void f_set_repcb(INT32 args)
 
   pop_n_elems(args);
 }
+
+static int call_repcb(struct svalue *repcb, p_wchar2 ch)
+{
+  push_string(make_shared_binary_string2(&ch, 1));
+  apply_svalue(repcb, 1);
+  if(sp[-1].type == T_STRING)
+    return 1;
+  pop_stack();
+  return 0;
+}
+
+#define REPLACE_CHAR(ch, func, ctx) \
+          if(repcb != NULL && call_repcb(repcb, ch)) { \
+	    func(ctx, sb, sp[-1].u.string, rep, NULL); \
+            pop_stack(); \
+	  } else if(rep != NULL) \
+            func(ctx, sb, rep, NULL, NULL); \
+	  else \
+	    error("Character unsupported by encoding.\n");
+
+#define MKREPCB(c) ((c).type == T_FUNCTION? &(c):NULL)
 
 static void f_drain(INT32 args)
 {
@@ -621,8 +642,9 @@ static void f_feed_8bit(INT32 args)
 }
 
 
-static void feed_utf8e(struct string_builder *sb,
-		       struct pike_string *str, struct pike_string *rep)
+static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
+		       struct pike_string *str, struct pike_string *rep,
+		       struct svalue *repcb)
 {
   INT32 l = str->len;
 
@@ -686,10 +708,8 @@ static void feed_utf8e(struct string_builder *sb,
 	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
-	} else if(rep != NULL)
-	  feed_utf8e(sb, rep, NULL);
-	else
-	  error("Character unsupported by encoding.\n");
+	} else
+	  REPLACE_CHAR(c, feed_utf8e, cs);
     }
     break;
   default:
@@ -704,14 +724,15 @@ static void f_feed_utf8e(INT32 args)
 
   get_all_args("feed()", args, "%W", &str);
 
-  feed_utf8e(&cs->strbuild, str, cs->replace);
+  feed_utf8e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
   pop_n_elems(args);
   push_object(this_object());
 }
 
 static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
-		       struct pike_string *str, struct pike_string *rep)
+		       struct pike_string *str, struct pike_string *rep,
+		       struct svalue *repcb)
 {
   INT32 l = str->len, dat = u7->dat;
   int shift = u7->shift, datbit = u7->datbit;
@@ -807,16 +828,13 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	  string_builder_putchar(sb, '+');
 	  string_builder_putchar(sb, '-');
 	} else if(c>0x10ffff) {
-	  if(rep != NULL) {
-	    u7->dat = dat;
-	    u7->shift = shift;
-	    u7->datbit = datbit;
-	    feed_utf7e(u7, sb, rep, NULL);
-	    dat = u7->dat;
-	    shift = u7->shift;
-	    datbit = u7->datbit;
-	  } else
-	    error("Character unsupported by encoding.\n");
+	  u7->dat = dat;
+	  u7->shift = shift;
+	  u7->datbit = datbit;
+	  REPLACE_CHAR(c, feed_utf7e, u7);
+	  dat = u7->dat;
+	  shift = u7->shift;
+	  datbit = u7->datbit;
 	} else {
 	  if(!shift) {
 	    string_builder_putchar(sb, '+');
@@ -861,7 +879,7 @@ static void f_feed_utf7e(INT32 args)
   get_all_args("feed()", args, "%W", &str);
 
   feed_utf7e((struct utf7_stor *)(((char*)fp->current_storage)+utf7_stor_offs),
-	     &cs->strbuild, str, cs->replace);
+	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -906,7 +924,8 @@ static void std_8bite_exit_stor(struct object *o)
 }
 
 static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
-		       struct pike_string *str, struct pike_string *rep)
+		       struct pike_string *str, struct pike_string *rep,
+		       struct svalue *repcb)
 {
   INT32 l = str->len;
   p_wchar0 *tab = s8->revtab;
@@ -922,10 +941,8 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
-	else if(rep != NULL)
-	  feed_std8e(s8, sb, rep, NULL);
 	else
-	  error("Character unsupported by encoding.\n");
+	  REPLACE_CHAR(c, feed_std8e, s8)
     }
     break;
   case 1:
@@ -936,10 +953,8 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
-	else if(rep != NULL)
-	  feed_std8e(s8, sb, rep, NULL);
 	else
-	  error("Character unsupported by encoding.\n");
+	  REPLACE_CHAR(c, feed_std8e, s8);
     }
     break;
   case 2:
@@ -950,10 +965,8 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
-	else if(rep != NULL)
-	  feed_std8e(s8, sb, rep, NULL);
 	else
-	  error("Character unsupported by encoding.\n");
+	  REPLACE_CHAR(c, feed_std8e, s8);
     }
     break;
   default:
@@ -970,7 +983,7 @@ static void f_feed_std8e(INT32 args)
 
   feed_std8e((struct std8e_stor *)(((char*)fp->current_storage)+
 				   std8e_stor_offs),
-	     &cs->strbuild, str, cs->replace);
+	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -997,7 +1010,8 @@ static void std_16bite_exit_stor(struct object *o)
 }
 
 static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
-			struct pike_string *str, struct pike_string *rep)
+			struct pike_string *str, struct pike_string *rep,
+			struct svalue *repcb)
 {
   INT32 l = str->len;
   p_wchar1 *tab = s16->revtab;
@@ -1014,10 +1028,8 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
 	  string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
-	} else if(rep != NULL)
-	  feed_std16e(s16, sb, rep, NULL);
-	else
-	  error("Character unsupported by encoding.\n");
+	} else
+	  REPLACE_CHAR(c, feed_std16e, s16);
     }
     break;
   case 1:
@@ -1029,10 +1041,8 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
 	  string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
-	} else if(rep != NULL)
-	  feed_std16e(s16, sb, rep, NULL);
-	else
-	  error("Character unsupported by encoding.\n");
+	} else
+	  REPLACE_CHAR(c, feed_std16e, s16);
     }
     break;
   case 2:
@@ -1044,10 +1054,8 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
 	  string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
-	} else if(rep != NULL)
-	  feed_std16e(s16, sb, rep, NULL);
-	else
-	  error("Character unsupported by encoding.\n");
+	} else
+	  REPLACE_CHAR(c, feed_std16e, s16);
     }
     break;
   default:
@@ -1064,7 +1072,7 @@ static void f_feed_std16e(INT32 args)
 
   feed_std16e((struct std16e_stor *)(((char*)fp->current_storage)+
 				     std16e_stor_offs),
-	      &cs->strbuild, str, cs->replace);
+	      &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
   pop_n_elems(args);
   push_object(this_object());
