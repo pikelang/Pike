@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.5 2003/04/12 13:03:11 grubba Exp $
+// $Id: module.pmod.in,v 1.6 2003/04/12 15:06:52 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -634,7 +634,7 @@ class PikeCompiler
     }
   }
 
-  Class parse_class(TokenList tokens)
+  Class parse_program(TokenList tokens)
   {
     Class prog = Class("class","class","class", 0);
     prog->parse_class_body(tokens);
@@ -645,42 +645,110 @@ class PikeCompiler
   {
     inherit GroupingCompiler::pike_tokenizer;
 
+    // Note: Pike prior to 0.6 used a K&R-style cpp.
+
     // Symbol ==> TokenClass
-    mapping(string:program(Token)) Pike_7_2_Tokens = ([
+    mapping(string:program(Token)) Pike_0_1_Tokens = ([
+      "array":ArrayType,
+      "break":Break,
+      "case":Case,
+      "catch":Catch,
       "class":Class,
-      "final":Modifier,
-      "import":NameSpace,
+      "continue":Continue,
+      "default":Default,
+      "do":Do,
+      "predef":Predef,
+      "else":Else,
+      "float":FloatType,
+      "for":For,
+      "foreach":ForEach,
+      "function":FunctionType,
+      "gauge":Gauge,
+      "if":If,
       "inherit":NameSpace,
       "inline":Modifier,
-      "local":Modifier,
+      "int":IntType,
+      "lambda":Lambda,
+      "multiset":MultisetType,
+      "mapping":MappingType,
+      "mixed":MixedType,
       "nomask":Modifier,
-      "optional":Modifier,
-      "predef":Modifier,
+      "object":ObjectType,
       "private":Modifier,
+      "program":ProgramType,
       "protected":Modifier,
       "public":Modifier,
+      "return":Return,
+      "sscanf":Sscanf,
       "static":Modifier,
-      "variant":Modifier,
+      "string":StringType,
+      "switch":Switch,
+      "typeof":Typeof,
+      "varargs":Modifier,
+      "void":VoidType,
+      "while":While,
     ]);
 
-    mapping(string:program(Token)) Pike_7_4_Tokens = Pike_7_2_Tokens + ([
-      "global":Modifier,
+    mapping(string:program(Token)) Pike_0_3_Tokens = Pike_0_1_Tokens + ([
+      "constant":Constant,	// 0.3
     ]);
+
+    mapping(string:program(Token)) Pike_0_4_Tokens = Pike_0_3_Tokens + ([
+      "import":NameSpace,	// 0.4.8
+      "multiset":Multiset,	// 0.4.8
+      "predef":Modifier,	// 0.4.8
+    ]);
+
+    mapping(string:program(Token)) Pike_0_6_Tokens = Pike_0_4_Tokens + ([
+      "final":Modifier,		// 0.6.36
+      "local":Modifier,		// 0.6.36
+    ]) - ([
+      "varargs":Modifier,	// Obsoleted in 0.6.2
+    ]);
+
+    mapping(string:program(Token)) Pike_0_7_Tokens = Pike_0_6_Tokens + ([
+      "extern":Modifier,	// 0.7.85
+      "optional":Modifier,	// 0.7.85
+    ]);
+
+    mapping(string:program(Token)) Pike_7_1_Tokens = Pike_0_7_Tokens + ([
+      "variant":Modifier,	// 7.1.3
+    ]);
+
+    mapping(string:program(Token)) Pike_7_3_Tokens = Pike_7_1_Tokens + ([
+      "enum":Enum,		// 7.3.6
+      "global":Modifier,
+      "typedef":Typedef,	// 7.3.6
+    ]);
+
+    array(array(int|mapping(string:program(Token)))) compat_lookup = ({
+      ({ 7, 3, Pike_7_3_Tokens, }),
+      ({ 7, 1, Pike_7_1_Tokens, }),
+      ({ 0, 7, Pike_0_7_Tokens, }),
+      ({ 0, 6, Pike_0_6_Tokens, }),
+      ({ 0, 4, Pike_0_4_Tokens, }),
+      ({ 0, 3, Pike_0_3_Tokens, }),
+      ({ 0, 0, Pike_0_1_Tokens, }),
+    });
 
     void handle_pike_compat(int major, int minor)
     {
-      // FIXME: Should affect the current resolver too.
-      if ((major < 7) || ((major == 7) && (minor <= 2))) {
-	token_lookup = Pike_7_2_Tokens;
-      } else {
-	token_lookup = Pike_7_4_Tokens;
+      if (major < 0) major = 0;
+      if (minor < 0) minor = 0;
+      foreach(compat_lookup,
+	      [int maj, int min, mapping(string:program(Token)) tokens]) {
+	if ((maj < major) || (maj == major && (min <= minor))) {
+	  token_lookup = tokens;
+	  return;
+	}
       }
+      // NOT REACHED.
     }
 
     static void create(string data, CompilerContext|void context)
     {
       // Default token_lookup.
-      token_lookup = Pike_7_4_Tokens;
+      token_lookup = compat_lookup[0][2];
 
       ::create(data, context);
     }
