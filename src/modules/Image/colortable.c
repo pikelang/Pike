@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.45 1998/04/24 13:50:22 mirar Exp $ */
+/* $Id: colortable.c,v 1.46 1998/04/30 00:00:57 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.45 1998/04/24 13:50:22 mirar Exp $
+**!	$Id: colortable.c,v 1.46 1998/04/30 00:00:57 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.45 1998/04/24 13:50:22 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.46 1998/04/30 00:00:57 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -63,7 +63,7 @@ extern struct program *image_program;
 #define CUBICLE_DEFAULT_R 10
 #define CUBICLE_DEFAULT_G 10
 #define CUBICLE_DEFAULT_B 10
-#define CUBICLE_DEFAULT_ACCUR 16
+#define CUBICLE_DEFAULT_ACCUR 4
 
 #ifndef MAX
 #define MAX(X,Y) ((X)>(Y)?(X):(Y))
