@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.126 2003/03/12 09:29:57 agehall Exp $
+|| $Id: builtin.cmod,v 1.127 2003/03/14 17:19:52 grubba Exp $
 */
 
 #include "global.h"
@@ -66,6 +66,7 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
     f_aggregate(6);
   }
   f_aggregate(p->num_identifier_references);
+  dmalloc_touch_svalue(Pike_sp-1);
   res = Pike_sp[-1].u.array;
   Pike_sp--;
   pop_n_elems(args);
@@ -301,6 +302,7 @@ PIKEFUN array column(array data, mixed index)
     for(e=0;e<a->size;e++)
       index_no_free(ITEM(a)+e, ITEM(data)+e, index);
 
+    dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
   }
   END_CYCLIC();
@@ -780,6 +782,7 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
     pop_n_elems(args);
     *Pike_sp=s;
     Pike_sp++;
+    dmalloc_touch_svalue(Pike_sp-1);
   }
   else if (map->type == T_OBJECT && map->u.object->prog)
   {
@@ -1622,6 +1625,7 @@ PIKECLASS Buffer
 	    push_int( 0 );
 	  }
 	  f_sprintf( 3 );
+	  dmalloc_touch_svalue(Pike_sp-1);
 	  res = Pike_sp[-1].u.string;
 	  Pike_sp--;
 	  RETURN res;
@@ -2768,6 +2772,7 @@ static void low_automap(int d,
       apply_svalue(fun,args);
     else
       low_automap(d+1,depth,fun,real_args,args);
+    dmalloc_touch_svalue(Pike_sp-1);
     ITEM(ret)[x]=*--Pike_sp;
   }
   stack_unlink(args);
