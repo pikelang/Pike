@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.9 1998/11/09 15:35:38 grubba Exp $
+dnl $Id: configure.in,v 1.10 2000/08/22 11:46:39 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(postgres.c)
@@ -21,21 +21,19 @@ AC_MODULE_INIT()
 ac_pike_postgres_skip=no
 
 dnl set up "reasonable" search paths
-pike_postgres_reasonable_prefixes="/usr/local /usr /opt /usr/lib"
-pike_postgres_reasonable_directories="postgres95 postgres pgsql ."
-pike_postgres_extra_include_directories="$HOME/include /usr/include/postgres95 /usr/include/pgsql /usr/include/postgres /usr/lib/pgsql/include"
-pike_postgres_extra_lib_directories="$HOME/lib /usr/lib/pgsql/lib"
+pike_postgres_reasonable_prefixes="/usr/local /usr /opt /usr/lib $HOME"
+pike_postgres_reasonable_directories="postgres95 postgres pgsql postgresql ."
 
 for a in $pike_postgres_reasonable_prefixes
 do
 	for b in $pike_postgres_reasonable_directories
 	do
-		pike_postgres_reasonable_include_searchpath="$pike_postgres_reasonable_include_searchpath $a/$b/include"
-		pike_postgres_reasonable_lib_searchpath="$pike_postgres_reasonable_lib_searchpath $a/$b/lib"
+		pike_postgres_reasonable_include_searchpath="$pike_postgres_reasonable_include_searchpath $a/$b/include $a/include/$b"
+		pike_postgres_reasonable_lib_searchpath="$pike_postgres_reasonable_lib_searchpath $a/$b/lib $a/lib/$b"
 	done
 done
-pike_postgres_reasonable_include_searchpath="$pike_postgres_user_include_directory $pike_postgres_reasonable_include_searchpath $pike_postgres_extra_include_directories"
-pike_postgres_reasonable_lib_searchpath="$pike_postgres_user_lib_directory $pike_postgres_reasonable_lib_searchpath $pike_postgres_extra_lib_directories"
+pike_postgres_reasonable_include_searchpath="$pike_postgres_user_include_directory $pike_postgres_reasonable_include_searchpath"
+pike_postgres_reasonable_lib_searchpath="$pike_postgres_user_lib_directory $pike_postgres_reasonable_lib_searchpath"
 
 dnl check for dirname and locate, we might need them
 AC_CHECK_PROG(dirname,dirname,yes)
