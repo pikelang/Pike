@@ -63,7 +63,7 @@
   PCODE(if(X) fatal("Variable %s not deallocated properly.\n",Y);) \
   ZMEMBER(struct lpc_string *,X,)
 #else
-#define STRMEMBER(X) \
+#define STRMEMBER(X,Y) \
   ZMEMBER(struct lpc_string *,X,)
 #endif
 
