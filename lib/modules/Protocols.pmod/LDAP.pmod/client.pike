@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.45 2002/10/21 16:17:35 agehall Exp $
+// $Id: client.pike,v 1.46 2002/11/27 22:04:32 marcus Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -180,9 +180,9 @@ int _prof_gtim;
       int lastel = sizeof(rawres) - 1;
 
       if (lastel < 0) {
-        ::seterr (LDAP_LOCAL_ERROR);
+        global::seterr (LDAP_LOCAL_ERROR);
         THROW(({"LDAP: Internal error.\n",backtrace()}));
-        return(-::ldap_errno);
+        return(-global::ldap_errno);
       }
       DWRITE(sprintf("result.create: rawres=%O\n",rawres[lastel]));
 
@@ -360,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.45 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.46 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
