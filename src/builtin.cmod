@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.158 2004/04/30 20:54:55 nilsson Exp $
+|| $Id: builtin.cmod,v 1.159 2004/05/13 23:29:27 nilsson Exp $
 */
 
 #include "global.h"
@@ -1946,16 +1946,13 @@ PIKECLASS multi_string_replace
       Pike_error("Replace must have equal-sized from and to arrays.\n");
     }
 
-    if(from->type_field & ~BIT_STRING) {
-      array_fix_type_field(from);
-      if(from->type_field & ~BIT_STRING)
-	SIMPLE_BAD_ARG_ERROR("Replace", 1, "array(string)");
-    }
-    if(to->type_field & ~BIT_STRING) {
-      array_fix_type_field(to);
-      if(to->type_field & ~BIT_STRING)
-	SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)");
-    }
+    if( (from->type_field & ~BIT_STRING) &&
+	(array_fix_type_field(from) & ~BIT_STRING) )
+      SIMPLE_BAD_ARG_ERROR("Replace", 1, "array(string)");
+
+    if( (to->type_field & ~BIT_STRING) &&
+	(array_fix_type_field(to) & ~BIT_STRING) )
+      SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)");
 
     if (THIS->v) {
       for (i = 0; i < (int)THIS->v_sz; i++) {

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.319 2004/05/13 22:15:12 nilsson Exp $
+|| $Id: file.c,v 1.320 2004/05/13 23:32:52 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.319 2004/05/13 22:15:12 nilsson Exp $");
+RCSID("$Id: file.c,v 1.320 2004/05/13 23:32:52 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1070,11 +1070,9 @@ static void file_write(INT32 args)
   if (Pike_sp[-args].type == PIKE_T_ARRAY) {
     struct array *a = Pike_sp[-args].u.array;
 
-    if(a->type_field & ~BIT_STRING) {
-      array_fix_type_field(a);
-      if(a->type_field & ~BIT_STRING)
-	SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
-    }
+    if( (a->type_field & ~BIT_STRING) &&
+	(array_fix_type_field(a) & ~BIT_STRING) )
+      SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
 
     i = a->size;
     while(i--)

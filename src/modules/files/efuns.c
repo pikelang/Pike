@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.142 2004/05/13 20:38:14 mast Exp $
+|| $Id: efuns.c,v 1.143 2004/05/13 23:32:35 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.142 2004/05/13 20:38:14 mast Exp $");
+RCSID("$Id: efuns.c,v 1.143 2004/05/13 23:32:35 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1150,9 +1150,9 @@ void f_exece(INT32 args)
   case 2:
     if(sp[1-args].type != T_ARRAY)
       SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
-    array_fix_type_field(sp[1-args].u.array);
 
-    if(sp[1-args].u.array->type_field & ~BIT_STRING)
+
+    if(array_fix_type_field(sp[1-args].u.array) & ~BIT_STRING)
       SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
 
   case 1:

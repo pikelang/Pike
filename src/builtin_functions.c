@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.553 2004/05/13 16:31:06 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.554 2004/05/13 23:31:04 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.553 2004/05/13 16:31:06 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.554 2004/05/13 23:31:04 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -635,7 +635,7 @@ PMOD_EXPORT void f_random_string(INT32 args)
 {
   struct pike_string *ret;
   INT_TYPE len, e;
-  get_all_args("random_string",args,"%i",&len);
+  get_all_args("random_string",args,"%+",&len);
   ret = begin_shared_string(len);
   for(e=0;e<len;e++) ret->str[e] = DO_NOT_WARN((char)my_rand());
   pop_n_elems(args);
@@ -3055,17 +3055,13 @@ static struct pike_string *replace_many(struct pike_string *str,
     return str;
   }
 
-  if(from->type_field & ~BIT_STRING) {
-    array_fix_type_field(from);
-    if(from->type_field & ~BIT_STRING)
-      Pike_error("replace: from array not array(string).\n");
-  }
+  if( (from->type_field & ~BIT_STRING) &&
+      (array_fix_type_field(from) & ~BIT_STRING) )
+    Pike_error("replace: from array not array(string).\n");
 
-  if(to->type_field & ~BIT_STRING) {
-    array_fix_type_field(to);
-    if(to->type_field & ~BIT_STRING)
-      Pike_error("replace: to array not array(string).\n");
-  }
+  if( (to->type_field & ~BIT_STRING) &&
+      (array_fix_type_field(to) & ~BIT_STRING) )
+    Pike_error("replace: to array not array(string).\n");
 
   ctx.v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
   init_string_builder(&ctx.ret,str->size_shift);
@@ -4782,11 +4778,9 @@ PMOD_EXPORT void f_glob(INT32 args)
   case T_ARRAY:
     a=Pike_sp[1-args].u.array;
 
-    if(a->type_field & ~BIT_STRING) {
-      array_fix_type_field(a);
-      if(a->type_field & ~BIT_STRING)
-	SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
-    }
+    if( (a->type_field & ~BIT_STRING) &&
+	(array_fix_type_field(a) & ~BIT_STRING) )
+      SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
 
     matches=0;
     check_stack(120);
@@ -4835,11 +4829,9 @@ static void f_interleave_array(INT32 args)
   /* We're not interrested in any other arguments. */
   pop_n_elems(args-1);
 
-  if(arr->type_field & ~BIT_MAPPING) {
-    array_fix_type_field(arr);
-    if(arr->type_field & ~BIT_MAPPING)
-      SIMPLE_BAD_ARG_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
-  }
+  if( (arr->type_field & ~BIT_MAPPING) &&
+      (array_fix_type_field(arr) & ~BIT_MAPPING) )
+    SIMPLE_BAD_ARG_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
 
   /* The order array */
   ref_push_array(arr);
@@ -6715,12 +6707,9 @@ PMOD_EXPORT void f_transpose(INT32 args)
     return; 
   }
 
-  if(in->type_field != BIT_ARRAY)
-  {
-    array_fix_type_field(in);
-    if(in->type_field != BIT_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
-  }
+  if( (in->type_field != BIT_ARRAY) &&
+      (array_fix_type_field(in) != BIT_ARRAY) )
+    SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
 
   sizeininner=in->item->u.array->size;
 

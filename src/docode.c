@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.174 2004/01/22 23:17:27 nilsson Exp $
+|| $Id: docode.c,v 1.175 2004/05/13 23:29:49 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.174 2004/01/22 23:17:27 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.175 2004/05/13 23:29:49 nilsson Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2146,8 +2146,7 @@ static int do_docode2(node *n, int flags)
 	  switch(n->u.sval.type)
 	  {
 	    case T_ARRAY:
-	      array_fix_type_field(n->u.sval.u.array);
-	      if(n->u.sval.u.array -> type_field & BIT_COMPLEX)
+	      if(array_fix_type_field(n->u.sval.u.array) & BIT_COMPLEX)
 		emit0(F_COPY_VALUE);
 	      break;
 

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.47 2004/05/02 21:31:37 nilsson Exp $
+|| $Id: polyfill.c,v 1.48 2004/05/13 23:32:15 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.47 2004/05/02 21:31:37 nilsson Exp $");
+RCSID("$Id: polyfill.c,v 1.48 2004/05/13 23:32:15 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -733,13 +733,11 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
    struct vertex *first,*last,*cur = NULL;
    int n;
 
-   if(a->type_field & ~(BIT_INT|BIT_FLOAT)) {
-     array_fix_type_field(a);
-     if(a->type_field & ~(BIT_INT|BIT_FLOAT)) {
-       polyfill_free(top);
-       Pike_error("Illegal argument %d to %s. %d Expected array(float|int).\n",arg,what, a->type_field);
-       return NULL;
-     }
+   if( (a->type_field & ~(BIT_INT|BIT_FLOAT)) &&
+       (array_fix_type_field(a) & ~(BIT_INT|BIT_FLOAT)) ) {
+     polyfill_free(top);
+     Pike_error("Illegal argument %d to %s. %d Expected array(float|int).\n",arg,what, a->type_field);
+     return NULL;
    }
 
    if (a->size<6) 
