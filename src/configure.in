@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.865 2005/01/03 13:17:07 agehall Exp $")
+AC_REVISION("$Id: configure.in,v 1.866 2005/01/03 15:25:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4719,14 +4719,6 @@ MY_CHECK_FUNCTION(isunordered,
   int t = isunordered(0.0, 0.0);
   exit(0);
 ])
-########################################################################
-MY_CHECK_FUNCTION(dlinit,
-[
-#include <dlfcn.h>
-], [
-  dlinit();
-  exit(0);
-})
 ########################################################################
 MY_CHECK_FUNCTION(dlopen,
 [
