@@ -112,7 +112,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
     start=diagram_data["yminvalue"];
     start=diagram_data["yspace"]*ceil((start)/diagram_data["yspace"]);
     diagram_data["values_for_ynames"]=({start});
-    while(diagram_data["values_for_ynames"][-1] < diagram_data["ymaxvalue"])
+    while(start < diagram_data["ymaxvalue"])
       diagram_data["values_for_ynames"]+=({start+=diagram_data["yspace"]});
   }
   
