@@ -9,7 +9,7 @@ enum error_type {
   ERR_NONE,
   ERR_TOO_FEW,
   ERR_TOO_MANY,
-  ERR_BAD_ARG,
+  ERR_BAD_ARG
 };
 
 struct expect_result {
