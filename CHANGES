@@ -1,6 +1,10 @@
 Changes in Pike 7.4.LATER:
 ----------------------------------------------------------------------
 
+
+Changes in Pike 7.4.40:
+----------------------------------------------------------------------
+
 o Added Memory.shmat on Windows.
 o Fixed bug in Function.defined.
 o Mac OS X poll() fixes.
