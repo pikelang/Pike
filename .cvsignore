@@ -5,6 +5,7 @@ alpha-no-debug
 alpha_cc
 build
 build2
+egcs-build
 mud
 mud-0.1.tar.gz
 mud-0.2.tar.gz
