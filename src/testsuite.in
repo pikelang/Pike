@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.589 2003/08/18 15:11:38 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.590 2003/08/20 19:41:07 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2374,6 +2374,150 @@ test_compile_any([[
   class X { void hej() {} }
   class Y { inherit X:banan; void hopp() { banan::hej(); } }
 ]])
+
+test_program_eq([[
+  class A {
+    string x = "x";
+    class B {
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    constant D = A::B;
+  }
+  string a() {
+    return C()->D()->f();
+  }
+]], "x")
+
+test_program_eq([[
+  class A {
+    string x = "x";
+    class B {
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    string x = "y";
+    constant D = A::B;
+  }
+  string a() {
+    return C()->D()->f();
+  }
+]], "y")
+
+test_program_eq([[
+  class A {
+    local string x = "x";
+    class B {
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    string x = "y";
+    constant D = A::B;
+  }
+  string a() {
+    return C()->D()->f();
+  }
+]], "x")
+
+test_program_eq([[
+  class A {
+    local string x = "x";
+    class B {
+      void set (string new) {x = new;}
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    string x = "y";
+    constant D = A::B;
+  }
+  string a() {
+    C c = C();
+    C.D d = c->D();
+    d->set ("bar");
+    c->x = "foo";
+    return d->f();
+  }
+]], "bar")
+
+test_program_eq([[
+  class A {
+    string x = "x";
+    class B {
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    constant D = A::B;
+  }
+  string a() {
+    return C()->D()->f();
+  }
+]], "x")
+
+test_program_eq([[
+  class A {
+    string x = "x";
+    class B {
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    string x = "y";
+    constant D = A::B;
+  }
+  string a() {
+    return C()->D()->f();
+  }
+]], "y")
+
+test_program_eq([[
+  class A {
+    local string x = "x";
+    class B {
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    string x = "y";
+    constant D = A::B;
+  }
+  string a() {
+    return C()->D()->f();
+  }
+]], "x")
+
+test_program_eq([[
+  class A {
+    local string x = "x";
+    class B {
+      void set (string new) {x = new;}
+      string f() {return x;}
+    }
+  }
+  class C {
+    inherit A;
+    string x = "y";
+    constant D = A::B;
+  }
+  string a() {
+    C c = C();
+    C.D d = c->D();
+    d->set ("bar");
+    c->x = "foo";
+    return d->f();
+  }
+]], "bar")
 
 
 test_compile_any([[
