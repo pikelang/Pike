@@ -1,3 +1,23 @@
+pike7.3 (7.3.60-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * src/code/: ppc32.c, ppc32.h: Implemented OPCODE_INLINE_BRANCH
+	  interface for PPC.
+        * src/dlopen.c: Some more IA64 fixes.
+        * lib/modules/Protocols.pmod/HTTP.pmod/Query.pike: added the
+          possibility to have array values in headers mapping to allow
+          multiple headers
+        * src/dlopen.c: The IA64 global offset table is now at the end of
+          the datasegment, so that gp-relative offsets have a chance at
+          working.
+        * lib/modules/Standards.pmod/RDF.pike: Improved API and working
+          N-triple parsing.
+        * src/threads.c: Added a reference from MutexKey to the mutex
+          object it holds, so that the latter won't be refcount garbed (which
+          causes both to be destructed) if there are no other references.
+
+ -- Marek Habersack <grendel@debian.org>  Mon,  4 Nov 2002 22:32:36 +0100
+
 pike7.3 (7.3.58-3) unstable; urgency=low
 
   * Removed the sybase module as it doesn't work on Debian.
