@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.15 2002/10/21 17:06:22 marcus Exp $
+|| $Id: sane.c,v 1.16 2002/12/30 12:30:06 grubba Exp $
 */
 
 #include "config.h"
@@ -39,7 +39,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.15 2002/10/21 17:06:22 marcus Exp $");
+RCSID("$Id: sane.c,v 1.16 2002/12/30 12:30:06 grubba Exp $");
 
 /*! @module SANE
  *!
@@ -759,7 +759,7 @@ static void f_scanner_cancel_scan( INT32 args )
  *! @decl constant FrameRGB
  *! @decl constant FrameRed
  *! @decl constant FrameGreen
- *! @decl cosntant FrameBlue
+ *! @decl constant FrameBlue
  */
 
 /*! @endmodule
