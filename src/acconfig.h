@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.32 1998/09/05 15:52:26 grubba Exp $
+ * $Id: acconfig.h,v 1.33 1998/10/11 22:33:11 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -276,10 +276,12 @@
 #ifdef HAVE_ANSI_CONCAT
 #define PIKE_CONCAT(X,Y)	X##Y
 #define PIKE_CONCAT3(X,Y,Z)	X##Y##Z
+#define PIKE_CONCAT4(X,Y,Z,Q)	X##Y##Z##Q
 #else
 #ifdef HAVE_KR_CONCAT
 #define PIKE_CONCAT(X,Y)	X/**/Y
 #define PIKE_CONCAT3(X,Y,Z)	X/**/Y/**/Z
+#define PIKE_CONCAT4(X,Y,Z,Q)	X/**/Y/**/Z/**/Q
 #endif /* HAVE_KR_CONCAT */
 #endif /* HAVE_ANSI_CONCAT */
 

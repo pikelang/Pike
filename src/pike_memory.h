@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.6 1998/10/11 11:18:52 hubbe Exp $
+ * $Id: pike_memory.h,v 1.7 1998/10/11 22:33:11 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -93,35 +93,6 @@ void memfill(char *to,
 	     char *from,
 	     INT32 fromlen,
 	     INT32 offset);
-char *debug_xalloc(long size);
-struct fileloc;
-BLOCK_ALLOC(fileloc, 4090)
-struct memloc;
-BLOCK_ALLOC(memloc, 16382)
-struct memhdr;
-char *do_pad(char *mem, long size);
-void check_pad(struct memhdr *mh, int freeok);
-void low_add_marks_to_memhdr(struct memhdr *to,
-			     struct memhdr *from);
-void add_marks_to_memhdr(struct memhdr *to, void *ptr);
-BLOCK_ALLOC(memhdr,16382)
-
-
-
-
-static struct memhdr *find_memhdr(void *p);
-void *debug_malloc(size_t s, const char *fn, int line);
-void *debug_calloc(size_t a, size_t b, const char *fn, int line);
-void *debug_realloc(void *p, size_t s, const char *fn, int line);
-void debug_free(void *p, const char *fn, int line);
-char *debug_strdup(const char *s, const char *fn, int line);
-void dump_memhdr_locations(struct memhdr *from,
-			   struct memhdr *notfrom);
-void debug_malloc_dump_references(void *x);
-void cleanup_memhdrs();
-int main(int argc, char *argv[]);
-void * debug_malloc_update_location(void *p,const char *fn, int line);
-void reset_debug_malloc(void);
 /* Prototypes end here */
 
 #undef BLOCK_ALLOC
