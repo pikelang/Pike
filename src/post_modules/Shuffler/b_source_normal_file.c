@@ -14,13 +14,20 @@
 
 #define CHUNK 8192
 
-/* $Id: b_source_normal_file.c,v 1.4 2002/07/03 14:49:54 per Exp $ */
+/* $Id: b_source_normal_file.c,v 1.5 2002/08/19 08:58:40 grubba Exp $ */
 
 
 /* Source: Normal file
  * Argument: Stdio.File instance pointing to a normal file
  */
 
+#ifndef S_ISREG
+#ifdef S_IFREG
+#define S_ISREG(mode)	(((mode) & (S_IFMT)) == (S_IFREG))
+#else /* !S_IFREG */
+#define S_ISREG(mode)	(((mode) & (_S_IFMT)) == (_S_IFREG))
+#endif /* S_IFREG */
+#endif /* !S_ISREG */
 
 static struct program *Fd_ref_program = NULL;
 
