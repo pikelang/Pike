@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.76 2002/01/18 04:56:22 nilsson Exp $
+ * $Id: builtin.cmod,v 1.77 2002/02/21 05:29:13 per-bash Exp $
  */
 
 #include "global.h"
@@ -1826,6 +1826,82 @@ PIKECLASS multi_string_replace
 
 /*! @endclass
  */
+
+/* NOTE: Documentation for these recides in System.pmod.  */
+PIKECLASS Time
+{
+  CVAR int hard_update;
+  
+  PIKEFUN int `->( string x )
+  {
+    extern struct timeval current_time;
+    struct pike_string *usec;
+    struct pike_string *sec;
+    MAKE_CONSTANT_SHARED_STRING( sec, "sec" ); 
+    MAKE_CONSTANT_SHARED_STRING( usec, "usec" ); 
+
+    if( !x )
+      RETURN 0;
+
+    if( THIS->hard_update )
+      gettimeofday( &current_time, 0 );
+
+    if( x == usec )
+      RETURN current_time.tv_usec;
+    if( x == sec )
+      RETURN current_time.tv_sec;
+
+#ifdef AUTO_BIGNUM
+    pop_stack();
+    push_int( current_time.tv_sec );
+    push_int( 1000000 );
+    f_multiply( 2 );
+    push_int( current_time.tv_usec );
+    f_add( 2 );
+    return;
+#else
+    RETURN (current_time.tv_sec * 1000000 + current_time.tv_usec);
+#endif
+  }
+  
+  PIKEFUN int `[]( string x )
+  {
+    f_Time_cq__backtick_2D_3E( args );
+  }
+
+  PIKEFUN void create( int|void fast )
+  {
+    THIS->hard_update = !fast;
+  }
+}
+
+PIKECLASS Timer
+{
+  CVAR struct timeval last_time;
+  CVAR int hard_update;
+  
+  PIKEFUN float get( )
+  {
+    extern struct timeval current_time;
+    FLOAT_TYPE res;
+    if( THIS->hard_update )
+      gettimeofday( &current_time, 0 );
+    res = current_time.tv_sec-THIS->last_time.tv_sec +
+      (current_time.tv_usec-THIS->last_time.tv_usec)/1000000.0;
+    THIS->last_time = current_time;
+    RETURN res;
+  }
+
+  PIKEFUN void create( int|void fast )
+  {
+    extern struct timeval current_time;
+    THIS->hard_update = !fast;
+    if( THIS->hard_update )
+      gettimeofday( &current_time, 0 );
+    THIS->last_time = current_time; 
+  }
+}
+
 
 /*! @class SingleReplace
  */
