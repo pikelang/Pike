@@ -5,9 +5,7 @@ inherit _Crypto;
 
 #if constant(Nettle.HashInfo)
 
-// Private so that it doesn't clutter the view for people doing
-// indices on the Crypto module.
-private inherit Nettle;
+import Nettle;
 
 //!
 class HashAlgorithm
@@ -43,6 +41,23 @@ class MD5_Algorithm
 }
 
 MD5_Algorithm MD5 = MD5_Algorithm();
+
+string crypt_md5(string password, void|string salt) {
+  if(salt)
+    sscanf(salt, "%s$", salt);
+  else
+    salt = MIME.encode_base64(random_string(8));
+  return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
+}
+
+int(0..1) crypt_md5_verify(string password, string hash) {
+  string magic, salt;
+  if( sscanf(hash, "$%s$%s$%s", magic, salt, hash)!=3 )
+    error("Error in hash.\n");
+  if( magic!="1" )
+    error("Unknown hash magic.\n");
+  return Nettle.crypt_md5(password, salt)==hash;
+}
 
 #if constant(Nettle.MD4_Info)
 
