@@ -48,10 +48,12 @@
 struct svalue *sp;     /* Current position */
 struct svalue *evaluator_stack; /* Start of stack */
 int stack_size = EVALUATOR_STACK_SIZE;
+int evaluator_stack_malloced = 0;
 
 /* mark stack, used to store markers into the normal stack */
 struct svalue **mark_sp; /* Current position */
 struct svalue **mark_stack; /* Start of stack */
+int mark_stack_malloced = 0;
 
 struct frame *fp; /* frame pointer */
 
@@ -66,6 +68,10 @@ void init_interpreter()
 
 #ifndef MAP_PRIVATE
 #define MAP_PRIVATE 0
+#endif
+
+#ifndef MAP_FAILED
+#define MAP_FAILED -1
 #endif
 
 #ifdef MAP_ANONYMOUS
@@ -83,11 +89,22 @@ void init_interpreter()
 
   if(fd != -1) close(fd);
 
-  if(!evaluator_stack || !mark_stack) fatal("Failed to mmap() stack space.\n");
-#else
-  evaluator_stack=(struct svalue *)malloc(stack_size*sizeof(struct svalue));
-  mark_stack=(struct svalue **)malloc(stack_size*sizeof(struct svalue *));
+  if((char *)MAP_FAILED == (char *)evaluator_stack)  evaluator_stack=0;
+  if((char *)MAP_FAILED == (char *)mark_stack) mark_stack=0;
+
 #endif
+  if(!evaluator_stack)
+  {
+    evaluator_stack=(struct svalue *)malloc(stack_size*sizeof(struct svalue));
+    evaluator_stack_malloced=1;
+  }
+
+  if(!mark_stack)
+  {
+    mark_stack=(struct svalue **)malloc(stack_size*sizeof(struct svalue *));
+    mark_stack_malloced=1;
+  }
+
   sp=evaluator_stack;
   mark_sp=mark_stack;
 }
@@ -1553,11 +1570,23 @@ void cleanup_interpret()
   reset_evaluator();
 
 #ifdef USE_MMAP_FOR_STACK
-  munmap((char *)evaluator_stack, stack_size*sizeof(struct svalue));
-  munmap((char *)mark_stack, stack_size*sizeof(struct svalue *));
-#else
-  free((char *)evaluator_stack);
-  free((char *)mark_stack);
+  if(!evaluator_stack_malloced)
+  {
+    munmap((char *)evaluator_stack, stack_size*sizeof(struct svalue));
+    evaluator_stack=0;
+  }
+  if(!mark_stack_malloced)
+  {
+    munmap((char *)mark_stack, stack_size*sizeof(struct svalue *));
+    mark_stack=0;
+  }
 #endif
 
+  if(evaluator_stack) free((char *)evaluator_stack);
+  if(mark_stack) free((char *)mark_stack);
+
+  mark_stack=0;
+  evaluator_stack=0;
+  mark_stack_malloced=0;
+  evaluator_stack_malloced=0;
 }
