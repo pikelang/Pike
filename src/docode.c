@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.92 2001/01/11 14:12:30 grubba Exp $");
+RCSID("$Id: docode.c,v 1.93 2001/01/14 04:13:48 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -29,45 +29,94 @@ RCSID("$Id: docode.c,v 1.92 2001/01/11 14:12:30 grubba Exp $");
 
 static int do_docode2(node *n, INT16 flags);
 
+typedef void (*cleanup_func)(void *);
+
+struct cleanup_frame
+{
+  struct cleanup_frame *prev;
+  cleanup_func cleanup;
+  void *cleanup_arg;
+};
+
 struct statement_label_name
 {
   struct statement_label_name *next;
   struct pike_string *str;
-  unsigned INT16 line_number;
+  unsigned int line_number;
 };
 
 struct statement_label
 {
   struct statement_label *prev;
   struct statement_label_name *name;
-  INT16 emit_break_label;
+  /* -2 in break_label is used to flag "open" statement_label entries.
+   * If an open entry is on top of the stack, it's used instead of a
+   * new one. That's used to associate statement labels to the
+   * following statement. */
   INT32 break_label, continue_label;
-  void (*cleanup)(void *);
-  void *cleanup_arg;
+  int emit_break_label;
+  struct cleanup_frame *cleanups;
 };
-static struct statement_label *current_label = 0;
+
+static struct statement_label top_statement_label_dummy =
+  {0, 0, -1, -1, 0, 0};
+static struct statement_label *current_label = &top_statement_label_dummy;
+
+#define PUSH_CLEANUP_FRAME(func, arg) do {				\
+  struct cleanup_frame cleanup_frame__;					\
+  cleanup_frame__.cleanup = (cleanup_func) (func);			\
+  cleanup_frame__.cleanup_arg = (void *)(ptrdiff_t) (arg);		\
+  DO_IF_DEBUG(								\
+    if (current_label->cleanups == (void *)(ptrdiff_t) -1)		\
+      fatal("current_label points to an unused statement_label.\n");	\
+  )									\
+  if (current_label->break_label == -2) {				\
+    DO_IF_DEBUG(							\
+      if (current_label->prev->break_label == -2)			\
+        fatal("Found two open statement_label entries in a row.\n");	\
+    )									\
+    cleanup_frame__.prev = current_label->prev->cleanups;		\
+    current_label->prev->cleanups = &cleanup_frame__;			\
+  }									\
+  else {								\
+    cleanup_frame__.prev = current_label->cleanups;			\
+    current_label->cleanups = &cleanup_frame__;				\
+  }
+
+#define POP_AND_DONT_CLEANUP						\
+  if (current_label->cleanups == &cleanup_frame__)			\
+    current_label->cleanups = cleanup_frame__.prev;			\
+  else {								\
+    DO_IF_DEBUG(							\
+      if (current_label->prev->cleanups != &cleanup_frame__)		\
+        fatal("Cleanup frame lost from statement_label cleanup list.\n");\
+    )									\
+    current_label->prev->cleanups = cleanup_frame__.prev;		\
+  }									\
+} while (0)
+
+#define POP_AND_DO_CLEANUP						\
+  cleanup_frame__.cleanup(cleanup_frame__.cleanup_arg);			\
+  POP_AND_DONT_CLEANUP
 
 #define PUSH_STATEMENT_LABEL do {					\
   struct statement_label new_label__;					\
   new_label__.prev = current_label;					\
-  new_label__.cleanup = 0;						\
-  if (!current_label || current_label->break_label != -2) {		\
-    /* Only cover the current label if it's in use by a statement. */	\
+  if (current_label->break_label != -2) {				\
+    /* Only cover the current label if it's closed. */			\
     new_label__.name = 0;						\
     new_label__.break_label = new_label__.continue_label = -1;		\
+    new_label__.cleanups = 0;						\
     current_label = &new_label__;					\
   }									\
-  DO_IF_DEBUG(								\
-  else if (current_label && current_label->cleanup)			\
-    fatal("Cleanup callback taken in unused statement label.\n");	\
-  )									\
-  do
+  DO_IF_DEBUG(else new_label__.cleanups = (void *)(ptrdiff_t) -1;)
 
 #define POP_STATEMENT_LABEL						\
-  while (0);								\
   current_label = new_label__.prev;					\
-  if (new_label__.cleanup)						\
-    new_label__.cleanup(new_label__.cleanup_arg);			\
+  DO_IF_DEBUG(								\
+    if (new_label__.cleanups &&						\
+	new_label__.cleanups != (void *)(ptrdiff_t) -1)			\
+      fatal("Cleanup frames still left in statement_label.\n"));	\
 } while (0)
 
 static INT32 current_switch_case;
@@ -151,12 +200,24 @@ int ins_label(int lbl)
 
 void do_pop(int x)
 {
+#ifdef PIKE_DEBUG
+  if (x < 0) fatal("Cannot do pop of %d args.\n", x);
+#endif
   switch(x)
   {
   case 0: return;
   case 1: emit0(F_POP_VALUE); break;
   default: emit1(F_POP_N_ELEMS,x); break;
   }
+}
+
+void do_cleanup_pop(int x)
+{
+#ifdef PIKE_DEBUG
+  if(d_flag)
+    emit0(F_POP_MARK);
+#endif
+  do_pop(x);
 }
 
 void do_escape_catch()
@@ -711,7 +772,7 @@ static int do_docode2(node *n, INT16 flags)
   case F_FOR:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    PUSH_STATEMENT_LABEL {
+    PUSH_STATEMENT_LABEL;
 
     current_switch_jumptable=0;
     current_label->break_label=alloc_label();
@@ -731,7 +792,7 @@ static int do_docode2(node *n, INT16 flags)
     ins_label(current_label->break_label);
 
     current_switch_jumptable = prev_switch_jumptable;
-    } POP_STATEMENT_LABEL;
+    POP_STATEMENT_LABEL;
     return 0;
   }
 
@@ -742,7 +803,8 @@ static int do_docode2(node *n, INT16 flags)
   {
     node *arr;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    PUSH_STATEMENT_LABEL {
+    PUSH_CLEANUP_FRAME(do_cleanup_pop, 4);
+    PUSH_STATEMENT_LABEL;
 
     current_switch_jumptable=0;
     current_label->break_label=alloc_label();
@@ -768,8 +830,6 @@ static int do_docode2(node *n, INT16 flags)
     emit0(F_CONST0);
 
   foreach_arg_pushed:
-    current_label->cleanup = (void (*)(void *)) do_pop;
-    current_label->cleanup_arg = (void *) 4;
 #ifdef PIKE_DEBUG
     /* This is really ugly because there is always a chance that the bug
      * will disappear when new instructions are added to the code, but
@@ -786,13 +846,9 @@ static int do_docode2(node *n, INT16 flags)
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_label->break_label);
 
-#ifdef PIKE_DEBUG
-    if(d_flag)
-      emit0(F_POP_MARK);
-#endif
-
     current_switch_jumptable = prev_switch_jumptable;
-    } POP_STATEMENT_LABEL;
+    POP_STATEMENT_LABEL;
+    POP_AND_DO_CLEANUP;
     return 0;
   }
 
@@ -802,15 +858,14 @@ static int do_docode2(node *n, INT16 flags)
   case F_DEC_LOOP:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    PUSH_STATEMENT_LABEL {
+    PUSH_CLEANUP_FRAME(do_cleanup_pop, 3);
+    PUSH_STATEMENT_LABEL;
 
     current_switch_jumptable=0;
     current_label->break_label=alloc_label();
     current_label->continue_label=alloc_label();
 
     tmp2=do_docode(CAR(n),0);
-    current_label->cleanup = (void (*)(void *)) do_pop;
-    current_label->cleanup_arg = (void *) 3;
 #ifdef PIKE_DEBUG
     /* This is really ugly because there is always a chance that the bug
      * will disappear when new instructions are added to the code, but
@@ -827,20 +882,17 @@ static int do_docode2(node *n, INT16 flags)
     low_insert_label( DO_NOT_WARN((INT32)tmp3));
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_label->break_label);
-#ifdef PIKE_DEBUG
-    if(d_flag)
-      emit0(F_POP_MARK);
-#endif
 
     current_switch_jumptable = prev_switch_jumptable;
-    } POP_STATEMENT_LABEL;
+    POP_STATEMENT_LABEL;
+    POP_AND_DO_CLEANUP;
     return 0;
   }
 
   case F_DO:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    PUSH_STATEMENT_LABEL {
+    PUSH_STATEMENT_LABEL;
 
     current_switch_jumptable=0;
     current_label->break_label=alloc_label();
@@ -853,7 +905,7 @@ static int do_docode2(node *n, INT16 flags)
     ins_label(current_label->break_label);
 
     current_switch_jumptable = prev_switch_jumptable;
-    } POP_STATEMENT_LABEL;
+    POP_STATEMENT_LABEL;
     return 0;
   }
 
@@ -1006,7 +1058,7 @@ static int do_docode2(node *n, INT16 flags)
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
 #endif
-    PUSH_STATEMENT_LABEL {
+    PUSH_STATEMENT_LABEL;
 
     if(do_docode(CAR(n),0)!=1)
       fatal("Internal compiler error, time to panic\n");
@@ -1099,7 +1151,7 @@ static int do_docode2(node *n, INT16 flags)
 
     low_insert_label( current_label->break_label);
 
-    } POP_STATEMENT_LABEL;
+    POP_STATEMENT_LABEL;
 #ifdef PIKE_DEBUG
     if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
       fatal("Stack error after F_SWITCH (underflow)\n");
@@ -1227,7 +1279,7 @@ static int do_docode2(node *n, INT16 flags)
     else
       if (n->token == F_BREAK) {
 	label = current_label;
-	if(!label || label->break_label < 0)
+	if(label->break_label < 0)
 	{
 	  yyerror("Break outside loop or switch.");
 	  return 0;
@@ -1243,9 +1295,12 @@ static int do_docode2(node *n, INT16 flags)
 	;
       }
 
-    for (p = current_label; p != label; p = p->prev)
-      if (p->cleanup)
-	p->cleanup(p->cleanup_arg);
+    for (p = current_label; 1; p = p->prev) {
+      struct cleanup_frame *q;
+      for (q = p->cleanups; q; q = q->prev)
+	q->cleanup(q->cleanup_arg);
+      if (p == label) break;
+    }
 
     if (n->token == F_BREAK) {
       if (label->break_label < 0) label->emit_break_label = 1;
@@ -1258,44 +1313,46 @@ static int do_docode2(node *n, INT16 flags)
   }
 
   case F_NORMAL_STMT_LABEL:
-  case F_CUSTOM_STMT_LABEL:
-    PUSH_STATEMENT_LABEL {
-      struct statement_label *label;
-      struct statement_label_name name;
-      name.str = CAR(n)->u.sval.u.string;
-      name.line_number = n->line_number;
+  case F_CUSTOM_STMT_LABEL: {
+    struct statement_label *label;
+    struct statement_label_name name;
+    PUSH_STATEMENT_LABEL;
+    name.str = CAR(n)->u.sval.u.string;
+    name.line_number = n->line_number;
 
-      for (label = current_label; label; label = label->prev) {
-	struct statement_label_name *lbl_name;
-	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
-	  if (lbl_name->str == name.str) {
-	    INT32 save_line = lex.current_line;
-	    lex.current_line = name.line_number;
-	    my_yyerror("Duplicate nested labels, previous one on line %d.",
-		       lbl_name->line_number);
-	    lex.current_line = save_line;
-	    break;
-	  }
-      }
+    for (label = current_label; label; label = label->prev) {
+      struct statement_label_name *lbl_name;
+      for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
+	if (lbl_name->str == name.str) {
+	  INT32 save_line = lex.current_line;
+	  lex.current_line = name.line_number;
+	  my_yyerror("Duplicate nested labels, previous one on line %d.",
+		     lbl_name->line_number);
+	  lex.current_line = save_line;
+	  goto label_check_done;
+	}
+    }
+  label_check_done:
 
-      name.next = current_label->name;
-      current_label->name = &name;
+    name.next = current_label->name;
+    current_label->name = &name;
 
-      if (!name.next) {
-	current_label->emit_break_label = 0;
-	if (n->token == F_CUSTOM_STMT_LABEL)
-	  /* The statement we precede has custom label handling; leave
-	   * the statement_label "open" so the statement will use it
-	   * instead of covering it. */
-	  current_label->break_label = -2;
-	else
-	  current_label->break_label = -1;
-      }
-      DO_CODE_BLOCK(CDR(n));
-      if (!name.next && current_label->emit_break_label)
-	low_insert_label(current_label->break_label);
-    } POP_STATEMENT_LABEL;
+    if (!name.next) {
+      current_label->emit_break_label = 0;
+      if (n->token == F_CUSTOM_STMT_LABEL)
+	/* The statement we precede has custom label handling; leave
+	 * the statement_label "open" so the statement will use it
+	 * instead of covering it. */
+	current_label->break_label = -2;
+      else
+	current_label->break_label = -1;
+    }
+    DO_CODE_BLOCK(CDR(n));
+    if (!name.next && current_label->emit_break_label)
+      low_insert_label(current_label->break_label);
+    POP_STATEMENT_LABEL;
     return 0;
+  }
 
   case F_RETURN:
     do_docode(CAR(n),0);
@@ -1308,15 +1365,15 @@ static int do_docode2(node *n, INT16 flags)
     emit1(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)));
     return 1;
 
-  case F_CATCH:
-    PUSH_STATEMENT_LABEL {
+  case F_CATCH: {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
+    PUSH_STATEMENT_LABEL;
 
     current_switch_jumptable=0;
     current_label->break_label=alloc_label();
     if (TEST_COMPAT(7,0))
       current_label->continue_label=alloc_label();
-    current_label->cleanup = (void (*)(void *)) do_escape_catch;
+    PUSH_CLEANUP_FRAME(do_escape_catch, 0);
 
     tmp1=do_jump(F_CATCH,-1);
     DO_CODE_BLOCK(CAR(n));
@@ -1328,9 +1385,10 @@ static int do_docode2(node *n, INT16 flags)
     ins_label(DO_NOT_WARN((INT32)tmp1));
 
     current_switch_jumptable = prev_switch_jumptable;
-    current_label->cleanup = 0;
-    } POP_STATEMENT_LABEL;
+    POP_AND_DONT_CLEANUP;
+    POP_STATEMENT_LABEL;
     return 1;
+  }
 
   case F_LVALUE_LIST:
     return do_docode(CAR(n),DO_LVALUE)+do_docode(CDR(n),DO_LVALUE);
