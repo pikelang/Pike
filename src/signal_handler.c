@@ -610,11 +610,13 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 struct passwd *getpwnam(char *name)
 {
   struct passwd *pw;
+  THREADS_ALLOW_UID();
   setpwent();
   while(pw=getpwent())
     if(strcmp(pw->pw_name,name))
       break;
   endpwent();
+  THREADS_DISALLOW_UID();
   return pw;
 }
 #define HAVE_GETPWNAM
@@ -624,11 +626,13 @@ struct passwd *getpwnam(char *name)
 struct passwd *getpwiod(int uid)
 {
   struct passwd *pw;
+  THREADS_ALLOW_UID();
   setpwent();
   while(pw=getpwent())
     if(pw->pw_uid == uid)
       break;
   endpwent();
+  THREADS_DISALLOW_UID();
   return 0;
 }
 #define HAVE_GETPWUID
@@ -640,11 +644,13 @@ struct passwd *getpwiod(int uid)
 struct group *getgrnam(char *name)
 {
   struct group *gr;
+  THREADS_ALLOW_UID();
   setgrent();
   while(pw=getgrent())
     if(strcmp(gr->gr_name,name))
       break;
   endgrent();
+  THREADS_DISALLOW_UID();
   return gr;
 }
 #define HAVE_GETGRNAM
@@ -785,7 +791,7 @@ void f_create_process(INT32 args)
       /* FIX: env, cleanup */
     }
 
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
     ret=CreateProcess(filename,
 		      command_line,
 		      NULL,  /* process security attribute */
@@ -796,7 +802,7 @@ void f_create_process(INT32 args)
 		      dir,   /* current dir */
 		      &info,
 		      &proc);
-    THREADS_DISALLOW();
+    THREADS_DISALLOW_UID();
     
     if(dir) free((char *)dir);
     if(command_line) free((char *)command_line);
@@ -821,11 +827,13 @@ void f_create_process(INT32 args)
 #else /* __NT__ */
   {
     pid_t pid;
+    THREADS_ALLOW_UID();
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
     pid=fork1();
 #else
     pid=fork();
 #endif
+    THREADS_DISALLOW_UID();
     if(pid==-1) error("Failed to start process.\n");
     if(pid)
     {
@@ -1160,11 +1168,15 @@ void f_fork(INT32 args)
   struct object *o;
   pid_t pid;
   pop_n_elems(args);
+
+  THREADS_ALLOW_UID();
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
   pid=fork1();
 #else
   pid=fork();
 #endif
+  THREADS_DISALLOW_UID();
+
   if(pid==-1) error("Fork failed\n");
 
   if(pid)
@@ -1199,26 +1211,26 @@ void f_fork(INT32 args)
 #ifdef HAVE_KILL
 static void f_kill(INT32 args)
 {
+  int signum;
+  int pid;
+  int res;
+
   if(args < 2)
     error("Too few arguments to kill().\n");
 
   switch(sp[-args].type)
   {
   case T_INT:
+    pid = sp[-args].u.integer;
     break;
 
   case T_OBJECT:
   {
-    INT32 pid;
     struct pid_status *p;
     if((p=(struct pid_status *)get_storage(sp[-args].u.object,
 					  pid_status_program)))
     {
       pid=p->pid;
-      free_svalue(sp-args);
-      sp[-args].type=T_INT;
-      sp[-args].subtype=NUMBER_NUMBER;
-      sp[-args].u.integer=pid;
       break;
     }
   }
@@ -1229,10 +1241,15 @@ static void f_kill(INT32 args)
   if(sp[1-args].type != T_INT)
     error("Bad argument 1 to kill().\n");
 
-  sp[-args].u.integer=!kill(sp[-args].u.integer,
-			    sp[1-args].u.integer);
+  signum = sp[1-args].u.integer;
+
+  THREADS_ALLOW_UID();
+  res = !kill(pid, signum);
+  THREADS_DISALLOW_UID();
+
   check_signals(0,0,0);
-  pop_n_elems(args-1);
+  pop_n_elems(args);
+  push_int(res);
 }
 
 #else
