@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.88 2001/07/01 21:34:49 mast Exp $
+ * $Id: acconfig.h,v 1.89 2001/07/01 21:47:34 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -415,6 +415,12 @@
 
 /* Define if you want to enable use of the struct pike_type (EXPERIMENTAL) */
 #undef USE_PIKE_TYPE
+
+/* set this to the modifier type string to print size_t, like "" or "l" */
+#undef PRINTSIZET
+
+/* set this to the modifier type string to print ptrdiff_t, like "" or "l" */
+#undef PRINTPTRDIFFT
 
 /* set this to the modifier type string to print INT_TYPE, like "" or "ll" */
 #undef PRINTPIKEINT

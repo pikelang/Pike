@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.530 2001/07/01 21:34:50 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.531 2001/07/01 21:47:33 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4841,6 +4841,158 @@ case "x$pike_cv_system_oob_working" in
 esac
 
 #######################################################################
+
+AC_MSG_CHECKING(how to printf size_t)
+AC_CACHE_VAL(pike_cv_printf_size_t,
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(size_t)>4)
+                         {
+			   sprintf(buf,"%llu,%d",((size_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%llu,%d",(size_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_size_t="ll"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(size_t)>4)
+                         {
+			   sprintf(buf,"%u,%d",((size_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%u,%d",(size_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_size_t=""],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(size_t)>4)
+                         {
+			   sprintf(buf,"%Lu,%d",((size_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%Lu,%d",(size_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_size_t="L"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(size_t)>4)
+                         {
+			   sprintf(buf,"%lu,%d",((size_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%lu,%d",(size_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_size_t="l"],
+			[AC_MSG_CHECKING([(none found?)])
+			 pike_cv_printf_size_t=""],
+			[?])],
+			[?])],
+			[?])],
+			[?])
+])
+AC_MSG_RESULT([%${pike_cv_printf_size_t}u, %${pike_cv_printf_size_t}x])
+AC_DEFINE_UNQUOTED(PRINTSIZET,"$pike_cv_printf_size_t")
+
+AC_MSG_CHECKING(how to printf ptrdiff_t)
+AC_CACHE_VAL(pike_cv_printf_ptrdiff_t,
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(ptrdiff_t)>4)
+                         {
+			   sprintf(buf,"%lld,%d",((ptrdiff_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%lld,%d",(ptrdiff_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_ptrdiff_t="ll"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(ptrdiff_t)>4)
+                         {
+			   sprintf(buf,"%d,%d",((ptrdiff_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%d,%d",(ptrdiff_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_ptrdiff_t=""],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(ptrdiff_t)>4)
+                         {
+			   sprintf(buf,"%Ld,%d",((ptrdiff_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%Ld,%d",(ptrdiff_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_ptrdiff_t="L"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(ptrdiff_t)>4)
+                         {
+			   sprintf(buf,"%ld,%d",((ptrdiff_t)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%ld,%d",(ptrdiff_t)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_ptrdiff_t="l"],
+			[AC_MSG_CHECKING([(none found?)])
+			 pike_cv_printf_ptrdiff_t=""],
+			[?])],
+			[?])],
+			[?])],
+			[?])
+])
+AC_MSG_RESULT([%${pike_cv_printf_ptrdiff_t}d, %${pike_cv_printf_ptrdiff_t}x])
+AC_DEFINE_UNQUOTED(PRINTPTRDIFFT,"$pike_cv_printf_ptrdiff_t")
 
 AC_MSG_CHECKING(how to printf INT_TYPE)
 AC_CACHE_VAL(pike_cv_printf_int_type,
