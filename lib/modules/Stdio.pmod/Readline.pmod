@@ -1,4 +1,4 @@
-// $Id: Readline.pmod,v 1.1 1999/03/13 01:12:37 marcus Exp $
+// $Id: Readline.pmod,v 1.2 1999/03/14 01:33:20 marcus Exp $
 
 class OutputController
 {
@@ -645,6 +645,7 @@ class DefaultEditKeys
 class History
 {
   static private array(string) historylist;
+  static private mapping(int:string) historykeep;
   static private int minhistory, maxhistory, historynum;
 
   int get_history_num()
@@ -658,7 +659,11 @@ class History
       n = minhistory;
     else if (n-minhistory>=sizeof(historylist))
       n = sizeof(historylist)+minhistory-1;
-    historylist[historynum-minhistory]=text;
+    if(text != historylist[historynum-minhistory]) {
+      if(!historykeep[historynum])
+	historykeep[historynum] = historylist[historynum-minhistory];
+      historylist[historynum-minhistory]=text;
+    }
     return historylist[(historynum=n)-minhistory];
   }
 
@@ -674,11 +679,17 @@ class History
       }
     }
     historynum = sizeof(historylist)-1+minhistory;
+    historykeep = ([]);
   }
 
   void finishline(string text)
   {
-    historylist[historynum-minhistory]=text;
+    foreach(indices(historykeep), int n)
+      historylist[n-minhistory]=historykeep[n];
+    historykeep = 0;
+    historylist[-1] = text;
+    if(sizeof(historylist)>1 && historylist[-2]==historylist[-1])
+      historylist = historylist[..sizeof(historylist)-2];
   }
 
   void set_max_history(int maxhist)
