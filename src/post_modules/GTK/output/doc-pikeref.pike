@@ -1,7 +1,6 @@
 // For the up_to_date code.
 inherit "split";
 
-
 static string imgfile;
 static mapping(string:int) ifcnt = ([]); // ImageFile count
 static array all_consts;
@@ -17,14 +16,20 @@ static string make_example_image( string data, int toplevel )
 {
   string tim = replace( imgfile, "#", (string)(++ifcnt[imgfile]));
   tim = replace( tim, "_1", "" );
+
   if( !file_stat( dir+"/"+tim ) )
-    Process.create_process( ({"pike",
+    Process.create_process( ({master()->_pike_file_name,
+			      "-DNOT_INSTALLED",
+			      "-DPRECOMPILED_SEARCH_MORE",
+			      "-m"+master()->_master_file_name,
 			      combine_path(__FILE__,
 					   "../../make_example_image.pike"),
 			      replace(data, "@@", "@"),
 			      toplevel?"TOP":"SUB",
 			      dir, tim
-			    }))->wait();
+			    }),
+			    ([ "stderr":Stdio.stderr,
+			       "stdout":Stdio.stdout ]) )->wait();
   return ("@code{" + data + "@}\n"
 	  "@xml{<image>../"+tim+"</image>@}\n");
 }
