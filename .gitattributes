@@ -396,7 +396,6 @@ testfont binary
 /src/threads.c foreign_ident
 /src/threads.h foreign_ident
 /src/time_stuff.h foreign_ident
-/src/ualarm.c foreign_ident
 /src/version.c foreign_ident
 /src/version.h foreign_ident
 /tutorial/manpages foreign_ident
