@@ -362,6 +362,11 @@ int choose(int n, int k)
 //! The 10-logarithm of @[x].
 float log10(float x) { return log(x)/log(10.0); }
 
+
+
+// only available when there are bignums
+#ifdef __AUTO_BIGNUM__
+
 //! Factorize the integer @[x]. The returned list of factors will
 //! be sorted biggest to smallest factor.
 array(int) factor(int x) {
@@ -371,3 +376,4 @@ array(int) factor(int x) {
   else
     return factor(x/f) + ({ f });
 }
+#endif
