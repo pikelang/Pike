@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.190 2001/12/16 22:48:08 mast Exp $");
+RCSID("$Id: object.c,v 1.191 2001/12/19 10:50:30 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1727,6 +1727,18 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  *! @endmodule
  */
 
+/* The type argument to the magic index functions is intentionally
+ * undocumented since I'm not sure this API is satisfactory. The
+ * argument would be explained as follows. /mast
+ *
+ * The indexing normally involves the externally accessable
+ * identifiers (i.e. those which aren't static or private) in the
+ * current class and any inherited classes. If @[type] is 1 then
+ * locally accessible identifiers are indexed too. If @[type] is 2
+ * then all externally accessible identifiers in the object, i.e. also
+ * those in inheriting classes, are indexed. */
+
+
 /*! @decl mixed ::`->(string index)
  *!
  *! Builtin arrow operator.
@@ -1740,11 +1752,24 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
 static void f_magic_index(INT32 args)
 {
   struct inherit *inherit;
-  int f;
+  int type = 0, f;
   struct pike_string *s;
   struct object *o;
 
-  get_all_args("::`->",args,"%S",&s);
+  switch (args) {
+    default:
+    case 2:
+      if (sp[-args+1].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|int");
+      type = sp[-args+1].u.integer;
+      /* FALL THROUGH */
+    case 1:
+      if (sp[-args].type != T_STRING) SIMPLE_BAD_ARG_ERROR ("::`->", 1, "string");
+      s = sp[-args].u.string;
+      break;
+    case 0:
+      SIMPLE_TOO_FEW_ARGS_ERROR ("::`->", 1);
+  }
+  pop_n_elems(args);
 
   if(!(o=MAGIC_THIS->o))
     Pike_error("Magic index error\n");
@@ -1752,20 +1777,31 @@ static void f_magic_index(INT32 args)
   if(!o->prog)
     Pike_error("::`-> on destructed object.\n");
 
-  inherit=MAGIC_THIS->inherit;
-
-  f=find_shared_string_identifier(s,inherit->prog);
+  switch (type) {
+    case 0:
+      inherit=MAGIC_THIS->inherit;
+      f=find_shared_string_identifier(s,inherit->prog);
+      break;
+    case 1:
+      inherit = MAGIC_THIS->inherit;
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      break;
+    case 2:
+      inherit = o->prog->inherits + 0;
+      f = find_shared_string_identifier (s, inherit->prog);
+      break;
+    default:
+      Pike_error("Unknown indexing type.\n");
+  }
 
   if(f<0)
   {
-    pop_n_elems(args);
     push_int(0);
     sp[-1].subtype=NUMBER_UNDEFINED;
   }else{
     struct svalue sval;
     low_object_index_no_free(&sval,o,f+
 			     inherit->identifier_level);
-    pop_stack();
     *sp=sval;
     sp++;
   }
@@ -1784,13 +1820,27 @@ static void f_magic_index(INT32 args)
  */
 static void f_magic_set_index(INT32 args)
 {
-  int f;
+  int type = 0, f;
   struct pike_string *s;
   struct object *o;
   struct svalue *val;
   struct inherit *inherit;
 
-  get_all_args("::`->=",args,"%S%*",&s,&val);
+  switch (args) {
+    default:
+    case 3:
+      if (sp[-args+2].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|int");
+      type = sp[-args+2].u.integer;
+      /* FALL THROUGH */
+    case 2:
+      val = sp-args+1;
+      if (sp[-args].type != T_STRING) SIMPLE_BAD_ARG_ERROR ("::`->=", 1, "string");
+      s = sp[-args].u.string;
+      break;
+    case 1:
+    case 0:
+      SIMPLE_TOO_FEW_ARGS_ERROR ("::`->=", 2);
+  }
 
   if(!(o=MAGIC_THIS->o))
     Pike_error("Magic index error\n");
@@ -1798,9 +1848,22 @@ static void f_magic_set_index(INT32 args)
   if(!o->prog)
     Pike_error("::`->= on destructed object.\n");
 
-  inherit=MAGIC_THIS->inherit;
-
-  f=find_shared_string_identifier(s,inherit->prog);
+  switch (type) {
+    case 0:
+      inherit=MAGIC_THIS->inherit;
+      f=find_shared_string_identifier(s,inherit->prog);
+      break;
+    case 1:
+      inherit = MAGIC_THIS->inherit;
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      break;
+    case 2:
+      inherit = o->prog->inherits + 0;
+      f = find_shared_string_identifier (s, inherit->prog);
+      break;
+    default:
+      Pike_error("Unknown indexing type.\n");
+  }
 
   if(f<0)
   {
@@ -1826,12 +1889,46 @@ static void f_magic_indices (INT32 args)
   struct object *obj;
   struct program *prog;
   struct array *res;
-  int e;
+  int type = 0, e, i;
 
+  if (args >= 1) {
+    if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
+    type = sp[-args].u.integer;
+  }
   pop_n_elems (args);
 
-  if(!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
-  if(!(prog = obj->prog)) Pike_error ("Object is destructed.\n");
+  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj->prog) Pike_error ("Object is destructed.\n");
+
+  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
+   * local identifiers before inherits that are overridden by them
+   * (e.g. listing duplicate identifiers). But then again, this is not
+   * the only place where that gives strange effects, imho. /mast */
+
+  switch (type) {
+    case 0:
+      prog = MAGIC_THIS->inherit->prog;
+      break;
+    case 1:
+      prog = MAGIC_THIS->inherit->prog;
+      push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
+      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+	struct reference *ref = prog->identifier_references + e;
+	struct identifier *id = ID_FROM_PTR (prog, ref);
+	if (ref->id_flags & ID_HIDDEN) continue;
+	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	    (ID_INHERITED|ID_PRIVATE)) continue;
+	copy_shared_string (ITEM(res)[i].u.string, ID_FROM_PTR (prog, ref)->name);
+	ITEM(res)[i++].type = T_STRING;
+      }
+      sp[-1].u.array = resize_array (res, i);
+      return;
+    case 2:
+      prog = obj->prog;
+      break;
+    default:
+      Pike_error("Unknown indexing type.\n");
+  }
 
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
   for (e = 0; e < (int) prog->num_identifier_index; e++) {
@@ -1853,17 +1950,56 @@ static void f_magic_values (INT32 args)
 {
   struct object *obj;
   struct program *prog;
+  struct inherit *inherit;
   struct array *res;
-  int e;
+  int type = 0, e, f, i;
 
+  if (args >= 1) {
+    if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
+    type = sp[-args].u.integer;
+  }
   pop_n_elems (args);
 
-  if(!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
-  if(!(prog = obj->prog)) Pike_error ("Object is destructed.\n");
+  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj->prog) Pike_error ("Object is destructed.\n");
+
+  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
+   * local identifiers before inherits that are overridden by them
+   * (e.g. listing duplicate identifiers). But then again, this is not
+   * the only place where that gives strange effects, imho. /mast */
+
+  switch (type) {
+    case 0:
+      inherit = MAGIC_THIS->inherit;
+      prog = inherit->prog;
+      break;
+    case 1:
+      inherit = MAGIC_THIS->inherit;
+      prog = inherit->prog;
+      push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
+      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+	struct reference *ref = prog->identifier_references + e;
+	struct identifier *id = ID_FROM_PTR (prog, ref);
+	if (ref->id_flags & ID_HIDDEN) continue;
+	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	    (ID_INHERITED|ID_PRIVATE)) continue;
+	low_object_index_no_free (ITEM(res) + i++, obj,
+				  e + inherit->identifier_level);
+      }
+      sp[-1].u.array = resize_array (res, i);
+      return;
+    case 2:
+      prog = obj->prog;
+      inherit = prog->inherits + 0;
+      break;
+    default:
+      Pike_error("Unknown indexing type.\n");
+  }
 
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
   for (e = 0; e < (int) prog->num_identifier_index; e++)
-    low_object_index_no_free (ITEM(res) + e, obj, prog->identifier_index[e]);
+    low_object_index_no_free (ITEM(res) + e, obj,
+			      prog->identifier_index[e] + inherit->identifier_level);
 }
 
 void init_object(void)
@@ -1875,28 +2011,28 @@ void init_object(void)
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_index,"function(string:mixed)",0);
+  add_function("`()",f_magic_index,"function(string,void|int:mixed)",0);
   magic_index_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_set_index,"function(string,mixed:void)",0);
+  add_function("`()",f_magic_set_index,"function(string,mixed,void|int:void)",0);
   magic_set_index_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_indices,"function(:array(string))",0);
+  add_function("`()",f_magic_indices,"function(void|int:array(string))",0);
   magic_indices_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_values,"function(:array)",0);
+  add_function("`()",f_magic_values,"function(void|int:array)",0);
   magic_values_program=end_program();
 }
 
