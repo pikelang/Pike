@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.180 1999/12/13 01:47:54 grubba Exp $");
+RCSID("$Id: program.c,v 1.181 1999/12/13 23:08:04 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3450,14 +3450,27 @@ static int low_implements(struct program *a, struct program *b)
   struct pike_string *s=findstring("__INIT");
   for(e=0;e<b->num_identifier_references;e++)
   {
-    struct identifier *bid=ID_FROM_INT(b,e);
+    struct identifier *bid;
     int i;
+    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+      continue;		/* Skip static & hidden */
+    bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
-    if (i == -1) return 0;
-
-    if(!match_types(ID_FROM_INT(a,i)->type, bid->type))
+    if (i == -1) {
+#if 0
+      fprintf(stderr, "Missing identifier \"%s\"\n", bid->name->str);
+#endif /* 0 */
       return 0;
+    }
+
+    if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+#if 0
+      fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
+	      bid->name->str);
+#endif /* 0 */
+      return 0;
+    }
   }
   return 1;
 }
