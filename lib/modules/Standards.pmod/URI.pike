@@ -2,8 +2,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.9 2001/06/16 13:47:57 per Exp $
+// $Id: URI.pike,v 1.10 2002/01/15 22:34:47 nilsson Exp $
 
 #pragma strict_types
 
@@ -79,7 +78,7 @@ int `==(mixed something)
 {
   return
     _sprintf('t') == sprintf("%t", something) &&
-    _sprintf('x') == sprintf("%x", something);
+    _sprintf('x') == sprintf("%x", [object]something);
 }
 
 string combine_uri_path(string base, string rel)
