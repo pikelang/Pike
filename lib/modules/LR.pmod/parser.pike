@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.16 1998/11/18 21:43:22 grubba Exp $
+ * $Id: parser.pike,v 1.17 1998/11/18 21:52:34 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.16 1998/11/18 21:43:22 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.17 1998/11/18 21:52:34 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -890,7 +890,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 	  if (i->direct_lookahead[symbol]) {
 	    object(priority) new_pri;
 	    if ((new_pri = i->r->pri)->value < pri->value) {
-	      if (1 || verbose) {
+	      if (verbose) {
 		werror(sprintf("Ignoring reduction of item\n%s\n"
 			       "on lookahead %s (Priority %d < %d)\n",
 			       item_to_string(i),
@@ -903,7 +903,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 	      }
 	    } else if ((pri->assoc >= 0) &&
 		       (shift_pri->value == pri->value)) {
-	      if (1 || verbose) {
+	      if (verbose) {
 		werror(sprintf("Ignoring reduction of item\n%s\n"
 			       "on lookahead %s (Right associative)\n",
 			       item_to_string(i),
@@ -914,7 +914,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 		i->direct_lookahead = (<>);
 	      }
 	    } else {
-	      if (1 || verbose) {
+	      if (verbose) {
 		werror(sprintf("Kept item\n%s\n"
 			       "on lookahead %s\n",
 			       item_to_string(i),
@@ -926,7 +926,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 	} else if (i->r->symbols[i->offset] == symbol) {
 	  /* Shift */
 	  if (shift_pri->value < pri->value) {
-	    if (1 || verbose) {
+	    if (verbose) {
 	      werror(sprintf("Ignoring shift on item\n%s\n"
 			     "on lookahead %s (Priority %d < %d)\n",
 			     item_to_string(i),
@@ -936,7 +936,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 	    i->direct_lookahead = (<>);
 	  } else if ((pri->assoc <= 0) &&
 		     (reduce_pri->value == pri->value)) {
-	    if (1 || verbose) {
+	    if (verbose) {
 	      werror(sprintf("Ignoring shift on item\n%s\n"
 			     "on lookahead %s (Left associative)\n",
 			     item_to_string(i),
@@ -944,7 +944,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 	    }
 	    i->direct_lookahead = (<>);
 	  } else {
-	    if (1 || verbose) {
+	    if (verbose) {
 	      werror(sprintf("Kept item\n%s\n"
 			     "on lookahead %s\n",
 			     item_to_string(i),
