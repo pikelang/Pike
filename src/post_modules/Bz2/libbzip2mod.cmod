@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.7 2003/01/24 11:28:52 finnman Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.8 2003/01/24 23:34:04 finnman Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -62,7 +62,7 @@ RCSID("$Id: libbzip2mod.cmod,v 1.7 2003/01/24 11:28:52 finnman Exp $");
 #define bzWriteClose		BZ2_bzWriteClose
 
 /* use 64 bit counting struct */
-#define TOTAL_OUT (s->total_out_lo_32 + (s->total_out_hi_32 << 32))
+#define TOTAL_OUT (s->total_out_lo32 + (s->total_out_hi32 << 32))
 #endif /* HAVE_BZ2_BZCOMPRESSINIT */
 
 #ifndef HAVE_BZ2_BZCOMPRESSINIT
