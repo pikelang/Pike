@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.45 2002/12/12 17:17:08 nilsson Exp $
+|| $Id: constants.c,v 1.46 2003/03/26 18:53:46 nilsson Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.45 2002/12/12 17:17:08 nilsson Exp $");
+RCSID("$Id: constants.c,v 1.46 2003/03/26 18:53:46 nilsson Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -185,10 +185,10 @@ void present_constant_profiling(void)
 
 void init_builtin_constants(void)
 {
-  builtin_constants = allocate_mapping(250);
+  builtin_constants = allocate_mapping(256);
 }
 
-void cleanup_added_efuns(void)
+void exit_builtin_constants(void)
 {
 #ifdef DO_PIKE_CLEANUP
   if(builtin_constants)
