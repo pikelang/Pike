@@ -1,95 +1,4 @@
 
-
-class BitBuffer {
-  static string data;
-  static int out_buffer;
-  static int bib, dptr;
-
-  void create(void|string _data) {
-    data = _data || "";
-  }
-
-  string feed( string x ) {
-    data = data[dptr..]+x;
-    dptr=0;
-  }
-
-  string drain() {
-    string d = data;
-    data = "";
-    dptr = 0;
-    return d;
-  }
-
-  int get( int bits ) {
-    while( bib < bits ) {
-      out_buffer = (out_buffer<<8) | data[dptr];
-      dptr++;
-      bib+=8; // Utgår från att strängarna är 8bittars.
-    }
-    bib-=bits;
-    int res = out_buffer & ((1<<bits)-1);
-    out_buffer>>=bits;
-    return res;
-  }
-
-  static int in_buffer, bob;
-  void put( int value, int bits ) {
-    bob += bits;
-    in_buffer <<= bits;
-    in_buffer |= value;
-    while( bob >= 8 ) {
-      data += sprintf("%c", in_buffer>>(bob-8));
-      bob -= 8;
-      in_buffer &= ((1<<bob)-1);
-    }
-  }
-
-  void put0( int bits ) {
-
-    if(bits<8) {
-      put(0, bits);
-      return;
-    }
-
-    // Fill to boundery
-    int t = 8-bob;
-    put(0, t);
-    bits -= t;
-    if(!bits) return;
-
-    // Add full bytes.
-    feed( "\0"*(bits/8) );
-    bits %= 8;
-    if(!bits) return;
-
-    // Add trailing bits.
-    put(0, bits);
-  }
-
-  void put1( int bits ) {
-
-    if(bits<8) {
-      put( (1<<bits)-1, bits );
-      return;
-    }
-
-    // Fill to boundery
-    int t = 8-bob;
-    put( (1<<t)-1, t);
-    bits -= t;
-    if(!bits) return;
-
-    // Add full bytes.
-    feed( "\xff"*(bits/8) );
-    bits %= 8;
-    if(!bits) return;
-
-    // Add trailing bits.
-    put( (1<<bits)-1, bits );
-  }
-}
-
 class File {
 
   int row;
@@ -163,10 +72,8 @@ class Messages {
     if(sizeof(m)!=m[0]+2) error("Error in format.\n");
     int b = m[1];
     if( !(<1,0>)[b] ) error("Error in format.\n");
-    object buf = BitBuffer();
+    ADT.BitBuffer buf = ADT.BitBuffer();
     for(int i=2; i<sizeof(m); i++) {
-      //      for(int j; j<m[i]; j++)
-      //	buf->put(b,1);
       if(b)
 	buf->put1(m[i]);
       else
@@ -175,9 +82,6 @@ class Messages {
     }
     return buf->drain();
   }
-
-  int rnd;
-  string seed;
 
   string get_message() {
     string m = _get_message();
@@ -204,10 +108,8 @@ class Test {
     int tests, fails;
     string o_s;
     while(1) {
-      if(o_s!=m->section+"/"+h->section) {
+      if(o_s!=m->section+"/"+h->section)
 	o_s = m->section+"/"+h->section;
-	//	werror("\n%O\n", o_s);
-      }
       string msg = m->get_message();
       if(!msg) break;
       tests++;
@@ -215,7 +117,6 @@ class Test {
 	werror("Fail %d %d\n", h->row, m->row);
 	fails++;
       }
-      //      werror(".");
     }
     return ({ tests, fails });
   }
