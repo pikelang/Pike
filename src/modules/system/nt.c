@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.16 1999/08/29 15:34:11 js Exp $
+ * $Id: nt.c,v 1.17 1999/09/01 01:32:44 mast Exp $
  *
  * NT system calls for Pike
  *
@@ -654,6 +654,7 @@ typedef NET_API_STATUS WINAPI (*netusergetgroupstype)(LPWSTR,LPWSTR,DWORD,LPBYTE
 typedef NET_API_STATUS WINAPI (*netusergetlocalgroupstype)(LPWSTR,LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
 typedef NET_API_STATUS WINAPI (*netgroupenumtype)(LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
 typedef NET_API_STATUS WINAPI (*netgroupgetuserstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS WINAPI (*netgetdcnametype)(LPWSTR,LPWSTR,LPBYTE*);
 typedef NET_API_STATUS WINAPI (*netapibufferfreetype)(LPVOID);
 
 static netusergetinfotype netusergetinfo;
@@ -662,6 +663,7 @@ static netusergetgroupstype netusergetgroups;
 static netusergetlocalgroupstype netusergetlocalgroups;
 static netgroupenumtype netgroupenum, netlocalgroupenum;
 static netgroupgetuserstype netgroupgetusers, netlocalgroupgetmembers;
+static netgetdcnametype netgetdcname, netgetanydcname;
 static netapibufferfreetype netapibufferfree;
 HINSTANCE netapilib;
 
@@ -716,6 +718,7 @@ void f_NetUserGetInfo(INT32 args)
   switch(ret)
   {
     case ERROR_ACCESS_DENIED:
+    case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
       error("NetGetUserInfo: Access denied.\n");
       break;
 
@@ -760,7 +763,7 @@ void f_NetUserEnum(INT32 args)
 	case 0: case 1: case 2: case 3: case 10: case 11: case 20:
 	  break;
 	default:
-	  error("Unsupported information level in NetUserGetInfo.\n");
+	  error("Unsupported information level in NetUserEnum.\n");
       }
 
     case 1:
@@ -795,13 +798,14 @@ void f_NetUserEnum(INT32 args)
     switch(ret)
     {
       case ERROR_ACCESS_DENIED:
+      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
 	if(to_free1) free(to_free1);
-	error("NetGetUserInfo: Access denied.\n");
+	error("NetUserEnum: Access denied.\n");
 	break;
 	
       case NERR_InvalidComputer:
 	if(to_free1) free(to_free1);
-	error("NetGetUserInfo: Invalid computer.\n");
+	error("NetUserEnum: Invalid computer.\n");
 	break;
 
       case NERR_Success:
@@ -818,6 +822,10 @@ void f_NetUserEnum(INT32 args)
 	}
 	netapibufferfree(buf);
 	if(ret==ERROR_MORE_DATA) continue;
+	break;
+
+      default:
+	error("NetUserEnum: Unknown error %d\n",ret);
     }
     break;
   }
@@ -873,6 +881,7 @@ void f_NetGroupEnum(INT32 args)
     switch(ret)
     {
       case ERROR_ACCESS_DENIED:
+      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
 	if(to_free1) free(to_free1);
 	error("NetGroupEnum: Access denied.\n");
 	break;
@@ -896,6 +905,10 @@ void f_NetGroupEnum(INT32 args)
 	}
 	netapibufferfree(buf);
 	if(ret==ERROR_MORE_DATA) continue;
+	break;
+
+      default:
+	error("NetGroupEnum: Unknown error %d\n",ret);
     }
     break;
   }
@@ -950,6 +963,7 @@ void f_NetLocalGroupEnum(INT32 args)
     switch(ret)
     {
       case ERROR_ACCESS_DENIED:
+      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
 	if(to_free1) free(to_free1);
 	error("NetLocalGroupEnum: Access denied.\n");
 	break;
@@ -973,6 +987,10 @@ void f_NetLocalGroupEnum(INT32 args)
 	}
 	netapibufferfree(buf);
 	if(ret==ERROR_MORE_DATA) continue;
+	break;
+
+      default:
+	error("NetLocalGroupEnum: Unknown error %d\n",ret);
     }
     break;
   }
@@ -1028,6 +1046,7 @@ void f_NetUserGetGroups(INT32 args)
   switch(ret)
   {
   case ERROR_ACCESS_DENIED:
+  case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
     if(to_free1) free(to_free1);
     if(to_free2) free(to_free2);
     error("NetUserGetGroups: Access denied.\n");
@@ -1051,6 +1070,10 @@ void f_NetUserGetGroups(INT32 args)
       ptr+=sizeof_group_users_info(level);
     }
     netapibufferfree(buf);
+    break;
+
+  default:
+    error("NetUserGetGroups: Unknown error %d\n",ret);
   }
   if(to_free1) free(to_free1);
   if(to_free2) free(to_free2);
@@ -1110,6 +1133,7 @@ void f_NetUserGetLocalGroups(INT32 args)
   switch(ret)
   {
   case ERROR_ACCESS_DENIED:
+  case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
     if(to_free1) free(to_free1);
     if(to_free2) free(to_free2);
     error("NetUserGetLocalGroups: Access denied.\n");
@@ -1133,6 +1157,10 @@ void f_NetUserGetLocalGroups(INT32 args)
       ptr+=sizeof_localgroup_users_info(level);
     }
     netapibufferfree(buf);
+    break;
+
+  default:
+    error("NetUserGetLocalGroups: Unknown error %d\n",ret);
   }
   if(to_free1) free(to_free1);
   if(to_free2) free(to_free2);
@@ -1191,6 +1219,7 @@ void f_NetGroupGetUsers(INT32 args)
     switch(ret)
     {
       case ERROR_ACCESS_DENIED:
+      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
 	if(to_free1) free(to_free1);
 	if(to_free2) free(to_free2);
 	error("NetGroupGetUsers: Access denied.\n");
@@ -1222,6 +1251,10 @@ void f_NetGroupGetUsers(INT32 args)
 	}
 	netapibufferfree(buf);
 	if(ret==ERROR_MORE_DATA) continue;
+	break;
+
+      default:
+	error("NetGroupGetUsers: Unknown error %d\n",ret);
     }
     break;
   }
@@ -1282,6 +1315,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
     switch(ret)
     {
       case ERROR_ACCESS_DENIED:
+      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
 	if(to_free1) free(to_free1);
 	if(to_free2) free(to_free2);
 	error("NetLocalGroupGetMembers: Access denied.\n");
@@ -1319,11 +1353,151 @@ void f_NetLocalGroupGetMembers(INT32 args)
 	}
 	netapibufferfree(buf);
 	if(ret==ERROR_MORE_DATA) continue;
+	break;
+
+      default:
+	error("NetLocalGroupGetMembers: Unknown error %d\n",ret);
     }
     break;
   }
   if(to_free1) free(to_free1);
   if(to_free2) free(to_free2);
+}
+
+void f_NetGetDCName(INT32 args)
+{
+  char *to_free1=NULL,*to_free2=NULL;
+  BYTE *tmp=0;
+  DWORD level;
+  LPWSTR server, domain;
+  NET_API_STATUS ret;
+
+  check_all_args("NetGetDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
+
+  if(sp[-args].type==T_STRING)
+  {
+    server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+    if(!server)
+      error("NetGetDCName, server name string is too wide.\n");
+  }else{
+    server=NULL;
+  }
+  
+  domain=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
+  if(!domain)
+  {
+    if(to_free1) free(to_free1);
+    error("NetGetDCName, domain name string is too wide.\n");
+  }
+
+  THREADS_ALLOW();
+  ret=netgetdcname(server,domain,&tmp);
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  if(to_free1) free(to_free1);
+  if(to_free2) free(to_free2);
+
+  switch(ret)
+  {
+    case NERR_DCNotFound:
+      error("NetGetDCName: Could not find the domain controller for the domain.\n");
+      break;
+
+    case ERROR_INVALID_NAME:
+      error("NetGetDCName: The name could not be found.\n");
+      break;
+
+    case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
+      error("NetGetDCName: Access denied.\n");
+      break;
+
+    case RPC_S_SERVER_UNAVAILABLE: /* Known to be returned sometimes.. */
+      error("NetGetDCName: The RPC server is unavailable.\n");
+      break;
+
+    case NERR_Success:
+      SAFE_PUSH_WSTR(tmp);
+      netapibufferfree(tmp);
+      return;
+
+    default:
+      error("NetGetDCName: Unknown error %d\n",ret);
+  }
+}
+
+void f_NetGetAnyDCName(INT32 args)
+{
+  char *to_free1=NULL,*to_free2=NULL;
+  BYTE *tmp=0;
+  DWORD level;
+  LPWSTR server, domain;
+  NET_API_STATUS ret;
+
+  check_all_args("NetGetAnyDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
+
+  if(sp[-args].type==T_STRING)
+  {
+    server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+    if(!server)
+      error("NetGetAnyDCName, server name string is too wide.\n");
+  }else{
+    server=NULL;
+  }
+  
+  domain=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
+  if(!domain)
+  {
+    if(to_free1) free(to_free1);
+    error("NetGetAnyDCName, domain name string is too wide.\n");
+  }
+
+  THREADS_ALLOW();
+  ret=netgetanydcname(server,domain,&tmp);
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  if(to_free1) free(to_free1);
+  if(to_free2) free(to_free2);
+
+  switch(ret)
+  {
+    case ERROR_NO_LOGON_SERVERS:
+      error("NetGetAnyDCName: No domain controllers could be found.\n");
+      break;
+
+    case ERROR_NO_SUCH_DOMAIN:
+      error("NetGetAnyDCName: The specified domain is not a trusted domain.\n");
+      break;
+
+    case ERROR_NO_TRUST_LSA_SECRET:
+      error("NetGetAnyDCName: The client side of the trust relationship is broken.\n");
+      break;
+
+    case ERROR_NO_TRUST_SAM_ACCOUNT:
+      error("NetGetAnyDCName: The server side of the trust relationship is broken or the password is broken.\n");
+      break;
+
+    case ERROR_DOMAIN_TRUST_INCONSISTENT:
+      error("NetGetAnyDCName: The server that responded is not a proper domain controller of the specified domain.\n");
+      break;
+
+    case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
+      error("NetGetAnyDCName: Access denied.\n");
+      break;
+
+    case RPC_S_SERVER_UNAVAILABLE: /* Known to be returned sometimes.. */
+      error("NetGetAnyDCName: The RPC server is unavailable.\n");
+      break;
+
+    case NERR_Success:
+      SAFE_PUSH_WSTR(tmp);
+      netapibufferfree(tmp);
+      return;
+
+    default:
+      error("NetGetAnyDCName: Unknown error %d\n",ret);
+  }
 }
 
 static void f_GetFileAttributes(INT32 args)
@@ -1689,8 +1863,11 @@ static void f_GetNamedSecurityInfo(INT32 args)
 #define SIMPCONST(X) \
       add_integer_constant(#X,X,0);
 
+
 void init_nt_system_calls(void)
 {
+  add_function("cp",f_cp,"function(string,string:int)", 0);
+
   add_function("GetFileAttributes",f_GetFileAttributes,"function(string:int)", 0);
   add_function("SetFileAttributes",f_SetFileAttributes,"function(string,int:int)", 0);
   
@@ -1910,6 +2087,20 @@ void init_nt_system_calls(void)
 	SIMPCONST(SidTypeInvalid);
 	SIMPCONST(SidTypeUnknown);
       }
+
+      if(proc=GetProcAddress(netapilib, "NetGetDCName"))
+      {
+	netgetdcname=(netgetdcnametype)proc;
+	
+ 	add_function("NetGetDCName",f_NetGetDCName,"function(string|int,string:string)",0);
+      }
+
+      if(proc=GetProcAddress(netapilib, "NetGetAnyDCName"))
+      {
+	netgetanydcname=(netgetdcnametype)proc;
+	
+ 	add_function("NetGetAnyDCName",f_NetGetAnyDCName,"function(string|int,string:string)",0);
+      }
     }
   }
 }
@@ -1952,6 +2143,8 @@ void exit_nt_system_calls(void)
       netapibufferfree=0;
       netgroupgetusers=0;
       netlocalgroupgetmembers=0;
+      netgetdcname=0;
+      netgetanydcname=0;
     }
   }
 }
