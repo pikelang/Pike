@@ -190,7 +190,7 @@ void f_get_dir(INT32 args)
     int lens[FPR];
     struct dirent *tmp;
     
-    tmp = xalloc(sizeof(struct dirent) + 
+    tmp = alloca(sizeof(struct dirent) + 
 #ifdef HAVE_SOLARIS_READDIR_R
 		 pathconf(path, _PC_NAME_MAX)
 #else
