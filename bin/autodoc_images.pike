@@ -1,4 +1,7 @@
 
+// #define DEBUG
+string copy_to = "manual/images";
+
 void parse_directory(string directory) {
   werror("autodoc_images: Entering %s...\n", directory);
   array(string) files = get_dir(directory);
@@ -12,16 +15,29 @@ void parse_directory(string directory) {
       continue;
     if(file=="sub_manual.xml")
       continue;
-    string x = Tools.AutoDoc.ProcessXML.moveImages
-      (Stdio.read_file(directory+file), directory, "manual/images");
+    string x;
+#ifdef DEBUG
+    array err = catch {
+      x = Tools.AutoDoc.ProcessXML.moveImages
+	(Stdio.read_file(directory+file), directory, copy_to);
+    };
+    if(!err)
+      Stdio.write_file(directory+file, x);
+    else
+      werror(describe_backtrace(err));
+#else
+    x = Tools.AutoDoc.ProcessXML.moveImages
+      (Stdio.read_file(directory+file), directory, copy_to);
     Stdio.write_file(directory+file, x);
+#endif
   }
 }
 
 
 int main(int num, array(string) args) {
 
-  if(num<2) throw( "Not enough arguments to autodoc_images.pike\n" );
+  if(num<3) throw( "Not enough arguments to autodoc_images.pike\n" );
+  copy_to = args[2];
   parse_directory( args[1] );
 
 }
