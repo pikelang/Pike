@@ -2,8 +2,9 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.216 2004/05/29 18:13:41 grubba Exp $
+|| $Id: encode.c,v 1.217 2004/07/02 23:45:54 srb Exp $
 */
+#include <stdio.h> //srb
 
 #include "global.h"
 #include "stralloc.h"
@@ -31,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.216 2004/05/29 18:13:41 grubba Exp $");
+RCSID("$Id: encode.c,v 1.217 2004/07/02 23:45:54 srb Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3610,8 +3611,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    switch(entry_type) {
 	    case ID_ENTRY_EFUN_CONSTANT:
-	      if ((Pike_sp[-1].type != T_FUNCTION) ||
-		  (Pike_sp[-1].subtype != FUNCTION_BUILTIN)) {
+	      if (Pike_sp[-1].type != T_FUNCTION) {
 		ref_push_program (p);
 		decode_error(Pike_sp - 1, Pike_sp - 2,
 			     "Expected efun constant: ");
