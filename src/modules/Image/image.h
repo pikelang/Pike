@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.30 1999/05/10 23:03:41 mirar Exp $
+**!	$Id: image.h,v 1.31 1999/05/20 17:08:03 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -25,7 +25,7 @@
 #define COLORL_TO_COLOR(X) ((COLORTYPE)((X)>>23))
 #define COLOR_TO_COLORL(X) ((((INT32)(X))*0x0808080)+((X)>>1))
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
-#define COLORL_TO_FLOAT(X) (((float)(X))/(float)COLORLMAX)
+#define COLORL_TO_FLOAT(X) ((((float)(X))/(float)(COLORLMAX>>8))/256.0)
 #define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
 #define FLOAT_TO_COLORL(X) /* stupid floats */ \
 	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))

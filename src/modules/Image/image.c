@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.133 1999/04/21 23:33:31 mirar Exp $ */
+/* $Id: image.c,v 1.134 1999/05/20 17:08:01 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.133 1999/04/21 23:33:31 mirar Exp $
+**!	$Id: image.c,v 1.134 1999/05/20 17:08:01 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.133 1999/04/21 23:33:31 mirar Exp $");
+RCSID("$Id: image.c,v 1.134 1999/05/20 17:08:01 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -208,11 +208,17 @@ static void exit_image_struct(struct object *obj)
    ((((int)x)<0||((int)y)<0||((int)x)>=(int)THIS->xsize||((int)y)>=(int)THIS->ysize)? \
     0:(setpixel((int)x,(int)y),0))
 
-static INLINE void getrgb(struct image *img,
-			  INT32 args_start,INT32 args,char *name)
+static INLINE int getrgb(struct image *img,
+			 INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
-   if (args-args_start<3) return;
+   if (args-args_start<1) return 0;
+
+   if (image_color_svalue(sp-args+args_start,&(img->rgb)))
+      return 1;
+
+   if (args-args_start<3) return 0;
+
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
          error("Illegal r,g,b argument to %s\n",name);
@@ -223,9 +229,15 @@ static INLINE void getrgb(struct image *img,
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
+      {
          img->alpha=sp[3-args+args_start].u.integer;
+	 return 4;
+      }
    else
+   {
       img->alpha=0;
+      return 3;
+   }
 }
 
 static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name)
@@ -467,6 +479,7 @@ THREADS_DISALLOW();
 /*
 **! method void create()
 **! method void create(int xsize,int ysize)
+**! method void create(int xsize,int ysize,Color color)
 **! method void create(int xsize,int ysize,int r,int g,int b)
 **! method void create(int xsize,int ysize,int r,int g,int b,int alpha)
 **! 	Initializes a new image object.
@@ -481,6 +494,7 @@ THREADS_DISALLOW();
 **! arg int xsize
 **! arg int ysize
 **! 	size of (new) image in pixels
+**! arg Color color
 **! arg int r
 **! arg int g
 **! arg int b
@@ -777,23 +791,16 @@ static void image_change_color(INT32 args)
    INT32 left;
    struct object *o;
    struct image *img;
+   int arg;
 
    if (!THIS->img) error("no image\n");
-   if (args<3) error("too few arguments to Image.Image->change_color()\n");
 
-   if (args<6)
-   {
-      to=THIS->rgb;   
-      getrgb(THIS,0,args,"Image.Image->change_color()");
-      from=THIS->rgb;
-   }
-   else
-   {
-      getrgb(THIS,0,args,"Image.Image->change_color()");
-      from=THIS->rgb;
-      getrgb(THIS,3,args,"Image.Image->change_color()");
+   to=THIS->rgb;   
+   if (!(arg=getrgb(THIS,0,MAXIMUM(args,3),"Image.Image->change_color()")))
+      error("too few arguments to Image.Image->change_color()\n");
+   from=THIS->rgb;
+   if (getrgb(THIS,arg,args,"Image.Image->change_color()"))
       to=THIS->rgb;
-   }
    
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -3505,8 +3512,6 @@ void image_cast(INT32 args)
 
 /***************** global init etc *****************************/
 
-#define RGB_TYPE "int|void,int|void,int|void,int|void"
-
 extern void init_font_programs(void);
 extern void exit_font(void);
 extern void init_colortable_programs(void);
@@ -3555,15 +3560,7 @@ extern struct object* init_image_png(void);
 extern void exit_image_png(void);
 
 static struct pike_string 
-   *magic_JPEG, 
-   *magic_XFace,
-   *magic_XPM,
-   *magic_XCF,
-   *magic_PSD,
-   *magic_TIFF,
-   *magic_PNG,
-   *magic_PS,
-   *magic_TTF;
+   *magic_PNG;
 
 static struct object *png_object=NULL;
 
@@ -3574,55 +3571,8 @@ static void image_index_magic(INT32 args)
       error("Image.`[]: Too few or too many arguments\n");
    if (sp[-1].type!=T_STRING)
       error("Image.`[]: Illegal type of argument\n");
-   if (sp[-1].u.string==magic_JPEG)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_JPEG"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
-   else if (sp[-1].u.string==magic_XFace)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_XFace"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
-   else if (sp[-1].u.string==magic_XPM)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_XPM"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
-   else if (sp[-1].u.string==magic_XCF)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_XCF"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
-   else if (sp[-1].u.string==magic_PSD)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_PSD"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
-   else if (sp[-1].u.string==magic_TIFF)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_TIFF"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
-   else if (sp[-1].u.string==magic_PNG)
+
+   if (sp[-1].u.string==magic_PNG)
    {
       pop_stack();
       if (!png_object)
@@ -3630,27 +3580,29 @@ static void image_index_magic(INT32 args)
       ref_push_object(png_object);
       return;
    }   
-   else if (sp[-1].u.string==magic_TTF)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_TTF"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
-   else if (sp[-1].u.string==magic_PS)
-   {
-      pop_stack();
-      push_string(make_shared_string("_Image_PS"));
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-      return;
-   }
 
+   stack_dup();
    ref_push_object(THISOBJ);
-   tmp=sp[-1], sp[-1]=sp[-2], sp[-2]=tmp;
+   stack_swap();
    f_arrow(2);
+
+   if (sp[-1].type==T_INT)
+   {
+      pop_stack();
+      push_text("_Image_");
+      stack_swap();
+      f_add(2);
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+   }
+   else
+   {
+      stack_swap();
+      pop_stack();
+   }
 }
+
+#define tRGB tOr3(tColor,tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid)
 
 void pike_module_init(void)
 {
@@ -3662,15 +3614,7 @@ void pike_module_init(void)
 #define IMAGE_CHECK_STACK()
 #endif /* PIKE_DEBUG */
 
-   magic_JPEG=make_shared_string("JPEG");
-   magic_TTF=make_shared_string("TTF");
-   magic_PS=make_shared_string("PS");
    magic_PNG=make_shared_string("PNG");
-   magic_XFace=make_shared_string("XFace");
-   magic_XPM=make_shared_string("XPM");
-   magic_XCF=make_shared_string("XCF");
-   magic_PSD=make_shared_string("PSD");
-   magic_TIFF=make_shared_string("TIFF");
 
    image_noise_init();
 
@@ -3679,14 +3623,14 @@ void pike_module_init(void)
    start_new_program();
    ADD_STORAGE(struct image);
 
-   add_function("create",image_create,
-		"function(int|void,int|void,"RGB_TYPE":void)",0);
-   add_function("clone",image_clone,
-		"function(int,int,"RGB_TYPE":object)",0);
-   add_function("new",image_clone, /* alias */
-		"function(int,int,"RGB_TYPE":object)",0);
-   add_function("clear",image_clear,
-		"function("RGB_TYPE":object)",0);
+   ADD_FUNCTION("create",image_create,
+		tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),0);
+   ADD_FUNCTION("clone",image_clone,
+		tFunc(tInt tInt tRGB,tObj),0);
+   ADD_FUNCTION("new",image_clone, /* alias */
+		tFunc(tInt tInt tRGB,tObj),0);
+   ADD_FUNCTION("clear",image_clear,
+		tFunc(tRGB,tObj),0);
    ADD_FUNCTION("toppm",image_toppm,tFunc(,tStr),0);
    ADD_FUNCTION("frompnm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
    ADD_FUNCTION("fromppm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
@@ -3735,8 +3679,9 @@ void pike_module_init(void)
 		tFunc(tInt tInt tInt tOr(tVoid,tStr),tStr),0);
 
 
-   add_function("copy",image_copy,
-		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
+   ADD_FUNCTION("copy",image_copy,
+		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt) 
+		      tOr(tVoid,tInt) tRGB,tObj),0);
    ADD_FUNCTION("autocrop",image_autocrop,
 		tFuncV(,tOr(tVoid,tInt),tObj),0);
    ADD_FUNCTION("scale",image_scale,
@@ -3758,16 +3703,16 @@ void pike_module_init(void)
 
    ADD_FUNCTION("setcolor",image_setcolor,
 		tFunc(tInt tInt tInt,tObj),0);
-   add_function("setpixel",image_setpixel,
-		"function(int,int,"RGB_TYPE":object)",0);
+   ADD_FUNCTION("setpixel",image_setpixel,
+		tFunc(tInt tInt tRGB,tObj),0);
    ADD_FUNCTION("getpixel",image_getpixel,
 		tFunc(tInt tInt,tArr(tInt)),0);
-   add_function("line",image_line,
-		"function(int,int,int,int,"RGB_TYPE":object)",0);
-   add_function("circle",image_circle,
-		"function(int,int,int,int,"RGB_TYPE":object)",0);
-   add_function("box",image_box,
-		"function(int,int,int,int,"RGB_TYPE":object)",0);
+   ADD_FUNCTION("line",image_line,
+		tFunc(tInt tInt tInt tInt tRGB,tObj),0);
+   ADD_FUNCTION("circle",image_circle,
+		tFunc(tInt tInt tInt tInt tRGB,tObj),0);
+   ADD_FUNCTION("box",image_box,
+		tFunc(tInt tInt tInt tInt tRGB,tObj),0);
    ADD_FUNCTION("tuned_box",image_tuned_box,
 		tFunc(tInt tInt tInt tInt tArray,tObj),0);
    ADD_FUNCTION("gradients",image_gradients,
@@ -3777,20 +3722,21 @@ void pike_module_init(void)
    ADD_FUNCTION("polyfill",image_polyfill,
 		tFuncV(,tArr(tOr(tFlt,tInt)),tObj),0);
 
-   add_function("gray",image_grey,
-		"function("RGB_TYPE":object)",0);
-   add_function("grey",image_grey,
-		"function("RGB_TYPE":object)",0);
-   add_function("color",image_color,
-		"function("RGB_TYPE":object)",0);
-   add_function("change_color",image_change_color,
-		"function(int,int,int,"RGB_TYPE":object)",0);
-   add_function("invert",image_invert,
-		"function("RGB_TYPE":object)",0);
-   add_function("threshold",image_threshold,
-		"function("RGB_TYPE":object)",0);
-   add_function("distancesq",image_distancesq,
-		"function("RGB_TYPE":object)",0);
+   ADD_FUNCTION("gray",image_grey,
+		tFunc(tRGB,tObj),0);
+   ADD_FUNCTION("grey",image_grey,
+		tFunc(tRGB,tObj),0);
+   ADD_FUNCTION("color",image_color,
+		tFunc(tRGB,tObj),0);
+   ADD_FUNCTION("change_color",image_change_color,
+		tOr(tFunc(tInt tInt tInt tRGB,tObj),
+		    tFunc(tColor tRGB,tObj)),0);
+   ADD_FUNCTION("invert",image_invert,
+		tFunc(tRGB,tObj),0);
+   ADD_FUNCTION("threshold",image_threshold,
+		tFunc(tRGB,tObj),0);
+   ADD_FUNCTION("distancesq",image_distancesq,
+		tFunc(tRGB,tObj),0);
 
    ADD_FUNCTION("rgb_to_hsv",image_rgb_to_hsv,
 		tFunc(tVoid,tObj),0);
@@ -3802,26 +3748,17 @@ void pike_module_init(void)
 
    ADD_FUNCTION("apply_matrix",image_apply_matrix,
 		tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
-   /* function(void|array(array(int)):object)"
-                "|function(array(array(int)),int,int,int,void|int:object)"
-                "|function(array(array(int)),int,int,int,int,int,int,void|int:object)"
-                "|function(int,int,int,void|int:object)"
-                "|function(int,int,int,int,int,int,void|int:object) */
    ADD_FUNCTION("outline",image_outline,
 		tOr5(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),
 		     tFunc(tArr(tArr(tInt)) tInt tInt tInt tOr(tVoid,tInt),tObj),
 		     tFunc(tArr(tArr(tInt)) tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tObj),
 		     tFunc(tInt tInt tInt tOr(tVoid,tInt),tObj),
 		     tFunc(tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tObj)),0);
-   /* function(void|array(array(int)):object)"
-      "|function(array(array(int)),int,int,int:object) */
    ADD_FUNCTION("outline_mask",image_outline_mask,
 		tOr(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),
 		    tFunc(tArr(tArr(tInt)) tInt tInt tInt,tObj)),0);
    ADD_FUNCTION("modify_by_intensity",image_modify_by_intensity,
 		tFunc(tInt tInt tInt tInt tInt,tObj),0);
-   /* function(float|int:object)|"
-      "function(float|int,float|int,float|int:object) */
    ADD_FUNCTION("gamma",image_gamma,
 		tOr(tFunc(tOr(tFlt,tInt),tObj),
 		    tFunc(tOr(tFlt,tInt) tOr(tFlt,tInt) tOr(tFlt,tInt),tObj)),0);
@@ -3834,19 +3771,19 @@ void pike_module_init(void)
 		tFunc(,tObj),0);
    ADD_FUNCTION("mirrory",image_mirrory,
 		tFunc(,tObj),0);
-   add_function("skewx",image_skewx,
-		"function(int|float,"RGB_TYPE":object)",0);
-   add_function("skewy",image_skewy,
-		"function(int|float,"RGB_TYPE":object)",0);
-   add_function("skewx_expand",image_skewx_expand,
-		"function(int|float,"RGB_TYPE":object)",0);
-   add_function("skewy_expand",image_skewy_expand,
-		"function(int|float,"RGB_TYPE":object)",0);
+   ADD_FUNCTION("skewx",image_skewx,
+		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
+   ADD_FUNCTION("skewy",image_skewy,
+		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
+   ADD_FUNCTION("skewx_expand",image_skewx_expand,
+		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
+   ADD_FUNCTION("skewy_expand",image_skewy_expand,
+		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
 
-   add_function("rotate",image_rotate,
-		"function(int|float,"RGB_TYPE":object)",0);
-   add_function("rotate_expand",image_rotate_expand,
-		"function(int|float,"RGB_TYPE":object)",0);
+   ADD_FUNCTION("rotate",image_rotate,
+		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
+   ADD_FUNCTION("rotate_expand",image_rotate_expand,
+		tFunc(tOr(tInt,tFlt) tRGB,tObj),0);
 
    ADD_FUNCTION("xsize",image_xsize,
 		tFunc(,tInt),0);
@@ -3909,13 +3846,9 @@ void pike_module_init(void)
    ADD_FUNCTION("average",image_average,
 		tFunc(,tArr(tInt)),0);
   
-   /* function(:array(int))|"
-		   "function(int,int,int:array(int)) */
    ADD_FUNCTION("find_min",image_find_min,
 		tOr(tFunc(,tArr(tInt)),
 		    tFunc(tInt tInt tInt,tArr(tInt))),0);
-   /* function(:array(int))|"
-		   "function(int,int,int:array(int)) */
    ADD_FUNCTION("find_max",image_find_max,
 		tOr(tFunc(,tArr(tInt)),
 		    tFunc(tInt tInt tInt,tArr(tInt))),0);
@@ -3942,10 +3875,7 @@ void pike_module_init(void)
 		tFunc(,tObj),0);
    ADD_FUNCTION("phasevh",image_phasevh,
 		tFunc(,tObj),0);
-   /* function(int|float,object:object)"
-		   "|function(int|float,object,object,object:object)"
-		   "|function(int|float,object,object,int:object)"
-		   "|function(int|float,object,object,object,object,int:object) */
+
    ADD_FUNCTION("match_phase",image_match_phase,
 		tOr4(tFunc(tOr(tInt,tFloat) tObj,tObj),
 		     tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),
@@ -3970,7 +3900,6 @@ void pike_module_init(void)
    ADD_FUNCTION("apply_max",image_apply_max,
 		tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),
 		       tOr(tVoid,tInt),tObj),0);
-   /*  function(object,object,object,object,int|void,int|void:string) */
    ADD_FUNCTION("make_ascii",image_make_ascii,
 		tFunc(tObj tObj tObj tObj tOr(tInt,tVoid),tStr),0);
   
@@ -4063,14 +3992,6 @@ void pike_module_exit(void)
    exit_image_x();
 
    free_string(magic_PNG);
-   free_string(magic_JPEG);
-   free_string(magic_XFace);
-   free_string(magic_XPM);
-   free_string(magic_XCF);
-   free_string(magic_PSD);
-   free_string(magic_TIFF);
-   free_string(magic_TTF);
-   free_string(magic_PS);
 }
 
 
