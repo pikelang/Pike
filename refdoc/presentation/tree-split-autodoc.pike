@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.5 2001/07/28 00:27:33 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.6 2001/07/28 04:41:05 nilsson Exp $
  *
  */
 
@@ -22,12 +22,12 @@ class Node
   array(Node) class_children  = ({ });
   array(Node) module_children = ({ });
   array(Node) method_children = ({ });
-  array(Node) appendix_children = ({ });
 
   Node parent;
 
   void create(string _type, string _name, string _data, void|Node _parent)
   {
+    if(!_type || !_name) throw( ({ "No type or name\n", backtrace() }) );
     type = _type;
     name = _name;
     parent = _parent;
@@ -39,7 +39,6 @@ class Node
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
     sort(method_children->name, method_children);
-    sort(appendix_children->name, appendix_children);
   }
 
   static function parse_node(string type)
@@ -55,18 +54,18 @@ class Node
 
   string my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
-    if(m["homogen-name"] && m["homogen-type"] && m["homogen-type"]=="method")
-    {
-      method_children +=
-      ({ Node( "method", m["homogen-name"], c, this_object() ) });
-      return "";
+    if(m["homogen-name"] && m["homogen-type"]) {
+      if( m["homogen-type"]=="method" ) {
+	method_children +=
+	  ({ Node( "method", m["homogen-name"], c, this_object() ) });
+	return "";
+      }
     }
     else
       return 0;
   }
 
-  static string parse(string in)
-  {
+  static Parser.HTML get_parser() {
     Parser.HTML parser = Parser.HTML();
 
     parser->case_insensitive_tag(1);
@@ -75,17 +74,20 @@ class Node
     parser->add_container("docgroup", my_parse_docgroup);
     parser->add_container("module", parse_node("module"));
     parser->add_container("class",  parse_node("class"));
-    parser->add_container("appendix", parse_node("appendix"));
 
-    parser->feed(in);
-    parser->finish();
+    return parser;
+  }
+
+  static string parse(string in)
+  {
+    Parser.HTML parser = get_parser();
+
+    parser->finish(in);
     return parser->read();
   }
 
   string make_faked_wrapper(string s)
   {
-    if(name=="top")
-      return s;
     if(type=="method")
       s = sprintf("<docgroup homogen-type='method' homogen-name='%s'>\n"
 		  "%s\n</docgroup>\n",
@@ -102,6 +104,7 @@ class Node
   string cquote(string n)
   {
     string ret="";
+    n = replace(n, ([ "&gt;":">", "&lt;":"<", "&amp;":"&" ]));
     while(sscanf((string)n,"%[a-zA-Z0-9]%c%s",string safe, int c, n)==3)
     {
       switch(c)
@@ -119,22 +122,12 @@ class Node
 
   string make_filename_low()
   {
-    string fn = cquote(name);
-    if(fn=="")
-      fn=="__index";
-    if(parent)
-      return parent->make_filename_low()+"/"+fn;
-    else
-      return fn;
+    return parent->make_filename_low()+"/"+cquote(name);
   }
 
   string make_filename()
   {
-    string s=make_filename_low()[5..]+".html";
-    if(s==".html")
-      return "index.html";
-    else
-      return s;
+    return make_filename_low()[5..]+".html";
   }
 
   string make_link(Node to)
@@ -146,10 +139,7 @@ class Node
 
   array(Node) get_ancestors()
   {
-    if(!parent)
-      return ({ });
-    else
-      return ({ this_object() }) + parent->get_ancestors();
+    return ({ this_object() }) + parent->get_ancestors();
   }
 
   string my_resolve_reference(string _reference, mapping vars)
@@ -181,11 +171,7 @@ class Node
 
   string make_class_path()
   {
-    array a;
-    if(parent)
-      a = reverse(parent->get_ancestors());
-    else
-      return "";
+    array a = reverse(parent->get_ancestors());
 
     string res = "";
     foreach(a[1..], Node n)
@@ -214,19 +200,18 @@ class Node
     string res = "";
     foreach(children, Node node)
     {
-      string extension = "";
       string my_name=node->name;
       if(node->type=="method")
-	extension="()";
+	my_name+="()";
       else
 	my_name="<b>"+my_name+"</b>";
 
       if(node==this_object())
-	res += sprintf("%s� %s%s%s",
-		       a, my_name, extension, b);
+	res += sprintf("%s� %s%s",
+		       a, my_name, b);
       else
-	res += sprintf("%s� <a href='%s'>%s%s</a>%s",
-		       a, make_link(node), my_name, extension, b);
+	res += sprintf("%s� <a href='%s'>%s</a>%s",
+		       a, make_link(node), my_name, b);
     }
     return res;
   }
@@ -334,39 +319,11 @@ class Node
       return siblings[index+1];
   }
 
-  void make_html(string template, string path)
-  {
-    werror("Layouting...%s\n", make_class_path());
-
-    class_children->make_html(template, path);
-    module_children->make_html(template, path);
-    method_children->make_html(template, path);
-    appendix_children->make_html(template, path);
-    if(!name || !type || name == "top")
-      return;
-
-    string res;
-
-    int num_segments = sizeof(make_filename()/"/")-1;
-    string style = ("../"*num_segments)+"style.css";
-
-    extra_prefix = "../"*num_segments;
+  static string make_content() {
     string contents;
-
-    if(name=="")
-    {
-      contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
-      foreach(method_children/( sizeof(method_children)/4.0 ), array(Node) children)
-      {
-	contents += "<td>";
-	contents += make_navbar_really_low(children, 1);
-	contents += "</td>"; 
-      }
-      contents += "</tr></table>";
-    }
-    else if(type=="appendix") {
+    if(type=="appendix") {
       Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input("<appendix name='"+name+"'>"+
-							   data+"</appendix>")[0];
+                                                           data+"</appendix>")[0];
 
       resolve_reference = my_resolve_reference;
       contents = parse_appendix(n, 1);
@@ -381,6 +338,20 @@ class Node
       contents += parse_children(n, "module", parse_module, 1);
       contents += parse_children(n, "class", parse_class, 1);
     }
+    return contents;
+  }
+
+  void make_html(string template, string path)
+  {
+    werror("Layouting...%s\n", make_class_path());
+
+    class_children->make_html(template, path);
+    module_children->make_html(template, path);
+    method_children->make_html(template, path);
+
+    int num_segments = sizeof(make_filename()/"/")-1;
+    string style = ("../"*num_segments)+"style.css";
+    extra_prefix = "../"*num_segments;
 
     Node prev = find_prev_node();
     Node next = find_next_node();
@@ -394,22 +365,77 @@ class Node
       prev_url   = make_link(prev);
     }
 
-    res = replace(template,
-		  (["$navbar$": make_navbar(),
-		    "$contents$": contents,
-		    "$prev_url$": prev_url,
-		    "$prev_title$": prev_title,
-		    "$next_url$": next_url,
-		    "$next_title$": next_title,
-		    "$title$": make_class_path(),
-		    "$style$": style,
-		  ]));
+    string res = replace(template,
+      (["$navbar$": make_navbar(),
+	"$contents$": make_content(),
+	"$prev_url$": prev_url,
+	"$prev_title$": prev_title,
+	"$next_url$": next_url,
+	"$next_title$": next_title,
+	"$title$": make_class_path(),
+	"$style$": style,
+      ]));
 
     Stdio.mkdirhier(combine_path(path+"/"+make_filename(), "../"));
     Stdio.write_file(path+"/"+make_filename(), res);
   }
 }
 
+class TopNode {
+  inherit Node;
+
+  array(Node) appendix_children = ({ });
+
+  void create(string _data) {
+    Parser.HTML parser = Parser.HTML();
+    parser->case_insensitive_tag(1);
+    parser->xml_tag_syntax(3);
+    parser->add_container("module", lambda(Parser.HTML p, mapping args, string c) {
+                                      return ({ c }); });
+    _data = parser->finish(_data)->read();
+    ::create("module", "", _data);
+    sort(appendix_children->name, appendix_children);
+  }
+
+  Parser.HTML get_parser() {
+    Parser.HTML parser = ::get_parser();
+    parser->add_container("appendix", parse_node("appendix"));
+    return parser;
+  }
+
+  string make_filename_low() {
+    return "__index";
+  }
+
+  string make_filename() {
+    return "index.html";
+  }
+
+  array(Node) get_ancestors() {
+    return ({ });
+  }
+
+  string make_class_path() {
+    return "";
+  }
+
+  string make_content() {
+    string contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
+    foreach(method_children/( sizeof(method_children)/4.0 ),
+            array(Node) children) {
+      contents += "<td>";
+      contents += make_navbar_really_low(children, 1);
+      contents += "</td>";
+    }
+    contents += "</tr></table>";
+    return contents;
+  }
+
+  void make_html(string template, string path) {
+    appendix_children->make_html(template, path);
+    ::make_html(template, path);
+  }
+}
 
 int main(int argc, array(string) argv)
 {
@@ -437,7 +463,7 @@ int main(int argc, array(string) argv)
   ]) );
 
   werror("Splitting to destination directory %s...\n", argv[3]);
-  Node top = Node("module","top", doc);
+  TopNode top = TopNode(doc);
   top->make_html(template, argv[3]);
   return 0;
 }
