@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.22 1998/07/16 19:12:11 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.23 1999/01/01 00:52:01 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -218,6 +218,8 @@ int fd_pipe(int fds[2])
     errno=GetLastError();
     return -1;
   }
+
+  FDDEBUG(fprintf(stderr,"ReadHANDLE=%d WriteHANDLE=%d\n",files[0],files[1]));
   
   SetHandleInformation(files[0],HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
   SetHandleInformation(files[1],HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
@@ -659,6 +661,10 @@ FD fd_dup(FD from)
 {
   FD fd;
   HANDLE x,p=GetCurrentProcess();
+#ifdef DEBUG
+  if(fd_type[from]>=FD_NO_MORE_FREE)
+    fatal("fd_dup() on file which is not open!\n");
+#endif
   if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,NULL,0,DUPLICATE_SAME_ACCESS))
   {
     errno=GetLastError();
