@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.89 2001/08/30 18:30:42 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.90 2001/08/31 07:19:18 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -163,6 +163,17 @@ OPCODE0(F_CONST0, "push 0", {
 });
 
 OPCODE0(F_CONST1, "push 1", {
+  push_int(1);
+});
+
+
+OPCODE0(F_MARK_AND_CONST0, "mark & 0", {
+  *(Pike_mark_sp++)=Pike_sp;
+  push_int(0);
+});
+
+OPCODE0(F_MARK_AND_CONST1, "mark & 1", {
+  *(Pike_mark_sp++)=Pike_sp;
   push_int(1);
 });
 
