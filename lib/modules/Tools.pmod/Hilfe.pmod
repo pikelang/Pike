@@ -17,7 +17,7 @@ import Array;
 
 #!define catch(X) ((X),0)
 
-#pragma all_inline
+  // #pragma all_inline
 
 /* #define DEBUG */
 
@@ -35,7 +35,7 @@ import Array;
     string prog,file;
     object o;
     mixed err;
-    prog=("#pragma unpragma_strict_types\n#pragma all_inline\n"+
+    prog=("#pragma unpragma_strict_types\n" // "#pragma all_inline\n"+
 	  "function write;\n"+
 	  map(indices(constants),lambda(string f)
 	      { return constants[f]&&sprintf("constant %s=%s;",f,constants[f]); })*"\n"+
@@ -175,9 +175,6 @@ import Array;
   int in_string=0;
   int in_quote=0;
   int eq_pos=-1;
-  int do_parse();
-  mixed parse_function(string s);
-  mixed parse_statement(string s);
   
   void set_buffer(string s,int parsing)
   {
