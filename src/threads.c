@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.33 1997/09/04 23:25:15 grubba Exp $");
+RCSID("$Id: threads.c,v 1.34 1997/09/05 22:16:18 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -49,6 +49,7 @@ void *new_thread_func(void * data)
   if((tmp=mt_lock( & interpreter_lock)))
     fatal("Failed to lock interpreter, errno %d\n",tmp);
   THREADS_FPRINTF((stderr,"THREADS_DISALLOW() Thread created...\n"));
+  SWAP_OUT_THREAD(((struct thread_state *)thread_id->storage));
   init_interpreter();
   thread_id=arg.id;
   SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
@@ -190,6 +191,7 @@ void f_mutex_lock(INT32 args)
   mt_lock(& m->kludge);
   if(m->key && OB2KEY(m->key)->owner == thread_id)
   {
+    mt_unlock(& m->kludge);
     THREADS_FPRINTF((stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 		     (unsigned int)OB2KEY(m->key),
 		     (unsigned int)m,
@@ -290,21 +292,21 @@ void exit_mutex_key_obj(struct object *o)
 		   (unsigned int)THIS_KEY->owner));
   if(THIS_KEY->mut)
   {
-    MUTEX_T *kludge;
-    mt_lock(kludge = & THIS_KEY->mut->kludge);
+    struct mutex_storage *mut = THIS_KEY->mut;
+    mt_lock(& mut->kludge);
 #ifdef DEBUG
-    if(THIS_KEY->mut->key != o)
-      fatal("Mutex unlock from wrong key %p != %p!\n", THIS_KEY->mut->key, o);
+    if(mut->key != o)
+      fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
 #endif
-    THIS_KEY->mut->key=0;
+    mut->key=0;
     if (THIS_KEY->owner) {
       free_object(THIS_KEY->owner);
       THIS_KEY->owner=0;
     }
-    co_signal(& THIS_KEY->mut->condition);
+    co_signal(& mut->condition);
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
-    mt_unlock(kludge);
+    mt_unlock(& mut->kludge);
   }
 }
 
@@ -465,6 +467,8 @@ void th_init(void)
     fatal("Failed to initialize thread program!\n");
 
   thread_id=clone_object(thread_id_prog,0);
+  SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
+  ((struct thread_state *)thread_id->storage)->swapped=0;
 }
 
 void th_cleanup(void)
