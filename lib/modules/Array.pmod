@@ -548,6 +548,7 @@ array flatten(array a)
 //! Sum the elements of an array using `+
 mixed sum(array a)
 {
+  if(a==({})) return 0;
 // 1000 is a safe stack limit
    if (sizeof(a)<1000)
       return `+(@a);
