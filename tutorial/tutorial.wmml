@@ -1,6 +1,10 @@
 <head>
 <title>Pike tutorial</title>
 </head>
+<!-- Allmänt: Sök på "'" och byt ut nästan alla 'foo' mot <i>foo</i>
+     Ändra alla kommandon under SEE ALSO till <tt>foo</tt> 
+     Det står "return" på miljoner ställen där det ska stå "returns">
+
 
 <firstpage>
 <p>
@@ -417,7 +421,7 @@ body. Those statements will be executed whenever the function is called.
 	int sqr(int x) { return x*x; }
 </example>
 This line defines a function called <tt>sqr</tt> to take one argument of the
-type <tt>int</tt> and also return an <tt>int</tt>. The code itself returns
+type <tt>int</tt> and also Returns an <tt>int</tt>. The code itself returns
 the argument multiplied by itself. To call this function from somewhere in the code
 you could simply put: <tt>sqr(17)</tt> and that would return the integer value
 289.
@@ -685,10 +689,10 @@ Now if we want to save the database and also be able to retrieve previously stor
 Now we will introduce you to programming with objects.
 To open a file for reading or writing we will use one of the programs which is builtin in Pike called <tt>Stdio.File</tt>.
 To Pike, a program is a data type which contains code, functions and variables.
-A program can be <i>cloned</i> which means that Pike creates an data area
+A program can be <i>cloned</i> which means that Pike creates a data area
  in memory for the program, place a reference to the program in the data area, and initialize it to act on the data file in question. The methods (ie. functions in the object) and variables in the object Stdio.File enables us to perform actions on the associated data file.
-The methods we need to use are open, read, write and close. See <ref to=io>
-for more details.
+The methods we need to use are open, read, write and close. <!-- See <ref to=io>
+for more details. (Den här eländeslänken krashar wmml->html) >
 <p>
 
 <section title="save()">
@@ -1413,7 +1417,7 @@ The basic types are, as the name implies, very basic. They are foundation,
 most of the pointer types are merely interesting ways to store the basic
 types. The pointer types are <tt>array</tt>, <tt>mapping</tt>,
 <tt>multiset</tt>, <tt>program</tt>, <tt>object</tt> and <tt>function</tt>.
-They are all <b>pointers</b> which means that they point to an something
+They are all <b>pointers</b> which means that they point to something
 in memory. This "something" is freed when there are no more pointers to it.
 Assigning a variable with a value of a pointer type will not copy this
 "something" instead it will only generate a new reference to it. Special care
@@ -1757,7 +1761,7 @@ a complete executable program in itself.  In this example we create a
 In <tt>add_empty_record</tt> a new object is created
 by calling <tt>record</tt>. This is called <b>cloning</b> and it
 allocates space to store the variables defined in the <tt>class record</tt>.
-<tt>Show_record</tt> takes a one of the records created in <tt>add_empty_record</tt> and shows the contents of it. As you can see, the arrow operator
+<tt>Show_record</tt> takes one of the records created in <tt>add_empty_record</tt> and shows the contents of it. As you can see, the arrow operator
 is used to access the data allocated in <tt>add_empty_record</tt>.
 If you do not understand this section I suggest you go on and read the
 next section about <tt>objects</tt> and then come back and read this
@@ -2516,7 +2520,7 @@ not fit in any particular categories.
 <tr><td>Increment</td>	<td>++ a</td>		<td>none</td>	<td>Increments a and returns the new value for a.</td></tr>
 <tr><td>Decrement</td>	<td>-- a</td>		<td>none</td>	<td>Decrements a and returns the new value for a.</td></tr>
 <tr><td>Post increment</td><td>a ++</td>	<td>none</td>	<td>Increments a and returns the old value for a.</td></tr>
-<tr><td>Post decrement</td><td>a --</td>	<td>none</td>	<td>Decrements a and return the old value for a.</td></tr>
+<tr><td>Post decrement</td><td>a --</td>	<td>none</td>	<td>Decrements a and returns the old value for a.</td></tr>
 <tr><td>casting</td>	<td>(<i>type</i>) a</td><td>none</td>	<td>Tries to convert a into a value of the specified type.</td></tr>
 <tr><td>Null</td>	<td>a, b</td>		<td>none</td>	<td>Evaluates a and b, then returns b.</td></tr>
 </table>
@@ -2531,7 +2535,7 @@ already seen many examples of this operator, although you might not have
 realized it was an operator at the time. The function call operator can
 do more than just calling functions though; if the 'function' is in fact
 an array, the operator will loop over the array and call each element in
-the array and return an array with the results.
+the array and returns an array with the results.
 <!-- In fact, <tt>({ foo, bar, gaznonk }) (1, 2, 3)</tt> is the same as <tt>map(({ foo, bar, gaznonk }), call_function, 1, 2, 3)</tt>. -->
 If on the other hand, the 'function' is a program, the operator will
 clone an object from the program and call create() in the new object
@@ -2815,7 +2819,7 @@ or variable you want, and you can call the original one by using a <tt>::</tt>
 in front of the function name. The argument to inherit can be one of the following:
 <dl>
 <dt> A string
-<dd> This will have the same effect as casting the string to an program and then
+<dd> This will have the same effect as casting the string to a program and then
      doing inherit on this program.
 <dt> A constant containing a program.
 <dd> Any constant from this program, module or inherited program that contains a
@@ -3502,7 +3506,7 @@ bytes had been written.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Seek to a position in a file, if pos is less than zero, seek to
-position pos relative end of file. Return -1 for failiure, or
+position pos relative end of file. Returns -1 for failiure, or
 the old position in the file when successful.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -3522,7 +3526,7 @@ the old position in the file when successful.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the current position in the file.
+Returns the current position in the file.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Stdio.File.seek>Stdio.File-&gt;seek</link>
@@ -3563,7 +3567,7 @@ socket.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the error code for the last command on this file.
+Returns the error code for the last command on this file.
 Error code is normally cleared when a command is successful.
 <p>
 <p>
@@ -4003,7 +4007,7 @@ except for stdin, stdout and stderr.
 
 <p>
 Here is an example of how to use the TCP functions in Stdio.File in blocking
-mode. This short program takes an URL as first argument, connects to the
+mode. This short program takes a URL as first argument, connects to the
 WWW server, sends a HEAD request and writes the reply to stdout. For clarity,
 all calls to Stdio.File use <tt>File::</tt> even if that is not strictly
 necessary.
@@ -4038,14 +4042,15 @@ necessary.
 	}
 </example>
 
-
+<!--
 </section>
 </anchor>
+>
 
 <anchor name=Stdio.FILE>
 <section title="Stdio.FILE">
 Stdio.FILE is a buffered version of Stdio.File, it inherits Stdio.File and
-has most of the functionalty of Stdio.File. However, it has a an input buffer
+has most of the functionalty of Stdio.File. However, it has an input buffer
 that allows line-by-line input. Note that the output part of Stio.FILE is
 not buffered at this moment. The added functionality of Stdio.FILE is
 described here:
@@ -4125,9 +4130,10 @@ a string containing one character.
 </anchor>
 
 <!-- FIXME, example of how to use Stdio.FILE here -->
-
+<!-- 
 </section>
 </anchor>
+>
 
 <anchor name=Stdio.stdin>
 <anchor name=Stdio.stdout>
@@ -4248,12 +4254,12 @@ string read_file(string <I>file</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Read 'len' lines from the file 'file' after skipping 'start' lines
-and return those lines as a string. If start and len are omitted
+Read <i>len</i> lines from the file <i>file</i> after skipping <i>start</i> lines
+and return those lines as a string. If <i>start</i> and <i>len</i> are omitted
 the whole file is read.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.read_bytes>Stdio.read_bytes</link> and <link to=Stdio.write_file.html>Stdio.write_file</link>
+<tt><link to=Stdio.read_bytes>Stdio.read_bytes</link></tt> and <tt><link to=Stdio.write_file.html>Stdio.write_file</link></tt>
 <p>
 </dl>
 
@@ -4271,7 +4277,7 @@ the whole file is read.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function writes the string 'prompt' and then waits until the
+This function writes the string <i>prompt</i> and then waits until the
 user has entered a line from the keyboard. If the readline library
 was available when Pike was compiled the user will have history and
 line edithing at his/her disposal when entering the line.
@@ -4936,7 +4942,7 @@ makes it very simple to write threaded programs. Let's look at an example:
 	    while(string line=o-&gt;gets())
 	    {
 	      if(search(line, lookfor) &gt;=0)
-		write(sprintf("%s:%d: %s\n",file, lineno<!-- Den härhittar jag inte tidigare>, line));
+		write(sprintf("%s:%d: %s\n",file, lineno<!-- Den här hittar jag inte tidigare>, line));
 
 	      linenum++;
 	    }
@@ -4966,7 +4972,7 @@ this example again.
 
 <dt> Deadlocks
 <dd> Deadlocks arise when two threads are waiting for each other to do something.
-     This bug can often arise when several threads needs access to a number of
+     This bug can often arise when several threads needs<!-- need ska det nog vara> access to a number of
      resources such as files or other I/O devices. What may happen is that one
      thread has locked device #1 and is trying to lock device #2 while another
      thread has locked device #2 and is trying to lock device #1. This type
@@ -5036,8 +5042,8 @@ This function returns the object that identifies this thread.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Thread.Mutex is a precompiled Pike program that implements
 mutual exclusion locks. Mutex locks are used to prevent multiple
-threads from simultaneously execute sections of code which accesses
-or changes shared data. The basic operations for a mutex is locking
+threads from simultaneously execute sections of code which accesses 
+or changes <!-- access or change ska det vara>shared data. The basic operations for a mutex are locking
 and unlocking, if a thread attempts to lock an already locked mutex
 the thread will sleep until the mutex is unlocked.
 <p>
@@ -5093,7 +5099,7 @@ mixed read()
 This function attempts to lock the mutex, if the mutex is already
 locked current thread will sleep until the lock is unlocked by some
 other thread. The value returned is the 'key' to the lock, which the
-key is destructed or has no more references the lock will automatically
+key is destructed <!-- Skriv om! Helt obegripligt>or has no more references the lock will automatically
 be unlocked.
 <p>
 </dl>
@@ -5328,7 +5334,7 @@ thread writes a value to the fifo.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns how many values are currently in the fifo.
+This function returns how many values are currently in the fifo<!-- Låter fel, lite osäker dock>.
 <p>
 </dl>
 
@@ -5510,7 +5516,7 @@ int main(int argc, array(string) argv)
 </example>
 <p>
 As stated in the beginning of this chapter; Pike threads are only available
-on some UNIX systems. The above example does not work if your systems does
+on some UNIX systems. The above example does not work if your systems <!-- "system"?>does
 not have threads.
 </section>
 </chapter>
@@ -5611,7 +5617,7 @@ suppliment those written in C.
 <tt>Array.map</tt> - map an array or mapping over a function
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *map(mixed <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+<tt>mixed *map(mixed <!-- "*"/Array() här?><I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
 or<br>
 mixed *map(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
 or<br>
@@ -5642,7 +5648,7 @@ arr[x]=arr[x]-&gt;fun(@ args);
 <tt>Array.filter</tt> - filter an array or mapping through a function
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *filter(mixed <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+<tt>mixed *filter(mixed<!-- "*"/Array() här?> <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
 or<br>
 mixed *filter(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
 or<br>
@@ -5732,10 +5738,10 @@ return res;<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function sorts an array after a compare-function 'fun'
+This function sorts an array after a compare-function <i>fun</i>
 which takes two arguments and should return 1 if the first argument
-is larger than the second. The rest of the arguments 'args' will be
-sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is used
+is larger then the second. The rest of the arguments <i>args</i> will be
+sent as 3rd, 4th etc. argument to <i>fun</i>. If <i>fun</i> is omitted, `&lt; is used
 instead.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -5754,7 +5760,7 @@ instead.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns an copy of the array a with all duplicate
+This function returns a copy of the array <i>a</i> with all duplicate
 values removed. The order of the values in the result is undefined.
 <p>
 </dl>
@@ -5951,9 +5957,9 @@ int getpgrp(int <I>pid</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-With no argguments or with 'pid' equal to zero, returns the process
+With no argguments or with <i>pid</i> equal to zero, returns the process
 group ID of this process.
-<p>If 'pid' is specified, returns the process group ID of that process.
+<p>If <i>pid'</i> is specified, returns the process group ID of that process.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getpid>getpid</link> and <link to=getppid>getppid</link>
@@ -6029,7 +6035,7 @@ Get the real user ID.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Creates a hardlink named 'to' from the file 'from'.
+Creates a hardlink named <i>to</i> from the file <i>from</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=symlink>symlink</link>, <link to=mv>mv</link> and <link to=rm>rm</link>
@@ -6049,7 +6055,7 @@ Creates a hardlink named 'to' from the file 'from'.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Initializes the group access list according to the system
-group database. 'base_gid' is also added to the group access
+group database. <i>base_gid</i> is also added to the group access
 list.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -6070,9 +6076,9 @@ list.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Initializes the connection to syslogd.
-<p>The 'ident' argument specifies an identifier to tag all logentries
+<p>The <i>ident</i> argument specifies an identifier to tag all logentries
 with.
-<p>'options' is a bitfield specifying the behaviour of the message
+<p><i>options</i> is a bitfield specifying the behaviour of the message
 logging. Valid options are:
 <p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td> LOG_PID </td><td> Log the process ID with each message. </td></tr>
@@ -6081,7 +6087,7 @@ logging. Valid options are:
 <tr valign=top><td> LOG_NOWAIT </td><td> Do not wait for subprocesses talking to syslogd. </td></tr>
 </table>
 </dl>
-<p>'facility' specifies what subsystem you want to log as. Valid
+<p><i>facility</i> specifies what subsystem you want to log as. Valid
 facilities are:
 <p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td> LOG_AUTH </td><td> Authorization subsystem </td></tr>
@@ -6123,7 +6129,7 @@ syslog, closelog and setlogmask
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns what the symbolic link 'linkname' points to.
+Returns what the symbolic link <i>linkname</i> points to.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=symlink>symlink</link>
@@ -6142,7 +6148,7 @@ Returns what the symbolic link 'linkname' points to.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Sets the effective group ID to 'gid'.
+Sets the effective group ID to <i>gid</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link> and <link to=getegid>getegid</link>
@@ -6161,7 +6167,7 @@ Sets the effective group ID to 'gid'.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Sets the effective user ID to 'uid'.
+Sets the effective user ID to <i>uid</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
@@ -6180,7 +6186,7 @@ Sets the effective user ID to 'uid'.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Sets the real group ID, effective group ID and saved group ID to 'gid'.
+Sets the real group ID, effective group ID and saved group ID to <i>gid</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
@@ -6199,7 +6205,7 @@ Sets the real group ID, effective group ID and saved group ID to 'gid'.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Sets the real user ID, effective user ID and saved user ID to 'uid'.
+Sets the real user ID, effective user ID and saved user ID to <i>uid</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
@@ -6218,7 +6224,7 @@ Sets the real user ID, effective user ID and saved user ID to 'uid'.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Creates a symbolic link named 'to' pointing to 'from'.
+Creates a symbolic link named <i>to</i> pointing to <i>from</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=hardlink>hardlink</link>, <link to=readlink>readlink</link>, <link to=mv>mv</link> and <link to=rm>rm</link>
@@ -6270,7 +6276,7 @@ The Process module contains functions to start and control other programs from P
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function runs the command cmd as in a shell and returns the
+This function runs the command <i>cmd</i> as in a shell and returns the
 output. See your unix/C manual for details on popen.
 <p>
 </dl>
@@ -6287,7 +6293,7 @@ output. See your unix/C manual for details on popen.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function runs the external program cmd and waits until it
+This function runs the external program <i>cmd</i> and waits until it
 is finished. Standard /bin/sh completions/redirections/etc. can
 be used.
 <p>
@@ -6339,8 +6345,8 @@ int exece(string <I>file</I>, array(string) <I>args</I>, mapping(string:string) 
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function transforms the Pike process into a process running
-the program specified in the argument 'file' with the argument 'args'.
-If the mapping 'env' is present, it will completely replace all
+the program specified in the argument <i>file</i> with the argument <i>args</i>.
+If the mapping <i>env</i> is present, it will completely replace all
 environment variables before the new program is executed.
 This function only returns if something went wrong during exece(),
 and in that case it returns zero.
@@ -6373,7 +6379,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function destroys the Pike parser and runs the program
-'file' instead with the arguments. If no there are no '/' in
+'file' instead with the arguments. If there is no '/' in
 the filename, the variable PATH will be consulted when looking
 for the program. This function does not return except when
 the exec fails for some reason.
@@ -6435,7 +6441,7 @@ they can then be used over and over again without needing to be recompiled.
 To give the user full control over the compilations and use of regexp an
 object oriented interface is provided.
 <p>
-You might wonder what you use regexp for, hopefully it should be more clear
+You might wonder what you use regexp for<!-- Skriv "... what regesp can be used to" eller nåt>, hopefully it should be more clear
 when you read about the following functions:
 
 <hr noshade size=1>
@@ -6475,11 +6481,11 @@ been used.
 <tt>Regexp.match</tt> - match a regexp
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>int match(string s)<br>
+<tt>int match(string <i>s</i>)<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return 1 if s matches the regexp bound to the object regexp,
+Returns 1 if <i>s</i> matches the regexp bound to the object regexp,
 zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -6495,7 +6501,7 @@ zero otherwise.
 <tt>Regexp.split</tt> - split a string according to a pattern
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string) split(string s)<br>
+<tt>array(string) split(string <i>s</i>)<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -6508,7 +6514,7 @@ If the total regexp didn't match, zero is returned.
 You can only have 40 subregexps.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Regexp.create>Regexp-&gt;create</link> and <link to=Regexp.match>Regexp-&gt;match</link>
+<tt><link to=Regexp.create>Regexp-&gt;create</link></tt> and <tt><link to=Regexp.match>Regexp-&gt;match</link></tt>
 <p>
 </dl>
 
@@ -6521,7 +6527,7 @@ You can only have 40 subregexps.
 </anchor>
 
 <anchor name=Gmp>
-<section title="Gmp">
+<section title="Gmp"><!-- Jag har ändrat alla "Name Gmp.mpz.foo" till "Gmp.mpz-&gt;foo". Dock inte i Anchor förståss.>
 Gmp is short for GNU MultiPrecision library. It is a set of routines that
 can manipulate very large numbers. Although much slower than regular integers
 they are very useful when you need to handle extremly large numbers.
@@ -6554,7 +6560,7 @@ found when Pike was compiled.
 <anchor name=Gmp.mpz.create>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.create</tt> - initialize a bignum
+<tt>Gmp.mpz-&gt;create</tt> - initialize a bignum
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object Mpz();<br>
@@ -6574,7 +6580,7 @@ give the number in the string in another base by specifying the
 base as a second argument. Valid bases are 2-36 and 256.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link>
+<tt><link to=clone>clone</link></tt>
 <p>
 </dl>
 
@@ -6583,14 +6589,14 @@ base as a second argument. Valid bases are 2-36 and 256.
 <anchor name=Gmp.mpz.powm>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.powm</tt> - raise and modulo
+<tt>Gmp.mpz-&gt;powm</tt> - raise and modulo
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object powm(int|string|float|object <I>a</I>,int|string|float|object <I>b</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns ( mpz ** a ) % b
+This function returns ( mpz ** a ) % b <!-- Fattar inte! Förklara!>
 </dl>
 
 </anchor>
@@ -6598,14 +6604,14 @@ This function returns ( mpz ** a ) % b
 <anchor name=Gmp.mpz.sqrt>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.sqrt</tt> - square root
+<tt>Gmp.mpz-&gt;sqrt</tt> - square root
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object sqrt();<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function return the the truncated integer part of the square
+This function returns the the truncated integer part of the square
 root of the value of mpz. 
 </dl>
 
@@ -6614,7 +6620,7 @@ root of the value of mpz.
 <anchor name=Gmp.mpz.probably_prime_p>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.probably_prime_p</tt> - is this number a prime?
+<tt>Gmp.mpz-&gt;probably_prime_p</tt> - is this number a prime?
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int probably_prime_p();<br>
@@ -6630,14 +6636,14 @@ if it is not.
 <anchor name=Gmp.mpz.gcd>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.gcd</tt> - greatest common divisor
+<tt>Gmp.mpz-&gt;gcd</tt> - greatest common divisor
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object gcd(object|int|float|string arg)<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns the greatest common divisor for arg and mpz.
+This function returns the greatest common divisor for <i>arg</i> and mpz.
 </dl>
 
 </anchor>
@@ -6645,7 +6651,7 @@ This function returns the greatest common divisor for arg and mpz.
 <anchor name=Gmp.mpz.cast>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.cast</tt> - cast to other type
+<tt>Gmp.mpz-&gt;cast</tt> - cast to other type
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object cast( "string" | "int" | "float" );<br>
@@ -6673,7 +6679,7 @@ calculation.
 <anchor name=Gmp.mpz.digits>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.digits</tt> - convert mpz to a string
+<tt>Gmp.mpz-&gt;digits</tt> - convert mpz to a string
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>string digits();<br>
@@ -6687,7 +6693,7 @@ number will be represented in that base. Valid bases are 2-36 and
 256. The default base is 10.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gmp.mpz.cast>Gmp.mpz-&gt;cast</link>
+<tt><link to=Gmp.mpz.cast>Gmp.mpz-&gt;cast</link></tt>
 <p>
 </dl>
 
@@ -6696,7 +6702,7 @@ number will be represented in that base. Valid bases are 2-36 and
 <anchor name=Gmp.mpz.size>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz.size</tt> - how long is a number
+<tt>Gmp.mpz-&gt;size</tt> - how long is a number
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>string size();<br>
@@ -6709,7 +6715,7 @@ This function returns how long the mpz would be represented in the
 specified base. The default base is 2.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gmp.mpz.digits>Gmp.mpz-&gt;digits</link>
+<tt><link to=Gmp.mpz.digits>Gmp.mpz-&gt;digits</link></tt>
 <p>
 </dl>
 
@@ -6801,7 +6807,7 @@ This closes the database.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Associate the contents of 'data' with the key 'key'. If the key 'key'
+Associate the contents of <i>data</i> with the key <i>key</i>. If the key <i>key</i>
 already exists in the database the data for that key will be replaced.
 If it does not exist it will be added. An error will be generated if
 the database was not open for writing.
@@ -6820,7 +6826,7 @@ the database was not open for writing.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the data associated with the key 'key' in the database.
+Returns the data associated with the key <i>key</i> in the database.
 If there was no such key in the database, zero is returned.
 <p>
 </dl>
@@ -6854,7 +6860,7 @@ if the key does not exist.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the first key in the database, this can be any key in the
+Returns the first key in the database, this can be any key in the
 database.
 <p>
 </dl>
@@ -6871,7 +6877,7 @@ database.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This returns the key in database that follows the key 'key' key.
+This returns the key in database that follows the key <i>key</i>.
 This is of course used to iterate over all keys in the database.
 <p>
 <dt><encaps>EXAMPLE</encaps><dd>
@@ -6943,11 +6949,11 @@ with an argument you write <tt>-t <i>argument</i></tt> or <tt>-t<i>argument</i><
 <tt>Getopt.find_option</tt> - find command line options
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt><p>mixed find_option(array(string) argv,<br>
-<dl><dt><dd>string shortform,<br>
-string longform,<br>
-string envvar,<br>
-mixed def);<br>
+<tt><p>mixed find_option(array(string) <i>argv</i>,<br>
+<dl><dt><dd>string <i>shortform</i>,<br>
+string <i>longform</i>,<br><!-- Det ska väl vara void| på dessa???>
+string <i>envvar</i>,<br>
+mixed <i>def</i>);<br>
 </dl></tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -6986,6 +6992,7 @@ find_option(argv,"b","bar","BAR_OPTION","default")+<br>
 </dl>}<br>
 </tt>
 <p>
+<!-- Förklara kort vad programmet ovan gör>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Getopt.get_args>Getopt.get_args</link>
 <p>
@@ -6998,7 +7005,7 @@ find_option(argv,"b","bar","BAR_OPTION","default")+<br>
 <tt>Getopt.find_all_options</tt> - find command line options
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt><p>mixed * find_all_options(array(string) argv, mixed *option, int|void posix_me_harder);<br>
+<tt><p>mixed * find_all_options(array(string) <i>argv</i>, mixed *<i>option</i>, int|void <i>posix_me_harder</i>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -7014,11 +7021,11 @@ following form:
 <p>
 <dl>
 <dt>({
-<dd>string name,
-<dd>int type,
-<dd>string|array(string) aliases,
-<dd>void|string|array(string) env_var,
-<dd>void|mixed default
+<dd>string <i>name</i>,
+<dd>int <i>type</i>,
+<dd>string|array(string) <i>aliases</i>,
+<dd>void|string|array(string) <i>env_var</i>,
+<dd>void|mixed <i>default</i>
 <dt>})
 </dl>
 Only the first three elements has to be included.
@@ -7033,7 +7040,7 @@ Only the first three elements has to be included.
      argument, such as <tt>--version</tt>. MAY_HAVE_ARG should be used
      for options that may or may not need an argument.
 <dt> <i>aliases</i>
-<dd> This  is a string or a list of string of options that will be looked for.
+<dd> This  is a string or a list of string <!-- Ska väl vara an array of strings> of options that will be looked for.
      Short and long options can be mixed, and short options can be
      combined into one string. Note that you must include the dashes
      in <i>aliases</i> so find_all_options can distinguish between
@@ -7054,8 +7061,8 @@ Find_all_options returns an array where each element is an array on
 this form:
 <dl>
 <dt>({
-<dd>string name,
-<dd>mixed value
+<dd>string <i>name</i>,
+<dd>mixed <i>value</i>
 <dt>})
 </dl>
 The <i>name</i> is the identifier from the input and <i>value</i> is the
@@ -7063,7 +7070,7 @@ value given to it from the argument, environment variable or <i>default</i>.
 If no default is given, <i>value</i> will be 1.
 <p>
 <dt><encaps>NOTA BENE</encaps><dd>
-find_option modifies argv.<br>
+find_option modifies argv.<br> <!-- Vad gäller find_all_options???>
 <p>
 <dt><encaps>EXAMPLE</encaps><dd>
 First let's take a look at input and output:
@@ -7103,7 +7110,7 @@ int main(int argc, array(string) argv
 </example>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Getopt.get_args>Getopt.get_args</link>
+<tt><link to=Getopt.get_args>Getopt.get_args</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7137,7 +7144,7 @@ werror("The arguments are: "+(argv*" ")+".\n");<br>
 </tt>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Getopt.find_option>Getopt.find_option</link>
+<tt><link to=Getopt.find_option>Getopt.find_option</link></tt>
 <p>
 </dl>
 
@@ -7172,7 +7179,7 @@ This program is only available if libz was available and found when
 Pike was compiled.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.inflate>Gz.inflate</link>
+<tt><link to=Gz.inflate>Gz.inflate</link></tt>
 <p>
 </dl>
 
@@ -7227,7 +7234,7 @@ used until the end of the data when FINISH should be used. For
 interactive data PARTIAL_FLUSH should be used.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.inflate.inflate>Gz.inflate-&gt;inflate</link>
+<tt><link to=Gz.inflate.inflate>Gz.inflate-&gt;inflate</link></tt>
 <p>
 </dl>
 
@@ -7247,7 +7254,7 @@ This program is only available if libz was available and found when
 Pike was compiled.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.deflate>Gz.deflate</link>
+<tt><link to=Gz.deflate>Gz.deflate</link></tt>
 <p>
 </dl>
 
@@ -7298,7 +7305,7 @@ while(string s=stdin-&gt;read(8192))<br>
 </dl></tt>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.deflate.deflate>Gz.deflate-&gt;deflate</link>
+<tt><link to=Gz.deflate.deflate>Gz.deflate-&gt;deflate</link></tt>
 <p>
 </dl>
 
@@ -7408,7 +7415,7 @@ write(dom->match("passwd.byname", "root"));
 
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-  Return the whole map as a mapping. <i>map</i> is the YP-map to search in.
+  Returns the whole map as a mapping. <i>map</i> is the YP-map to search in.
   This must be the full map name, you have to use <tt>passwd.byname</tt>
   instead of just <tt>passwd</tt>.
 <p>
@@ -7444,7 +7451,7 @@ write(dom->match("passwd.byname", "root"));
 <tt>string server(string <i>map</i>)</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-  Return the hostname of the server serving the map 'map'. <i>map</i>
+  Returns the hostname of the server serving the map 'map'. <i>map</i>
   is the YP-map to search in. This must be the full map name, as an
     example, passwd.byname instead of just passwd.
 <p>
@@ -7461,7 +7468,7 @@ write(dom->match("passwd.byname", "root"));
 <tt>int order(string <i>map</i>)</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-  Return the 'order' number for the map map. This is usually a
+  Returns the 'order' number for the map map. This is usually a
   time_t (see the global function time()). When the map is changed, this number
   will change as well. <i>map</i> is
     the YP-map to search in. This must be the full map name, as an
@@ -7504,11 +7511,12 @@ or<br>
 <tt>string <i>Yp.YpMap</i>[string <i>key</i>]</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-  Search for the key 'key'. If there is no 'key' in the map, 0
+  Search for the key <i>key</i>. If there is no <i>key</i> in the map, 0
   will be returned, otherwise the string matching the key will
-  be returned. <i>key</i> is the key to search for.
-  This key must match exactly, no pattern
+  be returned. 
+  <i>key</i> must match exactly, no pattern
    matching of any kind is done.
+<!-- Jag skrev om stycket ovan lite. Checka!>
 </dl>
 </anchor>
 <hr noshade size=1>
@@ -7525,7 +7533,7 @@ or<br>
 <tt>(mapping) <i>Yp.YpMap</i></tt><br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-    Return the whole map as a mapping.
+    Returns the whole map as a mapping.
 </dl>
 </anchor>
 <hr noshade size=1>
@@ -7554,7 +7562,7 @@ or<br>
 <tt>string server()</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-    Return the hostname of the server serving this map.
+    Returns the hostname of the server serving this map.
 </dl>
 </anchor>
 <hr noshade size=1>
@@ -7568,7 +7576,7 @@ or<br>
 <tt>int order()</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-    Return the 'order' number for this map. This is usually a
+    Returns the 'order' number for this map. This is usually a
     time_t (see the global function time())
 </dl>
 </anchor>
@@ -7601,7 +7609,7 @@ array(string) indices(<i>Yp.YpMap</i>)<br>
 array(string) values(<i>Yp.Ypmap</i>)
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-  Return the indices of the map. If indices is called first, values must
+  Returns the indices of the map. If indices is called first, values must
   be called immediately after. If values is called first, it is the
   other way around.
 </dl>
@@ -7724,7 +7732,7 @@ The encoding can be any of
 The encoding string is not case sensitive.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode>MIME.encode</link>
+<tt><link to=MIME.encode>MIME.encode</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7743,7 +7751,7 @@ The encoding string is not case sensitive.
 This function decodes data encoded using the <tt>base64</tt> transfer encoding.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_base64>MIME.encode_base64</link>
+<tt><link to=MIME.encode_base64>MIME.encode_base64</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7763,7 +7771,7 @@ This function decodes data encoded using the <tt>quoted-printable</tt>
 (a.k.a. quoted-unreadable) transfer encoding.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_qp>MIME.encode_qp</link>
+<tt><link to=MIME.encode_qp>MIME.encode_qp</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7783,7 +7791,7 @@ This function decodes data encoded using the <tt>x-uue</tt> transfer encoding.
 It can also be used to decode generic UUEncoded files.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_uue>MIME.encode_uue</link>
+<tt><link to=MIME.encode_uue>MIME.encode_uue</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7827,7 +7835,7 @@ Result: ({ /* 3 elements */
 </pre>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_word>MIME.encode_word</link>
+<tt><link to=MIME.encode_word>MIME.encode_word</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7861,7 +7869,7 @@ as <i>no_linebreaks</i>, the result string will not contain any linebreaks
 (base64 and quoted-printable only).
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode>MIME.decode</link>
+<tt><link to=MIME.decode>MIME.decode</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7882,7 +7890,7 @@ If a nonzero value is passed as <i>no_linebreaks</i>, the result string
 will not contain any linebreaks.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_base64>MIME.decode_base64</link>
+<tt><link to=MIME.decode_base64>MIME.decode_base64</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7904,7 +7912,7 @@ This function encodes data using the <tt>quoted-printable</tt>
 excuse for using it.</strong>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_qp>MIME.decode_qp</link>
+<tt><link to=MIME.decode_qp>MIME.decode_qp</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7927,7 +7935,7 @@ in the encoded data, for extraction purposes.
 This function can also be used to produce generic UUEncoded files.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_uue>MIME.decode_uue</link>
+<tt><link to=MIME.decode_uue>MIME.decode_uue</link></tt>
 <p>
 </dl>
 </anchor>
@@ -7959,7 +7967,7 @@ Result: Foo
 </pre>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_word>MIME.decode_word</link>
+<tt><link to=MIME.decode_word>MIME.decode_word</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8039,7 +8047,7 @@ There is no way to constuct a domain-literal using this function.
 Neither can it be used to produce comments.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.tokenize>MIME.tokenize</link>
+<tt><link to=MIME.tokenize>MIME.tokenize</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8077,7 +8085,7 @@ many, -1 is returned.
 </ul>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.is_partial>MIME.Message-&gt;is_partial</link>
+<tt><link to=MIME.Message.is_partial>MIME.Message-&gt;is_partial</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8133,7 +8141,7 @@ The set of special-characters is the one specified in RFC1521 (i.e. <tt>"&lt;",
 specified in RFC822.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.quote>MIME.quote</link>
+<tt><link to=MIME.quote>MIME.quote</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8162,8 +8170,8 @@ Message object for each part of the message.  If the message is not a
 multipart, this field is <tt>0</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>,
-<link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link>
+<tt><link to=MIME.Message.type>MIME.Message-&gt;type</link></tt>,
+<tt><link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8185,7 +8193,7 @@ are handled internally by the module, you should not need to access this
 field.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link>
+<tt><link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8207,7 +8215,7 @@ type text.  If there is no <tt>Content-Type</tt> header, the value of this
 field is <tt>"us-ascii"</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>
+<tt><link to=MIME.Message.type>MIME.Message-&gt;type</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8238,7 +8246,7 @@ field is <tt>0</tt>.
 <tt>MIME.Message-&gt;disp_params</tt> - Content-Disposition parameters
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string:string) msg-&gt;disp_params;<br>
+<tt>array(string:string) <!-- mapping ska det väl vara?>msg-&gt;disp_params;<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -8246,8 +8254,8 @@ A mapping containing all the additional parameters to the
 <tt>Content-Disposition</tt> header.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link>,
-<link to=MIME.Message.get_filename>MIME.Message-&gt;get_filename</link>
+<tt><link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link></tt>,
+<tt><link to=MIME.Message.get_filename>MIME.Message-&gt;get_filename</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8278,19 +8286,19 @@ The contents of these fields can be accessed and/or modified through a set
 of variables and methods available for this purpose.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>,
-<link to=MIME.Message.subtype>MIME.Message-&gt;subtype</link>,
-<link to=MIME.Message.charset>MIME.Message-&gt;charset</link>,
-<link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link>,
-<link to=MIME.Message.transfer_encoding>MIME.Message-&gt;transfer_encoding</link>,
-<link to=MIME.Message.params>MIME.Message-&gt;params</link>,
-<link to=MIME.Message.disposition>MIME.Message-&gt;disposition</link>,
-<link to=MIME.Message.disp_params>MIME.Message-&gt;disp_params</link>,
-<link to=MIME.Message.setencoding>MIME.Message-&gt;setencoding</link>,
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>,
-<link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link>,
-<link to=MIME.Message.setcharset>MIME.Message-&gt;setcharset</link>,
-<link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link>
+<tt><link to=MIME.Message.type>MIME.Message-&gt;type</link></tt>,
+<tt><link to=MIME.Message.subtype>MIME.Message-&gt;subtype</link></tt>,
+<tt><link to=MIME.Message.charset>MIME.Message-&gt;charset</link></tt>,
+<tt><link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link></tt>,
+<tt><link to=MIME.Message.transfer_encoding>MIME.Message-&gt;transfer_encoding</link></tt>,
+<tt><link to=MIME.Message.params>MIME.Message-&gt;params</link></tt>,
+<tt><link to=MIME.Message.disposition>MIME.Message-&gt;disposition</link></tt>,
+<tt><link to=MIME.Message.disp_params>MIME.Message-&gt;disp_params</link></tt>,
+<tt><link to=MIME.Message.setencoding>MIME.Message-&gt;setencoding</link></tt>,
+<tt><link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link></tt>,
+<tt><link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link></tt>,
+<tt><link to=MIME.Message.setcharset>MIME.Message-&gt;setcharset</link></tt>,
+<tt><link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8311,9 +8319,9 @@ A mapping containing all the additional parameters to the
 own, which should be accessed instead of this mapping wherever applicable.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.charset>MIME.Message-&gt;charset</link>,
-<link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link>,
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>
+<tt><link to=MIME.Message.charset>MIME.Message-&gt;charset</link></tt>,
+<tt><link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link></tt>,
+<tt><link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8335,8 +8343,8 @@ header.  If there is no <tt>Content-Type</tt> header, the value of this field
 is <tt>"plain"</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>,
-<link to=MIME.Message.params>MIME.Message-&gt;params</link>
+<tt><link to=MIME.Message.type>MIME.Message-&gt;type</link></tt>,
+<tt><link to=MIME.Message.params>MIME.Message-&gt;params</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8359,7 +8367,7 @@ field should be intrerresting only to applications wishing to do autoconversion
 of certain transfer encodings.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setencoding>MIME.Message-&gt;setencoding</link>
+<tt><link to=MIME.Message.setencoding>MIME.Message-&gt;setencoding</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8381,8 +8389,8 @@ header.  If there is no <tt>Content-Type</tt> header, the value of this field
 is <tt>"text"</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.subtype>MIME.Message-&gt;subtype</link>,
-<link to=MIME.Message.params>MIME.Message-&gt;params</link>
+<tt><link to=MIME.Message.subtype>MIME.Message-&gt;subtype</link></tt>,
+<tt><link to=MIME.Message.params>MIME.Message-&gt;params</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8427,7 +8435,7 @@ SGVsbG8sIHdvcmxkIQ==
 </pre>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.create>MIME.Message-&gt;create</link>
+<tt><link to=MIME.Message.create>MIME.Message-&gt;create</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8474,7 +8482,7 @@ Result: iso-8859-1
 </pre>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Messag.cast>MIME.Message-&gt;cast</link>
+<tt><link to=MIME.Messag.cast>MIME.Message-&gt;cast</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8495,7 +8503,7 @@ This method returns the raw data of the message body entity.  The
 indicate how this data should be interpreted.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getencoded>MIME.Message-&gt;getencoded</link>
+<tt><link to=MIME.Message.getencoded>MIME.Message-&gt;getencoded</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8515,7 +8523,7 @@ This method returns the data of the message body entity, encoded using the
 current transfer encoding.  You should never have to call this function.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getdata>MIME.Message-&gt;getdata</link>
+<tt><link to=MIME.Message.getdata>MIME.Message-&gt;getdata</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8531,7 +8539,7 @@ current transfer encoding.  You should never have to call this function.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This method tries to find a suitable filename should you want to save the
+This method tries to find a suitable filename should <!-- Parse error! Skriv om!>you want to save the
 body data to disk.  It will examine the <tt>filename</tt> attribute of the
 <tt>Content-Disposition</tt> header, and failing that the <tt>name</tt>
 attribute of the <tt>Content-Type</tt> header.  If neither attribute is set,
@@ -8567,7 +8575,7 @@ was not available.  If this method is called in a message that is not
 a part of a fragmented message, it will return 0.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.reconstruct_partial>MIME.reconstruct_partial</link>
+<tt><link to=MIME.reconstruct_partial>MIME.reconstruct_partial</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8588,7 +8596,7 @@ This is equivalent of calling
 <tt>msg-&gt;setparam("boundary", <i>boundary</i>)</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>
+<tt><link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8609,7 +8617,7 @@ This is equivalent of calling
 <tt>msg->setparam("charset", <i>charset</i>)</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>
+<tt><link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8631,7 +8639,7 @@ The new data should comply to the format indicated by the
 Do not use this method unless you know what you are doing.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getdata>MIME.Message-&gt;getdata</link>
+<tt><link to=MIME.Message.getdata>MIME.Message-&gt;getdata</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8653,8 +8661,8 @@ the <tt>Content-Disposition</tt> header directly, please use this
 function instead.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>,
-<link to=MIME.Message.get_filename>MIME.Message-&gt;get_filename</link>
+<tt><link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link></tt>,
+<tt><link to=MIME.Message.get_filename>MIME.Message-&gt;get_filename</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8677,7 +8685,7 @@ the new encoding.  See <link to=MIME.Message.encode>encode</link> for a list of 
 encodings.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getencoded>MIME.Message-&gt;getencoded</link>
+<tt><link to=MIME.Message.getencoded>MIME.Message-&gt;getencoded</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8699,9 +8707,9 @@ Common parameters include <tt>charset</tt> for text messages, and
 the <tt>Content-Type</tt> header directly, please use this function instead.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setcharset>MIME.Message-&gt;setcharset</link>,
-<link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link>,
-<link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link>
+<tt><link to=MIME.Message.setcharset>MIME.Message-&gt;setcharset</link></tt>,
+<tt><link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link></tt>,
+<tt><link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link></tt>
 <p>
 </dl>
 </anchor>
@@ -8729,7 +8737,7 @@ modules. In addition, these functions are available:
 <anchor name=Simulate.member_array>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Simulate.member_array</tt> - find first occurance of a value in an array
+<tt>Simulate.member_array</tt> - find the index to the <!-- Här la jag in index osv> first occurance of a value in an array
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int member_array(mixed <I>item</I>, mixed *<I>arr</I>);<br>
@@ -8759,7 +8767,7 @@ Returns an object pointer to the object that called current function,
 if any.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=backtrace>bactrace</link>
+<tt><link to=backtrace>backtrace</link></tt>
 <p>
 </dl>
 
@@ -8781,7 +8789,7 @@ Returns a function pointer to the current function, useful for
 making recursive lambda-functions.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=backtrace>backtrace</link>
+<tt><link to=backtrace>backtrace</link></tt>
 <p>
 </dl>
 
@@ -8814,7 +8822,7 @@ Defined as: return o[name];
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return those strings in arr that matches the regexp in reg.
+Returns those strings in arr that matches the regexp in reg.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Regexp>Regexp</link>
@@ -8855,7 +8863,7 @@ constant Pi.
 This function is the same as all_constants.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=all_constants>all_constants</link>
+<tt><link to=all_constants>all_constants</link></tt>
 <p>
 </dl>
 
@@ -8881,11 +8889,14 @@ mixed *filter_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
 Filter array is the same function as Array.filter.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.filter>Array.filter</link>
+<tt><link to=Array.filter>Array.filter</link></tt>
 <p>
 </dl>
 
 </anchor>
+
+<!-- Jag la in "<hr newpage>" här, men varför står .map_array här och inte på M? >
+<hr newpage>
 
 <anchor name=Simulate.map_array>
 <dl>
@@ -8904,7 +8915,7 @@ mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
 This function is the same as Array.map.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.map>Array.map</link>
+<tt><link to=Array.map>Array.map</link></tt>
 <p>
 </dl>
 
@@ -8934,7 +8945,7 @@ Result: a and b and c<br>
 </tt>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Simulate.simulated_explode.html>Simulate.explode</link>
+<tt><link to=Simulate.simulated_explode.html>Simulate.explode</link></tt>
 <p>
 </dl>
 
@@ -8952,7 +8963,7 @@ Result: a and b and c<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function is equal to indices
+This function is equal to indices.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=indices>indices</link>
@@ -8964,7 +8975,7 @@ This function is equal to indices
 <anchor name=Simulate.m_sizeof>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Simulate.m_sizeof</tt> - Return the size of a mapping
+<tt>Simulate.m_sizeof</tt> - return the size of a mapping
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int m_sizeof(mapping <I>m</I>);<br>
@@ -8974,7 +8985,7 @@ This function is equal to indices
 This function is equal to sizeof.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>
+<tt><link to=sizeof>sizeof</link></tt>
 <p>
 </dl>
 
@@ -8991,10 +9002,10 @@ This function is equal to sizeof.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function is equal to values
+This function is equal to values.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=values>values</link>
+<tt><link to=values>values</link></tt>
 <p>
 </dl>
 
@@ -9011,11 +9022,12 @@ This function is equal to values
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the position of str2 in str1, if str2 can't be found in str1
+Returns the position of str2 in str1, if str2 can't be found in str1
 -1 is returned.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sscanf>sscanf</link> and <link to=Simulate.explode>Simulate.explode</link>
+<tt><link to=sscanf>sscanf</link> and <link to=Simulate.explode>Simulate.explode</link></tt>
+<!-- Här ska det vara en länk till <tt>search</tt>!>
 <p>
 </dl>
 
@@ -9067,7 +9079,7 @@ void add_efun(string func_name)<br>
 This function is the same as add_constant.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=add_constant>Simulate.add_constant</link>
+<tt><link to=add_constant>Simulate.add_constant</link></tt>
 <p>
 </dl>
 </anchor>
@@ -9076,7 +9088,7 @@ This function is the same as add_constant.
 <anchor name=Simulate.l_sizeof>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Simulate.l_sizeof</tt> - Return the size of a multiset
+<tt>Simulate.l_sizeof</tt> - return the size of a multiset
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int l_sizeof(multiset <I>m</I>);<br>
@@ -9086,7 +9098,7 @@ This function is the same as add_constant.
 This function is equal to sizeof.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>
+<tt><link to=sizeof>sizeof</link></tt>
 <p>
 </dl>
 
@@ -9105,7 +9117,7 @@ This function is equal to sizeof.
 This function is the same as multisetp.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=multisetp>Simulate.multisetp</link>
+<tt><link to=multisetp>Simulate.multisetp</link></tt>
 <p>
 </dl>
 
@@ -9134,7 +9146,7 @@ Result: (&lt; /* 3 elements */<br>
 </tt>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=aggregage_multiset>aggregate_multiset</link>
+<tt><link to=aggregage_multiset>aggregate_multiset</link></tt>
 <p>
 </dl>
 
@@ -9154,7 +9166,7 @@ Result: (&lt; /* 3 elements */<br>
 This function is exactly the same as aggregate_multiset.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=aggregage_multiset>aggregate_multiset</link>
+<tt><link to=aggregage_multiset>aggregate_multiset</link></tt>
 <p>
 </dl>
 
@@ -9177,6 +9189,8 @@ prints.
 <p>
 </dl>
 
+<!-- explode saknas!>
+
 </anchor>
 </section>
 </anchor>
@@ -9197,6 +9211,8 @@ prints.
 
 <anchor name=Image>
 <chapter title="The Image module">
+
+<!-- Hela Image-skiten ska uppdateras från http://www.mirar.org/ >
 The Image module is used to manipulate bit-mapped color images. 
 It can read PPM images and do various manipulations, or it can be
 used to create completely new images. The created images can be
@@ -9342,7 +9358,7 @@ makes a new image out of the minimum pixels values
      the images must have the same size.
  array(int) color
      an array in format ({r,g,b}), this is equal
-     to using an uniform-colored image.
+     to using a uniform-colored image.
  int value
      equal to ({value,value,value}).
 </p>
@@ -9377,7 +9393,7 @@ Multiplies pixel values and creates a new image.
      the images must have the same size.
  array(int) color
      an array in format ({r,g,b}), this is equal
-     to using an uniform-colored image.
+     to using a uniform-colored image.
  int value
      equal to ({value,value,value}).
 </p>
@@ -9407,7 +9423,7 @@ adds two images; values are truncated at 255.
      the image which to add.
  array(int) color
      an array in format ({r,g,b}), this is equal
-     to using an uniform-colored image.
+     to using a uniform-colored image.
  int value
      equal to ({value,value,value}).
 </p>
@@ -9438,7 +9454,7 @@ makes a new image out of the difference
      the images must have the same size.
  array(int) color
      an array in format ({r,g,b}), this is equal
-     to using an uniform-colored image.
+     to using a uniform-colored image.
  int value
      equal to ({value,value,value}).
 </p>
@@ -9469,7 +9485,7 @@ makes a new image out of the maximum pixels values
      the images must have the same size.
  array(int) color
      an array in format ({r,g,b}), this is equal
-     to using an uniform-colored image.
+     to using a uniform-colored image.
  int value
      equal to ({value,value,value}).
 </p>
@@ -10039,12 +10055,12 @@ Do NOT use this function if you don't know what
 <anchor name=Image.image.distancesq>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>distancesq</tt> - Makes an grey-scale image for alpha-channel use<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>distancesq</tt> - Makes a grey-scale image for alpha-channel use<p><dt><encaps>SYNTAX</encaps><dd>
 <tt>object distancesq()<br>
 object distancesq(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Makes an grey-scale image, for alpha-channel use.
+Makes a grey-scale image, for alpha-channel use.
     
     The given value (or current color) are used for coordinates
     in the color cube. Each resulting pixel is the 
@@ -10868,13 +10884,13 @@ the new image object
 <anchor name=Image.image.select_from>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>select_from</tt> - Makes an grey-scale image for alpha-channel use
+<tt>select_from</tt> - Makes a grey-scale image for alpha-channel use
 <p><dt><encaps>SYNTAX</encaps><dd>
 <tt>object select_from(int&nbsp;x, int&nbsp;y)<br>
 object select_from(int&nbsp;x, int&nbsp;y, int&nbsp;edge_value)</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Makes an grey-scale image, for alpha-channel use.
+Makes a grey-scale image, for alpha-channel use.
     
     This is very close to a floodfill.
     
@@ -11610,10 +11626,10 @@ false and the expression after the #elif evaluates true.
 evaluate to zero unless they are defined to something else. Integers,
 strings and floats are the only types that can be used, but all pike
 operators can be used on these types.
-<p>Also, two special functions can be used, defined() and constant().
+<p>Also, two special functions can be used, defined() <!-- Ska detta skrivas med <tt> eller något annat?> and constant().
 defined(&lt;identifier&gt;) expands to '1' if the identifier is defined,
 '0' otherwise. constant(&lt;identifier&gt;) expands to '1' if identifier is
-an predefined constant (with add_constant), '0' otherwise.
+an predefined constant (with add_constant) and '0' otherwise.
 <p>
 <dt><encaps>EXAMPLES</encaps><dd>
 <tt>#if 1<br>
@@ -11749,7 +11765,7 @@ are currently allocated and how much memory they use. Try evaluating
 the function in hilfe to see precisly what it returns.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=_verify_internals>_verify_internals</link>
+<tt><link to=_verify_internals>_verify_internals</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11767,11 +11783,11 @@ the function in hilfe to see precisly what it returns.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function returns the 'next' object/array/mapping/string/etc
-in the linked list. It is mainly meant for debugging Pike but
+in the linked list<!-- Vilken länkad lista. Jag fattade det inte när jag läste detta första gången.>. It is mainly meant for debugging Pike but
 can also be used to control memory usage.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=next_object>next_object</link> and <link to=_prev>_prev</link>
+<tt><link to=next_object>next_object</link> and <link to=_prev>_prev</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11793,7 +11809,7 @@ can also be used to control memory usage. Note that this function
 does not work on strings.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=_next>_next</link>
+<tt><link to=_next>_next</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11816,7 +11832,7 @@ _refs() is mainly meant for debugging Pike but
 can also be used to control memory usage.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=_next>_next</link> and <link to=_prev>_prev</link>
+<tt><link to=_next>_next</link></tt> and <tt><link to=_prev>_prev</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11850,10 +11866,10 @@ It is only used for debugging.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the arcus cosinus value for f.
+Returns the arcus cosinus value for <i>f</i>. <!-- Borde man inte skriva att <i>f</i> ska anges i radianer?>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=cos>cos</link> and <link to=asin>asin</link>
+<tt><link to=cos>cos</link></tt> and <tt><link to=asin>asin</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11878,7 +11894,8 @@ If there is a constant called 'name' already, it will be replaced by
 by the new definition. This will not affect already compiled programs.
 <p>Calling add_constant without a value will remove that name from the list<br>
 <dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td>  </td><td> of of constant. As with replacing, this will not affect already compiled </td></tr>
+<tr valign=top><td>  </td><td> of of 
+<!-- Fel layout, ett extra "of" och det ska väl vara "constants"> constant. As with replacing, this will not affect already compiled </td></tr>
 <tr valign=top><td>  </td></tr>
 </table>
 </dl>programs.<br>
@@ -11893,7 +11910,7 @@ add_constant("add_constant");<br>
 </tt>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=all_constants>all_constants</link>
+<tt><link to=all_constants>all_constants</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11915,7 +11932,7 @@ the added directory will only be searched when using &lt;&nbsp;&gt; to
 quote the included file.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_include_path>remove_include_path</link> and <link to=include>#include</link>
+<tt><link to=remove_include_path>remove_include_path</link></tt> and <tt><link to=include>#include</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11936,7 +11953,7 @@ This is the same as the command line option <tt>-M</tt>. For more
 information about modules, see <ref to=modules>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_module_path>remove_module_path</link>
+<tt><link to=remove_module_path>remove_module_path</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11957,7 +11974,7 @@ This is the same as the command line option <tt>-P</tt>. For more
 information about programs, see <ref to=programs>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_program_path>remove_program_path</link>
+<tt><link to=remove_program_path>remove_program_path</link></tt>
 <p>
 </dl>
 </anchor>
@@ -11985,7 +12002,7 @@ like int a[10]=allocate(10); (and it isn't possible either) like
 in C, just int *a=allocate(10); will do.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=arrayp>arrayp</link> and <link to=allocate>allocate</link>
+<tt><link to=sizeof>sizeof</link>, <link to=arrayp>arrayp</link> and <link to=allocate>allocate</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12008,7 +12025,7 @@ creates a mapping of those pairs. The second syntax is always
 preferable.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=mappingp>mappingp</link> and <link to=mkmapping>mkmapping</link>
+<tt><link to=sizeof>sizeof</link></tt>, <tt><link to=mappingp>mappingp</link></tt> and <tt><link to=mkmapping>mkmapping</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12026,14 +12043,14 @@ or<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Construct an multiset with the arguments as indexes. This function
+Construct a multiset with the arguments as indexes. This function
 could be written in Pike as:
 <p>multiset aggregate(mixed ... elems) { return mkmultiset(elems); }
 <p>The only problem is that mkmultiset is implemented using
 aggregage_multiset...
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=multisetp>multisetp</link> and <link to=Simulate.mkmultiset>Simulate.mkmultiset</link>
+<tt><link to=sizeof>sizeof</link></tt>, <tt><link to=multisetp>multisetp</link></tt> and <tt><link to=Simulate.mkmultiset>Simulate.mkmultiset</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12049,18 +12066,18 @@ aggregage_multiset...
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-alarm arranges for a SIGALRM signal to be delivered to the
-process in seconds seconds.
-<p>If seconds is zero, no new alarm is scheduled.
+<tt>alarm</tt> arranges for a SIGALRM signal to be delivered to the
+process<!-- Menar du process eller thread? Lite mer förklaring, tack.> in <i>seconds</i> seconds.
+<p>If <i>seconds</i> is zero, no new alarm is scheduled.
 <p>In any event any previously set alarm is cancelled.
 <p>
 <dt><encaps>RETURN VALUE</encaps><dd>
-alarm returns the number of seconds  remaining  until  any
+<tt>alarm</tt> returns the number of seconds  remaining  until  any
 previously  scheduled  alarm  was  due to be delivered, or
 zero if there was no previously scheduled alarm.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=signal>signal</link>
+<tt><link to=signal>signal</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12076,11 +12093,11 @@ zero if there was no previously scheduled alarm.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return a mapping containing all constants, indexed on the names of the
+Returns a mapping containing all constants, indexed on the names of the
 constant, and with the value of the efun as argument.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=add_constant>add_constant</link>
+<tt><link to=add_constant>add_constant</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12104,11 +12121,11 @@ Allocate an array of size elements and initialize them to zero.
 <p>
 <dt><encaps>NOTA BENE</encaps><dd>
 Arrays are dynamically allocated there is no need to declare them
-like int a[10]=allocate(10); (and it isn't possible either) like
-in C, just int *a=allocate(10); will do.
+like <tt>int a[10]=allocate(10);</tt> (and it isn't possible either) like
+in C, just <tt>int *a=allocate(10);</tt> will do.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=aggregate>aggregate</link> and <link to=arrayp>arrayp</link>
+<tt><link to=sizeof>sizeof</link></tt>, <tt><link to=aggregate>aggregate</link></tt> and <tt><link to=arrayp>arrayp</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12124,10 +12141,10 @@ in C, just int *a=allocate(10); will do.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is an array, zero otherwise.
+Returns 1 if <i>arg</i> is an array and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=allocate>allocate</link>, <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
+<tt><link to=allocate>allocate</link></tt>, <tt><link to=intp>intp</link></tt>, <tt><link to=programp>programp</link></tt>, <tt><link to=floatp>floatp</link></tt>, <tt><link to=stringp>stringp</link></tt>, <tt><link to=objectp>objectp</link></tt>, <tt><link to=mappingp>mappingp</link></tt>, <tt><link to=multisetp>multisetp</link></tt> and <tt><link to=functionp>functionp</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12143,10 +12160,10 @@ Returns 1 if arg is an array, zero otherwise.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the arcus sinus value for f.
+Returns the arcus sinus value for f.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sin>sin</link> and <link to=acos>acos</link>
+<tt><link to=sin>sin</link></tt> and <tt><link to=acos>acos</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12162,10 +12179,10 @@ Return the arcus sinus value for f.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the arcus tangent value for f.
+Returns the arcus tangent value for f.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=tan>tan</link>, <link to=asin>asin</link> and <link to=acos>acos</link>
+<tt><link to=tan>tan</link></tt>, <tt><link to=asin>asin</link></tt> and <tt><link to=acos>acos</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12177,7 +12194,7 @@ Return the arcus tangent value for f.
 <tt>backtrace</tt> - get a description of the call stack
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *backtrace();<br>
+<tt>mixed <!-- Ett "*" till här?>*backtrace();<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -12197,7 +12214,7 @@ in the stack. Each entry has this format:
 that the last but one and so on.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=catch>catch</link> and <link to=throw>throw</link>
+<tt><link to=catch>catch</link></tt> and <tt><link to=throw>throw</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12215,13 +12232,13 @@ mixed fun ( mixed ... <I>args</I> );<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function takes a a function pointer as first argument and calls
+This function takes a function pointer as first argument and calls
 this function with the rest of the arguments as arguments. Normally,
 you will never have to write call_function(), because you will use the
 second syntax instead.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=backtrace>backtrace</link> and <link to=Simulate.get_function>Simulate.get_function</link>
+<tt><link to=backtrace>backtrace</link></tt> and <tt><link to=Simulate.get_function>Simulate.get_function</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12243,7 +12260,7 @@ identifies this call out. The return value can be sent to
 find_call_out or remove_call_out to remove the call out again.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_call_out>remove_call_out</link>, <link to=find_call_out>find_call_out</link> and <link to=call_out_info>call_out_info</link>
+<tt><link to=remove_call_out>remove_call_out</link></tt>, <tt><link to=find_call_out>find_call_out</link></tt> and <tt><link to=call_out_info>call_out_info</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12275,7 +12292,7 @@ contains an array that looks like this:
 
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=call_out>call_out</link>, <link to=find_call_out>find_call_out</link> and <link to=remove_call_out>remove_call_out</link>
+<tt><link to=call_out>call_out</link></tt>, <tt><link to=find_call_out>find_call_out</link></tt> and <tt><link to=remove_call_out>remove_call_out</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12298,7 +12315,7 @@ contains an array that looks like this:
 	<tt>time(1)</tt> to the current time.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=call_out>call_out</link>, <link to=find_call_out>find_call_out</link> and <link to=remove_call_out>remove_call_out</link>
+<tt><link to=call_out>call_out</link></tt>, <tt><link to=find_call_out>find_call_out</link></tt> and <tt><link to=remove_call_out>remove_call_out</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12321,7 +12338,7 @@ returns the argument given to throw. For a run time error, this value
 is ({ "error message", backtrace }) 
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=throw>throw</link>
+<tt><link to=throw>throw</link></tt>
 <p>
 </dl>
 </anchor>
@@ -12357,8 +12374,8 @@ Change the current directory for the whole Pike process, return
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the closest integral value higher or equal to x.
-Note that ceil() does _not_ return an int, merely an integral value.
+Returns the closest integer <!-- Det heter inte integral number! Då vill inte jag vara med i alla fall!> value higher or equal to <i>f</i>.
+Note that <tt>ceil()</tt> does _not_ return an int! It returns an integer value stored in a float. <!-- Jag skrev om den sista meningen>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=floor>floor</link>
@@ -12379,10 +12396,10 @@ or<br>
 <tt>object new(program <I>p</I>,mixed ... <I>args</I>);</tt><br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-new() or clone() creates an object from the program p. Or in C++ terms:
-It creates an instance of the class p. This clone will first have
-all global variables initialized, and then create() will be called
-with args as arguments.
+<tt>new()</tt> or <tt>clone()</tt> creates an object from the program <i>p</i>. Or in C++ terms:
+It creates an instance of the class <i>p</i>. This clone will first have
+all global variables initialized, and then <tt>create()</tt> will be called
+with <i>args</i> as arguments.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=destruct>destruct</link>, <link to=compile_string>compile_string</link> and <link to=compile_file>compile_file</link>
@@ -12408,6 +12425,7 @@ This function is exactly equivialent to:
 That is, it indexes every index in the array data on the value of
 the argument index and returns an array with the results.
 <p>
+<!-- Vore fint med ett exempel här.>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=rows>rows</link>
 <p>
@@ -12455,8 +12473,8 @@ Result: /foo/bar/sune.c<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function will compile the filename to a Pike program that can
-later be used for cloning.
+This function will compile the file with the filename <i>filename</i> to a Pike program that can
+later be used for cloning. <!-- Jag skrev om förgående mening. Kolla den!>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=clone>clone</link> and <link to=compile_string>compile_string</link>
@@ -12475,7 +12493,8 @@ later be used for cloning.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Compile_string takes a complete Pike program as an argument in the
+Compile_string takes a complete Pike program <!-- Nej, det gör den inte! Den tar en sträng med Pike-kod som beskriver ett helt program. Var försiktig med termen "program" annars blir det förvirrande!> 
+as an argument in the
 string prog and compiles it to clonable program. The second argument
 will be used as the file name of the program and will be used for
 error messages and such.
@@ -12520,7 +12539,7 @@ they may not the the same value. (tested with ==)
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the cosinus value for f.
+Returns the cosinus value for f.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=acos>acos</link> and <link to=sin>sin</link>
@@ -12590,11 +12609,11 @@ Result: Wed Jan 14 03:36:08 1970<br>
 <tt>decode_value</tt> - code a value into a string
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed denode_value(mixed <I>value</I>);<br>
+<tt>mixed denode_value(mixed<!-- Det ska väl vara string? Och kanske ett annat namn på "value"? (coded_value?)> <I>value</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function takes a string created with encode_value() and converts
+This function takes a string created with <tt>encode_value()</tt> and converts
 it back to the value that was coded. 
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -12791,8 +12810,9 @@ more information about return codes.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the natural exponent of f.
-log( exp( x ) ) == x as long as exp(x) doesn't overflow an int.
+Returns the natural exponent of <i>f</i>.
+<!-- Ingen matteskola här inte! Och vad menar du med "doesn't overflow an int."?
+log( exp( x ) ) == x as long as exp(x) doesn't overflow an int.>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=pow>pow</link> and <link to=log>log</link>
@@ -12870,14 +12890,14 @@ zero_type(find_call_out(f)) will return 1.
 <anchor name=floatp>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>floatp</tt> - is the argument an float?
+<tt>floatp</tt> - is the argument a float?
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int floatp(mixed <I>arg</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is a float, zero otherwise.
+Returns 1 if <i>arg</i> is a float and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
@@ -12896,8 +12916,8 @@ Returns 1 if arg is a float, zero otherwise.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the closest integral value lower or equal to x.
-Note that floor() does _not_ return an int, merely an integral value.
+Returns the closest integer <!-- Det heter inte integral number! Då vill inte jag vara med i alla fall!> value lower or equal to <i>f</i>.
+Note that <tt>floor()</tt> does _not_ return an int! It returns an integer value stored in a float. <!-- Jag skrev om den sista meningen>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=ceil>ceil</link>
@@ -12973,14 +12993,14 @@ returned.
 <anchor name=functionp>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>functionp</tt> - is the argument an function?
+<tt>functionp</tt> - is the argument a function?
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int functionp(mixed <I>arg</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is a function, zero otherwise.
+Returns 1 if <i>arg</i> is a function and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=floatp>floatp</link>
@@ -13022,7 +13042,7 @@ and call this routine then.)
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return an array of all filenames in the directory dir, or zero if
+Returns an array of all filenames in the directory <i>dirname</i>, or zero if
 no such directory exists.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -13061,7 +13081,7 @@ getcwd returns the current working directory.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Reurns the value of the environment variable with the name varname,
+Returns the value of the environment variable with the name <i>varname</i>,
 if no such environment variable exists, zero is returned.
 <p>
 <dt><encaps>NOTA BENE</encaps><dd>
@@ -13103,10 +13123,10 @@ array(string) glob(string <I>glob</I>, array(string) <I>arr</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function matches "globs". A the the glob string a question sign
+This function matches "globs". A the the <!-- Jag begriper inte vad det ska stå. Skriv om!> glob string a question sign
 matches any character and an asterisk matches any string. When
 given two strings as argument a true/false value is returned
-which reflects if the 'str' matches 'glob'. When given an array as
+which reflects if the <i>str</i> matches <i>glob</i>. When given an array as
 second argument, an array containing all matching strings is returned.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -13146,8 +13166,8 @@ is given, the result will be &gt;= 0 and lesser than that argument.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Indices returns an array of all values you can use as index when
-indexing foo. For strings and arrays this is simply an array of the
+<tt>indices</tt> returns an array of all values you can use as index when
+indexing <i>foo</i>. For strings and arrays this is simply an array of the
 ascending numbers. For mappings and multisets, the array may contain any
 kind of value. For objects, the result is an array of strings.
 <p>
@@ -13168,7 +13188,7 @@ kind of value. For objects, the result is an array of strings.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is an int, zero otherwise.
+Returns 1 if <i>arg</i> is an int and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=arrayp>arrayp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
@@ -13282,7 +13302,7 @@ components:
 <tr valign=top><td> yday     </td><td> day of year             </td><td> 0 - 365 </td></tr>
 <tr valign=top><td> isdst    </td><td> is daylight saving time </td><td> 0/1 </td></tr>
 <tr valign=top><td> timezone </td><td> difference between </td></tr>
-<tr valign=top><td>  </td><td>  </td><td> local time and UTC </td></tr>
+<tr valign=top><td>  </td><td><!-- Layout-fel! ("fel" är substantiv här :-)>  </td><td> local time and UTC </td></tr>
 </table>
 
 <p>
@@ -13306,8 +13326,10 @@ The 'timezone' might not be available on all platforms.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the natural logarithm of f.
+Returns the natural logarithm of <i>f</i>.
+<!--
 exp( log(x) ) == x for x &gt; 0.
+Onödig info som förvirrar>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=pow>pow</link> and <link to=exp>exp</link>
@@ -13326,7 +13348,7 @@ exp( log(x) ) == x for x &gt; 0.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return a string with all capital letters converted to lower case.
+Returns a string with all capital letters converted to lower case.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=upper_case>upper_case</link>
@@ -13346,7 +13368,7 @@ Return a string with all capital letters converted to lower case.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Remove the entry with index 'index' from mapping 'map' destructively.
-Return the changed mapping. If the mapping does not have an
+Returns the changed mapping. If the mapping does not have an
 entry with index 'index', nothing is done.
 Note that m_delete changes map destructively and only returns
 the mapping for compatibility reasons.
@@ -13361,14 +13383,14 @@ the mapping for compatibility reasons.
 <anchor name=mappingp>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>mappingp</tt> - is the argument an mapping?
+<tt>mappingp</tt> - is the argument a mapping?
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int mappingp(mixed <I>arg</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is a mapping, zero otherwise.
+Returns 1 if <i>arg</i> is a mapping and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=multisetp>multisetp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
@@ -13424,8 +13446,8 @@ Create a directory, return zero if it fails and nonzero if it successful.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Makes a mapping ind[x]:val[x], 0&lt;=x&lt;sizeof(ind).
-Ind and val must have the same size.
-This is the inverse operation of indices and values.
+<i>ind</i> and <i>val</i> must have the same size.
+This is the inverse operation of <tt>indices</tt> and <tt>values</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=indices>indices</link> and <link to=values>values</link>
@@ -13510,7 +13532,7 @@ Or you can just send them all on one line as the second syntax suggests.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is a multiset, zero otherwise.
+Returns 1 if <i>arg</i> is a multiset and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
@@ -13522,7 +13544,7 @@ Returns 1 if arg is a multiset, zero otherwise.
 <anchor name=mv>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>mv</tt> - move a file (may handle directiories as well)
+<tt>mv</tt> - move a file (may handle directories as well)
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int mv(string <I>from</I>,string <I>to</I>);<br>
@@ -13573,15 +13595,15 @@ for(o=next_object();o;o=next_object(o))<br>
 <anchor name=object_program>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>object_program</tt> - get the program asociated with the object
+<tt>object_program</tt> - get the program associated with the object
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>program object_program(object <I>o</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns the program from which o was cloned.
-If o is not an object, or o was destructed zero is returned.
+This function returns the program from which <i>o</i> was cloned.
+If <i>o</i> is not an object, or <i>o</i> have been destructed, zero is returned. <!-- Skrev om den meningen lite>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=clone>clone</link>
@@ -13600,7 +13622,7 @@ If o is not an object, or o was destructed zero is returned.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is an object, zero otherwise.
+Returns 1 if <i>arg</i> is an object and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=arrayp>arrayp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
@@ -13620,7 +13642,7 @@ Returns 1 if arg is an object, zero otherwise.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return n raised to the power of x.
+Returns <i>n</i> raised to the power of <i>x</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=exp>exp</link> and <link to=log>log</link>
@@ -13632,14 +13654,14 @@ Return n raised to the power of x.
 <anchor name=programp>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>programp</tt> - is the argument an program?
+<tt>programp</tt> - is the argument a program?
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int programp(mixed <I>arg</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is a program, zero otherwise.
+Returns 1 if <i>arg</i> is a program and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=multisetp>multisetp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
@@ -13658,7 +13680,7 @@ Returns 1 if arg is a program, zero otherwise.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function sets the environment variable 'varname' to 'value'.
+This function sets the environment variable <i>varname</i> to <i>value</i>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getenv>getenv</link> and <link to=exece>exece</link>
@@ -13678,7 +13700,7 @@ This function sets the environment variable 'varname' to 'value'.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function returns the name of the machine the interpreter is
-running on. This is the same thing that the command 'hostname'
+running on. This is the same thing that the command <i>hostname</i>
 prints.
 
 <p>
@@ -13696,7 +13718,7 @@ prints.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Query_num_arg returns the number of arguments given when this
+query_num_arg returns the number of arguments given when this
 function was called. This is only useful for varargs functions.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -14049,7 +14071,7 @@ mixed search(mapping <I>haystack</I>, mixed <I>needle</I>, [ mixed <I>start</I> 
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Search for needle in haystack. Return the position of needle in
+Search for needle in haystack. Returns the position of needle in
 haystack or -1 if not found. If the optional argument start is present
 search is started at this position. Note that when haystack is a string
 needle must be a string, and the first occurance of this string is
@@ -14110,7 +14132,7 @@ is restored to the default handler.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return a string describing the signal.
+Returns a string describing the signal.
 <p>
 <dt><encaps>EXAMPLE</encaps><dd>
 <tt>&gt; signame(9);<br>
@@ -14158,7 +14180,7 @@ Result: 9<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the sinus value for f.
+Returns the sinus value for f.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=asin>asin</link> and <link to=cos>cos</link>
@@ -14433,7 +14455,7 @@ int sqrt(int <I>i</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the square root of f, or in the second case, the square root
+Returns the square root of f, or in the second case, the square root
 truncated to the closest lower integer.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -14466,14 +14488,14 @@ This function may not be available on all platforms.
 <anchor name=stringp>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>stringp</tt> - is the argument an string?
+<tt>stringp</tt> - is the argument a string?
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int stringp(mixed <I>arg</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns 1 if arg is a string, zero otherwise.
+Returns 1 if <i>arg</i> is a string and zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=multisetp>multisetp</link>, <link to=arrayp>arrayp</link>, <link to=programp>programp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
@@ -14512,7 +14534,7 @@ This function is equal to sizeof.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return the tangent value for f.
+Returns the tangent value for f.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=atan>atan</link>, <link to=sin>sin</link> and <link to=cos>cos</link>
@@ -14672,7 +14694,7 @@ ualarm returns the number of microseconds seconds  remaining<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Return a copy of the string s with all lower case character converted
+Returns a copy of the string s with all lower case character converted
 to upper case character.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
