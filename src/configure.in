@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.84 1997/04/16 03:09:10 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.85 1997/04/16 23:04:51 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -668,6 +668,7 @@ AC_CHECK_FUNCS(
  dlsym \
  dld_link \
  dld_get_func \
+ pipe \
 )
 
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then

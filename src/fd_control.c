@@ -92,6 +92,9 @@ int set_close_on_exec(int fd, int which)
 #ifdef TESTING
 
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 /* a part of the autoconf thingy */
 
 RETSIGTYPE sigalrm_handler0(int tmp) { exit(0); }
@@ -99,15 +102,23 @@ RETSIGTYPE sigalrm_handler1(int tmp) { exit(1); }
 
 main()
 {
+  int tmp[2];
   char foo[1000];
-  set_nonblocking(0,1);
+
+  tmp[0]=0;
+  tmp[1]=0;
+#ifdef HAVE_PIPE
+  pipe(tmp);
+#endif
+  
+  set_nonblocking(tmp[0],1);
   signal(SIGALRM, sigalrm_handler1);
   alarm(1);
-  read(0,foo,999);
-  set_nonblocking(0,0);
+  read(tmp[0],foo,999);
+  set_nonblocking(tmp[0],0);
   signal(SIGALRM, sigalrm_handler0);
   alarm(1);
-  read(0,foo,999);
+  read(tmp[0],foo,999);
   exit(1);
 }
 #endif
