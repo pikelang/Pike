@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.521 2003/12/04 22:23:58 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.522 2003/12/06 10:08:55 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.521 2003/12/04 22:23:58 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.522 2003/12/06 10:08:55 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2294,7 +2294,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
   if(args < 2)
   {
     pop_n_elems(args);
-    push_string(make_shared_string(ret));
+    push_text(ret);
   }else{
     int i;
     i=!strcmp(ret,Pike_sp[1-args].u.string->str);
@@ -4224,25 +4224,25 @@ PMOD_EXPORT void f__compiler_trace(INT32 args)
 #if defined(HAVE_LOCALTIME) || defined(HAVE_GMTIME)
 static void encode_struct_tm(struct tm *tm)
 {
-  push_string(make_shared_string("sec"));
+  push_text("sec");
   push_int(tm->tm_sec);
-  push_string(make_shared_string("min"));
+  push_text("min");
   push_int(tm->tm_min);
-  push_string(make_shared_string("hour"));
+  push_text("hour");
   push_int(tm->tm_hour);
 
-  push_string(make_shared_string("mday"));
+  push_text("mday");
   push_int(tm->tm_mday);
-  push_string(make_shared_string("mon"));
+  push_text("mon");
   push_int(tm->tm_mon);
-  push_string(make_shared_string("year"));
+  push_text("year");
   push_int(tm->tm_year);
 
-  push_string(make_shared_string("wday"));
+  push_text("wday");
   push_int(tm->tm_wday);
-  push_string(make_shared_string("yday"));
+  push_text("yday");
   push_int(tm->tm_yday);
-  push_string(make_shared_string("isdst"));
+  push_text("isdst");
   push_int(tm->tm_isdst);
 }
 #endif
@@ -4273,7 +4273,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   pop_n_elems(args);
   encode_struct_tm(tm);
 
-  push_string(make_shared_string("timezone"));
+  push_text("timezone");
   push_int(0);
   f_aggregate_mapping(20);
 }
@@ -4335,17 +4335,17 @@ PMOD_EXPORT void f_localtime(INT32 args)
   encode_struct_tm(tm);
 
 #ifdef STRUCT_TM_HAS_GMTOFF
-  push_string(make_shared_string("timezone"));
+  push_text("timezone");
   push_int(-tm->tm_gmtoff);
   f_aggregate_mapping(20);
 #else
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
-  push_string(make_shared_string("timezone"));
+  push_text("timezone");
   push_int(-tm->__tm_gmtoff);
   f_aggregate_mapping(20);
 #else
 #ifdef HAVE_EXTERNAL_TIMEZONE
-  push_string(make_shared_string("timezone"));
+  push_text("timezone");
   push_int(timezone);
   f_aggregate_mapping(20);
 #else
@@ -7902,7 +7902,7 @@ void init_builtin_efuns(void)
   start_new_program();
   ADD_PROTOTYPE("_main", tFunc(tArr(tStr) tArr(tStr),tVoid), 0);
 
-  ADD_PROTOTYPE("cast_to_object", tFunc(tString tString, tObj), 0);
+  ADD_PROTOTYPE("cast_to_object", tFunc(tStr tStr tOr(tVoid, tObj), tObj), 0);
   ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg(tObj)), 0);
   ADD_PROTOTYPE("compile_error", tFunc(tStr tInt tStr, tVoid), 0);
   ADD_PROTOTYPE("compile_warning", tFunc(tStr tInt tStr, tVoid), 0);
@@ -7926,7 +7926,8 @@ void init_builtin_efuns(void)
 #endif
 
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
-  ADD_PROTOTYPE("resolv", tFunc(tStr tOr(tStr, tVoid), tMix), 0);
+  ADD_PROTOTYPE("resolv",
+		tFunc(tStr tOr(tStr,tVoid) tOr(tObj,tVoid), tMix), 0);
 
 #if 0
   /* Getenv and putenv are efuns, they do not HAVE to be defined in the
@@ -8197,6 +8198,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("sort",f_sort,
 	   tFuncV(tArr(tSetvar(0,tMix)),tArr(tMix),tArr(tVar(0))),
 	   OPT_SIDE_EFFECT);
+
   /* function(array(0=mixed)...:array(0)) */
   ADD_FUNCTION2("splice",f_splice,
 		tFuncV(tNone,tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0,
@@ -8208,8 +8210,8 @@ void init_builtin_efuns(void)
 		OPT_TRY_OPTIMIZE);
   
 /* function(mixed:int) */
-  ADD_EFUN("stringp", f_stringp,tFunc(tMix,tInt),0);
-  
+  ADD_EFUN("stringp", f_stringp, tFunc(tMix,tInt01), 0);
+
   ADD_EFUN2("this_object", f_this_object,tFunc(tOr(tVoid,tIntPos),tObj),
 	    OPT_EXTERNAL_DEPEND, optimize_this_object, generate_this_object);
   
