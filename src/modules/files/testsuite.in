@@ -30,6 +30,87 @@ test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) retur
 
 test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(9999999); if(!o->close()) return "close"+o->errno(); return s,sprintf("%'+-*'100000s",""))
 
+cond([[ Stdio.File()->proxy ]],
+[[
+  test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open("conftest","r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); destruct(o2); s=o3->read(100000); return s]],sprintf("%'+-*'100000s",""))
+  test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open("conftest","r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); destruct(o2); s=o3->read(9999999); return s]],sprintf("%'+-*'100000s",""))
+  test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open("conftest","r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); o2=0; s=o3->read(9999999); return s]],sprintf("%'+-*'100000s",""))
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe();
+  object x2,x=Stdio.File(); x2=x->pipe();
+  
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe(Stdio.PROP_IPC);
+  object x2,x=Stdio.File(); x2=x->pipe();
+  
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe();
+  object x2,x=Stdio.File(); x2=x->pipe(Stdio.PROP_IPC);
+  
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe(Stdio.PROP_IPC);
+  object x2,x=Stdio.File(); x2=x->pipe(Stdio.PROP_IPC);
+  
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+]])
+
+
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(); destruct(o2); return o->read()]],"")
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(); o2=0; return o->read()]],"")
+
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); destruct(o); return o2->read() || ("error:"+o2->errno())]],"")
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
+
+
 // - file->seek
 // - file->tell
 test_any(object o=clone(Stdio.File); return o->open("conftest","r") && o->read(4711) && o->tell() == 4711 && o->close(),1)
