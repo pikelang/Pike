@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.11 1996/11/26 20:50:15 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.12 1996/11/27 05:48:49 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -512,11 +512,14 @@ void f_zero_type(INT32 args)
   if(args < 1)
     error("Too few arguments to zero_type()\n");
   if(sp[-args].type != T_INT)
-    error("Bad argument 1 to zero_type.\n");
-
-  pop_n_elems(args-1);
-  sp[-1].u.integer=sp[-1].subtype;
-  sp[-1].subtype=NUMBER_NUMBER;
+  {
+    pop_n_elems(args);
+    push_int(0);
+  }else{
+    pop_n_elems(args-1);
+    sp[-1].u.integer=sp[-1].subtype;
+    sp[-1].subtype=NUMBER_NUMBER;
+  }
 }
 
 void f_all_constants(INT32 args)
