@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.215 2000/03/25 21:31:59 hubbe Exp $");
+RCSID("$Id: program.c,v 1.216 2000/03/25 21:34:31 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1057,8 +1057,8 @@ void check_program(struct program *p)
   {
     if(!p->inherits[e].prog) 
     {
-      /* This inherit is not yet initialized, ignore it */
-      continue;
+      /* This inherit is not yet initialized, ignore rest of tests.. */
+      return;
     }
 
     if(p->inherits[e].storage_offset < 0)
