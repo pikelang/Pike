@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.86 2003/04/04 11:45:05 grubba Exp $
+|| $Id: global.h,v 1.87 2003/04/15 18:19:13 nilsson Exp $
 */
 
 #ifndef GLOBAL_H
@@ -120,6 +120,7 @@ void *alloca();
 
 #ifdef __NT__
 /* We are running NT */
+#undef FD_SETSIZE
 #define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
