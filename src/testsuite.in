@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.488 2002/03/02 18:51:36 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.489 2002/03/08 18:54:44 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -445,6 +445,22 @@ test_any([[
   }
   return 1;
 ]], 1);
+
+test_any( [[
+// bug [2830] ------------------------------------------------------------
+// http://community/crunch/show_bug.cgi?id=2830
+class User{};
+
+object luser = User();
+
+#if constant(Pike.Security)
+object luser_creds = Pike.Security.Creds(luser, 0, 0);
+return !catch {
+  return !!call_with_creds(luser_creds, Stdio.File, "/dev/null");
+};
+#endif
+return 0;
+]], 0 )
 
 test_any( [[
 // bug [1996] ------------------------------------------------------------
