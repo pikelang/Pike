@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.73 2001/01/20 22:33:31 grubba Exp $
+ * $Id: acconfig.h,v 1.74 2001/01/24 22:37:50 marcus Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -142,6 +142,9 @@
 
 /* Define if you have fpsetround */
 #undef HAVE_FPSETROUND
+
+/* Define if you have isless */
+#undef HAVE_ISLESS
 
 /* Define if you have crypt.  */
 #undef HAVE_CRYPT

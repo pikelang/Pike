@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.461 2001/01/21 19:01:18 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.462 2001/01/24 22:37:51 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2886,6 +2886,22 @@ MY_CHECK_FUNCTION(fpsetround,
 #endif /* FP_RN */
 ], [
   fpsetround(FP_RN);
+  exit(0);
+])
+########################################################################
+MY_CHECK_FUNCTION(isless,
+[
+#include <math.h>
+#ifdef HAVE_FLOATINGPOINT_H
+#include <floatingpoint.h>
+#endif
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
+
+], [
+  int t = isless(0.0, 0.0);
   exit(0);
 ])
 ########################################################################
