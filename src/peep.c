@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.73 2002/08/30 14:59:41 grubba Exp $");
+RCSID("$Id: peep.c,v 1.74 2002/09/24 09:11:17 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -160,7 +160,7 @@ void assemble(void)
     {
       if (c[e].opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "~~~%4d %4lx %*s", c[e].line,
-	      DO_NOT_WARN((unsigned long)PIKE_PC), synch_depth, "");
+	      DO_NOT_WARN((unsigned long)e), synch_depth, "");
       dump_instr(c+e);
       fprintf(stderr,"\n");
       if (c[e].opcode == F_SYNCH_MARK) synch_depth++;
@@ -261,11 +261,11 @@ void assemble(void)
     if(!reoptimize) break;
     
     asm_opt();
-#if 0
+#if 1
     /* fprintf(stderr, "Rerunning optimizer.\n"); */
-#else /* !0 */
+#else /* !1 */
     reoptimize=0;
-#endif /* 0 */
+#endif /* 1 */
   }
 
   c=(p_instr *)instrbuf.s.str;
