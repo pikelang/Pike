@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.151 2004/11/01 03:52:01 nilsson Exp $
+|| $Id: efuns.c,v 1.152 2004/11/06 07:05:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -984,8 +984,7 @@ void f_get_dir(INT32 args)
     closedir(dir);
 
     END_AGGREGATE_ARRAY;
-    if(args)
-      stack_pop_n_elems_keep_top(args);
+    stack_pop_n_elems_keep_top(args);
   } else {
     pop_n_elems(args);
     push_int(0);
