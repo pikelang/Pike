@@ -376,7 +376,7 @@ img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
 
 object img1=Image.GIF.decode(MIME.decode_base64(
 "R0lGODlhZABkAMQAAAAAAAICAgUFBQoKChYWFigoKC0tLTAwMDIyMjMyMj8/P1lYWFFRUHJycXp5eYyLi6OioaWlpK2srLW0s8vLyszLytbV1Ojn5vTz8vn49/z7+v/+/QAAAAAAAAAAAAAAACwAAAAAZABkAAQF/yAAiONYmiaapivLuu8byzJd1zeO6/ve+z5gMDgkEo3HY1KpZDabTyhUOp1WrVZsNrvlcr3fb1gsJpfLZzRafWSw3Osd4bF7EOLtDCsDx6fmGBs7Gxh2fjgMGYIpG3yHAIAbG4s1k4SGjyaJkyyTjnGRlpQyopd3j5ucjJ59X6Glg6WmhwYICLYst7cGaAW6uro7wMAIBZmZx8jIysvLzc7O0GUOFBTVLNbWDmgKE9nZ1jvg4BMKhwISlp2TEgJrAw0XsrGiFw0DmeiqJuzuePDy1OGod8+Zvk7tMgHcR2qDPXzRAKBjkXAZwB0PI6bwZ4KjM4g1QGrUOJIkSZMnT+6mVKmSZcuWL2HClDlzZk2bNnHmzLmTJ0+fP38GFSqUaNGiR5EiVbp0aVOnTqFGjTqV6hdjKbBadRaBRdetywpoYKFBK9hDEUYB2PD1rB+xajeUdesnbVy2dOPAvTs3bxm7d/H6vapBIL9JfQdbARxYsOIpBxIkkMxi8uQDjx9n1qyZc+fOn0GDFj169CMI4LBlg2D6yAJR6yYtaE0kgAXDIyxZCECbyGuGa2X3rn377u7hvoELRx7EdtzjzIO87jQ7enMLLKBb91HdRPftO3inEA8efHnz5tGnT7+ePXv379/Hly+ffv369/HjPxQCADs="));
-if (img-img1>16) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 1 (right triangle 0.0, 0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
+if (!(img-img1<16)) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 1 (right triangle 0.0, 0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
 if (!equal(img->max(),({255,254,253}))) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 1 (right triangle 0.0, 0.2): "+( "wrong maxcolor" )+"\n"); return 0; } while (0);
 return 1;
 
@@ -410,7 +410,7 @@ img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
 
 object img1=Image.GIF.decode(MIME.decode_base64(
 "R0lGODlhZABkANUAAAAAAAICAgUFBQcHBwoKChQUFBYWFh4eHiMjIyYmJS0tLTAwMDMyMigoKFFRUFlYWHp5eX9+fnJycYyLi56dnDIyMqOioaWlpMHBwMvLyszLytHQz9bV1Orp6Ojn5vTz8vz7+v/+/QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAZABkAAUG/0AAQDgcFo1GZDK5ZDKdz2dUKqVWq1csVrvddr1ecDg8JpPN53NarWa32284XD6f1+12fD6/5/P9f3+BgoKEhYVqAkmKiGQEWAMBjW0FFEkMEZNYBhMYWBUcD5KaWwUbGZchmaRGnB8hqFUVISGho6xJprCpqqyutLuywLWiuEO6wUMMwKuIv8OxUrPDxLeTAhQZGRkWSQ3b2w6FAQ8Y4ODcWN/o4BYNxsbw8fHz9PT29/f5ggIMDP7vjBD49w/BuAUECf4LKGWgQoUHWEUAFg3AMlodFCBqcAEEtWRPplHzIOGRRFoVL2bUxNEjxU8jS9KbmDLESlYtUcKkRdLkvf8IKW8aa1mRyaye+pKIM4JAo74GELAkkJk0aVWrVrFmzbqVK1evX7+GFSuWbNmyZ9GiVbt2bVu3buHGjTuXLl27d+/m1auXb9++fwEDFjx4cGHDhvlYs5b43oMkCxg2jmfAkxEGFybfm5AShGTNmgx8qJkZNKsJIJd5Nh36Vc0QpVkjQp2a1mrZgkTrvAwsNu48tGvb/vxbDQFz27oZWbctavHiz6FDlz59enXr1rFnz152QIUK3yUTAA8+AfczATi85A1MwvkzD9YrA+bB5/st6XfPp+X+Ppn4wtXnHxn5vdbfgGHEV5OACIaRXk0HNujFAykxKKEXASinTIQXbiEk2QH2ddihiCOOWKKJJqKYYoorssiiiy++GKOMMtJYY4034hYEADs="));
-if (img-img1>16) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 2 (right triangle -0.2, -0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
+if (!(img-img1<16)) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 2 (right triangle -0.2, -0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
 if (!equal(img->max(),({255,254,253}))) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 2 (right triangle -0.2, -0.2): "+( "wrong maxcolor" )+"\n"); return 0; } while (0);
 return 1;
 
@@ -451,20 +451,20 @@ a+=({ 50+50*sin(i*2*3.1415926535/7+0.11),
 50+50*cos(i*2*3.1415926535/7+0.11) });
 a+=({ 50+19*sin((i+0.5)*2*3.1415926535/7+0.11),
 50+19*cos((i+0.5)*2*3.1415926535/7+0.11) });
-b+=({ 50+0.9*50*sin(i*2*3.1415926535/7+0.1),
-50+0.9*50*cos(i*2*3.1415926535/7+0.1) });
-b+=({ 50+0.5*19*sin((i+0.5)*2*3.1415926535/7+0.1),
-50+0.5*19*cos((i+0.5)*2*3.1415926535/7+0.1) });
+b+=({ 50+0.9*50*sin(i*2*3.1415926535/7+0.11),
+50+0.9*50*cos(i*2*3.1415926535/7+0.11) });
+b+=({ 50+0.5*19*sin((i+0.5)*2*3.1415926535/7+0.11),
+50+0.5*19*cos((i+0.5)*2*3.1415926535/7+0.11) });
 }
 
 img->setcolor(255,128,0);
 img->polyfill(a,b);
 
 object img1=Image.GIF.decode(MIME.decode_base64(
-"R0lGODlhZABkAPcAAAAAAAEAAAIAAAMAAAQAAAMBAAUAAAYAAAcAAAUCAAYDAAcDAAIBAAgAAQkAAQgEAAkEAAsAAQsBAAoAAQwAAQ4AAQoFAAwGAAsFAA0GAA4HAAQCAA8AARAAAhIAAhMAAhUAAhQAAhADABEAAhYAAhgAAxoAAxsAAxwAAx0AAxAEABEIABAIABIJAA8HABcAAh0EARMKABQKABUKABULABYLABcLABgMABkMABsNABwOAB0OAB0PAA0AAR4AAx8AAyAABCIABCEABCMGAiQAAyUABCQAAycABCgABSkABSoABSsABSwABS4ABS8ABTAABjEABjIABjMABjUABjYABjcABjkABzoABzkHBD4ABzwAB0AACD0ABz0HBR4PACAQAB8PACEQACIRACMRACQSACUSACYTACgTACcUACgUACkUACoVACwWAC0WAC0XADEPAS4XADAYADEYADIZADQaADUaADYbADgbADodADgcADweAD0eAD8fAEAgAEEgAEEhAEYACEcCBksACFAACVUACVgACl0AC2IADFkAC2gADGsBC3IADnEADXgBDXwADn0BDkcACEwaAkQfAFEdAk4mAFIoAFMpAFspAHAPCXYZBl4sAHQrAmUyAGw1AHA3AHo5AH8AD4AAD4AAEIEBD4ICD4ABD4MDD4QED4QFDoAIDYcGDowKDo0LDpAPDZISDJQUDZcWDJkaC5wcDJ4eDKEiCqUlC6gnCpYzBKsqCaswCLAuCbIyCbM0CbY4CLo5CLw8CGAHCYFBAIpFAIxIAJFKAJlNAKFQAKRTAMBBB7hOBMRFBshKBq1XALhdALteAMVjAMxNBtBPBdJWBNlYBNpbBNZjAuBgA+RlAtVrANpuAORuAeVzAOpsAu9xAet2APB2APF4ALNZAPR1AfN0AfV2AfZ2AfN6APR6APV6APZ4APZ7APZ3Afl5APl6APh5APd8APh8APl7APp7APp8APl9APp9APV7APt8APx9APx+APt+AP1/AP1+AP5/APd4AP+AACwAAAAAZABkAAcI/wABABA4cGBBgwYRJky4kCFDhw8fRpQokWLFihcxYtS4cWNHjx5Bhgw5kqTEACZNplSpkiXGDZpatpQ5c6bKT59s2tS5c2fCNfBi+vQ5lCjJAs/+SZI4wajRhBqetvz07x+ch0UASZVqp9PW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"));
+"R0lGODlhZABkAPcAAAAAAAEAAAIBAAQAAAIAAAMBAAUAAAQCAAUCAAMAAAcAAAgAAQYAAAcDAAkAAQsAAQwAAQsBAAoAAQkEAAoFAAsFAAwGAAgEAA0AAQ4AAQ8AARAAAhIAAhMAAhADABEAAhQAAhUAAhYAAhgAAxoAAxsAAw0GAA8HABEIABAIABEJABIJABMKAA4HABcAAhcIABUKABQKABYLABcLABkMABgMABoNABsNABwAAx0AAx4AAx8AAx0EASAABCEABCIABCQABCUABCYAAyQCAiYABCcABCgABSkABSsABSoABSwABS4ABS8ABTAABjEABjIABjAEBDMABjUABjcABjgABzcCBTYABjkABzoABzsABz0ABz4ABxwOAB0OAB4PAB0PAB8PACAQACEQACIRACMRACQSACcPACYTACcTACUSACgUACkUACkVACsWACoVACwWAC0WAC0XADEPAS4XAC8XADEYADIZADkHBDMaADUaADcbADYbADodADgcADweAD0eAEMACEQLBUkACE4ACU8ACFcAClkACmAACmAAC2gADGkADHAADXUADncADnkADnwAD0IXAUEfAEMhAEolAEokAFAnAFgnAFksAFcpAF4vAHQVB3QeBGEwAGYyAGkzAHY3AEoACX4AD38ADn8AD4AAEIAAD4EBD4ICD4MDD4MEDoUFD4cIDYoLDosKDosIDo4NDpEQDZMUDJYVDZkZDJsdC58fDKEgC6QgC6cnCqkpCqAvBqwrCq0yCLMyCbQzCLg3CHY7AH1AAH9BAIhFAI1IAJRKAJpGAp5QAHk8AKxLArw9B79GBapWALNbAL5bAb9hAMdHBs1NBs9RBNVWBNJTBM1kANtcBOJjAtBpANhsANpuAOFwAOhpAuptAeZzAOt2AadTAO9vAfBxAfByAfB4AO92APF5APNzAfN0AfV2AfF3APN6APN5APV6APd4APh5APd8APh7APl6APp7APl9APt8APp9APt+APx9APx+AP1+AP1/AO93AP5/AP5+AP+AACwAAAAAZABkAAcI/wABABA4cGBBgwYRJky4kCFDhw8fRpQokWLFihcxYtS4cWNHjx5Bhgw5kqTEACZNplSpkiXGA5datpQ5c6ZKZMBs2tS5c2dCN/Ay+fQ5lKjJAtX+SZIowajRhC2etgQG79+ch0EASZW6x9PW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"));
 
 
-if (img-img1>16) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 3 (hollow stars): "+( "differ too much" )+"\n"); return 0; } while (0);
+if (!(img-img1<16)) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 3 (hollow stars): "+( "differ too much" )+"\n"); return 0; } while (0);
 
 
 
@@ -498,9 +498,238 @@ img->polyfill(a);
 object img1=Image.GIF.decode(MIME.decode_base64(
 "R0lGODlhZABkAOYAAAAAAAIAAAEAAAQAAAUAAAYAAAMAAAgAAQkAAQoAAQsAAQwAAQ0AAQ4AAQ8AAQcAABAAAhEAAhIAAhMAAhUAAhQAAhYAAhcAAhgAAxkAAxoAAxsAAxwAAx0AAx4AAx8AAyAABCEABCIABCMABCQABCUABCYABCcABCgABSkABSoABSsABSwABS0ABS4ABS8ABTAABjEABjIABjMABjQABjUABjYABjcABjgABzkABzoABzsABzwABz0ABz4ABz8AB0AACEMACEIACEYACEcACEgACUkACUoACUsACUwACU0ACU4ACU8ACVAAClIAClEAClMAClUAClgAC1cAClkAC1YAClsAC1wAC10AC14AC18AC2AADGEADGIADGMADGQADGUADGYADGcADGgADWkADWoADWsADWwADW0ADW4ADW8ADXAADnEADnMADnQADnUADnIADncADngAD3kAD3YADnoAD3sAD3wAD0EACH0AD38AD34AD4AAEAAAAAAAAAAAACwAAAAAZABkAAYH/4AAAIKDg4WGhoiJiYuMjI6Pj5GSkpSVlZeYmJqbm52enqChoaOkpKanp6mqqqytra+wsLKzs7W2tri5ubu8hgq+vsHClSpFxMTIxDl6NMnJz7YCRnx8HNDQ2KoEUtV6BdnZ4Z4KX9V8aOLi6pUTaud8UeukKC3zsx508Hw9954HdcKI8EdqxZ19fEoQ3ISEj54rFxZW2qEHIZ8GEitRqMhnzxMHGQcJaGiRTshKWeDdGXJAIgEqFqtlOSnpBMI4Owb4UxAmZrUhNB8JeIeQzQsB6yoQ9eki6CMdPsmQyPYhjs9zEZ0mAnhViwZiLQ5e5XMngFZGSsbqgRKBFw+OY//FnGVkAa7PO0USwBo5Fh6TuYy09K0mpweBUwWsDD6HA3AiFIurwZGBdNMCMZGrgXBsSMCazHzMnMBE4XNmPS05D9oBuhqXa4xAyGm9RrUhBHZaO6wywZALsaCl2Da0RHe1PEgU+LCbGc/wQReYg85jvFqK54O2VK9+ri12Fdy5z8E+KACb8Ma5kB/EA73uI+sBJMjtPrOM+ACY1M/8NT4G6ftZtIdO+HURYF9l4DfICgeOBYWCAAQAR4M+7QAhAD1QGNN1ECYAnIbn1MGDARA2AaJFZ4yg4H8nIqRHFSDF50WLFtXRA4nYdTAbjRahMdVwItTBo096SAGBaid8OKT/RXb8QOBZLVC3ZF9pmHDWDHtMGRkV3p3EjJaZ2QHEkwv9ACCYY6kx2kJDoFmdFRLcw5eb1d0hxGHZBOAEneitwSExBnTDp3tX9OYLAVgMut8dQeA5ywMGKhogGyrMkkBPkjaYRQWqMFBGpvXdgcYVSOigggWnQJAGqK3p0UYXT+ABwwcNVAZLBROyetUcY0hBhA0lUECmLxi8oes5eaiRhRI8sLCBXv5wYFWmaUARhAwhQGDWSSHMwaqVZ5lAX6Z6IHDWClJyZ8caX1ChhBA2nFGdGWfFkGVfetSRhhdTIAFEDSl4IMEDkrxQ3RJa3QCXHnKgwUUVR/wwAwocROCo1ioBmNZaDE5F0IMMJmzgwLDJ1GAcpxfOMoAbrZmUsi2sgUbFy7YUMG1kPNBsCx6gfaCzpUIulgfJP4dCRGRfFD0LA0r6RITSs6Q1WKVQtyLBvVfpwUDVsEDRlxpcwxLdWE6EDQtMV9VgdisdnFkNBmu3ol1Mc9gadygj+ITF3a2AERMQfKuSQkwqBn6KGQjtQbDhpBi8zxiMnxLAUtUgEfkpJsPT1OWhrAzPkZyHEjMfbYROis3VVGE6KTzzkcPqoSAgJGywb0KEHTjWjgkDM+nuCQVzBQIAOw=="));
 
-if (img-img1>16) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 4 (star): "+( "differ too much" )+"\n"); return 0; } while (0);
+if (!(img-img1<16)) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 4 (star): "+( "differ too much" )+"\n"); return 0; } while (0);
 if (!equal(img->max(),({128,0,16}))) 
 do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 4 (star): "+( "wrong maxcolor ("+img->max()[0]+","+img->max()[1]+","+img->max()[2]+")" )+"\n"); return 0; } while (0);
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 24, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#324 "testsuite.in.in"
+object img=Image.image(200,200)->test();
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.colortable(img,1000)->cubicles(16,16,16,4);
+if (sizeof(c)<200) do { werror("failure; Image.image/colortable/colortable - standard: "+( "too few colors" )+"\n"); return 0; } while (0);
+object img1=(c*img);
+if (!(img-img1<50)) do { werror("failure; Image.image/colortable/colortable - standard: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 25, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#333 "testsuite.in.in"
+object img=Image.image(200,200)->test();
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.colortable(32,32,32)->floyd_steinberg();
+object img1=(c*img);
+if (!(img-img1<50)) do { werror("failure; Image.image/colortable/colortable - floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 26, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#341 "testsuite.in.in"
+object img=Image.image(200,200)->test();
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.colortable(32,32,32)->ordered();
+object img1=(c*img);
+if (!(img-img1<32)) do { werror("failure; Image.image/colortable/colortable - ordered: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+
+
+}
+mixed b() { return 1; }
+
+....
+test 27, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#353 "testsuite.in.in"
+object img=Image.image(100,100)->test();
+object img1=Image.PNM.decode(Image.PNM.encode(img));
+if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode: "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 28, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#359 "testsuite.in.in"
+object img=Image.image(100,100)->test();
+object c=Image.colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img));
+if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode: "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 29, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#367 "testsuite.in.in"
+object img=Image.image(100,100)->test();
+object c=Image.colortable(img,256)->cubicles(16,16,16,1);
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable : "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 30, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#375 "testsuite.in.in"
+object img=Image.image(100,100)->test();
+object c=Image.colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+if (!(img-img1<50)) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable w/ floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 31, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#386 "testsuite.in.in"
+foreach (
+({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
+({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
+({ "cyan", ({ 0, 255, 255 }), ({ 128, 255, 255 }), 168 }),
+({ "green", ({ 0, 255, 0 }), ({ 85, 255, 255 }), 127 }),
+({ "magenta", ({ 255, 0, 255 }), ({ 213, 255, 255 }), 128 }),
+({ "red", ({ 255, 0, 0 }), ({ 0, 255, 255 }), 87 }),
+({ "white", ({ 255, 255, 255 }), ({ 0, 0, 255 }), 255 }),
+({ "yellow", ({ 255, 255, 0 }), ({ 43, 255, 255 }), 214 }) }),
+array i)
+{
+object c1=Image.color(i[0]);
+object c2=Image.color(@i[1]);
+object c3=Image.color.rgb(@i[1]);
+
+if (c1!=c2)
+
+
+do { werror("failure; Image.image/Image.color/Image.color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "by values != by name" )+"\n"); return 0; } while (0);
+if (c1!=c3)
+
+
+do { werror("failure; Image.image/Image.color/Image.color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "by rgb() != by name|values" )+"\n"); return 0; } while (0);
+
+if (c1->r!=i[1][0] ||
+c1->g!=i[1][1] ||
+c1->b!=i[1][2])
+
+
+do { werror("failure; Image.image/Image.color/Image.color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->r("+c1->r+"), ->g, ->b reported" )+"\n"); return 0; } while (0);
+
+if (c1->rgb()[0]!=i[1][0] ||
+c1->rgb()[1]!=i[1][1] ||
+c1->rgb()[2]!=i[1][2])
+
+
+
+do { werror("failure; Image.image/Image.color/Image.color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->rgb() (" +c1->rgb()[0]+","+c1->rgb()[1]+","+c1->rgb()[2]+") reported" )+"\n"); return 0; } while (0);
+
+if (c1->hsv()[0]!=i[2][0] ||
+c1->hsv()[1]!=i[2][1] ||
+c1->hsv()[2]!=i[2][2])
+
+
+
+do { werror("failure; Image.image/Image.color/Image.color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->hsv() (" +c1->hsv()[0]+","+c1->hsv()[1]+","+c1->hsv()[2]+") reported" )+"\n"); return 0; } while (0);
+
+if (c1->greylevel()!=i[3])
+
+
+
+do { werror("failure; Image.image/Image.color/Image.color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->greylevel() ("+c1->greylevel()+", should be " +i[3]+") reported" )+"\n"); return 0; } while (0);
+
+if (c1->grey()->r!=i[3])
+
+
+
+do { werror("failure; Image.image/Image.color/Image.color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->grey()->r ("+c1->grey()->r+", should be " +i[3]+") reported" )+"\n"); return 0; } while (0);
+}; 
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 32, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#448 "testsuite.in.in"
+if (!arrayp(indices(Image.color)))
+do { werror("failure; Image.image/Image.color/indices(Image.color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
+if (!stringp(indices(Image.color)[0]))
+do { werror("failure; Image.image/Image.color/indices(Image.color): "+( "wrong type of elements\n" )+"\n"); return 0; } while (0);
+if (sizeof(indices(Image.color))<8)
+do { werror("failure; Image.image/Image.color/indices(Image.color): "+( "too few colors\n" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 33, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#457 "testsuite.in.in"
+if (!arrayp(values(Image.color)))
+do { werror("failure; Image.image/Image.color/values(Image.color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
+if (!objectp(values(Image.color)[0]))
+do { werror("failure; Image.image/Image.color/values(Image.color): "+( "wrong type of elements\n" )+"\n"); return 0; } while (0);
+if (sizeof(indices(Image.color))!=sizeof(values(Image.color)))
+do { werror("failure; Image.image/Image.color/values(Image.color): "+( "not the same size of indices() and values()\n" )+"\n"); return 0; } while (0);
 return 1;
 
 }

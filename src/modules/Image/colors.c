@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.2 1999/01/23 20:57:31 mirar Exp $
+**!	$Id: colors.c,v 1.3 1999/01/24 00:47:33 mirar Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -10,21 +10,83 @@
 **!
 **!	A color is here an object, containing color
 **!	information and methods for conversion, see below.
+**!
+**!	<ref>Image.color</ref> can be called to make a color object.
+**!	<ref>Image.color()</ref> takes the following arguments:
+**!	<pre>
+**!	Image.color(string name)
+**!	Image.color(string hex_name)
+**!	Image.color(string prefix_string)
+**!	Image.color(int red, int green, int blue)
+**!     </pre>
+**!
+**!	The color names available can be listed by using indices 
+**!	on Image.color. The colors are available by name directly 
+**!	as <tt>Image.color.name</tt>, too:
+**!	<pre>
+**!	...Image.color.red...
+**!	...Image.color.green...
+**!	or, maybe
+**!	import Image.color;
+**!	...red...
+**!	...green...
+**!	...lightgreen...
+**!	</pre>
+**!
+**!	Giving red, green and blue values is equal to calling
+**!	<ref>Image.color.rgb</ref>().
 **!	
+**!	The <tt>hex_name</tt> form is a simple 
+**!	<tt>#rrggbb</tt> form, as in HTML or X-program argument.
+**!	A shorter form (<tt>#rgb</tt>) is also accepted. This
+**!	is the inverse to the <ref>Image.color.color->hex</ref>()
+**!	method.
+**!
+**!	The prefix_string method is a form for getting modified 
+**!	colors, it understands all modifiers
+**!	(<ref to=Image.color.color->light>light</ref>,
+**!	<ref to=Image.color.color->dark>dark</ref>,
+**!	<ref to=Image.color.color->bright>bright</ref>,
+**!	<ref to=Image.color.color->dull>dull</ref> and 
+**!	<ref to=Image.color.color->neon>neon</ref>). Simply  use
+**!	&lt;method&gt;&lt;color&gt; (as in <tt>lightgreen</tt>, 
+**!	<tt>dullmagenta</tt>, <tt>lightdullorange</tt>).
+**!
+**! see also: Image.color.color->name, Image.color.color->rgb
+**!
+**! added:
+**!	pike 0.7
+**!	
+**! note: 
+**!	<tt>Image.color["something"]</tt> will never(!) generate an error, 
+**!	but a zero_type 0, if the color is unknown. This is enough
+**!	to give the error "not present in module", if used 
+**!	as <tt>Image.color.something</tt>, though.
+**!
+**!     If you are using colors from for instance a webpage, you might
+**!	want to create the color from <ref>Image.color.guess</ref>(),
+**!     since that method is more tolerant for mistakes and errors.
+**!
+**!     <tt>Image.color</tt>() is case- and space-sensitive.
+**!	Use <ref>Image.color.guess</ref>() to catch all variants.
+**!
+**!	and subtract with a space (lower_case(x)-" ") to make
+**!	sure you get all variants.
+**!	
+**! see also: Image.color.color, Image.color.guess, Image, Image.colortable
+**!
 **! class color
 **!	This is the color object. It has six readable variables,
 **!	<tt>r</tt>, <tt>g</tt>, <tt>b</tt>, for the <i>red</i>, 
 **!	<i>green</i> and <i>blue</i> values, 
 **!	and <tt>h</tt>, <tt>s</tt>, <tt>v</tt>, for
 **!	the <i>hue</i>, <i>saturation</i> anv <i>value</i> values.
-**!
-**! see also: Image, Image.image, Image.font, Image.GIF
 */
 
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.2 1999/01/23 20:57:31 mirar Exp $");
+RCSID("$Id: colors.c,v 1.3 1999/01/24 00:47:33 mirar Exp $");
 
 #include "config.h"
 
@@ -71,6 +133,21 @@ struct color_struct
 
 void image_make_hsv_color(INT32 args); /* forward */
 
+struct html_color
+{
+   int r,g,b;
+   char *name;
+   struct pike_string *pname;
+} html_color[]=
+{{0,0,0,"black",NULL}, {255,255,255,"white",NULL},
+ {0,128,0,"green",NULL}, {192,192,192,"silver",NULL},
+ {0,255,0,"lime",NULL}, {128,128,128,"gray",NULL}, 
+ {128,128,0,"olive",NULL}, {255,255,0,"yellow",NULL}, 
+ {128,0,0,"maroon",NULL}, {0,0,128,"navy",NULL}, 
+ {255,0,0,"red",NULL}, {0,0,255,"blue",NULL},
+ {128,0,128,"purple",NULL}, {0,128,128,"teal",NULL}, 
+ {255,255,0,"fuchsia",NULL}, {0,255,255,"aqua",NULL}};
+
 static void make_colors(void)
 {
    static struct color
@@ -86,6 +163,9 @@ static void make_colors(void)
    };
    int i;
    const int n=sizeof(c)/sizeof(c[0]);
+
+   for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
+      html_color[i].pname=make_shared_string(html_color[i].name);
 
    for (i=0;i<n;i++)
    {
@@ -193,7 +273,7 @@ void image_color_create(INT32 args)
    if (args==4) /* r,g,b,name */
    {
       INT32 r,g,b;
-      get_all_args("Image.color->create()",args,"%i%i%i%W",
+      get_all_args("Image.color.color->create()",args,"%i%i%i%W",
 		   &r,&g,&b,&(THIS->name));
 
       if (r<0) r=0; else if (r>COLORMAX) r=COLORMAX;
@@ -211,7 +291,7 @@ void image_color_create(INT32 args)
    else if (args==3) /* r,g,b */
    {
       INT32 r,g,b;
-      get_all_args("Image.color->create()",args,"%i%i%i",
+      get_all_args("Image.color.color->create()",args,"%i%i%i",
 		   &r,&g,&b);
 
       if (r<0) r=0; else if (r>COLORMAX) r=COLORMAX;
@@ -226,7 +306,7 @@ void image_color_create(INT32 args)
 
       try_find_name();
    }
-   else error("Image.color->create(): Illegal argument(s)\n");
+   else error("Image.color.color->create(): Illegal argument(s)\n");
 
    push_int(0);
 }
@@ -271,7 +351,7 @@ void image_color_greylevel(INT32 args)
    }
    else
    {
-      get_all_args("Image.color->grey()",args,"%i%i%i",&r,&g,&b);
+      get_all_args("Image.color.color->greylevel()",args,"%i%i%i",&r,&g,&b);
    }
    pop_n_elems(args);
    if (r+g+b==0) r=g=b=1;
@@ -342,24 +422,65 @@ void image_color_grey(INT32 args)
 }
 
 /*
+**! method string hex()
+**! method string hex(int n)
 **! method string name()
-**!	Information method, gives the name of this color,
-**!	if it exists in the database, or color of format
-**!	<tt>"#rrggbb"</tt>, where rr, gg, bb is the hexadecimal
-**!	representation of the red, green and blue values, respectively.
+**! method string html()
+**!	Information methods.
+**!
+**!	<ref>hex</ref>() simply gives a string on the <tt>#rrggbb</tt>
+**!	format. If <tt>n</tt> is given, the number of significant
+**!	digits is set to this number. 
+**!     (Ie, <tt>n=3</tt> gives <tt>#rrrgggbbb</tt>.)
+**!
+**!	<ref>name</ref>() is a simplified method; 
+**!	if the color exists in the database, the name is returned,
+**!	per default is the <ref>hex</ref>() method use.
+**!
+**!	<ref>html</ref>() gives the <tt>HTML</tt> name of 
+**!	the color, or the <ref>hex</ref>(2) if it isn't one
+**!	of the 16 <tt>HTML</tt> colors.
+**!
 **! returns a new <ref>Image.color.color</ref> object
 **! see also: rgb, hsv, Image.color
 */
 
-void image_color_name(INT32 args)
+void image_color_hex(INT32 args)
 {
-   if (THIS->name)
+   char buf[80];
+   INT32 i=sizeof(COLORTYPE)*2;
+
+   if (args)
+      get_all_args("Image.color.color->hex()",args,"%i",&i);
+
+   pop_n_elems(args);
+   if (i<1)
    {
-      ref_push_string(THIS->name);
+      push_text("#");  /* stupid */
+      return;
+   }
+   else if (i!=sizeof(COLORTYPE)*2)
+   {
+      int sh;
+      if (i>8) i=8;
+
+      sh=4*(sizeof(COLORTYPE)*2-i);
+      if (sh>0)
+	 sprintf(buf,"#%0*x%0*x%0*x",i,THIS->rgb.r>>sh,
+		 i,THIS->rgb.g>>sh,i,THIS->rgb.b>>sh); 
+      else
+      {
+	 unsigned INT32 r=THIS->rgb.r;
+	 unsigned INT32 g=THIS->rgb.g;
+	 unsigned INT32 b=THIS->rgb.b;
+	 const int q=
+	    ((sizeof(COLORTYPE)==1)?0x01010101:
+	     (sizeof(COLORTYPE)==2)?0x00010001:1);
+	 sh=32-i*4;
+	 sprintf(buf,"#%0*x%0*x%0*x",i,(r*q)>>sh,i,(g*q)>>sh,i,(b*q)>>sh);
+      }
    }
    else
-   {
-      char buf[20];
       switch (sizeof(COLORTYPE))
       {
 	 case 1: 
@@ -371,9 +492,40 @@ void image_color_name(INT32 args)
 	 case 4: 
 	    sprintf(buf,"#%08x%08x%08x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b); 
 	    break;
+	 default:
+	    error("unknown size of colortype\n");
       }
-      push_text(buf);
-   }
+   push_text(buf);
+}
+
+void image_color_html(INT32 args)
+{
+   int i;
+
+   if (!colors) make_colors();
+
+   pop_n_elems(args);
+
+   for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
+      if (THIS->rgb.r==html_color[i].r && 
+	  THIS->rgb.g==html_color[i].g && 
+	  THIS->rgb.b==html_color[i].b)
+      {
+	 ref_push_string(html_color[i].pname);
+	 return;
+      }
+
+   push_int(2); 
+   image_color_hex(1);
+}
+
+void image_color_name(INT32 args)
+{
+   pop_n_elems(args);
+   if (THIS->name)
+      ref_push_string(THIS->name);
+   else
+      image_color_hex(0);
 }
 
 /*
@@ -389,7 +541,7 @@ void image_color_cast(INT32 args)
 {
    if (args!=1 ||
        sp[-1].type!=T_STRING)
-      error("Image.color->cast(): Illegal argument(s)\n");
+      error("Image.color.color->cast(): Illegal argument(s)\n");
    
    if (sp[-1].u.string==str_array)
    {
@@ -401,7 +553,7 @@ void image_color_cast(INT32 args)
       image_color_name(args);
       return;
    }
-   error("Image.color->cast(): Can't cast to that\n");
+   error("Image.color.color->cast(): Can't cast to that\n");
 }
 
 void image_color_index(INT32 args)
@@ -463,18 +615,33 @@ void image_color_index(INT32 args)
 }
 
 /*
-**! method array|string cast()
-**!	cast the object to an array, representing red, green
-**!	and blue (equal to <tt>-><ref>rgb</ref>()</tt>), or
-**!	to a string, giving the name (equal to <tt>-><ref>name</ref>()</tt>).
-**! returns the name as string or rgb as array
-**! see also: rgb, name
+**! method int `==(object other_color)
+**! method int `==(array(int) rgb)
+**! method int `==(int greylevel)
+**! method int `==(string name)
+**!	Compares this object to another color,
+**!	or color name. Example:
+**!	<pre>
+**!	object red=Image.color.red;
+**!	object other=Image.color. ...;
+**!	object black=Image.color.black;
+**!	
+**!	if (red==other) ...
+**!     if (red==({255,0,0})) ...
+**!     if (black==0) ... 
+**!     if (red=="red") ...
+**!	</pre>
+**!
+**! returns 1 or 0
+**! see also: rgb, grey, name
+**! note:
+**!	The other datatype (not color object) must be to the right!
 */
 
 void image_color_equal(INT32 args)
 {
    if (args!=1) 
-      error("Image.color->`==: illegal number of arguments");
+      error("Image.color.color->`==: illegal number of arguments");
 
    if (sp[-1].type==T_OBJECT)
    {
@@ -517,9 +684,70 @@ void image_color_equal(INT32 args)
 	 return;
       }
    }
+   else if (sp[-1].type==T_STRING)
+   {
+      if (sp[-1].u.string==THIS->name)
+      {
+	 pop_stack();
+	 push_int(1);
+	 return;
+      }
+   }
    pop_stack();
    push_int(0);
 }
+
+
+/*
+**! method object light()
+**! method object dark()
+**! method object neon()
+**! method object bright()
+**! method object dull()
+**!	Color modification methods. These returns
+**!	a new color.
+**!	<table>
+**!	<tr><th>method</th><th width=50%>effect</th>
+**!	<th>h</th><th>s</th><th>v</th><th>as</th></tr>
+**!	<tr><td>light </td><td>raise light level</td><td>±0</td><td> ±0</td>
+**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light()->light())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light()->light()->light())</illustration></td></tr>
+**!
+**!	<tr><td>dark  </td><td>lower light level</td><td>±0</td><td> ±0</td>
+**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark()->dark())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark()->dark()->dark())</illustration></td></tr>
+**!
+**!	<tr><td>bright</td><td>brighter color   </td><td>±0</td><td>+50</td>
+**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright()->bright())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright()->bright()->bright())</illustration></td></tr>
+**!
+**!	<tr><td>dull  </td><td>greyer color     </td><td>±0</td><td>-50</td>
+**!	<td><illustration>return Image.image(20,20,@(array)Image.color.red)</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull()->dull())</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull()->dull()->dull())</illustration></td></tr>
+**!
+**!	<tr><td>neon  </td><td>set to extreme   </td><td>±0</td><td>max</td>
+**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
+**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->neon())</illustration></td></tr>
+**!
+**!     </table>
+**! returns the new color object
+**! note:
+**!	The opposites may not always take each other out.
+**!	The color is maximised at white and black levels,
+**!	so, for instance 
+**!	<ref>Image.color</ref>.white-><ref>light</ref>()-><ref>dark</ref>()
+**!	doesn't give the white color back, but the equal to
+**!	<ref>Image.color</ref>.white-><ref>dark</ref>(), since
+**!	white can't get any <ref>light</ref>er.
+*/
 
 
 void image_color_light(INT32 args)
@@ -560,6 +788,7 @@ void image_color_dull(INT32 args)
    sp--;
    push_array_items(sp->u.array); /* frees */
    sp[-2].u.integer-=50;
+   sp[-1].u.integer-=50;
    image_make_hsv_color(3);
 }
 
@@ -570,6 +799,7 @@ void image_color_bright(INT32 args)
    sp--;
    push_array_items(sp->u.array); /* frees */
    sp[-2].u.integer+=50;
+   sp[-1].u.integer+=50;
    image_make_hsv_color(3);
 }
 
@@ -581,6 +811,8 @@ void image_color_bright(INT32 args)
 void image_get_color(INT32 args)
 {
    struct svalue s;
+   int n;
+   static char *callables[]={"light","dark","neon","dull","bright"};
 
    if (args!=1) 
       error("Image.color[]: illegal number of args");
@@ -614,11 +846,16 @@ void image_get_color(INT32 args)
 	       i/=3;
 	       for (j=0; j<3; j++)
 	       {
-		  int z=0;
+		  unsigned INT32 z=0;
 		  for (k=0; k<i; k++)
 		  {
 		     if (HEXTONUM(*src)==-1)
-			error("Image.color[]: no such color (trying hexadecimal number)\n");
+		     {
+			pop_stack();
+			push_int(0);
+			sp[-1].subtype=NUMBER_UNDEFINED;
+			return;
+		     }
 		     z=z*16+HEXTONUM(*src),src++;
 		  }
 		  switch (i)
@@ -626,6 +863,11 @@ void image_get_color(INT32 args)
 		     case 1: z=(z<<12)+(z<<8)+(z<<4)+(z<<0); break;
 		     case 2: z=(z<<8)+(z<<0); break;
 		     case 3: z=(z<<4)+(z>>8); break;
+
+		     case 5: z=(z>>4); break;
+		     case 6: z=(z>>8); break;
+		     case 7: z=(z>>12); break;
+		     case 8: z=(z>>16); break;
 		  }
 		  switch (sizeof(COLORTYPE))
 		  {
@@ -643,73 +885,16 @@ void image_get_color(INT32 args)
 	       return;
 	    }
 	 }
-	 if (sp[-1].u.string->len>5 &&
-	     memcmp(sp[-1].u.string->str,"light",5)==0)
+	 for (n=0; (size_t)n<sizeof(callables)/sizeof(callables[0]); n++)
+	    if (sp[-1].u.string->len>(INT32)strlen(callables[n]) &&
+	     memcmp(sp[-1].u.string->str,callables[n],strlen(callables[n]))==0)
 	 {
-	    fprintf(stderr,"light\n");
-	    push_int(5);
+	    push_int(strlen(callables[n]));
 	    push_int(1000000);
 	    f_index(3);
 	    image_get_color(1);
-	    if (sp[-1].type!=T_OBJECT)
-	       error("no such color (internal wierdness)\n");
-	    safe_apply(sp[-1].u.object,"light",0);
-	    stack_swap();
-	    pop_stack();
-	    return;
-	 }
-	 if (sp[-1].u.string->len>4 &&
-	     memcmp(sp[-1].u.string->str,"dark",4)==0)
-	 {
-	    push_int(4);
-	    push_int(1000000);
-	    f_index(3);
-	    image_get_color(1);
-	    if (sp[-1].type!=T_OBJECT)
-	       error("no such color (internal wierdness)\n");
-	    safe_apply(sp[-1].u.object,"dark",0);
-	    stack_swap();
-	    pop_stack();
-	    return;
-	 }
-	 if (sp[-1].u.string->len>4 &&
-	     memcmp(sp[-1].u.string->str,"neon",4)==0)
-	 {
-	    push_int(4);
-	    push_int(1000000);
-	    f_index(3);
-	    image_get_color(1);
-	    if (sp[-1].type!=T_OBJECT)
-	       error("no such color (internal wierdness)\n");
-	    safe_apply(sp[-1].u.object,"neon",0);
-	    stack_swap();
-	    pop_stack();
-	    return;
-	 }
-	 if (sp[-1].u.string->len>6 &&
-	     memcmp(sp[-1].u.string->str,"bright",4)==0)
-	 {
-	    push_int(6);
-	    push_int(1000000);
-	    f_index(3);
-	    image_get_color(1);
-	    if (sp[-1].type!=T_OBJECT)
-	       error("no such color (internal wierdness)\n");
-	    safe_apply(sp[-1].u.object,"bright",0);
-	    stack_swap();
-	    pop_stack();
-	    return;
-	 }
-	 if (sp[-1].u.string->len>4 &&
-	     memcmp(sp[-1].u.string->str,"dull",4)==0)
-	 {
-	    push_int(4);
-	    push_int(1000000);
-	    f_index(3);
-	    image_get_color(1);
-	    if (sp[-1].type!=T_OBJECT)
-	       error("no such color (internal wierdness)\n");
-	    safe_apply(sp[-1].u.object,"dull",0);
+	    if (sp[-1].type!=T_OBJECT) return; /* no way */
+	    safe_apply(sp[-1].u.object,callables[n],0);
 	    stack_swap();
 	    pop_stack();
 	    return;
@@ -717,11 +902,42 @@ void image_get_color(INT32 args)
       }
 
       /* try other stuff here */
-      error("Image.color[]: no such color\n");
+
+      pop_stack();
+      push_int(0);
+      sp[-1].subtype=NUMBER_UNDEFINED;
+      return;
    }
 
    pop_stack();
    *(sp++)=s;
+}
+
+void image_guess_color(INT32 args)
+{
+   struct svalue s;
+
+   if (args!=1 && sp[-args].type!=T_STRING) 
+      error("Image.color->guess(): illegal argument(s)\n");
+   
+   f_lower_case(1);
+   push_text(" ");
+   o_subtract();
+
+   stack_dup();
+   image_get_color(1);
+   if (sp[-1].type==T_OBJECT)
+   {
+      stack_swap();
+      pop_stack();
+      return;
+   }
+   pop_stack();
+   push_text("#");
+   stack_swap();
+   f_add(2);
+
+   image_get_color(1);
 }
 
 void image_make_color(INT32 args)
@@ -736,6 +952,35 @@ void image_make_color(INT32 args)
 
    push_object(clone_object(image_color_program,args));
 }
+
+
+/* 
+**! module Image
+**! submodule color
+**!
+**! method object guess(string)
+**!	This is equivalent to
+**!	<tt><ref>Image.color</ref>(lower_case(str)-" ")</tt>,
+**!	and tries the color with a prepending '#' if no 
+**!	corresponding color is found.
+**!
+**! returns a color object or zero_type
+*/
+
+/*
+**! method object rgb(int red, int green, int blue)
+**! method object hsv(int hue, int saturation, int value)
+**! method object greylevel(int level)
+**! method object html(string html_color)
+**!	Creates a new color object from given red, green and blue,
+**!	hue, saturation and value, or greylevel.
+**!
+**!	The <ref>html</ref>()
+**!	method only understands the HTML color names,
+**!	or the <tt>#rrggbb</tt> form.
+**!
+**! returns the created object.
+*/
 
 void image_make_rgb_color(INT32 args)
 {
@@ -811,6 +1056,49 @@ void image_make_greylevel_color(INT32 args)
    push_object(clone_object(image_color_program,3));
 }
 
+void image_make_html_color(INT32 args)
+{
+   int i;
+
+   if (args!=1 ||
+       sp[-1].type!=T_STRING) 
+   {
+      error("Image.color.html(): illegal arguments\n");
+      return;
+   }
+   
+   f_lower_case(1);
+   for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
+      if (html_color[i].pname==sp[-1].u.string)
+      {
+	 push_int(html_color[i].r);
+	 push_int(html_color[i].g);
+	 push_int(html_color[i].b);
+	 push_object(clone_object(image_color_program,3));
+	 return;
+      }
+
+   if (sp[-1].u.string->len>0 &&
+       sp[-1].u.string->str[0]=='#')
+      push_object(clone_object(image_color_program,1));
+   else
+   {
+      push_text("#");
+      stack_swap();
+      f_add(2);
+      push_object(clone_object(image_color_program,1));
+   }
+}
+
+/*
+**! method array(string) _indices()
+**! method array(object) _values()
+**!	(ie as <tt>indices(Image.color)</tt> or <tt>values(Image.color)</tt>)
+**!	<tt>indices</tt> gives a list of all the known color names,
+**!	<tt>values</tt> gives there corresponding objects.
+**! see also: Image.color
+*/
+
 void image_colors_indices(INT32 args)
 {
    pop_n_elems(args);
@@ -858,10 +1146,15 @@ void init_image_colors(void)
 		"function(string|int:int|function)",OPT_TRY_OPTIMIZE);
    add_function("`->",image_color_index,
 		"function(string|int:int|function)",OPT_TRY_OPTIMIZE);
-   add_function("name",image_color_name,
-		"function(:string)",OPT_TRY_OPTIMIZE);
    add_function("`==",image_color_equal,
 		"function(object|int:int)",OPT_TRY_OPTIMIZE);
+
+   add_function("name",image_color_name,
+		"function(:string)",OPT_TRY_OPTIMIZE);
+   add_function("hex",image_color_hex,
+		"function(:string)",OPT_TRY_OPTIMIZE);
+   add_function("html",image_color_html,
+		"function(:string)",OPT_TRY_OPTIMIZE);
 
    add_function("rgb",image_color_rgb,
 		"function(:array)",OPT_TRY_OPTIMIZE);
@@ -898,6 +1191,10 @@ void init_image_colors(void)
 		"function(int,int,int:object)",OPT_TRY_OPTIMIZE);
    add_function("hsv",image_make_hsv_color,
 		"function(int,int,int:object)",OPT_TRY_OPTIMIZE);
+   add_function("html",image_make_html_color,
+		"function(string:object)",OPT_TRY_OPTIMIZE);
+   add_function("guess",image_guess_color,
+		"function(string:object)",OPT_TRY_OPTIMIZE);
    add_function("greylevel",image_make_greylevel_color,
 		"function(int:object)",OPT_TRY_OPTIMIZE);
    add_function("_indices",image_colors_indices,
@@ -925,6 +1222,8 @@ void exit_image_colors(void)
    }
    if (colors)
    {
+      int i;
+
       free_mapping(colors);
       free_object(colortable);
       free_array(colornames);
@@ -932,6 +1231,9 @@ void exit_image_colors(void)
       colors=NULL;
       colortable=NULL;
       colornames=NULL;
+
+      for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
+	 free_string(html_color[i].pname);
    }
    free_string(str_array);
    free_string(str_string);
@@ -941,4 +1243,5 @@ void exit_image_colors(void)
    free_string(str_h);
    free_string(str_s);
    free_string(str_v);
+
 }
