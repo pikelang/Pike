@@ -17,7 +17,7 @@ inherit Filesystem.Base;
 static Filesystem.Base parent; // parent filesystem
 
 static string root = ""; // Note: Can now include leading "/"
-static string wd;       // never trailing "/"
+static string wd;        // never trailing "/"
 
 static void create(void|string directory,  // default: cwd
 		   void|string _root,   // internal: root
@@ -65,7 +65,7 @@ static void create(void|string directory,  // default: cwd
 #ifdef __NT__
     if( strlen( directory ) != 2 || directory[1] != ':' )
 #endif
-      if(!(a = file_stat(combine_path(root,directory))) || !a->isdir)
+      if(!(a = file_stat(combine_path("/",root,directory))) || !a->isdir)
 	error("Not a directory\n");
   }
   while( strlen(directory) && directory[0] == '/' )
@@ -111,7 +111,7 @@ Filesystem.Base chroot(void|string directory)
     if(!new) return 0;
     return new->chroot();
   }
-  return this_program("", combine_path(root,wd), 1, parent);
+  return this_program("", combine_path("/",root,wd), 1, parent);
 }
 
 Filesystem.Stat stat(string file, int|void lstat)
@@ -124,7 +124,7 @@ Filesystem.Stat stat(string file, int|void lstat)
 #endif
    string full = combine_path(wd, file);
 
-   if((a = file_stat(combine_path(root,full), lstat)))
+   if((a = file_stat(combine_path("/",root,full), lstat)))
    {
      Filesystem.Stat s = Filesystem.Stat();
      s->fullpath = full;
@@ -149,7 +149,7 @@ array(string) get_dir(void|string directory, void|string|array(string) globs)
 #endif
   directory = directory ? combine_path(wd, directory) : wd;
 
-  array(string) y = predef::get_dir(combine_path(root,directory));
+  array(string) y = predef::get_dir(combine_path("/",root,directory));
   if(!globs)
     return y;
   else if(stringp(globs))
@@ -198,7 +198,7 @@ Stdio.File open(string filename, string mode)
   
   Stdio.File f = Stdio.File();
 
-  if( !f->open( combine_path(root,filename), mode) )
+  if( !f->open( combine_path("/",root,filename), mode) )
     return 0;
   return f;
 }
@@ -214,7 +214,7 @@ int rm(string filename)
   filename = replace( filename, "\\", "/" );
 #endif
   filename = combine_path(wd, filename);
-  return predef::rm(combine_path(root,filename));
+  return predef::rm(combine_path("/",root,filename));
 }
 
 void chmod(string filename, int|string mode)
@@ -229,7 +229,7 @@ void chmod(string filename, int|string mode)
     if(!st) return 0;
     mode = Filesystem.parse_mode(st->mode, mode);
   }
-  predef::chmod(combine_path(root,filename), mode);
+  predef::chmod(combine_path("/",root,filename), mode);
 }
 
 void chown(string filename, int|object owner, int|object group)
@@ -244,7 +244,7 @@ void chown(string filename, int|object owner, int|object group)
     error("user objects not supported (yet)\n");
 
   filename = combine_path(wd, filename);
-  predef::chown(combine_path(root,wd), owner, group);
+  predef::chown(combine_path("/",root,wd), owner, group);
 #else
   error("system does not have a chown"); // system does not have a chown()
 #endif
