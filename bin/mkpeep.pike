@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.23 2001/09/24 17:02:58 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.24 2002/11/01 15:29:06 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -253,7 +253,7 @@ array(int|string|array(string)) split(string s)
   return ({a,b,opcodes, line,a});
 }
 
-/* Replace $[0-9]+(o|a|b) with something a C compiler can understand */
+/* Replace $[0-9]+(o|a|b|l) with something a C compiler can understand */
 string treat(string expr)
 {
   int e;
@@ -273,6 +273,7 @@ string treat(string expr)
     {
     case 'a': tmp[e]="argument("+num+")"+rest; break;
     case 'b': tmp[e]="argument2("+num+")"+rest; break;
+    case 'l': tmp[e]="label("+num+")"+rest; break;
     case 'o': tmp[e]="opcode("+num+")"+rest; break;
     }
   }
