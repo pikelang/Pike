@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.105 1999/04/09 04:55:01 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.106 1999/04/22 20:27:12 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -531,7 +531,6 @@ static void exit_pid_status(struct object *o)
 static void report_child(int pid,
 			 WAITSTATUSTYPE status)
 {
-
   if(pid_mapping)
   {
     struct svalue *s, key;
@@ -591,6 +590,10 @@ static void *wait_thread(void *data)
     WAITSTATUSTYPE status;
     int pid;
 
+#ifdef PROC_DEBUG
+    fprintf(stderr, "wait_thread: getting the lock.\n");
+#endif
+
     mt_lock(&wait_thread_mutex);
     pid=MY_WAIT_ANY(&status, WNOHANG);
     
@@ -606,6 +609,10 @@ static void *wait_thread(void *data)
 #endif
     }
 
+#ifdef PROC_DEBUG
+    fprintf(stderr, "wait_thread: releasing the lock.\n");
+#endif
+
     mt_unlock(&wait_thread_mutex);
 
     if(pid <= 0) pid=MY_WAIT_ANY(&status, 0);
@@ -616,10 +623,22 @@ static void *wait_thread(void *data)
     
     if(pid>0)
     {
+#ifdef PROC_DEBUG
+      fprintf(stderr, "wait thread: locking interpreter\n",pid,errno);
+#endif
+    
       mt_lock(&interpreter_lock);
+
+#ifdef PROC_DEBUG
+      fprintf(stderr, "wait thread: reporting the event!\n");
+#endif
       report_child(pid, status);
       co_broadcast(& process_status_change);
 
+#ifdef PROC_DEBUG
+      fprintf(stderr, "wait thread: releasing interpreter\n",pid,errno);
+#endif
+    
       mt_unlock(&interpreter_lock);
       continue;
     }
@@ -2621,7 +2640,11 @@ void init_signals(void)
     co_init(& process_status_change);
     co_init(& start_wait_thread);
     mt_init(& wait_thread_mutex);
-    th_create_small(&foo,wait_thread,0);
+    if (th_create_small(&foo,wait_thread,0)) {
+      fatal("wait thread: Failed to create thread!\n"
+	    "errno: %d\n", errno);
+    }
+    num_threads++;	/* We use the interpreter lock */
     my_signal(SIGCHLD, SIG_DFL);
   }
 #endif
