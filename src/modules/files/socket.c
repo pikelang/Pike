@@ -111,9 +111,11 @@ static void port_accept_callback(int fd,void *data)
 {
   struct port *f;
   f=(struct port *)data;
+#ifndef __NT__
 #ifdef DEBUG
   if(!query_nonblocking(f->fd))
     fatal("Port is in blocking mode in port accept callback!!!\n");
+#endif
 #endif
   assign_svalue_no_free(sp++, &f->id);
   apply_svalue(& f->accept_callback, 1);
@@ -199,6 +201,7 @@ static void port_bind(INT32 args)
     return;
   }
 
+#ifndef __NT__
   o=1;
   if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
@@ -207,6 +210,7 @@ static void port_bind(INT32 args)
     push_int(0);
     return;
   }
+#endif
 
   my_set_close_on_exec(fd,1);
 
@@ -390,7 +394,7 @@ void port_setup_program(void)
   offset=add_storage(sizeof(struct port));
   map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),T_MIXED);
   map_variable("_id","mixed",0,offset+OFFSETOF(port,id),T_MIXED);
-  add_function("bind",port_bind,"function(int,void|mixed:int)",0);
+  add_function("bind",port_bind,"function(int,void|mixed,void|string:int)",0);
   add_function("listen_fd",port_listen_fd,"function(int,void|mixed:int)",0);
   add_function("set_id",port_set_id,"function(mixed:mixed)",0);
   add_function("query_id",port_query_id,"function(:mixed)",0);

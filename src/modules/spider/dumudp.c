@@ -1,7 +1,8 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.30 1998/01/10 21:21:32 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.31 1998/01/21 19:57:17 hubbe Exp $");
+#include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -102,11 +103,11 @@ static void udp_bind(INT32 args)
   if(FD != -1)
   {
     set_read_callback( FD, 0, 0 );
-    close(FD);	/* Shouldn't this be some other taste of close()? */
+    fd_close(FD);	/* Shouldn't this be some other taste of close()? */
     FD = -1;
   }
 
-  fd = socket(AF_INET, SOCK_DGRAM, 0);
+  fd = fd_socket(AF_INET, SOCK_DGRAM, 0);
   if(fd < 0)
   {
     pop_n_elems(args);
@@ -115,7 +116,7 @@ static void udp_bind(INT32 args)
   }
 
   o=1;
-  if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
+  if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
     close(fd);
     error("setsockopt failed\n");
@@ -133,7 +134,7 @@ static void udp_bind(INT32 args)
   addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
   addr.sin_family = AF_INET;
 
-  tmp=bind(fd, (struct sockaddr *)&addr, sizeof(addr))<0;
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr))<0;
 
   if(tmp)
   {
@@ -154,7 +155,7 @@ void udp_enable_broadcast(INT32 args)
   int o;
   pop_n_elems(args);
   o = 1;
-  push_int(setsockopt(FD, SOL_SOCKET, SO_BROADCAST, (char *)&o, sizeof(int)));
+  push_int(fd_setsockopt(FD, SOL_SOCKET, SO_BROADCAST, (char *)&o, sizeof(int)));
 #else /* SO_BROADCAST */
   pop_n_elems(args);
   push_int(0);
@@ -184,7 +185,7 @@ void udp_read(INT32 args)
   pop_n_elems(args);
   fd = FD;
   THREADS_ALLOW();
-  while(((res = recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
+  while(((res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
 			 (struct sockaddr *)&from, &fromlen))==-1)
 	&&(errno==EINTR));
   THREADS_DISALLOW();
@@ -193,6 +194,9 @@ void udp_read(INT32 args)
   {
     switch(errno)
     {
+#ifdef WSAEBADF
+      case WSAEBADF:
+#endif
      case EBADF:
       set_read_callback( FD, 0, 0 );
       error("Socket closed\n");
@@ -269,7 +273,7 @@ void udp_sendto(INT32 args)
   str = sp[2-args].u.string->str;
   len = sp[2-args].u.string->len;
   THREADS_ALLOW();
-  while(((res = sendto( fd, str, len, flags, (struct sockaddr *)&to,
+  while(((res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to,
 		       sizeof( struct sockaddr_in ))) == -1) && errno==EINTR);
   THREADS_DISALLOW();
   
@@ -318,7 +322,7 @@ void exit_udp(struct object *ignored)
     set_read_callback( FD, 0, 0 );
     if (& THIS->read_callback)
       free_svalue(& THIS->read_callback );
-    close(FD);
+    fd_close(FD);
   }
 }
 
@@ -382,7 +386,7 @@ static void udp_query_address(INT32 args)
     error("socket->query_address(): Port not bound yet.\n");
 
   len=sizeof(addr);
-  i=getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
+  i=fd_getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
   pop_n_elems(args);
   if(i < 0 || len < (int)sizeof(addr))
   {
