@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.30 2004/02/21 18:36:35 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.31 2004/09/16 00:13:33 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -951,6 +951,8 @@ PIKECLASS Twofish_State
 }
 /*! @endclass Twofish_State */
 
+#ifdef WITH_IDEA
+
 static void
 pike_idea_set_encrypt_key(struct idea_ctx *ctx,
 			 ptrdiff_t length, const char *key,
@@ -994,6 +996,8 @@ PIKECLASS IDEA_Info
 	CipherInfo->meta = &pike_idea;
     }
 }
+
+#endif
 
 /*! @endclass IDEA_Info */
 
