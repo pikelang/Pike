@@ -1309,7 +1309,7 @@ static int eval_instruction(unsigned char *pc)
 	  free_string(sval_type);
 
 	  t = describe_type(sp[-2].u.string);
-	  SET_ONERRROR(tmp, free_string, t);
+	  SET_ONERROR(tmp, do_free_string, t);
 	  bad_arg_error("soft_cast", sp-1, 1, 1, t->str, sp-1,
 			"Assertion failed in soft_cast(). Expected %s\n",
 			t->str);
