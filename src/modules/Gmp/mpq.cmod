@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.21 2003/04/01 14:54:45 mast Exp $
+|| $Id: mpq.cmod,v 1.22 2003/09/01 14:56:58 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.21 2003/04/01 14:54:45 mast Exp $");
+RCSID("$Id: mpq.cmod,v 1.22 2003/09/01 14:56:58 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -48,6 +48,12 @@ RCSID("$Id: mpq.cmod,v 1.21 2003/04/01 14:54:45 mast Exp $");
 #define THISMPQ (&(THIS->n))
 
 #define PUSH_REDUCED(o) push_object(o)
+
+/*! @module Gmp
+ */
+
+/*! @class mpq
+ */
 
 /*  id PROG_GMP_MPQ_ID; */
 PIKECLASS mpq
@@ -260,6 +266,9 @@ PIKECLASS mpq
 #define get_mpq debug_get_mpq
 #endif
 
+  /*! @decl static void create(void|string|int|float|Gmp.mpz|Gmp.mpq x)
+   *! @decl static void create(string x, int base)
+   */
   PIKEFUN void create(void|string|int|float|object x, void|int base)
     type function(void|string|int|float|object:void)|function(string,int:void)|function(int,int:void);
     flags ID_STATIC;
@@ -305,6 +314,8 @@ PIKECLASS mpq
     }
   }
   
+  /*! @decl int get_int()
+   */
   PIKEFUN int get_int()
     {
       struct object *res = fast_clone_object(mpzmod_program);
@@ -318,6 +329,8 @@ PIKECLASS mpq
 #endif /* AUTO_BIGNUM */
     }
 
+  /*! @decl static int __hash()
+   */
   PIKEFUN int __hash()
     flags ID_STATIC;
     {
@@ -326,12 +339,15 @@ PIKECLASS mpq
 	mpz_get_si(mpq_denref(THISMPQ));
     }
 
+  /*! @decl float get_float()
+   */
   PIKEFUN float get_float()
     {
       RETURN (FLOAT_TYPE) mpq_get_d(THISMPQ);
     }
 
-
+  /*! @decl string get_string()
+   */
   PIKEFUN string get_string()
     {
       push_string(low_get_mpz_digits(mpq_numref(THISMPQ),10));
@@ -362,7 +378,8 @@ PIKECLASS mpq
       return def;
     }
 		    
-
+  /*! @decl static string _sprintf(int c, mapping flags)
+   */
   PIKEFUN string _sprintf(int c, mapping flags)
     flags ID_STATIC;
     {
@@ -434,15 +451,18 @@ PIKECLASS mpq
       }
     }
   
-
-  PIKEFUN void _is_type(string arg)
+  /*! @decl static int(0..1) _is_type(string arg)
+   */
+  PIKEFUN int(0..1) _is_type(string arg)
     flags ID_STATIC;
     {
       push_constant_text("float");
       f_eq(2);
     }
-  
-  PIKEFUN void cast(string s)
+
+  /*! @decl static int|string|float|object cast(string s)
+   */
+  PIKEFUN int|string|float|object cast(string s)
     flags ID_STATIC;
     {
       add_ref(s);
@@ -500,6 +520,8 @@ PIKECLASS mpq
 			"Cannot cast to other type than sitrng, int or float.\n");
     }
 
+  /*! @decl static Gmp.mpq `+(int|float|object ... a)
+   */
   PIKEFUN object `+(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -514,7 +536,9 @@ PIKECLASS mpq
       
       RETURN res;
     }
-  
+
+  /*! @decl static Gmp.mpq ``+(int|float|object ... a)
+   */
   PIKEFUN object ``+(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -530,6 +554,8 @@ PIKECLASS mpq
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpq `+=(int|float|object ... a)
+   */
   PIKEFUN object `+=(int|float|object ... a)
     flags ID_STATIC;
   {
@@ -597,6 +623,8 @@ PIKECLASS mpq
       if(norm) mpq_canonicalize(res);
     }
   
+  /*! @decl static Gmp.mpq `*(int|float|object ... a)
+   */
   PIKEFUN object `*(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -610,6 +638,8 @@ PIKECLASS mpq
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpq ``*(int|float|object ... a)
+   */
   PIKEFUN object ``*(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -623,6 +653,8 @@ PIKECLASS mpq
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpq `*=(int|float|object ... a)
+   */
   PIKEFUN object `*=(int|float|object ... a)
     flags ID_STATIC;
   {
@@ -631,6 +663,8 @@ PIKECLASS mpq
     REF_RETURN fp->current_object;
   }
   
+  /*! @decl static Gmp.mpq `-(int|float|object ... a)
+   */
   PIKEFUN object `-(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -655,6 +689,8 @@ PIKECLASS mpq
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpq ``-(int|float|object sv)
+   */
   PIKEFUN object ``-(int|float|object sv)
     flags ID_STATIC;
     {
@@ -664,7 +700,9 @@ PIKECLASS mpq
       mpq_sub(OBTOMPQ(res), a, THISMPQ);
       RETURN res;
     }
-  
+
+  /*! @decl static Gmp.mpq `/(int|float|object ... a)
+   */
   PIKEFUN object `/(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -683,6 +721,8 @@ PIKECLASS mpq
       RETURN res;
     }
   
+  /*! @decl static Gmp.mpq ``/(int|float|object sv)
+   */
   PIKEFUN object ``/(int|float|object sv)
     flags ID_STATIC;
     {
@@ -699,7 +739,9 @@ PIKECLASS mpq
       RETURN res;
     }
 
-  /* a%b =  a -  floor(a/b)*b */
+  /*! @decl static Gmp.mpq `%(int|float|object ... a)
+   *! @expr{a%b =  a -  floor(a/b)*b @}
+   */
   PIKEFUN object `%(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -740,6 +782,8 @@ PIKECLASS mpq
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpq ``%(int|float|object a)
+   */
   PIKEFUN object ``%(int|float|object a)
     flags ID_STATIC;
     {
@@ -771,6 +815,8 @@ PIKECLASS mpq
       RETURN res;
     }
 
+  /*! @decl Gmp.mpq invert()
+   */
   PIKEFUN object invert()
     {
       struct object *res;
@@ -781,7 +827,9 @@ PIKECLASS mpq
       RETURN res;
     }
   
-  /* defined as -1-x */
+  /*! @decl static Gmp.mpq `~()
+   *! Defined as @expr{-1-x@}.
+   */
   PIKEFUN object `~()
     flags ID_STATIC;
     {
@@ -793,51 +841,67 @@ PIKECLASS mpq
       RETURN o;
     }
 
-  PIKEFUN int `>(mixed q)
+  /*! @decl static int(0..1) `>(mixed q)
+   */
+  PIKEFUN int(0..1) `>(mixed q)
     flags ID_STATIC;
     {
       RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`>", 1, args)) > 0;
     }
 
-  PIKEFUN int `<(mixed q)
+  /*! @decl static int(0..1) `<(mixed q)
+   */
+  PIKEFUN int(0..1) `<(mixed q)
     flags ID_STATIC;
     {
       RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<", 1, args)) < 0;
     }
-  
-  PIKEFUN int `>=(mixed q)
+
+  /*! @decl static int(0..1) `>=(mixed q)
+   */
+  PIKEFUN int(0..1) `>=(mixed q)
     flags ID_STATIC;
   {
     RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`>=", 1, args)) >= 0;
   }
-  
-  PIKEFUN int `<=(mixed q)
+
+  /*! @decl static int(0..1) `<=(mixed q)
+   */
+  PIKEFUN int(0..1) `<=(mixed q)
     flags ID_STATIC;
   {
     RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<=", 1, args)) <= 0;
   }
 
 
-  PIKEFUN int `==(mixed q)
+  /*! @decl static int(0..1) `==(mixed q)
+   */
+  PIKEFUN int(0..1) `==(mixed q)
     flags ID_STATIC;
   {
     MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
     RETURN arg && !mpq_cmp(THISMPQ, arg);
   }
 
-  PIKEFUN int `!=(mixed q)
+  /*! @decl static int(0..1) `!=(mixed q)
+   */
+  PIKEFUN int(0..1) `!=(mixed q)
     flags ID_STATIC;
   {
     MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
     RETURN !(arg && !mpq_cmp(THISMPQ, arg));
   }
 
-  PIKEFUN int sgn()
+  /*! @decl int(-1..1) sgn()
+   */
+  PIKEFUN int(-1..1) sgn()
     {
       RETURN mpq_sgn(THISMPQ);
     }
 
-  PIKEFUN int `!()
+  /*! @decl static int(0..1) `!(mixed q)
+   */
+  PIKEFUN int(0..1) `!()
     flags ID_STATIC;
     {
       RETURN !mpq_sgn(THISMPQ);
@@ -862,6 +926,12 @@ PIKECLASS mpq
     }
   
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 #endif /* USE_GMP */
 
