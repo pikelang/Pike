@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.92 2000/09/29 12:47:45 mirar Exp $
+ * $Id: system.c,v 1.93 2000/09/29 13:46:07 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.92 2000/09/29 12:47:45 mirar Exp $");
+RCSID("$Id: system.c,v 1.93 2000/09/29 13:46:07 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1664,7 +1664,9 @@ void pike_module_init(void)
   ADD_FUNCTION("closelog", f_closelog,tFunc(tNone,tVoid), 0);
 #endif /* HAVE_SYSLOG */
 
+#ifdef HAVE_SLEEP
   ADD_FUNCTION("sleep",f_system_sleep,tFunc(tInt,tInt), 0);
+#endif /* HAVE_SLEEP */
 
   init_passwd();
 
