@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.6 1998/01/26 02:01:23 mirar Exp $ */
+/* $Id: x.c,v 1.7 1998/02/10 13:45:46 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.6 1998/01/26 02:01:23 mirar Exp $
+**!	$Id: x.c,v 1.7 1998/02/10 13:45:46 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.6 1998/01/26 02:01:23 mirar Exp $");
+RCSID("$Id: x.c,v 1.7 1998/02/10 13:45:46 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -50,15 +50,15 @@ extern struct program *image_colortable_program;
 extern struct program *image_program;
 
 /*
-**! method string encode_truecolor(object image,int bpp,int alignbits,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift)
-**! method string encode_truecolor_masks(object image,int bpp,int alignbits,int rmask,int gmask,int bmask)
-**! method string encode_truecolor(object image,int bpp,int alignbits,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift,object ct)
-**! method string encode_truecolor_masks(object image,int bpp,int alignbits,int rmask,int gmask,int bmask,object ct)
+**! method string encode_truecolor(object image,int bpp,int alignbits,int swapbytes,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift)
+**! method string encode_truecolor_masks(object image,int bpp,int alignbits,int swapbytes,int rmask,int gmask,int bmask)
+**! method string encode_truecolor(object image,int bpp,int alignbits,int swapbytes,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift,object ct)
+**! method string encode_truecolor_masks(object image,int bpp,int alignbits,int swapbytes,int rmask,int gmask,int bmask,object ct)
 **!	Pack a image into a truecolor string. You will get a string
 **!	of packed red, green and blue bits; 
 **!	ie: 
 **!
-**!	<tt>encode_truecolor(img, 12,32, 3,5, 4,0, 3,8)</tt>
+**!	<tt>encode_truecolor(img, 12,32, 0, 3,5, 4,0, 3,8)</tt>
 **!	will give (aligned to even 32 bits for each row):<br>
 **!	<tt>0bbbrrr0 gggg0bbb rrr0gggg 0bbb</tt>...<br>
 **!	<tt><--pixel 1--><--pixel 2--> <--3--></tt><br>
@@ -69,9 +69,9 @@ extern struct program *image_program;
 **!	<tt>  +----------- 3,8</tt>: 3 bits blue shifted 8 bits
 **!
 **!	The above call is equal to 
-**!	<br><tt>encode_truecolor_masks(img, 12,32, 224, 15, 768)</tt>
+**!	<br><tt>encode_truecolor_masks(img, 12,32, 0, 224, 15, 768)</tt>
 **!	and
-**!	<br><tt>encode_truecolor(img, 12,32, 3,5,4,0,3,8, colortable(1<<3,1<<4,1<<3))</tt>. 
+**!	<br><tt>encode_truecolor(img, 12,32, 0, 3,5,4,0,3,8, colortable(1<<3,1<<4,1<<3))</tt>. 
 **!	<br>The latter gives possibility to use dither algorithms, 
 **!	but is slightly slower.
 **!
@@ -96,6 +96,8 @@ extern struct program *image_program;
 **!	needs to be massive (no zeroes among the ones in the mask).
 **! arg object ct
 **!	colortable object (for dithering, or whatever)
+**! arg int swapbytes
+**!	swap bytes (for change of byteorder between client and server)
 **! 
 */
 
@@ -110,15 +112,16 @@ static void x_encode_truecolor(INT32 args)
    struct pike_string *dest;
    INT32 x,y;
    rgb_group *s,*tmp=NULL;
+   int swap_bytes;
 
-   if (args<9)
-      error("Image.X.encode_truecolor: too few arguments (expected 9 arguments)\n");
+   if (args<10)
+      error("Image.X.encode_truecolor: too few arguments (expected 10 arguments)\n");
    
    if (sp[-args].type!=T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       error("Image.X.encode_truecolor: illegal argument 1 (expected image object)\n");
-   if (args>9)
-      if (sp[9-args].type!=T_OBJECT ||
+   if (args>10)
+      if (sp[10-args].type!=T_OBJECT ||
 	  !(nct=(struct neo_colortable*)
 	    get_storage(sp[9-args].u.object,image_colortable_program)))
 	 error("Image.X.encode_truecolor: illegal argument 10 (expected colortable object)\n");
@@ -138,32 +141,37 @@ static void x_encode_truecolor(INT32 args)
    if (sp[3-args].type!=T_INT)
       error("Image.X.encode_truecolor: illegal argument 4 (expected integer)\n");
    else
-      rbits=sp[3-args].u.integer;
+      swap_bytes=sp[3-args].u.integer;
 
    if (sp[4-args].type!=T_INT)
       error("Image.X.encode_truecolor: illegal argument 5 (expected integer)\n");
    else
-      rshift=sp[4-args].u.integer;
+      rbits=sp[4-args].u.integer;
 
    if (sp[5-args].type!=T_INT)
       error("Image.X.encode_truecolor: illegal argument 6 (expected integer)\n");
    else
-      gbits=sp[5-args].u.integer;
+      rshift=sp[5-args].u.integer;
 
    if (sp[6-args].type!=T_INT)
       error("Image.X.encode_truecolor: illegal argument 7 (expected integer)\n");
    else
-      gshift=sp[6-args].u.integer;
+      gbits=sp[6-args].u.integer;
 
    if (sp[7-args].type!=T_INT)
       error("Image.X.encode_truecolor: illegal argument 8 (expected integer)\n");
    else
-      bbits=sp[7-args].u.integer;
+      gshift=sp[7-args].u.integer;
 
    if (sp[8-args].type!=T_INT)
       error("Image.X.encode_truecolor: illegal argument 9 (expected integer)\n");
    else
-      bshift=sp[8-args].u.integer;
+      bbits=sp[8-args].u.integer;
+
+   if (sp[9-args].type!=T_INT)
+      error("Image.X.encode_truecolor: illegal argument 10 (expected integer)\n");
+   else
+      bshift=sp[9-args].u.integer;
 
    if (nct) 
    {
@@ -199,6 +207,13 @@ THREADS_ALLOW();
       INT32 gpos=-(gshift>>3)-1;
       INT32 bpos=-(bshift>>3)-1;
       INT32 linemod=(alignbits-((img->xsize*bpp+alignbits-1)%alignbits)-1)>>3;
+
+      if (swap_bytes)
+      {
+	 rpos=Bpp-rpos;
+	 gpos=Bpp-gpos;
+	 bpos=Bpp-bpos;
+      }
 
       if (!linemod && Bpp==4 && rpos!=gpos && gpos!=bpos) 
       {
@@ -285,6 +300,19 @@ THREADS_ALLOW();
 	 bit+=bp;
 	 if (bit==8) *(++d)=0,bit=0;
       }
+
+      if (swap_bytes)
+      {
+	 d=dest->str;
+	 x=dest->len;
+	 while (x>=4)
+	 {
+	    d[0]^=d[3],d[3]^=d[0],d[0]^=d[3];
+	    d[1]^=d[2],d[2]^=d[1],d[1]^=d[2];
+	    d+=4;
+	    x-=4;
+	 }
+      }
    }
 
 THREADS_DISALLOW();
@@ -322,28 +350,31 @@ static void x_encode_truecolor_masks(INT32 args)
    struct object *ct=NULL;
    int rbits,rshift,gbits,gshift,bbits,bshift;
 
-   if (args<6) 
-      error("Image.X.encode_truecolor_masks: too few arguments (expected 4 arguments)\n");
+   if (args<7) 
+      error("Image.X.encode_truecolor_masks: too few arguments (expected 7 arguments)\n");
    if (sp[-args].type!=T_OBJECT ||
        !get_storage(sp[-args].u.object,image_program))
       error("Image.X.encode_truecolor_masks: illegal argument 1 (expected image object)\n");
 
-   if (args>6)
-      if (sp[6-args].type!=T_OBJECT ||
+   if (args>7)
+      if (sp[7-args].type!=T_OBJECT ||
 	  !get_storage(ct=sp[6-args].u.object,image_colortable_program))
-	 error("Image.X.encode_truecolor_masks: illegal argument 7 (expected colortable object)\n");
+	 error("Image.X.encode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
  
    if (sp[1-args].type!=T_INT)
       error("Image.X.encode_truecolor_masks: illegal argument 2 (expected integer)\n");
    if (sp[2-args].type!=T_INT)
       error("Image.X.encode_truecolor_masks: illegal argument 3 (expected integer)\n");
 
-   x_examine_mask(sp+3-args,"argument 3 (red mask)",&rbits,&rshift);
-   x_examine_mask(sp+4-args,"argument 4 (blue mask)",&gbits,&gshift);
-   x_examine_mask(sp+5-args,"argument 5 (green mask)",&bbits,&bshift);
+   if (sp[3-args].type!=T_INT)
+      error("Image.X.encode_truecolor_masks: illegal argument 4 (expected integer)\n");
+
+   x_examine_mask(sp+4-args,"argument 3 (red mask)",&rbits,&rshift);
+   x_examine_mask(sp+5-args,"argument 4 (blue mask)",&gbits,&gshift);
+   x_examine_mask(sp+6-args,"argument 5 (green mask)",&bbits,&bshift);
 
    if (ct) ct->refs++;
-   pop_n_elems(args-3);
+   pop_n_elems(args-4);
    push_int(rbits);
    push_int(rshift);
    push_int(gbits);
@@ -353,10 +384,10 @@ static void x_encode_truecolor_masks(INT32 args)
    if (ct)
    {
       push_object(ct);
-      x_encode_truecolor(10);
+      x_encode_truecolor(11);
    }
    else
-      x_encode_truecolor(9);
+      x_encode_truecolor(10);
 }
 
 /*
@@ -678,9 +709,9 @@ void init_image_x(void)
    start_new_program();
    
    add_function("encode_truecolor",x_encode_truecolor,
-		"function(object,int,int,int,int,int,int,int,int,void|object:string)",0);
+		"function(object,int,int,int,int,int,int,int,int,int,void|object:string)",0);
    add_function("encode_truecolor_masks",x_encode_truecolor_masks,
-		"function(object,int,int,int,int,int,void|object:string)",0);
+		"function(object,int,int,int,int,int,int,void|object:string)",0);
    add_function("encode_pseudocolor",x_encode_pseudocolor,
 		"function(object,int,int,int,object,void|string:string)",0);
 
