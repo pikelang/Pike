@@ -327,34 +327,29 @@ array(Country) countries=
 //! Country
 class Country
 {
-//!    ISO 2-character code aka domain name
    string iso2; // iso-2-character-code aka domain name
-
-//! variable string fips10
-//!    FIPS 10-character code; 
-//!    "Federal Information Processing Standards 10-3" etc,
-//!    used by some goverments in the US.
+   //!    ISO 2-character code aka domain name
 
    string fips10; // iso-2-character-code aka domain name
-
-//! variable string name
-//! variable array(string) aka
-//!    Country name and as-known-as, if any
+   //!    FIPS 10-character code; 
+   //!    "Federal Information Processing Standards 10-3" etc,
+   //!    used by some goverments in the US.
 
    string name;
    array(string) aka=({});
+   //!    Country name and as-known-as, if any
 
-//!    Flag that is set if this country doesn't exist anymore.
-//!    (eg USSR.)
    int former=0;
+   //!    Flag that is set if this country doesn't exist anymore.
+   //!    (eg USSR.)
 
-//! @decl string continent()
-//!	Returns the continent of the country.
-//! @note
-//!	Some countries are geographically in more then
-//!	one continent; any of the continents might be
-//!	returned then, but probably the continent in which
-//!	the capital is resident - Europe for Russia, for instance.
+   //! @decl string continent()
+   //!	Returns the continent of the country.
+   //! @note
+   //!	Some countries are geographically in more then
+   //!	one continent; any of the continents might be
+   //!	returned then, but probably the continent in which
+   //!	the capital is resident - Europe for Russia, for instance.
 
    string _continent=0;
    string continent()
@@ -377,10 +372,10 @@ class Country
       }
    }
 
-//! @decl string cast("string")
-//!	It is possible to cast a country to a string,
-//!	which will be the same as performing 
-//!	@code{country->name;@}.
+   //! @decl string cast("string")
+   //!	It is possible to cast a country to a string,
+   //!	which will be the same as performing 
+   //!	@code{country->name;@}.
    string cast(string to)
    {
       if (to[..5]=="string") return name;
