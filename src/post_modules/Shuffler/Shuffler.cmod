@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.19 2002/11/04 03:08:49 nilsson Exp $
+|| $Id: Shuffler.cmod,v 1.20 2002/11/05 19:47:40 grendel Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.19 2002/11/04 03:08:49 nilsson Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.20 2002/11/05 19:47:40 grendel Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -610,7 +610,7 @@ PIKECLASS Shuffle
     *!     An ordinary 8-bit wide pike string.
     *!   @item Memory
     *!     An initialized instance of the System.Memory class.
-    *!   @item Normal file
+    *!   @item NormalFile
     *!     Stdio.File instance pointing to a normal file.
     *!   @item Stream
     *!     Stdio.File instance pointing to a stream of some kind
