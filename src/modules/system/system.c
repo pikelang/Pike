@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.11 1997/02/07 00:46:26 hubbe Exp $
+ * $Id: system.c,v 1.12 1997/03/04 21:48:32 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.11 1997/02/07 00:46:26 hubbe Exp $");
+RCSID("$Id: system.c,v 1.12 1997/03/04 21:48:32 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -105,9 +105,11 @@ static volatile void report_error(const char *function_name)
   case ENOENT:
     error_msg = "File not found";
     break;
+#ifdef ENOLINK
   case ENOLINK:
     error_msg = "Link to remote machine nolonger active";
     break;
+#endif /* ENOLINK */
   case ENOSPC:
     error_msg = "Filesystem full";
     break;
