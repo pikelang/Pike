@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.17 2000/06/10 11:12:51 mast Exp $ */
+/* $Id: mkpeep.pike,v 1.18 2000/08/14 17:14:34 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -95,7 +95,8 @@ array(string) explode_comma_expr(string s)
 /* Splitline into components */
 array(int|string|array(string)) split(string s)
 {
-  string *a,*b,tmp;
+  array(string) a, b;
+  string tmp;
   int i,e,opcodes;
   string line=s;
   opcodes=0;
@@ -193,13 +194,13 @@ array(int|string|array(string)) split(string s)
 #endif
 
   i=0;
-  array newa=({});
+  array(string) newa=({});
   for(e=0;e<sizeof(a);e++)
   {
     switch(a[e][0])
     {
       case '(':
-	array tmp=explode_comma_expr(a[e][1..strlen(a[e])-2]);
+	array(string) tmp=explode_comma_expr(a[e][1..strlen(a[e])-2]);
 	for(int x=0;x<sizeof(tmp);x++)
 	{
 	  string arg=sprintf("$%d%c", i, 'a'+x);
@@ -241,7 +242,7 @@ array(int|string|array(string)) split(string s)
 string treat(string expr)
 {
   int e;
-  string *tmp;
+  array(string) tmp;
   tmp=expr/"$";
   for(e=1;e<sizeof(tmp);e++)
   {
@@ -264,13 +265,12 @@ string treat(string expr)
 }
 
 /* Dump C co(d|r)e */
-void dump2(array(mixed) data,int ind)
+void dump2(array(array(array(string))) data,int ind)
 {
   int e,i,max,maxe;
-  mixed a,b,tmp;
+  mixed tmp;
   string test;
-  mapping(int:array(string))|mapping(string:array(string)) d;
-  mapping(string:mapping(string:array(string))) foo;
+  mapping(string:mapping(string:array(array(array(string))))) foo;
   mixed cons, var;
 
   foo=([]);
@@ -282,10 +282,10 @@ void dump2(array(mixed) data,int ind)
     /* First we create a mapping:
      * foo [ meta variable ] [ condition ] = ({ lines });
      */
-    foreach(data,d)
+    foreach(data, array(array(string)) d)
     {
-      a=d[0];
-      b=d[1];
+      array(string) a = d[0];
+      array(string) b = d[1];
       for(e=0;e<sizeof(a);e++)
       {
 	if(sscanf(a[e],"F_%[A-Z0-9_]==%s",cons,var)==2 ||
@@ -301,7 +301,7 @@ void dump2(array(mixed) data,int ind)
 
     /* Check what variable has most values */
     max=maxe=e=0; 
-    foreach(values(foo),d)
+    foreach(values(foo), mapping(string:array(array(array(string)))) d)
     {
       if(sizeof(d)>max)
       {
@@ -319,9 +319,9 @@ void dump2(array(mixed) data,int ind)
     write(sprintf("%*nswitch(%s)\n",ind,treat(test)));
     write(sprintf("%*n{\n",ind));
 
-    d=values(foo)[maxe];
-    a=indices(d);
-    b=values(d);
+    mapping(string:array(array(array(string)))) d = values(foo)[maxe];
+    array(string) a = indices(d);
+    array(array(array(array(string)))) b = values(d);
 
 
     /* foo: variable
@@ -341,7 +341,7 @@ void dump2(array(mixed) data,int ind)
       
       write(sprintf("%*ncase %s:\n",ind,cons+""));
 
-      foreach(b[e],d) d[0]-=({a[e]});
+      foreach(b[e], array(array(string)) d) d[0]-=({a[e]});
       dump2(b[e],ind+2);
       write(sprintf("%*n  break;\n",ind));
       write("\n");
@@ -353,12 +353,9 @@ void dump2(array(mixed) data,int ind)
   /* Take care of whatever is left */
   if(sizeof(data))
   {
-    foreach(data,d)
+    foreach(data, array(array(string)) d)
     {
-      mixed q;
-
       write(sprintf("%*n/* %s */\n",ind,d[3]));
-
       
       if(sizeof(d[0]))
       {
@@ -398,7 +395,7 @@ void dump2(array(mixed) data,int ind)
   
 
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   int e,max,maxe;
   string f;
@@ -411,7 +408,7 @@ int main(int argc, string *argv)
   f=cpp(Stdio.read_bytes(argv[1]),argv[1]);
   foreach(f/"\n",f)
   {
-    string *a,*b;
+    array(string) a, b;
     mapping tmp;
 
     sscanf(f,"%s#",f);
@@ -427,26 +424,28 @@ int main(int argc, string *argv)
 
 //  write(sprintf("%O\n",data));
 
-  write("  len=instrbuf.s.len/sizeof(p_instr);\n");
-  write("  instructions=(p_instr *)instrbuf.s.str;\n");
-  write("  instrbuf.s.str=0;\n");
-  write("  fifo_len=0;\n");
-  write("  init_bytecode();\n\n");
-  write("  for(eye=0;eye<len || fifo_len;)\n  {\n");
-  write("    INT32 current_line;\n");
-  write("    struct pike_string *current_file;\n");
-  write("\n");
-  write("#ifdef PIKE_DEBUG\n");
-  write("    if(a_flag>6) {\n");
-  write("      int e;\n");
-  write("      fprintf(stderr,\"#%d,%d:\",eye,fifo_len);\n");
-  write("      for(e=0;e<4;e++) {\n");
-  write("        fprintf(stderr,\" \");\n");
-  write("        dump_instr(instr(e));\n");
-  write("      }\n");
-  write("      fprintf(stderr,\"\\n\");\n");
-  write("    }\n");
-  write("#endif\n\n");
+  write("  len=instrbuf.s.len/sizeof(p_instr);\n"
+	"  instructions=(p_instr *)instrbuf.s.str;\n"
+	"  instrbuf.s.str=0;\n"
+	"  fifo_len=0;\n"
+	"  init_bytecode();\n\n"
+	"  for(eye=0;eye<len || fifo_len;)\n  {\n"
+	"    INT32 current_line;\n"
+	"    struct pike_string *current_file;\n"
+	"\n"
+	"#ifdef PIKE_DEBUG\n"
+	"    if(a_flag>6) {\n"
+	"      int e;\n"
+	"      fprintf(stderr, \"#%ld,%d:\",\n"
+	"              DO_NOT_WARN((long)eye),\n"
+	"              fifo_len);\n"
+	"      for(e=0;e<4;e++) {\n"
+	"        fprintf(stderr,\" \");\n"
+	"        dump_instr(instr(e));\n"
+	"      }\n"
+	"      fprintf(stderr,\"\\n\");\n"
+	"    }\n"
+	"#endif\n\n");
 
   dump2(data,4);
 

@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.33 2000/05/11 14:09:46 grubba Exp $");
+RCSID("$Id: peep.c,v 1.34 2000/08/14 17:18:06 grubba Exp $");
 
 struct p_instr_s
 {
@@ -65,7 +65,7 @@ void init_bytecode(void)
 
 void exit_bytecode(void)
 {
-  INT32 e,length;
+  ptrdiff_t e, length;
   p_instr *c;
 
   c=(p_instr *)instrbuf.s.str;
@@ -76,11 +76,11 @@ void exit_bytecode(void)
   toss_buffer(&instrbuf);
 }
 
-int insert_opcode2(unsigned int f,
-		  INT32 b,
-		  INT32 c,
-		  INT32 current_line,
-		  struct pike_string *current_file)
+ptrdiff_t insert_opcode2(unsigned int f,
+			 INT32 b,
+			 INT32 c,
+			 INT32 current_line,
+			 struct pike_string *current_file)
 {
   p_instr *p;
 
@@ -106,10 +106,10 @@ int insert_opcode2(unsigned int f,
   return p - (p_instr *)instrbuf.s.str;
 }
 
-int insert_opcode1(unsigned int f,
-		  INT32 b,
-		  INT32 current_line,
-		  struct pike_string *current_file)
+ptrdiff_t insert_opcode1(unsigned int f,
+			 INT32 b,
+			 INT32 current_line,
+			 struct pike_string *current_file)
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && b)
@@ -119,7 +119,7 @@ int insert_opcode1(unsigned int f,
   return insert_opcode2(f,b,0,current_line,current_file);
 }
 
-int insert_opcode0(int f,int current_line, struct pike_string *current_file)
+ptrdiff_t insert_opcode0(int f,int current_line, struct pike_string *current_file)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -221,8 +221,9 @@ static void ins_f_byte_with_2_args(unsigned int a,
 
 void assemble(void)
 {
-  INT32 e,d,length,max_label,tmp;
+  INT32 d,max_label,tmp;
   INT32 *labels, *jumps, *uses;
+  ptrdiff_t e, length;
   p_instr *c;
 
   c=(p_instr *)instrbuf.s.str;
@@ -248,7 +249,7 @@ void assemble(void)
   c=(p_instr *)instrbuf.s.str;
   for(e=0;e<length;e++)
     if(c[e].opcode == F_LABEL && c[e].arg>=0)
-      labels[c[e].arg]=e;
+      labels[c[e].arg]=DO_NOT_WARN((INT32)e);
 
   for(e=0;e<length;e++)
   {
@@ -412,10 +413,11 @@ void assemble(void)
 /**** Peephole optimizer ****/
 
 int remove_clear_locals=0x7fffffff;
-static int fifo_len, eye,len;
+static int fifo_len;
+static ptrdiff_t eye, len;
 static p_instr *instructions;
 
-int insopt2(int f, INT32 a, INT32 b, int cl, struct pike_string *cf)
+ptrdiff_t insopt2(int f, INT32 a, INT32 b, int cl, struct pike_string *cf)
 {
   p_instr *p;
 
@@ -446,7 +448,7 @@ int insopt2(int f, INT32 a, INT32 b, int cl, struct pike_string *cf)
   return p - (p_instr *)instrbuf.s.str;
 }
 
-int insopt1(int f, INT32 a, int cl, struct pike_string *cf)
+ptrdiff_t insopt1(int f, INT32 a, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && a)
@@ -456,7 +458,7 @@ int insopt1(int f, INT32 a, int cl, struct pike_string *cf)
   return insopt2(f,a,0,cl, cf);
 }
 
-int insopt0(int f, int cl, struct pike_string *cf)
+ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -654,7 +656,8 @@ static void asm_opt(void)
   if(a_flag > 3)
   {
     p_instr *c;
-    INT32 e,length;
+    ptrdiff_t e, length;
+
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
 
@@ -676,7 +679,8 @@ static void asm_opt(void)
   if(a_flag > 4)
   {
     p_instr *c;
-    INT32 e,length;
+    ptrdiff_t e, length;
+
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
 
