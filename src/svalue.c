@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.59 1999/12/15 00:47:06 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.60 2000/01/10 00:51:34 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -422,7 +422,7 @@ unsigned INT32 hash_svalue(struct svalue *s)
       break;
     }
 
-  default:      q=(unsigned INT32)((long)s->u.refs >> 2);
+  default:      q=(unsigned INT32)((long)s->u.refs >> 2); break;
   case T_INT:   q=s->u.integer; break;
   case T_FLOAT: q=(unsigned INT32)(s->u.float_number * 16843009.731757771173); break;
   }
