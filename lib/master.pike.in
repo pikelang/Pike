@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.245 2003/04/10 16:05:52 mast Exp $
+// $Id: master.pike.in,v 1.246 2003/05/15 13:55:14 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1813,11 +1813,12 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(0);
 	
       case "execute":
-	random_seed(time() ^ (getpid()<<8));
-	argv = tmp->get_args(argv,1);
 #ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp", "bignum" );
 #endif /* __AUTO_BIGNUM__ */
+
+	random_seed(time() ^ (getpid()<<8));
+	argv = tmp->get_args(argv,1);
 
 	program prog =
 	  compile_string("mixed create(int argc, array(string) argv,array(string) env){"+
