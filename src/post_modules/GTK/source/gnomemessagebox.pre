@@ -22,7 +22,7 @@ constant string GNOME_MESSAGE_BOX_ERROR;
 constant string GNOME_MESSAGE_BOX_QUESTION;
 constant string GNOME_MESSAGE_BOX_GENERIC;
 
-void create(string message, string messagebox_type, string(...) buttons)
+void create(string message, string messagebox_type, string ... buttons)
 //! Creates a dialog box of type message_box_type with message. A
 //! number of buttons are inserted on it. You can use the GNOME stock
 //! identifiers to create gnome stock buttons.
