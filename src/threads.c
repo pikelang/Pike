@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.150 2001/01/24 08:17:28 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.151 2001/02/06 17:10:38 per Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1124,12 +1124,18 @@ static void thread_was_checked(struct object *o)
 #endif
 }
 
-PMOD_EXPORT void f_thread_local(INT32 args)
+void f_thread_local_create( INT32 args )
 {
   static INT32 thread_local_id = 0;
+  ((struct thread_local *)Pike_fp->current_object->storage)->id =
+    thread_local_id++;
+  pop_n_elems(args);
+  push_int(0);
+}
 
+PMOD_EXPORT void f_thread_local(INT32 args)
+{
   struct object *loc = clone_object(thread_local_prog,0);
-  ((struct thread_local *)loc->storage)->id = thread_local_id++;
   pop_n_elems(args);
   push_object(loc);
 }
@@ -1165,7 +1171,7 @@ void f_thread_local_set(INT32 args)
 
   if(Pike_interpreter.thread_id == NULL)
     Pike_error("Trying to set Thread.Local without thread!\n");
-
+  
   if((m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local) == NULL)
     m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local =
       allocate_mapping(4);
@@ -1406,14 +1412,17 @@ void th_init(void)
   ADD_STORAGE(struct thread_local);
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
+  ADD_EFUN("crate",f_thread_local_create,
+	   tFunc(tNone,tObjIs_THREAD_LOCAL),
+	   OPT_SIDE_EFFECT);
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
-  if(!thread_local_prog)
-    fatal("Failed to initialize thread_local program!\n");
   ADD_EFUN("thread_local",f_thread_local,
 	   tFunc(tNone,tObjIs_THREAD_LOCAL),
 	   OPT_SIDE_EFFECT);
+  if(!thread_local_prog)
+    fatal("Failed to initialize thread_local program!\n");
 
   START_NEW_PROGRAM_ID(THREAD_ID);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
