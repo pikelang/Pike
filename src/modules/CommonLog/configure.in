@@ -1,0 +1,13 @@
+#
+# $Id: configure.in,v 1.1 1999/11/14 00:47:21 per Exp $
+#
+# configure.in for CommonLog.
+#
+
+AC_REVISION("$Id: configure.in,v 1.1 1999/11/14 00:47:21 per Exp $")
+AC_INIT(clf.c)
+AC_CONFIG_HEADER(clf_machine.h)
+
+AC_MODULE_INIT()
+
+AC_OUTPUT(Makefile, [echo foo >stamp-h])

@@ -1,0 +1,17 @@
+#
+# $Id: Makefile.in,v 1.1 1999/11/14 00:47:21 per Exp $
+#
+# Makefile for CommonLog
+#
+
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+OBJS=clf.o
+MODULE_LDFLAGS=@LDFLAGS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+@dependencies@
+

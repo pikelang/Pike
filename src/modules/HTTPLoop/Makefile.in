@@ -1,0 +1,22 @@
+# $Id: Makefile.in,v 1.1 1999/11/14 00:43:14 per Exp $
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=accept_and_parse.o util.o cache.o requestobject.o log.o timeout.o 
+# filesystem.o
+MODNAME=HTTPAccept
+MODULE_LDFLAGS=@LDFLAGS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@SET_MAKE@
+
+@dynamic_module_makefile@
+
+pike: all
+	cd ../..; $(MAKE) "AR=$(AR)"
+
+pure: all
+	cd ../..; $(MAKE) "AR=$(AR)" pure
+
+
+@dependencies@

@@ -1,0 +1,219 @@
+# $Id: extensions,v 1.1 1999/11/14 00:43:14 per Exp $
+# name="Extension database";
+# doc="The database used to map from extension to mime-type (example: *.gif to image/gif)";
+#
+
+aif	audio/x-aiff
+aifc	audio/x-aiff
+aiff	audio/x-aiff
+au	audio/basic
+m3u 	audio/x-mpegurl
+mid	audio/midi
+midi    audio/midi 
+mod	audio/x-mod
+mp2	audio/x-mpeg
+mp3 	audio/x-mpeg
+mp3url	audio/x-mpegurl
+mpa	audio/x-mpeg
+psid	audio/x-psid
+# This is the standard extension used by the RealVideo 5.0 encoder
+rm	audio/x-pn-realaudio
+ra	audio/x-pn-realaudio
+ram	audio/x-pn-realaudio
+rpm 	audio/x-pn-realaudio-plugin
+sid	audio/x-psid
+snd	audio/basic
+vox     audio/voxware 
+wav	audio/x-wav
+
+fif     image/fif 
+gif	image/gif
+ief	image/ief
+iff	image/ilbm
+ilbm	image/ilbm
+jpe	image/jpeg
+jpeg	image/jpeg
+jpg	image/jpeg
+pbm	image/x-portable-bitmap
+pgm	image/x-portable-graymap
+pict  	image/pict
+pjpg    image/jpeg
+png	image/png
+pnm	image/x-portable-anymap
+ppm	image/x-portable-pixmap
+ras	image/x-cmu-raster
+rgb	image/x-rgb
+rs	image/x-sun-raster
+tga	image/x-targa
+tif	image/tiff
+tiff	image/tiff
+xbm	image/x-xbitmap
+xpm	image/x-xpixmap
+xwd	image/x-xwindowdump
+
+# AutoCad (AutoDesk)
+dwf	drawing/x-dwf
+
+anim3	video/x-anim
+anim5	video/x-anim
+anim7	video/x-anim
+anim8	video/x-anim
+avi	video/x-msvideo
+fli	video/x-fli
+mov	video/quicktime
+movie	video/x-sgi-movie
+mpe	video/mpeg
+mpeg	video/mpeg
+mpg	video/mpeg
+qt	video/quicktime
+viv     video/vnd.vivo
+vivo    video/vnd.vivo
+vos	video/vosaic
+
+c	text/x-c-code
+cc	text/x-c++-code
+css	text/css
+etx	text/x-setext
+h	text/x-include-file
+htm	text/html
+html	text/html
+java	text/plain
+rtx	text/richtext
+rxml	text/roxencode
+sgm     text/x-sgml
+sgml    text/x-sgml
+shtml	text/html
+spider  text/spidercode 
+spml	text/spinnercode
+spml    text/spidercode 
+tsv     text/tab-separated-values
+txt	text/plain
+
+aab 	application/x-authorware-bin
+aam 	application/x-authorware-map
+aas 	application/x-authorware-seg
+ai	application/postscript
+arj	application/octet-stream
+asn     application/astound
+asp     application/x-asap 
+bcpio	application/x-bcpio
+bin	application/octet-stream
+cert	application/x-x509-ca-cert
+cer	application/x-x509-ca-cert
+cdf	application/x-netcdf
+cdr	application/x-coreldraw
+cdrw    application/x-coreldraw
+chat	application/x-chat
+class	application/x-java-vm
+com	application/octet-stream
+cpio	application/x-cpio
+csh	application/x-csh
+dll	application/octet-stream
+dnt     application/donut
+# Too general, but also too common to not be defined.
+doc	application/msword
+donut   application/donut
+drv	application/octet-stream
+dvi	application/x-dvi
+eps	application/postscript
+evy     application/x-envoy 
+exe	application/octet-stream
+gtar	application/x-gtar
+hdf	application/x-hdf
+hqx	application/mac-binhex40
+iw      application/iconauthor 
+iwm     application/iconauthor 
+jar	application/x-java-archive
+js	application/x-javascript
+latex	application/x-latex
+lha	application/lha
+lzh	application/lha
+man	application/x-troff-man
+map	application/x-imagemap
+me	application/x-troff-me
+mif	application/x-mif
+mm      application/x-meme 
+ms	application/x-troff-ms
+msw     application/binary 
+mw	application/math
+nc	application/x-netcdf
+oda	application/oda
+pdf	application/pdf
+pfr	application/font-tdpfr
+pl	application/x-perl
+# Oracle plug-ins
+po	application/x-form
+pot	application/mspowerpoint
+ppt	application/mspowerpoint
+ppz	application/mspowerpoint
+pps	application/mspowerpoint
+ps	application/postscript
+quake	application/x-qplug-plugin
+roff	application/x-troff
+rtf	application/rtf
+sh	application/x-sh
+shar	application/x-shar
+sit	application/x-stuffit
+so	application/octet-stream
+spl     application/futuresplash 
+spr     application/x-sprite 
+sprite  application/x-sprite 
+src	application/x-wais-source
+sv4cpic application/x-sv4cpio
+sv4crc	application/x-sv4crc
+swf	application/x-shockwave-flash
+t	application/x-troff
+tar	application/unix-tar
+tcl	application/x-tcl
+tex	application/x-tex
+texi	application/x-texinfo
+texinfo application/x-texinfo
+tgz	application/unix-tar	x-gzip
+tr	application/x-troff
+tsp	application/dsptype            
+user	application/x-x509-user-cert
+usr	application/x-x509-user-cert
+ustar	application/x-ustar
+vcd	application/x-cdlink
+vmd 	application/vocaltec-media-desc
+vmf 	application/vocaltec-media-file
+wpc     application/wpc 
+xls	application/vnd.ms-excel
+zip	application/zip
+
+# This one hasn't been registred with IANA yet, but is added anyway.
+# LivePicture PhotoVista RealSpace
+ivr	i-world/i-vrml
+
+wrl	x-world/x-vrml
+wrml    x-world/x-vrml
+
+talk    plugin/talker 
+
+# Diskmasher -- Amiga thingie
+dms	application/x-diskmasher
+
+# Windows Write
+wri     application/x-write
+
+ice     x-conference/x-cooltalk
+
+# MacroMedia Director (http://www.macromedia.com/)
+dcr	application/x-director
+dir	application/x-director
+dxr	application/x-director
+
+# Netscape proxy config files.
+nspc    application/x-ns-proxy-autoconfig
+pac     application/x-ns-proxy-autoconfig
+
+# Certificate Authority Certificate (recognized at least by Netscape)
+ca_cert application/x-x509-ca-cert
+
+# This is supposed to be just 'gzip' and 'compress', but Netscape
+# barfs.. Fixed in Netscape 3.*, but quite a lot of people still run 2.*
+Z	STRIP			x-compress
+gz	STRIP			x-gzip
+
+uu	STRIP			uuencode
+b64	STRIP			base64

@@ -177,6 +177,10 @@ testfont binary
 /src/module.h foreign_ident
 /src/module_support.c foreign_ident
 /src/module_support.h foreign_ident
+/src/modules/CommonLog/Makefile.in foreign_ident
+/src/modules/CommonLog/acconfig.h foreign_ident
+/src/modules/CommonLog/clf.c foreign_ident
+/src/modules/CommonLog/configure.in foreign_ident
 /src/modules/Gdbm/Makefile.in foreign_ident
 /src/modules/Gdbm/acconfig.h foreign_ident
 /src/modules/Gdbm/configure.in foreign_ident
@@ -197,6 +201,12 @@ testfont binary
 /src/modules/Gz/gz_test.c foreign_ident
 /src/modules/Gz/testsuite.in foreign_ident
 /src/modules/Gz/zlibmod.c foreign_ident
+/src/modules/HTTPLoop/Makefile.in foreign_ident
+/src/modules/HTTPLoop/acconfig.h foreign_ident
+/src/modules/HTTPLoop/configure.in foreign_ident
+/src/modules/HTTPLoop/extensions foreign_ident
+/src/modules/HTTPLoop/requestobject.c foreign_ident
+/src/modules/HTTPLoop/testsuite.in foreign_ident
 /src/modules/Image/Makefile foreign_ident
 /src/modules/Image/Makefile.in foreign_ident
 /src/modules/Image/acconfig.h foreign_ident
