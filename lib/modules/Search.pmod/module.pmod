@@ -58,16 +58,14 @@ int rank(mapping word) {
 }
 
 class Filter {
-
   void set_content(string);
   array(array(string)) get_anchors();
   void add_content(string, int);
-  array(string) get_words();
-  array(mapping) get_verbose_words();
+  array(array) get_filtered_content();
   string get_title();
   string get_keywords();
   string get_description();
-
+  // string normalization(string);
 }
 
 Filter get_filter(string mime_type) {
