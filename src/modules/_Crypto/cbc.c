@@ -1,9 +1,7 @@
 /*
- * $Id: cbc.c,v 1.18 2000/12/01 08:10:26 hubbe Exp $
+ * $Id: cbc.c,v 1.19 2001/02/10 21:09:08 grubba Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
- *
- * /precompiled/crypto/cbc
  *
  * Henrik Grubbström 1996-11-10
  */
@@ -122,7 +120,18 @@ INLINE static void cbc_decrypt_step(const unsigned INT8 *source,
  * efuns and the like
  */
 
-/* void create(program|object, ...) */
+/*! @module Crypto
+ */
+
+/*! @class cbc
+ *!
+ *! Implementation of the cipher block chaining mode (CBC).
+ */
+
+/*! @decl void create(object cipher)
+ *!
+ *! Initialize a cipher block chaining object with the cipher @[cipher].
+ */
 static void f_create(INT32 args)
 {
   if (args < 1) {
@@ -179,20 +188,29 @@ static void f_create(INT32 args)
   MEMSET(THIS->iv, 0, THIS->block_size);
 }
 
-/* int query_block_size(void) */
+/*! @decl int query_block_size()
+ *!
+ *! Return the block size of the contained object.
+ */
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->block_size);
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ *!
+ *! Return the encryption key length of the contained object.
+ */
 static void f_query_key_length(INT32 args)
 {
   safe_apply(THIS->object, "query_key_length", args);
 }
 
-/* object set_encrypt_key(INT32 args) */
+/*! @decl object set_encrypt_key(string key)
+ *!
+ *! Set the encryption key of the contained object.
+ */
 static void f_set_encrypt_key(INT32 args)
 {
   if (THIS->block_size) {
@@ -206,7 +224,10 @@ static void f_set_encrypt_key(INT32 args)
   push_object(this_object());
 }
 
-/* object set_decrypt_key(INT32 args) */
+/*! @decl object set_decrypt_key(string key)
+ *!
+ *! Set the decryption key of the contained object.
+ */
 static void f_set_decrypt_key(INT32 args)
 {
   if (THIS->block_size) {
@@ -220,6 +241,10 @@ static void f_set_decrypt_key(INT32 args)
   push_object(this_object());
 }
 
+/*! @decl object set_iv(string iv)
+ *!
+ *! Set the initialization vector to @[iv].
+ */
 static void f_set_iv(INT32 args)
 {
   if (!THIS->iv)
@@ -237,7 +262,11 @@ static void f_set_iv(INT32 args)
   push_object(this_object());
 }
 
-/* string encrypt_block(string) */
+/*! @decl string encrypt_block(string data)
+ *!
+ *! Encrypt the string @[data] according to
+ *! the cipher block chaining mode.
+ */
 static void f_encrypt_block(INT32 args)
 {
   unsigned INT8 *result;
@@ -269,7 +298,11 @@ static void f_encrypt_block(INT32 args)
   MEMSET(result, 0, offset);
 }
 
-/* string decrypt_block(string) */
+/*! @decl string decrypt_block(string data)
+ *!
+ *! Decrypt the string @[data] according to
+ *! the cipher block chaining mode.
+ */
 static void f_decrypt_block(INT32 args)
 {
   unsigned INT8 *result;
@@ -301,7 +334,11 @@ static void f_decrypt_block(INT32 args)
   MEMSET(result, 0, offset);
 }
 
-/* string crypt_block(string) */
+/*! @decl string crypt_block(string data)
+ *!
+ *! Encrypt/decrypt the string @[data] according to
+ *! the cipher block chaining mode.
+ */
 static void f_crypt_block(INT32 args)
 {
   if (THIS->mode) {
@@ -310,6 +347,12 @@ static void f_crypt_block(INT32 args)
     f_encrypt_block(args);
   }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*
  * Module linkage
@@ -338,25 +381,25 @@ void pike_cbc_init(void)
   ADD_STORAGE(struct pike_crypto_cbc);
 
   /* function(program|object:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tPrg,tObj),tVoid), 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tPrg, tObj), tVoid), 0);
 
   /* function(void:int) */
-  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
 
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_iv", f_set_iv,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_iv", f_set_iv, tFunc(tStr, tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt_block", f_crypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
   /* function(string:string) */
-  ADD_FUNCTION("encrypt_block", f_encrypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("encrypt_block", f_encrypt_block, tFunc(tStr, tStr), 0);
   /* function(string:string) */
-  ADD_FUNCTION("decrypt_block", f_decrypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("decrypt_block", f_decrypt_block, tFunc(tStr, tStr), 0);
 
   set_init_callback(init_pike_crypto_cbc);
   set_exit_callback(exit_pike_crypto_cbc);

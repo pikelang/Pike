@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.9 2000/12/01 08:10:26 hubbe Exp $
+ * $Id: cast.c,v 1.10 2001/02/10 20:54:27 grubba Exp $
  *
  * CAST crypto module for Pike
  *
@@ -57,10 +57,21 @@ void exit_pike_crypto_cast(struct object *o)
 }
 
 /*
- * methods
+ * Methods
  */
 
-/* string name(void) */
+/*! @module Crypto
+ */
+
+/*! @class cast
+ *!
+ *! Implementation of the CAST block crypto.
+ */
+
+/*! @decl string name()
+ *!
+ *! Returns the string @tt{"CAST"@}.
+ */
 static void f_name(INT32 args)
 {
   if (args) {
@@ -69,7 +80,10 @@ static void f_name(INT32 args)
   push_string(make_shared_string("CAST"));
 }
 
-/* int query_block_size(void) */
+/*! @decl int query_block_size()
+ *!
+ *! Return the encryption block size used by CAST.
+ */
 static void f_query_block_size(INT32 args)
 {
   if (args) {
@@ -78,7 +92,10 @@ static void f_query_block_size(INT32 args)
   push_int(CAST_BLOCKSIZE);
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ *!
+ *! Return the encryption key length used by CAST.
+ */
 static void f_query_key_length(INT32 args)
 {
   if (args) {
@@ -87,6 +104,7 @@ static void f_query_key_length(INT32 args)
   push_int(CAST_MAX_KEYSIZE);
 }
 
+/* Not public. */
 static void set_key(INT32 args)
 {
   if (args != 1) {
@@ -106,21 +124,46 @@ static void set_key(INT32 args)
   push_object(this_object());
 }
 
-/* void set_encrypt_key */
+/*! @decl Crypto.cast set_encrypt_key(string key)
+ *!
+ *! Set the encryption key to @[key], and set the object
+ *! to encryption mode.
+ *!
+ *! Returns the current object.
+ */
 static void f_set_encrypt_key(INT32 args)
 {
   set_key(args);
   THIS->crypt_fun = cast_encrypt;
 }
 
-/* void set_decrypt_key */
+/*! @decl Crypto.cast set_decrypt_key(string key)
+ *!
+ *! Set the decryption key to @[key], and set the object
+ *! to decryption mode.
+ *!
+ *! Returns the current object.
+ */
 static void f_set_decrypt_key(INT32 args)
 {
   set_key(args);
   THIS->crypt_fun = cast_decrypt;
 }
 
-/* string crypt_block(string) */
+/*! @decl string crypt_block(string data)
+ *!
+ *! Encrypt/decrypt the string @[data] with the current key.
+ *!
+ *! If @[data] is longer than the block size, additional blocks
+ *! will be encrypted the same way as the first one (ie ECB-mode).
+ *!
+ *! @note
+ *!   Will throw errors if @code{sizeof(@[data])@} is not a multiple
+ *!   of the block size.
+ *!
+ *! @seealso
+ *!   @[set_encrypt_key()], @[set_decrypt_key()]
+ */
 static void f_crypt_block(INT32 args)
 {
   ptrdiff_t len;
@@ -152,6 +195,12 @@ static void f_crypt_block(INT32 args)
   push_string(end_shared_string(s));
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 /*
  * Module linkage
  */
@@ -179,17 +228,17 @@ void pike_cast_init(void)
   ADD_STORAGE(struct pike_crypto_cast);
 
   /* function(void:string) */
-  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt_block", f_crypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
 
   set_init_callback(init_pike_crypto_cast);
   set_exit_callback(exit_pike_crypto_cast);
