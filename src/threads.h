@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.71 1999/11/18 04:14:55 hubbe Exp $
+ * $Id: threads.h,v 1.72 2000/02/04 21:46:15 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -8,6 +8,12 @@
 #include "interpret.h"
 #include "object.h"
 #include "error.h"
+
+/* Needed for the sigset_t typedef, which is needed for
+ * the pthread_sigsetmask() prototype on Solaris 2.x.
+ */
+#include <signal.h>
+
 #ifdef HAVE_SYS_TYPES_H
 /* Needed for pthread_t on OSF/1 */
 #include <sys/types.h>
