@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.385 2004/09/30 03:50:27 mbaehr Exp $
+# $Id: Makefile.in,v 1.386 2004/10/20 18:59:38 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -98,6 +98,9 @@ SMARTLINK=@SMARTLINK@
 REALCC=@REALCC@
 CC=@CC@
 CPP=@CPP@
+
+CANDLE=@CANDLE@ -nologo
+LIGHT=@LIGHT@ -nologo
 
 FALLBACK_CC=@FALLBACK_CC@
 
@@ -348,7 +351,7 @@ undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
 .SUFFIXES:
-.SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src
+.SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src .wxs .wixobj .msi .msm
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
@@ -422,6 +425,21 @@ undump_modules: delete_dumped_modules
 	  echo "cp $< $@"; \
 	  cp "$<" "$@"; \
 	)
+
+.wxs.wixobj:
+	$(CANDLE) "$<"
+
+.wixobj.msm:
+	@test -d cab_cache || mkdir cab_cache
+	$(LIGHT) "$<" -cc cab_cache
+
+.wixobj.msi:
+	@test -d cab_cache || mkdir cab_cache
+	$(LIGHT) "$<" -cc cab_cache
+
+Pike.msi: Pike.wixobj Pike_actions.wixobj Pike_ui.wixobj Pike_module.msm
+	@test -d cab_cache || mkdir cab_cache
+	$(LIGHT) Pike.wixobj Pike_actions.wixobj Pike_ui.wixobj -o Pike.msi -cc cab_cache
 
 force :
 	@:
@@ -823,6 +841,17 @@ bin_export:
 	    echo "Done." ;\
 	  ;; \
 	esac
+
+wix:
+	@no_autodoc="--no-autodoc"; \
+	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
+	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
+	MANDIR_SRC="$(MANDIR_SRC)" \
+	BASEDIR="$(BASEDIR)" man_prefix="$(man_prefix)" \
+	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 #new_peep_engine:
 #	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
