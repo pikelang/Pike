@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.83 1999/07/16 11:10:46 mirar Exp $");
+RCSID("$Id: spider.c,v 1.84 1999/07/21 18:39:31 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1307,8 +1307,6 @@ void pike_module_init(void)
     _tz = g->tm_gmtoff;
 #endif
   }
-
-  init_dumudp();
 
 #ifdef ENABLE_STREAMED_PARSER
   start_new_program();
