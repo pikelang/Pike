@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.66 2004/05/11 15:59:15 grubba Exp $
+|| $Id: udp.c,v 1.67 2004/09/18 01:41:35 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.66 2004/05/11 15:59:15 grubba Exp $");
+RCSID("$Id: udp.c,v 1.67 2004/09/18 01:41:35 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -142,7 +142,10 @@ struct udp_storage {
 };
 
 void zero_udp(struct object *ignored);
-void exit_udp(struct object *ignored);
+int low_exit_udp(void);
+void exit_udp(struct object *ignored) {
+  low_exit_udp();
+}
 
 #undef THIS
 #define THIS ((struct udp_storage *)Pike_fp->current_storage)
@@ -164,17 +167,18 @@ void exit_udp(struct object *ignored);
  */
 static void udp_close(INT32 args)
 {
-  exit_udp(NULL);
+  int ret = low_exit_udp();
   zero_udp(NULL);
   pop_n_elems(args);
-  /* FIXME: Should look at the returnvalue from close(). */
-  push_int(1);
+  push_int( ret==0 );
 }
 
-/*! @decl object bind(int|string port)
- *! @decl object bind(int|string port, string address)
+/*! @decl UDP bind(int|string port)
+ *! @decl UDP bind(int|string port, string address)
  *!
  *! Binds a port for recieving or transmitting UDP.
+ *! @throws
+ *!   Throws error when unable to bind port.
  */
 static void udp_bind(INT32 args)
 {
@@ -289,15 +293,86 @@ static void udp_bind(INT32 args)
 void udp_enable_broadcast(INT32 args)
 {
 #ifdef SO_BROADCAST
-  int o;
+  int o = 1;
   pop_n_elems(args);
-  o = 1;
   push_int(fd_setsockopt(FD, SOL_SOCKET, SO_BROADCAST, (char *)&o, sizeof(int)));
   THIS->my_errno=errno;
 #else /* SO_BROADCAST */
   pop_n_elems(args);
   push_int(0);
 #endif /* SO_BROADCAST */
+}
+
+/*! @decl int(0..1) enable_multicast(string reply_address)
+ *! Set the local device for a multicast socket. See also the Unix man
+ *! page for setsocketopt IPPROTO_IP IP_MULTICAST_IF.
+ */
+void udp_enable_multicast(INT32 args)
+{
+  int result;
+  char *ip;
+  struct in_addr reply;
+  get_all_args("enable_multicast", args, "%s", &ip);
+
+  if( !inet_aton(ip, &reply) )
+    Pike_error("Failed to parse ip address.\n");
+
+  result = fd_setsockopt(FD, IPPROTO_IP, IP_MULTICAST_IF,
+			 (char *)&reply, sizeof(reply));
+  pop_n_elems(args);
+  push_int(result);
+}
+
+/*! @decl int set_multicast_ttl(int ttl)
+ *! Set the time-to-live value of outgoing multicast packets for this
+ *! socket. It is very important for multicast packets to set the
+ *! smallest TTL possible. The default is 1 which means that multicast
+ *! packets don't leacl the local network unless the user program
+ *! explicitly request it. See also the Unix man page for setsocketopt
+ *! IPPROTO_IP IP_MULTICAST_TTL.
+ */
+void udp_set_multicast_ttl(INT32 args)
+{
+  int ttl;
+  get_all_args("set_multicast_ttl", args, "%d", &ttl);
+  pop_n_elems(args);
+  push_int( fd_setsockopt(FD, IPPROTO_IP, IP_MULTICAST_TTL,
+			  (char *)&ttl, sizeof(int)) );
+}
+
+/*! @decl int add_membership(string group, void|string address)
+ *! Join a multicast group. @[group] contains the address of the
+ *! multicast group the application wants to join or leave. It must be
+ *! a valid multicast address. @[address] is the address of the local
+ *! interface with wich the system should join to the multicast group.
+ *! If not provided the system will select an appropriate interface.
+ *! See also the Unix man page for setsocketopt IPPROTO_IP
+ *! ADD_MEMBERSHIP.
+ */
+void udp_add_membership(INT32 args)
+{
+  int face=0;
+  char *group;
+  char *address=0;
+  struct ip_mreq sock;
+
+  get_all_args("add_membership", args, "%s.%s%d", &group, &address, &face);
+
+  if( !inet_aton( group, &sock.imr_multiaddr ) )
+    Pike_error("Failed to parse ip address %d.\n", 1);
+  if( !address )
+    sock.imr_interface.s_addr = htonl( INADDR_ANY );
+  else {
+    if( !inet_aton( address, &sock.imr_interface ) )
+      Pike_error("Failed to parse ip address %d.\n", 2);
+  }
+#if 0
+  sock.imr_ifindex = face;
+#endif
+
+  pop_n_elems(args);
+  push_int( fd_setsockopt(FD, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+			  (char *)&sock, sizeof(sock)) );
 }
 
 /*! @decl int(0..1) wait(int|float timeout)
@@ -614,20 +689,23 @@ void zero_udp(struct object *o)
   /* map_variable handles read_callback. */
 }
 
-void exit_udp(struct object *ignored)
+int low_exit_udp()
 {
   int fd = FD;
+  int ret = 0;
 
   if(fd != -1)
   {
     THREADS_ALLOW();
-    fd_close(fd);
+    ret = fd_close(fd);
     THREADS_DISALLOW();
   }
 
   unhook_fd_callback_box (&THIS->box);
 
   /* map_variable handles read_callback. */
+
+  return ret;
 }
 
 static int got_udp_event (struct fd_callback_box *box, int event)
@@ -875,22 +953,19 @@ static void udp_errno(INT32 args)
    push_int(THIS->my_errno);
 }
 
-/*! @decl object set_type(int sock_type)
- *! @decl object set_type(int sock_type, int family)
+/*! @decl UDP set_type(int sock_type)
+ *! @decl UDP set_type(int sock_type, int family)
  *!
  *! Sets socket type and protocol family.
  */
 static void udp_set_type(INT32 args)
 {
-   INT_TYPE type=0;
-   INT_TYPE proto=0;
-   if (args<2)
-      get_all_args("Stdio.UDP->set_type",args,"%i",&type);
-   else
-      get_all_args("Stdio.UDP->set_type",args,"%i%i",&type,&proto);
+   int type, proto;
 
-   THIS->type=(int)type;
-   THIS->protocol=(int)proto;
+   get_all_args("Stdio.UDP->set_type",args,"%d.%d",&type,&proto);
+
+   THIS->type=type;
+   THIS->protocol=proto;
    
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -944,7 +1019,16 @@ void init_udp(void)
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tStr),tObj),0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
-	       tFunc(tNone,tVoid), 0);
+	       tFunc(tNone,tInt01), 0);
+
+  ADD_FUNCTION("enable_multicast", udp_enable_multicast,
+	       tFunc(tStr,tInt01), 0);
+
+  ADD_FUNCTION("set_multicast_ttl", udp_set_multicast_ttl,
+	       tFunc(tInt,tInt), 0);
+
+  ADD_FUNCTION("add_membership", udp_add_membership,
+	       tFunc(tStr tOr(tVoid,tStr tOr(tVoid,tInt)),tInt), 0);
 
   ADD_FUNCTION("wait", udp_wait, tFunc(tOr(tInt, tFloat), tInt), 0);
 
