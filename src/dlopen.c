@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.49 2002/10/26 16:01:24 grubba Exp $
+|| $Id: dlopen.c,v 1.50 2002/10/26 18:25:29 marcus Exp $
 */
 
 #include <global.h>
@@ -40,9 +40,12 @@ static char *dlerr=0;
 
 /* Todo:
  *  Make image debugable if possible
- *  Support Win64
  *  Separate RWX, RW and R memory sections.
  */
+
+#ifdef _WIN64
+#define USE_PDB_SYMBOLS
+#endif
 
 /* Enable debug output if compiled on win64. */
 #ifdef _WIN64
@@ -196,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.49 2002/10/26 16:01:24 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.50 2002/10/26 18:25:29 marcus Exp $");
 
 #endif
 
@@ -1510,7 +1513,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  }
 
 
-#ifdef _WIN64
+#ifdef _M_IA64
 
 	    /* We may need to support more types here */
 	  case COFFReloc_IA64_dir64:
@@ -1520,7 +1523,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    ((INT64 *)loc)[0]+=(INT64)ptr;
 	    break;
 
-#else
+#elif defined(_M_IX86)
 
 	    /* We may need to support more types here */
 	  case COFFReloc_I386_dir32:
@@ -1821,7 +1824,7 @@ FILE *__cdecl dlopen_fopen_wrapper(const char *fname, const char *mode)
 }
 #endif
 
-#ifdef _WIN64
+#ifdef USE_PDB_SYMBOLS
 
 /* IA64 PDB (Program Data Base) support. */
 
@@ -1959,7 +1962,7 @@ static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
   struct pdb_header *header;
   struct pdb_symbols_header *st;
   size_t stlen, len = *plen;
-  int toc_blocks, gsym_file, idlen=0;
+  int gsym_file, idlen=0;
   INT32 *toc;
   unsigned char *ret;
   while(idlen<256 && idlen<len && buf[idlen]!=0x1a) idlen++;
@@ -2076,7 +2079,7 @@ static void init_dlopen(void)
 
       data->peaout = NULL;
 
-#ifdef PIKE_DEBUG
+#if defined(PIKE_DEBUG) && !defined(USE_PDB_SYMBOLS)
     if(!data->coff->num_symbols)
       Pike_fatal("No COFF symbols found in pike binary.\n");
 #endif      
@@ -2161,7 +2164,7 @@ static void init_dlopen(void)
       
     }
     free(buf);
-#ifdef _WIN64
+#ifdef USE_PDB_SYMBOLS
     if(strlen(ARGV[0])>4) {
       char *pdb_name = alloca(strlen(ARGV[0])+1);
       strcpy(pdb_name, ARGV[0]);
@@ -2460,7 +2463,7 @@ int main(int argc, char ** argv)
       }
       free(buf);
 
-#ifdef _WIN64
+#ifdef USE_PDB_SYMBOLS
       if(strlen(argv[0]>4)) {
 	char *pdbname = alloca(strlen(argv[0])+1);
 	strcpy(pdbname, argv[0]);
@@ -2480,7 +2483,7 @@ int main(int argc, char ** argv)
 		unsigned INT16 len, id;
 		unsigned INT32 type, value;
 		unsigned INT16 secnum;
-	      char name[1];
+		char name[1];
 	      } *sym = (void *)&symtab[i];
 	      int namelen=STRNLEN(sym->name,sym->len-12);
 	      
@@ -2533,8 +2536,11 @@ int main(int argc, char ** argv)
       EXPORT(rand);
       EXPORT(srand);
     }
-#ifdef _WIN64
-    EXPORT(_gp);
+#ifdef _M_IA64
+    {
+      extern void *_gp[];
+      EXPORT(_gp);
+    }
 #endif
   }
   
