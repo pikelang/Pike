@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.333 2002/11/18 15:08:17 grubba Exp $
+# $Id: Makefile.in,v 1.334 2002/11/23 15:30:46 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -490,8 +490,8 @@ module_testsuites:
 
 just_verify: module_testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
-	  else args="$(TESTARGS)" ; fi; \
-	  $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
+	else args="$(TESTARGS)" ; fi; \
+	$(VALGRIND) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
 # Testsuite for dynamic loading debugging
 test_dlopen: dynloadtest.sh
