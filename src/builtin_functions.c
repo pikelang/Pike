@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.421 2002/02/13 13:36:02 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.422 2002/02/14 00:34:43 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1698,7 +1698,7 @@ static void f_parse_pike_type( INT32 args )
   free_type(t);
 }
 
-/*! @decl mapping (string:mixed) all_constant()
+/*! @decl mapping (string:mixed) all_constants()
  *!
  *!   Returns a mapping containing all global constants, indexed on the name
  *!   of the constant, and with the value of the constant as value.
