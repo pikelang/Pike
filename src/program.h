@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.104 2000/08/15 15:53:10 grubba Exp $
+ * $Id: program.h,v 1.105 2000/08/24 04:04:42 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -194,10 +194,9 @@ struct reference
   INT16 id_flags; /* static, private etc.. */
 };
 
-
 struct inherit
 {
-  INT16 inherit_level; /* really needed? */
+  INT16 inherit_level;
   INT16 identifier_level;
   INT16 parent_identifier;
   INT16 parent_offset;
@@ -260,6 +259,7 @@ struct program
   struct object *prot;
 #endif
   INT32 id;             /* used to identify program in caches */
+  INT32 parent_program_id;
   /* storage_needed - storage needed in object struct
    * the first inherit[0].storage_offset bytes are not used and are
    * subtracted when inheriting.

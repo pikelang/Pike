@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.30 2000/08/10 08:36:45 grubba Exp $
+ * $Id: interpret_functions.h,v 1.31 2000/08/24 04:04:41 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -102,92 +102,26 @@ BREAK;
 
 OPCODE2(F_EXTERNAL,"external")
 {
-  struct inherit *inherit;
-  struct program *p;
-  struct object *o;
-  INT32 i;
+  struct external_variable_context loc;
+
+  loc.o=Pike_fp->current_object;
+  if(!loc.o->prog)
+    error("Cannot access parent of destructed object.\n");
+
+  loc.parent_identifier=Pike_fp->fun;
+  loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
   
-  inherit=&Pike_fp->context;
-  
-  o=Pike_fp->current_object;
-  
-  if(!o)
-    error("Current object is destructed\n");
-  
-  while(1)
-  {
-    if(inherit->parent_offset)
-    {
+  find_external_context(&loc, arg2);
+
 #ifdef PIKE_DEBUG
-      if(t_flag>4)
-      {
-	sprintf(trace_buffer,"-   Following o->parent (accumulator+=%d)\n",inherit->parent_offset-1);
-	write_to_stderr(trace_buffer,strlen(trace_buffer));
-      }
+  TRACE((5,"-   Identifier=%d Offset=%d\n",
+	 arg1,
+	 loc.inherit->identifier_level));
 #endif
-      
-      i=o->parent_identifier;
-      o=o->parent;
-      arg2+=inherit->parent_offset-1;
-    }else{
-#ifdef PIKE_DEBUG
-      if(t_flag>4)
-      {
-	sprintf(trace_buffer,"-   Following inherit->parent (accumulator+=%d)\n",inherit->parent_offset-1);
-	write_to_stderr(trace_buffer,strlen(trace_buffer));
-      }
-#endif
-      i=inherit->parent_identifier;
-      o=inherit->parent;
-    }
-    
-    if(!o)
-      error("Parent was lost during cloning.\n");
-    
-    if(!(p=o->prog))
-      error("Attempting to access variable in destructed object\n");
-    
-#ifdef DEBUG_MALLOC
-    if (o->refs == 0x55555555) {
-      fprintf(stderr, "The object %p has been zapped!\n", o);
-      describe(p);
-      fatal("Object zapping detected.\n");
-    }
-    if (p->refs == 0x55555555) {
-      fprintf(stderr, "The program %p has been zapped!\n", p);
-      describe(p);
-      fprintf(stderr, "Which taken from the object %p\n", o);
-      describe(o);
-      fatal("Looks like the program %p has been zapped!\n", p);
-    }
-#endif /* DEBUG_MALLOC */
-    
-#ifdef PIKE_DEBUG
-    if(i < 0 || i > p->num_identifier_references)
-      fatal("Identifier out of range!\n");
-#endif
-    
-    inherit=INHERIT_FROM_INT(p, i);
-    
-#ifdef DEBUG_MALLOC
-    if (inherit->storage_offset == 0x55555555) {
-      fprintf(stderr, "The inherit %p has been zapped!\n", inherit);
-      debug_malloc_dump_references(inherit,0,2,0);
-      fprintf(stderr, "It was extracted from the program %p %d\n", p, i);
-      describe(p);
-      fprintf(stderr, "Which was in turn taken from the object %p\n", o);
-      describe(o);
-      fatal("Looks like the program %p has been zapped!\n", p);
-    }
-#endif /* DEBUG_MALLOC */
-    
-    if(!arg2) break;
-    --arg2;
-  }
-  
+
   low_object_index_no_free(Pike_sp,
-			   o,
-			   arg1 + inherit->identifier_level);
+			   loc.o,
+			   arg1 + loc.inherit->identifier_level);
   Pike_sp++;
   print_return_value();
 }
@@ -195,47 +129,27 @@ BREAK;
 
 OPCODE2(F_EXTERNAL_LVALUE,"& external")
 {
-  struct inherit *inherit;
-  struct program *p;
-  struct object *o;
-  INT32 i,id=arg1;
+  struct external_variable_context loc;
+
+  loc.o=Pike_fp->current_object;
+  if(!loc.o->prog)
+    error("Cannot access parent of destructed object.\n");
+
+  loc.parent_identifier=Pike_fp->fun;
+  loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
   
-  inherit=&Pike_fp->context;
-  o=Pike_fp->current_object;
-  
-  if(!o)
-    error("Parent was lost during cloning.\n");
-    
-  if(!(o->prog))
-    error("Attempting to access variable in destructed object\n");
-    
-  while(1)
-  {
-    if(inherit->parent_offset)
-    {
-      i=o->parent_identifier;
-      o=o->parent;
-      arg2+=inherit->parent_offset-1;
-    }else{
-      i=inherit->parent_identifier;
-      o=inherit->parent;
-    }
-    
-    if(!o)
-      error("Parent no longer exists\n");
-    
-    if(!(p=o->prog))
-      error("Attempting to access variable in destructed object\n");
-    
-    inherit=INHERIT_FROM_INT(p, i);
-    
-    if(!arg2) break;
-    arg2--;
-  }
-  
-  ref_push_object(o);
+  find_external_context(&loc, arg2);
+
+#ifdef PIKE_DEBUG
+  TRACE((5,"-   Identifier=%d Offset=%d\n",
+	 arg1,
+	 loc.inherit->identifier_level));
+#endif
+
+
+  ref_push_object(loc.o);
   Pike_sp->type=T_LVALUE;
-  Pike_sp->u.integer=id + inherit->identifier_level;
+  Pike_sp->u.integer=arg1 + loc.inherit->identifier_level;
   Pike_sp++;
 }
 BREAK;

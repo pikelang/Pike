@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.264 2000/08/17 19:11:34 grubba Exp $");
+RCSID("$Id: program.c,v 1.265 2000/08/24 04:04:42 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -740,6 +740,7 @@ void low_start_new_program(struct program *p,
     }
     e=2;
   }
+  Pike_compiler->parent_identifier=id;
   if(idp) *idp=id;
 
   init_type_stack();
@@ -775,7 +776,7 @@ void low_start_new_program(struct program *p,
   Pike_compiler->fake_object->prev=Pike_compiler->fake_object;
   Pike_compiler->fake_object->refs=1;
   Pike_compiler->fake_object->parent=0;
-  Pike_compiler->fake_object->parent_identifier=0;
+  Pike_compiler->fake_object->parent_identifier=-1;
   Pike_compiler->fake_object->prog=p;
   add_ref(p);
 
@@ -861,12 +862,12 @@ void low_start_new_program(struct program *p,
     i.storage_offset=0;
     i.inherit_level=0;
     i.parent=0;
-    i.parent_identifier=0;
-    i.parent_offset=1;
+    i.parent_identifier=-1;
+    i.parent_offset=-18;
     i.name=0;
+    Pike_compiler->new_program->parent_program_id=compilation_depth>0 && Pike_compiler->previous->new_program ? Pike_compiler->previous->new_program->id : -1;
     add_to_inherits(i);
   }
-
 
   Pike_compiler->init_node=0;
   Pike_compiler->num_parse_error=0;
@@ -1656,15 +1657,84 @@ void rename_last_inherit(struct pike_string *n)
 		     n);
 }
 
+static int locate_parent_state(struct program_state **state,
+			       struct inherit **i,
+			       int *parent_identifier,
+			       int depth)
+{
+  int result=1;
+  if(depth<=0) return depth;
+  while(depth-->0)
+  {
+    if( (*i)->parent_offset != -17)
+    {
+      int tmp=(*i)->parent_identifier;
+      if( (*i)->parent_offset > 0)
+      {
+	int po=(*i)->parent_offset;
+	*parent_identifier = (*state)->parent_identifier;
+	*state = (*state)->previous;
+	result++;
+	fprintf(stderr,"INHERIT: state=state->previous (po=%d)\n",po);
+
+	if(po>1)
+	{
+	  *i=INHERIT_FROM_INT( (*state)->new_program,
+			       *parent_identifier);
+
+	  result+=locate_parent_state(state,i,parent_identifier, po-1);
+	}
+      }
+
+      if(tmp != -1)
+      {
+	if( *parent_identifier == -4711)
+	{
+	  *parent_identifier = tmp;
+	}else{
+	  *parent_identifier = tmp + INHERIT_FROM_INT( (*state)->new_program,
+						      *parent_identifier)->identifier_level;
+	}
+      }
+    }else{
+      fprintf(stderr,"INHERIT: Bailout!\n");
+      return result+depth+1;
+    }
+    *i = INHERIT_FROM_INT( (*state)->new_program, *parent_identifier);
+  }
+  return result;
+}
+
+
+static int find_depth(struct program_state *state,
+		      struct inherit *i,
+		      int parent_identifier,
+		      int depth)
+{
+#if 0
+  int e;
+  struct inherit *oi;
+  for(e=0;e<=parent_offset;e++) state=state->previous;
+  oi=INHERIT_FROM_INT(state->new_program, parent_identifier);
+  parent_offset+=i->parent_offset;
+#endif
+
+  return locate_parent_state(&state,
+			     &i,
+			     &parent_identifier,
+			     depth);
+}
+
 /*
  * make this program inherit another program
  */
-void low_inherit(struct program *p,
-		 struct object *parent,
-		 int parent_identifier,
-		 int parent_offset,
-		 INT32 flags,
-		 struct pike_string *name)
+static void really_low_inherit(struct program *p,
+			       struct object *parent,
+			       int parent_identifier,
+			       int parent_offset,
+			       INT32 flags,
+			       struct pike_string *name,
+			       int parent_identifier_offset)
 {
   int e;
   ptrdiff_t inherit_offset, storage_offset;
@@ -1679,16 +1749,27 @@ void low_inherit(struct program *p,
 
   if(p->flags & PROGRAM_USES_PARENT)
   {
+    struct program_state *state=Pike_compiler;
+
     if(!parent && !parent_offset)
     {
       yyerror("Parent pointer lost, cannot inherit!");
       /* We inherit it anyway, to avoid causing more errors */
     }
+
+#if 0
+    /* FIXME: we don't really need to set thsi flag on ALL
+     * previous compilations, but I'm too lazy to figure out
+     * exactly how deep down we need to go...
+     */
+    for(e=0;e<compilation_depth;e++,state=state->previous)
+      state->new_program->flags |= PROGRAM_USES_PARENT;
+#endif
   }
 
- /* parent offset was increased by one for above test.. */
+ /* parent offset was increased by 42 for above test.. */
   if(parent_offset)
-    parent_offset--;
+    parent_offset-=42;
 
 
   if(!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
@@ -1715,6 +1796,8 @@ void low_inherit(struct program *p,
     inherit.identifier_level += Pike_compiler->new_program->num_identifier_references;
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
+
+
     if(!e)
     {
       if(parent)
@@ -1722,7 +1805,8 @@ void low_inherit(struct program *p,
 	if(parent->next == parent)
 	{
 	  struct object *o;
-	  for(o=Pike_compiler->fake_object->parent;o!=parent;o=o->parent)
+	  inherit.parent_offset=0;
+	  for(o=Pike_compiler->fake_object;o!=parent;o=o->parent)
 	  {
 #ifdef PIKE_DEBUG
 	    if(!o) fatal("low_inherit with odd Pike_compiler->fake_object as parent!\n");
@@ -1732,10 +1816,10 @@ void low_inherit(struct program *p,
 	}else{
 	  inherit.parent=parent;
 	  inherit.parent_identifier=parent_identifier;
-	  inherit.parent_offset=0;
+	  inherit.parent_offset=-17;
 	}
       }else{
-	inherit.parent_offset+=parent_offset;
+	inherit.parent_offset=parent_offset;
 	inherit.parent_identifier=parent_identifier;
       }
     }else{
@@ -1743,34 +1827,50 @@ void low_inherit(struct program *p,
       {
 	if(parent && parent->next != parent && inherit.parent_offset)
 	{
+	  /* Fake object */
 	  struct object *par=parent;
 	  int e,pid=parent_identifier;
+
 	  for(e=1;e<inherit.parent_offset;e++)
 	  {
 	    struct inherit *in;
 	    if(!par->prog)
 	    {
 	      par=0;
-	      pid=0;
+	      pid=-1;
 	      break;
 	    }
 
 	    in=INHERIT_FROM_INT(par->prog, pid);
-	    if(in->parent_offset)
+	    switch(in->parent_offset)
 	    {
-	      pid=par->parent_identifier;
-	      par=par->parent;
-	      e-=in->parent_offset-1;
-	    }else{
-	      pid=in->parent_identifier;
-	      par=in->parent;
+	      default:
+	      {
+		struct external_variable_context tmp;
+		struct inherit *in2=in;
+		while(in2->identifier_level >= in->identifier_level) in2--;
+		tmp.o=par;
+		tmp.inherit=in2;
+		tmp.parent_identifier=pid;
+		find_external_context(&tmp, in->parent_offset);
+		par=tmp.o;
+		pid=tmp.parent_identifier;
+	      }
+	      break;
+
+	      case -17:
+		pid=in->parent_identifier;
+		par=in->parent;
+		break;
+
+	      case -18:
+		par=par->parent_identifier;
+		par=par->parent;
 	    }
 	  }
 
 	  inherit.parent=par;
-	  inherit.parent_offset=0;
-	}else{
-	  inherit.parent_offset+=parent_offset;
+	  inherit.parent_offset=-17;
 	}
       }
     }
@@ -1831,17 +1931,29 @@ void low_inherit(struct program *p,
   }
 }
 
+void low_inherit(struct program *p,
+		 struct object *parent,
+		 int parent_identifier,
+		 int parent_offset,
+		 INT32 flags,
+		 struct pike_string *name)
+{
+  really_low_inherit(p,parent,parent_identifier,parent_offset,flags,name,0);
+}
+
+
 PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name)
 {
   struct program *p=program_from_svalue(s);
-  low_inherit(p,
-	      s->type == T_FUNCTION ? s->u.object : 0,
-	      s->subtype,
-	      0,
-	      flags,
-	      name);
+  really_low_inherit(p,
+		     s->type == T_FUNCTION ? s->u.object : 0,
+		     s->type == T_FUNCTION ? s->subtype : -1,
+		     0,
+		     flags,
+		     name,
+		     Pike_compiler->new_program->num_identifiers );
 }
 
 void compiler_do_inherit(node *n,
@@ -1850,7 +1962,7 @@ void compiler_do_inherit(node *n,
 {
   struct program *p;
   struct identifier *i;
-  INT32 numid, offset;
+  INT32 numid=-1, offset=0,parentoff=0;;
 
   if(!n)
   {
@@ -1863,11 +1975,12 @@ void compiler_do_inherit(node *n,
       p=Pike_compiler->new_program;
       offset=0;
       numid=n->u.id.number;
+      parentoff=Pike_compiler->new_program->num_identifiers;
       goto continue_inherit;
 
     case F_EXTERNAL:
       {
-	struct program_state *state = Pike_compiler->previous;
+	struct program_state *state = Pike_compiler;
 
 	offset = 0;	/* FIXME: Should this be zero or 1? */
 	while (state && (state->new_program->id != n->u.integer.a)) {
@@ -1880,6 +1993,12 @@ void compiler_do_inherit(node *n,
 	}
 	p = state->new_program;
 	numid = n->u.integer.b;
+	if(offset==-1)
+	{
+	  parentoff=Pike_compiler->new_program->num_identifiers;
+	}else{
+	  parentoff=~INHERIT_FROM_INT(p,numid)->identifier_level;
+	}
       }
 
   continue_inherit:
@@ -1902,12 +2021,13 @@ void compiler_do_inherit(node *n,
 	return;
       }
 
-      low_inherit(p,
-		  0,
-		  numid,
-		  offset+1,
-		  flags,
-		  name);
+      really_low_inherit(p,
+			 0,
+			 numid,
+			 offset+42,
+			 flags,
+			 name,
+			 parentoff);
       break;
 
     default:
@@ -3231,6 +3351,7 @@ struct program *compile(struct pike_string *prog,
     lex.pragmas = 0;
   }
 
+  compilation_depth=-1;
   low_start_new_program(0,0,0,0);
 
   initialize_buf(&used_modules);
@@ -3245,7 +3366,6 @@ struct program *compile(struct pike_string *prog,
       debug_malloc_name(Pike_compiler->new_program, lex.current_file->str, lex.current_line);
 #endif
   }
-  compilation_depth=0;
 
 /*  start_line_numbering(); */
 
@@ -4255,69 +4375,16 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
 
 PMOD_EXPORT void *parent_storage(int depth)
 {
-  struct inherit *inherit;
-  struct program *p;
-  struct object *o;
-  INT32 i;
+  struct external_variable_context loc;
 
-  inherit=&Pike_fp->context;
-  o=Pike_fp->current_object;
-  
-  if(!o)
-    error("Current object is destructed\n");
-  
-  while(1)
-  {
-    if(inherit->parent_offset)
-    {
-      i=o->parent_identifier;
-      o=o->parent;
-      depth+=inherit->parent_offset-1;
-    }else{
-      i=inherit->parent_identifier;
-      o=inherit->parent;
-    }
-    
-    if(!o) return 0;
-    if(!(p=o->prog)) return 0;
-    
-#ifdef DEBUG_MALLOC
-    if (o->refs == 0x55555555) {
-      fprintf(stderr, "The object %p has been zapped!\n", o);
-      describe(p);
-      fatal("Object zapping detected.\n");
-    }
-    if (p->refs == 0x55555555) {
-      fprintf(stderr, "The program %p has been zapped!\n", p);
-      describe(p);
-      fprintf(stderr, "Which taken from the object %p\n", o);
-      describe(o);
-      fatal("Looks like the program %p has been zapped!\n", p);
-    }
-#endif /* DEBUG_MALLOC */
-    
-#ifdef PIKE_DEBUG
-    if(i < 0 || i > p->num_identifier_references)
-      fatal("Identifier out of range!\n");
-#endif
-    
-    inherit=INHERIT_FROM_INT(p, i);
-    
-#ifdef DEBUG_MALLOC
-    if (inherit->storage_offset == 0x55555555) {
-      fprintf(stderr, "The inherit %p has been zapped!\n", inherit);
-      debug_malloc_dump_references(inherit,0,2,0);
-      fprintf(stderr, "It was extracted from the program %p %d\n", p, i);
-      describe(p);
-      fprintf(stderr, "Which was in turn taken from the object %p\n", o);
-      describe(o);
-      fatal("Looks like the program %p has been zapped!\n", p);
-    }
-#endif /* DEBUG_MALLOC */
-    
-    if(!depth) break;
-    --depth;
-  }
+  loc.o=Pike_fp->current_object;
+  if(!loc.o->prog)
+    error("Cannot access parent of destructed object.\n");
 
-  return o->storage + inherit->storage_offset;
+  loc.parent_identifier=Pike_fp->fun;
+  loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
+  
+  find_external_context(&loc, depth);
+
+  return loc.o->storage + loc.inherit->storage_offset;
 }

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.165 2000/08/17 18:45:04 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.166 2000/08/24 04:04:40 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -57,6 +57,11 @@ RCSID("$Id: interpret.c,v 1.165 2000/08/17 18:45:04 grubba Exp $");
 #define EVALUATOR_STACK_SIZE	100000
 
 #define TRACE_LEN (100 + t_flag * 10)
+
+
+#ifdef PIKE_DEBUG
+static char trace_buffer[2000];
+#endif
 
 
 /* Pike_sp points to first unused value on stack
@@ -371,6 +376,184 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
   }
 }
 
+inline void pike_trace(int level,char *fmt, ...) ATTRIBUTE((format (printf, 2, 3)));
+inline void pike_trace(int level,char *fmt, ...)
+{
+  if(t_flag > level)
+  {
+    va_list args;
+    va_start(args,fmt);
+    vsprintf(trace_buffer,fmt,args);
+    va_end(args);
+    write_to_stderr(trace_buffer,strlen(trace_buffer));
+  }
+}
+
+#ifdef PIKE_DEBUG
+
+void my_describe_inherit_structure(struct program *p)
+{
+  struct inherit *in,*last=0;
+  int e,i=0;
+  last=p->inherits-1;
+
+  fprintf(stderr,"PROGRAM[%d]: inherits=%d identifers_refs=%d ppid=%d\n",
+	  p->id,
+	  p->num_inherits,
+	  p->num_identifier_references,
+	  p->parent_program_id);
+  for(e=0;e<p->num_identifier_references;e++)
+  {
+    in=INHERIT_FROM_INT(p,e);
+    while(last < in)
+    {
+      last++;
+      fprintf(stderr,"[%d]%*s parent{ offset=%d ident=%d id=%d } id{ level=%d } prog=%d\n",
+	      last - p->inherits,
+	      last->inherit_level*2,"",
+	      last->parent_offset,
+	      last->parent_identifier,
+	      last->prog->parent_program_id,
+	      last->identifier_level,
+	      last->prog->id);
+      i=0;
+    }
+
+    fprintf(stderr,"   %*s %d,%d: %s\n",
+	      in->inherit_level*2,"",
+	      e,i,
+	    ID_FROM_INT(p,e)->name->str);
+    i++;
+  }
+}
+
+#define TRACE(X) pike_trace X
+#else
+#define TRACE(X)
+#endif
+
+PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
+				       int arg2)
+{
+  struct program *p;
+  INT32 e,off;
+  TRACE((4,"-find_external_context(%d, inherit=%d)\n",arg2,loc->inherit - loc->o->prog->inherits));
+
+  if(!loc->o)
+    error("Current object is destructed\n");
+
+  while(--arg2>=0)
+  {
+#ifdef PIKE_DEBUG  
+    if(t_flag>8)
+      my_describe_inherit_structure(loc->o->prog);
+#endif
+
+    TRACE((4,"-   i->parent_offset=%d i->parent_identifier=%d\n",
+	   loc->inherit->parent_offset,
+	   loc->inherit->parent_identifier));
+    TRACE((4,"-   o->parent_identifier=%d inherit->identifier_level=%d\n",
+	   loc->o->parent_identifier,
+	   loc->inherit->identifier_level));
+
+    switch(loc->inherit->parent_offset)
+    {
+      default:
+	{
+	  struct external_variable_context tmp=*loc;
+#ifdef PIKE_DEBUG
+	  if(!loc->inherit->inherit_level)
+	    fatal("Gahhh! inherit level zero in wrong place!\n");
+#endif
+	  while(tmp.inherit->inherit_level >= loc->inherit->inherit_level)
+	  {
+	    TRACE((5,"-   inherit-- (%d >= %d)\n",tmp.inherit->inherit_level, loc->inherit->inherit_level));
+	    tmp.inherit--;
+	  }
+
+
+	  find_external_context(&tmp,
+				loc->inherit->parent_offset);
+	  loc->o=tmp.o;
+	  loc->parent_identifier =
+	    loc->inherit->parent_identifier+
+	    tmp.inherit->identifier_level;
+	}
+	break;
+
+      case -17:
+	TRACE((5,"-   Following inherit->parent\n"));
+	loc->parent_identifier=loc->inherit->parent_identifier;
+	loc->o=loc->inherit->parent;
+	break;
+
+      case -18:
+	TRACE((5,"-   Following o->parent\n"));
+	loc->parent_identifier=loc->o->parent_identifier;
+	loc->o=loc->o->parent;
+	break;
+    }
+    
+    if(!loc->o)
+      error("Parent was lost during cloning.\n");
+    
+    if(!(p=loc->o->prog))
+      error("Attempting to access variable in destructed object\n");
+    
+#ifdef DEBUG_MALLOC
+    if (loc->o->refs == 0x55555555) {
+      fprintf(stderr, "The object %p has been zapped!\n", loc->o);
+      describe(p);
+      fatal("Object zapping detected.\n");
+    }
+    if (p->refs == 0x55555555) {
+      fprintf(stderr, "The program %p has been zapped!\n", p);
+      describe(p);
+      fprintf(stderr, "Which taken from the object %p\n", loc->o);
+      describe(loc->o);
+      fatal("Looks like the program %p has been zapped!\n", p);
+    }
+#endif /* DEBUG_MALLOC */
+    
+#ifdef PIKE_DEBUG
+    if(loc->parent_identifier < 0 ||
+       loc->parent_identifier > p->num_identifier_references)
+      fatal("Identifier out of range, loc->parent_identifer=%d!\n",
+	    loc->parent_identifier);
+#endif
+
+    loc->inherit=INHERIT_FROM_INT(p, loc->parent_identifier);
+
+#ifdef PIKE_DEBUG  
+    if(t_flag>28)
+      my_describe_inherit_structure(p);
+#endif
+
+    TRACE((5,"-   Parent identifier = %d (%s), inherit # = %d\n",
+	   loc->parent_identifier,
+	   ID_FROM_INT(p, loc->parent_identifier)->name->str,
+	   loc->inherit - p->inherits));
+    
+#ifdef DEBUG_MALLOC
+    if (loc->inherit->storage_offset == 0x55555555) {
+      fprintf(stderr, "The inherit %p has been zapped!\n", loc->inherit);
+      debug_malloc_dump_references(loc->inherit,0,2,0);
+      fprintf(stderr, "It was extracted from the program %p %d\n", p, loc->parent_identifier);
+      describe(p);
+      fprintf(stderr, "Which was in turn taken from the object %p\n", loc->o);
+      describe(loc->o);
+      fatal("Looks like the program %p has been zapped!\n", p);
+    }
+#endif /* DEBUG_MALLOC */
+  }
+
+  TRACE((4,"--find_external_context: parent_id=%d (%s)\n",
+	 loc->parent_identifier,
+	 ID_FROM_INT(loc->o->prog,loc->parent_identifier)->name->str
+	 ));
+}
+
+
 #ifdef PIKE_DEBUG
 void print_return_value(void)
 {
@@ -397,11 +580,6 @@ void print_return_value(void)
 #endif
 
 struct callback_list evaluator_callbacks;
-
-#ifdef PIKE_DEBUG
-static char trace_buffer[200];
-#endif
-
 #define CASE(X) case (X)-F_OFFSET:
 
 #define DOJUMP() \

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.55 2000/08/17 18:48:27 grubba Exp $");
+RCSID("$Id: backend.c,v 1.56 2000/08/24 04:04:39 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -677,6 +677,7 @@ void backend(void)
   if(SETJMP(back))
   {
     ONERROR tmp;
+    t_flag=0;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
     *(sp++)=throw_value;
     throw_value.type=T_INT;

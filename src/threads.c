@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.138 2000/08/18 22:28:48 grubba Exp $");
+RCSID("$Id: threads.c,v 1.139 2000/08/24 04:04:42 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -623,6 +623,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     if(throw_severity < THROW_EXIT)
     {
       ONERROR tmp;
+      t_flag=0;
       SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
       assign_svalue_no_free(Pike_sp++, & throw_value);
       APPLY_MASTER("handle_error", 1);

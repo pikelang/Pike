@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.65 2000/08/23 18:46:36 grubba Exp $
+ * $Id: interpret.h,v 1.66 2000/08/24 04:04:41 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -61,6 +61,13 @@ struct pike_frame
   struct object *current_object;
   struct inherit context;
   char *current_storage;
+};
+
+struct external_variable_context
+{
+  struct object *o;
+  struct inherit *inherit;
+  int parent_identifier;
 };
 
 #ifdef PIKE_DEBUG
@@ -226,6 +233,8 @@ struct backlog;
 void dump_backlog(void);
 BLOCK_ALLOC(pike_frame,128)
 
+PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
+				       int arg2);
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.79 2000/08/16 10:49:19 grubba Exp $");
+RCSID("$Id: docode.c,v 1.80 2000/08/24 04:04:40 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -302,7 +302,7 @@ static int do_docode2(node *n,int flags)
   case F_EXTERNAL:
     {
       int level = 0;
-      struct program_state *state = Pike_compiler->previous;
+      struct program_state *state = Pike_compiler;
       while (state && (state->new_program->id != n->u.integer.a)) {
 	state = state->previous;
 	level++;
@@ -312,13 +312,30 @@ static int do_docode2(node *n,int flags)
 	emit1(F_NUMBER,0);
 	return 1;
       }
-      if(flags & WANT_LVALUE)
+      if(level)
       {
-	emit2(F_EXTERNAL_LVALUE, n->u.integer.b, level);
-	return 2;
+	if(flags & WANT_LVALUE)
+	{
+	  emit2(F_EXTERNAL_LVALUE, n->u.integer.b, level);
+	  return 2;
+	}else{
+	  emit2(F_EXTERNAL, n->u.integer.b, level);
+	  return 1;
+	}
       }else{
-	emit2(F_EXTERNAL, n->u.integer.b, level);
-	return 1;
+	if(flags & WANT_LVALUE)
+	{
+	  emit1(F_GLOBAL_LVALUE, n->u.integer.b);
+	  return 2;
+	}else{
+	  if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(state->new_program,n->u.integer.b)->identifier_flags))
+	  {
+	    emit1(F_LFUN, n->u.integer.b);
+	  }else{
+	    emit1(F_GLOBAL, n->u.integer.b);
+	  }
+	  return 1;
+	}
       }
     }
     break;
@@ -508,6 +525,7 @@ static int do_docode2(node *n,int flags)
 	     CDR(n)->u.integer.a );
 	break;
 
+	/* FIXME: Make special case for F_EXTERNAL */
       case F_IDENTIFIER:
 	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.id.number)->identifier_flags))
 	{
@@ -830,6 +848,13 @@ static int do_docode2(node *n,int flags)
 					       CAR(n)->u.id.number)->identifier_flags))
     {
       return do_lfun_call(CAR(n)->u.id.number,CDR(n));
+    }
+    else if(CAR(n)->token == F_EXTERNAL &&
+	    CAR(n)->u.integer.a == Pike_compiler->new_program->id &&
+	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(Pike_compiler->new_program,
+					       CAR(n)->u.integer.b)->identifier_flags))
+    {
+      return do_lfun_call(CAR(n)->u.integer.b,CDR(n));
     }
     else
     {
@@ -1242,7 +1267,7 @@ static int do_docode2(node *n,int flags)
 	  int x=0;
 	  struct object *o;
 
-	  for(o=Pike_compiler->fake_object->parent;o!=n->u.sval.u.object;o=o->parent)
+	  for(o=Pike_compiler->fake_object;o!=n->u.sval.u.object;o=o->parent)
 	    x++;
 	  emit2(F_EXTERNAL, n->u.sval.subtype, x);
 	  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.99 2000/08/22 17:28:22 grubba Exp $");
+RCSID("$Id: main.c,v 1.100 2000/08/24 04:04:41 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -525,6 +525,7 @@ int dbm_main(int argc, char **argv)
       num=throw_value.u.integer;
     }else{
       ONERROR tmp;
+      t_flag=0;
       SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
       push_svalue(& throw_value);
       APPLY_MASTER("handle_error", 1);

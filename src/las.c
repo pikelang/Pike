@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.191 2000/08/16 10:20:23 grubba Exp $");
+RCSID("$Id: las.c,v 1.192 2000/08/24 04:04:41 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -876,6 +876,9 @@ node *debug_mklocalnode(int var, int depth)
 
 node *debug_mkidentifiernode(int i)
 {
+#if 1
+  return mkexternalnode(Pike_compiler->new_program, i);
+#else
   node *res = mkemptynode();
   res->token = F_IDENTIFIER;
   copy_shared_string(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
@@ -901,6 +904,7 @@ node *debug_mkidentifiernode(int i)
 
   check_tree(res,0);
   return res;
+#endif
 }
 
 node *debug_mktrampolinenode(int i)
@@ -965,7 +969,8 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   res->u.integer.b = i;
 
   /* Bzot-i-zot */
-  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
+  if(parent_prog != Pike_compiler->new_program)
+    Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
 
   return freeze_node(res);
 }
@@ -1079,7 +1084,7 @@ void resolv_constant(node *n)
 
     case F_EXTERNAL:
       {
-	struct program_state *state = Pike_compiler->previous;
+	struct program_state *state = Pike_compiler;
 
 	while (state && (state->new_program->id != n->u.integer.a)) {
 	  state = state->previous;
@@ -2424,7 +2429,7 @@ void fix_type_field(node *n)
 	{
 	  int program_id = CAR(n)->u.integer.a;
 	  int id_no = CAR(n)->u.integer.b;
-	  struct program_state *state = Pike_compiler->previous;
+	  struct program_state *state = Pike_compiler;
 
 	  name="external symbol";
 

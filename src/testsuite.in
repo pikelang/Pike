@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.322 2000/08/21 23:48:24 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.323 2000/08/24 04:04:42 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -596,77 +596,104 @@ test_any([[
 
 
 test_program([[
+
 int errors;
 int tests;
 
-string indent(string code)
-{
-  string tmp="  "+replace(code,"\n","\n  ");
-  while(strlen(tmp) && tmp[-1]==' ') tmp=tmp[..strlen(tmp)-2];
-  return tmp;
-}
+#define indent(X) (X)
 
-void low_generate(int depth,string code, string acc, string ans, int cnt)
+int maxdepth;
+
+void low_generate(int depth,
+		  array(string) code,
+		  string acc,
+		  string ans,
+		  int cnt)
 {
-  if(!depth)
+  mixed tmp;
+  if(--depth<0)
   {
-    mixed tmp;
-    string res="Error";
+    string res="None";
     tests++;
-    string test=code+"\nmixed Q() { return "+acc+"();}";
+
+    if(!(tests & 63))
+    {	
+      __signal_watchdog();
+      werror("\r%d: %d  ",maxdepth,tests);
+    }
+
+    string test=code*"\n"+"\n"
+      "mixed Q() { return "+acc+"();}\n"
+      "int main() { trace(9); werror(\"%O\\n\","+acc+"()); }\n"
+      ;
     mixed err=catch {
-      res=compile_string(test)()->Q();
+      mixed tmp=compile_string(test)();
+      res=tmp->Q();
       if(res != ans)
-	throw("Test failed");
+      throw("Test failed");
     };
     if(err)
     {
       errors++;
       werror("\nTest failed:\n----------------------------------\n%s\n---------------------------------\nexpected answer: %O\nAnswer received: %O\n",test,ans,res);
       if(err!="Test failed")
-	werror("%s\n",master()->describe_backtrace(err));
+      {
+	string tmp=master()->describe_backtrace(err);
+	array s=tmp/"\n";
+	s=s[..20];
+	werror("%s\n",s*"\n");
+      }
+      return;
     }
   }else{
-    depth--;
-
     low_generate(depth, 
-		 sprintf("class C%d {\n%s\n};",cnt,indent(code)),
-		 sprintf("C%d()->%s",cnt,acc),
-		 ans,cnt+1);
+		 code+
+		 ({sprintf("string F%d(){ return %s()+\"F%d\"; }",cnt,acc,cnt)}),
+		 sprintf("F%d",cnt),
+		 sprintf("%sF%d",ans,cnt),
+		 cnt+1);
 
-    low_generate(depth, 
-		 sprintf("class C%d {\n%s\n};\ninherit C%d;",cnt,indent(code),cnt),
-		 acc,
-		 ans,cnt+1);
-
-    low_generate(depth,
-		 sprintf("%s\nclass C%d { string F%d() { return %s()+\"F%d\"; } };",code,cnt,cnt+1,acc,cnt+1),
-		 sprintf("C%d()->F%d",cnt,cnt+1),
-		 sprintf("%sF%d",ans,cnt+1),cnt+2);
-
+    for(int e=0;e<sizeof(code);e++)
+    {
+      low_generate(depth, 
+		   code[..e-1]+({
+		     sprintf("class C%d {\n%s\n};",cnt,indent(code[e..]*"\n"))
+		       }),
+		   sprintf("C%d()->%s",cnt,acc),
+		   ans,cnt+1);
+    }
+      
 
     if(sscanf(acc,"%s()->%s",string classname,string rest))
     {
-      low_generate(depth,
-		   sprintf("%s\nclass C%d {\n  inherit %s;\n"
-			   "  string F%d() { return %s()+\"F%d\"; }\n};",code,cnt,classname,cnt+1,rest,cnt+1),
-		   sprintf("C%d()->F%d",cnt,cnt+1),
-		   sprintf("%sF%d",ans,cnt+1),cnt+2);
+      low_generate(depth, 
+		   code+({sprintf("inherit %s;",classname) }),
+		   rest,
+		   ans,
+		   cnt);
     }
   }
 }
 
 int a()
 {
-  for(int e=0;e<7;e++) 
-    low_generate(e,
-		 "string X(){return \"X\";}",
+  werror("Testing vtables and scope access.\n");
+  int total_tests;
+  for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
+  {
+    low_generate(maxdepth,
+		 ({ "string X(){return \"X\";}" }),
 		 "X",
 		 "X",0);
-
-  if(errors) werror("%d/%d tests failed.\n",errors,tests);
+    werror("\r%d: %d\n",maxdepth,tests);
+    total_tests+=tests;
+    tests=0;
+  }
+  
+  if(errors) werror("%d/%d tests failed.\n",errors,total_tests);
   return !errors;
 }
+
 ]])
 
 
