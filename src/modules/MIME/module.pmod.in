@@ -1,282 +1,278 @@
 /*
- * $Id: module.pmod.in,v 1.21 1999/08/07 21:24:31 marcus Exp $
+ * $Id: module.pmod.in,v 1.22 1999/08/07 21:36:17 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
  * Marcus Comstedt 1996-1999
  */
 
-class support {
 
-  inherit @module@;
 
-  string generate_boundary( )
-  {
-    return "'ThIs-RaNdOm-StRiNg-/=_."+random( 1000000000 )+":";
-  }
-  
-  string decode( string data, string encoding )
-  {
-    switch (lower_case( encoding || "binary" )) {
-    case "base64":
-      return decode_base64( data );
-    case "quoted-printable":
-      return decode_qp( data );
-    case "x-uue":
-    case "x-uuencode":
-      return decode_uue( data );
-    case "7bit":
-    case "8bit":
-    case "binary":
-      return data;
-    default:
-      throw(({ "unknown transfer encoding "+encoding+"\n",
-		 backtrace() }));
-    }
-  }
-  
-  string encode( string data, string encoding, void|string filename,
-		 void|int stripcrlf )
-  {
-    switch (lower_case( encoding || "binary" )) {
-    case "base64":
-      return encode_base64( data, stripcrlf );
-    case "quoted-printable":
-      return encode_qp( data, stripcrlf );
-    case "x-uue":
-    case "x-uuencode":
-      return encode_uue( data, filename );
-    case "7bit":
-    case "8bit":
-    case "binary":
-      return data;
-    default:
-      throw(({ "unknown transfer encoding "+encoding+"\n",
-		 backtrace() }));
-    }
-  }
+inherit @module@;
 
-  array(string) decode_word( string word )
-  {
-    string charset, encoding, encoded_text;
-    if (sscanf( word,
-		"=?%[^][ \t()<>@,;:\"\\/?.=]?%[^][ \t()<>@,;:\"\\/?.=]?%s?=",
-		charset, encoding, encoded_text) == 3 ) {
-      switch (lower_case( encoding )) {
-      case "b":
-	encoding = "base64";
-	break;
-      case "q":
-	encoding = "quoted-printable";
-	break;
-      default:
-	throw (({ "invalid rfc1522 encoding "+encoding+"\n", backtrace() }));
-      }
-      return ({ decode( replace( encoded_text, "_", " " ), encoding ),
-		  lower_case( charset ) });
-    } else
-      return ({ word, 0 });
-  }
+string generate_boundary( )
+{
+  return "'ThIs-RaNdOm-StRiNg-/=_."+random( 1000000000 )+":";
+}
   
-  string encode_word( string|array(string) word, string encoding )
-  {
-    if (stringp(word))
-      return word;
-    if (!encoding || !word[1])
-      return word[0];
-    switch (lower_case(encoding)) {
+string decode( string data, string encoding )
+{
+  switch (lower_case( encoding || "binary" )) {
+  case "base64":
+    return decode_base64( data );
+  case "quoted-printable":
+    return decode_qp( data );
+  case "x-uue":
+  case "x-uuencode":
+    return decode_uue( data );
+  case "7bit":
+  case "8bit":
+  case "binary":
+    return data;
+  default:
+    throw(({ "unknown transfer encoding "+encoding+"\n",
+	     backtrace() }));
+  }
+}
+  
+string encode( string data, string encoding, void|string filename,
+	       void|int stripcrlf )
+{
+  switch (lower_case( encoding || "binary" )) {
+  case "base64":
+    return encode_base64( data, stripcrlf );
+  case "quoted-printable":
+    return encode_qp( data, stripcrlf );
+  case "x-uue":
+  case "x-uuencode":
+    return encode_uue( data, filename );
+  case "7bit":
+  case "8bit":
+  case "binary":
+    return data;
+  default:
+    throw(({ "unknown transfer encoding "+encoding+"\n",
+	     backtrace() }));
+  }
+}
+
+array(string) decode_word( string word )
+{
+  string charset, encoding, encoded_text;
+  if (sscanf( word,
+	      "=?%[^][ \t()<>@,;:\"\\/?.=]?%[^][ \t()<>@,;:\"\\/?.=]?%s?=",
+	      charset, encoding, encoded_text) == 3 ) {
+    switch (lower_case( encoding )) {
     case "b":
-    case "base64":
       encoding = "base64";
       break;
     case "q":
-    case "quoted-printable":
       encoding = "quoted-printable";
       break;
     default:
       throw (({ "invalid rfc1522 encoding "+encoding+"\n", backtrace() }));
     }
-    string enc = encode( word[0], encoding, 0, 1 );
-    if (encoding == "quoted-printable")
-      enc = replace( enc, ({ "?", "_", "(", ")", "\\", "\"" }),
-		     ({ "=3F", "=5F", "=28", "=29", "=5C", "=22" }) );
-    return "=?"+word[1]+"?"+encoding[0..0]+"?"+ enc +"?=";
-  }
+    return ({ decode( replace( encoded_text, "_", " " ), encoding ),
+	      lower_case( charset ) });
+  } else
+    return ({ word, 0 });
+}
 
-  static string remap(array(string) item)
+string encode_word( string|array(string) word, string encoding )
+{
+  if (stringp(word))
+    return word;
+  if (!encoding || !word[1])
+    return word[0];
+  switch (lower_case(encoding)) {
+  case "b":
+  case "base64":
+    encoding = "base64";
+    break;
+  case "q":
+  case "quoted-printable":
+    encoding = "quoted-printable";
+    break;
+  default:
+    throw (({ "invalid rfc1522 encoding "+encoding+"\n", backtrace() }));
+  }
+  string enc = encode( word[0], encoding, 0, 1 );
+  if (encoding == "quoted-printable")
+    enc = replace( enc, ({ "?", "_", "(", ")", "\\", "\"" }),
+		   ({ "=3F", "=5F", "=28", "=29", "=5C", "=22" }) );
+  return "=?"+word[1]+"?"+encoding[0..0]+"?"+ enc +"?=";
+}
+
+static string remap(array(string) item)
+{
+  if (sizeof(item)>1 && item[1])
+    return master()->resolv("Locale")["Charset"]
+      ->decoder(item[1])->feed(item[0])->drain();
+  else
+    return item[0];
+}
+
+/* Convenience functions for decode/encode_word */
+array(array(string)) decode_words_text( string txt )
+{
+  object r = Regexp("^((.*)[ \t\n\r]|)(=\\?[^\1- ?]*\\?[^\1- ?]*\\?"
+		    "[^\1- ?]*\\?=)[ \t\n\r]*(.*)");
+  array a, res = ({});
+  while ((a = r->split(txt)))
   {
-    if (sizeof(item)>1 && item[1])
-      return master()->resolv("Locale")["Charset"]
-	->decoder(item[1])->feed(item[0])->drain();
+    txt = a[1]||"";
+    array w = decode_word(a[2]);
+    if (sizeof(a[3]))
+      res = ({ w, ({ a[3], 0 }) }) + res;
     else
-      return item[0];
+      res = ({ w }) + res;
   }
+  return (sizeof(txt)? ({ ({ txt, 0 }) }) : ({ })) + res;
+}
 
-  /* Convenience functions for decode/encode_word */
-  array(array(string)) decode_words_text( string txt )
-  {
-    object r = Regexp("^((.*)[ \t\n\r]|)(=\\?[^\1- ?]*\\?[^\1- ?]*\\?"
-		      "[^\1- ?]*\\?=)[ \t\n\r]*(.*)");
-    array a, res = ({});
-    while ((a = r->split(txt)))
-    {
-      txt = a[1]||"";
-      array w = decode_word(a[2]);
-      if (sizeof(a[3]))
-	res = ({ w, ({ a[3], 0 }) }) + res;
-      else
-	res = ({ w }) + res;
-    }
-    return (sizeof(txt)? ({ ({ txt, 0 }) }) : ({ })) + res;
-  }
+string decode_words_text_remapped( string txt )
+{
+  return Array.map(decode_words_text(txt), remap)*"";
+}
 
-  string decode_words_text_remapped( string txt )
-  {
-    return Array.map(decode_words_text(txt), remap)*"";
-  }
+array(array(string)|int) decode_words_tokenized( string phrase )
+{
+  return Array.map(tokenize(phrase),
+		   lambda(string|int item) {
+		     return intp(item)? item : decode_word(item);
+		   });
+}
 
-  array(array(string)|int) decode_words_tokenized( string phrase )
-  {
-    return Array.map(tokenize(phrase),
-		     lambda(string|int item) {
-		       return intp(item)? item : decode_word(item);
-		     });
-  }
+array(string|int) decode_words_tokenized_remapped( string phrase )
+{
+  return Array.map(decode_words_tokenized(phrase),
+		   lambda(array(string)|int item) {
+		     return intp(item)? item : remap(item);
+		   });
+}
 
-  array(string|int) decode_words_tokenized_remapped( string phrase )
-  {
-    return Array.map(decode_words_tokenized(phrase),
-		     lambda(array(string)|int item) {
-		       return intp(item)? item : remap(item);
-		     });
-  }
+array(array(string|int|array(array(string))))
+  decode_words_tokenized_labled( string phrase )
+{
+  return Array.map( tokenize_labled( phrase ),
+		    lambda(array(string|int) item) {
+		      switch(item[0]) {
+		      case "encoded-word":
+			return ({ "word", @decode_word(item[1]) });
+		      case "word":
+			return item + ({ 0 });
+		      case "comment":
+			return ({ "comment", decode_words_text(item[1]) });
+		      default:
+			return item;
+		      }
+		    });
+}
 
-  array(array(string|int|array(array(string))))
-    decode_words_tokenized_labled( string phrase )
-  {
-    return Array.map( tokenize_labled( phrase ),
-		      lambda(array(string|int) item) {
-			switch(item[0]) {
-			case "encoded-word":
-			  return ({ "word", @decode_word(item[1]) });
-			case "word":
-			  return item + ({ 0 });
-			case "comment":
-			  return ({ "comment", decode_words_text(item[1]) });
-			default:
-			  return item;
-			}
-		      });
-  }
+array(array(string|int))
+  decode_words_tokenized_labled_remapped(string phrase)
+{
+  return Array.map(decode_words_tokenized_labled(phrase),
+		   lambda(array(string|int|array(array(string|int))) item) {
+		     switch(item[0]) {
+		     case "word":
+		       return ({ "word", remap(item[1..]) });
+		     case "comment":
+		       return ({ "comment", Array.map(item[1], remap)*"" });
+		     default:
+		       return item;
+		     }
+		   });
+}
 
-  array(array(string|int))
-    decode_words_tokenized_labled_remapped(string phrase)
-  {
-    return Array.map(decode_words_tokenized_labled(phrase),
-		     lambda(array(string|int|array(array(string|int))) item) {
-		       switch(item[0]) {
-		       case "word":
-			 return ({ "word", remap(item[1..]) });
-		       case "comment":
-			 return ({ "comment", Array.map(item[1], remap)*"" });
-		       default:
-			 return item;
-		       }
-		     });
-  }
+string encode_words_text(array(string|array(string)) phrase, string encoding)
+{
+  return Array.map(phrase, encode_word, encoding)*" ";
+}
 
-  string encode_words_text(array(string|array(string)) phrase, string encoding)
-  {
-    return Array.map(phrase, encode_word, encoding)*" ";
-  }
+string encode_words_quoted(array(array(string)|int) phrase, string encoding)
+{
+  return quote(Array.map(phrase, lambda(array(string)|int item) {
+				   return intp(item)? item :
+				     encode_word(item, encoding);
+				 }));
+}
 
-  string encode_words_quoted(array(array(string)|int) phrase, string encoding)
-  {
-    return quote(Array.map(phrase, lambda(array(string)|int item) {
-				     return intp(item)? item :
-				       encode_word(item, encoding);
-				   }));
-  }
-
-  string encode_words_quoted_labled(array(array(string|int|array(string|array(string)))) phrase, string encoding)
-  {
-    return
-      quote_labled(Array.map(phrase,
-			     lambda(array(string|int|array(string)) item) {
-			       switch(item[0]) {
-			       case "word":
-				 if(sizeof(item)>2 && item[2])
-				   return ({
-				     "encoded-word",
-				     encode_word(item[1..], encoding) });
-				 else
-				   return item;
-			       case "comment":
+string encode_words_quoted_labled(array(array(string|int|array(string|array(string)))) phrase, string encoding)
+{
+  return
+    quote_labled(Array.map(phrase,
+			   lambda(array(string|int|array(string)) item) {
+			     switch(item[0]) {
+			     case "word":
+			       if(sizeof(item)>2 && item[2])
 				 return ({
-				   "comment",
-				   encode_words_text(item[1], encoding) });
-			       default:
+				   "encoded-word",
+				   encode_word(item[1..], encoding) });
+			       else
 				 return item;
-			       }
-			     }));
-  }
+			     case "comment":
+			       return ({
+				 "comment",
+				 encode_words_text(item[1], encoding) });
+			     default:
+			       return item;
+			     }
+			   }));
+}
 
-  string guess_subtype( string typ )
-  {
-    switch (typ) {
-    case "text":
-      return "plain";
-    case "message":
-      return "rfc822";
-    case "multipart":
-      return "mixed";
-    }
-    return 0;
+string guess_subtype( string typ )
+{
+  switch (typ) {
+  case "text":
+    return "plain";
+  case "message":
+    return "rfc822";
+  case "multipart":
+    return "mixed";
   }
+  return 0;
+}
 
-  array(mapping(string:string|array)|string) 
-       parse_headers(string message, void|int use_multiple)
+array(mapping(string:string|array)|string) 
+  parse_headers(string message, void|int use_multiple)
+{
+  mapping(string:string|array) headers = ([ ]);
+  string head, body, header, hname, hcontents;
+  int mesgsep;
+  int mesgsep1 = search(message, "\r\n\r\n");
+  int mesgsep2 = search(message, "\n\n");
+  mesgsep = (mesgsep1<0? mesgsep2 :
+	     (mesgsep2<0? mesgsep1 :
+	      (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
+  if (mesgsep<0) {
+    head = message;
+    body = "";
+  } else {
+    head = (mesgsep>0? message[..mesgsep-1]:"");
+    body = message[mesgsep+(message[mesgsep]=='\r'? 4:2)..];
+  }
+  foreach( replace(head, ({"\r", "\n ", "\n\t"}),
+		   ({"", " ", " "}))/"\n", header ) 
   {
-    mapping(string:string|array) headers = ([ ]);
-    string head, body, header, hname, hcontents;
-    int mesgsep;
-    int mesgsep1 = search(message, "\r\n\r\n");
-    int mesgsep2 = search(message, "\n\n");
-    mesgsep = (mesgsep1<0? mesgsep2 :
-	       (mesgsep2<0? mesgsep1 :
-		(mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
-    if (mesgsep<0) {
-      head = message;
-      body = "";
-    } else {
-      head = (mesgsep>0? message[..mesgsep-1]:"");
-      body = message[mesgsep+(message[mesgsep]=='\r'? 4:2)..];
-    }
-    foreach( replace(head, ({"\r", "\n ", "\n\t"}),
-		     ({"", " ", " "}))/"\n", header ) 
+    if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
     {
-      if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
-      {
-	if (use_multiple)
-	  headers[hname=lower_case(hname)]
-	    = (headers[hname]||({}))+({hcontents});
+      if (use_multiple)
+	headers[hname=lower_case(hname)]
+	  = (headers[hname]||({}))+({hcontents});
+      else
+	if(headers[lower_case(hname)])
+	  headers[lower_case(hname)] += "\0"+hcontents;
 	else
-	  if(headers[lower_case(hname)])
-	    headers[lower_case(hname)] += "\0"+hcontents;
-	  else
-	    headers[lower_case(hname)] = hcontents;
-      }
+	  headers[lower_case(hname)] = hcontents;
     }
-    return ({ headers, body });
   }
+  return ({ headers, body });
+}
 
-};
-
-inherit support;
 
 class Message {
 
-  inherit support;
   import Array;
 
   string encoded_data;
