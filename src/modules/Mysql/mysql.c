@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.35 2000/07/28 07:13:51 hubbe Exp $
+ * $Id: mysql.c,v 1.36 2000/08/04 20:14:26 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.35 2000/07/28 07:13:51 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.36 2000/08/04 20:14:26 grubba Exp $");
 
 /*
 **! module Mysql
@@ -103,7 +103,7 @@ RCSID("$Id: mysql.c,v 1.35 2000/07/28 07:13:51 hubbe Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.35 2000/07/28 07:13:51 hubbe Exp $
+**!	$Id: mysql.c,v 1.36 2000/08/04 20:14:26 grubba Exp $
 **!
 **! class mysql
 **!
@@ -170,10 +170,12 @@ static void init_mysql_struct(struct object *o)
 static void exit_mysql_struct(struct object *o)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
+  MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL_RES *last_result = PIKE_MYSQL->last_result;
 
   PIKE_MYSQL->last_result = NULL;
   PIKE_MYSQL->socket = NULL;
+  PIKE_MYSQL->mysql = NULL;
 
   if (PIKE_MYSQL->password) {
     free_string(PIKE_MYSQL->password);
@@ -200,6 +202,9 @@ static void exit_mysql_struct(struct object *o)
   if (socket) {
     mysql_close(socket);
   }
+  if (mysql) {
+    mysql_close(mysql);
+  }
 
   MYSQL_DISALLOW();
 
@@ -209,7 +214,7 @@ static void exit_mysql_struct(struct object *o)
 
 static void pike_mysql_reconnect(void)
 {
-  MYSQL *mysql = &(PIKE_MYSQL->mysql);
+  MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL *socket;
   char *host = NULL;
   char *database = NULL;
@@ -243,6 +248,10 @@ static void pike_mysql_reconnect(void)
   }
   if (PIKE_MYSQL->password) {
     password = PIKE_MYSQL->password->str;
+  }
+
+  if (!mysql) {
+    mysql = PIKE_MYSQL->mysql = (MYSQL *)xalloc(sizeof(MYSQL));
   }
 
   socket = PIKE_MYSQL->socket;
@@ -298,7 +307,7 @@ static void pike_mysql_reconnect(void)
   if (!(PIKE_MYSQL->socket = socket)) {
     error("Mysql.mysql(): Couldn't reconnect to SQL-server\n"
 	  "%s\n",
-	  mysql_error(&PIKE_MYSQL->mysql));
+	  mysql_error(PIKE_MYSQL->mysql));
   }
 
   if (socket->net.fd >= 0) {
@@ -354,8 +363,6 @@ static void pike_mysql_reconnect(void)
 /* void create(string|void host, string|void database, string|void user, string|void password) */
 static void f_create(INT32 args)
 {
-  MYSQL *mysql = &PIKE_MYSQL->mysql;
-
   if (args >= 1) {
     if (sp[-args].type != T_STRING) {
       error("Bad argument 1 to mysql()\n");
