@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.30 1998/02/20 00:51:16 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.31 1998/04/10 22:26:04 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -349,12 +349,12 @@ static void mpzmod_cast(INT32 args)
 /* Converts an svalue, located on the stack, to an mpz object */
 static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
 {
-#define ERROR(x) if (throw_error) error(x)
+#define MPZ_ERROR(x) if (throw_error) error(x)
   struct object *o;
   switch(s->type)
   {
   default:
-    ERROR("Wrong type of object, cannot convert to mpz.\n");
+    MPZ_ERROR("Wrong type of object, cannot convert to mpz.\n");
     return 0;
 
   case T_INT:
@@ -373,7 +373,7 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
   case T_OBJECT:
     if(s->u.object->prog != mpzmod_program)
       {
-	ERROR("Wrong type of object, cannot convert to mpz.\n");
+	MPZ_ERROR("Wrong type of object, cannot convert to mpz.\n");
 	return 0;
       }
     return (MP_INT *)s->u.object->storage;
