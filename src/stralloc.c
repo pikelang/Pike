@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.153 2004/05/14 09:01:13 grubba Exp $
+|| $Id: stralloc.c,v 1.154 2004/05/14 10:50:23 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.153 2004/05/14 09:01:13 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.154 2004/05/14 10:50:23 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1287,7 +1287,7 @@ PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
   return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
 }
 
-#if !defined(HAVE_STRCOLL) && defined(DONT_USE_SYSTEM_LOCALE)
+#if !defined(HAVE_STRCOLL) || defined(DONT_USE_SYSTEM_LOCALE)
 /* No locale function available */
 static int low_binary_strcmp(char *a, ptrdiff_t alen,
 			     char *b, ptrdiff_t blen)
