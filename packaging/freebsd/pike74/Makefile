@@ -15,7 +15,7 @@ MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${PORTVERSION}/ \
 		ftp://ftp.oav.net/pike/7.4/export/ \
 		http://ftp.oav.net/pike/7.4/export/ \
 		http://grendel.firewall.com/caudium-pkg/ 
-DISTNAME=	pike-${PORTVERSION}
+DISTNAME=	Pike-v${PORTVERSION}
 
 MAINTAINER=	kiwi@caudium.net
 
@@ -48,7 +48,6 @@ CONFIGURE_ARGS+= --without-debug \
 		 --without-rtldebug \
 		 --without-cdebug \
 		 --without-copt \
-		 --without-shared-nodes \
 		 --without-security \
 		 --with-oob \
 		 --with-poll \
@@ -66,6 +65,8 @@ CONFIGURE_ARGS+= --without-debug \
 		 --prefix=${PREFIX}
 
 .include <bsd.port.pre.mk>
+
+PLIST_SUB+=	PORTVERSION=${PORTVERSION}
 
 # FreeBSD 5.0 Needs to have libgmp port to support gmp.
 .if ${OSVERSION} >= 500000
@@ -311,5 +312,8 @@ pre-configure:
 post-install:
 	${INSTALL_PROGRAM} ${WRKSRC}pike ${PREFIX}/bin
 	${INSTALL_SCRIPT} ${WRKSRC}hilfe ${PREFIX}/bin
+
+verify:
+	@(cd ${WRKSRC}; make verify)
 
 .include <bsd.port.post.mk>
