@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.74 2004/09/19 02:05:10 nilsson Exp $
+// $Id: Query.pike,v 1.75 2004/11/30 17:37:44 mast Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -73,7 +73,7 @@ array extra_args;
 
 /****** internal stuff *********************************************/
 
-void ponder_answer( int|void start_position )
+static int ponder_answer( int|void start_position )
 {
    // read until we have all headers
 
@@ -91,7 +91,25 @@ void ponder_answer( int|void start_position )
 #ifdef HTTP_QUERY_DEBUG
       werror("-> %O\n",s);
 #endif
-      if (!s || s=="") { i=sizeof(buf); break; }
+      if (!s) {
+	errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+	werror ("<- (read error: %s)\n", strerror (errno));
+#endif
+	return 0;
+      }
+      if (s=="") {
+	if (sizeof (buf) <= start_position) {
+	  // FIXME: Try to fake some kind of errno here, or HTTP
+	  // error?
+#ifdef HTTP_QUERY_DEBUG
+	  werror ("<- (premature EOF)\n");
+#endif
+	  return -1;
+	}
+	i=strlen(buf);
+	break;
+      }
 
       i=sizeof(buf)-3;
       buf+=s;
@@ -130,6 +148,7 @@ void ponder_answer( int|void start_position )
    remove_call_out(async_timeout);
 
    if (request_ok) request_ok(this,@extra_args);
+   return 1;
 }
 
 static void connect(string server,int port,int blocking)
@@ -142,11 +161,13 @@ static void connect(string server,int port,int blocking)
    if(con->_fd)
      success = con->connect(server, port);
    else
+     // What is this supposed to do? /mast
      success = con->connect(server, port, blocking);
 
    if(!success) {
+     errno = con->errno();
 #ifdef HTTP_QUERY_DEBUG
-     werror("<- (connect error)\n");
+     werror("<- (connect error: %s)\n", strerror (errno));
 #endif
      //con->set_blocking(); // Only to remove callbacks to avoid cycles.
      con->close();
@@ -195,8 +216,14 @@ static void connect(string server,int port,int blocking)
    }
 #endif
 
-   con->write(request);
-   ponder_answer();
+   if (con->write(request) != sizeof (request)) {
+     errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+     werror ("-> (write error: %s)\n", strerror (errno));
+#endif
+   }
+   else
+     ponder_answer();
 }
 
 static void async_close()
@@ -228,7 +255,12 @@ static void async_write()
 #ifdef HTTP_QUERY_DEBUG
    werror("<- %O\n",request);
 #endif
-   con->write(request);
+   if (con->write(request) != sizeof (request)) {
+     errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+     werror ("-> (write error: %s)\n", strerror (errno));
+#endif
+   }
    con->set_nonblocking(async_read,0,async_close);
 }
 
@@ -507,7 +539,7 @@ this_program thread_request(string server, int port, string query,
 
    con=Stdio.File();
    if (!con->open_socket())
-      error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
+     error("HTTP.Query(): can't open socket; "+strerror(con->errno())+"\n");
 
    string server1=dns_lookup(server);
 
@@ -550,7 +582,7 @@ this_program sync_request(string server, int port, string query,
 
   // start open the connection
 
-  if(con && con->_fd &&
+  if(con && con->is_open() &&
      con->query_address() == server + " " + port &&
      headers && headers->connection &&
      lower_case( headers->connection ) != "close")
@@ -612,8 +644,20 @@ this_program sync_request(string server, int port, string query,
 #ifdef HTTP_QUERY_DEBUG
     werror("<- %O\n",request);
 #endif
-    con->write( request );
-    ponder_answer();
+    if (con->write( request ) != sizeof (request)) {
+      errno = con->errno;
+#ifdef HTTP_QUERY_DEBUG
+      werror ("-> (write error: %s)\n", strerror (errno));
+#endif
+    }
+    else
+      if (ponder_answer() == -1) {
+	// The keepalive connection was closed from the server end.
+	// Retry with a new one.
+	con->close();
+	con = 0;
+	return sync_request (server, port, query, http_headers, data);
+      }
   } else
     connect(server, port,1);
 
@@ -704,7 +748,14 @@ string data(int|void max_length)
 		  if ((i=search(rbuf,"\r\n\r\n"))==-1)
 		  {
 		     s=con->read(8192,1);
-		     if (!s || s=="") return lbuf;
+		     if (!s) {
+		       errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+		       werror ("<- (read error: %s)\n", strerror (errno));
+#endif
+		       return 0;
+		     }
+		     if (s=="") return lbuf;
 		     rbuf+=s;
 		     buf+=s;
 		  }
@@ -724,7 +775,14 @@ string data(int|void max_length)
 	       if (strlen(s)<len)
 	       {
 		  string t=con->read(len-strlen(s)+6); // + crlfx3
-		  if (!t || t=="") return lbuf+s;
+		  if (!t) {
+		    errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+		    werror ("<- (read error: %s)\n", strerror (errno));
+#endif
+		    return 0;
+		  }
+		  if (t=="") return lbuf+s;
 		  buf+=t;
 		  lbuf+=s+t[..len-strlen(s)-1];
 		  rbuf=t[len-strlen(s)+2..];
@@ -739,7 +797,14 @@ string data(int|void max_length)
 	 else
 	 {
 	    s=con->read(8192,1);
-	    if (!s || s=="") return lbuf;
+	    if (!s) {
+	      errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+	      werror ("<- (read error: %s)\n", strerror (errno));
+#endif
+	      return 0;
+	    }
+	    if (s=="") return lbuf;
 	    buf+=s;
 	    rbuf+=s;
 	 }
@@ -767,13 +832,29 @@ string data(int|void max_length)
    {
      if(headers->server == "WebSTAR")
      { // Some servers reporting this name exhibit some really hideous behaviour:
-       buf += con->read(); // First, they may well lie about the content-length
+       string s = con->read();
+       if (!s) {
+	 errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+	 werror ("<- (read error: %s)\n", strerror (errno));
+#endif
+	 return 0;
+       }
+       buf += s; // First, they may well lie about the content-length
        if(!discarded_bytes && buf[datapos..datapos+1] == "\r\n")
 	 datapos += 2; // And, as if that wasn't enough! *mumble*
      }
      else
      {
-	buf += con->read(l);
+       string s = con->read(l);
+       if (!s) {
+	 errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+	 werror ("<- (read error: %s)\n", strerror (errno));
+#endif
+	 return 0;
+       }
+       buf += s;
      }
    }
    if(zero_type( len ))
@@ -921,6 +1002,7 @@ class PseudoFile
       if (sizeof(buf)<n && con)
       {
 	 string s=con->read(n-sizeof(buf));
+	 if (!s) return 0;
 	 buf+=s;
       }
 
