@@ -23,3 +23,9 @@ cipher_init(void);
 
 void
 cipher_exit(void);
+
+void
+nt_init(void);
+
+void
+nt_exit(void);
