@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.42 1999/02/13 20:38:39 grubba Exp $
+ * $Id: requests.pmod,v 1.43 1999/02/13 20:45:56 grubba Exp $
  */
 
 import .types;
@@ -324,7 +324,7 @@ class store
 {
   inherit request;
 
-  constant arg_info ({ ({ "set" }), ({ "string" }), ({ "list" }) });
+  constant arg_info = ({ ({ "set" }), ({ "string" }), ({ "list" }) });
 
   mapping easy_process(object message_set, string data_item, mixed list)
   {
