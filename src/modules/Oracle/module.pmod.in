@@ -1,8 +1,8 @@
-inherit @module@;
+inherit @module@ : M;
 
 class oracle
 {
-  inherit @module@.oracle : O;
+  inherit M::oracle : O;
 
   object big_query(object(compile_query)|string query,
 		      void|mapping(int|string:int|float|string|multiset(string)) binds,

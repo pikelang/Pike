@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.22 2000/03/24 01:22:17 hubbe Exp $
+ * $Id: oracle.c,v 1.23 2000/03/24 02:35:04 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -31,13 +31,14 @@
 #include "multiset.h"
 #include "builtin_functions.h"
 #include "opcodes.h"
+#include "pike_macros.h"
 
 #ifdef HAVE_ORACLE
 
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.22 2000/03/24 01:22:17 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.23 2000/03/24 02:35:04 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -92,23 +93,52 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #endif
 
 #ifndef ADD_FUNCTION
+
 #define ADD_FUNCTION add_function
+#define ADD_STORAGE(X) add_storage(sizeof(X))
 #define tNone ""
-#define tFunc(X,Y) 
 #define tInt "int"
 #define tStr "string"
-#define tStr "float"
+#define tFlt "float"
 #define tObj "object"
 #define tVoid "void"
+#define tMix "mixed"
 
 #define tMap(X,Y) "mapping(" X ":" Y ")"
 #define tOr(X,Y) X "|" Y
 #define tArr(X) "array(" X ")"
 #define tFunc(X,Y) "function(" X ":" Y ")"
 #define tFuncV(X,Z,Y) "function(" X Z "...:" Y ")"
+#define tComma ","
+
+#define string_builder dynamic_buffer_s
+#define init_string_builder(X,Y) initialize_buf(X)
+#define string_builder_allocate(X,Y,Z) low_make_buf_space(Y,X);
+#define finish_string_builder(X) low_free_buf(X)
+#define free_string_builder(X) toss_buffer(X)
+
+#define STRING_BUILDER_STR(X) ((X).s.str)
+#define STRING_BUILDER_LEN(X) ((X).s.len)
+#include "dynamic_buffer.h"
+
+#else
+#define STRING_BUILDER_STR(X) ((X).s)
+#define STRING_BUILDER_LEN(X) ((X).s->len)
+#define tComma ""
+
 #endif
 
+
+#ifndef CURRENT_STORAGE
+#define CURRENT_STORAGE (fp->current_storage)
+#endif
+
+#ifdef DEBUG_MALLOC
 #define THISOBJ dmalloc_touch(struct pike_frame *,fp)->current_object
+#else
+#define THISOBJ (fp->current_object)
+#endif
+
 #define PARENTOF(X) ((X)->parent)
 
 #define THIS_DBCON ((struct dbcon *)(CURRENT_STORAGE))
@@ -444,11 +474,11 @@ static sb4 output_callback(struct inout *inout,
     case SQLT_STR:
     case SQLT_LBI:
     case SQLT_LNG:
-      if(!inout->output.s)
+      if(!STRING_BUILDER_STR(inout->output))
       {
 	init_string_builder(& inout->output,0);
       }else{
-	inout->output.s->len+=inout->xlen-BLOCKSIZE;
+	STRING_BUILDER_LEN(inout->output)+=inout->xlen-BLOCKSIZE;
 	inout->xlen=0;
       }
       
@@ -765,11 +795,12 @@ static void push_inout_value(struct inout *inout)
     case SQLT_LNG:
     case SQLT_CHR:
     case SQLT_STR:
-      inout->output.s->len+=inout->xlen-BLOCKSIZE;
-      if(inout->ftype == SQLT_STR) inout->output.s->len--;
+      STRING_BUILDER_LEN(inout->output)+=inout->xlen-BLOCKSIZE;
+      if(inout->ftype == SQLT_STR) 
+	STRING_BUILDER_LEN(inout->output)--;
       inout->xlen=0;
       push_string(finish_string_builder(& inout->output));
-      inout->output.s=0;;
+      STRING_BUILDER_STR(inout->output)=0;;
       break;
 
     case SQLT_ODT:
@@ -795,7 +826,7 @@ static void push_inout_value(struct inout *inout)
 
 static void init_inout(struct inout *i)
 {
-  i->output.s=0;
+  STRING_BUILDER_STR(i->output)=0;
   i->has_output=0;
   i->xlen=0;
   i->len=0;
@@ -804,7 +835,7 @@ static void init_inout(struct inout *i)
 
 static void free_inout(struct inout *i)
 {
-  if(i->output.s)
+  if(STRING_BUILDER_STR(i->output))
   {
     free_string_builder(& i->output);
     init_inout(i);
@@ -1373,7 +1404,8 @@ static void f_big_query_create(INT32 args)
     }
   }
 
-  CALL_AND_UNSET_ONERROR(err);
+  free_bind_block(&bind);
+  UNSET_ONERROR(err);
 }
 
 void dbdate_create(INT32 args)
@@ -1532,7 +1564,7 @@ void pike_module_init(void)
 
       MY_START_CLASS(dbresult); {
 	ADD_FUNCTION("create", f_big_query_create,
-		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt) tOr(tVoid,tObj),tVoid), ID_PUBLIC);
+		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tComma tOr(tVoid,tInt) tComma tOr(tVoid,tObj),tVoid), ID_PUBLIC);
 	
 	/* function(:int) */
 	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
@@ -1558,8 +1590,8 @@ void pike_module_init(void)
 	map_variable("length","int",0,offset+OFFSETOF(dbresultinfo, length), T_INT);
 	map_variable("decimals","int",0,offset+OFFSETOF(dbresultinfo, decimals), T_INT);
 	
-	ADD_FUNCTION("`->=",protect_dbresultinfo,tFunc(tStr tMix,tVoid),0);
-	ADD_FUNCTION("`[]=",protect_dbresultinfo,tFunc(tStr tMix,tVoid),0);
+	ADD_FUNCTION("`->=",protect_dbresultinfo,tFunc(tStr tComma tMix,tVoid),0);
+	ADD_FUNCTION("`[]=",protect_dbresultinfo,tFunc(tStr tComma tMix,tVoid),0);
 	MY_END_CLASS(dbresultinfo);
       }
 
@@ -1569,10 +1601,8 @@ void pike_module_init(void)
 #endif
     }
 
-    /* function(string|void, string|void, string|void, string|void:void) */
-    ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+    ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid),tVoid), ID_PUBLIC);
     
-    /* function(string,mapping(int|string:int|float|string|multiset(string))|void:object) */
     MY_END_CLASS(oracle);
   }
 
