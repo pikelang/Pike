@@ -1296,10 +1296,12 @@ array generate_overload_func_for(array(FuncData) d,
 	  werror("BT: %s\n",q->args[a]->type()->basetypes()*"|");
 #endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	  foreach(q->args[a]->type()->basetypes(), string t)
-	    {
+	  {
+	    if (t != "void") {
 	      if(!y[a][t]) y[a][t]=({});
 	      y[a][t]+=({q});
 	    }
+	  }
 	}
     }
 
