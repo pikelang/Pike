@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.363 2004/10/09 11:50:49 per Exp $
+// $Id: master.pike.in,v 1.364 2004/10/30 11:41:47 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -117,7 +117,7 @@ void resolv_debug (string fmt, mixed... args)
   string pad = "  " * GET_RESOLV_MSG_DEPTH;
   if (sizeof (args)) fmt = sprintf (fmt, @args);
   if (fmt[-1] == '\n')
-    fmt = pad + replace (fmt[..sizeof (fmt) - 2], "\n", "\n" + pad) + "\n";
+    fmt = pad + replace (fmt[..<1], "\n", "\n" + pad) + "\n";
   else
     fmt = pad + replace (fmt, "\n", "\n" + pad);
   werror (fmt);
@@ -133,9 +133,8 @@ void resolv_debug (string fmt, mixed... args)
 //! Throws an error. A more readable version of the code
 //! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
 void error(string f, mixed ... args) {
-  array b = backtrace();
   if (sizeof(args)) f = sprintf(f, @args);
-  throw( ({ f, b[..sizeof(b)-2] }) );
+  throw( ({ f, backtrace()[..<1] }) );
 }
 
 // FIXME: Should the pikeroot-things be private?
@@ -242,9 +241,9 @@ array(string) explode_path(string p)
 #ifdef __amigaos__
   int colon = search(reverse(p), ":");
   if(colon >= 0)
-    return ({ p[..sizeof(p)-colon-1] }) + explode_path(p[sizeof(p)-colon..]);
+    return ({ p[..<colon] }) + explode_path(p[<colon+1..]);
   array(string) r = p/"/";
-  return replace(r[..sizeof(r)-2], "", "/")+r[sizeof(r)-1..];
+  return replace(r[..<1], "", "/")+r[<0..];
 #else
   array(string) r = EXPLODE_PATH(p);
   if(r[0] == "" && sizeof(p))
@@ -274,13 +273,13 @@ string dirname(string x)
 #ifdef __amigaos__
   array(string) tmp=x/":";
   array(string) tmp2=tmp[-1]/"/";
-  tmp[-1]=tmp2[..sizeof(tmp2)-2]*"/";
+  tmp[-1]=tmp2[..<1]*"/";
   if(sizeof(tmp2) >= 2 && tmp2[-2]=="") tmp[-1]+="/";
   return tmp*":";
 #else
   array(string) tmp=EXPLODE_PATH(x);
   if(x[0]=='/' && sizeof(tmp)<3) return "/";
-  return tmp[..sizeof(tmp)-2]*"/";
+  return tmp[..<1]*"/";
 #endif
 }
 
@@ -682,9 +681,7 @@ static void compile_cb_error (string msg, mixed ... args)
 // compile_exception.
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
-  array bt = backtrace();
-  bt = bt[..sizeof (bt) - 2];
-  throw (CompileCallbackError (msg, bt));
+  throw (CompileCallbackError (msg, backtrace()[..<1]));
 }
 
 static void compile_cb_rethrow (object|array err)
@@ -961,7 +958,7 @@ program low_cast_to_program(string pname,
   if(sscanf(reverse(BASENAME(pname)),"%s.%s",ext, nname))
   {
     ext="."+reverse(ext);
-    pname=pname[..sizeof(pname)-sizeof(ext)-1];
+    pname=pname[..<sizeof(ext)];
   }
   else {
     ext="";
@@ -1217,10 +1214,10 @@ class dirnode
     if (has_prefix(low_name, ".#")) return 0;
     if (has_suffix(low_name, ".pike") ||
 	has_suffix(low_name, ".pmod")) {
-      return fname[..sizeof(fname)-6];
+      return fname[..<5];
     }
     if (has_suffix(low_name, ".so")) {
-      return fname[..sizeof(fname)-4];
+      return fname[..<3];
     }
     return 0;
   }
@@ -1243,7 +1240,7 @@ class dirnode
     compilation_handler=h;
     fc[dirname]=this;
     if(has_suffix(FIX_CASE(dirname),".pmod")) {
-      fc[dirname[..sizeof(dirname)-6]]=this;
+      fc[dirname[..<5]]=this;
     }
     array(string) files = sort(get_dir(d)||({}));
     if (!sizeof(d)) return;
@@ -2929,7 +2926,7 @@ class Describer
     array identify_stack = ({stuff});
     while (sizeof (identify_stack)) {
       stuff = identify_stack[-1];
-      identify_stack = identify_stack[..sizeof (identify_stack) - 2];
+      identify_stack = identify_stack[..<1];
       if (objectp (stuff) || functionp (stuff) || programp (stuff))
 	ident[stuff]++;
       else if (arrayp (stuff)) {
@@ -3168,16 +3165,16 @@ string program_path_to_name ( string path,
   if(search(modname, "/")<0) path=modname;
 
   if (has_suffix(path, ".module.pmod")) {
-    return (module_prefix || "") + path[..sizeof(path)-13] + (module_suffix || "");
+    return (module_prefix || "") + path[..<12] + (module_suffix || "");
   }
   if (has_suffix(path, ".pmod")) {
-    return (module_prefix || "") + path[..sizeof(path)-6] + (module_suffix || "");
+    return (module_prefix || "") + path[..<5] + (module_suffix || "");
   }
   if (has_suffix(path, ".so")) {
-    return (module_prefix || "") + path[..sizeof(path)-4] + (module_suffix || "");
+    return (module_prefix || "") + path[..<3] + (module_suffix || "");
   }
   if (has_suffix(path, ".pike")) {
-    return path[..sizeof(path)-6] + (object_suffix || "");
+    return path[..<5] + (object_suffix || "");
   }
   return path + (object_suffix || "");
 }
@@ -3353,7 +3350,7 @@ string describe_function (function f)
   if(string s = programs_reverse_lookup (f))
   {
     if(has_suffix(s, ".pmod"))
-      name = BASENAME(s[..sizeof(s)-6]);
+      name = BASENAME(s[..<5]);
     else
       name = trim_file_name(s);
   }
