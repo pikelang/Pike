@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.194 2001/05/11 11:39:04 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.195 2001/05/11 12:11:05 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1131,7 +1131,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame=alloc_pike_frame();
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
-      new_frame->>children_base = Pike_interpreter.accounted_time;
+      new_frame->children_base = Pike_interpreter.accounted_time;
       new_frame->start_time = gethrtime() - Pike_interpreter.time_base;
 #endif
 #endif
@@ -1387,8 +1387,11 @@ void low_return(void)
     time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
     self_time=time_passed - time_in_children;
     Pike_interpreter.accounted_time+=self_time;
+#if 0
+    /* FIXME: How to get at function? */
     function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
     function->self_time+=(INT32)( self_time /1000);
+#endif /* 0 */
   }
 #endif
 #endif
