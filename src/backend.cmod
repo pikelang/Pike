@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.134 2004/04/08 13:35:37 grubba Exp $
+|| $Id: backend.cmod,v 1.135 2004/04/08 13:59:14 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.134 2004/04/08 13:35:37 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.135 2004/04/08 13:59:14 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2358,7 +2358,7 @@ PIKECLASS Backend
 	     * systems, then? Should we always check for that? */
 	    ACCEPT_SIZE_T len = sizeof (err);
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: exception on %d\n", me->id, i));
-	    if (!getsockopt (i, SOL_SOCKET, SO_ERROR, &err, &len)) {
+	    if (!getsockopt (i, SOL_SOCKET, SO_ERROR, &err, &len) && err) {
 	      IF_PD (fprintf (stderr, "BACKEND[%d]: error on %d, error=%d\n",
 			      me->id, i, err));
 	    }
@@ -2574,7 +2574,8 @@ PIKECLASS Backend
 	      int err;
 	      ACCEPT_SIZE_T len = sizeof (err);
 	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
-		IF_PD (fprintf (stderr, "BACKEND[%d]: POLLERR on %d, error=%d\n",
+		IF_PD (fprintf (stderr,
+				"BACKEND[%d]: POLLERR on %d, error=%d\n",
 				me->id, fd, err));
 		errno = err;
 	      }
