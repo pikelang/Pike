@@ -11,6 +11,7 @@
 #include "error.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "module_support.h"
 #include "mapping.h"
 
 #include "parser.h"
@@ -18,7 +19,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#if 0
+#if 1
 #define DEBUG(X) fprintf X
 #else
 #define DEBUG(X) do; while(0)
@@ -29,6 +30,11 @@
 #endif
 
 #define MAX_FEED_STACK_DEPTH 10
+
+/*
+**! module Parser
+**! class HTML
+*/
 
 struct location
 {
@@ -56,14 +62,17 @@ struct feed_stack
       The bottom stack element has no local feed,
       it's just for convinience */
 
+   /* current position; if not local feed, use global feed */
    struct piece *local_feed;
+   int c; 
 
-   int c; /* position in string */
    struct location pos;
 };
 
 struct parser_html_storage
 {
+/*--- current state -----------------------------------------------*/
+
    /* feeded info */
    struct piece *feed,*feed_end;
 
@@ -74,6 +83,12 @@ struct parser_html_storage
    struct feed_stack *stack;
    int stack_count;
    int max_stack_depth;
+
+   /* current range (ie, current tag/entity/whatever) */
+   struct piece *start,*end;
+   int cstart,cend;
+
+/*--- user configurable -------------------------------------------*/
 
    /* callback functions */
    struct svalue callback__tag;
@@ -105,6 +120,11 @@ struct parser_html_storage
 
 #define THIS ((struct parser_html_storage*)(fp->current_storage))
 #define THISOBJ (fp->current_object)
+
+static struct pike_string *empty_string;
+
+static p_wchar2 whitespace[]={' ','\n','\r','\t','\v'};
+static p_wchar2 ws_or_endarg[]={' ','\n','\r','\t','\v','>','='};
 
 /****** init & exit *********************************/
 
@@ -374,7 +394,7 @@ static void push_feed_range(struct piece *head,
    if (!head)
       error("internal error: tail not found in feed (push_feed_range)\n");
    if (!n)
-      push_text("");
+      ref_push_string(empty_string);
    else
       f_add(n);
 }
@@ -477,12 +497,16 @@ static int scan_forward(struct piece *feed,
 			struct piece **destp,
 			int *d_p,
 			p_wchar2 *look_for,
-			int num_look_for)
+			int num_look_for) /* negative = skip those */
 {
+   int rev=0;
+
+   if (num_look_for<0) num_look_for=-num_look_for,rev=1;
+
    DEBUG((stderr,"scan_forward %p:%d "
-	  "num_look_for=%d look_for=%d %d %d %d %d\n",
+	  "num_look_for=%d %slook_for=%d %d %d %d %d\n",
 	  feed,c,
-	  num_look_for,
+	  num_look_for,rev?"(rev) ":"",
 	  (num_look_for>0?look_for[0]:-1),
 	  (num_look_for>1?look_for[1]:-1),
 	  (num_look_for>2?look_for[2]:-1),
@@ -500,61 +524,64 @@ static int scan_forward(struct piece *feed,
 	 return 0; /* not found :-) */
 	 
       case 1: 
-	 while (feed)
-	 {
-	    int ce=feed->s->len-c;
-	    p_wchar2 f=*look_for;
-/* 	    fprintf(stderr,"%p:%d .. %p:%d (%d)\n", */
-/* 		    feed,c,feed,feed->s->len,ce); */
-	    switch (feed->s->size_shift)
+	 if (!rev)
+	    while (feed)
 	    {
-	       case 0:
+	       int ce=feed->s->len-c;
+	       p_wchar2 f=*look_for;
+	       DEBUG((stderr,"loop %p:%d .. %p:%d (%d)\n", 
+		      feed,c,feed,feed->s->len,ce)); 
+	       switch (feed->s->size_shift)
 	       {
-		  p_wchar0*s=((p_wchar0*)feed->s->str)+c;
-		  while (ce--)
-		     if ((p_wchar2)*(s++)==f)
-		     {
-			c=feed->s->len-ce;
-			goto found;
-		     }
+		  case 0:
+		  {
+		     p_wchar0*s=((p_wchar0*)feed->s->str)+c;
+		     while (ce--)
+			if ((p_wchar2)*(s++)==f)
+			{
+			   c=feed->s->len-ce;
+			   goto found;
+			}
+		  }
+		  break;
+		  case 1:
+		  {
+		     p_wchar1*s=((p_wchar1*)feed->s->str)+c;
+		     while (ce--)
+			if ((p_wchar2)*(s++)==f)
+			{
+			   c=feed->s->len-ce;
+			   goto found;
+			}
+		  }
+		  break;
+		  case 2:
+		  {
+		     p_wchar2 f=(p_wchar2)*look_for;
+		     p_wchar2*s=((p_wchar2*)feed->s->str)+c;
+		     while (ce--)
+			if (*(s++)==f)
+			{
+			   c=feed->s->len-ce;
+			   goto found;
+			}
+		  }
+		  break;
+		  default:
+		     error("unknown width of string\n");
 	       }
+	       if (!feed->next) break;
+	       c=0;
+	       feed=feed->next;
 	       break;
-	       case 1:
-	       {
-		  p_wchar1*s=((p_wchar1*)feed->s->str)+c;
-		  while (ce--)
-		     if ((p_wchar2)*(s++)==f)
-		     {
-			c=feed->s->len-ce;
-			goto found;
-		     }
-	       }
-	       break;
-	       case 2:
-	       {
-		  p_wchar2 f=(p_wchar2)*look_for;
-		  p_wchar2*s=((p_wchar2*)feed->s->str)+c;
-		  while (ce--)
-		     if (*(s++)==f)
-		     {
-			c=feed->s->len-ce;
-			goto found;
-		     }
-	       }
-	       break;
-	       default:
-		  error("unknown width of string\n");
 	    }
-	    if (!feed->next) break;
-	    c=0;
-	    feed=feed->next;
-	 }
-	 break;
 
       default:  /* num_look_for > 1 */
 	 while (feed)
 	 {
 	    int ce=feed->s->len-c;
+	    DEBUG((stderr,"loop %p:%d .. %p:%d (%d)\n", 
+		   feed,c,feed,feed->s->len,ce)); 
 	    switch (feed->s->size_shift)
 	    {
 	       case 0:
@@ -567,9 +594,10 @@ static int scan_forward(struct piece *feed,
 			if (((p_wchar2)*s)==look_for[n])
 			{
 			   c=feed->s->len-ce;
-			   goto found;
+			   if (!rev) goto found; else break;
 			}
-			s++;
+		     if (rev && n==num_look_for) goto found;
+		     s++;
 		  }
 	       }
 	       break;
@@ -583,9 +611,10 @@ static int scan_forward(struct piece *feed,
 			if (((p_wchar2)*s)==look_for[n])
 			{
 			   c=feed->s->len-ce;
-			   goto found;
+			   if (!rev) goto found; else break;
 			}
-			s++;
+		     if (rev && n==num_look_for) goto found;
+		     s++;
 		  }
 	       }
 	       break;
@@ -599,9 +628,10 @@ static int scan_forward(struct piece *feed,
 			if (((p_wchar2)*s)==look_for[n])
 			{
 			   c=feed->s->len-ce;
-			   goto found;
+			   if (!rev) goto found; else break;
 			}
-			s++;
+		     if (rev && n==num_look_for) goto found;
+		     s++;
 		  }
 	       }
 	       break;
@@ -622,8 +652,9 @@ static int scan_forward(struct piece *feed,
 
 found:
    *destp=feed;
-   *d_p=c-1; 
-   DEBUG((stderr,"scan_forward found %p:%d\n",*destp,*d_p));
+   *d_p=c-!rev; 
+   DEBUG((stderr,"scan_forward found %p:%d (found %d)\n",
+	  *destp,*d_p,destp[0]->s->str[*d_p]));
    return 1;
 }
 
@@ -779,6 +810,28 @@ static int handle_result(struct parser_html_storage *this,
    }   
 }
 
+void do_callback(struct parser_html_storage *this,
+		 struct object *thisobj,
+		 struct svalue *callback_function,
+		 struct piece *start,
+		 int cstart,
+		 struct piece *end,
+		 int cend)
+{
+   this->start=start;
+   this->cstart=cstart;
+   this->end=end;
+   this->cend=cend;
+
+   ref_push_object(thisobj);
+   if (start)
+      push_feed_range(start,cstart,end,cend);
+   else 
+      ref_push_string(empty_string);;
+   apply_svalue(callback_function,2);
+}
+
+
 /* ---------------------------------------------------------------- */
 
 static int do_try_feed(struct parser_html_storage *this,
@@ -805,12 +858,17 @@ static int do_try_feed(struct parser_html_storage *this,
 	     this->stack_count,this->stack_count,
 	     scan_entity,scan_tag,st->ignore_data));
 
+#ifdef DEBUG
+      if (*feed && feed[0]->s->len < st->c) 
+	 fatal("len (%d) < st->c (%d)\n",feed[0]->s->len,st->c);
+#endif
+
       /* do we need to check data? */
       if (!st->ignore_data)
       {
-	 DEBUG((stderr,"%*d do_try_feed scan for data %p:%d\n",
+	 DEBUG((stderr,"%*d do_try_feed scan for data %p:%d (len=%d)\n",
 		this->stack_count,this->stack_count,
-		*feed,st->c));
+		*feed,st->c,feed[0]?feed[0]->s->len:0));
 
 	 /* we are to get data first */
 	 /* look for tag or entity */
@@ -827,14 +885,11 @@ static int do_try_feed(struct parser_html_storage *this,
 	    DEBUG((stderr,"%*d calling _data callback %p:%d..%p:%d\n",
 		   this->stack_count,this->stack_count,
 		   *feed,st->c,dst,cdst));
-
-	    ref_push_object(thisobj);
-	    if (*feed)
-	       push_feed_range(*feed,st->c,dst,cdst);
-	    else
-	       push_text("");
-	    apply_svalue(&(this->callback__data),2);
 	    
+	    do_callback(this,thisobj,
+			&(this->callback__data),
+			*feed,st->c,dst,cdst);
+
 	    if ((res=handle_result(this,st,
 				   feed,&(st->c),dst,cdst)))
 	    {
@@ -891,9 +946,9 @@ static int do_try_feed(struct parser_html_storage *this,
 		   *feed,st->c+1,dst,cdst));
 
 	    /* low-level entity call */
-	    ref_push_object(thisobj);
-	    push_feed_range(*feed,st->c+1,dst,cdst);
-	    apply_svalue(&(this->callback__entity),2);
+	    do_callback(this,thisobj,
+			&(this->callback__entity),
+			*feed,st->c+1,dst,cdst);
 
 	    if ((res=handle_result(this,st,
 				   feed,&(st->c),dst,cdst+1)))
@@ -937,9 +992,10 @@ static int do_try_feed(struct parser_html_storage *this,
 		   *feed,st->c+1,dst,cdst));
 
 	    /* low-level tag call */
-	    ref_push_object(thisobj);
-	    push_feed_range(*feed,st->c+1,dst,cdst);
-	    apply_svalue(&(this->callback__tag),2);
+	    do_callback(this,thisobj,
+			&(this->callback__tag),
+			*feed,st->c+1,dst,cdst);
+
 	    st->ignore_data=1;
 
 	    if ((res=handle_result(this,st,
@@ -990,7 +1046,11 @@ static void try_feed(int finished)
 	    if (!THIS->feed) THIS->feed_end=NULL;
 
 	    st=THIS->stack->prev;
-	    if (!st) return; /* all done, but keep last stack elem */
+	    if (!st) 
+	    {
+	       THIS->stack->c=0;
+	       return; /* all done, but keep last stack elem */
+	    }
 
 	    if (THIS->stack->local_feed)
 	       error("internal wierdness in Parser.HTML: feed left\n");
@@ -1034,9 +1094,13 @@ static void html_feed(INT32 args)
       f->next=NULL;
 
       if (THIS->feed_end==NULL)
+      {
+	 DEBUG((stderr,"  (new feed)\n"));
 	 THIS->feed=THIS->feed_end=f;
+      }
       else
       {
+	 DEBUG((stderr,"  (attached to feed end)\n"));
 	 THIS->feed_end->next=f;
 	 THIS->feed_end=f;
       }
@@ -1098,7 +1162,7 @@ static void html_feed_insert(INT32 args)
 static void html_finish(INT32 args)
 {
    pop_n_elems(args);
-   try_feed(1);
+   if (THIS->feed || THIS->stack->prev) try_feed(1);
    ref_push_object(THISOBJ);
 }
 
@@ -1149,7 +1213,7 @@ static void html_read(INT32 args)
       THIS->out_end=NULL;
 
    if (!m) 
-      push_text("");
+      ref_push_string(empty_string);
    else
       f_add(m);
 }
@@ -1164,7 +1228,85 @@ void html_write_out(INT32 args)
    ref_push_object(THISOBJ);
 }
 
+/** query *******************************************/
+
+/*
+**! method string current()
+**!	Gives the current range of data, ie the contents
+**!	of the tag/entity/etc for the current callback.
+*/
+
+static void html_current(INT32 args)
+{
+   pop_n_elems(args);
+   if (THIS->start)
+   {
+      push_feed_range(THIS->start,THIS->cstart,THIS->end,THIS->cend);
+   }
+   else
+      ref_push_string(empty_string);
+}
+
+/*
+**! method array tag()
+**! method string tag_name()
+**! method string tag_args()
+**! method array tag(mixed default_value)
+**! method string tag_args(mixed default_value)
+**!     This gives parsed information about the 
+**!	current tag. 
+**!
+**!	<tt>tag_name</tt> gives the name of the current tag,
+**!
+**!	<tt>tag_args</tt> is the arguments of the current tag,
+**!	parsed to a convinient mapping consisting of key:value pairs. 
+**!	The default value (if no default_value is given) is the same 
+**!	string as the key. 
+**!
+**!	<tt>tag()</tt> gives the equivalent of
+**!	<tt>({tag_name(),tag_args()})</tt>.
+*/
+
+static void html_tag_name(INT32 args)
+{
+   struct piece *s1=NULL,*s2=NULL;
+   int c1=0,c2=0;
+   int n;
+
+   /* get rid of arguments */
+   pop_n_elems(args);
+
+   /* scan start of tag name */
+   scan_forward(THIS->start,THIS->cstart,&s1,&c1,
+		whitespace,-(int)(sizeof(whitespace)/sizeof(whitespace[0])));
+   /* scan end of tag name */
+   scan_forward(s1,c1,&s2,&c2,
+		ws_or_endarg,sizeof(ws_or_endarg)/sizeof(ws_or_endarg[0]));
+   
+   DEBUG((stderr,"tag_name %p:%d .. %p:%d\n",s1,c1,s2,c2));
+
+   push_feed_range(s1,c1,s2,c2);
+   
+   n=0;
+}
+
+static void html_tag_args(INT32 args)
+{
+   pop_n_elems(args);
+   f_aggregate_mapping(0);
+}
+
 /** debug *******************************************/
+
+/*
+**! method mapping _inspect()
+**! 	This is a low-level way of debugging a parser.
+**!	This gives a mapping of the internal state
+**!	of the Parser.HTML object.
+**!
+**!	The format and contents of this mapping may
+**!	change without further notice.
+*/
 
 void html__inspect(INT32 args)
 {
@@ -1252,10 +1394,24 @@ void html__inspect(INT32 args)
    f_aggregate_mapping(n*2);
 }
 
+/** calculate ***************************************/
+
+void html_parse_get_tag(INT32 args)
+{
+   struct piece feed;
+   check_all_args("parse_get_tag",args,BIT_STRING,0);
+   feed.s=sp[-args].u.string->str;
+   feed.next=NULL;
+   parse_get_tag(feed);
+   stack_pop_n_elems_keep_top(args);
+}
+
 /****** module init *********************************/
 
 void init_parser_html(void)
 {
+   MAKE_CONSTANT_SHARED_STRING(empty_string,"");
+
    ADD_STORAGE(struct parser_html_storage);
 
    set_init_callback(init_html_struct);
@@ -1277,6 +1433,17 @@ void init_parser_html(void)
 		"function(string:object)",0);
    add_function("feed_insert",html_feed_insert,
 		"function(string,void|int:object)",0);
+
+   /* query */
+
+   add_function("current",html_current,
+		"function(:string)",0);
+
+   add_function("tag_name",html_tag_name,
+		"function(:string)",0);
+
+   add_function("tag_args",html_tag_args,
+		"function(:mapping)",0);
 
    /* special callbacks */
 
@@ -1329,16 +1496,22 @@ class Parse_HTML
    void extra(mixed ...extra);
 
    // query where we are now
-   string at_tag();  // tag name
-   string tag_data();// tag string (< foo bar=z > -> " foo bar=z ")
-   int at_line();    // line number (first=1)
-   int at_char();    // char (first=1)
-   int at_column();  // column (first=1)
+   string current();  // current tag/entity/etc data string 
+
+   array tag();       // tag data: ({string name,mapping arguments})
+   string tag_args(); // tag arguments only
+   string tag_name(); // tag name only
+
+   array at();        // current position: ({line,char,column})
+   int at_line();     // line number (first=1)
+   int at_char();     // char (first=1)
+   int at_column();   // column (first=1)
 
    // low-level callbacks
    // calls to_call(this,string data)
    void _set_tag_callback(function to_call);
    void _set_data_callback(function to_call);
+   void _set_entity_callback(function to_call);
 
    // just useful
    mapping parse_get_tag(string tag);
@@ -1352,9 +1525,6 @@ class Parse_HTML
    // call to_call(this,string entity,...extra);
    void add_entity(string entity,function to_call);
    void add_glob_entity(string entity,function to_call);
-
-   // calls to_call(this,string data)
-   void _set_entity_callback(function to_call);
 }
 
 */
