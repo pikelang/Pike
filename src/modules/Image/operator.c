@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.22 1999/04/21 23:33:29 mirar Exp $ */
+/* $Id: operator.c,v 1.23 1999/05/02 08:00:15 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.22 1999/04/21 23:33:29 mirar Exp $
+**!	$Id: operator.c,v 1.23 1999/05/02 08:00:15 hubbe Exp $
 **! class Image
 */
 
@@ -255,7 +255,7 @@ STANDARD_OPERATOR_HEADER("`*")
 void image_operator_rest(INT32 args)
 {
    double q=1/255.0;
-STANDARD_OPERATOR_HEADER("`%")
+STANDARD_OPERATOR_HEADER("`%%")
    while (i--)
    {
       d->r=s1->r%(s2->r?s2->r:1);
