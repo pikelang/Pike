@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.397 2001/03/23 00:50:45 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.398 2001/03/31 15:21:47 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3947,6 +3947,9 @@ test_eq(clone(clone(class c { program foo=class c { int i=20; }; })->foo)->i,20)
 test_true(programp(class c(){}))
 test_equal(indices(class c(string a,static int b){}("foo",0)), ({"a"}))
 test_equal(values(class c(string a,static int b){}("foo",0)), ({"foo"}))
+test_true(programp(class c(string ... a){}))
+test_equal(indices(class c(string a,static int ... b){}("foo",0)), ({"a"}))
+test_equal(values(class c(static string a, int ... b){}("foo",0)), ({({0})}))
 
 // type checks
 test_compile_error([[} int foo() { return]]);
