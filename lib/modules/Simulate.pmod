@@ -5,7 +5,7 @@ inherit Process;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
-inherit regexp : regexp;
+inherit Regexp : regexp;
 
 varargs int member_array(mixed needle,mixed *haystack,int start)
 {
