@@ -6,4 +6,6 @@ crypto.doc
 crypto.h
 crypto_submodule.doc
 invert.c
+md5.c
 pipe.c
+sha.c

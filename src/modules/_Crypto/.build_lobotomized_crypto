@@ -2,7 +2,7 @@
 
 # .build_lobotomized_crypto
 
-if [ -f cbc.c ]; then
+if [ ! -f cbc.c ]; then
     echo ".build_lobotomized_crypto should be run in pike/src/modules/_Crypto"
     exit 1
 fi
@@ -14,9 +14,9 @@ mkdir -p ../_Lobotomized_Crypto/lib
 
 echo "Copying source files..."
 for d in . include lib; do
-    for f in `$d/.exportable_files`; do
+    for f in `cat $d/.exportable_files`; do
 	echo $d/$f
-	cp $f ../_Lobotomized_Crypto/$d/$f
+	cp $d/$f ../_Lobotomized_Crypto/$d/$f
     done
 done
 
