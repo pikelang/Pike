@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.140 1999/06/19 20:17:43 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.141 1999/06/22 19:00:11 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -64,6 +64,10 @@ RCSID("$Id: signal_handler.c,v 1.140 1999/06/19 20:17:43 hubbe Exp $");
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
 #endif
 
 #ifdef __amigaos__
