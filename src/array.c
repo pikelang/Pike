@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.116 2001/08/31 06:53:36 hubbe Exp $");
+RCSID("$Id: array.c,v 1.117 2001/09/11 05:37:26 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1620,6 +1620,7 @@ node *make_node_from_array(struct array *a)
     
   if(a->type_field == BIT_INT)
   {
+    debug_malloc_touch(a);
     for(e=0; e<a->size; e++)
       if(ITEM(a)[e].u.integer != 0)
 	break;
@@ -1628,9 +1629,11 @@ node *make_node_from_array(struct array *a)
       return mkefuncallnode("allocate",mkintnode(a->size));
     }
   }
+  debug_malloc_touch(a);
   if(!is_more_than_one_bit(a->type_field))
   {
     e=0;
+    debug_malloc_touch(a);
     switch(a->type_field)
     {
       case BIT_INT:
@@ -1656,6 +1659,7 @@ node *make_node_from_array(struct array *a)
 	    break;
 	break;
     }
+    debug_malloc_touch(a);
     if(e == a->size)
       return mkefuncallnode("allocate",mknode(F_ARG_LIST,
 					      mkintnode(a->size),
@@ -1664,12 +1668,14 @@ node *make_node_from_array(struct array *a)
   
   if(check_that_array_is_constant(a))
   {
+    debug_malloc_touch(a);
     s.type=T_ARRAY;
     s.subtype=0;
     s.u.array=a;
     return mkconstantsvaluenode(&s);
   }else{
     node *ret=0;
+    debug_malloc_touch(a);
     for(e=0; e<a->size; e++)
       ret=mknode(F_ARG_LIST,ret,mksvaluenode(ITEM(a)+e));
     return mkefuncallnode("aggregate",ret);
@@ -2308,8 +2314,7 @@ void zap_all_arrays(void)
 {
   struct array *a,*next;
 
-  a=&empty_array;
-  do
+  for(a=empty_array.next;a!=&empty_array;a=next)
   {
 
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
@@ -2321,12 +2326,9 @@ void zap_all_arrays(void)
     add_ref(a);
     free_svalues(ITEM(a), a->size, a->type_field);
     a->size=0;
-    
-    if(!(next=a->next))
-      fatal("Null pointer in array list.\n");
 
     SET_NEXT_AND_FREE(a,free_array);
-  } while (a != & empty_array);
+  }
 }
 
 
