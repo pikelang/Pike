@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.23 2003/01/25 23:59:00 nilsson Exp $
+dnl $Id: testsuite.in,v 1.24 2003/01/29 00:26:32 nilsson Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -219,5 +219,27 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000")), 1)
   test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000001")), -1)
   test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000")))
+
+  test_do(random(Gmp.mpz(17)))
+  test_eq(Gmp.mpz(64)->sqrt(), 8)
+  test_eq(sqrt(Gmp.mpz(64)), 8)
+  test_eq(sqrt(Gmp.mpz(2)->pow(34)), 131072)
+  test_equal(Gmp.mpz(3)->pow(35)->sqrtrem(), ({223677323,274553378}) )
+  test_eq(Gmp.mpz(9)->cast_to_int(), 9)
+  test_eq(Gmp.mpz(8)->cast_to_float(), 8.0)
+  test_eq(Gmp.mpz(7)->cast_to_string(), "7")
+  test_false(Gmp.mpz(0)->probably_prime_p())
+  test_false(Gmp.mpz(1)->probably_prime_p(), 0)
+  test_true(Gmp.mpz(2)->probably_prime_p(), 0)
+  test_true(Gmp.mpz(3)->probably_prime_p(), 0)
+  test_false(Gmp.mpz(4)->probably_prime_p(), 0)
+  test_false(Gmp.mpz(100000000000000000)->probably_prime_p(), 0)
+  test_eq(Gmp.mpz(100000000000000000)->next_prime(), 100000000000000003);
+  test_eq(Gmp.mpz(0)->small_factor(),0)
+  test_eq(Gmp.mpz(1)->small_factor(),0)
+  test_eq(Gmp.mpz(2)->small_factor(),0)
+  test_eq(Gmp.mpz(10)->small_factor(),2)
+  test_eq(Gmp.mpz(15)->small_factor(),3)
+  test_eq(Gmp.mpz(10403)->small_factor(),101)
 ]]);
 
