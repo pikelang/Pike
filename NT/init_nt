@@ -1,7 +1,12 @@
 #!/bin/sh
 
+# Support local settings.
+if [ -f "$HOME/.init_ntrc" ]; then
+  . "$HOME/.init_ntrc"
+fi
+
 #This can be 'sprsh', 'wine' or 'cygwin'
-REMOTE_METHOD=sprsh
+REMOTE_METHOD=${REMOTE_METHOD-sprsh}
 
 # Choose 'rntcc' for Watcom or 'rntcl' for Microsoft VC++
 # (Make sure VC++ is before Watcom in your path!)
@@ -24,17 +29,20 @@ NTDRIVE=${NTDRIVE-k:}
 
 # What dir on the UNIX machine is on $NTDRIVE ?
 # This variable MUST NOT end with a slash.
-NTMOUNT=
+NTMOUNT=${NTMOUNT-}
 
 # Use Simple Pike Remote SHell?
 USE_SPRSH=yes
 
 # Port for sprsh
-NTPORT=4711
+NTPORT=${NTPORT-4711}
 
 #These are only used if you use wine
 watcom=D:\\CDROM
 INCLUDE="$watcom\\H;$watcom\\H\\NT"
+
+# Used for IA64 cross-compiling.
+IA64SDK=${IA64SDK-'C:\ia64sdk17'}
 
 case "/$CC" in
   */rntcl)
@@ -44,6 +52,24 @@ case "/$CC" in
 path=$MSVC\\bin;
 include=$MSVC\\Include;$local\\include
 lib=$MSVC\\Lib;$local\\lib
+"
+    export REMOTE_VARIABLES
+  ;;
+
+  */rntcl64)
+    REMOTE_VARIABLES="
+path=$IA64SDK\\bin\\Win64;$IA64SDK\\bin;
+include=$IA64SDK\\Include;
+lib=$IA64SDK\\Lib;
+"
+    export REMOTE_VARIABLES
+  ;;
+
+  */rntecl)
+    REMOTE_VARIABLES="
+path=$IA64SDK\\bin\\Intel64;$IA64SDK\\bin;
+include=$IA64SDK\\Include;
+lib=$IA64SDK\\Lib;
 "
     export REMOTE_VARIABLES
   ;;
