@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.32 1999/06/01 10:21:10 mirar Exp $
+ * $Id: interpret.h,v 1.33 1999/07/29 17:10:23 mirar Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -45,7 +45,9 @@ struct pike_frame
 
 #define check_stack(X) do {			\
   if(sp - evaluator_stack + (X) >= stack_size)	\
-    error("Stack overflow.\n");			\
+    error("Svalue stack overflow. " \
+	  "(%d of %d entries on stack, needed %d more entries)\n", \
+	  sp-evaluator_stack,stack_size,(X)); \
   }while(0)
 
 #define check_mark_stack(X) do {		\
