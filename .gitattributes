@@ -9,6 +9,7 @@
 *.pnm binary
 *.rs binary
 init_nt -text -crlf
+install-welcome binary
 lib -text -crlf
 testfont binary
 

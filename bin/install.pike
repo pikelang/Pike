@@ -652,7 +652,6 @@ object vbox1;
 object label4;
 object frame1;
 object hbox1;
-object pixmap1;
 object vbox2;
 object label3;
 object table1;
@@ -762,7 +761,7 @@ void begin_wizard(string *argv)
 	       ->set_shadow_type(GTK.SHADOW_IN)
 	       ->set_border_width(11)
 	       ->add(hbox1=GTK.Hbox(0,0)
-		     ->PS(pixmap1=GTK.Pixmap(GDK.Pixmap(Image.GIF.decode(Stdio.read_bytes("/home/hubbe/gfx/pike/Welcome.GIF")))),0,0,0)
+		     ->PS(GTK.Pixmap(GTK.Util.load_image(combine_path(vars->SRCDIR,"install-welcome"))->img),0,0,0)
 		     ->PS(vbox2=GTK.Vbox(0,0),1,1,0)
 		       ),1,1,0)
 	  ->PS(hbuttonbox1=GTK.HbuttonBox()
@@ -1035,6 +1034,7 @@ void do_install()
       to_export+=({master,
 		   combine_path(vars->TMP_BUILDDIR,"master.pike"),
 		   combine_path(vars->SRCDIR,"COPYING"),
+		   combine_path(vars->SRCDIR,"install-welcome"),
 		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
 		   combine_path(vars->SRCDIR,"dumpmodule.pike")
       });
