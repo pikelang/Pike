@@ -20,6 +20,12 @@ class stack {
     arr[ptr]=0; /* Don't waste references */
     return foo;
   }
+
+  void reset()
+  {
+    arr=allocate(32);
+    ptr=0;
+  }
 };
 
 void create()
