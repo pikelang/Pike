@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.19 2003/03/20 16:29:09 mast Exp $
+|| $Id: ia32.h,v 1.20 2003/03/22 13:39:37 mast Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -23,58 +23,11 @@
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
 
-
-#define MOV2EAX(ADDR) do {				\
-    add_to_program(0xa1 /* mov $xxxxx, %eax */);	\
-    ins_pointer( (INT32)&(ADDR));			\
-}while(0)
-
-#define MOV2EDX(ADDR) do {				\
-    add_to_program(0x8b);  /* mov $xxxxx, %edx */	\
-    add_to_program(0x15);	                        \
-    ins_pointer( (INT32)&(ADDR));			\
-}while(0)
-
-
-#define SET_MEM_REL_EAX(OFFSET, VALUE) do {		\
-  INT32 off_ = (OFFSET);				\
-  add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */	\
-  if(off_) 						\
-  {							\
-    add_to_program(0x40);				\
-    add_to_program(off_);				\
-  }else{						\
-    add_to_program(0x0);				\
-  }							\
-  ins_pointer(VALUE); /* Assumed to be added last. */	\
-}while(0)
-
-#define SET_MEM_REL_EDX(OFFSET, VALUE) do {		\
-  INT32 off_ = (OFFSET);				\
-  add_to_program(0xc7); /* movl $xxxxx, yy%(edx) */	\
-  if(off_) 						\
-  {							\
-    add_to_program(0x42);				\
-    add_to_program(off_);				\
-  }else{						\
-    add_to_program(0x02);				\
-  }							\
-  ins_pointer(VALUE); /* Assumed to be added last. */	\
-}while(0)
-
-#define REG_IS_SP 1
-#define REG_IS_FP 2
-#define REG_IS_MARK_SP 3
-#define REG_IS_UNKNOWN -1
-
-extern int ia32_reg_eax;
-extern int ia32_reg_ecx;
-extern int ia32_reg_edx;
-extern ptrdiff_t ia32_prev_stored_pc;
-
 void ia32_update_pc(void);
 
 #define UPDATE_PC() ia32_update_pc()
+
+extern ptrdiff_t ia32_prev_stored_pc;
 
 #define ADJUST_PIKE_PC(pc) do {						\
     ia32_prev_stored_pc = pc;						\
@@ -124,11 +77,14 @@ void ia32_flush_code_generator(void);
 #define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator
 
 #define CALL_MACHINE_CODE(pc)						\
-  /* This code does not clobber %eax, %ecx & %edx, but			\
+  /* This code does not clobber %eax, %ebx, %ecx & %edx, but		\
    * the code jumped to does.						\
    */									\
-  __asm__ __volatile__( "	sub $8,%%esp\n"				\
+  __asm__ __volatile__( "	sub $12,%%esp\n"			\
 			"	jmp *%0"				\
 			: "=m" (pc)					\
 			:						\
-			: "cc", "memory", "eax", "ecx", "edx" )
+			: "cc", "memory", "eax", "ebx", "ecx", "edx" )
+
+#define EXIT_MACHINE_CODE()						\
+  __asm__ __volatile__( "add $12,%%esp\n" : : )
