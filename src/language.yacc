@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.350 2004/11/05 16:21:23 grubba Exp $
+|| $Id: language.yacc,v 1.351 2004/11/06 07:05:41 nilsson Exp $
 */
 
 %pure_parser
@@ -442,7 +442,7 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
 	resolv_constant($4);
 	if (Pike_sp[-1].type == T_OBJECT) {
 	  o = Pike_sp[-1].u.object;
-	  push_string($2->u.sval.u.string);
+	  ref_push_string($2->u.sval.u.string);
 	  push_int(Pike_compiler->new_program->id);
 	  push_int(Pike_compiler->new_program->facet_class);
 	  safe_apply_low3(o, find_identifier("add_facet_class",o->prog), 3,
