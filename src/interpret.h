@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.150 2004/03/12 21:56:52 mast Exp $
+|| $Id: interpret.h,v 1.151 2004/05/01 16:46:13 marcus Exp $
 */
 
 #ifndef INTERPRET_H
@@ -144,7 +144,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
     Pike_interpreter.stack_top ;					\
   x_*=STACK_DIRECTION;							\
   if(x_>0)								\
-    ((void (*)(const char*, ...))low_error)(Pike_check_c_stack_errmsg);	\
+    low_error(Pike_check_c_stack_errmsg);				\
   }while(0)
 
 #define fatal_check_c_stack(X) do { 			\
