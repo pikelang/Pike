@@ -1,4 +1,4 @@
-/* $Id: next_prime.c,v 1.6 1998/07/11 18:35:26 grubba Exp $
+/* $Id: next_prime.c,v 1.7 1999/03/11 15:37:21 nisse Exp $
  *
  * Prime number test using trial division for small primes and then
  * Miller-Rabin, as suggested in Schneier's Applied Cryptography.
@@ -9,7 +9,7 @@
 
 #include "global.h"
 
-RCSID("$Id: next_prime.c,v 1.6 1998/07/11 18:35:26 grubba Exp $");
+RCSID("$Id: next_prime.c,v 1.7 1999/03/11 15:37:21 nisse Exp $");
 
 #include "gmp_machine.h"
 
@@ -177,7 +177,7 @@ mpz_next_prime(mpz_t p, mpz_t n, int count, int prime_limit)
   if (prime_limit)
     {
       /* Compute residues modulo small odd primes */
-      moduli = (unsigned long*) alloca((prime_limit -1) * sizeof(*moduli));
+      moduli = (unsigned long*) alloca(prime_limit * sizeof(*moduli));
       for (i = 0; i < prime_limit; i++)
 	moduli[i] = mpz_fdiv_ui(p, primes[i + 1]);
     }
