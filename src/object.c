@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.249 2003/11/14 00:41:26 mast Exp $
+|| $Id: object.c,v 1.250 2003/11/18 19:33:45 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.249 2003/11/14 00:41:26 mast Exp $");
+RCSID("$Id: object.c,v 1.250 2003/11/18 19:33:45 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -730,9 +730,11 @@ void destruct(struct object *o)
 
 #ifdef PIKE_DEBUG
   ONERROR uwp;
+
+  fatal_check_c_stack(8192);
+
   SET_ONERROR(uwp, fatal_on_error,
 	      "Shouldn't get an exception in destruct().\n");
-  fatal_check_c_stack(8192);
   if(d_flag > 20) do_debug();
 #endif
 #ifdef GC_VERBOSE
@@ -1011,7 +1013,12 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 
 
 /* Get a variable through internal indexing, i.e. directly by
- * identifier index without going through `->= or `[]= lfuns. */
+ * identifier index without going through `->= or `[]= lfuns.
+ *
+ * NOTE: This function may be called by the compiler on objects
+ *       cloned from unfinished programs (ie placeholder
+ *       objects). Degenerated cases may thus occur.
+ */
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  struct object *o,
 					  ptrdiff_t f)
@@ -1029,6 +1036,9 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 
   switch(i->identifier_flags & IDENTIFIER_TYPE_MASK)
   {
+  case IDENTIFIER_FUNCTION:
+    /* Pike function with tentative type from the first pass. */
+    /* FALL_THROUGH */
   case IDENTIFIER_PIKE_FUNCTION:
     if (i->func.offset == -1 && p->flags & PROGRAM_FINISHED) {
       /* Prototype. In the first pass we must be able to get a
