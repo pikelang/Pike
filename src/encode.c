@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.167 2004/05/11 10:49:55 grubba Exp $
+|| $Id: encode.c,v 1.168 2004/05/11 11:03:00 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.167 2004/05/11 10:49:55 grubba Exp $");
+RCSID("$Id: encode.c,v 1.168 2004/05/11 11:03:00 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -128,7 +128,7 @@ struct encode_data
 #endif
 };
 
-static void encode_value2(struct svalue *val, struct encode_data *data);
+static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
 #define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
 #define addchar(t)   low_my_putchar((char)(t), &(data->buf))
@@ -288,7 +288,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	sval.subtype = 0;
 	sval.u.string = (void *)t->car;
 
-	encode_value2(&sval, data);
+	encode_value2(&sval, data, 0);
       }
       t=t->cdr;
       goto one_more_type;
@@ -388,7 +388,16 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       }else{
 	push_int(0);
       }
-      encode_value2(Pike_sp-1, data);
+      /* If it's a program that should be encoded recursively then we
+       * must delay it. Consider:
+       *
+       *     class A {B b;}
+       *     class B {inherit A;}
+       *
+       * We can't dump B when the type is encountered inside A, since
+       * upon decode B won't have a complete A to inherit then.
+       */
+      encode_value2(Pike_sp-1, data, 0);
       pop_stack();
       break;
     }
@@ -429,11 +438,33 @@ static void zap_unfinished_program(struct program *p)
   }
 }
 
-static void encode_value2(struct svalue *val, struct encode_data *data)
+/* force_encode == 0: Maybe dump the thing later, and only a forward
+ * reference here (applies to programs only).
+ *
+ * force_encode == 1: Dump the thing now.
+ *
+ * force_encode == 2: A forward reference has been encoded to this
+ * thing. Now it's time to dump it. */
+
+static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode)
 
 #ifdef PIKE_DEBUG
 #undef encode_value2
-#define encode_value2(X,Y) do { struct svalue *_=Pike_sp; encode_value2_(X,Y); if(Pike_sp!=_) Pike_fatal("encode_value2 failed!\n"); } while(0)
+#define encode_value2(X,Y,Z) do {			\
+    struct svalue *_=Pike_sp;				\
+    struct svalue *X_ = (X);				\
+    encode_value2_(X_,Y,Z);				\
+    if(Pike_sp != _) {					\
+      fprintf(stderr, "Stack error when encoding:\n");	\
+      print_svalue(stderr, X_);				\
+      fprintf(stderr, "\n");				\
+      if (X_->type == T_PROGRAM) {			\
+        dump_program_tables(X_->u.program, 2);		\
+      }							\
+      Pike_fatal("encode_value2() failed %p != %p!\n",	\
+		 Pike_sp, _);				\
+    }							\
+  } while(0)
 #endif
 
 {
@@ -664,7 +695,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     case T_ARRAY:
       code_entry(TAG_ARRAY, val->u.array->size, data);
       for(i=0; i<val->u.array->size; i++)
-	encode_value2(ITEM(val->u.array)+i, data);
+	encode_value2(ITEM(val->u.array)+i, data, 0);
       break;
 
     case T_MAPPING:
@@ -695,8 +726,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       code_entry(TAG_MAPPING, Pike_sp[-2].u.array->size,data);
       for(i=0; i<Pike_sp[-2].u.array->size; i++)
       {
-	encode_value2(ITEM(Pike_sp[-2].u.array)+i, data); /* indices */
-	encode_value2(ITEM(Pike_sp[-1].u.array)+i, data); /* values */
+	encode_value2(ITEM(Pike_sp[-2].u.array)+i, data, 0); /* indices */
+	encode_value2(ITEM(Pike_sp[-1].u.array)+i, data, 0); /* values */
       }
       pop_n_elems(2);
       break;
@@ -733,7 +764,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  order_array(Pike_sp[-1].u.array, order);
 	  free((char *) order);
 	  for (i = 0; i < Pike_sp[-1].u.array->size; i++)
-	    encode_value2(ITEM(Pike_sp[-1].u.array)+i, data);
+	    encode_value2(ITEM(Pike_sp[-1].u.array)+i, data, 0);
 	  pop_stack();
 	}
 	else {
@@ -741,10 +772,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  struct svalue ind;
 	  union msnode *node = low_multiset_first (l->msd);
 	  for (; node; node = low_multiset_next (node))
-	    encode_value2 (low_use_multiset_index (node, ind), data);
+	    encode_value2 (low_use_multiset_index (node, ind), data, 0);
 #else
 	  for(i=0; i<l->ind->size; i++)
-	    encode_value2(ITEM(l->ind)+i, data);
+	    encode_value2(ITEM(l->ind)+i, data, 0);
 #endif
 	}
 #ifdef PIKE_NEW_MULTISETS
@@ -770,7 +801,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	apply(val->u.object,"digits",1);
 	if(Pike_sp[-1].type != T_STRING)
 	  Pike_error("Gmp.mpz->digits did not return a string!\n");
-	encode_value2(Pike_sp-1, data);
+	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
 	break;
       }
@@ -803,7 +834,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	    /* Code the program */
 	    code_entry(TAG_OBJECT, 3,data);
-	    encode_value2(Pike_sp-1, data);
+	    encode_value2(Pike_sp-1, data, 1);
 	    pop_stack();
 	    
 	    push_svalue(val);
@@ -841,7 +872,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  code_entry(TAG_OBJECT, 0,data);
 	  break;
       }
-      encode_value2(Pike_sp-1, data);
+      encode_value2(Pike_sp-1, data, 0);
       pop_stack();
       break;
 
@@ -867,9 +898,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    code_entry(TAG_FUNCTION, 1, data);
 	    push_svalue(val);
 	    Pike_sp[-1].type=T_OBJECT;
-	    encode_value2(Pike_sp-1, data);
+	    encode_value2(Pike_sp-1, data, 0);
 	    ref_push_string(ID_FROM_INT(val->u.object->prog, val->subtype)->name);
-	    encode_value2(Pike_sp-1, data);
+	    encode_value2(Pike_sp-1, data, 0);
 	    pop_n_elems(3);
 
 	    /* Put value back in cache */
@@ -884,7 +915,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       }
 
       code_entry(TAG_FUNCTION, 0, data);
-      encode_value2(Pike_sp-1, data);
+      encode_value2(Pike_sp-1, data, 0);
       pop_stack();
       break;
 
@@ -895,7 +926,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       if (val->u.program->id < PROG_DYNAMIC_ID_START) {
 	code_entry(TAG_PROGRAM, 3, data);
 	push_int(val->u.program->id);
-	encode_value2(Pike_sp-1, data);
+	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
 	break;
       }
@@ -920,13 +951,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	    code_entry(TAG_PROGRAM, 2, data);
 	    ref_push_program(p->parent);
-	    encode_value2(Pike_sp-1,data);
+	    encode_value2(Pike_sp-1, data, 0);
 
 	    ref_push_program(p);
 	    f_function_name(1);
 	    if(Pike_sp[-1].type == PIKE_T_INT)
 	      Pike_error("Cannot encode C programs.\n");
-	    encode_value2(Pike_sp-1, data);
+	    encode_value2(Pike_sp-1, data, 0);
 
 	    pop_n_elems(3);
 
@@ -953,7 +984,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	code_entry(TAG_PROGRAM, 1, data);
 	f_version(0);
-	encode_value2(Pike_sp-1,data);
+	encode_value2(Pike_sp-1,data, 0);
 	pop_stack();
 	code_number(p->flags,data);
 	code_number(p->storage_needed,data);
@@ -968,7 +999,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  ref_push_program(p->parent);
 	else
 	  push_int(0);
-	encode_value2(Pike_sp-1,data);			/**/
+	encode_value2(Pike_sp-1,data, 0);		/**/
 	pop_stack();
 
 #define FOO(X,Y,Z) \
@@ -1043,7 +1074,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    Pike_error("Failed to encode inherit #%d\n", d);
 	    push_int(0);
 	  }
-	  encode_value2(Pike_sp-1,data);
+	  encode_value2(Pike_sp-1,data, 1);
 	  pop_stack();
 
           adddata3(p->inherits[d].name);
@@ -1075,7 +1106,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	for(d=0;d<p->num_constants;d++)
 	{
-	  encode_value2(& p->constants[d].sval, data);
+	  encode_value2(& p->constants[d].sval, data, 0);
 	  adddata3(p->constants[d].name);
 	}
 
@@ -1092,7 +1123,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	/* version */
 	f_version(0);
-	encode_value2(Pike_sp-1, data);
+	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
 
 	/* parent */
@@ -1101,7 +1132,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	} else {
 	  push_int(0);
 	}
-	encode_value2(Pike_sp-1, data);
+	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
 
 	/* num_* */
@@ -1155,7 +1186,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  /* strings */
 	  for(d=0;d<p->num_strings;d++) {
 	    str_sval.u.string = p->strings[d];
-	    encode_value2(&str_sval, data);
+	    encode_value2(&str_sval, data, 0);
 	  }
 	}
 
@@ -1265,14 +1296,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 		  /* name */
 		  str_sval.u.string = id->name;
-		  encode_value2(&str_sval, data);
+		  encode_value2(&str_sval, data, 0);
 
 		  /* offset */
 		  code_number(id->func.offset, data);
 
 		  /* type */
 		  ref_push_type_value(id->type);
-		  encode_value2(Pike_sp-1, data);
+		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
 
 		  /* run-time type */
@@ -1289,11 +1320,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 		  /* name */
 		  str_sval.u.string = id->name;
-		  encode_value2(&str_sval, data);
+		  encode_value2(&str_sval, data, 0);
 
 		  /* type */
 		  ref_push_type_value(id->type);
-		  encode_value2(Pike_sp-1, data);
+		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
 
 		  /* func_flags (aka identifier_flags) */
@@ -1321,11 +1352,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 		  /* name */
 		  str_sval.u.string = id->name;
-		  encode_value2(&str_sval, data);
+		  encode_value2(&str_sval, data, 0);
 
 		  /* type */
 		  ref_push_type_value(id->type);
-		  encode_value2(Pike_sp-1, data);
+		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
 		}
 	      }
@@ -1381,11 +1412,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	      /* name */
 	      str_sval.u.string = inh->name;
-	      encode_value2(&str_sval, data);
+	      encode_value2(&str_sval, data, 0);
 
 	      /* prog */
 	      ref_push_program(inh->prog);
-	      encode_value2(Pike_sp-1, data);
+	      encode_value2(Pike_sp-1, data, 1);
 	      pop_stack();
 
 	      /* parent */
@@ -1394,7 +1425,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	      } else {
 		push_int(0);
 	      }
-	      encode_value2(Pike_sp-1, data);
+	      encode_value2(Pike_sp-1, data, 0);
 	      pop_stack();
 
 	      /* parent_identifier */
@@ -1431,15 +1462,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  for(d=0;d<p->num_constants;d++)
 	  {
 	    /* value */
-	    encode_value2(&p->constants[d].sval, data);
+	    encode_value2(&p->constants[d].sval, data, 0);
 
 	    /* name */
 	    if (p->constants[d].name) {
 	      str_sval.u.string = p->constants[d].name;
-	      encode_value2(&str_sval, data);
+	      encode_value2(&str_sval, data, 0);
 	    } else {
 	      push_int(0);
-	      encode_value2(Pike_sp-1, data);
+	      encode_value2(Pike_sp-1, data, 0);
 	      Pike_sp--;
 	    }
 	  }
@@ -1447,7 +1478,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #endif /* OLD_PIKE_ENCODE_PROGRAM */
       }else{
 	code_entry(TAG_PROGRAM, 0, data);
-	encode_value2(Pike_sp-1, data);
+	encode_value2(Pike_sp-1, data, 0);
       }
       pop_stack();
       break;
@@ -1529,7 +1560,7 @@ void f_encode_value(INT32 args)
 
   SET_ONERROR(tmp, free_encode_data, data);
   addstr("\266ke0", 4);
-  encode_value2(Pike_sp-args, data);
+  encode_value2(Pike_sp-args, data, 1);
   UNSET_ONERROR(tmp);
 
   free_mapping(data->encoded);
@@ -1590,7 +1621,7 @@ void f_encode_value_canonic(INT32 args)
 
   SET_ONERROR(tmp, free_encode_data, data);
   addstr("\266ke0", 4);
-  encode_value2(Pike_sp-args, data);
+  encode_value2(Pike_sp-args, data, 1);
   UNSET_ONERROR(tmp);
 
   free_mapping(data->encoded);
