@@ -1178,6 +1178,7 @@ void init_spider_efuns(void)
   add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
 	   OPT_TRY_OPTIMIZE);
 
+#if 0 /* these have been moved to ../system /Hubbe */
 #ifdef HAVE_GETPWNAM
   add_efun("getpwnam", f_getpwnam, "function(string:array)", 
 	   OPT_EXTERNAL_DEPEND);
@@ -1188,6 +1189,7 @@ void init_spider_efuns(void)
 	   OPT_EXTERNAL_DEPEND);
   add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif
 #endif
 
   add_efun("set_start_quote",f_set_start_quote,"function(int:int)",OPT_EXTERNAL_DEPEND);
