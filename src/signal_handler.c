@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.92 1998/11/29 21:55:27 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.93 1998/11/29 22:09:43 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1501,7 +1501,7 @@ void f_create_process(INT32 args)
 	  break;
 	case PROCE_SETUID:
 	  error("Process.create_process(): setuid(%d) failed. errno:%d\n",
-		buf[1]);
+		buf[2], buf[1]);
 	  break;
 	case PROCE_EXEC:
 	  error("Process.create_process(): exec() failed. errno:%d\n"
