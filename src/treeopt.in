@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.56 2001/02/19 23:50:03 grubba Exp $
+// $Id: treeopt.in,v 1.57 2001/02/28 04:21:10 hubbe Exp $
 //
 // The tree optimizer
 //
@@ -710,6 +710,10 @@ F_DO(-, 0 = +[node_is_true($$)]):
 F_FOREACH(F_VAL_LVAL(0, *), -):
   F_POP_VALUE($0, -);
 
+
+// forech(arr ; ; val) body; -> foreach(arr, val) body;
+F_FOREACH(F_VAL_LVAL(0[ $$->type == array_type_string ], ':'(-,1) ), 2):
+  F_FOREACH(F_VAL_LVAL($0, $1), $2);
 
 F_FOR(-, *):
   -;
