@@ -1,14 +1,14 @@
 #include "config.h"
 
 /*
- * $Id: svg.c,v 1.4 2002/07/10 22:45:23 nilsson Exp $
+ * $Id: svg.c,v 1.5 2002/09/25 14:12:46 marcus Exp $
  */
 
 #ifdef HAVE_SVG
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.4 2002/07/10 22:45:23 nilsson Exp $");
+RCSID("$Id: svg.c,v 1.5 2002/09/25 14:12:46 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -26,6 +26,13 @@ RCSID("$Id: svg.c,v 1.4 2002/07/10 22:45:23 nilsson Exp $");
 #include "modules/Image/image.h"
 
 #include <librsvg/rsvg.h>
+
+#endif /* HAVE_SVG */
+
+/* This must be included last! */
+#include "module_magic.h"
+
+#ifdef HAVE_SVG
 
 /*! @module Image
  */

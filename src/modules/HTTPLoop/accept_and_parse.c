@@ -50,8 +50,12 @@
 #include "util.h"
 #include "timeout.h"
 
+#endif /* _REENTRANT */
+
 /* This must be included last! */
 #include "module_magic.h"
+
+#ifdef _REENTRANT
 
 #define sp Pike_sp
 

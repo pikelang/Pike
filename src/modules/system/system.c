@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.124 2002/05/11 00:14:34 nilsson Exp $
+ * $Id: system.c,v 1.125 2002/09/25 14:12:46 marcus Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.124 2002/05/11 00:14:34 nilsson Exp $");
+RCSID("$Id: system.c,v 1.125 2002/09/25 14:12:46 marcus Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -104,6 +104,9 @@ RCSID("$Id: system.c,v 1.124 2002/05/11 00:14:34 nilsson Exp $");
 #endif
 
 #include "dmalloc.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 #define sp Pike_sp
 

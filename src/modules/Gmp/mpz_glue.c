@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.107 2002/08/15 14:50:25 marcus Exp $");
+RCSID("$Id: mpz_glue.c,v 1.108 2002/09/25 14:12:45 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -38,8 +38,12 @@ RCSID("$Id: mpz_glue.c,v 1.107 2002/08/15 14:50:25 marcus Exp $");
 
 #include <limits.h>
 
+#endif /* defined(USE_GMP) || defined(USE_GMP2) */
+
 /* This must be included last! */
 #include "module_magic.h"
+
+#if defined(USE_GMP) || defined(USE_GMP2)
 
 #define sp Pike_sp
 #define fp Pike_fp

@@ -4,7 +4,7 @@
 ||| for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.18 2002/05/31 22:31:39 nilsson Exp $");
+RCSID("$Id: gdbmmod.c,v 1.19 2002/09/25 14:12:44 marcus Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -21,12 +21,16 @@ RCSID("$Id: gdbmmod.c,v 1.18 2002/05/31 22:31:39 nilsson Exp $");
 
 #include <gdbm.h>
 
-#ifdef _REENTRANT
-static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
-#endif  
+#endif /* defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM) */
 
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
+
+#ifdef _REENTRANT
+static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
+#endif  
 
 #define sp Pike_sp
 

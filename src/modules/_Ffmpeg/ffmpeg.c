@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.8 2002/09/10 12:31:06 hop Exp $
+ * $Id: ffmpeg.c,v 1.9 2002/09/25 14:12:45 marcus Exp $
  *
  */
 
@@ -18,6 +18,9 @@
 #include "pike_macros.h"
 #include "module_support.h"
 #include "builtin_functions.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 
 #ifdef HAVE_WORKING_LIBFFMPEG

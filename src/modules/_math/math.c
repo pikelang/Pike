@@ -25,9 +25,12 @@
 #include <floatingpoint.h>
 #endif
 
+/* This must be included last! */
+#include "module_magic.h"
+
 #define sp Pike_sp
 
-RCSID("$Id: math.c,v 1.46 2002/05/31 22:31:40 nilsson Exp $");
+RCSID("$Id: math.c,v 1.47 2002/09/25 14:12:45 marcus Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080

@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.240 2002/08/16 12:51:30 grubba Exp $");
+RCSID("$Id: file.c,v 1.241 2002/09/25 14:12:45 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -100,6 +100,9 @@ RCSID("$Id: file.c,v 1.240 2002/08/16 12:51:30 grubba Exp $");
 #endif /* HAVE_NET_NETDB_H */
 
 #include "dmalloc.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.51 2002/09/19 13:42:32 marcus Exp $");
+RCSID("$Id: zlibmod.c,v 1.52 2002/09/25 14:12:45 marcus Exp $");
 
 #include "zlib_machine.h"
 
@@ -29,8 +29,12 @@ RCSID("$Id: zlibmod.c,v 1.51 2002/09/19 13:42:32 marcus Exp $");
 
 #include <zlib.h>
 
+#endif /* HAVE_ZLIB_H */
+
 /* This must be included last! */
 #include "module_magic.h"
+
+#ifdef HAVE_ZLIB_H
 
 #define sp Pike_sp
 

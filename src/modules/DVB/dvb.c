@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: dvb.c,v 1.4 2002/09/24 08:26:00 hop Exp $
+ * $Id: dvb.c,v 1.5 2002/09/25 14:12:44 marcus Exp $
  *
  * + Tuner zapping code based on 'szap' app from linux DVB driver
  *   package [ szap.c: (c) 2001 Johannes Stezenbach js@convergence.de ]
@@ -59,6 +59,13 @@
 #  include <ost/dmx.h>
 #  include <ost/audio.h>
 #endif
+
+#endif /* HAVE_DVB */
+
+/* MUST BE LAST */
+#include "module_magic.h"
+
+#ifdef HAVE_DVB
 
 #define MAX_ERR_LEN	160
 

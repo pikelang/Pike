@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.6 2002/05/11 00:24:25 nilsson Exp $");
+RCSID("$Id: freetype.c,v 1.7 2002/09/25 14:12:45 marcus Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -18,6 +18,12 @@ RCSID("$Id: freetype.c,v 1.6 2002/05/11 00:24:25 nilsson Exp $");
 #include "module_support.h"
 #include "operators.h"
 #include "../Image/image.h"
+#endif /* HAVE_LIBFT2 */
+
+/* This must be included last! */
+#include "module_magic.h"
+
+#ifdef HAVE_LIBFT2
 
 #define sp Pike_sp
 #define fp Pike_fp
