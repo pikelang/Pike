@@ -1,7 +1,8 @@
 //
-// $Id: module.pmod,v 1.2 2004/01/24 21:42:25 nilsson Exp $
+// $Id: module.pmod,v 1.3 2004/01/26 10:12:32 nilsson Exp $
 
 #pike __REAL_VERSION__
+#if constant(GL.GL_FLOAT)
 
 //! GL Universal Environment
 
@@ -2047,3 +2048,5 @@ mapping(string:mixed) debug_stuff() {
     "fast_mipmap" : fast_mipmap,
   ]);
 }
+
+#endif
