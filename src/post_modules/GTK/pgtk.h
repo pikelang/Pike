@@ -1,3 +1,5 @@
+#include "../../modules/Image/image.h"
+
 struct object_wrapper 
 {
   GtkObject *obj;
@@ -23,6 +25,11 @@ extern int pigtk_is_setup;
 
 void my_pop_n_elems( int n );
 void my_ref_push_object( struct object *o );
+void pgtk_return_this( int n );
+
+void pgtk_verify_setup();
+void pgtk_verify_inited();
+void pgtk_verify_not_inited();
 
 void push_Xpseudo32bitstring( void *f, int nelems );
 
@@ -67,10 +74,7 @@ struct object *pikeimage_from_gdkimage( GdkImage *img );
 #define GTK_ACCEL_GROUP(X) ((void *)X)
 #define GTK_STYLE(X) ((void *)X)
 
-#define RETURN_THIS()   do{			\
-  my_pop_n_elems(args);				\
-  my_ref_push_object( fp->current_object );	\
-} while(0)
+#define RETURN_THIS()  pgtk_return_this( args )
 
 struct my_pixel pgtk_pixel_from_xpixel( unsigned int pix, GdkImage *i );
 typedef void *Gdk_Atom;
@@ -81,6 +85,17 @@ void pgtk_get_mapping_arg( struct mapping *map,
 
 void pgtk_index_stack( char *with );
 void pgtk_get_image_module();
+
+void pgtk_encode_truecolor_masks(struct image *i,
+                                 int bitspp,
+                                 int pad,
+                                 int byteorder,
+                                 unsigned int red_mask,
+                                 unsigned int green_mask,
+                                 unsigned int blue_mask,
+                                 unsigned char *buffer, 
+                                 int debuglen);
+
 
 
 #if defined(PGTK_DEBUG) && defined(HAVE_GETHRTIME)
