@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.31 2002/11/11 12:34:17 grubba Exp $
+|| $Id: sparc.c,v 1.32 2002/11/11 12:58:39 grubba Exp $
 */
 
 /*
@@ -133,6 +133,10 @@
 
 #define SPARC_BNE(DISP22, A) \
     add_to_program(0x12800000|((A)<<29)|(((DISP22)>>2)&0x1fffff))
+
+#define SPARC_CALL(DISP30) \
+    add_to_program(0x40000000 | (((DISP30) >> 2) & 0x3fffffff))
+
 
 #define SET_REG(REG, X) do {						\
     INT32 val_ = X;							\
