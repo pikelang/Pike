@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.81 2001/07/26 14:17:13 grubba Exp $
+ * $Id: interpret_functions.h,v 1.82 2001/07/26 19:59:34 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1767,7 +1767,7 @@ OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),"mark, " NAME " & return", {   \
     PIKE_OPCODE_T *addr = Pike_fp->pc;					   \
     DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
     unlink_previous_frame();						   \
-    DO_JUMP_TO(Pike_fp->pc);						   \
+    DO_JUMP_TO(addr);							   \
   }else{								   \
     DO_DUMB_RETURN;							   \
   }									   \
