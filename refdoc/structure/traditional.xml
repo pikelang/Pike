@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.8 2001/11/24 04:58:17 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.9 2001/12/20 15:22:29 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -117,6 +117,7 @@
          compatible chapter, but it needs a modifying
          wrapper first. -->
     <insert-move entity="7-0"/>
+    <insert-move entity="7-2"/>
     <insert-move entity="_Roxen"/>
     <insert-move entity="__builtin"/>
   </void>
