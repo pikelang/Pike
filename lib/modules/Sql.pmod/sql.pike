@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.10 1997/06/20 12:59:31 grubba Exp $
+ * $Id: sql.pike,v 1.11 1997/06/27 17:30:32 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.10 1997/06/20 12:59:31 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.11 1997/06/27 17:30:32 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -39,8 +39,14 @@ int case_convert;
 //.   Create a new generic SQL object.
 //. > host
 //.   object - Use this object to access the SQL-database.
-//.   string - Use any available database server on this host.
-//.            If "" or 0, access through UNIX-domain socket or similar.
+//.   string - Connect to the server specified.
+//.            The string should be on the format:
+//.              [dbtype://][user[:password]@]hostname[:port][/database]
+//.            If dbtype isn't specified, use any available database server
+//.            on the specified host.
+//.            If the hostname is "", access through a UNIX-domain socket or
+//.            similar.
+//.   zero   - Access through a UNIX-domain socket or similar.
 //. > database
 //.   Select this database.
 //. > user
@@ -53,76 +59,131 @@ void create(void|string|object host, void|string db,
   if (objectp(host)) {
     master_sql = host;
     if ((user && user != "") || (password && password != "")) {
-      throw_error("Sql(): Only the database argument is supported when "
+      throw_error("Sql.sql(): Only the database argument is supported when "
 		  "first argument is an object\n");
     }
     if (db && db != "") {
       master_sql->select_db(db);
     }
     return;
-  } else {
-    foreach(get_dir(Sql->dirname), string program_name) {
-      if ((sizeof(program_name / "_result") == 1) &&
-	  (sizeof(program_name / ".pike") > 1) &&
-	  (program_name != "sql.pike")) {
-	/* Don't call ourselves... */
-	array(mixed) err;
+  }
+  if (db == "") {
+    db = 0;
+  }
+  if (user == "") {
+    user = 0;
+  }
+  if (password == "") {
+    password = 0;
+  }
 
-	err = catch {
-	  program p;
-#ifdef PIKE_SQL_DEBUG
-	  err = catch {p = Sql[program_name];};
-#else /* !PIKE_SQL_DEBUG */
-	  // Ignore compiler errors for the various sql-modules,
-	  // since we might not have some.
-	  // This is NOT a nice way to do it, but...
-	  mixed old_inhib = master()->inhibit_compile_errors;
-	  master()->inhibit_compile_errors = lambda(){};
-	  err = catch {p = Sql[program_name];};
-	  // Restore compiler errors mode to whatever it was before.
-	  master()->inhibit_compile_errors = old_inhib;
-#endif /* PIKE_SQL_DEBUG */
-	  if (err) {
-	    throw(err);
-	  }
+  array(string) program_names;
 
-	  if (p) {
-	    err = catch {
-	      if (password && password != "") {
-		master_sql = p(host||"", db||"", user||"", password);
-	      } else if (user && user != "") {
-		master_sql = p(host||"", db||"", user);
-	      } else if (db && db != "") {
-		master_sql = p(host||"", db);
-	      } else if (host && host != "") {
-		master_sql = p(host);
-	      } else {
-		master_sql = p();
-	      }
-	      return;
-	    };
-#ifdef PIKE_SQL_DEBUG
-	    if (err) {
-	      Stdio.stderr->write(sprintf("Sql.sql(): Failed to connect using module Sql.%s\n",
-					  program_name));
-	    }
-	  } else {
-	    Stdio.stderr->write(sprintf("Sql.sql(): Failed to index module Sql.%s\n",
-					program_name));
-#endif /* PIKE_SQL_DEBUG */
-	  }
-	};
-#ifdef PIKE_SQL_DEBUG
-	if (err) {
-	  Stdio.stderr->write(sprintf("Sql.sql(): Failed to compile module Sql.%s\n",
-				      program_name));
+  if (host != replace(host, ({ ":", "/", "@" }), ({ "", "", "" }))) {
+
+    // The hostname is on the format:
+    //
+    // [dbtype://][user[:password]@]hostname[:port][/database]
+
+    array(string) arr = host/"://";
+    if ((sizeof(arr) > 1) && (arr[0] !="")) {
+      program_names = ({ arr[0] });
+      host = arr[1..] * "://";
+    }
+    arr = host/"@";
+    if (sizeof(arr) > 1) {
+      // User and/or password specified
+      host = arr[-1];
+      arr = (arr[0..sizeof(arr)-2]*"@")/":";
+      if (!user && sizeof(arr[0])) {
+	user = arr[0];
+      }
+      if (!password && (sizeof(arr) > 1)) {
+	password = arr[1..]*":";
+	if (password == "") {
+	  password = 0;
 	}
-#endif /* PIKE_SQL_DEBUG */
+      }
+    }
+    arr = host/"/";
+    if (sizeof(arr) > 1) {
+      if (!db) {
+	db = arr[1..]*"/";
+	host = arr[0];
       }
     }
   }
 
-  throw_error("Sql(): Couldn't connect to database\n");
+  if (host == "") {
+    host = 0;
+  }
+
+  foreach(program_names || get_dir(Sql->dirname), string program_name) {
+    if ((sizeof(program_name / "_result") == 1) &&
+	(sizeof(program_name / ".pike") > 1) &&
+	(program_name != "sql.pike")) {
+      /* Don't call ourselves... */
+      array(mixed) err;
+      
+      err = catch {
+	program p;
+#ifdef PIKE_SQL_DEBUG
+	err = catch {p = Sql[program_name];};
+#else /* !PIKE_SQL_DEBUG */
+	// Ignore compiler errors for the various sql-modules,
+	// since we might not have some.
+	// This is NOT a nice way to do it, but...
+	mixed old_inhib = master()->inhibit_compile_errors;
+	master()->inhibit_compile_errors = lambda(){};
+	err = catch {p = Sql[program_name];};
+	// Restore compiler errors mode to whatever it was before.
+	master()->inhibit_compile_errors = old_inhib;
+#endif /* PIKE_SQL_DEBUG */
+	if (err) {
+	  throw(err);
+	}
+
+	if (p) {
+	  err = catch {
+	    if (password) {
+	      master_sql = p(host||"", db||"", user||"", password);
+	    } else if (user) {
+	      master_sql = p(host||"", db||"", user);
+	    } else if (db) {
+	      master_sql = p(host||"", db);
+	    } else if (host) {
+	      master_sql = p(host);
+	    } else {
+	      master_sql = p();
+	    }
+	    return;
+	  };
+#ifdef PIKE_SQL_DEBUG
+	  if (err) {
+	    Stdio.stderr->write(sprintf("Sql.sql(): Failed to connect using module Sql.%s\n",
+					program_name));
+	  }
+	} else {
+	  Stdio.stderr->write(sprintf("Sql.sql(): Failed to index module Sql.%s\n",
+				      program_name));
+#endif /* PIKE_SQL_DEBUG */
+	}
+      };
+#ifdef PIKE_SQL_DEBUG
+      if (err) {
+	Stdio.stderr->write(sprintf("Sql.sql(): Failed to compile module Sql.%s\n",
+				    program_name));
+      }
+#endif /* PIKE_SQL_DEBUG */
+    }
+  }
+
+  if (sizeof(program_names) > 1) {
+    throw_error("Sql.sql(): Couldn't connect using any of the databases\n");
+  } else {
+    throw_error("Sql.sql(): Couldn't connect using the " +
+		program_names[0] + " database\n");
+  }
 }
 
 static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
