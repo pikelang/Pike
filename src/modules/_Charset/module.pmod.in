@@ -96,11 +96,11 @@ static private inherit @module@;
 //!
 //! +359 more.
 
-//! Virtual base class for charset decoders. Typical usage:
+//! Virtual base class for charset decoders.
 //! @example
-//!   object deutf8 = Locale.Charset.decoder("utf-8");
 //!   string utf8_to_string( string data )
 //!   {
+//!     object deutf8 = Locale.Charset.decoder("utf-8");
 //!     return deutf8->clear()->feed( data )->drain();
 //!   }
 class Decoder
