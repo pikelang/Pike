@@ -459,26 +459,26 @@ array(array(array)) diff3_old(array mid,array left,array right)
    return transpose(res);
 }
 
-// sort with care of numerical sort:
-//  "abc4def" before "abc30def"
-
-int dwim_sort_func(string a0,string b0)
+//! sort with care of numerical sort:
+//!  @tt{"abc4def"@} before @tt{"abc30def"@}.
+int dwim_sort_func(string a, string b)
 {
+   if (a==b) return 0;
+
    string a2="",b2="";
    int a1,b1;
-   sscanf(a0,"%s%d%s",a0,a1,a2);
-   sscanf(b0,"%s%d%s",b0,b1,b2);
-   if (a0>b0) return 1;
-   if (a0<b0) return 0;
+   sscanf(a, "%s%d%s", a, a1, a2);
+   sscanf(b, "%s%d%s", b, b1, b2);
+   if (a > b) return 1;
+   if (a < b) return 0;
    if (a1>b1) return 1;
    if (a1<b1) return 0;
    if (a2==b2) return 0;
    return dwim_sort_func(a2,b2);
 }
 
-// sort with no notice of contents in paranthesis,
-// no care of case either
-
+//! sort with no notice of contents in paranthesis,
+//! no care of case either
 int lyskom_sort_func(string a,string b)
 {
    string a0=a,b0=b;
@@ -496,6 +496,7 @@ int lyskom_sort_func(string a,string b)
    return lyskom_sort_func(a0,b0);
 }
 
+//! Flatten a multi-dimensional array to a one-dimensional array.
 array flatten(array a)
 {
   array ret=({});
@@ -503,13 +504,14 @@ array flatten(array a)
   return ret;
 }
 
+//! Sum the elements of an array
 mixed sum(array a)
 {
 // 1000 is a safe stack limit
    if (sizeof(a)<1000)
       return `+(@a);
    else
-   {   
+   {
       mixed mem=`+(@a[..999]);
       int j=1000;
       array v;
