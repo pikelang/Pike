@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.28 2004/02/05 19:22:17 nilsson Exp $
+ * $Id: X509.pmod,v 1.29 2004/02/05 19:47:27 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -224,11 +224,7 @@ string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
     ({ tbs,
        rsa_sha1_algorithm,
        BitString(rsa_sign_digest(rsa, Identifiers.sha1_id,
-#if constant(Crypto.SHA1.name)
 				 Crypto.SHA1.hash(tbs->get_der())
-#else
-				 Crypto.sha()->update(tbs->get_der())->digest()
-#endif
 				 )) }) )->get_der();
 }
 
@@ -259,27 +255,15 @@ class rsa_verifier
   {
     if (algorithm->get_der() == rsa_md5_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md5_id,
-#if constant(Crypto.MD5.name)
 			       Crypto.MD5.hash(msg),
-#else
-			       Crypto.md5()->update(msg)->digest(),
-#endif
 			       signature);
     if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.sha1_id,
-#if constant(Crypto.SHA1.name)
 			       Crypto.SHA1.hash(msg),
-#else
-			       Crypto.sha()->update(msg)->digest(),
-#endif
 			       signature);
     if (algorithm->get_der() == rsa_md2_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md2_id,
-#if constant(Crypto.MD2.name)
 			       Crypto.MD2.hash(msg),
-#else
-			       Crypto.md2()->update(msg)->digest(),
-#endif
 			       signature);
     return 0;
   }
@@ -549,9 +533,11 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //!   @member int(0..1) "verified"
 //!     Non-zero if the certificate is verified.
 //!   @member string "authority"
-//!     @[Standards.ASN1.Sequence] of the authority RDN that verified the chain.
+//!     @[Standards.ASN1.Sequence] of the authority RDN that verified
+//!     the chain.
 //!   @member string "cn"
-//!     @[Standards.ASN1.Sequence] of the common name RDN of the leaf certificate.
+//!     @[Standards.ASN1.Sequence] of the common name RDN of the leaf
+//!     certificate.
 //! @endmapping
 //!
 //! @param cert_chain
@@ -559,10 +545,13 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //! @param authorities
 //!   A mapping from (DER-encoded) names to verifiers.
 //! @param forbid_selfsigned
-//!   Require that the certificate be traced to an authority, even if it is self signed.
+//!   Require that the certificate be traced to an authority, even if
+//!   it is self signed.
 //!
-//! See @[Standards.PKCS.Certificate.get_dn_string] for converting the RDN to an X500 style string.
-mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, int|void require_trust)
+//! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
+//! RDN to an X500 style string.
+mapping verify_certificate_chain(array(string) cert_chain,
+				 mapping authorities, int|void require_trust)
 {
 
   mapping m = ([ ]);
@@ -592,7 +581,8 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
     {
       v = authorities[tbs->issuer->get_der()];
 
-      // if we don't know the issuer of the root certificate, and we require trust, we're done.
+      // if we don't know the issuer of the root certificate, and we
+      // require trust, we're done.
       if(!v && require_trust)
       {
          X509_WERR("we require trust, but haven't got it.\n");
@@ -637,7 +627,8 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
         return m;
       }
 
-      // is the issuer of this certificate the subject of the previous (more rootward) certificate?
+      // is the issuer of this certificate the subject of the previous
+      // (more rootward) certificate?
       if(tbs->issuer->get_der() != chain_obj[idx-1]->subject->get_der())
       {
         X509_WERR("issuer chain is broken!\n");
@@ -646,7 +637,8 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
         m->error_cert = idx;
         return m;
       }
-      // the verifier for this certificate should be the public key of the previous certificate in the chain.
+      // the verifier for this certificate should be the public key of
+      // the previous certificate in the chain.
       v = chain_obj[idx-1]->public_key;
     }
 
@@ -658,7 +650,9 @@ mapping verify_certificate_chain(array(string) cert_chain, mapping authorities, 
        X509_WERR("signature is verified..\n");
        m->verified = 1;
 
-       if(idx == 0) // if we're the root of the chain and we've verified, this is the authority.
+       // if we're the root of the chain and we've verified, this is
+       // the authority.
+       if(idx == 0)
          m->authority = tbs->issuer;
  
        if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
