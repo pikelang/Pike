@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.84 2001/02/21 13:46:13 grubba Exp $");
+RCSID("$Id: encode.c,v 1.85 2001/02/22 21:15:34 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -263,9 +263,9 @@ static void do_enable_threads(void)
 }
 #endif
 
-static ptrdiff_t encode_type(char *t, struct encode_data *data)
+static ptrdiff_t encode_type(unsigned char *t, struct encode_data *data)
 {
-  char *q=t;
+  unsigned char *q = t;
 one_more_type:
   addchar(EXTRACT_UCHAR(t));
   switch(EXTRACT_UCHAR(t++))
@@ -375,7 +375,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   {
     code_entry(TAG_AGAIN, tmp->u.integer, data);
     return;
-  }else{
+  }else if (val->type != T_TYPE) {
     mapping_insert(data->encoded, val, &data->counter);
     data->counter.u.integer++;
   }
@@ -397,9 +397,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
 
     case T_TYPE:
+      /* NOTE: Types are added to the encoded mapping AFTER they have
+       *       been encoded, to simplify decoding.
+       */
       if (data->canonic)
 	Pike_error("Canonical encoding of the type type not supported.\n");
-      Pike_error("Encoding of the type type not supported yet!\n");
+      code_entry(TAG_TYPE, val->u.type->len, data);
+      encode_type(val->u.type->str, data);
+      mapping_insert(data->encoded, val, &data->counter);
+      data->counter.u.integer++;
       break;
 
     case T_FLOAT:
@@ -688,10 +694,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	for(d=0;d<p->num_identifiers;d++)
 	{
 	  adddata(p->identifiers[d].name);
-	  /* FIXME! */
-#ifndef USE_PIKE_TYPE
 	  encode_type(p->identifiers[d].type->str, data);
-#endif /* !USE_PIKE_TYPE */
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
@@ -1167,6 +1170,7 @@ static void decode_value2(struct decode_data *data)
       return;
 
     case TAG_INT:
+      tmp.type = T_INT;
       tmp=data->counter;
       data->counter.u.integer++;
       push_int(num);
@@ -1175,6 +1179,7 @@ static void decode_value2(struct decode_data *data)
     case TAG_STRING:
     {
       struct pike_string *str;
+      tmp.type = T_INT;
       tmp=data->counter;
       data->counter.u.integer++;
       get_string_data(str, num, data);
@@ -1206,10 +1211,17 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_TYPE:
     {
-      Pike_error("Failed to decode string. "
-	    "(decode of the type type isn't supported yet).\n");
-      break;
+      struct pike_type *t;
+
+      decode_type(t, data);
+      check_type_string(t);
+      push_type_value(t);
+
+      tmp.type = T_INT;
+      tmp = data->counter;
+      data->counter.u.integer++;
     }
+    break;
 
     case TAG_ARRAY:
     {
@@ -1765,7 +1777,9 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   case TAG_TYPE:
-    Pike_error("Format error: decoding of the type type not supported yet.\n");
+    {
+      Pike_error("Format error: TAG_TYPE not supported yet.\n");
+    }
     return;
 
   case TAG_STRING:
