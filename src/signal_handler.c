@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.202 2001/09/24 14:39:30 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.203 2001/09/26 10:21:42 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2939,7 +2939,7 @@ void f_create_process(INT32 args)
       call_callback(&fork_child_callback, 0); 
 */
 
-      for(e=0;e<cmd->size;e++) storage.argv[e]=ITEM(cmd)[e].u.string->str;
+      for(e=0;e<cmd->size;e++) storage.argv[e]=cmd->item[e].u.string->str;
       storage.argv[e]=0;
 
       if(storage.env) environ=storage.env;
