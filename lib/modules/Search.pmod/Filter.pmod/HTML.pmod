@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.36 2004/06/08 12:28:50 anders Exp $
+// $Id: HTML.pmod,v 1.37 2005/03/08 15:29:10 anders Exp $
 
 // Filter for text/html
 
@@ -82,7 +82,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   // FIXME: Push the a contents to the description field of the
   // document referenced to by this tag.
-  array(string) parse_a(Parser.HTML p, mapping m)  {
+  array(string) parse_a(Parser.HTML p, mapping m, mapping e)  {
     // FIXME: We should try to decode the source with the
     // charset indicated in m->charset.
     // FIXME: We should set the document language to the
@@ -91,7 +91,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     // FIXME: Push the value of m->title to the title field of
     // the referenced document instead.
     if(m->title)
-      dadd(" " + m->title + " ");
+      if(!e->noindex)
+	dadd(" " + m->title + " ");
     return ({ "" });
   };
 
@@ -155,14 +156,15 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     return ({ " " });
   };
 
-  array(string) parse_object(Parser.HTML p, mapping m) {
+  array(string) parse_object(Parser.HTML p, mapping m, mapping e) {
     if( m->archive ) ladd( m->archive );
     if( m->classid ) ladd( m->classid );
     if( m->code ) ladd( m->code );
     if( m->codebase ) ladd( m->codebase );
     if( m->data ) ladd( m->data );
     if( m->standby )
-      dadd(" " + m->standby + " ");
+      if(!e->noindex)
+	dadd(" " + m->standby + " ");
     return ({ " " });
   };
 
@@ -220,6 +222,16 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     return ({""});
   };
 
+  // <!-- robots:noindex -->...<!-- /robots:noindex -->
+  mixed parse_comment(Parser.HTML p, string c, mapping extra)
+  {
+    if(has_value(c, "/robots:noindex"))
+      extra->noindex--;
+    else if(has_value(c, "robots:noindex"))
+      extra->noindex++;
+    return ({""});
+  };
+
   String.Buffer databuf=String.Buffer();
   Parser.HTML parser = Parser.HTML();
 
@@ -227,9 +239,12 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->lazy_entity_end(1);
   parser->ignore_unknown(1);
   parser->match_tag(0);
-  
+
+  mapping extra = ([]);
+  parser->set_extra(extra);
+
   int(0..0) return_zero() {return 0;};
-  parser->add_quote_tag("!--", return_zero, "--");
+  parser->add_quote_tag("!--", parse_comment, "--");
   parser->add_quote_tag("![CDATA[", return_zero, "]]");
   parser->add_quote_tag("?", return_zero, "?");
   
@@ -268,8 +283,9 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
 
   dadd = databuf->add;
-  parser->_set_data_callback(lambda(Parser.HTML p, string data) {
-			       dadd(" " + data + " ");
+  parser->_set_data_callback(lambda(Parser.HTML p, string data, mapping e) {
+			       if (!e->noindex)
+				 dadd(" " + data + " ");
 			     });
   parser->_set_tag_callback(lambda(Parser.HTML p, string data) {
 			      //  Do nothing! Callback still needed so that
