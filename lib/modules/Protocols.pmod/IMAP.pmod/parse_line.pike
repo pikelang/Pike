@@ -59,8 +59,8 @@ string get_atom(int|void with_options)
 
   sscanf(buffer,
 	 (with_options
-	  ? "%*[ \t]%[^][(){ \0-\037\177%\"\\]%s"
-	  : "%*[ \t]%[^(){ \0-\037\177%\"\\]%s"),
+	  ? "%*[ \t]%[^][(){ \0-\037\177%\"]%s"
+	  : "%*[ \t]%[^(){ \0-\037\177%\"]%s"),
 	 atom, buffer);
 
 #if 0	/* FIXME: This code is broken */
@@ -229,13 +229,13 @@ mapping get_range(mapping atom)
 }
 
 /* Parses an object that (recursivly) can contain atoms (possible
-   * with options in brackets) or lists. Note that strings are not
-   * accepted, as it is a little difficult to wait for the
-   * continuation of the request.
-   *
-   * FXME: This function is used to read fetch commands. This breaks
-   * rfc-2060 compliance, as the names of headers can be represented
-   * as string literals. */
+ * with options in brackets) or lists. Note that strings are not
+ * accepted, as it is a little difficult to wait for the
+ * continuation of the request.
+ *
+ * FIXME: This function is used to read fetch commands. This breaks
+ * rfc-2060 compliance, as the names of headers can be represented
+ * as string literals. */
   
 mapping get_simple_list(int max_depth)
 {
@@ -282,15 +282,15 @@ array do_parse_simple_list(int max_depth, int terminator)
 }
 
 /* Reads an atom, optionally followd by a list enclosed in square
-   * brackets. Naturally, the atom itself cannot contain any brackets.
-   *
-   * Returns a mapping
-   *    type : "atom",
-   *    atom : name,
-   *    raw : name[options]
-   *    options : parsed options,
-   *    range : ({ start, size })
-   */
+ * brackets. Naturally, the atom itself cannot contain any brackets.
+ *
+ * Returns a mapping
+ *    type : "atom",
+ *    atom : name,
+ *    raw : name[options]
+ *    options : parsed options,
+ *    range : ({ start, size })
+ */
 mapping get_atom_options(int max_depth)
 {
   string atom = get_atom(1);
