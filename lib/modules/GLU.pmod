@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.8 2000/09/28 03:38:25 hubbe Exp $
+ * $Id: GLU.pmod,v 1.9 2001/11/19 16:21:12 nilsson Exp $
  *
  * GL Utilities module.
  */
@@ -13,8 +13,9 @@ import Math;
 #ifndef M_PI
 #define M_PI 3.1415926536
 #endif
-#define EPS 0.00001
 
+//! @fixme
+//!   Document this function.
 void gluLookAt(float|object eye,float|object center,float|object up,
 	       float ... old_api)
 {
@@ -54,12 +55,16 @@ void gluLookAt(float|object eye,float|object center,float|object up,
   glTranslate( ((array)(-1*eye))[0] );
 }  
 
+//! @fixme
+//!   Document this function.
 void gluOrtho2D(float left, float right,
 		float bottom, float top)
 {
   glOrtho( left, right, bottom, top, -1.0, 1.0 );
 }
 
+//! @fixme
+//!   Document this function.
 void gluPerspective(float fovy, float aspect,
 		    float zNear, float zFar)
 {
@@ -74,7 +79,8 @@ void gluPerspective(float fovy, float aspect,
   glFrustum( xmin, xmax, ymin, ymax, zNear, zFar );
 }
 
-
+//! @fixme
+//!   Document this function.
 void gluPickMatrix(float x, float y,
 		   float width, float height,
 		   array(int) viewport)
@@ -98,7 +104,8 @@ void gluPickMatrix(float x, float y,
   glMultMatrix( m );
 }
 
-
+//! @fixme
+//!   Document this function.
 static void transform_point(array(float) out, array(float)m,
 			    array(float) in)
 {
@@ -110,7 +117,8 @@ static void transform_point(array(float) out, array(float)m,
 #undef M
 }
 
-
+//! @fixme
+//!   Document this function.
 array(float) gluProject(float objx, float objy,
 			float objz, array(float) model,
 			array(float) proj, array(int) viewport)
