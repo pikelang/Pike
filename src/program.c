@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.292 2001/02/05 21:13:11 grubba Exp $");
+RCSID("$Id: program.c,v 1.293 2001/02/09 13:25:44 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -64,7 +64,7 @@ RCSID("$Id: program.c,v 1.292 2001/02/05 21:13:11 grubba Exp $");
  * things down a bit if the hit/miss rate is not fairly high.
  * For normal applications, the hitrate is most likely well over 90%,
  * but that should be verified.
- * - Holistiska Centralbyr}n (Hubbe)
+ * - Holistiska Centralbyrån (Hubbe)
  */
 
 /* Define the size of the cache that is used for method lookup. */
@@ -178,6 +178,386 @@ static char *raw_lfun_types[] = {
   tFuncV(tMix,tVoid,tInt),	/* "_equal", */
   tFuncV(tMix,tVoid,tMix),	/* "_m_delete", */
 };
+
+/*! @decl void lfun::__INIT()
+ *!
+ *! Global variable initialization.
+ *!
+ *! This function is called just before @[lfun::create()] when
+ *! an object is instanciated.
+ *!
+ *! @note
+ *!   This function is generated automatically by the compiler,
+ *!   and can not be overloaded.
+ *!
+ *! @seealso
+ *!   @[lfun::create()]
+ */
+
+/*! @decl void lfun::create(zero ... args)
+ *!
+ *! Object creation callback.
+ *!
+ *! This function is called right after @[lfun::__INIT()].
+ *!
+ *! @[args] will be the arguments passed when the program was called.
+ *!
+ *! In Pike 7.2 and later this function can be created implicitly
+ *! by the compiler using the new syntax:
+ *! @code{
+ *!   class Foo(int foo) {
+ *!     int bar;
+ *!   }
+ *! @}
+ *! In the above case an implicit @[lfun::create()] will be created,
+ *! and it will be equvivalent to:
+ *! @code{
+ *!   class Foo {
+ *!     int foo;
+ *!     int bar;
+ *!     static void create(int foo)
+ *!     {
+ *!       local::foo = foo;
+ *!     }
+ *!   }
+ *! @}
+ *!
+ *! @seealso
+ *!   @[lfun::__INIT()], @[lfun::destroy()]
+ */
+
+/*! @decl void lfun::destroy()
+ *!
+ *! Object destruction callback.
+ *!
+ *! This function is called by @[destruct()] right before
+ *! it will zero all the object variables, and destroy the object.
+ *!
+ *! @seealso
+ *!   @[lfun::create()], @[destruct()]
+ */
+
+/*! @decl mixed lfun::`+(zero ... args)
+ *!
+ *! Left associative addition operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``+()], @[`+()]
+ */
+
+/*! @decl mixed lfun::`-(zero ... args)
+ *!
+ *! Left associative subtraction operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``-()], @[`-()]
+ */
+
+/*! @decl mixed lfun::`&(zero ... args)
+ *!
+ *! Left associative and operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``&()], @[`&()]
+ */
+
+/*! @decl mixed lfun::`|(zero ... args)
+ *!
+ *! Left associative or operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``|()], @[`|()]
+ */
+
+/*! @decl mixed lfun::`^(zero ... args)
+ *!
+ *! Left associative exclusive or operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``^()], @[`^()]
+ */
+
+/*! @decl mixed lfun::`<<(zero arg)
+ *!
+ *! Left associative left shift operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``<<()], @[`<<()]
+ */
+
+/*! @decl mixed lfun::`>>(zero arg)
+ *!
+ *! Left associative right shift operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``>>()], @[`>>()]
+ */
+
+/*! @decl mixed lfun::`*(zero ... args)
+ *!
+ *! Left associative multiplication operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``*()], @[`*()]
+ */
+
+/*! @decl mixed lfun::`/(zero ... args)
+ *!
+ *! Left associative division operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``/()], @[`/()]
+ */
+
+/*! @decl mixed lfun::`%(zero ... args)
+ *!
+ *! Left associative modulo operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::``%()], @[`%()]
+ */
+
+/*! @decl mixed lfun::`~()
+ *!
+ *! Inversion operator callback.
+ *!
+ *! @seealso
+ *!   @[`~()]
+ */
+
+/*! @decl int(0..1) lfun::`==(mixed arg)
+ *!
+ *! Equality operator callback.
+ *!
+ *! @seealso
+ *!   @[`==()]
+ */
+
+/*! @decl int(0..1) lfun::`<(mixed arg)
+ *!
+ *! Less than operator callback.
+ *!
+ *! @seealso
+ *!   @[`<()]
+ */
+
+/*! @decl int(0..1) lfun::`>(mixed arg)
+ *!
+ *! Greater than operator callback.
+ *!
+ *! @seealso
+ *!   @[`>()]
+ */
+
+/*! @decl int lfun::__hash()
+ *!
+ *! Hashing callback.
+ *!
+ *! FIXME: When is this used?
+ */
+
+/*! @decl mixed lfun::cast(string requested_type)
+ *!
+ *! Cast operator callback.
+ *!
+ *! @note
+ *!   The argument is currently (Pike 7.2) a string with the name
+ *!   of the type, but might in the future be a value of the type type.
+ */
+
+/*! @decl int lfun::`!()
+ *!
+ *! Not operator callback.
+ *!
+ *! @seealso
+ *!   @[`!()]
+ */
+
+/*! @decl mixed lfun::`[](zero arg1, zero|void arg2)
+ *!
+ *! Index/range operator callback.
+ *!
+ *! @seealso
+ *!   @[`[]()]
+ */
+
+/*! @decl mixed lfun::`[]=(zero arg1, zero arg2)
+ *!
+ *! Index assignment operator callback.
+ *!
+ *! @seealso
+ *!   @[`[]=()]
+ */
+
+/*! @decl mixed lfun::`->(string arg)
+ *!
+ *! Arrow index operator callback.
+ *!
+ *! @seealso
+ *!   @[`->()]
+ */
+
+/*! @decl mixed lfun::`->=(string arg1, zero arg2)
+ *!
+ *! Arrow index assign operator callback.
+ *!
+ *! @seealso
+ *!   @[`->=()]
+ */
+
+/*! @decl int _sizeof()
+ *!
+ *! Sizeof operator callback.
+ *!
+ *! @seealso
+ *!   @[sizeof()]
+ */
+
+/*! @decl array _indices()
+ *!
+ *! Indices operator callback.
+ *!
+ *! @seealso
+ *!   @[indices()]
+ */
+
+/*! @decl array _values()
+ *!
+ *! Values operator callback.
+ *!
+ *! @seealso
+ *!   @[values()]
+ */
+
+/*! @decl mixed `()(zero ... args)
+ *!
+ *! Function call operator callback.
+ *!
+ *! @seealso
+ *!   @[`()]
+ */
+
+/*! @decl mixed lfun::``+(zero ... args)
+ *!
+ *! Right associative addition operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`+()], @[`+()]
+ */
+
+/*! @decl mixed lfun::``-(zero ... args)
+ *!
+ *! Right associative subtraction operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`-()], @[`-()]
+ */
+
+/*! @decl mixed lfun::``&(zero ... args)
+ *!
+ *! Right associative and operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`&()], @[`&()]
+ */
+
+/*! @decl mixed lfun::``|(zero ... args)
+ *!
+ *! Right associative or operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`|()], @[`|()]
+ */
+
+/*! @decl mixed lfun::``^(zero ... args)
+ *!
+ *! Right associative exclusive or operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`^()], @[`^()]
+ */
+
+/*! @decl mixed lfun::``<<(zero arg)
+ *!
+ *! Right associative left shift operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`<<()], @[`<<()]
+ */
+
+/*! @decl mixed lfun::``>>(zero arg)
+ *!
+ *! Right associative right shift operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`>>()], @[`>>()]
+ */
+
+/*! @decl mixed lfun::``*(zero ... args)
+ *!
+ *! Right associative multiplication operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`*()], @[`*()]
+ */
+
+/*! @decl mixed lfun::``/(zero ... args)
+ *!
+ *! Right associative division operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`/()], @[`/()]
+ */
+
+/*! @decl mixed lfun::``%(zero ... args)
+ *!
+ *! Right associative modulo operator callback.
+ *!
+ *! @seealso
+ *!   @[lfun::`%()], @[`%()]
+ */
+
+/*! @decl mixed lfun::`+=(zero arg)
+ *!
+ *! Self increment operator callback.
+ *!
+ *! @seealso
+ *!   @[`+()], @[lfun::`+()]
+ */
+
+/*! @decl int(0..1) _is_type(string arg)
+ *!
+ *! Type comparison callback.
+ *!
+ *! @note
+ *!   The argument is currently (Pike 7.2) a string with the name
+ *!   of the type, but migt in the future be a value of the type type.
+ */
+
+/*! @decl string _sprintf(int conversion_type,
+ *!                       mapping(string:int)|void params)
+ *!
+ *! Sprintf callback.
+ *!
+ *! @seealso
+ *!    @[sprintf()]
+ */
+
+/*! @decl int _equal(mixed arg)
+ *!
+ *! Equal callback.
+ *!
+ *! @seealso
+ *!   @[equal()], @[lfun::`==()]
+ */
+
+/*! @decl mixed _m_delete(mixed arg)
+ *!
+ *! Mapping delete callback.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
 
 struct program *first_program = 0;
 static int current_program_id=0x10000;
