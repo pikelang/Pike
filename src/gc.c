@@ -28,7 +28,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.44 2000/01/31 21:08:49 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.45 2000/02/01 06:24:40 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -354,7 +354,7 @@ void describe_something(void *a, int t, int dm)
       fprintf(stderr,"**Describing mapping:\n");
       debug_dump_mapping((struct mapping *)a);
       fprintf(stderr,"**Describing mapping data block:\n");
-      describe_something( ((struct mapping *)a)->data, -1, dm);
+      describe_something( ((struct mapping *)a)->data, -2, dm);
       break;
 
     case T_STRING:
