@@ -30,4 +30,9 @@ _$*
 *.elc
 *.ln
 core
+/test
+/test.lpc
+/uLPC_v1.0E-12.tar.gz
+/uLPC_v1.0E-13.tar.gz
+/uLPC_v1.1E-12.tar.gz
 /uLPC_v1.7E-12.tar.gz
