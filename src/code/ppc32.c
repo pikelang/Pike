@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.31 2003/04/18 15:41:12 mast Exp $
+|| $Id: ppc32.c,v 1.32 2003/08/07 14:45:10 marcus Exp $
 */
 
 /*
@@ -454,6 +454,15 @@ void ins_f_byte(unsigned int b)
 
   FLUSH_CODE_GENERATOR_STATE();
   ADD_CALL(addr);
+#ifdef OPCODE_RETURN_JUMPADDR
+  if (instrs[b].flags & I_JUMP) {
+    /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
+    /* mtlr r3 */
+    MTSPR(PPC_REG_RET, PPC_SPREG_LR);
+    /* blr */
+    BCLR(20, 0);
+  }
+#endif
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
