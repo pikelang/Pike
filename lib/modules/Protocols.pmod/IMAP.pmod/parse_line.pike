@@ -74,9 +74,11 @@ string get_atom(int|void with_options)
 	break;
       /* Fall through */
     default:
+      werror("=> atom: 0\n");
       return 0;
     }
       
+  werror(sprintf("=> atom: %O\n", atom));
   return strlen(atom) && atom;
 }
 
