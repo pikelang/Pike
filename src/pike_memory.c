@@ -44,10 +44,6 @@ void swap(char *a, char *b, INT32 size)
 
 void reverse(char *memory, INT32 nitems, INT32 size)
 {
-#ifdef DEBUG
-  if(((unsigned long)memory) % size)
-    fatal("Unaligned memory in argument to reverse()\n");
-#endif
 
 #define DOSIZE(X,Y)						\
  case X:							\
@@ -59,7 +55,11 @@ void reverse(char *memory, INT32 nitems, INT32 size)
   break;							\
  }
 
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
+#else
+  switch( (((unsigned long)memory) % size) ? size : 0 )
+#endif
   {
     DOSIZE(1,B1_T)
 #ifdef B2_T
@@ -98,12 +98,9 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   char *tmp;
   if(nitems<2) return;
 
-#ifdef DEBUG
-  if(((unsigned long)memory) % size)
-    fatal("Unaligned memory in argument to reorder()\n");
-#endif
 
   tmp=xalloc(size * nitems);
+
 #undef DOSIZE
 #define DOSIZE(X,Y)				\
  case X:					\
@@ -115,17 +112,21 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
  }
   
 
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
-  {
-    DOSIZE(1,B1_T)
+#else
+  switch( (((unsigned long)memory) % size) ? size : 0 )
+#endif
+ {
+   DOSIZE(1,B1_T)
 #ifdef B2_T
-    DOSIZE(2,B2_T)
+     DOSIZE(2,B2_T)
 #endif
 #ifdef B4_T
-    DOSIZE(4,B4_T)
+     DOSIZE(4,B4_T)
 #endif
 #ifdef B8_T
-    DOSIZE(8,B8_T)
+     DOSIZE(8,B8_T)
 #endif
 #ifdef B16_T
     DOSIZE(16,B16_T)

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.27 1998/01/29 01:55:34 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.28 1998/01/29 02:47:43 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -762,7 +762,7 @@ static int do_docode2(node *n,int flags)
     emit(F_ALIGN,sizeof(INT32));
 
     current_switch_values_on_stack=0;
-    current_switch_case=0;
+    current_switch_case=1;
     current_switch_default=-1;
     current_switch_jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
     jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));

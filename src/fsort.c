@@ -80,16 +80,16 @@ void fsort(void *base,
 	   long elmSize,
 	   fsortfun cmpfunc)
 {
-#ifdef DEBUG
-  if(((unsigned long)base) % elmSize)
-    fatal("Unaligned memory in argument to fsort()()\n");
-#endif
 
   if(elms<=0) return;
   cmpfun=cmpfunc;
   size=elmSize;
 
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(elmSize)
+#else
+  switch( (((unsigned long)memory) % elmSize) ? size : 0 )
+#endif
   {
   case  1:  fsort_1(( B1_T *)base,(elms-1)+( B1_T *)base); break;
 #ifdef B2_T
