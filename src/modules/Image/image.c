@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.74 1998/01/16 04:04:43 mirar Exp $ */
+/* $Id: image.c,v 1.75 1998/01/16 21:25:10 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.74 1998/01/16 04:04:43 mirar Exp $
+**!	$Id: image.c,v 1.75 1998/01/16 21:25:10 grubba Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.74 1998/01/16 04:04:43 mirar Exp $");
+RCSID("$Id: image.c,v 1.75 1998/01/16 21:25:10 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -203,12 +203,12 @@ static INLINE void getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
-   if (args-args_start>=4)
+   if (args-args_start>=4) {
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
          img->alpha=sp[3-args+args_start].u.integer;
-   else
+   } else
       img->alpha=0;
 }
 
@@ -798,11 +798,12 @@ void image_autocrop(INT32 args)
    struct image *img;
    int left=1,right=1,top=1,bottom=1;
 
-   if (args)
+   if (args) {
       if (sp[-args].type!=T_INT)
          error("Illegal argument to Image.image->autocrop()\n");
       else
          border=sp[-args].u.integer; 
+   }
 
    if (args>=5)
    {
@@ -2105,12 +2106,12 @@ void image_select_from(INT32 args)
        || sp[1-args].type!=T_INT)
       error("Illegal argument(s) to Image.image->select_from()\n");
 
-   if (args>=3)
+   if (args>=3) {
       if (sp[2-args].type!=T_INT)
 	 error("Illegal argument 3 (edge value) to Image.image->select_from()\n");
       else
 	 low_limit=MAXIMUM(0,sp[2-args].u.integer);
-   else
+   } else
       low_limit=30;
    low_limit=low_limit*low_limit;
 
@@ -2290,7 +2291,7 @@ CHRONO("apply_matrix");
        sp[-args].type!=T_ARRAY)
       error("Illegal arguments to Image.image->apply_matrix()\n");
 
-   if (args>3)
+   if (args>3) {
       if (sp[1-args].type!=T_INT ||
 	  sp[2-args].type!=T_INT ||
 	  sp[3-args].type!=T_INT)
@@ -2301,8 +2302,7 @@ CHRONO("apply_matrix");
 	 default_rgb.g=sp[1-args].u.integer;
 	 default_rgb.b=sp[1-args].u.integer;
       }
-   else
-   {
+   } else {
       default_rgb.r=0;
       default_rgb.g=0;
       default_rgb.b=0;
