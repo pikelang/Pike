@@ -29,7 +29,7 @@ extern struct program *parser_html_program;
 
 #ifdef DEBUG
 #undef DEBUG
-#define DEBUG(X) if (THIS->debug_mode) fprintf X
+#define DEBUG(X) if (THIS->flags & FLAG_DEBUG_MODE) fprintf X
 #define DEBUG_MARK_SPOT debug_mark_spot
 #else
 #define DEBUG(X) do; while(0)
@@ -100,6 +100,27 @@ struct feed_stack
 
 enum types {TYPE_TAG, TYPE_CONT, TYPE_ENTITY, TYPE_QTAG, TYPE_DATA};
 
+/* flag: case sensitive tag matching */
+#define FLAG_CASE_INSENSITIVE_TAG	0x00000001
+
+/* flag: arg quote may have tag_end to end quote and tag */
+#define FLAG_LAZY_END_ARG_QUOTE		0x00000002
+
+/* flag: the entity_break chars ends entity */
+#define FLAG_LAZY_ENTITY_END		0x00000004
+
+/* flag: match '<' and '>' for in-tag-tags (<foo <bar>>) */
+#define FLAG_MATCH_TAG			0x00000008
+
+/* flag: handle mixed data from callbacks */
+#define FLAG_MIXED_MODE			0x00000010
+
+/* flag: treat unknown tags and entities as text */
+#define FLAG_IGNORE_UNKNOWN		0x00000020
+
+/* flag: debug output */
+#define FLAG_DEBUG_MODE			0x00000040
+
 struct parser_html_storage
 {
 /*--- current state -----------------------------------------------*/
@@ -143,28 +164,8 @@ struct parser_html_storage
    struct svalue callback__data;
    struct svalue callback__entity;
 
-   /* flag: case sensitive tag matching */
-   int case_insensitive_tag;
-
-   /* flag: arg quote may have tag_end to end quote and tag */
-   int lazy_end_arg_quote; 
-
-   /* flag: the entity_break chars ends entity */
-   int lazy_entity_end; 
-
-   /* flag: match '<' and '>' for in-tag-tags (<foo <bar>>) */
-   int match_tag; 
-
-   /* flag: handle mixed data from callbacks */
-   int mixed_mode;
-
-   /* flag: treat unknown tags and entities as text */
-   int ignore_unknown;
-
-#ifdef DEBUG
-   /* flag: debug output */
-   int debug_mode;
-#endif
+   /* flag bitfield; see FLAG_* above */
+   int flags;
 
    p_wchar2 tag_start,tag_end;
    p_wchar2 entity_start,entity_end;
@@ -227,7 +228,7 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
    int l,m,i,i0;
    char buf[40];
 
-   if (!THIS->debug_mode) return;
+   if (!(THIS->flags & FLAG_DEBUG_MODE)) return;
 
    l=strlen(desc)+1;
    if (l<40) l=40;
@@ -318,8 +319,11 @@ static void recalculate_argq(struct parser_html_storage *this)
    /* prepare look for start of argument quote or end of tag */
    this->look_for_start[0]=this->tag_end;
    this->look_for_start[1]=this->arg_eq;
-   if (this->match_tag) this->look_for_start[2]=this->tag_start;
-   n=2+this->match_tag;
+   if (this->flags & FLAG_MATCH_TAG) {
+     this->look_for_start[2]=this->tag_start;
+     n=3;
+   }
+   else n=2;
    for (i=0; i<this->nargq; i++)
    {
       for (j=0; j<n; j++)
@@ -344,7 +348,7 @@ found_start:
    found_end:
 	    ;
 	 }
-      if (this->lazy_end_arg_quote)
+      if (this->flags & FLAG_LAZY_END_ARG_QUOTE)
 	 this->look_for_end[k][n++]=this->tag_end;
 
       this->num_look_for_end[k]=n;
@@ -355,13 +359,13 @@ found_start:
       free(THIS->ws_or_endarg);
       THIS->ws_or_endarg=NULL;
    }
-   THIS->n_ws_or_endarg=THIS->n_ws+2+THIS->match_tag;
+   THIS->n_ws_or_endarg=THIS->n_ws+(THIS->flags & FLAG_MATCH_TAG ? 3 : 2);
    THIS->ws_or_endarg=(p_wchar2*)xalloc(sizeof(p_wchar2)*THIS->n_ws_or_endarg);
-   MEMCPY(THIS->ws_or_endarg+2+THIS->match_tag,
+   MEMCPY(THIS->ws_or_endarg+(THIS->flags & FLAG_MATCH_TAG ? 3 : 2),
 	  THIS->ws,THIS->n_ws*sizeof(p_wchar2));
    THIS->ws_or_endarg[0]=THIS->arg_eq;
    THIS->ws_or_endarg[1]=THIS->tag_end;
-   if (THIS->match_tag)
+   if (THIS->flags & FLAG_MATCH_TAG)
       THIS->ws_or_endarg[2]=THIS->tag_start;
 
    if (THIS->ws_or_endarg_or_quote) 
@@ -389,7 +393,7 @@ static void init_html_struct(struct object *o)
    static p_wchar2 def_lazy_eends[]={';','&','<','>','\"','\'','\n','\r'};
 
 #ifdef DEBUG
-   THIS->debug_mode=0;
+   THIS->flags=0;
 #endif
    DEBUG((stderr,"init_html_struct %p\n",THIS));
 
@@ -419,12 +423,7 @@ static void init_html_struct(struct object *o)
    THIS->mapentity=NULL;
    THIS->mapqtag=NULL;
 
-   THIS->case_insensitive_tag=0;
-   THIS->lazy_end_arg_quote=0;
-   THIS->lazy_entity_end=0;
-   THIS->match_tag=1;
-   THIS->mixed_mode=0;
-   THIS->ignore_unknown=0;
+   THIS->flags=FLAG_MATCH_TAG;
 
    THIS->extra_args=NULL;
 
@@ -658,7 +657,7 @@ static void html_add_tag(INT32 args)
       DEBUG((stderr,"COPY\n"));
    }
    s=*--sp;
-   if (THIS->case_insensitive_tag)
+   if (THIS->flags & FLAG_CASE_INSENSITIVE_TAG)
      f_lower_case(1);
    if (IS_ZERO(&s))
      map_delete(THIS->maptag,sp-1);
@@ -691,7 +690,7 @@ static void html_add_container(INT32 args)
       pop_stack();
    }
    s=*--sp;
-   if (THIS->case_insensitive_tag)
+   if (THIS->flags & FLAG_CASE_INSENSITIVE_TAG)
      f_lower_case(1);
    if (IS_ZERO(&s))
      map_delete(THIS->mapcont,sp-1);
@@ -1536,7 +1535,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
       }
 
       if (ch==this->tag_end)
-	 if (this->match_tag && q--)
+	 if ((this->flags & FLAG_MATCH_TAG) && q--)
 	 {
 	    DEBUG_MARK_SPOT("scan for end of arg: inner tag end",
 			    destp[0],*d_p);
@@ -1550,7 +1549,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 	    break;
 	 }
 
-      if (this->match_tag && ch==this->tag_start)
+      if ((this->flags & FLAG_MATCH_TAG) && ch==this->tag_start)
       {
 	 DEBUG_MARK_SPOT("scan for end of arg: inner tag start",
 			 destp[0],*d_p);
@@ -1907,7 +1906,8 @@ static newstate handle_result(struct parser_html_storage *this,
 	 /* output element(s) */
 	 for (i=0; i<sp[-1].u.array->size; i++)
 	 {
-	    if (!THIS->mixed_mode && sp[-1].u.array->item[i].type!=T_STRING)
+	    if (!(THIS->flags & FLAG_MIXED_MODE) &&
+		sp[-1].u.array->item[i].type!=T_STRING)
 	       error("Parser.HTML: illegal result from callback: element in array not string\n");
 	    push_svalue(sp[-1].u.array->item+i);
 	    put_out_feed(this,sp-1);
@@ -2337,7 +2337,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       }
       DEBUG_MARK_SPOT("find_end_of_cont : got tag",s2,c2);
 
-      if (this->case_insensitive_tag)
+      if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
 	f_lower_case(1);
       if (is_eq(sp-1,tagname)) found = 't';
       else if (is_eq(sp-1,endtagname)) found = 'e';
@@ -2345,7 +2345,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
       /* When we should treat unknown tags as text, we have to parse
        * and lookup just the tag name before continuing. */
-      if (!found && THIS->ignore_unknown &&
+      if (!found && (THIS->flags & FLAG_IGNORE_UNKNOWN) &&
 	  (!this->maptag->size || !low_mapping_lookup(this->maptag,sp-1)) &&
 	  (!this->mapcont->size || !low_mapping_lookup(this->mapcont,sp-1))) {
 	DEBUG((stderr,"find_end_of_cont : treating unknown tag as text\n"));
@@ -2372,7 +2372,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       pop_stack();
 
       if (!scan_for_end_of_tag(this,s3,c3,&s2,&c2,finished,
-			       found == 'e' ? -1 : this->match_tag))
+			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG))
       {
 	 free_svalue(endtagname);
 	 return STATE_WAIT;
@@ -2617,7 +2617,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 if (this->maptag->size ||
 	     this->mapcont->size)
 	 {
-	    if (this->case_insensitive_tag)
+	    if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
 	      f_lower_case(1);
 	    v=low_mapping_lookup(this->maptag,sp-1);
 	    if (v) /* tag */
@@ -2625,7 +2625,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       pop_stack();
 
 	       if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-					finished,this->match_tag))
+					finished,this->flags & FLAG_MATCH_TAG))
 	       {
 		 st->ignore_data=1;
 		 return STATE_WAIT; /* come again */
@@ -2655,7 +2655,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       int ce1,ce2;          /*        e1 ^     ^ e2 */
 
 	       if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-					finished,this->match_tag))
+					finished,this->flags & FLAG_MATCH_TAG))
 	       {
 		 st->ignore_data=1;
 		 pop_stack();
@@ -2702,7 +2702,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 if (this->callback__tag.type!=T_INT && !ignore_tag_cb)
 	 {
 	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				     finished,this->match_tag))
+				     finished,this->flags & FLAG_MATCH_TAG))
 	    {
 	       st->ignore_data=1;
 	       return STATE_WAIT; /* come again */
@@ -2729,7 +2729,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
 	 }
-	 else if (this->ignore_unknown) {
+	 else if (this->flags & FLAG_IGNORE_UNKNOWN) {
 	   /* Send it to callback__data. */
 	   dst=*feed;
 	   cdst=st->c+1;
@@ -2739,7 +2739,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 else
 	 {
 	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				     finished,this->match_tag))
+				     finished,this->flags & FLAG_MATCH_TAG))
 	      return STATE_WAIT; /* come again */
 
 	    put_out_feed_range(this,*feed,st->c,dst,cdst+1);
@@ -2754,7 +2754,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 		*feed,st->c));
 	 /* just search for end of entity */
 
-	 if (this->lazy_entity_end) {
+	 if (this->flags & FLAG_LAZY_ENTITY_END) {
 	   end_found=scan_forward(*feed,st->c+1,&dst,&cdst,
 				  this->lazy_entity_ends,this->n_lazy_entity_ends);
 	   if (end_found && index_shared_string(dst->s,cdst) != this->entity_end)
@@ -2828,7 +2828,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
 	 }
-	 else if (this->ignore_unknown) {
+	 else if (this->flags & FLAG_IGNORE_UNKNOWN) {
 	   /* Send it to callback__data. */
 	   dst=*feed;
 	   cdst=st->c+1;
@@ -3085,7 +3085,7 @@ static void html_read(INT32 args)
 
    pop_n_elems(args);
 
-   if (THIS->mixed_mode)
+   if (THIS->flags & FLAG_MIXED_MODE)
    {
       int got_arr = 0;
       /* collect up to n items */
@@ -3169,7 +3169,7 @@ void html_write_out(INT32 args)
    int i;
    for (i = args; i; i--)
    {
-      if (!THIS->mixed_mode && sp[-i].type!=T_STRING)
+      if (!(THIS->flags & FLAG_MIXED_MODE) && sp[-i].type!=T_STRING)
 	 error("write_out: not a string argument\n");
       put_out_feed(THIS,sp-i);
    }
@@ -3325,6 +3325,8 @@ new_arg:
 
       /* scan this argument name and push*/
       scan_forward_arg(this,s1,c1,&s2,&c2,1,1);
+      if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
+	f_lower_case(1);
       n++;
 
       /* scan for '=', '>' or next argument */
@@ -3460,7 +3462,8 @@ static void html_tag_content(INT32 args)
       struct piece *end, *dummy;
       int cend, cdummy;
       if (scan_forward_arg (THIS, beg, cbeg, &beg, &cbeg, 1, 1)) {
-	if (scan_for_end_of_tag (THIS, beg, cbeg, &beg, &cbeg, 1, THIS->match_tag) &&
+	if (scan_for_end_of_tag (THIS, beg, cbeg, &beg, &cbeg, 1,
+				 THIS->flags & FLAG_MATCH_TAG) &&
 	    !find_end_of_container (THIS, sp-1, NULL, beg, cbeg+1,
 				    &end, &cend, &dummy, &cdummy, 1)) {
 	  pop_stack();
@@ -3636,28 +3639,8 @@ void html__inspect(INT32 args)
    push_svalue(&(THIS->callback__data));
    n++;
 
-   push_text("case_insensitive_tag");
-   push_int(THIS->case_insensitive_tag);
-   n++;
-
-   push_text("lazy_end_arg_quote");
-   push_int(THIS->lazy_end_arg_quote);
-   n++;
-
-   push_text("lazy_entity_end");
-   push_int(THIS->lazy_entity_end);
-   n++;
-
-   push_text("match_tag");
-   push_int(THIS->match_tag);
-   n++;
-
-   push_text("mixed_mode");
-   push_int(THIS->mixed_mode);
-   n++;
-
-   push_text("ignore_unknown");
-   push_int(THIS->ignore_unknown);
+   push_text("flags");
+   push_int(THIS->flags);
    n++;
 
    f_aggregate_mapping(n*2);
@@ -3728,16 +3711,8 @@ static void html_clone(INT32 args)
    else
       p->extra_args=NULL;
 
-   p->case_insensitive_tag=THIS->case_insensitive_tag;
-   p->lazy_end_arg_quote=THIS->lazy_end_arg_quote;
-   p->lazy_entity_end=THIS->lazy_entity_end;
-   p->match_tag=THIS->match_tag;
-   p->mixed_mode=THIS->mixed_mode;
-   p->ignore_unknown=THIS->ignore_unknown;
-#ifdef DEBUG
-   p->debug_mode=THIS->debug_mode;
-#endif
-   
+   p->flags=THIS->flags;
+
    p->tag_start=THIS->tag_start;
    p->tag_end=THIS->tag_end;
    p->entity_start=THIS->entity_start;
@@ -3801,10 +3776,11 @@ static void html_set_extra(INT32 args)
 **!	<ul>
 **!
 **!	<li><b>case_insensitive_tag</b>: All tags and containers are
-**!	matched case insensitively. Tags added with
-**!	<ref>add_quote_tag</ref>() are not affected, though. Switching
-**!	to case sensitive mode and back won't preserve the case of
-**!	registered tags and containers.
+**!	matched case insensitively, and argument names are converted
+**!	to lowercase. Tags added with <ref>add_quote_tag</ref>() are
+**!	not affected, though. Switching to case insensitive mode and
+**!	back won't preserve the case of registered tags and
+**!	containers.
 **!
 **!	<li><b>lazy_entity_end</b>: Normally, the entity end character
 **!	(i.e. ';') is required to end an entity. When this flag is
@@ -3834,12 +3810,14 @@ static void html_set_extra(INT32 args)
 
 static void html_case_insensitive_tag(INT32 args)
 {
-   int o=THIS->case_insensitive_tag;
+   int o=THIS->flags & FLAG_CASE_INSENSITIVE_TAG;
    check_all_args("case_insensitive_tag",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->case_insensitive_tag=!!sp[-args].u.integer;
+   if (args)
+     if (sp[-args].u.integer) THIS->flags |= FLAG_CASE_INSENSITIVE_TAG;
+     else THIS->flags &= ~FLAG_CASE_INSENSITIVE_TAG;
    pop_n_elems(args);
 
-   if (args && THIS->case_insensitive_tag && !o) {
+   if (args && (THIS->flags & FLAG_CASE_INSENSITIVE_TAG) && !o) {
      INT32 e;
      struct keypair *k;
 
@@ -3867,36 +3845,44 @@ static void html_case_insensitive_tag(INT32 args)
 
 static void html_lazy_entity_end(INT32 args)
 {
-   int o=THIS->lazy_entity_end;
+   int o=THIS->flags & FLAG_LAZY_ENTITY_END;
    check_all_args("lazy_entity_end",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->lazy_entity_end=!!sp[-args].u.integer;
+   if (args)
+     if (sp[-args].u.integer) THIS->flags |= FLAG_LAZY_ENTITY_END;
+     else THIS->flags &= ~FLAG_LAZY_ENTITY_END;
    pop_n_elems(args);
    push_int(o);
 }
 
 static void html_match_tag(INT32 args)
 {
-   int o=THIS->match_tag;
+   int o=THIS->flags & FLAG_MATCH_TAG;
    check_all_args("match_tag",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->match_tag=!!sp[-args].u.integer;
+   if (args)
+     if (sp[-args].u.integer) THIS->flags |= FLAG_MATCH_TAG;
+     else THIS->flags &= ~FLAG_MATCH_TAG;
    pop_n_elems(args);
    push_int(o);
 }
 
 static void html_mixed_mode(INT32 args)
 {
-   int o=THIS->mixed_mode;
+   int o=THIS->flags & FLAG_MIXED_MODE;
    check_all_args("mixed_mode",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->mixed_mode=!!sp[-args].u.integer;
+   if (args)
+     if (sp[-args].u.integer) THIS->flags |= FLAG_MIXED_MODE;
+     else THIS->flags &= ~FLAG_MIXED_MODE;
    pop_n_elems(args);
    push_int(o);
 }
 
 static void html_ignore_unknown(INT32 args)
 {
-   int o=THIS->ignore_unknown;
+   int o=THIS->flags & FLAG_IGNORE_UNKNOWN;
    check_all_args("ignore_unknown",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->ignore_unknown=!!sp[-args].u.integer;
+   if (args)
+     if (sp[-args].u.integer) THIS->flags |= FLAG_IGNORE_UNKNOWN;
+     else THIS->flags &= ~FLAG_IGNORE_UNKNOWN;
    pop_n_elems(args);
    push_int(o);
 }
@@ -3904,9 +3890,11 @@ static void html_ignore_unknown(INT32 args)
 #ifdef DEBUG
 static void html_debug_mode(INT32 args)
 {
-   int o=THIS->debug_mode;
+   int o=THIS->flags & FLAG_DEBUG_MODE;
    check_all_args("debug_mode",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->debug_mode=!!sp[-args].u.integer;
+   if (args)
+     if (sp[-args].u.integer) THIS->flags |= FLAG_DEBUG_MODE;
+     else THIS->flags &= ~FLAG_DEBUG_MODE;
    pop_n_elems(args);
    push_int(o);
 }
