@@ -2,6 +2,9 @@ Code generation templates for Pike.
 
 These paired files should all implement the following functions/macros:
 
+PIKE_OPCODE_T
+	Type with opcode granularity.
+
 void ins_pointer(INT32 ptr);
 	Store a 32bit pointer at the current offset.
 

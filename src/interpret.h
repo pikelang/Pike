@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.93 2001/07/08 20:52:15 grubba Exp $
+ * $Id: interpret.h,v 1.94 2001/07/20 22:45:13 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -97,6 +97,14 @@ struct external_variable_context
   struct inherit *inherit;
   int parent_identifier;
 };
+
+#ifdef HAVE_COMPUTED_GOTO
+extern PIKE_OPCODE_T *fcode_to_opcode;
+extern struct op_2_f {
+  PIKE_OPCODE_T opcode;
+  INT32 fcode;
+} *opcode_to_fcode;
+#endif /* HAVE_COMPUTED_GOTO */
 
 #ifdef PIKE_DEBUG
 #define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal("Stack error.\n");}while(0)

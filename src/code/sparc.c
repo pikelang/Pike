@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.c,v 1.4 2001/07/20 19:44:59 grubba Exp $
+ * $Id: sparc.c,v 1.5 2001/07/20 22:45:19 grubba Exp $
  *
  * Machine code generator for sparc.
  *
@@ -62,7 +62,7 @@ void ins_f_byte(unsigned int opcode)
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
-  SET_REG(REG_O0, b);
+  SET_REG(SPARC_REG_O0, b);
   low_ins_f_byte(a, 1);
   return;
 }
@@ -71,8 +71,8 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    unsigned INT32 c,
 			    unsigned INT32 b)
 {
-  SET_REG(REG_O0, c);
-  SET_REG(REG_O1, b);
+  SET_REG(SPARC_REG_O0, c);
+  SET_REG(SPARC_REG_O1, b);
   low_ins_f_byte(a, 1);
   return;
 }

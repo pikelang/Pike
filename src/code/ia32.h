@@ -1,6 +1,8 @@
 /*
- * $Id: ia32.h,v 1.4 2001/07/20 18:47:18 grubba Exp $
+ * $Id: ia32.h,v 1.5 2001/07/20 22:45:17 grubba Exp $
  */
+
+#define PIKE_OPCODE_T	unsigned INT8
 
 #define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
 #define read_pointer(OFF)	read_int(OFF)

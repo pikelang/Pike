@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.140 2001/07/17 22:03:33 grubba Exp $
+ * $Id: program.h,v 1.141 2001/07/20 22:45:13 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -17,6 +17,7 @@
 #include "svalue.h"
 #include "time_stuff.h"
 #include "program_id.h"
+#include "pikecode.h"
 
 #define STRUCT
 #include "compilation.h"
@@ -26,25 +27,6 @@
 
 /* Needed to support dynamic loading on NT */
 PMOD_PROTO extern struct program_state * Pike_compiler;
-
-#if defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
-#define PIKE_OPCODE_T	unsigned INT32
-#else /* !(PIKE_USE_MACHINE_CODE && sparc) */
-#ifdef HAVE_COMPUTED_GOTO
-#define PIKE_OPCODE_T	void *
-extern PIKE_OPCODE_T *fcode_to_opcode;
-extern struct op_2_f {
-  PIKE_OPCODE_T opcode;
-  INT32 fcode;
-} *opcode_to_fcode;
-#else /* !HAVE_COMPUTED_GOTO */
-#ifdef SHORT_PIKE_OPCODE
-#define PIKE_OPCODE_T	unsigned INT16
-#else /* !SHORT_PIKE_OPCODE */
-#define PIKE_OPCODE_T	unsigned INT8
-#endif /* SHORT_PIKE_OPCODE */
-#endif /* HAVE_COMPUTED_GOTO */
-#endif /* PIKE_USE_MACHINE_CODE && sparc */
 
 #ifdef PIKE_DEBUG
 #define PROGRAM_LINE_ARGS int line, char *file

@@ -1,6 +1,8 @@
 /*
- * $Id: bytecode.h,v 1.3 2001/07/20 15:49:00 grubba Exp $
+ * $Id: bytecode.h,v 1.4 2001/07/20 22:45:15 grubba Exp $
  */
+
+#define PIKE_OPCODE_T	unsigned INT8
 
 #define UPDATE_PC()
 
