@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.15 2004/04/12 16:24:24 grubba Exp $
+|| $Id: dummy.c,v 1.16 2004/10/23 11:50:27 nilsson Exp $
 */
 
 /*
@@ -49,7 +49,7 @@ _ll_t mysql_dummy_dum_dum(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
   fileno(stderr);
 #endif
 #ifdef HAVE_PUTS
-  puts(0);
+  puts(" ");
 #endif
 #ifdef HAVE_FGETS
   fgets(0, 0, 0);
