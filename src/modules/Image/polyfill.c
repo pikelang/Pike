@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.46 2004/05/02 21:04:00 nilsson Exp $
+|| $Id: polyfill.c,v 1.47 2004/05/02 21:31:37 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.46 2004/05/02 21:04:00 nilsson Exp $");
+RCSID("$Id: polyfill.c,v 1.47 2004/05/02 21:31:37 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -733,11 +733,11 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
    struct vertex *first,*last,*cur = NULL;
    int n;
 
-   if(a->type_field & ~(T_INT|T_FLOAT)) {
+   if(a->type_field & ~(BIT_INT|BIT_FLOAT)) {
      array_fix_type_field(a);
-     if(a->type_field & ~(T_INT|T_FLOAT)) {
+     if(a->type_field & ~(BIT_INT|BIT_FLOAT)) {
        polyfill_free(top);
-       Pike_error("Illegal argument %d to %s. Expected array(float|int).\n",arg,what);
+       Pike_error("Illegal argument %d to %s. %d Expected array(float|int).\n",arg,what, a->type_field);
        return NULL;
      }
    }
@@ -794,6 +794,7 @@ void image_polyfill(INT32 args)
 {
    struct vertex *v;
    double *buf;
+   ONERROR err;
 
    if (!THIS->img)
       Pike_error("Image.Image->polyfill: no image\n");
@@ -801,6 +802,7 @@ void image_polyfill(INT32 args)
    buf=malloc(sizeof(double)*(THIS->xsize+1));
    if (!buf)
       Pike_error("Image.Image->polyfill: out of memory\n");
+   SET_ONERROR(err, free, buf);
 
    v=polyfill_begin();
 
@@ -824,12 +826,16 @@ void image_polyfill(INT32 args)
       pop_stack();
    }
 
-   if (!v) return; /* no vertices */
+   if (!v) {
+     free(buf);
+     return; /* no vertices */
+   }
 
    polyfill_some(THIS,v,buf);
    
    polyfill_free(v);
-   
+
+   UNSET_ONERROR(err);
    free(buf);
 
    ref_push_object(THISOBJ);
