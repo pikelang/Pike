@@ -3,7 +3,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.47 2000/12/01 08:09:47 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.48 2002/03/15 09:31:51 tomas Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -174,7 +174,7 @@ PMOD_EXPORT FD debug_fd_open(char *file, int open_mode, int create_mode)
       break;
   }
 
-  if(create_mode & 4)
+  if(create_mode & 0222)
   {
     amode=FILE_ATTRIBUTE_NORMAL;
   }else{
