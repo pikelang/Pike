@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.142 1999/09/16 03:44:30 hubbe Exp $");
+RCSID("$Id: program.c,v 1.143 1999/09/16 03:52:33 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1075,15 +1075,14 @@ struct program *debug_end_program(void)
  * Allocate needed for this program in the object structure.
  * An offset to the data is returned.
  */
-SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo)
+SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
 {
   long offset;
 #ifdef PIKE_DEBUG
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
     fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %d\n",alignment);
 #endif
-  modulo+=OFFSETOF(object,storage);
-  modulo%=alignment;
+  modulo=( modulo_orig+OFFSETOF(object,storage) ) % alignment;
 
   offset=DO_ALIGN(new_program->storage_needed-modulo,alignment)+modulo;
 
