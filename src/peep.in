@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.69 2004/04/30 20:33:07 grubba Exp $
+// $Id: peep.in,v 1.70 2004/04/30 20:42:05 grubba Exp $
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -238,8 +238,17 @@ NUMBER [$1a < 0 && ($1a != -$1a)] SUBTRACT : ADD_INT (-$1a)
 // ADD_INT ADD_NEG_INT [$2a <= $1a]: ADD_INT ($1a-$2a)
 // ADD_INT ADD_NEG_INT [$2a > $1a]: ADD_NEG_INT ($2a-$1a)
 
-NUMBER ADD_INT : NUMBER ($1a+$2a)
-NUMBER ADD_NEG_INT : NUMBER ($1a-$2a)
+CONST0 ADD_INT : NUMBER ($2a)
+CONST0 ADD_NEG_INT : NUMBER($2a)
+
+// FIXME: BIGNUMS?
+//
+// NUMBER ADD_INT : NUMBER ($1a+$2a)
+// NUMBER ADD_NEG_INT : NUMBER ($1a-$2a)
+// CONST1 ADD_INT : NUMBER(1+$2a)
+// CONST1 ADD_NEG_INT : NUMBER(1-$2a)
+// CONST_1 ADD_INT : NUMBER($2a-1)
+// CONST_1 ADD_NEG_INT : NUMBER(-(1+$2a))
 
 LTOSVAL2 ADD ASSIGN : ADD_TO
 LTOSVAL ADD ASSIGN : ADD_TO
