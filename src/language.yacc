@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.251 2001/06/30 01:32:42 mast Exp $");
+RCSID("$Id: language.yacc,v 1.252 2001/06/30 02:34:39 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -543,6 +543,7 @@ constant: modifiers TOK_CONSTANT constant_list ';' {}
 block_or_semi: block
   {
     $$ = check_node_hash(mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0)));
+    if ($1) $$->line_number = $1->line_number;
   }
   | ';' { $$ = NULL; }
   | TOK_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
@@ -820,9 +821,15 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	free_string(bad_arg_str);
       }
 
-      if (check_args) {
-	/* Prepend the arg checking code. */
-	$10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
+      {
+	int l = $10->line_number;
+	char *f = $10->current_file;
+	if (check_args) {
+	  /* Prepend the arg checking code. */
+	  $10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
+	}
+	lex.current_line = l;
+	lex.current_file = f;
       }
 
       f=dooptcode(check_node_hash($4)->u.sval.u.string,
@@ -1606,12 +1613,16 @@ block:'{'
     else
       Pike_compiler->compiler_frame->last_block_level=$<number>2;
   }
+  {
+    $<number>$=lex.current_line;
+  }
   statements end_block
   {
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>3;
-    $$=$4;
+    if ($5) $5->line_number = $<number>4;
+    $$=$5;
   }
   ;
 
