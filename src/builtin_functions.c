@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.180 1999/08/03 00:43:57 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.181 1999/08/12 20:05:27 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4009,7 +4009,7 @@ void f_map(INT32 args)
    /*
      map(arr,fun,extra) => ret
 
-     arr	fun		goes 
+     arr	fun		goes
      array	function |	array ret; ret[i]=fun(arr[i],@extra);
        		program |	
            	object | 
@@ -4276,8 +4276,7 @@ void f_map(INT32 args)
 	    sp--;
 	    push_array_items(sp->u.array);
 	    f_call_function(1+splice);
-	    apply_svalue(mysp-2,1+mysp[-1].u.array->size);
-	    return; 
+	    return;
 	 }	    
 	 /* no break here */
       default:
@@ -4293,9 +4292,13 @@ void f_filter(INT32 args)
 
         _arr__________goes________
 
-        array		keep=map(arr,fun,@extra);
-        	     	for (i=0; i<sizeof(arr); i++) 
-				if (keep[i]) res+=({arr[i]});
+        array		if fun is an array:
+			   for (i=0; i<sizeof(arr); i++) 
+				   if (fun[i]) res+=({arr[i]});
+			otherwise:
+			   keep=map(arr,fun,@extra);
+			   for (i=0; i<sizeof(arr); i++) 
+				   if (keep[i]) res+=({arr[i]});
         
         multiset	(multiset)filter((array)arr,fun,@extra);
         
@@ -4322,11 +4325,18 @@ void f_filter(INT32 args)
    switch (sp[-args].type)
    {
       case T_ARRAY:
-	 MEMMOVE(sp-args+1,sp-args,args*sizeof(*sp));
-	 sp++;
-	 add_ref_svalue(sp-args);
+	 if (args >= 2 && sp[1-args].type == T_ARRAY) {
+	   if (sp[1-args].u.array->size != sp[-args].u.array->size)
+	     SIMPLE_BAD_ARG_ERROR("filter", 2, "array of same size as the first");
+	   pop_n_elems(args-2);
+	 }
+	 else {
+	   MEMMOVE(sp-args+1,sp-args,args*sizeof(*sp));
+	   sp++;
+	   add_ref_svalue(sp-args);
+	   f_map(args);
+	 }
 
-	 f_map(args);
 	 f=sp[-1].u.array;
 	 a=sp[-2].u.array;
 	 n=a->size;
