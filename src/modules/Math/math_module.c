@@ -1,5 +1,5 @@
 /*
- * $Id: math_module.c,v 1.2 1999/05/08 00:50:52 hubbe Exp $
+ * $Id: math_module.c,v 1.3 1999/10/25 19:07:04 mirar Exp $
  */
 
 #include "global.h"
@@ -47,5 +47,8 @@ void pike_module_init(void)
       if (sub[i].pd) sub[i].pd[0]=p;
       else free_program(p);
    }
+
+   add_float_constant("pi",3.14159265358979323846  ,0);
+   add_float_constant("e", 2.7182818284590452354   ,0);
 }
 
