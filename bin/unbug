@@ -551,8 +551,8 @@ class Gdb
       in->write("quit\n");
     }
 
-  string *tokens=({"(",")","*",",",";","!","%","^","&"});
-  string *token_dividers;
+  array(string) tokens=({"(",")","*",",",";","!","%","^","&"});
+  array(string) token_dividers;
 
   void init_tokenize()
     {
@@ -564,7 +564,7 @@ class Gdb
       }
     }
 
-  string *tokenize(string x)
+  array(string) tokenize(string x)
     {
       return replace(x,tokens,token_dividers)/" "-({""});
     }
@@ -871,7 +871,7 @@ class Gdb
     {
       init_tokenize();
       string tmp=cmd("info functions");
-      string *ret=({});
+      array(string) ret=({});
       sscanf(tmp,"%sNon-debugging symbols:",tmp);
       return Array.map(tmp/"\n",find_function_name)-({0});
     }
@@ -1300,8 +1300,8 @@ class Debug
 	if(op == 't') return _type();
 	if(failsafe) return "MULTISET";
 	string desc=sprintf("%O",arr);
-	desc[1]="<";
-	desc[-2]=">";
+	desc[1]='<';
+	desc[-2]='>';
 	return desc;
       }
 
@@ -2773,7 +2773,7 @@ class Debug
       terminal->kill(signum("SIGINT"));
     }
 
-  void create(string *argv)
+  void create(array(string) argv)
     {
       ::create();
       string tmpfile=sprintf("pike-debugger-%d-%d",getpid(),counter++);
@@ -2812,9 +2812,9 @@ string find_in_path(string cmd)
   return cmd;
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.6 2002/05/01 01:21:53 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.7 2002/09/04 17:08:46 grendel Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 UNBUG is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
