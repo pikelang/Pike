@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.9 2002/06/12 19:28:58 jhs Exp $
+ * $Id: module.pmod,v 1.10 2002/06/14 14:32:04 nilsson Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -122,7 +122,7 @@ class Rule
   //! 
   //!   might be created as
   //! 
-  //!	   rule(4, ({ 9, ";", 5, ";" }), "add_rule");
+  //!	   rule(4, ({ 9, ":", 5, ";" }), "add_rule");
   //! 
   //!   where 4 corresponds to the nonterminal "rule", 9 to "nonterminal"
   //!   and 5 to "symbols", and the function "add_rule" is too be called
