@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.162 2001/07/01 18:17:30 mast Exp $");
+RCSID("$Id: gc.c,v 1.163 2001/07/01 21:05:08 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -95,8 +95,8 @@ RCSID("$Id: gc.c,v 1.162 2001/07/01 18:17:30 mast Exp $");
 #define GC_VERBOSE_DO(X)
 #endif
 
-INT32 num_objects = 3;		/* Account for *_empty_array. */
-INT32 num_allocs =0;
+int num_objects = 3;		/* Account for *_empty_array. */
+int num_allocs =0;
 ptrdiff_t alloc_threshold = MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
@@ -239,9 +239,9 @@ static unsigned gc_extra_refs = 0;
 
 void dump_gc_info(void)
 {
-  fprintf(stderr,"Current number of objects: %ld\n",(long)num_objects);
-  fprintf(stderr,"Objects allocated total  : %ld\n",(long)num_allocs);
-  fprintf(stderr," threshold for next gc() : %ld\n",(long)alloc_threshold);
+  fprintf(stderr,"Current number of objects: %d\n",num_objects);
+  fprintf(stderr,"Objects allocated total  : %d\n",num_allocs);
+  fprintf(stderr," threshold for next gc() : %"PRINTPTRDIFFT"d\n",alloc_threshold);
   fprintf(stderr,"Average allocs per gc()  : %f\n",objects_alloced);
   fprintf(stderr,"Average frees per gc()   : %f\n",objects_freed);
   fprintf(stderr,"Second since last gc()   : %ld\n",
@@ -332,11 +332,11 @@ void describe_location(void *real_memblock,
     type=attempt_to_identify(memblock);
 
   if(memblock)
-    fprintf(stderr,"%*s-> from %s %p offset %ld\n",
+    fprintf(stderr,"%*s-> from %s %p offset %"PRINTPTRDIFFT"d\n",
 	    indent,"",
 	    get_name_of_type(type),
 	    memblock,
-	    DO_NOT_WARN((long)((char *)location - (char *)memblock)));
+	    (char *)location - (char *)memblock);
   else
     fprintf(stderr,"%*s-> at location %p%s\n",
 	    indent,"",
@@ -382,9 +382,8 @@ void describe_location(void *real_memblock,
 	 ptr < (char*)(p->inherits+p->num_inherits)) 
       {
 	e=((char *)ptr - (char *)(p->inherits)) / sizeof(struct inherit);
-	fprintf(stderr,"%*s  **In p->inherits[%ld] (%s)\n",indent,"",
-		DO_NOT_WARN((long)e),
-		p->inherits[e].name ? p->inherits[e].name->str : "no name");
+	fprintf(stderr,"%*s  **In p->inherits[%"PRINTPTRDIFFT"d] (%s)\n",indent,"",
+		e, p->inherits[e].name ? p->inherits[e].name->str : "no name");
 	break;
       }
 
@@ -394,9 +393,8 @@ void describe_location(void *real_memblock,
       {
 	e = ((char *)ptr - (char *)(p->constants)) /
 	  sizeof(struct program_constant);
-	fprintf(stderr,"%*s  **In p->constants[%ld] (%s)\n",indent,"",
-		DO_NOT_WARN((long)e),
-		p->constants[e].name ? p->constants[e].name->str : "no name");
+	fprintf(stderr,"%*s  **In p->constants[%"PRINTPTRDIFFT"d] (%s)\n",indent,"",
+		e, p->constants[e].name ? p->constants[e].name->str : "no name");
 	break;
       }
 
@@ -408,9 +406,8 @@ void describe_location(void *real_memblock,
 	e = ((char *)ptr - (char *)(p->identifiers)) /
 	  sizeof(struct identifier);
 
-	fprintf(stderr,"%*s  **In p->identifiers[%ld] (%s)\n",indent,"",
-		DO_NOT_WARN((long)e),
-		p->identifiers[e].name ?
+	fprintf(stderr,"%*s  **In p->identifiers[%"PRINTPTRDIFFT"d] (%s)\n",indent,"",
+		e, p->identifiers[e].name ?
 		(strlen(p->identifiers[e].name->str)<100 ? p->identifiers[e].name->str : "Name too long or already freed.."  )
 		: "no name");
 	break;
@@ -419,8 +416,8 @@ void describe_location(void *real_memblock,
 #define FOO(NTYP,TYP,NAME) \
     if(location == (void *)&p->NAME) fprintf(stderr,"%*s  **In p->" #NAME "\n",indent,""); \
     if(ptr >= (char *)p->NAME  && ptr<(char*)(p->NAME+p->PIKE_CONCAT(num_,NAME))) \
-      fprintf(stderr,"%*s  **In p->" #NAME "[%ld]\n",indent,"", \
-              PTRDIFF_T_TO_LONG(((char *)ptr - (char *)(p->NAME)) / sizeof(TYP)));
+      fprintf(stderr,"%*s  **In p->" #NAME "[%"PRINTPTRDIFFT"d]\n",indent,"", \
+              ((char *)ptr - (char *)(p->NAME)) / sizeof(TYP));
 #include "program_areas.h"
       
       break;
@@ -489,8 +486,8 @@ void describe_location(void *real_memblock,
     {
       struct array *a=(struct array *)descblock;
       struct svalue *s=(struct svalue *)location;
-      fprintf(stderr,"%*s  **In index number %ld\n",indent,"",
-	      DO_NOT_WARN((long)(s-ITEM(a))));
+      fprintf(stderr,"%*s  **In index number %"PRINTPTRDIFFT"d\n",indent,"",
+	      s-ITEM(a));
       break;
     }
 
@@ -859,8 +856,8 @@ void low_describe_something(void *a,
     case T_STRING:
     {
       struct pike_string *s=(struct pike_string *)a;
-      fprintf(stderr, "%*s**String length is %ld:\n", indent, "",
-	      DO_NOT_WARN((long)s->len));
+      fprintf(stderr, "%*s**String length is %"PRINTPTRDIFFT"d:\n",
+	      indent, "", s->len);
       if(s->len>77)
       {
 	fprintf(stderr,"%*s** \"%60s ...\"\n",indent,"",s->str);
@@ -925,7 +922,7 @@ void debug_describe_svalue(struct svalue *s)
   switch(s->type)
   {
     case T_INT:
-      fprintf(stderr,"    %ld\n",(long)s->u.integer);
+      fprintf(stderr,"    %"PRINTPIKEINT"d\n",s->u.integer);
       break;
 
     case T_FLOAT:
@@ -1698,6 +1695,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       }
       CYCLE_DEBUG_MSG(m, "gc_cycle_push, no live recurse");
     }
+
     else {
       /* We'll get here eventually in the normal recursion. Pop off
        * the remaining live recurse frames for the last thing. */
@@ -2105,7 +2103,7 @@ static void warn_bad_cycles()
 int do_gc(void)
 {
   double tmp;
-  int objs, pre_kill_objs;
+  ptrdiff_t objs, pre_kill_objs;
   double multiplier;
   struct array *a;
   struct multiset *l;
@@ -2209,8 +2207,9 @@ int do_gc(void)
    */
   call_callback(& gc_callbacks, (void *)0);
 
-  GC_VERBOSE_DO(fprintf(stderr, "| check: %u references checked, counted %lu weak refs\n",
-			checked, SIZE_T_TO_ULONG(gc_ext_weak_refs)));
+  GC_VERBOSE_DO(fprintf(stderr, "| check: %u references checked, "
+			"counted %"PRINTSIZET"u weak refs\n",
+			checked, gc_ext_weak_refs));
 
   Pike_in_gc=GC_PASS_MARK;
 
@@ -2242,9 +2241,9 @@ int do_gc(void)
 
   GC_VERBOSE_DO(fprintf(stderr,
 			"| mark: %u markers referenced, %u weak references freed,\n"
-			"|       %d things to free, got %lu tricky weak refs\n",
-			marked, weak_freed, delayed_freed,
-			SIZE_T_TO_ULONG(gc_ext_weak_refs)));
+			"|       %d things to free, "
+			"got %"PRINTSIZET"u tricky weak refs\n",
+			marked, weak_freed, delayed_freed, gc_ext_weak_refs));
 
   {
 #ifdef PIKE_DEBUG
@@ -2272,8 +2271,9 @@ int do_gc(void)
     if (NEXT(&rec_list) || gc_rec_last != &rec_list || gc_rec_top)
       fatal("Recurse list not empty or inconsistent after cycle check pass.\n");
     if (gc_ext_weak_refs != orig_ext_weak_refs)
-      fatal("gc_ext_weak_refs changed from %lu to %lu in cycle check pass.\n",
-	    SIZE_T_TO_ULONG(orig_ext_weak_refs), SIZE_T_TO_ULONG(gc_ext_weak_refs));
+      fatal("gc_ext_weak_refs changed from %"PRINTSIZET"u "
+	    "to %"PRINTSIZET"u in cycle check pass.\n",
+	    orig_ext_weak_refs, gc_ext_weak_refs);
 #endif
 
     GC_VERBOSE_DO(fprintf(stderr,
@@ -2301,10 +2301,11 @@ int do_gc(void)
     gc_zap_ext_weak_refs_in_programs();
     GC_VERBOSE_DO(
       fprintf(stderr,
-	      "| zap weak: freed %ld external weak refs, %lu internal still around,\n"
+	      "| zap weak: freed %"PRINTPTRDIFFT"d external weak refs, "
+	      "%"PRINTSIZET"u internal still around,\n"
 	      "|           %d more things to free\n",
-	      PTRDIFF_T_TO_LONG(to_free - gc_ext_weak_refs),
-	      SIZE_T_TO_ULONG(gc_ext_weak_refs), delayed_freed - obj_count));
+	      to_free - gc_ext_weak_refs, gc_ext_weak_refs,
+	      delayed_freed - obj_count));
   }
 
 #ifdef PIKE_DEBUG
@@ -2502,12 +2503,13 @@ int do_gc(void)
   if(GC_VERBOSE_DO(1 ||) t_flag)
   {
 #ifdef HAVE_GETHRTIME
-    fprintf(stderr,"done (freed %ld of %ld things), %ld ms.\n",
-	    (long)objs,(long)objs + num_objects,
-	    (long)((gethrtime() - gcstarttime)/1000000));
+    fprintf(stderr,
+	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things), %ld ms.\n",
+	    objs, objs + num_objects, (long)((gethrtime() - gcstarttime)/1000000));
 #else
-    fprintf(stderr,"done (freed %ld of %ld things)\n",
-	    (long)objs,(long)objs + num_objects);
+    fprintf(stderr,
+	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things)\n",
+	    objs, objs + num_objects);
 #endif
   }
 #endif
