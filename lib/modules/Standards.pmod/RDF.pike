@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.16 2003/08/22 14:24:47 nilsson Exp $
+// $Id: RDF.pike,v 1.17 2003/10/14 01:52:27 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -7,6 +7,15 @@
 
 static int(1..) node_counter = 1;
 static mapping(string:Resource) uris = ([]);
+
+static array(string) uri_parts(string uri) {
+  string obj,ns;
+  if(sscanf(uri, "%s#%s", ns,obj)==2)
+    return ({ ns+"#", obj });
+  if(sscanf(reverse(uri), "%s/%s", obj,ns)==2)
+    return ({ reverse(ns)+"/", reverse(obj) });
+  return ({ 0,0 });
+}
 
 //! Instances of this class represents resources as defined in RDF:
 //! All things being described by RDF expressions are called resources. A
@@ -96,6 +105,10 @@ class LiteralResource {
     return get_n_triple_name();
   }
 
+  string get_xml() {
+    return id; // FIXME: XML quote.
+  }
+
   string _sprintf(int t) { return __sprintf("LiteralResource", t); }
 }
 
@@ -122,6 +135,15 @@ class URIResource {
     return id;
   }
 
+  //! Returns the qualifying name, or zero.
+  string get_qname() {
+    fix_namespaces();
+    string ns,obj;
+    [ ns, obj ] = uri_parts(id);
+    if(!ns) return 0;
+    return namespaces[ns]+":"+obj;
+  }
+
   string get_n_triple_name() {
     return "<" + id + ">";
   }
@@ -143,6 +165,7 @@ static int(0..1) is_resource(mixed res) {
 // General RDF set modification
 //
 
+// predicate : Relation( subject, object )
 static mapping(Resource:ADT.Relation.Binary) statements = ([]);
 
 //! Adds a statement to the RDF set.
@@ -253,6 +276,20 @@ int(0..) dereify_all() {
 //! has been used as predicates.
 array(Resource) get_properties() {
   return indices(statements);
+}
+
+//! Returns a mapping with all the domains subject resources as
+//! indices and a mapping with that subjects predicates and objects
+//! as value.
+mapping(Resource:mapping(Resource:Resource)) get_subject_map() {
+  mapping subs = ([]);
+  foreach(statements; Resource pred; ADT.Relation.Binary rel)
+    foreach(rel; Resource subj; Resource obj)
+      if(subs[subj])
+	subs[subj][pred]=obj;
+      else
+	subs[subj] = ([ pred:obj ]);
+  return subs;
 }
 
 //! Returns an RDF resource with the given URI as identifier,
@@ -556,6 +593,9 @@ string encode_n_triple_string(string in) {
 
 #define Node Parser.XML.NSTree.NSNode
 
+static int dirty_namespaces = 1;
+static mapping(string:string) namespaces = ([]); // url-prefix:name
+
 static Node add_xml_children(Node p, string rdfns) {
   string subj_uri = p->get_attributes()->about;
   Resource subj;
@@ -647,6 +687,16 @@ this_program parse_xml(string|Node in, void|string base) {
   else
     n = in;
 
+  // FIXME: Namespaces defined under the rdf-element will not be used
+  // in serialization.
+  mapping nss = n->get_defined_nss();
+  foreach(values(nss), string name)
+    if( !namespaces[name] ) {
+      namespaces = mkmapping(values(nss),indices(nss))|namespaces;
+      dirty_namespaces = 1;
+      break;
+    }
+
   string rdfns = n->get_ns();
 
   foreach(n->get_elements(), Node c)
@@ -654,6 +704,73 @@ this_program parse_xml(string|Node in, void|string base) {
 
   return this_object();
 }
+
+static void fix_namespaces() {
+  if(!dirty_namespaces) return;
+  mapping(string:string) new = ([]);
+  int i=1;
+  foreach(indices(uris), string uri) {
+    string obj;
+    [ uri, obj ] = uri_parts(uri);
+    if( new[uri])
+      continue;
+    else if( namespaces[uri] )
+      new[uri] = namespaces[uri];
+    else {
+      string ns;
+      do {
+	ns = Locale.Language.nld.number(i++);
+      }
+      while( has_value(new, ns) || has_value(namespaces, ns) );
+      new[uri] = ns;
+    }
+  }
+  namespaces = new;
+  dirty_namespaces = 0;
+}
+
+//! Serialize the RDF domain as an XML string.
+string get_xml() {
+  String.Buffer buf = String.Buffer();
+
+  multiset delayed = (<>);
+
+  foreach(get_subject_map(); Resource n; mapping(Resource:Resource) rel) {
+    if( !n->is_literal_resource && !n->is_uri_resource ) {
+      delayed[n] = 1;
+      continue;
+    }
+    delayed[n] = 0;
+    if( !n->is_uri_resource ) {
+      werror("%O\n", n);
+      error("Can't serialize non-uri resources in subject position.\n");
+    }
+    buf->add("<Description about=\"", n->get_uri(), "\">");
+    if(sizeof(rel)>1) buf->add("\n");
+    foreach(rel; Resource left; Resource right) {
+      buf->add("<", left->get_qname()||"vräl");
+      if(right->is_literal_resource)
+	buf->add(">", right->get_xml(), "</", left->get_qname()||"vrål", ">");
+      else
+	buf->add(" rdf:resource=\"", right->get_qname(), "\"/>");
+      if(sizeof(rel)>1) buf->add("\n");
+    }
+    if(sizeof(rel)>1) buf->add("\n");
+    buf->add("</Description>\n");
+  }
+
+  String.Buffer ret = String.Buffer();
+  ret->add("<?xml version=\"1.0\"?>\n"
+	   "<RDF\nxmlns=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n"
+	   "rdf:xmlns=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n");
+  foreach(namespaces; string url; string name)
+    ret->add("xmlns:", name, "=\"", url, "\"\n");
+  ret->add(">\n");
+  ret->add( (string)buf );
+  ret->add("</RDF>\n");
+  return (string)ret;
+}
+
 
 //
 // lfuns
