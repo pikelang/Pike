@@ -29,8 +29,11 @@ static int hasarg(int opcode)
   case F_NUMBER:
   case F_NEG_NUMBER:
   case F_CALL_LFUN:
+  case F_CALL_LFUN_AND_POP:
   case F_SSCANF:
   case F_POP_N_ELEMS:
+
+  case F_SIZEOF_LOCAL:
 
   case F_ASSIGN_GLOBAL:
   case F_ASSIGN_GLOBAL_AND_POP:
