@@ -1,6 +1,8 @@
 // Bittorrent client - originally by Mirar 
 #pike __REAL_VERSION__
 
+constant dont_dump_program = 1;
+
 Stdio.File fd=Stdio.File();
 .Torrent parent;
 
