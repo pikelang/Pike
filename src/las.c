@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.247 2001/03/20 00:25:02 grubba Exp $");
+RCSID("$Id: las.c,v 1.248 2001/03/28 17:59:36 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -927,7 +927,7 @@ node *debug_mknode(short token, node *a, node *b)
     break;
 
   case F_POP_VALUE:
-    copy_shared_string(res->type, void_type_string);
+    copy_type(res->type, void_type_string);
     
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
@@ -1061,7 +1061,7 @@ node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  copy_shared_string(res->type, string_type_string);
+  copy_type(res->type, string_type_string);
   res->node_info = 0;
   res->u.sval.type = T_STRING;
 #ifdef __CHECKER__
@@ -1107,7 +1107,7 @@ node *debug_mkfloatnode(FLOAT_TYPE foo)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  copy_shared_string(res->type, float_type_string);
+  copy_type(res->type, float_type_string);
   res->u.sval.type = T_FLOAT;
 #ifdef __CHECKER__
   res->u.sval.subtype = 0;
@@ -1165,7 +1165,7 @@ node *debug_mklocalnode(int var, int depth)
 
   f=Pike_compiler->compiler_frame;
   for(e=0;e<depth;e++) f=f->previous;
-  copy_shared_string(res->type, f->variable[var].type);
+  copy_type(res->type, f->variable[var].type);
 
   res->node_info = OPT_NOT_CONST | OPT_NOT_SHARED;
   res->tree_info = res->node_info;
@@ -1228,7 +1228,7 @@ node *debug_mktrampolinenode(int i)
 {
   node *res = mkemptynode();
   res->token = F_TRAMPOLINE;
-  copy_shared_string(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
+  copy_type(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
 
   /* FIXME */
   if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(Pike_compiler->new_program, i)->identifier_flags))
@@ -1268,7 +1268,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   }
 #endif
 
-  copy_shared_string(res->type, id->type);
+  copy_type(res->type, id->type);
 
   /* FIXME */
   if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
@@ -3234,10 +3234,26 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Calling a void expression.");
     } else {
-      struct pike_type *s;
-      struct pike_type *f;
+      struct pike_type *f;	/* Expected type. */
+      struct pike_type *s;	/* Actual type */
       char *name;
       INT32 max_args,args;
+
+#if defined(USE_PIKE_TYPE) && defined(NEW_ARG_CHECK)
+
+      args = 0;
+
+      copy_type(f, CAR(n)->type);
+
+      f = new_check_call(CAR(n), &args, f, CDR(n));
+
+      if (f && (n->type = get_ret_type(f))) {
+	/* Type/argument-check OK. */
+	free_type(f);
+	break;
+      }
+
+#else /* !(USE_PIKE_TYPE && NEW_ARG_CHECK) */
 
       push_type(T_MIXED); /* match any return type */
       push_type(T_VOID);  /* even void */
@@ -3376,6 +3392,7 @@ void fix_type_field(node *n)
       /* print_tree(n); */
 
       free_type(s);
+#endif /* USE_PIKE_TYPE && NEW_ARG_CHECK */
     }
     copy_type(n->type, mixed_type_string);
     break;
