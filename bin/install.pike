@@ -1233,9 +1233,13 @@ void do_install()
     {
       to_export+=({master,
 		   combine_path(vars->TMP_BUILDDIR,"master.pike"),
+		   combine_path(vars->TMP_BUILDDIR,"specs"),
+		   combine_path(vars->TMP_BUILDDIR,
+				"modules/dynamic_module_makefile"),
 		   combine_path(vars->SRCDIR,"install-welcome"),
 		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
-		   combine_path(vars->SRCDIR,"dumpmodule.pike")
+		   combine_path(vars->SRCDIR,"dumpmodule.pike"),
+		   combine_path(vars->SRCDIR,"aclocal.m4"),
       });
 
       void basefile(string x) {
@@ -1261,20 +1265,24 @@ void do_install()
 			 combine_path(include_prefix,"code"));
     install_header_files(vars->TMP_BUILDDIR,include_prefix);
 
-    fix_smartlink(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
-		  combine_path(include_prefix,"dynamic_module_makefile"),
-		  include_prefix);
     install_file(combine_path(vars->SRCDIR,"make_variables.in"),
 		 combine_path(include_prefix,"make_variables.in"));
-    make_aclocal(combine_path(vars->SRCDIR,"aclocal.m4"),
-		 combine_path(include_prefix,"aclocal.m4"), include_prefix);
-    fix_smartlink(combine_path(vars->TMP_BUILDDIR,"specs"),
-		  combine_path(include_prefix,"specs"), include_prefix);
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
       install_file(combine_path(vars->TMP_BINDIR,f),
 		   combine_path(include_prefix,f));
+
+    if(!export) {
+      fix_smartlink(combine_path(vars->TMP_BUILDDIR,
+				 "modules/dynamic_module_makefile"),
+		    combine_path(include_prefix,"dynamic_module_makefile"),
+		    include_prefix);
+      make_aclocal(combine_path(vars->SRCDIR,"aclocal.m4"),
+		   combine_path(include_prefix,"aclocal.m4"), include_prefix);
+      fix_smartlink(combine_path(vars->TMP_BUILDDIR,"specs"),
+		    combine_path(include_prefix,"specs"), include_prefix);
+    }
 
     if(file_stat(vars->MANDIR_SRC))
     {
