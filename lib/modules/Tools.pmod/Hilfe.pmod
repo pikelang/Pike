@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.75 2002/05/09 23:53:43 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.76 2002/05/10 00:40:41 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -702,7 +702,7 @@ private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
 private constant notype = (< "(", "->", "[", ":", ";", "+", "++", "-", "--",
-			     "%", "/", "&", "&&", "||", ",",
+			     "%", "*", "/", "&", "&&", "||", ",",
 			     "<", ">", "==", "=", "!=", "?",
 			     "+=", "-=", "%=", "/=", "&=", "|=",
 			     "~=", "<<", ">>", "<<=", ">>=", "<=",
@@ -768,7 +768,7 @@ private class Expression {
     string t = `[](position);
     if( (< "int", "float", "string",
            "array", "mapping", "multiset",
-           "function", "object", "program" >)[ t ] ) {
+           "function", "object", "program", "void" >)[ t ] ) {
       // We are in a type declaration.
       position++;
 
@@ -840,10 +840,10 @@ private class Expression {
       return 1;
     if( `[](pos+1)!="(" )
       return 0;
-    pos = find_matching("(", pos);
+    pos = find_matching("(", pos+2);
     if( pos==-1 )
       return 0;
-    if( `[](pos)=="{" )
+    if( `[](pos+1)=="{" )
       return 1;
     return 0;
   }
@@ -1327,7 +1327,6 @@ class Evaluator {
     int top = !p;
     while( p<sizeof(expr)) {
       if( expr->is_block(p) ) {
-
 	string type = expr[p++];
 	multiset(string) new_scope = symbols+(<>);
 
@@ -1358,18 +1357,15 @@ class Evaluator {
 	    p++;
 	    break;
 
+	  // FIXME: Detect named lambdas.
+
 	  case "lambda":
 	  case "class": // Unnamed class
+	  default: // Function definition
 	    while(expr[p-1]!=")") {
 	      p = relocate(expr, symbols, new_scope, p, ",");
 	      p++;
 	    }
-	    break;
-
-	  // FIXME: Detect named lambdas.
-
-	  default:
-	    p = relocate(expr, symbols, new_scope, p);
 	    break;
 	  }
 
@@ -1464,8 +1460,13 @@ class Evaluator {
 
 	  pos++;
 	}
-	return pos;
       }
+      else {
+	// We are declaring a function. Take one step back so that the
+	// function name will be the first token to is_block.
+	pos--;
+      }
+      return pos;
     }
 
     int plevel;
