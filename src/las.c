@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.145 1999/12/19 14:57:36 grubba Exp $");
+RCSID("$Id: las.c,v 1.146 1999/12/21 20:41:11 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -968,7 +968,7 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
   }
 
   if (n->type) {
-    if (!pike_types_le(type, n->type)) {
+    if (!check_soft_cast(type, n->type)) {
       struct pike_string *t1 = describe_type(type);
       struct pike_string *t2 = describe_type(n->type);
       yywarning("Soft cast to %s isn't a restriction of %s.",
@@ -976,6 +976,10 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
       free_string(t2);
       free_string(t1);
     }
+    /* FIXME: check_soft_cast() is weaker than pike_types_le()
+     * The resulting type should probably be the and between the old
+     * and the new type.
+     */
   }
   res = mkemptynode();
   res->token = F_SOFT_CAST;
@@ -2148,7 +2152,7 @@ void fix_type_field(node *n)
   {
   case F_SOFT_CAST:
     if (CAR(n) && CAR(n)->type) {
-      if (!pike_types_le(old_type, CAR(n)->type)) {
+      if (!check_soft_cast(old_type, CAR(n)->type)) {
 	struct pike_string *t1 = describe_type(old_type);
 	struct pike_string *t2 = describe_type(CAR(n)->type);
 	yywarning("Soft cast to %s isn't a restriction of %s.",
@@ -2156,6 +2160,10 @@ void fix_type_field(node *n)
 	free_string(t2);
 	free_string(t1);
       }
+      /* FIXME: check_soft_cast() is weaker than pike_types_le()
+       * The resulting type should probably be the and between the old
+       * and the new type.
+       */
     }
     /* FALL_THROUGH */
   case F_CAST:
