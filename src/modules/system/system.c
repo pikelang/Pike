@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.101 2002/09/30 11:01:54 grubba Exp $
+ * $Id: system.c,v 1.102 2002/09/30 11:38:30 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.101 2002/09/30 11:01:54 grubba Exp $");
+RCSID("$Id: system.c,v 1.102 2002/09/30 11:38:30 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2112,7 +2112,7 @@ void pike_module_init(void)
   ADD_FUNCTION("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
   
 /* function(:void) */
-  ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), 0);
+  ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("closelog", f_closelog,tFunc(tNone,tVoid), 0);
 #endif /* HAVE_SYSLOG */
 
