@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.33 2002/12/29 14:42:04 nilsson Exp $
+// $Id: C.pmod,v 1.34 2002/12/30 14:26:30 nilsson Exp $
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
@@ -290,11 +290,7 @@ array(Token) tokenize(array(string) s, void|string file)
 
 array(Token) group(array(string|Token) tokens, void|mapping groupings)
 {
-#if constant(ADT.Stack)
   ADT.Stack stack=ADT.Stack();
-#else
-  Stack.stack stack=Stack.stack();
-#endif
   array(Token) ret=({});
   mapping actions=([]);
 
@@ -378,23 +374,10 @@ array hide_whitespaces(array tokens)
   return ret;
 }
 
-/* This module must work with Pike 7.0 */
-#if constant(Array.flatten)
-#define FLATTEN Array.flatten
-#else
-#define FLATTEN flatten
-array flatten(array a)
-{
-  array ret=({});
-  foreach(a, a) ret+=arrayp(a)?flatten(a):({a});
-  return ret;
-}
-#endif
-
 string simple_reconstitute(array(string|object(Token)|array) tokens)
 {
   string ret="";
-  foreach(FLATTEN(tokens), mixed tok)
+  foreach(Array.flatten(tokens), mixed tok)
     {
       if(objectp(tok))
 	tok=tok->text + tok->trailing_whitespaces;
@@ -409,7 +392,7 @@ string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
   int line=1;
   string file;
   string ret="";
-  foreach(FLATTEN(tokens), mixed tok)
+  foreach(Array.flatten(tokens), mixed tok)
     {
       if(objectp(tok))
       {
