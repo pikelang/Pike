@@ -2,13 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.49 2003/04/27 17:32:57 mast Exp $
+|| $Id: array.h,v 1.50 2003/04/27 20:10:57 mast Exp $
 */
 
 #ifndef ARRAY_H
 #define ARRAY_H
 
 #include "las.h"
+
+/* This debug tool writes out messages whenever arrays with bad type
+ * fields (i.e. BIT_MIXED) are encountered. */
+/* #define TRACE_UNFINISHED_TYPE_FIELDS */
 
 struct array
 {
@@ -212,8 +216,10 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
     ptrdiff_t diff__ = Pike_sp - base__;				\
     if (diff__ > (max_keep_on_stack)) {					\
       INT32 oldsize__ = base__[-1].u.array->size;			\
-      base__[-1].u.array =						\
-	resize_array(base__[-1].u.array, oldsize__ + diff__);		\
+      ACCEPT_UNFINISHED_TYPE_FIELDS {					\
+	base__[-1].u.array =						\
+	  resize_array(base__[-1].u.array, oldsize__ + diff__);		\
+      } END_ACCEPT_UNFINISHED_TYPE_FIELDS;				\
       /* Unless the user does something, the type field will contain */	\
       /* BIT_MIXED|BIT_UNFINISHED from the allocation above. */		\
       MEMCPY((char *) (ITEM(base__[-1].u.array) + oldsize__),		\
@@ -253,24 +259,50 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 									 \
   DO_IF_DEBUG(								 \
   if(index_<0 || index_>v_->size)					 \
-    Pike_fatal("Illegal index in low level array set routine.\n");		 \
+    Pike_fatal("Illegal index in low level array set routine.\n");	 \
     )									 \
 									 \
   check_destructed(s_);							 \
   tmp_=ITEM(v_)[index_];						 \
 									 \
-  v_->type_field = (v_->type_field & ~BIT_UNFINISHED) | (1 << s_->type); \
+  v_->type_field |= 1 << s_->type;					 \
   assign_svalue_no_free( ITEM(v_) + index_, s_);			 \
   free_svalue(&tmp_);							 \
 }while(0)
 
-#define array_fix_bad_type_field(A) do {				\
+#define array_fix_unfinished_type_field(A) do {				\
     struct array *a_ = (A);						\
-    if (a_->type_field == BIT_MIXED ||					\
-	a_->type_field == (BIT_MIXED|BIT_UNFINISHED)) {			\
+    if (a_->type_field & BIT_UNFINISHED) {				\
       DO_IF_DEBUG (array_check_type_field (a_));			\
       array_fix_type_field (a_);					\
     }									\
   } while (0)
+
+#ifdef TRACE_UNFINISHED_TYPE_FIELDS
+/* Note: These macros don't support thread switches. */
+
+extern PMOD_EXPORT int accept_unfinished_type_fields;
+PMOD_EXPORT void dont_accept_unfinished_type_fields (void *orig);
+
+#define ACCEPT_UNFINISHED_TYPE_FIELDS do {				\
+    ONERROR autf_uwp_;							\
+    int orig_autf_ = accept_unfinished_type_fields;			\
+    accept_unfinished_type_fields++;					\
+    SET_ONERROR (autf_uwp_, dont_accept_unfinished_type_fields,		\
+		 (void *) orig_autf_);					\
+    do
+
+#define END_ACCEPT_UNFINISHED_TYPE_FIELDS				\
+    while (0);								\
+    accept_unfinished_type_fields = orig_autf_;				\
+    UNSET_ONERROR (autf_uwp_);						\
+  } while (0)
+
+#else
+
+#define ACCEPT_UNFINISHED_TYPE_FIELDS do
+#define END_ACCEPT_UNFINISHED_TYPE_FIELDS while (0)
+
+#endif
 
 #endif /* ARRAY_H */
