@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.20 2001/02/12 18:01:08 grubba Exp $
+ * $Id: des.c,v 1.21 2001/02/12 22:25:43 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -218,16 +218,16 @@ void pike_des_init(void)
   ADD_STORAGE(struct pike_crypto_des);
 
   /* function(void:int) */
-  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
 
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt_block", f_crypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
   set_init_callback(init_pike_crypto_des);
   set_exit_callback(exit_pike_crypto_des);
 
