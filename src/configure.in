@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.564 2002/01/27 00:57:02 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.565 2002/02/13 20:27:17 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1108,15 +1108,6 @@ MY_AC_ARG_WITH(new-multisets,
 	       MY_DESCR([--with-new-multisets],
 			[enable new multiset implementation (EXPERIMENTAL).]),
 	       [AC_DEFINE(PIKE_NEW_MULTISETS)],[])
-
-# This makes configure default to --without-Perl
-# Remove this when the Perl module stops crashing and hanging. -Hubbe
-AC_ARG_WITH(perl, MY_DESCR([--with-perl],
-			   [enable the embedded Perl module (EXPERIMENTAL)]),
-	    [],
-[ac_configure_args="$ac_configure_args --without-perl"
- with_perl="no"
-])
 
 AC_ARG_WITH(pike-type, MY_DESCR([--without-pike-type],
 				[disable struct pike_type.]))
