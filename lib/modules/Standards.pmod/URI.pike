@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.17 2004/01/11 00:41:39 nilsson Exp $
+// $Id: URI.pike,v 1.18 2005/03/30 18:25:42 grubba Exp $
 
 #pragma strict_types
 
@@ -48,16 +48,26 @@ string raw_uri;
 #endif
 
 // Parse authority component (according to RFC 1738, § 3.1)
+// Updated to RFC 3986 $ 3.2.
 static void parse_authority()
 {
-  if(sscanf(authority, "%[^@]@%s", string auth, authority) == 2)
+  // authority   = [ userinfo "@" ] host [ ":" port ]
+  if(sscanf(authority, "%[^@]@%s", string userinfo, authority) == 2)
   {
-    sscanf(auth, "%[^:]:%s", user, password); // auth info present
+    // userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
+    sscanf(userinfo, "%[^:]:%s", user, password); // user info present
     DEBUG("parse_authority(): user=%O, password=%O", user, password);
   }
   if(scheme)
     port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
-  sscanf(authority, "%[^:]%*[:]%d", host, port);
+  // host        = IP-literal / IPv4address / reg-name
+  if (has_prefix(authority, "[")) {
+    // IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+    // IPvFuture  = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
+    sscanf(authority, "[%s]%*[:]%d", host, port);
+  } else {
+    sscanf(authority, "%[^:]%*[:]%d", host, port);
+  }
   DEBUG("parse_authority(): host=%O, port=%O", host, port);
 }
 
@@ -211,6 +221,15 @@ void reparse_uri(this_program|string|void base_uri)
     scheme = 0;
     if(!this_program::base_uri)
 	error("Standards.URI: got a relative URI (no scheme) lacking a base_uri!\n");
+  } else {
+    /* RFC 3986 §3.1
+     *
+     * An implementation should accept uppercase letters as equivalent
+     * to lowercase in scheme names (e.g., allow "HTTP" as well as
+     * "http") for the sake of robustness but should only produce
+     * lowercase scheme names for consistency.
+     */
+    scheme = lower_case(scheme);
   }
   DEBUG("Found scheme %O", scheme);
 
@@ -329,11 +348,9 @@ mixed `[]=(string property, mixed value)
     case "host":
     case "port":
       ::`[]=(property, value);
-      authority = (user ? user + (password ? ":" + password : "") + "@"
-		   : "") +
-		  (host || "") +
-		  (port != Protocols.Ports.tcp[scheme] ? ":" + port
-						       : "");
+      authority = (user ? user + (password ? ":" + password : "") + "@" : "") +
+	(host?(has_value(host, ":")?("["+host+"]"):host):"") +
+	(port != Protocols.Ports.tcp[scheme] ? ":" + port : "");
 	return value;
 
     case "authority":
@@ -345,6 +362,17 @@ mixed `[]=(string property, mixed value)
       reparse_uri([object(this_program)|string]value);
       return base_uri;
 
+    case "scheme":
+      /* RFC 3986 §3.1
+       *
+       * An implementation should accept uppercase letters as equivalent
+       * to lowercase in scheme names (e.g., allow "HTTP" as well as
+       * "http") for the sake of robustness but should only produce
+       * lowercase scheme names for consistency.
+       */
+      value = lower_case(value);
+
+      // FALL_THROUGH
     default:
       return ::`[]=(property, value); // Set and return the new value
   }
@@ -383,23 +411,19 @@ string _sprintf(int how, mapping|void args)
 
     case 'x': // A case-mangling version, especially suited for readable hash values
       if(_host) _host = lower_case(_host);
-      if(_scheme) _scheme = lower_case(_scheme);
     case 's':
     case 'O':
       getstring = (path||"") +
 	          (query ? "?" + query : "");
-      look = _scheme + ":" + (authority
-			      ? "//" + (user
-					? user + (password
-						  ? ":" + password
-						  : "") + "@"
-					: "") +
-			      (_host || "") +
-			      (port != Protocols.Ports.tcp[scheme]
-			       ? ":" + port
-			       : "")
-			      : ("")) +
-	getstring + (fragment ? "#" + fragment : "");
+      look =
+	(scheme?(scheme + ":"):"") +
+	(authority ?
+	 "//" +
+	 (user ? user + (password ? ":" + password : "") + "@" : "") +
+	 (_host?(has_value(_host, ":")?("["+_host+"]"):_host):"") +
+	 (port != Protocols.Ports.tcp[scheme] ? ":" + port : "") : ("")) +
+	getstring +
+	(fragment ? "#" + fragment : "");
       break;
   }
 
