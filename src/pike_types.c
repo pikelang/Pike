@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.130 2000/05/11 14:09:46 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.131 2000/06/24 00:48:13 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -205,32 +205,30 @@ one_more_type:
 
 
 unsigned char type_stack[PIKE_TYPE_STACK_SIZE];
-unsigned char *type_stackp=type_stack;
 unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
-unsigned char **pike_type_mark_stackp=pike_type_mark_stack;
 
 
 INT32 pop_stack_mark(void)
 { 
-  pike_type_mark_stackp--;
-  if(pike_type_mark_stackp<pike_type_mark_stack)
+  Pike_compiler->pike_type_mark_stackp--;
+  if(Pike_compiler->pike_type_mark_stackp<pike_type_mark_stack)
     fatal("Type mark stack underflow\n");
 
-  return type_stackp - *pike_type_mark_stackp;
+  return Pike_compiler->type_stackp - *Pike_compiler->pike_type_mark_stackp;
 }
 
 void pop_type_stack(void)
 { 
-  type_stackp--;
-  if(type_stackp<type_stack)
+  Pike_compiler->type_stackp--;
+  if(Pike_compiler->type_stackp<type_stack)
     fatal("Type stack underflow\n");
 }
 
 void type_stack_pop_to_mark(void)
 {
-  type_stackp-=pop_stack_mark();
+  Pike_compiler->type_stackp-=pop_stack_mark();
 #ifdef PIKE_DEBUG
-  if(type_stackp<type_stack)
+  if(Pike_compiler->type_stackp<type_stack)
     fatal("Type stack underflow\n");
 #endif
 }
@@ -239,7 +237,7 @@ void type_stack_reverse(void)
 {
   INT32 a;
   a=pop_stack_mark();
-  reverse((char *)(type_stackp-a),a,1);
+  reverse((char *)(Pike_compiler->type_stackp-a),a,1);
 }
 
 void push_type_int(INT32 i)
@@ -330,8 +328,8 @@ void push_finished_type_backwards(struct pike_string *type)
 {
   int e;
   check_type_string(type);
-  MEMCPY(type_stackp, type->str, type->len);
-  type_stackp+=type->len;
+  MEMCPY(Pike_compiler->type_stackp, type->str, type->len);
+  Pike_compiler->type_stackp+=type->len;
 }
 
 struct pike_string *debug_pop_unfinished_type(void)
@@ -340,8 +338,8 @@ struct pike_string *debug_pop_unfinished_type(void)
   struct pike_string *s;
   len=pop_stack_mark();
   s=begin_shared_string(len);
-  type_stackp-=len;
-  MEMCPY(s->str, type_stackp, len);
+  Pike_compiler->type_stackp-=len;
+  MEMCPY(s->str, Pike_compiler->type_stackp, len);
   reverse(s->str, len, 1);
   s=end_shared_string(s);
   check_type_string(s);
@@ -358,8 +356,7 @@ struct pike_string *debug_pop_type(void)
 
 struct pike_string *debug_compiler_pop_type(void)
 {
-  extern int num_parse_error;
-  if(num_parse_error)
+  if(Pike_compiler->num_parse_error)
   {
     /* This could be fixed to check if the type
      * is correct and then return it, I just didn't feel
@@ -734,8 +731,8 @@ struct pike_string *parse_type(char *s)
 {
   struct pike_string *ret;
 #ifdef PIKE_DEBUG
-  unsigned char *ts=type_stackp;
-  unsigned char **ptms=pike_type_mark_stackp;
+  unsigned char *ts=Pike_compiler->type_stackp;
+  unsigned char **ptms=Pike_compiler->pike_type_mark_stackp;
 #endif
   type_stack_mark();
   internal_parse_type(&s);
@@ -746,7 +743,7 @@ struct pike_string *parse_type(char *s)
   ret=pop_unfinished_type();
 
 #ifdef PIKE_DEBUG
-  if(ts!=type_stackp || ptms!=pike_type_mark_stackp)
+  if(ts!=Pike_compiler->type_stackp || ptms!=Pike_compiler->pike_type_mark_stackp)
     fatal("Type stack whacked in parse_type.\n");
 #endif
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.91 2000/06/10 11:52:44 mast Exp $
+ * $Id: program.h,v 1.92 2000/06/24 00:48:13 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -16,6 +16,14 @@
 #include "pike_macros.h"
 #include "svalue.h"
 #include "time_stuff.h"
+
+
+#define STRUCT
+#include "compilation.h"
+
+#define EXTERN
+#include "compilation.h"
+
 
 #ifdef PIKE_DEBUG
 #define PROGRAM_LINE_ARGS int line, char *file
@@ -296,13 +304,7 @@ struct program
 
 extern struct object *error_handler;
 
-extern struct object *fake_object;
-extern struct program *new_program;
 extern struct program *first_program;
-extern int compiler_pass;
-extern long local_class_counter;
-extern int catch_level;
-extern INT32 num_used_modules;
 extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 
@@ -518,12 +520,12 @@ void *parent_storage(int depth);
 
 #define START_NEW_PROGRAM_ID(ID) do { \
   start_new_program();  \
-  new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
+  Pike_compiler->new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
  }while(0)
 
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_pass(debug_end_program()))
-#define end_class(NAME, FLAGS) (debug_malloc_touch(new_program), debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS))
+#define end_class(NAME, FLAGS) (debug_malloc_touch(Pike_compiler->new_program), debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS))
 #else
 #define end_class(NAME,FLAGS) debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS)
 #define end_program debug_end_program
@@ -540,6 +542,12 @@ void *parent_storage(int depth);
   enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_program, (X))
 #define gc_cycle_check_program_weak(X) \
   enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_program_weak, (X))
+
+/* This can be used for backwards compatibility
+ *  (if added to program.h in Pike 0.6 and Pike 7.0
+ * -Hubbe
+ */
+#define Pike_new_program Pike_compiler->new_program
 
 
 #endif /* PROGRAM_H */

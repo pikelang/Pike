@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.38 2000/03/20 21:00:04 hubbe Exp $
+ * $Id: pike_types.h,v 1.39 2000/06/24 00:48:13 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -59,9 +59,7 @@ typedef struct node_s node;
 #define PIKE_TYPE_STACK_SIZE 100000
 
 extern unsigned char type_stack[PIKE_TYPE_STACK_SIZE];
-extern unsigned char *type_stackp;
 extern unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
-extern unsigned char **pike_type_mark_stackp;
 
 extern int max_correct_args;
 extern struct pike_string *string_type_string;
@@ -95,31 +93,31 @@ extern struct pike_string *weak_type_string;
 
 /* Hmm, these will cause fatals if they fail... */
 #define push_type(X) do {				\
-  if(type_stackp >= type_stack + sizeof(type_stack))	\
+  if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))	\
     yyerror("Type stack overflow.");			\
   else {						\
-    *type_stackp=(X);					\
-    type_stackp++;					\
+    *Pike_compiler->type_stackp=(X);					\
+    Pike_compiler->type_stackp++;					\
   }							\
 } while(0)
 
 #define unsafe_push_type(X) do {			\
-  *type_stackp=(X);					\
-  type_stackp++;					\
+  *Pike_compiler->type_stackp=(X);					\
+  Pike_compiler->type_stackp++;					\
 } while(0)
 
 #define type_stack_mark() do {				\
-  if(pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
+  if(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
     yyerror("Type mark stack overflow.");		\
   else {						\
-    *pike_type_mark_stackp=type_stackp;				\
-    pike_type_mark_stackp++;					\
+    *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
+    Pike_compiler->pike_type_mark_stackp++;					\
   }							\
 } while(0)
 
 #define unsafe_type_stack_mark() do {				\
-  *pike_type_mark_stackp=type_stackp;				\
-  pike_type_mark_stackp++;					\
+  *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
+  Pike_compiler->pike_type_mark_stackp++;					\
 } while(0)
 
 #define reset_type_stack() do {			\
@@ -233,7 +231,7 @@ struct pike_string *make_pike_type(char *t);
   unsafe_type_stack_mark();						\
 } while (0)
 #define DTYPE_END(TYPESTR) do {						\
-  if(type_stackp >= type_stack + sizeof(type_stack))			\
+  if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))			\
     fatal("Type stack overflow.");					\
   type_stack_reverse();							\
   (TYPESTR)=pop_unfinished_type();					\

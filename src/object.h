@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.47 2000/06/23 06:17:58 hubbe Exp $
+ * $Id: object.h,v 1.48 2000/06/24 00:48:13 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -53,6 +53,7 @@ extern struct program *magic_set_index_program;
 
 #include "block_alloc_h.h"
 /* Prototypes begin here */
+BLOCK_ALLOC(object, 511)
 struct object *low_clone(struct program *p);
 void call_c_initializers(struct object *o);
 void do_free_object(struct object *o);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.73 2000/05/11 14:09:45 grubba Exp $");
+RCSID("$Id: docode.c,v 1.74 2000/06/24 00:48:13 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -40,12 +40,12 @@ static struct pike_string *current_switch_type = NULL;
 
 void upd_int(int offset, INT32 tmp)
 {
-  MEMCPY(new_program->program+offset, (char *)&tmp,sizeof(tmp));
+  MEMCPY(Pike_compiler->new_program->program+offset, (char *)&tmp,sizeof(tmp));
 }
 
 INT32 read_int(int offset)
 {
-  return EXTRACT_INT(new_program->program+offset);
+  return EXTRACT_INT(Pike_compiler->new_program->program+offset);
 }
 
 int store_linenumbers=1;
@@ -196,7 +196,7 @@ static INT32 count_cases(node *n)
 
 static inline struct compiler_frame *find_local_frame(INT32 depth)
 {
-  struct compiler_frame *f=compiler_frame;
+  struct compiler_frame *f=Pike_compiler->compiler_frame;
   while(--depth>=0) f=f->previous;
   return f;
 }
@@ -204,24 +204,24 @@ static inline struct compiler_frame *find_local_frame(INT32 depth)
 int do_lfun_call(int id,node *args)
 {
 #if 1
-  if(id == compiler_frame->current_function_number)
+  if(id == Pike_compiler->compiler_frame->current_function_number)
   {
     int n=count_args(args);
-    if(n == compiler_frame->num_args)
+    if(n == Pike_compiler->compiler_frame->num_args)
     {
-      if(compiler_frame->is_inline)
+      if(Pike_compiler->compiler_frame->is_inline)
       {
 	emit0(F_MARK);
 	do_docode(args,0);
-	compiler_frame->recur_label=do_jump(F_RECUR,
-					    compiler_frame->recur_label);
+	Pike_compiler->compiler_frame->recur_label=do_jump(F_RECUR,
+					    Pike_compiler->compiler_frame->recur_label);
 	return 1;
       }else{
 	emit0(F_MARK);
 	do_docode(args,0);
 	emit1(F_COND_RECUR,id);
-	compiler_frame->recur_label=do_jump(F_POINTER,
-					    compiler_frame->recur_label);
+	Pike_compiler->compiler_frame->recur_label=do_jump(F_POINTER,
+					    Pike_compiler->compiler_frame->recur_label);
 	return 1;
       }
     }
@@ -494,7 +494,7 @@ static int do_docode2(node *n,int flags)
 	break;
 
       case F_IDENTIFIER:
-	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(new_program, CDR(n)->u.id.number)->identifier_flags))
+	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.id.number)->identifier_flags))
 	{
 	  yyerror("Cannot assign functions or constants.\n");
 	}else{
@@ -796,7 +796,7 @@ static int do_docode2(node *n,int flags)
 
 	  return 1;
 	}else{
-	  if(CAR(n)->u.sval.u.object == fake_object)
+	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
 	    return do_lfun_call(CAR(n)->u.sval.subtype,CDR(n));
        	}
       }
@@ -811,7 +811,7 @@ static int do_docode2(node *n,int flags)
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER &&
-	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program,
+	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(Pike_compiler->new_program,
 					       CAR(n)->u.id.number)->identifier_flags))
     {
       return do_lfun_call(CAR(n)->u.id.number,CDR(n));
@@ -920,7 +920,7 @@ static int do_docode2(node *n,int flags)
     f_aggregate(cases);
     order=get_switch_order(sp[-1].u.array);
 
-    if (!num_parse_error) {
+    if (!Pike_compiler->num_parse_error) {
       /* Check for cases inside a range */
       for(e=0; e<cases-1; e++)
       {
@@ -999,7 +999,7 @@ static int do_docode2(node *n,int flags)
 	}
       }
 
-      if (!num_parse_error) {
+      if (!Pike_compiler->num_parse_error) {
 	tmp1=eval_low(lower);
 	if(tmp1<1)
 	{
@@ -1033,7 +1033,7 @@ static int do_docode2(node *n,int flags)
 	    current_switch_jumptable[current_switch_case-1];
 	  current_switch_case++;
 
-	  if (!num_parse_error) {
+	  if (!Pike_compiler->num_parse_error) {
 	    tmp1=eval_low(CDR(n));
 	    if(tmp1<1)
 	    {
@@ -1215,7 +1215,7 @@ static int do_docode2(node *n,int flags)
     case T_FUNCTION:
       if(n->u.sval.subtype!=FUNCTION_BUILTIN)
       {
-	if(n->u.sval.u.object == fake_object)
+	if(n->u.sval.u.object == Pike_compiler->fake_object)
 	{
 	  emit1(F_LFUN,n->u.sval.subtype);
 	  return 1;
@@ -1226,10 +1226,10 @@ static int do_docode2(node *n,int flags)
 	  int x=0;
 	  struct object *o;
 	  
-	  for(o=fake_object->parent;o!=n->u.sval.u.object;o=o->parent)
+	  for(o=Pike_compiler->fake_object->parent;o!=n->u.sval.u.object;o=o->parent)
 	    x++;
 	  emit2(F_EXTERNAL, n->u.sval.subtype,x);
-	  new_program->flags |= PROGRAM_USES_PARENT;
+	  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
 	  return 1;
 	}
       }
@@ -1293,7 +1293,7 @@ static int do_docode2(node *n,int flags)
       return 1;
 
   case F_IDENTIFIER:
-    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, n->u.id.number)->identifier_flags))
+    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(Pike_compiler->new_program, n->u.id.number)->identifier_flags))
     {
       if(flags & WANT_LVALUE)
       {
@@ -1326,21 +1326,21 @@ void do_code_block(node *n)
   init_bytecode();
   label_no=1;
 
-  emit1(F_BYTE,compiler_frame->max_number_of_locals);
-  emit1(F_BYTE,compiler_frame->num_args);
+  emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
+  emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
   emit0(F_START_FUNCTION);
   emit1(F_LABEL,0);
-  if(new_program->identifier_references[compiler_frame->
+  if(Pike_compiler->new_program->identifier_references[Pike_compiler->compiler_frame->
 				       current_function_number].id_flags &
      ID_INLINE)
   {
-    compiler_frame->recur_label=0;
-    compiler_frame->is_inline=1;
+    Pike_compiler->compiler_frame->recur_label=0;
+    Pike_compiler->compiler_frame->is_inline=1;
   }
 
   DO_CODE_BLOCK(n);
 
-  if(compiler_frame->recur_label > 0)
+  if(Pike_compiler->compiler_frame->recur_label > 0)
   {
 #ifdef PIKE_DEBUG
     if(l_flag)
@@ -1349,14 +1349,14 @@ void do_code_block(node *n)
     }
 #endif
     /* generate code again, but this time it is inline */
-    compiler_frame->is_inline=1;
+    Pike_compiler->compiler_frame->is_inline=1;
 
     /* This is a no-op, but prevents optimizer to delete the bytes below */
     emit1(F_LABEL,-1);
-    emit1(F_BYTE,compiler_frame->max_number_of_locals);
-    emit1(F_BYTE,compiler_frame->num_args);
+    emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
+    emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
     emit0(F_START_FUNCTION);
-    emit1(F_LABEL,compiler_frame->recur_label);
+    emit1(F_LABEL,Pike_compiler->compiler_frame->recur_label);
     DO_CODE_BLOCK(n);
   }
   assemble();

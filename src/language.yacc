@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.190 2000/06/22 17:31:39 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.191 2000/06/24 00:48:13 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -402,10 +402,10 @@ program_ref: low_program_ref
       
 inheritance: modifiers TOK_INHERIT low_program_ref optional_rename_inherit ';'
   {
-    if (($1 & ID_EXTERN) && (compiler_pass == 1)) {
+    if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared inherit.");
     }
-    if(!(new_program->flags & PROGRAM_PASS_1_DONE))
+    if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
     {
       struct pike_string *s=sp[-1].u.string;
       if($4) s=$4->u.sval.u.string;
@@ -474,22 +474,22 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
     /* This can be made more lenient in the future */
 
     /* Ugly hack to make sure that $3 is optimized */
-    tmp=compiler_pass;
+    tmp=Pike_compiler->compiler_pass;
     $3=mknode(F_COMMA_EXPR,$3,0);
-    compiler_pass=tmp;
+    Pike_compiler->compiler_pass=tmp;
 
-    if ((current_modifiers & ID_EXTERN) && (compiler_pass == 1)) {
+    if ((current_modifiers & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared constant.");
     }
 
     if(!is_const($3))
     {
-      if(compiler_pass==2)
+      if(Pike_compiler->compiler_pass==2)
 	yyerror("Constant definition is not constant.");
       else
 	add_constant($1->u.sval.u.string, 0, current_modifiers & ~ID_EXTERN);
     } else {
-      if(!num_parse_error)
+      if(!Pike_compiler->num_parse_error)
       {
 	tmp=eval_low($3);
 	if(tmp < 1)
@@ -539,9 +539,9 @@ type_or_error: simple_type
 #ifdef PIKE_DEBUG
     check_type_string(check_node_hash($1)->u.sval.u.string);
 #endif /* PIKE_DEBUG */
-    if(compiler_frame->current_type)
-      free_string(compiler_frame->current_type); 
-    copy_shared_string(compiler_frame->current_type,$1->u.sval.u.string);
+    if(Pike_compiler->compiler_frame->current_type)
+      free_string(Pike_compiler->compiler_frame->current_type); 
+    copy_shared_string(Pike_compiler->compiler_frame->current_type,$1->u.sval.u.string);
     free_node($1);
   }
   ;
@@ -577,15 +577,15 @@ push_compiler_frame0: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
 
-    if(!compiler_frame->previous ||
-       !compiler_frame->previous->current_type)
+    if(!Pike_compiler->compiler_frame->previous ||
+       !Pike_compiler->compiler_frame->previous->current_type)
     {
       yyerror("Internal compiler fault.");
-      copy_shared_string(compiler_frame->current_type,
+      copy_shared_string(Pike_compiler->compiler_frame->current_type,
 			 mixed_type_string);
     }else{
-      copy_shared_string(compiler_frame->current_type,
-			 compiler_frame->previous->current_type);
+      copy_shared_string(Pike_compiler->compiler_frame->current_type,
+			 Pike_compiler->compiler_frame->previous->current_type);
     }
   }
   ;
@@ -595,22 +595,22 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   {
     int e;
     /* construct the function type */
-    push_finished_type(compiler_frame->current_type);
-    if ($3 && (compiler_pass == 2)) {
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    if ($3 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while(--$3>=0) push_type(T_ARRAY);
     
-    if(compiler_frame->current_return_type)
-      free_string(compiler_frame->current_return_type);
-    compiler_frame->current_return_type=compiler_pop_type();
+    if(Pike_compiler->compiler_frame->current_return_type)
+      free_string(Pike_compiler->compiler_frame->current_return_type);
+    Pike_compiler->compiler_frame->current_return_type=compiler_pop_type();
     
-    push_finished_type(compiler_frame->current_return_type);
+    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
     e=$7-1;
     if(varargs)
     {
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       varargs=0;
       pop_type_stack();
@@ -620,7 +620,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     push_type(T_MANY);
     for(; e>=0; e--)
     {
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
     }
     push_type(T_FUNCTION);
 
@@ -630,12 +630,12 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       free_string(s);
     }
 
-/*    if(compiler_pass==1) */
+/*    if(Pike_compiler->compiler_pass==1) */
     {
       /* FIXME:
        * set current_function_number for local functions as well
        */
-      compiler_frame->current_function_number=
+      Pike_compiler->compiler_frame->current_function_number=
 	define_function(check_node_hash($4)->u.sval.u.string,
 			check_node_hash($<n>$)->u.sval.u.string,
 			$1 & (~ID_EXTERN),
@@ -657,21 +657,21 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 #endif /* PIKE_DEBUG */
       lex.current_line = $8->line_number;
 
-      if (($1 & ID_EXTERN) && (compiler_pass == 1)) {
+      if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
 	yywarning("Extern declared function definition.");
       }
 
       for(e=0; e<$7; e++)
       {
-	if(!compiler_frame->variable[e].name ||
-	   !compiler_frame->variable[e].name->len)
+	if(!Pike_compiler->compiler_frame->variable[e].name ||
+	   !Pike_compiler->compiler_frame->variable[e].name->len)
 	{
 	  my_yyerror("Missing name for argument %d.",e);
 	} else {
 	  /* FIXME: Should probably use some other flag. */
 	  if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	      (compiler_pass == 2) &&
-	      (compiler_frame->variable[e].type != mixed_type_string)) {
+	      (Pike_compiler->compiler_pass == 2) &&
+	      (Pike_compiler->compiler_frame->variable[e].type != mixed_type_string)) {
 	    node *local_node;
 
 	    /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
@@ -686,7 +686,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 
 	    check_args =
 	      mknode(F_COMMA_EXPR, check_args,
-		     mksoftcastnode(compiler_frame->variable[e].type,
+		     mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
 				    local_node));
 	  }
 	}
@@ -710,8 +710,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
 
-      if(compiler_pass == 1 && f!=compiler_frame->current_function_number)
-	fatal("define_function screwed up! %d != %d\n",f,compiler_frame->current_function_number);
+      if(Pike_compiler->compiler_pass == 1 && f!=Pike_compiler->compiler_frame->current_function_number)
+	fatal("define_function screwed up! %d != %d\n",f,Pike_compiler->compiler_frame->current_function_number);
 #endif
     }
     pop_compiler_frame();
@@ -748,7 +748,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   {
     reset_type_stack();
     yyerrok;
-/*     if(num_parse_error>5) YYACCEPT; */
+/*     if(Pike_compiler->num_parse_error>5) YYACCEPT; */
   }
   | error '}'
   {
@@ -935,7 +935,7 @@ type6: type | identifier_type ;
   
 type: type '*'
   {
-    if (compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass == 2) {
        yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -945,7 +945,7 @@ type: type '*'
 
 type7: type7 '*'
   {
-    if (compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass == 2) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -1024,7 +1024,7 @@ identifier_type: idents
 	  break;
       
       default:
-	if (compiler_pass!=1)
+	if (Pike_compiler->compiler_pass!=1)
 	  yyerror("Illegal program identifier.");
 	pop_stack();
 	push_int(0);
@@ -1144,7 +1144,7 @@ opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
     {
       push_type_int(p->id);
     }else{
-      if (compiler_pass!=1) {
+      if (Pike_compiler->compiler_pass!=1) {
 	if ((sp[-2].type == T_STRING) && (sp[-2].u.string->len > 0) &&
 	    (sp[-2].u.string->len < 256)) {
 	  my_yyerror("Not a valid program specifier: '%s'",
@@ -1176,7 +1176,7 @@ opt_function_type: '('
 	/* function_type_list ends with a comma, or is empty.
 	 * FIXME: Should this be a syntax error or not?
 	 */
-	if (compiler_pass == 1) {
+	if (Pike_compiler->compiler_pass == 1) {
 	  yyerror("Missing type before ... .");
 	}
 	type_stack_reverse();
@@ -1258,8 +1258,8 @@ name_list: new_name
 new_name: optional_stars TOK_IDENTIFIER
   {
     struct pike_string *type;
-    push_finished_type(compiler_frame->current_type);
-    if ($1 && (compiler_pass == 2)) {
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1272,13 +1272,13 @@ new_name: optional_stars TOK_IDENTIFIER
   | optional_stars TOK_IDENTIFIER '='
   {
     struct pike_string *type;
-    push_finished_type(compiler_frame->current_type);
-    if ($1 && (compiler_pass == 2)) {
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
     type=compiler_pop_type();
-    if ((current_modifiers & ID_EXTERN) && (compiler_pass == 1)) {
+    if ((current_modifiers & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared variable has initializer.");
     }
     $<number>$=define_variable($2->u.sval.u.string, type,
@@ -1287,7 +1287,7 @@ new_name: optional_stars TOK_IDENTIFIER
   }
   expr0
   {
-    init_node=mknode(F_COMMA_EXPR,init_node,
+    Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
 		     mkcastnode(void_type_string,
 				mknode(F_ASSIGN,$5,
 				       mkidentifiernode($<number>4))));
@@ -1312,7 +1312,7 @@ new_name: optional_stars TOK_IDENTIFIER
 new_local_name: optional_stars TOK_IDENTIFIER
   {    
     push_finished_type($<n>0->u.sval.u.string);
-    if ($1 && (compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1324,7 +1324,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
   | optional_stars TOK_IDENTIFIER '=' expr0 
   {
     push_finished_type($<n>0->u.sval.u.string);
-    if ($1 && (compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1372,12 +1372,12 @@ new_local_name2: TOK_IDENTIFIER
 
 block:'{'
   {
-    $<number>1=num_used_modules;
-    $<number>$=compiler_frame->current_number_of_locals;
+    $<number>1=Pike_compiler->num_used_modules;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   } 
   statements end_block
   {
-    unuse_modules(num_used_modules - $<number>1);
+    unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>2);
     $$=$3;
   }
@@ -1463,10 +1463,10 @@ push_compiler_frame1: /* empty */
 
 lambda: TOK_LAMBDA push_compiler_frame1
   {
-    debug_malloc_touch(compiler_frame->current_return_type);
-    if(compiler_frame->current_return_type)
-      free_string(compiler_frame->current_return_type);
-    copy_shared_string(compiler_frame->current_return_type,any_type_string);
+    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
+    if(Pike_compiler->compiler_frame->current_return_type)
+      free_string(Pike_compiler->compiler_frame->current_return_type);
+    copy_shared_string(Pike_compiler->compiler_frame->current_return_type,any_type_string);
   }
   func_args failsafe_block
   {
@@ -1488,7 +1488,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
     e=$4-1;
     if(varargs)
     {
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       varargs=0;
       pop_type_stack();
@@ -1497,20 +1497,20 @@ lambda: TOK_LAMBDA push_compiler_frame1
     }
     push_type(T_MANY);
     for(; e>=0; e--)
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
     
     push_type(T_FUNCTION);
     
     type=compiler_pop_type();
 
     sprintf(buf,"__lambda_%ld_%ld",
-	    (long)new_program->id,
-	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+	    (long)Pike_compiler->new_program->id,
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
     name=make_shared_string(buf);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
     
     f=dooptcode(name,
@@ -1518,7 +1518,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
-    if(compiler_frame->lexical_scope & SCOPE_SCOPED) {
+    if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
       $$ = mktrampolinenode(f);
     } else {
       $$ = mkidentifiernode(f);
@@ -1541,20 +1541,20 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     node *n;
     struct identifier *i=0;
 
-    debug_malloc_touch(compiler_frame->current_return_type);
-    if(compiler_frame->current_return_type)
-      free_string(compiler_frame->current_return_type);
-    copy_shared_string(compiler_frame->current_return_type,
+    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
+    if(Pike_compiler->compiler_frame->current_return_type)
+      free_string(Pike_compiler->compiler_frame->current_return_type);
+    copy_shared_string(Pike_compiler->compiler_frame->current_return_type,
 		       $<n>0->u.sval.u.string);
 
 
     /***/
-    push_finished_type(compiler_frame->current_return_type);
+    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
     e=$3-1;
     if(varargs)
     {
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       varargs=0;
       pop_type_stack();
@@ -1563,7 +1563,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     }
     push_type(T_MANY);
     for(; e>=0; e--)
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
     
     push_type(T_FUNCTION);
     
@@ -1571,12 +1571,12 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     /***/
 
     sprintf(buf,"__lambda_%ld_%ld",
-	    (long)new_program->id,
-	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+	    (long)Pike_compiler->new_program->id,
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
 
     name=make_shared_string(buf);
@@ -1588,13 +1588,13 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 		       0);
     n=0;
 #if 0
-    if(compiler_pass > 1 &&
-       (i=ID_FROM_INT(new_program, id)))
+    if(Pike_compiler->compiler_pass > 1 &&
+       (i=ID_FROM_INT(Pike_compiler->new_program, id)))
       if(!(i->identifier_flags & IDENTIFIER_SCOPED))
 	n = mkidentifiernode(id);
 #endif
 
-    low_add_local_name(compiler_frame->previous,
+    low_add_local_name(Pike_compiler->compiler_frame->previous,
 		       $1->u.sval.u.string, type, n);
 
     $<number>$=id;
@@ -1603,7 +1603,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   failsafe_block
   {
     int localid;
-    struct identifier *i=ID_FROM_INT(new_program, $<number>4);
+    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
@@ -1621,12 +1621,12 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
      *           this has to be fixed.
      */
 
-    localid=compiler_frame->current_number_of_locals-1;
-    if(compiler_frame->variable[localid].def)
+    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
+    if(Pike_compiler->compiler_frame->variable[localid].def)
     {
-      $$=copy_node(compiler_frame->variable[localid].def);
+      $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
     }else{
-      if(compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+      if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
       {
 	$$ = mknode(F_ASSIGN, mktrampolinenode($<number>3),
 		    mklocalnode(localid,0));
@@ -1652,25 +1652,25 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     struct identifier *i=0;
 
     /***/
-    debug_malloc_touch(compiler_frame->current_return_type);
+    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     
     push_finished_type($<n>0->u.sval.u.string);
-    if ($1 && (compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
 
-    if(compiler_frame->current_return_type)
-      free_string(compiler_frame->current_return_type);
-    compiler_frame->current_return_type=compiler_pop_type();
+    if(Pike_compiler->compiler_frame->current_return_type)
+      free_string(Pike_compiler->compiler_frame->current_return_type);
+    Pike_compiler->compiler_frame->current_return_type=compiler_pop_type();
 
     /***/
-    push_finished_type(compiler_frame->current_return_type);
+    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
     e=$4-1;
     if(varargs)
     {
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       varargs=0;
       pop_type_stack();
@@ -1679,7 +1679,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     }
     push_type(T_MANY);
     for(; e>=0; e--)
-      push_finished_type(compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
     
     push_type(T_FUNCTION);
     
@@ -1688,12 +1688,12 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
 
     sprintf(buf,"__lambda_%ld_%ld",
-	    (long)new_program->id,
-	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+	    (long)Pike_compiler->new_program->id,
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
 
     name=make_shared_string(buf);
@@ -1706,13 +1706,13 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 		       0);
     n=0;
 #if 0
-    if(compiler_pass > 1 &&
-       (i=ID_FROM_INT(new_program, id)))
+    if(Pike_compiler->compiler_pass > 1 &&
+       (i=ID_FROM_INT(Pike_compiler->new_program, id)))
       if(!(i->identifier_flags & IDENTIFIER_SCOPED))
 	n = mkidentifiernode(id);
 #endif
 
-    low_add_local_name(compiler_frame->previous,
+    low_add_local_name(Pike_compiler->compiler_frame->previous,
 		       $2->u.sval.u.string, type, n);
     $<number>$=id;
     free_string(name);
@@ -1720,7 +1720,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
   failsafe_block
   {
     int localid;
-    struct identifier *i=ID_FROM_INT(new_program, $<number>5);
+    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>5);
 
     debug_malloc_touch($6);
     $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
@@ -1740,12 +1740,12 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
      *           this has to be fixed.
      */
 
-    localid=compiler_frame->current_number_of_locals-1;
-    if(compiler_frame->variable[localid].def)
+    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
+    if(Pike_compiler->compiler_frame->variable[localid].def)
     {
-      $$=copy_node(compiler_frame->variable[localid].def);
+      $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
     }else{
-      if(compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+      if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
       {
         $$ = mknode(F_ASSIGN, mktrampolinenode($<number>5),
 	  mklocalnode(localid,0));
@@ -1775,20 +1775,20 @@ failsafe_program: '{' program end_block
 class: modifiers TOK_CLASS optional_identifier
   {
     extern int num_parse_error;
-    int num_errors=num_parse_error;
+    int num_errors=Pike_compiler->num_parse_error;
     if(!$3)
     {
       struct pike_string *s;
       char buffer[42];
-      sprintf(buffer,"__class_%ld_%ld",(long)new_program->id,
-	      local_class_counter++);
+      sprintf(buffer,"__class_%ld_%ld",(long)Pike_compiler->new_program->id,
+	      Pike_compiler->local_class_counter++);
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
       $1|=ID_STATIC | ID_PRIVATE | ID_INLINE;
     }
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
-    if(compiler_pass==1)
+    if(Pike_compiler->compiler_pass==1)
     {
       if ($1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
@@ -1799,27 +1799,27 @@ class: modifiers TOK_CLASS optional_identifier
       if(lex.current_file)
       {
 	store_linenumber(lex.current_line, lex.current_file);
-	debug_malloc_name(new_program, lex.current_file->str,
+	debug_malloc_name(Pike_compiler->new_program, lex.current_file->str,
 			  lex.current_line);
       }
     }else{
       int i;
       struct program *p;
       struct identifier *id;
-      int tmp=compiler_pass;
+      int tmp=Pike_compiler->compiler_pass;
       i=isidentifier($3->u.sval.u.string);
       if(i<0)
       {
-	low_start_new_program(new_program,0,
+	low_start_new_program(Pike_compiler->new_program,0,
 			      $1,
 			      &$<number>$);
 	yyerror("Pass 2: program not defined!");
       }else{
-	id=ID_FROM_INT(new_program, i);
+	id=ID_FROM_INT(Pike_compiler->new_program, i);
 	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
 	{
 	  struct svalue *s;
-	  s=&PROG_FROM_INT(new_program,i)->constants[id->func.offset].sval;
+	  s=&PROG_FROM_INT(Pike_compiler->new_program,i)->constants[id->func.offset].sval;
 	  if(s->type==T_PROGRAM)
 	  {
 	    low_start_new_program(s->u.program,
@@ -1828,25 +1828,25 @@ class: modifiers TOK_CLASS optional_identifier
 				  &$<number>$);
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
-	    low_start_new_program(new_program, 0,
+	    low_start_new_program(Pike_compiler->new_program, 0,
 				  $1,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
-	  low_start_new_program(new_program, 0,
+	  low_start_new_program(Pike_compiler->new_program, 0,
 				$1,
 				&$<number>$);
 	}
       }
-      compiler_pass=tmp;
+      Pike_compiler->compiler_pass=tmp;
     }
-    num_parse_error=num_errors; /* Kluge to prevent gazillion error messages */
+    Pike_compiler->num_parse_error=num_errors; /* Kluge to prevent gazillion error messages */
   }
   failsafe_program
   {
     struct program *p;
-    if(compiler_pass == 1)
+    if(Pike_compiler->compiler_pass == 1)
       p=end_first_pass(0);
     else
       p=end_first_pass(1);
@@ -1868,7 +1868,7 @@ class: modifiers TOK_CLASS optional_identifier
 
 cond: TOK_IF
   {
-    $<number>$=compiler_frame->current_number_of_locals;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
   '(' safe_comma_expr end_cond statement optional_else_part
   {
@@ -1904,7 +1904,7 @@ safe_expr0: expr0
 
 foreach: TOK_FOREACH
   {
-    $<number>$=compiler_frame->current_number_of_locals;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
   '(' expr0 ',' safe_lvalue end_cond statement
   {
@@ -1949,7 +1949,7 @@ expected_semicolon: ';'
 
 for: TOK_FOR
   {
-    $<number>$=compiler_frame->current_number_of_locals;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
   '(' unused expected_semicolon for_expr expected_semicolon unused end_cond
   statement
@@ -1966,7 +1966,7 @@ for: TOK_FOR
 
 while:  TOK_WHILE
   {
-    $<number>$=compiler_frame->current_number_of_locals;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
   '(' safe_comma_expr end_cond statement
   {
@@ -1984,7 +1984,7 @@ for_expr: /* EMPTY */ { $$=mkintnode(1); }
 
 switch:	TOK_SWITCH
   {
-    $<number>$=compiler_frame->current_number_of_locals;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
   '(' safe_comma_expr end_cond statement
   {
@@ -2026,7 +2026,7 @@ expected_colon: ':'
 
 return: TOK_RETURN
   {
-    if(!match_types(compiler_frame->current_return_type,
+    if(!match_types(Pike_compiler->compiler_frame->current_return_type,
 		    void_type_string))
     {
       yyerror("Must return a value for a non-void function.");
@@ -2275,20 +2275,20 @@ idents2: idents
     copy_shared_string(last_identifier, $3->u.sval.u.string);
 
     if (((i = find_shared_string_identifier(last_identifier,
-					    new_program)) >= 0) ||
+					    Pike_compiler->new_program)) >= 0) ||
 	((i = really_low_find_shared_string_identifier(last_identifier,
-						       new_program,
+						       Pike_compiler->new_program,
 						       SEE_STATIC|
 						       SEE_PRIVATE)) >= 0)) {
-      if (!(new_program->identifier_references[i].id_flags & ID_HIDDEN)) {
+      if (!(Pike_compiler->new_program->identifier_references[i].id_flags & ID_HIDDEN)) {
 	/* We need to generate a new reference. */
 	int d;
-	struct reference funp = new_program->identifier_references[i];
+	struct reference funp = Pike_compiler->new_program->identifier_references[i];
 	funp.id_flags |= ID_HIDDEN;
 	i = -1;
-	for(d = 0; d < (int)new_program->num_identifier_references; d++) {
+	for(d = 0; d < (int)Pike_compiler->new_program->num_identifier_references; d++) {
 	  struct reference *fp;
-	  fp = new_program->identifier_references + d;
+	  fp = Pike_compiler->new_program->identifier_references + d;
 
 	  if(!MEMCMP((char *)fp,(char *)&funp,sizeof funp)) {
 	    i = d;
@@ -2297,13 +2297,13 @@ idents2: idents
 	}
 	if (i < 0) {
 	  add_to_identifier_references(funp);
-	  i = new_program->num_identifier_references - 1;
+	  i = Pike_compiler->new_program->num_identifier_references - 1;
 	}
       }
       $$ = mkidentifiernode(i);
     } else {
-      if (!num_parse_error) {
-	if (compiler_pass == 2) {
+      if (!Pike_compiler->num_parse_error) {
+	if (Pike_compiler->compiler_pass == 2) {
 	  my_yyerror("'%s' not defined in local scope.", last_identifier->str);
 	  $$ = 0;
 	} else {
@@ -2358,7 +2358,7 @@ idents: low_idents
 inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
   {
     /* FIXME: The following doesn't work...
-    struct program *p = find_named_inherit(new_program, $1->u.sval.u.string);
+    struct program *p = find_named_inherit(Pike_compiler->new_program, $1->u.sval.u.string);
 
     if (!p) {
       my_yyerror("No such inherit \"%s\".", $1->u.sval.u.string->str);
@@ -2411,9 +2411,9 @@ low_idents: TOK_IDENTIFIER
     }else if((i=isidentifier(last_identifier))>=0){
       $$=mkidentifiernode(i);
     }else if(!($$=find_module_identifier(last_identifier,1))){
-      if(!num_parse_error)
+      if(!Pike_compiler->num_parse_error)
       {
-	if(compiler_pass==2)
+	if(Pike_compiler->compiler_pass==2)
 	{
 	  my_yyerror("'%s' undefined.", last_identifier->str);
 	  $$=0;
@@ -2477,9 +2477,9 @@ low_idents: TOK_IDENTIFIER
     copy_shared_string(last_identifier, $2->u.sval.u.string);
 
     $$=0;
-    for(e=1;e<(int)new_program->num_inherits;e++)
+    for(e=1;e<(int)Pike_compiler->new_program->num_inherits;e++)
     {
-      if(new_program->inherits[e].inherit_level!=1) continue;
+      if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
       i=low_reference_inherited_identifier(0,e,$2->u.sval.u.string,SEE_STATIC);
       if(i==-1) continue;
       if($$)
@@ -2586,12 +2586,12 @@ catch_arg: '(' comma_expr ')'  { $$=$2; }
 
 catch: TOK_CATCH
      {
-       catch_level++;
+       Pike_compiler->catch_level++;
      }
      catch_arg
      {
        $$=mknode(F_CATCH,$3,NULL);
-       catch_level--;
+       Pike_compiler->catch_level--;
      }
      ;
 
@@ -2804,8 +2804,8 @@ void yyerror(char *str)
     fatal("Stack error (underflow)\n");
 #endif
 
-  if (num_parse_error > 10) return;
-  num_parse_error++;
+  if (Pike_compiler->num_parse_error > 10) return;
+  Pike_compiler->num_parse_error++;
   cumulative_parse_error++;
 
   if ((error_handler && error_handler->prog) || get_master())
@@ -2860,7 +2860,7 @@ int low_add_local_name(struct compiler_frame *frame,
     check_type_string(type);
 #endif /* PIKE_DEBUG */
     if (pike_types_le(type, void_type_string)) {
-      if (compiler_pass != 1) {
+      if (Pike_compiler->compiler_pass != 1) {
 	yywarning("Declaring local variable with type void "
 		  "(converted to type zero).");
       }
@@ -2890,7 +2890,7 @@ int add_local_name(struct pike_string *str,
 		   struct pike_string *type,
 		   node *def)
 {
-  return low_add_local_name(compiler_frame,
+  return low_add_local_name(Pike_compiler->compiler_frame,
 			    str,
 			    type,
 			    def);
@@ -2900,8 +2900,8 @@ int add_local_name(struct pike_string *str,
 int islocal(struct pike_string *str)
 {
   int e;
-  for(e=compiler_frame->current_number_of_locals-1;e>=0;e--)
-    if(compiler_frame->variable[e].name==str)
+  for(e=Pike_compiler->compiler_frame->current_number_of_locals-1;e>=0;e--)
+    if(Pike_compiler->compiler_frame->variable[e].name==str)
       return e;
   return -1;
 }
@@ -2910,7 +2910,7 @@ int islocal(struct pike_string *str)
 static node *lexical_islocal(struct pike_string *str)
 {
   int e,depth=0;
-  struct compiler_frame *f=compiler_frame;
+  struct compiler_frame *f=Pike_compiler->compiler_frame;
   
   while(1)
   {
@@ -2918,7 +2918,7 @@ static node *lexical_islocal(struct pike_string *str)
     {
       if(f->variable[e].name==str)
       {
-	struct compiler_frame *q=compiler_frame;
+	struct compiler_frame *q=Pike_compiler->compiler_frame;
 	if(f->variable[e].def)
 	  return copy_node(f->variable[e].def);
 	while(q!=f) 

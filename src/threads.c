@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.129 2000/06/10 11:52:44 mast Exp $");
+RCSID("$Id: threads.c,v 1.130 2000/06/24 00:48:13 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1231,7 +1231,7 @@ void th_init(void)
 	       mutex_key_offset + OFFSETOF(key_storage, owner), T_OBJECT);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
-  mutex_key=new_program;
+  mutex_key=Pike_compiler->new_program;
   add_ref(mutex_key);
   end_class("mutex_key", 0);
   mutex_key->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
@@ -1270,7 +1270,7 @@ void th_init(void)
     START_NEW_PROGRAM_ID(THREAD_DISABLE_THREADS);
     set_init_callback(init_threads_disable);
     set_exit_callback(exit_threads_disable);
-    tmp = new_program;
+    tmp = Pike_compiler->new_program;
     add_ref(tmp);
     end_class("threads_disabled", 0);
     tmp->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
@@ -1284,7 +1284,7 @@ void th_init(void)
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   /* function(mixed:mixed) */
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tMix,tMix),0);
-  thread_local_prog=new_program;
+  thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
   if(!thread_local_prog)
@@ -1308,7 +1308,7 @@ void th_init(void)
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);
-  thread_id_prog=new_program;
+  thread_id_prog=Pike_compiler->new_program;
   thread_id_prog->flags |= PROGRAM_NO_EXPLICIT_DESTRUCT;
   add_ref(thread_id_prog);
   end_class("thread_id", 0);

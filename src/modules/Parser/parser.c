@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.6 2000/05/24 01:21:38 hubbe Exp $");
+RCSID("$Id: parser.c,v 1.7 2000/06/24 00:48:31 hubbe Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -165,7 +165,7 @@ void pike_module_init(void)
    for (i=0; i<(int)NELEM(initclass); i++)
    {
       start_new_program();
-      if (initclass[i].id) new_program->id = initclass[i].id;
+      if (initclass[i].id) Pike_compiler->new_program->id = initclass[i].id;
 
 #ifdef DEBUG
       fprintf(stderr,"Parser: initiating class \"Parser.%s\"...\n",

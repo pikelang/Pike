@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.126 2000/06/23 06:17:58 hubbe Exp $");
+RCSID("$Id: object.c,v 1.127 2000/06/24 00:48:13 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1642,7 +1642,7 @@ void check_object_context(struct object *o,
 			  char *current_storage)
 {
   int q;
-  if(o == fake_object) return;
+  if(o == Pike_compiler->fake_object) return;
   if( ! o->prog ) return; /* Variables are already freed */
 
   for(q=0;q<(int)context_prog->num_variable_index;q++)
@@ -1674,7 +1674,7 @@ void check_object(struct object *o)
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
 
-  if(o == fake_object) return;
+  if(o == Pike_compiler->fake_object) return;
 
   if(o->next && o->next->prev !=o)
   {

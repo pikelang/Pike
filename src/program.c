@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.242 2000/06/23 06:17:58 hubbe Exp $");
+RCSID("$Id: program.c,v 1.243 2000/06/24 00:48:13 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -56,12 +56,8 @@ RCSID("$Id: program.c,v 1.242 2000/06/23 06:17:58 hubbe Exp $");
 #define FIND_FUNCTION_HASHSIZE 4711
 
 
-#define STRUCT
-#include "compilation.h"
-
 #define DECLARE
 #include "compilation.h"
-
 
 struct pike_string *this_program_string=0;
 
@@ -161,26 +157,14 @@ static char *raw_lfun_types[] = {
 struct program *first_program = 0;
 static int current_program_id=0x10000;
 
-struct program *new_program=0;
-struct object *fake_object=0;
-struct program *malloc_size_program=0;
 struct object *error_handler=0;
 
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
-int compiler_pass;
 int compilation_depth;
-long local_class_counter;
-int catch_level;
-struct compiler_frame *compiler_frame=0;
-static INT32 last_line = 0;
-static INT32 last_pc = 0;
-static struct pike_string *last_file = 0;
 dynamic_buffer used_modules;
-INT32 num_used_modules;
 static struct mapping *resolve_cache=0;
-static struct mapping *module_index_cache=0;
 
 int get_small_number(char **q);
 
@@ -188,9 +172,9 @@ int get_small_number(char **q);
 
 #ifdef PIKE_DEBUG
 #define CHECK_FOO(NUMTYPE,TYPE,NAME)				\
-  if(malloc_size_program-> PIKE_CONCAT(num_,NAME) < new_program-> PIKE_CONCAT(num_,NAME))	\
-    fatal("new_program->num_" #NAME " is out of order\n");	\
-  if(new_program->flags & PROGRAM_OPTIMIZED)			\
+  if(Pike_compiler->malloc_size_program-> PIKE_CONCAT(num_,NAME) < Pike_compiler->new_program-> PIKE_CONCAT(num_,NAME))	\
+    fatal("Pike_compiler->new_program->num_" #NAME " is out of order\n");	\
+  if(Pike_compiler->new_program->flags & PROGRAM_OPTIMIZED)			\
     fatal("Tried to reallocate fixed program.\n")
 
 #else
@@ -198,40 +182,28 @@ int get_small_number(char **q);
 #endif
 
 #define FOO(NUMTYPE,TYPE,NAME)						\
+void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
+                                    TYPE ARG) {				\
+  if(state->malloc_size_program->PIKE_CONCAT(num_,NAME) ==		\
+     state->new_program->PIKE_CONCAT(num_,NAME)) {			\
+    void *tmp;								\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;		\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)++;		\
+    tmp=realloc((char *)state->new_program->NAME,			\
+                sizeof(TYPE) *						\
+		state->malloc_size_program->				\
+                    PIKE_CONCAT(num_,NAME));				\
+    if(!tmp) fatal("Out of memory.\n");					\
+    state->new_program->NAME=tmp;					\
+  }									\
+  state->new_program->							\
+    NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
+}									\
 void PIKE_CONCAT(add_to_,NAME) (TYPE ARG) {				\
   CHECK_FOO(NUMTYPE,TYPE,NAME);						\
-  if(malloc_size_program->PIKE_CONCAT(num_,NAME) ==			\
-     new_program->PIKE_CONCAT(num_,NAME)) {				\
-    void *tmp;								\
-    malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;			\
-    malloc_size_program->PIKE_CONCAT(num_,NAME)++;			\
-    tmp=realloc((char *)new_program->NAME,				\
-                sizeof(TYPE) *						\
-		malloc_size_program->PIKE_CONCAT(num_,NAME));		\
-    if(!tmp) fatal("Out of memory.\n");					\
-    new_program->NAME=tmp;						\
-  }									\
-  new_program->NAME[new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);	\
+  PIKE_CONCAT(low_add_to_,NAME) ( Pike_compiler, ARG );			\
 }
 
-#include "program_areas.h"
-
-#define FOO(NUMTYPE,TYPE,NAME)							\
-void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,		\
-                                    TYPE ARG) {					\
-  if(state->malloc_size_program->PIKE_CONCAT(num_,NAME) ==			\
-     state->new_program->PIKE_CONCAT(num_,NAME)) {				\
-    void *tmp;									\
-    state->malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;			\
-    state->malloc_size_program->PIKE_CONCAT(num_,NAME)++;			\
-    tmp=realloc((char *)state->new_program->NAME,				\
-                sizeof(TYPE) *							\
-		state->malloc_size_program->PIKE_CONCAT(num_,NAME));		\
-    if(!tmp) fatal("Out of memory.\n");						\
-    state->new_program->NAME=tmp;						\
-  }										\
-  state->new_program->NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);	\
-}
 
 #include "program_areas.h"
 
@@ -252,14 +224,14 @@ void use_module(struct svalue *s)
 {
   if( (1<<s->type) & (BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM))
   {
-    num_used_modules++;
+    Pike_compiler->num_used_modules++;
     assign_svalue_no_free((struct svalue *)
 			  low_make_buf_space(sizeof(struct svalue),
 					     &used_modules), s);
-    if(module_index_cache)
+    if(Pike_compiler->module_index_cache)
     {
-      free_mapping(module_index_cache);
-      module_index_cache=0;
+      free_mapping(Pike_compiler->module_index_cache);
+      Pike_compiler->module_index_cache=0;
     }
   }else{
     yyerror("Module is neither mapping nor object");
@@ -273,15 +245,15 @@ void unuse_modules(INT32 howmany)
   if(howmany *sizeof(struct svalue) > used_modules.s.len)
     fatal("Unusing too many modules.\n");
 #endif
-  num_used_modules-=howmany;
+  Pike_compiler->num_used_modules-=howmany;
   low_make_buf_space(-sizeof(struct svalue)*howmany, &used_modules);
   free_svalues((struct svalue *)low_make_buf_space(0, &used_modules),
 	       howmany,
 	       BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM);
-  if(module_index_cache)
+  if(Pike_compiler->module_index_cache)
   {
-    free_mapping(module_index_cache);
-    module_index_cache=0;
+    free_mapping(Pike_compiler->module_index_cache);
+    Pike_compiler->module_index_cache=0;
   }
 }
 
@@ -360,13 +332,13 @@ struct node_s *find_module_identifier(struct pike_string *ident,
     (used_modules.s.str + used_modules.s.len);
 
   if((ret=index_modules(ident,
-			&module_index_cache,
-			num_used_modules,
+			&Pike_compiler->module_index_cache,
+			Pike_compiler->num_used_modules,
 			modules))) return ret;
-  modules-=num_used_modules;
+  modules-=Pike_compiler->num_used_modules;
 
   {
-    struct program_state *p=previous_program_state;
+    struct program_state *p=Pike_compiler->previous;
     int n;
     for(n=0;n<compilation_depth;n++,p=p->previous)
     {
@@ -383,7 +355,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	  return mkexternalnode(n, i, id);
 	}
       }
-
+      
       if((ret=index_modules(ident,
 			    &p->module_index_cache,
 			    p->num_used_modules,
@@ -400,7 +372,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
   if (ident == this_program_string) {
     struct svalue s;
     s.type=T_PROGRAM;
-    s.u.program=new_program;
+    s.u.program=Pike_compiler->new_program;
     return mkconstantsvaluenode(&s);
   }
 
@@ -416,7 +388,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
     }
   }
 
-  if(!num_parse_error && get_master())
+  if(!Pike_compiler->num_parse_error && get_master())
   {
     DECLARE_CYCLIC();
     node *ret=0;
@@ -440,7 +412,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 
       if(throw_value.type == T_STRING)
       {
-	if(compiler_pass==2)
+	if(Pike_compiler->compiler_pass==2)
 	  my_yyerror("%s",throw_value.u.string->str);
       }
       else
@@ -463,10 +435,11 @@ struct node_s *find_module_identifier(struct pike_string *ident,
   return 0;
 }
 
+/* Fixme: allow level=0 to return the current level */
 struct program *parent_compilation(int level)
 {
   int n;
-  struct program_state *p=previous_program_state;
+  struct program_state *p=Pike_compiler->previous;
   for(n=0;n<level;n++)
   {
     if(n>=compilation_depth) return 0;
@@ -546,8 +519,8 @@ void optimize_program(struct program *p)
 int program_function_index_compare(const void *a,const void *b)
 {
   return
-    my_order_strcmp(ID_FROM_INT(new_program, *(unsigned short *)a)->name,
-		    ID_FROM_INT(new_program, *(unsigned short *)b)->name);
+    my_order_strcmp(ID_FROM_INT(Pike_compiler->new_program, *(unsigned short *)a)->name,
+		    ID_FROM_INT(Pike_compiler->new_program, *(unsigned short *)b)->name);
 }
 
 #ifdef PIKE_DEBUG
@@ -577,34 +550,34 @@ char *find_program_name(struct program *p, INT32 *line)
 void fixate_program(void)
 {
   INT32 i,e,t;
-  if(new_program->flags & PROGRAM_FIXED) return;
+  if(Pike_compiler->new_program->flags & PROGRAM_FIXED) return;
 #ifdef PIKE_DEBUG
-  if(new_program->flags & PROGRAM_OPTIMIZED)
+  if(Pike_compiler->new_program->flags & PROGRAM_OPTIMIZED)
     fatal("Cannot fixate optimized program\n");
 #endif
 
   /* Ok, sort for binsearch */
-  for(e=i=0;i<(int)new_program->num_identifier_references;i++)
+  for(e=i=0;i<(int)Pike_compiler->new_program->num_identifier_references;i++)
   {
     struct reference *funp;
     struct identifier *fun;
-    funp=new_program->identifier_references+i;
+    funp=Pike_compiler->new_program->identifier_references+i;
     if(funp->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
     if(funp->id_flags & ID_INHERITED)
     {
       if(funp->id_flags & ID_PRIVATE) continue;
-      fun=ID_FROM_PTR(new_program, funp);
+      fun=ID_FROM_PTR(Pike_compiler->new_program, funp);
 /*	  if(fun->func.offset == -1) continue; * prototype */
 
       /* check for multiple definitions */
-      for(t=i+1;t>=0 && t<(int)new_program->num_identifier_references;t++)
+      for(t=i+1;t>=0 && t<(int)Pike_compiler->new_program->num_identifier_references;t++)
       {
 	struct reference *funpb;
 	struct identifier *funb;
 
-	funpb=new_program->identifier_references+t;
+	funpb=Pike_compiler->new_program->identifier_references+t;
 	if(funpb->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
-	funb=ID_FROM_PTR(new_program,funpb);
+	funb=ID_FROM_PTR(Pike_compiler->new_program,funpb);
 	/* if(funb->func.offset == -1) continue; * prototype */
 	if(fun->name==funb->name) t=-10;
       }
@@ -612,17 +585,17 @@ void fixate_program(void)
     }
     add_to_identifier_index(i);
   }
-  fsort((void *)new_program->identifier_index,
-	new_program->num_identifier_index,
+  fsort((void *)Pike_compiler->new_program->identifier_index,
+	Pike_compiler->new_program->num_identifier_index,
 	sizeof(unsigned short),(fsortfun)program_function_index_compare);
 
 
   /* Yes, it is supposed to start at 1  /Hubbe */
   for(i=1;i<NUM_LFUNS;i++) {
-    new_program->lfuns[i] = low_find_lfun(new_program, i);
+    Pike_compiler->new_program->lfuns[i] = low_find_lfun(Pike_compiler->new_program, i);
   }
 
-  new_program->flags |= PROGRAM_FIXED;
+  Pike_compiler->new_program->flags |= PROGRAM_FIXED;
 
 #ifdef DEBUG_MALLOC
   {
@@ -638,16 +611,16 @@ void fixate_program(void)
     {
       m=dmalloc_alloc_mmap( DBSTR(lex.current_file), lex.current_line);
     }
-    else if( (tmp=find_program_name(new_program, &line)) )
+    else if( (tmp=find_program_name(Pike_compiler->new_program, &line)) )
     {
       m=dmalloc_alloc_mmap( tmp, line);
     }else{
-      m=dmalloc_alloc_mmap( "program id", new_program->id);
+      m=dmalloc_alloc_mmap( "program id", Pike_compiler->new_program->id);
     }
 
-    for(e=0;e<new_program->num_inherits;e++)
+    for(e=0;e<Pike_compiler->new_program->num_inherits;e++)
     {
-      struct inherit *i=new_program->inherits+e;
+      struct inherit *i=Pike_compiler->new_program->inherits+e;
       char *tmp;
       char buffer[50];
 
@@ -681,7 +654,7 @@ void fixate_program(void)
 			     0,0);
 
     }
-    dmalloc_set_mmap_template(new_program, m);
+    dmalloc_set_mmap_template(Pike_compiler->new_program, m);
   }
 #endif
 }
@@ -735,7 +708,7 @@ void low_start_new_program(struct program *p,
   compilation_depth++;
 
   CDFPRINTF((stderr, "th(%ld) low_start_new_program() pass=%d: compilation_depth:%d\n",
-	     (long)th_self(),compilation_depth,compiler_pass));
+	     (long)th_self(),compilation_depth,Pike_compiler->compiler_pass));
 
   tmp.type=T_PROGRAM;
   if(!p)
@@ -756,7 +729,7 @@ void low_start_new_program(struct program *p,
       id=isidentifier(name);
       if (id < 0)
 	fatal("Program constant disappeared in second pass.\n");
-      i=ID_FROM_INT(new_program, id);
+      i=ID_FROM_INT(Pike_compiler->new_program, id);
       free_string(i->type);
       i->type=get_type_of_svalue(&tmp);
     }
@@ -769,9 +742,9 @@ void low_start_new_program(struct program *p,
 #define PUSH
 #include "compilation.h"
 
-  compiler_pass=e;
+  Pike_compiler->compiler_pass=e;
 
-  num_used_modules=0;
+  Pike_compiler->num_used_modules=0;
 
   if(p && (p->flags & PROGRAM_FINISHED))
   {
@@ -779,75 +752,75 @@ void low_start_new_program(struct program *p,
     p=0;
   }
 
-  malloc_size_program = ALLOC_STRUCT(program);
+  Pike_compiler->malloc_size_program = ALLOC_STRUCT(program);
 #ifdef PIKE_DEBUG
-  fake_object=alloc_object();
-  fake_object->storage=(char *)xalloc(256 * sizeof(struct svalue));
+  Pike_compiler->fake_object=alloc_object();
+  Pike_compiler->fake_object->storage=(char *)xalloc(256 * sizeof(struct svalue));
   /* Stipple to find illegal accesses */
-  MEMSET(fake_object->storage,0x55,256*sizeof(struct svalue));
+  MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
 #else
-  fake_object=ALLOC_STRUCT(object);
-  fake_object->storage=0;
+  Pike_compiler->fake_object=ALLOC_STRUCT(object);
+  Pike_compiler->fake_object->storage=0;
 #endif
-  GC_ALLOC(fake_object);
+  GC_ALLOC(Pike_compiler->fake_object);
 
-  fake_object->next=fake_object;
-  fake_object->prev=fake_object;
-  fake_object->refs=1;
-  fake_object->parent=0;
-  fake_object->parent_identifier=0;
-  fake_object->prog=p;
+  Pike_compiler->fake_object->next=Pike_compiler->fake_object;
+  Pike_compiler->fake_object->prev=Pike_compiler->fake_object;
+  Pike_compiler->fake_object->refs=1;
+  Pike_compiler->fake_object->parent=0;
+  Pike_compiler->fake_object->parent_identifier=0;
+  Pike_compiler->fake_object->prog=p;
   add_ref(p);
 
 #ifdef PIKE_DEBUG
-  fake_object->program_id=p->id;
+  Pike_compiler->fake_object->program_id=p->id;
 #endif
 
 #ifdef PIKE_SECURITY
-  fake_object->prot=0;
+  Pike_compiler->fake_object->prot=0;
 #endif
 
-  debug_malloc_touch(fake_object);
-  debug_malloc_touch(fake_object->storage);
+  debug_malloc_touch(Pike_compiler->fake_object);
+  debug_malloc_touch(Pike_compiler->fake_object->storage);
 
   if(name)
   {
-    if((fake_object->parent=previous_program_state->fake_object))
-      add_ref(fake_object->parent);
-    fake_object->parent_identifier=id;
+    if((Pike_compiler->fake_object->parent=Pike_compiler->previous->fake_object))
+      add_ref(Pike_compiler->fake_object->parent);
+    Pike_compiler->fake_object->parent_identifier=id;
   }
 
-  new_program=p;
+  Pike_compiler->new_program=p;
 
 #ifdef PROGRAM_BUILD_DEBUG
   if (name) {
     fprintf (stderr, "%.*sstarting program %d (pass=%d): ",
-	     compilation_depth, "                ", new_program->id, compiler_pass);
+	     compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
     push_string (name);
     print_svalue (stderr, --sp);
     putc ('\n', stderr);
   }
   else
     fprintf (stderr, "%.*sstarting program %d (pass=%d)\n",
-	     compilation_depth, "                ", new_program->id, compiler_pass);
+	     compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
 
-  debug_malloc_touch(fake_object);
-  debug_malloc_touch(fake_object->storage);
+  debug_malloc_touch(Pike_compiler->fake_object);
+  debug_malloc_touch(Pike_compiler->fake_object->storage);
 
-  if(new_program->program)
+  if(Pike_compiler->new_program->program)
   {
 #define FOO(NUMTYPE,TYPE,NAME) \
-    malloc_size_program->PIKE_CONCAT(num_,NAME)=new_program->PIKE_CONCAT(num_,NAME);
+    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME)=Pike_compiler->new_program->PIKE_CONCAT(num_,NAME);
 #include "program_areas.h"
 
 
     {
       INT32 line=0, off=0;
       char *file=0;
-      char *cnt=new_program->linenumbers;
+      char *cnt=Pike_compiler->new_program->linenumbers;
 
-      while(cnt < new_program->linenumbers + new_program->num_linenumbers)
+      while(cnt < Pike_compiler->new_program->linenumbers + Pike_compiler->new_program->num_linenumbers)
       {
 	if(*cnt == 127)
 	{
@@ -857,12 +830,12 @@ void low_start_new_program(struct program *p,
 	off+=get_small_number(&cnt);
 	line+=get_small_number(&cnt);
       }
-      last_line=line;
-      last_pc=off;
+      Pike_compiler->last_line=line;
+      Pike_compiler->last_pc=off;
       if(file)
       {
-	if(last_file) free_string(last_file);
-	last_file=make_shared_string(file);
+	if(Pike_compiler->last_file) free_string(Pike_compiler->last_file);
+	Pike_compiler->last_file=make_shared_string(file);
       }
     }
 
@@ -872,11 +845,11 @@ void low_start_new_program(struct program *p,
 
 #define START_SIZE 64
 #define FOO(NUMTYPE,TYPE,NAME) \
-    malloc_size_program->PIKE_CONCAT(num_,NAME)=START_SIZE; \
-    new_program->NAME=(TYPE *)xalloc(sizeof(TYPE) * START_SIZE);
+    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME)=START_SIZE; \
+    Pike_compiler->new_program->NAME=(TYPE *)xalloc(sizeof(TYPE) * START_SIZE);
 #include "program_areas.h"
 
-    i.prog=new_program;
+    i.prog=Pike_compiler->new_program;
     i.identifier_level=0;
     i.storage_offset=0;
     i.inherit_level=0;
@@ -888,14 +861,14 @@ void low_start_new_program(struct program *p,
   }
 
 
-  init_node=0;
-  num_parse_error=0;
+  Pike_compiler->init_node=0;
+  Pike_compiler->num_parse_error=0;
 
   push_compiler_frame(0);
-  add_ref(compiler_frame->current_return_type=void_type_string);
+  add_ref(Pike_compiler->compiler_frame->current_return_type=void_type_string);
 
-  debug_malloc_touch(fake_object);
-  debug_malloc_touch(fake_object->storage);
+  debug_malloc_touch(Pike_compiler->fake_object);
+  debug_malloc_touch(Pike_compiler->fake_object->storage);
 }
 
 void debug_start_new_program(PROGRAM_LINE_ARGS)
@@ -910,7 +883,7 @@ void debug_start_new_program(PROGRAM_LINE_ARGS)
     struct pike_string *s=make_shared_string(file);
     store_linenumber(line,s);
     free_string(s);
-    debug_malloc_name(new_program, file, line);
+    debug_malloc_name(Pike_compiler->new_program, file, line);
   }
 #endif
 }
@@ -1056,39 +1029,39 @@ void dump_program_desc(struct program *p)
 
 static void toss_compilation_resources(void)
 {
-  if(fake_object)
+  if(Pike_compiler->fake_object)
   {
-    free_program(fake_object->prog);
-    fake_object->prog=0;
-    free_object(fake_object);
-    fake_object=0;
+    free_program(Pike_compiler->fake_object->prog);
+    Pike_compiler->fake_object->prog=0;
+    free_object(Pike_compiler->fake_object);
+    Pike_compiler->fake_object=0;
   }
 
-  free_program(new_program);
-  new_program=0;
+  free_program(Pike_compiler->new_program);
+  Pike_compiler->new_program=0;
 
-  if(malloc_size_program)
+  if(Pike_compiler->malloc_size_program)
     {
-      dmfree((char *)malloc_size_program);
-      malloc_size_program=0;
+      dmfree((char *)Pike_compiler->malloc_size_program);
+      Pike_compiler->malloc_size_program=0;
     }
 
-  if(module_index_cache)
+  if(Pike_compiler->module_index_cache)
   {
-    free_mapping(module_index_cache);
-    module_index_cache=0;
+    free_mapping(Pike_compiler->module_index_cache);
+    Pike_compiler->module_index_cache=0;
   }
 
-  while(compiler_frame)
+  while(Pike_compiler->compiler_frame)
     pop_compiler_frame();
 
-  if(last_file)
+  if(Pike_compiler->last_file)
   {
-    free_string(last_file);
-    last_file=0;
+    free_string(Pike_compiler->last_file);
+    Pike_compiler->last_file=0;
   }
 
-  unuse_modules(num_used_modules);
+  unuse_modules(Pike_compiler->num_used_modules);
 }
 
 int sizeof_variable(int run_time_type)
@@ -1282,24 +1255,24 @@ struct program *end_first_pass(int finish)
   struct program *prog;
   struct pike_string *s;
 
-  debug_malloc_touch(fake_object);
-  debug_malloc_touch(fake_object->storage);
+  debug_malloc_touch(Pike_compiler->fake_object);
+  debug_malloc_touch(Pike_compiler->fake_object->storage);
 
   MAKE_CONSTANT_SHARED_STRING(s,"__INIT");
 
 
   /* Collect references to inherited __INIT functions */
-  for(e=new_program->num_inherits-1;e;e--)
+  for(e=Pike_compiler->new_program->num_inherits-1;e;e--)
   {
     int id;
-    if(new_program->inherits[e].inherit_level!=1) continue;
+    if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
     id=low_reference_inherited_identifier(0, e, s, SEE_STATIC);
     if(id!=-1)
     {
-      init_node=mknode(F_COMMA_EXPR,
+      Pike_compiler->init_node=mknode(F_COMMA_EXPR,
 		       mkcastnode(void_type_string,
 				  mkapplynode(mkidentifiernode(id),0)),
-		       init_node);
+		       Pike_compiler->init_node);
     }
   }
 
@@ -1308,29 +1281,29 @@ struct program *end_first_pass(int finish)
    * to initialize.
    */
 
-  if(init_node)
+  if(Pike_compiler->init_node)
   {
     union idptr tmp;
     e=dooptcode(s,
 		mknode(F_COMMA_EXPR,
-		       init_node,mknode(F_RETURN,mkintnode(0),0)),
+		       Pike_compiler->init_node,mknode(F_RETURN,mkintnode(0),0)),
 		function_type_string,
 		ID_STATIC);
-    init_node=0;
+    Pike_compiler->init_node=0;
   }else{
     e=-1;
   }
-  new_program->lfuns[LFUN___INIT]=e;
+  Pike_compiler->new_program->lfuns[LFUN___INIT]=e;
 
   free_string(s);
 
   pop_compiler_frame(); /* Pop __INIT local variables */
 
-  if(num_parse_error > 0)
+  if(Pike_compiler->num_parse_error > 0)
   {
     prog=0;
   }else{
-    prog=new_program;
+    prog=Pike_compiler->new_program;
     add_ref(prog);
 
 #ifdef PIKE_DEBUG
@@ -1339,29 +1312,29 @@ struct program *end_first_pass(int finish)
       dump_program_desc(prog);
 #endif
 
-    new_program->flags |= PROGRAM_PASS_1_DONE;
+    Pike_compiler->new_program->flags |= PROGRAM_PASS_1_DONE;
 
     if(finish)
     {
       fixate_program();
-      optimize_program(new_program);
-      new_program->flags |= PROGRAM_FINISHED;
+      optimize_program(Pike_compiler->new_program);
+      Pike_compiler->new_program->flags |= PROGRAM_FINISHED;
     }
 
   }
 
 #ifdef PROGRAM_BUILD_DEBUG
   fprintf (stderr, "%.*sfinishing program %d (pass=%d)\n",
-	   compilation_depth, "                ", new_program->id, compiler_pass);
+	   compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
 
   toss_compilation_resources();
 
   CDFPRINTF((stderr,
-	     "th(%ld),end_first_pass(): compilation_depth:%d, compiler_pass:%d\n",
-	     (long)th_self(), compilation_depth, compiler_pass));
+	     "th(%ld),end_first_pass(): compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
+	     (long)th_self(), compilation_depth, Pike_compiler->compiler_pass));
 
-  if(!compiler_frame && (compiler_pass==2 || !prog) && resolve_cache)
+  if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && resolve_cache)
   {
     free_mapping(dmalloc_touch(struct mapping *, resolve_cache));
     resolve_cache=0;
@@ -1403,7 +1376,7 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
   long offset;
   int modulo;
 
-  if(!size) return new_program->storage_needed;
+  if(!size) return Pike_compiler->new_program->storage_needed;
 
 #ifdef PIKE_DEBUG
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
@@ -1411,10 +1384,10 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
 #endif
   modulo=( modulo_orig /* +OFFSETOF(object,storage) */ ) % alignment;
 
-  offset=DO_ALIGN(new_program->storage_needed-modulo,alignment)+modulo;
+  offset=DO_ALIGN(Pike_compiler->new_program->storage_needed-modulo,alignment)+modulo;
 
-  if(!new_program->storage_needed) {
-    /* Shouldn't new_program->storage_needed be set here?
+  if(!Pike_compiler->new_program->storage_needed) {
+    /* Shouldn't Pike_compiler->new_program->storage_needed be set here?
      * Otherwise the debug code below ought to be trigged.
      * But since it isn't, I guess this is dead code?
      *	/grubba 1999-09-28
@@ -1432,14 +1405,14 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
      * Oops, seems I read the test below the wrong way around.
      *	/grubba 1999-09-29
      */
-    new_program->inherits[0].storage_offset=offset;
+    Pike_compiler->new_program->inherits[0].storage_offset=offset;
   }
 
-  if(new_program->alignment_needed<alignment)
-    new_program->alignment_needed=alignment;
+  if(Pike_compiler->new_program->alignment_needed<alignment)
+    Pike_compiler->new_program->alignment_needed=alignment;
 
 #ifdef PIKE_DEBUG
-  if(offset < new_program->storage_needed)
+  if(offset < Pike_compiler->new_program->storage_needed)
     fatal("add_storage failed horribly!\n");
 
   if( (offset /* + OFFSETOF(object,storage) */ - modulo_orig ) % alignment )
@@ -1452,7 +1425,7 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
 
 #endif
 
-  new_program->storage_needed = offset + size;
+  Pike_compiler->new_program->storage_needed = offset + size;
 
   return (SIZE_T) offset;
 }
@@ -1464,7 +1437,7 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
  */
 void set_init_callback(void (*init)(struct object *))
 {
-  new_program->init=init;
+  Pike_compiler->new_program->init=init;
 }
 
 /*
@@ -1473,7 +1446,7 @@ void set_init_callback(void (*init)(struct object *))
  */
 void set_exit_callback(void (*exit)(struct object *))
 {
-  new_program->exit=exit;
+  Pike_compiler->new_program->exit=exit;
 }
 
 /*
@@ -1490,7 +1463,7 @@ void set_exit_callback(void (*exit)(struct object *))
  */
 void set_gc_recurse_callback(void (*m)(struct object *))
 {
-  new_program->gc_recurse_func=m;
+  Pike_compiler->new_program->gc_recurse_func=m;
 }
 
 /*
@@ -1506,7 +1479,7 @@ void set_gc_recurse_callback(void (*m)(struct object *))
  */
 void set_gc_check_callback(void (*m)(struct object *))
 {
-  new_program->gc_check_func=m;
+  Pike_compiler->new_program->gc_check_func=m;
 }
 
 int low_reference_inherited_identifier(struct program_state *q,
@@ -1514,7 +1487,7 @@ int low_reference_inherited_identifier(struct program_state *q,
 				       struct pike_string *name,
 				       int flags)
 {
-  struct program *np=q?q->new_program:new_program;
+  struct program *np=(q?q:Pike_compiler)->new_program;
   struct reference funp;
   struct program *p;
   int i,d;
@@ -1557,7 +1530,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name)
 {
   int n,e,id;
-  struct program_state *state=previous_program_state;
+  struct program_state *state=Pike_compiler->previous;
 
   struct program *p;
 
@@ -1567,7 +1540,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
     fatal("reference_inherited_function on nonshared string.\n");
 #endif
 
-  p=new_program;
+  p=Pike_compiler->new_program;
 
   for(e=p->num_inherits-1;e>0;e--)
   {
@@ -1639,9 +1612,9 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 
 void rename_last_inherit(struct pike_string *n)
 {
-  if(new_program->inherits[new_program->num_inherits].name)
-    free_string(new_program->inherits[new_program->num_inherits].name);
-  copy_shared_string(new_program->inherits[new_program->num_inherits].name,
+  if(Pike_compiler->new_program->inherits[Pike_compiler->new_program->num_inherits].name)
+    free_string(Pike_compiler->new_program->inherits[Pike_compiler->new_program->num_inherits].name);
+  copy_shared_string(Pike_compiler->new_program->inherits[Pike_compiler->new_program->num_inherits].name,
 		     n);
 }
 
@@ -1685,7 +1658,7 @@ void low_inherit(struct program *p,
     return;
   }
 
-  inherit_offset = new_program->num_inherits;
+  inherit_offset = Pike_compiler->new_program->num_inherits;
 
   /* alignment magic */
   storage_offset=p->inherits[0].storage_offset % p->alignment_needed;
@@ -1700,7 +1673,7 @@ void low_inherit(struct program *p,
   {
     inherit=p->inherits[e];
     add_ref(inherit.prog);
-    inherit.identifier_level += new_program->num_identifier_references;
+    inherit.identifier_level += Pike_compiler->new_program->num_identifier_references;
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
     if(!e)
@@ -1710,10 +1683,10 @@ void low_inherit(struct program *p,
 	if(parent->next == parent)
 	{
 	  struct object *o;
-	  for(o=fake_object->parent;o!=parent;o=o->parent)
+	  for(o=Pike_compiler->fake_object->parent;o!=parent;o=o->parent)
 	  {
 #ifdef PIKE_DEBUG
-	    if(!o) fatal("low_inherit with odd fake_object as parent!\n");
+	    if(!o) fatal("low_inherit with odd Pike_compiler->fake_object as parent!\n");
 #endif
 	    inherit.parent_offset++;
 	  }
@@ -1803,7 +1776,7 @@ void low_inherit(struct program *p,
     {
       int n;
       n = isidentifier(name);
-      if (n != -1 && ID_FROM_INT(new_program,n)->func.offset != -1)
+      if (n != -1 && ID_FROM_INT(Pike_compiler->new_program,n)->func.offset != -1)
 	my_yyerror("Illegal to redefine 'nomask' function/variable \"%s\"",name->str);
     }
 
@@ -1848,7 +1821,7 @@ void compiler_do_inherit(node *n,
   switch(n->token)
   {
     case F_IDENTIFIER:
-      p=new_program;
+      p=Pike_compiler->new_program;
       offset=0;
       numid=n->u.id.number;
       goto continue_inherit;
@@ -1932,11 +1905,11 @@ void simple_do_inherit(struct pike_string *s,
 int isidentifier(struct pike_string *s)
 {
   INT32 e;
-  for(e=new_program->num_identifier_references-1;e>=0;e--)
+  for(e=Pike_compiler->new_program->num_identifier_references-1;e>=0;e--)
   {
-    if(new_program->identifier_references[e].id_flags & ID_HIDDEN) continue;
+    if(Pike_compiler->new_program->identifier_references[e].id_flags & ID_HIDDEN) continue;
 
-    if(ID_FROM_INT(new_program, e)->name == s)
+    if(ID_FROM_INT(Pike_compiler->new_program, e)->name == s)
       return e;
   }
   return -1;
@@ -1955,10 +1928,10 @@ int low_define_variable(struct pike_string *name,
   struct reference ref;
 
 #ifdef PIKE_DEBUG
-  if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
+  if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add variable to fixed program\n");
 
-  if(compiler_pass==2)
+  if(Pike_compiler->compiler_pass==2)
     fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
@@ -1967,7 +1940,7 @@ int low_define_variable(struct pike_string *name,
   copy_shared_string(dummy.type, type);
   dummy.identifier_flags = 0;
   dummy.run_time_type=run_time_type;
-  dummy.func.offset=offset - new_program->inherits[0].storage_offset;
+  dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
 #ifdef PROFILING
   dummy.self_time=0;
   dummy.num_calls=0;
@@ -1975,14 +1948,14 @@ int low_define_variable(struct pike_string *name,
 #endif
 
   ref.id_flags=flags;
-  ref.identifier_offset=new_program->num_identifiers;
+  ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
   ref.inherit_offset=0;
 
   add_to_variable_index(ref.identifier_offset);
 
   add_to_identifiers(dummy);
 
-  n=new_program->num_identifier_references;
+  n=Pike_compiler->new_program->num_identifier_references;
   add_to_identifier_references(ref);
 
   return n;
@@ -1999,7 +1972,7 @@ int map_variable(char *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
-	   compilation_depth, "                ", compiler_pass, type, name);
+	   compilation_depth, "                ", Pike_compiler->compiler_pass, type, name);
 #endif
 
   n=make_shared_string(name);
@@ -2023,7 +1996,7 @@ int quick_map_variable(char *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
-	   compilation_depth, "                ", compiler_pass, type, name);
+	   compilation_depth, "                ", Pike_compiler->compiler_pass, type, name);
 #endif
 
   n=make_shared_binary_string(name,name_length);
@@ -2050,7 +2023,7 @@ int define_variable(struct pike_string *name,
   {
     struct pike_string *d = describe_type (type);
     fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
-	     compilation_depth, "                ", compiler_pass, d->str);
+	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
     print_svalue (stderr, --sp);
@@ -2063,13 +2036,13 @@ int define_variable(struct pike_string *name,
 
   n = isidentifier(name);
 
-  if(new_program->flags & PROGRAM_PASS_1_DONE)
+  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {
     if(n==-1)
       yyerror("Pass2: Variable disappeared!");
     else {
       struct identifier *id;
-      id=ID_FROM_INT(new_program,n);
+      id=ID_FROM_INT(Pike_compiler->new_program,n);
       free_string(id->type);
       copy_shared_string(id->type, type);
       return n;
@@ -2077,14 +2050,14 @@ int define_variable(struct pike_string *name,
   }
 
 #ifdef PIKE_DEBUG
-  if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
+  if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add variable to fixed program\n");
 #endif
 
   if(n != -1)
   {
     /* not inherited */
-    if(new_program->identifier_references[n].inherit_offset == 0)
+    if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
     {
       if (!((IDENTIFIERP(n)->id_flags | flags) & ID_EXTERN)) {
 	my_yyerror("Identifier '%s' defined twice.",name->str);
@@ -2101,15 +2074,15 @@ int define_variable(struct pike_string *name,
 	my_yyerror("Illegal to redefine 'nomask/final' "
 		   "variable/functions \"%s\"", name->str);
 
-      if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || compiler_pass!=1)
+      if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || Pike_compiler->compiler_pass!=1)
       {
- 	if(!match_types(ID_FROM_INT(new_program, n)->type, type))
+ 	if(!match_types(ID_FROM_INT(Pike_compiler->new_program, n)->type, type))
  	  my_yyerror("Illegal to redefine inherited variable "
  		     "with different type.");
 
 	
 
-	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(new_program, n)->
+	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program, n)->
 				   identifier_flags))
 	{
 	  my_yyerror("Illegal to redefine inherited variable "
@@ -2180,13 +2153,13 @@ int add_constant(struct pike_string *name,
       struct pike_string *t = get_type_of_svalue (c);
       struct pike_string *d = describe_type (t);
       fprintf (stderr, "%.*sdefining constant (pass=%d): %s ",
-	       compilation_depth, "                ", compiler_pass, d->str);
+	       compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
       free_string (t);
       free_string (d);
     }
     else
       fprintf (stderr, "%.*sdeclaring constant (pass=%d): ",
-	       compilation_depth, "                ", compiler_pass);
+	       compilation_depth, "                ", Pike_compiler->compiler_pass);
     push_string (name);
     print_svalue (stderr, --sp);
     putc ('\n', stderr);
@@ -2213,18 +2186,18 @@ int add_constant(struct pike_string *name,
    * /Hubbe
    */
 
-  if(new_program->flags & PROGRAM_PASS_1_DONE)
+  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {
     if(n==-1)
     {
       yyerror("Pass2: Constant disappeared!");
     }else{
       struct identifier *id;
-      id=ID_FROM_INT(new_program,n);
+      id=ID_FROM_INT(Pike_compiler->new_program,n);
       if(id->func.offset>=0)
       {
 	struct pike_string *s;
-	struct svalue *c=&PROG_FROM_INT(new_program,n)->
+	struct svalue *c=&PROG_FROM_INT(Pike_compiler->new_program,n)->
 	  constants[id->func.offset].sval;
 	s=get_type_of_svalue(c);
 	free_string(id->type);
@@ -2244,10 +2217,10 @@ int add_constant(struct pike_string *name,
   }
 
 #ifdef PIKE_DEBUG
-  if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
+  if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add constant to fixed program\n");
 
-  if(compiler_pass==2)
+  if(Pike_compiler->compiler_pass==2)
     fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
@@ -2267,7 +2240,7 @@ int add_constant(struct pike_string *name,
   }
 
   ref.id_flags=flags;
-  ref.identifier_offset=new_program->num_identifiers;
+  ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
   ref.inherit_offset=0;
 
 #ifdef PROFILING
@@ -2284,7 +2257,7 @@ int add_constant(struct pike_string *name,
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
     /* not inherited */
-    if(new_program->identifier_references[n].inherit_offset == 0)
+    if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
     {
       my_yyerror("Identifier '%s' defined twice.",name->str);
       return n;
@@ -2293,12 +2266,12 @@ int add_constant(struct pike_string *name,
     if(!(IDENTIFIERP(n)->id_flags & ID_INLINE))
     {
       /* override */
-      new_program->identifier_references[n]=ref;
+      Pike_compiler->new_program->identifier_references[n]=ref;
 
       return n;
     }
   }
-  n=new_program->num_identifier_references;
+  n=Pike_compiler->new_program->num_identifier_references;
   add_to_identifier_references(ref);
 
   return n;
@@ -2449,7 +2422,7 @@ INT32 define_function(struct pike_string *name,
   {
     struct pike_string *d = describe_type (type);
     fprintf (stderr, "%.*sdefining function (pass=%d): %s ",
-	     compilation_depth, "                ", compiler_pass, d->str);
+	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
     print_svalue (stderr, --sp);
@@ -2481,7 +2454,7 @@ INT32 define_function(struct pike_string *name,
   }
 
   if(function_flags & IDENTIFIER_C_FUNCTION)
-    new_program->flags |= PROGRAM_HAS_C_METHODS;
+    Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
 
   i=isidentifier(name);
 
@@ -2489,8 +2462,8 @@ INT32 define_function(struct pike_string *name,
   {
     /* already defined */
 
-    funp=ID_FROM_INT(new_program, i);
-    ref=new_program->identifier_references[i];
+    funp=ID_FROM_INT(Pike_compiler->new_program, i);
+    ref=Pike_compiler->new_program->identifier_references[i];
 
     if(ref.inherit_offset == 0) /* not inherited */
     {
@@ -2547,21 +2520,21 @@ INT32 define_function(struct pike_string *name,
 
       fun.identifier_flags=function_flags;
       if(function_flags & IDENTIFIER_C_FUNCTION)
-	new_program->flags |= PROGRAM_HAS_C_METHODS;
+	Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
 
       if(func)
 	fun.func = *func;
       else
 	fun.func.offset = -1;
 
-      ref.identifier_offset=new_program->num_identifiers;
+      ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
       add_to_identifiers(fun);
     }
 
     ref.inherit_offset = 0;
     ref.id_flags = flags;
 #if 0
-    new_program->identifier_references[i]=ref;
+    Pike_compiler->new_program->identifier_references[i]=ref;
 #else
     {
       int z;
@@ -2571,26 +2544,26 @@ INT32 define_function(struct pike_string *name,
        * /Hubbe
        */
 
-      for(z=0;z<new_program->num_identifier_references;z++)
+      for(z=0;z<Pike_compiler->new_program->num_identifier_references;z++)
       {
 	/* Do zapp hidden identifiers */
-	if(new_program->identifier_references[z].id_flags & ID_HIDDEN)
+	if(Pike_compiler->new_program->identifier_references[z].id_flags & ID_HIDDEN)
 	  continue;
 
 	/* Do not zapp inline ('local') identifiers */
-	if(new_program->identifier_references[z].inherit_offset &&
-	   (new_program->identifier_references[z].id_flags & ID_INLINE))
+	if(Pike_compiler->new_program->identifier_references[z].inherit_offset &&
+	   (Pike_compiler->new_program->identifier_references[z].id_flags & ID_INLINE))
           continue;
 
 	/* Do not zapp functions with the wrong name... */
-	if(ID_FROM_INT(new_program, z)->name != name)
+	if(ID_FROM_INT(Pike_compiler->new_program, z)->name != name)
 	  continue;
 
-	new_program->identifier_references[z]=ref;
+	Pike_compiler->new_program->identifier_references[z]=ref;
       }
 
 #ifdef PIKE_DEBUG
-      if(MEMCMP(new_program->identifier_references+i, &ref,sizeof(ref)))
+      if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
 	fatal("New function overloading algorithm failed!\n");
 #endif
 
@@ -2602,7 +2575,7 @@ make_a_new_def:
 
 
 #ifdef PIKE_DEBUG
-  if(compiler_pass==2)
+  if(Pike_compiler->compiler_pass==2)
     fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
@@ -2619,7 +2592,7 @@ make_a_new_def:
   else
     fun.func.offset = -1;
 
-  i=new_program->num_identifiers;
+  i=Pike_compiler->new_program->num_identifiers;
 
   add_to_identifiers(fun);
 
@@ -2627,7 +2600,7 @@ make_a_new_def:
   ref.identifier_offset = i;
   ref.inherit_offset = 0;
 
-  i=new_program->num_identifier_references;
+  i=Pike_compiler->new_program->num_identifier_references;
   add_to_identifier_references(ref);
 
   return i;
@@ -2811,8 +2784,8 @@ int store_prog_string(struct pike_string *str)
 {
   unsigned int i;
 
-  for (i=0;i<new_program->num_strings;i++)
-    if (new_program->strings[i] == str)
+  for (i=0;i<Pike_compiler->new_program->num_strings;i++)
+    if (Pike_compiler->new_program->strings[i] == str)
       return i;
 
   reference_shared_string(str);
@@ -2848,9 +2821,9 @@ int store_constant(struct svalue *foo,
     UNSETJMP(tmp2);
     return store_constant(&zero, equal, constant_name);
   }else{
-    for(e=0;e<new_program->num_constants;e++)
+    for(e=0;e<Pike_compiler->new_program->num_constants;e++)
     {
-      struct program_constant *c= new_program->constants+e;
+      struct program_constant *c= Pike_compiler->new_program->constants+e;
       if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
 	 c->name == constant_name)
       {
@@ -2990,12 +2963,12 @@ int get_small_number(char **q)
 
 void start_line_numbering(void)
 {
-  if(last_file)
+  if(Pike_compiler->last_file)
   {
-    free_string(last_file);
-    last_file=0;
+    free_string(Pike_compiler->last_file);
+    Pike_compiler->last_file=0;
   }
-  last_pc=last_line=0;
+  Pike_compiler->last_pc=Pike_compiler->last_line=0;
 }
 
 static void insert_small_number(INT32 a)
@@ -3020,9 +2993,9 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   {
     INT32 line=0, off=0;
     char *file=0;
-    char *cnt=new_program->linenumbers;
+    char *cnt=Pike_compiler->new_program->linenumbers;
 
-    while(cnt < new_program->linenumbers + new_program->num_linenumbers)
+    while(cnt < Pike_compiler->new_program->linenumbers + Pike_compiler->new_program->num_linenumbers)
     {
       if(*cnt == 127)
       {
@@ -3033,37 +3006,37 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
       line+=get_small_number(&cnt);
     }
 
-    if(last_line != line ||
-       last_pc != off ||
-       (last_file && file && strcmp(last_file->str, file)))
+    if(Pike_compiler->last_line != line ||
+       Pike_compiler->last_pc != off ||
+       (Pike_compiler->last_file && file && strcmp(Pike_compiler->last_file->str, file)))
     {
       fatal("Line numbering out of whack\n"
 	    "    (line: %d ?= %d)!\n"
 	    "    (  pc: %d ?= %d)!\n"
 	    "    (file: %s ?= %s)!\n",
-	    last_line, line,
-	    last_pc, off,
-	    last_file?last_file->str:"N/A",
+	    Pike_compiler->last_line, line,
+	    Pike_compiler->last_pc, off,
+	    Pike_compiler->last_file?Pike_compiler->last_file->str:"N/A",
 	    file?file:"N/A");
     }
   }
 #endif
-  if(last_line!=current_line || last_file != current_file)
+  if(Pike_compiler->last_line!=current_line || Pike_compiler->last_file != current_file)
   {
-    if(last_file != current_file)
+    if(Pike_compiler->last_file != current_file)
     {
       char *tmp;
-      if(last_file) free_string(last_file);
+      if(Pike_compiler->last_file) free_string(Pike_compiler->last_file);
       add_to_linenumbers(127);
       for(tmp=current_file->str; *tmp; tmp++)
 	add_to_linenumbers(*tmp);
       add_to_linenumbers(0);
-      copy_shared_string(last_file, current_file);
+      copy_shared_string(Pike_compiler->last_file, current_file);
     }
-    insert_small_number(PC-last_pc);
-    insert_small_number(current_line-last_line);
-    last_line=current_line;
-    last_pc=PC;
+    insert_small_number(PC-Pike_compiler->last_pc);
+    insert_small_number(current_line-Pike_compiler->last_line);
+    Pike_compiler->last_line=current_line;
+    Pike_compiler->last_pc=PC;
   }
 }
 
@@ -3082,7 +3055,7 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
   if (prog == 0) return "Unkown program";
   offset = pc - prog->program;
 
-  if(prog == new_program)
+  if(prog == Pike_compiler->new_program)
   {
     linep[0]=0;
     return "Optimizer";
@@ -3154,7 +3127,7 @@ struct program *compile(struct pike_string *prog,
   int saved_threads_disabled;
   struct object *saved_handler = error_handler;
   dynamic_buffer used_modules_save = used_modules;
-  INT32 num_used_modules_save = num_used_modules;
+  INT32 num_used_modules_save = Pike_compiler->num_used_modules;
   extern void yyparse(void);
   struct mapping *resolve_cache_save = resolve_cache;
   resolve_cache = 0;
@@ -3184,7 +3157,7 @@ struct program *compile(struct pike_string *prog,
   SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
 #endif
 
-  num_used_modules=0;
+  Pike_compiler->num_used_modules=0;
 
   save_lex=lex;
 
@@ -3224,14 +3197,14 @@ struct program *compile(struct pike_string *prog,
 
 #ifdef DEBUG_MALLOC
     if(strcmp(lex.current_file->str,"-") || lex.current_line!=1)
-      debug_malloc_name(new_program, lex.current_file->str, lex.current_line);
+      debug_malloc_name(Pike_compiler->new_program, lex.current_file->str, lex.current_line);
 #endif
   }
   compilation_depth=0;
 
 /*  start_line_numbering(); */
 
-  compiler_pass=1;
+  Pike_compiler->compiler_pass=1;
   lex.pos=prog->str;
 
   CDFPRINTF((stderr, "compile(): First pass\n"));
@@ -3252,7 +3225,7 @@ struct program *compile(struct pike_string *prog,
     low_start_new_program(p,0,0,0);
     free_program(p);
     p=0;
-    compiler_pass=2;
+    Pike_compiler->compiler_pass=2;
     lex.pos=prog->str;
 
     use_module(sp-1);
@@ -3289,14 +3262,14 @@ struct program *compile(struct pike_string *prog,
 
 /*  unuse_modules(1); */
 #ifdef PIKE_DEBUG
-  if(num_used_modules)
+  if(Pike_compiler->num_used_modules)
     fatal("Failed to pop modules properly.\n");
 #endif
 
   toss_buffer(&used_modules);
   compilation_depth=save_depth;
   used_modules = used_modules_save;
-  num_used_modules = num_used_modules_save ;
+  Pike_compiler->num_used_modules = num_used_modules_save ;
   error_handler = saved_handler;
 #ifdef PIKE_DEBUG
   if (resolve_cache) fatal("resolve_cache not freed at end of compilation.\n");
@@ -3480,16 +3453,16 @@ void init_program(void)
     free_string(key.u.string);
   }
   start_new_program();
-  debug_malloc_touch(fake_object);
-  debug_malloc_touch(fake_object->storage);
+  debug_malloc_touch(Pike_compiler->fake_object);
+  debug_malloc_touch(Pike_compiler->fake_object->storage);
   ADD_STORAGE(struct pike_trampoline);
   add_function("`()",apply_trampoline,"function(mixed...:mixed)",0);
   set_init_callback(init_trampoline);
   set_exit_callback(exit_trampoline);
   set_gc_check_callback(gc_check_trampoline);
   set_gc_recurse_callback(gc_recurse_trampoline);
-  debug_malloc_touch(fake_object);
-  debug_malloc_touch(fake_object->storage);
+  debug_malloc_touch(Pike_compiler->fake_object);
+  debug_malloc_touch(Pike_compiler->fake_object->storage);
   pike_trampoline_program=end_program();
 }
 
@@ -3693,8 +3666,8 @@ unsigned gc_touch_all_programs(void)
   }
   /* Count the fake objects. They're not part of the gc, but they're
    * still counted by the gc. */
-  if (fake_object) n++;
-  for (ps = previous_program_state; ps; ps = ps->previous)
+  if (Pike_compiler->fake_object) n++;
+  for (ps = Pike_compiler->previous; ps; ps = ps->previous)
     if (ps->fake_object) n++;
   return n;
 }
@@ -3800,29 +3773,29 @@ void push_compiler_frame(int lexical_scope)
 {
   struct compiler_frame *f;
   f=ALLOC_STRUCT(compiler_frame);
+  f->previous=Pike_compiler->compiler_frame;
   f->lexical_scope=lexical_scope;
   f->current_type=0;
   f->current_return_type=0;
   f->current_number_of_locals=0;
   f->max_number_of_locals=0;
-  f->previous=compiler_frame;
   f->current_function_number=-2; /* no function */
   f->recur_label=-1;
   f->is_inline=0;
   f->num_args=-1;
-  compiler_frame=f;
+  Pike_compiler->compiler_frame=f;
 }
 
 void pop_local_variables(int level)
 {
-  while(compiler_frame->current_number_of_locals > level)
+  while(Pike_compiler->compiler_frame->current_number_of_locals > level)
   {
     int e;
-    e=--(compiler_frame->current_number_of_locals);
-    free_string(compiler_frame->variable[e].name);
-    free_string(compiler_frame->variable[e].type);
-    if(compiler_frame->variable[e].def)
-      free_node(compiler_frame->variable[e].def);
+    e=--(Pike_compiler->compiler_frame->current_number_of_locals);
+    free_string(Pike_compiler->compiler_frame->variable[e].name);
+    free_string(Pike_compiler->compiler_frame->variable[e].type);
+    if(Pike_compiler->compiler_frame->variable[e].def)
+      free_node(Pike_compiler->compiler_frame->variable[e].def);
   }
 }
 
@@ -3831,7 +3804,7 @@ void pop_compiler_frame(void)
 {
   struct compiler_frame *f;
   int e;
-  f=compiler_frame;
+  f=Pike_compiler->compiler_frame;
 #ifdef PIKE_DEBUG
   if(!f)
     fatal("Popping out of compiler frames\n");
@@ -3844,7 +3817,7 @@ void pop_compiler_frame(void)
   if(f->current_return_type)
     free_string(f->current_return_type);
 
-  compiler_frame=f->previous;
+  Pike_compiler->compiler_frame=f->previous;
   dmfree((char *)f);
 }
 
@@ -4006,7 +3979,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
    * This has the additional benefit of making it easier to
    * visually locate the actual error message.
    */
-  if (num_parse_error) return;
+  if (Pike_compiler->num_parse_error) return;
 
   va_start(args,fmt);
   VSPRINTF(buf, fmt, args);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.179 2000/05/11 14:09:45 grubba Exp $");
+RCSID("$Id: las.c,v 1.180 2000/06/24 00:48:13 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -40,8 +40,6 @@ static node *eval(node *);
 static void optimize(node *n);
 static node *localopt(node *n);
 
-node *init_node = 0;
-int num_parse_error;
 int cumulative_parse_error=0;
 extern char *get_type_name(int);
 
@@ -347,7 +345,7 @@ static node *freeze_node(node *orig)
 
 void free_all_nodes(void)
 {
-  if(!compiler_frame)
+  if(!Pike_compiler->compiler_frame)
   {
     node *tmp;
     struct node_s_block *tmp2;
@@ -679,7 +677,7 @@ node *debug_mknode(short token, node *a, node *b)
     verify_shared_strings_tables();
 #endif
 
-  if(!num_parse_error && compiler_pass==2)
+  if(!Pike_compiler->num_parse_error && Pike_compiler->compiler_pass==2)
   {
     check_tree(res,0);
     optimize(res);
@@ -799,7 +797,7 @@ node *debug_mklocalnode(int var, int depth)
   node *res = mkemptynode();
   res->token = F_LOCAL;
 
-  f=compiler_frame;
+  f=Pike_compiler->compiler_frame;
   for(e=0;e<depth;e++) f=f->previous;
   copy_shared_string(res->type, f->variable[var].type);
 
@@ -829,10 +827,10 @@ node *debug_mkidentifiernode(int i)
 {
   node *res = mkemptynode();
   res->token = F_IDENTIFIER;
-  copy_shared_string(res->type, ID_FROM_INT(new_program, i)->type);
+  copy_shared_string(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
 
   /* FIXME */
-  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(new_program, i)->identifier_flags))
+  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(Pike_compiler->new_program, i)->identifier_flags))
   {
     res->node_info = OPT_EXTERNAL_DEPEND;
   }else{
@@ -845,7 +843,7 @@ node *debug_mkidentifiernode(int i)
 #endif
   res->u.id.number = i;
 #ifdef SHARED_NODES
-  res->u.id.prog = new_program;
+  res->u.id.prog = Pike_compiler->new_program;
 #endif /* SHARED_NODES */
 
   res = freeze_node(res);
@@ -858,10 +856,10 @@ node *debug_mktrampolinenode(int i)
 {
   node *res = mkemptynode();
   res->token = F_TRAMPOLINE;
-  copy_shared_string(res->type, ID_FROM_INT(new_program, i)->type);
+  copy_shared_string(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
 
   /* FIXME */
-  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(new_program, i)->identifier_flags))
+  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(Pike_compiler->new_program, i)->identifier_flags))
   {
     res->node_info = OPT_EXTERNAL_DEPEND;
   }else{
@@ -874,7 +872,7 @@ node *debug_mktrampolinenode(int i)
 #endif
   res->u.id.number = i;
 #ifdef SHARED_NODES
-  res->u.id.prog = new_program;
+  res->u.id.prog = Pike_compiler->new_program;
 #endif /* SHARED_NODES */
 
   res = freeze_node(res);
@@ -909,7 +907,7 @@ node *debug_mkexternalnode(int level,
   res->u.integer.b = i;
 
   /* Bzot-i-zot */
-  new_program->flags |= PROGRAM_USES_PARENT;
+  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
 
   return freeze_node(res);
 }
@@ -966,7 +964,7 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
   }
 #endif /* PIKE_DEBUG */
 
-  if (compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == 2) {
     if (type == void_type_string) {
       yywarning("Soft cast to void.");
       return mknode(F_POP_VALUE, n, 0);
@@ -1045,7 +1043,7 @@ void resolv_constant(node *n)
       break;
 
     case F_IDENTIFIER:
-      p=new_program;
+      p=Pike_compiler->new_program;
       numid=n->u.id.number;
       break;
 
@@ -1062,7 +1060,7 @@ void resolv_constant(node *n)
       return;
 
     case F_UNDEFINED:
-      if(compiler_pass==2) {
+      if(Pike_compiler->compiler_pass==2) {
 	/* FIXME: Ought to have the name of the identifier in the message. */
 	yyerror("Expected constant, got undefined identifier");
       }
@@ -1110,7 +1108,7 @@ void resolv_constant(node *n)
       {
 	push_svalue(&PROG_FROM_INT(p, numid)->constants[i->func.offset].sval);
       }else{
-	if(compiler_pass!=1)
+	if(Pike_compiler->compiler_pass!=1)
 	  yyerror("Constant is not defined yet.");
 	push_int(0);
       }
@@ -1140,7 +1138,7 @@ void resolv_class(node *n)
       break;
 
     default:
-      if (compiler_pass!=1)
+      if (Pike_compiler->compiler_pass!=1)
 	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
@@ -1164,7 +1162,7 @@ void resolv_program(node *n)
 	break;
       
     default:
-      if (compiler_pass!=1)
+      if (Pike_compiler->compiler_pass!=1)
 	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
@@ -1203,7 +1201,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     switch(sp[-1].type)
     {
     case T_INT:
-      if(!num_parse_error) {
+      if(!Pike_compiler->num_parse_error) {
 	if (node_name) {
 	  my_yyerror("Failed to index module '%s' with '%s' "
 		     "(module doesn't exist?)",
@@ -1371,7 +1369,7 @@ node *debug_mksvaluenode(struct svalue *s)
     return make_node_from_mapping(s->u.mapping);
 
   case T_OBJECT:
-    if(s->u.object == fake_object)
+    if(s->u.object == Pike_compiler->fake_object)
     {
       return mkefuncallnode("this_object", 0);
     }
@@ -1380,7 +1378,7 @@ node *debug_mksvaluenode(struct svalue *s)
       int x=0;
       struct object *o;
       node *n=mkefuncallnode("this_object", 0);
-      for(o=fake_object;o!=s->u.object;o=o->parent)
+      for(o=Pike_compiler->fake_object;o!=s->u.object;o=o->parent)
       {
 	n=mkefuncallnode("function_object",
 			 mkefuncallnode("object_program",n));
@@ -1393,14 +1391,14 @@ node *debug_mksvaluenode(struct svalue *s)
   {
     if(s->subtype != FUNCTION_BUILTIN)
     {
-      if(s->u.object == fake_object)
+      if(s->u.object == Pike_compiler->fake_object)
 	return mkidentifiernode(s->subtype);
 
       if(s->u.object->next == s->u.object)
       {
 	int x=0;
 	struct object *o;
-	for(o=fake_object->parent;o!=s->u.object;o=o->parent) x++;
+	for(o=Pike_compiler->fake_object->parent;o!=s->u.object;o=o->parent) x++;
 	return mkexternalnode(x, s->subtype,
 			      ID_FROM_INT(o->prog, s->subtype));
 
@@ -1667,17 +1665,17 @@ static void low_print_tree(node *foo,int needlval)
 
   case F_IDENTIFIER:
     if(needlval) fputc('&', stderr);
-    if (new_program) {
-      fprintf(stderr, "%s",ID_FROM_INT(new_program, foo->u.id.number)->name->str);
+    if (Pike_compiler->new_program) {
+      fprintf(stderr, "%s",ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
     } else {
       fprintf(stderr, "unknown identifier");
     }
     break;
 
   case F_TRAMPOLINE:
-    if (new_program) {
+    if (Pike_compiler->new_program) {
       fprintf(stderr, "trampoline<%s>",
-	      ID_FROM_INT(new_program, foo->u.id.number)->name->str);
+	      ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
     } else {
       fprintf(stderr, "trampoline<unknown identifier>");
     }
@@ -2273,7 +2271,7 @@ void fix_type_field(node *n)
       type_a=CAR(n)->type;
       type_b=CDR(n)->type;
       if(!check_indexing(type_a, type_b, n))
-	if(!catch_level)
+	if(!Pike_compiler->catch_level)
 	  my_yyerror("Indexing on illegal type.");
       n->type=index_type(type_a, type_b,n);
     }
@@ -2319,7 +2317,7 @@ void fix_type_field(node *n)
       case F_TRAMPOLINE:
 #endif
       case F_IDENTIFIER:
-	name=ID_FROM_INT(new_program, CAR(n)->u.id.number)->name->str;
+	name=ID_FROM_INT(Pike_compiler->new_program, CAR(n)->u.id.number)->name->str;
 	break;
 
 	case F_ARROW:
@@ -2449,24 +2447,24 @@ void fix_type_field(node *n)
 #endif /* SHARED_NODES */
 	break;
       }
-    } else if(compiler_frame && compiler_frame->current_return_type) {
-      if (!pike_types_le(CAR(n)->type, compiler_frame->current_return_type) &&
+    } else if(Pike_compiler->compiler_frame && Pike_compiler->compiler_frame->current_return_type) {
+      if (!pike_types_le(CAR(n)->type, Pike_compiler->compiler_frame->current_return_type) &&
 	    !(
-	      compiler_frame->current_return_type==void_type_string &&
+	      Pike_compiler->compiler_frame->current_return_type==void_type_string &&
 	      CAR(n)->token == F_CONSTANT &&
 	      IS_ZERO(& CAR(n)->u.sval)
 	      )
 	  ) {
-	if (!match_types(compiler_frame->current_return_type,CAR(n)->type))
+	if (!match_types(Pike_compiler->compiler_frame->current_return_type,CAR(n)->type))
 	{
 	  yyerror("Wrong return type.");
-	  yyexplain_nonmatching_types(compiler_frame->current_return_type,
+	  yyexplain_nonmatching_types(Pike_compiler->compiler_frame->current_return_type,
 				      CAR(n)->type,0);
 	}
 	else if (lex.pragmas & ID_STRICT_TYPES)
 	{
 	  yytype_error("Return type mismatch.",
-		       compiler_frame->current_return_type,
+		       Pike_compiler->compiler_frame->current_return_type,
 		       CAR(n)->type,
 		       YYTE_IS_WARNING);
 	}
@@ -3612,10 +3610,10 @@ int eval_low(node *n)
   }
 #endif
 
-  if(num_parse_error) return -1; 
+  if(Pike_compiler->num_parse_error) return -1; 
 
-  num_strings=new_program->num_strings;
-  num_constants=new_program->num_constants;
+  num_strings=Pike_compiler->new_program->num_strings;
+  num_constants=Pike_compiler->new_program->num_constants;
   jump=PC;
 
   store_linenumbers=0;
@@ -3624,7 +3622,7 @@ int eval_low(node *n)
   store_linenumbers=1;
 
   ret=-1;
-  if(!num_parse_error)
+  if(!Pike_compiler->num_parse_error)
   {
     struct callback *tmp_callback;
     struct timer_oflo foo;
@@ -3637,10 +3635,10 @@ int eval_low(node *n)
 				 check_evaluation_time,
 				 (void *)&foo,0);
 				 
-    if(apply_low_safe_and_stupid(fake_object, jump))
+    if(apply_low_safe_and_stupid(Pike_compiler->fake_object, jump))
     {
       /* Generate error message */
-      if(!catch_level)
+      if(!Pike_compiler->catch_level)
       {
         if(throw_value.type == T_ARRAY && throw_value.u.array->size)
         {
@@ -3679,19 +3677,19 @@ int eval_low(node *n)
     remove_callback(tmp_callback);
   }
 
-  while(new_program->num_strings > num_strings)
+  while(Pike_compiler->new_program->num_strings > num_strings)
   {
-    new_program->num_strings--;
-    free_string(new_program->strings[new_program->num_strings]);
+    Pike_compiler->new_program->num_strings--;
+    free_string(Pike_compiler->new_program->strings[Pike_compiler->new_program->num_strings]);
   }
 
-  while(new_program->num_constants > num_constants)
+  while(Pike_compiler->new_program->num_constants > num_constants)
   {
     struct program_constant *p_const;
 
-    new_program->num_constants--;
+    Pike_compiler->new_program->num_constants--;
 
-    p_const = new_program->constants + new_program->num_constants;
+    p_const = Pike_compiler->new_program->constants + Pike_compiler->new_program->num_constants;
 
     free_svalue(&p_const->sval);
     if (p_const->name) {
@@ -3700,7 +3698,7 @@ int eval_low(node *n)
     }
   }
 
-  new_program->num_program=jump;
+  Pike_compiler->new_program->num_program=jump;
 
   return ret;
 }
@@ -3722,13 +3720,13 @@ static node *eval(node *n)
     break;
 
   case 0:
-    if(catch_level) return n;
+    if(Pike_compiler->catch_level) return n;
     free_node(n);
     n=0;
     break;
 
   case 1:
-    if(catch_level && IS_ZERO(sp-1))
+    if(Pike_compiler->catch_level && IS_ZERO(sp-1))
     {
       pop_stack();
       return n;
@@ -3883,13 +3881,13 @@ int dooptcode(struct pike_string *name,
     vargs=0;
   }
 
-  if(compiler_frame->lexical_scope & SCOPE_SCOPED)
+  if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED)
     vargs|=IDENTIFIER_SCOPED;
 
-  if(compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+  if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
     vargs|=IDENTIFIER_SCOPE_USED;
 
-  if(compiler_pass==1)
+  if(Pike_compiler->compiler_pass==1)
   {
     tmp.offset=-1;
 #ifdef PIKE_DEBUG
@@ -3937,7 +3935,7 @@ int dooptcode(struct pike_string *name,
     }
 
     tmp.offset=PC;
-    compiler_frame->num_args=args;
+    Pike_compiler->compiler_frame->num_args=args;
   
 #ifdef PIKE_DEBUG
     if(a_flag > 2)
@@ -3946,7 +3944,7 @@ int dooptcode(struct pike_string *name,
       print_tree(check_node_hash(n));
     }
 #endif
-    if(!num_parse_error)
+    if(!Pike_compiler->num_parse_error)
     {
       extern int remove_clear_locals;
       remove_clear_locals=args;

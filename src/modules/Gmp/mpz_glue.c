@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.77 2000/06/09 16:57:19 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.78 2000/06/24 00:48:26 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1551,8 +1551,8 @@ void pike_module_init(void)
     /* magic /Hubbe
      * This seems to break more than it fixes though... /Hubbe
      */
-    free_string(ID_FROM_INT(new_program, id)->type);
-    ID_FROM_INT(new_program, id)->type=CONSTTYPE(tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,tObj),tInt),tFunc(tStr tInt,tInt)));
+    free_string(ID_FROM_INT(Pike_compiler->new_program, id)->type);
+    ID_FROM_INT(Pike_compiler->new_program, id)->type=CONSTTYPE(tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,tObj),tInt),tFunc(tStr tInt,tInt)));
 #endif
   }
 #endif

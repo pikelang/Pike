@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.282 2000/06/20 03:26:16 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.283 2000/06/24 00:48:12 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1456,7 +1456,7 @@ node *fix_this_object_type(node *n)
 {
   free_string(n->type);
   type_stack_mark();
-  push_type_int(new_program->id);
+  push_type_int(Pike_compiler->new_program->id);
   /*  push_type(1);   We are rather sure that we contain ourselves... */
   push_type(0);		/* But it did not work yet, so... */
   push_type(T_OBJECT);

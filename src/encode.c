@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.59 2000/06/10 11:52:43 mast Exp $");
+RCSID("$Id: encode.c,v 1.60 2000/06/24 00:48:13 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -854,28 +854,28 @@ static void restore_type_stack(unsigned char *old_stackp)
 {
 #if 0
   fprintf(stderr, "Restoring type-stack: %p => %p\n",
-	  type_stackp, old_stackp);
+	  Pike_compiler->type_stackp, old_stackp);
 #endif /* 0 */
 #ifdef PIKE_DEBUG
-  if (old_stackp > type_stackp) {
+  if (old_stackp > Pike_compiler->type_stackp) {
     fatal("type stack out of sync!\n");
   }
 #endif /* PIKE_DEBUG */
-  type_stackp = old_stackp;
+  Pike_compiler->type_stackp = old_stackp;
 }
 
 static void restore_type_mark(unsigned char **old_type_mark_stackp)
 {
 #if 0
   fprintf(stderr, "Restoring type-mark: %p => %p\n",
-	  pike_type_mark_stackp, old_type_mark_stackp);
+	  Pike_compiler->pike_type_mark_stackp, old_type_mark_stackp);
 #endif /* 0 */
 #ifdef PIKE_DEBUG
-  if (old_type_mark_stackp > pike_type_mark_stackp) {
+  if (old_type_mark_stackp > Pike_compiler->pike_type_mark_stackp) {
     fatal("type mark_stack out of sync!\n");
   }
 #endif /* PIKE_DEBUG */
-  pike_type_mark_stackp = old_type_mark_stackp;
+  Pike_compiler->pike_type_mark_stackp = old_type_mark_stackp;
 }
 
 static void low_decode_type(struct decode_data *data)
@@ -886,8 +886,8 @@ static void low_decode_type(struct decode_data *data)
   ONERROR err1;
   ONERROR err2;
 
-  SET_ONERROR(err1, restore_type_stack, type_stackp);
-  SET_ONERROR(err2, restore_type_mark, pike_type_mark_stackp);
+  SET_ONERROR(err1, restore_type_stack, Pike_compiler->type_stackp);
+  SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
 
 one_more_type:
   tmp = GETC();
@@ -1475,8 +1475,8 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(dat);
 
-	  SET_ONERROR(err1, restore_type_stack, type_stackp);
-	  SET_ONERROR(err2, restore_type_mark, pike_type_mark_stackp);
+	  SET_ONERROR(err1, restore_type_stack, Pike_compiler->type_stackp);
+	  SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
 
 	  for(d=0;d<p->num_identifiers;d++)
 	  {
@@ -1509,12 +1509,12 @@ static void decode_value2(struct decode_data *data)
 	  debug_malloc_touch(dat);
 
 	  {
-	    struct program *new_program_save=new_program;
-	    new_program=p;
+	    struct program *new_program_save=Pike_compiler->new_program;
+	    Pike_compiler->new_program=p;
 	    fsort((void *)p->identifier_index,
 		  p->num_identifier_index,
 		  sizeof(unsigned short),(fsortfun)program_function_index_compare);
-	    new_program=new_program_save;
+	    Pike_compiler->new_program=new_program_save;
 	  }
 	  p->flags &=~ PROGRAM_AVOID_CHECK;
 	  p->flags |= PROGRAM_FINISHED;

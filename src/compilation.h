@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.14 1999/12/29 21:11:38 mast Exp $
+ * $Id: compilation.h,v 1.15 2000/06/24 00:48:13 hubbe Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -28,65 +28,82 @@
 #endif
 
 #ifdef STRUCT
-#define IMEMBER(X,Y) X Y ;
-#define DMEMBER(X,Y) X Y ;
-#define STACKMEMBER(X,Y) X Y ;
-#define IMEMBER2(X,Y,Z) X Y Z ;
-#define ZMEMBER(X,Y) X Y ;
-#define ZMEMBER2(X,Y,Z) X Y Z ;
+#define IMEMBER(X,Y,Z) X Y ;
+#define DMEMBER(X,Y,Z) X Y ;
+#define STACKMEMBER(X,Y,Z) X Y ;
+#define IMEMBER2(X,Y,Z,Q) X Y Z ;
+#define ZMEMBER(X,Y,Z) X Y ;
+#define ZMEMBER2(X,Y,Z,Q) X Y Z ;
 #define SNAME(X,Y) struct X { struct X *previous;
 #define SEND };
 #endif
 
-#ifdef DECLARE
-#define IMEMBER(X,Y)
-#define DMEMBER(X,Y)
-#define STACKMEMBER(X,Y)
-#define IMEMBER2(X,Y,Z)
-#define ZMEMBER(X,Y)
-#define ZMEMBER2(X,Y,Z)
-#define SNAME(X,Y) static struct X * Y = 0;
+#ifdef EXTERN
+#define IMEMBER(X,Y,Z)
+#define DMEMBER(X,Y,Z)
+#define STACKMEMBER(X,Y,z)
+#define IMEMBER2(X,Y,Z,Q)
+#define ZMEMBER(X,Y,Z)
+#define ZMEMBER2(X,Y,Z,Q)
+#define SNAME(X,Y) extern struct X * Y;
 #define SEND
 #endif
 
+#ifdef DECLARE
+#define IMEMBER(X,Y,Z) Z,
+#define DMEMBER(X,Y,Z) Z,
+#define STACKMEMBER(X,Y,Z) Z,
+#define IMEMBER2(X,Y,Z,Q) Q,
+#define ZMEMBER(X,Y,Z) Z,
+#define ZMEMBER2(X,Y,Z,Q) Q,
+#define SNAME(X,Y) \
+  extern struct X PIKE_CONCAT(Y,_base); \
+  struct X * Y = & PIKE_CONCAT(Y,_base); \
+  struct X PIKE_CONCAT(Y,_base) = { 0, 
+#define SEND };
+#endif
+
 #ifdef PUSH
-#define IMEMBER(X,Y) MEMCPY((char *)&(oLd->Y), (char *)&(Y), sizeof(Y));
-#define DMEMBER(X,Y) IMEMBER(X,Y)
-#define STACKMEMBER(X,Y) (oLd->Y=Y);
-#define IMEMBER2(X,Y,Z) IMEMBER(X,Y)
-#define ZMEMBER(X,Y) MEMCPY((char *)&(oLd->Y), (char *)&(Y), sizeof(Y)); \
-                     MEMSET((char *)&(Y), 0, sizeof(Y));
-#define ZMEMBER2(X,Y,Z) ZMEMBER(X,Y)
+#define IMEMBER(X,Y,Z) MEMCPY((char *)&(nEw->Y), (char *)&(Pike_compiler->Y), sizeof(nEw->Y));
+#define DMEMBER(X,Y,Z) IMEMBER(X,Y)
+#define STACKMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
+#define IMEMBER2(X,Y,Z,Q) IMEMBER(X,Y)
+#define ZMEMBER(X,Y,Z) MEMSET((char *)&(nEw->Y), 0, sizeof(nEw->Y));
+#define ZMEMBER2(X,Y,Z,Q) ZMEMBER(X,Y)
 #define SNAME(X,Y) { \
-      struct X *oLd; \
-      oLd=ALLOC_STRUCT(X); \
-      oLd->previous=Y; Y=oLd;
-#define SEND }
+      struct X *nEw; \
+      nEw=ALLOC_STRUCT(X); \
+      nEw->previous=Pike_compiler;
+#define SEND \
+      Pike_compiler=nEw; \
+      }
 
 #endif
 
 
 #ifdef POP
-#define IMEMBER(X,Y) MEMCPY((char *)&(Y), (char *)&(oLd->Y), sizeof(Y));
-#define IMEMBER2(X,Y,Z) IMEMBER(X,Y)
-#define ZMEMBER(X,Y) MEMCPY((char *)&(Y), (char *)&(oLd->Y), sizeof(Y));
-#define ZMEMBER2(X,Y,Z) ZMEMBER(X,Y)
+#define IMEMBER(X,Y,Z) 
+#define IMEMBER2(X,Y,Z,Q) IMEMBER(X,Y)
+#define ZMEMBER(X,Y,Z) 
+#define ZMEMBER2(X,Y,Z,Q) ZMEMBER(X,Y)
 
-#define DMEMBER(X,Y) DO_DEBUG_CODE( \
-    if(MEMCMP((char *)&(Y), (char *)&(oLd->Y), sizeof(Y))) \
+#define DMEMBER(X,Y,Z) DO_DEBUG_CODE( \
+    if(MEMCMP((char *)&(Pike_compiler->Y), (char *)&(oLd->Y), sizeof(oLd->Y))) \
       fatal("Variable " #Y " became whacked during compilation.\n"); ) \
   IMEMBER(X,Y)
 
-#define STACKMEMBER(X,Y) DO_DEBUG_CODE( \
-    if(Y < oLd->Y) \
-      fatal("Stack " #Y " shrunk %d steps compilation, currently: %p.\n",oLd->Y - Y,Y); ) \
-  Y=oLd->Y;
+#define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
+    if(Pike_compiler->Y < oLd->Y) \
+      fatal("Stack " #Y " shrunk %d steps compilation, currently: %p.\n",oLd->Y - Pike_compiler->Y,Pike_compiler->Y); )
 
 #define SNAME(X,Y) { \
-      struct X *oLd; \
-      oLd=Y; Y=oLd->previous;
-#define SEND free((char *)oLd); \
+      struct X *oLd=Pike_compiler->previous;
+
+#define SEND \
+     free((char *)Pike_compiler); \
+     Pike_compiler=oLd; \
     }
+
 #define PCODE(X) X
 #else
 #define PCODE(X)
@@ -94,31 +111,31 @@
 
 
 #ifdef PIKE_DEBUG
-#define STRMEMBER(X,Y) \
-  PCODE(if(X) fatal("Variable %s not deallocated properly.\n",Y);) \
-  ZMEMBER(struct pike_string *,X)
+#define STRMEMBER(X,Y,Z) \
+  PCODE(if(Pike_compiler->X) fatal("Variable %s not deallocated properly.\n",Y);) \
+  ZMEMBER(struct pike_string *,X,Z)
 #else
-#define STRMEMBER(X,Y) \
-  ZMEMBER(struct pike_string *,X)
+#define STRMEMBER(X,Y,Z) \
+  ZMEMBER(struct pike_string *,X,Z)
 #endif
 
-  SNAME(program_state,previous_program_state)
-  ZMEMBER(INT32,last_line)
-  STRMEMBER(last_file,"last_file")
-  ZMEMBER(struct object *,fake_object)
-  ZMEMBER(struct program *,new_program)
-  ZMEMBER(struct program *,malloc_size_program)
-  ZMEMBER(node *,init_node)
-  ZMEMBER(INT32,last_pc)
-  ZMEMBER(int,num_parse_error)
-  ZMEMBER(struct compiler_frame *,compiler_frame)
-  ZMEMBER(INT32,num_used_modules)
-  IMEMBER(int,compiler_pass)
-  ZMEMBER(int,local_class_counter)
-  ZMEMBER(int,catch_level)
-  ZMEMBER(struct mapping *,module_index_cache)
-  STACKMEMBER(unsigned char *,type_stackp)
-  STACKMEMBER(unsigned char **,pike_type_mark_stackp)
+  SNAME(program_state,Pike_compiler)
+  ZMEMBER(INT32,last_line,0)
+  STRMEMBER(last_file,"last_file",0)
+  ZMEMBER(struct object *,fake_object,0)
+  ZMEMBER(struct program *,new_program,0)
+  ZMEMBER(struct program *,malloc_size_program,0)
+  ZMEMBER(node *,init_node,0)
+  ZMEMBER(INT32,last_pc,0)
+  ZMEMBER(int,num_parse_error,0)
+  ZMEMBER(struct compiler_frame *,compiler_frame,0)
+  ZMEMBER(INT32,num_used_modules,0)
+  IMEMBER(int,compiler_pass,0)
+  ZMEMBER(int,local_class_counter,0)
+  ZMEMBER(int,catch_level,0)
+  ZMEMBER(struct mapping *,module_index_cache,0)
+  STACKMEMBER(unsigned char *,type_stackp,type_stack)
+  STACKMEMBER(unsigned char **,pike_type_mark_stackp,pike_type_mark_stack)
   SEND
 
 #undef PCODE
@@ -132,6 +149,7 @@
 #undef SEND
 #undef STACKMEMBER
 
+#undef EXTERN
 #undef STRUCT
 #undef PUSH
 #undef POP
