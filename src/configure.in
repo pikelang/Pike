@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.426 2000/10/01 18:26:25 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.427 2000/10/02 16:22:43 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1677,6 +1677,10 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
     xSolaris*)
       # Some versions of Solaris 2.5.1 require linking with -lthread too.
       LIBS="${OLDLIBS} -lpthread -lthread"
+    ;;
+
+    xDarwin*)
+      LIBS="${OLDLIBS}"
     ;;
 
     *)
