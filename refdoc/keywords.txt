@@ -261,7 +261,7 @@ ________________________________________________________________________________
 
 Keyword:      @array - @endarray
 Description:  Documentation of the layout of an array.
-Arguments:    -
+Arguments:    <name>
 Children:     @elem
 Groups with:  -
 Examples:     @array
@@ -358,7 +358,7 @@ ________________________________________________________________________________
 
 Keyword:      @int - @endint
 Description:  Documentation of the different values an integer may have.
-Arguments:    -
+Arguments:    <name>
 Children:     @value
 Examples:     @int
                 @value 0
@@ -389,7 +389,7 @@ ________________________________________________________________________________
 
 Keyword:      @mapping - @endmapping
 Description:  Documentation of the layout of a mapping.
-Arguments:    -
+Arguments:    <name>
 Children:     @member
 Examples:     @mapping
                 @member int "ip"
@@ -420,6 +420,37 @@ XML:          `@member float "foo"' =>
                 <type><float/></type>
                 <index>"foo"</index>
               </member>
+________________________________________________________________________________
+
+Keyword:      @multiset - @endmultiset
+Description:  Documentation of the layout of a multiset.
+Arguments:    <name>
+Children:     @index
+Examples:     @multiset
+                @index "cat"
+                  It's raining cats.
+                @index "dog"
+                  It's raining dogs
+              @endmultiset
+
+XML:          <multiset name="..."/>
+________________________________________________________________________________
+
+Keyword:      @index
+Description:  Documentation for a index in a multiset.
+              Only inside @multiset - @endmultiset.
+Arguments:    <index_value>
+              Where:
+                <index_value> is the index value. Can be a string or integer
+                  literal, or an identifier.
+Children:     -
+Groups with:  -
+Examples:     @index "cat"
+              @index "dog"
+                If present, these symbols signifies that it is raining animals.
+
+XML:          `@index "foo"' =>
+                <index>"foo"</index>
 ________________________________________________________________________________
 
 Keyword:      @ol - @endol
@@ -481,7 +512,7 @@ ________________________________________________________________________________
 
 Keyword:      @string - @endstring
 Description:  Documentation of the layout of a mapping.
-Arguments:    -
+Arguments:    <name>
 Children:     @value
 Examples:     @string
                 @value "GMT"
