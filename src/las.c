@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.195 2000/08/27 17:27:46 grubba Exp $");
+RCSID("$Id: las.c,v 1.196 2000/08/27 19:10:24 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1898,8 +1898,8 @@ void print_tree(node *n)
 }
 
 
-/* The following routines needs much better commenting */
-/* They also need to support lexical scoping and external variables.
+/* The following routines need much better commenting. */
+/* They also needed to support lexical scoping and external variables.
  * /grubba 2000-08-27
  */
 
@@ -1909,6 +1909,7 @@ void print_tree(node *n)
 #define MAX_VAR MAX_GLOBAL
 #endif /* MAX_LOCAL > MAX_GLOBAL */
 
+/* FIXME: Should perhaps use BLOCK_ALLOC for struct scope_info? */
 struct scope_info
 {
   struct scope_info *next;
@@ -1920,15 +1921,20 @@ struct used_vars
 {
   int err;
   int ext_flags;
-  struct scope_info *locals;
-  struct scope_info *externals;
+  /* Note that the locals and externals linked lists are sorted on scope_id. */
+  struct scope_info *locals;	/* Lexical scopes. scope_id == depth */
+  struct scope_info *externals;	/* External scopes. scope_id == program_id */
 };
 
 #define VAR_BLOCKED   0
 #define VAR_UNUSED    1
 #define VAR_USED      3
 
-/* FIXME: Shouldn't these two be named "or_vars"? */
+/* FIXME: Shouldn't the following two functions be named "*_or_vars"? */
+
+/* Perform a merge into a.
+ * Note that b is freed.
+ */
 static void low_and_vars(struct scope_info **a, struct scope_info *b)
 {
   while (*a && b) {
@@ -1966,6 +1972,9 @@ static void do_and_vars(struct used_vars *a,struct used_vars *b)
   free(b);
 }
 
+/* Makes a copy of a.
+ * Note: Can throw errors on out of memory.
+ */
 static struct used_vars *copy_vars(struct used_vars *a)
 {
   struct used_vars *ret;
@@ -2024,6 +2033,10 @@ static struct used_vars *copy_vars(struct used_vars *a)
   return ret;
 }
 
+/* Find the insertion point for the variable a:scope_id:num.
+ * Allocates a new scope if needed.
+ * Can throw errors on out of memory.
+ */
 char *find_q(struct scope_info **a, int num, int scope_id)
 {
   struct scope_info *new;
@@ -2057,6 +2070,7 @@ char *find_q(struct scope_info **a, int num, int scope_id)
   return new->vars + num;
 }
 
+/* Find the variables that are used in the tree n. */
 static int find_used_variables(node *n,
 			       struct used_vars *p,
 			       int noblock,
