@@ -1,4 +1,5 @@
 Makefile
+backend.c
 builtin.c
 case_info.h
 config.cache
@@ -35,6 +36,7 @@ patch_cc1.o
 peep_engine.c
 pike
 pike.tmp
+precompile-method
 precompile.sh
 qsort_template.h
 remake
