@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.99 1999/02/04 07:21:16 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.100 1999/02/16 01:10:56 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1526,14 +1526,16 @@ void f_create_process(INT32 args)
           error("Invalid stdin file\n");
       }
 
-      if((tmp = simple_mapping_string_lookup( optional, "stdout" )))
+      if((tmp = simple_mapping_string_lookup( optional, "stdout" )) &&
+	 tmp->type == T_OBJECT)
       {
         stds[1] = fd_from_object( tmp->u.object );
         if(stds[1] == -1)
           error("Invalid stdout file\n");
       }
 
-      if((tmp = simple_mapping_string_lookup( optional, "stderr" )))
+      if((tmp = simple_mapping_string_lookup( optional, "stderr" )) &&
+	 tmp->type == T_OBJECT)
       {
         stds[2] = fd_from_object( tmp->u.object );
         if(stds[2] == -1)
