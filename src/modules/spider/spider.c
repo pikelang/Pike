@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.109 2001/07/11 12:25:48 grubba Exp $");
+RCSID("$Id: spider.c,v 1.110 2001/07/13 12:33:42 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1035,7 +1035,7 @@ void f_fd_info(INT32 args)
 static void program_name(struct program *p)
 {
   char *f;
-  int n=0;
+  INT32 n=0;
   ref_push_program(p);
   APPLY_MASTER("program_name", 1);
   if(sp[-1].type == T_STRING)
@@ -1046,7 +1046,7 @@ static void program_name(struct program *p)
   if(!p->linenumbers || !strlen(f))
     push_text("Unknown program");
 
-  push_text( get_line( p->program, p, &n ) );
+  push_string( get_line( p->program, p, &n ) );
   push_text( ":" );
   push_int( n );
   f_add( 3 );
