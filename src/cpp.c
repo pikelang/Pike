@@ -1978,7 +1978,7 @@ static void check_constant(struct cpp *this,
 
       if(res)
       {
-        struct pike_string *s=make_shared_binary_string(data, dlen)
+        struct pike_string *s=make_shared_binary_string(data, dlen);
 	res=do_safe_index_call(s);
         free_string(s);
       }
