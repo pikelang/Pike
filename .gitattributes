@@ -47,7 +47,7 @@ testfont binary
 /lib/7.2/modules/__default.pmod foreign_ident
 /lib/7.2/modules/system.pmod foreign_ident
 /lib/master.pike.in foreign_ident
-/lib/mklibtests.pike foreign_ident
+/lib/mklibtests.sh foreign_ident
 /lib/modules/ADT.pmod/History.pike foreign_ident
 /lib/modules/ADT.pmod/Queue.pike foreign_ident
 /lib/modules/ADT.pmod/Relation.pmod/Binary.pike foreign_ident
