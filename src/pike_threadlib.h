@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.19 2002/09/14 02:46:27 mast Exp $
+ * $Id: pike_threadlib.h,v 1.20 2002/09/14 02:58:33 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -351,6 +351,17 @@ PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
 PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
 PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
+#if !defined(HAVE_GETHRTIME) && defined(HAVE_CLOCK)
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+PMOD_EXPORT extern clock_t thread_start_clock;
+#define USE_CLOCK_FOR_SLICES
+#define DO_IF_USE_CLOCK_FOR_SLICES(X) X
+#else
+#define DO_IF_USE_CLOCK_FOR_SLICES(X)
+#endif
+
 /* Define to get a debug-trace of some of the threads operations. */
 /* #define VERBOSE_THREADS_DEBUG	0 */ /* Some debug */
 /* #define VERBOSE_THREADS_DEBUG	1 */ /* Lots of debug */
@@ -481,6 +492,7 @@ PMOD_EXPORT extern int t_flag;
 #define SWAP_IN_THREAD(_tmp) do {					\
        (_tmp)->swapped=0;						\
        Pike_interpreter=(_tmp)->state;					\
+       DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
        DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime();)	\
      } while(0)
 

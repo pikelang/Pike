@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.183 2002/09/14 02:50:50 mast Exp $");
+RCSID("$Id: threads.c,v 1.184 2002/09/14 02:58:33 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -197,6 +197,9 @@ pthread_attr_t pattr;
 pthread_attr_t small_pattr;
 #endif
 PMOD_EXPORT ptrdiff_t thread_storage_offset;
+#ifdef USE_CLOCK_FOR_SLICES
+PMOD_EXPORT clock_t thread_start_clock = 0;
+#endif
 
 struct thread_starter
 {
@@ -618,14 +621,19 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   /* If we have no yield we can't cut calls here since it's possible
    * that a thread switch will take place only occasionally in the
    * window below. */
-#ifdef HAVE_GETHRTIME
-  static long long last_;
-  if( gethrtime()-last_ < 50000000 ) /* 0.05s slice */
-    return;
-  last_ = gethrtime();
-#else
   static int div_;
   if(div_++ & 255)
+    return;
+#ifdef HAVE_GETHRTIME
+  {
+    static hrtime_t last_ = 0;
+    hrtime_t now = gethrtime();
+    if( now-last_ < 50000000 ) /* 0.05s slice */
+      return;
+    last_ = now;
+  }
+#elif defined (USE_CLOCK_FOR_SLICES)
+  if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
     return;
 #endif
 #endif
@@ -644,6 +652,12 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   /* Allow other threads to run */
   th_yield();
   THREADS_DISALLOW();
+
+#ifdef USE_CLOCK_FOR_SLICES
+  /* Must set the base time for the slice here since clock() returns
+   * thread local time. */
+  thread_start_clock = clock();
+#endif
 
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
