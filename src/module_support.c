@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.19 1999/01/25 23:34:43 mirar Exp $");
+RCSID("$Id: module_support.c,v 1.20 1999/02/12 04:26:17 per Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -132,6 +132,7 @@ void check_all_args(const char *fnname, int args, ... )
  *   %m: struct mapping *
  *   %M: struct multiset *
  *   %o: struct object *
+ *   %O: struct object * or NULL
  *   %p: struct program *
  *   %*: struct svalue *
  */
@@ -142,6 +143,8 @@ int va_get_args(struct svalue *s,
 		va_list ap)
 {
   int ret=0;
+  extern void f_cast();
+
   while(*fmt)
   {
     if(*fmt != '%')
@@ -158,6 +161,34 @@ int va_get_args(struct svalue *s,
     case 'i':
       if(s->type != T_INT) return ret;
       *va_arg(ap, INT32 *)=s->u.integer;
+      break;
+    case 'D':
+      if(s->type == T_INT)
+	 *va_arg(ap, int *)=s->u.integer;
+      else if(s->type == T_FLOAT)
+        *va_arg(ap, int *)=(int)s->u.float_number;
+      else 
+      {
+        push_svalue( s );
+        push_text( "int" );
+        f_cast( );
+        *va_arg(ap, int *)=sp[-1].u.integer;
+        pop_stack();
+      }
+      break;
+    case 'I':
+      if(s->type == T_INT)
+	 *va_arg(ap, INT32 *)=s->u.integer;
+      else if(s->type == T_FLOAT)
+        *va_arg(ap, INT32 *)=(int)s->u.float_number;
+      else 
+      {
+        push_svalue( s );
+        push_text( "int" );
+        f_cast( );
+        *va_arg(ap, INT32 *)=sp[-1].u.integer;
+        pop_stack();
+      }
       break;
     case 's':
       if(s->type != T_STRING) return ret;
@@ -187,8 +218,15 @@ int va_get_args(struct svalue *s,
       else if(s->type == T_INT)
 	 *va_arg(ap, float *)=(float)s->u.integer;
       else 
-	 return ret;
+      {
+        push_svalue( s );
+        push_text( "float" );
+        f_cast( );
+        *va_arg(ap, float *)=sp[-1].u.float_number;
+        pop_stack();
+      }
       break;
+
     case 'm':
       if(s->type != T_MAPPING) return ret;
       *va_arg(ap, struct mapping **)=s->u.mapping;
@@ -200,6 +238,14 @@ int va_get_args(struct svalue *s,
     case 'o':
       if(s->type != T_OBJECT) return ret;
       *va_arg(ap, struct object **)=s->u.object;
+      break;
+    case 'O':
+      if(s->type == T_OBJECT) 
+        *va_arg(ap, struct object **)=s->u.object;
+      else if(IS_ZERO(s))
+        *va_arg(ap, struct object **)=NULL;
+      else
+        return ret;
       break;
     case 'p':
       if(s->type != T_PROGRAM) return ret;
@@ -242,6 +288,7 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
     char *expected_type;
     switch(format[ret*2+1]) {
     case 'd': case 'i': expected_type = "int"; break;
+    case 'D': case 'I': expected_type = "int|float"; break;
     case 's': case 'S': expected_type = "string (8bit)"; break;
     case 'W': expected_type = "string"; break;
     case 'a': expected_type = "array"; break;
@@ -250,6 +297,7 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
     case 'm': expected_type = "mapping"; break;
     case 'M': expected_type = "multiset"; break;
     case 'o': expected_type = "object"; break;
+    case 'O': expected_type = "object or zero"; break;
     case 'p': expected_type = "program"; break;
     case '*': expected_type = "mixed"; break;
     default: expected_type = "Unknown"; break;
