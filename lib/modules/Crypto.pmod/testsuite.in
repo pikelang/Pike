@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.20 2003/11/30 05:53:28 nilsson Exp $
+dnl $Id: testsuite.in,v 1.21 2003/12/03 05:07:27 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -235,12 +235,14 @@ cond([[ Crypto["$1"] ]],[[
 ]])]])
 
 test_cipher(AES,aes)
-test_cipher(ARCFOUR,arcfour)
-test_cipher(BLOWFISH,blowfish)
+test_cipher(Arcfour,arcfour)
+test_cipher(Blowfish,blowfish)
 test_cipher(CAST,cast128)
 test_cipher(DES,des)
 test_cipher(DES3,des3)
 test_cipher(IDEA,idea)
+test_cipher(Serpent,serpent)
+test_cipher(Twofish,twofish)
 
 
 dnl Crypto.rsa

@@ -11,21 +11,17 @@ import Nettle;
 
 constant HashState = Nettle.HashState;
 
-//!
+//! Abstract class for hash algorithms. Contains some tools useful
+//! for all hashes.
 class Hash
 {
-  inherit HashInfo;
+  inherit Nettle.HashInfo;
 
-  HashState `()();
+  Nettle.HashState `()();
   
   //! @decl string hash(string data)
   //!
   //!  Works as a shortcut for @expr{obj->update(data)->digest()@}.
-  //!
-  //! @note
-  //!  The hash buffer will not be cleared before @[data] is added
-  //!  to the buffer, so data added with calls to @[HashState()->update()]
-  //!  will be prepended to the @[data].
   //!
   //! @seealso
   //!   @[HashState()->update()] and @[HashState()->digest()].
@@ -34,17 +30,6 @@ class Hash
     return `()()->update(data)->digest();
   }
 }
-
-class MD5_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit MD5_Info;
-  inherit Hash;
-
-  MD5_State `()() { return MD5_State(); }
-}
-
-MD5_Algorithm MD5 = MD5_Algorithm();
 
 //! @decl string crypt_md5(string password, void|int salt)
 //! @decl int(0..1) crypt_md5(string password, string hash)
@@ -69,175 +54,29 @@ string|int(0..1) crypt_md5(string password, void|string salt) {
   return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
 }
 
-#if constant(Nettle.MD4_Info)
-
-class MD4_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit MD4_Info;
-  inherit Hash;
-
-  MD4_State `()() { return MD4_State(); }
-}
-
-MD4_Algorithm MD4 = MD4_Algorithm();
-
-#endif
-
-#if constant(Nettle.MD2_Info)
-
-class MD2_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit MD2_Info;
-  inherit Hash;
-
-  MD2_State `()() { return MD2_State(); }
-}
-
-MD2_Algorithm MD2 = MD2_Algorithm();
-
-#endif
-
-class SHA_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit SHA1_Info;
-  inherit Hash;
-
-  SHA1_State `()() { return SHA1_State(); }
-}
-
-SHA_Algorithm SHA = SHA_Algorithm();
-
-class SHA256_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit SHA256_Info;
-  inherit Hash;
-
-  SHA256_State `()() { return SHA256_State(); }
-}
-
-SHA256_Algorithm SHA256 = SHA256_Algorithm();
 
 constant CipherState = Nettle.CipherState;
 
-//!
+//! Abstract class for crypto algorithms. Contains some tools useful
+//! for all ciphers.
 class Cipher
 {
-  inherit CipherInfo;
+  inherit Nettle.CipherInfo;
 
-  CipherState `()();
+  Nettle.CipherState `()();
 
+  //! Works as a shortcut for @expr{obj->set_encrypt_key(key)->crypt(data)@}
   string encrypt(string key, string data) {
     return `()()->set_encrypt_key(key)->crypt(data);
   }
 
+  //! Works as a shortcut for @expr{obj->set_decrypt_key(key)->crypt(data)@}
   string decrypt(string key, string data) {
     return `()()->set_decrypt_key(key)->crypt(data);
   }
 }
 
-class AES_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit AES_Info;
-  inherit Cipher;
 
-  AES_State `()() { return AES_State(); }
-}
-
-AES_Algorithm AES = AES_Algorithm();
-
-class ARCFOUR_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit ARCFOUR_Info;
-  inherit Cipher;
-
-  ARCFOUR_State `()() { return ARCFOUR_State(); }
-}
-
-ARCFOUR_Algorithm ARCFOUR = ARCFOUR_Algorithm();
-
-class BLOWFISH_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit BLOWFISH_Info;
-  inherit Cipher;
-
-  BLOWFISH_State `()() { return BLOWFISH_State(); }
-}
-
-BLOWFISH_Algorithm Blowfish = BLOWFISH_Algorithm();
-
-class CAST_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit CAST128_Info;
-  inherit Cipher;
-
-  CAST128_State `()() { return CAST128_State(); }
-}
-
-CAST_Algorithm CAST = CAST_Algorithm();
-
-class DES_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit DES_Info;
-  inherit Cipher;
-
-  DES_State `()() { return DES_State(); }
-}
-
-DES_Algorithm DES = DES_Algorithm();
-
-//!
-class DES3_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit DES3_Info;
-  inherit Cipher;
-
-  DES3_State `()() { return DES3_State(); }
-}
-
-DES3_Algorithm DES3 = DES3_Algorithm();
-
-class IDEA_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit IDEA_Info;
-  inherit Cipher;
-
-  IDEA_State `()() { return IDEA_State(); }
-}
-
-IDEA_Algorithm IDEA = IDEA_Algorithm();
-
-class Serpent_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit Serpent_Info;
-  inherit Cipher;
-
-  Serpent_State `()() { return Serpent_State(); }
-}
-
-Serpent_Algorithm Serpent = Serpent_Algorithm();
-
-class Twofish_Algorithm
-{
-  // NOTE: Depends on the order of INIT invocations.
-  inherit Twofish_Info;
-  inherit Cipher;
-
-  Twofish_State `()() { return Twofish_State(); }
-}
-
-Twofish_Algorithm Twofish = Twofish_Algorithm();
 
 constant CBC = Nettle.CBC;
 
