@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.49 1998/04/20 18:52:02 grubba Exp $
+ * $Id: system.c,v 1.50 1998/05/13 20:13:42 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.49 1998/04/20 18:52:02 grubba Exp $");
+RCSID("$Id: system.c,v 1.50 1998/05/13 20:13:42 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1059,6 +1059,9 @@ void pike_module_init(void)
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT",HKEY_CLASSES_ROOT);
   add_efun("RegGetValue",f_RegGetValue,"function(int,string,string:string|int|string*)",OPT_EXTERNAL_DEPEND);
 #endif
+
+  /* errnos */
+#include "add-errnos.h"
 }
 
 void pike_module_exit(void)
