@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.155 2001/03/03 18:05:08 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.156 2001/03/03 21:12:24 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3544,7 +3544,7 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 }
 
 
-struct pike_type *make_pike_type(char *t)
+struct pike_type *make_pike_type(const char *t)
 {
   return make_shared_binary_string(t, type_length(t));
 }
