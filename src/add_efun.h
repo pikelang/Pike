@@ -17,6 +17,8 @@ struct efun
 };
 
 typedef void (*c_fun)(INT32);
+typedef int (*docode_fun)(node *n);
+typedef void (*optimize_fun)(node *n);
 
 struct callable
 {
@@ -25,13 +27,26 @@ struct callable
   struct lpc_string *type;
   struct lpc_string *name;
   INT16 flags;
+  optimize_fun optimize;
+  docode_fun docode;
 };
 
 /* Prototypes begin here */
 struct efun *lookup_efun(struct lpc_string *name);
 void low_add_efun(struct lpc_string *name, struct svalue *fun);
-struct callable *make_callable(c_fun fun,char *name, char *type, INT16 flags);
+struct callable *make_callable(c_fun fun,
+			       char *name,
+			       char *type,
+			       INT16 flags,
+			       optimize_fun optimize,
+			       docode_fun docode);
 void really_free_callable(struct callable *fun);
+void add_efun2(char *name,
+	       c_fun fun,
+	       char *type,
+	       INT16 flags,
+	       optimize_fun optimize,
+	       docode_fun docode);
 void add_efun(char *name, c_fun fun, char *type, INT16 flags);
 void push_all_efuns_on_stack();
 void cleanup_added_efuns();

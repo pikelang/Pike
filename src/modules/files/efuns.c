@@ -301,7 +301,7 @@ void f_exece(INT32 args)
       push_string(a->string);
       a->string->refs++;
 
-      f_sum(3);
+      f_add(3);
 
       env[e]=sp[-1].u.string->str;
     }

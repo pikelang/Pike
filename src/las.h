@@ -85,6 +85,7 @@ node *mkintnode(int nr);
 node *mkfloatnode(FLOAT_TYPE foo);
 node *mkapplynode(node *func,node *args);
 node *mkefuncallnode(char *function, node *args);
+node *mkopernode(char *oper_id, node *arg1, node *arg2);
 node *mklocalnode(int var);
 node *mkidentifiernode(int i);
 node *mkcastnode(struct lpc_string *type,node *n);

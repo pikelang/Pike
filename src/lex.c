@@ -808,12 +808,12 @@ static void do_define()
       if(e==argc)
       {
 	push_string(s2);
-	if(sp[-2].type==T_STRING) f_add();
+	if(sp[-2].type==T_STRING) f_add(2);
       }
       if(c=='\n' || c==MY_EOF)
       {
 	push_string(make_shared_string(" "));
-	if(sp[-2].type==T_STRING) f_add();
+	if(sp[-2].type==T_STRING) f_add(2);
 	break;
       }
       t=!!isidchar(c);
@@ -1507,6 +1507,61 @@ static int do_lex2(int literal, YYSTYPE *yylval)
     case '{':
     case ';':
     case '}': return c;
+
+    case '`':
+    {
+      char *tmp;
+      switch(GETC())
+      {
+      case '+': tmp="`+"; break;
+      case '-': tmp="`-"; break;
+      case '/': tmp="`/"; break;
+      case '%': tmp="`%"; break;
+      case '*': tmp="`*"; break;
+      case '&': tmp="`&"; break;
+      case '|': tmp="`|"; break;
+      case '^': tmp="`^"; break;
+      case '~': tmp="`~"; break;
+      case '(':
+	if(GOBBLE(')')) { tmp="`()"; break; }
+
+      default:
+	yyerror("Illegal ` identifier.");
+	tmp="";
+	break;
+
+      case '<':
+	if(GOBBLE('<')) { tmp="`<<"; break; }
+	if(GOBBLE('=')) { tmp="`<="; break; }
+	tmp="`<";
+	break;
+
+      case '>':
+	if(GOBBLE('>')) { tmp="`>>"; break; }
+	if(GOBBLE('=')) { tmp="`>="; break; }
+	tmp="`>";
+	break;
+
+      case '!':
+	if(GOBBLE('=')) { tmp="`!="; break; }
+	tmp="`!";
+	break;
+
+      case '=':
+	if(GOBBLE('=')) { tmp="`=="; break; }
+	tmp="`=";
+	break;
+      }
+
+      if(literal)
+      {
+	yylval->str=buf;
+      }else{
+	yylval->string=make_shared_string(tmp);
+      }
+      return F_IDENTIFIER;
+    }
+
   
     default:
       if(isidchar(c))
@@ -1679,9 +1734,9 @@ static void calcB()
 {
   switch(lookahead)
   {
-    case '-': low_lex(); calcB(); f_negate(); break;
-    case F_NOT: low_lex(); calcB(); f_not(); break;
-    case '~': low_lex(); calcB(); f_compl(); break;
+    case '-': low_lex(); calcB(); o_negate(); break;
+    case F_NOT: low_lex(); calcB(); o_not(); break;
+    case '~': low_lex(); calcB(); o_compl(); break;
     default: calcC();
   }
 }
@@ -1693,9 +1748,9 @@ static void calcA()
   {
     switch(lookahead)
     {
-      case '/': low_lex(); calcB(); f_divide(); continue;
-      case '*': low_lex(); calcB(); f_multiply(); continue;
-      case '%': low_lex(); calcB(); f_mod(); continue;
+      case '/': low_lex(); calcB(); o_divide(); continue;
+      case '*': low_lex(); calcB(); o_multiply(); continue;
+      case '%': low_lex(); calcB(); o_mod(); continue;
     }
     break;
   }
@@ -1709,8 +1764,8 @@ static void calc9()
   {
     switch(lookahead)
     {
-      case '+': low_lex(); calcA(); f_add(); continue;
-      case '-': low_lex(); calcA(); f_subtract(); continue;
+      case '+': low_lex(); calcA(); f_add(2); continue;
+      case '-': low_lex(); calcA(); o_subtract(); continue;
     }
     break;
   }
@@ -1724,8 +1779,8 @@ static void calc8()
   {
     switch(lookahead)
     {
-      case F_LSH: low_lex(); calc9(); f_lsh(); continue;
-      case F_RSH: low_lex(); calc9(); f_rsh(); continue;
+      case F_LSH: low_lex(); calc9(); o_lsh(); continue;
+      case F_RSH: low_lex(); calc9(); o_rsh(); continue;
     }
     break;
   }
@@ -1739,10 +1794,10 @@ static void calc7b()
   {
     switch(lookahead)
     {
-      case '<': low_lex(); calc8(); f_lt(); continue;
-      case '>': low_lex(); calc8(); f_gt(); continue;
-      case F_GE: low_lex(); calc8(); f_ge(); continue;
-      case F_LE: low_lex(); calc8(); f_le(); continue;
+      case '<': low_lex(); calc8(); f_lt(2); continue;
+      case '>': low_lex(); calc8(); f_gt(2); continue;
+      case F_GE: low_lex(); calc8(); f_ge(2); continue;
+      case F_LE: low_lex(); calc8(); f_le(2); continue;
     }
     break;
   }
@@ -1756,8 +1811,8 @@ static void calc7()
   {
     switch(lookahead)
     {
-      case F_EQ: low_lex(); calc7b(); f_eq(); continue;
-      case F_NE: low_lex(); calc7b(); f_ne(); continue;
+      case F_EQ: low_lex(); calc7b(); f_eq(2); continue;
+      case F_NE: low_lex(); calc7b(); f_ne(2); continue;
     }
     break;
   }
@@ -1771,7 +1826,7 @@ static void calc6()
   {
     low_lex();
     calc7();
-    f_and();
+    o_and();
   }
 }
 
@@ -1783,7 +1838,7 @@ static void calc5()
   {
     low_lex();
     calc6();
-    f_xor();
+    o_xor();
   }
 }
 
@@ -1795,7 +1850,7 @@ static void calc4()
   {
     low_lex();
     calc5();
-    f_or();
+    o_or();
   }
 }
 

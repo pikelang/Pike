@@ -16,25 +16,33 @@
 #include "language.h"
 #include "memory.h"
 #include "error.h"
+#include "docode.h"
+#include "add_efun.h"
 
-#define COMPARISON(ID,EXPR) \
-void ID() \
-{ \
-  int i=EXPR; \
+#define COMPARISON(ID,NAME,EXPR) \
+void ID(INT32 args) \
+{\
+  int i; \
+  if(args > 2) \
+    pop_n_elems(args-2); \
+  else if(args < 2) \
+    error("Too few arguments to %s\n",NAME); \
+  i=EXPR; \
   pop_n_elems(2); \
   sp->type=T_INT; \
   sp->u.integer=i; \
   sp++; \
-} 
+}
 
-COMPARISON(f_eq, is_eq(sp-2,sp-1))
-COMPARISON(f_ne,!is_eq(sp-2,sp-1))
-COMPARISON(f_lt, is_lt(sp-2,sp-1))
-COMPARISON(f_le,!is_gt(sp-2,sp-1))
-COMPARISON(f_gt, is_gt(sp-2,sp-1))
-COMPARISON(f_ge,!is_lt(sp-2,sp-1))
+COMPARISON(f_eq,"`==", is_eq(sp-2,sp-1))
+COMPARISON(f_ne,"`!=",!is_eq(sp-2,sp-1))
+COMPARISON(f_lt,"`<" , is_lt(sp-2,sp-1))
+COMPARISON(f_le,"`<=",!is_gt(sp-2,sp-1))
+COMPARISON(f_gt,"`>" , is_gt(sp-2,sp-1))
+COMPARISON(f_ge,"`>=",!is_lt(sp-2,sp-1))
 
-void f_sum(INT32 args)
+
+void f_add(INT32 args)
 {
   INT32 e,size;
   TYPE_FIELD types;
@@ -192,9 +200,51 @@ void f_sum(INT32 args)
   }
 }
 
-void f_add() { f_sum(2); }
+static int generate_sum(node *n)
+{
+  switch(count_args(CDR(n)))
+  {
+  case 1:
+    do_docode(CDR(n),0);
+    return 1;
 
-void f_subtract()
+  case 2:
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_ADD);
+    return 1;
+
+  default:
+    return 0;
+  }
+}
+
+static int generate_comparison(node *n)
+{
+  if(count_args(CDR(n))==2)
+  {
+    do_docode(CDR(n),DO_NOT_COPY);
+
+    if(CAR(n)->u.sval.u.efun->function == f_eq)
+      ins_f_byte(F_EQ);
+    else if(CAR(n)->u.sval.u.efun->function == f_ne)
+      ins_f_byte(F_NE);
+    else if(CAR(n)->u.sval.u.efun->function == f_lt)
+      ins_f_byte(F_LT);
+    else if(CAR(n)->u.sval.u.efun->function == f_le)
+      ins_f_byte(F_LE);
+    else if(CAR(n)->u.sval.u.efun->function == f_gt)
+      ins_f_byte(F_GT);
+    else if(CAR(n)->u.sval.u.efun->function == f_ge)
+      ins_f_byte(F_GE);
+    else
+      fatal("Couldn't generate comparison!\n");
+    return 1;
+  }
+  return 0;
+}
+
+
+void o_subtract()
 {
   if (sp[-2].type != sp[-1].type )
     error("Subtract on different types.\n");
@@ -259,7 +309,35 @@ void f_subtract()
   }
 }
 
-void f_and()
+void f_minus(INT32 args)
+{
+  switch(args)
+  {
+  case 0: error("Too few arguments to `-\n");
+  case 1: o_negate(); break;
+  case 2: o_subtract(); break;
+  default: error("Too many arguments to `-\n");
+  }
+}
+
+static int generate_minus(node *n)
+{
+  switch(count_args(CDR(n)))
+  {
+  case 1:
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_NEGATE);
+    return 1;
+
+  case 2:
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_SUBTRACT);
+    return 1;
+  }
+  return 0;
+}
+
+void o_and()
 {
   if(sp[-1].type != sp[-2].type)
     error("Bitwise and on different types.\n");
@@ -302,7 +380,36 @@ void f_and()
   }
 }
 
-void f_or()
+void f_and(INT32 args)
+{
+  switch(args)
+  {
+  case 0: error("Too few arguments to `&\n");
+  case 1: return;
+  case 2: o_and(); return;
+  default: while(--args > 0) o_and();
+  }
+}
+
+static int generate_and(node *n)
+{
+  switch(count_args(CDR(n)))
+  {
+  case 1:
+    do_docode(CDR(n),0);
+    return 1;
+
+  case 2:
+    do_docode(CDR(n),0);
+    ins_f_byte(F_AND);
+    return 1;
+
+  default:
+    return 0;
+  }
+}
+
+void o_or()
 {
   if(sp[-1].type != sp[-2].type)
     error("Bitwise or on different types.\n");
@@ -346,7 +453,37 @@ void f_or()
   }
 }
 
-void f_xor()
+void f_or(INT32 args)
+{
+  switch(args)
+  {
+  case 0: error("Too few arguments to `|\n");
+  case 1: return;
+  case 2: o_or(); return;
+  default: while(--args > 0) o_or();
+  }
+}
+
+static int generate_or(node *n)
+{
+  switch(count_args(CDR(n)))
+  {
+  case 1:
+    do_docode(CDR(n),0);
+    return 1;
+
+  case 2:
+    do_docode(CDR(n),0);
+    ins_f_byte(F_OR);
+    return 1;
+
+  default:
+    return 0;
+  }
+}
+
+
+void o_xor()
 {
   if(sp[-1].type != sp[-2].type)
     error("Bitwise xor on different types.\n");
@@ -389,7 +526,36 @@ void f_xor()
   }
 }
 
-void f_lsh()
+void f_xor(INT32 args)
+{
+  switch(args)
+  {
+  case 0: error("Too few arguments to `^\n");
+  case 1: return;
+  case 2: o_xor(); return;
+  default: while(--args > 0) o_xor();
+  }
+}
+
+static int generate_xor(node *n)
+{
+  switch(count_args(CDR(n)))
+  {
+  case 1:
+    do_docode(CDR(n),0);
+    return 1;
+
+  case 2:
+    do_docode(CDR(n),0);
+    ins_f_byte(F_XOR);
+    return 1;
+
+  default:
+    return 0;
+  }
+}
+
+void o_lsh()
 {
   if(sp[-2].type != T_INT) error("Bad argument 1 to <<\n");
   if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
@@ -397,7 +563,25 @@ void f_lsh()
   sp[-1].u.integer <<= sp[0].u.integer;
 }
 
-void f_rsh()
+void f_lsh(INT32 args)
+{
+  if(args != 2)
+    error("Bad number of args to `<<\n");
+  o_lsh();
+}
+
+static int generate_lsh(node *n)
+{
+  if(count_args(CDR(n))==2)
+  {
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_LSH);
+    return 1;
+  }
+  return 0;
+}
+
+void o_rsh()
 {
   if(sp[-2].type != T_INT) error("Bad argument 1 to >>\n"); 
   if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
@@ -405,7 +589,25 @@ void f_rsh()
   sp[-1].u.integer >>= sp[0].u.integer;
 }
 
-void f_multiply()
+void f_rsh(INT32 args)
+{
+  if(args != 2)
+    error("Bad number of args to `>>\n");
+  o_rsh();
+}
+
+static int generate_rsh(node *n)
+{
+  if(count_args(CDR(n))==2)
+  {
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_RSH);
+    return 1;
+  }
+  return 0;
+}
+
+void o_multiply()
 {
   switch(sp[-2].type)
   {
@@ -441,7 +643,36 @@ void f_multiply()
   }
 }
 
-void f_divide()
+void f_multiply(INT32 args)
+{
+  switch(args)
+  {
+  case 0: error("Too few arguments to `*\n");
+  case 1: return;
+  case 2: o_multiply(); return;
+  case 3: while(--args > 0) o_multiply(); 
+  }
+}
+
+static int generate_multiply(node *n)
+{
+  switch(count_args(CDR(n)))
+  {
+  case 1:
+    do_docode(CDR(n),0);
+    return 1;
+
+  case 2:
+    do_docode(CDR(n),0);
+    ins_f_byte(F_MULTIPLY);
+    return 1;
+
+  default:
+    return 0;
+  }
+}
+
+void o_divide()
 {
   if(sp[-2].type!=sp[-1].type)
     error("Division on different types.\n");
@@ -479,7 +710,25 @@ void f_divide()
   }
 }
 
-void f_mod()
+void f_divide(INT32 args)
+{
+  if(args != 2)
+    error("Bad number of args to `/\n");
+  o_divide();
+}
+
+static int generate_divide(node *n)
+{
+  if(count_args(CDR(n))==2)
+  {
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_DIVIDE);
+    return 1;
+  }
+  return 0;
+}
+
+void o_mod()
 {
   if(sp[-2].type != sp[-1].type)
     error("Modulo on different types.\n");
@@ -508,7 +757,25 @@ void f_mod()
   }
 }
 
-void f_not()
+void f_mod(INT32 args)
+{
+  if(args != 2)
+    error("Bad number of args to `%%\n");
+  o_mod();
+}
+
+static int generate_mod(node *n)
+{
+  if(count_args(CDR(n))==2)
+  {
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_MOD);
+    return 1;
+  }
+  return 0;
+}
+
+void o_not()
 {
   if(sp[-1].type==T_INT)
   {
@@ -521,13 +788,47 @@ void f_not()
   }
 }
 
-void f_compl()
+void f_not(INT32 args)
+{
+  if(args != 1) error("Bad number of args to `!\n");
+  o_not();
+}
+
+static int generate_not(node *n)
+{
+  if(count_args(CDR(n))==1)
+  {
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_NOT);
+    return 1;
+  }
+  return 0;
+}
+
+void o_compl()
 {
   if (sp[-1].type != T_INT) error("Bad argument to ~\n");
   sp[-1].u.integer = ~ sp[-1].u.integer;
 }
 
-void f_negate()
+void f_compl(INT32 args)
+{
+  if(args != 1) error("Bad number of args to `~\n");
+  o_compl();
+}
+
+static int generate_compl(node *n)
+{
+  if(count_args(CDR(n))==1)
+  {
+    do_docode(CDR(n),DO_NOT_COPY);
+    ins_f_byte(F_COMPL);
+    return 1;
+  }
+  return 0;
+}
+
+void o_negate()
 {
   switch(sp[-1].type)
   {
@@ -544,8 +845,7 @@ void f_negate()
   }
 }
 
-
-void f_range()
+void o_range()
 {
   INT32 from,to;
   if(sp[-2].type != T_INT)
@@ -598,4 +898,39 @@ void f_range()
   default:
     error("[ .. ] can only be done on strings and arrays.\n");
   }
+}
+
+void init_operators()
+{
+  
+
+  add_efun2("`==",f_eq,"function(mixed,mixed:int)",0,0,generate_comparison);
+  add_efun2("`!=",f_ne,"function(mixed,mixed:int)",0,0,generate_comparison);
+  add_efun2("`<", f_lt,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`<=",f_le,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`>", f_gt,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`>=",f_ge,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
+
+  add_efun2("`+",f_add,"function(int ...:int)|function(float ...:float)|function(string,string|int|float ...:string)|function(string,string|int|float ...:string)|function(int|float,string,string|int|float:string)|function(array ...:array)|function(mapping ...:mapping)|function(list...:list)",0,0,generate_sum);
+
+  add_efun2("`-",f_minus,"function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(list,list:list)|function(float,float:float)|function(int,int:int)|function(string,string:string)",0,0,generate_minus);
+
+  add_efun2("`&",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,0,generate_and);
+
+  add_efun2("`|",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,0,generate_or);
+
+  add_efun2("`^",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,0,generate_xor);
+
+  add_efun2("`<<",f_lsh,"function(int,int:int)",0,0,generate_lsh);
+  add_efun2("`>>",f_rsh,"function(int,int:int)",0,0,generate_rsh);
+
+  add_efun2("`*",f_multiply,"function(int...:int)|function(float...:float)|function(string*,string:string)",0,0,generate_multiply);
+
+  add_efun2("`/",f_divide,"function(int,int:int)|function(float,float:float)|function(string,string:string*)",0,0,generate_divide);
+
+  add_efun2("`%",f_mod,"function(int,int:int)|function(float,float:float)",0,0,generate_mod);
+
+  add_efun2("`!",f_not,"function(mixed:int)",0,0,generate_not);
+  add_efun2("`~",f_compl,"function(int:int)",0,0,generate_compl);
+  
 }

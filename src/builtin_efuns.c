@@ -1234,6 +1234,8 @@ TYPEP(f_floatp, "floatp", T_FLOAT)
 
 void init_builtin_efuns()
 {
+  init_operators();
+
   add_efun("add_efun",f_add_efun,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
   add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);
   add_efun("aggregate_list",f_aggregate_list,"function(mixed ...:list)",OPT_TRY_OPTIMIZE);
@@ -1286,7 +1288,7 @@ void init_builtin_efuns()
   add_efun("sizeof", f_sizeof, "function(string|list|array|mapping:int)",0);
   add_efun("sleep", f_sleep, "function(int:void)",OPT_SIDE_EFFECT);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
-  add_efun("sum",f_sum,"function(int ...:int)|function(float ...:float)|function(string,string|int|float ...:string)|function(string,string|int|float ...:string)|function(int|float,string,string|int|float:string)|function(array ...:array)|function(mapping ...:mapping)|function(list...:list)",0);
+
   add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
   add_efun("throw",f_throw,"function(mixed:void)",0);
   add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);

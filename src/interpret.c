@@ -797,14 +797,14 @@ static void eval_instruction(unsigned char *pc)
       COMPARISMENT(F_LT, is_lt(sp-2,sp-1));
       COMPARISMENT(F_LE,!is_gt(sp-2,sp-1));
 
-      CASE(F_ADD);      f_sum(2);     break;
-      CASE(F_SUBTRACT); f_subtract(); break;
-      CASE(F_AND);      f_and();      break;
-      CASE(F_OR);       f_or();       break;
-      CASE(F_XOR);      f_xor();      break;
-      CASE(F_MULTIPLY); f_multiply(); break;
-      CASE(F_DIVIDE);   f_divide();   break;
-      CASE(F_MOD);      f_mod();      break;
+      CASE(F_ADD);      f_add(2);     break;
+      CASE(F_SUBTRACT); o_subtract(); break;
+      CASE(F_AND);      o_and();      break;
+      CASE(F_OR);       o_or();       break;
+      CASE(F_XOR);      o_xor();      break;
+      CASE(F_MULTIPLY); o_multiply(); break;
+      CASE(F_DIVIDE);   o_divide();   break;
+      CASE(F_MOD);      o_mod();      break;
 
       CASE(F_PUSH_ARRAY);
       if(sp[-1].type!=T_ARRAY) error("Bad argument to @\n");
@@ -819,7 +819,7 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_CAST); f_cast(); break;
 
-      CASE(F_RANGE); f_range(); break;
+      CASE(F_RANGE); o_range(); break;
       CASE(F_COPY_VALUE);
       copy_svalues_recursively_no_free(sp,sp-1,1,0);
       sp++;

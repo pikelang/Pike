@@ -389,7 +389,7 @@ static int do_docode2(node *n,int flags);
 
 #define DO_CODE_BLOCK(N) do_pop(do_docode(N,DO_NOT_COPY | DO_POP))
 
-static int do_docode(node *n,INT16 flags)
+int do_docode(node *n,INT16 flags)
 {
   int i;
   int save_current_line=current_line;
@@ -534,6 +534,9 @@ static int do_docode2(node *n,int flags)
     tmp2=count_args(CADR(n));
 
     if(tmp2 < tmp1) tmp1=tmp2;
+
+    if(tmp1 == -1)
+      fatal("Unknown number of args in ? :\n");
 
     tmp2=do_jump_when_zero(CAR(n),-1);
 
@@ -873,26 +876,46 @@ static int do_docode2(node *n,int flags)
     return 1;
 
   case F_APPLY:
-    ins_f_byte(F_MARK);
     if(CAR(n)->token == F_CONSTANT)
     {
-      do_docode(CDR(n),0);
-      if(CAR(n)->u.sval.type == T_FUNCTION && 
-	 CAR(n)->u.sval.subtype != -1 &&
-	 CAR(n)->u.sval.u.object == &fake_object)
+      if(CAR(n)->u.sval.type == T_FUNCTION)
       {
-	ins_f_byte_with_numerical_arg(F_CALL_LFUN, CAR(n)->u.sval.subtype);
-      }else{
-	tmp1=store_constant(& CAR(n)->u.sval,
-			    !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND));
-	ins_f_byte(F_MAX_OPCODE + tmp1);
-	if(n->type == void_type_string) return 0;
+	if(CAR(n)->u.sval.subtype == -1) /* driver fun? */
+	{
+	  if(!CAR(n)->u.sval.u.efun->docode || 
+	     !CAR(n)->u.sval.u.efun->docode(n))
+	  {
+	    ins_f_byte(F_MARK);
+	    do_docode(CDR(n),0);
+	    tmp1=store_constant(& CAR(n)->u.sval,
+				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND));
+	    ins_f_byte(F_MAX_OPCODE + tmp1);
+	  }
+	  if(n->type == void_type_string) return 0;
+	  return 1;
+	}else{
+	  if(CAR(n)->u.sval.u.object == &fake_object)
+	  {
+	    ins_f_byte(F_MARK);
+	    do_docode(CDR(n),0);
+	    ins_f_byte_with_numerical_arg(F_CALL_LFUN, CAR(n)->u.sval.subtype);
+	    return 1;
+	  }
+       	}
       }
+
+      ins_f_byte(F_MARK);
+      do_docode(CDR(n),0);
+      tmp1=store_constant(& CAR(n)->u.sval,
+			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND));
+      ins_f_byte(F_MAX_OPCODE + tmp1);
+      
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER &&
 	    ID_FROM_INT(& fake_program, CAR(n)->u.number)->flags & IDENTIFIER_FUNCTION)
     {
+      ins_f_byte(F_MARK);
       do_docode(CDR(n),0);
       ins_f_byte_with_numerical_arg(F_CALL_LFUN, CAR(n)->u.number);
       return 1;
@@ -902,6 +925,7 @@ static int do_docode2(node *n,int flags)
       struct lpc_string *tmp;
       struct efun *fun;
 
+      ins_f_byte(F_MARK);
       tmp=make_shared_string("call_function");
       if(!tmp) yyerror("No call_function efun.");
       fun=lookup_efun(tmp);

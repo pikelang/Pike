@@ -67,12 +67,17 @@ int cdr_is_node(node *n)
 
 INT32 count_args(node *n)
 {
+  int a,b;
   if(!n) return 0;
   switch(n->token)
   {
   case F_VAL_LVAL:
   case F_ARG_LIST:
-    return count_args(CAR(n)) + count_args(CDR(n));
+    a=count_args(CAR(n));
+    if(a==-1) return -1;
+    b=count_args(CDR(n));
+    if(b==-1) return -1;
+    return a+b;
 
   case F_CAST:
     if(n->type == void_type_string)
@@ -98,6 +103,7 @@ INT32 count_args(node *n)
     int tmp1,tmp2;
     tmp1=count_args(CDAR(n));
     tmp2=count_args(CDAR(n));
+    if(tmp1==-1 || tmp2==-2) return -1;
     if(tmp1 < tmp2) return tmp1;
     return tmp2;
   }
@@ -265,6 +271,14 @@ node *mkefuncallnode(char *function, node *args)
     return mkintnode(0);
   }
   return mkapplynode(mksvaluenode(&fun->function), args);
+}
+
+node *mkopernode(char *oper_id, node *arg1, node *arg2)
+{
+  if(arg1 && arg2)
+    arg1=mknode(F_ARG_LIST,arg1,arg2);
+
+  return mkefuncallnode(oper_id, arg1);
 }
 
 node *mklocalnode(int var)

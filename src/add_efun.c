@@ -53,7 +53,12 @@ void low_add_efun(struct lpc_string *name, struct svalue *fun)
 }
 
 
-struct callable *make_callable(c_fun fun,char *name, char *type, INT16 flags)
+struct callable *make_callable(c_fun fun,
+			       char *name,
+			       char *type,
+			       INT16 flags,
+			       optimize_fun optimize,
+			       docode_fun docode)
 {
   struct callable *f;
   f=ALLOC_STRUCT(callable);
@@ -62,6 +67,8 @@ struct callable *make_callable(c_fun fun,char *name, char *type, INT16 flags)
   f->name=make_shared_string(name);
   f->type=parse_type(type);
   f->flags=flags;
+  f->docode=docode;
+  f->optimize=optimize;
   return f;
 }
 
@@ -72,7 +79,12 @@ void really_free_callable(struct callable *fun)
   free((char *)fun);
 }
 
-void add_efun(char *name, c_fun fun, char *type, INT16 flags)
+void add_efun2(char *name,
+	       c_fun fun,
+	       char *type,
+	       INT16 flags,
+	       optimize_fun optimize,
+	       docode_fun docode)
 {
   struct svalue s;
   struct lpc_string *n;
@@ -80,10 +92,15 @@ void add_efun(char *name, c_fun fun, char *type, INT16 flags)
   n=make_shared_string(name);
   s.type=T_FUNCTION;
   s.subtype=-1;
-  s.u.efun=make_callable(fun, name, type, flags);
+  s.u.efun=make_callable(fun, name, type, flags, optimize, docode);
   low_add_efun(n, &s);
   free_svalue(&s);
   free_string(n);
+}
+
+void add_efun(char *name, c_fun fun, char *type, INT16 flags)
+{
+  add_efun2(name,fun,type,flags,0,0);
 }
 
 static void push_efun_entry(struct hash_entry *h)

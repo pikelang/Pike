@@ -879,22 +879,22 @@ assoc_pair:  expr0 ':' expr1
 expr1: expr2
      | expr1 F_LOR expr1  { $$=mknode(F_LOR,$1,$3); }
      | expr1 F_LAND expr1 { $$=mknode(F_LAND,$1,$3); }
-     | expr1 '|' expr1    { $$=mknode(F_OR,$1,$3); }
-     | expr1 '^' expr1    { $$=mknode(F_XOR,$1,$3); }
-     | expr1 '&' expr1    { $$=mknode(F_AND,$1,$3); }
-     | expr1 F_EQ expr1   { $$=mknode(F_EQ,$1,$3); }
-     | expr1 F_NE expr1   { $$=mknode(F_NE,$1,$3); }
-     | expr1 '>' expr1    { $$=mknode(F_GT,$1,$3); }
-     | expr1 F_GE expr1   { $$=mknode(F_GE,$1,$3); }
-     | expr1 '<' expr1    { $$=mknode(F_LT,$1,$3); }
-     | expr1 F_LE expr1   { $$=mknode(F_LE,$1,$3); }
-     | expr1 F_LSH expr1  { $$=mknode(F_LSH,$1,$3); }
-     | expr1 F_RSH expr1  { $$=mknode(F_RSH,$1,$3); }
-     | expr1 '+' expr1    { $$=mknode(F_ADD,$1,$3); }
-     | expr1 '-' expr1    { $$=mknode(F_SUBTRACT,$1,$3); }
-     | expr1 '*' expr1    { $$=mknode(F_MULTIPLY,$1,$3); }
-     | expr1 '%' expr1    { $$=mknode(F_MOD,$1,$3); }
-     | expr1 '/' expr1    { $$=mknode(F_DIVIDE,$1,$3); }
+     | expr1 '|' expr1    { $$=mkopernode("`|",$1,$3); }
+     | expr1 '^' expr1    { $$=mkopernode("`^",$1,$3); }
+     | expr1 '&' expr1    { $$=mkopernode("`&",$1,$3); }
+     | expr1 F_EQ expr1   { $$=mkopernode("`==",$1,$3); }
+     | expr1 F_NE expr1   { $$=mkopernode("`!=",$1,$3); }
+     | expr1 '>' expr1    { $$=mkopernode("`>",$1,$3); }
+     | expr1 F_GE expr1   { $$=mkopernode("`>=",$1,$3); }
+     | expr1 '<' expr1    { $$=mkopernode("`<",$1,$3); }
+     | expr1 F_LE expr1   { $$=mkopernode("`<=",$1,$3); }
+     | expr1 F_LSH expr1  { $$=mkopernode("`<<",$1,$3); }
+     | expr1 F_RSH expr1  { $$=mkopernode("`>>",$1,$3); }
+     | expr1 '+' expr1    { $$=mkopernode("`+",$1,$3); }
+     | expr1 '-' expr1    { $$=mkopernode("`-",$1,$3); }
+     | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
+     | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
+     | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
      ;
 
 expr2: expr3
@@ -906,8 +906,8 @@ expr2: expr3
      | F_INC expr4       { $$=mknode(F_INC,$2,0); }
      | F_DEC expr4       { $$=mknode(F_DEC,$2,0); }
      | F_NOT expr2        { $$=mknode(F_NOT,$2,0); }
-     | '~' expr2          { $$=mknode(F_COMPL,$2,0); }
-     | '-' expr2          { $$=mknode(F_NEGATE,$2,0); }
+     | '~' expr2          { $$=mkopernode("`~",$2,0); }
+     | '-' expr2          { $$=mkopernode("`-",$2,0); }
      ;
 
 expr3: expr4
