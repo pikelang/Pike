@@ -236,7 +236,7 @@ Total tests: 1  (0 tests skipped)
   tests cases. A good test suite for a function includes both some
   trivial tests to ensure that the basic functionality works and some
   nasty tests to test the borderlands of what the function is capable
-  of.</p>
+  of, e.g. empty in parameters.</p>
 
   <p>Also, when a bug in Pike has been found, a minimized test case
   the triggers the bug should also be added to the test suite. After
@@ -259,8 +259,8 @@ test_any([[
   <subsection title="test_any_equal">
     <p>The test_any_equal macro tests if the result of two pike
     expressions are identical, e.g. if equal(a,b). The first
-    expression should be a complete block, while the other expression
-    should be a simple pike statement.</p>
+    expression should be a complete block, that returns a value, while
+    the other expression should be a simple pike statement.</p>
     <example>
 test_any_equal([[
   mixed a=({1,2,3});
@@ -327,10 +327,41 @@ test_compile([[Stdio.File foo=Stdio.File();]])
   </subsection>
 
   <subsection title="test_compile_any">
+    <p>Tests if the code compiles, just as <tt>test_compile</tt>, but
+    is a complete block of code and not just an expression.</p>
+<example>
+test_compile_any([[
+  void foo() 
+  {
+    Stdio.File bar(int x, int y)
+    { 
+      return 0;
+    }; 
+  } 
+]])
+</example>
   </subsection>
 
-  <subsection title="test_compile_error" />
-  <subsection title="test_compile_error_any" />
+  <subsection title="test_compile_error">
+    <p>Does the inverse of <tt>test_compile</tt>; verifies that the
+    code does not compile.</p>
+<example>
+test_compile_error([[ int a="a"; ]])
+</example>
+  </subsection>
+
+  <subsection title="test_compile_error_any">
+    <p>Does the inverse of <tt>test_compile_any</tt>; verifies that
+    the code does not compile.</p>
+<example>
+test_compile_error_any([[
+  int a=5;
+  string b="a";
+  a=b;
+]])
+</example>
+  </subsection>
+
   <subsection title="test_compile_warning" />
   <subsection title="test_compile_warning_any" />
   <subsection title="test_eval_error" />
