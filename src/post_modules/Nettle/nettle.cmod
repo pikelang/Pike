@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.22 2003/12/06 10:45:25 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.23 2003/12/06 14:52:40 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -226,6 +226,59 @@ static char * assert_is_crypto_object(struct program *p,
   return 0;
 }
 
+static struct object *make_cipher_object(INT32 args) {
+  ptrdiff_t fun;
+  char *missing;
+  struct svalue *top = Pike_sp-args;
+  struct object *obj;
+
+  switch(top->type)
+  {
+    case T_PROGRAM:
+      obj = clone_object(top->u.program, args-1);
+      break;
+
+    case T_FUNCTION:
+      apply_svalue(Pike_sp - args, args-1);
+
+      /* Check return value */
+      if(Pike_sp[-1].type != T_OBJECT)
+	Pike_error("Returned value is not an object.\n");
+
+      add_ref(obj = Pike_sp[-1].u.object);
+      break;
+
+    case T_OBJECT:
+      fun = -1;
+      missing = assert_is_crypto_object(top->u.object->prog,
+					crypto_functions);
+      if(missing)
+	fun = FIND_LFUN(top->u.object->prog, LFUN_CALL);
+      if(fun!=-1) {
+	apply_low(top->u.object, fun, args-1);
+	stack_swap();
+	pop_stack();
+      }
+      else
+	if(args!=1) Pike_error("Too many arguments.\n");
+
+      add_ref(obj = top->u.object);
+      break;
+    default:
+      SIMPLE_BAD_ARG_ERROR("create", 1, "program|object|function");
+    }
+
+  pop_stack();
+
+  missing = assert_is_crypto_object(obj->prog, crypto_functions);
+  if(missing) {
+    free_object(obj);
+    Pike_error("Object is missing identifier \"%s\"\n", missing);
+  }
+
+  return obj;
+}
+
 
 /*! @class CBC
  *! Implementation of the cipher block chaining mode (CBC).
@@ -249,7 +302,7 @@ PIKECLASS CBC
   {
     if(THIS->object) free_object(THIS->object);
     if(THIS->iv) {
-      memset(THIS->iv, 0, THIS->block_size);
+      MEMSET(THIS->iv, 0, THIS->block_size);
       free(THIS->iv);
     }
     THIS->iv = 0;
@@ -303,53 +356,14 @@ PIKECLASS CBC
     MEMCPY(THIS->iv, source, block_size);
   }
 
-  /*! @decl void create(program|object|function algorithm, mixed ... args)
+  static void cbc_free_this_object() {
+    if(THIS->object) free_object(THIS->object);
+  }
+
+  /*! @decl void create(program|object|function cipher, mixed ... args)
    */
-  PIKEFUN void create(program|object|function algorithm, mixed ... more) {
-    ptrdiff_t fun;
-    char *missing;
-
-    switch(algorithm->type)
-    {
-    case T_PROGRAM:
-      THIS->object = clone_object(algorithm->u.program, args-1);
-      break;
-
-    case T_FUNCTION:
-      apply_svalue(Pike_sp - args, args-1);
-
-      /* Check return value */
-      if(Pike_sp[-1].type != T_OBJECT)
-	Pike_error("Returned value is not an object.\n");
-
-      add_ref(THIS->object = Pike_sp[-1].u.object);
-      break;
-
-    case T_OBJECT:
-      fun = -1;
-      missing = assert_is_crypto_object(algorithm->u.object->prog,
-					crypto_functions);
-      if(missing)
-	fun = FIND_LFUN(algorithm->u.object->prog, LFUN_CALL);
-      if(fun!=-1) {
-	apply_low(algorithm->u.object, fun, args-1);
-	stack_swap();
-	pop_stack();
-      }
-      else
-	if(args!=1) Pike_error("Too many arguments.\n");
-
-      add_ref(THIS->object = algorithm->u.object);
-      break;
-    default:
-      SIMPLE_BAD_ARG_ERROR("CBC->create", 1, "program|object|function");
-    }
-
-    pop_stack(); /* Just one element left on the stack in all cases */
-
-    missing = assert_is_crypto_object(THIS->object->prog, crypto_functions);
-    if(missing)
-      Pike_error("Object is missing identifier \"%s\"\n", missing);
+  PIKEFUN void create(program|object|function cipher, mixed ... more) {
+    THIS->object = make_cipher_object(args);
 
     safe_apply(THIS->object, "block_size", 0);
 
@@ -435,6 +449,237 @@ PIKECLASS CBC
     pop_n_elems(args);
     push_string(make_shared_binary_string((INT8 *)result, offset));
     MEMSET(result, 0, offset);
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @class Proxy
+ *! Acts as a buffer so that data can be fed to a cipher in blocks
+ *! that doesn't correspond to cipher block sizes.
+ */
+PIKECLASS Proxy {
+  CVAR struct object *object;
+  CVAR int block_size;
+  CVAR unsigned char *backlog;
+  CVAR int backlog_len;
+
+  INIT {
+    THIS->object = 0;
+    THIS->block_size = 0;
+    THIS->backlog = 0;
+    THIS->backlog_len = 0;
+  }
+
+  EXIT {
+    if(THIS->backlog) {
+      MEMSET(THIS->backlog, 0, THIS->block_size);
+      free(THIS->backlog);
+    }
+    if(THIS->object)
+      free_object(THIS->object);
+  }
+
+  /*! @decl void create(program|object|function cipher, mixed ... args)
+   */
+  PIKEFUN void create(program|object|function cipher, mixed ... more) {
+    THIS->object = make_cipher_object(args);
+
+    safe_apply(THIS->object, "block_size", 0);
+    if (Pike_sp[-1].type != T_INT)
+      Pike_error("block_size() didn't return an int\n");
+    THIS->block_size = Pike_sp[-1].u.integer;
+
+    pop_stack();
+
+    if ((!THIS->block_size) ||
+	(THIS->block_size > 4096))
+      Pike_error("Bad block size %ld\n", DO_NOT_WARN((long)THIS->block_size));
+
+    THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
+    THIS->backlog_len = 0;
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+  }
+
+  /*! @decl int block_size()
+   *!
+   *! Get the block size of the contained block crypto.
+   */
+  PIKEFUN int block_size() {
+    RETURN THIS->block_size;
+  }
+
+  /*! @decl int key_size()
+   *!
+   *! Get the key size of the contained block crypto.
+   */
+  PIKEFUN int key_size() {
+    safe_apply(THIS->object, "key_size", args);
+  }
+
+  /*! @decl this_program set_encrypt_key(string key)
+   *!
+   *! Set the encryption key.
+   *!
+   *! @note
+   *!   As a side-effect any buffered data will be cleared.
+   */
+  PIKEFUN object set_encrypt_key(string key) {
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+    THIS->backlog_len = 0;
+    safe_apply(THIS->object, "set_encrypt_key", args);
+    pop_stack();
+    RETURN this_object();
+  }
+
+  /*! @decl this_program set_decrypt_key(string key)
+   *!
+   *! Set the decryption key.
+   *!
+   *! @note
+   *!   As a side-effect any buffered data will be cleared.
+   */
+  PIKEFUN object set_decrypt_key(string key) {
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+    THIS->backlog_len = 0;
+    safe_apply(THIS->object, "set_decrypt_key", args);
+    pop_stack();
+    RETURN this_object();
+  }
+
+  /*! @decl string crypt(string data)
+   *!
+   *! Encrypt some data.
+   *!
+   *! Adds data to be encrypted to the buffer. If there's enough
+   *! data to en/decrypt a block, that will be done, and the result
+   *! returned. Any uncrypted data will be left in the buffer.
+   */
+  PIKEFUN string crypt(string data) {
+    unsigned char *result;
+    ptrdiff_t roffset = 0;
+    ptrdiff_t soffset = 0;
+    ptrdiff_t len;
+
+    if (!(result = alloca(data->len + THIS->block_size)))
+      Pike_error("Out of memory\n");
+
+    if (THIS->backlog_len) {
+      if (data->len >= (THIS->block_size - THIS->backlog_len)) {
+	MEMCPY(THIS->backlog + THIS->backlog_len, data->str,
+	       (THIS->block_size - THIS->backlog_len));
+	soffset += (THIS->block_size - THIS->backlog_len);
+	THIS->backlog_len = 0;
+	push_string(make_shared_binary_string((char *)THIS->backlog,
+					      THIS->block_size));
+	safe_apply(THIS->object, "crypt", 1);
+	if (Pike_sp[-1].type != T_STRING)
+	  Pike_error("crypt() did not return string\n");
+	if (Pike_sp[-1].u.string->len != THIS->block_size)
+	  Pike_error("Unexpected string length %ld\n",
+		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+
+	MEMCPY(result, Pike_sp[-1].u.string->str, THIS->block_size);
+	roffset = THIS->block_size;
+	pop_stack();
+	MEMSET(THIS->backlog, 0, THIS->block_size);
+      } else {
+	MEMCPY(THIS->backlog + THIS->backlog_len,
+	       data->str, data->len);
+	THIS->backlog_len += data->len;
+	pop_n_elems(args);
+	push_constant_text("");
+	return;
+      }
+    }
+  
+    len = (Pike_sp[-1].u.string->len - soffset);
+    len -= len % THIS->block_size;
+
+    if (len) {
+      push_string(make_shared_binary_string(Pike_sp[-1].u.string->str +
+					    soffset, len));
+      soffset += len;
+
+      safe_apply(THIS->object, "crypt", 1);
+
+      if (Pike_sp[-1].type != T_STRING)
+      Pike_error("crypt() did not return string\n");
+      if (Pike_sp[-1].u.string->len != len)
+      Pike_error("crypt() Unexpected string length %ld\n",
+		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+
+      MEMCPY(result + roffset, Pike_sp[-1].u.string->str, len);
+
+      pop_stack();
+    }
+
+    if (soffset < Pike_sp[-1].u.string->len) {
+      MEMCPY(THIS->backlog, Pike_sp[-1].u.string->str + soffset,
+	     Pike_sp[-1].u.string->len - soffset);
+      THIS->backlog_len = Pike_sp[-1].u.string->len - soffset;
+    }
+
+    pop_n_elems(args);
+
+    push_string(make_shared_binary_string((char *)result, roffset + len));
+    MEMSET(result, 0, roffset + len);
+  }
+
+  /*! @decl string pad()
+   *!
+   *! Pad and de/encrypt any data left in the buffer.
+   *!
+   *! @seealso
+   *!   @[unpad()]
+   */
+  PIKEFUN string pad() {
+    ptrdiff_t i;
+
+    for (i = THIS->backlog_len; i < THIS->block_size - 1; i++)
+      THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
+  
+    THIS->backlog[THIS->block_size - 1] =
+      DO_NOT_WARN((unsigned char)(7 - THIS->backlog_len));
+
+    push_string(make_shared_binary_string((const char *)THIS->backlog,
+					  THIS->block_size));
+
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+    THIS->backlog_len = 0;
+
+    safe_apply(THIS->object, "crypt", 1);
+  }
+
+  /*! @decl string unpad(string data)
+   *!
+   *! De/encrypt and unpad a block of data.
+   *!
+   *! This performs the reverse operation of @[pad()].
+   *!
+   *! @seealso
+   *!   @[pad()]
+   */
+  PIKEFUN string unpad(string data) {
+    ptrdiff_t len;
+    struct pike_string *str;
+
+    str = Pike_sp[-1].u.string;
+    len = str->len;
+
+    if (str->str[len - 1] > (THIS->block_size - 1))
+      Pike_error("Invalid padding\n");
+
+    len -= (str->str[len - 1] + 1);
+
+    if (len < 0)
+      Pike_error("String to short to unpad\n");
+  
+    add_ref(str);
+    pop_stack();
+    push_string(make_shared_binary_string(str->str, len));
+    free_string(str);
   }
 }
 
