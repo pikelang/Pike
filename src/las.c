@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.31 1997/04/16 03:09:12 hubbe Exp $");
+RCSID("$Id: las.c,v 1.32 1997/04/18 01:17:40 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1544,6 +1544,32 @@ static void optimize(node *n)
 	    goto use_tmp1;
 	  }
 	}
+      }
+      break;
+
+    case F_ARROW:
+      if(CAR(n)->token==F_CONSTANT &&
+	 CAR(n)->u.sval.type==T_OBJECT &&
+	 CAR(n)->u.sval.u.object->prog &&
+	 CDR(n)->token==F_CONSTANT &&
+	 CAR(n)->u.sval.type==T_STRING &&
+	 find_identifier("`->",CAR(n)->u.sval.u.object->prog)==-1)
+      {
+	int i;
+	i=find_shared_string_identifier(CDR(n)->u.sval.u.string,
+					CAR(n)->u.sval.u.object->prog);
+	if(i)
+	{
+	  struct identifier *id;
+	  id=ID_FROM_INT(CAR(n)->u.sval.u.object->prog, i);
+	  if(IDENTIFIER_IS_VARIABLE(id->flags)) break;
+	}
+	ref_push_object(CAR(n)->u.sval.u.object);
+	ref_push_string(CDR(n)->u.sval.u.string);
+	f_index(2);
+	tmp1=mksvaluenode(sp-1);
+	pop_stack();
+	goto use_tmp1;
       }
       break;
 
