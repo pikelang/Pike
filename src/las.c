@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.171 2000/03/30 08:43:07 hubbe Exp $");
+RCSID("$Id: las.c,v 1.172 2000/03/31 01:54:12 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1633,7 +1633,7 @@ static void low_print_tree(node *foo,int needlval)
   {
     fprintf(stderr, "/*%x*/",foo->tree_info);
   }
-  switch(foo->token)
+  switch(l_flag > 99 ? -1 : foo->token)
   {
   case USHRT_MAX:
     fprintf(stderr, "FREED_NODE");
