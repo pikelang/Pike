@@ -139,7 +139,7 @@ array(string) output( mapping(string:Class) classes,
                       array(Node) global_code )
 {
   head = Stdio.read_bytes( combine_path( sdir, "../pgtk.c.head" ) );
-  sfhead = replace( head, "PROTOTYPES", "#include <prototypes.h>" );
+  sfhead = replace( head, "PROTOTYPES", "#include \"prototypes.h\"" );
   traverse_class_tree( classes, output_class );
   post_class_build();
   traverse_class_tree( classes, build_protos );
