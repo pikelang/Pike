@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.27 2004/04/21 19:27:53 mast Exp $
+dnl $Id: testsuite.in,v 1.28 2004/05/01 15:42:02 mast Exp $
 
 dnl - Array
 
@@ -810,7 +810,7 @@ cond([[all_constants()->thread_create]],
     Thread.Mutex m = Thread.Mutex();
     Thread.MutexKey l = m->lock();
 
-    void thread_fn ()
+    void thread_fn()
     {
       m->lock();
       num_ok++;
@@ -820,6 +820,29 @@ cond([[all_constants()->thread_create]],
 
     sleep (0.5); // Make sure they are waiting for the lock.
     destruct (m);
+    l = 0;
+    sleep (0.5); // Wait for them to finish.
+
+    return num_ok;
+  ]], 5)
+
+  test_any([[
+    #pike 7.4
+    int num_ok = 0;
+
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey l = m->lock();
+
+    void thread_fn()
+    {
+      m->lock();
+      num_ok++;
+    };
+
+    array(Thread.Thread) t = (({Thread.thread_create}) * 5) (thread_fn);
+
+    sleep (0.5); // Make sure they are waiting for the lock.
+    destruct (m); // Destructs the outstanding lock too.
     sleep (0.5); // Wait for them to finish.
 
     return num_ok;
