@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.50 2004/05/04 13:14:02 grendel Exp $
+# $Id: rules,v 1.51 2004/05/11 14:07:26 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -57,8 +57,8 @@ else
 MACHINE_OPTS=--without-machine-code
 endif
 
-VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
-OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
+VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9.]*$$//')
+OS:=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
 BUILDDIR=build/$(OS)
 CFARGS=$(CFARGSEXTRA) \
        --with-cflags="$(CFLAGS)" \
@@ -314,5 +314,5 @@ binary-arch: build install
 	dh_md5sums -a
 	dh_builddeb -a
 
-binary: binary-indep binary-arch
+binary: binary-arch binary-indep
 .PHONY: build clean binary-indep binary-arch binary install configure
