@@ -1,6 +1,6 @@
 /* -*- C -*-
  *
- * $Id: auto.c.in,v 1.17 2000/12/05 21:08:41 per Exp $
+ * $Id: auto.c.in,v 1.18 2001/12/06 10:36:44 per-bash Exp $
  *
  */
 
@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.17 2000/12/05 21:08:41 per Exp $");
+RCSID("$Id: auto.c.in,v 1.18 2001/12/06 10:36:44 per-bash Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -146,11 +146,16 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     void *img;
     INT_TYPE w, h;
   } *rgbstor = NULL, *lumstor = NULL, *astor = NULL;
+  struct {
+    unsigned char *p;
+    size_t size;
+  } *stor_mem;
   unsigned char *pp;
   struct { unsigned char r, g, b; } *p1, *p2;
   INT32 cnt;
 
   static struct program *image_program=NULL;
+  static struct program *shm_program=NULL;
 
   if(image_program == NULL) {
     push_string(make_shared_string("Image")); push_int(0);
@@ -164,6 +169,15 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     }
     if(image_program == NULL)
       Pike_error("%s: Can't resolve Image.image!\n", func);
+  }
+
+  if(shm_program == NULL) {
+    push_string(make_shared_string("system.Memory")); push_int(0);
+    SAFE_APPLY_MASTER("resolv",2);
+    shm_program=program_from_svalue(sp-1);
+    pop_stack();
+    if(shm_program == NULL)
+      Pike_error("%s: Can't resolve System.Memory!\n", func);
   }
 
   img->alloc = 0;
@@ -192,6 +206,32 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	;
       else
 	Pike_error("Bad argument %d to %s.\n", arg, func);
+    }
+    if( (v=simple_mapping_string_lookup(a->u.mapping, "mem" )) ) {
+      if( v->type == T_OBJECT &&
+	  (stor_mem = (void *)get_storage( v->u.object, shm_program ) ) )
+      {
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_w" )) )
+	  img->width = v->u.integer;
+	else
+	  Pike_error("Need mem_w for memory texture\n");
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_h" )) )
+	  img->height = v->u.integer;
+	else
+	  Pike_error("Need mem_h for memory texture\n");
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_format" )) )
+	  img->format = v->u.integer;
+	else
+	  Pike_error("Need mem_format for memory texture\n");
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_type" )) )
+	  img->type = v->u.integer;
+	else
+	  Pike_error("Need mem_type for memory texture\n");
+	img->pixels = stor_mem->p;
+	if(!img_inited)
+	  img_init();
+	return;
+      }
     }
   } else if(a->type == T_OBJECT &&
 	    (rgbstor = (void *)get_storage(a->u.object, image_program)) !=
