@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.14 1999/05/13 17:52:42 marcus Exp $
+ * $Id: nt.c,v 1.15 1999/05/17 22:50:37 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -114,8 +114,10 @@ static struct program *token_program;
 #define THIS_TOKEN (*(HANDLE *)(fp->current_storage))
 
 typedef BOOL WINAPI (*logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
+typedef DWORD WINAPI (*getlengthsidtype)(PSID);
 
 static logonusertype logonuser;
+static getlengthsidtype getlengthsid;
 HINSTANCE advapilib;
 
 void f_LogonUser(INT32 args)
@@ -421,6 +423,56 @@ static void encode_localgroup_users_info(BYTE *u, int level)
   }
 }
 
+static void low_encode_localgroup_members_info_0(LOCALGROUP_MEMBERS_INFO_0 *tmp)
+{
+#define SAFE_PUSH_SID(X) \ 
+  if(getlengthsid && (X)) \
+    push_string(make_shared_binary_string((char *)(X),getlengthsid((X)))); \
+  else \
+    push_int(0)
+
+  SAFE_PUSH_SID(tmp->lgrmi0_sid);
+}
+
+static void low_encode_localgroup_members_info_1(LOCALGROUP_MEMBERS_INFO_1 *tmp)
+{
+  low_encode_localgroup_members_info_0((LOCALGROUP_MEMBERS_INFO_0 *)tmp);
+  push_int(tmp->lgrmi1_sidusage);
+  SAFE_PUSH_WSTR(tmp->lgrmi1_name);  
+  /* 3 entries */
+}
+
+static void low_encode_localgroup_members_info_2(LOCALGROUP_MEMBERS_INFO_2 *tmp)
+{
+  low_encode_localgroup_members_info_0((LOCALGROUP_MEMBERS_INFO_0 *)tmp);
+  push_int(tmp->lgrmi2_sidusage);
+  SAFE_PUSH_WSTR(tmp->lgrmi2_domainandname);
+  /* 3 entries */
+}
+
+static void low_encode_localgroup_members_info_3(LOCALGROUP_MEMBERS_INFO_3 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->lgrmi3_domainandname);
+}
+
+static void encode_localgroup_members_info(BYTE *u, int level)
+{
+  if(!u)
+  {
+    push_int(0);
+    return;
+  }
+  switch(level)
+  {
+    case 0: low_encode_localgroup_members_info_0 ((LOCALGROUP_MEMBERS_INFO_0 *) u);break;
+    case 1: low_encode_localgroup_members_info_1 ((LOCALGROUP_MEMBERS_INFO_1 *) u);f_aggregate(3);break;
+    case 2: low_encode_localgroup_members_info_2 ((LOCALGROUP_MEMBERS_INFO_2 *) u);f_aggregate(3);break;
+    case 3: low_encode_localgroup_members_info_3 ((LOCALGROUP_MEMBERS_INFO_3 *) u);break;
+    default:
+      error("Unsupported LOCALGROUPMEMBERSINFO level.\n");
+  }
+}
+
 static int sizeof_user_info(int level)
 {
   switch(level)
@@ -476,11 +528,24 @@ static int sizeof_localgroup_users_info(int level)
   }
 }
 
+static int sizeof_localgroup_members_info(int level)
+{
+  switch(level)
+  {
+    case 0: return sizeof(LOCALGROUP_MEMBERS_INFO_0);
+    case 1: return sizeof(LOCALGROUP_MEMBERS_INFO_1);
+    case 2: return sizeof(LOCALGROUP_MEMBERS_INFO_2);
+    case 3: return sizeof(LOCALGROUP_MEMBERS_INFO_3);
+    default: return -1;
+  }
+}
+
 typedef NET_API_STATUS WINAPI (*netusergetinfotype)(LPWSTR,LPWSTR,DWORD,LPBYTE *);
 typedef NET_API_STATUS WINAPI (*netuserenumtype)(LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
 typedef NET_API_STATUS WINAPI (*netusergetgroupstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
 typedef NET_API_STATUS WINAPI (*netusergetlocalgroupstype)(LPWSTR,LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
 typedef NET_API_STATUS WINAPI (*netgroupenumtype)(LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS WINAPI (*netgroupgetuserstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
 typedef NET_API_STATUS WINAPI (*netapibufferfreetype)(LPVOID);
 
 static netusergetinfotype netusergetinfo;
@@ -488,13 +553,14 @@ static netuserenumtype netuserenum;
 static netusergetgroupstype netusergetgroups;
 static netusergetlocalgroupstype netusergetlocalgroups;
 static netgroupenumtype netgroupenum, netlocalgroupenum;
+static netgroupgetuserstype netgroupgetusers, netlocalgroupgetmembers;
 static netapibufferfreetype netapibufferfree;
 HINSTANCE netapilib;
 
 
 void f_NetUserGetInfo(INT32 args)
 {
-  char *to_free1,*to_free2;
+  char *to_free1=NULL,*to_free2=NULL;
   BYTE *tmp=0;
   DWORD level;
   LPWSTR server, user;
@@ -565,7 +631,7 @@ void f_NetUserGetInfo(INT32 args)
 
 void f_NetUserEnum(INT32 args)
 {
-  char *to_free1;
+  char *to_free1=NULL;
   DWORD level=0;
   DWORD filter=0;
   LPWSTR server=NULL;
@@ -653,7 +719,7 @@ void f_NetUserEnum(INT32 args)
 
 void f_NetGroupEnum(INT32 args)
 {
-  char *to_free1, *tmp_server=NULL;
+  char *to_free1=NULL, *tmp_server=NULL;
   DWORD level=0;
   LPWSTR server=NULL;
   INT32 pos=0,e;
@@ -730,7 +796,7 @@ void f_NetGroupEnum(INT32 args)
 
 void f_NetLocalGroupEnum(INT32 args)
 {
-  char *to_free1, *tmp_server=NULL;
+  char *to_free1=NULL, *tmp_server=NULL;
   DWORD level=0;
   LPWSTR server=NULL;
   INT32 pos=0,e;
@@ -807,7 +873,7 @@ void f_NetLocalGroupEnum(INT32 args)
 
 void f_NetUserGetGroups(INT32 args)
 {
-  char *to_free1, *to_free2, *tmp_server=NULL, *tmp_user;
+  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL, *tmp_user;
   DWORD level=0;
   LPWSTR server=NULL;
   LPWSTR user=NULL;
@@ -884,7 +950,7 @@ void f_NetUserGetGroups(INT32 args)
 
 void f_NetUserGetLocalGroups(INT32 args)
 {
-  char *to_free1, *to_free2, *tmp_server=NULL, *tmp_user;
+  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL, *tmp_user;
   DWORD level=0;
   DWORD flags=0;
   LPWSTR server=NULL;
@@ -964,6 +1030,193 @@ void f_NetUserGetLocalGroups(INT32 args)
   if(to_free2) free(to_free2);
 }
 
+void f_NetGroupGetUsers(INT32 args)
+{
+  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL;
+  DWORD level=0;
+  LPWSTR server=NULL;
+  LPWSTR group=NULL;
+  INT32 pos=0,e;
+  struct array *a=0;
+  DWORD resume=0;
+
+  check_all_args("NetGroupGetUsers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
+
+  if(args && sp[-args].type==T_STRING)
+    server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+
+  if(args>1 && sp[1-args].type==T_STRING)
+    group=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
+
+  if(args>2 && sp[2-args].type==T_INT) {
+    level = sp[2-args].u.integer;
+    switch(level)
+    {
+      case 0: case 1:
+	break;
+      default:
+	error("Unsupported information level in NetGroupGetUsers.\n");
+    }
+  }
+
+  pop_n_elems(args);
+
+  while(1)
+  {
+    DWORD read=0, total=0;
+    NET_API_STATUS ret;
+    LPBYTE buf=0,ptr;
+
+    THREADS_ALLOW();
+    ret=netgroupgetusers(server,
+			 group,
+			 level,
+			 &buf,
+			 0x10000,
+			 &read,
+			 &total,
+			 &resume);
+    THREADS_DISALLOW();
+    if(!a)
+      push_array(a=allocate_array(total));
+
+    switch(ret)
+    {
+      case ERROR_ACCESS_DENIED:
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	error("NetGroupGetUsers: Access denied.\n");
+	break;
+	
+      case NERR_InvalidComputer:
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	error("NetGroupGetUsers: Invalid computer.\n");
+	break;
+
+      case NERR_GroupNotFound:
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	error("NetGroupGetUsers: Group not found.\n");
+	break;
+
+      case NERR_Success:
+      case ERROR_MORE_DATA:
+	ptr=buf;
+	for(e=0;e<read;e++)
+	{
+	  encode_group_users_info(ptr,level);
+	  a->item[pos]=sp[-1];
+	  sp--;
+	  pos++;
+	  if(pos>=a->size) break;
+	  ptr+=sizeof_group_users_info(level);
+	}
+	netapibufferfree(buf);
+	if(ret==ERROR_MORE_DATA) continue;
+    }
+    break;
+  }
+  if(to_free1) free(to_free1);
+  if(to_free2) free(to_free2);
+}
+
+void f_NetLocalGroupGetMembers(INT32 args)
+{
+  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL;
+  DWORD level=0;
+  LPWSTR server=NULL;
+  LPWSTR group=NULL;
+  INT32 pos=0,e;
+  struct array *a=0;
+  DWORD resume=0;
+
+  check_all_args("NetLocalGroupGetMembers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
+
+  if(args && sp[-args].type==T_STRING)
+    server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+
+  if(args>1 && sp[1-args].type==T_STRING)
+    group=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
+
+  if(args>2 && sp[2-args].type==T_INT) {
+    level = sp[2-args].u.integer;
+    switch(level)
+    {
+      case 0: case 1: case 2: case 3:
+	break;
+      default:
+	error("Unsupported information level in NetLocalGroupGetMembers.\n");
+    }
+  }
+
+  pop_n_elems(args);
+
+  while(1)
+  {
+    DWORD read=0, total=0;
+    NET_API_STATUS ret;
+    LPBYTE buf=0,ptr;
+
+    THREADS_ALLOW();
+    ret=netlocalgroupgetmembers(server,
+				group,
+				level,
+				&buf,
+				0x10000,
+				&read,
+				&total,
+				&resume);
+    THREADS_DISALLOW();
+    if(!a)
+      push_array(a=allocate_array(total));
+
+    switch(ret)
+    {
+      case ERROR_ACCESS_DENIED:
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	error("NetLocalGroupGetMembers: Access denied.\n");
+	break;
+	
+      case NERR_InvalidComputer:
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	error("NetLocalGroupGetMembers: Invalid computer.\n");
+	break;
+
+      case NERR_GroupNotFound:
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	error("NetLocalGroupGetMembers: Group not found.\n");
+	break;
+
+      case ERROR_NO_SUCH_ALIAS:
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	error("NetLocalGroupGetMembers: No such alias.\n");
+	break;
+
+      case NERR_Success:
+      case ERROR_MORE_DATA:
+	ptr=buf;
+	for(e=0;e<read;e++)
+	{
+	  encode_localgroup_members_info(ptr,level);
+	  a->item[pos]=sp[-1];
+	  sp--;
+	  pos++;
+	  if(pos>=a->size) break;
+	  ptr+=sizeof_localgroup_members_info(level);
+	}
+	netapibufferfree(buf);
+	if(ret==ERROR_MORE_DATA) continue;
+    }
+    break;
+  }
+  if(to_free1) free(to_free1);
+  if(to_free2) free(to_free2);
+}
 
 void init_nt_system_calls(void)
 {
@@ -1003,6 +1256,11 @@ void init_nt_system_calls(void)
       token_program=end_program();
       add_program_constant("UserToken",token_program,0);
       token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+    }
+
+    if(proc=GetProcAddress(advapilib, "GetLengthSid"))
+    {
+      getlengthsid=(getlengthsidtype)proc;
     }
   }
 
@@ -1090,6 +1348,29 @@ void init_nt_system_calls(void)
 
 	SIMPCONST(LG_INCLUDE_INDIRECT);
       }
+
+      if(proc=GetProcAddress(netapilib, "NetGroupGetUsers"))
+      {
+	netgroupgetusers=(netgroupgetuserstype)proc;
+	
+ 	add_function("NetGroupGetUsers",f_NetGroupGetUsers,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+      }
+
+      if(proc=GetProcAddress(netapilib, "NetLocalGroupGetMembers"))
+      {
+	netlocalgroupgetmembers=(netgroupgetuserstype)proc;
+	
+ 	add_function("NetLocalGroupGetMembers",f_NetLocalGroupGetMembers,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+
+	SIMPCONST(SidTypeUser);
+	SIMPCONST(SidTypeGroup);
+	SIMPCONST(SidTypeDomain);
+	SIMPCONST(SidTypeAlias);
+	SIMPCONST(SidTypeWellKnownGroup);
+	SIMPCONST(SidTypeDeletedAccount);
+	SIMPCONST(SidTypeInvalid);
+	SIMPCONST(SidTypeUnknown);
+      }
     }
   }
 }
@@ -1107,6 +1388,7 @@ void exit_nt_system_calls(void)
     {
       advapilib=0;
       logonuser=0;
+      getlengthsid=0;
     }
   }
   if(netapilib)
@@ -1121,6 +1403,8 @@ void exit_nt_system_calls(void)
       netgroupenum=0;
       netlocalgroupenum=0;
       netapibufferfree=0;
+      netgroupgetusers=0;
+      netlocalgroupgetmembers=0;
     }
   }
 }
