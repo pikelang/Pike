@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.48 2003/01/03 17:50:45 grubba Exp $
+|| $Id: jvm.c,v 1.49 2003/01/03 18:24:57 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.48 2003/01/03 17:50:45 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.49 2003/01/03 18:24:57 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1653,21 +1653,21 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   ctx->code[1] = dispatch;
 
   /* mov $18, $19 */
-  *p++ = 0x13045246;
+  *p++ = 0x46520413;
   /* ldq $1, ro */
-  *p++ = 0x10803da4; *p++ = 0x000021a4;
+  *p++ = 0xa43d8010; *p++ = 0xa4210000;
   /* mov $17, $18 */
-  *p++ = 0x12043146;
+  *p++ = 0x46310412;
   /* ldq $2, ro+8 */
-  *p++ = 0x18805da4; *p++ = 0x000042a4;
+  *p++ = 0xa45d8018; *p++ = 0xa4420000;
   /* mov $16, $17 */
-  *p++ = 0x11041046;
+  *p++ = 0x46100411;
   /* mov $1, $16 */
-  *p++ = 0x10042144;
+  *p++ = 0x44210410;
   /* jmp ($2) */
-  *p++ = 0x0000e26b; *p++ = 0x1f04ff47;
+  *p++ = 0x6be20000; *p++ = 0x47ff041f;
   /* Padding? */
-  *p++ = 0x0000fe2f; *p++ = 0x1f04ff47;
+  *p++ = 0x2ffe0000; *p++ = 0x47ff041f;
 
   return &ctx->code[2];
 }
