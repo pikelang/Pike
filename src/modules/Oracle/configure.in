@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.32 2001/02/27 18:52:25 grubba Exp $
+# $Id: configure.in,v 1.33 2002/01/27 00:54:00 mast Exp $
 #
 # Configure script for the oracle module
 #
@@ -152,7 +152,11 @@ if test x$with_oracle = xyes; then
 
   oracle_include_dir="`cat conftest`"
 
-  AC_MSG_RESULT($oracle_include_dir/rdbms/demo/)
+  if test "$oracle_include_dir" = "no"; then
+    AC_MSG_RESULT(no)
+  else
+    AC_MSG_RESULT($oracle_include_dir/rdbms/demo/)
+  fi
 
   AC_MSG_CHECKING(for sysliblist)
 
@@ -193,7 +197,11 @@ if test x$with_oracle = xyes; then
   rm -f conftest
   AC_CHECK_LIB(aio, aioread, [oracle_aio=-laio], [oracle_aio=""])
 
-  if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :;
+  if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then
+    if test "x$enable_binary" = "xno"; then
+      AC_DEFINE(HAVE_ORACLE)
+      PIKE_FEATURE_OK(Oracle)
+    fi
   else
 
     CPPFLAGS="-I$oracle_include_dir/oci/include -I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/rdbms/public/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public ${CPPFLAGS}"

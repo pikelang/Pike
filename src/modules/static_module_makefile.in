@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.69 2001/12/17 04:24:33 mast Exp $
+# $Id: static_module_makefile.in,v 1.70 2002/01/27 00:54:00 mast Exp $
 #
 
 
@@ -42,7 +42,7 @@ dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 
 .SUFFIXES: .c .o .cmod
 
-.cmod.c:
+.cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(BUILD_BASE)/precompile.pike
 	$(BUILD_BASE)/precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 # GCC dumps core on some files @ OSF1
@@ -121,9 +121,15 @@ clean:
 	-rm -f *.o *.fail *.obj *.a *.so module.so module.pmod linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
 	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
-depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+depend: $(SRC_TARGETS) $(PMOD_TARGETS)
+	-@echo Fixing dependencies for $(SRCDIR)/\*.c
+	@gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
+	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
+	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
+	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
+	|sed -e "s@$(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@\1@g" \
+	>$(SRCDIR)/dependencies
+	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@for a in '' $(MODULE_SUBDIRS) ; do \
 	  if test "x$$a" = "x"; then :; else \
 	    echo making depend in $$a; \

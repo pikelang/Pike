@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.78 2001/10/15 09:37:03 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.79 2002/01/27 00:53:59 mast Exp $
 #
 
 
@@ -54,7 +54,7 @@ dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 
 .SUFFIXES: .c .o .cmod
 
-.cmod.c:
+.cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(BUILD_BASE)/precompile.pike
 	$(BUILD_BASE)/precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 
@@ -114,14 +114,15 @@ clean:
 	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 
-depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
+depend: $(SRC_TARGETS) $(PMOD_TARGETS)
+	-@echo Fixing dependencies for $(SRCDIR)/\*.c
+	@gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
 	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
 	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
 	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
 	|sed -e "s@$(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@\1@g" \
 	>$(SRCDIR)/dependencies
-	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@for a in '' $(MODULE_SUBDIRS) ; do \
 	  if test "x$$a" = "x"; then :; else \
 	    echo making depend in $$a; \

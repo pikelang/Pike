@@ -1,8 +1,9 @@
-# $Id: Makefile.in,v 1.21 2001/09/06 20:37:28 grubba Exp $
+# $Id: Makefile.in,v 1.22 2002/01/27 00:54:00 mast Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=mpz_glue.o next_prime.o my_mpz_xor.o mpq.o mpf.o
+SRC_TARGETS=prime_table.out
 
 PRIME_LIMIT=1024
 
@@ -28,7 +29,5 @@ prime_table_no: $(SRCDIR)/prime_table.c
 # Cross-compiling
 prime_table_yes: $(SRCDIR)/prime_table.pike
 	test -f ./prime_table_yes || ln -s $(SRCDIR)/prime_table.pike ./prime_table_yes || cp $(SRCDIR)/prime_table.pike ./prime_table_yes
-
-depend: prime_table.out
 
 @dependencies@

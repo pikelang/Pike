@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.78 2001/06/25 12:34:55 grubba Exp $
+# $Id: configure.in,v 1.79 2002/01/27 00:54:02 mast Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -966,6 +966,9 @@ fi
 AC_MSG_CHECKING(size of socket buffers)
 AC_CACHE_VAL(pike_cv_socket_buffer_max,
 [
+if test "x$enable_binary" = "xno"; then
+  pike_cv_socket_buffer_max=0
+else
 AC_TRY_RUN([
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
@@ -1018,7 +1021,9 @@ pike_cv_socket_buffer_max=`cat conftest.out.2`
 ,
 pike_cv_socket_buffer_max=0,
 pike_cv_socket_buffer_max=0
-)])
+)
+fi
+])
 
 AC_DEFINE_UNQUOTED(SOCKET_BUFFER_MAX,$pike_cv_socket_buffer_max)
 AC_MSG_RESULT($pike_cv_socket_buffer_max)

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.50 2002/01/16 05:27:12 nilsson Exp $
+# $Id: Makefile,v 1.51 2002/01/27 00:53:58 mast Exp $
 #
 # Meta Makefile
 #
@@ -75,9 +75,14 @@ configure: src/configure builddir
 	    echo "$$configureargs" > .configureargs; \
 	    if test "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	    else \
-	      echo Configure arguments have changed - doing make clean and depend; \
+	      echo Configure arguments have changed - doing make clean; \
 	      $(MAKE) "MAKE=$(MAKE)" clean || exit $$?; \
-	      $(MAKE) "MAKE=$(MAKE)" depend || exit $$?; \
+	      if test "x$(METATARGET)" = "xsource"; then :; \
+	      elif test "x$(METATARGET)" = "xexport"; then :; \
+	      else \
+		echo Configure arguments have changed - doing make depend; \
+		$(MAKE) "MAKE=$(MAKE)" depend || exit $$?; \
+	      fi; \
 	    fi; \
 	  fi; \
 	} || exit $$?
@@ -106,6 +111,8 @@ compile: configure
 	    }; \
 	  done; \
 	} || exit $$?
+
+# FIXME: The refdoc stuff ought to use $(BUILDDIR) too.
 
 documentation:
 	@test -f "$(BUILDDIR)/pike" || $(MAKE) $(MAKE_FLAGS) compile
@@ -155,12 +162,12 @@ run_hilfe:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
 
 source:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary" "OS=source" \
-	  "RUNPIKE=$(RUNPIKE)" "LIMITED_TARGETS=yes" "METATARGET=source" compile
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=source" compile
 
 export:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary" "OS=source" \
-	  "RUNPIKE=$(RUNPIKE)" "LIMITED_TARGETS=yes" "METATARGET=export" compile
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" compile
 
 bin_export:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
@@ -216,12 +223,14 @@ distclean: delete_builddir
 	$(MAKE) "OS=source" delete_builddir
 	-rm -rf bin/pike
 
-cvsclean: distclean
+srcclean:
 	for d in `find src -type d -print`; do \
 	  if test -f "$$d/.cvsignore"; then \
 	    (cd "$$d" && rm -f `cat ".cvsignore"`); \
 	  else :; fi; \
 	done
+
+cvsclean: srcclean distclean
 
 depend: configure
 	-@cd "$(BUILDDIR)" && \

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.11 2001/02/13 15:44:17 mirar Exp $
+# $Id: configure.in,v 1.12 2002/01/27 00:54:01 mast Exp $
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 
@@ -14,9 +14,9 @@ if test "x$with_perl" = "xno"; then :; else
   PIKE_FEATURE_NODEP(Perl)
 
   if test "x$with_perl" = "xyes"; then
-    AC_CHECK_PROGS(perl, perl perl5, x)
+    MY_AC_CHECK_PROGS(perl, perl perl5, x)
   else
-    AC_CHECK_PROGS(perl, "$with_perl" perl perl5, x)
+    MY_AC_CHECK_PROGS(perl, "$with_perl" perl perl5, x)
   fi
 
   AC_MSG_CHECKING(if perl is embeddable)

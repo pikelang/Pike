@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.281 2001/12/09 01:13:14 mast Exp $
+# $Id: Makefile.in,v 1.282 2002/01/27 00:53:58 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -95,9 +95,9 @@ LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 
 DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
-RUNPIKE=$(DEFAULT_RUNPIKE)
 USE_TPIKE=$(TMP_BUILDDIR)/precompile.sh
-USE_PIKE=@PIKE@ $(PIKEOPTS)
+USE_PIKE=pike $(PIKEOPTS)
+RUNPIKE=$(@RUNPIKE@)
 RUNTPIKE=$(@RUNTPIKE@)
 PIKE_MODULE_RELOC=@PIKE_MODULE_RELOC@
 
@@ -163,10 +163,14 @@ MODULE_REQUIREMENTS= \
   $(SRCDIR)/interpret_protos.h \
   lib @EXTRA_MODULE_REQUIREMENTS@
 
-
-DEPEND= \
+SRC_TARGETS= \
+ $(SRCDIR)/peep_engine.c \
+ $(SRCDIR)/case_info.h \
+ $(SRCDIR)/treeopt.h \
  $(SRCDIR)/language.c \
- $(SRCDIR)/builtin.c
+ $(SRCDIR)/language.h \
+ $(SRCDIR)/interpret_protos.h \
+ @PMOD_TARGETS@
 
 #
 # The following objectfiles differ between tpike & pike:
@@ -345,7 +349,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 # The .c file will not be created in the SOURCE directory otherwise.
 # -Hubbe
 #
-.cmod.c: precompile.sh-stamp
+.cmod.c: precompile.sh-stamp precompile.pike
 	./precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 # This rule is used for some header files that are generated from the
@@ -555,7 +559,7 @@ aclocal: $(SRCDIR)/aclocal.m4
 # We touch the files that depend on language.h_src and
 # interpret_protos.h_src to ensure that the .h_src.h rule doesn't have
 # anything to do in the dist.
-source: $(SRCDIR)/peep_engine.c $(SRCDIR)/case_info.h $(SRCDIR)/treeopt.h $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h depend
+source: depend
 	touch $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h
 
 # make export archive (requires compiled Pike)
@@ -643,7 +647,7 @@ stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)
 	@echo foo > stamp-tpike-predep
 
 # make dependencies
-depend: $(DEPEND)
+depend: $(SRC_TARGETS)
 	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \

@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.34 2001/10/06 20:32:57 grubba Exp $
+dnl $Id: aclocal.m4,v 1.35 2002/01/27 00:53:59 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -117,7 +117,9 @@ EOF
     ])    
     AC_MSG_RESULT($AC_CV_NAME)
     undefine([AC_CV_NAME])dnl
-  else :; fi
+  elif test "x$enable_binary" = "xno"; then
+    translit(ac_cv_sizeof_$1, [ *], [_p])=$2
+  fi
   ORIG_AC_CHECK_SIZEOF($1,$2)
 ])
 
@@ -227,7 +229,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.34 2001/10/06 20:32:57 grubba Exp $
+# $Id: aclocal.m4,v 1.35 2002/01/27 00:53:59 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -257,6 +259,36 @@ AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-di
     ;;
   esac
 ],[with_root=""])
+
+if test "x$enable_binary" = "xno"; then
+  # Fix makefile rules as if we're cross compiling, to use pike
+  # fallbacks etc. Do this without setting $ac_cv_prog_cc_cross to yes
+  # since autoconf macros like AC_TRY_RUN will complain bitterly then.
+  CROSS=yes
+else
+  CROSS="$ac_cv_prog_cc_cross"
+  # newer autoconf
+  if test x"$CROSS" = x; then
+     CROSS="$cross_compiling"
+  fi
+fi
+
+AC_SUBST(CROSS)
+
+if test "x$enable_binary" = "xno"; then
+  CC="$BINDIR/nobinary_dummy cc"
+  CPP="$BINDIR/nobinary_dummy cpp"
+  RUNPIKE="USE_PIKE"
+  RUNTPIKE="USE_PIKE"
+elif test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  RUNPIKE="DEFAULT_RUNPIKE"
+  RUNTPIKE="USE_PIKE"
+else
+  RUNPIKE="DEFAULT_RUNPIKE"
+  RUNTPIKE="USE_TPIKE"
+fi
+AC_SUBST(RUNPIKE)
+AC_SUBST(RUNTPIKE)
 ])
 
 
@@ -272,12 +304,10 @@ static_module_makefile=PIKE_INCLUDE_PATH/dynamic_module_makefile
 ],[
   AC_MSG_CHECKING([for the Pike module base directory])
 
-  dynamic_module_makefile=../dynamic_module_makefile
-  static_module_makefile=../static_module_makefile
-
   counter=.
 
-  while test ! -f "$dynamic_module_makefile"
+  uplevels=../
+  while test ! -f "${uplevels}dynamic_module_makefile"
   do
     counter=.$counter
     if test $counter = .......... ; then
@@ -286,10 +316,12 @@ static_module_makefile=PIKE_INCLUDE_PATH/dynamic_module_makefile
     else
       :
     fi
-    dynamic_module_makefile=../$dynamic_module_makefile
-    static_module_makefile=../$static_module_makefile
+    uplevels=../$uplevels
   done
-  AC_MSG_RESULT(found)
+
+  dynamic_module_makefile=${uplevels}dynamic_module_makefile
+  static_module_makefile=${uplevels}static_module_makefile
+  AC_MSG_RESULT(${uplevels}.)
 ])
 
 ])
@@ -326,6 +358,13 @@ pushdef([AC_OUTPUT],
   export CCSHARED
   AC_SUBST(CCSHARED)
 
+  PMOD_TARGETS=
+  for f in $srcdir/*.cmod; do
+    PMOD_TARGETS="$PMOD_TARGETS $f"
+  done
+  PMOD_TARGETS=`echo $srcdir/*.cmod | sed -e "s/\.cmod/\.c/g" | sed -e "s|$srcdir/|\\$(SRCDIR)/|g"`
+  AC_SUBST(PMOD_TARGETS)
+
 ifdef([PIKE_INCLUDE_PATH],
 [
   make_variables_in=PIKE_INCLUDE_PATH/make_variables_in
@@ -336,7 +375,8 @@ ifdef([PIKE_INCLUDE_PATH],
 
   counter=.
 
-  while test ! -f "$srcdir/$make_variables_in"
+  uplevels=
+  while test ! -f "$srcdir/$uplevels$make_variables_in"
   do
     counter=.$counter
     if test $counter = .......... ; then
@@ -345,10 +385,11 @@ ifdef([PIKE_INCLUDE_PATH],
     else
       :
     fi
-    make_variables_in=../$make_variables_in
+    uplevels=../$uplevels
   done
 
-  AC_MSG_RESULT(found)
+  make_variables_in=$uplevels$make_variables_in
+  AC_MSG_RESULT(${uplevels}.)
 ])
 
   AC_SUBST_FILE(make_variables)
@@ -379,4 +420,36 @@ return 0;
   if test [$]pike_cv_func_$1 = yes; then
     AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
   else :; fi
+])
+
+dnl These are like AC_PATH_PROG etc, but gives a path to
+dnl nobinary_dummy when --disable-binary is used. That program will
+dnl always return true and have ' ' as output.
+define(MY_AC_CHECK_PROG,[
+  if test "x$enable_binary" = "xno"; then
+    AC_CHECK_PROG($1,nobinary_dummy,$3,$4,$BINDIR)
+  else
+    AC_CHECK_PROG($1,$2,$3,$4,$5,$6)
+  fi
+])
+define(MY_AC_CHECK_PROGS,[
+  if test "x$enable_binary" = "xno"; then
+    AC_CHECK_PROGS($1,nobinary_dummy,$3,$BINDIR)
+  else
+    AC_CHECK_PROGS($1,$2,$3,$4)
+  fi
+])
+define(MY_AC_PATH_PROG,[
+  if test "x$enable_binary" = "xno"; then
+    AC_PATH_PROG($1,nobinary_dummy,$3,$BINDIR)
+  else
+    AC_PATH_PROG($1,$2,$3,$4)
+  fi
+])
+define(MY_AC_PATH_PROGS,[
+  if test "x$enable_binary" = "xno"; then
+    AC_PATH_PROGS($1,nobinary_dummy,$3,$BINDIR)
+  else
+    AC_PATH_PROGS($1,$2,$3,$4)
+  fi
 ])

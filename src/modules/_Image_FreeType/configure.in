@@ -10,7 +10,7 @@ if test "x$with_freetype" = "xyes" ; then
 
   PIKE_FEATURE_NODEP(Image.FreeType)
 
-  AC_PATH_PROG(FT_CONFIG, freetype-config, no)
+  MY_AC_PATH_PROG(FT_CONFIG, freetype-config, no)
 
   if test "$FT_CONFIG" = "no" ; then
      :

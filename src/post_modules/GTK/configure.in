@@ -18,7 +18,7 @@ for module in . $3; do
   esac
 done
 
-AC_PATH_PROG(LIBGLADE_CONFIG, libglade-config, no)
+MY_AC_PATH_PROG(LIBGLADE_CONFIG, libglade-config, no)
 AC_MSG_CHECKING(for libglade)
 if test "$LIBGLADE_CONFIG" = "no"; then
   AC_MSG_RESULT(no)
@@ -287,7 +287,7 @@ if test "x$with_GTK" = "xyes" ; then
   PIKE_FEATURE_NODEP(GTK.GladeXML)
   if test "x$with_GTK2" = "xyes" ; then
     PIKE_FEATURE_NODEP(GTK2)
-    AC_PATH_PROG(PKG_CONFIG,pkg-config,no)
+    MY_AC_PATH_PROG(PKG_CONFIG,pkg-config,no)
   else
      PKG_CONFIG=no
   fi
@@ -297,7 +297,7 @@ AC_SUBST(have_gtk_20)
 AC_SUBST(have_gtk_120)
 
  if test "$PKG_CONFIG" = "no" ; then
-   AC_PATH_PROG(GTK_CONFIG, gtk-config,no)
+   MY_AC_PATH_PROG(GTK_CONFIG, gtk-config,no)
    AM_PATH_GTK(1.2.0,[have_gtk_120=gtk_120],[have_gtk_120=no_gtk_120])
    if test x$have_gtk_120 = xno_gtk_120 ; then
      AM_PATH_GTK(1.1.13,[WITH_GTK=1],[WITH_GTK=0])
@@ -316,7 +316,7 @@ AC_SUBST(have_gtk_120)
      AC_CHECK_LIB(iconv,iconv,,,$GTK_LIBS)
      WITH_GTK=2
    else
-     AC_PATH_PROG(GTK_CONFIG, gtk-config,no)
+     MY_AC_PATH_PROG(GTK_CONFIG, gtk-config,no)
      AM_PATH_GTK(1.2.0,[have_gtk_120=gtk_120],[have_gtk_120=no_gtk_120])
      if test x$have_gtk_120 = xno_gtk_120 ; then
        AM_PATH_GTK(1.1.13,[WITH_GTK=1],[WITH_GTK=0])
@@ -409,7 +409,7 @@ if test "x$WITH_GTK" = x1 ; then
  if test "x$with_gnome" = "xyes"; then
  
  PIKE_FEATURE_NODEP(Gnome)
- AC_PATH_PROG(GNOME_CONFIG,gnome-config,no)
+ MY_AC_PATH_PROG(GNOME_CONFIG,gnome-config,no)
  
  if test "$GNOME_CONFIG" = "no"; then
    :

@@ -1,19 +1,10 @@
-# $Id: configure.in,v 1.28 2001/09/25 00:55:59 hubbe Exp $
+# $Id: configure.in,v 1.29 2002/01/27 00:54:00 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
 AC_ARG_WITH(bignums, [  --with(out)-bignums    Support automatic bignum conversion],[],[with_bignums=yes])
 
 AC_MODULE_INIT()
-
-# Check if we're cross-compiling.
-
-CROSS="$ac_cv_prog_cc_cross"
-# newer autoconf
-if test x"$CROSS" = x; then
-   CROSS="$cross_compiling"
-fi
-AC_SUBST(CROSS)
 
 #############################################################################
 # Copied from ../../configure.in
@@ -170,7 +161,7 @@ int main(int argc, char **argv)
 
 PIKE_FEATURE_WITHOUT([Gmp (bignums)])
 
-if test x$with_gmp = xyes -a "x$enable_binary" != "xno" ; then
+if test x$with_gmp = xyes ; then
   PIKE_FEATURE_NODEP([Gmp (bignums)])
   AC_CHECK_GMP(gmp2,gmp2/gmp.h,[
     AC_CHECK_GMP(gmp,gmp.h,[

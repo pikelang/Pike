@@ -22,7 +22,7 @@ AC_ARG_WITH(java-lib-dir,
 
 PIKE_FEATURE_WITHOUT(Java)
 
-if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
+if test "x$with_java" = xyes; then
 
   PIKE_FEATURE_NODEP(Java)
 
