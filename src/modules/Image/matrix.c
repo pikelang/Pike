@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.20 1999/06/18 19:19:27 mirar Exp $ */
+/* $Id: matrix.c,v 1.21 2000/01/30 21:29:29 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.20 1999/06/18 19:19:27 mirar Exp $
+**!	$Id: matrix.c,v 1.21 2000/01/30 21:29:29 hubbe Exp $
 **! class Image
 */
 
@@ -698,13 +698,16 @@ static void img_skewx(struct image *src,
 	    d->b=ROUND(rgb.b*xn+s->b*xm);
 	 d++;
 	 s++;
+	 debug_malloc_touch(dest->img);
 	 j=dest->xsize-x0-len;
       }
       if (xpn) rgb=s[-1];
       while (j--) *(d++)=rgb;
+      debug_malloc_touch(dest->img);
       x0+=xmod;
    }
    THREADS_DISALLOW();
+   debug_malloc_touch(dest->img);
 
    CHRONO("skewx end\n");
 }
