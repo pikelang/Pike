@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.183 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.184 2002/06/11 17:30:38 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -806,7 +806,6 @@ again:
       }
       /* FALL THROUGH */
 
-    describe_object:
     case T_OBJECT:
       p=((struct object *)a)->prog;
       if(p && (p->flags & PROGRAM_USES_PARENT))
