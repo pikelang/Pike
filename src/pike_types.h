@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.65 2001/03/29 20:19:17 grubba Exp $
+ * $Id: pike_types.h,v 1.66 2001/03/29 20:36:43 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -54,7 +54,9 @@ extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 #define check_type_string(T) debug_check_type_string((struct pike_type *)debug_malloc_pass(T))
 #else /* !DEBUG_MALLOC */
 #define free_type debug_free_type
+#ifdef PIKE_DEBUG
 #define check_type_string debug_check_type_string
+#ebdif /* PIKE_DEBUG */
 #endif /* DEBUG_MALLOC */
 
 #else /* !USE_PIKE_TYPE */
