@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.168 2003/03/26 18:53:46 nilsson Exp $
+|| $Id: main.c,v 1.169 2003/03/30 02:08:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.168 2003/03/26 18:53:46 nilsson Exp $");
+RCSID("$Id: main.c,v 1.169 2003/03/30 02:08:08 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -818,9 +818,6 @@ void low_init_main(void)
 
 void exit_main(void)
 {
-#ifdef DO_PIKE_CLEANUP
-  cleanup_objects();
-#endif
 }
 
 void init_main(void)
@@ -852,6 +849,8 @@ void low_exit_main(void)
   cleanup_compiler();
   cleanup_error();
   exit_backend();
+  cleanup_gc();
+  cleanup_pike_types();
 
 #ifdef SHARED_NODES
   free(node_hash.table);
@@ -861,6 +860,9 @@ void low_exit_main(void)
   free_svalue(& throw_value);
   throw_value.type=T_INT;
   {
+#ifdef DEBUG_MALLOC
+    gc_keep_markers = 1;
+#endif
     while(1) {
       int tmp=num_objects;
       do_gc(NULL, 1);
@@ -868,14 +870,9 @@ void low_exit_main(void)
     }
   }
 
-  cleanup_gc();
-
-  cleanup_pike_types();
-
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
   {
-    INT32 num,size,recount=0;
     fprintf(stderr,"Exited normally, counting bytes.\n");
 
 #ifdef _REENTRANT
@@ -887,81 +884,79 @@ void low_exit_main(void)
     }
 #endif
 
-
     search_all_memheaders_for_references();
 
-    count_memory_in_arrays(&num, &size);
-    if(num)
+#define REPORT_LINKED_LIST_LEAKS(TYPE, START, END, T_TYPE, NAME) do {	\
+      size_t num = 0;							\
+      struct TYPE *x;							\
+      for (x = START; x != END; x = x->next) {				\
+	struct marker *m = find_marker (x);				\
+	num++;								\
+	if (!m) {							\
+	  fprintf (stderr, "Didn't find gc marker as expected for:\n");	\
+	  describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
+	}								\
+	else if (m->refs != x->refs) {					\
+	  fprintf (stderr, NAME " got %d extra external references:\n",	\
+		   x->refs - m->refs);					\
+	  describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
+	}								\
+      }									\
+      if (num)								\
+	fprintf (stderr, NAME "s left: %"PRINTSIZET"d\n", num);		\
+    } while (0)
+
+    REPORT_LINKED_LIST_LEAKS (array, &empty_array, &empty_array, T_ARRAY, "Array");
+    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, NULL, T_MULTISET, "Multiset");
+    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, NULL, T_MAPPING, "Mapping");
+    REPORT_LINKED_LIST_LEAKS (program, first_program, NULL, T_PROGRAM, "Program");
+    REPORT_LINKED_LIST_LEAKS (object, first_object, NULL, T_OBJECT, "Object");
+
+#undef REPORT_LINKED_LIST_LEAKS
+
+    /* Just remove the extra external refs reported above and do
+     * another gc so that we don't report the blocks again in the low
+     * level dmalloc reports. */
+
+#define ZAP_LINKED_LIST_LEAKS(TYPE, START, END) do {			\
+      struct TYPE *x;							\
+      for (x = START; x != END; x = x->next) {				\
+	struct marker *m = find_marker (x);				\
+	if (m)								\
+	  while (x->refs > m->refs)					\
+	    PIKE_CONCAT(free_, TYPE) (x);				\
+      }									\
+    } while (0)
+
+    ZAP_LINKED_LIST_LEAKS (array, weak_shrink_empty_array.next, &empty_array);
+    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset, NULL);
+    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, NULL);
+    ZAP_LINKED_LIST_LEAKS (program, first_program, NULL);
+    ZAP_LINKED_LIST_LEAKS (object, first_object, NULL);
+
+#undef ZAP_LINKED_LIST_LEAKS
+
+    /* If we stumble on the real refs whose refcounts we've zapped
+     * above we should try to handle it gracefully. */
+    gc_external_refs_zapped = 1;
+
+    gc_keep_markers = 0;
+    do_gc (NULL, 1);
+
     {
-      recount++;
-      fprintf(stderr,"Arrays left: %d (%d bytes) (zapped)\n",num,size);
+      INT32 num, size;
+      count_memory_in_pike_types(&num, &size);
+      if (num)
+	fprintf(stderr, "Types left: %d (%d bytes)\n", num, size);
+      describe_all_types();
     }
-
-    zap_all_arrays();
-
-    count_memory_in_mappings(&num, &size);
-    if(num)
-    {
-      recount++;
-      fprintf(stderr,"Mappings left: %d (%d bytes) (zapped)\n",num,size);
-    }
-
-    zap_all_mappings();
-
-    count_memory_in_multisets(&num, &size);
-    if(num)
-      fprintf(stderr,"Multisets left: %d (%d bytes)\n",num,size);
-
-
-    destruct_objects_to_destruct_cb();
-    if(recount)
-    {
-
-      fprintf(stderr,"Garbage collecting..\n");
-      do_gc(NULL, 1);
-      
-      count_memory_in_arrays(&num, &size);
-      fprintf(stderr,"Arrays left: %d (%d bytes)\n",num,size);
-      count_memory_in_mappings(&num, &size);
-      fprintf(stderr,"Mappings left: %d (%d bytes)\n",num,size);
-      count_memory_in_multisets(&num, &size);
-      fprintf(stderr,"Multisets left: %d (%d bytes)\n",num,size);
-    }
-    
-
-    count_memory_in_programs(&num, &size);
-    if(num)
-      fprintf(stderr,"Programs left: %d (%d bytes)\n",num,size);
-
-    {
-      struct program *p;
-      for(p=first_program;p;p=p->next)
-	describe_something(p, T_PROGRAM, 0,2,0, NULL);
-    }
-
-
-    count_memory_in_objects(&num, &size);
-    if(num)
-      fprintf(stderr,"Objects left: %d (%d bytes)\n",num,size);
-
-    {
-      struct object *o;
-      for(o=first_object;o;o=o->next)
-	describe_something(o, T_OBJECT, 0,2,0, NULL);
-    }
-
-    count_memory_in_pike_types(&num, &size);
-    if (num)
-      fprintf(stderr, "Types left: %d (%d bytes)\n", num, size);
-    describe_all_types();
   }
 #else
-
-  zap_all_arrays();
-  zap_all_mappings();
-
-  destruct_objects_to_destruct_cb();
+  gc_keep_markers = 0;
+  do_gc (NULL, 1);
 #endif
+
+  cleanup_objects();
 
   really_clean_up_interpret();
 

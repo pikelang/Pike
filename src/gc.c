@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.211 2003/03/30 01:34:53 mast Exp $
+|| $Id: gc.c,v 1.212 2003/03/30 02:08:08 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.211 2003/03/30 01:34:53 mast Exp $");
+RCSID("$Id: gc.c,v 1.212 2003/03/30 02:08:08 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -320,6 +320,16 @@ static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
 char *fatal_after_gc=0;
+
+#ifdef DEBUG_MALLOC
+
+/* To keep the markers after the gc. Only used for the dmalloc leak
+ * report at exit. */
+int gc_keep_markers = 0;
+
+int gc_external_refs_zapped = 0;
+
+#endif
 
 #define DESCRIBE_MEM 1
 #define DESCRIBE_NO_REFS 2
@@ -1313,11 +1323,30 @@ INT32 real_gc_check_weak(void *a)
   return ret;
 }
 
+static void cleanup_markers (void)
+{
+#ifdef DO_PIKE_CLEANUP
+  size_t e=0;
+  struct marker *h;
+  for(e=0;e<marker_hash_table_size;e++)
+    while(marker_hash_table[e])
+      remove_marker(marker_hash_table[e]->data);
+#endif
+  exit_marker_hash();
+}
+
+
 static void init_gc(void)
 {
 #ifdef PIKE_DEBUG
   if (!gc_is_watching) {
 #endif
+#ifdef DEBUG_MALLOC
+    /* The marker hash table is left around after a previous gc if
+     * gc_keep_markers is set. */
+    if (marker_hash_table) cleanup_markers();
+#endif
+
     low_init_marker_hash(num_objects);
     get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
 #ifdef PIKE_DEBUG
@@ -1327,24 +1356,23 @@ static void init_gc(void)
 
 static void exit_gc(void)
 {
-#ifdef DO_PIKE_CLEANUP
-  size_t e=0;
-  struct marker *h;
-  for(e=0;e<marker_hash_table_size;e++)
-    while(marker_hash_table[e])
-      remove_marker(marker_hash_table[e]->data);
+#ifdef DEBUG_MALLOC
+  if (!gc_keep_markers)
 #endif
+    cleanup_markers();
+
+  free_all_gc_frame_blocks();
+
+#ifdef GC_VERBOSE
+  num_gc_frames = 0;
+#endif
+
 #ifdef PIKE_DEBUG
   if (gc_is_watching) {
     fprintf(stderr, "## Exiting gc and resetting watches for %d things.\n",
 	    gc_is_watching);
     gc_is_watching = 0;
   }
-#endif
-  exit_marker_hash();
-  free_all_gc_frame_blocks();
-#ifdef GC_VERBOSE
-  num_gc_frames = 0;
 #endif
 }
 
@@ -1417,9 +1445,6 @@ void locate_references(void *a)
   if(i) exit_gc();
   d_flag=tmp;
 }
-#endif
-
-#ifdef PIKE_DEBUG
 
 void debug_gc_add_extra_ref(void *a)
 {
@@ -1535,6 +1560,15 @@ int gc_external_mark3(void *a, void *in, char *where)
 
   if (Pike_in_gc != GC_PASS_CHECK)
     Pike_fatal("gc_external_mark() called in invalid gc pass.\n");
+
+#ifdef DEBUG_MALLOC
+  if (gc_external_refs_zapped) {
+    fprintf (stderr, "One external ref to %p found%s.\n",
+	     a, where ? where : "");
+    if (in) describe (in);
+    return 0;
+  }
+#endif
 
   m=get_marker(a);
   m->xrefs++;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.99 2003/02/08 22:29:22 mast Exp $
+|| $Id: gc.h,v 1.100 2003/03/30 02:08:08 mast Exp $
 */
 
 #ifndef GC_H
@@ -59,6 +59,11 @@ extern cpu_time_t auto_gc_time;
 extern struct callback *gc_evaluator_callback;
 #ifdef PIKE_DEBUG
 extern void *gc_svalue_location;
+#endif
+
+#ifdef DEBUG_MALLOC
+extern int gc_keep_markers;
+extern int gc_external_refs_zapped;
 #endif
 
 #define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)

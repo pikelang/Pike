@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.231 2003/03/30 01:34:53 mast Exp $
+|| $Id: object.c,v 1.232 2003/03/30 02:08:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.231 2003/03/30 01:34:53 mast Exp $");
+RCSID("$Id: object.c,v 1.232 2003/03/30 02:08:08 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1567,11 +1567,7 @@ void cleanup_objects(void)
     }
     SET_NEXT_AND_FREE(o,free_object);
   }
-  if (master_object) free_object(master_object);
-  master_object=0;
-  if (master_program) free_program(master_program);
-  master_program=0;
-  destruct_objects_to_destruct();
+  destruct_objects_to_destruct_cb();
 }
 
 PMOD_EXPORT struct array *object_indices(struct object *o)
@@ -2326,6 +2322,18 @@ void exit_object(void)
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback = NULL;
   }
+
+  if (master_object) {
+    free_object(master_object);
+    master_object=0;
+  }
+
+  if (master_program) {
+    free_program(master_program);
+    master_program=0;
+  }
+
+  destruct_objects_to_destruct();
 
   if(magic_index_program)
   {
