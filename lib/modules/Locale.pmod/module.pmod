@@ -458,18 +458,32 @@ class DeferredLocale( static string project,
 	error(sprintf("Illegal formatting char '%c'\n", c));
     }
   }
+
   static string `+(mixed ... args)
   {
     return predef::`+(lookup(), @args);
   }
+
   static string ``+(mixed ... args)
   {
     return predef::`+(@args, lookup());
   }
+
+  static string `-(mixed ... args)
+  {
+    return predef::`-(lookup(), @args);
+  }
+
+  static string `*(mixed ... args)
+  {
+    return predef::`*(lookup(), @args);
+  }
+
   static int _sizeof()
   {
     return sizeof(lookup());
   }
+
   static int|string `[](int a,int|void b)
   {
     if (query_num_arg() < 2) {
@@ -477,24 +491,29 @@ class DeferredLocale( static string project,
     }
     return lookup()[a..b];
   }
+
   static array(string) `/(string s)
   {
     return lookup()/s;
   }
+
   static array(int) _indices()
   {
     return indices(lookup());
   }
+
   static array(int) _values()
   {
     return values(lookup());
   }
+
   static mixed cast(string to)
   {
     if(to=="string") return lookup();
     if(to=="mixed" || to=="object") return this_object();
     throw( ({ "Cannot cast DeferredLocale to "+to+".\n", backtrace() }) );
   }
+
   static int _is_type(string type) {
     return type=="string";
   }
