@@ -220,15 +220,6 @@ o this
     this magic identifier is to make it possible to address the object
     of a surrounding class with Foo::this.
 
-o The Local module
-    All Pike modules and classes found in the directory hierarchies
-    /usr/local/pike_modules, /opt/pike_modules, /opt/share/pike_modules,
-    /usr/local/share/pike_modules, $HOME/pike_modules, and
-    $PIKE_LOCAL_PATH (a :-separated list of directories) are available
-    with the prefix "Local.". Local.add_path() and Local.remove_path()
-    respectively adds and removes entries from the list of paths to
-    inspect when resolving Local.* symbols.
-
 o The program type can be specialized
     It's possible to specialize a program variable by adding a program
     identifier, much like an object variable can be specialized. E.g:
@@ -343,10 +334,12 @@ o Image.Fonts
     accessing the FreeType, TTF and Image.Font modules directly.
 
 o Image.Image 
-    Added two new methods: blur() and grey_blur().
+    Added two new methods, blur() and grey_blur(), which are hard
+    coded, MMX optimized versions of these common matrix operations.
 
 o Image.JPEG
-    Support for lossless transforms and handling of metadata.
+    Support for lossless transforms, such as rotating and rescaling
+    the image, and handling of metadata.
 
 o Image.PVR
     VQ compression/decompression added.
@@ -355,8 +348,21 @@ o Image.SVG
     Support for Structured Vector Graphics through the Gnome SVG
     library. Requires Gnome 2.
 
+o Local
+    All Pike modules and classes found in the directory hierarchies
+    /usr/local/pike_modules, /opt/pike_modules, /opt/share/pike_modules,
+    /usr/local/share/pike_modules, $HOME/pike_modules, and
+    $PIKE_LOCAL_PATH (a :-separated list of directories) are available
+    with the prefix "Local.". Local.add_path() and Local.remove_path()
+    respectively adds and removes entries from the list of paths to
+    inspect when resolving Local.* symbols.
+
 o Locale.Language
-    FIXME: nilsson?
+    Support for time formatting, counting and more for various
+    languages. Currently added languages are Catalan, Croatian, Czech,
+    Dutch, English, Finnish, French, German, Hungarian, Italian,
+    Japanese, Maori, Norwegian, Polish, Portuguese, Russian, Serbian,
+    Slovenian, Spanish and Swedish.
 
 o Math.Matrix
     Methods sum(), max(), min(), convolve() and dot_product() added.
@@ -365,10 +371,10 @@ o Math.Transforms
     Glue for supporting FFT and iFFT via libfftw and librfftw.
 
 o Math
-    Added inf and nan constants.
+    Added the IEEE float constants inf and nan.
 
 o MIME.Message
-    Guess mode added. *FIXME: expand on this*
+    Guess mode added. *FIXME: expand on this jhs*
 
 o Parser.Python
     Splits Python source code into text tokens.
@@ -377,7 +383,8 @@ o Parser.RCS
     Extracts data from RCS or CVS repositories.
 
 o Parser.XML.NSTree
-    FIXME: Nilsson?
+    This is an extended version of Parser.XML.Tree that can handle
+    namespaces according to the W3C namespace specification.
 
 o Protocols.X.KeySyms
 
@@ -391,7 +398,9 @@ o Standards.ID3
     2.2-2.4. Frequently used in MP3 files for encapsulating metadata.
 
 o Standards.RDF
-    FIXME: nilsson?
+    Represents an RDF domain and allows you to perform searches in its
+    relations. Currently only serializes/deserializes to N-triple
+    format.
 
 o System.Time
     Used to get the current time with sub second precision.
@@ -590,6 +599,11 @@ o dirname
 o default_yp_domain
     The EFUN default_yp_domain is now only available as
     Yp.default_domain.
+
+o clone
+    The function clone has been removed. Instead of doing clone(x), do
+    x() in the future if x is a program or ((program)x)() if x is a
+    string.
 
 o LR
     LR has been moved to Parser.LR and the API has been changed
