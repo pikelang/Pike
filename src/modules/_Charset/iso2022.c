@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.14 1999/10/11 18:16:21 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.15 2000/07/24 11:22:31 lange Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -362,7 +362,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 			   struct pike_string *rep, struct svalue *repcb)
 {
   extern UNICHAR map_ANSI_X3_4_1968[];
-  extern UNICHAR map_ISO_8859_1_1987[];
+  extern UNICHAR map_ISO_8859_1_1998[];
   INT32 l = str->len;
   int s1 = 0;
 
@@ -411,7 +411,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  }
 	} else if(!lat) {
 	  string_builder_strcat(&s->strbuild, "\033-A");
-	  s->g[1].transl = map_ISO_8859_1_1987;
+	  s->g[1].transl = map_ISO_8859_1_1998;
 	  s->g[1].mode = MODE_96;
 	  s->g[1].index = 0x11;
 	  if(s->r[1].map != NULL) {
@@ -476,7 +476,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	} else if(c<0x100) {
 	  if(s->g[1].mode != MODE_96 || s->g[1].index != 0x11) {
 	    string_builder_strcat(&s->strbuild, "\033-A");
-	    s->g[1].transl = map_ISO_8859_1_1987;
+	    s->g[1].transl = map_ISO_8859_1_1998;
 	    s->g[1].mode = MODE_96;
 	    s->g[1].index = 0x11;
 	    if(s->r[1].map != NULL) {
@@ -659,7 +659,7 @@ static void f_drain(INT32 args)
 static void f_clear(INT32 args)
 {
   extern UNICHAR map_ANSI_X3_4_1968[];
-  extern UNICHAR map_ISO_8859_1_1987[];
+  extern UNICHAR map_ISO_8859_1_1998[];
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
   int i;
 
@@ -676,7 +676,7 @@ static void f_clear(INT32 args)
   s->g[0].mode = MODE_94;
   s->g[0].index = 0x12;
   /* Perhaps not strictly correct, but oh so convenient... ;-) */
-  s->g[1].transl = map_ISO_8859_1_1987;
+  s->g[1].transl = map_ISO_8859_1_1998;
   s->g[1].mode = MODE_96;
   s->g[1].index = 0x11;
 

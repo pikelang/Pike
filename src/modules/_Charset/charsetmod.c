@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.18 2000/02/03 19:02:59 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.19 2000/07/24 11:22:31 lange Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -251,7 +251,7 @@ static INT32 feed_utf7(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
   if(l<=0)
     return l;
 
-  if(shift==2)
+  if(shift==2) {
     if(*p=='-') {
       string_builder_putchar(&s->strbuild, '+');
       if(--l==0) {
@@ -262,6 +262,7 @@ static INT32 feed_utf7(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
       shift=0;
     } else
       shift=1;
+  }
 
   for(;;)
     if(shift) {
