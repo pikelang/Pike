@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.14 1998/04/15 17:36:19 mirar Exp $ */
+/* $Id: operator.c,v 1.15 1998/04/16 00:38:57 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.14 1998/04/15 17:36:19 mirar Exp $
+**!	$Id: operator.c,v 1.15 1998/04/16 00:38:57 mirar Exp $
 **! class image
 */
 
@@ -104,7 +104,7 @@ extern struct program *image_program;
 **!	to using an uniform-colored image.
 **! arg int value
 **!	equal to ({value,value,value}).
-**! see also: `+, `|, `&, `*, add_layers
+**! see also: `+, `|, `&, `*, add_layers, min, max, `==
 */
 
 void image_operator_minus(INT32 args)
@@ -307,9 +307,9 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **! method int `==(object operand)
 **! method int `==(array(int) color)
 **! method int `==(int value)
-**! method int `<(object operand)
-**! method int `<(array(int) color)
-**! method int `<(int value)
+**! method int `&lt;(object operand)
+**! method int `&lt;(array(int) color)
+**! method int `&lt;(int value)
 **! method int `>(object operand)
 **! method int `>(array(int) color)
 **! method int `>(int value)
@@ -334,14 +334,14 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **! see also: `-, `+, `|, `*, `&
 **!	
 **! note:
-**!	`< or `> on empty ("no image") image objects or images
+**!	`&lt; or `> on empty ("no image") image objects or images
 **!	with different size will result in an error. 
 **!	`== is always true on two empty image objects and
 **!	always false if one and only one of the image objects
 **!	is empty or the images differs in size.
 **!
-**!	a>=b and a<=b between objects is equal to !(a<b) and !(a>b),
-**!	which may not be what you want (since both < and > can return
+**!	a>=b and a&lt;=b between objects is equal to !(a&lt;b) and !(a>b),
+**!	which may not be what you want (since both &lt; and > can return
 **!	false, comparing the same images).
 */
 

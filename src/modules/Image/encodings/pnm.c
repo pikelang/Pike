@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $ */
+/* $Id: pnm.c,v 1.15 1998/04/16 00:39:02 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $
+**!	$Id: pnm.c,v 1.15 1998/04/16 00:39:02 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $");
+RCSID("$Id: pnm.c,v 1.15 1998/04/16 00:39:02 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -244,12 +244,13 @@ void img_pnm_decode(INT32 args)
 **!	uses the most optimized encoding for this image (bitmap, grey
 **!	or truecolor) - P4, P5 or P6 respective P1, P2 or P3.
 **!
-**!	<ref>P1</ref>/<ref>P4</ref> assumes the image is black and white. Use 
+**!	<ref>encode_P1</ref>/<ref>encode_P4</ref> 
+**!	assumes the image is black and white. Use 
 **!	<ref>Image.image->threshold</ref>() or something like
-**!	<tt><ref>Image.colortable</ref>( ({({0,0,0}),({255,255,255})}) )->floyd_steinberg()->map(my_image)</ref></tt> 
+**!	<tt><ref>Image.colortable</ref>( ({({0,0,0}),({255,255,255})}) )<wbr>->floyd_steinberg()<wbr>->map(my_image)</tt> 
 **!	to get a black and white image.
 **!
-**!	<ref>P2</ref>/<ref>P5</ref> assumes the image is greyscale. Use
+**!	<ref>encode_P2</ref>/<ref>encode_P5</ref> assumes the image is greyscale. Use
 **!	<ref>Image.image->grey</ref>() to get a greyscale image.
 **!
 **! see also: decode

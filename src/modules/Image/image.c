@@ -1,78 +1,93 @@
-/* $Id: image.c,v 1.98 1998/04/15 17:36:15 mirar Exp $ */
+/* $Id: image.c,v 1.99 1998/04/16 00:38:55 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.98 1998/04/15 17:36:15 mirar Exp $
+**!	$Id: image.c,v 1.99 1998/04/16 00:38:55 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
 **!	is used as drawing area, mask or result of operations.
 **!
-**!	init: <ref>clear</ref>,
+**!	basic: <br>
+**!	<ref>clear</ref>,
 **!	<ref>clone</ref>,
 **!	<ref>create</ref>, 
 **!	<ref>xsize</ref>,
 **!	<ref>ysize</ref>
 **!
-**!	plain drawing: <ref>box</ref>,
+**!	plain drawing: <br>
+**!	<ref>box</ref>,
 **!	<ref>circle</ref>,
 **!	<ref>getpixel</ref>, 
 **!	<ref>line</ref>,
 **!	<ref>setcolor</ref>,
 **!	<ref>setpixel</ref>, 
 **!	<ref>threshold</ref>,
-**!	<ref>tuned_box</ref>,
 **!	<ref>polyfill</ref>
 **!
-**!	operators: <ref>`&</ref>,
+**!	operators: <br>
+**!	<ref>`&</ref>,
 **!	<ref>`*</ref>,
 **!	<ref>`+</ref>,
 **!	<ref>`-</ref>,
+**!	<ref>`==</ref>,
+**!	<ref>`></ref>,
+**!	<ref>`&gt;</ref>,
 **!	<ref>`|</ref>
 **!
-**!	pasting images, layers: <ref>add_layers</ref>, 
+**!	pasting images, layers: <br>
+**!	<ref>add_layers</ref>, 
 **!	<ref>paste</ref>,
 **!	<ref>paste_alpha</ref>,
 **!	<ref>paste_alpha_color</ref>,
 **!	<ref>paste_mask</ref>
 **!
-**!	getting subimages, scaling, rotating: <ref>autocrop</ref>, 
+**!	getting subimages, scaling, rotating: <br>
+**!	<ref>autocrop</ref>, 
 **!	<ref>clone</ref>,
 **!	<ref>copy</ref>, 
 **!	<ref>dct</ref>,
 **!	<ref>mirrorx</ref>, 
 **!	<ref>rotate</ref>,
-**!	<ref>rotate_expand</ref>, 
 **!	<ref>rotate_ccw</ref>,
 **!	<ref>rotate_cw</ref>,
+**!	<ref>rotate_expand</ref>, 
 **!	<ref>scale</ref>, 
 **!	<ref>skewx</ref>,
 **!	<ref>skewx_expand</ref>,
 **!	<ref>skewy</ref>,
 **!	<ref>skewy_expand</ref>
 **!
-**!	calculation by pixels: <ref>apply_matrix</ref>, 
+**!	calculation by pixels: <br>
+**!	<ref>apply_matrix</ref>, 
 **!	<ref>change_color</ref>,
 **!	<ref>color</ref>,
 **!	<ref>distancesq</ref>, 
 **!	<ref>grey</ref>,
 **!	<ref>invert</ref>, 
 **!	<ref>modify_by_intensity</ref>,
+**!	<ref>outline</ref>
 **!	<ref>select_from</ref>, 
 **!	<ref>rgb_to_hsv</ref>,
-**!	<ref>hsv_to_rgb</ref>,
-**!	<ref>Image.colortable</ref>
+**!	<ref>hsv_to_rgb</ref>,<br>
 **!
-**!	converting to other datatypes: 
-**!	<ref>Image.GIF</ref>,
-**!	<ref>Image.PNM</ref>
+**!	<ref>average</ref>,
+**!	<ref>max</ref>,
+**!	<ref>min</ref>,
+**!	<ref>sum</ref>,
+**!	<ref>sumf</ref>,
+**!	<ref>find_min</ref>,
+**!	<ref>find_max</ref>
 **!
-**!	special pattern drawing:
+**!	special pattern drawing:<br>
 **!	<ref>noise</ref>,
-**!	<ref>turbulence</ref>
+**!	<ref>turbulence</ref>,
+**!	<ref>test</ref>,
+**!	<ref>tuned_box</ref>,
+**!	<ref>gradients</ref>
 **!
-**! see also: Image, Image.font
+**! see also: Image, Image.font, Image.colortable, Image.X
 */
 
 #include "global.h"
@@ -82,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.98 1998/04/15 17:36:15 mirar Exp $");
+RCSID("$Id: image.c,v 1.99 1998/04/16 00:38:55 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -455,6 +470,14 @@ THREADS_DISALLOW();
 **! method void create(int xsize,int ysize,int r,int g,int b)
 **! method void create(int xsize,int ysize,int r,int g,int b,int alpha)
 **! 	Initializes a new image object.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena()->clear(0,0,0); </illustration></td>
+**!	<td><illustration> return lena()->clear(255,128,0); </illustration></td>
+**!	</tr><tr>
+**!	<td>Image.image<wbr>(XSIZE,YSIZE)</td>
+**!	<td>Image.image<wbr>(XSIZE,YSIZE,255,128,0)</td>
+**!	</tr></table>
 **! arg int xsize
 **! arg int ysize
 **! 	size of (new) image in pixels
@@ -503,6 +526,17 @@ void image_create(INT32 args)
 **! method object clone(int xsize,int ysize,int r,int g,int b)
 **! method object clone(int xsize,int ysize,int r,int g,int b,int alpha)
 **! 	Copies to or initialize a new image object.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->clone(); </illustration></td>
+**!	<td><illustration> return lena()->clone(50,50); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>clone</td>
+**!	<td>clone(50,50)</td>
+**!	</tr></table>
+**!	
 **! returns the new object
 **! arg int xsize
 **! arg int ysize
@@ -578,6 +612,15 @@ void image_clone(INT32 args)
 **! method void clear(int r,int g,int b)
 **! method void clear(int r,int g,int b,int alpha)
 **! 	gives a new, cleared image with the same size of drawing area
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->clear(0,128,255); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>->clear<wbr>(0,128,255)</td>
+**!	</tr></table>
+**!
 **! arg int r
 **! arg int g
 **! arg int b
@@ -619,6 +662,16 @@ void image_clear(INT32 args)
 **! 	Copies this part of the image. The requested area can
 **!	be smaller, giving a cropped image, or bigger - 
 **!	the new area will be filled with the given or current color.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->copy(5,5,lena()->xsize()-6,lena()->ysize()-6); </illustration></td>
+**!	<td><illustration> return lena()->copy(-5,-5,lena()->xsize()+4,lena()->ysize()+4,10,75,10); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>->copy<wbr>(5,5,<wbr>XSIZE-6,YSIZE-6)</td>
+**!	<td>->copy<wbr>(-5,-5,<wbr>XSIZE+4,YSIZE+4,<wbr>10,75,10)</td>
+**!	</tr></table>
 **!
 **! returns a new image object
 **!
@@ -889,6 +942,14 @@ void image_setcolor(INT32 args)
 **! method object setpixel(int x,int y,int r,int g,int b)
 **! method object setpixel(int x,int y,int r,int g,int b,int alpha)
 **!    
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->copy()->setpixel(10,10,255,0,0); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>->setpixel<wbr>(10,10,<wbr>255,0,0)</td>
+**!	</tr></table>
+**!
 **! returns the object called
 **!
 **! arg int x
@@ -960,6 +1021,14 @@ void image_getpixel(INT32 args)
 **! method object line(int x1,int y1,int x2,int y2,int r,int g,int b)
 **! method object line(int x1,int y1,int x2,int y2,int r,int g,int b,int alpha)
 **! 	Draws a line on the image. The line is <i>not</i> antialiased.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->copy()->line(50,10,10,50,255,0,0); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>->line<wbr>(50,10,<wbr>10,50,<wbr>255,0,0)</td>
+**!	</tr></table>
 **! 
 **! returns the object called
 **!
@@ -1001,6 +1070,14 @@ void image_line(INT32 args)
 **! method object box(int x1,int y1,int x2,int y2,int r,int g,int b,int alpha)
 **! 	Draws a filled rectangle on the image. 
 **! 
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->copy()->box(40,10,10,80,0,255,0); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>->box<wbr>(40,10,<wbr>10,80,<wbr>0,255,0)</td>
+**!	</tr></table>
+**! 
 **! returns the object called
 **!
 **! arg int x1
@@ -1039,7 +1116,15 @@ void image_box(INT32 args)
 **! method object circle(int x,int y,int rx,int ry)
 **! method object circle(int x,int y,int rx,int ry,int r,int g,int b)
 **! method object circle(int x,int y,int rx,int ry,int r,int g,int b,int alpha)
-**! 	Draws a line on the image. The line is <i>not</i> antialiased.
+**! 	Draws a circle on the image. The circle is <i>not</i> antialiased.
+**! 
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->copy()->circle(50,50,30,50,255,255); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>->circle<wbr>(50,50,<wbr>30,50,<wbr>0,255,255)</td>
+**!	</tr></table>
 **! 
 **! returns the object called
 **!
@@ -1155,10 +1240,12 @@ static INLINE void
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->copy()->tuned_box(30,10,lena()->xsize()-20,lena()->ysize()-20,({({255,0,0}),({0,255,0}),({0,0,255}),({255,255,0})})); </illustration></td>
 **!	<td><illustration> return lena()->copy()->tuned_box(0,0,lena()->xsize(),lena()->ysize(),({({255,0,0}),({0,255,0}),({0,0,255}),({255,255,0})})); </illustration></td>
 **!	<td><illustration> return lena()->copy()->tuned_box(0,0,lena()->xsize(),lena()->ysize(),({({255,0,0,255}),({0,255,0,128}),({0,0,255,128}),({255,255,0})})); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
+**!	<td>tuned box</td>
 **!	<td>solid tuning<br>(blue,red,green,yellow)</td>
 **!	<td>tuning transparency<br>(as left + 255,128,128,0)</td>
 **!	</tr></table>
@@ -1380,6 +1467,49 @@ void image_tuned_box(INT32 args)
 /*
 **! method int gradients(array(int) point, ...)
 **! method int gradients(array(int) point, ..., float grad)
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->gradients(
+**!              ({random(lena()->xsize()),random(lena()->ysize()),255,0,0}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),255,255,0})
+**!              )</illustration></td>
+**!	<td><illustration> return lena()->gradients(
+**!              ({random(lena()->xsize()),random(lena()->ysize()),255,0,0}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),255,255,0}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),255,0,255}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),0,0,0}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),128,128,255}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),0,128,255}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),0,0,255}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),255,128,0}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),255,255,255}),
+**!              ({random(lena()->xsize()),random(lena()->ysize()),0,255,0})
+**!              )</illustration></td>
+**!	<td><illustration> return lena()->gradients(
+**!              ({(int)(0.2*lena()->xsize()),(int)(0.8*lena()->ysize()),255,0,0}),
+**!              ({(int)(0.5*lena()->xsize()),(int)(-0.2*lena()->ysize()),16,16,64}),
+**!              ({(int)(0.7*lena()->xsize()),(int)(0.6*lena()->ysize()),255,255,0}),
+**!              4.0)</illustration></td>
+**!	<td><illustration> return lena()->gradients(
+**!              ({(int)(0.2*lena()->xsize()),(int)(0.8*lena()->ysize()),255,0,0}),
+**!              ({(int)(0.5*lena()->xsize()),(int)(-0.2*lena()->ysize()),16,16,64}),
+**!              ({(int)(0.7*lena()->xsize()),(int)(0.6*lena()->ysize()),255,255,0}),
+**!              1.0)</illustration></td>
+**!	<td><illustration> return lena()->gradients(
+**!              ({(int)(0.2*lena()->xsize()),(int)(0.8*lena()->ysize()),255,0,0}),
+**!              ({(int)(0.5*lena()->xsize()),(int)(-0.2*lena()->ysize()),16,16,64}),
+**!              ({(int)(0.7*lena()->xsize()),(int)(0.6*lena()->ysize()),255,255,0}),
+**!              0.25)</illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>2 color<br>gradient</td>
+**!	<td>10 color<br>gradient</td>
+**!	<td>3 colors,<br>grad=4.0</td>
+**!	<td>3 colors,<br>grad=1.0</td>
+**!	<td>3 colors,<br>grad=0.25</td>
+**!	</tr></table>
+**!
 **! returns the new image
 */
 
@@ -1526,7 +1656,18 @@ static void image_gradients(INT32 args)
 
 /*
 **! method object test()
-**!    Generates a test image, currently random gradients.
+**!    	Generates a test image, currently random gradients.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->test()</illustration></td>
+**!	<td><illustration> return lena()->copy()->test()</illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>->test()</td>
+**!	<td>...and again</td>
+**!	</tr></table>
+**!
 **! returns the new image
 **! note
 **!    May be subject to change or cease without prior warning.
@@ -2085,10 +2226,14 @@ void image_rgb_to_hsv(INT32 args)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> return lena()->distancesq(255,0,128); </illustration></td>
+**!	<td><illustration> return lena()->distancesq(0,255,255); </illustration></td>
+**!	<td><illustration> return lena()->distancesq(255,0,255); </illustration></td>
+**!	<td><illustration> return lena()->distancesq(255,255,0); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
-**!	<td>->distancesq(255,0,128);</td>
+**!	<td>distance² to cyan</td>
+**!	<td>...to purple</td>
+**!	<td>...to yellow</td>
 **!	</tr></table>
 **!
 **!
@@ -2589,6 +2734,17 @@ CHRONO("apply_matrix, end");
 **!
 **!	The outline_mask function gives the calculated outline as an
 **!	alpha channel image of white and black instead.
+**! 
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()*lena()->threshold(100,100,100)</illustration></td>
+**!	<td><illustration> return (lena()*lena()->threshold(100,100,100))->outline(255,0,0)</illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>masked<br>through<br>threshold</td>
+**!	<td>...and<br>outlined<br>with red</td>
+**!	</tr></table>
+**! 
 **!    
 **! returns the new image object
 **!

@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.37 1998/03/26 03:12:00 hubbe Exp $ */
+/* $Id: gif.c,v 1.38 1998/04/16 00:39:00 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.37 1998/03/26 03:12:00 hubbe Exp $
+**!	$Id: gif.c,v 1.38 1998/04/16 00:39:00 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.37 1998/03/26 03:12:00 hubbe Exp $");
+RCSID("$Id: gif.c,v 1.38 1998/04/16 00:39:00 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2070,7 +2070,7 @@ void image_gif_decode(INT32 args)
 }
 
 /*
-**! method _encode(array data)
+**! method string _encode(array data)
 **!	Encodes GIF data; reverses _decode.
 **!
 **! arg array data

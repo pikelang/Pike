@@ -15,14 +15,53 @@
 **!     <td align=left valign=top><ref>Image.colortable</ref></td>
 **!     <td align=left valign=top>Color reduction, quantisation and dither</td>
 **!	</tr>
+**!	<tr></tr><tr></tr><tr></tr>
+**!	<tr>
+**!	<td align=left valign=top></td>
+**!	<td align=left valign=top><i>encoding/decoding image files</i></td>
+**!	</tr>
 **!	<tr>
 **!     <td align=left valign=top><ref>Image.GIF</ref></td>
 **!     <td align=left valign=top>GIF encoding/decoding capabilities</td>
 **!	</tr>
 **!	<tr>
-**!     <td align=left valign=top><ref>Image.PNM</ref></td>
-**!     <td align=left valign=top>PNM (PBM/PGM/PPM) encoding/decoding capabilities</td>
+**!	<td align=left valign=top><ref>Image.JPEG</ref></td>
+**!	<td align=left valign=top>JPEG encoding/decoding capabilities (needs libjpeg)</td>
+**!	</tr>
+**!	<tr>
+**!	<td align=left valign=top><ref>Image.PNG</ref></td>
+**!	<td align=left valign=top>PNG encoding/decoding capabilities (needs libz)</td>
+**!	</tr>
+**!	<tr>
+**!	<td align=left valign=top><ref>Image.PNM</ref></td>
+**!	<td align=left valign=top>PNM (PBM/PGM/PPM) encoding/decoding capabilities</td>
+**!	</tr>
+**!	<tr>
+**!	<td align=left valign=top><ref>Image.XFace</ref></td>
+**!	<td align=left valign=top>XFace encoding/decoding capabilities (needs libgmp)</td>
+**!	</tr>
+**!	<tr>
+**!	<td align=left valign=top><ref>Image.XWD</ref></td>
+**!	<td align=left valign=top>XWD (X-windows dump) decoding capabilities</td>
+**!	</tr>
+**!	<tr></tr><tr></tr><tr></tr>
+**!	<tr>
+**!	<td align=left valign=top></td>
+**!	<td align=left valign=top><i>advanced</i></td>
+**!	</tr>
+**!	<tr>
+**!	<td align=left valign=top><ref>Image.X</ref></td>
+**!	<td align=left valign=top>module for supporting X-windows
+**!                               low-level formats, keeping a lot
+**!                               of bit-mending stuff.</td>
 **!	</tr>
 **!	</table>
+1.4 Image.GIF 
+       1.5 Image.JPEG 
+       1.6 Image.PNG 
+       1.7 Image.PNM 
+       1.8 Image.X 
+       1.9 Image.XFace 
+       1.10 Image.XWD 
 **! note
 **!	<font size=-1><pre>Image module documentation is based on these file versions:
