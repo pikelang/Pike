@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.53 2004/08/09 19:08:29 grubba Exp $
+/* $Id: handshake.pike,v 1.54 2004/08/10 12:46:08 mast Exp $
  *
  */
 
@@ -778,7 +778,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 		      backtrace()));
 	  return -1;
 	}
-	client_random = ("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge)[..31];
+
+	if (ch_len < 32)
+	  challenge = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge;
+	client_random = challenge[sizeof (challenge) - 32..];
+
 	{
 	  int(-1..0) err = reply_new_session(cipher_suites,
 					     ({ COMPRESSION_null }) );
