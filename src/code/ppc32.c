@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.2 2001/07/30 20:56:27 marcus Exp $
+ * $Id: ppc32.c,v 1.3 2001/07/30 22:29:19 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -120,8 +120,10 @@ void ins_f_byte_with_2_args(unsigned int a,
 
 void ppc32_flush_instruction_cache(void *addr, size_t len)
 {
-#ifndef _AIX
   INT32 a = (INT32)addr;
+#ifdef _AIX
+  __asm__(".machine \"ppc\"");
+#endif
   len >>= 2;
   while(len>0) {
     __asm__("dcbst 0,%0" : : "r" (a));
@@ -129,6 +131,5 @@ void ppc32_flush_instruction_cache(void *addr, size_t len)
     a += 4;
     --len;
   }
-#endif
   __asm__("sync");
 }
