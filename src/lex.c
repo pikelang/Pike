@@ -1512,10 +1512,6 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       if(GOBBLE('=')) return F_MULT_EQ;
       return '*';
 
-    case (unsigned)('·'&0xff):
-      if(GOBBLE('=')) return F_MULT_EQ;
-      return F_MULT;
-
     case '%':
       if(GOBBLE('=')) return F_MOD_EQ;
       return '%';
@@ -1538,7 +1534,6 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 	continue;
       }
        /* Fallthrough */
-     case ((unsigned)('÷'&0xff)):
       if(GOBBLE('=')) return F_DIV_EQ;
       return '/';
   
@@ -1566,7 +1561,6 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       return '>';
 
     case '!':
-    case 0xac: /* ('¬') */
       if(GOBBLE('=')) return F_NE;
       return F_NOT;
 
