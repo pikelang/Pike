@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: RankingProfile.pike,v 1.14 2001/07/31 13:49:15 js Exp $
+// $Id: RankingProfile.pike,v 1.15 2001/07/31 13:54:44 js Exp $
 
 array(int) field_ranking;
 array(int) proximity_ranking;
@@ -28,8 +28,10 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
 	field_ranking[i]=1;
       int field_id;
       foreach(indices(_field_ranking), string field)
-        if(field_id==db->get_field_id(field, 1))
-          field_ranking[field_id]=_field_ranking[field];
+        if( (field_id=db->get_field_id(field, 1)) != -1 )
+	  field_ranking[field_id]=_field_ranking[field];
+	else
+	  werror("Search.Rankingprofile: Did not find field id for %O\n", field);
     }
     else if (arrayp(_field_ranking))
       field_ranking = copy_value(_field_ranking);
