@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.69 2004/04/15 10:52:34 grubba Exp $
+|| $Id: sendfile.c,v 1.70 2004/05/02 00:35:40 nilsson Exp $
 */
 
 /*
@@ -104,15 +104,6 @@
 #ifndef MAP_FILE
 #define MAP_FILE	0
 #endif /* !MAP_FILE */
-
-#ifndef S_ISREG
-#ifdef S_IFREG
-#define S_ISREG(mode)   (((mode) & (S_IFMT)) == (S_IFREG))
-#else /* !S_IFREG */
-#define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
-#endif /* S_IFREG */
-#endif /* !S_ISREG */
-
 
 /*
  * Only support for threaded operation right now.
