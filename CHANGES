@@ -38,7 +38,7 @@ o Extended random()
 
 o delay()/sleep()
     sleep() no longer busywaits, which it previously did for small
-    values. The old behaviour is available from the delay() function.
+    values. The old behavior is available from the delay() function.
 
 o search(string, int) / has_value(string, int)
     Both of these methods now handle both looking for strings and
@@ -153,7 +153,7 @@ o Implicit lambda
        {
          PushPop() {
            if (glError()) return;
-           glTranslate( ((1.0-0.08)-pcs)/2, 0.0, 0.0 );
+           glTranslate( (1.0-0.08)/2, 0.0, 0.0 );
            draw_stuff();
          };
          draw_more_stuff();
@@ -173,7 +173,7 @@ o Implicit lambda
 
 o Access to hidden variables in surrounding scopes
     Include the names of the surrounding classes themselves in the lookup for
-    Foo::, to make it possible to adress hidden variables in the scopes of
+    Foo::, to make it possible to address hidden variables in the scopes of
     surrounding classes, e.g:
 
        class Foo {
@@ -213,20 +213,6 @@ o The program type can be specialized
 
        program(Stdio.File) fd = Stdio.File;
 
-o enum reserved
-    An enum construct similar to that in C has been introduced.
-    For example:
-
-        enum AlphaMode
-        {
-          Squares,
-          Solid,
-          None,
-          AlphaOnly,
-        };
-
-o enum and typedef have implicit local binding
-
 o ::_indices(), ::_values().
     There are now two "magic" functions ::_indices() and ::_values()
     that can be used by an object to list all identifiers and their
@@ -252,8 +238,8 @@ o sprintf("%O", foo) is more descriptive
     be called in this case.
 
 
-New modules / classes / methods added:
---------------------------------------
+New modules / classes / methods / functionality added:
+------------------------------------------------------
 
 o ADT.History
     ADT implementation of a "leaking stack". Hilfe example:
@@ -305,6 +291,19 @@ o Debug.Subject
     Helper classes that helps in understanding what Pike is doing.
 
 o Locale.Language
+    FIXME: nilsson?
+
+o Math.Matrix
+    Methods sum(), max(), min(), convolve() and dot_product() added.
+    
+o Math.Transforms
+    Added support for FFT and iFFT.
+
+o Math
+    Added inf and nan constants.
+
+o MIME.Message
+    Guess mode added. *FIXME: expand on this*
 
 o Parser.Python
     Splits Python source code into text tokens.
@@ -312,31 +311,52 @@ o Parser.Python
 o Parser.RCS
     Extracts data from RCS or CVS repositories.
 
-o XML.NSTree
-
 o HTTP.Server
     A simple HTTP Server.
 
 o Protocols.X.KeySyms
-
 o Standards.CIFF
-
 o Standards.FIPS10_4
+    FIXME: remove?
 
 o Standards.ID3
     ID3 tags decoder/encoder. Supports versions: 1.0, 1.1,
     2.2-2.4. Frequently used in MP3 files for encapsulating metadata.
 
 o Standards.RDF
+    FIXME: nilsson?
 
 o System.Time
     Used to get the current time with sub second precision.
 
 o System.Timer
-    Messures the time between two calls.
+    Measures the time between two calls.
+
+o System.Memory 
+   Handles read/write from mmap'ed or allocated memory.
+
+system.normalize_path
+system.gettimeofday
+system.get_netinfo_property (Max OS X)
+system.usleep/nanosleep
+   FIXME: per?
 
 o Stdio.FakeFile
     Wraps a string and exports a Stdio.File interface.
+
+o Stdio.File->grantpt()
+    can now allocate a VTY on systems with /dev/ptmx support.
+
+    Minimal example:
+      fd = Stdio.File("/dev/ptmx", "rw" );
+      Stdio.File fd2 = Stdio.File( fd->grantpt(), "rw" );
+      Process.create_process( ({ "/bin/bash" }), ([
+        "stdin":fd2,  "stdout":fd2, "stderr":fd2, "setsid":fd2, 
+      ]) );
+
+o Stdio
+    Moved get_all_active_fd() from spider to Stdio.
+    Added methods to Stdio.File: sync(), line_iterator()
 
 o Gz.File
     Pike can now compress and decompress the Gzip format.
@@ -354,7 +374,7 @@ o Tools.PV
       > object i=Image.Image(32,32)->random();
       > Tools.PV(i);
 
-    The Pike Viewer tool is also accessable via "pike -x pv"
+    The Pike Viewer tool is also accessible via "pike -x pv"
 
 o Image.Dims
     Can extract the dimensions of an image with a minimal amount of
@@ -368,12 +388,23 @@ o Image.Dims
 
 o Image.Fonts
     High level API for font handling. Should be used instead of
-    accessing the Freetype, TTF and *FIXME* modules directly.
+    accessing the FreeType, TTF and Image.Font modules directly.
 
 o Image.DWG
     Decodes AutoCAD thumbnail images.
 
+o Image.JPEG
+    Support for lossless transforms and handling of metadata.
+
 o Image.SVG
+    Support for Structured Vector Graphics through the Gnome SVG
+    library. Requires Gnome 2.
+
+o Image.Image 
+    Added two new methods: blur() and grey_blur()
+
+o Image.PVR
+    VQ compression/decompression added
 
 o Shuffler
 
@@ -381,10 +412,21 @@ o Gmp.mpq and Gmp.mpf
     Multi precision fractions.
 
 o String.SplitIterator
-
-o Stdio.File.line_iterator
+    FIXME: grubba
 
 o String.Replace, String.SingleReplace
+    FIXME
+
+o SDL
+    Wrapper for a subset of Simple DirectMedia Layer
+    functionality. Useful for writing games, movie players and other
+    graphically intensive applications.
+
+o XML.NSTree
+    FIXME: Nilsson?
+
+o Oracle
+     CLOB and BLOB support.
 
 o Return value from catch blocks.
     The return value from catch blocks that exit normally has been
@@ -409,6 +451,8 @@ o Overall speed improvements.
 
 o Deferred backtraces.
 
+o Saved 8 bytes per object for objects not using their parent scope
+
 o Improvement and bug tickets closed: 1499
 
 
@@ -416,7 +460,7 @@ Compatibility changes:
 ----------------------
 
 The following changes are known to break compatibility. The old
-behaviour is emulated in the compatibility layer that is activated by
+behavior is emulated in the compatibility layer that is activated by
 adding the preprocessor directive "#pike 7.2" to your program or by
 giving the argument "-V7.2" to the pike executable.
 
@@ -492,6 +536,44 @@ o Identifier lookup
       |
       +-A---foo
 
+o Thread.Condition()->wait
+
+o Protocols.HTTP
+    All methods in Protocols.HTTP that take a header mapping can now
+    handle array values (signifying multiple headers of that type).
+
+o Protocols.LDAP.client
+    The return code from all methods was changed to follow Pike's
+    logic better. 0 is now a failure. The old behavior is emulated in
+    a compatibility layer.
+
+o dirname
+    Now correctly returns a directory instead of just stripping the
+    part after the nearest directory separator.
+
+o LR
+    LR has been moved to Parser.LR and the API has been changed.
+    FIXME: More about this?
+
+o wmml documentation removed
+    Use the documentation in the refdoc directory instead.
+
+o .build_lobotomize_crypto removed
+    Use the Makefile target lobotomize_crypto to lobotomize Pike.
+    Should preferably be executed in an unused tree straight from CVS.
+
+
+Compatibility changes without backward compatibility:
+-----------------------------------------------------
+
+The folloing changes were considered bugs and have no backwards
+compatibility layer.
+
+
+o enum and typedef have implicit local binding
+    enums and typedefs now always have static binding. In 7.2 they
+    could sometimes be dynamically bound.
+
 o Image.Layer modes modified
 
     Alpha channel handling for modes add, subtract, multiply, divide,
@@ -511,12 +593,12 @@ o Image.Layer modes modified
     Bug fixes in the above modes so that alpha r,g,b channels
     are handled properly (separately).
 
-    Bug fixes in equal, not_equal, less, more, less_or_equal,
+    Bug fixes in equal, not_equal, less, more, less_or_equal, and
     more_or_equal modes so that the alpha channel is handled as
     documented (which is, in fact, as above; aD=aS).
 
-    Bug fix in divide, invdivide to actually do what the modes
-    are supposed to do (rather then just black the layer).
+    Bug fix in divide and invdivide to actually do what the modes are
+    supposed to do (rather then just black the layer).
 
     And while on it, adding some modes:
 
@@ -527,35 +609,6 @@ o Image.Layer modes modified
     'value_mul' - multiplying the source layer value
     (as in h,s,v) with the current layer value to the destination
     layer ("true burn").
-
-    NOTE: There is no backward compatibility functions added for use
-    with #pike.
-
-o Thread.Condition()->wait
-
-o Protocols.HTTP
-    All methods in Protocols.HTTP that take a header mapping can now
-    handle array values (signifying multiple headers of that type).
-
-o Protocols.LDAP.client
-    The return code from all methods was changed to follow Pike's
-    logic better. 0 is now a failure. The old behaviour is emulated in
-    a compatibility layer.
-
-o dirname
-    Now correctly returns a directory instead of just stripping the
-    part after the nearest directory separator.
-
-o LR
-    LR has been moved to Parser.LR and the API has been chnged.
-    FIXME: More about this?
-
-o wmml documentation removed
-    Use the documentation in the refdoc directory instead.
-
-o .build_lobotomize_crypto removed
-    Use the Makefile target lobotomize_crypto to lobotomize Pike.
-    Should preferably be executed in an unused tree straight from CVS.
 
 
 C level/development changes:
@@ -577,49 +630,89 @@ Bugs fixed:
 
 o Reworked trampolines to cause less circular references. (solves 1937)
 
+o Works with Autoconf 2.50
+
 (To browse bug tickets, either visit
 http://community.roxen.com/crunch/ - or append the ticket id to
 "http://bugs.roxen.com/" for an address directly to the ticket
 itself.)
 
 
-Uncategorized:
---------------
 
-o Works with Autoconf 2.50
-o Saved 8 bytes per object for objects not using their parent scope
+Uncategorized misc changes:
+---------------------------
+
 o constant objects (Gmp.Bignum, Math.Matrix, Image.Color)
 o basetype()
 o it is possible to change predefines without forking a new pike
-o dynamic loading
 o #pragma save_parent
 o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
-o dont_dump_module
+o dont_dump_module *FIXME: grubba*
 o C modules can no longer call functions in other dynamic C modules directly
-o it is possible to inherit pike programs from C programs.
-o separate weak flags for indices and values in mappings
+  FIXME: mast, grubba?
+o It is possible to inherit pike programs from C programs.
+o Separate weak flags for indices and values in mappings
+o Added low lowel glue for the Ffmpeg library.
 
-Math.inf
-Math.nan
-Gz._file
-Image.Image()->blur
-Image.Image()->grey_blur
-Image.PVR: VQ compression/decompression added
-MIME.Message: guess mode added
-Math.Transforms (FFT iFFT)
-Math.Matrix()->sum,max,min
-Math.Matrix.convolve
-Math.Matrix.dot_product
-Oracle: CLOB and BLOB support
-_Ffmpeg
-Image.JPEG: transforms
-Stdio.File->sync
-Stdio.get_all_active_fd (from spider)
-system.normalize_path
-system.gettimeofday
-system.get_netinfo_property (Max OS X)
-system.usleep/nanosleep
-system.Memory (a class to read/write from mmap'ed or allocated memory)
-SDL
 
-o Calendar.verify
+o Calendar.verify  *FIXME: remove?*
+
+Nilsson does lib:
+
+master.pike
+- Better %O print outs for objects and programs.
+- pike -x
+- add_predefine/remove_predefine
+- argc, argv and env are available when using pike -e
+- getenv/putenv is now case insensitive on NT.
+- Improved handling of module cross dependencies.
+
+Array.common_prefix
+Array.count
+Array.greedy_diff
+Array.oid_sort_func
+Array.arrayify
+Array.uniq2
+Array.sum
+
+Local
+
+Multiset
+
+Pike.Backend
+Pike.Security
+Pike.BacktraceFrame
+Pike.WEAK_INDICES, WEAK_VALUES, WEAK
+
+Image.DWG
+
+String.Elite
+String.SingleReplace
+String.Replace
+String.SplitIterator
+String.soundex
+String.Buffer
+
+ADT.History
+ADT.Relation.Binary
+
+Audio
+
+Debug.Subject
+Debug.Tracer
+
+Locale.Language
+
+MIME.ext_to_media_type
+
+Parser.Python
+Parser.RCS
+Parser.decode_numeric_xml_entity
+Parser.get_xml_parser
+Parser.parse_html_entities
+Parser.LR
+Parser.XML.NSTree
+
+Protocols.HTTP.Query supports https
+
+Protocols.LDP supports ldaps
