@@ -52,8 +52,8 @@ string sillycaps(string str)
   return Array.map(str/" ",capitalize)*" ";
 }
 
-//! This function multiplies @[s] by @[num]. The return value is the same
-//! as appending @[s] to an empty string @[num] times.
+//! This function multiplies @[str] by @[num]. The return value is the same
+//! as appending @[str] to an empty string @[num] times.
 //!
 //! @note
 //! This function is obsolete, since this functionality has been incorporated
