@@ -419,8 +419,8 @@ class Display
 	      }
 	    else if (type == "Reply")
 	      {
-		werror(sprintf("Xlib.Display->process: Reply '%s'\n",
-			       msg));
+		// werror(sprintf("Xlib.Display->process: Reply '%s'\n",
+		// 	       msg));
 		reply = ([]);
 		int length;
 	      
