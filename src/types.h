@@ -26,5 +26,4 @@
 
 #define FLOAT_TYPE float
 
-#include "memory.h"
 #endif

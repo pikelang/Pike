@@ -10,6 +10,7 @@
 #include "lpc_types.h"
 #include "fsort.h"
 #include "builtin_efuns.h"
+#include "memory.h"
 
 struct array empty_array=
 {

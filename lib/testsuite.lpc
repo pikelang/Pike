@@ -1850,133 +1850,1647 @@ int main(int argc, string *argv)
   "=mixed a() { return search(([1:2,3:4,5:6,7:8]),8); }\n"+	// test 791
   "mixed b() { return 7; }",
 
+// test large searches (find string, size, pattern)
+
+
+
+
+
+
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10),\"SUNE\"); }\n"+	// test 792
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10),\"SUNE\"); }\n"+	// test 793
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",10),\"SUNE\"); }\n"+	// test 794
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10,10),\"SUNE\"); }\n"+	// test 795
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10+1),\"SUNE\"); }\n"+	// test 796
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+1),\"SUNE\"); }\n"+	// test 797
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",10+1),\"SUNE\"); }\n"+	// test 798
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10+1,10+1),\"SUNE\"); }\n"+	// test 799
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10+2),\"SUNE\"); }\n"+	// test 800
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+2),\"SUNE\"); }\n"+	// test 801
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",10+2),\"SUNE\"); }\n"+	// test 802
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10+2,10+2),\"SUNE\"); }\n"+	// test 803
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10+3),\"SUNE\"); }\n"+	// test 804
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+3),\"SUNE\"); }\n"+	// test 805
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",10+3),\"SUNE\"); }\n"+	// test 806
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",10+3,10+3),\"SUNE\"); }\n"+	// test 807
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000),\"SUNE\"); }\n"+	// test 808
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000),\"SUNE\"); }\n"+	// test 809
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",1000),\"SUNE\"); }\n"+	// test 810
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000,1000),\"SUNE\"); }\n"+	// test 811
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000+1),\"SUNE\"); }\n"+	// test 812
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+1),\"SUNE\"); }\n"+	// test 813
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",1000+1),\"SUNE\"); }\n"+	// test 814
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000+1,1000+1),\"SUNE\"); }\n"+	// test 815
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000+2),\"SUNE\"); }\n"+	// test 816
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+2),\"SUNE\"); }\n"+	// test 817
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",1000+2),\"SUNE\"); }\n"+	// test 818
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000+2,1000+2),\"SUNE\"); }\n"+	// test 819
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000+3),\"SUNE\"); }\n"+	// test 820
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+3),\"SUNE\"); }\n"+	// test 821
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",1000+3),\"SUNE\"); }\n"+	// test 822
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",1000+3,1000+3),\"SUNE\"); }\n"+	// test 823
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000),\"SUNE\"); }\n"+	// test 824
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000),\"SUNE\"); }\n"+	// test 825
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",100000),\"SUNE\"); }\n"+	// test 826
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000,100000),\"SUNE\"); }\n"+	// test 827
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000+1),\"SUNE\"); }\n"+	// test 828
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+1),\"SUNE\"); }\n"+	// test 829
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",100000+1),\"SUNE\"); }\n"+	// test 830
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000+1,100000+1),\"SUNE\"); }\n"+	// test 831
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000+2),\"SUNE\"); }\n"+	// test 832
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+2),\"SUNE\"); }\n"+	// test 833
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",100000+2),\"SUNE\"); }\n"+	// test 834
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000+2,100000+2),\"SUNE\"); }\n"+	// test 835
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000+3),\"SUNE\"); }\n"+	// test 836
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+3),\"SUNE\"); }\n"+	// test 837
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\",100000+3),\"SUNE\"); }\n"+	// test 838
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"SUNE\"+\"%'\"+\"+-*\"+\"'*n\",100000+3,100000+3),\"SUNE\"); }\n"+	// test 839
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10),\"SUNE\"); }\n"+	// test 840
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,10),\"SUNE\"); }\n"+	// test 841
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",10),\"SUNE\"); }\n"+	// test 842
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10,10),\"SUNE\"); }\n"+	// test 843
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10+1),\"SUNE\"); }\n"+	// test 844
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,10+1),\"SUNE\"); }\n"+	// test 845
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",10+1),\"SUNE\"); }\n"+	// test 846
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10+1,10+1),\"SUNE\"); }\n"+	// test 847
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10+2),\"SUNE\"); }\n"+	// test 848
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,10+2),\"SUNE\"); }\n"+	// test 849
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",10+2),\"SUNE\"); }\n"+	// test 850
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10+2,10+2),\"SUNE\"); }\n"+	// test 851
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10+3),\"SUNE\"); }\n"+	// test 852
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,10+3),\"SUNE\"); }\n"+	// test 853
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",10+3),\"SUNE\"); }\n"+	// test 854
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",10+3,10+3),\"SUNE\"); }\n"+	// test 855
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000),\"SUNE\"); }\n"+	// test 856
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,1000),\"SUNE\"); }\n"+	// test 857
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",1000),\"SUNE\"); }\n"+	// test 858
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000,1000),\"SUNE\"); }\n"+	// test 859
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000+1),\"SUNE\"); }\n"+	// test 860
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,1000+1),\"SUNE\"); }\n"+	// test 861
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",1000+1),\"SUNE\"); }\n"+	// test 862
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000+1,1000+1),\"SUNE\"); }\n"+	// test 863
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000+2),\"SUNE\"); }\n"+	// test 864
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,1000+2),\"SUNE\"); }\n"+	// test 865
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",1000+2),\"SUNE\"); }\n"+	// test 866
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000+2,1000+2),\"SUNE\"); }\n"+	// test 867
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000+3),\"SUNE\"); }\n"+	// test 868
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,1000+3),\"SUNE\"); }\n"+	// test 869
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",1000+3),\"SUNE\"); }\n"+	// test 870
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",1000+3,1000+3),\"SUNE\"); }\n"+	// test 871
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000),\"SUNE\"); }\n"+	// test 872
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,100000),\"SUNE\"); }\n"+	// test 873
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",100000),\"SUNE\"); }\n"+	// test 874
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000,100000),\"SUNE\"); }\n"+	// test 875
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000+1),\"SUNE\"); }\n"+	// test 876
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,100000+1),\"SUNE\"); }\n"+	// test 877
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",100000+1),\"SUNE\"); }\n"+	// test 878
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000+1,100000+1),\"SUNE\"); }\n"+	// test 879
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000+2),\"SUNE\"); }\n"+	// test 880
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,100000+2),\"SUNE\"); }\n"+	// test 881
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",100000+2),\"SUNE\"); }\n"+	// test 882
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000+2,100000+2),\"SUNE\"); }\n"+	// test 883
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000+3),\"SUNE\"); }\n"+	// test 884
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\" ,100000+3),\"SUNE\"); }\n"+	// test 885
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\",100000+3),\"SUNE\"); }\n"+	// test 886
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[0..strlen(\"SUNE\")-2])+\"'*n\",100000+3,100000+3),\"SUNE\"); }\n"+	// test 887
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10),\"SUNE\"); }\n"+	// test 888
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,10),\"SUNE\"); }\n"+	// test 889
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",10),\"SUNE\"); }\n"+	// test 890
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10,10),\"SUNE\"); }\n"+	// test 891
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10+1),\"SUNE\"); }\n"+	// test 892
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,10+1),\"SUNE\"); }\n"+	// test 893
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",10+1),\"SUNE\"); }\n"+	// test 894
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10+1,10+1),\"SUNE\"); }\n"+	// test 895
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10+2),\"SUNE\"); }\n"+	// test 896
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,10+2),\"SUNE\"); }\n"+	// test 897
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",10+2),\"SUNE\"); }\n"+	// test 898
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10+2,10+2),\"SUNE\"); }\n"+	// test 899
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10+3),\"SUNE\"); }\n"+	// test 900
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,10+3),\"SUNE\"); }\n"+	// test 901
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",10+3),\"SUNE\"); }\n"+	// test 902
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",10+3,10+3),\"SUNE\"); }\n"+	// test 903
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000),\"SUNE\"); }\n"+	// test 904
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,1000),\"SUNE\"); }\n"+	// test 905
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",1000),\"SUNE\"); }\n"+	// test 906
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000,1000),\"SUNE\"); }\n"+	// test 907
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000+1),\"SUNE\"); }\n"+	// test 908
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,1000+1),\"SUNE\"); }\n"+	// test 909
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",1000+1),\"SUNE\"); }\n"+	// test 910
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000+1,1000+1),\"SUNE\"); }\n"+	// test 911
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000+2),\"SUNE\"); }\n"+	// test 912
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,1000+2),\"SUNE\"); }\n"+	// test 913
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",1000+2),\"SUNE\"); }\n"+	// test 914
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000+2,1000+2),\"SUNE\"); }\n"+	// test 915
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000+3),\"SUNE\"); }\n"+	// test 916
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,1000+3),\"SUNE\"); }\n"+	// test 917
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",1000+3),\"SUNE\"); }\n"+	// test 918
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",1000+3,1000+3),\"SUNE\"); }\n"+	// test 919
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000),\"SUNE\"); }\n"+	// test 920
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,100000),\"SUNE\"); }\n"+	// test 921
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",100000),\"SUNE\"); }\n"+	// test 922
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000,100000),\"SUNE\"); }\n"+	// test 923
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000+1),\"SUNE\"); }\n"+	// test 924
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,100000+1),\"SUNE\"); }\n"+	// test 925
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",100000+1),\"SUNE\"); }\n"+	// test 926
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000+1,100000+1),\"SUNE\"); }\n"+	// test 927
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000+2),\"SUNE\"); }\n"+	// test 928
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,100000+2),\"SUNE\"); }\n"+	// test 929
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",100000+2),\"SUNE\"); }\n"+	// test 930
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000+2,100000+2),\"SUNE\"); }\n"+	// test 931
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000+3),\"SUNE\"); }\n"+	// test 932
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\" ,100000+3),\"SUNE\"); }\n"+	// test 933
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\",100000+3),\"SUNE\"); }\n"+	// test 934
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\"+\"SUNE\"+\"%'\"+(\"SUNE\"[1..0x7fffffff])+\"'*n\",100000+3,100000+3),\"SUNE\"); }\n"+	// test 935
+  "mixed b() { return 100000+3; }",
+
+
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10),\"-------------------+\"); }\n"+	// test 936
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10),\"-------------------+\"); }\n"+	// test 937
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",10),\"-------------------+\"); }\n"+	// test 938
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10,10),\"-------------------+\"); }\n"+	// test 939
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10+1),\"-------------------+\"); }\n"+	// test 940
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+1),\"-------------------+\"); }\n"+	// test 941
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",10+1),\"-------------------+\"); }\n"+	// test 942
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10+1,10+1),\"-------------------+\"); }\n"+	// test 943
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10+2),\"-------------------+\"); }\n"+	// test 944
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+2),\"-------------------+\"); }\n"+	// test 945
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",10+2),\"-------------------+\"); }\n"+	// test 946
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10+2,10+2),\"-------------------+\"); }\n"+	// test 947
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10+3),\"-------------------+\"); }\n"+	// test 948
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+3),\"-------------------+\"); }\n"+	// test 949
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",10+3),\"-------------------+\"); }\n"+	// test 950
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",10+3,10+3),\"-------------------+\"); }\n"+	// test 951
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000),\"-------------------+\"); }\n"+	// test 952
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000),\"-------------------+\"); }\n"+	// test 953
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",1000),\"-------------------+\"); }\n"+	// test 954
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000,1000),\"-------------------+\"); }\n"+	// test 955
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000+1),\"-------------------+\"); }\n"+	// test 956
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+1),\"-------------------+\"); }\n"+	// test 957
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",1000+1),\"-------------------+\"); }\n"+	// test 958
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000+1,1000+1),\"-------------------+\"); }\n"+	// test 959
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000+2),\"-------------------+\"); }\n"+	// test 960
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+2),\"-------------------+\"); }\n"+	// test 961
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",1000+2),\"-------------------+\"); }\n"+	// test 962
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000+2,1000+2),\"-------------------+\"); }\n"+	// test 963
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000+3),\"-------------------+\"); }\n"+	// test 964
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+3),\"-------------------+\"); }\n"+	// test 965
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",1000+3),\"-------------------+\"); }\n"+	// test 966
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",1000+3,1000+3),\"-------------------+\"); }\n"+	// test 967
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000),\"-------------------+\"); }\n"+	// test 968
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000),\"-------------------+\"); }\n"+	// test 969
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",100000),\"-------------------+\"); }\n"+	// test 970
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000,100000),\"-------------------+\"); }\n"+	// test 971
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000+1),\"-------------------+\"); }\n"+	// test 972
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+1),\"-------------------+\"); }\n"+	// test 973
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",100000+1),\"-------------------+\"); }\n"+	// test 974
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000+1,100000+1),\"-------------------+\"); }\n"+	// test 975
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000+2),\"-------------------+\"); }\n"+	// test 976
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+2),\"-------------------+\"); }\n"+	// test 977
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",100000+2),\"-------------------+\"); }\n"+	// test 978
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000+2,100000+2),\"-------------------+\"); }\n"+	// test 979
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000+3),\"-------------------+\"); }\n"+	// test 980
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+3),\"-------------------+\"); }\n"+	// test 981
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\",100000+3),\"-------------------+\"); }\n"+	// test 982
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"-------------------+\"+\"%'\"+\"+-*\"+\"'*n\",100000+3,100000+3),\"-------------------+\"); }\n"+	// test 983
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10),\"-------------------+\"); }\n"+	// test 984
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,10),\"-------------------+\"); }\n"+	// test 985
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",10),\"-------------------+\"); }\n"+	// test 986
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10,10),\"-------------------+\"); }\n"+	// test 987
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10+1),\"-------------------+\"); }\n"+	// test 988
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,10+1),\"-------------------+\"); }\n"+	// test 989
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",10+1),\"-------------------+\"); }\n"+	// test 990
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10+1,10+1),\"-------------------+\"); }\n"+	// test 991
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10+2),\"-------------------+\"); }\n"+	// test 992
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,10+2),\"-------------------+\"); }\n"+	// test 993
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",10+2),\"-------------------+\"); }\n"+	// test 994
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10+2,10+2),\"-------------------+\"); }\n"+	// test 995
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10+3),\"-------------------+\"); }\n"+	// test 996
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,10+3),\"-------------------+\"); }\n"+	// test 997
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",10+3),\"-------------------+\"); }\n"+	// test 998
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",10+3,10+3),\"-------------------+\"); }\n"+	// test 999
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000),\"-------------------+\"); }\n"+	// test 1000
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,1000),\"-------------------+\"); }\n"+	// test 1001
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",1000),\"-------------------+\"); }\n"+	// test 1002
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000,1000),\"-------------------+\"); }\n"+	// test 1003
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000+1),\"-------------------+\"); }\n"+	// test 1004
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,1000+1),\"-------------------+\"); }\n"+	// test 1005
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",1000+1),\"-------------------+\"); }\n"+	// test 1006
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000+1,1000+1),\"-------------------+\"); }\n"+	// test 1007
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000+2),\"-------------------+\"); }\n"+	// test 1008
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,1000+2),\"-------------------+\"); }\n"+	// test 1009
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",1000+2),\"-------------------+\"); }\n"+	// test 1010
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000+2,1000+2),\"-------------------+\"); }\n"+	// test 1011
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000+3),\"-------------------+\"); }\n"+	// test 1012
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,1000+3),\"-------------------+\"); }\n"+	// test 1013
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",1000+3),\"-------------------+\"); }\n"+	// test 1014
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",1000+3,1000+3),\"-------------------+\"); }\n"+	// test 1015
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000),\"-------------------+\"); }\n"+	// test 1016
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,100000),\"-------------------+\"); }\n"+	// test 1017
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",100000),\"-------------------+\"); }\n"+	// test 1018
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000,100000),\"-------------------+\"); }\n"+	// test 1019
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000+1),\"-------------------+\"); }\n"+	// test 1020
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,100000+1),\"-------------------+\"); }\n"+	// test 1021
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",100000+1),\"-------------------+\"); }\n"+	// test 1022
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000+1,100000+1),\"-------------------+\"); }\n"+	// test 1023
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000+2),\"-------------------+\"); }\n"+	// test 1024
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,100000+2),\"-------------------+\"); }\n"+	// test 1025
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",100000+2),\"-------------------+\"); }\n"+	// test 1026
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000+2,100000+2),\"-------------------+\"); }\n"+	// test 1027
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000+3),\"-------------------+\"); }\n"+	// test 1028
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\" ,100000+3),\"-------------------+\"); }\n"+	// test 1029
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\",100000+3),\"-------------------+\"); }\n"+	// test 1030
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[0..strlen(\"-------------------+\")-2])+\"'*n\",100000+3,100000+3),\"-------------------+\"); }\n"+	// test 1031
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10),\"-------------------+\"); }\n"+	// test 1032
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,10),\"-------------------+\"); }\n"+	// test 1033
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",10),\"-------------------+\"); }\n"+	// test 1034
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10,10),\"-------------------+\"); }\n"+	// test 1035
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10+1),\"-------------------+\"); }\n"+	// test 1036
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,10+1),\"-------------------+\"); }\n"+	// test 1037
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",10+1),\"-------------------+\"); }\n"+	// test 1038
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10+1,10+1),\"-------------------+\"); }\n"+	// test 1039
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10+2),\"-------------------+\"); }\n"+	// test 1040
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,10+2),\"-------------------+\"); }\n"+	// test 1041
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",10+2),\"-------------------+\"); }\n"+	// test 1042
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10+2,10+2),\"-------------------+\"); }\n"+	// test 1043
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10+3),\"-------------------+\"); }\n"+	// test 1044
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,10+3),\"-------------------+\"); }\n"+	// test 1045
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",10+3),\"-------------------+\"); }\n"+	// test 1046
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",10+3,10+3),\"-------------------+\"); }\n"+	// test 1047
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000),\"-------------------+\"); }\n"+	// test 1048
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,1000),\"-------------------+\"); }\n"+	// test 1049
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",1000),\"-------------------+\"); }\n"+	// test 1050
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000,1000),\"-------------------+\"); }\n"+	// test 1051
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000+1),\"-------------------+\"); }\n"+	// test 1052
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,1000+1),\"-------------------+\"); }\n"+	// test 1053
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",1000+1),\"-------------------+\"); }\n"+	// test 1054
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000+1,1000+1),\"-------------------+\"); }\n"+	// test 1055
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000+2),\"-------------------+\"); }\n"+	// test 1056
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,1000+2),\"-------------------+\"); }\n"+	// test 1057
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",1000+2),\"-------------------+\"); }\n"+	// test 1058
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000+2,1000+2),\"-------------------+\"); }\n"+	// test 1059
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000+3),\"-------------------+\"); }\n"+	// test 1060
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,1000+3),\"-------------------+\"); }\n"+	// test 1061
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",1000+3),\"-------------------+\"); }\n"+	// test 1062
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",1000+3,1000+3),\"-------------------+\"); }\n"+	// test 1063
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000),\"-------------------+\"); }\n"+	// test 1064
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,100000),\"-------------------+\"); }\n"+	// test 1065
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",100000),\"-------------------+\"); }\n"+	// test 1066
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000,100000),\"-------------------+\"); }\n"+	// test 1067
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000+1),\"-------------------+\"); }\n"+	// test 1068
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,100000+1),\"-------------------+\"); }\n"+	// test 1069
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",100000+1),\"-------------------+\"); }\n"+	// test 1070
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000+1,100000+1),\"-------------------+\"); }\n"+	// test 1071
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000+2),\"-------------------+\"); }\n"+	// test 1072
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,100000+2),\"-------------------+\"); }\n"+	// test 1073
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",100000+2),\"-------------------+\"); }\n"+	// test 1074
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000+2,100000+2),\"-------------------+\"); }\n"+	// test 1075
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000+3),\"-------------------+\"); }\n"+	// test 1076
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\" ,100000+3),\"-------------------+\"); }\n"+	// test 1077
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\",100000+3),\"-------------------+\"); }\n"+	// test 1078
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\"+\"-------------------+\"+\"%'\"+(\"-------------------+\"[1..0x7fffffff])+\"'*n\",100000+3,100000+3),\"-------------------+\"); }\n"+	// test 1079
+  "mixed b() { return 100000+3; }",
+
+
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10),\"+-------------------\"); }\n"+	// test 1080
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10),\"+-------------------\"); }\n"+	// test 1081
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",10),\"+-------------------\"); }\n"+	// test 1082
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10,10),\"+-------------------\"); }\n"+	// test 1083
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10+1),\"+-------------------\"); }\n"+	// test 1084
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+1),\"+-------------------\"); }\n"+	// test 1085
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",10+1),\"+-------------------\"); }\n"+	// test 1086
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10+1,10+1),\"+-------------------\"); }\n"+	// test 1087
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10+2),\"+-------------------\"); }\n"+	// test 1088
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+2),\"+-------------------\"); }\n"+	// test 1089
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",10+2),\"+-------------------\"); }\n"+	// test 1090
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10+2,10+2),\"+-------------------\"); }\n"+	// test 1091
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10+3),\"+-------------------\"); }\n"+	// test 1092
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+3),\"+-------------------\"); }\n"+	// test 1093
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",10+3),\"+-------------------\"); }\n"+	// test 1094
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",10+3,10+3),\"+-------------------\"); }\n"+	// test 1095
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000),\"+-------------------\"); }\n"+	// test 1096
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000),\"+-------------------\"); }\n"+	// test 1097
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",1000),\"+-------------------\"); }\n"+	// test 1098
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000,1000),\"+-------------------\"); }\n"+	// test 1099
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000+1),\"+-------------------\"); }\n"+	// test 1100
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+1),\"+-------------------\"); }\n"+	// test 1101
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",1000+1),\"+-------------------\"); }\n"+	// test 1102
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000+1,1000+1),\"+-------------------\"); }\n"+	// test 1103
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000+2),\"+-------------------\"); }\n"+	// test 1104
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+2),\"+-------------------\"); }\n"+	// test 1105
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",1000+2),\"+-------------------\"); }\n"+	// test 1106
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000+2,1000+2),\"+-------------------\"); }\n"+	// test 1107
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000+3),\"+-------------------\"); }\n"+	// test 1108
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+3),\"+-------------------\"); }\n"+	// test 1109
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",1000+3),\"+-------------------\"); }\n"+	// test 1110
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",1000+3,1000+3),\"+-------------------\"); }\n"+	// test 1111
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000),\"+-------------------\"); }\n"+	// test 1112
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000),\"+-------------------\"); }\n"+	// test 1113
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",100000),\"+-------------------\"); }\n"+	// test 1114
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000,100000),\"+-------------------\"); }\n"+	// test 1115
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000+1),\"+-------------------\"); }\n"+	// test 1116
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+1),\"+-------------------\"); }\n"+	// test 1117
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",100000+1),\"+-------------------\"); }\n"+	// test 1118
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000+1,100000+1),\"+-------------------\"); }\n"+	// test 1119
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000+2),\"+-------------------\"); }\n"+	// test 1120
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+2),\"+-------------------\"); }\n"+	// test 1121
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",100000+2),\"+-------------------\"); }\n"+	// test 1122
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000+2,100000+2),\"+-------------------\"); }\n"+	// test 1123
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000+3),\"+-------------------\"); }\n"+	// test 1124
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+3),\"+-------------------\"); }\n"+	// test 1125
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\",100000+3),\"+-------------------\"); }\n"+	// test 1126
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+\"+-------------------\"+\"%'\"+\"+-*\"+\"'*n\",100000+3,100000+3),\"+-------------------\"); }\n"+	// test 1127
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10),\"+-------------------\"); }\n"+	// test 1128
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,10),\"+-------------------\"); }\n"+	// test 1129
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",10),\"+-------------------\"); }\n"+	// test 1130
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10,10),\"+-------------------\"); }\n"+	// test 1131
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10+1),\"+-------------------\"); }\n"+	// test 1132
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,10+1),\"+-------------------\"); }\n"+	// test 1133
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",10+1),\"+-------------------\"); }\n"+	// test 1134
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10+1,10+1),\"+-------------------\"); }\n"+	// test 1135
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10+2),\"+-------------------\"); }\n"+	// test 1136
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,10+2),\"+-------------------\"); }\n"+	// test 1137
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",10+2),\"+-------------------\"); }\n"+	// test 1138
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10+2,10+2),\"+-------------------\"); }\n"+	// test 1139
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10+3),\"+-------------------\"); }\n"+	// test 1140
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,10+3),\"+-------------------\"); }\n"+	// test 1141
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",10+3),\"+-------------------\"); }\n"+	// test 1142
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",10+3,10+3),\"+-------------------\"); }\n"+	// test 1143
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000),\"+-------------------\"); }\n"+	// test 1144
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,1000),\"+-------------------\"); }\n"+	// test 1145
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",1000),\"+-------------------\"); }\n"+	// test 1146
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000,1000),\"+-------------------\"); }\n"+	// test 1147
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000+1),\"+-------------------\"); }\n"+	// test 1148
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,1000+1),\"+-------------------\"); }\n"+	// test 1149
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",1000+1),\"+-------------------\"); }\n"+	// test 1150
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000+1,1000+1),\"+-------------------\"); }\n"+	// test 1151
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000+2),\"+-------------------\"); }\n"+	// test 1152
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,1000+2),\"+-------------------\"); }\n"+	// test 1153
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",1000+2),\"+-------------------\"); }\n"+	// test 1154
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000+2,1000+2),\"+-------------------\"); }\n"+	// test 1155
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000+3),\"+-------------------\"); }\n"+	// test 1156
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,1000+3),\"+-------------------\"); }\n"+	// test 1157
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",1000+3),\"+-------------------\"); }\n"+	// test 1158
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",1000+3,1000+3),\"+-------------------\"); }\n"+	// test 1159
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000),\"+-------------------\"); }\n"+	// test 1160
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,100000),\"+-------------------\"); }\n"+	// test 1161
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",100000),\"+-------------------\"); }\n"+	// test 1162
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000,100000),\"+-------------------\"); }\n"+	// test 1163
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000+1),\"+-------------------\"); }\n"+	// test 1164
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,100000+1),\"+-------------------\"); }\n"+	// test 1165
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",100000+1),\"+-------------------\"); }\n"+	// test 1166
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000+1,100000+1),\"+-------------------\"); }\n"+	// test 1167
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000+2),\"+-------------------\"); }\n"+	// test 1168
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,100000+2),\"+-------------------\"); }\n"+	// test 1169
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",100000+2),\"+-------------------\"); }\n"+	// test 1170
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000+2,100000+2),\"+-------------------\"); }\n"+	// test 1171
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000+3),\"+-------------------\"); }\n"+	// test 1172
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\" ,100000+3),\"+-------------------\"); }\n"+	// test 1173
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\",100000+3),\"+-------------------\"); }\n"+	// test 1174
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[0..strlen(\"+-------------------\")-2])+\"'*n\",100000+3,100000+3),\"+-------------------\"); }\n"+	// test 1175
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10),\"+-------------------\"); }\n"+	// test 1176
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,10),\"+-------------------\"); }\n"+	// test 1177
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",10),\"+-------------------\"); }\n"+	// test 1178
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10,10),\"+-------------------\"); }\n"+	// test 1179
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10+1),\"+-------------------\"); }\n"+	// test 1180
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,10+1),\"+-------------------\"); }\n"+	// test 1181
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",10+1),\"+-------------------\"); }\n"+	// test 1182
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10+1,10+1),\"+-------------------\"); }\n"+	// test 1183
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10+2),\"+-------------------\"); }\n"+	// test 1184
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,10+2),\"+-------------------\"); }\n"+	// test 1185
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",10+2),\"+-------------------\"); }\n"+	// test 1186
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10+2,10+2),\"+-------------------\"); }\n"+	// test 1187
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10+3),\"+-------------------\"); }\n"+	// test 1188
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,10+3),\"+-------------------\"); }\n"+	// test 1189
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",10+3),\"+-------------------\"); }\n"+	// test 1190
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",10+3,10+3),\"+-------------------\"); }\n"+	// test 1191
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000),\"+-------------------\"); }\n"+	// test 1192
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,1000),\"+-------------------\"); }\n"+	// test 1193
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",1000),\"+-------------------\"); }\n"+	// test 1194
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000,1000),\"+-------------------\"); }\n"+	// test 1195
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000+1),\"+-------------------\"); }\n"+	// test 1196
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,1000+1),\"+-------------------\"); }\n"+	// test 1197
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",1000+1),\"+-------------------\"); }\n"+	// test 1198
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000+1,1000+1),\"+-------------------\"); }\n"+	// test 1199
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000+2),\"+-------------------\"); }\n"+	// test 1200
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,1000+2),\"+-------------------\"); }\n"+	// test 1201
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",1000+2),\"+-------------------\"); }\n"+	// test 1202
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000+2,1000+2),\"+-------------------\"); }\n"+	// test 1203
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000+3),\"+-------------------\"); }\n"+	// test 1204
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,1000+3),\"+-------------------\"); }\n"+	// test 1205
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",1000+3),\"+-------------------\"); }\n"+	// test 1206
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",1000+3,1000+3),\"+-------------------\"); }\n"+	// test 1207
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000),\"+-------------------\"); }\n"+	// test 1208
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,100000),\"+-------------------\"); }\n"+	// test 1209
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",100000),\"+-------------------\"); }\n"+	// test 1210
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000,100000),\"+-------------------\"); }\n"+	// test 1211
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000+1),\"+-------------------\"); }\n"+	// test 1212
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,100000+1),\"+-------------------\"); }\n"+	// test 1213
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",100000+1),\"+-------------------\"); }\n"+	// test 1214
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000+1,100000+1),\"+-------------------\"); }\n"+	// test 1215
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000+2),\"+-------------------\"); }\n"+	// test 1216
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,100000+2),\"+-------------------\"); }\n"+	// test 1217
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",100000+2),\"+-------------------\"); }\n"+	// test 1218
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000+2,100000+2),\"+-------------------\"); }\n"+	// test 1219
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000+3),\"+-------------------\"); }\n"+	// test 1220
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\" ,100000+3),\"+-------------------\"); }\n"+	// test 1221
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\",100000+3),\"+-------------------\"); }\n"+	// test 1222
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\"+\"+-------------------\"+\"%'\"+(\"+-------------------\"[1..0x7fffffff])+\"'*n\",100000+3,100000+3),\"+-------------------\"); }\n"+	// test 1223
+  "mixed b() { return 100000+3; }",
+
+
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1224
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1225
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1226
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10,10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1227
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1228
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1229
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1230
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10+1,10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1231
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1232
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1233
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1234
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10+2,10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1235
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1236
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1237
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1238
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",10+3,10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1239
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1240
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1241
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1242
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000,1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1243
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1244
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1245
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1246
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000+1,1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1247
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1248
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1249
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1250
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000+2,1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1251
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1252
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1253
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1254
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",1000+3,1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1255
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1256
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1257
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1258
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000,100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1259
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1260
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1261
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1262
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000+1,100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1263
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1264
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1265
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1266
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000+2,100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1267
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1268
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\" ,100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1269
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1270
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+\"+-*\"+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+\"+-*\"+\"'*n\",100000+3,100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1271
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1272
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1273
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1274
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10,10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1275
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1276
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1277
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1278
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10+1,10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1279
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1280
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1281
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1282
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10+2,10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1283
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1284
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1285
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1286
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",10+3,10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1287
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1288
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1289
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1290
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000,1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1291
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1292
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1293
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1294
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000+1,1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1295
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1296
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1297
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1298
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000+2,1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1299
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1300
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1301
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1302
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",1000+3,1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1303
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1304
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1305
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1306
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000,100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1307
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1308
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1309
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1310
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000+1,100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1311
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1312
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1313
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1314
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000+2,100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1315
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1316
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\" ,100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1317
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1318
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[0..strlen(sprintf(\"%'argel-bargel glop-glyf?'2000n\"))-2])+\"'*n\",100000+3,100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1319
+  "mixed b() { return 100000+3; }",
+
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1320
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1321
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1322
+  "mixed b() { return 10; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10,10),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1323
+  "mixed b() { return 10; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1324
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1325
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1326
+  "mixed b() { return 10+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10+1,10+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1327
+  "mixed b() { return 10+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1328
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1329
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1330
+  "mixed b() { return 10+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10+2,10+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1331
+  "mixed b() { return 10+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1332
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1333
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1334
+  "mixed b() { return 10+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",10+3,10+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1335
+  "mixed b() { return 10+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1336
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1337
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1338
+  "mixed b() { return 1000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000,1000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1339
+  "mixed b() { return 1000; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1340
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1341
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1342
+  "mixed b() { return 1000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000+1,1000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1343
+  "mixed b() { return 1000+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1344
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1345
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1346
+  "mixed b() { return 1000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000+2,1000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1347
+  "mixed b() { return 1000+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1348
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1349
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1350
+  "mixed b() { return 1000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",1000+3,1000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1351
+  "mixed b() { return 1000+3; }",
+
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1352
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1353
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1354
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000,100000),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1355
+  "mixed b() { return 100000; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1356
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1357
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1358
+  "mixed b() { return 100000+1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000+1,100000+1),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1359
+  "mixed b() { return 100000+1; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1360
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1361
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1362
+  "mixed b() { return 100000+2; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000+2,100000+2),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1363
+  "mixed b() { return 100000+2; }",
+
+
+  "=mixed a() { return search(sprintf(sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1364
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\" ,100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1365
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\"),100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1366
+  "mixed b() { return 100000+3; }",
+  "=mixed a() { return search(sprintf(\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\"+sprintf(\"%'argel-bargel glop-glyf?'2000n\")+\"%'\"+(sprintf(\"%'argel-bargel glop-glyf?'2000n\")[1..0x7fffffff])+\"'*n\",100000+3,100000+3),sprintf(\"%'argel-bargel glop-glyf?'2000n\")); }\n"+	// test 1367
+  "mixed b() { return 100000+3; }",
+
+
+
+
+
+  "=mixed a() { return search(sprintf(\"SUNE%'+-*'100000n\"),\"SUNE\"); }\n"+	// test 1368
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(sprintf(\"%'+-*'100000nSUNE\"),\"SUNE\"); }\n"+	// test 1369
+  "mixed b() { return 100000; }",
+  "=mixed a() { return search(sprintf(\"%'+-*'100001nSUNE\"),\"SUNE\"); }\n"+	// test 1370
+  "mixed b() { return 100001; }",
+  "=mixed a() { return search(sprintf(\"%'+-*'100002nSUNE\"),\"SUNE\"); }\n"+	// test 1371
+  "mixed b() { return 100002; }",
+  "=mixed a() { return search(sprintf(\"%'+-*'100003nSUNE\"),\"SUNE\"); }\n"+	// test 1372
+  "mixed b() { return 100003; }",
+
+
 // - sizeof
-  "=mixed a() { return sizeof(\"felbar\"); }\n"+	// test 792
+  "=mixed a() { return sizeof(\"felbar\"); }\n"+	// test 1373
   "mixed b() { return 6; }",
-  "=mixed a() { return sizeof(({\"fulbar\",\"gazonk\",7})); }\n"+	// test 793
+  "=mixed a() { return sizeof(({\"fulbar\",\"gazonk\",7})); }\n"+	// test 1374
   "mixed b() { return 3; }",
-  "=mixed a() { return sizeof(([8:3,6:6,7:0])); }\n"+	// test 794
+  "=mixed a() { return sizeof(([8:3,6:6,7:0])); }\n"+	// test 1375
   "mixed b() { return 3; }",
-  "=mixed a() { return sizeof((<8,7,6,5,4,7>)); }\n"+	// test 795
+  "=mixed a() { return sizeof((<8,7,6,5,4,7>)); }\n"+	// test 1376
   "mixed b() { return 6; }",
 
 // - sum
-  "=mixed a() { return sum(1,1); }\n"+	// test 796
+  "=mixed a() { return sum(1,1); }\n"+	// test 1377
   "mixed b() { return 2; }",
-  "=mixed a() { return sum(1,-2); }\n"+	// test 797
+  "=mixed a() { return sum(1,-2); }\n"+	// test 1378
   "mixed b() { return -1; }",
-  "=mixed a() { return sum(-2,-2); }\n"+	// test 798
+  "=mixed a() { return sum(-2,-2); }\n"+	// test 1379
   "mixed b() { return -4; }",
-  "=mixed a() { return sum(\"hi\",\"there\"); }\n"+	// test 799
+  "=mixed a() { return sum(\"hi\",\"there\"); }\n"+	// test 1380
   "mixed b() { return \"hithere\"; }",
-  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 800
+  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 1381
   "mixed b() { return \"humannumber666\"; }",
-  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 801
+  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 1382
   "mixed b() { return \"humannumber666\"; }",
-  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 802
+  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 1383
   "mixed b() { return \"humannumber666\"; }",
-  "=mixed a() { return sum(\"human\",\"number\",666,111); }\n"+	// test 803
+  "=mixed a() { return sum(\"human\",\"number\",666,111); }\n"+	// test 1384
   "mixed b() { return \"humannumber666111\"; }",
-  "=mixed a() { return sum(\"humannumber\",sum(666+111)); }\n"+	// test 804
+  "=mixed a() { return sum(\"humannumber\",sum(666+111)); }\n"+	// test 1385
   "mixed b() { return \"humannumber777\"; }",
-  "=mixed a() { return sum(\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\",\"i\",\"j\",\"k\",\"l\",\"m\",\"n\",\"o\",\"p\",\"q\",\"r\",\"s\",\"t\",\"u\",\"v\",\"x\",\"y\"); }\n"+	// test 805
+  "=mixed a() { return sum(\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\",\"i\",\"j\",\"k\",\"l\",\"m\",\"n\",\"o\",\"p\",\"q\",\"r\",\"s\",\"t\",\"u\",\"v\",\"x\",\"y\"); }\n"+	// test 1386
   "mixed b() { return \"abcdefghijklmnopqrstuvxy\"; }",
-  "=mixed a() { return sum(1.0+1.0); }\n"+	// test 806
+  "=mixed a() { return sum(1.0+1.0); }\n"+	// test 1387
   "mixed b() { return 2.0; }",
-  "=mixed a() { return sum(1.0,-1.0); }\n"+	// test 807
+  "=mixed a() { return sum(1.0,-1.0); }\n"+	// test 1388
   "mixed b() { return 0.0; }",
-  "=mixed a() { return sum(-1.0,-1.0); }\n"+	// test 808
+  "=mixed a() { return sum(-1.0,-1.0); }\n"+	// test 1389
   "mixed b() { return -2.0; }",
-  "emixed a() { return sum(({1,2,3}),({4,5,6})); }\n"+	// test 809
+  "emixed a() { return sum(({1,2,3}),({4,5,6})); }\n"+	// test 1390
   "mixed b() { return ({1,2,3,4,5,6}); }",
-  "emixed a() { return sum((<1,2,3,4>),(<4,5,6>)); }\n"+	// test 810
+  "emixed a() { return sum((<1,2,3,4>),(<4,5,6>)); }\n"+	// test 1391
   "mixed b() { return (<1,2,3,4,4,5,6>); }",
-  "emixed a() { return sum(([0:1,3:6]),([5:2,3:6])); }\n"+	// test 811
+  "emixed a() { return sum(([0:1,3:6]),([5:2,3:6])); }\n"+	// test 1392
   "mixed b() { return ([0:1,3:6,3:6,5:2]); }",
 
 // - this_object
-  "tmixed a() { return objectp(this_object()); }",	// test 812
+  "tmixed a() { return objectp(this_object()); }",	// test 1393
 
 // - throw
-  "=mixed a() { return 20; }\n"+	// test 813
+  "=mixed a() { return 20; }\n"+	// test 1394
   "mixed b() { return catch(throw(a())); }",
 
 // - time
-  "tmixed a() { return intp(time()); }",	// test 814
+  "tmixed a() { return intp(time()); }",	// test 1395
 
 // - trace
-  "dmixed a() { trace(0); }\n",	// test 815
-  "=mixed a() { return trace(0); }\n"+	// test 816
+  "dmixed a() { trace(0); }\n",	// test 1396
+  "=mixed a() { return trace(0); }\n"+	// test 1397
   "mixed b() { return 0; }",
 
 // - upper_case
-  "emixed a() { return upper_case(\"fooq\"); }\n"+	// test 817
+  "emixed a() { return upper_case(\"fooq\"); }\n"+	// test 1398
   "mixed b() { return \"FOOQ\"; }",
-  "emixed a() { return upper_case(\"FooR\"); }\n"+	// test 818
+  "emixed a() { return upper_case(\"FooR\"); }\n"+	// test 1399
   "mixed b() { return \"FOOR\"; }",
-  "emixed a() { return upper_case(\"Foo1234-*~\\n\"); }\n"+	// test 819
+  "emixed a() { return upper_case(\"Foo1234-*~\\n\"); }\n"+	// test 1400
   "mixed b() { return \"FOO1234-*~\\n\"; }",
 
 // - values
-  "emixed a() { return values(\"foo\"); }\n"+	// test 820
+  "emixed a() { return values(\"foo\"); }\n"+	// test 1401
   "mixed b() { return ({'f','o','o'}); }",
-  "emixed a() { return values(({'f','o','o'})); }\n"+	// test 821
+  "emixed a() { return values(({'f','o','o'})); }\n"+	// test 1402
   "mixed b() { return ({'f','o','o'}); }",
-  "emixed a() { return sort_array(values(([7:3,8:9,99:12]))); }\n"+	// test 822
+  "emixed a() { return sort_array(values(([7:3,8:9,99:12]))); }\n"+	// test 1403
   "mixed b() { return ({3,9,12}); }",
-  "emixed a() { return values((<7,8,99>)); }\n"+	// test 823
+  "emixed a() { return values((<7,8,99>)); }\n"+	// test 1404
   "mixed b() { return ({1,1,1}); }",
 
 // - zero_type
-  "=mixed a() { return zero_type(0); }\n"+	// test 824
+  "=mixed a() { return zero_type(0); }\n"+	// test 1405
   "mixed b() { return 0; }",
-  "=mixed a() { return zero_type(([])[7]); }\n"+	// test 825
+  "=mixed a() { return zero_type(([])[7]); }\n"+	// test 1406
   "mixed b() { return 1; }",
 
 // - call_out, call_out_info, remove_call_out, find_call_out
-  "dmixed a() { call_out(a,100000); }\n",	// test 826
-  "tmixed a() { return arrayp(call_out_info()); }",	// test 827
-  "tmixed a() { return sizeof(call_out_info()) > 0; }",	// test 828
-  "tmixed a() { return call_out_info()[-1][0] > 1; }",	// test 829
-  "=mixed a() { return find_call_out(call_out_info()[-1][2]); }\n"+	// test 830
+  "dmixed a() { call_out(a,100000); }\n",	// test 1407
+  "tmixed a() { return arrayp(call_out_info()); }",	// test 1408
+  "tmixed a() { return sizeof(call_out_info()) > 0; }",	// test 1409
+  "tmixed a() { return call_out_info()[-1][0] > 1; }",	// test 1410
+  "=mixed a() { return find_call_out(call_out_info()[-1][2]); }\n"+	// test 1411
   "mixed b() { return call_out_info()[-1][0]; }",
-  "=mixed a() { return find_call_out(a); }\n"+	// test 831
+  "=mixed a() { return find_call_out(a); }\n"+	// test 1412
   "mixed b() { return -1; }",
-  "tmixed a() { return zero_type(find_call_out(a)); }",	// test 832
-  "dmixed a() { remove_call_out(call_out_info()[-1][2]); }\n",	// test 833
-  "tmixed a() { return !sizeof(call_out_info()) || function_name(call_out_info()[-1][2])!=\"a\"; }",	// test 834
+  "tmixed a() { return zero_type(find_call_out(a)); }",	// test 1413
+  "dmixed a() { remove_call_out(call_out_info()[-1][2]); }\n",	// test 1414
+  "tmixed a() { return !sizeof(call_out_info()) || function_name(call_out_info()[-1][2])!=\"a\"; }",	// test 1415
 
 // m_delete
-  "emixed a() { return ([1:1]); }\n"+	// test 835
+  "emixed a() { return ([1:1]); }\n"+	// test 1416
   "mixed b() { return m_delete(a(),0); }",
-  "emixed a() { return ([1:1]); }\n"+	// test 836
+  "emixed a() { return ([1:1]); }\n"+	// test 1417
   "mixed b() { return m_delete(([1:1,0:3]),0); }",
-  "=mixed a() { mapping a=([1:1]); return a==m_delete(a,1); }\n"+	// test 837
+  "=mixed a() { mapping a=([1:1]); return a==m_delete(a,1); }\n"+	// test 1418
   "mixed b() { return 1; }",
 
-  "t\n"+"int b=10; mixed a() { return 1; }\n",	// test 838 
-  "t\n"+"mixed b=10; mixed a() { return 1;}\n",	// test 839 
-  "Pstring a() { return \"/test\"; }\n"+	// test 840
+  "t\n"+"int b=10; mixed a() { return 1; }\n",	// test 1419 
+  "t\n"+"mixed b=10; mixed a() { return 1;}\n",	// test 1420 
+  "Pstring a() { return \"/test\"; }\n"+	// test 1421
   "string b() { return \"int q,w,e,r,t; mixed foo() { return 10; }\"; }",
 
-  "t\n"+"inherit \"/test\"; mixed a() { return foo()==10; }\n",	// test 841 
-  "t\n"+"inherit \"/test\"; mixed a() { return test::foo()==10; }\n",	// test 842 
-  "t\n"+"inherit \"/test\" : bar; mixed a() { return bar::foo()==10; }\n",	// test 843 
+  "t\n"+"inherit \"/test\"; mixed a() { return foo()==10; }\n",	// test 1422 
+  "t\n"+"inherit \"/test\"; mixed a() { return test::foo()==10; }\n",	// test 1423 
+  "t\n"+"inherit \"/test\" : bar; mixed a() { return bar::foo()==10; }\n",	// test 1424 
 
-  "Pstring a() { return \"/test2\"; }\n"+	// test 844
+  "Pstring a() { return \"/test2\"; }\n"+	// test 1425
   "string b() { return \"int z,x,c,v,b; mixed bar() { return 11; }\"; }",
-  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { return foo()==10 && bar()==11; }\n",	// test 845 
-  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { return foo()==10 && bar()==11; }\n",	// test 846 
+  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { return foo()==10 && bar()==11; }\n",	// test 1426 
+  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { return foo()==10 && bar()==11; }\n",	// test 1427 
 
-  "Pstring a() { return \"/test\"; }\n"+	// test 847
+  "Pstring a() { return \"/test\"; }\n"+	// test 1428
   "string b() { return \"int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }\"; }",
-  "Pstring a() { return \"/test2\"; }\n"+	// test 848
+  "Pstring a() { return \"/test2\"; }\n"+	// test 1429
   "string b() { return \"int z,x,c,v,b; mixed getb() { return b; } void setb(int _) { b=_; }\"; }",
 
-  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; }\n",	// test 849 
-  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { setw(20); setb(22); return w==20 && b==22; }\n",	// test 850 
-  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; }\n",	// test 851 
-  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { setw(20); setb(22); return w==20 && b==22; }\n",	// test 852 
+  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; }\n",	// test 1430 
+  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { setw(20); setb(22); return w==20 && b==22; }\n",	// test 1431 
+  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; }\n",	// test 1432 
+  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { setw(20); setb(22); return w==20 && b==22; }\n",	// test 1433 
 
 
   });
@@ -2008,7 +3522,7 @@ int main(int argc, string *argv)
 	successes++;
       }else{
 	perror("Test "+(e+1)+" failed.\n");
-	if(verbose) perror(test+"\n");
+	perror(test+"\n");
 	errors++;
       }
       master()->set_inhibit_compile_errors(0);
@@ -2021,7 +3535,7 @@ int main(int argc, string *argv)
 	successes++;
       }else{
 	perror("Test "+(e+1)+" failed.\n");
-	if(verbose) perror(test+"\n");
+	perror(test+"\n");
 	errors++;
       }
       master()->set_inhibit_compile_errors(0);
@@ -2050,7 +3564,7 @@ int main(int argc, string *argv)
 	if(!a)
 	{
 	  perror("Test "+(e+1)+" failed.\n");
-	  if(verbose) perror(test+"\n");
+	  perror(test+"\n");
 	  errors++;
 	}else{
 	  successes++;
@@ -2065,12 +3579,9 @@ int main(int argc, string *argv)
 	if(a!=b)
 	{
 	  perror("Test "+(e+1)+" failed.\n");
-	  if(verbose)
-	  {
-	    perror(test+"\n");
-	    perror(sprintf("o->a(): %O\n",a));
-	    perror(sprintf("o->b(): %O\n",b));
-	  }
+	  perror(test+"\n");
+	  perror(sprintf("o->a(): %O\n",a));
+	  perror(sprintf("o->b(): %O\n",b));
 	  errors++;
 	}else{
 	  successes++;
@@ -2081,12 +3592,9 @@ int main(int argc, string *argv)
 	if(!equal(a,b))
 	{
 	  perror("Test "+(e+1)+" failed.\n");
-	  if(verbose)
-	  {
-	    perror(test+"\n");
-	    perror(sprintf("o->a(): %O\n",a));
-	    perror(sprintf("o->b(): %O\n",b));
-	  }
+          perror(test+"\n");
+	  perror(sprintf("o->a(): %O\n",a));
+	  perror(sprintf("o->b(): %O\n",b));
 	  errors++;
 	}else{
 	  successes++;

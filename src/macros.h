@@ -2,6 +2,7 @@
 #define MACROS_H
 
 #include <sys/param.h>
+#include "memory.h"
 
 #define BASEOF(ptr, str_type, field)  \
 ((struct str_type *)((char*)ptr - (char*)& (((struct str_type *)0)->field)))

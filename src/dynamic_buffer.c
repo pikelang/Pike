@@ -2,6 +2,7 @@
 #include "dynamic_buffer.h"
 #include "stralloc.h"
 #include "error.h"
+#include "memory.h"
 
 static dynamic_buffer buff;
 

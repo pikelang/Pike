@@ -1398,6 +1398,38 @@ test_eq(search(([1:2,3:4,5:6,7:8]),4),3)
 test_true(zero_type(search(([1:2,3:4,5:6,7:8]),1)))
 test_eq(search(([1:2,3:4,5:6,7:8]),8),7)
 
+// test large searches (find string, size, pattern)
+define(test_search,[[
+test_eq(search(sprintf($1+"%'"+$3+"'*n",$2),$1),0)
+test_eq(search(sprintf("%'"+$3+"'*n" ,$2),$1),-1)
+test_eq(search(sprintf("%'"+$3+"'*n"+$1,$2),$1),$2)
+test_eq(search(sprintf("%'"+$3+"'*n"+$1+"%'"+$3+"'*n",$2,$2),$1),$2)
+]])
+
+define(test_search2,[[dnl
+test_search($1,$2,$3)
+test_search($1,$2+1,$3)
+test_search($1,$2+2,$3)
+test_search($1,$2+3,$3)
+]])
+
+define(test_search3,[[dnl
+test_search2($1,10,$2)
+test_search2($1,1000,$2)
+test_search2($1,100000,$2)
+]])
+
+define(test_search4,[[dnl
+test_search3($1,"+-*")
+test_search3($1,($1[0..strlen($1)-2]))
+test_search3($1,($1[1..0x7fffffff]))
+]])
+
+test_search4("SUNE")
+test_search4("-------------------+")
+test_search4("+-------------------")
+test_search4(sprintf("%'argel-bargel glop-glyf?'2000n"))
+
 // - sizeof
 test_eq(sizeof("felbar"),6)
 test_eq(sizeof(({"fulbar","gazonk",7})),3)
@@ -1516,7 +1548,7 @@ test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); 
 	successes++;
       }else{
 	perror("Test "+(e+1)+" failed.\n");
-	if(verbose) perror(test+"\n");
+	perror(test+"\n");
 	errors++;
       }
       master()->set_inhibit_compile_errors(0);
@@ -1529,7 +1561,7 @@ test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); 
 	successes++;
       }else{
 	perror("Test "+(e+1)+" failed.\n");
-	if(verbose) perror(test+"\n");
+	perror(test+"\n");
 	errors++;
       }
       master()->set_inhibit_compile_errors(0);
@@ -1540,8 +1572,8 @@ test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); 
 
       if(t) trace(t);
       a=b=0;
-      if(o->a) a=o->a();
-      if(o->b) b=o->b();
+      if(functionp(o->a)) a=o->a();
+      if(functionp(o->b)) b=o->b();
       if(t) trace(0);
       switch(type)
       {
@@ -1558,7 +1590,7 @@ test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); 
 	if(!a)
 	{
 	  perror("Test "+(e+1)+" failed.\n");
-	  if(verbose) perror(test+"\n");
+	  perror(test+"\n");
 	  errors++;
 	}else{
 	  successes++;
@@ -1573,12 +1605,9 @@ test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); 
 	if(a!=b)
 	{
 	  perror("Test "+(e+1)+" failed.\n");
-	  if(verbose)
-	  {
-	    perror(test+"\n");
-	    perror(sprintf("o->a(): %O\n",a));
-	    perror(sprintf("o->b(): %O\n",b));
-	  }
+	  perror(test+"\n");
+	  perror(sprintf("o->a(): %O\n",a));
+	  perror(sprintf("o->b(): %O\n",b));
 	  errors++;
 	}else{
 	  successes++;
@@ -1589,12 +1618,9 @@ test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); 
 	if(!equal(a,b))
 	{
 	  perror("Test "+(e+1)+" failed.\n");
-	  if(verbose)
-	  {
-	    perror(test+"\n");
-	    perror(sprintf("o->a(): %O\n",a));
-	    perror(sprintf("o->b(): %O\n",b));
-	  }
+          perror(test+"\n");
+	  perror(sprintf("o->a(): %O\n",a));
+	  perror(sprintf("o->b(): %O\n",b));
 	  errors++;
 	}else{
 	  successes++;

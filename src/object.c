@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "global.h"
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -77,7 +78,7 @@ struct object *clone(struct program *p, int args)
 	union anything *u;
 	u=(union anything *)(frame.current_storage +
 			     frame.context.prog->identifiers[d].func.offset);
-	u->integer=0;
+	MEMSET((char *)u,0,sizeof(*u));
       }
     }
 
@@ -236,7 +237,10 @@ void object_index_no_free(struct svalue *to,
   int f;
 
   if(!o || !(p=o->prog))
+  {
     error("Lookup in destructed object.\n");
+    return; /* make gcc happy */
+  }
 
   if(index->type != T_STRING)
     error("Lookup on non-string value.\n");
@@ -287,7 +291,10 @@ void object_index(struct svalue *to,
   int f;
 
   if(!o || !(p=o->prog))
+  {
     error("Lookup in destructed object.\n");
+    return; /* make gcc happy */
+  }
 
   if(index->type != T_STRING)
     error("Lookup on non-string value.\n");
@@ -342,7 +349,10 @@ void object_low_set_index(struct object *o,
   struct program *p;
 
   if(!o || !(p=o->prog))
+  {
     error("Lookup in destructed object.\n");
+    return; /* make gcc happy */
+  }
 
   check_destructed(from);
 
@@ -379,7 +389,10 @@ void object_set_index(struct object *o,
   int f;
 
   if(!o || !(p=o->prog))
+  {
     error("Lookup in destructed object.\n");
+    return; /* make gcc happy */
+  }
 
   if(index->type != T_STRING)
     error("Lookup on non-string value.\n");
@@ -402,7 +415,10 @@ union anything *object_low_get_item_ptr(struct object *o,
   struct program *p;
 
   if(!o || !(p=o->prog))
+  {
     error("Lookup in destructed object.\n");
+    return 0; /* make gcc happy */
+  }
 
   i=ID_FROM_INT(p, f);
 
@@ -437,7 +453,10 @@ union anything *object_get_item_ptr(struct object *o,
   int f;
 
   if(!o || !(p=o->prog))
+  {
     error("Lookup in destructed object.\n");
+    return 0; /* make gcc happy */
+  }
 
   if(index->type != T_STRING)
     error("Lookup on non-string value.\n");
