@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.615 2002/08/31 00:31:35 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.616 2002/09/02 16:50:31 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1722,7 +1722,8 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
     $with_root/usr/gnu/include $with_root/opt/gnu/include \
     $with_root/sw/gnu/include $with_root/sw/include \
     $with_root/usr/freeware/include $with_root/usr/pkg/include \
-    $with_root/opt/sfw/include $with_root/opt/gnome-1.4/include \
+    $with_root/opt/sfw/include \
+    `echo $with_root/opt/gnome*/include | sort -r` \
     `echo $with_root/usr/X11*/include | sort -r`
   do
     AC_MSG_CHECKING($d)
@@ -4938,6 +4939,7 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
     pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK
   else
     OCPPFLAGS="$CPPFLAGS"
+    pike_cv_sys_bad_signal_handling=""
     pike_cv_sys_nonblock=UNKNOWN
     # USE_FCNTL_O_NONBLOCK seems to be the most common, so let's start
     # with it.
@@ -4963,6 +4965,29 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 	])
       ])
     done
+    if test "$pike_cv_sys_nonblock" = "UNKNOWN"; then
+      # Some OS's don't like signals in combination with threads.
+      # Try compiling half the test...
+
+      # USE_FCNTL_O_NONBLOCK seems to be the most common, so let's start
+      # with it.
+      for method in USE_FCNTL_O_NONBLOCK USE_FCNTL_FNDELAY USE_FCNTL_O_NDELAY \
+		    USE_IOCTL_FIONBIO USE_IOCTLSOCKET_FIONBIO; do
+	# Make sure we can run configure in a separate directory,
+	# and set the method to try.
+	CPPFLAGS="-I$srcdir $OCPPFLAGS -D$method -DSHORT_TEST"
+	AC_TRY_RUN([
+#define TESTING
+#include "fd_control.c"
+        ], [
+	  pike_cv_sys_bad_signal_handling=" (signal handling failed)"
+          pike_cv_sys_nonblock=$method
+          break;
+        ], [], [
+	  # Not meaningful.
+  	])
+      done
+    else :; fi
     # Restore CPPFLAGS
     CPPFLAGS="$OCPPFLAGS"
   fi
@@ -4971,7 +4996,7 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 if test "${pike_cv_sys_nonblock}" = "UNKNOWN"; then
   AC_MSG_RESULT(none found)
 else
- AC_MSG_RESULT($pike_cv_sys_nonblock)
+ AC_MSG_RESULT($pike_cv_sys_nonblock$pike_cv_sys_bad_signal_handling)
  AC_DEFINE_UNQUOTED($pike_cv_sys_nonblock)
 fi
 
