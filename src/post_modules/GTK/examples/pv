@@ -1,26 +1,21 @@
 #!/usr/local/bin/pike
 // -*- pike -*-
-
-
+object cached_root;
 object root()
 {
+  if( cached_root )
+    return cached_root;
   GDK.Window root = GTK.root_window();
   array maybe=root->children()->get_property(GDK.Atom.__SWM_VROOT)-({0});
   if(sizeof(maybe)) root=GDK.Window( maybe[0]->data[0] );
-  return root;
+  return cached_root = root;
 }
 
 array(int) get_max_size( Image.image q)
 {
-  return ({
-    min( q->xsize(), 
-         root()->xsize()-30  ),
-    min( q->ysize(), 
-         root()->ysize()-30  )
-  });
-          
+  return ({ min( q->xsize(), root()->xsize()-30 ),
+            min( q->ysize(), root()->ysize()-30 ) });
 }
-
 
 class ImageWindow
 {
@@ -44,7 +39,7 @@ class ImageWindow
   {
     object alpha;
     _img = copy_value(img);
-    
+
     if( scale != 1.0 )
     {
       if( img->alpha )
@@ -89,9 +84,6 @@ class ImageWindow
     set( pix );
   }
 
-
-
-
   void scale_image( float to )
   {
     if( !to )
@@ -104,7 +96,6 @@ class ImageWindow
   ImageWindow load_image( string img )
   {
     mapping q = cload_img( img );
-//     scale = 1.0;
     if( !q || !q->img )
     {
       int x, y;
@@ -123,10 +114,11 @@ class ImageWindow
      yp = q->img->ysize()-preloaded_image_data->img->ysize();
 
      q->img_name = img;
-     q->img->paste_mask(preloaded_image_data->img,preloaded_image_data->alpha,
+     q->img->paste_mask(preloaded_image_data->img,
+                        preloaded_image_data->alpha,
                         xp, yp);
-     q->alpha->paste_alpha_color( preloaded_image_data->alpha, 255,255,255, 
-                                 xp, yp);
+     q->alpha->paste_alpha_color( preloaded_image_data->alpha, 255,255,255,
+                                  xp, yp);
 
 
       xp = q->img->xsize()/2 - txt->xsize()/2;
@@ -135,7 +127,7 @@ class ImageWindow
         for( y = yp-1; y<yp+2; y++ )
           q->alpha->paste_alpha_color( txt, 255,255,255, x,y );
       q->img->paste_alpha_color( txt,255,255,0,xp,yp );
-     
+
     }
 
     set_image( q );
@@ -150,13 +142,22 @@ string preloaded_image;
 
 mapping options;
 
+string stdindata;
 void preload_image( string img )
 {
   if(preloaded_image == img )
     return;
   preloaded_image = preloaded_image_data = 0;
-  preloaded_image_data = GTK.Util.low_load_image( img,options );
-  preloaded_image = img;
+  if( img == "-" )
+  {
+    if( !stdindata )
+      stdindata = Stdio.stdin->read();
+    preloaded_image_data = GTK.Util.low_decode_image( stdindata,options );
+    preloaded_image = img;
+  } else {
+    preloaded_image_data = GTK.Util.low_load_image( img,options );
+    preloaded_image = img;
+  }
 }
 
 mapping cload_img( string img )
@@ -229,7 +230,7 @@ class doCopy
     data->from = file;
     data->to = copy_to + (file - dirname( file ) );
     data->outfmt = default_copy_encode_format;
-    
+
     if( copy_library )
       switch( copy_library->convert( data, output ) )
       {
@@ -250,7 +251,7 @@ ImageWindow imgwin;
 
 void key_pressed( object w, object win, mixed e )
 {
-  switch(e->data) 
+  switch(e->data)
   {
    case "<": imgwin->scale_image( 0.5 );  break;
    case ">": imgwin->scale_image( 2.0 );  break;
@@ -288,6 +289,12 @@ int main(int argc, array argv)
     if( !all_images )
       switch( i )
       {
+       case "--root":
+       case "-root":
+         exit(Process.create_process( ({"/usr/local/bin/psetroot"})+
+                                      argv[1..]-({"-root","--root"}) )
+              ->wait());
+         break;
        case "--name-layers":
          options->mark_layer_names = Image.Font();
          continue;
@@ -328,7 +335,7 @@ int main(int argc, array argv)
                "                      the 'img' mapping. Encoding format is\n"
                "                      in the variable 'outfmt', if 'outdata'\n"
                "                      is set, this is the data that will be\n"
-               "                      written to the destination file.\n" 
+               "                      written to the destination file.\n"
                "                      Example:\n"
                "                        'i = i->scale(2.0); rm(src);'\n\n"
                "  --copy-conv-library=file\n"
@@ -365,7 +372,7 @@ int main(int argc, array argv)
             case "copy-conv-library":
               if( catch {
                 copy_library = compile_file( b )();
-              }) 
+              })
                 exit(1);
               continue;
             case "copy-conv-code":
@@ -406,7 +413,7 @@ int main(int argc, array argv)
     images += ({ i });
   }
   argv = GTK.setup_gtk( argv )[1..];
-  
+
 
 
   object w,win =  GTK.Window( GTK.WindowToplevel );
