@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.36 2003/02/02 00:32:57 mast Exp $
+|| $Id: backend.cmod,v 1.37 2003/02/24 09:29:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.36 2003/02/02 00:32:57 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.37 2003/02/24 09:29:55 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -198,7 +198,13 @@ void set_backend_for_fd(int fd, struct Backend_struct *b)
     int old=fd_map_size;
     if(!fd_map_size) fd_map_size=64;
     while(fd >= fd_map_size) fd_map_size*=2;
-    fd_map=(struct Backend_struct **)realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
+    if (fd_map) {
+      fd_map = (struct Backend_struct **)
+	realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
+    } else {
+      fd_map = (struct Backend_struct **)
+	malloc(sizeof(struct Backend_struct *) * fd_map_size);
+    }
     if(!fd_map)
       Pike_fatal("Out of memory in backend:set_backend_for_fd.\n"
 	"Tried to allocate %d bytes.\n",sizeof(struct Backend_struct *) * fd_map_size);
@@ -272,7 +278,13 @@ static void MY_FD_SET(struct selectors *me,
   if (me->num_in_poll > me->poll_fd_size)
   {
     me->poll_fd_size += me->num_in_poll;	/* Usually a doubling */
-    if (!(me->poll_fds = realloc(me->poll_fds, sizeof(struct pollfd)*me->poll_fd_size)))
+    if (me->poll_fds) {
+      me->poll_fds =
+	realloc(me->poll_fds, sizeof(struct pollfd)*me->poll_fd_size);
+    } else {
+      me->poll_fds = malloc(sizeof(struct pollfd)*me->poll_fd_size);
+    }
+    if (!me->poll_fds)
     {
       Pike_fatal("Out of memory in backend::MY_FD_SET()\n"
 	    "Tried to allocate %d pollfds\n", me->poll_fd_size);
@@ -325,7 +337,14 @@ static void copy_selectors(struct active_selectors *to,
 		  to->poll_fd_size,
 		  from->poll_fd_size));
     to->poll_fd_size=from->poll_fd_size;
-    if (!(to->poll_fds = realloc(to->poll_fds, sizeof(struct pollfd)*to->poll_fd_size))) {
+    if (to->poll_fds) {
+      to->poll_fds =
+	realloc(to->poll_fds, sizeof(struct pollfd)*to->poll_fd_size);
+    } else {
+      to->poll_fds =
+	malloc(sizeof(struct pollfd)*to->poll_fd_size);
+    }
+    if (!to->poll_fds) {
       Pike_fatal("Out of memory in backend::copy_poll_set()\n"
 	    "Tried to allocate %d pollfds\n", to->poll_fd_size);
     }
@@ -506,7 +525,11 @@ PIKECLASS Backend
       debug_malloc_touch(me->fds);
       if(!me->fds_size) me->fds_size = 16;
       while(wanted_size >= me->fds_size) me->fds_size*=2;
-      me->fds = realloc( me->fds, sizeof(struct fd_datum) * me->fds_size );
+      if (me->fds) {
+	me->fds = realloc(me->fds, sizeof(struct fd_datum) * me->fds_size);
+      } else {
+	me->fds = malloc(sizeof(struct fd_datum) * me->fds_size);
+      }
       if( !me->fds )
 	Pike_fatal("Out of memory in backend::grow_fds()\n"
 	      "Tried to allocate %d fd_datum structs\n", me->fds_size);
@@ -1474,7 +1497,14 @@ PIKECLASS Backend
 	 struct hash_ent *new_hash;
 	 int e;
 	 
-	 new_buffer=(call_out **)realloc((char *)me->call_buffer, sizeof(call_out *)*me->call_buffer_size*2);
+	 if (me->call_buffer) {
+	   new_buffer = (call_out **)
+	     realloc((char *)me->call_buffer,
+		     sizeof(call_out *)*me->call_buffer_size*2);
+	 } else {
+	   new_buffer = (call_out **)
+	     malloc(sizeof(call_out *)*me->call_buffer_size*2);
+	 }
 	 if(!new_buffer)
 	   Pike_error("Not enough memory for another call_out\n");
 	 me->call_buffer_size*=2;
