@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.8 2001/07/26 18:19:31 grubba Exp $
+ * $Id: sparc.h,v 1.9 2001/08/13 23:39:11 mast Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -64,7 +64,7 @@
 #define ENTRY_PROLOGUE_SIZE	1
 
 #define UPDATE_PC() do {						\
-    INT32 tmp = PC;							\
+    INT32 tmp = PIKE_PC;						\
     SET_REG(SPARC_REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	\
     /* lduw [ %o3 ], %o3 */						\
     add_to_program(0xc0000000|(SPARC_REG_O3<<25)|(SPARC_REG_O3<<14));	\

@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.14 2001/08/02 22:24:54 hubbe Exp $
+ * $Id: ia32.c,v 1.15 2001/08/13 23:39:10 mast Exp $
  *
  * Machine code generator for IA32.
  *
@@ -281,7 +281,7 @@ INT32 ins_f_jump(unsigned int b)
   INT32 ret;
   if(b != F_BRANCH) return -1;
   add_to_program(0xe9);
-  ret=DO_NOT_WARN( (INT32) PC );
+  ret=DO_NOT_WARN( (INT32) PIKE_PC );
   PUSH_INT(0);
   return ret;
 }

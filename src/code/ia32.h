@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.h,v 1.11 2001/07/31 23:10:35 marcus Exp $
+ * $Id: ia32.h,v 1.12 2001/08/13 23:39:10 mast Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT8
@@ -72,7 +72,7 @@ extern int ia32_reg_edx;
 #if 0
 /* For some reason, this does not work - Hubbe*/
 #define UPDATE_PC() do {				\
-    INT32 tmp=PC;					\
+    INT32 tmp=PIKE_PC;					\
     if(ia32_reg_edx != REG_IS_FP)                      \
       MOV2EDX(Pike_interpreter.frame_pointer);		\
     ia32_reg_edx=REG_IS_FP;                             \
@@ -80,7 +80,7 @@ extern int ia32_reg_edx;
 }while(0)
 #else
 #define UPDATE_PC() do {				\
-   INT32 tmp=PC;					\
+   INT32 tmp=PIKE_PC;					\
    if(ia32_reg_eax != REG_IS_FP)                      \
      MOV2EAX(Pike_interpreter.frame_pointer);		\
    ia32_reg_eax=REG_IS_FP;                             \
