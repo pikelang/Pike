@@ -343,7 +343,7 @@ class _Class_or_Module {
     mapping(string:string) m = standardAttributes();
     if (file) m["file"] = file;
     if (directory) m["directory"] = directory;
-    return opentag(objtype, m) + contents + standardEnd();
+    return "\n\n" + opentag(objtype, m) + contents + standardEnd();
   }
 
   string print() {

@@ -524,7 +524,7 @@ static class DocParserClass {
     }
     if (sizeof(tagstack))
       parseError("@" + tagstack[0] + "{ without matching @}");
-    return "<p>" + res + "</p>\n";
+    return "<p>" + String.trim_whites(res) + "</p>\n";
   }
 
   // Read until the next delimiter token on the same level, or to
