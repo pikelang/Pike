@@ -598,13 +598,15 @@ class PutImage
 
   string to_string()
   {
+    werror(sprintf("PutImage>to_string: %d, %d, %d, %d\n",
+		   dst_x, dst_y, width, height));
     string pad="";
     while(((strlen(data)+strlen(pad))%4)) pad += "\0";
     pad =  build_request(sprintf("%4c" "%4c"
-			       "%2c" "%2c"
-			       "%2c" "%2c"
-			       "%c" "%c" "\0\0"
-			       "%s%s",
+				 "%2c" "%2c"
+				 "%2c" "%2c"
+				 "%c" "%c" "\0\0"
+				 "%s%s",
 				 drawable, gc,
 				 width, height,
 				 dst_x, dst_y, left_pad, depth,
