@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.338 2001/05/31 22:20:09 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.339 2001/06/06 01:12:30 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3091,6 +3091,10 @@ node *optimize_replace(node *n)
     n->node_info |= OPT_SIDE_EFFECT;
     n->tree_info |= OPT_SIDE_EFFECT;
   }
+
+  free_type(array_zero);
+  free_type(mapping_zero);
+
   return NULL;
 }
 
