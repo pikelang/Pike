@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.3 1998/02/15 15:53:00 mirar Exp $ */
+/* $Id: orient.c,v 1.4 1998/02/17 19:47:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.3 1998/02/15 15:53:00 mirar Exp $
+**!	$Id: orient.c,v 1.4 1998/02/17 19:47:44 hubbe Exp $
 **! class image
 */
 
@@ -121,7 +121,7 @@ void image_orient(INT32 args)
 		B->img[(x+xd)+(y+yd)*B->xsize].CO)) \
 		     )/2.0); 
 
-  //Create image 1
+	/* Create image 1 */
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
@@ -133,7 +133,7 @@ void image_orient(INT32 args)
 #undef A
 #define A o2img
 
-  //Create image 2
+  /* Create image 2 */
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
@@ -146,7 +146,7 @@ void image_orient(INT32 args)
 #undef A
 #define A o3img
 
-  //Create image 3
+  /* Create image 3 */
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
@@ -158,7 +158,7 @@ void image_orient(INT32 args)
 #undef A
 #define A o4img
 
-  //Create image 4
+  /* Create image 4 */
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
@@ -170,11 +170,11 @@ void image_orient(INT32 args)
 #undef A
 #define A o5img
 
-  //Create image 5, the hsv-thing...
+  /* Create image 5, the hsv-thing... */
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
-	//Första färg, sista mörkhet
+	/* Första färg, sista mörkhet */
 	j=o1img->img[x+y*B->xsize].r+
 	  o1img->img[x+y*B->xsize].g+
 	  o1img->img[x+y*B->xsize].b-
@@ -226,7 +226,7 @@ void image_orient(INT32 args)
 
 
 
-  //Och så fylla ut de andra bilderna med lite junk.
+  /* Och så fylla ut de andra bilderna med lite junk. */
 
   pop_n_elems(args);
   push_object(o1);
