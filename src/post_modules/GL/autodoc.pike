@@ -424,7 +424,6 @@ void fix_refs() {
 }
 
 void main() {
-
   werror("Reading manpages.\n");
   prefetch();
   fix_refs();
@@ -439,10 +438,10 @@ void main() {
   }
 
   foreach( funcV, string func)
-      doc += document(func, "V") + "\n";
+    doc += document(func, "V") + "\n";
 
   foreach( funcEV, string func)
-      doc += document(func, "VE") + "\n";
+    doc += document(func, "VE") + "\n";
 
   foreach( sort(indices(constants)), string name ) {
     doc += "/*!@decl constant "+name+" " + constants[name] + "\n";
