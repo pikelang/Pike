@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.154 1999/07/21 14:48:56 mirar Exp $ */
+/* $Id: image.c,v 1.155 1999/08/27 12:50:45 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.154 1999/07/21 14:48:56 mirar Exp $
+**!	$Id: image.c,v 1.155 1999/08/27 12:50:45 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.154 1999/07/21 14:48:56 mirar Exp $");
+RCSID("$Id: image.c,v 1.155 1999/08/27 12:50:45 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -229,7 +229,10 @@ static INLINE int getrgb(struct image *img,
 
    if (max > 3 && args-args_start>=4) 
       if (sp[3-args+args_start].type!=T_INT)
+      {
          error("Illegal alpha argument to %s\n",name);
+	 return 0; /* avoid stupid warning */
+      }
       else
       {
          img->alpha=sp[3-args+args_start].u.integer;
