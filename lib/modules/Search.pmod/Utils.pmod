@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.33 2001/11/22 14:48:16 js Exp $
+// $Id: Utils.pmod,v 1.34 2002/04/19 13:41:12 js Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -615,13 +615,19 @@ class Logger {
     if(zero_type(log_profile))
       log_profile = profile;
 
-    if(extra)
-      db->query("INSERT INTO eventlog (profile,code,type,extra) VALUES (%d,%d,%s,%s)",
-		log_profile, code, type, extra);
-    else
-      db->query("INSERT INTO eventlog (profile, code,type) VALUES (%d,%d,%s)",
-		log_profile, code, type);
-  }
+    mixed err=
+    catch
+    {
+      if(extra)
+	db->query("INSERT INTO eventlog (profile,code,type,extra) VALUES (%d,%d,%s,%s)",
+		  log_profile, code, type, extra);
+      else
+	db->query("INSERT INTO eventlog (profile, code,type) VALUES (%d,%d,%s)",
+		  log_profile, code, type);
+    };
+    if(err)
+      werror(describe_backtrace(err));
+    }
 
   //!
   void log_error( int code, void|string extra, void|int log_profile ) {
