@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.25 1999/11/20 22:13:03 grubba Exp $
+ * $Id: pike_types.h,v 1.26 1999/11/23 22:34:35 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -75,6 +75,7 @@ extern struct pike_string *list_type_string;
 extern struct pike_string *mapping_type_string;
 extern struct pike_string *mixed_type_string;
 extern struct pike_string *void_type_string;
+extern struct pike_string *zero_type_string;
 extern struct pike_string *any_type_string;
 
 #define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
@@ -136,6 +137,7 @@ struct pike_string *or_pike_types(struct pike_string *a,
 struct pike_string *and_pike_types(struct pike_string *a,
 				   struct pike_string *b);
 int match_types(struct pike_string *a,struct pike_string *b);
+int pike_types_le(struct pike_string *a,struct pike_string *b);
 struct pike_string *index_type(struct pike_string *type, node *n);
 struct pike_string *key_type(struct pike_string *type, node *n);
 int check_indexing(struct pike_string *type,
