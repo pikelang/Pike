@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.69 2002/05/03 21:50:23 nilsson Exp $
+# $Id: Makefile,v 1.70 2002/05/13 19:15:16 mast Exp $
 #
 # Meta Makefile
 #
@@ -147,23 +147,30 @@ documentation:
 
 doc: documentation
 
+# Don't make bin/pike if we're recursing with a $(METATARGET) since we
+# don't want the backquote expression which usually is part of
+# $(BUILDDIR) to be expanded in that script. It's better to evaluate
+# it when the script is run, so that it can choose the build directory
+# for the right architecture.
 bin/pike: force
-	@builddir='$(BUILDDIR)'; \
-	case $$builddir in /*) ;; *) builddir="`pwd`/$$builddir";; esac; \
-	sed -e "s@\"BUILDDIR\"@$$builddir@" < bin/pike.in > bin/pike
-	@chmod a+x bin/pike
+	@if test \! -x bin/pike -o "x$(METATARGET)" = x; then \
+	  builddir='$(BUILDDIR)'; \
+	  case $$builddir in /*) ;; *) builddir="`pwd`/$$builddir";; esac; \
+	  sed -e "s@\"BUILDDIR\"@$$builddir@" < bin/pike.in > bin/pike && \
+	  chmod a+x bin/pike; \
+	else :; fi
 
 # This skips the modules.
 pike: bin/pike
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=pike"
 
-install:
+install: bin/pike
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=install"
 
-install_interactive:
+install_interactive: bin/pike
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive"
 
-tinstall:
+tinstall: bin/pike
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=tinstall"
 
 just_verify:
