@@ -3,6 +3,14 @@
  * PLIS (Permuted Lisp). A Lisp language somewhat similar to scheme.
  */
 
+#define error(X) throw( ({ (X), backtrace() }) )
+
+#ifdef LISP_DEBUG
+#define WERROR werror
+#else
+#define WERROR(x)
+#endif
+
 /* Data shared between all Lisp objects */
 mapping symbol_table = ([ ]);
 
@@ -46,6 +54,10 @@ class Cons
 
   void create(object a, object d)
     {
+      if (!a)
+	error("Cons: car is null!\n");
+      if (!d)
+	error("Cons: cdr is null!\n");
       car = a; cdr = d;
     }
 
@@ -110,7 +122,7 @@ class Cons
   
   object eval(object env, object globals)
     {
-      // werror(sprintf("eval list: %s\n", print(1)));
+      WERROR(sprintf("eval list: %s\n", print(1)));
       //if (car->name == "read-line")
       //  trace(1);
       object fun = car->eval(env, globals);
@@ -145,7 +157,7 @@ class Symbol
 
   object eval(object env, object globals)
     {
-      // werror(sprintf("eval symbol '%s'\n", name));
+      WERROR(sprintf("eval symbol '%s'\n", name));
 #if 0
       if(globals->eval_limit)
       {
@@ -181,6 +193,9 @@ class Symbol
       if (table)
 	table[name] = this_object();
     }
+
+  string to_string() { return name; }
+    
 }
 
 class ConstantSymbol 
@@ -199,8 +214,9 @@ class Nil
   void create()
     {
       Cons :: create(this_object(), this_object());
+      SelfEvaluating :: create("()");
     }
-  
+
   object mapcar(mixed ...ignored) { return this_object(); }
   object map(mixed ...ignored) { return this_object(); }
 }
@@ -219,8 +235,8 @@ class String
   
   string print(int display)
     {
-      return display ? ("\"" + replace(value, ({ "\"", "\n",}),
-				       ({ "\\\"", "\\n"}) ) + "\"")
+      return display ? ("\"" + replace(value, ({ "\\", "\"", "\n",}),
+				       ({ "\\\\", "\\\"", "\\n"}) ) + "\"")
 	: value;
     }
   
@@ -279,7 +295,13 @@ class Environment
   string print(int display) 
     {
       string res="";
-      foreach(indices(env), object s)
+      // werror("PLIS.Environment->print\n");
+      foreach(Array.sort_array(indices(env),
+			       lambda(object a, object b)
+			       { return a->to_string && b->to_string
+				   && (a->to_string() > b->to_string());
+			       } ),
+	      object s)
       {
 	if(env[s]->value != this_object())
 	  res += s->print(display)+": "+env[s]->value->print(display)+"\n";
@@ -365,7 +387,8 @@ class Macro
   constant is_special = 1;
   object apply(object arglist, object env, object globals)
     {
-      return ::apply(arglist, env, globals)->eval(env, globals);
+      object expansion = ::apply(arglist, env, globals);
+      return expansion && expansion->eval(env, globals);
     }
 }
 
@@ -426,10 +449,10 @@ object make_list(object ...args)
 class Parser 
 {
   object number_re = Regexp("^(-|)([0-9]+)");
-  object symbol_re = Regexp("^([^0-9 \t\n(.)\"]+)");
+  object symbol_re = Regexp("^([^0-9 \t\n(.)\"#]+)");
   object space_re = Regexp("^([ \t\n]+)");
   object comment_re = Regexp("^(;[^\n]*\n)");
-  object string_re = Regexp("^(\"[^\"]*\")");
+  object string_re = Regexp("^(\"([^\\\\\"]|\\\\.)*\")");
   
   string buffer;
   
@@ -470,7 +493,9 @@ class Parser
       {
 	//	werror("Scanning string\n");
 	buffer = buffer[strlen(a[0])..];
-	return String(a[0][1 .. strlen(a[0]) - 2]);
+	return String(replace(a[0][1 .. strlen(a[0]) - 2],
+			      ({ "\\\\", "\\\"", "\\n" }),
+			      ({ "\\", "\"", "\n"}) ) );
       }
       
       switch(int c = buffer[0])
@@ -536,7 +561,8 @@ class Parser
 	  throw( ({ "lisp->parser: internal error\n",
 		    backtrace() }) );
 	}
-      return Cons(item , read_list());
+      object rest = read_list();
+      return rest && Cons(item , rest);
     }
 }
 
@@ -596,7 +622,7 @@ object s_if(object arglist, object env, object globals)
 {
   if (arglist->car->eval(env, globals) != Lfalse)
     return arglist->cdr->car->eval(env, globals);
-  object arglist = arglist->cdr->cdr;
+  arglist = arglist->cdr->cdr;
   return (arglist != Lempty) ? arglist->car->eval(env, globals) : Lfalse;
 }
 
@@ -826,6 +852,11 @@ object f_display(object arglist, object env, object globals)
   return Lfalse;
 }
 
+object f_global_environment(object arglist, object env, object globals)
+{
+  return globals;
+}
+
 void init_specials(object environment)
 {
   environment->extend(make_symbol("quote"), Special(s_quote));
@@ -858,7 +889,8 @@ void init_functions(object environment)
   // environment->extend(make_symbol("princ"), Builtin(f_print));
   environment->extend(make_symbol("eval"), Builtin(f_eval));
   environment->extend(make_symbol("apply"), Builtin(f_apply));
-  // environment->extend(make_symbol("global-environment"), environment);
+  environment->extend(make_symbol("global-environment"),
+		      Builtin(f_global_environment));
   environment->extend(make_symbol("car"), Builtin(f_car));
   environment->extend(make_symbol("cdr"), Builtin(f_cdr));
   environment->extend(make_symbol("null?"), Builtin(f_null));
@@ -868,50 +900,48 @@ void init_functions(object environment)
   environment->extend(make_symbol("list"), Builtin(f_list));
 }
 
-object default_boot_code()
-{
-  return Parser(
-    "(begin\n"
-    "  (defmacro (cddr x)\n"
-    "    (list (quote cdr) (list (quote cdr) x)))\n"
-    "  (defmacro (cadr x)\n"
-    "    (list (quote car) (list (quote cdr) x)))\n"
-    "  (defmacro (cdar x)\n"
-    "    (list (quote cdr) (list (quote car) x)))\n"
-    "  (defmacro (caar x)\n"
-    "    (list (quote car) (list (quote car) x)))\n"
-    "\n"
-    //"  (defmacro (defun name arguments . body)\n"
-    //"    (cons (quote define) (cons (cons name arguments) body)))\n"
-    "\n"
-    "  (defmacro (when cond . body)\n"
-    "    (list (quote if) cond\n"
-    "	  (cons (quote begin) body)))\n"
-    "  \n"
-    "  (define (mapcar fun list)\n"
-    "    (if (null? list) (quote ())\n"
-    "      (cons (fun (car list))\n"
-    "	         (mapcar fun (cdr list)))))\n"
-    "\n"
-    "  (defmacro (let decl . body)\n"
-    "    (cons (cons (quote lambda)\n"
-    "		(cons (mapcar car decl) body))\n"
-    "	  (mapcar cadr decl))))")->read();
-}
+object default_boot_code =
+Parser(
+  "(begin\n"
+  "  (defmacro (cddr x)\n"
+  "    (list (quote cdr) (list (quote cdr) x)))\n"
+  "  (defmacro (cadr x)\n"
+  "    (list (quote car) (list (quote cdr) x)))\n"
+  "  (defmacro (cdar x)\n"
+  "    (list (quote cdr) (list (quote car) x)))\n"
+  "  (defmacro (caar x)\n"
+  "    (list (quote car) (list (quote car) x)))\n"
+  "\n"
+  //"  (defmacro (defun name arguments . body)\n"
+  //"    (cons (quote define) (cons (cons name arguments) body)))\n"
+  "\n"
+  "  (defmacro (when cond . body)\n"
+  "    (list (quote if) cond\n"
+  "	  (cons (quote begin) body)))\n"
+  "  \n"
+  "  (define (map fun list)\n"
+  "    (if (null? list) (quote ())\n"
+  "      (cons (fun (car list))\n"
+  "	         (map fun (cdr list)))))\n"
+  "\n"
+  "  (defmacro (let decl . body)\n"
+  "    (cons (cons (quote lambda)\n"
+  "		(cons (map car decl) body))\n"
+  "	  (map cadr decl))))")->read();
 
 object default_environment()
 {
   object env = Environment();
   init_specials(env);
   init_functions(env);
-  default_boot_code()->eval(env, env);
+  default_boot_code->eval(env, env);
   return env;
 }
 
 void main()
 {
   object e = default_environment();
-  e->extend(make_symbol("global-environment"), e);
+  // e->extend(make_symbol("global-environment"), e);
   e->extend(make_symbol("read-line"), Builtin(f_readline));
   e->extend(make_symbol("display"), Builtin(f_display));
 
@@ -921,7 +951,7 @@ void main()
     "     (let ((line (read-line \"PLIS: \")))\n"
     "         (if line \n"
     "    	 (let ((res (catch (eval (read-string line)\n"
-    "                                    global-environment))))\n"
+    "                                    (global-environment)))))\n"
     "    	    (display res)\n"
     "               (loop)))))\n"
     "   (loop))\n")->read();
