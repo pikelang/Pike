@@ -1,4 +1,3 @@
-<html>
 <title>Pike tutorial</title>
 <body bgcolor="#A0E0C0" text="#000000" link=blue vlink=purple>
 <p>
@@ -8,7 +7,7 @@ Programming, using and understanding
 <p>
 <img src=pike.gif alt=" ">
 <p>
-<font size=+7><gh1>Pike</gh1></font>
+<font size=+7>Pike</font>
 <p>
 </h1>
 <h2>by Fredrik Hübinette</h2>
@@ -4797,6 +4796,7 @@ a slow machine available for the server.
 <p>
 </section>
 </chapter>
+</a>
 
 <a name=Threads>
 <chapter title="Threads">
@@ -5726,6 +5726,7 @@ values removed. The order of the values in the result is undefined.
 Pike also include a number of smaller modules. These modules implement support
 for various algorithms, data structures and system routines.
 
+<a name=System>
 <section title="System">
 The system module contains some system-specific functions that may or may
 not be available on your system. Most of these functions do exactly the same
@@ -6250,13 +6251,14 @@ Returns a mapping describing the operating system.
 This function only exists on systems that have the uname(2)
 system call.
 <p>
-<p>
 </dl>
 
 </a>
-<hr noshade size=1>
 </section>
+</a>
+<hr noshade size=1>
 
+<a name=Process>
 <section title="Process">
 The Process module contains functions to start and control other programs from Pike.
 <hr noshade size=1>
@@ -7335,7 +7337,7 @@ Returns the default yp-domain.
 <dl>
 <dt><encaps>NAME</encaps><dd>
 <tt>Yp.YpDomain</tt> - class representing an Yp domain
-</p>
+<p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object(Yp.YpDomain) Yp.YpDomain(string|void <i>domain</i>);
 </tt>
@@ -7597,15 +7599,13 @@ or<br>
 <tt>Yp.YpMap._values</tt> - return the values from the map
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-array(string) indices(<i>Yp.YpMap</i>)</br>
+array(string) indices(<i>Yp.YpMap</i>)<br>
 array(string) values(<i>Yp.Ypmap</i>)
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
   Return the indices of the map. If indices is called first, values must
   be called immediately after. If values is called first, it is the
   other way around.
-</dl>
-<p>
 </dl>
 </a>
 </a>
@@ -10785,7 +10785,7 @@ fills an area with the current color
 
 <dt><encaps>NOTE</encaps><dd>
 This function is new (april-97) and rather untested.
-</dl><p>
+<p>
 
 <dt><encaps>RETURNS</encaps><dd>
 the current object
@@ -11503,7 +11503,7 @@ Writes some text; thus creating an image object
 
 </dl><p>
 <dt><encaps>RETURNS</encaps><dd>
-an <ref>Image::image</ref> object
+an Image::image object
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#Image.font.text_extents>Image.font-&gt;text_extents</a>, <a href=#Image.font.load>Image.font-&gt;load</a>, <a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a> and <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>
@@ -13113,12 +13113,11 @@ Returns 1 if arg is a function, zero otherwise.
 This function checks all the memory for cyclic structures such
 as arrays containing themselves and frees them if approperiate.
 It also frees up destructed objects. It then returns how many
-arrays/objects/programs/etc. it managed </td><td> to free by doing this.
+arrays/objects/programs/etc. it managed to free by doing this.
 Normally there is no need to call this function since Pike will
 call it by itself every now and then. (Pike will try to predict
 when 20% of all arrays/object/programs in memory is 'garbage'
 and call this routine then.)
-</table>
 
 </dl>
 </a>
@@ -15192,8 +15191,6 @@ instead of writing them to stderr.
 </chapter>
 
 
-<appendixes>
-
 <appendix title="Terms and jargon">
 <dl>
   <dt> HTTP <dd> HyperText Transfer Protocol, the protocol used by WWW to transfer HTML from the server to the client. Based on TCP.
@@ -15451,7 +15448,7 @@ This is the BNF for Pike:
 <tr valign=top><td>modifiers</td><td>::=</td><td> { <b>static</b> | <b>private</b> | <b>nomask</b> | <b>public</b> | <b>protected</b> | <b>inline</b> }</td></tr>
 <tr valign=top><td>block</td><td>::=</td><td>"{" { statement }  "}" </td></tr>
 <tr valign=top><td>statement</td><td>::=</td><td>expression2 ";" | cond | while | do_while | for | switch | case | default | return | block | foreach | break | continue | ";" </td></tr>
-<tr valign=top><td>cond</td><td>::=</td><td><b>if</b> statement </b> [ <b>else</b> statement ]</td></tr>
+<tr valign=top><td>cond</td><td>::=</td><td><b>if</b> statement [ <b>else</b> statement ]</td></tr>
 <tr valign=top><td>while</td><td>::=</td><td><b>while</b> "(" expression ")" statement</td></tr>
 <tr valign=top><td>do_while</td><td>::=</td><td><b>do</b> statement <b>while</b> "(" expression ")" ";" </td></tr>
 <tr valign=top><td>for</td><td>::=</td><td><b>for</b> "(" [ expression ] ";" [ expression ] ";" [ expression ] ")" statement</td></tr>
