@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.9 1998/03/14 05:40:46 nisse Exp $
+/* $Id: sslfile.pike,v 1.10 1998/04/10 21:21:54 grubba Exp $
  *
  */
 
@@ -212,6 +212,9 @@ private void ssl_close_callback(mixed id)
 
 void set_accept_callback(function(mixed:void) a)
 {
+#ifdef SSL3_DEBUG
+  werror("SSL.sslport: set_accept_callback\n");
+#endif
   accept_callback = a;
 }
 
@@ -219,6 +222,9 @@ function query_accept_callback() { return accept_callback; }
 
 void set_read_callback(function(mixed,string:void) r)
 {
+#ifdef SSL3_DEBUG
+  werror("SSL.sslport: set_read_callback\n");
+#endif
   read_callback = r;
 }
 
@@ -238,6 +244,9 @@ function query_write_callback() { return write_callback; }
 
 void set_close_callback(function(mixed:void) c)
 {
+#ifdef SSL3_DEBUG
+  werror("SSL.sslport: set_close_callback\n");
+#endif
   close_callback = c;
 }
 
@@ -246,7 +255,7 @@ function query_close_callback() { return close_callback; }
 void set_nonblocking(function ...args)
 {
 #ifdef SSL3_DEBUG
-  werror("SSL.sslfile->set_nonblocking\n");
+  werror(sprintf("SSL.sslfile->set_nonblocking(%O)\n", args));
 #endif
   switch (sizeof(args))
   {
@@ -258,7 +267,7 @@ void set_nonblocking(function ...args)
     set_close_callback(args[2]);
     break;
   default:
-    throw( ({ "SSL.sslfile->set_blocking: Wrong number of arguments\n",
+    throw( ({ "SSL.sslfile->set_nonblocking: Wrong number of arguments\n",
 		backtrace() }) );
   }
   blocking = 0;
@@ -292,6 +301,7 @@ void create(object f, object c)
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->create\n");
 #endif
+  socket::create();
   context = c;
   read_buffer = write_buffer = "";
   socket::assign(f);
