@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // -*- Pike -*-
 
-// $Id: rntecl,v 1.7 2000/08/20 12:37:56 grubba Exp $
+// $Id: rntecl,v 1.8 2000/08/20 12:49:16 grubba Exp $
 
 // RNTECL, a front-end to Intel ECL with options similar to GCC
 // Written by Fredrik Hubinette & Henrik Grubbström.
@@ -201,7 +201,7 @@ int main(int argc, string *argv)
 	  case "all": case "4":
 	    cflags+=({"-W4"}); break;
 	    // Not supported, but in the manual...
-	    // case "X": cflags+=({"-WX"}); break;
+	    case "X": cflags+=({"-WX"}); break;
 	    default: cflags+=({"-W3"}); break;
 	  }
 	  break;
@@ -298,11 +298,12 @@ int main(int argc, string *argv)
 
   int ret;
   int first_line=1;
-  int prototype_error=0;
+  int forced_error=0;
   string trailer = "";
   // ecl.exe echoes the file name of the file we are compiling
   // first, we need to get rid of that to make configure behave.
-  // We also convert warning 147 into an error.
+  // We also convert warning 147 into an error, and command line
+  // remark "option not supported" into an error.
   ret = silent_do_cmd(cmd,
 		      lambda(string output) 
 		      {
@@ -324,10 +325,18 @@ int main(int argc, string *argv)
 			  // for some reason this isn't an error.
 			  // We make it an error...
 			  if (search(lines[i], "warning #147:") != -1) {
-			    prototype_error = 1;
+			    forced_error = 1;
 			    lines[i] = replace(lines[i],
 					       "warning #147:",
 					       "error #147:");
+			  } else {
+			    // Make it possible to test if flags are supported.
+			    if (search(lines[i],
+				       "Command line remark: option '") != -1){
+			      if (search(lines[i], "' not supported") != -1) {
+				forced_error = 1;
+			      }
+			    }
 			  }
 			}
 			write(lines*"\n" + "\n");
@@ -336,7 +345,7 @@ int main(int argc, string *argv)
     // Shouldn't happen, but...
     write(trailer);
   }
-  ret = ret || prototype_error;
+  ret = ret || forced_error;
 
   if(ret)
   {
