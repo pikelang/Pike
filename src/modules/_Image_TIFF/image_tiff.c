@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.9 1999/05/26 17:06:48 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.10 1999/07/25 22:22:51 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -86,6 +86,12 @@ static void increase_buffer_size( struct buffer * buffer )
   if(buffer->len > 1024*1024*400)
     error("Too large buffer (temprary error..)\n");
   if(!buffer->len) buffer->len = INITIAL_WRITE_BUFFER_SIZE;
+
+  /* FIXME: According to DMALLOC this leaks.
+   *
+   * NOTE: buffer->str seems to point into Pike strings sometimes,
+   * in which case realloc() is wrong.
+   */
   new_d = realloc( buffer->str, buffer->len*2 );
   if(!new_d) error("Realloc (%d->%d) failed!\n", buffer->len,buffer->len*2);
   MEMSET(new_d+buffer->len, 0, buffer->len);
