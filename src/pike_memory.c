@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.129 2002/11/25 00:52:18 mast Exp $
+|| $Id: pike_memory.c,v 1.130 2002/11/25 01:28:22 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.129 2002/11/25 00:52:18 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.130 2002/11/25 01:28:22 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1063,32 +1063,41 @@ static int add_location_duplicate=0;  /* Used in AD_HOC mode */
 #if DEBUG_MALLOC_PAD - 0 > 0
 char *do_pad(char *mem, long size)
 {
-  unsigned long q,e;
   mem+=DEBUG_MALLOC_PAD;
-  q= (((long)mem) ^ 0x555555) + (size * 9248339);
-  
-/*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
-#if 1
-  q%=RNDSIZE;
-  MEMCPY(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
-  MEMCPY(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
-#else
-  for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
-  {
-    char tmp;
-    q=(q<<13) ^ ~(q>>5);
 
-#define BLORG(X,Y)				\
-    tmp=(Y);					\
-    mem[e+(X)-DEBUG_MALLOC_PAD] = tmp;		\
-    mem[size+e+(X)] = tmp;
-
-    BLORG(0, (q) | 1)
-    BLORG(1, (q >> 5) | 1)
-    BLORG(2, (q >> 10) | 1)
-    BLORG(3, (q >> 15) | 1)
+  if (PIKE_MEM_CHECKER()) {
+    PIKE_MEM_NA_RANGE(mem - DEBUG_MALLOC_PAD, DEBUG_MALLOC_PAD);
+    PIKE_MEM_NA_RANGE(mem + size, DEBUG_MALLOC_PAD);
   }
+
+  else {
+    unsigned long q,e;
+    q= (((long)mem) ^ 0x555555) + (size * 9248339);
+  
+    /*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
+#if 1
+    q%=RNDSIZE;
+    MEMCPY(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
+    MEMCPY(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
+#else
+    for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
+    {
+      char tmp;
+      q=(q<<13) ^ ~(q>>5);
+
+#define BLORG(X,Y)							\
+      tmp=(Y);								\
+      mem[e+(X)-DEBUG_MALLOC_PAD] = tmp;				\
+      mem[size+e+(X)] = tmp;
+
+      BLORG(0, (q) | 1)
+	BLORG(1, (q >> 5) | 1)
+	BLORG(2, (q >> 10) | 1)
+	BLORG(3, (q >> 15) | 1)
+	}
 #endif
+  }
+
   return mem;
 }
 
@@ -1116,6 +1125,9 @@ void check_pad(struct memhdr *mh, int freeok)
       size = ~size;
     }
   }
+
+  if (PIKE_MEM_CHECKER()) return;
+
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
   /* optimization? */
@@ -1629,9 +1641,16 @@ void *debug_calloc(size_t a, size_t b, LOCATION location)
 void *debug_realloc(void *p, size_t s, LOCATION location)
 {
   char *m,*base;
+  struct memhdr *mh;
   mt_lock(&debug_malloc_mutex);
 
-  base=my_find_memhdr(p,0) ?  (void *)(((char *)p)-DEBUG_MALLOC_PAD): p;
+  mh = my_find_memhdr(p,0);
+  if (mh) {
+    base = (char *) p - DEBUG_MALLOC_PAD;
+    PIKE_MEM_RW_RANGE(base, mh->size + 2 * DEBUG_MALLOC_PAD);
+  }
+  else
+    base = p;
   m=fake_realloc(base, s+DEBUG_MALLOC_PAD*2);
 
   if(m) {
@@ -1673,6 +1692,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
   {
     void *p2;
     MEMSET(p, 0x55, mh->size);
+    PIKE_MEM_NA_RANGE(p, mh->size);
     if(mh->size < MAX_UNFREE_MEM/FREE_DELAY)
     {
       add_location(mh, location);
@@ -1698,6 +1718,8 @@ void debug_free(void *p, LOCATION location, int mustfind)
   
   if(mh)
   {
+    PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
+		      (mh->size > 0 ? mh->size : ~mh->size) + 2 * DEBUG_MALLOC_PAD);
     real_free( ((char *)p) - DEBUG_MALLOC_PAD );
     if(!low_dmalloc_unregister(p,1))
     {
@@ -2047,8 +2069,12 @@ void cleanup_memhdrs(void)
     void *p;
     if((p=blocks_to_free[h]))
     {
-      if(low_dmalloc_unregister(p,0))
+      struct memhdr *mh = find_memhdr(p);
+      if(mh)
       {
+	PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
+			  ~mh->size + 2 * DEBUG_MALLOC_PAD);
+	low_dmalloc_unregister(p,0);
 	real_free( ((char *)p) - DEBUG_MALLOC_PAD );
       }else{
 	fake_free(p);
