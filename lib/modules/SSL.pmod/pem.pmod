@@ -54,3 +54,11 @@ if(!f)
 #endif
   return parts;
 }
+
+string build_pem(string tag, string data)
+{
+  return sprintf("-----BEGIN %s-----\n\n"
+		 "%s\n"
+		 "-----END %s-----\n",
+		 tag, MIME.encode_base64(data), tag);
+}
