@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.17 2003/02/08 22:18:18 mast Exp $
+# $Id: xenofarm.sh,v 1.18 2003/02/20 17:02:43 grubba Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -10,7 +10,7 @@ log() {
 
 log_start() {
   log "BEGIN $1"
-  date >> build/xenofarm/mainlog.txt
+  TZ=GMT date >> build/xenofarm/mainlog.txt
 }
 
 log_end() {
@@ -20,7 +20,7 @@ log_end() {
   else
     log "FAIL"
   fi
-  date >> build/xenofarm/mainlog.txt
+  TZ=GMT date >> build/xenofarm/mainlog.txt
 }
 
 xenofarm_build() {
