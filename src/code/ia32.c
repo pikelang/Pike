@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.10 2001/07/24 09:22:13 hubbe Exp $
+ * $Id: ia32.c,v 1.11 2001/07/24 12:35:50 grubba Exp $
  *
  * Machine code generator for IA32.
  *
@@ -175,15 +175,6 @@ void ins_f_byte(unsigned int b)
       update_arg1(2);
       addr=(void *)f_add;
       break;
-
-    case F_AND - F_OFFSET: addr=(void *)o_and; break;
-    case F_OR - F_OFFSET: addr=(void *)o_or; break;
-    case F_XOR - F_OFFSET: addr=(void *)o_xor; break;
-    case F_MULTIPLY - F_OFFSET: addr=(void *)o_multiply; break;
-    case F_DIVIDE - F_OFFSET: addr=(void *)o_divide; break;
-    case F_MOD - F_OFFSET: addr=(void *)o_mod; break;
-    case F_COMPL - F_OFFSET: addr=(void *)o_compl; break;
-    case F_SSCANF - F_OFFSET: addr=(void *)o_sscanf; break;
   }
 #endif
   CALL_RELATIVE(addr);

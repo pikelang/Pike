@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.c,v 1.8 2001/07/24 12:23:14 grubba Exp $
+ * $Id: sparc.c,v 1.9 2001/07/24 12:34:23 grubba Exp $
  *
  * Machine code generator for sparc.
  *
@@ -70,26 +70,11 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
       addr = (void *)f_Iterator;
     }
     break;
-  case F_COMPL - F_OFFSET: addr=(void *)o_compl; break;
-  case F_LSH - F_OFFSET: addr=(void *)o_lsh; break;
-  case F_RSH - F_OFFSET: addr=(void *)o_rsh; break;
   case F_ADD - F_OFFSET:
     SET_REG(SPARC_REG_O0, 2);
     delay_ok = 1;
     addr = (void *)f_add;
     break;
-  case F_SUBTRACT - F_OFFSET: addr = (void *)o_subtract; break;
-  case F_AND - F_OFFSET: addr=(void *)o_and; break;
-  case F_OR - F_OFFSET: addr=(void *)o_or; break;
-  case F_XOR - F_OFFSET: addr=(void *)o_xor; break;
-  case F_MULTIPLY - F_OFFSET: addr=(void *)o_multiply; break;
-  case F_DIVIDE - F_OFFSET: addr=(void *)o_divide; break;
-  case F_MOD - F_OFFSET: addr=(void *)o_mod; break;
-  case F_CAST - F_OFFSET: addr = (void *)f_cast; break;
-  case F_CAST_TO_INT - F_OFFSET: addr = (void *)o_cast_to_int; break;
-  case F_CAST_TO_STRING - F_OFFSET: addr = (void *)o_cast_to_string; break;
-  case F_RANGE - F_OFFSET: addr = (void *)o_range; break;
-  case F_SSCANF - F_OFFSET: addr=(void *)o_sscanf; break;
   }
 #endif
   
