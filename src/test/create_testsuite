@@ -1104,6 +1104,8 @@ test_eq(file_stat("conftest"),0)
 // - rm
 // - mkdir
 // - get_dir
+test_true(arrayp(get_dir(".")))
+
 // - cd
 // - getcwd
 test_true(stringp(getcwd()))
