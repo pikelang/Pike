@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.283 2003/07/04 19:30:29 grubba Exp $
+|| $Id: file.c,v 1.284 2003/07/05 09:41:31 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.283 2003/07/04 19:30:29 grubba Exp $");
+RCSID("$Id: file.c,v 1.284 2003/07/05 09:41:31 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1497,7 +1497,7 @@ static void file_grantpt( INT32 args )
 #else /* USE_CHGPT */
   /* chgpt on HPUX doesn't like getting any arguments... */
   push_constant_text(USE_CHGPT);
-  f_aggregatew(1);
+  f_aggregate(1);
 
   /* chgpt wants to get the pty on fd 0. */
   push_constant_text("stdin");
