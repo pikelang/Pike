@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.55 2003/11/14 10:26:43 mast Exp $
+|| $Id: module_support.c,v 1.56 2003/12/08 14:11:18 grubba Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.55 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: module_support.c,v 1.56 2003/12/08 14:11:18 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -135,10 +135,11 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
  * usage: get_args(sp-args, args, "%i",&an_int)
  * format specifiers:
  *   %i: INT_TYPE
- *   %I: int of float -> INT_TYPE 
+ *   %I: int or float -> INT_TYPE 
  *   %d: int (the c type "int" which may vary from INT_TYPE)
  *   %D: int of float -> int
  *   %+: positive int -> INT_TYPE
+ *   %l: int or bignum -> LONGEST
  *   %s: char *				Only 8bit strings
  *   %S: struct pike_string *		Only 8bit strings
  *   %W: struct pike_string *		Allow wide strings
@@ -222,6 +223,15 @@ int va_get_args(struct svalue *s,
 	else
 	  Pike_error("Cast to int failed.\n");
         pop_stack();
+      }
+      break;
+    case 'l':
+      if (s->type == T_INT) {
+	*va_arg(ap, LONGEST *)=s->u.integer;
+	break;
+      } else if (!is_bignum_object_in_svalue(s) ||
+		 !int64_from_bignum(*va_arg(ap, LONGEST *), s->u.object)) {
+	return ret;
       }
       break;
     case 's':
@@ -342,7 +352,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
   if((ptrdiff_t)ret*2 != (ptrdiff_t)strlen(format)) {
     char *expected_type;
     switch(format[ret*2+1]) {
-    case 'd': case 'i': expected_type = "int"; break;
+    case 'd': case 'i': case 'l': expected_type = "int"; break;
     case 'D': case 'I': expected_type = "int|float"; break;
     case 's': case 'S': expected_type = "string (8bit)"; break;
     case 'W': expected_type = "string"; break;
