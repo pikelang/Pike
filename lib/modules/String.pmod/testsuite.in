@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.18 2004/05/02 18:22:22 nilsson Exp $
+dnl $Id: testsuite.in,v 1.19 2004/05/02 20:27:46 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -156,8 +156,12 @@ test_any([[
   sizeof("foobar gazonk gurka baz"/" ");
 ]])
 
-dnl MISSING TEST: Replace
-dnl MISSING TEST: SingeReplace
+test_eval_error( String.Replace(({}),({}))("") )
+test_eq( String.Replace("bar"/1,"foo"/1)(""), "" )
+test_eq( String.Replace("bax"/1,"fox"/1)("bar"), "for" )
+
+test_eq( String.SingleReplace("","")(""), "" )
+test_eq( String.SingleReplace("a","b")("bar"), "bbr" )
 
 test_eq(String.int2char(0), "\0")
 test_eq(String.int2char(65), "A")
