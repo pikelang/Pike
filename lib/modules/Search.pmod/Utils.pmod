@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.26 2001/08/16 21:22:32 nilsson Exp $
+// $Id: Utils.pmod,v 1.27 2001/08/19 14:34:52 nilsson Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -39,25 +39,25 @@ class ProfileEntry {
   private int last_stat;
 
   private int database_profile_id;
-  private int search_profile_id;
+  private int query_profile_id;
   private ProfileCache my_cache;
 
   private mapping(string:mixed) database_values;
-  private mapping(string:mixed) search_values;
+  private mapping(string:mixed) query_values;
 
   private Search.Database.MySQL db;
   private Search.RankingProfile ranking;
   private array(string) stop_words;
 
-  //! @decl void create(int database_profile_id, int search_profile_id,@
+  //! @decl void create(int database_profile_id, int query_profile_id,@
   //!                   ProfileCache cache)
   //! @param cache
   //!  The parent cache object.
   void create(int _database_profile_id,
-	      int _search_profile_id,
+	      int _query_profile_id,
 	      ProfileCache _my_cache) {
     database_profile_id = _database_profile_id;
-    search_profile_id = _search_profile_id;
+    query_profile_id = _query_profile_id;
     my_cache = _my_cache;
     int last_stat = time(1);
 
@@ -80,11 +80,11 @@ class ProfileEntry {
     return database_values[index];
   }
 
-  //! Returns the search profile value @[index].
-  mixed get_search_value(string index) {
-    if(!search_values)
-      search_values = my_cache->get_value_mapping(search_profile_id);
-    return search_values[index];
+  //! Returns the query profile value @[index].
+  mixed get_query_value(string index) {
+    if(!query_values)
+      query_values = my_cache->get_value_mapping(query_profile_id);
+    return query_values[index];
   }
 
   //! Returns a cached search database for the current database profile.
@@ -101,13 +101,13 @@ class ProfileEntry {
   }
 
   //! Returns a cached ranking profile for the current database and
-  //! search profile.
+  //! query profile.
   Search.RankingProfile get_ranking() {
     if(!ranking)
-      ranking = Search.RankingProfile(get_search_value("fi_cut"),
-				      get_search_value("px_rank"),
+      ranking = Search.RankingProfile(get_query_value("fi_cut"),
+				      get_query_value("px_rank"),
 				      get_database(),
-				      get_search_value("fi_rank"));
+				      get_query_value("fi_rank"));
     return ranking;
   }
 
@@ -151,11 +151,11 @@ class ProfileEntry {
     }
   }
 
-  //! Returns a cached array of stop words for the current search profile.
+  //! Returns a cached array of stop words for the current query profile.
   array(string) get_stop_words() {
     if(!stop_words) {
       ADTSet words = ADTSet();
-      foreach(get_search_value("sw_lists"), string fn) {
+      foreach(get_query_value("sw_lists"), string fn) {
 	string file = Stdio.read_file(fn);
 	if(!fn)
 	  report_error("Could not load %O.\n", fn);
@@ -165,7 +165,7 @@ class ProfileEntry {
 				       return in/" ";
 				     }))-({""}));
       }
-      words + (Array.flatten(map(get_search_value("sw_words")/"\n",
+      words + (Array.flatten(map(get_query_value("sw_words")/"\n",
 				 lambda(string in) {
 				   return in/" ";
 				 }))-({""}));
@@ -181,7 +181,7 @@ class ProfileCache (string db_name) {
   private mapping(string:ProfileEntry) entry_cache = ([]);
   private mapping(int:mapping(string:mixed)) value_cache = ([]);
   private mapping(string:int) db_profile_names = ([]);
-  private mapping(string:int) srh_profile_names = ([]);
+  private mapping(string:int) query_profile_names = ([]);
   private mapping(int:int) profile_stat = ([]);
 
   private Sql.Sql get_db() {
@@ -219,11 +219,11 @@ class ProfileCache (string db_name) {
 	  m_delete(value_cache, id);
 
       foreach(indices(entry_cache), string id) {
-	int dbp, srhp;
-	sscanf(id, "%d:%d", dbp, srhp);
+	int dbp, qp;
+	sscanf(id, "%d:%d", dbp, qp);
 	if(!has_value(existing, dbp))
 	  m_delete(entry_cache, id);
-	if(!has_value(existing, srhp))
+	if(!has_value(existing, qp))
 	  m_delete(entry_cache, id);
       }
 
@@ -231,9 +231,9 @@ class ProfileCache (string db_name) {
 	if(!has_value(existing, db_profile_names[name]))
 	  m_delete(db_profile_names, name);
 
-      foreach(indices(srh_profile_names), string name)
-	if(!has_value(existing, srh_profile_names[name]))
-	  m_delete(srh_profile_names, name);
+      foreach(indices(query_profile_names), string name)
+	if(!has_value(existing, query_profile_names[name]))
+	  m_delete(query_profile_names, name);
 
       return -1;
     }
@@ -242,7 +242,7 @@ class ProfileCache (string db_name) {
     if((int)res[0]->altered == profile_stat[profile_id]) return 1;
     profile_stat[profile_id] = (int)res[0]->altered;
 
-    // Search profile
+    // Query profile
     if((int)res[0]->type == 2) 
     {
       m_delete(value_cache, profile_id);
@@ -273,19 +273,19 @@ class ProfileCache (string db_name) {
     return db_profile_names[name] = (int)res[0]->id;
   }
 
-  //! Returns the profile number for the given search profile.
-  int get_srh_profile_number(string name)
+  //! Returns the profile number for the given query profile.
+  int get_query_profile_number(string name)
   {
-    int srh_profile;
-    if( srh_profile=srh_profile_names[name] )
-      return srh_profile;
+    int query_profile;
+    if( query_profile=query_profile_names[name] )
+      return query_profile;
 
     array res = get_db()->
       query("SELECT id FROM wf_profile WHERE name=%s AND type=1", name);
     if(!sizeof(res))
-      THROW("No search profile " + name + " found.\n");
+      THROW("No query profile " + name + " found.\n");
 
-    return srh_profile_names[name] = (int)res[0]->id;
+    return query_profile_names[name] = (int)res[0]->id;
   }
 
   private int last_db_prof_stat = 0;  // 1970
@@ -303,18 +303,18 @@ class ProfileCache (string db_name) {
     return res->name;
   }
 
-  private int last_srh_prof_stat = 0;  // 1970
+  private int last_query_prof_stat = 0;  // 1970
 
-  //! Returns a list of available search profiles.
-  array(string) list_srh_profiles()
+  //! Returns a list of available query profiles.
+  array(string) list_query_profiles()
   {
-    if (time(1) - last_srh_prof_stat >= 5*60) {
+    if (time(1) - last_query_prof_stat >= 5*60) {
       array res = get_db()->query("SELECT name, id FROM wf_profile WHERE type=1");
-      srh_profile_names = mkmapping( res->name, (array(int)) res->id );
-      if(sizeof(srh_profile_names))
-	last_srh_prof_stat = time(1);
+      query_profile_names = mkmapping( res->name, (array(int)) res->id );
+      if(sizeof(query_profile_names))
+	last_query_prof_stat = time(1);
     }
-    return indices(srh_profile_names);
+    return indices(query_profile_names);
   }
 
   // Used when decoding text encoded pike data types.
@@ -356,24 +356,24 @@ class ProfileCache (string db_name) {
 
   //! Returns a @[ProfileEntry] object with the states needed for
   //! commiting searches in the database profile @[db_name] with
-  //! the rules from search profile @[srh_name].
-  ProfileEntry get_profile_entry(string db_name, void|string srh_name) {
+  //! the rules from query profile @[query_name].
+  ProfileEntry get_profile_entry(string db_name, void|string query_name) {
     //    werror("Entry: %O\n", indices(entry_cache));
     //    werror("Value: %O\n", indices(value_cache));
     //    werror("Stat : %O\n", profile_stat);
 
     int db = get_db_profile_number(db_name);
-    int srh = get_srh_profile_number(srh_name);
+    int query = get_query_profile_number(query_name);
 
     ProfileEntry entry;
-    if(entry=entry_cache[srh +":"+ db]) {
+    if(entry=entry_cache[query +":"+ db]) {
       if(!entry->check_timeout()) return entry;
       if(up_to_datep(db) &&
-	 up_to_datep(srh)) return entry;
+	 up_to_datep(query)) return entry;
     }
 
-    entry = ProfileEntry( db, srh, this_object() );
-    return entry_cache[srh +":"+ db] = entry;
+    entry = ProfileEntry( db, query, this_object() );
+    return entry_cache[query +":"+ db] = entry;
   }
 
   //! Flushes profile entry @[p] from the profile cache.
@@ -382,7 +382,7 @@ class ProfileCache (string db_name) {
     foreach(indices(db_profile_names), string name)
       if(db_profile_names[name]==p)
 	m_delete(db_profile_names, name);
-    m_delete(srh_profile_names, p);
+    m_delete(query_profile_names, p);
     foreach(indices(entry_cache), string id) {
       array ids = array_sscanf(id, "%d:%d");
       if(ids[0]==p || ids[1]==p)
@@ -394,7 +394,7 @@ class ProfileCache (string db_name) {
   void flush_cache() {
     value_cache = ([]);
     db_profile_names = ([]);
-    srh_profile_names = ([]);
+    query_profile_names = ([]);
   }
 }
 
