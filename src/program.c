@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.501 2003/04/27 23:06:15 mast Exp $
+|| $Id: program.c,v 1.502 2003/05/16 14:08:38 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.501 2003/04/27 23:06:15 mast Exp $");
+RCSID("$Id: program.c,v 1.502 2003/05/16 14:08:38 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1098,6 +1098,8 @@ static struct node_s *index_modules(struct pike_string *ident,
       struct svalue thrown = throw_value;
       throw_value.type = T_INT;
 
+      dmalloc_touch_svalue(&thrown);
+
       if (!ident->size_shift) {
 	my_yyerror("Couldn't index a module with '%s'.", ident->str);
       } else {
@@ -1285,6 +1287,8 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	  else {
 	    struct svalue thrown = throw_value;
 	    throw_value.type = T_INT;
+
+	    dmalloc_touch_svalue(&thrown);
 
 	    if (!ident->size_shift)
 	      my_yyerror("Error resolving '%s'.", ident->str);
@@ -3592,6 +3596,8 @@ int call_handle_inherit(struct pike_string *s)
   else {
     struct svalue thrown = throw_value;
     throw_value.type = T_INT;
+    dmalloc_touch_svalue(&thrown);
+
     my_yyerror("Error finding program");
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
@@ -4247,6 +4253,9 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
 
   id=make_shared_binary_string(name,namelen);
   ret=add_constant(id, &tmp, flags);
+  /* The following is not really true, but it helps encode_value()... */
+  Pike_compiler->new_program->flags |=
+    tmp.u.program->flags & PROGRAM_HAS_C_METHODS;
   free_string(id);
   free_svalue(&tmp);
   return ret;
@@ -4757,6 +4766,8 @@ int store_constant(struct svalue *foo,
   {
     struct svalue zero, thrown = throw_value;
     throw_value.type = T_INT;
+
+    dmalloc_touch_svalue(&thrown);
 
     yyerror("Couldn't store constant.");
 
@@ -6074,6 +6085,8 @@ static void run_cleanup(struct compilation *c, int delayed)
 	  struct svalue thrown = throw_value;
 	  debug_malloc_touch(c->placeholder);
 	  throw_value.type = T_INT;
+	  dmalloc_touch_svalue(&thrown);
+
 	  push_svalue(&thrown);
 	  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
 	  if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
