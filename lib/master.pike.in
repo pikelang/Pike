@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.246 2003/05/15 13:55:14 grubba Exp $
+// $Id: master.pike.in,v 1.247 2003/05/17 10:52:47 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1638,13 +1638,13 @@ void _main(array(string) orig_argv, array(string) env)
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
     tmp = main_resolv("Getopt");
-    int NO_ARG = tmp->NO_ARG;
-    int MAY_HAVE_ARG = tmp->MAY_HAVE_ARG;
-    int HAS_ARG = tmp->HAS_ARG;
-
     if (!tmp)
       _error("master.pike: Couldn't resolv Getopt module.\n"
 	     "Is your PIKE_MODULE_PATH environment variable set correctly?\n");
+
+    int NO_ARG = tmp->NO_ARG;
+    int MAY_HAVE_ARG = tmp->MAY_HAVE_ARG;
+    int HAS_ARG = tmp->HAS_ARG;
 
     q=tmp->find_all_options(argv,({
       ({"compat_version", HAS_ARG, ({"-V", "--compat"}), 0, 0}),
