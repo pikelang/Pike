@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.52 2002/11/23 17:03:00 mast Exp $
+|| $Id: block_alloc.h,v 1.53 2002/11/24 20:31:23 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -37,6 +37,11 @@
 #define BA_STATIC
 #define BA_INLINE
 #endif
+
+/* Size of the members in the block struct below that doesn't contain
+ * the payload data (i.e. that aren't x). This can be used in
+ * BSIZE to make the block fit within a page. */
+#define BLOCK_HEADER_SIZE (3 * sizeof (void *) + sizeof (INT32))
 
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 									\
@@ -251,7 +256,7 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
   DO_IF_DMALLOC(                                                        \
    for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                 \
    {                                                                    \
-     int tmp2;                                                          \
+     size_t tmp2;							\
      extern void dmalloc_check_block_free(void *p, char *loc);          \
      for(tmp2=0;tmp2<(BSIZE);tmp2++)					\
      {                                                                  \
