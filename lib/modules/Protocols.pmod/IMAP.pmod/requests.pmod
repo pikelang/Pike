@@ -403,13 +403,13 @@ class search
       string charset = "us-ascii";
 	
       if (!sizeof(args))
-	return ([ "action"  : "bad", "msg", "No arguments to SEARCH" ]);
+	return ([ "action"  : "bad", "msg" : "No arguments to SEARCH" ]);
 
       if (lower(args[0]->atom) == "charset")
       {
 	if ( (sizeof(args) < 2)
 	     || !(charset = astring(args[1])) )
-	  return ([ "action"  : "bad", "msg", "Bad charset to SEARCH" ]);
+	  return ([ "action"  : "bad", "msg" : "Bad charset to SEARCH" ]);
 
 	args = args[2..];
       }
@@ -417,9 +417,9 @@ class search
       mapping criteria = parse_criteria(args)->parse_toplevel();
       
       if (!criteria)
-	return ([ "action" : "bad", "Invalid search criteria" ]);
+	return ([ "action" : "bad", "msg" : "Invalid search criteria" ]);
       
-      array matches = server->search(session, charset, make_intersection(criteria));
+      array matches = server->search(session, charset, criteria);
       
       if (matches)
       {
@@ -440,10 +440,10 @@ class search
 
   string astring(mapping m)
     {
-      m->atom || m->["string"];
+      return m->atom || m["string"];
     }
 
-/* Parse the arguments to search */
+  /* Parse the arguments to search */
   class parse_criteria
   {
     array input;
@@ -463,7 +463,7 @@ class search
 	switch(sizeof(criteria))
 	{
 	case 0:
-	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() ]) );
+	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() }) );
 	case 1:
 	  return criteria[0];
 	default:
@@ -481,7 +481,7 @@ class search
 	switch(sizeof(criteria))
 	{
 	case 0:
-	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() ]) );
+	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() }) );
 	case 1:
 	  return criteria[0];
 	default:
@@ -495,7 +495,7 @@ class search
 	if (!criteria)
 	  return 0;
       
-	return ([ "type" : "not" , "not" : c ]);
+	return ([ "type" : "not" , "not" : criteria ]);
       }
       
     mapping get_token()
@@ -526,7 +526,7 @@ class search
 	if (i == sizeof(input))
 	  return 0;
 	i++;
-	return input[i]->atom ? string_to_number(input[i]->atom);
+	return input[i]->atom ? string_to_number(input[i]->atom) : -1;
       }
 
     int get_set()
@@ -626,18 +626,18 @@ class search
 	    return (i >= 0) && ([ "type" : key, key : value ]);
 	  }
 	  case "not": 
-	    return c && make_complement(parse_one(););
-
+	    return make_complement(parse_one());
+	    
 	  case "or": {
 	    mapping c1, c2;
-
+	    
 	    return (c1 = parse_one())
 	      && (c2 = parse_one())
-	      && make_union( ({ c1, c2 }) })
-	  
-		       default: {
+	      && make_union( ({ c1, c2 }) );
+	  }
+	  default: {
 	    object set = imap_set()->init(key);
-
+	    
 	    return set && ([ "type" : "set", "set" : set ]);
 	  }
 	  }
