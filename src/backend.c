@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.35 1998/07/19 07:00:08 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.36 1998/07/19 14:13:06 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -701,6 +701,11 @@ void backend(void)
 	if((active_poll_fds[i].revents & POLLHUP) ||
 	   (active_poll_fds[i].revents & POLLERR)) {
 	  /* Closed or error */
+#ifdef DEBUG
+	  if (active_poll_fds[i].revents & POLLERR) {
+	    fprintf(stderr, "Got POLLERR on fd %d\n", i);
+	  }
+#endif /* DEBUG */
 	  if (fds[fd].read.callback) {
 	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
 	  }
