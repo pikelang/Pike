@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.151 2000/05/03 09:03:16 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.152 2000/05/09 01:17:59 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1055,7 +1055,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	num_locals=EXTRACT_UCHAR(pc++);
 	num_args=EXTRACT_UCHAR(pc++);
 
-	if(function->identifier_flags & IDENTIFIER_SCOPED)
+	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
 	  new_frame->expendible+=num_locals;
 	
 	/* adjust arguments on stack */

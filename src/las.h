@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.36 2000/05/01 02:11:25 hubbe Exp $
+ * $Id: las.h,v 1.37 2000/05/09 01:17:59 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -90,6 +90,10 @@ extern struct node_hash_table node_hash;
 
 #define OPT_DEFROSTED	    0x4000 /* Node may be a duplicate */
 #define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
+
+#define SCOPE_LOCAL 1
+#define SCOPE_SCOPED 2
+#define SCOPE_SCOPE_USED 4
 
 /* Prototypes begin here */
 int car_is_node(node *n);

@@ -195,7 +195,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.183 2000/05/01 03:33:46 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.184 2000/05/09 01:17:59 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -658,7 +658,7 @@ close_bracket_or_missing: ']'
 
 push_compiler_frame0: /* empty */
   {
-    push_compiler_frame(0);
+    push_compiler_frame(SCOPE_LOCAL);
 
     if(!compiler_frame->previous ||
        !compiler_frame->previous->current_type)
@@ -1540,7 +1540,7 @@ continue: F_CONTINUE { $$=mknode(F_CONTINUE,0,0); } ;
 
 push_compiler_frame1: /* empty */
   {
-    push_compiler_frame(1);
+    push_compiler_frame(SCOPE_LOCAL);
   }
   ;
 
@@ -1601,7 +1601,7 @@ lambda: F_LAMBDA push_compiler_frame1
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
-    if(compiler_frame->lexical_scope == 2) {
+    if(compiler_frame->lexical_scope & SCOPE_SCOPED) {
       $$ = mktrampolinenode(f);
     } else {
       $$ = mkidentifiernode(f);
@@ -2896,13 +2896,17 @@ static node *lexical_islocal(struct pike_string *str)
 	  return copy_node(f->variable[e].def);
 	while(q!=f) 
 	{
-	  q->lexical_scope=2;
+	  q->lexical_scope|=SCOPE_SCOPED;
 	  q=q->previous;
 	}
+
+	if(depth)
+	  q->lexical_scope|=SCOPE_SCOPE_USED;
+
 	return mklocalnode(e,depth);
       }
     }
-    if(!f->lexical_scope) return 0;
+    if(!(f->lexical_scope & SCOPE_LOCAL)) return 0;
     depth++;
     f=f->previous;
   }

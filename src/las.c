@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.177 2000/05/07 00:39:17 hubbe Exp $");
+RCSID("$Id: las.c,v 1.178 2000/05/09 01:17:59 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3881,8 +3881,12 @@ int dooptcode(struct pike_string *name,
   }else{
     vargs=0;
   }
-  if(compiler_frame->lexical_scope>1)
+
+  if(compiler_frame->lexical_scope & SCOPE_SCOPED)
     vargs|=IDENTIFIER_SCOPED;
+
+  if(compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+    vargs|=IDENTIFIER_SCOPE_USED;
 
   if(compiler_pass==1)
   {
