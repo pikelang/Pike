@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.174 1999/11/18 04:14:50 hubbe Exp $");
+RCSID("$Id: program.c,v 1.175 1999/11/22 19:06:21 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3318,7 +3318,19 @@ struct program *program_from_svalue(struct svalue *s)
   {
     case T_OBJECT:
     {
-      struct program *p;
+      struct program *p = s->u.object->prog;
+      int call_fun;
+
+      if (!p) return 0;
+
+      if (!s->subtype) {
+	if ((call_fun = FIND_LFUN(p, LFUN_CALL)) >= 0) {
+	  /* Get the program from the return type. */
+	  struct identifier *id = ID_FROM_INT(p, call_fun);
+	  /* FIXME: do it. */
+	  return 0;
+	}
+      }
       push_svalue(s);
       f_object_program(1);
       p=program_from_svalue(sp-1);
