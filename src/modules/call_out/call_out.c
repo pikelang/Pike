@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.31 1999/11/25 01:25:29 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.32 2000/04/08 19:58:17 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -719,17 +719,20 @@ void pike_module_init(void)
 	   OPT_SIDE_EFFECT);
   
 /* function(:array*) */
-  ADD_EFUN("call_out_info",f_call_out_info,tFunc(tNone,tArr(tArray)),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("call_out_info",f_call_out_info,tFunc(tNone,tArr(tArray)),
+	   OPT_EXTERNAL_DEPEND);
   
 /* function(void:void) */
   ADD_EFUN("_do_call_outs",f_do_call_outs,tFunc(tVoid,tVoid),
+	   OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  
+/* function(mixed:int) */
+  ADD_EFUN("find_call_out",f_find_call_out,tFunc(tMix,tInt),
 	   OPT_EXTERNAL_DEPEND);
   
 /* function(mixed:int) */
-  ADD_EFUN("find_call_out",f_find_call_out,tFunc(tMix,tInt),OPT_EXTERNAL_DEPEND);
-  
-/* function(mixed:int) */
-  ADD_EFUN("remove_call_out",f_remove_call_out,tFunc(tMix,tInt),OPT_SIDE_EFFECT);
+  ADD_EFUN("remove_call_out",f_remove_call_out,tFunc(tMix,tInt),
+	   OPT_SIDE_EFFECT);
 }
 
 void pike_module_exit(void)
