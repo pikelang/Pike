@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.114 2004/04/25 15:16:19 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.115 2004/04/25 15:26:24 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -137,6 +137,12 @@ private class CommandSet {
     }
   }
 
+  private array my_indices(string|mapping|multiset|object|program in) {
+    if(objectp(in) || programp(in))
+      return sort(indices(in));
+    return indices(in);
+  }
+
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) {
 
@@ -174,6 +180,7 @@ private class CommandSet {
 	  e->variables[name] = vals[name];
 	  e->types[name] = type;
 	}
+      e->functions->indices = my_indices;
       return;
     }
 
@@ -1757,9 +1764,6 @@ class Evaluator {
 	p++;
 	continue;
       }
-
-      // FIXME: Handle variable declarations in sscanf.
-
     }
 
     return p;
