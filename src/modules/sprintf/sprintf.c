@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.13 1997/07/20 23:56:32 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.14 1997/09/11 21:01:32 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -113,7 +113,7 @@ RCSID("$Id: sprintf.c,v 1.13 1997/07/20 23:56:32 hubbe Exp $");
 
 struct format_info
 {
-  char *free_string;
+  char *fi_free_string;
   char *b;
   int len;
   int width;
@@ -256,9 +256,9 @@ static void free_sprintf_strings(void)
   temp_svalue.type=T_INT;
   for(;fsp>=format_info_stack;fsp--)
   {
-    if(fsp->free_string)
-      free(fsp->free_string);
-    fsp->free_string=0;
+    if(fsp->fi_free_string)
+      free(fsp->fi_free_string);
+    fsp->fi_free_string=0;
   }
 }
 
@@ -459,7 +459,7 @@ INLINE static int do_one(struct format_info *f)
      } \
      fsp->b=_b.str; \
      fsp->len=_b.len; \
-     fsp->free_string=fsp->b; \
+     fsp->fi_free_string=fsp->b; \
      fsp->pad_string=" "; \
      fsp->pad_length=1; \
      fsp->column_width=0; \
@@ -498,7 +498,7 @@ static string low_pike_sprintf(char *format,
       sprintf_error("Sprintf stack overflow.\n");
     fsp->pad_string=" ";
     fsp->pad_length=1;
-    fsp->free_string=NULL;
+    fsp->fi_free_string=NULL;
     fsp->column_width=0;
     fsp->pos_pad=fsp->flags=fsp->width=fsp->precision=0;
 
@@ -652,7 +652,7 @@ static string low_pike_sprintf(char *format,
 	  }
 	  fsp->b=b.str;
 	  fsp->len=b.len;
-	  fsp->free_string=fsp->b;
+	  fsp->fi_free_string=fsp->b;
 	}
 	a+=e;
 	break;
@@ -723,7 +723,7 @@ static string low_pike_sprintf(char *format,
 		fsp->width?fsp->width:8,
 		fsp->precision?fsp->precision:3,tf);
 	fsp->len=strlen(fsp->b);
-	fsp->free_string=fsp->b;
+	fsp->fi_free_string=fsp->b;
 	break;
 
       case 'O':
@@ -739,7 +739,7 @@ static string low_pike_sprintf(char *format,
 	  s=complex_free_buf();
 	  fsp->b=s.str;
 	  fsp->len=s.len;
-	  fsp->free_string=fsp->b;
+	  fsp->fi_free_string=fsp->b;
 	  break;
 	}else{
 	  arg=t;
@@ -814,8 +814,8 @@ static string low_pike_sprintf(char *format,
 
   while(fsp>start)
   {
-    if(fsp->free_string) free(fsp->free_string);
-    fsp->free_string=0;
+    if(fsp->fi_free_string) free(fsp->fi_free_string);
+    fsp->fi_free_string=0;
     fsp--;
   }
   return complex_free_buf();
