@@ -12,7 +12,7 @@
 #include "peep.h"
 #include "dmalloc.h"
 
-RCSID("$Id: peep.c,v 1.21 1998/04/01 00:47:48 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.22 1998/04/27 09:54:16 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -373,7 +373,6 @@ int insopt2(int f, int cl, struct pike_string *cf)
   return insopt(f,0,cl, cf);
 }
 
-
 static void debug(void)
 {
   if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr))
@@ -393,7 +392,7 @@ static void debug(void)
 }
 
 
-static p_instr *instr(int offset)
+static INLINE p_instr *instr(int offset)
 {
   p_instr *p;
 
@@ -414,7 +413,7 @@ static p_instr *instr(int offset)
   }
 }
 
-static int opcode(int offset)
+static INLINE int opcode(int offset)
 {
   p_instr *a;
   a=instr(offset);
@@ -422,7 +421,7 @@ static int opcode(int offset)
   return -1;
 }
 
-static int argument(int offset)
+static INLINE int argument(int offset)
 {
   p_instr *a;
   a=instr(offset);
@@ -467,6 +466,47 @@ static void pop_n_opcodes(int n)
     low_make_buf_space(-((INT32)sizeof(p_instr))*d, &instrbuf);
   }
   eye+=n;
+}
+
+static void do_optimization(int topop, ...)
+{
+  va_list arglist;
+  struct pike_string *cf;
+  int q=-1;
+  INT32 cl=instr(0)->line;
+  copy_shared_string(cf,instr(0)->file);
+  pop_n_opcodes(topop);
+  va_start(arglist, topop);
+  
+  while(1)
+  {
+    q++;
+    switch(va_arg(arglist, int))
+    {
+      case 0:
+	break;
+      case 1:
+      {
+	int i=va_arg(arglist, int);
+	insopt2(i,cl,cf);
+	continue;
+      }
+      case 2:
+      {
+	int i=va_arg(arglist, int);
+	int j=va_arg(arglist, int);
+	insopt(i,j,cl,cf);
+	continue;
+      }
+    }
+    break;
+  }
+
+  va_end(arglist);
+  fifo_len+=q;
+  free_string(cf);
+  debug();
+  fifo_len+=q + 3;
 }
 
 
