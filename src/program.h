@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.182 2004/10/11 16:41:49 mast Exp $
+|| $Id: program.h,v 1.183 2005/03/22 11:47:29 jonasw Exp $
 */
 
 #ifndef PROGRAM_H
@@ -601,7 +601,7 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
 		      unsigned INT16 flags,
-		      unsigned INT8 function_flags,
+		      unsigned INT16 function_flags,
 		      union idptr *func,
 		      unsigned INT16 opt_flags);
 int really_low_find_shared_string_identifier(struct pike_string *name,
@@ -655,14 +655,14 @@ struct program *compile(struct pike_string *aprog,
 			struct program *atarget,
 			struct object *aplaceholder);
 PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
-				   const char *type, unsigned INT8 flags,
+				   const char *type, unsigned INT16 flags,
 				   unsigned INT16 opt_flags);
 PMOD_EXPORT int quick_add_function(const char *name,
 				   int name_length,
 				   void (*cfun)(INT32),
 				   const char *type,
 				   int type_length,
-				   unsigned INT8 flags,
+				   unsigned INT16 flags,
 				   unsigned INT16 opt_flags);
 void check_all_programs(void);
 void placeholder_index(INT32 args);

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.493 2004/10/11 16:41:48 mast Exp $
+|| $Id: program.c,v 1.494 2005/03/22 11:47:29 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.493 2004/10/11 16:41:48 mast Exp $");
+RCSID("$Id: program.c,v 1.494 2005/03/22 11:47:29 jonasw Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4073,7 +4073,7 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
 		      unsigned INT16 flags,
-		      unsigned INT8 function_flags,
+		      unsigned INT16 function_flags,
 		      union idptr *func,
 		      unsigned INT16 opt_flags)
 {
@@ -6022,7 +6022,7 @@ struct program *compile(struct pike_string *aprog,
 }
 
 PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
-				   const char *type, unsigned INT8 flags,
+				   const char *type, unsigned INT16 flags,
 				   unsigned INT16 opt_flags)
 {
   int ret;
@@ -6060,7 +6060,7 @@ PMOD_EXPORT int quick_add_function(const char *name,
 				   void (*cfun)(INT32),
 				   const char *type,
 				   int type_length,
-				   unsigned INT8 flags,
+				   unsigned INT16 flags,
 				   unsigned INT16 opt_flags)
 {
   int ret;
