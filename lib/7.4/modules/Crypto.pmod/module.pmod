@@ -9,11 +9,10 @@
 //! salt from the hash and compared with the hash.
 string crypt_md5(string pw, void|string salt) {
   sscanf(pw, "%s\0", pw);
-  sscanf(salt, "%s\0", salt);
-  string|int res = Crypto.crypt_md5(pw,salt);
-  if(res==1) return salt;
-  if(stringp(res)) return res;
-  sscanf(salt, "$1$%s$", salt);
+  if(salt) {
+    sscanf(salt, "%s\0", salt);
+    sscanf(salt, "$1$%s", salt);
+  }
   return Crypto.crypt_md5(pw,salt);
 }
 #endif

@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.35 2004/03/06 01:07:00 nilsson Exp $
+// $Id: testsuite.in,v 1.36 2004/03/08 16:35:27 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -557,20 +557,18 @@ S(Crypto.HMAC(Crypto.SHA1)("\252" * 16)("\335" * 50))]],
 ]])
 
 // CRYPT_MD5
-cond_resolv(Crypto.crypt_md5, [[
-test_true([[stringp(Crypto.crypt_md5(""))]])
-test_eq([[Crypto.crypt_md5("","")]],
+cond_resolv(Nettle.crypt_md5, [[
+test_true([[stringp(Crypto.make_crypt_md5(""))]])
+test_eq([[Crypto.make_crypt_md5("","")]],
         [["$1$$qRPK7m23GJusamGpoGLby/"]])
-test_eq([[Crypto.crypt_md5("","$xyz")]],
+test_eq([[Crypto.make_crypt_md5("","$xyz")]],
         [["$1$$qRPK7m23GJusamGpoGLby/"]])
-test_eq([[Crypto.crypt_md5("Hello","sl5hO7j4")]],
+test_eq([[Crypto.make_crypt_md5("Hello","sl5hO7j4")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
-cond([[ Nettle["crypt_md5"] ]],[[
-  test_eq([[Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
-	  [[1]])
-  test_eq([[Crypto.crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
-	  [[0]])
-]])
+test_eq([[Crypto.verify_crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
+	[[1]])
+test_eq([[Crypto.verify_crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
+	[[0]])
 ]])
 
 // pipe

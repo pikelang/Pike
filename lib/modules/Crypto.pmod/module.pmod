@@ -29,29 +29,30 @@ class Hash
   }
 }
 
-//! @decl string crypt_md5(string password, void|int salt)
-//! @decl int(0..1) crypt_md5(string password, string hash)
 //! Hashes a @[password] together with a @[salt] with the
-//! crypt_md5 algorithm and returns the result. If such an
-//! result is provided as @[hash], the password will instead
-//! be hashed and compared with the @[hash], returning either
-//! @expr{1@} or @expr{0@}.
-string|int(0..1) crypt_md5(string password, void|string salt) {
-  if(salt) {
-    if(has_prefix(salt, "$1$")) {
-      // Verify:
-      string hash, full=salt;
-      if( sscanf(full, "$1$%s$%s", salt, hash)!=2 )
-	error("Error in hash.\n");
-      return Nettle.crypt_md5(password, salt)==hash;
-    }
+//! crypt_md5 algorithm and returns the result.
+//! @seealso
+//!   @[verify_crypt_md5]
+string make_crypt_md5(string password, void|string salt) {
+  if(salt)
     sscanf(salt, "%s$", salt);
-  }
   else
     salt = ([function(string:string)]MIME["encode_base64"])
       (.Random.random_string(8));
 
   return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
+}
+
+//! Verifies the @[password] against the crypt_md5 hash.
+//! @throws
+//!   May throw an exception if the hash value is bad.
+//! @seealso
+//!   @[make_crypt_md5]
+int(0..1) verify_crypt_md5(string password, string hash) {
+  string salt;
+  if( sscanf(hash, "$1$%s$%s", salt, hash)!=2 )
+    error("Error in hash.\n");
+  return Nettle.crypt_md5(password, salt)==hash;
 }
 
 class CipherState {
