@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.31 1998/11/23 00:50:29 marcus Exp $
+ * $Id: cpp.c,v 1.32 1999/02/01 02:55:29 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -2118,7 +2118,7 @@ void f_cpp(INT32 args)
   }
 
   simple_add_define(&this,"__PIKE__"," 1 ");
-  simple_add_define(&this,"__VERSION__"," 0.6 ");
+  simple_add_define(&this,"__VERSION__"," 0.7 ");
 #ifdef __NT__
   simple_add_define(&this,"__NT__"," 1 ");
 #endif
