@@ -7,7 +7,7 @@
 # configure.in for Pike environment
 #
 
-# $Id: configure.in,v 1.3 2001/03/26 13:26:57 mirar Exp $
+# $Id: configure.in,v 1.4 2001/03/26 13:27:45 mirar Exp $
 AC_INIT(internal.h)
 AC_CONFIG_HEADER(config.h)
 
@@ -128,7 +128,7 @@ fi
 
 AC_MSG_CHECKING(MODULE_LDFLAGS for large file support)
 AC_CACHE_VAL(mird_cv_largefile_ldflags,
-  [mird_cv_largefile_ldflags=`getconf LFS_MODULE_LDFLAGS 2>&5`])
+  [mird_cv_largefile_ldflags=`getconf LFS_LDFLAGS 2>&5`])
 if test "x$mird_cv_largefile_ldflags" != "x"; then
    AC_MSG_RESULT($mird_cv_largefile_ldflags)
    MODULE_LDFLAGS="${MODULE_LDFLAGS} $mird_cv_largefile_ldflags"
