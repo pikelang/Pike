@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.3 2002/11/29 19:49:40 nilsson Exp $
+dnl $Id: testsuite.in,v 1.4 2002/12/29 22:31:21 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -253,12 +253,12 @@ test_do([[
 ]])
 test_do([[
   #pike 7.2
-  _TEST()->Flurp=String.String_buffer()
+  add_constant("Flurp", String.String_buffer());
 ]])
-test_do(_TEST()->Flurp->append("test"))
-test_do(_TEST()->Flurp->append("test"))
-test_eq((string)_TEST()->Flurp,"testtest")
-test_do( m_delete(_TEST(), "Flurp") )
+test_do(Flurp->append("test"))
+test_do(Flurp->append("test"))
+test_eq((string)Flurp,"testtest")
+test_do( add_constant("Flurp") )
 test_compile_error( String.String_buffer x; )
 
 test_any([[
