@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.4 1996/11/07 20:30:19 grubba Exp $
+ * $Id: crypto.c,v 1.5 1996/11/08 18:32:26 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -89,7 +89,7 @@ static void check_functions(struct object *o, const char **requiered)
   p = o->prog;
 
   while (*requiered) {
-    if (!find_identifier(*requiered, p)) {
+    if (find_identifier(*requiered, p) < 0) {
       error("/precompiled/crypto: Object is missing identifier \"%s\"\n",
 	    *requiered);
     }
@@ -385,6 +385,8 @@ static void f_ecb_encrypt(INT32 args)
     PIKE_CRYPTO->overflow_len = sp[-1].u.string->len - soffset;
   }
 
+  pop_n_elems(args);
+
   push_string(make_shared_binary_string((char *)result, roffset));
   MEMSET(result, 0, roffset);
 }
@@ -462,6 +464,8 @@ static void f_ecb_decrypt(INT32 args)
     PIKE_CRYPTO->overflow_len = sp[-1].u.string->len - soffset;
   }
 
+  pop_n_elems(args);
+
   push_string(make_shared_binary_string((char *)result, roffset));
   MEMSET(result, 0, roffset);
 }
@@ -519,6 +523,8 @@ static void f_cbc_encrypt(INT32 args)
     PIKE_CRYPTO->overflow_len = sp[-1].u.string->len - soffset;
   }
 
+  pop_n_elems(args);
+
   push_string(make_shared_binary_string((char *)result, roffset));
   MEMSET(result, 0, roffset);
 }
@@ -575,6 +581,8 @@ static void f_cbc_decrypt(INT32 args)
 	   sp[-1].u.string->len - soffset);
     PIKE_CRYPTO->overflow_len = sp[-1].u.string->len - soffset;
   }
+
+  pop_n_elems(args);
 
   push_string(make_shared_binary_string((char *)result, roffset));
   MEMSET(result, 0, roffset);
