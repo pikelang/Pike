@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.152 2002/09/14 02:46:27 mast Exp $");
+RCSID("$Id: main.c,v 1.153 2002/09/26 16:15:57 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -35,6 +35,7 @@ RCSID("$Id: main.c,v 1.152 2002/09/14 02:46:27 mast Exp $");
 #include "version.h"
 #include "program.h"
 #include "rusage.h"
+#include "module_support.h"
 
 #ifdef AUTO_BIGNUM
 #include "bignum.h"
