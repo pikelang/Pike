@@ -4,5 +4,6 @@ constant contenttypes = ({ });
 
 string tmp_filename()
 {
+  mkdir("../var/search/");
   return sprintf("../var/search/search.tmp.%s.%d", tmp_unique, tmp_sequence++);
 }
