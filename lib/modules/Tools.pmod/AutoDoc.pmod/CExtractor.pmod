@@ -15,10 +15,9 @@ static inherit .DocParser;
 
 constant EOF = .PikeParser.EOF;
 
-static constant scanString = "%*[ \t]*!%s";
 static string stripDocMarker(string s) {
   string res;
-  if (sscanf(s, scanString, res) == 2)
+  if (sscanf(s, "%*[ \t]*!%s", res) == 2)
     return res;
   return "";
 }
@@ -88,12 +87,12 @@ static private class Extractor {
         if (alreadyChild) {
           c = alreadyChild;
           if (meta->type != c->objtype)
-            extractorErrorAt(token->sourcePos,
+            extractorErrorAt(token->currentPosition,
                              "'%s %s' doesnt match '%s %s'"
                              " in previous declaration",
                              meta->type, meta->name, c->objtype, c->name);
           if (meta->appears || meta->belongs)
-            extractorErrorAt(token->sourcePos,
+            extractorErrorAt(token->currentPosition,
                              "cannot specify @appears or @belongs on"
                              " reentrance into '%s %s'", c->objtype, c->name);
         }
@@ -107,22 +106,22 @@ static private class Extractor {
         .DocParser.Parse p = tokens[0];
         MetaData endmeta = p ? p->metadata() : 0;
         if (!endmeta || endmeta->type != "end" + meta->type)
-          extractorErrorAt(token->sourcePos,
+          extractorErrorAt(token->currentPosition,
                            "'@%s %s' without matching '@end%s'",
                            meta->type, meta->name, meta->type);
         if (endmeta->name && endmeta->name != meta->name)
-          extractorErrorAt(token->sourcePos,
+          extractorErrorAt(token->currentPosition,
                            "'@end%s %s' does not match '@%s %s'",
                            meta->type, endmeta->name, meta->type, meta->name);
         string endXML = p->doc("_general");
         if (endXML && endXML != "")
-          extractorErrorAt(p->sourcePos,
+          extractorErrorAt(p->currentPosition,
                            "doc for @%s not allowed", endmeta->type);
 
         Documentation doc = Documentation();
         doc->xml = token->doc("_" + meta->type);
         if (alreadyChild && doc->xml && doc->xml != "")
-          extractorErrorAt(p->sourcePos,
+          extractorErrorAt(p->currentPosition,
                            "doc not allowed on reentrance into '%s %s'",
                            c->objtype, c->name);
 	if (!alreadyChild)
@@ -139,7 +138,7 @@ static private class Extractor {
         foreach (decls, PikeObject obj)
           contexts[obj->objtype] = 1;
         if (contexts["inherit"] && sizeof(decls) > 1)
-          extractorErrorAt(token->sourcePos,
+          extractorErrorAt(token->currentPosition,
                            "inherit can not be grouped"
                            " with other declarations");
         string context;
@@ -158,7 +157,7 @@ static private class Extractor {
         }
         break;
       case 0:
-        extractorErrorAt(token->sourcePos, "doc comment without destination");
+        extractorErrorAt(token->currentPosition, "doc comment without destination");
       default:
         return 0;
     }
