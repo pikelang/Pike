@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.327 2000/09/09 12:38:14 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.328 2000/09/10 09:17:05 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -183,6 +183,22 @@ test_compile_error([[
  class B { inherit A; string z="z"; constant q="x"+z; }
 ]])
 
+test_compile_any([[
+  class A
+  {
+     object x(int y)
+     {
+        return B(y);
+     }
+  }
+  
+  class B
+  {
+     void create(int y)
+     {
+     }
+  }
+]])
 
 test_do([[
 class Foo
