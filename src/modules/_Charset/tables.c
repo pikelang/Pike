@@ -1,5 +1,7 @@
 #include "iso2022.h"
 
+/* Updates can be found at http://www.itscj.ipsj.or.jp/ISO-IR/ */
+
 extern UNICHAR map_ANSI_X3_110_1983[];
 extern UNICHAR map_T_61_8bit[];
 extern UNICHAR map_T_101_G2[];
@@ -6563,6 +6565,10 @@ const struct charset_def charset_map[] = {
   { "inis-cyrillic", map_INIS_cyrillic, MODE_94 },
   { "irv", map_ISO_646_irv_1983, MODE_94 },
   { "iso-8859-1", map_ISO_8859_1_1998, MODE_96 },
+  { "iso-8859-10", map_ISO_8859_10_1998, MODE_96 },
+  { "iso-8859-13", map_ISO_8859_13_1998, MODE_96 },
+  { "iso-8859-14", map_ISO_8859_14_1998, MODE_96 },
+  { "iso-8859-15", map_ISO_8859_15_1999, MODE_96 },
   { "iso-8859-2", map_ISO_8859_2_1999, MODE_96 },
   { "iso-8859-3", map_ISO_8859_3_1999, MODE_96 },
   { "iso-8859-4", map_ISO_8859_4_1998, MODE_96 },
@@ -6571,10 +6577,6 @@ const struct charset_def charset_map[] = {
   { "iso-8859-7", map_ISO_8859_7_1987, MODE_96 },
   { "iso-8859-8", map_ISO_8859_8_1999, MODE_96 },
   { "iso-8859-9", map_ISO_8859_9_1999, MODE_96 },
-  { "iso-8859-10", map_ISO_8859_10_1998, MODE_96 },
-  { "iso-8859-13", map_ISO_8859_13_1998, MODE_96 },
-  { "iso-8859-14", map_ISO_8859_14_1998, MODE_96 },
-  { "iso-8859-15", map_ISO_8859_15_1999, MODE_96 },
   { "iso-ir-10", map_SEN_850200_B, MODE_94 },
   { "iso-ir-100", map_ISO_8859_1_1998, MODE_96 },
   { "iso-ir-101", map_ISO_8859_2_1999, MODE_96 },
@@ -6683,6 +6685,14 @@ const struct charset_def charset_map[] = {
   { "iso_6937-2-25", map_ISO_6937_2_25, MODE_96 },
   { "iso_6937-2-add", map_ISO_6937_2_add, MODE_96 },
   { "iso_8859-1", map_ISO_8859_1_1998, MODE_96 },
+  { "iso_8859-10", map_ISO_8859_10_1998, MODE_96 },
+  { "iso_8859-10:1998", map_ISO_8859_10_1998, MODE_96 },
+  { "iso_8859-13", map_ISO_8859_13_1998, MODE_96 },
+  { "iso_8859-13:1998", map_ISO_8859_13_1998, MODE_96 },
+  { "iso_8859-14", map_ISO_8859_14_1998, MODE_96 },
+  { "iso_8859-14:1998", map_ISO_8859_14_1998, MODE_96 },
+  { "iso_8859-15", map_ISO_8859_15_1999, MODE_96 },
+  { "iso_8859-15:1999", map_ISO_8859_15_1999, MODE_96 },
   { "iso_8859-1:1987", map_ISO_8859_1_1998, MODE_96 },
   { "iso_8859-1:1998", map_ISO_8859_1_1998, MODE_96 },
   { "iso_8859-2", map_ISO_8859_2_1999, MODE_96 },
@@ -6705,14 +6715,6 @@ const struct charset_def charset_map[] = {
   { "iso_8859-8:1999", map_ISO_8859_8_1999, MODE_96 },
   { "iso_8859-9", map_ISO_8859_9_1999, MODE_96 },
   { "iso_8859-9:1999", map_ISO_8859_9_1999, MODE_96 },
-  { "iso_8859-10", map_ISO_8859_10_1998, MODE_96 },
-  { "iso_8859-10:1998", map_ISO_8859_10_1998, MODE_96 },
-  { "iso_8859-13", map_ISO_8859_13_1998, MODE_96 },
-  { "iso_8859-13:1998", map_ISO_8859_13_1998, MODE_96 },
-  { "iso_8859-14", map_ISO_8859_14_1998, MODE_96 },
-  { "iso_8859-14:1998", map_ISO_8859_14_1998, MODE_96 },
-  { "iso_8859-15", map_ISO_8859_15_1999, MODE_96 },
-  { "iso_8859-15:1999", map_ISO_8859_15_1999, MODE_96 },
   { "iso_8859-supp", map_ISO_8859_supp, MODE_96 },
   { "iso_9036", map_ASMO_449, MODE_94 },
   { "it", map_IT, MODE_94 },
