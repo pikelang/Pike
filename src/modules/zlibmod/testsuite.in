@@ -1,2 +1,5 @@
-test_true(Gz_deflate())
-test_true(Gz_inflate())
+cond([[ master()->programs["/precompiled/gz_inflate"] ]],
+[[
+  test_true(Gz_deflate())
+  test_true(Gz_inflate())
+]])
