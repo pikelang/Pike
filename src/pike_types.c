@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.102 1999/12/17 00:27:33 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.103 1999/12/17 22:45:40 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2146,6 +2146,25 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
     return low_pike_types_le(a, b, array_cnt);
   }
 
+  /* NOTE: void only matches void. */
+  if (EXTRACT_UCHAR(a) == T_VOID) {
+    /* void <= any_type */
+    if (array_cnt >= 0) {
+      /* !array(void) */
+      if (!array_cnt && (EXTRACT_UCHAR(b) == T_VOID)) {
+	return 1;
+      }
+      return 0;
+    }
+  }
+
+  if (EXTRACT_UCHAR(b) == T_VOID) {
+    if (array_cnt <= 0) {
+      /* !array(void) */
+      return 0;
+    }
+  }
+
   if (EXTRACT_UCHAR(b) == T_MIXED) {
     /* any_type <= 'mixed' */
     if (array_cnt <= 0) {
@@ -2157,21 +2176,6 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
   if (EXTRACT_UCHAR(a) == T_MIXED) {
     if (array_cnt >= 0) {
       /* !array(mixed) */
-      return 0;
-    }
-  }
-
-  if (EXTRACT_UCHAR(a) == T_VOID) {
-    /* void <= any_type */
-    if (array_cnt >= 0) {
-      /* !array(void) */
-      return 1;
-    }
-  }
-
-  if (EXTRACT_UCHAR(b) == T_VOID) {
-    if (array_cnt <= 0) {
-      /* !array(void) */
       return 0;
     }
   }
@@ -2246,6 +2250,8 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
      * function(:int) <= function(:void)
      * function(string:int) != function(int:int)
      * function(int:int) != function(:int)
+     *
+     * FIXME: Enforcing of all required arguments?
      */
     a++;
     b++;
@@ -2269,11 +2275,6 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
       }
 
       if (EXTRACT_UCHAR(a_tmp) != T_VOID) {
-	if ((EXTRACT_UCHAR(b_tmp) == T_VOID) &&
-	    (a_tmp != a+1)) {
-	  /* a is not a many arg */
-	  return 0;
-	}
 	if (!low_pike_types_le(b_tmp, a_tmp, 0)) return 0;
       }
     }
