@@ -1,0 +1,1040 @@
+<chapter title="Data types">
+
+<p>In this chapter we will discuss all the different ways to store data
+in Pike in detail. We have seen examples of many of these, but we haven't
+really gone into how they work. In this chapter we will also see which
+operators and functions work with the different types.
+There are two categories of data types in Pike: <b>basic types</b>, and
+<b>pointer types</b>. The difference is that basic types are copied when
+assigned to a variable. With pointer types, merely the pointer is copied,
+that way you get two variables pointing to the same thing.</p>
+
+<section title="Basic types">
+
+<p>The basic types are <tt>int</tt>, <tt>float</tt> and <tt>string</tt>.
+For you who are accustomed to C or C++, it may seem odd that a string
+is a basic type as opposed to an array of char, but it is surprisingly
+easy to get used to.</p>
+
+<subsection title="int">
+
+<p><tt>Int</tt> is short for integer, or integer number. They are normally
+32 bit integers, which means that they are in the range -2147483648 to
+2147483647. Note that on some machines an <tt>int</tt> might be larger
+than 32 bits. Since they are integers, no decimals are allowed. An integer
+constant can be written in several ways:</p>
+
+<example>
+78	// decimal number
+0116	// octal number
+0x4e	// hexadecimal number
+'N'	// Ascii character
+</example>
+
+<p>All of the above represent the number 78. Octal notation means that
+each digit is worth 8 times as much as the one after. Hexadecimal notation
+means that each digit is worth 16 times as much as the one after.
+Hexadecimal notation uses the letters a, b, c, d, e and f to represent the
+numbers 10, 11, 12, 13, 14 and 15. The ASCII notation gives the ASCII
+value of the character between the single quotes. In this case the character
+is <tt>N</tt> which just happens to be 78 in ASCII.</p>
+
+<p>Integers are coded in 2-complement and overflows are silently ignored
+by Pike. This means that if your integers are 32-bit and you add 1 to
+the number 2147483647 you get the number -2147483648. This works exactly
+as in C or C++.</p>
+
+<p>All the arithmetic, bitwise and comparison operators can be used on integers.
+Also note these functions:</p>
+
+<dl>
+<dt><tt>int intp(mixed <i>x</i>)</tt></dt>
+<dd>This function returns 1 if <i>x</i> is an int, 0 otherwise.</dd>
+<dt><tt>int random(int <i>x</i>)</tt></dt>
+<dd>This function returns a random number greater or equal to zero and smaller than <i>x</i>.</dd>
+<dt><tt>int reverse(int <i>x</i>)</tt></dt>
+<dd>This function reverses the order of the bits in <i>x</i> and returns the new number. It is not very useful.</dd>
+<dt><tt>int sqrt(int <i>x</i>)</tt></dt>
+<dd>This computes the square root of <i>x</i>. The value is always rounded down.</dd>
+</dl>
+</subsection>
+
+<subsection title="float">
+<!-- FIXME: Du borde skriva något om att float och int inte är kompatibla och ingen 
+implicit casting sker som i C++ -->
+<p>Although most programs only use integers, they are unpractical when doing
+trigonometric calculations, transformations or anything else where you
+need decimals. For this purpose you use <tt>float</tt>. Floats are normally
+32 bit floating point numbers, which means that they can represent very large
+and very small numbers, but only with 9 accurate digits. To write a floating
+point constant, you just put in the decimals or write it in the exponential
+form:</p>
+
+<example>
+3.14159265358979323846264338327950288419716939937510 // Pi
+1.0e9  // A billion
+1.0e-9 // A billionth
+</example>
+
+<p>Of course you do not need this many decimals, but it doesn't hurt either.
+Usually digits after the ninth digit are ignored, but on some architectures
+<tt>float</tt> might have higher accuracy than that. In the exponential form,
+<tt>e</tt> means "times 10 to the power of", so <tt>1.0e9</tt> is equal to
+"1.0 times 10 to the power of 9".</p>
+
+<p>All the arithmetic and comparison operators can be used on floats.
+Also, these functions operates on floats:</p>
+
+<dl>
+<dt>trigonometric functions</dt>
+<dd> The trigonometric functions are: <tt>sin</tt>, <tt>asin</tt>,
+     <tt>cos</tt>, <tt>acos</tt>, <tt>tan</tt> and <tt>atan</tt>.
+     If you do not know what these functions do you probably don't
+     need them. Asin, acos and atan are of course short for
+     arc sine, arc cosine and arc tangent. On a calculator they
+     are often known as inverse sine, inverse cosine and
+     inverse tangent.</dd>
+
+<dt><tt>float log(float <i>x</i>)</tt></dt>
+<dd>This function computes the natural logarithm of <i>x</i>,</dd>
+
+<dt><tt>float exp(float <i>x</i>)</tt></dt>
+<dd>This function computes <b>e</b> raised to the power of <i>x</i>.</dd>
+
+<dt><tt>float pow(float|int <i>x</i>, float|int <i>y</i>)</tt></dt>
+<dd>This function computes <i>x</i> raised to the power of <i>y</i>.</dd>
+
+<dt><tt>float sqrt(float <i>x</i>)</tt></dt>
+<dd>This computes the square root of <i>x</i>.</dd>
+
+<dt><tt>float floor(float <i>x</i>)</tt></dt>
+<dd>This function computes the largest integer value less than or equal
+    to <i>x</i>. Note that the value is returned as a <tt>float</tt>,
+    not an <tt>int</tt>.</dd>
+
+<dt><tt>float ceil(float <i>x</i>)</tt></dt>
+<dd>This function computes the smallest integer value greater than or
+    equal to <i>x</i> and returns it as a <tt>float</tt>.</dd>
+
+<dt><tt>float round(float <i>x</i>)</tt></dt>
+<dd>This function computes the closest integer value to <i>x</i> 
+    and returns it as a <tt>float</tt>.</dd>
+</dl>
+</subsection>
+
+<subsection title="string">
+
+<p>A <tt>string</tt> can be seen as an array of values from 0 to 2³²-1.
+Usually a string contains text such as a word, a sentence, a page or
+even a whole book. But it can also contain parts of a binary file,
+compressed data or other binary data. Strings in Pike are <b>shared</b>,
+which means that identical strings share the same memory space. This
+reduces memory usage very much for most applications and also speeds
+up string comparisons. We have already seen how to write a constant
+string:</p>
+
+<example>
+"hello world" // hello world
+"he" "llo"    // hello
+"\116"        // N (116 is the octal ASCII value for N)
+"\t"          // A tab character
+"\n"          // A newline character
+"\r"          // A carriage return character
+"\b"          // A backspace character
+"\0"          // A null character
+"\""          // A double quote character
+"\\"          // A singe backslash
+"\x4e"        // N (4e is the hexadecimal ASCII value for N)
+"\d78"        // N (78 is the decimal ACII value for N)
+"hello world\116\t\n\r\b\0\"\\" // All of the above
+"\xff"        // the character 255
+"\xffff"      // the character 65536
+"\xffffff"    // the character 16777215
+"\116""3"     // 'N' followed by a '3'
+</example>
+
+<p>As you can see, any sequence of characters within double quotes is a string.
+The backslash character is used to escape characters that are not allowed or
+impossible to type. As you can see, <tt>\t</tt> is the sequence to produce
+a tab character, <tt>\\</tt> is used when you want one backslash and
+<tt>\"</tt> is used when you want a double quote (<tt>"</tt>) to be a part
+of the string instead of ending it.
+Also, <tt>\<i>XXX</i></tt> where <i>XXX</i> is an
+octal number from 0 to 37777777777 or <tt>\x<i>XX</i></tt> where <i>XX</i>
+is 0 to ffffffff lets you write any character you want in the
+string, even null characters. From version 0.6.105, you may also use
+<tt>\d<i>XXX</i></tt> where <i>XXX</i> is 0 to 2³²-1. If you write two constant
+strings after each other, they will be concatenated into one string.</p>
+
+<p>You might be surprised to see that individual characters can have values
+up to 2³²-1 and wonder how much memory that use. Do not worry, Pike
+automatically decides the proper amount of memory for a string, so all
+strings with character values in the range 0-255 will be stored with
+one byte per character. You should also beware that not all functions
+can handle strings which are not stored as one byte per character, so
+there are some limits to when this feature can be used.</p>
+
+<p>Although strings are a form of arrays, they are immutable. This means that
+there is no way to change an individual character within a string without
+creating a new string. This may seem strange, but keep in mind that strings
+are shared, so if you would change a character in the string <tt>"foo"</tt>,
+you would change *all* <tt>"foo"</tt> everywhere in the program.</p>
+
+<p>However, the Pike compiler will allow you to to write code like you could
+change characters within strings, the following code is valid and works:</p>
+
+<example>
+string s="hello torld";
+s[6]='w';
+</example>
+
+<p>However, you should be aware that this does in fact create a new string and
+it may need to copy the string <i>s</i> to do so. This means that the above
+operation can be quite slow for large strings. You have been warned.
+Most of the time, you can use <tt>replace</tt>, <tt>sscanf</tt>, <tt>`/</tt>
+or some other high-level string operation to avoid having to use the above
+construction too much.</p>
+
+<p>All the comparison operators plus the operators listed here can be used on strings:</p>
+
+<dl>
+<dt> Summation</dt>
+<dd> Adding strings together will simply concatenate them.
+     <tt>"foo"+"bar"</tt> becomes <tt>"foobar"</tt>.</dd>
+<dt> Subtraction</dt>
+<dd> Subtracting one string from another will remove all occurrences
+     of the second string from the first one. So 
+     <tt>"foobarfoogazonk" - "foo"</tt> results in <tt>"bargazonk"</tt>.</dd>
+<dt> Indexing</dt>
+<dd> Indexing will let you get the ASCII value of any character in a string.
+     The first index is zero.</dd>
+<dt> Range</dt>
+<dd> The range operator will let you copy any part of the string into a
+     new string. Example: <tt>"foobar"[2..4]</tt> will return <tt>"oba"</tt>.</dd>
+<dt> Division</dt>
+<dd> Division will let you divide a string at every occurrence of a word or
+     character. For instance if you do <tt>"foobargazonk" / "o"</tt> the
+     result would be <tt>({"f","","bargaz","nk"})</tt>. It is also possible
+     to divide the string into strings of length N by dividing the string
+     by N. If N is converted to a float before dividing, the reminder of
+     the division will be included in the result.</dd>
+<dt> Multiplication</dt>
+<dd> The inverse of the division operator can be accomplished by multiplying
+     an array with a string. So if you evaluate
+     <tt>({"f","","bargaz","nk"}) * "o"</tt> the result would be
+     <tt>"foobargazonk"</tt>.</dd>
+<dt> Modulo</dt>
+<dd> To complement the division operator, you can do <tt>string</tt> % <tt>int</tt>.
+     This operator will simply return the part of the string that was not 
+     included in the array returned by <tt>string</tt> / <tt>int</tt></dd>
+</dl>
+
+<p>Also, these functions operates on strings:</p>
+
+<dl>
+<dt><tt>string String.capitalize(string <i>s</i>)</tt></dt>
+<dd>Returns <i>s</i> with the first character converted to upper case.</dd>
+
+<dt><tt>int String.count(string <i>haystack</i>, string <i>needle</i>)</tt></dt>
+<dd>Returns the number of occurances of <i>needle</i> in <i>haystack</i>.
+    Equvivalent to <tt>sizeof(<i>haystack</i>/<i>needle</i>)-1</tt>.</dd>
+
+<dt><tt>int String.width(string <i>s</i>)</tt></dt>
+<dd>Returns the width <i>s</i> in bits (8, 16 or 32).</dd>
+
+<dt><tt>string lower_case(string <i>s</i>)</tt></dt>
+<dd>Returns <i>s</i> with all the upper case characters converted to lower case.</dd>
+
+<dt><tt>string replace(string <i>s</i>, string <i>from</i>, string <i>to</i>)</tt></dt>
+<dd>This function replaces all occurrences of the string <i>from</i>
+    in <i>s</i> with <i>to</i> and returns the new string.</dd>
+
+<dt><tt>string reverse(string <i>s</i>)</tt></dt>
+<dd>This function returns a copy of <i>s</i> with the last byte from <i>s</i>
+    first, the second last in second place and so on.</dd>
+
+<dt><tt>int search(string <i>haystack</i>, string <i>needle</i>)</tt></dt>
+<dd>This function finds the first occurrence of <i>needle</i> in
+    <i>haystack</i> and returns where it found it.</dd>
+
+<dt><tt>string sizeof(string <i>s</i>)</tt></dt>
+<dd>Same as <tt>strlen(<i>s</i>)</tt>, returns the length of the string.</dd>
+
+<dt><tt>int stringp(mixed <i>s</i>)</tt></dt>
+<dd>This function returns 1 if <i>s</i> is a string, 0 otherwise.</dd>
+
+<dt><tt>int strlen(string <i>s</i>)</tt></dt>
+<dd>Returns the length of the string <i>s</i>.</dd>
+
+<dt><tt>string upper_case(string <i>s</i>)</tt></dt>
+<dd>This function returns <i>s</i> with all lower case characters converted
+    to upper case.</dd>
+</dl>
+</subsection>
+</section>
+
+<section title="Pointer types">
+
+<p>The basic types are, as the name implies, very basic. They are the foundation,
+most of the pointer types are merely interesting ways to store the basic
+types. The pointer types are <tt>array</tt>, <tt>mapping</tt>,
+<tt>multiset</tt>, <tt>program</tt>, <tt>object</tt> and <tt>function</tt>.
+They are all <b>pointers</b> which means that they point to something
+in memory. This "something" is freed when there are no more pointers to it.
+Assigning a variable with a value of a pointer type will not copy this
+"something" instead it will only generate a new reference to it. Special care
+sometimes has to be taken when giving one of these types as arguments to
+a function; the function can in fact modify the "something". If this effect
+is not wanted you have to explicitly copy the value. More about this will
+be explained later in this chapter.</p>
+
+<subsection title="array">
+
+<p>Arrays are the simplest of the pointer types. An array is merely a block of
+memory with a fixed size containing a number of slots which can hold any
+type of value. These slots are called <b>elements</b> and are accessible
+through the index operator. To write a constant array you enclose the
+values you want in the array with <tt>({ })</tt> like this:</p>
+
+<example>
+({ })      // Empty array
+({ 1 })    // Array containing one element of type int
+({ "" })   // Array containing a string
+({ "", 1, 3.0 }) // Array of three elements, each of different type
+</example>
+
+<p>As you can see, each element in the array can contain any type of value.
+Indexing and ranges on arrays works just like on strings, except with
+arrays you can change values inside the array with the index operator.
+However, there is no way to change the size of the array, so if you want
+to append values to the end you still have to add it to another array
+which creates a new array. Figure 4.1 shows how the schematics of an array.
+As you can see, it is a very simple memory structure.</p>
+
+<!-- <image src=array.fig>fig 4.1 -->
+
+<p>Operators and functions usable with arrays:</p>
+
+<dl>
+<dt> indexing ( <tt><i>arr</i> [ <i>c</i> ]</tt> )</dt>
+<dd> Indexing an array retrieves or sets a given element in the array.
+     The index <i>c</i> has to be an integer. To set an index, simply put
+     the whole thing on the left side of an assignment, like this:
+     <tt><i>arr</i> [ <i>c</i> ] = <i>new_value</i></tt></dd>
+
+<dt> range ( <tt><i>arr</i> [ <i>from</i> .. <i>to</i> ]</tt> )</dt>
+<dd> The range copies the elements <i>from</i>, <i>from</i>+1, , <i>from</i>+2 ... <i>to</i>
+     into a new array. The new array will have the size <i>to</i>-<i>from</i>+1.</dd>
+
+<dt> comparing (<tt><i>a</i> == <i>b</i></tt> and <tt><i>a</i> != <i>b</i></tt>)</dt>
+<dd> The equal operator returns 1 if <i>a</i> and <i>b</i> are the <b>same</b> arrays.
+     It is not enough that they have the same size and same data. They must
+     be the same array. For example: <tt>({1}) == ({1})</tt> would return 0, while
+     <tt>array(int) a=({1}); return a==a;</tt> would return 1. Note that you cannot
+     use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt> on arrays.</dd>
+
+<dt> Summation (<tt><i>a</i> + <i>b</i></tt>)</dt>
+<dd> As with strings, summation concatenates arrays. <tt>({1})+({2})</tt> returns <tt>({1,2})</tt>.</dd>
+
+<dt> Subtractions (<tt><i>a</i> - <i>b</i></tt>)</dt>
+<dd> Subtracting one array from another returns a copy of
+    <i>a</i> with all the elements that are also present in <i>b</i> removed.
+    So <tt>({1,3,8,3,2}) - ({3,1})</tt> returns <tt>({8,2})</tt>.</dd>
+
+<dt> Intersection (<tt><i>a</i> &amp; <i>b</i></tt>)</dt>
+<dd> Intersection returns an array with all values that are present in both
+     <i>a</i> and <i>b</i>. The order of the elements will be the same as
+     the the order of the elements in <i>a</i>. Example:
+     <tt>({1,3,7,9,11,12}) &amp; ({4,11,8,9,1})</tt> will return:
+     <tt>({1,9,11})</tt>.</dd>
+
+<dt> Union (<tt><i>a</i> | <i>b</i></tt>)</dt>
+<dd> Union works almost as summation, but it only adds elements not
+     already present in <i>a</i>. So, <tt>({1,2,3}) | ({1,3,5})</tt> will
+     return <tt>({1,2,3,5})</tt>. 
+     Note: the order of the elements in <i>a</i> can be changed!</dd>
+
+<dt> Xor (<tt><i>a</i> ^ <i>b</i></tt>)</dt>
+<dd>  This is also called symmetric difference. It returns an array with all
+     elements present in <i>a</i> or <i>b</i> but the element must NOT
+     be present in both. Example: <tt>({1,3,5,6}) ^ ({4,5,6,7})</tt> will
+     return <tt>({1,3,4,7})</tt>.</dd>
+
+<dt> Division (<tt><i>a</i> / <i>b</i></tt>)</dt>
+<dd> This will split the array <i>a</i> into an array of arrays. If <i>b</i> is
+     another array, <i>a</i> will be split at each occurance of that array.
+     If <i>b</i> is an integer or float, <i>a</i> will be split between
+     every <i>b</i>th element. Examples: <tt>({1,2,3,4,5})/({2,3})</tt> will
+     return <tt>({ ({1}), ({4,5}) })</tt> and <tt>({1,2,3,4})/2</tt> will
+     return <tt>({ ({1,2}), ({3,4}) })</tt>.</dd>
+
+<dt> Modulo (<tt><i>a</i> % <i>b</i></tt>)</dt>
+<dd> This operation is valid only if <i>b</i> is an integer. It will return
+     the part of the array that was not included by dividing <i>a</i> by
+     <i>b</i>.</dd>
+
+<dt><tt>array aggregate(mixed ... <i>elems</i>)</tt></dt>
+<dd> This function does the same as the <tt>({ })</tt> operator; it creates an
+     array from all arguments given to it. In fact, writing <tt>({1,2,3})</tt>
+     is the same as writing <tt>aggregate(1,2,3)</tt>.</dd>
+
+<dt><tt>array allocate(int <i>size</i>)</tt></dt>
+<dd>This function allocates a new array of size <tt>size</tt>. All the elements
+    in the new array will be zeroes.</dd>
+
+<dt><tt>int arrayp(mixed <i>a</i>)</tt></dt>
+<dd>This function returns 1 if <i>a</i> is an array, 0 otherwise.</dd>
+
+<dt><tt>array column(array(mixed) <i>a</i>, mixed <i>ind</i>)</tt></dt>
+<dd>This function goes through the array <i>a</i> and indexes every element
+    in it on <i>ind</i> and builds an array of the results. So if you have
+    an array <i>a</i> in which each element is a also an array. This function
+    will take a cross section, by picking out element <i>ind</i> from each
+    of the arrays in <i>a</i>. Example:
+    <tt>column( ({ ({1,2,3}), ({4,5,6}), ({7,8,9}) }), 2)</tt> will return
+    <tt>({3,6,9})</tt>.</dd>
+
+<dt><tt>int equal(mixed <i>a</i>, mixed <i>b</i>)</tt></dt>
+<dd> This function returns 1 if if <i>a</i> and <i>b</i> look the same. They
+     do not have to be pointers to the same array, as long as they are the same
+     size and contain equal data.</dd>
+
+<dt><tt>array filter(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt></dt>
+<dd><tt>filter</tt> returns every element in <i>a</i> for which
+    <i>func</i> returns <b>true</b> when called with that element as
+    first argument, and <i>args</i> for the second, third, etc.
+    arguments. (Both <i>a</i> and <i>func</i> can be other things; see
+    the reference for <tt><ref>filter</ref></tt> for
+    details about that.)</dd>
+
+<dt><tt>array map(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt></dt>
+<dd>This function works similar to <tt>filter</tt> but returns the
+    results of the function <i>func</i> instead of returning the
+    elements from <i>a</i> for which <i>func</i> returns <b>true</b>.
+    (Like <tt>filter</tt>, this function accepts other things for
+    <i>a</i> and <i>func</i>; see the reference for <ref>map</ref>.)</dd>
+
+<dt><tt>array replace(array <i>a</i>, mixed <i>from</i>, mixed <i>to</i>)</tt></dt>
+<dd>This function will create a copy of <i>a</i> with all elements equal to
+    <i>from</i> replaced by <i>to</i>.</dd>
+
+<dt><tt>array reverse(array <i>a</i>)</tt></dt>
+<dd><tt>Reverse</tt> will create a copy of <i>a</i> with the last element first,
+    the last but one second, and so on.</dd>
+
+<dt><tt>array rows(array <i>a</i>, array <i>indexes</i>)</tt></dt>
+<dd>This function is similar to <tt>column</tt>. It indexes <i>a</i> with
+    each element from <i>indexes</i> and returns the results in an array.
+    For example: <tt>rows( ({"a","b","c"}), ({ 2,1,2,0}) ) </tt> will return
+    <tt>({"c","b","c","a"})</tt>.</dd>
+
+<dt><tt>int search(array <i>haystack</i>, mixed <i>needle</i>)</tt></dt>
+<dd>This function returns the index of the first occurrence of an element
+    equal (tested with <tt>==</tt>) to <i>needle</i> in the array
+    <i>haystack</i>.</dd>
+
+<dt><tt>int sizeof(mixed <i>arr</i>)</tt></dt>
+<dd>This function returns the number of elements in the array <i>arr</i>.</dd>
+
+<dt><tt>array sort(array <i>arr</i>, array ... <i>rest</i>)</tt></dt>
+<dd>This function sorts <i>arr</i> in smaller-to-larger order. Numbers, floats
+    and strings can be sorted. If there are any additional arguments, they
+    will be permutated in the same manner as <i>arr</i>. See
+    <!-- <ref to=functions> --> functions for more details.</dd>
+
+<dt><tt>array uniq(array <i>a</i>)</tt></dt>
+<dd>This function returns a copy of the array <i>a</i> with all duplicate
+    elements removed. Note that this function can return the elements
+    in any order.</dd>
+</dl>
+</subsection>
+
+<subsection title="mapping">
+
+<p>Mappings are are really just more generic arrays. However, they are slower
+and use more memory than arrays, so they cannot replace arrays completely.
+What makes mappings special is that they can be indexed on other things than
+integers. We can imagine that a mapping looks like this:</p>
+
+<!-- <image src=mapping.fig>fig 4.2 -->
+
+<p>Each index-value pair is floating around freely inside the mapping. There is
+exactly one value for each index. We also have a (magical) lookup function.
+This lookup function can find any index in the mapping very quickly. Now, if
+the mapping is called <i>m</i> and we index it like this:
+<tt><i>m</i> [ <i>i</i> ]</tt> the lookup function will quickly find the index
+<i>i</i> in the mapping and return the corresponding value. If the index is 
+not found, zero is returned instead. 
+If we on the other hand assign an index in the mapping the value will
+instead be overwritten with the new value. If the index is not found when
+assigning, a new index-value pair will be added to the mapping.
+Writing a constant mapping is easy:</p>
+
+<example>
+([ ])       // Empty mapping
+([ 1:2 ])   // Mapping with one index-value pair, the 1 is the index
+([ "one":1, "two":2 ]) // Mapping which maps words to numbers
+([ 1:({2.0}), "":([]), ]) // Mapping with lots of different types
+</example>
+
+<p>As with arrays, mappings can contain any type. The main difference is that
+the index can be any type too. Also note that the index-value pairs in a
+mapping are not stored in a specific order. You can not refer to the
+fourteenth key-index pair, since there is no way of telling which one is
+the fourteenth. Because of this, you cannot use the range operator on
+mappings.</p>
+
+<p>The following operators and functions are important:</p>
+
+<dl>
+<dt> indexing ( <tt><i>m</i> [ <i>ind</i> ]</tt> )</dt>
+<dd> As discussed above, indexing is used to retrieve, store and add values
+     to the mapping.</dd>
+<dt> addition, subtraction, union, intersection and xor</dt>
+<dd> All these operators works exactly as on arrays, with the difference that
+     they operate on the indices. In those cases when the value can come from
+     either mapping, it will be taken from the right side of the operator.
+     This makes it easier to add new values to a mapping with <tt>+=</tt>.
+     Some examples:<br />
+     <tt>([1:3, 3:1]) + ([2:5, 3:7])</tt> returns <tt>([1:3, 2:5, 3:7 ])</tt><br />
+     <tt>([1:3, 3:1]) - ([2:5, 3:7])</tt> returns <tt>([1:3])</tt><br />
+     <tt>([1:3, 3:1]) | ([2:5, 3:7])</tt> returns <tt>([1:3, 2:5, 3:7 ])</tt><br />
+     <tt>([1:3, 3:1]) &amp; ([2:5, 3:7])</tt> returns <tt>([3:7])</tt><br />
+     <tt>([1:3, 3:1]) ^ ([2:5, 3:7])</tt> returns <tt>([1:3, 2:5])</tt><br /></dd>
+
+<dt> same ( <tt><i>a</i> == <i>b</i></tt> )</dt>
+<dd> Returns 1 if <i>a</i> is <b>the same</b> mapping as <i>b</i>, 0 otherwise.</dd>
+
+<dt> not same ( <tt><i>a</i> != <i>b</i></tt> )</dt>
+<dd> Returns 0 if <i>a</i> is <b>the same</b> mapping as <i>b</i>, 1 otherwise.</dd>
+
+<dt><tt>array indices(mapping <i>m</i>)</tt></dt>
+<dd><tt>Indices</tt> returns an array containing all the indices in the mapping <i>m</i>.</dd>
+
+<dt><tt>mixed m_delete(mapping <i>m</i>, mixed <i>ind</i>)</tt></dt>
+<dd>This function removes the index-value pair with the index <i>ind</i> from the mapping <i>m</i>.
+    It will return the value that was removed.</dd>
+
+<dt><tt>int mappingp(mixed <i>m</i>)</tt></dt>
+<dd>This function returns 1 if <i>m</i> is a mapping, 0 otherwise.</dd>
+
+<dt><tt>mapping mkmapping(array <i>ind</i>, array <i>val</i>)</tt></dt>
+<dd>This function constructs a mapping from the two arrays <i>ind</i> and
+    <i>val</i>. Element 0 in <i>ind</i> and element 0 in <i>val</i> becomes
+    one index-value pair. Element 1 in <i>ind</i> and element 1 in <i>val</i>
+    becomes another index-value pair, and so on..</dd>
+
+<dt><tt>mapping replace(mapping <i>m</i>, mixed <i>from</i>, mixed <i>to</i>)</tt></dt>
+<dd>This function creates a copy of the mapping <i>m</i> with all values equal to
+    <i>from</i> replaced by <i>to</i>.</dd>
+
+<dt><tt>mixed search(mapping <i>m</i>, mixed <i>val</i>)</tt></dt>
+<dd>This function returns the index of the 'first' index-value pair which has the value <i>val</i>.</dd>
+
+<dt><tt>int sizeof(mapping <i>m</i>)</tt></dt>
+<dd><tt>Sizeof</tt> returns how many index-value pairs there are in the mapping.</dd>
+
+<dt><tt>array values(mapping <i>m</i>)</tt></dt>
+<dd>This function does the same as <tt>indices</tt>, but returns an array with all the values instead.
+    If <tt>indices</tt> and <tt>values</tt> are called on the same mapping after each other, without
+    any other mapping operations in between, the returned arrays will be in the same order. They can
+    in turn be used as arguments to <tt>mkmapping</tt> to rebuild the mapping <i>m</i> again.</dd>
+
+<dt><tt>int zero_type(mixed t)</tt></dt>
+<dd>When indexing a mapping and the index is not found, zero is returned. However, problems can arise
+    if you have also stored zeroes in the mapping. This function allows you to see the difference between
+    the two cases. If <tt>zero_type(<i>m</i> [ <i>ind</i> ])</tt> returns 1, it means that the value was
+    not present in the mapping. If the value was present in the mapping, <tt>zero_type</tt> will return
+    something else than 1.</dd>
+</dl>
+</subsection>
+
+
+<subsection title="multiset">
+
+<p>A multiset is almost the same thing as a mapping. The difference is that there
+are no values:</p>
+
+<!-- <image src=multiset.fig>fig 4.3 -->
+
+<p>Instead, the index operator will return 1 if the value was found
+in the multiset and 0 if it was not. When assigning an index to a multiset like
+this: <tt><i>mset</i>[ <i>ind</i> ] = <i>val</i></tt> the index <i>ind</i>
+will be added to the multiset <i>mset</i> if <i>val</i> is <b>true</b>.
+Otherwise <i>ind</i> will be removed from the multiset instead.</p>
+
+<p>Writing a constant multiset is similar to writing an array:</p>
+
+<example>
+(&lt; &gt;)      // Empty multiset
+(&lt; 17 &gt;)  // Multiset with one index: 17
+(&lt; "", 1, 3.0, 1 &gt;) // Multiset with four indices
+</example>
+
+<p>Note that you can actually have more than one of the same index in a multiset. This is
+normally not used, but can be practical at times.</p>
+</subsection>
+
+<subsection title="program">
+
+<p>Normally, when we say <b>program</b> we mean something we can execute from
+a shell prompt. However, Pike has another meaning for the same word. In Pike
+a <tt>program</tt> is the same as a <b>class</b> in C++. A <tt>program</tt>
+holds a table of what functions and variables are defined in that program.
+It also holds the code itself, debug information and references to other
+programs in the form of inherits. A <tt>program</tt> does not hold space
+to store any data however.
+All the information in a <tt>program</tt> is
+gathered when a file or string is run through the Pike compiler. The variable
+space needed to execute the code in the program is stored in an <tt>object</tt>
+which is the next data type we will discuss.</p>
+
+<!-- <image src=program.fig>fig 4.4 -->
+
+<p>Writing a <tt>program</tt> is easy, in fact, every example we have tried so
+far has been a <tt>program</tt>. To load such a program into memory, we can
+use <tt>compile_file</tt> which takes a file name, compiles the file
+and returns the compiled program. It could look something like this:</p>
+
+<example>
+program p = compile_file("hello_world.pike");
+</example>
+
+<p>You can also use the <b>cast</b> operator like this:</p>
+
+<example>
+program p = (program) "hello_world";
+</example>
+
+<p>This will also load the program <tt>hello_world.pike</tt>, the only difference
+is that it will cache the result so that next time you do <tt>(program)"hello_world"</tt>
+you will receive the _same_ program. If you call <tt>compile_file("hello_world.pike")</tt>
+repeatedly you will get a new program each time.</p>
+
+<p>There is also a way to write programs inside programs with the help of the
+<tt>class</tt> keyword:</p>
+
+<example>
+class class_name {
+  inherits, variables and functions
+}
+</example>
+
+<p>The <tt>class</tt> keyword can be written as a separate entity
+outside of all functions, but it is also an expression which returns the
+<tt>program</tt> written between the brackets. The <i>class_name</i> is
+optional. If used you can later refer to that <tt>program</tt> by the name
+<i>class_name</i>.
+This is very similar to how classes are written in C++ and can be used
+in much the same way. It can also be used to create <b>structs</b>
+(or records if you program Pascal).
+Let's look at an example:</p>
+
+<example>
+class record {
+  string title;
+  string artist;
+  array(string) songs;
+}
+
+array(record) records = ({});
+
+void add_empty_record()
+{
+  records+=({ record() });
+}
+
+void show_record(record rec)
+{
+  write("Record name: "+rec-&gt;title+"\n");
+  write("Artist: "+rec-&gt;artist+"\n");
+  write("Songs:\n");
+  foreach(rec-&gt;songs, string song)
+    write("   "+song+"\n");
+}
+</example>
+
+<p>This could be a small part of a better record register program. It is not
+a complete executable program in itself.  In this example we create a
+<tt>program</tt> called <tt>record</tt> which has three identifiers.
+In <tt>add_empty_record</tt> a new object is created
+by calling <tt>record</tt>. This is called <b>cloning</b> and it
+allocates space to store the variables defined in the <tt>class record</tt>.
+<tt>Show_record</tt> takes one of the records created in
+<tt>add_empty_record</tt> and shows the contents of it. As you can see, the arrow operator
+is used to access the data allocated in <tt>add_empty_record</tt>.
+If you do not understand this section I suggest you go on and read the
+next section about <tt>objects</tt> and then come back and read this
+section again.</p>
+
+<dl>
+<dt> cloning</dt>
+<dd> To create a data area for a <tt>program</tt> you need to instantiate or
+     <b>clone</b> the program. This is accomplished by using a pointer
+     to the <tt>program</tt> as if it was a function and call it. That
+     creates a new object and calls the function <tt>create</tt> in the
+     new object with the arguments. It is also possible to use the
+     functions <tt>new()</tt> and <tt>clone()</tt> which do exactly the
+     same thing except you can use a string to specify what program you
+     want to clone.</dd>
+
+<dt> compiling</dt>
+<dd> All programs are generated by compiling a string. The string may of
+     course be read from a file. For this purpose there are three functions:
+<example>
+program compile(string p);
+program compile_file(string filename);
+program compile_string(string p, string filename);
+</example>
+     <tt>compile_file</tt> simply reads the file given as argument, compiles
+     it and returns the resulting program. <tt>compile_string</tt> instead
+     compiles whatever is in the string <i>p</i>. The second argument,
+     <i>filename</i>, is only used in debug printouts when an error occurs
+     in the newly made program. Both <tt>compile_file</tt> and
+     <tt>compile_string</tt> calls <tt>compile</tt> to actually compile
+     the string after calling <tt>cpp</tt> on it.</dd>
+
+<dt> casting</dt>
+<dd> Another way of compiling files to program is to use the <b>cast</b>
+     operator. Casting a string to the type <tt>program</tt> calls a function
+     in the master object which will compile the program in question for you.
+     The master also keeps the program in a cache, so if you later need the
+     same program again it will not be re-compiled.</dd>
+
+<dt> <tt>int programp(mixed <i>p</i>)</tt></dt>
+<dd> This function returns 1 if <i>p</i> is a program, 0 otherwise.</dd>
+
+<dt> comparisons</dt>
+<dd> As with all data types <tt>==</tt> and <tt>!=</tt> can be used to
+     see if two programs are the same or not.</dd>
+</dl>
+
+<p>The following operators and functions are important:</p>
+
+<dl>
+<dt> cloning ( <tt><i>p</i> ( <i>args</i> )</tt> )</dt>
+<dd> Creates an object from a program. Discussed in the next section.</dd>
+
+<dt> indexing ( <tt><i>p</i> [ <i>string</i> ]</tt>, or
+                <tt><i>p</i> -> <i>identifier</i></tt> )</dt>
+<dd> Retreives the value of the named constant from a program.</dd>
+
+<dt> <tt>array(string) indices(program <i>p</i>)</tt></dt>
+<dd> Returns an array with the names of all non-static constants in the
+     program.</dd>
+
+<dt> <tt>array(mixed) values(program <i>p</i>)</tt></dt>
+<dd> Returns an array with the values of all non-static constants in the
+     program.</dd>
+</dl>
+
+</subsection>
+
+
+<subsection title="object">
+
+<p>Although programs are absolutely necessary for any application you might
+want to write, they are not enough. A <tt>program</tt> doesn't have anywhere
+to store data, it just merely outlines how to store data. To actually store
+the data you need an <tt>object</tt>. Objects are basically a chunk of memory
+with a reference to the program from which it was cloned. Many objects can
+be made from one program. The <tt>program</tt> outlines where in the object
+different variables are stored.</p>
+
+<!-- <image src=object.fig>fig 4.5 -->
+
+<p>Each object has its own set of variables, and when calling a function in that
+object, that function will operate on those variables. If we take a look at
+the short example in the section about programs, we see that it would be
+better to write it like this:</p>
+
+<example>
+class record {
+  string title;
+  string artist;
+  array(string) songs;
+
+  void show()
+  {
+    write("Record name: "+title+"\n");
+    write("Artist: "+artist+"\n");
+    write("Songs:\n");
+    foreach(songs, string song)
+      write("   "+song+"\n");
+  }
+}
+
+array(record) records = ({});
+
+void add_empty_record()
+{
+  records+=({ record() });
+}
+
+void show_record(object rec)
+{
+  rec-&gt;show();
+}
+</example>
+
+<p>Here we can clearly see how the function <tt>show</tt> prints the
+contents of the variables in that object. In essence, instead of accessing
+the data in the object with the <tt>-&gt;</tt> operator, we call a function
+in the object and have it write the information itself. This type of
+programming is very flexible, since we can later change how <tt>record</tt>
+stores its data, but we do not have to change anything outside of
+the <tt>record</tt> program.</p>
+
+<p>Functions and operators relevant to objects:</p>
+
+<dl>
+<dt> indexing</dt>
+<dd> Objects can be indexed on strings to access identifiers. If the identifier
+     is a variable, the value can also be set using indexing. If the identifier
+     is a function, a pointer to that function will be returned. If the
+     identifier is a constant, the value of that constant will be returned.
+     Note that the <tt>-&gt;</tt> operator is actually the same as indexing.
+     This means that <tt>o-&gt;foo</tt> is the same as <tt>o["foo"]</tt></dd>
+
+<dt> cloning</dt>
+<dd> As discussed in the section about programs, cloning a program can be done
+     in two different ways:
+     <ol>
+     <li> Use a pointer to the program as a function and call it.</li>
+     <li> Use the functions <tt>new</tt> or <tt>clone</tt>. (They are the same function.)</li>
+     </ol>
+     Whenever you clone an object, all the global variables will be
+     initialized. After that the function <tt>create</tt> will be called
+     with any arguments you call the program with.</dd>
+
+<dt> <tt>void destruct(object <i>o</i>)</tt></dt>
+<dd> This function invalidates all references to the object <i>o</i> and
+     frees all variables in that object. This function is also called when
+     <i>o</i> runs out of references. If there is a function named
+     <tt>destroy</tt> in the object, it will be called before the actual
+     destruction of the object.</dd>
+
+<dt> <tt>array(string) indices(object <i>o</i>)</tt></dt>
+<dd> This function returns a list of all identifiers in the object <i>o</i>.</dd>
+
+<dt> <tt>program object_program(object <i>o</i>)</tt></dt>
+<dd> This function returns the program from which <i>o</i> was cloned.</dd>
+
+<dt> <tt>int objectp(mixed <i>o</i>)</tt></dt>
+<dd> This function returns 1 if <i>o</i> is an object, 0 otherwise.
+     Note that if <i>o</i> has been destructed, this function will return 0.</dd>
+
+<dt> <tt>object this_object()</tt></dt>
+<dd> This function returns the object in which the interpreter is currently
+     executing.</dd>
+
+<dt> <tt>array values(object <i>o</i>)</tt></dt>
+<dd> This function returns the same as <tt>rows(o,indices(o))</tt>.
+     That means it returns all the values of the identifiers in the
+     object <i>o</i>.</dd>
+
+<dt> comparing</dt>
+<dd> As with all data types <tt>==</tt> and <tt>!=</tt> can be used to
+     check if two objects are the same or not.</dd>
+</dl>
+</subsection>
+
+<subsection title="function">
+
+<p>When indexing an object on a string, and that string is the name of a function
+in the object a <tt>function</tt> is returned. Despite its name, a
+<tt>function</tt> is really a <b>function pointer</b>.</p>
+
+<!-- <image src=function.fig>fig 4.6 -->
+
+<p>When the function pointer is called, the interpreter sets
+<tt>this_object()</tt> to the object in which the function is located and
+proceeds to execute the function it points to. Also note that function pointers
+can be passed around just like any other data type:</p>
+
+<example>
+int foo() { return 1; }
+function bar() { return foo; }
+int gazonk() { return foo(); }
+int teleledningsanka() { return bar()(); }
+</example>
+
+<p>In this example, the function bar returns a pointer to the function
+<tt>foo</tt>. No indexing is necessary since the function <tt>foo</tt> is
+located in the same object. The function <tt>gazonk</tt> simply calls
+<tt>foo</tt>. However, note that the word <tt>foo</tt> in that function
+is an expression returning a function pointer that is then called. To
+further illustrate this, <tt>foo</tt> has been replaced by <tt>bar()</tt>
+in the function <tt>teleledningsanka</tt>.</p>
+
+<p>For convenience, there is also a simple way to write a function inside another
+function. To do this you use the <tt>lambda</tt> keyword.  The
+syntax is the same as for a normal function, except you write
+<tt>lambda</tt> instead of the function name:</p>
+
+<example>
+lambda ( types ) { statements }
+</example>
+
+<p>The major difference is that this is an expression that can be used inside
+an other function. Example:</p>
+
+<example>
+function bar() { return lambda() { return 1; }; )
+</example>
+
+<p>This is the same as the first two lines in the previous example, the keyword
+<tt>lambda</tt> allows you to write the function inside <tt>bar</tt>.</p>
+
+<p>Note that unlike C++ and Java you can not use function overloading in Pike.
+This means that you cannot have one function called 'foo' which takes an
+integer argument and another function 'foo' which takes a float argument.</p>
+
+<p>This is what you can do with a function pointer.</p>
+
+<dl>
+<dt> calling ( <i>f</i> ( mixed ... <i>args</i> ) )</dt>
+<dd> As mentioned earlier, all function pointers can be called. In this example
+     the function <i>f</i> is called with the arguments <i>args</i>.</dd>
+
+<dt> <tt>string function_name(function <i>f</i>)</tt></dt>
+<dd> This function returns the name of the function <i>f</i> is pointing at.</dd>
+
+<dt> <tt>object function_object(function <i>f</i>)</tt></dt>
+<dd> This function returns the object the function <i>f</i> is located in.</dd>
+
+<dt> <tt>int functionp(mixed <i>f</i>)</tt></dt>
+<dd> This function returns 1 if <i>f</i> is a <tt>function</tt>, 0 otherwise.
+     If <i>f</i> is located in a destructed object, 0 is returned.</dd>
+
+<dt> <tt>function this_function()</tt></dt>
+<dd> This function returns a pointer to the function it is called from.
+     This is normally only used with <b>lambda</b> functions because they
+     do not have a name.</dd>
+</dl>
+</subsection>
+</section>
+
+<section title="Sharing data">
+
+<p>As mentioned in the beginning of this chapter, the assignment operator
+(<tt>=</tt>) does not copy anything when you use it on a pointer type.
+Instead it just creates another reference to the memory object.
+In most situations this does not present a problem, and it speeds up
+Pike's performance. However, you must be aware of this when programming.
+This can be illustrated with an example:</p>
+
+<example>
+int main(int argc, array(string) argv)
+{
+  array(string) tmp;
+  tmp=argv;
+  argv[0]="Hello world.\n";
+  write(tmp[0]);
+}
+</example>
+
+<p>This program will of course write <tt>Hello world.</tt></p>
+
+<p>Sometimes you want to create a copy of a mapping, array or object. To
+do so you simply call <tt>copy_value</tt> with whatever you want to copy
+as argument. Copy_value is recursive, which means that if you have an
+array containing arrays, copies will be made of all those arrays.</p>
+
+<p>If you don't want to copy recursively, or you know you don't have to
+copy recursively, you can use the plus operator instead. For instance,
+to create a copy of an array you simply add an empty array to it, like this:
+<tt>copy_of_arr = arr + ({});</tt> If you need to copy a mapping you use
+an empty mapping, and for a multiset you use an empty multiset.</p>
+</section>
+
+
+<section title="Variables">
+
+<p>When declaring a variable, you also have to specify what type of variable
+it is. For most types, such as <tt>int</tt> and <tt>string</tt> this is
+very easy. But there are much more interesting ways to declare variables
+than that, let's look at a few examples:</p>
+
+<example>
+int x; // x is an integer
+int|string x; // x is a string or an integer
+array(string) x; // x is an array of strings
+array x; // x is an array of mixed
+mixed x; // x can be any type
+string *x; // x is an array of strings
+
+// x is a mapping from int to string
+mapping(string:int) x;
+
+// x implements Stdio.File
+Stdio.File x;
+
+// x implements Stdio.File
+object(Stdio.File) x;
+
+// x is a function that takes two integer
+// arguments and returns a string
+function(int,int:string) x;
+
+// x is a function taking any amount of
+// integer arguments and returns nothing.
+function(int...:void) x;
+
+// x is ... complicated
+mapping(string:function(string|int...:mapping(string:array(string)))) x;
+</example>
+
+<p>As you can see there are some interesting ways to specify types.
+Here is a list of what is possible:</p>
+
+<dl>
+<dt> <tt>mixed</tt></dt>
+<dd> This means that the variable can contain any type, or the
+     function return any value.</dd>
+
+<dt> <tt>array( <i>type</i> )</tt></dt>
+<dd> This means an array of elements with the type <i>type</i>.</dd>
+
+<dt> <tt>mapping( <i>key type</i> : <i>value type</i> )</tt></dt>
+<dd> This is a mapping where the keys are of type <i>key type</i> and the
+      values of <i>value type</i>.</dd>
+
+<dt> <tt>multiset ( <i>type</i> )</tt></dt>
+<dd> This means a multiset containing values of the type <i>type</i>.</dd>
+
+<dt> <tt>object ( <i>program</i> )</tt></dt>
+<dd> This means an object which 'implements'  the specified program. The
+     <i>program</i> can be a class, a constant, or a string.
+     If the program is a string it will be casted to a program first.
+     See the documentation for <tt>inherit</tt> for more information
+     about this casting. The compiler will assume that any function
+     or variable accessed in this object has the same type information
+     as that function or variable has in <i>program</i>.</dd>
+
+<dt> <tt><i>program</i></tt></dt>
+<dd> This too means 'an object which implements <i>program</i>'.
+     <i>program</i> can be a class or a constant.</dd>
+
+<dt> <tt>function( <i>argument types</i> : <i>return type</i> )</tt></dt>
+<dd> This is a function taking the specified arguments and returning
+     <i>return type</i>. The <i>argument types</i> is a comma separated
+     list of types that specify the arguments. The argument list can also
+     end with <tt>...</tt> to signify that there can be any amount of the
+     last type.</dd>
+
+<dt> <tt><i>type1</i> | <i>type2</i></tt></dt>
+<dd> This means either <i>type1</i> or <i>type2</i></dd>
+
+<dt> <tt>void</tt></dt>
+<dd> Void can only be used in certain places, if used as return type for a
+     function it means that the function does not return a value. If used
+     in the argument list for a function it means that that argument can
+     be omitted. Example: <tt>function(int|void:void)</tt> this means a
+     function that may or may not take an integer argument and does not
+     return a value.</dd>
+</dl>
+
+</section>
+
+</chapter>

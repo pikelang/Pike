@@ -1,0 +1,336 @@
+<chapter title="Control Structures">
+
+<p>In this chapter all the control structures in Pike will be explained. As
+mentioned earlier, control structures are used to control the flow of the
+program execution. Note that functions that make the program pause and
+simple function calls are not qualified as control structures.</p>
+
+<section title="Conditions">
+
+<p>Pike only has two major condition control structures. We have already seen
+examples of both of them in Chapter two. But for completeness they will be
+described again in this chapter.</p>
+
+<subsection title="if">
+
+<p>The simplest one is called the <b>if statement</b>. It can be written anywhere
+where a statement is expected and it looks like this:</p>
+
+<example>
+if( expression )
+  statement1;
+else
+  statement2;
+</example>
+
+<p>Please note that there is no semicolon after the parenthesis or after the
+<tt>else</tt>. Step by step, <tt>if</tt> does the following:</p>
+
+<ol>
+<li>First it evaluates <i>expression</i>.</li>
+<li>If the result was <b>false</b> go to point 5.</li>
+<li>Execute <i>statement1</i>.</li>
+<li>Jump to point 6.</li>
+<li>Execute <i>statement2</i>.</li>
+<li>Done.</li>
+</ol>
+
+<p>This is actually more or less how the interpreter executes the if statement.
+In short, <i>statement1</i> is executed if <i>expression</i> is <b>true</b>
+otherwise <i>statement2</i> is executed. If you are interested in
+having something executed if the expression is false you can drop the
+whole else part like this:</p>
+
+<example>
+if( expression )
+  statement1;
+</example>
+
+<p>If on the other hand you are not interested in evaluating something if the
+expression is <b>false</b> you should use the <b>not</b> operator to negate
+the true/false value of the expression. See chapter 5 for more information
+about the <b>not</b> operator. It would look like this:</p>
+
+<example>
+if( ! expression )
+  statement2 ;
+</example>
+
+<p>Any of the statements here and in the rest of this chapter can
+also be a <b>block</b> of statements. A block is a list of statements,
+separated by semicolons and enclosed by brackets. Note that you should
+never put a semicolon after a block of statements. The example above
+would look like this;</p>
+
+<example>
+if ( ! expression )
+{
+  statement;
+  statement;
+  statement;
+}
+</example>
+
+</subsection>
+
+<subsection title="switch">
+
+<p>A more sophisticated condition control structure is the <b>switch
+statement</b>. A switch lets you select one of many choices depending
+on the value of an expression and it can look something like this:</p>
+
+<example>
+switch ( expression )
+{
+  case constant1:
+    statement1;
+    break;
+
+  case constant2:
+    statement2;
+    break;
+
+  case constant3 .. constant4:
+    statement3;
+    break;
+
+  default:
+    statement5;
+}
+</example>
+
+<p>As you can see, a switch statement is a bit more complicated than an
+if statement. It is still fairly simple however. It starts by evaluating
+the expression it then searches all the <tt>case</tt> statements in the
+following block. If one is found to be equal to the value returned by
+the expression, Pike will continue executing the code directly following
+that <tt>case</tt> statement. When a <tt>break</tt> is encountered Pike
+will skip the rest of the code in the switch block and continue executing
+after the block. Note that it is not strictly necessary to have a break
+before the next case statement. If there is no break before the next case
+statement Pike will simply continue executing and execute the code after
+that case statement as well.</p>
+
+<p>One of the case statements in the above example differs in that it is
+a <b>range</b>. In this case, any value between <i>constant3</i> and
+<i>constant4</i> will cause Pike to jump to <i>statement3</i>. Note
+that the ranges are inclusive, so the values <i>constant3</i> and
+<i>constant4</i> are also valid.</p>
+</subsection>
+
+</section>
+
+<section title="Loops">
+
+<p>Loops are used to execute a piece of code more than once. Since this can
+be done in quite a few different ways there are four different loop
+control structures. They may all seem very similar, but using the right
+one at the right time makes the code a lot shorter and simpler.</p>
+
+<subsection title="while">
+
+<p><tt>While</tt> is the simplest of the loop control structures. It looks
+just like an <tt>if</tt> statement without the else part:</p>
+
+<example>
+	while ( expression )
+	  statement;
+</example>
+
+<p>The difference in how it works isn't that big either, the statement is
+executed if the expression is true. Then the expression is evaluated
+again, and if it is true the statement is executed again. Then it
+evaluates the expression again and so forth... Here is an example of
+how it could be used:</p>
+
+<example>
+int e=1;
+while(e&lt;5)
+{
+  show_record(e);
+  e=e+1;
+}
+</example>
+
+<p>This would call show_record with the values 1, 2, 3 and 4.</p>
+</subsection>
+
+<subsection title="for">
+
+<p><tt>For</tt> is simply an extension of <tt>while</tt>. It provides an
+even shorter and more compact way of writing loops. The syntax looks
+like this:</p>
+
+<example>
+for ( initializer_statement ; expression ; incrementor_expression )
+  statement ;
+</example>
+
+<p>For does the following steps:</p>
+
+<ol>
+<li> Executes the the <i>initializer_statement</i>. The initializer statement
+     is executed only once and is most commonly used to initialize the loop
+     variable.</li>
+<li> Evaluates <i>expression</i></li>
+<li> If the result was false it exits the loop and continues with the
+     program after the loop.</li>
+<li> Executes <i>statement</i>.</li>
+<li> Executes the <i>increment_expression</i>.</li>
+<li> Starts over from 2.</li>
+</ol>
+
+<p>This means that the example in the while section can be written like this:</p>
+
+<example>
+for(int e=1; e&lt;5; e=e+1)
+  show_record(e);
+</example>
+
+</subsection>
+
+<subsection title="do-while">
+
+<p>Sometimes it is unpractical that the expression is always evaluated before
+the first time the loop is executed. Quite often you want to execute
+something, and then do it over and over until some condition is satisfied.
+This is exactly when you should use the do-while statement.</p>
+
+<example>
+do
+  statement;
+while ( expression );
+</example>
+
+<p>As usual, the <i>statement</i> can also be a block of statements, and then
+you do not need a semicolon after it. To clarify, this statement executes
+<i>statement</i> first, and then evaluates the <i>expression</i>. If the
+expression is <b>true</b> it executes the loop again. For instance, if you
+want to make a program that lets your modem dial your Internet provider,
+it could look something like this:</p>
+
+<!-- Can someone come up with a better example? -->
+<example>
+do {
+  modem-&gt;write("ATDT441-9109\n"); // Dial 441-9109
+} while(modem-&gt;gets()[..6]] != "CONNECT");
+</example>
+
+<p>This example assumes you have written something that can communicate with
+the modem by using the functions <tt>write</tt> and <tt>gets</tt>.</p>
+
+</subsection>
+
+<subsection title="foreach">
+
+<p><tt>Foreach</tt> is unique in that it does not have an explicit test expression
+evaluated for each iteration in the loop. Instead, <tt>foreach</tt> executes
+the statement once for each element in an array. <tt>Foreach</tt> looks like
+this:</p>
+
+<example>
+foreach ( array_expression, variable )
+  statement ;
+</example>
+
+<p>We have already seen an example of <tt>foreach</tt> in the <tt>find_song</tt>
+function in chapter 2. What foreach does is:</p>
+
+<ol>
+<li> It evaluates the <i>array_expression</i> which must return an array.</li>
+<li> If the array is empty, exit the loop.</li>
+<li> It then assigns the first element from the array to the <i>variable</i>.</li>
+<li> Then it executes the <i>statement</i>.</li>
+<li> If there are more elements in the array, the next one is assigned to
+     the <i>variable</i>, otherwise exit the loop.</li>
+<li> Go to point 4.</li>
+</ol>
+
+<p><tt>Foreach</tt> is not really necessary, but it is faster and clearer than
+doing the same thing with a <tt>for</tt> loop, as shown here:</p>
+
+<example>
+array tmp1= array_expression;
+for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
+{
+  variable = tmp1 [ tmp2 ];
+  statement;
+}
+</example>
+
+</subsection>
+</section>
+
+<section title="Breaking out of loops">
+
+<p>The loop control structures above are enough to solve any problem, but
+they are not enough to provide an easy solution to all problems. One thing
+that is still missing is the ability to exit a loop in the middle of it.
+There are three ways to do this:</p>
+
+<subsection title="break">
+<p><tt>break</tt> exits a loop or switch statement immediately and continues
+executing after the loop. <tt>Break</tt> can not be used outside of a loop or
+switch. It is quite useful in conjunction with <tt>while(1)</tt> to
+construct command parsing loops for instance:</p>
+
+<example>
+while(1)
+{
+  string command=Stdio.Readline()->read("&gt; ");
+  if(command=="quit") break;
+  do_command(command);
+}
+</example>
+</subsection>
+
+<subsection title="continue">
+<p><tt>Continue</tt> does almost the same thing as <tt>break</tt>, except instead of
+breaking out of the loop it only breaks out of the loop body. It then continues
+to execute the next iteration in the loop. For a <tt>while</tt> loop, this
+means it jumps up to the top again. For a <tt>for</tt> loop, it jumps to the
+incrementor expression. For a <tt>do-while</tt> loop it jumps down to the
+expression at the end. To continue our example above, <tt>continue</tt> can be used
+like this:</p>
+
+<example>
+while(1)
+{
+  string command=Stdio.Readline()->read("&gt; ");
+  if(strlen(command) == 0) continue;
+  if(command=="quit") break;
+  do_command(command);
+}
+</example>
+
+<p>This way, <tt>do_command</tt> will never be called with an empty string as
+argument.</p>
+</subsection>
+
+<subsection title="return">
+
+<p><tt>Return</tt> doesn't just exit the loop, it exits the whole function. We have seen
+several examples how to use it chapter 2. None of the functions in chapter
+two returned anything in particular however. To do that you just put the return
+value right after <tt>return</tt>. Of course the type of the return value
+must match the type in the function declaration. If your function declaration
+is <tt>int main()</tt> the value after <tt>return</tt> must be an <b>int</b>.
+For instance, if we wanted to make a program that always returns an error
+code to the system, just like the UNIX command <tt>false</tt> this is how
+it would be done:</p>
+
+<example>
+#!/usr/local/bin/pike
+
+int main()
+{
+  return 1;
+}
+</example>
+
+<p>This would return the error code <tt>1</tt> to the system when the program
+is run.</p>
+</subsection>
+</section>
+
+</chapter>
