@@ -3,7 +3,9 @@
 LINKER="$1"
 shift
 RPATH=""
-LDOPTS=""
+LPATH=""
+LPATHS="::"
+LOPTS=""
 
 #Special hack for HP-UX
 LD_PXDB=/dev/null
@@ -30,6 +32,28 @@ while test "$#" != 0; do
      fi
      RPATH="$RPATH:$tmp"
     ;;
+    -n32)
+     SET_N32="-n32"
+    ;;
+
+    -L*)
+     if test x$1 = x-L ; then
+       tmp="$2"
+       shift
+     else
+       tmp=`echo $1 | sed -e 's/^-L//g'`
+     fi
+
+     case $LDPATHS in
+       *:$tmp:*)
+         ;;
+       *)     
+         LDPATHS="$LDPATHS$tmp:"
+        LDOPTS="$LDOPTS -L$tmp"
+       ;;
+    esac
+    ;;
+
     -n32)
      SET_N32="-n32"
     ;;
