@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.134 2000/09/28 03:38:23 hubbe Exp $
+ * $Id: master.pike.in,v 1.135 2000/11/20 01:26:26 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -456,25 +456,24 @@ program cast_to_program(string pname, string current_file, object|void handler)
 }
 
 /* This function is called when an error occurs that is not caught
- * with catch(). It's argument consists of:
- * ({ error_string, backtrace }) where backtrace is the output from the
- * backtrace() efun.
+ * with catch().
  */
 void handle_error(array(mixed)|object trace)
 {
-  predef::trace(0);
   if(mixed x=catch {
     werror(describe_backtrace(trace));
   })
   {
+    // One reason for this might be too little stack space, which
+    // easily can occur for "out of stack" errors. It should help to
+    // tune up the STACK_MARGIN values in interpret.c then.
     werror("Error in handle_error in master object:\n");
-    if(catch {	
+    if(catch {
       werror("%O\nOriginal error:\n%O\n",x,trace);
     }) {
       werror("sprintf() failed to write error.\n");
     }
   }
-  
 }
 
 object new(mixed prog, mixed ... args)
@@ -1490,23 +1489,28 @@ class Describer
 
   void identify_parts (mixed stuff)
   {
-    if (arrayp (stuff)) {
-      if (!ident[stuff]++)
-	foreach (stuff, mixed elem)
-	  identify_parts (elem);
+    // Use an array as stack here instead of recursing directly; we
+    // might be pressed for stack space if the backtrace being
+    // described is a stack overflow.
+    array identify_stack = ({stuff});
+    while (sizeof (identify_stack)) {
+      stuff = identify_stack[-1];
+      identify_stack = identify_stack[..sizeof (identify_stack) - 2];
+      if (arrayp (stuff)) {
+	if (!ident[stuff]++)
+	  identify_stack += stuff;
+      }
+      else if (multisetp (stuff)) {
+	if (!ident[stuff]++)
+	  identify_stack += indices (stuff);
+      }
+      else if (mappingp (stuff)) {
+	if (!ident[stuff]++)
+	  identify_stack += indices (stuff) + values (stuff);
+      }
+      else if (objectp (stuff) || functionp (stuff) || programp (stuff))
+	ident[stuff]++;
     }
-    else if (multisetp (stuff)) {
-      if (!ident[stuff]++)
-	foreach (indices (stuff), mixed elem)
-	  identify_parts (elem);
-    }
-    else if (mappingp (stuff)) {
-      if (!ident[stuff]++)
-	foreach (indices (stuff), mixed elem)
-	  identify_parts (elem), identify_parts (stuff[elem]);
-    }
-    else if (objectp (stuff) || functionp (stuff) || programp (stuff))
-      ident[stuff]++;
   }
 
   string describe_string (string m, int maxlen)
@@ -1749,7 +1753,8 @@ string describe_function (function f)
   else
     if (catch (name = function_name (f))) name = "function";
 
-  if(object o=function_object(f)) {
+  object o = function_object(f);
+  if(o != 0) { // Testing simply on o here could invoke a `!.
     string s;
     if (!catch (s = sprintf("%O",o)) && s != "object")
       return s+"->"+name;
@@ -1797,16 +1802,23 @@ string describe_backtrace(mixed trace, void|int linewidth)
     Describer desc = Describer();
     desc->identify_parts (trace);
 
-    for(e = sizeof(trace)-1; e>=0; e--)
+    int end = 0;
+    if( (sizeof(trace)>1) &&
+	arrayp(trace[0]) &&
+	(sizeof(trace[0]) > 2) &&
+	(trace[0][2] == _main))
+      end = 1;
+
+    mapping(string:int) prev_pos = ([]);
+    array(string) frames = ({});
+    int loop_start = 0, loop_next, loops;
+
+    for(e = sizeof(trace)-1; e>=end; e--)
     {
       mixed tmp;
       string row;
-      if( arrayp(trace[e]) &&
-          (sizeof(trace[e]) > 2) &&
-          (trace[e][2] == _main) && 
-          (sizeof(trace)>1) )
-        continue;
-      if (mixed err=catch {
+      // The continue's below jump wrong when this catch is here.. :P
+//       if (mixed err=catch {
 	tmp = trace[e];
 	if(stringp(tmp))
 	{
@@ -1817,6 +1829,28 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  string pos;
 	  if(sizeof(tmp)>=2 && stringp(tmp[0])) {
 	    if (intp(tmp[1])) {
+
+	      string exact_pos = tmp[0] + ":" + tmp[1];
+	      int dup_frame;
+	      if (!zero_type (dup_frame = prev_pos[exact_pos])) {
+		dup_frame -= sizeof (frames);
+		if (!loop_start) {
+		  loop_start = dup_frame;
+		  loop_next = dup_frame + 1;
+		  loops = 0;
+		  continue;
+		}
+		else {
+		  int new_loop = 0;
+		  if (!loop_next) loop_next = loop_start, new_loop = 1;
+		  if (dup_frame == loop_next++) {
+		    loops += new_loop;
+		    continue;
+		  }
+		}
+	      }
+	      prev_pos[exact_pos] = sizeof (frames);
+
 	      pos=trim_file_name(tmp[0])+":"+tmp[1];
 	    } else {
 	      pos = sprintf("%s:Bad line %t", trim_file_name(tmp[0]), tmp[1]);
@@ -1835,7 +1869,20 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    }
 	    pos=desc;
 	  }
-	  
+
+	  if (loop_start) {
+	    array(string) tail;
+	    if (!loop_next) tail = ({}), loops++;
+	    else tail = frames[loop_start + sizeof (frames) ..
+			       loop_next - 1 + sizeof (frames)];
+	    if (loops)
+	      frames += ({sprintf ("... last %d frames above repeated %d times ...\n",
+				   -loop_start, loops)});
+	    frames += tail;
+	    prev_pos = ([]);
+	    loop_start = 0;
+	  }
+
 	  string data;
 	  
 	  if(sizeof(tmp)>=3)
@@ -1871,11 +1918,24 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    row = "Destructed object";
 	  }
 	}
-      }) {
-	row = sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
-      }
-      ret += row + "\n";
+//       }) {
+//  	row = sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
+//       }
+      frames += ({row + "\n"});
     }
+
+    if (loop_start) {
+      // Want tail to contain a full loop rather than being empty; it
+      // looks odd when the repeat message ends the backtrace.
+      array(string) tail = frames[loop_start + sizeof (frames) ..
+				  loop_next - 1 + sizeof (frames)];
+      if (loops)
+	frames += ({sprintf ("... last %d frames above repeated %d times ...\n",
+			     -loop_start, loops)});
+      frames += tail;
+    }
+
+    ret += frames * "";
   }
 
   return ret;
