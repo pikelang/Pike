@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.36 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: dlopen.c,v 1.37 2002/10/22 20:15:30 grubba Exp $
 */
 
 #include <global.h>
@@ -44,7 +44,11 @@ static char *dlerr=0;
  *  Separate RWX, RW and R memory sections.
  */
 
-/* #define DLDEBUG 1*/
+/* Enable debug output if compiled on win64. */
+#ifdef _WIN64
+#define DLDEBUG 1
+#endif /* _WIN64 */
+
 #define DL_VERBOSE 1
 
 /*
@@ -185,7 +189,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.36 2002/10/11 01:39:30 nilsson Exp $");
+RCSID("$Id: dlopen.c,v 1.37 2002/10/22 20:15:30 grubba Exp $");
 
 #endif
 
