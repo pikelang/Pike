@@ -1,10 +1,11 @@
-/* $Id: mkdoc.pike,v 1.11 1997/10/27 22:40:34 mirar Exp $ */
+/* $Id: mkdoc.pike,v 1.12 1997/10/29 02:57:06 mirar Exp $ */
 
 import Stdio;
 import Array;
 
 mapping parse=([]);
 int illustration_counter;
+object illustration_source;
 
 string illustration_code=read_bytes("illustration.pike");
 object lena_image=Image.image()->fromppm(read_file("doc/lena.ppm"));
@@ -190,6 +191,8 @@ object(File) make_file(string filename)
    return f;
 }
 
+mapping ills=([]);
+
 string fixdesc(string s,string prefix)
 {
    s=stripws(s);
@@ -208,10 +211,12 @@ string fixdesc(string s,string prefix)
    while (sscanf(t,"%s<illustration>%s</illustration>%s",t,u,v)==3)
    {
       s+=t;
+
       array err=catch {
 	 object x=compile_string(replace(illustration_code,"***the string***",u))();
 	 x->lena_image=lena_image;
-	 u=x->doit("illustration_"+illustration_counter+++".gif");
+	 u=x->doit("illustration_"+illustration_counter+++".gif",
+		   ills,illustration_source,u);
       };
       if (err)
       {
@@ -474,6 +479,9 @@ void document_module(mapping mod,string module,string dir)
 void make_doc_files(string dir)
 {
    stdout->write("modules: "+sort(indices(parse))*", "+"\n");
+
+   illustration_source=File();
+   illustration_source->open(dir+"illustrations.html","wct");
 
    string module;
    

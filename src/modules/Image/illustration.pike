@@ -1,4 +1,4 @@
-/* $Id: illustration.pike,v 1.1 1997/05/29 22:51:19 mirar Exp $ */
+/* $Id: illustration.pike,v 1.2 1997/10/29 02:57:04 mirar Exp $ */
 
 import Image;
 import Stdio;
@@ -15,13 +15,29 @@ object foo()
 ***the string***
 }
 
-string doit(string name)
+string doit(string name,mapping has,object f,string src)
 {
+   rm("doc/"+name); // clean up
+
    object o=foo();
-   if (o->toppm()==lena()->toppm()) 
+   string s=o->toppm();
+
+   if (s==lena()->toppm()) 
       return "<img src=lena.gif width=67 height=67>";
+
+   if (has[s]) return has[s];
    
-   rm("doc/"+name);
    write_file("doc/"+name,o->togif());
-   return "<img src="+name+" width="+o->xsize()+" height="+o->ysize()+">";
+
+   f->write(
+      "<a name="+name+">"
+      "<img border=0 src="+name+" width="+o->xsize()+" height="+o->ysize()+" align=right>"
+      "<pre>"+src+"</pre>"
+      "</a><br clear=all><hr>"
+      );
+
+   return has[s]=
+      "<a href=illustrations.html#"+name+">"
+      "<img border=0 src="+name+" width="+o->xsize()+" height="+o->ysize()+">"
+      "</a>";
 }
