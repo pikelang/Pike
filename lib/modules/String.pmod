@@ -41,6 +41,42 @@ string strmult(string str, int num)
 #endif
 }
 
+/*
+ * string common_prefix(array(string) strs)
+ * {
+ *   if(!sizeof(strs))
+ *     return "";
+ *  
+ *   for(int n = 0; n < sizeof(strs[0]); n++)
+ *     for(int i = 1; i < sizeof(strs); i++)
+ * 	if(sizeof(strs[i]) <= n || strs[i][n] != strs[0][n])
+ * 	  return strs[0][0..n-1];
+ *
+ *   return strs[0];
+ * }
+ *
+ * This function is a slightly optimised version based on the code
+ * above (which is far more suitable for an implementation in C).
+ */
+string common_prefix(array(string) strs)
+{
+  if(!sizeof(strs))
+    return "";
+
+  string strs0 = strs[0];
+  int n, i;
+  
+  catch
+  {
+    for(n = 0; n < sizeof(strs0); n++)
+      for(i = 1; i < sizeof(strs); i++)
+	if(strs[i][n] != strs0[n])
+	  return strs0[0..n-1];
+  };
+
+  return strs0[0..n-1];
+}
+
 class String_buffer {
   string *buffer=allocate(BEGIN);
   int ptr=0;

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.193 1999/09/11 08:15:58 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.194 1999/09/14 22:31:28 noring Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2599,6 +2599,11 @@ test_eq(1,call_function(intp,1))
 test_eq(String.capitalize("fubar"),"Fubar")
 test_eq(String.capitalize("FooBar"),"FooBar")
 test_eq(String.capitalize("-"),"-")
+
+// - common_prefix
+test_eq(String.common_prefix(({ "muzzle", "muzzy" })), "muzz")
+test_eq(String.common_prefix(({ "labyrinth", "diatom" })), "")
+test_eq(String.common_prefix(({})), "")
 
 // - clone
 // clone is already tested a lot by this script

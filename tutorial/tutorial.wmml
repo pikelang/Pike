@@ -5938,6 +5938,25 @@ lower_case, upper_case
 
 
 
+<function name=String.common_prefix title="find the longest common prefix">
+<man_syntax>
+string common_prefix(array(string) strs);
+</man_syntax>
+<man_description>
+Find the longest common beginning from an array of strings.
+</man_description>
+<man_example>
+&gt; String.common_prefix(({ "muzzle", "muzzy" }));<br>
+Result: "muzz"<br>
+&gt; String.common_prefix(({ "labyrinth", "diatom" }));<br>
+Result: ""<br>
+&gt; String.common_prefix(({}));<br>
+Result: ""<br>
+</man_example>
+</function>
+
+
+
 <function name=String.sillycaps title="Sillycaps A String">
 <man_syntax>
 string sillycaps(string str);
