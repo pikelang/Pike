@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.643 2003/05/24 11:53:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.644 2003/05/24 12:02:25 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9624,6 +9624,8 @@ test_any([[
     return sprintf("Unexpected signal:%d (expected %d)", sig, signum("TRAP"));
   }
   proc->cont();
+
+  sleep(5);	// Give it some time to settle down after initialization.
 
   // Check that we can block deadly signals.
   proc->kill(signum("TERM"));
