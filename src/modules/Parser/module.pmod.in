@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.5 1999/06/12 19:51:38 mirar Exp $
+ * $Id: module.pmod.in,v 1.6 1999/06/14 20:49:34 mirar Exp $
  *
  */
 
@@ -133,11 +133,14 @@ class SGML
 //! note:
 //! 	No, it doesn't read the file itself. See <ref>feed</ref>.
 
+   int i;
+
    void create(void|string _file)
    {
       file=_file;
 
       p->_set_tag_callback(got_tag);
+//       p->_set_tag_callback(lambda() { i++; sleep(0); return ({}); });
       p->_set_data_callback(lambda(object g,string data) 
 			    { if (data!="") res[0]+=({data}); return ({}); });
    }
@@ -163,6 +166,7 @@ class SGML
       p->finish();
       data=res[0];
       res=0;
+      werror("i=%O\n",i);
       return data;
    }
 

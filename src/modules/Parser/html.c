@@ -1254,8 +1254,8 @@ static void do_callback(struct parser_html_storage *this,
    if (start)
       push_feed_range(start,cstart,end,cend);
    else 
-      ref_push_string(empty_string);;
-   apply_svalue(callback_function,2);
+      ref_push_string(empty_string);
+   apply_svalue(callback_function,2);  
 }
 
 static newstate entity_callback(struct parser_html_storage *this,
