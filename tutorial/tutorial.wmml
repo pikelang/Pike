@@ -1582,6 +1582,13 @@ Also, these functions operates on strings:
 <dt><tt>string String.capitalize(string <i>s</i>)</tt>
 <dd>Returns <i>s</i> with the first character converted to upper case.
 
+<dt><tt>int String.count(string <i>haystack</i>, string <i>needle</i>)</tt>
+<dd>Returns the number of occurances of <i>needle</i> in <i>haystack</i>.
+Equvivalent to <tt>sizeof(<i>haystack</i>/<i>needle</i>)-1</tt>.
+
+<dt><tt>int String.width(string <i>s</i>)</tt>
+<dd>Returns the width <i>s</i> in bits (8, 16 or 32).
+
 <dt><tt>string lower_case(string <i>s</i>)</tt>
 <dd>Returns <i>s</i> with all the upper case characters converted to lower case.
 
@@ -5962,6 +5969,17 @@ can be found in haystack.
 
 Intersections between needles are not counted, ie
 count("....","..") is 2.
+</man_description>
+</function>
+
+
+
+<function name=String.width title="return width of string">
+<man_syntax>
+int width(string s);
+</man_syntax>
+<man_description>
+Returns the width in bits (8, 16 or 32) of the widest character in <i>s</i>.
 </man_description>
 </function>
 
