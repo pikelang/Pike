@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.10 2000/04/20 02:41:44 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.11 2000/04/20 11:12:31 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -257,10 +257,10 @@ OPCODE2(F_2_LOCALS, "2 locals")
 BREAK;
 
 OPCODE2(F_LOCAL_2_LOCAL, "local = local")
-  assign_svalue(Pike_fp->locals+arg1, Pike_fp->locals+arg2);
+  assign_svalue(Pike_fp->locals + arg1, Pike_fp->locals + arg2);
 BREAK;
 
-OPCODE2(F_LOCAL_2_GLOBAL, "global=local;")
+OPCODE2(F_LOCAL_2_GLOBAL, "global = local")
 {
   INT32 tmp = arg1 + Pike_fp->context.identifier_level;
   struct identifier *i;
@@ -283,9 +283,9 @@ OPCODE2(F_LOCAL_2_GLOBAL, "global=local;")
 }
 BREAK;
 
-OPCODE2(F_GLOBAL_2_LOCAL,"global = local")
+OPCODE2(F_GLOBAL_2_LOCAL,"local = global")
 {
-  INT32 tmp=arg1 + Pike_fp->context.identifier_level;
+  INT32 tmp = arg1 + Pike_fp->context.identifier_level;
   free_svalue(Pike_fp->locals + arg2);
   low_object_index_no_free(Pike_fp->locals + arg2,
 			   Pike_fp->current_object,
