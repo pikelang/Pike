@@ -54,13 +54,11 @@ static int adjust_up(int elem)
 {
   int parent=(elem-1)/2;
 
-  if(!elem) return 0;
-  
-  if(values[elem] < values[parent])
+  if(elem && values[elem] < values[parent])
   {
     SWAP(elem, parent);
     elem=parent;
-    while(values[elem] < values[parent=(elem -1)/2])
+    while(elem && (values[elem] < values[parent=(elem -1)/2]))
     {
       SWAP(elem, parent);
       elem=parent;
