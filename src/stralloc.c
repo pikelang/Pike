@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.114 2001/01/10 11:26:44 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.115 2001/02/02 20:36:22 mast Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1766,6 +1766,14 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
 {
   s->malloced=256;
   s->s=begin_wide_shared_string(256,mag);
+  s->s->len=0;
+  s->known_shift=0;
+}
+
+PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t length, int mag)
+{
+  s->malloced=length;
+  s->s=begin_wide_shared_string(length,mag);
   s->s->len=0;
   s->known_shift=0;
 }
