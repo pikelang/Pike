@@ -278,3 +278,5 @@ test_eq([[xCrypto.crypt_md5("Hello","sl5hO7j4")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
 test_eq([[xCrypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
+
+test_do(add_constant("xCrypto"))

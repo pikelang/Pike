@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.4 1998/03/28 14:55:06 grubba Exp $
+// $Id: testsuite.in,v 1.5 2002/10/28 13:36:24 nilsson Exp $
 
 // gdbm
 cond( [[ master()->resolv("Gdbm")->gdbm ]],
@@ -51,4 +51,5 @@ cond( [[ master()->resolv("Gdbm")->gdbm ]],
   GDBMTESTS
 
   test_do(rm("test.gdbm"))
+  test_do(add_constant("GDBMBASE"))
 ]])
