@@ -1,11 +1,28 @@
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
 
-//! 
-void set_content(string);
-array(array(string)) get_anchors();
-void add_content(string, int);
-array(array) get_filtered_content();
-string get_title();
-string get_keywords();
-string get_description();
+class Output
+{
+  // Wide strings here
+
+  mapping(string:string) fields=([]);
+  // body_normal
+  // body_medium
+  // body_big
+  // title, description, keywords
+  
+  mapping(string:string) uri_anchors=([]);
+  // Maps un-normalized URLs to raw text
+  // ([ "http://www.roxen.com": "the Roxen web-server" ])
+
+  array(Standards.URI|string) links=({});
+
+  void fix_relative_links(Standards.URI base_uri)
+  {
+    for(int i=0; i<sizeof(links); i++)
+      links[i]=Standards.URI(links[i], base_uri);
+  }
+}
+
+Output filter(Standards.URI uri, string|Stdio.File data,
+	      string content_type);
