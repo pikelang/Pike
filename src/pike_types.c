@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.165 2001/03/18 19:46:52 per Exp $");
+RCSID("$Id: pike_types.c,v 1.166 2001/03/19 00:41:20 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -176,8 +176,10 @@ static void internal_parse_type(char **s);
  * ---------------------------------------------
  * SCOPE	num vars (int)	type
  * ASSIGN	variable (int)	type
+ * NAME		name (string)	type
  * FUNCTION	type		FUNCTION|MANY
  * MANY		many type	return type
+ * RING		type		type
  * TUPLE	type		type
  * MAPPING	index type	value type
  * OR		type		type
@@ -240,6 +242,7 @@ void free_type(struct pike_type *t)
     case T_MAPPING:
     case T_OR:
     case T_AND:
+    case PIKE_T_RING:
       /* Free car & cdr */
       free_type(car);
       t = cdr;
@@ -294,6 +297,7 @@ static inline struct pike_type *mk_type(unsigned INT32 type,
       case T_MAPPING:
       case T_OR:
       case T_AND:
+      case PIKE_T_RING:
 	/* Free car & cdr */
 	free_type(car);
 	free_type(cdr);
@@ -459,6 +463,7 @@ void push_type(unsigned INT16 type)
   case T_MAPPING:
   case T_OR:
   case T_AND:
+  case PIKE_T_RING:
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
     *Pike_compiler->type_stackp = mk_type(type,
@@ -531,6 +536,7 @@ void pop_type_stack(void)
   case T_MAPPING:
   case T_OR:
   case T_AND:
+  case PIKE_T_RING:
     /* Both car & cdr. */
     push_finished_type(top->cdr);
     push_finished_type(top->car);
@@ -592,6 +598,7 @@ void push_reverse_type(unsigned INT16 type)
   case T_MAPPING:
   case T_OR:
   case T_AND:
+  case PIKE_T_RING:
     {
       /* Binary type-node. -- swap the types. */
       struct pike_type *tmp = Pike_compiler->type_stackp[0];
@@ -1203,6 +1210,13 @@ void simple_describe_type(struct pike_type *s)
 	break;
 	
       case PIKE_T_UNKNOWN: printf("unknown"); break;
+      case PIKE_T_RING:
+	printf("ring(";
+	simple_describe_type(s->car);
+	printf("°");
+	simple_describe_type(s->cdr);
+	printf(")");
+	break;
       case T_OR:
 	printf("or(");
 	simple_describe_type(s->car);
@@ -1392,6 +1406,15 @@ static void low_describe_type(struct pike_type *t)
 	my_describe_type(t->car);
       }
       break;
+
+    case PIKE_T_RING:
+      /* FIXME: Should be renumbered for correct parenthesing. */
+      my_strcat("(");
+      my_describe_type(t->car);
+      my_strcat(")°(");
+      my_describe_type(t->cdr);
+      my_strcat(")");
+      break;
       
     case T_OR:
       if (t->car->type > T_OR) {
@@ -1477,6 +1500,9 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
 {
   switch(t->type)
   {
+  case PIKE_T_RING:
+    return compile_type_to_runtime_type(t->car);
+
   case T_OR:
     {
       TYPE_T tmp = compile_type_to_runtime_type(t->car);
@@ -1953,6 +1979,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       return low_match_types(a->cdr, b, flags);
     }
 
+  case PIKE_T_RING:
+    return low_match_types(a->car, b, flags);
+
   case PIKE_T_NAME:
     return low_match_types(a->cdr, b, flags);
 
@@ -2043,6 +2072,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     }else{
       return low_match_types(a, b->cdr, flags);
     }
+
+  case PIKE_T_RING:
+    return low_match_types(a, b->car, flags);
 
   case PIKE_T_NAME:
     return low_match_types(a, b->cdr, flags);
@@ -2471,6 +2503,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       }
     }
 
+  case PIKE_T_RING:
+    a = a->car;
+    goto recurse;
+
   case PIKE_T_NAME:
     a = a->cdr;
     goto recurse;
@@ -2556,6 +2592,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ret=low_pike_types_le(a, b->car, array_cnt, flags);
     if (ret) return ret;
     b = b->cdr;
+    goto recurse;
+
+  case PIKE_T_RING:
+    b = b->car;
     goto recurse;
 
   case PIKE_T_NAME:
@@ -2967,6 +3007,9 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
     if(!tmp) return 0;
     return low_get_return_type(a->cdr, b);
 
+  case PIKE_T_RING:
+    return low_get_return_type(a->car, b);
+
   case PIKE_T_NAME:
     return low_get_return_type(a->cdr, b);
 
@@ -3147,6 +3190,7 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 #endif
     case T_ZERO:
     case T_TYPE:
+    case PIKE_T_RING:
     case T_VOID:
     case T_FLOAT:
       return 0;
@@ -3306,6 +3350,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
     case T_VOID:
     case T_ZERO:
     case T_TYPE:
+    case PIKE_T_RING:
     case T_FLOAT:
     case T_INT:
       return 0;
@@ -3869,6 +3914,9 @@ int type_may_overload(struct pike_type *type, int lfun)
     case PIKE_T_NAME:
       return type_may_overload(type->cdr, lfun);
 
+    case PIKE_T_RING:
+      return type_may_overload(type->car, lfun);
+
     case T_OR:
       return type_may_overload(type->car, lfun) ||
 	type_may_overload(type->cdr, lfun);
@@ -3963,6 +4011,7 @@ static struct pike_type *low_make_pike_type(unsigned char *type_string,
     return low_make_function_type(type_string+1, cont);
   case T_TUPLE:
   case T_MAPPING:
+  case PIKE_T_RING:
     /* Order dependant */
     return mk_type(type, low_make_pike_type(type_string+1, cont),
 		   low_make_pike_type(*cont, cont), PT_COPY_BOTH);
@@ -4053,6 +4102,10 @@ int pike_type_allow_premature_toss(struct pike_type *type)
       type = type->cdr;
       goto again;
 
+    case PIKE_T_RING:
+      type = type->car;
+      goto again;
+
     case T_OR:
     case T_MAPPING:
       if(!pike_type_allow_premature_toss(type->car)) return 0;
@@ -4097,6 +4150,7 @@ static void low_type_to_string(struct pike_type *t)
     t = t->car;
     goto recurse;
 
+  case PIKE_T_RING:
   case T_TUPLE:
   case T_MAPPING:
   case T_OR:
@@ -4259,6 +4313,7 @@ one_more_type:
       
     case T_TUPLE:
     case T_MAPPING:
+    case PIKE_T_RING:
     case T_OR:
     case T_AND:
       t+=type_length(t);
@@ -4911,6 +4966,7 @@ void stupid_describe_type(char *a, ptrdiff_t len)
 	
       case PIKE_T_UNKNOWN: fputs("unknown", stderr); break;
       case T_MANY: fputs("many", stderr); break;
+      case PIKE_T_RING: fputs("ring", stderr); break;
       case T_OR: fputs("or", stderr); break;
       case T_AND: fputs("and", stderr); break;
       case T_NOT: fputs("not", stderr); break;
@@ -5092,6 +5148,14 @@ static char *low_describe_type(char *t)
 	t=low_describe_type(t);
       }
       break;
+
+    case PIKE_T_RING:
+      my_strcat("(");
+      t = low_describe_type(t);
+      my_strcat(")°(");
+      t = low_describe_type(t);
+      my_strcat(")");
+      break;
       
     case T_OR:
       if (EXTRACT_UCHAR(t) > T_OR) {
@@ -5194,6 +5258,9 @@ static TYPE_T low_compile_type_to_runtime_type(char *t)
 
   case T_ZERO:
     return T_INT;
+
+  case PIKE_T_RING:
+    return low_compile_type_to_runtime_type(t+1);
 
     case T_SCOPE:
       return low_compile_type_to_runtime_type(t+2);
@@ -5678,6 +5745,9 @@ static char *low_match_types2(char *a,char *b, int flags)
       return low_match_types(a,b,flags);
     }
 
+  case PIKE_T_RING:
+    return low_match_types(a+1, b, flags);
+
   case T_NOT:
     if(low_match_types(a+1,b,(flags ^ B_EXACT ) | NO_MAX_ARGS))
       return 0;
@@ -5762,6 +5832,9 @@ static char *low_match_types2(char *a,char *b, int flags)
     }else{
       return low_match_types(a,b,flags);
     }
+
+  case PIKE_T_RING:
+    return low_match_types(a, b+1, flags);
 
   case T_NOT:
     if(low_match_types(a,b+1, (flags ^ A_EXACT ) | NO_MAX_ARGS))
@@ -6177,6 +6250,9 @@ static int low_pike_types_le2(char *a, char *b,
       }
     }
 
+  case PIKE_T_RING:
+    return low_pike_types_le(a+1, b, array_cnt, flags);
+
   case T_NOT:
     if (EXTRACT_UCHAR(b) == T_NOT) {
       return low_pike_types_le(b+1, a+1, -array_cnt, flags);
@@ -6254,6 +6330,9 @@ static int low_pike_types_le2(char *a, char *b,
     if (ret) return ret;
     b+=type_length(b);
     return low_pike_types_le(a, b, array_cnt, flags);
+
+  case PIKE_T_RING:
+    return low_pike_types_le(a, b+1, array_cnt, flags);
 
   case T_NOT:
     if (EXTRACT_UCHAR(b+1) == T_NOT) {
@@ -6826,6 +6905,7 @@ static struct pike_type *debug_low_index_type(char *t,
     case T_TYPE:
     case T_VOID:
     case T_FLOAT:
+    case PIKE_T_RING:
       return 0;
 
   case T_OR:
@@ -6980,6 +7060,7 @@ static struct pike_type *debug_low_key_type(char *t, node *n)
     case T_TYPE:
     case T_FLOAT:
     case T_INT:
+    case PIKE_T_RING:
       return 0;
 
   case T_OR:
@@ -7596,6 +7677,7 @@ static int low_pike_type_allow_premature_toss(char *type)
     case T_FUNCTION:
       return 0;
 
+    case PIKE_T_RING:
     case T_SCOPE:
     case T_ASSIGN:
       type++;

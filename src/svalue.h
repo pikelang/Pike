@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.80 2001/03/17 16:37:43 grubba Exp $
+ * $Id: svalue.h,v 1.81 2001/03/19 00:41:20 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -96,6 +96,7 @@ struct svalue
 #define T_VOID       16	/* Can't return any value */
 #define T_MANY       17
 
+#define PIKE_T_RING 240
 #define PIKE_T_NAME 241		/* Only supported in USE_PIKE_TYPE-mode. */
 #define T_MAPPING_DATA 242
 #define PIKE_T_SCOPE 243	/* Not supported yet */
