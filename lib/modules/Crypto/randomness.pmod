@@ -70,10 +70,8 @@ PRIVATE string some_entropy()
 class pike_random {
   string read(int len)
   {
-    return sprintf("%@c", Array.map(allocate(len), lambda(int dummy)
-				    {
-				      return random(256);
-				    } ));
+    if (len > 16384) return read(len/2)+read(len-len/2);
+    return (string)allocate(len, random)(256);
   }
 }
 
