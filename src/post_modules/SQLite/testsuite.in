@@ -43,11 +43,11 @@ cond_resolv( SQLite.SQLite, [[
   test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([ 1:12,2:"blå",3:"blå"]) )->fetch_row();, 0 )
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=12")->fetch_row();, ({"blå","blå"}) )
 
-dnl  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:13,2:"f\x1234",3:"f\x1234"]))->fetch_row();, 0 )
-dnl  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=13")->fetch_row();, ({"f\x1234","f\x1234"}) )
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:13,2:"f\x1234",3:"f\x1234"]))->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=13")->fetch_row();, ({"f\x1234","f\x1234"}) )
 
-dnl  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:14,2:"f\x103456",3:"f\x103456"]))->fetch_row();, 0 )
-dnl  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=14")->fetch_row();, ({"f\x103456","f\x103456"}) )
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:14,2:"f\x103456",3:"f\x103456"]))->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=14")->fetch_row();, ({"f\x103456","f\x103456"}) )
 
   test_do( add_constant("db"); )
   test_do( rm("testdb"); )
