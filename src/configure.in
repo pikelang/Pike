@@ -2,6 +2,8 @@ AC_INIT(interpret.c)
 AC_PROG_CC
 AC_C_CROSS
 
+#############################################################################
+
 # We need some special hacks when running slowaris
 AC_PATH_PROG(uname_prog,uname,no)
 AC_MSG_CHECKING(operating system)
@@ -31,6 +33,8 @@ dnl   AC_DEFINE(SOLARIS)
 dnl  LIBS="$LIBS -lthread"
 dnl fi
 dnl
+
+#############################################################################
 
 OLD_CFLAGS="$CFLAGS"
 OPTIMIZE="";
@@ -84,6 +88,8 @@ else
   fi
 fi
 
+#############################################################################
+
 AC_MSG_CHECKING(ansi prototype capability)
 AC_CACHE_VAL(lpc_cv_sys_ansi_prototypes,
 [
@@ -99,11 +105,15 @@ else
   exit 1
 fi
 
+#############################################################################
+
 AC_CONFIG_HEADER(machine.h)
 AC_PROG_INSTALL
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
+
+#############################################################################
 
 AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
 AC_CACHE_VAL(lpc_cv_prog_working_yacc,
@@ -183,6 +193,8 @@ lpc_cv_prog_working_yacc="$YACC"
 YACC="$lpc_cv_prog_working_yacc"
 AC_MSG_RESULT($YACC)
 
+#############################################################################
+
 AC_MSG_CHECKING(first yacc define)
 AC_CACHE_VAL(lpc_cv_yacc_first,
 [
@@ -210,11 +222,13 @@ AC_DEFINE_UNQUOTED(F_OFFSET,$lpc_cv_yacc_first)
 
 rm -rf conftest.y y.tab.c y.tab.h conftest.out
 
+#############################################################################
+
 AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h unistd.h stdlib.h memory.h \
 values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-sys/resource.h sys/select.h netdb.h)
+sys/resource.h sys/select.h sys/mman.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -229,7 +243,7 @@ AC_TYPE_UID_T
 AC_TYPE_SIGNAL
 AC_CHECK_TYPE(time_t,INT32)
 
-AC_CHECK_LIB(PW, alloca)
+dnl AC_CHECK_LIB(PW, alloca)
 
 dnl AC_CHECK_LIB(crypt, crypt)
 
@@ -252,6 +266,7 @@ fi
 LIBOBJS="${OLD_LIBOBJS}"
 
 AC_FUNC_STRCOLL
+AC_FUNC_MMAP
 
 AC_CHECK_FUNCS(
  _crypt \
@@ -265,6 +280,7 @@ AC_CHECK_FUNCS(
  getrusage \
  gettimeofday \
  index \
+ localtime \
  memchr \
  memcpy \
  memset \
@@ -286,10 +302,12 @@ AC_CHECK_FUNCS(
  wait3 \
  wait4 \
  waitpid \
- localtime \
+ munmap \
 )
 
 AC_STRUCT_TM
+
+#############################################################################
 
 AC_MSG_CHECKING(extern int timezone)
 
@@ -306,10 +324,14 @@ if test "$lpc_cv_has_external_timezone" = "yes"; then
   AC_DEFINE(HAVE_EXTERNAL_TIMEZONE)
 fi
 
+AC_MSG_RESULT($lpc_cv_has_external_timezone)
+
+#############################################################################
+
 # No test for this yet...
 AC_DEFINE(HAVE_STRUCT_TIMEVAL)
 
-AC_MSG_RESULT($lpc_cv_has_external_timezone)
+#############################################################################
 
 AC_MSG_CHECKING(if gettimeofday takes two arguments)
 AC_CACHE_VAL(lpc_cv_func_gettimeofday_has_two_args,
