@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.533 2002/09/02 10:15:38 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.534 2002/09/03 22:15:17 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9333,7 +9333,6 @@ void test_dir(string dir, int|void base_size)
   {
     switch(s)
     {
-      case "db":        // Protocols.pmod/X.pmod/db
       case "msql.pike":
       case "mysql.pike":
       case "mysql_result.pike":
@@ -9353,15 +9352,14 @@ void test_dir(string dir, int|void base_size)
     string file=combine_path(dir,s);
     mixed stat=file_stat(file);
     if(!stat) continue;
-    if(stat[1]==-2)
+    if(stat[1]==-2 && has_suffix(file, ".pmod"))
     {
-      if (glob("*.pmod", file)) {
-        test_resolv(file, base_size);
-      }
+      test_resolv(file, base_size);
       test_dir(file, base_size);
-    }else if(stat[1]>=0){
+    }
+    else if(stat[1]>=0){
       // werror("Testing file %O\n", file);
-      if(glob("*.pike",file) || glob("*.pmod",file))
+      if(has_suffix(file, ".pike") || has_suffix(file, ".pmod"))
       {
 #if 0
         mixed err=catch { (program)file; };
