@@ -6,10 +6,12 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.207 2002/07/02 21:05:21 nilsson Exp $
+// $Id: master.pike.in,v 1.208 2002/07/09 11:28:30 nilsson Exp $
 
 #pike __REAL_VERSION__
 
+// Some programs destroys character pairs beginning with the currency
+// symbol when running in chinese locale.
 #if "¤/" != "\244/"
 #error "master.pike.in is corrupted."
 #endif
@@ -20,7 +22,7 @@
 #define GETCWD_CACHE
 #define FILE_STAT_CACHE
 
-// This define is search and replaced by bin/install.pike.
+// This define is searched and replaced by bin/install.pike.
 #undef PIKE_MODULE_RELOC
 
 #ifndef PIKE_WARNINGS
@@ -167,13 +169,25 @@ array(string) explode_path(string p)
 }
 
 //! @appears dirname
-//! Returns all but the last segment of a path.
+//! Returns all but the last segment of a path. Some example inputs and
+//! outputs:
+//!
+//! @xml{<matrix>
+//! <r><c><b>Expression</b></c><c><b>Value</b></c></r>
+//! <r><c>dirname("/a/b")</c><c>"/a/"</c></r>
+//! <r><c>dirname("/a/")</c><c>"/a/"</c></r>
+//! <r><c>dirname("/a")</c><c>"/"</c></r>
+//! <r><c>dirname("/")</c><c>"/"</c></r>
+//! <r><c>dirname("")</c><c>""</c></r>
+//! </matrix>@}
 //!
 //! @seealso
 //! @[basename()], @[explode_path()]
 string dirname(string x)
 {
+  if(x=="") return "";
   array(string) tmp=EXPLODE_PATH(x);
+  if(sizeof(tmp)<3) return "/";
   return tmp[..sizeof(tmp)-2]*"/";
 }
 
