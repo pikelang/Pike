@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.252 2001/06/30 02:34:39 mast Exp $");
+RCSID("$Id: language.yacc,v 1.253 2001/06/30 22:06:37 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -746,8 +746,10 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       int save_line = lex.current_line;
       int num_required_args = 0;
       struct identifier *i;
+#ifdef PIKE_DEBUG
       struct pike_string *save_file = lex.current_file;
       lex.current_file = $8->current_file;
+#endif
       lex.current_line = $8->line_number;
 
       if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
@@ -823,13 +825,17 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 
       {
 	int l = $10->line_number;
+#ifdef PIKE_DEBUG
 	char *f = $10->current_file;
+#endif
 	if (check_args) {
 	  /* Prepend the arg checking code. */
 	  $10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
 	}
 	lex.current_line = l;
+#ifdef PIKE_DEBUG
 	lex.current_file = f;
+#endif
       }
 
       f=dooptcode(check_node_hash($4)->u.sval.u.string,
@@ -857,7 +863,9 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 #endif
 
       lex.current_line = save_line;
+#ifdef PIKE_DEBUG
       lex.current_file = save_file;
+#endif
     }
     pop_compiler_frame();
     free_node($4);

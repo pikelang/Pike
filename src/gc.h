@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.78 2001/06/30 21:28:35 mast Exp $
+ * $Id: gc.h,v 1.79 2001/06/30 22:06:37 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -244,6 +244,7 @@ void cleanup_gc(void);
   fprintf(stderr, "%s:%d: GC fatal:\n", __FILE__, __LINE__), debug_gc_fatal
 
 #ifdef PIKE_DEBUG
+
 #define gc_checked_as_weak(X) (get_marker(X)->flags |= GC_CHECKED_AS_WEAK)
 #define gc_assert_checked_as_weak(X) do {				\
   if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
@@ -274,7 +275,7 @@ void cleanup_gc(void);
 #ifdef PIKE_DEBUG
 #define debug_gc_check2(X, T, DATA, FROM) \
   DMALLOC_TOUCH_MARKER(X, debug_low_gc_check(debug_malloc_pass(X), (T), (DATA), (FROM)))
-#define debug_gc_check(X, T, DATA) debug_gc_check2(X, T, DATA, 0)
+
 #endif /* PIKE_DEBUG */
 
 #define gc_recurse_svalues(S,N)						\
@@ -306,13 +307,14 @@ void cleanup_gc(void);
 #define debug_gc_check_short_svalue2(S,N,T,V,F) gc_check_short_svalue((S),N)
 #define debug_gc_check_weak_short_svalue2(S,N,T,V,F) gc_check_weak_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
-#define debug_gc_check(VP,T,V) gc_check((VP))
+#define debug_gc_check2(VP,T,V,F) gc_check((VP))
 #endif
 
 #define debug_gc_check_svalues(S,N,T,V) debug_gc_check_svalues2(S,N,T,V,0)
 #define debug_gc_check_weak_svalues(S,N,T,V) debug_gc_check_weak_svalues2(S,N,T,V,0)
 #define debug_gc_check_short_svalue(S,N,T,V) debug_gc_check_short_svalue2(S,N,T,V,0)
 #define debug_gc_check_weak_short_svalue(S,N,T,V) debug_gc_check_weak_short_svalue2(S,N,T,V,0)
+#define debug_gc_check(VP,T,V) debug_gc_check2(VP,T,V,0)
 
 #ifdef PIKE_DEBUG
 #define gc_is_referenced(X) \
