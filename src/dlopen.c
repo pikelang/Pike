@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.61 2002/10/28 13:13:53 grubba Exp $
+|| $Id: dlopen.c,v 1.62 2002/10/28 19:12:17 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.61 2002/10/28 13:13:53 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.62 2002/10/28 19:12:17 grubba Exp $");
 
 #endif
 
@@ -1433,20 +1433,11 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	char *loc=data->section_addresses[s] + RELOCS(r).location;
 	char *ptr;
 	ptrdiff_t sym=RELOCS(r).symbol;
-#ifdef DLDEBUG
 	char *name;
 	size_t len;
-#endif /* DLDEBUG */
 #ifdef _M_IA64
 	int flag = ((size_t)loc) & 0xf;
 #endif /* _M_IA64 */
-
-#ifdef DLDEBUG
-	fprintf(stderr,"DL: Reloc[%d] sym=%d loc=%d type=%d\n",
-		r,
-		sym,
-		RELOCS(r).location,
-		RELOCS(r).type);
 
 	if(!SYMBOLS(sym).name.ptr[0])
 	{
@@ -1456,6 +1447,14 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  name=SYMBOLS(sym).name.text;
 	  len=STRNLEN(name,8);
 	}
+
+#ifdef DLDEBUG
+	fprintf(stderr,"DL: Reloc[%d] sym=%d loc=%d type=%d\n",
+		r,
+		sym,
+		RELOCS(r).location,
+		RELOCS(r).type);
+
 	if(!name[len])
 	{
 	  fprintf(stderr,"DL: symbol name=%s\n",name);
@@ -1484,14 +1483,6 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  }
 	  else if(!SYMBOLS(sym).secnum /* && !SYMBOLS(sym).value */)
 	  {
-	    if(!SYMBOLS(sym).name.ptr[0])
-	    {
-	      name=data->stringtable + SYMBOLS(sym).name.ptr[1];
-	      len=strlen(name);
-	    }else{
-	      name=SYMBOLS(sym).name.text;
-	      len=STRNLEN(name,8);
-	    }
 	       
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: resolving symbol[%d], type=%d class=%d secnum=%d aux=%d value=%d\n",
@@ -1541,7 +1532,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
 		fprintf(stderr,"DL: %s\n",err);
 #endif
 	      }
+#ifdef _M_IA64
 	    }
+#endif /* _M_IA64 */
 	  }else{
 	    static char err[200];
 #ifdef DLDEBUG
@@ -1773,31 +1766,31 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #elif defined(_M_IX86)
 
 	    /* We may need to support more types here */
-	  case COFFReloc_I386_dir32:
+	case COFFReloc_I386_dir32:
 #ifdef DLDEBUG
-	    fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
+	  fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
 #endif
-	    ((INT32 *)loc)[0]+=(INT32)ptr;
-	    break;
+	  ((INT32 *)loc)[0]+=(INT32)ptr;
+	  break;
 
 #if 0
-	  case COFFReloc_I386_dir32nb:
+	case COFFReloc_I386_dir32nb:
 #ifdef DLDEBUG
-	    fprintf(stderr,"DL: reloc absolute nb: loc %p = %p\n", loc,ptr);
+	  fprintf(stderr,"DL: reloc absolute nb: loc %p = %p\n", loc,ptr);
 #endif
-	    ((INT32 *)loc)[0]+=((INT32)ptr) - global_imagebase;
-	    break;	   
+	  ((int32 *)loc)[0]+=((INT32)ptr) - global_imagebase;
+	  break;	   
 #endif
 
-          case COFFReloc_I386_rel32:
+	case COFFReloc_I386_rel32:
 #ifdef DLDEBUG
-	    fprintf(stderr,"DL: reloc relative: loc %p = %p = %d\n",
-		    loc,
-		    ptr,
-		    ptr - (loc+sizeof(INT32)));
+	  fprintf(stderr,"DL: reloc relative: loc %p = %p = %d\n",
+		  loc,
+		  ptr,
+		  ptr - (loc+sizeof(INT32)));
 #endif
-	    ((INT32*)loc)[0]+=ptr - (loc+sizeof(INT32));
-	    break;
+	  ((INT32*)loc)[0]+=ptr - (loc+sizeof(INT32));
+	  break;
 
 
 	default:
