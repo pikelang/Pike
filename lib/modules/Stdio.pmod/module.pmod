@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.107 2001/01/27 03:49:15 per Exp $
+// $Id: module.pmod,v 1.108 2001/06/13 11:58:34 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -327,7 +327,7 @@ class File
     }
     _async_cb = callback;
     _async_args = args;
-    set_nonblocking(0, _async_connected, _async_failed);
+    set_nonblocking(0, _async_connected, _async_failed, _async_failed, 0);
     mixed err;
     int res;
     if (err = catch(res = connect(host, port))) {
