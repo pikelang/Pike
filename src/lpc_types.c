@@ -48,6 +48,7 @@ struct lpc_string *list_type_string;
 struct lpc_string *mapping_type_string;
 struct lpc_string *mixed_type_string;
 struct lpc_string *void_type_string;
+struct lpc_string *any_type_string;
 
 void init_types()
 {
@@ -62,6 +63,7 @@ void init_types()
   mapping_type_string=parse_type("mapping");
   function_type_string=parse_type("function");
   void_type_string=parse_type("void");
+  any_type_string=parse_type("void|mixed");
 }
 
 static int type_length(char *t)
@@ -856,4 +858,5 @@ void cleanup_lpc_types()
   free_string(mapping_type_string);
   free_string(mixed_type_string);
   free_string(void_type_string);
+  free_string(any_type_string);
 }

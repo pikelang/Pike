@@ -180,7 +180,7 @@ void f_random_seed(INT32 args)
     error("Bad argument 1 to random_seed()\n");
 
   my_srand(sp[-args].u.integer);
-  pop_n_elems(args-1);
+  pop_n_elems(args);
 }
 
 void f_query_num_arg(INT32 args)
