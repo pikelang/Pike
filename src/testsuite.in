@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.458 2001/10/02 09:16:55 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.459 2001/10/05 09:29:59 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -917,6 +917,26 @@ cond([[all_constants()->_debug]],
 ]])
 test_do(_static_modules())
 test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
+
+dnl ----------------------------------------------------------------
+dnl backtrace/linenumber tests
+dnl ----------------------------------------------------------------
+
+test_any([[
+  program p=compile_string(
+"int foo()\n"
+"{\n"
+"  error(\"test error\\n\"); // line 3\n"
+"  return 17;\n"
+"}","test");
+  mixed err=catch { p()->foo(); };
+  if (err[1][0][1]!=3)
+  {
+     werror("backtrace is:\n"+master()->describe_backtrace(err));
+  }
+  return err[1][0][1];
+]],3);
+   
 
 dnl ----------------------------------------------------------------
 dnl scopes and stuff
