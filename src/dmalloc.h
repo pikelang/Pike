@@ -1,8 +1,8 @@
 /*
- * $Id: dmalloc.h,v 1.25 2000/04/15 05:05:28 hubbe Exp $
+ * $Id: dmalloc.h,v 1.26 2000/08/04 01:32:39 hubbe Exp $
  */
 
-extern char *debug_xalloc(long);
+extern char *debug_xalloc(size_t);
 
 #define DMALLOC_LOCATION() ("S"  __FILE__ ":" DEFINETOSTR(__LINE__) )
 
