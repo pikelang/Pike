@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.288 2003/09/30 02:05:22 nilsson Exp $
+|| $Id: file.c,v 1.289 2003/09/30 20:43:28 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.288 2003/09/30 02:05:22 nilsson Exp $");
+RCSID("$Id: file.c,v 1.289 2003/09/30 20:43:28 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -294,9 +294,9 @@ static void close_fd_quietly(void)
     int i, e;
     THREADS_ALLOW_UID();
     i=fd_close(fd);
+    e=errno;
     THREADS_DISALLOW_UID();
 
-    e=errno;  /* check_threads_etc may affect errno */
     check_threads_etc();
 
     if(i < 0)
@@ -346,9 +346,9 @@ static void just_close_fd(void)
     int i, e;
     THREADS_ALLOW_UID();
     i=fd_close(fd);
+    e=errno;
     THREADS_DISALLOW_UID();
 
-    e=errno;  /* check_threads_etc may affect errno */
     check_threads_etc();
 
     if(i < 0)
@@ -356,7 +356,7 @@ static void just_close_fd(void)
       switch(e)
       {
 	default:
-	  ERRNO=e;
+	  ERRNO=errno=e;
 	  FD=fd;
 	  push_int(e);
 	  f_strerror(1);
@@ -490,9 +490,9 @@ static struct pike_string *do_read(int fd,
       int e;
       THREADS_ALLOW();
       i = fd_read(fd, str->str+bytes_read, r);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno;  /* check_threads_etc may affect errno */
       check_threads_etc();
 
       if(i>0)
@@ -554,9 +554,9 @@ static struct pike_string *do_read(int fd,
 
       THREADS_ALLOW();
       i = fd_read(fd, buf, try_read);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno; /* check_threads_etc may effect errno */
       check_threads_etc();
 
       if(i==try_read)
@@ -631,9 +631,9 @@ static struct pike_string *do_read_oob(int fd,
       int fd=FD;
       THREADS_ALLOW();
       i=fd_recv(fd, str->str+bytes_read, r, MSG_OOB);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno; /* check_threads_etc may effect errno */
       check_threads_etc();
 
       if(i>0)
@@ -695,9 +695,9 @@ static struct pike_string *do_read_oob(int fd,
 
       THREADS_ALLOW();
       i=fd_recv(fd, buf, try_read, MSG_OOB);
+      e=errno;
       THREADS_DISALLOW();
 
-      e=errno; /* check_threads_etc may effect errno */
       check_threads_etc();
 
       if(i==try_read)
@@ -800,8 +800,10 @@ static void file_read(INT32 args)
 
   if((tmp=do_read(FD, len, all, & ERRNO)))
     push_string(tmp);
-  else
+  else {
+    errno = ERRNO;
     push_int(0);
+  }
 }
 
 #ifdef HAVE_AND_USE_POLL
@@ -967,8 +969,10 @@ static void file_read_oob(INT32 args)
 
   if((tmp=do_read_oob(FD, len, all, & ERRNO)))
     push_string(tmp);
-  else
+  else {
+    errno = ERRNO;
     push_int(0);
+  }
 }
 #endif /* WITH_OOB */
 
@@ -1191,7 +1195,7 @@ static void file_write(INT32 args)
 	  {
 	  default:
 	    free(iovbase);
-	    ERRNO=e;
+	    ERRNO=errno=e;
 	    pop_n_elems(args);
 	    if (!written) {
 	      push_int(-1);
@@ -1260,9 +1264,9 @@ static void file_write(INT32 args)
     int e;
     THREADS_ALLOW();
     i=fd_write(fd, str->str + written, str->len - written);
+    e=errno;
     THREADS_DISALLOW();
 
-    e=errno; /* check_threads_etc may effect errno */
     check_threads_etc();
 
 #ifdef _REENTRANT
@@ -1274,7 +1278,7 @@ static void file_write(INT32 args)
       switch(e)
       {
       default:
-	ERRNO=e;
+	ERRNO=errno=e;
 	pop_n_elems(args);
 	if (!written) {
 	  push_int(-1);
@@ -1361,9 +1365,9 @@ static void file_write_oob(INT32 args)
     int e;
     THREADS_ALLOW();
     i = fd_send(fd, str->str + written, str->len - written, MSG_OOB);
+    e=errno;
     THREADS_DISALLOW();
 
-    e=errno; /* check_threads_etc may effect errno */
     check_threads_etc();
 
 #ifdef _REENTRANT
@@ -1375,7 +1379,7 @@ static void file_write_oob(INT32 args)
       switch(e)
       {
       default:
-	ERRNO=e;
+	ERRNO=errno=e;
 	pop_n_elems(args);
 	if (!written) {
 	  push_int(-1);
@@ -1586,6 +1590,7 @@ static void file_open(INT32 args)
 {
   int flags,fd;
   int access;
+  int err;
   struct pike_string *str, *flag_str;
   close_fd();
 
@@ -1615,7 +1620,7 @@ static void file_open(INT32 args)
 
      if (strlen(str->str) != (size_t)str->len) {
        /* Filenames with NUL are not supported. */
-       ERRNO = ENOENT;
+       ERRNO = errno = ENOENT;
        pop_n_elems(args);
        push_int(0);
        return;
@@ -1646,7 +1651,7 @@ static void file_open(INT32 args)
 	      switch(Pike_sp[-1].u.integer)
 	      {
 		 case 0: /* return 0 */
-		    ERRNO=EPERM;
+		    ERRNO=errno=EPERM;
 		    pop_n_elems(args+1);
 		    push_int(0);
 		    return;
@@ -1684,21 +1689,22 @@ static void file_open(INT32 args)
      do {
        THREADS_ALLOW_UID();
        fd=fd_open(str->str,map(flags), access);
+       err = errno;
        THREADS_DISALLOW_UID();
-       if ((fd < 0) && (errno == EINTR))
+       if ((fd < 0) && (err == EINTR))
 	 check_threads_etc();
-     } while(fd < 0 && errno == EINTR);
+     } while(fd < 0 && err == EINTR);
 
      if(!Pike_fp->current_object->prog)
      {
        if (fd >= 0)
-	 fd_close(fd);
+	 while (fd_close(fd) && errno == EINTR) {}
        Pike_error("Object destructed in Stdio.File->open()\n");
      }
 
      if(fd < 0)
      {
-	ERRNO=errno;
+	ERRNO=errno=err;
      }
      else
      {
@@ -1769,8 +1775,8 @@ static void file_openpt(INT32 args)
   if(!Pike_fp->current_object->prog)
   {
     if (fd >= 0)
-      fd_close(fd);
-    Pike_error("Object destructed in Stdio.File->open()\n");
+      while (fd_close(fd) && errno == EINTR) {}
+    Pike_error("Object destructed in Stdio.File->openpt()\n");
   }
 
   if(fd < 0)
@@ -1825,7 +1831,7 @@ void file_sync(INT32 args)
   } while ((ret < 0) && (e == EINTR));
 
   if (ret < 0) {
-    ERRNO = e;
+    ERRNO = errno = e;
     push_int(0);
   } else {
     push_int(1);
@@ -2332,7 +2338,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     {
       SP_DEBUG((stderr, "my_socketpair:fd_bind() failed, errno:%d\n",
 		errno));
-      fd_close(socketpair_fd);
+      while (fd_close(socketpair_fd) && errno == EINTR) {}
       socketpair_fd=-1;
       return -1;
     }
@@ -2343,7 +2349,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     {
       SP_DEBUG((stderr, "my_socketpair:fd_getsockname() failed, errno:%d\n",
 		errno));
-      fd_close(socketpair_fd);
+      while (fd_close(socketpair_fd) && errno == EINTR) {}
       socketpair_fd=-1;
       return -1;
     }
@@ -2353,7 +2359,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     {
       SP_DEBUG((stderr, "my_socketpair:fd_listen() failed, errno:%d\n",
 		errno));
-      fd_close(socketpair_fd);
+      while (fd_close(socketpair_fd) && errno == EINTR) {}
       socketpair_fd=-1;
       return -1;
     }
@@ -2399,7 +2405,7 @@ retry_connect:
 	if(tmp!=-1) {
 	  SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d\n",
 		    errno));
-	  fd_close(tmp);
+	  while (fd_close(tmp) && errno == EINTR) {}
 	}
 	else
 	  break;
@@ -2429,7 +2435,7 @@ retry_connect:
       SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d (2)\n",
 		errno));
       if(errno==EINTR) goto retry_accept;
-      fd_close(sv[1]);
+      while (fd_close(sv[1]) && errno == EINTR) {}
       return -1;
     }
 
@@ -2551,11 +2557,12 @@ static void file_pipe(INT32 args)
   {
     ERRNO=errno;
     if (inout[0] >= 0) {
-      fd_close(inout[0]);
+      while (fd_close(inout[0]) && errno == EINTR) {}
     }
     if (inout[1] >= 0) {
-      fd_close(inout[1]);
+      while (fd_close(inout[1]) && errno == EINTR) {}
     }
+    errno = ERRNO;
     push_int(0);
   }
   else
@@ -2799,14 +2806,16 @@ static void file_open_socket(INT32 args)
     o=1;
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
       ERRNO=errno;
-      fd_close(fd);
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = ERRNO;
       pop_n_elems(args);
       push_int(0);
       return;
     }
     if (fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) {
       ERRNO=errno;
-      fd_close(fd);
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = ERRNO;
       pop_n_elems(args);
       push_int(0);
       return;
@@ -2853,12 +2862,12 @@ static void file_set_keepalive(INT32 args)
   }
 #else /* !SO_KEEPALIVE */
 #ifdef ENOTSUP
-  ERRNO = ENOTSUP;
+  ERRNO = errno = ENOTSUP;
 #else /* !ENOTSUP */
 #ifdef ENOTTY
-  ERRNO = ENOTTY;
+  ERRNO = errno = ENOTTY;
 #else /* !ENOTTY */
-  ERRNO = EIO;
+  ERRNO = errno = EIO;
 #endif /* ENOTTY */
 #endif /* ENOTSUP */
 #endif /* SO_KEEPALIVE */
@@ -3189,8 +3198,8 @@ static TH_RETURN_TYPE proxy_thread(void * data)
 
 /*  fprintf(stderr,"Closing %d and %d\n",p->to,p->from); */
 
-  fd_close(p->to);
-  fd_close(p->from);
+  while (fd_close(p->to) && errno == EINTR) {}
+  while (fd_close(p->from) && errno == EINTR) {}
   low_mt_lock_interpreter();	/* Can run even if threads_disabled. */
   num_threads--;
   mt_unlock_interpreter();
@@ -3229,7 +3238,8 @@ void file_proxy(INT32 args)
   if(from<0)
   {
     ERRNO=errno;
-    fd_close(from);
+    while (fd_close(from) && errno == EINTR) {}
+    errno = ERRNO;
     Pike_error("Failed to dup proxy fd.\n");
   }
 
@@ -3312,9 +3322,9 @@ static void low_file_lock(INT32 args, int flags)
     {
       if (flags & fd_LOCK_NB) {
 #ifdef EWOULDBLOCK
-	ERRNO = EWOULDBLOCK;
+	ERRNO = errno = EWOULDBLOCK;
 #else /* !EWOULDBLOCK */
-	ERRNO = EAGAIN;
+	ERRNO = errno = EAGAIN;
 #endif /* EWOULDBLOCK */
 	pop_n_elems(args);
 	push_int(0);
@@ -3631,7 +3641,7 @@ PIKE_MODULE_EXIT
   }
   exit_file_locking();
   if (socketpair_fd >= 0) {
-    fd_close(socketpair_fd);
+    while (fd_close(socketpair_fd) && errno == EINTR) {}
     socketpair_fd = -1;
   }
   port_exit_program();
