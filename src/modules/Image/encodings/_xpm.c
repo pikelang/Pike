@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.8 1999/05/30 20:12:02 mirar Exp $");
+RCSID("$Id: _xpm.c,v 1.9 1999/10/26 22:54:03 marcus Exp $");
 
 #include "image_machine.h"
 
@@ -112,8 +112,13 @@ static rgba_group decode_color( struct buffer *s )
   push_svalue( parse_color );
   push_string(make_shared_binary_string(s->str,s->len));
   f_index( 2 );
-  push_constant_text( "array" );
-  apply( sp[-2].u.object, "cast", 1 );
+  if(sp[-1].type != T_OBJECT) {
+    push_int(0);
+    stack_swap();
+  } else {
+    push_constant_text( "array" );
+    apply( sp[-2].u.object, "cast", 1 );
+  }
   if(sp[-1].type == T_ARRAY && sp[-1].u.array->size == 3)
   {
     res.r = sp[-1].u.array->item[0].u.integer;
@@ -131,24 +136,40 @@ static rgba_group decode_color( struct buffer *s )
 static rgba_group parse_color_line( struct pike_string *cn, int sl )
 {
   int toggle = 0;
-  int i;
+  struct buffer s;
   rgba_group res;
+  int i;
   for(i=sl; i<cn->len; i++)
   {
     switch(cn->str[i])
     {
      case ' ':
      case '\t':
-       if(toggle)
-       {
-         struct buffer s;
-         s.str = cn->str+i+1;
-         s.len = cn->len-i-1;
+       if(toggle==4) {
+	 s.len = i-(s.str-cn->str);
          return decode_color(&s);
+       } else if(toggle>=2)
+	 toggle=3;
+       else
+	 toggle=0;
+       break;
+     case 'c':
+       if(!toggle) {
+	 toggle=2;
+	 break;
        }
      default:
-       toggle=1;
+       if(toggle == 3)
+       {
+	 s.str = cn->str+i;
+	 toggle = 4;
+       } else if(toggle != 4)
+	 toggle=1;
     }
+  }
+  if(toggle==4) {
+    s.len = cn->len-(s.str-cn->str);
+    return decode_color(&s);
   }
   res.r = res.g = res.b = 0;
   res.alpha = 255;
