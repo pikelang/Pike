@@ -86,7 +86,7 @@ class Queue {
   inherit Condition : r_cond;
   inherit Mutex : lock;
   
-  mixed *buffer=allocate(16);
+  array buffer=allocate(16);
   int r_ptr, w_ptr;
   
   int size() {  return w_ptr - r_ptr;  }
