@@ -6,19 +6,19 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: win32-config.h,v 1.1 2001/03/26 12:33:00 mirar Exp $
+** $Id: win32-config.h,v 1.2 2002/03/15 22:10:43 nilsson Exp $
 **
 */ 
 /* config.h */
 /* this is for win32 systems, that doesn't work that well */
 /* with configure/autoconf. Created by <paul@theV.net>.   */
-/* $Id: win32-config.h,v 1.1 2001/03/26 12:33:00 mirar Exp $ */
+/* $Id: win32-config.h,v 1.2 2002/03/15 22:10:43 nilsson Exp $ */
 
 /* define if there is an inline keyword */
-//#define HAS_INLINE 1
+/* #define HAS_INLINE 1 */
 
 /* define as the inline keyword */
-//#define INLINE static inline
+/* #define INLINE static inline */
 #define INLINE
 
 /* define as the 16 bit integer (2 bytes) */
@@ -28,7 +28,7 @@
 #define INT32 long
 
 /* define as the 64 bit integer (8 bytes) if any*/
-//#define INT64 long long
+/* #define INT64 long long */
 #define INT64 __int64
 
 /* define if you want memory allocation debug */
@@ -47,10 +47,10 @@
 /* #undef USE_FCNTL_FREESP */
 
 /* define if flock() works */
-//#define HAS_LOCKF 1
+/* #define HAS_LOCKF 1 */
 
 /* define if lockf() workds */
-//#define HAS_FLOCK 1
+/* #define HAS_FLOCK 1 */
 
 /* define if O_APPEND works as it should */
 #define WORKING_O_APPEND 1
@@ -60,20 +60,20 @@
 /* #undef HANDLES_UNALIGNED_ACCESS */
 
 /* define this if ftrunc works */
-//#define WORKING_FTRUNCATE 1
+/* #define WORKING_FTRUNCATE 1 */
 
 /* define as the off_t type to use */
-//#define MIRD_OFF_T signed long
+/* #define MIRD_OFF_T signed long */
 #define MIRD_OFF_T off_t
 
 /* set if you want syscall statistics */
-//#define SYSCALL_STATISTICS 1
+/* #define SYSCALL_STATISTICS 1 */
 
 /* Define if you have the fdatasync function.  */
 #define HAVE_FDATASYNC 1
 
 /* Define if you have the ftruncate function.  */
-//#define HAVE_FTRUNCATE 1
+/* #define HAVE_FTRUNCATE 1 */
 
 /* Define if you have the llseek function.  */
 #define HAVE_LLSEEK 1
