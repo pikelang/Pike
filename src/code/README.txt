@@ -54,6 +54,13 @@ INT32 READ_INCR_BYTE(PIKE_OPCODE_T *pc);
 
 Optional macros:
 
+void CALL_MACHINE_CODE(PIKE_OPCODE_T *pc)
+	Start execution of the machine-code located at 'pc'.
+	NOTE: This macro does not return, but instead contains
+	code that returns from the calling context. The value
+	returned in the macro should be one of -1 (inter return),
+	or -2 (inter escape catch).
+
 void SET_PROG_COUNTER(PIKE_OPCODE_T *newpc)
 	Set PROG_COUNTER to a new value.
 
