@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.139 1999/05/24 15:51:11 mirar Exp $ */
+/* $Id: image.c,v 1.140 1999/05/24 22:09:00 neotron Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.139 1999/05/24 15:51:11 mirar Exp $
+**!	$Id: image.c,v 1.140 1999/05/24 22:09:00 neotron Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.139 1999/05/24 15:51:11 mirar Exp $");
+RCSID("$Id: image.c,v 1.140 1999/05/24 22:09:00 neotron Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3516,6 +3516,7 @@ void image_cast(INT32 args)
 
 void init_image_image(void)
 {
+   int i;
    for (i=0; i<CIRCLE_STEPS; i++) 
       circle_sin_table[i]=(INT32)4096*sin(((double)i)*2.0*3.141592653589793/(double)CIRCLE_STEPS);
 
