@@ -295,13 +295,18 @@ array do_parse_simple_list(int max_depth, int terminator)
       return a;
     }
 
-    a += ({ get_atom(max_depth-1) });
+    mapping atom = get_atom_options(max_depth-1);
+
+    if (!atom) {
+      return a;
+    }
+    a += ({ atom });
 
     mapping m = get_simple_list(max_depth);
     if (!m) {
       werror(sprintf("get_simple_list(%d) failed\n", max_depth));
     } else {
-      a->list = m;
+      atom->list = m;
     }
   }
 }
