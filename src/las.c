@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.120 1999/11/20 21:13:25 grubba Exp $");
+RCSID("$Id: las.c,v 1.121 1999/11/20 21:16:39 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2064,6 +2064,8 @@ void fix_type_field(node *n)
       max_args = count_arguments(f);
       if(max_args<0) max_args = 0x7fffffff;
 
+      free_string(s);
+
       if (n->type) {
 	/* Type/argument-check OK. */
 	break;
@@ -2120,7 +2122,6 @@ void fix_type_field(node *n)
 	my_yyerror("Bad argument %d to %s.",
 		   max_correct_args+1, name);
       }
-      free_string(s);
     }
     copy_shared_string(n->type, mixed_type_string);
     break;
