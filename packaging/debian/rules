@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.26 2002/08/23 11:19:34 grendel Exp $
+# $Id: rules,v 1.27 2002/08/26 09:35:42 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -245,6 +245,7 @@ binary-indep: build install
 	dh_testroot -i
 	dh_installdocs -i
 	dh_installchangelogs  -i
+	dh_undocumented -p$(PIKE)-dev $(PIKE)-config.1
 	dh_link -i
 	dh_compress -i
 	dh_fixperms -i
@@ -262,7 +263,6 @@ binary-arch: build install
 	dh_installmenu -a -p$(PIKE)-core
 	dh_installman -p$(PIKE)-core debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
 	dh_installchangelogs -a
-	dh_undocumented -p$(PIKE)-dev $(PIKE)-config
 	dh_strip -a
 	dh_link -a
 	dh_compress -a
