@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.95 2000/08/03 17:52:55 grubba Exp $");
+RCSID("$Id: operators.c,v 1.96 2000/08/09 15:07:34 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -163,7 +163,7 @@ PMOD_EXPORT void f_add(INT32 args)
   {
     struct pike_string *r;
     PCHARP buf;
-    INT32 tmp;
+    ptrdiff_t tmp;
     int max_shift=0;
 
     if(args==1) return;
@@ -1010,7 +1010,7 @@ PMOD_EXPORT void o_and(void)
   case T_STRING:							  \
   {									  \
     struct pike_string *s;						  \
-    INT32 len, i;							  \
+    ptrdiff_t len, i;							  \
 									  \
     len = sp[-2].u.string->len;						  \
     if (len != sp[-1].u.string->len)					  \
@@ -1612,7 +1612,8 @@ PMOD_EXPORT void o_multiply(void)
       {
 	struct pike_string *ret;
 	char *pos;
-	INT32 e,len;
+	INT_TYPE e;
+	ptrdiff_t len;
 	if(sp[-1].u.integer < 0)
 	  SIMPLE_BAD_ARG_ERROR("`*", 2, "int(0..)");
 	ret=begin_wide_shared_string(sp[-2].u.string->len * sp[-1].u.integer,
@@ -1732,7 +1733,8 @@ PMOD_EXPORT void o_divide(void)
       case TWO_TYPES(T_STRING,T_INT):
       {
 	struct array *a;
-	INT32 size,e,len,pos=0;
+	INT_TYPE len;
+	ptrdiff_t size,e,pos=0;
 
 	len=sp[-1].u.integer;
 	if(!len)
@@ -1762,7 +1764,7 @@ PMOD_EXPORT void o_divide(void)
       case TWO_TYPES(T_STRING,T_FLOAT):
       {
 	struct array *a;
-	INT32 last,pos,e,size;
+	ptrdiff_t size, pos, last, e;
 	double len;
 
 	len=sp[-1].u.float_number;
@@ -1772,7 +1774,7 @@ PMOD_EXPORT void o_divide(void)
 	if(len<0)
 	{
 	  len=-len;
-	  size=(INT32)ceil( ((double)sp[-2].u.string->len) / len);
+	  size=(ptrdiff_t)ceil( ((double)sp[-2].u.string->len) / len);
 	  a=allocate_array(size);
 	  
 	  for(last=sp[-2].u.string->len,e=0;e<size-1;e++)
@@ -1818,7 +1820,7 @@ PMOD_EXPORT void o_divide(void)
       case TWO_TYPES(T_ARRAY, T_INT):
       {
 	struct array *a;
-	INT32 size,e,len,pos;
+	ptrdiff_t size,e,len,pos;
 
 	len=sp[-1].u.integer;
 	if(!len)
@@ -1851,7 +1853,7 @@ PMOD_EXPORT void o_divide(void)
       case TWO_TYPES(T_ARRAY,T_FLOAT):
       {
 	struct array *a;
-	INT32 last,pos,e,size;
+	ptrdiff_t last,pos,e,size;
 	double len;
 
 	len=sp[-1].u.float_number;
@@ -1861,7 +1863,7 @@ PMOD_EXPORT void o_divide(void)
 	if(len<0)
 	{
 	  len=-len;
-	  size=(INT32)ceil( ((double)sp[-2].u.array->size) / len);
+	  size = (ptrdiff_t)ceil( ((double)sp[-2].u.array->size) / len);
 	  a=allocate_array(size);
 	  
 	  for(last=sp[-2].u.array->size,e=0;e<size-1;e++)
@@ -1941,7 +1943,7 @@ PMOD_EXPORT void o_divide(void)
 
   case T_INT:
   {
-    INT32 tmp;
+    INT_TYPE tmp;
     
     if (sp[-1].u.integer == 0)
       OP_DIVISION_BY_ZERO_ERROR("`/");
@@ -2022,7 +2024,8 @@ PMOD_EXPORT void o_mod(void)
       case TWO_TYPES(T_STRING,T_INT):
       {
 	struct pike_string *s=sp[-2].u.string;
-	INT32 tmp,base;
+	ptrdiff_t tmp,base;
+
 	if(!sp[-1].u.integer)
 	  OP_MODULO_BY_ZERO_ERROR("`%");
 
@@ -2356,7 +2359,7 @@ PMOD_EXPORT void o_range(void)
       if(from>to+1) from=to+1;
     }
 
-    a=slice_array(sp[-1].u.array,from,to+1);
+    a = slice_array(sp[-1].u.array, from, to+1);
     free_array(sp[-1].u.array);
     sp[-1].u.array=a;
     break;

@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.89 2000/08/08 19:21:55 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.90 2000/08/09 14:53:11 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -146,9 +146,9 @@ PMOD_EXPORT INLINE struct pike_string *debug_check_size_shift(struct pike_string
 #endif
 
 #define CONVERT(FROM,TO) \
-INLINE void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, int len) \
+INLINE void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len) \
 {  while(--len>=0) *(to++)=*(from++); } \
-INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, int len) \
+INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len) \
 { int tmp; while(--len>=0) if((tmp=*(to++)-*(from++))) return tmp; return 0; }
 
 
