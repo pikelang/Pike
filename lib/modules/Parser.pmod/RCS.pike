@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.3 2002/02/23 01:14:00 jhs Exp $
+// $Id: RCS.pike,v 1.4 2002/02/23 01:15:42 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -335,7 +335,7 @@ class Revision
   }
 
   //! Returns the file contents from this revision.
-  //! @todo
+  //! @bugs
   //!   add optional argument "expand_override" and implement keyword expansion
   string get_contents()
   {
