@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.86 2000/04/08 02:01:09 hubbe Exp $
+ * $Id: program.h,v 1.87 2000/07/09 18:32:53 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -301,6 +301,7 @@ extern struct program *first_program;
 extern int compiler_pass;
 extern long local_class_counter;
 extern int catch_level;
+extern INT32 current_modifiers;
 extern INT32 num_used_modules;
 extern struct program *pike_trampoline_program;
 
