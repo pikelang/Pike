@@ -6,8 +6,7 @@ if [ $NT_DEBUG = yes ]; then
 fi
 
 fixpath() {
-  echo "$*" | sed -e "s@$NTMOUNT@@g
-@/@\\@g"
+  echo "$*" | sed -e "s@$NTMOUNT@@g" -e "s@/@\\\\@g"
 }
 
 fixabspath() {
