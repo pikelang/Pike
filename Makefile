@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.47 2001/12/18 15:16:22 mast Exp $
+# $Id: Makefile,v 1.48 2001/12/18 18:31:43 mast Exp $
 #
 # Meta Makefile
 #
@@ -70,18 +70,17 @@ configure: src/configure builddir
 	  else \
 	    echo Running $$srcdir/configure $$configureargs in $$builddir; \
 	    if [ -f /bin/bash  ] ; then CONFIG_SHELL=/bin/bash ;  fi ;\
-	    (CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} \
-	      "$$srcdir"/configure $$configureargs || \
-	      exit $$?) && \
-	      echo "$$configureargs" > .configureargs; \
+	    CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} \
+	      "$$srcdir"/configure $$configureargs || exit $$?; \
+	    echo "$$configureargs" > .configureargs; \
 	    if test "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	    else \
 	      echo Configure arguments have changed - doing make clean and depend; \
-	      $(MAKE) "MAKE=$(MAKE)" clean; \
-	      $(MAKE) "MAKE=$(MAKE)" depend; \
+	      $(MAKE) "MAKE=$(MAKE)" clean || exit $$?; \
+	      $(MAKE) "MAKE=$(MAKE)" depend || exit $$?; \
 	    fi; \
 	  fi; \
-	}
+	} || exit $$?
 
 compile: configure
 	@builddir="$(BUILDDIR)"; \
@@ -106,7 +105,7 @@ compile: configure
 	      fi; \
 	    }; \
 	  done; \
-	}
+	} || exit $$?
 
 documentation:
 	@test -f "$(BUILDDIR)/pike" || $(MAKE) $(MAKE_FLAGS) compile
@@ -171,14 +170,14 @@ clean:
 	  res=$$?; \
 	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean; \
 	  else exit $$res; fi; \
-	}
+	} || exit $$?
 
 spotless:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" spotless || { \
 	  res=$$?; \
 	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" spotless; \
 	  else exit $$res; fi; \
-	}
+	} || exit $$?
 
 delete_builddir:
 	-rm -rf "$(BUILDDIR)"
@@ -200,7 +199,7 @@ depend: configure
 	  res=$$?; \
 	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend; \
 	  else exit $$res; fi; \
-	}
+	} || exit $$?
 
 pikefun_TAGS:
 	cd src && etags -l none -r \
