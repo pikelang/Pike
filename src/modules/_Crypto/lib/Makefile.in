@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.23 2000/08/02 14:05:22 grubba Exp $
+# $Id: Makefile.in,v 1.24 2000/08/02 18:09:15 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -123,7 +123,12 @@ desdata.yes:	$(SRCDIR)/desdata.pike
 
 .c.o:
 	@echo "Compiling $<" ;\
-	$(CC) $(CFLAGS) -c $< -o $@
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
+	else \
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	fi
 
 # slowest to quickest
 desSmallFips.c:
