@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.66 2004/09/30 14:00:14 mast Exp $
+|| $Id: array.h,v 1.67 2004/10/18 00:42:36 bill Exp $
 */
 
 #ifndef ARRAY_H
@@ -15,22 +15,29 @@
  * type fields are encountered. */
 /* #define TRACE_UNFINISHED_TYPE_FIELDS */
 
+/**
+ * A Pike array is represented as a 'struct array' with all the
+ * needed svalues malloced in the same block.
+ * 
+ * @see type_field
+ */
 struct array
 {
   PIKE_MEMORY_OBJECT_MEMBERS;
 
-  struct array *next;	/* we need to keep track of all arrays */
-  struct array *prev;	/* Another pointer, so we don't have to search
+  struct array *next;	/**< we need to keep track of all arrays */
+  struct array *prev;	/**< Another pointer, so we don't have to search
 			 * when freeing arrays */
-  INT32 size;		/* number of items in this array */
-  INT32 malloced_size;	/* number of elements that can fit in this array */
-  TYPE_FIELD type_field;/* A bitfield with one bit for each type. */
-  /* Bits can be set that don't exist in the array. type_field is
+  INT32 size;		/**< number of svalues in this array */
+  INT32 malloced_size;	/**< number of svalues that can fit in this array */
+  TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
+			  * data in this array.
+   Bits can be set that don't exist in the array. type_field is
    * initialized to BIT_MIXED|BIT_UNFINISHED for newly allocated
    * arrays so that they can be modified without having to update
    * this. It should be set accurately when that's done, though. */
-  INT16 flags;          /* ARRAY_* flags */
-  struct svalue *item;
+  INT16 flags;          /**< ARRAY_* flags */
+  struct svalue *item;  /**< the array of svalues */
   struct svalue real_item[1];
 };
 
@@ -67,7 +74,12 @@ extern struct array *gc_internal_array;
 #define PIKE_ARRAY_OP_ADD PIKE_MINTERM(PIKE_ARRAY_OP_TAKE_A,PIKE_ARRAY_OP_TAKE_A | PIKE_ARRAY_OP_TAKE_B ,PIKE_ARRAY_OP_TAKE_B)
 #define PIKE_ARRAY_OP_SUB PIKE_MINTERM(PIKE_ARRAY_OP_TAKE_A,PIKE_ARRAY_OP_SKIP_A ,PIKE_ARRAY_OP_SKIP_B)
 
-
+/**
+ *  This macro frees one reference to the array V. If the reference
+ *  is the last reference to the array, it will free the memory used
+ *  by the array V.
+ *  @param V an array struct to be freed.
+ */
 #define free_array(V) do{						\
     struct array *v_=(V);						\
     debug_malloc_touch(v_);						\
@@ -265,7 +277,11 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 
 
 /*
- * Set an index in an array
+ * Sets an index in an array. 
+ * 
+ * @param V the array to modify
+ * @param I the index of the array to set
+ * @param S the svalue to set
  */
 #define array_set_index(V,I,S) do {					 \
   struct array *v_=(V);							 \

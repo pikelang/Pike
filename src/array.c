@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.175 2004/10/16 22:03:45 nilsson Exp $
+|| $Id: array.c,v 1.176 2004/10/18 00:42:36 bill Exp $
 */
 
 #include "global.h"
@@ -78,6 +78,7 @@ PMOD_EXPORT void dont_accept_unfinished_type_fields (void *orig)
  * @param size The size of the new array, in elements.
  * @param extra_space The number of extra elements space
  * should be reserved for.
+ * @return A pointer to the allocated array struct.
  */
 PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 					      ptrdiff_t extra_space)
@@ -130,6 +131,8 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 
 /**
  * Free an array without freeing the values inside it.
+ * Any values inside of the array will be kept.
+ * @param v The array to be freed.
  */
 static void array_free_no_free(struct array *v)
 {
@@ -142,6 +145,7 @@ static void array_free_no_free(struct array *v)
 
 /**
  * Free an array. Call this when the array has zero references.
+ * @param v The array to free.
  */
 PMOD_EXPORT void really_free_array(struct array *v)
 {
@@ -167,12 +171,18 @@ PMOD_EXPORT void really_free_array(struct array *v)
   array_free_no_free(v);
 }
 
+/**
+ *  Decrement the references (and free if unused) an array if it is not null.
+ */
 PMOD_EXPORT void do_free_array(struct array *a)
 {
   if (a)
     free_array(a);
 }
 
+/**
+ *  Set flags on an array. If the array is empty, 
+ */
 PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
 {
   if (a->size)
@@ -193,7 +203,21 @@ PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
 
 
 /**
- * Extract an svalue from an array.
+ * Extract an svalue from an array. This function frees the contents of 
+ * of the svalue 's' and replaces it with a copy of the 
+ * contents from index 'index' in the array 'v'.
+ *
+ * @param index The index of the array to be extracted.
+ * @param s The recipient of the extracted array element.
+ * @param v The array to extract the element from.
+ *
+ * This function is similar to
+ *    assign_svalue(s, v->item + n);
+ * except that it adds debug and safety measures. Usually, this function
+ * is not needed.
+ *
+ * @note If n is out of bounds, Pike will dump core. If Pike was compiled 
+ * with DEBUG, a message will be written first stating what the problem was.
  */
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
 {
@@ -478,7 +502,14 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
 }
 
 /**
- * Remove an index from an array and shrink the array.
+ * Remove an index from an array and shrink the array destructively.
+ * Because this function is destructive, and might free the region for 'v',
+ * do not use this function on arrays that might have been sent to a 
+ * Pike function.
+ *
+ * @param v The array to operate on.
+ * @param index The index of the element to remove
+ * @return a new array with the contents of the input minus the removed index.
  */
 PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 {
@@ -1993,6 +2024,7 @@ void describe_array(struct array *a,struct processing *p,int indent)
 
 /**
  * Pops a number of arguments off of the stack an puts them in an array.
+ * The 'top' of the stack will be the last element in the array.
  * @argument args The number of arguments to aggregate.
  */
 PMOD_EXPORT struct array *aggregate_array(INT32 args)
