@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.15 1998/07/04 17:08:53 grubba Exp $
+ * $Id: passwords.c,v 1.16 1998/07/09 21:03:22 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -11,7 +11,7 @@
  *         pretty much screwed.
  *
  * NOTE: To avoid deadlocks, any locking of password_protection_mutex
- *       MUST be done within THREADS_ALLOW()/THREADS_DISALLOW().
+ *       MUST be done within THREADS_ALLOW_UID()/THREADS_DISALLOW_UID().
  */
 
 /*
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.15 1998/07/04 17:08:53 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.16 1998/07/09 21:03:22 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -242,11 +242,11 @@ void f_getpwuid(INT32 args)
 /* int setpwent() */
 void f_setpwent(INT32 args)
 {
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   mt_lock(&password_protection_mutex);
   setpwent();
   mt_unlock(&password_protection_mutex);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   pop_n_elems(args);
   push_int(0);
 }
@@ -256,11 +256,11 @@ void f_setpwent(INT32 args)
 /* int endpwent() */
 void f_endpwent(INT32 args)
 {
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   mt_lock(&password_protection_mutex);
   endpwent();
   mt_unlock(&password_protection_mutex);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   pop_n_elems(args);
   push_int(0);
 }
@@ -293,12 +293,12 @@ void f_get_all_users(INT32 args)
   pop_n_elems(args);
   a = low_allocate_array(0, 10);
 
-  /* NOTE: We need THREADS_ALLOW()/THREADS_DISALLOW() here
+  /* NOTE: We need THREADS_ALLOW_UID()/THREADS_DISALLOW_UID() here
    * to avoid deadlocks.
    */
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   mt_lock(&password_protection_mutex);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
 
   setpwent();
   while(1)
@@ -306,9 +306,9 @@ void f_get_all_users(INT32 args)
     struct passwd *pw;
     struct pike_pwent *nppwent;
 
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
     pw=getpwent();
-    THREADS_DISALLOW();
+    THREADS_DISALLOW_UID();
 
     if(!pw) break;
 
@@ -329,11 +329,11 @@ void f_get_all_users(INT32 args)
 /* int setgrent() */
 void f_setgrent(INT32 args)
 {
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   mt_lock(&password_protection_mutex);
   setgrent();
   mt_unlock(&password_protection_mutex);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   pop_n_elems(args);
   push_int(0);
 }
@@ -343,11 +343,11 @@ void f_setgrent(INT32 args)
 /* int endgrent() */
 void f_endgrent(INT32 args)
 {
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   mt_lock(&password_protection_mutex);
   endgrent();
   mt_unlock(&password_protection_mutex);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
   pop_n_elems(args);
   push_int(0);
 }
@@ -380,21 +380,21 @@ void f_get_all_groups(INT32 args)
 
   a = low_allocate_array(0, 10);
 
-  /* NOTE: We need THREADS_ALLOW()/THREADS_DISALLOW() here
+  /* NOTE: We need THREADS_ALLOW_UID()/THREADS_DISALLOW_UID() here
    * to avoid deadlocks.
    */
-  THREADS_ALLOW();
+  THREADS_ALLOW_UID();
   mt_lock(&password_protection_mutex);
-  THREADS_DISALLOW();
+  THREADS_DISALLOW_UID();
 
   setgrent();
   while(1)
   {
     struct group *gr;
 
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
     gr=getgrent();
-    THREADS_DISALLOW();
+    THREADS_DISALLOW_UID();
 
     if(!gr) break;
 
@@ -425,20 +425,20 @@ void f_get_groups_for_user(INT32 arg)
   if(sp[-1].type == T_INT)
   {
     int uid=sp[-1].u.integer;
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
     mt_lock(&password_protection_mutex);
     pw=getpwuid(uid);
-    THREADS_DISALLOW();
+    THREADS_DISALLOW_UID();
 
     sp[-1].u.string=make_shared_string(pw->pw_name);
     sp[-1].type=T_STRING;
     user=sp[-1].u.string->str;
   }else{
     user=sp[-1].u.string->str;
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
     mt_lock(&password_protection_mutex);
     pw=getpwnam(user);
-    THREADS_DISALLOW();
+    THREADS_DISALLOW_UID();
   }
 
   /* NOTE: password_protection_mutex is still locked here. */
@@ -458,7 +458,7 @@ void f_get_groups_for_user(INT32 arg)
   while(1)
   {
     int e;
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
 
     while(1)
     {
@@ -471,7 +471,7 @@ void f_get_groups_for_user(INT32 arg)
       if(gr->gr_mem[e]) break;
     }
 
-    THREADS_DISALLOW();		/* Is there a risk of deadlock here? */
+    THREADS_DISALLOW_UID();		/* Is there a risk of deadlock here? */
     if(!gr) break;
 
     push_int(gr->gr_gid);
