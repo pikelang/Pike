@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.31 1999/08/09 14:46:41 mirar Exp $
+**!	$Id: layers.c,v 1.32 1999/08/10 10:13:21 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -195,7 +195,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.31 1999/08/09 14:46:41 mirar Exp $");
+RCSID("$Id: layers.c,v 1.32 1999/08/10 10:13:21 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -330,6 +330,12 @@ LMFUNC(lm_logic_strict_more);
 LMFUNC(lm_logic_strict_less_or_equal);
 LMFUNC(lm_logic_strict_more_or_equal);
 
+static void lm_spec_burn_alpha(struct layer *ly,
+			       rgb_group *l, rgb_group *la,
+			       rgb_group *s, rgb_group *sa,
+			       rgb_group *d, rgb_group *da,
+			       int len);
+
 struct layer_mode_desc
 {
    char *name;
@@ -376,6 +382,7 @@ struct layer_mode_desc
 
    {"screen",        lm_screen,        1, NULL            }, 
    {"overlay",       lm_overlay,       1, NULL            }, 
+   {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL },
 
    {"equal",         lm_equal,         0, NULL            },
    {"not_equal",     lm_not_equal,     0, NULL            },
@@ -1238,8 +1245,10 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
    if (alpha==0.0) /* optimized */
    {
+#ifdef LAYERS_DUAL
       MEMCPY(d,s,sizeof(rgb_group)*len);
       MEMCPY(da,sa,sizeof(rgb_group)*len);
+#endif
       return; 
    }
    else if (alpha==1.0)
@@ -1250,17 +1259,37 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 	 smear_color(da,white,len);
       }
       else
+      {
 	 while (len--)
 	 {
-	    if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
+	    if (la->r==0 && la->g==0 && la->b==0)
+	    {
+	       int n=0;
+	       do
+	       {
+		  n++; la++;
+	       }
+	       while (len && len-- && la->r==0 && la->g==0 && la->b==0);
+	       if (n>1)
+	       {
+		  MEMCPY(d,s,n*sizeof(rgb_group));
+		  MEMCPY(da,sa,n*sizeof(rgb_group));
+		  l+=n; s+=n; sa+=n; d+=n; da+=n;
+	       }
+	       else 
+		  *(d++)=*(s++),*(da++)=*(sa++),l++;
+	       continue;
+	    }
+	    else if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
 	    {
 	       *d=*l;
 	       *da=*la;
 	    }
-	    else if (la->r==0 && la->g==0 && la->b==0)
+	    else if (l->r==COLORMAX && l->g==COLORMAX && l->b==COLORMAX)
 	    {
-	       *d=*s;
-	       *da=*sa;
+	       ALPHA_ADD(s,&white,d,sa,la,da,r);
+	       ALPHA_ADD(s,&white,d,sa,la,da,g);
+	       ALPHA_ADD(s,&white,d,sa,la,da,b);
 	    }
 	    else
 	    {
@@ -1270,6 +1299,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 	    }
 	    l++; s++; la++; sa++; d++; da++;
 	 }
+      }
    }
    else
    {
@@ -1764,8 +1794,10 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
 {
    if (alpha==0.0)
    {
+#ifdef LAYERS_DUAL
       MEMCPY(d,s,sizeof(rgb_group)*len);
       MEMCPY(da,sa,sizeof(rgb_group)*len);
+#endif
       return; 
    }
    else if (alpha==1.0)
@@ -1821,8 +1853,10 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
 
    if (alpha==0.0) /* optimized */
    {
+#ifdef LAYERS_DUAL
       MEMCPY(d,s,sizeof(rgb_group)*len);
       MEMCPY(da,sa,sizeof(rgb_group)*len);
+#endif
       return; 
    }
    else if (alpha==1.0)
@@ -1889,7 +1923,9 @@ static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
 {
    /* la may be NULL, no other */
 
+#ifdef LAYERS_DUAL
    MEMCPY(d,s,sizeof(rgb_group)*len);
+#endif
 
    if (alpha==1.0)
       if (!la) /* full opaque */
@@ -1919,6 +1955,118 @@ static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
 
 	    la++; sa++; da++;
 	 }
+}
+
+static void lm_spec_burn_alpha(struct layer *ly,
+			       rgb_group *l, rgb_group *la,
+			       rgb_group *s, rgb_group *sa,
+			       rgb_group *d, rgb_group *da,
+			       int len)
+			       
+{
+   /* special optimized */
+   if (!la) 
+   {
+#ifdef LAYERS_DUAL      
+      MEMCPY(d,s,len*sizeof(rgb_group));
+      MEMCPY(da,sa,len*sizeof(rgb_group));
+#endif
+      return;
+   }
+
+   if (ly->alpha_value==1.0)
+      if (!l)
+	 if (ly->fill.r==COLORMAX &&
+	     ly->fill.g==COLORMAX &&
+	     ly->fill.b==COLORMAX)
+	 {
+	    smear_color(d,white,len);
+	    while (len--)
+	    {
+	       da->r=MINIMUM(sa->r+la->r,COLORMAX);
+	       da->g=MINIMUM(sa->g+la->g,COLORMAX);
+	       da->b=MINIMUM(sa->b+la->b,COLORMAX);
+	       da++; sa++; la++; 
+	    }
+	 }
+	 else if (ly->fill.r!=0 ||
+	     ly->fill.g!=0 ||
+	     ly->fill.b!=0)
+	 {
+	    rgb_group fill=ly->fill;
+	    while (len--)
+	    {
+	       d->r=MINIMUM(s->r+fill.r,COLORMAX);
+	       d->g=MINIMUM(s->g+fill.g,COLORMAX);
+	       d->b=MINIMUM(s->b+fill.b,COLORMAX);
+	       da->r=MINIMUM(sa->r+la->r,COLORMAX);
+	       da->g=MINIMUM(sa->g+la->g,COLORMAX);
+	       da->b=MINIMUM(sa->b+la->b,COLORMAX);
+	       da++; sa++; la++; d++; s++;
+	    }
+	 }
+	 else
+	 {
+#ifdef LAYERS_DUAL
+	    MEMCPY(d,s,len*sizeof(rgb_group));
+#endif
+	    while (len--)
+	    {
+	       da->r=MINIMUM(sa->r+la->r,COLORMAX);
+	       da->g=MINIMUM(sa->g+la->g,COLORMAX);
+	       da->b=MINIMUM(sa->b+la->b,COLORMAX);
+	       da++; sa++; la++; 
+	    }
+	 }
+      else
+	 while (len--)
+	 {
+	    if ((s->r==COLORMAX &&
+		 s->g==COLORMAX &&
+		 s->b==COLORMAX))
+	    {
+	       *d=*s;
+	    }
+	    else 
+	    {
+	       d->r=MINIMUM(s->r+l->r,COLORMAX);
+	       d->g=MINIMUM(s->g+l->g,COLORMAX);
+	       d->b=MINIMUM(s->b+l->b,COLORMAX);
+	    }
+	    da->r=MINIMUM(sa->r+la->r,COLORMAX);
+	    da->g=MINIMUM(sa->g+la->g,COLORMAX);
+	    da->b=MINIMUM(sa->b+la->b,COLORMAX);
+	    da++; sa++; la++; s++; d++;
+	    if (l) l++;
+	 }
+   else
+   {
+      double alpha=ly->alpha_value;
+      while (len--)
+      {
+	 if ((s->r==COLORMAX &&
+	      s->g==COLORMAX &&
+	      s->b==COLORMAX)
+	     || !l)
+	 {
+	    *d=*s;
+	    da->r=MINIMUM(sa->r+(COLORTYPE)(alpha*la->r),COLORMAX);
+	    da->g=MINIMUM(sa->g+(COLORTYPE)(alpha*la->g),COLORMAX);
+	    da->b=MINIMUM(sa->b+(COLORTYPE)(alpha*la->b),COLORMAX);
+	 }
+	 else
+	 {
+	    d->r=s->r+(COLORTYPE)(alpha*l->r);
+	    d->g=s->g+(COLORTYPE)(alpha*l->g);
+	    d->b=s->b+(COLORTYPE)(alpha*l->b);
+
+	    da->r=MINIMUM(sa->r+(COLORTYPE)(alpha*l->r),COLORMAX);
+	    da->g=MINIMUM(sa->g+(COLORTYPE)(alpha*l->g),COLORMAX);
+	    da->b=MINIMUM(sa->b+(COLORTYPE)(alpha*l->b),COLORMAX);
+	 }
+	 da++; sa++; la++; s++; d++;
+      }
+   }
 }
 
 /*** the add-layer function ***************************/
@@ -2030,17 +2178,24 @@ static INLINE void img_lay_stroke(struct layer *ly,
 				  rgb_group *da,
 				  int len)
 {
+   if (ly->row_func==lm_spec_burn_alpha)
+   {
+      lm_spec_burn_alpha(ly,l,la,s,sa,d,da,len);
+      return;
+   }
+
    if (l) 
    {
       (ly->row_func)(s,l,d,sa,la,da,len,ly->alpha_value);
       return;
    }
-
    if (!la && ly->really_optimize_alpha)
    {
 /*       fprintf(stderr,"fast skip ly->yoffs=%d\n",ly->yoffs); */
+#ifdef LAYERS_DUAL      
       MEMCPY(d,s,len*sizeof(rgb_group));
       MEMCPY(da,sa,len*sizeof(rgb_group));
+#endif
       return;
    }
 
@@ -2064,6 +2219,8 @@ static INLINE void img_lay_stroke(struct layer *ly,
    else
    {
       int i;
+
+/* fprintf(stderr,"ly=%p len=%d\n",ly,len); */
 
       while (len>SNUMPIXS)
       {
@@ -2179,25 +2336,31 @@ void img_lay(struct layer **layer,
 	     int layers,
 	     struct layer *dest)
 {
-   rgb_group *line1,*line2,*aline1,*aline2;
+#ifdef LAYERS_DUAL
+   rgb_group *line1,*aline1;
+   rgb_group *line2,*aline2;
+#endif
    rgb_group *d,*da;
    int width=dest->xsize;
    int y,z;
    int xoffs=dest->xoffs,xsize=dest->xsize;
 
+#ifdef LAYERS_DUAL
    line1=malloc(sizeof(rgb_group)*width);
-   line2=malloc(sizeof(rgb_group)*width);
    aline1=malloc(sizeof(rgb_group)*width);
+   line2=malloc(sizeof(rgb_group)*width);
    aline2=malloc(sizeof(rgb_group)*width);
-   if (!line1 || !line2 || !aline1 || !aline2)
+   if (!line1 || !aline1
+       !line2 || !aline2)
    {
       if (line1) free(line1);
-      if (line2) free(line2);
       if (aline1) free(aline1);
+      if (line2) free(line2);
       if (aline2) free(aline2);
       resource_error(NULL,0,0,"memory",sizeof(rgb_group)*4*width,
 		     "Out of memory.\n");
    }
+#endif
 
    da=dest->alp->img;
    d=dest->img->img;
@@ -2214,13 +2377,23 @@ void img_lay(struct layer **layer,
 	 {
 	    img_lay_first_line(layer[0],xoffs,xsize,
 			       y+dest->yoffs-layer[0]->yoffs,
-			       line1,aline1),z=1;
+#ifdef LAYERS_DUAL
+			       line1,aline1
+#else
+			       d,da
+#endif
+			       ),z=1;
 	    z=1;
 	 }
 	 else
 	 {
+#ifdef LAYERS_DUAL
 	    smear_color(line1,black,xsize);
 	    smear_color(aline1,black,xsize);
+#else
+	    smear_color(d,black,xsize);
+	    smear_color(da,black,xsize);
+#endif
 	    z=0;
 	 }
 
@@ -2242,20 +2415,38 @@ void img_lay(struct layer **layer,
 /* 			  y+dest->yoffs, */
 /* 			  layer[z]->yoffs+layer[z]->ysize); */
 
-	       img_lay_line(layer[z],line1,aline1,
+	       img_lay_line(layer[z],
+#ifdef LAYERS_DUAL
+			    line1,aline1,
+#else
+			    d,da,
+#endif
 			    xoffs,xsize,
 			    y+dest->yoffs-layer[z]->yoffs,
-			    line2,aline2);
+#ifdef LAYERS_DUAL
+			    line2,aline2
+#else
+			    d,da
+#endif
+			    );
+#ifdef LAYERS_DUAL
 	       /* swap buffers */
 	       tmp=line1; line1=line2; line2=tmp;
 	       tmp=aline1; aline1=aline2; aline2=tmp;
+#endif
 	    }
 /* 	    else */
 /* 	       fprintf(stderr,"skip %d\n",z); */
 
 	 /* make the last layer on the destionation */
-	 img_lay_line(layer[layers-1],line1,aline1,
-		      xoffs,xsize,y+dest->yoffs-layer[layers-1]->yoffs,d,da);
+	 img_lay_line(layer[layers-1],
+#ifdef LAYERS_DUAL
+		      line1,aline1,
+#else
+		      d,da,
+#endif
+		      xoffs,xsize,y+dest->yoffs-layer[layers-1]->yoffs,
+		      d,da);
       }
       else 
       {
@@ -2267,10 +2458,12 @@ void img_lay(struct layer **layer,
       da+=dest->xsize;
    }
 
+#ifdef LAYERS_DUAL
    free(line1);
    free(aline1);
    free(line2);
    free(aline2);
+#endif
 }
 
 /*
