@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.37 2005/02/22 09:31:36 grubba Exp $ */
+/* $Id: socktest.pike,v 1.38 2005/02/22 11:59:58 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -609,6 +609,14 @@ int main()
 
   if(!code)
   {
+#ifdef IPV6
+#if constant(System.EAFNOSUPPORT)
+    if (port1::errno() == System.EAFNOSUPPORT) {
+      werror("\nIPv6 not supported.\n");
+      exit(0);      
+    }
+#endif /* EAFNOSUPPORT */
+#endif /* IPV6 */
     werror("Bind failed. (%d)\n",port1::errno());
     fd_fail();
   }
