@@ -33,12 +33,24 @@
 #include "spider.h"
 #include "conf.h"
 
+#ifdef HAVE_SYS_CONF_H
+#include <sys/conf.h>
+#endif
+
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
 #endif
 
 #ifdef HAVE_ARPA_INET_H
@@ -48,6 +60,7 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#include <errno.h>
 
 
 #define MAX_PARSE_RECURSE 1024
@@ -107,7 +120,7 @@ void f_parse_accessed_database(INT32 args)
   arg = sp[-1].u.array;
   arg->refs++;
   /* The initial string is gone, but the array is there now. */
-  pop_n_elems(args); 
+  pop_stack(); 
 
   for (i = 0; i < arg->size; i++)
   {
@@ -132,22 +145,56 @@ void f_parse_accessed_database(INT32 args)
   f_aggregate(2);
 }
 
-#if defined(__svr4__) && defined(sun)
-#define SOLARIS
-#endif
 
-#ifndef SOLARIS
-extern int errno;
-#endif
+#ifdef I_SENDFD
+#define HAVE_SEND_FD
+void f_send_fd(INT32 args)
+{
+  int sock_fd, fd;
 
-#ifdef SOLARIS
-#include <errno.h>
-#include <sys/socket.h>
-#include <sys/sockio.h>
-#include <sys/conf.h>
-#include <stropts.h>
+  if(args != 2) error("RTSL\n");
 
-#if 0
+  sock_fd = sp[-args].u.integer;
+  fd =  sp[-args+1].u.integer;
+  pop_stack();
+  pop_stack();
+
+  while(ioctl(sock_fd, I_SENDFD, fd) == -1)
+  {
+    switch(errno)
+    {
+     case EINVAL:
+      perror("Strange error while sending fd");
+      push_int(0);
+      return;
+
+     case EIO:
+     case EBADF:
+     case ENOTSOCK:
+     case ESTALE:
+      perror("Cannot send fd");
+      push_int(0);
+      return;
+
+     case EWOULDBLOCK:
+     case EINTR:
+     case ENOMEM:
+     case ENOSR:
+      continue;
+
+     default:
+      perror("Unknown error while ioctl(I_SENDFD)ing");
+      push_int(0);
+      return;
+    }
+  }
+  push_int(1);
+  return;
+}
+
+#else
+#if HAVE_SENDMSG
+#define HAVE_SEND_FD
 void f_send_fd(INT32 args)
 {
   struct iovec iov; 
@@ -200,51 +247,6 @@ void f_send_fd(INT32 args)
   push_int(1);
   return;
 }
-#else
-void f_send_fd(INT32 args)
-{
-  int sock_fd, fd;
-
-  if(args != 2) error("RTSL\n");
-
-  sock_fd = sp[-args].u.integer;
-  fd =  sp[-args+1].u.integer;
-  pop_stack();
-  pop_stack();
-
-  while(ioctl(sock_fd, I_SENDFD, fd) == -1)
-  {
-    switch(errno)
-    {
-     case EINVAL:
-      perror("Strange error while sending fd");
-      push_int(0);
-      return;
-
-     case EIO:
-     case EBADF:
-     case ENOTSOCK:
-     case ESTALE:
-      perror("Cannot send fd");
-      push_int(0);
-      return;
-
-     case EWOULDBLOCK:
-     case EINTR:
-     case ENOMEM:
-     case ENOSR:
-      continue;
-
-     default:
-      perror("Unknown error while semdmsg()ing");
-      push_int(0);
-      return;
-    }
-  }
-  push_int(1);
-  return;
-}
-
 #endif
 #endif
 
@@ -802,26 +804,18 @@ void f_localtime(INT32 args)
   t=sp[-1].u.integer;
   tm=localtime(&t);
   pop_stack();
-  push_string(make_shared_string("sec"));
-  push_int(tm->tm_sec);
-  push_string(make_shared_string("min"));
-  push_int(tm->tm_min);
-  push_string(make_shared_string("hour"));
-  push_int(tm->tm_hour);
 
-  push_string(make_shared_string("mday"));
-  push_int(tm->tm_mday);
-  push_string(make_shared_string("mon"));
-  push_int(tm->tm_mon);
-  push_string(make_shared_string("year"));
-  push_int(tm->tm_year);
+  push_string(make_shared_string("sec"));   push_int(tm->tm_sec);
+  push_string(make_shared_string("min"));   push_int(tm->tm_min);
+  push_string(make_shared_string("hour"));  push_int(tm->tm_hour);
 
-  push_string(make_shared_string("wday"));
-  push_int(tm->tm_wday);
-  push_string(make_shared_string("yday"));
-  push_int(tm->tm_yday);
-  push_string(make_shared_string("isdst"));
-  push_int(tm->tm_isdst);
+  push_string(make_shared_string("mday"));  push_int(tm->tm_mday);
+  push_string(make_shared_string("mon"));   push_int(tm->tm_mon);
+  push_string(make_shared_string("year"));  push_int(tm->tm_year);
+
+  push_string(make_shared_string("wday"));  push_int(tm->tm_wday);
+  push_string(make_shared_string("yday"));  push_int(tm->tm_yday);
+  push_string(make_shared_string("isdst")); push_int(tm->tm_isdst);
 
   push_string(make_shared_string("timezone"));
 #if !HAVE_INT_TIMEZONE
@@ -831,6 +825,7 @@ void f_localtime(INT32 args)
 #endif
   f_aggregate_mapping(20);
 }
+
 #ifdef HAVE_INITGROUPS
 void f_initgroups(INT32 args)
 {
@@ -845,6 +840,7 @@ void f_initgroups(INT32 args)
   pop_n_elems(args);
 }
 #endif
+
 
 void f_do_setuid(INT32 args)
 {
@@ -1134,11 +1130,6 @@ void f_real_perror(INT32 args)
 {
   pop_n_elems(args);
   perror(NULL);
-}
-#else
-void f_real_perror(INT32 args)
-{
-  pop_n_elems(args);
 }
 #endif
 
@@ -1561,7 +1552,7 @@ void init_spider_efuns(void)
   make_shared_string("POST");
 #endif
 
-#ifdef HAVE_SYS_SEM_H
+#if defined(HAVE_PTHREAD_MUTEX_UNLOCK) || defined(HAVE_MUTEX_UNLOCK)
   add_efun("_lock", f_lock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_unlock", f_unlock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);
@@ -1625,7 +1616,8 @@ void init_spider_efuns(void)
   add_efun("uname", f_uname, "function(:mapping)", OPT_TRY_OPTIMIZE);
 #endif
 
-#ifdef SOLARIS
+#ifdef HAVE_SEND_FD
+  /* Defined above */
   add_efun("send_fd", f_send_fd, "function(int,int:int)", OPT_EXTERNAL_DEPEND);
 #endif
 
@@ -1695,10 +1687,12 @@ void init_spider_efuns(void)
 	   "function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_STRERROR
-  add_efun("strerror", f_strerror, "function(int|void:string)",OPT_TRY_OPTIMIZE);
+  add_efun("strerror",f_strerror,"function(int|void:string)",0);
 #endif
 
+#ifdef HAVE_PERROR
   add_efun("real_perror",f_real_perror, "function(:void)",OPT_EXTERNAL_DEPEND);
+#endif
 
 #ifdef HAVE_SYSLOG
   add_efun("openlog", f_openlog, "function(string,int,int:void)", 0);
@@ -1714,14 +1708,18 @@ void init_spider_efuns(void)
 #ifdef HAVE_INITGROUPS
   add_efun("initgroups", f_initgroups, "function(string,int:void)", 0);
 #endif
+
   add_efun("setuid", f_do_setuid, "function(int:void)", 0);
   add_efun("setgid", f_do_setgid, "function(int:void)", 0);
+
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
   add_efun("seteuid", f_do_seteuid, "function(int:void)", 0);
 #endif
+
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
   add_efun("setegid", f_do_setegid, "function(int:void)", 0);
 #endif
+
   add_efun("timezone",f_timezone,"function(:int)",0);
   add_efun("get_all_active_fd",f_get_all_active_fd,"function(:array(int))",0);
   add_efun("fd_info",f_fd_info,"function(int:string)",0);
@@ -1768,9 +1766,6 @@ void init_spider_programs()
 void exit_spider(void)
 {
   int i;
-#ifdef HAVE_SYS_SEM_H
-  free_all_locks();
-#endif
   for(i=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
     if(fd_marks[i])
       free_string(fd_marks[i]);
