@@ -281,6 +281,7 @@ testfont binary
 /packaging/debian/prerm foreign_ident
 /packaging/debian/rules foreign_ident
 /packaging/fink/README foreign_ident
+/packaging/windows/installer.vbs foreign_ident
 /refdoc/Makefile foreign_ident
 /refdoc/presentation/tree-split-autodoc.pike foreign_ident
 /refdoc/presentation/wiki.pike foreign_ident
