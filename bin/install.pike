@@ -240,11 +240,9 @@ int low_install_file(string from,
     return 0;
   }
   mkdirhier(dirname(to));
-  switch(query_num_arg())
-  {
-    case 2:
+  if( query_num_arg()==2 )
       mode=0755;
-  }
+
   string tmpfile=to+"-"+getpid()+"-"+time();
   if(!Stdio.cp(from,tmpfile))
     fail("copy(%s,%s)",from,tmpfile);
@@ -910,9 +908,7 @@ int pre_install(array(string) argv)
       do {
 	write("\n");
 
-//	werror("PREFIX: %O\n",prefix);
-//	if(!vars->prefix)
-	prefix=interactive->edit_directory(prefix,"Install prefix: ");
+	prefix = interactive->edit_directory(prefix,"Install prefix: ");
 	prefix = interactive->absolute_path(prefix);
 
 	if(!vars->pike_name)
@@ -1203,6 +1199,7 @@ void do_install()
 	status("Finalizing",pike_bin_file,"FAILED");
 	if (!istty()) {
 	  werror("Finalizing of %O failed!\n", pike_bin_file);
+	  werror("Not found in %s.\n%O\n", getcwd(), get_dir("."));
 	}
 	exit(1);
       }
