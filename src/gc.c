@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.167 2001/07/05 01:44:55 mast Exp $");
+RCSID("$Id: gc.c,v 1.168 2001/07/11 11:24:00 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -605,17 +605,18 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 static void gdb_gc_stop_here(void *a, int weak)
 {
 #if 1
-  if (!found_in) fatal("found_in is zero.\n");
   if (!found_where) fatal("found_where is zero.\n");
 #endif
   fprintf(stderr,"***One %sref found%s. ",
 	  weak ? "weak " : "",
-	  found_in && found_where?found_where:"");
-  if (gc_svalue_location)
-    describe_location(found_in , found_in_type, gc_svalue_location,0,1,0);
-  else {
-    fputc('\n', stderr);
-    describe_something(found_in, found_in_type, 2, 0, DESCRIBE_MEM);
+	  found_where?found_where:"");
+  if (found_in) {
+    if (gc_svalue_location)
+      describe_location(found_in , found_in_type, gc_svalue_location,0,1,0);
+    else {
+      fputc('\n', stderr);
+      describe_something(found_in, found_in_type, 2, 0, DESCRIBE_MEM);
+    }
   }
   fprintf(stderr,"----------end------------\n");
 }
