@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.360 2005/03/20 12:32:57 grubba Exp $
+|| $Id: las.c,v 1.361 2005/04/06 17:37:37 grubba Exp $
 */
 
 #include "global.h"
@@ -3591,6 +3591,7 @@ void fix_type_field(node *n)
 	yytype_error("Bad argument to splice operator.",
 		     array_type, CAR(n)->type, 0);
       }
+      free_type(array_type);
     }
     /* FIXME: The type field of the splice operator is not yet utilized.
      *
