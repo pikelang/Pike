@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.13 1998/10/22 05:05:08 hubbe Exp $
+# $Id: configure.in,v 1.14 1998/10/22 20:08:58 hubbe Exp $
 #
 # Configure script for the odbc-module
 #
@@ -19,17 +19,18 @@ AC_ARG_WITH(odbc,  [  --without-odbc       no support for ODBC databases],[],[wi
 
 if test x$with_odbc = xyes; then
  if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
-   AC_DEFINE(HAVE_WINDOWS_H)
-   AC_DEFINE(HAVE_SQL_H)
-   AC_DEFINE(HAVE_SQLEXT_H)
-   AC_DEFINE(HAVE_ODBC)
-   LIBS="-lodbc32 $LIBS"
-   pike_cv_odbc=yes
-    cat <<EOF
+   AC_CHECK_HEADERS(windows.h sql.h sqlext.h)
+
+   if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
+     AC_DEFINE(HAVE_ODBC)
+     LIBS="-lodbc32 $LIBS"
+     pike_cv_odbc=yes
+     cat <<EOF
 
 ODBC support enabled.
 
 EOF
+    fi
  else
 
   AC_MSG_CHECKING(for ODBC library-directory)
