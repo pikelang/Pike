@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.8 1998/04/06 03:19:37 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.9 1998/04/08 22:05:36 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -164,6 +164,7 @@ int main(int argc, string *argv)
 		{
 		  werror("Test "+(e+1)+" failed.\n");
 		  werror(test+"\n");
+		  werror(sprintf("o->a(): %O\n",a));
 		  errors++;
 		}else{
 		  successes++;
