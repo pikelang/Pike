@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.41 2003/05/31 11:00:10 mast Exp $
+|| $Id: dumpmodule.pike,v 1.42 2003/05/31 12:47:39 mast Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -151,7 +151,7 @@ do_dump: {
 	// Kludge: Resolve the module through master()->resolv since
 	// it handles cyclic references better than we do in
 	// compile_file above.
-	master()->resolv (master()->module_path_to_name (file));
+	master()->resolv (master()->program_path_to_name (file));
 
 	p=compile_file(file, Handler());
 
@@ -285,8 +285,10 @@ int main(int argc, array(string) argv)
 
   argv=Getopt.get_args(argv);
 
+#if 0
   // Hack to get Calendar files to compile in correct order.
   object tmp = Calendar;
+#endif
 
   foreach(argv, string file)
   {
