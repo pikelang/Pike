@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.105 2002/05/31 22:31:39 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.106 2002/07/09 17:04:00 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1547,14 +1547,14 @@ void pike_module_exit(void)
 #define MPZ_RET_TYPE "object"
 #define MPZ_SHIFT_TYPE "function(int|float|object:" MPZ_RET_TYPE")"
 #define MPZ_BINOP_TYPE ("function(" MPZ_ARG_TYPE "...:"MPZ_RET_TYPE")")
-#define MPZ_CMPOP_TYPE ("function(" MPZ_ARG_TYPE ":int)")
+#define MPZ_CMPOP_TYPE ("function(mixed:int)")
 
 #define tMpz_arg tOr3(tInt,tFloat,tObj)
 #define tMpz_ret tObj
 #define tMpz_int tInt
 #define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
 #define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
-#define tMpz_cmpop_type tFunc(tMpz_arg, tMpz_ret)
+#define tMpz_cmpop_type tFunc(tMixed, tMpz_ret)
 
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
