@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.219 2003/06/05 21:52:03 mast Exp $
+|| $Id: gc.c,v 1.220 2003/06/30 17:06:08 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.219 2003/06/05 21:52:03 mast Exp $");
+RCSID("$Id: gc.c,v 1.220 2003/06/30 17:06:08 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1434,7 +1434,7 @@ void locate_references(void *a)
 #endif
   
   found_where=0;
-  call_callback(& gc_callbacks, (void *)0);
+  call_callback(& gc_callbacks, NULL);
   
   found_where=orig_found_where;
   check_for=orig_check_for;
@@ -2617,7 +2617,7 @@ size_t do_gc(void *ignored, int explicit_call)
   /* These callbacks are mainly for the check pass, but can also
    * do things that are normally associated with the mark pass
    */
-  call_callback(& gc_callbacks, (void *)0);
+  call_callback(& gc_callbacks, NULL);
 
   GC_VERBOSE_DO(fprintf(stderr, "| check: %u references in %d things, "
 			"counted %"PRINTSIZET"u weak refs\n",

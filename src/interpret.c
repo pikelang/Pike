@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.306 2003/06/07 13:28:39 grubba Exp $
+|| $Id: interpret.c,v 1.307 2003/06/30 17:06:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.306 2003/06/07 13:28:39 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.307 2003/06/30 17:06:09 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1529,7 +1529,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
   case APPLY_LOW:
     o = (struct object *)arg1;
-    fun = ((char *)arg2) - (char *)0;
+    fun = PTR_TO_INT(arg2);
     if(o->prog == pike_trampoline_program &&
        fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
     {

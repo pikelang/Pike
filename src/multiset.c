@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.73 2003/05/12 12:17:49 nilsson Exp $
+|| $Id: multiset.c,v 1.74 2003/06/30 17:06:09 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.73 2003/05/12 12:17:49 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.74 2003/06/30 17:06:09 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -153,8 +153,7 @@ PMOD_EXPORT const char msg_multiset_no_node_refs[] =
 
 #define NODE_AT(MSD, TYPE, POS) ((struct TYPE *) &(MSD)->nodes + (POS))
 #define NODE_OFFSET(TYPE, POS)						\
-  ((size_t)(((char *)NODE_AT ((struct multiset_data *) NULL, TYPE, POS))- \
-            (char *)0))
+  PTR_TO_INT (NODE_AT ((struct multiset_data *) NULL, TYPE, POS))
 
 #define SHIFT_PTR(PTR, FROM, TO) ((char *) (PTR) - (char *) (FROM) + (char *) (TO))
 #define SHIFT_NODEPTR(NODEPTR, FROM_MSD, TO_MSD)			\
@@ -4232,8 +4231,8 @@ static void check_low_msnode (struct multiset_data *msd,
     Pike_fatal ("Node outside storage for multiset.\n");
   if ((char *) node - (char *) msd->nodes !=
       (msd->flags & MULTISET_INDVAL ?
-       (&node->iv - &msd->nodes->iv) * (ptrdiff_t) ((struct msnode_indval *) NULL + 1) :
-       (&node->i - &msd->nodes->i) * (ptrdiff_t) ((struct msnode_ind *) NULL + 1)))
+       (&node->iv - &msd->nodes->iv) * sizeof (struct msnode_indval) :
+       (&node->i - &msd->nodes->i) * sizeof (struct msnode_ind)))
     Pike_fatal ("Unaligned node in storage for multiset.\n");
 
   switch (node->i.ind.type) {
@@ -5291,7 +5290,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.73 2003/05/12 12:17:49 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.74 2003/06/30 17:06:09 mast Exp $");
 
 struct multiset *first_multiset;
 

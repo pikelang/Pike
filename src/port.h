@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.50 2003/04/02 19:22:43 mast Exp $
+|| $Id: port.h,v 1.51 2003/06/30 17:06:10 mast Exp $
 */
 
 #ifndef PORT_H
@@ -41,7 +41,7 @@ struct timeval;
 void GETTIMEOFDAY(struct timeval *t);
 #else
 #  ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
-#    define GETTIMEOFDAY(X) gettimeofday((X),(void *)0)
+#    define GETTIMEOFDAY(X) gettimeofday((X),NULL)
 #  else
 #    define GETTIMEOFDAY gettimeofday
 #  endif

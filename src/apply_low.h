@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.18 2003/03/15 17:37:35 grubba Exp $
+|| $Id: apply_low.h,v 1.19 2003/06/30 17:06:08 mast Exp $
 */
 
     {
@@ -159,8 +159,7 @@
 	char buf[50];
 
 	init_buf();
-	sprintf(buf, "%lx->",
-		DO_NOT_WARN((long)(((char *)o)-((char *)0))));
+	sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
 	my_strcat(buf);
 	my_strcat(function->name->str);
 	do_trace_call(args);

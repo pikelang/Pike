@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.273 2003/05/23 10:58:17 grubba Exp $
+|| $Id: signal_handler.c,v 1.274 2003/06/30 17:06:10 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.273 2003/05/23 10:58:17 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.274 2003/06/30 17:06:10 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1871,7 +1871,7 @@ static void f_proc_reg_index(INT32 args)
   }
 
   if ((val = ptrace(PTRACE_PEEKUSER, proc->pid,
-		    ((long *)(((struct user *)0)->regs)) + regno, 0)) == -1) {
+		    ((long *)(((struct user *)NULL)->regs)) + regno, 0)) == -1) {
     int err = errno;
     /* FIXME: Better diagnostics. */
     if (errno) {

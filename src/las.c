@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.335 2003/04/02 19:24:20 nilsson Exp $
+|| $Id: las.c,v 1.336 2003/06/30 17:06:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.335 2003/04/02 19:24:20 nilsson Exp $");
+RCSID("$Id: las.c,v 1.336 2003/06/30 17:06:09 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1892,7 +1892,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     {
       ptrdiff_t c;
       DECLARE_CYCLIC();
-      c = ((char *)BEGIN_CYCLIC(Pike_sp[-1].u.refs, id))-(char *)0;
+      c = PTR_TO_INT(BEGIN_CYCLIC(Pike_sp[-1].u.refs, id));
       if(c>1)
       {
 	my_yyerror("Recursive module dependency in '%s'.",id->str);

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.42 2003/04/28 00:32:42 mast Exp $
+|| $Id: backend.cmod,v 1.43 2003/06/30 17:06:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.42 2003/04/28 00:32:42 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.43 2003/06/30 17:06:08 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -947,7 +947,7 @@ PIKECLASS Backend
 	if(my_timercmp(& CALL(0)->tv, < , &next_timeout))
 	  next_timeout = CALL(0)->tv;
 
-      call_callback(& me->backend_callbacks, (void *)0);
+      call_callback(& me->backend_callbacks, NULL);
 
       copy_selectors(& me->active_set, &me->set);
       
@@ -1522,7 +1522,7 @@ PIKECLASS Backend
 	   for(e=0;e<me->num_pending_calls;e++)
 	   {
 	     call_out *c=CALL(e);
-	     hval=(size_t)(((char *)c->args)-(char *)0);
+	     hval=PTR_TO_INT(c->args);
 
 #define LINK(X,c)							\
 	     hval%=me->hash_size;					\
@@ -1548,7 +1548,7 @@ PIKECLASS Backend
      new->pos=me->num_pending_calls;
      
      {
-       hval=(size_t)(((char *)args)-(char *)0);
+       hval=PTR_TO_INT(args);
        LINK(arr,new);
        hval=hash_svalue(args->item);
        LINK(fun,new);
@@ -1726,7 +1726,7 @@ PIKECLASS Backend
        
        if(fun->type == T_ARRAY)
        {
-	 hval=(size_t)(((char *)fun->u.array)-(char *)0);
+	 hval=PTR_TO_INT(fun->u.array);
 	 hval%=me->hash_size;
 	 for(c=me->call_hash[hval].arr;c;c=c->next_arr)
 	 {

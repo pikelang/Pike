@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.218 2003/06/26 08:28:17 tomas Exp $
+|| $Id: threads.c,v 1.219 2003/06/30 17:06:10 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.218 2003/06/26 08:28:17 tomas Exp $");
+RCSID("$Id: threads.c,v 1.219 2003/06/30 17:06:10 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1458,7 +1458,7 @@ void f_thread_id__sprintf (INT32 args)
     return;
   }
   push_constant_text ("Thread.Thread(");
-  push_int64(((char *)THREAD_T_TO_PTR(THIS_THREAD->id))-(char *)0);
+  push_int64(PTR_TO_INT(THREAD_T_TO_PTR(THIS_THREAD->id)));
   push_constant_text (")");
   f_add (3);
 }
@@ -1473,7 +1473,7 @@ void f_thread_id__sprintf (INT32 args)
 void f_thread_id_id_number(INT32 args)
 {
   pop_n_elems(args);
-  push_int64(((char *)THREAD_T_TO_PTR(THIS_THREAD->id))-(char *)0);
+  push_int64(PTR_TO_INT(THREAD_T_TO_PTR(THIS_THREAD->id)));
 }
 
 /*! @decl mixed result()

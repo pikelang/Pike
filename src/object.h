@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.78 2003/02/15 16:02:05 grubba Exp $
+|| $Id: object.h,v 1.79 2003/06/30 17:06:09 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -127,7 +127,7 @@ void check_all_objects(void);
 #endif
 
 #ifdef PIKE_DEBUG
-#define master() ( get_master() ? get_master() : ( Pike_fatal("Couldn't load master object at %s:%d.\n",__FILE__,__LINE__), (struct object *)0) )
+#define master() ( get_master() ? get_master() : ( Pike_fatal("Couldn't load master object at %s:%d.\n",__FILE__,__LINE__), (struct object *)NULL) )
 #else
 #define master() debug_master()
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.150 2003/04/27 17:52:42 mast Exp $
+|| $Id: interpret_functions.h,v 1.151 2003/06/30 17:06:09 mast Exp $
 */
 
 /*
@@ -1018,13 +1018,8 @@ OPCODE0_TAIL(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", 0, {
   OPCODE0(F_POP_SYNCH_MARK, "pop synch mark", 0, {
     if (d_flag) {
       if (Pike_mark_sp <= Pike_interpreter.mark_stack) {
-	Pike_fatal("Mark stack out of synch - 0x%08lx <= 0x%08lx.\n",
-		   DO_NOT_WARN((unsigned long)
-			       (((char *)Pike_mark_sp)-
-				(char *)0)),
-		   DO_NOT_WARN((unsigned long)
-			       (((char *)Pike_interpreter.mark_stack)-
-				(char *)0)));
+	Pike_fatal("Mark stack out of synch - %p <= %p.\n",
+		   Pike_mark_sp, Pike_interpreter.mark_stack);
       } else if (*--Pike_mark_sp != Pike_sp) {
 	ptrdiff_t should = *Pike_mark_sp - Pike_interpreter.evaluator_stack;
 	ptrdiff_t is = Pike_sp - Pike_interpreter.evaluator_stack;
@@ -1243,7 +1238,7 @@ OPCODE1(F_SWITCH, "switch", 0, {
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
   addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
-				  DO_ALIGN(((char *)addr)-(char *)0,
+				  DO_ALIGN(PTR_TO_INT(addr),
 					   ((ptrdiff_t)sizeof(INT32))));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) fast_check_threads_etc(7);
@@ -1262,7 +1257,7 @@ OPCODE1(F_SWITCH_ON_INDEX, "switch on index", 0, {
 		    constants[arg1].sval.u.array,Pike_sp-1);
   pop_n_elems(3);
   addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
-				  DO_ALIGN(((char *)addr)-(char *)0,
+				  DO_ALIGN(PTR_TO_INT(addr),
 					   ((ptrdiff_t)sizeof(INT32))));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) fast_check_threads_etc(7);
@@ -1275,7 +1270,7 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", 0, {
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg2].sval.u.array,Pike_fp->locals + arg1);
   addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
-				  DO_ALIGN(((char *)addr)-(char *)0,
+				  DO_ALIGN(PTR_TO_INT(addr),
 					   ((ptrdiff_t)sizeof(INT32))));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) fast_check_threads_etc(7);

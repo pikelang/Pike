@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.141 2003/04/27 17:43:15 mast Exp $
+|| $Id: interpret.h,v 1.142 2003/06/30 17:06:09 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -546,7 +546,7 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
 
 #define check_threads_etc() do { \
   DO_IF_INTERNAL_PROFILING (evaluator_callback_calls++); \
-  call_callback(& evaluator_callbacks, (void *)0); \
+  call_callback(& evaluator_callbacks, NULL); \
 }while(0) 
 
 #ifdef PIKE_DEBUG

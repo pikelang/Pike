@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort_template.h,v 1.15 2003/04/26 16:12:53 mast Exp $
+|| $Id: fsort_template.h,v 1.16 2003/06/30 17:06:08 mast Exp $
 */
 
 #ifdef SORT_BY_INDEX
@@ -33,7 +33,7 @@
 
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
-#define SIZE (((char *)STEP((PTYPE)0,1))-((char *)0))
+#define SIZE PTR_TO_INT(STEP((PTYPE)0,1))
 
 #define PARENT(X) (((X)-1)>>1)
 #define CHILD1(X) (((X)<<1)+1)

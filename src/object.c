@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.237 2003/06/03 18:00:07 mast Exp $
+|| $Id: object.c,v 1.238 2003/06/30 17:06:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.237 2003/06/03 18:00:07 mast Exp $");
+RCSID("$Id: object.c,v 1.238 2003/06/30 17:06:09 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -106,7 +106,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #endif /* PROFILING */
 
   o=alloc_object();
-  o->storage=p->storage_needed ? (char *)xalloc(p->storage_needed) : (char *)0;
+  o->storage=p->storage_needed ? (char *)xalloc(p->storage_needed) : (char *)NULL;
 
   GC_ALLOC(o);
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.62 2003/05/04 14:36:39 nilsson Exp $
+|| $Id: fdlib.c,v 1.63 2003/06/30 17:06:08 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.62 2003/05/04 14:36:39 nilsson Exp $");
+RCSID("$Id: fdlib.c,v 1.63 2003/06/30 17:06:08 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -1603,7 +1603,7 @@ void fd_waitor_remove_customer(fd_waitor *x, FD customer)
 
   CloseHandle(x->customers[pos]);
   
-  fd_mapper_store(customer, x->fd_to_pos_key, (void *)0);
+  fd_mapper_store(customer, x->fd_to_pos_key, NULL);
   x->occupied--;
   if(x->occupied != pos)
   {

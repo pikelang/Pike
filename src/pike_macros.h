@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.36 2003/06/30 16:43:02 mast Exp $
+|| $Id: pike_macros.h,v 1.37 2003/06/30 17:06:09 mast Exp $
 */
 
 #ifndef MACROS_H
@@ -16,14 +16,14 @@
 
 #include "pike_memory.h"
 
-#define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR) - (char *) 0))
+#define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR) - (char *) NULL))
 
 #define OFFSETOF(str_type, field) \
-  PTR_TO_INT(& (((struct str_type *)0)->field))
+  PTR_TO_INT(& (((struct str_type *)NULL)->field))
 #define BASEOF(ptr, str_type, field)  \
   ((struct str_type *)((char*)ptr - OFFSETOF(str_type, field)))
 #define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
-/* #define ALIGNOF(X) PTR_TO_INT(&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_)) */
+/* #define ALIGNOF(X) PTR_TO_INT(&(((struct { char ignored_ ; X fooo_; } *)NULL)->fooo_)) */
 
 #define NELEM(a) (sizeof (a) / sizeof ((a)[0]))
 #define ALLOC_STRUCT(X) ( (struct X *)xalloc(sizeof(struct X)) )

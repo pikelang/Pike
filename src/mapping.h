@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.49 2003/03/30 16:15:10 mast Exp $
+|| $Id: mapping.h,v 1.50 2003/06/30 17:06:09 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -62,7 +62,9 @@ extern struct mapping *gc_internal_mapping;
 #define mapping_get_flags(m) ((m)->data->flags)
 
 #define MD_KEYPAIRS(MD, HSIZE) \
-   ( (struct keypair *)DO_ALIGN( ((char *)(((struct mapping_data *)(MD))->hash + HSIZE))-(char *)0, ALIGNOF(struct keypair)) )
+   ( (struct keypair *)							\
+     DO_ALIGN( PTR_TO_INT(((struct mapping_data *)(MD))->hash + HSIZE),	\
+	       ALIGNOF(struct keypair)) )
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define NEW_MAPPING_LOOP(md) \

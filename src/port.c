@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.71 2003/04/02 21:37:48 mast Exp $
+|| $Id: port.c,v 1.72 2003/06/30 17:06:10 mast Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.71 2003/04/02 21:37:48 mast Exp $");
+RCSID("$Id: port.c,v 1.72 2003/06/30 17:06:10 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -160,7 +160,7 @@ long STRTOL(const char *str,char **ptr,int base)
   int c;
   int xx, neg = 0, add_limit, overflow = 0;
 
-  if (ptr != (char **)0)
+  if (ptr != (char **)NULL)
     *ptr = (char *)str;		/* in case no number is formed */
   if (base < 0 || base > MBASE)
     return (0);			/* base is invalid -- should be a fatal error */
@@ -211,7 +211,7 @@ long STRTOL(const char *str,char **ptr,int base)
       val = base * val + xx;
   }
 
-  if (ptr != (char **)0)
+  if (ptr != (char **)NULL)
     *ptr = (char *)str;
   if (overflow) {
     errno = ERANGE;
@@ -397,7 +397,7 @@ PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e)
 {
   const char *t = p;
   while(e--) if(*(t++)==c) return t-1;
-  return (char *)0;
+  return (char *)NULL;
 }
 #endif
 

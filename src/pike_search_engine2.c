@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search_engine2.c,v 1.8 2003/01/09 14:28:50 grubba Exp $
+|| $Id: pike_search_engine2.c,v 1.9 2003/06/30 17:06:10 mast Exp $
 */
 
 /*
@@ -42,8 +42,7 @@ INLINE HCHAR *NameNH(memchr_search)(void *data,
 				    ptrdiff_t haystacklen)
 {
   return NameNH(MEMCHR)(haystack,
-			DO_NOT_WARN((NCHAR)(ptrdiff_t)
-				    (((char *)data)-(char *)0)),
+			DO_NOT_WARN((NCHAR)(ptrdiff_t) PTR_TO_INT(data)),
 			haystacklen);
 }
 

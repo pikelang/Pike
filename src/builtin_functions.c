@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.496 2003/06/24 20:27:19 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.497 2003/06/30 17:06:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.496 2003/06/24 20:27:19 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.497 2003/06/30 17:06:08 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2289,7 +2289,7 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
     /* FIXME: Ought to handle or-nodes here. */
     if(t && (t->type == T_OBJECT))
     {
-      struct program *p = id_to_program(((char *)t->cdr)-(char *)0);
+      struct program *p = id_to_program(CDR_TO_INT(t));
       if(p)
       {
 	int fun=FIND_LFUN(p, lfun);
@@ -5859,7 +5859,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   }
 #endif
 
-  call_callback(&memory_usage_callback, (void *)0);
+  call_callback(&memory_usage_callback, NULL);
 
   f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.46 2003/06/26 08:28:17 tomas Exp $
+|| $Id: pike_threadlib.h,v 1.47 2003/06/30 17:06:10 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -826,7 +826,7 @@ PMOD_EXPORT extern int Pike_in_gc;
 #define low_th_init()
 #define th_cleanup()
 #define th_init_programs()
-#define th_self() ((void*)0)
+#define th_self() NULL
 #define co_wait(X,Y)
 #define co_signal(X)
 #define co_broadcast(X)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: misc.c,v 1.13 2003/04/06 14:37:31 nilsson Exp $
+|| $Id: misc.c,v 1.14 2003/06/30 17:11:19 mast Exp $
 */
 
 #include "global.h"
@@ -2077,5 +2077,5 @@ p_wchar1 const *misc_charset_lookup(char *name, int *rlo, int *rhi)
     else
       lo=mid+1;
   }
-  return (p_wchar1 *)0;
+  return (p_wchar1 *)NULL;
 }

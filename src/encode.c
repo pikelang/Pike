@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.189 2003/06/12 18:42:56 mast Exp $
+|| $Id: encode.c,v 1.190 2003/06/30 17:06:08 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.189 2003/06/12 18:42:56 mast Exp $");
+RCSID("$Id: encode.c,v 1.190 2003/06/30 17:06:08 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -296,7 +296,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     
     case T_ASSIGN:
       {
-	ptrdiff_t marker = ((char *)t->car)-(char *)0;
+	ptrdiff_t marker = CAR_TO_INT(t);
 	if ((marker < 0) || (marker > 9)) {
 	  Pike_fatal("Bad assign marker: %ld\n",
 		     (long)marker);
@@ -337,12 +337,12 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       {
 	ptrdiff_t val;
 
-	val = ((char *)t->car)-(char *)0;
+	val = CAR_TO_INT(t);
 	addchar((val >> 24)&0xff);
 	addchar((val >> 16)&0xff);
 	addchar((val >> 8)&0xff);
 	addchar(val & 0xff);
-	val = ((char *)t->cdr)-(char *)0;
+	val = CDR_TO_INT(t);
 	addchar((val >> 24)&0xff);
 	addchar((val >> 16)&0xff);
 	addchar((val >> 8)&0xff);
@@ -370,11 +370,11 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
     case T_OBJECT:
     {
-      addchar(((char *)t->car)-(char *)0);
+      addchar(CAR_TO_INT(t));
 
       if(t->cdr)
       {
-	ptrdiff_t id = ((char *)t->cdr)-(char *)0;
+	ptrdiff_t id = CAR_TO_INT(t);
 	if( id >= PROG_DYNAMIC_ID_START )
 	{
 	  struct program *p=id_to_program(id);
@@ -3018,7 +3018,7 @@ static void decode_value2(struct decode_data *data)
 	    } else {
 	      placeholder->storage=p->storage_needed ?
 		(char *)xalloc(p->storage_needed) :
-		(char *)0;
+		(char *)NULL;
 	      call_c_initializers(placeholder);
 	    }
 	  }
@@ -3039,7 +3039,7 @@ static void decode_value2(struct decode_data *data)
 	  {
 	    /* Logic for the PROGRAM_FINISHED flag:
 	     * The purpose of this code is to make sure that the PROGRAM_FINISHED
-	     * flat is not set on the program until all inherited programs also
+	     * flag is not set on the program until all inherited programs also
 	     * have that flag. -Hubbe
 	     */
 	    for(d=1;d<p->num_inherits;d++)
