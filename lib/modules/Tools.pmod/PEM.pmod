@@ -41,12 +41,19 @@ static string extract_boundary(string s)
 // ------------
 
 
+//!
 class EncapsulatedMsg {
 
+//! contains the boundary string
   string boundary;
+
+//! contains the body of the message
   string body;
+
+//!
   mapping(string:string) headers;
 
+//!
   void create(string eb, string contents)
   {
     boundary = eb;
@@ -62,16 +69,19 @@ class EncapsulatedMsg {
       }
   }
   
+//! decodes a base 64 encoded message body
   string decoded_body()
   {
     return MIME.decode_base64(body);
   }
 
+//!
   string get_boundary()
   {
     return extract_boundary(boundary);
   }
 
+//!
   string canonical_body()
   {
     // Replace singular LF with CRLF
@@ -85,6 +95,7 @@ class EncapsulatedMsg {
     return lines * "\n";
   }
 
+//! converts the message body and headers to the standard message format.
   string to_string()
   {
     string s = (headers
@@ -98,11 +109,19 @@ class EncapsulatedMsg {
   }
 }
 
+//! 
 class RFC934 {
 
+//!
   string initial_text;
+
+//!
   string final_text;
+
+//!
   string final_boundary;
+
+//!
   array(EncapsulatedMsg) encapsulated;
   
   static array(string) dash_split(string data)
@@ -125,6 +144,7 @@ class RFC934 {
     return parts * "- -";
   }
 
+//! decodes an RFC 934 encoded message.
   void create(string data)
   {
     array(string) parts = dash_split(data);
@@ -193,11 +213,13 @@ class RFC934 {
     final_boundary = boundary;
   }
 
+//!
   string get_final_boundary()
   {
     return extract_boundary(final_boundary);
   }
 
+//!
   string to_string()
   {
     string s = dash_stuff(initial_text);
@@ -211,15 +233,25 @@ class RFC934 {
   }
 }
 
-// Disassembles PGP and PEM style messages with parts
-// separated by "-----BEGIN FOO-----" and "-----END FOO-----".
-
+//! Disassembles PGP and PEM style messages with parts
+//! separated by "-----BEGIN FOO-----" and "-----END FOO-----".
 class Msg
 {
+
+//! Contains any text preceeding the PEM message.
   string initial_text;
+
+//! Contains any text following the PEM message.
   string final_text;
+
+//! The decoded PEM message, as an array of @[EncapsulatedMsg] objects
+//! indexed by message name, such as "CERTIFICATE".
   mapping(string:EncapsulatedMsg) parts;
 
+//! Creates a decoded PEM message
+//!
+//! @param s
+//!   a string containing a PEM encoded message to be decoded.
   void create(string s)
    {
 #ifdef PEM_DEBUG
