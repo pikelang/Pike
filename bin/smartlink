@@ -77,9 +77,9 @@ while test x$1 = x -a x$# != x0; do
   shift
 done
 
-if test -x /usr/bin/uname ; then
+if test -x /usr/bin/uname 2>/dev/null; then
   UNAME=`/usr/bin/uname -sr`
-elif test -x /bin/uname ; then
+elif test -x /bin/uname 2>/dev/null; then
   UNAME=`/bin/uname -sr`
 else
   UNAME=unknown
