@@ -457,8 +457,8 @@ void f_cd(INT32 args)
 void f_getcwd(INT32 args)
 {
   char *e;
-#if defined(HAVE_WORKING_GETCWD) || !defined(HAVE_GETWD)
   char *tmp;
+#if defined(HAVE_WORKING_GETCWD) || !defined(HAVE_GETWD)
   INT32 size;
 
   size=1000;
@@ -467,6 +467,7 @@ void f_getcwd(INT32 args)
     e=(char *)getcwd(tmp,1000); 
     if (e || errno!=ERANGE) break;
     free((char *)tmp);
+    tmp=0;
     size*=2;
   } while (size < 10000);
 #else
@@ -474,12 +475,16 @@ void f_getcwd(INT32 args)
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 32768
 #endif
+  tmp=xalloc(MAXPATHLEN+1);
   THREADS_ALLOW();
-  e=(char *)getwd((char *)malloc(MAXPATHLEN+1));
+  e=(char *)getwd(tmp);
   THREADS_DISALLOW();
 #endif
-  if(!e)
+  if(!e) {
+    if (tmp) 
+      free(tmp);
     error("Failed to fetch current path.\n");
+  }
 
   pop_n_elems(args);
   push_string(make_shared_string(e));
