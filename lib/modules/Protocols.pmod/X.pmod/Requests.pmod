@@ -501,6 +501,24 @@ class ChangeGC
   }
 }
 
+class ClearArea
+{
+  inherit request;
+  constant reqType = 61;
+
+  int exposures;
+  int window;
+  int x, y;
+  int width, height;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%2c%2c%2c%2c",
+				 window, x, y, width, height),
+			 exposures);
+  }
+}
+
 class PolyPoint
 {
   inherit request;
