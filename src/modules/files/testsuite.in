@@ -224,6 +224,7 @@ test_eq(Stdio.read_file("conftest",100,5),"")
 dnl locking
 cond([[Stdio.File()->lock]],
 [[
+  dnl FIXME: It seems MacOS X has a lockf(3) that always fails with ENOTSUP.
   test_true(Stdio.File("conftest","wr")->lock()&&1)
   test_true(Stdio.File("conftest","wr")->trylock()&&1)
   test_true(Stdio.File("conftest","wr")->trylock()&&1)
