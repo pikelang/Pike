@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.55 2004/09/18 20:50:50 nilsson Exp $
+|| $Id: iterators.cmod,v 1.56 2004/11/26 17:39:00 grubba Exp $
 */
 
 #include "global.h"
@@ -102,7 +102,7 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl Iterator `+ (int steps)
+  /*! @decl optional Iterator `+ (int steps)
    *!
    *! Returns a clone of this iterator which is advanced the specified
    *! number of steps. The amount may be negative to move backwards.
@@ -110,18 +110,19 @@ PIKECLASS Iterator
    *! throw an exception in that case.
    */
   PIKEFUN Iterator `+(int steps)
-    flags ID_STATIC;
+    flags ID_STATIC|ID_OPTIONAL;
     prototype;
   {}
 
-  /*! @decl Iterator `+= (int steps)
+  /*! @decl optional Iterator `+= (int steps)
    *!
    *! Advance this iterator the specified number of steps and return
    *! it. The amount may be negative to move backwards. If the
    *! iterator doesn't support backward movement it should throw an
    *! exception in that case.
    *!
-   *! @[foreach] calls this function with a step value of @expr{1@}.
+   *! @[foreach] calls this function with a step value of @expr{1@}
+   *! if @[next()] doesn't exist.
    *!
    *! @note
    *!   @[foreach] will call this function even when the the
@@ -137,12 +138,14 @@ PIKECLASS Iterator
    *!   @endcode
    *!
    *! @note
-   *!   Even though this function is an lfun, it is often beneficial
-   *!   to not declare it static, since code might want to advance
-   *!   the iterator by hand.
+   *!   Even though this function is sufficient for @[foreach] to
+   *!   advance the iterator, @[next()] is the preferred API.
+   *!   @[next()] has the additional advantage of not being an
+   *!   lfun, so it is possible to advance the iterator by hand.
    */
   PIKEFUN Iterator `+=(int steps)
     prototype;
+    flags ID_OPTIONAL;
   {}
 
   /*! @decl optional Iterator `- (int steps)
@@ -226,9 +229,17 @@ PIKECLASS Iterator
    *! If this function is defined it should advance the iterator one
    *! step, just like @expr{@[`+=](1)@} would do.
    *!
+   *! @note
+   *!   This is the preferred way to advance the iterator, since it
+   *!   reduces the overhead.
+   *!
+   *! @note
+   *!   This function will likely be non-optional in future versions
+   *!   of Pike.
+   *!
    *! @returns
    *!   Returns @tt{1@} if it succeeded in advancing, and
-   *!   @tt{0@} (zero) at end of iterator.
+   *!   @tt{0@} (zero) if it has reached the end of the iterator.
    */
   PIKEFUN int(0..1) next()
     flags ID_OPTIONAL;
@@ -1984,14 +1995,55 @@ int foreach_iterate(struct object *o, int do_step)
   /* Generic iteration */
 
   if (do_step) {
-    fun = FIND_LFUN (prog, LFUN_ADD_EQ);
-    if (fun < 0) Pike_error ("Iterator object lacks `+=.\n");
-    push_int(1);
-    apply_low(o, fun, 1);
-    pop_stack();
+    if ((fun = find_shared_string_identifier(MK_STRING("next"), prog)) < 0) {
+      fun = FIND_LFUN (prog, LFUN_ADD_EQ);
+      if (fun < 0)
+	Pike_error("Iterator object lacks both next() and `+=().\n");
+      push_int(1);
+      apply_low(o, fun, 1);
+      pop_stack();
+      fun = FIND_LFUN(prog, LFUN_NOT);
+      if (fun < 0) Pike_error("Iterator object lacks `!.\n");
+      apply_low(o, fun, 0);
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return 0;
+      }
+    } else {
+      /* NOTE: next() returns 1 on success, and 0 on failure,
+       *       we thus don't need to call `! to see if we are at a
+       *       valid position. Note that this is the reverse of the
+       *       output from `!.
+       */
+      apply_low(o, fun, 0);
+      if(UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return 0;
+      }
+    }
+  } else {
+    fun = FIND_LFUN(prog, LFUN_NOT);
+    if (fun < 0) Pike_error("Iterator object lacks `!.\n");
+    apply_low(o, fun, 0);
+    if(!UNSAFE_IS_ZERO(Pike_sp-1))
+    {
+      pop_stack();
+      return 0;
+    }
   }
 
+  /* Only reached if the iterator is at a valid position. */
+
+  pop_stack();	/* Get rid of the return value from `!() or step(). */
+
 #if 0
+  /* NOTE: This code has not been updated since the introduction of
+   *       support for step().
+   *		/grubba 2004-11-26
+   */
+
   /* We should be able to save calls to `! this way, but there are
    * iterators where index() and value() don't return UNDEFINED as
    * stipulated by the interface. */
@@ -2040,37 +2092,25 @@ int foreach_iterate(struct object *o, int do_step)
 
 #else
 
-  fun = FIND_LFUN (o->prog, LFUN_NOT);
-  if (fun < 0) Pike_error ("Iterator object lacks `!.\n");
-  apply_low(o, fun, 0);
-  if(UNSAFE_IS_ZERO(Pike_sp-1))
+  if(Pike_sp[-4].type != T_INT)
   {
+    fun = find_shared_string_identifier(MK_STRING("index"), prog);
+    if (fun < 0) Pike_error ("Iterator object lacks index().\n");
+    apply_low(o, fun, 0);
+    assign_lvalue(Pike_sp-5,Pike_sp-1);
     pop_stack();
-
-    if(Pike_sp[-4].type != T_INT)
-    {
-      fun = find_identifier ("index", o->prog);
-      if (fun < 0) Pike_error ("Iterator object lacks index().\n");
-      apply_low(o, fun, 0);
-      assign_lvalue(Pike_sp-5,Pike_sp-1);
-      pop_stack();
-    }
-
-    if(Pike_sp[-2].type != T_INT)
-    {
-      fun = find_identifier ("value", o->prog);
-      if (fun < 0) Pike_error ("Iterator object lacks value().\n");
-      apply_low(o, fun, 0);
-      assign_lvalue(Pike_sp-3,Pike_sp-1);
-      pop_stack();
-    }
-
-    return 1;
-  }else{
-    pop_stack();
-    return 0;
   }
 
+  if(Pike_sp[-2].type != T_INT)
+  {
+    fun = find_shared_string_identifier(MK_STRING("value"), o->prog);
+    if (fun < 0) Pike_error ("Iterator object lacks value().\n");
+    apply_low(o, fun, 0);
+    assign_lvalue(Pike_sp-3,Pike_sp-1);
+    pop_stack();
+  }
+
+  return 1;
 #endif
 }
 
