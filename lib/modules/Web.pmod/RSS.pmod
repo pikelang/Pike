@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.4 2003/11/25 16:30:34 nilsson Exp $
+// $Id: RSS.pmod,v 1.5 2003/12/02 00:29:03 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -8,7 +8,7 @@ static constant ns = "http://purl.org/rss/1.0/";
 
 static class Thing {
   static .RDF rdf;
-  static mapping(string:string|Standards.URI) attributes = ([]);
+  static mapping /* (string:string|Standards.URI) */ attributes = ([]);
   .RDF.Resource me;
   constant thing = "";
 
@@ -119,7 +119,7 @@ class Textinput {
 class Channel {
   inherit Thing;
   static constant thing = "channel";
-  static mapping(string:string|Standards.URI|array) attributes = ([
+  static mapping attributes = ([
     "title" : 0,
     "link" : 0,
     "description" : 0,
