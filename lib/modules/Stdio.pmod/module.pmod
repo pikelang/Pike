@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.108 2001/03/10 16:19:49 mirar Exp $
+// $Id: module.pmod,v 1.109 2001/03/10 22:11:43 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -887,13 +887,17 @@ class File
   void set_blocking_keep_callbacks()
   {
      CHECK_OPEN();
+     ::_disable_callbacks(); // Thread safing
      ::set_blocking();
+     ::_enable_callbacks();
   }
 
   void set_nonblocking_keep_callbacks()
   {
      CHECK_OPEN();
+     ::_disable_callbacks(); // Thread safing
      ::set_nonblocking();
+     ::_enable_callbacks();
   }
    
   static void destroy()
