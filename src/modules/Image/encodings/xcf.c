@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.12 2000/02/03 19:01:29 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.13 2000/02/08 03:39:19 per Exp $");
 
 #include "image_machine.h"
 
@@ -212,7 +212,7 @@ struct level
 {
   unsigned int width;
   unsigned int height;
-  
+
   struct tile *first_tile;
 };
 
@@ -414,7 +414,7 @@ static struct hierarchy read_hierarchy( struct buffer *buff,
   return res;
 }
 
-static struct layer_mask read_layer_mask( struct buffer *buff, 
+static struct layer_mask read_layer_mask( struct buffer *buff,
                                           struct buffer *initial )
 {
   struct layer_mask res;
@@ -427,7 +427,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
-  
+
   SET_ONERROR( err, free_layer_mask, &res );
   do
   {
@@ -441,7 +441,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
     }
   } while(tmp.type);
   offset = read_uint( buff );
-  
+
   if(offset)
   {
     struct buffer ob = *initial;
@@ -452,7 +452,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
   return res;
 }
 
-static struct channel read_channel( struct buffer *buff, 
+static struct channel read_channel( struct buffer *buff,
                                     struct buffer *initial )
 {
   struct channel res;
@@ -465,7 +465,7 @@ static struct channel read_channel( struct buffer *buff,
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
-  
+
   SET_ONERROR( err, free_channel, &res );
   do
   {
@@ -479,7 +479,7 @@ static struct channel read_channel( struct buffer *buff,
     }
   }  while( tmp.type );
   offset = read_uint( buff );
-  
+
   if(offset)
   {
     struct buffer ob = *initial;
@@ -505,7 +505,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   res.type = read_int( buff );
   res.name = read_string( buff );
 
-  
+
   do
   {
     tmp = read_property( buff );
@@ -585,7 +585,7 @@ static struct gimp_image read_image( struct buffer * data )
       res.first_property = s;
     }
   } while( tmp.type );
-  
+
   while( (offset = read_uint( data )) )
   {
     struct buffer layer_data = initial;
@@ -653,7 +653,7 @@ static void push_hierarchy( struct hierarchy * h )
   ref_push_string( s_width );  push_int( h->width );
   ref_push_string( s_height ); push_int( h->height );
   ref_push_string( s_bpp ); push_int( h->bpp );
-  
+
   ref_push_string( s_tiles );
   tsp = sp;
   while(t)
@@ -845,21 +845,31 @@ void image_xcf_f__rle_decode( INT32 args )
   free(od.str);
 }
 
+/*
+**! method array(object) decode_layers( string data )
+**!     Decodes a XCF image to an array of Image.Layer objects
+**!
+**!     The layer object have the following extra variables (to be queried
+**!     using get_misc_value):
+**!
+**!      image_xres, image_yres, image_colormap, image_guides, image_parasites,
+**!      name, parasites, visible, active
+*/
 
 /*
 **! method object decode(string data)
-**! 	Decodes a XCF image to a single image object. 
+**! 	Decodes a XCF image to a single image object.
 **!
 **! note
-**!	Throws upon error in data, you will loose quite a lot of 
+**!	Throws upon error in data, you will loose quite a lot of
 **!     information by doing this. See Image.XCF._decode and Image.XCF.__decode
 */
 
 
 /*
 **! method mapping _decode(string|object data,mapping|void options)
-**! 	Decodes a XCF image to a mapping, with at least an 
-**!   'image' and possibly an 'alpha' object. Data is either a XCF image, or 
+**! 	Decodes a XCF image to a mapping, with at least an
+**!   'image' and possibly an 'alpha' object. Data is either a XCF image, or
 **!    a XCF.GimpImage object structure (as received from __decode)
 **!
 **!   <pre> Supported options
@@ -895,8 +905,8 @@ void image_xcf_f__rle_decode( INT32 args )
 **! method object __decode(string|mapping data, mapping|void options)
 **! 	Decodes a XCF image to a Image.XCF.GimpImage object.
 **!
-**!     <pre>Returned structure reference 
-**!    
+**!     <pre>Returned structure reference
+**!
 **!    !class GimpImage
 **!    {
 **!      int width;
@@ -919,7 +929,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      Channel active_channel;
 **!      Channel selection;
 **!    }
-**!    
+**!
 **!    !class Layer
 **!    {
 **!      string name;
@@ -934,7 +944,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      LayerMask mask;
 **!      Hierarchy image;
 **!    }
-**!    
+**!
 **!    !class Channel
 **!    {
 **!      string name;
@@ -948,7 +958,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      mapping flags = ([]);
 **!      array (Parasite) parasites;
 **!    }
-**!    
+**!
 **!    !class Hierarchy
 **!    {
 **!      Image.Image img;
@@ -957,21 +967,21 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      int height;
 **!      int bpp;
 **!    }
-**!    
+**!
 **!    !class Parasite
 **!    {
 **!      string name;
 **!      int flags;
 **!      string data;
 **!    }
-**!    
-**!    
+**!
+**!
 **!    !class Guide
 **!    {
 **!      int pos;
 **!      int vertical;
 **!    }
-**!    
+**!
 **!    !class Path
 **!    {
 **!      string name;
@@ -982,7 +992,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      int locked;
 **!      array (PathPoint) points = ({});
 **!    }
-**!    
+**!
 **!    !class PathPoint
 **!    {
 **!      int type;
@@ -997,14 +1007,14 @@ void image_xcf_f__rle_decode( INT32 args )
 **! method object ___decode(string|mapping data)
 **! 	Decodes a XCF image to a mapping.
 **!
-**!     <pre>Structure reference 
-**!    
+**!     <pre>Structure reference
+**!
 **!    ([
 **!      "width":int,
 **!      "height":int,
 **!      "type":int,
 **!      "properties":({
-**!        ([ 
+**!        ([
 **!          "type":int,
 **!          "data":string,
 **!        ]),
@@ -1017,7 +1027,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!          "height":int,
 **!          "type":type,
 **!          "properties":({
-**!            ([ 
+**!            ([
 **!              "type":int,
 **!              "data":string,
 **!            ]),
@@ -1028,7 +1038,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!            "width":int,
 **!            "height":int,
 **!            "properties":({
-**!              ([ 
+**!              ([
 **!                "type":int,
 **!                "data":string,
 **!              ]),
@@ -1061,7 +1071,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!        "width":int,
 **!        "height":int,
 **!        "properties":({
-**!          ([ 
+**!          ([
 **!            "type":int,
 **!            "data":string,
 **!          ]),
@@ -1097,7 +1107,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     error("Wrong type object argument 1 (image)\n");
   if(ao && !(a = (struct image *)get_storage( ao, image_program )))
     error("Wrong type object argument 2 (image)\n");
-  if( cmapo && 
+  if( cmapo &&
       !(cmap=(struct neo_colortable *)get_storage(cmapo,
                                                   image_colortable_program)))
     error("Wrong type object argument 4 (colortable)\n");
@@ -1156,9 +1166,9 @@ void image_xcf_f__decode_tiles( INT32 args )
     if( (unsigned)(tile->len) < (unsigned)(eheight * ewidth * bpp ))
       error("Too small tile, was %d bytes, I really need %d\n",
             tile->len, eheight*ewidth * bpp);
-    
+
     s = (unsigned char *)tile->str;
- 
+
     check_signals(); /* Allow ^C */
 
     for(cy=0; cy<eheight; cy++)
@@ -1179,15 +1189,15 @@ void image_xcf_f__decode_tiles( INT32 args )
         switch( bpp )
         {
          case 1: /* indexed or grey */
-           if(colortable) 
+           if(colortable)
              pix = colortable[s[ind]];
-           else 
+           else
              pix.r = pix.g = pix.b = s[ind];
            break;
          case 2: /* indexed or grey with alpha */
-           if(colortable) 
+           if(colortable)
              pix = colortable[s[ind]];
-           else 
+           else
              pix.r = pix.g = pix.b = s[ind];
            apix.r = apix.g = apix.b = s[ind+span];
            break;
@@ -1223,7 +1233,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     free_string(tile);
   }
   if(colortable) free( colortable );
-  
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -1232,7 +1242,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 static struct program *image_encoding_xcf_program=NULL;
 void init_image_xcf()
 {
-  add_function( "___decode", image_xcf____decode, 
+  add_function( "___decode", image_xcf____decode,
                 "function(string:mapping)", 0);
 
   add_function( "_decode_tiles", image_xcf_f__decode_tiles, "mixed", 0);
@@ -1320,4 +1330,3 @@ void exit_image_xcf()
 #include "xcf_constant_strings.h"
 #undef STRING
 }
-
