@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.102 2004/08/25 12:00:08 grubba Exp $
+|| $Id: peep.c,v 1.103 2004/08/27 02:26:40 nilsson Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.102 2004/08/25 12:00:08 grubba Exp $");
+RCSID("$Id: peep.c,v 1.103 2004/08/27 02:26:40 nilsson Exp $");
 
 static int asm_opt(void);
 
@@ -415,7 +415,7 @@ INT32 assemble(int store_linenumbers)
     ins_data(store_prog_string(tripples));
     free_string(tripples);
   } else {
-    ins_data(NULL);
+    ins_data(0);
   }
 #endif /* PIKE_PORTABLE_BYTECODE */
 
