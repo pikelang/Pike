@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.16 1997/09/04 16:03:09 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.17 1997/09/07 11:37:00 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -76,13 +76,19 @@ static void udp_bind(INT32 args)
   int o;
   int fd,tmp;
 
+  
   if(args < 1) error("Too few arguments to dumudp->bind()\n");
 
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to dumudp->bind()\n");
 
-  fd = socket(AF_INET, SOCK_DGRAM, 0);
+  if(FD)
+  {
+    set_read_callback( FD, 0, 0 );
+    close(FD);
+  }
 
+  fd = socket(AF_INET, SOCK_DGRAM, 0);
   if(fd < 0)
   {
     pop_n_elems(args);
@@ -108,9 +114,7 @@ static void udp_bind(INT32 args)
 
   addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
 
-  THREADS_ALLOW();
   tmp=bind(fd, (struct sockaddr *)&addr, sizeof(addr))<0;
-  THREADS_DISALLOW();
 
   if(tmp)
   {
@@ -120,7 +124,7 @@ static void udp_bind(INT32 args)
     return;
   }
 
-  THIS->fd=fd;
+  FD=fd;
   pop_n_elems(args);
   push_int(1);
 }
@@ -146,7 +150,7 @@ void udp_read(INT32 args)
       error("Illegal 'flags' value passed to udp->read([int flags])\n");
   }
   pop_n_elems(args);
-  fd = THIS->fd;
+  fd = FD;
   THREADS_ALLOW();
   while(((res = recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
 			 (struct sockaddr *)&from, &fromlen))==-1)
@@ -158,9 +162,11 @@ void udp_read(INT32 args)
     switch(errno)
     {
      case EBADF:
+      set_read_callback( FD, 0, 0 );
       error("Socket closed\n");
      case ESTALE:
      case EIO:
+      set_read_callback( FD, 0, 0 );
       error("I/O error\n");
      case ENOMEM:
 #ifdef ENOSR
@@ -170,12 +176,13 @@ void udp_read(INT32 args)
      case ENOTSOCK:
       fatal("reading from non-socket fd!!!\n");
      case EWOULDBLOCK:
+      push_int( 0 );
       return;
     }
   }
   /* Now comes the interresting part.
-     make a nice mapping from this stuff..
-     */
+   * make a nice mapping from this stuff..
+   */
   push_text("ip");
   push_text( inet_ntoa( from.sin_addr ) );
 
@@ -217,7 +224,7 @@ void udp_sendto(INT32 args)
 
   to.sin_port = htons( ((u_short)sp[1-args].u.integer) );
 
-  fd = THIS->fd;
+  fd = FD;
   str = sp[2-args].u.string->str;
   len = sp[2-args].u.string->len;
   THREADS_ALLOW();
@@ -232,6 +239,7 @@ void udp_sendto(INT32 args)
      case EMSGSIZE:
       error("Too big message\n");
      case EBADF:
+      set_read_callback( FD, 0, 0 );
       error("Socket closed\n");
      case ENOMEM:
 #ifdef ENOSR
@@ -240,7 +248,8 @@ void udp_sendto(INT32 args)
       error("Out of memory\n");
      case EINVAL:
      case ENOTSOCK:
-      fatal("Odd error!!!\n");
+      set_read_callback( FD, 0, 0 );
+      error("Not a socket!!!\n");
      case EWOULDBLOCK:
       return;
     }
@@ -257,12 +266,12 @@ void zero_udp(struct object *ignored)
 
 void exit_udp(struct object *ignored)
 {
-  if(THIS->fd)
+  if(FD)
   {
-    set_read_callback( THIS->fd, 0, 0 );
+    set_read_callback( FD, 0, 0 );
     if (& THIS->read_callback)
       free_svalue(& THIS->read_callback );
-    close(THIS->fd);
+    close(FD);
   }
 }
 
@@ -270,9 +279,10 @@ void exit_udp(struct object *ignored)
 
 static void udp_read_callback( int fd, void *data )
 {
-  /*  fp->current_object->refs++;
-      push_object( fp->current_object ); */
-  apply_svalue(& THIS_DATA->read_callback, 0);
+  if(IS_ZERO(&THIS_DATA->read_callback))
+    set_read_callback(THIS_DATA->fd, 0, 0);
+  else
+    apply_svalue(& THIS_DATA->read_callback, 0);
   pop_stack(); 
   return;
 }
@@ -282,13 +292,13 @@ static void udp_set_read_callback(INT32 args)
   if(FD < 0)
     error("File is not open.\n");
 
-  if(args < 1)
-    error("Too few arguments to file->set_read_callback().\n");
-
+  if(args != 1)
+    error("Wrong number of arguments to file->set_read_callback().\n");
+  
   if(IS_ZERO(& THIS->read_callback))
-    assign_svalue(& THIS->read_callback, sp-args);
+    assign_svalue(& THIS->read_callback, sp-1);
   else
-    assign_svalue_no_free(& THIS->read_callback, sp-args);
+    assign_svalue_no_free(& THIS->read_callback, sp-1);
 
   if(IS_ZERO(& THIS->read_callback))
     set_read_callback(FD, 0, 0);
@@ -303,10 +313,16 @@ static void udp_set_nonblocking(INT32 args)
 
   switch(args)
   {
-  default: pop_n_elems(args-1);
-  case 1: udp_set_read_callback(1);
+   default: pop_n_elems(args-1);
+   case 1: udp_set_read_callback(1);
   }
   set_nonblocking(FD,1);
+}
+
+static void udp_set_blocking(INT32 args)
+{
+  if (FD < 0) error("File not open.\n");
+  set_nonblocking(FD,0);
 }
 
 void init_udp(void)
@@ -321,10 +337,9 @@ void init_udp(void)
 		"function(function(void:void):void)", 0 );
   add_function( "set_read_callback", udp_set_read_callback,
 		"function(function(void:void):void)", 0 );
+  add_function( "set_blocking", udp_set_blocking,"function(void:void)", 0 );
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
-  /*  end_c_program( "/precompiled/dumUDP" )->refs++; // For pike 0.4 */
-  /* otherwise... */
   end_class("dumUDP",0);
 }
 

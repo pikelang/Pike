@@ -1,5 +1,5 @@
 /*
- * $Id: system.h,v 1.1 1997/01/28 22:40:10 grubba Exp $
+ * $Id: system.h,v 1.2 1997/09/07 11:37:01 per Exp $
  *
  * Prototypes for the Pike system-module
  *
@@ -23,6 +23,8 @@
 /*
  * passwords.c
  */
+void f_getgrnam(INT32 args);
+void f_getgrgid(INT32 args);
 void f_getpwnam(INT32 args);
 void f_getpwuid(INT32 args);
 void f_setpwent(INT32 args);

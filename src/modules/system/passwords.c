@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.3 1997/07/10 14:55:35 grubba Exp $
+ * $Id: passwords.c,v 1.4 1997/09/07 11:37:00 per Exp $
  *
  * Password handling for Pike.
  *
@@ -15,7 +15,7 @@
 
 #include <global.h>
 
-RCSID("$Id: passwords.c,v 1.3 1997/07/10 14:55:35 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.4 1997/09/07 11:37:00 per Exp $");
 
 #include <module_support.h>
 #include <interpret.h>
@@ -26,10 +26,12 @@ RCSID("$Id: passwords.c,v 1.3 1997/07/10 14:55:35 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
+# include <group.h>
 #endif /* HAVE_PASSWD_H */
  
 #ifdef HAVE_PWD_H
 # include <pwd.h>
+# include <grp.h>
 #endif /* HAVE_PWD_H */
  
 #ifdef HAVE_SHADOW_H
@@ -68,10 +70,49 @@ static void push_pwent(struct passwd *ent)
   push_text(ent->pw_shell);
   f_aggregate(7);
 }
+
+static void push_grent(struct group *ent)
+{
+  if(!ent)
+  {
+    push_int(0);
+    return;
+  }
+  push_text(ent->gr_name);
+  push_text(ent->gr_passwd);
+  push_int(ent->gr_gid);
+  {
+    char **cp = ent->gr_mem;
+    int i=0;
+    while(cp[i]) push_text(cp[i++]);
+    f_aggregate(i);
+  }
+  f_aggregate(4);
+}
 #endif
  
 #ifdef HAVE_GETPWNAM
 /* array getpwnam(string str) */
+void f_getgrgid(INT32 args)
+{
+  int gid;
+  struct group *foo;
+  get_all_args("getgrgid", args, "%d", &gid);
+  foo = getgrgid( gid );
+  pop_n_elems( args );
+  push_grent( foo );
+}
+
+void f_getgrnam(INT32 args)
+{
+  char *str;
+  struct group *foo;
+  get_all_args("getpwnam", args, "%s", &str);
+  foo = getgrnam( str );
+  pop_n_elems( args );
+  push_grent( foo );
+}
+
 void f_getpwnam(INT32 args)
 {
   char *str;
