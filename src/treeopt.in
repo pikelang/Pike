@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.43 2000/09/25 15:26:16 grubba Exp $
+// $Id: treeopt.in,v 1.44 2000/09/30 23:50:12 per Exp $
 //
 // The tree optimizer
 //
@@ -70,7 +70,9 @@ F_APPLY(0 = F_CONSTANT
     node *old_apply = $3;
     ADD_NODE_REF2($1, _CAR(arglist) = $1);
 #ifdef SHARED_NODES
+    sub_node( arglist );
     arglist->hash = hash_node(arglist);
+    add_node( arglist );
     arglist->node_info |= OPT_DEFROSTED;
 #endif /* SHARED_NODES */
     free_node(old_apply);
@@ -99,7 +101,9 @@ F_APPLY(0 = F_CONSTANT
     node *old_apply = $3;
     ADD_NODE_REF2($1, _CAR(arglist) = $1);
 #ifdef SHARED_NODES
+    sub_node( arglist );
     arglist->hash = hash_node(arglist);
+    add_node( arglist );
     arglist->node_info |= OPT_DEFROSTED;
 #endif /* SHARED_NODES */
     free_node(old_apply);
