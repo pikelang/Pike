@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.29 2004/10/07 22:49:56 nilsson Exp $
+|| $Id: mpf.cmod,v 1.30 2004/11/12 13:26:31 grubba Exp $
 */
 
 #include "global.h"
@@ -432,8 +432,8 @@ PIKECLASS mpf
     }  
     free_string(s);
       
-    Pike_error("Gmp.mpf cast to \"%s\" is other type than int, string or float.\n",
-	       s->str);
+    Pike_error("Gmp.mpf cast to \"%S\" is other type than int, string or float.\n",
+	       s);
   }
 
 #ifdef DEBUG_MALLOC

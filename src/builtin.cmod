@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.172 2004/10/28 12:51:53 grubba Exp $
+|| $Id: builtin.cmod,v 1.173 2004/11/12 12:57:38 grubba Exp $
 */
 
 #include "global.h"
@@ -1727,7 +1727,7 @@ PIKECLASS Buffer
       o_cast_to_int( );
       return;
     }
-    Pike_error("Cannot cast to %s\n", type->str );
+    Pike_error("Cannot cast to %S\n", type);
   }
   
   /*! @decl String.Buffer `+( string what )

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.150 2004/11/05 20:57:34 nilsson Exp $
+|| $Id: cpp.c,v 1.151 2004/11/12 12:59:18 grubba Exp $
 */
 
 #include "global.h"
@@ -55,6 +55,18 @@
 #define CALC_DUMPPOS(X)	DUMPPOS(X)
 #else /* !0 */
 #define CALC_DUMPPOS(X)
+#endif /* 0 */
+
+/* Some string builder debug. */
+#if 0
+
+#define string_builder_putchar(X, Y)	do {				\
+    int Y_Y_ = Y;							\
+    fprintf(stderr, "%s:%d string_builder_putchar(%s, %s, '%c')\n",	\
+	    __FILE__,__LINE__, #X, #Y, Y_Y_);				\
+    string_builder_putchar(X, Y_Y_);					\
+  } while(0)
+
 #endif /* 0 */
 
 struct pike_predef_s
@@ -1744,10 +1756,7 @@ void f_cpp(INT32 args)
       if (!predefs) {
       predef_map_error:
 	f_sprintf (sprintf_args);
-	if (!sp[-1].u.string->size_shift)
-	  Pike_error ("%s", sp[-1].u.string->str);
-	else
-	  Pike_error ("%s", sp[-2].u.string->str);
+	Pike_error("%S", sp[-1].u.string);
       }
     }
     pop_stack();

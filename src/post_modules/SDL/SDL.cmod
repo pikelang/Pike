@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.26 2004/10/07 22:19:12 nilsson Exp $
+|| $Id: SDL.cmod,v 1.27 2004/11/12 13:42:44 grubba Exp $
 */
 
 #include "global.h"
@@ -425,7 +425,7 @@ PIKECLASS Rect {
       return;
     }
 
-    Pike_error("Cannot cast to %s\n", type->str );
+    Pike_error("Cannot cast to %S\n", type);
   }
 }
 /*! @endclass Rect */
@@ -2287,8 +2287,8 @@ PIKECLASS Music {
     }
     THIS->music = Mix_LoadMUS(fname->str);
     if(THIS->music == NULL) {
-      Pike_error("Failed to load %s: %s\n",
-		 fname->str, SDL_GetError());
+      Pike_error("Failed to load %S: %s\n",
+		 fname, SDL_GetError());
     }
   }
 

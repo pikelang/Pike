@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.331 2004/10/15 15:12:38 grubba Exp $
+|| $Id: file.c,v 1.332 2004/11/12 13:39:25 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -303,7 +303,7 @@ static void close_fd_quietly(void)
 	    change_fd_for_box (&THIS->box, fd);
 	    push_int(e);
 	    f_strerror(1);
-	    Pike_error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
+	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
 	  }
 	  UNSETJMP (jmp);
 	  break;
@@ -354,7 +354,7 @@ static void close_fd(void)
 	  change_fd_for_box (&THIS->box, fd);
 	  push_int(e);
 	  f_strerror(1);
-	  Pike_error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
+	  Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
 	  break;
 
 	case EBADF:
@@ -2200,8 +2200,8 @@ static void file_set_nonblocking(INT32 args)
     ERRNO=errno;
     push_int (ERRNO);
     f_strerror (1);
-    Pike_error("Stdio.File->set_nonblocking() failed: %s\n",
-	       Pike_sp[-1].u.string->str);
+    Pike_error("Stdio.File->set_nonblocking() failed: %S\n",
+	       Pike_sp[-1].u.string);
   }
 
   THIS->open_mode |= FILE_NONBLOCKING;

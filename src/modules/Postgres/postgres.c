@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.39 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: postgres.c,v 1.40 2004/11/12 13:30:19 grubba Exp $
 */
 
 /*
@@ -323,7 +323,8 @@ static void f_create (INT32 args)
 		PQfinish(conn);
 		PQ_UNLOCK();
 		THREADS_DISALLOW();
-		Pike_error("Could not connect to database. Reason: \"%s\".\n",THIS->last_error->str);
+		Pike_error("Could not connect to database. Reason: \"%S\".\n",
+			   THIS->last_error);
 	}
 	THIS->dblink=conn;
 	if (!THIS->dblink)

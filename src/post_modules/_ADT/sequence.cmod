@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.13 2003/11/29 15:39:51 grubba Exp $
+|| $Id: sequence.cmod,v 1.14 2004/11/12 13:44:44 grubba Exp $
 */
 
 #include "global.h"
@@ -425,7 +425,7 @@ PIKECLASS Sequence
     }
     else
     {
-      Pike_error("Cannot cast to %s\n", type->str );
+      Pike_error("Cannot cast to %S\n", type);
     }
   }
 

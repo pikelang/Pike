@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.24 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: freetype.c,v 1.25 2004/11/12 13:31:58 grubba Exp $
 */
 
 #include "config.h"
@@ -292,9 +292,9 @@ static void image_ft_face_create( INT32 args )
     Pike_error("Illegal argument 1 to FreeType.Face. Expected string.\n");
   er = FT_New_Face( library, sp[-args].u.string->str, 0, &TFACE );
   if( er == FT_Err_Unknown_File_Format )
-    Pike_error( "Failed to parse the font file %s\n", sp[-args].u.string->str );
+    Pike_error("Failed to parse the font file %S\n", sp[-args].u.string);
   else if( er )
-    Pike_error( "Failed to open the font file %s\n", sp[-args].u.string->str );
+    Pike_error("Failed to open the font file %S\n", sp[-args].u.string);
   for(enc_no=0; enc_no<TFACE->num_charmaps; enc_no++) {
     switch(TFACE->charmaps[enc_no]->encoding) {
     case ft_encoding_symbol: enc_score = -1; break;
@@ -325,8 +325,8 @@ static void image_ft_face_create( INT32 args )
   }
   er = FT_Select_Charmap(TFACE, best_enc);
   if( er )
-    Pike_error( "Failed to set a character map for the font %s\n",
-		sp[-args].u.string->str );
+    Pike_error("Failed to set a character map for the font %S\n",
+	       sp[-args].u.string);
   pop_n_elems( args );
   push_int( 0 );
 }

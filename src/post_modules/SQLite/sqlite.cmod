@@ -1,4 +1,7 @@
-/* sqlite.cmod -*- c -*- */
+/* sqlite.cmod -*- c -*-
+ *
+ * $Id: sqlite.cmod,v 1.14 2004/11/12 13:44:18 grubba Exp $
+ */
 
 #include "global.h"
 #include "interpret.h"
@@ -198,7 +201,7 @@ PIKECLASS SQLite
 	  idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
 	  pop_stack();
 	  if(!idx)
-	    Pike_error("Unknown bind index \"%s\".\n", k->ind.u.string->str);
+	    Pike_error("Unknown bind index \"%S\".\n", k->ind.u.string);
 	  break;
 	default:
 	  Pike_error("Bind index is not int|string.\n");

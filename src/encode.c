@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.223 2004/10/17 05:44:18 agehall Exp $
+|| $Id: encode.c,v 1.224 2004/11/12 13:05:27 grubba Exp $
 */
 
 #include "global.h"
@@ -1123,8 +1123,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    code_number(p->identifiers[d].func.offset,data);
 	  } else {
 	    Pike_error("Cannot encode functions implemented in C "
-		       "(identifier='%s').\n",
-		       p->identifiers[d].name->str);
+		       "(identifier=\"%S\").\n",
+		       p->identifiers[d].name);
 	  }
 	}
 
@@ -1439,8 +1439,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		case IDENTIFIER_C_FUNCTION:
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
-			     "(identifier='%s').\n",
-			     p->identifiers[d].name->str);
+			     "(identifier=\"%S\").\n",
+			     p->identifiers[d].name);
 		  break;
 
 		case IDENTIFIER_VARIABLE:

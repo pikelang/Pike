@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.152 2004/11/06 07:05:22 nilsson Exp $
+|| $Id: efuns.c,v 1.153 2004/11/12 13:33:36 grubba Exp $
 */
 
 #include "global.h"
@@ -953,7 +953,7 @@ void f_get_dir(INT32 args)
       THREADS_DISALLOW();
       if ((!d) && err) {
 	free(tmp);
-	Pike_error("get_dir(): readdir_r(\"%s\") failed: %d\n", str->str, err);
+	Pike_error("get_dir(): readdir_r(\"%S\") failed: %d\n", str, err);
       }
       for(e=0;e<num_files;e++)
       {

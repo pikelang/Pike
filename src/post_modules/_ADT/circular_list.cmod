@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.14 2003/11/29 15:39:51 grubba Exp $
+|| $Id: circular_list.cmod,v 1.15 2004/11/12 13:45:30 grubba Exp $
 */
 
 #include "global.h"
@@ -588,7 +588,7 @@ PIKECLASS CircularList
     }
     else
     {
-      Pike_error("Cannot cast to %s\n", type->str );
+      Pike_error("Cannot cast to %S\n", type);
     }
   }
 

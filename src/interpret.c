@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.358 2004/10/30 11:38:25 mast Exp $
+|| $Id: interpret.c,v 1.359 2004/11/12 13:13:30 grubba Exp $
 */
 
 #include "global.h"
@@ -995,16 +995,11 @@ static int o_catch(PIKE_OPCODE_T *pc);
 
 
 #ifdef PIKE_USE_MACHINE_CODE
-
 /* Labels to jump to to cause eval_instruction to return */
 /* FIXME: Replace these with assembler lables */
 void *do_inter_return_label = NULL;
 void *do_escape_catch_label;
 void *dummy_label = NULL;
-
-#ifndef DEF_PROG_COUNTER
-#define DEF_PROG_COUNTER
-#endif /* !DEF_PROG_COUNTER */
 
 #ifndef CALL_MACHINE_CODE
 #define CALL_MACHINE_CODE(pc)					\
@@ -1069,9 +1064,24 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
   }
 }
 
-#else  /* !PIKE_DEBUG */
-#define DEBUG_PROLOGUE(OPCODE, EXTRA) do {} while (0)
 #endif	/* !PIKE_DEBUG */
+
+#endif /* PIKE_USE_MACHINE_CODE */
+
+#ifdef PIKE_SMALL_EVAL_INSTRUCTION
+#undef PROG_COUNTER
+#define PROG_COUNTER	Pike_fp->pc+1
+#endif /* PIKE_SMALL_EVAL_INSTRUCTION */
+
+#if defined(PIKE_USE_MACHINE_CODE) || defined(PIKE_SMALL_EVAL_INSTRUCTION)
+
+#ifndef DEF_PROG_COUNTER
+#define DEF_PROG_COUNTER
+#endif /* !DEF_PROG_COUNTER */
+
+#ifndef DEBUG_PROLOGUE
+#define DEBUG_PROLOGUE(OPCODE, EXTRA) do {} while (0)
+#endif
 
 #define OPCODE0(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(void) { \
@@ -1091,7 +1101,7 @@ void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) { \
   DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1); DEBUG_LOG_ARG2 (arg2));	\
 C }
 
-#ifdef OPCODE_RETURN_JUMPADDR
+#if defined(OPCODE_RETURN_JUMPADDR) || defined(PIKE_SMALL_EVAL_INSTRUCTION)
 
 #define OPCODE0_JUMP(O,N,F,C)						\
   void *PIKE_CONCAT(jump_opcode_,O)(void) {				\
@@ -1132,14 +1142,14 @@ C }
 #define JUMP_DONE return jumpaddr
 #endif
 
-#else  /* !OPCODE_RETURN_JUMPADDR */
+#else  /* !OPCODE_RETURN_JUMPADDR && !PIKE_SMALL_EVAL_INSTRUCTION */
 #define OPCODE0_JUMP OPCODE0
 #define OPCODE1_JUMP OPCODE1
 #define OPCODE2_JUMP OPCODE2
 #define JUMP_DONE DONE
-#endif	/* !OPCODE_RETURN_JUMPADDR */
+#endif	/* OPCODE_RETURN_JUMPADDR || PIKE_SMALL_EVAL_INSTRUCTION */
 
-#ifdef OPCODE_INLINE_BRANCH
+#if defined(OPCODE_INLINE_BRANCH) || defined(PIKE_SMALL_EVAL_INSTRUCTION)
 #define TEST_OPCODE0(O,N,F,C) \
 int PIKE_CONCAT(test_opcode_,O)(void) { \
     int branch_taken = 0;	\
@@ -1170,11 +1180,11 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 
 #define DO_BRANCH()	(branch_taken = -1)
 #define DONT_BRANCH()	(branch_taken = 0)
-#else /* !OPCODE_INLINE_BRANCH */
+#else /* !OPCODE_INLINE_BRANCH && !PIKE_SMALL_EVAL_INSTRUCTION */
 #define TEST_OPCODE0(O,N,F,C) OPCODE0_PTRJUMP(O,N,F,C)
 #define TEST_OPCODE1(O,N,F,C) OPCODE1_PTRJUMP(O,N,F,C)
 #define TEST_OPCODE2(O,N,F,C) OPCODE2_PTRJUMP(O,N,F,C)
-#endif /* OPCODE_INLINE_BRANCH */
+#endif /* OPCODE_INLINE_BRANCH || PIKE_SMALL_EVAL_INSTRUCTION */
 
 #define OPCODE0_TAIL(O,N,F,C) OPCODE0(O,N,F,C)
 #define OPCODE1_TAIL(O,N,F,C) OPCODE1(O,N,F,C)
@@ -1213,6 +1223,42 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 #ifdef GLOBAL_DEF_PROG_COUNTER
 GLOBAL_DEF_PROG_COUNTER;
 #endif
+
+#ifndef SET_PROG_COUNTER
+#define SET_PROG_COUNTER(X)	(PROG_COUNTER=(X))
+#endif /* SET_PROG_COUNTER */
+
+#undef DONE
+#undef FETCH
+#undef INTER_RETURN
+#undef INTER_ESCAPE_CATCH
+
+#define DONE return
+#define FETCH
+#define INTER_RETURN {SET_PROG_COUNTER(do_inter_return_label);JUMP_DONE;}
+#define INTER_ESCAPE_CATCH {SET_PROG_COUNTER(do_escape_catch_label);JUMP_DONE;}
+
+#if defined(PIKE_USE_MACHINE_CODE) && defined(_M_IX86)
+/* Disable frame pointer optimization */
+#pragma optimize("y", off)
+#endif
+
+#include "interpret_functions_fixed.h"
+
+#if defined(PIKE_USE_MACHINE_CODE) && defined(_M_IX86)
+/* Restore optimization */
+#pragma optimize("", on)
+#endif
+
+#ifdef PIKE_SMALL_EVAL_INSTRUCTION
+#undef SET_PROG_COUNTER
+#undef PROG_COUNTER
+#define PROG_COUNTER	pc
+#endif
+
+#endif /* PIKE_USE_MACHINE_CODE || PIKE_SMALL_EVAL_INSTRUCTION */
+
+#ifdef PIKE_USE_MACHINE_CODE
 
 #ifdef PIKE_DEBUG
 /* Note: The debug code is extracted, to keep the frame size constant. */
@@ -1306,32 +1352,6 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
   return -1;
 }
 
-#ifndef SET_PROG_COUNTER
-#define SET_PROG_COUNTER(X)	(PROG_COUNTER=(X))
-#endif /* SET_PROG_COUNTER */
-
-#undef DONE
-#undef FETCH
-#undef INTER_RETURN
-#undef INTER_ESCAPE_CATCH
-
-#define DONE return
-#define FETCH
-#define INTER_RETURN {SET_PROG_COUNTER(do_inter_return_label);JUMP_DONE;}
-#define INTER_ESCAPE_CATCH {SET_PROG_COUNTER(do_escape_catch_label);JUMP_DONE;}
-
-#ifdef _M_IX86
-// Disable frame pointer optimization
-#pragma optimize("y", off)
-#endif
-
-#include "interpret_functions_fixed.h"
-
-#ifdef _M_IX86
-// Restore optimization
-#pragma optimize("", on)
-#endif
-
 #else /* PIKE_USE_MACHINE_CODE */
 
 
@@ -1381,7 +1401,7 @@ static INLINE int eval_instruction(unsigned char *pc)
 }
 
 
-#else
+#else /* !PIKE_DEBUG || HAVE_COMPUTED_GOTO */
 #include "interpreter.h"
 #endif
 
@@ -1643,9 +1663,9 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
     case T_STRING:
       if (s->u.string->len > 20) {
-	Pike_error("Attempt to call the string \"%20s\"...\n", s->u.string->str);
+	Pike_error("Attempt to call the string \"%20S\"...\n", s->u.string);
       } else {
-	Pike_error("Attempt to call the string \"%s\"\n", s->u.string->str);
+	Pike_error("Attempt to call the string \"%S\"\n", s->u.string);
       }
     case T_MAPPING:
       Pike_error("Attempt to call a mapping\n");
@@ -1677,17 +1697,17 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	if(Pike_sp != expected_stack + !s->u.efun->may_return_void)
 	{
 	  if(Pike_sp < expected_stack)
-	    Pike_fatal("Function popped too many arguments: %s\n",
-		  s->u.efun->name->str);
+	    Pike_fatal("Function popped too many arguments: %S\n",
+		       s->u.efun->name);
 	  if(Pike_sp>expected_stack+1)
-	    Pike_fatal("Function left droppings on stack: %s\n",
-		  s->u.efun->name->str);
+	    Pike_fatal("Function left droppings on stack: %S\n",
+		       s->u.efun->name);
 	  if(Pike_sp == expected_stack && !s->u.efun->may_return_void)
-	    Pike_fatal("Non-void function returned without return value on stack: %s %d\n",
-		  s->u.efun->name->str,s->u.efun->may_return_void);
+	    Pike_fatal("Non-void function returned without return value on stack: %S %d\n",
+		       s->u.efun->name, s->u.efun->may_return_void);
 	  if(Pike_sp==expected_stack+1 && s->u.efun->may_return_void)
-	    Pike_fatal("Void function returned with a value on the stack: %s %d\n",
-		  s->u.efun->name->str, s->u.efun->may_return_void);
+	    Pike_fatal("Void function returned with a value on the stack: %S %d\n",
+		       s->u.efun->name, s->u.efun->may_return_void);
 	}
 #endif
 
@@ -2262,6 +2282,7 @@ PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args)
     safe_apply_low2(o, id, args, 1);
   else {
     char buf[4096];
+    /* FIXME: Ought to use string_buffer_vsprintf(). */
     SNPRINTF(buf, sizeof (buf), "Cannot call unknown function \"%s\".\n", fun);
     push_error (buf);
     free_svalue (&throw_value);
@@ -2358,14 +2379,8 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
 	push_int(0);
       }
       else {
-	push_constant_text("Invalid return value from %s: %O\n");
-	push_text(fun);
-	push_svalue(Pike_sp - 3);
-	f_sprintf(3);
-	if (!Pike_sp[-1].u.string->size_shift)
-	  Pike_error("%s", Pike_sp[-1].u.string->str);
-	else
-	  Pike_error("Invalid return value from %s\n", fun);
+	Pike_error("Invalid return value from %s: %O\n",
+		   fun, Pike_sp-1);
       }
     }
 
@@ -2399,10 +2414,7 @@ PMOD_EXPORT void apply_shared(struct object *o,
   if (id >= 0)
     apply_low(o, id, args);
   else
-    if (fun->size_shift)
-      Pike_error ("Cannot call unknown function.\n");
-    else
-      Pike_error ("Cannot call unknown function \"%s\".\n", fun->str);
+    Pike_error("Cannot call unknown function \"%S\".\n", fun);
 }
 
 PMOD_EXPORT void apply(struct object *o, const char *fun, int args)

@@ -816,6 +816,7 @@ testfont binary
 /src/post_modules/SDL/constants.h foreign_ident
 /src/post_modules/SQLite/Makefile.in foreign_ident
 /src/post_modules/SQLite/configure.in foreign_ident
+/src/post_modules/SQLite/sqlite.cmod foreign_ident
 /src/post_modules/Shuffler/Makefile.in foreign_ident
 /src/post_modules/Shuffler/Shuffler.cmod foreign_ident
 /src/post_modules/Shuffler/a_source_pikestring.c foreign_ident

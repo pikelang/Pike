@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.310 2004/10/22 20:10:44 grubba Exp $
+|| $Id: signal_handler.c,v 1.311 2004/11/12 13:25:13 grubba Exp $
 */
 
 #include "global.h"
@@ -2843,7 +2843,7 @@ void f_create_process(INT32 args)
     if(optional && (tmp=simple_mapping_string_lookup(optional, "cwd")))
       if(tmp->type == T_STRING)
         if((storage.cwd_lock=Lock((char *)STR0(tmp->u.string), ACCESS_READ))==0)
-	  Pike_error("Failed to lock cwd \"%s\".\n", STR0(tmp->u.string));
+	  Pike_error("Failed to lock cwd \"%S\".\n", tmp->u.string);
 
     storage.stdin_b = get_amigados_handle(optional, "stdin", 0);
     storage.stdout_b = get_amigados_handle(optional, "stdout", 1);
