@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.538 2001/07/16 19:48:56 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.539 2001/07/20 10:00:04 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5162,8 +5162,8 @@ AC_CACHE_VAL(pike_cv_have_union_init, [
     struct bar {int c[2];};
     union anything
     {
-      struct foo *foo;
-      struct bar *bar;
+      struct foo foo;
+      struct bar bar;
     };
     struct svalue
     {
