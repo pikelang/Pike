@@ -3,7 +3,7 @@ import ".";
 constant MAXIMUM_REQUEST_SIZE=1000000;
 
 Stdio.File my_fd;
-_Port server_port;
+Port server_port;
 HeaderParser headerparser;
 
 string buf="";    // content buffer
@@ -24,7 +24,7 @@ mapping misc=([]); // external use only
 
 function(this_program:void) request_callback;
 
-void attach_fd(Stdio.File _fd,_Port server,
+void attach_fd(Stdio.File _fd,Port server,
 	       function(this_program:void) _request_callback)
 {
    my_fd=_fd;

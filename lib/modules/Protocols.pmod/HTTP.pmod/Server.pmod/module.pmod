@@ -88,9 +88,4 @@ string http_date(int time)
 
 constant http_serverid=version()+": HTTP Server module";
 
-// Port class standard to avoid recursion
-class _Port
-{
-   void close();
-}
 
