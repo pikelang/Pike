@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.8 1997/08/14 20:56:11 grubba Exp $
+ * $Id: result.c,v 1.9 1997/09/15 20:40:24 grubba Exp $
  *
  * mysql query result
  *
@@ -78,7 +78,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.8 1997/08/14 20:56:11 grubba Exp $");
+RCSID("$Id: result.c,v 1.9 1997/09/15 20:40:24 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -463,4 +463,6 @@ void exit_mysql_res(void)
   }
 }
 
+#else
+static int place_holder;	/* Keep the compiler happy */
 #endif /* HAVE_MYSQL */

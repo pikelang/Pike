@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.4 1997/08/15 20:20:11 grubba Exp $
+ * $Id: odbc_result.c,v 1.5 1997/09/15 20:39:34 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.4 1997/08/15 20:20:11 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.5 1997/09/15 20:39:34 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -439,5 +439,7 @@ void exit_odbc_res(void)
   }
 }
 
+#else
+static int place_holder;	/* Keep the compiler happy */
 #endif /* HAVE_ODBC */
 

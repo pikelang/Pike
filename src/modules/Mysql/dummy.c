@@ -17,4 +17,6 @@ static _ll_t mysql_dummy(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
   return(a%b+(c%d)+(c/d)+(a/b));
 }
 
+#else
+static int place_holder;	/* Keep the compiler happy */
 #endif /* HAVE_MYSQL */
