@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.10 2004/05/23 01:58:15 nilsson Exp $
+// $Id: FakeFile.pike,v 1.11 2004/07/17 23:02:02 srb Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -12,6 +12,7 @@ static string data;
 static int ptr;
 static int(0..1) r;
 static int(0..1) w;
+static int mtime;
 
 static function read_cb;
 static function read_oob_cb;
@@ -47,6 +48,7 @@ void create(string _data, void|string type, int|void _ptr) {
   if(!_data) error("No data string given to FakeFile.\n");
   data = _data;
   ptr = _ptr;
+  mtime = time();
   if(type) {
     type = lower_case(type);
     if(has_value(type, "r"))
@@ -75,6 +77,14 @@ this_program dup() {
 //! @seealso
 //!   @[Stdio.File()->errno()]
 int errno() { return 0; }
+
+//! Returns size and the creation time of the string.
+Stdio.Stat stat() {
+  Stdio.Stat st = Stdio.Stat();
+  st->size = sizeof(data);
+  st->mtime=st->atime=st->ctime=mtime;
+  return st;
+}
 
 //! @seealso
 //!   @[Stdio.File()->line_iterator()]
@@ -294,7 +304,6 @@ NOPE(query_fd);
 NOPE(read_oob);
 NOPE(set_close_on_exec);
 NOPE(set_keepalive);
-NOPE(stat); // We could implement this
 NOPE(trylock); // We could implement this
 NOPE(write_oob);
 
