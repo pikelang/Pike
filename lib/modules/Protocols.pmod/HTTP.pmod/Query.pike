@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.53 2003/03/29 07:40:11 mirar Exp $
+// $Id: Query.pike,v 1.54 2003/03/31 14:20:43 mirar Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -623,7 +623,8 @@ string data(int|void max_length)
 
    if (buf=="") return ""; // already emptied
 
-   if (lower_case(headers["transfer-encoding"])=="chunked")
+   if (headers["transfer-encoding"] &&
+       lower_case(headers["transfer-encoding"])=="chunked")
    {
       string rbuf=buf[datapos..];
       string lbuf="";
