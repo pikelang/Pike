@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.17 2000/08/11 19:22:14 grubba Exp $ */
+/* $Id: orient.c,v 1.18 2000/12/01 08:10:02 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.17 2000/08/11 19:22:14 grubba Exp $
+**!	$Id: orient.c,v 1.18 2000/12/01 08:10:02 hubbe Exp $
 **! class Image
 */
 
@@ -21,7 +21,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 
 #include "image.h"
 
@@ -162,7 +162,7 @@ void image_orient(INT32 args)
   double mag;
   int i, w, h;
 
-  if (!THIS->img) { error("Called Image.Image object is not initialized\n");;  return; }
+  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
 
   this=THIS;
 
@@ -190,12 +190,12 @@ void image_orient(INT32 args)
       bad_arg_error("image->orient\\n",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->orient\n()\n");
     if (sp[1-args].u.array->size!=4)
-      error("The array given as argument 2 to image->orient do not have size 4\n");
+      Pike_error("The array given as argument 2 to image->orient do not have size 4\n");
     for(i=0; i<4; i++)
       if ((sp[1-args].u.array->item[i].type!=T_OBJECT) ||
 	  (!(sp[1-args].u.array->item[i].u.object)) ||
 	  (sp[1-args].u.array->item[i].u.object->prog!=image_program))
-	error("The array given as argument 2 to image->orient do not contain images\n");
+	Pike_error("The array given as argument 2 to image->orient do not contain images\n");
     img1=(struct image*)sp[1-args].u.array->item[0].u.object->storage;
 
     w=this->xsize;
@@ -206,7 +206,7 @@ void image_orient(INT32 args)
       img1=(struct image*)sp[1-args].u.array->item[i].u.object->storage;
       if ((img1->xsize!=w)||
 	  (img1->ysize!=h))
-	error("The images in the array given as argument 2 to image->orient have different sizes\n");
+	Pike_error("The images in the array given as argument 2 to image->orient have different sizes\n");
     }
     for(i=0; i<4; i++) 
       img[i]=(struct image*)sp[1-args].u.array->item[i].u.object->storage;
@@ -281,7 +281,7 @@ void image_orient4(INT32 args)
   struct object *o[5];
   struct image *img[5];
   
-  if (!THIS->img) { error("Called Image.Image object is not initialized\n");;  return; }
+  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
 
   pop_n_elems(args);
   _image_orient(THIS,o,img);

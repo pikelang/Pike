@@ -1,10 +1,10 @@
 /*
- * $Id: cyclic.h,v 1.4 2000/08/14 20:18:29 grubba Exp $
+ * $Id: cyclic.h,v 1.5 2000/12/01 08:09:45 hubbe Exp $
  */
 #ifndef CYCLIC_H
 #define CYCLIC_H
 
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 
 typedef struct CYCLIC

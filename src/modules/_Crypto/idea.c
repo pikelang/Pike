@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.15 2000/08/09 13:14:27 grubba Exp $
+ * $Id: idea.c,v 1.16 2000/12/01 08:10:28 hubbe Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -18,7 +18,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "object.h"
-#include "error.h"
+#include "pike_error.h"
 #include "las.h"
 
 /* Backend includes */
@@ -59,7 +59,7 @@ void exit_pike_crypto_idea(struct object *o)
 static void f_name(INT32 args)
 {
   if (args) {
-    error("Too many arguments to idea->name()\n");
+    Pike_error("Too many arguments to idea->name()\n");
   }
   push_string(make_shared_string("IDEA"));
 }
@@ -68,7 +68,7 @@ static void f_name(INT32 args)
 static void f_query_block_size(INT32 args)
 {
   if (args) {
-    error("Too many arguments to idea->query_block_size()\n");
+    Pike_error("Too many arguments to idea->query_block_size()\n");
   }
   push_int(IDEA_BLOCKSIZE);
 }
@@ -77,7 +77,7 @@ static void f_query_block_size(INT32 args)
 static void f_query_key_length(INT32 args)
 {
   if (args) {
-    error("Too many arguments to idea->query_key_length()\n");
+    Pike_error("Too many arguments to idea->query_key_length()\n");
   }
   push_int(IDEA_KEYSIZE);
 }
@@ -86,13 +86,13 @@ static void f_query_key_length(INT32 args)
 static void f_set_encrypt_key(INT32 args)
 {
   if (args != 1) {
-    error("Wrong number of args to idea->set_encrypt_key()\n");
+    Pike_error("Wrong number of args to idea->set_encrypt_key()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to idea->set_encrypt_key()\n");
+    Pike_error("Bad argument 1 to idea->set_encrypt_key()\n");
   }
   if (sp[-1].u.string->len != IDEA_KEYSIZE) {
-    error("idea->set_encrypt_key(): Invalid key length\n");
+    Pike_error("idea->set_encrypt_key(): Invalid key length\n");
   }
   idea_expand(THIS, (unsigned char *)sp[-1].u.string->str);
   
@@ -115,15 +115,15 @@ static void f_crypt_block(INT32 args)
   ptrdiff_t i;
   
   if (args != 1) {
-    error("Wrong number of arguemnts to idea->crypt()\n");
+    Pike_error("Wrong number of arguemnts to idea->crypt()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to idea->crypt()\n");
+    Pike_error("Bad argument 1 to idea->crypt()\n");
   }
 
   len = sp[-1].u.string->len;
   if (len % IDEA_BLOCKSIZE) {
-    error("Bad length of argument 1 to idea->crypt()\n");
+    Pike_error("Bad length of argument 1 to idea->crypt()\n");
   }
 
   s = begin_shared_string(len);

@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.20 2000/09/15 21:27:56 grubba Exp $ */
+/* $Id: ilbm.c,v 1.21 2000/12/01 08:10:04 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.20 2000/09/15 21:27:56 grubba Exp $
+**!	$Id: ilbm.c,v 1.21 2000/12/01 08:10:04 hubbe Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.20 2000/09/15 21:27:56 grubba Exp $");
+RCSID("$Id: ilbm.c,v 1.21 2000/12/01 08:10:04 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -22,7 +22,7 @@ RCSID("$Id: ilbm.c,v 1.20 2000/09/15 21:27:56 grubba Exp $");
 #include "svalue.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
@@ -121,16 +121,16 @@ static void image_ilbm___decode(INT32 args)
    map_delete(m, &string_[string_BODY]);
 
    if(sp[-5].type != T_STRING)
-     error("Missing BMHD chunk\n");
+     Pike_error("Missing BMHD chunk\n");
    if(sp[-2].type != T_STRING)
-     error("Missing BODY chunk\n");
+     Pike_error("Missing BODY chunk\n");
 
    /* Extract image size from BMHD */
    s = (unsigned char *)STR0(sp[-5].u.string);
    len = sp[-5].u.string->len;
 
    if(len<20)
-     error("Short BMHD chunk\n");
+     Pike_error("Short BMHD chunk\n");
 
    free_svalue(sp-7);
 
@@ -165,7 +165,7 @@ static void image_ilbm___decode(INT32 args)
 static void parse_bmhd(struct BMHD *bmhd, unsigned char *s, ptrdiff_t len)
 {
   if(len<20)
-    error("Short BMHD chunk\n");
+    Pike_error("Short BMHD chunk\n");
 
   bmhd->w = (s[0]<<8)|s[1];
   bmhd->h = (s[2]<<8)|s[3];
@@ -269,7 +269,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
     line = alloca(rbyt*eplanes);
     break;
   default:
-    error("Unsupported ILBM compression %d\n", bmhd->compression);
+    Pike_error("Unsupported ILBM compression %d\n", bmhd->compression);
   }
 
   switch(bmhd->masking) {
@@ -278,9 +278,9 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
   case mskHasTransparentColor:
     break;
   case mskLasso:
-    error("Lasso masking not supported\n");
+    Pike_error("Lasso masking not supported\n");
   default:
-    error("Unsupported ILBM masking %d\n", bmhd->masking);
+    Pike_error("Unsupported ILBM masking %d\n", bmhd->masking);
   }
 
   THREADS_ALLOW();
@@ -428,7 +428,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
   THREADS_DISALLOW();
 
   if(blen<0)
-    error("truncated or corrupt BODY chunk\n");
+    Pike_error("truncated or corrupt BODY chunk\n");
 }
 
 static void image_ilbm__decode(INT32 args)
@@ -454,7 +454,7 @@ static void image_ilbm__decode(INT32 args)
   if(arr->size < 6 ||
      ITEM(arr)[2].type != T_STRING || ITEM(arr)[2].u.string->size_shift != 0 ||
      ITEM(arr)[5].type != T_STRING || ITEM(arr)[5].u.string->size_shift != 0)
-    error("Image.ILBM._decode: illegal argument\n");
+    Pike_error("Image.ILBM._decode: illegal argument\n");
 
   parse_bmhd(&bmhd, STR0(ITEM(arr)[2].u.string), ITEM(arr)[2].u.string->len);
 
@@ -557,7 +557,7 @@ void img_ilbm_decode(INT32 args)
    struct svalue *sv;
 
    if (!args)
-      error("Image.ILBM.decode: too few argument\n");
+      Pike_error("Image.ILBM.decode: too few argument\n");
 
    if (sp[-args].type != T_MAPPING) {
      image_ilbm__decode(args);
@@ -565,7 +565,7 @@ void img_ilbm_decode(INT32 args)
    }
      
    if (sp[-args].type != T_MAPPING)
-     error("Image.ILBM.decode: illegal argument\n");
+     Pike_error("Image.ILBM.decode: illegal argument\n");
 
    if(args>1)
      pop_n_elems(args-1);
@@ -573,7 +573,7 @@ void img_ilbm_decode(INT32 args)
    sv = simple_mapping_string_lookup(sp[-args].u.mapping, "image");
 
    if(sv == NULL || sv->type != T_OBJECT)
-     error("Image.ILBM.decode: illegal argument\n");
+     Pike_error("Image.ILBM.decode: illegal argument\n");
 
    ref_push_object(sv->u.object);
    stack_swap();
@@ -752,25 +752,25 @@ static void image_ilbm_encode(INT32 args)
 	       &imgo, &optm);
 
   if((img=(struct image*)get_storage(imgo, image_program))==NULL)
-     error("Image.ILBM.encode: illegal argument 1\n");
+     Pike_error("Image.ILBM.encode: illegal argument 1\n");
 
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !IS_ZERO(s))
       if(s->type != T_OBJECT ||
 	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
-	error("Image.ILBM.encode: option (arg 2) \"alpha\" has illegal type\n");
+	Pike_error("Image.ILBM.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !IS_ZERO(s))
       if(s->type != T_OBJECT ||
 	 (ct=(struct neo_colortable*)
 	  get_storage(s->u.object, image_colortable_program))==NULL)
-	error("Image.ILBM.encode: option (arg 2) \"palette\" has illegal type\n");
+	Pike_error("Image.ILBM.encode: option (arg 2) \"palette\" has illegal type\n");
   }
 
   if (!img->img)
-    error("Image.ILBM.encode: no image\n");
+    Pike_error("Image.ILBM.encode: no image\n");
   if (alpha && !alpha->img)
-    error("Image.ILBM.encode: no alpha image\n");
+    Pike_error("Image.ILBM.encode: no alpha image\n");
 
   if(ct && ct->type == NCT_NONE)
     ct = NULL;

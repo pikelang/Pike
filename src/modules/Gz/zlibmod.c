@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.31 2000/08/17 15:41:30 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.32 2000/12/01 08:09:57 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -60,12 +60,12 @@ static void gz_deflate_create(INT32 args)
   if(args)
   {
     if(sp[-args].type != T_INT)
-      error("Bad argument 1 to gz->create()\n");
+      Pike_error("Bad argument 1 to gz->create()\n");
     level=sp[-args].u.integer;
     if(level < Z_NO_COMPRESSION ||
        level > Z_BEST_COMPRESSION)
     {
-      error("Compression level out of range for gz_deflate->create()\n");
+      Pike_error("Compression level out of range for gz_deflate->create()\n");
     }
   }
 
@@ -83,14 +83,14 @@ static void gz_deflate_create(INT32 args)
     return;
 
   case Z_VERSION_ERROR:
-    error("libz not compatible with zlib.h!!!\n");
+    Pike_error("libz not compatible with zlib.h!!!\n");
     break;
 
   default:
     if(THIS->gz.msg)
-      error("Failed to initialize gz_deflate: %s\n",THIS->gz.msg);
+      Pike_error("Failed to initialize gz_deflate: %s\n",THIS->gz.msg);
     else
-      error("Failed to initialize gz_deflate\n");
+      Pike_error("Failed to initialize gz_deflate\n");
   }
 }
 
@@ -137,20 +137,20 @@ static void gz_deflate(INT32 args)
   dynamic_buffer buf;
 
   if(!THIS->gz.state)
-    error("gz_deflate not initialized or destructed\n");
+    Pike_error("gz_deflate not initialized or destructed\n");
 
   if(args<1)
-    error("Too few arguments to gz_deflate->deflate()\n");
+    Pike_error("Too few arguments to gz_deflate->deflate()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to gz_deflate->deflate()\n");
+    Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
 
   data=sp[-args].u.string;
 
   if(args>1)
   {
     if(sp[1-args].type != T_INT)
-      error("Bad argument 2 to gz_deflate->deflate()\n");
+      Pike_error("Bad argument 2 to gz_deflate->deflate()\n");
     
     flush=sp[1-args].u.integer;
 
@@ -163,7 +163,7 @@ static void gz_deflate(INT32 args)
       break;
 
     default:
-      error("Argument 2 to gz_deflate->deflate() out of range.\n");
+      Pike_error("Argument 2 to gz_deflate->deflate() out of range.\n");
     }
   }else{
     flush=Z_FINISH;
@@ -181,9 +181,9 @@ static void gz_deflate(INT32 args)
   {
     free(buf.s.str);
     if(THIS->gz.msg)
-      error("Error in gz_deflate->deflate(): %s\n",THIS->gz.msg);
+      Pike_error("Error in gz_deflate->deflate(): %s\n",THIS->gz.msg);
     else
-      error("Error in gz_deflate->deflate(): %d\n",fail);
+      Pike_error("Error in gz_deflate->deflate(): %d\n",fail);
   }
 
   push_string(low_free_buf(&buf));
@@ -236,14 +236,14 @@ static void gz_inflate_create(INT32 args)
     return;
 
   case Z_VERSION_ERROR:
-    error("libz not compatible with zlib.h!!!\n");
+    Pike_error("libz not compatible with zlib.h!!!\n");
     break;
 
   default:
     if(THIS->gz.msg)
-      error("Failed to initialize gz_inflate: %s\n",THIS->gz.msg);
+      Pike_error("Failed to initialize gz_inflate: %s\n",THIS->gz.msg);
     else
-      error("Failed to initialize gz_inflate\n");
+      Pike_error("Failed to initialize gz_inflate\n");
   }
 }
 
@@ -289,13 +289,13 @@ static void gz_inflate(INT32 args)
   dynamic_buffer buf;
 
   if(!THIS->gz.state)
-    error("gz_inflate not initialized or destructed\n");
+    Pike_error("gz_inflate not initialized or destructed\n");
 
   if(args<1)
-    error("Too few arguments to gz_inflate->inflate()\n");
+    Pike_error("Too few arguments to gz_inflate->inflate()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to gz_inflate->inflate()\n");
+    Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
 
   data=sp[-args].u.string;
 
@@ -311,9 +311,9 @@ static void gz_inflate(INT32 args)
   {
     free(buf.s.str);
     if(THIS->gz.msg)
-      error("Error in gz_inflate->inflate(): %s\n",THIS->gz.msg);
+      Pike_error("Error in gz_inflate->inflate(): %s\n",THIS->gz.msg);
     else
-      error("Error in gz_inflate->inflate(): %d\n",fail);
+      Pike_error("Error in gz_inflate->inflate(): %d\n",fail);
   }
   push_string(low_free_buf(&buf));
   if(fail != Z_STREAM_END && fail!=Z_OK && !sp[-1].u.string->len)
@@ -348,11 +348,11 @@ static void gz_crc32(INT32 args)
    unsigned INT32 crc;
    if (!args ||
        sp[-args].type!=T_STRING)
-      error("Gz.crc32: illegal or missing argument 1 (expected string)\n");
+      Pike_error("Gz.crc32: illegal or missing argument 1 (expected string)\n");
 
    if (args>1) {
       if (sp[1-args].type!=T_INT)
-	 error("Gz.crc32: illegal argument 2 (expected integer)\n");
+	 Pike_error("Gz.crc32: illegal argument 2 (expected integer)\n");
       else
 	 crc=(unsigned INT32)sp[1-args].u.integer;
    } else

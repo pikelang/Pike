@@ -1,7 +1,7 @@
 #include "global.h"
 #include "pike_macros.h"
 #include "queue.h"
-#include "error.h"
+#include "pike_error.h"
 
 struct queue_entry
 {

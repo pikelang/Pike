@@ -18,7 +18,7 @@
 #include <rpcsvc/ypclnt.h>
 
 #include "stralloc.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -31,13 +31,13 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: yp.c,v 1.19 2000/08/17 18:31:26 grubba Exp $");
+RCSID("$Id: yp.c,v 1.20 2000/12/01 08:10:24 hubbe Exp $");
 
 #ifdef HAVE_YPERR_STRING
-#define YPERROR(fun,err) do{ if(err) error("yp->%s(): %s\n", (fun), \
+#define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
                                            yperr_string(err)); }while(0)
 #else /* !HAVE_YPERR_STRING */
-#define YPERROR(fun,err) do{ if(err) error("yp->%s(): YP error %d.\n", (fun), \
+#define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): YP Pike_error %d.\n", (fun), \
                                            (err)); }while(0)
 #endif /* HAVE_YPERR_STRING */
 

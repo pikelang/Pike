@@ -1,11 +1,11 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.44 2000/09/11 16:04:56 grubba Exp $
+**!	$Id: image.h,v 1.45 2000/12/01 08:10:00 hubbe Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
-#error IMAGE.h included twice
+#Pike_error IMAGE.h included twice
 #endif
 
 #define PIKE_IMAGE_IMAGE_H

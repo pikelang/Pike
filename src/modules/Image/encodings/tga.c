@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.24 2000/08/31 21:26:08 grubba Exp $
+ * $Id: tga.c,v 1.25 2000/12/01 08:10:06 hubbe Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -48,7 +48,7 @@
 #include "object.h"
 #include "program.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.24 2000/08/31 21:26:08 grubba Exp $");
+RCSID("$Id: tga.c,v 1.25 2000/12/01 08:10:06 hubbe Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -186,7 +186,7 @@ static struct image_alpha load_image(struct pike_string *str)
   buffer.len = str->len;
 
   if(buffer.len < ((sizeof(struct tga_footer)+sizeof(struct tga_header))))
-    error("Data (%ld bytes) is too short\n",
+    Pike_error("Data (%ld bytes) is too short\n",
 	  DO_NOT_WARN((long)buffer.len));
 
 
@@ -200,13 +200,13 @@ static struct image_alpha load_image(struct pike_string *str)
   buffer.len -= hdr.idLength;
 
   if( (hdr.bpp != 8) && (hdr.bpp != 16) && (hdr.bpp != 24) && (hdr.bpp != 32) )
-    error("Unsupported TGA file (bpp==%d)\n", hdr.bpp);
+    Pike_error("Unsupported TGA file (bpp==%d)\n", hdr.bpp);
 
   if( hdr.imageType > 11 )
-    error("Unsupported TGA image type\n");
+    Pike_error("Unsupported TGA image type\n");
 
   if(buffer.len < 3)
-    error("Not enough data in buffer to decode a TGA image\n");
+    Pike_error("Not enough data in buffer to decode a TGA image\n");
 
   return ReadImage (&buffer, &hdr);
 }
@@ -542,7 +542,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
      if (bpp != 8)
        /* We can only cope with 8-bit indices. */
-       error ("TGA: index sizes other than 8 bits are unimplemented\n");
+       Pike_error ("TGA: index sizes other than 8 bits are unimplemented\n");
      break;
 
    case TGA_TYPE_GRAY_RLE:
@@ -558,18 +558,18 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
      break;
 
    default:
-     error ("TGA: unrecognized image type %d\n", hdr->imageType);
+     Pike_error ("TGA: unrecognized image type %d\n", hdr->imageType);
   }
   /* Check that we have a color map only when we need it. */
   if (itype == INDEXED)
   {
     if (hdr->colorMapType != 1)
-      error ("TGA: indexed image has invalid color map type %d\n",
+      Pike_error ("TGA: indexed image has invalid color map type %d\n",
               hdr->colorMapType);
   }
   else if (hdr->colorMapType != 0)
   {
-    error ("TGA: non-indexed image has invalid color map type %d\n",
+    Pike_error ("TGA: non-indexed image has invalid color map type %d\n",
             hdr->colorMapType);
   }
 
@@ -583,7 +583,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     length = (hdr->colorMapLengthHi << 8) | hdr->colorMapLengthLo;
 
     if (length == 0)
-      error ("TGA: invalid color map length %d\n", length);
+      Pike_error ("TGA: invalid color map length %d\n", length);
 
     pelbytes = ROUNDUP_DIVIDE (hdr->colorMapSize, 8);
     colors = length + index;
@@ -596,7 +596,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     if (std_fread (cmap + (index * pelbytes), pelbytes, length, fp) != length)
     {
       free(cmap);
-      error ("TGA: error reading colormap\n");
+      Pike_error ("TGA: Pike_error reading colormap\n");
     }
 
     /* Now pretend as if we only have 8 bpp. */
@@ -608,7 +608,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   /* Allocate the data. */
   data = (guchar *) malloc (ROUNDUP_DIVIDE((width * height * bpp), 8));
   if(!data)
-    error("TGA: malloc failed\n");
+    Pike_error("TGA: malloc failed\n");
 
   if (rle)
     myfread = rle_fread;
@@ -759,7 +759,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   if(alpha &&
      (alpha->xsize != img->xsize ||
       alpha->ysize != img->ysize ))
-    error("Alpha and image objects are not equally sized.\n");
+    Pike_error("Alpha and image objects are not equally sized.\n");
 
   width = img->xsize;
   height = img->ysize;
@@ -808,12 +808,12 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   if (std_fwrite((void *)&hdr, sizeof (hdr), 1, fp) != 1)
   {
     free(obuf.str);
-    error("Internal error: Out of space in buffer.\n");
+    Pike_error("Internal Pike_error: Out of space in buffer.\n");
   }
   if (std_fwrite ((void *)SAVE_ID_STRING, hdr.idLength, 1, fp) != 1)
   {
     free(obuf.str);
-    error("Internal error: Out of space in buffer.\n");
+    Pike_error("Internal Pike_error: Out of space in buffer.\n");
   }
 
   /* Allocate a new set of pixels. */
@@ -834,7 +834,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
       if(!data)
       {
         free(obuf.str);
-        error("Out of memory while encoding image\n");
+        Pike_error("Out of memory while encoding image\n");
       }
       for(y=0; y<height; y++)
         for(x=0; x<width; x++)
@@ -851,7 +851,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
       if(!data)
       {
         free(obuf.str);
-        error("Out of memory while encoding image\n");
+        Pike_error("Out of memory while encoding image\n");
       }
       for(y=0; y<height; y++)
         for(x=0; x<width; x++)
@@ -866,7 +866,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
     {
       free(data);
       free(obuf.str);
-      error("Internal error: Out of space in buffer.\n");
+      Pike_error("Internal Pike_error: Out of space in buffer.\n");
     }
     free(data);
   }
@@ -887,7 +887,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 **!           ([ "image":img_object, "alpha":alpha_channel ])
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 void image_tga__decode( INT32 args )
 {
@@ -919,7 +919,7 @@ void image_tga__decode( INT32 args )
 **! 	Decodes a Targa image.
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 void image_tga_decode( INT32 args )
 {
@@ -964,20 +964,20 @@ void image_tga_encode( INT32 args )
   struct buffer buf;
   int rle = 1;
   if (!args)
-    error("Image.TGA.encode: too few arguments\n");
+    Pike_error("Image.TGA.encode: too few arguments\n");
 
   if (Pike_sp[-args].type!=PIKE_T_OBJECT ||
       !(img=(struct image*)
         get_storage(Pike_sp[-args].u.object,image_program)))
-    error("Image.TGA.encode: illegal argument 1\n");
+    Pike_error("Image.TGA.encode: illegal argument 1\n");
 
   if (!img->img)
-    error("Image.TGA.encode: no image\n");
+    Pike_error("Image.TGA.encode: no image\n");
 
   if (args>1)
   {
     if (Pike_sp[1-args].type!=PIKE_T_MAPPING)
-      error("Image.TGA.encode: illegal argument 2\n");
+      Pike_error("Image.TGA.encode: illegal argument 2\n");
 
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_alpha);
@@ -987,15 +987,15 @@ void image_tga_encode( INT32 args )
       if (Pike_sp[-1].type!=PIKE_T_OBJECT ||
           !(alpha=(struct image*)
             get_storage(Pike_sp[-1].u.object,image_program)))
-        error("Image.TGA.encode: option (arg 2) \"alpha\" has illegal type\n");
+        Pike_error("Image.TGA.encode: option (arg 2) \"alpha\" has illegal type\n");
     pop_stack();
 
     if (alpha &&
         (alpha->xsize!=img->xsize ||
          alpha->ysize!=img->ysize))
-      error("Image.TGA.encode option (arg 2) \"alpha\"; images differ in size\n");
+      Pike_error("Image.TGA.encode option (arg 2) \"alpha\"; images differ in size\n");
     if (alpha && !alpha->img)
-      error("Image.TGA.encode option (arg 2) \"alpha\"; no image\n");
+      Pike_error("Image.TGA.encode option (arg 2) \"alpha\"; no image\n");
 
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_raw);

@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.10 2000/08/09 13:18:58 grubba Exp $
+ * $Id: invert.c,v 1.11 2000/12/01 08:10:28 hubbe Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -53,7 +53,7 @@ void exit_pike_crypto_invert(struct object *o)
 static void f_name(INT32 args)
 {
   if (args) {
-    error("Too many arguments to invert->name()\n");
+    Pike_error("Too many arguments to invert->name()\n");
   }
   push_string(make_shared_string("INVERT"));
 }
@@ -62,7 +62,7 @@ static void f_name(INT32 args)
 static void f_query_block_size(INT32 args)
 {
   if (args) {
-    error("Too many arguments to invert->query_block_size()\n");
+    Pike_error("Too many arguments to invert->query_block_size()\n");
   }
   push_int(8);
 }
@@ -71,7 +71,7 @@ static void f_query_block_size(INT32 args)
 static void f_query_key_length(INT32 args)
 {
   if (args) {
-    error("Too many arguments to invert->query_key_length()\n");
+    Pike_error("Too many arguments to invert->query_key_length()\n");
   }
   push_int(0);
 }
@@ -80,10 +80,10 @@ static void f_query_key_length(INT32 args)
 static void f_set_key(INT32 args)
 {
   if (args != 1) {
-    error("Wrong number of args to invert->set_key()\n");
+    Pike_error("Wrong number of args to invert->set_key()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to invert->set_key()\n");
+    Pike_error("Bad argument 1 to invert->set_key()\n");
   }
   pop_n_elems(args);
   push_object(this_object());
@@ -97,17 +97,17 @@ static void f_crypt_block(INT32 args)
   ptrdiff_t len;
 
   if (args != 1) {
-    error("Wrong number of arguments to invert->crypt_block()\n");
+    Pike_error("Wrong number of arguments to invert->crypt_block()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to invert->crypt_block()\n");
+    Pike_error("Bad argument 1 to invert->crypt_block()\n");
   }
   if (sp[-1].u.string->len % 8) {
-    error("Bad length of argument 1 to invert->crypt_block()\n");
+    Pike_error("Bad length of argument 1 to invert->crypt_block()\n");
   }
 
   if (!(buffer = alloca(len = sp[-1].u.string->len))) {
-    error("invert->crypt_block(): Out of memory\n");
+    Pike_error("invert->crypt_block(): Out of memory\n");
   }
 
   for (i=0; i<len; i++) {

@@ -5,14 +5,14 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.175 2000/12/01 01:14:58 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.176 2000/12/01 08:09:48 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
 #include "svalue.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "language.h"
 #include "stralloc.h"
 #include "constants.h"
@@ -82,7 +82,7 @@ int mark_stack_malloced = 0;
 void push_sp_mark(void)
 {
   if(Pike_mark_sp == Pike_interpreter.mark_stack + stack_size)
-    error("No more mark stack!\n");
+    Pike_error("No more mark stack!\n");
   *Pike_mark_sp++=Pike_sp;
 }
 ptrdiff_t pop_sp_mark(void)
@@ -222,7 +222,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 #ifdef PIKE_SECURITY
   if(lval->type <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_INDEX))
-      error("Index permission denied.\n");
+      Pike_error("Index permission denied.\n");
 #endif
   switch(lval->type)
   {
@@ -287,7 +287,7 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 #ifdef PIKE_SECURITY
   if(lval->type <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
-      error("Assign index permission denied.\n");
+      Pike_error("Assign index permission denied.\n");
 #endif
 
   switch(lval->type)
@@ -296,13 +296,13 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     {
       INT32 e;
       if(from->type != T_ARRAY)
-	error("Trying to assign combined lvalue from non-array.\n");
+	Pike_error("Trying to assign combined lvalue from non-array.\n");
 
       if(from->u.array->size < (lval[1].u.array->size>>1))
-	error("Not enough values for multiple assign.\n");
+	Pike_error("Not enough values for multiple assign.\n");
 
       if(from->u.array->size > (lval[1].u.array->size>>1))
-	error("Too many values for multiple assign.\n");
+	Pike_error("Too many values for multiple assign.\n");
 
       for(e=0;e<from->u.array->size;e++)
 	assign_lvalue(lval[1].u.array->item+(e<<1),from->u.array->item+e);
@@ -349,7 +349,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 #ifdef PIKE_SECURITY
   if(lval->type <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
-      error("Assign index permission denied.\n");
+      Pike_error("Assign index permission denied.\n");
 #endif
 
   switch(lval->type)
@@ -452,7 +452,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	 DO_NOT_WARN((long)(loc->o->prog ? loc->inherit - loc->o->prog->inherits : 0))));
 
   if(!loc->o)
-    error("Current object is destructed\n");
+    Pike_error("Current object is destructed\n");
 
   while(--arg2>=0)
   {
@@ -507,10 +507,10 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     }
     
     if(!loc->o)
-      error("Parent was lost during cloning.\n");
+      Pike_error("Parent was lost during cloning.\n");
     
     if(!(p=loc->o->prog))
-      error("Attempting to access variable in destructed object\n");
+      Pike_error("Attempting to access variable in destructed object\n");
     
 #ifdef DEBUG_MALLOC
     if (loc->o->refs == 0x55555555) {
@@ -932,19 +932,19 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
       if (!s->u.integer) {
 	PIKE_ERROR("0", "Attempt to call the NULL-value\n", Pike_sp, args);
       } else {
-	error("Attempt to call the value %d\n", s->u.integer);
+	Pike_error("Attempt to call the value %d\n", s->u.integer);
       }
 
     case T_STRING:
       if (s->u.string->len > 20) {
-	error("Attempt to call the string \"%20s\"...\n", s->u.string->str);
+	Pike_error("Attempt to call the string \"%20s\"...\n", s->u.string->str);
       } else {
-	error("Attempt to call the string \"%s\"\n", s->u.string->str);
+	Pike_error("Attempt to call the string \"%s\"\n", s->u.string->str);
       }
     case T_MAPPING:
-      error("Attempt to call a mapping\n");
+      Pike_error("Attempt to call a mapping\n");
     default:
-      error("Call to non-function value type:%s.\n",
+      Pike_error("Call to non-function value type:%s.\n",
 	    get_name_of_type(s->type));
       
     case T_FUNCTION:
@@ -1297,7 +1297,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	}
 #ifdef PIKE_DEBUG
 	if(Pike_sp<Pike_interpreter.evaluator_stack)
-	  fatal("Stack error (also simple).\n");
+	  fatal("Stack Pike_error (also simple).\n");
 #endif
 	break;
       }
@@ -1492,7 +1492,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     
 #ifdef PIKE_DEBUG
     if(Pike_sp<Pike_interpreter.evaluator_stack)
-      fatal("Stack error (simple).\n");
+      fatal("Stack Pike_error (simple).\n");
 #endif
     ret=0;
   }

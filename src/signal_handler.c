@@ -13,7 +13,7 @@
 #include "constants.h"
 #include "pike_macros.h"
 #include "backend.h"
-#include "error.h"
+#include "pike_error.h"
 #include "callback.h"
 #include "mapping.h"
 #include "threads.h"
@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.184 2000/10/18 15:43:55 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.185 2000/12/01 08:09:54 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -729,17 +729,17 @@ static void f_signal(int args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("signal: permission denied.\n");
+    Pike_error("signal: permission denied.\n");
 #endif
 
   check_signals(0,0,0);
 
   if(args < 1)
-    error("Too few arguments to signal()\n");
+    Pike_error("Too few arguments to signal()\n");
 
   if(sp[-args].type != T_INT)
   {
-    error("Bad argument 1 to signal()\n");
+    Pike_error("Bad argument 1 to signal()\n");
   }
 
   signum=sp[-args].u.integer;
@@ -751,7 +751,7 @@ static void f_signal(int args)
 #endif
     )
   {
-    error("Signal out of range.\n");
+    Pike_error("Signal out of range.\n");
   }
 
   if(!signal_evaluator_callback)
@@ -821,10 +821,10 @@ static void f_signum(int args)
 {
   int i;
   if(args < 1)
-    error("Too few arguments to signum()\n");
+    Pike_error("Too few arguments to signum()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to signum()\n");
+    Pike_error("Bad argument 1 to signum()\n");
 
   i=signum(sp[-args].u.string->str);
   pop_n_elems(args);
@@ -835,10 +835,10 @@ static void f_signame(int args)
 {
   char *n;
   if(args < 1)
-    error("Too few arguments to signame()\n");
+    Pike_error("Too few arguments to signame()\n");
 
   if(sp[-args].type != T_INT)
-    error("Bad argument 1 to signame()\n");
+    Pike_error("Bad argument 1 to signame()\n");
 
   n=signame(sp[-args].u.integer);
   pop_n_elems(args);
@@ -1102,7 +1102,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 	  break;
 
 	default:
-	  fprintf(stderr,"Wait thread: waitpid returned error: %d\n",errno);
+	  fprintf(stderr,"Wait thread: waitpid returned Pike_error: %d\n",errno);
       }
     }
   }
@@ -1114,7 +1114,7 @@ static void f_pid_status_wait(INT32 args)
 {
   pop_n_elems(args);
   if(THIS->pid == -1)
-    error("This process object has no process associated with it.\n");
+    Pike_error("This process object has no process associated with it.\n");
 #ifdef __NT__
   {
     int err=0;
@@ -1138,7 +1138,7 @@ static void f_pid_status_wait(INT32 args)
     }
     THREADS_DISALLOW();
     if(err)
-      error("Failed to get status of process.\n");
+      Pike_error("Failed to get status of process.\n");
     push_int(xcode);
   }
 #else
@@ -1176,7 +1176,7 @@ static void f_pid_status_wait(INT32 args)
 
 	}
 	else
-	  error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+	  Pike_error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
       }
 
       THREADS_ALLOW();
@@ -1244,7 +1244,7 @@ static void f_pid_status_set_priority(INT32 args)
   int r;
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("pid_status_wait: permission denied.\n");
+    Pike_error("pid_status_wait: permission denied.\n");
 #endif
   get_all_args("set_priority", args, "%s", &to);
   r = set_priority( THIS->pid, to );
@@ -1269,18 +1269,18 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
       fd = fd_from_object(tmp->u.object);
 
       if(fd == -1)
-	error("File for %s is not open.\n",name);
+	Pike_error("File for %s is not open.\n",name);
     }
   }
 
   if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
-    error("File for %s can not be externalized.\n", name);
+    Pike_error("File for %s can not be externalized.\n", name);
   
   sprintf(buf, "IXPIPE:%lx", ext);
 
   /* It's a kind of magic... */
   if((b = Open(buf, 0x4242)) == 0)
-    error("File for %s can not be internalized.\n", name);
+    Pike_error("File for %s can not be internalized.\n", name);
 
   return b;
 }
@@ -1322,7 +1322,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
       INT32 fd=fd_from_object(tmp->u.object);
 
       if(fd == -1)
-	error("File for %s is not open.\n",name);
+	Pike_error("File for %s is not open.\n",name);
 
 #if 0
       {
@@ -1353,7 +1353,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	fd=fd_from_object(sp[-1].u.object);
 	
 	if(fd == -1)
-	  error("Proxy thread creation failed for %s.\n",name);
+	  Pike_error("Proxy thread creation failed for %s.\n",name);
       }
       
       
@@ -1365,7 +1365,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 			  1,
 			  DUPLICATE_SAME_ACCESS))
 	  /* This could cause handle-leaks */
-	  error("Failed to duplicate handle %d.\n", GetLastError());
+	  Pike_error("Failed to duplicate handle %d.\n", GetLastError());
     }
   }
   pop_n_elems(sp-save_stack);
@@ -1622,7 +1622,7 @@ void f_set_priority( INT32 args )
   char *plevel;
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("set_priority: permission denied.\n");
+    Pike_error("set_priority: permission denied.\n");
 #endif
   if(args == 1)
   {
@@ -1768,7 +1768,7 @@ void f_create_process(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("Process.create_process: permission denied.\n");
+    Pike_error("Process.create_process: permission denied.\n");
 #endif
 
   check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
@@ -1780,20 +1780,20 @@ void f_create_process(INT32 args)
       mapping_fix_type_field(optional);
 
       if(m_ind_types(optional) & ~BIT_STRING)
-	error("Bad index type in argument 2 to Process->create()\n");
+	Pike_error("Bad index type in argument 2 to Process->create()\n");
 
     case 1: cmd=sp[-args].u.array;
       if(cmd->size < 1)
-	error("Too few elements in argument array.\n");
+	Pike_error("Too few elements in argument array.\n");
       
       for(e=0;e<cmd->size;e++)
 	if(ITEM(cmd)[e].type!=T_STRING)
-	  error("Argument is not a string.\n");
+	  Pike_error("Argument is not a string.\n");
 
       array_fix_type_field(cmd);
 
       if(cmd->type_field & ~BIT_STRING)
-	error("Bad argument 1 to Process().\n");
+	Pike_error("Bad argument 1 to Process().\n");
   }
 
 
@@ -1958,7 +1958,7 @@ void f_create_process(INT32 args)
 
       THIS->pid=proc.dwProcessId;
     }else{
-      error("Failed to start process (%d).\n",err);
+      Pike_error("Failed to start process (%d).\n",err);
     }
   }
 #else /* !__NT__ */
@@ -2002,7 +2002,7 @@ void f_create_process(INT32 args)
     if((tmp=simple_mapping_string_lookup(optional, "cwd")))
       if(tmp->type == T_STRING)
         if((storage.cwd_lock=Lock((char *)STR0(tmp->u.string), ACCESS_READ))==0)
-	  error("Failed to lock cwd \"%s\".\n", STR0(tmp->u.string));
+	  Pike_error("Failed to lock cwd \"%s\".\n", STR0(tmp->u.string));
 
     storage.stdin_b = get_amigados_handle(optional, "stdin", 0);
     storage.stdout_b = get_amigados_handle(optional, "stdout", 1);
@@ -2020,7 +2020,7 @@ void f_create_process(INT32 args)
 		  NP_Error, storage.stderr_b,
 	          (storage.cwd_lock!=0? NP_CurrentDir:TAG_IGNORE),
 		  storage.cwd_lock, TAG_END))
-      error("Failed to start process (%ld).\n", IoErr());
+      Pike_error("Failed to start process (%ld).\n", IoErr());
 
     UNSET_ONERROR(err);
 
@@ -2115,9 +2115,9 @@ void f_create_process(INT32 args)
 	    push_svalue(tmp);
 	    f_getgrnam(1);
 	    if(!sp[-1].type != T_ARRAY)
-	      error("No such group.\n");
+	      Pike_error("No such group.\n");
 	    if(sp[-1].u.array->item[2].type != T_INT)
-	      error("Getgrnam failed!\n");
+	      Pike_error("Getgrnam failed!\n");
 	    wanted_gid = sp[-1].u.array->item[2].u.integer;
 	    pop_stack();
 	    gid_request=1;
@@ -2126,7 +2126,7 @@ void f_create_process(INT32 args)
 #endif
 	  
 	  default:
-	    error("Invalid argument for gid.\n");
+	    Pike_error("Invalid argument for gid.\n");
 	}
       }
       
@@ -2163,7 +2163,7 @@ void f_create_process(INT32 args)
       {
         fds[0] = fd_from_object( tmp->u.object );
         if(fds[0] == -1)
-          error("Invalid stdin file\n");
+          Pike_error("Invalid stdin file\n");
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "stdout" )) &&
@@ -2171,7 +2171,7 @@ void f_create_process(INT32 args)
       {
         fds[1] = fd_from_object( tmp->u.object );
         if(fds[1] == -1)
-          error("Invalid stdout file\n");
+          Pike_error("Invalid stdout file\n");
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "stderr" )) &&
@@ -2179,7 +2179,7 @@ void f_create_process(INT32 args)
       {
         fds[2] = fd_from_object( tmp->u.object );
         if(fds[2] == -1)
-          error("Invalid stderr file\n");
+          Pike_error("Invalid stderr file\n");
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "nice"))
@@ -2192,7 +2192,7 @@ void f_create_process(INT32 args)
       {
         struct svalue *tmp2;
         if(tmp->type != T_MAPPING)
-          error("Wrong type of argument for the 'rusage' option. "
+          Pike_error("Wrong type of argument for the 'rusage' option. "
                 "Should be mapping.\n");
 
 #define ADD_LIMIT(X,Y,Z) internal_add_limit(&storage,X,Y,Z);
@@ -2252,7 +2252,7 @@ void f_create_process(INT32 args)
 	      if(sp[-1].type==T_ARRAY)
 	      {
 		if(sp[-1].u.array->item[3].type!=T_INT)
-		  error("Getpwuid failed!\n");
+		  Pike_error("Getpwuid failed!\n");
 		wanted_gid = sp[-1].u.array->item[3].u.integer;
 	      }
 	      pop_stack();
@@ -2267,10 +2267,10 @@ void f_create_process(INT32 args)
 	    push_svalue(tmp);
 	    f_getpwnam(1);
 	    if(sp[-1].type != T_ARRAY)
-	      error("No such user.\n");
+	      Pike_error("No such user.\n");
 	    if(sp[-1].u.array->item[2].type!=T_INT ||
 	       sp[-1].u.array->item[3].type!=T_INT)
-	      error("Getpwnam failed!\n");
+	      Pike_error("Getpwnam failed!\n");
 	    wanted_uid=sp[-1].u.array->item[2].u.integer;
 	    if(!gid_request)
 	      wanted_gid=sp[-1].u.array->item[3].u.integer;
@@ -2280,7 +2280,7 @@ void f_create_process(INT32 args)
 #endif
 	    
 	  default:
-	    error("Invalid argument for uid.\n");
+	    Pike_error("Invalid argument for uid.\n");
 	}
       }
 
@@ -2293,13 +2293,13 @@ void f_create_process(INT32 args)
 	  add_ref(storage.wanted_gids_array);
 	  for(e=0;e<storage.wanted_gids_array->size;e++)
 	    if(storage.wanted_gids_array->item[e].type != T_INT)
-	      error("Invalid type for setgroups.\n");
+	      Pike_error("Invalid type for setgroups.\n");
 	  do_initgroups=0;
 	}else{
-	  error("Invalid type for setgroups.\n");
+	  Pike_error("Invalid type for setgroups.\n");
 	}
 #else
-	error("Setgroups is not available.\n");
+	Pike_error("Setgroups is not available.\n");
 #endif
       }
 
@@ -2381,7 +2381,7 @@ void f_create_process(INT32 args)
 	    ref_push_string(storage.wanted_gids_array->item[e].u.string);
 	    f_getgrnam(2);
 	    if(sp[-1].type != T_ARRAY)
-	      error("No such group.\n");
+	      Pike_error("No such group.\n");
 
 	    storage.wanted_gids[e]=sp[-1].u.array->item[2].u.integer;
 	    pop_stack();
@@ -2390,7 +2390,7 @@ void f_create_process(INT32 args)
 #endif
 
 	  default:
-	    error("Gids must be integers or strings only.\n");
+	    Pike_error("Gids must be integers or strings only.\n");
 	}
       }
       storage.num_wanted_gids=storage.wanted_gids_array->size;
@@ -2403,7 +2403,7 @@ void f_create_process(INT32 args)
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
 
     if (pike_make_pipe(control_pipe) < 0) {
-      error("Failed to create child communication pipe.\n");
+      Pike_error("Failed to create child communication pipe.\n");
     }
 
 #if 0 /* Changed to 0 by hubbe 990306 - why do we need it? */
@@ -2479,16 +2479,16 @@ void f_create_process(INT32 args)
       free_perishables(&storage);
 
       if (e == EAGAIN) {
-	error("Process.create_process(): fork() failed with EAGAIN.\n"
+	Pike_error("Process.create_process(): fork() failed with EAGAIN.\n"
 	      "Process table full?\n");
       }
 #ifdef ENOMEM
       if (e == ENOMEM) {
-	error("Process.create_process(): fork() failed with ENOMEM.\n"
+	Pike_error("Process.create_process(): fork() failed with ENOMEM.\n"
 	      "Out of memory?\n");
       }
 #endif /* ENOMEM */
-      error("Process.create_process(): fork() failed. errno:%d\n",
+      Pike_error("Process.create_process(): fork() failed. errno:%d\n",
 	    e);
     } else if(pid) {
       int olderrno;
@@ -2507,7 +2507,7 @@ void f_create_process(INT32 args)
 
 
 #ifdef USE_SIGCHILD
-      /* FIXME: Can anything of the following throw an error? */
+      /* FIXME: Can anything of the following throw an Pike_error? */
       if(!signal_evaluator_callback)
       {
 	signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
@@ -2545,7 +2545,7 @@ void f_create_process(INT32 args)
 	while(close(control_pipe[0]) < 0 && errno==EINTR);
 	gnapp=1;
       } else {
-        /* Wait for exec or error */
+        /* Wait for exec or Pike_error */
         while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	  ;
         /* Paranoia in case close() sets errno. */
@@ -2555,7 +2555,7 @@ void f_create_process(INT32 args)
       }
       THREADS_DISALLOW();
       if(gnapp)
-	error("Child process died prematurely. (e=%d errno=%d)\n",
+	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
 	      e ,olderrno);
       }
 #else
@@ -2565,11 +2565,11 @@ void f_create_process(INT32 args)
 	/* Paranoia in case close() sets errno. */
 	olderrno = errno;
 	while(close(control_pipe[0]) < 0 && errno==EINTR);
-	error("Child process died prematurely. (e=%d errno=%d)\n",
+	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
 	      e ,olderrno);
       }
 
-      /* Wait for exec or error */
+      /* Wait for exec or Pike_error */
       while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	;
       /* Paranoia in case close() sets errno. */
@@ -2588,72 +2588,72 @@ void f_create_process(INT32 args)
 	/* Something went wrong. */
 	switch(buf[0]) {
 	case PROCE_CHDIR:
-	  error("Process.create_process(): chdir() failed. errno:%d\n",
+	  Pike_error("Process.create_process(): chdir() failed. errno:%d\n",
 		buf[1]);
 	  break;
 	case PROCE_DUP:
-	  error("Process.create_process(): dup() failed. errno:%d\n",
+	  Pike_error("Process.create_process(): dup() failed. errno:%d\n",
 		buf[1]);
 	  break;
 	case PROCE_DUP2:
 	  if (buf[1] == EINVAL) {
-	    error("Process.create_process(): dup2() failed with EINVAL.\n");
+	    Pike_error("Process.create_process(): dup2() failed with EINVAL.\n");
 	  }
-	  error("Process.create_process(): dup2() failed. errno:%d\n",
+	  Pike_error("Process.create_process(): dup2() failed. errno:%d\n",
 		buf[1]);
 	  break;
 	case PROCE_SETGID:
-	  error("Process.create_process(): setgid(%d) failed. errno:%d\n",
+	  Pike_error("Process.create_process(): setgid(%d) failed. errno:%d\n",
 		buf[2], buf[1]);
 	  break;
 #ifdef HAVE_SETGROUPS
 	case PROCE_SETGROUPS:
 	  if (buf[1] == EINVAL) {
-	    error("Process.create_process(): setgroups() failed with EINVAL.\n"
+	    Pike_error("Process.create_process(): setgroups() failed with EINVAL.\n"
 		  "Too many supplementary groups (%d)?\n",
 		  storage.num_wanted_gids);
 	  }
-	  error("Process.create_process(): setgroups() failed. errno:%d\n",
+	  Pike_error("Process.create_process(): setgroups() failed. errno:%d\n",
 		buf[1]);
 	  break;
 #endif
 	case PROCE_GETPWUID:
-	  error("Process.create_process(): getpwuid(%d) failed. errno:%d\n",
+	  Pike_error("Process.create_process(): getpwuid(%d) failed. errno:%d\n",
 		buf[2], buf[1]);
 	  break;
 	case PROCE_INITGROUPS:
-	  error("Process.create_process(): initgroups() failed. errno:%d\n",
+	  Pike_error("Process.create_process(): initgroups() failed. errno:%d\n",
 		buf[1]);
 	  break;
 	case PROCE_SETUID:
 	  if (buf[1] == EINVAL) {
-	    error("Process.create_process(): Invalid uid: %d.\n",
+	    Pike_error("Process.create_process(): Invalid uid: %d.\n",
 		  (int)wanted_uid);
 	  }
-	  error("Process.create_process(): setuid(%d) failed. errno:%d\n",
+	  Pike_error("Process.create_process(): setuid(%d) failed. errno:%d\n",
 		buf[2], buf[1]);
 	  break;
 	case PROCE_SETSID:
-          error("Process.create_process(): setsid() failed.\n");
+          Pike_error("Process.create_process(): setsid() failed.\n");
 	  break;
 	case PROCE_EXEC:
 	  if (buf[1] == ENOENT) {
-	    error("Process.create_process(): Executable file not found.\n");
+	    Pike_error("Process.create_process(): Executable file not found.\n");
 	  }
 	  if (buf[1] == EACCES) {
-	    error("Process.create_process(): Access denied.\n");
+	    Pike_error("Process.create_process(): Access denied.\n");
 	  }
-	  error("Process.create_process(): exec() failed. errno:%d\n"
+	  Pike_error("Process.create_process(): exec() failed. errno:%d\n"
 		"File not found?\n", buf[1]);
 	  break;
 	case PROCE_CLOEXEC:
-	  error("Process.create_process(): set_close_on_exec() failed. errno:%d\n",
+	  Pike_error("Process.create_process(): set_close_on_exec() failed. errno:%d\n",
 		buf[1]);
 	  break;
 	case 0:
 	  /* read() probably failed. */
 	default:
-	  error("Process.create_process(): "
+	  Pike_error("Process.create_process(): "
 		"Child failed: %d, %d, %d, %d, %d!\n",
 		buf[0], buf[1], buf[2], e, olderrno);
 	  break;
@@ -2796,7 +2796,7 @@ void f_create_process(INT32 args)
       if (setsid_request)
 	 if (setsid()==-1)
 	    PROCERROR(PROCE_SETSID,0);
-/* fixme: else... what? error or ignore? */
+/* fixme: else... what? Pike_error or ignore? */
 #endif
 
 #ifdef HAVE_SETGID
@@ -2914,11 +2914,11 @@ void Pike_f_fork(INT32 args)
 
 #ifdef _REENTRANT
   if(num_threads >1)
-    error("You cannot use fork in a multithreaded application.\n");
+    Pike_error("You cannot use fork in a multithreaded application.\n");
 #endif
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("fork: permission denied.\n");
+    Pike_error("fork: permission denied.\n");
 #endif
 
   th_atfork_prepare();
@@ -2943,7 +2943,7 @@ void Pike_f_fork(INT32 args)
   }
   
   if(pid==-1) {
-    error("Fork failed\n"
+    Pike_error("Fork failed\n"
 	  "errno: %d\n", errno);
   }
 
@@ -2991,11 +2991,11 @@ static void f_kill(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("kill: permission denied.\n");
+    Pike_error("kill: permission denied.\n");
 #endif
 
   if(args < 2)
-    error("Too few arguments to kill().\n");
+    Pike_error("Too few arguments to kill().\n");
 
   switch(sp[-args].type)
   {
@@ -3006,11 +3006,11 @@ static void f_kill(INT32 args)
     /* FIXME: What about if it's an object? */
 
   default:
-    error("Bad argument 1 to kill().\n");
+    Pike_error("Bad argument 1 to kill().\n");
   }
     
   if(sp[1-args].type != T_INT)
-    error("Bad argument 2 to kill().\n");
+    Pike_error("Bad argument 2 to kill().\n");
 
   signum = sp[1-args].u.integer;
 
@@ -3035,13 +3035,13 @@ static void f_pid_status_kill(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("pid->kill: permission denied.\n");
+    Pike_error("pid->kill: permission denied.\n");
 #endif
 
   get_all_args("pid->kill", args, "%i", &signum);
 
   if (pid < 0) {
-    error("pid->kill(): No process\n");
+    Pike_error("pid->kill(): No process\n");
   }
 
 #ifdef PROC_DEBUG
@@ -3068,11 +3068,11 @@ static void f_kill(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("kill: permission denied.\n");
+    Pike_error("kill: permission denied.\n");
 #endif
 
   if(args < 2)
-    error("Too few arguments to kill().\n");
+    Pike_error("Too few arguments to kill().\n");
 
   switch(sp[-args].type)
   {
@@ -3103,11 +3103,11 @@ static void f_kill(INT32 args)
   }
 
   default:
-    error("Bad argument 1 to kill().\n");
+    Pike_error("Bad argument 1 to kill().\n");
   }
     
   if(sp[1-args].type != T_INT)
-    error("Bad argument 1 to kill().\n");
+    Pike_error("Bad argument 1 to kill().\n");
 
   switch(sp[1-args].u.integer)
   {
@@ -3141,7 +3141,7 @@ static void f_pid_status_kill(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("kill: permission denied.\n");
+    Pike_error("kill: permission denied.\n");
 #endif
 
   get_all_args("pid->kill", args, "%i", &signum);
@@ -3172,14 +3172,14 @@ static void f_alarm(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("alarm: permission denied.\n");
+    Pike_error("alarm: permission denied.\n");
 #endif
 
   if(args < 1)
-    error("Too few arguments to signame()\n");
+    Pike_error("Too few arguments to signame()\n");
 
   if(sp[-args].type != T_INT)
-    error("Bad argument 1 to signame()\n");
+    Pike_error("Bad argument 1 to signame()\n");
 
   seconds=sp[-args].u.integer;
 
@@ -3198,14 +3198,14 @@ static void f_ualarm(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("ualarm: permission denied.\n");
+    Pike_error("ualarm: permission denied.\n");
 #endif
 
   if(args < 1)
-    error("Too few arguments to ualarm()\n");
+    Pike_error("Too few arguments to ualarm()\n");
 
   if(sp[-args].type != T_INT)
-    error("Bad argument 1 to ualarm()\n");
+    Pike_error("Bad argument 1 to ualarm()\n");
 
   useconds=sp[-args].u.integer;
 

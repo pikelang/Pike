@@ -15,7 +15,7 @@ struct callback *gc_evaluator_callback=0;
 #include "program.h"
 #include "stralloc.h"
 #include "stuff.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_memory.h"
 #include "pike_macros.h"
 #include "pike_types.h"
@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.142 2000/12/01 01:14:57 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.143 2000/12/01 08:09:47 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is

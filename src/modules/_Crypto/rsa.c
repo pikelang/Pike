@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.23 2000/08/10 09:51:55 per Exp $
+ * $Id: rsa.c,v 1.24 2000/12/01 08:10:30 hubbe Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -12,7 +12,7 @@
 #include "program.h"
 #include "object.h"
 #include "interpret.h"
-#include "error.h"
+#include "pike_error.h"
 #include "port.h"
 
 #include "module_support.h"
@@ -34,7 +34,7 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
-RCSID("$Id: rsa.c,v 1.23 2000/08/10 09:51:55 per Exp $");
+RCSID("$Id: rsa.c,v 1.24 2000/12/01 08:10:30 hubbe Exp $");
 
 struct pike_rsa_data
 {
@@ -133,10 +133,10 @@ static void init_pike_rsa(struct object *o)
   MEMSET(THIS, 0, sizeof(struct pike_rsa_data));
 
   if ((code = B_CreateAlgorithmObject(&(THIS->cipher)))) {
-    error("Crypto.rsa(): Failed to create cipher object: %04x\n", code);
+    Pike_error("Crypto.rsa(): Failed to create cipher object: %04x\n", code);
   }
   if ((code = B_SetAlgorithmInfo(THIS->cipher, AI_RSAPublic, NULL_PTR))) {
-    error("Crypto.rsa(): Failed to initialize RSA algorithm: %04x\n", code);
+    Pike_error("Crypto.rsa(): Failed to initialize RSA algorithm: %04x\n", code);
   }
 }
 
@@ -189,12 +189,12 @@ static void f_set_public_key(INT32 args)
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Crypto.rsa.set_public_key(): "
+    Pike_error("Crypto.rsa.set_public_key(): "
 	  "Unexpected return value from modulo->digits().\n");
   }
 
   if (sp[-1].u.string->len < 12) {
-    error("Crypto.rsa.set_public_key(): Too small modulo.\n");
+    Pike_error("Crypto.rsa.set_public_key(): Too small modulo.\n");
   }
 
   /* We need to remember the modulus for the private key. */
@@ -207,12 +207,12 @@ static void f_set_public_key(INT32 args)
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Crypto.rsa.set_public_key(): "
+    Pike_error("Crypto.rsa.set_public_key(): "
 	  "Unexpected return value from pub->digits().\n");
   }
 
   if ((code = B_CreateKeyObject(&(THIS->public_key)))) {
-    error("Crypto.rsa.set_public_key(): "
+    Pike_error("Crypto.rsa.set_public_key(): "
 	  "Failed to create public key object: %04x\n", code);
   }
 
@@ -223,7 +223,7 @@ static void f_set_public_key(INT32 args)
 
   if ((code = B_SetKeyInfo(THIS->public_key, KI_RSAPublic,
 			   (POINTER)&rsa_public_key))) {
-    error("Crypto.rsa.set_public_key(): "
+    Pike_error("Crypto.rsa.set_public_key(): "
 	  "Failed to set public key: %04x\n", code);
   }
 
@@ -253,7 +253,7 @@ static void f_set_private_key(INT32 args)
   }
 
   if (!THIS->n) {
-    error("Crypto.rsa.set_private_key(): Public key hasn't been set.\n");
+    Pike_error("Crypto.rsa.set_private_key(): Public key hasn't been set.\n");
   }
 
   push_int(256);
@@ -261,12 +261,12 @@ static void f_set_private_key(INT32 args)
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Crypto.rsa.set_private_key(): "
+    Pike_error("Crypto.rsa.set_private_key(): "
 	  "Unexpected return value from priv->digits().\n");
   }
 
   if ((code = B_CreateKeyObject(&(THIS->private_key)))) {
-    error("Crypto.rsa.set_private_key(): "
+    Pike_error("Crypto.rsa.set_private_key(): "
 	  "Failed to create private key object: %04x\n", code);
   }
 
@@ -277,7 +277,7 @@ static void f_set_private_key(INT32 args)
 
   if ((code = B_SetKeyInfo(THIS->private_key, KI_RSAPublic,
 			   (POINTER)&rsa_private_key))) {
-    error("Crypto.rsa.set_private_key(): "
+    Pike_error("Crypto.rsa.set_private_key(): "
 	  "Failed to set private key: %04x\n", code);
   }
 
@@ -294,12 +294,12 @@ static void f_cooked_get_n(INT32 args)
   int code;
 
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   if ((code = B_GetKeyInfo((POINTER *)&rsa_public_key, THIS->public_key,
 			   KI_RSAPublic))) {
-    error("Crypto rsa.cooked_get_n(): "
+    Pike_error("Crypto rsa.cooked_get_n(): "
 	  "Failed to get public key: %04x\n", code);
   }
 
@@ -316,12 +316,12 @@ static void f_cooked_get_e(INT32 args)
   int code;
 
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   if ((code = B_GetKeyInfo((POINTER *)&rsa_public_key, THIS->public_key,
 			   KI_RSAPublic))) {
-    error("Crypto rsa.cooked_get_n(): "
+    Pike_error("Crypto rsa.cooked_get_n(): "
 	  "Failed to get public key: %04x\n", code);
   }
 
@@ -338,12 +338,12 @@ static void f_cooked_get_d(INT32 args)
   int code;
 
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   if ((code = B_GetKeyInfo((POINTER *)&rsa_private_key, THIS->private_key,
 			   KI_RSAPrivate))) {
-    error("Crypto rsa.cooked_get_d(): "
+    Pike_error("Crypto rsa.cooked_get_d(): "
 	  "Failed to get private key: %04x\n", code);
   }
 
@@ -360,12 +360,12 @@ static void f_cooked_get_p(INT32 args)
   int code;
 
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   if ((code = B_GetKeyInfo((POINTER *)&rsa_private_key, THIS->private_key,
 			   KI_PKCS_RSAPrivate))) {
-    error("Crypto rsa.cooked_get_p(): "
+    Pike_error("Crypto rsa.cooked_get_p(): "
 	  "Failed to get private key: %04x\n", code);
   }
 
@@ -382,12 +382,12 @@ static void f_cooked_get_q(INT32 args)
   int code;
 
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   if ((code = B_GetKeyInfo((POINTER *)&rsa_private_key, THIS->private_key,
 			   KI_PKCS_RSAPrivate))) {
-    error("Crypto rsa.cooked_get_q(): "
+    Pike_error("Crypto rsa.cooked_get_q(): "
 	  "Failed to get private key: %04x\n", code);
   }
 
@@ -401,7 +401,7 @@ static void f_cooked_get_q(INT32 args)
 static void f_query_blocksize(INT32 args)
 {
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   pop_n_elems(args);
@@ -411,7 +411,7 @@ static void f_query_blocksize(INT32 args)
 /* bignum rsa_pad(string message, int type, mixed|void random) */
 static void f_rsa_pad(INT32 args)
 {
-  error("Not yet implemented.\n");
+  Pike_error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
@@ -427,7 +427,7 @@ static void f_low_unpad(INT32 args)
   get_all_args("low_unpad", args, "%S%i", &block, &type);
 
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   if ((block->str[0]) ||
@@ -470,11 +470,11 @@ static void f_rsa_unpad(INT32 args)
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Unexpected return value from block->digits().\n");
+    Pike_error("Unexpected return value from block->digits().\n");
   }
 
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   if (((i = strlen(sp[-1].u.string->str)) < 9) ||
@@ -506,20 +506,20 @@ static void f_cooked_sign(INT32 args)
   /* Digits(Decrypt(Pad(digest, 1))); */
 
   if (!THIS->private_key) {
-    error("Private key has not been set.\n");
+    Pike_error("Private key has not been set.\n");
   }
 
   get_all_args("cooked_sign", args, "%S", &digest);
 
   if ((err = B_DecryptInit(THIS->cipher, THIS->private_key, rsa_chooser,
 			   (A_SURRENDER_CTX *)NULL_PTR))) {
-    error("Failed to initialize decrypter: %04x\n", err);
+    Pike_error("Failed to initialize decrypter: %04x\n", err);
   }
 
   /* rsa_pad(digest, 1, 0) inlined. */
   len = THIS->n->len - 3 - digest->len;
   if (len < 8) {
-    error("Too large block.\n");
+    Pike_error("Too large block.\n");
   }
   
   buffer = (unsigned char *)xalloc(THIS->n->len+1);
@@ -545,7 +545,7 @@ static void f_cooked_sign(INT32 args)
 			     (A_SURRENDER_CTX *)NULL_PTR))) {
     free_string(s);
     free(buffer);
-    error("Decrypt failed: %04x\n", err);
+    Pike_error("Decrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -560,7 +560,7 @@ static void f_cooked_sign(INT32 args)
 			    (B_ALGORITHM_OBJ)NULL_PTR,
 			    (A_SURRENDER_CTX *)NULL_PTR))) {
     free_string(s);
-    error("Decrypt failed: %04x\n", err);
+    Pike_error("Decrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -572,7 +572,7 @@ static void f_cooked_sign(INT32 args)
 #if defined(PIKE_RSA_DEBUG) || defined(PIKE_DEBUG)
   if (len != (unsigned int)THIS->n->len) {
     free_string(s);
-    error("Decrypted string has bad length. Expected %d. Got %d\n",
+    Pike_error("Decrypted string has bad length. Expected %d. Got %d\n",
 	  THIS->n->len, len);
   }
 #endif /* PIKE_RSA_DEBUG || PIKE_DEBUG */
@@ -593,14 +593,14 @@ static void f_raw_verify(INT32 args)
   unsigned int len;
 
   if (!THIS->private_key) {
-    error("Private key has not been set.\n");
+    Pike_error("Private key has not been set.\n");
   }
 
   get_all_args("raw_verify", args, "%S%o", &digest, &o);
 
   if ((err = B_EncryptInit(THIS->cipher, THIS->public_key, rsa_chooser,
 			   (A_SURRENDER_CTX *)NULL_PTR))) {
-    error("Failed to initialize encrypter: %04x\n", err);
+    Pike_error("Failed to initialize encrypter: %04x\n", err);
   }
 
   /* Digest == rsa_unpad(encrypt(digits(s)), 1) */
@@ -610,7 +610,7 @@ static void f_raw_verify(INT32 args)
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Crypto.rsa.raw_verify(): "
+    Pike_error("Crypto.rsa.raw_verify(): "
 	  "Unexpected return value from o->digits().\n");
   }
 
@@ -624,7 +624,7 @@ static void f_raw_verify(INT32 args)
 			     (B_ALGORITHM_OBJ)NULL_PTR,
 			     (A_SURRENDER_CTX *)NULL_PTR))) {
     free_string(s);
-    error("Encrypt failed: %04x\n", err);
+    Pike_error("Encrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -637,7 +637,7 @@ static void f_raw_verify(INT32 args)
 			    (B_ALGORITHM_OBJ)NULL_PTR,
 			    (A_SURRENDER_CTX *)NULL_PTR))) {
     free_string(s);
-    error("Encrypt failed: %04x\n", err);
+    Pike_error("Encrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -649,7 +649,7 @@ static void f_raw_verify(INT32 args)
 #if defined(PIKE_RSA_DEBUG) || defined(PIKE_DEBUG)
   if (len != (unsigned int)THIS->n->len) {
     free_string(s);
-    error("Encrypted string has bad length. Expected %d. Got %d\n",
+    Pike_error("Encrypted string has bad length. Expected %d. Got %d\n",
 	  THIS->n->len, len);
   }
 #endif /* PIKE_RSA_DEBUG || PIKE_DEBUG */
@@ -680,20 +680,20 @@ static void f_encrypt(INT32 args)
   unsigned int i;
 
   if (!THIS->private_key) {
-    error("Private key has not been set.\n");
+    Pike_error("Private key has not been set.\n");
   }
 
   get_all_args("encrypt", args, "%S", &s);
 
   if ((err = B_EncryptInit(THIS->cipher, THIS->public_key, rsa_chooser,
 			   (A_SURRENDER_CTX *)NULL_PTR))) {
-    error("Failed to initialize encrypter: %04x\n", err);
+    Pike_error("Failed to initialize encrypter: %04x\n", err);
   }
 
   /* rsa_pad(s, 2, r) inlined. */
   len = THIS->n->len - 3 - s->len;
   if (len < 8) {
-    error("Too large block.\n");
+    Pike_error("Too large block.\n");
   }
   
   buffer = (unsigned char *)xalloc(THIS->n->len+1);
@@ -711,7 +711,7 @@ static void f_encrypt(INT32 args)
     apply_svalue(r, 1);
     if ((sp[-1].type != T_STRING) || (sp[-1].u.string->size_shift) ||
 	((unsigned int)sp[-1].u.string->len != len)) {
-      error("Unexpected return value from the random function\n");
+      Pike_error("Unexpected return value from the random function\n");
     }      
     MEMCPY(buffer + 2, sp[-1].u.string->str, len);
     pop_stack();
@@ -744,7 +744,7 @@ static void f_encrypt(INT32 args)
 			     (A_SURRENDER_CTX *)NULL_PTR))) {
     free_string(s);
     free(buffer);
-    error("Encrypt failed: %04x\n", err);
+    Pike_error("Encrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -759,7 +759,7 @@ static void f_encrypt(INT32 args)
 			    (B_ALGORITHM_OBJ)NULL_PTR,
 			    (A_SURRENDER_CTX *)NULL_PTR))) {
     free_string(s);
-    error("Encrypt failed: %04x\n", err);
+    Pike_error("Encrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -771,7 +771,7 @@ static void f_encrypt(INT32 args)
 #if defined(PIKE_RSA_DEBUG) || defined(PIKE_DEBUG)
   if (len != (unsigned int)THIS->n->len) {
     free_string(s);
-    error("Encrypted string has bad length. Expected %d. Got %d\n",
+    Pike_error("Encrypted string has bad length. Expected %d. Got %d\n",
 	  THIS->n->len, len);
   }
 #endif /* PIKE_RSA_DEBUG || PIKE_DEBUG */
@@ -791,14 +791,14 @@ static void f_decrypt(INT32 args)
   unsigned int i;
 
   if (!THIS->private_key) {
-    error("Private key has not been set.\n");
+    Pike_error("Private key has not been set.\n");
   }
 
   get_all_args("decrypt", args, "%S", &s);
   
   if ((err = B_DecryptInit(THIS->cipher, THIS->private_key, rsa_chooser,
 			   (A_SURRENDER_CTX *)NULL_PTR))) {
-    error("Failed to initialize decrypter: %04x\n", err);
+    Pike_error("Failed to initialize decrypter: %04x\n", err);
   }
 
   buffer = (unsigned char *)xalloc(s->len+1);
@@ -810,7 +810,7 @@ static void f_decrypt(INT32 args)
 			     (B_ALGORITHM_OBJ)NULL_PTR,
 			     (A_SURRENDER_CTX *)NULL_PTR))) {
     free(buffer);
-    error("decrypt failed: %04x\n", err);
+    Pike_error("decrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -822,7 +822,7 @@ static void f_decrypt(INT32 args)
 			    (B_ALGORITHM_OBJ)NULL_PTR,
 			    (A_SURRENDER_CTX *)NULL_PTR))) {
     free(buffer);
-    error("Decrypt failed: %04x\n", err);
+    Pike_error("Decrypt failed: %04x\n", err);
   }
 
 #ifdef PIKE_RSA_DEBUG
@@ -866,7 +866,7 @@ static void f_decrypt(INT32 args)
 static void f_rsa_size(INT32 args)
 {
   if (!THIS->n) {
-    error("Public key has not been set.\n");
+    Pike_error("Public key has not been set.\n");
   }
 
   pop_n_elems(args);

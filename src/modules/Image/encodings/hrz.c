@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: hrz.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: hrz.c,v 1.6 2000/12/01 08:10:04 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -13,7 +13,7 @@ RCSID("$Id: hrz.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $");
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 
 
@@ -52,7 +52,7 @@ void image_hrz_f_decode(INT32 args)
   int c;
   get_all_args( "decode", args, "%S", &s);
   
-  if(s->len != 256*240*3) error("This is not a HRZ file\n");
+  if(s->len != 256*240*3) Pike_error("This is not a HRZ file\n");
 
   push_int( 256 );
   push_int( 240 );
@@ -87,7 +87,7 @@ void image_hrz_f_encode(INT32 args )
   get_all_args( "encode", args, "%o", &io);
   
   if(!(i = (struct image *)get_storage( io, image_program)))
-    error("Wrong argument 1 to Image.HRZ.encode\n");
+    Pike_error("Wrong argument 1 to Image.HRZ.encode\n");
   
   s = begin_shared_string( 256*240*3 );
   

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.11 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: xbm.c,v 1.12 2000/12/01 08:10:07 hubbe Exp $");
 
 #define NO_PIKE_SHORTHAND
 
@@ -11,7 +11,7 @@ RCSID("$Id: xbm.c,v 1.11 2000/08/03 21:25:32 grubba Exp $");
 #include "object.h"
 #include "program.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
@@ -115,18 +115,18 @@ static struct object *load_xbm( struct pike_string *data )
   buff.len = data->len;
 
   if(!buf_search( b, '#' ) || !buf_search( b, ' ' ) || !buf_search( b, ' ' ))
-    error("This is not a XBM image!\n");
+    Pike_error("This is not a XBM image!\n");
   width = atoi(b->str);
   if(width <= 0)
-    error("This is not a XBM image!\n");
+    Pike_error("This is not a XBM image!\n");
   if(!buf_search( b, '#' ) || !buf_search( b, ' ' ) || !buf_search( b, ' ' ))
-    error("This is not a XBM image!\n");
+    Pike_error("This is not a XBM image!\n");
   height = atoi(b->str);
   if(height <= 0)
-    error("This is not a XBM image!\n");
+    Pike_error("This is not a XBM image!\n");
   
   if(!buf_search( b, '{' ))
-    error("This is not a XBM image!\n");
+    Pike_error("This is not a XBM image!\n");
 
 
   push_int( width );
@@ -218,7 +218,7 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
 **! 	Decodes a XBM image. 
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 static void image_xbm_decode( INT32 args )
 {
@@ -246,7 +246,7 @@ static void image_xbm_decode( INT32 args )
 **!	</pre>
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 
 
@@ -266,7 +266,7 @@ static void image_xbm__decode( INT32 args )
   if (args>1)
   {
     if (Pike_sp[1-args].type!=PIKE_T_MAPPING)
-      error("Image.XBM._decode: illegal argument 2\n");
+      Pike_error("Image.XBM._decode: illegal argument 2\n");
       
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_fg); 
@@ -274,13 +274,13 @@ static void image_xbm__decode( INT32 args )
     if(!IS_ZERO(Pike_sp-1))
     {
       if(Pike_sp[-1].type != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3)
-        error("Wrong type for foreground. Should be array(int(0..255))"
+        Pike_error("Wrong type for foreground. Should be array(int(0..255))"
               " with 3 elements\n");
       for(ele=0; ele<3; ele++)
         if(Pike_sp[-1].u.array->item[ele].type != PIKE_T_INT
            ||Pike_sp[-1].u.array->item[ele].u.integer < 0
            ||Pike_sp[-1].u.array->item[ele].u.integer > 255)
-          error("Wrong type for foreground. Should be array(int(0..255))"
+          Pike_error("Wrong type for foreground. Should be array(int(0..255))"
                 " with 3 elements\n");
       fg = Pike_sp[-1].u.array;
     }
@@ -292,13 +292,13 @@ static void image_xbm__decode( INT32 args )
     if(!IS_ZERO(Pike_sp-1))
     {
       if(Pike_sp[-1].type != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3)
-        error("Wrong type for background. Should be array(int(0..255))"
+        Pike_error("Wrong type for background. Should be array(int(0..255))"
               " with 3 elements\n");
       for(ele=0; ele<3; ele++)
         if(Pike_sp[-1].u.array->item[ele].type != PIKE_T_INT
            ||Pike_sp[-1].u.array->item[ele].u.integer < 0
            ||Pike_sp[-1].u.array->item[ele].u.integer > 255)
-          error("Wrong type for background. Should be array(int(0..255))"
+          Pike_error("Wrong type for background. Should be array(int(0..255))"
                 " with 3 elements\n");
       bg = Pike_sp[-1].u.array;
     }
@@ -391,20 +391,20 @@ void image_xbm_encode( INT32 args )
   struct image *img = NULL;
   struct pike_string *name = NULL, *buf;
   if (!args)
-    error("Image.XBM.encode: too few arguments\n");
+    Pike_error("Image.XBM.encode: too few arguments\n");
    
   if (Pike_sp[-args].type!=PIKE_T_OBJECT ||
       !(img=(struct image*)
         get_storage(Pike_sp[-args].u.object,image_program)))
-    error("Image.XBM.encode: illegal argument 1\n");
+    Pike_error("Image.XBM.encode: illegal argument 1\n");
    
   if (!img->img)
-    error("Image.XBM.encode: no image\n");
+    Pike_error("Image.XBM.encode: no image\n");
 
   if (args>1)
   {
     if (Pike_sp[1-args].type!=PIKE_T_MAPPING)
-      error("Image.XBM.encode: illegal argument 2\n");
+      Pike_error("Image.XBM.encode: illegal argument 2\n");
       
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_name); 
@@ -412,7 +412,7 @@ void image_xbm_encode( INT32 args )
     if(Pike_sp[-1].type == PIKE_T_STRING)
     {
       if(Pike_sp[-1].u.string->size_shift)
-        error("The name of the image must be a normal non-wide string (sorry, not my fault)\n");
+        Pike_error("The name of the image must be a normal non-wide string (sorry, not my fault)\n");
       name = Pike_sp[-1].u.string;
     }
     pop_stack();

@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.29 2000/08/23 18:56:38 grubba Exp $ */
+/* $Id: matrix.c,v 1.30 2000/12/01 08:10:01 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.29 2000/08/23 18:56:38 grubba Exp $
+**!	$Id: matrix.c,v 1.30 2000/12/01 08:10:01 hubbe Exp $
 **! class Image
 */
 
@@ -21,7 +21,7 @@
 #include "svalue.h"
 #include "array.h"
 #include "threads.h"
-#include "error.h"
+#include "pike_error.h"
 
 #include "image.h"
 
@@ -94,14 +94,14 @@ static INLINE int getrgb(struct image *img,
 
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
-         error("Illegal r,g,b argument to %s\n",name);
+         Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
    if (args-args_start>=4) {
       if (sp[3-args+args_start].type!=T_INT) {
-         error("Illegal alpha argument to %s\n",name);
+         Pike_error("Illegal alpha argument to %s\n",name);
       }
 
       img->alpha=sp[3-args+args_start].u.integer;
@@ -119,7 +119,7 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
    if (args-args_start<3) return 0;
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
-         error("Illegal r,g,b argument to %s\n",name);
+         Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;
    rgb->b=sp[2-args+args_start].u.integer;
@@ -411,7 +411,7 @@ void image_ccw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -518,7 +518,7 @@ void image_cw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -570,7 +570,7 @@ void image_mirrorx(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -619,7 +619,7 @@ void image_mirrory(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -859,7 +859,7 @@ void image_skewx(INT32 args)
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -923,7 +923,7 @@ void image_skewy(INT32 args)
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -951,7 +951,7 @@ void image_skewx_expand(INT32 args)
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -979,7 +979,7 @@ void image_skewy_expand(INT32 args)
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -1010,7 +1010,7 @@ void img_rotate(INT32 args,int xpn)
       bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->rotate()\n");
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    dest2.img=d0.img=NULL;
 
@@ -1104,7 +1104,7 @@ void img_translate(INT32 args,int expand)
    struct image *img;
    rgb_group *s,*d;
 
-   if (args<2) error("illegal number of arguments to image->translate()\n");
+   if (args<2) Pike_error("illegal number of arguments to image->translate()\n");
 
    if (sp[-args].type==T_FLOAT) xt=sp[-args].u.float_number;
    else if (sp[-args].type==T_INT) xt=sp[-args].u.integer;

@@ -15,7 +15,7 @@
 #include "array.h"
 #include "multiset.h"
 #include "dynamic_buffer.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.77 2000/11/08 20:03:45 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.78 2000/12/01 08:09:46 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -271,7 +271,7 @@ one_more_type:
   switch(EXTRACT_UCHAR(t++))
   {
     default:
-      fatal("error in type string.\n");
+      fatal("Pike_error in type string.\n");
       /*NOTREACHED*/
 
       break;
@@ -398,8 +398,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
     case T_TYPE:
       if (data->canonic)
-	error("Canonical encoding of the type type not supported.\n");
-      error("Encoding of the type type not supported yet!\n");
+	Pike_error("Canonical encoding of the type type not supported.\n");
+      Pike_error("Encoding of the type type not supported yet!\n");
       break;
 
     case T_FLOAT:
@@ -469,7 +469,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	     * long as they aren't handled deterministically by the
 	     * sort function. */
 	    /* They should be hanled deterministically now - Hubbe */
-	    error("Canonical encoding requires basic types in indices.\n");
+	    Pike_error("Canonical encoding requires basic types in indices.\n");
 	}
 	order = get_switch_order(Pike_sp[-2].u.array);
 	order_array(Pike_sp[-2].u.array, order);
@@ -496,7 +496,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    /* This doesn't let bignums through. That's necessary as
 	     * long as they aren't handled deterministically by the
 	     * sort function. */
-	    error("Canonical encoding requires basic types in indices.\n");
+	    Pike_error("Canonical encoding requires basic types in indices.\n");
 	}
 	check_stack(1);
 	ref_push_array(val->u.multiset->ind);
@@ -528,7 +528,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	push_int(36);
 	apply(val->u.object,"digits",1);
 	if(Pike_sp[-1].type != T_STRING)
-	  error("Gmp.mpz->digits did not return a string!\n");
+	  Pike_error("Gmp.mpz->digits did not return a string!\n");
 	encode_value2(Pike_sp-1, data);
 	pop_stack();
 	break;
@@ -536,7 +536,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #endif
 
       if (data->canonic)
-	error("Canonical encoding of objects not supported.\n");
+	Pike_error("Canonical encoding of objects not supported.\n");
       push_svalue(val);
       apply(data->codec, "nameof", 1);
       switch(Pike_sp[-1].type)
@@ -568,7 +568,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
     case T_FUNCTION:
       if (data->canonic)
-	error("Canonical encoding of functions not supported.\n");
+	Pike_error("Canonical encoding of functions not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(data->codec,"nameof", 1);
@@ -616,19 +616,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     {
       int d;
       if (data->canonic)
-	error("Canonical encoding of programs not supported.\n");
+	Pike_error("Canonical encoding of programs not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(data->codec,"nameof", 1);
       if(Pike_sp[-1].type == val->type)
-	error("Error in master()->nameof(), same type returned.\n");
+	Pike_error("Error in master()->nameof(), same type returned.\n");
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype == NUMBER_UNDEFINED)
       {
 	INT32 e;
 	struct program *p=val->u.program;
 	if(p->init || p->exit || p->gc_recurse_func || p->gc_check_func ||
 	   (p->flags & PROGRAM_HAS_C_METHODS))
-	  error("Cannot encode C programs.\n");
+	  Pike_error("Cannot encode C programs.\n");
 	code_entry(type_to_tag(val->type), 1,data);
 	f_version(0);
 	encode_value2(Pike_sp-1,data);
@@ -797,7 +797,7 @@ static void decode_value2(struct decode_data *data);
 static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
-    error("Format error, not enough data in string.\n");
+    Pike_error("Format Pike_error, not enough data in string.\n");
   return data->data [ data->ptr++ ];
 }
 
@@ -841,13 +841,13 @@ static int my_extract_char(struct decode_data *data)
     INT32 what, e, num, numh;					\
     DECODE("decode_entry");					\
     if((what & TAG_MASK) != (X))				\
-      error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK); \
+      Pike_error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK); \
     (Y)=num;							\
   } while(0);
 
 #define getdata2(S,L) do {						\
       if(data->ptr + (ptrdiff_t)(sizeof(S[0])*(L)) > data->len)		\
-	error("Failed to decode string. (string range error)\n");	\
+	Pike_error("Failed to decode string. (string range Pike_error)\n");	\
       MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
       data->ptr+=sizeof(S[0])*(L);					\
   }while(0)
@@ -870,9 +870,9 @@ static int my_extract_char(struct decode_data *data)
     DECODE("get_string_data");						    \
     what &= TAG_MASK;							    \
     if(data->ptr + num > data->len || num <0)				    \
-      error("Failed to decode string. (string range error)\n");		    \
+      Pike_error("Failed to decode string. (string range Pike_error)\n");		    \
     if(what<0 || what>2)						    \
-      error("Failed to decode string. (Illegal size shift)\n");		    \
+      Pike_error("Failed to decode string. (Illegal size shift)\n");		    \
     STR=begin_wide_shared_string(num, what);				    \
     MEMCPY(STR->str, data->data + data->ptr, num << what);		    \
     data->ptr+=(num << what);						    \
@@ -880,7 +880,7 @@ static int my_extract_char(struct decode_data *data)
     STR=end_shared_string(STR);                                             \
   }else{								    \
     if(data->ptr + (LEN) > data->len || (LEN) <0)			    \
-      error("Failed to decode string. (string range error)\n");		    \
+      Pike_error("Failed to decode string. (string range Pike_error)\n");		    \
     STR=make_shared_binary_string((char *)(data->data + data->ptr), (LEN)); \
     data->ptr+=(LEN);							    \
   }									    \
@@ -906,7 +906,7 @@ static int my_extract_char(struct decode_data *data)
       break;								     \
 									     \
     default:								     \
-      error("Failed to decode string, tag is wrong: %d\n",		     \
+      Pike_error("Failed to decode string, tag is wrong: %d\n",		     \
             what & TAG_MASK);						     \
     }									     \
 }while(0)
@@ -963,7 +963,7 @@ one_more_type:
   switch(tmp)
   {
     default:
-      fatal("error in type string.\n");
+      fatal("Pike_error in type string.\n");
       /*NOTREACHED*/
       break;
 
@@ -1042,18 +1042,18 @@ one_more_type:
 	  {
 	    struct program *prog;
 	    if (Pike_sp[-1].subtype == FUNCTION_BUILTIN) {
-	      error("Failed to decode object type.\n");
+	      Pike_error("Failed to decode object type.\n");
 	    }
 	    prog = program_from_svalue(Pike_sp-1);
 	    if (!prog) {
-	      error("Failed to decode object type.\n");
+	      Pike_error("Failed to decode object type.\n");
 	    }
 	    push_type_int(prog->id);
 	  }
 	  break;
 
 	default:
-	  error("Failed to decode type "
+	  Pike_error("Failed to decode type "
 		"(object(%s), expected object(zero|program)).\n",
 		get_name_of_type(Pike_sp[-1].type));
       }
@@ -1101,7 +1101,7 @@ static void decode_value2(struct decode_data *data)
       {
 	push_svalue(tmp2);
       }else{
-	error("Failed to decode string. (invalid T_AGAIN)\n");
+	Pike_error("Failed to decode string. (invalid T_AGAIN)\n");
       }
       return;
 
@@ -1145,7 +1145,7 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_TYPE:
     {
-      error("Failed to decode string. "
+      Pike_error("Failed to decode string. "
 	    "(decode of the type type isn't supported yet).\n");
       break;
     }
@@ -1154,11 +1154,11 @@ static void decode_value2(struct decode_data *data)
     {
       struct array *a;
       if(num < 0)
-	error("Failed to decode string. (array size is negative)\n");
+	Pike_error("Failed to decode string. (array size is negative)\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
-	error("Failed to decode array. (not enough data)\n");
+	Pike_error("Failed to decode array. (not enough data)\n");
 
       tmp.type=T_ARRAY;
       tmp.u.array=a=allocate_array(num);
@@ -1186,11 +1186,11 @@ static void decode_value2(struct decode_data *data)
     {
       struct mapping *m;
       if(num<0)
-	error("Failed to decode string. (mapping size is negative)\n");
+	Pike_error("Failed to decode string. (mapping size is negative)\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
-	error("Failed to decode mapping. (not enough data)\n");
+	Pike_error("Failed to decode mapping. (not enough data)\n");
 
       m=allocate_mapping(num);
       tmp.type=T_MAPPING;
@@ -1215,11 +1215,11 @@ static void decode_value2(struct decode_data *data)
       struct multiset *m;
       struct array *a;
       if(num<0)
-	error("Failed to decode string. (multiset size is negative)\n");
+	Pike_error("Failed to decode string. (multiset size is negative)\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
-	error("Failed to decode multiset. (not enough data)\n");
+	Pike_error("Failed to decode multiset. (not enough data)\n");
 
       /* NOTE: This code knows stuff about the implementation of multisets...*/
       a = low_allocate_array(num, 0);
@@ -1274,12 +1274,12 @@ static void decode_value2(struct decode_data *data)
 	    push_svalue(Pike_sp-1);
 	    decode_value2(data);
 	    if(!data->codec)
-	      error("Failed to decode (no codec)\n");
+	      Pike_error("Failed to decode (no codec)\n");
 	    apply(data->codec,"decode_object",2);
 	    pop_stack();
 	  }
 	  if(data->pickyness && Pike_sp[-1].type != T_OBJECT)
-	    error("Failed to decode object.\n");
+	    Pike_error("Failed to decode object.\n");
 	  return;
 
 #ifdef AUTO_BIGNUM
@@ -1302,11 +1302,11 @@ static void decode_value2(struct decode_data *data)
 #endif
 
 	default:
-	  error("Object coding not compatible.\n");
+	  Pike_error("Object coding not compatible.\n");
 	  break;
       }
       if(data->pickyness && Pike_sp[-1].type != T_OBJECT)
-	error("Failed to decode (got type %d; expected object).\n",
+	Pike_error("Failed to decode (got type %d; expected object).\n",
               Pike_sp[-1].type);
       break;
 
@@ -1339,11 +1339,11 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
 	default:
-	  error("Function coding not compatible.\n");
+	  Pike_error("Function coding not compatible.\n");
 	  break;
       }
       if(data->pickyness && Pike_sp[-1].type != T_FUNCTION)
-	error("Failed to decode function.\n");
+	Pike_error("Failed to decode function.\n");
       break;
 
 
@@ -1358,7 +1358,7 @@ static void decode_value2(struct decode_data *data)
 	  data->counter.u.integer++;
 	  decode_value2(data);
 
-	  /* Keep the value so that we can make a good error-message. */
+	  /* Keep the value so that we can make a good Pike_error-message. */
 	  prog_code = Pike_sp-1;
 	  stack_dup();
 
@@ -1374,10 +1374,10 @@ static void decode_value2(struct decode_data *data)
 	    if ((prog_code->type == T_STRING) &&
 		(prog_code->u.string->len < 128) &&
 		(!prog_code->u.string->size_shift)) {
-	      error("Failed to decode program \"%s\".\n",
+	      Pike_error("Failed to decode program \"%s\".\n",
 		    prog_code->u.string->str);
 	    }
-	    error("Failed to decode program.\n");
+	    Pike_error("Failed to decode program.\n");
 	  }
 	  /* Remove the extra entry from the stack. */
 	  stack_swap();
@@ -1410,7 +1410,7 @@ static void decode_value2(struct decode_data *data)
 	  decode_value2(data);
 	  f_version(0);
 	  if(!is_eq(Pike_sp-1,Pike_sp-2))
-	    error("Cannot decode programs encoded with other driver version.\n");
+	    Pike_error("Cannot decode programs encoded with other driver version.\n");
 	  pop_n_elems(2);
 
 	  decode_number(p->flags,data);
@@ -1473,7 +1473,7 @@ static void decode_value2(struct decode_data *data)
 	    if(p->identifier_index[d] > p->num_identifier_references)
 	    {
 	      p->identifier_index[d]=0;
-	      error("Malformed program in decode.\n");
+	      Pike_error("Malformed program in decode.\n");
 	    }
 	  }
 
@@ -1483,7 +1483,7 @@ static void decode_value2(struct decode_data *data)
 	    if(p->variable_index[d] > p->num_identifiers)
 	    {
 	      p->variable_index[d]=0;
-	      error("Malformed program in decode.\n");
+	      Pike_error("Malformed program in decode.\n");
 	    }
 	  }
 
@@ -1493,7 +1493,7 @@ static void decode_value2(struct decode_data *data)
 	    if(p->identifier_references[d].inherit_offset > p->num_inherits)
 	    {
 	      p->identifier_references[d].inherit_offset=0;
-	      error("Malformed program in decode.\n");
+	      Pike_error("Malformed program in decode.\n");
 	    }
 	    decode_number(p->identifier_references[d].identifier_offset,data);
 	    decode_number(p->identifier_references[d].id_flags,data);
@@ -1524,7 +1524,7 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      if(Pike_sp[-1].type != T_PROGRAM ||
 		 Pike_sp[-1].u.program != p)
-		error("Program decode failed!\n");
+		Pike_error("Program decode failed!\n");
 	      p->refs--;
 	    }
 
@@ -1532,12 +1532,12 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      case T_FUNCTION:
 		if(Pike_sp[-1].subtype == FUNCTION_BUILTIN)
-		  error("Failed to decode parent.\n");
+		  Pike_error("Failed to decode parent.\n");
 
 		p->inherits[d].parent_identifier=Pike_sp[-1].subtype;
 		p->inherits[d].prog=program_from_svalue(Pike_sp-1);
 		if(!p->inherits[d].prog)
-		  error("Failed to decode parent.\n");
+		  Pike_error("Failed to decode parent.\n");
 		add_ref(p->inherits[d].prog);
 		p->inherits[d].parent=Pike_sp[-1].u.object;
 		Pike_sp--;
@@ -1550,7 +1550,7 @@ static void decode_value2(struct decode_data *data)
 		dmalloc_touch_svalue(Pike_sp);
 		break;
 	      default:
-		error("Failed to decode inheritance.\n");
+		Pike_error("Failed to decode inheritance.\n");
 	    }
 
 	    getdata3(p->inherits[d].name);
@@ -1616,12 +1616,12 @@ static void decode_value2(struct decode_data *data)
 	}
 
 	default:
-	  error("Cannot decode program encoding type %d\n",num);
+	  Pike_error("Cannot decode program encoding type %d\n",num);
       }
       break;
 
   default:
-    error("Failed to restore string. (Illegal type)\n");
+    Pike_error("Failed to restore string. (Illegal type)\n");
   }
 
   mapping_insert(data->decoded, & tmp, Pike_sp-1);
@@ -1668,7 +1668,7 @@ static INT32 my_decode(struct pike_string *tmp,
 
 static unsigned char extract_char(char **v, ptrdiff_t *l)
 {
-  if(!*l) error("Format error, not enough place for char.\n");
+  if(!*l) Pike_error("Format Pike_error, not enough place for char.\n");
   else (*l)--;
   (*v)++;
   return ((unsigned char *)(*v))[-1];
@@ -1683,7 +1683,7 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
   if(j & 0x80) return (j & 0x7f);
 
   if((j & ~8) > 4)
-    error("Format Error: Error in format string, invalid integer.\n");
+    Pike_error("Format Error: Error in format string, invalid integer.\n");
   i=0;
   while(j & 7) { i=(i<<8) | extract_char(v,l); j--; }
   if(j & 8) return -i;
@@ -1704,39 +1704,39 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   case TAG_FLOAT:
     if(sizeof(ptrdiff_t) < sizeof(FLOAT_TYPE))  /* FIXME FIXME FIXME FIXME */
-      error("Float architecture not supported.\n");
+      Pike_error("Float architecture not supported.\n");
     push_int(DO_NOT_WARN(t)); /* WARNING! */
     Pike_sp[-1].type = T_FLOAT;
     return;
 
   case TAG_TYPE:
-    error("Format error:decoding of the type type not supported yet.\n");
+    Pike_error("Format Pike_error:decoding of the type type not supported yet.\n");
     return;
 
   case TAG_STRING:
-    if(t<0) error("Format error, length of string is negative.\n");
-    if(*l < t) error("Format error, string to short\n");
+    if(t<0) Pike_error("Format Pike_error, length of string is negative.\n");
+    if(*l < t) Pike_error("Format Pike_error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t;
     (*v)+= t;
     return;
 
   case TAG_ARRAY:
-    if(t<0) error("Format error, length of array is negative.\n");
+    if(t<0) Pike_error("Format Pike_error, length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate(DO_NOT_WARN(t));
     return;
 
   case TAG_MULTISET:
-    if(t<0) error("Format error, length of multiset is negative.\n");
+    if(t<0) Pike_error("Format Pike_error, length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate_multiset(DO_NOT_WARN(t));
     return;
 
   case TAG_MAPPING:
-    if(t<0) error("Format error, length of mapping is negative.\n");
+    if(t<0) Pike_error("Format Pike_error, length of mapping is negative.\n");
     check_stack(t*2);
     for(i=0;i<t;i++)
     {
@@ -1747,31 +1747,31 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   case TAG_OBJECT:
-    if(t<0) error("Format error, length of object is negative.\n");
-    if(*l < t) error("Format error, string to short\n");
+    if(t<0) Pike_error("Format Pike_error, length of object is negative.\n");
+    if(*l < t) Pike_error("Format Pike_error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("objectof", 1);
     return;
 
   case TAG_FUNCTION:
-    if(t<0) error("Format error, length of function is negative.\n");
-    if(*l < t) error("Format error, string to short\n");
+    if(t<0) Pike_error("Format Pike_error, length of function is negative.\n");
+    if(*l < t) Pike_error("Format Pike_error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("functionof", 1);
     return;
 
   case TAG_PROGRAM:
-    if(t<0) error("Format error, length of program is negative.\n");
-    if(*l < t) error("Format error, string to short\n");
+    if(t<0) Pike_error("Format Pike_error, length of program is negative.\n");
+    if(*l < t) Pike_error("Format Pike_error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("programof", 1);
     return;
 
   default:
-    error("Format error. Unknown type tag %ld:%ld\n",
+    Pike_error("Format Pike_error. Unknown type tag %ld:%ld\n",
 	  PTRDIFF_T_TO_LONG(i), PTRDIFF_T_TO_LONG(t));
   }
 }

@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.100 2000/11/29 21:38:19 hubbe Exp $ */
+/* $Id: colortable.c,v 1.101 2000/12/01 08:09:59 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.100 2000/11/29 21:38:19 hubbe Exp $
+**!	$Id: colortable.c,v 1.101 2000/12/01 08:09:59 hubbe Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.100 2000/11/29 21:38:19 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.101 2000/12/01 08:09:59 hubbe Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -36,7 +36,7 @@ RCSID("$Id: colortable.c,v 1.100 2000/11/29 21:38:19 hubbe Exp $");
 #include "mapping.h"
 #include "threads.h"
 #include "builtin_functions.h"
-#include "../../error.h"
+#include "../../pike_error.h"
 #include "module_support.h"
 #include "operators.h"
 #include "dmalloc.h"
@@ -926,7 +926,7 @@ static struct nct_flat _img_get_flat_from_string(struct pike_string *str)
 
    flat.numentries = str->len/3;
    if (flat.numentries<1) 
-      error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less then one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -950,7 +950,7 @@ static struct nct_flat _img_get_flat_from_bgr_string(struct pike_string *str)
 
    flat.numentries=str->len/3;
    if (flat.numentries<1) 
-      error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less then one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -974,7 +974,7 @@ static struct nct_flat _img_get_flat_from_bgrz_string(struct pike_string *str)
 
    flat.numentries=str->len/4;
    if (flat.numentries<1) 
-      error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less then one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -1075,7 +1075,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
        sp[-args].type!=T_INT ||
        sp[1-args].type!=T_INT ||
        sp[2-args].type!=T_INT)
-      error("Image.Colortable->create (get cube from args): Illegal argument(s) 1, 2 or 3\n");
+      Pike_error("Image.Colortable->create (get cube from args): Illegal argument(s) 1, 2 or 3\n");
 
    cube.r=sp[-args].u.integer;
    cube.g=sp[1-args].u.integer;
@@ -1114,7 +1114,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       if (!image_color_arg(1-args,&high))
 	 SIMPLE_BAD_ARG_ERROR("colortable",2,"color");
       if (sp[2+ap-args].type!=T_INT)
-	 error("illegal argument(s) %d, %d or %d\n",ap,ap+1,ap+2);
+	 Pike_error("illegal argument(s) %d, %d or %d\n",ap,ap+1,ap+2);
 
       steps=isteps=sp[2+ap-args].u.integer;
       ap+=3;
@@ -1960,7 +1960,7 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 
 	 return 1;
    }
-   error("Illegal dither method\n");
+   Pike_error("Illegal dither method\n");
    return 0; /* uh */
 }
 
@@ -3561,7 +3561,7 @@ void image_colortable_map(INT32 args)
       rgb_group *d;
 
       if (args!=3) 
-	 error("illegal number of arguments to colortable->map()\n");
+	 Pike_error("illegal number of arguments to colortable->map()\n");
       o=clone_object(image_program,2);
       img=(struct image*)get_storage(o,image_program);
       d=img->img;
@@ -3627,7 +3627,7 @@ void image_colortable_map(INT32 args)
 		"Bad argument 1 to colortable->map()\n");
 
    if (!src->img) 
-      error("Called Image.Image object is not initialized\n");;
+      Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    dest=(struct image*)(o->storage);
@@ -3644,7 +3644,7 @@ void image_colortable_map(INT32 args)
 				   src->xsize*src->ysize,src->xsize))
    {
       free_object(o);
-      error("colortable->map(): called colortable is not initiated\n");
+      Pike_error("colortable->map(): called colortable is not initiated\n");
    }
 
    pop_n_elems(args);
@@ -3749,7 +3749,7 @@ void image_colortable_spacefactors(INT32 args)
 **! arg int|float downforward
 **! arg int|float down
 **! arg int|float downback
-**!	Set error correction directions. Default is 
+**!	Set Pike_error correction directions. Default is 
 **!	forward=7, downforward=1, down=5, downback=3.
 **! arg int|float factor
 **!     Error keeping factor. 
@@ -3861,9 +3861,9 @@ void image_colortable_nodither(INT32 args)
 **! method object randomgrey(int err)
 **!	Set random cube dithering.
 **!	Color choosen is the closest one to color in picture
-**!	plus (flat) random error; <tt>color±random(error)</tt>.
+**!	plus (flat) random Pike_error; <tt>color±random(Pike_error)</tt>.
 **!
-**!	The randomgrey method uses the same random error on red, green
+**!	The randomgrey method uses the same random Pike_error on red, green
 **!	and blue and the randomcube method has three random errors.
 **!
 **!	<table><tr valign=center>
@@ -3904,7 +3904,7 @@ void image_colortable_nodither(INT32 args)
 **! arg int g
 **! arg int b
 **! arg int err
-**!	The maximum error. Default is 32, or colorcube step.
+**!	The maximum Pike_error. Default is 32, or colorcube step.
 **!
 **! returns the called object
 **!
@@ -4103,7 +4103,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **! method object ordered(int r,int g,int b,int xsize,int ysize)
 **! method object ordered(int r,int g,int b,int xsize,int ysize,int x,int y)
 **! method object ordered(int r,int g,int b,int xsize,int ysize,int rx,int ry,int gx,int gy,int bx,int by)
-**!	Set ordered dithering, which gives a position-dependent error added
+**!	Set ordered dithering, which gives a position-dependent Pike_error added
 **!	to the pixel values. 
 **!
 **!	<table><tr valign=center>
@@ -4152,11 +4152,11 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **! arg int r
 **! arg int g
 **! arg int b
-**!	The maximum error. Default is 32, or colorcube steps (256/size).
+**!	The maximum Pike_error. Default is 32, or colorcube steps (256/size).
 **!
 **! arg int xsize
 **! arg int ysize
-**!	Size of error matrix. Default is 8×8.
+**!	Size of Pike_error matrix. Default is 8×8.
 **!	Only values which factors to multiples of 2 and 3 are
 **!	possible to choose (2,3,4,6,8,12,...).
 **!
@@ -4168,7 +4168,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **! arg int gy
 **! arg int bx
 **! arg int by
-**!	Offset for the error matrix. <tt>x</tt> and <tt>y</tt> is for
+**!	Offset for the Pike_error matrix. <tt>x</tt> and <tt>y</tt> is for
 **!	both red, green and blue values, the other is individual.
 **!
 **! returns the called object

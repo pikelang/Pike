@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.16 2000/03/22 23:42:39 grubba Exp $
+ * $Id: result.c,v 1.17 2000/12/01 08:10:13 hubbe Exp $
  *
  * mysql query result
  *
@@ -32,7 +32,7 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
-#error Need mysql.h header-file
+#Pike_error Need mysql.h header-file
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
@@ -53,7 +53,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include "program.h"
 #include "stralloc.h"
 #include "interpret.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 #include "las.h"
 #include "threads.h"
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.16 2000/03/22 23:42:39 grubba Exp $");
+RCSID("$Id: result.c,v 1.17 2000/12/01 08:10:13 hubbe Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -211,7 +211,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     }
   } else {
     /*
-     * Should this be an error?
+     * Should this be an Pike_error?
      */
     push_int(0);
   }
@@ -227,12 +227,12 @@ static void f_create(INT32 args)
   struct precompiled_mysql *mysql;
 
   if (!args) {
-    error("Too few arguments to mysql_result()\n");
+    Pike_error("Too few arguments to mysql_result()\n");
   }
   if ((sp[-args].type != T_OBJECT) ||
       (!(mysql = (struct precompiled_mysql *)get_storage(sp[-args].u.object,
 							 mysql_program)))) {
-    error("Bad argument 1 to mysql_result()\n");
+    Pike_error("Bad argument 1 to mysql_result()\n");
   }
 
   add_ref(PIKE_MYSQL_RES->connection = sp[-args].u.object);
@@ -242,7 +242,7 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 
   if (!PIKE_MYSQL_RES->result) {
-    error("mysql_result(): No result to clone\n");
+    Pike_error("mysql_result(): No result to clone\n");
   }
 }
 
@@ -266,10 +266,10 @@ static void f_num_fields(INT32 args)
 static void f_field_seek(INT32 args)
 {
   if (!args) {
-    error("Too few arguments to mysql->field_seek()\n");
+    Pike_error("Too few arguments to mysql->field_seek()\n");
   }
   if (sp[-args].type != T_INT) {
-    error("Bad argument 1 to mysql->field_seek()\n");
+    Pike_error("Bad argument 1 to mysql->field_seek()\n");
   }
   mysql_field_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
   pop_n_elems(args);
@@ -326,13 +326,13 @@ static void f_fetch_fields(INT32 args)
 static void f_seek(INT32 args)
 {
   if (!args) {
-    error("Too few arguments to mysql_result->seek()\n");
+    Pike_error("Too few arguments to mysql_result->seek()\n");
   }
   if (sp[-args].type != T_INT) {
-    error("Bad argument 1 to mysql_result->seek()\n");
+    Pike_error("Bad argument 1 to mysql_result->seek()\n");
   }
   if (sp[-args].u.integer < 0) {
-    error("Negative argument 1 to mysql_result->seek()\n");
+    Pike_error("Negative argument 1 to mysql_result->seek()\n");
   }
   mysql_data_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
 

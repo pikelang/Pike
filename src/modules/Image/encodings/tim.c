@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.10 2000/09/17 12:51:45 grubba Exp $");
+RCSID("$Id: tim.c,v 1.11 2000/12/01 08:10:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -13,7 +13,7 @@ RCSID("$Id: tim.c,v 1.10 2000/09/17 12:51:45 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
@@ -183,9 +183,9 @@ void img_tim_decode(INT32 args, int header_only)
   pop_n_elems(args-1);
   
   if(len < 12 || (s[0] != 0x10 || s[2] != 0 || s[3] != 0))
-    error("not a TIM texture\n");
+    Pike_error("not a TIM texture\n");
   else if(s[2] != 0)
-    error("unknown version of TIM texture\n");     
+    Pike_error("unknown version of TIM texture\n");     
 
   s += 4; len -= 4;
   
@@ -195,7 +195,7 @@ void img_tim_decode(INT32 args, int header_only)
   
   attr = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);
   if(attr&0xfffffff0)
-    error("unknown flags in TIM texture\n");
+    Pike_error("unknown flags in TIM texture\n");
   
   s += 4; len -= 4;
 
@@ -231,7 +231,7 @@ void img_tim_decode(INT32 args, int header_only)
 #ifdef TIM_DEBUG
      printf("24bit\n");
 #endif
-     error("24bit TIMs not supported. Please send an example to peter@roxen.com\n");
+     Pike_error("24bit TIMs not supported. Please send an example to peter@roxen.com\n");
    case MODE_CLUT4:
      /* dx and dy word ignored */
 #ifdef TIM_DEBUG
@@ -262,9 +262,9 @@ void img_tim_decode(INT32 args, int header_only)
 #ifdef TIM_DEBUG
      printf("Mixed\n");
 #endif
-     error("mixed TIMs not supported\n");
+     Pike_error("mixed TIMs not supported\n");
    default:
-     error("unknown TIM format\n");
+     Pike_error("unknown TIM format\n");
   }
   
   push_text("xsize");
@@ -283,7 +283,7 @@ void img_tim_decode(INT32 args, int header_only)
     struct image *img;
     
     if(len < (INT32)(bitpp*(h*w)/8))
-      error("short pixel data\n");
+      Pike_error("short pixel data\n");
     
     push_text("image");
     push_int(w);

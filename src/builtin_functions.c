@@ -5,14 +5,14 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.317 2000/10/31 10:05:21 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.318 2000/12/01 08:09:44 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
@@ -556,7 +556,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
   default:
-    error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
+    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
   }
@@ -603,7 +603,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
       
     case T_OBJECT:
       /* FIXME: If the object behaves like an array, it will throw an
-	 error for non-valid indices. Therefore it's not a good idea
+	 Pike_error for non-valid indices. Therefore it's not a good idea
 	 to use the index operator.
 
 	 Maybe we should use object->_has_index(index) provided that
@@ -1127,12 +1127,12 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	    /* 0xfffe: Byte-order detection illegal character.
 	     * 0xffff: Illegal character.
 	     */
-	    error("string_to_unicode(): Illegal character 0x%04x (index %ld) "
+	    Pike_error("string_to_unicode(): Illegal character 0x%04x (index %ld) "
 		  "is not a Unicode character.",
 		  str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  if (str2[i] > 0x10ffff) {
-	    error("string_to_unicode(): Character 0x%08x (index %ld) "
+	    Pike_error("string_to_unicode(): Character 0x%08x (index %ld) "
 		  "is out of range (0x00000000 - 0x0010ffff).",
 		  str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
@@ -1164,7 +1164,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       }
 #ifdef PIKE_DEBUG
       if (j) {
-	fatal("string_to_unicode(): Indexing error: len:%ld, j:%ld.\n",
+	fatal("string_to_unicode(): Indexing Pike_error: len:%ld, j:%ld.\n",
 	      PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
       }
 #endif /* PIKE_DEBUG */
@@ -1172,7 +1172,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     }
     break;
   default:
-    error("string_to_unicode(): Bad string shift: %d!\n", in->size_shift);
+    Pike_error("string_to_unicode(): Bad string shift: %d!\n", in->size_shift);
     break;
   }
   pop_n_elems(args);
@@ -1260,7 +1260,7 @@ void f_string_to_utf8(INT32 args)
 	      if (c & ~0x7fffffff) {
 		/* 32bit or more. */
 		if (!extended) {
-		  error("string_to_utf8(): "
+		  Pike_error("string_to_utf8(): "
 			"Value 0x%08x (index %ld) is larger than 31 bits.\n",
 			c, PTRDIFF_T_TO_LONG(i));
 		}
@@ -1363,7 +1363,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     if (c & 0x80) {
       int cont = 0;
       if ((c & 0xc0) == 0x80) {
-	error("utf8_to_string(): "
+	Pike_error("utf8_to_string(): "
 	      "Unexpected continuation block 0x%02x at index %d.\n",
 	      c, i);
       }
@@ -1395,13 +1395,13 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	} else if (c == 0xfe) {
 	  /* 36bit */
 	  if (!extended) {
-	    error("utf8_to_string(): "
+	    Pike_error("utf8_to_string(): "
 		  "Character 0xfe at index %d when not in extended mode.\n",
 		  i);
 	  }
 	  cont = 6;
 	} else {
-	  error("utf8_to_string(): "
+	  Pike_error("utf8_to_string(): "
 		"Unexpected character 0xff at index %d.\n",
 		i);
 	}
@@ -1409,11 +1409,11 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
       while(cont--) {
 	i++;
 	if (i >= in->len) {
-	  error("utf8_to_string(): Truncated UTF8 sequence.\n");
+	  Pike_error("utf8_to_string(): Truncated UTF8 sequence.\n");
 	}
 	c = ((unsigned char *)(in->str))[i];
 	if ((c & 0xc0) != 0x80) {
-	  error("utf8_to_string(): "
+	  Pike_error("utf8_to_string(): "
 		"Expected continuation character at index %d (got 0x%02x).\n",
 		i, c);
 	}
@@ -1485,7 +1485,7 @@ static void f_parse_pike_type( INT32 args )
   struct pike_string *res;
   if( Pike_sp[-1].type != T_STRING ||
       Pike_sp[-1].u.string->size_shift )
-    error( "__parse_type requires a 8bit string as its first argument\n" );
+    Pike_error( "__parse_type requires a 8bit string as its first argument\n" );
   res = parse_type( (char *)STR0(Pike_sp[-1].u.string) );
   pop_stack();
   push_string( res );
@@ -1590,7 +1590,7 @@ PMOD_EXPORT void f_exit(INT32 args)
   if(Pike_sp[-args].type != T_INT)
     SIMPLE_BAD_ARG_ERROR("exit", 1, "int");
 
-  if(in_exit) error("exit already called!\n");
+  if(in_exit) Pike_error("exit already called!\n");
   in_exit=1;
 
   assign_svalue(&throw_value, Pike_sp-args);
@@ -1705,7 +1705,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
     PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n", Pike_sp, args);
 #ifdef PIKE_SECURITY
   if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
-    error("Destruct permission denied.\n");
+    Pike_error("Destruct permission denied.\n");
 #endif
   destruct(o);
   pop_n_elems(args);
@@ -2284,7 +2284,7 @@ static struct pike_string * replace_many(struct pike_string *str,
   int set_end[256];
 
   if(from->size != to->size)
-    error("Replace must have equal-sized from and to arrays.\n");
+    Pike_error("Replace must have equal-sized from and to arrays.\n");
 
   if(!from->size)
   {
@@ -2299,13 +2299,13 @@ static struct pike_string * replace_many(struct pike_string *str,
     if(ITEM(from)[e].type != T_STRING)
     {
       free((char *)v);
-      error("Replace: from array is not array(string)\n");
+      Pike_error("Replace: from array is not array(string)\n");
     }
 
     if(ITEM(to)[e].type != T_STRING)
     {
       free((char *)v);
-      error("Replace: to array is not array(string)\n");
+      Pike_error("Replace: to array is not array(string)\n");
     }
 
     if(ITEM(from)[e].u.string->size_shift > str->size_shift)
@@ -3076,7 +3076,7 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
 	  i = j + 1 + low_parse_format(s + j + 1, slen - (j+1));
 	  f_aggregate(1);
 	  if ((i + 2 >= slen) || (s[i] != '%') || (s[i+1] != '}')) {
-	    error("parse_format(): Expected %%}.\n");
+	    Pike_error("parse_format(): Expected %%}.\n");
 	  }
 	  i += 2;
 	  break;
@@ -3094,7 +3094,7 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
 	break;
       }
       if (j == slen) {
-	error("parse_format(): Unterminated %%-expression.\n");
+	Pike_error("parse_format(): Unterminated %%-expression.\n");
       }
       offset = i = j;
     }
@@ -3122,7 +3122,7 @@ static void f_parse_format(INT32 args)
 
   len = low_parse_format(STR0(s), s->len);
   if (len != s->len) {
-    error("parse_format(): Unexpected %%} in format string at offset %ld\n",
+    Pike_error("parse_format(): Unexpected %%} in format string at offset %ld\n",
 	  PTRDIFF_T_TO_LONG(len));
   }
 #ifdef PIKE_DEBUG
@@ -3274,18 +3274,18 @@ static void f_interleave_array(INT32 args)
     INT_TYPE low = 0x7fffffff;
 #ifdef PIKE_DEBUG
     if (ITEM(arr)[i].type != T_MAPPING) {
-      error("interleave_array(): Element %d is not a mapping!\n", i);
+      Pike_error("interleave_array(): Element %d is not a mapping!\n", i);
     }
 #endif /* PIKE_DEBUG */
     m = ITEM(arr)[i].u.mapping;
     MAPPING_LOOP(m) {
       if (k->ind.type != T_INT) {
-	error("interleave_array(): Index not an integer in mapping %d!\n", i);
+	Pike_error("interleave_array(): Index not an integer in mapping %d!\n", i);
       }
       if (low > k->ind.u.integer) {
 	low = k->ind.u.integer;
 	if (low < 0) {
-	  error("interleave_array(): Index %d in mapping %d is negative!\n",
+	  Pike_error("interleave_array(): Index %d in mapping %d is negative!\n",
 		low, i);
 	}
       }
@@ -3369,7 +3369,7 @@ static void f_interleave_array(INT32 args)
 	char *newtab = realloc(tab, size*2 + max);
 	if (!newtab) {
 	  free(tab);
-	  error("interleave_array(): Couldn't extend table!\n");
+	  Pike_error("interleave_array(): Couldn't extend table!\n");
 	}
 	tab = newtab;
 	MEMSET(tab + size + max, 0, size);
@@ -3461,7 +3461,7 @@ static struct array *longest_ordered_sequence(struct array *a)
     stack[pos] = i;
   }
 
-  /* FIXME(?) memory unfreed upon error here */
+  /* FIXME(?) memory unfreed upon Pike_error here */
   res = low_allocate_array(top, 0); 
   while (ltop != -1)
   {
@@ -3901,7 +3901,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
    free(marks);
 
-   /* FIXME(?) memory unfreed upon error here. */
+   /* FIXME(?) memory unfreed upon Pike_error here. */
    a=low_allocate_array(top,0); 
    if (top)
    {
@@ -4075,7 +4075,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   while(dml) {
 #ifdef PIKE_DEBUG
     if (i >= sz) {
-      fatal("Consistency error in diff_dyn_longest_sequence()\n");
+      fatal("Consistency Pike_error in diff_dyn_longest_sequence()\n");
     }
 #endif /* PIKE_DEBUG */
 #ifdef DIFF_DEBUG
@@ -4089,7 +4089,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   }
 #ifdef PIKE_DEBUG
   if (i != sz) {
-    fatal("Consistency error in diff_dyn_longest_sequence()\n");
+    fatal("Consistency Pike_error in diff_dyn_longest_sequence()\n");
   }
 #endif /* PIKE_DEBUG */
 
@@ -4104,7 +4104,7 @@ static struct array* diff_build(struct array *a,
    struct array *ad,*bd;
    ptrdiff_t bi, ai, lbi, lai, i, eqstart;
 
-   /* FIXME(?) memory unfreed upon error here (and later) */
+   /* FIXME(?) memory unfreed upon Pike_error here (and later) */
    ad=low_allocate_array(0,32);
    bd=low_allocate_array(0,32);
    
@@ -4771,14 +4771,14 @@ PMOD_EXPORT void f_transpose(INT32 args)
   {
     array_fix_type_field(in);
     if(!in->type_field || in->type_field & ~BIT_ARRAY)
-      error("The array given as argument 1 to transpose must contain arrays only.\n");
+      Pike_error("The array given as argument 1 to transpose must contain arrays only.\n");
   }
 
   sizeininner=in->item->u.array->size;
 
   for(i=1 ; i<sizein; i++)
     if (sizeininner!=(in->item+i)->u.array->size)
-      error("The array given as argument 1 to transpose must contain arrays of the same size.\n");
+      Pike_error("The array given as argument 1 to transpose must contain arrays of the same size.\n");
 
   out=allocate_array(sizeininner);
 
@@ -4930,9 +4930,9 @@ PMOD_EXPORT void f_map(INT32 args)
                                 if arr->_sizeof && arr->`[] 
                                    array ret; ret[i]=arr[i];
 				   ret=map(ret,fun,@extra);
-                                error
+                                Pike_error
 
-     *          *               error (ie arr or fun = float or bad int )
+     *          *               Pike_error (ie arr or fun = float or bad int )
 
     */
 

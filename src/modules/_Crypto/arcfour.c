@@ -11,7 +11,7 @@
 #include "object.h"
 #include "interpret.h"
 #include "program.h"
-#include "error.h"
+#include "pike_error.h"
 #include "las.h"
 
 #include "arcfour.h"
@@ -19,7 +19,7 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
-RCSID("$Id: arcfour.c,v 1.12 2000/08/08 19:07:12 grubba Exp $");
+RCSID("$Id: arcfour.c,v 1.13 2000/12/01 08:10:25 hubbe Exp $");
 
 #undef THIS
 #define THIS ((struct arcfour_ctx *)(fp->current_storage))
@@ -40,7 +40,7 @@ void exit_pike_arcfour(struct object *o)
 static void f_name(INT32 args)
 {
   if (args) {
-    error("Too many arguments to arcfour->name()\n");
+    Pike_error("Too many arguments to arcfour->name()\n");
   }
   push_string(make_shared_string("ARCFOUR"));
 }
@@ -49,7 +49,7 @@ static void f_name(INT32 args)
 static void f_query_key_length(INT32 args)
 {
   if (args) {
-    error("Too many arguments to arcfour->query_key_length()\n");
+    Pike_error("Too many arguments to arcfour->query_key_length()\n");
   }
   push_int(0);
 }
@@ -58,13 +58,13 @@ static void f_query_key_length(INT32 args)
 static void f_set_key(INT32 args)
 {
   if (args != 1) {
-    error("Wrong number of args to arcfour->set_key()\n");
+    Pike_error("Wrong number of args to arcfour->set_key()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to arcfour->set_key()\n");
+    Pike_error("Bad argument 1 to arcfour->set_key()\n");
   }
   if (!sp[-1].u.string->len)
-    error("Empty key to arcfour_set_key()\n");
+    Pike_error("Empty key to arcfour_set_key()\n");
   arcfour_set_key(THIS, (unsigned INT8 *) sp[-1].u.string->str,
 		  DO_NOT_WARN(sp[-1].u.string->len));
 
@@ -79,10 +79,10 @@ static void f_arcfour_crypt(INT32 args)
   struct pike_string *s;
   
   if (args != 1) {
-    error("Wrong number of arguments to arcfour->crypt()\n");
+    Pike_error("Wrong number of arguments to arcfour->crypt()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to arcfour->crypt()\n");
+    Pike_error("Bad argument 1 to arcfour->crypt()\n");
   }
 
   len = sp[-1].u.string->len;

@@ -6,26 +6,26 @@ void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl );
 void pgtk_verify_setup()
 {
   if( !pigtk_is_setup )
-    error("You must call GTK.setup_gtk( argv ) first\n");
+    Pike_error("You must call GTK.setup_gtk( argv ) first\n");
 }
 
 void pgtk_verify_gnome_setup()
 {
   extern int gnome_is_setup;
   if( !gnome_is_setup )
-    error("You must call Gnome.init( app,version,argv[,do_corba] ) first\n");
+    Pike_error("You must call Gnome.init( app,version,argv[,do_corba] ) first\n");
 }
 
 void pgtk_verify_inited( )
 {
   if(! THIS->obj )
-    error( "Calling function in unitialized object\n" );
+    Pike_error( "Calling function in unitialized object\n" );
 }
 
 void pgtk_verify_not_inited( )
 {
   if( THIS->obj )
-    error( "Tried to initialize object twice\n" );
+    Pike_error( "Tried to initialize object twice\n" );
 }
 
 void my_pop_n_elems( int n ) /* anti-inline */
@@ -50,7 +50,7 @@ void pgtk_get_image_module()
   push_int(0);
   SAFE_APPLY_MASTER("resolv", 2);
   if (Pike_sp[-1].type!=PIKE_T_OBJECT)
-    error("No Image module.\n");
+    Pike_error("No Image module.\n");
 }
 
 void pgtk_index_stack( char *what )
@@ -59,7 +59,7 @@ void pgtk_index_stack( char *what )
   f_index(2);
 #ifdef DEBUG
   if (Pike_sp[-1].type==PIKE_T_INT)
-    error("Internal indexing error.\n");
+    Pike_error("Internal indexing Pike_error.\n");
 #endif
 }
 
@@ -148,7 +148,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
 
 
   if( x==0 || y==0 )
-    error("Size of image must be > 0x0\n");
+    Pike_error("Size of image must be > 0x0\n");
   if(i)
   {
     if((i->width != x) || (i->height != y))
@@ -165,7 +165,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
   }
 
   if(!i)
-    error("Failed to create gdkimage\n");
+    Pike_error("Failed to create gdkimage\n");
 
   /* 1b: do the work.. */
 
@@ -297,7 +297,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       if(Pike_sp[-1].type != PIKE_T_STRING)
       {
 	gdk_image_destroy((void *)i);
-	error("Failed to convert image\n");
+	Pike_error("Failed to convert image\n");
       }
       PFTIME("Converting image");
       MEMCPY(i->mem, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
@@ -464,7 +464,7 @@ GdkAtom get_gdkatom( struct object *o )
     pop_stack();
     return r;
   }
-  error("Got non GDK.Atom object to get_gdkatom()\n");
+  Pike_error("Got non GDK.Atom object to get_gdkatom()\n");
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.9 2000/08/04 20:14:26 grubba Exp $
+ * $Id: precompiled_mysql.h,v 1.10 2000/12/01 08:10:13 hubbe Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -32,7 +32,7 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
-#error Need mysql.h header-file
+#Pike_error Need mysql.h header-file
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h

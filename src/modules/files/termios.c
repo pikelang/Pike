@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.9 2000/08/10 09:51:55 per Exp $");
+RCSID("$Id: termios.c,v 1.10 2000/12/01 08:10:37 hubbe Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -81,11 +81,11 @@ void file_tcgetattr(INT32 args)
    int n;
 
    if(FD < 0)
-      error("File not open.\n");
+      Pike_error("File not open.\n");
 
    pop_n_elems(args);
 
-   if (tcgetattr(FD,&ti)) /* error */
+   if (tcgetattr(FD,&ti)) /* Pike_error */
    {
       ERRNO=errno;
       push_int(0);
@@ -173,16 +173,16 @@ void file_tcsetattr(INT32 args)
    int optional_actions=TCSANOW;
 
    if(FD < 0)
-      error("File not open.\n");
+      Pike_error("File not open.\n");
 
    if (!args)
-      error("too few arguments to tcsetattr\n");
+      Pike_error("too few arguments to tcsetattr\n");
 
 
    if (args>=2)
    {
       if (sp[-1].type!=T_STRING)
-	 error("illegal argument 2 to tcsetattr\n");
+	 Pike_error("illegal argument 2 to tcsetattr\n");
 	  
       if (!strcmp(sp[-1].u.string->str,"TCSANOW"))
 	 optional_actions=TCSANOW;
@@ -191,16 +191,16 @@ void file_tcsetattr(INT32 args)
       else if (!strcmp(sp[-1].u.string->str,"TCSAFLUSH"))
 	 optional_actions=TCSAFLUSH;
       else
-	 error("illegal argument 2 to tcsetattr\n");
+	 Pike_error("illegal argument 2 to tcsetattr\n");
 
       pop_n_elems(args-1);
    }
 
    if (sp[-1].type!=T_MAPPING)
-      error("illegal argument 1 to tcsetattr\n");
+      Pike_error("illegal argument 1 to tcsetattr\n");
 
    /* read attr to edit */
-   if (tcgetattr(FD,&ti)) /* error */
+   if (tcgetattr(FD,&ti)) /* Pike_error */
    {
       ERRNO=errno;
       push_int(0);
@@ -214,7 +214,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) \
    { \
       if (sp[-1].type!=T_INT)  \
-         error("illegal argument 1 to tcsetattr: key %s has illegal value",sflag); \
+         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value",sflag); \
       if (sp[-1].u.integer) ti.where|=flag; else ti.where&=~flag; \
    } \
    pop_stack();
@@ -226,7 +226,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) \
    { \
       if (sp[-1].type!=T_INT)  \
-         error("illegal argument 1 to tcsetattr: key %s has illegal value",scc); \
+         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value",scc); \
       ti.c_cc[cc]=(char)sp[-1].u.integer; \
    } \
    pop_stack();
@@ -244,7 +244,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) 
    {
       if (sp[-1].type!=T_INT)  
-   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","csize"); 
+   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","csize"); 
 
       switch (sp[-1].u.integer)
       {
@@ -261,7 +261,7 @@ void file_tcsetattr(INT32 args)
 	 case 5: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS5; break;
 #endif
 	 default:
-	    error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size","csize"); 
+	    Pike_error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size","csize"); 
       }
    }
    pop_stack();
@@ -275,13 +275,13 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) 
    {
       if (sp[-1].type!=T_INT)  
-   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
+   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
       switch (sp[-1].u.integer)
       {
    #define TERMIOS_SPEED(B,V) case V: push_int(B); break;
    #include "termios_flags.h"
    	 default:
-   	    error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ospeed");
+   	    Pike_error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ospeed");
       }
       cfsetospeed(&ti,sp[-1].u.integer);
       pop_stack();
@@ -294,13 +294,13 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) 
    {
       if (sp[-1].type!=T_INT)  
-   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","ispeed"); 
+   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","ispeed"); 
       switch (sp[-1].u.integer)
       {
    #include "termios_flags.h"
    #undef TERMIOS_SPEED
    	 default:
-   	    error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ispeed");
+   	    Pike_error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ispeed");
       }
       cfsetispeed(&ti,sp[-1].u.integer);
       pop_stack();

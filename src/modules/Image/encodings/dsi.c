@@ -1,7 +1,7 @@
 /* Dream SNES Image file */
 
 #include "global.h"
-RCSID("$Id: dsi.c,v 1.2 2000/10/19 13:40:02 grubba Exp $");
+RCSID("$Id: dsi.c,v 1.3 2000/12/01 08:10:04 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -17,7 +17,7 @@ RCSID("$Id: dsi.c,v 1.2 2000/10/19 13:40:02 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
@@ -42,17 +42,17 @@ void f__decode( INT32 args )
   struct image *ip, *ap;
   rgb_group black = {0,0,0};
   if( sp[-args].type != T_STRING )
-    error("Illegal argument 1 to Image.DSI._decode\n");
+    Pike_error("Illegal argument 1 to Image.DSI._decode\n");
   data = (unsigned char *)sp[-args].u.string->str;
   len = (size_t)sp[-args].u.string->len;
 
-  if( len < 10 ) error("Data too short\n");
+  if( len < 10 ) Pike_error("Data too short\n");
 
   xs = data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
   ys = data[4] | (data[5]<<8) | (data[6]<<16) | (data[7]<<24);
 
   if( (xs * ys * 2) != (ptrdiff_t)(len-8) )
-    error("Not a DSI %d * %d + 8 != %ld\n",
+    Pike_error("Not a DSI %d * %d + 8 != %ld\n",
 	  xs, ys,
 	  DO_NOT_WARN((long)len));
 

@@ -30,6 +30,8 @@
 #include "threads.h"
 #include "operators.h"
 
+/* must be last include! */
+#include "module_magic.h"
 
 /**** CLASS HeaderParser */
 
@@ -52,10 +54,10 @@ static void f_hp_feed( INT32 args )
   unsigned char *in;
 
   if( Pike_sp[-1].type != PIKE_T_STRING )
-    error("Wrong type of argument to feed()\n");
+    Pike_error("Wrong type of argument to feed()\n");
 
   if( str->len >= THP->left )
-    error("Too many headers\n");
+    Pike_error("Too many headers\n");
 
   MEMCPY( THP->pnt, str->str, str->len );
 
@@ -155,14 +157,14 @@ static void f_make_http_headers( INT32 args )
   struct keypair *k;
   struct pike_string *res;
   if( Pike_sp[-1].type != PIKE_T_MAPPING )
-    error("Wrong argument type to make_http_headers(mapping heads)\n");
+    Pike_error("Wrong argument type to make_http_headers(mapping heads)\n");
 
   m = Pike_sp[-1].u.mapping;
   /* loop to check len */
   NEW_MAPPING_LOOP( m->data )
   {
     if( k->ind.type != PIKE_T_STRING || k->ind.u.string->size_shift )
-      error("Wrong argument type to make_http_headers("
+      Pike_error("Wrong argument type to make_http_headers("
             "mapping(string(8bit):string(8bit)|array(string(8bit))) heads)\n");
     if( k->val.type == PIKE_T_STRING )
       total_len +=  k->val.u.string->len + 2 + k->ind.u.string->len + 2;
@@ -172,13 +174,13 @@ static void f_make_http_headers( INT32 args )
       ptrdiff_t i, kl = k->ind.u.string->len + 2 ;
       for( i = 0; i<a->size; i++ )
         if( a->item[i].type != PIKE_T_STRING||a->item[i].u.string->size_shift )
-          error("Wrong argument type to make_http_headers("
+          Pike_error("Wrong argument type to make_http_headers("
                 "mapping(string(8bit):string(8bit)|"
                 "array(string(8bit))) heads)\n");
         else
           total_len += kl + a->item[i].u.string->len + 2;
     } else
-      error("Wrong argument type to make_http_headers("
+      Pike_error("Wrong argument type to make_http_headers("
             "mapping(string(8bit):string(8bit)|"
             "array(string(8bit))) heads)\n");
   }
@@ -224,7 +226,7 @@ static void f_http_decode_string(INT32 args)
    struct pike_string *newstr;
 
    if (!args || Pike_sp[-args].type != PIKE_T_STRING)
-     error("Invalid argument to http_decode_string(STRING);\n");
+     Pike_error("Invalid argument to http_decode_string(STRING);\n");
 
    foo=bar=Pike_sp[-args].u.string->str;
    end=foo+Pike_sp[-args].u.string->len;

@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.23 2000/11/25 16:49:49 grubba Exp $
+ * $Id: lexer.h,v 1.24 2000/12/01 08:09:49 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -8,7 +8,7 @@
  */
 
 #ifndef SHIFT
-#error Internal error: SHIFT not defined
+#Pike_error Internal Pike_error: SHIFT not defined
 #endif
 
 /*
@@ -503,13 +503,13 @@ static int low_yylex(YYSTYPE *yylval)
 	break;
 	
       case 'e':
-	if(ISWORD("error"))
+	if(ISWORD("Pike_error"))
 	{
 	  SKIPSPACE();
 	  READBUF(C!='\n');
 	  /* FIXME: Does the following actually work?
 	   * Where does the NUL-termination come from?
-	   * Suspicion: #error is usually handled by cpp().
+	   * Suspicion: #Pike_error is usually handled by cpp().
 	   * What about wide-strings?
 	   * /grubba 2000-11-19 (in Versailles)
 	   */
@@ -581,7 +581,7 @@ static int low_yylex(YYSTYPE *yylval)
 	  struct pike_string *dir =
 	    make_shared_binary_string2((p_wchar2 *)buf, len);
 #else /* SHIFT != 2 */
-#error Unsupported SHIFT.
+#Pike_error Unsupported SHIFT.
 #endif /* SHIFT == 2 */
 #endif /* SHIFT == 1 */
 	  if (!dir->size_shift) {

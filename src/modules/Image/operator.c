@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.33 2000/08/15 12:41:59 grubba Exp $ */
+/* $Id: operator.c,v 1.34 2000/12/01 08:10:01 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.33 2000/08/15 12:41:59 grubba Exp $
+**!	$Id: operator.c,v 1.34 2000/12/01 08:10:01 hubbe Exp $
 **! class Image
 */
 
@@ -20,7 +20,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
 
@@ -50,7 +50,7 @@ extern struct program *image_program;
    rgb_group trgb;                                                      \
    INT32 i;								\
 									\
-   if (!THIS->img) error("no image\n");					\
+   if (!THIS->img) Pike_error("no image\n");					\
 									\
    if (args && sp[-args].type==T_INT)					\
    {									\
@@ -79,20 +79,20 @@ extern struct program *image_program;
       if (args<1 || sp[-args].type!=T_OBJECT				\
        || !sp[-args].u.object						\
        || sp[-args].u.object->prog!=image_program)			\
-      error("illegal arguments to image->"what"()\n");			\
+      Pike_error("illegal arguments to image->"what"()\n");			\
 									\
       oper=(struct image*)sp[-args].u.object->storage;			\
-      if (!oper->img) error("no image (operand)\n");			\
+      if (!oper->img) Pike_error("no image (operand)\n");			\
       if (oper->xsize!=THIS->xsize					\
           || oper->ysize!=THIS->ysize)					\
-         error("operands differ in size (image->"what")");		\
+         Pike_error("operands differ in size (image->"what")");		\
    }									\
 									\
    push_int(THIS->xsize);						\
    push_int(THIS->ysize);						\
    o=clone_object(image_program,2);					\
    img=(struct image*)o->storage;					\
-   if (!img->img) { free_object(o); error("out of memory\n"); }		\
+   if (!img->img) { free_object(o); Pike_error("out of memory\n"); }		\
 									\
    s1=THIS->img;							\
    if (oper) s2=oper->img; else s2=NULL;				\
@@ -504,7 +504,7 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **!	
 **! note:
 **!	`&lt; or `> on empty ("no image") image objects or images
-**!	with different size will result in an error. 
+**!	with different size will result in an Pike_error. 
 **!	`== is always true on two empty image objects and
 **!	always false if one and only one of the image objects
 **!	is empty or the images differs in size.
@@ -556,7 +556,7 @@ void image_operator_equal(INT32 args)
       if (args<1 || sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 error("`==: illegal argument 2\n");
+	 Pike_error("`==: illegal argument 2\n");
 
       if (!oper->img || !THIS->img)
       {
@@ -611,7 +611,7 @@ void image_operator_lesser(INT32 args)
    int res=1;
 
    if (!THIS->img)
-      error("image->`<: operator 1 has no image\n");
+      Pike_error("image->`<: operator 1 has no image\n");
 
    if (args && sp[-args].type==T_INT)
    {
@@ -636,13 +636,13 @@ void image_operator_lesser(INT32 args)
       if (args<1 || sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 error("`==: illegal argument 2\n");
+	 Pike_error("`==: illegal argument 2\n");
 
       if (!oper->img)
-	 error("image->`<: operator 2 has no image\n");
+	 Pike_error("image->`<: operator 2 has no image\n");
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
-	 error("image->`<: operators differ in size\n");
+	 Pike_error("image->`<: operators differ in size\n");
    }
 
    s1=THIS->img;
@@ -683,7 +683,7 @@ void image_operator_greater(INT32 args)
    int res=1;
 
    if (!THIS->img)
-      error("image->`>: operator 1 has no image\n");
+      Pike_error("image->`>: operator 1 has no image\n");
 
    if (args && sp[-args].type==T_INT)
    {
@@ -708,13 +708,13 @@ void image_operator_greater(INT32 args)
       if (args<1 || sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 error("`==: illegal argument 2\n");
+	 Pike_error("`==: illegal argument 2\n");
 
       if (!oper->img)
-	 error("image->`>: operator 2 has no image\n");
+	 Pike_error("image->`>: operator 2 has no image\n");
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
-	 error("image->`>: operators differ in size\n");
+	 Pike_error("image->`>: operators differ in size\n");
    }
 
    s1=THIS->img;
@@ -777,9 +777,9 @@ void image_average(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.Image->average(): no image\n");
+      Pike_error("Image.Image->average(): no image\n");
    if (!THIS->xsize || !THIS->ysize)
-      error("Image.Image->average(): no pixels in image (division by zero)\n");
+      Pike_error("Image.Image->average(): no pixels in image (division by zero)\n");
 
    y=THIS->ysize;
    xz=THIS->xsize;
@@ -818,7 +818,7 @@ void image_sumf(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.Image->sumf(): no image\n");
+      Pike_error("Image.Image->sumf(): no image\n");
 
    y=THIS->ysize;
    xz=THIS->xsize;
@@ -856,7 +856,7 @@ void image_sum(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.Image->sum(): no image\n");
+      Pike_error("Image.Image->sum(): no image\n");
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -885,7 +885,7 @@ void image_min(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.Image->min(): no image\n");
+      Pike_error("Image.Image->min(): no image\n");
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -914,7 +914,7 @@ void image_max(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.Image->max(): no image\n");
+      Pike_error("Image.Image->max(): no image\n");
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -957,7 +957,7 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,
    if (args-args_start<3) return;
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
-         error("Illegal r,g,b argument to %s\n",name);
+         Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;
    rgb->b=sp[2-args+args_start].u.integer;
@@ -986,9 +986,9 @@ void image_find_min(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.Image->find_min(): no image\n");
+      Pike_error("Image.Image->find_min(): no image\n");
    if (!THIS->xsize || !THIS->ysize)
-      error("Image.Image->find_min(): no pixels in image (none to find)\n");
+      Pike_error("Image.Image->find_min(): no pixels in image (none to find)\n");
 
    yz=THIS->ysize;
    xz=THIS->xsize;
@@ -1034,9 +1034,9 @@ void image_find_max(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.Image->find_max(): no image\n");
+      Pike_error("Image.Image->find_max(): no image\n");
    if (!THIS->xsize || !THIS->ysize)
-      error("Image.Image->find_max(): no pixels in image (none to find)\n");
+      Pike_error("Image.Image->find_max(): no pixels in image (none to find)\n");
 
    yz=THIS->ysize;
    xz=THIS->xsize;

@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.100 2000/11/06 20:56:02 per Exp $");
+RCSID("$Id: spider.c,v 1.101 2000/12/01 08:10:37 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -111,11 +111,11 @@ void f_parse_accessed_database(INT32 args)
   struct mapping *m;
 
   if(!args) {
-    error("Wrong number of arguments to parse_accessed_database(string).\n");
+    Pike_error("Wrong number of arguments to parse_accessed_database(string).\n");
   }
 
   if ((sp[-args].type != T_STRING) || (sp[-args].u.string->size_shift)) {
-    error("Bad argument 1 to parse_accessed_database(string(8)).\n");
+    Pike_error("Bad argument 1 to parse_accessed_database(string(8)).\n");
   }
 
   /* Pop all but the first argument */
@@ -125,7 +125,7 @@ void f_parse_accessed_database(INT32 args)
   f_divide(2);
 
   if (sp[-1].type != T_ARRAY) {
-    error("Expected array as result of string-division.\n");
+    Pike_error("Expected array as result of string-division.\n");
   }
 
   /* The initial string is gone, but the array is there now. */
@@ -168,7 +168,7 @@ void f_parse_html(INT32 args)
       sp[-args].type!=T_STRING||
       sp[1-args].type!=T_MAPPING||
       sp[2-args].type!=T_MAPPING)
-    error("Bad argument(s) to parse_html.\n");
+    Pike_error("Bad argument(s) to parse_html.\n");
 
   ss=sp[-args].u.string;
   if(!ss->len)
@@ -218,7 +218,7 @@ void f_parse_html_lines(INT32 args)
       sp[-args].type!=T_STRING||
       sp[1-args].type!=T_MAPPING||
       sp[2-args].type!=T_MAPPING)
-    error("Bad argument(s) to parse_html_lines.\n");
+    Pike_error("Bad argument(s) to parse_html_lines.\n");
 
   ss=sp[-args].u.string;
   if(!ss->len)
@@ -263,14 +263,14 @@ char end_quote_character = '\000';
 void f_set_end_quote(INT32 args)
 {
   if(args < 1 || sp[-1].type != T_INT)
-    error("Wrong argument to set_end_quote(int CHAR)\n");
+    Pike_error("Wrong argument to set_end_quote(int CHAR)\n");
   end_quote_character = sp[-1].u.integer;
 }
 
 void f_set_start_quote(INT32 args)
 {
   if(args < 1 || sp[-1].type != T_INT)
-    error("Wrong argument to set_start_quote(int CHAR)\n");
+    Pike_error("Wrong argument to set_start_quote(int CHAR)\n");
   start_quote_character = sp[-1].u.integer;
 }
 
@@ -948,7 +948,7 @@ void f_fd_info(INT32 args)
 
   if (args<1||
       sp[-args].type!=T_INT)
-    error("Illegal argument to fd_info\n");
+    Pike_error("Illegal argument to fd_info\n");
   i=sp[-args].u.integer;
   pop_n_elems(args);
   if (fd_fstat(i,&foo))

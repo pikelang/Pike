@@ -1,4 +1,4 @@
-/* $Id: sha.c,v 1.17 2000/08/09 13:19:44 grubba Exp $
+/* $Id: sha.c,v 1.18 2000/12/01 08:10:31 hubbe Exp $
  *
  * Written by Niels Möller
  */
@@ -12,11 +12,11 @@
 #include "object.h"
 #include "interpret.h"
 #include "program.h"
-#include "error.h"
+#include "pike_error.h"
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.17 2000/08/09 13:19:44 grubba Exp $");
+RCSID("$Id: sha.c,v 1.18 2000/12/01 08:10:31 hubbe Exp $");
 
 #include <sha.h>
 
@@ -33,7 +33,7 @@ static struct program *shamod_program;
 static void f_name(INT32 args)
 {
   if (args) 
-    error("Too many arguments to sha->name()\n");
+    Pike_error("Too many arguments to sha->name()\n");
   
   push_string(make_shared_string("SHA"));
 }
@@ -44,7 +44,7 @@ static void f_create(INT32 args)
     {
       if ( ((sp-args)->type != T_OBJECT)
 	   || ((sp-args)->u.object->prog != shamod_program) )
-	error("Object not of sha type.\n");
+	Pike_error("Object not of sha type.\n");
       sha_copy(THIS, OBTOCTX((sp-args)->u.object));
     }
   else

@@ -2,13 +2,13 @@
 #  include "global.h"
 #  include "interpret.h"
 #  include "constants.h"
-#  include "error.h"
+#  include "pike_error.h"
 #  include "module.h"
 #  include "stralloc.h"
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.46 2000/09/29 15:31:31 mast Exp $");
+RCSID("$Id: dynamic_load.c,v 1.47 2000/12/01 08:09:46 hubbe Exp $");
 
 #endif /* !TESTING */
 
@@ -82,7 +82,7 @@ static void *dlopen(const char *foo, int how)
 static char * dlerror(void)
 {
   static char buffer[200];
-  sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
+  sprintf(buffer,"LoadLibrary failed with Pike_error: %d",GetLastError());
   return buffer;
 }
 
@@ -263,7 +263,7 @@ void f_load_module(INT32 args)
   const char *module_name;
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to load_module()\n");
+    Pike_error("Bad argument 1 to load_module()\n");
 
   module_name = sp[-args].u.string->str;
 
@@ -279,10 +279,10 @@ void f_load_module(INT32 args)
     const char *err = dlerror();
     if(!err) err = "Unknown reason";
     if (sp[-args].u.string->len < 1024) {
-      error("load_module(\"%s\") failed: %s\n",
+      Pike_error("load_module(\"%s\") failed: %s\n",
 	    sp[-args].u.string->str, err);
     } else {
-      error("load_module() failed: %s\n", err);
+      Pike_error("load_module() failed: %s\n", err);
     }
   }
 
@@ -300,9 +300,9 @@ void f_load_module(INT32 args)
     dlclose(module);
 
     if (strlen(module_name) < 1024) {
-      error("Failed to initialize dynamic module \"%s\".\n", module_name);
+      Pike_error("Failed to initialize dynamic module \"%s\".\n", module_name);
     } else {
-      error("Failed to initialize dynamic module.\n");
+      Pike_error("Failed to initialize dynamic module.\n");
     }
   }
 

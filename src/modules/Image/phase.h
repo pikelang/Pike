@@ -15,7 +15,7 @@ void IMAGE_PHASE(INT32 args)
   int yz, xz; /* for this & img */
   int ys, xs; /* for this & img */
   
-  if (!THIS->img) { error("no image\n");  return; }
+  if (!THIS->img) { Pike_error("no image\n");  return; }
   this=THIS;
   thisi=this->img;
 

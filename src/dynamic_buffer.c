@@ -7,10 +7,10 @@
 #include "global.h"
 #include "dynamic_buffer.h"
 #include "stralloc.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.12 2000/08/10 09:03:10 grubba Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.13 2000/12/01 08:09:45 hubbe Exp $");
 
 static dynamic_buffer buff;
 
@@ -31,7 +31,7 @@ PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf)
 
     buf->s.str=(char *)realloc(buf->s.str, buf->bufsize);
     if(!buf->s.str)
-      error("Out of memory.\n");
+      Pike_error("Out of memory.\n");
   }
   ret = buf->s.str + buf->s.len;
   buf->s.len += space;

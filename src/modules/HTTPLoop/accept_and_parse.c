@@ -130,7 +130,7 @@ struct args *new_args( )
 
 /* This should probably be improved to include the reason for the 
  * failure. Currently, all failed requests get the same (hardcoded) 
- * error message.
+ * Pike_error message.
  * 
  * It is virtually impossible to call a pike function from here, so that
  * is not an option.
@@ -339,7 +339,7 @@ void aap_handle_connection(struct args *arg)
     if(data_read <= 0)
     {
 #ifdef AAP_DEBUG
-      fprintf(stderr, "AAP: Read error/eof.\n");
+      fprintf(stderr, "AAP: Read Pike_error/eof.\n");
 #endif /* AAP_DEBUG */
       arg->res.data = buffer;
       free_args( arg );
@@ -611,7 +611,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   if(!request_program)
   {
     free_args(args);
-    error("Invalid request program\n");
+    Pike_error("Invalid request program\n");
   }
   if(!my_callback)
     my_callback = add_backend_callback( finished_p, 0, 0 );

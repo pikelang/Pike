@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.14 2000/08/10 09:51:54 per Exp $");
+RCSID("$Id: _xpm.c,v 1.15 2000/12/01 08:10:03 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -9,7 +9,7 @@ RCSID("$Id: _xpm.c,v 1.14 2000/08/10 09:51:54 per Exp $");
 #include "object.h"
 #include "program.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
@@ -103,10 +103,10 @@ static rgba_group decode_color( struct buffer *s )
     push_text("Image");
     push_int(0);
     SAFE_APPLY_MASTER( "resolv", 2 );
-    if(IS_ZERO(sp-1)) error("Internal error: No Image module!\n");
+    if(IS_ZERO(sp-1)) Pike_error("Internal Pike_error: No Image module!\n");
     push_text("Color");
     f_index(2);
-    if(IS_ZERO(sp-1)) error("Internal error: No Image[] function!\n");
+    if(IS_ZERO(sp-1)) Pike_error("Internal Pike_error: No Image[] function!\n");
     _parse_color = sp[-1];
     parse_color = &_parse_color;
     sp--;
@@ -235,7 +235,7 @@ void f__xpm_write_rows( INT32 args )
   iimg = (struct image *)get_storage( img, image_program );
   ialpha = (struct image *)get_storage( alpha, image_program );
   if(!iimg || !ialpha)
-    error("Sluta pilla på interna saker..\n");
+    Pike_error("Sluta pilla på interna saker..\n");
 
   dst = iimg->img;
   adst = ialpha->img;
@@ -390,7 +390,7 @@ void f__xpm_trim_rows( INT32 args )
     int len,start;
     struct pike_string *s = a->item[i].u.string;
     if(a->item[i].type != T_STRING)
-      error("Ajabaja\n");
+      Pike_error("Ajabaja\n");
     if(s->len > 4)
     {
       for(start=0; start<s->len; start++)

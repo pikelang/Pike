@@ -10,7 +10,7 @@
 #include "dynamic_buffer.h"
 #include "pike_macros.h"
 #include "pike_memory.h"
-#include "error.h"
+#include "pike_error.h"
 #include "gc.h"
 #include "stuff.h"
 #include "bignum.h"
@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.108 2000/11/29 21:23:18 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.109 2000/12/01 08:09:55 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -2197,7 +2197,7 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
   int i;
 
   if(sp[-1].type != T_STRING)
-    error("Cannot convert stack top to integer number.\n");
+    Pike_error("Cannot convert stack top to integer number.\n");
   
   i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(sp[-1].u.string), 0, base, 0);
   
@@ -2338,12 +2338,12 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
   return num * sign;
 
  overflow:
-  /* Return an overflow error.  */
+  /* Return an overflow Pike_error.  */
   errno = ERANGE;
   return HUGE * sign;
 
  underflow:
-  /* Return an underflow error.  */
+  /* Return an underflow Pike_error.  */
   if (endptr != NULL)
     *endptr = nptr;
   errno = ERANGE;

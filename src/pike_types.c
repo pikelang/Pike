@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.142 2000/11/25 16:55:27 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.143 2000/12/01 08:09:52 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -18,7 +18,7 @@ RCSID("$Id: pike_types.c,v 1.142 2000/11/25 16:55:27 grubba Exp $");
 #include "multiset.h"
 #include "mapping.h"
 #include "pike_macros.h"
-#include "error.h"
+#include "pike_error.h"
 #include "las.h"
 #include "language.h"
 #include "lex.h"
@@ -148,7 +148,7 @@ one_more_type:
   switch(EXTRACT_UCHAR(t++))
   {
     default:
-      fatal("error in type string %d.\n",EXTRACT_UCHAR(t-1));
+      fatal("Pike_error in type string %d.\n",EXTRACT_UCHAR(t-1));
       /*NOTREACHED*/
       
       break;
@@ -389,7 +389,7 @@ static void internal_parse_typeA(char **_s)
   len=0;
   for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
-    if(len>=sizeof(buf)) error("Buffer overflow in parse_type\n");
+    if(len>=sizeof(buf)) Pike_error("Buffer overflow in parse_type\n");
     buf[len] = s[0][len];
   }
   buf[len]=0;
@@ -415,13 +415,13 @@ static void internal_parse_typeA(char **_s)
 	  if(s[0][0]=='.' && s[0][1]=='.')
 	    s[0]+=2;
 	  else
-	    error("Missing .. in integer type.\n");
+	    Pike_error("Missing .. in integer type.\n");
 	  
 	  while(ISSPACE(**s)) ++*s;
 	  max=STRTOL((char *)*s,(char **)s,0);
 	  while(ISSPACE(**s)) ++*s;
 
-	  if(**s != ')') error("Missing ')' in integer range.\n");
+	  if(**s != ')') Pike_error("Missing ')' in integer range.\n");
 	  ++*s;
 	  push_type_int(max);
 	  push_type_int(min);
@@ -469,7 +469,7 @@ static void internal_parse_typeA(char **_s)
 	      type_stack_reverse();
 	      *s+=3;
 	      while(ISSPACE(**s)) ++*s;
-	      if(**s != ':') error("Missing ':' after ... in function type.\n");
+	      if(**s != ':') Pike_error("Missing ':' after ... in function type.\n");
 	      break;
 	    }
 	    pop_stack_mark();
@@ -479,7 +479,7 @@ static void internal_parse_typeA(char **_s)
 	  type_stack_mark();
 	  internal_parse_type(_s);  /* return type */
 	  type_stack_reverse();
-	  if(**s != ')') error("Missing ')' in function type.\n");
+	  if(**s != ')') Pike_error("Missing ')' in function type.\n");
 	  ++*s;
 	  type_stack_reverse(); 
 	}else{
@@ -532,12 +532,12 @@ static void internal_parse_typeA(char **_s)
 	  type_stack_mark();
 	  internal_parse_type(_s);
 	  type_stack_reverse();
-	  if(**s != ',') error("Expecting ','.\n");
+	  if(**s != ',') Pike_error("Expecting ','.\n");
 	  ++*s;
 	  type_stack_mark();
 	  internal_parse_type(_s);
 	  type_stack_reverse();
-	  if(**s != ')') error("Expecting ')'.\n");
+	  if(**s != ')') Pike_error("Expecting ')'.\n");
 	  ++*s;
 	  type_stack_reverse();
 	}else{
@@ -562,12 +562,12 @@ static void internal_parse_typeA(char **_s)
 	  type_stack_mark();
 	  internal_parse_type(_s);
 	  type_stack_reverse();
-	  if(**s != ':') error("Expecting ':'.\n");
+	  if(**s != ':') Pike_error("Expecting ':'.\n");
 	  ++*s;
 	  type_stack_mark();
 	  internal_parse_type(_s);
 	  type_stack_reverse();
-	  if(**s != ')') error("Expecting ')'.\n");
+	  if(**s != ')') Pike_error("Expecting ')'.\n");
 	  ++*s;
 	  type_stack_reverse();
 	}else{
@@ -584,7 +584,7 @@ static void internal_parse_typeA(char **_s)
 	{
 	  ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ')') error("Expecting ')'.\n");
+	  if(**s != ')') Pike_error("Expecting ')'.\n");
 	  ++*s;
 	}else{
 	  push_type(T_MIXED);
@@ -606,7 +606,7 @@ static void internal_parse_typeA(char **_s)
 	{
 	  ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ')') error("Expecting ')'.\n");
+	  if(**s != ')') Pike_error("Expecting ')'.\n");
 	  ++*s;
 	}else{
 	  push_type(T_MIXED);
@@ -643,7 +643,7 @@ static void internal_parse_typeA(char **_s)
 
     default:
   bad_type:
-      error("Couldn't parse type. (%s)\n",buf);
+      Pike_error("Couldn't parse type. (%s)\n",buf);
   }
 
   while(ISSPACE(**s)) ++*s;
@@ -665,7 +665,7 @@ static void internal_parse_typeB(char **s)
     ++*s;
     internal_parse_type(s);
     while(ISSPACE(**((unsigned char **)s))) ++*s;
-    if(**s != ')') error("Expecting ')'.\n");
+    if(**s != ')') Pike_error("Expecting ')'.\n");
     ++*s;
     break;
     
@@ -1950,7 +1950,7 @@ static char *low_match_types2(char *a,char *b, int flags)
     break;
 
   default:
-    fatal("error in type string.\n");
+    fatal("Pike_error in type string.\n");
   }
   return ret;
 }
@@ -2467,7 +2467,7 @@ static int low_pike_types_le2(char *a, char *b,
     break;
 
   default:
-    fatal("error in type string.\n");
+    fatal("Pike_error in type string.\n");
   }
   return 1;
 }
@@ -3173,7 +3173,7 @@ struct pike_string *zzap_function_return(char *a, INT32 id)
       /* I wonder when this occurrs, but apparently it does... */
       return zzap_function_return(tFuncV(tVoid,tOr(tMix,tVoid),tObj), id);
   }
-/* This error is bogus /Hubbe
+/* This Pike_error is bogus /Hubbe
   fatal("zzap_function_return() called with unexpected value: %d\n",
 	EXTRACT_UCHAR(a));
 */

@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.22 2000/09/02 09:52:06 grubba Exp $
+ * $Id: odbc.c,v 1.23 2000/12/01 08:10:14 hubbe Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.22 2000/09/02 09:52:06 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.23 2000/12/01 08:10:14 hubbe Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -92,27 +92,27 @@ void odbc_error(const char *fun, const char *msg,
   switch(_code) {
   case SQL_SUCCESS:
   case SQL_SUCCESS_WITH_INFO:
-    error("%s(): %s:\n"
+    Pike_error("%s(): %s:\n"
 	  "%d:%s:%s\n",
 	  fun, msg, code, errcode, errmsg);
     break;
   case SQL_ERROR:
-    error("%s(): %s:\n"
+    Pike_error("%s(): %s:\n"
 	  "SQLError failed (%d:SQL_ERROR)\n",
 	  fun, msg, code);
     break;
   case SQL_NO_DATA_FOUND:
-    error("%s(): %s:\n"
+    Pike_error("%s(): %s:\n"
 	  "SQLError failed (%d:SQL_NO_DATA_FOUND)\n",
 	  fun, msg, code);
     break;
   case SQL_INVALID_HANDLE:
-    error("%s(): %s:\n"
+    Pike_error("%s(): %s:\n"
 	  "SQLError failed (%d:SQL_INVALID_HANDLE)\n",
 	  fun, msg, code);
     break;
   default:
-    error("%s(): %s:\n"
+    Pike_error("%s(): %s:\n"
 	  "SQLError failed (%d:%d)\n",
 	  fun, msg, code, _code);
     break;
@@ -295,7 +295,7 @@ static void f_big_query(INT32 args)
   apply(sp[-2].u.object, "execute", 1);
   
   if (sp[-1].type != T_INT) {
-    error("odbc->big_query(): Unexpected return value from "
+    Pike_error("odbc->big_query(): Unexpected return value from "
 	  "odbc_result->execute().\n");
   }
 
@@ -312,7 +312,7 @@ static void f_big_query(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (sp != save_sp) {
-    fatal("Stack error in odbc->big_query().\n");
+    fatal("Stack Pike_error in odbc->big_query().\n");
   }
 #endif /* PIKE_DEBUG */
 }
@@ -352,14 +352,14 @@ void pike_module_init(void)
   if (err != SQL_SUCCESS) {
     odbc_henv = SQL_NULL_HENV;
     return;
-    /*    error("odbc_module_init(): SQLAllocEnv() failed with code %08x\n", err); */
+    /*    Pike_error("odbc_module_init(): SQLAllocEnv() failed with code %08x\n", err); */
   }
 
   start_new_program();
   ADD_STORAGE(struct precompiled_odbc);
 
   /* function(void:int|string) */
-  ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
+  ADD_FUNCTION("Pike_error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
 
@@ -428,7 +428,7 @@ void pike_module_exit(void)
     odbc_henv = SQL_NULL_HENV;
 
     if ((err != SQL_SUCCESS) && (err != SQL_SUCCESS_WITH_INFO)) {
-      error("odbc_module_exit(): SQLFreeEnv() failed with code %08x\n", err);
+      Pike_error("odbc_module_exit(): SQLFreeEnv() failed with code %08x\n", err);
     }
   }
 #endif /* HAVE_ODBC */

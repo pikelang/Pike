@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.29 2000/09/05 12:46:12 grubba Exp $ */
+/* $Id: bmp.c,v 1.30 2000/12/01 08:10:03 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.29 2000/09/05 12:46:12 grubba Exp $
+**!	$Id: bmp.c,v 1.30 2000/12/01 08:10:03 hubbe Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.29 2000/09/05 12:46:12 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.30 2000/12/01 08:10:03 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -31,7 +31,7 @@ RCSID("$Id: bmp.c,v 1.29 2000/09/05 12:46:12 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 
 #include "image.h"
@@ -254,7 +254,7 @@ void img_bmp_encode(INT32 args)
 	    if (!(nct=(struct neo_colortable*)
 		  get_storage(oc, image_colortable_program))) {
 	      free_object(oc);
-	      error("Unexpected result from clone_object().\n");
+	      Pike_error("Unexpected result from clone_object().\n");
 	    }
 	 }
 	 else if (image_colortable_size(nct)>(1<<bpp))
@@ -281,7 +281,7 @@ void img_bmp_encode(INT32 args)
    free_object(o);
    if (sp[-1].type!=T_OBJECT ||
        !(img=(struct image*)get_storage(o=sp[-1].u.object,image_program)))
-      error("Image.BMP.encode: wierd result from ->mirrory()\n");
+      Pike_error("Image.BMP.encode: wierd result from ->mirrory()\n");
    if (nct) push_object(oc);
 
    /* bitmapinfo */
@@ -579,10 +579,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
    pop_n_elems(args-1);
    
    if (len<20)
-      error("Image.BMP.decode: not a BMP (file to short)\n");
+      Pike_error("Image.BMP.decode: not a BMP (file to short)\n");
 
    if (s[0]!='B' || s[1]!='M')
-      error("Image.BMP.decode: not a BMP (illegal header)\n");
+      Pike_error("Image.BMP.decode: not a BMP (illegal header)\n");
 
    /* ignore stupid info like file size */
 
@@ -592,7 +592,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       case 68: /* fuji jpeg mode */
 
 	 if (len<54)
-	    error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
+	    Pike_error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
 		  PTRDIFF_T_TO_LONG(len));
 
 	 push_text("xsize");
@@ -647,7 +647,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       case 12: /* dos (?) mode */
 
 	 if (len<54)
-	    error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
+	    Pike_error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
 		  DO_NOT_WARN((long)len));
 
 	 push_text("xsize");
@@ -676,7 +676,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 break;
 
       default:
-	 error("Image.BMP.decode: not a known BMP type "
+	 Pike_error("Image.BMP.decode: not a known BMP type "
 	       "(illegal info size %ld, expected 68, 40 or 12)\n",
 	       int_from_32bit(s+14));
    }
@@ -696,7 +696,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       push_text("image");
 
       if (olen-n<0)
-	 error("Image.BMP.decode: unexpected EOF in JFIF data\n");
+	 Pike_error("Image.BMP.decode: unexpected EOF in JFIF data\n");
 
       push_text("Image");
       push_int(0);
@@ -736,7 +736,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       if (windows)
       {
 	 if ((4<<bpp)>len)
-	    error("Image.BMP.decode: unexpected EOF in palette\n");
+	    Pike_error("Image.BMP.decode: unexpected EOF in palette\n");
 
 	 push_string(make_shared_binary_string((char *)s,(4<<bpp)));
 	 push_int(2);
@@ -749,7 +749,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       else
       {
 	 if ((3<<bpp)>len)
-	    error("Image.BMP.decode: unexpected EOF in palette\n");
+	    Pike_error("Image.BMP.decode: unexpected EOF in palette\n");
 
 	 push_string(make_shared_binary_string((char *)s,(3<<bpp)));
 	 push_int(1);
@@ -781,7 +781,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    {
       case 24:
 	 if (comp)
-	    error("Image.BMP.decode: can't handle compressed 24bpp BMP\n");
+	    Pike_error("Image.BMP.decode: can't handle compressed 24bpp BMP\n");
 
 	 skip=(4-((img->xsize*3)&3))&3;
 
@@ -805,7 +805,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 break;
       case 16:
 	 if (comp)
-	    error("Image.BMP.decode: can't handle compressed 16bpp BMP\n");
+	    Pike_error("Image.BMP.decode: can't handle compressed 16bpp BMP\n");
 
 	 skip=(4-((img->xsize*2)&3))&3;
 
@@ -831,7 +831,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 break;
       case 8:
 	 if (comp != 0 && comp != 1 )
-	    error("Image.BMP.decode: can't handle compression %d for 8bpp BMP\n",comp);
+	    Pike_error("Image.BMP.decode: can't handle compression %d for 8bpp BMP\n",comp);
 
 	 if (comp==1)
 	 {
@@ -870,12 +870,12 @@ void i_img_bmp__decode(INT32 args,int header_only)
 			case 1: /* EOD */
 			   goto done_rle8;
 			case 2: /* cursor */
-			   error("Image.BMP.decode: advanced RLE "
+			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (cursor movement) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
 			default: /* literal run */
-			   error("Image.BMP.decode: advanced RLE "
+			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (literal run) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
@@ -915,7 +915,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 break;
       case 4:
 	 if (comp != 0 && comp != 2 )
-	    error("Image.BMP.decode: can't handle compression %d for 4bpp BMP\n",comp);
+	    Pike_error("Image.BMP.decode: can't handle compression %d for 4bpp BMP\n",comp);
 
 	 if (comp == 2) /* RLE4 */
 	 {
@@ -957,7 +957,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 #endif
 			   goto done_rle4;
 			case 2:
-			   error("Image.BMP.decode: advanced RLE "
+			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (cursor movement) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
@@ -970,7 +970,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 #endif
 			   break;
 			default:
-			   error("Image.BMP.decode: advanced RLE "
+			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (non-rle data) "
 				 "is unimplemented (please send this "
 				 "image to mirar@idonex.se)\n");
@@ -1034,7 +1034,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 break;
       case 1:
 	 if (comp)
-	    error("Image.BMP.decode: can't handle compressed 1bpp BMP\n");
+	    Pike_error("Image.BMP.decode: can't handle compressed 1bpp BMP\n");
 
 	 skip=(4-(((img->xsize+7)/8)&3))&3;
 	 j=len;
@@ -1059,7 +1059,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 }
 	 break;
       default:
-	 error("Image.BMP.decode: unknown bpp: %d\n",bpp);
+	 Pike_error("Image.BMP.decode: unknown bpp: %d\n",bpp);
    }
 
 final:

@@ -1,9 +1,9 @@
-/* $Id: image_gif.c,v 1.1 2000/09/11 16:05:04 grubba Exp $ */
+/* $Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image_gif.c,v 1.1 2000/09/11 16:05:04 grubba Exp $
+**!	$Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.1 2000/09/11 16:05:04 grubba Exp $");
+RCSID("$Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -43,7 +43,7 @@ RCSID("$Id: image_gif.c,v 1.1 2000/09/11 16:05:04 grubba Exp $");
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 
 #include "../Image/image.h"
@@ -169,10 +169,10 @@ void image_gif_header_block(INT32 args)
    int alphaentry=0;
 
    if (args<3)
-      error("Image.GIF.header_block(): too few arguments\n");
+      Pike_error("Image.GIF.header_block(): too few arguments\n");
    if (sp[-args].type!=T_INT ||
        sp[1-args].type!=T_INT)
-      error("Image.GIF.header_block(): illegal argument(s) 1..2 (expected int)\n");
+      Pike_error("Image.GIF.header_block(): illegal argument(s) 1..2 (expected int)\n");
 
    xs=sp[-args].u.integer;
    ys=sp[1-args].u.integer;
@@ -191,24 +191,24 @@ void image_gif_header_block(INT32 args)
       globalpalette=1;
    }
    else
-      error("Image.GIF.header_block(): illegal argument 3 (expected int or colortable object)\n");
+      Pike_error("Image.GIF.header_block(): illegal argument 3 (expected int or colortable object)\n");
 
    if (args>=4) {
       if (sp[3-args].type!=T_INT)
-	 error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
+	 Pike_error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
       else
 	 bkgi=sp[3-args].u.integer;
    }
    if (args>=5) {
       if (sp[4-args].type!=T_INT)
-	 error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
+	 Pike_error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
       else
 	 gif87a=sp[4-args].u.integer;
    }
    if (args>=7) {
       if (sp[5-args].type!=T_INT ||
 	  sp[6-args].type!=T_INT)
-	 error("Image.GIF.header_block(): illegal argument(s) 5..6 (expected int)\n");
+	 Pike_error("Image.GIF.header_block(): illegal argument(s) 5..6 (expected int)\n");
       else
 	 if (sp[5-args].u.integer &&
 	     sp[6-args].u.integer)
@@ -222,7 +222,7 @@ void image_gif_header_block(INT32 args)
       if (sp[7-args].type!=T_INT ||
 	  sp[8-args].type!=T_INT ||
 	  sp[9-args].type!=T_INT)
-	 error("Image.GIF.header_block(): illegal argument 8..10 (expected int)\n");
+	 Pike_error("Image.GIF.header_block(): illegal argument 8..10 (expected int)\n");
       alphacolor.r=(unsigned char)(sp[7-args].u.integer);
       alphacolor.g=(unsigned char)(sp[8-args].u.integer);
       alphacolor.b=(unsigned char)(sp[9-args].u.integer);
@@ -230,7 +230,7 @@ void image_gif_header_block(INT32 args)
    }
 
    if (numcolors+alphaentry>256)
-      error("Image.GIF.header_block(): too many colors (%ld%s)\n",
+      Pike_error("Image.GIF.header_block(): too many colors (%ld%s)\n",
 	    DO_NOT_WARN((long)(numcolors + alphaentry)),
 	    alphaentry?" including alpha channel color":"");
 
@@ -339,13 +339,13 @@ static void image_gif__gce_block(INT32 args)
 {
    char buf[20];
    if (args<5) 
-      error("Image.GIF._gce_block(): too few arguments\n");
+      Pike_error("Image.GIF._gce_block(): too few arguments\n");
    if (sp[-args].type!=T_INT ||
        sp[1-args].type!=T_INT ||
        sp[2-args].type!=T_INT ||
        sp[3-args].type!=T_INT ||
        sp[4-args].type!=T_INT)
-      error("Image.GIF._gce_block(): Illegal argument(s)\n");
+      Pike_error("Image.GIF._gce_block(): Illegal argument(s)\n");
    sprintf(buf,"%c%c%c%c%c%c%c%c",
 	   0x21, /* extension intruder */
 	   0xf9, /* gce extension */
@@ -409,7 +409,7 @@ static void image_gif__render_block(INT32 args)
 CHRONO("gif _render_block begun");
 
    if (args<8)
-      error("Image.GIF._render_block(): Too few arguments\n");
+      Pike_error("Image.GIF._render_block(): Too few arguments\n");
 
    if (sp[-args].type!=T_INT ||
        sp[1-args].type!=T_INT ||
@@ -418,7 +418,7 @@ CHRONO("gif _render_block begun");
        sp[4-args].type!=T_INT ||
        sp[5-args].type!=T_STRING ||
        sp[7-args].type!=T_INT)
-      error("Image.GIF._render_block(): Illegal argument(s)\n");
+      Pike_error("Image.GIF._render_block(): Illegal argument(s)\n");
 
    xpos=sp[-args].u.integer;
    ypos=sp[1-args].u.integer;
@@ -440,13 +440,13 @@ CHRONO("gif _render_block begun");
       cps=sp[6-args].u.string;
       localpalette=1;
       if (cps->len!=3*(1<<bpp))
-	 error("Image.GIF._render_block(): colortable string has wrong length\n");
+	 Pike_error("Image.GIF._render_block(): colortable string has wrong length\n");
    }
    else
-      error("Image.GIF._render_block(): Illegal argument(s)\n");
+      Pike_error("Image.GIF._render_block(): Illegal argument(s)\n");
 
    if (xs*ys!=ips->len)
-      error("Image.GIF._render_block(): indices string has wrong length\n");
+      Pike_error("Image.GIF._render_block(): indices string has wrong length\n");
 
 /*** write image rendering header */
 
@@ -484,7 +484,7 @@ CHRONO("gif _render_block begun");
    numstrings++;
    
    image_gif_lzw_init(&lzw,(bpp<2)?2:bpp);
-   if (lzw.broken) error("out of memory\n");
+   if (lzw.broken) Pike_error("out of memory\n");
 
    THREADS_ALLOW();
 
@@ -507,7 +507,7 @@ CHRONO("gif _render_block begun");
    
    THREADS_DISALLOW();
 
-   if (lzw.broken) error("out of memory\n");
+   if (lzw.broken) Pike_error("out of memory\n");
 
 CHRONO("gif _render_block push of packed data begin");
 
@@ -701,23 +701,23 @@ void image_gif_render_block(INT32 args)
 CHRONO("gif render_block begin");
 
    if (args<2) 
-      error("Image.GIF.render_block(): Too few arguments\n");
+      Pike_error("Image.GIF.render_block(): Too few arguments\n");
    if (sp[-args].type!=T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      error("Image.GIF.render_block(): Illegal argument 1 (expected image object)\n");
+      Pike_error("Image.GIF.render_block(): Illegal argument 1 (expected image object)\n");
    else if (!img->img)
-      error("Image.GIF.render_block(): given image has no image\n");
+      Pike_error("Image.GIF.render_block(): given image has no image\n");
    if (sp[1-args].type!=T_OBJECT ||
        !(nct=(struct neo_colortable*)
   	     get_storage(sp[1-args].u.object,image_colortable_program)))
-      error("Image.GIF.render_block(): Illegal argument 2 (expected colortable object)\n");
+      Pike_error("Image.GIF.render_block(): Illegal argument 2 (expected colortable object)\n");
 
    if (args>=4)
    {
       if (sp[2-args].type!=T_INT)
-	 error("Image:GIF.render_block(): Illegal argument 3 (expected int)\n");
+	 Pike_error("Image:GIF.render_block(): Illegal argument 3 (expected int)\n");
       if (sp[3-args].type!=T_INT)
-	 error("Image:GIF.render_block(): Illegal argument 4 (expected int)\n");
+	 Pike_error("Image:GIF.render_block(): Illegal argument 4 (expected int)\n");
       xpos=sp[2-args].u.integer;
       ypos=sp[3-args].u.integer;
    }
@@ -725,16 +725,16 @@ CHRONO("gif render_block begin");
 
    numcolors=image_colortable_size(nct);
    if (numcolors==0)
-      error("Image.GIF.render_block(): no colors in colortable\n");
+      Pike_error("Image.GIF.render_block(): no colors in colortable\n");
    else if (numcolors>256)
-      error("Image.GIF.render_block(): too many colors in given colortable: "
+      Pike_error("Image.GIF.render_block(): too many colors in given colortable: "
 	    "%ld (256 is max)\n",
 	    DO_NOT_WARN((long)numcolors));
 
    if (args>=5)
    {
       if (sp[4-args].type!=T_INT)
-	 error("Image:GIF.render_block(): Illegal argument 5 (expected int)\n");
+	 Pike_error("Image:GIF.render_block(): Illegal argument 5 (expected int)\n");
       localpalette=sp[4-args].u.integer;
    }
    else localpalette=0;
@@ -744,10 +744,10 @@ CHRONO("gif render_block begin");
 	  (alpha=(struct image*)get_storage(sp[5-args].u.object,image_program)))
       {
 	 if (!alpha->img)
-	    error("Image.GIF.render_block(): given alpha channel has no image\n");
+	    Pike_error("Image.GIF.render_block(): given alpha channel has no image\n");
 	 else if (alpha->xsize != img->xsize ||
 		  alpha->ysize != img->ysize)
-	    error("Image.GIF.render_block(): given alpha channel differ in size from given image\n");
+	    Pike_error("Image.GIF.render_block(): given alpha channel differ in size from given image\n");
 	 alphaidx=numcolors;
 	 n=9;
 
@@ -757,7 +757,7 @@ CHRONO("gif render_block begin");
 	    if (sp[6-args].type!=T_INT ||
 		sp[7-args].type!=T_INT ||
 		sp[8-args].type!=T_INT)
-	       error("Image.GIF.render_block(): illegal argument 7..9 (expected int)\n");
+	       Pike_error("Image.GIF.render_block(): illegal argument 7..9 (expected int)\n");
 	    alphacolor.r=(unsigned char)(sp[6-args].u.integer);
 	    alphacolor.g=(unsigned char)(sp[7-args].u.integer);
 	    alphacolor.b=(unsigned char)(sp[8-args].u.integer);
@@ -766,7 +766,7 @@ CHRONO("gif render_block begin");
 	             in image_gif_header_block */
 	    alphaentry=1;
 	    if (numcolors>255) 
-	       error("Image.GIF.render_block(): too many colors in colortable (255 is max, need one for transparency)\n");
+	       Pike_error("Image.GIF.render_block(): too many colors in colortable (255 is max, need one for transparency)\n");
 	 }
       }
       else if (sp[5-args].type==T_INT)
@@ -774,14 +774,14 @@ CHRONO("gif render_block begin");
 	 n=5;
       }
       else
-	 error("Image:GIF.render_block(): Illegal argument 6 (expected int or image object)\n");
+	 Pike_error("Image:GIF.render_block(): Illegal argument 6 (expected int or image object)\n");
       if (alphaidx!=-1) transparency=1; else transparency=0;
 
       if (args>n) /* interlace and gce arguments */
       {
 	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
-	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
+	       Pike_error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       delay=sp[n-args].u.integer;
 	 }
@@ -790,7 +790,7 @@ CHRONO("gif render_block begin");
 	 {
 	    if (args>n) {
 	       if (sp[n-args].type!=T_INT)
-	          error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
+	          Pike_error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	       else
 	       {
 	          alphaidx=sp[n-args].u.integer;
@@ -800,7 +800,7 @@ CHRONO("gif render_block begin");
 		  {
 		     transparency=1;
 		     if (numcolors<=alphaidx || alphaidx<0)
-			error("Image.GIF.render_block(): illegal index to transparent color\n");
+			Pike_error("Image.GIF.render_block(): illegal index to transparent color\n");
 		  }
 	          n=6;
 	       }
@@ -809,21 +809,21 @@ CHRONO("gif render_block begin");
 	 }
 	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
-	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
+	       Pike_error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       interlace=!!sp[n-args].u.integer;
 	 }
 	 n++;
 	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
-	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
+	       Pike_error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       user_input=!!sp[n-args].u.integer;
 	 }
 	 n++;
 	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
-	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
+	       Pike_error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       disposal=sp[n-args].u.integer&7;
 	 }
@@ -1001,12 +1001,12 @@ void _image_gif_encode(INT32 args,int fs)
    int arg=2;
 
    if (args<1)
-      error("Image.GIF.encode(): Too few arguments\n");
+      Pike_error("Image.GIF.encode(): Too few arguments\n");
 
    if (sp[-args].type!=T_OBJECT ||
        !(img=(struct image*)get_storage(imgobj=sp[-args].u.object,
 					image_program)))
-      error("Image.GIF.encode(): Illegal argument 1 (expected image object)\n");
+      Pike_error("Image.GIF.encode(): Illegal argument 1 (expected image object)\n");
    add_ref(imgobj);
 
    
@@ -1024,13 +1024,13 @@ void _image_gif_encode(INT32 args,int fs)
 	    nct=(struct neo_colortable*)
 	       get_storage(nctobj,image_colortable_program);
 	    if (!nct)
-	       error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+	       Pike_error("Image.GIF.encode(): Internal Pike_error; colortable isn't colortable\n");
 	    arg=2;
 	 }
 	 else arg=1;
       }
       else if (sp[1-args].type!=T_OBJECT)
-	 error("Image.GIF.encode(): Illegal argument 2 (expected image or colortable object or int)\n");
+	 Pike_error("Image.GIF.encode(): Illegal argument 2 (expected image or colortable object or int)\n");
       else if ((nct=(struct neo_colortable*)
 		get_storage(nctobj=sp[1-args].u.object,image_colortable_program)))
       {
@@ -1054,7 +1054,7 @@ void _image_gif_encode(INT32 args,int fs)
 		sp[1+arg-args].type!=T_INT ||
 		sp[2+arg-args].type!=T_INT ||
 		sp[3+arg-args].type!=T_INT)
-	       error("Image.GIF.encode: Illegal arguments %d..%d (expected int)\n",arg+2,arg+4);
+	       Pike_error("Image.GIF.encode: Illegal arguments %d..%d (expected int)\n",arg+2,arg+4);
 	    else
 	    {
 	       ac.r=sp[1+arg-args].u.integer;
@@ -1076,7 +1076,7 @@ void _image_gif_encode(INT32 args,int fs)
 	     sp[arg-args].type==T_INT)
 	    tridx=sp[arg-args].u.integer;
 	 else
-	    error("Image.GIF.encode(): Illegal argument %d or %d..%d\n",
+	    Pike_error("Image.GIF.encode(): Illegal argument %d or %d..%d\n",
 		  arg+1,arg+1,arg+3);
 	 trans=1;
       }
@@ -1095,7 +1095,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    nct=(struct neo_colortable*)
 	       get_storage(nctobj,image_colortable_program);
 	    if (!nct)
-	       error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+	       Pike_error("Image.GIF.encode(): Internal Pike_error; colortable isn't colortable\n");
 	 }
    
 	 tr.r=(unsigned char)sp[arg-args].u.integer;
@@ -1117,7 +1117,7 @@ void _image_gif_encode(INT32 args,int fs)
       nct=(struct neo_colortable*)
 	 get_storage(nctobj,image_colortable_program);
       if (!nct)
-	 error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+	 Pike_error("Image.GIF.encode(): Internal Pike_error; colortable isn't colortable\n");
    }
 
    if (fs) image_colortable_internal_floyd_steinberg(nct);
@@ -1208,7 +1208,7 @@ void image_gif_netscape_loop_block(INT32 args)
    char buf[30];
    if (args) {
       if (sp[-args].type!=T_INT) 
-	 error("Image.GIF.netscape_loop_block: illegal argument (exected int)\n");
+	 Pike_error("Image.GIF.netscape_loop_block: illegal argument (exected int)\n");
       else
 	 loops=sp[-args].u.integer;
    } else
@@ -1404,7 +1404,7 @@ static void image_gif___decode(INT32 args)
 
    if (args!=1 
        || sp[-args].type!=T_STRING) 
-      error("Image.GIF.__decode: illegal or illegal number of arguments\n");
+      Pike_error("Image.GIF.__decode: illegal or illegal number of arguments\n");
 
    add_ref(str=sp[-args].u.string);
    s=(unsigned char *)str->str;
@@ -1439,7 +1439,7 @@ static void image_gif___decode(INT32 args)
        s[0]!='G' ||
        s[1]!='I' ||
        s[2]!='F')
-      error("Image.GIF.__decode: not a GIF (no GIF header found)\n");
+      Pike_error("Image.GIF.__decode: not a GIF (no GIF header found)\n");
    
    xsize=s[6]+(s[7]<<8);
    ysize=s[8]+(s[9]<<8);
@@ -1452,7 +1452,7 @@ static void image_gif___decode(INT32 args)
 
    s+=13; len-=13;
    if (globalpalette && len<(unsigned long)(3<<bpp))
-      error("Image.GIF.__decode: premature EOD (in global palette)\n");
+      Pike_error("Image.GIF.__decode: premature EOD (in global palette)\n");
    
    push_int(xsize);
    push_int(ysize);
@@ -1761,7 +1761,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 #ifdef GIF_DEBUG
 		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
 #endif
-		  break; /* error! too much codes */
+		  break; /* Pike_error! too much codes */
 	       }
 	    }
 	 }
@@ -1814,7 +1814,7 @@ void image_gif__decode(INT32 args)
    struct image *img,*aimg=NULL;
 
    if (!args)
-      error("Image.GIF._decode: too few argument\n");
+      Pike_error("Image.GIF._decode: too few argument\n");
 
    if (sp[-args].type==T_ARRAY)
       pop_n_elems(args-1);
@@ -1822,12 +1822,12 @@ void image_gif__decode(INT32 args)
       image_gif___decode(args);
 
    if (sp[-1].type!=T_ARRAY)
-      error("Image.GIF._decode: internal error: "
+      Pike_error("Image.GIF._decode: internal Pike_error: "
 	    "illegal result from __decode\n");
    
    a=sp[-1].u.array;
    if (a->size<5)
-      error("Image.GIF._decode: given (__decode'd) array "
+      Pike_error("Image.GIF._decode: given (__decode'd) array "
 	    "is too small\n");
 
    push_svalue(a->item+0); /* xsize */
@@ -1853,14 +1853,14 @@ void image_gif__decode(INT32 args)
       if (a->item[i].type!=T_ARRAY ||
 	  (b=a->item[i].u.array)->size<1 ||
 	  b->item[0].type!=T_INT)
-	 error("Image.GIF._decode: given (__decode'd) "
+	 Pike_error("Image.GIF._decode: given (__decode'd) "
 	       "array has illegal contents (position %d)\n",i);
       else
 	 switch (b->item[0].u.integer)
 	 {
 	    case GIF_RENDER:
 	       if (b->size!=9)
-		  error("Image.GIF._decode: given (__decode'd) "
+		  Pike_error("Image.GIF._decode: given (__decode'd) "
 			"array has illegal contents "
 			"(illegal size of block array in position %d)\n",i);
 	       if (b->item[0].type!=T_INT ||
@@ -1871,7 +1871,7 @@ void image_gif__decode(INT32 args)
 		   b->item[5].type!=T_INT ||
 		   b->item[7].type!=T_INT ||
 		   b->item[8].type!=T_STRING)
-		  error("Image.GIF._decode: given (__decode'd) "
+		  Pike_error("Image.GIF._decode: given (__decode'd) "
 			"array has illegal contents "
 			"(illegal type(s) in block array in position %d)\n",i);
 
@@ -1954,11 +1954,11 @@ void image_gif__decode(INT32 args)
 	       break;
 	    case GIF_EXTENSION:
 	       if (b->size!=3)
-		  error("Image.GIF._decode: given (__decode'd) "
+		  Pike_error("Image.GIF._decode: given (__decode'd) "
 			"array has illegal contents "
 			"(illegal size of block array in position %d)\n",i);
 	       if (b->item[2].type!=T_STRING)
-		  error("Image.GIF._decode: given (__decode'd) "
+		  Pike_error("Image.GIF._decode: given (__decode'd) "
 			"array has illegal contents "
 			"(no data string of block array in position %d)\n",i);
 	       switch (b->item[1].u.integer)
@@ -1986,7 +1986,7 @@ void image_gif__decode(INT32 args)
 	       n++;
 	       break;
 	    default:
-	       error("Image.GIF._decode: given (__decode'd) "
+	       Pike_error("Image.GIF._decode: given (__decode'd) "
 		     "array has illegal contents (illegal type of "
 		     "block in position %d)\n",i);
 	 }
@@ -2021,13 +2021,13 @@ void image_gif_decode(INT32 args)
    int n;
 
    if (!args)
-      error("Image.GIF._decode: too few argument\n");
+      Pike_error("Image.GIF._decode: too few argument\n");
 
    if (sp[-args].type==T_ARRAY)
    {
       pop_n_elems(args-1);
       if (sp[-args].u.array->size<4)
-	 error("Image.GIF.decode: illegal argument\n");
+	 Pike_error("Image.GIF.decode: illegal argument\n");
       if (sp[-args].u.array->item[3].type!=T_ARRAY)
 	 image_gif__decode(1);
    }
@@ -2035,12 +2035,12 @@ void image_gif_decode(INT32 args)
       image_gif__decode(args);
 
    if (sp[-1].type!=T_ARRAY)
-      error("Image.GIF.decode: internal error: "
+      Pike_error("Image.GIF.decode: internal Pike_error: "
 	    "illegal result from _decode\n");
 
    a=sp[-1].u.array;
    if (a->size<4)
-      error("Image.GIF.decode: given (_decode'd) array "
+      Pike_error("Image.GIF.decode: given (_decode'd) array "
 	    "is too small\n");
 
    push_svalue(a->item+0);
@@ -2114,13 +2114,13 @@ void image_gif_decode_layers(INT32 args)
    int numlayers=0;
 
    if (!args)
-      error("Image.GIF.decode_layers: too few argument\n");
+      Pike_error("Image.GIF.decode_layers: too few argument\n");
 
    if (sp[-args].type==T_ARRAY)
    {
       pop_n_elems(args-1);
       if (sp[-args].u.array->size<4)
-	 error("Image.GIF.decode: illegal argument\n");
+	 Pike_error("Image.GIF.decode: illegal argument\n");
       if (sp[-args].u.array->item[3].type!=T_ARRAY)
 	 image_gif__decode(1);
    }
@@ -2128,12 +2128,12 @@ void image_gif_decode_layers(INT32 args)
       image_gif__decode(args);
 
    if (sp[-1].type!=T_ARRAY)
-      error("Image.GIF.decode: internal error: "
+      Pike_error("Image.GIF.decode: internal Pike_error: "
 	    "illegal result from _decode\n");
 
    a=sp[-1].u.array;
    if (a->size<4)
-      error("Image.GIF.decode: given (_decode'd) array "
+      Pike_error("Image.GIF.decode: given (_decode'd) array "
 	    "is too small\n");
 
    for (n=4; n<a->size; n++)
@@ -2254,13 +2254,13 @@ void image_gif__encode_render(INT32 args)
    if (args<2 ||
        sp[-args].type!=T_ARRAY ||
        sp[1-args].type!=T_INT)
-      error("Image.GIF._encode_render: Illegal argument(s) (expected array, int)\n");
+      Pike_error("Image.GIF._encode_render: Illegal argument(s) (expected array, int)\n");
 
    localp=sp[1-args].u.integer;
    add_ref(a=sp[-args].u.array);
 
    if (a->size<11)
-      error("Image.GIF._encode_render: Illegal size of array\n");
+      Pike_error("Image.GIF._encode_render: Illegal size of array\n");
 
    pop_n_elems(args);
 
@@ -2280,13 +2280,13 @@ void image_gif__encode_render(INT32 args)
       if (!nct)
       {
 	 free_array(a);
-	 error("Image.GIF._encode_render: Passed object is not colortable\n");
+	 Pike_error("Image.GIF._encode_render: Passed object is not colortable\n");
       }
       
       if (nct->type!=NCT_FLAT)
       {
 	 free_array(a);
-	 error("Image.GIF._encode_render: Passed colortable is not flat (sorry9\n");
+	 Pike_error("Image.GIF._encode_render: Passed colortable is not flat (sorry9\n");
       }
       push_svalue(a->item+4);
       if (a->item[7].type==T_INT 
@@ -2329,16 +2329,16 @@ void image_gif__encode_extension(INT32 args)
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      error("Image.GIF._encode_extension: Illegal argument(s) (expected array)\n");
+      Pike_error("Image.GIF._encode_extension: Illegal argument(s) (expected array)\n");
 
    add_ref(a=sp[-args].u.array);
    pop_n_elems(args);
 
    if (a->size<3)
-      error("Image.GIF._encode_extension: Illegal size of array\n");
+      Pike_error("Image.GIF._encode_extension: Illegal size of array\n");
    if (a->item[1].type!=T_INT ||
        a->item[2].type!=T_STRING)
-      error("Image.GIF._encode_extension: Illegal type in indices 1 or 2\n");
+      Pike_error("Image.GIF._encode_extension: Illegal type in indices 1 or 2\n");
 
    sprintf(buf,"%c%c",0x21,a->item[1].u.integer);
    push_string(make_shared_binary_string(buf,2));
@@ -2389,7 +2389,7 @@ void image_gif__encode(INT32 args)
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      error("Image.GIF._encode: Illegal argument (expected array)");
+      Pike_error("Image.GIF._encode: Illegal argument (expected array)");
 
    add_ref(a=sp[-args].u.array);
    pos=0;
@@ -2397,7 +2397,7 @@ void image_gif__encode(INT32 args)
    pop_n_elems(args);
 
    if (a->size<4) 
-      error("Image.GIF._encode: Given array too small\n");
+      Pike_error("Image.GIF._encode: Given array too small\n");
    
    push_svalue(a->item+0); /* xsize */
    push_svalue(a->item+1); /* ysize */
@@ -2407,7 +2407,7 @@ void image_gif__encode(INT32 args)
       || a->item[3].u.array->size<3)
    {
       free_array(a);
-      error("Image.GIF._encode: Illegal type on array index 3 (expected array)\n");
+      Pike_error("Image.GIF._encode: Illegal type on array index 3 (expected array)\n");
    }
 
    push_svalue(a->item[3].u.array->item+2); /* bkgi */
@@ -2424,7 +2424,7 @@ void image_gif__encode(INT32 args)
       if (a->item[pos].type!=T_ARRAY)
       {
 	 free_array(a);
-	 error("Image.GIF._encode: Illegal type on array index %d (expected array)\n",pos);
+	 Pike_error("Image.GIF._encode: Illegal type on array index %d (expected array)\n",pos);
       }
       b=a->item[pos].u.array;
 
@@ -2432,7 +2432,7 @@ void image_gif__encode(INT32 args)
 	  || b->item[0].type!=T_INT)
       {
 	 free_array(a);
-	 error("Image.GIF._encode: Illegal array on array index %d\n",pos);
+	 Pike_error("Image.GIF._encode: Illegal array on array index %d\n",pos);
       }
       
       if (b->item[0].u.integer==GIF_RENDER)
@@ -2466,10 +2466,10 @@ static void image_gif_lzw_encode(INT32 args)
    struct gif_lzw lzw;
 
    if (!args || sp[-args].type!=T_STRING)
-      error("Image.GIF.lzw_encode(): illegal argument\n");
+      Pike_error("Image.GIF.lzw_encode(): illegal argument\n");
 
    image_gif_lzw_init(&lzw,8);
-   if (lzw.broken) error("out of memory\n");
+   if (lzw.broken) Pike_error("out of memory\n");
 
    if (args>=2 && !IS_ZERO(sp+1-args))
       lzw.earlychange=1;
@@ -2483,7 +2483,7 @@ static void image_gif_lzw_encode(INT32 args)
 
    image_gif_lzw_finish(&lzw);
    
-   if (lzw.broken) error("out of memory\n");
+   if (lzw.broken) Pike_error("out of memory\n");
 
    pop_n_elems(args);
    push_string(make_shared_binary_string((char*)lzw.out,lzw.outpos));
@@ -2504,7 +2504,7 @@ static void image_gif_lzw_decode(INT32 args)
    int reversebits=0;
 
    if (!args || sp[-args].type!=T_STRING)
-      error("Image.GIF.lzw_encode(): illegal argument\n");
+      Pike_error("Image.GIF.lzw_encode(): illegal argument\n");
 
    s=(unsigned char*)sp[-args].u.string->str;
    len = (ptrdiff_t)sp[-args].u.string->len;
@@ -2536,7 +2536,7 @@ static void image_gif_lzw_decode(INT32 args)
    if (!dest0)
    {
       free(c);
-      error("Image.GIF.lzw_decode: out of memory\n");
+      Pike_error("Image.GIF.lzw_decode: out of memory\n");
    }
    dest=dest0; dlen=dlen0;
 
@@ -2680,7 +2680,7 @@ static void image_gif_lzw_decode(INT32 args)
 #ifdef GIF_DEBUG
 		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
 #endif
-		  break; /* error! too much codes */
+		  break; /* Pike_error! too much codes */
 	       }
 	    }
 	 }

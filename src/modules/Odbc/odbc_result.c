@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.23 2000/09/08 15:57:28 grubba Exp $
+ * $Id: odbc_result.c,v 1.24 2000/12/01 08:10:15 hubbe Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.23 2000/09/08 15:57:28 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.24 2000/12/01 08:10:15 hubbe Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -129,7 +129,7 @@ static void odbc_fix_fields(void)
   unsigned char *buf = alloca(buf_size);
 
   if ((!buf)||(!odbc_field_types)) {
-    error("odbc_fix_fields(): Out of memory\n");
+    Pike_error("odbc_fix_fields(): Out of memory\n");
   }
 
   /*
@@ -158,7 +158,7 @@ static void odbc_fix_fields(void)
 	buf_size *= 2;
       } while (name_len >= (ptrdiff_t)buf_size);
       if (!(buf = alloca(buf_size))) {
-	error("odbc_fix_fields(): Out of memory\n");
+	Pike_error("odbc_fix_fields(): Out of memory\n");
       }
     }
 #ifdef ODBC_DEBUG
@@ -283,13 +283,13 @@ static void f_create(INT32 args)
   HSTMT hstmt = SQL_NULL_HSTMT;
 
   if (!args) {
-    error("Too few arguments to odbc_result()\n");
+    Pike_error("Too few arguments to odbc_result()\n");
   }
   if ((sp[-args].type != T_OBJECT) ||
       (!(PIKE_ODBC_RES->odbc =
 	 (struct precompiled_odbc *)get_storage(sp[-args].u.object,
 						odbc_program)))) {
-    error("Bad argument 1 to odbc_result()\n");
+    Pike_error("Bad argument 1 to odbc_result()\n");
   }
   add_ref(PIKE_ODBC_RES->obj = sp[-args].u.object);
 
@@ -427,13 +427,13 @@ static void f_fetch_row(INT32 args)
 /* int eof() */
 static void f_eof(INT32 args)
 {
-  error("odbc->eof(): Not implemented yet!\n");
+  Pike_error("odbc->eof(): Not implemented yet!\n");
 }
 
 /* void seek() */
 static void f_seek(INT32 args)
 {
-  error("odbc->seek(): Not implemented yet!\n");
+  Pike_error("odbc->seek(): Not implemented yet!\n");
 }
  
 /*

@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.25 2000/11/25 16:33:22 grubba Exp $ */
+/* $Id: block_alloc.h,v 1.26 2000/12/01 08:09:44 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -186,7 +186,7 @@ struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, ptrdiff_t hval)		     \
   struct DATA *p;							     \
 									     \
   DO_IF_DEBUG( if(!PIKE_CONCAT(DATA,_hash_table))			     \
-    fatal("Hash table error!\n"); )					     \
+    fatal("Hash table Pike_error!\n"); )					     \
   PIKE_CONCAT(num_,DATA)++;						     \
 									     \
   if(( PIKE_CONCAT(num_,DATA)>>2 ) >=					     \

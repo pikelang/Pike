@@ -7,7 +7,7 @@
 #define NO_PIKE_SHORTHAND
 #include "global.h"
 #include "pike_macros.h"
-#include "error.h"
+#include "pike_error.h"
 #include "interpret.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.64 2000/12/01 01:14:56 hubbe Exp $");
+RCSID("$Id: error.c,v 1.65 2000/12/01 08:09:46 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -277,11 +277,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   }
 
   if(!Pike_interpreter.recoveries)
-    fatal("No error recovery context.\n");
+    fatal("No Pike_error recovery context.\n");
 
 #ifdef PIKE_DEBUG
   if(Pike_sp - Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-    fatal("Stack error in error.\n");
+    fatal("Stack Pike_error in Pike_error.\n");
 #endif
 
   while(Pike_fp != Pike_interpreter.recoveries->frame_pointer)
@@ -337,7 +337,7 @@ void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noret
   {
     const char *tmp=in_error;
     in_error=0;
-    fatal("Recursive error() calls, original error: %s",tmp);
+    fatal("Recursive Pike_error() calls, original Pike_error: %s",tmp);
   }
 
   in_error=buf;
@@ -354,12 +354,12 @@ void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noret
     dump_backlog();
 #endif
 
-    fprintf(stderr,"No error recovery context!\n%s",buf);
+    fprintf(stderr,"No Pike_error recovery context!\n%s",buf);
     exit(99);
   }
 
   if((size_t)strlen(buf) >= (size_t)sizeof(buf))
-    fatal("Buffer overflow in error()\n");
+    fatal("Buffer overflow in Pike_error()\n");
   
   low_error(buf);
 }
@@ -375,7 +375,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
   {
     const char *tmp=in_error;
     in_error=0;
-    fatal("Recursive error() calls, original error: %s",tmp);
+    fatal("Recursive Pike_error() calls, original Pike_error: %s",tmp);
   }
 
   in_error=text;
@@ -386,7 +386,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
     dump_backlog();
 #endif
 
-    fprintf(stderr,"No error recovery context!\n%s():%s",name,text);
+    fprintf(stderr,"No Pike_error recovery context!\n%s():%s",name,text);
     if(file)
       fprintf(stderr,"at %s:%d\n",file,line);
     exit(99);
@@ -438,7 +438,7 @@ PMOD_EXPORT void exit_on_error(void *msg)
 #ifdef PIKE_DEBUG
   {
     char *s;
-    fprintf(stderr,"Attempting to dump raw error: (may fail)\n");
+    fprintf(stderr,"Attempting to dump raw Pike_error: (may fail)\n");
     init_buf();
     describe_svalue(&throw_value,0,0);
     s=simple_free_buf();
@@ -471,7 +471,7 @@ PMOD_EXPORT void fatal_on_error(void *msg)
   do_abort();
 }
 
-PMOD_EXPORT DECLSPEC(noreturn) void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   va_start(args,fmt);
@@ -532,7 +532,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
 void f_error_cast(INT32 args)
 {
   char *s;
-  get_all_args("error->cast",args,"%s",&s);
+  get_all_args("Pike_error->cast",args,"%s",&s);
   if(!strncmp(s,"array",5))
   {
     pop_n_elems(args);
@@ -540,14 +540,14 @@ void f_error_cast(INT32 args)
     ref_push_array(GENERIC_ERROR_THIS->backtrace);
     f_aggregate(2);
   }else{
-    SIMPLE_BAD_ARG_ERROR("error->cast", 1, "the value \"array\"");
+    SIMPLE_BAD_ARG_ERROR("Pike_error->cast", 1, "the value \"array\"");
   }
 }
 
 void f_error_index(INT32 args)
 {
   INT_TYPE ind;
-  get_all_args("error->`[]",args,"%i",&ind);
+  get_all_args("Pike_error->`[]",args,"%i",&ind);
 
   switch(ind)
   {
@@ -560,7 +560,7 @@ void f_error_index(INT32 args)
       ref_push_array(GENERIC_ERROR_THIS->backtrace);
       break;
     default:
-      index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+      index_error("Pike_error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		  "Index %d is out of range 0 - 1.\n", ind);
       break;
   }
@@ -592,7 +592,7 @@ void f_error_backtrace(INT32 args)
   va_start(foo,desc); \
   ASSERT_THREAD_SWAPPED_IN(); \
   o=low_clone(PIKE_CONCAT(FEL,_error_program)); \
-  DWERROR((stderr, "%s(): Throwing a " #FEL " error\n", func))
+  DWERROR((stderr, "%s(): Throwing a " #FEL " Pike_error\n", func))
 
 #define ERROR_DONE(FOO) \
   PIKE_CONCAT(FOO,_error_va(o,func, \
@@ -642,7 +642,7 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   VSPRINTF(buf, fmt, foo);
 
   if(buf[sizeof(buf)-1])
-    fatal("Buffer overflow in error()\n");
+    fatal("Buffer overflow in Pike_error()\n");
 #endif /* HAVE_VSNPRINTF */
   in_error=buf;
 

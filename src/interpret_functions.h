@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.33 2000/12/01 03:19:00 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.34 2000/12/01 08:09:48 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -106,7 +106,7 @@ OPCODE2(F_EXTERNAL,"external")
 
   loc.o=Pike_fp->current_object;
   if(!loc.o->prog)
-    error("Cannot access parent of destructed object.\n");
+    Pike_error("Cannot access parent of destructed object.\n");
 
   loc.parent_identifier=Pike_fp->fun;
   loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
@@ -133,7 +133,7 @@ OPCODE2(F_EXTERNAL_LVALUE,"& external")
 
   loc.o=Pike_fp->current_object;
   if(!loc.o->prog)
-    error("Cannot access parent of destructed object.\n");
+    Pike_error("Cannot access parent of destructed object.\n");
 
   loc.parent_identifier=Pike_fp->fun;
   loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
@@ -182,11 +182,11 @@ OPCODE2(F_LOCAL_2_GLOBAL, "global = local")
   struct identifier *i;
 
   if(!Pike_fp->current_object->prog)
-    error("Cannot access global variables in destructed object.\n");
+    Pike_error("Cannot access global variables in destructed object.\n");
 
   i = ID_FROM_INT(Pike_fp->current_object->prog, tmp);
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-    error("Cannot assign functions or constants.\n");
+    Pike_error("Cannot assign functions or constants.\n");
   if(i->run_time_type == PIKE_T_MIXED)
   {
     assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp),
@@ -222,7 +222,7 @@ OPCODE2(F_LEXICAL_LOCAL,"lexical local")
   while(arg2--)
   {
     f=f->scope;
-    if(!f) error("Lexical scope error.\n");
+    if(!f) Pike_error("Lexical scope Pike_error.\n");
   }
   push_svalue(f->locals + arg1);
   print_return_value();
@@ -235,7 +235,7 @@ OPCODE2(F_LEXICAL_LOCAL_LVALUE,"&lexical local")
   while(arg2--)
   {
     f=f->scope;
-    if(!f) error("Lexical scope error.\n");
+    if(!f) Pike_error("Lexical scope Pike_error.\n");
   }
   Pike_sp[0].type=T_LVALUE;
   Pike_sp[0].u.lval=f->locals+arg1;
@@ -449,11 +449,11 @@ OPCODE1(F_GLOBAL_LVALUE, "& global")
   struct identifier *i;
   INT32 tmp=arg1 + Pike_fp->context.identifier_level;
   if(!Pike_fp->current_object->prog)
-    error("Cannot access global variables in destructed object.\n");
+    Pike_error("Cannot access global variables in destructed object.\n");
   i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
 
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-    error("Cannot re-assign functions or constants.\n");
+    Pike_error("Cannot re-assign functions or constants.\n");
 
   if(i->run_time_type == PIKE_T_MIXED)
   {
@@ -647,11 +647,11 @@ OPCODE1(F_ASSIGN_GLOBAL, "assign global")
   struct identifier *i;
   INT32 tmp=arg1 + Pike_fp->context.identifier_level;
   if(!Pike_fp->current_object->prog)
-    error("Cannot access global variables in destructed object.\n");
+    Pike_error("Cannot access global variables in destructed object.\n");
 
   i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-    error("Cannot assign functions or constants.\n");
+    Pike_error("Cannot assign functions or constants.\n");
   if(i->run_time_type == PIKE_T_MIXED)
   {
     assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp), Pike_sp-1);
@@ -668,11 +668,11 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop")
   struct identifier *i;
   INT32 tmp=arg1 + Pike_fp->context.identifier_level;
   if(!Pike_fp->current_object->prog)
-    error("Cannot access global variables in destructed object.\n");
+    Pike_error("Cannot access global variables in destructed object.\n");
 
   i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-    error("Cannot assign functions or constants.\n");
+    Pike_error("Cannot assign functions or constants.\n");
 
   if(i->run_time_type == PIKE_T_MIXED)
   {
@@ -1180,7 +1180,7 @@ OPCODE0(F_PUSH_ARRAY, "@")
 
     apply_lfun(Pike_sp[-1].u.object, LFUN__VALUES, 0);
     if(Pike_sp[-1].type != PIKE_T_ARRAY)
-      error("Bad return type from o->_values() in @\n");
+      Pike_error("Bad return type from o->_values() in @\n");
     free_svalue(Pike_sp-2);
     Pike_sp[-2]=Pike_sp[-1];
     Pike_sp--;

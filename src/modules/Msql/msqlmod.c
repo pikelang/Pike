@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.14 2000/07/28 07:13:45 hubbe Exp $
+ * $Id: msqlmod.c,v 1.15 2000/12/01 08:10:12 hubbe Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.14 2000/07/28 07:13:45 hubbe Exp $");
+RCSID("$Id: msqlmod.c,v 1.15 2000/12/01 08:10:12 hubbe Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -131,7 +131,7 @@ static void do_select_db(char * dbname)
 	{
 		THIS->db_selected=0;
 		report_error();
-		error("Could not select database.\n");
+		Pike_error("Could not select database.\n");
 	}
 	THIS->db_selected=1;
 	return;
@@ -147,7 +147,7 @@ static void do_shutdown (INT32 args)
 	pop_n_elems(args);
 
 	if (!THIS->connected)
-		error ("Not connected to any server.\n");
+		Pike_error ("Not connected to any server.\n");
 
 	THREADS_ALLOW();
 	MSQL_LOCK();
@@ -158,7 +158,7 @@ static void do_shutdown (INT32 args)
 	THREADS_DISALLOW();
 	if (status<0) {
 		report_error();
-		error ("Error while shutting down the DBserver, connection not closed.\n");
+		Pike_error ("Error while shutting down the DBserver, connection not closed.\n");
 	}
 	THIS->connected=0;
 	THIS->db_selected=0;
@@ -172,7 +172,7 @@ static void do_reload_acl (INT32 args)
 	check_all_args("Msql->reload_acl",args,0);
 	pop_n_elems(args);
 	if (!THIS->connected)
-		error ("Not connected to any server.\n");
+		Pike_error ("Not connected to any server.\n");
 
 	socket=THIS->socket;
 	THREADS_ALLOW();
@@ -182,7 +182,7 @@ static void do_reload_acl (INT32 args)
 	THREADS_DISALLOW();
 	if (status<0) {
 		report_error();
-		error ("Could not reload ACLs.\n");
+		Pike_error ("Could not reload ACLs.\n");
 	}
 }
 
@@ -244,7 +244,7 @@ static void msql_mod_create (INT32 args)
 		THIS->db_selected=0;
 		THIS->connected=0;
 		report_error();
-		error("Error while connecting to mSQL server.\n");
+		Pike_error("Error while connecting to mSQL server.\n");
 	}
 	THIS->socket=sock;
 	THIS->connected=1;
@@ -263,7 +263,7 @@ static void do_list_dbs (INT32 args)
 	check_all_args("Msql->list_dbs",args,BIT_STRING|BIT_VOID,0);
 
 	if (!THIS->connected)
-		error ("Not connected.\n");
+		Pike_error ("Not connected.\n");
 	if (args>0 && sp[-args].u.string->len)
 		/* We have a glob. We should pop the arg and push it again for a later
 		 * call to glob() */
@@ -307,7 +307,7 @@ static void do_list_tables (INT32 args)
 	check_all_args ("Msql->list_tables",args,BIT_STRING|BIT_VOID,0);
 
 	if (!THIS->db_selected)
-		error ("No database selected.\n");
+		Pike_error ("No database selected.\n");
 
 	if (args>0 && sp[-args].u.string->len)
 		/* We have a glob. We should pop the arg and push it again for a later
@@ -348,7 +348,7 @@ static void select_db(INT32 args)
 
 	check_all_args("Msql->select_db",args,BIT_STRING,0);
 	if (!THIS->connected)
-		error ("Not connected.\n");
+		Pike_error ("Not connected.\n");
 	arg=sp[-args].u.string;
 	do_select_db(arg->str);
 	pop_n_elems(args);
@@ -367,9 +367,9 @@ static void do_query (INT32 args)
 	check_all_args("Msql->query",args,BIT_STRING,0);
 
 	if (!THIS->connected)
-		error("Must connect to database server before querying it.\n");
+		Pike_error("Must connect to database server before querying it.\n");
 	if (!THIS->db_selected)
-		error("Must select database before querying it.\n");
+		Pike_error("Must select database before querying it.\n");
 
 	tmp_socket=THIS->socket;
 	query=sp[-args].u.string->str;
@@ -386,7 +386,7 @@ static void do_query (INT32 args)
 
 	if (status==-1) {
 		report_error();
-		error("Error in SQL query.\n");
+		Pike_error("Error in SQL query.\n");
 	}
 
 #ifdef MSQL_VERSION_2
@@ -411,7 +411,7 @@ static void do_query (INT32 args)
 	duplicate_names_map = malloc (sizeof(int)*num_fields);
 	names = malloc (sizeof(char*)*num_fields);
 	if (!duplicate_names_map || !names)
-		error ("Memory exhausted.\n");
+		Pike_error ("Memory exhausted.\n");
 
 	/* initialize support structure for duplicate column names */
 	for (j=0;j<num_fields;j++)
@@ -436,7 +436,7 @@ static void do_query (INT32 args)
 	for (j=0;j<num_fields;j++) {
 		current_field=msqlFetchField(result);
 		if (!current_field)
-			error ("Huh? Weird! Null field returned at index %d.\n",j);
+			Pike_error ("Huh? Weird! Null field returned at index %d.\n",j);
 		if (duplicate_names_map[j]) { 
 			/* If we have a clashing column name we need to prepend "tablename."*/
 			push_text (current_field->table);
@@ -486,7 +486,7 @@ static void do_info (INT32 args)
 	check_all_args("Msql->info",args,0);
 	pop_n_elems(args);
 	if (!THIS->connected)
-		error ("Not connected.\n");
+		Pike_error ("Not connected.\n");
 	push_text("msql/");
 	THREADS_ALLOW();
 	MSQL_LOCK();
@@ -504,17 +504,17 @@ static void do_host_info (INT32 args)
 	check_all_args("Msql->host_info",args,0);
 	pop_n_elems(args);
 	if (!THIS->connected)
-		error ("Not connected.\n");
+		Pike_error ("Not connected.\n");
 	/*it's local to the client library. Not even worth allowing
 	 context switches*/
 	push_text(msqlGetHostInfo()); 
 	return;
 }
 
-/* string error() */
+/* string Pike_error() */
 static void do_error (INT32 args)
 {
-	check_all_args("Msql->error",args,0);
+	check_all_args("Msql->Pike_error",args,0);
 	pop_n_elems(args);
 	if (THIS->error_msg)
 		ref_push_string(THIS->error_msg);
@@ -533,7 +533,7 @@ static void do_create_db (INT32 args)
 	check_all_args("Msql->create_db",args,BIT_STRING,0);
 
 	if (!THIS->connected)
-		error("Not connected.\n");
+		Pike_error("Not connected.\n");
 	dbname = sp[-args].u.string->str;
 	socket=THIS->socket;
 	THREADS_ALLOW();
@@ -543,7 +543,7 @@ static void do_create_db (INT32 args)
 	THREADS_DISALLOW();
 	if (dbresult==-1) {
 		report_error();
-		error ("Could not create database.\n");
+		Pike_error ("Could not create database.\n");
 	}
 	pop_n_elems(args);
 }
@@ -558,7 +558,7 @@ static void do_drop_db (INT32 args)
 	check_all_args("Msql->drop_db",args,BIT_STRING,0);
 
 	if (!THIS->connected)
-		error("Not connected.\n");
+		Pike_error("Not connected.\n");
 	dbname = sp[-args].u.string->str;
 	socket=THIS->socket;
 	THREADS_ALLOW();
@@ -568,7 +568,7 @@ static void do_drop_db (INT32 args)
 	THREADS_DISALLOW();
 	if (dbresult==-1) {
 		report_error();
-		error ("Could not drop database.\n");
+		Pike_error ("Could not drop database.\n");
 	}
 	pop_n_elems(args);
 	return;
@@ -584,9 +584,9 @@ static void do_list_fields (INT32 args)
 
 	check_all_args("Msql->list_fields",args,BIT_STRING,0);
 	if (!THIS->connected)
-		error ("Not connected.\n");
+		Pike_error ("Not connected.\n");
 	if (!THIS->db_selected)
-		error ("Must select a db first.\n");
+		Pike_error ("Must select a db first.\n");
 	table=sp[-args].u.string->str;
 #ifdef MSQL_DEBUG
 	printf ("list_fields: table=%s(%d)\n",sp[-args].u.string->str,sp[-args].u.string->len);
@@ -601,12 +601,12 @@ static void do_list_fields (INT32 args)
 
 	if (!result) {
 		report_error();
-		error ("No fields information.\n");
+		Pike_error ("No fields information.\n");
 	}
 	
 	fields = msqlNumFields(result);
 	if (!fields)
-		error ("No such table.\n");
+		Pike_error ("No such table.\n");
 
 	for (j=0;j<fields;j++)
 	{
@@ -668,7 +668,7 @@ static void do_list_index (INT32 args)
 
 	check_all_args("Msql->list_index",args,BIT_STRING,BIT_STRING,0);
 	if (!THIS->db_selected)
-		error ("No database selected.\n");
+		Pike_error ("No database selected.\n");
 	arg1=sp[-args].u.string->str;
 	arg2=sp[1-args].u.string->str;
 	sock=THIS->socket;
@@ -751,9 +751,9 @@ void pike_module_init(void)
 	  database */
 
 	/* function(void:void|string) */
-  ADD_FUNCTION("error",do_error,tFunc(tVoid,tOr(tVoid,tStr)),
+  ADD_FUNCTION("Pike_error",do_error,tFunc(tVoid,tOr(tVoid,tStr)),
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
-	/* return the last error reported by the server. */
+	/* return the last Pike_error reported by the server. */
 
 	/* function(void:string) */
   ADD_FUNCTION("server_info", do_info,tFunc(tVoid,tStr),

@@ -147,12 +147,12 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   pop_n_elems(args);
   apply(f, "query_fd", 0);
   mfd = fd_dup(sp[-1].u.integer);
-  if(mfd < 1)error("Bad fileobject to ->log_as_commonlog_to_file\n");
+  if(mfd < 1)Pike_error("Bad fileobject to ->log_as_commonlog_to_file\n");
   pop_stack();
 
   foo = fdopen( mfd, "w" );
   if(!foo)
-    error("Bad fileobject to ->log_as_commonlog_to_file\n");
+    Pike_error("Bad fileobject to ->log_as_commonlog_to_file\n");
 
   THREADS_ALLOW();
 

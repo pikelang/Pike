@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.8 2000/08/08 19:06:07 grubba Exp $
+ * $Id: cast.c,v 1.9 2000/12/01 08:10:26 hubbe Exp $
  *
  * CAST crypto module for Pike
  *
@@ -17,7 +17,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "object.h"
-#include "error.h"
+#include "pike_error.h"
 #include "las.h"
 
 #include <cast.h>
@@ -64,7 +64,7 @@ void exit_pike_crypto_cast(struct object *o)
 static void f_name(INT32 args)
 {
   if (args) {
-    error("Too many arguments to cast->name()\n");
+    Pike_error("Too many arguments to cast->name()\n");
   }
   push_string(make_shared_string("CAST"));
 }
@@ -73,7 +73,7 @@ static void f_name(INT32 args)
 static void f_query_block_size(INT32 args)
 {
   if (args) {
-    error("Too many arguments to cast->query_block_size()\n");
+    Pike_error("Too many arguments to cast->query_block_size()\n");
   }
   push_int(CAST_BLOCKSIZE);
 }
@@ -82,7 +82,7 @@ static void f_query_block_size(INT32 args)
 static void f_query_key_length(INT32 args)
 {
   if (args) {
-    error("Too many arguments to cast->query_key_length()\n");
+    Pike_error("Too many arguments to cast->query_key_length()\n");
   }
   push_int(CAST_MAX_KEYSIZE);
 }
@@ -90,14 +90,14 @@ static void f_query_key_length(INT32 args)
 static void set_key(INT32 args)
 {
   if (args != 1) {
-    error("Wrong number of arguments to des->set_key()\n");
+    Pike_error("Wrong number of arguments to des->set_key()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to des->set_key()\n");
+    Pike_error("Bad argument 1 to des->set_key()\n");
   }
   if ( (sp[-1].u.string->len < CAST_MIN_KEYSIZE)
        || (sp[-1].u.string->len > CAST_MAX_KEYSIZE))
-    error("Invalid key length to cast->set_key()\n");
+    Pike_error("Invalid key length to cast->set_key()\n");
 
   cast_setkey(&(THIS->key), (unsigned char *)sp[-1].u.string->str,
 	      DO_NOT_WARN(sp[-1].u.string->len));
@@ -128,19 +128,19 @@ static void f_crypt_block(INT32 args)
   INT32 i;
   
   if (args != 1) {
-    error("Wrong number of arguments to cast->crypt_block()\n");
+    Pike_error("Wrong number of arguments to cast->crypt_block()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to cast->crypt()\n");
+    Pike_error("Bad argument 1 to cast->crypt()\n");
   }
 
   len = sp[-1].u.string->len;
   if (len % CAST_BLOCKSIZE) {
-    error("Bad length of argument 1 to cast->crypt()\n");
+    Pike_error("Bad length of argument 1 to cast->crypt()\n");
   }
 
   if (!THIS->key.rounds)
-    error("Crypto.cast->crypt_block: Key not set\n");
+    Pike_error("Crypto.cast->crypt_block: Key not set\n");
   s = begin_shared_string(len);
   for(i = 0; i < len; i += CAST_BLOCKSIZE)
     THIS->crypt_fun(&(THIS->key), 

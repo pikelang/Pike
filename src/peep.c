@@ -6,7 +6,7 @@
 #include "las.h"
 #include "docode.h"
 #include "main.h"
-#include "error.h"
+#include "pike_error.h"
 #include "lex.h"
 #include "pike_memory.h"
 #include "peep.h"
@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.41 2000/12/01 01:13:45 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.42 2000/12/01 08:09:52 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -143,7 +143,7 @@ void ins_f_byte(unsigned int b)
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
   if(b>255)
-    error("Instruction too big %d\n",b);
+    Pike_error("Instruction too big %d\n",b);
 #endif
   add_to_program((unsigned char)b);
 }
@@ -411,7 +411,7 @@ void assemble(void)
     {
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
-	fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
+	fatal("Hyperspace Pike_error: unknown jump point %ld at %d (pc=%x).\n",
 	      PTRDIFF_T_TO_LONG(e), labels[e], jumps[e]);
 #endif
       tmp=read_int(jumps[e]);

@@ -38,12 +38,12 @@ void INAME(INT32 args)
   int needle_average=0;
   int needle_size=0;
   
-  if (!THIS->img) { error("no image\n");  return; }
+  if (!THIS->img) { Pike_error("no image\n");  return; }
   this=THIS;
   haystacki=this->img;
   haystack=this;
-  if (!args) { error("Missing arguments to image->"NAME"\n");  return; }
-  else if (args<2) { error("Too few arguments to image->"NAME"\n");  return; }
+  if (!args) { Pike_error("Missing arguments to image->"NAME"\n");  return; }
+  else if (args<2) { Pike_error("Too few arguments to image->"NAME"\n");  return; }
   else 
     {
       if (sp[-args].type==T_INT) 
@@ -51,16 +51,16 @@ void INAME(INT32 args)
       else if (sp[-args].type==T_FLOAT)
 	scale = sp[-args].u.float_number;
       else
-	error("Illegal argument 1 to image->"NAME"\n");
+	Pike_error("Illegal argument 1 to image->"NAME"\n");
 
       if ((sp[1-args].type!=T_OBJECT)
 	  || !(needle=
 	       (struct image*)get_storage(sp[1-args].u.object,image_program)))
-	error("Illegal argument 2 to image->"NAME"()\n");
+	Pike_error("Illegal argument 2 to image->"NAME"()\n");
 
       if ((needle->xsize>haystack->xsize)||
 	  (needle->ysize>haystack->ysize))
-	error("Haystack must be bigger than needle error in image->"NAME"()\n");
+	Pike_error("Haystack must be bigger than needle Pike_error in image->"NAME"()\n");
       needlei=needle->img;
       haystacki=haystack->img;
 
@@ -71,11 +71,11 @@ void INAME(INT32 args)
 	  if ((sp[2-args].type!=T_OBJECT)|| 
 		   !(haystack_cert=
 		     (struct image*)get_storage(sp[2-args].u.object,image_program)))
-	    error("Illegal argument 3 to image->"NAME"()\n");
+	    Pike_error("Illegal argument 3 to image->"NAME"()\n");
 	  else
 	    if ((haystack->xsize!=haystack_cert->xsize)||
 		(haystack->ysize!=haystack_cert->ysize))
-	      error("Argument 3 must be the same size as haystack error in image->"NAME"()\n");
+	      Pike_error("Argument 3 must be the same size as haystack Pike_error in image->"NAME"()\n");
 	  
 	  if ((sp[3-args].type==T_INT))
 	    {
@@ -87,12 +87,12 @@ void INAME(INT32 args)
 	  else if ((sp[3-args].type!=T_OBJECT)|| 
 		   !(needle_cert=
 		     (struct image*)get_storage(sp[3-args].u.object,image_program)))
-	    error("Illegal argument 4 to image->"NAME"()\n");
+	    Pike_error("Illegal argument 4 to image->"NAME"()\n");
 	  else
 	    {
 	      if ((needle_cert->xsize!=needle->xsize)||
 		  (needle_cert->ysize!=needle->ysize))
-		error("Needle_cert must be the same size as needle error in image->"NAME"()\n");
+		Pike_error("Needle_cert must be the same size as needle Pike_error in image->"NAME"()\n");
 	      type=2;
 	    }
 	  if (args>=6)
@@ -103,15 +103,15 @@ void INAME(INT32 args)
 		  type=4;
 		}
 	      else 
-		error("Illegal argument 6 to image->"NAME"()\n");
+		Pike_error("Illegal argument 6 to image->"NAME"()\n");
 	      if ((sp[4-args].type!=T_OBJECT)|| 
 		  !(haystack_avoid=
 		    (struct image*)get_storage(sp[4-args].u.object,image_program)))
-		error("Illegal argument 5 to image->"NAME"()\n");
+		Pike_error("Illegal argument 5 to image->"NAME"()\n");
 	      else
 		if ((haystack->xsize!=haystack_avoid->xsize)||
 		    (haystack->ysize!=haystack_avoid->ysize))
-		  error("Haystack_avoid must be the same size as haystack error in image->"NAME"()\n");
+		  Pike_error("Haystack_avoid must be the same size as haystack Pike_error in image->"NAME"()\n");
 	    }
 	}
       push_int(this->xsize);

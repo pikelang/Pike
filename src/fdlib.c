@@ -1,9 +1,9 @@
 #include "global.h"
 #include "fdlib.h"
-#include "error.h"
+#include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.46 2000/09/01 20:48:34 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.47 2000/12/01 08:09:47 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 

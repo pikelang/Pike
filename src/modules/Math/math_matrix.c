@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.18 2000/10/11 10:11:50 mirar Exp $ */
+/* $Id: math_matrix.c,v 1.19 2000/12/01 08:10:10 hubbe Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -6,7 +6,7 @@
 #include <math.h>
 
 #include "pike_macros.h"
-#include "../../error.h"
+#include "../../pike_error.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
@@ -478,7 +478,7 @@ static void matrix_transpose(INT32 args)
 **!
 **!	m->normv() is equal to m*(1.0/m->norm()),
 **!	with the exception that the zero vector will still be
-**!	the zero vector (no error).
+**!	the zero vector (no Pike_error).
 */
 
 static void matrix_norm(INT32 args)

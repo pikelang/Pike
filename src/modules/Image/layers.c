@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.57 2000/11/29 21:47:53 hubbe Exp $
+**!	$Id: layers.c,v 1.58 2000/12/01 08:10:01 hubbe Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.57 2000/11/29 21:47:53 hubbe Exp $");
+RCSID("$Id: layers.c,v 1.58 2000/12/01 08:10:01 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -531,7 +531,7 @@ struct layer_mode_desc
     COMBINE_ALPHA_SUM(aS,(aL)*(V))
 
 #else /* unknown COMBINE_METHOD */
-#error unknown COMBINE_METHOD
+#Pike_error unknown COMBINE_METHOD
 #endif /* COMBINE_METHOD_FLOAT  */
 
 #endif
@@ -797,7 +797,7 @@ static void image_layer_set_image(INT32 args)
 static void image_layer_get_misc_value( INT32 args )
 {
   if( args != 1 )
-    error("Wrong number of arguments to get_misc_value\n");
+    Pike_error("Wrong number of arguments to get_misc_value\n");
   if( THIS->misc )
   {
     ref_push_mapping( THIS->misc );
@@ -820,7 +820,7 @@ static void image_layer_get_misc_value( INT32 args )
 static void image_layer_set_misc_value( INT32 args )
 {
   if( args != 2 )
-    error("Wrong number of arguments to set_misc_value\n");
+    Pike_error("Wrong number of arguments to set_misc_value\n");
   if( !THIS->misc )
     THIS->misc = allocate_mapping( 4 );
 
@@ -2765,9 +2765,9 @@ static void image_layer_crop(INT32 args)
       f_call_function(8);
       if (Pike_sp[-1].type!=T_OBJECT ||
 	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
-	 error("No image returned from image->copy\n");
+	 Pike_error("No image returned from image->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
-	 error("Image returned from image->copy had "
+	 Pike_error("Image returned from image->copy had "
 	       "unexpected size (%d,%d, expected %d,%d)\n",
 	       img->xsize,img->ysize,xz,yz);
 
@@ -2793,9 +2793,9 @@ static void image_layer_crop(INT32 args)
       f_call_function(8);
       if (Pike_sp[-1].type!=T_OBJECT ||
 	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
-	 error("No image returned from alpha->copy\n");
+	 Pike_error("No image returned from alpha->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
-	 error("Image returned from alpha->copy had "
+	 Pike_error("Image returned from alpha->copy had "
 	       "unexpected size (%d,%d, expected %d,%d)\n",
 	       img->xsize,img->ysize,xz,yz);
       free_object(l->alpha);

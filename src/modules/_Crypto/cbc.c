@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.17 2000/08/16 20:09:23 grubba Exp $
+ * $Id: cbc.c,v 1.18 2000/12/01 08:10:26 hubbe Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -82,10 +82,10 @@ INLINE static void cbc_encrypt_step(const unsigned INT8 *source,
   safe_apply(THIS->object, "crypt_block", 1);
 
   if (sp[-1].type != T_STRING) {
-    error("cbc->encrypt(): Expected string from crypt_block()\n");
+    Pike_error("cbc->encrypt(): Expected string from crypt_block()\n");
   }
   if (sp[-1].u.string->len != block_size) {
-    error("cbc->encrypt(): Bad string length %ld returned from crypt_block()\n",
+    Pike_error("cbc->encrypt(): Bad string length %ld returned from crypt_block()\n",
 	  DO_NOT_WARN((long)sp[-1].u.string->len));
   }
   MEMCPY(THIS->iv, sp[-1].u.string->str, block_size);
@@ -103,10 +103,10 @@ INLINE static void cbc_decrypt_step(const unsigned INT8 *source,
   safe_apply(THIS->object, "crypt_block", 1);
 
   if (sp[-1].type != T_STRING) {
-    error("cbc->decrypt(): Expected string from crypt_block()\n");
+    Pike_error("cbc->decrypt(): Expected string from crypt_block()\n");
   }
   if (sp[-1].u.string->len != block_size) {
-    error("cbc->decrypt(): Bad string length %ld returned from crypt_block()\n",
+    Pike_error("cbc->decrypt(): Bad string length %ld returned from crypt_block()\n",
 	  DO_NOT_WARN((long)sp[-1].u.string->len));
   }
 
@@ -126,7 +126,7 @@ INLINE static void cbc_decrypt_step(const unsigned INT8 *source,
 static void f_create(INT32 args)
 {
   if (args < 1) {
-    error("Too few arguments to cbc->create()\n");
+    Pike_error("Too few arguments to cbc->create()\n");
   }
 #if 0
   fprintf(stderr, "cbc->create: type = %d\n",
@@ -143,18 +143,18 @@ static void f_create(INT32 args)
 
     /* Check return value */
     if (sp[-1].type != T_OBJECT)
-      error("cbc->create(): Returned value is not an object\n");
+      Pike_error("cbc->create(): Returned value is not an object\n");
     
     add_ref(THIS->object = sp[-1].u.object);
     break;
   case T_OBJECT:
     if (args != 1) {
-      error("Too many arguments to cbc->create()\n");
+      Pike_error("Too many arguments to cbc->create()\n");
     }
     add_ref(THIS->object = sp[-1].u.object);
     break;
   default:
-    error("Bad argument 1 to cbc->create()\n");
+    Pike_error("Bad argument 1 to cbc->create()\n");
   }
 
   pop_stack(); /* Just one element left on the stack in both cases */
@@ -164,7 +164,7 @@ static void f_create(INT32 args)
   safe_apply(THIS->object, "query_block_size", 0);
 
   if (sp[-1].type != T_INT) {
-    error("cbc->create(): query_block_size() didn't return an int\n");
+    Pike_error("cbc->create(): query_block_size() didn't return an int\n");
   }
   THIS->block_size = sp[-1].u.integer;
 
@@ -172,7 +172,7 @@ static void f_create(INT32 args)
 
   if ((!THIS->block_size) ||
       (THIS->block_size > 4096)) {
-    error("cbc->create(): Bad block size %d\n", THIS->block_size);
+    Pike_error("cbc->create(): Bad block size %d\n", THIS->block_size);
   }
 
   THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
@@ -198,7 +198,7 @@ static void f_set_encrypt_key(INT32 args)
   if (THIS->block_size) {
     /* MEMSET(THIS->iv, 0, THIS->block_size); */
   } else {
-    error("cbc->set_encrypt_key(): Object has not been created yet\n");
+    Pike_error("cbc->set_encrypt_key(): Object has not been created yet\n");
   }
   THIS->mode = 0;
   safe_apply(THIS->object, "set_encrypt_key", args);
@@ -212,7 +212,7 @@ static void f_set_decrypt_key(INT32 args)
   if (THIS->block_size) {
     /* MEMSET(THIS->iv, 0, THIS->block_size); */
   } else {
-    error("cbc->set_decrypt_key(): Object has not been created yet\n");
+    Pike_error("cbc->set_decrypt_key(): Object has not been created yet\n");
   }
   THIS->mode = 1;
   safe_apply(THIS->object, "set_decrypt_key", args);
@@ -224,14 +224,14 @@ static void f_set_iv(INT32 args)
 {
   if (!THIS->iv)
     {
-      error("cbc->set_iv: uninitialized object\n");
+      Pike_error("cbc->set_iv: uninitialized object\n");
     }
   if (args != 1)
-    error("cbc->set_iv: wrong number of arguments\n");
+    Pike_error("cbc->set_iv: wrong number of arguments\n");
   if (sp[-args].type != T_STRING)
-    error("cbc->set_iv: non-string argument\n");
+    Pike_error("cbc->set_iv: non-string argument\n");
   if (sp[-args].u.string->len != THIS->block_size)
-    error("cbc->set_iv: argument incompatible with cipher blocksize\n");
+    Pike_error("cbc->set_iv: argument incompatible with cipher blocksize\n");
   MEMCPY(THIS->iv, sp[-args].u.string->str, THIS->block_size);
   pop_n_elems(args);
   push_object(this_object());
@@ -244,16 +244,16 @@ static void f_encrypt_block(INT32 args)
   INT32 offset = 0;
 
   if (args != 1) {
-    error("Wrong number of arguments to cbc->encrypt_block()\n");
+    Pike_error("Wrong number of arguments to cbc->encrypt_block()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to cbc->encrypt_block()\n");
+    Pike_error("Bad argument 1 to cbc->encrypt_block()\n");
   }
   if (sp[-1].u.string->len % THIS->block_size) {
-    error("Bad length of argument 1 to cbc->encrypt_block()\n");
+    Pike_error("Bad length of argument 1 to cbc->encrypt_block()\n");
   }
   if (!(result = alloca(sp[-1].u.string->len))) {
-    error("cbc->encrypt_block(): Out of memory\n");
+    Pike_error("cbc->encrypt_block(): Out of memory\n");
   }
 
   while (offset < sp[-1].u.string->len) {
@@ -276,16 +276,16 @@ static void f_decrypt_block(INT32 args)
   INT32 offset = 0;
 
   if (args != 1) {
-    error("Wrong number of arguments to cbc->decrypt_block()\n");
+    Pike_error("Wrong number of arguments to cbc->decrypt_block()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to cbc->decrypt_block()\n");
+    Pike_error("Bad argument 1 to cbc->decrypt_block()\n");
   }
   if (sp[-1].u.string->len % THIS->block_size) {
-    error("Bad length of argument 1 to cbc->decrypt_block()\n");
+    Pike_error("Bad length of argument 1 to cbc->decrypt_block()\n");
   }
   if (!(result = alloca(sp[-1].u.string->len))) {
-    error("cbc->cbc_decrypt(): Out of memory\n");
+    Pike_error("cbc->cbc_decrypt(): Out of memory\n");
   }
 
   while (offset < sp[-1].u.string->len) {

@@ -8,9 +8,9 @@
 #include "hashtable.h"
 #include "stralloc.h"
 #include "stuff.h"
-#include "error.h"
+#include "pike_error.h"
 
-RCSID("$Id: hashtable.c,v 1.7 2000/08/15 16:03:48 grubba Exp $");
+RCSID("$Id: hashtable.c,v 1.8 2000/12/01 08:09:47 hubbe Exp $");
 
 static size_t gobble(struct pike_string *s)
 {

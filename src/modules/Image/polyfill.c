@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.35 2000/08/18 21:36:36 grubba Exp $");
+RCSID("$Id: polyfill.c,v 1.36 2000/12/01 08:10:02 hubbe Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -40,7 +40,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.35 2000/08/18 21:36:36 grubba Exp $
+**!	$Id: polyfill.c,v 1.36 2000/12/01 08:10:02 hubbe Exp $
 **! class Image
 */
 
@@ -701,7 +701,7 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
 	  a->item[n].type!=T_INT)
       {
 	 polyfill_free(top);
-	 error("Illegal argument %d to %s, array index %d is not int nor float\n",arg,what,n);
+	 Pike_error("Illegal argument %d to %s, array index %d is not int nor float\n",arg,what,n);
 	 return NULL;
       }
 
@@ -710,7 +710,7 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
       return top; 
 #if 0
       polyfill_free(top);
-      error("Illegal argument %d to %s, too few vertices (min 3)\n", arg, what);
+      Pike_error("Illegal argument %d to %s, too few vertices (min 3)\n", arg, what);
       return NULL; /* no polygon with less then tree corners */
 #endif
    }
@@ -759,11 +759,11 @@ void image_polyfill(INT32 args)
    double *buf;
 
    if (!THIS->img)
-      error("Image.Image->polyfill: no image\n");
+      Pike_error("Image.Image->polyfill: no image\n");
 
    buf=malloc(sizeof(double)*(THIS->xsize+1));
    if (!buf)
-      error("Image.Image->polyfill: out of memory\n");
+      Pike_error("Image.Image->polyfill: out of memory\n");
 
    v=polyfill_begin();
 
@@ -774,14 +774,14 @@ void image_polyfill(INT32 args)
       if (sp[-1].type!=T_ARRAY)
       {
 	 polyfill_free(v);
-	 error("Image.Image->polyfill: Illegal argument %d, expected array\n",
+	 Pike_error("Image.Image->polyfill: Illegal argument %d, expected array\n",
 	       args);
       }
       if ((v_tmp=polyfill_add(v, sp[-1].u.array, args, "Image.Image->polyfill()"))) {
 	 v = v_tmp;
       } else {
 	 polyfill_free(v);
-	 error("Image.Image->polyfill: Bad argument %d, bad vertex\n", args);
+	 Pike_error("Image.Image->polyfill: Bad argument %d, bad vertex\n", args);
       }
       args--;
       pop_stack();

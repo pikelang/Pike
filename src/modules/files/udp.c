@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.17 2000/10/24 12:25:27 leif Exp $
+ * $Id: udp.c,v 1.18 2000/12/01 08:10:37 hubbe Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.17 2000/10/24 12:25:27 leif Exp $");
+RCSID("$Id: udp.c,v 1.18 2000/12/01 08:10:37 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -18,7 +18,7 @@ RCSID("$Id: udp.c,v 1.17 2000/10/24 12:25:27 leif Exp $");
 #include "backend.h"
 #include "fd_control.h"
 
-#include "error.h"
+#include "pike_error.h"
 #include "signal_handler.h"
 #include "pike_types.h"
 #include "threads.h"
@@ -149,10 +149,10 @@ static void udp_bind(INT32 args)
   int fd,tmp;
 
   
-  if(args < 1) error("Too few arguments to dumudp->bind()\n");
+  if(args < 1) Pike_error("Too few arguments to dumudp->bind()\n");
 
   if(Pike_sp[-args].type != PIKE_T_INT)
-    error("Bad argument 1 to dumudp->bind()\n");
+    Pike_error("Bad argument 1 to dumudp->bind()\n");
 
   if(FD != -1)
   {
@@ -166,7 +166,7 @@ static void udp_bind(INT32 args)
   {
     pop_n_elems(args);
     THIS->my_errno=errno;
-    error("UDP.bind: failed to create socket\n");
+    Pike_error("UDP.bind: failed to create socket\n");
   }
 
   /* Make sure this fd gets closed on exec. */
@@ -177,7 +177,7 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    error("UDP.bind: setsockopt failed\n");
+    Pike_error("UDP.bind: setsockopt failed\n");
   }
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
@@ -201,7 +201,7 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    error("UDP.bind: failed to bind to port %d\n",Pike_sp[-args].u.integer);
+    Pike_error("UDP.bind: failed to bind to port %d\n",Pike_sp[-args].u.integer);
     return;
   }
 
@@ -246,7 +246,7 @@ void udp_wait(INT32 args)
   }
 
   if (fd < 0) {
-    error("udp->wait(): Port not bound!\n");
+    Pike_error("udp->wait(): Port not bound!\n");
   }
 
 #ifdef HAVE_POLL
@@ -264,7 +264,7 @@ void udp_wait(INT32 args)
     /* Timeout */
   } else if (res < 0) {
     /* Error */
-    error("udp->wait(): poll() failed with errno %d\n", e);
+    Pike_error("udp->wait(): poll() failed with errno %d\n", e);
   } else {
     /* Success? */
     if (pollfds->revents) {
@@ -288,7 +288,7 @@ void udp_wait(INT32 args)
     /* Timeout */
   } else if (res < 0) {
     /* Error */
-    error("udp->wait(): select() failed with errno %d\n", e);
+    Pike_error("udp->wait(): select() failed with errno %d\n", e);
   } else {
     /* Success? */
     if (FD_ISSET(fd, &rset)) {
@@ -326,13 +326,13 @@ void udp_read(INT32 args)
 #endif /* MSG_PEEK */
     }
     if(Pike_sp[-args].u.integer & ~3) {
-      error("Illegal 'flags' value passed to udp->read([int flags])\n");
+      Pike_error("Illegal 'flags' value passed to udp->read([int flags])\n");
     }
   }
   pop_n_elems(args);
   fd = FD;
   if (FD < 0)
-    error("UDP: not open\n");
+    Pike_error("UDP: not open\n");
   do {
     THREADS_ALLOW();
     res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
@@ -354,18 +354,18 @@ void udp_read(INT32 args)
 #endif
        case EBADF:
 	  set_read_callback( FD, 0, 0 );
-	  error("Socket closed\n");
+	  Pike_error("Socket closed\n");
 #ifdef ESTALE
        case ESTALE:
 #endif
        case EIO:
 	  set_read_callback( FD, 0, 0 );
-	  error("I/O error\n");
+	  Pike_error("I/O Pike_error\n");
        case ENOMEM:
 #ifdef ENOSR
        case ENOSR:
 #endif /* ENOSR */
-	  error("Out of memory\n");
+	  Pike_error("Out of memory\n");
 #ifdef ENOTSOCK
        case ENOTSOCK:
 	  fatal("reading from non-socket fd!!!\n");
@@ -375,7 +375,7 @@ void udp_read(INT32 args)
 	  return;
 
        default:
-	  error("Socket read failed with errno %d.\n", e);
+	  Pike_error("Socket read failed with errno %d.\n", e);
     }
   }
   /* Now comes the interresting part.
@@ -401,7 +401,7 @@ void udp_sendto(INT32 args)
   ptrdiff_t len;
 
   if(FD < 0)
-    error("UDP: not open\n");
+    Pike_error("UDP: not open\n");
   
   if(args>3)
   {
@@ -416,18 +416,18 @@ void udp_sendto(INT32 args)
 #endif /* MSG_DONTROUTE */
     }
     if(Pike_sp[3-args].u.integer & ~3) {
-      error("Illegal 'flags' value passed to udp->send(string m,string t,int p,[int flags])\n");
+      Pike_error("Illegal 'flags' value passed to udp->send(string m,string t,int p,[int flags])\n");
     }
   }
   if(!args)
-    error("Illegal number of arguments to udp->sendto(string to"
+    Pike_error("Illegal number of arguments to udp->sendto(string to"
 	  ", string message, int port[, int flags])\n");
 
 
   if( Pike_sp[-args].type==PIKE_T_STRING ) 
     get_inet_addr(&to, Pike_sp[-args].u.string->str);
   else
-    error("Illegal type of argument to sendto, got non-string to-address.\n");
+    Pike_error("Illegal type of argument to sendto, got non-string to-address.\n");
 
   to.sin_port = htons( ((u_short)Pike_sp[1-args].u.integer) );
 
@@ -452,23 +452,23 @@ void udp_sendto(INT32 args)
 #ifdef EMSGSIZE
        case EMSGSIZE:
 #endif
-	  error("Too big message\n");
+	  Pike_error("Too big message\n");
        case EBADF:
 	  set_read_callback( FD, 0, 0 );
-	  error("Socket closed\n");
+	  Pike_error("Socket closed\n");
        case ENOMEM:
 #ifdef ENOSR
        case ENOSR:
 #endif /* ENOSR */
-	  error("Out of memory\n");
+	  Pike_error("Out of memory\n");
        case EINVAL:
 #ifdef ENOTSOCK
        case ENOTSOCK:
 	  set_read_callback( FD, 0, 0 );
-	  error("Not a socket!!!\n");
+	  Pike_error("Not a socket!!!\n");
 #endif
        case EWOULDBLOCK:
-	  error("Message would block.\n");
+	  Pike_error("Message would block.\n");
     }
   }
   pop_n_elems(args);
@@ -513,10 +513,10 @@ static void udp_read_callback( int fd, void *data )
 static void udp_set_read_callback(INT32 args)
 {
   if(FD < 0)
-    error("File is not open.\n");
+    Pike_error("File is not open.\n");
 
   if(args != 1)
-    error("Wrong number of arguments to file->set_read_callback().\n");
+    Pike_error("Wrong number of arguments to file->set_read_callback().\n");
   
   if(IS_ZERO(& THIS->read_callback))
     assign_svalue(& THIS->read_callback, Pike_sp-1);
@@ -533,7 +533,7 @@ static void udp_set_read_callback(INT32 args)
 
 static void udp_set_nonblocking(INT32 args)
 {
-  if (FD < 0) error("File not open.\n");
+  if (FD < 0) Pike_error("File not open.\n");
 
   if (args)
   {
@@ -546,7 +546,7 @@ static void udp_set_nonblocking(INT32 args)
 
 static void udp_set_blocking(INT32 args)
 {
-  if (FD < 0) error("File not open.\n");
+  if (FD < 0) Pike_error("File not open.\n");
   set_nonblocking(FD,0);
   pop_n_elems(args);
   ref_push_object(THISOBJ);
@@ -570,7 +570,7 @@ static void udp_connect(INT32 args)
      if(FD < 0)
      {
 	THIS->my_errno=errno;
-	error("UDP.connect: failed to create socket\n");
+	Pike_error("UDP.connect: failed to create socket\n");
      }
      set_close_on_exec(FD, 1);
   }
@@ -586,7 +586,7 @@ static void udp_connect(INT32 args)
   if(tmp < 0)
   {
     THIS->my_errno=errno;
-    error("UDP.connect: failed to connect\n");
+    Pike_error("UDP.connect: failed to connect\n");
   }else{
     THIS->my_errno=0;
     pop_n_elems(args);
@@ -603,7 +603,7 @@ static void udp_query_address(INT32 args)
   ACCEPT_SIZE_T len;
 
   if(fd <0)
-    error("socket->query_address(): Port not bound yet.\n");
+    Pike_error("socket->query_address(): Port not bound yet.\n");
 
   THREADS_ALLOW();
 

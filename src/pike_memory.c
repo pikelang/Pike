@@ -6,11 +6,11 @@
 /**/
 #include "global.h"
 #include "pike_memory.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.92 2000/10/19 14:05:48 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.93 2000/12/01 08:09:52 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -627,7 +627,7 @@ PMOD_EXPORT char *debug_xalloc(size_t size)
 {
   char *ret;
   if(!size) 
-     error("Allocating zero bytes.\n");
+     Pike_error("Allocating zero bytes.\n");
 
 #ifdef SOFTLIM
   if(softlim_should_be)
@@ -640,7 +640,7 @@ PMOD_EXPORT char *debug_xalloc(size_t size)
   ret=(char *)malloc(size);
   if(ret) return ret;
 
-  error("Out of memory.\n");
+  Pike_error("Out of memory.\n");
   return 0;
 }
 

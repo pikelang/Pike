@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.21 2000/10/12 10:45:25 grubba Exp $ */
+/* $Id: perlmod.c,v 1.22 2000/12/01 08:10:18 hubbe Exp $ */
 
 #define NO_PIKE_SHORTHAND
 
@@ -24,7 +24,7 @@
 #include <perl.h>
 
 #ifdef USE_THREADS
-/* #error Threaded Perl not supported. */
+/* #Pike_error Threaded Perl not supported. */
 #endif
 
 #define MY_XS 1
@@ -105,7 +105,7 @@ static SV * _pikev2sv(struct svalue *s)
       if (s->u.string->size_shift) break;
       return newSVpv(s->u.string->str, s->u.string->len); break;
   }
-  error("Unsupported value type.\n");
+  Pike_error("Unsupported value type.\n");
   return 0;
 }
 
@@ -155,11 +155,11 @@ static int _perl_parse(struct perlmod_storage *ps,
 #endif
 
   if (!ps)
-         error("Internal error: no Perl storage allocated.\n");
+         Pike_error("Internal Pike_error: no Perl storage allocated.\n");
   if (!ps->perl)
-         error("Internal error: no Perl interpreter allocated.\n");
+         Pike_error("Internal Pike_error: no Perl interpreter allocated.\n");
   if (!ps->constructed)
-         error("Internal error: Perl interpreter not constructed.\n");
+         Pike_error("Internal Pike_error: Perl interpreter not constructed.\n");
   if (!envp && !ps->env)
   { /* Copy environment data, since Perl may wish to modify it. */
 
@@ -228,7 +228,7 @@ static void init_perl_glue(struct object *o)
 #ifdef PIKE_PERLDEBUG
     fprintf(stderr,"num_perl_interpreters=%d\n",num_perl_interpreters);
 #endif
-    /*    error("Perl: There can be only one!\n"); */
+    /*    Pike_error("Perl: There can be only one!\n"); */
     return;
   }
 #endif
@@ -314,8 +314,8 @@ static void perlmod_create(INT32 args)
 #endif
 #endif
     
-  if (args != 0) error("Perl->create takes no arguments.");
-  if (!ps || !ps->perl) error("No perl interpreter available.\n");
+  if (args != 0) Pike_error("Perl->create takes no arguments.");
+  if (!ps || !ps->perl) Pike_error("No perl interpreter available.\n");
 
   MT_PERMIT;
   if(!ps->constructed)
@@ -345,7 +345,7 @@ static void perlmod_parse(INT32 args)
 #endif
     
   check_all_args("Perl->parse",args,BIT_ARRAY, BIT_MAPPING|BIT_VOID, 0);
-  if(!ps->perl) error("No perl interpreter available.\n");
+  if(!ps->perl) Pike_error("No perl interpreter available.\n");
 
   switch(args)
   {
@@ -354,9 +354,9 @@ static void perlmod_parse(INT32 args)
       mapping_fix_type_field(env_mapping);
 
       if(m_ind_types(env_mapping) & ~BIT_STRING)
-	error("Bad argument 2 to Perl->create().\n");
+	Pike_error("Bad argument 2 to Perl->create().\n");
       if(m_val_types(env_mapping) & ~BIT_STRING)
-	error("Bad argument 2 to Perl->create().\n");
+	Pike_error("Bad argument 2 to Perl->create().\n");
       
     case 1:
       if (_THIS->argv_strings || _THIS->env_block)
@@ -369,10 +369,10 @@ static void perlmod_parse(INT32 args)
       array_fix_type_field(ps->argv_strings);
 
       if(ps->argv_strings->size<2)
-	   error("Perl: Too few elements in argv array.\n");
+	   Pike_error("Perl: Too few elements in argv array.\n");
 
       if(ps->argv_strings->type_field & ~BIT_STRING)
-	   error("Bad argument 1 to Perl->parse().\n");
+	   Pike_error("Bad argument 1 to Perl->parse().\n");
   }
 
   ps->argv=(char **)xalloc(sizeof(char *)*ps->argv_strings->size);
@@ -421,11 +421,11 @@ static void perlmod_run(INT32 args)
   INT32 i;
   struct perlmod_storage *ps = _THIS;
 
-  if(!ps->perl) error("No perl interpreter available.\n");
+  if(!ps->perl) Pike_error("No perl interpreter available.\n");
   pop_n_elems(args);
 
   if(!_THIS->constructed || !_THIS->parsed)
-    error("No Perl program loaded (run() called before parse()).\n");
+    Pike_error("No Perl program loaded (run() called before parse()).\n");
 
   MT_PERMIT;
   i=perl_run(ps->perl);
@@ -441,7 +441,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
 // #define sp _perlsp
   dSP;
 
-  if (!ps->perl) error("Perl interpreter not available.\n");
+  if (!ps->perl) Pike_error("Perl interpreter not available.\n");
 
   check_all_args("Perl->eval", args, BIT_STRING, 0);
   firstarg = Pike_sp[-args].u.string;
@@ -489,7 +489,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
             254-strlen(errtmp));
     POPs;
     PUTBACK; FREETMPS; LEAVE;
-    error(errtmp);
+    Pike_error(errtmp);
   }
 
   if (perlflags & G_ARRAY)
@@ -524,14 +524,14 @@ static void _perlmod_call(INT32 args, int perlflags)
   fprintf(stderr, "[perlmod_call: args=%d]\n", args);
 #endif
 
-  if (!ps->perl) error("No perl interpreter available.\n");
+  if (!ps->perl) Pike_error("No perl interpreter available.\n");
 
-  if (args <   1) error("Too few arguments.\n");
-  if (args > 201) error("Too many arguments.\n");
+  if (args <   1) Pike_error("Too few arguments.\n");
+  if (args > 201) Pike_error("Too many arguments.\n");
 
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift)
-       error("bad Perl function name (must be an 8-bit string)");
+       Pike_error("bad Perl function name (must be an 8-bit string)");
 
   ENTER;
   SAVETMPS;
@@ -550,7 +550,7 @@ static void _perlmod_call(INT32 args, int perlflags)
       case PIKE_T_STRING:
         if (s->u.string->size_shift)
         { PUTBACK; FREETMPS; LEAVE;
-          error("widestrings not supported in Pike-to-Perl call interface");
+          Pike_error("widestrings not supported in Pike-to-Perl call interface");
           return;
         }
         XPUSHs(sv_2mortal(newSVpv(s->u.string->str, s->u.string->len)));
@@ -566,7 +566,7 @@ static void _perlmod_call(INT32 args, int perlflags)
       default:
         msg = "Unsupported argument type.\n";
         PUTBACK; FREETMPS; LEAVE;
-        error(msg);
+        Pike_error(msg);
         return;
     }
   }
@@ -594,12 +594,12 @@ static void _perlmod_call(INT32 args, int perlflags)
             254-strlen(errtmp));
     POPs;
     PUTBACK; FREETMPS; LEAVE;
-    error(errtmp);
+    Pike_error(errtmp);
   }
 
   if (n < 0)
   { PUTBACK; FREETMPS; LEAVE;
-    error("Internal error: perl_call_pv returned a negative number.\n");
+    Pike_error("Internal Pike_error: perl_call_pv returned a negative number.\n");
   }
 
   if (!(perlflags & G_ARRAY) && n > 1)
@@ -607,7 +607,7 @@ static void _perlmod_call(INT32 args, int perlflags)
 
   if (n > ps->array_size_limit)
   { PUTBACK; FREETMPS; LEAVE;
-    error("Perl function returned too many values.\n");
+    Pike_error("Perl function returned too many values.\n");
   }
 
   if (perlflags & G_ARRAY)
@@ -639,12 +639,12 @@ static void _perlmod_varop(INT32 args, int op, int type)
   wanted_args = type == 'S' ? 1 : 2;
   if (op == 'W') ++wanted_args;
 
-  if (!(_THIS->perl)) error("No Perl interpreter available.\n");
+  if (!(_THIS->perl)) Pike_error("No Perl interpreter available.\n");
 
-  if (args != wanted_args) error("Wrong number of arguments.\n");
+  if (args != wanted_args) Pike_error("Wrong number of arguments.\n");
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
-       error("Variable name must be an 8-bit string.\n");
+       Pike_error("Variable name must be an 8-bit string.\n");
 
   if (type == 'S') /* scalar */
   { SV *sv = perl_get_sv(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
@@ -657,7 +657,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
   { AV *av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
     SV **svp;
     if (Pike_sp[1-args].type != PIKE_T_INT || (i = Pike_sp[1-args].u.integer) < 0)
-          error("Array subscript must be a non-negative integer.\n");
+          Pike_error("Array subscript must be a non-negative integer.\n");
     if (op == 'W')
          av_store(av, i, _sv_2mortal(_pikev2sv(Pike_sp+2-args)));
     pop_n_elems(args);
@@ -675,7 +675,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
                    (hv, key, _sv_2mortal(_pikev2sv(Pike_sp+2-args)), 0)))
          sv_setsv(HeVAL(he), _sv_2mortal(_pikev2sv(Pike_sp+2-args)));
       else
-         error("Internal error: hv_store_ent returned NULL.\n");
+         Pike_error("Internal Pike_error: hv_store_ent returned NULL.\n");
     }
     pop_n_elems(args);
     if (op == 'R')
@@ -685,7 +685,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
          _push_zerotype();
     }
   }
-  else error("Internal error in _perlmod_varop.\n");
+  else Pike_error("Internal Pike_error in _perlmod_varop.\n");
 
   if (op != 'R') push_int(0);
 }
@@ -705,13 +705,13 @@ static void perlmod_set_hash_item(INT32 args)
 
 static void perlmod_array_size(INT32 args)
 { AV *av;
-  if (args != 1) error("Wrong number of arguments.\n");
+  if (args != 1) Pike_error("Wrong number of arguments.\n");
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
-      error("Array name must be given as an 8-bit string.\n");
+      Pike_error("Array name must be given as an 8-bit string.\n");
 
   av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
-  if (!av) error("Interal error: perl_get_av() return NULL.\n");
+  if (!av) Pike_error("Interal Pike_error: perl_get_av() return NULL.\n");
   pop_n_elems(args);
   /* Return av_len()+1, since av_len() returns the value of the highest
    * index, which is 1 less than the size. */
@@ -720,17 +720,17 @@ static void perlmod_array_size(INT32 args)
 
 static void perlmod_get_whole_array(INT32 args)
 { AV *av; int i, n; struct array *arr;
-  if (args != 1) error("Wrong number of arguments.\n");
+  if (args != 1) Pike_error("Wrong number of arguments.\n");
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
-      error("Array name must be given as an 8-bit string.\n");
+      Pike_error("Array name must be given as an 8-bit string.\n");
 
   av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
-  if (!av) error("Interal error: perl_get_av() returned NULL.\n");
+  if (!av) Pike_error("Interal Pike_error: perl_get_av() returned NULL.\n");
   n = av_len(av) + 1;
 
   if (n > _THIS->array_size_limit)
-     error("The array is larger than array_size_limit.\n");
+     Pike_error("The array is larger than array_size_limit.\n");
 
   arr = allocate_array(n);
   for(i = 0; i < n; ++i)
@@ -743,19 +743,19 @@ static void perlmod_get_whole_array(INT32 args)
 
 static void perlmod_get_hash_keys(INT32 args)
 { HV *hv; HE *he; SV *sv; int i, n; I32 len; struct array *arr;
-  if (args != 1) error("Wrong number of arguments.\n");
+  if (args != 1) Pike_error("Wrong number of arguments.\n");
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
-      error("Hash name must be given as an 8-bit string.\n");
+      Pike_error("Hash name must be given as an 8-bit string.\n");
 
   hv = perl_get_hv(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
-  if (!hv) error("Interal error: perl_get_av() return NULL.\n");
+  if (!hv) Pike_error("Interal Pike_error: perl_get_av() return NULL.\n");
 
   /* count number of elements in hash */
   for(n = 0, hv_iterinit(hv); (he = hv_iternext(hv)); ++n);
 
   if (n > _THIS->array_size_limit)
-     error("The array is larger than array_size_limit.\n");
+     Pike_error("The array is larger than array_size_limit.\n");
 
   arr = allocate_array(n);
   for(i = 0, hv_iterinit(hv); (he = hv_iternext(hv)); ++i)
@@ -772,11 +772,11 @@ static void perlmod_array_size_limit(INT32 args)
       break;
     case 1:
       if (Pike_sp[-args].type != PIKE_T_INT || Pike_sp[-args].u.integer < 1)
-           error("Argument must be a integer in range 1 to 2147483647.");
+           Pike_error("Argument must be a integer in range 1 to 2147483647.");
       _THIS->array_size_limit = Pike_sp[-args].u.integer;
       break;
     default:
-      error("Wrong number of arguments.\n");
+      Pike_error("Wrong number of arguments.\n");
   }
   pop_n_elems(args);
   push_int(_THIS->array_size_limit);
@@ -873,7 +873,7 @@ void pike_module_exit(void)
 #else /* HAVE_PERL */
 
 #ifdef ERROR_IF_NO_PERL
-#error "No Perl!"
+#Pike_error "No Perl!"
 #endif
 
 void pike_module_init(void) {}

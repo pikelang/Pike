@@ -8,7 +8,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
@@ -589,7 +589,7 @@ static void save_subparse_state (struct parser_html_storage *this,
   save->out_ctx = this->out_ctx;
   if (!this->cond_out) {
     struct out_piece *ph = malloc (sizeof (struct out_piece));
-    if (!ph) error ("Parser.HTML: Out of memory.\n");
+    if (!ph) Pike_error ("Parser.HTML: Out of memory.\n");
     ph->v.type = T_INT;
     ph->next = NULL;
     this->cond_out = this->cond_out_end = ph;
@@ -723,7 +723,7 @@ static void unwind_subparse_state (struct subparse_save *save)
 
 static void html__set_tag_callback(INT32 args)
 {
-   if (!args) error("_set_tag_callback: too few arguments\n");
+   if (!args) Pike_error("_set_tag_callback: too few arguments\n");
    dmalloc_touch_svalue(sp-args);
    assign_svalue(&(THIS->callback__tag),sp-args);
    pop_n_elems(args);
@@ -732,7 +732,7 @@ static void html__set_tag_callback(INT32 args)
 
 static void html__set_data_callback(INT32 args)
 {
-   if (!args) error("_set_data_callback: too few arguments\n");
+   if (!args) Pike_error("_set_data_callback: too few arguments\n");
    dmalloc_touch_svalue(sp-args);
    assign_svalue(&(THIS->callback__data),sp-args);
    pop_n_elems(args);
@@ -741,7 +741,7 @@ static void html__set_data_callback(INT32 args)
 
 static void html__set_entity_callback(INT32 args)
 {
-   if (!args) error("_set_entity_callback: too few arguments\n");
+   if (!args) Pike_error("_set_entity_callback: too few arguments\n");
    dmalloc_touch_svalue(sp-args);
    assign_svalue(&(THIS->callback__entity),sp-args);
    pop_n_elems(args);
@@ -1247,7 +1247,7 @@ static void put_out_feed(struct parser_html_storage *this,
 
    f=malloc(sizeof(struct out_piece));
    if (!f)
-      error("Parser.HTML(): out of memory\n");
+      Pike_error("Parser.HTML(): out of memory\n");
    assign_svalue_no_free(&f->v,v);
 
    f->next=NULL;
@@ -1301,7 +1301,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
       c_head=0;
       head=head->next;
    }
-   fatal("internal error: tail not found in feed (put_out_feed_range)\n");
+   fatal("internal Pike_error: tail not found in feed (put_out_feed_range)\n");
 }
 
 /* ------------------------ */
@@ -1343,7 +1343,7 @@ static INLINE void push_feed_range(struct piece *head,
       head=head->next;
    }
    if (!head)
-      fatal("internal error: tail not found in feed (push_feed_range)\n");
+      fatal("internal Pike_error: tail not found in feed (push_feed_range)\n");
    if (!n)
       ref_push_string(empty_string);
    else if (n>1)
@@ -1457,7 +1457,7 @@ static INLINE void skip_piece_range(struct location *loc,
       }
       break;
       default:
-	 error("unknown width of string\n");
+	 Pike_error("unknown width of string\n");
    }
    loc->byteno=b;
 }
@@ -1605,7 +1605,7 @@ static int scan_forward(struct piece *feed,
 		  }
 		  break;
 		  default:
-		     error("unknown width of string\n");
+		     Pike_error("unknown width of string\n");
 	       }
 	       if (!feed->next) break;
 	       c=0;
@@ -1674,7 +1674,7 @@ static int scan_forward(struct piece *feed,
 	       }
 	       break;
 	       default:
-		  error("unknown width of string\n");
+		  Pike_error("unknown width of string\n");
 	    }
 	    if (!feed->next) break;
 	    c=0;
@@ -1757,7 +1757,7 @@ static int scan_for_string (struct parser_html_storage *this,
     case 0: LOOP (p_wchar0); break;
     case 1: LOOP (p_wchar1); break;
     case 2: LOOP (p_wchar2); break;
-    default: error ("Unknown width of string.\n");
+    default: Pike_error ("Unknown width of string.\n");
   }
 
 #undef LOOP
@@ -2189,7 +2189,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 	  case 0: LOOP (p_wchar0); break;
 	  case 1: LOOP (p_wchar1); break;
 	  case 2: LOOP (p_wchar2); break;
-	  default: error ("Unknown width of string.\n");
+	  default: Pike_error ("Unknown width of string.\n");
 	}
 
 #undef LOOP
@@ -2223,13 +2223,13 @@ static INLINE void add_local_feed (struct parser_html_storage *this,
 {
   struct feed_stack *new = malloc(sizeof(struct feed_stack));
   if (!new)
-    error("out of memory\n");
+    Pike_error("out of memory\n");
 
   new->local_feed=malloc(sizeof(struct piece));
   if (!new->local_feed)
   {
     free(new);
-    error("out of memory\n");
+    Pike_error("out of memory\n");
   }
 
   copy_shared_string(new->local_feed->s,str);
@@ -2311,7 +2311,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	       pop_stack();
 	       return STATE_REPARSE;
 	 }
-	 error("Parser.HTML: illegal result from callback: %d, "
+	 Pike_error("Parser.HTML: illegal result from callback: %d, "
 	       "not 0 (skip) or 1 (wait)\n",
 	       sp[-1].u.integer);
 
@@ -2321,7 +2321,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 {
 	    if (!(THIS->flags & FLAG_MIXED_MODE) &&
 		sp[-1].u.array->item[i].type!=T_STRING)
-	       error("Parser.HTML: illegal result from callback: element in array not string\n");
+	       Pike_error("Parser.HTML: illegal result from callback: element in array not string\n");
 	    push_svalue(sp[-1].u.array->item+i);
 	    put_out_feed(this,sp-1,0);
 	    pop_stack();
@@ -2333,7 +2333,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 return STATE_DONE; /* continue */
 
       default:
-	 error("Parser.HTML: illegal result from callback: not 0, string or array(string)\n");
+	 Pike_error("Parser.HTML: illegal result from callback: not 0, string or array(string)\n");
    }
    /* NOT_REACHED */
    return STATE_DONE;
@@ -2418,7 +2418,7 @@ static newstate entity_callback(struct parser_html_storage *this,
 	    break;
 	 }
       default:
-	 error("Parser.HTML: illegal type found "
+	 Pike_error("Parser.HTML: illegal type found "
 	       "when trying to call entity callback\n");
    }
 
@@ -2485,7 +2485,7 @@ static newstate tag_callback(struct parser_html_storage *this,
 	    break;
 	 }
       default:
-	 error("Parser.HTML: illegal type found "
+	 Pike_error("Parser.HTML: illegal type found "
 	       "when trying to call tag callback\n");
    }
 
@@ -2556,7 +2556,7 @@ static newstate container_callback(struct parser_html_storage *this,
 	    break;
 	 }
       default:
-	 error("Parser.HTML: illegal type found "
+	 Pike_error("Parser.HTML: illegal type found "
 	       "when trying to call container callback\n");
    }
 
@@ -2628,7 +2628,7 @@ static newstate quote_tag_callback(struct parser_html_storage *this,
 	    break;
 	 }
       default:
-	 error("Parser.HTML: illegal type found "
+	 Pike_error("Parser.HTML: illegal type found "
 	       "when trying to call quote tag callback\n");
    }
 
@@ -3711,7 +3711,7 @@ static void try_feed(int finished)
 
 	 case STATE_REREAD: /* reread stack head */
 	    if (THIS->stack_count>THIS->max_stack_depth)
-	       error("Parser.HTML: too deep recursion\n");
+	       Pike_error("Parser.HTML: too deep recursion\n");
 	    break;
       }
    }
@@ -3728,7 +3728,7 @@ static void low_feed(struct pike_string *ps)
 
    f=malloc(sizeof(struct piece));
    if (!f)
-      error("feed: out of memory\n");
+      Pike_error("feed: out of memory\n");
    copy_shared_string(f->s,ps);
 
    f->next=NULL;
@@ -3863,7 +3863,7 @@ static void html_read(INT32 args)
       if (sp[-args].type==T_INT)
          n=sp[-args].u.integer;
       else
-         error("read: illegal argument\n");
+         Pike_error("read: illegal argument\n");
    }
 
    pop_n_elems(args);
@@ -3901,7 +3901,7 @@ static void html_read(INT32 args)
 	 struct out_piece *z;
 
 	 if (THIS->out->v.type != T_STRING)
-	    error("Parser.HTML: Got nonstring in parsed data\n");
+	    Pike_error("Parser.HTML: Got nonstring in parsed data\n");
 
 	 if (THIS->out->v.u.string->len>n)
 	 {
@@ -3950,7 +3950,7 @@ void html_write_out(INT32 args)
    for (i = args; i; i--)
    {
       if (!(THIS->flags & FLAG_MIXED_MODE) && sp[-i].type!=T_STRING)
-	 error("write_out: not a string argument\n");
+	 Pike_error("write_out: not a string argument\n");
       put_out_feed(THIS,sp-i,1);
    }
    pop_n_elems(args);
@@ -4234,7 +4234,7 @@ static void html_tag_name(INT32 args)
    /* get rid of arguments */
    pop_n_elems(args);
 
-   if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
+   if (!THIS->start) Pike_error ("Parser.HTML: There's no current range.\n");
    switch (THIS->type) {
      case TYPE_TAG:
      case TYPE_CONT:
@@ -4282,7 +4282,7 @@ static void html_tag_args(INT32 args)
    if (args) assign_svalue_no_free(&def,sp-args);
    pop_n_elems(args);
 
-   if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
+   if (!THIS->start) Pike_error ("Parser.HTML: There's no current range.\n");
 
    switch (THIS->type) {
      case TYPE_TAG:
@@ -4306,7 +4306,7 @@ static void html_tag_content(INT32 args)
 
   pop_n_elems(args);
 
-  if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
+  if (!THIS->start) Pike_error ("Parser.HTML: There's no current range.\n");
 
   if (THIS->flags & FLAG_WS_BEFORE_TAG_NAME &&
       !scan_forward (beg, cbeg, &beg, &cbeg, THIS->ws, -THIS->n_ws)) {

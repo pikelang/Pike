@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.6 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: wbf.c,v 1.7 2000/12/01 08:10:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -15,7 +15,7 @@ RCSID("$Id: wbf.c,v 1.6 2000/08/03 21:25:32 grubba Exp $");
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 #include "program.h"
 
@@ -65,7 +65,7 @@ struct wbf_header
 static void read_string( struct buffer *from, unsigned int len, char *to )
 {
   if( from->len < len )
-    error("Invalid data format\n");
+    Pike_error("Invalid data format\n");
   MEMCPY( from->str, to, len );
   from->str += len;
   from->len -= len;
@@ -80,7 +80,7 @@ static unsigned char read_uchar( struct buffer *from )
     from->str++;
     from->len--;
   } else
-    error("Invalid data format\n");
+    Pike_error("Invalid data format\n");
   return res;
 }
 
@@ -287,7 +287,7 @@ static void low_image_f_wbf_decode( int args, int mode )
      free_string( s );
      free_wbf_header_contents( &wh );
 
-     error("Unsupported wbf image type.\n");
+     Pike_error("Unsupported wbf image type.\n");
   }
 }
 
@@ -359,20 +359,20 @@ static void image_f_wbf_encode( int args )
   int num_strings = 0;
 
   if( !args )
-    error("No image given to encode.\n");
+    Pike_error("No image given to encode.\n");
   if( args > 2 )
-    error("Too many arguments to encode.\n");
+    Pike_error("Too many arguments to encode.\n");
   if( sp[-args].type != T_OBJECT )
-    error("No image given to encode.\n");
+    Pike_error("No image given to encode.\n");
 
   o = sp[-args].u.object;
   i = (struct image*)get_storage(o,image_program);
   if(!i)
-    error("Wrong type object argument\n");
+    Pike_error("Wrong type object argument\n");
   if( args == 2 )
   {
     if( sp[-args+1].type != T_MAPPING )
-      error("Wrong type for argument 2.\n");
+      Pike_error("Wrong type for argument 2.\n");
     options = sp[-args+1].u.mapping;
   }
   sp-=args;

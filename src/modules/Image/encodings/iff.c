@@ -1,9 +1,9 @@
-/* $Id: iff.c,v 1.8 2000/08/11 18:36:19 grubba Exp $ */
+/* $Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.8 2000/08/11 18:36:19 grubba Exp $");
+RCSID("$Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -11,7 +11,7 @@ RCSID("$Id: iff.c,v 1.8 2000/08/11 18:36:19 grubba Exp $");
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 #include "builtin_functions.h"
 
@@ -31,9 +31,9 @@ static ptrdiff_t low_parse_iff(unsigned char *data, ptrdiff_t len,
     if(!memcmp(hdr, "FORM", 4))
       clen -= 4;
     if(clen > len)
-      error("truncated file\n");
+      Pike_error("truncated file\n");
     else if(clen < 0)
-      error("invalid chunk length\n");
+      Pike_error("invalid chunk length\n");
   }
 
   if((!memcmp(hdr, "FORM", 4)) || (!memcmp(hdr, "LIST", 4))) {
@@ -60,10 +60,10 @@ void parse_iff(char *id, unsigned char *data, ptrdiff_t len,
 	       struct mapping *m, char *stopchunk)
 {
   if(len<12 || memcmp("FORM", data, 4))
-    error("invalid IFF FORM\n");
+    Pike_error("invalid IFF FORM\n");
 
   if(memcmp(id, data+8, 4))
-    error("FORM is not %s\n", id);
+    Pike_error("FORM is not %s\n", id);
 
   low_parse_iff(data+12, len-12, data, m, (unsigned char *)stopchunk);
 }
@@ -76,7 +76,7 @@ static struct pike_string *low_make_iff(struct svalue *s)
   if(s->type != T_ARRAY || s->u.array->size != 2 ||
      s->u.array->item[0].type != T_STRING ||
      s->u.array->item[1].type != T_STRING)
-    error("invalid chunk\n");
+    Pike_error("invalid chunk\n");
 
   add_ref(s->u.array);
   push_array_items(s->u.array);

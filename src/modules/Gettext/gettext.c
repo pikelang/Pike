@@ -12,7 +12,7 @@
 #endif
 
 #include "stralloc.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_macros.h"
 #include "constants.h"
 #include "interpret.h"
@@ -23,7 +23,7 @@
 /* This must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: gettext.c,v 1.5 2000/08/10 09:51:52 per Exp $");
+RCSID("$Id: gettext.c,v 1.6 2000/12/01 08:09:57 hubbe Exp $");
 
 /*
 **! module Locale.Gettext
@@ -31,7 +31,7 @@ RCSID("$Id: gettext.c,v 1.5 2000/08/10 09:51:52 per Exp $");
 **!	This module enables access to localization functions from within Pike.
 **!
 **! note
-**!	$Id: gettext.c,v 1.5 2000/08/10 09:51:52 per Exp $
+**!	$Id: gettext.c,v 1.6 2000/12/01 08:09:57 hubbe Exp $
 */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
@@ -51,9 +51,9 @@ void f_gettext(INT32 args)
 {
   char *translated;
   if (args != 1)
-    error( "Wrong number of arguments to Gettext.gettext()\n" );
+    Pike_error( "Wrong number of arguments to Gettext.gettext()\n" );
   if (sp[-1].type != T_STRING)
-    error( "Bad argument 1 to Gettext.gettext(), expected string\n" );
+    Pike_error( "Bad argument 1 to Gettext.gettext(), expected string\n" );
   translated = gettext(sp[-1].u.string->str);
 
   pop_n_elems(args);
@@ -149,12 +149,12 @@ void f_textdomain(INT32 args)
 {
   char *domain=NULL, *returnstring;
   if (args != 0 && args != 1)
-    error( "Wrong number of arguments to Gettext.textdomain()\n" );
+    Pike_error( "Wrong number of arguments to Gettext.textdomain()\n" );
 
   if(sp[-args].type == T_STRING)
     domain = sp[-args].u.string->str;
   else if(!(sp[-args].type == T_INT && sp[-args].u.integer == 0))
-    error( "Bad argument 1 to Gettext.textdomain(), expected string|void\n" );
+    Pike_error( "Bad argument 1 to Gettext.textdomain(), expected string|void\n" );
   returnstring = textdomain(domain);
   pop_n_elems(args);
   push_string(make_shared_string(returnstring));
@@ -193,21 +193,21 @@ void f_bindtextdomain(INT32 args)
 {
   char *returnstring, *domain = NULL, *dirname = NULL;
   if (args < 1 || args > 2)
-    error( "Wrong number of arguments to Gettext.bindtextdomain()\n" );
+    Pike_error( "Wrong number of arguments to Gettext.bindtextdomain()\n" );
   switch(args)
   {
    case 2:
     if(sp[-1].type == T_STRING)
       dirname = sp[-1].u.string->str;
     else if(!(sp[-1].type == T_INT && sp[-1].u.integer == 0))
-      error( "Bad argument 2 to Gettext.bindtextdomain(), expected string|void\n" );
+      Pike_error( "Bad argument 2 to Gettext.bindtextdomain(), expected string|void\n" );
     /* FALLTHROUGH */
     
    case 1:
     if(sp[-args].type == T_STRING)
       domain = sp[-args].u.string->str;
     else if(!(sp[-args].type == T_INT && sp[-args].u.integer == 0))
-      error( "Bad argument 1 to Gettext.bindtextdomain(), expected string|void\n" );
+      Pike_error( "Bad argument 1 to Gettext.bindtextdomain(), expected string|void\n" );
   }
   returnstring = bindtextdomain(domain, dirname);
   pop_n_elems(args);

@@ -19,7 +19,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "mapping.h"
 #include "multiset.h"
 #include "backend.h"
@@ -32,7 +32,7 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: sane.c,v 1.7 2000/08/10 09:51:54 per Exp $");
+RCSID("$Id: sane.c,v 1.8 2000/12/01 08:10:23 hubbe Exp $");
 
 /*
 **! module SANE
@@ -41,7 +41,7 @@ RCSID("$Id: sane.c,v 1.7 2000/08/10 09:51:54 per Exp $");
 **!     library from pike
 **!
 **! note
-**!	$Id: sane.c,v 1.7 2000/08/10 09:51:54 per Exp $
+**!	$Id: sane.c,v 1.8 2000/12/01 08:10:23 hubbe Exp $
 */
 
 static int sane_is_inited;
@@ -54,7 +54,7 @@ struct scanner
 static void init_sane()
 {
   if( sane_init( NULL, NULL ) )
-    error( "Sane init failed.\n" );
+    Pike_error( "Sane init failed.\n" );
   sane_is_inited =  1;
 }
 
@@ -107,7 +107,7 @@ static void f_list_scanners( INT32 args )
      f_aggregate( i );
      break;
    default:
-     error("Failed to get device list\n");
+     Pike_error("Failed to get device list\n");
   }
 }
 
@@ -217,7 +217,7 @@ static void f_scanner_create( INT32 args )
   get_all_args( "create", args, "%s", &name );
 
   if( sane_open( name, &THIS->h ) )
-    error("Failed to open scanner \"%s\"\n", name );
+    Pike_error("Failed to open scanner \"%s\"\n", name );
 }
 
 /*
@@ -244,7 +244,7 @@ static int find_option( char *name, const SANE_Option_Descriptor **p )
       *p = d;
       return i;
     }
-  error("No such option: %s\n", name );
+  Pike_error("No such option: %s\n", name );
 }
 
 
@@ -417,7 +417,7 @@ static void assert_image_program()
     sp--;/* Do not free image program.. */
   }
   if( !image_program )
-    error("No Image.Image?!\n");
+    Pike_error("No Image.Image?!\n");
 }
 
 /*
@@ -434,11 +434,11 @@ static void f_scanner_simple_scan( INT32 args )
   assert_image_program();
 
   pop_n_elems( args );
-  if( sane_start( THIS->h ) )   error("Start failed\n");
-  if( sane_get_parameters( THIS->h, &p ) )  error("Get parameters failed\n");
+  if( sane_start( THIS->h ) )   Pike_error("Start failed\n");
+  if( sane_get_parameters( THIS->h, &p ) )  Pike_error("Get parameters failed\n");
 
   if( p.depth != 8 )
-    error("Sorry, only depth 8 supported right now.\n");
+    Pike_error("Sorry, only depth 8 supported right now.\n");
 
   push_int( p.pixels_per_line );
   push_int( p.lines );
@@ -487,9 +487,9 @@ static void f_scanner_row_scan( INT32 args )
   rgb_group *r, or;
   int i, nr;
 
-  if( sane_start( THIS->h ) )               error("Start failed\n");
-  if( sane_get_parameters( THIS->h, &p ) )  error("Get parameters failed\n");
-  if( p.depth != 8 )  error("Sorry, only depth 8 supported right now.\n");
+  if( sane_start( THIS->h ) )               Pike_error("Start failed\n");
+  if( sane_get_parameters( THIS->h, &p ) )  Pike_error("Get parameters failed\n");
+  if( p.depth != 8 )  Pike_error("Sorry, only depth 8 supported right now.\n");
 
   assert_image_program();
   switch( p.format )
@@ -500,7 +500,7 @@ static void f_scanner_row_scan( INT32 args )
    case SANE_FRAME_RED:
    case SANE_FRAME_GREEN:
    case SANE_FRAME_BLUE:
-     error("Composite frame mode not supported for row_scan\n");
+     Pike_error("Composite frame mode not supported for row_scan\n");
      break;
   }
   push_int( p.pixels_per_line );
@@ -631,9 +631,9 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
   int fd;
   struct row_scan_struct *rsp;
 
-  if( sane_start( THIS->h ) )               error("Start failed\n");
-  if( sane_get_parameters( THIS->h, &p ) )  error("Get parameters failed\n");
-  if( p.depth != 8 )  error("Sorry, only depth 8 supported right now.\n");
+  if( sane_start( THIS->h ) )               Pike_error("Start failed\n");
+  if( sane_get_parameters( THIS->h, &p ) )  Pike_error("Get parameters failed\n");
+  if( p.depth != 8 )  Pike_error("Sorry, only depth 8 supported right now.\n");
 
   switch( p.format )
   {
@@ -643,7 +643,7 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
    case SANE_FRAME_RED:
    case SANE_FRAME_GREEN:
    case SANE_FRAME_BLUE:
-     error("Composite frame mode not supported for row_scan\n");
+     Pike_error("Composite frame mode not supported for row_scan\n");
      break;
   }
 
@@ -671,7 +671,7 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
     free_object( rsp->t );
     free( rsp->buffer );
     free( rsp );
-    error("Failed to get select fd for scanning device!\n");
+    Pike_error("Failed to get select fd for scanning device!\n");
   }
   set_read_callback( fd, nonblocking_row_scan_callback, (void*)rsp );
   push_int( 0 );

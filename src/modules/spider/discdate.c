@@ -17,7 +17,7 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 #include <time.h>
 #include <string.h>
@@ -26,7 +26,7 @@
 /* This must be included last! */
 #include "module_magic.h"
 
-RCSID("$Id: discdate.c,v 1.7 2000/07/28 07:15:49 hubbe Exp $");
+RCSID("$Id: discdate.c,v 1.8 2000/12/01 08:10:37 hubbe Exp $");
 
 struct disc_time
 {
@@ -47,7 +47,7 @@ void f_discdate(INT32 argc)
   struct disc_time hastur;
   if (argc != 1) 
   {
-    error("Error: discdate(time)");
+    Pike_error("Error: discdate(time)");
     exit(1);
   } else {
     struct tm *eris;

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.40 2000/09/10 01:23:58 per Exp $
+**!	$Id: colors.c,v 1.41 2000/12/01 08:09:58 hubbe Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -152,9 +152,9 @@
 **!	pike 0.7
 **!	
 **! note: 
-**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
+**!	<tt>Image.Color["something"]</tt> will never(!) generate an Pike_error, 
 **!	but a zero_type 0, if the color is unknown. This is enough
-**!	to give the error "not present in module", if used 
+**!	to give the Pike_error "not present in module", if used 
 **!	as <tt>Image.Color.something</tt>, though.
 **!
 **!     If you are using colors from for instance a webpage, you might
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.40 2000/09/10 01:23:58 per Exp $");
+RCSID("$Id: colors.c,v 1.41 2000/12/01 08:09:58 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -482,7 +482,7 @@ static void image_color_hsvf(INT32 args)
    if(max != 0.0)
       s = (max - min)/max;
    else
-      error("internal error, max==0.0\n");
+      Pike_error("internal Pike_error, max==0.0\n");
 
    delta = max-min;
 
@@ -685,7 +685,7 @@ static void image_color_hex(INT32 args)
 	    sprintf(buf,"#%08x%08x%08x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b); 
 	    break;
 	 default:
-	    error("unknown size of colortype\n");
+	    Pike_error("unknown size of colortype\n");
       }
    push_text(buf);
 }
@@ -748,7 +748,7 @@ static void image_color_cast(INT32 args)
       image_color_name(args);
       return;
    }
-   error("Image.Color.Color->cast(): Can't cast to that\n");
+   Pike_error("Image.Color.Color->cast(): Can't cast to that\n");
 }
 
 /*
@@ -842,7 +842,7 @@ static void image_color_index(INT32 args)
    struct svalue s;
 
    if (args!=1)
-      error("Image.Color[]: illegal number of arguments\n");
+      Pike_error("Image.Color[]: illegal number of arguments\n");
 
    object_index_no_free2(&s,THISOBJ,sp-1);
    if (s.type==T_INT && sp[-1].type==T_STRING)
@@ -922,7 +922,7 @@ static void image_color_index(INT32 args)
 static void image_color_equal(INT32 args)
 {
    if (args!=1) 
-      error("Image.Color.Color->`==: illegal number of arguments");
+      Pike_error("Image.Color.Color->`==: illegal number of arguments");
 
    if (sp[-1].type==T_OBJECT)
    {
@@ -1224,7 +1224,7 @@ static void image_get_color(INT32 args)
    static char *callables[]={"light","dark","neon","dull","bright"};
 
    if (args!=1) 
-      error("Image.Color[]: illegal number of args");
+      Pike_error("Image.Color[]: illegal number of args");
    
    if (!colors)
       make_colors();
@@ -1571,7 +1571,7 @@ static void image_make_hsv_color(INT32 args)
 	 case 3: r = p;	 g = q;	 b = v;	 break;
 	 case 4: r = t;	 g = p;	 b = v;	 break;
 	 case 5: r = v;	 g = p;	 b = q;	 break;
-	 default: error("internal error (hue=%d <= hsv[%f,%f,%f])\n",
+	 default: Pike_error("internal Pike_error (hue=%d <= hsv[%f,%f,%f])\n",
 			DOUBLE_TO_INT(i), h, s, v);
       }
    }

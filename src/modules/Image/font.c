@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.65 2000/08/19 11:16:53 grubba Exp $ */
+/* $Id: font.c,v 1.66 2000/12/01 08:10:00 hubbe Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.65 2000/08/19 11:16:53 grubba Exp $
+**!	$Id: font.c,v 1.66 2000/12/01 08:10:00 hubbe Exp $
 **! class Font
 **!
 **! note
@@ -368,7 +368,7 @@ void font_load(INT32 args)
    }
 
    if (sp[-args].type!=T_STRING)
-      error("font->read: illegal or wrong number of arguments\n");
+      Pike_error("font->read: illegal or wrong number of arguments\n");
    
    do 
    {
@@ -568,7 +568,7 @@ void font_write(INT32 args)
    INT32 c;
    struct font *this = (*(struct font **)(Pike_fp->current_storage));
    if (!this)
-      error("font->write: no font loaded\n");
+      Pike_error("font->write: no font loaded\n");
 
    if (args==0)
    {
@@ -767,7 +767,7 @@ void font_text_extents(INT32 args)
 {
   INT32 xsize,i,maxwidth2,j;
 
-  if (!THIS) error("font->text_extents: no font loaded\n");
+  if (!THIS) Pike_error("font->text_extents: no font loaded\n");
 
   maxwidth2=0;
 
@@ -848,10 +848,10 @@ void font_text_extents(INT32 args)
 
 void font_set_xspacing_scale(INT32 args)
 {
-  if(!THIS) error("font->set_xspacing_scale(FLOAT): No font loaded.\n");
-  if(!args) error("font->set_xspacing_scale(FLOAT): No argument!\n");
+  if(!THIS) Pike_error("font->set_xspacing_scale(FLOAT): No font loaded.\n");
+  if(!args) Pike_error("font->set_xspacing_scale(FLOAT): No argument!\n");
   if(sp[-args].type!=T_FLOAT)
-    error("font->set_xspacing_scale(FLOAT): Wrong type of argument!\n");
+    Pike_error("font->set_xspacing_scale(FLOAT): Wrong type of argument!\n");
 
   THIS->xspacing_scale = (double)sp[-args].u.float_number;
 /*fprintf(stderr, "Setting xspacing to %f\n", THIS->xspacing_scale);*/
@@ -863,10 +863,10 @@ void font_set_xspacing_scale(INT32 args)
 
 void font_set_yspacing_scale(INT32 args)
 {
-  if(!THIS) error("font->set_yspacing_scale(FLOAT): No font loaded.\n");
-  if(!args) error("font->set_yspacing_scale(FLOAT): No argument!\n");
+  if(!THIS) Pike_error("font->set_yspacing_scale(FLOAT): No font loaded.\n");
+  if(!args) Pike_error("font->set_yspacing_scale(FLOAT): No argument!\n");
   if(sp[-args].type!=T_FLOAT)
-    error("font->set_yspacing_scale(FLOAT): Wrong type of argument!\n");
+    Pike_error("font->set_yspacing_scale(FLOAT): Wrong type of argument!\n");
 
   THIS->yspacing_scale = (double)sp[-args].u.float_number;
 /*fprintf(stderr, "Setting yspacing to %f\n", THIS->yspacing_scale);*/

@@ -5,14 +5,14 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.111 2000/11/08 20:03:45 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.112 2000/12/01 08:09:50 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
 #include "svalue.h"
 #include "array.h"
 #include "pike_macros.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_memory.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1687,7 +1687,7 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args)
   struct mapping *m;
 
   if(args & 1)
-    error("Uneven number of arguments to aggregate_mapping.\n");
+    Pike_error("Uneven number of arguments to aggregate_mapping.\n");
 
   m=allocate_mapping(MAP_SLOTS(args / 2));
 

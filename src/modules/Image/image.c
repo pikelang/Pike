@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.181 2000/11/29 21:47:53 hubbe Exp $ */
+/* $Id: image.c,v 1.182 2000/12/01 08:10:00 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.181 2000/11/29 21:47:53 hubbe Exp $
+**!	$Id: image.c,v 1.182 2000/12/01 08:10:00 hubbe Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.181 2000/11/29 21:47:53 hubbe Exp $");
+RCSID("$Id: image.c,v 1.182 2000/12/01 08:10:00 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -106,7 +106,7 @@ RCSID("$Id: image.c,v 1.181 2000/11/29 21:47:53 hubbe Exp $");
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 #include "module_support.h"
 
@@ -231,7 +231,7 @@ static INLINE int getrgb(struct image *img,
 
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
-         error("Illegal r,g,b argument to %s\n",name);
+         Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
@@ -239,7 +239,7 @@ static INLINE int getrgb(struct image *img,
    if (max > 3 && args-args_start>=4) 
       if (sp[3-args+args_start].type!=T_INT)
       {
-         error("Illegal alpha argument to %s\n",name);
+         Pike_error("Illegal alpha argument to %s\n",name);
 	 return 0; /* avoid stupid warning */
       }
       else
@@ -260,7 +260,7 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *nam
    if (args-args_start<3) return;
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
-         error("Illegal r,g,b argument to %s\n",name);
+         Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;
    rgb->b=sp[2-args+args_start].u.integer;
@@ -585,10 +585,10 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 	 break;
       case T_STRING:
 	 if (sp[arg-args-1].u.string->size_shift)
-	    error("create_method: argument %d (%s channel): "
+	    Pike_error("create_method: argument %d (%s channel): "
 		  "wide strings are not supported (yet)\n",arg+1,name);
 	 if (sp[arg-args-1].u.string->len!=THIS->xsize*THIS->ysize)
-	    error("create_method: argument %d (%s channel): "
+	    Pike_error("create_method: argument %d (%s channel): "
 		  "string is %ld characters, expected %ld\n",
 		  arg+1, name,
 		  DO_NOT_WARN((long)sp[arg-args-1].u.string->len),
@@ -599,13 +599,13 @@ void img_read_get_channel(int arg,char *name,INT32 args,
       case T_OBJECT:
 	 img=(struct image*)get_storage(sp[arg-args-1].u.object,image_program);
 	 if (!img) 
-	    error("create_method: argument %d (%s channel): "
+	    Pike_error("create_method: argument %d (%s channel): "
 		  "not an image object\n",arg+1,name);
 	 if (!img->img) 
-	    error("create_method: argument %d (%s channel): "
+	    Pike_error("create_method: argument %d (%s channel): "
 		  "uninitialized image object\n",arg+1,name);
 	 if (img->xsize!=THIS->xsize || img->ysize!=THIS->ysize) 
-	    error("create_method: argument %d (%s channel): "
+	    Pike_error("create_method: argument %d (%s channel): "
 		  "size is wrong, %dx%d; expected %dx%d\n",
 		  arg+1,name,img->xsize,img->ysize,
 		  THIS->xsize,THIS->ysize);
@@ -613,7 +613,7 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 	 *m=sizeof(rgb_group);
 	 break;
       default:
-	 error("create_method: argument %d (%s channel): "
+	 Pike_error("create_method: argument %d (%s channel): "
 	       "illegal type\n",arg+1,name);
    }
 }
@@ -766,7 +766,7 @@ void image_create_method(INT32 args)
    MAKE_CONSTANT_SHARED_STRING(s_tuned_box,"tuned_box");
 
    if (THIS->xsize<=0 || THIS->ysize<=0)
-      error("create_method: image size is too small\n");
+      Pike_error("create_method: image size is too small\n");
 
    if (sp[-args].u.string==s_grey)
    {
@@ -823,7 +823,7 @@ void image_create_method(INT32 args)
       image_tuned_box(5);
    }
    else 
-      error("create_method: unknown method\n");
+      Pike_error("create_method: unknown method\n");
 
    /* on stack: "string" image */
    /* want: put that image in this, crap that image */
@@ -850,7 +850,7 @@ void image_create(INT32 args)
    if (THIS->ysize<0) THIS->ysize=0;
 
    if (image_too_big(THIS->xsize,THIS->ysize)) 
-      error("Image.Image->create(): image too large (>2Gpixels)\n");
+      Pike_error("Image.Image->create(): image too large (>2Gpixels)\n");
 
    if (args>2 && sp[2-args].type==T_STRING &&
        !image_color_svalue(sp+2-args,&(THIS->rgb))) 
@@ -925,7 +925,7 @@ void image_clone(INT32 args)
    {
       if(sp[-args].u.integer < 0 ||
 	 sp[1-args].u.integer < 0)
-	 error("Illegal size to Image.Image->clone()\n");
+	 Pike_error("Illegal size to Image.Image->clone()\n");
       img->xsize=sp[-args].u.integer;
       img->ysize=sp[1-args].u.integer;
    }
@@ -1066,7 +1066,7 @@ void image_copy(INT32 args)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    getrgb(THIS,4,args,args,"Image.Image->copy()"); 
 
@@ -1109,7 +1109,7 @@ static void image_change_color(INT32 args)
    struct image *img;
    int arg;
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    to=THIS->rgb;   
    if (!(arg=getrgb(THIS,0,args,3,"Image.Image->change_color()")))
@@ -1265,7 +1265,7 @@ static void image_find_autocrop(INT32 args)
    }
 
    if (!THIS->img)
-      error("Called Image.Image object is not initialized\n");;
+      Pike_error("Called Image.Image object is not initialized\n");;
 
    img_find_autocrop(THIS,&x1,&y1,&x2,&y2,
 		     border,left,right,top,bottom,0,rgb);
@@ -1398,7 +1398,7 @@ void image_getpixel(INT32 args)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
@@ -1755,7 +1755,7 @@ static void image_tuned_box(INT32 args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->tuned_box",5);
 
   if (!THIS->img)
-    error("Called Image.Image object is not initialized\n");;
+    Pike_error("Called Image.Image object is not initialized\n");;
 
   x1=sp[-args].u.integer;
   y1=sp[1-args].u.integer;
@@ -2244,7 +2244,7 @@ void image_color(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
    if (args<3)
    {
       if (args>0 && sp[-args].type==T_INT)
@@ -2320,7 +2320,7 @@ void image_invert(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2395,7 +2395,7 @@ void image_threshold(INT32 args)
    struct image *img;
    INT_TYPE level=-1;
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    if (args==1)
       get_all_args("threshold",args,"%i",&level),level*=3;
@@ -2524,7 +2524,7 @@ void image_hsv_to_rgb(INT32 args)
    struct object *o;
    struct image *img;
    char *err = NULL;
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2588,7 +2588,7 @@ exit_loop:
    THREADS_DISALLOW();
 
    if (err) {
-     error("%s\n", err);
+     Pike_error("%s\n", err);
    }
 
    pop_n_elems(args);
@@ -2609,7 +2609,7 @@ void image_rgb_to_hsv(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2703,7 +2703,7 @@ void image_distancesq(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    getrgb(THIS,0,args,args,"Image.Image->distancesq()");
 
@@ -2874,7 +2874,7 @@ void image_select_from(INT32 args)
    struct image *img;
    INT32 low_limit=0;
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    if (args<2 
        || sp[-args].type!=T_INT
@@ -2971,10 +2971,10 @@ void image_bitscale( INT32 args )
       newx = DOUBLE_TO_INT(oldx * sp[-1].u.float_number);
       newy = DOUBLE_TO_INT(oldy * sp[-1].u.float_number);
     } else 
-      error("The scale factor must be an integer less than 2^32, or a float\n");
+      Pike_error("The scale factor must be an integer less than 2^32, or a float\n");
   } else if( args == 2 ) {
     if( sp[-1].type != sp[-2].type )
-      error("Wrong type of argument\n");
+      Pike_error("Wrong type of argument\n");
     if( sp[-2].type  == T_INT )
       (newx = sp[-2].u.integer),(newy = sp[-1].u.integer);
     else if( sp[-2].type  == T_FLOAT )
@@ -2983,13 +2983,13 @@ void image_bitscale( INT32 args )
       newy = DOUBLE_TO_INT(oldy*sp[-1].u.float_number);
 
     } else
-      error( "Wrong type of arguments\n");
+      Pike_error( "Wrong type of arguments\n");
   }
 
   /* Not really nessesary if I use floats below.. */
   /* FIXME */
   if( newx > 65536 || newy > 65536 || oldx > 65536 || oldy > 65536)
-    error("Image too big.\n");
+    Pike_error("Image too big.\n");
 
   if( newx < 1 ) newx = 1;
   if( newy < 1 ) newy = 1;
@@ -3158,7 +3158,7 @@ CHRONO("apply_matrix");
       if (sp[1-args].type!=T_INT ||
 	  sp[2-args].type!=T_INT ||
 	  sp[3-args].type!=T_INT)
-	 error("Illegal argument(s) (2,3,4) to Image.Image->apply_matrix()\n");
+	 Pike_error("Illegal argument(s) (2,3,4) to Image.Image->apply_matrix()\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;
@@ -3192,12 +3192,12 @@ CHRONO("apply_matrix");
    {
       struct svalue s=sp[-args].u.array->item[i];
       if (s.type!=T_ARRAY) 
-	 error("Illegal contents of (root) array (Image.Image->apply_matrix)\n");
+	 Pike_error("Illegal contents of (root) array (Image.Image->apply_matrix)\n");
       if (width==-1)
 	 width=s.u.array->size;
       else
 	 if (width!=s.u.array->size)
-	    error("Arrays has different size (Image.Image->apply_matrix)\n");
+	    Pike_error("Arrays has different size (Image.Image->apply_matrix)\n");
    }
    if (width==-1) width=0;
 
@@ -3318,7 +3318,7 @@ static void _image_outline(INT32 args,int mask)
    struct image *img;
 
    if (!THIS->img || !THIS->xsize || !THIS->ysize)
-      error("Called Image.Image object is not initialized\n");;
+      Pike_error("Called Image.Image object is not initialized\n");;
 
    if (args && sp[-args].type==T_ARRAY)
    {
@@ -3329,12 +3329,12 @@ static void _image_outline(INT32 args,int mask)
       {
 	 struct svalue s=sp[-args].u.array->item[i];
 	 if (s.type!=T_ARRAY) 
-	    error("Image.Image->outline: Illegal contents of (root) array\n");
+	    Pike_error("Image.Image->outline: Illegal contents of (root) array\n");
 	 if (width==-1)
 	    width=s.u.array->size;
 	 else
 	    if (width!=s.u.array->size)
-	       error("Image.Image->outline: Arrays has different size\n");
+	       Pike_error("Image.Image->outline: Arrays has different size\n");
       }
       if (width==-1) width=0;
 
@@ -3526,7 +3526,7 @@ void image_modify_by_intensity(INT32 args)
    struct image *img;
    long div;
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
    if (args<5) 
       SIMPLE_TOO_FEW_ARGS_ERROR("Image",1);
    
@@ -3887,7 +3887,7 @@ void image_gamma(INT32 args)
    double gammar=0.0, gammab=0.0, gammag=0.0;
    COLORTYPE newr[256];
 
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
    if (args==1) 
       if (sp[-args].type==T_INT) 
 	 gammar=gammab=gammag=(double)sp[-args].u.integer;
@@ -3911,7 +3911,7 @@ void image_gamma(INT32 args)
 		"Bad arguments to Image.Image->gamma()\n");
    }
    else
-      error("Image.Image->gamma(): illegal number of arguments\n");
+      Pike_error("Image.Image->gamma(): illegal number of arguments\n");
 
    if (gammar==gammab && gammab==gammag)
    {
@@ -4217,7 +4217,7 @@ void image_cast(INT32 args)
 	 int i,j;
 	 rgb_group *s=THIS->img;
 
-	 if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+	 if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 	 
 	 pop_n_elems(args);
 
@@ -4236,7 +4236,7 @@ void image_cast(INT32 args)
       }
       if (strncmp(sp[-args].u.string->str,"string",6)==0)
       {
-	 if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+	 if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
 	 pop_n_elems(args);
 	 push_string(make_shared_binary_string((char *)THIS->img,
@@ -4289,7 +4289,7 @@ void image_tobitmap(INT32 args)
    rgb_group *s;
 
    pop_n_elems(args);
-   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    xs=(THIS->xsize+7)>>3;
 

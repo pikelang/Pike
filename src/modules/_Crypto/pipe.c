@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.18 2000/08/15 13:02:44 grubba Exp $
+ * $Id: pipe.c,v 1.19 2000/12/01 08:10:29 hubbe Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -83,7 +83,7 @@ static void f_create(INT32 args)
   int block_size=1;
 
   if (!args) {
-    error("_Crypto.pipe->create(): Too few arguments\n");
+    Pike_error("_Crypto.pipe->create(): Too few arguments\n");
   }
   THIS->objects = (struct object **)xalloc(args * sizeof(struct object *));
   MEMSET(THIS->objects, 0, args * sizeof(struct object *));
@@ -97,11 +97,11 @@ static void f_create(INT32 args)
       INT32 n_args;
 
       if (!sp[i].u.array->size) {
-	error("_Crypto.pipe->create(): Argument %d: Empty array\n",
+	Pike_error("_Crypto.pipe->create(): Argument %d: Empty array\n",
 	      1 + args + i);
       }
       if (sp[i].u.array->item[0].type != T_PROGRAM) {
-	error("_Crypto.pipe->create(): Argument %d: "
+	Pike_error("_Crypto.pipe->create(): Argument %d: "
 	      "First element of array must be a program\n",
 	      1 + args + i);
       }
@@ -115,7 +115,7 @@ static void f_create(INT32 args)
 
       assert_is_crypto_module(THIS->objects[args + i]);
     } else {
-      error("_Crypto.pipe->create(): Bad argument %d\n", i + args);
+      Pike_error("_Crypto.pipe->create(): Bad argument %d\n", i + args);
     }
   }
   THIS->num_objs = args;
@@ -127,11 +127,11 @@ static void f_create(INT32 args)
 
     safe_apply(THIS->objects[i], "query_block_size", 0);
     if (sp[-1].type != T_INT) {
-      error("_Crypto.pipe->create(): query_block_size() returned other than int\n"
+      Pike_error("_Crypto.pipe->create(): query_block_size() returned other than int\n"
 	    "for object #%d\n", i+1);
     }
     if (!(sub_size = sp[-1].u.integer)) {
-      error("_Crypto.pipe->create(): query_block_size() returned zero\n"
+      Pike_error("_Crypto.pipe->create(): query_block_size() returned zero\n"
 	    "for object #%d\n", i+1);
     }
     pop_stack();
@@ -201,7 +201,7 @@ static void f_set_encrypt_key(INT32 args)
   int i;
 
   if (args != THIS->num_objs) {
-    error("_Crypto.pipe->set_encrypt_key(): Wrong number of arguments\n");
+    Pike_error("_Crypto.pipe->set_encrypt_key(): Wrong number of arguments\n");
   }
   THIS->mode = 0;
   for (i=-args; i; i++) {
@@ -214,7 +214,7 @@ static void f_set_encrypt_key(INT32 args)
       n_args = sp[i].u.array->size;
       push_array_items(sp[i].u.array);
     } else {
-      error("_Crypto.pipe->set_encrypt_key(): Bad argument %d\n",
+      Pike_error("_Crypto.pipe->set_encrypt_key(): Bad argument %d\n",
 	    1 + args + i);
     }
     safe_apply(THIS->objects[args + i], "set_encrypt_key", n_args);
@@ -230,7 +230,7 @@ static void f_set_decrypt_key(INT32 args)
   int i;
 
   if (args != THIS->num_objs) {
-    error("_Crypto.pipe->set_decrypt_key(): Wrong number of arguments\n");
+    Pike_error("_Crypto.pipe->set_decrypt_key(): Wrong number of arguments\n");
   }
   THIS->mode = 1;
   for (i=-args; i; i++) {
@@ -243,7 +243,7 @@ static void f_set_decrypt_key(INT32 args)
       n_args = sp[i].u.array->size;
       push_array_items(sp[i].u.array);
     } else {
-      error("_Crypto.pipe->set_decrypt_key(): Bad argument %d\n",
+      Pike_error("_Crypto.pipe->set_decrypt_key(): Bad argument %d\n",
 	    1 + args + i);
     }
     safe_apply(THIS->objects[args + i], "set_decrypt_key", n_args);
@@ -259,16 +259,16 @@ static void f_crypt_block(INT32 args)
   int i;
 
   if (args < 1) {
-    error("_Crypto.pipe->crypt_block(): Too few arguments\n");
+    Pike_error("_Crypto.pipe->crypt_block(): Too few arguments\n");
   }
   if (args > 1) {
     pop_n_elems(args-1);
   }
   if (sp[-1].type != T_STRING) {
-    error("_Crypto.pipe->crypt_block(): Bad argument 1\n");
+    Pike_error("_Crypto.pipe->crypt_block(): Bad argument 1\n");
   }
   if (sp[-1].u.string->len % THIS->block_size) {
-    error("_Crypto.pipe->crypt_block(): Bad length of argument 1\n");
+    Pike_error("_Crypto.pipe->crypt_block(): Bad length of argument 1\n");
   }
   if (THIS->mode) {
     /* Decryption -- Reverse the order */

@@ -1,6 +1,6 @@
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.4 2000/08/19 11:12:21 grubba Exp $");
+RCSID("$Id: clf.c,v 1.5 2000/12/01 08:09:56 hubbe Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -9,7 +9,7 @@ RCSID("$Id: clf.c,v 1.4 2000/08/19 11:12:21 grubba Exp $");
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "module_support.h"
-#include "error.h"
+#include "pike_error.h"
 #include "bignum.h"
 
 #include "threads.h"
@@ -118,14 +118,14 @@ static void f_read_clf( INT32 args )
 
   get_all_args("CommonLog.read", args, "%*%*", &logfun, &file);
   if(logfun->type != T_FUNCTION)
-    error("Bad argument 1 to CommonLog.read, expected function.\n");
+    Pike_error("Bad argument 1 to CommonLog.read, expected function.\n");
 
   if(file->type == T_OBJECT)
   {
     f = fd_from_object(file->u.object);
     
     if(f == -1)
-      error("CommonLog.read: File is not open.\n");
+      Pike_error("CommonLog.read: File is not open.\n");
     my_fd = 0;
   } else if(file->type == T_STRING &&
 	    file->u.string->size_shift == 0) {
@@ -136,10 +136,10 @@ static void f_read_clf( INT32 args )
     THREADS_DISALLOW();
     
     if(errno < 0)
-      error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
+      Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
 	    errno);
   } else 
-    error("Bad argument 1 to CommonLog.read, expected string or object .\n");
+    Pike_error("Bad argument 1 to CommonLog.read, expected string or object .\n");
   
 #ifdef HAVE_LSEEK64
   lseek64(f, offs0, SEEK_SET);

@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.35 2000/09/08 16:05:35 grubba Exp $
+ * $Id: image_jpeg.c,v 1.36 2000/12/01 08:10:31 hubbe Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.35 2000/09/08 16:05:35 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.36 2000/12/01 08:10:31 hubbe Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -54,7 +54,7 @@ RCSID("$Id: image_jpeg.c,v 1.35 2000/09/08 16:05:35 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "threads.h"
 #include "builtin_functions.h"
@@ -116,7 +116,7 @@ static void my_error_exit(struct jpeg_common_struct *cinfo)
    (*cinfo->err->format_message) (cinfo, buffer);
 
    jpeg_destroy(cinfo);
-   error("Image.JPEG: fatal error in libjpeg; %s\n",buffer);
+   Pike_error("Image.JPEG: fatal Pike_error in libjpeg; %s\n",buffer);
 }
 
 static void my_emit_message(struct jpeg_common_struct *cinfo,int msg_level)
@@ -234,21 +234,21 @@ static int parameter_qt(struct svalue *map,struct pike_string *what,
 
    if (!v) return 0;
    else if (v->type!=T_MAPPING) 
-      error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
+      Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
 
    m=v->u.mapping;
    MAPPING_LOOP(m)
       {
 	 int z;
 	 if (k->ind.type!=T_INT || k->val.type!=T_ARRAY)
-	    error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
+	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
 
 	 if (k->ind.u.integer<0 || k->ind.u.integer>=NUM_QUANT_TBLS)
-	    error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int(0..%d):array)\n",NUM_QUANT_TBLS-1);
+	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int(0..%d):array)\n",NUM_QUANT_TBLS-1);
 
 	 if ((z=store_int_in_table(k->val.u.array,DCTSIZE2,table))!=
 	     DCTSIZE2)
-	    error("Image.JPEG.encode: illegal value of option quant_table;"
+	    Pike_error("Image.JPEG.encode: illegal value of option quant_table;"
 		  " quant_table %d array is of illegal size (%d), "
 		  "expected %d integers\n",
 		  k->ind.u.integer,z,DCTSIZE2);
@@ -272,21 +272,21 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
 
    if (!v) return 0;
    else if (v->type!=T_MAPPING) 
-      error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
+      Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
 
    m=v->u.mapping;
    MAPPING_LOOP(m)
       {
 	 int z;
 	 if (k->ind.type!=T_INT || k->val.type!=T_ARRAY)
-	    error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
+	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
 
 	 if (k->ind.u.integer<0 || k->ind.u.integer>=NUM_QUANT_TBLS)
-	    error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int(0..%d):array)\n",NUM_QUANT_TBLS-1);
+	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int(0..%d):array)\n",NUM_QUANT_TBLS-1);
 
 	 if ((z=store_int_in_table(k->val.u.array,DCTSIZE2,table))!=
 	     DCTSIZE2)
-	    error("Image.JPEG.encode: illegal value of option quant_table;"
+	    Pike_error("Image.JPEG.encode: illegal value of option quant_table;"
 		  " quant_table %d array is of illegal size (%d), "
 		  "expected %d integers\n",
 		  k->ind.u.integer,z,DCTSIZE2);
@@ -426,15 +426,15 @@ static void image_jpeg_encode(INT32 args)
        || !(img=(struct image*)
 	    get_storage(sp[-args].u.object,image_program))
        || (args>1 && sp[1-args].type!=T_MAPPING))
-      error("Image.JPEG.encode: Illegal arguments\n");
+      Pike_error("Image.JPEG.encode: Illegal arguments\n");
 
 
    if (!img->img)
-      error("Image.JPEG.encode: Given image is empty.\n");
+      Pike_error("Image.JPEG.encode: Given image is empty.\n");
 
    tmp=malloc(img->xsize*3*8);
    if (!tmp) 
-      error("Image.JPEG.encode: out of memory\n");
+      Pike_error("Image.JPEG.encode: out of memory\n");
 
    /* init jpeg library objects */
 
@@ -647,7 +647,7 @@ static void img_jpeg_decode(INT32 args,int mode)
    if (args<1 
        || sp[-args].type!=T_STRING
        || (args>1 && sp[1-args].type!=T_MAPPING))
-      error("Image.JPEG.decode: Illegal arguments\n");
+      Pike_error("Image.JPEG.decode: Illegal arguments\n");
 
    /* init jpeg library objects */
 
@@ -777,14 +777,14 @@ static void img_jpeg_decode(INT32 args,int mode)
 
       o=clone_object(image_program,0);
       img=(struct image*)get_storage(o,image_program);
-      if (!img) error("image no image? foo?\n"); /* should never happen */
+      if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
       img->img=malloc(sizeof(rgb_group)*
 		      cinfo.output_width*cinfo.output_height);
       if (!img->img)
       {
 	 jpeg_destroy((struct jpeg_common_struct*)&cinfo);
 	 free_object(o);
-	 error("Image.JPEG.decode: out of memory\n");
+	 Pike_error("Image.JPEG.decode: out of memory\n");
       }
       img->xsize=cinfo.output_width;
       img->ysize=cinfo.output_height;
@@ -794,7 +794,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       {
 	 jpeg_destroy((struct jpeg_common_struct*)&cinfo);
 	 free_object(o);
-	 error("Image.JPEG.decode: out of memory\n");
+	 Pike_error("Image.JPEG.decode: out of memory\n");
       }
    
       y=img->ysize;

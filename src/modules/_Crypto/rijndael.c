@@ -1,5 +1,5 @@
 /*
- * $Id: rijndael.c,v 1.3 2000/10/10 20:52:56 grubba Exp $
+ * $Id: rijndael.c,v 1.4 2000/12/01 08:10:30 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -97,7 +97,7 @@ static void f_set_encrypt_key(INT32 args)
 
   get_all_args("rijndael->set_encrypt_key()", args, "%S", &key);
   if (((key->len - 8) & ~0x18) || (!key->len)) {
-    error("rijndael->set_encrypt_key(): Bad key length "
+    Pike_error("rijndael->set_encrypt_key(): Bad key length "
 	  "(must be 16, 24 or 32).\n");
   }
   MEMCPY(k, key->str, key->len);
@@ -114,7 +114,7 @@ static void f_set_decrypt_key(INT32 args)
 
   get_all_args("rijndael->set_encrypt_key()", args, "%S", &key);
   if (((key->len - 8) & ~0x18) || (key->len != 8)) {
-    error("rijndael->set_encrypt_key(): Bad key length "
+    Pike_error("rijndael->set_encrypt_key(): Bad key length "
 	  "(must be 16, 24 or 32).\n");
   }
   MEMCPY(k, key->str, key->len);
@@ -132,15 +132,15 @@ static void f_crypt_block(INT32 args)
   size_t i;
   
   if (args != 1) {
-    error("Wrong number of arguments to rijndael->crypt_block()\n");
+    Pike_error("Wrong number of arguments to rijndael->crypt_block()\n");
   }
   if (!THIS->crypt_fun)
-    error("rijndael->crypt_block: must set key first\n");
+    Pike_error("rijndael->crypt_block: must set key first\n");
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to rijndael->crypt_block()\n");
+    Pike_error("Bad argument 1 to rijndael->crypt_block()\n");
   }
   if ((len = sp[-1].u.string->len) % RIJNDAEL_BLOCK_SIZE) {
-    error("Bad string length in rijndael->crypt_block()\n");
+    Pike_error("Bad string length in rijndael->crypt_block()\n");
   }
   s = begin_shared_string(len);
   for(i = 0; i < len; i += RIJNDAEL_BLOCK_SIZE)

@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.22 2000/08/11 18:49:46 grubba Exp $ */
+/* $Id: pattern.c,v 1.23 2000/12/01 08:10:02 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.22 2000/08/11 18:49:46 grubba Exp $
+**!	$Id: pattern.c,v 1.23 2000/12/01 08:10:02 hubbe Exp $
 **! class Image
 */
 
@@ -20,7 +20,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
 
@@ -249,9 +249,9 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    int b;
 
    if (s->type!=T_ARRAY)
-      error("Illegal colorrange to %s\n",where);
+      Pike_error("Illegal colorrange to %s\n",where);
    else if (s->u.array->size<2)
-      error("Colorrange array too small (meaningless) (to %s)\n",where);
+      Pike_error("Colorrange array too small (meaningless) (to %s)\n",where);
 
    vp=v=(void*)xalloc(sizeof(double)*(s->u.array->size/2+1));
    rgbp=rgb=(void*)xalloc(sizeof(rgbd_group)*(s->u.array->size/2+1));
@@ -326,13 +326,13 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    ( (args>n) \
       ? ( (sp[n-args].type==T_INT) ? (double)(sp[n-args].u.integer) \
 	  : ( (sp[n-args].type==T_FLOAT) ? sp[n-args].u.float_number \
-	      : ( error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
+	      : ( Pike_error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
       : def )
 #define GET_INT_ARG(sp,args,n,def,where) \
    ( (args>n) \
       ? ( (sp[n-args].type==T_INT) ? sp[n-args].u.integer \
 	  : ( (sp[n-args].type==T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
-	      : ( error("illegal argument(s) to %s\n", where), 0 ) ) ) \
+	      : ( Pike_error("illegal argument(s) to %s\n", where), 0 ) ) ) \
       : def )
 
 /*
@@ -368,7 +368,7 @@ void image_noise(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (args<1) error("too few arguments to image->noise()\n");
+   if (args<1) Pike_error("too few arguments to image->noise()\n");
 
    scale=GET_FLOAT_ARG(sp,args,1,0.1,"image->noise");
    xdiff=GET_FLOAT_ARG(sp,args,2,0,"image->noise");
@@ -383,7 +383,7 @@ void image_noise(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      Pike_error("Out of memory\n");
    }
 
    cscale*=COLORRANGE_LEVELS;
@@ -447,7 +447,7 @@ void image_turbulence(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (args<1) error("too few arguments to image->turbulence()\n");
+   if (args<1) Pike_error("too few arguments to image->turbulence()\n");
 
    octaves = GET_INT_ARG(sp,args,1,3,"image->turbulence");
    scale = GET_FLOAT_ARG(sp,args,2,0.1,"image->turbulence");
@@ -463,7 +463,7 @@ void image_turbulence(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      Pike_error("Out of memory\n");
    }
 
    cscale*=COLORRANGE_LEVELS;

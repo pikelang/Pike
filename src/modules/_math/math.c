@@ -9,7 +9,7 @@
 #include "interpret.h"
 #include "constants.h"
 #include "svalue.h"
-#include "error.h"
+#include "pike_error.h"
 #include "module_support.h"
 #include "operators.h"
 #include "bignum.h"
@@ -29,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.33 2000/08/28 20:56:58 grubba Exp $");
+RCSID("$Id: math.c,v 1.34 2000/12/01 08:10:34 hubbe Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -45,24 +45,24 @@ int matherr(struct exception *exc)
     switch(exc->type) {
     case OVERFLOW:
       exc->retval = HUGE_VAL;
-      return 1;	/* No error */
+      return 1;	/* No Pike_error */
     case UNDERFLOW:
       exc->retval = 0.0;
-      return 1; /* No error */
+      return 1; /* No Pike_error */
 #ifdef TLOSS
     case TLOSS:
-      return 1; /* No error */
+      return 1; /* No Pike_error */
 #endif /* TLOSS */
 #ifdef PLOSS
     case PLOSS:
-      return 1; /* No error */
+      return 1; /* No Pike_error */
 #endif /* PLOSS */
     default:
       return 0; /* Error */
     }
   }
 #endif /* HUGE_VAL */
-  return 1;	/* No error */
+  return 1;	/* No Pike_error */
 }
 
 #endif /* HAVE_STRUCT_EXCEPTION */
@@ -70,42 +70,42 @@ int matherr(struct exception *exc)
 
 void f_sin(INT32 args)
 {
-  if(args<1) error("Too few arguments to sin()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to sin()\n");
+  if(args<1) Pike_error("Too few arguments to sin()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to sin()\n");
   sp[-args].u.float_number=sin(sp[-args].u.float_number);
 }
 
 void f_asin(INT32 args)
 {
-  if(args<1) error("Too few arguments to asin()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to asin()\n");
+  if(args<1) Pike_error("Too few arguments to asin()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to asin()\n");
   sp[-args].u.float_number=asin(sp[-args].u.float_number);
 }
 
 void f_cos(INT32 args)
 {
-  if(args<1) error("Too few arguments to cos()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to cos()\n");
+  if(args<1) Pike_error("Too few arguments to cos()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to cos()\n");
   sp[-args].u.float_number=cos(sp[-args].u.float_number);
 }
 
 void f_acos(INT32 args)
 {
-  if(args<1) error("Too few arguments to acos()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to acos()\n");
+  if(args<1) Pike_error("Too few arguments to acos()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to acos()\n");
   sp[-args].u.float_number=acos(sp[-args].u.float_number);
 }
 
 void f_tan(INT32 args)
 {
   double f;
-  if(args<1) error("Too few arguments to tan()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to tan()\n");
+  if(args<1) Pike_error("Too few arguments to tan()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to tan()\n");
 
   f = (sp[-args].u.float_number-M_PI/2) / M_PI;
   if(f==floor(f+0.5))
   {
-    error("Impossible tangent.\n");
+    Pike_error("Impossible tangent.\n");
     return;
   }
   sp[-args].u.float_number=tan(sp[-args].u.float_number);
@@ -113,16 +113,16 @@ void f_tan(INT32 args)
 
 void f_atan(INT32 args)
 {
-  if(args<1) error("Too few arguments to atan()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to atan()\n");
+  if(args<1) Pike_error("Too few arguments to atan()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to atan()\n");
   sp[-args].u.float_number=atan(sp[-args].u.float_number);
 }
 
 void f_atan2(INT32 args)
 {
-  if(args<2) error("Too few arguments to atan2()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to atan2()\n");
-  if(sp[-args+1].type!=T_FLOAT) error("Bad argument 2 to atan2()\n");
+  if(args<2) Pike_error("Too few arguments to atan2()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to atan2()\n");
+  if(sp[-args+1].type!=T_FLOAT) Pike_error("Bad argument 2 to atan2()\n");
   sp[-args].u.float_number=
     atan2(sp[-args].u.float_number,sp[-args+1].u.float_number);
   pop_stack();
@@ -130,7 +130,7 @@ void f_atan2(INT32 args)
 
 void f_sqrt(INT32 args)
 {
-  if(args<1) error("Too few arguments to sqrt()\n");
+  if(args<1) Pike_error("Too few arguments to sqrt()\n");
 
   if(sp[-args].type==T_INT)
   {
@@ -152,7 +152,7 @@ void f_sqrt(INT32 args)
   {
     if (sp[-args].u.float_number< 0.0)
     {
-      error("math: sqrt(x) with (x < 0.0)\n");
+      Pike_error("math: sqrt(x) with (x < 0.0)\n");
       return;
     }
     sp[-args].u.float_number=sqrt(sp[-args].u.float_number);
@@ -165,7 +165,7 @@ void f_sqrt(INT32 args)
     push_constant_text("_sqrt");
     o_index();
     if(IS_UNDEFINED(&sp[-1]))
-      error("Object to to sqrt() does not have _sqrt.\n");
+      Pike_error("Object to to sqrt() does not have _sqrt.\n");
     pop_stack(); /* Maybe we can use this result instead of throwing it? */
     apply(sp[-1].u.object, "_sqrt", 0);
     stack_swap();
@@ -174,16 +174,16 @@ void f_sqrt(INT32 args)
 #endif /* AUTO_BIGNUM */
   else
   {
-    error("Bad argument 1 to sqrt().\n");
+    Pike_error("Bad argument 1 to sqrt().\n");
   }
 }
 
 void f_log(INT32 args)
 {
-  if(args<1) error("Too few arguments to log()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to log()\n");
+  if(args<1) Pike_error("Too few arguments to log()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to log()\n");
   if(sp[-args].u.float_number <=0.0)
-    error("Log on number less or equal to zero.\n");
+    Pike_error("Log on number less or equal to zero.\n");
 
   sp[-args].u.float_number=log(sp[-args].u.float_number);
 }
@@ -207,29 +207,29 @@ void f_pow(INT32 args)
 
 void f_floor(INT32 args)
 {
-  if(args<1) error("Too few arguments to floor()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to floor()\n");
+  if(args<1) Pike_error("Too few arguments to floor()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to floor()\n");
   sp[-args].u.float_number=floor(sp[-args].u.float_number);
 }
 
 void f_ceil(INT32 args)
 {
-  if(args<1) error("Too few arguments to ceil()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to ceil()\n");
+  if(args<1) Pike_error("Too few arguments to ceil()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to ceil()\n");
   sp[-args].u.float_number=ceil(sp[-args].u.float_number);
 }
 
 void f_round(INT32 args)
 {
-  if(args<1) error("Too few arguments to round()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to round()\n");
+  if(args<1) Pike_error("Too few arguments to round()\n");
+  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to round()\n");
   sp[-args].u.float_number=RINT(sp[-args].u.float_number);
 }
 
 void f_min(INT32 args)
 {
   INT32 i;
-  if(!args) error("Too few arguments to min()\n");
+  if(!args) Pike_error("Too few arguments to min()\n");
   for(i=args-2;i>=0;i--)
     if(is_gt(sp-args+i,sp-args+1+i))
       assign_svalue(sp-args+i,sp-args+1+i);
@@ -239,7 +239,7 @@ void f_min(INT32 args)
 void f_max(INT32 args)
 {
   INT32 i;
-  if(!args) error("Too few arguments to max()\n");
+  if(!args) Pike_error("Too few arguments to max()\n");
   for(i=args-2;i>=0;i--)
     if(is_lt(sp-args+i,sp-args+1+i))
       assign_svalue(sp-args+i,sp-args+1+i);

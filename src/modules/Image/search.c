@@ -19,7 +19,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 
 #include "image.h"
@@ -266,7 +266,7 @@ void image_make_ascii(INT32 args)
   int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max,sum0,sum1,sum2,sum3;
   struct pike_string *s;
 
-  if (!THIS->img) { error("Called Image.Image object is not initialized\n");;  return; }
+  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
 
   this=THIS;
 
@@ -646,7 +646,7 @@ void image_apply_max(INT32 args)
       if (sp[1-args].type!=T_INT ||
 	  sp[2-args].type!=T_INT ||
 	  sp[3-args].type!=T_INT)
-	 error("Illegal argument(s) (2,3,4) to Image.Image->apply_max()\n");
+	 Pike_error("Illegal argument(s) (2,3,4) to Image.Image->apply_max()\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;
@@ -680,12 +680,12 @@ void image_apply_max(INT32 args)
    {
       struct svalue s=sp[-args].u.array->item[i];
       if (s.type!=T_ARRAY) 
-	 error("Illegal contents of (root) array (Image.Image->apply_max)\n");
+	 Pike_error("Illegal contents of (root) array (Image.Image->apply_max)\n");
       if (width==-1)
 	 width=s.u.array->size;
       else
 	 if (width!=s.u.array->size)
-	    error("Arrays has different size (Image.Image->apply_max)\n");
+	    Pike_error("Arrays has different size (Image.Image->apply_max)\n");
    }
    if (width==-1) width=0;
 

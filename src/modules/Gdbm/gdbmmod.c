@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.11 2000/07/28 07:11:52 hubbe Exp $");
+RCSID("$Id: gdbmmod.c,v 1.12 2000/12/01 08:09:56 hubbe Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -62,7 +62,7 @@ static int fixmods(char *mods)
     case 0:
       switch(mode & 15)
       {
-      default: error("No mode given for gdbm->open()\n"); 
+      default: Pike_error("No mode given for gdbm->open()\n"); 
       case 1|16:
       case 1: mode=GDBM_READER; break;
       case 3: mode=GDBM_WRITER; break;
@@ -81,14 +81,14 @@ static int fixmods(char *mods)
     case 'f': case 'F': mode|=16; break;
 
     default:
-      error("Bad mode flag in gdbm->open.\n");
+      Pike_error("Bad mode flag in gdbm->open.\n");
     }
   }
 }
 
 void gdbmmod_fatal(char *err)
 {
-  error("GDBM: %s\n",err);
+  Pike_error("GDBM: %s\n",err);
 }
 
 static void gdbmmod_create(INT32 args)
@@ -102,12 +102,12 @@ static void gdbmmod_create(INT32 args)
     int rwmode = GDBM_WRCREAT;
 
     if(sp[-args].type != T_STRING)
-      error("Bad argument 1 to gdbm->create()\n");
+      Pike_error("Bad argument 1 to gdbm->create()\n");
 
     if(args>1)
     {
       if(sp[1-args].type != T_STRING)
-	error("Bad argument 2 to gdbm->create()\n");
+	Pike_error("Bad argument 2 to gdbm->create()\n");
 
       rwmode=fixmods(sp[1-args].u.string->str);
     }
@@ -123,13 +123,13 @@ static void gdbmmod_create(INT32 args)
     if(!Pike_fp->current_object->prog)
     {
       if(tmp) gdbm_close(tmp);
-      error("Object destructed in gdbm->open()n");
+      Pike_error("Object destructed in gdbm->open()n");
     }
     THIS->dbf=tmp;
 
     pop_n_elems(args);
     if(!THIS->dbf)
-      error("Failed to open GDBM database.\n");
+      Pike_error("Failed to open GDBM database.\n");
   }
 }
 
@@ -142,13 +142,13 @@ static void gdbmmod_fetch(INT32 args)
   datum key,ret;
 
   if(!args)
-    error("Too few arguments to gdbm->fetch()\n");
+    Pike_error("Too few arguments to gdbm->fetch()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to gdbm->fetch()\n");
+    Pike_error("Bad argument 1 to gdbm->fetch()\n");
 
   if(!THIS->dbf)
-    error("GDBM database not open.\n");
+    Pike_error("GDBM database not open.\n");
 
   STRING_TO_DATUM(key, sp[-args].u.string);
 
@@ -174,13 +174,13 @@ static void gdbmmod_delete(INT32 args)
   datum key;
   int ret;
   if(!args)
-    error("Too few arguments to gdbm->delete()\n");
+    Pike_error("Too few arguments to gdbm->delete()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to gdbm->delete()\n");
+    Pike_error("Bad argument 1 to gdbm->delete()\n");
 
   if(!this->dbf)
-    error("GDBM database not open.\n");
+    Pike_error("GDBM database not open.\n");
 
   STRING_TO_DATUM(key, sp[-args].u.string);
 
@@ -200,7 +200,7 @@ static void gdbmmod_firstkey(INT32 args)
   datum ret;
   pop_n_elems(args);
 
-  if(!this->dbf) error("GDBM database not open.\n");
+  if(!this->dbf) Pike_error("GDBM database not open.\n");
 
   THREADS_ALLOW();
   mt_lock(& gdbm_lock);
@@ -222,13 +222,13 @@ static void gdbmmod_nextkey(INT32 args)
   struct gdbm_glue *this=THIS;
   datum key,ret;
   if(!args)
-    error("Too few arguments to gdbm->nextkey()\n");
+    Pike_error("Too few arguments to gdbm->nextkey()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to gdbm->nextkey()\n");
+    Pike_error("Bad argument 1 to gdbm->nextkey()\n");
 
   if(!THIS->dbf)
-    error("GDBM database not open.\n");
+    Pike_error("GDBM database not open.\n");
 
   STRING_TO_DATUM(key, sp[-args].u.string);
 
@@ -254,16 +254,16 @@ static void gdbmmod_store(INT32 args)
   datum key,data;
   int ret;
   if(args<2)
-    error("Too few arguments to gdbm->store()\n");
+    Pike_error("Too few arguments to gdbm->store()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to gdbm->store()\n");
+    Pike_error("Bad argument 1 to gdbm->store()\n");
 
   if(sp[1-args].type != T_STRING)
-    error("Bad argument 2 to gdbm->store()\n");
+    Pike_error("Bad argument 2 to gdbm->store()\n");
 
   if(!THIS->dbf)
-    error("GDBM database not open.\n");
+    Pike_error("GDBM database not open.\n");
 
   STRING_TO_DATUM(key, sp[-args].u.string);
   STRING_TO_DATUM(data, sp[1-args].u.string);
@@ -275,7 +275,7 @@ static void gdbmmod_store(INT32 args)
   THREADS_DISALLOW();
 
   if(ret == -1)
-    error("GDBM database not open for writing.\n");
+    Pike_error("GDBM database not open for writing.\n");
 
   pop_n_elems(args);
   push_int(ret == 0);
@@ -287,7 +287,7 @@ static void gdbmmod_reorganize(INT32 args)
   int ret;
   pop_n_elems(args);
 
-  if(!THIS->dbf) error("GDBM database not open.\n");
+  if(!THIS->dbf) Pike_error("GDBM database not open.\n");
   THREADS_ALLOW();
   mt_lock(& gdbm_lock);
   ret=gdbm_reorganize(this->dbf);
@@ -302,7 +302,7 @@ static void gdbmmod_sync(INT32 args)
   struct gdbm_glue *this=THIS;
   pop_n_elems(args);
 
-  if(!THIS->dbf) error("GDBM database not open.\n");
+  if(!THIS->dbf) Pike_error("GDBM database not open.\n");
   THREADS_ALLOW();
   mt_lock(& gdbm_lock);
   gdbm_sync(this->dbf);

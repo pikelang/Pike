@@ -21,7 +21,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.51 2000/08/10 07:57:55 grubba Exp $");
+RCSID("$Id: socket.c,v 1.52 2000/12/01 08:10:36 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -96,7 +96,7 @@ static void do_close(struct port *p, struct object *o)
 static void port_set_id(INT32 args)
 {
   if(args < 1)
-    error("Too few arguments to port->set_id()\n");
+    Pike_error("Too few arguments to port->set_id()\n");
 
   assign_svalue(& THIS->id, Pike_sp-args);
   pop_n_elems(args-1);
@@ -137,10 +137,10 @@ static void port_listen_fd(INT32 args)
   do_close(THIS,Pike_fp->current_object);
 
   if(args < 1)
-    error("Too few arguments to port->bind_fd()\n");
+    Pike_error("Too few arguments to port->bind_fd()\n");
 
   if(Pike_sp[-args].type != PIKE_T_INT)
-    error("Bad argument 1 to port->bind_fd()\n");
+    Pike_error("Bad argument 1 to port->bind_fd()\n");
 
   fd=Pike_sp[-args].u.integer;
 
@@ -186,10 +186,10 @@ static void port_bind(INT32 args)
   do_close(THIS,Pike_fp->current_object);
 
   if(args < 1)
-    error("Too few arguments to port->bind()\n");
+    Pike_error("Too few arguments to port->bind()\n");
 
   if(Pike_sp[-args].type != PIKE_T_INT)
-    error("Bad argument 1 to port->bind()\n");
+    Pike_error("Bad argument 1 to port->bind()\n");
 
   fd=fd_socket(AF_INET, SOCK_STREAM, 0);
 
@@ -267,10 +267,10 @@ static void port_create(INT32 args)
       return;
     }else{
       if(Pike_sp[-args].type != PIKE_T_STRING)
-	error("Bad argument 1 to port->create()\n");
+	Pike_error("Bad argument 1 to port->create()\n");
 
       if(strcmp("stdin",Pike_sp[-args].u.string->str))
-	error("port->create() called with string other than 'stdin'\n");
+	Pike_error("port->create() called with string other than 'stdin'\n");
 
       do_close(THIS,Pike_fp->current_object);
       THIS->fd=0;
@@ -306,7 +306,7 @@ static void port_accept(INT32 args)
   ACCEPT_SIZE_T len=0;
 
   if(THIS->fd < 0)
-    error("port->accept(): Port not open.\n");
+    Pike_error("port->accept(): Port not open.\n");
 
   THREADS_ALLOW();
   len=sizeof(addr);
@@ -336,7 +336,7 @@ static void socket_query_address(INT32 args)
   ACCEPT_SIZE_T len;
 
   if(THIS->fd <0)
-    error("socket->query_address(): Socket not bound yet.\n");
+    Pike_error("socket->query_address(): Socket not bound yet.\n");
 
   len=sizeof(addr);
   i=fd_getsockname(THIS->fd,(struct sockaddr *)&addr,&len);

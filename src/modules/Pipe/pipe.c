@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.43 2000/08/28 22:13:09 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.44 2000/12/01 08:10:19 hubbe Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -39,7 +39,7 @@ RCSID("$Id: pipe.c,v 1.43 2000/08/28 22:13:09 hubbe Exp $");
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 #include "fdlib.h"
 
@@ -253,7 +253,7 @@ static INLINE void free_input(struct input *i)
     munmap(i->u.mmap,i->len);
     mmapped -= i->len;  
 #else
-    error("I_MMAP input when MMAP is diabled!");
+    Pike_error("I_MMAP input when MMAP is diabled!");
 #endif
     break;
 
@@ -273,7 +273,7 @@ static INLINE void pipe_done(void)
 
     if(!THISOBJ->prog) /* We will not free anything in this case. */
       return;
-    /*  error("Pipe done callback destructed pipe.\n");  */
+    /*  Pike_error("Pipe done callback destructed pipe.\n");  */
   }
   close_and_free_everything(THISOBJ,THIS);
 }
@@ -610,7 +610,7 @@ static INLINE void output_finish(struct object *obj)
       apply(o->obj,"close",0);
       pop_stack();
       if(!THISOBJ->prog)
-	error("Pipe done callback destructed pipe.\n");
+	Pike_error("Pipe done callback destructed pipe.\n");
       destruct(o->obj);
     }
     free_object(o->obj);
@@ -669,7 +669,7 @@ static INLINE void output_try_write_some(struct object *obj)
     if(sp[-1].type == T_INT) ret=sp[-1].u.integer;
     pop_stack();
 
-    if (ret==-1)		/* error, byebye */
+    if (ret==-1)		/* Pike_error, byebye */
     {
       output_finish(obj);
       return;
@@ -694,11 +694,11 @@ static void pipe_input(INT32 args)
    struct object *obj;
 
    if (args<1 || sp[-args].type != T_OBJECT)
-     error("Bad/missing argument 1 to pipe->input().\n");
+     Pike_error("Bad/missing argument 1 to pipe->input().\n");
 
    obj=sp[-args].u.object;
    if(!obj || !obj->prog)
-     error("pipe->input() on destructed object.\n");
+     Pike_error("pipe->input() on destructed object.\n");
 
    push_int(0);
    apply(sp[-args-1].u.object,"set_id", 1);
@@ -787,7 +787,7 @@ static void pipe_input(INT32 args)
 	 i->type=I_NONE;
 
 	 nobjects--;
-	 error("illegal file object%s%s\n",
+	 Pike_error("illegal file object%s%s\n",
 	       ((i->set_nonblocking_offset<0)?"; no set_nonblocking":""),
 	       ((i->set_blocking_offset<0)?"; no set_blocking":""));
       } else {
@@ -830,7 +830,7 @@ static void pipe_write(INT32 args)
   struct input *i;
 
   if (args<1 || sp[-args].type!=T_STRING)
-    error("illegal argument to pipe->write()\n");
+    Pike_error("illegal argument to pipe->write()\n");
 
   if (!THIS->firstinput)
   {
@@ -861,11 +861,11 @@ static void pipe_output(INT32 args)
       sp[-args].type != T_OBJECT ||
       !sp[-args].u.object ||
       !sp[-args].u.object->prog)
-    error("Bad/missing argument 1 to pipe->output().\n");
+    Pike_error("Bad/missing argument 1 to pipe->output().\n");
 
   if (args==2 &&
       sp[1-args].type != T_INT)
-    error("Bad argument 2 to pipe->output().\n");
+    Pike_error("Bad argument 2 to pipe->output().\n");
        
   if (THIS->fd==-1)		/* no buffer */
   {
@@ -935,7 +935,7 @@ static void pipe_output(INT32 args)
       o->set_blocking_offset<0) 
   {
     free_object(o->obj);
-    error("illegal file object%s%s%s\n",
+    Pike_error("illegal file object%s%s%s\n",
 	  ((o->write_offset<0)?"; no write":""),
 	  ((o->set_nonblocking_offset<0)?"; no set_nonblocking":""),
 	  ((o->set_blocking_offset<0)?"; no set_blocking":""));
@@ -974,7 +974,7 @@ static void pipe_set_done_callback(INT32 args)
     return;
   }
   if (args<1 || (sp[-args].type!=T_FUNCTION && sp[-args].type!=T_ARRAY))
-    error("Illegal argument to set_done_callback()\n");
+    Pike_error("Illegal argument to set_done_callback()\n");
 
   if (args>1)
   {
@@ -996,7 +996,7 @@ static void pipe_set_output_closed_callback(INT32 args)
     return;
   }
   if (args<1 || (sp[-args].type!=T_FUNCTION && sp[-args].type!=T_ARRAY))
-    error("Illegal argument to set_output_closed_callback()\n");
+    Pike_error("Illegal argument to set_output_closed_callback()\n");
 
   if (args>1)
   {
@@ -1033,12 +1033,12 @@ static void f_bytes_sent(INT32 args)
 static void pipe_write_output_callback(INT32 args)
 {
    if (args<1 || sp[-args].type!=T_OBJECT)
-     error("Illegal argument to pipe->write_output_callback\n");
+     Pike_error("Illegal argument to pipe->write_output_callback\n");
 
    if(!sp[-args].u.object->prog) return;
 
    if(sp[-args].u.object->prog != output_program)
-     error("Illegal argument to pipe->write_output_callback\n");
+     Pike_error("Illegal argument to pipe->write_output_callback\n");
 
    debug_malloc_touch(sp[-args].u.object);
    output_try_write_some(sp[-args].u.object);
@@ -1053,7 +1053,7 @@ static void pipe_close_output_callback(INT32 args)
    if(!sp[-args].u.object->prog) return;
 
    if(sp[-args].u.object->prog != output_program)
-     error("Illegal argument to pipe->close_output_callback\n");
+     Pike_error("Illegal argument to pipe->close_output_callback\n");
 
   o=(struct output *)(sp[-args].u.object->storage);
 
@@ -1075,12 +1075,12 @@ static void pipe_read_input_callback(INT32 args)
   struct pike_string *s;
 
   if (args<2 || sp[1-args].type!=T_STRING)
-    error("Illegal argument to pipe->read_input_callback\n");
+    Pike_error("Illegal argument to pipe->read_input_callback\n");
    
   i=THIS->firstinput;
 
   if (!i)
-    error("Pipe read callback without any inputs left.\n");
+    Pike_error("Pipe read callback without any inputs left.\n");
 
   s=sp[1-args].u.string;
 
@@ -1105,10 +1105,10 @@ static void pipe_close_input_callback(INT32 args)
    i=THIS->firstinput;
 
    if(!i)
-     error("Input close callback without inputs!\n");
+     Pike_error("Input close callback without inputs!\n");
 
    if(i->type != I_OBJ)
-     error("Premature close callback on pipe!.\n");
+     Pike_error("Premature close callback on pipe!.\n");
 
    if (i->u.obj->prog)
    {
@@ -1253,7 +1253,7 @@ static void exit_output_struct(struct object *obj)
       pop_stack();
 
       if(!THISOBJ->prog)
-	error("Pipe done callback destructed pipe.\n");
+	Pike_error("Pipe done callback destructed pipe.\n");
     }
     free_object(o->obj);
     noutputs--;

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.93 2000/09/29 13:46:07 grubba Exp $
+ * $Id: system.c,v 1.94 2000/12/01 08:10:40 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.93 2000/09/29 13:46:07 grubba Exp $");
+RCSID("$Id: system.c,v 1.94 2000/12/01 08:10:40 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -142,13 +142,13 @@ static void report_error(const char *function_name)
     error_msg = "Destination already exists";
     break;
   case EFAULT:
-    error_msg = "Internal Pike error:Bad Pike string!";
+    error_msg = "Internal Pike Pike_error:Bad Pike string!";
     break;
   case EINVAL:
     error_msg = "Bad argument";
     break;
   case EIO:
-    error_msg = "I/O error";
+    error_msg = "I/O Pike_error";
     break;
 #ifdef ELOOP
   case ELOOP:
@@ -204,7 +204,7 @@ static void report_error(const char *function_name)
     error_msg = "No such process";
     break;
   }
-  error("%s(): Failed: %s\n", function_name, error_msg);
+  Pike_error("%s(): Failed: %s\n", function_name, error_msg);
 }
 
 
@@ -280,7 +280,7 @@ void f_readlink(INT32 args)
   do {
     buflen *= 2;
     if (!(buf = alloca(buflen))) {
-      error("readlink(): Out of memory\n");
+      Pike_error("readlink(): Out of memory\n");
     }
 
     THREADS_ALLOW_UID();
@@ -328,7 +328,7 @@ void f_resolvepath(INT32 args)
   do {
     buflen *= 2;
     if (!(buf = alloca(buflen))) {
-      error("resolvepath(): Out of memory\n");
+      Pike_error("resolvepath(): Out of memory\n");
     }
 
     THREADS_ALLOW_UID();
@@ -402,7 +402,7 @@ void f_chown(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("chown: permission denied.\n");
+    Pike_error("chown: permission denied.\n");
 #endif
 
   get_all_args("chown", args, "%s%i%i", &path, &uid, &gid);
@@ -433,7 +433,7 @@ void f_utime(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("utime: permission denied.\n");
+    Pike_error("utime: permission denied.\n");
 #endif
 
   get_all_args("utime", args, "%s%i%i", &path, &atime, &mtime);
@@ -461,7 +461,7 @@ void f_initgroups(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("initgroups: permission denied.\n");
+    Pike_error("initgroups: permission denied.\n");
 #endif
   
   VALID_FILE_IO("initgroups","status");
@@ -483,7 +483,7 @@ void f_cleargroups(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("cleargroups: permission denied.\n");
+    Pike_error("cleargroups: permission denied.\n");
 #endif
 
   pop_n_elems(args);
@@ -506,7 +506,7 @@ void f_setgroups(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("setgroups: permission denied.\n");
+    Pike_error("setgroups: permission denied.\n");
 #endif
 
   get_all_args("setgroups", args, "%a", &arr);
@@ -522,7 +522,7 @@ void f_setgroups(INT32 args)
        * so we always have an allocated gids here.
        */
       free(gids);
-      error("setgroups(): Bad element %d in array (expected int)\n", i);
+      Pike_error("setgroups(): Bad element %d in array (expected int)\n", i);
     }
     gids[i] = arr->item[i].u.integer;
   }
@@ -611,7 +611,7 @@ void f_setuid(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("setuid: permission denied.\n");
+    Pike_error("setuid: permission denied.\n");
 #endif
 
   get_all_args("setuid", args, "%i", &id);
@@ -637,7 +637,7 @@ void f_setgid(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("setgid: permission denied.\n");
+    Pike_error("setgid: permission denied.\n");
 #endif
   get_all_args("setgid", args, "%i", &id);
  
@@ -663,7 +663,7 @@ void f_seteuid(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("seteuid: permission denied.\n");
+    Pike_error("seteuid: permission denied.\n");
 #endif
   get_all_args("seteuid", args, "%i", &id);
  
@@ -695,7 +695,7 @@ void f_setegid(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("setegid: permission denied.\n");
+    Pike_error("setegid: permission denied.\n");
 #endif
 
   get_all_args("setegid", args, "%i", &id);
@@ -728,7 +728,7 @@ void f_getpgrp(INT32 args)
 
   if (args) {
     if (sp[-args].type != T_INT) {
-      error("Bad argument 1 to getpgrp()\n");
+      Pike_error("Bad argument 1 to getpgrp()\n");
     }
     pid = sp[-args].u.integer;
   }
@@ -737,7 +737,7 @@ void f_getpgrp(INT32 args)
   pgid = getpgid(pid);
 #elif defined(HAVE_GETPGRP)
   if (pid && (pid != getpid())) {
-    error("getpgrp(): Mode not supported on this OS\n");
+    Pike_error("getpgrp(): Mode not supported on this OS\n");
   }
   pgid = getpgrp();
 #endif
@@ -774,7 +774,7 @@ void f_getsid(INT32 args)
 {
   int pid = 0;
   if (args >= 1 && sp[-args].type != T_INT)
-       error("Bad argument for getsid().\n");
+       Pike_error("Bad argument for getsid().\n");
   if (args >= 1)
        pid = sp[-args].u.integer;
   pop_n_elems(args);
@@ -790,7 +790,7 @@ void f_setsid(INT32 args)
 {
   int pid;
   if (args > 0)
-       error("setsid() takes no arguments.\n");
+       Pike_error("setsid() takes no arguments.\n");
   pop_n_elems(args);
   pid = setsid();
   if (pid < 0)
@@ -807,7 +807,7 @@ void f_setresuid(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("setresuid: permission denied.\n");
+    Pike_error("setresuid: permission denied.\n");
 #endif
   get_all_args("setresuid", args, "%i%i%i", &ruid,&euid,&suid);
  
@@ -826,7 +826,7 @@ void f_setresgid(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("setresgid: permission denied.\n");
+    Pike_error("setresgid: permission denied.\n");
 #endif
   get_all_args("setresgid", args, "%i%i%i", &rgid,&egid,&sgid);
  
@@ -868,7 +868,7 @@ void f_chroot(INT32 args)
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("chroot: permission denied.\n");
+    Pike_error("chroot: permission denied.\n");
 #endif
 
 #ifdef HAVE_FCHROOT
@@ -997,7 +997,7 @@ void f_uname(INT32 args)
   old_sp = sp;
  
   if(uname(&foo) < 0)
-    error("uname() system call failed.\n");
+    Pike_error("uname() system call failed.\n");
  
   push_text("sysname");
   push_text(foo.sysname);
@@ -1025,7 +1025,7 @@ void f_gethostname(INT32 args)
   struct utsname foo;
   pop_n_elems(args);
   if(uname(&foo) < 0)
-    error("uname() system call failed.\n");
+    Pike_error("uname() system call failed.\n");
   push_text(foo.nodename);
 }
 #elif defined(HAVE_GETHOSTNAME)
@@ -1042,7 +1042,7 @@ void f_gethostname(INT32 args)
   char name[1024];
   pop_n_elems(args);
   if (sysinfo(SI_HOSTNAME, name, sizeof(name)) < 0) {
-    error("sysinfo() system call failed.\n");
+    Pike_error("sysinfo() system call failed.\n");
   }
   push_text(name);
 }
@@ -1276,7 +1276,7 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
-      error("Malformed ip number.\n");
+      Pike_error("Malformed ip number.\n");
 
     addr->sin_addr.s_addr = inet_addr(name);
   }
@@ -1288,9 +1288,9 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
 
     if(!ret) {
       if (strlen(name) < 1024) {
-	error("Invalid address '%s'\n",name);
+	Pike_error("Invalid address '%s'\n",name);
       } else {
-	error("Invalid address\n");
+	Pike_error("Invalid address\n");
       }
     }
 
@@ -1305,9 +1305,9 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
 #endif
 #else
     if (strlen(name) < 1024) {
-      error("Invalid address '%s'\n",name);
+      Pike_error("Invalid address '%s'\n",name);
     } else {
-      error("Invalid address\n");
+      Pike_error("Invalid address\n");
     }
 #endif
   }
@@ -1363,7 +1363,7 @@ void f_gethostbyaddr(INT32 args)
   get_all_args("gethostbyaddr", args, "%s", &name);
 
   if ((int)(addr = inet_addr(name)) == -1) {
-    error("gethostbyaddr(): IP-address must be of the form a.b.c.d\n");
+    Pike_error("gethostbyaddr(): IP-address must be of the form a.b.c.d\n");
   }
  
   pop_n_elems(args);

@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.87 2000/11/29 21:28:37 hubbe Exp $");
+RCSID("$Id: efuns.c,v 1.88 2000/12/01 08:10:35 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -116,9 +116,9 @@ void f_file_stat(INT32 args)
   struct pike_string *str;
   
   if(args<1)
-    error("Too few arguments to file_stat()\n");
+    Pike_error("Too few arguments to file_stat()\n");
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to file_stat()\n");
+    Pike_error("Bad argument 1 to file_stat()\n");
 
   VALID_FILE_IO("file_stat","read");
 
@@ -162,9 +162,9 @@ void f_file_truncate(INT32 args)
   int res;
 
   if(args<1 || sp[-args].type != T_STRING)
-    error("Bad argument 1 to file_truncate(string filename,int length).\n");
+    Pike_error("Bad argument 1 to file_truncate(string filename,int length).\n");
   if(args<2 || sp[1-args].type != T_INT)
-    error("Bad argument 2 to file_truncate(string filename,int length).\n");
+    Pike_error("Bad argument 2 to file_truncate(string filename,int length).\n");
 
   str = sp[-args].u.string;
   len = sp[1-args].u.integer;
@@ -306,7 +306,7 @@ void f_filesystem_stat(INT32 args)
   struct fs_data st;
 #else /* !HAVE_STRUCT_FS_DATA */
     /* Should not be reached */
-#error No struct to hold statfs() data.
+#Pike_error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
@@ -315,7 +315,7 @@ void f_filesystem_stat(INT32 args)
   struct ustat st;
 #else /* !HAVE_USTAT */
   /* Should not be reached */
-#error No stat function for filesystems.
+#Pike_error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
@@ -323,9 +323,9 @@ void f_filesystem_stat(INT32 args)
   struct pike_string *str;
 
   if(args<1)
-    error("Too few arguments to filesystem_stat()\n");
+    Pike_error("Too few arguments to filesystem_stat()\n");
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to filesystem_stat()\n");
+    Pike_error("Bad argument 1 to filesystem_stat()\n");
 
   str = sp[-args].u.string;
 
@@ -354,7 +354,7 @@ void f_filesystem_stat(INT32 args)
   }
 #else
   /* Should not be reached */
-#error No stat function for filesystems.
+#Pike_error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
@@ -417,7 +417,7 @@ void f_filesystem_stat(INT32 args)
     f_aggregate_mapping(4*2);
 #else /* !HAVE_STRUCT_FS_DATA */
     /* Should not be reached */
-#error No struct to hold statfs() data.
+#Pike_error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
@@ -428,7 +428,7 @@ void f_filesystem_stat(INT32 args)
     f_aggregate_mapping(3*2);
 #else
     /* Should not be reached */
-#error No stat function for filesystems.
+#Pike_error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
@@ -441,9 +441,9 @@ void f_filesystem_stat(INT32 args)
 void f_werror(INT32 args)
 {
   if(!args)
-    error("Too few arguments to werror.\n");
+    Pike_error("Too few arguments to werror.\n");
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to werror().\n");
+    Pike_error("Bad argument 1 to werror().\n");
 
   if(args> 1)
   {
@@ -466,10 +466,10 @@ void f_rm(INT32 args)
   destruct_objects_to_destruct();
 
   if(!args)
-    error("Too few arguments to rm()\n");
+    Pike_error("Too few arguments to rm()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to rm().\n");
+    Pike_error("Bad argument 1 to rm().\n");
 
   VALID_FILE_IO("rm","write");
 
@@ -511,17 +511,17 @@ void f_mkdir(INT32 args)
   int i;
 
   if(!args)
-    error("Too few arguments to mkdir()\n");
+    Pike_error("Too few arguments to mkdir()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to mkdir().\n");
+    Pike_error("Bad argument 1 to mkdir().\n");
 
   mode = 0777;			/* &'ed with ~umask anyway. */
 
   if(args > 1)
   {
     if(sp[1-args].type != T_INT)
-      error("Bad argument 2 to mkdir.\n");
+      Pike_error("Bad argument 2 to mkdir.\n");
 
     mode = sp[1-args].u.integer;
   }
@@ -644,7 +644,7 @@ void f_get_dir(INT32 args)
 #endif /* HAVE_SOLARIS_READDIR_R */
       )) {
       closedir(dir);
-      error("get_dir(): Out of memory\n");
+      Pike_error("get_dir(): Out of memory\n");
     }
 
     while(1)
@@ -660,7 +660,7 @@ void f_get_dir(INT32 args)
       {
 #if defined(HAVE_SOLARIS_READDIR_R)
 	/* Solaris readdir_r returns the second arg on success,
-	 * and returns NULL on error or at end of dir.
+	 * and returns NULL on Pike_error or at end of dir.
 	 */
 	errno=0;
 	do {
@@ -680,7 +680,7 @@ void f_get_dir(INT32 args)
 	/* HPUX's readdir_r returns an int instead:
 	 *
 	 *  0	- Successfull operation.
-	 * -1	- End of directory or encountered an error (sets errno).
+	 * -1	- End of directory or encountered an Pike_error (sets errno).
 	 */
 	errno=0;
 	if (readdir_r(dir, tmp)) {
@@ -725,7 +725,7 @@ void f_get_dir(INT32 args)
 		str->str, d->d_name);
 #endif /* READDIR_DEBUG */
 #else
-#error Unknown readdir_r variant
+#Pike_error Unknown readdir_r variant
 #endif
 	if(d->d_name[0]=='.')
 	{
@@ -742,7 +742,7 @@ void f_get_dir(INT32 args)
       }
       THREADS_DISALLOW();
       if ((!d) && err) {
-	error("get_dir(): readdir_r(\"%s\") failed: %d\n", str->str, err);
+	Pike_error("get_dir(): readdir_r(\"%s\") failed: %d\n", str->str, err);
       }
       for(e=0;e<num_files;e++)
       {
@@ -790,10 +790,10 @@ void f_cd(INT32 args)
   struct pike_string *str;
 
   if(!args)
-    error("Too few arguments to cd()\n");
+    Pike_error("Too few arguments to cd()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to cd()\n");
+    Pike_error("Bad argument 1 to cd()\n");
 
   VALID_FILE_IO("cd","status");
 
@@ -841,7 +841,7 @@ void f_getcwd(INT32 args)
   if(!e) {
     if (tmp) 
       free(tmp);
-    error("Failed to fetch current path.\n");
+    Pike_error("Failed to fetch current path.\n");
   }
 
   pop_n_elems(args);
@@ -862,11 +862,11 @@ void f_exece(INT32 args)
   save_sp=sp-args;
 
   if(args < 2)
-    error("Too few arguments to exece().\n");
+    Pike_error("Too few arguments to exece().\n");
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    error("exece: permission denied.\n");
+    Pike_error("exece: permission denied.\n");
 #endif
 
 
@@ -876,26 +876,26 @@ void f_exece(INT32 args)
   {
   default:
     if(sp[2-args].type != T_MAPPING)
-      error("Bad argument 3 to exece().\n");
+      Pike_error("Bad argument 3 to exece().\n");
     en=sp[2-args].u.mapping;
     mapping_fix_type_field(en);
 
     if(m_ind_types(en) & ~BIT_STRING)
-      error("Bad argument 3 to exece().\n");
+      Pike_error("Bad argument 3 to exece().\n");
     if(m_val_types(en) & ~BIT_STRING)
-      error("Bad argument 3 to exece().\n");
+      Pike_error("Bad argument 3 to exece().\n");
 
   case 2:
     if(sp[1-args].type != T_ARRAY)
-      error("Bad argument 2 to exece().\n");
+      Pike_error("Bad argument 2 to exece().\n");
     array_fix_type_field(sp[1-args].u.array);
 
     if(sp[1-args].u.array->type_field & ~BIT_STRING)
-      error("Bad argument 2 to exece().\n");
+      Pike_error("Bad argument 2 to exece().\n");
 
   case 1:
     if(sp[0-args].type != T_STRING)
-      error("Bad argument 1 to exece().\n");
+      Pike_error("Bad argument 1 to exece().\n");
   }
 
   argv=(char **)xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
@@ -969,13 +969,13 @@ void f_mv(INT32 args)
   struct pike_string *str2;
 
   if(args<2)
-    error("Too few arguments to mv()\n");
+    Pike_error("Too few arguments to mv()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to mv().\n");
+    Pike_error("Bad argument 1 to mv().\n");
 
   if(sp[-args+1].type != T_STRING)
-    error("Bad argument 2 to mv().\n");
+    Pike_error("Bad argument 2 to mv().\n");
 
   VALID_FILE_IO("mv","write");
 
@@ -1007,9 +1007,9 @@ void f_strerror(INT32 args)
   int err;
 
   if(!args) 
-    error("Too few arguments to strerror()\n");
+    Pike_error("Too few arguments to strerror()\n");
   if(sp[-args].type != T_INT)
-    error("Bad argument 1 to strerror()\n");
+    Pike_error("Bad argument 1 to strerror()\n");
 
   err = sp[-args].u.integer;
   pop_n_elems(args);

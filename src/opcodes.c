@@ -15,7 +15,7 @@
 #include "multiset.h"
 #include "opcodes.h"
 #include "object.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_types.h"
 #include "pike_memory.h"
 #include "fd_control.h"
@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.94 2000/11/29 13:14:18 mirar Exp $");
+RCSID("$Id: opcodes.c,v 1.95 2000/12/01 08:09:51 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -35,7 +35,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 #ifdef PIKE_SECURITY
   if(what->type <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(what->u.array, SECURITY_BIT_INDEX))
-      error("Index permission denied.\n");
+      Pike_error("Index permission denied.\n");
 #endif
 
   switch(what->type)
@@ -49,12 +49,12 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       index_no_free(to, what, ind);
       if(IS_UNDEFINED(to)) {
 	if (val) {
-	  error("Indexing the integer %d with an unknown method.\n", val);
+	  Pike_error("Indexing the integer %d with an unknown method.\n", val);
 	} else {
           if(ind->type == T_STRING)
-            error("Indexing the NULL value with \"%s\".\n", ind->u.string->str);
+            Pike_error("Indexing the NULL value with \"%s\".\n", ind->u.string->str);
           else
-            error("Indexing the NULL value.\n");
+            Pike_error("Indexing the NULL value.\n");
        }
       }
     }
@@ -89,9 +89,9 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       if(i<0 || i>=what->u.string->len)
       {
 	if(what->u.string->len == 0)
-	  error("Attempt to index the empty string with %d.\n", i);
+	  Pike_error("Attempt to index the empty string with %d.\n", i);
 	else
-	  error("Index %d is out of string range 0 - %ld.\n",
+	  Pike_error("Index %d is out of string range 0 - %ld.\n",
 		i, PTRDIFF_T_TO_LONG(what->u.string->len - 1));
       } else
 	i=index_shared_string(what->u.string,i);
@@ -100,7 +100,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       to->u.integer=i;
       break;
     }else{
-      error("Index is not an integer.\n");
+      Pike_error("Index is not an integer.\n");
     }
 
   case T_PROGRAM:
@@ -118,7 +118,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     /* FALL THROUGH */
 
   default:
-    error("Indexing a basic type.\n");
+    Pike_error("Indexing a basic type.\n");
   }
 }
 
@@ -147,9 +147,9 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
       s=describe_type(type);
       push_string(s);
       if(!sp[-2].u.object->prog)
-	error("Cast called on destructed object.\n");
+	Pike_error("Cast called on destructed object.\n");
       if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
-	error("No cast method in object.\n");
+	Pike_error("No cast method in object.\n");
       apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
       free_svalue(sp-2);
       sp[-2]=sp[-1];
@@ -160,7 +160,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
     switch(run_time_type)
     {
       default:
-	error("Cannot perform cast to that type.\n");
+	Pike_error("Cannot perform cast to that type.\n");
 	
       case T_MIXED:
 	return;
@@ -176,7 +176,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  }
 
 	  default:
-	    error("Cannot cast %s to multiset.\n",get_name_of_type(sp[-1].type));
+	    Pike_error("Cannot cast %s to multiset.\n",get_name_of_type(sp[-1].type));
 	}
 	break;
 	
@@ -194,11 +194,11 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	     for (i=0; i<a->size; i++)
 	     {
 		if (ITEM(a)[i].type!=T_ARRAY)
-		   error("Cast array to mapping: "
+		   Pike_error("Cast array to mapping: "
 			 "element %d is not an array\n", i);
 		b=ITEM(a)[i].u.array;
 		if (b->size!=2)
-		   error("Cast array to mapping: "
+		   Pike_error("Cast array to mapping: "
 			 "element %d is not an array of size 2\n", i);
 		mapping_insert(m,ITEM(b)+0,ITEM(b)+1);
 	     }
@@ -208,7 +208,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  }
 
 	  default:
-	    error("Cannot cast %s to mapping.\n",get_name_of_type(sp[-1].type));
+	    Pike_error("Cannot cast %s to mapping.\n",get_name_of_type(sp[-1].type));
 	}
 	break;
 	
@@ -232,7 +232,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    break;
 
 	  default:
-	    error("Cannot cast %s to array.\n",get_name_of_type(sp[-1].type));
+	    Pike_error("Cannot cast %s to array.\n",get_name_of_type(sp[-1].type));
 	      
 	}
 	break;
@@ -282,7 +282,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    break;
 	    
 	  default:
-	    error("Cannot cast %s to int.\n",get_name_of_type(sp[-1].type));
+	    Pike_error("Cannot cast %s to int.\n",get_name_of_type(sp[-1].type));
 	}
 	
 	break;
@@ -304,7 +304,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    break;
 	    
 	  default:
-	    error("Cannot cast %s to float.\n",get_name_of_type(sp[-1].type));
+	    Pike_error("Cannot cast %s to float.\n",get_name_of_type(sp[-1].type));
 	}
 	
 	sp[-1].type=T_FLOAT;
@@ -335,7 +335,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	      for(i = a->size; i--; ) {
 		unsigned INT32 val;
 		if (a->item[i].type != T_INT) {
-		  error("cast: Item %d is not an integer.\n", i);
+		  Pike_error("cast: Item %d is not an integer.\n", i);
 		}
 		val = (unsigned INT32)a->item[i].u.integer;
 		if (val > 0xff) {
@@ -344,19 +344,19 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 		    shift = 2;
 		    while(i--)
 		      if (a->item[i].type != T_INT)
-			error("cast: Item %d is not an integer.\n", i);
+			Pike_error("cast: Item %d is not an integer.\n", i);
 		    break;
 		  }
 		  while(i--) {
 		    if (a->item[i].type != T_INT) {
-		      error("cast: Item %d is not an integer.\n", i);
+		      Pike_error("cast: Item %d is not an integer.\n", i);
 		    }
 		    val = (unsigned INT32)a->item[i].u.integer;
 		    if (val > 0xffff) {
 		      shift = 2;
 		      while(i--)
 			if (a->item[i].type != T_INT)
-			  error("cast: Item %d is not an integer.\n", i);
+			  Pike_error("cast: Item %d is not an integer.\n", i);
 		      break;
 		    }
 		  }
@@ -399,7 +399,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    break;
 	    
 	  default:
-	    error("Cannot cast %s to string.\n",get_name_of_type(sp[-1].type));
+	    Pike_error("Cannot cast %s to string.\n",get_name_of_type(sp[-1].type));
 	}
 	
 	sp[-1].type=T_STRING;
@@ -426,7 +426,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    break;
 
 	  default:
-	    error("Cannot cast %s to object.\n",get_name_of_type(sp[-1].type));
+	    Pike_error("Cannot cast %s to object.\n",get_name_of_type(sp[-1].type));
 	}
 	break;
 	
@@ -460,7 +460,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	return;
 
 	default:
-	  error("Cannot cast %s to a program.\n",get_name_of_type(sp[-1].type));
+	  Pike_error("Cannot cast %s to a program.\n",get_name_of_type(sp[-1].type));
       }
     }
   }
@@ -479,7 +479,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	if(f) goto emulated_type_ok;
       }
     }
-    error("Cast failed, wanted %s, got %s\n",
+    Pike_error("Cast failed, wanted %s, got %s\n",
 	  get_name_of_type(run_time_type),
 	  get_name_of_type(sp[-1].type));
   }
@@ -650,7 +650,7 @@ PMOD_EXPORT void f_cast(void)
 	 compile_type_to_runtime_type(sp[-2].u.string));
 #ifdef PIKE_DEBUG
   if(save_sp != sp)
-    fatal("Internal error: o_cast() left droppings on stack.\n");
+    fatal("Internal Pike_error: o_cast() left droppings on stack.\n");
 #endif
   free_svalue(sp-2);
   sp[-2]=sp[-1];
@@ -699,7 +699,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   CHAROPT( int set_size=0; )					\
 								\
   if(cnt>=match_len)						\
-    error("Error in sscanf format string.\n");			\
+    Pike_error("Error in sscanf format string.\n");			\
 								\
   MEMSET(set->c, 0, sizeof(set->c));				\
   set->a=0;							\
@@ -709,7 +709,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->neg=1;							\
     cnt++;							\
     if(cnt>=match_len)						\
-      error("Error in sscanf format string.\n");		\
+      Pike_error("Error in sscanf format string.\n");		\
   }else{							\
     set->neg=0;							\
   }								\
@@ -719,7 +719,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->c[last=match[cnt]]=1;					\
     cnt++;							\
     if(cnt>=match_len)						\
-      error("Error in sscanf format string.\n");		\
+      Pike_error("Error in sscanf format string.\n");		\
   }								\
 								\
   for(;match[cnt]!=']';cnt++)					\
@@ -728,7 +728,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     {								\
       cnt++;							\
       if(cnt>=match_len)					\
-	error("Error in sscanf format string.\n");		\
+	Pike_error("Error in sscanf format string.\n");		\
 								\
       if(match[cnt]==']')					\
       {								\
@@ -737,7 +737,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
       }								\
 								\
       if(last >= match[cnt])					\
-	error("Error in sscanf format string.\n");		\
+	Pike_error("Error in sscanf format string.\n");		\
 								\
 CHAROPT(							\
       if(last < (size_t)sizeof(set->c))				\
@@ -796,7 +796,7 @@ CHAROPT(							\
         free_array(set->a);					\
         set->a=0;						\
         free((char *)order);					\
-        error("Overlapping ranges in sscanf not supported.\n");	\
+        Pike_error("Overlapping ranges in sscanf not supported.\n");	\
       }								\
     }								\
 								\
@@ -1068,7 +1068,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
     cnt++;								 \
     if(cnt>=match_len)							 \
-      error("Error in sscanf format string.\n");			 \
+      Pike_error("Error in sscanf format string.\n");			 \
 									 \
     while(1)								 \
     {									 \
@@ -1078,7 +1078,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  no_assign=1;							 \
 	  cnt++;							 \
 	  if(cnt>=match_len)						 \
-	    error("Error in sscanf format string.\n");			 \
+	    Pike_error("Error in sscanf format string.\n");			 \
 	  continue;							 \
 									 \
 	case '0': case '1': case '2': case '3': case '4':		 \
@@ -1104,7 +1104,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  {								 \
 	    if(e>=match_len)						 \
 	    {								 \
-	      error("Missing %%} in format string.\n");			 \
+	      Pike_error("Missing %%} in format string.\n");			 \
 	      break;		/* UNREACHED */				 \
 	    }								 \
 	    if(match[e]=='%')						 \
@@ -1307,7 +1307,7 @@ CHAROPT2(								 \
 	case 'F':							 \
 	  if(field_length == -1) field_length = 4;			 \
 	  if(field_length != 4 && field_length != 8)			 \
-	    error("Invalid IEEE width %ld in sscanf format string.\n",	 \
+	    Pike_error("Invalid IEEE width %ld in sscanf format string.\n",	 \
 		  PTRDIFF_T_TO_LONG(field_length));			 \
 	  if(eye+field_length > input_len)				 \
 	  {								 \
@@ -1380,7 +1380,7 @@ CHAROPT2(								 \
 	          goto test_again;					 \
 									 \
 		case 's':						 \
-		  error("Illegal to have two adjecent %%s.\n");		 \
+		  Pike_error("Illegal to have two adjecent %%s.\n");		 \
 		  return 0;		/* make gcc happy */		 \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
@@ -1534,7 +1534,7 @@ CHAROPT2(								 \
 	  break;							 \
 									 \
 	default:							 \
-	  error("Unknown sscanf token %%%c(0x%02x)\n",			 \
+	  Pike_error("Unknown sscanf token %%%c(0x%02x)\n",			 \
 		match[cnt], match[cnt]);				 \
       }									 \
       break;								 \
@@ -1604,10 +1604,10 @@ void o_sscanf(INT32 args)
   struct svalue *save_sp=sp;
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to sscanf().\n");
+    Pike_error("Bad argument 1 to sscanf().\n");
 
   if(sp[1-args].type != T_STRING)
-    error("Bad argument 1 to sscanf().\n");
+    Pike_error("Bad argument 1 to sscanf().\n");
 
   switch(sp[-args].u.string->size_shift*3 + sp[1-args].u.string->size_shift) {
     /* input_shift : match_shift */
@@ -1693,13 +1693,13 @@ void o_sscanf(INT32 args)
 			  &x);
     break;
   default:
-    error("Unsupported shift-combination to sscanf(): %d:%d\n",
+    Pike_error("Unsupported shift-combination to sscanf(): %d:%d\n",
 	  sp[-args].u.string->size_shift, sp[1-args].u.string->size_shift);
     break;
   }
 
   if(sp-save_sp > args/2-1)
-    error("Too few arguments for sscanf format.\n");
+    Pike_error("Too few arguments for sscanf format.\n");
 
   for(x=0;x<sp-save_sp;x++)
     assign_lvalue(save_sp-args+2+x*2,save_sp+x);
@@ -1817,7 +1817,7 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 			  &x);
     break;
   default:
-    error("Unsupported shift-combination to sscanf(): %d:%d\n",
+    Pike_error("Unsupported shift-combination to sscanf(): %d:%d\n",
 	  sp[-args].u.string->size_shift, sp[1-args].u.string->size_shift);
     break;
   }

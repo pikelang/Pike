@@ -1,5 +1,5 @@
 /*
- * $Id: stardate.c,v 1.10 2000/08/09 12:34:46 grubba Exp $
+ * $Id: stardate.c,v 1.11 2000/12/01 08:10:37 hubbe Exp $
  */
 
 #include "global.h"
@@ -15,9 +15,9 @@
 #include "mapping.h"
 #include "array.h"
 #include "builtin_functions.h"
-#include "error.h"
+#include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.10 2000/08/09 12:34:46 grubba Exp $");
+RCSID("$Id: stardate.c,v 1.11 2000/12/01 08:10:37 hubbe Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
@@ -117,7 +117,7 @@ void f_stardate (INT32 args)
   char fmt[16];
 
   if (args < 2) 
-    error("Wrong number of arguments to stardate(int, int)\n");
+    Pike_error("Wrong number of arguments to stardate(int, int)\n");
   precis=sp[-args+1].u.integer;
   t=sp[-args].u.integer;
 

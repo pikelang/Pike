@@ -4,9 +4,9 @@
 #include "svalue.h"
 #include "stralloc.h"
 #include "pike_types.h"
-#include "error.h"
+#include "pike_error.h"
 
-RCSID("$Id: module_support.c,v 1.37 2000/08/17 19:03:15 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.38 2000/12/01 08:09:50 hubbe Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -108,7 +108,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
       }
     }
 	
-    error("Bad argument %d to %s(), (expecting %s, got %s)\n", 
+    Pike_error("Bad argument %d to %s(), (expecting %s, got %s)\n", 
 	  tmp.argno+1,
 	  fnname,
 	  buf,
@@ -184,7 +184,7 @@ int va_get_args(struct svalue *s,
 	  *va_arg(ap, int *)=
 	    DO_NOT_WARN((int)sp[-1].u.float_number);
 	else
-	  error("Cast to int failed.\n");
+	  Pike_error("Cast to int failed.\n");
         pop_stack();
       }
       break;
@@ -204,7 +204,7 @@ int va_get_args(struct svalue *s,
 	  *va_arg(ap, INT_TYPE *)=
 	    DO_NOT_WARN((INT_TYPE)sp[-1].u.float_number);
 	else
-	  error("Cast to int failed.\n");
+	  Pike_error("Cast to int failed.\n");
         pop_stack();
       }
       break;

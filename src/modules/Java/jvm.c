@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.29 2000/12/01 01:15:04 hubbe Exp $
+ * $Id: jvm.c,v 1.30 2000/12/01 08:10:09 hubbe Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,14 +17,14 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.29 2000/12/01 01:15:04 hubbe Exp $");
+RCSID("$Id: jvm.c,v 1.30 2000/12/01 08:10:09 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
 #include "object.h"
 #include "mapping.h"
 #include "builtin_functions.h"
-#include "error.h"
+#include "pike_error.h"
 #include "module_support.h"
 #include "pike_memory.h"
 #include "gc.h"
@@ -348,9 +348,9 @@ static void f_jobj_cast(INT32 args)
   jstring jstr;
 
   if(args < 1)
-    error("cast() called without arguments.\n");
+    Pike_error("cast() called without arguments.\n");
   if(Pike_sp[-args].type != PIKE_T_STRING)
-    error("Bad argument 1 to cast().\n");
+    Pike_error("Bad argument 1 to cast().\n");
 
   if(!strcmp(Pike_sp[-args].u.string->str, "object")) {
     pop_n_elems(args);
@@ -358,7 +358,7 @@ static void f_jobj_cast(INT32 args)
   }
 
   if(strcmp(Pike_sp[-args].u.string->str, "string"))
-    error("cast() to other type than string.\n");
+    Pike_error("cast() to other type than string.\n");
 
   pop_n_elems(args);
   if((env=jvm_procure_env(jo->jvm))) {
@@ -429,7 +429,7 @@ static void f_jobj_instance(INT32 args)
   get_all_args("Java.obj->is_instance_of()", args, "%o", &cls);
 
   if((c = (struct jobj_storage *)get_storage(cls, jclass_program)) == NULL)
-    error("Bad argument 1 to is_instance_of().\n");
+    Pike_error("Bad argument 1 to is_instance_of().\n");
 
   if((env=jvm_procure_env(jo->jvm))) {
     if((*env)->IsInstanceOf(env, jo->jobj, c->jobj))
@@ -529,7 +529,7 @@ static void f_method_create(INT32 args)
   get_all_args("Java.method->create()", args, "%S%S%o", &name, &sig, &class);
 
   if((c = (struct jobj_storage *)get_storage(class, jclass_program)) == NULL)
-    error("Bad argument 3 to create().\n");
+    Pike_error("Bad argument 3 to create().\n");
 
   if((env = jvm_procure_env(c->jvm))==NULL) {
     pop_n_elems(args);
@@ -579,7 +579,7 @@ static void f_method_create(INT32 args)
 static void jargs_error(struct object *jvm, JNIEnv *env)
 {
   jvm_vacate_env(jvm, env);
-  error("incompatible types passed to method.\n");
+  Pike_error("incompatible types passed to method.\n");
 }
 
 static void make_jargs(jvalue *jargs, INT32 args, char *sig,
@@ -756,7 +756,7 @@ static void f_call_static(INT32 args)
   jobject jjo; FLOAT_TYPE jjf; INT32 jji;
 
   if(args != m->nargs)
-    error("wrong number of arguments for method.\n");
+    Pike_error("wrong number of arguments for method.\n");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -861,12 +861,12 @@ static void f_call_virtual(INT32 args)
   struct jobj_storage *jo;
 
   if(args != 1+m->nargs)
-    error("wrong number of arguments for method.\n");
+    Pike_error("wrong number of arguments for method.\n");
 
   if(Pike_sp[-args].type != PIKE_T_OBJECT || 
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
-    error("Bad argument 1 to `().\n");
+    Pike_error("Bad argument 1 to `().\n");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -971,12 +971,12 @@ static void f_call_nonvirtual(INT32 args)
   struct jobj_storage *jo;
 
   if(args != 1+m->nargs)
-    error("wrong number of arguments for method.\n");
+    Pike_error("wrong number of arguments for method.\n");
 
   if(Pike_sp[-args].type != PIKE_T_OBJECT || 
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
-    error("Bad argument 1 to call_nonvirtual.\n");
+    Pike_error("Bad argument 1 to call_nonvirtual.\n");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -1125,7 +1125,7 @@ static void f_field_create(INT32 args)
     get_all_args("Java.field->create()", args, "%S%S%o", &name, &sig, &class);
 
   if((c = (struct jobj_storage *)get_storage(class, jclass_program)) == NULL)
-    error("Bad argument 3 to create().\n");
+    Pike_error("Bad argument 3 to create().\n");
 
   f->field = 0;
 
@@ -1174,12 +1174,12 @@ static void f_field_set(INT32 args)
   jvalue v;
 
   if(args!=2)
-    error("Incorrect number of arguments to set.\n");
+    Pike_error("Incorrect number of arguments to set.\n");
 
   if(Pike_sp[-args].type != PIKE_T_OBJECT || 
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
-    error("Bad argument 1 to set.\n");
+    Pike_error("Bad argument 1 to set.\n");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -1237,7 +1237,7 @@ static void f_field_get(INT32 args)
   if(Pike_sp[-args].type != PIKE_T_OBJECT || 
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
-    error("Bad argument 1 to get.\n");
+    Pike_error("Bad argument 1 to get.\n");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -1313,7 +1313,7 @@ static void f_static_field_set(INT32 args)
   jvalue v;
 
   if(args!=1)
-    error("Incorrect number of arguments to set.\n");
+    Pike_error("Incorrect number of arguments to set.\n");
 
   if((env = jvm_procure_env(co->jvm))==NULL) {
     pop_n_elems(args);
@@ -1578,7 +1578,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 }
 
 #else
-#error How did you get here?  It should never happen.
+#Pike_error How did you get here?  It should never happen.
 #endif /* HAVE_PPC_CPU */
 #endif /* HAVE_X86_CPU */
 #endif /* HAVE_SPARC_CPU */
@@ -1879,7 +1879,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       statc = 1;
     else {
       (*env)->ExceptionClear(env);
-      error("trying to register nonexistant function\n");
+      Pike_error("trying to register nonexistant function\n");
     }
   }
 
@@ -1993,10 +1993,10 @@ static void f_natives_create(INT32 args)
   get_all_args("Java.natives->create()", args, "%a%o", &arr, &cls);
 
   if((c = (struct jobj_storage *)get_storage(cls, jclass_program)) == NULL)
-    error("Bad argument 2 to create().\n");
+    Pike_error("Bad argument 2 to create().\n");
 
   if(n->num_methods)
-    error("create() called twice in Java.natives object.\n");
+    Pike_error("create() called twice in Java.natives object.\n");
 
   if(!arr->size) {
     pop_n_elems(args);
@@ -2013,10 +2013,10 @@ static void f_natives_create(INT32 args)
     for(i=0; i<arr->size; i++) {
       struct array *nm;
       if(ITEM(arr)[i].type != PIKE_T_ARRAY || ITEM(arr)[i].u.array->size != 3)
-	error("Bad argument 1 to create().\n");
+	Pike_error("Bad argument 1 to create().\n");
       nm = ITEM(arr)[i].u.array;
       if(ITEM(nm)[0].type != PIKE_T_STRING || ITEM(nm)[1].type != PIKE_T_STRING)
-	error("Bad argument 1 to create().\n");
+	Pike_error("Bad argument 1 to create().\n");
       assign_svalue_no_free(&n->cons[i].callback, &ITEM(nm)[2]);
       n->cons[i].nat = n;
       n->num_methods++;
@@ -2064,7 +2064,7 @@ static void f_is_assignable_from(INT32 args)
   if(args<1 || Pike_sp[-args].type != PIKE_T_OBJECT ||
      (jc = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jclass_program))==NULL)
-    error("illegal argument 1 to is_assignable_from\n");
+    Pike_error("illegal argument 1 to is_assignable_from\n");
 
   if((env = jvm_procure_env(jo->jvm))) {
     iaf = (*env)->IsAssignableFrom(env, jo->jobj, jc->jobj);
@@ -2090,12 +2090,12 @@ static void f_throw_new(INT32 args)
 
     if(!(*env)->IsAssignableFrom(env, jo->jobj, jj->class_throwable)) {
       jvm_vacate_env(jo->jvm, env);
-      error("throw_new called in a class that doesn't inherit java.lang.Throwable!\n");
+      Pike_error("throw_new called in a class that doesn't inherit java.lang.Throwable!\n");
     }
 
     if((*env)->ThrowNew(env, jo->jobj, cn)<0) {
       jvm_vacate_env(jo->jvm, env);
-      error("throw_new failed!\n");
+      Pike_error("throw_new failed!\n");
     }
 
     jvm_vacate_env(jo->jvm, env);
@@ -2244,7 +2244,7 @@ static void f_javathrow(INT32 args)
   if((env = jvm_procure_env(jo->jvm))) {
     if((*env)->Throw(env, jo->jobj)<0) {
       jvm_vacate_env(jo->jvm, env);
-      error("throw failed!\n");
+      Pike_error("throw failed!\n");
     }
     jvm_vacate_env(jo->jvm, env);
   }
@@ -2365,7 +2365,7 @@ static void f_javaarray_getelt(INT32 args)
 
   if(args<1 || Pike_sp[-args].type != PIKE_T_INT ||
      (args>1 && Pike_sp[1-args].type != PIKE_T_INT))
-    error("Bad args to `[].");
+    Pike_error("Bad args to `[].");
 
   n = Pike_sp[-args].u.integer;
 
@@ -2441,7 +2441,7 @@ static void f_javaarray_setelt(INT32 args)
   char ty2;
 
   if(args<2 || Pike_sp[-args].type != PIKE_T_INT)
-    error("Bad args to `[]=.");
+    Pike_error("Bad args to `[]=.");
 
   if(args>2)
     pop_n_elems(args-2);
@@ -2686,7 +2686,7 @@ static void f_att_create(INT32 args)
   get_all_args("Java.attachment->create()", args, "%o", &j);
 
   if((jvm = (struct jvm_storage *)get_storage(j, jvm_program))==NULL)
-    error("Bad argument 1 to create().\n");
+    Pike_error("Bad argument 1 to create().\n");
 
   att->jvm = j;
   j->refs++;
@@ -2761,7 +2761,7 @@ static void f_monitor_create(INT32 args)
   get_all_args("Java.monitor->create()", args, "%o", &obj);
 
   if(get_storage(obj, jobj_program) == NULL)
-    error("Bad argument 1 to create().\n");
+    Pike_error("Bad argument 1 to create().\n");
 
 #ifdef _REENTRANT
   m->tid = th_self();
@@ -2844,7 +2844,7 @@ static void f_create(INT32 args)
   /* load and initialize a Java VM, return a JNI interface 
    * pointer in env */
   if(JNI_CreateJavaVM(&j->jvm, (void**)&j->env, &j->vm_args))
-    error( "Failed to create virtual machine\n" );
+    Pike_error( "Failed to create virtual machine\n" );
 
   cls = (*j->env)->FindClass(j->env, "java/lang/Object");
   j->class_object = (*j->env)->NewGlobalRef(j->env, cls);
@@ -3016,7 +3016,7 @@ static void f_define_class(INT32 args)
 
   get_all_args("define_class", args, "%s%o%S", &name, &obj, &str);
   if((ldr = THAT_JOBJ(obj))==NULL)
-    error("Bad argument 2 to define_class().\n");
+    Pike_error("Bad argument 2 to define_class().\n");
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     c = (*env)->DefineClass(env, name, ldr->jobj, (jbyte*)str->str, str->len);
     pop_n_elems(args);

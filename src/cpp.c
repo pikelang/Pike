@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.77 2000/09/28 03:39:15 hubbe Exp $
+ * $Id: cpp.c,v 1.78 2000/12/01 08:09:45 hubbe Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -16,7 +16,7 @@
 #include "hashtable.h"
 #include "program.h"
 #include "object.h"
-#include "error.h"
+#include "pike_error.h"
 #include "array.h"
 #include "mapping.h"
 #include "builtin_functions.h"
@@ -640,7 +640,7 @@ static struct pike_string *recode_string(struct pike_string *data)
      *   according to EBCDIC-US, and then the rest of the string
      *   according to the encoding specified by the first line.
      *
-     * * It's an error for a program written in EBCDIC not to
+     * * It's an Pike_error for a program written in EBCDIC not to
      *   start with a #charset directive.
      *
      * Obfuscation note:
@@ -1204,10 +1204,10 @@ void f_cpp(INT32 args)
 #endif /* PIKE_DEBUG */
 
   if(args<1)
-    error("Too few arguments to cpp()\n");
+    Pike_error("Too few arguments to cpp()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to cpp()\n");
+    Pike_error("Bad argument 1 to cpp()\n");
 
   data = sp[-args].u.string;
 
@@ -1221,13 +1221,13 @@ void f_cpp(INT32 args)
     if(args > 5)
     {
       if(sp[4-args].type != T_INT)
-	error("Bad argument 5 to cpp()\n");
+	Pike_error("Bad argument 5 to cpp()\n");
       if(sp[5-args].type != T_INT)
-	error("Bad argument 6 to cpp()\n");
+	Pike_error("Bad argument 6 to cpp()\n");
     }
     if(sp[1-args].type != T_STRING) {
       free_string(data);
-      error("Bad argument 2 to cpp()\n");
+      Pike_error("Bad argument 2 to cpp()\n");
     }
     copy_shared_string(this.current_file, sp[1-args].u.string);
 
@@ -1239,7 +1239,7 @@ void f_cpp(INT32 args)
 	SAFE_APPLY_MASTER("decode_charset", 2);
 	if (sp[-1].type != T_STRING) {
 	  free_string(this.current_file);
-	  error("Unknown charset\n");
+	  Pike_error("Unknown charset\n");
 	}
 	data = sp[-1].u.string;
 	sp--;
@@ -1248,7 +1248,7 @@ void f_cpp(INT32 args)
 	auto_convert = sp[2-args].u.integer;
       } else {
 	free_string(data);
-	error("Bad argument 3 to cpp()\n");
+	Pike_error("Bad argument 3 to cpp()\n");
       }
       if (args > 3) {
 	if (sp[3-args].type == T_OBJECT) {
@@ -1256,7 +1256,7 @@ void f_cpp(INT32 args)
 	} else if (sp[3-args].type != T_INT) {
 	  free_string(data);
 	  free_string(this.current_file);
-	  error("Bad argument 4 to cpp()\n");
+	  Pike_error("Bad argument 4 to cpp()\n");
 	}
       }
     }
@@ -1367,7 +1367,7 @@ void f_cpp(INT32 args)
   if(this.compile_errors)
   {
     free_string_builder(&this.buf);
-    error("Cpp() failed\n");
+    Pike_error("Cpp() failed\n");
   }else{
     pop_n_elems(sp - save_sp);
     push_string(finish_string_builder(&this.buf));

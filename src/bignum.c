@@ -6,7 +6,7 @@
 #include "program.h"
 #include "object.h"
 #include "svalue.h"
-#include "error.h"
+#include "pike_error.h"
 
 struct svalue auto_bignum_program = { T_INT };
 
@@ -25,7 +25,7 @@ static void resolve_auto_bignum_program(void)
     SAFE_APPLY_MASTER("resolv", 1);
     
     if(sp[-1].type != T_FUNCTION)
-      error("Failed to resolv Gmp.mpz!\n");
+      Pike_error("Failed to resolv Gmp.mpz!\n");
     
     auto_bignum_program=sp[-1];
     sp--;
@@ -61,7 +61,7 @@ PMOD_EXPORT void convert_stack_top_to_bignum(void)
   apply_svalue(&auto_bignum_program, 1);
 
   if(sp[-1].type != T_OBJECT)
-    error("Gmp.mpz conversion failed.\n");
+    Pike_error("Gmp.mpz conversion failed.\n");
 }
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
@@ -70,7 +70,7 @@ PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
   apply_svalue(&auto_bignum_program, 2);
 
   if(sp[-1].type != T_OBJECT)
-    error("Gmp.mpz conversion failed.\n");
+    Pike_error("Gmp.mpz conversion failed.\n");
 }
 
 int is_bignum_object(struct object *o)
@@ -114,7 +114,7 @@ PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
   safe_apply(o, "digits", 1);
   
   if(sp[-1].type != T_STRING)
-    error("Gmp.mpz string conversion failed.\n");
+    Pike_error("Gmp.mpz string conversion failed.\n");
   
   return (--sp)->u.string;
 }
@@ -190,7 +190,7 @@ PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
   push_int(0);
   apply_low(bignum, FIND_LFUN(bignum->prog, LFUN_LT), 1);
   if(sp[-1].type != T_INT)
-    error("Result from Gmp.bignum->`< not an integer.\n");
+    Pike_error("Result from Gmp.bignum->`< not an integer.\n");
   neg = (--sp)->u.integer;
 
   if(neg)
@@ -206,7 +206,7 @@ PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
     push_int(BIGNUM_INT64_MASK);
     apply_low(sp[-2].u.object, andfun, 1);
     if(sp[-1].type != T_INT)
-      error("Result from Gmp.bignum->`& not an integer.\n");
+      Pike_error("Result from Gmp.bignum->`& not an integer.\n");
     *i |= (INT64)(--sp)->u.integer << (INT64)pos;
     pos += BIGNUM_INT64_SHIFT;
     

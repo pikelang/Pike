@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.146 2000/12/01 01:15:02 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.147 2000/12/01 08:09:55 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -718,7 +718,7 @@ void f_thread_create(INT32 args)
     free_object(arg->id);
     free_array(arg->args);
     free((char *)arg);
-    error("Failed to create thread (errno = %d).\n",tmp);
+    Pike_error("Failed to create thread (errno = %d).\n",tmp);
   }
 }
 
@@ -727,7 +727,7 @@ void f_thread_set_concurrency(INT32 args)
 {
   int c=1;
   if(args) c=Pike_sp[-args].u.integer;
-  else error("No argument to thread_set_concurrency(int concurrency);\n");
+  else Pike_error("No argument to thread_set_concurrency(int concurrency);\n");
   pop_n_elems(args);
   num_lwps=c;
   th_setconcurrency(c);
@@ -794,7 +794,7 @@ void f_mutex_lock(INT32 args)
 			 (unsigned int)OB2KEY(m->key)->mut,
 			 (unsigned int) Pike_interpreter.thread_id));
 
-	if(type==0) error("Recursive mutex locks!\n");
+	if(type==0) Pike_error("Recursive mutex locks!\n");
 
 	pop_n_elems(args);
 	push_int(0);
@@ -817,7 +817,7 @@ void f_mutex_lock(INT32 args)
     if(threads_disabled)
     {
       free_object(o);
-      error("Cannot wait for mutexes when threads are disabled!\n");
+      Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
     SWAP_OUT_CURRENT_THREAD();
     do
@@ -869,7 +869,7 @@ void f_mutex_trylock(INT32 args)
     case 0:
       if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_id)
       {
-	error("Recursive mutex locks!\n");
+	Pike_error("Recursive mutex locks!\n");
       }
 
     case 2:
@@ -954,7 +954,7 @@ void f_cond_wait(INT32 args)
   COND_T *c;
 
   if(threads_disabled)
-    error("Cannot wait for conditions when threads are disabled!\n");
+    Pike_error("Cannot wait for conditions when threads are disabled!\n");
       
   if(args > 1) {
     pop_n_elems(args - 1);
@@ -969,18 +969,18 @@ void f_cond_wait(INT32 args)
     struct mutex_storage *mut;
 
     if(Pike_sp[-1].type != T_OBJECT)
-      error("Bad argument 1 to condition->wait()\n");
+      Pike_error("Bad argument 1 to condition->wait()\n");
     
     key=Pike_sp[-1].u.object;
     
     if(key->prog != mutex_key)
-      error("Bad argument 1 to condition->wait()\n");
+      Pike_error("Bad argument 1 to condition->wait()\n");
 
     if (OB2KEY(key)->initialized) {
 
       mut = OB2KEY(key)->mut;
       if(!mut)
-	error("Bad argument 1 to condition->wait()\n");
+	Pike_error("Bad argument 1 to condition->wait()\n");
 
       /* Unlock mutex */
       mut->key=0;
@@ -1161,10 +1161,10 @@ void f_thread_local_set(INT32 args)
   if(args>1)
     pop_n_elems(args-1);
   else if(args<1)
-    error("Too few arguments to thread_local->set()\n");
+    Pike_error("Too few arguments to thread_local->set()\n");
 
   if(Pike_interpreter.thread_id == NULL)
-    error("Trying to set thread_local without thread!\n");
+    Pike_error("Trying to set thread_local without thread!\n");
 
   if((m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local) == NULL)
     m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local =
@@ -1297,7 +1297,7 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 void low_th_init(void)
 {
 #ifdef SGI_SPROC_THREADS
-#error /* Need to specify a filename */
+#Pike_error /* Need to specify a filename */
   us_cookie = usinit("");
 #endif /* SGI_SPROC_THREADS */
 

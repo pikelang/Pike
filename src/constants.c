@@ -13,10 +13,10 @@
 #include "pike_memory.h"
 #include "interpret.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.23 2000/08/10 14:46:54 grubba Exp $");
+RCSID("$Id: constants.c,v 1.24 2000/12/01 08:09:44 hubbe Exp $");
 
 struct mapping *builtin_constants = 0;
 

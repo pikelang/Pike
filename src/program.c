@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.282 2000/11/20 01:20:25 mast Exp $");
+RCSID("$Id: program.c,v 1.283 2000/12/01 08:09:53 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -16,7 +16,7 @@ RCSID("$Id: program.c,v 1.282 2000/11/20 01:20:25 mast Exp $");
 #include "lex.h"
 #include "pike_macros.h"
 #include "fsort.h"
-#include "error.h"
+#include "pike_error.h"
 #include "docode.h"
 #include "interpret.h"
 #include "hashtable.h"
@@ -2110,7 +2110,7 @@ int low_define_variable(struct pike_string *name,
     fatal("Attempting to add variable to fixed program\n");
 
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
+    fatal("Internal Pike_error: Not allowed to add more identifiers during second compiler pass.\n"
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
 
@@ -2399,7 +2399,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     fatal("Attempting to add constant to fixed program\n");
 
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+    fatal("Internal Pike_error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   copy_shared_string(dummy.name, name);
@@ -2763,7 +2763,7 @@ make_a_new_def:
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+    fatal("Internal Pike_error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   /* define a new function */
@@ -2957,9 +2957,9 @@ PMOD_EXPORT int find_identifier(char *name,struct program *prog)
   struct pike_string *n;
   if(!prog) {
     if (strlen(name) < 1024) {
-      error("Lookup of identifier %s in destructed object.\n", name);
+      Pike_error("Lookup of identifier %s in destructed object.\n", name);
     } else {
-      error("Lookup of long identifier in destructed object.\n");
+      Pike_error("Lookup of long identifier in destructed object.\n");
     }
   }
   n=findstring(name);
@@ -3081,7 +3081,7 @@ void program_index_no_free(struct svalue *to, struct program *p,
   struct pike_string *s;
 
   if (ind->type != T_STRING) {
-    error("Can't index a program with a %s (expected string)\n",
+    Pike_error("Can't index a program with a %s (expected string)\n",
 	  get_name_of_type(ind->type));
   }
   s = ind->u.string;
@@ -3096,9 +3096,9 @@ void program_index_no_free(struct svalue *to, struct program *p,
       return;
     } else {
       if (s->len < 1024) {
-	error("Index \"%s\" is not constant.\n", s->str);
+	Pike_error("Index \"%s\" is not constant.\n", s->str);
       } else {
-	error("Index is not constant.\n");
+	Pike_error("Index is not constant.\n");
       }
     }
   }
@@ -3109,9 +3109,9 @@ void program_index_no_free(struct svalue *to, struct program *p,
   to->u.integer=0;
 #else
   if (s->len < 1024) {
-    error("No such index \"%s\".\n", s->str);
+    Pike_error("No such index \"%s\".\n", s->str);
   } else {
-    error("No such index.\n");
+    Pike_error("No such index.\n");
   }
 #endif
 }
@@ -3298,7 +3298,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 }
 
 struct program *compile(struct pike_string *prog,
-			struct object *handler,/* error handler */
+			struct object *handler,/* Pike_error handler */
 			int major, int minor)
 {
 #ifdef PIKE_DEBUG
@@ -3477,7 +3477,7 @@ struct program *compile(struct pike_string *prog,
 #endif
   pop_stack(); /* pop the 'default' module */
 
-  if(!p) error("Compilation failed.\n");
+  if(!p) Pike_error("Compilation failed.\n");
   return p;
 }
 
@@ -3585,7 +3585,7 @@ struct program *pike_trampoline_program=0;
 
 static void apply_trampoline(INT32 args)
 {
-  error("Internal error: Trampoline magic failed!\n");
+  Pike_error("Internal Pike_error: Trampoline magic failed!\n");
 }
 
 static void init_trampoline(struct object *o)
@@ -4182,7 +4182,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
   /* If we have parse errors we might get erroneous warnings,
    * so don't print them.
    * This has the additional benefit of making it easier to
-   * visually locate the actual error message.
+   * visually locate the actual Pike_error message.
    */
   if (Pike_compiler->num_parse_error) return;
 
@@ -4430,12 +4430,12 @@ PMOD_EXPORT void *parent_storage(int depth)
     p=get_program_for_object_being_destructed(loc.o);
     if(!p)
     {
-      error("Cannot access parent of destructed object.\n");
+      Pike_error("Cannot access parent of destructed object.\n");
     }
   }
 
   if((Pike_fp->fun & 0xffff) == 0xffff)
-    error("Cannot access parent storage!\n");
+    Pike_error("Cannot access parent storage!\n");
 
   loc.parent_identifier=Pike_fp->fun;
   loc.inherit=INHERIT_FROM_INT(p, Pike_fp->fun);

@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.48 2000/08/23 18:57:27 grubba Exp $ */
+/* $Id: blit.c,v 1.49 2000/12/01 08:09:58 hubbe Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.48 2000/08/23 18:57:27 grubba Exp $
+**!	$Id: blit.c,v 1.49 2000/12/01 08:09:58 hubbe Exp $
 **! class Image
 */
 
@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 
 #include "image.h"
@@ -101,14 +101,14 @@ static INLINE int getrgb(struct image *img,
 
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
-         error("Illegal r,g,b argument to %s\n",name);
+         Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
    if (max > 3 && args-args_start>=4) {
       if (sp[3-args+args_start].type!=T_INT) {
-         error("Illegal alpha argument to %s\n",name);
+         Pike_error("Illegal alpha argument to %s\n",name);
       }
       img->alpha=sp[3-args+args_start].u.integer;
       return 4;
@@ -461,7 +461,7 @@ void image_paste_mask(INT32 args)
 CHRONO("image_paste_mask init");
 
    if (args<2)
-      error("illegal number of arguments to image->paste_mask()\n");
+      Pike_error("illegal number of arguments to image->paste_mask()\n");
    if (sp[-args].type!=T_OBJECT
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste_mask",sp-args,args,1,"",sp+1-1-args,
@@ -479,7 +479,7 @@ CHRONO("image_paste_mask init");
    {
       if (sp[2-args].type!=T_INT
 	  || sp[3-args].type!=T_INT)
-         error("illegal coordinate arguments to image->paste_mask()\n");
+         Pike_error("illegal coordinate arguments to image->paste_mask()\n");
       x1=sp[2-args].u.integer;
       y1=sp[3-args].u.integer;
    }
@@ -581,7 +581,7 @@ void image_paste_alpha_color(INT32 args)
    {
       if (sp[arg-args].type!=T_INT
 	  || sp[1+arg-args].type!=T_INT)
-         error("illegal coordinate arguments to image->paste_alpha_color()\n");
+         Pike_error("illegal coordinate arguments to image->paste_alpha_color()\n");
       x1=sp[arg-args].u.integer;
       y1=sp[1+arg-args].u.integer;
    }

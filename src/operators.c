@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.112 2000/11/12 04:02:43 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.113 2000/12/01 08:09:51 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -17,7 +17,7 @@ RCSID("$Id: operators.c,v 1.112 2000/11/12 04:02:43 hubbe Exp $");
 #include "operators.h"
 #include "language.h"
 #include "pike_memory.h"
-#include "error.h"
+#include "pike_error.h"
 #include "docode.h"
 #include "constants.h"
 #include "peep.h"
@@ -2620,7 +2620,7 @@ static void f_string_assignment_index(INT32 args)
   if(i<0)
     i+=THIS->s->len;
   if(i<0 || i>=THIS->s->len)
-    error("Index %d is out of range 0 - %ld.\n",
+    Pike_error("Index %d is out of range 0 - %ld.\n",
 	  i, PTRDIFF_T_TO_LONG(THIS->s->len - 1));
   else
     i=index_shared_string(THIS->s,i);
@@ -2638,16 +2638,16 @@ static void f_string_assignment_assign_index(INT32 args)
     free_string(THIS->s);
     if(i<0) i+=u->string->len;
     if(i<0 || i>=u->string->len)
-      error("String index out of range %ld\n",(long)i);
+      Pike_error("String index out of range %ld\n",(long)i);
     u->string=modify_shared_string(u->string,i,j);
     copy_shared_string(THIS->s, u->string);
   }else{
     lvalue_to_svalue_no_free(sp,THIS->lval);
     sp++;
-    if(sp[-1].type != T_STRING) error("string[]= failed.\n");
+    if(sp[-1].type != T_STRING) Pike_error("string[]= failed.\n");
     if(i<0) i+=sp[-1].u.string->len;
     if(i<0 || i>=sp[-1].u.string->len)
-      error("String index out of range %ld\n",(long)i);
+      Pike_error("String index out of range %ld\n",(long)i);
     sp[-1].u.string=modify_shared_string(sp[-1].u.string,i,j);
     assign_lvalue(THIS->lval, sp-1);
     pop_stack();

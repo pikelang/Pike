@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.39 2000/10/28 22:52:45 per Exp $");
+RCSID("$Id: png.c,v 1.40 2000/12/01 08:10:05 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -11,7 +11,7 @@ RCSID("$Id: png.c,v 1.39 2000/10/28 22:52:45 per Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
 #include "builtin_functions.h"
@@ -86,7 +86,7 @@ static INLINE INT32 call_gz_crc32(INT32 args)
    INT32 z;
    apply_svalue(&gz_crc32,args);
    if (sp[-1].type!=T_INT)
-      error("Image.PNG: internal error (not integer from Gz.crc32)\n");
+      Pike_error("Image.PNG: internal Pike_error (not integer from Gz.crc32)\n");
    z=sp[-1].u.integer;
    pop_stack();
    return z;
@@ -130,7 +130,7 @@ static void png_decompress(int style)
    struct object *o;
 
    if (style)
-      error("internal error: illegal decompression style %d\n",style);
+      Pike_error("internal Pike_error: illegal decompression style %d\n",style);
    
    o=clone_object(gz_inflate,0);
    apply(o,"inflate",1);
@@ -142,7 +142,7 @@ static void png_compress(int style)
    struct object *o;
 
    if (style)
-      error("internal error: illegal decompression style %d\n",style);
+      Pike_error("internal Pike_error: illegal decompression style %d\n",style);
    
    push_int(8);
    o=clone_object(gz_deflate,1);
@@ -170,11 +170,11 @@ static void image_png__chunk(INT32 args)
    if (args!=2 ||
        sp[-args].type!=T_STRING ||
        sp[1-args].type!=T_STRING)
-      error("Image.PNG.chunk: Illegal argument(s)\n");
+      Pike_error("Image.PNG.chunk: Illegal argument(s)\n");
    
    a=sp[-args].u.string;
    if (a->len!=4)
-      error("Image.PNG.chunk: Type string not 4 characters\n");
+      Pike_error("Image.PNG.chunk: Type string not 4 characters\n");
    b=sp[1-args].u.string;
    pop_n_elems(args-2);
    sp-=2;
@@ -216,9 +216,9 @@ static void image_png___decode(INT32 args)
    ONERROR uwp;
 
    if (args<1) 
-      error("Image.PNG.__decode: too few arguments\n");
+      Pike_error("Image.PNG.__decode: too few arguments\n");
    if (sp[-args].type!=T_STRING)
-      error("Image.PNG.__decode: illegal argument 1\n");
+      Pike_error("Image.PNG.__decode: illegal argument 1\n");
    
    if (args==2 &&
        (sp[1-args].type!=T_INT ||
@@ -374,7 +374,7 @@ static void image_png___decode(INT32 args)
 **!	This function ignores any checksum errors in the file.
 **!	A PNG of higher color resolution than the Image module
 **!	supports (8 bit) will lose that information in the conversion.
-**!	It throws an error if the image data is erroneous.
+**!	It throws an Pike_error if the image data is erroneous.
 */
 
 static struct pike_string *_png_unfilter(unsigned char *data,
@@ -505,7 +505,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	    
 	    break;
 	 default:
-	    error("Image.PNG._decode: unsupported filter %d\n",s[-1]);
+	    Pike_error("Image.PNG._decode: unsupported filter %d\n",s[-1]);
       }
    }
 }
@@ -521,7 +521,7 @@ static int _png_write_rgb(rgb_group *w1,
 			  struct pike_string *trns)
 {
    /* returns 1 if alpha channel, 0 if not */
-   /* w1, wa1 will be freed upon error */
+   /* w1, wa1 will be freed upon Pike_error */
 
    static rgb_group white={255,255,255};
    static rgb_group grey4[4]={{0,0,0},{85,85,85},{170,170,170},{255,255,255}};
@@ -616,7 +616,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
+	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
 		     type,bpp);
 	 }
 	 if (trns && trns->len==2)
@@ -657,7 +657,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
+	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
 		     type,bpp);
 	 }
 	 if (trns && trns->len==6)
@@ -678,20 +678,20 @@ static int _png_write_rgb(rgb_group *w1,
 	 {
 	    free(w1);
 	    free(wa1);
-	    error("Image.PNG->decode: No palette (PLTE entry), but color type (3) needs one\n");
+	    Pike_error("Image.PNG->decode: No palette (PLTE entry), but color type (3) needs one\n");
 	 }
 	 if (ct->type!=NCT_FLAT)
 	 {
 	    free(w1);
 	    free(wa1);
-	    error("Image.PNG->decode: Internal error (created palette isn't flat)\n");
+	    Pike_error("Image.PNG->decode: Internal Pike_error (created palette isn't flat)\n");
 	 }
 	 mz=ct->u.flat.numentries;
 	 if (mz==0)
 	 {
 	    free(w1);
 	    free(wa1);
-	    error("Image.PNG->decode: palette is zero entries long; need at least one color.\n");
+	    Pike_error("Image.PNG->decode: palette is zero entries long; need at least one color.\n");
 	 }
 
 #define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
@@ -858,7 +858,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       
 	    default:
 	       free(w1); free(wa1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
+	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return !!trns; /* alpha channel if trns chunk */
@@ -892,7 +892,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
+	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return 1; /* alpha channel */
@@ -930,16 +930,16 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d(rgba)/%d bit.\n",
+	       Pike_error("Image.PNG->_decode: Unsupported color type/bit depth %d(rgba)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return 1; /* alpha channel */
       default:
 	 free(wa1); free(w1);
-	 error("Image.PNG->_decode: Unknown color type %d (bit depth %d).\n",
+	 Pike_error("Image.PNG->_decode: Unknown color type %d (bit depth %d).\n",
 	       type,bpp);
    }
-   error("Image.PNG->_decode: illegal state\n");
+   Pike_error("Image.PNG->_decode: illegal state\n");
    return 0; /* stupid */
 }
 
@@ -979,7 +979,7 @@ static void img_png_decode(INT32 args,int header_only)
    } ihdr={-1,-1,-1,0,-1,-1,-1};
 
    if (args<1) 
-      error("Image.PNG._decode: too few arguments\n");
+      Pike_error("Image.PNG._decode: too few arguments\n");
 
    m=allocate_mapping(10);
    push_mapping(m);
@@ -987,7 +987,7 @@ static void img_png_decode(INT32 args,int header_only)
    if (args>=2)
    {
       if (sp[1-args-1].type!=T_MAPPING)
-	 error("Image.PNG._decode: illegal argument 2\n");
+	 Pike_error("Image.PNG._decode: illegal argument 2\n");
 
       push_svalue(sp+1-args-1);
       ref_push_string(param_palette);
@@ -997,7 +997,7 @@ static void img_png_decode(INT32 args,int header_only)
 	 case T_OBJECT:
 	    push_string(make_shared_string("cast"));
 	    if (sp[-1].type==T_INT)
-	       error("Image.PNG._decode: illegal value of option \"palette\"\n");
+	       Pike_error("Image.PNG._decode: illegal value of option \"palette\"\n");
 	    f_index(2);
 	    push_string(make_shared_string("array"));
 	    f_call_function(2);
@@ -1008,7 +1008,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    ct=(struct neo_colortable*)get_storage(sp[-1].u.object,
 						   image_colortable_program);
 	    if (!ct)
-	       error("Image.PNG._decode: internal error: cloned colortable isn't colortable\n");
+	       Pike_error("Image.PNG._decode: internal Pike_error: cloned colortable isn't colortable\n");
 	    ref_push_string(param_palette);
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
@@ -1016,7 +1016,7 @@ static void img_png_decode(INT32 args,int header_only)
 	 case T_INT:
 	    pop_n_elems(1);
 	 default:
-	    error("Image.PNG._decode: illegal value of option \"palette\"\n");
+	    Pike_error("Image.PNG._decode: illegal value of option \"palette\"\n");
       }
    }
 
@@ -1030,10 +1030,10 @@ static void img_png_decode(INT32 args,int header_only)
       push_int(1); /* no care crc */
       image_png___decode(2);
       if (sp[-1].type!=T_ARRAY)
-	 error("Image.PNG._decode: Not PNG data\n");
+	 Pike_error("Image.PNG._decode: Not PNG data\n");
    }
    else if (sp[-1].type!=T_ARRAY)
-      error("Image.PNG._decode: Illegal argument 1\n");
+      Pike_error("Image.PNG._decode: Illegal argument 1\n");
 
    a=sp[-1].u.array;
 
@@ -1048,7 +1048,7 @@ static void img_png_decode(INT32 args,int header_only)
 	  b->item[0].type!=T_STRING ||
 	  b->item[1].type!=T_STRING ||
 	  b->item[0].u.string->len!=4)
-	 error("Image.PNG._decode: Illegal stuff in array index %d\n",i);
+	 Pike_error("Image.PNG._decode: Illegal stuff in array index %d\n",i);
 
       data = (unsigned char *)b->item[1].u.string->str;
       len = (size_t)b->item[1].u.string->len;
@@ -1056,7 +1056,7 @@ static void img_png_decode(INT32 args,int header_only)
       if (!i &&
 	  int_from_32bit((unsigned char*)b->item[0].u.string->str)
 	  != 0x49484452 )
-	 error("Imge.PNG.decode: first chunk isn't IHDR\n");
+	 Pike_error("Imge.PNG.decode: first chunk isn't IHDR\n");
 
       switch (int_from_32bit((unsigned char*)b->item[0].u.string->str))
       {
@@ -1064,7 +1064,7 @@ static void img_png_decode(INT32 args,int header_only)
          case 0x49484452: /* IHDR */
 	    /* header info */
 	    if (b->item[1].u.string->len!=13)
-	       error("Image.PNG._decode: illegal header (IHDR chunk)\n");
+	       Pike_error("Image.PNG._decode: illegal header (IHDR chunk)\n");
 
 	    ihdr.width=int_from_32bit(data+0);
 	    ihdr.height=int_from_32bit(data+4);
@@ -1103,7 +1103,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    if (header_only) break;
 
 	    if (ihdr.compression!=0)
-	       error("Image.PNG._decode: unknown compression (%d)\n",
+	       Pike_error("Image.PNG._decode: unknown compression (%d)\n",
 		     ihdr.compression);
 
 	    ref_push_string(b->item[1].u.string);
@@ -1209,21 +1209,21 @@ static void img_png_decode(INT32 args,int header_only)
 
    if (ihdr.type==-1)
    {
-      error("Image.PNG._decode: missing header (IHDR chunk)\n");
+      Pike_error("Image.PNG._decode: missing header (IHDR chunk)\n");
    }
    if (ihdr.type==3 && !ct)
    {
-      error("Image.PNG._decode: missing palette (PLTE chunk)\n");
+      Pike_error("Image.PNG._decode: missing palette (PLTE chunk)\n");
    }
    
    if (ihdr.compression==0)
    {
       png_decompress(ihdr.compression);
       if (sp[-1].type!=T_STRING)
-	 error("Image.PNG._decode: got wierd stuff from decompression\n");
+	 Pike_error("Image.PNG._decode: got wierd stuff from decompression\n");
    }
    else
-      error("Image.PNG._decode: illegal compression type 0x%02x\n",
+      Pike_error("Image.PNG._decode: illegal compression type 0x%02x\n",
 	    ihdr.compression);
 
    fs=sp[-1].u.string; 
@@ -1236,13 +1236,13 @@ static void img_png_decode(INT32 args,int header_only)
 
    w1=d1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
    if (!d1)
-      error("Image.PNG._decode: Out of memory\n");
+      Pike_error("Image.PNG._decode: Out of memory\n");
 
    wa1=da1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
    if (!da1)
    {
       free(d1);
-      error("Image.PNG._decode: Out of memory\n");
+      Pike_error("Image.PNG._decode: Out of memory\n");
    }
 
    /* --- interlace decoding --- */
@@ -1279,7 +1279,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    if (wa1) free(wa1); 
 	    if (ta1) free(ta1); 
 	    if (ta1) free(t1); 
-	    error("Image.PNG->_decode: out of memory (close one)\n");
+	    Pike_error("Image.PNG->_decode: out of memory (close one)\n");
 	 }
 	 /* loop over adam7 interlace's 
 	    and write them to the arena */
@@ -1334,7 +1334,7 @@ static void img_png_decode(INT32 args,int header_only)
 	 break;
       default:
 	 free(w1); if (wa1) free(wa1);
-	 error("Image.PNG._decode: Unknown interlace type\n");
+	 Pike_error("Image.PNG._decode: Unknown interlace type\n");
    }
 
 
@@ -1432,20 +1432,20 @@ static void image_png_encode(INT32 args)
    char buf[20];
    
    if (!args)
-      error("Image.PNG.encode: too few arguments\n");
+      Pike_error("Image.PNG.encode: too few arguments\n");
    
    if (sp[-args].type!=T_OBJECT ||
        !(img=(struct image*)
 	 get_storage(sp[-args].u.object,image_program)))
-      error("Image.PNG.encode: illegal argument 1\n");
+      Pike_error("Image.PNG.encode: illegal argument 1\n");
    
    if (!img->img)
-      error("Image.PNG.encode: no image\n");
+      Pike_error("Image.PNG.encode: no image\n");
 
    if (args>1)
    {
       if (sp[1-args].type!=T_MAPPING)
-	 error("Image.PNG.encode: illegal argument 2\n");
+	 Pike_error("Image.PNG.encode: illegal argument 2\n");
       
       push_svalue(sp+1-args);
       ref_push_string(param_alpha);
@@ -1454,15 +1454,15 @@ static void image_png_encode(INT32 args)
 	 if (sp[-1].type!=T_OBJECT ||
 	     !(alpha=(struct image*)
 	       get_storage(sp[-1].u.object,image_program)))
-	    error("Image.PNG.encode: option (arg 2) \"alpha\" has illegal type\n");
+	    Pike_error("Image.PNG.encode: option (arg 2) \"alpha\" has illegal type\n");
       pop_stack();
 
       if (alpha &&
 	  (alpha->xsize!=img->xsize ||
 	   alpha->ysize!=img->ysize))
-	 error("Image.PNG.encode option (arg 2) \"alpha\"; images differ in size\n");
+	 Pike_error("Image.PNG.encode option (arg 2) \"alpha\"; images differ in size\n");
       if (alpha && !alpha->img)
-	 error("Image.PNG.encode option (arg 2) \"alpha\"; no image\n");
+	 Pike_error("Image.PNG.encode option (arg 2) \"alpha\"; no image\n");
 
       push_svalue(sp+1-args);
       ref_push_string(param_palette); 
@@ -1472,7 +1472,7 @@ static void image_png_encode(INT32 args)
 	 if (sp[-1].type!=T_OBJECT ||
 	     !(ct=(struct neo_colortable*)
 	       get_storage(sp[-1].u.object,image_colortable_program)))
-	    error("Image.PNG.encode: option (arg 2) \"palette\" has illegal type\n");
+	    Pike_error("Image.PNG.encode: option (arg 2) \"palette\" has illegal type\n");
       pop_stack();
 
    }
@@ -1487,7 +1487,7 @@ static void image_png_encode(INT32 args)
       ptrdiff_t sz;
       sz = image_colortable_size(ct);
       if (sz>256)
-	 error("Image.PNG.encode: palette size to large; "
+	 Pike_error("Image.PNG.encode: palette size to large; "
 	       "PNG doesn't support bigger palettes then 256 colors\n");
       if (sz>16) bpp=8;
       else if (sz>4) bpp=4;
@@ -1528,13 +1528,13 @@ static void image_png_encode(INT32 args)
    if (alpha) sa=alpha->img;
    if (ct)
       if (alpha)
-	 error("Image.PNG.encode: colortable and alpha channel not supported at the same time\n");
+	 Pike_error("Image.PNG.encode: colortable and alpha channel not supported at the same time\n");
       else
       {
 	 unsigned char *tmp=malloc(img->xsize*img->ysize),*ts;
 
 	 if (!tmp)
-	    error("Image.PNG.encode: out of memory\n");
+	    Pike_error("Image.PNG.encode: out of memory\n");
 	 image_colortable_index_8bit_image(ct,img->img,tmp,
 					   img->xsize*img->ysize,img->xsize);
 	 ts=tmp;
@@ -1634,13 +1634,13 @@ static void image_png_decode_header(INT32 args)
 **!	</pre>
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 
 static void image_png_decode(INT32 args)
 {
    if (!args)
-      error("Image.PNG.decode: missing argument(s)\n");
+      Pike_error("Image.PNG.decode: missing argument(s)\n");
    
    image_png__decode(args);
    push_string(make_shared_string("image"));
@@ -1651,7 +1651,7 @@ static void image_png_decode_alpha(INT32 args)
 {
    struct svalue s;
    if (!args)
-      error("Image.PNG.decode: missing argument(s)\n");
+      Pike_error("Image.PNG.decode: missing argument(s)\n");
    
    image_png__decode(args);
    assign_svalue_no_free(&s,sp-1);

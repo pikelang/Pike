@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.13 2000/11/14 19:26:43 marcus Exp $");
+RCSID("$Id: image_xface.c,v 1.14 2000/12/01 08:10:33 hubbe Exp $");
 
 #include "config.h"
 
@@ -20,7 +20,7 @@ RCSID("$Id: image_xface.c,v 1.13 2000/11/14 19:26:43 marcus Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
 #include "operators.h"
@@ -394,15 +394,15 @@ static void image_xface_decode(INT32 args)
   struct image *img;
 
   if(args<1 || sp[-args].type!=T_STRING)
-    error("Image.XFace.decode: Illegal arguments\n");
+    Pike_error("Image.XFace.decode: Illegal arguments\n");
 
   o=clone_object(image_program,0);
   img=(struct image*)get_storage(o,image_program);
-  if (!img) error("image no image? foo?\n"); /* should never happen */
+  if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
   img->img=malloc(sizeof(rgb_group)*48*48);
   if (!img->img) {
     free_object(o);
-    error("Image.XFace.decode: out of memory\n");
+    Pike_error("Image.XFace.decode: out of memory\n");
   }
   img->xsize=48;
   img->ysize=48;
@@ -435,13 +435,13 @@ static void image_xface_encode(INT32 args)
       || !(img=(struct image*)
 	   get_storage(sp[-args].u.object,image_program))
       || (args>1 && sp[1-args].type!=T_MAPPING))
-    error("Image.XFace.encode: Illegal arguments\n");
+    Pike_error("Image.XFace.encode: Illegal arguments\n");
   
   if (!img->img)
-    error("Image.XFace.encode: Given image is empty.\n");
+    Pike_error("Image.XFace.encode: Given image is empty.\n");
   
   if (img->xsize != 48 || img->ysize != 48)
-    error("Image.XFace.encode: Wrong image dimensions (must be 48 by 48).\n");
+    Pike_error("Image.XFace.encode: Wrong image dimensions (must be 48 by 48).\n");
 
   res = encodeface(img->img);
 
@@ -479,7 +479,7 @@ static void image_xface_encode(INT32 args)
 static void image_xface_decode_header(INT32 args)
 {
   if(args<1 || sp[-args].type!=T_STRING)
-    error("Image.XFace.decode: Illegal arguments\n");
+    Pike_error("Image.XFace.decode: Illegal arguments\n");
 
   pop_n_elems(args);
 

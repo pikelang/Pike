@@ -10,14 +10,14 @@
 #include "svalue.h"
 #include "pike_macros.h"
 #include "pike_memory.h"
-#include "error.h"
+#include "pike_error.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.29 2000/11/08 20:03:46 hubbe Exp $");
+RCSID("$Id: multiset.c,v 1.30 2000/12/01 08:09:50 hubbe Exp $");
 
 struct multiset *first_multiset;
 

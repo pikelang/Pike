@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.33 2000/11/29 21:31:04 hubbe Exp $");
+RCSID("$Id: xcf.c,v 1.34 2000/12/01 08:10:08 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -15,7 +15,7 @@ RCSID("$Id: xcf.c,v 1.33 2000/11/29 21:31:04 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
@@ -83,7 +83,7 @@ static void f_substring_index( INT32 args )
 
   if( i < 0 ) i = s->len + i;
   if( i >= s->len ) {
-    error("Index out of bounds, %d > %ld\n", i,
+    Pike_error("Index out of bounds, %d > %ld\n", i,
 	  DO_NOT_WARN((long)s->len-1) );
   }
   push_int( ((unsigned char *)s->s->str)[s->offset+i] );
@@ -129,7 +129,7 @@ static void f_substring_get_int( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>2 )
-    error("Index %d out of range", x );
+    Pike_error("Index %d out of range", x );
 
   p = s->s->str + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
@@ -144,7 +144,7 @@ static void f_substring_get_uint( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>2 )
-    error("Index %d out of range", x );
+    Pike_error("Index %d out of range", x );
 
   p = s->s->str + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
@@ -158,7 +158,7 @@ static void f_substring_get_ushort( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>1 )
-    error("Index %d out of range", x );
+    Pike_error("Index %d out of range", x );
 
   p = s->s->str + s->offset + x*2;
   res = (p[2]<<8) | p[3];
@@ -172,7 +172,7 @@ static void f_substring_get_short( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>1 )
-    error("Index %d out of range", x );
+    Pike_error("Index %d out of range", x );
 
   p = s->s->str + s->offset + x*2;
   res = (p[2]<<8) | p[3];
@@ -301,7 +301,7 @@ static unsigned int read_uint( struct buffer *from )
 {
   unsigned int res;
   if(from->len < 4)
-    error("Not enough space for 4 bytes (uint32)\n");
+    Pike_error("Not enough space for 4 bytes (uint32)\n");
   res = (from->str[0]<<24)|(from->str[1]<<16)|(from->str[2]<<8)|from->str[3];
   from->str += 4;
   from->len -= 4;
@@ -317,7 +317,7 @@ static char *read_data( struct buffer *from, size_t len )
 {
   char *res;
   if( from->len < len )
-    error("Not enough space for %lu bytes\n",
+    Pike_error("Not enough space for %lu bytes\n",
 	  DO_NOT_WARN((unsigned long)len));
   res = (char *)from->str;
   from->str += len;
@@ -334,7 +334,7 @@ static struct buffer read_string( struct buffer *data )
   if(res.len > 0)  res.len--;  /* len includes ending \0 */
   res.base_len = res.len;
   if(!res.str)
-    error("String read failed\n");
+    Pike_error("String read failed\n");
   return res;
 }
 
@@ -699,7 +699,7 @@ static struct gimp_image read_image( struct buffer * data )
   MEMSET(&res, 0, sizeof(res));
   initial = *data;
   if(data->len < 34)
-    error("This is not an xcf file (to little data)\n");
+    Pike_error("This is not an xcf file (to little data)\n");
   if(!(data->str[0] == 'g' &&
        data->str[1] == 'i' &&
        data->str[2] == 'm' &&
@@ -707,9 +707,9 @@ static struct gimp_image read_image( struct buffer * data )
        data->str[4] == ' '))
   {
     if(strlen((char *)data->str) == 13)
-      error("This is not an xcf file (%s)\n", data->str);
+      Pike_error("This is not an xcf file (%s)\n", data->str);
     else
-      error("This is not an xcf file\n");
+      Pike_error("This is not an xcf file\n");
   }
   data->str+=14; data->len-=14;
 
@@ -794,7 +794,7 @@ static void push_hierarchy( struct hierarchy * h )
   struct svalue *osp = sp, *tsp;
   if(h->level.width != h->width ||
      h->level.height != h->height)
-    error("Illegal hierarchy level sizes!\n");
+    Pike_error("Illegal hierarchy level sizes!\n");
 
   ref_push_string( s_width );  push_int( h->width );
   ref_push_string( s_height ); push_int( h->height );
@@ -900,7 +900,7 @@ static void image_xcf____decode( INT32 args )
   ONERROR err;
   get_all_args( "___decode", args, "%S", &s );
   if(args > 1)
-    error("Too many arguments to Image.XCF.___decode()\n");
+    Pike_error("Too many arguments to Image.XCF.___decode()\n");
 
   b.s = s;
   b.base_offset = 0;
@@ -946,7 +946,7 @@ static unsigned char read_char( struct buffer *from )
 **! 	Decodes a XCF image to a single image object.
 **!
 **! note
-**!	Throws upon error in data, you will loose quite a lot of
+**!	Throws upon Pike_error in data, you will loose quite a lot of
 **!     information by doing this. See Image.XCF._decode and Image.XCF.__decode
 */
 
@@ -983,7 +983,7 @@ static unsigned char read_char( struct buffer *from )
 **!     ])</pre>
 **!
 **! note
-**!	Throws upon error in data. For more information, see Image.XCF.__decode
+**!	Throws upon Pike_error in data. For more information, see Image.XCF.__decode
 */
 
 /*
@@ -1194,22 +1194,22 @@ void image_xcf_f__decode_tiles( INT32 args )
 
 
   if( !(i = (struct image *)get_storage( io, image_program )))
-    error("Wrong type object argument 1 (image)\n");
+    Pike_error("Wrong type object argument 1 (image)\n");
 
   if(ao && !(a = (struct image *)get_storage( ao, image_program )))
-    error("Wrong type object argument 2 (image)\n");
+    Pike_error("Wrong type object argument 2 (image)\n");
 
   if( cmapo &&
       !(cmap=(struct neo_colortable *)get_storage(cmapo,
                                                   image_colortable_program)))
-    error("Wrong type object argument 4 (colortable)\n");
+    Pike_error("Wrong type object argument 4 (colortable)\n");
 
   for(l=0; l<(unsigned int)tiles->size; l++)
     if(tiles->item[l].type != T_OBJECT)
-      error("Wrong type array argument 3 (tiles)\n");
+      Pike_error("Wrong type array argument 3 (tiles)\n");
 
   if(a && ((i->xsize != a->xsize) || (i->ysize != a->ysize)))
-    error("Image and alpha objects are not identically sized.\n");
+    Pike_error("Image and alpha objects are not identically sized.\n");
 
   if(cmap)
   {

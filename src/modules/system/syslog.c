@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.9 2000/08/10 09:51:55 per Exp $
+ * $Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.9 2000/08/10 09:51:55 per Exp $");
+RCSID("$Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -159,10 +159,10 @@ void f_syslog(INT32 args)
   get_all_args("syslog", args, "%i%S", &i, &s);
  
   if(args < 2)
-    error("Wrong number of arguments to syslog(int, string)\n");
+    Pike_error("Wrong number of arguments to syslog(int, string)\n");
   if(sp[-args].type != T_INT ||
      sp[-args+1].type != T_STRING)
-    error("Wrong type of arguments to syslog(int, string)\n");
+    Pike_error("Wrong type of arguments to syslog(int, string)\n");
  
   if(i & (1<<0)) pri |= LOG_EMERG;
   if(i & (1<<1)) pri |= LOG_ALERT;

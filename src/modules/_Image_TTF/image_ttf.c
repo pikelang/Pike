@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.36 2000/09/11 18:31:57 grubba Exp $
+ * $Id: image_ttf.c,v 1.37 2000/12/01 08:10:33 hubbe Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.36 2000/09/11 18:31:57 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.37 2000/12/01 08:10:33 hubbe Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -30,7 +30,7 @@ RCSID("$Id: image_ttf.c,v 1.36 2000/09/11 18:31:57 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
@@ -194,7 +194,7 @@ void my_tt_error(char *where,char *extra,int err)
       errc="TT_Err_Raster_Invalid_Value";
    else if (err==TT_Err_Raster_Not_Initialized)
       errc="TT_Err_Raster_Not_Initialized";
-   error("%s: %sFreeType error 0x%03x (%s)\n",
+   Pike_error("%s: %sFreeType Pike_error 0x%03x (%s)\n",
 	 where,extra,err,errc);
 }
 
@@ -245,7 +245,7 @@ static void image_ttf_make(INT32 args)
    TT_Face face;
 
    if (sp[-args].type!=T_STRING)
-      error("Image.TTF(): illegal argument 1\n");
+      Pike_error("Image.TTF(): illegal argument 1\n");
 
    res=TT_Open_Collection(engine, sp[-args].u.string->str, col, &face);
    if (res) my_tt_error("Image.TTF()","",res);
@@ -514,7 +514,7 @@ static void image_ttf_face__names(INT32 args)
    pop_n_elems(args);
 
    if ((ns=TT_Get_Name_Count(face))==-1)
-      error("Image.TTF.Face->names(): Illegal face handler\n");
+      Pike_error("Image.TTF.Face->names(): Illegal face handler\n");
 
    for (i=0; i<ns; i++)
    {
@@ -552,7 +552,7 @@ static void image_ttf_face_names(INT32 args)
    image_ttf_face__names(args);
 
    if (sp[-1].type!=T_ARRAY)
-      error("Image.TTF.Face->names(): internal error, wierd _names()\n");
+      Pike_error("Image.TTF.Face->names(): internal Pike_error, wierd _names()\n");
 
    a=sp[-1].u.array;
 
@@ -675,12 +675,12 @@ static void image_ttf_faceinstance_create(INT32 args)
    int res;
 
    if (!args)
-      error("Image.TTF.FaceInstance(): too few arguments\n");
+      Pike_error("Image.TTF.FaceInstance(): too few arguments\n");
 
    if (sp[-args].type!=T_OBJECT ||
        !(face_s=(struct image_ttf_face_struct*)
 	 get_storage(sp[-args].u.object,image_ttf_face_program)))
-      error("Image.TTF.FaceInstance(): illegal argument 1\n");
+      Pike_error("Image.TTF.FaceInstance(): illegal argument 1\n");
 
    if ((res=TT_New_Instance(face_s->face,&(face_i->instance))))
       my_tt_error("Image.TTF.FaceInstance()","TT_New_Instance: ",res);
@@ -698,19 +698,19 @@ static void image_ttf_faceinstance_set_height(INT32 args)
    int h=0;
 
    if (!args)
-      error("Image.TTF.FaceInstance->set_height(): missing arguments\n");
+      Pike_error("Image.TTF.FaceInstance->set_height(): missing arguments\n");
 
    if (sp[-args].type==T_INT)
       h = sp[-args].u.integer*64;
    else if (sp[-args].type==T_FLOAT)
       h = DOUBLE_TO_INT(sp[-args].u.float_number*64);
    else
-      error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
+      Pike_error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
    if (h<1) h=1;
 
    if (!(face_s=(struct image_ttf_face_struct*)
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
-      error("Image.TTF.FaceInstance->write(): lost Face\n");
+      Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
    ttf_instance_setc(face_s,face_i,h,"Image.TTF.FaceInstance->set_height()");
 
@@ -757,7 +757,7 @@ static void ttf_get_nice_charmap(TT_Face face,
 {
    int n,i,res,got=-1,best=-1;
    if (-1==(n=TT_Get_CharMap_Count(face)))
-      error("%s: illegal face handle\n",where);
+      Pike_error("%s: illegal face handle\n",where);
 
    for (i=0; i<n; i++)
    {
@@ -789,7 +789,7 @@ static void ttf_get_nice_charmap(TT_Face face,
       }
    }
    if (got==-1)
-      error("%s: no charmaps at all\n",where);
+      Pike_error("%s: no charmaps at all\n",where);
 
    if ((res=TT_Get_CharMap(face, (TT_UShort)best, charMap)))
       my_tt_error(where,"TT_Get_CharMap: ",res);
@@ -833,7 +833,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 
    if (!(face_s=(struct image_ttf_face_struct*)
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
-      error("Image.TTF.FaceInstance->ponder(): lost Face\n");
+      Pike_error("Image.TTF.FaceInstance->ponder(): lost Face\n");
 
    if (args && sp[-1].type==T_INT)
    {
@@ -843,7 +843,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
    }
 
    if (sp[-args].type!=T_STRING)
-      error("Image.TTF.FaceInstance->ponder(): illegal argument 1\n");
+      Pike_error("Image.TTF.FaceInstance->ponder(): illegal argument 1\n");
 
    if(sp[-args].u.string->size_shift == 0)
      ttf_please_translate_8bit(face_s->face,
@@ -854,7 +854,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 			       sp[-args].u.string,&sstr,&len,base,
 			       "Image.TTF.FaceInstance->ponder()");
    else
-     error("Too wide string for truetype\n");
+     Pike_error("Too wide string for truetype\n");
 
    pop_n_elems(args);
 
@@ -983,7 +983,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 
    if (!(face_s=(struct image_ttf_face_struct*)
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
-      error("Image.TTF.FaceInstance->write(): lost Face\n");
+      Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
    if(!TT_Get_Kerning_Directory( face_s->face, &kerning ))
    {
@@ -991,7 +991,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 /*      fprintf(stderr, "has kerning!\n"); */
      has_kerning = 1;
      if(TT_Get_Instance_Metrics( face_i->instance, &metrics ))
-       error("Nope. No way.\n");
+       Pike_error("Nope. No way.\n");
      scalefactor = metrics.x_scale;
 /*      fprintf(stderr, "offset=%d\n", (int)metrics.x_scale); */
    }
@@ -1023,7 +1023,7 @@ static void image_ttf_faceinstance_write(INT32 args)
      TT_Glyph_Metrics metrics;
 
       if (sp[a-args].type!=T_STRING)
-	 error("Image.TTF.FaceInstance->write(): illegal argument %d\n",a+1);
+	 Pike_error("Image.TTF.FaceInstance->write(): illegal argument %d\n",a+1);
 
       switch(sp[a-args].u.string->size_shift)
       {
@@ -1042,7 +1042,7 @@ static void image_ttf_faceinstance_write(INT32 args)
        case 2:
          free( sstr );
          free( slen );
-	 error("Too wide string for truetype\n");
+	 Pike_error("Too wide string for truetype\n");
 	 break;
       }
 
@@ -1214,7 +1214,7 @@ static void image_ttf_faceinstance_write(INT32 args)
    }
    else
    {
-      error("Image.TTF.FaceInstance->write(): out of memory\n");
+      Pike_error("Image.TTF.FaceInstance->write(): out of memory\n");
    }
 
    for (a=0; a<args; a++)

@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: gd.c,v 1.4 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: gd.c,v 1.5 2000/12/01 08:10:04 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -16,7 +16,7 @@ RCSID("$Id: gd.c,v 1.4 2000/07/28 07:13:06 hubbe Exp $");
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
@@ -79,12 +79,12 @@ extern struct program *image_program;
 
 void image_gd_f_encode(INT32 args)
 {
-   error("not implemented\n");
+   Pike_error("not implemented\n");
 }
 
 void img_gd_decode(INT32 args,int header_only)
 {
-   error("not implemented\n");
+   Pike_error("not implemented\n");
 }
 
 static void image_gd_f_decode(INT32 args)

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.25 2000/11/23 11:08:37 per Exp $");
+RCSID("$Id: psd.c,v 1.26 2000/12/01 08:10:05 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -15,7 +15,7 @@ RCSID("$Id: psd.c,v 1.25 2000/11/23 11:08:37 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
@@ -70,7 +70,7 @@ static unsigned int psd_read_uint( struct buffer *from )
 {
   unsigned int res;
   if(from->len < 4)
-    error("Not enough space for 4 bytes (uint32)\n");
+    Pike_error("Not enough space for 4 bytes (uint32)\n");
   res = from->str[0]<<24|from->str[1]<<16|from->str[2]<<8|from->str[3];
   from->str += 4;
   from->len -= 4;
@@ -86,7 +86,7 @@ static unsigned short psd_read_ushort( struct buffer *from )
 {
   unsigned short res;
   if(from->len < 2)
-    error("Not enough space for 2 bytes (uint16)\n");
+    Pike_error("Not enough space for 2 bytes (uint16)\n");
   res = from->str[0]<<8 | from->str[1];
   from->str += 2;
   from->len -= 2;
@@ -120,7 +120,7 @@ static char *psd_read_data( struct buffer * from, size_t len )
 {
   char *res;
   if( from->len < len )
-    error("Not enough space for %lu bytes\n",
+    Pike_error("Not enough space for %lu bytes\n",
 	  DO_NOT_WARN((unsigned long)len));
   res = (char *)from->str;
   from->str += len;
@@ -135,7 +135,7 @@ static struct buffer psd_read_string( struct buffer *data )
   res.str = (unsigned char *)psd_read_data( data, res.len );
   if(res.len > 0) res.len--; /* len includes ending \0 */
   if(!res.str)
-    error("String read failed\n");
+    Pike_error("String read failed\n");
   return res;
 }
 
@@ -145,7 +145,7 @@ static struct buffer psd_read_pstring( struct buffer *data )
   res.len = psd_read_uchar( data );
   res.str = (unsigned char *)psd_read_data( data, res.len );
   if(!res.str)
-    error("PString read failed\n");
+    Pike_error("PString read failed\n");
   return res;
 }
 
@@ -355,7 +355,7 @@ static void f_decode_packbits_encoded(INT32 args)
   int compression = 0;
   struct buffer b, ob, d;
   if(sp[-args].type != T_STRING)
-    error("internal argument error");
+    Pike_error("internal argument Pike_error");
 
 
   if(args == 5)
@@ -367,7 +367,7 @@ static void f_decode_packbits_encoded(INT32 args)
     pop_n_elems(4);
   } else if(args == 3) {
     if( src->str[0] )
-      error("Impossible compression (%d)!\n", (src->str[0]<<8|src->str[1]) );
+      Pike_error("Impossible compression (%d)!\n", (src->str[0]<<8|src->str[1]) );
     compression = src->str[1];
     b.str = (unsigned char *)src->str+2;
     b.len = src->len-2;
@@ -392,7 +392,7 @@ static void f_decode_packbits_encoded(INT32 args)
      push_string( make_shared_binary_string((char *)b.str,b.len));
      break;
    default:
-     error("Impossible compression (%d)!\n", src->str[1]);
+     Pike_error("Impossible compression (%d)!\n", src->str[1]);
   }
   stack_swap();
   pop_stack();
@@ -417,7 +417,7 @@ static void f_decode_image_channel( INT32 args )
   stack_swap();
   pop_stack();
   if(s->len < w*h)
-    error("Not enough data in string for this channel\n");
+    Pike_error("Not enough data in string for this channel\n");
   source = (unsigned char *)s->str;
   push_int( w ); push_int( h );
   io = clone_object( image_program, 2 );
@@ -456,7 +456,7 @@ static void f_decode_image_data( INT32 args )
   stack_swap();
   pop_stack();
   if(s->len < w*h*d)
-    error("Not enough data in string for this channel\n");
+    Pike_error("Not enough data in string for this channel\n");
   source = (unsigned char *)s->str;
   source2 = source+w*h;
   source3 = source+w*h*2;
@@ -709,9 +709,9 @@ static void image_f_psd___decode( INT32 args )
     pop_n_elems( args-1 );
   if(s->str[0] != '8' || s->str[1] != 'B'  
      || s->str[2] != 'P'  || s->str[3] != 'S' )
-    error("This is not a Photoshop PSD file (invalid signature)\n");
+    Pike_error("This is not a Photoshop PSD file (invalid signature)\n");
   if(s->str[4] || s->str[5] != 1)
-    error("This is not a Photoshop PSD file (invalid version)\n");
+    Pike_error("This is not a Photoshop PSD file (invalid version)\n");
     
   b.len = s->len-12;
   b.str = (unsigned char *)s->str+12;
@@ -736,9 +736,9 @@ static void f_apply_cmap( INT32 args )
   int n;
   get_all_args( "apply_cmap", args, "%o%S", &io, &cmap );
   if(cmap->len < 256*3)
-    error("Invalid colormap resource\n");
+    Pike_error("Invalid colormap resource\n");
   if(!(i = (struct image *)get_storage( io, image_program )))
-    error("Invalid image object\n");
+    Pike_error("Invalid image object\n");
   n = i->xsize * i->ysize;
   d = i->img;
   THREADS_ALLOW();

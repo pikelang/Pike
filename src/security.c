@@ -101,16 +101,16 @@ static void f_call_with_creds(INT32 args)
       if(!CHECK_SECURITY(SECURITY_BIT_SECURITY) &&
 	 !(Pike_fp->current_object->prot && 
 	   (OBJ2CREDS(Pike_fp->current_object->prot)->may_always & SECURITY_BIT_SECURITY)))
-	error("call_with_creds: permission denied.\n");
+	Pike_error("call_with_creds: permission denied.\n");
       
       break;
 
     default:
-      error("Bad argument 1 to call_with_creds.\n");
+      Pike_error("Bad argument 1 to call_with_creds.\n");
   }
     
   if(!valid_creds_object(o))
-    error("call_with_creds: Not a valid creds object.\n");
+    Pike_error("call_with_creds: Not a valid creds object.\n");
   SET_CURRENT_CREDS(o);
 
   /* NOTE: This only works on objects that have no credentials, or have
@@ -218,7 +218,7 @@ static void creds_create(INT32 args)
 
   get_all_args("init_creds",args,"%o%i%i",&o,&may,&data);
   if(THIS->user)
-    error("You may only call creds_create once.\n");
+    Pike_error("You may only call creds_create once.\n");
   
   add_ref(THIS->user=o);
   THIS->may_always=may;
@@ -287,7 +287,7 @@ static void creds_get_data_bits(INT32 args)
 static void creds_apply(INT32 args)
 {
   if(args < 0 || sp[-args].type > MAX_COMPLEX)
-    error("Bad argument 1 to creds->apply()\n");
+    Pike_error("Bad argument 1 to creds->apply()\n");
 
   if( CHECK_SECURITY(SECURITY_BIT_SECURITY) ||
       (sp[-args].u.array->prot &&
@@ -298,7 +298,7 @@ static void creds_apply(INT32 args)
       free_object(sp[-args].u.array->prot);
     add_ref( sp[-args].u.array->prot=Pike_fp->current_object );
   }else{
-    error("creds->apply(): permission denied.\n");
+    Pike_error("creds->apply(): permission denied.\n");
   }
   pop_n_elems(args);
 }
@@ -321,7 +321,7 @@ static void f_get_object_creds(INT32 args)
 {
   struct object *o;
   if(args < 0 || sp[-args].type > MAX_COMPLEX)
-    error("Bad argument 1 to get_object_creds\n");
+    Pike_error("Bad argument 1 to get_object_creds\n");
   if((o=sp[-args].u.array->prot))
   {
     add_ref(o);

@@ -388,7 +388,7 @@ void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl )
      }
      return;
    default:
-     error("This greyscale is to wide for me!\n");
+     Pike_error("This greyscale is to wide for me!\n");
   }
 }
 

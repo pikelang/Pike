@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.12 2000/09/16 23:53:23 grubba Exp $ */
+/* $Id: ras.c,v 1.13 2000/12/01 08:10:05 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.12 2000/09/16 23:53:23 grubba Exp $
+**!	$Id: ras.c,v 1.13 2000/12/01 08:10:05 hubbe Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.12 2000/09/16 23:53:23 grubba Exp $");
+RCSID("$Id: ras.c,v 1.13 2000/12/01 08:10:05 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -22,7 +22,7 @@ RCSID("$Id: ras.c,v 1.12 2000/09/16 23:53:23 grubba Exp $");
 #include "svalue.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
@@ -128,33 +128,33 @@ void img_ras_decode(INT32 args)
    get_all_args("Image.RAS.decode", args, "%S", &str);
 
    if(str->len < 32)
-     error("Image.RAS.decode: header too small\n");
+     Pike_error("Image.RAS.decode: header too small\n");
 
    decode_ras_header(&rs, STR0(str));
 
    if(rs.ras_magic != 0x59a66a95)
-     error("Image.RAS.decode: bad magic\n");
+     Pike_error("Image.RAS.decode: bad magic\n");
 
    if(rs.ras_type < 0 || rs.ras_type > RT_BYTE_ENCODED)
-     error("Image.RAS.decode: unsupported ras_type %d\n", rs.ras_type);
+     Pike_error("Image.RAS.decode: unsupported ras_type %d\n", rs.ras_type);
 
    if(rs.ras_maptype < 0 || rs.ras_maptype > RMT_EQUAL_RGB)
-     error("Image.RAS.decode: unsupported ras_maptype %d\n", rs.ras_maptype);
+     Pike_error("Image.RAS.decode: unsupported ras_maptype %d\n", rs.ras_maptype);
 
    if(rs.ras_depth != 1 && rs.ras_depth != 8 && rs.ras_depth != 24)
-     error("Image.RAS.decode: unsupported ras_depth %d\n", rs.ras_depth);
+     Pike_error("Image.RAS.decode: unsupported ras_depth %d\n", rs.ras_depth);
 
    if(rs.ras_width < 0)
-     error("Image.RAS.decode: negative ras_width\n");
+     Pike_error("Image.RAS.decode: negative ras_width\n");
 
    if(rs.ras_height < 0)
-     error("Image.RAS.decode: negative ras_height\n");
+     Pike_error("Image.RAS.decode: negative ras_height\n");
 
    if(rs.ras_length < 0)
-     error("Image.RAS.decode: negative ras_length\n");
+     Pike_error("Image.RAS.decode: negative ras_length\n");
 
    if(rs.ras_maplength < 0)
-     error("Image.RAS.decode: negative ras_maplength\n");
+     Pike_error("Image.RAS.decode: negative ras_maplength\n");
 
    src = (unsigned char *)(STR0(str)+32);
    len = str->len - 32;
@@ -164,7 +164,7 @@ void img_ras_decode(INT32 args)
      unsigned char *map = src;
 
      if(len < rs.ras_maplength)
-       error("Image.RAS.decode: colormap truncated\n");
+       Pike_error("Image.RAS.decode: colormap truncated\n");
      
      src += rs.ras_maplength;
      len -= rs.ras_maplength;
@@ -175,7 +175,7 @@ void img_ras_decode(INT32 args)
 
      switch(rs.ras_maptype) {
       case RMT_NONE:
-	error("Image.RAS.decode: RMT_NONE colormap has length != 0 ( == %d )\n", rs.ras_maplength);
+	Pike_error("Image.RAS.decode: RMT_NONE colormap has length != 0 ( == %d )\n", rs.ras_maplength);
 	break;
       case RMT_EQUAL_RGB:
 	{
@@ -202,7 +202,7 @@ void img_ras_decode(INT32 args)
        /* Better to proceed and make a partly black image? */
        if(ctab != NULL)
 	 free_object(ctab);
-       error("Image.RAS.decode: image data truncated\n");
+       Pike_error("Image.RAS.decode: image data truncated\n");
      } else
        len = rs.ras_length;
    }
@@ -250,7 +250,7 @@ void img_ras_decode(INT32 args)
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
-	    error("Image.RAS.decode: image data too short\n");
+	    Pike_error("Image.RAS.decode: image data too short\n");
 	  }
 	  rgb->b = *src++;
 	  rgb->g = *src++;
@@ -272,7 +272,7 @@ void img_ras_decode(INT32 args)
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
-	    error("Image.RAS.decode: image data too short\n");
+	    Pike_error("Image.RAS.decode: image data too short\n");
 	  }
 	  if(*src<numcolors)
 	    *rgb++ = entries[*src++].color;
@@ -299,7 +299,7 @@ void img_ras_decode(INT32 args)
 		if(ctab != NULL)
 		  free_object(ctab);
 		free_object(o);
-		error("Image.RAS.decode: image data too short\n");
+		Pike_error("Image.RAS.decode: image data too short\n");
 	      }
 	      data = (src[0]<<8)|src[1];
 	      src += 2;
@@ -422,7 +422,7 @@ static void image_ras_encode(INT32 args)
 	       &imgo, &optm);
 
   if((img=(struct image*)get_storage(imgo, image_program))==NULL)
-     error("Image.RAS.encode: illegal argument 1\n");
+     Pike_error("Image.RAS.encode: illegal argument 1\n");
 
   if(optm != NULL) {
     struct svalue *s;
@@ -431,11 +431,11 @@ static void image_ras_encode(INT32 args)
       if(s->type != T_OBJECT ||
 	 (ct=(struct neo_colortable*)
 	  get_storage(s->u.object, image_colortable_program))==NULL)
-	error("Image.RAS.encode: option (arg 2) \"palette\" has illegal type\n");
+	Pike_error("Image.RAS.encode: option (arg 2) \"palette\" has illegal type\n");
   }
 
   if (!img->img)
-    error("Image.RAS.encode: no image\n");
+    Pike_error("Image.RAS.encode: no image\n");
 
   rgb = img->img;
 

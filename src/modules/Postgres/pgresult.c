@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.14 2000/08/06 05:00:55 hubbe Exp $
+ * $Id: pgresult.c,v 1.15 2000/12/01 08:10:20 hubbe Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -65,7 +65,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.14 2000/08/06 05:00:55 hubbe Exp $");
+RCSID("$Id: pgresult.c,v 1.15 2000/12/01 08:10:20 hubbe Exp $");
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
@@ -109,14 +109,14 @@ static void f_create (INT32 args)
 
 	storage=get_storage(Pike_sp[-args].u.object,postgres_program);
 	if (!storage)
-		error ("I need a Postgres object or an heir of it.\n");
+		Pike_error ("I need a Postgres object or an heir of it.\n");
 	THIS->result=((struct pgres_object_data *)storage)->last_result;
 	((struct pgres_object_data *) Pike_sp[-args].u.object->storage)->last_result=NULL;
 	/* no fear of memory leaks, we've only moved the pointer from there to here */
 
 	pop_n_elems(args);
 	if (!THIS->result) /*this ensures we _DO_ have a result*/
-		error ("Bad result.\n");
+		Pike_error ("Bad result.\n");
 #ifdef PGRESDEBUG
 	pgdebug("Got %d tuples.\n",PQntuples(THIS->result));
 #endif
@@ -180,9 +180,9 @@ static void f_seek (INT32 args)
 	check_all_args("postgres_result->seek",args,BIT_INT,0);
 	howmuch=Pike_sp[-args].u.integer;
 	if (THIS->cursor+howmuch < 0)
-		error ("Cannot seek to negative result indexes!\n");
+		Pike_error ("Cannot seek to negative result indexes!\n");
 	if (THIS->cursor+howmuch > PQntuples(THIS->result))
-		error ("Cannot seek past result's end!.\n");
+		Pike_error ("Cannot seek past result's end!.\n");
 	pop_n_elems(args);
 	THIS->cursor += howmuch;
 	return;

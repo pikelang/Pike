@@ -12,7 +12,7 @@
 #include "stralloc.h"
 #include "interpret.h"
 #include "opcodes.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_types.h"
 #include "fsort.h"
 #include "builtin_functions.h"
@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.96 2000/12/01 01:14:56 hubbe Exp $");
+RCSID("$Id: array.c,v 1.97 2000/12/01 08:09:43 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -62,7 +62,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
   v=(struct array *)malloc(sizeof(struct array)+
 			   (size+extra_space-1)*sizeof(struct svalue));
   if(!v)
-    error("Couldn't allocate array, out of memory.\n");
+    Pike_error("Couldn't allocate array, out of memory.\n");
 
   GC_ALLOC(v);
   
@@ -246,9 +246,9 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
       if(i<0) i+=a->size;
       if(i<0 || i>=a->size) {
 	if (a->size) {
-	  error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
+	  Pike_error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
 	} else {
-	  error("Attempt to index the empty array with %d.\n", i);
+	  Pike_error("Attempt to index the empty array with %d.\n", i);
 	}
       }
       array_set_index(a,i,s);
@@ -1033,14 +1033,14 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
 {
   INT32 i;
   if(ind->type != T_INT)
-    error("Index is not an integer.\n");
+    Pike_error("Index is not an integer.\n");
   i=ind->u.integer;
   if(i<0) i+=a->size;
   if(i<0 || i>=a->size) {
     if (a->size) {
-      error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
+      Pike_error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
     } else {
-      error("Attempt to index the empty array with %d.\n", i);
+      Pike_error("Attempt to index the empty array with %d.\n", i);
     }
   }
   return low_array_get_item_ptr(a,i,t);
@@ -2292,7 +2292,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
   for(e=0;e<a->size;e++)
   {
     if(ITEM(a)[e].type!=T_ARRAY)
-      error("Implode array contains non-arrays.\n");
+      Pike_error("Implode array contains non-arrays.\n");
     size+=ITEM(a)[e].u.array->size;
   }
 

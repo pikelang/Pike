@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.21 2000/09/07 11:25:38 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.22 2000/12/01 08:10:32 hubbe Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -21,7 +21,7 @@ RCSID("$Id: image_tiff.c,v 1.21 2000/09/07 11:25:38 grubba Exp $");
 #include "array.h"
 #include "mapping.h"
 #include "module_support.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "operators.h"
 #include "../Image/image.h"
@@ -80,9 +80,9 @@ static void increase_buffer_size( struct buffer * buffer )
   TRACE("increase_buffer_size(%p<%d,%d>)\n", buffer,buffer->len,
         buffer->offset);
   if(!buffer->extendable)
-    error("Extending non-extendable buffer!\n");
+    Pike_error("Extending non-extendable buffer!\n");
   if(buffer->len > 1024*1024*400)
-    error("Too large buffer (temprary error..)\n");
+    Pike_error("Too large buffer (temprary Pike_error..)\n");
   if(!buffer->len) buffer->len = INITIAL_WRITE_BUFFER_SIZE;
 
   /* FIXME: According to DMALLOC this leaks.
@@ -91,7 +91,7 @@ static void increase_buffer_size( struct buffer * buffer )
    * in which case realloc() is wrong.
    */
   new_d = realloc( buffer->str, buffer->len*2 );
-  if(!new_d) error("Realloc (%ld->%ld) failed!\n",
+  if(!new_d) Pike_error("Realloc (%ld->%ld) failed!\n",
 		   DO_NOT_WARN((long)buffer->len),
 		   DO_NOT_WARN((long)buffer->len*2));
   MEMSET(new_d+buffer->len, 0, buffer->len);
@@ -233,12 +233,12 @@ void low_image_tiff_encode( struct buffer *buf,
                         size_buffer, map_buffer,
                         unmap_buffer );
   if(!tif)
-    error("\"open\" of TIF file failed!\n");
+    Pike_error("\"open\" of TIF file failed!\n");
   
  i = ((struct image *)get_storage(img->img,image_program));
 
   if(!i)
-    error("Image is not an image object.\n");
+    Pike_error("Image is not an image object.\n");
 
   is = i->img;
 
@@ -248,10 +248,10 @@ void low_image_tiff_encode( struct buffer *buf,
     spp++;
     a = ((struct image *)get_storage(img->alpha,image_program));
     if(!a)
-      error("Alpha is not an image object.\n");
+      Pike_error("Alpha is not an image object.\n");
     if(i->xsize != a->xsize ||
        i->ysize != a->ysize)
-      error("Image and alpha objects are not equally sized!\n");
+      Pike_error("Image and alpha objects are not equally sized!\n");
   }
 
 
@@ -301,7 +301,7 @@ void low_image_tiff_encode( struct buffer *buf,
     if(TIFFWriteScanline(tif, buffer, y, 0) < 0)
     {
       free(buffer);
-      error("TIFFWriteScanline returned error on line %d\n", y );
+      Pike_error("TIFFWriteScanline returned Pike_error on line %d\n", y );
     }
   }
   free(buffer);
@@ -335,17 +335,17 @@ void low_image_tiff_decode( struct buffer *buf,
 		       size_buffer, map_buffer,
 		       unmap_buffer);
   if(!tif)
-    error("Failed to 'open' tiff image.\n");
+    Pike_error("Failed to 'open' tiff image.\n");
 
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
   s = raster = (uint32 *)_TIFFmalloc(w*h*sizeof(uint32));
   if (raster == NULL)
-    error("Malloc failed to allocate buffer for %ldx%ld image\n",
+    Pike_error("Malloc failed to allocate buffer for %ldx%ld image\n",
 	  (long)w, (long)h);
 
   if(!TIFFReadRGBAImage(tif, w, h, raster, 0))
-    error("Failed to read TIFF data\n");
+    Pike_error("Failed to read TIFF data\n");
 
 
   push_int(w);
@@ -483,7 +483,7 @@ void low_image_tiff_decode( struct buffer *buf,
          push_text( "halftone or dithered scan" );
          break;
        case THRESHHOLD_ERRORDIFFUSE:
-         push_text( "error diffused" );
+         push_text( "Pike_error diffused" );
          break;
        default:
          push_text( "unknown" );
@@ -608,10 +608,10 @@ static void image_tiff_decode( INT32 args )
   struct buffer buffer;
   struct imagealpha res;
   if(!args) 
-    error("Too few arguments to Image.TIFF.decode()\n");
+    Pike_error("Too few arguments to Image.TIFF.decode()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Invalid argument 1 to Image.TIFF.decode()\n");
+    Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");
 
   buffer.str = sp[-args].u.string->str;
   buffer.len = buffer.real_len =sp[-args].u.string->len;
@@ -628,7 +628,7 @@ static void image_tiff_decode( INT32 args )
 **! 	Decodes a TIFF image. 
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 
 /*
@@ -637,7 +637,7 @@ static void image_tiff_decode( INT32 args )
 **!     image and alpha. 
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 static void image_tiff__decode( INT32 args )
 {
@@ -645,9 +645,9 @@ static void image_tiff__decode( INT32 args )
   struct imagealpha res;
   struct svalue *osp=sp;
   if(!args) 
-    error("Too few arguments to Image.TIFF.decode()\n");
+    Pike_error("Too few arguments to Image.TIFF.decode()\n");
   if(sp[-args].type != T_STRING)
-    error("Invalid argument 1 to Image.TIFF.decode()\n");
+    Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");
 
   MEMSET(&res, 0, sizeof(res));
   buffer.str = sp[-args].u.string->str;
@@ -764,7 +764,7 @@ static void image_tiff_encode( INT32 args )
   {
     float dpy;
     if(sp[-args+1].type != T_MAPPING)
-      error("Invalid argument 2 to Image.TIFF.encode. Expected mapping.\n");
+      Pike_error("Invalid argument 2 to Image.TIFF.encode. Expected mapping.\n");
     parameter_int( sp-args+1, opt_compression, &c.compression );
     if(parameter_float( sp-args+1, opt_dpy, &dpy ))
       c.xdpy = c.ydpy = dpy;

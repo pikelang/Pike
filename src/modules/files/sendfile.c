@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.49 2000/10/23 19:10:05 grubba Exp $
+ * $Id: sendfile.c,v 1.50 2000/12/01 08:10:36 hubbe Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -240,7 +240,7 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
   remove_callback(cb);
 
   if (this->self) {
-    /* Make sure we get freed in case of error */
+    /* Make sure we get freed in case of Pike_error */
     push_object(this->self);
     this->self = NULL;
   }
@@ -663,7 +663,7 @@ static void sf_create(INT32 args)
   struct svalue *cb = NULL;
 
   if (THIS->to_file) {
-    error("sendfile->create(): Called a second time!\n");
+    Pike_error("sendfile->create(): Called a second time!\n");
   }
 
   /* In case the user has succeeded in initializing _callback

@@ -3,13 +3,13 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.24 2000/08/15 13:00:00 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.25 2000/12/01 08:10:25 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
 #include "object.h"
 #include "module_support.h"
-#include "error.h"
+#include "pike_error.h"
 
 #include "iso2022.h"
 
@@ -120,7 +120,7 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 	  } else if(rep != NULL) \
             func(ctx, sb, rep, NULL, NULL); \
 	  else \
-	    error("Character unsupported by encoding.\n");
+	    Pike_error("Character unsupported by encoding.\n");
 
 #define MKREPCB(c) ((c).type == T_FUNCTION? &(c):NULL)
 
@@ -188,7 +188,7 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
   get_all_args("feed()", args, "%W", &str);
 
   if(str->size_shift>0)
-    error("Can't feed on wide strings!\n");
+    Pike_error("Can't feed on wide strings!\n");
 
   if(s->retain != NULL) {
     tmpstr = add_shared_strings(s->retain, str);
@@ -441,7 +441,7 @@ static void f_rfc1345(INT32 args)
 	case MODE_9494: lowtrans=lo=lo2=33; hi=hi2=126; break;
 	case MODE_9696: lowtrans=32; lo=lo2=160; hi=hi2=255; break;
 	default:
-	  fatal("Internal error in rfc1345\n");
+	  fatal("Internal Pike_error in rfc1345\n");
 	}
 	
 	if(hi2) {
@@ -484,7 +484,7 @@ static void f_rfc1345(INT32 args)
       case MODE_9494: p = std_9494_program; break;
       case MODE_9696: p = std_9696_program; break;
       default:
-	fatal("Internal error in rfc1345\n");
+	fatal("Internal Pike_error in rfc1345\n");
       }
       push_object(clone_object(p, 0));
       ((struct std_rfc_stor *)(sp[-1].u.object->storage+std_rfc_stor_offs))

@@ -1,5 +1,5 @@
 /*
- * $Id: smartlink.c,v 1.10 2000/10/28 15:48:18 grubba Exp $
+ * $Id: smartlink.c,v 1.11 2000/12/01 08:09:55 hubbe Exp $
  *
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.10 2000/10/28 15:48:18 grubba Exp $\n"
+	    "$Id: smartlink.c,v 1.11 2000/12/01 08:09:55 hubbe Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
       fatal("Out of memory (7)!");
     }
 #else
-#error Unknown method
+#Pike_error Unknown method
 #endif
   }
 

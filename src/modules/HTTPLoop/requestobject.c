@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.15 2000/11/02 12:01:14 grubba Exp $
+ * $Id: requestobject.c,v 1.16 2000/12/01 08:09:58 hubbe Exp $
  */
 
 #include "global.h"
@@ -420,7 +420,7 @@ void f_aap_index_op(INT32 args)
 {
   struct svalue *res;
   struct pike_string *s;
-  if (!args) error("HTTP C object->`[]: too few args\n");
+  if (!args) Pike_error("HTTP C object->`[]: too few args\n");
   pop_n_elems(args-1);
   if(!THIS->misc_variables) 
   {
@@ -439,7 +439,7 @@ void f_aap_index_op(INT32 args)
     return;
   }
   
-  if(!THIS->request) error("Reply called. No data available\n");
+  if(!THIS->request) Pike_error("Reply called. No data available\n");
   get_all_args("`[]", args, "%S", &s);
   
   if(s == s_not_query || s==s_query || s==s_prestate)
@@ -682,7 +682,7 @@ void f_aap_end(INT32 args)
 
 void f_aap_output(INT32 args)
 {
-  if(sp[-1].type != T_STRING) error("Bad argument 1 to output\n");
+  if(sp[-1].type != T_STRING) Pike_error("Bad argument 1 to output\n");
   WRITE(THIS->request->fd, sp[-1].u.string->str, sp[-1].u.string->len);
 }
 
@@ -967,18 +967,18 @@ void f_aap_reply(INT32 args)
   int reply_string=0, reply_object=0;
   struct send_args *q;
   if(!THIS->request)
-    error("reply already called.\n");
+    Pike_error("reply already called.\n");
   if(args && sp[-args].type == T_STRING) 
     reply_string = 1;
 
   if(args>1)
   {
     if(args<3)
-      error("->reply(string|void pre,object(Stdio.file) fd,int len)\n");
+      Pike_error("->reply(string|void pre,object(Stdio.file) fd,int len)\n");
     if(sp[-args+1].type != T_OBJECT)
-      error("Bad argument 2 to reply\n");
+      Pike_error("Bad argument 2 to reply\n");
     if(sp[-args+2].type != T_INT)
-      error("Bad argument 3 to reply\n");
+      Pike_error("Bad argument 3 to reply\n");
     reply_object = 1;
   }
 
@@ -993,10 +993,10 @@ void f_aap_reply(INT32 args)
     if((sp[-1].type != T_INT) || (sp[-1].u.integer <= 0))
     {
       aap_free(q);
-      error("Bad fileobject to request_object->reply()\n");
+      Pike_error("Bad fileobject to request_object->reply()\n");
     }
     if((q->from_fd = fd_dup(sp[-1].u.integer)) == -1)
-      error("Bad file object to request_object->reply()\n");
+      Pike_error("Bad file object to request_object->reply()\n");
     pop_stack();
 
     q->len = sp[-1].u.integer;
@@ -1026,7 +1026,7 @@ void f_aap_reply_with_cache(INT32 args)
   struct pike_string *reply;
   INT_TYPE time_to_keep, t, freed=0;
   if(!THIS->request)
-    error("Reply already called.\n");
+    Pike_error("Reply already called.\n");
 
   get_all_args("reply_with_cache", args, "%S%d", &reply, &time_to_keep);
 

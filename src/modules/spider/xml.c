@@ -14,7 +14,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
-#include "error.h"
+#include "pike_error.h"
 #include "opcodes.h"
 #include "block_alloc.h"
 #include "bignum.h"
@@ -887,7 +887,7 @@ static int gobble(struct xmldata *data, char *s)
 #define PARSE_REF(PARSE_RECURSIVELY) do {\
     /* Entity reference */						    \
     /* lookup entry in mapping and parse it recursively */		    \
-    /* Generate error if entity is not defined */			    \
+    /* Generate Pike_error if entity is not defined */			    \
     if(THIS->entities)							    \
     {									    \
       struct pike_string *name=0;					    \
@@ -1078,7 +1078,7 @@ static void xmlerror(char *desc, struct xmldata *data)
 {
   struct svalue * save_sp=sp;
 
-  push_constant_text("error");
+  push_constant_text("Pike_error");
   push_int(0); /* no name */
   push_int(0); /* no attributes */
   push_text(desc);
@@ -1105,7 +1105,7 @@ static int read_smeg_pereference(struct xmldata *data)
     XMLERROR("Missing ';' after parsed entity reference.");
   READ(1);
   /* lookup entry in mapping and parse it recursively */
-  /* Generate error if entity is not defined */
+  /* Generate Pike_error if entity is not defined */
   f_index(2);
   if(IS_ZERO(sp-1))
   {
@@ -2562,7 +2562,7 @@ static void parse_xml(INT32 args)
 
   s=sp[-args].u.string;
   if(args<2)
-    error("Too few arguments to XML->parse()\n");
+    Pike_error("Too few arguments to XML->parse()\n");
 
 #if 0
   if(!s->size_shift)
@@ -2729,11 +2729,11 @@ static void autoconvert(INT32 args)
   struct pike_string *s;
 
   if(!args)
-    error("Too few arguments to XML->autoconvert.\n");
+    Pike_error("Too few arguments to XML->autoconvert.\n");
 
   pop_n_elems(args-1);
   if(sp[-1].type != T_STRING)
-    error("Bad argument 1 to XML->autoconvert.\n");
+    Pike_error("Bad argument 1 to XML->autoconvert.\n");
 
   s=sp[-1].u.string;
   if(!s->size_shift)
@@ -2807,7 +2807,7 @@ static void autoconvert(INT32 args)
 
       case 0x3c003f00: /* UTF-16, little endian, no byte order mark */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, little-endian, no byte order mark detected.\n"));
-	error("XML: Little endian byte order not supported yet.\n");
+	Pike_error("XML: Little endian byte order not supported yet.\n");
 
       case 0x3c3f786d: /* ASCII? UTF-8? ISO-8859? */
 	IF_XMLDEBUG(fprintf(stderr,"Extended ASCII detected (assuming UTF8).\n"));
@@ -2817,7 +2817,7 @@ static void autoconvert(INT32 args)
 	
       case 0x4c6fa794: /* EBCDIC */
 	IF_XMLDEBUG(fprintf(stderr,"EBCDIC detected.\n"));
-	error("XML: EBCDIC not supported yet.\n");
+	Pike_error("XML: EBCDIC not supported yet.\n");
     }
   }
   IF_XMLDEBUG(fprintf(stderr,"No encoding detected.\n"));

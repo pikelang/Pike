@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.37 2000/08/13 14:55:14 grubba Exp $
+ * $Id: mysql.c,v 1.38 2000/12/01 08:10:12 hubbe Exp $
  *
  * SQL database functionality for Pike
  *
@@ -34,7 +34,7 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
-#error Need mysql.h header-file
+#Pike_error Need mysql.h header-file
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
@@ -65,7 +65,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include "stralloc.h"
 #include "interpret.h"
 #include "port.h"
-#include "error.h"
+#include "pike_error.h"
 #include "threads.h"
 #include "program.h"
 #include "operators.h"
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.37 2000/08/13 14:55:14 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.38 2000/12/01 08:10:12 hubbe Exp $");
 
 /*
 **! module Mysql
@@ -103,7 +103,7 @@ RCSID("$Id: mysql.c,v 1.37 2000/08/13 14:55:14 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.37 2000/08/13 14:55:14 grubba Exp $
+**!	$Id: mysql.c,v 1.38 2000/12/01 08:10:12 hubbe Exp $
 **!
 **! class mysql
 **!
@@ -229,7 +229,7 @@ static void pike_mysql_reconnect(void)
   if (PIKE_MYSQL->host) {
     hostptr = strdup(PIKE_MYSQL->host->str);
     if (!hostptr) {
-      error("Mysql.mysql(): Out of memory!\n");
+      Pike_error("Mysql.mysql(): Out of memory!\n");
     }
     if ((portptr = strchr(hostptr, ':')) && (*portptr == ':')) {
       *portptr = 0;
@@ -305,7 +305,7 @@ static void pike_mysql_reconnect(void)
   }
   
   if (!(PIKE_MYSQL->socket = socket)) {
-    error("Mysql.mysql(): Couldn't reconnect to SQL-server\n"
+    Pike_error("Mysql.mysql(): Couldn't reconnect to SQL-server\n"
 	  "%s\n",
 	  mysql_error(PIKE_MYSQL->mysql));
   }
@@ -332,9 +332,9 @@ static void pike_mysql_reconnect(void)
 
       MYSQL_DISALLOW();
       if (strlen(database) < 1024) {
-	error("Mysql.mysql(): Couldn't select database \"%s\"\n", database);
+	Pike_error("Mysql.mysql(): Couldn't select database \"%s\"\n", database);
       } else {
-	error("Mysql.mysql(): Couldn't select database\n");
+	Pike_error("Mysql.mysql(): Couldn't select database\n");
       }
     }
   }
@@ -365,7 +365,7 @@ static void f_create(INT32 args)
 {
   if (args >= 1) {
     if (sp[-args].type != T_STRING) {
-      error("Bad argument 1 to mysql()\n");
+      Pike_error("Bad argument 1 to mysql()\n");
     }
     if (sp[-args].u.string->len) {
       add_ref(PIKE_MYSQL->host = sp[-args].u.string);
@@ -373,7 +373,7 @@ static void f_create(INT32 args)
 
     if (args >= 2) {
       if (sp[1-args].type != T_STRING) {
-	error("Bad argument 2 to mysql()\n");
+	Pike_error("Bad argument 2 to mysql()\n");
       }
       if (sp[1-args].u.string->len) {
 	add_ref(PIKE_MYSQL->database = sp[1-args].u.string);
@@ -381,7 +381,7 @@ static void f_create(INT32 args)
 
       if (args >= 3) {
 	if (sp[2-args].type != T_STRING) {
-	  error("Bad argument 3 to mysql()\n");
+	  Pike_error("Bad argument 3 to mysql()\n");
 	}
 	if (sp[2-args].u.string->len) {
 	  add_ref(PIKE_MYSQL->user = sp[2-args].u.string);
@@ -389,7 +389,7 @@ static void f_create(INT32 args)
 
 	if (args >= 4) {
 	  if (sp[3-args].type != T_STRING) {
-	    error("Bad argument 4 to mysql()\n");
+	    Pike_error("Bad argument 4 to mysql()\n");
 	  }
 	  if (sp[3-args].u.string->len) {
 	    add_ref(PIKE_MYSQL->password = sp[3-args].u.string);
@@ -457,12 +457,12 @@ static void f_insert_id(INT32 args)
 }
 
 /*
-**! method string error()
+**! method string Pike_error()
 **!
-**!	Returns a string describing the last error from the Mysql-server.
+**!	Returns a string describing the last Pike_error from the Mysql-server.
 **!
 */
-/* int|string error() */
+/* int|string Pike_error() */
 static void f_error(INT32 args)
 {
   MYSQL *socket;
@@ -506,10 +506,10 @@ static void f_select_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    error("Too few arguments to mysql->select_db()\n");
+    Pike_error("Too few arguments to mysql->select_db()\n");
   }
   if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to mysql->select_db()\n");
+    Pike_error("Bad argument 1 to mysql->select_db()\n");
   }
 
   database = sp[-args].u.string->str;
@@ -541,7 +541,7 @@ static void f_select_db(INT32 args)
     err = mysql_error(socket);
     MYSQL_DISALLOW();
 
-    error("mysql->select_db(): Couldn't select database \"%s\" (%s)\n",
+    Pike_error("mysql->select_db(): Couldn't select database \"%s\" (%s)\n",
 	  sp[-args].u.string->str, err);
   }
   if (PIKE_MYSQL->database) {
@@ -575,10 +575,10 @@ static void f_big_query(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    error("Too few arguments to mysql->big_query()\n");
+    Pike_error("Too few arguments to mysql->big_query()\n");
   }
   if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to mysql->big_query()\n");
+    Pike_error("Bad argument 1 to mysql->big_query()\n");
   }
 
   query = sp[-args].u.string->str;
@@ -640,10 +640,10 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (sp[-args].u.string->len <= 512) {
-      error("mysql->big_query(): Query \"%s\" failed (%s)\n",
+      Pike_error("mysql->big_query(): Query \"%s\" failed (%s)\n",
 	    sp[-args].u.string->str, err);
     } else {
-      error("mysql->big_query(): Query failed (%s)\n", err);
+      Pike_error("mysql->big_query(): Query failed (%s)\n", err);
     }
   }
 
@@ -657,7 +657,7 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (err) {
-      error("mysql->big_query(): Couldn't create result for query\n");
+      Pike_error("mysql->big_query(): Couldn't create result for query\n");
     }
     /* query was INSERT or similar - return 0 */
 
@@ -690,17 +690,17 @@ static void f_create_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    error("Too few arguments to mysql->create_db()\n");
+    Pike_error("Too few arguments to mysql->create_db()\n");
   }
   if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to mysql->create_db()\n");
+    Pike_error("Bad argument 1 to mysql->create_db()\n");
   }
   if (sp[-args].u.string->len > 127) {
     if (sp[-args].u.string->len < 1024) {
-      error("Database name \"%s\" is too long (max 127 characters)\n",
+      Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
 	    sp[-args].u.string->str);
     } else {
-      error("Database name (length %d) is too long (max 127 characters)\n",
+      Pike_error("Database name (length %d) is too long (max 127 characters)\n",
 	    sp[-args].u.string->len);
     }
   }
@@ -727,7 +727,7 @@ static void f_create_db(INT32 args)
   }
 
   if (tmp < 0) {
-    error("mysql->create_db(): Creation of database \"%s\" failed\n",
+    Pike_error("mysql->create_db(): Creation of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
 
@@ -753,17 +753,17 @@ static void f_drop_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    error("Too few arguments to mysql->drop_db()\n");
+    Pike_error("Too few arguments to mysql->drop_db()\n");
   }
   if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to mysql->drop_db()\n");
+    Pike_error("Bad argument 1 to mysql->drop_db()\n");
   }
   if (sp[-args].u.string->len > 127) {
     if (sp[-args].u.string->len < 1024) {
-      error("Database name \"%s\" is too long (max 127 characters)\n",
+      Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
 	    sp[-args].u.string->str);
     } else {
-      error("Database name (length %d) is too long (max 127 characters)\n",
+      Pike_error("Database name (length %d) is too long (max 127 characters)\n",
 	    sp[-args].u.string->len);
     }
   }
@@ -790,7 +790,7 @@ static void f_drop_db(INT32 args)
   }    
 
   if (tmp < 0) {
-    error("mysql->drop_db(): Drop of database \"%s\" failed\n",
+    Pike_error("mysql->drop_db(): Drop of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
 
@@ -834,7 +834,7 @@ static void f_shutdown(INT32 args)
   }
 
   if (tmp < 0) {
-    error("mysql->shutdown(): Shutdown failed\n");
+    Pike_error("mysql->shutdown(): Shutdown failed\n");
   }
 
   pop_n_elems(args);
@@ -876,7 +876,7 @@ static void f_reload(INT32 args)
   }
 
   if (tmp < 0) {
-    error("mysql->reload(): Reload failed\n");
+    Pike_error("mysql->reload(): Reload failed\n");
   }
 
   pop_n_elems(args);
@@ -1040,14 +1040,14 @@ static void f_list_dbs(INT32 args)
 
   if (args) {
     if (sp[-args].type != T_STRING) {
-      error("Bad argument 1 to mysql->list_dbs()\n");
+      Pike_error("Bad argument 1 to mysql->list_dbs()\n");
     }
     if (sp[-args].u.string->len > 80) {
       if (sp[-args].u.string->len < 1024) {
-	error("Wildcard \"%s\" is too long (max 80 characters)\n",
+	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
 	      sp[-args].u.string->str);
       } else {
-	error("Wildcard (length %d) is too long (max 80 characters)\n",
+	Pike_error("Wildcard (length %d) is too long (max 80 characters)\n",
 	      sp[-args].u.string->len);
       }
     }
@@ -1083,7 +1083,7 @@ static void f_list_dbs(INT32 args)
 
     MYSQL_DISALLOW();
 
-    error("mysql->list_dbs(): Cannot list databases: %s\n", err);
+    Pike_error("mysql->list_dbs(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1116,14 +1116,14 @@ static void f_list_tables(INT32 args)
 
   if (args) {
     if (sp[-args].type != T_STRING) {
-      error("Bad argument 1 to mysql->list_tables()\n");
+      Pike_error("Bad argument 1 to mysql->list_tables()\n");
     }
     if (sp[-args].u.string->len > 80) {
       if (sp[-args].u.string->len < 1024) {
-	error("Wildcard \"%s\" is too long (max 80 characters)\n",
+	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
 	      sp[-args].u.string->str);
       } else {
-	error("Wildcard (length %d) is too long (max 80 characters)\n",
+	Pike_error("Wildcard (length %d) is too long (max 80 characters)\n",
 	      sp[-args].u.string->len);
       }
     }
@@ -1159,7 +1159,7 @@ static void f_list_tables(INT32 args)
 
     MYSQL_DISALLOW();
 
-    error("mysql->list_tables(): Cannot list databases: %s\n", err);
+    Pike_error("mysql->list_tables(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1224,34 +1224,34 @@ static void f_list_fields(INT32 args)
   char *wild = NULL;
 
   if (!args) {
-    error("Too few arguments to mysql->list_fields()\n");
+    Pike_error("Too few arguments to mysql->list_fields()\n");
   }
   
   if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to mysql->list_fields()\n");
+    Pike_error("Bad argument 1 to mysql->list_fields()\n");
   }
   if (sp[-args].u.string->len > 125) {
     if (sp[-args].u.string->len < 1024) {
-      error("Table name \"%s\" is too long (max 125 characters)\n",
+      Pike_error("Table name \"%s\" is too long (max 125 characters)\n",
 	    sp[-args].u.string->str);
     } else {
-      error("Table name (length %d) is too long (max 125 characters)\n",
+      Pike_error("Table name (length %d) is too long (max 125 characters)\n",
 	    sp[-args].u.string->len);
     }
   }
   table = sp[-args].u.string->str;
   if (args > 1) {
     if (sp[-args+1].type != T_STRING) {
-      error("Bad argument 2 to mysql->list_fields()\n");
+      Pike_error("Bad argument 2 to mysql->list_fields()\n");
     }
     if (sp[-args+1].u.string->len + sp[-args].u.string->len > 125) {
       /* The length of the table name has already been checked. */
       if (sp[-args+1].u.string->len < 1024) {
-	error("Wildcard \"%s\" + table name \"%s\" is too long "
+	Pike_error("Wildcard \"%s\" + table name \"%s\" is too long "
 	      "(max 125 characters)\n",
 	      sp[-args+1].u.string->str, sp[-args].u.string->str);
       } else {
-	error("Wildcard (length %d) + table name \"%s\" is too long "
+	Pike_error("Wildcard (length %d) + table name \"%s\" is too long "
 	      "(max 125 characters)\n",
 	      sp[-args+1].u.string->len, sp[-args].u.string->str);
       }
@@ -1288,7 +1288,7 @@ static void f_list_fields(INT32 args)
 
     MYSQL_DISALLOW();
 
-    error("mysql->list_fields(): Cannot list databases: %s\n", err);
+    Pike_error("mysql->list_fields(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1349,7 +1349,7 @@ static void f_list_processes(INT32 args)
 
     MYSQL_DISALLOW();
 
-    error("mysql->list_processes(): Cannot list databases: %s\n", err);
+    Pike_error("mysql->list_processes(): Cannot list databases: %s\n", err);
   }
 
   ref_push_object(Pike_fp->current_object);
@@ -1413,7 +1413,7 @@ void pike_module_init(void)
   ADD_STORAGE(struct precompiled_mysql);
 
   /* function(void:int|string) */
-  ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
+  ADD_FUNCTION("Pike_error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
   /* function(void:int) */

@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h 
  */
 
-/* @(#) $Id: gz_test.c,v 1.3 2000/01/30 00:07:22 hubbe Exp $ */
+/* @(#) $Id: gz_test.c,v 1.4 2000/12/01 08:09:57 hubbe Exp $ */
 
 #include <stdio.h>
 #include <zlib.h>
@@ -17,7 +17,7 @@
 
 #define CHECK_ERR(err, msg) { \
     if (err != Z_OK) { \
-        fprintf(stderr, "%s error: %d\n", msg, err); \
+        fprintf(stderr, "%s Pike_error: %d\n", msg, err); \
         exit(1); \
     } \
 }
@@ -273,7 +273,7 @@ void test_flush(compr, comprLen)
     err = deflate(&c_stream, Z_FULL_FLUSH);
     CHECK_ERR(err, "deflate");
 
-    compr[3]++; /* force an error in first compressed block */
+    compr[3]++; /* force an Pike_error in first compressed block */
     c_stream.avail_in = len - 3;
 
     err = deflate(&c_stream, Z_FINISH);

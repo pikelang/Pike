@@ -1,5 +1,5 @@
 /*
- * $Id: md2.c,v 1.9 2000/08/09 13:20:46 grubba Exp $
+ * $Id: md2.c,v 1.10 2000/12/01 08:10:28 hubbe Exp $
  *
  * A pike module for MD2 hashing.
  *
@@ -17,7 +17,7 @@
 #include "object.h"
 #include "interpret.h"
 #include "program.h"
-#include "error.h"
+#include "pike_error.h"
 #include "module_support.h"
 
 #include <md2.h>
@@ -37,7 +37,7 @@ static struct program *md2mod_program;
 static void f_name(INT32 args)
 {
   if (args)
-    error("Too many arguments to md2->name()\n");
+    Pike_error("Too many arguments to md2->name()\n");
 
   push_string(make_shared_string("MD2"));
 }
@@ -48,7 +48,7 @@ static void f_create(INT32 args)
     {
       if ( ((sp-args)->type != T_OBJECT)
 	   || ((sp-args)->u.object->prog != md2mod_program) )
-	error("Object not of md2 type.\n");
+	Pike_error("Object not of md2 type.\n");
       md2_copy(THIS, OBTOCTX((sp-args)->u.object));
     }
   else

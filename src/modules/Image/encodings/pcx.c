@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.13 2000/09/08 20:10:54 grubba Exp $");
+RCSID("$Id: pcx.c,v 1.14 2000/12/01 08:10:04 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -15,7 +15,7 @@ RCSID("$Id: pcx.c,v 1.13 2000/09/08 20:10:54 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
@@ -249,7 +249,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
   b.len = data->len;
 
   if(b.len < sizeof(struct pcx_header))
-    error("There is not enough data available for this to be a PCX image\n");
+    Pike_error("There is not enough data available for this to be a PCX image\n");
   pcx_header = *((struct pcx_header *)get_chunk(&b,sizeof(struct pcx_header)));
 #if BYTEORDER == 1234
   SWAP_S(pcx_header.x1);
@@ -262,21 +262,21 @@ static struct object *low_pcx_decode( struct pike_string *data )
 
   if((pcx_header.manufacturer != 10) || (pcx_header.reserved) ||
      (pcx_header.rle_encoded & ~1))
-    error("This is not a known type of PCX\n");
+    Pike_error("This is not a known type of PCX\n");
 
   if ((pcx_header.bpp != 8) &&
       (pcx_header.bpp != 1)) {
-    error("Unsupported bits per plane: %d\n", pcx_header.bpp);
+    Pike_error("Unsupported bits per plane: %d\n", pcx_header.bpp);
   }
 
   if ((pcx_header.planes < 1) || (pcx_header.planes > 4)) {
-    error("Unsupported number of planes: %d\n", pcx_header.planes);
+    Pike_error("Unsupported number of planes: %d\n", pcx_header.planes);
   }
 
   width = pcx_header.x2 - pcx_header.x1 + 1;
   height = pcx_header.y2 - pcx_header.y1 + 1;
   if ((width <= 0) || (height <= 0)) {
-    error("Unsupported PCX image.\n");
+    Pike_error("Unsupported PCX image.\n");
   }
 
   push_int64(width);
@@ -298,7 +298,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
         load_rgb_pcx( &pcx_header, &b, dest );
         break;
       default:
-        error("Unsupported number of planes for %d bpp image: %d\n",
+        Pike_error("Unsupported number of planes for %d bpp image: %d\n",
               pcx_header.bpp, pcx_header.planes);
      }
      break;
@@ -312,11 +312,11 @@ static struct object *low_pcx_decode( struct pike_string *data )
         load_planar_palette_pcx( &pcx_header, &b, dest );
         break;
       default:
-        error("Unsupported number of planes for %d bpp image: %d\n",
+        Pike_error("Unsupported number of planes for %d bpp image: %d\n",
               pcx_header.bpp, pcx_header.planes);
      }
    default:
-     error("Unsupported bits per plane: %d\n", pcx_header.bpp);
+     Pike_error("Unsupported bits per plane: %d\n", pcx_header.bpp);
   }
   UNSET_ONERROR(onerr);
   return io;
@@ -328,7 +328,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
 **! 	Decodes a PCX image. 
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 void image_pcx_decode( INT32 args )
 {
@@ -346,7 +346,7 @@ void image_pcx_decode( INT32 args )
 **! 	Decodes a PCX image to a mapping. 
 **!
 **! note
-**!	Throws upon error in data.
+**!	Throws upon Pike_error in data.
 */
 void image_pcx__decode( INT32 args )
 {
@@ -574,7 +574,7 @@ void image_pcx_encode( INT32 args )
   get_all_args( "Image.PCX.encode", args, "%o", &i );
 
   if(!get_storage( i, image_program ))
-    error("Invalid object argument to Image.PCX.encode\n");
+    Pike_error("Invalid object argument to Image.PCX.encode\n");
 
   img = ((struct image *)get_storage( i, image_program ));
   
@@ -588,7 +588,7 @@ void image_pcx_encode( INT32 args )
   {
     int dpy;
     if(sp[-args+1].type != T_MAPPING)
-      error("Invalid argument 2 to Image.PCX.encode. Expected mapping.\n");
+      Pike_error("Invalid argument 2 to Image.PCX.encode. Expected mapping.\n");
     parameter_int( sp-args+1, opt_raw, &c.raw );
     if(parameter_int( sp-args+1, opt_dpy, &dpy ))
       c.hdpi = c.vdpi = dpy;

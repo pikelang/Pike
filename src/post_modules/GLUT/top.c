@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.3 2000/07/28 07:16:16 hubbe Exp $
+ * $Id: top.c,v 1.4 2000/12/01 08:10:40 hubbe Exp $
  *
  */
 
@@ -7,14 +7,14 @@
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.3 2000/07/28 07:16:16 hubbe Exp $");
+RCSID("$Id: top.c,v 1.4 2000/12/01 08:10:40 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
-#include "error.h"
+#include "pike_error.h"
 
 #include "module_magic.h"
 

@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.11 2000/09/17 12:36:26 grubba Exp $");
+RCSID("$Id: pvr.c,v 1.12 2000/12/01 08:10:05 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -13,7 +13,7 @@ RCSID("$Id: pvr.c,v 1.11 2000/09/17 12:36:26 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "error.h"
+#include "pike_error.h"
 #include "operators.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
@@ -241,14 +241,14 @@ void image_pvr_f_encode(INT32 args)
 					  "%o%m":"%o"), &imgo, &optm);
 
   if((img=(struct image*)get_storage(imgo, image_program))==NULL)
-    error("Image.PVR.encode: illegal argument 1\n");
+    Pike_error("Image.PVR.encode: illegal argument 1\n");
 
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !IS_ZERO(s))
       if(s->type != T_OBJECT ||
 	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
-	error("Image.PVR.encode: option (arg 2) \"alpha\" has illegal type\n");
+	Pike_error("Image.PVR.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s = simple_mapping_string_lookup(optm, "global_index"))!=NULL &&
        !IS_UNDEFINED(s)) {
       if(s->type == T_INT) {
@@ -256,17 +256,17 @@ void image_pvr_f_encode(INT32 args)
 	has_gbix=1;
       }
       else
-	error("Image.PVR.encode: option (arg 2) \"global_index\" has illegal type\n");
+	Pike_error("Image.PVR.encode: option (arg 2) \"global_index\" has illegal type\n");
     }
   }
 
   if (!img->img)
-    error("Image.PVR.encode: no image\n");
+    Pike_error("Image.PVR.encode: no image\n");
   if (alpha && !alpha->img)
-    error("Image.PVR.encode: no alpha image\n");
+    Pike_error("Image.PVR.encode: no alpha image\n");
 
   if (alpha && (alpha->xsize != img->xsize || alpha->ysize != img->ysize))
-    error("Image.PVR.encode: alpha and image size differ\n");
+    Pike_error("Image.PVR.encode: alpha and image size differ\n");
 
   res = begin_shared_string(8+(sz=8+2*img->xsize*img->ysize)+(has_gbix? 12:0));
   dst = STR0(res);
@@ -520,13 +520,13 @@ void img_pvr_decode(INT32 args,int header_only)
    }
 
    if(len < 16 || strncmp(s, "PVRT", 4))
-     error("not a PVR texture\n");
+     Pike_error("not a PVR texture\n");
    else {
      INT32 l = s[4]|(s[5]<<8)|(s[6]<<16)|(s[7]<<24);
      if(l+8>len)
-       error("file is truncated\n");
+       Pike_error("file is truncated\n");
      else if(l<8)
-       error("invalid PVRT chunk length\n");
+       Pike_error("invalid PVRT chunk length\n");
      len = l+8;
    }
 
@@ -563,7 +563,7 @@ void img_pvr_decode(INT32 args,int header_only)
       case MODE_TWIDDLE:
 	twiddle = 1;
 	if(w != h || w<8 || w>1024 || (w&(w-1)))
-	  error("invalid size for twiddle texture\n");
+	  Pike_error("invalid size for twiddle texture\n");
       case MODE_RECTANGLE:
       case MODE_STRIDE:
 	break;
@@ -571,18 +571,18 @@ void img_pvr_decode(INT32 args,int header_only)
 	twiddle = 1;
 	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
 	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
-	  error("invalid size for twiddle rectangle texture\n");
+	  Pike_error("invalid size for twiddle rectangle texture\n");
 	break;
       case MODE_COMPRESSED:
       case MODE_COMPRESSED_MIPMAP:
-	error("compressed PVRs not supported\n");
+	Pike_error("compressed PVRs not supported\n");
       case MODE_CLUT4:
       case MODE_CLUT4_MIPMAP:
       case MODE_CLUT8:
       case MODE_CLUT8_MIPMAP:
-   	error("palette PVRs not supported\n");
+   	Pike_error("palette PVRs not supported\n");
       default:
-	error("unknown PVR format\n");
+	Pike_error("unknown PVR format\n");
      }
 
      switch(attr&0xff) {
@@ -593,13 +593,13 @@ void img_pvr_decode(INT32 args,int header_only)
       case MODE_RGB555:
 	bpp=2; break;
       case MODE_YUV422:
-	error("YUV mode not supported\n");
+	Pike_error("YUV mode not supported\n");
       case MODE_ARGB8888:
-	error("ARGB8888 mode not supported\n");
+	Pike_error("ARGB8888 mode not supported\n");
       case MODE_BUMPMAP:
-	error("bumpmap mode not supported\n");
+	Pike_error("bumpmap mode not supported\n");
       default:
-	error("unknown PVR color mode\n");
+	Pike_error("unknown PVR color mode\n");
      }
 
      if(mipmap) /* Just skip everything except the largest version */
@@ -607,7 +607,7 @@ void img_pvr_decode(INT32 args,int header_only)
 	 mipmap += x*x;
 
      if(len < (INT32)(bpp*(h*w+mipmap)))
-       error("short PVRT chunk\n");
+       Pike_error("short PVRT chunk\n");
 
      s += bpp*mipmap;
 

@@ -6,7 +6,7 @@
 #include "global.h"
 #include "module.h"
 #include "pike_macros.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 #include "main.h"
 #include "svalue.h"
@@ -18,7 +18,7 @@
 
 #include "modules/modlist_headers.h"
 
-RCSID("$Id: module.c,v 1.11 2000/07/07 02:38:08 hubbe Exp $");
+RCSID("$Id: module.c,v 1.12 2000/12/01 08:09:50 hubbe Exp $");
 
 typedef void (*modfun)(void);
 

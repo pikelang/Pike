@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.6 2000/08/10 09:51:55 per Exp $
+ * $Id: nt.c,v 1.7 2000/12/01 08:10:29 hubbe Exp $
  *
  * NT crypto stuff for Pike
  */
@@ -18,7 +18,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "object.h"
-#include "error.h"
+#include "pike_error.h"
 #include "las.h"
 #include "module_support.h"
 

@@ -7,10 +7,10 @@
 
 #ifndef TESTING
 #include "global.h"
-#include "error.h"
+#include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.33 2000/07/28 19:54:23 hubbe Exp $");
+RCSID("$Id: fd_control.c,v 1.34 2000/12/01 08:09:46 hubbe Exp $");
 
 #else /* TESTING */
 
@@ -98,7 +98,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
     ret=fcntl(fd, F_SETFL, which?FNDELAY:0);
 #else
 
-#error Do not know how to set your filedescriptors nonblocking.
+#Pike_error Do not know how to set your filedescriptors nonblocking.
 
 #endif
 #endif

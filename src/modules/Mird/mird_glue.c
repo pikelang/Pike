@@ -79,22 +79,22 @@ static void pmird_exception(MIRD_RES res)
    memcpy(d,s,strlen(s)+1);
    mird_free(s);
    mird_free_error(res);
-   error("[mird] %s\n",d);
+   Pike_error("[mird] %s\n",d);
 }
 
 static void pmird_no_database(char *func)
 {
-   error("%s: database is not open\n",func);
+   Pike_error("%s: database is not open\n",func);
 }
 
 static void pmird_tr_no_database(char *func)
 {
-   error("%s: no database connected to the transaction\n",func);
+   Pike_error("%s: no database connected to the transaction\n",func);
 }
 
 static void pmird_no_transaction(void)
 {
-   error("transaction is already closed\n");
+   Pike_error("transaction is already closed\n");
 }
 
 /**** main program *********************************/
@@ -1191,7 +1191,7 @@ UNLOCK(this->pmird);
       case MIRD_TABLE_HASHKEY: this->type=PMTS_HASHKEY; break;
       case MIRD_TABLE_STRINGKEY: this->type=PMTS_STRINGKEY; break;
       default:
-	 error("Scanner: Unknown table %08lx\n",(unsigned long)type);
+	 Pike_error("Scanner: Unknown table %08lx\n",(unsigned long)type);
    }
 
    if (args>2) {
@@ -1208,7 +1208,7 @@ UNLOCK(this->pmird);
 	    case PMTS_STRINGKEY:
 	       TRY(mird_s_scan_continued(key,&(this->mssr)));
 	       break;
-	    case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
+	    case PMTS_UNKNOWN: Pike_error("illegal scanner type\n"); break;
 	 }
       }
    }
@@ -1258,7 +1258,7 @@ LOCK(this->pmird);
 	    res=mird_s_table_scan(this->pmird->db,this->table_id,
 				  (mird_size_t)n,this->mssr,&(this->mssr));
 	    break;
-	 case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
+	 case PMTS_UNKNOWN: Pike_error("illegal scanner type\n"); break;
       }
    }
    else /* pmtr */
@@ -1275,7 +1275,7 @@ LOCK(this->pmird);
 					      this->table_id,(mird_size_t)n,
 					      this->mssr,&(this->mssr));
 	    break;
-	 case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
+	 case PMTS_UNKNOWN: Pike_error("illegal scanner type\n"); break;
       }
    }
 UNLOCK(this->pmird);
@@ -1330,7 +1330,7 @@ static void pmts_next_key(INT32 args)
       case PMTS_STRINGKEY:
 	 TRY(mird_s_scan_continuation(this->mssr,&key));
 	 break;
-      case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
+      case PMTS_UNKNOWN: Pike_error("illegal scanner type\n"); break;
    }
    pop_n_elems(args);
    push_int( (INT_TYPE)key );

@@ -14,7 +14,7 @@
 #include "object.h"
 #include "program.h"
 #include "constants.h"
-#include "error.h"
+#include "pike_error.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
 #include "gc.h"
@@ -24,7 +24,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.88 2000/12/01 01:15:01 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.89 2000/12/01 08:09:55 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -316,7 +316,7 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
     if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
     u->refs=0;
   }else{
-    error("Wrong type in assignment, expected %s, got %s.\n",
+    Pike_error("Wrong type in assignment, expected %s, got %s.\n",
 	  get_name_of_type(type),
 	  get_name_of_type(s->type));
   }
@@ -343,7 +343,7 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
   }else if(type<=MAX_REF_TYPE && IS_ZERO(s)){
     u->refs=0;
   }else{
-    error("Wrong type in assignment, expected %s, got %s.\n",
+    Pike_error("Wrong type in assignment, expected %s, got %s.\n",
 	  get_name_of_type(type),
 	  get_name_of_type(s->type));
   }
@@ -780,7 +780,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
       int res;
       aa.u.program = program_from_svalue(a);
       if (!aa.u.program) {
-	error("Bad argument to comparison.");
+	Pike_error("Bad argument to comparison.");
       }
       type_stack_mark();
       push_type_int(aa.u.program->id);
@@ -798,7 +798,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
       int res;
       bb.u.program = program_from_svalue(b);
       if (!bb.u.program) {
-	error("Bad argument to comparison.");
+	Pike_error("Bad argument to comparison.");
       }
       type_stack_mark();
       push_type_int(bb.u.program->id);
@@ -832,9 +832,9 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
     {
     a_is_object:
       if(!a->u.object->prog)
-	error("Comparison on destructed object.\n");
+	Pike_error("Comparison on destructed object.\n");
       if(FIND_LFUN(a->u.object->prog,LFUN_LT) == -1)
-	error("Object lacks `<\n");
+	Pike_error("Object lacks `<\n");
       assign_svalue_no_free(sp, b);
       sp++;
       apply_lfun(a->u.object, LFUN_LT, 1);
@@ -851,9 +851,9 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
     if(b->type == T_OBJECT)
     {
       if(!b->u.object->prog)
-	error("Comparison on destructed object.\n");
+	Pike_error("Comparison on destructed object.\n");
       if(FIND_LFUN(b->u.object->prog,LFUN_GT) == -1)
-	error("Object lacks `>\n");
+	Pike_error("Object lacks `>\n");
       assign_svalue_no_free(sp, a);
       sp++;
       apply_lfun(b->u.object, LFUN_GT, 1);
@@ -867,7 +867,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
       }
     }
     
-    error("Cannot compare different types.\n");
+    Pike_error("Cannot compare different types.\n");
   }
   switch(a->type)
   {
@@ -875,7 +875,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
     goto a_is_object;
 
   default:
-    error("Bad type to comparison.\n");
+    Pike_error("Bad type to comparison.\n");
 
   case T_INT:
     return a->u.integer < b->u.integer;
@@ -1591,19 +1591,19 @@ PMOD_EXPORT INT32 pike_sizeof(struct svalue *s)
   case T_MULTISET: return l_sizeof(s->u.multiset);
   case T_OBJECT:
     if(!s->u.object->prog)
-      error("sizeof() on destructed object.\n");
+      Pike_error("sizeof() on destructed object.\n");
     if(FIND_LFUN(s->u.object->prog,LFUN__SIZEOF) == -1)
     {
       return s->u.object->prog->num_identifier_index;
     }else{
       apply_lfun(s->u.object, LFUN__SIZEOF, 0);
       if(sp[-1].type != T_INT)
-	error("Bad return type from o->_sizeof() (not int)\n");
+	Pike_error("Bad return type from o->_sizeof() (not int)\n");
       sp--;
       return sp->u.integer;
     }
   default:
-    error("Bad argument 1 to sizeof().\n");
+    Pike_error("Bad argument 1 to sizeof().\n");
     return 0; /* make apcc happy */
   }
 }

@@ -61,7 +61,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.19 2000/08/06 05:00:55 hubbe Exp $");
+RCSID("$Id: postgres.c,v 1.20 2000/12/01 08:10:21 hubbe Exp $");
 
 #define THIS ((struct pgres_object_data *) Pike_fp->current_storage)
 
@@ -178,7 +178,7 @@ static void f_create (INT32 args)
 			}
 		}
 		else
-			error ("You must specify a TCP/IP port number as argument 5 "
+			Pike_error ("You must specify a TCP/IP port number as argument 5 "
 					"to Sql.postgres->create().\n");
 #endif
 	pgdebug("f_create(host=%s, port=%s, db=%s, user=%s, pass=%s).\n",
@@ -193,7 +193,7 @@ static void f_create (INT32 args)
 	PQ_UNLOCK();
 	THREADS_DISALLOW();
 	if (!conn)
-		error ("Could not conneect to server\n");
+		Pike_error ("Could not conneect to server\n");
 	if (PQstatus(conn)!=CONNECTION_OK) {
 		set_error(PQerrorMessage(conn));
 		THREADS_ALLOW();
@@ -201,11 +201,11 @@ static void f_create (INT32 args)
 		PQfinish(conn);
 		PQ_UNLOCK();
 		THREADS_DISALLOW();
-		error("Could not connect to database. Reason: \"%s\".\n",THIS->last_error->str);
+		Pike_error("Could not connect to database. Reason: \"%s\".\n",THIS->last_error->str);
 	}
 	THIS->dblink=conn;
 	if (!THIS->dblink)
-		error ("Huh? Weirdness here! Internal error!\n");
+		Pike_error ("Huh? Weirdness here! Internal Pike_error!\n");
 	pop_n_elems(args);
 }
 
@@ -217,7 +217,7 @@ static void f_select_db (INT32 args)
 	check_all_args("Postgres->select_db",args,BIT_STRING,0);
 	
 	if (!THIS->dblink)
-		error ("Driver error. How can you possibly not be linked to a "
+		Pike_error ("Driver Pike_error. How can you possibly not be linked to a "
 				"database already?\n");
 	conn=THIS->dblink;
 	THREADS_ALLOW();
@@ -256,7 +256,7 @@ static void f_select_db (INT32 args)
 	if (PQstatus(conn)==CONNECTION_BAD) {
 		set_error(PQerrorMessage(conn));
 		PQfinish(conn);
-		error("Could not connect to database.\n");
+		Pike_error("Could not connect to database.\n");
 	}
 	THIS->dblink=conn;
 	pop_n_elems(args);
@@ -272,7 +272,7 @@ static void f_big_query(INT32 args)
 	check_all_args("Postgres->big_query",args,BIT_STRING,0);
 
 	if (!conn)
-		error ("Not connected.\n");
+		Pike_error ("Not connected.\n");
 
 	if (Pike_sp[-args].u.string->len)
 		query=Pike_sp[-args].u.string->str;
@@ -315,7 +315,7 @@ static void f_big_query(INT32 args)
 			push_int(1);
 			return;
 		}
-		error ("Error in query.\n");
+		Pike_error ("Error in query.\n");
 	}
 
 	switch (PQresultStatus(res))
@@ -337,7 +337,7 @@ static void f_big_query(INT32 args)
 			pgdebug("\tBad.\n");
 			set_error(PQerrorMessage(conn));
 			PQclear(res);
-			error ("Error in frontend-backend communications.\n");
+			Pike_error ("Error in frontend-backend communications.\n");
 		case PGRES_TUPLES_OK:
 			pgdebug("\tResult.\n");
 			THIS->last_result=res;
@@ -345,14 +345,14 @@ static void f_big_query(INT32 args)
 			push_object(clone_object(pgresult_program,1));
 			return;
 		default:
-			error ("Unimplemented server feature.\n");
+			Pike_error ("Unimplemented server feature.\n");
 	}
-	error ("Internal error in postgresmodule.\n");
+	Pike_error ("Internal Pike_error in postgresmodule.\n");
 }
 
 static void f_error (INT32 args)
 {
-	check_all_args("Postgres->error",args,0);
+	check_all_args("Postgres->Pike_error",args,0);
 
 	if (THIS->last_error)
 		ref_push_string(THIS->last_error);
@@ -368,7 +368,7 @@ static void f_reset (INT32 args)
 	check_all_args("Postgres->reset",args,0);
 
 	if (!THIS->dblink)
-		error ("Not connected.\n");
+		Pike_error ("Not connected.\n");
 	conn=THIS->dblink;
 	THREADS_ALLOW();
 	PQ_LOCK();
@@ -377,7 +377,7 @@ static void f_reset (INT32 args)
 	THREADS_DISALLOW();
 	if (PQstatus(conn)==CONNECTION_BAD) {
 		set_error(PQerrorMessage(conn));
-		error("Bad connection.\n");
+		Pike_error("Bad connection.\n");
 	}
 }
 
@@ -388,12 +388,12 @@ static void f_reset (INT32 args)
 static void f_trace (INT32 args)
 {
 	if (args!=1)
-		error ("Wrong args for trace().\n");
+		Pike_error ("Wrong args for trace().\n");
 	if (Pike_sp[-args].type==PIKE_T_INT)
 		if (Pike_sp[-args].u.integer==0)
 			PQuntrace(THIS->dblink);
 		else
-			error ("Wrong argument for postgres->trace().\n");
+			Pike_error ("Wrong argument for postgres->trace().\n");
 	else
 /* I really don't know how to check that the argument is an instance of
  * /precompiled/file... I guess there's the name stored somewhere..
@@ -436,7 +436,7 @@ static void f_host_info (INT32 args)
 		return;
 	}
 	set_error(PQerrorMessage(THIS->dblink));
-	error ("Bad connection.\n");
+	Pike_error ("Bad connection.\n");
 }
 
 void pike_module_init (void)
@@ -462,7 +462,7 @@ void pike_module_init (void)
   ADD_FUNCTION("big_query",f_big_query,tFunc(tStr,tOr(tInt,tObj)),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* function(void:string) */
-  ADD_FUNCTION("error",f_error,tFunc(tVoid,tStr),
+  ADD_FUNCTION("Pike_error",f_error,tFunc(tVoid,tStr),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* function(void:string) */
   ADD_FUNCTION("host_info",f_host_info,tFunc(tVoid,tStr),

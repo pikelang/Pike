@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.60 2000/11/20 01:20:24 mast Exp $");
+RCSID("$Id: backend.c,v 1.61 2000/12/01 08:09:43 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -18,7 +18,7 @@ RCSID("$Id: backend.c,v 1.60 2000/11/20 01:20:24 mast Exp $");
 #include <string.h>
 #include "interpret.h"
 #include "object.h"
-#include "error.h"
+#include "pike_error.h"
 #include "fd_control.h"
 #include "main.h"
 #include "callback.h"
@@ -869,7 +869,7 @@ void backend(void)
 
 	if((active_poll_fds[i].revents & POLLHUP) ||
 	   (active_poll_fds[i].revents & POLLERR)) {
-	  /* Closed or error */
+	  /* Closed or Pike_error */
 #ifdef PIKE_DEBUG
 	  if (active_poll_fds[i].revents & POLLERR) {
 	    fprintf(stderr, "Got POLLERR on fd %d\n", i);
@@ -1051,7 +1051,7 @@ void backend(void)
 #ifdef WSAENOTSOCK
 		    case WSAENOTSOCK:
 #endif
-		      fatal("Filedescriptor %d (%s) caused fatal error %d in backend.\n",i,fd_info(i),errno);
+		      fatal("Filedescriptor %d (%s) caused fatal Pike_error %d in backend.\n",i,fd_info(i),errno);
 		      
 		    case EINTR:
 		      break;

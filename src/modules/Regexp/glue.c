@@ -19,7 +19,7 @@
 #include "threads.h"
 #include "module_support.h"
 
-RCSID("$Id: glue.c,v 1.18 2000/07/28 07:14:40 hubbe Exp $");
+RCSID("$Id: glue.c,v 1.19 2000/12/01 08:10:22 hubbe Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -81,7 +81,7 @@ static void regexp_create(INT32 args)
 	char buf[1024];
 
 	regerror(err, &(THIS->regexp), buf, 1024);
-	error("Regexp.regexp->create(): Compilation failed:%s\n", buf);
+	Pike_error("Regexp.regexp->create(): Compilation failed:%s\n", buf);
       }
       for (i=0,paren_ptr=str; paren_ptr = strchr(paren_ptr, '('); i++) {
 	paren_ptr++;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.153 2000/12/01 01:15:00 hubbe Exp $");
+RCSID("$Id: object.c,v 1.154 2000/12/01 08:09:51 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -14,7 +14,7 @@ RCSID("$Id: object.c,v 1.153 2000/12/01 01:15:00 hubbe Exp $");
 #include "svalue.h"
 #include "pike_macros.h"
 #include "pike_memory.h"
-#include "error.h"
+#include "pike_error.h"
 #include "main.h"
 #include "array.h"
 #include "gc.h"
@@ -95,7 +95,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   struct object *o;
 
   if(!(p->flags & PROGRAM_FINISHED))
-    error("Attempting to clone an unfinished program\n");
+    Pike_error("Attempting to clone an unfinished program\n");
 
 #ifdef PROFILING
   p->num_clones++;
@@ -267,7 +267,7 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
   ONERROR tmp;
   struct object *o;
   if(p->flags & PROGRAM_USES_PARENT)
-    error("Parent lost, cannot clone program.\n");
+    Pike_error("Parent lost, cannot clone program.\n");
 
   o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
@@ -445,7 +445,7 @@ PMOD_EXPORT struct object *get_master(void)
       sp--;
       dmalloc_touch_svalue(sp);
     }else{
-      error("Couldn't load master program. (%s)\n",master_file);
+      Pike_error("Couldn't load master program. (%s)\n",master_file);
     }
   }
   master_object=low_clone(master_program);
@@ -778,7 +778,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   struct program *p=o->prog;
   
   if(!p)
-    error("Cannot access global variables in destructed object.\n");
+    Pike_error("Cannot access global variables in destructed object.\n");
 
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
@@ -846,7 +846,7 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 
   if(!o || !(p=o->prog))
   {
-    error("Lookup in destructed object.\n");
+    Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
 
@@ -861,7 +861,7 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
     break;
 
   default:
-    error("Lookup on non-string value.\n");
+    Pike_error("Lookup on non-string value.\n");
   }
 
   if(f < 0)
@@ -885,7 +885,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 
   if(!o || !(p=o->prog))
   {
-    error("Lookup in destructed object.\n");
+    Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
   lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
@@ -912,7 +912,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 
   if(!o || !(p=o->prog))
   {
-    error("Lookup in destructed object.\n");
+    Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
 
@@ -924,7 +924,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
   {
-    error("Cannot assign functions or constants.\n");
+    Pike_error("Cannot assign functions or constants.\n");
   }
   else if(i->run_time_type == T_MIXED)
   {
@@ -948,7 +948,7 @@ PMOD_EXPORT void object_set_index2(struct object *o,
 
   if(!o || !(p=o->prog))
   {
-    error("Lookup in destructed object.\n");
+    Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
 
@@ -958,9 +958,9 @@ PMOD_EXPORT void object_set_index2(struct object *o,
     f=find_shared_string_identifier(index->u.string, p);
     if(f<0) {
       if (index->u.string->len < 1024) {
-	error("No such variable (%s) in object.\n", index->u.string->str);
+	Pike_error("No such variable (%s) in object.\n", index->u.string->str);
       } else {
-	error("No such variable in object.\n");
+	Pike_error("No such variable in object.\n");
       }
     }
     break;
@@ -970,15 +970,15 @@ PMOD_EXPORT void object_set_index2(struct object *o,
     break;
 
   default:
-    error("Lookup on non-string value.\n");
+    Pike_error("Lookup on non-string value.\n");
   }
 
   if(f < 0)
   {
     if (index->u.string->len < 1024) {
-      error("No such variable (%s) in object.\n", index->u.string->str);
+      Pike_error("No such variable (%s) in object.\n", index->u.string->str);
     } else {
-      error("No such variable in object.\n");
+      Pike_error("No such variable in object.\n");
     }
   }else{
     object_low_set_index(o, f, from);
@@ -994,7 +994,7 @@ PMOD_EXPORT void object_set_index(struct object *o,
 
   if(!o || !(p=o->prog))
   {
-    error("Lookup in destructed object.\n");
+    Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
 
@@ -1020,7 +1020,7 @@ static union anything *object_low_get_item_ptr(struct object *o,
 
   if(!o || !(p=o->prog))
   {
-    error("Lookup in destructed object.\n");
+    Pike_error("Lookup in destructed object.\n");
     return 0; /* make gcc happy */
   }
 
@@ -1028,7 +1028,7 @@ static union anything *object_low_get_item_ptr(struct object *o,
 
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
   {
-    error("Cannot assign functions or constants.\n");
+    Pike_error("Cannot assign functions or constants.\n");
   }
   else if(i->run_time_type == T_MIXED)
   {
@@ -1054,7 +1054,7 @@ union anything *object_get_item_ptr(struct object *o,
 
   if(!o || !(p=o->prog))
   {
-    error("Lookup in destructed object.\n");
+    Pike_error("Lookup in destructed object.\n");
     return 0; /* make gcc happy */
   }
 
@@ -1068,7 +1068,7 @@ union anything *object_get_item_ptr(struct object *o,
     {
       return 0;
       
-      /* error("Cannot do incremental operations on overloaded index (yet).\n");
+      /* Pike_error("Cannot do incremental operations on overloaded index (yet).\n");
        */
     }
     
@@ -1080,13 +1080,13 @@ union anything *object_get_item_ptr(struct object *o,
     break;
 
   default:
-/*    error("Lookup on non-string value.\n"); */
+/*    Pike_error("Lookup on non-string value.\n"); */
     return 0;
   }
 
   if(f < 0)
   {
-    error("No such variable in object.\n");
+    Pike_error("No such variable in object.\n");
   }else{
     return object_low_get_item_ptr(o, f, type);
   }
@@ -1176,7 +1176,7 @@ PMOD_EXPORT struct array *object_indices(struct object *o)
 
   p=o->prog;
   if(!p)
-    error("indices() on destructed object.\n");
+    Pike_error("indices() on destructed object.\n");
 
   if(FIND_LFUN(p,LFUN__INDICES) == -1)
   {
@@ -1190,7 +1190,7 @@ PMOD_EXPORT struct array *object_indices(struct object *o)
   }else{
     apply_lfun(o, LFUN__INDICES, 0);
     if(sp[-1].type != T_ARRAY)
-      error("Bad return type from o->_indices()\n");
+      Pike_error("Bad return type from o->_indices()\n");
     a=sp[-1].u.array;
     sp--;
     dmalloc_touch_svalue(sp);
@@ -1206,7 +1206,7 @@ PMOD_EXPORT struct array *object_values(struct object *o)
   
   p=o->prog;
   if(!p)
-    error("values() on destructed object.\n");
+    Pike_error("values() on destructed object.\n");
 
   if(FIND_LFUN(p,LFUN__VALUES)==-1)
   {
@@ -1218,7 +1218,7 @@ PMOD_EXPORT struct array *object_values(struct object *o)
   }else{
     apply_lfun(o, LFUN__VALUES, 0);
     if(sp[-1].type != T_ARRAY)
-      error("Bad return type from o->_values()\n");
+      Pike_error("Bad return type from o->_values()\n");
     a=sp[-1].u.array;
     sp--;
     dmalloc_touch_svalue(sp);
@@ -1524,7 +1524,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   struct object *magic;
 
   loc.o=Pike_fp->current_object;
-  if(!loc.o) error("Illegal magic index call.\n");
+  if(!loc.o) Pike_error("Illegal magic index call.\n");
 
   loc.parent_identifier=Pike_fp->fun;
   loc.inherit=INHERIT_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun);
@@ -1551,10 +1551,10 @@ static void f_magic_index(INT32 args)
   get_all_args("::`->",args,"%S",&s);
 
   if(!(o=MAGIC_THIS->o))
-    error("Magic index error\n");
+    Pike_error("Magic index Pike_error\n");
 
   if(!o->prog)
-    error("Magic index on destructed object!\n");
+    Pike_error("Magic index on destructed object!\n");
 
   inherit=MAGIC_THIS->inherit;
 
@@ -1586,10 +1586,10 @@ static void f_magic_set_index(INT32 args)
   get_all_args("::`->=",args,"%S%*",&s,&val);
 
   if(!(o=MAGIC_THIS->o))
-    error("Magic index error\n");
+    Pike_error("Magic index Pike_error\n");
 
   if(!o->prog)
-    error("Magic index on destructed object!\n");
+    Pike_error("Magic index on destructed object!\n");
 
   inherit=MAGIC_THIS->inherit;
 
@@ -1597,7 +1597,7 @@ static void f_magic_set_index(INT32 args)
 
   if(f<0)
   {
-    error("No such variable in object.\n");
+    Pike_error("No such variable in object.\n");
   }else{
     object_low_set_index(o, f+inherit->identifier_level,
 			 val);

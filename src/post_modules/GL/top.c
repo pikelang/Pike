@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.12 2000/07/28 07:16:09 hubbe Exp $
+ * $Id: top.c,v 1.13 2000/12/01 08:10:40 hubbe Exp $
  *
  */
 
@@ -26,7 +26,7 @@
 
 #include "global.h"
 
-RCSID("$Id: top.c,v 1.12 2000/07/28 07:16:09 hubbe Exp $");
+RCSID("$Id: top.c,v 1.13 2000/12/01 08:10:40 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -34,7 +34,7 @@ RCSID("$Id: top.c,v 1.12 2000/07/28 07:16:09 hubbe Exp $");
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "module_support.h"
-#include "error.h"
+#include "pike_error.h"
 
 #ifdef HAVE_GL
 
@@ -363,7 +363,7 @@ static void f_glGet(INT32 args)
     break;
 
   default:
-    error("glGet: Unsupported parameter name\n");
+    Pike_error("glGet: Unsupported parameter name\n");
   }
 }
 

@@ -41,12 +41,12 @@ struct pike_creds
 
 #define CHECK_DATA_SECURITY_OR_ERROR(DATA,BIT,ERR) do {	\
   if(!CHECK_DATA_SECURITY(DATA,BIT))             \
-     error ERR;					\
+     Pike_error ERR;					\
  }while(0)
 
 #define CHECK_SECURITY_OR_ERROR(BIT,ERR) do { \
   if(!CHECK_SECURITY(BIT))             \
-     error ERR;					\
+     Pike_error ERR;					\
  }while(0)
 
 #define SET_CURRENT_CREDS(O) do {		\
@@ -66,7 +66,7 @@ struct pike_creds
     struct svalue *base_sp=Pike_sp-args;					\
 									\
     if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))			\
-      error(name ": Permission denied.\n");				\
+      Pike_error(name ": Permission denied.\n");				\
 									\
     push_constant_text(name);						\
     push_constant_text(access_type);					\
@@ -103,15 +103,15 @@ struct pike_creds
 	    break;							\
 	    								\
 	  case 3: /* permission denied */				\
-	    error(name ": permission denied.\n");			\
+	    Pike_error(name ": permission denied.\n");			\
 	    								\
 	  default:							\
-	    error("Error in user->valid_io, wrong return value.\n");	\
+	    Pike_error("Error in user->valid_io, wrong return value.\n");	\
 	}								\
 	break;								\
 									\
       default:								\
-	error("Error in user->valid_io, wrong return type.\n");		\
+	Pike_error("Error in user->valid_io, wrong return type.\n");		\
 									\
       case PIKE_T_STRING:							\
 	assign_svalue(Pike_sp-args-1,Pike_sp-1);					\

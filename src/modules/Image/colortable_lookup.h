@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.14 2000/09/08 15:55:01 grubba Exp $ */
+/* $Id: colortable_lookup.h,v 1.15 2000/12/01 08:09:59 hubbe Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.14 2000/09/08 15:55:01 grubba Exp $
+**!	$Id: colortable_lookup.h,v 1.15 2000/12/01 08:09:59 hubbe Exp $
 **! class colortable
 */
 
@@ -40,7 +40,7 @@ CHRONO("init flat/cubicles");
 
       cub=cubs->cubicles=malloc(sizeof(struct nctlu_cubicle)*n2);
       
-      if (!cub) error("out of memory\n");
+      if (!cub) Pike_error("out of memory\n");
 
       while (n2--) /* initiate all to empty */
       {

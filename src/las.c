@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.225 2000/11/27 00:02:08 grubba Exp $");
+RCSID("$Id: las.c,v 1.226 2000/12/01 08:09:49 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -19,7 +19,7 @@ RCSID("$Id: las.c,v 1.225 2000/11/27 00:02:08 grubba Exp $");
 #include "constants.h"
 #include "mapping.h"
 #include "multiset.h"
-#include "error.h"
+#include "pike_error.h"
 #include "docode.h"
 #include "main.h"
 #include "pike_memory.h"
@@ -1451,7 +1451,7 @@ void resolv_constant(node *n)
 	  {
 	    yyerror("Expected constant, got void expression");
 	  }else{
-	    yyerror("Possible internal error!!!");
+	    yyerror("Possible internal Pike_error!!!");
 	    pop_n_elems(DO_NOT_WARN(args-1));
 	    return;
 	  }
@@ -1623,9 +1623,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  struct svalue *save_sp = Pike_sp-2;
 	  JMP_BUF recovery;
 	  if (SETJMP(recovery)) {
-	    /* f_index() threw an error!
+	    /* f_index() threw an Pike_error!
 	     *
-	     * FIXME: Report the error thrown.
+	     * FIXME: Report the Pike_error thrown.
 	     */
 	    if (Pike_sp > save_sp) {
 	      pop_n_elems(Pike_sp - save_sp);
@@ -2327,7 +2327,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
 	src = tmp;
       }
       free(ret);
-      error("Out of memory in copy_vars.\n");
+      Pike_error("Out of memory in copy_vars.\n");
       return NULL;	/* Make sure that the optimizer knows we exit here. */
     }
     MEMCPY(*dst, src, sizeof(struct scope_info));
@@ -2354,7 +2354,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
 	src = tmp;
       }
       free(ret);
-      error("Out of memory in copy_vars.\n");
+      Pike_error("Out of memory in copy_vars.\n");
       return NULL;	/* Make sure that the optimizer knows we exit here. */
     }
     MEMCPY(*dst, src, sizeof(struct scope_info));
@@ -3531,7 +3531,7 @@ static void find_usage(node *n, unsigned char *usage,
     {
       int i;
 
-      /* catch_usage is restored if sscanf throws an error. */
+      /* catch_usage is restored if sscanf throws an Pike_error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -3560,7 +3560,7 @@ static void find_usage(node *n, unsigned char *usage,
     {
       int i;
 
-      /* catch_usage is restored if the function throws an error. */
+      /* catch_usage is restored if the function throws an Pike_error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -3815,7 +3815,7 @@ static node *low_localopt(node *n,
     {
       int i;
       
-      /* catch_usage is restored if sscanf throws an error. */
+      /* catch_usage is restored if sscanf throws an Pike_error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -3852,7 +3852,7 @@ static node *low_localopt(node *n,
     {
       int i;
 
-      /* catch_usage is restored if the function throws an error. */
+      /* catch_usage is restored if the function throws an Pike_error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -4496,7 +4496,7 @@ ptrdiff_t eval_low(node *n)
 				 
     if(apply_low_safe_and_stupid(Pike_compiler->fake_object, jump))
     {
-      /* Generate error message */
+      /* Generate Pike_error message */
       if(!Pike_compiler->catch_level)
       {
         if(throw_value.type == T_ARRAY && throw_value.u.array->size)
@@ -4507,7 +4507,7 @@ ptrdiff_t eval_low(node *n)
 	  {
 	    yyerror(a->string->str);
 	  }else{
-	    yyerror("Nonstandard error format.");
+	    yyerror("Nonstandard Pike_error format.");
 	  }
 	}
 	else if(throw_value.type == T_OBJECT)
@@ -4516,14 +4516,14 @@ ptrdiff_t eval_low(node *n)
 	  push_int(0);
 	  f_index(2);
 	  if(Pike_sp[-1].type != T_STRING)
-	    yyerror("Nonstandard error format.");
+	    yyerror("Nonstandard Pike_error format.");
 	  else
 	    yyerror(Pike_sp[-1].u.string->str);
 	  pop_stack();
 	}
 	else
 	{
-	  yyerror("Nonstandard error format.");
+	  yyerror("Nonstandard Pike_error format.");
 	}
       }
     }else{

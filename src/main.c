@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.107 2000/11/20 01:20:25 mast Exp $");
+RCSID("$Id: main.c,v 1.108 2000/12/01 08:09:49 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -17,7 +17,7 @@ RCSID("$Id: main.c,v 1.107 2000/11/20 01:20:25 mast Exp $");
 #include "array.h"
 #include "stralloc.h"
 #include "interpret.h"
-#include "error.h"
+#include "pike_error.h"
 #include "pike_macros.h"
 #include "callback.h"
 #include "signal_handler.h"

@@ -6,12 +6,12 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.39 2000/08/17 18:32:46 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.40 2000/12/01 08:10:34 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
 #include "interpret.h"
-#include "error.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 #include "pike_memory.h"
 #include "main.h"
@@ -286,7 +286,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
 
       new_buffer=(call_out **)realloc((char *)call_buffer, sizeof(call_out *)*call_buffer_size*2);
       if(!new_buffer)
-	error("Not enough memory for another call_out\n");
+	Pike_error("Not enough memory for another call_out\n");
       call_buffer_size*=2;
       call_buffer=new_buffer;
 
@@ -434,10 +434,10 @@ void f_call_out(INT32 args)
   struct svalue tmp;
   struct array *v;
   if(args<2)
-    error("Too few arguments to call_out.\n");
+    Pike_error("Too few arguments to call_out.\n");
 
   if(sp[1-args].type != T_INT && sp[1-args].type!=T_FLOAT)
-    error("Bad argument 2 to call_out.\n");
+    Pike_error("Bad argument 2 to call_out.\n");
 
   /* Swap, for compatibility */
   tmp=sp[-args];

@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.39 2000/10/02 19:35:02 grubba Exp $
+ * $Id: crypto.c,v 1.40 2000/12/01 08:10:27 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -91,7 +91,7 @@ static void check_functions(struct object *o, const char **requiered)
   struct program *p;
 
   if (!o) {
-    error("/precompiled/crypto: internal error -- no object\n");
+    Pike_error("/precompiled/crypto: internal Pike_error -- no object\n");
   }
   if (!requiered) {
     return;
@@ -101,7 +101,7 @@ static void check_functions(struct object *o, const char **requiered)
 
   while (*requiered) {
     if (find_identifier( (char *) *requiered, p) < 0) {
-      error("/precompiled/crypto: Object is missing identifier \"%s\"\n",
+      Pike_error("/precompiled/crypto: Object is missing identifier \"%s\"\n",
 	    *requiered);
     }
     requiered++;
@@ -124,10 +124,10 @@ static void f_string_to_hex(INT32 args)
   INT32 i;
 
   if (args != 1) {
-    error("Wrong number of arguments to string_to_hex()\n");
+    Pike_error("Wrong number of arguments to string_to_hex()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to string_to_hex()\n");
+    Pike_error("Bad argument 1 to string_to_hex()\n");
   }
 
   s = begin_shared_string(2 * sp[-1].u.string->len);
@@ -147,13 +147,13 @@ static void f_hex_to_string(INT32 args)
   INT32 i;
 
   if (args != 1) {
-    error("Wrong number of arguments to hex_to_string()\n");
+    Pike_error("Wrong number of arguments to hex_to_string()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to hex_to_string()\n");
+    Pike_error("Bad argument 1 to hex_to_string()\n");
   }
   if (sp[-1].u.string->len & 1) {
-    error("Bad string length to hex_to_string()\n");
+    Pike_error("Bad string length to hex_to_string()\n");
   }
 
   s = begin_shared_string(sp[-1].u.string->len/2);
@@ -171,7 +171,7 @@ static void f_hex_to_string(INT32 args)
       break;
     default:
       free_string(end_shared_string(s));
-      error("hex_to_string(): Illegal character (0x%02x) in string\n",
+      Pike_error("hex_to_string(): Illegal character (0x%02x) in string\n",
 	    sp[-1].u.string->str[i*2] & 0xff);
     }
     switch (sp[-1].u.string->str[i*2+1])
@@ -186,7 +186,7 @@ static void f_hex_to_string(INT32 args)
       break;
     default:
       free_string(end_shared_string(s));
-      error("hex_to_string(): Illegal character (0x%02x) in string\n",
+      Pike_error("hex_to_string(): Illegal character (0x%02x) in string\n",
 	    sp[-1].u.string->str[i*2+1] & 0xff);
     }
   }
@@ -207,10 +207,10 @@ static void f_des_parity(INT32 args)
   struct pike_string *s;
   int i;
   if (args != 1) {
-    error("Wrong number of arguments to des_parity()\n");
+    Pike_error("Wrong number of arguments to des_parity()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to des_parity()\n");
+    Pike_error("Bad argument 1 to des_parity()\n");
   }
 
   s = begin_shared_string(sp[-1].u.string->len);
@@ -230,17 +230,17 @@ static void f_des_parity(INT32 args)
 static void f_create(INT32 args)
 {
   if (args < 1) {
-    error("Too few arguments to crypto->create()\n");
+    Pike_error("Too few arguments to crypto->create()\n");
   }
   if ((sp[-args].type != T_PROGRAM) &&
       (sp[-args].type != T_OBJECT)) {
-    error("Bad argument 1 to crypto->create()\n");
+    Pike_error("Bad argument 1 to crypto->create()\n");
   }
   if (sp[-args].type == T_PROGRAM) {
     THIS->object = clone_object(sp[-args].u.program, args-1);
   } else {
     if (args != 1) {
-      error("Too many arguments to crypto->create()\n");
+      Pike_error("Too many arguments to crypto->create()\n");
     }
     add_ref(THIS->object = sp[-args].u.object);
   }
@@ -251,7 +251,7 @@ static void f_create(INT32 args)
   safe_apply(THIS->object, "query_block_size", 0);
 
   if (sp[-1].type != T_INT) {
-    error("crypto->create(): query_block_size() didn't return an int\n");
+    Pike_error("crypto->create(): query_block_size() didn't return an int\n");
   }
   THIS->block_size = sp[-1].u.integer;
 
@@ -259,7 +259,7 @@ static void f_create(INT32 args)
 
   if ((!THIS->block_size) ||
       (THIS->block_size > 4096)) {
-    error("crypto->create(): Bad block size %ld\n",
+    Pike_error("crypto->create(): Bad block size %ld\n",
 	  DO_NOT_WARN((long)THIS->block_size));
   }
 
@@ -288,7 +288,7 @@ static void f_set_encrypt_key(INT32 args)
     MEMSET(THIS->backlog, 0, THIS->block_size);
     THIS->backlog_len = 0;
   } else {
-    error("crypto->set_encrypt_key(): Object has not been created yet\n");
+    Pike_error("crypto->set_encrypt_key(): Object has not been created yet\n");
   }
   safe_apply(THIS->object, "set_encrypt_key", args);
   pop_stack();
@@ -302,7 +302,7 @@ static void f_set_decrypt_key(INT32 args)
     MEMSET(THIS->backlog, 0, THIS->block_size);
     THIS->backlog_len = 0;
   } else {
-    error("crypto->set_decrypt_key(): Object has not been created yet\n");
+    Pike_error("crypto->set_decrypt_key(): Object has not been created yet\n");
   }
   safe_apply(THIS->object, "set_decrypt_key", args);
   pop_stack();
@@ -318,13 +318,13 @@ static void f_crypto_crypt(INT32 args)
   ptrdiff_t len;
 
   if (args != 1) {
-    error("Wrong number of arguments to crypto->crypt()\n");
+    Pike_error("Wrong number of arguments to crypto->crypt()\n");
   }
   if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to crypto->crypt()\n");
+    Pike_error("Bad argument 1 to crypto->crypt()\n");
   }
   if (!(result = alloca(sp[-1].u.string->len + THIS->block_size))) {
-    error("crypto->crypt(): Out of memory\n");
+    Pike_error("crypto->crypt(): Out of memory\n");
   }
   if (THIS->backlog_len) {
     if (sp[-1].u.string->len >=
@@ -338,10 +338,10 @@ static void f_crypto_crypt(INT32 args)
 					    THIS->block_size));
       safe_apply(THIS->object, "crypt_block", 1);
       if (sp[-1].type != T_STRING) {
-	error("crypto->crypt(): crypt_block() did not return string\n");
+	Pike_error("crypto->crypt(): crypt_block() did not return string\n");
       }
       if (sp[-1].u.string->len != THIS->block_size) {
-	error("crypto->crypt(): Unexpected string length %ld\n",
+	Pike_error("crypto->crypt(): Unexpected string length %ld\n",
 	      DO_NOT_WARN((long)sp[-1].u.string->len));
       }
 	
@@ -369,10 +369,10 @@ static void f_crypto_crypt(INT32 args)
     safe_apply(THIS->object, "crypt_block", 1);
 
     if (sp[-1].type != T_STRING) {
-      error("crypto->crypt(): crypt_block() did not return string\n");
+      Pike_error("crypto->crypt(): crypt_block() did not return string\n");
     }
     if (sp[-1].u.string->len != len) {
-      error("crypto->crypt(): Unexpected string length %ld\n",
+      Pike_error("crypto->crypt(): Unexpected string length %ld\n",
 	    DO_NOT_WARN((long)sp[-1].u.string->len));
     }
 	
@@ -399,7 +399,7 @@ static void f_pad(INT32 args)
   ptrdiff_t i;
   
   if (args) {
-    error("Too many arguments to crypto->pad()\n");
+    Pike_error("Too many arguments to crypto->pad()\n");
   }
 
   for (i = THIS->backlog_len; i < THIS->block_size - 1; i++) 
@@ -424,21 +424,21 @@ static void f_unpad(INT32 args)
   struct pike_string *str;
 
   if (args != 1) 
-    error("Wrong number of arguments to crypto->unpad()\n");
+    Pike_error("Wrong number of arguments to crypto->unpad()\n");
   
   if (sp[-1].type != T_STRING) 
-    error("Bad argument 1 to crypto->unpad()\n");
+    Pike_error("Bad argument 1 to crypto->unpad()\n");
   
   str = sp[-1].u.string;
   len = str->len;
 
   if (str->str[len - 1] > (THIS->block_size - 1))
-    error("crypto->unpad(): Invalid padding\n");
+    Pike_error("crypto->unpad(): Invalid padding\n");
 
   len -= (str->str[len - 1] + 1);
 
   if (len < 0) 
-    error("crypto->unpad(): String to short to unpad\n");
+    Pike_error("crypto->unpad(): String to short to unpad\n");
   
   add_ref(str);
   pop_stack();

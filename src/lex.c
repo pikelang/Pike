@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.84 2000/12/01 01:14:59 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.85 2000/12/01 08:09:49 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -16,7 +16,7 @@ RCSID("$Id: lex.c,v 1.84 2000/12/01 01:14:59 hubbe Exp $");
 #include "stuff.h"
 #include "pike_memory.h"
 #include "interpret.h"
-#include "error.h"
+#include "pike_error.h"
 #include "object.h"
 #include "las.h"
 #include "operators.h"

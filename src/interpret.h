@@ -5,14 +5,14 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.68 2000/11/20 01:20:24 mast Exp $
+ * $Id: interpret.h,v 1.69 2000/12/01 08:09:48 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
 
 #include "global.h"
 #include "program.h"
-#include "error.h"
+#include "pike_error.h"
 
 struct Pike_interpreter {
   /* Swapped variables */
@@ -74,9 +74,9 @@ struct external_variable_context
 };
 
 #ifdef PIKE_DEBUG
-#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal("Stack error.\n");}while(0)
+#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal("Stack Pike_error.\n");}while(0)
 #define check__positive(X,Y) if((X)<0) fatal Y
-#include "error.h"
+#include "pike_error.h"
 #else
 #define check__positive(X,Y)
 #define debug_check_stack() 
@@ -85,7 +85,7 @@ struct external_variable_context
 #define check_stack(X) do { \
   if(Pike_sp - Pike_interpreter.evaluator_stack + \
      Pike_interpreter.svalue_stack_margin + (X) >= Pike_stack_size) \
-    error("Svalue stack overflow. " \
+    Pike_error("Svalue stack overflow. " \
 	  "(%ld of %ld entries on stack, needed %ld more entries)\n", \
 	  PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack), \
           PTRDIFF_T_TO_LONG(Pike_stack_size), \
@@ -94,7 +94,7 @@ struct external_variable_context
 
 #define check_mark_stack(X) do {		\
   if(Pike_mark_sp - Pike_interpreter.mark_stack + (X) >= Pike_stack_size)	\
-    error("Mark stack overflow.\n");		\
+    Pike_error("Mark stack overflow.\n");		\
   }while(0)
 
 #define check_c_stack(X) do {						\

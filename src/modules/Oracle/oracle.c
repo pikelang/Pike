@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.50 2000/11/23 16:32:33 stewa Exp $
+ * $Id: oracle.c,v 1.51 2000/12/01 08:10:15 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.50 2000/11/23 16:32:33 stewa Exp $");
+RCSID("$Id: oracle.c,v 1.51 2000/12/01 08:10:15 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -202,7 +202,7 @@ void *parent_storage(int depth)
   o=Pike_fp->current_object;
   
   if(!o)
-    error("Current object is destructed\n");
+    Pike_error("Current object is destructed\n");
   
   while(1)
   {
@@ -314,7 +314,7 @@ static OCIEnv *get_oracle_environment(void)
   {
     rc=OCIEnvInit(&oracle_environment, OCI_DEFAULT, 0, 0);
     if(rc != OCI_SUCCESS)
-      error("Failed to initialize oracle environment.\n");
+      Pike_error("Failed to initialize oracle environment.\n");
   }
   return oracle_environment;
 }
@@ -520,7 +520,7 @@ static void gc_dbresultinfo_struct(struct object *o)
 
 static void protect_dbresultinfo(INT32 args)
 {
-  error("You may not change variables in dbresultinfo objects.\n");
+  Pike_error("You may not change variables in dbresultinfo objects.\n");
 }
 
 /****** dbdate ******/
@@ -573,9 +573,9 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
 
   OCIErrorGet(err,1,0,&errcode,msgbuf,sizeof(msgbuf),OCI_HTYPE_ERROR);
   if(func)
-    error("%s:code=%d:%s",func,rc,msgbuf);
+    Pike_error("%s:code=%d:%s",func,rc,msgbuf);
   else
-    error("Oracle:code=%d:%s",rc,msgbuf);
+    Pike_error("Oracle:code=%d:%s",rc,msgbuf);
 }
 
 
@@ -591,7 +591,7 @@ OCIError *get_global_error_handle(void)
 		    0);
 
   if(rc != OCI_SUCCESS)
-    error("Failed to allocate error handle.\n");
+    Pike_error("Failed to allocate Pike_error handle.\n");
   
   return global_error_handle;
 }
@@ -995,7 +995,7 @@ static void push_inout_value(struct inout *inout)
 	break;
 	
       default:
-	error("Unknown data type.\n");
+	Pike_error("Unknown data type.\n");
 	break;
     }
     return;
@@ -1042,7 +1042,7 @@ static void push_inout_value(struct inout *inout)
       break;
       
     default:
-      error("Unknown data type.\n");
+      Pike_error("Unknown data type.\n");
       break;
   }
   free_inout(inout);
@@ -1166,11 +1166,11 @@ static void f_oracle_create(INT32 args)
 #if 0
     if(OCIHandleAlloc(get_oracle_environment(),&THIS_DBCON->srvhp,
 		      OCI_HTYPE_SERVER, 0,0)!=OCI_SUCCESS)
-      error("Failed to allocate server handle.\n");
+      Pike_error("Failed to allocate server handle.\n");
     
     if(OCIHandleAlloc(get_oracle_environment(),&THIS_DBCON->srchp,
 		      OCI_HTYPE_SVCCTX, 0,0)!=OCI_SUCCESS)
-      error("Failed to allocate service context.\n");
+      Pike_error("Failed to allocate service context.\n");
 #endif
 
 
@@ -1414,7 +1414,7 @@ static void f_big_query_create(INT32 args)
   }
 
   if(bnds && m_sizeof(bnds) > MAX_NUMBER_OF_BINDINGS)
-    error("Too many variables.\n");
+    Pike_error("Too many variables.\n");
 
   destruct_objects_to_destruct();
 
@@ -1429,7 +1429,7 @@ static void f_big_query_create(INT32 args)
      PARENTOF(PARENTOF(THISOBJ)) != new_parent)
   {
     if(new_parent->prog != PARENTOF(PARENTOF(THISOBJ))->parent->prog)
-      error("Bad argument 3 to big_query.\n");
+      Pike_error("Bad argument 3 to big_query.\n");
 
     /* We might need to check that there are no locks held here
      * but I don't beleive that could happen, so just go with it...
@@ -1488,7 +1488,7 @@ static void f_big_query_create(INT32 args)
 	      value=& ((struct dbnull *)STORAGE(value->u.object))->type;
 	      goto retry;
 	    }
-	    error("Bad value type in argument 2 to "
+	    Pike_error("Bad value type in argument 2 to "
 		  "Oracle.oracle->big_query()\n");
 	    break;
 
@@ -1533,7 +1533,7 @@ static void f_big_query_create(INT32 args)
 	    }
 	    
 	  default:
-	    error("Bad value type in argument 2 to "
+	    Pike_error("Bad value type in argument 2 to "
 		  "Oracle.oracle->big_query()\n");
 	}
 	
@@ -1581,7 +1581,7 @@ static void f_big_query_create(INT32 args)
 	}
 	else
 	{
-	  error("Bad index type in argument 2 to "
+	  Pike_error("Bad index type in argument 2 to "
 		"Oracle.oracle->big_query()\n");
 	}
 	if(rc)
@@ -1764,12 +1764,12 @@ static void dbdate_cast(INT32 args)
     dbdate_sprintf(args);
     return;
   }
-  error("Cannot cast Oracle.Date to %s\n",s);
+  Pike_error("Cannot cast Oracle.Date to %s\n",s);
 }
 
 static void dbnull_create(INT32 args)
 {
-  if(args<1) error("Too few arguments to Oracle.NULL->create\n");
+  if(args<1) Pike_error("Too few arguments to Oracle.NULL->create\n");
   assign_svalue(& THIS_DBNULL->type, Pike_sp-args);
 }
 

@@ -7,10 +7,10 @@
 #include "global.h"
 #include "pike_macros.h"
 #include "callback.h"
-#include "error.h"
+#include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.20 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: callback.c,v 1.21 2000/12/01 08:09:44 hubbe Exp $");
 
 struct callback_list fork_child_callback;
 
