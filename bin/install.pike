@@ -1035,12 +1035,9 @@ void dump_modules()
 				  @(vars->fakeroot?({"--fakeroot="+
                                                      vars->fakeroot}):({})),
 				  master}), options);
-     p->wait();
-     if (p->status())
-     {
-	werror("Dumping of master.pike failed (not fatal) (%d)\n",
-	       p->status());
-     }
+     int retcode=p->wait();
+     if (retcode)
+       werror("Dumping of master.pike failed (not fatal) (%d)\n",retcode);
   }
 
   if(sizeof(to_dump))
@@ -1091,11 +1088,11 @@ void dump_modules()
 						offset, sizeof(to_dump))
 				     }) : ({"--quiet"}) ) +
 				   delta_dump, options);
-	 p->wait();
-	 if (p->status() && p->status()!=1)
+	 int retcode=p->wait();
+	 if (retcode)
 	 {
 	    werror("Dumping of some modules failed (not fatal) (%d)\n",
-		   p->status());
+		   retcode);
 	 }
 
 	 offset += sizeof(delta_dump);
