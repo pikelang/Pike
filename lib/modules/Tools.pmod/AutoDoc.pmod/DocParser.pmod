@@ -57,6 +57,7 @@ mapping(string : int) keywordtype =
 
   "example" : DELIMITERKEYWORD,
   "note" : DELIMITERKEYWORD,
+  "returns" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
   "seealso" : DELIMITERKEYWORD,
 
