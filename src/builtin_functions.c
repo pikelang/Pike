@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.429 2002/05/12 01:46:41 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.430 2002/05/14 16:27:49 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3945,7 +3945,7 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_assembler_debug: permission denied.\n"));
 
-  get_all_args("_optimizer_debug", args, "%i", &l);
+  get_all_args("_assembler_debug", args, "%i", &l);
   pop_n_elems(args);
   push_int(a_flag);
   a_flag = l;
