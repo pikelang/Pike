@@ -894,7 +894,6 @@ static void file_dup(INT32 args)
   o=clone(file_program,0);
   (*(int *)o->storage)=FD;
   files[FD].refs++;
-  pop_n_elems(args);
   push_object(o);
 }
 

@@ -56,8 +56,8 @@
 
 #ifdef FILE_STATE
   SNAME(file_state,previous_file_state)
-  ZMEMBER(INT32,current_line,)
   ZMEMBER(INT32,old_line,)
+  ZMEMBER(INT32,current_line,)
   ZMEMBER(INT32,nexpands,)
   ZMEMBER(int,pragma_all_inline,)
   ZMEMBER(struct inputstate *,istate,)
@@ -68,9 +68,10 @@
 
 #ifdef PROGRAM_STATE
   SNAME(program_state,previous_program_state)
+  ZMEMBER(INT32,last_line,)
+  ZMEMBER(struct shared_string *,last_file,)
   ZMEMBER(struct program,fake_program,)
   ZMEMBER(node *,init_node,)
-  ZMEMBER(INT32,last_line,)
   ZMEMBER(INT32,last_pc,)
   ZMEMBER(int,num_parse_error,)
   ZMEMBER(struct locals *,local_variables,)

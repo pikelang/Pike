@@ -180,3 +180,5 @@ assert (kolla typer explicit)
 generalisera foreach()
 constant
 'type wish'
+rewrite sort_array
+fix efun->foo (always copies value)

@@ -144,7 +144,6 @@ struct object *master()
   return o;
 }
 
-
 void destruct(struct object *o)
 {
   int e;
@@ -152,16 +151,27 @@ void destruct(struct object *o)
   struct program *p;
 
   if(!o || !(p=o->prog)) return; /* Object already destructed */
+
+  o->refs++;
+
+  safe_apply(o, "destroy", 0);
+  pop_stack();
+
+  /* destructed in destroy() */
+  if(!o->prog)
+  {
+    free_object(o);
+    return;
+  }
+
   o->prog=0;
 
   frame.parent_frame=fp;
-  frame.current_object=o;
+  frame.current_object=o;  /* refs already updated */
   frame.locals=0;
   frame.fun=-1;
   frame.pc=0;
   fp= & frame;
-
-  frame.current_object->refs++;
 
   /* free globals and call C de-initializers */
   for(e=p->num_inherits-1; e>=0; e--)

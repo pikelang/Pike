@@ -143,7 +143,9 @@ struct id_hash_entry;
 void setup_fake_program();
 void start_new_program();
 void really_free_program(struct program *p);
+void dump_program_desc(struct program *p);
 void toss_current_program();
+void check_program(struct program *p, int pass);
 struct program *end_program();
 SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(char *,struct object *));
@@ -168,7 +170,7 @@ int find_shared_string_identifier(struct lpc_string *name,
 				  struct program *prog);
 int find_identifier(char *name,struct program *prog);
 int store_prog_string(struct lpc_string *str);
-int store_constant(struct svalue *foo);
+int store_constant(struct svalue *foo, int equal);
 void start_line_numbering(void);
 void store_linenumber(void);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
@@ -179,8 +181,8 @@ struct program *compile_string(struct lpc_string *prog,
 			       struct lpc_string *name);
 struct program *end_c_program(char *name);
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
-void check_program(struct program *p, int pass);
 void check_all_programs(int pass);
+void cleanup_program();
 /* Prototypes end here */
 
 

@@ -28,30 +28,32 @@ void free_short_svalue(union anything *s,TYPE_T type)
   {
     if(--*(s->refs) <= 0)
     {
+      union anything tmp=*s;
+      s->refs=0;
       switch(type)
       {
       case T_ARRAY:
-	really_free_array(s->array);
+	really_free_array(tmp.array);
 	break;
 
       case T_MAPPING:
-	really_free_mapping(s->mapping);
+	really_free_mapping(tmp.mapping);
 	break;
 
       case T_LIST:
-	really_free_list(s->list);
+	really_free_list(tmp.list);
 	break;
 
       case T_OBJECT:
-	really_free_object(s->object);
+	really_free_object(tmp.object);
 	break;
 
       case T_PROGRAM:
-	really_free_program(s->program);
+	really_free_program(tmp.program);
 	break;
 
       case T_STRING:
-	really_free_string(s->string);
+	really_free_string(tmp.string);
 	break;
 
 #ifdef DEBUG
@@ -73,18 +75,29 @@ void free_svalue(struct svalue *s)
   {
     if(--*(s->u.refs) <= 0)
     {
-      switch(s->type)
+      int tmp=s->type;
+      s->type=T_INT;
+      switch(tmp)
       {
       case T_ARRAY:
 	really_free_array(s->u.array);
+#ifdef DEBUG
+	s->type = 99;
+#endif
 	break;
 
       case T_MAPPING:
 	really_free_mapping(s->u.mapping);
+#ifdef DEBUG
+	s->type = 99;
+#endif
 	break;
 
       case T_LIST:
 	really_free_list(s->u.list);
+#ifdef DEBUG
+	s->type = 99;
+#endif
 	break;
 
       case T_FUNCTION:
@@ -101,10 +114,16 @@ void free_svalue(struct svalue *s)
 
       case T_PROGRAM:
 	really_free_program(s->u.program);
+#ifdef DEBUG
+	s->type = 99;
+#endif
 	break;
 
       case T_STRING:
 	really_free_string(s->u.string);
+#ifdef DEBUG
+	s->type = 99;
+#endif
 	break;
 
 #ifdef DEBUG
@@ -114,9 +133,6 @@ void free_svalue(struct svalue *s)
       }
     }
   }
-#ifdef DEBUG
-  s->type = 99;
-#endif
 }
 
 /* Free a bunch of normal svalues.
@@ -130,49 +146,31 @@ void free_svalues(struct svalue *s,INT32 num)
 
 void free_short_svalues(union anything *s,INT32 num,TYPE_T type)
 {
+  union anything tmp;
 #ifdef DEBUG
   int e;
   for(e=0;e<num;e++)
     check_refs2(s+e,type);
 #endif
 
+#define PRE \
+  for(;--num >= 0;s++) { \
+    if(s->refs && --*(s->refs) <= 0) { \
+      tmp=*s; \
+      s->refs=0
+
+#define POST }}break
+
+
+
   switch(type)
   {
-    case T_ARRAY:
-      for(;--num >= 0;s++)
-        if(s->refs && --*(s->refs) <= 0)
-          really_free_array(s->array);
-     break;
-
-    case T_MAPPING:
-      for(;--num >= 0;s++)
-        if(s->refs && --*(s->refs) <= 0)
-	  really_free_mapping(s->mapping);
-      break;
-
-    case T_LIST:
-      for(;--num >= 0;s++)
-        if(s->refs && --*(s->refs) <= 0)
-          really_free_list(s->list);
-      break;
-
-    case T_OBJECT:
-      for(;--num >= 0;s++)
-        if(s->refs && --*(s->refs) <= 0)
-          really_free_object(s->object);
-      break;
-
-    case T_PROGRAM:
-      for(;--num >= 0;s++)
-        if(s->refs && --*(s->refs) <= 0)
-          really_free_program(s->program);
-      break;
-
-    case T_STRING:
-      for(;--num >= 0;s++)
-        if(s->refs && --*(s->refs) <= 0)
-          really_free_string(s->string);
-      break;
+    case T_ARRAY: PRE; really_free_array(tmp.array); POST;
+    case T_MAPPING: PRE; really_free_mapping(tmp.mapping); POST;
+    case T_LIST: PRE; really_free_list(tmp.list); POST;
+    case T_OBJECT: PRE; really_free_object(tmp.object); POST;
+    case T_PROGRAM: PRE; really_free_program(tmp.program); POST;
+    case T_STRING: PRE; really_free_string(tmp.string); POST;
 
     case T_INT:
     case T_FLOAT:

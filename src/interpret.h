@@ -73,10 +73,11 @@ void pop_n_elems(INT32 x);
 void reset_evaluator();
 void f_catch(unsigned char *pc);
 struct backlog;
-void dump_backlog();
+void dump_backlog(void);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 void apply_low(struct object *o, int fun, int args);
 void safe_apply_low(struct object *o,int fun,int args);
+void safe_apply(struct object *o, char *fun ,INT32 args);
 void apply_shared(struct object *o,
 		  struct lpc_string *fun,
 		  int args);

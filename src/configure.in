@@ -731,6 +731,7 @@ done
 
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
+DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
 
 AC_CONFIG_SUBDIRS($dirs)
@@ -744,6 +745,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(LIBDIR)
 AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
+AC_SUBST(DOCDIR)
 
 AC_OUTPUT(Makefile,
 [
