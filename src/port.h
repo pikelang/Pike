@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.23 2000/03/29 05:17:15 hubbe Exp $
+ * $Id: port.h,v 1.24 2000/03/29 10:47:56 grubba Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -39,9 +39,9 @@ time_t TIME(time_t *);
 #endif
 
 #ifndef HAVE_RINT
-#define RINT rint
-#else
 #define RINT(X) floor( (X) + 0.5 )
+#else
+#define RINT rint
 #endif
 
 #if defined(HAVE_STRTOL) && defined(HAVE_WORKING_STRTOL)
