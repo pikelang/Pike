@@ -97,5 +97,7 @@ mapping attribute_ids =
   "challengePassword" : pkcs_9_id->append(7),       /* Printable | T61
 						       | Universal */
   "unstructuredAddress" : pkcs_9_id->append(8),     /* Printable | T61 */
-  "extendedCertificateAttributes" : pkcs_9_id->append(9) /* Attributes */
-   ]);
+  "extendedCertificateAttributes" : pkcs_9_id->append(9), /* Attributes */
+  "friendlyName" : pkcs_9_id->append(20),           /* BMPString */
+  "localKeyID" : pkcs_9_id->append(21)              /* OCTET STRING */
+]);

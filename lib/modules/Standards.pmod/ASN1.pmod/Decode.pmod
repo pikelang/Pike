@@ -13,6 +13,36 @@
  * FIXME: Handling of implicit and explicit ASN.1 tagging, as well as
  * other context dependence, is next to non_existant. */
 
+class primitive
+{
+  int tag;
+  string raw;
+
+  string get_der() { return raw; }
+
+  void create(int t, string r)
+    {
+      tag = t;
+      raw = r;
+    }
+}
+
+class constructed
+{
+  int tag;
+  string raw;
+  array contents;
+  
+  string get_der() { return raw; }
+
+  void create(int t, string r, array c)
+    {
+      tag = t;
+      raw = r;
+      contents = c;
+    }
+}
+
 object|mapping der_decode(object data, mapping types)
 {
   int raw_tag = data->get_uint(1);
@@ -47,27 +77,36 @@ object|mapping der_decode(object data, mapping types)
   {
     /* Constructed encoding */
 
-    object res;
-    if (p)
-    {
-      res = p();
-      types = res->element_types(types);
-    }
-    
     array elements = ({ });
     object struct = ADT.struct(contents);
-
-    while (!struct->is_empty())
-      elements += ({ der_decode(struct, types) });
     
-    return res ? res->decode_constructed(elements, contents)
-      : ([ "tag" : tag, "contents" : contents, "elements" : elements ]);
+    if (!p)
+    {
+      while (!struct->is_empty())
+	elements += ({ der_decode(struct, types) });
+
+      return constructed(tag, contents, elements);
+    }
+
+    object res = p();
+    res->begin_decode_constructed(contents);
+    
+    int i;
+
+    /* Ask object which types it expects for field i, decode it, and
+     * record the decoded object */
+    for(i = 0; !struct->is_empty(); i++)
+      res->decode_constructed_element
+	(i, der_decode(struct,
+		       res->element_types(i, types)));
+    
+    return res->decode_constructed_end(i);
   }
   else
   {
     /* Primitive encoding */
     return p ? p()->decode_primitive(contents)
-      : ([ "tag" : tag, "contents" : contents ]);
+      : primitive(tag, contents);
   }
 }
 

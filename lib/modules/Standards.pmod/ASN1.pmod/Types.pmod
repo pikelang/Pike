@@ -27,11 +27,18 @@ class asn1_object
   // Should be overridden by subclasses 
   object decode_primitive(string contents)
     { error("decode_primitive not implemented\n"); }
-  object decode_constructed(array contents) 
-    { error("decode_constructed not implemented\n"); }
+
+  object begin_decode_constructed(string raw) 
+    { error("begin_decode_constructed not implemented\n"); }
+  object decode_constructed_element(int i, object e) 
+    { error("decode_constructed_element not implemented\n"); }
+  object end_decode_constructed(int length) 
+    { error("end_decode_constructed not implemented\n"); }
+
   string der_encode();
-  mapping element_types(mapping types) { return types; }
+  mapping element_types(int i, mapping types) { return types; }
   object init(mixed ... args) { return this_object(); }
+
   string to_base_128(int n)
     {
       if (!n)
@@ -103,9 +110,9 @@ class asn1_compound
   inherit asn1_object;
 
   constant constructed = 1;
-  array(object) elements = ({ });
+  array elements = ({ });
 
-  object init(array(object) args)
+  object init(array args)
     {
       WERROR(sprintf("asn1_compound[%s]->init(%O)\n", type_name, args));
       elements = args;
@@ -117,11 +124,29 @@ class asn1_compound
       return this_object();
     }
 
-  object decode_constructed(array contents, string raw)
+  object begin_decode_constructed(string raw)
     {
-      WERROR(sprintf("asn1_compound[%s]->decode(%O)\n", type_name, contents));
+      WERROR(sprintf("asn1_compound[%s]->begin_decode_constructed\n",
+		     type_name));
       record_der(raw);
-      elements = contents;
+      return this_object();
+    }
+
+  object decode_constructed_element(int i, object e)
+    {
+      WERROR(sprintf("asn1_compound[%s]->decode_constructed_element(%O)\n",
+		     type_name, e));
+      if (i != sizeof(elements))
+	error("decode_constructed_element: Unexpected index!\n");
+      elements += ({ e });
+      return this_object();
+    }
+  
+  object end_decode_constructed(int length)
+    {
+      if (length != sizeof(elements))
+	error("end_decode_constructed: Invalid length!\n");
+
       return this_object();
     }
 
@@ -404,7 +429,7 @@ class asn1_set
     {
       WERROR(sprintf("asn1_set->der: elements = '%O\n",
 		     elements));
-      array(string) a = Array.map(elements, "der");
+      array(string) a = Array.map(elements, "get_der");
       WERROR(sprintf("asn1_set->der: der_encode(elements) = '%O\n", a));
       return build_der(`+("", @Array.sort_array(a, compare_octet_strings)));
     }
@@ -437,3 +462,69 @@ class asn1_utc
   constant tag = 23;
   constant type_name = "UTCTime";
 }
+
+class meta_explicit
+{
+  /* meta-instances handle a particular explicit tag and set of types */
+  int real_tag;
+  mapping valid_types;
+
+  class `()
+    {
+      inherit asn1_compound;
+      constant type_name = "EXPLICIT";
+      constant constructed = 1;
+      
+      int get_tag() { return real_tag; }
+  
+      object contents;
+
+      object init(object o)
+	{
+	  contents = o;
+	  return this_object();
+	}
+    
+      string der_encode()
+	{
+	  WERROR(sprintf("asn1_explicit->der: contents = '%O\n",
+			 contents));
+	  return build_der(contents->get_der());
+	}
+
+      string decode_constructed_element(int i, object e)
+	{
+	  if (i)
+	    error("decode_constructed_element: Unexpected index!\n");
+	  contents = e;
+	  return this_object();
+	}
+
+      string end_decode_constructed(int length);
+      {
+	if (length != 1)
+	  error("end_decode_constructed: length != 1!\n");
+	return this_object();
+      }
+
+      mapping element_types(int i, mapping types)
+	{
+	  if (i)
+	    error("element_types: Unexpected index!\n");
+	  return valid_types;
+	}
+
+      string debug_string()
+	{
+	  return type_name + "[" + (int) real_tag + "]"
+	    + contents->debug_string();
+	}
+    }
+  
+  void create(int tag, mapping|void types)
+    {
+      real_tag = tag;
+      valid_types = types;
+    }
+}
+      
