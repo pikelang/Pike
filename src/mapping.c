@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.59 2000/02/04 00:50:58 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.60 2000/02/04 19:25:10 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -40,13 +40,18 @@ struct mapping *first_mapping;
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(m)							\
   INT32 e;								\
-DO_IF_DEBUG(							        \
+DO_IF_DEBUG(								\
   if(m->refs)								\
     fatal("really free mapping on mapping with nonzero refs.\n");	\
 )									\
 									\
   FREE_PROT(m);								\
 									\
+  if(m->data->hardlinks)						\
+  {									\
+    m->data->hardlinks--;						\
+    m->data->valrefs--;							\
+  }									\
   free_mapping_data(m->data);						\
 									\
   if(m->prev)								\
