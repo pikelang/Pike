@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.37 2001/01/26 18:25:35 mast Exp $
+# $Id: Makefile,v 1.38 2001/01/26 19:22:35 mast Exp $
 #
 # Meta Makefile
 #
@@ -77,7 +77,7 @@ compile: configure
 	cd "$$builddir" && { \
 	  metatarget="$(METATARGET)"; \
 	  if test "x$(LIMITED_TARGETS)" = "x"; then \
-	    if test -f "$$builddir"/master.pike -a -x "$$builddir"/pike; then :; \
+	    if test -f master.pike -a -x pike; then :; \
 	    else metatarget="all $$metatarget"; fi; \
 	    if test "x$$metatarget" = x; then metatarget=all; else :; fi; \
 	  else :; fi; \
