@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.13 2002/12/05 16:52:34 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.14 2002/12/12 18:20:03 grubba Exp $ */
 
 /* MirarDoc documentation extractor.
  */
@@ -772,30 +772,41 @@ void document(string enttype,
    }
 }
 
-string make_doc_files(string builddir, string imgdest)
+string make_doc_files(string builddir, string imgdest, string|void namespace)
 {
-  string here = getcwd();
-  cd(builddir);
+   string here = getcwd();
+   cd(builddir);
 
-  Stdio.stderr->write("modules: "+sort(indices(parse)-({" appendix"}))*", "+"\n");
+   Stdio.stderr->write("modules: " +
+		       sort(indices(parse)-({" appendix"}))*", " +
+		       "\n");
+
+   namespace = namespace || "predef::";
+   if (has_suffix(namespace, "::")) {
+      namespace = namespace[..sizeof(namespace)-3];
+   }
 
    object f = class {
-       string doc = "";
-       int write(string in) {
+      string doc = "";
+      int write(string in) {
 	 doc += in;
 	 return sizeof(in);
-       }
-       string read() {
-	 return "<module name=''>\n" + doc + "</module>";
-       }
-     }();
+      }
+      string read() {
+	 return "<autodoc>\n"
+	    "<namespace name='" + namespace + "'>\n" +
+	    doc +
+	    "</namespace>"
+	    "</autodoc>";
+      }
+   }();
 
    foreach (sort(indices(parse)-({"_order", " appendix"})),string module)
       document("module",parse[module],module,module+".", f);
 
    if(appendixM)
-     foreach(parse[" appendix"]->_order, string title)
-       document("appendix",parse[" appendix"][title],title,"", f);
+      foreach(parse[" appendix"]->_order, string title)
+         document("appendix",parse[" appendix"][title],title,"", f);
 
    cd(here);
    return Tools.AutoDoc.ProcessXML.moveImages(f->read(), builddir, imgdest);
