@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.646 2002/11/22 13:19:52 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.647 2002/11/23 16:35:01 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1339,7 +1339,7 @@ else :; fi
 if test "x$with_valgrind" = "xno"; then
   VALGRIND=""
 else
-  VALGRIND="$with_valgrind -q"
+  VALGRIND="$with_valgrind"
   AC_DEFINE(USE_VALGRIND)
 fi
 export VALGRIND

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.335 2002/11/23 16:29:40 mast Exp $
+# $Id: Makefile.in,v 1.336 2002/11/23 16:35:01 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -108,6 +108,7 @@ PIKE_MODULE_RELOC=@PIKE_MODULE_RELOC@
 
 # Set to an appropriate invocation of valgrind (or similar)
 VALGRIND=@VALGRIND@
+VALGRINDARGS=-q
 
 MAKE_FLAGS=
 
