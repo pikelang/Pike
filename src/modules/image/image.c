@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.37 1997/01/07 00:53:23 law Exp $ */
+/* $Id: image.c,v 1.38 1997/01/28 04:33:30 per Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.37 1997/01/07 00:53:23 law Exp $");
+RCSID("$Id: image.c,v 1.38 1997/01/28 04:33:30 per Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1673,7 +1673,7 @@ void init_image_programs()
    add_function("copy",image_copy,
 		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
    add_function("autocrop",image_autocrop,
-		"function(:object)",0);
+		"function(void|int ...:object)",0);
    add_function("scale",image_scale,
 		"function(int|float,int|float|void:object)",0);
    add_function("translate",image_translate,
@@ -1721,7 +1721,7 @@ void init_image_programs()
 		"function(int,int:object)",0);
 
    add_function("apply_matrix",image_apply_matrix,
-                "function(array(array(int|array(int))):object)",0);
+                "function(array,void|int ...:object)",0);
    add_function("modify_by_intensity",image_modify_by_intensity,
                 "function(int,int,int,int,int:object)",0);
 
