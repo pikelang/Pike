@@ -73,3 +73,12 @@ $version manual
 	KEYWORD_INDEX other
 
 	LINK pike/all Here's a list of all pages.
+
+ Pike internals
+
+  This section of the manual tries to explain how the inside of Pike works.
+  It is intended for people who wants to write extentions to Pike, but
+  could also be useful for debugging and/or optimization.
+
+	KEYWORD_LIST internal__internals
+
