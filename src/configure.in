@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.374 2000/05/20 02:20:37 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.375 2000/05/20 13:40:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1660,6 +1660,13 @@ int main()
       :
     fi
 
+##########################################################################
+
+    # On Linux the threads don't inherit euid & egid from the main thread.
+    # FIXME: Add a real test here!
+    if test "x$pike_cv_sys_os" = "xLinux"; then
+      AC_DEFINE(HAVE_BROKEN_LINUX_THREAD_EUID)
+    else :; fi
 
   else
     AC_MSG_RESULT(no)
