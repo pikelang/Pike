@@ -1,11 +1,15 @@
-# $Id: configure.in,v 1.1 1998/11/02 23:54:36 marcus Exp $
+# $Id: configure.in,v 1.2 1999/07/16 20:01:12 marcus Exp $
 AC_INIT(top.c)
+AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
 AC_PATH_XTRA()
 
-AC_CHECK_LIB(GL, glOrtho,,,[$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(GL, glOrtho,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+if test x"$ac_cv_lib_GL_glOrtho" != yes; then
+  AC_CHECK_LIB(MesaGL, glOrtho,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+fi
 AC_CHECK_FUNC(glXChooseVisual)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

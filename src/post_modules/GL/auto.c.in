@@ -1,11 +1,13 @@
 /*
- * $Id: auto.c.in,v 1.4 1998/11/03 01:08:18 marcus Exp $
+ * $Id: auto.c.in,v 1.5 1999/07/16 20:01:26 marcus Exp $
  *
  */
 
 #include "global.h"
 
-RCSID("$Id: auto.c.in,v 1.4 1998/11/03 01:08:18 marcus Exp $");
+#include "config.h"
+
+RCSID("$Id: auto.c.in,v 1.5 1999/07/16 20:01:26 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"

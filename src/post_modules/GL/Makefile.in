@@ -1,9 +1,10 @@
-# $Id: Makefile.in,v 1.1 1998/11/02 23:54:33 marcus Exp $
+# $Id: Makefile.in,v 1.2 1999/07/16 20:01:12 marcus Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=top.o auto.o
 MODULE_LDFLAGS=@LDFLAGS@ @X_LIBS@ @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@ @LIBS@
 MODULE_CFLAGS=@X_CFLAGS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
