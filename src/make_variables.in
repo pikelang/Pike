@@ -1,5 +1,6 @@
+# -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.2 1999/11/18 16:18:47 grubba Exp $
+# $Id: make_variables.in,v 1.3 1999/11/18 16:21:42 grubba Exp $
 #
 
 @SET_MAKE@
