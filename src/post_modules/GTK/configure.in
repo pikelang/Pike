@@ -322,6 +322,9 @@ fi
 AC_CHECK_HEADERS( X11/xpm.h )
 AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
 
+# End of gnome dependent stuff.
+fi
+
 AC_PATH_PROG(GTKEXTRA_CONFIG,gtkextra-config,no)
 
 AC_SUBST(pgtk_has_gtkextra)
@@ -340,9 +343,6 @@ else
 AC_CHECK_HEADERS(gtkextra/gtkextra.h)
   CFLAGS=$save_CFLAGS
   pgtk_has_gtkextra=gtkextra
-fi
-
-# End of gnome dependent stuff.
 fi
 
 
