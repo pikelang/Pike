@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.25 2003/12/08 15:13:15 nilsson Exp $
+// $Id: RDF.pike,v 1.26 2003/12/15 19:56:26 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -10,12 +10,16 @@ constant rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 static int(1..) node_counter = 1;
 static mapping(string:Resource) uris = ([]);
 
+// Returns ({ namespace, object })
 static array(string) uri_parts(string uri) {
   string obj,ns;
   if(sscanf(uri, "%s#%s", ns,obj)==2)
     return ({ ns+"#", obj });
-  if(sscanf(reverse(uri), "%s/%s", obj,ns)==2)
+  if(sscanf(reverse(uri), "%s/%s", obj,ns)==2) {
+    if(reverse(ns)=="http:/")
+      return ({ 0, "http://"+reverse(obj) });
     return ({ reverse(ns)+"/", reverse(obj) });
+  }
   return ({ 0,0 });
 }
 
@@ -59,6 +63,8 @@ class Resource {
   }
 
   string _sprintf(int t) { return __sprintf("Resource", t); }
+
+  static int __hash() { return number; }
 }
 
 //! Resource used for RDF-technical reasons like reification.
@@ -79,7 +85,9 @@ class RDFResource {
     return "RDF:"+id;
   }
 
-  string get_qname() {
+  string get_qname(void|string ns) {
+    if(!ns) ns = common_ns;
+    if(ns=rdf_ns) return id;
     return "rdf:"+id;
   }
 }
@@ -146,12 +154,14 @@ class URIResource {
   }
 
   //! Returns the qualifying name, or zero.
-  string get_qname() {
+  string get_qname(void|string ns) {
     fix_namespaces();
-    string ns,obj;
-    [ ns, obj ] = uri_parts(id);
-    if(!ns) return 0;
-    return namespaces[ns]+":"+obj;
+    if(!ns) ns=common_ns;
+    string nns,obj;
+    [ nns, obj ] = uri_parts(id);
+    if(!obj) error("Could not produce qname.\n");
+    if(!nns || nns==ns) return obj;
+    return namespaces[nns]+":"+obj;
   }
 
   string get_n_triple_name() {
@@ -291,14 +301,18 @@ array(Resource) get_properties() {
 //! Returns a mapping with all the domains subject resources as
 //! indices and a mapping with that subjects predicates and objects
 //! as value.
-mapping(Resource:mapping(Resource:Resource)) get_subject_map() {
+mapping(Resource:mapping(Resource:array(Resource))) get_subject_map() {
   mapping subs = ([]);
   foreach(statements; Resource pred; ADT.Relation.Binary rel)
     foreach(rel; Resource subj; Resource obj)
-      if(subs[subj])
-	subs[subj][pred]=obj;
+      if(subs[subj]) {
+	if(subs[subj][pred])
+	  subs[subj][pred] += ({ obj });
+	else
+	  subs[subj][pred] = ({ obj });
+      }
       else
-	subs[subj] = ([ pred:obj ]);
+	subs[subj] = ([ pred:({obj}) ]);
   return subs;
 }
 
@@ -605,6 +619,7 @@ string encode_n_triple_string(string in) {
 
 static int dirty_namespaces = 1;
 static mapping(string:string) namespaces = ([]); // url-prefix:name
+static string common_ns = ""; // The most common namespace
 
 static Node add_xml_children(Node p, string rdfns) {
   mapping rdf_m = p->get_ns_attributes(rdf_ns);
@@ -728,12 +743,14 @@ this_program parse_xml(string|Node in, void|string base) {
 static void fix_namespaces() {
   if(!dirty_namespaces) return;
   mapping(string:string) new = ([]);
+  mapping(string:int) stat = ([]);
   int i=1;
   foreach(indices(uris), string uri) {
     string obj;
     [ uri, obj ] = uri_parts(uri);
+    if(!uri) continue;
     if( new[uri])
-      continue;
+      ;
     else if( namespaces[uri] )
       new[uri] = namespaces[uri];
     else {
@@ -744,9 +761,32 @@ static void fix_namespaces() {
       while( has_value(new, ns) || has_value(namespaces, ns) );
       new[uri] = ns;
     }
+    stat[uri]++;
   }
   namespaces = new;
+
+  array nss = indices(stat);
+  array occur = values(stat);
+  sort(occur,nss);
+  common_ns = nss[-1];
+
   dirty_namespaces = 0;
+}
+
+
+static void add_xml_Description(String.Buffer buf,
+				 mapping(Resource:array(Resource)) rel) {
+  if(sizeof(rel)>1) buf->add("\n");
+  foreach(rel; Resource left; array(Resource) rights) {
+    foreach(rights, Resource right) {
+      buf->add("<", left->get_qname());
+      if(right->is_literal_resource)
+	buf->add(">", right->get_xml(), "</", left->get_qname(), ">");
+      else
+	buf->add(" rdf:resource=\"", right->get_qname(), "\"/>");
+      if(sizeof(rel)>1) buf->add("\n");
+    }
+  }
 }
 
 //! Serialize the RDF domain as an XML string.
@@ -755,7 +795,8 @@ string get_xml() {
 
   multiset delayed = (<>);
 
-  foreach(get_subject_map(); Resource n; mapping(Resource:Resource) rel) {
+  foreach(get_subject_map(); Resource n;
+	  mapping(Resource:array(Resource)) rel) {
     if( !n->is_literal_resource && !n->is_uri_resource ) {
       delayed[n] = 1;
       continue;
@@ -765,31 +806,37 @@ string get_xml() {
       werror("%O\n", n);
       error("Can't serialize non-uri resources in subject position.\n");
     }
-    buf->add("<Description about=\"", n->get_uri(), "\">");
-    if(sizeof(rel)>1) buf->add("\n");
-    foreach(rel; Resource left; Resource right) {
-      buf->add("<", left->get_qname()||"vräl");
-      if(right->is_literal_resource)
-	buf->add(">", right->get_xml(), "</", left->get_qname()||"vrål", ">");
+
+    // Can we make a <foo></foo> instead of
+    // <Description><rdf:type rdf:resource="foo"/></Description>
+    if(rel[rdf_type]) {
+      Resource c = rel[rdf_type][0];
+      if(sizeof(rel[rdf_type])>1)
+	rel[rdf_type] = rel[rdf_type][1..];
       else
-	buf->add(" rdf:resource=\"", right->get_qname(), "\"/>");
-      if(sizeof(rel)>1) buf->add("\n");
+	m_delete(rel, rdf_type);
+      buf->add("<", c->get_qname(), " about=\"", n->get_uri(), "\">");
+      add_xml_Description(buf, rel);
+      buf->add("</", c->get_qname(), ">\n\n");
     }
-    if(sizeof(rel)>1) buf->add("\n");
-    buf->add("</Description>\n");
+    else {
+      buf->add("<Description about=\"", n->get_uri(), "\">");
+      add_xml_Description(buf, rel);
+      buf->add("</Description>\n\n");
+    }
   }
 
   if(sizeof(delayed)) error("Meesa think somoethink wrong.\n");
 
   String.Buffer ret = String.Buffer();
   ret->add("<?xml version=\"1.0\"?>\n"
-	   "<RDF\nxmlns=\"" + rdf_ns +"\"\n"
+	   "<rdf:RDF\nxmlns=\"" + common_ns +"\"\n"
 	   "rdf:xmlns=\"" +rdf_ns + "\"\n");
   foreach(namespaces; string url; string name)
     ret->add("xmlns:", name, "=\"", url, "\"\n");
   ret->add(">\n");
   ret->add( (string)buf );
-  ret->add("</RDF>\n");
+  ret->add("</rdf:RDF>\n");
   return (string)ret;
 }
 
