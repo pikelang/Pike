@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.22 2002/11/23 14:41:56 mast Exp $
+|| $Id: pike_error.h,v 1.23 2002/11/23 17:59:11 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -114,7 +114,7 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #define DEBUG_LINE_ARGS 
 #define SETJMP(X) setjmp((init_recovery(&X, 0)->recovery))
 #define SETJMP_SP(jmp, stack_pop_levels)				\
-  setjmp((init_recovery(&X, stack_pop_levels)->recovery))
+  setjmp((init_recovery(&jmp, stack_pop_levels)->recovery))
 #define UNSETJMP(X) Pike_interpreter.recoveries=X.previous
 #endif
 
