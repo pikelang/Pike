@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.11 1999/03/14 01:32:33 grubba Exp $
+ * $Id: preprocessor.h,v 1.12 1999/03/23 02:21:05 marcus Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1963,18 +1963,18 @@ static INT32 lower_cpp(struct cpp *this,
 #undef lower_cpp
 #undef find_end_parenthesis
 
-#undef calc	calc_2
-#undef calc1	calc1_2
-#undef calc2	calc2_2
-#undef calc3	calc3_2
-#undef calc4	calc4_2
-#undef calc5	calc5_2
-#undef calc6	calc6_2
-#undef calc7	calc7_2
-#undef calc7b	calc7b_2
-#undef calc8	calc8_2
-#undef calc9	calc9_2
-#undef calcA	calcA_2
-#undef calcB	calcB_2
-#undef calcC	calcC_2
+#undef calc
+#undef calc1
+#undef calc2
+#undef calc3
+#undef calc4
+#undef calc5
+#undef calc6
+#undef calc7
+#undef calc7b
+#undef calc8
+#undef calc9
+#undef calcA
+#undef calcB
+#undef calcC
 
