@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.24 2000/12/01 08:10:15 hubbe Exp $
+ * $Id: odbc_result.c,v 1.25 2001/10/03 11:46:58 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.24 2000/12/01 08:10:15 hubbe Exp $");
+RCSID("$Id: odbc_result.c,v 1.25 2001/10/03 11:46:58 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -307,7 +307,7 @@ static void f_execute(INT32 args)
 
   odbc_check_error("odbc_result->execute", "Query failed",
 		   SQLExecDirect(hstmt, (unsigned char *)q->str,
-				 DO_NOT_WARN(q->len)),
+				 DO_NOT_WARN((SQLINTEGER)(q->len))),
 		   NULL);
 
   odbc_check_error("odbc_result->execute", "Couldn't get the number of fields",
@@ -315,6 +315,50 @@ static void f_execute(INT32 args)
 		   NULL);
 
   odbc_check_error("odbc_result->execute", "Couldn't get the number of rows",
+		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)), NULL);
+
+  PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows;
+
+  if (PIKE_ODBC_RES->num_fields) {
+    odbc_fix_fields();
+  }
+
+  pop_n_elems(args);
+
+  /* Result */
+  push_int(PIKE_ODBC_RES->num_fields);
+}
+ 
+static void f_list_tables(INT32 args)
+{
+  struct pike_string *table_name_pattern = NULL;
+  HSTMT hstmt = PIKE_ODBC_RES->hstmt;
+
+  if (!args) {
+    push_constant_text("%");
+    args = 1;
+  } else if ((Pike_sp[-args].type != T_STRING) ||
+	     (Pike_sp[-args].u.string->size_shift)) {
+    Pike_error("odbc_result->list_tables(): "
+	       "Bad argument 1. Expected 8-bit string.\n");
+  }
+
+  table_name_pattern = Pike_sp[-args].u.string;
+
+  odbc_check_error("odbc_result->list_tables", "Query failed",
+		   SQLTables(hstmt, "%", 1, "%", 1,
+			     table_name_pattern->str,
+			     DO_NOT_WARN((SQLSMALLINT)table_name_pattern->len),
+			     "%", 1),
+		   NULL);
+
+  odbc_check_error("odbc_result->list_tables",
+		   "Couldn't get the number of fields",
+		   SQLNumResultCols(hstmt, &(PIKE_ODBC_RES->num_fields)),
+		   NULL);
+
+  odbc_check_error("odbc_result->list_tables",
+		   "Couldn't get the number of rows",
 		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)), NULL);
 
   PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows;
@@ -471,6 +515,8 @@ void init_odbc_res_programs(void)
   ADD_FUNCTION("create", f_create,tFunc(tObj,tVoid), ID_PUBLIC);
   /* function(string:int) */
   ADD_FUNCTION("execute", f_execute,tFunc(tStr,tInt), ID_PUBLIC);
+  /* function(void|string:int) */
+  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tInt), ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("num_rows", f_num_rows,tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void:int) */
