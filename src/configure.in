@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.662 2002/12/14 14:13:00 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.663 2002/12/14 14:43:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -54,21 +54,23 @@ else :; fi
 
 AC_PROG_MAKE_SET
 
-if test -f main.c; then :; else
+touch "$srcdir/conftest_VPATH.in"
+if test -f conftest_VPATH; then :; else
   # Not building in source tree.
   AC_MSG_CHECKING([whether ${MAKE-make} supports VPATH])
   AC_CACHE_VAL(pike_cv_make_supports_VPATH, [
     cat > conftestmake <<EOF
 VPATH=.:$srcdir
-conftest.out: main.c
+conftest_VPATH.out: conftest_VPATH.in
 	cat "\$<" >"\$@"
 EOF
     pike_cv_make_supports_VPATH=no
-    if ${MAKE-make} -f conftestmake conftest.out >/dev/null 2>&5; then
-      if test -f conftest.out; then
+    if ${MAKE-make} -f conftestmake conftest_VPATH.out >/dev/null 2>&5; then
+      if test -f conftest_VPATH.out; then
         pike_cv_make_supports_VPATH=yes
       else :; fi
     else :; fi
+    rm -f conftestmake conftest_VPATH.out
   ])
   AC_MSG_RESULT($pike_cv_make_supports_VPATH)
   if test "x$pike_cv_make_supports_VPATH" = "xno"; then
@@ -84,6 +86,7 @@ EOF
     done
   else :; fi
 fi
+rm "$srcdir/conftest_VPATH.in" 2>/dev/null
 
 AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
