@@ -51,7 +51,7 @@
 
 #ifdef OLD
 import ".";
-#define PC .C
+#define PC .Pike
 #else /* !OLD */
 #if constant(Parser.Pike)
 #define PC Parser.Pike

@@ -133,6 +133,17 @@ else
   fi
 fi
 
+if test -f ./Pike.pmod ; then
+  :
+else
+  rm Pike.pmod 2>/dev/null
+  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" ./Pike.pmod; then :; else
+    # We might be on a filesystem that doesn't support symlinks (eg FAT).
+    echo "Trying copying instead..."
+    cp "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" ./Pike.pmod
+  fi
+fi
+
 
 
 if test "x${RUNPIKE-}" != x ; then
