@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.41 2001/05/29 17:17:48 grubba Exp $
+ * $Id: preprocessor.h,v 1.42 2001/06/07 20:16:26 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -290,11 +290,15 @@ static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
 					     ptrdiff_t len,
 					     ptrdiff_t pos)/* pos of first " */
 {
+  INT32 start_line = this->current_line;
   while(1)
   {
     if(pos+1>=len)
     {
+      INT32 save_line = this->current_line;
+      this->current_line = start_line;
       cpp_error(this, "End of file while looking for end parenthesis.");
+      this->current_line = save_line;
       return pos;
     }
 
@@ -782,6 +786,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 {
   ptrdiff_t pos, tmp, e;
   int tmp2;
+  INT32 first_line = this->current_line;
+  /* FIXME: What about this->current_file? */
   
   for(pos=0; pos<len;)
   {
@@ -880,7 +886,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	if(d && !(d->inside & 1))
 	{
 	  int arg=0;
-	  INT32 startline = this->current_line;
+	  INT32 start_line = this->current_line;
 	  struct string_builder tmp;
 	  struct define_argument arguments [MAX_ARGS];
 	  short inside = d->inside;
@@ -930,7 +936,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      {
 		if(pos+1>len)
 		{
+		  INT32 save_line = this->current_line;
+		  this->current_line = start_line;
 		  cpp_error(this, "End of file in macro call.");
+		  this->current_line = save_line;
 		  break;
 		}
 		
@@ -974,7 +983,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      char buffer[1024];
 	      sprintf(buffer, "Missing ) in the macro %.950s.", 
 		      d->link.s->str);
-	      this->current_line = startline;
+	      this->current_line = start_line;
 	      cpp_error(this, buffer);
 	    }
 	  }
@@ -2059,8 +2068,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     }
   }
 
-  if(flags & CPP_EXPECT_ENDIF)
+  if(flags & CPP_EXPECT_ENDIF) {
+    INT32 saved_line = this->current_line;
+    this->current_line = first_line;
     cpp_error(this, "End of file while searching for #endif.");
+    this->current_line = saved_line;
+  }
 
   return pos;
 }
