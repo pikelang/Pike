@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.45 1999/04/19 18:33:52 grubba Exp $
+// $Id: module.pmod,v 1.46 1999/04/19 20:56:45 grubba Exp $
 
 import String;
 
@@ -703,8 +703,22 @@ static class nb_sendfile
     if (trailers) {
       to_write += trailers;
     }
-    if (sizeof(to_write)) {
-      start_writer();
+    if (blocking_to) {
+      while(sizeof(to_write)) {
+	if (!do_write()) {
+	  // Connection closed or Disk full.
+	  writer_done();
+	  return;
+	}
+      }
+      if (!from) {
+	writer_done();
+	return;
+      }
+    } else {
+      if (sizeof(to_write)) {
+	start_writer();
+      }
     }
   }
 
@@ -737,6 +751,7 @@ static class nb_sendfile
       } else {
 	to_write += ({ data[..len-1] });
 	reader_done();
+	return;
       }
     } else {
       to_write += ({ data });
@@ -778,6 +793,11 @@ static class nb_sendfile
     // Disable any reader.
     if (from) {
       from->set_nonblocking(0,0,0);
+    }
+
+    // Disable any writer.
+    if (to) {
+      to->set_nonblocking(0,0,0);
     }
 
     // Make sure we get rid of any references...
@@ -866,6 +886,7 @@ static class nb_sendfile
       call_out(do_blocking, 0);
     } else {
       from = 0;
+      to = 0;
       writer_done();
     }
   }
