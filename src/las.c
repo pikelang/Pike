@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.238 2001/02/24 02:38:32 hubbe Exp $");
+RCSID("$Id: las.c,v 1.239 2001/02/24 15:22:14 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3447,10 +3447,101 @@ void fix_type_field(node *n)
       if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
 	yyerror("foreach(): Looping over a void expression.");
       } else {
-	if(CDAR(n)->token && CDAR(n)->token == ':')
+	if(CDAR(n) && CDAR(n)->token == ':')
 	{
-	  /* type checking for new style iterators goes here */
-	}else{
+	  /* Check the iterator type */
+	  struct pike_type *iterator_type;
+	  struct pike_type *foreach_call_type;
+	  MAKE_CONSTANT_SHARED_STRING(iterator_type,
+				      tOr5(tArray, tStr, tObj,
+					   tMapping, tMultiset));
+	  if (!pike_types_le(CAAR(n)->type, iterator_type)) {
+	    if (!match_types(CAAR(n)->type, iterator_type)) {
+	      yytype_error("Bad argument 1 to foreach()", iterator_type,
+			   CAAR(n)->type, 0);
+
+	      /* No use checking the index and value types if
+	       * the iterator type is bad.
+	       */
+	      free_type(iterator_type);
+	      goto foreach_type_check_done;
+	    } else {
+	      yytype_error("Iterator type mismatch in foreach()",
+			   iterator_type, CAAR(n)->type, YYTE_IS_WARNING);
+	    }
+	  }
+	  free_type(iterator_type);
+
+	  push_type(T_MIXED);
+	  push_type(T_VOID);
+	  push_type(T_MANY);
+	  push_finished_type(CAAR(n)->type);
+	  push_type(T_FUNCTION);
+
+	  foreach_call_type = pop_type();
+
+	  if (CADAR(n)) {
+	    /* Check the index type */
+	    struct pike_type *index_fun_type;
+	    struct pike_type *index_type;
+	    MAKE_CONSTANT_SHARED_STRING(index_fun_type,
+					tOr4(tFunc(tOr(tArray, tStr), tZero),
+					     tFunc(tMap(tSetvar(0, tMix),
+							tMix), tVar(0)),
+					     tFunc(tSet(tSetvar(1, tMix)),
+						   tVar(1)),
+					     tFunc(tObj, tZero)));
+	    index_type = check_call(foreach_call_type, index_fun_type, 0);
+	    if (!index_type) {
+	      /* Should not happen. */
+	      yyerror("Bad iterator type for index in foreach().");
+	    } else {
+	      if (!pike_types_le(index_type, CADAR(n)->type)) {
+		if (!match_types(CADAR(n)->type, index_type)) {
+		  yytype_error("Type mismatch for index in foreach().",
+			       index_type, CADAR(n)->type, 0);
+		} else {
+		  yytype_error("Type mismatch for index in foreach().",
+			       index_type, CADAR(n)->type, YYTE_IS_WARNING);
+		}
+	      }
+	      free_type(index_type);
+	    }
+	    free_type(index_fun_type);
+	  }
+	  if (CDDAR(n)) {
+	    /* Check the value type */
+	    struct pike_type *value_fun_type;
+	    struct pike_type *value_type;
+	    MAKE_CONSTANT_SHARED_STRING(value_fun_type,
+					tOr5(tFunc(tArr(tSetvar(0, tMix)),
+						   tVar(0)),
+					     tFunc(tStr, tZero),
+					     tFunc(tMap(tMix,tSetvar(1, tMix)),
+						   tVar(1)),
+					     tFunc(tMultiset, tInt1),
+					     tFunc(tObj, tZero)));
+	    value_type = check_call(foreach_call_type, value_fun_type, 0);
+	    if (!value_type) {
+	      /* Should not happen. */
+	      yyerror("Bad iterator type for value in foreach().");
+	    } else {
+	      if (!pike_types_le(value_type, CDDAR(n)->type)) {
+		if (!match_types(CDDAR(n)->type, value_type)) {
+		  yytype_error("Type mismatch for value in foreach().",
+			       value_type, CDDAR(n)->type, 0);
+		} else {
+		  yytype_error("Type mismatch for value in foreach().",
+			       value_type, CDDAR(n)->type, YYTE_IS_WARNING);
+		}
+	      }
+	      free_type(value_type);
+	    }
+	    free_type(value_fun_type);
+	  }
+	  free_type(foreach_call_type);
+	} else {
+	  /* Old-style foreach */
 	  struct pike_type *array_zero;
 	  MAKE_CONSTANT_SHARED_STRING(array_zero, tArr(tZero));
 	  
@@ -3486,6 +3577,7 @@ void fix_type_field(node *n)
 	}
       }
     }
+  foreach_type_check_done:
     copy_type(n->type, void_type_string);
     break;
 
