@@ -10728,6 +10728,10 @@ prints.
 <include file=Mysql.wmml>
 <include file=crypto.wmml>
 
+<section title=Locale.Gettext>
+<include file=Gettext.wmml>
+</section>
+
 <section title=Calendar>
 <include file=Calendar.wmml>
 </section>

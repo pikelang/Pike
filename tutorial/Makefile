@@ -9,7 +9,7 @@ all:
 low_all: tutorial.html tutorial_onepage.html
 
 MADEFILES=Image.wmml Math.wmml Mysql.wmml Parser.wmml Calendar.wmml \
-	  Protocols.wmml
+	  Protocols.wmml Gettext.wmml
 
 SRCFILES=tutorial.wmml $(MADEFILES)
 
@@ -33,8 +33,11 @@ Image.wmml :
 Math.wmml : 
 	$(MKWMML) ../src/modules/Math/*.c >Math.wmml
 
-Mysql.wmml : 
+Mysql.wmml :  ../src/modules/Mysql/mysql.c
 	$(MKWMML) ../src/modules/Mysql/mysql.c >Mysql.wmml
+
+Gettext.wmml: ../src/modules/Gettext/gettext.c
+	$(MKWMML) ../src/modules/Gettext/gettext.c >Gettext.wmml
 
 Parser.wmml : ../src/modules/Parser/html.c
 	$(MKWMML) ../src/modules/Parser/*.pmod.in ../src/modules/Parser/*.c  >Parser.wmml
