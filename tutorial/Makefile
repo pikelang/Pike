@@ -2,7 +2,8 @@ all: tutorial.html tutorial_onepage.html
 
 # lenna.gif lenna-mirrorx.gif lenna-mirrory.gif lenna-rotate.gif lenna-skewx.gif lenna-skewy.gif
 
-MADEFILES=Image.wmml Mysql.wmml ProtocolsHTTP.wmml Parser.wmml Calendar.wmml
+MADEFILES=Image.wmml Mysql.wmml ProtocolsLysKOM.wmml \
+	ProtocolsHTTP.wmml Parser.wmml Calendar.wmml
 SRCFILES=tutorial.wmml $(MADEFILES)
 
 pike=pike
@@ -19,10 +20,14 @@ Mysql.wmml :
 	$(pike) ../bin/mkwmml.pike ../src/modules/Mysql/mysql.c >Mysql.wmml
 
 Parser.wmml : 
-	$(pike) ../bin/mkwmml.pike ../src/modules/Parser/*.c >Parser.wmml
+	$(pike) ../bin/mkwmml.pike ../src/modules/Parser/*.pmod.in ../src/modules/Parser/*.c  >Parser.wmml
 
 ProtocolsHTTP.wmml :
-	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Protocols.pmod/HTTP.pmod/*.p* | egrep -v '~$'` >ProtocolsHTTP.wmml
+	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Protocols.pmod/HTTP.pmod/*.p???` >ProtocolsHTTP.wmml
+
+ProtocolsLysKOM.wmml :
+	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Protocols.pmod/LysKOM.pmod/*.p???` >ProtocolsLysKOM.wmml
+
 
 Calendar.wmml :
 	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$'` >Calendar.wmml
@@ -69,3 +74,6 @@ export:
 
 mirar_www: Image.wmml the_image_module_onepage.html
 	ln -f illustration*.gif the_image_module_onepage.html /home/mirar/www/image
+
+mirar_www_tutorial: tutorial.html
+	ln -f illustration*.gif tutorial*html /home/mirar/www/pike_tutorial
