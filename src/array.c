@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.121 2001/12/16 02:49:36 mast Exp $");
+RCSID("$Id: array.c,v 1.122 2001/12/16 20:28:08 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -126,6 +126,8 @@ PMOD_EXPORT void really_free_array(struct array *v)
 #ifdef PIKE_DEBUG
   if(v == & empty_array || v == &weak_empty_array || v == &weak_shrink_empty_array)
     fatal("Tried to free some *_empty_array.\n");
+  if (v->refs)
+    fatal("Freeing array with %d refs.\n", v->refs);
 #endif
 
 #ifdef PIKE_DEBUG
