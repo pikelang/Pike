@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.27 1998/03/03 11:24:39 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.28 1998/03/03 14:37:15 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -24,7 +24,7 @@ RCSID("$Id: pike_types.c,v 1.27 1998/03/03 11:24:39 hubbe Exp $");
 
 int max_correct_args;
 
-static void internal_parse_type(char **s);
+static void internal_parse_type(unsigned char **s);
 static int type_length(char *t);
 
 #define TWOT(X,Y) (((X) << 8)+(Y))
@@ -234,11 +234,10 @@ struct pike_string *debug_pop_type(void)
   return s;
 }
 
-static void internal_parse_typeA(char **_s)
+static void internal_parse_typeA(unsigned char **s)
 {
   char buf[80];
   unsigned int len;
-  unsigned char **s = (unsigned char **)_s;
   
   while(ISSPACE(**s)) ++*s;
 
@@ -283,7 +282,7 @@ static void internal_parse_typeA(char **_s)
 	type_stack_mark();
 	type_stack_mark();
 	type_stack_mark();
-	internal_parse_type(_s);
+	internal_parse_type(s);
 	type_stack_reverse();
 	if(**s==',')
 	{
@@ -305,7 +304,7 @@ static void internal_parse_typeA(char **_s)
       }
       ++*s;
       type_stack_mark();
-      internal_parse_type(_s);  /* return type */
+      internal_parse_type(s);  /* return type */
       type_stack_reverse();
       if(**s != ')') error("Missing ')' in function type.\n");
       ++*s;
@@ -325,12 +324,12 @@ static void internal_parse_typeA(char **_s)
       type_stack_mark();
       ++*s;
       type_stack_mark();
-      internal_parse_type(_s);
+      internal_parse_type(s);
       type_stack_reverse();
       if(**s != ':') error("Expecting ':'.\n");
       ++*s;
       type_stack_mark();
-      internal_parse_type(_s);
+      internal_parse_type(s);
       type_stack_reverse();
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
@@ -347,7 +346,7 @@ static void internal_parse_typeA(char **_s)
     if(**s == '(')
     {
       ++*s;
-      internal_parse_type(_s);
+      internal_parse_type(s);
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
     }else{
@@ -361,7 +360,7 @@ static void internal_parse_typeA(char **_s)
     if(**s == '(')
     {
       ++*s;
-      internal_parse_type(_s);
+      internal_parse_type(s);
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
     }else{
@@ -376,7 +375,7 @@ static void internal_parse_typeA(char **_s)
 }
 
 
-static void internal_parse_typeB(char **s)
+static void internal_parse_typeB(unsigned char **s)
 {
   while(ISSPACE(**s)) ++*s;
   switch(**s)
@@ -400,7 +399,7 @@ static void internal_parse_typeB(char **s)
   }
 }
 
-static void internal_parse_typeCC(char **s)
+static void internal_parse_typeCC(unsigned char **s)
 {
   internal_parse_typeB(s);
 
@@ -414,7 +413,7 @@ static void internal_parse_typeCC(char **s)
   }
 }
 
-static void internal_parse_typeC(char **s)
+static void internal_parse_typeC(unsigned char **s)
 {
   type_stack_mark();
 
@@ -437,7 +436,7 @@ static void internal_parse_typeC(char **s)
   }
 }
 
-static void internal_parse_type(char **s)
+static void internal_parse_type(unsigned char **s)
 {
   internal_parse_typeC(s);
 
@@ -459,7 +458,7 @@ static void internal_parse_type(char **s)
 struct pike_string *parse_type(char *s)
 {
   type_stack_mark();
-  internal_parse_type(&s);
+  internal_parse_type((unsigned char **)&s);
 
   if( *s )
     fatal("Extra junk at end of type definition.\n");
