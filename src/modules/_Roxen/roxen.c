@@ -279,12 +279,52 @@ static void f_html_encode_string( INT32 args )
   if( args != 1 )
     Pike_error("Wrong number of arguments to html_encode_string\n" );
   
-  if( Pike_sp[-args].type != PIKE_T_STRING )
+  switch( Pike_sp[-1].type )
   {
     struct pike_string *s;
     void o_cast(struct pike_string *type, INT32 run_time_type);
-    MAKE_CONSTANT_SHARED_STRING( s, tString );
-    o_cast(s, PIKE_T_STRING);
+
+    case PIKE_T_INT:
+      /* Optimization, this is basically a inlined cast_int_to_string */
+      {
+	char buf[21], *b = buf+19;
+	int neg, i, j=0;
+	i = Pike_sp[-1].u.integer;
+	pop_stack();
+	if( i < 0 )
+	{
+	  neg = 1;
+	  i = -i;
+	}
+	else
+	  neg = 0;
+
+	buf[20] = 0;
+
+	while( i > 10 )
+	{
+	  b[ -j++ ] = '0'+(i%10);
+	  i /= 10;
+	}
+	b[ -j++ ] = '0'+(i%10);
+	if( neg )  b[ -j++ ] = '-';
+	push_text( b-j+1 );
+      }
+      return;
+
+    case PIKE_T_FLOAT:
+      /* Optimization, no need to check the resultstring for
+       * unsafe characters. 
+       */
+      MAKE_CONSTANT_SHARED_STRING( s, tString );
+      o_cast(s, PIKE_T_STRING);
+      return;
+
+    default:
+      MAKE_CONSTANT_SHARED_STRING( s, tString );
+      o_cast(s, PIKE_T_STRING);
+    case PIKE_T_STRING:
+      break;
   }
 
   str = Pike_sp[-1].u.string;
