@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.85 2003/09/26 13:20:33 grubba Exp $
+|| $Id: peep.c,v 1.86 2003/10/10 01:18:25 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.85 2003/09/26 13:20:33 grubba Exp $");
+RCSID("$Id: peep.c,v 1.86 2003/10/10 01:18:25 mast Exp $");
 
 static void asm_opt(void);
 
@@ -279,7 +279,7 @@ void assemble(void)
 	      
 	    case TWOO(F_LOR, F_RETURN):
 	      c[e].opcode=F_RETURN_IF_TRUE;
-	      break;
+	      goto pointer_opcode_done;
 	      
 	    case TWOO(F_BRANCH, F_RETURN):
 	    case TWOO(F_BRANCH, F_RETURN_0):
@@ -288,12 +288,17 @@ void assemble(void)
 	      if(c[e].file) free_string(c[e].file);
 	      c[e]=c[tmp];
 	      if(c[e].file) add_ref(c[e].file);
-	      break;
+	      goto pointer_opcode_done;
 	  }
 	  break;
 	}
+#ifdef PIKE_DEBUG
+	if (c[e].arg < 0 || c[e].arg > max_label)
+	  Pike_fatal ("Invalid index into uses: %d\n", c[e].arg);
+#endif
 	uses[c[e].arg]++;
       }
+    pointer_opcode_done:;
     }
     
     for(e=0;e<=max_label;e++)
@@ -308,7 +313,10 @@ void assemble(void)
     
     asm_opt();
 #if 1
-    /* fprintf(stderr, "Rerunning optimizer.\n"); */
+#ifdef PIKE_DEBUG
+    if (a_flag > 3)
+      fprintf(stderr, "Rerunning optimizer.\n");
+#endif
 #else /* !1 */
     reoptimize=0;
 #endif /* 1 */
@@ -887,11 +895,11 @@ static void asm_opt(void)
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
 
-    fprintf(stderr,"Optimization begins: \n");
+    fprintf(stderr,"Before peep optimization:\n");
     for(e=0;e<length;e++,c++)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr,"---%4d: %*s",c->line,synch_depth,"");
+      fprintf(stderr,"<<<%4d: %*s",c->line,synch_depth,"");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
@@ -908,16 +916,19 @@ static void asm_opt(void)
   {
     p_instr *c;
     ptrdiff_t e, length;
+    int synch_depth = 0;
 
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
 
-    fprintf(stderr,"Optimization begins: \n");
+    fprintf(stderr,"After peep optimization:\n");
     for(e=0;e<length;e++,c++)
     {
-      fprintf(stderr,">>>%3d: ",c->line);
+      if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
+      fprintf(stderr,">>>%4d: %*s",c->line,synch_depth,"");
       dump_instr(c);
       fprintf(stderr,"\n");
+      if (c->opcode == F_SYNCH_MARK) synch_depth++;
     }
   }
 #endif
