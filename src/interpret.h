@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.137 2003/04/25 00:09:17 mast Exp $
+|| $Id: interpret.h,v 1.138 2003/04/27 12:25:34 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -191,11 +191,16 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 
 PMOD_EXPORT extern const char msg_pop_neg[];
 #define pop_n_elems(X)							\
- do { ptrdiff_t x_=(X); if(x_) { 					\
-   check__positive(x_, (msg_pop_neg, x_));				\
-   Pike_sp -= x_; debug_check_stack();					\
-   free_mixed_svalues(Pike_sp, x_);					\
- } } while (0)
+ do {									\
+   ptrdiff_t x_=(X);							\
+   if(x_) {								\
+     struct svalue *_sp_;						\
+     check__positive(x_, (msg_pop_neg, x_));				\
+     _sp_ = Pike_sp = Pike_sp - x_;					\
+     debug_check_stack();						\
+     free_mixed_svalues(_sp_, x_);					\
+   }									\
+ } while (0)
 
 /* This pops a number of arguments from the stack but keeps the top
  * element on top. Used for popping the arguments while keeping the
@@ -203,14 +208,21 @@ PMOD_EXPORT extern const char msg_pop_neg[];
  */
 #define stack_unlink(X) do {						\
     if(X) {								\
-      struct svalue *_sp_ = Pike_sp--;					\
-      free_svalue(_sp_-(X)-1);						\
-      _sp_[-(X)-1]=_sp_[-1];						\
+      struct svalue *_sp_ = --Pike_sp;					\
+      free_svalue(_sp_-(X));						\
+      _sp_[-(X)] = _sp_[0];						\
       pop_n_elems(X-1);							\
     }									\
   }while(0)
 
 #define stack_pop_n_elems_keep_top(X) stack_unlink(X)
+
+#define stack_pop_keep_top() do {					\
+    struct svalue *_sp_ = --Pike_sp;					\
+    free_svalue (_sp_ - 1);						\
+    _sp_[-1] = _sp_[0];							\
+    debug_check_stack();						\
+  } while (0)
 
 #define stack_pop_to_no_free(X) move_svalue(X, --Pike_sp)
 
