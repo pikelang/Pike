@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.17 2001/06/23 10:33:11 hubbe Exp $
+ * $Id: opcodes.h,v 1.18 2001/07/06 14:07:55 grubba Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -47,15 +47,12 @@ enum Pike_opcodes
   F_PREFIX2_WORDX256,
   F_PREFIX2_24BITX256,
 
-  F_BRANCH_AND_POP_WHEN_ZERO,
-  F_BRANCH_AND_POP_WHEN_NON_ZERO,
   F_BRANCH_WHEN_LT,
   F_BRANCH_WHEN_GT,
   F_BRANCH_WHEN_LE,
   F_BRANCH_WHEN_GE,
   F_BRANCH_WHEN_EQ,
   F_BRANCH_WHEN_NE,
-  F_BRANCH_IF_NOT_LOCAL,
   F_INC_LOOP,
   F_DEC_LOOP,
   F_INC_NEQ_LOOP,
@@ -81,12 +78,7 @@ enum Pike_opcodes
   F_GE,
   F_LE,
   F_NE,
-  F_LAND,
-  F_LOR,
-  F_EQ_OR,
-  F_EQ_AND,
 
-  F_CATCH,
   F_FOREACH,
   F_NEW_FOREACH,
 

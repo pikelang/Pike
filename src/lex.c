@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.91 2001/07/02 04:09:49 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.92 2001/07/06 14:07:55 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -207,24 +207,16 @@ struct keyword instr_names[]=
 { "for",		F_FOR,0 },
 { "index",              F_INDEX,0 },
 
-{ "branch if !local",	F_BRANCH_IF_NOT_LOCAL, I_HASARG },	
 { "branch if <",	F_BRANCH_WHEN_LT, I_ISJUMP },
 { "branch if >",	F_BRANCH_WHEN_GT, I_ISJUMP },
 { "branch if <=",	F_BRANCH_WHEN_LE, I_ISJUMP },
 { "branch if >=",	F_BRANCH_WHEN_GE, I_ISJUMP },
 { "branch if ==",	F_BRANCH_WHEN_EQ, I_ISJUMP },
 { "branch if !=",	F_BRANCH_WHEN_NE, I_ISJUMP },
-{ "branch & pop if zero",	F_BRANCH_AND_POP_WHEN_ZERO, I_ISJUMP },
-{ "branch & pop if !zero",	F_BRANCH_AND_POP_WHEN_NON_ZERO, I_ISJUMP },
 { "++Loop",		F_INC_LOOP, I_ISJUMP },	
 { "++Loop!=",		F_INC_NEQ_LOOP, I_ISJUMP },
 { "--Loop",		F_DEC_LOOP, I_ISJUMP },	
 { "--Loop!=",		F_DEC_NEQ_LOOP, I_ISJUMP },
-{ "&&",			F_LAND, I_ISJUMP },	
-{ "||",			F_LOR, I_ISJUMP },	
-{ "==||",               F_EQ_OR, I_ISJUMP },
-{ "==&&",               F_EQ_AND, I_ISJUMP },
-{ "catch",		F_CATCH, I_ISJUMP },
 { "foreach",		F_FOREACH, I_ISJUMP },
 { "foreach++",		F_NEW_FOREACH, I_ISJUMP },
 { "pointer",		F_POINTER, I_ISPOINTER },

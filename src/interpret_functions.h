@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.67 2001/07/02 07:02:45 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.68 2001/07/06 14:07:55 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -898,15 +898,14 @@ OPCODE1_JUMP(F_BRANCH_IF_LOCAL,"branch if local")
   }
 BREAK;
 
-      CASE(F_BRANCH_IF_NOT_LOCAL);
-      instr=GET_ARG();
-      if(!IS_ZERO(Pike_fp->locals + instr))
-      {
-	SKIPJUMP();
-      }else{
-	DOJUMP();
-      }
-      break;
+OPCODE1_JUMP(F_BRANCH_IF_NOT_LOCAL, "branch if !local")
+  if(!IS_ZERO(Pike_fp->locals + arg1))
+  {
+    SKIPJUMP();
+  }else{
+    DOJUMP();
+  }
+BREAK;
 
       CJUMP(F_BRANCH_WHEN_EQ, is_eq);
       CJUMP(F_BRANCH_WHEN_NE,!is_eq);
@@ -915,82 +914,82 @@ BREAK;
       CJUMP(F_BRANCH_WHEN_GT, is_gt);
       CJUMP(F_BRANCH_WHEN_GE,!is_lt);
 
-      CASE(F_BRANCH_AND_POP_WHEN_ZERO);
-      if(!IS_ZERO(Pike_sp-1))
-      {
-	SKIPJUMP();
-      }else{
-	DOJUMP();
-	pop_stack();
-      }
-      break;
+OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero")
+  if(!IS_ZERO(Pike_sp-1))
+  {
+    SKIPJUMP();
+  }else{
+    DOJUMP();
+    pop_stack();
+  }
+BREAK;
 
-      CASE(F_BRANCH_AND_POP_WHEN_NON_ZERO);
-      if(IS_ZERO(Pike_sp-1))
-      {
-	SKIPJUMP();
-      }else{
-	DOJUMP();
-	pop_stack();
-      }
-      break;
+OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero")
+  if(IS_ZERO(Pike_sp-1))
+  {
+    SKIPJUMP();
+  }else{
+    DOJUMP();
+    pop_stack();
+  }
+BREAK;
 
-      CASE(F_LAND);
-      if(!IS_ZERO(Pike_sp-1))
-      {
-	SKIPJUMP();
-	pop_stack();
-      }else{
-	DOJUMP();
-      }
-      break;
+OPCODE0_JUMP(F_LAND, "&&")
+  if(!IS_ZERO(Pike_sp-1))
+  {
+    SKIPJUMP();
+    pop_stack();
+  }else{
+    DOJUMP();
+  }
+BREAK;
 
-      CASE(F_LOR);
-      if(IS_ZERO(Pike_sp-1))
-      {
-	SKIPJUMP();
-	pop_stack();
-      }else{
-	DOJUMP();
-      }
-      break;
+OPCODE0_JUMP(F_LOR, "||")
+  if(IS_ZERO(Pike_sp-1))
+  {
+    SKIPJUMP();
+    pop_stack();
+  }else{
+    DOJUMP();
+  }
+BREAK;
 
-      CASE(F_EQ_OR);
-      if(!is_eq(Pike_sp-2,Pike_sp-1))
-      {
-	pop_n_elems(2);
-	SKIPJUMP();
-      }else{
-	pop_n_elems(2);
-	push_int(1);
-	DOJUMP();
-      }
-      break;
+OPCODE0_JUMP(F_EQ_OR, "==||")
+  if(!is_eq(Pike_sp-2,Pike_sp-1))
+  {
+    pop_n_elems(2);
+    SKIPJUMP();
+  }else{
+    pop_n_elems(2);
+    push_int(1);
+    DOJUMP();
+  }
+BREAK;
 
-      CASE(F_EQ_AND);
-      if(is_eq(Pike_sp-2,Pike_sp-1))
-      {
-	pop_n_elems(2);
-	SKIPJUMP();
-      }else{
-	pop_n_elems(2);
-	push_int(0);
-	DOJUMP();
-      }
-      break;
+OPCODE0_JUMP(F_EQ_AND, "==&&")
+  if(is_eq(Pike_sp-2,Pike_sp-1))
+  {
+    pop_n_elems(2);
+    SKIPJUMP();
+  }else{
+    pop_n_elems(2);
+    push_int(0);
+    DOJUMP();
+  }
+BREAK;
 
-      CASE(F_CATCH);
-      switch (o_catch(pc+sizeof(INT32))) {
-	case 1:
-          /* There was a return inside the evaluated code */
-	  goto do_dumb_return;
-	case 2:
-	  pc = Pike_fp->pc;
-	  break;
-	default:
-	  pc+=GET_JUMP();
-      }
-      break;
+OPCODE0_JUMP(F_CATCH, "catch")
+  switch (o_catch(pc+sizeof(INT32))) {
+  case 1:
+    /* There was a return inside the evaluated code */
+    goto do_dumb_return;
+  case 2:
+    pc = Pike_fp->pc;
+    break;
+  default:
+    pc+=GET_JUMP();
+  }
+BREAK;
 
 OPCODE0(F_ESCAPE_CATCH, "escape catch")
 {
