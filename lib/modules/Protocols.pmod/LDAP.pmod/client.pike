@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.63 2004/09/14 10:40:07 mast Exp $
+// $Id: client.pike,v 1.64 2004/10/14 00:20:47 bill Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.63 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.64 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -403,8 +403,7 @@ import SSL.Constants;
       });
     }
 #endif
- 
-    if(!(::connect(lauth->host, lauth->port))) {
+    if(!(low_fd->connect(lauth->host, lauth->port))) {
       //errno = ldapfd->errno();
       seterr (LDAP_SERVER_DOWN);
       DWRITE("client.create: ERROR: can't open socket.\n");
@@ -419,16 +418,16 @@ import SSL.Constants;
 #if constant(SSL.Cipher.CipherAlgorithm)
     if(lauth->scheme == "ldaps") {
       context->random = Crypto.Random.random_string;
-      ::create(SSL.sslfile(this, context, 1,1));
+      ::create(SSL.sslfile(low_fd, context, 1,1));
       info->tls_version = ldapfd->version;
     } else
-      ::create(::_fd);
+      ::create(low_fd);
 #else
     if(lauth->scheme == "ldaps") {
 	THROW(({"LDAP: LDAPS is not available without SSL support.\n",backtrace()}));
     }
     else
-      ::create(::_fd);
+      ::create(low_fd);
 #endif
 
     DWRITE("client.create: connected!\n");
@@ -462,7 +461,73 @@ import SSL.Constants;
     return do_op(msgval);
   }
 
-  //! @decl int bind()
+  private mixed send_starttls_op(object|void context) {
+
+    object msgval;
+#if constant(SSL.Cipher.CipherAlgorithm)
+
+    // can we do this now?
+    if(ldapfd->context) 
+    {
+      THROW(({"LDAP: TLS/SSL already established.\n",backtrace()}));
+    }
+
+    // NOTE: should we be on the lookout for requests in flight?
+
+    
+
+    msgval = ASN1_APPLICATION_SEQUENCE(23, ({Standards.ASN1.Types.OctetString("1.3.6.1.4.1.1466.20037")}));
+
+    do_op(msgval);
+    int result = ASN1_DECODE_RESULTCODE(readbuf);
+    if(result!=0) return 0;
+    // otherwise, we can try to negotiate.
+      if(!context)
+      {
+        context = SSL.context();
+        // Allow only strong crypto
+        context->preferred_suites = ({
+  	  SSL_rsa_with_idea_cbc_sha,
+ 	  SSL_rsa_with_rc4_128_sha,
+	  SSL_rsa_with_rc4_128_md5,
+	  SSL_rsa_with_3des_ede_cbc_sha,
+        });
+      }
+    object _f = ldapfd;
+    ldapfd=SSL.sslfile(_f, context, 1, 1);
+    return 1;
+#endif
+  return 0;    
+  }
+
+  //!  Requests that a SSL/TLS session be negotiated on the connection.
+  //!  If the connection is already secure, this call will fail.
+  //!
+  //!  @param context
+  //!    an optional SSL.context object to provide to the 
+  //!    SSL/TLS connection client.
+  //!  
+  //!  Returns @expr{1@} on success, @expr{0@} otherwise.
+  //!
+  int start_tls (void|SSL.context context) {
+
+    int id;
+    mixed raw;
+    if(ldap_version < 3)
+    {
+      seterr (LDAP_PROTOCOL_ERROR);
+      THROW(({"LDAP: Unknown/unsupported protocol version.\n",backtrace()}));
+      return -ldap_errno;
+    }
+    if(intp(raw = send_starttls_op(context||UNDEFINED))) {
+      THROW(({error_string()+"\n",backtrace()}));
+      return -ldap_errno;
+    }
+
+    return 1;
+  } // start_tls
+
+   //! @decl int bind()
   //! @decl int bind(string dn, string password)
   //! @decl int bind(string dn, string password, int version)
   //!
@@ -493,7 +558,7 @@ import SSL.Constants;
   //!
   //! @note
   //!   The API change: the returning code was changed in Pike 7.3+
-  //!	to follow his logic better.
+  //!   to follow his logic better.
   int bind (string|void dn, string|void password, int|void version) {
 
     int id;
@@ -528,6 +593,7 @@ import SSL.Constants;
    return binded;
 
   } // bind
+
 
   private int send_unbind_op() {
   // UNBIND operation

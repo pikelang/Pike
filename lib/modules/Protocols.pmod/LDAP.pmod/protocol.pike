@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.14 2004/06/18 13:05:50 grubba Exp $
+// $Id: protocol.pike,v 1.15 2004/10/14 00:20:48 bill Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -27,8 +27,6 @@
 
 #include "ldap_errors.h"
 
-  inherit Stdio.File : ldap;
-
   // private variables 
   int next_id = 1;				// message id counter
   int ldap_version = LDAP_DEFAULT_VERSION;	// actually used protocol vers.
@@ -44,6 +42,7 @@
   array extra_args;				// not used, yet
 //  /*private*/ int errno;
   int connected = 0;
+  object low_fd = Stdio.File();			// helper fd
   object ldapfd;			// helper fd
 
   int seterr(int errno) {
