@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.175 1999/07/27 19:19:52 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.176 1999/07/27 19:44:36 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4345,8 +4345,6 @@ void f_filter(INT32 args)
 	 return;
 
       case T_MULTISET:
-	 /* multiset ret =                             
-	       (multiset)(map(indices(arr),fun,@extra)); */
 	 push_svalue(sp-args);      /* take indices from arr */
 	 free_svalue(sp-args-1);    /* move it to top of stack */
 	 sp[-args-1].type=T_INT;    
@@ -4359,8 +4357,6 @@ void f_filter(INT32 args)
 	 return;
 
       case T_STRING:
-	 /* multiset ret =                             
-	       (string)(map((array)arr,fun,@extra)); */
 	 push_svalue(sp-args);      /* take indices from arr */
 	 free_svalue(sp-args-1);    /* move it to top of stack */
 	 sp[-args-1].type=T_INT;    
@@ -4372,11 +4368,6 @@ void f_filter(INT32 args)
 	 return;
 
       case T_OBJECT:
-	 /* if arr->cast :              
-               try map((array)arr,fun,@extra);
-               try map((mapping)arr,fun,@extra);
-               try map((multiset)arr,fun,@extra); */
-
 	 mysp=sp+3-args;
 
 	 push_svalue(mysp-3);
@@ -4428,6 +4419,87 @@ void f_filter(INT32 args)
 	 SIMPLE_BAD_ARG_ERROR("filter",1,
 			      "array|mapping|program|function|"
 			      "multiset|string|object");
+   }
+}
+
+void f_enumerate(INT32 args)
+{
+   struct array *d;
+   int i,n;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("enumarate", 1);
+   if (args<2) 
+   {
+      push_int(1);
+      args++;
+   }
+   if (args<3)
+   {
+      push_int(0);
+      args++;
+   }
+
+   if (sp[1-args].type==T_INT &&
+       sp[2-args].type==T_INT)
+   {
+      int step,start;
+
+      get_all_args("enumerate",args,"%i%i%i",&n,&step,&start);
+      if (n<0) 
+	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+
+      pop_n_elems(args);
+      push_array(d=allocate_array(n));
+      for (i=0; i<n; i++)
+      {
+	 d->item[i].u.integer=start;
+	 d->item[i].type=T_INT;
+	 d->item[i].subtype=NUMBER_NUMBER;
+	 start+=step;
+      }
+   }
+   else if ((sp[1-args].type==T_INT ||
+	     sp[1-args].type==T_FLOAT) &&
+	    (sp[2-args].type==T_INT ||
+	     sp[2-args].type==T_FLOAT) )
+   {
+      float step,start;
+
+      get_all_args("enumerate",args,"%i%F%F",&n,&step,&start);
+      if (n<0) 
+	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+
+      pop_n_elems(args);
+
+      push_array(d=allocate_array(n));
+      for (i=0; i<n; i++)
+      {
+	 d->item[i].u.float_number=start;
+	 d->item[i].type=T_FLOAT;
+	 start+=step;
+      }
+   }
+   else
+   {
+      get_all_args("enumerate",args,"%i",&n);
+      if (args>3) pop_n_elems(args-3);
+      if (n<0) 
+	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+			      
+      push_array(d=allocate_array(n));
+      push_svalue(sp-2); /* start */
+      for (i=0; i<n; i++)
+      {
+	 assign_svalue_no_free(d->item+i,sp-1);
+	 if (i<n-1)
+	 {
+	    push_svalue(sp-4); /* step */
+	    f_add(2);
+	 }
+      }
+      pop_stack();
+      stack_pop_n_elems_keep_top(3);
    }
 }
 
@@ -4808,6 +4880,16 @@ void init_builtin_efuns(void)
 			tMixed,tVar(1)),
 		 tFuncV(tOr(tProgram,tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
+	   OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("enumerate",f_enumerate,
+	   tOr7(tFunc(tIntPos,tArr(tInt)),
+		tFunc(tIntPos tInt,tArr(tInt)),
+		tFunc(tIntPos tInt tOr(tVoid,tInt),tArr(tInt)),
+		tFunc(tIntPos tFloat tOr3(tVoid,tInt,tFloat),tArr(tFloat)),
+		tFunc(tIntPos tOr(tInt,tFloat) tFloat,tArr(tFloat)),
+		tFunc(tIntPos tMix tObj,tArr(tMix)),
+		tFunc(tIntPos tObj tOr(tVoid,tMix),tArr(tMix))),
 	   OPT_TRY_OPTIMIZE);
 		
 
