@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.29 2004/04/08 13:59:59 grubba Exp $ */
+/* $Id: socktest.pike,v 1.30 2004/04/09 16:45:23 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -16,6 +16,7 @@ import String;
 
 void fd_fail()
 {
+#if constant(Stdio.get_all_active_fd)
   array(int) fds = sort(Stdio.get_all_active_fd());
 
   if (sizeof(fds)) {
@@ -38,6 +39,7 @@ void fd_fail()
     }
     werror("\n");
   }
+#endif /* constant(Stdio.get_all_active_fd) */
   exit(1);
 }
 
@@ -64,6 +66,7 @@ class Socket {
     if(input_finished && output_finished)
     {
       finish();
+      //werror("Closing fd:%O\n", query_fd());
       close();
       destruct(this_object());
     }
@@ -72,6 +75,7 @@ class Socket {
   void close_callback()
   {
     int err=errno();
+    //werror("close_callback[%O]\n", query_fd());
     got_callback();
     if(input_buffer != expected_data)
     {
@@ -100,9 +104,11 @@ class Socket {
   void write_callback()
   {
     got_callback();
+    //werror("write_callback[%O]: output_buffer: %O\n", query_fd(), output_buffer);
     if(sizeof(output_buffer))
     {
       int tmp=write(output_buffer);
+      //werror("write_callback(): Wrote %d bytes.\n", tmp, output_buffer);
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
@@ -121,6 +127,7 @@ class Socket {
   void read_callback(mixed id, string foo)
   {
     got_callback();
+    //werror("read_callback[%O]: Got %O\n", query_fd(), foo);
     input_buffer+=foo;
   }
 
@@ -216,6 +223,7 @@ int oob_sent;
 
 void send_oob0()
 {
+  //werror("S");
   got_callback();
   expected = sprintf("%c", random(256));
   oob_originator->write_oob(expected);
@@ -225,6 +233,7 @@ void send_oob0()
 
 void got_oob1(mixed ignored, string got)
 {
+  //werror("G");
   got_callback();
   if (got != expected) {
     werror(sprintf("loopback: Received unexpected oob data "
@@ -237,6 +246,7 @@ void got_oob1(mixed ignored, string got)
 
 void send_oob1()
 {
+  //werror("s");
   got_callback();
   oob_loopback->write_oob(expected);
   oob_loopback->set_write_oob_callback(0);
@@ -245,6 +255,7 @@ void send_oob1()
 
 void got_oob0(mixed ignored, string got)
 {
+  //werror("s");
   got_callback();
   if (got != expected) {
     werror(sprintf("loopback: Received unexpected oob data "
@@ -503,14 +514,18 @@ int main()
 
 #if constant(fork)
   werror("\nForking...");
-  object pid = fork();
-  if (pid) {
+  object pid;
+  if (catch { pid = fork(); }) {
+    werror(" failed.");
+  } else if (pid) {
     int res = pid->wait();
     if (res) {
       werror("\nChild failed with errcode %d\n", res);
       exit(res);
     }
     werror("\nRunning in parent...");
+  } else {
+    werror(" ok.");
   }
 #endif /* constant(fork) */
 
