@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.26 1997/10/16 06:34:26 hubbe Exp $");
+RCSID("$Id: object.c,v 1.27 1997/10/17 02:31:40 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -670,7 +670,7 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
   if(a->prog)
   {
     int e;
-    for(e=0;e<(int)a->prog->num_identifiers;e++)
+    for(e=0;e<(int)a->prog->num_identifier_references;e++)
     {
       struct identifier *i;
       i=ID_FROM_INT(a->prog, e);
@@ -836,22 +836,26 @@ void gc_check_all_objects(void)
   {
     if(o->prog)
     {
-      INT32 e;
-
-      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      INT32 e,d;
+      
+      for(e=0;e<(int)o->prog->num_inherits;e++)
       {
-	struct identifier *i;
-	
-	i=ID_FROM_INT(o->prog, e);
-	
-	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags)) continue;
-	
-	if(i->run_time_type == T_MIXED)
+	struct inherit in=o->prog->inherits[e];
+	char *base=o->storage + in.storage_offset;
+	for(d=0;d<in.prog->num_identifiers;d++)
 	{
-	  debug_gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1, T_OBJECT, o);
-	}else{
-	  debug_gc_check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
-				      i->run_time_type, T_OBJECT,o);
+	  struct identifier *i=in.prog->identifiers+d;
+
+	  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags)) continue;
+	
+	  if(i->run_time_type == T_MIXED)
+	  {
+	    debug_gc_check_svalues((struct svalue *)(base+i->func.offset),1, T_OBJECT, o);
+	  }else{
+	    debug_gc_check_short_svalue((union anything *)
+					(base+i->func.offset),
+					i->run_time_type, T_OBJECT,o);
+	  }
 	}
       }
     }

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.44 1997/10/16 06:34:27 hubbe Exp $");
+RCSID("$Id: program.c,v 1.45 1997/10/17 02:31:41 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -534,11 +534,12 @@ void check_program(struct program *p)
   {
     if(p->identifier_references[e].inherit_offset > p->num_inherits)
       fatal("Inherit offset is wrong!\n");
-
+    
     if(p->identifier_references[e].identifier_offset >
        p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers)
       fatal("Identifier offset is wrong!\n");
   }
+    
 
   for(e=0;e<(int)p->num_identifier_indexes;e++)
   {
@@ -548,8 +549,56 @@ void check_program(struct program *p)
 
   for(e=0;e<(int)p->num_inherits;e++)
   {
+    struct program *tmp_prog=p->inherits[e].prog;
+    INT32 d;
+
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
+
+    for(d=0;d<(int)tmp_prog->num_identifiers;d++)
+    {
+      struct identifier *id=tmp_prog->identifiers+d;
+
+      if(IDENTIFIER_IS_VARIABLE(id->identifier_flags))
+      {
+	INT32 offset,size,e2;
+	offset=p->inherits[e].storage_offset + id->func.offset;
+	size=id->run_time_type == T_MIXED ? sizeof(struct svalue) : sizeof(union anything);
+
+	if(offset < 0 || offset+size > p->storage_needed)
+	  fatal("Variable located outside allocated space.\n");
+
+
+	for(e2=0;e2<(int)p->num_inherits;e2++)
+	{
+	  struct program *tmp_prog2=p->inherits[e2].prog;
+	  INT32 d2;
+
+	  for(d2=0;d2<(int)tmp_prog2->num_identifiers;d2++)
+	  {
+	    struct identifier *id2=tmp_prog2->identifiers+d2;
+
+	    if(e==e2 && d==d2) continue;
+
+	    if(IDENTIFIER_IS_VARIABLE(id2->identifier_flags))
+	    {
+	      INT32 offset2,size2;
+
+	      offset2=p->inherits[e2].storage_offset + id2->func.offset;
+	      size2=id2->run_time_type == T_MIXED ? sizeof(struct svalue) : sizeof(union anything);
+	      if( (offset > offset2) ?
+		  (offset2+size2 > offset) : 
+		  (offset+size > offset2))
+	      {
+		fatal("Variable %s (%ld+%ld) and %s (%ld+%ld) overlap.\n",
+		      id->name->str, (long)offset, (long)size,
+		      id2->name->str, (long)offset2, (long)size2);
+	      }
+	    }
+	  }
+	}
+      }
+    }
   }
 }
 #endif
@@ -1736,6 +1785,7 @@ void gc_check_all_programs(void)
   {
     debug_gc_check_svalues(p->constants, p->num_constants, T_PROGRAM, p);
 
+#ifdef DEBUG
     if(d_flag)
     {
       int e;
@@ -1748,6 +1798,7 @@ void gc_check_all_programs(void)
 	gc_check(p->identifiers[e].type);
       }
     }
+#endif
   }
 }
 

@@ -149,11 +149,49 @@ static void *found_in=0;
 static TYPE_T found_in_type=0;
 void *gc_svalue_location=0;
 
+void describe_location(void *memblock, TYPE_T type, void *location)
+{
+  fprintf(stderr,"**Location of (short) svalue: %p\n",location);
+  if(type==T_OBJECT)
+  {
+    struct object *o=(struct object *)memblock;
+    if(o->prog)
+    {
+      INT32 e,d;
+      for(e=0;e<o->prog->num_inherits;e++)
+      {
+	struct inherit tmp=o->prog->inherits[e];
+	char *base=o->storage + tmp.storage_offset;
+
+	for(d=0;d<tmp.prog->num_identifiers;d++)
+	{
+	  struct identifier *id=tmp.prog->identifiers+d;
+	  if(!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) continue;
+
+	  if(location == (void *)(base + id->func.offset))
+	  {
+	    fprintf(stderr,"**In variable %s\n",id->name->str);
+	  }
+	}
+      }
+    }
+    return;
+  }
+
+  if(type == T_ARRAY)
+  {
+    struct array *a=(struct array *)memblock;
+    struct svalue *s=(struct svalue *)location;
+    fprintf(stderr,"**In index %ld\n",(long)(s-ITEM(a)));
+    return;
+  }
+}
+
 static void gdb_gc_stop_here(void *a)
 {
   fprintf(stderr,"**One ref found%s.\n",found_where);
-  fprintf(stderr,"**Location of (short) svalue: %p\n",gc_svalue_location);
   describe_something(found_in, found_in_type);
+  describe_location(found_in, found_in_type, gc_svalue_location);
 }
 
 TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data)
@@ -194,18 +232,28 @@ void describe_something(void *a, TYPE_T t)
       fprintf(stderr,"**Attempting to describe program object was instantiated from:\n");
       
     case T_PROGRAM:
+    {
+      char *tmp;
+      INT32 line,pos;
+
+      fprintf(stderr,"**Program id: %ld\n",(long)(p->id));
       if(!p->num_linenumbers)
       {
 	fprintf(stderr,"**The program was written in C.\n");
 	break;
       }
-      if(p->linenumbers[0]==127)
+
+      for(pos=0;pos<(long)p->program_size && pos<100;pos++)
       {
-	fprintf(stderr,"**The program may have been compiled from %s.\n",p->linenumbers+1);
-	break;
+	tmp=get_line(p->program+pos, p, &line);
+	if(tmp && line)
+	{
+	  fprintf(stderr,"**Location: %s:%ld\n",tmp,(long)line);
+	  break;
+	}
       }
-      fprintf(stderr,"**No information available about this program.\n");
       break;
+    }
       
     case T_ARRAY:
       fprintf(stderr,"**Describing array:\n");
@@ -243,7 +291,7 @@ int gc_is_referenced(void *a)
     TYPE_T t=attempt_to_identify(a);
 
     fprintf(stderr,"**Something has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
-    describe_something(t, a);
+    describe_something(a, t);
 
     fprintf(stderr,"**Looking for references:\n");
     check_for=a;
