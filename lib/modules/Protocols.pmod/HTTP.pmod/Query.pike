@@ -177,15 +177,23 @@ static void ponder_answer()
 
 static void connect(string server,int port)
 {
+#ifdef HTTP_QUERY_DEBUG
+   werror("<- (connect %O:%d)\n",server,port);
+#endif
    if (catch { con->connect(server,port); })
    {
       if (!(errno=con->errno())) errno=22; /* EINVAL */
+#ifdef HTTP_QUERY_DEBUG
+      werror("<- (error %d)\n",errno);
+#endif
       destruct(con);
       con=0;
       ok=0;
       return;
    }
-
+#ifdef HTTP_QUERY_DEBUG
+   werror("<- %O\n",request);
+#endif
    con->write(request);
 
    ponder_answer();
@@ -199,6 +207,10 @@ static void async_close()
 
 static void async_read(mixed dummy,string s)
 {
+#ifdef HTTP_QUERY_DEBUG
+   werror("-> %O\n",s);
+#endif
+   
    buf+=s;
    if (-1!=search(buf,"\r\n\r\n")) 
    {
@@ -210,6 +222,9 @@ static void async_read(mixed dummy,string s)
 static void async_write()
 {
    con->set_blocking();
+#ifdef HTTP_QUERY_DEBUG
+   werror("<- %O\n",request);
+#endif
    con->write(request);
    con->set_nonblocking(async_read,0,async_close);
 }
@@ -217,6 +232,9 @@ static void async_write()
 static void async_connected()
 {
    con->set_nonblocking(async_read,async_write,async_close);
+#ifdef HTTP_QUERY_DEBUG
+   werror("<- %O\n","");
+#endif
    con->write("");
 }
 
@@ -274,6 +292,9 @@ void async_got_host(string server,int port)
 
 void async_fetch_read(mixed dummy,string data)
 {
+#ifdef HTTP_QUERY_DEBUG
+   werror("-> %O\n",data);
+#endif
    buf+=data;
 }
 
@@ -293,8 +314,9 @@ string headers_encode(mapping h)
    return Array.map( indices(h),
 		     lambda(string hname,mapping headers)
 		     {
-			if (stringp(headers[hname]))
-			   return String.capitalize(hname) + 
+			if (stringp(headers[hname]) ||
+			    intp(headers[hname]))
+			   return String.capitalize(replace(hname,"_","-")) + 
 			      ": " + headers[hname];
 		     }, h )*"\r\n" + "\r\n";
 }
@@ -422,7 +444,11 @@ object sync_request(string server,int port,string query,
 
       if (data!="") headers->content_length=strlen(data);
 
+      werror("headers is %O\n",headers);
+
       headers=headers_encode(headers);
+
+      werror("headers is:\n%s\n",headers);
    }
    
    request=query+"\r\n"+headers+"\r\n"+data;
