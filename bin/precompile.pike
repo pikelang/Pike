@@ -1418,8 +1418,11 @@ class ParseBlock
 	string define = make_unique_name("class", base, name, "defined");
 
 	ret+=DEFINE(define);
-	ret+=({sprintf("struct program *%s=0;\n"
-		       "int %s_fun_num=-1;\n",
+	// FIXME: The struct program variable should probably default
+	//        to being static.
+	//	/grubba 2004-10-23
+	ret+=({sprintf("struct program *%s=NULL;\n"
+		       "static int %s_fun_num=-1;\n",
 		       program_var, program_var)});
 	ret+=subclass->declarations;
 	ret+=subclass->code;
