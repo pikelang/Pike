@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.8 2004/01/11 00:41:16 nilsson Exp $
+// $Id: FakeFile.pike,v 1.9 2004/03/10 19:18:48 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -103,7 +103,7 @@ int(-1..1) peek(int|float|void timeout) {
 //! Always returns 0.
 //! @seealso
 //!   @[Stdio.File()->query_address()]
-int(0..0) query_address(void|int(0..1) is_local) { return 0; }
+string query_address(void|int(0..1) is_local) { return 0; }
 
 //! @seealso
 //!   @[Stdio.File()->read()]
