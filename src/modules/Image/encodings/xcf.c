@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.13 2000/02/08 03:39:19 per Exp $");
+RCSID("$Id: xcf.c,v 1.14 2000/04/10 21:58:23 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -273,10 +273,8 @@ static void free_level( struct level *l )
   struct tile *t;
   while( (t = l->first_tile) )
   {
-    struct tile *n;
-    n = t->next;
+    l->first_tile = t->next;
     free(t);
-    l->first_tile = n;
   }
 }
 
@@ -286,10 +284,8 @@ static void free_layer_mask( struct layer_mask *l )
 
   while( (p = l->first_property) )
   {
-    struct property *n;
-    n = p->next;
+    l->first_property = p->next;
     free(p);
-    l->first_property = n;
   }
   free_level( &l->image_data.level );
 }
@@ -301,10 +297,8 @@ static void free_layer( struct layer *l )
 
   while( (p = l->first_property) )
   {
-    struct property *n;
-    n = p->next;
+    l->first_property = p->next;
     free(p);
-    l->first_property = n;
   }
   if(l->mask)
   {
@@ -320,10 +314,8 @@ static void free_channel( struct channel *l )
 
   while( (p = l->first_property) )
   {
-    struct property *n;
-    n = p->next;
+    l->first_property = p->next;
     free(p);
-    l->first_property = n;
   }
   free_level( &l->image_data.level );
 }
@@ -333,20 +325,23 @@ static void free_image( struct gimp_image *i )
 {
   struct property *p;
   struct layer *l;
+  struct channel *c;
   while( (p = i->first_property) )
   {
-    struct property *n;
-    n = p->next;
+    i->first_property = p->next;
     free(p);
-    i->first_property = n;
   }
   while( (l = i->first_layer) )
   {
-    struct layer *n;
-    n = l->next;
+    i->first_layer = l->next;
     free_layer( l );
     free( l );
-    i->first_layer = n;
+  }
+  while( (c = i->first_channel) )
+  {
+    i->first_channel = c->next;
+    free_channel(c);
+    free(c);
   }
 }
 
