@@ -935,7 +935,7 @@ class ParseException
   {
     switch (i) {
       case 0:
-	return "ParseException: " +message+"\n";
+	return "ParseException: " + sysid + ":" + loc + ": " + message+"\n";
       case 1:
 	return backtrace;
     }
@@ -1027,7 +1027,7 @@ class AbstractDOMParser
 
   static void parse_callback(string ty, string name, mapping attributes,
 			     array|string contents, mapping info,
-			     string sysid, string|void pubid)
+			     InputSource input)
   {
     switch(ty) {
      case "<!--":
@@ -1068,12 +1068,12 @@ class AbstractDOMParser
      case "<!NOTATION":
        break;
      case "error":
-       throw(ParseException(contents, sysid, pubid, info->location));
+       throw(ParseException(contents, input->get_system_id(),
+			    input->get_public_id(), info->location));
     }
   }
 
-  static void _parse(string data, function cb,
-		     string|void sysid, string|void pubid);
+  static void _parse(string data, function cb, InputSource input);
 
   void parse(InputSource|string source)
   {
@@ -1081,8 +1081,7 @@ class AbstractDOMParser
       source = InputSource(source);
     current_node = document = create_document(source);
     node_stack = ({});
-    _parse(source->get_data(), parse_callback,
-	   source->get_system_id(), source->get_public_id());
+    _parse(source->get_data(), parse_callback, source);
   }
 }
 
@@ -1090,9 +1089,28 @@ class NonValidatingDOMParser
 {
   inherit AbstractDOMParser;
   static inherit Parser.XML.Simple : xml;
-  static void _parse(string data, function cb,
-		     string|void sysid, string|void pubid)
+  static void _parse(string data, function cb, InputSource input)
   {
-    xml::parse(data, cb, sysid, pubid);
+    xml::parse(data, cb, input);
   }
 }
+
+#if constant(Parser.XML.Validating)
+class DOMParser
+{
+  inherit AbstractDOMParser;
+  static inherit Parser.XML.Validating : xml;
+
+  string get_external_entity(string sysid, string|void pubid,
+			     InputSource input)
+  {
+    return InputSource(combine_path(combine_path(input->get_system_id(), ".."),
+				    sysid))->get_data();
+  }
+
+  static void _parse(string data, function cb, InputSource input)
+  {
+    xml::parse(data, cb, input);
+  }
+}
+#endif
