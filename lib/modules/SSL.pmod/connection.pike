@@ -1,9 +1,7 @@
-#pike __REAL_VERSION__
+//
+// $Id: connection.pike,v 1.27 2003/03/07 17:44:02 nilsson Exp $
 
-/* $Id: connection.pike,v 1.26 2003/01/27 15:03:00 nilsson Exp $
- *
- * SSL packet layer
- */
+#pike __REAL_VERSION__
 
 //! SSL packet layer.
 //! SSL.connection inherits SSL.handshake, and in addition to the state in
@@ -12,10 +10,10 @@
 //! sending packets, processing handshake packets, and providing a clear
 //! text packages for some application.
 
-object current_read_state;
-object current_write_state;
+.state current_read_state;
+.state current_write_state;
 string left_over;
-object packet;
+Packet packet;
 
 int dying;
 int closing;
