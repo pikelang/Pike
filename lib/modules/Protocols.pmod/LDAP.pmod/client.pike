@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.80 2005/03/13 13:21:17 mast Exp $
+// $Id: client.pike,v 1.81 2005/03/14 16:07:23 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -86,6 +86,7 @@ import Protocols.LDAP;
 // ASN.1 decode macros
 
 #define ASN1_GET_RESULTAPP(X)           ((X)->elements[1]->get_tag())
+#define ASN1_GET_DN(X)			((X)->elements[0]->value)
 #define ASN1_GET_ATTR_ARRAY(X)		(sizeof ((X)->elements) > 1 &&	\
 					 (array) ((X)->elements[1]->elements))
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
@@ -95,7 +96,6 @@ import Protocols.LDAP;
 #define ASN1_DECODE_RESULTCODE(X)	(int)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value->cast_to_int())
 #define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[2]->value)
 #define ASN1_DECODE_RESULTREFS(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[3]->elements)
-#define ASN1_DECODE_DN(X)		utf8_to_string ((X)->elements[0]->value)
 #define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
 
  //! Contains the client implementation of the LDAP protocol.
@@ -177,11 +177,11 @@ static function(string:string) get_attr_encoder (string attr)
     {
       array(mapping(string:array(string))) res = ({});
 
-#define DECODE_ENTRIES(SET_ATTR) do {					\
+#define DECODE_ENTRIES(SET_DN, SET_ATTR) do {				\
 	foreach (rawres, string rawent) {				\
 	  object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
 	  if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
-	    mapping(string:array) attrs = (["dn": ({ASN1_DECODE_DN (derent)})]); \
+	    mapping(string:array) attrs = (["dn": ({SET_DN})]);		\
 	    foreach (derattribs, object derattr)			\
 	      {SET_ATTR;}						\
 	    res += ({attrs});						\
@@ -192,15 +192,15 @@ static function(string:string) get_attr_encoder (string attr)
       if (ldap_version < 3) {
 	// Use the values raw.
 	if (flags & SEARCH_LOWER_ATTRS)
-	  DECODE_ENTRIES ({
-	    attrs[lower_case (ASN1_GET_ATTR_NAME (derattr))] =
-	      ASN1_GET_ATTR_VALUES (derattr);
-	  });
+	  DECODE_ENTRIES (ASN1_GET_DN (derent), {
+	      attrs[lower_case (ASN1_GET_ATTR_NAME (derattr))] =
+		ASN1_GET_ATTR_VALUES (derattr);
+	    });
 	else
-	  DECODE_ENTRIES ({
-	    attrs[ASN1_GET_ATTR_NAME (derattr)] =
-	      ASN1_GET_ATTR_VALUES (derattr);
-	  });
+	  DECODE_ENTRIES (ASN1_GET_DN (derent), {
+	      attrs[ASN1_GET_ATTR_NAME (derattr)] =
+		ASN1_GET_ATTR_VALUES (derattr);
+	    });
       }
 
       else {
@@ -209,21 +209,21 @@ static function(string:string) get_attr_encoder (string attr)
 	// won't be matched by get_attr_type_descr and are therefore
 	// left untouched.
 	if (flags & SEARCH_LOWER_ATTRS)
-	  DECODE_ENTRIES ({
-	    string attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
-	    if (function(string:string) decoder = get_attr_decoder (attr))
-	      attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
-	    else
-	      attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
-	  });
+	  DECODE_ENTRIES (utf8_to_string (ASN1_GET_DN (derent)), {
+	      string attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
+	      if (function(string:string) decoder = get_attr_decoder (attr))
+		attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
+	      else
+		attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
+	    });
 	else
-	  DECODE_ENTRIES ({
-	    string attr = ASN1_GET_ATTR_NAME (derattr);
-	    if (function(string:string) decoder = get_attr_decoder (attr))
-	      attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
-	    else
-	      attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
-	  });
+	  DECODE_ENTRIES (utf8_to_string (ASN1_GET_DN (derent)), {
+	      string attr = ASN1_GET_ATTR_NAME (derattr);
+	      if (function(string:string) decoder = get_attr_decoder (attr))
+		attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
+	      else
+		attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
+	    });
       }
 
 #undef DECODE_ENTRIES
@@ -482,7 +482,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.80 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.81 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
