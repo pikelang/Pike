@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.195 2002/01/16 02:54:15 nilsson Exp $");
+RCSID("$Id: object.c,v 1.196 2002/01/27 18:26:37 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -449,11 +449,12 @@ PMOD_EXPORT struct object *get_master(void)
     char *tmp;
     struct stat stat_buf;
 
-    if(!simple_mapping_string_lookup(get_builtin_constants(),
+    if(!get_builtin_constants() ||
+       !simple_mapping_string_lookup(get_builtin_constants(),
 				     "_static_modules"))
     {
-      fprintf(stderr,"Cannot load master object yet!\n");
-      return 0; /* crash? */
+      /* fprintf(stderr,"Cannot load master object yet!\n"); */
+      return 0;
     }
 
     /* fprintf(stderr, "Master file: \"%s\"\n", master_file); */
