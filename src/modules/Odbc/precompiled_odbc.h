@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.9 1999/04/08 23:35:32 marcus Exp $
+ * $Id: precompiled_odbc.h,v 1.10 2000/08/04 11:32:54 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -75,7 +75,7 @@ struct precompiled_odbc_result {
   struct precompiled_odbc *odbc;
   HSTMT hstmt;
   SWORD num_fields;
-  SDWORD num_rows;
+  SQLLEN num_rows;
   struct array *fields;
   struct field_info *field_info;
 };

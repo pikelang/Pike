@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.19 2000/07/28 07:13:58 hubbe Exp $
+ * $Id: odbc_result.c,v 1.20 2000/08/04 11:32:43 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.19 2000/07/28 07:13:58 hubbe Exp $");
+RCSID("$Id: odbc_result.c,v 1.20 2000/08/04 11:32:43 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -138,7 +138,7 @@ static void odbc_fix_fields(void)
     int nbits;
     SWORD name_len;
     SWORD sql_type;
-    UDWORD precision;
+    SQLULEN precision;
     SWORD scale;
     SWORD nullable;
 
@@ -148,12 +148,12 @@ static void odbc_fix_fields(void)
 				      buf, buf_size, &name_len,
 				      &sql_type, &precision, &scale, &nullable),
 		       0);
-      if (name_len < (int)buf_size) {
+      if (name_len < (ptrdiff_t)buf_size) {
 	break;
       }
       do {
 	buf_size *= 2;
-      } while (name_len >= (int)buf_size);
+      } while (name_len >= (ptrdiff_t)buf_size);
       if (!(buf = alloca(buf_size))) {
 	error("odbc_fix_fields(): Out of memory\n");
       }
@@ -368,7 +368,7 @@ static void f_fetch_row(INT32 args)
 	/* BLOB */
 	int num_strings = 0;
 	char buf[BLOB_BUFSIZ+1];
-	SDWORD len = 0;
+	SQLLEN len = 0;
 
 	while(1) {
 	  code = SQLGetData(PIKE_ODBC_RES->hstmt, i+1,
