@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.263 2005/04/06 19:09:45 grubba Exp $
+|| $Id: gc.c,v 1.264 2005/04/06 19:18:25 grubba Exp $
 */
 
 #include "global.h"
@@ -442,7 +442,9 @@ void describe_location(void *real_memblock,
 	fprintf(stderr,"%*s  **In p->constants[%"PRINTPTRDIFFT"d] (%s)\n",indent,"",
 		e, p->constants[e].name ? p->constants[e].name->str : "no name");
 #else /* !0 */
-	fprintf(stderr,"%*s  **In p->constants[%"PRINTPTRDIFFT"d] (%d)\n",indent,"",
+	fprintf(stderr,"%*s  **In p->constants[%"PRINTPTRDIFFT"d] "
+		"(%"PRINTPTRDIFFT"d)\n",
+		indent,"",
 		e, p->constants[e].offset);
 #endif /* 0 */
 	break;
@@ -847,7 +849,7 @@ again:
 
 	fprintf(stderr,"%*s**Describing program %p of object:\n",indent,"", p);
 #ifdef DEBUG_MALLOC
-	if ((int) p == 0x55555555)
+	if ((INT32)(ptrdiff_t) p == 0x55555555)
 	  fprintf(stderr, "%*s**Zapped program pointer.\n", indent, "");
 	else
 #endif
@@ -1001,7 +1003,7 @@ again:
       {
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
       fprintf(stderr, "%*s* " #NAME " %p[%"PRINTSIZET"u]\n", \
-              indent, "", p->NAME, p->PIKE_CONCAT(num_,NAME));
+              indent, "", p->NAME, (size_t)p->PIKE_CONCAT(num_,NAME));
 #include "program_areas.h"
       }
 
@@ -1060,8 +1062,10 @@ again:
     case T_STRING:
     {
       struct pike_string *s=(struct pike_string *)a;
-      fprintf(stderr,"%*s**size_shift: %d, len: %"PRINTPTRDIFFT"d, hash: %"PRINTSIZET"x\n",
-	      indent,"", s->len, s->size_shift, s->hval);
+      fprintf(stderr,"%*s**size_shift: %d, "
+	      "len: %"PRINTPTRDIFFT"d, "
+	      "hash: %"PRINTSIZET"x\n",
+	      indent,"", s->size_shift, s->len, s->hval);
       if (!s->size_shift && s->refs > 0) {
 	if(s->len>77)
 	{
@@ -1134,7 +1138,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags,
   d_flag=0;
 
 #ifdef DEBUG_MALLOC
-  if (((int)a) == 0x55555555) {
+  if (((INT32)(ptrdiff_t)a) == 0x55555555) {
     fprintf(stderr,"%*s**Block: %p  Type: %s  Zapped pointer\n",indent,"",a,
 	    get_name_of_type(t));
   } else
@@ -3240,7 +3244,7 @@ size_t do_gc(void *ignored, int explicit_call)
 	timestr[0] = 0;
 #ifdef DO_PIKE_CLEANUP
       if (gc_destruct_everything)
-	fprintf(stderr, "done (%"PRINTSIZET"d was destructed)%s\n",
+	fprintf(stderr, "done (%u was destructed)%s\n",
 		destroy_count, timestr);
       else
 #endif
