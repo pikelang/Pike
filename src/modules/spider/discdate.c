@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: discdate.c,v 1.14 2002/10/21 17:06:26 marcus Exp $
+|| $Id: discdate.c,v 1.15 2003/06/02 21:07:06 nilsson Exp $
 */
 
 /* DiscDate.C .. converts boring normal dates to fun Discordian Date -><-
@@ -31,7 +31,7 @@
 #include <stdio.h>
 
 
-RCSID("$Id: discdate.c,v 1.14 2002/10/21 17:06:26 marcus Exp $");
+RCSID("$Id: discdate.c,v 1.15 2003/06/02 21:07:06 nilsson Exp $");
 
 struct disc_time
 {
@@ -50,25 +50,23 @@ static struct disc_time convert(int,int);
 
 /*! @decl string discdate(int time)
  */
-void f_discdate(INT32 argc) 
+void f_discdate(INT32 args)
 {
   time_t t;
   int bob,raw;
   struct disc_time hastur;
-  if (argc != 1) 
-  {
-    Pike_error("Error: discdate(time)");
-    exit(1);
-  } else {
+  if (args != 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("discdate",1);
+  else {
     struct tm *eris;
-    t=Pike_sp[-argc].u.integer;
+    t=Pike_sp[-args].u.integer;
     eris=localtime(&t);
     if (!eris) Pike_error ("localtime() failed to convert %ld\n", (long) t);
     bob=eris->tm_yday;		/* days since Jan 1. */
     raw=eris->tm_year;		/* years since 1980 */
     hastur=convert(bob,raw);
   }
-  pop_n_elems(argc);
+  pop_n_elems(args);
   print(hastur);
 }
 
