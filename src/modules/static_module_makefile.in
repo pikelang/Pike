@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.34 1998/06/18 00:44:16 grubba Exp $
+# $Id: static_module_makefile.in,v 1.35 1998/07/09 01:40:02 hubbe Exp $
 #
 
 
@@ -24,7 +24,7 @@ dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 
 linker_options: Makefile $(MODULE_ARCHIVES)
 	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS)
-	for a in '' $(MODULE_ARCHIVES) ; do \
+	@for a in '' $(MODULE_ARCHIVES) ; do \
 	  if test "x$$a" = "x"; then :; else \
 	    case "$$a" in \
 	      /*) \
