@@ -80,6 +80,7 @@ testfont binary
 /lib/modules/Stdio.pmod/Terminfo.pmod foreign_ident
 /lib/modules/Stdio.pmod/module.pmod foreign_ident
 /lib/modules/Yabu.pmod/module.pmod foreign_ident
+/lib/modules/_Image.pmod/module.pmod foreign_ident
 /lib/modules/error.pmod foreign_ident
 /man/hilfe.1 foreign_ident
 /man/pike.1 foreign_ident
