@@ -35,6 +35,7 @@ testfont binary
 /lib/modules/Crypto/des_cbc.pike foreign_ident
 /lib/modules/Crypto/idea_cbc.pike foreign_ident
 /lib/modules/Crypto/rsa.pike foreign_ident
+/lib/modules/Filesystem.pmod/Tar.pmod foreign_ident
 /lib/modules/LR.pmod/Grammar_parser.pmod foreign_ident
 /lib/modules/LR.pmod/item.pike foreign_ident
 /lib/modules/LR.pmod/lr.pike foreign_ident
