@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.17 2001/06/25 12:21:30 noy Exp $
+/* $Id: connection.pike,v 1.18 2001/08/25 18:26:44 noy Exp $
  *
  * SSL packet layer
  */
@@ -58,10 +58,10 @@ static object recv_packet(string data)
   if (left_over || !packet)
   {
     packet = Packet(2048);
-    res = packet->recv( (left_over || "")  + data);
+    res = packet->recv( (left_over || "")  + data, version[1]);
   }
   else
-    res = packet->recv(data);
+    res = packet->recv(data,version[1]);
 
   if (stringp(res))
   { /* Finished a packet */
@@ -156,17 +156,18 @@ string|int to_write()
 
 void send_close()
 {
-  send_packet(Alert(ALERT_warning, ALERT_close_notify), PRI_application);
+  send_packet(Alert(ALERT_warning, ALERT_close_notify,version[1]), PRI_application);
 }
 
 int handle_alert(string s)
 {
   int level = s[0];
   int description = s[1];
+
   //FIXME  Include the TLS alerts in ALERT_levels and ALERT_descriptopns aswell!!
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,version[1],
 		      "SSL.connection->handle_alert: invalid alert\n", backtrace()));
     return -1;
   }
@@ -198,7 +199,7 @@ int handle_alert(string s)
     } else {
       send_packet(Alert(ALERT_fatal, ((certificate_state == CERT_requested)
 			       ? ALERT_handshake_failure
-				: ALERT_unexpected_message)));
+				: ALERT_unexpected_message),version[1]));
       return -1;
     }
   }
@@ -214,7 +215,7 @@ int handle_change_cipher(int c)
 #ifdef SSL3_DEBUG
     werror("SSL.connection: handle_change_cipher: Unexcepted message!");
 #endif
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,version[1]));
     return -1;
   }
   else
@@ -299,7 +300,7 @@ string|int got_data(string|int s)
 	 if (expect_change_cipher)
 	 {
 	   /* No change_cipher message was recieved */
-	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,version[1]));
 	   return -1;
 	 }
 	 mixed err;
@@ -326,7 +327,7 @@ string|int got_data(string|int s)
       case PACKET_application_data:
 	if (!handshake_finished)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,version[1]));
 	  return -1;
 	}
 	res += packet->fragment;

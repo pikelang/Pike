@@ -1,4 +1,4 @@
-/* $Id: packet.pike,v 1.7 2001/06/14 13:48:48 noy Exp $
+/* $Id: packet.pike,v 1.8 2001/08/25 18:26:45 noy Exp $
  *
  * SSL Record Layer
  */
@@ -30,11 +30,11 @@ void create(void|int extra)
   needed_chars = HEADER_SIZE;
 }
 
-object check_size(int|void extra)
+object check_size(int|void extra,int version)
 {
   marginal_size = extra;
   return (strlen(fragment) > (PACKET_MAX_SIZE + extra))
-    ? Alert(ALERT_fatal, ALERT_unexpected_message) : 0;
+    ? Alert(ALERT_fatal, ALERT_unexpected_message,version) : 0;
 }
 
 /* Called with data read from network.
@@ -43,7 +43,7 @@ object check_size(int|void extra)
  * If there's an error, an alert object is returned.
  */
 
-object|string recv(string data)
+object|string recv(string data,int version)
 {
 
 #ifdef SSL3_FRAGDEBUG
@@ -73,7 +73,7 @@ object|string recv(string data)
 	  content_type = PACKET_V2;
 	  if ( (!(buffer[0] & 0x80)) /* Support only short SSL2 headers */
 	       || (buffer[2] != 1))
-	    return Alert(ALERT_fatal, ALERT_unexpected_message);
+	    return Alert(ALERT_fatal, ALERT_unexpected_message,version);
 	  length = ((buffer[0] & 0x7f) << 8 | buffer[1]
 		    - 3);
 #ifdef SSL3_DEBUG
@@ -82,16 +82,16 @@ object|string recv(string data)
 	  protocol_version = values(buffer[3..4]);
 	}
 	else
-	  return Alert(ALERT_fatal, ALERT_unexpected_message,
+	  return Alert(ALERT_fatal, ALERT_unexpected_message,version,
 		       "SSL.packet->recv: invalid type\n", backtrace());
       } else {
 	protocol_version = values(buffer[1..2]);
 	sscanf(buffer[3..4], "%2c", length);
 	if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
-	  return Alert(ALERT_fatal, ALERT_unexpected_message);
+	  return Alert(ALERT_fatal, ALERT_unexpected_message,version);
       }
       if (protocol_version[0] != 3)
-	return Alert(ALERT_fatal, ALERT_unexpected_message,
+	return Alert(ALERT_fatal, ALERT_unexpected_message,version,
 		     sprintf("SSL.packet->send: Version %d is not supported\n",
 			     protocol_version[0]), backtrace());
 #ifdef SSL3_DEBUG

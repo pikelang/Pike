@@ -1,4 +1,4 @@
-/* $Id: state.pike,v 1.10 2001/06/25 15:41:29 noy Exp $
+/* $Id: state.pike,v 1.11 2001/08/25 18:26:45 noy Exp $
  *
  */
 
@@ -70,14 +70,14 @@ object decrypt_packet(object packet,int version)
         
     msg = crypt->crypt(msg); 
     if (! msg)
-      return Alert(ALERT_fatal, ALERT_unexpected_message);
+      return Alert(ALERT_fatal, ALERT_unexpected_message,version);
     if (session->cipher_spec->cipher_type == CIPHER_block)
       if(version==0) {
 	if (catch { msg = crypt->unpad(msg); })
-	  return Alert(ALERT_fatal, ALERT_unexpected_message);
+	  return Alert(ALERT_fatal, ALERT_unexpected_message,version);
       } else {
 	if (catch { msg = tls_unpad(msg); })
-	  return Alert(ALERT_fatal, ALERT_unexpected_message);
+	  return Alert(ALERT_fatal, ALERT_unexpected_message,version);
       }
     packet->fragment = msg;
   }
@@ -100,7 +100,7 @@ object decrypt_packet(object packet,int version)
 #ifdef SSL3_DEBUG
 	werror("Failed MAC-verification!!\n");
 #endif
-	return Alert(ALERT_fatal, ALERT_bad_record_mac);
+	return Alert(ALERT_fatal, ALERT_bad_record_mac,version);
       }
     seq_num += 1;
   }
@@ -113,10 +113,10 @@ object decrypt_packet(object packet,int version)
     string msg;
     msg = compress(packet->fragment);
     if (!msg)
-      return Alert(ALERT_fatal, ALERT_unexpected_message);
+      return Alert(ALERT_fatal, ALERT_unexpected_message,version);
     packet->fragment = msg;
   }
-  return packet->check_size() || packet;
+  return packet->check_size(version) || packet;
 }
 
 object encrypt_packet(object packet,int version)
@@ -153,7 +153,7 @@ object encrypt_packet(object packet,int version)
   else
     packet->fragment += digest;
   
-  return packet->check_size(2048) || packet;
+  return packet->check_size(2048,version) || packet;
 }
 
 
