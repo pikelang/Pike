@@ -4,30 +4,30 @@
 
 #pike __REAL_VERSION__
 
-/* Decodes a DER object. DATA is an instance of ADT.struct, and types
- * is a mapping from tag numbers to classes.
- *
- * Returns either an object, or a mapping of tag and contents.
- * Throws an exception if the data could not be decoded.
- *
- * FIXME: Handling of implicit and explicit ASN.1 tagging, as well as
- * other context dependence, is next to non_existant. */
+//! Decodes a DER object.
 
 #if constant(Gmp.mpz)
 
 import .Types;
 
+//! primitive unconstructed ASN1 data type
 class primitive
 {
   import .Types;
 
   constant constructed = 0;  
   int combined_tag;
+
   string raw;
   
+//! get raw encoded contents of object
   string get_der() { return raw; }
   int get_combined_tag() { return combined_tag; }
+
+//! get tag
   int get_tag() { return extract_tag(combined_tag); }
+
+//! get class
   int get_cls() { return extract_cls(combined_tag); }
   
   void create(int t, string r)
@@ -42,6 +42,7 @@ class primitive
     }
 }
 
+//! constructed type
 class constructed
 {
   import .Types;
@@ -49,12 +50,19 @@ class constructed
   constant constructed = 1;
   int combined_tag;
   
+//! raw encoded  contents
   string raw;
+
+//! elements of object
   array elements;
   
   string get_der() { return raw; }
   int get_combined_tag() { return combined_tag; }
+
+//! get tag 
   int get_tag() { return extract_tag(combined_tag); }
+
+//! get class
   int get_cls() { return extract_cls(combined_tag); }
 
   void create(int t, string r, array e)
@@ -65,6 +73,22 @@ class constructed
     }
 }
 
+//! @param data
+//!   an instance of ADT.struct
+//! @param types
+//!   a mapping from combined tag numbers to classes from or derived from 
+//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated using 
+//!   @[Standards.ASN1.Types.make_combined_tag].
+//!
+//! @returns
+//!   an object from @[Standards.ASN1.Types] or 
+//!   either @[Standards.ASN1.Decode.primitive] or
+//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
+//!   Throws an exception if the data could not be decoded.
+//! 
+//! @fixme
+//!   Handling of implicit and explicit ASN.1 tagging, as well as
+//!   other context dependence, is next to non_existant.
 object|mapping der_decode(object data, mapping types)
 {
   int raw_tag = data->get_uint(1);
@@ -168,6 +192,14 @@ mapping universal_types =
    U(30) : asn1_bmp_string,
   ]);
 
+//! decode a DER encoded object using universal data types
+//!
+//! @param data
+//!   a DER encoded object
+//! @returns
+//!   an object from @[Standards.ASN1.Types] or 
+//!   either @[Standards.ASN1.Decode.primitive] or
+//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
 object|mapping simple_der_decode(string data)
 {
   return der_decode(ADT.struct(data), universal_types);

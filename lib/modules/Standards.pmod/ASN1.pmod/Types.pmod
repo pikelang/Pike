@@ -1,8 +1,11 @@
 /*
- * $Id: Types.pmod,v 1.19 2002/10/15 15:33:19 grubba Exp $
+ * $Id: Types.pmod,v 1.20 2002/12/05 18:08:05 bill Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
+
+//! Encodes various asn.1 objects according to the Distinguished
+//! Encoding Rules (DER)
 
 #pike __REAL_VERSION__
 
@@ -15,17 +18,36 @@
 #endif
 
 
-/* Combines tag and class as a single integer, in a somewhat arbitrary
- * way. This works also for tags beyond 31 (although not for tags
- * beyond 2^30. */
 
 #define MAKE_COMBINED_TAG(cls, tag) (((tag) << 2) | (cls))
+
+//! Combines tag and class as a single integer, in a somewhat arbitrary
+//! way. This works also for tags beyond 31 (although not for tags
+//! beyond 2^30. 
+//! 
+//! @param cls
+//!   ASN1 type class
+//! @param tag
+//!   ASN1 type tag
+//! @returns
+//!   combined tag
+//! @seealso 
+//!  @[Standards.ASN1.Types.extract_tag]
+//!  @[Standards.ASN1.Types.extract_cls]
 int make_combined_tag(int cls, int tag)
 { return MAKE_COMBINED_TAG(cls, tag); }
 
+//! extract ASN1 type tag from a combined tag
+//! @seealso 
+//!  @[Standards.ASN1.Types.make_combined_tag]
 int extract_tag(int i) { return i >> 2; }
+
+//! extract ASN1 type class from a combined tag
+//! @seealso 
+//!  @[Standards.ASN1.Types.make_combined_tag]
 int extract_cls(int i) { return i & 3; }
 
+//! generic base class for ASN1 data types
 class asn1_object
 {
   constant cls = 0;
@@ -33,9 +55,24 @@ class asn1_object
   constant constructed = 0;
 
   constant type_name = 0;
-  
+  string der_encode();
+
+//! get the class of this object
+//!
+//! @returns
+//!   the class of this object  
   int get_cls() { return cls; }
+
+//! get the tag for this object
+//!
+//! @returns
+//!   the tag for this object
   int get_tag() { return tag; }
+
+//!  get the combined tag (tag + class) for this object
+//!  
+//!  @returns
+//!    the combined tag header
   int get_combined_tag()
     { return make_combined_tag(get_tag(), get_cls()); }
   
@@ -52,7 +89,6 @@ class asn1_object
   object end_decode_constructed(int length) 
     { error("end_decode_constructed not implemented\n"); }
 
-  string der_encode();
   mapping element_types(int i, mapping types) { return types; }
   object init(mixed ... args) { return this_object(); }
 
@@ -113,11 +149,16 @@ class asn1_object
       record_der(build_der(s));
     }
   
+//! get the DER encoded version of this object
+//!
+//! @returns
+//!   DER encoded representation of this object
   string get_der()
     {
       return der || (record_der(der_encode()));
     }
 
+//! create an ASN1 object
   void create(mixed ...args)
     {
       WERROR(sprintf("asn1_object[%s]->create\n", type_name));
@@ -126,11 +167,14 @@ class asn1_object
     }
 }
 
+//! Compound object primitive
 class asn1_compound
 {
   inherit asn1_object;
 
   constant constructed = 1;
+
+//! contents of compound object, elements are from @[Standards.ASN1.Types]
   array elements = ({ });
 
   object init(array args)
@@ -178,9 +222,12 @@ class asn1_compound
     }
 }
 
+//! string object primitive
 class asn1_string
 {
   inherit asn1_object;
+
+//! value of object
   string value;
 
   object init(string s)
@@ -212,12 +259,14 @@ class asn1_string
 // FIXME: What is the DER-encoding of TRUE???
 // According to Jan Petrous, the LDAP spec says that 0xff is right.
 
+//! boolean object
 class asn1_boolean
 {
   inherit asn1_object;
   constant tag = 1;
   constant type_name = "BOOLEAN";
 
+//! value of object
   int value;
   
   object init(int x) { value = x; return this_object(); }
@@ -239,14 +288,16 @@ class asn1_boolean
       return value ? "TRUE" : "FALSE";
     }
 }
-    
-// All integers are represented as bignums, for simplicity
+   
+//! Integer object 
+//! All integers are represented as bignums, for simplicity
 class asn1_integer
 {
   inherit asn1_object;
   constant tag = 2;
   constant type_name = "INTEGER";
   
+//! value of object
   object value;
 
   object init(int|object n)
@@ -289,6 +340,8 @@ class asn1_integer
     }
 
 }
+
+//! Enumerated object
 class asn1_enumerated
 {
   inherit asn1_integer;
@@ -296,12 +349,16 @@ class asn1_enumerated
   constant type_name ="ENUMERATED";
 }
 
+//! Bit string object
 class asn1_bit_string
 {
   inherit asn1_object;
   constant tag = 3;
   constant type_name = "BIT STRING";
+
+//! value of object
   string value;
+
   int unused = 0;
   
   object init(string s) { value = s; return this_object(); }
@@ -311,6 +368,8 @@ class asn1_bit_string
       return build_der(sprintf("%c%s", unused, value));
     }
 
+//! @fixme
+//!   document me!
   int set_length(int len)
     {
       if (len)
@@ -346,6 +405,7 @@ class asn1_bit_string
     }
 }
 
+//! Octet string object
 class asn1_octet_string
 {
   inherit asn1_string;
@@ -353,6 +413,7 @@ class asn1_octet_string
   constant type_name = "OCTET STRING";
 }
 
+//! Null object
 class asn1_null
 {
   inherit asn1_object;
@@ -370,12 +431,14 @@ class asn1_null
   string debug_string() { return "NULL"; }
 }
 
+//! Object identifier object
 class asn1_identifier
 {
   inherit asn1_object;
   constant tag = 6;
   constant type_name = "OBJECT IDENTIFIER";
   
+//! value of object
   array(int) id;
 
   object init(int ...args)
@@ -391,6 +454,8 @@ class asn1_identifier
   mixed _encode() { return id; }
   void _decode(mixed data) { id=data; }
 
+//! @fixme
+//!   document me!
   object append(int ...args)
     {
       return object_program(this_object())(@id, @args);
@@ -441,10 +506,13 @@ int asn1_utf8_valid (string s)
   return 1;
 }
 
+//! UTF8 string object
+//!
+//! Character set: ISO/IEC 10646-1 (compatible with Unicode).
+//!
+//! Variable width encoding, see rfc2279.
 class asn1_utf8_string
 {
-  // Character set: ISO/IEC 10646-1 (compatible with Unicode).
-  // Variable width encoding, see rfc2279.
 
   inherit asn1_string;
   constant tag = 12;
@@ -467,6 +535,7 @@ class asn1_utf8_string
     }
 }  
 
+//! Sequence object
 class asn1_sequence
 {
   inherit asn1_compound;
@@ -483,6 +552,7 @@ class asn1_sequence
     }
 }
 
+//! Set object
 class asn1_set
 {
   inherit asn1_compound;
@@ -533,6 +603,7 @@ int asn1_printable_valid (string s)
   return !asn1_printable_invalid_chars->match (s);
 }
 
+//! PrintableString object
 class asn1_printable_string
 {
   inherit asn1_string;
@@ -551,32 +622,34 @@ int asn1_teletex_valid (string s)
   return !asn1_teletex_invalid_chars->match (s);
 }
 
+//! TeletexString object
+//!
+//! Avoid this one; it seems to be common that this type is used to
+//! label strings encoded with the ISO 8859-1 character set (use
+//! asn1_broken_teletex_string for that). From
+//! http://www.mindspring.com/~asn1/nlsasn.htm:
+//!
+//! /.../ Types GeneralString, VideotexString, TeletexString
+//! (T61String), and GraphicString exist in earlier versions
+//! [pre-1994] of ASN.1. They are considered difficult to use
+//! correctly by applications providing national language support.
+//! Varying degrees of application support for T61String values seems
+//! to be most common in older applications. Correct support is made
+//! more difficult, as character values available in type T61String
+//! have changed with the addition of new register entries from the
+//! 1984 through 1997 versions.
+//!
+//! This implementation is based on the description of T.61 and T.51
+//! in "Some functions for representing T.61 characters from the
+//! X.500 Directory Service in ISO 8859 terminals (Version 0.2. July
+//! 1994.)" by Enrique Silvestre Mora (mora@@si.uji.es), Universitat
+//! Jaume I, Spain, found in the package
+//! ftp://pereiii.uji.es/pub/uji-ftp/unix/ldap/iso-t61.translation.tar.Z
+//!
+//! The translation is only complete for 8-bit latin 1 strings. It
+//! encodes strictly to T.61, but decodes from the superset T.51.
 class asn1_teletex_string
 {
-  // Avoid this one; it seems to be common that this type is used to
-  // label strings encoded with the ISO 8859-1 character set (use
-  // asn1_broken_teletex_string for that). From
-  // http://www.mindspring.com/~asn1/nlsasn.htm:
-  //
-  // /.../ Types GeneralString, VideotexString, TeletexString
-  // (T61String), and GraphicString exist in earlier versions
-  // [pre-1994] of ASN.1. They are considered difficult to use
-  // correctly by applications providing national language support.
-  // Varying degrees of application support for T61String values seems
-  // to be most common in older applications. Correct support is made
-  // more difficult, as character values available in type T61String
-  // have changed with the addition of new register entries from the
-  // 1984 through 1997 versions.
-  //
-  // This implementation is based on the description of T.61 and T.51
-  // in "Some functions for representing T.61 characters from the
-  // X.500 Directory Service in ISO 8859 terminals (Version 0.2. July
-  // 1994.)" by Enrique Silvestre Mora (mora@si.uji.es), Universitat
-  // Jaume I, Spain, found in the package
-  // ftp://pereiii.uji.es/pub/uji-ftp/unix/ldap/iso-t61.translation.tar.Z
-  //
-  // The translation is only complete for 8-bit latin 1 strings. It
-  // encodes strictly to T.61, but decodes from the superset T.51.
 
   inherit asn1_string;
   constant tag = 20;
@@ -946,10 +1019,12 @@ int asn1_broken_teletex_valid (string s)
   return !wide_string (s);
 }
 
+//! (broken) TeletexString object
+//!
+//! Encodes and decodes latin1, but labels it TeletexString, as is
+//! common in many broken programs (e.g. Netscape 4.0X).
 class asn1_broken_teletex_string
 {
-  // Encodes and decodes latin1, but labels it TeletexString, as is
-  // common in many broken programs (e.g. Netscape 4.0X).
 
   inherit asn1_string;
   constant tag = 20;
@@ -965,10 +1040,12 @@ int asn1_IA5_valid (string s)
   return !asn1_printable_invalid_chars->match (s);
 }
 
+//! IA5 String object
+//!
+//! Character set: ASCII. Fixed width encoding with 1 octet per
+//! character.
 class asn1_IA5_string
 {
-  // Character set: ASCII. Fixed width encoding with 1 octet per
-  // character.
 
   inherit asn1_string;
   constant tag = 22;
@@ -987,14 +1064,15 @@ int asn1_universal_valid (string s)
   return 1;
 }
 
+//! Universal String object
+//!
+//! Character set: ISO/IEC 10646-1 (compatible with Unicode).
+//! Fixed width encoding with 4 octets per character.
+//!
+//! @fixme
+//! The encoding is very likely UCS-4, but that's not yet verified.
 class asn1_universal_string
 {
-  // Character set: ISO/IEC 10646-1 (compatible with Unicode).
-  // Fixed width encoding with 4 octets per character.
-
-  // FIXME: The encoding is very likely UCS-4, but that's not yet
-  // verified.
-
   inherit asn1_octet_string;
   constant tag = 28;
   constant type_name = "UniversalString";
@@ -1015,14 +1093,14 @@ int asn1_bmp_valid (string s)
   return wide_string (s) <= 1;
 }
 
+//! BMP String object
+//!
+//! Character set: ISO/IEC 10646-1 (compatible with Unicode).
+//! Fixed width encoding with 2 octets per character.
+//!
+//! FIXME: The encoding is very likely UCS-2, but that's not yet verified.
 class asn1_bmp_string
 {
-  // Character set: ISO/IEC 10646-1 (compatible with Unicode).
-  // Fixed width encoding with 2 octets per character.
-
-  // FIXME: The encoding is very likely UCS-2, but that's not yet
-  // verified.
-
   inherit asn1_octet_string;
   constant tag = 30;
   constant type_name = "BMPString";
@@ -1040,9 +1118,12 @@ class asn1_bmp_string
   }
 }
 
+//! meta-instances handle a particular explicit tag and set of types
+//!
+//! @fixme 
+//!  document me!
 class meta_explicit
 {
-  /* meta-instances handle a particular explicit tag and set of types */
   int real_tag;
   int real_cls;
   
