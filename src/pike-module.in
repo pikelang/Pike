@@ -1,4 +1,7 @@
 #!¤pike¤
+// -*- Pike -*-
+
+// $Id: pike-module.in,v 1.5 2000/04/03 14:36:51 grubba Exp $
 
 // Source directory
 string srcdir;
@@ -83,10 +86,10 @@ void run_or_fail(mapping options,string ... cmd)
 }
 
 
-void do_make(string *cmd)
+void do_make(array(string) cmd)
 {
   int tmp1;
-  string *makecmd=(
+  array(string) makecmd=(
     ({make})+
     Process.split_quoted_string(make_flags)-({""})+
     ({"PIKE_INCLUDES=-I"+include_path,
@@ -114,7 +117,7 @@ void do_make(string *cmd)
   }
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"fixate",Getopt.NO_ARG,({"--fixate"}) }),
