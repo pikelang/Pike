@@ -1,0 +1,9 @@
+// Icon definitions for pike.exe
+
+0 ICON pike_black.ico
+1 ICON pike_blue.ico
+2 ICON pike_green.ico
+3 ICON pike_magenta.ico
+4 ICON pike_orange.ico
+
+// red is used by uninstaller.
