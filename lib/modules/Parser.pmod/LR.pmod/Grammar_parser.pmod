@@ -3,7 +3,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Grammar_parser.pmod,v 1.1 2002/05/09 17:51:04 nilsson Exp $
+ * $Id: Grammar_parser.pmod,v 1.2 2002/05/22 12:33:28 nilsson Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -174,7 +174,7 @@ static private Parser g;
 static private object master;
 
 //! Error code from the parsing.
-int error;
+int lr_error;
 
 static private int add_nonterminal(string id)
 {
@@ -237,12 +237,12 @@ static private void add_rule(int nt, string colon, array(mixed) symbols, string 
     if (!master[action]) {
       werror(sprintf("Warning: Missing action %s\n", action));
 
-      error |= ERROR_MISSING_ACTION;
+      lr_error |= ERROR_MISSING_ACTION;
     } else if (!functionp(master[action])) {
       werror(sprintf("Warning: \"%s\" is not a function in object\n",
 		     action));
 
-      error |= ERROR_BAD_ACTION;
+      lr_error |= ERROR_BAD_ACTION;
     } else {
       g->add_rule(Rule(nt, symbols, master[action]));
       return;
@@ -311,13 +311,13 @@ void create()
 //!
 //! @bugs
 //! Returns error-code in both Grammar_parser.error and
-//! return_value->error.
+//! return_value->lr_error.
 Parser make_parser(string str, object|void m)
 {
   Parser res = 0;
 
   master = m;
-  error = 0;	/* No errors yet */
+  lr_error = 0;	/* No errors yet */
 
   g = Parser();
 
@@ -343,8 +343,8 @@ Parser make_parser(string str, object|void m)
 
   _parser->parse(scanner->scan);
 
-  if ((!_parser->error) &&
-      (!error) &&
+  if ((!_parser->lr_error) &&
+      (!lr_error) &&
       (!g->compile())) {
     res = g;
   }
@@ -377,7 +377,7 @@ int main(int argc, array(string) argv)
       werror("Compiling \"%s\"...\n", argv[i]);
 
       int|Parser g = make_parser_from_file(argv[i]);
-      if (error || !g) {
+      if (lr_error || !g) {
 	werror("Compilation failed\n");
       } else {
 	werror("Compilation done\n");

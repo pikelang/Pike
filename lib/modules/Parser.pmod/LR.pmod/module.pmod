@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.1 2002/05/22 11:09:57 grubba Exp $
+ * $Id: module.pmod,v 1.2 2002/05/22 12:33:28 nilsson Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -204,7 +204,7 @@ class Parser
   int verbose=1;
 
   //! Error code
-  int error=0;
+  int lr_error=0;
 
   /* Number of next rule (used only for conflict resolving) */
   static int next_rule_number = 1;
@@ -334,7 +334,7 @@ class Parser
       } else {
 	werror("Error: Definition missing for non-terminal %s\n",
 	       symbol_to_string(nonterminal));
-	error |= ERROR_MISSING_DEFINITION;
+	lr_error |= ERROR_MISSING_DEFINITION;
       }
     }
 
@@ -1252,7 +1252,7 @@ class Parser
   //! Compiles the grammar into a parser, so that parse() can be called.
   int compile()
   {
-    int error = 0;	/* No error yet */
+    int lr_error = 0;	/* No error yet */
     int state_no = 0;	/* DEBUG INFO */
     Kernel state;
     multiset(int|string) symbols, conflicts;
@@ -1525,7 +1525,7 @@ class Parser
 	  /* Repair conflicts */
 	  // int ov = verbose;
 	  // verbose = 1;
-	  error = repair(state, conflicts);
+	  lr_error = repair(state, conflicts);
 	  // verbose = ov;
 	} else if (verbose) {
 	  werror("No conflicts in state:\n%s\n",
@@ -1568,7 +1568,7 @@ class Parser
     werror("DONE\n");
 #endif /* LR_PROFILE */
 
-    return (error);
+    return (lr_error);
   }
 
   //! Parse the input according to the compiled grammar.
@@ -1600,12 +1600,12 @@ class Parser
     string input;
     mixed value;
 
-    error = 0;	/* No parse error yet */
+    lr_error = 0;	/* No parse error yet */
 
     if (!functionp(scanner) &&
 	!(objectp(scanner) && functionp(scanner->`()))) {
       werror("parser->parse(): scanner not set!\n");
-      error = ERROR_NO_SCANNER;
+      lr_error = ERROR_NO_SCANNER;
       return(0);
     }
 
@@ -1639,18 +1639,18 @@ class Parser
 		if (!func) {
 		  werror("Missing action \"%s\" in object\n",
 			 a->action);
-		  error |= ERROR_MISSING_ACTION;
+		  lr_error |= ERROR_MISSING_ACTION;
 		} else {
 		  werror("Bad type (%s) for action \"%s\" in object\n",
 			 typeof(func), a->action);
-		  error |= ERROR_BAD_ACTION_TYPE;
+		  lr_error |= ERROR_BAD_ACTION_TYPE;
 		  func = 0;
 		}
 	      }
 	    } else {
 	      werror("Missing object for action \"%s\"\n",
 		     a->action);
-	      error |= ERROR_NO_OBJECT;
+	      lr_error |= ERROR_NO_OBJECT;
 	      func = 0;
 	    }
 	  }
@@ -1721,7 +1721,7 @@ class Parser
 	/* ERROR */
 	if (input = "") {
 	  /* At end of file */
-	  error |= ERROR_EOF;
+	  lr_error |= ERROR_EOF;
 
 	  if (value_stack->ptr != 1) {
 	    if (value_stack->ptr) {
@@ -1737,7 +1737,7 @@ class Parser
 	    return(value_stack->pop());
 	  }
 	} else {
-	  error |= ERROR_SYNTAX;
+	  lr_error |= ERROR_SYNTAX;
 
 	  werror("Error: Bad input: \""+input+"\"(\""+value+"\")\n");
 
