@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.36 2001/01/08 20:04:48 mast Exp $
+ * $Id: interpret_functions.h,v 1.37 2001/01/10 19:56:37 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -849,11 +849,23 @@ BREAK;
       break;
 
       CASE(F_CATCH);
-      if(o_catch(pc+sizeof(INT32)))
-	return -1; /* There was a return inside the evaluated code */
-      else
-	pc+=EXTRACT_INT(pc);
+      switch (o_catch(pc+sizeof(INT32))) {
+	case 1:
+	  return -1; /* There was a return inside the evaluated code */
+	case 2:
+	  pc = Pike_fp->pc;
+	  break;
+	default:
+	  pc+=EXTRACT_INT(pc);
+      }
       break;
+
+OPCODE0(F_ESCAPE_CATCH, "escape catch")
+{
+  Pike_fp->pc = pc;
+  return -2;
+}
+BREAK;
 
 OPCODE0(F_THROW_ZERO, "throw(0)")
   push_int(0);
@@ -1503,12 +1515,13 @@ OPCODE0_JUMP(F_RECUR,"recur")
   Pike_sp += num_locals - args;
 
   x=eval_instruction(addr);
+  EVAL_INSTR_RET_CHECK(x);
 #ifdef PIKE_DEBUG
   if(Pike_mark_sp < save_mark_sp)
     fatal("mark Pike_sp underflow in F_RECUR.\n");
 #endif
   Pike_mark_sp=save_mark_sp;
-  if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
+  if(x>=0) mega_apply(APPLY_STACK, x, 0,0);
   pc+=sizeof(INT32);
   if(save_sp+1 < Pike_sp)
   {
@@ -1568,12 +1581,13 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
     Pike_sp += num_locals - args;
     
     x=eval_instruction(addr);
+    EVAL_INSTR_RET_CHECK(x);
 #ifdef PIKE_DEBUG
   if(Pike_mark_sp < save_mark_sp)
     fatal("mark Pike_sp underflow in F_RECUR.\n");
 #endif
     Pike_mark_sp=save_mark_sp;
-    if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
+    if(x>=0) mega_apply(APPLY_STACK, x, 0,0);
     pc+=sizeof(INT32);
     if(save_sp+1 < Pike_sp)
     {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.178 2000/12/05 21:08:18 per Exp $");
+RCSID("$Id: interpret.c,v 1.179 2001/01/10 19:56:37 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -755,6 +755,15 @@ void dump_backlog(void)
 static int o_catch(unsigned char *pc);
 
 #ifdef PIKE_DEBUG
+#define EVAL_INSTR_RET_CHECK(x)						\
+  if (x == -2)								\
+    fatal("Return value -2 from eval_instruction is not handled here.\n"\
+	  "Probable cause: F_ESCAPE_CATCH outside catch block.\n")
+#else
+#define EVAL_INSTR_RET_CHECK(x)
+#endif
+
+#ifdef PIKE_DEBUG
 #define eval_instruction eval_instruction_with_debug
 #include "interpreter.h"
 
@@ -1298,6 +1307,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	{
 	  struct svalue **save_mark_sp=Pike_mark_sp;
 	  tailrecurse=eval_instruction(pc);
+	  EVAL_INSTR_RET_CHECK(tailrecurse);
 	  Pike_mark_sp=save_mark_sp;
 #ifdef PIKE_DEBUG
 	  if(Pike_mark_sp < save_mark_sp)
@@ -1437,9 +1447,9 @@ static int o_catch(unsigned char *pc)
 #endif
     Pike_mark_sp=save_mark_sp;
     Pike_fp->expendible=expendible;
-    if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
+    if(x>=0) mega_apply(APPLY_STACK, x, 0,0);
     UNSETJMP(tmp);
-    return 1;
+    return x == -2 ? 2 : 1;
   }
 }
 
@@ -1496,8 +1506,9 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   }else{
     struct svalue **save_mark_sp=Pike_mark_sp;
     int tmp=eval_instruction(o->prog->program + offset);
+    EVAL_INSTR_RET_CHECK(tmp);
     Pike_mark_sp=save_mark_sp;
-    if(tmp!=-1) mega_apply(APPLY_STACK, tmp, 0,0);
+    if(tmp>=0) mega_apply(APPLY_STACK, tmp, 0,0);
     
 #ifdef PIKE_DEBUG
     if(Pike_sp<Pike_interpreter.evaluator_stack)
