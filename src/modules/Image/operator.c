@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.16 1998/04/16 04:32:51 mirar Exp $ */
+/* $Id: operator.c,v 1.17 1998/04/18 17:16:23 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.16 1998/04/16 04:32:51 mirar Exp $
+**!	$Id: operator.c,v 1.17 1998/04/18 17:16:23 mirar Exp $
 **! class image
 */
 
@@ -22,6 +22,7 @@
 #include "array.h"
 #include "error.h"
 #include "threads.h"
+#include "builtin_functions.h"
 
 #include "image.h"
 
@@ -34,10 +35,13 @@ extern struct program *image_program;
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
 
+#define testrange(x) ((COLORTYPE)MAXIMUM(MINIMUM(((int)x),255),0))
+
 #define STANDARD_OPERATOR_HEADER(what) \
    struct object *o;			   			\
    struct image *img,*oper;		   			\
-   rgb_group *s1,*s2,*d,rgb;		   			\
+   rgb_group *s1,*s2,*d;		   			\
+   rgbl_group rgb;                                              \
    INT32 i;				   			\
 					   			\
    if (!THIS->img) error("no image\n");	   			\
@@ -47,6 +51,13 @@ extern struct program *image_program;
       rgb.r=sp[-args].u.integer;				\
       rgb.g=sp[-args].u.integer;				\
       rgb.b=sp[-args].u.integer;				\
+      oper=NULL;						\
+   }								\
+   if (args && sp[-args].type==T_FLOAT)				\
+   {								\
+      rgb.r=(long)(255*sp[-args].u.float_number);		\
+      rgb.g=(long)(255*sp[-args].u.float_number);		\
+      rgb.b=(long)(255*sp[-args].u.float_number);		\
       oper=NULL;						\
    }								\
    else if (args && sp[-args].type==T_ARRAY			\
@@ -60,8 +71,19 @@ extern struct program *image_program;
       rgb.b=sp[-args].u.array->item[2].u.integer;		\
       oper=NULL;						\
    }								\
-   else								\
-   {								\
+   else if (args && sp[-args].type==T_ARRAY                     \
+       && sp[-args].u.array->size>=3                            \
+       && sp[-args].u.array->item[0].type==T_FLOAT              \
+       && sp[-args].u.array->item[1].type==T_FLOAT              \
+       && sp[-args].u.array->item[2].type==T_FLOAT)             \
+   {                                                            \
+      rgb.r=(long)(sp[-args].u.array->item[0].u.float_number*255); \
+      rgb.g=(long)(sp[-args].u.array->item[1].u.float_number*255); \
+      rgb.b=(long)(sp[-args].u.array->item[2].u.float_number*255); \
+      oper=NULL;                                                \
+   }                                                            \
+   else                                                         \
+   {                                                            \
       if (args<1 || sp[-args].type!=T_OBJECT			\
        || !sp[-args].u.object					\
        || sp[-args].u.object->prog!=image_program)		\
@@ -120,9 +142,9 @@ STANDARD_OPERATOR_HEADER("`-")
    else
    while (i--)
    {
-      d->r=absdiff(s1->r,rgb.r);
-      d->g=absdiff(s1->g,rgb.g);
-      d->b=absdiff(s1->b,rgb.b);
+      d->r=MAXIMUM(absdiff(s1->r,rgb.r),255);
+      d->g=MAXIMUM(absdiff(s1->g,rgb.g),255);
+      d->b=MAXIMUM(absdiff(s1->b,rgb.b),255);
       s1++; d++;
    }
    THREADS_DISALLOW();
@@ -208,9 +230,9 @@ STANDARD_OPERATOR_HEADER("`*")
    else
    while (i--)
    {
-      d->r=floor(s1->r*q*rgb.r+0.5);
-      d->g=floor(s1->g*q*rgb.g+0.5);
-      d->b=floor(s1->b*q*rgb.b+0.5);
+      d->r=testrange(floor(s1->r*q*rgb.r+0.5));
+      d->g=testrange(floor(s1->g*q*rgb.g+0.5));
+      d->b=testrange(floor(s1->b*q*rgb.b+0.5));
       s1++; d++; 
    }
    THREADS_DISALLOW();
