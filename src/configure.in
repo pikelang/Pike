@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.442 2000/12/19 00:43:43 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.443 2000/12/19 14:23:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -615,6 +615,7 @@ AC_ARG_WITH(long-double-precision,  [  --with-long-double-precision          use
 
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
+AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[with_debug="yes" AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
 AC_ARG_WITH(rtldebug,    [  --with-rtldebug        enable run time self tests],[],[with_rtldebug=])
 AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[
@@ -653,7 +654,6 @@ AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure soc
 AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
 AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing instead of lzw],[],[])
 AC_ARG_WITH(rsaref,      [  --with-rsaref[=path]   Support for RSAREF],[],[])
-AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
 AC_ARG_WITH(pg,          [  --with-pg              Use the gcc -pg option],
@@ -739,6 +739,7 @@ if test "x$with_thread_trace" = "xyes"; then
   AC_DEFINE(THREAD_TRACE)
 else :; fi
 
+
 #
 # Allow --with(out)-debug to toggle both cdebug and rtldebug, but
 # let --with(out)-{c,rtl}debug take precedence.
@@ -749,6 +750,16 @@ fi
 
 if test "x$with_rtldebug" = x ; then
   with_rtldebug="$with_debug"
+fi
+
+
+#
+# --with-dmalloc requires --with-rtldebug
+#
+if test "x$with_dmalloc" = "x"; then :; else
+  if test "x$with_rtldebug" = "xyes"; then :; else
+    AC_MSG_WARN([Debug malloc requires rtldebug. Enabling rtldebug.])
+  fi
 fi
 
 
