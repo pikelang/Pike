@@ -1,4 +1,4 @@
-pike7.6 (7.6.11-3) unstable; urgency=low
+pike7.6 (7.6.11-3) unstable; urgency=medium
 
   * Gotten rid of gdk-imlib1-dev build dependency
 
