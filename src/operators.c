@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.78 1999/12/15 01:40:34 grubba Exp $");
+RCSID("$Id: operators.c,v 1.79 1999/12/15 07:50:00 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -597,6 +597,25 @@ static int float_promote(void)
     sp[-1].type=T_FLOAT;
     return 1;
   }
+
+#ifdef AUTO_BIGNUM
+  if(is_bignum_object_in_svalue(sp-2) && sp[-1].type==T_FLOAT)
+  {
+    stack_swap();
+    push_constant_text(tFloat);
+    stack_swap();
+    f_cast();
+    stack_swap();
+    return 1;
+  }
+  else if(is_bignum_object_in_svalue(sp-1) && sp[-2].type==T_FLOAT)
+  {
+    push_constant_text(tFloat);
+    stack_swap();
+    f_cast();
+    return 1;
+  }
+#endif
   return 0;
 }
 
