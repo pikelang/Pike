@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.95 2000/08/10 18:23:17 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.96 2000/08/11 13:44:03 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1042,16 +1042,16 @@ PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
 
 #ifndef HAVE_STRCOLL
 /* No locale function available */
-int low_binary_strcmp(char *a, ptrdiff_t alen,
-		      char *b, ptrdiff_t blen)
+static int low_binary_strcmp(char *a, ptrdiff_t alen,
+			     char *b, ptrdiff_t blen)
 {
   low_quick_binary_strcmp(a,alen,b,blen);
 }
 #else
 
 /* takes locale into account */
-static int low_binary_strcmp(char *a,INT32 alen,
-			     char *b,INT32 blen)
+static int low_binary_strcmp(char *a, ptrdiff_t alen,
+			     char *b, ptrdiff_t blen)
 {
   INT32 tmp;
   while(alen>0 && blen>0)
