@@ -80,8 +80,14 @@ do{ \
 #define check_threads_etc() \
   call_callback(& evaluator_callbacks, (void *)0)
 
+#ifdef DEBUG
+#define fast_check_threads_etc(X) do { \
+  static int div_; if(d_flag || !(div_++& ((1<<(X))-1))) check_threads_etc(); } while(0)
+
+#else
 #define fast_check_threads_etc(X) do { \
   static int div_; if(!(div_++& ((1<<(X))-1))) check_threads_etc(); } while(0)
+#endif
 
 /* Prototypes begin here */
 void push_sp_mark(void);
