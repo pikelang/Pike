@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.21 2000/08/31 12:40:15 grubba Exp $
+ * $Id: odbc_result.c,v 1.22 2000/08/31 21:31:56 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.21 2000/08/31 12:40:15 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.22 2000/08/31 21:31:56 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -147,7 +147,7 @@ static void odbc_fix_fields(void)
       odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
 		       SQLDescribeCol(PIKE_ODBC_RES->hstmt, i+1,
 				      buf,
-				      DO_NOT_WARN(buf_size),
+				      DO_NOT_WARN((SQLSMALLINT)buf_size),
 				      &name_len,
 				      &sql_type, &precision, &scale, &nullable),
 		       0);
@@ -375,7 +375,7 @@ static void f_fetch_row(INT32 args)
 	SQLLEN len = 0;
 
 	while(1) {
-	  code = SQLGetData(PIKE_ODBC_RES->hstmt, i+1,
+	  code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
 			    PIKE_ODBC_RES->field_info[i].type,
 			    buf, BLOB_BUFSIZ, &len);
 	  if (code == SQL_NO_DATA_FOUND) {

@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.23 2000/08/16 19:54:05 grubba Exp $
+ * $Id: tga.c,v 1.24 2000/08/31 21:26:08 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.23 2000/08/16 19:54:05 grubba Exp $");
+RCSID("$Id: tga.c,v 1.24 2000/08/31 21:26:08 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -651,9 +651,9 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
         for(x = 0; x<width; x++)
         {
           unsigned short pixel = extract_le_short(&sd);
-          id->b = c5to8bit( pixel&31 );
-          id->g = c5to8bit((pixel & 922)>>5);
-          id->r = c5to8bit((pixel & 31744)>>10);
+          id->b = c5to8bit((unsigned char)(pixel & 31));
+          id->g = c5to8bit((unsigned char)((pixel & 922)>>5));
+          id->r = c5to8bit((unsigned char)((pixel & 31744)>>10));
           id++;
         }
     }
