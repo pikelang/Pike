@@ -1,0 +1,19 @@
+NAME
+	mklist - make a list
+
+SYNTAX
+	list mklist(mixed *a)
+
+DESCRIPTION
+	This function creates a list from an array.
+
+EXAMPLE
+	> mklist( ({1,2,3}) );
+	Result: (< /* 3 elements */
+	    1,
+	    2,
+	    3
+	>)
+
+SEE ALSO
+	builtin/aggregate_list
