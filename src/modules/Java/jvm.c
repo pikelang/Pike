@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.1 1999/03/02 22:07:11 marcus Exp $
+ * $Id: jvm.c,v 1.2 1999/03/05 22:01:32 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.1 1999/03/02 22:07:11 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.2 1999/03/05 22:01:32 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -2832,7 +2832,7 @@ void pike_module_exit(void)
   }
   if(jclass_program) {
     free_program(jclass_program);
-    jobj_program=NULL;
+    jclass_program=NULL;
   }
   if(jobj_program) {
     free_program(jobj_program);
