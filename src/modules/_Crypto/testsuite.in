@@ -597,5 +597,5 @@ test_eq([[
   for(int i = 0; i < 10000; i++) {
     ct = aes_cbc->crypt_block(ct);
   }
-  return ct;
+  return String.string2hex(ct);
 ]], [[ "FACA37E0B0C85373DF706E73F7C9AF86" ]])
