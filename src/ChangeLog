@@ -1,3 +1,7 @@
+Fri Mar  1 00:35:40 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* configure.in: added test for %pure_parser
+
 Sun Feb 25 22:42:48 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* operator functions implemented
