@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.157 1999/09/28 23:49:54 grubba Exp $");
+RCSID("$Id: program.c,v 1.158 1999/10/09 23:29:02 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -554,8 +554,10 @@ void low_start_new_program(struct program *p,
   if(!p)
   {
     p=low_allocate_program();
+    e=1;
   }else{
     add_ref(p);
+    e=2;
   }
 
   if(name)
@@ -570,6 +572,8 @@ void low_start_new_program(struct program *p,
 
 #define PUSH
 #include "compilation.h"
+
+  compiler_pass=e;
 
   num_used_modules=0;
 

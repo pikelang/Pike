@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.183 1999/09/06 11:12:08 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.184 1999/10/09 23:28:57 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -349,7 +349,15 @@ void f_random(INT32 args)
 void f_random_seed(INT32 args)
 {
   INT_TYPE i;
+#ifdef AUTO_BIGNUM
+  check_all_args("random_seed",args,BIT_INT | BIT_OBJECT, 0);
+  if(sp[-args].type == T_INT)
+    i=sp[-args].u.integer;
+  else
+    i=hash_svalue(sp-args);
+#else
   get_all_args("random_seed",args,"%i",&i);
+#endif
   my_srand(i);
   pop_n_elems(args);
 }

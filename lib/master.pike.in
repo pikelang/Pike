@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.58 1999/10/06 14:26:30 grubba Exp $
+/* $Id: master.pike.in,v 1.59 1999/10/09 23:28:39 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -443,6 +443,18 @@ void create()
   add_constant("UNDEFINED", UNDEFINED);
   add_constant("write", _static_modules.files()->_stdout->write);
 
+#if "¤share_prefix¤"[0]!='¤'
+  // add path for architecture-dependant files
+  add_include_path("¤share_prefix¤/include");
+  add_module_path("¤share_prefix¤/modules");
+#endif
+
+#if "¤lib_prefix¤"[0]!='¤'
+  // add path for architecture-dependant files
+  add_include_path("¤lib_prefix¤/include");
+  add_module_path("¤lib_prefix¤/modules");
+#endif
+
   random_seed(time() + (getpid() * 0x11111111));
 }
 
@@ -782,19 +794,6 @@ void _main(string *orig_argv, string *env)
 
 
 
-#if "¤share_prefix¤"[0]!='¤'
-  // add path for architecture-dependant files
-  add_include_path("¤share_prefix¤/include");
-  add_module_path("¤share_prefix¤/modules");
-#endif
-
-#if "¤lib_prefix¤"[0]!='¤'
-  // add path for architecture-dependant files
-  add_include_path("¤lib_prefix¤/include");
-  add_module_path("¤lib_prefix¤/modules");
-#endif
-
-
 #ifndef NOT_INSTALLED
   q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
@@ -999,7 +998,10 @@ void set_inhibit_compile_errors(mixed f)
 
 string trim_file_name(string s)
 {
+  if(getenv("LONG_PIKE_ERRORS")) return s;
   if(getenv("SHORT_PIKE_ERRORS")) return BASENAME(s);
+  string cwd=getcwd();
+  if(s[..sizeof(cwd)-1]==cwd) return s[sizeof(cwd)..];
   return s;
 }
 
@@ -1212,7 +1214,7 @@ string describe_program(program p)
   {
     if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
       return EXPLODE_PATH(reverse(rest))[-1];
-    return s;
+    return trim_file_name(s);
   }
 
   if(functionp(p))

@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.61 1999/10/08 16:35:18 noring Exp $");
+RCSID("$Id: operators.c,v 1.62 1999/10/09 23:29:01 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -267,35 +267,22 @@ void f_add(INT32 args)
 
   case BIT_INT:
 #ifdef AUTO_BIGNUM
-    /* FIXME: I believe this routine is somewhat buggy... */
-  {
-    struct object *o = 0;
-    ONERROR onerr;
-    
     size = 0;
     for(e = -args; e < 0; e++)
     {
-      if(o)
-	apply_lfun(o, LFUN_ADD, 1);
-      else if(INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, size))
+      if(INT_TYPE_ADD_OVERFLOW(sp[e].u.integer, size))
       {
-	push_int(size);
-	o = make_bignum_object();
-	SET_ONERROR(onerr, do_free_object, o);
-	apply_lfun(o, LFUN_ADD, 1);
+	convert_svalue_to_bignum(sp-args);
+	f_add(args);
+	return;
       }
       else
       {
-	size += sp[-1].u.integer;
-	sp--;
+	size += sp[e].u.integer;
       }
     }
-
-    if(o)
-      CALL_AND_UNSET_ONERROR(onerr);
-    else
-      push_int(size);
-  }
+    sp-=args;
+    push_int(size);
 #else
     size=0;
     for(e=-args; e<0; e++) size+=sp[e].u.integer;
@@ -1282,32 +1269,18 @@ void o_multiply(void)
 
   case TWO_TYPES(T_INT,T_INT):
 #ifdef AUTO_BIGNUM
-  {
-    static int ign = 1;   /* FIXME: VERY UGLY PATCH, but since I cannot
-			     get through the master while loading Gmp.mpz,
-			     we have to ignore that the very first mul
-			     will actually overflow. */
-
-    if(!ign && INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+    if(INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     {
-      struct object *o;
-      ONERROR tmp;
-      
-      o = make_bignum_object();
-	
-      SET_ONERROR(tmp, do_free_object, o);
-      apply_lfun(o, LFUN_MULTIPLY, 1);
-      CALL_AND_UNSET_ONERROR(tmp);
-      return;
+      convert_stack_top_to_bignum();
+      goto do_lfun_multiply;
     }
-    ign = 0;
-  }
 #endif /* AUTO_BIGNUM */
     sp--;
     sp[-1].u.integer *= sp[0].u.integer;
     return;
 
   default:
+  do_lfun_multiply:
     if(call_lfun(LFUN_MULTIPLY, LFUN_RMULTIPLY))
       return;
 

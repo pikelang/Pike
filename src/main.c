@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.76 1999/09/25 23:50:19 grubba Exp $");
+RCSID("$Id: main.c,v 1.77 1999/10/09 23:29:00 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -547,6 +547,10 @@ void low_exit_main(void)
   void cleanup_compiler(void);
   void cleanup_backend(void);
 
+#ifdef AUTO_BIGNUM
+  void exit_auto_bignum(void);
+  exit_auto_bignum();
+#endif
   th_cleanup();
   exit_object();
   exit_dynamic_load();
