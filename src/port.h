@@ -65,7 +65,7 @@ char *MEMCPY(char *b,const char *a,int s);
 #    define __builtin_memcpy MEMCPY
 #  endif
 #else
-#  define MEMCPY memcpy
+#  define MEMCPY(X,Y,Z) memcpy((char*)(X),(char*)(Y),(Z))
 #endif
 
 #ifndef HAVE_MEMMOVE
