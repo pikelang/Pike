@@ -9925,24 +9925,17 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 </method>
 
 <HR NEWPAGE>
-<anchor name=exit>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>exit</tt> - exit Pike interpreter
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void exit(int <I>returncode</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=exit fullpath title="exit Pike interpreter">
+<man_syntax>
+void exit(int <I>returncode</I>);<br>
+</man_syntax>
+<man_description>
 This function exits the whole Pike program with the return code
 given. Using exit() with any other value than 0 indicates that
 something went wrong during execution. See your system manuals for
 more information about return codes.
-
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
 <anchor name=exp>
@@ -9964,20 +9957,13 @@ Return the natural exponent of <i>f</i>.
 </anchor>
 
 <HR NEWPAGE>
-<anchor name=file_stat>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>file_stat</tt> - stat a file
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int *file_stat(string <I>file</I>);<br>
-or<br>
+<function name=file_stat title="stat a file" fullpath>
+<man_syntax>
+int *file_stat(string <I>file</I>);<br>
 int *file_stat(string <I>file</I>, <I>1</I>);<br>
-or<br>
 int *file-&gt;stat();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 file_stat returns an array of integers describing some properties<br>
 about the file. Currently file_stat returns 7 entries:<br>
 ({<br>
@@ -9995,12 +9981,9 @@ If you give 1 as a second argument, file_stat does not follow links.<br>
 You can never get -3 as size if you don't give a second argument.<br>
 
 <p>If there is no such file or directory, zero is returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=get_dir>get_dir</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>get_dir</man_see>
+</function>
 
 <HR NEWPAGE>
 <anchor name=find_call_out>
