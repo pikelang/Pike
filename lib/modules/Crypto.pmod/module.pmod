@@ -29,17 +29,6 @@ class Hash
 
   //! Calling `() will return a @[Nettle.HashState] object.
   HashState `()();
-  
-  //! @decl string hash(string data)
-  //!
-  //!  Works as a shortcut for @expr{obj->update(data)->digest()@}.
-  //!
-  //! @seealso
-  //!   @[HashState()->update()] and @[HashState()->digest()].
-  string hash(string data)
-  {
-    return `()()->update(data)->digest();
-  }
 }
 
 //! Hashes a @[password] together with a @[salt] with the
