@@ -3,71 +3,16 @@
 int quiet=0;
 program p; /* program being dumped */
 
-string fakeroot;
-
-class FakeMaster
+#ifdef PIKE_FAKEROOT
+string fakeroot(string s)
 {
-  inherit "/master";
-  string master_read_file(string s)
-    {
-      return ::master_read_file(fakeroot+combine_path_with_cwd(s));
-    }
+  return PIKE_FAKEROOT+combine_path(getcwd(),s);
 }
+#else
+#define fakeroot(X) X
+#endif
 
-class ProgressBar
-{
-  private constant width = 45;
-
-  private float phase_base, phase_size;
-  private int max, cur;
-  private string name;
-
-  void set_current(int _cur)
-  {
-    cur = _cur;
-  }
-
-  void set_phase(float _phase_base, float _phase_size)
-  {
-    phase_base = _phase_base;
-    phase_size = _phase_size;
-  }
-  
-  void update(int increment)
-  {
-    cur += increment;
-    cur = min(cur, max);
-    
-    float ratio = phase_base + ((float)cur/(float)max) * phase_size;
-    if(1.0 < ratio)
-      ratio = 1.0;
-    
-    int bar = (int)(ratio * (float)width);
-    int is_full = (bar == width);
-    
-    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
-	  name+":",
-	  "="*bar,
-	  is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
-	  is_full ? "" : " "*(width-bar-1),
-	  is_full ? "" : "|",
-	  100.0 * ratio);
-  }
-
-  void create(string _name, int _cur, int _max,
-	      float|void _phase_base, float|void _phase_size)
-    /* NOTE: max must be greater than zero. */
-  {
-    name = _name;
-    max = _max;
-    cur = _cur;
-    
-    phase_base = _phase_base || 0.0;
-    phase_size = _phase_size || 1.0 - phase_base;
-  }
-}
-
-ProgressBar progress_bar;
+Tools.Install.ProgressBar progress_bar;
 
 #define error(X) throw( ({ (X), backtrace() }) )
 
@@ -213,8 +158,6 @@ class Handler
     }
 }
 
-
-
 void dumpit(string file)
 {
   if(logfile)
@@ -225,7 +168,7 @@ void dumpit(string file)
   
   mixed err=catch {
     rm(file+".o"); // Make sure no old files are left
-    if(mixed s=file_stat(file))
+    if(mixed s=file_stat(fakeroot(file)))
     {
       if(s[1]<=0)
       {
@@ -243,7 +186,7 @@ void dumpit(string file)
       p=decode_value(s,master()->Codec());
       if(programp(p))
       {
-	Stdio.File(file + ".o","wct")->write(s);
+	Stdio.File(fakeroot(file) + ".o","wct")->write(s);
 	switch(quiet)
 	{
 	  case 1: werror("."); break;
@@ -300,7 +243,10 @@ int main(int argc, string *argv)
   function_names[Stdio.stderr]="resolv:Stdio.stderr";
   function_names[_static_modules.Builtin]="resolv:_";
 
-  if(argv[1]=="--quiet")
+  // Remove the name of the program.
+  argv = argv[1..];
+  
+  if(argv[0]=="--quiet")
   {
     quiet=1;
     argv=argv[1..];
@@ -308,45 +254,34 @@ int main(int argc, string *argv)
     // FIXME: Make this a command line option..
     // It should not be done when running a binary dist
     // installation...
-
-    //
-    // FIXME: Print everything that should go to the log on stderr instead.
-    //
-    // logfile=Stdio.File("dumpmodule.log","caw");
-    
-    //    werror("Dumping modules ");
+    logfile=Stdio.File("dumpmodule.log","caw");
+//    werror("Dumping modules ");
   }
 
-  if(argv[1]=="--distquiet")
+  if(argv[0]=="--distquiet")
   {
     quiet=2;
     argv=argv[1..];
     logfile=0;
   }
 
-  if(argv[1] == "--progress-bar")
+  if(argv[0] == "--progress-bar")
   {
-    quiet = 2;
-    logfile = Stdio.File("dumpmodule.log","caw");
-    
-    progress_bar = ProgressBar("Precompiling",
-			       @array_sscanf(argv[2], "%d,%d"),
-			       0.2, 0.8);
-    
-    argv = argv[2..];
+      quiet = 2;
+      logfile = Stdio.File("dumpmodule.log","caw");
+      
+      progress_bar = Tools.Install.ProgressBar("Precompiling",
+					       @array_sscanf(argv[1], "%d,%d"),
+					       0.2, 0.8);
+      
+      argv = argv[2..];
   }
 
-  if(sscanf(argv[1],"--fakeroot=%s",fakeroot))
-  {
-    argv=argv[1..];
-    replace_master(FakeMaster());
-  }
-
-  foreach(argv[1..],string file)
+  foreach(argv, string file)
   {
     if(progress_bar)
       progress_bar->update(1);
-    
+      
     dumpit(file);
   }
 
