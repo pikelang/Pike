@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.169 2003/01/15 13:08:11 jhs Exp $
+|| $Id: operators.c,v 1.170 2003/01/15 16:01:09 nilsson Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.169 2003/01/15 13:08:11 jhs Exp $");
+RCSID("$Id: operators.c,v 1.170 2003/01/15 16:01:09 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2664,9 +2664,10 @@ PMOD_EXPORT void o_divide(void)
  *!   	  result will be a float.
  *!   @endmixed
  *! @note
- *!   Unlike in some languages, the function f(x) = x/n behaves in a
- *!   well-defined, sane way. When you increase x, f(x) will jump one step
- *!   for each n:th increment. For all x, (x + n) / n = x/n + 1; crossing
+ *!   Unlike in some languages, the function f(x) = x/n (x and n integers)
+ *!   behaves in a well-defined way and is always rounded down. When you
+ *!   increase x, f(x) will increase with one for each n:th increment. For
+ *!   all x, (x + n) / n = x/n + 1; crossing
  *!   zero is not special. This also means that / and % are compatible, so
  *!   that a = b*(a/b) + a%b for all a and b.
  *! @seealso
