@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.42 2002/02/25 13:32:29 nilsson Exp $ */
+/* $Id: export.pike,v 1.43 2002/04/07 13:25:11 nilsson Exp $ */
 
 import Stdio;
 
@@ -207,7 +207,9 @@ int main(int argc, string *argv)
   symlink(".",vpath);
   //  system("ln -s pike "+vpath);
 
-  files=`+(({ vpath+"/README", vpath+"/ANNOUNCE", vpath+"/Makefile" }),
+  files=`+( ({ vpath+"/README.txt", vpath+"/ANNOUNCE",
+	       vpath+"/COPYING", vpath+"/COPYRIGHT",
+	       vpath+"/Makefile" }),
 	   get_files(vpath+"/src"),
 	   get_files(vpath+"/lib"),
 	   get_files(vpath+"/bin"),
