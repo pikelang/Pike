@@ -165,26 +165,30 @@ unsigned INT16 EXTRACT_UWORD(unsigned char *p);
 INT16 EXTRACT_WORD(unsigned char *p);
 INT32 EXTRACT_INT(unsigned char *p);
 #else
-static INLINE unsigned INT16 EXTRACT_UWORD(unsigned char *p)
+static INLINE unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
-static INLINE INT16 EXTRACT_WORD(unsigned char *p)
+static INLINE INT16 EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
-static INLINE INT32 EXTRACT_INT(unsigned char *p)
+static INLINE INT32 EXTRACT_INT_(unsigned char *p)
 {
   INT32 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
+#define EXTRACT_UWORD(p) EXTRACT_UWARD_((unsigned char *)p)
+#define EXTRACT_WORD(p) EXTRACT_WARD_((unsigned char *)p)
+#define EXTRACT_INT(p) EXTRACT_INT_((unsigned char *)p)
+
 #endif
 #endif
 
