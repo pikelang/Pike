@@ -61,6 +61,8 @@ mapping(string : int) keywordtype =
   "param" : DELIMITERKEYWORD,
   "seealso" : DELIMITERKEYWORD,
 
+  "section" : CONTAINERKEYWORD,
+
   "mapping" : CONTAINERKEYWORD, "member" : DELIMITERKEYWORD,
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
   "array" : CONTAINERKEYWORD, "elem" : DELIMITERKEYWORD,
@@ -113,6 +115,7 @@ mapping(string : function(string, string : string)
   "elem" : elemArgHandler,
   "index" : indexArgHandler,
   "deprecated" : deprArgHandler,
+  "section" : sectionArgHandler,
 ]);
 
 static string memberArgHandler(string keyword, string arg) {
@@ -187,6 +190,10 @@ static string deprArgHandler(string keyword, string arg) {
       return res;
     parser->eat(",");
   }
+}
+
+static mapping(string : string) sectionArgHandler(string keyword, string arg) {
+  return ([ "name" : arg ]);
 }
 
 static mapping(string : string) standardArgHandler(string keyword, string arg)
@@ -380,7 +387,7 @@ static string xmlNode(string s) {  /* now, @xml works like @i & @tt */
           ;
         string keyword = s[start .. i - 1];
         if (s[i] != '{' || keyword == "")
-          parseError("expected @keyword{");
+          parseError("expected @keyword{, got %O", s[start .. i]);
         ++i;
         tagstack = ({ keyword }) + tagstack;
         if (keyword == "xml")
