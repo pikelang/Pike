@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.21 1998/08/21 04:43:57 hubbe Exp $ */
+/* $Id: export.pike,v 1.22 1999/05/06 14:33:12 marcus Exp $ */
 
 #include <simulate.h>
 
@@ -20,6 +20,9 @@ string *get_files(string path)
     if(tmp[0]=='.' && tmp[1]=='#') continue;
 
     if(path==vpath+"/src/modules" && except_modules[tmp])
+      continue;
+
+    if(path==vpath+"/bin" && except_modules[tmp])
       continue;
 
     if(search(path,vpath+"/lib/modules")==0 &&
