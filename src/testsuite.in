@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.391 2001/02/28 14:44:54 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.392 2001/02/28 14:48:33 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4765,7 +4765,7 @@ test_any([[
   int ret;
   foreach( "foobar" ; int a;) ret+=a;
   return ret;
-]],21)
+]],15)
 
 test_any([[
   int ret;
