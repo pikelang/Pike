@@ -1,3 +1,10 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: pike_dlfcn.h,v 1.2 2002/10/28 19:51:22 grubba Exp $
+*/
+
 #ifndef PIKE_DLFCN_H
 #define PIKE_DLFCN_H
 
@@ -13,7 +20,7 @@
 
 void *dlsym(DLHANDLE *handle, char *name);
 const char *dlerror(void);
-DLHANDLE *dlopen(char *name, int flags);
+DLHANDLE *dlopen(const char *name, int flags);
 int dlclose(DLHANDLE *h);
 
 #endif

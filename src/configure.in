@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.492 2002/10/19 10:06:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.493 2002/10/28 19:50:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5001,9 +5001,9 @@ if test "x$with_dynamic_modules" != "xno" ; then
     if test x$pike_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
     then
 #     Dynamic loading is now WORKING (maybe)
-#      if test x"$pike_cv_sys_os" != xWindows_NT ; then
+      if test x"$pike_cv_sys_os" != xWindows_NT ; then
         with_dynamic_modules=no
-#      fi
+      fi
     fi
   fi
 fi
