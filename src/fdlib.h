@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.48 2003/10/05 19:31:05 grubba Exp $
+|| $Id: fdlib.h,v 1.49 2003/11/26 16:02:15 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -179,6 +179,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 #define fd_TRUNC 16
 #define fd_EXCL 32
 #define fd_BINARY 0
+#define fd_LARGEFILE 0
 
 #define fd_shutdown_read SD_RECEIVE
 #define fd_shutdown_write SD_SEND
@@ -307,6 +308,11 @@ typedef off_t PIKE_OFF_T;
 #define fd_TRUNC O_TRUNC
 #define fd_EXCL O_EXCL
 #define fd_BINARY 0
+#ifdef O_LARGEFILE
+#define fd_LARGEFILE O_LARGEFILE
+#else /* !O_LARGEFILE */
+#define fd_LARGEFILE 0
+#endif /* O_LARGEFILE */
 
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 
