@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: rsqld.pike,v 1.6 2003/01/26 19:51:10 nilsson Exp $
+// $Id: rsqld.pike,v 1.7 2003/01/27 01:39:55 nilsson Exp $
 
 constant description = "Implements an rsql daemon.";
 
@@ -91,8 +91,9 @@ class Connection
     reply_cmd(cmd, seq, 1, catch {
       mixed arg = sizeof(a) && decode_value(a);
       function f = commandset[cmd];
+      //      werror("[%d] command:%O args:%O\n", seq, f, arg);
       if(!f)
-	throw(({"Unknown/unallowed command invoked\n", backtrace()}));
+	error("Unknown/unallowed command invoked\n");
       reply_cmd(cmd, seq, 0, f(arg));
       expect_command();
       return;
@@ -223,7 +224,7 @@ class Connection
   static object get_query(string qid)
   {
     return queries[qid] || 
-      (throw (({"Query ID has expired.\n", backtrace()})),0);
+      (error("Query ID has expired.\n"),0);
   }
 
   static array(mapping(string:mixed)) cmd_query(array args)
@@ -330,7 +331,7 @@ class Server
       port = RSQL_PORT;
     servsock = Stdio.Port();
     if(!servsock->bind(@({port, accept_callback})+(ip? ({ip}):({}))))
-      throw(({"Failed to bind port "+port+".\n", backtrace()}));
+      error("Failed to bind port "+port+".\n");
     if(ip)
       write("RSQL available on port %d on %s.\n", port, ip);
     else
