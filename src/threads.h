@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.43 1998/06/25 14:50:25 grubba Exp $
+ * $Id: threads.h,v 1.44 1998/07/05 13:48:58 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -357,7 +357,7 @@ struct thread_state {
      struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
-       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x (#%d)\n", \
+       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
 			__FILE__, __LINE__, \
 			(unsigned int)_tmp->thread_id, live_threads)); \
        mt_unlock(& interpreter_lock); \
@@ -368,12 +368,12 @@ struct thread_state {
      REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp->swapped) { \
        mt_lock(& interpreter_lock); \
-       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d... t:%08x (#%d)\n", \
+       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
 			__FILE__, __LINE__, \
                         (unsigned int)_tmp->thread_id, live_threads)); \
        while (threads_disabled) { \
          THREADS_FPRINTF((stderr, "THREADS_DISALLOW(): Threads disabled\n")); \
-         co_wait(&live_threads_change, &interpreter_lock); \
+         co_wait(&threads_disabled_change, &interpreter_lock); \
        } \
        SWAP_IN_THREAD(_tmp);\
      } \
@@ -384,7 +384,7 @@ struct thread_state {
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
        live_threads++; \
-       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x (#%d)\n", \
+       THREADS_FPRINTF((stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			__FILE__, __LINE__, \
 			(unsigned int)_tmp_uid->thread_id, live_threads)); \
        mt_unlock(& interpreter_lock); \
@@ -396,12 +396,12 @@ struct thread_state {
      if(_tmp_uid->swapped) { \
        mt_lock(& interpreter_lock); \
        live_threads--; \
-       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d... t:%08x (#%d)\n", \
+       THREADS_FPRINTF((stderr, "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			__FILE__, __LINE__, \
                         (unsigned int)_tmp_uid->thread_id, live_threads)); \
+       co_broadcast(&live_threads_change); \
        while (threads_disabled) { \
-         THREADS_FPRINTF((stderr, "THREADS_DISALLOW(): Threads disabled\n")); \
-         co_signal(&live_threads_change); \
+         THREADS_FPRINTF((stderr, "THREADS_DISALLOW_UID(): Wait...\n")); \
          co_wait(&threads_disabled_change, &interpreter_lock); \
        } \
        SWAP_IN_THREAD(_tmp_uid);\
