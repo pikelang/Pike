@@ -526,7 +526,9 @@ int `()()
 
 string data()
 {
+#if constant(thread_create)
    `()();
+#endif
    int len=(int)headers["content-length"];
    int l;
    if (zero_type(len)) 
