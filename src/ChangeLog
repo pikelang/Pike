@@ -1,3 +1,9 @@
+Mon Apr 29 20:47:31 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.in: All makefiles are now generated from Makefile.src ->
+	  Makefile.in -> Makefile. This is so I don't have to save
+	  dependencies in my CVS repository :)
+
 Tue Apr 23 22:32:04 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* Makefile.in: Now language.c and language.h is a part of the
