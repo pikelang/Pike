@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.213 2001/03/10 12:30:41 mirar Exp $");
+RCSID("$Id: file.c,v 1.214 2001/03/10 12:57:25 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -744,6 +744,11 @@ static void file_read(INT32 args)
  *!
  *! @seealso
  *!   @[errno()], @[read()]
+ *!
+ *! @note
+ *!    The function may be interrupted prematurely
+ *!    of the timeout (due to signals); 
+ *!    check the timing manually if this is imporant.
  */
 static void file_peek(INT32 args)
 {
