@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.24 2002/09/21 15:08:31 mast Exp $
+// $Id: Table.pmod,v 1.25 2002/10/12 12:10:40 grubba Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) error("(Table) "+msg+"\n")
@@ -460,7 +460,7 @@ object ASCII = class {
     options = options || ([]);
     mapping sizes = ([]);
     array fields = indices(t);
-    string indent = String.strmult(" ", options->indent);
+    string indent = " " * options->indent;
     
     t = t->copy(({ fields }) + values(t));
     for(int field = 0; field < sizeof(fields); field++)
@@ -481,7 +481,7 @@ object ASCII = class {
     string l = (indent+"-"+
 		Array.map(values(sizes),
 			  lambda(int n)
-			  { return String.strmult("-", n); })*"---"+"-");
+			  { return "-" * n; })*"---"+"-");
     array table = values(t);
     return (indent+" "+table[0]*"   "+"\n"+l+"\n"+
 	    Array.map(table[1..], lambda(array row, string indent)
