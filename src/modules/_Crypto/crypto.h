@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.h,v 1.4 2000/03/28 12:20:01 grubba Exp $
+ * $Id: crypto.h,v 1.5 2000/08/09 13:18:22 grubba Exp $
  *
  * Prototypes for some functions.
  *
@@ -7,6 +7,9 @@
 
 extern void assert_is_crypto_module(struct object *);
 
+extern void pike_nt_init(void);
+extern void pike_md2_init(void);
+extern void pike_md2_exit(void);
 extern void pike_md5_init(void);
 extern void pike_md5_exit(void);
 extern void pike_crypto_init(void);
