@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.245 2003/01/01 17:51:56 nilsson Exp $
+// $Id: master.pike.in,v 1.246 2003/01/07 19:41:57 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -358,7 +358,8 @@ mapping(string:array(string)) environment=([]);
 //! @appears getenv
 //!
 //! When called with no arguments, a mapping with all current environment
-//! variables will be returned.
+//! variables will be returned. Destructive opreations on the mapping
+//! will not affect the internal environment representation.
 //!
 //! If the @[varname] argument has been given, the value of the environment
 //! variable with the name @[varname] will be returned. If no such
