@@ -524,7 +524,6 @@ INT32 *get_order(struct array *v, cmpfun fun)
   return current_order;
 }
 
-
 static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
 {
   INT32 tmp;
@@ -604,6 +603,17 @@ static int alpha_svalue_cmpfun(struct svalue *a, struct svalue *b)
     return set_svalue_cmpfun(a,b);
   }
 }
+
+void sort_array_destructively(struct array *v)
+{
+  if(!v->size) return;
+  fsort((char *)ITEM(v),
+	v->size,
+	sizeof(struct svalue),
+	(fsortfun)alpha_svalue_cmpfun);
+}
+
+
 
 /*
  * return an 'order' suitable for making mappings, lists other sets
@@ -1117,8 +1127,7 @@ node *make_node_from_array(struct array *a)
 
 void push_array_items(struct array *a)
 {
-  if(sp + a->size >= &evaluator_stack[EVALUATOR_STACK_SIZE])
-    error("Array does not fit on stack.\n");
+  check_stack(a->size);
   check_array_for_destruct(a);
   if(a->refs == 1)
   {
@@ -1126,12 +1135,11 @@ void push_array_items(struct array *a)
     sp += a->size;
     a->size=0;
     free_array(a);
-    return;
   }else{
     assign_svalues_no_free(sp, ITEM(a), a->size, a->type_field);
+    sp += a->size;
+    free_array(a);
   }
-  sp += a->size;
-  free_array(a);
 }
 
 void describe_array_low(struct array *a, struct processing *p, int indent)
@@ -1211,45 +1219,40 @@ struct array *aggregate_array(INT32 args)
 struct array *explode(struct lpc_string *str,
 		       struct lpc_string *del)
 {
-  INT32 e,d;
+  INT32 e;
   struct array *ret;
   char *s, *end, *tmp;
 
   if(!del->len)
   {
     ret=allocate_array_no_init(str->len,0);
-    ret->type_field |= BIT_STRING;
     for(e=0;e<str->len;e++)
     {
       ITEM(ret)[e].type=T_STRING;
       ITEM(ret)[e].u.string=make_shared_binary_string(str->str+e,1);
     }
   }else{
-
+    struct mem_searcher searcher;
+    
     s=str->str;
     end=s+str->len;
     e=0;
-
-    while((s=MEMMEM(del->str, del->len, s, end-s)))
+    
+    init_memsearch(&searcher, del->str, del->len, str->len);
+    
+    while(tmp=memory_search(&searcher, s, end-s))
     {
-      s+=del->len;
+      check_stack(1);
+      push_string(make_shared_binary_string(s, tmp-s));
+      s=tmp+del->len;
       e++;
     }
-
-    ret=allocate_array_no_init(e+1,0);
-    ret->type_field |= BIT_STRING;
-
-    s=str->str;
-    for(d=0;d<e;d++)
-    {
-      tmp=MEMMEM((char *)(del->str), del->len, (char *)s, end-s);
-      ITEM(ret)[d].type=T_STRING;
-      ITEM(ret)[d].u.string=make_shared_binary_string(s,tmp-s);
-      s=tmp+del->len;
-    }
-    ITEM(ret)[d].type=T_STRING;
-    ITEM(ret)[d].u.string=make_shared_binary_string(s,end-s);
+    check_stack(1);
+    push_string(make_shared_binary_string(s, end-s));
+    e++;
+    ret=aggregate_array(e);
   }
+  ret->type_field=BIT_STRING;
   return ret;
 }
 
@@ -1314,13 +1317,17 @@ struct array *copy_array_recursively(struct array *a,struct processing *p)
 
 void apply_array(struct array *a, INT32 args)
 {
-  struct svalue *argp;
   INT32 e;
   struct array *ret;
-  argp=sp-args;
+  INT32 argp;
+
+  argp=sp-args - evaluator_stack;
+
+  check_stack(a->size + args + 1);
+
   for(e=0;e<a->size;e++)
   {
-    assign_svalues_no_free(sp,argp,args,BIT_MIXED);
+    assign_svalues_no_free(sp,evaluator_stack+argp,args,BIT_MIXED);
     sp+=args;
     apply_svalue(ITEM(a)+e,args);
   }

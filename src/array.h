@@ -75,6 +75,7 @@ struct array *copy_array(struct array *v);
 void check_array_for_destruct(struct array *v);
 INT32 array_find_destructed_object(struct array *v);
 INT32 *get_order(struct array *v, cmpfun fun);
+void sort_array_destructively(struct array *v);
 INT32 *get_set_order(struct array *a);
 INT32 *get_switch_order(struct array *a);
 INT32 *get_alpha_order(struct array *a);
