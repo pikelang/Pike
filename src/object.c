@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.41 1998/02/19 21:38:45 hubbe Exp $");
+RCSID("$Id: object.c,v 1.42 1998/03/22 06:21:25 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -237,12 +237,6 @@ void destruct(struct object *o)
 
   o->refs++;
 
-  if(o->parent)
-  {
-    free_object(o->parent);
-    o->parent=0;
-  }
-
   e=FIND_LFUN(o->prog,LFUN_DESTROY);
   if(e != -1)
   {
@@ -258,6 +252,12 @@ void destruct(struct object *o)
   }
 
   o->prog=0;
+
+  if(o->parent)
+  {
+    free_object(o->parent);
+    o->parent=0;
+  }
 
   frame.parent_frame=fp;
   frame.current_object=o;  /* refs already updated */
