@@ -1195,18 +1195,15 @@ test_parser([[{
   p->feed("f")->feed("o")->feed("")->feed(WIDENER);
   return p->read(0) + " " + p->read(1) + " " + p->read(2) + " " + p->read(3);
 }]], " f o" WIDENER " ");
-
 test_any([[{
    string decode_config_region(Parser.HTML p, mapping mr, string s)
    {
       return "";
    };
-
    string s=#" <region name='Variables'> </region> ";
-
-   Parser.HTML()
-      ->add_container ("region", decode_config_region)
-      ->finish (s);
-   return 0;
-]]},0);
+   object p = Parser.HTML();
+   p->add_container ("region", decode_config_region);
+   p->finish (s);
+   return p->read();
+}]],"  ");
 

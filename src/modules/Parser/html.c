@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.139 2001/04/14 21:16:46 grubba Exp $ */
+/* $Id: html.c,v 1.140 2001/04/20 21:18:31 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -32,7 +32,7 @@ extern struct program *parser_html_program;
 
 #ifdef DEBUG
 #undef DEBUG
-#define DEBUG(X) if (THIS->flags & FLAG_DEBUG_MODE) fprintf X
+#define DEBUG(X) do if (THIS->flags & FLAG_DEBUG_MODE) {fprintf X;} while (0)
 #define DEBUG_MARK_SPOT debug_mark_spot
 #define HTML_DEBUG
 #else
@@ -465,6 +465,35 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
 	   DO_NOT_WARN((int)(l+c-i0+3)),
 	   buf);
 }
+
+static void debug_print_chars (p_wchar2 *chars, size_t numchars)
+{
+  size_t i;
+  for (i=0; i<numchars; i++)
+    if (i > 30) {
+      fprintf (stderr, "... (number of chars suspiciously large: %d)", numchars);
+      break;
+    }
+    else if (chars[i]<33 || (chars[i]>126 && chars[i]<160)
+	     || chars[i]>255)
+      fprintf(stderr,"%d ",chars[i]);
+    else
+      fprintf(stderr,"'%c' ",chars[i]);
+  fprintf(stderr,"\n");
+}
+
+static void debug_print_search_chars (struct parser_html_storage *this)
+{
+  size_t i;
+  fprintf (stderr, "  arg_break_chars: ");
+  debug_print_chars (ARG_BREAK_CHARS (this), N_ARG_BREAK_CHARS (this));
+  fprintf (stderr, "  look_for_start:  ");
+  debug_print_chars (LOOK_FOR_START (this), NUM_LOOK_FOR_START (this));
+  for (i = 0; i < NARGQ (this); i++) {
+    fprintf (stderr, "  look_for_end[%d]: ", i);
+    debug_print_chars (LOOK_FOR_END (this)[i], NUM_LOOK_FOR_END (this)[i]);
+  }
+}
 #endif
 
 /****** init & exit *********************************/
@@ -643,9 +672,15 @@ found_start:
 #ifdef CONFIGURABLE_MARKUP
 #define init_calc_chars()
 #define exit_calc_chars()
-#define recalculate_argq(this) calculate_chars (this)
+#define recalculate_argq(this) \
+  calculate_chars (this); \
+  DEBUG ((stderr, "Recalculated search chars:\n"); \
+	 debug_print_search_chars (this))
 #else
-#define recalculate_argq(this) (this->cc = select_variant (this->flags))
+#define recalculate_argq(this) \
+  this->cc = select_variant (this->flags); \
+  DEBUG ((stderr, "Using precalculated search chars:\n"); \
+	 debug_print_search_chars (this))
 
 static INLINE void init_calc_chars()
 {
@@ -1591,20 +1626,9 @@ static int scan_forward(struct piece *feed,
 
 #ifdef SCAN_DEBUG
    if (THIS->flags & FLAG_DEBUG_MODE) {
-      int i=0;
       DEBUG_MARK_SPOT("scan_forward",feed,c);
       fprintf(stderr,"    n=%d%s; ",num_look_for,rev?"; rev":"");
-      for (i=0; i<num_look_for; i++)
-	 if (i > 30) {
-	   fprintf (stderr, "\nnum_look_for suspiciously large: %d", num_look_for);
-	   break;
-	 }
-	 else if (look_for[i]<33 || (look_for[i]>126 && look_for[i]<160)
-		  || look_for[i]>255)
-	    fprintf(stderr,"%d ",look_for[i]);
-	 else
-	    fprintf(stderr,"%d:'%c' ",look_for[i],look_for[i]);
-      fprintf(stderr,"\n");
+      debug_print_chars (look_for, num_look_for);
    }
 #define SCAN_DEBUG_MARK_SPOT(A,B,C) DEBUG_MARK_SPOT(A,B,C)
 #else
@@ -2929,9 +2953,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       /* do we need to check data? */
       if (!st->ignore_data && *feed)
       {
-	 DEBUG((stderr,"%*d do_try_feed scan for data %p:%d (len=%d)\n",
-		this->stack_count,this->stack_count,
-		*feed,st->c,feed[0]?feed[0]->s->len:0));
+	 DEBUG_MARK_SPOT("do_try_feed scan for data from", *feed, st->c);
 
 	 /* we are to get data first */
 	 /* look for tag or entity */
@@ -2939,9 +2961,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 if (scan_entity) look_for[n++] = ENTITY_START (this);
 	 if (st->parse_tags) look_for[n++] = TAG_START (this);
 	 scan_forward(dst,cdst,&dst,&cdst,look_for,n);
-	 DEBUG((stderr,"%*d do_try_feed scan for data %p:%d\n",
-		this->stack_count,this->stack_count,
-		dst,cdst));
+	 DEBUG_MARK_SPOT("do_try_feed scan for data to", dst, cdst);
 
 	 if (*feed != dst || st->c != cdst) { /* Found some data. */
 	   ignore_tag_cb = 0;
@@ -2968,10 +2988,11 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	   skip_feed_range(st,feed,&(st->c),dst,cdst);
 	 }
-
-	 DEBUG((stderr,"%*d do_try_feed scan data done %p:%d\n",
-		this->stack_count,this->stack_count,
-		*feed,st->c));
+	 else if (!dst->next && dst->s->len == cdst) {
+	   /* Skip a last empty piece. */
+	   really_free_piece (*feed);
+	   *feed = NULL;
+	 }
       }
       /* at end, entity or tag */
 
@@ -3745,12 +3766,18 @@ static void low_feed(struct pike_string *ps)
 
    if (THIS->feed_end==NULL)
    {
-      DEBUG((stderr,"  (new feed)\n"));
+#ifdef HTML_DEBUG
+      if (THIS->flags & FLAG_DEBUG_MODE) {
+	fprintf (stderr, "Initial search chars:\n");
+	debug_print_search_chars (THIS);
+      }
+#endif
+      DEBUG_MARK_SPOT("new feed", f, 0);
       THIS->top.local_feed=THIS->feed_end=f;
    }
    else
    {
-      DEBUG((stderr,"  (attached to feed end)\n"));
+      DEBUG_MARK_SPOT("attached to feed end", f, 0);
       THIS->feed_end->next=f;
       THIS->feed_end=f;
    }
