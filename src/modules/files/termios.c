@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.6 1999/11/15 17:32:38 hubbe Exp $");
+RCSID("$Id: termios.c,v 1.7 2000/02/07 08:02:17 hubbe Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -287,7 +287,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) 
    {
       if (sp[-1].type!=T_INT)  
-   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
+   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","ispeed"); 
       switch (sp[-1].u.integer)
       {
    #include "termios_flags.h"
