@@ -65,10 +65,14 @@ setmember float page_size;
 member float page_size;
 //! Get the page size (the actual size of a page)
 
+void changed();
+//! Call this when you have modified anything except the value member
+//! of the adjustment.
+
 void clamp_page( float lower, float upper );
-//! Updates the GtkAdjustment value to ensure that the range between
+//! Updates the GTK.Adjustment value to ensure that the range between
 //! lower and upper is in the current page (i.e. between value and
-//! value + page_size). If the range is larger than the page size, then
-//! only the start of it will be in the current page. A "changed"
-//! signal will be emitted if the value is changed.
+//! value + page_size). If the range is larger than the page size,
+//! then only the start of it will be in the current page. A
+//! "value_changed" signal will be emitted if the value is changed.
 
