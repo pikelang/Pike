@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.144 2003/04/03 14:56:26 grubba Exp $
+|| $Id: interpret_functions.h,v 1.145 2003/04/07 18:17:05 grubba Exp $
 */
 
 /*
@@ -714,8 +714,17 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
     s.subtype=0;
     s.u.integer=0;
     assign_lvalue(Pike_sp-4,&s);
+  } else if (Pike_sp[-2].type == T_OBJECT) {
+    /* One ref in the lvalue, and one on the stack. */
+    if(Pike_sp[-2].u.object->refs <= 2 &&
+       FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ) != -1)
+    {
+      apply_lfun(Pike_sp[-2].u.object, LFUN_ADD_EQ, 1);
+      goto add_and_pop_set_lvalue;
+    }
   }
   f_add(2);
+ add_and_pop_set_lvalue:
   assign_lvalue(Pike_sp-3,Pike_sp-1);
   pop_n_elems(3);
  add_and_pop_done:
