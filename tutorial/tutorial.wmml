@@ -32,6 +32,7 @@ predef::m_delete-behavior is missing.
 Missing funktions in the manual: (tab before function means fixed)
 UNDEFINED
 ( Stdio.append_path FIXED! /Hedda)
+Array.transpose
 Regexp->replace
 _sqrt
 _is_type
