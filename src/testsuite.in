@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.272 2000/02/08 04:20:35 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.273 2000/02/08 11:02:28 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -448,11 +448,11 @@ test_compile_error_low([[
 
 test_do([[
   class A {
-    int i = 17;
+    constant i = 5;
   };
   class B {
     inherit A;
-    constant i = 5;
+    int i = 17;
   };
   B();
 ]])
