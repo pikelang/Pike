@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.55 2004/01/14 00:44:38 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.56 2004/03/02 12:37:45 vida Exp $
  *
  */
 
@@ -450,7 +450,7 @@ class Node
   }
 
   string make_navbar_low(Node root)
-  { 
+  {
     string res="";
 
     res += make_hier_list(root);
@@ -504,7 +504,7 @@ class Node
 
     Node tmp;
 
-    if(index==0)
+    if(index==0 || index == -1)
       return parent;
 
     tmp = siblings[index-1];
