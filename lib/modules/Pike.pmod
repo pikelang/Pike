@@ -1,6 +1,6 @@
 // Pike core things that don't belong anywhere else.
 //
-// $Id: Pike.pmod,v 1.4 2002/03/12 15:12:18 grubba Exp $
+// $Id: Pike.pmod,v 1.5 2002/03/12 15:14:44 grubba Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -16,4 +16,5 @@ constant BacktraceFrame = __builtin.backtrace_frame;
 constant Security = __builtin.security;
 #endif /* constant(__builtin.security) */
 
-constant Backend = __builtin.__backend;
+constant Backend = __builtin.Backend;
+constant DefaultBackend = __builtin.__backend;
