@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.11 2001/05/09 13:15:25 hop Exp $
+### $Id: regional,v 1.12 2001/07/18 10:01:47 nilsson Exp $
 
 ### =====================================================================
 ###
@@ -8,7 +8,8 @@
 ###
 ### Event definition:
 ### 	Event "<id>" <flags> "<name>" <rule>
-###          ^ only one space
+###     ^    ^ only one space
+###     may be preceded by whitespace
 ###
 ### where <rule> is one of the following:
 ### 	Fixed <month> <date>
@@ -69,6 +70,8 @@
 ### <flags> is any character; "-" is treated as "no flags",
 ### "h" is holiday, "f" is flag day.
 ###
+### A "#" character marks the rest of the line as a comment.
+### Empty lines are ignored.
 ###
 ### No <id> may contain a doublequote ('"');
 ### <name> may escape doublequote ('\"').
@@ -2718,15 +2721,16 @@ Region "nc"
 
 
 # new zealand
-Region "new zealand"
+Region "nz"
   Add   "new year 2d"             - # "New Year"              Fixed Jan  1  2 days
-  Event "new zealand/waitangi"    -   "Waitangi Day"          Fixed Feb  6
+  Event "nz/waitangi"             h   "Waitangi Day"          Fixed Feb  6
   Add   "c/good friday"           - # "Good Friday"           Easter -2
   Add   "c/easter monday"         - # "Easter Monday"         Easter +1
-  Add   "anzac"                   - # "ANZAC Day"             Fixed Apr 25
+  Add "c/easter"                  h # "Easter"                Easter +0
+  Add   "anzac"                   h # "ANZAC Day"             Fixed Apr 25
   Add   "labor"                   - # "Labor Day"             Fixed May  1
-  Event "new zealand/queens"      -   "Queen's Birthday"      Fixed Jun  4
-  Event "new zealand/labor"       -   "Labor Day"             WDRel Oct Mon last
+  Event "nz/queens"               -   "Queen's Birthday"      Fixed Jun  4
+  Event "nz/labor"                -   "Labor Day"             WDRel Oct Mon last
   Add   "c/christmas"             - # "Christmas Day"         Fixed Dec 25
   Add   "c/boxing"                - # "Boxing Day"            Fixed Dec 26
 
@@ -3404,6 +3408,19 @@ Region "se"
   Add   "c/easter eve"                -  # "Easter Eve"               Easter -1
   Event "se/valborg eve"              -    "Valborgsmässoafton"       Fixed Apr 30
   Event "se/mothers"                  -    "Mother's Day"             WDRel May Sun last
+
+# http://oresund.malmo.se/Regional_info/Fester/Svensk/maj.htm
+#  Mors dag firas den sista söndagen i maj. Mors dag lanserades 1905
+#  av den amerikanska lärarinnan Ann Jarvis och firades första gången
+#  i USA andra söndagen i maj 1907.I Sverige togs traditionen upp 1919
+#  på initiativ av Cecilia Bååth - Holmberg, som flyttade det till
+#  sista söndagen i maj. 1920 gav hon ut en handledning om hur man
+#  skulle fira Mors dag. Det är inte många fester som tillkommit genom
+#  att någon talat om hur firandet skall gå till. I våra dagar har de
+#  kommersiella intressena tagit över, men många mödrar får
+#  fortfarande kaffe på sängen och bjuds på middag och blommor.
+
+
   Add   "c/pentecost eve"             -  # "Pentecost Eve"            Easter +48
   Event "se/midsummers eve"           -    "Midsummer's Eve"          WDRel Jun 20 Fri +1
   Add   "saints/john the baptist"     -  # "St. John the Baptist"     Fixed Jun 24
@@ -3725,6 +3742,7 @@ Region "uy"
 Region "us"
   Event "us/columbus"             h   "Columbus Day"                WDRel Oct Mon 2nd
   Event "us/veterans"             h   "Veteran's Day"               Fixed Nov 11
+  Add   "saints/valentine"        - # "St. Valentine's Day"                     (14-Feb 2000)
   Event "us/washingtons"          h   "Washington's Birthday"       WDRel Feb Mon 3rd
   Add   "new year"                h # "New Year's Day"              Fixed Jan  1
   Event "us/independence"         h   "Independence Day"            Fixed Jul  4
