@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.10 2001/01/18 13:01:18 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.11 2001/01/26 12:40:47 hubbe Exp $");
 
 #endif
 
@@ -718,7 +718,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	continue;
 
       align=(data->sections[s].characteristics>>20) & 0xf;
-      align=(1<<(align-1))-1;
+      if(align)
+	align=(1<<(align-1))-1;
 #ifdef DLDEBUG
       fprintf(stderr,"DL: section[%d,%d], %d bytes, align=%d (0x%x)\n",e,s,data->sections[s].raw_data_size,align+1,data->sections[s].characteristics);
 #endif
@@ -818,13 +819,18 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	continue;
 
       align=(data->sections[s].characteristics>>20) & 0xf;
-      align=(1<<(align-1))-1;
+      if(align)
+	align=(1<<(align-1))-1;
       ptr+=align;
       ptr&=~align;
 
       data->section_addresses[s]=(char *)ret->memory + ptr;
 #ifdef DLDEBUG
-      fprintf(stderr,"DL: section[%d]=%p\n",s,data->section_addresses[s]);
+      fprintf(stderr,"DL: section[%d]=%p { %d, %d }\n",s,
+	      data->section_addresses[s],
+	      data->sections[s].ptr2_raw_data,
+	      data->sections[s].raw_data_size);
+      FLUSH();
 #endif
 
       if(data->sections[s].ptr2_raw_data)
