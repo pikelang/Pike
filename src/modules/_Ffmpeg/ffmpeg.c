@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.6 2002/09/09 16:13:21 hop Exp $
+ * $Id: ffmpeg.c,v 1.7 2002/09/09 20:38:37 manual Exp $
  *
  */
 
@@ -70,8 +70,7 @@ int encoder_flg(AVCodec *codec) {
   return(flg);
 }
 
-/*!
- *! @module _Ffmpeg
+/*! @module _Ffmpeg
  */
 
 /*! @class ffmpeg
