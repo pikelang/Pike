@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.87 2001/08/16 00:45:43 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.88 2001/08/16 03:27:35 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1799,6 +1799,168 @@ MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 
 MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
+OPCODE1(F_CALL_OTHER,"call other", {
+  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  struct svalue *s=Pike_sp-args;
+  if(s->type == T_OBJECT)
+  {
+    struct object *o=s->u.object;
+    struct program *p;
+    if((p=o->prog))
+    {
+      if(FIND_LFUN(p, LFUN_ARROW) == -1)
+      {
+	int fun;
+	fun=find_shared_string_identifier(Pike_fp->context.prog->strings[arg1],
+					  p);
+	if(fun >= 0)
+	{
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)fun))
+	  {
+	    Pike_fp->save_sp--;
+	    Pike_fp->next->pc=PROG_COUNTER;
+	    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+	    DO_JUMP_TO(Pike_fp->pc);
+	  }
+	  stack_unlink(1);
+	  DONE;
+	}
+      }
+    }
+  }
+
+  {
+    struct svalue tmp;
+    struct svalue tmp2;
+
+    tmp.type=PIKE_T_STRING;
+    tmp.u.string=Pike_fp->context.prog->strings[arg1];
+    tmp.subtype=1;
+
+    index_no_free(&tmp2, s, &tmp);
+    free_svalue(s);
+    *s=tmp2;
+    print_return_value();
+
+    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    {
+      Pike_fp->next->pc=PROG_COUNTER;
+      Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+      DO_JUMP_TO(Pike_fp->pc);
+    }
+    DONE;
+  }
+});
+
+OPCODE1(F_CALL_OTHER_AND_POP,"call other & pop", {
+  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  struct svalue *s=Pike_sp-args;
+  if(s->type == T_OBJECT)
+  {
+    struct object *o=s->u.object;
+    struct program *p;
+    if((p=o->prog))
+    {
+      if(FIND_LFUN(p, LFUN_ARROW) == -1)
+      {
+	int fun;
+	fun=find_shared_string_identifier(Pike_fp->context.prog->strings[arg1],
+					  p);
+	if(fun >= 0)
+	{
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)fun))
+	  {
+	    Pike_fp->save_sp--;
+	    Pike_fp->next->pc=PROG_COUNTER;
+	    Pike_fp->flags |= 
+	      PIKE_FRAME_RETURN_INTERNAL |
+	      PIKE_FRAME_RETURN_POP;
+	    DO_JUMP_TO(Pike_fp->pc);
+	  }
+	  pop_2_elems();
+	  DONE;
+	}
+      }
+    }
+  }
+
+  {
+    struct svalue tmp;
+    struct svalue tmp2;
+
+    tmp.type=PIKE_T_STRING;
+    tmp.u.string=Pike_fp->context.prog->strings[arg1];
+    tmp.subtype=1;
+
+    index_no_free(&tmp2, s, &tmp);
+    free_svalue(s);
+    *s=tmp2;
+    print_return_value();
+
+    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    {
+      Pike_fp->next->pc=PROG_COUNTER;
+      Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+      DO_JUMP_TO(Pike_fp->pc);
+    }
+    pop_stack();
+  }
+});
+
+OPCODE1(F_CALL_OTHER_AND_RETURN,"call other & return", {
+  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  struct svalue *s=Pike_sp-args;
+  if(s->type == T_OBJECT)
+  {
+    struct object *o=s->u.object;
+    struct program *p;
+    if((p=o->prog))
+    {
+      if(FIND_LFUN(p, LFUN_ARROW) == -1)
+      {
+	int fun;
+	fun=find_shared_string_identifier(Pike_fp->context.prog->strings[arg1],
+					  p);
+	if(fun >= 0)
+	{
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)fun))
+	  {
+	    PIKE_OPCODE_T *addr = Pike_fp->pc;
+	    Pike_fp->save_sp--;
+	    DO_IF_DEBUG(Pike_fp->next->pc=0);
+	    unlink_previous_frame();
+	    DO_JUMP_TO(addr);
+	  }
+	  stack_unlink(1);
+	  DO_DUMB_RETURN;
+	}
+      }
+    }
+  }
+
+  {
+    struct svalue tmp;
+    struct svalue tmp2;
+
+    tmp.type=PIKE_T_STRING;
+    tmp.u.string=Pike_fp->context.prog->strings[arg1];
+    tmp.subtype=1;
+
+    index_no_free(&tmp2, s, &tmp);
+    free_svalue(s);
+    *s=tmp2;
+    print_return_value();
+
+    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    {
+      PIKE_OPCODE_T *addr = Pike_fp->pc;
+      DO_IF_DEBUG(Pike_fp->next->pc=0);
+      unlink_previous_frame();
+      DO_JUMP_TO(addr);
+    }
+    DO_DUMB_RETURN;
+  }
+});
 
 #undef DO_CALL_BUILTIN
 #ifdef PIKE_DEBUG

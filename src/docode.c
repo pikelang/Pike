@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.129 2001/08/15 03:31:55 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.130 2001/08/16 03:27:35 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1218,6 +1218,16 @@ static int do_docode2(node *n, INT16 flags)
 					       CAR(n)->u.integer.b)->identifier_flags))
     {
       return do_lfun_call(CAR(n)->u.integer.b,CDR(n));
+    }
+    else if(CAR(n)->token == F_ARROW)
+    {
+      emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+      do_docode(CAAR(n),0); /* object */
+      do_docode(CDR(n),0); /* args */
+      emit1(F_CALL_OTHER, store_prog_string(CDAR(n)->u.sval.u.string));
+      POP_AND_DONT_CLEANUP;
+      return 1;
     }
     else
     {
