@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.67 2001/09/01 15:20:08 mast Exp $
+# $Id: static_module_makefile.in,v 1.68 2001/10/15 09:37:03 mast Exp $
 #
 
 
@@ -138,7 +138,7 @@ depend:
 
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE)
-	if test "x$(REAL_TESTSUITE)" != x ; then \
+	@if test "x$(REAL_TESTSUITE)" != x ; then \
 	  cp $(SRCDIR)/$(REAL_TESTSUITE) module_testsuite; \
 	else \
 	  if test "$$PIKE_PATH_TRANSLATE" = ""; then \
