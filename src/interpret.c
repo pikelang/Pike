@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.295 2003/10/20 13:15:58 mast Exp $
+|| $Id: interpret.c,v 1.296 2003/12/09 17:44:59 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.295 2003/10/20 13:15:58 mast Exp $");
+RCSID("$Id: interpret.c,v 1.296 2003/12/09 17:44:59 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -976,6 +976,16 @@ void *dummy_label = NULL;
     }								\
   } while(0)
 #endif /* !CALL_MACHINE_CODE */
+
+#if defined(OPCODE_INLINE_BRANCH) || defined(INS_F_JUMP) || \
+    defined(INS_F_JUMP_WITH_ARG) || defined(INS_F_JUMP_WITH_TWO_ARGS)
+/* Intended to be called from machine code on backward branch jumps,
+ * to ensure thread switching. */
+void branch_check_threads_etc()
+{
+  fast_check_threads_etc (6);
+}
+#endif
 
 #ifdef PIKE_DEBUG
 

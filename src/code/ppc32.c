@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.31 2003/12/09 13:31:43 grubba Exp $
+|| $Id: ppc32.c,v 1.32 2003/12/09 17:44:59 grubba Exp $
 */
 
 /*
@@ -15,6 +15,8 @@
 #include "constants.h"
 #include "object.h"
 #include "builtin_functions.h"
+#include "pikecode.h"
+#include "interpret.h"
 
 #if PIKE_BYTEORDER == 1234
 #define MAKE_TYPE_WORD(t,st) ((t)|((st)<<16))

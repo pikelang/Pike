@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.21 2003/12/09 13:31:43 grubba Exp $
+|| $Id: ppc32.h,v 1.22 2003/12/09 17:44:59 grubba Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -243,7 +243,7 @@ void ppc32_decode_program(struct program *p);
 			  "r10", "r11", "r12")
 
 #define OPCODE_INLINE_BRANCH
-#define OPCODE_RETURN_JUMPADDR
+/* #define OPCODE_RETURN_JUMPADDR */
 
 #ifdef OPCODE_RETURN_JUMPADDR
 
