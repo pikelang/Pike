@@ -960,3 +960,5 @@ test_any([[{
     feed("<? ? >")->
     finish()->read();
 }]], "<? ? >");
+test_equal(Parser.HTML()->parse_tag_args("<"), ([]));
+test_equal(Parser.HTML()->parse_tag_args(">"), ([]));
