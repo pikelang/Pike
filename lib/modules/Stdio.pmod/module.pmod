@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.178 2003/07/22 16:57:10 grubba Exp $
+// $Id: module.pmod,v 1.179 2003/07/23 10:51:26 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2055,10 +2055,10 @@ static void call_cp_cb(int len,
 //! @param to
 //!   Name of file to create or replace with a copy of @[from].
 //!
-//! @param cb
+//! @param callback
 //!   Function to be called on completion.
 //!   The first argument will be @expr{1@} on success, and @expr{0@} (zero)
-//!   otherwise. The rest of the arguments tp @[callback] are passed
+//!   otherwise. The rest of the arguments to @[callback] are passed
 //!   verbatim from @[args].
 //!
 //! @param args
@@ -2066,7 +2066,9 @@ static void call_cp_cb(int len,
 //!
 //! @note
 //!   For @[callback] to be called, the backend must be active (ie
-//!   @[main()] must have returned @expr{-1@}).
+//!   @[main()] must have returned @expr{-1@}, or @[Pike.DefaultBackend]
+//!   get called in some other way). The actual copying may start
+//!   before the backend has activated.
 //!
 //! @bugs
 //!   Currently the file sizes are not compared, so the destination file
@@ -2095,7 +2097,7 @@ void async_cp(string from, string to,
 //! with the current umask (on OS'es that support this).
 //!
 //! @returns
-//! Returns zero if it fails and nonzero if it is successful.
+//!   Returns zero on failure and nonzero on success.
 //!
 //! @seealso
 //! @[mkdir()]
@@ -2543,7 +2545,8 @@ static class nb_sendfile
 //! before the function returns.
 //!
 //! For @[callback] to be called, the backend must be active (ie
-//! @[main()] must have returned @expr{-1@}).
+//! @[main()] must have returned @expr{-1@}, or @[Pike.DefaultBackend]
+//! get called in some other way).
 //!
 //! In some cases, the backend must also be active for any sending to
 //! be performed at all.
@@ -2650,5 +2653,10 @@ class UDP
 //! Write a message to stderr. Stderr is normally the console, even if
 //! the process output has been redirected to a file or pipe.
 //!
+//! @note
+//!   This function is identical to @[predef::werror()].
+//!
+//! @seealso
+//!   @[predef::werror()]
 
 constant werror=predef::werror;
