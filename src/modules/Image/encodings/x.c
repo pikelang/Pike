@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.33 2000/08/16 19:51:15 grubba Exp $ */
+/* $Id: x.c,v 1.34 2000/08/23 17:28:22 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.33 2000/08/16 19:51:15 grubba Exp $
+**!	$Id: x.c,v 1.34 2000/08/23 17:28:22 grubba Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.33 2000/08/16 19:51:15 grubba Exp $");
+RCSID("$Id: x.c,v 1.34 2000/08/23 17:28:22 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -49,6 +49,8 @@ RCSID("$Id: x.c,v 1.33 2000/08/16 19:51:15 grubba Exp $");
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+
+/* #define BITDEBUG */
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -570,6 +572,12 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
    bit=0;
    *d=0;
 
+#ifdef BITDEBUG
+   fprintf(stderr, "image_x_encode_pseudo_color(%d, [%d,%d], X, %d, %d, %d, X)\n",
+	   args, img->xsize, img->ysize,
+	   bpp, vbpp, alignbits);
+#endif /* BITDEBUG */
+
    y=img->ysize;
    while (y--)
    {
@@ -597,7 +605,7 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b = ((*(s++))<<(32-bpp)) && 0xffffffff;
+	    b = ((*(s++))<<(32-bpp)) & 0xffffffff;
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
