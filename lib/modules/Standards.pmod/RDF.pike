@@ -7,7 +7,15 @@ class Node {
   static int(0..1) name_is_uri;
   static string name;
 
-  void create() {
+  //! @decl void create()
+  //! @decl void create(string id, int(0..1) is_uri)
+  void create(void|string id, void|int(0..1) is_uri) {
+    if(id) {
+      if(is_uri)
+	set_uri(id);
+      else
+	set_string(id);
+    }
     number = node_counter++;
   }
 
@@ -74,10 +82,23 @@ static void update_uri_table(Node entity) {
 //! Adds a relation to the RDF set.
 void add_relation(Node subj, Node pred, Node obj) {
   ADT.Relation.Binary rel = relations[pred];
-  if(!rel) rel = ADT.Relation.Binary;
+  if(!rel) {
+    rel = ADT.Relation.Binary(pred);
+    relations[pred] = rel;
+  }
+
   update_uri_table(subj);
   update_uri_table(pred);
   update_uri_table(obj);
+
+  rel->add(subj, obj);
+}
+
+//! Returns an RDF node with the given URI as identifier,
+//! or zero.
+Node get_node(string uri) {
+  if(uris[uri]) return uris[uri];
+  return 0;
 }
 
 //! Returns an N-triples serialization of the RDF set.
