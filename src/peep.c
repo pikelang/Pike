@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.68 2001/08/15 16:40:47 marcus Exp $");
+RCSID("$Id: peep.c,v 1.69 2001/08/16 18:49:46 marcus Exp $");
 
 static void asm_opt(void);
 
@@ -137,7 +137,6 @@ void update_arg(int instr,INT32 arg)
 #ifndef FLUSH_CODE_GENERATOR_STATE
 #define FLUSH_CODE_GENERATOR_STATE()
 #endif
-
 
 /**** Bytecode Generator *****/
 
@@ -328,7 +327,7 @@ void assemble(void)
 	tmp=INS_F_JUMP(c->opcode);
 	if(tmp != -1)
 	{
-	  upd_pointer(tmp, jumps[c->arg]);
+	  UPDATE_F_JUMP(tmp, jumps[c->arg]);
 	  jumps[c->arg]=~tmp;
 	  break;
 	}
@@ -407,7 +406,7 @@ void assemble(void)
 #ifdef INS_F_JUMP
       if(jumps[e] < 0)
       {
-	tmp = read_pointer(~jumps[e]);
+	tmp = READ_F_JUMP(~jumps[e]);
 	UPDATE_F_JUMP(~jumps[e], tmp2);
 	jumps[e]=tmp;
 	continue;

@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.15 2001/08/13 23:39:10 mast Exp $
+ * $Id: ia32.c,v 1.16 2001/08/16 18:49:46 marcus Exp $
  *
  * Machine code generator for IA32.
  *
@@ -289,6 +289,11 @@ INT32 ins_f_jump(unsigned int b)
 void update_f_jump(INT32 offset, INT32 to_offset)
 {
   upd_pointer(offset, to_offset - offset - 4);
+}
+
+INT32 read_f_jump(INT32 offset)
+{
+  return read_pointer(offset) + offset + 4;
 }
 
 void ia32_push_int(INT32 x)
