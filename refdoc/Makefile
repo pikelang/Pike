@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.55 2003/04/15 14:46:09 nisse Exp $
+# $Id: Makefile,v 1.56 2003/09/27 12:58:46 kiwi Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -12,6 +12,8 @@ PIKE=pike
 all: modref traditional
 
 pike.ida.liu.se: modref pelix_modref traditional
+
+caudium.net: modref caudium_modref traditional
 
 # These are the actual build targets for making manuals...
 
@@ -42,6 +44,18 @@ low_pelix_modref:
 	  $(BUILDDIR)/modref.xml structure/pelix_modref.html pelix_modref predef
 	@mkdir pelix_modref/images
 	cp $(BUILDDIR)/doc_build/images/* pelix_modref/images
+
+caudium_modref: $(BUILDDIR)/modref.xml structure/caudium_modref.html \
+		presentation/make_html.pike presentation/tree-split-autodoc.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_caudium_modref
+
+low_caudium_modref:
+	rm -rf caudium_modref || /bin/true
+	@mkdir caudium_modref
+	@$(PIKE) presentation/tree-split-autodoc.pike \
+	  $(BUILDDIR)/modref.xml structure/caudium_modref.html caudium_modref predef
+	@mkdir pelix_modref/images
+	cp $(BUILDDIR)/doc_build/images/* caudium_modref/images
 
 one_page: onepage $(BUILDDIR)/onepage.xml presentation/make_html.pike
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_one_page

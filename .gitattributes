@@ -257,6 +257,7 @@ testfont binary
 /refdoc/Makefile foreign_ident
 /refdoc/presentation/tree-split-autodoc.pike foreign_ident
 /refdoc/presentation/wiki.pike foreign_ident
+/refdoc/structure/caudium_modref.html foreign_ident
 /refdoc/structure/modref.xml foreign_ident
 /refdoc/structure/onepage.xml foreign_ident
 /refdoc/structure/traditional.xml foreign_ident
