@@ -11,7 +11,7 @@
  */
 %token F_PREFIX_256 F_PREFIX_512 F_PREFIX_768 F_PREFIX_1024
 %token F_PREFIX_CHARX256 F_PREFIX_WORDX256 F_PREFIX_24BITX256
-%token F_POP_VALUE F_POP_N_ELEMS F_MARK F_MARK2
+%token F_POP_VALUE F_POP_N_ELEMS F_MARK F_MARK2 F_LDA
 %token F_CALL_LFUN F_CALL_LFUN_AND_POP
 %token F_APPLY F_APPLY_AND_POP F_MARK_APPLY F_MARK_APPLY_POP
 
@@ -31,8 +31,10 @@
 /*
  * Basic value pushing
  */
-%token F_LFUN F_GLOBAL F_LOCAL F_2_LOCALS F_MARK_AND_LOCAL
-%token F_GLOBAL_LVALUE F_LOCAL_LVALUE
+%token F_LFUN
+%token F_GLOBAL F_GLOBAL_LVALUE
+%token F_LOCAL F_2_LOCALS F_LOCAL_LVALUE F_MARK_AND_LOCAL
+%token F_EXTERNAL F_EXTERNAL_LVALUE
 %token F_CLEAR_LOCAL F_CLEAR_2_LOCAL F_CLEAR_STRING_SUBTYPE
 %token F_CONSTANT F_FLOAT F_STRING F_ARROW_STRING
 %token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 F_BIGNUM
@@ -157,7 +159,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.42.2.2 1997/06/25 22:46:38 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.42.2.3 1997/06/27 06:55:17 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -390,16 +392,8 @@ program_ref: string_constant
       break;
 
     case T_FUNCTION:
-    {
-      struct program *p=program_from_function(sp-1);
-      if(p)
-      {
-	p->refs++;
-	pop_stack();
-	push_program(p);
+      if(program_from_function(sp-1))
 	break;
-      }
-    }
 
     default:
       yyerror("Illegal program identifier");
@@ -416,12 +410,11 @@ program_ref: string_constant
           
 inheritance: modifiers F_INHERIT program_ref optional_rename_inherit ';'
   {
-    if(sp[-1].type == T_PROGRAM &&
-       !(new_program->flags & PROGRAM_PASS_1_DONE))
+    if(!(new_program->flags & PROGRAM_PASS_1_DONE))
     {
       struct pike_string *s=sp[-2].u.string;
       if($4) s=$4;
-      do_inherit(sp[-1].u.program,$1,s);
+      do_inherit(sp-1,$1,s);
     }
     if($4) free_string($4);
     pop_n_elems(2);
@@ -679,9 +672,10 @@ type3: F_INT_ID      { push_type(T_INT); }
 opt_object_type:  /* Empty */ { push_type_int(0); }
   | '(' program_ref ')'
   {
-    if(sp[-1].type == T_PROGRAM)
+    struct program *p=program_from_svalue(sp-1);
+    if(p)
     {
-      push_type_int(sp[-1].u.program->id);
+      push_type_int(p->id);
     }else{
       yyerror("Not a valid program specifier");
       push_type_int(0);
@@ -960,25 +954,20 @@ class: modifiers F_CLASS F_IDENTIFIER
   }
   failsafe_program
   {
-    struct svalue s;
+    struct program *p;
     if(compiler_pass == 1)
-      s.u.program=end_first_pass(0);
+      p=end_first_pass(0);
     else
-      s.u.program=end_program();
+      p=end_program();
 
-    if(!s.u.program)
-    {
+    $$=mkidentifiernode(isidentifier($3));
+
+    if(!p)
       yyerror("Class definition failed.");
-      s.type=T_INT;
-      s.subtype=0;
-    } else {
-      s.type=T_PROGRAM;
-      s.subtype=0;
-    }
+    else
+      free_program(p);
 
     free_string($3);
-    $$=mksvaluenode(&s);
-    free_svalue(&s);
   }
   ;
 
@@ -1249,10 +1238,7 @@ low_idents: F_IDENTIFIER
       $$=mklocalnode(i);
     }else if((i=isidentifier($1))>=0){
       $$=mkidentifiernode(i);
-    }else if(find_module_identifier($1)){
-      $$=mkconstantsvaluenode(sp-1);
-      pop_stack();
-    }else{
+    }else if(!($$=find_module_identifier($1))){
       $$=0;
       if( get_master() && !num_parse_error)
       {

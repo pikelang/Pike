@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.36.2.1 1997/06/25 22:46:35 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.36.2.2 1997/06/27 06:55:13 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -279,28 +279,6 @@ void f_call_function(INT32 args)
     sp[-2]=sp[-1];
     sp--;
   }
-}
-
-void f_parent(INT32 args)
-{
-  struct object *o;
-  if(!args)
-  {
-    o=fp->current_object;
-  }else{
-    if(sp[-args].type!=T_OBJECT)
-      error("Bad argument 1 to parent()\n");
-    o=sp[-args].u.object;
-  }
-  o->refs++;
-  pop_n_elems(args);
-  if(o->parent)
-  {
-    ref_push_object(o->parent);
-  }else{
-    push_int(0);
-  }
-  free_object(o);
 }
 
 void f_backtrace(INT32 args)
@@ -858,16 +836,14 @@ void f_object_program(INT32 args)
     {
       if(o->parent && o->parent->prog)
       {
-	INT32 i=find_child(o->parent->prog, p);
-	if(i!=-1)
-	{
-	  o->refs++;
-	  pop_n_elems(args);
-	  push_object(o->parent);
-	  sp[-1].subtype=i;
-	  sp[-1].type=T_FUNCTION;
-	  return;
-	}
+	INT32 id=o->parent_identifier;
+	o=o->parent;
+	o->refs++;
+	pop_n_elems(args);
+	push_object(o);
+	sp[-1].subtype=id;
+	sp[-1].type=T_FUNCTION;
+	return;
       }else{
 	p->refs++;
 	pop_n_elems(args);
@@ -1804,6 +1780,5 @@ void init_builtin_efuns()
 
   add_efun("encode_value", f_encode_value, "function(mixed:string)", OPT_TRY_OPTIMIZE);
   add_efun("decode_value", f_decode_value, "function(string:mixed)", OPT_TRY_OPTIMIZE);
-  add_efun("parent", f_parent, "function(object|void:object)", OPT_EXTERNAL_DEPEND);
 }
 

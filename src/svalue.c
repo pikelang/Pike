@@ -897,7 +897,12 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
     case T_OBJECT:
       if(s->u.object->prog)
       {
-	gc_check(s->u.object);
+#ifdef DEBUG
+	if(gc_check(s->u.object) == -2)
+	  fprintf(stderr,"(in svalue at %lx, type = %d)\n",(long)s,s->type);
+#else	  
+	  gc_check(s->u.object);
+#endif
       }else{
 	free_svalue(s);
 	s->type=T_INT;

@@ -35,8 +35,16 @@ struct node_s
     {
       struct node_s *a,*b;
     } node;
+    struct
+    {
+      int a,b;
+    } integer;
   } u;
 };
+
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
+#endif
 
 typedef struct node_s node;
 
@@ -93,6 +101,9 @@ node *mkefuncallnode(char *function, node *args);
 node *mkopernode(char *oper_id, node *arg1, node *arg2);
 node *mklocalnode(int var);
 node *mkidentifiernode(int i);
+node *mkexternalnode(int level,
+		     int i,
+		     struct identifier *id);
 node *mkcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
 node *index_node(node *n, struct pike_string * id);
@@ -116,7 +127,6 @@ int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_string *type,
 	      int modifiers);
-INT32 get_opt_info();
 /* Prototypes end here */
 
 #define CAR(n) ((n)->u.node.a)

@@ -108,7 +108,7 @@ static struct marker *getmark(void *a)
 }
 
 #ifdef DEBUG
-static void *check_for =0;
+void *gc_check_for =0;
 
 static void gdb_gc_stop_here(void *a)
 {
@@ -119,13 +119,14 @@ static void gdb_gc_stop_here(void *a)
 INT32 gc_check(void *a)
 {
 #ifdef DEBUG
-  if(check_for)
+  if(gc_check_for)
   {
-    if(check_for == a)
+    if(gc_check_for == a)
     {
       gdb_gc_stop_here(a);
+      return -2;
     }
-    return 0;
+    return -1;
   }
 #endif
   return getmark(a)->refs++;
@@ -138,16 +139,24 @@ int gc_is_referenced(void *a)
 #ifdef DEBUG
   if(m->refs > *(INT32 *)a)
   {
-    check_for=a;
+    gc_check_for=a;
 
+    fprintf(stderr,"Too many ref counts found %d > %d (%lx)\n",m->refs, *(INT32 *)a, (long)a);
+
+    fprintf(stderr,"Checking arrays\n");
     gc_check_all_arrays();
+    fprintf(stderr,"Checking multisets\n");
     gc_check_all_multisets();
+    fprintf(stderr,"Checking mappings\n");
     gc_check_all_mappings();
+    fprintf(stderr,"Checking programs\n");
     gc_check_all_programs();
+    fprintf(stderr,"Checking objects\n");
     gc_check_all_objects();
+    fprintf(stderr,"Checking callbacks\n");
     call_callback(& gc_callbacks, (void *)0);
 
-    check_for=0;
+    gc_check_for=0;
     fatal("Ref counts are totally wrong!!!\n");
   }
 #endif

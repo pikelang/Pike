@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.42.2.1 1997/06/25 22:46:37 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.42.2.2 1997/06/27 06:55:16 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -479,7 +479,7 @@ static int o_catch(unsigned char *pc);
 
 static void eval_instruction(unsigned char *pc)
 {
-  unsigned INT32 instr, prefix=0;
+  unsigned INT32 accumulator=0, instr, prefix=0;
   while(1)
   {
     fp->pc = pc;
@@ -560,6 +560,9 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_PREFIX_CHARX256);
       prefix+=EXTRACT_UCHAR(pc++)<<8;
       break;
+
+      CASE(F_LDA); accumulator=GET_ARG(); break;
+
       /* Push number */
       CASE(F_CONST0); push_int(0); break;
       CASE(F_CONST1); push_int(1); break;
@@ -567,6 +570,7 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_BIGNUM); push_int(0x7fffffff); break;
       CASE(F_NUMBER); push_int(GET_ARG()); break;
       CASE(F_NEG_NUMBER); push_int(-GET_ARG()); break;
+
 
       /* The rest of the basic 'push value' instructions */	
       CASE(F_STRING);
@@ -614,6 +618,82 @@ static void eval_instruction(unsigned char *pc)
       print_return_value();
       break;
 
+      CASE(F_EXTERNAL);
+      {
+	struct inherit *inherit;
+	struct program *p;
+	INT32 id=GET_ARG();
+	struct object *o=fp->context.parent;
+	INT32 i=fp->context.parent_identifier;
+	
+	while(1)
+	{
+	  if(!o)
+	    error("Parent no longer exists\n");
+
+	  if(!(p=o->prog))
+	    error("Attempting to access variable in destructed object\n");
+
+	  inherit=INHERIT_FROM_INT(p, i);
+
+	  if(!accumulator) break;
+	  --accumulator;
+
+	  if(p->identifier_references[id].inherit_offset==0)
+	  {
+	    i=o->parent_identifier;
+	    o=o->parent;
+	  }else{
+	    i=inherit->parent_identifier;
+	    o=inherit->parent;
+	  }
+	}
+
+	low_object_index_no_free(sp,
+				 o,
+				 id + inherit->identifier_level);
+	sp++;
+	print_return_value();
+	break;
+      }
+
+      CASE(F_EXTERNAL_LVALUE);
+      {
+	struct inherit *inherit;
+	struct program *p;
+	INT32 id=GET_ARG();
+	struct object *o=fp->context.parent;
+	INT32 i=fp->context.parent_identifier;
+	
+	while(1)
+	{
+	  if(!o)
+	    error("Parent no longer exists\n");
+
+	  if(!(p=o->prog))
+	    error("Attempting to access variable in destructed object\n");
+
+	  inherit=INHERIT_FROM_INT(p, i);
+
+	  if(!accumulator) break;
+	  accumulator--;
+
+	  if(p->identifier_references[id].inherit_offset==0)
+	  {
+	    i=o->parent_identifier;
+	    o=o->parent;
+	  }else{
+	    i=inherit->parent_identifier;
+	    o=inherit->parent;
+	  }
+	}
+
+	ref_push_object(o);
+	sp->type=T_LVALUE;
+	sp->u.integer=id + inherit->identifier_level;
+	sp++;
+	break;
+      }
 
       CASE(F_MARK_AND_LOCAL); *(mark_sp++)=sp;
       CASE(F_LOCAL);
@@ -1214,6 +1294,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame.fun = -1;
   new_frame.pc = 0;
   new_frame.current_storage=o->storage;
+  new_frame.context.parent=0;
   fp = & new_frame;
 
   new_frame.current_object->refs++;
@@ -1279,6 +1360,8 @@ void apply_low(struct object *o, int fun, int args)
   new_frame.parent_frame = fp;
   new_frame.current_object = o;
   new_frame.context = p->inherits[ ref->inherit_offset ];
+  if(!ref->inherit_offset) new_frame.context.parent=o->parent;
+
   function = new_frame.context.prog->identifiers + ref->identifier_offset;
   
   new_frame.locals = sp - args;
@@ -1289,6 +1372,7 @@ void apply_low(struct object *o, int fun, int args)
 
   new_frame.current_object->refs++;
   new_frame.context.prog->refs++;
+  if(new_frame.context.parent) new_frame.context.parent->refs++;
 
 #ifdef DEBUG
   if(t_flag)
@@ -1354,7 +1438,10 @@ void apply_low(struct object *o, int fun, int args)
     struct svalue *s=fp->context.prog->constants+function->func.offset;
     if(s->type == T_PROGRAM)
     {
-      struct object *tmp=parent_clone_object(s->u.program,o,args);
+      struct object *tmp=parent_clone_object(s->u.program,
+					     o,
+					     fun,
+					     args);
       push_object(tmp);
     }else{
       error("Calling strange value!\n");
@@ -1424,6 +1511,7 @@ void apply_low(struct object *o, int fun, int args)
     sp++;
   }
 
+  if(new_frame.context.parent) free_object(new_frame.context.parent);
   free_object(new_frame.current_object);
   free_program(new_frame.context.prog);
 

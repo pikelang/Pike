@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.32.2.1 1997/06/25 22:46:39 hubbe Exp $");
+RCSID("$Id: las.c,v 1.32.2.2 1997/06/27 06:55:17 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -45,6 +45,7 @@ int car_is_node(node *n)
 {
   switch(n->token)
   {
+  case F_EXTERNAL:
   case F_IDENTIFIER:
   case F_CONSTANT:
   case F_LOCAL:
@@ -59,6 +60,7 @@ int cdr_is_node(node *n)
 {
   switch(n->token)
   {
+  case F_EXTERNAL:
   case F_IDENTIFIER:
   case F_CONSTANT:
   case F_LOCAL:
@@ -377,13 +379,12 @@ node *mkefuncallnode(char *function, node *args)
   struct pike_string *name;
   node *n;
   name = findstring(function);
-  if(!name || !find_module_identifier(name))
+  if(!name || !(n=find_module_identifier(name)))
   {
     my_yyerror("Internally used efun undefined: %s",function);
     return mkintnode(0);
   }
-  n=mkapplynode(mksvaluenode(sp-1), args);
-  pop_stack();
+  n=mkapplynode(n, args);
   return n;
 }
 
@@ -431,6 +432,27 @@ node *mkidentifiernode(int i)
   return res;
 }
 
+node *mkexternalnode(int level,
+		     int i,
+		     struct identifier *id)
+{
+  node *res = mkemptynode();
+  res->token = F_EXTERNAL;
+
+  copy_shared_string(res->type, id->type);
+
+  /* FIXME */
+  res->node_info = OPT_NOT_CONST;
+  res->tree_info=res->node_info;
+
+#ifdef __CHECKER__
+  CDR(res)=0;
+#endif
+  res->u.integer.a = level;
+  res->u.integer.b = i;
+  return res;
+}
+
 node *mkcastnode(struct pike_string *type,node *n)
 {
   node *res;
@@ -455,6 +477,9 @@ node *mkcastnode(struct pike_string *type,node *n)
 void resolv_constant(node *n)
 {
   struct identifier *i;
+  struct program *p;
+  INT32 numid;
+
   if(!n)
   {
     push_int(0);
@@ -463,30 +488,49 @@ void resolv_constant(node *n)
     {
     case F_CONSTANT:
       push_svalue(& n->u.sval);
+      return;
+
+    case F_EXTERNAL:
+      p=parent_compilation(n->u.integer.a);
+      if(!p)
+      {
+	yyerror("Failed to resolv external constant");
+	push_int(0);
+	return;
+      }
+      numid=n->u.integer.b;
       break;
 
     case F_IDENTIFIER:
-      i=ID_FROM_INT(new_program, n->u.number);
-	
-      if(IDENTIFIER_IS_CONSTANT(i->flags))
-      {
-	push_svalue(PROG_FROM_INT(new_program, n->u.number)->constants +
-		    i->func.offset);
-      }else{
-	yyerror("Identifier is not a constant");
-	push_int(0);
-      }
+      p=new_program;
+      numid=n->u.number;
       break;
 
     case F_LOCAL:
-	yyerror("Expected constant, got local variable");
-	push_int(0);
-	break;
+      yyerror("Expected constant, got local variable");
+      push_int(0);
+      return;
 
     case F_GLOBAL:
-	yyerror("Expected constant, got global variable");
-	push_int(0);
-	break;
+      yyerror("Expected constant, got global variable");
+      push_int(0);
+      return;
+
+    default:
+      yyerror("Expected constant, got something else");
+      push_int(0);
+      return;
+    }
+
+    i=ID_FROM_INT(p, numid);
+    
+    if(IDENTIFIER_IS_CONSTANT(i->flags))
+    {
+      push_svalue(PROG_FROM_INT(new_program, numid)->constants +
+		  i->func.offset);
+    }else{
+      yyerror("Identifier is not a constant");
+      push_int(0);
     }
   }
 }

@@ -49,6 +49,11 @@ extern char *lfun_names[];
 struct svalue;
 #endif
 
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
+struct node_s;
+#endif
+
 #ifndef STRUCT_OBJECT_DECLARED
 #define STRUCT_OBJECT_DECLARED
 struct object;
@@ -127,11 +132,13 @@ struct reference
 
 struct inherit
 {
-  struct program *prog;
-  struct pike_string *name;
   INT16 inherit_level; /* really needed? */
   INT16 identifier_level;
+  INT16 parent_identifier;
   INT32 storage_offset;
+  struct object *parent;
+  struct program *prog;
+  struct pike_string *name;
 };
 
 /* program parts have been realloced into one block */
@@ -197,7 +204,8 @@ extern int compiler_pass;
 void ins_int(INT32 i, void (*func)(char tmp));
 void ins_short(INT16 i, void (*func)(char tmp));
 void use_module(struct svalue *s);
-int find_module_identifier(struct pike_string *ident);
+struct node_s *find_module_identifier(struct pike_string *ident);
+struct program *parent_compilation(int level);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
 void fixate_program(void);
@@ -218,8 +226,12 @@ int low_reference_inherited_identifier(int e,
 int reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
-void do_inherit(struct program *p,INT32 flags, struct pike_string *name);
-void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *name);
+void do_inherit(struct svalue *prog,
+		INT32 flags,
+		struct pike_string *name);
+void simple_do_inherit(struct pike_string *s,
+		       INT32 flags,
+		       struct pike_string *name);
 int isidentifier(struct pike_string *s);
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
@@ -252,6 +264,8 @@ INT32 define_function(struct pike_string *name,
 		      INT16 flags,
 		      INT8 function_flags,
 		      union idptr *func);
+int low_find_shared_string_identifier(struct pike_string *name,
+				      struct program *prog);
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog);
@@ -278,6 +292,7 @@ char *get_storage(struct object *o, struct program *p);
 struct program *low_program_from_function(struct program *p,
 					  INT32 i);
 struct program *program_from_function(struct svalue *f);
+struct program *program_from_svalue(struct svalue *s);
 struct find_child_cache_s;
 int find_child(struct program *parent, struct program *child);
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));

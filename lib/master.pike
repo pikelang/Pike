@@ -259,14 +259,13 @@ class dirnode
   void create(string name) { dirname=name; }
   object|program `[](string index)
   {
-    object m=((object)"/master");
-    if(mixed o=m->findmodule(dirname+"/module"))
+    if(mixed o=findmodule(dirname+"/module"))
     {
       if(mixed tmp=o->_module_value) o=tmp;
       if(o=o[index]) return o;
     }
     index = dirname+"/"+index;
-    if(object o=((object)"/master")->findmodule(index))
+    if(object o=findmodule(index))
     {
       if(mixed tmp=o->_module_value) o=tmp;
       return o;

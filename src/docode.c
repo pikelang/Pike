@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.16.2.1 1997/06/25 22:46:36 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.16.2.2 1997/06/27 06:55:15 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -255,12 +255,25 @@ static int do_docode2(node *n,int flags)
     case F_INDEX:
     case F_ARROW:
     case F_ARG_LIST:
+    case F_EXTERNAL:
       break;
     }
   }
 
   switch(n->token)
   {
+  case F_EXTERNAL:
+    emit(F_LDA, n->u.integer.a);
+    if(flags & DO_LVALUE)
+    {
+      emit(F_EXTERNAL_LVALUE, n->u.integer.b);
+      return 2;
+    }else{
+      emit(F_EXTERNAL, n->u.integer.b);
+      return 1;
+    }
+    break;
+
   case F_UNDEFINED:
     yyerror("Undefined identifier");
     emit(F_NUMBER,0);
@@ -693,14 +706,15 @@ static int do_docode2(node *n,int flags)
 
       tmp=findstring("call_function");
       if(!tmp) yyerror("No call_function efun.");
-      if(!find_module_identifier(tmp))
+      foo=find_module_identifier(tmp);
+      if(!foo || !foo->token==F_CONSTANT)
       {
 	yyerror("No call_function efun.");
       }else{
-	tmp1=store_constant(sp-1, 1);
-	pop_stack();
+	tmp1=store_constant(& foo->u.sval, 1);
 	emit(F_APPLY, tmp1);
       }
+      free_node(foo);
       return 1;
     }
 

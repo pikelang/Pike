@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.33.2.2 1997/06/25 22:46:43 hubbe Exp $");
+RCSID("$Id: program.c,v 1.33.2.3 1997/06/27 06:55:20 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -147,12 +147,16 @@ void use_module(struct svalue *s)
 }
 
 
-static int low_find_shared_string_identifier(struct pike_string *name,
-					     struct program *prog);
 
-int find_module_identifier(struct pike_string *ident)
+int low_find_shared_string_identifier(struct pike_string *name,
+				      struct program *prog);
+
+
+
+struct node_s *find_module_identifier(struct pike_string *ident)
 {
   JMP_BUF tmp;
+  node *ret;
 
   if(SETJMP(tmp))
   {
@@ -178,7 +182,9 @@ int find_module_identifier(struct pike_string *ident)
       {
 /*	fprintf(stderr,"MOD: %s, %d %d\n",ident->str, current_line, sp[-1].type); */
 	UNSETJMP(tmp);
-	return 1;
+	ret=mksvaluenode(sp-1);
+	pop_stack();
+	return ret;
       }
       pop_stack();
     }
@@ -197,18 +203,29 @@ int find_module_identifier(struct pike_string *ident)
 	id=ID_FROM_INT(p->new_program, i);
 	if(IDENTIFIER_IS_CONSTANT(id->flags))
 	{
-	  push_svalue(PROG_FROM_INT(p->new_program, i)->constants+
-		      id->func.offset);
-	  return 1;
+	  ret=mksvaluenode(PROG_FROM_INT(p->new_program, i)->constants+
+			   id->func.offset);
+	  return ret;
 	}else{
-	  yyerror("Identifier is not a constant");
-	  return 0;
+	  return mkexternalnode(n, i, id);
 	}
       }
     }
   }
-
   return 0;
+}
+
+struct program *parent_compilation(int level)
+{
+  int n;
+  struct program_state *p=previous_program_state;
+  for(n=0;n<level;n++)
+  {
+    if(n>=compilation_depth) return 0;
+    p=p->previous;
+    if(!p) return 0;
+  }
+  return p->new_program;
 }
 
 #define ID_TO_PROGRAM_CACHE_SIZE 512
@@ -406,6 +423,8 @@ void low_start_new_program(struct program *p,
     i.identifier_level=0;
     i.storage_offset=0;
     i.inherit_level=0;
+    i.parent=0;
+    i.parent_identifier=0;
     i.name=0;
     add_to_inherits(i);
   }
@@ -452,7 +471,11 @@ void really_free_program(struct program *p)
     free_svalue(p->constants+e);
 
   for(e=1; e<p->num_inherits; e++)
+  {
     free_program(p->inherits[e].prog);
+    if(p->inherits[e].parent)
+      free_object(p->inherits[e].parent);
+  }
 
   if(p->prev)
     p->prev->next=p->next;
@@ -843,11 +866,22 @@ void rename_last_inherit(struct pike_string *n)
 /*
  * make this program inherit another program
  */
-void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
+void do_inherit(struct svalue *prog,
+		INT32 flags,
+		struct pike_string *name)
 {
   int e, inherit_offset, storage_offset;
   struct inherit inherit;
   struct pike_string *s;
+
+  struct program *p=program_from_svalue(prog);
+
+  
+  if(!p)
+  {
+    yyerror("Illegal program pointer.");
+    return;
+  }
 
   inherit_offset = new_program->num_inherits;
 
@@ -861,7 +895,15 @@ void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
     inherit.identifier_level += new_program->num_identifier_references;
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
-
+    if(!e)
+    {
+      if(prog->type == T_FUNCTION)
+      {
+	inherit.parent=prog->u.object;
+	inherit.parent_identifier=prog->subtype;
+      }
+    }
+    if(inherit.parent) inherit.parent->refs++;
 
     if(name)
     {
@@ -933,7 +975,9 @@ void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
   }
 }
 
-void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *name)
+void simple_do_inherit(struct pike_string *s,
+		       INT32 flags,
+		       struct pike_string *name)
 {
   reference_shared_string(s);
   push_string(s);
@@ -952,7 +996,7 @@ void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *na
     free_string(s);
     s=name;
   }
-  do_inherit(sp[-1].u.program, flags, s);
+  do_inherit(sp-1, flags, s);
   free_string(s);
   pop_stack();
 }
@@ -1027,8 +1071,12 @@ int define_variable(struct pike_string *name,
     dummy.flags = 0;
     dummy.run_time_type=compile_type_to_runtime_type(type);
 
-    if(dummy.run_time_type == T_FUNCTION)
+    switch(dummy.run_time_type)
+    {
+    case T_FUNCTION:
+    case T_PROGRAM:
       dummy.run_time_type = T_MIXED;
+    }
 
     dummy.func.offset=add_storage(dummy.run_time_type == T_MIXED ?
 				  sizeof(struct svalue) :
@@ -1335,8 +1383,8 @@ INT32 define_function(struct pike_string *name,
  * lookup the number of a function in a program given the name in
  * a shared_string
  */
-static int low_find_shared_string_identifier(struct pike_string *name,
-					     struct program *prog)
+int low_find_shared_string_identifier(struct pike_string *name,
+				      struct program *prog)
 {
   int max,min,tst;
   struct reference *funp;
@@ -1722,7 +1770,20 @@ void cleanup_program(void)
 void gc_mark_program_as_referenced(struct program *p)
 {
   if(gc_mark(p))
+  {
+    int e;
     gc_mark_svalues(p->constants, p->num_constants);
+
+    for(e=0;e<p->num_inherits;e++)
+    {
+      if(p->inherits[e].parent)
+	gc_mark_object_as_referenced(p->inherits[e].parent);
+
+      if(e)
+	gc_mark_program_as_referenced(p->inherits[e].prog);
+    }
+      
+  }
 }
 
 void gc_check_all_programs(void)
@@ -1730,7 +1791,29 @@ void gc_check_all_programs(void)
   struct program *p;
   for(p=first_program;p;p=p->next)
   {
+    int e;
     gc_check_svalues(p->constants, p->num_constants);
+
+    for(e=0;e<p->num_inherits;e++)
+    {
+      if(p->inherits[e].parent)
+      {
+#ifdef DEBUG
+	if(gc_check(p->inherits[e].parent)==-2)
+	  fprintf(stderr,"(program at 0x%lx -> inherit[%d].parent)\n",
+		  (long)p,
+		  e);
+#else
+	gc_check(p->inherits[e].parent);
+#endif
+      }
+
+      if(d_flag && p->inherits[e].name)
+	gc_check(p->inherits[e].name);
+
+      if(e)
+	gc_check(p->inherits[e].prog);
+    }
 
     if(d_flag)
     {
@@ -1763,8 +1846,17 @@ void gc_free_all_unreferenced_programs(void)
   {
     if(gc_do_free(p))
     {
+      int e;
       p->refs++;
       free_svalues(p->constants, p->num_constants, -1);
+      for(e=0;e<p->num_inherits;e++)
+      {
+	if(p->inherits[e].parent)
+	{
+	  free_object(p->inherits[e].parent);
+	  p->inherits[e].parent=0;
+	}
+      }
       next=p->next;
       free_program(p);
     }else{
@@ -1893,6 +1985,19 @@ struct program *program_from_function(struct svalue *f)
   if(f->subtype == FUNCTION_BUILTIN) return 0;
   if(!f->u.object->prog) return 0;
   return low_program_from_function(f->u.object->prog, f->subtype);
+}
+
+struct program *program_from_svalue(struct svalue *s)
+{
+  switch(s->type)
+  {
+  case T_FUNCTION:
+    return program_from_function(s);
+  case T_PROGRAM:
+    return s->u.program;
+  default:
+    return 0;
+  }
 }
 
 #define FIND_CHILD_HASHSIZE 5003

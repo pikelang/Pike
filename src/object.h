@@ -19,6 +19,7 @@ struct object
   INT32 refs;                    /* Reference count, must be first. */
   struct program *prog;
   struct object *parent;
+  INT16 parent_identifier;
   struct object *next;
   struct object *prev;
   char storage[1];
@@ -39,11 +40,10 @@ extern struct program *master_program;
 
 /* Prototypes begin here */
 void setup_fake_object();
-struct object *low_clone(struct program *p,
-			 struct object *parent);
 struct object *clone_object(struct program *p, int args);
 struct object *parent_clone_object(struct program *p,
 				   struct object *parent,
+				   int parent_identifier,
 				   int args);
 struct object *get_master();
 struct object *master();
@@ -53,18 +53,12 @@ void really_free_object(struct object *o);
 void low_object_index_no_free(struct svalue *to,
 			      struct object *o,
 			      INT32 f);
-void object_index_no_free2(struct svalue *to,
-			  struct object *o,
-			  struct svalue *index);
 void object_index_no_free(struct svalue *to,
 			   struct object *o,
 			   struct svalue *index);
 void object_low_set_index(struct object *o,
 				 int f,
 				 struct svalue *from);
-void object_set_index2(struct object *o,
-		      struct svalue *index,
-		      struct svalue *from);
 void object_set_index(struct object *o,
 		       struct svalue *index,
 		       struct svalue *from);
