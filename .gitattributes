@@ -25,6 +25,7 @@ testfont binary
 /bin/mkpeep.pike foreign_ident
 /bin/mkwmml.pike foreign_ident
 /bin/pikedoc.pike foreign_ident
+/bin/pikedoc2.pike foreign_ident
 /bin/test_pike.pike foreign_ident
 /lib/master.pike.in foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
