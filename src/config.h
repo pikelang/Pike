@@ -8,7 +8,7 @@
  * with DEBUG defined debugging becomes much easier.
  */
 
-#define DEBUG
+#undef DEBUG
 
 /*
  * Define the evaluator stack size, used for just about everything.
