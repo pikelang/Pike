@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.246 1998/10/23 17:20:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.247 1998/10/28 01:00:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2534,10 +2534,14 @@ then
 	IRIX*)
 	  if test "$GCC" = yes ; then
 	    # egcs defaults to building -n32 objects
-	    LDSHARED="ld -shared -n32 -woff 84,85,134"
+	    LDSHARED="ld -shared -n32"
 	  else
-            LDSHARED="ld -shared -woff 84,85,134"
+            LDSHARED="ld -shared"
 	  fi
+	  # -woff isn't understood by ld on Irix 5.
+	  if test "`uname -r`" -ge 6 ; then
+	    LDSHARED="$LDSHARED -woff 84,85,134"
+	  else :; fi
 	;;
 	SunOS*) LDSHARED="ld";;
 	Solaris) LDSHARED="/usr/ccs/bin/ld -G";;
