@@ -390,3 +390,4 @@ testfont binary
 /src/ualarm.c foreign_ident
 /src/version.c foreign_ident
 /src/version.h foreign_ident
+/tutorial/manpages foreign_ident

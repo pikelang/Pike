@@ -1,5 +1,10 @@
+// -*- Pike -*-
+// $Id: manpages,v 1.15 1998/05/13 00:36:50 grubba Exp $
+
 #include "types.h"
 inherit Stdio.File : out;
+
+int verbose = 0;
 
 string globalbase;
 object windex;
@@ -48,18 +53,28 @@ void mkdirhier(string what)
    }
 }
 
+int stripws=1;
+
 string make_manpage(string base, SGML data, string ind, string fbase)
 {
   string res="";
-  int stripws=0;
+
+  if (verbose) {
+    werror(sprintf("data:%O\n", data));
+  }
 
   if (stringp(data)) {
-    sscanf(data,"%*[ \t\n\r]%s",data);
+    if (stripws) {
+      sscanf(data,"%*[ \t\n\r]%s",data);
+    }
     mixed d = data;	// Fool Pikes type-checker.
     res+=quote_text(d);
   } else if(arrayp(data)) {
     foreach (data, TAG tag) {
       if (objectp(tag)) {
+	if (verbose) {
+	  werror(sprintf("tag:%O, params:%O\n", tag->tag, tag->params));
+	}
 	switch (tag->tag) {
 	case "method":
 	case "function":
@@ -80,25 +95,37 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	  stripws=1;
 	  break;
 	case "br":
+	case "ex_br":
 	  res+="\n.br\n";
 	  stripws=1;
 	  break;
 
+	case "ex_indent":
+	  res += "  ";
+	  continue;
+
 	case "link":
 	case "i": 
 	case "emboss":
+	case "ex_identifier":
 	  res+="\\f2"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
 	  continue;
 
 	case "b": 
 	case "strong":
+	case "ex_keyword":
 	  res+="\\f3"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
 	  continue;
 
 	case "pre":
-	  res+="\n.nf\n"+make_manpage(base,tag->data,ind,fbase)
-	    +"\n.fi\n";
+	case "tt":
+	case "example":
+	  int ows = stripws;
 	  stripws=0;
+	  res+="\n.nf\n"+
+	    make_manpage(base,tag->data,ind,fbase)+
+	    "\n.fi\n";
+	  stripws = ows;
 	  continue;
 	}
 	res+=make_manpage(base,tag->data,ind,fbase);
@@ -152,6 +179,8 @@ void make_page(string base, TAG tag, string ind, string fbase)
        mkdirhier(globalbase+base);
      }
 
+     verbose = ((names*",") == "Thread.Mutex");
+
      string page=strip_empty_lines(make_manpage(base,tag->data,ind+" ",fbase));
 
 //   werror("creating "+outfiles[0]+"...\n"); 
@@ -162,7 +191,7 @@ void make_page(string base, TAG tag, string ind, string fbase)
 			     ".\\\" automatically generated from wmml\n"
 			     ".TH " + names*"," + " " + upper_case(obase) +
 			     " \"" + t[8..9] + t[3..7] + t[20..23] + "\""
-			     " Pike \"Pike Manual\"\n" +
+			     " Pike \"Pike Manual\" Pike\n" +
 			     page + "\n"));
      f->close();
 
