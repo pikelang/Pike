@@ -226,8 +226,9 @@ array find_all_options(array(string) argv, array options,
 	if(argv[e]=="-") argv[e]=0;
       }
     }else{
-      if(posix_me_harder || getenv("POSIX_ME_HARDER"))
-	break;
+      if(posix_me_harder != -1)
+	if(posix_me_harder || getenv("POSIX_ME_HARDER"))
+	  break;
     }
   }
 
