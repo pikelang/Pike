@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.85 2001/03/28 15:07:40 grubba Exp $
+ * $Id: svalue.h,v 1.86 2001/03/30 02:52:26 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -515,7 +515,7 @@ PMOD_EXPORT INT32 pike_sizeof(struct svalue *s);
 
 #endif /* !NO_PIKE_SHORTHAND */
 
-#ifdef PIKE_RUN_UNLOCKED
+#if 0 /* PIKE_RUN_UNLOCKED */
 
 #include "pike_error.h"
 
