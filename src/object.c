@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.37 1998/02/03 05:29:27 hubbe Exp $");
+RCSID("$Id: object.c,v 1.38 1998/02/03 18:11:35 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -472,6 +472,10 @@ void object_index_no_free2(struct svalue *to,
     f=find_shared_string_identifier(index->u.string, p);
     break;
 
+  case T_LVALUE:
+    f=index->u.integer;
+    break;
+
   default:
     error("Lookup on non-string value.\n");
   }
@@ -569,6 +573,10 @@ void object_set_index2(struct object *o,
       error("No such variable (%s) in object.\n", index->u.string->str);
     break;
 
+  case T_LVALUE:
+    f=index->u.integer;
+    break;
+
   default:
     error("Lookup on non-string value.\n");
   }
@@ -662,6 +670,10 @@ union anything *object_get_item_ptr(struct object *o,
   {
   case T_STRING:
     f=find_shared_string_identifier(index->u.string, p);
+    break;
+
+  case T_LVALUE:
+    f=index->u.integer;
     break;
 
   default:
