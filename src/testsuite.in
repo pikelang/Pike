@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.582 2003/01/09 14:29:28 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.583 2003/01/11 03:14:26 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4299,27 +4299,30 @@ ifefun(gc,
   }]], 1);
 
   test_any([[{
+    gc();
     array x = set_weak_flag (({0}), 1);
     x[0] = x;
     multiset b = set_weak_flag ((<x>), 1);
     array a = ({17});
     b[a] = 1;
     x = 0;
-    return gc() + gc() >= 1;
+    return gc() >= 1;
   }]], 1);
 
   test_any([[{
+    gc();
     array a = set_weak_flag (({0, this_object()}), 1);
     a[0] = a;
     a = 0;
-    return gc() + gc() >= 1;
+    return gc() >= 1;
   }]], 1);
 
   test_any([[{
+    gc();
     array y = set_weak_flag (({0}), 1), z = set_weak_flag (({y}), 1);
     y[0] = z;
     y = z = 0;
-    return gc() + gc() >= 2;
+    return gc() >= 2;
   }]], 1);
 
   test_any([[{
@@ -4338,9 +4341,10 @@ ifefun(gc,
 	  add_constant ("my_little_error", "GC garbed weak things too early.\n");
       }
     };
+    gc();
     object o = Live();
     o = 0;
-    int res = gc() + gc() >= 3;
+    int res = gc() >= 3;
     if (all_constants()->my_little_error)
       error (all_constants()->my_little_error);
     return res;
@@ -5234,7 +5238,8 @@ ifefun(gc,
 	destruct_order = ({""}); // Using ({}) would alloc a new array in destructing().
 	setup();
 	live = dead = live_nested = dead_nested = 0;
-	int garbed = gc() + gc(); // Second gc to garb live object leftovers.
+	int garbed = gc();
+	gc();			// To garb live object leftovers.
 	destruct_order = destruct_order[1..];
 	if (!got_error && (got_error = sizeof (destruct_order) != nlive + nlnested))
 	  werror ("\nGC should garb %d live objects, "
