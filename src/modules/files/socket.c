@@ -44,6 +44,8 @@
 mutex_t *locks;
 #endif
 
+#undef u
+
 struct port
 {
   int fd;

@@ -54,6 +54,8 @@ static struct program *file_program;
 static void file_read_callback(int fd, void *data);
 static void file_write_callback(int fd, void *data);
 
+#undef u
+
 static void init_fd(int fd, int open_mode)
 {
   files[fd].refs=1;
