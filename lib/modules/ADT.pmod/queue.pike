@@ -1,6 +1,6 @@
 /* queue.pike
  *
- * A FIFO queue. Used by connection*
+ * A simple FIFO queue. 
  */
 
 #define QUEUE_SIZE 100
@@ -9,10 +9,11 @@ array l;
 int head;
 int tail;
 
-void create()
+void create(mixed ..args)
 {
-  l = allocate(QUEUE_SIZE);
-  head = tail = 0;
+  l = args + allocate(QUEUE_SIZE);
+  head = sizeof(args);
+  tail = 0;
 }
 
 void put(mixed item)
