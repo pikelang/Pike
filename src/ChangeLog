@@ -1,3 +1,12 @@
+Mon Dec 22 09:33:59 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* version.c: version now includes release number
+	* export.pike: now updates release number automatically
+	* smartlink: -L options are now uniq-ified
+	* encode.c: doesn't attempt to allocate mappings with negative
+	  sizes any more 
+	* interpret.c: allows trace up to -t2 without #define DEBUG
+
 Wed Dec 17 20:05:46 1997  Henrik Grubbström  <grubba@idonex.se>
 
 	* lex.c (low_lex): #if constant() now knows about the module-system.
