@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.233 2004/03/12 21:18:54 grubba Exp $
+|| $Id: pike_types.c,v 1.234 2004/04/19 13:08:38 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.233 2004/03/12 21:18:54 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.234 2004/04/19 13:08:38 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -21,7 +21,6 @@ RCSID("$Id: pike_types.c,v 1.233 2004/03/12 21:18:54 grubba Exp $");
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "las.h"
-#include "language.h"
 #include "lex.h"
 #include "pike_memory.h"
 #include "bignum.h"
@@ -4941,11 +4940,17 @@ void cleanup_pike_type_table(void)
   /* Free the hashtable here. */
   if (pike_type_hash) {
     free(pike_type_hash);
-    /* Don't do this, it messes up stuff... */
-    /* pike_type_hash = NULL; */
+    /* Don't do this, it messes up stuff...
+     *
+     * It's needed for dmalloc to survive.
+     */
+    pike_type_hash = NULL;
   }
-  /* Don't do this, it messes up stuff... */
-  /* pike_type_hash_size = 0; */
+  /* Don't do this, it messes up stuff...
+   *
+   * It's needed for dmalloc to survive.
+   */
+  pike_type_hash_size = 0;
 #ifdef DO_PIKE_CLEANUP
   free_all_pike_type_blocks();
 #endif /* DO_PIKE_CLEANUP */
