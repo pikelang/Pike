@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.34 2000/04/04 20:37:00 hubbe Exp $
+ * $Id: oracle.c,v 1.35 2000/04/04 22:03:15 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -41,13 +41,13 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.34 2000/04/04 20:37:00 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.35 2000/04/04 22:03:15 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
 
 #define ORACLE_DEBUG
-/* #define ORACLE_USE_THREADS*/
+#define ORACLE_USE_THREADS
 #define SERIALIZE_CONNECT
 
 #ifndef ORACLE_USE_THREADS
