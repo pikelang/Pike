@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.200 2000/07/10 18:21:33 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.201 2000/07/12 12:38:41 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1963,6 +1963,10 @@ class: modifiers TOK_CLASS optional_identifier
       low_start_new_program(0, $3->u.sval.u.string,
 			    $1,
 			    &$<number>$);
+
+      /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
+	 $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
+
       if(lex.current_file)
       {
 	store_linenumber(lex.current_line, lex.current_file);
@@ -1993,6 +1997,10 @@ class: modifiers TOK_CLASS optional_identifier
 				  $3->u.sval.u.string,
 				  $1,
 				  &$<number>$);
+
+	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
+	       $3->u.sval.u.string->str, Pike_compiler->new_program->id); */
+
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(Pike_compiler->new_program, 0,
@@ -2636,8 +2644,7 @@ low_idents: TOK_IDENTIFIER
 
       if (id != -1) {
 	if (inherit_depth >= 0) {
-	  $$ = mkexternalnode(inherit_depth, id,
-			      ID_FROM_INT(inherit_state->new_program, id));
+	  $$ = mkexternalnode(inherit_state->new_program, id);
 	} else {
 	  $$ = mkidentifiernode(id);
 	}

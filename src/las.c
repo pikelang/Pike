@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.185 2000/07/12 01:20:21 hubbe Exp $");
+RCSID("$Id: las.c,v 1.186 2000/07/12 12:38:40 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -108,11 +108,14 @@ void check_tree(node *n, int depth)
     case F_EXTERNAL:
       if(n->type)
       {
-	int level = n->u.integer.a;
+	int parent_id = n->u.integer.a;
 	int id_no = n->u.integer.b;
-	struct program *p = parent_compilation(level);
-	if (p) {
-	  struct identifier *id = ID_FROM_INT(p, id_no);
+	struct program_state *state = Pike_compiler->previous;
+	while (state && (state->new_program->id != parent_id)) {
+	  state = state->previous;
+	}
+	if (state) {
+	  struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	  if (id) {
 #ifdef PIKE_DEBUG
 	    if(id->type != n->type)
@@ -383,9 +386,10 @@ static node *freeze_node(node *orig)
   check_tree(orig);
   return orig;
 }
-#endif
-
+#else /* !PIKE_DEBUG */
 #define freeze_node(X) (X)
+#endif /* PIKE_DEBUG */
+
 #endif /* SHARED_NODES */
 
 void free_all_nodes(void)
@@ -926,11 +930,10 @@ node *debug_mktrampolinenode(int i)
   return res;
 }
 
-node *debug_mkexternalnode(int level,
-			   int i,
-			   struct identifier *id)
+node *debug_mkexternalnode(struct program *parent_prog, int i)
 {
   node *res = mkemptynode();
+  struct identifier *id;
   res->token = F_EXTERNAL;
 #ifdef PIKE_DEBUG
   if(d_flag)
@@ -940,8 +943,7 @@ node *debug_mkexternalnode(int level,
   }
 #endif
 
-  /* Kludge */
-  id = ID_FROM_INT(parent_compilation(level), i);
+  id = ID_FROM_INT(parent_prog, i);
 
   copy_shared_string(res->type, id->type);
 
@@ -957,16 +959,13 @@ node *debug_mkexternalnode(int level,
 #ifdef __CHECKER__
   _CDR(res) = 0;
 #endif
-  res->u.integer.a = level;
+  res->u.integer.a = parent_prog->id;
   res->u.integer.b = i;
 
   /* Bzot-i-zot */
   Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
 
-  /* Can't freeze the node, since the type-info may become wrong. */
-  /* return freeze_node(res); */
-  res->hash = hash_node(res);
-  return res;
+  return freeze_node(res);
 }
 
 node *debug_mkcastnode(struct pike_string *type,node *n)
@@ -1077,14 +1076,21 @@ void resolv_constant(node *n)
       return;
 
     case F_EXTERNAL:
-      p=parent_compilation(n->u.integer.a);
-      if(!p)
       {
-	yyerror("Failed to resolv external constant");
-	push_int(0);
-	return;
+	struct program_state *state = Pike_compiler->previous;
+
+	while (state && (state->new_program->id != n->u.integer.a)) {
+	  state = state->previous;
+	}
+	if(!state)
+	{
+	  yyerror("Failed to resolv external constant");
+	  push_int(0);
+	  return;
+	}
+	p = state->new_program;
+	numid=n->u.integer.b;
       }
-      numid=n->u.integer.b;
       break;
 
     case F_IDENTIFIER:
@@ -1455,12 +1461,7 @@ node *debug_mksvaluenode(struct svalue *s)
 
       if(s->u.object->next == s->u.object)
       {
-	int x=0;
-	struct object *o;
-	for(o=Pike_compiler->fake_object->parent;o!=s->u.object;o=o->parent) x++;
-	return mkexternalnode(x, s->subtype,
-			      ID_FROM_INT(o->prog, s->subtype));
-
+	return mkexternalnode(s->u.object->prog, s->subtype);
       }
 
 /*      yyerror("Non-constant function pointer! (should not happen!)"); */
@@ -2419,12 +2420,18 @@ void fix_type_field(node *n)
 
       case F_EXTERNAL:
 	{
-	  int level = CAR(n)->u.integer.a;
+	  int program_id = CAR(n)->u.integer.a;
 	  int id_no = CAR(n)->u.integer.b;
-	  struct program *p = parent_compilation(level);
+	  struct program_state *state = Pike_compiler->previous;
+
 	  name="external symbol";
-	  if (p) {
-	    struct identifier *id = ID_FROM_INT(p, id_no);
+
+	  while (state && (state->new_program->id != program_id)) {
+	    state = state->previous;
+	  }
+
+	  if (state) {
+	    struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	    if (id && id->name) {
 	      name = id->name->str;
 #ifdef PIKE_DEBUG

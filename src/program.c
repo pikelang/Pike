@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.249 2000/07/11 03:45:10 mast Exp $");
+RCSID("$Id: program.c,v 1.250 2000/07/12 12:38:41 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -350,9 +350,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 						   SEE_STATIC);
 	if(i!=-1)
 	{
-	  struct identifier *id;
-	  id=ID_FROM_INT(p->new_program, i);
-	  return mkexternalnode(n, i, id);
+	  return mkexternalnode(p->new_program, i);
 	}
       }
       
@@ -1622,7 +1620,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
       id=low_reference_inherited_identifier(state,e,function_name,SEE_STATIC);
 
       if(id!=-1)
-	return mkexternalnode(n,id,ID_FROM_INT(state->new_program, id));
+	return mkexternalnode(p, id);
 
       if(ISCONSTSTR(function_name,"`->") ||
 	 ISCONSTSTR(function_name,"`[]"))
@@ -1860,14 +1858,20 @@ void compiler_do_inherit(node *n,
       goto continue_inherit;
 
     case F_EXTERNAL:
-      p=parent_compilation(n->u.integer.a);
-      offset=n->u.integer.a;
-      numid=n->u.integer.b;
-
-      if(!p)
       {
-	yyerror("Failed to resolv external constant.\n");
-	return;
+	struct program_state *state = Pike_compiler->previous;
+
+	offset = 0;	/* FIXME: Should this be zero or 1? */
+	while (state && (state->new_program->id != n->u.integer.a)) {
+	  state = state->previous;
+	  offset++;
+	}
+	if (!state) {
+	  yyerror("Failed to resolv external constant.\n");
+	  return;
+	}
+	p = state->new_program;
+	numid = n->u.integer.b;
       }
 
   continue_inherit:

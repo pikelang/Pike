@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.75 2000/07/07 01:28:57 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.76 2000/07/12 12:38:40 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -299,13 +299,26 @@ static int do_docode2(node *n,int flags)
     return 1;
       
   case F_EXTERNAL:
-    if(flags & WANT_LVALUE)
     {
-      emit2(F_EXTERNAL_LVALUE, n->u.integer.b,n->u.integer.a);
-      return 2;
-    }else{
-      emit2(F_EXTERNAL, n->u.integer.b,n->u.integer.a);
-      return 1;
+      int level = 0;
+      struct program_state *state = Pike_compiler->previous;
+      while (state && (state->new_program->id != n->u.integer.a)) {
+	state = state->previous;
+	level++;
+      }
+      if (!state) {
+	my_yyerror("Program parent %d lost during compiling.", n->u.integer.a);
+	emit1(F_NUMBER,0);
+	return 1;
+      }
+      if(flags & WANT_LVALUE)
+      {
+	emit2(F_EXTERNAL_LVALUE, n->u.integer.b, level);
+	return 2;
+      }else{
+	emit2(F_EXTERNAL, n->u.integer.b, level);
+	return 1;
+      }
     }
     break;
 
@@ -1225,10 +1238,10 @@ static int do_docode2(node *n,int flags)
 	{
 	  int x=0;
 	  struct object *o;
-	  
+
 	  for(o=Pike_compiler->fake_object->parent;o!=n->u.sval.u.object;o=o->parent)
 	    x++;
-	  emit2(F_EXTERNAL, n->u.sval.subtype,x);
+	  emit2(F_EXTERNAL, n->u.sval.subtype, x);
 	  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
 	  return 1;
 	}
