@@ -42,4 +42,4 @@ void adjust_pri(mixed handle, int new_pri)
 
 //! @fixme
 //!   Document this function
-mixed pop() { return top()->value; }
+mixed pop() { return ::pop()->value; }
