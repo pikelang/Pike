@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.10 2001/04/25 21:36:13 grubba Exp $
+ * $Id: autodoc.pike,v 1.11 2001/04/25 22:28:03 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -37,8 +37,7 @@ int main(int argc, array(string) argv)
   	  } else if (has_suffix(path, ".cmod")) {
 	    name = segments[-1][..sizeof(segments[-1])-6];
   	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
-  	  } else if (has_suffix(path, ".pmod") ||
-		     has_suffix(path, ".pmod.in")) {
+  	  } else if (has_suffix(path, ".pmod")) {
 	    if (segments[-1] == "module.pmod") {
 	      // Handling of Foo.pmod/module.pmod.
 	      segments = segments[..sizeof(segments)-2];
@@ -46,7 +45,8 @@ int main(int argc, array(string) argv)
 	    if (has_suffix(segments[-1], ".pmod")) {
 	      name = segments[-1][..sizeof(segments[-1])-6];
 	    } else {
-	      name = segments[-1][..sizeof(segments[-1])-9];
+	      // Not likely to occurr, but...
+	      name = segments[-1];
 	    }
   	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
   	  } else if (has_suffix(path, ".pike")) {
@@ -57,6 +57,19 @@ int main(int argc, array(string) argv)
 	    // Note: The below works for both .pike and .pmod.
 	    name = segments[-1][..sizeof(segments[-1])-6];
   	    info = Tools.AutoDoc.PikeExtractor.extractClass(raw, path, name);
+  	  } else if (has_suffix(path, ".pmod.in")) {
+	    if (segments[-1] == "module.pmod.in") {
+	      // Handling of Foo.pmod/module.pmod.
+	      segments = segments[..sizeof(segments)-2];
+	    }
+	    if (has_suffix(segments[-1], ".pmod")) {
+	      name = segments[-1][..sizeof(segments[-1])-6];
+	    } else {
+	      // This happens rather frequently...
+	      name = segments[-1];
+	    }
+	    raw = replace(raw, "@module@", sprintf("%O", "___"+name));
+  	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
   	  } else {
             werror("Unknown filetype %O\n", path);
   	    exit(1);
