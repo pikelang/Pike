@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.20 2004/03/10 00:17:08 nilsson Exp $
+// $Id: EXIF.pmod,v 1.21 2004/03/15 16:33:07 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -13,6 +13,8 @@
 // http://tsc.jeita.or.jp/WTO-01.htm
 // http://www.exif.org/
 // http://www.dicasoft.de/casiomn.htm
+// http://www.dalibor.cz/minolta/
+
 
 static void add_field(mapping m, string field,
 		      mapping|array alts,
@@ -300,6 +302,15 @@ static mapping NIKON_990_MAKERNOTE = ([
 		       "\00\03\00\00": "Left",
 		       "\00\04\00\00": "Right",
 		    ])  }),
+  0x0094:       ({"MN_Saturation", "MAP",
+		  ([ -3 : "B&W",
+		     -2 : "-2",
+		     -1 : "-1",
+		     0 : "0",
+		     1 : "1",
+		     2 : "2"
+		  ]) }),
+  0x0095:       ({"MN_NoiseReduction",          }),
   0x0010:	({"MN_DataDump",     	    	}),
 ]);
 
@@ -315,7 +326,8 @@ static mapping sanyo_specialmode(array(int) data) {
   if(data[1]) res->SanyoSpecialModeSequence = (string)data[1];
 
   add_field(res, "SanyoSpecialModeDirection",
-	    ([ 1:"Left to right",
+            ([ 0:"Non-panoramic",
+	       1:"Left to right",
 	       2:"Right to left",
 	       3:"Bottom to top",
 	       4:"Top to bottom" ]), data, 2);
@@ -391,6 +403,7 @@ static mapping SANYO_MAKERNOTE = ([
 ]);
 
 static mapping OLYMPUS_MAKERNOTE = ([
+  0x0100:       ({"MN_JPEGThumbnail"            }),
   0x0200:       ({"MN_SpecialMode",             "CUSTOM", sanyo_specialmode }),
   0x0201:       ({"MN_JPEGQuality",             "MAP",
 		  ([ 0:"SQ",
@@ -550,6 +563,36 @@ static mapping FUJIFILM_MAKERNOTE = ([
   0x1300:       ({"MN_BlurWarning",             "MAP", ([ 0:"No", 1:"Yes" ]) }),
   0x1301:       ({"MN_FocusWarning",            "MAP", ([ 0:"No", 1:"Yes" ]) }),
   0x1302:       ({"MN_AEWarning",               "MAP", ([ 0:"No", 1:"Yes" ]) }),
+]);
+
+static mapping GPS_TAGS = ([
+  0x0000: ({"GPSVersionID"}),
+  0x0001: ({"GPSLatitudeRef"}),
+  0x0002: ({"GPSLatitude"}),
+  0x0003: ({"GPSLongitudeRef"}),
+  0x0004: ({"GPSLongitude"}),
+  0x0005: ({"GPSAltitudeRef"}),
+  0x0006: ({"GPSAltitude"}),
+  0x0007: ({"GPSTimeStamp"}),
+  0x0008: ({"GPSSatellites"}),
+  0x0009: ({"GPSStatus"}),
+  0x000A: ({"GPSMeasureMode"}),
+  0x000B: ({"GPSDOP"}),
+  0x000C: ({"GPSSpeedRef"}),
+  0x000D: ({"GPSSpeed"}),
+  0x000E: ({"GPSTrackRef"}),
+  0x000F: ({"GPSTrack"}),
+  0x0010: ({"GPSImgDirectionRef"}),
+  0x0011: ({"GPSImgDirection"}),
+  0x0012: ({"GPSMapDatum"}),
+  0x0013: ({"GPSDestLatitudeRef"}),
+  0x0014: ({"GPSDestLatitude"}),
+  0x0015: ({"GPSDestLongitudeRef"}),
+  0x0016: ({"GPSDestLongitude"}),
+  0x0017: ({"GPSDestBearingRef"}),
+  0x0018: ({"GPSDestBearing"}),
+  0x0019: ({"GPSDestDistanceRef"}),
+  0x001A: ({"GPSDestDistance"}),
 ]);
 
 static mapping TAG_INFO = ([
@@ -801,6 +844,15 @@ static int short_value(string str, string order)
     return (str[1]<<8)|str[0];
 }
 
+static int short_swap(int i) {
+  return ((i&255)<<8) | ((i&65280)>>8);
+}
+
+static int long_swap(int i) {
+  return ((i&255)<<24) | ((i&65280)<<8) |
+    ((i&(255<<16))>>8) | ((i&(255<<24))>>24);
+}
+
 static int long_value(string str, string order)
 {
   if(order=="MM")
@@ -827,11 +879,17 @@ static mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   int tag_count=long_value(file->read(4), order);
   string make,model;
 
+  if(!TAG_TYPE_INFO[tag_type]) {
+    tag_id = short_swap(tag_id);
+    tag_type = short_swap(tag_type);
+    tag_count = long_swap(tag_count);
+  }
+
   string tag_name, tag_format;
   mapping|function tag_map;
   array temp = exif_info[tag_id];
   if(!temp || !sizeof(temp)) {
-    tag_name = sprintf("%s0x%x", (exif_info->prefix||"Tag"), tag_id);
+    tag_name = sprintf("%s0x%04x", (exif_info->prefix||"Tag"), tag_id);
     tag_format = 0;
     tag_map = ([]);
   }
@@ -872,7 +930,6 @@ static mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
       int num_entries=short_value(file->read(2), order);
       for(int i=0; i<num_entries; i++) {
 	catch {
-	  // This catch hides a probable bug in the parser.
 	  tags|=parse_tag(file, tags, tag_map, exif_offset, order);
 	};
       }
