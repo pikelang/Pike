@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.88 1998/05/05 21:01:35 grubba Exp $
+# $Id: Makefile.in,v 1.89 1998/05/06 00:38:55 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -178,8 +178,8 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
-interpret.o: interpret.c
-	$(CC) $(CFLAGS) -c interpret.c -o interpret.o || NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c interpret.c -o interpret.o 
+interpret.o: $(SRCDIR)/interpret.c
+	$(CC) $(CFLAGS) -c $(SRCDIR)/interpret.c -o interpret.o || NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $(SRCDIR)/interpret.c -o interpret.o 
 
 force :
 
