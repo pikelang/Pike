@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.575 2002/12/03 17:57:45 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.576 2002/12/03 21:19:26 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9310,21 +9310,11 @@ void test_dir(string dir, int|void base_size, object|void handler)
   {
     switch(s)
     {
-      case "msql.pike":
-      case "mysql.pike":
-      case "mysql_result.pike":
-      case "odbc.pike":
-      case "odbc_result.pike":
-      case "oracle.pike":
-      case "postgres.pike":
-      case "postgres_result.pike":
-      case "sybase.pike":
 #if !constant(GTK.Window)
       case "GTKSupport.pmod":
       case "PV.pike":
       case "pv.pike":
 #endif
-      case "GZipFile.pike":
         continue; // These modules cannot be tested properly by this test
     }
     string file=combine_path(dir,s);
