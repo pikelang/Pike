@@ -1,0 +1,23 @@
+#!/usr/local/bin/pike
+
+// Used to run an arbitrary command with sprshd.
+
+inherit "lib.pike";
+
+int verbose=0;
+
+int main(int argc, string *argv)
+{
+  int ret;
+  if(verbose)
+  { 
+    ret=do_cmd(argv[1..]);
+  }else{
+    ret=silent_do_cmd(argv[1..]);
+  }
+
+  if(ret)
+    werror("The command returned error code %d.\n",ret);
+
+  exit(ret);
+}
