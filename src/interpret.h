@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.88 2001/06/08 21:31:15 grubba Exp $
+ * $Id: interpret.h,v 1.89 2001/06/11 16:35:07 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -273,7 +273,7 @@ do{ \
     static int h_fun_=-1, h_id_=0;				\
     static int c_fun_=-1, c_fun_id_=0;				\
     struct object *h_=(HANDLER), *c_=(COMPAT);			\
-    if (h_) {							\
+    if (h_ && h_->prog) {					\
       if (h_->prog->id != h_id_) {				\
 	h_fun_ = find_identifier(fun, h_->prog);		\
 	h_id_ = h_->prog->id;					\
@@ -283,7 +283,7 @@ do{ \
 	break;							\
       }								\
     }								\
-    if (c_) {							\
+    if (c_ && c_->prog) {					\
       if (c_->prog->id != c_id_) {				\
 	c_fun_ = find_identifier(fun, c_->prog);		\
 	c_id_ = c_->prog->id;					\
