@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.606 2003/02/24 21:53:30 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.607 2003/02/25 15:52:39 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -125,6 +125,16 @@ test_any([[
       return -1;
   return 0;
 ]], 0)
+
+test_compile_any([[
+  void foo() 
+  {
+    Stdio.File bar(int x, int y)
+    { 
+      return 0;
+    }; 
+  } 
+]])
 
 
 dnl FIXME: Add test that local and local:: in combination
