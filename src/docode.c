@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.161 2003/02/24 21:00:44 mast Exp $
+|| $Id: docode.c,v 1.162 2003/08/18 15:11:38 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.161 2003/02/24 21:00:44 mast Exp $");
+RCSID("$Id: docode.c,v 1.162 2003/08/18 15:11:38 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -682,6 +682,8 @@ static int do_docode2(node *n, INT16 flags)
       {
 	if(flags & WANT_LVALUE)
 	{
+	  if (n->u.integer.b == IDREF_MAGIC_THIS)
+	    yyerror ("Cannot assign to this.");
 	  emit2(F_EXTERNAL_LVALUE, n->u.integer.b, level);
 	  return 2;
 	}else{
@@ -694,16 +696,20 @@ static int do_docode2(node *n, INT16 flags)
 	  emit1(F_GLOBAL_LVALUE, n->u.integer.b);
 	  return 2;
 	}else{
-	  struct identifier *id = ID_FROM_INT(state->new_program,n->u.integer.b);
-	  if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
-	     id->identifier_flags & IDENTIFIER_HAS_BODY)
-	  {
-	    /* Only use this opcode when it's certain that the result
-	     * can't zero, i.e. when we know the function isn't just a
-	     * prototype. */
-	    emit1(F_LFUN, n->u.integer.b);
-	  }else{
-	    emit1(F_GLOBAL, n->u.integer.b);
+	  if (n->u.integer.b == IDREF_MAGIC_THIS)
+	    emit1(F_THIS_OBJECT, 0);
+	  else {
+	    struct identifier *id = ID_FROM_INT(state->new_program,n->u.integer.b);
+	    if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
+	       id->identifier_flags & IDENTIFIER_HAS_BODY)
+	    {
+	      /* Only use this opcode when it's certain that the result
+	       * can't zero, i.e. when we know the function isn't just a
+	       * prototype. */
+	      emit1(F_LFUN, n->u.integer.b);
+	    }else{
+	      emit1(F_GLOBAL, n->u.integer.b);
+	    }
 	  }
 	  return 1;
 	}
@@ -991,7 +997,8 @@ static int do_docode2(node *n, INT16 flags)
 	  if(Pike_compiler ->new_program->id == CDR(n)->u.integer.a)
 	  {
 	    /* Check that it is a variable */
-	    if(IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.integer.b)->identifier_flags))
+	    if(CDR(n)->u.integer.b != IDREF_MAGIC_THIS &&
+	       IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.integer.b)->identifier_flags))
 	    {
 	      code_expression(CAR(n), 0, "RHS");
 	      emit1(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
@@ -1505,7 +1512,8 @@ static int do_docode2(node *n, INT16 flags)
       return do_lfun_call(CAR(n)->u.id.number, CDR(n));
     }
     else if(CAR(n)->token == F_EXTERNAL &&
-	    CAR(n)->u.integer.a == Pike_compiler->new_program->id)
+	    CAR(n)->u.integer.a == Pike_compiler->new_program->id &&
+	    CAR(n)->u.integer.b != IDREF_MAGIC_THIS)
     {
       return do_lfun_call(CAR(n)->u.integer.b, CDR(n));
     }

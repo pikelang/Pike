@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.124 2003/04/08 14:27:36 mast Exp $
+|| $Id: interpret_functions.h,v 1.125 2003/08/18 15:11:38 mast Exp $
 */
 
 /*
@@ -357,12 +357,9 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", 0, {
     struct external_variable_context loc;
 
     loc.o=Pike_fp->current_object;
-    if(!loc.o->prog)
-      Pike_error("Cannot access parent of destructed object.\n");
-
     loc.parent_identifier=Pike_fp->fun;
-    loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
-  
+    if (loc.o->prog)
+      loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
     find_external_context(&loc, arg2);
 
     DO_IF_DEBUG({
@@ -371,10 +368,16 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", 0, {
 	     loc.inherit->identifier_level));
     });
 
-    low_object_index_no_free(Pike_sp,
-			     loc.o,
-			     arg1 + loc.inherit->identifier_level);
-    Pike_sp++;
+    if (arg1 == IDREF_MAGIC_THIS)
+      /* Special treatment to allow doing Foo::this on destructed
+       * parent objects. */
+      ref_push_object (loc.o);
+    else {
+      low_object_index_no_free(Pike_sp,
+			       loc.o,
+			       arg1 + loc.inherit->identifier_level);
+      Pike_sp++;
+    }
     print_return_value();
   });
 });
@@ -384,20 +387,19 @@ OPCODE2(F_EXTERNAL_LVALUE, "& external", 0, {
   struct external_variable_context loc;
 
   loc.o=Pike_fp->current_object;
-  if(!loc.o->prog)
-    Pike_error("Cannot access parent of destructed object.\n");
-
   loc.parent_identifier=Pike_fp->fun;
-  loc.inherit=INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
-  
+  if (loc.o->prog)
+    loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
   find_external_context(&loc, arg2);
+
+  if (!loc.o->prog)
+    Pike_error ("Cannot access variable in destructed parent object.\n");
 
   DO_IF_DEBUG({
     TRACE((5,"-   Identifier=%d Offset=%d\n",
 	   arg1,
 	   loc.inherit->identifier_level));
   });
-
 
   ref_push_object(loc.o);
   Pike_sp->type=T_LVALUE;
@@ -2237,15 +2239,15 @@ OPCODE1(F_THIS_OBJECT, "this_object", 0, {
   if(Pike_fp)
   {
     struct object *o = Pike_fp->current_object;
-    int level = arg1;
-    for (; level > 0; level--) {
+    int level;
+    for (level = 0; level < arg1; level++) {
       struct program *p = o->prog;
       if (!p)
-	Pike_error ("Cannot get the parent object of a destructed object.\n");
-      DO_IF_DEBUG (
-	if (!(p->flags & PROGRAM_USES_PARENT))
-	  Pike_fatal ("optimize_this_object failed to set up parent pointers.\n");
-      );
+	Pike_error ("Object %d level(s) up is destructed - cannot get the parent.\n",
+		    level);
+      if (!(p->flags & PROGRAM_USES_PARENT))
+	/* FIXME: Ought to write out the object here. */
+	Pike_error ("Object %d level(s) up lacks parent reference.\n", level);
       o = PARENT_INFO(o)->parent;
     }
     ref_push_object(o);

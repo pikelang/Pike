@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.473 2003/06/30 17:18:24 mast Exp $
+|| $Id: program.c,v 1.474 2003/08/18 15:11:38 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.473 2003/06/30 17:18:24 mast Exp $");
+RCSID("$Id: program.c,v 1.474 2003/08/18 15:11:38 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1117,7 +1117,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 
 /*! @decl constant this
  *!
- *! Builtin constant that evaluates to the current object.
+ *! Builtin read only variable that evaluates to the current object.
  *!
  *! @seealso
  *!   @[this_program], @[this_object()]
@@ -1150,15 +1150,25 @@ struct node_s *program_magic_identifier (struct program_state *state,
     /* These are only recognized when looking in the current program
      * and not an inherited one. */
 
-    /* Handle this */
-    if (ident == this_string)
-      return mkefuncallnode ("this_object", mknewintnode (state_depth));
+    /* Handle this by referring to the magic this identifier at index 0. */
+    if (ident == this_string) {
+      if (state_depth > 0) 
+	return mkexternalnode (state->new_program, IDREF_MAGIC_THIS);
+      else
+	return mkidentifiernode (IDREF_MAGIC_THIS);
+    }
 
     /* Handle this_program */
-    if (ident == this_program_string)
-      return mkefuncallnode ("object_program",
-			     mkefuncallnode ("this_object",
-					     mknewintnode (state_depth)));
+    if (ident == this_program_string) {
+      node *n = mkefuncallnode ("object_program",
+				state_depth > 0 ?
+				mkexternalnode (state->new_program, IDREF_MAGIC_THIS) :
+				mkidentifiernode (IDREF_MAGIC_THIS));
+      /* We know this expression is constant. */
+      n->node_info &= ~OPT_NOT_CONST;
+      n->tree_info &= ~OPT_NOT_CONST;
+      return n;
+    }
   }
 
   if (colon_colon_ref) {
@@ -3327,9 +3337,8 @@ void compiler_do_inherit(node *n,
 
   continue_inherit:
 
-      i=ID_FROM_INT(p, numid);
-
-      if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
+      if(numid != IDREF_MAGIC_THIS &&
+	 (i=ID_FROM_INT(p, numid), IDENTIFIER_IS_CONSTANT(i->identifier_flags)))
       {
 	struct svalue *s=&PROG_FROM_INT(p, numid)->
 	  constants[i->func.offset].sval;
@@ -7051,6 +7060,9 @@ PMOD_EXPORT void *parent_storage(int depth)
   loc.inherit=INHERIT_FROM_INT(p, Pike_fp->fun);
   
   find_external_context(&loc, depth);
+
+  if (!loc.o->prog)
+    Pike_error ("Cannot access storage of destructed parent object.\n");
 
   return loc.o->storage + loc.inherit->storage_offset;
 }

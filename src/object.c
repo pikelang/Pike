@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.219 2003/08/06 13:21:13 mast Exp $
+|| $Id: object.c,v 1.220 2003/08/18 15:11:38 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.219 2003/08/06 13:21:13 mast Exp $");
+RCSID("$Id: object.c,v 1.220 2003/08/18 15:11:38 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1766,9 +1766,12 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   if(!loc.o) Pike_error("Illegal magic index call.\n");
 
   loc.parent_identifier=Pike_fp->fun;
-  loc.inherit=INHERIT_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun);
-  
+  if (loc.o->prog)
+    loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
   find_external_context(&loc, parent_level);
+
+  if (!loc.o->prog)
+    Pike_error ("Cannot index in destructed parent object.\n");
 
   magic=low_clone(type);
   add_ref(MAGIC_O2S(magic)->o=loc.o);

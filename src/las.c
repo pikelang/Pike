@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.320 2003/07/30 18:44:38 mast Exp $
+|| $Id: las.c,v 1.321 2003/08/18 15:11:38 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.320 2003/07/30 18:44:38 mast Exp $");
+RCSID("$Id: las.c,v 1.321 2003/08/18 15:11:38 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -125,7 +125,7 @@ void check_tree(node *n, int depth)
 	while (state && (state->new_program->id != parent_id)) {
 	  state = state->previous;
 	}
-	if (state) {
+	if (state && id_no != IDREF_MAGIC_THIS) {
 	  struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	  if (id) {
 #if 0
@@ -998,7 +998,7 @@ node *debug_mknode(short token, node *a, node *b)
 	  }
 	  break;
 	case F_EXTERNAL:
-	  {
+	  if (a->u.integer.b != IDREF_MAGIC_THIS) {
 	    struct program_state *state = Pike_compiler;
 	    int program_id = a->u.integer.a;
 	    while (state && (state->new_program->id != program_id)) {
@@ -1396,26 +1396,34 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 {
   struct program_state *state;
   node *res = mkemptynode();
-  struct identifier *id;
   res->token = F_EXTERNAL;
 
-  id = ID_FROM_INT(parent_prog, i);
-#ifdef PIKE_DEBUG
-  if(d_flag)
-  {
-    check_type_string(id->type);
-    check_string(id->name);
+  if (i == IDREF_MAGIC_THIS) {
+    type_stack_mark();
+    push_object_type (0, parent_prog->id);
+    res->type = pop_unfinished_type();
+    res->node_info = OPT_NOT_CONST;
   }
+
+  else {
+    struct identifier *id = ID_FROM_INT(parent_prog, i);
+#ifdef PIKE_DEBUG
+    if(d_flag)
+    {
+      check_type_string(id->type);
+      check_string(id->name);
+    }
 #endif
 
-  copy_pike_type(res->type, id->type);
+    copy_pike_type(res->type, id->type);
 
-  /* FIXME */
-  if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
-  {
-    res->node_info = OPT_EXTERNAL_DEPEND;
-  }else{
-    res->node_info = OPT_NOT_CONST;
+    /* FIXME */
+    if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
+    {
+      res->node_info = OPT_EXTERNAL_DEPEND;
+    }else{
+      res->node_info = OPT_NOT_CONST;
+    }
   }
   res->tree_info = res->node_info;
 
@@ -1570,9 +1578,14 @@ void resolv_constant(node *n)
       return;
 
     case F_EXTERNAL:
-      {
-	struct program_state *state = Pike_compiler;
+      if (n->u.integer.b == IDREF_MAGIC_THIS) {
+	yyerror ("Expected constant, got reference to this");
+	push_int (0);
+	return;
+      }
 
+      else {
+	struct program_state *state = Pike_compiler;
 	while (state && (state->new_program->id != n->u.integer.a)) {
 	  state = state->previous;
 	}
@@ -2489,12 +2502,14 @@ static void low_print_tree(node *foo,int needlval)
       char *name = "?";
       int program_id = foo->u.integer.a;
       int level = 0;
+      int id_no = foo->u.integer.b;
       while(state && (state->new_program->id != program_id)) {
 	state = state->previous;
 	level++;
       }
-      if (state) {
-	int id_no = foo->u.integer.b;
+      if (id_no == IDREF_MAGIC_THIS)
+	name = "this";
+      else if (state) {
 	struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	if (id && id->name) {
 	  name = id->name->str;
@@ -3732,37 +3747,43 @@ void fix_type_field(node *n)
 
       case F_EXTERNAL:
 	{
-	  int program_id = CAR(n)->u.integer.a;
 	  int id_no = CAR(n)->u.integer.b;
-	  struct program_state *state = Pike_compiler;
 
-	  name="external symbol";
+	  if (id_no == IDREF_MAGIC_THIS)
+	    name = "this";	/* Should perhaps qualify it. */
 
-	  while (state && (state->new_program->id != program_id)) {
-	    state = state->previous;
-	  }
+	  else {
+	    int program_id = CAR(n)->u.integer.a;
+	    struct program_state *state = Pike_compiler;
 
-	  if (state) {
-	    struct identifier *id = ID_FROM_INT(state->new_program, id_no);
-	    if (id && id->name) {
-	      name = id->name->str;
+	    name="external symbol";
+
+	    while (state && (state->new_program->id != program_id)) {
+	      state = state->previous;
+	    }
+
+	    if (state) {
+	      struct identifier *id = ID_FROM_INT(state->new_program, id_no);
+	      if (id && id->name) {
+		name = id->name->str;
 #if 0
 #ifdef PIKE_DEBUG
-	      /* FIXME: This test crashes on valid code because the type of the
-	       * identifier can change in pass 2 -Hubbe
-	       */
-	      if(id->type != f)
-	      {
-		printf("Type of external node is not matching it's identifier.\nid->type: ");
-		simple_describe_type(id->type);
-		printf("\nf       : ");
-		simple_describe_type(f);
-		printf("\n");
+		/* FIXME: This test crashes on valid code because the type of the
+		 * identifier can change in pass 2 -Hubbe
+		 */
+		if(id->type != f)
+		{
+		  printf("Type of external node is not matching it's identifier.\nid->type: ");
+		  simple_describe_type(id->type);
+		  printf("\nf       : ");
+		  simple_describe_type(f);
+		  printf("\n");
 
-		Pike_fatal("Type of external node is not matching it's identifier.\n");
+		  Pike_fatal("Type of external node is not matching it's identifier.\n");
+		}
+#endif
+#endif
 	      }
-#endif
-#endif
 	    }
 	  }
 	}

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.460 2003/06/12 20:43:32 mast Exp $
+|| $Id: builtin_functions.c,v 1.461 2003/08/18 15:11:37 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.460 2003/06/12 20:43:32 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.461 2003/08/18 15:11:37 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1874,8 +1874,15 @@ void f_rusage(INT32 args)
  *!
  *!   @[level] might be used to access the object of a surrounding
  *!   class: The object at level 0 is the current object, the object
- *!   at level 1 is the one belonging to the class surrounding the
- *!   current class, and so on.
+ *!   at level 1 is the one belonging to the class that surrounds
+ *!   the class that the object comes from, and so on.
+ *!
+ *! @note
+ *!   As opposed to a qualified @expr{this@} reference such as
+ *!   @expr{global::this@}, this function doesn't always access the
+ *!   objects belonging to the lexically surrounding classes. If the
+ *!   class containing the call has been inherited then the objects
+ *!   surrounding the inheriting class are accessed.
  */
 void f_this_object(INT32 args)
 {
@@ -1892,13 +1899,14 @@ void f_this_object(INT32 args)
   if(Pike_fp)
   {
     struct object *o = Pike_fp->current_object;
-    for (; level > 0; level--) {
+    int l;
+    for (l = 0; l < level; l++) {
       struct program *p = o->prog;
       if (!p)
-	Pike_error ("Cannot get the parent object of a destructed object.\n");
+	Pike_error ("Object %d level(s) up is destructed - cannot get the parent.\n", l);
       if (!(p->flags & PROGRAM_USES_PARENT))
 	/* FIXME: Ought to write out the object here. */
-	Pike_error ("Object lacks parent reference.\n");
+	Pike_error ("Object %d level(s) up lacks parent reference.\n", l);
       o = PARENT_INFO(o)->parent;
     }
     ref_push_object(o);
@@ -1910,7 +1918,7 @@ void f_this_object(INT32 args)
 
 static node *optimize_this_object(node *n)
 {
-  int id;
+  int level = 0;
 
   if (CDR (n)) {
     struct program_state *state = Pike_compiler;
@@ -1923,34 +1931,35 @@ static node *optimize_this_object(node *n)
       return NULL;
     }
     else {
-      int level;
+      int i;
 #ifdef PIKE_DEBUG
       if (CDR (n)->u.sval.type != T_INT || CDR (n)->u.sval.u.integer < 0)
 	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
       level = CDR (n)->u.sval.u.integer;
-      if (level > compilation_depth) {
-	my_yyerror ("There is no surrounding class %d levels out.", level);
-	return NULL;
-      }
-      for (; level > 0; level--, state = state->previous)
+      for (i = MIN (level, compilation_depth); i; i--, state = state->previous)
 	state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
-      id = state->new_program->id;
     }
   }
-  else id = Pike_compiler->new_program->id;
 
-  free_type(n->type);
-  type_stack_mark();
-
-  /* We are rather sure that we contain ourselves... */
-  /* push_object_type(1, Pike_compiler->new_program->id); */
-  /* But it did not work yet, so... */
-  push_object_type(0, id);
-  n->type = pop_unfinished_type();
-  if (n->parent) {
-    n->parent->node_info |= OPT_TYPE_NOT_FIXED;
+  /* We can only improve the type when accessing the innermost object:
+   * Since this_object always follows the object pointers it might not
+   * access the lexically surrounding objects. Thus the
+   * PROGRAM_USES_PARENT stuff above is a bit of a long shot, but it's
+   * better than nothing. */
+  if (!level) {
+    free_type(n->type);
+    type_stack_mark();
+    /* We are rather sure that we contain ourselves... */
+    /* push_object_type(1, Pike_compiler->new_program->id); */
+    /* But it did not work yet, so... */
+    push_object_type(0, Pike_compiler->new_program->id);
+    n->type = pop_unfinished_type();
+    if (n->parent) {
+      n->parent->node_info |= OPT_TYPE_NOT_FIXED;
+    }
   }
+
   return NULL;
 }
 
@@ -1969,11 +1978,6 @@ static int generate_this_object(node *n)
 	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
       level = CDR (n)->u.sval.u.integer;
-#ifdef PIKE_DEBUG
-      if (level > compilation_depth)
-	Pike_fatal ("this_object level too high. "
-	       "Expected this to be caught by optimize_this_object.\n");
-#endif
     }
   }
   else level = 0;

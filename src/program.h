@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.175 2003/03/20 18:02:57 mast Exp $
+|| $Id: program.h,v 1.176 2003/08/18 15:11:38 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -237,6 +237,9 @@ struct reference
   unsigned INT16 identifier_offset;
   INT16 id_flags; /* static, private etc.. */
 };
+
+/* Magic value used as identifier reference integer to refer to this. */
+#define IDREF_MAGIC_THIS -1
 
 /*
  * Each program has an array of these,
