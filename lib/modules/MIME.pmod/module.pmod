@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.3 2002/11/25 15:35:56 marcus Exp $
+// $Id: module.pmod,v 1.4 2002/12/12 18:31:28 marcus Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -245,14 +245,15 @@ static string remap(array(string) item)
 array(array(string)) decode_words_text( string txt )
 {
   object r = Regexp("^((.*)[ \t\n\r]|)(=\\?[^\1- ?]*\\?[^\1- ?]*\\?"
-		    "[^\1- ?]*\\?=)[ \t\n\r]*(.*)");
+		    "[^\1- ?]*\\?=)([ \t\n\r]*)(.*)");
   array a, res = ({});
   while ((a = r->split(txt)))
   {
-    txt = a[1]||"";
+    txt = a[0]||"";
+    if(!sizeof(res) || sizeof(a[4])) a[4]=a[3]+a[4];
     array w = decode_word(a[2]);
-    if (sizeof(a[3]))
-      res = ({ w, ({ a[3], 0 }) }) + res;
+    if (sizeof(a[4]))
+      res = ({ w, ({ a[4], 0 }) }) + res;
     else
       res = ({ w }) + res;
   }
