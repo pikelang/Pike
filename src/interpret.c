@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.310 2003/07/30 18:51:15 mast Exp $
+|| $Id: interpret.c,v 1.311 2003/07/31 14:28:50 tomas Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.310 2003/07/30 18:51:15 mast Exp $");
+RCSID("$Id: interpret.c,v 1.311 2003/07/31 14:28:50 tomas Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1157,6 +1157,83 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
   return -1;
 }
 
+#else /* __GNUC__ */
+#ifdef _M_IX86
+
+void *inter_return_label;
+void *escape_catch_label;
+
+#ifdef PIKE_DEBUG
+/* Note: The debug code is extracted, to keep the frame size constant. */
+static int eval_instruction_low(PIKE_OPCODE_T *pc);
+#endif /* PIKE_DEBUG */
+
+static int eval_instruction(PIKE_OPCODE_T *pc)
+#ifdef PIKE_DEBUG
+{
+  if (Pike_interpreter.trace_level > 5 && pc) {
+    int i;
+    fprintf(stderr, "Calling code at %p:\n", pc);
+#ifdef PIKE_OPCODE_ALIGN
+    if (((INT32)pc) % PIKE_OPCODE_ALIGN) {
+      Pike_fatal("Odd offset!\n");
+    }
+#endif /* PIKE_OPCODE_ALIGN */
+    for (i=0; i < 16; i+=4) {
+      fprintf(stderr,
+	      "  0x%08x 0x%08x 0x%08x 0x%08x\n",
+	      ((int *)pc)[i],
+	      ((int *)pc)[i+1],
+	      ((int *)pc)[i+2],
+	      ((int *)pc)[i+3]);
+    }
+  }
+  return eval_instruction_low(pc);
+}
+
+static int eval_instruction_low(PIKE_OPCODE_T *pc)
+#endif /* PIKE_DEBUG */
+{
+  if(pc == NULL) {
+
+    if(do_inter_return_label != NULL)
+      Pike_fatal("eval_instruction called with NULL (twice).\n");
+
+    _asm
+    {
+      lea eax,inter_return_label2
+      mov do_inter_return_label,eax
+      lea eax,inter_escape_catch_label
+      mov do_escape_catch_label,eax
+    }
+
+    /* Trick optimizer */
+    if(!dummy_label)
+      return 0;
+  }
+
+  CALL_MACHINE_CODE(pc);
+
+  /* This code is never reached, but will
+   * prevent gcc from optimizing the labels below too much
+   */
+
+  fprintf(stderr,"We have reached the end of the world!\n");
+  goto dummy_label;
+
+ inter_escape_catch_label:
+  EXIT_MACHINE_CODE();
+  return -2;
+
+ inter_return_label2:
+  EXIT_MACHINE_CODE();
+  return -1;
+
+ dummy_label:
+  ;
+}
+
+#endif /* _M_IX86 */
 #endif /* __GNUC__ */
 
 #ifndef SET_PROG_COUNTER
@@ -1173,8 +1250,17 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #define INTER_RETURN {SET_PROG_COUNTER(do_inter_return_label);DONE;}
 #define INTER_ESCAPE_CATCH {SET_PROG_COUNTER(do_escape_catch_label);DONE;}
 
+#ifdef _M_IX86
+// Disable frame pointer optimization
+#pragma optimize("y", off)
+#endif
+
 #include "interpret_functions_fixed.h"
 
+#ifdef _M_IX86
+// Restore optimization
+#pragma optimize("", on)
+#endif
 
 #else /* PIKE_USE_MACHINE_CODE */
 

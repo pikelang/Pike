@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.33 2003/04/18 15:41:12 mast Exp $
+|| $Id: ia32.c,v 1.34 2003/07/31 14:28:51 tomas Exp $
 */
 
 /*
@@ -13,6 +13,11 @@
 #include "constants.h"
 #include "object.h"
 #include "builtin_functions.h"
+
+/* This is defined on windows */
+#ifdef REG_NONE
+#undef REG_NONE
+#endif
 
 enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4};
 

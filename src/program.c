@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.509 2003/06/30 16:47:14 mast Exp $
+|| $Id: program.c,v 1.510 2003/07/31 14:28:50 tomas Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.509 2003/06/30 16:47:14 mast Exp $");
+RCSID("$Id: program.c,v 1.510 2003/07/31 14:28:50 tomas Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -7547,8 +7547,18 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 
 void make_program_executable(struct program *p)
 {
+#ifdef _WIN32
+  DWORD old_prot;
+  VirtualProtect((void *)p->program, p->num_program*sizeof(p->program[0]),
+                 PAGE_EXECUTE_READWRITE, &old_prot);
+
+#else  /* _WIN32 */
+
   mprotect((void *)p->program, p->num_program*sizeof(p->program[0]),
 	   PROT_EXEC | PROT_READ | PROT_WRITE);
+
+#endif /* _WIN32 */
+
 #ifdef FLUSH_INSTRUCTION_CACHE
   FLUSH_INSTRUCTION_CACHE(p->program,
 			  p->num_program*sizeof(p->program[0]));

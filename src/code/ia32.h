@@ -2,14 +2,26 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.20 2003/03/22 13:39:37 mast Exp $
+|| $Id: ia32.h,v 1.21 2003/07/31 14:28:51 tomas Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
 
 #define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + sizeof(INT32)))
+
+
+#ifdef _M_IX86
+
+#define DEF_PROG_COUNTER void *ia32_pc; \
+                         _asm { _asm mov ia32_pc,ebp }
+#define PROG_COUNTER  (((unsigned char **)ia32_pc)[1])
+
+#else  /* _M_IX86 */
+
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
+
+#endif
 
 
 #define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
@@ -76,6 +88,24 @@ INT32 read_f_jump(INT32 offset);
 void ia32_flush_code_generator(void);
 #define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator
 
+
+#ifdef _M_IX86
+
+#define CALL_MACHINE_CODE(pc)                                   \
+  /* This code does not clobber %eax, %ebx, %ecx & %edx, but    \
+   * the code jumped to does.                                   \
+   */                                                           \
+  __asm {                                                       \
+    __asm sub esp,12                                            \
+    __asm inc ebx /* dummy: forces the compiler to save ebx */  \
+    __asm jmp pc                                                \
+  }
+
+#define EXIT_MACHINE_CODE()                                     \
+  __asm { __asm add esp,12 }
+
+#else  /* _M_IX86 */
+
 #define CALL_MACHINE_CODE(pc)						\
   /* This code does not clobber %eax, %ebx, %ecx & %edx, but		\
    * the code jumped to does.						\
@@ -88,3 +118,5 @@ void ia32_flush_code_generator(void);
 
 #define EXIT_MACHINE_CODE()						\
   __asm__ __volatile__( "add $12,%%esp\n" : : )
+
+#endif /* _M_IX86 */
