@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.171 2001/08/20 18:33:51 mast Exp $");
+RCSID("$Id: gc.c,v 1.172 2001/08/30 23:21:54 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -544,7 +544,10 @@ void describe_location(void *real_memblock,
   /* FIXME: Is the following call correct?
    * Shouldn't the second argument be an offset?
    */
-  dmalloc_describe_location(descblock, location, indent);
+  /* dmalloc_describe_location(descblock, location, indent); */
+  /* My attempt to fix it, although I'm not really sure: /mast */
+  if (memblock)
+    dmalloc_describe_location(memblock, (char *) location - (char *) memblock, indent);
 #endif
 }
 
@@ -1224,7 +1227,7 @@ static void init_gc(void)
 static void exit_gc(void)
 {
 #ifdef DO_PIKE_CLEANUP
-  int e=0;
+  size_t e=0;
   struct marker *h;
   for(e=0;e<marker_hash_table_size;e++)
     while(marker_hash_table[e])
