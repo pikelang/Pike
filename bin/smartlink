@@ -147,4 +147,7 @@ fi
 
 # Used to be exec, but Digital-Unix's stupid sh has buggy variable-expansion.
 # /grubba
-eval $LINKER $LDOPTS
+# Used to be eval, but then quoting of quotes doesn't work.
+# /grubba
+$LINKER $LDOPTS
+exit $?
