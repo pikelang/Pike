@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.132 2003/01/26 22:16:03 mirar Exp $
+|| $Id: interpret_functions.h,v 1.133 2003/01/30 14:14:56 grubba Exp $
 */
 
 /*
@@ -1280,7 +1280,8 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", 0, {
 #define LOOP(ID, DESC, INC, OP2, OP4)					\
   OPCODE0_BRANCH(ID, DESC, 0, {						\
     union anything *i=get_pointer_if_this_type(Pike_sp-2, T_INT);	\
-    if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC))			\
+    if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC) &&			\
+       Pike_sp[-3].type == T_INT)					\
     {									\
       i->integer += INC;						\
       if(i->integer OP2 Pike_sp[-3].u.integer)				\
