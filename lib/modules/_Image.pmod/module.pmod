@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.15 2000/12/16 17:55:34 mirar Exp $
+//! $Id: module.pmod,v 1.16 2001/02/20 08:57:17 mirar Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -35,7 +35,9 @@ mapping _decode( string data, mixed|void tocolor )
   }
 
   // macbinary decoding
-  if (data[102..105]=="mBIN")
+  if (data[102..105]=="mBIN" ||
+      data[65..68]=="JPEG" ||    // wierd standard, that
+      data[69..72]=="8BIM")
   {
      int i;
      sscanf(data,"%2c",i);
