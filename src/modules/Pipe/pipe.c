@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.26 1998/07/22 18:01:12 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.27 1998/07/22 18:03:00 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -461,6 +461,9 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 	  }
 	}
       } while(len < 0);
+      /*
+       * FIXME: What if len is 0?
+       */
       return make_shared_binary_string(buffer,len);
    }
 
