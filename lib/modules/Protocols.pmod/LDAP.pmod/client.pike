@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.76 2005/03/10 19:27:33 mast Exp $
+// $Id: client.pike,v 1.77 2005/03/11 13:22:10 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -112,6 +112,8 @@ import SSL.Constants;
     mapping lauth = ([]);
     object last_rv = 0; // last returned value
   }
+
+constant supported_extensions = (<"bindname">);
 
 static function(string:string) get_attr_decoder (string attr,
 						 DO_IF_DEBUG (void|int nowarn))
@@ -454,7 +456,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.76 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.77 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1782,27 +1784,18 @@ string get_scope() {return ([0: "base", 1: "one", 2: "sub"])[ldap_scope];}
 
   // ldap://machine.at.home.cz:123/c=cz?attr1,attr2,attr3?sub?(uid=*)?!bindname=uid=hop,dc=unibase,dc=cz"
 
-  string url=ldapuri, s, scheme;
+  string url=ldapuri;
   array ar;
-  mapping res;
+    mapping(string:mixed) res = ([]);
 
-    s = (url / ":")[0];
-    url = url[sizeof(s)..];
+    if (sscanf (url, "%[^:]://%s", res->scheme, url) != 2)
+      ERROR ("Failed to parse scheme from ldap url.\n");
 
-    res = ([ "scheme" : s ]);
-
-#ifdef LDAP_URL_STRICT
-    if (url[..2] != "://")
-      return -1;
-#endif
-
-    s = (url[3..] / "/")[0];
-    url = url[sizeof(s)+4..];
-
-    res += ([ "host" : (s / ":")[0] ]);
-
-    if(sizeof(s / ":") > 1)
-      res += ([ "port" : (int)((s / ":")[1]) ]);
+    sscanf (url, "%[^/]/%s", string hostport, url);
+    sscanf (hostport, "%[^:]:%s", res->host, string port);
+    if (port)
+      if (sscanf (port, "%d%*c", res->port) != 1)
+	ERROR ("Failed to parse port number from %O.\n", port);
 
     ar = url / "?";
 
@@ -1810,22 +1803,25 @@ string get_scope() {return ([0: "base", 1: "one", 2: "sub"])[ldap_scope];}
       case 5: if (sizeof(ar[4])) {
 		mapping extensions = ([]);
 		foreach(ar[4] / ",", string ext) {
-		  int ix = predef::search(ext, "=");
-		  if(ix)
-		    extensions += ([ ext[..(ix-1)] : replace(ext[ix+1..],QUOTED_COMMA, ",") ]);
+		  sscanf (ext, "%[^=]=%s", string extype, string exvalue);
+		  extype = _Roxen.http_decode_string (extype);
+		  if (has_prefix (extype, "!")) {
+		    extype = extype[1..];
+		    if (!supported_extensions[extype[1..]])
+		      ERROR ("Critical extension %s is not supported.\n", extype);
+		  }
+		  if (extype == "")
+		    ERROR ("Failed to parse extension type from %O.\n", ext);
+		  extensions[extype] =
+		    exvalue ? _Roxen.http_decode_string (exvalue) : 1;
 		}
-		if (sizeof(extensions))
-		  res += ([ "ext" : extensions ]);
+		res->ext = extensions;
 	      }
-      //case 5: res += ([ "ext" : ar[4] ]);
-      case 4: res += ([ "filter" : ar[3] ]);
-      case 3: switch (ar[2]) {
-		case "sub": res += ([ "scope" : 2 ]); break;
-		case "one": res += ([ "scope" : 1 ]); break;
-		default: res += ([ "scope" : 0]); // = "base"
-	      }
-      case 2: res += sizeof(ar[1]) ? ([ "attributes" : ar[1] / "," ]) : ([]);
-      case 1: res += ([ "basedn" : ar[0] ]);
+      case 4: res->filter = _Roxen.http_decode_string (ar[3]);
+      case 3: res->scope = (["base": 0, "one": 1, "sub": 2])[ar[2]];
+      case 2: if (sizeof(ar[1])) res->attributes =
+				   map (ar[1] / ",", _Roxen.http_decode_string);
+      case 1: res->basedn = _Roxen.http_decode_string (ar[0]);
     }
 
     return res;
@@ -1884,28 +1880,6 @@ static mapping(string:array(string)) query_subschema (string dn,
     }
 
   return 0;
-}
-
-static string rfc_2252_decode (string str, string errmsg_prefix)
-// Decodes an arbitrary string that has been encoded with backslash
-// notation for inclusion in a larger production (RFC 2252, section
-// 4.3).
-{
-  string orig_str = str, res = "";
-  while (1) {
-    sscanf (str, "%[^\\]%s", string val, str);
-    res += val;
-    if (str == "") break;
-    // str[0] == '\\' now.
-    if (sscanf (str, "\\%1x%1x%s", int high, int low, str) == 3)
-      // Use two %1x to force reading of exactly two hex digits;
-      // something like %2.2x is currently not supported.
-      res += sprintf ("%c", (high << 4) + low);
-    else
-      ERROR ("%sInvalid backslash escape %O in string %O.\n",
-	     errmsg_prefix, str[..2], orig_str);
-  }
-  return res;
 }
 
 static mapping(string:mixed) parse_schema_terms (
@@ -2008,7 +1982,7 @@ static mapping(string:mixed) parse_schema_terms (
 	  if (catch (qstr = utf8_to_string (qstr)))
 	    ERROR ("%sMalformed UTF-8 in %s after term %O at pos %d: %O\n",
 		   term_id, what, sizeof (orig_str) - pos, orig_str);
-	  return rfc_2252_decode (qstr, errmsg_prefix);
+	  return Protocols.LDAP.ldap_decode_string (qstr);
 	};
 	res[term_id] = parse_qdstring ("quoted string");
 	break;
