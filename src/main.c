@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.212 2004/09/30 14:07:19 mast Exp $
+|| $Id: main.c,v 1.213 2004/10/11 14:28:17 grubba Exp $
 */
 
 #include "global.h"
@@ -798,6 +798,12 @@ int dbm_main(int argc, char **argv)
     }
   }else{
     back.severity=THROW_EXIT;
+
+    TRACE((stderr, "Init master cookie...\n"));
+
+    push_constant_text(MASTER_COOKIE);
+    low_add_constant("__master_cookie", Pike_sp-1);
+    pop_stack();
 
     TRACE((stderr, "Init modules...\n"));
 

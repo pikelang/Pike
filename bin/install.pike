@@ -26,7 +26,7 @@ int installed_files;
 
 // the nt scripts depends on this value
 // (incidentally defined elsewhere in the C code too)
-#define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
+#define MASTER_COOKIE __master_cookie
 
 constant pike_upgrade_guid = "FCBB6B90-1608-4A7C-926C-69BBAB366326";
 
