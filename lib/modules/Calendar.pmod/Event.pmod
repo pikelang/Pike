@@ -155,18 +155,21 @@ class Day_Event
 // find
    TimeRange next(TimeRange from,void|int(0..1) including)
    {
-      int jd=(int)(from->julian_day())+!including;
-      jd=scan_jd(from->calendar(),jd,1);
-      if (jd==NODAY) return 0;
+      int jd;
+      if (including) jd=(int)(from->julian_day());
+      else jd=(int)(from->end()->julian_day());
+      jd=scan_jd(from->calendar(),jd-nd+1,1);
       return (from->calendar()->Day)("julian_r",jd,from->ruleset())*nd;
    }
 
    TimeRange previous(TimeRange from,void|int(0..1) including)
    {
-      float|int jd=from->julian_day();
-      if (floatp(jd)) jd=(int)ceil(jd);
-      if (!including) jd--;
-      jd=scan_jd(from->calendar(),jd,-1);
+      int jd;
+      if (including) jd=(int)(from->end()->julian_day());
+      else jd=(floatp(from->julian_day())
+	       ?(int)floor(from->julian_day())
+	       :(from->julian_day()-1));
+      jd=scan_jd(from->calendar(),jd+nd-1,-1);
       if (jd==NODAY) return 0;
       return (from->calendar()->Day)("julian_r",jd,from->ruleset())*nd;
    }
@@ -446,8 +449,7 @@ class Gregorian_Fixed
       mn=_mn;
 
       yd=M_YD[mn]+md;
-//        if (sizeof(_n)) nd=_n[0];
-      nd=1;
+      if (sizeof(_n)) nd=_n[0];
    }
 
    int scan_jd(Calendar realm,int jd,int(-1..1) direction)
@@ -455,18 +457,24 @@ class Gregorian_Fixed
       [int y,int yjd,int leap]=gregorian_yjd(jd);
       int njd;
 
-      if (leap && yd>59) 
-	 njd=yjd+yd;
-      else 
-	 njd=yjd+yd-1; // yd start with 1
-      
-      if (direction==1) 
+      for (;;)
       {
-	 if (njd>=jd) return njd;
-	 return scan_jd(realm,yjd+365+leap,1);
+	 if (leap && yd>59) 
+	    njd=yjd+yd;
+	 else 
+	    njd=yjd+yd-1; // yd start with 1
+
+	 if (direction==1) 
+	 {
+	    if (njd>=jd) return njd;
+	    [y,yjd,leap]=gregorian_year(y+1);
+	 }
+	 else
+	 {
+	    if (njd<=jd) return njd;
+	    [y,yjd,leap]=gregorian_year(y-1);
+	 }
       }
-      if (njd<=jd) return njd;
-      return scan_jd(realm,yjd-1,-1);
    }
 
    string describe()
