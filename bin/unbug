@@ -1505,7 +1505,7 @@ class Debug
 	string desc="(< ";
 	Handle h = msd->nodes->i;
 	for(int e=0;e<_sizeof();e++) {
-	  desc += sprintf("%O", Svalue(h->ind)->_value());
+	  desc += sprintf("%O", Svalue(h->ind, 1)->_value());
 	  if(sizeof(desc)>300) {
 	    desc += " ..."+(_sizeof()-e);
 	    break;
@@ -1523,7 +1523,7 @@ class Debug
       {
 	Handle h = msd->nodes->i;
 	for(int e=0;e<_sizeof();e++) {
-	  mixed i = Svalue(h->ind)->_value();
+	  mixed i = Svalue(h->ind, 1)->_value();
 	  if(i == key)
 	    return 1;
 	  h=h->next;
@@ -2089,9 +2089,12 @@ class Debug
       }
     }
 
-  object Svalue(Handle s)
+  object Svalue(Handle s, void|int(0..1) is_multiset)
     {
-      switch(string type=revsyms->PIKE_T[s->type->_value()])
+      int itype = s->type->_value();
+      if(is_multiset)
+	itype &= 0b0000111111111111;
+      switch(string type=revsyms->PIKE_T[itype])
       {
 	case 0:
 	  return SvalueError(s->u, s->type->_value());
@@ -3110,7 +3113,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.19 2004/04/07 15:46:32 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.20 2004/04/08 14:17:44 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2004, Department of Computer and Information Science,
                      Linköping University
