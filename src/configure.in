@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.403 2000/08/21 13:07:23 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.404 2000/08/21 15:22:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -899,7 +899,9 @@ if test $cflags_is_set = no; then
       AC_SYS_COMPILER_FLAG(-MT,MT,LDFLAGS)
 
       # Interprocedural optimizations.
-      AC_SYS_COMPILER_FLAG(-Qip,Qip,OPTIMIZE)
+      # For some reason this seems to cause the error:
+      # dynamic_buffer.obj : error LNK2001: unresolved external symbol "[Entry] ?1memcpy" (.?1memcpy)
+      # AC_SYS_COMPILER_FLAG(-Qip,Qip,OPTIMIZE)
 
       # More warnings.
       AC_SYS_COMPILER_FLAG(-W3,W3,WARN)
