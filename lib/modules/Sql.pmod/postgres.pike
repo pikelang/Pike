@@ -2,7 +2,7 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.8 2000/04/29 00:10:38 kinkie Exp $
+ * $Id: postgres.pike,v 1.9 2000/04/29 00:38:18 kinkie Exp $
  *
  */
 
@@ -129,7 +129,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {  
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings));
+  return ::big_query(.sql_util.emulate_bindings(q,bindings),this_object());
 }
 
 #else /* !constant(Postgres.postgres) */

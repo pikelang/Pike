@@ -1,12 +1,12 @@
 /*
- * $Id: mysql.pike,v 1.8 2000/04/29 00:10:21 kinkie Exp $
+ * $Id: mysql.pike,v 1.9 2000/04/29 00:38:18 kinkie Exp $
  *
  * Glue for the Mysql-module
  */
 
 //.
 //. File:	mysql.pike
-//. RCSID:	$Id: mysql.pike,v 1.8 2000/04/29 00:10:21 kinkie Exp $
+//. RCSID:	$Id: mysql.pike,v 1.9 2000/04/29 00:38:18 kinkie Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the glue to the Mysql-module.
@@ -132,7 +132,7 @@ int|object big_query(string q, mapping(string|int:mixed)|void bindings)
 {
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings));
+  return ::big_query(.sql_util.emulate_bindings(q,bindings),this_object());
 }
 
 #else /* !constant(Mysql.mysql) */

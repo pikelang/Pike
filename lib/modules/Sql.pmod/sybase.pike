@@ -3,7 +3,7 @@
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  * (C) Roxen IS
  * 
- * $Id: sybase.pike,v 1.2 2000/04/29 00:11:09 kinkie Exp $
+ * $Id: sybase.pike,v 1.3 2000/04/29 00:38:18 kinkie Exp $
  *
  */
 
@@ -100,7 +100,7 @@ void create(void|string host, void|string db, void|string user,
 int|object big_query(string q, mapping(string|int:mixed)|void bindings) {
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings));
+  return ::big_query(.sql_util.emulate_bindings(q,bindings,this_object()));
 }
 
 #else

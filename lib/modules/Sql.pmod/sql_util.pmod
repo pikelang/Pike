@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.3 2000/04/29 00:10:59 kinkie Exp $
+ * $Id: sql_util.pmod,v 1.4 2000/04/29 00:38:18 kinkie Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	sql_util.pmod
-//. RCSID:	$Id: sql_util.pmod,v 1.3 2000/04/29 00:10:59 kinkie Exp $
+//. RCSID:	$Id: sql_util.pmod,v 1.4 2000/04/29 00:38:18 kinkie Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Some SQL utility functions
@@ -46,13 +46,16 @@ void fallback()
 //.   Optional mapping containing the variable bindings. Make sure that
 //.   no confusion is possible in the query. If necessary, change the
 //.   variables' names
-string emulate_bindings(string query, mapping(string|int:mixed)|void bindings)
+string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
+                        void|object driver)
 {
   array(string)k, v;
+  function my_quote=(driver&&driver->quote?driver->quote:quote);
   if (!bindings)
     return query;
   v=Array.map(values(bindings),
-              lambda(mixed m) {return (stringp(m)?m:(string)m);});
+              lambda(mixed m) {return 
+                                 my_quote(stringp(m)?m:(string)m);});
   k=Array.map(indices(bindings),lambda(string s){return ":"+s;});
   return replace(query,k,v);
 }
