@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.57 2001/04/09 16:50:59 jonasw Exp $
+//! $Id: DNS.pmod,v 1.58 2001/09/17 21:36:21 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -520,13 +520,13 @@ class client
 	      system->get_netinfo_property(".",
 					   "/locations/resolver",
 					   "nameserver")) {
-	    nameservers = sizeof(nameservers) && map(nameservers, `-, "\n");
+	    nameservers = map(nameservers, `-, "\n");
 	  }
 	  
 	  if (domains = system->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
-	    domains = sizeof(domains) && map(domains, `-, "\n");
+	    domains = map(domains, `-, "\n");
 	  }
 	} else {
 	  /* FIXME: Is this a good idea?
