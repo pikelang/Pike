@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.37 2000/09/22 12:54:10 grubba Exp $");
+RCSID("$Id: peep.c,v 1.38 2000/11/25 16:54:46 grubba Exp $");
 
 struct p_instr_s
 {
@@ -561,6 +561,10 @@ static void pop_n_opcodes(int n)
       fatal("Popping out of instructions.\n");
 #endif
 
+    /* FIXME: It looks like the fifo could be optimized.
+     *	/grubba 2000-11-21 (in Versailles)
+     */
+
     p=(p_instr *)low_make_buf_space(0, &instrbuf);
     p-=fifo_len;
     for(e=0;e<d;e++) free_string(p[e].file);
@@ -572,30 +576,56 @@ static void pop_n_opcodes(int n)
   eye+=n;
 }
 
+#define DO_OPTIMIZATION_PREQUEL(topop) do {	\
+    struct pike_string *cf; 			\
+    INT32 cl=instr(0)->line;			\
+  						\
+    DO_IF_DEBUG(				\
+      if(a_flag>5)				\
+      {						\
+  	int e;					\
+  	fprintf(stderr,"PEEP at %d:",cl);	\
+  	for(e=0;e<topop;e++)			\
+  	{					\
+  	  fprintf(stderr," ");			\
+  	  dump_instr(instr(e));			\
+  	}					\
+  	fprintf(stderr," => ");			\
+      }						\
+    )						\
+    						\
+    copy_shared_string(cf,instr(0)->file);	\
+    pop_n_opcodes(topop)
+
+#define DO_OPTIMIZATION_POSTQUEL(q)	\
+    fifo_len+=q;			\
+    free_string(cf);			\
+    debug();				\
+  					\
+    DO_IF_DEBUG(			\
+      if(a_flag>5)			\
+      {					\
+  	int e;				\
+  	for(e=0;e<q;e++)		\
+  	{				\
+  	  fprintf(stderr," ");		\
+  	  dump_instr(instr(e));		\
+  	}				\
+  	fprintf(stderr,"\n");		\
+      }					\
+    )					\
+  					\
+    fifo_len += q + 3;			\
+  }  while(0)
+
 
 static void do_optimization(int topop, ...)
 {
   va_list arglist;
-  struct pike_string *cf;
   int q=-1;
-  INT32 cl=instr(0)->line;
 
-#ifdef PIKE_DEBUG
-  if(a_flag>5)
-  {
-    int e;
-    fprintf(stderr,"PEEP at %d:",cl);
-    for(e=0;e<topop;e++)
-    {
-      fprintf(stderr," ");
-      dump_instr(instr(e));
-    }
-    fprintf(stderr," => ");
-  }
-#endif
-  
-  copy_shared_string(cf,instr(0)->file);
-  pop_n_opcodes(topop);
+  DO_OPTIMIZATION_PREQUEL(topop);
+
   va_start(arglist, topop);
   
   while(1)
@@ -631,24 +661,8 @@ static void do_optimization(int topop, ...)
   }
 
   va_end(arglist);
-  fifo_len+=q;
-  free_string(cf);
-  debug();
 
-#ifdef PIKE_DEBUG
-  if(a_flag>5)
-  {
-    int e;
-    for(e=0;e<q;e++)
-    {
-      fprintf(stderr," ");
-      dump_instr(instr(e));
-    }
-    fprintf(stderr,"\n");
-  }
-#endif
-
-  fifo_len+=q + 3;
+  DO_OPTIMIZATION_POSTQUEL(q);
 }
 
 
