@@ -10,11 +10,11 @@
  *  attributes;
  * {
  *
- *   PIKEFUNC int function_name (int x)
+ *   PIKEFUNC int function_name (int x, CTYPE char * foo)
  *    attribute;
  *    attribute value;
  *   {
- *     C code using 'x'.
+ *     C code using 'x' and 'foo'.
  *
  *     RETURN x;
  *   }
@@ -145,14 +145,52 @@ string uname(mixed type)
   }
 }
 
+array convert_ctype(array tokens)
+{
+  switch((string)tokens[0])
+  {
+    case "char": /* char* */
+      if(sizeof(tokens) >1 && "*" == (string)tokens[1])
+	return ({ PC.Token("string") });
+
+    case "short":
+    case "int":
+    case "long":
+    case "size_t":
+    case "ptrdiff_t":
+    case "INT32":
+      return ({ PC.Token("int") });
+
+    case "double":
+    case "float":
+      return ({ PC.Token("float") });
+
+    default:
+      werror("Unknown C type.\n");
+      exit(0);
+  }
+}
+
 mapping(string:string) parse_arg(array x)
 {
   mapping ret=(["name":x[-1]]);
   ret->type=x[..sizeof(x)-2];
   ret->basetype=x[0];
-  if(sizeof(ret->type/({"|"}))>1)
-    ret->basetype="mixed";
-  ret->ctype=cname(ret->basetype);
+  if(ret->basetype == PC.Token("CTYPE"))
+  {
+    ret->cname = merge(ret->type[1..]);
+    ret->type = convert_ctype(ret->type[1..]);
+    ret->is_c_type=1;
+  }else{
+    array ored_types=ret->type/({"|"});
+    if(sizeof(ored_types)>1)
+      ret->basetype="mixed";
+    
+    if(search(ored_types,PC.Token("void"))!=-1)
+      ret->optional=1;
+    
+    ret->ctype=cname(ret->type);
+  }
   ret->typename=trim(merge(recursive(strip_type_assignments,ret->type)));
   ret->line=ret->name->line;
   return ret;
@@ -190,13 +228,28 @@ string convert_type(array s)
 	convert_type((tmp/({":"}))[0])+","+
 	  convert_type((tmp/({":"}))[1])+")";
     }
-    case "object": 
+    case "object": /* FIXME: support object is/implements */
       return "tObj";
 
     case "program": 
       return "tProgram";
     case "function": 
-      return "tFunc";
+    {
+      if(sizeof(s)<2) return "tFunction";
+      array args=s[1][1..sizeof(s[1])-2];
+      [ args, array ret ] = args / PC.Token(":");
+      if(args[-1]=="...")
+      {
+	return sprintf("tFunc(%s,%s)",
+		       map(convert_type,args)*" ",
+		       convert_type(ret));
+      }else{
+	return sprintf("tFuncV(%s,,%s)",
+		       map(convert_type,args[..sizeof(args)-2])*" ",
+		       convert_type(args[-1]),
+		       convert_type(ret));
+      }
+    }
     case "mixed": 
       return "tMix";
 
@@ -452,7 +505,6 @@ array convert(array x, string base)
     args=args[1..sizeof(args)-2]/({","});
 
 //    werror("FIX RETURN: %O\n",body);
-    body=recursive(fix_return,body, rettype[0], cname(rettype), sizeof(args)); 
     
 //    werror("name=%s\n",name);
 //    werror("  rettype=%O\n",rettype);
@@ -465,6 +517,11 @@ array convert(array x, string base)
     });
 
     args=map(args,parse_arg);
+    int min_args=sizeof(args);
+    int max_args=sizeof(args); /* FIXME: check for ... */
+
+    while(min_args>0 && args[min_args-1]->optional)
+      min_args--;
 
     foreach(args, mapping arg)
       ret+=({
@@ -505,35 +562,81 @@ array convert(array x, string base)
     int argnum;
 
     argnum=0;
-    ret+=({
-      PC.Token(sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
-		       sizeof(args),
-		       name,
-		       sizeof(args)), proto[0]->line)
-    });
+    string argbase;
+    string num_arguments;
+    if(min_args == max_args)
+    {
+      ret+=({
+	PC.Token(sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
+			 sizeof(args),
+			 name,
+			 sizeof(args)), proto[0]->line)
+	  });
+      argbase=(string) (-sizeof(args));
+      num_arguments=(string)sizeof(args);
+    }else{
+      argbase="-args";
+      num_arguments="args";
+      if(min_args > 0) {
+	ret+=({
+	  PC.Token(sprintf("if(args < %d) wrong_number_of_args_error(%O,args,%d);\n",
+			   min_args,
+			   name,
+			   min_args), proto[0]->line)
+	    });
+      }
 
-    int sp=-sizeof(args);
+      if(max_args != -1) {
+	ret+=({
+	  PC.Token(sprintf("if(args > %d) wrong_number_of_args_error(%O,args,%d);\n",
+			   max_args,
+			   name,
+			   max_args), proto[0]->line)
+	    });
+      }
+    }
+
     foreach(args, mapping arg)
       {
+	if(arg->optional && "mixed" != (string)arg->basetype)
+	{
+	  ret+=({
+	    PC.Token(sprintf("if(args >= %s) ",argnum)),
+	      });
+	}
+	if(arg->is_c_type && arg->basetype == "string")
+	{
+	  /* Special case for 'char *' */
+	  /* This will have to be amended when we want to support
+	   * wide strings
+	   */
+	  ret+=({
+	      PC.Token(sprintf("if(sp[%d%s].type != PIKE_T_STRING || sp[%d%s].ustring -> width)",
+			       argnum,argbase,
+			       argnum,argbase,
+			       upper_case(arg->basetype->text)),arg->line)
+	    });
+	}else
+
 	switch((string)arg->basetype)
 	{
 	  default:
 	    ret+=({
-	      PC.Token(sprintf("if(Pike_sp[%d].type != PIKE_T_%s)",
-			       sp,upper_case(arg->basetype->text)),arg->line)
+	      PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_%s)",
+			       argnum,argbase,
+			       upper_case(arg->basetype->text)),arg->line)
 	    });
 	    break;
 
 	  case "program":
 	    ret+=({
-	      PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d)))",
-			       arg->name,sp),arg->line)
+	      PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d%s)))",
+			       arg->name,argnum,argbase),arg->line)
 	    });
 	    break;
 
 	  case "mixed":
 	}
-
 	switch((string)arg->basetype)
 	{
 	  default:
@@ -547,45 +650,75 @@ array convert(array x, string base)
 	  case "mixed":
 	}
 
+	if(arg->optional)
+	{
+	  ret+=({
+	    PC.Token(sprintf("if(args >= %s) { ",argnum)),
+	      });
+	}
+
 	switch(objectp(arg->basetype) ? arg->basetype->text : arg->basetype )
 	{
 	  case "int":
 	    ret+=({
-	      sprintf("%s=Pike_sp[%d].u.integer;\n",arg->name,sp)
+	      sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name,argnum,argbase)
 	    });
 	    break;
 
 	  case "float":
 	    ret+=({
-	      sprintf("%s=Pike_sp[%d].u.float_number;\n",
+	      sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
 		      arg->name,
-		      sp)
+		      argnum,argbase)
 	    });
 	    break;
 
 
 	  case "mixed":
 	    ret+=({
-	      PC.Token(sprintf("%s=sp%+d; dmalloc_touch_svalue(sp%+d);\n",
+	      PC.Token(sprintf("%s=sp%+d%s; dmalloc_touch_svalue(sp%+d%s);\n",
 			       arg->name,
-			       sp,sp),arg->line),
+			       argnum,argbase,argnum,argbase),arg->line),
 	    });
 	    break;
 
 	  default:
-	    ret+=({
-	      PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d].u.%s);\n",
-			       arg->name,
-			       sp,
-			       arg->basetype),arg->line)
-	    });
+	    if(arg->is_c_type && arg->basetype == "string")
+	    {
+	      /* some sort of 'char *' */
+	      /* This will have to be amended when we want to support
+	       * wide strings
+	       */
+	      ret+=({
+		PC.Token(sprintf("%s=Pike_sp[%d%s].u.string->str; debug_malloc_touch(Pike_sp[%d%s].u.string)\n",
+				 arg->name,
+				 argnum,argbase,
+				 argnum,argbase),arg->line)
+		  });
+	      
+	    }else{
+	      ret+=({
+		PC.Token(sprintf("debug_malloc_pass(%s=sp[%d%s].u.%s);\n",
+				 arg->name,
+				 argnum,argbase,
+				 arg->basetype),arg->line)
+		  });
+	    }
 
 	  case "program":
 	}
+
+	if(arg->optional)
+	{
+	  ret+=({
+	    PC.Token(sprintf("}",argnum)),
+	      });
+	}
+
         argnum++;
-	sp++;
       }
     
+    body=recursive(fix_return,body, rettype[0], cname(rettype), num_arguments); 
     if(sizeof(body))
       ret+=({body});
     ret+=({ "}\n" });
