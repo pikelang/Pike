@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.12 2000/03/22 23:22:40 grubba Exp $
+# $Id: configure.in,v 1.13 2000/03/22 23:25:41 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -238,6 +238,7 @@ fi
 #error Need mysql.h headerfile!
 #endif
 #endif
+	  ], [
 $ret_type *mysql_fetch_lengths(MYSQL_RES *mysql)
 {
   return 0;
