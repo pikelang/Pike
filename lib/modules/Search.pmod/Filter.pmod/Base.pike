@@ -1,10 +1,12 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.11 2001/08/08 19:30:25 nilsson Exp $
+// $Id: Base.pike,v 1.12 2001/08/09 12:53:21 noring Exp $
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
+
+constant tmp_filename = .TmpFile.tmp_filename;
 
 //!
 class Output
@@ -41,13 +43,6 @@ class Output
 //!
 Output filter(Standards.URI uri, string|Stdio.File data,
 	      string content_type, mixed ... more);
-
-private string tmp_unique = sprintf("%d.%d", time(), getpid());
-private int tmp_sequence = 0;
-string tmp_filename()
-{
-  return sprintf("../var/tmp/search.tmp.%s.%d", tmp_unique, tmp_sequence++);
-}
 
 string my_popen(array(string) args)
   // A smarter version of Process.popen: No need to quote arguments.
