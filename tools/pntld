@@ -977,6 +977,8 @@ class dumpfile
       string tmpname=symname;
       sscanf(tmpname,"%s@",tmpname);
 
+      if( !(type & 3) ) tmpname+="()";
+
       Symbol sym=global_symbols[tmpname];
       if(!sym)
 	global_symbols[tmpname]=sym=Symbol();
@@ -991,7 +993,7 @@ class dumpfile
 #ifdef DEBUG
       werror("Importing symbol: %O\n",symname);
 #endif
-      tmpname="__imp_"+tmpname+"()";
+      tmpname="__imp_"+tmpname+(tmpname[-1]==')'? "":"()");
 
       sym=global_symbols[tmpname];
       if(!sym)
@@ -1036,7 +1038,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.10 2001/01/26 12:58:48 hubbe Exp $\n"
+	 "$Id: pntld,v 1.11 2001/09/14 04:42:00 marcus Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
