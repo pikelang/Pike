@@ -1,7 +1,4 @@
 test_compile([[#pike 7.0
-functionp(read_bytes);]])
-
-test_compile([[#pike 7.0
 functionp(Stdio.read_bytes);]])
 
 test_compile([[#pike 7.0
