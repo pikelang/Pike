@@ -79,11 +79,13 @@ struct pike_string * debug_make_shared_binary_string(const char *str,int len);
 struct pike_string *debug_make_shared_string(const char *str);
 void unlink_pike_string(struct pike_string *s);
 void really_free_string(struct pike_string *s);
+void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
 void check_string(struct pike_string *s);
 void verify_shared_strings_tables(void);
 int safe_debug_findstring(struct pike_string *foo);
 struct pike_string *debug_findstring(const struct pike_string *foo);
+void debug_dump_pike_string(struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
 int low_quick_binary_strcmp(char *a,INT32 alen,
 			    char *b,INT32 blen);

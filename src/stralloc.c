@@ -40,7 +40,10 @@ static struct pike_string *internal_findstring(const char *s,int len,int h)
   {
 #ifdef DEBUG
     if(curr->refs<1)
+    {
+      debug_dump_pike_string(curr, 70);
       fatal("String with no references.\n");
+    }
 #endif
 
     if (full_hash_value == curr->hval &&
@@ -85,7 +88,10 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,i
     }
 #ifdef DEBUG
     if(curr->refs<1)
+    {
+      debug_dump_pike_string(curr, 70);
       fatal("String with no references.\n");
+    }
 #endif
   }
   return 0; /* not found */
@@ -391,13 +397,50 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
   return tmp;
 }
 
+void debug_dump_pike_string(struct pike_string *s, INT32 max)
+{
+  INT32 e;
+  fprintf(stderr,"0x%p: %ld refs, len=%ld, hval=%lux (%lux)\n",
+	  s,
+	  (long)s->refs,
+	  (long)s->len,
+	  (unsigned long)s->hval,
+	  (unsigned long)StrHash(s->str, s->len));
+  fprintf(stderr," \"");
+  for(e=0;e<s->len && max>0;e++)
+  {
+    int c=EXTRACT_UCHAR(s->str+e);
+    switch(c)
+    {
+      case '\t': fprintf(stderr,"\\t"); max-=2; break;
+      case '\n': fprintf(stderr,"\\n"); max-=2; break;
+      case '\r': fprintf(stderr,"\\r"); max-=2; break;
+      case '\b': fprintf(stderr,"\\b"); max-=2; break;
+
+      default:
+	if(is8bitalnum(c) || c==' ' || isgraph(c))
+	{
+	  putc(c,stderr);
+	  max--;
+	}else{
+	  fprintf(stderr,"\\%03o",c);
+	  max-=4;
+	}
+    }
+  }
+  if(!max)
+    fprintf(stderr,"...\n");
+  else
+    fprintf(stderr,"\"\n");
+}
+
 void dump_stralloc_strings(void)
 {
   unsigned INT32 e;
   struct pike_string *p;
   for(e=0;e<htable_size;e++)
     for(p=base_table[e];p;p=p->next)
-      printf("0x%p: %ld refs \"%s\"\n",p,(long)p->refs,p->str);
+      debug_dump_pike_string(p, 70);
 }
 
 #endif
