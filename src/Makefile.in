@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.103 1998/07/26 10:28:07 hubbe Exp $
+# $Id: Makefile.in,v 1.104 1998/08/01 19:58:44 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -140,12 +140,12 @@ pike: $(OBJ) modules/linker_options
 # purify
 pure: $(OBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) module_objects
