@@ -7,6 +7,7 @@
 *.pbm binary
 *.png binary
 *.pnm binary
+*.tiff binary
 /src/modules/_Crypto/rijndael_ecb_tbl.txt eol=lf
 /src/modules/_Crypto/rijndael_cbc_d_m.txt eol=lf
 /src/modules/_Crypto/rijndael_cbc_e_m.txt eol=lf
