@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.738 2004/09/20 12:12:13 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.739 2004/10/06 18:40:53 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10286,6 +10286,31 @@ test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
 test_true([[lambda () {mapping a=([]); return zero_type(a[0] = ([])[0]);}()]])
 test_true([[zero_type (lambda () {return ([])[0];}())]])
 
+test_any([[
+  int i = lambda() {return UNDEFINED;}();
+  lambda (int x) {} (i += 17);
+  return zero_type (i);
+]], 0)
+test_any([[
+  int i = lambda() {return UNDEFINED;}();
+  lambda (int x) {} (i -= 17);
+  return zero_type (i);
+]], 0)
+test_any([[
+  int i = lambda() {return UNDEFINED;}();
+  lambda (int x) {} (i++);
+  i++;
+  return zero_type (i);
+]], 0)
+test_any([[
+  int i = lambda() {return UNDEFINED;}();
+  lambda (int x) {} (i--);
+  return zero_type (i);
+]], 0)
+test_any([[
+  int i = lambda() {return UNDEFINED;}();
+  return zero_type (-i);
+]], 0)
 
 
 
