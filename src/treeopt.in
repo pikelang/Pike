@@ -1,6 +1,6 @@
 // -*- c-mode -*-
 //
-// $Id: treeopt.in,v 1.3 1999/11/08 16:32:21 grubba Exp $
+// $Id: treeopt.in,v 1.4 1999/11/08 20:52:33 grubba Exp $
 //
 // The tree optimizer
 //
@@ -296,7 +296,8 @@ F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
 					  $0->u.sval.u.object->prog);
     if (i) {
       struct identifier *id = ID_FROM_INT($0->u.sval.u.object->prog, i);
-      if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) break;
+      if (IDENTIFIER_IS_VARIABLE(id->identifier_flags))
+	goto next_arrow_opt;
     }
     ref_push_object($0->u.sval.u.object);
     ref_push_string($1->u.sval.u.string);
@@ -305,6 +306,8 @@ F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
     pop_stack();
     goto use_tmp1;
   }
+ next_arrow_opt:
+  ;
 }
 ;
 
@@ -366,6 +369,11 @@ F_FOR(F_POST_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)], -)):
 F_FOR(F_POST_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
 			    2[!($$->tree_info & OPT_CONTINUE)])):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(-1, $0), F_COMMA_EXPR($1, $2));
+
+F_FOR(0, ':'(*, -)):
+{
+}
+;
 
 F_FOR(0, ':'(1, F_CAST[$$->type == void_type_string](2, *))):
   F_FOR($0, ':'($1, $2));
@@ -506,5 +514,23 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     goto use_tmp1;
   }
  next_for_opt:
+  ;
 }
 ;
+
+// NULL protection of F_FOR
+
+F_FOR(*, ':'(*, -)):
+{
+  /* Protect the rest from the NULL */
+  break;
+}
+;
+
+F_FOR(*, -):
+{
+  /* Protect the rest from the NULL */
+  break;
+}
+;
+
