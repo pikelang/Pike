@@ -1,3 +1,7 @@
+Tue Aug 20 01:16:48 1996  Fredrik Hubinette  <hubbe@signum.se>
+
+	* version 0.000002 released
+
 Tue Aug 13 12:16:06 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
 
 	* gpmmod should now work with older versions of GMP.
