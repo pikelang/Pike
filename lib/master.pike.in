@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.92 2000/01/05 13:32:55 mast Exp $
+ * $Id: master.pike.in,v 1.93 2000/01/10 00:39:55 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -495,8 +495,6 @@ void create()
   add_include_path("¤lib_prefix¤/include");
   add_module_path("¤lib_prefix¤/modules");
 #endif
-
-  random_seed(time() + (getpid() * 0x11111111));
 }
 
 /*
@@ -998,6 +996,7 @@ void _main(string *orig_argv, string *env)
 	exit(0);
 	
       case "execute":
+	  random_seed(time() + (getpid() * 0x11111111));
 	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
 	exit(0);
 
@@ -1009,6 +1008,8 @@ void _main(string *orig_argv, string *env)
 
     argv = tmp->get_args(argv,1);
   }
+
+  random_seed(time() + (getpid() * 0x11111111));
 
   if(sizeof(argv)==1)
   {
