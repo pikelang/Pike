@@ -40,7 +40,15 @@ o Fixed a bug that could cause the parser to hang when a tag callback
 o Bugfix for handling of NUL in %{%} in sprintf.
 o Added kludge to avoid race condition in syslog(2) in
   glibc/linuxthreads.
-
+o Bugfix when iterators are used in foreach. They are now incremented
+  after the loop instead of before it. This can have compatibility
+  effects in code that uses iterators explicitly. E.g:
+    String.Iterator iter = String.Iterator ("foo");
+    foreach (iter; int ind; int val)
+      werror ("%d %d\n", ind, iter->index());
+  This will now write "0 0", "1 1", etc. In previous versions of 7.4
+  it wrote "0 1", "1 2", etc since the iterator has already been
+  incremented to point to the next element.
 
 Changes since Pike 7.4.10:
 ----------------------------------------------------------------------
