@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.438 2002/07/03 09:16:47 grubba Exp $");
+RCSID("$Id: program.c,v 1.439 2002/07/09 16:48:34 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3992,9 +3992,13 @@ INT32 define_function(struct pike_string *name,
 #endif /* PIKE_DEBUG */
     if (!pike_types_le(type, lfun_type->u.type)) {
       if (!match_types(type, lfun_type->u.type)) {
-	yytype_error("Function type mismatch", lfun_type->u.type, type, 0);
+	my_yyerror("Type mismatch for callback function %s():",
+		   name->str);
+	yytype_error(NULL, lfun_type->u.type, type, 0);
       } else if (lex.pragmas & ID_STRICT_TYPES) {
-	yytype_error("Function type mismatch", lfun_type->u.type, type,
+	yywarning("Type mismatch for callback function %s():",
+		  name->str);
+	yytype_error(NULL, lfun_type->u.type, type,
 		     YYTE_IS_WARNING);
       }
     }
