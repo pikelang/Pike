@@ -1,6 +1,22 @@
 Changes since Pike 7.4.10:
 ----------------------------------------------------------------------
 
+o Generation of LDSHARED bugfixed so that building of 3:rd party
+  modules work.
+o Bugfixes to String.Buffer.`+ and String.Buffer.`+=.
+o is_absolute_path can handle empty strings.
+o FakeFile works as Stdio.File when reading more than stored in the
+  file.
+o Bugfix in Standards.EXIF for Nikon 990/D1 cameras.
+o The MIME module supports transport padding after delimiter.
+o Buffer overflow fixed in _Roxen.
+o Several iterator bug fixes.
+o Array.lyskom_sort_func bug fixed.
+
+
+Changes since Pike 7.4.10:
+----------------------------------------------------------------------
+
 o Bugfix in Parser.C. "!=" is now considered one token instead of two.
 o Bugfixed loop over-optimization caused by faulty dependency
   analysis.
