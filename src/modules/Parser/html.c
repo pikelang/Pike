@@ -4232,7 +4232,7 @@ static void html_tag_args(INT32 args)
 static void html_tag_content(INT32 args)
 {
   struct piece *beg = THIS->start;
-  int cbeg = THIS->cstart+1;
+  ptrdiff_t cbeg = THIS->cstart+1;
 
   pop_n_elems(args);
 
