@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.675 2003/01/16 20:00:35 neotron Exp $")
+AC_REVISION("$Id: configure.in,v 1.676 2003/01/16 21:02:49 neotron Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -726,7 +726,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
       fi
     ;;
     Linux\ 2.*)
-      if test "x$ac_cv_prog_CC" = "xicc"; then
+      if test "x$REALCC" = "xicc"; then
         pike_cv_run_path_method=qoption
       else
         pike_cv_run_path_method=wl
@@ -915,7 +915,7 @@ case "$pike_cv_sys_os" in
     esac
   ;;
   Linux*)
-    if test "x$ac_cv_prog_CC" = "xicc"; then
+    if test "x$REALCC" = "xicc"; then
       LC_REQ=""
     fi
   ;;
@@ -1689,7 +1689,7 @@ if test "$cflags_is_set" = "no"; then
   # Linux with Intel C++
   DO_IF_OS(Linux,
   [
-    if test "x$ac_cv_prog_CC" = "xicc"; then
+    if test "x$REALCC" = "xicc"; then
       AC_SYS_COMPILER_FLAG(-Ob2,Ob2,OPTIMIZE)
       AC_SYS_COMPILER_FLAG(-ipo,ipo,OPTIMIZE)
       AC_SYS_COMPILER_FLAG(-ipo,ipo,EXTRALDFLAGS)
