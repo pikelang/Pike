@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.488 2003/04/27 17:52:41 mast Exp $
+|| $Id: builtin_functions.c,v 1.489 2003/04/27 20:12:11 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.488 2003/04/27 17:52:41 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.489 2003/04/27 20:12:11 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3819,7 +3819,7 @@ PMOD_EXPORT void f_sort(INT32 args)
   else {
     /* If there are only simple types in the array we can use unstable
      * sorting. */
-    array_fix_bad_type_field (a);
+    array_fix_unfinished_type_field (a);
     if (a->type_field & BIT_COMPLEX)
       free (stable_sort_array_destructively (a));
     else
