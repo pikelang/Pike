@@ -9,38 +9,6 @@ import ".";
 
 int procfs=-1;
 
-//! This function is the main calling function of the tests.
-//! It will perform all the tests and write the result on stdout.
-
-void run_tests(int|float|void seconds_per_test,int|void maximum_runs)
-{
-   mapping(string:Test) tests=([]);
-   array results=({});
-   
-   foreach (indices(Tools.Shoot);;string test)
-   {
-      program p;
-      Test t;
-      if ((programp(p=Tools.Shoot[test])) && 
-	  (t=p())->perform)
-	 tests[test]=t;
-   }
-
-   if (zero_type(seconds_per_test)) seconds_per_test=5;
-   if (zero_type(maximum_runs)) maximum_runs=25;
-
-   ExecTest("Overhead",Overhead())->run(0,1,1); // fill caches
-
-   write("test                        total    user    mem   (runs)\n");
-
-/* always run overhead check first */
-   foreach (({"Overhead"})+(sort(indices(tests))-({"Overhead"}));;string id)
-   {
-      ExecTest(id,tests[id])
-	 ->run(seconds_per_test,maximum_runs);
-   }
-}
-
 // internal to find a pike binary
 
 private static string locate_binary(array path, string name)
@@ -86,7 +54,6 @@ class ExecTest(string id,Test test)
 //! a new pike and call it until at least one of these conditions:
 //! maximum_seconds has passed, or
 //! the number of runs is at least maximum_runs.
-
    void run(int maximum_seconds,
 	    int maximum_runs,
 	    void|int silent)
