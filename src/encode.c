@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.179 2003/06/05 15:03:38 mast Exp $
+|| $Id: encode.c,v 1.180 2003/06/05 15:30:52 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.179 2003/06/05 15:03:38 mast Exp $");
+RCSID("$Id: encode.c,v 1.180 2003/06/05 15:30:52 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -847,8 +847,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
       if (data->canonic)
 	Pike_error("Canonical encoding of objects not supported.\n");
-      push_svalue(val);
-      apply(data->codec, "nameof", 1);
+      if (data->codec) {
+	push_svalue(val);
+	apply(data->codec, "nameof", 1);
+      } else {
+	push_undefined();
+      }
       EDB(5, fprintf(stderr, "%*s->nameof: ", data->depth, "");
 	  print_svalue(stderr, Pike_sp-1);
 	  fputc('\n', stderr););
@@ -918,8 +922,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if (data->canonic)
 	Pike_error("Canonical encoding of functions not supported.\n");
       check_stack(1);
-      push_svalue(val);
-      apply(data->codec,"nameof", 1);
+      if (data->codec) {
+	push_svalue(val);
+	apply(data->codec,"nameof", 1);
+      } else {
+	push_undefined();
+      }
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype==NUMBER_UNDEFINED)
       {
 	if(val->subtype != FUNCTION_BUILTIN)
@@ -966,8 +974,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if (data->canonic)
 	Pike_error("Canonical encoding of programs not supported.\n");
       check_stack(1);
-      push_svalue(val);
-      apply(data->codec,"nameof", 1);
+      if (data->codec) {
+	push_svalue(val);
+	apply(data->codec,"nameof", 1);
+      } else {
+	push_undefined();
+      }
       if(Pike_sp[-1].type == val->type)
 	Pike_error("Error in master()->nameof(), same type returned.\n");
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype == NUMBER_UNDEFINED)
@@ -2389,7 +2401,12 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  apply(data->codec,"objectof", 1);
+	  if (data->codec) {
+	    apply(data->codec,"objectof", 1);
+	  } else {
+	    decode_error(NULL, Pike_sp-1,
+			 "Failed to decode object (no codec). Got: ");
+	  }
 	  break;
 
 	case 1:
@@ -2496,7 +2513,12 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  apply(data->codec,"functionof", 1);
+	  if (data->codec) {
+	    apply(data->codec,"functionof", 1);
+	  } else {
+	    decode_error(NULL, Pike_sp-1,
+			 "Failed to decode function (no codec). Got: ");
+	  }
 	  break;
 
 	case 1: {
@@ -2559,7 +2581,12 @@ static void decode_value2(struct decode_data *data)
 	  struct program *p;
 
 	  decode_value2(data);
-	  apply(data->codec,"programof", 1);
+	  if (data->codec) {
+	    apply(data->codec,"programof", 1);
+	  } else {
+	    decode_error(NULL, Pike_sp-1,
+			 "Failed to decode program (no codec). Got: ");
+	  }
 
 	  p = program_from_svalue(Pike_sp-1);
 
@@ -2611,7 +2638,9 @@ static void decode_value2(struct decode_data *data)
 
 	    debug_malloc_touch(p);
 	    ref_push_program(p);
-	    apply(data->codec, "__register_new_program", 1);
+	    if (data->codec) {
+	      apply(data->codec, "__register_new_program", 1);
+	    }
 	      
 	    /* return a placeholder */
 	    if(Pike_sp[-1].type == T_OBJECT)
