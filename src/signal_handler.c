@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.183 2000/10/16 19:27:40 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.184 2000/10/18 15:43:55 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -73,6 +73,16 @@ RCSID("$Id: signal_handler.c,v 1.183 2000/10/16 19:27:40 grubba Exp $");
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
+
+#ifdef HAVE_POLL
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif /* HAVE_POLL_H */
+
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL */
 
 #ifdef __amigaos__
 #define timeval amigaos_timeval
@@ -2406,7 +2416,8 @@ void f_create_process(INT32 args)
       int loop_cnt = 0;
       sigset_t new_sig, old_sig;
       sigfillset(&new_sig);
-      while(sigprocmask(SIG_BLOCK, &new_sig, &old_sig));
+      while(sigprocmask(SIG_BLOCK, &new_sig, &old_sig))
+	;
 
       do {
 
