@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.141 1999/09/16 03:13:35 hubbe Exp $");
+RCSID("$Id: program.c,v 1.142 1999/09/16 03:44:30 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -825,6 +825,7 @@ static int alignof_variable(int run_time_type)
 }
 
 #ifdef PIKE_DEBUG
+
 void check_program(struct program *p)
 {
   INT32 size,e;
@@ -866,6 +867,26 @@ void check_program(struct program *p)
 
   for(e=0;e<(int)p->num_strings;e++)
     check_string(p->strings[e]);
+
+  for(e=0;e<(int)p->num_inherits;e++)
+  {
+    if(p->inherits[e].storage_offset < 0)
+      fatal("Inherit->storage_offset is wrong.\n");
+
+
+    if(e)
+    {
+      if(p->inherits[e-1].storage_offset > 
+	 p->inherits[e].storage_offset)
+	fatal("Overlapping inherits! (1)\n");
+
+      if(p->inherits[e-1].prog &&
+	 p->inherits[e-1].inherit_level >= p->inherits[e].inherit_level && 
+	 p->inherits[e-1].storage_offset + 
+	 p->inherits[e-1].prog->storage_needed > p->inherits[e].storage_offset)
+	fatal("Overlapping inherits!\n");
+    }
+  }
 
   if(p->flags & PROGRAM_FINISHED)
   for(e=0;e<(int)p->num_identifiers;e++)
@@ -911,11 +932,15 @@ void check_program(struct program *p)
 
     if( !(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
     {
-      int q, num;
+      int q, size;
       /* Variable */
       int offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
-      num=sizeof_variable(i->run_time_type);
-      for(q=0;q<num;q++)
+      size=sizeof_variable(i->run_time_type);
+
+      if(offset+size > p->storage_needed || offset<0)
+	fatal("Variable outside storage! (%s)\n",i->name->str);
+
+      for(q=0;q<size;q++)
       {
 	if(offset+q >= NELEM(variable_positions)) break;
 
@@ -940,12 +965,6 @@ void check_program(struct program *p)
       fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
   }
 
-  for(e=0;e<(int)p->num_inherits;e++)
-  {
-    if(p->inherits[e].storage_offset < 0)
-      fatal("Inherit->storage_offset is wrong.\n");
-
-  }
 }
 #endif
 
