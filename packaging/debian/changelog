@@ -1,3 +1,12 @@
+pike7.3 (7.3.51-4) unstable; urgency=low
+
+  * Enabled the Pike security.
+  * Build-conflicts with libutahglx since the latter doesn't conform
+    to the Linux OpenGL ABI
+  * Added correct build dependencies for Debian/Sid
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 23 Aug 2002 02:47:22 +0200
+
 pike7.3 (7.3.51-3) unstable; urgency=low
 
   * Added the -svg package.
