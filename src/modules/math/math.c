@@ -137,6 +137,55 @@ void f_ceil(INT32 args)
   sp[-args].u.float_number=ceil(sp[-args].u.float_number);
 }
 
+void f_min(INT32 args)
+{
+  check_all_args("min",args,BIT_MIXED,BIT_MIXED,0);
+  if(args<2) error("Too few arguments to min()\n");
+  if(is_gt(sp-args,sp-args+1)) assign_svalue(sp-args,sp-args+1);
+  pop_n_elems(args-1);
+}
+
+void f_max(INT32 args)
+{
+  check_all_args("max",args,BIT_MIXED,BIT_MIXED,0);
+  if(is_lt(sp-args,sp-args+1)) assign_svalue(sp-args,sp-args+1);
+  pop_n_elems(args-1);
+}
+
+void f_abs(INT32 args)
+{
+  struct svalue zero;
+  zero.type=T_INT;
+  zero.u.integer=0;
+
+  check_all_args("abs",args,BIT_INT|BIT_FLOAT|BIT_OBJECT,0);
+  pop_n_elems(args-1);
+  if(is_lt(sp-1,&zero)) o_negate();
+}
+
+void f_sgn(INT32 args)
+{
+  struct svalue zero;
+  zero.type=T_INT;
+  zero.u.integer=0;
+
+  check_all_args("sgn",args,BIT_MIXED,BIT_MIXED,0);
+  if(is_lt(sp-args,&zero))
+  {
+    pop_n_elems(args);
+    push_int(-1);
+  }
+  else if(is_gt(sp-1,&zero))
+  {
+    pop_n_elems(args);
+    push_int(1);
+  }
+  else
+  {
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
 
 void pike_module_init()
 {
@@ -152,6 +201,11 @@ void pike_module_init()
   add_efun("pow",f_pow,"function(float,float:float)",0);
   add_efun("floor",f_floor,"function(float:float)",0);
   add_efun("ceil",f_ceil,"function(float:float)",0);
+
+  add_efun("max",f_max,"function(mixed,mixed:mixed)",0);
+  add_efun("min",f_min,"function(mixed,mixed:mixed)",0);
+  add_efun("abs",f_abs,"function(float|int|object:float|int|object)",0);
+  add_efun("sgn",f_sgn,"function(mixed,mixed,int)",0);
 }
 
 void pike_module_exit() {}
