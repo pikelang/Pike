@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.107 2001/12/16 02:49:47 mast Exp $");
+RCSID("$Id: efuns.c,v 1.108 2001/12/22 00:26:22 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -89,9 +89,9 @@ static HINSTANCE kernel32lib;
   static PIKE_CONCAT(NAME,type) NAME
 
 LINKFUNC(BOOL, movefileex, (
-  LPCTSTR lpExistingFileName,  // file name
-  LPCTSTR lpNewFileName,       // new file name
-  DWORD dwFlags                // move options
+  LPCTSTR lpExistingFileName,  /* file name     */
+  LPCTSTR lpNewFileName,       /* new file name */
+  DWORD dwFlags                /* move options  */
 ));
 
 #endif
