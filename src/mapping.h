@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.30 2000/08/09 12:49:28 grubba Exp $
+ * $Id: mapping.h,v 1.31 2000/09/03 23:16:22 mast Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -30,10 +30,15 @@ struct mapping_data
   INT32 size, hashsize;
   INT32 num_keypairs;
   TYPE_FIELD ind_types, val_types;
+  INT16 flags;
   struct keypair *free_list;
   struct keypair *hash[1 /* hashsize */ ];
   /* struct keypair data_block[ hashsize * AVG_LINK_LENGTH ] */
 };
+
+#undef MAPPING_SIZE_DEBUG
+/* This debug doesn't work with stealth_check_mapping_for_destruct and
+ * gc_recurse_weak_mapping. */
 
 struct mapping
 {
@@ -41,10 +46,9 @@ struct mapping
 #ifdef PIKE_SECURITY
   struct object *prot;
 #endif
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
   INT32 debug_size;
 #endif
-  INT16 flags;
   struct mapping_data *data;
   struct mapping *next, *prev;
 };
@@ -57,6 +61,7 @@ extern struct mapping *gc_internal_mapping;
 #define m_sizeof(m) ((m)->data->size)
 #define m_ind_types(m) ((m)->data->ind_types)
 #define m_val_types(m) ((m)->data->val_types)
+#define mapping_get_flags(m) ((m)->data->flags)
 
 
 #define NEW_MAPPING_LOOP(md) \
@@ -85,6 +90,7 @@ void really_free_mapping_data(struct mapping_data *md);
 void do_free_mapping(struct mapping *m);
 struct mapping_data *copy_mapping_data(struct mapping_data *md);
 void mapping_fix_type_field(struct mapping *m);
+void mapping_set_flags(struct mapping *m, int flags);
 void low_mapping_insert(struct mapping *m,
 			struct svalue *key,
 			struct svalue *val,
