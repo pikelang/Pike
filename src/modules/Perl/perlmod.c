@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.14 2000/03/23 21:48:38 leif Exp $ */
+/* $Id: perlmod.c,v 1.15 2000/03/27 00:17:06 grubba Exp $ */
 
 #include "builtin_functions.h"
 #include "global.h"
@@ -431,10 +431,10 @@ static void _perlmod_eval(INT32 args, int perlflags)
 }
 
 static void perlmod_eval(INT32 args)
-  { return _perlmod_eval(args, G_SCALAR);}
+  { _perlmod_eval(args, G_SCALAR); }
 
 static void perlmod_eval_list(INT32 args)
-  { return _perlmod_eval(args, G_ARRAY);}
+  { _perlmod_eval(args, G_ARRAY); }
 
 static void _perlmod_call(INT32 args, int perlflags)
 { PerlInterpreter *p = PERL;
