@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.195 2003/11/28 15:44:27 grubba Exp $
+|| $Id: program.h,v 1.196 2003/12/30 09:24:53 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -162,7 +162,8 @@ union idptr
    *
    * For pike functions: Offset to the start of the function in
    * program.program in the program pointed to by prog in the struct
-   * inherit that corresponds to the identifier. */
+   * inherit that corresponds to the identifier. Or -1 if a prototype.
+   */
   ptrdiff_t offset;
 };
 
