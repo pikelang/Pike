@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.75 2003/04/11 02:37:28 mast Exp $
+|| $Id: stralloc.h,v 1.76 2003/04/30 23:18:41 nilsson Exp $
 */
 
 #ifndef STRALLOC_H
@@ -93,7 +93,7 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 static INLINE PCHARP MKPCHARP(void *ptr, int shift)
 {
   PCHARP tmp;
-  tmp.ptr=ptr;
+  tmp.ptr=(p_wchar0 *)ptr;
   tmp.shift=shift;
   return tmp;
 }
