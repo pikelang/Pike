@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.37 2000/09/15 13:45:58 leif Exp $
+# $Id: configure.in,v 1.38 2000/09/17 17:07:29 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -22,7 +22,7 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
-        getsid setsid \
+        setpgid getsid setsid \
 	getpwnam getspnam getgrnam getpwuid getgrgid \
 	getgrent setgrent endgrent getpwent setpwent endpwent \
 	chroot fchroot uname sysinfo gethostname gethostbyname \
@@ -30,6 +30,26 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
         getpwnam_r getpwent_r getpwuid_r \
         getspnam_r innetgr utime)
 
+
+if test "x$ac_cv_func_setpgrp" = "xyes"; then
+  AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
+  AC_CACHE_VAL(pike_cv_setprgp_bsd, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+], [
+  int prgp = setprgp(0, 0);
+], [ pike_cv_setprgp_bsd=yes ], [ pike_cv_setprgp_bsd=no ])
+  ])
+  if test "x$pike_cv_setpgrp_bsd" = "xyes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_SETPGRP_BSD)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
 
 AC_CHECK_LIB(nsl, gethostbyname)
 
