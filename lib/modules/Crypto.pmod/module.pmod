@@ -181,6 +181,49 @@ class DES_Algorithm
 
 DES_Algorithm DES = DES_Algorithm();
 
+class DES3_Algorithm
+{
+  // NOTE: Depends on the order of INIT invocations.
+  inherit DES3_Info;
+  inherit Cipher;
+
+  //! Creates a valid DES3-key out of its in parameter.
+  //! Two 7 or 8 bytes long strings or one 14 or 16 bytes will
+  //! result in an ABA key. Thre 7 or 8 bytes long strings or one
+  //! 21 or 24 bytes will result in an ABC key.
+  string fix_key(string key, string|void key2, string|void key3) {
+    if(key && key2 && key3)
+      return DES->fix_parity(key)+DES->fix_parity(key2)+DES->fix_parity(key3);
+    if(key && key2)
+      return DES->fix_parity(key)+DES->fix_parity(key2)+DES->fix_parity(key);
+    if(key) {
+      switch(sizeof(key)) {
+      case 14:
+	return DES->fix_parity(key[..6])+
+	  DES->fix_parity(key[7..])+
+	  DES->fix_parity(key[..6]);
+      case 16:
+	return DES->fix_parity(key[..7])+
+	  DES->fix_parity(key[8..])+
+	  DES->fix_parity(key[..7]);
+      case 21:
+	return DES->fix_parity(key[..6])+
+	  DES->fix_parity(key[7..13])+
+	  DES->fix_parity(key[14..]);
+      case 24:
+	return DES->fix_parity(key[..7])+
+	  DES->fix_parity(key[8..15])+
+	  DES->fix_parity(key[16..]);
+      }
+    }
+    error("Invalid in parameters.\n");
+  }
+
+  DES3_State `()() { return DES3_State(); }
+}
+
+DES3_Algorithm DES3 = DES3_Algorithm();
+
 #if 0
 class IDEA_Algorithm
 {

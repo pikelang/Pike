@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.16 2003/10/05 00:54:05 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.17 2003/10/08 18:33:10 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -554,6 +554,72 @@ PIKECLASS DES_State
     }
 }
 /*! @endclass DES_State */
+
+static int
+DES3_check_key(ptrdiff_t len, const char *key)
+{
+  return len==24;
+}
+
+static void
+glue_des3_set_key(struct des3_ctx *ctx, unsigned length, const uint8_t *key)
+{
+  des_set_key(ctx, key);
+}
+
+const struct nettle_cipher nettle_des3 = {
+  "DES3",
+  sizeof(struct des3_ctx),
+  8,
+  (56*3)/8,
+  (nettle_set_key_func) glue_des3_set_key,
+  (nettle_set_key_func) glue_des3_set_key,
+  (nettle_crypt_func) des3_encrypt,
+  (nettle_crypt_func) des3_decrypt,
+};
+
+/*! @class DES3_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo. */
+
+PIKECLASS DES3_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
+
+      if (CipherInfo && !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_des3;
+	CipherInfo->check_key = &DES3_check_key;
+      }
+    }
+}
+
+/*! @endclass DES3_Info */
+
+/*! @class DES3_State
+ *!
+ *! State for DES3 encyption
+ */
+PIKECLASS DES3_State
+{
+  INHERIT DES3_Info;
+  INHERIT CipherState;
+  CVAR struct des3_ctx des3;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->des3;
+    }
+}
+/*! @endclass DES3_State */
 
 static int
 serpent_check_key(ptrdiff_t len, const char *key)
