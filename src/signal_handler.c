@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.265 2003/05/04 14:37:17 nilsson Exp $
+|| $Id: signal_handler.c,v 1.266 2003/05/09 22:57:16 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.265 2003/05/04 14:37:17 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.266 2003/05/09 22:57:16 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -4619,8 +4619,8 @@ void init_signals(void)
   ADD_EFUN("set_priority",f_set_priority,tFunc(tStr tOr(tInt,tVoid),tInt),
            OPT_SIDE_EFFECT);
   
-/* function(int,mixed|void:void) */
-  ADD_EFUN("signal",f_signal,tFunc(tInt tOr(tMix,tVoid),tMix),OPT_SIDE_EFFECT);
+  ADD_EFUN("signal",f_signal,tFunc(tInt tOr(tVoid,tFunc(tInt,tVoid)),tMix),
+	   OPT_SIDE_EFFECT);
 
 #ifdef HAVE_KILL
 /* function(int|object,int:int) */
