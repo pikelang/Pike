@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.68 1999/11/04 18:47:18 grubba Exp $
+/* $Id: master.pike.in,v 1.69 1999/11/19 00:30:59 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -849,6 +849,7 @@ void _main(string *orig_argv, string *env)
 #endif
       ({"master",tmp->HAS_ARG,"-m"}),
       ({"compiler_trace",tmp->NO_ARG,"--compiler-trace"}),
+      ({"optimizer_debug",tmp->MAY_HAVE_ARG,"--optimizer-debug"}),
       ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
       ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
       ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1}),
@@ -874,6 +875,12 @@ void _main(string *orig_argv, string *env)
 	_compiler_trace(1);
 	break;
 #endif /* constant(_compiler_trace) */
+
+#if constant(_optimizer_debug)
+      case "optimizer_debug":
+	_optimizer_debug((int)q[i][1]);
+	break;
+#endif /* constant(_optimizer_debug) */
 
       case "trace":
 	trace+=(int)q[i][1];
