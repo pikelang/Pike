@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.165 1998/12/03 03:15:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.166 1999/04/23 01:12:36 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1936,7 +1936,7 @@ AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 
-if test x$ac_cv_func_dlopen$ac_cv_func_dld_link = xnono ; then
+if test x$pike_cv_func_dlopen$ac_cv_func_dld_link = xnono ; then
   with_dynamic_modules=no
 fi
 
