@@ -15,6 +15,8 @@ string not_query;
 string query;
 string protocol;
 
+int started = time();
+
 mapping(string:string|array(string)) request_headers=([]);
 
 mapping(string:string|array(string)) variables=([]);
@@ -152,11 +154,10 @@ string _sprintf(int t)
 }
 
 // ----------------------------------------------------------------
-
+function log_cb;
 string make_response_header(mapping m)
 {
    array(string) res=({});
-
    switch (m->error)
    {
       case 0:
@@ -213,9 +214,10 @@ string make_response_header(mapping m)
    return res*"\r\n"+"\r\n\r\n";
 }
 
-void response_and_finish(mapping m)
+void response_and_finish(mapping m, function|void _log_cb)
 {
 // insert HTTP 1.1 stuff here
+   log_cb = _log_cb;
 
    string header=make_response_header(m);
 
@@ -241,7 +243,7 @@ void response_and_finish(mapping m)
    if (sizeof(send_buf)<4096 &&
        !m->file)
    {
-      my_fd->write(send_buf);
+      sent = my_fd->write(send_buf);
       send_buf="";
 
       finish();
@@ -262,9 +264,12 @@ void response_and_finish(mapping m)
 
 void finish()
 {
+   if( log_cb )
+     log_cb(this_object());
    if (my_fd) my_fd->close();
 }
 
+int sent;
 string send_buf="";
 int send_pos;
 Stdio.File send_fd=0;
@@ -293,6 +298,7 @@ void send_write()
    }
 
    int n=my_fd->write(send_buf[send_pos..]);
+   sent += n;
    send_pos+=n;
 }
 
