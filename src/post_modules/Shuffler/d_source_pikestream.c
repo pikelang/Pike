@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: d_source_pikestream.c,v 1.4 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: d_source_pikestream.c,v 1.5 2002/11/06 23:08:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -18,9 +18,7 @@
 
 #include "shuffler.h"
 
-#define CHUNK 8192
-
-/* Source: Pike-Stream 
+/* Source: Pike-Stream
  * Argument: Stdio.File lookalike with read
  *           callback support (set_read_callback)
  */
