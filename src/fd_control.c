@@ -9,7 +9,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.21 1998/09/01 20:28:08 hubbe Exp $");
+RCSID("$Id: fd_control.c,v 1.22 1998/11/22 11:02:46 hubbe Exp $");
 
 #else /* TESTING */
 #ifndef _LARGEFILE_SOURCE
@@ -22,7 +22,7 @@ RCSID("$Id: fd_control.c,v 1.21 1998/09/01 20:28:08 hubbe Exp $");
 #  define __STDC_EXT__
 #endif /* !__STDC_EXT__ */
 #include <sys/types.h>
-#undef DEBUG
+#undef PIKE_DEBUG
 #define fd_ioctl ioctl
 #endif
 
@@ -63,7 +63,7 @@ RCSID("$Id: fd_control.c,v 1.21 1998/09/01 20:28:08 hubbe Exp $");
 
 int set_nonblocking(int fd,int which)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
     fatal("Filedescriptor %d out of range [0,%d).\n",
 	  fd, MAX_OPEN_FILEDESCRIPTORS);
@@ -95,7 +95,7 @@ int set_nonblocking(int fd,int which)
 
 int query_nonblocking(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd > MAX_OPEN_FILEDESCRIPTORS)
     fatal("Filedescriptor out of range.\n");
 #endif

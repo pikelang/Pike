@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.48 1998/11/06 03:08:01 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.49 1998/11/22 11:03:10 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -86,7 +86,7 @@ static void clear_markers(void)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static void CHECK_TYPE(struct pike_string *s)
 {
   if(debug_findstring(s) != s)
@@ -201,7 +201,7 @@ void pop_type_stack(void)
 void type_stack_pop_to_mark(void)
 {
   type_stackp-=pop_stack_mark();
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(type_stackp<type_stack)
     fatal("Type stack underflow\n");
 #endif
@@ -611,7 +611,7 @@ static void internal_parse_type(char **s)
 struct pike_string *parse_type(char *s)
 {
   struct pike_string *ret;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   unsigned char *ts=type_stackp;
   unsigned char **ptms=pike_type_mark_stackp;
 #endif
@@ -623,7 +623,7 @@ struct pike_string *parse_type(char *s)
 
   ret=pop_unfinished_type();
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(ts!=type_stackp || ptms!=pike_type_mark_stackp)
     fatal("Type stack whacked in parse_type.\n");
 #endif
@@ -631,7 +631,7 @@ struct pike_string *parse_type(char *s)
   return ret;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void stupid_describe_type(char *a,INT32 len)
 {
   INT32 e;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.110 1998/11/20 19:01:06 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.111 1998/11/22 11:02:53 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -83,7 +83,7 @@ void push_sp_mark(void)
 }
 int pop_sp_mark(void)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(mark_sp < mark_stack)
     fatal("Mark stack underflow!\n");
 #endif
@@ -92,7 +92,7 @@ int pop_sp_mark(void)
 
 struct frame *fp; /* frame pointer */
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
   struct frame *f;
@@ -177,7 +177,7 @@ use_malloc:
   mark_sp=mark_stack;
   fp=0;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   {
     static struct callback *spcb;
     if(!spcb)
@@ -375,7 +375,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void print_return_value(void)
 {
   if(t_flag>3)
@@ -402,7 +402,7 @@ void print_return_value(void)
 
 struct callback_list evaluator_callbacks;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static char trace_buffer[200];
 #define GET_ARG() (backlog[backlogp].arg=(\
   instr=prefix,\
@@ -484,7 +484,7 @@ void reset_evaluator(void)
   pop_n_elems(sp - evaluator_stack);
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define BACKLOG 512
 struct backlog
 {
@@ -536,7 +536,7 @@ static int eval_instruction(unsigned char *pc)
     fp->pc = pc;
     instr=EXTRACT_UCHAR(pc++);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag)
     {
 #if defined(_REENTRANT) && !defined(__NT__)
@@ -690,7 +690,7 @@ static int eval_instruction(unsigned char *pc)
 	{
 	  if(inherit->parent_offset)
 	  {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	    if(t_flag>4)
 	    {
 	      sprintf(trace_buffer,"-   Following o->parent (accumulator+=%d)\n",inherit->parent_offset-1);
@@ -702,7 +702,7 @@ static int eval_instruction(unsigned char *pc)
 	    o=o->parent;
 	    accumulator+=inherit->parent_offset-1;
 	  }else{
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	    if(t_flag>4)
 	    {
 	      sprintf(trace_buffer,"-   Following inherit->parent (accumulator+=%d)\n",inherit->parent_offset-1);
@@ -1463,7 +1463,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_RETURN);
     do_return:
-#if defined(DEBUG) && defined(GC2)
+#if defined(PIKE_DEBUG) && defined(GC2)
       if(d_flag>2) do_gc();
       if(d_flag>3) do_debug();
       check_threads_etc();
@@ -1863,7 +1863,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     case T_FUNCTION:
       if(s->subtype == FUNCTION_BUILTIN)
       {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(t_flag>1)
 	{
 	  init_buf();
@@ -1881,7 +1881,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       break;
 
     case T_ARRAY:
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(t_flag>1)
       {
 	init_buf();
@@ -1893,7 +1893,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       break;
 
     case T_PROGRAM:
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(t_flag>1)
       {
 	init_buf();
@@ -1913,7 +1913,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   }
 
   call_lfun:
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(fun < 0 || fun >= NUM_LFUNS)
       fatal("Apply lfun on illegal value!\n");
 #endif
@@ -1945,7 +1945,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       check_mark_stack(256);
       check_c_stack(8192);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(d_flag>2) do_debug();
 #endif
 
@@ -1953,7 +1953,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       if(!p)
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", sp, args);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)
       {
 	fprintf(stderr,"Function index out of range. %d >= %d\n",fun,(int)p->num_identifier_references);
@@ -1966,7 +1966,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 
       ref = p->identifier_references + fun;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(ref->inherit_offset>=p->num_inherits)
 	fatal("Inherit offset out of range in program.\n");
 #endif
@@ -2089,7 +2089,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	
 	clear_svalues(sp, num_locals - args);
 	sp += num_locals - args;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(num_locals < num_args)
 	  fatal("Wrong number of arguments or locals in function def.\n");
 #endif
@@ -2101,13 +2101,13 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	{
 	  struct svalue **save_mark_sp=mark_sp;
 	  tailrecurse=eval_instruction(pc);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  if(mark_sp < save_mark_sp)
 	    fatal("Popped below save_mark_sp!\n");
 #endif
 	  mark_sp=save_mark_sp;
 	}
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(sp<evaluator_stack)
 	  fatal("Stack error (also simple).\n");
 #endif
@@ -2123,7 +2123,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	time_passed = gethrtime() - time_base - start_time;
 	self_time=time_passed - time_in_children;
 	accounted_time+=self_time;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(self_time < 0 || children_base <0 || accounted_time <0)
 	  fatal("Time is negative\n  self_time=%ld\n  time_passed=%ld\n  time_in_children=%ld\n  children_base=%ld\n  accounted_time=%ld!\n  time_base=%ld\n  start_time=%ld\n",
 		(long)(self_time/100000),
@@ -2146,7 +2146,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       {
 	pop_n_elems(sp - new_frame.locals -1);
       }else if(sp - new_frame.locals < 1){
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(sp - new_frame.locals<0) fatal("Frame underflow.\n");
 #endif
 	sp->u.integer = 0;
@@ -2249,7 +2249,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     int tmp=eval_instruction(o->prog->program + offset);
     if(tmp!=-1) mega_apply(APPLY_STACK, tmp, 0,0);
     
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(sp<evaluator_stack)
       fatal("Stack error (simple).\n");
 #endif
@@ -2307,7 +2307,7 @@ void safe_apply_low(struct object *o,int fun,int args)
 
 void safe_apply(struct object *o, char *fun ,INT32 args)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!o->prog) fatal("Apply safe on destructed object.\n");
 #endif
   safe_apply_low(o, find_identifier(fun, o->prog), args);
@@ -2315,7 +2315,7 @@ void safe_apply(struct object *o, char *fun ,INT32 args)
 
 void apply_lfun(struct object *o, int fun, int args)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fun < 0 || fun >= NUM_LFUNS)
     fatal("Apply lfun on illegal value!\n");
 #endif
@@ -2356,14 +2356,14 @@ void apply_svalue(struct svalue *s, INT32 args)
     {
       push_int(0);
     }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(sp < (expected_stack + evaluator_stack))
       fatal("Stack underflow!\n");
 #endif
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void slow_check_stack(void)
 {
   struct svalue *s,**m;
@@ -2411,7 +2411,7 @@ void slow_check_stack(void)
 
 void cleanup_interpret(void)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   int e;
 #endif
 
@@ -2423,7 +2423,7 @@ void cleanup_interpret(void)
     fp = fp->parent_frame;
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   for(e=0;e<BACKLOG;e++)
   {
     if(backlog[e].program)

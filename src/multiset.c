@@ -15,7 +15,7 @@
 #include "builtin_functions.h"
 #include "gc.h"
 
-RCSID("$Id: multiset.c,v 1.11 1998/04/20 18:53:19 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.12 1998/11/22 11:03:03 hubbe Exp $");
 
 struct multiset *first_multiset;
 
@@ -47,7 +47,7 @@ static struct multiset *allocate_multiset(struct array *ind)
  */
 void really_free_multiset(struct multiset *l)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(l->refs)
     fatal("really free multiset on multiset with nonzero refs.\n");
 #endif
@@ -152,19 +152,19 @@ struct multiset *add_multisets(struct svalue *argp,INT32 args)
     break;
 
   case 2:
-    ret=merge_multisets(argp[0].u.multiset,argp[1].u.multiset,OP_ADD);
+    ret=merge_multisets(argp[0].u.multiset,argp[1].u.multiset,PIKE_ARRAY_OP_ADD);
     break;
 
   case 3:
-    a=merge_multisets(argp[0].u.multiset, argp[1].u.multiset, OP_ADD);
-    ret=merge_multisets(a, argp[2].u.multiset, OP_ADD);
+    a=merge_multisets(argp[0].u.multiset, argp[1].u.multiset, PIKE_ARRAY_OP_ADD);
+    ret=merge_multisets(a, argp[2].u.multiset, PIKE_ARRAY_OP_ADD);
     free_multiset(a);
     break;
 
   default:
     a=add_multisets(argp,args/2);
     b=add_multisets(argp+args/2,args-args/2);
-    ret=merge_multisets(a,b,OP_ADD);
+    ret=merge_multisets(a,b,PIKE_ARRAY_OP_ADD);
     free_multiset(a);
     free_multiset(b);
     break;

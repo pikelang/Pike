@@ -16,7 +16,7 @@
 #include "backend.h"
 #include "operators.h"
 
-RCSID("$Id: error.c,v 1.21 1998/07/16 23:09:39 hubbe Exp $");
+RCSID("$Id: error.c,v 1.22 1998/11/22 11:02:44 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -25,7 +25,7 @@ JMP_BUF *recoveries=0;
 
 JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   r->line=line;
   r->file=file;
 #endif
@@ -55,14 +55,14 @@ void pike_throw(void) ATTRIBUTE((noreturn))
   if(!recoveries)
     fatal("No error recovery context.\n");
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(sp - evaluator_stack < recoveries->sp)
     fatal("Stack error in error.\n");
 #endif
 
   while(fp != recoveries->fp)
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(!fp)
       fatal("Popped out of stack frames.\n");
 #endif
@@ -120,7 +120,7 @@ void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 
   if(!recoveries)
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     dump_backlog();
 #endif
 
@@ -156,7 +156,7 @@ void new_error(const char *name, const char *text, struct svalue *oldsp,
 
   if(!recoveries)
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     dump_backlog();
 #endif
 
@@ -198,7 +198,7 @@ void new_error(const char *name, const char *text, struct svalue *oldsp,
 
 void exit_on_error(void *msg)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   dump_backlog();
 #endif
   fprintf(stderr,"%s\n",(char *)msg);
@@ -207,7 +207,7 @@ void exit_on_error(void *msg)
 
 void fatal_on_error(void *msg)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   dump_backlog();
 #endif
   fprintf(stderr,"%s\n",(char *)msg);
@@ -236,7 +236,7 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
     abort();
   }
   in_fatal = 1;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   dump_backlog();
 #endif
 

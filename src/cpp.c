@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.29 1998/10/09 17:56:31 hubbe Exp $
+ * $Id: cpp.c,v 1.30 1998/11/22 11:02:39 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -496,6 +496,11 @@ void PUSH_STRING(char *str,
 	low_my_putchar(((c>>6)&7)+'0', buf);
 	low_my_putchar(((c>>3)&7)+'0', buf);
 	low_my_putchar((c&7)+'0', buf);
+	if(EXTRACT_UCHAR(str+p2+1)>='0' && EXTRACT_UCHAR(str+p2+1)<='7')
+	{
+	  low_my_putchar('"',buf);
+	  low_my_putchar('"',buf);
+	}
       }
       break;
     }
@@ -1298,7 +1303,7 @@ static INT32 low_cpp(struct cpp *this,
 		  str.s.len--;
 		if(!str.s.len && sp-partbase>1)
 		{
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 		  if(sp[-1].type != T_INT)
 		    fatal("Internal error in CPP\n");
 #endif
@@ -1393,7 +1398,7 @@ static INT32 low_cpp(struct cpp *this,
 				 partbase[e*2+2].u.string);
 	    }
 	    
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	    if(def->num_parts==1 &&
 	       (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
 	      fatal("Internal error in define\n");
@@ -1537,7 +1542,7 @@ static INT32 calcC(struct cpp *this,char *data,INT32 len,INT32 pos)
   }
   
   default:
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(isidchar(data[pos]))
       error("Syntax error in #if (should not happen)\n");
 #endif

@@ -13,7 +13,7 @@
 #include "dmalloc.h"
 #include "stuff.h"
 
-RCSID("$Id: peep.c,v 1.24 1998/05/12 23:51:26 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.25 1998/11/22 11:03:07 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -58,7 +58,7 @@ int insert_opcode(unsigned int f,
 {
   p_instr *p;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!hasarg(f) && b)
     fatal("hasarg(%d) is wrong!\n",f);
 #endif
@@ -66,7 +66,7 @@ int insert_opcode(unsigned int f,
   p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!instrbuf.s.len)
     fatal("Low make buf space failed!!!!!!\n");
 #endif
@@ -81,7 +81,7 @@ int insert_opcode(unsigned int f,
 
 int insert_opcode2(int f,int current_line, struct pike_string *current_file)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(hasarg(f))
     fatal("hasarg(%d) is wrong!\n",f);
 #endif
@@ -92,7 +92,7 @@ int insert_opcode2(int f,int current_line, struct pike_string *current_file)
 void update_arg(int instr,INT32 arg)
 {
   p_instr *p;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(instr > (long)instrbuf.s.len / (long)sizeof(p_instr) || instr < 0)
     fatal("update_arg outside known space.\n");
 #endif  
@@ -105,13 +105,13 @@ void update_arg(int instr,INT32 arg)
 
 void ins_f_byte(unsigned int b)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(store_linenumbers && b<F_MAX_OPCODE)
     ADD_COMPILED(b);
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 
   b-=F_OFFSET;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(b>255)
     error("Instruction too big %d\n",b);
 #endif
@@ -235,7 +235,7 @@ void assemble(void)
   c=(p_instr *)instrbuf.s.str;
   for(e=0;e<length;e++)
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(a_flag > 2 && store_linenumbers)
     {
       if(hasarg(c->opcode))
@@ -264,7 +264,7 @@ void assemble(void)
       break;
 
     case F_LABEL:
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(c->arg > max_label || c->arg < 0)
 	fatal("max_label calculation failed!\n");
 
@@ -280,7 +280,7 @@ void assemble(void)
       case I_ISJUMP:
 	ins_f_byte(c->opcode);
       case I_ISPOINTER:
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
 	tmp=PC;
@@ -296,7 +296,7 @@ void assemble(void)
 	ins_f_byte(c->opcode);
 	break;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       default:
 	fatal("Unknown instruction type.\n");
 #endif
@@ -312,7 +312,7 @@ void assemble(void)
 
     while(jumps[e]!=-1)
     {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(labels[e]==-1)
 	fatal("Hyperspace error: unknown jump point.\n");
 #endif
@@ -340,7 +340,7 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
 {
   p_instr *p;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!hasarg(f) && b)
     fatal("hasarg(%d) is wrong!\n",f);
 #endif
@@ -353,7 +353,7 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
     p-=fifo_len;
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!instrbuf.s.len)
     fatal("Low make buf space failed!!!!!!\n");
 #endif
@@ -368,7 +368,7 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
 
 int insopt2(int f, int cl, struct pike_string *cf)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(hasarg(f))
     fatal("hasarg(%d) is wrong!\n",f);
 #endif
@@ -379,7 +379,7 @@ static void debug(void)
 {
   if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr))
     fifo_len=(long)instrbuf.s.len / (long)sizeof(p_instr);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(eye < 0)
     fatal("Popped beyond start of code.\n");
 
@@ -454,7 +454,7 @@ static void pop_n_opcodes(int n)
 
     d=n;
     if(d>fifo_len) d=fifo_len;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if((long)d > (long)instrbuf.s.len / (long)sizeof(p_instr))
       fatal("Popping out of instructions.\n");
 #endif
@@ -514,7 +514,7 @@ static void do_optimization(int topop, ...)
 
 static void asm_opt(void)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(a_flag > 3)
   {
     p_instr *c;
@@ -536,7 +536,7 @@ static void asm_opt(void)
 #include "peep_engine.c"
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(a_flag > 4)
   {
     p_instr *c;

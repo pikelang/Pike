@@ -32,9 +32,9 @@
 #include "operators.h"
 
 /* Postgres includes */
-/* A hack, because DEBUG is defined both in pike's machine.h and in postgres */
-#ifdef DEBUG
-#undef DEBUG
+/* A hack, because PIKE_DEBUG is defined both in pike's machine.h and in postgres */
+#ifdef PIKE_DEBUG
+#undef PIKE_DEBUG
 #endif 
 
 #include <postgres.h>
@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.9 1998/08/25 13:11:52 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.10 1998/11/22 11:05:17 hubbe Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 

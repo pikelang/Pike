@@ -9,14 +9,14 @@
 #include "error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.8 1998/03/28 15:33:52 grubba Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.9 1998/11/22 11:02:42 hubbe Exp $");
 
 static dynamic_buffer buff;
 
 char *low_make_buf_space(INT32 space, dynamic_buffer *buf)
 {
   char *ret;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!buf->s.str) fatal("ARRRRGH! Deadly Trap!\n");
 #endif
 
@@ -39,7 +39,7 @@ char *low_make_buf_space(INT32 space, dynamic_buffer *buf)
 
 void low_my_putchar(char b,dynamic_buffer *buf)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!buf->s.str)
     fatal("Error in internal buffering.\n");
 #endif
@@ -48,7 +48,7 @@ void low_my_putchar(char b,dynamic_buffer *buf)
 
 void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!buf->s.str)
     fatal("Error in internal buffering.\n");
 #endif
@@ -83,7 +83,7 @@ void low_init_buf_with_string(string s, dynamic_buffer *buf)
      the bufsize back */
   for(buf->bufsize=BUFFER_BEGIN_SIZE;buf->bufsize<buf->s.len;buf->bufsize*=2);
   buf->s.str=realloc(buf->s.str,buf->bufsize);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!buf->s.str)
     fatal("Realloc failed.\n");
 #endif

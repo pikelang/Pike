@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.38 1998/04/29 15:06:29 noring Exp $");
+RCSID("$Id: gc.c,v 1.39 1998/11/22 11:02:48 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -62,7 +62,7 @@ struct callback *add_gc_callback(callback_func call,
 struct marker
 {
   INT32 refs;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   INT32 xrefs;
 #endif
   INT32 flags;
@@ -105,7 +105,7 @@ static struct marker *getmark(void *a)
   hashval=(unsigned long)a;
   hashval%=hashsize;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(hashval >= hashsize)
     fatal("Compiler has buggy modulo operator.\n");
 #endif
@@ -117,7 +117,7 @@ static struct marker *getmark(void *a)
   m=new_marker();
   m->marked=a;
   m->refs=0;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   m->xrefs=0;
 #endif
   m->flags=0;
@@ -127,7 +127,7 @@ static struct marker *getmark(void *a)
   return m;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 
 time_t last_gc;
 
@@ -394,7 +394,7 @@ void describe(void *x)
 
 INT32 gc_check(void *a)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(check_for)
   {
     if(check_for == a)
@@ -437,7 +437,7 @@ static void exit_gc(void)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void locate_references(void *a)
 {
   if(!in_gc)
@@ -477,7 +477,7 @@ int gc_is_referenced(void *a)
 {
   struct marker *m;
   m=getmark(a);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(m->refs + m->xrefs > *(INT32 *)a ||
      (!(m->refs < *(INT32 *)a) && m->xrefs) )
   {
@@ -499,7 +499,7 @@ int gc_is_referenced(void *a)
   return m->refs < *(INT32 *)a;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 int gc_external_mark(void *a)
 {
   struct marker *m;
@@ -542,7 +542,7 @@ int gc_do_free(void *a)
 {
   struct marker *m;
   m=getmark(a);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if( !(m->flags & GC_REFERENCED)  && m->flags & GC_XREFERENCED )
   {
     INT32 refs=m->refs;
@@ -580,7 +580,7 @@ void do_gc(void)
 
   tmp2=num_objects;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(t_flag)
     fprintf(stderr,"Garbage collecting ... ");
   if(num_objects < 0)
@@ -652,7 +652,7 @@ void do_gc(void)
     alloc_threshold = MAX_ALLOC_THRESHOLD;
   num_allocs=0;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(t_flag)
     fprintf(stderr,"done (freed %ld of %ld objects).\n",
 	    (long)(tmp2-num_objects),(long)tmp2);

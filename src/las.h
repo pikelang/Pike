@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.16 1998/08/29 22:15:18 grubba Exp $
+ * $Id: las.h,v 1.17 1998/11/22 11:02:57 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -125,7 +125,7 @@ int dooptcode(struct pike_string *name,
 #define INHERIT(i) (new_program->inherits+(i))
 #define PC (new_program->num_program)
 
-#ifndef DEBUG
+#ifndef PIKE_DEBUG
 #define check_tree(X,Y)
 #endif
 

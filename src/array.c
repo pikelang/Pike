@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.41 1998/10/14 05:48:44 hubbe Exp $");
+RCSID("$Id: array.c,v 1.42 1998/11/22 11:02:31 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -104,12 +104,12 @@ static void array_free_no_free(struct array *v)
 void really_free_array(struct array *v)
 {
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(v == & empty_array)
     fatal("Tried to free the empty_array.\n");
 #endif
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
 
@@ -129,7 +129,7 @@ void do_free_array(struct array *a)
  */
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
     fatal("Illegal index in low level index routine.\n");
 #endif
@@ -142,7 +142,7 @@ void array_index_no_free(struct svalue *s,struct array *v,INT32 index)
  */
 void array_index(struct svalue *s,struct array *v,INT32 index)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
     fatal("Illegal index in low level index routine.\n");
 #endif
@@ -190,7 +190,7 @@ void simple_array_index_no_free(struct svalue *s,
  */
 void array_free_index(struct array *v,INT32 index)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
     fatal("Illegal index in low level free index routine.\n");
 #endif
@@ -203,7 +203,7 @@ void array_free_index(struct array *v,INT32 index)
  */
 void array_set_index(struct array *v,INT32 index, struct svalue *s)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(index<0 || index>v->size)
     fatal("Illegal index in low level array set routine.\n");
 #endif
@@ -239,7 +239,7 @@ void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
  */
 struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(index<0 || index>v->size)
     fatal("Illegal index in low level insert routine.\n");
 #endif
@@ -284,7 +284,7 @@ struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
  */
 struct array *resize_array(struct array *a, INT32 size)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
 
@@ -327,7 +327,7 @@ struct array *array_shrink(struct array *v,INT32 size)
 {
   struct array *a;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(v->refs>2) /* Odd, but has to be two */
     fatal("Array shrink on array with many references.\n");
 
@@ -359,7 +359,7 @@ struct array *array_remove(struct array *v,INT32 index)
 {
   struct array *a;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(v->refs>1)
     fatal("Array remove on array with many references.\n");
 
@@ -402,7 +402,7 @@ struct array *array_remove(struct array *v,INT32 index)
 INT32 array_search(struct array *v, struct svalue *s,INT32 start)
 {
   INT32 e;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(start<0)
     fatal("Start of find_index is less than zero.\n");
 #endif
@@ -410,7 +410,7 @@ INT32 array_search(struct array *v, struct svalue *s,INT32 start)
   check_destructed(s);
 
   /* Why search for something that is not there? */
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
   if(v->type_field & (1 << s->type))
@@ -440,7 +440,7 @@ struct array *slice_array(struct array *v,INT32 start,INT32 end)
 {
   struct array *a;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(start > end || end>v->size || start<0)
     fatal("Illegal arguments to slice_array()\n");
 
@@ -469,7 +469,7 @@ struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end)
 {
   struct array *a;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(start > end || end>v->size || start<0)
     fatal("Illegal arguments to slice_array()\n");
 
@@ -508,7 +508,7 @@ void check_array_for_destruct(struct array *v)
   INT16 types;
 
   types = 0;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
   if(v->type_field & (BIT_OBJECT | BIT_FUNCTION))
@@ -543,7 +543,7 @@ INT32 array_find_destructed_object(struct array *v)
 {
   INT32 e;
   TYPE_FIELD types;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
   if(v->type_field & (BIT_OBJECT | BIT_FUNCTION))
@@ -560,7 +560,7 @@ INT32 array_find_destructed_object(struct array *v)
     }
     v->type_field = types;
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
   return -1;
@@ -765,7 +765,7 @@ static INT32 low_lookup(struct array *v,
 
 INT32 set_lookup(struct array *a, struct svalue *s)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
   /* face it, it's not there */
@@ -782,7 +782,7 @@ INT32 set_lookup(struct array *a, struct svalue *s)
 INT32 switch_lookup(struct array *a, struct svalue *s)
 {
   /* face it, it's not there */
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
   if( (((2 << s->type) -1) & a->type_field) == 0)
@@ -838,7 +838,7 @@ void array_fix_type_field(struct array *v)
 
   for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(t & ~(v->type_field))
   {
     describe(v);
@@ -848,7 +848,7 @@ void array_fix_type_field(struct array *v)
   v->type_field = t;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 /* Maybe I should have a 'clean' flag for this computation */
 void array_check_type_field(struct array *v)
 {
@@ -927,7 +927,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   INT32 ap,bp,i,*ret,*ptr;
   
   ap=bp=0;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)
   {
     array_check_type_field(a);
@@ -939,12 +939,12 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
     /* do smart optimizations */
     switch(opcode)
     {
-    case OP_AND:
+    case PIKE_ARRAY_OP_AND:
       ret=(INT32 *)xalloc(sizeof(INT32));
       *ret=0;
       return ret;
 
-    case OP_SUB:
+    case PIKE_ARRAY_OP_SUB:
       ptr=ret=(INT32 *)xalloc(sizeof(INT32)*(a->size+1));
       *(ptr++)=a->size;
       for(i=0;i<a->size;i++) *(ptr++)=i;
@@ -965,14 +965,14 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
     else
       i=opcode >> 4;
     
-    if(i & OP_A) *(ptr++)=ap;
-    if(i & OP_B) *(ptr++)=~bp;
-    if(i & OP_SKIP_A) ap++;
-    if(i & OP_SKIP_B) bp++;
+    if(i & PIKE_ARRAY_OP_A) *(ptr++)=ap;
+    if(i & PIKE_ARRAY_OP_B) *(ptr++)=~bp;
+    if(i & PIKE_ARRAY_OP_SKIP_A) ap++;
+    if(i & PIKE_ARRAY_OP_SKIP_B) bp++;
   }
 
-  if((opcode >> 8) & OP_A) while(ap<a->size) *(ptr++)=ap++;
-  if(opcode & OP_B) while(bp<b->size) *(ptr++)=~(bp++);
+  if((opcode >> 8) & PIKE_ARRAY_OP_A) while(ap<a->size) *(ptr++)=ap++;
+  if(opcode & PIKE_ARRAY_OP_B) while(bp<b->size) *(ptr++)=~(bp++);
 
   *ret=(ptr-ret-1);
 
@@ -1046,7 +1046,7 @@ int array_equal_p(struct array *a, struct array *b, struct processing *p)
   if(a->size != b->size) return 0;
   if(!a->size) return 1;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)
   {
     array_check_type_field(a);
@@ -1169,7 +1169,7 @@ struct array *merge_array_without_order(struct array *a,
 /* subtract an array from another */
 struct array *subtract_arrays(struct array *a, struct array *b)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)
   {
     array_check_type_field(b);
@@ -1179,7 +1179,7 @@ struct array *subtract_arrays(struct array *a, struct array *b)
 
   if(a->type_field & b->type_field)
   {
-    return merge_array_with_order(a, b, OP_SUB);
+    return merge_array_with_order(a, b, PIKE_ARRAY_OP_SUB);
   }else{
     if(a->refs == 1)
     {
@@ -1193,7 +1193,7 @@ struct array *subtract_arrays(struct array *a, struct array *b)
 /* and two arrays */
 struct array *and_arrays(struct array *a, struct array *b)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)
   {
     array_check_type_field(b);
@@ -1203,7 +1203,7 @@ struct array *and_arrays(struct array *a, struct array *b)
 
   if(a->type_field & b->type_field)
   {
-    return merge_array_without_order(a, b, OP_AND);
+    return merge_array_without_order(a, b, PIKE_ARRAY_OP_AND);
   }else{
     return allocate_array_no_init(0,0);
   }
@@ -1469,7 +1469,7 @@ struct array *copy_array_recursively(struct array *a,struct processing *p)
   struct processing doing;
   struct array *ret;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
 
@@ -1536,7 +1536,7 @@ void array_replace(struct array *a,
   while((i=array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void check_array(struct array *a)
 {
   INT32 e;
@@ -1573,7 +1573,7 @@ void check_all_arrays(void)
       fatal("Null pointer in array list.\n");
   } while (a != & empty_array);
 }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 
 
 void gc_mark_array_as_referenced(struct array *a)
@@ -1589,7 +1589,7 @@ void gc_check_all_arrays(void)
   a=&empty_array;
   do
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag > 1)  array_check_type_field(a);
 #endif
     if(a->type_field & BIT_COMPLEX)
@@ -1651,7 +1651,7 @@ void gc_free_all_unreferenced_arrays(void)
 }
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 
 void debug_dump_type_field(TYPE_FIELD t)
 {
@@ -1690,7 +1690,7 @@ void zap_all_arrays(void)
   do
   {
 
-#if defined(DEBUG) && defined(DEBUG_MALLOC)
+#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
     if(verbose_debug_exit && a!=&empty_array)
       describe(a);
 #endif
@@ -1798,7 +1798,7 @@ struct array *implode_array(struct array *a, struct array *b)
 			   ITEM(a)[e].u.array->type_field);
     size+=ITEM(a)[e].u.array->size;
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(size != ret->size)
     fatal("Implode_array failed miserably\n");
 #endif

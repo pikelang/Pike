@@ -83,7 +83,7 @@ What to do when it doesn't work:
 
 8)
 If you find a bug in the interpreter, the first thing to do is to make sure
-the interpreter is compiled with DEBUG defined. If not recompile with DEBUG
+the interpreter is compiled with PIKE_DEBUG defined. If not recompile with PIKE_DEBUG
 and see if you get another error. When you've done this, please report the
 bug to hubbe@hubbe.net and include as much as you can muster of the
 following:

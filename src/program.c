@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.104 1998/11/13 01:28:44 hubbe Exp $");
+RCSID("$Id: program.c,v 1.105 1998/11/22 11:03:14 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -113,7 +113,7 @@ static struct mapping *module_index_cache=0;
 
 /* So what if we don't have templates? / Hubbe */
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define CHECK_FOO(NUMTYPE,TYPE,NAME)				\
   if(malloc_size_program-> PIKE_CONCAT(num_,NAME) < new_program-> PIKE_CONCAT(num_,NAME))	\
     fatal("new_program->num_" #NAME " is out of order\n");	\
@@ -196,7 +196,7 @@ void use_module(struct svalue *s)
 void unuse_modules(INT32 howmany)
 {
   if(!howmany) return;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(howmany *sizeof(struct svalue) > used_modules.s.len)
     fatal("Unusing too many modules.\n");
 #endif
@@ -437,7 +437,7 @@ void fixate_program(void)
 {
   INT32 i,e,t;
   if(new_program->flags & PROGRAM_FIXED) return;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(new_program->flags & PROGRAM_OPTIMIZED)
     fatal("Cannot fixate optimized program\n");
 #endif
@@ -545,7 +545,7 @@ void low_start_new_program(struct program *p,
   }
 
   malloc_size_program = ALLOC_STRUCT(program);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   fake_object=(struct object *)xalloc(sizeof(struct object) + 256*sizeof(struct svalue));
   /* Stipple to find illegal accesses */
   MEMSET(fake_object,0x55,sizeof(struct object) + 256*sizeof(struct svalue));
@@ -603,7 +603,7 @@ void low_start_new_program(struct program *p,
 
   push_compiler_frame();
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(lex.current_file)
     store_linenumber(last_pc, lex.current_file);
 #endif
@@ -681,7 +681,7 @@ void really_free_program(struct program *p)
   GC_FREE();
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void dump_program_desc(struct program *p)
 {
   int e,d,q;
@@ -781,7 +781,7 @@ static int alignof_variable(int run_time_type)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void check_program(struct program *p)
 {
   INT32 size,e;
@@ -924,7 +924,7 @@ struct program *end_first_pass(int finish)
     prog=new_program;
     add_ref(prog);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     check_program(prog);
     if(l_flag)
       dump_program_desc(prog);
@@ -980,7 +980,7 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment)
   SIZE_T offset;
   offset=DO_ALIGN(new_program->storage_needed, alignment);
   new_program->storage_needed = offset + size;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(alignment <=0) fatal("Alignment must be at least 1\n");
   if(new_program->storage_needed<0)
     fatal("add_storage failed horribly!\n");
@@ -1076,7 +1076,7 @@ static int middle_reference_inherited_identifier(
   int e,i;
   struct program *p=state?state->new_program:new_program;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(function_name!=debug_findstring(function_name))
     fatal("reference_inherited_function on nonshared string.\n");
 #endif
@@ -1174,7 +1174,7 @@ void low_inherit(struct program *p,
 	  struct object *o;
 	  for(o=fake_object->parent;o!=parent;o=o->parent)
 	  {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	    if(!o) fatal("low_inherit with odd fake_object as parent!\n");
 #endif
 	    inherit.parent_offset++;
@@ -1402,7 +1402,7 @@ int low_define_variable(struct pike_string *name,
   struct identifier dummy;
   struct reference ref;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add variable to fixed program\n");
 
@@ -1460,7 +1460,7 @@ int define_variable(struct pike_string *name,
 {
   int n, run_time_type;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
     fatal("define_variable on nonshared string.\n");
 #endif
@@ -1478,7 +1478,7 @@ int define_variable(struct pike_string *name,
       return n;
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add variable to fixed program\n");
 #endif
@@ -1545,7 +1545,7 @@ int add_constant(struct pike_string *name,
   struct identifier dummy;
   struct reference ref;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
     fatal("define_constant on nonshared string.\n");
 #endif
@@ -1576,7 +1576,7 @@ int add_constant(struct pike_string *name,
     }
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add constant to fixed program\n");
 
@@ -1816,7 +1816,7 @@ INT32 define_function(struct pike_string *name,
     }
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(compiler_pass==2)
     fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
@@ -1906,7 +1906,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
   {
     unsigned short *funindex = prog->identifier_index;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(!funindex)
       fatal("No funindex in fixed program\n");
 #endif
@@ -2252,7 +2252,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 
 struct program *compile(struct pike_string *prog)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   JMP_BUF tmp;
 #endif
   struct program *p;
@@ -2263,7 +2263,7 @@ struct program *compile(struct pike_string *prog)
   INT32 num_used_modules_save = num_used_modules;
   void yyparse(void);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(SETJMP(tmp))
     fatal("Compiler exited with longjump!\n");
 #endif
@@ -2310,12 +2310,12 @@ struct program *compile(struct pike_string *prog)
     p=end_program();
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if (threads_disabled < saved_threads_disabled) {
     fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
 	  threads_disabled, saved_threads_disabled);
   }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
   threads_disabled = saved_threads_disabled + 1;
   /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
 
@@ -2325,7 +2325,7 @@ struct program *compile(struct pike_string *prog)
   lex=save_lex;
 
   unuse_modules(1);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(num_used_modules)
     fatal("Failed to pop modules properly.\n");
 #endif
@@ -2335,7 +2335,7 @@ struct program *compile(struct pike_string *prog)
   used_modules = used_modules_save;
   num_used_modules = num_used_modules_save ;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   UNSETJMP(tmp);
 #endif
 
@@ -2372,7 +2372,7 @@ int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
   return ret;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void check_all_programs(void)
 {
   struct program *p;
@@ -2453,7 +2453,7 @@ void gc_check_all_programs(void)
     {
       if(p->inherits[e].parent)
       {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(debug_gc_check(p->inherits[e].parent,T_PROGRAM,p)==-2)
 	  fprintf(stderr,"(program at 0x%lx -> inherit[%d].parent)\n",
 		  (long)p,
@@ -2470,7 +2470,7 @@ void gc_check_all_programs(void)
 	debug_gc_check(p->inherits[e].prog, T_PROGRAM, p);
     }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag)
     {
       int e;
@@ -2567,7 +2567,7 @@ void pop_compiler_frame(void)
   struct compiler_frame *f;
   int e;
   f=compiler_frame;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!f)
     fatal("Popping out of compiler frames\n");
 #endif
@@ -2599,7 +2599,7 @@ int low_get_storage(struct program *o, struct program *p)
   pid=p->id;
   hval=oid*9248339 + pid;
   hval%=GET_STORAGE_CACHE_SIZE;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(hval>GET_STORAGE_CACHE_SIZE)
     fatal("hval>GET_STORAGE_CACHE_SIZE");
 #endif
@@ -2690,7 +2690,7 @@ int find_child(struct program *parent, struct program *child)
 {
   unsigned INT32 h=(parent->id  * 9248339 + child->id);
   h= h % FIND_CHILD_HASHSIZE;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(h>=FIND_CHILD_HASHSIZE)
     fatal("find_child failed to hash within boundaries.\n");
 #endif  
@@ -2771,7 +2771,7 @@ int implements(struct program *a, struct program *b)
 
   hval = a->id*9248339 + b->id;
   hval %= IMPLEMENTS_CACHE_SIZE;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(hval >= IMPLEMENTS_CACHE_SIZE)
     fatal("Implements_cache failed!\n");
 #endif

@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.49 1998/10/29 16:37:33 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.50 1998/11/22 11:03:18 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -90,7 +90,7 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, int pos
 
 INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
     if (s->len) {
       fatal("String index %d is out of range [0 - %d]!\n", pos, s->len-1);
@@ -104,7 +104,7 @@ INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
 
 INLINE void low_set_index(struct pike_string *s, int pos, int value)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(pos > s->len || pos<0)
     fatal("string index out of range!\n");
   
@@ -121,7 +121,7 @@ INLINE void low_set_index(struct pike_string *s, int pos, int value)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 struct INLINE pike_string *debug_check_size_shift(struct pike_string *a,int shift)
 {
   if(a->size_shift != shift)
@@ -208,7 +208,7 @@ INLINE void pike_string_cpy(PCHARP to,
 }
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #ifdef DEBUG_MALLOC
 #define DM(X) X
 #else
@@ -272,7 +272,7 @@ static struct pike_string *internal_findstring(const char *s,
 
   for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(curr->refs<1)
     {
       debug_dump_pike_string(curr, 70);
@@ -323,7 +323,7 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,
       *base=curr;
       return curr;
     }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(curr->refs<1)
     {
       debug_dump_pike_string(curr, 70);
@@ -374,7 +374,7 @@ static void rehash(void)
 struct pike_string *debug_begin_shared_string(int len)
 {
   struct pike_string *t;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag>10)
     verify_shared_strings_tables();
@@ -400,7 +400,7 @@ static void link_pike_string(struct pike_string *s, int h)
 struct pike_string *debug_begin_wide_shared_string(int len, int shift)
 {
   struct pike_string *t;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag>10)
     verify_shared_strings_tables();
@@ -424,7 +424,7 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
   len=s->len;
   h=do_hash(s);
   s2=internal_findstring(s->str,len,s->size_shift,h);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(s2==s) 
     fatal("end_shared_string called twice! (or something like that)\n");
 #endif
@@ -600,7 +600,7 @@ void unlink_pike_string(struct pike_string *s)
   h=do_hash(s);
   propagate_shared_string(s,h);
   base_table[h]=s->next;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   s->next=(struct pike_string *)-1;
 #endif
   num_strings--;
@@ -608,7 +608,7 @@ void unlink_pike_string(struct pike_string *s)
 
 void really_free_string(struct pike_string *s)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag > 2)
   {
@@ -683,8 +683,8 @@ struct pike_string *add_string_status(int verbose)
   return free_buf();
 }
 
-/*** DEBUG ***/
-#ifdef DEBUG
+/*** PIKE_DEBUG ***/
+#ifdef PIKE_DEBUG
 
 void check_string(struct pike_string *s)
 {
@@ -1052,7 +1052,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 c)
 {
   INT32 old_value;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(index<0 || index>=a->len)
     fatal("Index out of range in modify_shared_string()\n");
 #endif
@@ -1248,7 +1248,7 @@ struct pike_string *string_slice(struct pike_string *s,
 				 INT32 start,
 				 INT32 len)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(start < 0 || len<0 || start+len>s->len )
   {
     fatal("string_slice, start = %d, len = %d, s->len = %d\n",start,len,s->len);
@@ -1385,7 +1385,7 @@ void cleanup_shared_string_table(void)
   unsigned INT32 e;
   struct pike_string *s,*next;
 
-#if defined(DEBUG) && defined(DEBUG_MALLOC)
+#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   while(all_shared_string_locations)
   {
     struct shared_string_location *x=all_shared_string_locations;
@@ -1441,7 +1441,7 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
       size_+=sizeof(struct pike_string)+(p->len<<p->size_shift);
     }
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(num_strings != num_)
     fatal("Num strings is wrong! %d!=%d.\n",num_strings, num_);
 #endif
@@ -1545,7 +1545,7 @@ void string_builder_fill(struct string_builder *s,
 			 INT32 offset)
 {
   INT32 tmp;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(len<=0)
     fatal("Cannot fill with zero length strings!\n");
 #endif

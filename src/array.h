@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.13 1998/04/17 05:08:00 hubbe Exp $
+ * $Id: array.h,v 1.14 1998/11/22 11:02:32 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -33,7 +33,7 @@ struct array
 
 extern struct array empty_array;
 
-#if defined(DEBUG_MALLOC) && defined(DEBUG)
+#if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
 #define ITEM(X) (((struct array *)(debug_malloc_pass((X))))->item)
 #else
 #define ITEM(X) ((X)->item)
@@ -42,19 +42,19 @@ extern struct array empty_array;
 /* These are arguments for the function 'merge' which merges two sorted
  * set stored in arrays in the way you specify
  */
-#define OP_A 1
-#define OP_SKIP_A 2
-#define OP_TAKE_A 3
-#define OP_B 4
-#define OP_SKIP_B 8
-#define OP_TAKE_B 12
-#define MINTERM(X,Y,Z) (((X)<<8)+((Y)<<4)+(Z))
+#define PIKE_ARRAY_OP_A 1
+#define PIKE_ARRAY_OP_SKIP_A 2
+#define PIKE_ARRAY_OP_TAKE_A 3
+#define PIKE_ARRAY_OP_B 4
+#define PIKE_ARRAY_OP_SKIP_B 8
+#define PIKE_ARRAY_OP_TAKE_B 12
+#define PIKE_MINTERM(X,Y,Z) (((X)<<8)+((Y)<<4)+(Z))
 
-#define OP_AND MINTERM(OP_SKIP_A,OP_SKIP_A | OP_TAKE_B,OP_SKIP_B)
-#define OP_OR  MINTERM(OP_TAKE_A,OP_SKIP_A | OP_TAKE_B,OP_TAKE_B)
-#define OP_XOR MINTERM(OP_TAKE_A,OP_SKIP_A | OP_SKIP_B,OP_TAKE_B)
-#define OP_ADD MINTERM(OP_TAKE_A,OP_TAKE_A | OP_TAKE_B ,OP_TAKE_B)
-#define OP_SUB MINTERM(OP_TAKE_A,OP_SKIP_A ,OP_SKIP_B)
+#define PIKE_ARRAY_OP_AND PIKE_MINTERM(PIKE_ARRAY_OP_SKIP_A,PIKE_ARRAY_OP_SKIP_A | PIKE_ARRAY_OP_TAKE_B,PIKE_ARRAY_OP_SKIP_B)
+#define PIKE_ARRAY_OP_OR  PIKE_MINTERM(PIKE_ARRAY_OP_TAKE_A,PIKE_ARRAY_OP_SKIP_A | PIKE_ARRAY_OP_TAKE_B,PIKE_ARRAY_OP_TAKE_B)
+#define PIKE_ARRAY_OP_XOR PIKE_MINTERM(PIKE_ARRAY_OP_TAKE_A,PIKE_ARRAY_OP_SKIP_A | PIKE_ARRAY_OP_SKIP_B,PIKE_ARRAY_OP_TAKE_B)
+#define PIKE_ARRAY_OP_ADD PIKE_MINTERM(PIKE_ARRAY_OP_TAKE_A,PIKE_ARRAY_OP_TAKE_A | PIKE_ARRAY_OP_TAKE_B ,PIKE_ARRAY_OP_TAKE_B)
+#define PIKE_ARRAY_OP_SUB PIKE_MINTERM(PIKE_ARRAY_OP_TAKE_A,PIKE_ARRAY_OP_SKIP_A ,PIKE_ARRAY_OP_SKIP_B)
 
 
 #define free_array(V) do{ struct array *v_=(V); debug_malloc_touch(v_); if(!--v_->refs) really_free_array(v_); }while(0)

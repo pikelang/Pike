@@ -167,7 +167,7 @@ Mon Dec 22 09:33:59 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 	* smartlink: -L options are now uniq-ified
 	* encode.c: doesn't attempt to allocate mappings with negative
 	  sizes any more 
-	* interpret.c: allows trace up to -t2 without #define DEBUG
+	* interpret.c: allows trace up to -t2 without #define PIKE_DEBUG
 
 Wed Dec 17 20:05:46 1997  Henrik Grubbström  <grubba@idonex.se>
 
@@ -1259,7 +1259,7 @@ Wed Nov 15 10:56:45 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 	* sprintf.c: now includes memory.h (for xalloc)
 	* configure.in: added check to see if -pipe works, fixed caching of
           oneshot signal tests.
-	* builtin_efuns.c: exit() now only deallocates memory when DEBUG
+	* builtin_efuns.c: exit() now only deallocates memory when PIKE_DEBUG
 	  is defined.
 
 Tue Nov 14 04:57:29 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
@@ -1326,7 +1326,7 @@ Thu Nov  2 00:13:20 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 Tue Oct 31 18:57:49 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
-	* Makefile.in, config.h: moved DEBUG to Makefile
+	* Makefile.in, config.h: moved PIKE_DEBUG to Makefile
 	* signal_handler.c: fixed a warning
 
 Sun Oct 29 04:02:03 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
@@ -1416,7 +1416,7 @@ Sat Oct 14 01:58:13 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 	* v1.1E-15 Released
 
 	* call_out.c (verify_call_outs): Fixed so that this function
-	  is actually run (when compiled with DEBUG and usint -d)
+	  is actually run (when compiled with PIKE_DEBUG and usint -d)
 	  Also fixed a bug when doing call_out 0 or less...
 
 	* interpret.c (strict_apply_svalue): Moved fix to a bug

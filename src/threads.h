@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.59 1998/11/20 19:33:46 hubbe Exp $
+ * $Id: threads.h,v 1.60 1998/11/22 11:03:23 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -350,7 +350,7 @@ struct thread_state {
 #define DO_IF_PROFILING(X)
 #endif
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define DO_IF_DEBUG(X) X
 #else
 #define DO_IF_DEBUG(X)
@@ -403,7 +403,7 @@ struct thread_state {
    SWAP_IN_THREAD(_tmp);\
  } while(0)
 
-#if defined(DEBUG) && ! defined(DONT_HIDE_GLOBALS)
+#if defined(PIKE_DEBUG) && ! defined(DONT_HIDE_GLOBALS)
 /* Note that scalar types are used in place of pointers and vice versa
  * below. This is intended to cause compiler warnings/errors if
  * there is an attempt to use the global variables in an unsafe
@@ -421,10 +421,10 @@ struct thread_state {
  * in case there is a label before the macro.
  */
 #define REVEAL_GLOBAL_VARIABLES() ; } while(0)
-#else /* DEBUG */
+#else /* PIKE_DEBUG */
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 			   
 
 #define THREADS_ALLOW() do { \
@@ -559,7 +559,7 @@ void exit_interleave_mutex(IMUTEX_T *im);
 #endif /* _REENTRANT */
 
 #ifdef __NT__
-#ifndef DEBUG
+#ifndef PIKE_DEBUG
 #define CheckValidHandle(X) 0
 #else
 void CheckValidHandle(HANDLE h);

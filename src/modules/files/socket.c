@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.39 1998/08/06 23:38:52 grubba Exp $");
+RCSID("$Id: socket.c,v 1.40 1998/11/22 11:08:06 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -116,7 +116,7 @@ static void port_accept_callback(int fd,void *data)
   struct port *f;
   f=(struct port *)data;
 #ifndef __NT__
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!query_nonblocking(f->fd))
     fatal("Port is in blocking mode in port accept callback!!!\n");
 #endif

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.25 1998/10/11 11:18:51 hubbe Exp $
+ * $Id: global.h,v 1.26 1998/11/22 11:02:50 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -203,7 +203,7 @@ typedef unsigned INT32 p_wchar2;
  static char *rcsid = X
 #endif
 
-#if defined(__GNUC__) && !defined(DEBUG) && !defined(lint)
+#if defined(__GNUC__) && !defined(PIKE_DEBUG) && !defined(lint)
 #define INLINE inline
 #else
 #define INLINE

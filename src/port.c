@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.17 1998/05/29 20:40:01 grubba Exp $");
+RCSID("$Id: port.c,v 1.18 1998/11/22 11:03:12 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -534,7 +534,7 @@ int VFPRINTF(FILE *f,char *s,va_list args)
 }
 #endif
 
-#if defined(DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
+#if defined(PIKE_DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
 
 unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
 {

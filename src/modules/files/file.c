@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.127 1998/10/22 00:10:13 grubba Exp $");
+RCSID("$Id: file.c,v 1.128 1998/11/22 11:08:04 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -122,7 +122,7 @@ static struct my_file *get_file_storage(struct object *o)
   return 0;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #ifdef WITH_OOB
 #define OOBOP(X) X
 #else
@@ -1633,7 +1633,7 @@ static void exit_file_struct(struct object *o)
   /* map_variable will free callbacks */
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static void gc_mark_file_struct(struct object *o)
 {
   DEBUG_CHECK_INTERNAL_REFERENCE(THIS);
@@ -2198,7 +2198,7 @@ static void exit_file_lock_key(struct object *o)
   {
     int fd=THIS_KEY->f->fd;
     int err;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(THIS_KEY->f->key != o)
       fatal("File lock key is wrong!\n");
 #endif
@@ -2291,7 +2291,7 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {\
 
 #include "file_functions.h"
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void check_static_file_data(struct callback *a, void *b, void *c)
 {
   if(file_program)
@@ -2329,7 +2329,7 @@ void pike_module_init(void)
   init_file_locking();
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   set_gc_check_callback(gc_mark_file_struct);
 #endif
 
@@ -2371,7 +2371,7 @@ void pike_module_init(void)
 #ifdef WITH_OOB
   add_integer_constant("__HAVE_OOB__",1,0);
 #endif
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   add_to_callback(&do_debug_callbacks,
 		  check_static_file_data,
 		  0,

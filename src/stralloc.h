@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.25 1998/10/27 00:45:58 js Exp $
+ * $Id: stralloc.h,v 1.26 1998/11/22 11:03:19 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -33,7 +33,7 @@ struct string_builder
   int known_shift;
 };
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 struct pike_string *debug_findstring(const struct pike_string *foo);
 #endif
 
@@ -43,7 +43,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))
 #define is_same_string(X,Y) ((X)==(Y))
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define STR0(X) ((p_wchar0 *)debug_check_size_shift((X),0)->str)
 #define STR1(X) ((p_wchar1 *)debug_check_size_shift((X),1)->str)
 #define STR2(X) ((p_wchar2 *)debug_check_size_shift((X),2)->str)
@@ -77,7 +77,7 @@ typedef struct p_wchar_p
 #define LOW_COMPARE_PCHARP(X,CMP,Y) (((char *)((X).ptr)) CMP ((char *)((Y).ptr)))
 #define LOW_SUBTRACT_PCHARP(X,Y) LOW_COMPARE_PCHARP((X),-,(Y))
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define SUBTRACT_PCHARP(X,Y)    ((X).shift!=(Y).shift?(fatal("Subtracting different size charp!\n")),0:LOW_SUBTRACT_PCHARP((X),(Y)))
 #define COMPARE_PCHARP(X,CMP,Y) ((X).shift!=(Y).shift?(fatal("Subtracting different size charp!\n")),0:LOW_COMPARE_PCHARP((X),CMP,(Y)))
 #else

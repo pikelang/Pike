@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.52 1998/05/25 10:38:46 hubbe Exp $");
+RCSID("$Id: object.c,v 1.53 1998/11/22 11:03:04 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -299,7 +299,7 @@ void destruct(struct object *o)
   struct frame frame;
   struct program *p;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
 #endif
 
@@ -395,7 +395,7 @@ void destruct_objects_to_destruct(void)
 
   while((o=objects_to_destruct))
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(o->refs)
       fatal("Object to be destructed grew extra references.\n");
 #endif
@@ -782,7 +782,7 @@ union anything *object_get_item_ptr(struct object *o,
   return 0;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void verify_all_objects(void)
 {
   struct object *o;
@@ -1053,7 +1053,7 @@ void gc_check_all_objects(void)
     struct program *p;
     add_ref(o);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(o->parent)
       if(debug_gc_check(o->parent,T_OBJECT,o)==-2)
 	fprintf(stderr,"(in object at %lx -> parent)\n",(long)o);

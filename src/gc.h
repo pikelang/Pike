@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.19 1998/04/29 15:06:28 noring Exp $
+ * $Id: gc.h,v 1.20 1998/11/22 11:02:49 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -15,7 +15,7 @@ extern INT32 alloc_threshold;
 
 extern struct callback *gc_evaluator_callback;
 extern struct callback_list evaluator_callbacks;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 extern void *gc_svalue_location;
 #endif
 
@@ -51,7 +51,7 @@ int gc_do_free(void *a);
 void do_gc(void);
 /* Prototypes end here */
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define GC_FREE() do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); }while(0)
 #else
 #define debug_gc_check_svalues(S,N,T,V) gc_check_svalues(S,N)

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.59 1998/10/22 00:33:31 hubbe Exp $");
+RCSID("$Id: main.c,v 1.60 1998/11/22 11:03:01 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -509,7 +509,7 @@ void low_exit_main(void)
   free_svalue(& throw_value);
   throw_value.type=T_INT;
 
-#if defined(DEBUG) && defined(DEBUG_MALLOC)
+#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
   {
     INT32 num,size,recount=0;

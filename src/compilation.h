@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.12 1998/11/09 07:21:30 hubbe Exp $
+ * $Id: compilation.h,v 1.13 1998/11/22 11:02:37 hubbe Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -21,7 +21,7 @@
  * define PROGRAM_STATE to select the program state
  */
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define DO_DEBUG_CODE(X) X
 #else
 #define DO_DEBUG_CODE(X)
@@ -93,7 +93,7 @@
 #endif
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define STRMEMBER(X,Y) \
   PCODE(if(X) fatal("Variable %s not deallocated properly.\n",Y);) \
   ZMEMBER(struct pike_string *,X)

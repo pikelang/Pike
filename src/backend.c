@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.39 1998/11/05 23:30:42 grubba Exp $");
+RCSID("$Id: backend.c,v 1.40 1998/11/22 11:02:33 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -251,7 +251,7 @@ void set_read_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set = (fds[fd].read.callback!=0);
 #endif
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -298,7 +298,7 @@ void set_write_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set = (fds[fd].write.callback!=0);
 #endif
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -357,7 +357,7 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set = (fds[fd].read_oob.callback!=0);
 #endif
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -400,7 +400,7 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
 #ifdef HAVE_POLL
   int was_set = (fds[fd].write_oob.callback!=0);
 #endif
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -449,7 +449,7 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
 
 file_callback query_read_callback(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -459,7 +459,7 @@ file_callback query_read_callback(int fd)
 
 file_callback query_write_callback(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -470,7 +470,7 @@ file_callback query_write_callback(int fd)
 #ifdef WITH_OOB
 file_callback query_read_oob_callback(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -480,7 +480,7 @@ file_callback query_read_oob_callback(int fd)
 
 file_callback query_write_oob_callback(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -491,7 +491,7 @@ file_callback query_write_oob_callback(int fd)
 
 void *query_read_callback_data(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -501,7 +501,7 @@ void *query_read_callback_data(int fd)
 
 void *query_write_callback_data(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -512,7 +512,7 @@ void *query_write_callback_data(int fd)
 #ifdef WITH_OOB
 void *query_read_oob_callback_data(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -522,7 +522,7 @@ void *query_read_oob_callback_data(int fd)
 
 void *query_write_oob_callback_data(int fd)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
@@ -531,7 +531,7 @@ void *query_write_oob_callback_data(int fd)
 }
 #endif /* WITH_OOB */
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 
 struct callback_list do_debug_callbacks;
 
@@ -657,7 +657,7 @@ void backend(void)
 #endif
 
     alloca(0);			/* Do garbage collect */
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag > 1) do_debug();
 #endif
 
@@ -694,9 +694,9 @@ void backend(void)
     if (!i) {
       /* Timeout */
     } else if (i>0) {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       int num_active = i;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 #ifndef HAVE_POLL
       /* FIXME: OOB? */
       for(i=0; i<max_fd+1; i++)
@@ -724,9 +724,9 @@ void backend(void)
       for(i=0; i<active_num_in_poll; i++)
       {
 	int fd = active_poll_fds[i].fd;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	int handled = 0;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	if(active_poll_fds[i].revents & POLLNVAL)
 	{
 	  int j;
@@ -745,37 +745,37 @@ void backend(void)
 	      break;
 	    }
 	  }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  handled = 1;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	}
 
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLRDBAND) &&
 	    fds[fd].read_oob.callback) {
 	  (*(fds[fd].read_oob.callback))(fd, fds[fd].read_oob.data);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  handled = 1;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	}
 #endif /* WITH_OOB */
 
 	if((active_poll_fds[i].revents & POLLHUP) ||
 	   (active_poll_fds[i].revents & POLLERR)) {
 	  /* Closed or error */
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  if (active_poll_fds[i].revents & POLLERR) {
 	    fprintf(stderr, "Got POLLERR on fd %d\n", i);
 	  }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	  if (fds[fd].read.callback) {
 	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
 	  }
 	  /* We don't want to keep this fd anymore. */
 	  POLL_FD_CLR(fd, ~0);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  handled = 1;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	}
 
 	if(active_poll_fds[i].revents & POLLRDNORM) {
@@ -784,18 +784,18 @@ void backend(void)
 	  } else {
 	    POLL_FD_CLR(fd, POLLRDNORM);
 	  }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  handled = 1;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	}
 
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLWRBAND) &&
 	    fds[fd].write_oob.callback) {
 	  (*(fds[fd].write_oob.callback))(fd, fds[fd].write_oob.data);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  handled = 1;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	}
 #endif /* WITH_OOB */
 
@@ -805,20 +805,20 @@ void backend(void)
 	  } else {
 	    POLL_FD_CLR(fd, POLLOUT);
 	  }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  handled = 1;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	}
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	num_active -= handled;
 	if (!handled && active_poll_fds[i].revents) {
 	  fprintf(stderr, "BACKEND: fd %d has revents 0x%08x, "
 		  "but hasn't been handled.\n", active_poll_fds[i].fd,
 		  active_poll_fds[i].revents);
 	}
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
       }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if (num_active) {
 	fprintf(stderr, "BACKEND: %d more active fds than were handled.\n",
 		num_active);
@@ -828,7 +828,7 @@ void backend(void)
 		  active_poll_fds[i].revents);
 	}
       }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 #endif
     }else{
       switch(errno)

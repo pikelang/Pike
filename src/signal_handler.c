@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.88 1998/10/22 00:33:32 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.89 1998/11/22 11:03:17 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1675,7 +1675,7 @@ static void unset_signalling(void *notused) { signalling=0; }
 void check_signals(struct callback *foo, void *bar, void *gazonk)
 {
   ONERROR ebuf;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag>5) do_debug();
 #endif
@@ -1907,7 +1907,7 @@ static void f_ualarm(INT32 args)
 }
 #endif /* HAVE_UALARM || HAVE_SETITIMER */
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static RETSIGTYPE fatal_signal(int signum)
 {
   my_signal(signum,SIG_DFL);
@@ -1927,7 +1927,7 @@ void init_signals(void)
   my_signal(SIGPIPE, SIG_IGN);
 #endif
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #ifdef SIGSEGV
 /*  my_signal(SIGSEGV, fatal_signal); */
 #endif

@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.43 1998/10/14 05:48:45 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.44 1998/11/22 11:03:06 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -339,7 +339,7 @@ static node *optimize_eq(node *n)
     first_arg=my_get_arg(&CDR(n), 0);
     second_arg=my_get_arg(&CDR(n), 1);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(!first_arg || !second_arg)
       fatal("Couldn't find argument!\n");
 #endif
@@ -368,7 +368,7 @@ static node *optimize_not(node *n)
   if(count_args(CDR(n))==1)
   {
     first_arg=my_get_arg(&CDR(n), 0);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(!first_arg)
       fatal("Couldn't find argument!\n");
 #endif
@@ -404,7 +404,7 @@ static node *optimize_binary(node *n)
     first_arg=my_get_arg(&CDR(n), 0);
     second_arg=my_get_arg(&CDR(n), 1);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(!first_arg || !second_arg)
       fatal("Couldn't find argument!\n");
 #endif
@@ -551,7 +551,7 @@ void o_subtract(void)
   case T_MAPPING:
   {
     struct mapping *m;
-    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping,OP_SUB);
+    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping,PIKE_ARRAY_OP_SUB);
     pop_n_elems(2);
     push_mapping(m);
     return;
@@ -560,7 +560,7 @@ void o_subtract(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, OP_SUB);
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_SUB);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -658,7 +658,7 @@ void o_and(void)
   case T_MAPPING:
   {
     struct mapping *m;
-    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping, OP_AND);
+    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping, PIKE_ARRAY_OP_AND);
     pop_n_elems(2);
     push_mapping(m);
     return;
@@ -667,7 +667,7 @@ void o_and(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, OP_AND);
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_AND);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -839,7 +839,7 @@ void o_or(void)
   case T_MAPPING:
   {
     struct mapping *m;
-    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping, OP_OR);
+    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping, PIKE_ARRAY_OP_OR);
     pop_n_elems(2);
     push_mapping(m);
     return;
@@ -848,7 +848,7 @@ void o_or(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, OP_OR);
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_OR);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -857,7 +857,7 @@ void o_or(void)
   case T_ARRAY:
   {
     struct array *a;
-    a=merge_array_without_order(sp[-2].u.array, sp[-1].u.array, OP_OR);
+    a=merge_array_without_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_OR);
     pop_n_elems(2);
     push_array(a);
     return;
@@ -929,7 +929,7 @@ void o_xor(void)
   case T_MAPPING:
   {
     struct mapping *m;
-    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping, OP_XOR);
+    m=merge_mappings(sp[-2].u.mapping, sp[-1].u.mapping, PIKE_ARRAY_OP_XOR);
     pop_n_elems(2);
     push_mapping(m);
     return;
@@ -938,7 +938,7 @@ void o_xor(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, OP_XOR);
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_XOR);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -947,7 +947,7 @@ void o_xor(void)
   case T_ARRAY:
   {
     struct array *a;
-    a=merge_array_without_order(sp[-2].u.array, sp[-1].u.array, OP_XOR);
+    a=merge_array_without_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_XOR);
     pop_n_elems(2);
     push_array(a);
     return;
@@ -1737,7 +1737,7 @@ void o_range(void)
 
       if(from>to+1) from=to+1;
     }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(from < 0 || (to-from+1) < 0)
       fatal("Error in o_range.\n");
 #endif

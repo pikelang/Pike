@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.70 1998/11/17 23:16:39 hubbe Exp $");
+RCSID("$Id: las.c,v 1.71 1998/11/22 11:02:56 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -74,7 +74,7 @@ int cdr_is_node(node *n)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void check_tree(node *n, int depth)
 {
   if(!d_flag) return;
@@ -210,7 +210,7 @@ void free_all_nodes(void)
     struct node_chunk *tmp2;
     int e=0;
 
-#ifndef DEBUG
+#ifndef PIKE_DEBUG
     if(cumulative_parse_error)
     {
 #endif
@@ -231,7 +231,7 @@ void free_all_nodes(void)
 	    if(!tmp)
 	    {
 	      tmp=tmp2->nodes+e;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
 	      {
 		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",tmp, tmp->current_file->str, tmp->line_number, tmp->token);
@@ -251,12 +251,12 @@ void free_all_nodes(void)
 	    }
 	  }
 	}
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(!cumulative_parse_error)
 	  fatal("Failed to free %d nodes when compiling!\n",e2);
 #endif
       }
-#ifndef DEBUG
+#ifndef PIKE_DEBUG
     }
 #endif
     while(node_chunks)
@@ -273,7 +273,7 @@ void free_all_nodes(void)
 void free_node(node *n)
 {
   if(!n) return;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(l_flag>9)
     print_tree(n);
 #endif
@@ -294,7 +294,7 @@ void free_node(node *n)
   }
   n->token=USHRT_MAX;
   if(n->type) free_string(n->type);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(n->current_file) free_string(n->current_file);
 #endif
   CAR(n)=free_nodes;
@@ -322,7 +322,7 @@ static node *mkemptynode(void)
   free_nodes=CAR(res);
   res->token=0;
   res->line_number=lex.current_line;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   copy_shared_string(res->current_file, lex.current_file);
 #endif
   res->type=0;
@@ -335,7 +335,7 @@ static node *mkemptynode(void)
 node *mknode(short token,node *a,node *b)
 {
   node *res;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(a && a==b)
     fatal("mknode: a and be are the same!\n");
 #endif    
@@ -414,7 +414,7 @@ node *mknode(short token,node *a,node *b)
   res->type = 0;
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 3)
     verify_shared_strings_tables();
 #endif
@@ -426,7 +426,7 @@ node *mknode(short token,node *a,node *b)
     check_tree(res,0);
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 3)
     verify_shared_strings_tables();
 #endif
@@ -1427,7 +1427,7 @@ static int depend_p3(node *a,node *b)
   return depend_p2(a,b);
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static int depend_p(node *a,node *b)
 {
   int ret;
@@ -1785,7 +1785,7 @@ static void optimize(node *n)
     fix_type_field(n);
     debug_malloc_touch(n->type);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(l_flag > 3 && n)
     {
       fprintf(stderr,"Optimizing (tree info=%x):",n->tree_info);
@@ -2159,7 +2159,7 @@ static void optimize(node *n)
       if(tmp1) tmp1->parent = n->parent;
       free_node(n);
       n=tmp1;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(l_flag > 3)
       {
 	fprintf(stderr,"Result: ");
@@ -2198,7 +2198,7 @@ int eval_low(node *n)
   struct svalue *save_sp = sp;
   int ret;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(l_flag > 3 && n)
   {
     fprintf(stderr,"Evaluating (tree info=%x):",n->tree_info);
@@ -2410,7 +2410,7 @@ int dooptcode(struct pike_string *name,
 
   check_tree(n,0);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(a_flag > 1)
     fprintf(stderr,"Doing function '%s' at %x\n",name->str,PC);
 #endif
@@ -2426,7 +2426,7 @@ int dooptcode(struct pike_string *name,
   if(compiler_pass==1)
   {
     tmp.offset=-1;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(a_flag > 4)
     {
       fprintf(stderr,"Making prototype (pass 1) for: ");
@@ -2447,7 +2447,7 @@ int dooptcode(struct pike_string *name,
 			    IDENTIFIER_C_FUNCTION | vargs,
 			    &tmp);
 	free_node(n);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(a_flag > 1)
 	  fprintf(stderr,"Identifer (C) = %d\n",ret);
 #endif
@@ -2459,7 +2459,7 @@ int dooptcode(struct pike_string *name,
     add_to_program(compiler_frame->max_number_of_locals);
     add_to_program(args);
   
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(a_flag > 2)
     {
       fprintf(stderr,"Coding: ");
@@ -2483,7 +2483,7 @@ int dooptcode(struct pike_string *name,
 		      &tmp);
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(a_flag > 1)
     fprintf(stderr,"Identifer = %d\n",ret);
 #endif

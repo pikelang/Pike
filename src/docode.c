@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.41 1998/11/16 22:14:49 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.42 1998/11/22 11:02:41 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -318,7 +318,7 @@ static int do_docode2(node *n,int flags)
   case F_MOD_EQ:
   case F_DIV_EQ:
     tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(tmp1 != 2)
       fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
 #endif
@@ -460,7 +460,7 @@ static int do_docode2(node *n,int flags)
   case F_INC:
   case F_POST_INC:
     tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(tmp1 != 2)
       fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
@@ -477,7 +477,7 @@ static int do_docode2(node *n,int flags)
   case F_DEC:
   case F_POST_DEC:
     tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(tmp1 != 2)
       fatal("HELP! FATAL INTERNAL COMPILER ERROR (2)\n");
 #endif
@@ -534,7 +534,7 @@ static int do_docode2(node *n,int flags)
 
     tmp2=do_docode(CAR(n),DO_NOT_COPY);
     emit2(F_CONST0);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     /* This is really ugly because there is always a chance that the bug
      * will disappear when new instructions are added to the code, but
      * think it is worth it.
@@ -550,7 +550,7 @@ static int do_docode2(node *n,int flags)
     do_jump(n->token,tmp1);
     ins_label(current_break);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag)
       emit2(F_POP_MARK);
 #endif
@@ -576,7 +576,7 @@ static int do_docode2(node *n,int flags)
     current_continue=alloc_label();
 
     tmp2=do_docode(CAR(n),0);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     /* This is really ugly because there is always a chance that the bug
      * will disappear when new instructions are added to the code, but
      * think it is worth it.
@@ -592,7 +592,7 @@ static int do_docode2(node *n,int flags)
     emit(F_LABEL,tmp3);
     do_jump(n->token,tmp1);
     ins_label(current_break);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag)
       emit2(F_POP_MARK);
 #endif
@@ -746,7 +746,7 @@ static int do_docode2(node *n,int flags)
     INT32 prev_switch_default = current_switch_default;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     INT32 break_save = current_break;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     struct svalue *save_sp=sp;
 #endif
 
@@ -776,7 +776,7 @@ static int do_docode2(node *n,int flags)
 
     DO_CODE_BLOCK(CDR(n));
     
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(sp-save_sp != cases)
       fatal("Count cases is wrong!\n");
 #endif
@@ -829,7 +829,7 @@ static int do_docode2(node *n,int flags)
     emit(F_LABEL, current_break);
 
     current_break=break_save;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(recoveries && sp-evaluator_stack < recoveries->sp)
       fatal("Stack error after F_SWITCH (underflow)\n");
 #endif
@@ -967,7 +967,7 @@ static int do_docode2(node *n,int flags)
 
     case F_ARRAY_LVALUE:
       tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(tmp1 & 1)
 	fatal("Very internal compiler error.\n");
 #endif
@@ -1003,7 +1003,7 @@ static int do_docode2(node *n,int flags)
 		     mklval ? DO_LVALUE_IF_POSSIBLE : 0);
       if(tmp1==2)
       {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(!mklval)
 	  fatal("Unwanted lvalue!\n");
 #endif
@@ -1069,7 +1069,7 @@ static int do_docode2(node *n,int flags)
 	}
       }
       
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       case T_OBJECT:
 	if(n->u.sval.u.object->next == n->u.sval.u.object)
 	  fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.253 1998/11/18 20:16:11 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.254 1998/11/22 11:02:38 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -230,7 +230,7 @@ if test "x$with_rtldebug" = x ; then
 fi
 
 if test "x$with_rtldebug" = xyes ; then
-  AC_DEFINE(DEBUG)
+  AC_DEFINE(PIKE_DEBUG)
 fi
 
 #############################################################################
@@ -1572,7 +1572,7 @@ pike_cv_hardware_byteorder=0
 )])
 
 AC_MSG_RESULT($pike_cv_hardware_byteorder)
-AC_DEFINE_UNQUOTED(BYTEORDER,$pike_cv_hardware_byteorder)
+AC_DEFINE_UNQUOTED(PIKE_BYTEORDER,$pike_cv_hardware_byteorder)
 
 dnl#####################################################################
 

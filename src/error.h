@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.24 1998/07/17 12:33:52 grubba Exp $
+ * $Id: error.h,v 1.25 1998/11/22 11:02:45 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -44,17 +44,17 @@ struct frame;
 typedef struct ONERROR
 {
   struct ONERROR *previous;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   const char *file;
   int line;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
   error_call func;
   void *arg;
 } ONERROR;
 
 typedef struct JMP_BUF
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   int line;
   char *file;
 #endif
@@ -71,7 +71,7 @@ extern JMP_BUF *recoveries;
 extern struct svalue throw_value;
 extern int throw_severity;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define UNSETJMP(X) do{ \
   if(recoveries != &X) { \
     if(recoveries) \
@@ -90,7 +90,7 @@ extern int throw_severity;
 #endif
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define SET_ONERROR(X,Y,Z) \
   do{ \
      OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n", \
@@ -129,7 +129,7 @@ extern int throw_severity;
             __FILE__, __LINE__, &(X)); \
     } \
   }while(0)
-#else /* !DEBUG */
+#else /* !PIKE_DEBUG */
 #define SET_ONERROR(X,Y,Z) \
   do{ \
      if(!recoveries) break; \
@@ -142,16 +142,16 @@ extern int throw_severity;
 #define UNSET_ONERROR(X) recoveries && (recoveries->onerror=X.previous)
 
 #define ASSERT_ONERROR(X)
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 
-#if defined(DEBUG) && 0
+#if defined(PIKE_DEBUG) && 0
 /* Works, but probably not interresting for most people
  *	/grubba 1998-04-11
  */
 #define PIKE_ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, __FILE__, __LINE__);
 #else
 #define PIKE_ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, NULL, 0);
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 
 /* Prototypes begin here */
 JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);

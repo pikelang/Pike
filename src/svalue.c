@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.38 1998/10/09 17:56:33 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.39 1998/11/22 11:03:20 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -61,7 +61,7 @@ void really_free_short_svalue(union anything *s, TYPE_T type)
       really_free_string(tmp.string);
       break;
       
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     default:
 	fatal("Bad type in free_short_svalue.\n");
 #endif
@@ -76,21 +76,21 @@ void really_free_svalue(struct svalue *s)
   {
   case T_ARRAY:
     really_free_array(s->u.array);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     s->type = 99;
 #endif
     break;
     
   case T_MAPPING:
     really_free_mapping(s->u.mapping);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     s->type = 99;
 #endif
     break;
     
   case T_MULTISET:
     really_free_multiset(s->u.multiset);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     s->type = 99;
 #endif
     break;
@@ -109,19 +109,19 @@ void really_free_svalue(struct svalue *s)
     
   case T_PROGRAM:
     really_free_program(s->u.program);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     s->type = 99;
 #endif
     break;
     
   case T_STRING:
     really_free_string(s->u.string);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     s->type = 99;
 #endif
     break;
     
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   default:
     fatal("Bad type in free_svalue.\n");
 #endif
@@ -223,7 +223,7 @@ void assign_svalues_no_free(struct svalue *to,
 			    INT32 num,
 			    INT32 type_hint)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag)
   {
     INT32 e;
@@ -905,7 +905,7 @@ void copy_svalues_recursively_no_free(struct svalue *to,
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void check_short_svalue(union anything *u, TYPE_T type)
 {
   static int inside=0;
@@ -959,7 +959,7 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
     check_type(s->type);
     check_refs(s);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     gc_svalue_location=(void *)s;
 #endif
     
@@ -982,7 +982,7 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
     case T_OBJECT:
       if(s->u.object->prog)
       {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(gc_check(s->u.object) == -2)
 	  fprintf(stderr,"(in svalue at %lx, type = %d)\n",(long)s,s->type);
 #else	  
@@ -1008,14 +1008,14 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
     f|= 1 << s->type;
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   gc_svalue_location=0;
 #endif
 
   return f;
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void gc_xmark_svalues(struct svalue *s, int num)
 {
   INT32 e;
@@ -1029,14 +1029,14 @@ void gc_xmark_svalues(struct svalue *s, int num)
     check_type(s->type);
     check_refs(s);
     
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     gc_svalue_location=(void *)s;
 #endif
 
     if(s->type <= MAX_REF_TYPE)
       gc_external_mark(s->u.refs);
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   gc_svalue_location=0;
 #endif
 }
@@ -1044,7 +1044,7 @@ void gc_xmark_svalues(struct svalue *s, int num)
 
 void gc_check_short_svalue(union anything *u, TYPE_T type)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   gc_svalue_location=(void *)u;
 #endif
   switch(type)
@@ -1073,7 +1073,7 @@ void gc_check_short_svalue(union anything *u, TYPE_T type)
     gc_check(u->refs);
     break;
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   gc_svalue_location=0;
 #endif
 }

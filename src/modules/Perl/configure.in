@@ -1,0 +1,22 @@
+# $Id: configure.in,v 1.1 1998/11/22 11:05:04 hubbe Exp $
+AC_INIT(perlmod.c)
+
+AC_MODULE_INIT()
+
+AC_CHECK_PROGS(perl, perl perl5, x)
+
+if test x$perl != xx ; then
+  # We have perl, but do we have perlembed?
+#  PERL_LDFLAGS=`perl -V:lddlflags | sed "s/^lddlflags='\(.*\);$/\1/"`
+#  PERL_CCFLAGS=`perl -V:ccflags | sed "s/^ccflags='\(.*\);$/\1/"`
+
+  PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
+  PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
+fi
+
+AC_SUBST(perl)
+AC_SUBST(PERL_LDFLAGS)
+AC_SUBST(PERL_CCFLAGS)
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

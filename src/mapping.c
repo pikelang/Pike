@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.36 1998/08/05 22:48:36 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.37 1998/11/22 11:03:02 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -27,7 +27,7 @@ RCSID("$Id: mapping.c,v 1.36 1998/08/05 22:48:36 hubbe Exp $");
 struct mapping *first_mapping;
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 /* This function checks that the type field isn't lacking any bits.
  * It is used for debugging purposes only.
  */
@@ -64,7 +64,7 @@ static void init_mapping(struct mapping *m, INT32 size)
   INT32 e;
   INT32 hashsize,hashspace;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(size < 0) fatal("init_mapping with negative value.\n");
 #endif
   if(size)
@@ -125,7 +125,7 @@ void really_free_mapping(struct mapping *m)
 {
   INT32 e;
   struct keypair *k;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(m->refs)
     fatal("really free mapping on mapping with nonzero refs.\n");
 #endif
@@ -179,7 +179,7 @@ static void mapping_rehash_backwards(struct mapping *m, struct keypair *p)
  */
 static struct mapping *rehash(struct mapping *m, int new_size)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   INT32 tmp=m->size;
 #endif
   INT32 e,hashsize;
@@ -198,12 +198,12 @@ static struct mapping *rehash(struct mapping *m, int new_size)
     free((char *)hash);
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(m->size != tmp)
       fatal("Rehash failed, size not same any more.\n");
 #endif
     
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
@@ -228,7 +228,7 @@ void mapping_fix_type_field(struct mapping *m)
       ind_types |= 1 << k->ind.type;
     }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(val_types & ~(m->val_types))
     fatal("Mapping value types out of order!\n");
 
@@ -254,7 +254,7 @@ void mapping_insert(struct mapping *m,
   {
     h=h2 % m->hashsize;
   
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag > 1) check_mapping_type_fields(m);
 #endif
     if(m->ind_types & (1 << key->type))
@@ -270,7 +270,7 @@ void mapping_insert(struct mapping *m,
 	  m->val_types |= 1 << val->type;
 	  assign_svalue(& k->val, val);
 	  
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 	  return;
@@ -297,7 +297,7 @@ void mapping_insert(struct mapping *m,
   assign_svalue_no_free(& k->val, val);
   m->size++;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 }
@@ -315,7 +315,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   {
     h=h2 % m->hashsize;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
@@ -329,7 +329,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
 	
 	if(k->val.type == t) return & ( k->val.u );
 	
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 	
@@ -360,7 +360,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
 
   if(t != T_INT) return 0;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
@@ -391,7 +391,7 @@ void map_delete(struct mapping *m,
       if(m->size < (m->hashsize + 1) * MIN_LINK_LENGTH)
 	rehash(m, MAP_SLOTS(m->size));
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(d_flag > 1) check_mapping_type_fields(m);
 #endif
       return;
@@ -405,7 +405,7 @@ void check_mapping_for_destruct(struct mapping *m)
   struct keypair *k, **prev;
   TYPE_FIELD ind_types, val_types;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
@@ -442,7 +442,7 @@ void check_mapping_for_destruct(struct mapping *m)
 
     m->val_types = val_types;
     m->ind_types = ind_types;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(d_flag > 1) check_mapping_type_fields(m);
 #endif
   }
@@ -454,7 +454,7 @@ struct svalue *low_mapping_lookup(struct mapping *m,
   unsigned INT32 h;
   struct keypair *k, **prev;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
   if(!m->size) return 0;
@@ -540,7 +540,7 @@ struct array *mapping_indices(struct mapping *m)
 
   a->type_field = m->ind_types;
   
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
@@ -561,7 +561,7 @@ struct array *mapping_values(struct mapping *m)
 
   a->type_field = m->val_types;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
   
@@ -601,7 +601,7 @@ void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to)
 
   m->val_types |= 1 << to->type;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
@@ -613,7 +613,7 @@ struct mapping *mkmapping(struct array *ind, struct array *val)
   struct svalue *i,*v;
   INT32 e;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(ind->size != val->size)
     fatal("mkmapping on different sized arrays.\n");
 #endif
@@ -932,7 +932,7 @@ void mapping_search_no_free(struct svalue *to,
 }
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 
 void check_mapping(struct mapping *m)
 {
@@ -1045,7 +1045,7 @@ void gc_check_all_mappings(void)
 	m->val_types |= debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
       }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
@@ -1104,7 +1104,7 @@ void gc_free_all_unreferenced_mappings(void)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 
 void simple_describe_mapping(struct mapping *m)
 {
@@ -1145,7 +1145,7 @@ void zap_all_mappings(void)
   {
     add_ref(m);
 
-#if defined(DEBUG) && defined(DEBUG_MALLOC)
+#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
     if(verbose_debug_exit)
       debug_dump_mapping(m);
 #endif

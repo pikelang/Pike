@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.22 1998/11/17 05:12:41 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.23 1998/11/22 11:05:56 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -45,7 +45,7 @@ struct call_out_s
 
 #include "block_alloc.h"
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define MESS_UP_BLOCK(X) \
  (X)->next_arr=(struct call_out_s *)-1; \
  (X)->next_fun=(struct call_out_s *)-1; \
@@ -95,7 +95,7 @@ static struct hash_ent *call_hash=0;
 #define CMP(X,Y) my_timercmp(& CALL(X)->tv, <, & CALL(Y)->tv)
 #define SWAP(X,Y) do{ call_out *_tmp=CALL(X); (CALL(X)=CALL(Y))->pos=(X); (CALL(Y)=_tmp)->pos=(Y); } while(0)
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static int inside_call_out=0;
 #define PROTECT_CALL_OUTS() \
    if(inside_call_out) fatal("Recursive call in call_out module.\n"); \
@@ -108,7 +108,7 @@ static int inside_call_out=0;
 #define UNPROTECT_CALL_OUTS()
 #endif
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static void verify_call_outs(void)
 {
   struct array *v;
@@ -218,7 +218,7 @@ static int adjust_up(int pos)
 {
   int parent=PARENT(pos);
   int from;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(pos <0 || pos>=num_pending_calls)
     fatal("Bad argument to adjust_up(%d)\n",pos);
 #endif
@@ -412,7 +412,7 @@ static struct callback *call_out_backend_callback=0;
 static struct callback *mem_callback=0;
 void do_call_outs(struct callback *ignored, void *ignored_too, void *arg);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static void mark_call_outs(struct callback *foo, void *bar, void *gazonk)
 {
   int e;
@@ -452,7 +452,7 @@ void f_call_out(INT32 args)
   if(!mem_callback)
     mem_callback=add_memory_usage_callback(count_memory_in_call_outs,0,0);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!verify_call_out_callback)
   {
     verify_call_out_callback=add_to_callback(& do_debug_callbacks,
@@ -556,7 +556,7 @@ static int find_call_out(struct svalue *fun)
     {
       if(c->args == fun->u.array)
       {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if(CALL(c->pos) != c)
 	  fatal("Call_out->pos not correct!\n");
 #endif
@@ -571,7 +571,7 @@ static int find_call_out(struct svalue *fun)
   {
     if(is_eq(fun, ITEM(c->args)))
     {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if(CALL(c->pos) != c)
 	fatal("Call_out->pos not correct!\n");
 #endif

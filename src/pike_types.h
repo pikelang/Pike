@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.15 1998/11/06 03:08:02 hubbe Exp $
+ * $Id: pike_types.h,v 1.16 1998/11/22 11:03:11 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -18,7 +18,7 @@ struct node_s
   INT16 line_number;
   INT16 node_info;
   INT16 tree_info;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   struct pike_string *current_file;
 #endif
   struct pike_string *type;
@@ -66,7 +66,7 @@ extern struct pike_string *mixed_type_string;
 extern struct pike_string *void_type_string;
 extern struct pike_string *any_type_string;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #define init_type_stack() type_stack_mark()
 #define exit_type_stack() do {\
   int q_q_q_q=pop_stack_mark(); \

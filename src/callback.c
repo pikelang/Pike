@@ -9,7 +9,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.14 1998/03/28 15:39:14 grubba Exp $");
+RCSID("$Id: callback.c,v 1.15 1998/11/22 11:02:36 hubbe Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -30,14 +30,14 @@ struct callback
 };
 
 #define CALLBACK_CHUNK 128
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 #undef PRE_INIT_BLOCK
 #define PRE_INIT_BLOCK(X) X->free_func=(callback_func)remove_callback;
 #endif
 BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 extern int d_flag;
 
 static int is_in_free_list(struct callback * c)
@@ -161,7 +161,7 @@ void call_callback(struct callback_list *lst, void *arg)
       *ptr=l->next;
       free_callback(l);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       l->free_func=(callback_func)remove_callback;
 #endif
     }else{

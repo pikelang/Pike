@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.31 1998/10/09 23:33:39 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.32 1998/11/22 11:03:05 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -340,7 +340,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
     }
   }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(run_time_type != sp[-1].type)
     fatal("Internal error: Cast failed (run_time_type = %d, sp[-1].type = %d.)\n",run_time_type,sp[-1].type);
 #endif
@@ -367,7 +367,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	}else{
 	  INT32 e,i;
 	  struct pike_string *s;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
 #endif
 	  push_array(a=allocate_array(tmp->size));
@@ -380,7 +380,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    array_set_index(a,e,sp-1);
 	    pop_stack();
 	  }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  if(save_sp!=sp)
 	    fatal("o_cast left stack droppings.\n");
 #endif
@@ -397,12 +397,12 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 
 void f_cast(void)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   struct svalue *save_sp=sp;
 #endif
   o_cast(sp[-2].u.string,
 	 compile_type_to_runtime_type(sp[-2].u.string));
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(save_sp != sp)
     fatal("Internal error: o_cast() left droppings on stack.\n");
 #endif
@@ -607,7 +607,7 @@ static INT32 really_low_sscanf(char *input,
       return matches;
     }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(match[cnt]!='%' || match[cnt+1]=='%')
     {
       fatal("Error in sscanf.\n");
@@ -1109,7 +1109,7 @@ static INT32 really_low_sscanf(char *input,
     }else{
       check_stack(1);
       *sp++=sval;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       sval.type=99;
 #endif
     }
@@ -1121,7 +1121,7 @@ static INT32 really_low_sscanf(char *input,
 
 void o_sscanf(INT32 args)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   extern int t_flag;
 #endif
   INT32 e,i;
@@ -1149,7 +1149,7 @@ void o_sscanf(INT32 args)
     assign_lvalue(save_sp-args+2+x*2,save_sp+x);
   pop_n_elems(sp-save_sp +args);
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(t_flag >2)
   {
     int nonblock;
@@ -1166,7 +1166,7 @@ void o_sscanf(INT32 args)
 
 void f_sscanf(INT32 args)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   extern int t_flag;
 #endif
   INT32 e,i;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.57 1998/11/16 22:14:53 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.58 1998/11/22 11:02:58 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -44,7 +44,7 @@ int last_instruction=0;
 
 void exit_lex(void)
 {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(p_flag)
   {
     int e;

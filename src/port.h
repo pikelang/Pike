@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.19 1998/05/29 20:40:33 grubba Exp $
+ * $Id: port.h,v 1.20 1998/11/22 11:03:13 hubbe Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -167,7 +167,7 @@ static INLINE int EXTRACT_CHAR(char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
 #  define EXTRACT_WORD(p) (*(INT16 *)(p))
 #  define EXTRACT_INT(p) (*(INT32 *)(p))
 #else
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 unsigned INT16 EXTRACT_UWORD_(unsigned char *p);
 INT16 EXTRACT_WORD_(unsigned char *p);
 INT32 EXTRACT_INT_(unsigned char *p);

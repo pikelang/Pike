@@ -1,0 +1,14 @@
+# $Id: Makefile.in,v 1.1 1998/11/22 11:05:03 hubbe Exp $
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @PERL_LDFLAGS@
+OBJS=perlmod.o perlxsi.o
+PERL=@perl@
+MODULE_CFLAGS=@PERL_CCFLAGS@
+
+@dynamic_module_makefile@
+
+perlxsi.c:
+	$(PERL) -MExtUtils::Embed -e xsinit -- -o perlxsi.c
+
+@dependencies@

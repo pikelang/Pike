@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.30 1998/11/02 22:04:42 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.31 1998/11/22 11:08:52 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -730,7 +730,7 @@ static void low_pike_sprintf(struct string_builder *r,
     int num_snurkel;
 
     fsp++;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(fsp < format_info_stack)
       fatal("sprintf: fsp out of bounds.\n");
 #endif
@@ -856,7 +856,7 @@ static void low_pike_sprintf(struct string_builder *r,
       {
 	struct array *w;
 	struct string_builder b;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	struct format_info *fsp_save=fsp;
 #endif
 	DO_OP();
@@ -906,7 +906,7 @@ static void low_pike_sprintf(struct string_builder *r,
 	    low_pike_sprintf(&b,ADD_PCHARP(a,1),e-2,s,sp-s,0);
 	    pop_n_elems(sp-s);
 	  }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	  if(fsp < format_info_stack)
 	    fatal("sprintf: fsp out of bounds.\n");
 	  if(fsp!=fsp_save)
@@ -1139,7 +1139,7 @@ static void low_pike_sprintf(struct string_builder *r,
 
   while(fsp>start)
   {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(fsp < format_info_stack)
       fatal("sprintf: fsp out of bounds.\n");
 #endif

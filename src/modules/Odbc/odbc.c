@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.11 1998/10/19 00:56:26 grubba Exp $
+ * $Id: odbc.c,v 1.12 1998/11/22 11:04:48 hubbe Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.11 1998/10/19 00:56:26 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.12 1998/11/22 11:04:48 hubbe Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -238,9 +238,9 @@ static void f_big_query(INT32 args)
   ONERROR ebuf;
   HSTMT hstmt = SQL_NULL_HSTMT;
   struct pike_string *q = NULL;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   struct svalue *save_sp = sp + 1 - args;
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 
   get_all_args("odbc->big_query", args, "%S", &q);
 
@@ -281,11 +281,11 @@ static void f_big_query(INT32 args)
   } else {
     pop_stack();	/* Keep the result object */
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if (sp != save_sp) {
     fatal("Stack error in odbc->big_query().\n");
   }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 }
 
 static void f_create_db(INT32 args)

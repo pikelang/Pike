@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.139 1998/11/17 06:39:50 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.140 1998/11/22 11:02:35 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -69,7 +69,7 @@ void f_equal(INT32 args)
 void f_aggregate(INT32 args)
 {
   struct array *a;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(args < 0) fatal("Negative args to f_aggregate()\n");
 #endif
 
@@ -412,7 +412,7 @@ static char *combine_path(char *cwd,char *file)
   }
 #endif
 
-#ifdef DEBUG    
+#ifdef PIKE_DEBUG    
   if(!cwd)
     fatal("No cwd in combine_path!\n");
 #endif
@@ -623,7 +623,7 @@ void f_string_to_unicode(INT32 args)
     /* FIXME: Should we check for 0xfffe & 0xffff here too? */
     len = in->len * 2;
     out = begin_shared_string(len);
-#if (BYTEORDER == 4321)
+#if (PIKE_BYTEORDER == 4321)
     /* Big endian -- We don't need to do much...
      *
      * FIXME: Future optimization: Check if refcount is == 1,
@@ -689,11 +689,11 @@ void f_string_to_unicode(INT32 args)
 	out->str[j + 1] = c & 0xff;
 	out->str[j] = c >> 8;
       }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if (j) {
 	fatal("string_to_unicode(): Indexing error: len:%d, j:%d.\n", len, j);
       }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
       out = end_shared_string(out);
     }
     break;
@@ -722,7 +722,7 @@ void f_unicode_to_string(INT32 args)
   len = in->len / 2;
 
   out = begin_wide_shared_string(len, 1);
-#if (BYTEORDER == 4321)
+#if (PIKE_BYTEORDER == 4321)
   /* Big endian
    *
    * FIXME: Future optimization: Perform sufficient magic
@@ -740,7 +740,7 @@ void f_unicode_to_string(INT32 args)
 	((unsigned char *)in->str)[i*2 + 1];
     }
   }
-#endif /* BYTEORDER == 4321 */
+#endif /* PIKE_BYTEORDER == 4321 */
   out = end_shared_string(out);
   pop_n_elems(args);
   push_string(out);
@@ -852,12 +852,12 @@ void f_string_to_utf8(INT32 args)
       out->str[j++] = 0x80 | (c & 0x3f);
     }
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if (len != j) {
     fatal("string_to_utf8(): Calculated and actual lengths differ: %d != %d\n",
 	  len, j);
   }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
   out = end_shared_string(out);
   pop_n_elems(args);
   push_string(out);
@@ -993,12 +993,12 @@ void f_utf8_to_string(INT32 args)
     }
     low_set_index(out, j++, c);
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if (j != len) {
     fatal("utf8_to_string(): Calculated and actual lengths differ: %d != %d\n",
 	  len, j);
   }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
   out = end_shared_string(out);
   pop_n_elems(args);
   push_string(out);
@@ -1898,7 +1898,7 @@ void f_column(INT32 args)
   }
 }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
@@ -2216,11 +2216,11 @@ static void f_interleave_array(INT32 args)
     INT32 e;
     struct keypair *k;
     INT_TYPE low = 0x7fffffff;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if (ITEM(arr)[i].type != T_MAPPING) {
       error("interleave_array(): Element %d is not a mapping!\n", i);
     }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
     m = ITEM(arr)[i].u.mapping;
     MAPPING_LOOP(m) {
       if (k->ind.type != T_INT) {
@@ -2694,13 +2694,13 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 #ifdef DIFF_DEBUG
 	 fprintf(stderr, "DIFF:  j=%d, x=%d\n", j, x);
 #endif /* DIFF_DEBUG */
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	 if (x >= blen) {
 	   fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
 	 } else if (x < 0) {
 	   fatal("diff_longest_sequence(): x:%d < 0\n", x);
 	 }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 	 if (!marks[x]) {
 	   int pos;
 
@@ -2737,13 +2737,13 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 #ifdef DIFF_DEBUG
 	   fprintf(stderr, "DIFF: New j=%d, x=%d\n", j, x);
 #endif /* DIFF_DEBUG */
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	   if (x >= blen) {
 	     fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
 	   } else if (x < 0) {
 	     fatal("diff_longest_sequence(): x:%d < 0\n", x);
 	   }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 
 	   /* Put x on the stack. */
 	   marks[x] = 1;
@@ -2987,11 +2987,11 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 
   i = 0;
   while(dml) {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if (i >= sz) {
       fatal("Consistency error in diff_dyn_longest_sequence()\n");
     }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 #ifdef DIFF_DEBUG
     fprintf(stderr, "  %02d: %d\n", i, dml->x);
 #endif /* DIFF_DEBUG */
@@ -3001,11 +3001,11 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
     dml = dml->prev;
     i++;
   }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if (i != sz) {
     fatal("Consistency error in diff_dyn_longest_sequence()\n");
   }
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
 
   dml_free_pools(dml_pool);
   return(res);
@@ -3446,7 +3446,7 @@ void f_splice(INT32 args)
   INT32 size=0x7fffffff;
   INT32 i,j,k;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(args < 0) fatal("Negative args to f_splice()\n");
 #endif
 
@@ -3483,7 +3483,7 @@ void f_everynth(INT32 args)
   struct array *a;
   struct array *ina;
   INT32 size=0;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(args < 0) fatal("Negative args to f_everynth()\n");
 #endif
 
@@ -3523,7 +3523,7 @@ void f_transpose(INT32 args)
   INT32 inner=0;
   INT32 j,i;
   TYPE_FIELD type=0;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(args < 0) fatal("Negative args to f_transpose()\n");
 #endif
   
@@ -3592,7 +3592,7 @@ void f__reset_dmalloc(INT32 args)
 }
 #endif
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 void f__locate_references(INT32 args)
 {
   if(args)
@@ -3727,7 +3727,7 @@ void init_builtin_efuns(void)
   add_efun("mktime",f_mktime,"function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int)",OPT_TRY_OPTIMIZE);
 #endif
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
   add_efun("_debug",f__debug,"function(int:int)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #ifdef YYDEBUG
@@ -3753,7 +3753,7 @@ void init_builtin_efuns(void)
 #ifdef DEBUG_MALLOC
   add_efun("_reset_dmalloc",f__reset_dmalloc,"function(void:void)",OPT_SIDE_EFFECT);
 #endif
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   add_efun("_locate_references",f__locate_references,"function(1=mixed:1)",OPT_SIDE_EFFECT);
 #endif
 }

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.84 1998/09/05 19:40:50 grubba Exp $");
+RCSID("$Id: threads.c,v 1.85 1998/11/22 11:03:22 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -24,7 +24,7 @@ size_t thread_stack_size=1024 * 1204;
 
 #ifdef __NT__
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 static int IsValidHandle(HANDLE h)
 {
   __try {
@@ -82,7 +82,7 @@ int co_wait(COND_T *c, MUTEX_T *m)
   event_destroy(& me.event);
   /* Cancellation point?? */
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(me.next)
     fatal("Wait on event return prematurely!!\n");
 #endif
@@ -258,10 +258,10 @@ void exit_threads_disable(struct object *o)
       THREADS_FPRINTF(0, (stderr, "_exit_threads_disable(): Wake up!\n"));
       co_broadcast(&threads_disabled_change);
     }
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   } else {
     fatal("exit_threads_disable() called too many times!\n");
-#endif /* DEBUG */
+#endif /* PIKE_DEBUG */
   }
 }
 
@@ -334,7 +334,7 @@ void thread_table_insert(struct object *o)
 {
   struct thread_state *s = (struct thread_state *)o->storage;
   unsigned INT32 h = thread_table_hash(&s->id);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
     fatal("thread_table_hash failed miserably!\n");
 #endif
@@ -360,7 +360,7 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
 {
   unsigned INT32 h = thread_table_hash(&tid);
   struct thread_state *s = NULL;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
     fatal("thread_table_hash failed miserably!\n");
 #endif
@@ -729,7 +729,7 @@ void exit_mutex_key_obj(struct object *o)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
     if(mut->key != o)
       fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
 #endif
@@ -869,7 +869,7 @@ static void thread_was_marked(struct object *o)
   struct thread_state *tmp=(struct thread_state *)(o->storage);
   if(tmp->thread_local != NULL)
     gc_mark_mapping_as_referenced(tmp->thread_local);
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(tmp->swapped)
   {
     debug_gc_xmark_svalues(tmp->evaluator_stack,tmp->sp-tmp->evaluator_stack-1,"idle thread stack");
@@ -1008,7 +1008,7 @@ void th_init(void)
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=end_program();
   mutex_key->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if(!mutex_key)
     fatal("Failed to initialize mutex_key program!\n");
 #endif

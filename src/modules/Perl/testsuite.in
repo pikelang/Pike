@@ -1,0 +1,5 @@
+cond( [[ master()->resolv("Perl")->Perl ]],
+[[
+  test_true(Perl.Perl)
+  test_true(Perl.Perl())
+]])
