@@ -1,1 +1,1 @@
-/* $Id: acconfig.h,v 1.1 2000/04/12 11:16:31 mirar Exp $ */
+/* $Id: acconfig.h,v 1.2 2000/05/11 06:29:33 mirar Exp $ */

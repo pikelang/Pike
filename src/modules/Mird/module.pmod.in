@@ -4,7 +4,7 @@ class Mird
 {
    constant Glue=@module@;
 
-   object mird;
+   Glue.Mird mird;
 
 #define TABLE2ID_TABLE 1
 #define ID2TABLE_TABLE 2
@@ -14,13 +14,15 @@ class Mird
    mapping id2table=([]); 
    int next_table;
 
+   function(int,int|string:string) _fetch;
+      
 //! class Mird
 //!
 //! method void create(string filename,void|mapping options)
 
    void create(string filename,void|mapping options)
    {
-      mird=Glue.Mird(filename,options);
+      mird=Glue.Mird(filename,options||([]));
 
       mixed err=catch 
       { 
@@ -29,14 +31,29 @@ class Mird
       if (err || !next_table)
       {
 	 next_table=max(ID2TABLE_TABLE,TABLE2ID_TABLE)+1;
-	 object mtr=Glue.Transaction(mird);
+	 Glue.Transaction mtr=Glue.Transaction(mird);
 	 mtr->new_stringkey_table(TABLE2ID_TABLE);
 	 mtr->new_hashkey_table(ID2TABLE_TABLE);
 	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)next_table);
 	 mtr->close();
       }
 
+      _fetch=mird->fetch;
+
       call_out(sync_loop,60,60);
+   }
+
+   Glue.Scanner _scanner(int ... args)
+   {
+      return Glue.Scanner(mird,@args);
+   }
+
+   Mird _store(int table_id,int|string key,string data)
+   {
+      Transaction tr=transaction();
+      tr->_store(table_id,key,data);
+      tr->close();
+      return this_object();
    }
 
 //! method Table table(string name)
@@ -51,6 +68,23 @@ class Mird
 	 table2id[name]=(int)d;
       }
       return Table(this_object(),table2id[name]);
+   }
+
+//! method vTable vtable(string name)
+//! 	A vTable is just like a table, except that the
+//!     values can be anything, not just strings. The
+//!     data is encode_value()ed before storage.
+
+   vTable vtable(string name)
+   {
+      if (name==NEXT_TABLE) error("illegal name\n");
+      if (!table2id[name]) 
+      {
+	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 if (!d) error("no such table (%O)\n",name);
+	 table2id[name]=(int)d;
+      }
+      return vTable(this_object(),table2id[name]);
    }
 
 //! method table_name(int id)
@@ -70,7 +104,7 @@ class Mird
 
    Table new_stringkey_table(string name)
    {
-      object tr=transaction();
+      Transaction tr=transaction();
       tr->new_stringkey_table(name);
       tr->close();
       return table(name);
@@ -78,7 +112,7 @@ class Mird
 
    Table new_hashkey_table(string name)
    {
-      object tr=transaction();
+      Transaction tr=transaction();
       tr->new_hashkey_table(name);
       tr->close();
       return table(name);
@@ -114,23 +148,21 @@ class Mird
 //!	shut down the loop.
 //!	Default is 1 minute (60 seconds).
 
-   object sync()
+   Mird sync()
    {
       gc(); // kill any leftover transactions
       mird->sync();
       return this_object();
    }
 
-   object sync_please()
+   Mird sync_please()
    {
-      werror("sync %f\n",gauge {
-	 gc(); // kill any leftover transactions
-	 mird->sync_please();
-      });
+      gc(); // kill any leftover transactions
+      mird->sync_please();
       return this_object();
    }
 
-   object sync_loop(int seconds)
+   Mird sync_loop(int seconds)
    {
       remove_call_out(sync_loop);
       if (seconds<=0) return this_object();
@@ -145,9 +177,8 @@ class Mird
 
    void close()
    {
-      werror("close\n");
       remove_call_out(sync_loop);
-      mird->close();
+      if (mird) mird->close();
    }
 
    function destroy=close;
@@ -159,7 +190,7 @@ class Mird
    class Table 
    {
       int table_id;
-      object parent;
+      object(Mird)|object(Transaction) parent;
 
 //! method void create(object parent,int table_id)
       void create(object _parent,int _table_id)
@@ -168,23 +199,28 @@ class Mird
 	 table_id=_table_id;
       }
 
+//! method Mird.Glue.Scanner scanner()
+//! method Mird.Glue.Scanner scanner(int key)
+//!	Creates a scanner over the called table;
+//!	if a key is given, continue at that key
+//!	(as returned from <ref to=Mird.Glue.Scanner.next_key>next_key</ref>).
+
+      Mird.Glue.Scanner scanner(int ... key)
+      {
+	 return parent->_scanner(table_id,@key);
+      }
+
 //! method string `[](int|string key)
       string `[](int|string key)
       {
-	 return parent->fetch(table_id,key);
+	 string s=parent->_fetch(table_id,key);
+	 return s;
       }
 
-//! method string `[]=(int|string key)
+//! method string `[]=(int|string key,string value)
       string `[]=(int|string key,string value)
       {
-	 if (parent->mtr)
-	 return parent->mtr->store(table_id,key,value);
-	 else
-	 {
-	    object tr=parent->transaction();
-	    tr->mtr->store(table_id,key,value);
-	    tr->close();
-	 }
+	 parent->_store(table_id,key,value);
 	 return value;
       }
 
@@ -192,7 +228,7 @@ class Mird
       array(int|string) _indices()
       {
 	 array keys=({});
-	 object sc=Glue.Scanner(parent->mird,table_id);
+	 Glue.Scanner sc=scanner();
 	 mapping m;
 	 while ( (m=sc->read(100)) ) keys+=indices(m);
 	 return keys;
@@ -201,11 +237,11 @@ class Mird
 //! method array(int|string) _values()
       array(int|string) _values()
       {
-	 array values=({});
-	 object sc=Glue.Scanner(parent->mird,table_id);
+	 array vals=({});
+	 Glue.Scanner sc=scanner();
 	 mapping m;
-	 while ( (m=sc->read(100)) ) values+=values(m);
-	 return values;
+	 while ( (m=sc->read(100)) ) vals+=values(m);
+	 return vals;
       }
 
 //! method array|mapping cast("mapping"|"array")
@@ -214,7 +250,7 @@ class Mird
 	 if (sscanf(to,"array%*s"))
 	 {
 	    array tupels=({});
-	    object sc=Glue.Scanner(parent,table_id);
+	    Glue.Scanner sc=scanner();
 	    mapping m;
 	    while ( (m=sc->read(100)) ) tupels+=(array)m;
 	    return tupels;
@@ -222,10 +258,74 @@ class Mird
 	 if (sscanf(to,"mapping%*s"))
 	 {
 	    mapping tupels=([]);
-	    object sc=Glue.Scanner(parent,table_id);
+	    Glue.Scanner sc=scanner();
 	    mapping m;
 	    while ( (m=sc->read(100)) ) tupels+=m;
 	    return tupels;
+	 }
+	 error("illegal argument 1 to cast\n");
+      }
+   }
+
+//!
+//! subclass vTable
+//! inherits Table
+//!     This is just like a normal table, but all data is encode_value()ed,
+//!     and unpacked if reading, for convinience. 
+//!
+
+   class vTable
+   {
+      inherit Table;
+
+      mixed `[](int|string key)
+      {
+	 string s=parent->_fetch(table_id,key);
+	 if (s) return decode_value(s);
+	 return ([])[0];
+      }
+
+      string `[]=(int|string key,mixed value)
+      {
+	 parent->_store(table_id,key,encode_value(value));
+	 return value;
+      }
+
+
+      array(int|string) _values()
+      {
+	 array vals=({});
+	 Glue.Scanner sc=parent->_scanner(table_id);
+	 mapping m;
+	 while ( (m=sc->read(100)) ) vals+=values(m);
+	 return map(vals,decode_value);
+      }
+
+      array|mapping cast(string to)
+      {
+	 if (sscanf(to,"array%*s"))
+	 {
+	    array tupels=({});
+	    Glue.Scanner sc=parent->_scanner(table_id);
+	    mapping m;
+	    while ( (m=sc->read(100)) ) tupels+=(array)m;
+	    return map(tupels,lambda(array(string) v)
+			      {
+				 return ({v[0],decode_value(v[1])});
+			      });
+	 }
+	 if (sscanf(to,"mapping%*s"))
+	 {
+	    mapping tupels=([]);
+	    Glue.Scanner sc=parent->_scanner(table_id);
+	    mapping m;
+	    while ( (m=sc->read(100)) ) 
+	       tupels+=m;
+	    return (mapping)map((array)tupels,
+				lambda(array(string) v)
+				{
+				   return ({v[0],decode_value(v[1])});
+				});
 	 }
 	 error("illegal argument 1 to cast\n");
       }
@@ -237,17 +337,32 @@ class Mird
 
    class Transaction
    {
-      object parent;
-      object mird;
-      object mtr;
+      Mird parent;
+      Glue.Transaction mtr;
       mapping table2id=([]);
       int refresh_at_close=0;
 
+      function(int,int|string:string) _fetch;
+      function(int:Glue.Scanner) _scanner;
+      
       void create(object _parent)
       {
 	 parent=_parent;
-	 mird=parent->mird;
-	 mtr=Glue.Transaction(mird);
+	 mtr=Glue.Transaction(parent->mird);
+	 _fetch=mtr->fetch;
+	 _scanner=lambda(int ... args) 
+		  { 
+		     return Glue.Scanner(mtr,@args); 
+		  };
+      }
+
+      Transaction _store(int table_id,int|string key,string value)
+      {
+	 if (!value) 
+	    mtr->delete(table_id,key);
+	 else
+	    mtr->store(table_id,key,value);
+	 return this_object();
       }
 
 //! method Table table(string name)
@@ -274,6 +389,23 @@ class Mird
 	 return Table(this_object(),id);
       }
 
+//! method vTable vtable(string name)
+//! 	A vTable is just like a table, except that the
+//!     values can be anything, not just strings. The
+//!     data is encode_value()ed before storage.
+
+   vTable vtable(string name)
+   {
+      if (name==NEXT_TABLE) error("illegal name\n");
+      if (!table2id[name]) 
+      {
+	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 if (!d) error("no such table (%O)\n",name);
+	 table2id[name]=(int)d;
+      }
+      return vTable(this_object(),table2id[name]);
+   }
+
 //!
 //! method Table new_stringkey_table(string name)
 //! method Table new_hashkey_table(string name)
@@ -284,12 +416,12 @@ class Mird
 
       Table new_stringkey_table(string name)
       {
-	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 string d=mtr->fetch(TABLE2ID_TABLE,name);
 	 if (d) error("table already exist");
 	 int no=parent->next_table++;
-	 mtr->store(TABLE2ID_TABLE,name,(string)next_table);
-	 mtr->store(ID2TABLE_TABLE,next_table,name);
-	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)next_table);
+	 mtr->store(TABLE2ID_TABLE,name,(string)no);
+	 mtr->store(ID2TABLE_TABLE,no,name);
+	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)parent->next_table);
 	 mtr->new_stringkey_table(no);
 	 refresh_at_close=1;
 	 return table(name);
@@ -297,12 +429,12 @@ class Mird
 
       Table new_hashkey_table(string name)
       {
-	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 string d=mtr->fetch(TABLE2ID_TABLE,name);
 	 if (d) error("table already exist");
 	 int no=parent->next_table++;
-	 mtr->store(TABLE2ID_TABLE,name,(string)next_table);
-	 mtr->store(ID2TABLE_TABLE,next_table,name);
-	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)next_table);
+	 mtr->store(TABLE2ID_TABLE,name,(string)no);
+	 mtr->store(ID2TABLE_TABLE,no,name);
+	 mtr->store(TABLE2ID_TABLE,NEXT_TABLE,(string)parent->next_table);
 	 mtr->new_hashkey_table(no);
 	 refresh_at_close=1;
 	 return table(name);
@@ -344,7 +476,7 @@ class Mird
 
       void destroy()
       {
-	 mtr->destroy();
+	 if (mtr) destruct(mtr);
       }
    }
 }

@@ -7,7 +7,10 @@
 #include "stralloc.h"
 #include "mapping.h"
 #include "array.h"
+#include "builtin_functions.h"
+#include "operators.h"
 #include "object.h"
+#include "threads.h"
 
 #ifdef HAVE_MIRD_H
 #ifdef HAVE_LIBMIRD
@@ -28,10 +31,28 @@ struct program *mird_scanner_program;
 #define TRY(X) \
    do { MIRD_RES res; if ( (res=(X)) ) pmird_exception(res); } while (0)
 
-#define LOCK(PMIRD)
-#define UNLOCK(PMIRD)
+#define LOCK(PMIRD)							\
+   do									\
+   {									\
+      struct pmird_storage *me=(PMIRD);					\
+      ONERROR err;							\
+      SET_ONERROR(err,pmird_unlock,&(me->mutex));			\
+      THREADS_ALLOW();							\
+      mt_lock(&(me->mutex));
+
+#define UNLOCK(PMIRD)							\
+      mt_unlock(&(me->mutex));						\
+      THREADS_DISALLOW();						\
+      UNSET_ONERROR(err);						\
+   }									\
+   while (0);
 
 /**** utilities ************************************/
+
+static void pmird_unlock(PIKE_MUTEX_T *mutex)
+{
+   mt_unlock(mutex);
+}
 
 static void pmird_exception(MIRD_RES res)
 {
@@ -39,17 +60,19 @@ static void pmird_exception(MIRD_RES res)
    mird_describe_error(res,&s);
    d=alloca(strlen(s)+1);
    memcpy(d,s,strlen(s)+1);
-   error("[mird] %s\n",s);
+   mird_free(s);
+   mird_free_error(res);
+   error("[mird] %s\n",d);
 }
 
-static void pmird_no_database(void)
+static void pmird_no_database(char *func)
 {
-   error("database is not open\n");
+   error("%s: database is not open\n",func);
 }
 
-static void pmird_tr_no_database(void)
+static void pmird_tr_no_database(char *func)
 {
-   error("no database connected to the transaction\n");
+   error("%s: no database connected to the transaction\n",func);
 }
 
 static void pmird_no_transaction(void)
@@ -62,6 +85,7 @@ static void pmird_no_transaction(void)
 struct pmird_storage
 {
    struct mird *db;
+   PIKE_MUTEX_T mutex;
 };
 
 #define THIS ((struct pmird_storage*)(fp->current_storage))
@@ -69,6 +93,7 @@ struct pmird_storage
 static void init_pmird(struct object *o)
 {
    THIS->db=NULL;
+   mt_init(&THIS->mutex);
 }
 
 static void exit_pmird(struct object *o)
@@ -78,6 +103,7 @@ static void exit_pmird(struct object *o)
       mird_free_structure(THIS->db);
       THIS->db=NULL;
    }
+   mt_destroy(&THIS->mutex);
 }
 
 /*
@@ -154,9 +180,11 @@ static void exit_pmird(struct object *o)
 **! 
 **! 	<pre>flags is a string with any of these characters:
 **! 	"r" - readonly
+**! 	"R" - readonly in a live system (one process writes, many reads)
 **! 	"n" - don't create if it doesn't exist
 **! 	"x" - exclusive (always create)
-**! 	"s" - call sync(2) after fsync
+**! 	"s" - call fsync when finishing transactions
+**! 	"S" - call sync(2) after fsync
 **! 	"j" - complain if journal file is gone missing
 **! 	</pre>
 **!
@@ -164,24 +192,82 @@ static void exit_pmird(struct object *o)
 
 static void pmird_create(INT32 args)
 {
+   struct pmird_storage * this=THIS;
+
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("Mird",1);
    if (sp[-args].type!=T_STRING ||
        sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("Mird",1,"8 bit string");
 
-LOCK(THIS);
-   if (THIS->db)
-      mird_free_structure(THIS->db);
+   if (args>1)
+      if (sp[1-args].type!=T_MAPPING)
+	 SIMPLE_BAD_ARG_ERROR("Mird",2,"mapping of options");
 
-   TRY(mird_initialize(sp[-args].u.string->str,&(THIS->db)));
+   if (this->db)
+      mird_free_structure(this->db);
 
-/*    THIS->db->hashtrie_bits=4; */
+   TRY(mird_initialize(sp[-args].u.string->str,&(this->db)));
+
+   if (args>1)
+   {
+#define LOOKUP(SVALUE,TEXT)						\
+      push_svalue(&(SVALUE));						\
+      push_text(TEXT);							\
+      f_index(2);
+
+#define LOOKUP_INT(SVALUE,TEXT,WHAT)					\
+      LOOKUP(SVALUE,TEXT);						\
+      if (!IS_UNDEFINED(sp-1))						\
+      {									\
+	 if (sp[-1].type!=T_INT)					\
+	    SIMPLE_BAD_ARG_ERROR("Mird",2,"option \""TEXT"\":int");	\
+	 this->db->WHAT=sp[-1].u.integer;				\
+      }									\
+      pop_stack();
+
+      LOOKUP_INT(sp[1-args],"block_size",block_size);
+      LOOKUP_INT(sp[1-args],"frag_bits",frag_bits);
+      LOOKUP_INT(sp[1-args],"hashtrie_bits",hashtrie_bits);
+      LOOKUP_INT(sp[1-args],"cache_size",cache_size);
+      LOOKUP_INT(sp[1-args],"cache_search_length",cache_search_length);
+      LOOKUP_INT(sp[1-args],"max_free_frag_blocks",max_free_frag_blocks);
+      LOOKUP_INT(sp[1-args],"file_mode",file_mode);
+      LOOKUP_INT(sp[1-args],"journal_readback_n",journal_readback_n);
+
+      LOOKUP(sp[1-args],"flags");
+      if (!IS_UNDEFINED(sp-1))
+      {
+	 int i;
+	 if (sp[-1].type!=T_STRING ||
+	     sp[-1].u.string->size_shift)
+	    SIMPLE_BAD_ARG_ERROR("Mird",2,"\"flags\":8-bit string");
+	 for (i=0; i<sp[-1].u.string->len; i++)
+	    switch (sp[-1].u.string->str[i])
+	    {
+	       case 'r': this->db->flags|=MIRD_READONLY; break;
+	       case 'R': this->db->flags|=MIRD_READONLY|MIRD_LIVE; break;
+	       case 'n': this->db->flags|=MIRD_NOCREATE; break;
+	       case 'x': this->db->flags|=MIRD_EXCL; break;
+	       case 's': this->db->flags|=MIRD_SYNC_END; break;
+	       case 'S': this->db->flags|=MIRD_CALL_SYNC; break;
+	       case 'j': this->db->flags|=MIRD_JO_COMPLAIN; break;
+	       default:
+		  SIMPLE_BAD_ARG_ERROR("Mird",2,"\"flags\":[rRnxsSj]");
+	    }
+      }
+      pop_stack();
+   }
+
+/*     this->db->cache_size=6144; */
+/*     this->db->journal_readback_n=10000; */
+/*    this->db->hashtrie_bits=4; */
    
    /* options here */
 
-   TRY(mird_open(THIS->db));
-UNLOCK(THIS);
+LOCK(this);
+   TRY(mird_open(this->db));
+UNLOCK(this);
 
    pop_n_elems(args);
    push_int(0);
@@ -203,17 +289,19 @@ UNLOCK(THIS);
 
 static void pmird_close(INT32 args)
 {
+   struct pmird_storage * this=THIS;
+
    MIRD_RES res;
    pop_n_elems(args);
 
-   if (THIS->db)
+   if (this->db)
    {
-LOCK(THIS);
-      res=mird_close(THIS->db);
-      if (res) mird_free_structure(THIS->db);
-      THIS->db=NULL;
+LOCK(this);
+      res=mird_close(this->db);
+      if (res) mird_free_structure(this->db);
+      this->db=NULL;
       if (res) pmird_exception(res);
-UNLOCK(THIS);
+UNLOCK(this);
    }
 
    push_int(0);
@@ -248,26 +336,30 @@ UNLOCK(THIS);
 
 static void pmird_sync(INT32 args)
 {
+   struct pmird_storage * this=THIS;
+
    pop_n_elems(args);
 
-   if (!THIS->db) pmird_no_database();
+   if (!this->db) pmird_no_database("sync");
 
-   LOCK(THIS);
-   TRY(mird_sync(THIS->db));
-   UNLOCK(THIS);
+   LOCK(this);
+   TRY(mird_sync(this->db));
+   UNLOCK(this);
 
    ref_push_object(THISOBJ);
 }
 
 static void pmird_sync_please(INT32 args)
 {
+   struct pmird_storage * this=THIS;
+
    pop_n_elems(args);
 
-   if (!THIS->db) pmird_no_database();
+   if (!this->db) pmird_no_database("sync_please");
 
-   LOCK(THIS);
-   TRY(mird_sync_please(THIS->db));
-   UNLOCK(THIS);
+   LOCK(this);
+   TRY(mird_sync_please(this->db));
+   UNLOCK(this);
 
    ref_push_object(THISOBJ);
 }
@@ -279,6 +371,8 @@ static void pmird_sync_please(INT32 args)
 
 static void pmird_fetch(INT32 args)
 {
+   struct pmird_storage * this=THIS;
+
    INT_TYPE hashkey,table_id;
    struct pike_string *stringkey;
    struct mird *db=THIS->db;
@@ -288,28 +382,28 @@ static void pmird_fetch(INT32 args)
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",2);
 
-   if (!THIS->db) return pmird_no_transaction();
+   if (!this->db) return pmird_no_transaction();
 
    if (sp[1-args].type==T_INT)
    {
       get_all_args("fetch",args,"%i%i",&table_id,&hashkey);
-LOCK(THIS);
+LOCK(this);
       TRY(mird_key_lookup(db,(mird_key_t)table_id,
 			  (mird_key_t)hashkey,
 			  &data,
 			  &len));
-UNLOCK(THIS);
+UNLOCK(this);
    }
    else if (sp[1-args].type==T_STRING)
    {
       get_all_args("fetch",args,"%i%S",&table_id,&stringkey);
-LOCK(THIS);
+LOCK(this);
       TRY(mird_s_key_lookup(db,(mird_key_t)table_id,
 			    (unsigned char*)(stringkey->str),
 			    (mird_size_t)(stringkey->len),
 			    &data,
 			    &len));
-UNLOCK(THIS);
+UNLOCK(this);
    }
    else
       SIMPLE_BAD_ARG_ERROR("fetch",2,"int|string");
@@ -317,13 +411,64 @@ UNLOCK(THIS);
    pop_n_elems(args);
 
    if (data)
+   {
       push_string(make_shared_binary_string(data,len));
+      mird_free(data);
+   }
    else
    {
       push_int(0);
       sp[-1].subtype=NUMBER_UNDEFINED;
    }
-   mird_free(data);
+}
+
+/*
+**! method int first_unused_key(int table_id)
+**! method int first_unused_key(int table_id,int start_key)
+**! method int first_unused_table()
+**! method int first_unused_table(int start_table_id)
+*/
+
+static void pmird_first_unused_key(INT32 args)
+{
+   struct pmird_storage * this=THIS;
+
+   INT_TYPE table_id=0,start_key=0;
+   mird_key_t dest_key;
+
+   if (args>1)
+      get_all_args("first_unused_key",args,"%i%i",&table_id,&start_key);
+   else
+      get_all_args("first_unused_key",args,"%i",&table_id);
+
+   if (!this->db) return pmird_no_transaction();
+
+LOCK(this);
+   TRY(mird_find_first_unused(this->db,(mird_key_t)table_id,
+			      (mird_key_t)start_key,&dest_key));
+UNLOCK(this);
+   pop_n_elems(args);
+   push_int( (INT_TYPE)dest_key );
+}
+
+static void pmird_first_unused_table(INT32 args)
+{
+   struct pmird_storage * this=THIS;
+
+   INT_TYPE table_id=0;
+   mird_key_t dest_key;
+
+   if (args)
+      get_all_args("first_unused_table",args,"%i",&table_id);
+
+   if (!this->db) return pmird_no_transaction();
+
+LOCK(this);
+   TRY(mird_find_first_unused_table(this->db,(mird_key_t)table_id,
+				    &dest_key));
+UNLOCK(this);
+   pop_n_elems(args);
+   push_int( (INT_TYPE)dest_key );
 }
 
 /*
@@ -335,10 +480,12 @@ UNLOCK(THIS);
 
 static void pmird__debug_cut(INT32 args)
 {
-   if (THIS->db)
+   struct pmird_storage * this=THIS;
+
+   if (this->db)
    {
-      mird_free_structure(THIS->db);
-      THIS->db=NULL;
+      mird_free_structure(this->db);
+      this->db=NULL;
    }
    
    pop_n_elems(args);
@@ -348,7 +495,7 @@ static void pmird__debug_cut(INT32 args)
 /*
 **! method void _debug_check_free()
 **! method void _debug_check_free(int(0..1) silent)
-**!	This syncs the database and verifies
+**!	this syncs the database and verifies
 **!	the database free list. It prints stuff
 **!	on stderr. It exists only for debug
 **!	purpose and has no other use.
@@ -356,15 +503,41 @@ static void pmird__debug_cut(INT32 args)
 
 static void pmird__debug_check_free(INT32 args)
 {
+   struct pmird_storage * this=THIS;
+
    int silent=0;
    if (sp[-args].type==T_INT &&
        sp[-args].u.integer) silent=1;
-   if (!THIS->db) pmird_no_database();
-   TRY(mird_sync(THIS->db));
-   mird_debug_check_free(THIS->db,silent);
+   if (!this->db) pmird_no_database("_debug_check_free");
+   TRY(mird_sync(this->db));
+   mird_debug_check_free(this->db,silent);
    
    pop_n_elems(args);
    push_int(0);
+}
+
+/*
+**! method int _debug_syscalls()
+**! returns the number of syscalls the database has done so far
+*/
+
+static void pmird__debug_syscalls(INT32 args)
+{
+   struct pmird_storage * this=THIS;
+
+   if (!this->db) pmird_no_database("_debug_syscalls");
+
+   pop_n_elems(args);
+   push_int( (INT_TYPE)(this->db->syscalls_counter[0]) );
+   push_int( (INT_TYPE)(this->db->syscalls_counter[1]) );
+   push_int( (INT_TYPE)(this->db->syscalls_counter[2]) );
+   push_int( (INT_TYPE)(this->db->syscalls_counter[3]) );
+   push_int( (INT_TYPE)(this->db->syscalls_counter[4]) );
+   push_int( (INT_TYPE)(this->db->syscalls_counter[5]) );
+   push_int( (INT_TYPE)(this->db->syscalls_counter[6]) );
+   push_int( (INT_TYPE)(this->db->last_used) );
+   push_int( (INT_TYPE)(this->db->last_used*this->db->block_size) );
+   f_aggregate(9);
 }
 
 /**** transaction program ***************************/
@@ -412,6 +585,8 @@ static void exit_pmtr(struct object *o)
 
 static void pmtr_create(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    struct pmird_storage *pmird;
 
    if (args<1)
@@ -422,15 +597,15 @@ static void pmtr_create(INT32 args)
       SIMPLE_BAD_ARG_ERROR("Transaction",1,"Mird object");
 
    add_ref(sp[-args].u.object);
-   THIS->dbobj=sp[-args].u.object;
-   THIS->parent=pmird;
+   this->dbobj=sp[-args].u.object;
+   this->parent=pmird;
 
-   if (!pmird->db) pmird_no_database();
+   if (!pmird->db) pmird_no_database("Transaction");
 
-   THIS->mtr=NULL;
-LOCK(THIS->parent);
-   TRY(mird_transaction_new(pmird->db,&(THIS->mtr)));
-UNLOCK(THIS->parent);
+   this->mtr=NULL;
+LOCK(this->parent);
+   TRY(mird_transaction_new(pmird->db,&(this->mtr)));
+UNLOCK(this->parent);
 
    pop_n_elems(args);
    push_int(0);
@@ -444,18 +619,20 @@ UNLOCK(THIS->parent);
 
 static void pmtr_close(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    struct mird_transaction *mtr;
 
    pop_n_elems(args);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("close");
 
-   mtr=THIS->mtr;
-LOCK(THIS->parent);
+   mtr=this->mtr;
+LOCK(this->parent);
    TRY(mird_transaction_close(mtr));
-UNLOCK(THIS->parent);
-   THIS->mtr=NULL;
+UNLOCK(this->parent);
+   this->mtr=NULL;
 
    ref_push_object(THISOBJ);
 }
@@ -468,38 +645,42 @@ UNLOCK(THIS->parent);
 
 static void pmtr_cancel(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    pop_n_elems(args);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("cancel");
 
-LOCK(THIS->parent);
-   TRY(mird_transaction_cancel(THIS->mtr));
-UNLOCK(THIS->parent);
-   THIS->mtr=NULL;
+LOCK(this->parent);
+   TRY(mird_transaction_cancel(this->mtr));
+UNLOCK(this->parent);
+   this->mtr=NULL;
 
-   ref_push_object(THISOBJ);
+   push_int(0);
 }
 
 static void pmtr_destroy(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    pop_n_elems(args);
 
-   if (THIS->mtr &&
-       THIS->mtr->db)
+   if (this->mtr &&
+       this->mtr->db)
    {
-LOCK(THIS->parent);
-      TRY(mird_transaction_cancel(THIS->mtr));
-UNLOCK(THIS->parent);
-      THIS->mtr=NULL;
+LOCK(this->parent);
+      TRY(mird_transaction_cancel(this->mtr));
+UNLOCK(this->parent);
+      this->mtr=NULL;
    }
-   else if (THIS->mtr)
+   else if (this->mtr)
    {
-      mird_tr_free(THIS->mtr);
-      THIS->mtr=NULL;
+      mird_tr_free(this->mtr);
+      this->mtr=NULL;
    }
 
-   ref_push_object(THISOBJ);
+   push_int(0);
 }
 
 /*
@@ -512,14 +693,16 @@ UNLOCK(THIS->parent);
 
 static void pmtr_resolve(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    pop_n_elems(args);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("resolve");
 
-LOCK(THIS->parent);
-   TRY(mird_tr_resolve(THIS->mtr));
-UNLOCK(THIS->parent);
+LOCK(this->parent);
+   TRY(mird_tr_resolve(this->mtr));
+UNLOCK(this->parent);
 
    ref_push_object(THISOBJ);
 }
@@ -530,6 +713,8 @@ UNLOCK(THIS->parent);
 
 static void pmtr_store(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    INT_TYPE hashkey,table_id;
    struct pike_string *stringkey;
    struct pike_string *data;
@@ -539,28 +724,28 @@ static void pmtr_store(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",3);
 
    if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!THIS->mtr->db) return pmird_tr_no_database("store");
 
    if (sp[1-args].type==T_INT)
    {
       get_all_args("store",args,"%i%i%S",&table_id,&hashkey,&data);
-LOCK(THIS->parent);
+LOCK(this->parent);
       TRY(mird_key_store(mtr,(mird_key_t)table_id,
 			 (mird_key_t)hashkey,
 			 (unsigned char*)(data->str),
 			 (mird_size_t)(data->len)));
-UNLOCK(THIS->parent);
+UNLOCK(this->parent);
    }
    else if (sp[1-args].type==T_STRING)
    {
       get_all_args("store",args,"%i%S%S",&table_id,&stringkey,&data);
-LOCK(THIS->parent);
+LOCK(this->parent);
       TRY(mird_s_key_store(mtr,(mird_key_t)table_id,
 			   (unsigned char*)(stringkey->str),
 			   (mird_size_t)(stringkey->len),
 			   (unsigned char*)(data->str),
 			   (mird_size_t)(data->len)));
-UNLOCK(THIS->parent);
+UNLOCK(this->parent);
    }
    else
       SIMPLE_BAD_ARG_ERROR("store",2,"int|string");
@@ -575,6 +760,8 @@ UNLOCK(THIS->parent);
 
 static void pmtr_delete(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    INT_TYPE hashkey,table_id;
    struct pike_string *stringkey;
    struct mird_transaction *mtr=THIS->mtr;
@@ -582,27 +769,27 @@ static void pmtr_delete(INT32 args)
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",2);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("delete");
 
    if (sp[1-args].type==T_INT)
    {
       get_all_args("delete",args,"%i%i",&table_id,&hashkey);
-LOCK(THIS->parent);
+LOCK(this->parent);
       TRY(mird_key_store(mtr,(mird_key_t)table_id,
 			 (mird_key_t)hashkey,
 			 NULL,0));
-UNLOCK(THIS->parent);
+UNLOCK(this->parent);
    }
    else if (sp[1-args].type==T_STRING)
    {
       get_all_args("delete",args,"%i%S",&table_id,&stringkey);
-LOCK(THIS->parent);
+LOCK(this->parent);
       TRY(mird_s_key_store(mtr,(mird_key_t)table_id,
 			   (unsigned char*)(stringkey->str),
 			   (mird_size_t)(stringkey->len),
 			   NULL,0));
-UNLOCK(THIS->parent);
+UNLOCK(this->parent);
    }
    else
       SIMPLE_BAD_ARG_ERROR("delete",2,"int|string");
@@ -618,38 +805,40 @@ UNLOCK(THIS->parent);
 
 static void pmtr_fetch(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    INT_TYPE hashkey,table_id;
    struct pike_string *stringkey;
-   struct mird_transaction *mtr=THIS->mtr;
+   struct mird_transaction *mtr=this->mtr;
    unsigned char *data;
    mird_size_t len;
 
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("store",2);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("fetch");
 
    if (sp[1-args].type==T_INT)
    {
       get_all_args("fetch",args,"%i%i",&table_id,&hashkey);
-LOCK(THIS->parent);
+LOCK(this->parent);
       TRY(mird_transaction_key_lookup(mtr,(mird_key_t)table_id,
 				      (mird_key_t)hashkey,
 				      &data,
 				      &len));
-UNLOCK(THIS->parent);
+UNLOCK(this->parent);
    }
    else if (sp[1-args].type==T_STRING)
    {
       get_all_args("fetch",args,"%i%S",&table_id,&stringkey);
-LOCK(THIS->parent);
+LOCK(this->parent);
       TRY(mird_transaction_s_key_lookup(mtr,(mird_key_t)table_id,
 					(unsigned char*)(stringkey->str),
 					(mird_size_t)(stringkey->len),
 					&data,
 					&len));
-UNLOCK(THIS->parent);
+UNLOCK(this->parent);
    }
    else
       SIMPLE_BAD_ARG_ERROR("fetch",2,"int|string");
@@ -657,13 +846,15 @@ UNLOCK(THIS->parent);
    pop_n_elems(args);
 
    if (data)
+   {
       push_string(make_shared_binary_string(data,len));
+      mird_free(data);
+   }
    else
    {
       push_int(0);
       sp[-1].subtype=NUMBER_UNDEFINED;
    }
-   mird_free(data);
 }
 
 /*
@@ -674,16 +865,18 @@ UNLOCK(THIS->parent);
 
 static void pmtr_new_hashkey_table(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    INT_TYPE table_id;
 
    get_all_args("new_hashkey_table",args,"%i",&table_id);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("new_hashkey_table");
 
-LOCK(THIS->parent);
-   TRY(mird_key_new_table(THIS->mtr,(mird_key_t)table_id));
-UNLOCK(THIS->parent);
+LOCK(this->parent);
+   TRY(mird_key_new_table(this->mtr,(mird_key_t)table_id));
+UNLOCK(this->parent);
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -691,16 +884,18 @@ UNLOCK(THIS->parent);
 
 static void pmtr_new_stringkey_table(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    INT_TYPE table_id;
 
    get_all_args("new_hashkey_table",args,"%i",&table_id);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("new_stringkey_table");
 
-LOCK(THIS->parent);
-   TRY(mird_s_key_new_table(THIS->mtr,(mird_key_t)table_id));
-UNLOCK(THIS->parent);
+LOCK(this->parent);
+   TRY(mird_s_key_new_table(this->mtr,(mird_key_t)table_id));
+UNLOCK(this->parent);
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -716,16 +911,18 @@ UNLOCK(THIS->parent);
 
 static void pmtr_delete_table(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    INT_TYPE table_id;
 
    get_all_args("delete_table",args,"%i",&table_id);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("delete_table");
   
-   LOCK(THIS->parent);
-   TRY(mird_delete_table(THIS->mtr,(mird_key_t)table_id));
-   UNLOCK(THIS->parent);
+   LOCK(this->parent);
+   TRY(mird_delete_table(this->mtr,(mird_key_t)table_id));
+   UNLOCK(this->parent);
 }
 
 /*
@@ -734,16 +931,69 @@ static void pmtr_delete_table(INT32 args)
 
 static void pmtr_depend_table(INT32 args)
 {
+   struct pmtr_storage *this=THIS;
+
    INT_TYPE table_id;
 
    get_all_args("depend_table",args,"%i",&table_id);
 
-   if (!THIS->mtr) return pmird_no_transaction();
-   if (!THIS->mtr->db) return pmird_tr_no_database();
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("depend_table");
   
-   LOCK(THIS->parent);
-   TRY(mird_depend_table(THIS->mtr,(mird_key_t)table_id));
-   UNLOCK(THIS->parent);
+   LOCK(this->parent);
+   TRY(mird_depend_table(this->mtr,(mird_key_t)table_id));
+   UNLOCK(this->parent);
+}
+
+/*
+**! method int first_unused_key(int table_id)
+**! method int first_unused_key(int table_id,int start_key)
+**! method int first_unused_table()
+**! method int first_unused_table(int start_table_id)
+*/
+
+static void pmtr_first_unused_key(INT32 args)
+{
+   struct pmtr_storage *this=THIS;
+
+   INT_TYPE table_id=0,start_key=0;
+   mird_key_t dest_key;
+
+   if (args>1)
+      get_all_args("first_unused_key",args,"%i%i",&table_id,&start_key);
+   else
+      get_all_args("first_unused_key",args,"%i",&table_id);
+
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("first_unused_key");
+
+LOCK(this->parent);
+   TRY(mird_transaction_find_first_unused(this->mtr,(mird_key_t)table_id,
+					  (mird_key_t)start_key,&dest_key));
+UNLOCK(this->parent);
+   pop_n_elems(args);
+   push_int( (INT_TYPE)dest_key );
+}
+
+static void pmtr_first_unused_table(INT32 args)
+{
+   struct pmtr_storage *this=THIS;
+
+   INT_TYPE table_id=0;
+   mird_key_t dest_key;
+
+   if (args)
+      get_all_args("first_unused_table",args,"%i",&table_id);
+
+   if (!this->mtr) return pmird_no_transaction();
+   if (!this->mtr->db) return pmird_tr_no_database("first_unused_table");
+
+LOCK(this->parent);
+   TRY(mird_transaction_find_first_unused_table(this->mtr,(mird_key_t)table_id,
+						&dest_key));
+UNLOCK(this->parent);
+   pop_n_elems(args);
+   push_int( (INT_TYPE)dest_key );
 }
 
 /**** hashkey table scanner ************************/
@@ -753,6 +1003,7 @@ static void pmtr_depend_table(INT32 args)
 
 struct pmts_storage
 {
+   enum { PMTS_UNKNOWN, PMTS_HASHKEY, PMTS_STRINGKEY } type;
    struct mird_scan_result *msr;
    struct mird_s_scan_result *mssr;
    struct object *obj;
@@ -766,6 +1017,7 @@ static void init_pmts(struct object *o)
    THIS->msr=NULL;
    THIS->mssr=NULL;
    THIS->obj=NULL;
+   THIS->type=PMTS_UNKNOWN;
 }
 
 static void exit_pmts(struct object *o)
@@ -793,6 +1045,8 @@ static void pmts_create(INT32 args)
 {
    struct pmird_storage *pmird;
    struct pmtr_storage *pmtr;
+   struct pmts_storage *this=THIS;
+   mird_key_t type;
 
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("Scanner",2);
@@ -811,11 +1065,48 @@ static void pmts_create(INT32 args)
       SIMPLE_BAD_ARG_ERROR("Scanner",2,"int");
 
    add_ref(sp[-args].u.object);
-   THIS->obj=sp[-args].u.object;
-   THIS->pmird=pmird;
-   THIS->pmtr=pmtr;
+   this->obj=sp[-args].u.object;
+   this->pmird=pmird;
+   this->pmtr=pmtr;
 
-   THIS->table_id=(mird_key_t)sp[1-args].u.integer;
+   this->table_id=(mird_key_t)sp[1-args].u.integer;
+
+   if (!this->pmird)
+      this->pmird=this->pmtr->parent;
+
+LOCK(this->pmird);
+   if (this->pmtr)
+      TRY(mird_transaction_get_table_type(this->pmtr->mtr,
+					  this->table_id,&type));
+   else
+      TRY(mird_get_table_type(this->pmird->db,this->table_id,&type));
+UNLOCK(this->pmird);
+
+   switch (type)
+   {
+      case MIRD_TABLE_HASHKEY: this->type=PMTS_HASHKEY; break;
+      case MIRD_TABLE_STRINGKEY: this->type=PMTS_STRINGKEY; break;
+      default:
+	 error("Scanner: Unknown table %08lx\n",(unsigned long)type);
+   }
+
+   if (args>2)
+      if (sp[2-args].type!=T_INT)
+	 SIMPLE_BAD_ARG_ERROR("Scanner",3,"int");
+      else
+      {
+	 mird_key_t key=(mird_key_t)sp[2-args].u.integer;
+	 switch (this->type)
+	 {
+	    case PMTS_HASHKEY:
+	       TRY(mird_scan_continued(key,&(this->msr)));
+	       break;
+	    case PMTS_STRINGKEY:
+	       TRY(mird_s_scan_continued(key,&(this->mssr)));
+	       break;
+	    case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
+	 }
+      }
 
    pop_n_elems(args);
    push_int(0);
@@ -836,89 +1127,118 @@ static void pmts_create(INT32 args)
 
 static void pmts_read(INT32 args)
 {
+   struct pmts_storage *this=THIS;
+
    INT_TYPE n;
-   MIRD_RES res;
+   MIRD_RES res=NULL;
    mird_size_t i;
 
    get_all_args("read",args,"%+",&n);
 
-   if (THIS->pmird && !THIS->pmird->db) pmird_no_database();
-   if (THIS->pmtr && !THIS->pmtr->mtr) pmird_no_transaction();
-   if (THIS->pmtr && !THIS->pmtr->parent->db) pmird_tr_no_database();
-   
-   if (THIS->msr)
-   {
-      if (THIS->pmird)
-	 res=mird_table_scan(THIS->pmird->db,THIS->table_id,(mird_size_t)n,
-			     THIS->msr,&(THIS->msr));
-      else /* pmtr */
-	 res=mird_transaction_table_scan(THIS->pmtr->mtr,
-					 THIS->table_id,(mird_size_t)n,
-					 THIS->msr,&(THIS->msr));
-   }
-   else if (THIS->mssr)
-   {
-      if (THIS->pmird)
-	 res=mird_s_table_scan(THIS->pmird->db,THIS->table_id,(mird_size_t)n,
-			       THIS->mssr,&(THIS->mssr));
-      else /* pmtr */
-	 res=mird_transaction_s_table_scan(THIS->pmtr->mtr,
-					   THIS->table_id,(mird_size_t)n,
-					   THIS->mssr,&(THIS->mssr));
-   }
-   else /* chance */
-   {
-      if (THIS->pmird)
-	 res=mird_table_scan(THIS->pmird->db,THIS->table_id,(mird_size_t)n,
-			     NULL,&(THIS->msr));
-      else /* pmtr */
-	 res=mird_transaction_table_scan(THIS->pmtr->mtr,
-					 THIS->table_id,(mird_size_t)n,
-					 NULL,&(THIS->msr));
-      if (res && res->error_no==MIRDE_WRONG_TABLE) 
-      {
-	 mird_free_error(res);
-	 /* it's a string table, then */
+   if (this->pmird && !this->pmird->db) pmird_no_database("read");
+   if (this->pmtr && !this->pmtr->mtr) pmird_no_transaction();
+   if (this->pmtr && !this->pmtr->parent->db) pmird_tr_no_database("read");
 
-	 if (THIS->pmird)
-	    res=mird_s_table_scan(THIS->pmird->db,THIS->table_id,
-				  (mird_size_t)n,THIS->mssr,&(THIS->mssr));
-	 else /* pmtr */
-	    res=mird_transaction_s_table_scan(THIS->pmtr->mtr,
-					      THIS->table_id,(mird_size_t)n,
-					      THIS->mssr,&(THIS->mssr));
+
+LOCK(this->pmird);
+   if (this->pmird)
+   {
+      switch (this->type)
+      {
+	 case PMTS_HASHKEY:
+	    res=mird_table_scan(this->pmird->db,this->table_id,(mird_size_t)n,
+				this->msr,&(this->msr));
+	    break;
+	 case PMTS_STRINGKEY:
+	    res=mird_s_table_scan(this->pmird->db,this->table_id,
+				  (mird_size_t)n,this->mssr,&(this->mssr));
+	    break;
+	 case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
       }
    }
+   else /* pmtr */
+   {
+      switch (this->type)
+      {
+	 case PMTS_HASHKEY:
+	    res=mird_transaction_table_scan(this->pmtr->mtr,
+					    this->table_id,(mird_size_t)n,
+					    this->msr,&(this->msr));
+	    break;
+	 case PMTS_STRINGKEY:
+	    res=mird_transaction_s_table_scan(this->pmtr->mtr,
+					      this->table_id,(mird_size_t)n,
+					      this->mssr,&(this->mssr));
+	    break;
+	 case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
+      }
+   }
+UNLOCK(this->pmird);
    if (res) pmird_exception(res);
 
    pop_n_elems(args);
 
-   if (THIS->msr)
+   if (this->msr)
    {
-      for (i=0; i<THIS->msr->n; i++)
+      for (i=0; i<this->msr->n; i++)
       {
-	 push_int((INT_TYPE)(THIS->msr->tupel[i].key));
+	 push_int((INT_TYPE)(this->msr->tupel[i].key));
 	 push_string(make_shared_binary_string(
-	    THIS->msr->tupel[i].value,
-	    THIS->msr->tupel[i].value_len));
+	    this->msr->tupel[i].value,
+	    this->msr->tupel[i].value_len));
       }
-      f_aggregate_mapping(THIS->msr->n*2);
+      f_aggregate_mapping(this->msr->n*2);
    }
-   else if (THIS->mssr)
+   else if (this->mssr)
    {
-      for (i=0; i<THIS->mssr->n; i++)
+      for (i=0; i<this->mssr->n; i++)
       {
 	 push_string(make_shared_binary_string(
-	    THIS->mssr->tupel[i].key,
-	    THIS->mssr->tupel[i].key_len));
+	    this->mssr->tupel[i].key,
+	    this->mssr->tupel[i].key_len));
 	 push_string(make_shared_binary_string(
-	    THIS->mssr->tupel[i].value,
-	    THIS->mssr->tupel[i].value_len));
+	    this->mssr->tupel[i].value,
+	    this->mssr->tupel[i].value_len));
       }
-      f_aggregate_mapping(THIS->mssr->n*2);
+      f_aggregate_mapping(this->mssr->n*2);
    }
    else /* eod */
       push_int(0);
+}
+
+/*
+**! method int next_key()
+**!	Gives back a possible argument to the constructor
+**!	of <ref>Scanner</ref>; allows the possibility
+**!	to continue to scan even if the Scanner object is lost.
+*/
+
+static void pmts_next_key(INT32 args)
+{
+   mird_key_t key;
+   struct pmts_storage *this=THIS;
+   switch (this->type)
+   {
+      case PMTS_HASHKEY:
+	 TRY(mird_scan_continuation(this->msr,&key));
+	 break;
+      case PMTS_STRINGKEY:
+	 TRY(mird_s_scan_continuation(this->mssr,&key));
+	 break;
+      case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
+   }
+   pop_n_elems(args);
+   push_int( (INT_TYPE)key );
+}
+
+/****              *********************************/
+
+int mird_check_mem(void);
+
+static void m_debug_check_mem(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(mird_check_mem());
 }
 
 /**** module stuff *********************************/
@@ -946,9 +1266,16 @@ void pike_module_init(void)
    ADD_FUNCTION("sync_please",pmird_sync_please,tFunc(tNone,tVoid),0);
    ADD_FUNCTION("fetch",pmird_fetch,tFunc(tInt tOr(tInt,tStr),tOr(tStr,tInt0)),0);
 
+   ADD_FUNCTION("first_unused_key",pmird_first_unused_key,
+		tFunc(tInt tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("first_unused_table",pmird_first_unused_table,
+		tFunc(tOr(tVoid,tInt),tInt),0);
+
    ADD_FUNCTION("_debug_cut",pmird__debug_cut,tFunc(tNone,tVoid),0);
    ADD_FUNCTION("_debug_check_free",pmird__debug_check_free,
 		tFunc(tNone,tVoid),0);
+   ADD_FUNCTION("_debug_syscalls",pmird__debug_syscalls,
+		tFunc(tNone,tArr(tInt)),0);
 
    mird_program=end_program();
 
@@ -973,9 +1300,14 @@ void pike_module_init(void)
    ADD_FUNCTION("depend_table",pmtr_depend_table,tFunc(tInt,tObj),0);
 
    ADD_FUNCTION("new_stringkey_table",pmtr_new_stringkey_table,
-		tFunc(tNone,tObj),0);
+		tFunc(tInt,tObj),0);
    ADD_FUNCTION("new_hashkey_table",pmtr_new_hashkey_table,
-		tFunc(tNone,tObj),0);
+		tFunc(tInt,tObj),0);
+
+   ADD_FUNCTION("first_unused_key",pmtr_first_unused_key,
+		tFunc(tInt tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("first_unused_table",pmtr_first_unused_table,
+		tFunc(tOr(tVoid,tInt),tInt),0);
 
    mird_transaction_program=end_program();
 
@@ -988,6 +1320,7 @@ void pike_module_init(void)
 
    ADD_FUNCTION("create",pmts_create,tFunc(tObj tInt,tVoid),0);
    ADD_FUNCTION("read",pmts_read,tFunc(tIntPos,tMap(tOr(tInt,tStr),tStr)),0);
+   ADD_FUNCTION("next_key",pmts_next_key,tFunc(tNone,tInt),0);
 
    mird_scanner_program=end_program();
 
@@ -1000,6 +1333,9 @@ void pike_module_init(void)
    add_program_constant("Mird",mird_program,0);
    add_program_constant("Transaction",mird_transaction_program,0);
    add_program_constant("Scanner",mird_scanner_program,0);
+
+   ADD_FUNCTION("_debug_check_mem",m_debug_check_mem,
+		tFunc(tNone,tInt),0);
 
 #if 0
    p=end_program();
