@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.13 2004/11/23 17:13:19 grubba Exp $
+// $Id: Wix.pmod,v 1.14 2004/11/24 15:32:46 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -186,12 +186,20 @@ class Directory
     string name;
     string source;
     string id;
+    string font_title;
 
     static void create(string name, string source, string id)
     {
       File::name = name;
       File::source = source;
       File::id = id;
+      if (has_suffix(".ttf", lower_case(source))) {
+	if (catch {
+	  font_title = Image.TTF(source)->names()->full;
+	  }) {
+	  font_title = "";
+	}
+      }
     }
 
     WixNode gen_xml()
@@ -206,6 +214,13 @@ class Directory
       ]);
       if (source) {
 	attrs->src = replace(source, "/", "\\");
+      }
+      if (font_title) {
+	if (sizeof(font_title)) {
+	  attrs->FontTitle = font_title;
+	} else {
+	  attrs->TrueType = "yes";
+	}
       }
       return WixNode("File", attrs);
     }
