@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.8 2001/11/16 16:54:23 nilsson Exp $
+ * $Id: extract.pike,v 1.9 2002/02/05 23:01:52 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -38,6 +38,11 @@ int main(int n, array(string) args) {
     error("Not enough arguments to 'extract' (No imgdest).\n");
   string imgdest = args[1];
 
+  extract(filename, imgdest, rootless) || exit(1);
+}
+
+int(0..1) extract(string filename, string imgdest, int(0..1) rootless) {
+
   werror("Extracting file %O...\n", filename);
   string file = Stdio.read_file(filename);
 
@@ -52,7 +57,7 @@ int main(int n, array(string) args) {
       mirar_parser->process_line(line, filename, lineno++);
     }
     mirar_parser->make_doc_files( imgdest );
-    return 0;
+    return 1;
   }
 
   string suffix;
@@ -102,8 +107,9 @@ int main(int n, array(string) args) {
     else if (objectp(err) && _typeof(err) <= Tools.AutoDoc.AutoDocError)
       werror("%O\n", err);
     else
-      throw(err);
-    exit(1);
-  }
+      werror("%s\n", describe_backtrace(err));
 
+    return 0;
+  }
+  return 1;
 }
