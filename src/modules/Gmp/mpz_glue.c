@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.99 2002/01/16 03:00:37 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.100 2002/02/06 12:29:20 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -276,6 +276,28 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
   }
 }
 
+/*! @decl void create()
+ *! @decl void create(string|int|float|object value)
+ *! @decl void create(string value, int(2..36)|int(256..256) base)
+ *!
+ *!   Create and initialize a @[Gmp.mpz] object.
+ *!
+ *! @param value
+ *!   Initial value. If no value is specified, the object will be initialized
+ *!   to zero.
+ *!
+ *! @param base
+ *!   Base the value is specified in. The default base is base 10.
+ *!   The base can be either a value in the range @tt{[2..36]@} (inclusive),
+ *!   in which case the numbers are taken from the ASCII range
+ *!   @tt{0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@} (case-insensitive),
+ *!   or the value 256, in which case @[value] is taken to be the binary
+ *!   representation in network byte order.
+ *!
+ *! @note
+ *!   Leading zeroes in @[value] are not significant. In particular leading
+ *!   NUL characters are not preserved in base 256 mode.
+ */
 static void mpzmod_create(INT32 args)
 {
 #ifdef AUTO_BIGNUM
