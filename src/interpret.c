@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.128 1999/09/25 20:14:17 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.129 1999/10/19 15:33:20 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -960,11 +960,15 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       case 0:
       {
 	debug_malloc_touch(fp);
+	debug_malloc_touch(o);
 	if(sp-save_sp-args<=0)
 	{
 	  /* Create an extra svalue for tail recursion style call */
 	  sp++;
 	  MEMMOVE(sp-args,sp-args-1,sizeof(struct svalue)*args);
+	  sp[-args-1].type=T_INT;
+	}else{
+	  free_svalue(sp-args-1);
 	  sp[-args-1].type=T_INT;
 	}
 	low_object_index_no_free(sp-args-1,o,fun);
