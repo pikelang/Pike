@@ -96,9 +96,15 @@ string strip_eightbit(string s)
   return(s & String.strmult("\177", sizeof(s)));
 }
 
+int pages=0;
+
 void make_page(string base, TAG tag, string ind, string fbase)
 {
-   werror(ind+tag->tag+" "+tag->params->name+"\n");
+//   werror(ind+tag->tag+" "+tag->params->name+"\n");
+ 
+   werror("manpage "+(++pages)+"...\r");
+
+   mixed err = catch {
 
    string *outfiles,*names,*s_outfiles;
    string obase=base;
@@ -120,7 +126,7 @@ void make_page(string base, TAG tag, string ind, string fbase)
      }
    }
    
-   werror("files: "+outfiles*", "+"\n");
+//   werror("files: "+outfiles*", "+"\n");
 
    if (tag->params->mansuffix)
    {
@@ -131,7 +137,8 @@ void make_page(string base, TAG tag, string ind, string fbase)
 
    string page=make_manpage(base,tag->data,ind+" ",fbase);
 
-   werror("creating "+outfiles[0]+"...\n"); 
+//   werror("creating "+outfiles[0]+"...\n"); 
+
    object f=Stdio.File(outfiles[0],"wtc");
    string t=ctime(time());
    f->write(strip_eightbit(".\\\" t\n"
@@ -145,7 +152,7 @@ void make_page(string base, TAG tag, string ind, string fbase)
    {
       string name;
       sscanf(outfiles[0],"man/%s",name);
-      werror("creating "+s+" -> "+name+"...\n"); 
+//      werror("creating "+s+" -> "+name+"...\n"); 
       object f=Stdio.File(s ,"wtc");
       f->write(".so "+name+"\n");
       f->close();
@@ -155,6 +162,11 @@ void make_page(string base, TAG tag, string ind, string fbase)
       windex->write(sprintf("%-15s %-15s - %s\n",
 			    s,q+" ("+obase+")",
 			    tag->params->title || (names*", ")));
+
+   };
+   if (err)
+	 werror("Error while making manpage for "+tag->name+" ("+base+"):\n"
+		+master()->describe_backtrace(err));
 }
 
 void make_pages(string base, SGML data, string ind, string fbase)
