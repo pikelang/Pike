@@ -13,7 +13,7 @@
 //:      2570   : v3 description
 //:
 
-// $Id: protocol.pike,v 1.4 2002/03/20 16:39:59 nilsson Exp $
+// $Id: protocol.pike,v 1.5 2002/11/30 21:25:12 bill Exp $
 
 
 #include "snmp_globals.h"
@@ -165,7 +165,7 @@ inherit Stdio.UDP : snmp;
 //:
 //:  private variables
 //:
-int port; // = SNMP_DEFAULT_PORT;
+int remote_port; // = SNMP_DEFAULT_PORT;
 string local_host = SNMP_DEFAULT_HOST;
 string remote_host;
 int request_id = 1;
@@ -186,18 +186,22 @@ mapping msgpool = ([]);
 function con_ok, con_fail;
 array extra_args;
 
-//:
-//: create
-//:
-//: *_port: local and remote UDP port
-//: *_addr: local and remote address
-//:
+//! create a new SNMP protocol object
+//!
+//! @param rem_port
+//! @param rem_addr
+//!   remote address and UDP port (optional)
+//! @param loc_port
+//! @param loc_addr
+//!   local address and UDB port (optional)
+//!
 void create(int|void rem_port, string|void rem_addr, int|void loc_port, string|void loc_addr) {
 
   int lport = loc_port;
 
   local_host = (!loc_addr || !sizeof(loc_addr)) ? SNMP_DEFAULT_LOCHOST : loc_addr;
   if(stringp(rem_addr) && sizeof(rem_addr)) remote_host = rem_addr;
+  if(intp(rem_port) && sizeof(rem_port)) remote_port = rem_port;
 
   if (!snmp::bind(lport, local_host)) {
     //# error ...
@@ -211,21 +215,21 @@ void create(int|void rem_port, string|void rem_addr, int|void loc_port, string|v
     THROW(({"Failed to bind to SNMP port.\n", backtrace()}));
   DWRITE("protocol.bind: success!\n");
 
-  DWRITE(sprintf("protocol.create: local adress:port binded: [%s:%d].\n", local_host, lport));
+  DWRITE(sprintf("protocol.create: local adress:port bound: [%s:%d].\n", local_host, lport));
 
 }
 
 
+//! return the whole SNMP message in raw format
 mapping readmsg() {
-  //: returns the whole SNMP message in raw format
   mapping rv;
 
   rv = read();
   return(rv);
 }
 
+//! decode ASN1 data, if garbaged ignore it
 mapping decode_asn1_msg(mapping rawd) {
-  //: decode ASN1 data, if garbaged ignore it
 
   object xdec = snmp_der_decode(rawd->data);
   string msgid = (string)xdec->elements[2]->elements[0]->value;
@@ -245,6 +249,7 @@ mapping decode_asn1_msg(mapping rawd) {
 }
 
 
+//! decode raw pdu message and place in message pool
 void to_pool(mapping rawd) {
   //: put decoded msg to the pool
 
@@ -265,6 +270,7 @@ mapping|int from_pool(string msgid) {
 }
 
 
+//! read decoded message from pool
 mapping readmsg_from_pool(int msgid) {
   //: read SNMP response PDU from PDU pool
 
@@ -318,19 +324,24 @@ int get_req_id() {
 //: read_response
 //:
 array(mapping)|int read_response(int msgid) {
-  //: GetResponse-PDU low call
   mapping rawpdu = readmsg_from_pool(msgid);
 
 
   return(({rawpdu}));
 }
 
-//:
-//: get_request
-//:
+//!
+//! GetRequest-PDU call
+//!
+//! @param varlist
+//!   an array of OIDs to GET
+//! @param rem_addr
+//! @param rem_port
+//!   remote address an UDP port to send request to (optional)
+//! @returns
+//!   request ID
 int get_request(array(string) varlist, string|void rem_addr,
                          int|void rem_port) {
-  //: GetRequest-PDU low call
   object pdu;
   int id = get_req_id(), flg;
   array vararr = ({});
@@ -350,7 +361,7 @@ int get_request(array(string) varlist, string|void rem_addr,
 	       );
 
   // now we have PDU ...
-  flg = writemsg(rem_addr||remote_host, rem_port || port || SNMP_DEFAULT_PORT, pdu);
+  flg = writemsg(rem_addr||remote_host, rem_port || remote_port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 
@@ -406,9 +417,42 @@ object mk_asn1_val(string type, int|string val) {
   return rv;
 }
 
-//:
-//: get_response
-//:
+//!
+//! GetResponse-PDU call
+//!
+//! @param varlist
+//!   a mapping containing data to return
+//!   @mapping
+//!     @member array oid1
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oid1
+//!       @endarray
+//!     @member array oid2
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oid2
+//!       @endarray
+//!     @member array oidn
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oidn
+//!       @endarray
+//!   @endmapping
+//! @param origdata
+//!   original received decoded pdu that this response corresponds to
+//! @param errcode
+//!   error code
+//! @param erridx
+//!   error index
+//! @returns
+//!   request ID
 int get_response(mapping varlist, mapping origdata, int|void errcode, int|void erridx) {
   //: GetResponse-PDU low call
   object pdu;
@@ -432,16 +476,23 @@ int get_response(mapping varlist, mapping origdata, int|void errcode, int|void e
 	       );
 
   // now we have PDU ...
-  flg = writemsg(origdata[id]->ip||remote_host, origdata[id]->port || port || SNMP_DEFAULT_PORT, pdu);
+  flg = writemsg(origdata[id]->ip||remote_host, origdata[id]->port || remote_port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 
 }
 
 
-//:
-//: get_nextrequest
-//:
+//!
+//! GetNextRequest-PDU call
+//!
+//! @param varlist
+//!   an array of OIDs to GET
+//! @param rem_addr
+//! @param rem_port
+//!   remote address an UDP port to send request to (optional)
+//! @returns
+//!   request ID
 int get_nextrequest(array(string) varlist, string|void rem_addr,
                          int|void rem_port) {
   //: GetNextRequest-PDU low call
@@ -464,15 +515,45 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
 	       );
 
   // now we have PDU ...
-  flg = writemsg(rem_addr||remote_host, rem_port || port || SNMP_DEFAULT_PORT, pdu);
+  flg = writemsg(rem_addr||remote_host, rem_port || remote_port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 
 }
 
-//:
-//: set_request
-//:
+//!
+//! SetRequest-PDU call
+//!
+//! @param varlist
+//!   a mapping of OIDs to SET
+//!   @mapping
+//!     @member array oid1
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oid1
+//!       @endarray
+//!     @member array oid2
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oid2
+//!       @endarray
+//!     @member array oidn
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oidn
+//!       @endarray
+//!   @endmapping
+//! @param rem_addr
+//! @param rem_port
+//!   remote address an UDP port to send request to (optional)
+//! @returns
+//!   request ID
 int set_request(mapping varlist, string|void rem_addr,
                          int|void rem_port) {
   //: SetRequest-PDU low call
@@ -495,14 +576,53 @@ int set_request(mapping varlist, string|void rem_addr,
        );
 
   // now we have PDU ...
-  flg = writemsg(rem_addr||remote_host, rem_port || port || SNMP_DEFAULT_PORT, pdu);
+  flg = writemsg(rem_addr||remote_host, rem_port || remote_port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 }
 
-//:
-//: trap
-//:
+
+//! send an SNMP-v1 trap
+//!
+//! @param varlist
+//!   a mapping of OIDs to include in trap
+//!   @mapping
+//!     @member array oid1
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oid1
+//!       @endarray
+//!     @member array oid2
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oid2
+//!       @endarray
+//!     @member array oidn
+//!       @array
+//!         @elem string type
+//!            data type such as tick, oid, gauge, etc
+//!         @elem mixed data
+//!            data to return for oidn
+//!       @endarray
+//!   @endmapping
+//! @param oid
+//! @param type
+//!   generic trap-type
+//! @param spectype
+//!   specific trap-type
+//! @param ticks
+//!   uptime
+//! @param locip
+//!   originating ip address of the trap
+//! @param remaddr
+//! @param remport
+//!   address and UDP to send trap to
+//! @returns 
+//!   request id
 int trap(mapping varlist, string oid, int type, int spectype, int ticks,
          string|void locip, string|void remaddr, int|void remport) {
   //: Trap-PDU low call
@@ -539,7 +659,7 @@ int trap(mapping varlist, string oid, int type, int spectype, int ticks,
        );
 
   // now we have PDU ...
-  flg = writemsg(remaddr||remote_host, remport || port || SNMP_DEFAULT_TRAPPORT, pdu);
+  flg = writemsg(remaddr||remote_host, remport || remote_port || SNMP_DEFAULT_TRAPPORT, pdu);
 
   return id;
 }
