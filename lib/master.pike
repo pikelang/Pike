@@ -1,5 +1,8 @@
 #define UNDEFINED (([])[0])
+#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
+
 string describe_backtrace(mixed *trace);
+object low_cast_to_object(string oname, string current_file);
 
 string pike_library_path;
 string *pike_include_path=({});
@@ -72,11 +75,11 @@ static program low_findprog(string pname, string ext)
 	throw(e);
       }
       break;
-#if efun(load_module)
+#if constant(load_module)
     case ".so":
       ret=load_module(fname);
-    }
 #endif /* load_module */
+    }
     return programs[fname]=ret;
   }else{
     return UNDEFINED;
@@ -196,11 +199,7 @@ program handle_inherit(string pname, string current_file)
 
 mapping (program:object) objects=([object_program(this_object()):this_object()]);
 
-/* This function is called when the drivers wants to cast a string
- * to an object because of an implict or explicit cast. This function
- * may also receive more arguments in the future.
- */
-object cast_to_object(string oname, string current_file)
+object low_cast_to_object(string oname, string current_file)
 {
   program p;
   object o;
@@ -209,6 +208,17 @@ object cast_to_object(string oname, string current_file)
   if(!p) return 0;
   if(!(o=objects[p])) o=objects[p]=p();
   return o;
+}
+
+/* This function is called when the drivers wants to cast a string
+ * to an object because of an implict or explicit cast. This function
+ * may also receive more arguments in the future.
+ */
+object cast_to_object(string oname, string current_file)
+{
+  if(object o=low_cast_to_object(oname, current_file))
+    return o;
+  error("Cast to object failed\n");
 }
 
 class dirnode
@@ -236,22 +246,20 @@ class dirnode
 object findmodule(string fullname)
 {
   mixed *stat;
-  program p;
+  object o;
   if(mixed *stat=file_stat(fullname+".pmod"))
   {
     if(stat[1]==-2)
       return dirnode(fullname+".pmod");
-    else
-      return (object)(fullname+".pmod");
   }
+
+  if(o=low_cast_to_object(fullname+".pmod","/."))
+    return o;
     
 #if constant(load_module)
   if(file_stat(fullname+".so"))
-  {
-    return (object)(fullname);
-  }
+    return low_cast_to_object(fullname,"/.");
 #endif
-
 
   return UNDEFINED;
 }
@@ -276,17 +284,18 @@ varargs mixed resolv(string identifier, string current_file)
 	string file=combine_path(path,identifier);
 	if(ret=findmodule(file)) break;
       }
+    
+    if(!ret)
+    {
+      string path=combine_path(pike_library_path+"/modules",identifier);
+      ret=findmodule(path);
+    }
   }
 
-  if(!ret)
-  {
-    string path=combine_path(pike_library_path+"/modules",identifier);
-    ret=findmodule(path);
-  }
 
   if(ret)
   {
-    if(mixed tmp=ret->_module_value) return tmp;
+    if(mixed tmp=ret->_module_value) ret=tmp;
     return ret;
   }
   return UNDEFINED;
