@@ -337,7 +337,7 @@ static string encode_params(array params)
 class Client(string|Standards.URI url)
 {
 
-  mixed `[](string call)
+  function `[](string call)
   {
     return lambda(mixed ... args)
 	   {
@@ -354,5 +354,62 @@ class Client(string|Standards.URI url)
   string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%O)", this_program, url);
+  }
+}
+
+//! This class implements an XML-RPC client that uses HTTP transport using
+//! non blocking sockets.
+//! @example
+//! @pre{void data_ok(mixed result)
+//!{
+//!  write("result=%O\n", result);
+//!}
+//!
+//!void fail()
+//!{
+//!  write("fail\n");
+//!}
+//!
+//!int main(int argc, array argv)
+//!{
+//!  object async_client = Protocols.XMLRPC.AsyncClient("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
+//!  async_client["system.listMethods"](data_ok, fail);
+//!  return -1;
+//!@}
+class AsyncClient
+{
+  static object request;
+  static function user_data_ok;
+  static string _url;
+
+  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url)
+  {
+    _url = url;
+  }
+  
+  static void _data_ok()
+  {
+    mixed result;
+    if(request)
+      result = decode_response(request->data());
+    user_data_ok(result);
+  }
+
+  function `[](string call)
+  {
+     return lambda(function data_ok, function fail, mixed ...args)
+     {
+       user_data_ok = data_ok;
+       request = Protocols.HTTP.Session()->async_do_method_url(
+                       "POST",
+                        _url,
+			0,
+			encode_call( call, args ),
+			([ "content-type":"text/xml"]),
+			0,
+			_data_ok,
+			fail,
+			({ }));
+    };
   }
 }
