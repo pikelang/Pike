@@ -16,7 +16,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.15 1999/09/24 13:03:03 noring Exp $");
+RCSID("$Id: multiset.c,v 1.16 1999/10/29 03:36:48 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -73,9 +73,12 @@ void really_free_multiset(struct multiset *l)
 void order_multiset(struct multiset *l)
 {
   INT32 *order;
+  int flags;
   if(l->ind->size < 2) return;
   order = get_set_order(l->ind);
+  flags = l->ind->flags;
   l->ind = order_array(l->ind, order);
+  l->ind->flags = flags;
   free((char *)order);
 }
 
@@ -94,7 +97,9 @@ void multiset_insert(struct multiset *l,
   i=set_lookup(l->ind, ind);
   if(i < 0)
   {
+    int flags = l->ind->flags;
     l->ind=array_insert(l->ind, ind, ~i);
+    l->ind->flags = flags;
   }
 }
 
@@ -110,15 +115,22 @@ void multiset_delete(struct multiset *l,struct svalue *ind)
   INT32 i;
   i=set_lookup(l->ind, ind);
 
-  if(i >= 0) l->ind=array_remove(l->ind, i);
+  if(i >= 0)
+  {
+    int flags = l->ind->flags;
+    l->ind=array_remove(l->ind, i);
+    l->ind->flags = flags;
+  }
 }
 
 void check_multiset_for_destruct(struct multiset *l)
 {
-/* Horrifiying worst case!!!!! */
+/* Horrifying worst case!!!!! */
   INT32 i;
+  int flags = l->ind->flags;
   while( (i=array_find_destructed_object(l->ind)) >= 0)
     l->ind=array_remove(l->ind, i);
+  l->ind->flags = flags;
 }
 
 struct multiset *copy_multiset(struct multiset *tmp)
