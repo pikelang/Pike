@@ -110,29 +110,33 @@ class ProgressBar
     phase_size = _phase_size;
   }
 
-  //!
-  void update(int increment)
+  //! Write the current look of the progressbar to stdout.
+  //! @param increment
+  //!   the number of increments closer to completion since last call
+  //! @returns
+  //!   the length (in characters) of the line with the progressbar
+  int update(int increment)
   {
     cur += increment;
     cur = min(cur, max);
-    
+
     float ratio = phase_base + ((float)cur/(float)max) * phase_size;
     if(1.0 < ratio)
       ratio = 1.0;
-    
+
     int bar = (int)(ratio * (float)width);
     int is_full = (bar == width);
 
     // int spinner = (max < 2*width ? '=' : ({ '\\', '|', '/', '-' })[cur&3]);
     int spinner = '=';
-    
-    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
-	  name+":",
-	  "="*bar,
-	  is_full ? '|' : spinner,
-	  is_full ? "" : " "*(width-bar-1),
-	  is_full ? "" : "|",
-	  100.0 * ratio);
+
+    return write("\r   %-13s |%s%c%s%s %4.1f %%  ",
+		 name+":",
+		 "="*bar,
+		 is_full ? '|' : spinner,
+		 is_full ? "" : " "*(width-bar-1),
+		 is_full ? "" : "|",
+		 100.0 * ratio) - 1;
   }
 
   //! @decl void create(string name, int cur, int max, float|void phase_base,@
