@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.72 2005/01/25 14:13:57 grubba Exp $
+# $Id: configure.in,v 1.73 2005/02/16 19:37:34 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -85,7 +85,7 @@ Disabling use of getaddrinfo.])
   esac
 fi
      
-AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
+AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
         setpgid getsid setsid \
