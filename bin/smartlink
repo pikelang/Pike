@@ -15,7 +15,7 @@ export LD_PXDB
 if test "x$SGI_ABI" = "x"; then
   SGI_ABI=-n32
 fi
-export SGI_API
+export SGI_ABI
 
 #set -x
 
