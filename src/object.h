@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.56 2000/12/16 05:34:04 marcus Exp $
+ * $Id: object.h,v 1.57 2001/07/16 00:38:27 mast Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -64,6 +64,7 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 					       struct object *parent,
 					       ptrdiff_t parent_identifier,
 					       int args);
+struct object *decode_value_clone_object(struct svalue *prog);
 PMOD_EXPORT struct object *get_master(void);
 PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;

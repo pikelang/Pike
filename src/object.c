@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.162 2001/07/02 20:32:55 mast Exp $");
+RCSID("$Id: object.c,v 1.163 2001/07/16 00:38:27 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -94,7 +94,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   int e;
   struct object *o;
 
-  if(!(p->flags & PROGRAM_FINISHED))
+  if(!(p->flags & PROGRAM_PASS_1_DONE))
     Pike_error("Attempting to clone an unfinished program\n");
 
 #ifdef PROFILING
@@ -269,6 +269,9 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
   if(p->flags & PROGRAM_USES_PARENT)
     Pike_error("Parent lost, cannot clone program.\n");
 
+  if(!(p->flags & PROGRAM_FINISHED))
+    Pike_error("Attempting to clone an unfinished program\n");
+
   o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
@@ -303,11 +306,42 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   struct object *o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
+
+  if(!(p->flags & PROGRAM_FINISHED))
+    Pike_error("Attempting to clone an unfinished program\n");
+
   o->parent=parent;
   add_ref(parent);
   o->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
   call_c_initializers(o);
   call_pike_initializers(o,args);
+  UNSET_ONERROR(tmp);
+  return o;
+}
+
+/* BEWARE: This function does not call create() or __INIT() */
+struct object *decode_value_clone_object(struct svalue *prog)
+{
+  struct object *o;
+  ONERROR tmp;
+  struct program *p=program_from_svalue(prog);
+  if(!p) Pike_error("Failed to decode program!\n");
+
+  o=low_clone(p);
+  SET_ONERROR(tmp, do_free_object, o);
+  debug_malloc_touch(o);
+  
+  if(prog->type == T_FUNCTION)
+  {
+    o->parent=prog->u.object;
+    if(o->parent) add_ref(o->parent);
+    o->parent_identifier=prog->subtype;
+  }else{
+    o->parent=0;
+    o->parent_identifier=0;
+  }
+
+  call_c_initializers(o);
   UNSET_ONERROR(tmp);
   return o;
 }
