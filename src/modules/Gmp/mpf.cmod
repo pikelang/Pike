@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.19 2002/12/01 22:34:59 nilsson Exp $
+|| $Id: mpf.cmod,v 1.20 2002/12/02 09:39:19 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.19 2002/12/01 22:34:59 nilsson Exp $");
+RCSID("$Id: mpf.cmod,v 1.20 2002/12/02 09:39:19 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -148,7 +148,7 @@ PIKECLASS mpf
       case 2:
 	if(sp[1-args].type == T_INT)
 	{
-	  if(sp[1-args].u.integer<1) {
+	  if(sp[1-args].u.integer<0) {
 	    Pike_error("Bad argument 2 to Gmp.mpf, must be positive.\n");
 	  } else if (sp[1-args].u.integer > 0x10000) {
 	    Pike_error("Bad argument 2 to Gmp.mpf, must be <= 0x10000.\n");
