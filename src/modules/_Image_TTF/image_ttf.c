@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.23 1999/09/07 14:26:42 mirar Exp $
+ * $Id: image_ttf.c,v 1.24 1999/09/18 16:57:20 mirar Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.23 1999/09/07 14:26:42 mirar Exp $");
+RCSID("$Id: image_ttf.c,v 1.24 1999/09/18 16:57:20 mirar Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -911,39 +911,26 @@ static int find_kerning( TT_Kerning kerning, int c1, int c2 )
      case 0: /* The microsoft one */
        {
 	 TT_Kern_0 table = kerning.tables[j].t.kern0;
-	 int delta=1, i=table.nPairs>>1;
-	 while(i)
-	 {
-	   delta<<=1;
-	   i>>=1;
-	 }
-	 i=delta;
+	 int a=0,b=table.nPairs-1;
 
-	 while(delta)
+	 while (a<b)
 	 {
-	   if(table.pairs[i].left == c1)
-	   {
-	     if(table.pairs[i].right == c2)
-	     {
-/* 	       fprintf(stderr, "found kerning\n"); */
-	       return table.pairs[i].value;
-	     }
-	     else if(table.pairs[i].right < c2)
-	     {
-	       while(i+delta >= table.nPairs)
-		 delta>>=1;
-	       i += delta;
-	     } else {
-	       i-=delta;
-	     }
-	   } else if(table.pairs[i].left < c1) {
-	     while(i+delta >= table.nPairs)
-	       delta>>=1;
-	     i += delta;
-	   } else  {
-	     i-=delta;
-	   }
-	   delta>>=1;
+	    int i=(a+b)/2;
+	    if(table.pairs[i].left == c1)
+	    {
+	       if(table.pairs[i].right == c2)
+	       {
+		  /* fprintf(stderr, "found kerning\n"); */
+		  return table.pairs[i].value;
+	       }
+	       else if(table.pairs[i].right < c2)
+		  a=i+1;
+	       else 
+		  b=i-1;
+	    } else if(table.pairs[i].left < c1) 
+	       a=i+1;
+	    else  
+	       b=i-1;
 	 }
        }
        break;
