@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.3 2003/09/20 19:20:46 nilsson Exp $
+# $Id: configure.in,v 1.4 2003/09/20 19:28:37 mirar Exp $
 #
 AC_INIT(pcre_glue.cmod)
 AC_CONFIG_HEADER(pcre_machine.h)
@@ -16,7 +16,7 @@ if test x$with_libpcre = xyes ; then
     AC_CHECK_LIB(pcre, pcre_compile, [
       AC_DEFINE(HAVE_LIBPCRE) 
       LIBS="${LIBS-} -lpcre"
-      PIKE_FEATURE_OK(Regexp.PCRE)
+      PIKE_FEATURE(Regexp.PCRE,[yes, (using libpcre)])
     ])
   fi
 fi

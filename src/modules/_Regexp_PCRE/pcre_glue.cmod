@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.1 2003/09/20 16:16:05 mirar Exp $
+|| $Id: pcre_glue.cmod,v 1.2 2003/09/20 19:28:37 mirar Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.1 2003/09/20 16:16:05 mirar Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.2 2003/09/20 19:28:37 mirar Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -71,23 +71,26 @@ PIKECLASS _pcre
 	 const char *errptr;
 	 int erroffset;
 
-	 if (THIS->pattern) free_string(THIS->pattern);
-
+	 if (THIS->pattern) { free_string(THIS->pattern); THIS->pattern=NULL; }
+ 
+         /* get stuff as ints and check the string at the same time */
 	 switch (args)
 	 {
 	    default:
 	       get_all_args("pcre->create",args,"%S%d%o",
-			    &THIS->pattern,&options,&table);
+			    &(THIS->pattern),&options,&table);
 	       break;
 	    case 2:
 	       get_all_args("pcre->create",args,"%S%d",
-			    &THIS->pattern,&options);
+			    &(THIS->pattern),&options);
 	       break;
 	    case 1:
 	    case 0:
-	       get_all_args("pcre->create",args,"%S",&THIS->pattern);
+	       get_all_args("pcre->create",args,"%S",&(THIS->pattern));
 	       break;
 	 }
+	 add_ref(THIS->pattern);
+	 add_ref(THIS->pattern);
 
 	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
 	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
@@ -113,6 +116,9 @@ PIKECLASS _pcre
    PIKEFUN object study()
       {
 	 const char *errmsg=NULL;
+	 if (!THIS->re)
+	    Pike_error("need to initialize before study() is called\n");
+
 	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
 
          THIS->extra=pcre_study(THIS->re,0,&errmsg);
@@ -123,11 +129,12 @@ PIKECLASS _pcre
 	 RETURN this_object();
       }
 
+#if 0
 /*! @decl static string _sprintf(int c, mapping flags)
  */
-  PIKEFUN string _sprintf(int c, mapping flags)
-    flags ID_STATIC;
-    {
+   PIKEFUN string _sprintf(int c, mapping flags)
+      flags ID_STATIC;
+   {
       switch(c)
       {
 	 default:
@@ -136,28 +143,201 @@ PIKECLASS _pcre
 
 	 case 'O':
 	    push_constant_text ("Regexp.PCRE(%O)");
-	    push_string(THIS->pattern);
+	    if (THIS->pattern)
+	       ref_push_string(THIS->pattern);
+	    else
+	       push_undefined();
 	    f_sprintf(2);
 	    return;
 
 	 case 's':
-	    push_string(THIS->pattern);
+	    if (THIS->pattern)
+	       ref_push_string(THIS->pattern);
+	    else
+	       push_undefined();
 	    return;
       }
-    }
+   }
+#endif
+
+   PIKEFUN mapping info()
+      {
+	 int backrefmax,firstbyte,lastliteral,capturecount;
+	 void *firsttable,*nametable;
+	 int namecount,nameentrysize,options;
+	 size_t size,studysize;
+
+	 if (!THIS->re)
+	    Pike_error("need to initialize before info() is called\n");
+
+	 if (pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_BACKREFMAX,&backrefmax) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_CAPTURECOUNT,&capturecount) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_FIRSTBYTE,&firstbyte) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_FIRSTTABLE,&firsttable) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_LASTLITERAL,&lastliteral) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_NAMECOUNT,&namecount) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_NAMEENTRYSIZE,&nameentrysize) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_NAMETABLE,&nametable) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_OPTIONS,&options) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_SIZE,&size) ||
+	     pcre_fullinfo(THIS->re,THIS->extra,
+			   PCRE_INFO_STUDYSIZE,&studysize))
+	    Pike_error("pcre_fullinfo gave errors (unexpected)\n");
+	  
+	 push_text("backrefmax");   	push_int(backrefmax);
+	 push_text("capturecount"); 	push_int(capturecount);
+	 push_text("firstbyte"); 	push_int(firstbyte);
+	 push_text("firsttable"); 	push_int(0); /* FIXME: table */
+	 push_text("lastliteral"); 	push_int(lastliteral);
+	 push_text("namecount"); 	push_int(namecount);
+	 push_text("nameentrysize"); 	push_int(nameentrysize);
+	 push_text("nametable"); 	push_int(0); /* FIXME: table */
+	 push_text("options"); 	push_int(options);
+	 push_text("size"); 		push_int(size);
+	 push_text("studysize"); 	push_int(studysize);
+	 f_aggregate_mapping(22);
+      }
+
+/*! @decl int|array exec(string subject,void|int startoffset)
+ *!     match a regexp; will return an array of 2*n integers
+ *!	where n is the number of hits;
+ *!	returns an int upon failure
+ *!
+ *!	Error codes:
+ *!
+ *!     ERROR.NOMATCH
+ *!
+ *!   The subject string did not match the pattern.
+ *!
+ *!     ERROR.NULL   
+ *!
+ *!   Either code or subject was passed as NULL,  or  ovector  was  NULL  and
+ *!   ovecsize was not zero.
+ *!
+ *!     ERROR.BADOPTION
+ *!
+ *!   An unrecognized bit was set in the options argument.
+ *!
+ *!     ERROR.BADMAGIC 
+ *!
+ *!   PCRE  stores a 4-byte "magic number" at the start of the compiled code,
+ *!   to catch the case when it is passed a junk pointer. This is  the  error
+ *!   it gives when the magic number isn't present.
+ *!
+ *!     ERROR.UNKNOWN_NODE
+ *!
+ *!   While running the pattern match, an unknown item was encountered in the
+ *!   compiled pattern. This error could be caused by a bug  in  PCRE  or  by
+ *!   overwriting of the compiled pattern.
+ *!
+ *!     ERROR.NOMEMORY    
+ *!
+ *!   If  a  pattern contains back references, but the ovector that is passed
+ *!   to pcre_exec() is not big enough to remember the referenced substrings,
+ *!   PCRE  gets  a  block of memory at the start of matching to use for this
+ *!   purpose. If the call via pcre_malloc() fails, this error is given.  The
+ *!   memory is freed at the end of matching.
+ *!
+ *!     ERROR.NOSUBSTRING 
+ *!
+ *!   This  error is used by the pcre_copy_substring(), pcre_get_substring(),
+ *!   and  pcre_get_substring_list()  functions  (see  below).  It  is  never
+ *!   returned by pcre_exec().
+ *!
+ *!     ERROR.MATCHLIMIT  
+ *!
+ *!   The  recursion  and backtracking limit, as specified by the match_limit
+ *!   field in a pcre_extra structure (or defaulted)  was  reached.  See  the
+ *!   description above.
+ *!
+ *!     ERROR.CALLOUT     
+ *!
+ *!   This error is never generated by pcre_exec() itself. It is provided for
+ *!   use by callout functions that want to yield a distinctive  error  code.
+ *!   See the pcrecallout documentation for details.
+ */
+
+#define OVECTOR_SIZE 3000 /* multiple of three; possible hits*3 */
+
+   PIKEFUN int|array exec(string subject,
+			  void|int startoffset)
+      {
+	 struct array *res;
+
+	 int rc;
+	 int ovector[OVECTOR_SIZE];
+	 int off=0;
+	 char *dummy_s;
+	 int opts=0;
+
+	 if (!THIS->re)
+	    Pike_error("need to initialize before exec() is called\n");
+
+	 if (THIS->extra) opts|=PCRE_EXTRA_STUDY_DATA;
+         /* FIXME: also MATCH_LIMIT and CALLOUT_DATA ... later */
+
+	 switch (args) /* get ints and check 8 bit compliancy */
+	 {
+	    case 2: get_all_args("exec",args,"%s%d",&dummy_s,&off); break;
+	    case 1: get_all_args("exec",args,"%s",&dummy_s); break;
+	 }
+	 
+	 rc=pcre_exec(THIS->re,THIS->extra,
+		      subject->str,subject->len,
+		      off,opts,
+		      ovector,OVECTOR_SIZE);
+
+	 if (rc<0)
+	 {
+	    push_int(rc);
+	 }
+	 else
+	 {
+	    int i;
+	    rc*=2;
+	    res=allocate_array(rc);
+	    for (i=0; i<rc; i++)
+	    {
+	       ITEM(res)[i].type=T_INT;
+	       ITEM(res)[i].subtype=0;
+	       ITEM(res)[i].u.integer=ovector[i];
+	    }
+	    push_array(res);
+	 }
+      }
 
    INIT
       {
 	 THIS->re=NULL;
 	 THIS->extra=NULL;
+	 THIS->pattern=NULL;
       }
 
    EXIT
       {
 	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
 	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
-	 THIS->re=NULL;
-	 THIS->extra=NULL;
+      }
+
+/*! @decl get_stringnumber(string stringname)
+ *!    returns the number of a named subpattern
+ */
+
+   PIKEFUN int get_stringnumber(string stringname)
+      {
+	 if (stringname->size_shift)
+	    SIMPLE_BAD_ARG_ERROR("get_stringnumber",1,"string (8bit)");
+	 RETURN pcre_get_stringnumber(THIS->re,stringname->str);
       }
 }
 
@@ -367,13 +547,32 @@ PIKE_MODULE_INIT
  */
    add_integer_constant("UTF8",PCRE_UTF8,0);
 
-   { /* keep this structure if we want to make a macro later */
-      struct program *p=end_program();
-      struct object *obj=clone_object(p,0);
-      add_object_constant("OPTION",obj,0);
-      free_object(obj);
-      free_program(p);
-   }
+#define END_PROGRAM_MAKE_SUBMODULE(X)					\
+   do									\
+   { 									\
+      struct program *p=end_program();					\
+      struct object *obj=clone_object(p,0);				\
+      add_object_constant(X,obj,0);					\
+      free_object(obj);							\
+      free_program(p);							\
+   }									\
+   while (0)
+
+   END_PROGRAM_MAKE_SUBMODULE("OPTION");
+
+   start_new_program();
+/* documented in exec() */
+   add_integer_constant("NOMATCH",PCRE_ERROR_NOMATCH,0);
+   add_integer_constant("NULL",PCRE_ERROR_NULL,0);
+   add_integer_constant("BADOPTION",PCRE_ERROR_BADOPTION,0);
+   add_integer_constant("BADMAGIC",PCRE_ERROR_BADMAGIC,0);
+   add_integer_constant("NODE",PCRE_ERROR_UNKNOWN_NODE,0);
+   add_integer_constant("NOMEMORY",PCRE_ERROR_NOMEMORY,0);
+   add_integer_constant("NOSUBSTRING",PCRE_ERROR_NOSUBSTRING,0);
+   add_integer_constant("MATCHLIMIT",PCRE_ERROR_MATCHLIMIT,0);
+   add_integer_constant("CALLOUT",PCRE_ERROR_CALLOUT,0);
+
+   END_PROGRAM_MAKE_SUBMODULE("ERROR");
 
 /*! @endmodule
  */
