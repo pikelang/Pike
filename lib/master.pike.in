@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.182 2001/12/16 04:03:58 mast Exp $
+ * $Id: master.pike.in,v 1.183 2001/12/17 11:47:46 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -833,15 +833,16 @@ class dirnode
 
   void create(string d, object|void h)
     {
+#ifdef MODULE_TRACE
+      werror("%*ndirnode(%O,%O);\n",sizeof(backtrace())-1,d,h);
+      _verify_internals();
+//      werror(describe_backtrace( ({"HERE\n",backtrace()})));
+#endif
       dirname=d;
       handler=h;
       fc[dirname]=this_object();
       if(dirname[sizeof(dirname)-5..]==".pmod")
 	fc[dirname[..sizeof(dirname)-6]]=this_object();
-#ifdef MODULE_TRACE
-      werror("%*ndirnode(%O,%O);\n",sizeof(backtrace())-1,dirname,h);
-//      werror(describe_backtrace( ({"HERE\n",backtrace()})));
-#endif
     }
 
   class module_checker
@@ -1162,6 +1163,10 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   } else {
     path = combine_path_with_cwd(what);
   }
+#ifdef MODULE_TRACE
+  werror("%*nhandle_import(%O, %O, %O)\n",
+	 sizeof(backtrace()), what, current_file, handler);
+#endif /* MODULE_TRACE */
   if (handler) {
     return dirnode(path, handler);
   }
@@ -1290,7 +1295,8 @@ class CompatResolver
 
       mixed x;
       mixed err =catch {
-	if(x=resolv("__default.all_constants")) x=x();
+	if(resolv("__default") && (x=resolv("__default.all_constants")))
+	  x=x();
       };
 
       compat_major=saved_compat_major;
