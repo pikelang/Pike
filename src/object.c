@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.239 2003/07/16 14:12:45 mast Exp $
+|| $Id: object.c,v 1.240 2003/07/21 16:23:58 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.239 2003/07/16 14:12:45 mast Exp $");
+RCSID("$Id: object.c,v 1.240 2003/07/21 16:23:58 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -466,13 +466,17 @@ static struct pike_string *low_read_file(char *file)
     while(pos<len)
     {
       tmp = fd_read(f,s->str+pos,len-pos);
-      if(tmp<0)
+      if(tmp<=0)
       {
-	if(errno==EINTR) {
-	  check_threads_etc();
-	  continue;
+	if (tmp < 0) {
+	  if(errno==EINTR) {
+	    check_threads_etc();
+	    continue;
+	  }
+	  Pike_fatal("low_read_file(%s) failed, errno=%d\n",file,errno);
 	}
-	Pike_fatal("low_read_file(%s) failed, errno=%d\n",file,errno);
+	Pike_fatal("low_read_file(%s) failed, short read: %d < %d\n",
+		   file, pos, len);
       }
       pos+=tmp;
     }
