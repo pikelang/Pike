@@ -12,6 +12,6 @@ MODULE_CPPFLAGS= -I$(SRCDIR)/include -DPIKE
 lib/algorithms.a:
 	cd lib; $(MAKE) \
                   "EXTRA_CPP_FLAGS=-DPIKE -g -I$(SRCDIR)/../.. -I../../.." \
-	          algorithms.a
+	          "EXTRA_CFLAGS= $(CFLAGS)" algorithms.a
 
 @dependencies@
