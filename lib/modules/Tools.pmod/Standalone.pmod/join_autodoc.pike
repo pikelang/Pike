@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.13 2002/12/14 18:22:28 grubba Exp $
+ * $Id: join_autodoc.pike,v 1.14 2002/12/19 14:56:14 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -10,12 +10,24 @@
 constant description = "Joins AutoDoc extractions.";
 mapping sub_cache = ([]);
 
+int verbosity = 2;
+
 int main(int n, array(string) args) {
 
   int post_process = has_value(args, "--post-process");
   args -= ({ "--post-process" });
 
-  if(n<3) {
+  if (has_value(args, "-q")) {
+    // quiet.
+    verbosity = 0;
+    args -= ({ "-q" });
+  } else if (has_value(args, "--quiet")) {
+    // quiet.
+    verbosity = 0;
+    args -= ({ "--quiet" });
+  } 
+
+  if(sizeof(args)<3) {
     write("pike -x %s <destination.xml> <builddir>\n", args[0]);
     write("pike -x %s --post-process <dest.xml> files_to_join.xml [...]\n",
 	  args[0]);
@@ -50,7 +62,8 @@ void recurse(array(string) sources, string save_to, int post_process) {
       }
       
       // Adding all *.xml files to the file queue
-      werror("Joining in %s\n", builddir);
+      if (verbosity > 0)
+	werror("Joining in %s\n", builddir);
       foreach(filter(get_dir(builddir), has_suffix, ".xml"), string fn) {
 	if(fn[0]=='.' || (fn[0]=='#' && fn[-1]=='#')) continue;
 	Stdio.Stat stat = file_stat(builddir+fn);
@@ -77,19 +90,23 @@ object load_tree(string fn) {
 int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process) {
 
   if(!sizeof(files)) {
-    werror("No content to merge.\n");
+    if (verbosity > 1)
+      werror("No content to merge.\n");
     return 0;
   }
 
   if(sizeof(files)==1) {
-   werror("Only one content file present. Copy instead of merge.\n");
+    if (verbosity > 1)
+      werror("Only one content file present. Copy instead of merge.\n");
     return(!Stdio.cp(files[0], save_to));
   }
 
-  werror("Joining %d file%s...\n", sizeof(files),
-	 (sizeof(files)==1?"":"s"));
+  if (verbosity > 0)
+    werror("Joining %d file%s...\n", sizeof(files),
+	   (sizeof(files)==1?"":"s"));
 
-  werror("Reading %s...\n", files[0]);
+  if (verbosity > 1)
+    werror("Reading %s...\n", files[0]);
   object dest = load_tree(files[0]);
 
   int fail;
@@ -117,7 +134,8 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
       werror("\rFailed to read %O\n", filename);
       continue;
     }
-    werror("\rMerging with %s...\n", filename);
+    if (verbosity > 1)
+      werror("\rMerging with %s...\n", filename);
     if (mixed err = catch {
       Tools.AutoDoc.ProcessXML.mergeTrees(dest, src);
     }) {
@@ -134,12 +152,14 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
   }
 
   if(post_process) {
-    werror("Post processing manual file.\n");
+    if (verbosity > 0)
+      werror("Post processing manual file.\n");
     Tools.AutoDoc.ProcessXML.postProcess(dest);
   }
 
   if (!fail) {
-    werror("\rWriting %s...\n", save_to);
+    if (verbosity > 0)
+      werror("\rWriting %s...\n", save_to);
     Stdio.write_file(save_to, dest->html_of_node());
     sub_cache[save_to] = dest;
   }
