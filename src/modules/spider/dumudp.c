@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.19 1997/09/14 20:19:34 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.20 1997/09/16 00:35:39 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -204,6 +204,8 @@ void udp_sendto(INT32 args)
   struct sockaddr_in to;
   char *str;
   INT32 len;
+  if(FD < 0)
+    error("UDP: not open\n");
   
   if(args>3)
   {
