@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.8 1999/09/25 20:10:31 grubba Exp $
+ * $Id: udp.c,v 1.9 1999/12/08 15:33:59 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.8 1999/09/25 20:10:31 grubba Exp $");
+RCSID("$Id: udp.c,v 1.9 1999/12/08 15:33:59 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -248,12 +248,16 @@ void udp_wait(INT32 args)
   }
 
 #ifdef HAVE_POLL
+  THREADS_ALLOW();
+
   pollfds->fd = fd;
   pollfds->events = POLLIN;
   pollfds->revents = 0;
   ms = timeout * 1000;
   res = poll(pollfds, 1, ms);
   e = errno;
+
+  THREADS_DISALLOW();
   if (!res) {
     /* Timeout */
   } else if (res < 0) {
@@ -268,13 +272,15 @@ void udp_wait(INT32 args)
     }
   }
 #else /* !HAVE_POLL */
+  THREADS_ALLOW();
+
   FD_ZERO(&rset);
   FD_SET(fd, &rset);
   tv.tv_sec = (int)timeout;
   tv.tv_usec = (int)(timeout * 1000000.0);
-  THREADS_ALLOW();
   res = select(fd+1, &rset, NULL, NULL, &tv);
   e = errno;
+
   THREADS_DISALLOW();
   if (!res) {
     /* Timeout */
@@ -476,7 +482,10 @@ void exit_udp(struct object *ignored)
   if(FD != -1)
   {
     set_read_callback( FD, 0, 0 );
+
+    THREADS_ALLOW();
     fd_close(FD);
+    THREADS_DISALLOW();
   }
   free_svalue(& THIS->read_callback );
 }
@@ -539,14 +548,20 @@ static void udp_query_address(INT32 args)
 {
   struct sockaddr_in addr;
   int i;
+  int fd = THIS->fd;
   char buffer[496],*q;
   ACCEPT_SIZE_T len;
 
-  if(THIS->fd <0)
+  if(fd <0)
     error("socket->query_address(): Port not bound yet.\n");
 
+  THREADS_ALLOW();
+
   len=sizeof(addr);
-  i=fd_getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
+  i=fd_getsockname(fd,(struct sockaddr *)&addr,&len);
+
+  THREADS_DISALLOW();
+
   pop_n_elems(args);
   if(i < 0 || len < (int)sizeof(addr))
   {
