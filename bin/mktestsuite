@@ -69,8 +69,8 @@ define(SEPARATOR,[[....]])
 define(CONDITION,[[]])
 
 define(DOTEST,[[dnl
-checkarg([[DOTEST]],1,[[\$1]])dnl
-checkarg([[DOTEST]],2,[[\$2]])dnl
+dnl checkarg([[DOTEST]],1,[[\$1]])dnl
+dnl checkarg([[DOTEST]],2,[[\$2]])dnl
 divert(0)dnl
 define([[TESTNO]],incr(TESTNO))dnl
 CONDITION()__file__:__line__: test TESTNO, expected result: [[\$1]]
@@ -136,8 +136,8 @@ define(test_tests, [[DOTEST(RUNCT,dnl
 [[\$1]])]])
 
 define(cond,[[
-checkarg([[cond]],1,[[\$1]])dnl
-checkarg([[cond]],2,[[\$2]])dnl
+dnl checkarg([[cond]],1,[[\$1]])dnl
+dnl checkarg([[cond]],2,[[\$2]])dnl
 define([[CONDITION]],[[COND \$1
 ]])
 \$2
