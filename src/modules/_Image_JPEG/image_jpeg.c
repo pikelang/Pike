@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.21 1999/04/14 21:05:15 hubbe Exp $
+ * $Id: image_jpeg.c,v 1.22 1999/04/25 20:42:00 grubba Exp $
  */
 
 #include "global.h"
@@ -14,6 +14,13 @@
 
 #define FILE void
 #define size_t unsigned int
+/* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */
+#ifdef INT16
+#undef INT16
+#endif /* INT16 */
+#ifdef INT32
+#undef INT32
+#endif
 #include <jpeglib.h>
 #undef size_t
 #undef FILE
@@ -23,7 +30,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.21 1999/04/14 21:05:15 hubbe Exp $");
+RCSID("$Id: image_jpeg.c,v 1.22 1999/04/25 20:42:00 grubba Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
