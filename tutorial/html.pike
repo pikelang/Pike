@@ -243,49 +243,49 @@ SGML convert(SGML data)
       cpos=data->pos;
       switch(data->tag)
       {
-      case "hr":
+	case "hr":
 	data->params->noshade=1;
 	data->params->size="1";
 	break;
-
-      case "link":
-      {
-	data->tag="a";
-	string to=data->params->to;
-	m_delete(data->params,"to");
-	if(!link_to_page[to])
+	
+	case "link":
 	{
-	  werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	  data->tag="a";
+	  string to=data->params->to;
+	  m_delete(data->params,"to");
+	  if(!link_to_page[to])
+	  {
+	    werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	  }
+	  data->params->href=mkfilename(link_to_page[to])+"#"+to;
+	  break;
 	}
-	data->params->href=mkfilename(link_to_page[to])+"#"+to;
-	break;
-      }
-
-      case "ref":
-      {
-	string to=data->params->to;
-	TAG t2=link_to_data[to];
-	if(!t2)
+	
+	case "ref":
 	{
-	  werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	  string to=data->params->to;
+	  TAG t2=link_to_data[to];
+	  if(!t2)
+	  {
+	    werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	  }
+	  data->data=({t2->tag+" "+t2->params->number});
+	  data->tag="a";
+	  data->params->href=mkfilename(link_to_page[to])+"#"+to;
+	  break;
 	}
-	data->data=({t2->tag+" "+t2->params->number});
-	data->tag="a";
-	data->params->href=mkfilename(link_to_page[to])+"#"+to;
-	break;
-      }
-
-      case "anchor":
+	
+	case "anchor":
 	data->tag="a";
 	break;
-
-      case "ex_identifier":
-      case "ex_string":
-      case "ex_commend":
+	
+	case "ex_identifier":
+	case "ex_string":
+	case "ex_commend":
 	ret+=convert(data->data);
 	continue;
-
-      case "example": data->tag="blockquote";break;
+	
+	case "example": data->tag="blockquote";break;
       case "ex_keyword": data->tag="b";break;
       case "ex_br": data->tag="br"; break;
 
