@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.197 2000/08/27 19:22:30 grubba Exp $");
+RCSID("$Id: file.c,v 1.198 2000/08/27 19:23:38 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2445,6 +2445,7 @@ static struct program * file_lock_key_program;
 struct file_lock_key_storage
 {
   struct my_file *f;
+  struct object *file;
 #ifdef _REENTRANT
   struct object *owner;
 #endif
