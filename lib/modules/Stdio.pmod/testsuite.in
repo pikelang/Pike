@@ -17,6 +17,53 @@ lambda()
 }()
 ]],({"hej","hopp","gazonk"}))
 
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  v+=({r->gets()});
+  r->ungets("hipp");
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hej","hipp","hopp","gazonk"}))
+
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  v+=({r->gets()});
+  r->ungets("hipp\nhurra");
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hej","hipp","hurra","hopp","gazonk"}))
+
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  r->ungets("hipp");
+  v+=({r->gets()});
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hipp","hej","hopp","gazonk"}))
+
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  r->ungets("h\nh\nhi");
+  v+=({r->getchar(),r->getchar(),r->getchar()});
+  v+=({r->gets()});
+  r->ungets("oj\noj");
+  v+=({r->getchar()});
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({'h','\n','h',"",'o',"j","oj","hi","hej","hopp","gazonk"}))
+
 test_equal([[
 lambda()
 {
