@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.36 2001/02/05 13:40:35 mirar Exp $
+ * $Id: port.h,v 1.37 2001/03/14 20:05:35 mast Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -235,7 +235,7 @@ PMOD_EXPORT void my_srand(long seed);
 
 #ifdef OWN_GETHRTIME
 void own_gethrtime_init(void);
-int own_gethrtime_update(struct timeval *ptr);
+void own_gethrtime_update(struct timeval *ptr);
 long long gethrtime(void);
 
 #define hrtime_t long long

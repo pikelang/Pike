@@ -8,6 +8,8 @@
 #include "pike_macros.h"
 #include "time_stuff.h"
 #include "pike_error.h"
+#include "fdlib.h"
+#include "fd_control.h"
 
 #include <ctype.h>
 #include <math.h>
@@ -18,7 +20,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.40 2001/02/17 17:02:51 grubba Exp $");
+RCSID("$Id: port.c,v 1.41 2001/03/14 20:05:35 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -671,11 +673,37 @@ size_t _chkstk() { return __chkstk(); }
 
 #ifdef OWN_GETHRTIME_RDTSC
 
+/* Estimated errors in max standard deviation in seconds between the
+ * realtime and rtsc clocks. */
+
+#define GETTIMEOFDAY_ERR 1e-3
+/* Conservative value for gettimeofday resolution: It's taken from a
+ * Linux with SMP kernel where it's reliable only down to msec. */
+
+#define CPUINFO_ERR 1e-4
+/* Only count on four accurate digits in the MHz figure in
+ * /proc/cpuinfo. */
+
+#define SATISFACTORY_ERR 1e-6
+/* This is a compromise between final accurancy and the risk that the
+ * system clock changes during calibration so that the zero time gets
+ * wrong. (It's still better than the typical gethrtime accurancy on
+ * Solaris.) */
+
+#define COUNT_THRESHOLD 10
+/* Number of measurements before we can trust the variance
+ * calculation. */
+
 static long long hrtime_rtsc_zero;
 static long long hrtime_rtsc_last;
-static long long hrtime_max;
+#ifdef PIKE_DEBUG
+static long long hrtime_max = 0;
+#endif
 static struct timeval hrtime_timeval_zero;
+static long long hrtime_rtsc_base, hrtime_nsec_base = 0;
 static long double hrtime_conv=0.0;
+static double hrtime_conv_var = GETTIMEOFDAY_ERR * GETTIMEOFDAY_ERR;
+static int hrtime_is_calibrated = 0;
 
 #define RTSC(x)   							\
    __asm__ __volatile__ (  "rdtsc"                			\
@@ -684,34 +712,165 @@ static long double hrtime_conv=0.0;
 
 void own_gethrtime_init()
 {
+   int fd;
+
    GETTIMEOFDAY(&hrtime_timeval_zero);
    RTSC(hrtime_rtsc_zero);
-   hrtime_rtsc_last=hrtime_rtsc_zero;
-   hrtime_max=0;
+   hrtime_rtsc_last = hrtime_rtsc_base = hrtime_rtsc_zero;
+
+   do {
+     fd = fd_open("/proc/cpuinfo", fd_RDONLY, 0);
+   } while (fd < 0 && errno == EINTR);
+   if (fd >= 0) {
+     char buf[10240];
+     ptrdiff_t len;
+
+     set_nonblocking(fd, 1);	/* Paranoia. */
+     do {
+       len = fd_read(fd, buf, sizeof(buf) - 1);
+     } while (len < 0 && errno == EINTR);
+     fd_close(fd);
+
+     if (len > 0) {
+       char *p;
+       buf[len] = 0;
+       p = STRSTR(buf, "\ncpu MHz");
+       if (p) {
+	 p += sizeof("\ncpu MHz");
+	 p += STRCSPN(p, "0123456789\n");
+	 if (*p != '\n') {
+	   long long hz = 0;
+
+	   for (; *p >= '0' && *p <= '9'; p++)
+	     hz = hz * 10 + (*p - '0') * 1000000;
+	   if (*p == '.') {
+	     int mult = 100000;
+	     for (p++; mult && *p >= '0' && *p <= '9'; p++, mult /= 10)
+	       hz += (*p - '0') * mult;
+
+	     hrtime_conv = 1e9 / (long double) hz;
+	     hrtime_conv_var = CPUINFO_ERR * CPUINFO_ERR;
+#ifdef RTSC_DEBUG
+	     fprintf(stderr, "cpu Mhz read from /proc/cpuinfo: %lld.%lld, "
+		     "conv=%#.10Lg, est err=%#.3g\n",
+		     hz / 1000000, hz % 1000000, hrtime_conv, sqrt(hrtime_conv_var));
+#endif
+
+	     if (hrtime_conv_var < GETTIMEOFDAY_ERR * GETTIMEOFDAY_ERR) {
+#ifdef RTSC_DEBUG
+	       fprintf(stderr, "using rtsc from the start\n");
+#endif
+	       hrtime_is_calibrated = 1;
+	     }
+	   }
+	 }
+       }
+     }
+   }
 }
 
-int own_gethrtime_update(struct timeval *ptr)
+void own_gethrtime_update(struct timeval *ptr)
 {
    long long td,t,now;
+   long double conv;
+   double var;
+   static long long td_last = 0;
+   static long long w_sum = 0.0, w_c_sum = 0.0;
+   static double w_c_c_sum = 0.0;
+   static int count = -COUNT_THRESHOLD;
+
    GETTIMEOFDAY(ptr);
    RTSC(now);
+
+   if (hrtime_is_calibrated == 2) return; /* Calibration done. */
+
    td=((long long)ptr->tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
       ((long long)ptr->tv_usec-hrtime_timeval_zero.tv_usec)*1000;
 
-   if (td<100000000) return 0; /* less then 0.1 seconds */
+   if (!hrtime_is_calibrated) {
+     /* We're in a hurry to make the rtsc kick in - require only
+      * hundreds of seconds between measurements. */
+     if (td - td_last < 10000000) return;
+     /* Drop the count threshold if a second has gone by. That ought
+      * to be long enough to get a reasonable reading. */
+     if (td - td_last > 1000000000) count = 0;
+   }
+   else
+     /* Doing fine calibration - require an order of whole seconds
+      * between measurements. */
+     if (now - hrtime_rtsc_last < 1000000000) return;
 
+   td_last = td;
    hrtime_rtsc_last=now;
    t=now-hrtime_rtsc_zero;
-   if (t) hrtime_conv=((long double)td)/t;
+   if (!t) return;
+   conv=((long double)td)/t;
 
 /* fixme: add time deviation detection;
    when time is adjusted, this calculation isn't linear anymore,
    so it might be best to reset it */
 
+   /* Calculate the variance. Each conversion factor is weighted by
+    * the time it was measured over, since later factors can be
+    * considered more exact due to the elapsed time. */
+   w_sum += t;
+   w_c_sum += td;		/* = t * conv */
+   w_c_c_sum += td * conv;	/* = t * conv * conv */
+
+   if (++count >= 0) {
+     double var = (w_c_c_sum - (double) w_c_sum * w_c_sum / w_sum) / w_sum;
+
+     if (var > 0.0 && var < hrtime_conv_var) {
+       hrtime_nsec_base +=
+	 (long long) ( (long double)(now-hrtime_rtsc_base) * hrtime_conv );
+       hrtime_rtsc_base = now;
+       hrtime_conv_var = var;
+       hrtime_conv = (long double) w_c_sum / w_sum;
+
 #ifdef RTSC_DEBUG
-   fprintf(stderr,"conv=%.8Lg MHz=%.8Lg\n",hrtime_conv,1000.0/hrtime_conv);
+       fprintf(stderr, "[%d, %#5.4g] "
+	       "last=%#.10Lg, conv=%#.10Lg +/- %#.3g (%#.10Lg MHz)\n",
+	       count, td / 1e9,
+	       conv, hrtime_conv, sqrt(hrtime_conv_var), 1000.0/hrtime_conv);
 #endif
-   return 1;
+
+       if (!hrtime_is_calibrated) {
+	 if (hrtime_conv_var < GETTIMEOFDAY_ERR * GETTIMEOFDAY_ERR) {
+#ifdef RTSC_DEBUG
+	   fprintf(stderr, "switching to rtsc after %g sec\n", td / 1e9);
+#endif
+	   hrtime_is_calibrated = 1;
+	   /* Reinitialize the statistics since it's hard to weight
+	    * away the initial burst of noisy measurements we might
+	    * have done to make rtsc good enough to use. */
+	   count = -COUNT_THRESHOLD;
+	   w_c_sum = w_sum = 0;
+	   w_c_c_sum = 0.0;
+	   /* The variance might be too low if we dropped the count
+	    * threshold above. */
+	   hrtime_conv_var = GETTIMEOFDAY_ERR * GETTIMEOFDAY_ERR;
+	 }
+       }
+       else
+	 if (hrtime_conv_var < SATISFACTORY_ERR * SATISFACTORY_ERR) {
+#ifdef RTSC_DEBUG
+	   fprintf(stderr, "rtsc calibration finished, took %g sec\n", td / 1e9);
+#endif
+	   hrtime_is_calibrated = 2;
+	 }
+     }
+     else {
+#ifdef RTSC_DEBUG
+       fprintf(stderr, "[%d, %#5.4g] last=%#.10Lg +/- %#.3g, conv=%#.10Lg\n",
+	       count, td / 1e9, conv, var > 0.0 ? sqrt(var) : -1.0, hrtime_conv);
+#endif
+     }
+   }
+   else {
+#ifdef RTSC_DEBUG
+     fprintf(stderr, "[%d, %#5.4g] last=%#.10Lg\n", count, td / 1e9, conv);
+#endif
+   }
 }
 
 long long gethrtime()
@@ -719,40 +878,36 @@ long long gethrtime()
    long long now;
    struct timeval tv;
 
-   if (hrtime_conv==0.0) 
-   {
-      if (!own_gethrtime_update(&tv))  /* not calibrated yet */
-      {
-#ifdef RTSC_DEBUG
-	 fprintf(stderr,"not calibrated yet (%lld)\n",
-		 ((long long)tv.tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
-		 ((long long)tv.tv_usec-hrtime_timeval_zero.tv_usec)*1000);
-#endif
-	 return
-	    hrtime_max=
-	    ((long long)tv.tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
-	    ((long long)tv.tv_usec-hrtime_timeval_zero.tv_usec)*1000;
-      }
+   if (!hrtime_is_calibrated) {
+     own_gethrtime_update(&tv);
+     if (hrtime_is_calibrated) goto use_rtsc;
+     RTSC(hrtime_rtsc_base);
+     now=hrtime_nsec_base =
+       ((long long)tv.tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
+       ((long long)tv.tv_usec-hrtime_timeval_zero.tv_usec)*1000;
+   }
+   else {
+     RTSC(now);
+     if ((hrtime_is_calibrated == 1) &
+	 (now - hrtime_rtsc_last > 1000000000)) { /* Some seconds between updates. */
+       own_gethrtime_update(&tv);
+     use_rtsc:
+       RTSC(now);
+     }
+     now = (long long) ( (long double)(now-hrtime_rtsc_base) * hrtime_conv ) +
+       hrtime_nsec_base;
    }
 
-   RTSC(now);
-
-/* 2 seconds between updates */
-   if (now-hrtime_rtsc_last > 2000000000) 
-   {
-/*      fprintf(stderr,"update: %.8llg\n",1e-9*(now-hrtime_rtsc_last)); */
-      own_gethrtime_update(&tv);
-      return gethrtime();
-   }
-
-   now = (long long) ( (long double)(now-hrtime_rtsc_zero) * hrtime_conv );
-
-#ifdef RTSC_DEBUG
+#ifdef RTSC_DEBUG_MORE
    fprintf(stderr,"(%lld)\n",now);
 #endif
 
-   if (now<hrtime_max) now=hrtime_max;
-   return hrtime_max=now;
+#ifdef PIKE_DEBUG
+   if (now<hrtime_max)
+     fatal("Time calculation went backwards with %lld.\n", hrtime_max - now);
+   hrtime_max = now;
+#endif
+   return now;
 }
 
 #endif
