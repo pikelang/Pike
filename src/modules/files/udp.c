@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.2 1999/07/15 17:43:49 mirar Exp $
+ * $Id: udp.c,v 1.3 1999/07/19 23:36:00 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.2 1999/07/15 17:43:49 mirar Exp $");
+RCSID("$Id: udp.c,v 1.3 1999/07/19 23:36:00 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -212,11 +212,14 @@ void udp_read(INT32 args)
   }
   pop_n_elems(args);
   fd = FD;
-  THREADS_ALLOW();
-  while(((res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
-			 (struct sockaddr *)&from, &fromlen))==-1)
-	&&(errno==EINTR));
-  THREADS_DISALLOW();
+  do {
+    THREADS_ALLOW();
+    res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
+		      (struct sockaddr *)&from, &fromlen);
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+  } while((res==-1) && (errno==EINTR));
 
   THIS->my_errno=errno;
 
@@ -307,10 +310,15 @@ void udp_sendto(INT32 args)
   fd = FD;
   str = sp[2-args].u.string->str;
   len = sp[2-args].u.string->len;
-  THREADS_ALLOW();
-  while(((res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to,
-		       sizeof( struct sockaddr_in ))) == -1) && errno==EINTR);
-  THREADS_DISALLOW();
+
+  do {
+    THREADS_ALLOW();
+    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to,
+		     sizeof( struct sockaddr_in ));
+    THREADS_DISALLOW();
+
+    check_threads_etc();
+  } while((res == -1) && errno==EINTR);
   
   if(res<0)
   {
