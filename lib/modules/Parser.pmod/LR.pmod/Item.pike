@@ -1,5 +1,5 @@
 /*
- * $Id: Item.pike,v 1.1 2002/05/09 17:51:04 nilsson Exp $
+ * $Id: Item.pike,v 1.2 2002/05/09 20:46:49 nilsson Exp $
  *
  * An LR(0) item
  *
@@ -18,16 +18,16 @@ import LR;
 /* constant item = (program)"item"; */
 
 //! The rule
-object(rule) r;
+Rule r;
 
 //! How long into the rule the parsing has come.
 int offset;
 
 //! The state we will get if we shift according to this rule
-object /* (kernel) */ next_state;
+object /* Kernel */ next_state;
 
 //! Item representing this one (used for shifts).
-object /* (item) */ master_item;
+object /* Item */ master_item;
 
 //! Look-ahead set for this item.
 multiset(string) direct_lookahead = (<>);
@@ -36,7 +36,7 @@ multiset(string) direct_lookahead = (<>);
 multiset(string) error_lookahead = (<>);
 
 //! Relation to other items (used when compiling).
-multiset(object /* (item) */ ) relation = (<>);
+multiset(object /* Item */ ) relation = (<>);
 
 //! Depth counter (used when compiling).
 int counter;

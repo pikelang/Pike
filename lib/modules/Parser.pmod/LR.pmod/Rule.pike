@@ -1,5 +1,5 @@
 /*
- * $Id: Rule.pike,v 1.1 2002/05/09 17:51:04 nilsson Exp $
+ * $Id: Rule.pike,v 1.2 2002/05/09 20:47:32 nilsson Exp $
  *
  * A BNF-rule.
  *
@@ -49,7 +49,7 @@ multiset(string) prefix_tokens = (<>);
 int number = 0;
 
 //! Priority and associativity of this rule.
-object /* (priority) */ pri;
+object /* Priority */ pri;
 
 /*
  * Functions
