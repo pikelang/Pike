@@ -7,6 +7,7 @@
 #define RCSID2(name, X) \
  static char *name __attribute__ ((unused)) =X
 #elif __GNUC__ == 2
+ /* No need for PIKE_CONCAT() here since gcc supports ## */
 #define RCSID2(name, X) \
  static char *name = X; \
  static void *use_##name=(&use_##name, (void *)&name)
