@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.76 2004/01/25 19:17:32 grubba Exp $
+|| $Id: backend.cmod,v 1.77 2004/01/25 19:32:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.76 2004/01/25 19:17:32 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.77 2004/01/25 19:32:56 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -313,6 +313,9 @@ static void MY_FD_CLR(struct selectors *me,
   poll_state[1].revents = 0;
 
   do {
+    /* NOTE: DP_ISPOLLED sets revents, and NOT events.
+     *       The poll(7d) manpage on Solaris 8 and 9 lies.
+     */
     e = ioctl(me->devpoll_fd, DP_ISPOLLED,
 	      poll_state+1, sizeof(poll_state[1]));
   } while ((e < 0) && (errno == EINTR));
@@ -352,29 +355,27 @@ static void MY_FD_CLR(struct selectors *me,
 	       fd, e, sizeof(poll_state));
   }
 #ifdef PIKE_DEBUG
-  {
-    poll_state[1].revents = 0;
-    do {
-      e = ioctl(me->devpoll_fd, DP_ISPOLLED,
-		poll_state + 1, sizeof(poll_state[1]));
-    } while ((e < 0) && (errno == EINTR));
+  poll_state[1].revents = 0;
+  do {
+    e = ioctl(me->devpoll_fd, DP_ISPOLLED,
+	      poll_state + 1, sizeof(poll_state[1]));
+  } while ((e < 0) && (errno == EINTR));
 
-    if (e < 0) {
-      Pike_fatal("Failed to verify state for fd %d from /dev/poll (errno:%d).\n",
-		 fd, errno);
-    } else if (!e) {
-      /* fd is not in /dev/poll. */
-      IF_PD(fprintf(stderr, "BACKEND: Fd %d no longer in /dev/poll.\n", fd));
-      return;
-    }
+  if (e < 0) {
+    Pike_fatal("Failed to verify state for fd %d from /dev/poll (errno:%d).\n",
+	       fd, errno);
+  } else if (!e) {
+    /* fd is not in /dev/poll. */
+    IF_PD(fprintf(stderr, "BACKEND: Fd %d no longer in /dev/poll.\n", fd));
+    return;
+  }
 
-    if (poll_state[1].revents != (poll_state[1].events & ~POLLREMOVE)) {
-      /* Expected and actual poll state differ. */
-      IF_PD(fprintf(stderr,
-		    "BACKEND: Fd %d unexpected events 0x%04x in /dev/poll (0x%04x).\n",
-		    fd, poll_state[1].revents,
-		    poll_state[1].events & ~POLLREMOVE));
-    }
+  if (poll_state[1].revents != (poll_state[1].events & ~POLLREMOVE)) {
+    /* Expected and actual poll state differ. */
+    IF_PD(fprintf(stderr,
+		  "BACKEND: Fd %d unexpected events 0x%04x in /dev/poll (0x%04x).\n",
+		  fd, poll_state[1].revents,
+		  poll_state[1].events & ~POLLREMOVE));
   }
 #endif
 }
