@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.312 2000/07/11 03:45:10 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.313 2000/07/11 20:42:58 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1421,9 +1421,9 @@ for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(mixed *data) {
   test_eq(String.strmult("foo",4),"foofoofoofoo")
 
 // m_delete
-test_equal(([1:1]),m_delete(a(),0))
-test_equal(([1:1]),m_delete(([1:1,0:3]),0))
-test_any(mapping a=([1:1]); return a==m_delete(a,1),1)
+test_any_equal([[ mapping m=([1:1]); m_delete(m,0); return m; ]],[[ ([1:1]) ]])
+test_any_equal([[ mapping m=([1:1,0:3]); m_delete(m,0); return m; ]],[[ ([1:1]) ]])
+test_any([[mapping a=([1:1]); return m_delete(a,1)]],1)
 test_any([[mapping m=([]); m[1]++; return m[1];]],1)
 test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
