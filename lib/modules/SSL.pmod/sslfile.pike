@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.53 2003/01/27 15:03:00 nilsson Exp $
+/* $Id: sslfile.pike,v 1.54 2003/02/17 17:49:19 grubba Exp $
  *
  */
 
@@ -494,33 +494,36 @@ void set_close_callback(function(mixed:void) c)
 
 function query_close_callback() { return close_callback; }
 
-void set_nonblocking(function ...args)
+void set_nonblocking(function|void rcb,
+		     function|void wcb,
+		     function|void ccb,
+		     function|void roobcb,
+		     function|void woobcb)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->set_nonblocking(%O)\n", args);
 #endif
   if (is_closed || !socket) return;
 
-  switch (sizeof(args))
-  {
-  case 0:
-    break;
-  case 3:
-    set_read_callback(args[0]);
-    set_write_callback(args[1]);
-    set_close_callback(args[2]);
-    if (!this_object()) {
-      return;
-    }
-    break;
-  default:
-    error( "Wrong number of arguments\n" );
+  if (roobcb || woobcb)
+    error("Out-of-band data not supported\n");
+
+  set_close_callback(ccb);
+  set_write_callback(wcb);
+  set_read_callback(rcb);
+
+  if (!this_object()) {
+    return;
   }
+
   blocking = 0;
   if (!socket) return;
-  socket->set_nonblocking(ssl_read_callback,ssl_write_callback,ssl_close_callback);
-  if (sizeof(read_buffer))
-    ssl_read_callback(socket->query_id(), "");
+  socket->set_nonblocking(ssl_read_callback,
+			  ssl_write_callback,
+			  ssl_close_callback);
+
+  /* The callback should be called from the backend... */
+  call_out(ssl_read_callback, 0, socket->query_id(), "");
 }
 
 void set_blocking()
