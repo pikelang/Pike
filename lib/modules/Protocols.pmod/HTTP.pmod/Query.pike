@@ -387,7 +387,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
 string dns_lookup(string hostname)
 {
    string id;
-   sscanf(hostname,"%*[0-9.]",id);
+   sscanf(hostname,"%[0-9.]",id);
    if (hostname==id ||
        (id=hostname_cache[hostname]))
       return id;
