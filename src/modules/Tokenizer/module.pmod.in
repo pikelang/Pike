@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.27 2003/12/28 15:50:03 grubba Exp $
+// $Id: module.pmod.in,v 1.28 2004/09/03 12:04:03 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -10,7 +10,7 @@
 inherit @module@;
 //! @endignore
 
-typedef function(string, mapping(string:int|string), CompilerContext: Token) TokenHandler;
+// typedef function(string, mapping(string:int|string), CompilerContext: Token) TokenHandler;
 
 //! List of Tokens and Groups
 class TokenList
@@ -30,7 +30,8 @@ class TokenList
 
     static int(0..1) `!()
     {
-      werror("Pos:%d, size:%d\n", pos, sizeof(tokens));
+      werror("Pos:%d, size:%d token:%O\n", pos, sizeof(tokens),
+	     (sizeof(tokens)>pos)&& tokens[pos]);
       return pos >= sizeof(tokens);
     }
 
@@ -86,7 +87,7 @@ class TokenList
   static string _sprintf(int c)
   {
     if (c == 's') {
-      return sprintf("%{%s, %}", tokens);
+      return sprintf("%{%s %}", tokens);
     } else {
       return sprintf("%{%O, %}", tokens);
     }
@@ -118,13 +119,13 @@ class Group
       if (!group_start) {
 	return sprintf("%s", contents);
       } else {
-	return sprintf("%s%s%s", group_start, contents, group_end);
+	return sprintf("%s %s %s", group_start, contents, group_end);
       }
     } else {
       if (!group_start) {
 	return sprintf("%O", contents);
       } else {
-	return sprintf("%O%O%O", group_start, contents, group_end);
+	return sprintf("%O %O %O", group_start, contents, group_end);
       }
     }
   }
@@ -187,7 +188,9 @@ class PikeCompiler
   inherit GroupingCompiler;
 
 #define SYNTAX_ERROR(MSG)						\
-    report(ERROR, token && token->pos, "parser",			\
+    report(ERROR, token && (token->context ||				\
+			    (token->group_start &&			\
+			     token->group_start->context)), "parser",	\
 	   sprintf("%s Detected when looking at %s.", MSG, token||"EOS"))
 
   class Modifiers
@@ -341,9 +344,11 @@ class PikeCompiler
     Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
     {									\
       Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
-      foreach(tokens_left;; Token token) {				\
-	if (!SYMS[token->symbol]) return expr;				\
+      Token token;							\
+      while(tokens_left &&						\
+	    SYMS[(token = tokens_left->value())->symbol]) {		\
 	expr = SuffixExpression(token, expr);				\
+        tokens_left->`+=(1);						\
       }									\
       return expr;							\
     }
@@ -408,15 +413,18 @@ class PikeCompiler
     {									\
       Token token;							\
       Expression expr;							\
+      werror("parse_" #NAME "_expression(%O)...\n", tokens_left);	\
       if (!tokens_left ||						\
 	  !SYMS[(token = tokens_left->value())->symbol]) {		\
         expr = parse_ ## BASE ## _expression(tokens_left);		\
+        werror("1 tokens_left: %O\n", tokens_left);			\
 	if (!tokens_left ||						\
 	    !SYMS[(token = tokens_left->value())->symbol]) {		\
 	  return expr;							\
 	}								\
       }									\
       tokens_left->`+=(1);						\
+      werror("2 tokens_left: %O\n", tokens_left);			\
       if (!tokens_left || (tokens_left->value()->symbol == ",")) {	\
 	return BinaryExpression(token, expr, 0);			\
       }									\
@@ -427,11 +435,11 @@ class PikeCompiler
 
   ArgList parse_argument_list(array(Token) tokens)
   {
-    Iterator tokens_left = get_iterator(tokens);
     ArgList arg_list;
     ArgList current_arg;
 
-    foreach(tokens_left;;) {
+    for(Iterator tokens_left = get_iterator(tokens); tokens_left;
+	tokens_left->`+=(1)) {
       ArgList next_arg = ArgList(parse_pair_expression(tokens_left));
       if (arg_list) {
 	current_arg->next = next_arg;
@@ -439,7 +447,9 @@ class PikeCompiler
 	arg_list = next_arg;
       }
       current_arg = next_arg;
-	
+
+      werror("parse argument list: tokens_left: %O\n", tokens_left);
+
       if (tokens_left) {
 	Token token = tokens_left->value();
 	if (token->symbol != ",") {
@@ -523,6 +533,7 @@ class PikeCompiler
     Token token;
     werror("Parsing basic expression from %O...\n", tokens_left);
     if (!tokens_left) {
+      // FIXME: Linenumber!
       SYNTAX_ERROR("Expected expression.");
       return 0;
     }
@@ -583,6 +594,9 @@ class PikeCompiler
 	tokens_left->`+=(1);
 	return LiteralExpression(token);
       default:
+	werror("token: %O\n"
+	       "token->token: %O\n",
+	       token, token->token);
 	SYNTAX_ERROR("Unsupported basic expression.");
 	return 0;
       }
@@ -1070,8 +1084,8 @@ class PikeCompiler
 
     static void redefinition_error(Token old, Token new, string msg)
     {
-      report(ERROR, new->context, "parser", msg);
-      report(ERROR, old->context, "parser", "Previously defined here.");
+      report(ERROR, new->name->context, "parser", msg);
+      report(ERROR, old->name->context, "parser", "Previously defined here.");
     }
 
     void redefine(Modifiers new_modifiers, Token new_meta)
@@ -1746,12 +1760,12 @@ class PikeCompiler
 	// NOT REACHED.
       }
 
-      void create(string data, mapping(string:string|int)|void context)
+      void create(string data/*, mapping(string:string|int)|void context */)
       {
 	// Default token_lookup.
 	token_lookup = compat_lookup[0][2];
 
-	::create(data, context);
+	::create(data/*, context*/);
       }
     }
   }
