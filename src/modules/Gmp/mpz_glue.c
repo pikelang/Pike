@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.83 2000/12/01 08:09:57 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.84 2001/01/04 02:16:48 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1380,11 +1380,19 @@ static void mpzmod_random(INT32 args)
   
 static void init_mpz_glue(struct object *o)
 {
+#ifdef PIKE_DEBUG
+  if(!fp) fatal("ZERO FP\n");
+  if(!THIS) fatal("ZERO THIS\n");
+#endif
   mpz_init(THIS);
 }
 
 static void exit_mpz_glue(struct object *o)
 {
+#ifdef PIKE_DEBUG
+  if(!fp) fatal("ZERO FP\n");
+  if(!THIS) fatal("ZERO THIS\n");
+#endif
   mpz_clear(THIS);
 }
 #endif
