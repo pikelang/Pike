@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.34 1998/04/16 21:39:45 hubbe Exp $");
+RCSID("$Id: socket.c,v 1.35 1998/05/27 13:30:54 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -410,6 +410,6 @@ void port_setup_program(void)
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
 
-  end_class("port",0);
+  end_class("_port",0);
 }
 
