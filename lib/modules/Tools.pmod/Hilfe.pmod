@@ -261,7 +261,7 @@ import Getopt;
 	      continue;
 	      
 	    case "new":
-	      this_object()->__INIT();
+	      __INIT();
 	      continue;
 	      
 	    case "dump":
