@@ -45,7 +45,7 @@ This is what you need to do to install Pike:
 
 3) Run make.
 
-4) optionally, run 'make verify' to check that the compiled driver works
+4) Optionally, run 'make verify' to check that the compiled driver works
    as it should (might be a good idea) This will take a little time
    and use quite a lot of memory, because the testprogram is quite
    large. If everything works out fine no extra messages are written.
@@ -87,19 +87,18 @@ THREADS SUPPORT
 
 Getting threads support might be hairy on some platforms, most platforms
 have threads support but quite a few have problems running external
-processes. (through create_process) By default thread support is disabled
+processes (through create_process). By default threads support is disabled
 on platforms where threading is known not to work 100% properly.
 
-IRIX: starting many processes causes an error causes a resource
-      error which sometimes causes a complete hang and 100% cpu
-      usage.
+IRIX: Starting many processes causes a resource error which
+      sometimes causes a complete hang and 100% cpu usage.
 
 FreeBSD 3.x: Symptoms are similar to IRIX, but the problem has
       something to do with signal handling. (And as you may know,
       process handling uses signals on UNIX...)
 
 Linux: Not all linux variations have 100% working threads, in
-      fact most libc5 systems do not work very well threads.
+      fact most libc5 systems do not work very well with threads.
       Threads support is enabled by default on Linux, but I
       recommend running 'make verify' after compilation. This
       will (hopefully) tell you if your threads are not working.
@@ -108,21 +107,21 @@ Linux: Not all linux variations have 100% working threads, in
 BUGS
 
 If you find a bug in the interpreter, the first thing to do is to make sure
-the interpreter is compiled with PIKE_DEBUG defined. If not recompile with PIKE_DEBUG
-and see if you get another error. When you've done this, please report the
-bug to hubbe@hubbe.net and include as much as you can muster of the
-following:
+the interpreter is compiled with PIKE_DEBUG defined. If not, recompile with
+PIKE_DEBUG and see if you get another error. When you've done this, please
+report the bug to hubbe@hubbe.net and include as much as you can muster of
+the following:
 
-  o The version of the driver. (Try pike --version or look in src/version.c)
+  o The version of the driver. (Try pike --version or look in src/version.h)
   o What kind of system hardware/software you use (OS, compiler, etc.)
-  o the piece of code that crashes or bugs.
+  o The piece of code that crashes or bugs.
     (preferably in a very small pike-script with the bug isolated)
     Please send a complete running example of something that makes the
     interpreter bug.
-  o a description of what it is that bugs and when.
-  o if you know how then also give me a backtrace and dump of vital variables
+  o A description of what it is that bugs and when.
+  o If you know how, then also give me a backtrace and dump of vital variables
     at the point of crash.
-  o or, if you found the error and corrected it, just send me the bugfix along
+  o Or, if you found the error and corrected it, just send me the bugfix along
     with a description of what you did and why.
 
   /Fredrik Hubinette
