@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.3 2002/11/27 21:14:05 nilsson Exp $
+// $Id: module.pmod,v 1.4 2004/08/26 03:35:38 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -75,3 +75,25 @@ constant reset_dmalloc = _reset_dmalloc;
 #if constant(_verify_internals)
 constant verify_internals = _verify_internals;
 #endif
+
+//! Returns the number of objects of every kind in memory.
+mapping(string:int) count_objects() {
+  int orig_enabled = Pike.gc_parameters()->enabled;
+  Pike.gc_parameters( (["enabled":0]) );
+
+  mapping(string:int) ret = ([]);
+
+  object obj = next_object();
+  //  while( zero_type(_prev(obj)) ) obj=_prev(obj);
+  while(1) {
+    object next_obj;
+    if(catch(next_obj=_next(obj))) break;
+    string p = sprintf("%O",object_program(obj));
+    sscanf(p, "object_program(%s)", p);
+    ret[p]++;
+    obj = next_obj;
+  }
+
+  Pike.gc_parameters( (["enabled":orig_enabled]) );
+  return ret;
+}
