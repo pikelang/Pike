@@ -15,18 +15,8 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.40 2000/11/28 02:19:16 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.41 2000/12/01 01:13:45 hubbe Exp $");
 
-struct p_instr_s
-{
-  short opcode;
-  short line;
-  struct pike_string *file;
-  INT32 arg;
-  INT32 arg2;
-};
-
-typedef struct p_instr_s p_instr;
 static void asm_opt(void);
 
 dynamic_buffer instrbuf;
@@ -225,6 +215,7 @@ void assemble(void)
   INT32 *labels, *jumps, *uses;
   ptrdiff_t e, length;
   p_instr *c;
+  int reoptimize=1;
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -240,78 +231,89 @@ void assemble(void)
   jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
   uses=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
 
-  for(e=0;e<=max_label;e++)
+  while(reoptimize)
   {
-    labels[e]=jumps[e]=-1;
-    uses[e]=0;
-  }
-
-  c=(p_instr *)instrbuf.s.str;
-  for(e=0;e<length;e++)
-    if(c[e].opcode == F_LABEL && c[e].arg>=0)
-      labels[c[e].arg]=DO_NOT_WARN((INT32)e);
-
-  for(e=0;e<length;e++)
-  {
-    if(instrs[c[e].opcode-F_OFFSET].flags & I_POINTER)
+    reoptimize=0;
+    for(e=0;e<=max_label;e++)
     {
-      while(1)
-      {
-	int tmp,tmp2;
-	tmp=labels[c[e].arg];
-	
-	while(tmp<length &&
-	      (c[tmp].opcode == F_LABEL ||
-	       c[tmp].opcode == F_NOP)) tmp++;
-	
-	if(tmp>=length) break;
-
-	if(c[tmp].opcode==F_BRANCH)
-	{
-	  c[e].arg=c[tmp].arg;
-	  continue;
-	}
-
-#define TWOO(X,Y) (((X)<<8)+(Y))
-
-	switch(TWOO(c[e].opcode,c[tmp].opcode))
-	{
-	case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
-	  c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
-	case TWOO(F_LOR,F_LOR):
-	  c[e].arg=c[tmp].arg;
-	continue;
-	
-	case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
-	  c[e].opcode=F_BRANCH_WHEN_ZERO;
-	case TWOO(F_LAND,F_LAND):
-	  c[e].arg=c[tmp].arg;
-	continue;
-
-        case TWOO(F_LOR, F_RETURN):
-	  c[e].opcode=F_RETURN_IF_TRUE;
-	  break;
-
-        case TWOO(F_BRANCH, F_RETURN):
-        case TWOO(F_BRANCH, F_RETURN_0):
-        case TWOO(F_BRANCH, F_RETURN_1):
-        case TWOO(F_BRANCH, F_RETURN_LOCAL):
-	  if(c[e].file) free_string(c[e].file);
-	  c[e]=c[tmp];
-	  if(c[e].file) add_ref(c[e].file);
-	  break;
-	}
-	break;
-      }
-      uses[c[e].arg]++;
+      labels[e]=jumps[e]=-1;
+      uses[e]=0;
     }
+    
+    c=(p_instr *)instrbuf.s.str;
+    for(e=0;e<length;e++)
+      if(c[e].opcode == F_LABEL && c[e].arg>=0)
+	labels[c[e].arg]=DO_NOT_WARN((INT32)e);
+    
+    for(e=0;e<length;e++)
+    {
+      if(instrs[c[e].opcode-F_OFFSET].flags & I_POINTER)
+      {
+	while(1)
+	{
+	  int tmp,tmp2;
+	  tmp=labels[c[e].arg];
+	  
+	  while(tmp<length &&
+		(c[tmp].opcode == F_LABEL ||
+		 c[tmp].opcode == F_NOP)) tmp++;
+	  
+	  if(tmp>=length) break;
+	  
+	  if(c[tmp].opcode==F_BRANCH)
+	  {
+	    c[e].arg=c[tmp].arg;
+	    continue;
+	  }
+	  
+#define TWOO(X,Y) (((X)<<8)+(Y))
+	  
+	  switch(TWOO(c[e].opcode,c[tmp].opcode))
+	  {
+	    case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
+	      c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
+	    case TWOO(F_LOR,F_LOR):
+	      c[e].arg=c[tmp].arg;
+	      continue;
+	      
+	    case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
+	      c[e].opcode=F_BRANCH_WHEN_ZERO;
+	    case TWOO(F_LAND,F_LAND):
+	      c[e].arg=c[tmp].arg;
+	      continue;
+	      
+	    case TWOO(F_LOR, F_RETURN):
+	      c[e].opcode=F_RETURN_IF_TRUE;
+	      break;
+	      
+	    case TWOO(F_BRANCH, F_RETURN):
+	    case TWOO(F_BRANCH, F_RETURN_0):
+	    case TWOO(F_BRANCH, F_RETURN_1):
+	    case TWOO(F_BRANCH, F_RETURN_LOCAL):
+	      if(c[e].file) free_string(c[e].file);
+	      c[e]=c[tmp];
+	      if(c[e].file) add_ref(c[e].file);
+	      break;
+	  }
+	  break;
+	}
+	uses[c[e].arg]++;
+      }
+    }
+    
+    for(e=0;e<=max_label;e++)
+    {
+      if(!uses[e] && labels[e]>=0)
+      {
+	c[labels[e]].opcode=F_NOP;
+	reoptimize++;
+      }
+    }
+    if(!reoptimize) break;
+    
+    asm_opt();
+    reoptimize=0;
   }
-
-  for(e=0;e<=max_label;e++)
-    if(!uses[e] && labels[e]>=0)
-      c[labels[e]].opcode=F_NOP;
-
-  asm_opt();
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -337,6 +339,7 @@ void assemble(void)
     switch(c->opcode)
     {
     case F_NOP:
+    case F_NOTREACHED:
     case F_START_FUNCTION:
       break;
     case F_ALIGN:

@@ -1,5 +1,5 @@
 /*
- * $Id: peep.h,v 1.6 2000/08/14 17:18:06 grubba Exp $
+ * $Id: peep.h,v 1.7 2000/12/01 01:13:46 hubbe Exp $
  */
 #ifndef PEEP_H
 #define PEEP_H
@@ -7,8 +7,18 @@
 #include "dynamic_buffer.h"
 extern dynamic_buffer instrbuf;
 
+struct p_instr_s
+{
+  short opcode;
+  short line;
+  struct pike_string *file;
+  INT32 arg;
+  INT32 arg2;
+};
+
+typedef struct p_instr_s p_instr;
+
 /* Prototypes begin here */
-struct p_instr_s;
 void init_bytecode(void);
 void exit_bytecode(void);
 ptrdiff_t insert_opcode2(unsigned int f,

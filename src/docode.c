@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.84 2000/11/08 20:03:45 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.85 2000/12/01 01:13:43 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -60,7 +60,56 @@ int do_jump(int token,INT32 lbl)
   return lbl;
 }
 
-#define ins_label(L) do_jump(F_LABEL, L)
+
+#define LBLCACHESIZE 4711
+#define CURRENT_INSTR ((long)instrbuf.s.len / (long)sizeof(p_instr))
+#define MAX_UNWIND 100
+
+static int lbl_cache[LBLCACHESIZE];
+
+int do_branch(INT32 lbl)
+{
+  if(lbl==-1)
+  {
+    lbl=alloc_label();
+  }else{
+    INT32 last,pos=lbl_cache[lbl % LBLCACHESIZE];
+    if(pos < (last=CURRENT_INSTR) &&  (CURRENT_INSTR - pos) < MAX_UNWIND)
+    {
+#define BUF ((p_instr *)instrbuf.s.str)
+      if(BUF[pos].opcode == F_LABEL && BUF[pos].arg == lbl)
+      {
+	for(;pos < last;pos++)
+	{
+	  if(BUF[pos].opcode != F_LABEL)
+	  {
+	    insert_opcode2(BUF[pos].opcode,
+			   BUF[pos].arg,
+			   BUF[pos].arg2,
+			   BUF[pos].line,
+			   BUF[pos].file);
+	  }
+	}
+      }
+    }
+
+  }
+  emit1(F_BRANCH, lbl);
+  return lbl;
+}
+
+void low_insert_label(int lbl)
+{
+  lbl_cache[ lbl % LBLCACHESIZE ] = CURRENT_INSTR;
+  emit1(F_LABEL, lbl);
+}
+
+int ins_label(int lbl)
+{
+  if(lbl==-1) lbl=alloc_label();
+  low_insert_label(lbl);
+  return lbl;
+}
 
 void do_pop(int x)
 {
@@ -117,7 +166,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
     f=!!node_is_false(n);
     if(t || f)
     {
-      if(t == iftrue) do_jump(F_BRANCH, label);
+      if(t == iftrue) do_branch( label);
       return;
     }
   }
@@ -131,7 +180,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
       int tmp=alloc_label();
       do_cond_jump(CAR(n), tmp, !iftrue, flags | DO_POP);
       do_cond_jump(CDR(n), label, iftrue, flags);
-      emit1(F_LABEL,tmp);
+      low_insert_label(tmp);
     }else{
       do_cond_jump(CAR(n), label, iftrue, flags);
       do_cond_jump(CDR(n), label, iftrue, flags);
@@ -362,7 +411,7 @@ static int do_docode2(node *n, INT16 flags)
       tmp1=alloc_label();
       do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
       DO_CODE_BLOCK(CADR(n));
-      emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( DO_NOT_WARN((INT32)tmp1));
       current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
@@ -372,7 +421,7 @@ static int do_docode2(node *n, INT16 flags)
       tmp1=alloc_label();
       do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
       DO_CODE_BLOCK(CDDR(n));
-      emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( DO_NOT_WARN((INT32)tmp1));
       current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
@@ -384,8 +433,8 @@ static int do_docode2(node *n, INT16 flags)
     tmp3=emit1(F_POP_N_ELEMS,0);
 
     /* Else */
-    tmp2=do_jump(F_BRANCH,-1);
-    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
+    tmp2=do_branch(-1);
+    low_insert_label( DO_NOT_WARN((INT32)tmp1));
 
     bdroppings=do_docode(CDDR(n), flags);
     if(adroppings < bdroppings)
@@ -400,7 +449,7 @@ static int do_docode2(node *n, INT16 flags)
       adroppings=bdroppings;
     }
 
-    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp2));
+    low_insert_label( DO_NOT_WARN((INT32)tmp2));
 
     current_switch_jumptable = prev_switch_jumptable;
     return adroppings;
@@ -552,7 +601,7 @@ static int do_docode2(node *n, INT16 flags)
     tmp1=alloc_label();
     do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, 0);
     code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
-    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
+    low_insert_label( DO_NOT_WARN((INT32)tmp1));
     return 1;
 
   case F_EQ:
@@ -687,11 +736,11 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
-    tmp3=do_jump(F_BRANCH,-1);
+    tmp3=do_branch(-1);
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_continue);
-    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp3));
+    low_insert_label( DO_NOT_WARN((INT32)tmp3));
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_break);
 
@@ -729,12 +778,12 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
-    tmp3=do_jump(F_BRANCH,-1);
+    tmp3=do_branch(-1);
     tmp1=ins_label(-1);
 
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_continue);
-    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp3));
+    low_insert_label( DO_NOT_WARN((INT32)tmp3));
     do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_break);
 #ifdef PIKE_DEBUG
@@ -947,6 +996,7 @@ static int do_docode2(node *n, INT16 flags)
       jumptable[e] = DO_NOT_WARN((INT32)emit1(F_POINTER, 0));
       current_switch_jumptable[e]=-1;
     }
+    emit0(F_NOTREACHED);
 
     current_switch_jumptable[current_switch_case++]=-1;
 
@@ -1010,7 +1060,7 @@ static int do_docode2(node *n, INT16 flags)
     current_switch_values_on_stack = prev_switch_values_on_stack;
     current_switch_type = prev_switch_type;
 
-    emit1(F_LABEL, current_break);
+    low_insert_label( current_break);
 
     current_break=break_save;
 #ifdef PIKE_DEBUG
@@ -1120,7 +1170,7 @@ static int do_docode2(node *n, INT16 flags)
     {
       yyerror("Break outside loop or switch.");
     }else{
-      do_jump(F_BRANCH, current_break);
+      do_branch( current_break);
     }
     return 0;
 
@@ -1129,7 +1179,7 @@ static int do_docode2(node *n, INT16 flags)
     {
       yyerror("continue outside loop or switch.");
     }else{
-      do_jump(F_BRANCH, current_continue);
+      do_branch( current_continue);
     }
     return 0;
 
@@ -1375,7 +1425,7 @@ void do_code_block(node *n)
   emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
   emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
   emit0(F_START_FUNCTION);
-  emit1(F_LABEL,0);
+  low_insert_label(0);
   if(Pike_compiler->new_program->identifier_references[Pike_compiler->compiler_frame->
 				       current_function_number].id_flags &
      ID_INLINE)
@@ -1398,11 +1448,11 @@ void do_code_block(node *n)
     Pike_compiler->compiler_frame->is_inline=1;
 
     /* This is a no-op, but prevents optimizer to delete the bytes below */
-    emit1(F_LABEL,-1);
+    low_insert_label(-1);
     emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
     emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
     emit0(F_START_FUNCTION);
-    emit1(F_LABEL,Pike_compiler->compiler_frame->recur_label);
+    low_insert_label(Pike_compiler->compiler_frame->recur_label);
     DO_CODE_BLOCK(n);
   }
   assemble();

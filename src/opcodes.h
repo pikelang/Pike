@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.6 2000/05/11 14:09:46 grubba Exp $
+ * $Id: opcodes.h,v 1.7 2000/12/01 01:13:44 hubbe Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -233,7 +233,9 @@
 #define	F_START_FUNCTION	490
 #define	F_BYTE	491
 
-#define	F_MAX_INSTR	492
+#define F_NOTREACHED 492
+
+#define	F_MAX_INSTR	493
 
 /* Prototypes begin here */
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind);
