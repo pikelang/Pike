@@ -5,6 +5,7 @@ all: tutorial.html tutorial_onepage.html
 SRCFILES=tutorial.wmml Image.wmml Mysql.wmml
 
 pike=pike
+DESTINATION=/usr/local/share/pike/tutorial/
 
 .DUMMY: 
 
@@ -37,7 +38,10 @@ clean:
 
 rebuild:
 	-rm Image.wmml Mysql.wmml
-	make pike="$(pike)" Image.wmml Mysql.wmml all
+	make pike="$(pike)" Image.wmml Mysql.wmml tutorial.html
+
+install:
+	cp `cat tutorial.files` $(DESTINATION)
 
 export:
 	tar czvTf tutorial.files tutorial.tar.gz 
