@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.11 2003/10/06 16:57:39 grubba Exp $
+|| $Id: pcre_glue.cmod,v 1.12 2003/10/08 08:19:16 grubba Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.11 2003/10/06 16:57:39 grubba Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.12 2003/10/08 08:19:16 grubba Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -183,18 +183,26 @@ PIKECLASS _pcre
 			   PCRE_INFO_BACKREFMAX,&backrefmax) ||
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_CAPTURECOUNT,&capturecount) ||
+#ifdef PCRE_INFO_FIRSTBYTE
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_FIRSTBYTE,&firstbyte) ||
+#endif /* PCRE_INFO_FIRSTBYTE */
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_FIRSTTABLE,&firsttable) ||
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_LASTLITERAL,&lastliteral) ||
+#ifdef PCRE_INFO_NAMECOUNT
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_NAMECOUNT,&namecount) ||
+#endif /* PCRE_INFO_NAMECOUNT */
+#ifdef PCRE_INFO_NAMEENTRYSIZE
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_NAMEENTRYSIZE,&nameentrysize) ||
+#endif /* PCRE_INFO_NAMEENTRYSIZE */
+#ifdef PCRE_INFO_NAMETABLE
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_NAMETABLE,&nametable) ||
+#endif /* PCRE_INFO_NAMETABLE */
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_OPTIONS,&options) ||
 	     pcre_fullinfo(THIS->re,THIS->extra,
