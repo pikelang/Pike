@@ -1,4 +1,4 @@
-AC_INIT(desCode.h)
+AC_INIT(sha.h)
 
 AC_PROG_CC
 AC_PROG_CPP
