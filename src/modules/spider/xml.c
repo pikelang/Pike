@@ -2107,9 +2107,10 @@ static int really_low_parse_dtd(struct xmldata *data)
 		      
 		    case 'S':
 		      if(GOBBLE("SYSTEM")) goto read_system;
-
+		    default:
 		      XMLERROR("Expected PUBLIC or SYSTEM, found something else.");
 		      push_int(0);
+		      
 		  }
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
@@ -2184,6 +2185,10 @@ static int really_low_parse_dtd(struct xmldata *data)
 		SKIPTO('>');
 		break;
 	    }
+#ifdef PIKE_DEBUG
+	    if(sp<save_sp)
+	      fatal("Stack underflow.\n");
+#endif
 	    break;
 
 
