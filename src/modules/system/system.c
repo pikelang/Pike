@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.48 1998/04/07 00:20:28 hubbe Exp $
+ * $Id: system.c,v 1.49 1998/04/20 18:52:02 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.48 1998/04/07 00:20:28 hubbe Exp $");
+RCSID("$Id: system.c,v 1.49 1998/04/20 18:52:02 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -943,7 +943,7 @@ void f_RegGetValue(INT32 args)
 }
 #endif
 
-extern init_passwd(void);
+extern void init_passwd(void);
 
 /*
  * Module linkage
