@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.99 2001/01/17 20:14:34 grubba Exp $");
+RCSID("$Id: docode.c,v 1.100 2001/01/17 20:15:53 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -413,8 +413,8 @@ int do_lfun_call(int id,node *args)
     else
       emit1(F_CALL_LFUN, id);
   }
-#endif
   else
+#endif
     emit1(F_CALL_LFUN, id);
   POP_AND_DONT_CLEANUP;
   return 1;
