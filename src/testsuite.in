@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.309 2000/07/02 02:24:47 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.310 2000/07/02 16:55:11 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5664,7 +5664,6 @@ test_any(class A {int v=1;}; class B {inherit A; private int v=2; int t(){return
 test_any(class A {int v=1;}; class B {inherit A; final int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; nomask int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; local int v=2; int t(){return v;}}; return B()->t(), 2)
-test_any(class A {int v=1;}; class B {inherit A; int v=2; int t(){return local::v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; inline int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; public int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
