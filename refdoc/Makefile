@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.1 2001/02/02 20:37:26 grubba Exp $
+# $Id: Makefile,v 1.2 2001/02/02 20:38:24 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -42,7 +42,7 @@ subdirectories:
 clean:
 	rm *.xml
 	for d in */.; do \
-	  if test "$$d" = "*/."; then :; else \
+	  if test "$$d" = "*/." -o "$$d" = "CVS/."; then :; else \
 	    rm -rf "$$d"; \
 	  fi; \
 	done
