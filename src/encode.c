@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.37 1999/09/19 22:58:20 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.38 1999/09/21 21:16:26 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -645,6 +645,7 @@ static int my_extract_char(struct decode_data *data)
     what&=T_MASK;							    \
     if(data->ptr + num > data->len || num <0)				    \
        error("Failed to decode string. (string range error)\n");	    \
+    if(what<0 || what>2) error("Failed to decode string. (Illegal size shift)\n"); \
     STR=begin_wide_shared_string(num, what);				    \
     MEMCPY(STR->str, data->data + data->ptr, num << what);		    \
     data->ptr+=(num << what);						    \
@@ -847,9 +848,16 @@ static void decode_value2(struct decode_data *data)
     
     case T_ARRAY:
     {
-      struct array *a=allocate_array(num);
+      struct array *a;
+      if(num < 0)
+	error("Failed to decode string. (array size is negative)\n");
+
+      /* Heruetical */
+      if(data->ptr + num > data->len)
+	error("Failed to decode array. (not enough data)\n");
+
       tmp.type=T_ARRAY;
-      tmp.u.array=a;
+      tmp.u.array=a=allocate_array(num);
       mapping_insert(data->decoded, & data->counter, &tmp);
       data->counter.u.integer++;
       
@@ -875,6 +883,10 @@ static void decode_value2(struct decode_data *data)
       if(num<0)
 	error("Failed to decode string. (mapping size is negative)\n");
 
+      /* Heruetical */
+      if(data->ptr + num > data->len)
+	error("Failed to decode mapping. (not enough data)\n");
+
       m=allocate_mapping(num);
       tmp.type=T_MAPPING;
       tmp.u.mapping=m;
@@ -895,7 +907,15 @@ static void decode_value2(struct decode_data *data)
     
     case T_MULTISET:
     {
-      struct multiset *m=mkmultiset(low_allocate_array(0, num));
+      struct multiset *m;
+      if(num<0)
+	error("Failed to decode string. (multiset size is negative)\n");
+
+      /* Heruetical */
+      if(data->ptr + num > data->len)
+	error("Failed to decode multiset. (not enough data)\n");
+
+      m=mkmultiset(low_allocate_array(0, num));
       tmp.type=T_MULTISET;
       tmp.u.multiset=m;
       mapping_insert(data->decoded, & data->counter, &tmp);

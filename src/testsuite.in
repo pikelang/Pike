@@ -1,4 +1,5 @@
-test_true([["$Id: testsuite.in,v 1.197 1999/09/18 09:21:30 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.198 1999/09/21 21:16:27 hubbe Exp $"]])
+
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -705,6 +706,19 @@ test_equal(decode_value("\206\206\146\157\157\142\141\162"),"foobar")
 test_any([[mixed a=({0}); a[0]=a; return equal(a, decode_value(encode_value(a)));]], 1)
 test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(e))!=e) return e; return -1;]], -1)
 test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(-e))!=-e) return e; return -1;]], -1)
+
+test_eval_error([[decode_value("\266ke0\241\346abc\b&\346de~\200\335\1\362PO\35\242")]])
+test_eval_error([[decode_value("\266ke0\241\346abcpf\221\337v\37\224")]])
+test_eval_error([[decode_value("\266ke0\241\346abc\b&\346def`\266\212\340\337\b\252\b")]])
+test_eval_error([[decode_value("\266ke0\241\346abc\b&\346def`\266\264\22\330\207")]])
+test_eval_error([[decode_value("\266ke0\241\262\266\216\213{@\333|")]])
+test_eval_error([[decode_value("\266ke0\241\346a\211[\266SN\313\331")]])
+test_eval_error([[decode_value("\266ke0\241\346ab-\266""6\227}u\320\274\251\211")]])
+test_eval_error([[decode_value("\266ke0\241\346abc\b&\346de\276\266\364\30\251s\233UF\362")]])
+test_eval_error([[decode_value("\266ke0\241\346abcv\22C\246\264\264L"          )]])
+test_eval_error([[decode_value("\266ke0\241\260\303\rl")]])
+
+
 
 test_any([[mixed s="foo"; return s++;]],"foo")
 test_any([[mixed s="foo"; s++; return s;]],"foo1")
