@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.198 1999/09/21 21:16:27 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.199 1999/10/03 21:44:19 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1737,7 +1737,7 @@ test_eq(0 | 0,0)
 test_eq(1 | 1,1)
 test_eq(4 | 1,5)
 test_eq(1 | 9,9)
-test_equal( Array.sort_array(({1,2,3,4,4}) | ({3,5,6})), ({1,2,3,4,4,5,6}))
+test_equal( ({1,2,3,4,4}) | ({3,5,6}), ({1,2,4,4,3,5,6}))
 test_equal( (<4,5,6>) | (<5,5,5>), (<4,5,5,5,6>) )
 test_equal( ([-4:8,8:7]) | ([3:3,8:3]), ([-4:8,8:3,3:3]) )
 
