@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 2003/03/25 11:04:46 marcus Exp $
+# $Id: configure.in,v 1.6 2003/09/10 12:40:50 mirar Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
@@ -271,6 +271,26 @@ AM_PATH_SDL($SDL_VERSION, [
         else
           PIKE_FEATURE_NODEP(SDL_mixer)
         fi
+
+        AC_CACHE_VAL(pike_cv_sdl_joystick,
+        [
+            AC_MSG_CHECKING([if libSDL has joystick support])
+    	    AC_TRY_LINK([#include <SDL.h>
+                ],[
+                int main()
+                {
+                  return SDL_JoystickEventState(1);
+                }
+                ],[ AC_MSG_RESULT(yes)
+                    pike_cv_sdl_joystick=yes 
+                ],[ AC_MSG_RESULT(no)
+                    pike_cv_sdl_joystick=no
+                ])
+        ])
+        if test "x${pike_cv_sdl_joystick}" = "xyes" ; then
+           AC_DEFINE(HAVE_LIBSDL_JOYSTICK)
+        fi
+
 	], [
 		PIKE_FEATURE_NODEP(SDL)
 		PIKE_FEATURE_NODEP(SDL_mixer) ] )

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.18 2003/09/04 14:59:48 mast Exp $
+|| $Id: SDL.cmod,v 1.19 2003/09/10 12:40:50 mirar Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.18 2003/09/04 14:59:48 mast Exp $");
+RCSID("$Id: SDL.cmod,v 1.19 2003/09/10 12:40:50 mirar Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -1827,6 +1827,8 @@ PIKEFUN int grab_input(int mode) {
 
 /* Joystick related functionality */
 
+#ifdef HAVE_LIBSDL_JOYSTICK
+
 /*! @class Joystick
  */
 
@@ -2026,6 +2028,7 @@ PIKEFUN void joystick_update() {
 PIKEFUN int joystick_event_state(int state) {
   RETURN SDL_JoystickEventState(state);
 }
+#endif
 
 /* CD Related methods */
 
