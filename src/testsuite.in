@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.294 2000/04/14 16:05:26 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.295 2000/04/17 18:19:52 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -27,7 +27,9 @@ bar"]],[["foo\nbar"]]);
 test_eq([[#"foo\
 bar"]],[["foobar"]]);
 test_true([[stringp(#string "Makefile")]]);
-test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1);
+test_any([[class Bar { array(int) foo = ({}); };
+	   class Foo { inherit Bar; array(int) foo = ({1}); };
+	   return sizeof(Foo()->foo);]],1);
 
 test_eq(8, 0b1000);
 test_eq(-8, -0b1000);
@@ -35,6 +37,13 @@ test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
 
 test_eval_error([[mixed x; return mkmapping(x,x)]]);
+
+test_eval_error([[class Foo {
+  void bar() {}
+  void foo() {destruct(this_object());bar();}
+};
+  Foo()->foo();
+]])
 
 test_any([[int a=0xffffffff; return a+17]], 0x100000010);
 test_any([[int a=0xffffffff; return a-17]], 0xffffffee);
@@ -1322,9 +1331,9 @@ cond([[all_constants()->thread_create]],
   test_true(_tmp_mutex->trylock())
   test_do(add_constant("_tmp_mutex"))
   test_any([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); catch { destruct(k); }; }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]],1)
-  test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l=data[2]->lock(1); object ll=data[1]->lock(); return data[0]; ]],1)
+  test_any([[ array data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(array data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l=data[2]->lock(1); object ll=data[1]->lock(); return data[0]; ]],1)
   test_any([[
-mixed *data=({1, Thread.Mutex(), Thread.Condition(), 0});
+array data=({1, Thread.Mutex(), Thread.Condition(), 0});
 for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(mixed *data) {
   for(int e=0;e<1000;e++) { object o=data[1]->lock(); data[0]*=2;
     for(int d=0;d<5;d++) { data[0]--; data[0]*=2; } data[0]--; destruct(o); }
@@ -2023,7 +2032,7 @@ test_eq(foo->i,0)
 test_do(foo->i=17)
 test_eq(foo->i,17)
 test_do(add_constant("foo"));
-test_do(add_constant("foo",clone(class c {int *i=({0});})))
+test_do(add_constant("foo",clone(class c {array(int) i=({0});})))
 test_eq(foo->i[0],0)
 test_do(foo->i[0]=17)
 test_eq(foo->i[0],17)
@@ -2087,7 +2096,7 @@ test_compile_error([[} void foo(); function(:string) a() { return foo;]])
 
 test_do(lambda(){return;}())
 test_equal( ({ lambda() { return 3; } , lambda() { return 7; }, lambda() { return 9; } })(), ({ 3,7,9 }))
-test_any(int *a=({10}); a[0]++; return a[0], 11)
+test_any(array(int) a=({10}); a[0]++; return a[0], 11)
 test_any(mapping a=([10:11]); a[10]++; return a[10], 12)
 test_equal(mkmapping( ({3,6,2}), ({"3","6","2"})), ([3:"3", 6:"6", 2:"2"]))
 test_equal(`+(([3:"3", 6:"6", 2:"2"])), ([3:"3", 6:"6", 2:"2"]))
@@ -2095,7 +2104,7 @@ test_true(`+(([3:"3", 6:"6", 2:"2"])) != ([3:"3", 6:"6", 2:"2"]))
 
 test_true(predef::stringp(""))
 test_equal([["a,b,4,7,8s,asfd,a,d,f" / ","]],[["a,b,4,7,8s,asfd,a,d,f" / ","]])
-test_any([[string *a="a,b"/","; a[0]="c"; return equal(a,({"c","b"}))]],1)
+test_any([[array(string) a="a,b"/","; a[0]="c"; return equal(a,({"c","b"}))]],1)
 test_true(0||1)
 test_true(1||0)
 test_true(!0||!0)
@@ -2693,7 +2702,7 @@ test_eval_error([[return (mapping)""]])
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
 test_equal("foo"/"",lambda(mixed ... x) { return x; }(@a()))
-test_any([[mixed *a=({1,2,3}); return lambda(mixed ... x) { return x; }(@a) !=a]],1)
+test_any([[array a=({1,2,3}); return lambda(mixed ... x) { return x; }(@a) !=a]],1)
 
 // testing +=
 test_any(int a=1; a+=10; return a,11)
@@ -2739,7 +2748,7 @@ test_any(while(1) if(1) break; return 1,1)
 
 // for
 test_program(
-int* ia=({1,2,3,4,5,6});
+array(int) ia=({1,2,3,4,5,6});
 
 int a()
 {
@@ -2767,7 +2776,10 @@ test_any(int e;string t=""; for(e=0;e>-10;e--) t+=e; return t,"0-1-2-3-4-5-6-7-8
 
 // foreach
 test_any([[int e;string t=""; foreach(({7,6,3,8}),e) t+=e; return t]],"7638")
-test_any([[string s;if(1) foreach(({}),s); else foreach(({}),s); return 1]],1)
+test_any([[
+  /* FIXME: This test needs to be proofed against the optimizer. */
+  string s;if(1) foreach(({}),s); else foreach(({}),s); return 1
+]],1)
 
 // do-while
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
@@ -3553,10 +3565,10 @@ test_true(stringp(ctime(0)))
 test_do(add_constant("PROG",compile_string("int foo() { return 1; }")));
 test_any([[object o=clone(PROG); destruct(o); return o]],0);
 test_any([[object o=clone(PROG); destruct(o); return objectp(o)]],0);
-test_any([[object *o=({clone(PROG)}); destruct(o[0]); return o-({0}) ]],({}));
+test_any([[array(object) o=({clone(PROG)}); destruct(o[0]); return o-({0}) ]],({}));
 test_any([[mapping o=(["foo":clone(PROG)]); destruct(o["foo"]); return o["foo"]; ]],0);
 dnl test_any([[object t; mapping o=([t=clone(PROG):"foo"]); destruct(t); return sizeof(o)]],0);
-test_do([[object t,*o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
+test_do([[object t; array(object) o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
 
 // - Array.diff
 test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
@@ -3898,7 +3910,7 @@ test_eq("123\000456""890"-"\0", "123\456""890")
 test_eq("123\456000""890"-"\0", "123\456000""890")
 
 test_any([[
-function reference=lambda(string x, string *a, string *b)
+function reference=lambda(string x, array(string) a, array(string) b)
 {
   string ret="";
   for(int pos=0;pos<strlen(x);)
@@ -3931,7 +3943,7 @@ function reference=lambda(string x, string *a, string *b)
 
   for(int e=0;e<10000;e++)
   {
-    string *base=(array(string)) ( (({random})*(1+random(10)))(20) );
+    array(string) base=(array(string)) ( (({random})*(1+random(10)))(20) );
 
     for(int d=0;d<random(random(40));d++)
       base+=({ base[ random(sizeof(base))] + random(10) });
@@ -4078,7 +4090,7 @@ test_do([[
   for(int i = 0; i < 100; i++)
     m[i] = o;
   
-  search(m, 4711);
+  return search(m, 4711);
 ]])
 
 test_any_equal([[
@@ -4412,6 +4424,9 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
     return kill(o->pid(), 9);
   ]],0);
 
+  dnl Some OSs have a delay before PIDs are reused.
+  dnl Be nice, and let them reuse some.
+  test_do([[ sleep(2); ]]);
   test_any([[ for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
 ]])
 
@@ -4633,15 +4648,15 @@ test_compile_any(class A {inline int f(){}} class B {inherit A; int f;})
 
 // - modifiers, compile time access properties
 
-test_compile_error_low(class A {} class B {inherit A; void g(){v;}})
-test_compile_any(class A {int v;} class B {inherit A; void g(){v;}})
-test_compile_any(class A {public int v;} class B {inherit A; void g(){v;}})
-test_compile_any(class A {static int v;} class B {inherit A; void g(){v;}})
-test_compile_error_low(class A {private int v;} class B {inherit A; void g(){v;}})
-test_compile_any(class A {final int v;} class B {inherit A; void g(){v;}})
-test_compile_any(class A {nomask int v;} class B {inherit A; void g(){v;}})
-test_compile_any(class A {local int v;} class B {inherit A; void g(){v;}})
-test_compile_any(class A {inline int v;} class B {inherit A; void g(){v;}})
+test_compile_error_low(class A {} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_error_low(class A {private int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {nomask int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {public int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {static int f(){}} class B {inherit A; void g(){f();}})
@@ -4651,13 +4666,13 @@ test_compile_any(class A {nomask int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {local int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {inline int f(){}} class B {inherit A; void g(){f();}})
 
-test_compile_any(class A {int v;} class B {public inherit A; void g(){v;}})
-test_compile_any(class A {int v;} class B {static inherit A; void g(){v;}})
-test_compile_any(class A {int v;} class B {private inherit A; void g(){v;}})
-test_compile_any(class A {int v;} class B {final inherit A; void g(){v;}})
-test_compile_any(class A {int v;} class B {nomask inherit A; void g(){v;}})
-test_compile_any(class A {int v;} class B {local inherit A; void g(){v;}})
-test_compile_any(class A {int v;} class B {inline inherit A; void g(){v;}})
+test_compile_any(class A {int v;} class B {public inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {static inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {private inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {final inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {nomask inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {local inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {inline inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int f(){}} class B {public inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {static inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {private inherit A; void g(){f();}})
@@ -4666,15 +4681,15 @@ test_compile_any(class A {int f(){}} class B {nomask inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {local inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){f();}})
 
-test_compile_error_low(class A {} class B {inherit A; void g(){A::v;}})
-test_compile_any(class A {int v;} class B {inherit A; void g(){A::v;}})
-test_compile_any(class A {public int v;} class B {inherit A; void g(){A::v;}})
-test_compile_any(class A {static int v;} class B {inherit A; void g(){A::v;}})
-test_compile_error_low(class A {private int v;} class B {inherit A; void g(){A::v;}})
-test_compile_any(class A {final int v;} class B {inherit A; void g(){A::v;}})
-test_compile_any(class A {nomask int v;} class B {inherit A; void g(){A::v;}})
-test_compile_any(class A {local int v;} class B {inherit A; void g(){A::v;}})
-test_compile_any(class A {inline int v;} class B {inherit A; void g(){A::v;}})
+test_compile_error_low(class A {} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_error_low(class A {private int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {nomask int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {public int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {static int f(){}} class B {inherit A; void g(){A::f();}})
@@ -4684,13 +4699,13 @@ test_compile_any(class A {nomask int f(){}} class B {inherit A; void g(){A::f();
 test_compile_any(class A {local int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {inline int f(){}} class B {inherit A; void g(){A::f();}})
 
-test_compile_any(class A {int v;} class B {public inherit A; void g(){A::v;}})
-test_compile_any(class A {int v;} class B {static inherit A; void g(){A::v;}})
-test_compile_any(class A {int v;} class B {private inherit A; void g(){A::v;}})
-test_compile_any(class A {int v;} class B {final inherit A; void g(){A::v;}})
-test_compile_any(class A {int v;} class B {nomask inherit A; void g(){A::v;}})
-test_compile_any(class A {int v;} class B {local inherit A; void g(){A::v;}})
-test_compile_any(class A {int v;} class B {inline inherit A; void g(){A::v;}})
+test_compile_any(class A {int v;} class B {public inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {static inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {private inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {final inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {nomask inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {local inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {inline inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int f(){}} class B {public inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {static inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {private inherit A; void g(){A::f();}})
@@ -4699,15 +4714,15 @@ test_compile_any(class A {int f(){}} class B {nomask inherit A; void g(){A::f();
 test_compile_any(class A {int f(){}} class B {local inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){A::f();}})
 
-test_compile_error_low(class A {} class B {inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_any(class A {int v;} class B {inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_any(class A {int v;} class B {public inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_any(class A {int v;} class B {static inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_error_low(class A {int v;} class B {private inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_any(class A {int v;} class B {final inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_any(class A {int v;} class B {nomask inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_any(class A {int v;} class B {local inherit A;} class C {inherit B; void g(){B::v;}})
-test_compile_any(class A {int v;} class B {inline inherit A;} class C {inherit B; void g(){B::v;}})
+test_compile_error_low(class A {} class B {inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {public inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {static inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_error_low(class A {int v;} class B {private inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {final inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {nomask inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {local inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {inline inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int f(){}} class B {inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {public inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {static inherit A;} class C {inherit B; void g(){B::f();}})
