@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.63 1999/03/16 23:37:25 hubbe Exp $");
+RCSID("$Id: object.c,v 1.64 1999/03/19 11:42:50 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -354,12 +354,9 @@ void destruct(struct object *o)
   int e;
   struct program *p;
 
-  
-
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
 #endif
-
   if(!o || !(p=o->prog)) return; /* Object already destructed */
 
   add_ref(o);
