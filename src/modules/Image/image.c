@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.50 1997/11/02 03:43:23 mirar Exp $ */
+/* $Id: image.c,v 1.51 1997/11/05 03:41:35 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.50 1997/11/02 03:43:23 mirar Exp $
+**!	$Id: image.c,v 1.51 1997/11/05 03:41:35 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -102,7 +102,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.50 1997/11/02 03:43:23 mirar Exp $");
+RCSID("$Id: image.c,v 1.51 1997/11/05 03:41:35 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -482,9 +482,9 @@ void image_create(INT32 args)
    if (args<2) return;
    if (sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to image::create()\n");
+      error("Illegal arguments to Image.image->create()\n");
 
-   getrgb(THIS,2,args,"image::create()"); 
+   getrgb(THIS,2,args,"Image.image->create()"); 
 
    if (THIS->img) free(THIS->img);
 	
@@ -534,7 +534,7 @@ void image_clone(INT32 args)
       if (args<2||
 	  sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT)
-	 error("Illegal arguments to image::clone()\n");
+	 error("Illegal arguments to Image.image->clone()\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -544,12 +544,12 @@ void image_clone(INT32 args)
    {
       if(sp[-args].u.integer < 0 ||
 	 sp[1-args].u.integer < 0)
-	 error("Illegal size to image::clone()\n");
+	 error("Illegal size to Image.image->clone()\n");
       img->xsize=sp[-args].u.integer;
       img->ysize=sp[1-args].u.integer;
    }
 
-   getrgb(img,2,args,"image::clone()"); 
+   getrgb(img,2,args,"Image.image->clone()"); 
 
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
@@ -601,7 +601,7 @@ void image_clear(INT32 args)
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   getrgb(img,0,args,"image::clear()"); 
+   getrgb(img,0,args,"Image.image->clear()"); 
 
    img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    if (!img->img)
@@ -663,11 +663,11 @@ void image_copy(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("illegal arguments to image::copy()\n");
+      error("illegal arguments to Image.image->copy()\n");
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,4,args,"image::copy()"); 
+   getrgb(THIS,4,args,"Image.image->copy()"); 
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -708,19 +708,19 @@ static void image_change_color(INT32 args)
    struct image *img;
 
    if (!THIS->img) error("no image\n");
-   if (args<3) error("too few arguments to image::change_color()\n");
+   if (args<3) error("too few arguments to Image.image->change_color()\n");
 
    if (args<6)
    {
       to=THIS->rgb;   
-      getrgb(THIS,0,args,"image::change_color()");
+      getrgb(THIS,0,args,"Image.image->change_color()");
       from=THIS->rgb;
    }
    else
    {
-      getrgb(THIS,0,args,"image::change_color()");
+      getrgb(THIS,0,args,"Image.image->change_color()");
       from=THIS->rgb;
-      getrgb(THIS,3,args,"image::change_color()");
+      getrgb(THIS,3,args,"Image.image->change_color()");
       to=THIS->rgb;
    }
    
@@ -815,7 +815,7 @@ void image_autocrop(INT32 args)
 
    if (args)
       if (sp[-args].type!=T_INT)
-         error("Illegal argument to image::autocrop()\n");
+         error("Illegal argument to Image.image->autocrop()\n");
       else
          border=sp[-args].u.integer; 
 
@@ -825,9 +825,9 @@ void image_autocrop(INT32 args)
       right=!(sp[2-args].type==T_INT && sp[2-args].u.integer==0);
       top=!(sp[3-args].type==T_INT && sp[3-args].u.integer==0);
       bottom=!(sp[4-args].type==T_INT && sp[4-args].u.integer==0);
-      getrgb(THIS,5,args,"image::autocrop()"); 
+      getrgb(THIS,5,args,"Image.image->autocrop()"); 
    }
-   else getrgb(THIS,1,args,"image::autocrop()"); 
+   else getrgb(THIS,1,args,"Image.image->autocrop()"); 
 
    if (!THIS->img)
    {
@@ -882,8 +882,8 @@ void image_autocrop(INT32 args)
 void image_setcolor(INT32 args)
 {
    if (args<3)
-      error("illegal arguments to image::setcolor()\n");
-   getrgb(THIS,0,args,"image::setcolor()");
+      error("illegal arguments to Image.image->setcolor()\n");
+   getrgb(THIS,0,args,"Image.image->setcolor()");
    pop_n_elems(args);
    THISOBJ->refs++;
    push_object(THISOBJ);
@@ -912,8 +912,8 @@ void image_setpixel(INT32 args)
    if (args<2||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to image::setpixel()\n");
-   getrgb(THIS,2,args,"image::setpixel()");   
+      error("Illegal arguments to Image.image->setpixel()\n");
+   getrgb(THIS,2,args,"Image.image->setpixel()");   
    if (!THIS->img) return;
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
@@ -941,7 +941,7 @@ void image_getpixel(INT32 args)
    if (args<2||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to image::getpixel()\n");
+      error("Illegal arguments to Image.image->getpixel()\n");
 
    if (!THIS->img) error("No image.\n");
 
@@ -987,8 +987,8 @@ void image_line(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("Illegal arguments to image::line()\n");
-   getrgb(THIS,4,args,"image::line()");
+      error("Illegal arguments to Image.image->line()\n");
+   getrgb(THIS,4,args,"Image.image->line()");
    if (!THIS->img) return;
 
    img_line(sp[-args].u.integer,
@@ -1027,8 +1027,8 @@ void image_box(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("Illegal arguments to image::box()\n");
-   getrgb(THIS,4,args,"image::box()");
+      error("Illegal arguments to Image.image->box()\n");
+   getrgb(THIS,4,args,"Image.image->box()");
    if (!THIS->img) return;
 
    img_box(sp[-args].u.integer,
@@ -1071,8 +1071,8 @@ void image_circle(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("illegal arguments to image::circle()\n");
-   getrgb(THIS,4,args,"image::circle()");
+      error("illegal arguments to Image.image->circle()\n");
+   getrgb(THIS,4,args,"Image.image->circle()");
    if (!THIS->img) return;
 
    x=sp[-args].u.integer;
@@ -1202,7 +1202,7 @@ void image_tuned_box(INT32 args)
        sp[3-args].type!=T_INT||
        sp[4-args].type!=T_ARRAY||
        sp[4-args].u.array->size<4)
-      error("Illegal number of arguments to image::tuned_box()\n");
+      error("Illegal number of arguments to Image.image->tuned_box()\n");
 
    if (!THIS->img)
       error("no image\n");
@@ -1343,7 +1343,7 @@ void image_grey(INT32 args)
       rgb.b=41;
    }
    else
-      getrgbl(&rgb,0,args,"image::grey()");
+      getrgbl(&rgb,0,args,"Image.image->grey()");
    div=rgb.r+rgb.g+rgb.b;
 
    o=clone_object(image_program,0);
@@ -1425,7 +1425,7 @@ void image_color(INT32 args)
 	 rgb.b=THIS->rgb.b;
    }
    else
-      getrgbl(&rgb,0,args,"image::color()");
+      getrgbl(&rgb,0,args,"Image.image->color()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -1553,7 +1553,7 @@ void image_threshold(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,0,args,"image::threshold()");
+   getrgb(THIS,0,args,"Image.image->threshold()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -1847,7 +1847,7 @@ void image_distancesq(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,0,args,"image::distancesq()");
+   getrgb(THIS,0,args,"Image.image->distancesq()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2021,11 +2021,11 @@ void image_select_from(INT32 args)
    if (args<2 
        || sp[-args].type!=T_INT
        || sp[1-args].type!=T_INT)
-      error("Illegal argument(s) to image::select_from()\n");
+      error("Illegal argument(s) to Image.image->select_from()\n");
 
    if (args>=3)
       if (sp[2-args].type!=T_INT)
-	 error("Illegal argument 3 (edge value) to image::select_from()\n");
+	 error("Illegal argument 3 (edge value) to Image.image->select_from()\n");
       else
 	 low_limit=max(0,sp[2-args].u.integer);
    else
@@ -2207,13 +2207,13 @@ CHRONO("apply_matrix");
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      error("Illegal arguments to image::apply_matrix()\n");
+      error("Illegal arguments to Image.image->apply_matrix()\n");
 
    if (args>3)
       if (sp[1-args].type!=T_INT ||
 	  sp[2-args].type!=T_INT ||
 	  sp[3-args].type!=T_INT)
-	 error("Illegal argument(s) (2,3,4) to image::apply_matrix()\n");
+	 error("Illegal argument(s) (2,3,4) to Image.image->apply_matrix()\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;
@@ -2248,12 +2248,12 @@ CHRONO("apply_matrix");
       struct svalue s;
       array_index_no_free(&s,sp[-args].u.array,i);
       if (s.type!=T_ARRAY) 
-	 error("Illegal contents of (root) array (image::apply_matrix)\n");
+	 error("Illegal contents of (root) array (Image.image->apply_matrix)\n");
       if (width==-1)
 	 width=s.u.array->size;
       else
 	 if (width!=s.u.array->size)
-	    error("Arrays has different size (image::apply_matrix)\n");
+	    error("Arrays has different size (Image.image->apply_matrix)\n");
       free_svalue(&s);
    }
    if (width==-1) width=0;
@@ -2356,9 +2356,9 @@ void image_modify_by_intensity(INT32 args)
 
    if (!THIS->img) error("no image\n");
    if (args<5) 
-      error("too few arguments to image::modify_by_intensity()\n");
+      error("too few arguments to Image.image->modify_by_intensity()\n");
    
-   getrgbl(&rgb,0,args,"image::modify_by_intensity()");
+   getrgbl(&rgb,0,args,"Image.image->modify_by_intensity()");
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
@@ -2461,7 +2461,7 @@ void image_modify_by_intensity(INT32 args)
 **!     list of destination (available) colors
 **!
 **! note
-**!     this function may change slightly when <ref>Image::colortable</ref> 
+**!     this function may change slightly when <ref>Image.image->colortable</ref> 
 **!	is implemented (pike 0.6, probably)
 **!
 **! see also: map_fast, select_colors, map_fs
@@ -2478,13 +2478,13 @@ static void image_map_closest(INT32 args)
    if (!THIS->img) error("no image\n");
    if (args<1
        || sp[-args].type!=T_ARRAY)
-      error("illegal argument to image::map_closest()\n");
+      error("illegal argument to Image.image->map_closest()\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
       
-   ct=colortable_from_array(sp[-args].u.array,"image::map_closest()\n");
+   ct=colortable_from_array(sp[-args].u.array,"Image.image->map_closest()\n");
    pop_n_elems(args);
 
    i=THIS->xsize*THIS->ysize;
@@ -2518,7 +2518,7 @@ static void image_map_closest(INT32 args)
 **!    list of destination (available) colors
 **!
 **! note
-**!     this function may change slightly when <ref>Image::colortable</ref> 
+**!     this function may change slightly when <ref>Image.image->colortable</ref> 
 **!	is implemented (pike 0.6, probably)
 **!
 **! see also: map_fast, select_colors
@@ -2534,13 +2534,13 @@ static void image_map_fast(INT32 args)
    if (!THIS->img) error("no image\n");
    if (args<1
        || sp[-args].type!=T_ARRAY)
-      error("illegal argument to image::map_closest()\n");
+      error("illegal argument to Image.image->map_closest()\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
       
-   ct=colortable_from_array(sp[-args].u.array,"image::map_closest()\n");
+   ct=colortable_from_array(sp[-args].u.array,"Image.image->map_closest()\n");
    pop_n_elems(args);
 
    i=THIS->xsize*THIS->ysize;
@@ -2583,7 +2583,7 @@ static void image_map_fast(INT32 args)
 **!    list of destination (available) colors
 **!
 **! note
-**!     this function may change slightly when <ref>Image::colortable</ref> 
+**!     this function may change slightly when <ref>Image.image->colortable</ref> 
 **!	is implemented (pike 0.6, probably)
 **!
 **! see also: map_fast, select_colors, map_closest
@@ -2601,7 +2601,7 @@ static void image_map_fs(INT32 args)
    if (!THIS->img) error("no image\n");
    if (args<1
        || sp[-args].type!=T_ARRAY)
-      error("illegal argument to image::map_fs()\n");
+      error("illegal argument to Image.image->map_fs()\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
@@ -2610,7 +2610,7 @@ static void image_map_fs(INT32 args)
    res=(int*)xalloc(sizeof(int)*THIS->xsize);
    errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
       
-   ct=colortable_from_array(sp[-args].u.array,"image::map_closest()\n");
+   ct=colortable_from_array(sp[-args].u.array,"Image.image->map_closest()\n");
    pop_n_elems(args);
 
    for (i=0; i<THIS->xsize; i++)
@@ -2661,7 +2661,7 @@ static void image_map_fs(INT32 args)
 **!	number of colors to return
 **!
 **! note
-**!     this function may change somewhat when <ref>Image::colortable</ref>
+**!     this function may change somewhat when <ref>Image.image->colortable</ref>
 **!	is implemented (pike 0.6, probably)
 **!
 **! see also: map_fast, select_colors
@@ -2674,7 +2674,7 @@ void image_select_colors(INT32 args)
 
    if (args<1
       || sp[-args].type!=T_INT)
-      error("Illegal argument to image::select_colors()\n");
+      error("Illegal argument to Image.image->select_colors()\n");
 
    colors=sp[-args].u.integer;
    pop_n_elems(args);
@@ -2718,7 +2718,7 @@ void image_write_lsb_rgb(INT32 args)
 
    if (args<1
        || sp[-args].type!=T_STRING)
-      error("Illegal argument to image::write_lowbit()\n");
+      error("Illegal argument to Image.image->write_lowbit()\n");
    
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;
@@ -2788,7 +2788,7 @@ void image_write_lsb_grey(INT32 args)
 
    if (args<1
        || sp[-args].type!=T_STRING)
-      error("Illegal argument to image::write_lowbit()\n");
+      error("Illegal argument to Image.image->write_lowbit()\n");
    
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;

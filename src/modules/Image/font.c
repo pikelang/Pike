@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.19 1997/10/27 22:41:19 mirar Exp $ */
+/* $Id: font.c,v 1.20 1997/11/05 03:41:34 mirar Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.19 1997/10/27 22:41:19 mirar Exp $
+**!	$Id: font.c,v 1.20 1997/11/05 03:41:34 mirar Exp $
 **! class font
 **!
 **! note
@@ -443,10 +443,10 @@ void font_load(INT32 args)
 **! method object write(string text,...)
 **! 	Writes some text; thus creating an image object
 **!	that can be used as mask or as a complete picture.
-**! returns an <ref>Image::image</ref> object
+**! returns an <ref>Image.image</ref> object
 **! arg string text, ...
 **!	One or more lines of text.
-**! see also: text_extents, load, image::paste_mask, image::paste_alpha_color
+**! see also: text_extents, load, Image.image->paste_mask, Image.image->paste_alpha_color
 */
 
 void font_write(INT32 args)
