@@ -71,6 +71,9 @@ void section_ref_expansion(Node n) {
     switch(c->get_tag_name()) {
 
     case "p":
+    case "example":
+    case "dl":
+    case "ul":
       break;
 
     case "subsection":
@@ -82,7 +85,7 @@ void section_ref_expansion(Node n) {
       break;
 
     default:
-      werror("Unknown element %O in section element.\n", c->get_tag_name());
+      error("Unknown element %O in section element.\n", c->get_tag_name());
       break;
     }
 }
@@ -102,6 +105,10 @@ void chapter_ref_expansion(Node n) {
 
     case "insert-move":
       enqueue_move(c->get_attributes()->entity, c);
+      break;
+
+    default:
+      error("Unknown element %O in chapter element.\n", c->get_tag_name());
       break;
     }
 }
