@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.32 1998/04/17 16:57:12 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.33 1998/04/17 17:50:35 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -194,6 +194,7 @@ struct pike_string *debug_begin_shared_string(int len)
 {
   struct pike_string *t;
 #ifdef DEBUG
+  extern int d_flag;
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
