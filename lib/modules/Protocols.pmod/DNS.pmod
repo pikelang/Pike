@@ -32,7 +32,7 @@ class protocol
   string mklabel(string s)
   {
     if(strlen(s)>63)
-      throw(({"Too long component in domain name",backtrace()}));
+      throw(({"Too long component in domain name\n",backtrace()}));
     return sprintf("%c%s",strlen(s),s);
   }
 
