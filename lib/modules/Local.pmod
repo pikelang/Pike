@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.1 2002/02/23 00:58:29 nilsson Exp $
+// $Id: Local.pmod,v 1.2 2002/02/23 01:29:23 mikael%unix.pp.se Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -17,6 +17,12 @@
 static array(string) local_path;
 
 mixed `[](string name) {
+  // Make sure dot syntax Local.add_path works.
+  if(name=="add_path" || name=="remove_path"){
+    if(name=="add_path")
+      return add_path;
+    return remove_path;
+  }
   foreach(local_path,string lp){
     program r=(program)combine_path(lp,name);
     if(r)
@@ -55,13 +61,13 @@ static void create() {
   local_path=({ });
   // FIXME $prefix/pike_modules
   // FIXME All this should be controllable from .pikerc, when such a file is implemented...
-  add_local_path("/usr/local/pike_modules");
-  add_local_path("/opt/pike_modules");
-  add_local_path("/opt/share/pike_modules");
-  add_local_path("/usr/local/share/pike_modules");
+  add_path("/usr/local/pike_modules");
+  add_path("/opt/pike_modules");
+  add_path("/opt/share/pike_modules");
+  add_path("/usr/local/share/pike_modules");
   if( (tmp=getenv("HOME")) || (tmp=getenv("USERPROFILE")) ) {
     tmp = (tmp[-1]=='/'?tmp:tmp+"/")+"pike_modules/";
-    add_local_path(tmp);
+    add_path(tmp);
   }
 }
 
@@ -73,12 +79,12 @@ static void create() {
 //!
 //! @returns
 //!   Returns 1 on success, otherwise 0.
-int(0..1) add_local_path(string path){
+int(0..1) add_path(string path){
   if(!file_stat(path))
     return 0;
   if(path[sizeof(path)-1]!='/')
     path+="/";
-  remove_local_path(path); // Avoid duplicate entries.
+  remove_path(path); // Avoid duplicate entries.
   local_path=({path})+local_path;
   return 1;
 }
@@ -90,7 +96,7 @@ int(0..1) add_local_path(string path){
 //! @param path
 //!   The path to be removed.
 //!
-void remove_local_path(string path){
+void remove_path(string path){
   if(local_path)
     local_path-=({ path });
 }
