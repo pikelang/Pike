@@ -1,0 +1,302 @@
+NAME
+	/precompiled/mysql - Interface to the Mysql database
+
+DESCRIPTION
+	/precompiled/mysql is a pre-compiled Pike program. It enables
+	access to the Mysql database from within Pike. /precompiled/mysql
+	is a part of the mysql module.
+
+	Mysql is available from http://www.tcx.se/ .
+
+============================================================================
+NAME
+	create - connect to the Mysql database
+
+SYNTAX
+	#include <mysql.h>
+
+	object(Mysql) Mysql();
+	or
+	object(Mysql) Mysql(string hostname);
+	or
+	object(Mysql) Mysql(string hostname, string database);
+	or
+	object(Mysql) Mysql(string hostname, string database, string password);
+
+DESCRIPTION
+	To access the Mysql database, you must first connect to it. This is
+	done with the function Mysql().
+
+	If you give no argument, or the "" as hostname it will connect with
+	a UNIX-domain socket, which is a big performance gain.
+
+============================================================================
+NAME
+	affected_rows - return the number of affected rows in the table
+
+SYNTAX
+	#include <mysql.h>
+
+	int mysql->affected_rows();
+
+DESCRIPTION
+
+============================================================================
+NAME
+	insert_id - return the insert id
+
+SYNTAX
+	#include <mysql.h>
+
+	int mysql->insert_id();
+
+DESCRIPTION
+
+============================================================================
+NAME
+	error - return the last error in Mysql
+
+SYNTAX
+	#include <mysql.h>
+
+	string mysql->error();
+
+DESCRIPTION
+	When a Mysql-method fails you can get a description of why with this
+	function.
+
+============================================================================
+NAME
+	select_db - select database
+
+SYNTAX
+	#include <mysql.h>
+
+	void select_db(string database);
+
+DESCRIPTION
+	The Mysql-server can hold several databases. You select which one
+	you want to access with this function.
+
+SEE ALSO
+	create
+	create_db
+	drop_db
+
+============================================================================
+NAME
+	query - make an SQL query
+
+SYNTAX
+	#include <mysql.h>
+
+	object(Mysql_result) mysql->query(string q);
+
+DESCRIPTION
+	This function sends an SQL query to the Mysql-server. The result
+	of the query is returned as a /precompiled/mysql_result object.
+
+SEE ALSO
+	/precompiled/mysql_result
+
+============================================================================
+NAME
+	create_db - create a new database
+
+SYNTAX
+	#include <mysql.h>
+
+	void mysql->create_db(string database);
+
+DESCRIPTION
+	This function creates a new database in the Mysql-server.
+
+SEE ALSO
+	select_db
+	drop_db
+
+============================================================================
+NAME
+	drop_db - drop a database
+
+SYNTAX
+	#include <mysql.h>
+
+	void mysql->drop_db(string database);
+
+DESCRIPTION
+	This function drops a database from a Mysql-server.
+
+SEE ALSO
+	create_db
+	select_db
+
+============================================================================
+NAME
+	shutdown - shutdown the Mysql-server
+
+SYNTAX
+	#include <mysql.h>
+
+	void mysql->shutdown();
+
+DESCRIPTION
+	This function shuts down a running Mysql-server.
+
+SEE ALSO
+	reload
+
+============================================================================
+NAME
+	reload - reload the tables
+
+SYNTAX
+	#include <mysql.h>
+
+	void mysql->reload();
+
+DESCRIPTION
+	This function causes the Mysql-server to reload its tables.
+
+SEE ALSO
+	shutdown
+
+============================================================================
+NAME
+	statistics - some Mysql-server statistics
+
+SYNTAX
+	#include <mysql.h>
+
+	string mysql->statistics();
+
+DESCRIPTION
+	This function returns some server statistics.
+
+EXAMPLE
+
+	#include <mysql.h>
+
+	int main()
+	{
+	  write(Mysql()->statistics());
+	  return(0);
+	}
+
+SEE ALSO
+	server_info
+	host_info
+	protocol_info
+
+============================================================================
+NAME
+	server_info - give the version number of the Mysql-server
+
+SYNTAX
+	#include <mysql.h>
+
+	string mysql->server_info();
+
+DESCRIPTION
+	This function returns the version number of the Mysql-server.
+
+SEE ALSO
+	statistics
+	host_info
+	protocol_info
+
+============================================================================
+NAME
+	host_info - give information about the Mysql-server connection
+
+SYNTAX
+	#include <mysql.h>
+
+	string mysql->host_info();
+
+DESCRIPTION
+	This function returns a string describing the connection to
+	the Mysql-server.
+
+SEE ALSO
+	statistics
+	server_info
+	protocol_info
+
+============================================================================
+NAME
+	protocol_info - give the Mysql protocol version
+
+SYNTAX
+	#include <mysql.h>
+
+	int mysql->protocol_info();
+
+DESCRIPTION
+	This function returns the version number of the protocol the
+	Mysql-server uses.
+
+SEE ALSO
+	statistics
+	server_info
+	host_info
+
+============================================================================
+NAME
+	list_dbs - list databases
+
+SYNTAX
+	#include <mysql.h>
+
+	object(Mysql_result) mysql->list_dbs();
+	or
+	object(Mysql_result) mysql->list_dbs(string wild);
+
+DESCRIPTION
+	Returns a table containing the names of all databases in the
+	Mysql-server. If an argument is specified, only those matching
+	wild are returned.
+
+SEE ALSO
+	list_tables
+	list_processes
+	/precompiled/mysql_result
+
+============================================================================
+NAME
+	list_tables - list tables in the current database
+
+SYNTAX
+	#include <mysql.h>
+
+	object(Mysql_result) mysql->list_tables();
+	or
+	object(Mysql_result) mysql->list_tables(string wild);
+
+DESCRIPTION
+	Returns a table containing the names of all tables in the current
+	database. If an argument is given, only those matching wild are
+	returned.
+
+SEE ALSO
+	list_dbs
+	list_processes
+	/precompiled/mysql_result
+
+============================================================================
+NAME
+	list_processes - list all processes in the Mysql-server.
+
+SYNTAX
+	#include <mysql.h>
+
+	object(Mysql_result) mysql->list_processes();
+
+DESCRIPTION
+	Returns a table containing the names of all processes in the
+	Mysql-server.
+
+SEE ALSO
+	list_dbs
+	list_tables
+	/precompiled/mysql_result
