@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.51 1997/01/29 00:09:02 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.52 1997/01/29 20:15:42 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -169,6 +169,8 @@ else
 fi
 
 if test $pike_cv_sys_os = "Solaris" ; then
+AC_DEFINE(SOLARIS)
+
 AC_MSG_CHECKING(if ld accepts setting the run-time path with -R)
 AC_CACHE_VAL(pike_cv_ld_accepts_r,
 [
