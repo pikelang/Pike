@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.45 2000/02/26 01:18:16 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.46 2000/09/17 16:31:24 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -83,6 +83,13 @@ static struct selectors selectors;
 #endif /* HAVE_SYS_POLL_H */
 
 /* Some constants... */
+
+/* Notes on POLLRDNORM and POLLIN:
+ *
+ * According to the AIX manual, POLLIN and POLLRDNORM are both set
+ * if there's a nonpriority message on the read queue. POLLIN is
+ * also set if the message is of 0 length.
+ */
 
 #ifndef POLLRDNORM
 #define POLLRDNORM	POLLIN
@@ -263,7 +270,7 @@ void set_read_callback(int fd,file_callback cb,void *data)
   {
 #ifdef HAVE_POLL
     if(!was_set)
-      POLL_FD_SET(fd, POLLRDNORM);
+      POLL_FD_SET(fd, POLLRDNORM|POLLIN);
 #else
     my_FD_SET(fd, &selectors.read);
 #endif
@@ -272,7 +279,7 @@ void set_read_callback(int fd,file_callback cb,void *data)
   }else{
 #ifdef HAVE_POLL
     if(was_set)
-      POLL_FD_CLR(fd, POLLRDNORM);
+      POLL_FD_CLR(fd, POLLRDNORM|POLLIN);
 #else /* !HAVE_POLL */
     if(fd <= max_fd)
     {
@@ -784,11 +791,11 @@ void backend(void)
 #endif /* PIKE_DEBUG */
 	}
 
-	if(active_poll_fds[i].revents & POLLRDNORM) {
+	if(active_poll_fds[i].revents & (POLLRDNORM|POLLIN)) {
 	  if (fds[fd].read.callback) {
 	    (*(fds[fd].read.callback))(fd,fds[fd].read.data);
 	  } else {
-	    POLL_FD_CLR(fd, POLLRDNORM);
+	    POLL_FD_CLR(fd, POLLRDNORM|POLLIN);
 	  }
 #ifdef PIKE_DEBUG
 	  handled = 1;
