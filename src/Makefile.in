@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.135 1999/03/23 16:53:23 hubbe Exp $
+# $Id: Makefile.in,v 1.136 1999/03/26 19:27:26 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -211,11 +211,11 @@ force :
 
 # install
 install: pike hilfe pike-module aclocal
-	@exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
+	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)" \
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike
+	man_prefix="$(man_prefix)" pike_name=$(pike_name)
 
 old-install: pike hilfe pike-module aclocal
 	@echo
@@ -445,11 +445,6 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 	  else : ; fi; \
 	  ln -s "$(LIBDIR_SRC)" ./share || exit 1; \
 	fi
-	@echo "Creating lib/master.pike"; \
-	( sed -e 's!¤lib_prefix¤!$(lib_prefix)!'  \
-	      -e 's!¤share_prefix¤!$(share_prefix)!'  \
-	      <$(LIBDIR_SRC)/master.pike.in \
-	  >./lib/master.pike && chmod 644 ./lib/master.pike) || exit 1
 	@echo "Done."
 	-@touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
 
@@ -492,7 +487,7 @@ bin_export:
 
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
-	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt
+	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
 $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 	echo "" >$(SRCDIR)/peep_engine.c

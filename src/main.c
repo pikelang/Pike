@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.66 1999/03/19 11:42:38 hubbe Exp $");
+RCSID("$Id: main.c,v 1.67 1999/03/26 19:29:51 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -30,6 +30,7 @@ RCSID("$Id: main.c,v 1.66 1999/03/19 11:42:38 hubbe Exp $");
 #include "main.h"
 #include "operators.h"
 #include "security.h"
+#include "version.h"
 
 #include <errno.h>
 
@@ -59,6 +60,14 @@ int p_flag=0;
 extern int yydebug;
 #endif /* YYDEBUG */
 static long instructions_left;
+
+#define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 32768
+#endif
+
+char master_location[MAXPATHLEN * 2] = MASTER_COOKIE;
 
 static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
 {
@@ -146,16 +155,28 @@ int dbm_main(int argc, char **argv)
 #endif  
   init_backend();
   master_file = 0;
-#if __NT__
-  if(!master_file) get_master_key(HKEY_CURRENT_USER);
-  if(!master_file) get_master_key(HKEY_LOCAL_MACHINE);
-#endif
+
 #ifdef HAVE_GETENV
   if(getenv("PIKE_MASTER"))
     master_file = getenv("PIKE_MASTER");
 #endif
 
-  if(!master_file) master_file = DEFAULT_MASTER;
+  if(master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
+    master_file=master_location + CONSTANT_STRLEN(MASTER_COOKIE);
+
+#if __NT__
+  if(!master_file) get_master_key(HKEY_CURRENT_USER);
+  if(!master_file) get_master_key(HKEY_LOCAL_MACHINE);
+#endif
+
+  if(!master_file)
+  {
+    sprintf(master_location,DEFAULT_MASTER,
+	    PIKE_MAJOR_VERSION,
+	    PIKE_MINOR_VERSION,
+	    PIKE_BUILD_VERSION);
+    master_file=master_location;
+  }
 
   for(e=1; e<argc; e++)
   {

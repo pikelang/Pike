@@ -5,6 +5,8 @@ int redump_all;
 string pike;
 array(string) to_dump=({});
 
+#define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
+
 void fail(string fmt, mixed ... args)
 {
   if(last_len) write("\n");
@@ -176,7 +178,7 @@ void install_header_files(string from, string to)
   foreach(get_dir(from),string file)
     {
       if(file[..1]==".#") continue;
-      if(file[-1]!='h' && file[-2]!='.') continue;
+      if(file[-1]!='h' || file[-2]!='.') continue;
       install_file(combine_path(from,file),combine_path(to,file));
     }
 }
@@ -202,43 +204,105 @@ void dumpmodules(string dir)
 	    if(stat2 && stat2[3]>=stat[3])
 	      continue;
 	    
-	    Process.create_process( ({pike,combine_path(getenv("SRCDIR"),"dumpmodule.pike"),f}) )->wait();
+	    Process.create_process( ({pike,combine_path(vars->SRCDIR,"dumpmodule.pike"),f}) )->wait();
 	}
       }
     }
 }
 
+mapping vars=([]);
+
 
 int main(int argc, string *argv)
 {
+  int traditional;
+  string prefix;
+  string exec_prefix;
+  string lib_prefix;
+  string include_prefix;
+  string man_prefix;
+  string lnk;
+
+  foreach(argv[1..], string foo)
+    if(sscanf(foo,"%s=%s",string var, string value)==2)
+      vars[var]=value;
+
+  prefix=vars->prefix;
+  if(argc>1 && argv[1]=="--traditional")
+  {
+    exec_prefix=vars->exec_prefix;
+    lib_prefix=vars->lib_prefix;
+    include_prefix=combine_path(prefix,"include","pike");
+    man_prefix=vars->man_prefix;
+  }else{
+
+    if(!(lnk=vars->pike_name) || !strlen(lnk))
+      lnk=combine_path(vars->exec_prefix,"pike");
+
+    prefix=combine_path(prefix,"pike",replace(version()-"Pike v"," release ","."));
+    exec_prefix=combine_path(prefix);
+    lib_prefix=combine_path(prefix,"lib");
+    include_prefix=combine_path(prefix,"include","pike");
+    man_prefix=combine_path(prefix,"man");
+  }
+  pike=combine_path(exec_prefix,"pike");
+
   mixed err=catch {
-    pike=combine_path(getenv("exec_prefix"),"pike");
-    write("\nInstalling Pike... in %s\n\n",getenv("prefix"));
-    if(install_file("pike",pike))
+    write("\nInstalling Pike in %s...\n\n",prefix);
+
+    string pike_bin_file="pike";
+    status("Finalizing",pike_bin_file);
+    string pike_bin=Stdio.read_file(pike_bin_file);
+    int pos=search(pike_bin,MASTER_COOKIE);
+
+    if(pos<=0 && strlen(pike_bin) < 10000 && file_stat("pike.exe"))
     {
-      redump_all=1;
+      pike_bin_file="pike.exe";
+      status("Finalizing",pike_bin_file);
+      pike_bin=Stdio.read_file(pike_bin_file);
+      pos=search(pike_bin,MASTER_COOKIE);
+      pike+=".exe";
     }
-    install_file("hilfe",combine_path(getenv("exec_prefix"),"hilfe"));
-    install_dir(getenv("TMP_LIBDIR"),getenv("lib_prefix"),1);
-    install_dir(getenv("LIBDIR_SRC"),getenv("lib_prefix"),1);
+
+    if(pos>=0)
+    {
+      status("Finalizing",pike_bin_file,"...");
+      Stdio.write_file(pike_bin_file="pike.tmp",pike_bin);
+      Stdio.File f=Stdio.File(pike_bin_file,"rw");
+      f->seek(pos+strlen(MASTER_COOKIE));
+      f->write(combine_path(lib_prefix,"master.pike"));
+      f->close();
+      status("Finalizing",pike_bin_file,"done");
+    }else{
+      write("Warning! Failed to finalize master location!\n");
+    }
+    if(install_file(pike_bin_file,pike)) redump_all=1;
+
+    install_file("hilfe",combine_path(exec_prefix,"hilfe"));
+    string master=combine_path(vars->LIBDIR_SRC,"master.pike.in");
+
+//    werror("Making master with libdir=%s\n",lib_prefix);
+    status("Finalizing",master);
+    string master_data=Stdio.read_file(master);
+    master_data=replace(master_data,"¤lib_prefix¤",lib_prefix);
+    Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
+    status("Finalizing",master,"done");
+		    
+    install_dir(vars->TMP_LIBDIR,lib_prefix,1);
+    install_dir(vars->LIBDIR_SRC,lib_prefix,1);
     
-    install_header_files(getenv("SRCDIR"),
-			 combine_path(getenv("prefix"),"include/pike"));
-    install_header_files(".",combine_path(getenv("prefix"),"include/pike"));
+    install_header_files(vars->SRCDIR,include_prefix);
+    install_header_files(".",include_prefix);
     
     install_file("modules/dynamic_module_makefile",
-		 combine_path(getenv("prefix"),"include/pike/dynamic_module_makefile"));
+		 combine_path(include_prefix,"dynamic_module_makefile"));
     install_file("./aclocal",
-		 combine_path(getenv("prefix"),"include/pike/aclocal.m4"));
+		 combine_path(include_prefix,"aclocal.m4"));
     
-    if(file_stat(getenv("MANDIR_SRC")))
+    if(file_stat(vars->MANDIR_SRC))
     {
-      install_dir(getenv("MANDIR_SRC"),combine_path(getenv("man_prefix"),"man1"),0);
+      install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
     }
-
-
-
-
   };
 
   if(last_len)
@@ -249,21 +313,37 @@ int main(int argc, string *argv)
 
   if(err) throw(err);
 
-  string master=combine_path(getenv("lib_prefix"),"master.pike");
+  string master=combine_path(lib_prefix,"master.pike");
   mixed s1=file_stat(master);
   mixed s2=file_stat(master+".o");
   if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
   {
-    Process.create_process( ({pike,"-m",combine_path(getenv("SRCDIR"),"dumpmaster.pike"),master}))->wait();
+    Process.create_process( ({pike,"-m",combine_path(vars->SRCDIR,"dumpmaster.pike"),master}))->wait();
   }
   
-//    dumpmodules(combine_path(getenv("lib_prefix"),"modules"));
+//    dumpmodules(combine_path(vars->lib_prefix,"modules"));
   if(sizeof(to_dump))
   {
     foreach(to_dump, string mod) rm(mod+".o");
-    Process.create_process( ({pike,combine_path(getenv("SRCDIR"),"dumpmodule.pike")}) + to_dump)->wait();
+    Process.create_process( ({pike,combine_path(vars->SRCDIR,"dumpmodule.pike")}) + to_dump)->wait();
   }
 
+#if constant(symlink)
+  if(lnk)
+  {
+    mixed s=file_stat(lnk,1);
+    if(s)
+    {
+      if(!mv(lnk,lnk+".old"))
+      {
+	werror("Failed to move %s\n",lnk);
+	exit(1);
+      }
+    }
+
+    symlink(pike,lnk);
+  }
+#endif
 
   return 0;
 }

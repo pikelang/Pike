@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.64 1999/03/19 11:42:50 hubbe Exp $");
+RCSID("$Id: object.c,v 1.65 1999/03/26 19:29:53 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -219,6 +219,7 @@ struct object *parent_clone_object(struct program *p,
   return o;
 }
 
+/* FIXME: use open/read/close instead */
 static struct pike_string *low_read_file(char *file)
 {
   struct pike_string *s;
@@ -957,7 +958,6 @@ void cleanup_objects(void)
     next=o->next;
     free_object(o);
   }
-
   free_object(master_object);
   master_object=0;
   free_program(master_program);
