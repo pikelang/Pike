@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.4 2001/02/06 14:23:14 grubba Exp $
+ * $Id: autodoc.pike,v 1.5 2001/03/05 19:27:38 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -23,19 +23,23 @@ int main(int argc, array(string) argv)
   	// Recurse.
       } else if (st->isreg) {
   	string raw = Stdio.read_bytes(path);
-  
+
   	Tools.AutoDoc.PikeObjects.Module info;
-  	if (has_suffix(path, ".c") || has_suffix(path, ".h")) {
-  	  info = Tools.AutoDoc.CExtractor.extract(raw, path);
-  	} else if (has_suffix(path, ".cmod")) {
-  	  info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path);
-  	} else if (has_suffix(path, ".pike") || has_suffix(path, ".pmod")) {
-  	  info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path);
-  	} else {
-  	  werror(sprintf("Unknown filetype %O\n", path));
-  	  exit(1);
-  	}
-	write(sprintf("%s\n", info->xml()));
+	if (has_value(raw, "/*!") || has_value(raw, "//!")) {
+  	  if (has_suffix(path, ".c") || has_suffix(path, ".h")) {
+  	    info = Tools.AutoDoc.CExtractor.extract(raw, path);
+  	  } else if (has_suffix(path, ".cmod")) {
+  	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path);
+  	  } else if (has_suffix(path, ".pike") || has_suffix(path, ".pmod") ||
+  		     has_suffix(path, ".pmod.in")) {
+  	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path);
+  	  } else {
+  	    werror(sprintf("Unknown filetype %O\n", path));
+  	    exit(1);
+  	  }
+	}
+	write(info?sprintf("%s\n",info->xml()):
+	      "<module name=''><modifiers/></module>\n");
       } else {
   	werror(sprintf("%O is not a plain file or directory.\n", path));
   	exit(1);
