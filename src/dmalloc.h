@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.15 1999/08/16 23:54:54 grubba Exp $
+ * $Id: dmalloc.h,v 1.16 1999/10/18 19:15:40 hubbe Exp $
  */
 
 extern char *debug_xalloc(long);
@@ -28,6 +28,11 @@ extern int debug_malloc_register_fd(int, const char *, int);
 extern int debug_malloc_close_fd(int, const char *, int);
 
 void *debug_malloc_update_location(void *,const char *, int);
+
+/* Beware! names of named memory regions are never ever freed!! /Hubbe */
+void *debug_malloc_name(void *p,const char *fn, int line);
+void debug_malloc_copy_names(void *p, void *p2);
+
 #define malloc(x) debug_malloc((x), __FILE__, __LINE__)
 #define calloc(x, y) debug_calloc((x), (y), __FILE__, __LINE__)
 #define realloc(x, y) debug_realloc((x), (y), __FILE__, __LINE__)
@@ -68,4 +73,6 @@ void dmalloc_accept_leak(void *);
 #define dmalloc_register(X,Y,Z,W)
 #define dmalloc_unregister(X,Y)
 #define debug_free(X,Y,Z,Q) free((X))
+#define debug_malloc_name(P,FN,LINE)
+#define debug_malloc_copy_names(p,p2)
 #endif

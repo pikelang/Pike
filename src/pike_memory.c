@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.43 1999/09/25 20:30:46 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.44 1999/10/18 19:15:42 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -804,6 +804,33 @@ static int location_number(const char *file, int line)
   return f->number;
 }
 
+static int dynamic_location_number(const char *file, int line)
+{
+  struct fileloc *f,**prev;
+  unsigned long h=hashstr(file, 4711);
+  h*=4711;
+  h+=line;
+  h%=FLSIZE;
+  for(prev=flhash+h;(f=*prev);prev=&f->next)
+  {
+    if(f->line == line && !strcmp(f->file,file))
+    {
+      *prev=f->next;
+      f->next=flhash[h];
+      flhash[h]=f;
+      return f->number;
+    }
+  }
+
+  f=alloc_fileloc();
+  f->line=line;
+  f->file=strdup(file);
+  f->number=~ ( ++file_location_number );
+  f->next=flhash[h];
+  flhash[h]=f;
+  return f->number;
+}
+
 static struct fileloc *find_file_location(int locnum)
 {
   int e;
@@ -955,6 +982,7 @@ static void add_location(struct memhdr *mh, int locnum)
   ml->times++;
   mlhash[l]=ml;
 }
+
 
 static struct memhdr *low_make_memhdr(void *p, int s, int locnum)
 {
@@ -1161,7 +1189,8 @@ void dump_memhdr_locations(struct memhdr *from,
       continue;
 
     f=find_file_location(l->locnum);
-    fprintf(stderr," *** %s:%d (%d times)\n",f->file,f->line,l->times);
+    fprintf(stderr," *** %s:%d (%d times)%s\n",f->file,f->line,l->times,
+	    l->locnum<0 ? " -" : " ");
   }
 }
 
@@ -1193,11 +1222,13 @@ void list_open_fds(void)
 	  for(l=m->locations;l;l=l->next)
 	  {
 	    struct fileloc *f=find_file_location(l->locnum);
-	    fprintf(stderr,"  *** %s:%d (%d times) %s\n",
+	    fprintf(stderr,"  *** %s:%d (%d times) %s%s\n",
 		    f->file,
 		    f->line,
 		    l->times,
-		    find_location(&no_leak_memlocs, l->locnum) ? "" : " *");
+		    l->locnum<0 ? "-" : "",
+		    find_location(&no_leak_memlocs, l->locnum) ? "" : "*"
+		    );
 	  }
 	}
       }
@@ -1315,6 +1346,45 @@ void * debug_malloc_update_location(void *p,const char *fn, int line)
     mt_unlock(&debug_malloc_mutex);
   }
   return p;
+}
+
+void * debug_malloc_name(void *p,const char *fn, int line)
+{
+  if(p)
+  {
+    struct memhdr *mh;
+    mt_lock(&debug_malloc_mutex);
+    if((mh=my_find_memhdr(p,0)))
+      add_location(mh, dynamic_location_number(fn,line));
+
+    mt_unlock(&debug_malloc_mutex);
+  }
+  return p;
+}
+
+void debug_malloc_copy_names(void *p, void *p2)
+{
+  if(p)
+  {
+    struct memhdr *mh,*from;
+    mt_lock(&debug_malloc_mutex);
+
+    if((from=my_find_memhdr(p2,0)))
+    {
+      struct memloc *l;
+      for(l=from->locations;l;l=l->next)
+      {
+	struct fileloc *f;
+	if(l->locnum < 0)
+	{
+	  if((mh=my_find_memhdr(p,0)))
+	    add_location(mh, l->locnum);
+	}
+      }
+    }
+
+    mt_unlock(&debug_malloc_mutex);
+  }
 }
 
 int debug_malloc_touch_fd(int fd, const char *fn, int line)

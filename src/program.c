@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.158 1999/10/09 23:29:02 hubbe Exp $");
+RCSID("$Id: program.c,v 1.159 1999/10/18 19:15:44 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -662,6 +662,7 @@ void debug_start_new_program(PROGRAM_LINE_ARGS)
     struct pike_string *s=make_shared_string(file);
     store_linenumber(line,s);
     free_string(s);
+    debug_malloc_name(new_program, file, line);
   }
 #endif
 }
@@ -2627,7 +2628,10 @@ struct program *compile(struct pike_string *prog)
 
   low_start_new_program(0,0,0);
   if(lex.current_file)
-    store_linenumber(last_pc, lex.current_file);
+  {
+    store_linenumber(lex.current_line, lex.current_file);
+    debug_malloc_name(new_program, lex.current_file->str, lex.current_line);
+  }
   compilation_depth=0;
 
 /*  start_line_numbering(); */
