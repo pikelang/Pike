@@ -259,6 +259,7 @@ DESCRIPTION
 
 SEE ALSO
 	list_tables
+	list_fields
 	list_processes
 	/precompiled/mysql_result
 
@@ -280,12 +281,31 @@ DESCRIPTION
 
 SEE ALSO
 	list_dbs
+	list_fields
 	list_processes
 	/precompiled/mysql_result
 
 ============================================================================
 NAME
-	list_processes - list all processes in the Mysql-server.
+	list_fields - list all fields
+
+SYNTAX
+	#include <mysql.h>
+
+	object(Mysql_result) mysql->list_fields(string table);
+	or
+	object(Mysql_result) mysql->list_fields(string table, string wild);
+
+DESCRIPTION
+	Returns a table containing the names of all fields in the table.
+
+NOTA BENE
+	Michael Widenius recomends usage of the following query instead:
+		show fields in 'table' like "wild"
+
+============================================================================
+NAME
+	list_processes - list all processes in the Mysql-server
 
 SYNTAX
 	#include <mysql.h>
@@ -298,5 +318,7 @@ DESCRIPTION
 
 SEE ALSO
 	list_dbs
+	list_fields
 	list_tables
 	/precompiled/mysql_result
+

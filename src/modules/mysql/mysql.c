@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.2 1996/12/30 20:45:13 grubba Exp $
+ * $Id: mysql.c,v 1.3 1996/12/31 00:51:17 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -53,7 +53,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.2 1996/12/30 20:45:13 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.3 1996/12/31 00:51:17 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -120,8 +120,6 @@ static void f_create(INT32 args)
     }
   }
 
-  pop_n_elems(args);
-
   if (!(PIKE_MYSQL->socket = mysql_connect(&PIKE_MYSQL->mysql, host,
 					   0, password))) {
     error("mysql(): Couldn't connect to SQL-server\n");
@@ -131,6 +129,8 @@ static void f_create(INT32 args)
     PIKE_MYSQL->socket = NULL;
     error("mysql(): Couldn't select database \"%s\"\n", database);
   }
+
+  pop_n_elems(args);
 }
 
 /* int affected_rows() */
@@ -215,6 +215,7 @@ static void f_create_db(INT32 args)
     error("mysql->create_db(): Creation of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
+
   pop_n_elems(args);
 }
 
@@ -235,6 +236,7 @@ static void f_drop_db(INT32 args)
     error("mysql->drop_db(): Drop of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
+
   pop_n_elems(args);
 }
 
@@ -305,12 +307,12 @@ static void f_list_dbs(INT32 args)
     }
     wild = sp[-args].u.string->str;
   }
-  pop_n_elems(args);
-
   if (!(PIKE_MYSQL->last_result = mysql_list_dbs(PIKE_MYSQL->socket, wild))) {
     error("mysql->list_dbs(): Cannot list databases: %s\n",
 	  mysql_error(PIKE_MYSQL->socket));
   }
+
+  pop_n_elems(args);
 
   push_object(fp->current_object);
   fp->current_object->refs++;
@@ -333,45 +335,54 @@ static void f_list_tables(INT32 args)
     }
     wild = sp[-args].u.string->str;
   }
-  pop_n_elems(args);
-
   PIKE_MYSQL->last_result = mysql_list_tables(PIKE_MYSQL->socket, wild);
 
-  push_object(fp->current_object);
-  fp->current_object->refs++;
-
-  push_object(clone(mysql_result_program, 1));
-}
-
-#if 0
-/* DON'T USE! */
-
-/* object(mysql_res) list_fields(void|string wild) */
-static void f_list_fields(INT32 args)
-{
-  char *wild = "*";
-
-  if (args) {
-    if (sp[-args].type != T_STRING) {
-      error("Bad argument 1 to mysql->list_fields()\n");
-    }
-    if (sp[-args].u.string->len > 80) {
-      error("Wildcard \"%s\" is too long (max 80 characters)\n",
-	    sp[-args].u.string->str);
-    }
-    wild = sp[-args].u.string->str;
-  }
   pop_n_elems(args);
 
-  PIKE_MYSQL->last_result = mysql_list_fields(PIKE_MYSQL->socket, wild);
-
   push_object(fp->current_object);
   fp->current_object->refs++;
 
   push_object(clone(mysql_result_program, 1));
 }
 
-#endif /* 0 */
+/* object(mysql_res) list_fields(string table, void|string wild) */
+static void f_list_fields(INT32 args)
+{
+  char *table;
+  char *wild = "*";
+
+  if (!args) {
+    error("Too few arguments to mysql->list_fields()\n");
+  }
+  
+  if (sp[-args].type != T_STRING) {
+    error("Bad argument 1 to mysql->list_fields()\n");
+  }
+  if (sp[-args].u.string->len > 125) {
+    error("Table name \"%s\" is too long (max 125 characters)\n",
+	  sp[-args].u.string->str);
+  }
+  table = sp[-args].u.string->str;
+  if (args > 1) {
+    if (sp[-args+1].type != T_STRING) {
+      error("Bad argument 2 to mysql->list_fields()\n");
+    }
+    if (sp[-args+1].u.string->len + sp[-args].u.string > 125) {
+      error("Wildcard \"%s\" + table name \"%s\" is too long "
+	    "(max 125 characters)\n",
+	    sp[-args+1].u.string->str, sp[-args].u.string->str);
+    }
+    wild = sp[-args+1].u.string->str;
+  }
+  PIKE_MYSQL->last_result = mysql_list_fields(PIKE_MYSQL->socket, table, wild);
+
+  pop_n_elems(args);
+
+  push_object(fp->current_object);
+  fp->current_object->refs++;
+
+  push_object(clone(mysql_result_program, 1));
+}
 
 /* object(mysql_res) list_processes() */
 static void f_list_processes(INT32 args)
@@ -438,6 +449,7 @@ void init_mysql_programs(void)
   add_function("protocol_info", f_protocol_info, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("list_dbs", f_list_dbs, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
   add_function("list_tables", f_list_tables, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
+  add_function("list_fields", f_list_fields, "function(string, void|string:object)", OPT_EXTERNAL_DEPEND);
   add_function("list_processes", f_list_processes, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
 
   set_init_callback(init_mysql_struct);
