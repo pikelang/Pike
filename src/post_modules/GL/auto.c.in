@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.39 2003/07/05 09:41:05 grubba Exp $
+|| $Id: auto.c.in,v 1.40 2003/07/06 19:24:59 per Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.39 2003/07/05 09:41:05 grubba Exp $");
+RCSID("$Id: auto.c.in,v 1.40 2003/07/06 19:24:59 per Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -438,10 +438,10 @@ static void post_init()
 
 static void my_glFrustum(INT32 args)
 {
-  float right,left,bottom,top,close,away;
-
-  get_all_args("glFrustum", args, "%F%F%F%F%F%F",
-	       &right, &left, &bottom, &top, &close, &away);
+  FLOAT_TYPE right,left,bottom,top,close,away;
+  GLdouble m[16];
+  get_all_args("glFrustum", args, "%f%f%f%f%f%f",
+	       &left, &right, &bottom, &top, &close, &away);
 
   if (right == left) {
     SIMPLE_ARG_ERROR("glFrustum", 2,
@@ -455,35 +455,19 @@ static void my_glFrustum(INT32 args)
 
   if (close == away) {
     SIMPLE_ARG_ERROR("glFrustum", 6,
-		     "Arguments near and far must not be equal.");
+		     "Arguments near and away must not be equal.");
   }
 
+
+  memset( m, 0, sizeof(m) );
+  m[0] = 2*close/(right-left);
+  m[5] = 2*close/(top-bottom);
+  m[8] = (right+left)/(right-left);
+  m[9] = (top+bottom)/(top-bottom);
+  m[10] = (away+close)/(away-close);
+  m[11] = -1.0;
+  m[14] = 2*away*close/(away-close);
+
+  glMultMatrixd( m );
   pop_n_elems(args);
-
-  /* row 1 */
-  push_float( 2*close/(right-left) );
-  push_int( 0 );
-  push_int( 0 );
-  push_int( 0 );
-
-  /* row 2 */
-  push_int( 0 );
-  push_float( 2*close/(top-bottom) );
-  push_int( 0 );
-  push_int( 0 );
-
-  /* row 3 */
-  push_float( (right+left)/(right-left) );
-  push_float( (top+bottom)/(top-bottom) );
-  push_float( (away+close)/(away-close) );
-  push_int( -1 );
-
-  /* row 4 */
-  push_int( 0 );
-  push_int( 0 );
-  push_int( 2*away*close/(away-close) );
-  push_int( 0 );
-
-  aggregate_array(16);
-  f_glMultMatrix(1);
 }
