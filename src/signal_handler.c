@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.311 2004/11/12 13:25:13 grubba Exp $
+|| $Id: signal_handler.c,v 1.312 2004/11/20 16:17:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -2128,7 +2128,7 @@ static int set_priority( int pid, char *to )
 #ifdef __NT__
   {
     HANDLE process;
-    DWORD how;
+    DWORD how = NORMAL_PRIORITY_CLASS;
     if( pid == getpid() || !pid ) /* pid == 0 == this process. */
       process = GetCurrentProcess();
     else
@@ -2142,9 +2142,21 @@ static int set_priority( int pid, char *to )
     
     switch( prilevel )
     {
-    case -2: case -1:  how = IDLE_PRIORITY_CLASS;     break;
+    case -1:
+#ifdef BELOW_NORMAL_PRIORITY_CLASS
+      how = BELOW_NORMAL_PRIORITY_CLASS;
+      break;
+#endif
+      /* Fallthrough */
+    case -2:           how = IDLE_PRIORITY_CLASS;     break;
     case 0:            how = NORMAL_PRIORITY_CLASS;   break;
-    case 1: case 2:    how = HIGH_PRIORITY_CLASS;     break;
+    case 1:
+#ifdef ABOVE_NORMAL_PRIORITY_CLASS
+      how = ABOVE_NORMAL_PRIORITY_CLASS;
+      break;
+#endif
+      /* Fallthrough */
+    case 2:            how = HIGH_PRIORITY_CLASS;     break;
     case 3:            how = REALTIME_PRIORITY_CLASS; break;
     }
     
@@ -2702,7 +2714,7 @@ void f_create_process(INT32 args)
 
     if(optional)
     {
-      if(tmp=simple_mapping_string_lookup(optional, "cwd"))
+      if( (tmp=simple_mapping_string_lookup(optional, "cwd")) )
       {
 	if(tmp->type == T_STRING)
 	{
