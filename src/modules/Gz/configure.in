@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.20 2001/02/27 20:50:52 grubba Exp $
+# $Id: configure.in,v 1.21 2001/03/21 15:05:46 jonasw Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
@@ -11,9 +11,7 @@ define([AC_CHECK_GZ],
   AC_MSG_CHECKING(working lib$1)
   AC_CACHE_VAL(pike_cv_working_$1,[
     OLDLIBS="${LIBS-}"
-    if test "$pike_cv_sys_os" != "Darwin"; then
-      LIBS="${LIBS-} -l$1"
-    fi
+    LIBS="${LIBS-} -l$1"
     AC_TRY_RUN([
 `cat $srcdir/gz_test.c`
     ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
@@ -28,9 +26,7 @@ define([AC_CHECK_GZ],
   if test "x$pike_cv_working_$1" = xyes; then
     AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_LIBZ)
-    if test "$pike_cv_sys_os" != "Darwin"; then
-      LIBS="${LIBS-} -l$1"
-    fi
+    LIBS="${LIBS-} -l$1"
     done=yes
   else
     AC_MSG_RESULT(no)
@@ -41,11 +37,6 @@ define([AC_CHECK_GZ],
     :
   fi
 ])
-
-if test "$pike_cv_sys_os" = "Darwin"; then
-  CPPFLAGS="-I$with_root/System/Library/Frameworks/Zip.framework/Headers $CPPFLAGS"
-  LDFLAGS="-framework Zip"
-fi
 
 if test x$with_zlib = xyes ; then
   AC_CHECK_HEADERS(zlib.h)
@@ -70,7 +61,7 @@ int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
 	AC_HAVE_FUNCS(__T_9__nothrow)
       fi
 
-      AC_CHECK_GZ(z,[AC_CHECK_GZ(gz,[AC_CHECK_GZ(Zip, [ ac_cv_lib_z_main=no ] ) ]) ])
+      AC_CHECK_GZ(z,[AC_CHECK_GZ(gz, [ ac_cv_lib_z_main=no ] ) ])
     fi
   fi
 fi
