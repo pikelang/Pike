@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: a_source_pikestring.c,v 1.8 2003/03/14 15:57:49 grubba Exp $
+|| $Id: a_source_pikestring.c,v 1.9 2004/08/28 12:45:07 nilsson Exp $
 */
 
 #include "global.h"
@@ -60,7 +60,7 @@ struct source *source_pikestring_make( struct svalue *s,
 
   if( s->type != PIKE_T_STRING )   return 0;
   if( s->u.string->size_shift )    return 0;
-  
+
   res = malloc( sizeof( struct ps_source ) );
   debug_malloc_touch( res );
   debug_malloc_touch( s );
@@ -90,6 +90,7 @@ struct source *source_pikestring_make( struct svalue *s,
   {
     sub_ref(res->str);
     free(res);
+    return 0;
   }
   return (struct source *)res;
 }
