@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.6 1996/12/04 14:37:45 nisse Exp $");
+RCSID("$Id: ssleay.c,v 1.7 1996/12/13 16:54:30 nisse Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -57,8 +57,9 @@ static struct program *ssleay_connection_program;
 /* Arg is an ssleay object */
 void ssleay_connection_create(INT32 args)
 {
-  if ((args < 1)
-      || (sp[-args].type != T_OBJECT)
+  if (args < 1)
+    error("ssleay_connection->create: no context given\n");
+  if ((sp[-args].type != T_OBJECT)
       || (sp[-args].u.object->prog != ssleay_program))
     error("ssleay_connection->create: invalid argument\n");
   if (CON)
@@ -266,7 +267,7 @@ void init_ssleay_programs(void)
   add_function("read",ssleay_connection_read,"function(int,int|void:int|string)",0);
   add_function("write",ssleay_connection_write,"function(string:int)",0);
   add_function("set_fd",ssleay_connection_set_fd,"function(int:void)",0);
-  add_function("werror", ssleay_connection_werror, "function(void:void)", 0);
+  add_function("ssleay_werror", ssleay_connection_werror, "function(void:void)", 0);
   set_init_callback(init_connection);
   set_exit_callback(exit_connection);
 
