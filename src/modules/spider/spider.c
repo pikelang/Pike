@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.104 2001/03/28 15:07:41 grubba Exp $");
+RCSID("$Id: spider.c,v 1.105 2001/04/19 14:42:06 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -218,7 +218,7 @@ void f_parse_html(INT32 args)
 }
 
 
-/*! @decl string parse_html(string html, @
+/*! @decl string parse_html_lines(string html, @
  *!                         mapping(string:function(string, mapping(string:string), int, mixed ...:string|array)) tag_callbacks, @
  *!                         mapping(string:function(string, mapping(string:string), string, int, mixed ...:string|array)) container_callbacks, @
  *!                         mixed ... extras)
