@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.15 1999/09/01 01:49:19 mast Exp $
+ * $Id: nt.c,v 1.16 1999/11/30 23:06:05 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -671,6 +671,7 @@ static netgroupenumtype netgroupenum, netlocalgroupenum;
 static netgroupgetuserstype netgroupgetusers, netlocalgroupgetmembers;
 static netgetdcnametype netgetdcname, netgetanydcname;
 static netapibufferfreetype netapibufferfree;
+
 HINSTANCE netapilib;
 
 
@@ -1506,6 +1507,230 @@ void f_NetGetAnyDCName(INT32 args)
   }
 }
 
+static LPWSTR get_wstring(struct svalue *s)
+{
+  if(s->type != T_STRING) return (LPWSTR)0;
+  switch(s->u.string->size_shift)
+  {
+    case 0:
+    {
+      struct string_builder x;
+      init_string_builder(&x,1);
+      string_builder_shared_strcat(&x, s->u.string);
+      string_builder_putchar(&x, 0);
+      string_builder_putchar(&x, 32767);
+      free_string(s->u.string);
+      s->u.string=finish_string_builder(&x);
+    }
+    /* Fall through */
+    case 1:
+      return STR1(s->u.string);
+    case 2:
+    error("String too wide!\n");
+  }
+}
+
+
+/* Stuff for NetSessionEnum */
+
+LINKFUNC(NET_API_STATUS,netsessionenum,
+	 (LPWSTR, LPWSTR, LPWSTR, DWORD, LPBYTE *,
+	  DWORD, LPDWORD,LPDWORD,LPDWORD));
+
+
+static void low_encode_session_info_0(SESSION_INFO_0 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->sesi0_cname);
+}
+
+static void low_encode_session_info_1(SESSION_INFO_1 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->sesi1_cname);
+  SAFE_PUSH_WSTR(tmp->sesi1_username);
+  push_int(tmp->sesi1_time);
+  push_int(tmp->sesi1_idle_time);
+  push_int(tmp->sesi1_user_flags);
+  f_aggregate(5);
+}
+
+static void low_encode_session_info_2(SESSION_INFO_2 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->sesi2_cname);
+  SAFE_PUSH_WSTR(tmp->sesi2_username);
+  push_int(tmp->sesi2_num_opens);
+  push_int(tmp->sesi2_time);
+  push_int(tmp->sesi2_idle_time);
+  push_int(tmp->sesi2_user_flags);
+  SAFE_PUSH_WSTR(tmp->sesi2_cltype_name);
+
+  f_aggregate(7);
+}
+
+static void low_encode_session_info_10(SESSION_INFO_10 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->sesi10_cname);
+  SAFE_PUSH_WSTR(tmp->sesi10_username);
+  push_int(tmp->sesi10_time);
+  push_int(tmp->sesi10_idle_time);
+
+  f_aggregate(4);
+}
+
+static void low_encode_session_info_502(SESSION_INFO_502 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->sesi502_cname);
+  SAFE_PUSH_WSTR(tmp->sesi502_username);
+  push_int(tmp->sesi502_num_opens);
+
+  push_int(tmp->sesi502_time);
+  push_int(tmp->sesi502_idle_time);
+  push_int(tmp->sesi502_user_flags);
+
+  SAFE_PUSH_WSTR(tmp->sesi502_cltype_name);
+  SAFE_PUSH_WSTR(tmp->sesi502_transport);
+
+  f_aggregate(8);
+}
+
+
+static void encode_session_info(BYTE *u, int level)
+{
+  if(!u)
+  {
+    push_int(0);
+    return;
+  }
+  switch(level)
+  {
+    case 0: low_encode_session_info_0 ((SESSION_INFO_0 *) u);break;
+    case 1: low_encode_session_info_1 ((SESSION_INFO_1 *) u); break;
+    case 2: low_encode_session_info_2 ((SESSION_INFO_2 *) u);break;
+    case 10:low_encode_session_info_10((SESSION_INFO_10 *)u); break;
+    case 502:low_encode_session_info_502((SESSION_INFO_502 *)u); break;
+    default:
+      error("Unsupported SESSIONINFO level.\n");
+  }
+}
+
+static int sizeof_session_info(int level)
+{
+  switch(level)
+  {
+    case 0: return sizeof(SESSION_INFO_0);
+    case 1: return sizeof(SESSION_INFO_1);
+    case 2: return sizeof(SESSION_INFO_2);
+    case 10: return sizeof(SESSION_INFO_10);
+    case 502: return sizeof(SESSION_INFO_502);
+    default: return -1;
+  }
+}
+
+static void f_NetSessionEnum(INT32 args)
+{
+  INT32 pos=0,e;
+  LPWSTR server, client, user;
+  DWORD level;
+  DWORD resume = 0;
+  struct array *a=0;
+
+  check_all_args("System.NetSessionEnum",args,
+		 BIT_INT|BIT_STRING,
+		 BIT_INT|BIT_STRING,
+		 BIT_INT|BIT_STRING,
+		 BIT_INT,
+		 0);
+
+  server=get_wstring(sp-args);
+  client=get_wstring(sp-args+1);
+  user=get_wstring(sp-args+2);
+  level=sp[3-args].u.integer;
+
+  switch(level)
+  {
+    default:
+    error("System.NetSessionEnum: Unsupported level.\n");
+
+    case 0:
+    case 1:
+    case 2:
+    case 10:
+    case 502:
+    break;
+  }
+
+  
+  while(1)
+  {
+    DWORD read=0, total=0;
+    NET_API_STATUS ret;
+    LPBYTE buf=0,ptr;
+
+    THREADS_ALLOW();
+    ret=netsessionenum(server,
+		       client,
+		       user,
+		       level,
+		       &buf,
+		       0x10000,
+		       &read,
+		       &total,
+		       &resume);
+    THREADS_DISALLOW();
+
+    if(!a)
+      push_array(a=allocate_array(total));
+    
+    switch(ret)
+    {
+      case ERROR_ACCESS_DENIED:
+      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
+	error("NetSessionEnum: Access denied.\n");
+	break;
+
+      case ERROR_INVALID_PARAMETER:
+	error("NetSessionEnum: Invalid parameter.\n");
+
+      case ERROR_NOT_ENOUGH_MEMORY:
+	error("NetSessionEnum: Out of memory.\n");
+	
+      case NERR_InvalidComputer:
+	error("NetSessionEnum: Invalid computer.\n");
+	break;
+
+      case NERR_UserNotFound:
+	error("NetSessionEnum: User not found\n");
+	break;
+
+      case NERR_ClientNameNotFound:
+	error("NetSessionEnum: Client name not found.\n");
+	break;
+
+      case NERR_Success:
+      case ERROR_MORE_DATA:
+	ptr=buf;
+	for(e=0;e<read;e++)
+	{
+	  encode_session_info(ptr,level);
+	  a->item[pos]=sp[-1];
+	  sp--;
+	  pos++;
+	  if(pos>=a->size) break;
+	  ptr+=sizeof_session_info(level);
+	}
+	netapibufferfree(buf);
+	if(ret==ERROR_MORE_DATA) continue;
+	if(pos < total) continue;
+	break;
+
+      default:
+	error("NetUserEnum: Unknown error %d\n",ret);
+    }
+    break;
+  }
+}
+
+/* End netsessionenum */
+
 static void f_GetFileAttributes(INT32 args)
 {
   char *file;
@@ -2110,6 +2335,18 @@ void init_nt_system_calls(void)
 	netgetanydcname=(netgetdcnametype)proc;
 	
  	add_function("NetGetAnyDCName",f_NetGetAnyDCName,"function(string|int,string:string)",0);
+      }
+
+
+      /* FIXME: On windows 9x, netsessionenum is located in svrapi.lib */
+      if(proc=GetProcAddress(netapilib, "NetSessionEnum"))
+      {
+	netsessionenum=(netsessionenumtype)proc;
+	
+ 	add_function("NetSessionEnum",f_NetSessionEnum,"function(string,string,string,int:array(int|string))",0);
+
+        SIMPCONST(SESS_GUEST);
+        SIMPCONST(SESS_NOENCRYPTION);
       }
     }
   }
