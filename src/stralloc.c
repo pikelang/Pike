@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.70 1999/10/23 06:51:32 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.71 1999/10/24 01:08:39 noring Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1844,7 +1844,7 @@ int pcharp_to_svalue_inumber(struct svalue *r,
 {
   PCHARP str_start;
   
-  INT_TYPE xx, neg = 0, is_bignum = 0;
+  INT_TYPE xx, neg = 0, is_bignum = 0, implicit_base = 0;
   INT_TYPE val;
   INT_TYPE c;
 
@@ -1882,6 +1882,8 @@ int pcharp_to_svalue_inumber(struct svalue *r,
   
   if(base == 0)
   {
+    implicit_base = 1;
+    
     if(c != '0')
       base = 10;
     else if(INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X')
@@ -1897,7 +1899,7 @@ int pcharp_to_svalue_inumber(struct svalue *r,
   if(!isalnum(c) || (xx = DIGIT(c)) >= base)
     return 0;   /* No number formed. */
   
-  if(base == 16 && c == '0' &&
+  if(implicit_base && base == 16 && c == '0' &&
      INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
      isxdigit(INDEX_PCHARP(str,2)) &&
       (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
@@ -1930,14 +1932,20 @@ int pcharp_to_svalue_inumber(struct svalue *r,
   {
     push_string(make_shared_binary_pcharp(str_start,
 					  SUBTRACT_PCHARP(str,str_start)));
-    push_int(base);
-
     /* Note that this can concievably throw errors()
      * in some situations that might not be desirable...
      * take care.
      * /Hubbe
      */
-    convert_stack_top_with_base_to_bignum();
+    if(implicit_base)
+    {
+      convert_stack_top_to_bignum();
+    }
+    else
+    {
+      push_int(base);
+      convert_stack_top_with_base_to_bignum();
+    }
     
     *r = *--sp;
   }

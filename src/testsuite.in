@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.204 1999/10/23 13:04:58 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.205 1999/10/24 01:08:41 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1399,13 +1399,9 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("123456789F01234567890", "%x")[0] ]])
   test_eq("1375488932614371410344080",
-	   [[ (string)array_sscanf("0x123456789F01234567890", "%x")[0] ]])
-  test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("0x123456789F01234567890", "%i")[0] ]])
   test_eq("45954944846776",
 	   [[ (string)array_sscanf("1234567012345670", "%o")[0] ]])
-  test_eq("45954944846776",
-	   [[ (string)array_sscanf("01234567012345670", "%o")[0] ]])
   test_eq("45954944846776",
 	   [[ (string)array_sscanf("01234567012345670", "%i")[0] ]])
   
@@ -1414,15 +1410,15 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-1375488932614371410344080",
 	   [[ (string)array_sscanf("-123456789F01234567890", "%x")[0] ]])
   test_eq("-1375488932614371410344080",
-	   [[ (string)array_sscanf("-0x123456789F01234567890","%x")[0] ]])
-  test_eq("-1375488932614371410344080",
 	   [[ (string)array_sscanf("-0x123456789F01234567890","%i")[0] ]])
   test_eq("-45954944846776",
 	   [[ (string)array_sscanf("-1234567012345670", "%o")[0] ]])
   test_eq("-45954944846776",
-	   [[ (string)array_sscanf("-01234567012345670", "%o")[0] ]])
-  test_eq("-45954944846776",
 	   [[ (string)array_sscanf("-01234567012345670", "%i")[0] ]])
+
+  test_equal([[ ({ 0, 118 }) ]], [[ array_sscanf("0x76", "%xx%x") ]])
+  test_equal([[ ({ 0, 557239244978618154304871 }) ]],
+             [[ array_sscanf("0x76000000000001234567", "%xx%x") ]])
 ]])
 
 cond([[all_constants()->_verify_internals]],

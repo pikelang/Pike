@@ -24,7 +24,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.48 1999/10/23 06:51:29 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.49 1999/10/24 01:08:38 noring Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -896,82 +896,30 @@ static INT32 really_low_sscanf(char *input,
 	     }
 	  break;
 
-	case 'd':
+        case 'o':
+        case 'd':
+        case 'x':
+        case 'D':
+        case 'i':
 	{
 	  char * t;
+	  int base = 0;
 
 	  if(eye>=input_len)
 	  {
 	    chars_matched[0]=eye;
 	    return matches;
 	  }
-	  
-	  string_to_svalue_inumber(&sval, input+eye, &t, 10, field_length);
 
-	  if(input + eye == t)
+	  switch(match[cnt])
 	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  eye=t-input;
-	  break;
-	}
-
-	case 'x':
-	{
-	  char * t;
-
-	  if(eye>=input_len)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
+	  case 'o': base =  8; break;
+	  case 'd': base = 10; break;
+	  case 'x': base = 16; break;
 	  }
 	  
-	  string_to_svalue_inumber(&sval, input+eye, &t, 16, field_length);
-	  
-	  if(input + eye == t)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  eye=t-input;
-	  break;
-	}
+	  string_to_svalue_inumber(&sval, input+eye, &t, base, field_length);
 
-	case 'o':
-	{
-	  char * t;
-
-	  if(eye>=input_len)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  
-	  string_to_svalue_inumber(&sval, input+eye, &t, 8, field_length);
-	  
-	  if(input + eye == t)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  eye=t-input;
-	  break;
-	}
-
-	case 'D':
-	case 'i':
-	{
-	  char * t;
-
-	  if(eye>=input_len)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  
-	  string_to_svalue_inumber(&sval, input+eye, &t, 0, field_length);
-	  
 	  if(input + eye == t)
 	  {
 	    chars_matched[0]=eye;
