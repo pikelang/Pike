@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.30 1998/07/19 03:24:09 hubbe Exp $
+// $Id: Stdio.pmod,v 1.31 1998/07/26 10:25:02 hubbe Exp $
 
 #include <string.h>
 
@@ -29,6 +29,9 @@ class File
   int open(string file, string mode, void|int bits)
   {
     _fd=Fd();
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
     if(query_num_arg()<3) bits=0666;
     return ::open(file,mode,bits);
   }
@@ -36,6 +39,9 @@ class File
   int open_socket(int|void port, string|void address)
   {
     _fd=Fd();
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
     switch(query_num_arg()) {
     case 0:
       return ::open_socket();
@@ -49,12 +55,18 @@ class File
   int connect(string host, int port)
   {
     if(!_fd) _fd=Fd();
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
     return ::connect(host,port);
   }
 
   object(File) pipe(void|int how)
   {
     _fd=Fd();
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
     if(query_num_arg()==0)
       how=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
     if(object(Fd) fd=::pipe(how))
@@ -73,55 +85,83 @@ class File
     {
       case "stdin":
 	_fd=_stdin;
+#ifdef __STDIO_DEBUG
+	__closed_backtrace=0;
+#endif
       case 0:
 	break;
 	
       case "stdout":
 	_fd=_stdout;
+#ifdef __STDIO_DEBUG
+	__closed_backtrace=0;
+#endif
 	break;
 	
       case "stderr":
 	_fd=_stderr;
+#ifdef __STDIO_DEBUG
+	__closed_backtrace=0;
+#endif
 	break;
 	
       default:
 	_fd=Fd();
+#ifdef __STDIO_DEBUG
+	__closed_backtrace=0;
+#endif
 	if(query_num_arg()<3) bits=0666;
 	::open(file,mode,bits);
     }
   }
 
-  // Don't allow overloading of this function.
-  static private nomask int do_assign(object to, object from)
+  int assign(object o)
   {
-    if((program)Fd == (program)object_program(from))
+    if((program)Fd == (program)object_program(o))
     {
-      to->_fd = from->dup();
+      _fd = o->dup();
     }else{
-      to->_fd = from->_fd;
-      to->___read_callback = from->___read_callback;
-      to->___write_callback = from->___write_callback;
-      to->___close_callback = from->___close_callback;
+      _fd = o->_fd;
+      if(___read_callback = o->___read_callback)
+	_fd->_read_callback=__stdio_read_callback;
+
+      if(___write_callback = o->___write_callback)
+	_fd->_write_callback=__stdio_write_callback;
+
+      ___close_callback = o->___close_callback;
 #if constant(__HAVE_OOB__)_
-      to->___read_oob_callback = from->___read_oob_callback;
-      to->___write_oob_callback = from->___write_oob_callback;
+      if(___read_oob_callback = o->___read_oob_callback)
+	_fd->_read_oob_callback = __stdio_read_oob_callbac;
+
+      if(___write_oob_callback = o->___write_oob_callback)
+	_fd->_write_oob_callback = __stdio_write_oob_callbac;
 #endif
-      to->___id = from->___id;
+      ___id = o->___id;
+      
     }
     return 0;
   }
 
-  int assign(object o)
-  {
-    return do_assign(this_object(), o);
-  }
-
   object dup()
   {
-    object o;
-    o = File();
-    do_assign(o, this_object());
-    return o;
+    object to = File();
+    to->_fd = _fd;
+    if(to->___read_callback = ___read_callback)
+      _fd->_read_callback=to->__stdio_read_callback;
+
+    if(to->___write_callback = ___write_callback)
+      _fd->_write_callback=to->__stdio_write_callback;
+
+    to->___close_callback = ___close_callback;
+#if constant(__HAVE_OOB__)_
+    if(to->___read_oob_callback = ___read_oob_callback)
+      _fd->_read_oob_callback=to->__stdio_read_oob_callback;
+
+    if(to->___write_oob_callback = ___write_oob_callback)
+      _fd->_write_oob_callback=to->__stdio_write_oob_callback;
+#endif
+    to->___id = ___id;
+    return to;
   }
 
 
@@ -146,7 +186,7 @@ class File
 #endif
   }
 
-  static void my_read_callback()
+  static void __stdio_read_callback()
   {
 #if defined(__STDIO_DEBUG) && !defined(__NT__)
     if(!::peek())
@@ -162,10 +202,10 @@ class File
     }
   }
 
-  static void my_write_callback() { ___write_callback(___id); }
+  static void __stdio_write_callback() { ___write_callback(___id); }
 
 #if constant(__HAVE_OOB__)_
-  static void my_read_oob_callback()
+  static void __stdio_read_oob_callback()
   {
     string s=::read_oob(8192,1);
     if(s && strlen(s))
@@ -176,10 +216,11 @@ class File
     }
   }
 
-  static void my_write_oob_callback() { ___write_oob_callback(___id); }
+  static void __stdio_write_oob_callback() { ___write_oob_callback(___id); }
 #endif
 
-#define SET(X,Y) ::set_##X ((___##X = (Y)) && my_##X)
+#define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
+#define _SET(X,Y) do { _##X=__stdio_##X; ___##X = (Y); }while(0)
 
 #define CBFUNC(X)					\
   void set_##X (mixed l##X)				\
@@ -225,15 +266,30 @@ class File
       
     }
 #endif
-    SET(read_callback,rcb);
-    SET(write_callback,wcb);
+    ::_disable_callbacks(); // Thread safing
+
+    _SET(read_callback,rcb);
+    _SET(write_callback,wcb);
     ___close_callback=ccb;
 
 #if constant(__HAVE_OOB__)_
-    SET(read_oob_callback,roobcb);
-    SET(write_oob_callback,woobcb);
+    _SET(read_oob_callback,roobcb);
+    _SET(write_oob_callback,woobcb);
 #endif
+#ifdef __STDIO_DEBUG
+    if(mixed x=catch { ::set_nonblocking(); })
+    {
+      x[0]+=(__closed_backtrace ? 
+	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :
+	   "This file has never been open.\n" )+
+	(_fd?"_fd is nonzero\n":"_fd is zero\n");
+      throw(x);
+    }
+#else
     ::set_nonblocking();
+#endif
+    ::_enable_callbacks();
+
   }
 
   void set_blocking()
