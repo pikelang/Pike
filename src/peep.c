@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.38 2000/11/25 16:54:46 grubba Exp $");
+RCSID("$Id: peep.c,v 1.39 2000/11/28 02:16:22 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -287,6 +287,17 @@ void assemble(void)
 	case TWOO(F_LAND,F_LAND):
 	  c[e].arg=c[tmp].arg;
 	continue;
+
+        case TWOO(F_LOR, F_RETURN):
+	  c[e].opcode=F_RETURN_IF_TRUE;
+	  break;
+
+        case TWOO(F_BRANCH, F_RETURN):
+        case TWOO(F_BRANCH, F_RETURN_0):
+        case TWOO(F_BRANCH, F_RETURN_1):
+        case TWOO(F_BRANCH, F_RETURN_LOCAL):
+	  c[e]=c[tmp];
+	  break;
 	}
 	break;
       }
