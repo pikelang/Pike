@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.397 2001/12/20 12:54:37 grubba Exp $");
+RCSID("$Id: program.c,v 1.398 2001/12/20 14:23:35 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -262,6 +262,11 @@ static char *raw_lfun_types[] = {
  *!   This function is called by @[destruct()] right before
  *!   it will zero all the object variables, and destroy the object.
  *!
+ *! @note
+ *!   Note that it will also be called on implicit destruct, eg
+ *!   when there are no more references to the object, or when
+ *!   the garbage-collector decides to destruct the object.
+ *!
  *! @seealso
  *!   @[lfun::create()], @[destruct()]
  */
@@ -382,21 +387,40 @@ static char *raw_lfun_types[] = {
  *!
  *!   Hashing callback.
  *!
- *!   FIXME: When is this used?
+ *!   This function gets called by various mapping operations when the
+ *!   object is used as index in a mapping.
  */
 
 /*! @decl mixed lfun::cast(string requested_type)
  *!
  *!   Cast operator callback.
  *!
+ *! @param requested_type
+ *!   Type to cast to.
+ *!
+ *! @returns
+ *!   Expected to return the object value-casted (converted) to
+ *!   the type described by @[requested_type].
+ *!
  *! @note
- *!   The argument is currently (Pike 7.2) a string with the name
+ *!   The argument is currently (Pike 7.3) a string with the name
  *!   of the type, but might in the future be a value of the type type.
+ *!
+ *! @note
+ *!   Currently (Pike 7.3) casting between object types is a noop.
+ *!
+ *! @note
+ *!   If the returned value is not deemed to be of the requested type
+ *!   a runtime error may be thrown.
  */
 
 /*! @decl int lfun::`!()
  *!
  *!   Not operator callback.
+ *!
+ *! @returns
+ *!   Returns non-zero if the object should be evaluated as false,
+ *!   and @tt{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[`!()]
@@ -415,7 +439,7 @@ static char *raw_lfun_types[] = {
  *!   Index assignment operator callback.
  *!
  *! @seealso
- *!   @[`[]=()]
+ *!   @[`[]=()], @[lfun::`->=()]
  */
 
 /*! @decl mixed lfun::`->(string arg)
@@ -431,12 +455,19 @@ static char *raw_lfun_types[] = {
  *!   Arrow index assign operator callback.
  *!
  *! @seealso
- *!   @[`->=()]
+ *!   @[`->=()], @[lfun::`[]=()]
  */
 
 /*! @decl int lfun::_sizeof()
  *!
  *!   Sizeof operator callback.
+ *!
+ *!   Called by @[sizeof()] to determine the number of elements
+ *!   in an object. If this function is not present, the number
+ *!   of public symbols in the object will be returned.
+ *!
+ *! @returns
+ *!   Expected to return the number of valid indices in the object.
  *!
  *! @seealso
  *!   @[sizeof()]
@@ -446,16 +477,23 @@ static char *raw_lfun_types[] = {
  *!
  *!   Indices operator callback.
  *!
+ *! @returns
+ *!   Expected to return an array with the valid indices in the object.
+ *!
  *! @seealso
- *!   @[indices()]
+ *!   @[indices()], @[lfun::_values()]
  */
 
 /*! @decl array lfun::_values()
  *!
  *!   Values operator callback.
  *!
+ *! @returns
+ *!   Expected to return an array with the values corresponding to
+ *!   the indices returned by @[lfun::_indices()].
+ *!
  *! @seealso
- *!   @[values()]
+ *!   @[values()], @[lfun::_indices()]
  */
 
 /*! @decl mixed lfun::`()(zero ... args)
@@ -554,13 +592,46 @@ static char *raw_lfun_types[] = {
  *!   @[`+()], @[lfun::`+()]
  */
 
-/*! @decl int(0..1) lfun::_is_type(string arg)
+/*! @decl int(0..1) lfun::_is_type(string basic_type)
  *!
  *!   Type comparison callback.
  *!
+ *!   Called by the cast operator to determine if an object
+ *!   simulates a basic type.
+ *!
+ *! @param basic_type
+ *!   One of:
+ *!   @string
+ *!     @value "array"
+ *!     @value "float"
+ *!     @value "function"
+ *!     @value "int"
+ *!     @value "mapping"
+ *!     @value "multiset"
+ *!     @value "object"
+ *!     @value "program"
+ *!     @value "string"
+ *!     @value "type"
+ *!     @value "void"
+ *!     @value "zero"
+ *!   @endstring
+ *!
+ *!   The following five shouldn't occurr, but are here for completeness:
+ *!   @string
+ *!     @value "lvalue"
+ *!     @value "mapping_data"
+ *!     @value "object storage"
+ *!     @value "pike_frame"
+ *!     @value "unknown"
+ *!   @endstring
+ *!
+ *! @returns
+ *!   Expected to return @tt{1@} if the object is to be regarded as a
+ *!   simulation of the type specified by @[basic_type@].
+ *!
  *! @note
  *!   The argument is currently (Pike 7.2) a string with the name
- *!   of the type, but migt in the future be a value of the type type.
+ *!   of the type, but might in the future be a value of the type type.
  */
 
 /*! @decl string lfun::_sprintf(int conversion_type, @
@@ -663,8 +734,8 @@ static char *raw_lfun_types[] = {
  *!   Should return an object that implements the iterator API:
  *!   @dl
  *!   	@item
- *!   	  @[lfun::`!()] should return @tt{1@} when not at end of stream,
- *!   	  and @tt{0@} (zero) at end of stream.
+ *!   	  @[lfun::`!()] should return @tt{0@} (zero) when not at end of stream,
+ *!   	  and @tt{1@} at end of stream.
  *!   	@item
  *!   	  @[lfun::`+=()] should advance the specified number of steps.
  *!   	@item
