@@ -21,7 +21,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.51 1999/08/17 03:17:06 mast Exp $");
+RCSID("$Id: array.c,v 1.52 1999/08/17 22:00:00 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -182,22 +182,22 @@ void simple_array_index_no_free(struct svalue *s,
       break;
 
     case T_STRING:
-      if (ind->subtype == 1) {
-	check_stack(4);
-	ref_push_array(a);
-	assign_svalue_no_free(sp++,ind);
-	f_column(2);
-	s[0]=sp[-1];
-	sp--;
-	break;
-      }
+    {
+      check_stack(4);
+      ref_push_array(a);
+      assign_svalue_no_free(sp++,ind);
+      f_column(2);
+      s[0]=sp[-1];
+      sp--;
+      break;
+    }
 	
     default:
       {
 	struct svalue tmp;
 	tmp.type=T_ARRAY;
 	tmp.u.array=a;
-	index_error(0,0,0,&tmp,ind,"Index is not an integer.\n");
+	index_error(0,0,0,&tmp,ind,"Array index is neither int nor string.\n");
       }
   }
 }
@@ -254,20 +254,26 @@ void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
       break;
 
     case T_STRING:
-      if (ind->subtype == 1) {
-	INT32 i, n;
-	sp++->type = T_VOID;
-	push_svalue(ind);
-	for (i = 0, n = a->size; i < n; i++) {
-	  assign_svalue(sp-2, &a->item[i]);
-	  assign_lvalue(sp-2, s);
-	}
-	pop_n_elems(2);
-	break;
+    {
+      INT32 i, n;
+      check_stack(2);
+      sp++->type = T_VOID;
+      push_svalue(ind);
+      for (i = 0, n = a->size; i < n; i++) {
+	assign_svalue(sp-2, &a->item[i]);
+	assign_lvalue(sp-2, s);
       }
+      pop_n_elems(2);
+      break;
+    }
 
     default:
-      error("Index is not an integer.\n");
+    {
+      struct svalue tmp;
+      tmp.type=T_ARRAY;
+      tmp.u.array=a;
+      index_error(0,0,0,&tmp,ind,"Array index is neither int nor string.\n");
+    }
   }
 }
 
