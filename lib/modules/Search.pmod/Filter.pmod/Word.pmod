@@ -1,18 +1,12 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.7 2001/09/03 22:12:28 marcus Exp $
+// $Id: Word.pmod,v 1.8 2001/11/19 13:33:15 js Exp $
 
 inherit Search.Filter.HTML;
 
 constant contenttypes = ({ "application/msword", "application/vnd.ms-word" });
 constant fields = ({ "body", "title", "keywords"});
-
-#if constant(PIKE_MODULE_RELOC)
-#define RELPATH(n) combine_path(getcwd(), master()->relocate_module(__FILE__), "../"n)
-#else
-#define RELPATH(n) combine_path(getcwd(), __FILE__, "../"n)
-#endif
 
 Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 {
@@ -29,13 +23,18 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
     error("Failed to write data for %O (returned %O, not %O)\n",
 	  fn, r, sizeof(data));
   
-  string text = my_popen(({ RELPATH("../../../bin/wvWare"),
-			    "-c", "utf-8",
-			    "-x", RELPATH("wvHtml.xml"),
-			    fn }));
-  
+  string text;
+  mixed err = catch
+  {
+    text = my_popen(({ "modules/search/bin/wvWare",
+		       "-c", "utf-8",
+		       "-x", "modules/search/pike-modules/Search.pmod/Filter.pmod/wvHtml.xml",
+		       fn }));
+  };
   if(!rm(fn))
     werror("Search: Failed to remove temporary file: %s\n", fn);
+  if(err)
+    throw(err);
   
   return ::filter(uri, text, "text/html", ([]), "utf-8");
 }

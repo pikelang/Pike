@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.8 2001/09/03 22:12:28 marcus Exp $
+// $Id: PDF.pmod,v 1.9 2001/11/19 13:33:15 js Exp $
 
 // Filter for application/pdf
 
@@ -9,12 +9,6 @@ inherit Search.Filter.Base;
 
 constant contenttypes = ({ "application/pdf" });
 constant fields = ({ "body", "title", "keywords" });
-
-#if constant(PIKE_MODULE_RELOC)
-#define RELPATH(n) combine_path(getcwd(), master()->relocate_module(__FILE__), "../"n)
-#else
-#define RELPATH(n) combine_path(getcwd(), __FILE__, "../"n)
-#endif
 
 Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 {
@@ -31,11 +25,13 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
     error("Failed to write data for %O (returned %O, not %O)\n",
 	  fn, r, sizeof(data));
   
-  string text =
-    my_popen(({ RELPATH("../../../bin/pdftotext"), fn, "-" }));
+  string text;
+  mixed err = catch(text=my_popen(({ "modules/search/bin/pdftotext", fn, "-" })));
   
   if(!rm(fn))
     werror("Search: Failed to remove temporary file: %s\n", fn);
+  if(err)
+    throw(err);
 
   string md="", body="";
   array a=text/"\n----------";
