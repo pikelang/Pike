@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.761 2004/01/12 12:26:42 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.762 2004/01/22 21:15:27 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6456,6 +6456,17 @@ then
       # What about UNIX_SV?
       UnixWare*|OpenUNIX*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
       Windows_NT*|NT*) LINKFORSHARED="-rdynamic";;
+
+      FreeBSD*)
+        AC_TRY_RUN([int main(){exit(
+#ifdef __ELF__
+    0
+#else
+    1
+#endif
+);}
+        ],LINKFORSHARED=-rdynamic)
+      ;;
     esac
   fi
 fi
