@@ -43,6 +43,7 @@ void gc_mark_multiset_as_referenced(struct multiset *l);
 void gc_check_all_multisets();
 void gc_mark_all_multisets();
 void gc_free_all_unreferenced_multisets();
+void count_memory_in_multisets(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
 #endif

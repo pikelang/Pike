@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.15 1996/12/03 21:41:15 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.16 1996/12/05 00:47:11 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -1433,6 +1433,82 @@ void f_glob(INT32 args)
   }
 }
 
+static struct callback_list memory_usage_callback;
+
+struct callback *add_memory_usage_callback(callback_func call,
+					  void *arg,
+					  callback_func free_func)
+{
+  return add_to_callback(&memory_usage_callback, call, arg, free_func);
+}
+
+
+void f__memory_usage(INT32 args)
+{
+  INT32 num,size;
+  struct svalue *ss;
+  pop_n_elems(args);
+  ss=sp;
+
+  count_memory_in_mappings(&num, &size);
+  push_text("num_mappings");
+  push_int(num);
+  push_text("mapping_bytes");
+  push_int(size);
+
+  count_memory_in_strings(&num, &size);
+  push_text("num_strings");
+  push_int(num);
+  push_text("string_bytes");
+  push_int(size);
+
+  count_memory_in_arrays(&num, &size);
+  push_text("num_arrays");
+  push_int(num);
+  push_text("array_bytes");
+  push_int(size);
+
+  count_memory_in_programs(&num,&size);
+  push_text("num_programs");
+  push_int(num);
+  push_text("program_bytes");
+  push_int(size);
+
+  count_memory_in_multisets(&num, &size);
+  push_text("num_multisets");
+  push_int(num);
+  push_text("multiset_bytes");
+  push_int(size);
+
+  count_memory_in_objects(&num, &size);
+  push_text("num_objects");
+  push_int(num);
+  push_text("object_bytees");
+  push_int(size);
+
+  count_memory_in_callbacks(&num, &size);
+  push_text("num_callbacks");
+  push_int(num);
+  push_text("callback_bytes");
+  push_int(size);
+
+  count_memory_in_constants(&num, &size);
+  push_text("num_constants");
+  push_int(num);
+  push_text("constant_bytes");
+  push_int(size);
+
+  count_memory_in_callables(&num, &size);
+  push_text("num_callables");
+  push_int(num);
+  push_text("callable_bytes");
+  push_int(size);
+
+  call_callback(&memory_usage_callback, (void *)0);
+
+  f_aggregate_mapping(sp-ss);
+}
+
 void init_builtin_efuns()
 {
   init_operators();
@@ -1501,6 +1577,7 @@ void init_builtin_efuns()
 #ifdef DEBUG
   add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #endif
+  add_efun("_memory_usage",f__memory_usage,"function(:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 
 #ifdef GC2
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);

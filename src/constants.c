@@ -13,6 +13,7 @@
 #include "interpret.h"
 
 static struct hash_table *efun_hash = 0;
+static INT32 num_callable=0;
 
 struct efun *lookup_efun(struct pike_string *name)
 {
@@ -63,6 +64,7 @@ struct callable *make_callable(c_fun fun,
 {
   struct callable *f;
   f=ALLOC_STRUCT(callable);
+  num_callable++;
   f->refs=1;
   f->function=fun;
   f->name=make_shared_string(name);
@@ -78,6 +80,7 @@ void really_free_callable(struct callable *fun)
   free_string(fun->type);
   free_string(fun->name);
   free((char *)fun);
+  num_callable--;
 }
 
 void add_efun2(char *name,
@@ -138,3 +141,23 @@ void cleanup_added_efuns()
   }
   
 }
+
+void count_memory_in_constants(INT32 *num_, INT32 *size_)
+{
+  INT32 size=0, num=0;
+  if(efun_hash)
+  {
+    size+=sizeof(struct hash_table) +
+      efun_hash->mask*sizeof(struct hash_entry)+
+    efun_hash->entries*sizeof(struct efun);
+  }
+  *num_=num;
+  *size_=size;
+}
+
+void count_memory_in_callables(INT32 *num_, INT32 *size_)
+{
+  *num_=num_callable;
+  *size_=num_callable*sizeof(struct callable);
+}
+

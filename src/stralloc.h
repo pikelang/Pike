@@ -56,6 +56,7 @@ struct pike_string *string_replace(struct pike_string *str,
 				     struct pike_string *to);
 void init_shared_string_table();
 void cleanup_shared_string_table();
+void count_memory_in_strings(INT32 *num, INT32 *size);
 /* Prototypes end here */
 
 #endif /* STRALLOC_H */

@@ -128,6 +128,10 @@ void gc_mark_array_as_referenced(struct array *a);
 void gc_check_all_arrays();
 void gc_mark_all_arrays();
 void gc_free_all_unreferenced_arrays();
+void debug_dump_type_field(TYPE_FIELD t);
+void debug_dump_array(struct array *a);
+void zap_all_arrays();
+void count_memory_in_arrays(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
 

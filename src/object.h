@@ -67,6 +67,7 @@ void gc_mark_object_as_referenced(struct object *o);
 void gc_check_all_objects();
 void gc_mark_all_objects();
 void gc_free_all_unreferenced_objects();
+void count_memory_in_objects(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
 #endif /* OBJECT_H */

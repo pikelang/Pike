@@ -526,3 +526,25 @@ void cleanup_shared_string_table()
   }
   free((char *)base_table);
 }
+
+void count_memory_in_strings(INT32 *num, INT32 *size)
+{
+  unsigned INT32 e, num_=0, size_=0;
+  if(!base_table) return;
+  size_+=htable_size * sizeof(struct pike_string *);
+  for(e=0;e<htable_size;e++)
+  {
+    struct pike_string *p;
+    for(p=base_table[e];p;p=p->next)
+    {
+      num_++;
+      size_+=sizeof(struct pike_string)+p->len;
+    }
+  }
+#ifdef DEBUG
+  if(num_strings != num_)
+    fatal("Num strings is wrong!.\n");
+#endif
+  num[0]=num_;
+  size[0]=size_;
+}

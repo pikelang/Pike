@@ -1,3 +1,8 @@
+Wed Dec  4 16:33:53 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* callback.c: fixed a memory leak and added more debug
+	* new efun: _memory_usage
+
 Wed Dec  4 05:01:00 1996  Niels Möller  <nisse@skuld.infovav.se>
 
 	* modules/ssleay/ssleay.c (init_context): Increment reference count.

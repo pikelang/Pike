@@ -50,6 +50,8 @@ void add_efun2(char *name,
 void add_efun(char *name, c_fun fun, char *type, INT16 flags);
 void push_all_efuns_on_stack();
 void cleanup_added_efuns();
+void count_memory_in_constants(INT32 *num_, INT32 *size_);
+void count_memory_in_callables(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
 #endif

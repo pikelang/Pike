@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.9 1996/12/04 00:27:11 hubbe Exp $");
+RCSID("$Id: las.c,v 1.10 1996/12/05 00:47:14 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -36,6 +36,7 @@ static void optimize(node *n);
 dynamic_buffer areas[NUM_AREAS];
 node *init_node = 0;
 int num_parse_error;
+int cumulative_parse_error=0;
 extern char *get_type_name(int);
 
 #define MAX_GLOBAL 256
@@ -139,28 +140,51 @@ void free_all_nodes()
   {
     node *tmp;
     struct node_chunk *tmp2;
-#ifdef DEBUG
     int e=0;
-    for(tmp2=node_chunks;tmp2;tmp2=tmp2->next) e+=NODES;
-    for(tmp=free_nodes;tmp;tmp=CAR(tmp)) e--;
-    if(e)
-    {
-      int e2=e;
-      for(tmp2=node_chunks;tmp2;tmp2=tmp2->next)
-      {
-	for(e=0;e<NODES;e++)
-	{
-	  for(tmp=free_nodes;tmp;tmp=CAR(tmp))
-	    if(tmp==tmp2->nodes+e)
-	      break;
 
-	  if(!tmp)
-	    fprintf(stderr,"Free node at %p.\n",(tmp2->nodes+e));
-	}
-      }
-      fatal("Failed to free %d nodes when compiling!\n",e2);
-    }
+
+    if(cumulative_parse_error)
+    {
+      
+      for(tmp2=node_chunks;tmp2;tmp2=tmp2->next) e+=NODES;
+      for(tmp=free_nodes;tmp;tmp=CAR(tmp)) e--;
+      if(e)
+      {
+	int e2=e;
+	for(tmp2=node_chunks;tmp2;tmp2=tmp2->next)
+	{
+	  for(e=0;e<NODES;e++)
+	  {
+	    for(tmp=free_nodes;tmp;tmp=CAR(tmp))
+	      if(tmp==tmp2->nodes+e)
+		break;
+	    
+	    if(!tmp)
+	    {
+	      tmp=tmp2->nodes+e;
+#ifdef DEBUG
+	      if(!cumulative_parse_error)
+	      {
+		fprintf(stderr,"Free node at %p.\n",tmp);
+	      }
+	      else
 #endif
+	      {
+		/* Free the node and be happy */
+		/* Make sure we don't free any nodes twice */
+		if(car_is_node(tmp)) CAR(tmp)=0;
+		if(cdr_is_node(tmp)) CDR(tmp)=0;
+		free_node(tmp);
+	      }
+	    }
+	  }
+	}
+#ifdef DEBUG
+	if(!cumulative_parse_error)
+	  fatal("Failed to free %d nodes when compiling!\n",e2);
+#endif
+      }
+    }
     while(node_chunks)
     {
       tmp2=node_chunks;
@@ -168,6 +192,7 @@ void free_all_nodes()
       free((char *)tmp2);
     }
     free_nodes=0;
+    cumulative_parse_error=0;
   }
 }
 

@@ -58,6 +58,7 @@ typedef struct node_s node;
 extern struct locals *local_variables;
 extern node *init_node;
 extern int num_parse_error;
+extern int cumulative_parse_error;
 
 #define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
 				    * only used in node_info

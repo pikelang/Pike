@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.7 1996/11/14 01:36:29 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.8 1996/12/05 00:47:15 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -19,7 +19,6 @@ RCSID("$Id: mapping.c,v 1.7 1996/11/14 01:36:29 hubbe Exp $");
 #include "interpret.h"
 #include "las.h"
 #include "gc.h"
-
 
 #define AVG_LINK_LENGTH 4
 #define MIN_LINK_LENGTH 1
@@ -1047,4 +1046,24 @@ void zap_all_mappings()
     
     free_mapping(m);
   }
+}
+
+void count_memory_in_mappings(INT32 *num_, INT32 *size_)
+{
+  INT32 num=0, size=0;
+  struct mapping *m;
+  for(m=first_mapping;m;m=m->next)
+  {
+    struct keypair *k;
+    num++;
+    size+=sizeof(struct mapping)+
+      sizeof(struct keypair *) * m->hashsize+
+      sizeof(struct keypair) *  m->size;
+
+    for(k=m->free_list;k;k=k->next)
+      size+=sizeof(struct keypair);
+  }
+
+  *num_=num;
+  *size_=size;
 }

@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.14 1996/12/04 00:27:10 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.15 1996/12/05 00:47:14 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1295,6 +1295,7 @@ void yyerror(char *str)
 
   if (num_parse_error > 5) return;
   num_parse_error++;
+  cumulative_parse_error++;
 
   if ( get_master() )
   {

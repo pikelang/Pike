@@ -223,6 +223,7 @@ void gc_mark_program_as_referenced(struct program *p);
 void gc_check_all_programs();
 void gc_mark_all_programs();
 void gc_free_all_unreferenced_programs();
+void count_memory_in_programs(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
 

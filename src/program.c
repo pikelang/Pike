@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.10 1996/12/04 00:27:12 hubbe Exp $");
+RCSID("$Id: program.c,v 1.11 1996/12/05 00:47:18 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1452,3 +1452,17 @@ void gc_free_all_unreferenced_programs()
 }
 
 #endif /* GC2 */
+
+
+void count_memory_in_programs(INT32 *num_, INT32 *size_)
+{
+  INT32 size=0, num=0;
+  struct program *p;
+  for(p=first_program;p;p=p->next)
+  {
+    num++;
+    size+=p->total_size;
+  }
+  *num_=num;
+  *size_=size;
+}

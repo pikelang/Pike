@@ -70,6 +70,10 @@ void f_column(INT32 args);
 void f__verify_internals(INT32 args);
 void f_localtime(INT32 args);
 void f_glob(INT32 args);
+struct callback *add_memory_usage_callback(callback_func call,
+					   void *arg,
+					   callback_func free_func);
+void f__memory_usage(INT32 args);
 void init_builtin_efuns();
 /* Prototypes end here */
 

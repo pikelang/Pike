@@ -1534,3 +1534,17 @@ void zap_all_arrays()
     a=next;
   } while (a != & empty_array);
 }
+
+void count_memory_in_arrays(INT32 *num_, INT32 *size_)
+{
+  INT32 num=0, size=0;
+  struct array *m;
+  for(m=empty_array.next;m!=&empty_array;m=m->next)
+  {
+    num++;
+    size+=sizeof(struct array)+
+      sizeof(struct svalue) *  (m->malloced_size - 1);
+  }
+  *num_=num;
+  *size_=size;
+}

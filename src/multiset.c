@@ -305,3 +305,16 @@ void gc_free_all_unreferenced_multisets()
 }
 
 #endif /* GC2 */
+
+void count_memory_in_multisets(INT32 *num_, INT32 *size_)
+{
+  struct multiset *m;
+  INT32 size=0, num=0;
+  for(m=first_multiset;m;m=m->next)
+  {
+    num++;
+    size+=sizeof(struct multiset);
+  }
+  *num_=num;
+  *size_=size;
+}

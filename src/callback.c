@@ -34,23 +34,66 @@ static struct callback *first_callback =0;
 static struct callback *free_callbacks =0;
 
 #ifdef DEBUG
+extern int d_flag;
+
 static void check_callback_chain(struct callback_list *lst)
 {
-  int len=0;
+  int e,len=0;
+  struct callback_block *tmp;
   struct callback *foo;
-  for(foo=lst->callbacks;foo;foo=foo->next)
+  if(d_flag)
   {
-    if((len & 1024)==1023)
+    for(foo=lst->callbacks;foo;foo=foo->next)
     {
-      int len2=0;
-      struct callback *tmp;
-      for(tmp=foo->next;tmp && len2<=len;tmp=tmp->next)
+      if((len & 1024)==1023)
       {
-	if(tmp==foo)
-	  fatal("Callback list is cyclic!!!\n");
+	int len2=0;
+	struct callback *tmp;
+	for(tmp=foo->next;tmp && len2<=len;tmp=tmp->next)
+	{
+	  if(tmp==foo)
+	    fatal("Callback list is cyclic!!!\n");
+	}
       }
+      len++;
     }
-    len++;
+    
+    for(tmp=callback_chunks;tmp;tmp=tmp->next)
+    {
+      for(e=0;e<CALLBACK_CHUNK;e++)
+      {
+	int d;
+	struct callback_block *tmp2;
+	
+	if(tmp->callbacks[e].free_func == (callback_func)remove_callback)
+	{
+	  for(foo=free_callbacks;foo;foo=foo->next)
+	    if(foo==tmp->callbacks+e)
+	      break;
+	  
+	  if(!foo)
+	    fatal("Lost track of a struct callback!\n");
+	}
+	
+	if(tmp->callbacks[e].next)
+	{
+	  d=CALLBACK_CHUNK;
+	  for(tmp2=callback_chunks;tmp2;tmp2=tmp2->next)
+	  {
+	    for(d=0;d<CALLBACK_CHUNK;d++)
+	    {
+	      if(tmp2->callbacks+d == tmp->callbacks[e].next)
+		break;
+	      
+	      if(d < CALLBACK_CHUNK) break;
+	    }
+	  }
+	  
+	  if(d == CALLBACK_CHUNK)
+	    fatal("Callback next pointer pointing to Z'ha'dum\n");
+	}
+      }
+  }
   }
 }
 #else
@@ -61,7 +104,7 @@ static void check_callback_chain(struct callback_list *lst)
 static struct callback *get_free_callback()
 {
   struct callback *tmp;
-  if(!(tmp=free_callbacks))
+  if(!free_callbacks)
   {
     int e;
     struct callback_block *tmp2;
@@ -69,12 +112,14 @@ static struct callback *get_free_callback()
     tmp2->next=callback_chunks;
     callback_chunks=tmp2;
 
-    for(e=0;e<(int)sizeof(CALLBACK_CHUNK);e++)
+    for(e=0;e<CALLBACK_CHUNK;e++)
     {
-      tmp2->callbacks[e].next=tmp;
-      tmp=tmp2->callbacks+e;
+      tmp2->callbacks[e].next=free_callbacks;
+      tmp2->callbacks[e].free_func=(callback_func)remove_callback;
+      free_callbacks=tmp2->callbacks+e;
     }
   }
+  tmp=free_callbacks;
   free_callbacks=tmp->next;
   return tmp;
 }
@@ -103,9 +148,15 @@ void call_callback(struct callback_list *lst, void *arg)
 
     if(!l->call)
     {
+      if(l->free_func)
+	l->free_func(l, l->arg, 0);
+
       *ptr=l->next;
       l->next=free_callbacks;
       free_callbacks=l;
+#ifdef DEBUG
+      l->free_func=(callback_func)remove_callback;
+#endif
     }else{
       ptr=& l->next;
     }
@@ -123,6 +174,7 @@ struct callback *add_to_callback(struct callback_list *lst,
   l=get_free_callback();
   l->call=call;
   l->arg=arg;
+  l->free_func=free_func;
 
   l->next=lst->callbacks;
   lst->callbacks=l;
@@ -138,6 +190,7 @@ struct callback *add_to_callback(struct callback_list *lst,
 void *remove_callback(struct callback *l)
 {
   l->call=0;
+  l->free_func=0;
   return l->arg;
 }
 
@@ -149,11 +202,14 @@ void free_callback(struct callback_list *lst)
   ptr=& lst->callbacks;
   while(l=*ptr)
   {
-    if(l->arg && l->free_func)
+    if(l->free_func)
       l->free_func(l, l->arg, 0);
     *ptr=l->next;
     l->next=free_callbacks;
     free_callbacks=l;
+#ifdef DEBUG
+    l->free_func=(callback_func)remove_callback;
+#endif
   }
 }
 
@@ -166,4 +222,20 @@ void cleanup_callbacks()
     free((char *)tmp);
   }
   free_callbacks=0;
+}
+
+
+void count_memory_in_callbacks(INT32 *num_, INT32 *size_)
+{
+  INT32 num=0, size=0;
+  struct callback_block *tmp;
+  struct callback *tmp2;
+  for(tmp=callback_chunks;tmp;tmp=tmp->next)
+  {
+    num+=CALLBACK_CHUNK;
+    size+=sizeof(struct callback_block);
+  }
+  for(tmp2=free_callbacks;tmp2;tmp2=tmp2->next) num--;
+  *num_=num;
+  *size_=size;
 }

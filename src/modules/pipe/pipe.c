@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.6 1996/11/14 01:36:35 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.7 1996/12/05 00:47:58 hubbe Exp $");
 
 #include "stralloc.h"
 #include "types.h"
@@ -1108,6 +1108,7 @@ void init_pipe_programs()
    
    pipe_program->refs++;
    
+   /* Why is this here?? /Hubbe */
    port_setup_program();
    
    offset_output_close_callback=find_identifier("_output_close_callback",
