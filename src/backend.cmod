@@ -2540,7 +2540,14 @@ PIKECLASS Backend
 	  }
 #endif /* MY_POLLNVAL */
 
-	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR))
+	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR)
+#ifdef USE_KQUEUE
+	      || 
+	      ( CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT) &&
+		CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], EV_EOF) &&
+		!ACTIVE_POLLSET[i].data)
+#endif /* USE_KQUEUE */
+	      )
 	  {
 	    /* Closed (write end) or error */
 	    int old_events;
