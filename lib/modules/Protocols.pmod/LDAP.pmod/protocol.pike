@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.2 1999/08/25 05:04:33 hubbe Exp $
+// $Id: protocol.pike,v 1.3 1999/12/30 00:34:10 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -389,7 +389,8 @@ DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
   // Reads LDAP PDU (with defined msgid) from server, checks msgid ...
 
     int msglen = 0, ix;
-    string retv, s, shlp;
+    string|int(-1..0) retv;
+    string s, shlp;
 
     retv = ldap::read(2); 	// 1. byte = 0x0C, 2. byte = msglen
     if (intp(retv) && (retv == -1)) {
