@@ -138,9 +138,6 @@ int main()
 
   AC_MSG_CHECKING(if the struct statfs has the member f_bavail)
   AC_CACHE_VAL(pike_cv_struct_statfs_f_bavail, [
-    echo -------
-    cat confdefs.h
-    echo -------
     AC_TRY_COMPILE([
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -151,6 +148,9 @@ int main()
 #endif
 #ifdef HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
+#endif
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
 #endif
     ], [
       struct statfs st;
