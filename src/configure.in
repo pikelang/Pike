@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.305 1999/08/10 00:18:59 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.306 1999/08/10 12:35:19 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1162,7 +1162,6 @@ fi
 ########################################################################
 
 if test x$with_threads = xyes ; then
-  AC_DEFINE(PIKE_THREADS)
   OLDLIBS="$LIBS"
   OLDCFLAGS="$CFLAGS"
 
@@ -1173,6 +1172,7 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
   AC_DEFINE(_THREAD_SAFE)
   AC_DEFINE(_UNIX_THREADS)
   AC_DEFINE(NT_THREADS)
+  AC_DEFINE(PIKE_THREADS)
 
 else
 
@@ -1279,6 +1279,7 @@ int main()
     AC_DEFINE(_REENTRANT)
     AC_DEFINE(_THREAD_SAFE)
     AC_DEFINE(_MIT_POSIX_THREADS,1)
+    AC_DEFINE(PIKE_THREADS)
 
     AC_MSG_CHECKING(for pthread_attr_setstacksize)
     AC_CACHE_VAL(pike_cv_have_pthread_attr_setstacksize,[
@@ -1450,6 +1451,7 @@ int main()
       AC_DEFINE(_REENTRANT)
       AC_DEFINE(_THREAD_SAFE)
       AC_DEFINE(_UNIX_THREADS)
+      AC_DEFINE(PIKE_THREADS)
     else
       AC_MSG_RESULT(no)
       LIBS="$OLDLIBS"
