@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.145 2001/02/06 19:39:40 grubba Exp $");
+RCSID("$Id: gc.c,v 1.146 2001/02/28 04:20:17 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -405,9 +405,12 @@ void describe_location(void *real_memblock,
       {
 	e = ((char *)ptr - (char *)(p->identifiers)) /
 	  sizeof(struct identifier);
+
 	fprintf(stderr,"%*s  **In p->identifiers[%ld] (%s)\n",indent,"",
 		DO_NOT_WARN((long)e),
-		p->identifiers[e].name ? p->identifiers[e].name->str : "no name");
+		p->identifiers[e].name ?
+		(strlen(p->identifiers[e].name->str)<100 ? p->identifiers[e].name->str : "Name too long or already freed.."  )
+		: "no name");
 	break;
       }
 
