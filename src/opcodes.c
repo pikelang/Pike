@@ -111,7 +111,7 @@ void cast(struct lpc_string *s)
 	break;
 
       case T_STRING:
-	i=strtol(sp[-1].u.string->str,0,0);
+	i=STRTOL(sp[-1].u.string->str,0,0);
 	free_string(sp[-1].u.string);
 	break;
       
@@ -257,7 +257,7 @@ void f_cast()
 	break;
 
       case T_STRING:
-	i=strtol(sp[-1].u.string->str,0,0);
+	i=STRTOL(sp[-1].u.string->str,0,0);
 	free_string(sp[-1].u.string);
 	break;
       
