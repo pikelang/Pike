@@ -65,7 +65,7 @@ array shuffle(array arr)
   int i = sizeof(arr);
 
   while(i) {
-    int j = random(i--);
+    int j = predef::random(i--);
     if (j != i) {
       mixed tmp = arr[i];
       arr[i] = arr[j];
@@ -665,4 +665,9 @@ array(array(array)) greedy_diff(array from, array to)
   [d1, d2] = Array.diff(from, to);
   [d2, d1] = low_greedy_diff(d2, d1);
   return low_greedy_diff(d1, d2);
+}
+
+//! Returns a random element from the @[in] array.
+mixed random(array in) {
+  return in[predef::random(sizeof(in))];
 }
