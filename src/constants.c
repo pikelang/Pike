@@ -43,6 +43,23 @@ void low_add_efun(struct pike_string *name, struct svalue *fun)
   }
 }
 
+void low_add_constant(char *name, struct svalue *fun)
+{
+  struct pike_string *p;
+  p=make_shared_string(name);
+  low_add_efun(p, fun);
+  free_string(p);
+}
+
+void add_global_program(char *name, struct program *p)
+{
+  struct svalue s;
+  s.type=T_PROGRAM;
+  s.subtype=0;
+  s.u.program=p;
+  low_add_constant(name, &s);
+}
+
 struct callable *make_callable(c_fun fun,
 			       char *name,
 			       char *type,

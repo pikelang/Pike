@@ -28,6 +28,8 @@ struct callable
 /* Prototypes begin here */
 struct mapping *get_builtin_constants();
 void low_add_efun(struct pike_string *name, struct svalue *fun);
+void low_add_constant(char *name, struct svalue *fun);
+void add_global_program(char *name, struct program *p);
 struct callable *make_callable(c_fun fun,
 			       char *name,
 			       char *type,
