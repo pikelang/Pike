@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.487 2003/03/14 17:45:05 grubba Exp $
+|| $Id: program.c,v 1.488 2003/03/19 18:32:01 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.487 2003/03/14 17:45:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.488 2003/03/19 18:32:01 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -888,6 +888,17 @@ static struct program *gc_mark_program_pos = 0;
 int compilation_depth=-1;
 dynamic_buffer used_modules;
 static struct mapping *resolve_cache=0;
+
+#ifdef PIKE_DEBUG
+#define CHECK_FILE_ENTRY(PROG, POS, LEN, SHIFT)				\
+  do {									\
+    if (SHIFT < 0 || SHIFT > 2 ||					\
+	POS + (LEN << SHIFT) > PROG->linenumbers + PROG->num_linenumbers) \
+      Pike_fatal ("Invalid file entry in linenumber info.\n");		\
+  } while (0)
+#else
+#define CHECK_FILE_ENTRY(PROG, POS, LEN, SHIFT) do {} while (0)
+#endif
 
 int get_small_number(char **q);
 
@@ -1927,6 +1938,7 @@ void low_start_new_program(struct program *p,
 	  len = get_small_number(&cnt);
 	  shift = *cnt;
 	  file = ++cnt;
+	  CHECK_FILE_ENTRY (Pike_compiler->new_program, cnt, len, shift);
 	  cnt += len<<shift;
 	}
 	off+=get_small_number(&cnt);
@@ -2346,6 +2358,7 @@ void dump_program_tables (struct program *p, int indent)
 	len = get_small_number(&cnt);
 	shift = *cnt;
 	file = ++cnt;
+	CHECK_FILE_ENTRY (p, cnt, len, shift);
 	cnt += len << shift;
 	if (!shift) {
 	  fprintf(stderr, "%*s  Filename: \"%s\"\n", indent, "", file);
@@ -5017,6 +5030,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 	len = get_small_number(&cnt);
 	shift = *cnt;
 	file = ++cnt;
+	CHECK_FILE_ENTRY (Pike_compiler->new_program, cnt, len, shift);
 	cnt += len<<shift;
 	if (a_flag > 100) {
 	  fprintf(stderr, "Filename entry:\n"
@@ -5100,6 +5114,7 @@ PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
 	len = get_small_number(&cnt);
 	shift = *cnt;
 	file = ++cnt;
+	CHECK_FILE_ENTRY (prog, cnt, len, shift);
 	cnt += len<<shift;
       }
       get_small_number(&cnt);	/* Ignore the offset */
@@ -5157,6 +5172,7 @@ char *debug_get_program_line(struct program *prog,
       len = get_small_number(&cnt);
       shift = *cnt;
       file = ++cnt;
+      CHECK_FILE_ENTRY (prog, cnt, len, shift);
       cnt += len<<shift;
     }
     get_small_number(&cnt);	/* Ignore the offset */
@@ -5208,14 +5224,14 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
     ptrdiff_t offset = pc - prog->program;
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       static char *file = NULL;
-      static char *cnt;
+      static char *base, *cnt;
       static INT32 off,line,pid;
       static size_t len;
       static INT32 shift;
 
-      if(prog->id != pid || offset < off)
+      if(prog->linenumbers != base || prog->id != pid || offset < off)
       {
-	cnt=prog->linenumbers;
+	base = cnt = prog->linenumbers;
 	off=line=0;
 	pid=prog->id;
 	file = 0;
@@ -5232,6 +5248,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	  len = get_small_number(&cnt);
 	  shift = *cnt;
 	  file = ++cnt;
+	  CHECK_FILE_ENTRY (prog, cnt, len, shift);
 	  cnt += len<<shift;
 	}
 	off+=get_small_number(&cnt);
