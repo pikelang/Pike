@@ -615,7 +615,7 @@ class async_client
 	       generic_get, 0, 0, T_A, "a", host, callback, @args );
     } else {
       do_query(host, C_IN, T_A,
-	       generic_get, -1, 0, "a",
+	       generic_get, -1, 0, T_A, "a",
 	       host, callback, @args);
     }
   }
