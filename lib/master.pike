@@ -1,4 +1,8 @@
+#if efun(__version)
+#define VERSION __version()
+#else
 #define VERSION "Pike v0.4pl2"
+#endif /* __version */
 
 string describe_backtrace(mixed *trace);
 
@@ -208,7 +212,7 @@ void _main(string *argv, string *env)
       switch(opts[0])
       {
       case "version":
-	werror(VERSION " Copyright (C) 1994-1997 Fredrik Hübinette\n");
+	werror(VERSION + " Copyright (C) 1994-1997 Fredrik Hübinette\n");
 	werror("Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n");
 	werror("welcome to redistribute it under certain conditions; Read the files\n");
 	werror("COPYING and DISCLAIMER in the Pike distribution for more details.\n");
