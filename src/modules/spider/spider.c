@@ -235,12 +235,14 @@ int push_parsed_tag(char *s,int len)
   int i,j,elems=0;
   int haskey;
 
-  for (i=haskey=0; i<len&&s[i]!='>';)
+  for (i=haskey=0; i<len && s[i]!='>';)
   {
     for (; i<len&&s[i]!='>' && isspace(s[i]); i++); /* skip space */
     if (!(i<len && s[i]!='>')) break;
+
     /* check wordlen */
-    for (j=i; i<len&&s[i]!='>' && !isspace(s[i]) && s[i]!='='; i++); 
+    for (j=i; i<len && s[i] != '>' && !isspace(s[i]) && s[i]!='='; i++); 
+
     if (j<i) 
     {
       push_string(make_shared_binary_string(s+j,i-j));
@@ -249,7 +251,8 @@ int push_parsed_tag(char *s,int len)
     else
       push_string(make_shared_string(""));
 
-    for (;i<len&&s[i]!='>'&&isspace(s[i]);i++); /* skip space */
+    while(i<len && s[i] != '>' && isspace(s[i])) 
+      i++; /* skip space */
 
     if (i>=len || s[i]!='=') 
     {
@@ -281,43 +284,48 @@ int push_parsed_tag(char *s,int len)
   return i+(i<len);
 }
 
-INLINE int tagsequal(char *s,char *t,int len)
+INLINE int tagsequal(char *s, char *t, int len, char *end)
 {
-  while (--len) if (tolower(*(t++))!=tolower(*(s++))) return 1;
-  return 0;
+  if(s+len >= end)  return 0;
+
+  if(s[len] != '>' && s[len] != ' ')
+    return 0;
+
+  while(len--) if(tolower(*(t++)) != tolower(*(s++)))
+    return 0;
+
+  return 1;
 }
 
 
-int find_endtag(struct lpc_string *tag,char *s,int len,int *aftertag)
+int find_endtag(struct lpc_string *tag, char *s, int len, int *aftertag)
 {
-  int i,lend,j;
-  for (i=j=0; i<len; i++)
+  int num=1;
+
+  int i,j;
+
+  for (i=j=0; i < len; i++)
   {
-    for (; i<len&&s[i]!='<'; i++);
+    for (; i<len && s[i]!='<'; i++);
     if (i>=len) break;
     j=i++;
     if (i>=len) break;
     if (s[i]=='/')
     {
-      if (i+tag->len+1<len&&
-	  !tagsequal(s+i+1,tag->str,tag->len)&&
-	  (isspace(s[i+1+tag->len])||s[i+1+tag->len]=='>'))
+      if(tagsequal(s+i+1, tag->str, tag->len, s+len) && !(--num))
 	break;
-      continue;
-    }
-    if (i+tag->len<len&&
-	!tagsequal(s+i,tag->str,tag->len)&&
-	(isspace(s[i+tag->len])||s[i+tag->len]=='>')) /* oop, recurse */
-    {
-      find_endtag(tag,s+i+tag->len,len-i-tag->len,&lend);
-      j=i+=lend;
+    } else if(tagsequal(s+i, tag->str, tag->len, s+len)) {
+      ++num;
     }
   }
-  if (i>=len) *aftertag=len,j=i; /* no end */
-  else
+
+  if(i >= len) 
   {
-    for (;i<len&&s[i]!='>'; i++);
-    *aftertag=i+(i<len);
+    *aftertag=len;
+    j=i;              /* no end */
+  } else {
+    for (; i<len && s[i] != '>'; i++);
+    *aftertag = i + (i<len?1:0); 
   }
   return j;
 }
@@ -359,17 +367,21 @@ void do_html_parse(struct lpc_string *ss,
 
       if (j==len) break; /* end of string */
 
+      push_string(make_shared_binary_string((char *)s+i, j-i));
+      f_lower_case(1);
+      sval2.u.string = sp[-1].u.string;
+      sval2.u.string->refs++;
       sval2.type=T_STRING;
-      sval2.subtype=-1;		/* ? */
-      sval2.u.string=make_shared_binary_string((char *)s+i,j-i);
+      pop_stack();
 
       mapping_index_no_free(&sval1,single,&sval2);
+
       if (sval1.type==T_STRING)
       {
 	assign_svalue_no_free(sp++,&sval1);
 	free_svalue(&sval1);
 	(*strings)++;
-	find_endtag(sval2.u.string,s+j,len-j,&l);
+	find_endtag(sval2.u.string ,s+j, len-j, &l);
 	free_svalue(&sval2);
 	i=last=j+=l;
 	continue;
