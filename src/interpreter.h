@@ -74,6 +74,8 @@ static int eval_instruction(unsigned char *pc)
       backlog[backlogp].instruction=instr;
       backlog[backlogp].arg=0;
       backlog[backlogp].pc=pc;
+
+      debug_malloc_touch(fp->current_object);
     }
 
     if(t_flag > 2)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.76 1999/08/30 06:22:44 hubbe Exp $");
+RCSID("$Id: object.c,v 1.77 1999/09/10 00:11:22 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -576,6 +576,8 @@ void low_object_index_no_free(struct svalue *to,
   if(!p)
     error("Cannot access global variables in destructed object.\n");
 
+  debug_malloc_touch(o);
+
   i=ID_FROM_INT(p, f);
 
   switch(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
@@ -702,6 +704,7 @@ void object_low_set_index(struct object *o,
     return; /* make gcc happy */
   }
 
+  debug_malloc_touch(o);
   check_destructed(from);
 
   i=ID_FROM_INT(p, f);

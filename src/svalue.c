@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.43 1999/06/17 08:34:55 mast Exp $");
+RCSID("$Id: svalue.c,v 1.44 1999/09/10 00:11:23 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -255,7 +255,7 @@ void assign_svalues_no_free(struct svalue *to,
       struct svalue tmp;
       tmp=*(from++);
       *(to++)=tmp;
-      tmp.u.refs[0]++;
+      add_ref( tmp.u.array );
     }
     return;
   }
@@ -342,7 +342,7 @@ void assign_from_short_svalue_no_free(struct svalue *s,
     default:
       if((s->u.refs=u->refs))
       {
-	u->refs[0]++;
+	add_ref( u->array );
       }else{
 	s->type=T_INT;
 	s->subtype=NUMBER_NUMBER;
@@ -903,7 +903,7 @@ void copy_svalues_recursively_no_free(struct svalue *to,
     {
     default:
       *to=*from;
-      if(from->type <= MAX_REF_TYPE) from->u.refs[0]++;
+      if(from->type <= MAX_REF_TYPE) add_ref(from->u.array);
       break;
 
     case T_ARRAY:
