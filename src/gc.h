@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.92 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: gc.h,v 1.93 2002/11/25 00:20:47 mast Exp $
 */
 
 #ifndef GC_H
@@ -186,7 +186,7 @@ struct marker
 #endif
 
 #include "block_alloc_h.h"
-PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
+PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker, n/a)
 
 #ifdef PIKE_DEBUG
 #undef get_marker
