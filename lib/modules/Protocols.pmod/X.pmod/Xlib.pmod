@@ -680,8 +680,11 @@ class Display
 
     /* Asynchronous connection */
     if (async)
-      set_nonblocking(0, 0, close_callback);
-
+      {
+	if (host)
+	  open_socket();
+	set_nonblocking(0, 0, close_callback);
+      }
     if(host)
       if (!connect(host, XPORT + (int)fields[1]))
 	return 0;
