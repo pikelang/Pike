@@ -1,3 +1,37 @@
+pike7.3 (7.3.58-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * lib/modules/Parser.pmod/XML.pmod/Tree.pmod: Better typing.
+        * lib/modules/Array.pmod: Fixed a border problem in Array.sum
+        * src/builtin.cmod: Fixed leak of the strings "string" and "int".
+        * lib/modules/String.pmod/module.pmod: Removed the deprecated
+          strmult and String_buffer (compatibility is already in place).
+          Fixed a soundex bug. Made int2roman and int2size throw an error
+          when input is out of range. Fixed an off by one error for the
+          bytes/kb transition in int2size.
+        * lib/modules/Parser.pmod/Pike.pmod: Parse binary numbers.
+        * lib/modules/Standards.pmod/EXIF.pmod: Better EXIF support. Some
+          API changes: get_properties only accepts Stdio.File objects.
+          MN_Multi1 is renamed to MN_Multi3.
+        * src/: builtin.cmod, builtin_functions.c: It's better to throw
+          errors than return zero if ctime(), localtime() or gmtime() fails.
+        * src/builtin.cmod: Fixed missing checks for NULL from gmtime(2),
+          localtime(2) and ctime(2) which could cause segfaults. E.g. on NT
+          they don't handle negative time stamps.
+        * src/modules/: HTTPLoop/log.c, Oracle/oracle.c, spider/discdate.c:
+          Fixed missing checks for NULL from gmtime(2), localtime(2) and
+          ctime(2) which could cause segfaults. E.g. on NT they don't handle
+          negative time stamps.
+        * src/builtin_functions.c: Fixed missing checks for NULL from
+          gmtime(2) and localtime(2) which could cause segfaults. E.g. on NT
+          they don't handle negative time stamps.
+        * lib/modules/Remote.pmod/connection.pike: Fixed races that could
+          cause synchronous calls to hang in threaded mode.  It's still
+          unclear whether a connection close is handled cleanly, though. 
+          Better handling of exceptions from close callbacks.
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 18 Oct 2002 22:49:02 +0200
+
 pike7.3 (7.3.56-2) unstable; urgency=low
 
   * Latest CVS snapshot.
