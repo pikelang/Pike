@@ -15,8 +15,8 @@ void fail(string fmt, mixed ... args)
 
 string status(string doing, string file, string|void msg)
 {
-  if(strlen(file)>60)
-    file="..."+file[strlen(file)-58..];
+  if(strlen(file)>50)
+    file="..."+file[strlen(file)-48..];
 
   if(msg) file+=" "+msg;
   if(doing) file=doing+" "+file;
@@ -98,9 +98,9 @@ int low_install_file(string from,
 }
 
 int install_file(string from,
-		     string to,
-		     void|int mode,
-		     void|int dump)
+		 string to,
+		 void|int mode,
+		 void|int dump)
 {
   int ret;
   if(query_num_arg() == 2)
@@ -112,7 +112,7 @@ int install_file(string from,
     switch(reverse(to)[..4])
     {
       case "ekip.":
-	if(glob(to,"*/master.pike")) break;
+	if(glob("*/master.pike",to)) break;
       case "domp.":
 	to_dump+=({to});
     }
