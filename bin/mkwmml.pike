@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.8 1998/03/07 01:11:46 neotron Exp $ */
+/* $Id: mkwmml.pike,v 1.8 1998/05/21 11:53:38 grubba fake $ */
 
 import Stdio;
 import Array;
