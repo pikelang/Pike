@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.42 2004/07/24 22:55:32 nilsson Exp $
+|| $Id: charsetmod.c,v 1.43 2004/07/25 16:12:03 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.42 2004/07/24 22:55:32 nilsson Exp $");
+RCSID("$Id: charsetmod.c,v 1.43 2004/07/25 16:12:03 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -44,6 +44,7 @@ static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_big5_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
 static struct program *std_16bite_program = NULL;
+static struct program *gbk_program = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -241,8 +242,9 @@ static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
 			   0, 0, 0, 0, 0, 0, 0, 0,
 			   1, 1, 1, 1, 1, 1, 1, 1,
 			   2, 2, 2, 2, 3, 3, 4, 5 };
-  static unsigned INT32 utf8of[] = { 0ul, 0x3080ul, 0xe2080ul,
-				     0x3c82080ul, 0xfa082080ul, 0x82082080ul };
+  static const unsigned INT32 utf8of[] = { 0ul, 0x3080ul, 0xe2080ul,
+					   0x3c82080ul, 0xfa082080ul,
+					   0x82082080ul };
   while(l>0) {
     unsigned INT32 ch = 0;
     int cl = utf8len[(*p)>>2];
@@ -272,7 +274,7 @@ static ptrdiff_t feed_utf7_5(const p_wchar0 *p, ptrdiff_t l,
 {
   static int utf7_5len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
 			    -1,-1, 1, 2,-1,-1,-1,-1, };
-  static unsigned INT32 utf7_5of[] = { 0ul, 0x28c0ul, 0xb30c0ul };
+  static const unsigned INT32 utf7_5of[] = { 0ul, 0x28c0ul, 0xb30c0ul };
   while(l>0) {
     unsigned INT32 ch = 0;
     int cl = utf7_5len[(*p)>>4];
@@ -504,6 +506,45 @@ static ptrdiff_t feed_euc(const p_wchar0 *p, ptrdiff_t l,
 static void f_feed_euc(INT32 args)
 {
   f_std_feed(args, feed_euc);
+}
+
+struct multichar_table {
+  const unsigned int lo;
+  const unsigned int hi;
+  UNICHAR const *table;
+};
+extern const struct multichar_table GBK[];
+
+static ptrdiff_t feed_gbk(const p_wchar0 *p, ptrdiff_t l,
+			  struct std_cs_stor *s)
+{
+  while(l>0) {
+    unsigned INT32 ch = *p++;
+    if(ch < 0x81) {
+      string_builder_putchar(&s->strbuild, ch);
+      --l;
+    }
+    else {
+      const struct multichar_table *tbl = &GBK[ ch-0x81 ];
+      if(l==1) return 1;
+      if(ch==0xff) {
+	Pike_error("Illegal character.\n");
+      }
+      ch = *p++;
+      if( ch<tbl->lo || ch>tbl->hi ) {
+	Pike_error("Illegal character.\n");
+      }
+      else
+	string_builder_putchar(&s->strbuild, tbl->table[ch-tbl->lo]);
+      l -= 2;
+    }
+  }
+  return 0;
+}
+
+static void f_feed_gbk(INT32 args)
+{
+  f_std_feed(args, feed_gbk);
 }
 
 static void f_create_euc(INT32 args)
@@ -1541,6 +1582,12 @@ PIKE_MODULE_INIT
   /* function(string:) */
   ADD_FUNCTION("create", f_create_euc,tFunc(tStr,tVoid), ID_STATIC);
   add_program_constant("EUCDec", euc_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  /*  gbk_stor_offs = ADD_STORAGE(struct gbk_stor); */
+  ADD_FUNCTION("feed", f_feed_gbk,tFunc(tStr,tObj), 0);
+  add_program_constant("GBKDec", gbk_program = end_program(), ID_STATIC|ID_NOMASK);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);

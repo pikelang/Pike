@@ -270,6 +270,9 @@ Decoder decoder(string name)
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCDec("x0208");
 
+  if( (< "gbk", "936" >)[ name ] )
+    return GBKDec();
+
   Decoder o = rfc1345(name);
 
   if(o)
