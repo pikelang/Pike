@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.1 1997/11/01 01:36:54 mirar Exp $ */
+/* $Id: colortable_lookup.h,v 1.2 1997/11/02 20:03:18 mirar Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.1 1997/11/01 01:36:54 mirar Exp $
+**!	$Id: colortable_lookup.h,v 1.2 1997/11/02 20:03:18 mirar Exp $
 **! class colortable
 */
 
@@ -387,9 +387,9 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 
 	       i=(int)
 		  (( sc->steps *
-		     ( ((int)rgbr-sc->low.r)*sc->vector.r +
-		       ((int)rgbg-sc->low.g)*sc->vector.g +
-		       ((int)rgbb-sc->low.b)*sc->vector.b ) ) *
+		     ( ((int)rgbr-(int)sc->low.r)*sc->vector.r +
+		       ((int)rgbg-(int)sc->low.g)*sc->vector.g +
+		       ((int)rgbb-(int)sc->low.b)*sc->vector.b ) ) *
 		   sc->invsqvector);
 
 	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;

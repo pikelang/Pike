@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.17 1997/11/02 18:48:32 grubba Exp $ */
+/* $Id: colortable.c,v 1.18 1997/11/02 20:03:15 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.17 1997/11/02 18:48:32 grubba Exp $
+**!	$Id: colortable.c,v 1.18 1997/11/02 20:03:15 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.17 1997/11/02 18:48:32 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.18 1997/11/02 20:03:15 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -272,7 +272,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
    rgbl_group sum={0,0,0},diff={0,0,0};
    rgbl_group min={256,256,256},max={0,0,0};
    unsigned long mmul,tot=0;
-   long gdiff=0,g;
+   INT32 gdiff=0,g;
    int left,right;
    enum { SORT_R,SORT_G,SORT_B,SORT_GREY } st;
    rgbd_group newpos1,newpos2;
@@ -338,12 +338,12 @@ static int reduce_recurse(struct nct_flat_entry *src,
 	    /* find min and max */
 	    for (i=0; i<src_size; i++)
 	    {
-	       if (min.r>src[i].color.r) min.r=src[i].color.r;
-	       if (min.g>src[i].color.g) min.g=src[i].color.g;
-	       if (min.b>src[i].color.b) min.b=src[i].color.b;
-	       if (max.r<src[i].color.r) max.r=src[i].color.r;
-	       if (max.g<src[i].color.g) max.g=src[i].color.g;
-	       if (max.b<src[i].color.b) max.b=src[i].color.b;
+	       if (min.r>(INT32)src[i].color.r) min.r=src[i].color.r;
+	       if (min.g>(INT32)src[i].color.g) min.g=src[i].color.g;
+	       if (min.b>(INT32)src[i].color.b) min.b=src[i].color.b;
+	       if (max.r<(INT32)src[i].color.r) max.r=src[i].color.r;
+	       if (max.g<(INT32)src[i].color.g) max.g=src[i].color.g;
+	       if (max.b<(INT32)src[i].color.b) max.b=src[i].color.b;
 	       tot+=src[i].weight;
 	    }
     
@@ -437,7 +437,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
       while (left<right) \
       { \
          struct nct_flat_entry tmp; \
-         if (src[left].color.C>sum.C)  \
+         if ((long)src[left].color.C>sum.C)  \
 	    tmp=src[left],src[left]=src[right],src[right--]=tmp; \
          else left++; \
       } \
@@ -455,8 +455,8 @@ static int reduce_recurse(struct nct_flat_entry *src,
          while (left<right) 
 	 { 
 	    struct nct_flat_entry tmp; 
-	    if (src[left].color.r*sf.r+src[left].color.g*sf.g+
-		src[left].color.b*sf.b>g)  
+	    if ((INT32)(src[left].color.r*sf.r+src[left].color.g*sf.g+
+			src[left].color.b*sf.b)>(INT32)g)  
 	       tmp=src[left],src[left]=src[right],src[right--]=tmp; 
 	    else left++; 
 	 } 
@@ -848,13 +848,13 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 
    if (cube.r&&cube.g&&cube.b)
    {
-      mindist=sf.r*sq((((rgb.r*(int)cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
-	      sf.g*sq((((rgb.g*(int)cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
-	      sf.b*sq((((rgb.b*(int)cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
+      mindist=sf.r*sq((((INT32)(rgb.r*(int)cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
+	      sf.g*sq((((INT32)(rgb.g*(int)cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
+	      sf.b*sq((((INT32)(rgb.b*(int)cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
 
-      *no=((rgb.r*cube.r+cube.r/2)>>8)+
-	  ((rgb.g*cube.g+cube.g/2)>>8)*cube.r+
-	  ((rgb.b*cube.b+cube.b/2)>>8)*cube.r*cube.g;
+      *no=((INT32)(rgb.r*cube.r+cube.r/2)>>8)+
+	  ((INT32)(rgb.g*cube.g+cube.g/2)>>8)*cube.r+
+	  ((INT32)(rgb.b*cube.b+cube.b/2)>>8)*cube.r*cube.g;
 
       if (mindist<cube.disttrig)
       {
@@ -887,9 +887,9 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       if (s->no[n]>=nc) 
       {
 	 int steps=s->steps;
-	 int ldist=sf.r*sq(rgb.r-(INT32)((s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
-	           sf.g*sq(rgb.g-(INT32)((s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
-	           sf.b*sq(rgb.b-(INT32)((s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
+	 int ldist=sf.r*sq(rgb.r-((int)(s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
+	           sf.g*sq(rgb.g-((int)(s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
+	           sf.b*sq(rgb.b-((int)(s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
 
 	 if (ldist<mindist)
 	 {
@@ -987,7 +987,9 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       o2steps=osteps=-1;
       for (;;)
       {
-	 mdist=((SQ(low.r-high.r)+SQ(low.g-high.g)+SQ(low.b-high.b))
+	 mdist=((INT32)(SQ((INT32)low.r-high.r)+
+			SQ((INT32)low.g-high.g)+
+			SQ((INT32)low.b-high.b))
 		/SQ(steps)) / ( 4 );
   			 /* 4 is for /2², closest dot, always */
 			 /* 6 makes a suitable constant */
@@ -999,9 +1001,9 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
 	    rgb_group rgb;
 	    int dist,dummyno;
 
-	    rgb.r=(unsigned char)((high.r*i+low.r*(steps-i-1))/(steps-1));
-	    rgb.g=(unsigned char)((high.g*i+low.g*(steps-i-1))/(steps-1));
-	    rgb.b=(unsigned char)((high.b*i+low.b*(steps-i-1))/(steps-1));
+	    rgb.r=(unsigned char)((INT32)(high.r*i+low.r*(steps-i-1))/(steps-1));
+	    rgb.g=(unsigned char)((INT32)(high.g*i+low.g*(steps-i-1))/(steps-1));
+	    rgb.b=(unsigned char)((INT32)(high.b*i+low.b*(steps-i-1))/(steps-1));
 
 	    _find_cube_dist(cube,rgb,&dist,&dummyno,sf);
 
@@ -1041,9 +1043,9 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
 	 rgb_group rgb;
 	 int dist,dummyno;
 
-	 rgb.r=(unsigned char)((high.r*i+low.r*(steps-i))/(steps-1));
-	 rgb.g=(unsigned char)((high.g*i+low.g*(steps-i))/(steps-1));
-	 rgb.b=(unsigned char)((high.b*i+low.b*(steps-i))/(steps-1));
+	 rgb.r=(unsigned char)((int)(high.r*i+low.r*(steps-i))/(steps-1));
+	 rgb.g=(unsigned char)((int)(high.g*i+low.g*(steps-i))/(steps-1));
+	 rgb.b=(unsigned char)((int)(high.b*i+low.b*(steps-i))/(steps-1));
 
 	 _find_cube_dist(cube,rgb,&dist,&dummyno,sf);
 
@@ -1100,11 +1102,11 @@ static struct nct_flat _img_nct_cube_to_flat(struct nct_cube cube)
 	 if (s->steps && s->no[i]>=no)
 	 {
 	    flat.entries[no].color.r=
-	       (unsigned char)((s->high.r*i+s->low.r*(s->steps-i-1))/(s->steps-1));
+	       (unsigned char)((int)(s->high.r*i+s->low.r*(s->steps-i-1))/(s->steps-1));
 	    flat.entries[no].color.g=
-	       (unsigned char)((s->high.g*i+s->low.g*(s->steps-i-1))/(s->steps-1));
+	       (unsigned char)((int)(s->high.g*i+s->low.g*(s->steps-i-1))/(s->steps-1));
 	    flat.entries[no].color.b=
-	       (unsigned char)((s->high.b*i+s->low.b*(s->steps-i-1))/(s->steps-1));
+	       (unsigned char)((int)(s->high.b*i+s->low.b*(s->steps-i-1))/(s->steps-1));
 	    flat.entries[no].no=no;
 	    flat.entries[no].weight=cube.weight;
 	    no++;
@@ -1484,11 +1486,11 @@ static rgbl_group dither_floyd_steinberg_encode(struct nct_dither *dith,
 {
    rgbl_group rgb;
    int i;
-   i=(int)(s.r-dith->u.floyd_steinberg.errors[rowpos].r+0.5); 
+   i=(int)((int)s.r-dith->u.floyd_steinberg.errors[rowpos].r+0.5); 
    rgb.r=i<0?0:(i>255?255:i);
-   i=(int)(s.g-dith->u.floyd_steinberg.errors[rowpos].g+0.5); 
+   i=(int)((int)s.g-dith->u.floyd_steinberg.errors[rowpos].g+0.5); 
    rgb.g=i<0?0:(i>255?255:i);
-   i=(int)(s.b-dith->u.floyd_steinberg.errors[rowpos].b+0.5); 
+   i=(int)((int)s.b-dith->u.floyd_steinberg.errors[rowpos].b+0.5); 
    rgb.b=i<0?0:(i>255?255:i);
    return rgb;
 }
@@ -1504,9 +1506,9 @@ static void dither_floyd_steinberg_got(struct nct_dither *dith,
    rgbd_group *er=dith->u.floyd_steinberg.errors;
    rgbd_group err;
 
-   err.r=(float)(d.r-(int)s.r)+dith->u.floyd_steinberg.errors[rowpos].r+0.5;
-   err.g=(float)(d.g-(int)s.g)+dith->u.floyd_steinberg.errors[rowpos].g+0.5;
-   err.b=(float)(d.b-(int)s.b)+dith->u.floyd_steinberg.errors[rowpos].b+0.5;
+   err.r=(float)((int)d.r-(int)s.r)+dith->u.floyd_steinberg.errors[rowpos].r+0.5;
+   err.g=(float)((int)d.g-(int)s.g)+dith->u.floyd_steinberg.errors[rowpos].g+0.5;
+   err.b=(float)((int)d.b-(int)s.b)+dith->u.floyd_steinberg.errors[rowpos].b+0.5;
 
    ner[rowpos].r+=err.r*dith->u.floyd_steinberg.down;
    ner[rowpos].g+=err.g*dith->u.floyd_steinberg.down;
@@ -2698,9 +2700,9 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 
    while (n--)
    {
-      if (fe->color.r>=rmin && fe->color.r<=rmax &&
-	  fe->color.g>=gmin && fe->color.g<=gmax &&
-	  fe->color.b>=bmin && fe->color.b<=bmax)
+      if ((int)fe->color.r>=rmin && (int)fe->color.r<=rmax &&
+	  (int)fe->color.g>=gmin && (int)fe->color.g<=gmax &&
+	  (int)fe->color.b>=bmin && (int)fe->color.b<=bmax)
       {
 	 *pp=fe->no;
 	 pp++; i++;
@@ -2812,9 +2814,9 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,&d,NULL,NULL,NULL,&cd)
 
 #define NCTLU_CUBE_FAST_WRITE(SRC) \
-            d->r=((int)((((SRC)->r*red+hred)>>8)*redf)); \
-	    d->g=((int)((((SRC)->g*green+hgreen)>>8)*greenf)); \
-	    d->b=((int)((((SRC)->b*blue+hblue)>>8)*bluef));
+            d->r=((int)(((int)((SRC)->r*red+hred)>>8)*redf)); \
+	    d->g=((int)(((int)((SRC)->g*green+hgreen)>>8)*greenf)); \
+	    d->b=((int)(((int)((SRC)->b*blue+hblue)>>8)*bluef));
 
 #define NCTLU_CUBE_FAST_WRITE_DITHER_GOT(SRC) \
             dither_got(dith,rowpos,*s,*d)
@@ -2842,9 +2844,10 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,&d,NULL,NULL,&cd)
 
 #define NCTLU_CUBE_FAST_WRITE(SRC) \
-   *d=(((SRC)->r*red+hred)>>8)+ \
-      ((((SRC)->g*green+hgreen)>>8)+ \
-       (((SRC)->b*blue+hblue)>>8)*green)*red;
+   *d=(unsigned char) \
+      ((int)((SRC)->r*red+hred)>>8)+ \
+      (((int)((SRC)->g*green+hgreen)>>8)+ \
+       ((int)((SRC)->b*blue+hblue)>>8)*green)*red;
 
 #define NCTLU_CUBE_FAST_WRITE_DITHER_GOT(SRC) \
    do \
