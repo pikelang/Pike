@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.29 2002/03/20 16:59:00 nilsson Exp $
+// $Id: C.pmod,v 1.30 2002/06/07 14:17:38 nilsson Exp $
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
@@ -97,11 +97,17 @@ array(string) split(string data)
 	    pos++;
 	    while(data[pos]>='0' && data[pos]<='9') pos++;
 	  }
+	  break;
+	}
+	if(data[pos]=='e' || data[pos]=='E')
+	{
+	  pos++;
+	  while(data[pos]>='0' && data[pos]<='9') pos++;
 	}
 	break;
 
       default:
-	throw( ({sprintf("Unknown token %O\n",data[pos..pos+20]) }) );
+	error("Unknown token %O\n",data[pos..pos+20]);
 
       case  '`':
 	while(data[pos]=='`') data[pos]++;
