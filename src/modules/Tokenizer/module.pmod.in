@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.22 2003/10/31 14:56:59 grubba Exp $
+// $Id: module.pmod.in,v 1.23 2003/11/27 16:50:03 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -43,14 +43,50 @@ class TokenizingCompiler
 	   pos, subsystem, msg);
   }
 
-  // Placeholder token classes.
+  // Token classes.
   // These are likely to be overloaded.
-  class StringToken { inherit Token; }
-  class IntegerToken { inherit Token; }
-  class FloatToken { inherit Token; }
   class IdentifierToken {
     inherit Token;
+    constant token = "identifier";
     constant is_identifier = 1;
+  }
+  class OperatorToken {
+    inherit Token;
+    constant token = "operator";
+    constant is_operator = 1;
+  }
+  class StringToken {
+    inherit Token;
+    constant token = "string_constant";
+    constant is_string = 1;
+    string value;
+    static void create(string token, Position pos, string value)
+    {
+      this_program::value = value;
+      ::create(token, pos);
+    }
+  }
+  class IntegerToken {
+    inherit Token;
+    constant token = "int_constant";
+    constant is_int = 1;
+    int value;
+    static void create(string token, Position Pos, int value)
+    {
+      this_program::value = value;
+      ::create(token, pos);
+    }
+  }
+  class FloatToken {
+    inherit Token;
+    constant token = "float_constant";
+    constant is_float = 1;
+    float value;
+    static void create(string token, Position Pos, float value)
+    {
+      this_program::value = value;
+      ::create(token, pos);
+    }
   }
 
   //! Pike tokenizer.
@@ -63,7 +99,7 @@ class TokenizingCompiler
 
     CompilerContext context;
 
-    mapping(string:program(Token)) token_lookup;
+    mapping(string:program(IdentifierToken)) token_lookup;
 
     static Position pos;
 
@@ -246,30 +282,29 @@ class TokenizingCompiler
 
 	if (token_lookup &&
 	    token_lookup[symbol]) {
-	  return token_lookup[symbol](symbol, symbol, symbol, pos);
+	  return token_lookup[symbol](symbol, pos);
 	}
 
 	string rest="";
 
 	switch (symbol[0]) {
 	case '\"':
-	  return StringToken(symbol, "string_constant",
-			     parse_string(symbol), pos);
+	  return StringToken(symbol, pos, parse_string(symbol));
 
 	case '\'':
 	  string s = parse_string(symbol);
 	  if (!sizeof(s)) {
 	    yyerror("Zero-length character constant.");
-	    return IntegerToken(symbol, "int_constant", 0, pos);
+	    return IntegerToken(symbol, pos, 0);
 	  }
 	  if (sizeof(s) > 1) {
 	    yyerror("Unterminated character constant.");
 	  }
-	  return IntegerToken(symbol, "int_constant", s[0], pos);
+	  return IntegerToken(symbol, pos, s[0]);
 
 	case '0':
 	  if (symbol == "0") {
-	    return IntegerToken(symbol, "int_constant", 0, pos);
+	    return IntegerToken(symbol, pos, 0);
 	  }
 	  if ((symbol[1] == 'x') || (symbol[1] == 'X')) {
 	    // Hexadecimal constant.
@@ -278,7 +313,7 @@ class TokenizingCompiler
 	    if (sizeof(rest)) {
 	      yyerror("Strange hexadecimal constant: %s", symbol);
 	    }
-	    return IntegerToken(symbol, "int_constant", val, pos);
+	    return IntegerToken(symbol, pos, val);
 	  }
 	  if ((symbol[1] == 'b') || (symbol[1] == 'B')) {
 	    // Binary constant.
@@ -287,7 +322,7 @@ class TokenizingCompiler
 	    if (sizeof(rest)) {
 	      yyerror("Strange binary constant: %s", symbol);
 	    }
-	    return IntegerToken(symbol, "int_constant", val, pos);
+	    return IntegerToken(symbol, pos, val);
 	  }
 	  // FALL_THROUGH
 	case '1'..'9':
@@ -301,7 +336,7 @@ class TokenizingCompiler
 	      sscanf(symbol, "%*d%s", rest2);
 	      if (!sizeof(rest2)) {
 		yyerror("Bad octal number: %s", symbol);
-		return IntegerToken(symbol, "int_constant", int_val, pos);
+		return IntegerToken(symbol, pos, int_val);
 	      }
 	    }
 	  } else {
@@ -309,7 +344,7 @@ class TokenizingCompiler
 	    sscanf(symbol, "%d%s", int_val, rest);
 	  }
 	  if (!sizeof(rest)) {
-	    return IntegerToken(symbol, "int_constant", int_val, pos);
+	    return IntegerToken(symbol, pos, int_val);
 	  }
 	  float float_val;
 	  string rest2="";
@@ -317,10 +352,10 @@ class TokenizingCompiler
 	  if (sizeof(rest2)) {
 	    yyerror("Strange numeric constant: %s", symbol);
 	    if (rest == rest2) {
-	      return IntegerToken(symbol, "int_constant", int_val, pos);
+	      return IntegerToken(symbol, pos, int_val);
 	    }
 	  }
-	  return FloatToken(symbol, "float_constant", float_val, pos);
+	  return FloatToken(symbol, pos, float_val);
 
 	case '/':
 	  if ((sizeof(symbol) > 1) &&
@@ -336,7 +371,7 @@ class TokenizingCompiler
 	  preprocess(cmd, rest);
 	  return 0;
 	}
-	return IdentifierToken(symbol, "identifier", symbol, pos);
+	return IdentifierToken(symbol, pos);
       }
 
       void scan()
@@ -374,6 +409,7 @@ class TokenList
     return this;
   }
 
+  //! Get an iterator.
   static class _get_iterator()
   {
     static int pos = 0;
@@ -531,6 +567,7 @@ class GroupingCompiler
   }
 }
 
+//!
 class PikeCompiler
 {
   inherit GroupingCompiler;
@@ -572,6 +609,7 @@ class PikeCompiler
     void parse_modifier(Iterator tokens_left) {}
   }
 
+  //!
   class VariableDecl(Token name, Expression type, Modifiers modifiers)
   {
   }
@@ -580,6 +618,7 @@ class PikeCompiler
   {
   }
 
+  //!
   class LiteralExpression(Token value)
   {
     inherit Expression;
@@ -590,6 +629,7 @@ class PikeCompiler
     }
   }
 
+  //!
   class FunCallExpression(Expression func, ArgList|void args)
   {
     inherit Expression;
@@ -600,6 +640,7 @@ class PikeCompiler
     }
   }
 
+  //!
   class PrefixExpression(Token operator, Expression operand)
   {
     inherit Expression;
@@ -610,6 +651,7 @@ class PikeCompiler
     }
   }
 
+  //!
   class SuffixExpression(Token operator, Expression operand)
   {
     inherit Expression;
@@ -620,6 +662,7 @@ class PikeCompiler
     }
   }
 
+  //!
   class BinaryExpression(Token operator, Expression operand1,
 			 Expression operand2)
   {
@@ -631,6 +674,7 @@ class PikeCompiler
     }
   }
 
+  //!
   class TrinaryExpression(Token operator1, Expression operand1,
 			  Token operator2, Expression operand2,
 			  Expression operand3)
@@ -645,6 +689,7 @@ class PikeCompiler
     }
   }
 
+  //!
   class ArgList(Expression arg, ArgList|void next)
   {
     static string _sprintf()
@@ -660,14 +705,10 @@ class PikeCompiler
   Expression predef_call(string fun, ArgList arguments)
   {
     return
-      FunCallExpression(BinaryExpression(Token("::","::","::",0),
+      FunCallExpression(BinaryExpression(OperatorToken("::",0),
 					 LiteralExpression(IdentifierToken("predef",
-									   "predef",
-									   "predef",
 									   0)),
-					 LiteralExpression(IdentifierToken("identifier",
-									   fun,
-									   fun,
+					 LiteralExpression(IdentifierToken(fun,
 									   0))),
 			arguments);
   }
@@ -977,8 +1018,7 @@ class PikeCompiler
       if ((token = tokens_left->value())->group_start) {
 	if (is_fun_call && (token->group_start->symbol == "{")) {
 	  // Implicit lambda.
-	  Lambda implicit_lambda = Lambda("lambda", "lambda", "lambda",
-					  token->group_start->pos);
+	  Lambda implicit_lambda = Lambda("lambda", token->group_start->pos);
 	  implicit_lambda->parse_lambda_body(tokens_left);
 	  if (expr->args) {
 	    ArgList last_arg = expr->args;
@@ -1117,7 +1157,7 @@ class PikeCompiler
 	  SYNTAX_ERROR("Unexpected index operation.");
 	  tokens_left->`+=(1);
 	} else {
-	  Lambda func = Lambda("lambda", "lambda", "lambda", name->pos);
+	  Lambda func = Lambda("lambda", name->pos);
 	  func->return_type = type;
 	  func->name = name;
 	  func->parse_meta_program(current_scope, tokens_left,
@@ -1140,7 +1180,7 @@ class PikeCompiler
       if (!result) {
 	result = sub_expression;
       } else {
-	result = BinaryExpression(Token(",", ",", ",", name->pos),
+	result = BinaryExpression(OperatorToken(",", name->pos),
 				  result, sub_expression);
       }
       if (!tokens_left || tokens_left->value()->symbol != ",") {
@@ -1245,11 +1285,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(Token("(","(","(", pos));
+      Group group = Group(OperatorToken("(", pos));
       group->contents->tokens = ({ 
-	MixedType("mixed","mixed","mixed", pos),
+	MixedType("mixed", pos),
       });
-      group->group_end = Token(")", ")", ")", pos);
+      group->group_end = OperatorToken(")", pos);
       return group;
     }
   }
@@ -1261,17 +1301,17 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' '|' 'void' '...' ':' 'mixed' '|' 'void' ')'.
-      Group group = Group(Token("(","(","(", pos));
+      Group group = Group(OperatorToken("(", pos));
       group->contents->tokens = ({ 
-	MixedType("mixed","mixed","mixed", pos),
-	Token("|","|","|", pos),
-	VoidType("void","void","void", pos),
-	Token("...","...","...", pos),
-	MixedType("mixed","mixed","mixed", pos),
-	Token("|","|","|", pos),
-	VoidType("void","void","void", pos),
+	MixedType("mixed", pos),
+	OperatorToken("|", pos),
+	VoidType("void", pos),
+	OperatorToken("...", pos),
+	MixedType("mixed", pos),
+	OperatorToken("|", pos),
+	VoidType("void", pos),
       });
-      group->group_end = Token(")", ")", ")", pos);
+      group->group_end = OperatorToken(")", pos);
       return group;
     }
   }
@@ -1283,11 +1323,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' '..' ')'.
-      Group group = Group(Token("(","(","(", pos));
+      Group group = Group(OperatorToken("(",pos));
       group->contents->tokens = ({ 
-	Token("..","..","..", pos),
+	OperatorToken("..", pos),
       });
-      group->group_end = Token(")", ")", ")", pos);
+      group->group_end = OperatorToken(")", pos);
       return group;
     }
   }
@@ -1299,13 +1339,13 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ':' 'mixed' ')'.
-      Group group = Group(Token("(","(","(", pos));
+      Group group = Group(OperatorToken("(", pos));
       group->contents->tokens = ({ 
-	MixedType("mixed","mixed","mixed", pos),
-	Token(":",":",":", pos),
-	MixedType("mixed","mixed","mixed", pos),
+	MixedType("mixed", pos),
+	OperatorToken(":", pos),
+	MixedType("mixed", pos),
       });
-      group->group_end = Token(")", ")", ")", pos);
+      group->group_end = OperatorToken(")", pos);
       return group;
     }
   }
@@ -1317,11 +1357,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(Token("(","(","(", pos));
+      Group group = Group(OperatorToken("(", pos));
       group->contents->tokens = ({ 
-	MixedType("mixed","mixed","mixed", pos),
+	MixedType("mixed", pos),
       });
-      group->group_end = Token(")", ")", ")", pos);
+      group->group_end = OperatorToken(")", pos);
       return group;
     }
   }
@@ -1333,11 +1373,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'mixed' ')'.
-      Group group = Group(Token("(","(","(", pos));
+      Group group = Group(OperatorToken("(", pos));
       group->contents->tokens = ({ 
-	MixedType("mixed","mixed","mixed", pos),
+	MixedType("mixed", pos),
       });
-      group->group_end = Token(")", ")", ")", pos);
+      group->group_end = OperatorToken(")", pos);
       return group;
     }
   }
@@ -1349,11 +1389,11 @@ class PikeCompiler
     Group default_args()
     {
       // The group '(' 'object' ')'.
-      Group group = Group(Token("(","(","(", pos));
+      Group group = Group(OperatorToken("(", pos));
       group->contents->tokens = ({ 
-	ObjectType("object","object","object", pos),
+	ObjectType("object", pos),
       });
-      group->group_end = Token(")", ")", ")", pos);
+      group->group_end = OperatorToken(")", pos);
       return group;
     }
   }
@@ -1363,6 +1403,7 @@ class PikeCompiler
     inherit IdentifierToken;
 
     Expression source;
+    mixed value;
     Token rename;
 
     // Called at
@@ -1397,8 +1438,14 @@ class PikeCompiler
       }
       tokens_left->`+=(1);
     }
+
+    void resolv_namespace(Scope current_scope)
+    {
+      //evaluate_expression(current_scope, source);	//***************
+    }
   }
 
+  //!
   class Definition(Modifiers modifiers, Token name, Token meta)
   {
     // FIXME!
@@ -1443,7 +1490,7 @@ class PikeCompiler
 
   class Scope
   {
-    array(Token) meta_programs = ({});
+    array(Token) meta_objects = ({});
     mapping(string:Definition) identifiers = ([]);
 
     void add_identifier(Modifiers modifiers, Token name, Token meta)
@@ -1460,7 +1507,7 @@ class PikeCompiler
     void add_meta_object(Token token)
     {
       werror("%s->add_meta_object(%O)\n", this_object(), token);
-      meta_programs += ({ token });
+      meta_objects += ({ token });
     }
   }
 
@@ -1485,6 +1532,7 @@ class PikeCompiler
     }
   }
 
+  //!
   class ExpressionStatement(Expression expr)
   {
   }
@@ -1880,14 +1928,12 @@ class PikeCompiler
 	return;
       }
       if (token->group_start->symbol == "(") {
-	Lambda create_fun = Lambda("lambda", "lambda", "lambda", token->pos);
+	Lambda create_fun = Lambda("lambda", token->pos);
 	create_fun->return_type =
-	  LiteralExpression(Token("void", "void", "void", token->pos));
-	create_fun->name = IdentifierToken("create", "identifier",
-					   "create", token->pos);
+	  LiteralExpression(VoidType("void", token->pos));
+	create_fun->name = IdentifierToken("create", token->pos);
 	this->add_meta_object(create_fun);
-	this->add_identifier(Modifiers(({Modifier("static","static","static",
-						  token->pos)})),
+	this->add_identifier(Modifiers(({Modifier("static", token->pos)})),
 			     create_fun->name, create_fun);
 	parse_create_args(create_fun, token->contents);
 	tokens_left->`+=(1);
@@ -1909,13 +1955,29 @@ class PikeCompiler
     //
     //   First symbols that are used expand the resolution
     //   space are resolved. ie symbols refered to from
-    //   inherit and import. These symbols are looked up
-    //   in the scope surrounding the current scope unless
-    //   specified explicitly via local::.
+    //   inherit and import. Note that the order of inherits
+    //   is significant.
     //
     //   After the first pass all symbols that are available
     //   in the local scope are known, and the remaining
     //   symbols can be resolved.
+
+    static int(-1..1) resolved;
+    void resolv_namespaces()
+    {
+      if (resolved) {
+	if (resolved > 0) return;
+	// FIXME: Resolution loop. Error?
+	return;
+      }
+      resolved = -1;
+      foreach(meta_objects, Token meta_object) {
+	if (meta_object->resolv_namespace) {
+	  meta_object->resolv_namespace(this);
+	}
+      }
+      resolved = 1;
+    }
 
 #if 0
     void resolv_symbols(Scope parent_scope)
@@ -1951,10 +2013,14 @@ class PikeCompiler
     }
   }
 
+  //!
   Class parse_program(TokenList tokens)
   {
-    Class prog = Class("class","class","class", 0);
+    Class prog = Class("class", 0);
     prog->parse_class_body(tokens);
+
+    prog->resolv_namespaces();
+
     return prog;
   }
 
