@@ -378,14 +378,14 @@ void port_setup_program(void)
   offset=add_storage(sizeof(struct port));
   map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),T_MIXED);
   map_variable("_id","mixed",0,offset+OFFSETOF(port,id),T_MIXED);
-  add_function("bind",port_bind,"function(int,void|mixed:int)",0);
+  add_function("bind",port_bind,"function(int,void|mixed,void|string:int)",0);
   add_function("listen_fd",port_listen_fd,"function(int,void|mixed:int)",0);
   add_function("set_id",port_set_id,"function(mixed:mixed)",0);
   add_function("query_id",port_query_id,"function(:mixed)",0);
   add_function("query_address",socket_query_address,"function(:string)",0);
   add_function("errno",port_errno,"function(:int)",0);
   add_function("accept",port_accept,"function(:object)",0);
-  add_function("create",port_create,"function(void|string|int,void|mixed:void)",0);
+  add_function("create",port_create,"function(void|string|int,void|mixed,void|string:void)",0);
 
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
