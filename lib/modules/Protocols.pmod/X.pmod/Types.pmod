@@ -226,7 +226,8 @@ class Drawable
   void PutImage(object gc, int depth,
 		int tx, int ty, int width, int height, string data)
   {
-    display->send_request(PutImage_req(gc, depth, tx,tx,width, height, data));
+    display->send_request(PutImage_req(gc, depth, tx, ty,
+				       width, height, data));
   }
 }
 
