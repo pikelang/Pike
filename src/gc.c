@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.50 2000/03/07 21:32:17 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.51 2000/03/07 23:23:23 grubba Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -355,9 +355,20 @@ void describe_something(void *a, int t, int dm)
     return;
   }
 
-  fprintf(stderr,"**Location: %p  Type: %s  Refs: %d\n",a,
-	  get_name_of_type(t),
-	  *(INT32 *)a);
+#ifdef DEBUG_MALLOC
+  if (((int)a) == 0x55555555) {
+    fprintf(stderr,"**Location: %p  Type: %s  Zapped pointer\n",a,
+	    get_name_of_type(t));
+  } else
+#endif /* DEBUG_MALLOC */
+  if (((int)a) & 3) {
+    fprintf(stderr,"**Location: %p  Type: %s  Missaligned address\n",a,
+	    get_name_of_type(t));
+  } else {
+    fprintf(stderr,"**Location: %p  Type: %s  Refs: %d\n",a,
+	    get_name_of_type(t),
+	    *(INT32 *)a);
+  }
 
   low_describe_something(a,t,dm);
 
