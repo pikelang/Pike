@@ -1765,11 +1765,18 @@ class cWeek
 
    TimeRange place(TimeRange what,void|int force)
    {
+      if (what->is_supertimerange)
+	 return what->mend_overlap(map(what->parts,place,force));
+//  	 return `|(@map(what->parts,place,force));
+
       if (what->is_year) 
 	 return year()->place(what,force); // just fallback
       
       if (what->is_day)
 	 return place_day(what->week_day(),what->n,force);
+
+      if (what->is_timeofday)
+	 return place(what->day(),force)->place(what,force);
 
       error("place: Incompatible type %O\n",what);
    }

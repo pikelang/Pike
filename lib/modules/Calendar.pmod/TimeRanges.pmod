@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.11 2000/10/18 10:05:46 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.12 2000/10/18 11:01:18 mirar Exp $
 
 #pike __REAL_VERSION__
 
@@ -1148,7 +1148,8 @@ class cSuperTimeRange
 //!	is non-zero. <tt>`!</tt> on this timerange is true.
 
 
-static class NullTimeRange
+program NullTimeRange=cNullTimeRange;
+static class cNullTimeRange
 {
    inherit TimeRange;
 
@@ -1244,7 +1245,7 @@ static class NullTimeRange
    }
 }
 
-NullTimeRange nulltimerange=NullTimeRange();
+cNullTimeRange nulltimerange=NullTimeRange();
 
 // helper functions
 

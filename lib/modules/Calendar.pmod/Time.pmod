@@ -1109,6 +1109,25 @@ class cSuperTimeRange
    }
 }
 
+class cNullTimeRange
+{
+   inherit TimeRanges::cNullTimeRange;
+
+   array(cHour) hours(int ...range) { return ({}); }
+   cHour hour(void|int n) { error("no hours in nulltimerange\n"); }
+   int number_of_hours() { return 0; }
+
+   array(cMinute) minutes(int ...range) { return ({}); }
+   cMinute minute(void|int n) { error("no minutes in nulltimerange\n"); }
+   int number_of_minutes() { return 0; }
+
+   array(cSecond) seconds(int ...range) { return ({}); }
+   cSecond second(void|int n) { error("no seconds in nulltimerange\n"); }
+   int number_of_seconds() { return 0; }
+
+   string format_elapsed() { return "0:00:00"; }
+}
+
 //------------------------------------------------------------------------
 //! class Hour
 //------------------------------------------------------------------------
