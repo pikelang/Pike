@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.288 2003/03/21 14:36:16 mast Exp $
+|| $Id: interpret.c,v 1.289 2003/03/23 12:35:08 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.288 2003/03/21 14:36:16 mast Exp $");
+RCSID("$Id: interpret.c,v 1.289 2003/03/23 12:35:08 jonasw Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -110,9 +110,6 @@ void gdb_stop_here(void)
 }
 
 
-/* mark stack, used to store markers into the normal stack */
-int mark_stack_malloced = 0;
-
 void push_sp_mark(void)
 {
   if(Pike_mark_sp == Pike_interpreter.mark_stack + Pike_stack_size)
@@ -201,7 +198,7 @@ PMOD_EXPORT void init_interpreter(void)
 #define MMALLOC(X,Y) (Y *)mmap(0,X*sizeof(Y),PROT_READ|PROT_WRITE, MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, fd, 0)
 
   Pike_interpreter.evaluator_stack_malloced=0;
-  mark_stack_malloced=0;
+  Pike_interpreter.mark_stack_malloced=0;
   Pike_interpreter.evaluator_stack=MMALLOC(Pike_stack_size,struct svalue);
   Pike_interpreter.mark_stack=MMALLOC(Pike_stack_size, struct svalue *);
   if((char *)MAP_FAILED == (char *)Pike_interpreter.evaluator_stack) Pike_interpreter.evaluator_stack=0;
@@ -223,7 +220,7 @@ use_malloc:
   if(!Pike_interpreter.mark_stack)
   {
     Pike_interpreter.mark_stack=(struct svalue **)xalloc(Pike_stack_size*sizeof(struct svalue *));
-    mark_stack_malloced=1;
+    Pike_interpreter.mark_stack_malloced=1;
   }
 
   Pike_sp=Pike_interpreter.evaluator_stack;
@@ -2388,7 +2385,7 @@ PMOD_EXPORT void cleanup_interpret(void)
     munmap((char *)Pike_interpreter.evaluator_stack, Pike_stack_size*sizeof(struct svalue));
     Pike_interpreter.evaluator_stack=0;
   }
-  if(!mark_stack_malloced)
+  if(!Pike_interpreter.mark_stack_malloced)
   {
     munmap((char *)Pike_interpreter.mark_stack, Pike_stack_size*sizeof(struct svalue *));
     Pike_interpreter.mark_stack=0;
@@ -2400,7 +2397,7 @@ PMOD_EXPORT void cleanup_interpret(void)
 
   Pike_interpreter.mark_stack=0;
   Pike_interpreter.evaluator_stack=0;
-  mark_stack_malloced=0;
+  Pike_interpreter.mark_stack_malloced=0;
   Pike_interpreter.evaluator_stack_malloced=0;
 }
 
