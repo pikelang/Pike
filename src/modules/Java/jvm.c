@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.7 1999/06/14 13:59:15 marcus Exp $
+ * $Id: jvm.c,v 1.8 1999/06/14 14:26:45 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.7 1999/06/14 13:59:15 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.8 1999/06/14 14:26:45 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -140,7 +140,6 @@ struct att_storage {
 
 TODO(?):
 
-DefineClass
 *Reflected*
 
 Array stuff
@@ -2751,6 +2750,41 @@ static void f_find_class(INT32 args)
   }
 }
 
+static void f_define_class(INT32 args)
+{
+  JNIEnv *env;
+  struct object *obj;
+  struct pike_string *str;
+  struct jobj_storage *ldr;
+  char *name;
+  jclass c;
+
+  get_all_args("define_class", args, "%s%o%S", &name, &obj, &str);
+  if((ldr = THAT_JOBJ(obj))==NULL)
+    error("Bad argument 2 to define_class().\n");
+  if((env = jvm_procure_env(fp->current_object))) {
+    c = (*env)->DefineClass(env, name, ldr->jobj, (jbyte*)str->str, str->len);
+    pop_n_elems(args);
+    push_java_class(c, fp->current_object, env);
+    jvm_vacate_env(fp->current_object, env);
+  } else {
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
+
+static void f_exception_check(INT32 args)
+{
+  JNIEnv *env;
+
+  pop_n_elems(args);
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_int((((*env)->ExceptionCheck(env))==JNI_TRUE? 1 : 0));
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
 static void f_exception_occurred(INT32 args)
 {
   JNIEnv *env;
@@ -2996,6 +3030,9 @@ void pike_module_init(void)
   add_function("create", f_create, "function(string|void:void)", 0);
   add_function("get_version", f_get_version, "function(:int)", 0);
   add_function("find_class", f_find_class, "function(string:object)", 0);
+  add_function("define_class", f_define_class,
+	       "function(object,string:object)", 0);
+  add_function("exception_check", f_exception_check, "function(:int)", 0);
   add_function("exception_occurred", f_exception_occurred,
 	       "function(:object)", 0);
   add_function("exception_describe", f_exception_describe,

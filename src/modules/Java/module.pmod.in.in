@@ -462,9 +462,8 @@ static class package {
       return p;
     if(zero_type(p)) {
       p = info->jvm->find_class(name==""?n:replace(name, ".", "/")+"/"+n);
-      if(info->jvm->exception_occurred())
+      if(info->jvm->exception_check())
 	check_exception(info);
-        /* info->jvm->exception_clear(); */
       if(p)
 	p = info->classes[p] || jclass(p, info);
       return p;
