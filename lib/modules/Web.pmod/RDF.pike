@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.35 2004/01/16 22:23:10 nilsson Exp $
+// $Id: RDF.pike,v 1.36 2004/01/28 11:56:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -107,6 +107,11 @@ class LiteralResource {
     return id;
   }
 
+  int(0..1) _equal(mixed r) {
+    if(!objectp(r) || !r->is_literal_resource) return 0;
+    return r->id==id;
+  }
+
   string _sprintf(int t) { return __sprintf("LiteralResource", t); }
 }
 
@@ -155,6 +160,11 @@ class URIResource {
 
   string get_3_tuple_name() {
     return "[" + id + "]";
+  }
+
+  int(0..1) _equal(mixed r) {
+    if(!objectp(r) || !r->is_uri_resource) return 0;
+    return r->id==id;
   }
 
   string _sprintf(int t) { return __sprintf("URIResource", t); }
@@ -507,8 +517,8 @@ int parse_n_triples(string in) {
 	if( in[pos]=='\\' ) pos++;
       string str = decode_n_triple_string( in[start+1..pos-1] );
       tokens += ({ TempLiteral(str) });
-      if( in[pos]=='^' ) {
-	pos += 2; // ^^
+      if( in[pos+1]=='^' ) {
+	pos += 3; // "^^
 	start = pos+1;
 	while(in[++pos]!='>');
 	tokens[-1]->datatype = in[start..pos-1];
