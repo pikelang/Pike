@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.15 2001/10/08 04:32:09 per Exp $
+ * $Id: X509.pmod,v 1.16 2001/10/08 05:36:17 per Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -23,7 +23,7 @@ object make_time(int t)
 {
   Calendar.Second second = Calendar.Second(t)->set_timezone("UTC");
 
-  if (second->year_no() >= 2050) {
+  if (second->year_no() >= 2050)
     error( "Tools.X509.make_time: "
 	   "Times later than 2049 not supported yet\n" );
 
