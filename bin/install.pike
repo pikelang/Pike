@@ -25,7 +25,7 @@ int istty()
     istty_cache=!!Stdio.stdin->tcgetattr();
     if(!istty_cache) istty_cache=-1;
   }
-  return istty_cache;
+  return istty_cache>0;
 #endif
 }
 
@@ -1144,6 +1144,7 @@ int main(int argc, string *argv)
 {
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
+    ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
     ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
     ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
@@ -1154,6 +1155,10 @@ int main(int argc, string *argv)
       {
 	case "help":
 	  werror(helptext);
+	  exit(0);
+
+	case "notty":
+	  istty_cache=-1;
 	  exit(0);
 
 	default:
