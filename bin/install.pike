@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.123 2004/12/04 16:33:52 grubba Exp $
+// $Id: install.pike,v 1.124 2004/12/06 14:56:31 grubba Exp $
 
 #define USE_GTK
 
@@ -1217,6 +1217,9 @@ void make_wix()
   Directory root = Directory("SourceDir",
 			     Standards.UUID.UUID(version_guid)->encode(),
 			     "TARGETDIR");
+  /* Workaround for bug in light. */
+  root->extra_ids["PIKE_TARGETDIR"] = 1;
+
   root->merge_module(".", "Pike_module.msm", "Pike", "TARGETDIR");
 
   string title = 
