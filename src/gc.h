@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.76 2001/06/26 21:03:49 hubbe Exp $
+ * $Id: gc.h,v 1.77 2001/06/29 18:10:55 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -103,23 +103,57 @@ struct marker
 };
 
 #define GC_MARKED		0x0001
+/* The thing has less internal references than references, or has been
+ * visited by reference from such a thing. Set in the mark pass. */
 #define GC_NOT_REFERENCED	0x0002
+/* The thing has only internal references and is not referenced from a
+ * marked thing. Set in the check pass and cleared in the mark
+ * pass. */
 #define GC_CYCLE_CHECKED	0x0004
+/* The thing has been pushed in the cycle check pass. */
 #define GC_LIVE			0x0008
+/* The thing is a live object (i.e. not destructed and got a destroy
+ * function) or is referenced from a live object. Set in the cycle
+ * check pass. */
 #define GC_LIVE_OBJ		0x0010
+/* The thing is a live object. Set in the cycle check pass. */
 #define GC_LIVE_RECURSE		0x0020
+/* The thing is being recursed a second time to propagate GC_LIVE. */
 #define GC_GOT_DEAD_REF		0x0040
+/* 1.  The thing has lost all references but since it can't be freed
+ *     inside the gc, it's been given an extra ref to stay around
+ *     until the free pass. Set in the mark, cycle check or zap weak
+ *     passes.
+ * 2.  The thing is in a cycle and isn't GC_LIVE. It's given an
+ *     extra ref so that the refcount garb doesn't recurse when the
+ *     cycle is freed. Set but not cleared in the cycle check pass.
+ *     Thus this flag is set on things that was dead but later marked
+ *     as live, and they won't have the extra ref in that case (cf
+ *     GC_GOT_EXTRA_REF). */
 #define GC_FREE_VISITED		0x0080
+/* The thing has been visited in the zap weak pass, which uses the
+ * mark pass code to remove references to things that got nonweak
+ * references but only weak external references. */
 
 #ifdef PIKE_DEBUG
 #define GC_PRETOUCHED		0x0100
+/* The thing has been visited by debug_gc_touch() in the pretouch pass. */
 #define GC_MIDDLETOUCHED	0x0200
+/* The thing has been visited by debug_gc_touch() in the middletouch pass. */
 #define GC_IS_REFERENCED	0x0400
+/* The thing has been visited by gc_is_referenced() in the mark pass. */
 #define GC_XREFERENCED		0x0800
+/* The thing has been visited by gc_external_mark*() and thus has a
+ * known external reference. Set in the check and locate passes. */
 #define GC_DO_FREE		0x1000
+/* The thing has been visited by gc_do_free(). Set in the free pass. */
 #define GC_GOT_EXTRA_REF	0x2000
+/* The thing has got an extra reference by the gc. */
 #define GC_WEAK_FREED		0x4000
+/* The thing has only weak (external) references left and will be
+ * freed. Set in the mark and zap weak passes. */
 #define GC_CHECKED_AS_WEAK	0x8000
+/* The thing has been visited by gc_checked_as_weak(). */
 #endif
 
 #ifdef PIKE_DEBUG
