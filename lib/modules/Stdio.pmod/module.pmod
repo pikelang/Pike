@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.194 2004/04/04 23:56:57 mast Exp $
+// $Id: module.pmod,v 1.195 2004/04/05 21:44:29 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -104,7 +104,7 @@ class File
   optional inherit Fd_ref;
   
 #ifdef TRACK_OPEN_FILES
-  static int open_file_id = next_open_file_id++;
+  /*static*/ int open_file_id = next_open_file_id++;
 #endif
 
   int is_file;
@@ -119,7 +119,7 @@ class File
 #ifdef __STDIO_DEBUG
   string __closed_backtrace;
 #define CHECK_OPEN()							\
-  if(!_fd)								\
+  if(!is_open())							\
   {									\
     error( "Stdio.File(): line "+__LINE__+" on closed file.\n" +	\
 	   (__closed_backtrace ?					\
@@ -137,7 +137,7 @@ class File
   //!
   int errno()
   {
-    return _fd && ::errno();
+    return ::errno();
   }
 
   static string|int debug_file;
@@ -154,17 +154,11 @@ class File
   static string _sprintf( int type, mapping flags )
   {
     if(type!='O') return 0;
-    int do_query_fd( )
-    {
-      int fd = -1;
-      catch{ fd = query_fd(); };
-      return fd;
-    };
     return sprintf("%O(%O, %O, %o /* fd=%d */)",
 		   this_program,
 		   debug_file, debug_mode,
 		   debug_bits||0777,
-		   do_query_fd() );
+		   is_open() ? query_fd() : -1 );
   }
 
   //  @decl int open(int fd, string mode)
@@ -203,8 +197,6 @@ class File
   //!
   int open(string file, string mode, void|int bits)
   {
-    _fd=Fd();
-    register_open_file (file, open_file_id, backtrace());
     is_file = 1;
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
@@ -212,7 +204,12 @@ class File
     if(query_num_arg()<3) bits=0666;
     debug_file = file;  debug_mode = mode;
     debug_bits = bits;
-    return ::open(file,mode,bits);
+    if (::open(file,mode,bits)) {
+      register_open_file (file, open_file_id, backtrace());
+      fix_internal_callbacks();
+      return 1;
+    }
+    return 0;
   }
 
 #if constant(files.__HAVE_OPENPT__)
@@ -235,14 +232,17 @@ class File
   //!
   int openpt(string mode)
   {
-    _fd=Fd();
-    register_open_file ("pty master", open_file_id, backtrace());
     is_file = 0;
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
     debug_file = "pty master";  debug_mode = mode; debug_bits=0;
-    return ::openpt(mode);
+    if (::openpt(mode)) {
+      register_open_file ("pty master", open_file_id, backtrace());
+      fix_internal_callbacks();
+      return 1;
+    }
+    return 0;
   }
 #endif
 
@@ -271,23 +271,32 @@ class File
   //!
   int open_socket(int|string|void port, string|void address, int|void family)
   {
-    _fd=Fd();
     is_file = 0;
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
     debug_file="socket";
     debug_mode=0; debug_bits=0;
+    int ok;
     switch(query_num_arg()) {
     case 0:
-      return ::open_socket();
+      ok = ::open_socket();
+      break;
     case 1:
-      return ::open_socket(port);
+      ok = ::open_socket(port);
+      break;
     case 2:
-      return ::open_socket(port, address);
+      ok = ::open_socket(port, address);
+      break;
     default:
-      return ::open_socket(port, address, family);
+      ok = ::open_socket(port, address, family);
+      break;
     }
+    if (ok) {
+      register_open_file ("socket", open_file_id, backtrace());
+      fix_internal_callbacks();
+    }
+    return ok;
   }
 
   //! This function connects a socket previously created with
@@ -313,7 +322,6 @@ class File
   int connect(string host, int|string port,
 	      void|string client, void|int|string client_port)
   {
-    if(!_fd) _fd=Fd();
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
@@ -321,8 +329,20 @@ class File
     debug_file = "socket";
     debug_mode = host+":"+port; 
     debug_bits = 0;
-    if(!client) return ::connect(host, port);
-    return ::connect(host, port, client, client_port);
+    if(!client) {
+      if (::connect(host, port)) {
+	register_open_file ("socket", open_file_id, backtrace());
+	fix_internal_callbacks();
+	return 1;
+      }
+    }
+    else
+      if (::connect(host, port, client, client_port)) {
+	register_open_file ("socket", open_file_id, backtrace());
+	fix_internal_callbacks();
+	return 1;
+      }
+    return 0;
   }
 
 #if constant(files.__HAVE_CONNECT_UNIX__)
@@ -335,7 +355,6 @@ class File
   //! @note
   //!  Nonblocking mode is not supported while connecting
   {
-    if(!_fd) _fd=Fd();
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
@@ -343,7 +362,12 @@ class File
     debug_file = "unix_socket";
     debug_mode = path;
     debug_bits = 0;
-    return ::connect_unix( path );
+    if (::connect_unix( path )) {
+      register_open_file ("unix_socket", open_file_id, backtrace());
+      fix_internal_callbacks();
+      return 1;
+    }
+    return 0;
   }
 #endif
 
@@ -358,7 +382,7 @@ class File
     _async_args = 0;
     set_nonblocking(0,0,0,0,0);
     if (cb) {
-      if (_fd && query_address()) {
+      if (is_open() && query_address()) {
 	// Connection OK.
 	cb(1, @args);
       } else {
@@ -437,8 +461,8 @@ class File
 		    function(int, mixed ...:void) callback,
 		    mixed ... args)
   {
-    if (!_fd ||
-	!_fd->stat()->issock ||
+    if (!is_open() ||
+	!::stat()->issock ||
 	catch { throw(query_address()); }) {
       // Open a new socket if:
       //   o We don't have an fd.
@@ -514,7 +538,6 @@ class File
   //!
   File pipe(void|int required_properties)
   {
-    _fd=Fd();
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
@@ -526,6 +549,9 @@ class File
       File o=File();
       o->_fd=fd;
       o->_setup_debug( "pipe", 0 );
+      register_open_file ("pipe", open_file_id, backtrace());
+      register_open_file ("pipe", o->open_file_id, backtrace());
+      fix_internal_callbacks();
       return o;
     }else{
       return 0;
@@ -567,7 +593,11 @@ class File
   //! @[open()], @[connect()], @[Stdio.FILE],
   static void create(int|string|void file,void|string mode,void|int bits)
   {
-    if (zero_type(file)) return;
+    if (zero_type(file)) {
+      _fd = Fd();
+      return;
+    }
+
     debug_file = file;  
     debug_mode = mode;
     debug_bits = bits;
@@ -605,7 +635,6 @@ class File
 
       default:
 	_fd=Fd();
-	register_open_file (file, open_file_id, backtrace());
 	is_file = 1;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
@@ -615,6 +644,7 @@ class File
 	if (!::open(file,mode,bits))
 	   error("Failed to open %O mode %O : %s\n",
 		 file,mode,strerror(errno()));
+	register_open_file (file, open_file_id, backtrace());
     }
   }
 
@@ -712,12 +742,13 @@ class File
   {
     if(::close(how||"rw"))
     {
-#define FREE_CB(X) if(___##X && query_##X == __stdio_##X) ::set_##X(0)
+      // Avoid cyclic refs.
+#define FREE_CB(X) _fd->_##X = 0
       FREE_CB(read_callback);
       FREE_CB(write_callback);
       FREE_CB(read_oob_callback);
       FREE_CB(write_oob_callback);
-      _fd=0;
+
       register_close_file (open_file_id);
 #ifdef __STDIO_DEBUG
       __closed_backtrace=master()->describe_backtrace(backtrace());
@@ -871,7 +902,6 @@ class File
 #define CBFUNC(TYPE, X)					\
   void set_##X (TYPE l##X)				\
   {							\
-    CHECK_OPEN();                                       \
     SET( X , l##X );					\
   }							\
 							\
@@ -1000,7 +1030,6 @@ class File
 
   void set_read_callback(function(void|mixed,void|string:void|mixed) read_cb)
   {
-    CHECK_OPEN();
     ::set_read_callback(((___read_callback = read_cb) &&
 			 __stdio_read_callback) ||
 			(___close_callback && __stdio_close_callback));
@@ -1016,7 +1045,6 @@ class File
   CBFUNC(function(void|mixed:void|mixed), write_oob_callback)
 
   void set_close_callback(mixed c)  {
-    CHECK_OPEN();
     ___close_callback=c;
     if (!___read_callback) {
       if (c) {
@@ -1028,6 +1056,15 @@ class File
   }
 
   mixed query_close_callback()  { return ___close_callback; }
+
+  static void fix_internal_callbacks()
+  {
+    ::set_read_callback ((___read_callback && __stdio_read_callback) ||
+			 (___close_callback && __stdio_close_callback));
+    ::set_write_callback (___write_callback && __stdio_write_callback);
+    ::set_read_oob_callback (___read_oob_callback && __stdio_read_oob_callback);
+    ::set_write_callback (___write_oob_callback && __stdio_write_oob_callback);
+  }
 
   //! @endignore
 
@@ -1104,8 +1141,7 @@ class File
     {
       x[0]+=(__closed_backtrace ? 
 	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :
-	   "This file has never been open.\n" )+
-	(_fd?"_fd is nonzero\n":"_fd is zero\n");
+	   "This file has never been open.\n" );
       throw(x);
     }
 #else
@@ -1180,13 +1216,12 @@ class File
    
   static void destroy()
   {
-    if(_fd)
-    { 
-      FREE_CB(read_callback);
-      FREE_CB(write_callback);
-      FREE_CB(read_oob_callback);
-      FREE_CB(write_oob_callback);
-    }
+    // Avoid cyclic refs.
+    FREE_CB(read_callback);
+    FREE_CB(write_callback);
+    FREE_CB(read_oob_callback);
+    FREE_CB(write_oob_callback);
+
     register_close_file (open_file_id);
   }
 }
