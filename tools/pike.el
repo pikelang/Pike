@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.39 2002/05/11 21:42:25 mast Exp $
+;;; $Id: pike.el,v 1.39 2002/08/02 05:07:15 jhs fake $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
