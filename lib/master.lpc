@@ -156,6 +156,12 @@ void _main(string *argv, string *env)
   }
   script=(object)argv[0];
 
+  if(!script->main)
+  {
+    perror("Error: "+argv[0]+" has no main().\n");
+    exit(1);
+  }
+
   i=script->main(sizeof(argv),argv,env);
   if(i >=0) exit(i);
 }
