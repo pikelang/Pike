@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.172 2000/04/11 21:00:57 grubba Exp $");
+RCSID("$Id: file.c,v 1.173 2000/04/14 17:30:31 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1347,11 +1347,13 @@ static void file_open(INT32 args)
      if(!( flags &  (FILE_READ | FILE_WRITE)))
 	error("Must open file for at least one of read and write.\n");
 
-     THREADS_ALLOW_UID();
      do {
-	fd=fd_open(str->str,map(flags), access);
+       THREADS_ALLOW_UID();
+       fd=fd_open(str->str,map(flags), access);
+       THREADS_DISALLOW_UID();
+       if ((fd < 0) && (errno == EINTR))
+	 check_threads_etc();
      } while(fd < 0 && errno == EINTR);
-     THREADS_DISALLOW_UID();
 
      if(!fp->current_object->prog)
      {
@@ -1364,13 +1366,15 @@ static void file_open(INT32 args)
 	 describe(fp->current_object);
        }
 #endif
+       if (fd >= 0)
+	 fd_close(fd);
        error("Object destructed in file->open()\n");
      }
 
      if(fd >= MAX_OPEN_FILEDESCRIPTORS)
      {
 	ERRNO=EBADF;
-	close(fd);
+	fd_close(fd);
 	fd=-1;
      }
      else if(fd < 0)
@@ -1530,7 +1534,10 @@ static void file_stat(INT32 args)
 
   if(tmp < 0)
   {
-    if(errno == EINTR) goto retry;
+    if(errno == EINTR) {
+      check_threads_etc();
+      goto retry;
+    }
     ERRNO=errno;
     push_int(0);
   }else{
@@ -2558,16 +2565,19 @@ static void exit_file_lock_key(struct object *o)
       fatal("File lock key is wrong!\n");
 #endif
 
-    THREADS_ALLOW();
     do
     {
+      THREADS_ALLOW();
 #ifdef HAVE_FD_FLOCK
       err=fd_flock(fd, fd_LOCK_UN);
 #else
       err=fd_lockf(fd, fd_LOCK_UN);
 #endif
+      THREADS_DISALLOW();
+      if ((err < 0) && (errno == EINTR)) {
+	check_threads_etc();
+      }
     }while(err<0 && errno==EINTR);
-    THREADS_DISALLOW();
 
 #ifdef _REENTRANT
     if(THIS_KEY->owner)
