@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.15 2001/08/14 03:55:31 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.16 2001/08/20 11:54:46 nilsson Exp $
  *
  */
 
@@ -103,8 +103,13 @@ class Node
     if(m["homogen-type"]) {
       if( m["homogen-type"]=="method" ) {
 	if( m["homogen-name"] ) {
+	  string name = m["homogen-name"];
+	  if(m->belongs) {
+	    if(m->belongs[-1]==':') name = m->belongs + name;
+	    else name = m->belongs + "." + name;
+	  }
 	  method_children +=
-	    ({ Node( "method", m["homogen-name"], c, this_object() ) });
+	    ({ Node( "method", name, c, this_object() ) });
 	  return ({ "" });
 	}
 
@@ -123,6 +128,11 @@ class Node
 	return ({ "" });
       }
       else if( m["homogen-type"]=="constant" ) {
+	string path = make_class_path();
+	if(sizeof(path)) path += ".";
+	consts[path + m["homogen-name"]] = 1;
+      }
+      else if( m["homogen-type"]=="variable" ) {
 	string path = make_class_path();
 	if(sizeof(path)) path += ".";
 	consts[path + m["homogen-name"]] = 1;
@@ -315,7 +325,7 @@ class Node
       res += "<tr><td><br /><b>Classes</b></td></tr>\n" +
 	make_navbar_really_low(root->class_children);
 
-    if(root->name=="")
+    if(root->appendix_children && sizeof(root->appendix_children))
       res += "<tr><td><br /><b>Appendices</b></td></tr>\n"+
 	make_navbar_really_low(root->appendix_children);
     else
@@ -456,6 +466,7 @@ class TopNode {
     _data = parser->finish(_data)->read();
     ::create("module", "", _data);
     sort(appendix_children->name, appendix_children);
+    type = "";
   }
 
   Parser.HTML get_parser() {
@@ -470,12 +481,15 @@ class TopNode {
   int(0..0) find_prev_node() { return 0; }
   int(0..0) find_next_node() { return 0; }
   string make_class_path(void|int(0..1) header) {
-    if(!header) return "";
-    return "Top level methods";
+    if(header && sizeof(method_children))
+      return "Top level methods";
+    return "";
   }
 
   string make_content() {
     resolve_reference = my_resolve_reference;
+    if(!sizeof(method_children)) return "";
+
     string contents = "<table class='sidebar'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children)
