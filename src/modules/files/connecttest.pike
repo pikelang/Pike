@@ -50,6 +50,8 @@ void ok()
 
 #endif
 
+void rcb(){}
+
 void timeout()
 {
    werror(PRE"timeout - connection neither succeded "
@@ -74,7 +76,7 @@ int main()
    sleep(0.1);
    
    f->open_socket();
-   f->set_nonblocking(0,ok,fail);
+   f->set_nonblocking(rcb,ok,fail);
    if (catch { f->connect("127.0.0.1",z); } &&
        catch { f->connect("localhost",z); })
    {
