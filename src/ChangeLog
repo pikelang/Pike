@@ -1,3 +1,29 @@
+Thu Aug  1 15:26:12 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.src: a few bugs fixed
+	* backend.c: now handles unsigned tv_sec better
+	* callback.c: bugs fixed, comments added
+	* configure.in: now checks for mmap
+	* docode.c: if() no longer uses count_args
+	* docode.c: one jump eliminated from for() loops
+	* interpret.c: stack now allocated with mmap when possible
+	* interpret.c: catch() inline warning removed...
+	* interpret.c: F_DEC_LOCAL_AND_POP now works...
+	* interpret.c: new opcodes: F_MARK2, F_SIZEOF, F_SIZEOF_LOCAL
+	*             F_CALL_LFUN_AND_POP
+	* language.y: gauge can now take a block of code as argument
+	* lex.c: added `[] and `[]=
+	* rusage.c: bug fixed when no rusage() was found
+	* mpz module now checks that libgmp is new enough
+	* readline module now checks for both <readline.h> and
+	  <readline/readline.h>
+
+Mon Jul 22 12:04:34 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* interpret.c (catch): return should now work from inside catch
+	  all catch statements are now exited through return or throw
+	* readlinemod: now checks for <readline/readline.h> too
+
 Mon Jul  8 23:52:48 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
 
 	* uLPC v1.0E-6 released
