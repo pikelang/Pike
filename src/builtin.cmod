@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.72 2001/12/16 02:49:37 mast Exp $
+ * $Id: builtin.cmod,v 1.73 2001/12/21 14:09:20 grubba Exp $
  */
 
 #include "global.h"
@@ -28,6 +28,35 @@
 #include "builtin_functions.h"
 #include "fsort.h"
 
+
+/*! @decl array(array(int|string)) _describe_program(program p)
+ *!
+ *! Debug function for showing the symbol table of a program.
+ */
+PIKEFUN array(array(int|string)) _describe_program(mixed x)
+     efun;
+{
+  struct program *p;
+  struct array *res;
+  int i;
+
+  if (!(p = program_from_svalue(sp - args))) {
+    Pike_error("_describe_program(): Bad argument 1 (expected program).\n");
+  }
+
+  for (i=0; i < (int)p->num_identifier_references;i++) {
+    struct reference *ref = p->identifier_references + i;
+    struct identifier *id = ID_FROM_PTR(p, ref);
+    push_int(ref->id_flags);
+    ref_push_string(id->name);
+    f_aggregate(2);
+  }
+  f_aggregate(p->num_identifier_references);
+  res = sp[-1].u.array;
+  sp--;
+  pop_n_elems(args);
+  push_array(res);
+}
 
 /*! @decl string basetype(mixed x)
  *!
