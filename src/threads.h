@@ -230,6 +230,7 @@ struct thread_state {
   char status;
   COND_T status_change;
   THREAD_T id;
+  struct thread_state *hashlink, **backlink;
 
   /* Swapped variables */
   struct svalue *sp,*evaluator_stack;

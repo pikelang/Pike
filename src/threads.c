@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.56 1998/02/19 05:15:20 per Exp $");
+RCSID("$Id: threads.c,v 1.57 1998/02/27 20:09:04 marcus Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -138,7 +138,7 @@ struct object *thread_id;
 static struct callback *threads_evaluator_callback=0;
 int thread_id_result_variable;
 
-MUTEX_T interpreter_lock;
+MUTEX_T interpreter_lock, thread_table_lock;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 #ifdef POSIX_THREADS
@@ -151,6 +151,116 @@ struct thread_starter
   struct object *id;
   struct array *args;
 };
+
+
+/* Thread hashtable */
+
+#define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
+
+static struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
+
+void thread_table_init()
+{
+  INT32 x;
+  for(x=0; x<THREAD_TABLE_SIZE; x++)
+    thread_table_chains[x] = NULL;
+}
+
+unsigned INT32 thread_table_hash(THREAD_T *tid)
+{
+  return hashmem((unsigned char *)tid, sizeof(*tid), 16) % THREAD_TABLE_SIZE;
+}
+
+void thread_table_insert(struct object *o)
+{
+  struct thread_state *s = (struct thread_state *)o->storage;
+  unsigned INT32 h = thread_table_hash(&s->id);
+  mt_lock( & thread_table_lock );
+  if((s->hashlink = thread_table_chains[h]) != NULL)
+    s->hashlink->backlink = &s->hashlink;
+  thread_table_chains[h] = s;
+  s->backlink = &thread_table_chains[h];
+  mt_unlock( & thread_table_lock );  
+}
+
+void thread_table_delete(struct object *o)
+{
+  struct thread_state *s = (struct thread_state *)o->storage;
+  mt_lock( & thread_table_lock );
+  if(s->hashlink != NULL)
+    s->hashlink->backlink = s->backlink;
+  *(s->backlink) = s->hashlink;
+  mt_unlock( & thread_table_lock );
+}
+
+struct thread_state *thread_state_for_id(THREAD_T tid)
+{
+  unsigned INT32 h = thread_table_hash(&tid);
+  struct thread_state *s = NULL;
+  mt_lock( & thread_table_lock );
+  if(thread_table_chains[h] == NULL) {
+    /* NULL result */
+  } else if((s=thread_table_chains[h])->id == tid) {
+    /* Quick return */
+  } else {
+    while((s = s->hashlink) != NULL)
+      if(s->id == tid)
+	break;
+    if(s != NULL) {
+      /* Move the thread_state to the head of the chain, in case
+	 we want to search for it again */
+
+      /* Unlink */
+      if(s->hashlink != NULL)
+	s->hashlink->backlink = s->backlink;
+      *(s->backlink) = s->hashlink;
+      /* And relink at the head of the chain */
+      if((s->hashlink = thread_table_chains[h]) != NULL)
+	s->hashlink->backlink = &s->hashlink;
+      thread_table_chains[h] = s;
+      s->backlink = &thread_table_chains[h];
+    }
+  }
+  mt_unlock( & thread_table_lock );
+  return s;
+  /* NOTEZ BIEN:  Return value only guaranteed to remain valid as long
+     as you have the interpreter lock, unless tid == th_self() */
+}
+
+struct object *thread_for_id(THREAD_T tid)
+{
+  struct thread_state *s = thread_state_for_id(tid);
+  return (s == NULL? NULL :
+	  (struct object *)(((char *)s)-((((struct object *)NULL)->storage)-
+					 ((char*)NULL))));
+  /* See NB in thread_state_for_id.  Lifespan of result can be prolonged
+     by incrementing refcount though. */
+}
+
+void f_all_threads(INT32 args)
+{
+  /* Return an unordered array containing all threads that was running
+     at the time this function was invoked */
+
+  INT32 x;
+  struct svalue *oldsp;
+  struct thread_state *s;
+
+  pop_n_elems(args);
+  oldsp = sp;
+  mt_lock( & thread_table_lock );
+  for(x=0; x<THREAD_TABLE_SIZE; x++)
+    for(s=thread_table_chains[x]; s; s=s->hashlink) {
+      struct object *o =
+	(struct object *)(((char *)s)-((((struct object *)NULL)->storage)-
+				       ((char*)NULL)));
+      o->refs++;
+      push_object(o);
+    }
+  mt_unlock( & thread_table_lock );
+  f_aggregate(sp-oldsp);
+}
+
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
@@ -219,6 +329,7 @@ void *new_thread_func(void * data)
   THREADS_FPRINTF((stderr,"THREADS_ALLOW() Thread %08x done\n",
 		   (unsigned int)thread_id));
 
+  thread_table_delete(thread_id);
   free_object(thread_id);
   thread_id=0;
   cleanup_interpret();
@@ -255,6 +366,7 @@ void f_thread_create(INT32 args)
   if(!tmp)
   {
     num_threads++;
+    thread_table_insert(arg->id);
 
     if(!threads_evaluator_callback)
     {
@@ -602,6 +714,8 @@ void th_init(void)
 
   mt_init( & interpreter_lock);
   mt_lock( & interpreter_lock);
+  mt_init( & thread_table_lock);
+  thread_table_init();
 #ifdef POSIX_THREADS
   pthread_attr_init(&pattr);
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
@@ -625,6 +739,8 @@ void th_init(void)
 #endif
   add_efun("this_thread",f_this_thread,"function(:object)",
            OPT_EXTERNAL_DEPEND);
+  add_efun("all_threads",f_all_threads,"function(:array(object))",
+	   OPT_EXTERNAL_DEPEND);
 
   start_new_program();
   add_storage(sizeof(struct mutex_storage));
@@ -675,6 +791,8 @@ void th_init(void)
   thread_id=clone_object(thread_id_prog,0);
   SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
   ((struct thread_state *)thread_id->storage)->swapped=0;
+  ((struct thread_state *)thread_id->storage)->id=th_self();
+  thread_table_insert(thread_id);
 }
 
 void th_cleanup(void)
