@@ -233,45 +233,72 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
   return ret;
 }
 
+Process spawn(string command, void|Stdio.Stream stdin,
+	      void|Stdio.Stream stdout, void|Stdio.Stream stderr,
+	      // These aren't used. Seems to be part of something unfinished. /mast
+	      //function|void cleanup, mixed ... args
+	     )
+//! Spawns a process that executes @[command] as a command shell
+//! statement ("@expr{/bin/sh -c @[command]@}" for Unix, "@expr{cmd /c
+//! @[command]@}" for Windows).
 //!
-Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
-	      function|void cleanup, mixed ... args)
+//! @param stdin
+//! @param stdout
+//! @param stderr
+//!   Stream objects to use as standard input, standard output and
+//!   standard error, respectively, for the created process. The
+//!   corresponding streams for this process are used for those that
+//!   are left out.
+//!
+//! @returns
+//!   Returns a @[Process.Process] object for the created process.
+//!
+//! @seealso
+//!   @[system], @[popen]
 {
   mapping(string:mixed) data=(["env":getenv()]);
   if(stdin) data->stdin=stdin;
   if(stdout) data->stdout=stdout;
   if(stderr) data->stderr=stderr;
 #if defined(__NT__)
-  // if the command string s is not quoted, add double quotes to
+  // if the command string command is not quoted, add double quotes to
   // make sure it is not modified by create_process
-  if (sizeof(s) <= 1 || s[0] != '\"' || s[sizeof(s)-1] != '\"')
-    s = "\"" + s + "\"";
-  return create_process(({ "cmd", "/c", s }),data);
+  if (sizeof(command) <= 1 ||
+      command[0] != '\"' || command[sizeof(command)-1] != '\"')
+    command = "\"" + command + "\"";
+  return create_process(({ "cmd", "/c", command }),data);
 #elif defined(__amigaos__)
-  return create_process(split_quoted_string(s),data);
+  return create_process(split_quoted_string(command),data);
 #else /* !__NT__||__amigaos__ */
-  return create_process(({ "/bin/sh", "-c", s }),data);
+  return create_process(({ "/bin/sh", "-c", command }),data);
 #endif /* __NT__||__amigaos__ */
 
 }
 
 //! @decl string popen(string command)
-//! Executes the @[command], waits until it has finished and returns
-//! the result as a string.
+//! Executes @[command] as a shell statement ("@expr{/bin/sh -c
+//! @[command]@}" for Unix, "@expr{cmd /c @[command]@}" for Windows),
+//! waits until it has finished and returns the result as a string.
+//!
+//! @seealso
+//!   @[system], @[spawn]
 
 //! @decl Stdio.FILE popen(string command, string mode)
 //! Open a "process" for reading or writing.  The @[command] is executed
-//! as a shell statement ("/bin/sh -c command" for Unix,
-//! "cmd /c command" for Windows).  The parameter @[mode] should
-//! be one of the following letters:
+//! as a shell statement ("@expr{/bin/sh -c @[command]@}" for Unix,
+//! "@expr{cmd /c @[command]@}" for Windows). The parameter @[mode]
+//! should be one of the following letters:
 //! @string
-//!   @value 'r'
+//!   @value "r"
 //!   Open for reading.  Data written by the process to stdout
 //!   is available for read.
-//!   @value 'w'
+//!   @value "w"
 //!   Open for writing.  Data written to the file is available
 //!   to the process on stdin.
 //! @endstring
+//!
+//! @seealso
+//!   @[system], @[spawn]
 
 Stdio.FILE|string popen(string s, string|void mode) {
   if(mode)
@@ -289,19 +316,33 @@ static Stdio.FILE fpopen(string s, string|void mode)
   if(!p) error("Popen failed. (couldn't create pipe)\n");
 
   if (mode == "w")
-    spawn(s, p, 0, 0, destruct, f);
+    spawn(s, p, 0, 0, /*destruct, f*/);
   else
-    spawn(s, 0, p, 0, destruct, f);
+    spawn(s, 0, p, 0, /*destruct, f*/);
   p->close();
   destruct(p);
 
   return f;
 }
 
+int system(string command, void|Stdio.Stream stdin,
+	   void|Stdio.Stream stdout, void|Stdio.Stream stderr)
+//! Executes @[command] as a shell statement ("@expr{/bin/sh -c
+//! @[command]@}" for Unix, "@expr{cmd /c @[command]@}" for Windows),
+//! waits until it has finished and returns its return value.
 //!
-int system(string s)
+//! @param stdin
+//! @param stdout
+//! @param stderr
+//!   Stream objects to use as standard input, standard output and
+//!   standard error, respectively, for the created process. The
+//!   corresponding streams for this process are used for those that
+//!   are left out.
+//!
+//! @seealso
+//!   @[spawn], @[popen]
 {
-  return spawn(s)->wait();
+  return spawn(command, stdin, stdout, stderr)->wait();
 }
 
 #ifndef __NT__
