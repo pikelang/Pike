@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.443 2001/07/12 15:07:35 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.444 2001/07/12 23:56:04 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1788,6 +1788,54 @@ test_equal(encode_value_canonic ((<"en","sv","de">)),
            encode_value_canonic ((<"de","sv","en">)))
 test_equal(encode_value_canonic ((<"en","sv","de">)),
            encode_value_canonic ((<"sv","en","de">)))
+
+
+test_any([[
+class Test
+{
+    class Resolver (array c)
+    {
+      mixed resolv (string id)
+      {
+	if (id == "c") return c;
+      }
+    }
+
+    class Codec
+    {
+      mixed fooof (string name) {return all_constants()[name];}
+      function objectof = fooof;
+      function functionof = fooof;
+      function programof = fooof;
+
+      string nameof (mixed what)
+      {
+	if (string name = search (all_constants(), what)) return name;
+	return ([])[0];
+      }
+    }
+
+    mixed main()
+    {
+      array c = ({"subres"});
+      object o = compile (
+	#"string res() {return `+(@c());}
+	string subres() {return \"foo\";}",
+	Resolver (c))();
+      for (int i = 0; i < sizeof (c); i++)
+	if (stringp (c[i])) c[i] = o[c[i] ];
+#ifdef DEBUG
+#define D ,1
+#else
+#define D
+#endif
+      function e=encode_value;
+      function d=decode_value;
+      return d (e (o, Codec() D), Codec() D)->res();
+    }
+};
+  return Test()->main();
+]],"foo")
 
 test_any([[mixed s="foo"; return s++;]],"foo")
 test_any([[mixed s="foo"; s++; return s;]],"foo1")
