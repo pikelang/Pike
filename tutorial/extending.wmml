@@ -1,4 +1,4 @@
-<chapter title="Pike internals - how to extend Pike">
+<chapter title="Pike internals - how to extend Pike" mansuffix=e>
 The rest of this book describes how Pike works and how to extend it with
 your own functions written in C or C++. Even if you are not interested in
 extending Pike, the information in this section can make you understand
