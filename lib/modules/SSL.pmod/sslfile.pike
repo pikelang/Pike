@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.30 2001/06/20 22:21:10 js Exp $
+/* $Id: sslfile.pike,v 1.31 2001/06/25 18:56:13 noy Exp $
  *
  */
 
@@ -101,13 +101,24 @@ void close()
   if (sizeof (write_buffer) && !blocking)
     ssl_write_callback(socket->query_id());
 
+  if(sizeof(write_buffer) && blocking) {
+    write_blocking();
+  }
+
   send_close();
   queue_write();
   read_callback = 0;
   write_callback = 0;
   close_callback = 0;
 
+  if (sizeof (write_buffer) && !blocking) {
+     ssl_write_callback(socket->query_id());
+   }
+  if(sizeof(write_buffer) && blocking) {
+    write_blocking();
+  }
 
+  socket->close();
 }
 
 
@@ -332,6 +343,7 @@ private void ssl_write_callback(mixed id)
 		 "blocking = %d, write_callback = %O\n",
 		 handshake_finished, blocking, write_callback));
 #endif
+
   if (strlen(write_buffer))
     {
       int written = socket->write(write_buffer);
@@ -460,7 +472,6 @@ void set_blocking()
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->set_blocking\n");
 #endif
-  
   if (sizeof (write_buffer) && !blocking)
     ssl_write_callback(socket->query_id());
   
