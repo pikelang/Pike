@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.163 2004/05/14 08:49:40 grubba Exp $
+|| $Id: main.c,v 1.164 2004/12/17 17:28:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.163 2004/05/14 08:49:40 grubba Exp $");
+RCSID("$Id: main.c,v 1.164 2004/12/17 17:28:40 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -242,7 +242,7 @@ int dbm_main(int argc, char **argv)
     init_pike_frame_blocks();
     init_node_s_blocks();
     init_object_blocks();
-#ifndef DEBUG_MALLOC
+#if !defined(DEBUG_MALLOC) || !defined(_REENTRANT)
     /* This has already been done by initialize_dmalloc(). */
     init_callback_blocks();
 #endif /* !DEBUG_MALLOC */
