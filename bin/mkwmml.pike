@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.18 1999/07/15 19:14:07 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.19 2000/02/20 10:22:48 hubbe Exp $ */
 
 import Stdio;
 import Array;
@@ -199,7 +199,7 @@ string synopsis_to_html(string s,mapping huh)
 string htmlify(string s) 
 {
 #define HTMLIFY(S) \
-   (replace((S),({"&lt;",">","&","\240"}),({"&lt;","&gt;","&amp;","&nbsp;"})))
+   (replace((S),({"&lt;","&gt;",">","&","\240"}),({"&lt;","&gt;","&gt;","&amp;","&nbsp;"})))
 
    string t="",u,v;
    while (sscanf(s,"%s<%s>%s",u,v,s)==3)
