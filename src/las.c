@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.126 1999/11/22 14:56:13 grubba Exp $");
+RCSID("$Id: las.c,v 1.127 1999/11/22 15:04:19 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2256,6 +2256,14 @@ void fix_type_field(node *n)
     n->type = get_type_of_svalue(& n->u.sval);
     break;
 
+  case F_SSCANF:
+    MAKE_CONSTANT_SHARED_STRING(n->type, tIntPos);
+    break;
+
+  case F_UNDEFINED:
+    MAKE_CONSTANT_SHARED_STRING(n->type, tInt0);
+    break;
+
   case F_ARG_LIST:
     if (n->parent) {
       /* Propagate the changed type all the way up to the apply node. */
@@ -2280,14 +2288,6 @@ void fix_type_field(node *n)
 	copy_shared_string(n->type,void_type_string);
       break;
     }
-
-  case F_SSCANF:
-    MAKE_CONSTANT_SHARED_STRING(n->type, tIntPos);
-    break;
-
-  case F_UNDEFINED:
-    MAKE_CONSTANT_SHARED_STRING(n->type, tInt0);
-    break;
 
     /* FALL_THROUGH */
   case F_MAGIC_INDEX:
