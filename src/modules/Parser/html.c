@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.137 2001/04/14 13:49:24 grubba Exp $ */
+/* $Id: html.c,v 1.138 2001/04/14 20:32:59 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -3987,8 +3987,10 @@ static void html_write_out(INT32 args)
 **! method int at_line();
 **! method int at_char();
 **! method int at_column();
-**!	Get the current position.
-**!	<ref>at</ref>() gives an array consisting of
+**!	Returns the current position. Characters and columns count
+**!	from 0, lines count from 1.
+**!
+**!	<p><ref>at</ref>() gives an array consisting of
 **!	({<i>line</i>,<i>char</i>,<i>column</i>}), in that order.
 */
 
