@@ -1,46 +1,58 @@
 #
-# $Id: configure.in,v 1.7 2002/08/06 20:01:53 kiwi Exp $
+# $Id: configure.in,v 1.8 2002/09/11 12:13:57 hop Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
 
 PIKE_FEATURE_WITHOUT(FFmpeg)
 
+  incdirs="$with_root/usr/local/include/ffmpeg $with_root/usr/local/include/libffmpeg $with_root/usr/local/include/libavcodec $with_root/usr/include/ffmpeg $with_root/usr/include/libffmpeg $with_root/usr/include/libavcodec $with_root/opt/ffmpeg/include $with_root/opt/libffmpeg/include $with_root/opt/libavcodec/include no"
+
 AC_ARG_WITH(ffmpeg,     [  --without-ffmpeg      no support for FFmpeg],[],[with_ffmpeg=yes])
 
 AC_MODULE_INIT()
 if test x$with_ffmpeg = xyes ; then
   PIKE_FEATURE_NODEP(FFmpeg)
-  AC_CHECK_HEADERS(avcodec.h)
-  AC_CHECK_HEADERS(libffmpeg/avcodec.h)
-  AC_CHECK_HEADERS(libavcodec/avcodec.h)
-  AC_CHECK_LIB( ffmpeg, avcodec_init, [
-    AC_DEFINE(HAVE_LIBFFMPEG)
-    LIBS="${LIBS-} -lffmpeg"
 
-    PIKE_FEATURE(FFmpeg,[yes (using libffmpeg)])
-    ])
+  AC_MSG_CHECKING(for Ffmpeg include-directory)
+  AC_CACHE_VAL(pike_cv_ffmpeg_include_dir, [
+    for pike_cv_ffmpeg_include_dir in $incdirs; do
+      if test -d $pike_cv_ffmpeg_include_dir/.; then
+        break
+      else
+        :
+      fi
+    done
+  ])
+  AC_MSG_RESULT($pike_cv_ffmpeg_include_dir)
+  if test x$pike_cv_ffmpeg_include_dir = xno; then :; else
+  echo Adding $pike_cv_ffmpeg_include_dir to the include search path.
+    CPPFLAGS="${CPPFLAGS} -I$pike_cv_ffmpeg_include_dir"
+  fi
+
+  AC_CHECK_HEADERS(avcodec.h)
 dnl ffmpeg and avcodec are the same libs... with 2 differents..
 dnl don't ask me why.
+dnl hop: libavcodec is Ffmpeg's native name, libffmpeg should
+dnl      be libavcode + libav libraries together
   AC_CHECK_LIB( avcodec, avcodec_init, [
     AC_DEFINE(HAVE_LIBFFMPEG)
     LIBS="${LIBS-} -lavcodec"
  
     PIKE_FEATURE(FFmpeg,[yes (using libavcodec)])
     ])
+  AC_CHECK_LIB( ffmpeg, avcodec_init, [
+    AC_DEFINE(HAVE_LIBFFMPEG)
+    LIBS="${LIBS-} -lffmpeg"
+
+    PIKE_FEATURE(FFmpeg,[yes (using libffmpeg)])
+    ])
+
   AC_MSG_CHECKING([if library is really working])
   AC_CACHE_VAL(pike_cv_ffmpeg_working, [
     AC_TRY_COMPILE([
-#ifdef HAVE_LIBAVCODEC_AVCODEC_H
-#include <libavcodec/avcodec.h>
-#else
-#ifdef HAVE_LIBFFMPEG_AVCODEC_H
-#include <libffmpeg/avcodec.h>
-#else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
-#endif
-#endif
 #endif
       ], [
   extern AVCodec *thecodec;
