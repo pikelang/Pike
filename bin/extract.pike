@@ -2,7 +2,7 @@
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.10 2001/02/20 06:21:12 nilsson Exp $
+// $Id: extract.pike,v 1.11 2001/11/16 03:42:21 nilsson Exp $
 //
 
 
@@ -535,25 +535,27 @@ array(string) get_tokens(string in, mapping args, string filename) {
   // The order between // blocks and /* */ blocks is not important
   // for our purposes.
   string comments = "";
-  foreach(in/"//", string line) {
+  foreach( (in/"//")[1..], string line) {
     sscanf(line, "%s\n", line);
     comments += line+"\n";
   }
-  foreach(in/"/\052", string block) {
-    string c = "";
-    sscanf(block, "%s\052/", c);
-    comments += c+"\n";
-  }
+
+  // This is code is flawed. Breaks in e.g. userfs.pike in Roxen.
+  //  foreach(in/"/\052", string block) {
+  //    string c = "";
+  //    sscanf(block, "%s\052/", c);
+  //    comments += c+"\n";
+  //  }
 
   array(string) tokens = ({});
   Parser.HTML()->      
     add_container("locale-token",
 		  lambda(object foo, mapping m, string c) {
-		    if(args->project && m->project!=args->project) 
+		    if(args->project && m->project!=args->project)
 		      return 0;
 		    c = String.trim_whites(c);
 		    if(has_value(tokens, c))
-		      werror("\n* Warning: Token %O already found\n", c);
+		      werror("\n* Warning: Token %O already found.\n", c);
 		    tokens += ({c});
 		    if (m->project)
 		      args->project = m->project;
@@ -1038,7 +1040,7 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) && 
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.10 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.11 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
