@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.176 1999/06/17 20:33:06 noring Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.177 1999/06/23 06:48:22 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -81,7 +81,11 @@ test_compile_error(""())
 test_compile_error(([])())
 test_compile_error(([])())
 test_any([[ class X { int y; class Z { void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+
 test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
+
+test_any([[ class X { int y; class Z { static void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { static void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
 cond([[all_constants()->_debug]],
 [[

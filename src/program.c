@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.123 1999/05/02 08:11:47 hubbe Exp $");
+RCSID("$Id: program.c,v 1.124 1999/06/23 06:48:20 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -480,7 +480,21 @@ void fixate_program(void)
   
   
   /* Yes, it is supposed to start at 1  /Hubbe */
-  for(i=1;i<NUM_LFUNS;i++)
+  for(i=1;i<3;i++)
+  {
+    struct pike_string *tmp=findstring(lfun_names[i]);
+    if(tmp)
+    {
+      new_program->lfuns[i]=really_low_find_shared_string_identifier(
+	tmp,
+	new_program,
+	1);
+    }else{
+      new_program->lfuns[i]=-1;
+    }
+  }
+
+  for(;i<NUM_LFUNS;i++)
     new_program->lfuns[i]=find_identifier(lfun_names[i],new_program);
   
   new_program->flags |= PROGRAM_FIXED;
