@@ -13,10 +13,14 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "mapping.h"
+#include "stralloc.h"
 
 #include "parser.h"
 
+/*
 #define DEBUG
+#define SCAN_DEBUG
+*/
 
 #ifdef DEBUG
 #undef DEBUG
@@ -27,7 +31,7 @@
 #define DEBUG_MARK_SPOT(TEXT,FEED,C) do; while(0)
 #endif
 
-#if 1
+#if 0
 #define free(X) fprintf(stderr,"free line %d: %p\n",__LINE__,X); free(X)
 #endif
 
@@ -139,6 +143,8 @@ struct parser_html_storage
    int num_look_for_end[MAX_ARGQ];
 };
 
+typedef enum { P_DONE=0, P_WAIT, P_REREAD } newstate;
+
 #ifdef THIS
 #undef THIS /* Needed for NT */
 #endif
@@ -224,7 +230,7 @@ void reset_feed(struct parser_html_storage *this)
 
    /* new stack head */
 
-   this->stack=xalloc(sizeof(struct feed_stack));
+   this->stack=(struct feed_stack*)xalloc(sizeof(struct feed_stack));
 
    this->stack->prev=NULL;
    this->stack->local_feed=NULL;
@@ -280,7 +286,7 @@ found_start:
       THIS->ws_or_endarg=NULL;
    }
    THIS->ws_or_endarg=(p_wchar2*)xalloc(sizeof(p_wchar2)*THIS->n_ws);
-   fprintf(stderr,"got: %p\n",THIS->ws_or_endarg);
+
    MEMCPY(THIS->ws_or_endarg+2,THIS->ws,THIS->n_ws*sizeof(p_wchar2));
    THIS->ws_or_endarg[0]=THIS->arg_eq;
    THIS->ws_or_endarg[1]=THIS->tag_end;
@@ -670,6 +676,12 @@ static void skip_feed_range(struct feed_stack *st,
    struct piece *head=*headp;
    int c_head=*c_headp;
 
+   if (!*headp)
+   {
+      DEBUG((stderr,"skip_feed_range: already at end<tm>\n"));
+      return;
+   }
+
    DEBUG_MARK_SPOT("skip_feed_range from",*headp,*c_headp);
    DEBUG_MARK_SPOT("                  to",tail,c_tail);
 
@@ -704,8 +716,8 @@ static int scan_forward(struct piece *feed,
 
    if (num_look_for<0) num_look_for=-num_look_for,rev=1;
 
+#ifdef SCAN_DEBUG
    DEBUG_MARK_SPOT("scan_forward",feed,c);
-#ifdef DEBUG
    do
    {
       int i=0;
@@ -719,7 +731,11 @@ static int scan_forward(struct piece *feed,
       fprintf(stderr,"\n");
    }
    while(0);
+#define SCAN_DEBUG_MARK_SPOT(A,B,C) DEBUG_MARK_SPOT(A,B,C)
+#else
+#define SCAN_DEBUG_MARK_SPOT(A,B,C) do {} while (0);
 #endif
+
 
    switch (num_look_for)
    {
@@ -728,8 +744,8 @@ static int scan_forward(struct piece *feed,
 	    feed=feed->next;
 	 *destp=feed;
 	 *d_p=feed->s->len;
-	 DEBUG_MARK_SPOT("scan_forward end (nothing to look for)",
-			  *destp,*d_p);
+	 SCAN_DEBUG_MARK_SPOT("scan_forward end (nothing to look for)",
+			      *destp,*d_p);
 	 return 0; /* not found :-) */
 	 
       case 1: 
@@ -738,7 +754,7 @@ static int scan_forward(struct piece *feed,
 	    {
 	       int ce=feed->s->len-c;
 	       p_wchar2 f=*look_for;
-	       DEBUG_MARK_SPOT("scan_forward piece loop (1)",feed,c);
+	       SCAN_DEBUG_MARK_SPOT("scan_forward piece loop (1)",feed,c);
 	       switch (feed->s->size_shift)
 	       {
 		  case 0:
@@ -781,7 +797,6 @@ static int scan_forward(struct piece *feed,
 	       if (!feed->next) break;
 	       c=0;
 	       feed=feed->next;
-	       break;
 	    }
 	 break;
 
@@ -789,7 +804,7 @@ static int scan_forward(struct piece *feed,
 	 while (feed)
 	 {
 	    int ce=feed->s->len-c;
-	    DEBUG_MARK_SPOT("scan_forward piece loop (>1)",feed,c);
+	    SCAN_DEBUG_MARK_SPOT("scan_forward piece loop (>1)",feed,c);
 	    switch (feed->s->size_shift)
 	    {
 	       case 0:
@@ -853,7 +868,7 @@ static int scan_forward(struct piece *feed,
 	 break;
    }
 
-   DEBUG_MARK_SPOT("scan_forward not found",feed,feed->s->len);
+   SCAN_DEBUG_MARK_SPOT("scan_forward not found",feed,feed->s->len);
    *destp=feed;
    *d_p=feed->s->len;
    return 0; /* not found */
@@ -861,7 +876,7 @@ static int scan_forward(struct piece *feed,
 found:
    *destp=feed;
    *d_p=c-!rev; 
-   DEBUG_MARK_SPOT("scan_forward found",feed,c-!rev);
+   SCAN_DEBUG_MARK_SPOT("scan_forward found",feed,c-!rev);
    return 1;
 }
 
@@ -935,7 +950,6 @@ static int scan_forward_arg(struct parser_html_storage *this,
 
    if (do_push) 
    {
-      fprintf(stderr,"add %d\n",n);
       if (n>1) f_add(n);
       else if (!n) ref_push_string(empty_string);
    }
@@ -1021,7 +1035,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 /* ---------------------------------------------------------------- */
 /* this is called to get data from callbacks and do the right thing */
 
-static int handle_result(struct parser_html_storage *this,
+static newstate handle_result(struct parser_html_storage *this,
 			 struct feed_stack *st,
 			 struct piece **head,
 			 int *c_head,
@@ -1065,7 +1079,7 @@ static int handle_result(struct parser_html_storage *this,
 	 st2->c=0;
 	 this->stack=st2;
 	 THIS->stack_count++;
-	 return 2; /* please reread stack head */
+	 return P_REREAD; /* please reread stack head */
 
       case T_INT:
 	 switch (sp[-1].u.integer)
@@ -1074,11 +1088,11 @@ static int handle_result(struct parser_html_storage *this,
 	       /* just output range */
 	       put_out_feed_range(this,*head,*c_head,tail,c_tail);
 	       skip_feed_range(st,head,c_head,tail,c_tail);
-	       return 0; /* continue */
+	       return P_DONE; /* continue */
 	    case 1:
 	       /* wait: "incomplete" */
 	       skip_feed_range(st,head,c_head,tail,c_tail);
-	       return 1; /* continue */
+	       return P_WAIT; /* continue */
 	 }
 	 error("Parse.HTML: illegal result from callback: %d, "
 	       "not 0 (skip) or 1 (wait)\n",
@@ -1094,20 +1108,20 @@ static int handle_result(struct parser_html_storage *this,
 	    put_out_feed(this,sp[-1].u.array->item[i].u.string);
 	 }
 	 skip_feed_range(st,head,c_head,tail,c_tail);
-	 return 0; /* continue */
+	 return P_DONE; /* continue */
 
       default:
 	 error("Parse.HTML: illegal result from callback: not 0, string or array(string)\n");   
    }   
 }
 
-void do_callback(struct parser_html_storage *this,
-		 struct object *thisobj,
-		 struct svalue *callback_function,
-		 struct piece *start,
-		 int cstart,
-		 struct piece *end,
-		 int cend)
+static void do_callback(struct parser_html_storage *this,
+			struct object *thisobj,
+			struct svalue *callback_function,
+			struct piece *start,
+			int cstart,
+			struct piece *end,
+			int cend)
 {
    this->start=start;
    this->cstart=cstart;
@@ -1122,20 +1136,20 @@ void do_callback(struct parser_html_storage *this,
    apply_svalue(callback_function,2);
 }
 
-int tag_callback(struct parser_html_storage *this,
-		 struct object *thisobj,
-		 struct svalue *v,
-		 struct piece *start, int cstart,
-		 struct piece *end, int cend,
-		 struct feed_stack *st,
-		 struct piece **cutstart, int *ccutstart,
-		 struct piece *cutend, int ccutend)
+static newstate tag_callback(struct parser_html_storage *this,
+			     struct object *thisobj,
+			     struct svalue *v,
+			     struct piece *start, int cstart,
+			     struct piece *end, int cend,
+			     struct feed_stack *st,
+			     struct piece **cutstart, int *ccutstart,
+			     struct piece *cutend, int ccutend)
 {
    switch (v->type)
    {
       case T_STRING:
 	 push_svalue(v);
-	 return 0; /* done */
+	 return P_DONE;
       case T_ARRAY:
 	 error("unimplemented");
 	 
@@ -1174,6 +1188,156 @@ int tag_callback(struct parser_html_storage *this,
    return handle_result(this,st,cutstart,ccutstart,cutend,ccutend);
 }
 
+static newstate container_callback(struct parser_html_storage *this,
+				   struct object *thisobj,
+				   struct svalue *v,
+				   struct piece *start, int cstart,
+				   struct piece *end, int cend,
+				   struct piece *startc, int cstartc,
+				   struct piece *endc, int cendc,
+				   struct feed_stack *st,
+				   struct piece **cutstart, int *ccutstart,
+				   struct piece *cutend, int ccutend)
+{
+   switch (v->type)
+   {
+      case T_STRING:
+	 push_svalue(v);
+	 return P_DONE; /* done */
+      case T_ARRAY:
+	 error("unimplemented");
+	 
+      case T_FUNCTION:
+      case T_OBJECT:
+	 break;
+      default:
+	 error("Parser.HTML: illegal type found when trying to call callback\n");
+   }
+
+   push_svalue(v);
+
+   this->start=start;
+   this->cstart=cstart;
+   this->end=end;
+   this->cend=cend;
+
+   ref_push_object(thisobj);
+   tag_args(this,this->start,this->cstart);
+   push_feed_range(startc,cstartc,endc,cendc);
+
+   if (this->extra_args)
+   {
+      this->extra_args->refs++;
+      push_array_items(this->extra_args);
+
+      DEBUG((stderr,"container_callback args=%d\n",4+this->extra_args->size));
+
+      f_call_function(4+this->extra_args->size);
+   }
+   else
+   {
+      DEBUG((stderr,"tag_callback args=%d\n",4));
+      f_call_function(4);
+   }
+
+   return handle_result(this,st,cutstart,ccutstart,cutend,ccutend);
+}
+
+static newstate find_end_of_container(struct parser_html_storage *this,
+				      struct svalue *tagname,
+				      struct svalue *endtagname,
+				      struct piece *feed,int c,
+				      struct piece **e1,int *ce1,
+				      struct piece **e2,int *ce2,
+				      int finished)
+{
+   struct piece *s1,*s2;
+   int c1,c2;
+   newstate res;
+   struct svalue e;
+
+   if (!endtagname)
+   {
+      push_constant_text("/");
+      push_svalue(tagname);
+      f_add(2);
+      e=sp[-1];
+      endtagname=&e;
+      sp--;
+   }
+   else
+      add_ref_svalue(endtagname);
+
+   DEBUG_MARK_SPOT("find_end_of_container",feed,c);
+
+   for (;;)
+   {
+      DEBUG_MARK_SPOT("find_end_of_cont loop",feed,c);
+      if (!scan_forward(feed,c,&s1,&c1,&(this->tag_start),1))
+      {
+	 if (!finished) 
+	 {
+	    DEBUG_MARK_SPOT("find_end_of_cont : wait\n",s1,c1);
+	    free_svalue(endtagname);
+	    return P_WAIT; /* please wait */
+	 }
+	 else
+	 {
+	    DEBUG_MARK_SPOT("find_end_of_cont : forced end\n",s1,c1);
+	    *e1=*e2=s1;
+	    *ce1=*ce2=c1;
+	    free_svalue(endtagname);
+	    return P_DONE; /* end of tag, sure... */
+	 }
+      }
+      DEBUG_MARK_SPOT("find_end_of_container got tag",feed,c);
+      if (!scan_for_end_of_tag(this,s1,c1+1,&s2,&c2,finished))
+      {
+	 DEBUG_MARK_SPOT("find_end_of_cont : wait for end\n",s1,c1);
+	 free_svalue(endtagname);
+	 return P_WAIT;
+      }
+      tag_name(this,s1,c1+1);
+
+      if (is_eq(sp-1,tagname)) /* push a new level */
+      {
+	 pop_stack();
+	 DEBUG_MARK_SPOT("find_end_of_cont : push\n",s2,c2);
+	 res=find_end_of_container(this,tagname,endtagname,
+				   s2,c2,e1,ce1,&feed,&c,finished);
+	 DEBUG_MARK_SPOT("find_end_of_cont : push end\n",feed,c);
+	 if (res)
+	 {
+	    DEBUG((stderr,"find_end_of_cont (pushed) return %d %p:%d\n",
+		   res,s1,c1));
+	    free_svalue(endtagname);
+	    return res;
+	 }
+      }
+      else if (is_eq(sp-1,endtagname))
+      {
+	 pop_stack();
+
+	 free_svalue(endtagname);
+	 
+	 DEBUG_MARK_SPOT("find_end_of_cont got cont end   --> ",s1,c1);
+	 DEBUG_MARK_SPOT("find_end_of_cont got endtag end --> ",s2,c2);
+
+	 *e1=s1;
+	 *ce1=c1;
+	 *e2=s2;
+	 *ce2=c2+1;
+
+	 return P_DONE;
+      }
+      else
+      {
+	 feed=s2;
+	 c=c2;
+	 pop_stack();
+      }
+   }
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -1239,7 +1403,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
 		      res,*feed,st->c));
-	       st->ignore_data=(res==1);
+	       st->ignore_data=(res==P_WAIT);
 	       return res;
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
@@ -1294,13 +1458,13 @@ static int do_try_feed(struct parser_html_storage *this,
 
 	       /* low-level tag call */
 	       if ((res=tag_callback(this,thisobj,v,
-				     *feed,st->c+1,dst,cdst,
+				     *feed,st->c,dst,cdst+1,
 				     st,feed,&(st->c),dst,cdst+1)))
 	       {
 		  DEBUG((stderr,"%*d tag callback return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
 			 res,*feed,st->c));
-		  st->ignore_data=(res==1);
+		  st->ignore_data=(res==P_WAIT);
 		  return res;
 	       }
 
@@ -1315,10 +1479,37 @@ static int do_try_feed(struct parser_html_storage *this,
 	    {
 	       /* this is the hardest part : find the corresponding end tag */
 
-	       error("unimplemented\n");
+	       struct piece *e1,*e2; /* <tag> ... </tag>     */
+	       int ce1,ce2;          /*        e1 ^     ^ e2 */
 
+	       if ((res=find_end_of_container(this,
+					      sp-1,
+					      NULL,
+					      dst,cdst+1,
+					      &e1,&ce1,&e2,&ce2,
+					      finished)))
+	       {
+		  DEBUG((stderr,"%*d find end of cont return %d %p:%d\n",
+			 this->stack_count,this->stack_count,
+			 res,*feed,st->c));
+		  st->ignore_data=(res==P_WAIT);
+		  pop_stack();
+		  return res;
+	       }
 	       pop_stack();
 
+	       /* low-level container call */
+	       if ((res=container_callback(this,thisobj,v,
+					   *feed,st->c,e2,ce2,
+					   dst,cdst+1,e1,ce1,
+					   st,feed,&(st->c),e2,ce2)))
+	       {
+		  DEBUG((stderr,"%*d container callback return %d %p:%d\n",
+			 this->stack_count,this->stack_count,
+			 res,*feed,st->c));
+		  st->ignore_data=(res==P_WAIT);
+		  return res;
+	       }
 
 	       goto done;
 	    }
@@ -1342,7 +1533,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	    /* low-level tag call */
 	    do_callback(this,thisobj,
 			&(this->callback__tag),
-			*feed,st->c+1,dst,cdst);
+			*feed,st->c,dst,cdst+1);
 
 	    if ((res=handle_result(this,st,
 				   feed,&(st->c),dst,cdst+1)))
@@ -1437,7 +1628,7 @@ static void try_feed(int finished)
 			  :&(THIS->feed),
 			  finished||(THIS->stack->prev!=NULL)))
       {
-	 case 0: /* done, pop stack */
+	 case P_DONE: /* done, pop stack */
 	    if (!THIS->feed) THIS->feed_end=NULL;
 
 	    st=THIS->stack->prev;
@@ -1455,10 +1646,10 @@ static void try_feed(int finished)
 	    THIS->stack_count--;
 	    break;
 
-	 case 1: /* incomplete, call again */
+	 case P_WAIT: /* incomplete, call again */
 	    return;
 
-	 case 2: /* reread stack head */
+	 case P_REREAD: /* reread stack head */
 	    if (THIS->stack_count>THIS->max_stack_depth)
 	       error("Parse.HTML: too deep recursion\n");
 	    break;
@@ -1667,6 +1858,9 @@ static void tag_name(struct parser_html_storage *this,struct piece *feed,int c)
    struct piece *s1=NULL,*s2=NULL;
    int c1=0,c2=0;
 
+   p_wchar2 ch=index_shared_string(feed->s,c);
+   if (ch==this->tag_start) c++;
+
    /* scan start of tag name */
    scan_forward(feed,c,&s1,&c1,
 		THIS->ws,-THIS->n_ws);
@@ -1679,8 +1873,10 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c)
 {
    struct piece *s1=NULL,*s2=NULL;
    int c1=0,c2=0;
-   p_wchar2 ch;
    int n=0;
+
+   p_wchar2 ch=index_shared_string(feed->s,c);
+   if (ch==this->tag_start) c++;
 
    /* scan past tag name */
    scan_forward(feed,c,&s1,&c1,
