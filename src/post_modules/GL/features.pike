@@ -58,7 +58,11 @@ array func_misc = ({
   ({"glEvalCoord", "V+RR"}),
   ({"glEvalPoint", "V+II"}),
   ({"glFog","VE@Q"}),
-  ({"glFrustum", "VDDDDDD"}),
+
+  // Replaced by my_glFrustum since glFrustum is
+  // broken on some SUN implementations.
+  //  ({"glFrustum", "VDDDDDD"}),
+
   ({"glGenLists", "II"}),
   ({"glGetError", "E"}),
   ({"glGetString", "SE"}),

@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.30 2003/05/31 13:10:51 per Exp $
+|| $Id: auto.c.in,v 1.31 2003/07/03 12:42:51 nilsson Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.30 2003/05/31 13:10:51 per Exp $");
+RCSID("$Id: auto.c.in,v 1.31 2003/07/03 12:42:51 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -414,6 +414,47 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
   return tt|(arr?ZT_ARRAY:0);
 }
 
+void my_glFrustum(INT32 args) {
+  float right,left,bottom,top,near,far;
+  if(args<6)
+    SIMPLE_TOO_FEW_ARGS_ERROR("glFrustum", 6);
+
+  right = Pike_sp[-args];
+  left = Pike_sp[-args+1];
+  bottom = Pike_sp[-args+2];
+  top = Pike_sp[-args+3];
+  near = Pike_sp[-args+4];
+  far = Pike_sp[-args+5];
+  pop_n_elems(args);
+
+  /* row 1 */
+  push_float( 2*near/(right-left) );
+  push_int( 0 );
+  push_int( 0 );
+  push_int( 0 );
+
+  /* row 2 */
+  push_int( 0 );
+  push_float( 2*near/(top-bottom) );
+  push_int( 0 );
+  push_int( 0 );
+
+  /* row 3 */
+  push_float( (right+left)/(right-left) );
+  push_float( (top+bottom)/(top-bottom) );
+  push_float( (far+near)/(far-near) );
+  push_int( -1 );
+
+  /* row 4 */
+  push_int( 0 );
+  push_int( 0 );
+  push_int( 2*far*near/(far-near) );
+  push_int( 0 );
+
+  aggregate_array(16);
+  f_glMultMatrix(1);
+}
+
 #define glClearColor3v(f) glClearColor((f)[0], (f)[1], (f)[2], 0.0)
 #define glClearColor4v(f) glClearColor((f)[0], (f)[1], (f)[2], (f)[3])
 #define glClearAccum3v(f) glClearAccum((f)[0], (f)[1], (f)[2], 0.0)
@@ -423,6 +464,9 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 
 static void pre_init()
 {
+  add_function_constant("glFrustum", my_glFrustum,
+			"function(float,float,float,float,float,float:void)",
+			OPT_SIDE_EFFECT);
 }
 
 static void post_init()
