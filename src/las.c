@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.57 1998/04/09 20:38:28 hubbe Exp $");
+RCSID("$Id: las.c,v 1.58 1998/04/10 04:35:20 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -27,6 +27,7 @@ RCSID("$Id: las.c,v 1.57 1998/04/09 20:38:28 hubbe Exp $");
 #include "pike_macros.h"
 #include "peep.h"
 #include "builtin_functions.h"
+#include "cyclic.h"
 
 #define LASDEBUG
 
@@ -704,15 +705,27 @@ node *index_node(node *n, struct pike_string * id)
       break;
 
     default:
-      ref_push_string(id);
-      f_index(2);
-
-      if(sp[-1].type == T_INT &&
-	 !sp[-1].u.integer &&
-	 sp[-1].subtype==NUMBER_UNDEFINED)
+    {
+      DECLARE_CYCLIC();
+      if(BEGIN_CYCLIC(sp[-1].u.refs, id))
       {
-	my_yyerror("Index '%s' not present in module.",id->str);
+	my_yyerror("Recursive module dependency in '%s'.",id->str);
+	pop_stack();
+	push_int(0);
+      }else{
+	SET_CYCLIC_RET(1);
+	ref_push_string(id);
+	f_index(2);
+      
+	if(sp[-1].type == T_INT &&
+	   !sp[-1].u.integer &&
+	   sp[-1].subtype==NUMBER_UNDEFINED)
+	{
+	  my_yyerror("Index '%s' not present in module.",id->str);
+	}
+	END_CYCLIC();
       }
+    }
     }
   }
   UNSETJMP(tmp);

@@ -1,3 +1,8 @@
+Thu Apr  9 15:11:07 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* Recursive module references now generates errors
+	* combine_path now takes any number of arguments
+
 Sun Apr  5 20:23:22 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* main.c: new option -q, allows you to force an exit after
