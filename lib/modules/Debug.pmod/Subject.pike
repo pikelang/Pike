@@ -1,4 +1,4 @@
-// $Id: Subject.pike,v 1.5 2002/11/06 02:21:35 grendel Exp $
+// $Id: Subject.pike,v 1.6 2002/11/06 04:59:06 nilsson Exp $
 
 //! This is a probe subject which you can send in somewhere to
 //! get probed (not to be confused with a probe object, which
@@ -89,15 +89,10 @@ int(0..1) PROXY(_is_type, 0);
 int PROXY(_equal, 0);
 mixed PROXY(_m_delete, 0);
 
-array _indices(mixed ... args) { 
-   ENTER(_indices);
-   return ::_indices(); 
-}
- 
-array _values(mixed ... args) { 
-   ENTER(_values);
-   return ::_values(); 
-}
+//! @ignore
+array PROXY(_indices, ::_indices());
+array PROXY(_values, ::_values());
+//! @endignore
 
 object _get_iterator(mixed ... args)
 {
