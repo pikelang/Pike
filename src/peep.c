@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.87 2003/12/02 13:49:58 grubba Exp $
+|| $Id: peep.c,v 1.88 2004/05/11 15:47:39 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.87 2003/12/02 13:49:58 grubba Exp $");
+RCSID("$Id: peep.c,v 1.88 2004/05/11 15:47:39 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -534,10 +534,6 @@ INT32 assemble(int store_linenumbers)
 				       (labels[c[1].arg] != -1));
 	if(tmp != -1)
 	{
-#ifdef ADJUST_PIKE_PC
-	  if (instrs[c->opcode - F_OFFSET].flags & I_PC_AT_NEXT)
-	    ADJUST_PIKE_PC (PIKE_PC);
-#endif
 
 	  /* Step ahead to the pointer instruction, and inline it. */
 #ifdef PIKE_DEBUG
@@ -569,10 +565,6 @@ INT32 assemble(int store_linenumbers)
 	tmp = INS_F_JUMP_WITH_ARG(c->opcode, c->arg, (labels[c[1].arg] != -1));
 	if(tmp != -1)
 	{
-#ifdef ADJUST_PIKE_PC
-	  if (instrs[c->opcode - F_OFFSET].flags & I_PC_AT_NEXT)
-	    ADJUST_PIKE_PC (PIKE_PC);
-#endif
 
 	  /* Step ahead to the pointer instruction, and inline it. */
 #ifdef PIKE_DEBUG
@@ -610,10 +602,6 @@ INT32 assemble(int store_linenumbers)
       }
     }
 
-#ifdef ADJUST_PIKE_PC
-    if (instrs[c->opcode - F_OFFSET].flags & I_PC_AT_NEXT)
-      ADJUST_PIKE_PC (PIKE_PC);
-#endif
 
 #ifdef PIKE_DEBUG
     if (instrs[c->opcode - F_OFFSET].flags & I_HASPOINTER) {
