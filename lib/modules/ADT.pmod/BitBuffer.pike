@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.5 2004/04/20 22:57:33 nilsson Exp $
+// $Id: BitBuffer.pike,v 1.6 2004/05/01 16:21:32 nilsson Exp $
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way
@@ -50,7 +50,7 @@ string drain() {
     d = data;
   else {
     String.Buffer b = String.Buffer(sizeof(data)+1);
-    while(_sizeof()>8)
+    while(_sizeof()>=8)
       b->putchar(get(8));
     d = b->get();
   }
@@ -62,27 +62,28 @@ string drain() {
 static int out_buffer, bib;
 
 //! Get @[bits] from the buffer.
-//! @note
-//!   No checks are made to see if there are enough bits in the
-//!   buffer.
+//! @throws
+//!   Throws an error in case of data underflow.
 int get( int bits ) {
-  if(sizeof(data)-dptr)
-    while( bib < bits ) {
-      out_buffer = (out_buffer<<8) | data[dptr];
-      dptr++;
-      bib+=8; // Eight bit strings.
-    }
-  else if(bib<bits) {
+
+  while( bib<bits && sizeof(data)-dptr ) {
+    out_buffer = (out_buffer<<8) | data[dptr];
+    dptr++;
+    bib+=8; // Eight bit strings.
+  }
+
+  if(bib<bits) {
     int n = bits-bib; // We need n bits more.
+    if(bob<n) error("BitBuffer undeflow.\n");
     out_buffer = (out_buffer<<n) | (in_buffer>>(bob-n));
     bib += n;
     in_buffer &= pow(2,bob-n)-1;
     bob -= n;
   }
 
+  int res = out_buffer>>(bib-bits);
+  out_buffer &= pow(2,bib-bits)-1;
   bib-=bits;
-  int res = out_buffer & ((1<<bits)-1);
-  out_buffer>>=bits;
 
   if(dptr>64) {
     data = data[dptr..];
