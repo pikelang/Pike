@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.9 2003/08/05 18:05:13 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.10 2003/08/06 00:50:16 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -39,10 +39,23 @@ DECLARATIONS
  */
 PIKECLASS Yarrow
 {
-  CVAR const struct yarrow256_ctx *ctx;
+  CVAR struct yarrow256_ctx *ctx;
+  CVAR struct yarrow_source *sources;
 
-  PIKEFUN void create() {
-    yarrow256_init(THIS->ctx, 0, NULL);
+  PIKEFUN void create(void|int arg) {
+    INT32 num = 0;
+    THIS->sources = NULL;
+
+    if(arg) {
+      if (arg->type != PIKE_T_INT)
+	Pike_error("Bad argument type.\n");
+      num = arg->u.integer;
+      if(num < 0)
+	Pike_error("Invalid number of sources.\n");
+      THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
+    }
+
+    yarrow256_init(THIS->ctx, num, THIS->sources);
   }
 
   /*! @decl Yarrow seed(string data)
@@ -56,7 +69,6 @@ PIKECLASS Yarrow
    */
   PIKEFUN object seed(string data)
   {
-    /* FIXME: Take figure in error msg from define */
     if(data->len < YARROW256_SEED_FILE_SIZE)
       Pike_error( "Seed must be at least 32 characters.\n" );
 
@@ -111,9 +123,11 @@ PIKECLASS Yarrow
   INIT
   {
     THIS->ctx = xalloc(sizeof(struct yarrow256_ctx));
+    THIS->ctx->nsources = 0;
   }
   EXIT
   {
+    if(THIS->ctx->nsources) free(THIS->sources);
     free(THIS->ctx);
   }
 }
