@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.48 2000/10/19 13:56:21 grubba Exp $
+ * $Id: sendfile.c,v 1.49 2000/10/23 19:10:05 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -260,12 +260,28 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
 {
   ptrdiff_t sent = 0;
 
+  SF_DFPRINTF((stderr, "sendfile: send_iov(%d, %p, %d)...\n",
+	       fd, iov, iovcnt));
+#ifdef SF_DEBUG
+  {
+    int cnt;
+    for(cnt = 0; cnt < iovcnt; cnt++) {
+      SF_DFPRINTF((stderr, "sendfile: %4d: iov_base: %p, iov_len: %d\n",
+		   cnt, iov[cnt].iov_base, iov[cnt].iov_len));
+    }
+  }
+#endif /* SF_DEBUG */
+
   while (iovcnt) {
     ptrdiff_t bytes;
     int cnt = iovcnt;
 
 #ifdef IOV_MAX
     if (cnt > IOV_MAX) cnt = IOV_MAX;
+#endif
+
+#ifdef DEF_IOV_MAX
+    if (cnt > DEF_IOV_MAX) cnt = DEF_IOV_MAX;
 #endif
 
 #ifdef MAX_IOVEC
@@ -278,6 +294,9 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
       continue;
     } else if (bytes < 0) {
       /* Error or file closed at other end. */
+      SF_DFPRINTF((stderr, "sendfile: send_iov(): writev() failed with errno:%d.\n"
+		   "sendfile: Sent %ld bytes so far.\n",
+		   errno, DO_NOT_WARN((long)sent)));
       return sent;
     } else {
       sent += bytes;
@@ -295,6 +314,8 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
       }
     }
   }
+  SF_DFPRINTF((stderr, "sendfile: send_iov(): Sent %d bytes\n",
+	       sent));
   return sent;
 }
 
@@ -402,6 +423,9 @@ void low_do_sendfile(struct pike_sendfile *this)
     if (this->hd_cnt) {
       this->sent += send_iov(this->to_fd, this->hd_iov, this->hd_cnt);
     }
+
+    SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
+		 DO_NOT_WARN((long)this->sent)));
     
 #if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE)
     SF_DFPRINTF((stderr, "sendfile: Sending file with sendfile()\n"));
@@ -521,6 +545,9 @@ void low_do_sendfile(struct pike_sendfile *this)
       }
     }
   send_trailers:
+    SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
+		 DO_NOT_WARN((long)this->sent)));
+    
     /* No more need for the buffer */
     free(this->buffer);
     this->buffer = NULL;
