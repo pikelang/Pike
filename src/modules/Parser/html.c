@@ -852,7 +852,6 @@ static void html__set_entity_callback(INT32 args)
 
 static void html_add_tag(INT32 args)
 {
-   struct svalue s;
    check_all_args("add_tag",args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (sp[1-args].type == T_ARRAY) {
@@ -870,23 +869,24 @@ static void html_add_tag(INT32 args)
       push_mapping(THIS->maptag);
       THIS->maptag=copy_mapping(THIS->maptag);
       pop_stack();
-      DEBUG((stderr,"COPY\n"));
    }
-   s=*--sp;
-   if (THIS->flags & FLAG_CASE_INSENSITIVE_TAG)
+
+   if (THIS->flags & FLAG_CASE_INSENSITIVE_TAG) {
+     stack_swap();
      f_lower_case(1);
-   if (IS_ZERO(&s))
-     map_delete(THIS->maptag,sp-1);
+     stack_swap();
+   }
+
+   if (IS_ZERO(sp-1))
+     map_delete(THIS->maptag,sp-2);
    else
-     mapping_insert(THIS->maptag,sp-1,&s);
-   free_svalue(&s);
-   pop_n_elems(args-1);
+     mapping_insert(THIS->maptag,sp-2,sp-1);
+   pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
 
 static void html_add_container(INT32 args)
 {
-   struct svalue s;
    check_all_args("add_container",args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (sp[1-args].type == T_ARRAY) {
@@ -905,15 +905,18 @@ static void html_add_container(INT32 args)
       THIS->mapcont=copy_mapping(THIS->mapcont);
       pop_stack();
    }
-   s=*--sp;
-   if (THIS->flags & FLAG_CASE_INSENSITIVE_TAG)
+
+   if (THIS->flags & FLAG_CASE_INSENSITIVE_TAG) {
+     stack_swap();
      f_lower_case(1);
-   if (IS_ZERO(&s))
-     map_delete(THIS->mapcont,sp-1);
+     stack_swap();
+   }
+
+   if (IS_ZERO(sp-1))
+     map_delete(THIS->mapcont,sp-2);
    else
-     mapping_insert(THIS->mapcont,sp-1,&s);
-   free_svalue(&s);
-   pop_n_elems(args-1);
+     mapping_insert(THIS->mapcont,sp-2,sp-1);
+   pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
 
@@ -937,6 +940,7 @@ static void html_add_entity(INT32 args)
       THIS->mapentity=copy_mapping(THIS->mapentity);
       pop_stack();
    }
+
    if (IS_ZERO(sp-1))
      map_delete(THIS->mapentity,sp-2);
    else
