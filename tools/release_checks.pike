@@ -120,6 +120,45 @@ int test_realpike() {
   return status;
 }
 
+array(int) read_version() {
+  array r = array_sscanf(Stdio.read_file("src/version.h"),
+			 "%*sPIKE_MAJOR_VERSION %d%*s"
+			 "PIKE_MINOR_VERSION %d%*s"
+			 "PIKE_BUILD_VERSION %d");
+  if(!r || sizeof(r)!=3)
+    error("Couldn't parse version.h\n");
+  return r;
+}
+
+void assert_version() {
+  array v = read_version();
+  if( v[0]!=__REAL_MAJOR__ || v[1]!=__REAL_MINOR__ ||
+      v[2]!=__REAL_BUILD__ ) {
+    write("You must be running the Pike you want to test.\n");
+    exit(1);
+  }
+}
+
+int test_version() {
+  int status=1;
+  array v = read_version();
+  array t = array_sscanf(Stdio.read_file("ANNOUNCE"),
+			 "%*sPIKE %d.%d ANNOUNCEMENT");
+
+  if(t[0]!=v[0] || t[1]!=v[1]) {
+    write("Wrong Pike version in ANNOUNCE.\n");
+    status = 0;
+  }
+
+  t = array_sscanf(Stdio.read_file("man/pike.1"),
+		   "%*s.nr mj %d%*s.nr mn %d");
+  if(t[0]!=v[0] || t[1]!=v[1]) {
+    write("Wrong Pike version in man/pike.1.\n");
+    status = 0;
+  }
+  return status;
+}
+
 void main(int args) {
   if(args>1) {
     write("This program checks various aspects of the Pike tree\n"
@@ -127,6 +166,8 @@ void main(int args) {
     exit(0);
   }
   cd(combine_path(__FILE__,"../.."));
+
+  assert_version();
 
   test_constants();
   test_copyright();
@@ -136,4 +177,5 @@ void main(int args) {
   test_charset_table("misc.c");
   test_unicode();
   test_realpike();
+  test_version();
 }
