@@ -44,16 +44,6 @@ int file_size(string s)
   return stat[1]; 
 }
 
-mixed *sum_arrays(function foo, mixed * ... args)
-{
-  mixed *ret;
-  int e,d;
-  ret=allocate(sizeof(args[0]));
-  for(e=0;e<sizeof(args[0]);e++)
-    ret[e]=foo(@ column(args, e));
-  return ret;
-}
-
 varargs int member_array(mixed needle,mixed *haystack,int start)
 {
   return search(haystack,needle,start);
@@ -123,7 +113,6 @@ void create()
   add_constant("regexp",regexp);
   add_constant("strstr",search);
   add_constant("sum",`+);
-  add_constant("sum_arrays",sum_arrays);
   add_constant("this_function",this_function);
   add_constant("write_file",write_file);
   add_constant("add_efun",add_constant);
