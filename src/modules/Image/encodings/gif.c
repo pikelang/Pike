@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.32 1998/02/11 00:31:42 mirar Exp $ */
+/* $Id: gif.c,v 1.33 1998/02/15 14:59:38 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.32 1998/02/11 00:31:42 mirar Exp $
+**!	$Id: gif.c,v 1.33 1998/02/15 14:59:38 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.32 1998/02/11 00:31:42 mirar Exp $");
+RCSID("$Id: gif.c,v 1.33 1998/02/15 14:59:38 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2320,7 +2320,7 @@ void init_image_gif(void)
 
    /** constants **/
 
-   add_integer_constant("RENDERER",GIF_RENDER,0);
+   add_integer_constant("RENDER",GIF_RENDER,0);
    add_integer_constant("EXTENSION",GIF_EXTENSION,0);
 
    add_integer_constant("LOOSE_GCE",GIF_LOOSE_GCE,0);
