@@ -53,10 +53,13 @@ void really_free_multiset(struct multiset *l)
 
   free_array(l->ind);
 
-  if(l->prev) l->prev->next = l->next;
-  if(l->next) l->next->prev = l->prev;
-  if(first_multiset == l) first_multiset = 0;
+  if(l->prev)
+    l->prev->next = l->next;
+  else
+    first_multiset = l->next;
 
+  if(l->next)  l->next->prev = l->prev;
+    
   free((char *)l);
   GC_FREE();
 }

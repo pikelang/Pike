@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.16 1996/12/05 00:47:11 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.17 1996/12/05 02:32:35 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -1483,7 +1483,7 @@ void f__memory_usage(INT32 args)
   count_memory_in_objects(&num, &size);
   push_text("num_objects");
   push_int(num);
-  push_text("object_bytees");
+  push_text("object_bytes");
   push_int(size);
 
   count_memory_in_callbacks(&num, &size);
