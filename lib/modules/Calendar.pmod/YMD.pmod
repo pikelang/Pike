@@ -516,12 +516,12 @@ class YMD
 
    string format_mtime()
    {
-      return format_ymd_short()+" 00:00";
+      return format_ymd()+" 00:00";
    }
 
    string format_xtime()
    {
-      return format_ymd_short()+" 00:00:00.000000";
+      return format_ymd()+" 00:00:00.000000";
    }
 
    string format_tod()
