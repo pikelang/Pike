@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.9 1999/07/23 23:28:10 marcus Exp $
+ * $Id: auto.c.in,v 1.10 1999/07/25 00:55:36 marcus Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.9 1999/07/23 23:28:10 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.10 1999/07/25 00:55:36 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -118,13 +118,13 @@ static void img_init()
   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
   glPixelStorei(GL_PACK_SKIP_ROWS, 0);
   glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
-  glPixelStorei(GL_PACK_ALIGNMENT, 0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
   glPixelStorei(GL_UNPACK_SWAP_BYTES, 0);
   glPixelStorei(GL_UNPACK_LSB_FIRST, 0);
   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
   glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
   glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   img_inited=1;
 }
 
