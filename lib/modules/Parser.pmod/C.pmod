@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.32 2002/11/29 00:38:32 nilsson Exp $
+// $Id: C.pmod,v 1.33 2002/12/29 22:37:19 nilsson Exp $
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
@@ -144,7 +144,7 @@ array(string) split(string data)
 
 	  case "<<": case ">>":
 	    if(data[pos+2]=='=') pos++;
-	  case "==": case "<=": case ">=":
+	  case "==": case "!=": case "<=": case ">=":
 	  case "*=": case "/=": case "%=":
 	  case "&=": case "|=": case "^=":
 	  case "+=": case "-=":
