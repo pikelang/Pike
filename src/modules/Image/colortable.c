@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.59 1999/04/10 03:11:57 mirar Exp $ */
+/* $Id: colortable.c,v 1.60 1999/04/10 05:18:18 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.59 1999/04/10 03:11:57 mirar Exp $
+**!	$Id: colortable.c,v 1.60 1999/04/10 05:18:18 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.59 1999/04/10 03:11:57 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.60 1999/04/10 05:18:18 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3078,7 +3078,6 @@ void build_rigid(struct neo_colortable *nct)
    int di,hdi,hhdi;
 
    if (nct->lu.rigid.index) fatal("rigid is initialized twice");
-   
 
    index=malloc(sizeof(int)*r*g*b);
    dist=malloc(sizeof(int)*r*g*b);
@@ -3089,7 +3088,7 @@ void build_rigid(struct neo_colortable *nct)
       if (dist) free(dist);
       resource_error(NULL,0,0,"memory",r*g*b*sizeof(int),"Out of memory.\n");
    }
-   
+
    for (i=0; i<nct->u.flat.numentries; i++)
    {
       rc=nct->u.flat.entries[i].color.r;
@@ -3098,16 +3097,16 @@ void build_rigid(struct neo_colortable *nct)
 
       ddist=dist;
       dindex=index;
-      for (bi=0; bi<r; bi++)
+      for (bi=0; bi<b; bi++)
       {
 	 hhdi=(bc-bi*COLORMAX/b)*(bc-bi*COLORMAX/b);
-	 for (gi=0; gi<r; gi++)
+	 for (gi=0; gi<g; gi++)
 	 {
 	    hdi=hhdi+(gc-gi*COLORMAX/g)*(gc-gi*COLORMAX/g);
 	    if (i==0)
 	       for (ri=0; ri<r; ri++)
 	       {
-		  *(ddist++)=hdi+(rc-ri*COLORMAX/r)*(rc-ri*COLORMAX/r);
+		  *(ddist++)=di=hdi+(rc-ri*COLORMAX/r)*(rc-ri*COLORMAX/r);
 		  *(dindex++)=0;
 	       }
 	    else
@@ -3121,8 +3120,8 @@ void build_rigid(struct neo_colortable *nct)
 		  }
 		  else
 		  {
-		     ddist++;
 		     dindex++;
+		     ddist++;
 		  }
 	       }
 	 }
