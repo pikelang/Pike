@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.71 2005/03/08 16:41:32 mast Exp $
+// $Id: client.pike,v 1.72 2005/03/09 12:28:26 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -87,9 +87,10 @@ import SSL.Constants;
 #define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[2]->value)
 #define ASN1_DECODE_RESULTREFS(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[3]->elements)
 #define ASN1_DECODE_ENTRIES(X)		_New_decode(X)
-#define ASN1_DECODE_DN(X)		(string)((X)->elements[0]->value)
+#define ASN1_DECODE_DN(X)		((string)((X)->elements[0]->value))
 #define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
-#define ASN1_GET_ATTR_ARRAY(X)		(array)((X)->elements[1]->elements)
+#define ASN1_GET_ATTR_ARRAY(X)		(sizeof ((X)->elements) > 1 &&	\
+					 (array) ((X)->elements[1]->elements))
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 
  //! Contains the client implementation of the LDAP protocol.
@@ -119,7 +120,6 @@ import SSL.Constants;
 
     private int resultcode = LDAP_SUCCESS;
     private string resultstring;
-    private int entrycnt = 0;
     private int actnum = 0;
     private array(mapping(string:array(string))) entry = ({});
     array(string) referrals;
@@ -151,18 +151,16 @@ import SSL.Constants;
     private array _New_decode(array ar) {
 
       array res = ({});
-      array entry1;
-      mapping attrs;
-      object oder;
 
       foreach(ar, string raw1)  {
-	oder = (.ldap_privates.ldap_der_decode(raw1)->elements[1]);
-	attrs = (["dn":({ASN1_DECODE_DN(oder)})]);
-	if(catch(entry1 = ASN1_GET_ATTR_ARRAY(oder))) continue;
-	foreach(entry1, object attr1) {
-	  attrs += ([ASN1_GET_ATTR_NAME(attr1):_get_attr_values(ldap_version, attr1)]);
+	object oder = (.ldap_privates.ldap_der_decode(raw1)->elements[1]);
+	mapping(string:array) attrs = (["dn":({ASN1_DECODE_DN(oder)})]);
+	if(array entry1 = ASN1_GET_ATTR_ARRAY(oder)) {
+	  foreach(entry1, object attr1) {
+	    attrs[ASN1_GET_ATTR_NAME(attr1)] = _get_attr_values(ldap_version, attr1);
+	  }
+	  res += ({attrs});
 	}
-	res += ({attrs});
       }
 
       return res;
@@ -199,9 +197,11 @@ import SSL.Constants;
       }
 #endif
       DWRITE(sprintf("result.create: elements=%d\n",lastel+1));
+#if 0
+      DWRITE(sprintf("result.create: entries=%O\n",rawres[..lastel-1]));
+#endif
       if (lastel) { // Have we any entry?
         entry = ASN1_DECODE_ENTRIES(rawres[..lastel-1]);
-        entrycnt = sizeof(entry); //num_entries();
       }
 
 #if 0
@@ -240,7 +240,7 @@ import SSL.Constants;
     //!
     //! @seealso
     //!  @[LDAP.client.result.count_entries]
-    int num_entries() { return entrycnt; }
+    int num_entries() { return sizeof (entry); }
 
     //!
     //! Returns the number of entries from current cursor
@@ -248,14 +248,39 @@ import SSL.Constants;
     //!
     //! @seealso
     //!  @[LDAP.client.result.first], @[LDAP.client.result.next]
-    int count_entries() { return entrycnt - actnum; }
+    int count_entries() { return sizeof (entry) - actnum; }
 
-    //! Returns a mapping with an entry for each attribute.
-    //! Each entry is an array of values of the attribute.
+    //! Returns the current entry pointed to by the cursor.
+    //! a mapping with an entry for each attribute. Each value
+    //! is an array of the values for the attribute. The
     //!
     //! @param index
     //!  Optional argument can be used for direct access
     //!  to the entry other then currently pointed by cursor.
+    //!
+    //! @returns
+    //!  The return value is a mapping describing the entry:
+    //!
+    //!  @mapping
+    //!  @member string attribute
+    //!    An attribute in the entry. The value is an array containing
+    //!    the returned attribute value(s) on string form. It may be
+    //!    an empty array if only the attribute types were requested
+    //!    or if all values were excluded.
+    //!
+    //!  @member string "dn"
+    //!    This special entry contains the object name of the entry as
+    //!    a distinguished name.
+    //!  @endmapping
+    //!
+    //!  Zero is returned if the cursor is outside the valid range of
+    //!  entries.
+    //!
+    //! @note
+    //!  Don't be destructive on the returned mapping.
+    //!
+    //! @seealso
+    //!   @[fetch_all]
     int|mapping(string:array(string)) fetch(int|void idx) {
 
       if (!idx)
@@ -294,6 +319,20 @@ import SSL.Constants;
 	return count_entries();
       }
       return 0;
+    }
+
+    array(mapping(string:array(string))) fetch_all()
+    //! Convenience function to fetch all entries at once. The cursor
+    //! isn't affected.
+    //!
+    //! @returns
+    //!   Returns an array where each element is the entry from the
+    //!   result. Don't be destructive on the returned value.
+    //!
+    //! @seealso
+    //!   @[fetch]
+    {
+      return entry;
     }
 
   } // end of class 'result' ---------------
@@ -359,8 +398,9 @@ import SSL.Constants;
   //! own context if your LDAP server supports only export encryption.
   //!
   //! @param url
-  //!  LDAP server URL in form
-  //!    @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}
+  //!  LDAP server URL on the form
+  //!  @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}. See RFC
+  //!  2255.
   //!
   //! @param context
   //!  TLS context of connection
@@ -370,7 +410,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.71 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.72 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -432,7 +472,7 @@ import SSL.Constants;
 
     DWRITE("client.create: connected!\n");
 
-    DWRITE(sprintf("client.create: remote = %s\n", query_address()));
+    DWRITE(sprintf("client.create: remote = %s\n", low_fd->query_address()));
     DWRITE_HI("client.OPEN: " + lauth->host + ":" + (string)(lauth->port) + " - OK\n");
 
     binded = 0;
@@ -1118,38 +1158,39 @@ multiset(string) get_supported_controls()
   //!   for every entry.
   //!
   //! @param attrsonly
-  //!   The flag causes server return only attribute name but not
-  //!   the attribute values.
+  //!   The flag causes server return only attribute type (aka name)
+  //!   but not the attribute values.
   //!
   //! @param controls
   //!   Extra controls to send in the search query, to modify how the
   //!   server executes the search in various ways. The value is a
   //!   mapping with an entry for each control.
   //!
-  //!   The mapping index is the object identifier in string form for
-  //!   the control type. The mapping value is an array where the
-  //!   first field is an integer flag and the second is the value of
-  //!   the control in string form.
-  //!
-  //!   The integer flag specifies whether the control is critical or
-  //!   not. If it is nonzero, the server returns an error if it
-  //!   doesn't understand the control. If it is zero, the server
-  //!   ignores it instead.
-  //!
-  //!   The value may also be zero if the control doesn't need any
-  //!   value at all.
-  //!
-  //!   There are constants in @[Protocols.LDAP] for the object
-  //!   identifiers for some known controls.
+  //!   @mapping
+  //!   @member string object_identifier
+  //!     The index is the object identifier in string form for the
+  //!     control type. There are constants in @[Protocols.LDAP] for
+  //!     the object identifiers for some known controls.
+  //! 
+  //!     The mapping value is an array of two elements:
+  //! 
+  //!     @array
+  //!     @elem int 0
+  //!       The first element is an integer flag that specifies
+  //!       whether the control is critical or not. If it is nonzero,
+  //!       the server returns an error if it doesn't understand the
+  //!       control. If it is zero, the server ignores it instead.
+  //! 
+  //!     @elem string|int(0..0) 1
+  //!       The second element is the string value to pass with the
+  //!       control. It may also be zero to not pass any value at all.
+  //!     @endarray
+  //!   @endmapping
   //!
   //! @returns
   //!   Returns object @[LDAP.client.result] on success, @expr{0@}
   //!	otherwise.
   //!
-  //! @note
-  //!   For syntax of search filter see at RFC 1960
-  //!   (http://community.roxen.com/developers/idocs/rfc/rfc1960.html).
-  //!    
   //! @note
   //!   The API change: the returning code was changed in Pike 7.3+
   //!	to follow his logic better.
