@@ -1,5 +1,5 @@
 /*
- * $Id: system.h,v 1.5 2001/02/03 23:08:41 mirar Exp $
+ * $Id: system.h,v 1.6 2001/12/06 10:35:49 per-bash Exp $
  *
  * Prototypes for the Pike system-module
  *
@@ -56,6 +56,7 @@ struct memory_storage
 #define MEM_WRITE       0x02
 #define MEM_FREE_FREE   0x10
 #define MEM_FREE_MUNMAP 0x20   
+#define MEM_FREE_SHMDEL 0x40
    unsigned long flags;
 };
 

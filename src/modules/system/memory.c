@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $
+ * $Id: memory.c,v 1.12 2001/12/06 10:35:49 per-bash Exp $
  */
 
 /*! @module system
@@ -16,7 +16,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $");
+RCSID("$Id: memory.c,v 1.12 2001/12/06 10:35:49 per-bash Exp $");
 
 #include "system_machine.h"
 
@@ -41,6 +41,11 @@ RCSID("$Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $");
 
 #ifdef HAVE_SYS_USER_H
 #include <sys/user.h>
+#endif
+
+#ifdef HAVE_SYS_SHM_H
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #endif
 
 
@@ -83,6 +88,7 @@ RCSID("$Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $");
 
 static void memory__mmap(INT32 args,int complain,int private);
 static void memory_allocate(INT32 args);
+static void memory_shm(INT32 args);
 
 /*** Memory object *******************************************************/
 
@@ -101,27 +107,23 @@ static void init_memory(struct object *o)
    THIS->flags=0;
 }
 
+static void MEMORY_FREE( struct memory_storage *storage )
+{
+  if( storage->flags & MEM_FREE_FREE )
+    free( storage->p );
 #ifdef HAVE_MMAP
-#define MEMORY_FREE(STORAGE)						\
-   if ((STORAGE)->p)							\
-   {									\
-      if ((STORAGE)->flags&MEM_FREE_FREE)				\
-	 free((STORAGE)->p);						\
-      else if ((STORAGE)->flags&MEM_FREE_MUNMAP)			\
-	 munmap((void*)(STORAGE)->p,(STORAGE)->size);			\
-      (STORAGE)->p=NULL;						\
-      (STORAGE)->flags=0;						\
-   }
-#else /* HAVE_MMAP */
-#define MEMORY_FREE(STORAGE)						\
-   if ((STORAGE)->p)							\
-   {									\
-      if ((STORAGE)->flags&MEM_FREE_FREE)				\
-	 free((STORAGE)->p);						\
-      (STORAGE)->p=NULL;						\
-      (STORAGE)->flags=0;						\
-   }
+  else if( storage->flags & MEM_FREE_MUNMAP )
+    munmap( (void*)storage->p, storage->size );
 #endif
+#ifdef HAVE_SYS_SHM_H
+  else if( storage->flags & MEM_FREE_SHMDEL )
+    shmdt( storage->p );
+#endif
+  storage->flags = 0;
+  storage->p = 0;
+  storage->size = 0;
+}
+
 
 #define MEMORY_VALID(STORAGE,FUNC)					\
    if (!(STORAGE->p))							\
@@ -134,6 +136,7 @@ static void exit_memory(struct object *o)
 
 /*! @decl void create()
  *! @decl void create(string|Stdio.File filename_to_mmap)
+ *! @decl void create(int shmkey, int shmsize, int shmflg)
  *! @decl void create(int bytes_to_allocate)
  *!
  *!	Will call @[mmap()] or @[allocate()]
@@ -147,9 +150,11 @@ static void memory_create(INT32 args)
    {
       if (sp[-args].type==T_STRING ||
 	  sp[-args].type==T_OBJECT) /* filename to mmap */
-	 memory__mmap(args,1,0);
-      else if (sp[-args].type==T_INT) /* bytes to allocate */
-	 memory_allocate(args);
+	memory__mmap(args,1,0);
+      else if (sp[-args].type==T_INT && args==1) /* bytes to allocate */
+	memory_allocate(args);
+      else if(sp[-args].type==T_INT && sp[-args+1].type==T_INT && args==2 )
+	memory_shm( args );
       else
 	 SIMPLE_BAD_ARG_ERROR("Memory",1,"int or string");
    }
@@ -186,6 +191,44 @@ static INLINE off_t file_size(int fd)
       return;								\
    }									\
    while (0)
+
+static void memory_shm( INT32 args )
+{
+#ifdef HAVE_SYS_SHM_H
+  int id;
+
+  MEMORY_FREE(THIS);
+
+  if( args < 2 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("Memory.shmat",2);
+  if (Pike_sp[1-args].type!=T_INT )
+    SIMPLE_BAD_ARG_ERROR("Memory.shmat",1,"int(0..)");
+  if (Pike_sp[-args].type!=T_INT )
+    SIMPLE_BAD_ARG_ERROR("Memory.shmat",0,"int(0..)");
+
+  if( (id = shmget( Pike_sp[0-args].u.integer,
+		    Pike_sp[1-args].u.integer,
+		    IPC_CREAT|0666 )) < 0 )
+  {
+    switch( errno )
+    {
+      case EINVAL:
+	Pike_error("Too large or small shared memory segment\n");
+	break;
+      case ENOSPC:
+	Pike_error("Out of resources, cannot create segment\n");
+	break;
+    }
+  }
+  THIS->p = shmat( id, 0, 0 );
+  THIS->size = Pike_sp[1-args].u.integer;
+  THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
+  pop_n_elems(args);
+  push_int(1);
+#else /* HAVE_MMAP */
+   Pike_error("Memory.shmat(): system has no shmat() (sorry)\n");
+#endif
+}
 
 static void memory__mmap(INT32 args,int complain,int private)
 {
@@ -839,6 +882,10 @@ void init_system_memory(void)
 		     tFunc(tOr(tStr,tObj) 
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
+
+#ifdef HAVE_SYS_SHM_H
+   ADD_FUNCTION("shmat", memory_shm, tFunc(tInt tInt, tInt), 0 );
+#endif
 
 #ifdef HAVE_MMAP
    ADD_FUNCTION("mmap",memory_mmap,
