@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fd_control.c,v 1.46 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: fd_control.c,v 1.47 2003/04/30 10:38:31 grubba Exp $
 */
 
 #ifndef TESTING
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.46 2002/10/11 01:39:31 nilsson Exp $");
+RCSID("$Id: fd_control.c,v 1.47 2003/04/30 10:38:31 grubba Exp $");
 
 #else /* TESTING */
 
@@ -48,7 +48,9 @@ RCSID("$Id: fd_control.c,v 1.46 2002/10/11 01:39:31 nilsson Exp $");
 #include <sys/errno.h>
 #endif
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 

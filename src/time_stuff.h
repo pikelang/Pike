@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: time_stuff.h,v 1.13 2003/02/11 19:25:59 mast Exp $
+|| $Id: time_stuff.h,v 1.14 2003/04/30 10:36:47 grubba Exp $
 */
 
 #ifndef TIME_STUFF_H
@@ -25,7 +25,9 @@
 # endif
 #endif
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+# include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 # include <winsock.h>
 #endif
 
