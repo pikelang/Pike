@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.59 2001/10/03 11:05:12 per Exp $
+//! $Id: DNS.pmod,v 1.60 2002/01/13 18:44:37 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -217,8 +217,8 @@ class protocol
 
   int decode_int(string s, array(int) next)
   {
-    sscanf(s[next[0]..next[0]+1],"%2c",int ret);
-    next[0]+=2;
+    sscanf(s[next[0]..next[0]+3],"%4c",int ret);
+    next[0]+=4;
     return ret;
   }
   
