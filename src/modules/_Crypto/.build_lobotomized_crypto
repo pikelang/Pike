@@ -12,11 +12,22 @@ mkdir -p ../_Lobotomized_Crypto
 mkdir -p ../_Lobotomized_Crypto/include
 mkdir -p ../_Lobotomized_Crypto/lib
 
+#
+# This way we avoid re-building things which have not changed.
+#
+function smartcopy() {
+  if test -f "$1" -a -f "$2" && cmp "$1" "$2" 1>/dev/null 2>/dev/null; then
+    :
+  else
+    cp "$1" "$2"
+  fi
+}
+
 echo "Copying source files..."
 for d in . include lib; do
     for f in `cat $d/.exportable_files`; do
-	echo $d/$f
-	cp $d/$f ../_Lobotomized_Crypto/$d/$f
+        echo $d/$f
+	smartcopy $d/$f ../_Lobotomized_Crypto/$d/$f
     done
 done
 
@@ -24,6 +35,8 @@ echo "Censoring sensitive files"
 for f in crypto.c Makefile.in lib/Makefile.in testsuite.in ; do
     echo $f
     sed '/BEGIN NATIONAL SECURITY/,/END NATIONAL SECURITY/d' \
-    < $f > ../_Lobotomized_Crypto/$f
+    < $f > .temporary_file
+    smartcopy .temporary_file ../_Lobotomized_Crypto/$f
 done
 
+rm .temporary_file

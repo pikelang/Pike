@@ -1,6 +1,15 @@
 // Crypto
 test_true([[objectp(Crypto)]])
 
+// BEGIN NATIONAL SECURITY
+define(AVOID,[[]])
+AVOID([[
+// END NATIONAL SECURITY
+test_do(add_constant("Crypto",master()->resolv("_Lobotomized_Crypto")))
+// BEGIN NATIONAL SECURITY
+]])
+// END NATIONAL SECURITY
+
 // C-programs
 test_true([[programp(Crypto.cbc)]])
 test_true([[programp(Crypto.crypto)]])
