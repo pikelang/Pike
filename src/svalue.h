@@ -59,7 +59,7 @@ union anything
   struct program *program;
   struct pike_string *string;
   INT32 *refs;
-  INT32 integer;
+  INT_TYPE integer;
   FLOAT_TYPE float_number;
   struct svalue *lval;   /* only used on stack */
   union anything *short_lval;   /* only used on stack */
