@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.189 2001/01/23 10:36:17 norlin Exp $");
+RCSID("$Id: signal_handler.c,v 1.190 2001/01/31 17:11:46 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -726,6 +726,29 @@ static int signum(char *name)
   return -1;
 }
 
+/*! @decl void signal(int sig, function(int:void) callback)
+ *! @decl void signal(int sig)
+ *!
+ *! Trap signals.
+ *!
+ *! This function allows you to trap a signal and have a function called
+ *! when the process receives a signal. Although it IS possible to trap
+ *! SIGBUS, SIGSEGV etc. I advice you not to. Pike should not receive any
+ *! such signals and if it does it is because of bugs in the Pike
+ *! interpreter. And all bugs should be reported, no matter how trifle.
+ *!
+ *! The callback will receive the signal number as its only argument.
+ *!
+ *! See the documentation for @[kill()] for a list of signals.
+ *!
+ *! If no second argument is given, the signal handler for that signal
+ *! is restored to the default handler.
+ *!
+ *! If the second argument is zero, the signal will be completely ignored.
+ *!
+ *! @seealso
+ *!   @[kill()], @[signame()], @[signum()]
+ */
 static void f_signal(int args)
 {
   int signum;
@@ -821,6 +844,15 @@ void set_default_signal_handler(int signum, void (*func)(INT32))
     my_signal(signum, want_on ? receive_signal : (sigfunctype) SIG_DFL);
 }
 
+/*! @decl int signum(string sig)
+ *!
+ *! Get a signal number given a descriptive string.
+ *!
+ *! This function is the inverse of @[signame()].
+ *!
+ *! @seealso
+ *!   @[signame()], @[kill()], @[signal()]
+ */
 static void f_signum(int args)
 {
   int i;
@@ -835,6 +867,13 @@ static void f_signum(int args)
   push_int(i);
 }
 
+/*! @decl string signame(int sig)
+ *!
+ *! Returns a string describing the signal @[sig].
+ *!
+ *! @seealso
+ *!   @[kill()], @[signum()], @[signal()]
+ */
 static void f_signame(int args)
 {
   char *n;
@@ -1113,7 +1152,11 @@ static TH_RETURN_TYPE wait_thread(void *data)
 }
 #endif
 
+/*! @class Pid_Status
+ */
 
+/*! @decl int wait()
+ */
 static void f_pid_status_wait(INT32 args)
 {
   pop_n_elems(args);
@@ -1218,6 +1261,8 @@ static void f_pid_status_wait(INT32 args)
 #endif /* __NT__ */
 }
 
+/*! @decl int status()
+ */
 static void f_pid_status_status(INT32 args)
 {
   pop_n_elems(args);
@@ -1236,12 +1281,16 @@ static void f_pid_status_status(INT32 args)
 #endif
 }
 
+/*! @decl int pid()
+ */
 static void f_pid_status_pid(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->pid);
 }
 
+/*! @decl int set_priority(string priority)
+ */
 static void f_pid_status_set_priority(INT32 args)
 {
   char *to;
@@ -1255,6 +1304,10 @@ static void f_pid_status_set_priority(INT32 args)
   pop_n_elems(args);
   push_int(r);
 }
+
+/*! @endclass
+ */
+
 #ifdef __amigaos__
 
 extern struct DosLibrary *DOSBase;
@@ -1619,6 +1672,8 @@ static int set_priority( int pid, char *to )
   return 0;
 }
 
+/*! @decl int set_priority(string level, int|void pid)
+ */
 void f_set_priority( INT32 args )
 {
   INT_TYPE pid;
@@ -1631,7 +1686,7 @@ void f_set_priority( INT32 args )
   {
     pid = 0;
     get_all_args( "set_priority", args, "%s", &plevel );
-  } else if(args == 2) {
+  } else if(args >= 2) {
     get_all_args( "set_priority", args, "%s%d", &plevel, &pid );
   }
   pid = set_priority( pid, plevel );
@@ -3091,6 +3146,79 @@ void Pike_f_fork(INT32 args)
 
 
 #ifdef HAVE_KILL
+/*! @decl void kill(int pid, int signal)
+ *!
+ *! Send a signal to another process.
+ *!
+ *! Kill sends a signal to another process. If something goes wrong
+ *! -1 is returned, 0 otherwise.
+ *!
+ *! Some signals and their supposed purpose:
+ *! @int
+ *!   @value SIGHUP
+ *!     Hang-up, sent to process when user logs out.
+ *!   @value SIGINT
+ *!     Interrupt, normally sent by ctrl-c.
+ *!   @value SIGQUIT
+ *!     Quit, sent by ctrl-\.
+ *!   @value SIGILL
+ *!     Illegal instruction.
+ *!   @value SIGTRAP
+ *!     Trap, mostly used by debuggers.
+ *!   @value SIGABRT
+ *!     Aborts process, can be caught, used by Pike whenever something
+ *!     goes seriously wrong.
+ *!   @value SIGBUS
+ *!     Bus error.
+ *!   @value SIGFPE
+ *!     Floating point error (such as division by zero).
+ *!   @value SIGKILL
+ *!     Really kill a process, cannot be caught.
+ *!   @value SIGUSR1
+ *!     Signal reserved for whatever you want to use it for.
+ *!     Note that some OSs reserve this signal for the thread library.
+ *!   @value SIGSEGV
+ *!     Segmentation fault, caused by accessing memory where you
+ *!     shouldn't. Should never happen to Pike.
+ *!   @value SIGUSR2
+ *!     Signal reserved for whatever you want to use it for.
+ *!     Note that some OSs reserve this signal for the thread library.
+ *!   @value SIGALRM
+ *!     Signal used for timer interrupts.
+ *!   @value SIGTERM
+ *!     Termination signal.
+ *!   @value SIGSTKFLT
+ *!     Stack fault
+ *!   @value SIGCHLD
+ *!     Child process died. This signal is reserved for internal use
+ *!     by the Pike run-time.
+ *!   @value SIGCONT
+ *!     Continue suspended.
+ *!   @value SIGSTOP
+ *!     Stop (suspend) process.
+ *!   @value SIGSTP
+ *!     Stop (suspend) process.
+ *!   @value SIGTTIN
+ *!     TTY input for background process.
+ *!   @value SIGTTOU
+ *!     TTY output for background process.
+ *!   @value SIGXCPU
+ *!     Out of CPU.
+ *!   @value SIGXFSZ
+ *!     File size limit exceeded.
+ *!   @value SIGPROF
+ *!     Profiling trap.
+ *!   @value SIGWINCH
+ *!     Window change signal.
+ *! @endint
+ *!
+ *! @note
+ *!   Note that you have to use signame to translate the name of a signal
+ *!   to its number.
+ *!
+ *! @seealso
+ *!   @[signal()], @[signum()], @[signame()], @[fork()]
+ */
 static void f_kill(INT32 args)
 {
   int signum;
@@ -3135,6 +3263,11 @@ static void f_kill(INT32 args)
   push_int(res);
 }
 
+/*! @class Pid_Status
+ */
+
+/*! @decl int kill(int signal)
+ */
 static void f_pid_status_kill(INT32 args)
 {
   int pid = THIS->pid;
@@ -3162,9 +3295,11 @@ static void f_pid_status_kill(INT32 args)
 
   check_signals(0,0,0);
   pop_n_elems(args);
-  push_int(args);
+  push_int(res);
 }
 
+/*! @endclass
+ */
 #else
 
 #ifdef __NT__
@@ -3266,7 +3401,13 @@ static void f_pid_status_kill(INT32 args)
 #endif
 
 
-
+/*! @decl int getpid()
+ *!
+ *! Returns the process ID of this process.
+ *!
+ *! @seealso
+ *!    @[getppid()], @[getpgrp()]
+ */
 static void f_getpid(INT32 args)
 {
   pop_n_elems(args);
@@ -3274,6 +3415,25 @@ static void f_getpid(INT32 args)
 }
 
 #ifdef HAVE_ALARM
+/*! @decl int alarm(int seconds)
+ *!
+ *! Set an alarm clock for delivery of a signal.
+ *!
+ *! @[alarm()] arranges for a SIGALRM signal to be delivered to the
+ *! process in @[seconds] seconds.
+ *!
+ *! If @[seconds] is @tt{0@} (zero), no new alarm will be scheduled.
+ *!
+ *! Any previous alarms will in any case be canceled.
+ *!
+ *! @returns
+ *!   Returns the number of seconds remaining until any previously
+ *!   scheduled alarm was due to be delivered, or zero if there was
+ *!   no previously scheduled alarm.
+ *!
+ *! @seealso
+ *!   @[ualarm()], @[signal()], @[call_out()]
+ */
 static void f_alarm(INT32 args)
 {
   long seconds;
@@ -3297,6 +3457,25 @@ static void f_alarm(INT32 args)
 #endif
 
 #if defined(HAVE_UALARM) || defined(HAVE_SETITIMER)
+/*! @decl int ualarm(int useconds)
+ *!
+ *! Set an alarm clock for delivery of a signal.
+ *!
+ *! @[alarm()] arranges for a SIGALRM signal to be delivered to the
+ *! process in @[useconds] microseconds.
+ *!
+ *! If @[useconds] is @tt{0@} (zero), no new alarm will be scheduled.
+ *!
+ *! Any previous alarms will in any case be canceled.
+ *!
+ *! @returns
+ *!   Returns the number of microseconds remaining until any previously
+ *!   scheduled alarm was due to be delivered, or zero if there was
+ *!   no previously scheduled alarm.
+ *!
+ *! @seealso
+ *!   @[alarm()], @[signal()], @[call_out()]
+ */
 static void f_ualarm(INT32 args)
 {
 #ifndef HAVE_UALARM
@@ -3373,6 +3552,18 @@ static void do_signal_exit(INT32 sig)
   f_exit(1);
 }
 
+/*! @decl void atexit(function callback)
+ *!
+ *! This function puts the @[callback] in a queue of callbacks to
+ *! call when pike exits.
+ *!
+ *! @note
+ *!   Please note that @[atexit] callbacks are not called if Pike
+ *!   exits abnormally.
+ *!
+ *! @seealso
+ *!   @[exit()], @[_exit()]
+ */
 void f_atexit(INT32 args)
 {
   if(!atexit_functions)
