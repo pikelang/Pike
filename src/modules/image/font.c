@@ -1,6 +1,6 @@
 #include <config.h>
 
-/* $Id: font.c,v 1.12 1997/01/30 14:24:55 law Exp $ */
+/* $Id: font.c,v 1.13 1997/01/30 15:54:02 grubba Exp $ */
 
 #include "global.h"
 
@@ -28,6 +28,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
+#include "threads.h"
 
 #include "image.h"
 #ifdef HAVE_MMAP
@@ -55,7 +56,7 @@ struct font
   enum {
     J_LEFT,
     J_RIGHT,
-    J_CENTER,
+    J_CENTER
   } justification;
    struct _char      
    {
@@ -174,33 +175,41 @@ void font_load(INT32 args)
       free_font_struct(THIS);
       THIS=NULL;
    }
-   do {
+   do 
+   {
+#ifdef FONT_DEBUG
+     fprintf(stderr,"FONT open '%s'\n",sp[-args].u.string->str);
+#endif
      fd = open(sp[-args].u.string->str,O_RDONLY);
    } while(fd < 0 && errno == EINTR);
 
    if (fd >= 0)
    {
       long size;
+      struct font *new;
+
       size = file_size(fd);
       if (size > 0)
       {
-	 THIS=(struct font *)xalloc(sizeof(struct font));
+	 new=THIS=(struct font *)xalloc(sizeof(struct font));
+
+	 THREADS_ALLOW();
 #ifdef HAVE_MMAP
-	 THIS->mem = 
+	 new->mem = 
 	    mmap(0,size,PROT_READ,MAP_SHARED,fd,0);
-	 THIS->mmaped_size=size;
+	 new->mmaped_size=size;
 #else
-	 THIS->mem = malloc(size);
-	 if (THIS->mem)
-	    my_read(fd,THIS->mem,size);
+	 new->mem = malloc(size);
+	 if ((new->mem) && (!my_read(fd,new->mem,size))) {
+	   free(new->mem);
+	   new->mem = NULL;
+	 }
 #endif
+	 THREADS_DISALLOW();
+
 	 if (THIS->mem)
 	 {
 	    int i;
-
-#ifdef FONT_DEBUG
-	    fprintf(stderr,"FONT mapped ok\n");
-#endif
 
 	    struct file_head 
 	    {
@@ -218,6 +227,10 @@ void font_load(INT32 args)
 	       unsigned char data[1];
 	    } *ch;
 
+#ifdef FONT_DEBUG
+	    fprintf(stderr,"FONT mapped ok\n");
+#endif
+
 	    fh=(struct file_head*)THIS->mem;
 
 	    if (ntohl(fh->cookie)==0x464f4e54) /* "FONT" */
@@ -227,11 +240,11 @@ void font_load(INT32 args)
 #endif
 	       if (ntohl(fh->version)==1)
 	       {
+		  unsigned long i;
+
 #ifdef FONT_DEBUG
 		  fprintf(stderr,"FONT version 1\n");
 #endif
-		  unsigned long i;
-		  struct font *new;
 
 		  THIS->chars=ntohl(fh->chars);
 
