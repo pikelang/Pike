@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.15 2002/10/21 17:06:14 marcus Exp $
+|| $Id: avs.c,v 1.16 2003/12/17 21:08:56 marcus Exp $
 */
 
 #include "global.h"
@@ -13,9 +13,12 @@
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.15 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id: avs.c,v 1.16 2003/12/17 21:08:56 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.208 2003/12/16 10:40:28 grubba Exp $
+|| $Id: encode.c,v 1.209 2003/12/17 21:08:56 marcus Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.208 2003/12/16 10:40:28 grubba Exp $");
+RCSID("$Id: encode.c,v 1.209 2003/12/17 21:08:56 marcus Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -56,6 +56,10 @@ RCSID("$Id: encode.c,v 1.208 2003/12/16 10:40:28 grubba Exp $");
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
 #endif
 
 #ifdef HAVE_IEEEFP_H
