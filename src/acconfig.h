@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.29 1998/07/23 00:43:51 hubbe Exp $
+ * $Id: acconfig.h,v 1.30 1998/08/06 23:35:30 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -221,6 +221,9 @@
 
 /* Define if your compiler has a symbol __FUNCTION__ */
 #undef HAVE_WORKING___FUNCTION__
+
+/* The last argument to accept() is an ACCEPT_SIZE_T * */
+#define ACCEPT_SIZE_T	int
 
 @BOTTOM@
 
