@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.18 2003/04/22 11:31:18 grubba Exp $
+|| $Id: program_id.h,v 1.19 2003/10/27 23:21:44 mast Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -50,6 +50,8 @@
 #define     PROG_BUFFER_ID					    014
 #define     PROG_MULTI_STRING_REPLACE_ID			    015
 #define     PROG_BACKEND_ID					    016
+#define tObjImpl_BACKEND		      "\003\000\000\000\000\016"
+#define   tObjIs_BACKEND		      "\003\001\000\000\000\016"
 #define     PROG_MAPPING_ITERATOR_ID				    017
 #define     PROG_ARRAY_ITERATOR_ID				    020
 #define     PROG_MULTISET_ITERATOR_ID				    021
@@ -59,6 +61,28 @@
 #define     PROG_ITERATOR_ID					    025
 #define tObjImpl_ITERATOR		      "\003\000\000\000\000\025"
 #define   tObjIs_ITERATOR		      "\003\001\000\000\000\025"
+
+#define     PROG_STDIO_FD_REF_ID                                    026
+#define tObjImpl_STDIO_FD_REF		      "\003\000\000\000\000\026"
+#define   tObjIs_STDIO_FD_REF		      "\003\001\000\000\000\026"
+#define     PROG_STDIO_FILE_LOCK_KEY_ID                             027
+#define tObjImpl_STDIO_FILE_LOCK_KEY	      "\003\000\000\000\000\027"
+#define   tObjIs_STDIO_FILE_LOCK_KEY	      "\003\001\000\000\000\027"
+#define     PROG_STDIO_PORT_ID                                      030
+#define tObjImpl_STDIO_PORT		      "\003\000\000\000\000\030"
+#define   tObjIs_STDIO_PORT		      "\003\001\000\000\000\030"
+#define     PROG_STDIO_SENDFILE_ID                                  031
+#define tObjImpl_STDIO_SENDFILE		      "\003\000\000\000\000\031"
+#define   tObjIs_STDIO_SENDFILE		      "\003\001\000\000\000\031"
+#define     PROG_STDIO_UDP_ID                                       032
+#define tObjImpl_STDIO_UDP		      "\003\000\000\000\000\032"
+#define   tObjIs_STDIO_UDP		      "\003\001\000\000\000\032"
+#define     PROG_STDIO_SOCK_ID                                      033
+#define tObjImpl_STDIO_SOCK		      "\003\000\000\000\000\033"
+#define   tObjIs_STDIO_SOCK		      "\003\001\000\000\000\033"
+#define     PROG_STDIO_IPPROTO_ID                                   034
+#define tObjImpl_STDIO_IPPROTO		      "\003\000\000\000\000\034"
+#define   tObjIs_STDIO_IPPROTO		      "\003\001\000\000\000\034"
 
 #define     PROG_GMP_MPZ_ID                                         040
 #define tObjImpl_GMP_MPZ                      "\003\000\000\000\000\040"
