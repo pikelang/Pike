@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.48 1998/08/10 23:33:31 hubbe Exp $
+ * $Id: threads.h,v 1.49 1998/08/17 04:36:57 per Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -83,7 +83,7 @@ extern pthread_attr_t small_pattr;
 #define th_create_small(ID,fun,arg) pthread_create(ID,&small_pattr,fun,arg)
 #define th_exit(foo) pthread_exit(foo)
 #define th_self() pthread_self()
-
+#define th_kill(ID,sig) pthread_kill((ID),(sig))
 #ifdef HAVE_PTHREAD_COND_INIT
 #define COND_T pthread_cond_t
 
@@ -122,6 +122,7 @@ extern pthread_attr_t small_pattr;
 #define th_create_small(ID,fun,arg) thr_create(NULL,32768,fun,arg,THR_DAEMON|THR_DETACHED,ID)
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
+#define th_kill(ID,sig) thr_kill((ID),(sig))
 #define th_yield() thr_yield()
 
 #define COND_T cond_t
