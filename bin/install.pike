@@ -141,7 +141,10 @@ int mkdirhier(string dir)
   if(export) return 1;
 
   if(dir=="" || (strlen(dir)==2 && dir[-1]==':')) return 1;
+  dir=fakeroot(dir);
+
   status("creating",dir+"/");
+
   mixed s=file_stat(dir);
   if(s)
   {
@@ -193,6 +196,8 @@ int low_install_file(string from,
     to_export+=({ from });
     return 1;
   }
+  
+  to=fakeroot(to);
 
   status("installing",to);
 
@@ -320,14 +325,43 @@ void install_header_files(string from, string to)
 
 mapping vars=([]);
 
+object reg;
+string regexp;
+
+string regquote(string s)
+{
+  while(s[-1] == '/' || s[-1]=='\\') s=s[..strlen(s)-2];
+  return
+    replace(s,
+	    ({".","[","]","*","\\","(",")","|","+"}),
+	    ({"\\.","\\[","\\]","\\*","\\\\","\\(","\\)","\\|","\\+"}) );
+}
+
+string globify(string s)
+{
+  if(s[-1]=='/') s=s[..strlen(s)-2];
+  return s+"*";
+}
+
 string fakeroot(string s)
 {
-  if(vars->fakeroot)
+  if(!vars->fakeroot) return s;
+  if(!reg)
   {
-    return vars->fakeroot+combine_path(getcwd(),s);
-  }else{
-    return s;
+    reg=Regexp(regexp=sprintf("^([^/])%{|(%s)%}",
+			      Array.map(
+				({
+				  getcwd(),
+				    vars->LIBDIR_SRC,
+				    vars->SRCDIR,
+				    vars->TMP_BINDIR,
+				    vars->MANDIR_SRC,
+				    vars->TMP_LIBDIR,
+				    vars->fakeroot,
+				    }),regquote)));
   }
+  if(reg->match(s)) return s;
+  return vars->fakeroot+s;
 }
 
 string export_base_name;
@@ -1066,7 +1100,7 @@ void do_install()
   pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
-    status1("Installing Pike in %s...\n",prefix);
+    status1("Installing Pike in %s...\n",fakeroot(prefix));
   }
 
   mixed err=catch {
@@ -1119,22 +1153,22 @@ void do_install()
 		  lib_prefix);
     }
     
-    install_dir(fakeroot(vars->TMP_LIBDIR),lib_prefix,1);
-    install_dir(fakeroot(vars->LIBDIR_SRC),lib_prefix,1);
+    install_dir(vars->TMP_LIBDIR,lib_prefix,1);
+    install_dir(vars->LIBDIR_SRC,lib_prefix,1);
     
-    install_header_files(fakeroot(vars->SRCDIR),include_prefix);
-    install_header_files(fakeroot(vars->TMP_BUILDDIR),include_prefix);
+    install_header_files(vars->SRCDIR,include_prefix);
+    install_header_files(vars->TMP_BUILDDIR,include_prefix);
     
-    install_file(fakeroot(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile")),
+    install_file(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
 		 combine_path(include_prefix,"dynamic_module_makefile"));
-    install_file(fakeroot(combine_path(vars->TMP_BUILDDIR,"aclocal")),
+    install_file(combine_path(vars->TMP_BUILDDIR,"aclocal"),
 		 combine_path(include_prefix,"aclocal.m4"));
     
     if(file_stat(vars->MANDIR_SRC))
     {
 //      trace(9);
 //      _debug(5);
-      install_dir(fakeroot(vars->MANDIR_SRC),combine_path(man_prefix,"man1"),0);
+      install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
     }
   };
 
@@ -1158,9 +1192,11 @@ void do_install()
         "PIKE_INCLUDE_PATH":"",
         "PIKE_MASTER":"",
       ]) ]); 
+
+
     if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
     {
-      Process.create_process( ({pike,"-m",
+      Process.create_process( ({fakeroot(pike),"-m",
 				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
 				  @(vars->fakeroot?({"--fakeroot="+
                                                      vars->fakeroot}):({})),
@@ -1174,20 +1210,38 @@ void do_install()
       foreach(to_dump, string mod) rm(mod+".o");
       /* Dump 50 modules at a time */
       write("\n");
+
+      array cmd=({fakeroot(pike) });
+
+      if(vars->fakeroot)
+	cmd+=({
+	  sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
+	    sprintf("-DPIKE_FAKEROOT_OMIT=%O",
+		    Array.map( ({
+				  getcwd(),
+				    vars->LIBDIR_SRC,
+				    vars->SRCDIR,
+				    vars->TMP_BINDIR,
+				    vars->MANDIR_SRC,
+				    vars->TMP_LIBDIR,
+				    vars->fakeroot,
+				    }), globify)*":"),
+	    "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
+	    });
+
+      cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
+
+#if defined(USE_GTK) && constant(GTK.parse_rc)
+		label1?"--distquiet":
+#endif
+	"--quiet"});
+
+//      werror("%O\n",cmd);
+
       foreach(to_dump/50.0,to_dump)
 	{
 	  write("    ");
-	  Process.create_process( ({pike,
-				      combine_path(vars->SRCDIR,
-                                                   "dumpmodule.pike"),
-#if defined(USE_GTK) && constant(GTK.parse_rc)
-				      label1?"--distquiet":
-#endif
-	    "--quiet",
-				      @(vars->fakeroot? 
-                                        ({"--fakeroot="+vars->fakeroot}):({})),
-                                  }) + to_dump,
-                                  options)->wait();
+	  Process.create_process(cmd+ to_dump, options)->wait();
 	}
     }
 
@@ -1200,20 +1254,20 @@ void do_install()
     if(lnk)
     {
       status("creating",lnk);
-      mixed s=file_stat(lnk,1);
+      mixed s=file_stat(fakeroot(lnk),1);
       if(s)
       {
-	if(!mv(lnk,lnk+".old"))
+	if(!mv(fakeroot(lnk),fakeroot(lnk+".old")))
 	{
 	  werror("Failed to move %s\n",lnk);
 	  exit(1);
 	}
       }
       if (old_exec_prefix) {
-	mkdirhier(old_exec_prefix);
+	mkdirhier(fakeroot(old_exec_prefix));
       }
-      mkdirhier(dirname(lnk));
-      symlink(pike,lnk);
+      mkdirhier(fakeroot(dirname(lnk)));
+      symlink(pike,fakeroot(lnk));
       status("creating",lnk,"done");
     }
 #endif
@@ -1258,5 +1312,20 @@ int main(int argc, array(string) argv)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
 
+  /* Some magic for the fakeroot stuff */
+  string tmp=vars->fakeroot;
+  m_delete(vars,"fakeroot");
+  if(tmp!="")
+  {
+    if(tmp[-1]=='/' || tmp[-1]=='\\')
+      tmp=tmp[..sizeof(tmp)-2];
+
+    /* Create the fakeroot if it doesn't exist
+    /* This must be done with fakeroot unset since
+     * it would create fakeroot/fakeroot otherwise
+     */
+    mkdirhier(tmp);
+    vars->fakeroot=tmp;
+  }
   return pre_install(argv);
 }

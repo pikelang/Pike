@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.194 2000/06/23 06:17:58 hubbe Exp $
+# $Id: Makefile.in,v 1.195 2000/07/12 01:19:28 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -22,6 +22,14 @@ TMP_BINDIR = @BINDIR@
 TMP_BUILDDIR = @BUILDDIR@
 TMP_DOCDIR = @DOCDIR@
 TMP_LIBDIR = $(TMP_BUILDDIR)/lib
+
+#
+# RPM and package builders, listen up, because this is your only
+# documentation! This variable is prepended to the install path.
+# Please note that Pike will not work until moved into the proper
+# place.  -Hubbe
+# 
+buildroot=
 
 prefix = @prefix@
 exec_prefix = $(prefix)/bin
@@ -292,13 +300,15 @@ install: pike hilfe pike-module aclocal
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)" pike_name=$(pike_name)
+	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
+	fakeroot="$(buildroot)"
 
 install_interactive: pike hilfe pike-module aclocal
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
-	SRCDIR="$(SRCDIR)" MANDIR_SRC="$(MANDIR_SRC)"
+	SRCDIR="$(SRCDIR)" MANDIR_SRC="$(MANDIR_SRC)" \
+	fakeroot="$(buildroot)"
 
 # tidy up a bit
 tidy:

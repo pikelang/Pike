@@ -2,16 +2,17 @@
 
 program p;
 
-string fakeroot;
-
-class FakeMaster
+#ifdef PIKE_FAKEROOT
+string fakeroot(string s)
 {
-  inherit "/master";
-  string master_read_file(string s)
-    {
-      return ::master_read_file(fakeroot+combine_path_with_cwd(s));
-    }
+  return PIKE_FAKEROOT+combine_path(getcwd(),s);
 }
+#else
+#define fakeroot(X) X
+#endif
+
+
+
 
 #define error(X) throw( ({ (X), backtrace() }) )
 
@@ -159,8 +160,6 @@ class Handler
     }
 }
 
-
-
 void dumpit(string file)
 {
   if(logfile)
@@ -171,7 +170,7 @@ void dumpit(string file)
   
   mixed err=catch {
     rm(file+".o"); // Make sure no old files are left
-    if(mixed s=file_stat(file))
+    if(mixed s=file_stat(fakeroot(file)))
     {
       if(s[1]<=0)
       {
@@ -189,7 +188,7 @@ void dumpit(string file)
       p=decode_value(s,master()->Codec());
       if(programp(p))
       {
-	Stdio.File(file + ".o","wct")->write(s);
+	Stdio.File(fakeroot(file) + ".o","wct")->write(s);
 	switch(quiet)
 	{
 	  case 1: werror("."); break;
@@ -260,12 +259,6 @@ int main(int argc, string *argv)
     quiet=2;
     argv=argv[1..];
     logfile=0;
-  }
-
-  if(sscanf(argv[1],"--fakeroot=%s",fakeroot))
-  {
-    argv=argv[1..];
-    replace_master(FakeMaster());
   }
 
   foreach(argv[1..],string file)
