@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: polygon.c,v 1.1 1998/04/20 01:42:24 mirar Exp $ */
+/* $Id: polygon.c,v 1.1.4.1 1998/11/22 11:04:34 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: polygon.c,v 1.1 1998/04/20 01:42:24 mirar Exp $
+**!	$Id: polygon.c,v 1.1.4.1 1998/11/22 11:04:34 hubbe Exp $
 **! class polygon
 **!
 **!	This object keep polygon information,
@@ -18,7 +18,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: polygon.c,v 1.1 1998/04/20 01:42:24 mirar Exp $");
+RCSID("$Id: polygon.c,v 1.1.4.1 1998/11/22 11:04:34 hubbe Exp $");
 
 #include <math.h> 
 
