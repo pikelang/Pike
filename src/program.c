@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.334 2001/06/28 10:24:22 hubbe Exp $");
+RCSID("$Id: program.c,v 1.335 2001/06/29 02:15:13 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4037,7 +4037,16 @@ struct program *compile(struct pike_string *prog,
   CDFPRINTF((stderr, "th(%ld)   compile(): First pass\n",
 	     (long)th_self()));
 
+#ifdef PIKE_DEBUG
+  {
+    struct svalue *save_sp=Pike_sp;
+    yyparse();  /* Parse da program */
+    if(save_sp != Pike_sp)
+      fatal("yyparse() left droppings on the stack!\n");
+  }
+#else  
   yyparse();  /* Parse da program */
+#endif
 
   CDFPRINTF((stderr, "th(%ld)   compile(): First pass done\n",
 	     (long)th_self()));
@@ -4096,7 +4105,16 @@ struct program *compile(struct pike_string *prog,
     CDFPRINTF((stderr, "th(%ld)   compile(): Second pass\n",
 	       (long)th_self()));
 
-    yyparse();  /* Parse da program again */
+#ifdef PIKE_DEBUG
+    {
+      struct svalue *save_sp=Pike_sp;
+      yyparse();  /* Parse da program */
+      if(save_sp != Pike_sp)
+	fatal("yyparse() left droppings on the stack!\n");
+    }
+#else  
+    yyparse();  /* Parse da program */
+#endif
 
     CDFPRINTF((stderr, "th(%ld)   compile(): Second pass done\n",
 	       (long)th_self()));
