@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.142 2002/01/03 12:04:06 grubba Exp $");
+RCSID("$Id: main.c,v 1.143 2002/01/08 17:49:19 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -583,13 +583,14 @@ int dbm_main(int argc, char **argv)
 	if((handle=dlopen(0, RTLD_LAZY)))
 	{
 	  bos_location=dlsym(handle,"__pthread_initial_thread_bos");
-	  dlclose(handle);
 
 	  if(bos_location && *bos_location &&
 	     (*bos_location - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
 	  {
 	    Pike_interpreter.stack_top=*bos_location;
 	  }
+
+	  dlclose(handle);
 	}
       }
 #else
