@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.468 2001/11/02 15:48:47 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.469 2001/11/09 02:09:14 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1060,19 +1060,28 @@ test_any([[
 
  // Compilation handler that hides compilation errors.
  class handler
- { void compile_error(string file, int line, string err) { } };
-
- catch {
-   compile_string("import \".\"; "
-	"int foo() { testsuite_test_dir.a(); }",
-	"test",handler());
+ {
+   void handle_error(array(mixed)|object trace) { }
+   void compile_error(string file, int line, string err) { } 
+   void compile_warning(string file, int line, string err) { } 
  };
 
-// rm("testsuite_test_dir.pmod/module.pmod");
-// rm("testsuite_test_dir.pmod/A.pike");
-// rm("testsuite_test_dir.pmod");
-//
- return 0;
+  master()->set_inhibit_compile_errors(handler());
+  mixed err = catch {
+     compile_string("import \".\"; "
+  	"int foo() { testsuite_test_dir.a(); }",
+  	"test",handler());
+  };
+  master()->set_inhibit_compile_errors(0);
+  if(err)
+  { 
+    rm("testsuite_test_dir.pmod/module.pmod");
+    rm("testsuite_test_dir.pmod/A.pike");
+    rm("testsuite_test_dir.pmod");
+    return 0;
+  }
+  
+ return 1;
 ]],0);
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
@@ -1357,9 +1366,11 @@ int errors;
 int tests;
 
 #define indent(X) (X)
+#define FMT "%d:%d  "
 
 int maxdepth;
 int quiet;
+string status_prefix="";
 
 void low_generate(int depth,
 		  array(string) code,
@@ -1377,7 +1388,7 @@ void low_generate(int depth,
     {	
       __signal_watchdog();
       if(!quiet)
-        werror("\r%d: %d  ",maxdepth,tests);
+        werror("\r%s" FMT, status_prefix,maxdepth,tests);
     }
 
     string test=code*"\n"+"\n"
@@ -1451,6 +1462,7 @@ int a()
     case "dumb":
     case "emacs":
       quiet=1;
+      werror("Max depth: ");
   }
 
   int total_tests;
@@ -1460,14 +1472,17 @@ int a()
 		 ({ "string X(){return \"X\";}" }),
 		 "X",
 		 "X",0);
+
+    status_prefix+=sprintf(FMT,maxdepth,tests);
     if(quiet)
-      werror("Maxdepth %d\n",maxdepth);
+      werror("%d .. ",maxdepth);
     else
-      werror("\r%d: %d\n",maxdepth,tests);
+      werror("\r%s",status_prefix);
     total_tests+=tests;
     tests=0;
   }
   
+  werror("\n");
   if(errors) werror("%d/%d tests failed.\n",errors,total_tests);
   return !errors;
 }
@@ -8374,6 +8389,7 @@ int ok=1;
 
 void test_resolv(string file, int base_size)
 {
+  __signal_watchdog();
   string prg = replace( file[base_size+1..sizeof(file)-6],
 			([ "/":".", ".pmod":""]) );
   if(prg[sizeof(prg)-7..]==".module")
@@ -8422,6 +8438,7 @@ void test_dir(string dir, int|void base_size)
       {
         if(glob("*.pike",file) || glob("*.pmod",file))
         {
+#if 0
 	   mixed err=catch { (program)file; };
 	   if (err) 
            {
@@ -8429,6 +8446,7 @@ void test_dir(string dir, int|void base_size)
               ok=0;
               continue;
            }
+#endif
 	   test_resolv(file, base_size);
         }
       }
