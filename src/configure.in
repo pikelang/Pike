@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.412 2000/08/29 13:40:13 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.413 2000/08/29 18:05:00 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3737,7 +3737,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	  CCSHARED="-fPIC"
 	;;
 	*)
-	  CCSHARED="-fpic"
+	  CCSHARED="-fPIC"
 	;;
       esac
     else
