@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.263 2002/08/15 14:49:21 marcus Exp $");
+RCSID("$Id: interpret.c,v 1.264 2002/09/11 17:13:58 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -463,7 +463,7 @@ void my_describe_inherit_structure(struct program *p)
 	  p->id,
 	  p->num_inherits,
 	  p->num_identifier_references,
-	  p->parent_program_id);
+	  p->parent ? p->parent->id : -1);
   for(e=0;e<p->num_identifier_references;e++)
   {
     in=INHERIT_FROM_INT(p,e);
@@ -477,7 +477,7 @@ void my_describe_inherit_structure(struct program *p)
 	      last->inherit_level*2,"",
 	      last->parent_offset,
 	      last->parent_identifier,
-	      last->prog->parent_program_id,
+	      last->prog->parent ? last->prog->parent->id : -1,
 	      last->identifier_level,
 	      last->prog->id);
       i=0;
