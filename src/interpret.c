@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.196 2001/05/14 03:26:21 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.197 2001/05/14 05:28:46 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1126,7 +1126,13 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame->context = p->inherits[ ref->inherit_offset ];
 
       function = new_frame->context.prog->identifiers + ref->identifier_offset;
+      new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
 
+      /* This is mostly for profiling, but
+       * could also be used to find out the name of a function
+       * in a destructed object. -hubbe
+       */
+      new_frame->ident = ref->identifier_offset;
       
 #ifdef PIKE_DEBUG
 	if(t_flag > 9)
@@ -1155,7 +1161,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame->locals = Pike_sp - args;
       new_frame->expendible = new_frame->locals;
       new_frame->args = args;
-      new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
       new_frame->current_storage = o->storage+new_frame->context.storage_offset;
       new_frame->pc = 0;
       new_frame->scope=scope;
@@ -1367,16 +1372,15 @@ void low_return(void)
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
   {
+    struct identifier *function;
     long long time_passed, time_in_children, self_time;
     time_in_children=  Pike_interpreter.accounted_time - Pike_fp->children_base;
     time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
     self_time=time_passed - time_in_children;
     Pike_interpreter.accounted_time+=self_time;
-#if 0
-    /* FIXME: How to get at function? */
+    function = Pike_fp->context.prog->identifiers + Pike_fp->ident;
     function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
     function->self_time+=(INT32)( self_time /1000);
-#endif /* 0 */
   }
 #endif
 #endif

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.81 2001/05/10 22:14:37 hubbe Exp $
+ * $Id: interpret.h,v 1.82 2001/05/14 05:28:46 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -56,6 +56,7 @@ struct pike_frame
   INT16 num_locals;
   INT16 num_args;
   unsigned INT16 flags;
+  INT16 ident;
   struct pike_frame *next;
   struct pike_frame *scope;
   unsigned char *pc;
