@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree_low.h,v 1.6 2002/12/19 01:44:00 mast Exp $
+|| $Id: rbtree_low.h,v 1.7 2003/01/08 22:28:06 grubba Exp $
 */
 
 /* The lower level api for using rbtree. This is in a separate file
@@ -61,9 +61,10 @@ void rbstack_shift (struct rbstack_ptr rbstack,
     {NULL,}								\
   };									\
   struct rbstack_ptr rbstack = {					\
-    &PIKE_CONCAT3 (_, rbstack, _top_),					\
+    NULL,								\
     0									\
-  }
+  };									\
+  rbstack.slice = &PIKE_CONCAT3 (_, rbstack, _top_)
 
 #define RBSTACK_PUSH(rbstack, node) do {				\
     if ((rbstack).ssp < STACK_SLICE_SIZE) {				\
