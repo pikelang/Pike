@@ -68,7 +68,7 @@ dnl [#]line __oline__ "[$]0"
 [#]line __oline__ "configure"
 #include "confdefs.h"
 #include <stdio.h>
-char size_info[] = {
+char size_info[[]] = {
   0, 'S', 'i', 'Z', 'e', '_', 'I', 'n', 'F', 'o', '_',
   '0' + sizeof([$1]), 0
 };
@@ -142,7 +142,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.18 2000/08/13 19:53:36 grubba Exp $
+# $Id: aclocal.m4,v 1.19 2000/08/18 16:59:20 grubba Exp $
 
 MY_AC_PROG_CC
 
