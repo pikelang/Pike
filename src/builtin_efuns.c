@@ -27,10 +27,12 @@
 #include "memory.h"
 #include "time_stuff.h"
 #include <math.h>
+#include <ctype.h>
 
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
 #endif
+
 
 void f_equal(INT32 args)
 {
