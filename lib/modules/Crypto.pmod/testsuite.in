@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.38 2004/05/02 18:27:35 nilsson Exp $
+// $Id: testsuite.in,v 1.39 2005/02/18 18:06:57 grubba Exp $
 
 // Nettle.Yarrow
 
@@ -225,8 +225,8 @@ cond_resolv( Crypto.$1.name,[[
     c->make_key();
     c->crypt("\500"*c->block_size());
   ]])
-  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_encrypt_key("A")))
-  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_decrypt_key("A")))
+  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_encrypt_key("")))
+  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_decrypt_key("")))
   test_eval_error(Crypto.$1()->set_decrypt_key("\500"*Crypto.$1->key_size()))
   test_eval_error(Crypto.$1()->crypt();)
 ]])]])
