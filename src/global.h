@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.44 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: global.h,v 1.45 2000/08/03 12:34:02 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -203,6 +203,12 @@ char *alloca ();
 #define TYPE_T unsigned INT8
 #define TYPE_FIELD unsigned INT16
 
+#if SIZEOF_CHAR_P > SIZEOF_FLOAT
+#ifndef WITH_DOUBLE_PRECISION_SVALUE
+#define WITH_DOUBLE_PRECISION_SVALUE
+#endif /* !WITH_DOUBLE_PRECISION_SVALUE */
+#endif /* sizeof(char *) > sizeof(float) */
+
 #ifndef WITH_DOUBLE_PRECISION_SVALUE
 #define FLOAT_TYPE float
 #else
@@ -213,7 +219,11 @@ char *alloca ();
 #endif /* long double */
 #endif /* double */
 
+#if SIZEOF_CHAR_P > 4
+#define INT_TYPE LONGEST
+#else /* !(sizeof(char *) > 4) */
 #define INT_TYPE INT32
+#endif /* sizeof(char *) > 4 */
 
 #define B1_T char
 
@@ -235,6 +245,10 @@ char *alloca ();
 #define B8_T int
 #elif SIZEOF_LONG == 8
 #define B8_T long
+#elif (SIZEOF_LONG_LONG - 0) == 8
+#define B8_T long long
+#elif (SIZEOF___INT64 - 0) == 8
+#define B8_T __int64
 #elif SIZEOF_CHAR_P == 8
 #define B8_T char *
 #elif defined(B4_T)
