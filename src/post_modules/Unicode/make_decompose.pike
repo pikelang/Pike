@@ -58,7 +58,12 @@ void main()
 	if( cd[0] == '<' )  compat[c]=1;
 	return cd[0] != '<';
       };
+#if constant(Gmp.mpz)
       array cc = map( filter(data[5]/" "-({""}), strip_lt),Gmp.mpz, 16)-({0});
+#else /* !constant(Gmp.mpz) */
+      array cc = map( filter(data[5]/" "-({""}), strip_lt),
+		      array_sscanf, "%x")*({})-({0});
+#endif /* constant(Gmp.mpz) */
       
       if( sizeof( cc ) )
       {
