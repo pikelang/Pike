@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.158 2000/01/04 00:49:52 grubba Exp $");
+RCSID("$Id: las.c,v 1.159 2000/01/04 00:58:07 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2467,8 +2467,11 @@ void fix_type_field(node *n)
     if (CDR(n) && CAR(n)) {
       /* case 1 .. 2: */
       if (!match_types(CAR(n)->type, CDR(n)->type)) {
-	yytype_error("Type mismatch in case range.",
-		     CAR(n)->type, CDR(n)->type, 0);
+	if (!match_types(CAR(n)->type, int_type_string) ||
+	    !match_types(CDR(n)->type, int_type_string)) {
+	  yytype_error("Type mismatch in case range.",
+		       CAR(n)->type, CDR(n)->type, 0);
+	}
       } else if ((lex.pragmas & ID_STRICT_TYPES) &&
 		 (CAR(n)->type != CDR(n)->type)) {
 	/* The type should be the same for both CAR & CDR. */
