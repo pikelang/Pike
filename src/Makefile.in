@@ -54,9 +54,9 @@ CC=@CC@
 CPP=@CPP@
 
 LD=$(CC)
-LDFLAGS=$(CFLAGS) @LDFLAGS@
+LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
-RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
+RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike -M$(TMP_BUILDDIR)/modules $(PIKEOPTS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)"
 
@@ -107,7 +107,8 @@ OBJ= \
 # User callable targets
 #
 
-all: $(OBJ) module_objects
+
+all: module_objects
 	$(MAKE) $(MAKE_FLAGS) pike
 
 pike: $(OBJ) modules/linker_options modules/lib_dirs
@@ -142,6 +143,8 @@ install:
 	$(INSTALL) $(SRCDIR)/*.h *.h $(prefix)/include/pike
 	$(INSTALL) $(TMP_LIBDIR)/master.pike $(lib_prefix)
 	cp -r $(TMP_LIBDIR)/include $(lib_prefix)
+	cp -r $(TMP_LIBDIR)/modules $(lib_prefix)
+	-( cd modules; ${MAKE} $(MAKE_FLAGS) install )
 
 # tidy up a bit
 tidy:
@@ -231,7 +234,7 @@ html_docs: docs
 #
 # Pike internal targets
 #
-module_objects:
+module_objects: global.h $(SRCDIR)/language.h
 	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
@@ -245,7 +248,13 @@ $(SRCDIR)/language.h: $(SRCDIR)/language.yacc
 $(SRCDIR)/language.c: $(SRCDIR)/language.h
 	touch $(SRCDIR)/language.c
 
-$(SRCDIR)/module.c: modlist.h
+modules/modlist.h:
+	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
+
+modules/modlist_headers.h: modules/modlist.h
+	touch modules/modlist_headers.h
+
+$(SRCDIR)/module.c: modules/modlist.h
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in
 	cd $(SRCDIR) && autoconf
