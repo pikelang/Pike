@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.361 2001/01/03 21:14:36 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.362 2001/01/07 04:19:47 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6041,6 +6041,10 @@ test_equal(Colors.parse_color("#ff0000"),({255,0,0}))
 test_equal(Colors.parse_color("ff0000"),({255,0,0}))
 test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
 test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
+test_equal(Colors.rgb_to_hsv(255,0,0),({0,255,255}))
+test_equal(Colors.hsv_to_rgb(0,255,255),({255,0,0}))
+test_equal(Colors.rgb_to_cmyk(255,0,0),({0,100,100,0}))
+test_equal(Colors.cmyk_to_rgb(0,100,100,0),({255,0,0}))
 
 test_do([[
   string s;
