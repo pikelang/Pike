@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.78 1998/04/15 01:44:24 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.79 1998/04/17 01:22:34 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1452,7 +1452,7 @@ expr4: string
     { $$=mkefuncallnode("aggregate_mapping",$3); };
   | F_MULTISET_START expr_list F_MULTISET_END
     { $$=mkefuncallnode("aggregate_multiset",$2); }
-  | '(' error ')' { yyerrok; }
+  | '(' error ')' { $$=mkintnode(0); yyerrok; }
   | expr4 F_ARROW F_IDENTIFIER
   {
     $$=mknode(F_ARROW,$1,$3);
