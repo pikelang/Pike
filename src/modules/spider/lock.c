@@ -1,3 +1,4 @@
+#include "global.h"
 #if defined(HAVE_PTHREAD_MUTEX_UNLOCK) || defined(HAVE_MUTEX_UNLOCK)
 
 #include <sys/types.h>
