@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.40 2001/08/29 21:28:25 nilsson Exp $
+ * $Id: nt.c,v 1.41 2001/09/17 13:14:28 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -238,6 +238,36 @@ static const HKEY hkeys[] = {
   HKEY_USERS,
 };
 
+/*! @decl string|int|array(string) RegGetValue(int hkey, string key, @
+ *!                                            string index)
+ *!
+ *!   Get a single value from the register.
+ *!
+ *! @param hkey
+ *!   One of the following:
+ *!   @int
+ *!     @value HKEY_CLASSES_ROOT
+ *!     @value HKEY_LOCAL_MACHINE
+ *!     @value HKEY_CURRENT_USER
+ *!     @value HKEY_USERS
+ *!   @endint
+ *!
+ *! @param key
+ *!   Registry key.
+ *!
+ *! @param index
+ *!   Value name.
+ *!
+ *! @returns
+ *!   Returns the value stored at the specified location in the register
+ *!   if any. Throws errors on failure.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.RegGetValues()], @[system.RegGetKeyNames()]
+ */
 void f_RegGetValue(INT32 args)
 {
   long ret;
@@ -275,6 +305,32 @@ static void do_regclosekey(HKEY key)
   RegCloseKey(key);
 }
 
+/*! @decl array(string) RegGetKeyNames(int hkey, string key)
+ *!
+ *!   Get a list of value key names from the register.
+ *!
+ *! @param hkey
+ *!   One of the following:
+ *!   @int
+ *!     @value HKEY_CLASSES_ROOT
+ *!     @value HKEY_LOCAL_MACHINE
+ *!     @value HKEY_CURRENT_USER
+ *!     @value HKEY_USERS
+ *!   @endint
+ *!
+ *! @param key
+ *!   Registry key.
+ *!
+ *! @returns
+ *!   Returns an array of value keys stored at the specified location iof any.
+ *!   Throws errors on failure.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.RegGetValue()], @[system.RegGetValues()]
+ */
 void f_RegGetKeyNames(INT32 args)
 {
   INT_TYPE hkey_num;
@@ -324,6 +380,33 @@ void f_RegGetKeyNames(INT32 args)
   f_aggregate(i);
 }
 
+/*! @decl mapping(string:string|int|array(string)) RegGetValues(int hkey, @
+ *!                                                             string key)
+ *!
+ *!   Get multiple values from the register.
+ *!
+ *! @param hkey
+ *!   One of the following:
+ *!   @int
+ *!     @value HKEY_CLASSES_ROOT
+ *!     @value HKEY_LOCAL_MACHINE
+ *!     @value HKEY_CURRENT_USER
+ *!     @value HKEY_USERS
+ *!   @endint
+ *!
+ *! @param key
+ *!   Registry key.
+ *!
+ *! @returns
+ *!   Returns a mapping with all the values stored at the specified location
+ *!   in the register if any. Throws errors on failure.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.RegGetValue()], @[system.RegGetKeyNames()]
+ */
 void f_RegGetValues(INT32 args)
 {
   INT_TYPE hkey_num;
@@ -496,7 +579,45 @@ static void f_sid_account(INT32 args)
   
 }
 
-
+/*! @decl object LogonUser(string username, string|int(0..0) domain, @
+ *!                        string password, int|void logon_type, @
+ *!                        int|void logon_provider)
+ *!
+ *!   Logon a user.
+ *!
+ *! @param username
+ *!   User name of the user to login.
+ *!
+ *! @param domain
+ *!   Domain to login on, or zero if local logon.
+ *!
+ *! @param password
+ *!   Password to login with.
+ *!
+ *! @param logon_type
+ *!   One of the following values:
+ *!   @int
+ *!     @value LOGON32_LOGON_BATCH
+ *!     @value LOGON32_LOGON_INTERACTIVE
+ *!     @value LOGON32_LOGON_SERVICE
+ *!
+ *!     @value LOGON32_LOGON_NETWORK
+ *!       This is the default.
+ *!   @endint
+ *!
+ *! @param logon_provider
+ *!   One of the following values:
+ *!   @int
+ *!     @value LOGON32_PROVIDER_DEFAULT
+ *!       This is the default.
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns a login token object on success, and zero on failure.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ */
 void f_LogonUser(INT32 args)
 {
   LPTSTR username, domain, pw;
@@ -945,6 +1066,42 @@ static netapibufferfreetype netapibufferfree;
 HINSTANCE netapilib;
 
 
+/*! @decl string|array(string|int) NetUserGetInfo(string username, @
+ *!                                               string|int(0..0) server, @
+ *!                                               int|void level)
+ *!
+ *!   Get information about a network user.
+ *!
+ *! @param username
+ *!   User name of the user to get information about.
+ *!
+ *! @param server
+ *!   Server the user exists on.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!     @value 2
+ *!     @value 3
+ *!     @value 10
+ *!     @value 11
+ *!     @value 20
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserEnum()], @[system.NetGroupEnum()]
+ */
 void f_NetUserGetInfo(INT32 args)
 {
   char *to_free1=NULL,*to_free2=NULL;
