@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.18 1997/11/11 01:58:37 grubba Exp $ */
+/* $Id: blit.c,v 1.19 1997/11/23 05:28:27 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.18 1997/11/11 01:58:37 grubba Exp $
+**!	$Id: blit.c,v 1.19 1997/11/23 05:28:27 per Exp $
 **! class image
 */
 
@@ -104,8 +104,25 @@ static INLINE void getrgb(struct image *img,
 
 void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
 {
+  int ok = 0;
    THREADS_ALLOW();
-   while (size--) *(dest++)=rgb;
+   if(sizeof(rgb.r) == 1)
+   {
+     if(rgb.r == rgb.b && rgb.b == rgb.g)
+       (ok = 1),MEMSET(dest, rgb.r, size*sizeof(rgb_group));
+   } else {
+     if(!rgb.r && !rgb.b && !rgb.g)
+       (ok = 1),MEMSET(dest, 0, size*sizeof(rgb_group));
+   }
+   if(!ok)
+   {
+       int increment = 1;
+       rgb_group *from = dest;
+       *(dest++)=rgb;
+       for (; size > increment; size-=increment,dest+=increment,increment*=2) 
+	 MEMCPY(dest,from,increment*sizeof(rgb_group));
+       MEMCPY(dest,from,size*sizeof(rgb_group));
+   }
    THREADS_DISALLOW();
 }
 

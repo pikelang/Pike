@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.14 1997/11/12 03:40:19 mirar Exp $
+**!	$Id: image.h,v 1.15 1997/11/23 05:28:29 per Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -38,6 +38,11 @@ typedef struct
 {
    float r,g,b;
 } rgbd_group; /* use float, it gets so big otherwise... */
+
+typedef struct
+{
+   float r,g,b,alpha;
+} rgbda_group; /* use float, it gets so big otherwise... */
 
 struct image
 {

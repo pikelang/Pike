@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.64 1997/11/23 03:29:35 per Exp $ */
+/* $Id: image.c,v 1.65 1997/11/23 05:28:28 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.64 1997/11/23 03:29:35 per Exp $
+**!	$Id: image.c,v 1.65 1997/11/23 05:28:28 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.64 1997/11/23 03:29:35 per Exp $");
+RCSID("$Id: image.c,v 1.65 1997/11/23 05:28:28 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -183,6 +183,8 @@ static void exit_image_struct(struct object *obj)
    (THIS->alpha? \
     set_rgb_group_alpha(THIS->img[(x)+(y)*THIS->xsize],THIS->rgb,THIS->alpha): \
     ((pixel(THIS,x,y)=THIS->rgb),0))
+
+#define color_equal(A,B) ((A.r == B.r) && (A.g == B.g) && (A.b == B.b))
 
 #define setpixel_test(x,y) \
    ((((int)x)<0||((int)y)<0||((int)x)>=(int)THIS->xsize||((int)y)>=(int)THIS->ysize)? \
@@ -1100,34 +1102,34 @@ static INLINE void get_rgba_group_from_array_index(rgba_group *rgba,struct array
 }
 
 static INLINE void
-   add_to_rgba_sum_with_factor(rgba_group *sum,
+   add_to_rgbda_sum_with_factor(rgbda_group *sum,
+				rgba_group rgba,
+				float factor)
+{
+  /* NOTE:
+   *	This code MUST be MT-SAFE! (but also fast /per)
+   */
+/*   HIDE_GLOBAL_VARIABLES(); */
+   sum->r=sum->r+rgba.r*factor;
+   sum->g=sum->g+rgba.g*factor;
+   sum->b=sum->b+rgba.b*factor;
+   sum->alpha=sum->alpha+rgba.alpha*factor;
+/*    REVEAL_GLOBAL_VARIABLES(); */
+}
+
+static INLINE void
+   add_to_rgbd_sum_with_factor(rgbd_group *sum,
 			       rgba_group rgba,
 			       float factor)
 {
   /* NOTE:
-   *	This code MUST be MT-SAFE!
+   *	This code MUST be MT-SAFE! (but also fast /per)
    */
-  HIDE_GLOBAL_VARIABLES();
-   sum->r=testrange(sum->r+(INT32)(rgba.r*factor+0.5));
-   sum->g=testrange(sum->g+(INT32)(rgba.g*factor+0.5));
-   sum->b=testrange(sum->b+(INT32)(rgba.b*factor+0.5));
-   sum->alpha=testrange(sum->alpha+(INT32)(rgba.alpha*factor+0.5));
-   REVEAL_GLOBAL_VARIABLES();
-}
-
-static INLINE void
-   add_to_rgb_sum_with_factor(rgb_group *sum,
-			      rgba_group rgba,
-			      float factor)
-{
-  /* NOTE:
-   *	This code MUST be MT-SAFE!
-   */
-  HIDE_GLOBAL_VARIABLES();
-   sum->r=testrange(sum->r+(INT32)(rgba.r*factor+0.5));
-   sum->g=testrange(sum->g+(INT32)(rgba.g*factor+0.5));
-   sum->b=testrange(sum->b+(INT32)(rgba.b*factor+0.5));
-   REVEAL_GLOBAL_VARIABLES();
+/*   HIDE_GLOBAL_VARIABLES(); */
+   sum->r=sum->r+rgba.r*factor;
+   sum->g=sum->g+rgba.g*factor;
+   sum->b=sum->b+rgba.b*factor;
+/*    REVEAL_GLOBAL_VARIABLES(); */
 }
 
 /*
@@ -1199,14 +1201,15 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
       color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
       color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
       color.b = (((long)left.b)*(height-y)+((long)right.b)*(y))/height;
-      if(y && old.r == color.r && old.g == color.g && old.b == color.b)
+      if(y && color_equal(old, color))
       {
 	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
 	dest+=xsize;
       } else {
+	from = dest;
 	for(x=0; x<64; x++) *(dest++) = color;
-	from = (dest-=64);
-	for(;x<length-64;x+=64) MEMCPY((dest+=64), from, 64*sizeof(rgb_group));
+	for(;x<length-64;x+=64,dest+=64) 
+	  MEMCPY(dest, from, 64*sizeof(rgb_group));
 	for(;x<length; x++) *(dest++) = color;
 	dest += xsize-length;
 	old = color;
@@ -1218,7 +1221,7 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
       color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
       color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
       color.b = (((long)left.b)*(height-y)+((long)right.b)*(y))/height;
-      if(y && old.r == color.r && old.g == color.g && old.b == color.b)
+      if(y && color_equal(old, color))
       {
 	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
 	dest+=xsize;
@@ -1236,8 +1239,10 @@ void image_tuned_box(INT32 args)
    INT32 x1,y1,x2,y2,xw,yw,x,y;
    rgba_group topleft,topright,bottomleft,bottomright,sum,sumzero={0,0,0,0};
    rgb_group *img;
+   INT32 ymax;
    struct image *this;
    float dxw, dyw;
+   rgb_group *rows, *cols;
 
    if (args<5||
        sp[-args].type!=T_INT||
@@ -1261,9 +1266,6 @@ void image_tuned_box(INT32 args)
    get_rgba_group_from_array_index(&bottomleft,sp[4-args].u.array,2);
    get_rgba_group_from_array_index(&bottomright,sp[4-args].u.array,3);
 
-#define color_equal(A,B) ((A.r == B.r) && (A.g == B.g) && (A.b == B.b) && (A.alpha == B.alpha))
-
-
    if (x1>x2) x1^=x2,x2^=x1,x1^=x2,
               sum=topleft,topleft=topright,topright=sum,
               sum=bottomleft,bottomleft=bottomright,bottomright=sum;
@@ -1274,10 +1276,6 @@ void image_tuned_box(INT32 args)
    xw=x2-x1;
    yw=y2-y1;
    if(xw == 0 || yw == 0) return;
-
-   dxw = 1.0/(float)xw;
-   dyw = 1.0/(float)yw;
-
    this=THIS;
    THREADS_ALLOW();
 
@@ -1287,53 +1285,65 @@ void image_tuned_box(INT32 args)
      {
        image_tuned_box_leftright(topleft, bottomright, 
 				 this->img+x1+this->xsize*y1, 
-				 xw, this->xsize, yw);
+				 xw+1, this->xsize, yw+1);
        return;
      } 
      else if(color_equal(topleft,topright) && color_equal(bottomleft,bottomright))
      {
        image_tuned_box_topbottom(topleft, bottomleft, 
 				 this->img+x1+this->xsize*y1, 
-				 xw, this->xsize, yw);
+				 xw+1, this->xsize, yw+1);
        return;
      }
 
- 
+   dxw = 1.0/(float)xw;
+   dyw = 1.0/(float)yw;
+   ymax=min(yw,this->ysize-y1);
    for (x=max(0,-x1); x<=xw && x+x1<this->xsize; x++)
    {
 #define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
-      INT32 ymax;
       float tfx1=tune_factor(x,dxw);
       float tfx2=tune_factor(xw-x,dxw);
 
-      ymax=min(yw,this->ysize-y1);
       img=this->img+x+x1+this->xsize*max(0,y1);
       if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
 	 for (y=max(0,-y1); y<ymax; y++)
 	 {
 	    float tfy;
-	    sum=sumzero;
+	    rgbda_group sum={0.0,0.0,0.0,0.0};
+	    rgbd_group rgb;
 
-	    add_to_rgba_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
-	    add_to_rgba_sum_with_factor(&sum,topright,tfy*tfx2);
-	    add_to_rgba_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
-	    add_to_rgba_sum_with_factor(&sum,bottomright,tfy*tfx2);
+	    add_to_rgbda_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
+	    add_to_rgbda_sum_with_factor(&sum,topright,tfy*tfx2);
+	    add_to_rgbda_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
+	    add_to_rgbda_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
-	    set_rgb_group_alpha(*img, sum,sum.alpha);
+	    sum.alpha*=(1.0/255.0);
+
+	    rgb.r=sum.r*sum.alpha+img->r*(1.0-sum.alpha);
+	    rgb.g=sum.g*sum.alpha+img->g*(1.0-sum.alpha);
+	    rgb.b=sum.b*sum.alpha+img->b*(1.0-sum.alpha);
+
+	    img->r=testrange(rgb.r+0.5);
+	    img->g=testrange(rgb.g+0.5);
+	    img->b=testrange(rgb.b+0.5);
+
 	    img+=this->xsize;
 	 }
       else
 	 for (y=max(0,-y1); y<ymax; y++)
 	 {
 	    float tfy;
-	    rgb_group rgbsum={0,0,0};
+	    rgbd_group sum={0,0,0};
 
-	    add_to_rgb_sum_with_factor(&rgbsum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
-	    add_to_rgb_sum_with_factor(&rgbsum,topright,tfy*tfx2);
-	    add_to_rgb_sum_with_factor(&rgbsum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
-	    add_to_rgb_sum_with_factor(&rgbsum,bottomright,tfy*tfx2);
+	    add_to_rgbd_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
+	    add_to_rgbd_sum_with_factor(&sum,topright,tfy*tfx2);
+	    add_to_rgbd_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
+	    add_to_rgbd_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
-	    *img=rgbsum;
+	    img->r=testrange(sum.r+0.5);
+	    img->g=testrange(sum.g+0.5);
+	    img->b=testrange(sum.b+0.5);
 	    img+=this->xsize;
 	 }
 	 
