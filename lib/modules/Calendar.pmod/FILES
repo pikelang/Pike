@@ -40,7 +40,7 @@ Time.pmod
 	some virtual functions filled in.
 	It extends the TimeRanges module.
 
-YMD.pmod
+YMD.pike
 	This contains the base classes of any traditional calendar:
 	Year
 		The Year class, which contains the largest timerange
@@ -100,6 +100,9 @@ Ruleset.pike
 	position and possible other needed stuff later.
 	Any TimeRange object returning a new TimeRange object
 	will transfer the rules in the creation of the object.
+Rule.pmod
+        Contains the classes for the Timezone and Language objects
+        used in a Ruleset object.
 Language.pmod
 	This module keeps the base classes of languages.
 Timezone.pmod
