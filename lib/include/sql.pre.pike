@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pre.pike,v 1.3 1997/01/12 02:34:46 grubba Exp $
+ * $Id: sql.pre.pike,v 1.4 1997/01/14 15:45:08 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -56,7 +56,7 @@ class sql_result {
       }
       return(res);
     }
-    return(master_res->fetch_fields);
+    return(master_res->fetch_fields());
   }
 
   void seek(int skip)
@@ -113,16 +113,22 @@ class sql {
 	  array(mixed) err;
 
 	  err = catch {
-	    master_sql = ((program)program_name)(host||"", db||"",
-						 user||"", password||"");
-	  };
-	  if (err) {
-	    werror(err[0]);
-	    describe_backtrace(err[1]);
-	  }
-	  if (master_sql) {
+	    if (password && password != "") {
+	      master_sql = ((program)program_name)(host||"", db||"",
+						   user||"", password);
+	    } else if (user && user != "") {
+	      master_sql = ((program)program_name)(host||"", db||"", user);
+	    } else if (db && db != "") {
+	      master_sql = ((program)program_name)(host||"", db);
+	    } else if (host && host != "") {
+	      master_sql = ((program)program_name)(host);
+	    } else {
+	      master_sql = ((program)program_name)();
+	    }
 	    return;
-	  } 
+	  };
+	  werror(err[0]);
+	  describe_backtrace(err[1]);
 	}
       }
     }
