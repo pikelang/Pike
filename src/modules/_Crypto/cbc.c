@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.7 1997/03/17 03:11:14 hubbe Exp $
+ * $Id: cbc.c,v 1.8 1997/04/10 02:33:26 nisse Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -260,7 +260,7 @@ static void f_decrypt_block(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to cbc->decrypt_block()\n");
   }
-  if (sp[-1].u.string->len & THIS->block_size) {
+  if (sp[-1].u.string->len % THIS->block_size) {
     error("Bad length of argument 1 to cbc->decrypt_block()\n");
   }
   if (!(result = alloca(sp[-1].u.string->len))) {

@@ -81,7 +81,7 @@ int sha_verify(string message, string signature)
   string s;
   
   hash->update(message);
-  s = hash->digest;
+  s = hash->digest();
   s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
 
   return s == rsa_unpad(BIGNUM(signature, 256)->powm(e, n), 1);

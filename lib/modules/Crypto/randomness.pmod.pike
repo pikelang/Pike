@@ -105,7 +105,7 @@ object reasonably_random()
 
 object really_random(int|void may_block)
 {
-  object res;
+  object res = Stdio.File();
   if (may_block && file_stat(RANDOM_DEVICE))
   {
     if (res->open(RANDOM_DEVICE, "r"))

@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.19 1997/03/23 18:18:55 nisse Exp $
+ * $Id: crypto.c,v 1.20 1997/04/10 02:33:27 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -397,11 +397,10 @@ static void f_pad(INT32 args)
     error("Too many arguments to crypto->pad()\n");
   }
 
-  len = THIS->block_size - 1 - THIS->backlog_len;
-  for (i=0; i < len; i++)
-    THIS->backlog[THIS->backlog_len + i] = my_rand() & 0xff;
+  for (i = THIS->backlog_len; i < THIS->block_size - 1; i++) 
+    THIS->backlog[i] = my_rand() & 0xff;
   
-  THIS->backlog[i] = len;
+  THIS->backlog[THIS->block_size - 1] = 7 - THIS->backlog_len;
 
   push_string(make_shared_binary_string((const char *)THIS->backlog,
 					THIS->block_size));

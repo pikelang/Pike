@@ -7,7 +7,6 @@ import Crypto;
 #define K(a) hex_to_string(a)
 #define H(a) string_to_hex(a)
 
-
 int test_des()
 {
   string *keys = ({ K("0101010101010180"),
@@ -59,7 +58,6 @@ int test_des()
   write(err ? "DES failed!\n" : "DES Ok.\n");
   return err;
 }
-
 
 int test_idea()
 {
@@ -220,5 +218,5 @@ int test_cbc()
 
 int main()
 {
-  return test_des() | test_idea() | test_cbc();
+  return test_des() |  test_idea() | test_cbc();
 }
