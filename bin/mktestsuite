@@ -56,6 +56,10 @@ define(test_any, [[DOTEST(EQ,dnl
 mixed a() { [[$1]]; }
 mixed b() { return [[$2]]; })]])
 
+define(test_any_equal, [[DOTEST(EQUAL,dnl
+mixed a() { [[$1]]; }
+mixed b() { return [[$2]]; })]])
+
 define(test_eq,[[DOTEST(EQ,dnl
 mixed a() { return [[$1]]; }
 mixed b() { return [[$2]]; })]])
