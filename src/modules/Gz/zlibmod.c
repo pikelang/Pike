@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.46 2002/05/31 22:31:40 nilsson Exp $");
+RCSID("$Id: zlibmod.c,v 1.47 2002/08/25 11:03:54 agehall Exp $");
 
 #include "zlib_machine.h"
 
@@ -39,6 +39,7 @@ struct zipper
   int  level;
   int  state;
   struct z_stream_s gz;
+  gzFile gzfile;
 #ifdef _REENTRANT
   DEFINE_MUTEX(lock);
 #endif /* _REENTRANT */
@@ -522,6 +523,288 @@ static void gz_crc32(INT32 args)
    push_int((INT32)crc);
 }
 
+/*! @class gzip_file
+ *! Read-support for GZip files
+ */
+
+/*! @decl int open(string|int file, void|string mode)
+ *! Opens a file for I/O.
+ *! @param file
+ *! The filename or an open filedescriptor for the GZip file to open.
+ *! @param mode
+ *! Mode for the fileoperations. Defaults to read only.
+ *!
+ *! @note
+ *! If the object represents a file, it will first be closed.
+ */
+void gz_file_open(INT32 args)
+{
+  char default_mode[] = "rb";
+  char *mode = default_mode;
+
+  if (THIS->gzfile!=NULL) {
+    gzclose(THIS->gzfile);
+    THIS->gzfile = NULL;
+  }
+
+  if (args<1 || args>2) {
+    Pike_error("Bad number of arguments to file->open()\n"
+	       "Got %d, expected 1 or 2.\n", args);
+  }
+
+  if (sp[-args].type != PIKE_T_STRING &&
+      sp[-args].type != PIKE_T_INT) {
+    Pike_error("Bad parameter 1 to file->open()\n");
+  }
+
+  if (args == 2 && sp[1-args].type != PIKE_T_STRING) {
+    Pike_error("Bad parameter 2 to file->open()\n");
+  } else if (args == 2) {
+    mode = sp[1-args].u.string->str;
+  }
+
+  if (sp[-args].type == PIKE_T_INT) {
+    // We got an FD.
+    THIS->gzfile = gzdopen(dup(sp[-args].u.integer),
+			   mode);
+  } else {
+    THIS->gzfile = gzopen(sp[-args].u.string->str,
+			  mode);
+  }
+
+  pop_n_elems(args);
+  push_int(THIS->gzfile != NULL);
+}
+
+/*! @decl create(void|string gzFile, void|string mode)
+ *! Opens a gzip file for reading.
+ */
+void gz_file_create(INT32 args)
+{
+  THIS->gzfile = NULL;
+  if (args) {
+    gz_file_open(args);
+    if (sp[-1].u.integer == 0) {
+      Pike_error("Failed to open file.\n");
+    }
+    pop_n_elems(1);
+  }
+}
+
+/*! @decl int close()
+ *! closes the file
+ *! @returns 1 if successful
+ */
+void gz_file_close(INT32 args)
+{
+  if (args!=0) {
+    Pike_error("Bad number of arguments to file->close()\n"
+	       "Got %d, expected 0.\n", args);
+  }
+
+  if (THIS->gzfile!=NULL) {
+    gzclose(THIS->gzfile);
+    THIS->gzfile = NULL;
+  }
+
+  push_int(1);
+}
+
+/*! @decl int|string read(int len)
+ *! Reads len (uncompressed) bytes from the file.
+ *! If read is unsuccessful, 0 is returned.
+ */
+void gz_file_read(INT32 args)
+{
+  char *buf;
+  int len;
+  int res;
+
+  if (args!=1) {
+    Pike_error("Bad number of arguments to gz_file->read()\n"
+	       "Got %d, expected 1.\n", args);
+  }
+
+  if (sp[-args].type != PIKE_T_INT) {
+    Pike_error("Bad argument 1 to gz_file->read()\n");
+  }
+
+  if (THIS->gzfile == NULL) {
+    Pike_error("File not open!\n");
+  }
+
+  len = sp[-args].u.integer;
+
+  buf = malloc(sizeof(char) * (len+1));
+
+  pop_n_elems(args);
+
+  res = gzread(THIS->gzfile, buf, len);
+
+  if (res<0) {
+    push_int(0);
+    free(buf);
+    return;
+  }
+
+  buf[res] = '\0';
+
+  push_string(make_shared_string(buf));
+  free(buf);
+}
+
+/*! @decl int write(string data)
+ *! Writes the data to the file.
+ *! @returns the number of bytes written to the file.
+ */
+void gz_file_write(INT32 args)
+{
+  int res = 0;
+
+  if (args!=1) {
+    Pike_error("Bad number of arguments to gz_file->write()\n"
+	       "Got %d, expected 1.\n", args);
+  }
+
+  if (sp[-args].type != PIKE_T_STRING) {
+    Pike_error("Bad argument 1 to gz_file->write()\n");
+  }
+
+  if (THIS->gzfile == NULL) {
+    Pike_error("File not open!\n");
+  }
+
+  res = gzwrite(THIS->gzfile,
+		sp[-args].u.string->str,
+		(unsigned INT32)sp[-args].u.string->len);
+
+  pop_n_elems(args);
+  push_int(res);
+}
+
+/*! @decl int seek(int pos, void|int type)
+ *! Seeks within the file.
+ *! @param pos
+ *! Position relative to the searchtype.
+ *! @param type
+ *! SEEK_SET = set current position in file to pos
+ *! SEEK_CUR = new position is current+pos
+ *! SEEK_END is not supported.
+ *! @returns New position or negative number if seek failed.
+ */
+void gz_file_seek(INT32 args)
+{
+  int res, newpos;
+  int type = SEEK_SET;
+
+  if (args>2) {
+    Pike_error("Bad number of arguments to file->seek()\n"
+	       "Got %d, expected 1 or 2.\n", args);
+  }
+
+  if (sp[-args].type != PIKE_T_INT) {
+    Pike_error("Bad argument 1 to file->seek()\n");
+  }
+
+  if (args == 2 && sp[1-args].type != PIKE_T_INT) {
+    Pike_error("Bad argument 2 to file->seek()\n");
+  }
+  else if (args == 2) {
+    type = sp[1-args].u.integer;
+  }
+
+  if (THIS->gzfile == NULL) {
+    Pike_error("File not open!\n");
+  }
+
+  newpos = sp[-args].u.integer;
+
+  pop_n_elems(args);
+
+  res = gzseek(THIS->gzfile, newpos, type);
+
+  push_int(res);
+}
+
+/*! @decl int seek()
+ *! @returns the current position within the file.
+ */
+void gz_file_tell(INT32 args)
+{
+  if (args!=0) {
+    Pike_error("Bad number of arguments to file->tell()\n"
+	       "Got %d, expected 0.\n", args);
+  }
+
+  if (THIS->gzfile == NULL) {
+    Pike_error("File not open!\n");
+  }
+
+  push_int(gztell(THIS->gzfile));
+
+}
+
+/*! @decl int(0..1) eof()
+ *! @returns 1 if EOF has been reached.
+ */
+void gz_file_eof(INT32 args)
+{
+  if (args!=0) {
+    Pike_error("Bad number of arguments to file->eof()\n"
+	       "Got %d, expected 0.\n", args);
+  }
+
+  push_int(gzeof(THIS->gzfile));
+}
+
+/*! @decl int setparams(int level, int strategy)
+ *! Sets the encoding level and strategy
+ *! @param level
+ *! Level of the compression.
+ *! 0 is the least compression, 9 is max. 8 is default.
+ *! @param strategy
+ *! Set strategy for encoding to one of the following:
+ *! Z_DEFAULT_STRATEGY
+ *! Z_FILTERED
+ *! Z_HUFFMAN_ONLY
+ */
+void gz_file_setparams(INT32 args)
+{
+  int res;
+  if (args!=2) {
+    Pike_error("Bad number of arguments to file->setparams()\n"
+	       "Got %d, expected 2.\n", args);
+  }
+
+  if (sp[-args].type != PIKE_T_INT ||
+      sp[1-args].type != PIKE_T_INT) {
+    Pike_error("Bad type in argument\n");
+  }
+
+  res = gzsetparams(THIS->gzfile,
+		    sp[-args].u.integer,
+		    sp[1-args].u.integer);
+
+  pop_n_elems(args);
+  push_int(res == Z_OK);
+}
+
+static void init_gz_file(struct object *o)
+{
+  mt_init(& THIS->lock);
+  THIS->gzfile = NULL;
+}
+
+static void exit_gz_file(struct object *o)
+{
+  if (THIS->gzfile != NULL)
+    gzclose(THIS->gzfile);
+
+  mt_destroy( & THIS->lock );
+}
+
+/*! @endclass
+ */
 
 /*! @endmodule
  */
@@ -567,6 +850,28 @@ void pike_module_init(void)
   set_exit_callback(exit_gz_inflate);
 
   end_class("inflate",0);
+
+  start_new_program();
+  ADD_STORAGE(struct zipper);
+
+  ADD_FUNCTION("create", gz_file_create, tFunc(tOr(tVoid, tString) tOr(tVoid, tString), tVoid), 0);
+  ADD_FUNCTION("open", gz_file_open, tFunc(tString tOr(tVoid, tString), tInt), 0);
+  ADD_FUNCTION("close", gz_file_close, tFunc(tVoid, tInt), 0);
+  ADD_FUNCTION("read", gz_file_read, tFunc(tInt,tOr(tString,tInt)), 0);
+  ADD_FUNCTION("write", gz_file_write, tFunc(tString,tInt), 0);
+  ADD_FUNCTION("seek", gz_file_seek, tFunc(tInt tOr(tVoid,tInt), tInt), 0);
+  ADD_FUNCTION("tell", gz_file_tell, tFunc(tVoid, tInt), 0);
+  ADD_FUNCTION("eof", gz_file_eof, tFunc(tVoid, tInt), 0);
+  ADD_FUNCTION("setparams", gz_file_setparams, tFunc(tInt tInt, tInt), 0);
+
+  add_integer_constant("SEEK_SET", SEEK_SET, 0);
+  add_integer_constant("SEEK_CUR", SEEK_CUR, 0);
+  add_integer_constant("Z_DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY,0);
+  add_integer_constant("Z_FILTERED", Z_FILTERED,0);
+  add_integer_constant("Z_HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
+  set_init_callback(init_gz_file);
+  set_exit_callback(exit_gz_file);
+  end_class("_file", 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
