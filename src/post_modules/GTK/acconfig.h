@@ -1,5 +1,4 @@
-/* $Id: acconfig.h,v 1.3 2000/03/05 03:48:56 per Exp $ */
-
-/* Define this to get prototypes from X's header-files */
+/* $Id: acconfig.h,v 1.4 2000/12/18 17:53:53 per Exp $ */
 #undef FUNCPROTO
 #undef HAVE_GNOME
+#undef PGTK_AUTO_UTF8

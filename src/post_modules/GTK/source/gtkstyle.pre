@@ -1,50 +1,53 @@
-class style;
+class GTK.Style;
 
-FUNCTION(destroy, "function(void:void)");
+void destroy()
 {
   /* do nothing */
 }
 
-style copy();
-//  Copy this style, and return the new style object
-style attach( GdkWindow to );
-//   Attach a style to a window; this process allocates the colors and
-//   creates the GC's for the style - it specializes it to a
-//   particular visual and colormap. The process may involve the
-//   creation of a new style if the style has already been attached to
-//   a window with a different style and colormap.
+GTK.Style copy();
+//!  Copy this style, and return the new style object
+GTK.Style attach( GDK.Window to );
+//!   Attach a style to a window; this process allocates the colors and
+//!   creates the GC's for the style - it specializes it to a
+//!   particular visual and colormap. The process may involve the
+//!   creation of a new style if the style has already been attached to
+//!   a window with a different style and colormap.
 void detach();
-//  Undo a previous attach
-void apply_default_background( GdkWindow window, int set_bgp, int state_type, ?GdkRectangle area, int x, int y, int width, int height );
-// Set the background of the specified window (or the subarea
-// indicated by the rectangle) to the default background for the state
-// specified by state_type.
-// <p>
-// If set_bgp is true, the background of the widget will be set,
-// otherwise it will only be drawn into the window.</p>
-COPY array GDK.Color &fg[5];
-COPY array GDK.Color &bg[5];
-COPY array GDK.Color &light[5];
-COPY array GDK.Color &dark[5];
-COPY array GDK.Color &mid[5];
-COPY array GDK.Color &text[5];
-COPY array GDK.Color &base[5];
+//!  Undo a previous attach
+void apply_default_background( GDK.Window window,
+                               int set_bgp, int state_type,
+                               ?GDK.Rectangle area,
+                               int x, int y, int width, int height );
+//! Set the background of the specified window (or the subarea
+//! indicated by the rectangle) to the default background for the state
+//! specified by state_type.
+//! <p>
+//! If set_bgp is true, the background of the widget will be set,
+//! otherwise it will only be drawn into the window.</p>
+member array(&GDK.Color(copy),size=5) fg;
+member array(&GDK.Color(copy),size=5) bg;
+member array(&GDK.Color(copy),size=5) light;
+member array(&GDK.Color(copy),size=5) dark;
+member array(&GDK.Color(copy),size=5) mid;
+member array(&GDK.Color(copy),size=5) text;
+member array(&GDK.Color(copy),size=5) base;
 
-COPY member GDK.Color &black;
-COPY member GDK.Color &white;
+member &GDK.Color(copy) black;
+member &GDK.Color(copy) white;
 
-REF member GDK.Font font;
-REF array GDK.Pixmap bg_pixmap[5];
+member GDK.Font(ref) font;
 
-REF array GDK.GC fg_gc[5];
-REF array GDK.GC bg_gc[5];
-REF array GDK.GC light_gc[5];
-REF array GDK.GC dark_gc[5];
-REF array GDK.GC mid_gc[5];
-REF array GDK.GC text_gc[5];
-REF array GDK.GC base_gc[5];
-REF member GDK.GC black_gc;
-REF member GDK.GC white_gc;
+member array(GDK.Pixmap(ref),size=5) bg_pixmap;
+member array(GDK.GC(ref),size=5) fg_gc;
+member array(GDK.GC(ref),size=5) bg_gc;
+member array(GDK.GC(ref),size=5) light_gc;
+member array(GDK.GC(ref),size=5) dark_gc;
+member array(GDK.GC(ref),size=5) mid_gc;
+member array(GDK.GC(ref),size=5) text_gc;
+member array(GDK.GC(ref),size=5) base_gc;
+member GDK.GC(ref) black_gc;
+member GDK.GC(ref) white_gc;
 
 %{
 /* void draw_hline( GDK.Window window, int state_type, int x1, int x2, int y)
@@ -61,3 +64,4 @@ REF member GDK.GC white_gc;
  * void draw_tab( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
  */
 %}
+

@@ -1,11 +1,10 @@
-class menu_item;
-inherit item;
-// Menu items, to be added to menues.
-FUNCTION(create, "function(string|void:void)")
-NAME_ARGS(label);
-// If a string is supplied, a W(Label) widget is created using that
-// string and added to the item. Otherwise, you should add another
-// widget to the list item with -&gt;add().
+class GTK.MenuItem;
+inherit GTK.Item;
+//! Menu items, to be added to menues.
+void create(string|void label)
+//! If a string is supplied, a W(Label) widget is created using that
+//! string and added to the item. Otherwise, you should add another
+//! widget to the list item with -&gt;add().
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
@@ -20,35 +19,36 @@ NAME_ARGS(label);
   pgtk__init_this_object();
 }
 
-void set_submenu( widget menu );
-// Set the submenu for this menu button.
+void set_submenu( GTK.Widget menu );
+//! Set the submenu for this menu button.
 void remove_submenu();
-// Remove the submenu for this menu button.
+//! Remove the submenu for this menu button.
 void set_placement( int dir );
-// (sub menu placement) One of CONST(GTK_DIRECTION)
+//! (sub menu placement) One of CONST(GTK_DIRECTION)
 void configure( int toggle_indicator, int submenu_indicator );
-// First argument is 'show_toggle_indicator', second is
-// 'show_submenu_indicator'.
+//! First argument is 'show_toggle_indicator', second is
+//! 'show_submenu_indicator'.
 void select();
-// Emulate a select signal
+//! Emulate a select signal
 void deselect();
-// Emulate a deselect signal
+//! Emulate a deselect signal
 void activate();
-// Emulate an activate signal
+//! Emulate an activate signal
 void right_justify();
-// Make the menu item stick to the right edge of it's container.
+//! Make the menu item stick to the right edge of it's container.
 member int right_justify;
-// Is the widget right justified?
+//! Is the widget right justified?
 member int submenu_direction;
-// The direction the submenu will be shown in. One of CONST(GTK_DIR_)
+//! The direction the submenu will be shown in. One of CONST(GTK_DIR_)
 member int submenu_placement;
-// The placement of the submenu.
+//! The placement of the submenu.
 member int show_submenu_indicator;
-// Should the submenu indicator be shown?
+//! Should the submenu indicator be shown?
 member int show_toggle_indicator;
-// Should the toggle indicator be shown?
+//! Should the toggle indicator be shown?
 member int toggle_size;
-// The size of the toggle indicator
+//! The size of the toggle indicator
 member int accelerator_width;
-// The width of the accelerator string, in pixels
+//! The width of the accelerator string, in pixels
+
 

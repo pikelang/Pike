@@ -1,35 +1,32 @@
-class GdkGC;
-// A GC, or Graphics Context, is used for most low-level drawing operation.
-// <p>
-// As an example, the foreground color, background color and drawing
-// function is stored in the GC.</p>
-//
-// NOIMG
-FUNCTION(create, "function(object:void)");
-ARGS(GTK.Widget|GDK.Drawable);
-NAME_ARGS(context);
-// The argument is a either a W(Widget) or a GDK(Drawable) in
-// which the gc will be valid.
+class GDK.GC;
+//! A GC, or Graphics Context, is used for most low-level drawing operation.
+//! <p>
+//! As an example, the foreground color, background color and drawing
+//! function is stored in the GC.</p>
+//!
+//! NOIMG
+void create( GTK.Widget|GDK.Drawable context )
+//! The argument is a either a W(Widget) or a GDK(Drawable) in
+//! which the gc will be valid.
 {
   struct object *o;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   get_all_args("'()", args, "%o", &o);
-  if(get_gdkobject(o, Drawable))
-    THIS->obj = (void *)gdk_gc_new( (GdkWindow*)get_gdkobject(o,Drawable) );
+  if(get_gdkobject(o, drawable))
+    THIS->obj = (void *)gdk_gc_new( (GdkWindow*)get_gdkobject(o,drawable) );
   else
     THIS->obj = (void *)gdk_gc_new( GTK_WIDGET(get_gtkobject(o))->window );
 }
-FUNCTION(destoy, "function(void:void)");
-// Free the gc, called automatically by pike when the object is destroyed.
+void destoy()
+//! Free the gc, called automatically by pike when the object is destroyed.
 {
   gdk_gc_destroy( (GdkGC*)THIS->obj );
   destruct(Pike_fp->current_object);
 }
 
-FUNCTION(get_values, "function(void:mapping)");
-RETURNS(mapping(string:mixed));
-// Get all (or rather most) values from the GC.
+mapping(string:mixed) get_values()
+//! Get all (or rather most) values from the GC.
 {
   GdkGCValues v;
   struct svalue *osp;
@@ -47,10 +44,10 @@ RETURNS(mapping(string:mixed));
   push_text( "ts_x_origin" );     push_int( v.ts_x_origin );
   push_text( "ts_y_origin" );     push_int( v.ts_y_origin );
   push_text( "subwindow_mode" );  push_int( v.subwindow_mode );
-  push_text( "clip_mask" );       push_gdkobject( v.clip_mask, Bitmap );
-  push_text( "stipple" );         push_gdkobject( v.stipple, Bitmap );
-  push_text( "tile" );            push_gdkobject( v.tile, Pixmap );
-  push_text( "font" );            push_gdkobject( v.font, Font );
+  push_text( "clip_mask" );       push_gdkobject( v.clip_mask, bitmap );
+  push_text( "stipple" );         push_gdkobject( v.stipple, bitmap );
+  push_text( "tile" );            push_gdkobject( v.tile, pixmap );
+  push_text( "font" );            push_gdkobject( v.font, font );
 
   if( v.font )      gdk_font_ref( v.font );
   if( v.tile )      gdk_pixmap_ref( v.tile );
@@ -58,60 +55,45 @@ RETURNS(mapping(string:mixed));
   if( v.clip_mask ) gdk_pixmap_ref( v.clip_mask );
 
   push_text( "fill" ); push_int( v.fill );
-#ifdef __NT__
-  push_text( "tile" ); push_gdkobject( v.tile, Pixmap );
-#else
-  push_text( "tile" ); push_int( v.tile );
-#endif
   push_text( "function" ); push_int( v.function );
   {
-    GdkColor *f = malloc( sizeof( GdkColor ) );
-    GdkColor *b = malloc( sizeof( GdkColor ) );
+    GdkColor *f = g_malloc( sizeof( GdkColor ) );
+    GdkColor *b = g_malloc( sizeof( GdkColor ) );
     *f = v.foreground;
     *b = v.background;
-    push_text( "foreground" ); push_gdkobject( f, Color );
-    push_text( "background" ); push_gdkobject( b, Color );
+    push_text( "foreground" ); push_gdkobject( f, color );
+    push_text( "background" ); push_gdkobject( b, color );
   }
   f_aggregate_mapping( Pike_sp-osp );
 }
 
-FUNCTION(set_foreground, "function(object:object)");
-ARGS(GDK.Color);
-NAME_ARGS(color);
-RETURNS(GDK.GC);
-// Set the foreground to the specified GDK.Color.
+void set_foreground(GDK.Color color)
+//! Set the foreground to the specified GDK.Color.
 {
   struct object *o;
   get_all_args("set_foreground", args, "%o", &o);
-  gdk_gc_set_foreground( (GdkGC*)THIS->obj, get_gdkobject(o, Color));
+  gdk_gc_set_foreground( (GdkGC*)THIS->obj, get_gdkobject(o, color));
   RETURN_THIS();
 }
-FUNCTION(set_background, "function(object:object)");
-ARGS(GDK.Color);
-NAME_ARGS(color);
-RETURNS(GDK.GC);
-// Set the background to the specified GDK.Color.
+void set_background(GDK.Color color)
+//! Set the background to the specified GDK.Color.
 {
   struct object *o;
   get_all_args("set_background", args, "%o", &o);
-  gdk_gc_set_background( (GdkGC*)THIS->obj, get_gdkobject(o,Color));
+  gdk_gc_set_background( (GdkGC*)THIS->obj, get_gdkobject(o,color));
   RETURN_THIS();
 }
-FUNCTION(set_font, "function(object:object)");
-ARGS(GDK.Font);
-NAME_ARGS(font);
-RETURNS(GDK.GC);
-// Set the font to the specified GDK.Font.
+void set_font(GDK.Font font)
+//! Set the font to the specified GDK.Font.
 {
   struct object *o;
   get_all_args("set_font", args, "%o", &o);
-  gdk_gc_set_font( (GdkGC*)THIS->obj, get_gdkobject(o,Font));
+  gdk_gc_set_font( (GdkGC*)THIS->obj, get_gdkobject(o,font));
   RETURN_THIS();
 }
-FUNCTION(set_clip_origin, "function(int,int:object)");
-NAME_ARGS(x,y);
-RETURNS(GDK.GC);
-// Set the clip mask origin to the specified point.
+
+void set_clip_origin(int x, int y)
+//! Set the clip mask origin to the specified point.
 {
   INT_TYPE x, y;
   get_all_args("set_clip_origin", args, "%d%d", &x, &y);
@@ -119,28 +101,23 @@ RETURNS(GDK.GC);
   RETURN_THIS();
 }
 
-FUNCTION(set_clip_mask, "function(void|object:object)");
-ARGS(GDK.Bitmap);
-NAME_ARGS(mask);
-RETURNS(GDK.GC);
-// Set the clip mask to the specified GDK.Bitmap
+void set_clip_mask(GDK.Bitmap mask)
+//! Set the clip mask to the specified GDK.Bitmap
 {
   if (args == 1)
   {
     struct object *o;
     get_all_args("set_clip_mask", args, "%o", &o);
-    gdk_gc_set_clip_mask( (GdkGC*)THIS->obj, get_gdkobject(o,Bitmap));
+    gdk_gc_set_clip_mask( (GdkGC*)THIS->obj, get_gdkobject(o,bitmap));
   } else
     gdk_gc_set_clip_mask( (GdkGC*)THIS->obj, 0);
 
   RETURN_THIS();
 }
 
-FUNCTION(set_function, "function(int:object)");
-NAME_ARGS(fun);
-RETURNS(GDK.GC);
-// Set the function to the specified one. One of GDK.Xor,
-// GDK.Invert and GDK.Copy.
+void set_function(int fun)
+//! Set the function to the specified one. One of GDK.Xor,
+//! GDK.Invert and GDK.Copy.
 {
   INT_TYPE a;
   get_all_args("set_function", args, "%d", &a);
@@ -148,11 +125,9 @@ RETURNS(GDK.GC);
   RETURN_THIS();
 }
 
-FUNCTION(set_subwindow, "function(int:object)");
-NAME_ARGS(draw_on_subwindows);
-RETURNS(GDK.GC);
-// If set, anything drawn with this GC will draw on subwindows as well
-// as the window in which the drawing is done.
+void set_subwindow(int draw_on_subwindows)
+//! If set, anything drawn with this GC will draw on subwindows as well
+//! as the window in which the drawing is done.
 {
   INT_TYPE a;
   get_all_args("set_subwindow", args, "%d", &a);
@@ -160,3 +135,4 @@ RETURNS(GDK.GC);
   RETURN_THIS();
 }
 /* TODO: a lot of functions left.. */
+

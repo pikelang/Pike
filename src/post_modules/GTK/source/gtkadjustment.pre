@@ -1,33 +1,35 @@
-class adjustment;
-inherit data;
-// The GtkAdjustment object represents a value which has an associated
-// lower and upper bound, together with step and page increments, and
-// a page size. It is used within several GTK+ widgets, including
-// GtkSpinButton, GtkViewport, and GtkRange (which is a base class for
-// GtkHScrollbar, GtkVScrollbar, GtkHScale, and GtkVScale).
-// <p>
-// The GtkAdjustment object does not update the value itself. Instead
-// it is left up to the owner of the GtkAdjustment to control the
-// value.
-// </p><p>
-// The owner of the GtkAdjustment typically calls the value_changed()
-// and changed() functions after changing the value or its
-// bounds. This results in the emission of the "value_changed" or
-// "changed" signal respectively.
-// </p>
+class GTK.Adjustment;
+inherit GTK.Data;
+//! The GtkAdjustment object represents a value which has an associated
+//! lower and upper bound, together with step and page increments, and
+//! a page size. It is used within several GTK+ widgets, including
+//! GtkSpinButton, GtkViewport, and GtkRange (which is a base class for
+//! GtkHScrollbar, GtkVScrollbar, GtkHScale, and GtkVScale).
+//! <p>
+//! The GtkAdjustment object does not update the value itself. Instead
+//! it is left up to the owner of the GtkAdjustment to control the
+//! value.
+//! </p><p>
+//! The owner of the GtkAdjustment typically calls the value_changed()
+//! and changed() functions after changing the value or its
+//! bounds. This results in the emission of the "value_changed" or
+//! "changed" signal respectively.
+//! </p>
 signal changed;
-// The adjustment changed in some way
+//! The adjustment changed in some way
 
 signal value_changed;
-// The value changed
+//! The value changed
 
-FUNCTION(create, "function(void|float,void|float,void|float,void|float,void|float,void|float:void)")
-NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
-// Normal operaion: w(Adjustment);
-// using no arguments gives defaults of 0.0 1.0 0.0 0.01 0.01 1.0.
-// If you want to specify all values, they are:
-// value, lower, upper, step_increment, page_increment and page_size
-// All are floating point values. For most widgets the unit is pixels.
+void create(void|float value, void|float lower, void|float upper,
+            void|float step_increment, void|float page_increment,
+            void|float page_size )
+//! Normal operaion: GTK.Adjustment()
+//!
+//! Using no arguments gives defaults of 0.0 1.0 0.0 0.01 0.01 1.0.
+//! If you want to specify all values, they are:
+//! value, lower, upper, step_increment, page_increment and page_size
+//! All are floating point values. For most widgets the unit is pixels.
 {
   FLOAT_TYPE l=0.0, u=1.0, v=0.0, si=0.01, pi=0.01, ps=1.0;
   pgtk_verify_setup();
@@ -46,33 +48,34 @@ NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
   push_int( 0 );
 }
 void set_value( float to );
-// Set the value component.
+//! Set the value component.
 member float value;
-// Get the value component.
+//! Get the value component.
 member float lower;
-// Get the lower limit
+//! Get the lower limit
 setmember float lower;
-// Set the lower limit.
+//! Set the lower limit.
 setmember float upper;
-// Set the upper limit.
+//! Set the upper limit.
 member float upper;
-// get the upper limit.
+//! get the upper limit.
 setmember float step_increment;
-// Set the step increment (arrow click)
+//! Set the step increment (arrow click)
 member float step_increment;
-// Get the step increment (arrow click)
+//! Get the step increment (arrow click)
 setmember float page_increment;
-// Set the page increment (page down or through click)
+//! Set the page increment (page down or through click)
 member float page_increment;
-// Get the page increment (page down or through click)
+//! Get the page increment (page down or through click)
 setmember float page_size;
-// Set the page size (the actual size of a page)
+//! Set the page size (the actual size of a page)
 member float page_size;
-// Get the page size (the actual size of a page)
+//! Get the page size (the actual size of a page)
 
 void clamp_page( float lower, float upper );
-// Updates the GtkAdjustment value to ensure that the range between
-// lower and upper is in the current page (i.e. between value and
-// value + page_size). If the range is larger than the page size, then
-// only the start of it will be in the current page. A "changed"
-// signal will be emitted if the value is changed.
+//! Updates the GtkAdjustment value to ensure that the range between
+//! lower and upper is in the current page (i.e. between value and
+//! value + page_size). If the range is larger than the page size, then
+//! only the start of it will be in the current page. A "changed"
+//! signal will be emitted if the value is changed.
+

@@ -1,6 +1,7 @@
-class data;
-// A class inherited by all objects used to store data (they are not widgets)
+class GTK.Data;
+//! A class inherited by all objects used to store data (they are not widgets)
+inherit GTK.Object;
 signal disconnect;
-inherit object;
+
 
 

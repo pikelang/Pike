@@ -1,12 +1,12 @@
-class GdkPixmap;
-inherit GdkDrawable;
-// This class creates a GDK.Pixmap from either an GDK.Image or
-// Image.image object (or a numeric ID, see your X-manual for XIDs).
-// <p> The GDK.Pixmap object can be used in a lot
-// of different GTK widgets.  The most notable is the W(Pixmap)
-// widget.</p>
-//
-// NOIMG
+class GDK.Pixmap;
+inherit GDK.Drawable;
+//! This class creates a GDK.Pixmap from either an GDK.Image or
+//! Image.image object (or a numeric ID, see your X-manual for XIDs).
+//! <p> The GDK.Pixmap object can be used in a lot
+//! of different GTK widgets.  The most notable is the W(Pixmap)
+//! widget.</p>
+//!
+//! NOIMG
 %{
 #ifdef __NT__
 #include <gdk/win32/gdkwin32.h>
@@ -16,10 +16,8 @@ inherit GdkDrawable;
 
 GdkImage *pgtk_pixmap_setup( struct object *o, int *free)
 {
-  if(get_gdkobject( o, Image ))
-  {
-    return get_gdkobject( o, Image );
-  }
+  if(get_gdkobject( o, image ))
+    return get_gdkobject( o, image );
   else
   {
     *free=1;
@@ -39,11 +37,9 @@ void pgtk__pixmap_draw( GdkImage *i )
 }
 %}
 
-FUNCTION(create, "function(int|object:void)")
-ARGS(object(GDK.Image)|object(Image.image)|int);
-NAME_ARGS(image|xid);
-// Create a new GDK.Pixmap object.
-// Argument is a GDK.Image object or a Image.image object
+void create(int|object image)
+//! Create a new GDK.Pixmap object.
+//! Argument is a GDK.Image object or a Image.Image object
 {
   GdkImage *i;
   int f = 0;
@@ -75,15 +71,12 @@ NAME_ARGS(image|xid);
   }
 }
 
-FUNCTION(set, "function(object:object)");
-RETURNS(GDK.Image);
-ARGS(object(GDK.Image)|object(Image.image));
-NAME_ARGS(image);
-// Argument is a GDK.Image object or an Image.image object.
-// It is much faster to use an gdkImage object, especially one
-// allocated in shared memory. This is only an issue if you are
-// going to change the contents of the pixmap often, toggling between
-// a small number of images.
+void set(GDK.Image|Image.Image image)
+//! Argument is a GDK.Image object or an Image.image object.
+//! It is much faster to use an gdkImage object, especially one
+//! allocated in shared memory. This is only an issue if you are
+//! going to change the contents of the pixmap often, toggling between
+//! a small number of images.
 {
   struct object *o;
   int f = 0;
@@ -95,8 +88,8 @@ NAME_ARGS(image);
   RETURN_THIS();
 }
 
-FUNCTION(destroy, "function(void:void)");
-// Destructor. Destroys the pixmap.
+void destroy()
+//! Destructor. Destroys the pixmap.
 {
   if(THIS->obj)
     gdk_pixmap_unref( (void *)THIS->obj );
@@ -107,14 +100,15 @@ FUNCTION(destroy, "function(void:void)");
   THIS->extra_data = 0;
 }
 
-FUNCTION(ref, "function(void:object)");
+void ref()
 {
   gdk_pixmap_ref( (void *)THIS->obj );
   RETURN_THIS();
 }
 
-FUNCTION(unref, "function(void:object)");
+void unref()
 {
   gdk_pixmap_unref( (void *)THIS->obj );
   RETURN_THIS();
 }
+

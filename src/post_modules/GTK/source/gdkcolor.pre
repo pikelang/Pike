@@ -1,14 +1,13 @@
-class GdkColor;
-// The GDK.Color object is used to represent a color.
-// When you call GDK.Color(r,g,b) the color will be allocated
-// from the X-server. The constructor can return an  exception if there are
-// no more colors to allocate.
-// NOIMG
-FUNCTION(create, "function(object|int,int|void,int|void:void)")
-NAME_ARGS(r|color,g,b);
-// r g and b are in the range 0 to 255, inclusive.
-// If color is specified, it should be an Image.Color object, and the
-// only argument.
+class GDK.Color;
+//! The GDK.Color object is used to represent a color.
+//! When you call GDK.Color(r,g,b) the color will be allocated
+//! from the X-server. The constructor can return an  exception if there are
+//! no more colors to allocate.
+//! NOIMG
+void create(object|int color|r,int|void g,int|void b)
+//! r g and b are in the range 0 to 255, inclusive.
+//! If color is specified, it should be an Image.Color object, and the
+//! only argument.
 {
   INT_TYPE r,g,b;
   GdkColormap *col = gdk_colormap_get_system();
@@ -30,7 +29,7 @@ NAME_ARGS(r|color,g,b);
     b*=257;
   }
 
-  c = malloc(sizeof(GdkColor));
+  c = g_malloc(sizeof(GdkColor));
   THIS->obj = (void *)c;
   c->red   = r;
   c->green = g;
@@ -38,14 +37,14 @@ NAME_ARGS(r|color,g,b);
   c->pixel = 0;
   if(!gdk_color_alloc( col, c ))
   {
-    free(c);
+    g_free(c);
     THIS->obj = 0;
     Pike_error("Failed to allocate color.\n");
   }
 }
 
-FUNCTION(rgb, "function(void:array(int))")
-// Returns the red green and blue color components as an array.
+array(int) rgb()
+//! Returns the red green and blue color components as an array.
 {
   push_int(((GdkColor *)THIS->obj)->red/257);
   push_int(((GdkColor *)THIS->obj)->green/257);
@@ -53,33 +52,33 @@ FUNCTION(rgb, "function(void:array(int))")
   f_aggregate(3);
 }
 
-FUNCTION(red, "function(void:int)")
-// Returns the red color component.
+int red()
+//! Returns the red color component.
 {
   push_int(((GdkColor *)THIS->obj)->red/257);
 }
 
-FUNCTION(green, "function(void:int)")
-// Returns the green color component.
+int green()
+//! Returns the green color component.
 {
   push_int(((GdkColor *)THIS->obj)->green/257);
 }
 
-FUNCTION(blue, "function(void:int)")
-// Returns the blue color component.
+int blue()
+//! Returns the blue color component.
 {
   push_int(((GdkColor *)THIS->obj)->blue/257);
 }
 
-FUNCTION(pixel, "function(void:int)")
-// Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK.Image->set_pixel</a>.
+int pixel()
+//! Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK.Image->set_pixel</a>.
 {
   push_int(((GdkColor *)THIS->obj)->pixel);
 }
 
-FUNCTION(image_color_object, "function(void:object)");
-// Return a Image.Color.Color instance.<br />
-// This gives better precision than the rgb function.
+Image.Color.Color image_color_object()
+//! Return a Image.Color.Color instance.<br />
+//! This gives better precision than the rgb function.
 {
   unsigned char colorname[4+4+4+2];
   sprintf( colorname, "#%04x%04x%04x",
@@ -93,13 +92,15 @@ FUNCTION(image_color_object, "function(void:object)");
   pgtk_index_stack(colorname);
 }
 
-FUNCTION(destroy, "function(void:void)")
-// Destroys the color object. Please note that this function does
-// _not_ free the color from the X-colormap right now.
+void destroy()
+//! Destroys the color object. Please note that this function does
+//! not free the color from the X-colormap (in case of pseudocolor)
+//! right now.
 {
   if(THIS->obj)
   {
-    free(THIS->obj);
+    g_free(THIS->obj);
     THIS->obj = 0;
   }
 }
+

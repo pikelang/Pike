@@ -1,7 +1,7 @@
 require gnome;
-class gnome_paper_selector;
-inherit vbox;
-// IMG: Gnome.PaperSelector()
+class Gnome.PaperSelector;
+inherit GTK.Vbox;
+//! IMG: Gnome.PaperSelector()
 void create();
 string get_name();
 float get_width();
@@ -10,3 +10,4 @@ float get_left_margin();
 float get_right_margin();
 float get_top_margin();
 float get_bottom_margin();
+

@@ -100,8 +100,8 @@ int data_offset( string what )
 string S( string what, int|void nul, int|void nq, int|void ind )
 {
   if( nq == 2 )
-    return sprintf("((char *)__pgtk_string_data+0x%x)",data_offset(what+(nul?"\0":"")));
-  return sprintf("/* %O */\n%s((char*)__pgtk_string_data+0x%x)",
+    return sprintf("(PSTR+0x%x)",data_offset(what+(nul?"\0":"")));
+  return sprintf("/* %O */\n%s(PSTR+0x%x)",
                  (nq?what:replace(what,"%","%%")),
                  " "*ind,
                  (data_offset(what+(nul?"\0":"")))
@@ -154,11 +154,33 @@ class Function(Class parent,
   string pike_add( )
   {
     string type = function_type( pike_type( ) );
-    return sprintf("    quick_add_function(%s,%d,p%s,%s,%d,"
-                   "%s,OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);\n",
-                   S(name,0,1,27), strlen(name),
-                   c_name(), S(type,0,2,27),
-                   strlen(type), (is_static()?"ID_STATIC":"0"));
+    string res="";
+    void low_do_emit( string name )
+    {
+      res += sprintf("    quick_add_function(%s,%d,p%s,%s,%d,\n                          "
+                     "%s,OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);\n",
+                     S(name,0,1,27), strlen(name),
+                     c_name(), S(type,0,2,27),
+                     strlen(type), (is_static()?"ID_STATIC":"0"));
+    };
+    array names = ({ name });
+    switch( name )
+    {
+     case "union": names += ({ "`|" }); break;
+     case "subtract": names += ({ "`-" }); break;
+     case "intersect": names += ({ "`&" }); break;
+     case "equal": names += ({ "`==" }); break;
+     case "lt": names += ({ "`<" }); break;
+     case "gt": names += ({ "`>" }); break;
+     case "xor": names += ({ "`^" }); break;
+     case "not": names += ({ "`~" }); break;
+     case "_add": names += ({ "`+" }); break;
+     case "_index": names += ({ "`[]", "`->" }); break;
+    }
+
+
+    foreach( names, string n ) low_do_emit( n );
+    return res;
   }
 
   static string prefix( Class c )
@@ -230,16 +252,26 @@ class Function(Class parent,
 
       /* Arguments now fetched. Time to call the function. :-) */
       int rv = a;
+      if( name == "create" )
+      {
+        if( has_prefix( parent->name, "Gnome" ) )
+          emit("    pgtk_verify_gnome_setup();\n" );
+        else
+          emit("    pgtk_verify_setup();\n" );
+        emit("  pgtk_verify_not_inited();\n");
+        emit( "  THIS->obj =  (void *)");
+      } else
+        emit("  pgtk_verify_inited();\n");
+
       if( return_type->name != "void" )
       {
         emit("  {\n");
-        emit("  "+return_type->c_declare( rv = a+1 ) );
+        emit("  "+return_type->c_declare( rv = a+1, 1 ) );
         emit("    a"+rv+" = ");
         if( classes[ return_type->name ] )
-        {
           emit( " ("+classes[ return_type->name ]->c_type()+" *)" );
-        }
       }
+
 
       emit( "  "+c_name() + "( " );
       if( name != "create" )
@@ -264,7 +296,13 @@ class Function(Class parent,
       }
       else
       {
-        emit("  RETURN_THIS();\n");
+        if( name != "create" )
+          emit("  RETURN_THIS();\n");
+        else
+        {
+          emit( "  my_pop_n_elems( args );\n" );
+          emit( "  push_int( 0 );\n" );
+        }
       }
       a = 0;
       foreach( arg_types, Type t )
@@ -273,6 +311,8 @@ class Function(Class parent,
           emit( t->c_free( a ) );
         a += t->c_stack_consumed( a );
       }
+      if( name == "create" )
+        emit( "  pgtk__init_object( Pike_fp->current_object );\n");
       emit("}\n\n");
     }
     return res;
@@ -290,8 +330,8 @@ class Signal( string name )
 
   string pike_add( )
   {
-    return "  add_string_constant( "+S("s_"+pike_name(),1)+", "+
-           S(pike_name(),1)+", 0 );\n";
+    return "  add_string_constant( "+S("s_"+pike_name(),1,0,27)+", "+
+           S(pike_name(),1,0,27)+", 0 );\n";
   }
 
   static string _sprintf()
@@ -314,24 +354,31 @@ class Member( string name, Type type, int set,
 
   string pike_type( )
   {
-    return "function(void:"+type->pike_type()+")";
+    if( set )
+      return "function("+type->pike_type()+":void)";
+    else
+      return "function(void:"+type->pike_type()+")";
   }
 
   string pike_add( )
   {
-    string type = function_type( pike_type( ) );
-    return sprintf("    quick_add_function(%s,%d,p%s,%s,%d,"
+    string tp = function_type( pike_type( ) );
+    if( set || classes[ type->name ] )
+      return sprintf("    quick_add_function(%s,%d,p%s,\n                       %s,%d,"
+                     "0,OPT_EXTERNAL_DEPEND);\n",
+                     S(name,0,1,27), strlen(name),
+                     c_name(), S(tp,0,2,27), strlen(tp));
+    return sprintf("    quick_add_function(%s,%d,p%s,\n                       %s,%d,"
                    "0,OPT_EXTERNAL_DEPEND);\n",
-                   S(name,0,1,27), strlen(name),
-                   c_name(), S(type,0,2,27),
-                   strlen(type));
+                   S("get_"+name,0,1,27), strlen("get_"+name),
+                   c_name(), S(tp,0,2,27), strlen(tp));
   }
 
   string c_name( )
   {
     if( parent->c_name() == "" )
       return "gtk_"+name;
-    return parent->c_name()+"_get_"+name;
+    return set ? parent->c_name()+"_"+name : parent->c_name()+"_get_"+name;
   }
 
   string c_prototype()
@@ -341,13 +388,25 @@ class Member( string name, Type type, int set,
 
   string c_defenition()
   {
-    return
-      "void p"+c_name()+#"( INT32 args )\n"
-      "{\n"
-      "  if( args )\n"
-      "    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
-      +type->direct_push( parent->c_cast( "THIS->obj" ) +"->"+name )+
-      "\n}\n\n";
+    if( set )
+      return
+        "void p"+c_name()+"( INT32 args )\n"
+        "{\n"
+        + type->c_declare( 0 )+
+        "  if( args != 1 )\n"
+        "    Pike_error("+S("Wrong number of arguments.\n",1,1,16)+");\n"
+        + type->c_fetch_from_stack( 0 ) +
+        "  "+parent->c_cast( "THIS->obj" )+"->"+name[4..]+" = "+type->c_pass_to_function(0)+";\n"
+        "  RETURN_THIS();\n"
+        "}\n";
+    else
+      return
+        "void p"+c_name()+#"( INT32 args )\n"
+        "{\n"
+        "  if( args )\n"
+        "    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
+        +type->direct_push( parent->c_cast( "THIS->obj" ) +"->"+name )+
+        "\n}\n\n";
   }
 
   static string _sprintf()
@@ -368,18 +427,23 @@ class Type
   
   array _s_modifiers;
 
-  string pike_type( )
+  string pike_type( int|void nc )
   {
+    if( subtypes )
+      return subtypes->pike_type(1)*"|";
+    string optp = "";
+    if( opt )
+      optp = "|void";
     switch( name )
     {
-     case "uint":  case "int":     return "int";
-     case "float": case "double":  return "float";
-     case "string":                return "string";
+     case "uint":  case "int":     return "int"+optp;
+     case "float": case "double":  return "float"+optp;
+     case "string":                return "string"+optp;
      case "array":
        {
-         if( !c_inited ) catch(c_init());
+         if( !nc && !c_inited ) catch(c_init());
          if( array_type )
-           return "array("+array_type->pike_type()+")";
+           return "array("+array_type->pike_type()+")"+optp;
          return "array";
        }
      case "mapping":
@@ -387,13 +451,16 @@ class Type
      case "callback":
        return "function,mixed";
      case "function":
-       if( search( get_modifiers(), "callback" ) )
-         return "function,mixed";
-       return "function";
+       if( has_value( get_modifiers(), "callback" ) )
+         return "function"+optp+",mixed"+optp;
+       return "function"+optp;
      default:
        if( classes[ name ] )
-         return "object";
-       return "mixed";
+         if( opt )
+           return "object"+optp;
+         else
+           return "zero|object";
+       return "mixed"+optp;
     }
   }
 
@@ -404,7 +471,7 @@ class Type
     {
       subtypes = map( q, Type );
       int ind;
-      if( (ind = search( subtypes->name, "void" )) != -1 )
+      if( (ind = has_value( subtypes->name, "void" )) )
       {
         opt = 1;
         subtypes = subtypes[..ind-1] + subtypes[ind+1..];
@@ -478,7 +545,9 @@ class Type
     switch( name )
     {
      case "array":
-       if( !array_size )   throw("Cannot push array of unknown size");
+       if( !array_size )
+         throw(sprintf("Cannot push array of unknown size (%O)",
+                       this_object()));
        if( !array_type )   throw("Cannot push array(mixed)"); 
        return
          "  {\n"
@@ -524,7 +593,7 @@ class Type
     {
      case "string":
        _push = "  PGTK_PUSH_GCHAR( %s );";
-       if( search( get_modifiers(), "free"  ) != -1 )
+       if( has_value( get_modifiers(), "free"  ) )
          _push += "\n  g_free( %[0]s );";
        return sprintf( _push, vv );
 
@@ -590,7 +659,7 @@ class Type
      case "uint":
        declare = "  gint a%[0]d = 0;\n";
        if( name == "uint")
-         declare = "  guint a%[0]d = 0;\n";
+         declare = " guint a%[0]d = 0;\n";
        fetch = "  a%[0]d = (gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
        pass =  "a%[0]d";
        break;
@@ -608,7 +677,7 @@ class Type
        break;
 
      case "string":
-       declare = "  gchar *a%[0]d = 0;\n";
+       declare = " CONST gchar *a%[0]d = 0;\n";
        fetch =
              " if( Pike_sp[%[0]d-args].type != PIKE_T_STRING )\n"
              "   Pike_error( "+S("Illegal argument %d, expected string\n",1,0,16)+",\n                %[0]d);\n"
@@ -684,6 +753,8 @@ class Type
                                          "got %d\n", 1, 0, 16)+", "+
                            array_size+", _a%[0]d->size );\n";
               }
+              else if( has_prefix(opt, "cast" )  )
+                ;
               else
               {
                 if( array_type ||
@@ -698,7 +769,7 @@ class Type
 //            throw( sprintf("Cannot push %O", this_object()) );
 //          }
          declare = "  int _i%[0]d;\n  struct array *_a%[0]d = 0;\n  " +
-                 sub+"\n";
+                 "CONST "+sub+"\n";
          pass = "a%d";
          fetch =
 #"
@@ -752,10 +823,14 @@ class Type
     if( !c_inited )c_init();
     return consumed;
   }
-  string c_declare( int a )
+  string c_declare( int a, int|void const )
   {
     if( !c_inited )c_init();
-    return declare && sprintf(declare, a);
+    if(!declare) return 0;
+    if( const && !free )
+      return sprintf( replace( declare, "CONST", "const" ), a );
+    return sprintf( replace( declare, "CONST", "" ), a );
+           
   }
 
   string c_free( int a )
@@ -773,7 +848,16 @@ class Type
   string c_pass_to_function( int a )
   {
     if( !c_inited )c_init();
-    return pass && sprintf(pass,a);
+    if( pass )
+    {
+      foreach( get_modifiers(), string m )
+        if( classes[m] )
+          return classes[m]->c_cast( sprintf(pass,a) );
+        else if( sscanf( m,"cast=%s", m ) )
+          return replace(m,"_"," ")+sprintf(pass,a);
+
+      return sprintf(pass,a);
+    }
   }
 }
 
@@ -849,7 +933,7 @@ class Class( string name, string file, int line )
     string cn = (name/".")[-1];
     if( mn == cn )
       return mn;
-    if( mn == "Gnome" && (search( cn, "Applet" ) == 0) )
+    if( mn == "Gnome" && (has_prefix( cn, "Applet" ) ) )
       return lower_case(unsillycaps(cn));
     cn = replace( cn, ({ "GL", "GC","XML","CList","CTree" }),
                       ({ "Gl","Gc","Xml","Clist","Ctree"}) );
@@ -913,7 +997,7 @@ class Class( string name, string file, int line )
   string c_cast( string x )
   {
     string f = upper_case(c_name())+"("+x+")";
-    if( !search(f,"GDK_") )
+    if( has_prefix(f,"GDK_") )
       return "((Gdk"+((name-"_")/".")[1]+"*)"+x+")";
     return f;
   }
@@ -1245,7 +1329,7 @@ string parse_pre_file( string file )
          IDENTIFIER("member"); name = tk;
          SEMICOLON("setmember");
          current_class->add_member( current_scope =
-                                    Member( name->text,type, 1,
+                                    Member( "set_"+name->text,type, 1,
                                             file, tk->line, current_class) );
          break;
 
@@ -1313,7 +1397,7 @@ string parse_pre_file( string file )
 
          if( token->text[0] == '#' )
          {
-           if( !search( token->text, "#line" ) )
+           if( has_prefix( token->text, "#line" ) )
            {
              token->text="";
              continue;

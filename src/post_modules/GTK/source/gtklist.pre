@@ -1,11 +1,12 @@
-class list;
-// This class is not yet finished enough to be usable.
+DISABLED {
+class GTK.List;
+//! This class is not yet finished enough to be usable.
 signal selection_changed;
-// ...
+//! ...
 signal select_child;
-// ...
+//! ...
 signal unselect_child;
-// ...
+//! ...
 inherit container;
 void create();
 FUNCTION(selection, "function(void:array(object))");
@@ -137,5 +138,6 @@ member int anchor_state;
 member int selection_mode;
 member int drag_selection;
 member int add_mode;
+};
 
 

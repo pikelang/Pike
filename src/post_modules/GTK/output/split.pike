@@ -98,9 +98,10 @@ static void build_pike_fadds( Class cls, int lvl )
       output_thing( cls->functions[ f ] );
     foreach( sort( indices( cls->members ) ), string f )
       output_thing( cls->members[ f ] );
-    res += ("  add_program_constant("+S(cls->pike_name(),1,0,26)+",\n"
-            "                       (p"+cls->c_name()+
-            "_program = end_program()), 0);\n");
+    if( cls->name != "_global" )
+      res += ("  add_program_constant("+S(cls->pike_name(),1,0,26)+",\n"
+              "                       (p"+cls->c_name()+
+              "_program = end_program()), 0);\n");
     res += "}\n\n";
     toplevel += res;
   } )
@@ -126,6 +127,9 @@ string make_initfun()
     res += "  "+line+"\n";
   return res;
 }
+void post_class_build()
+{
+}
 
 array(string) output( mapping(string:Class) classes,
                       mapping(string:Constant) constants,
@@ -134,13 +138,14 @@ array(string) output( mapping(string:Class) classes,
   head = Stdio.read_bytes( combine_path( sdir, "../pgtk.c.head" ) );
   sfhead = replace( head, "PROTOTYPES", "#include <prototypes.h>" );
   traverse_class_tree( classes, output_class );
+  post_class_build();
   traverse_class_tree( classes, build_protos );
   write_file( dir + "prototypes.h",  protos );
   write_file( dir + "time_stamp", (string)time() );
 
   string pre = "#define EXTPRG\n"+sfhead+"\n", res = "";
   
-  pre += COMPOSE( global_code );
+  pre += Parser.Pike.simple_reconstitute( global_code );
 
   foreach( sort(indices(constants)), string c )
     if( mixed e = catch( initfun += constants[c]->pike_add()) )
@@ -154,17 +159,28 @@ array(string) output( mapping(string:Class) classes,
     q |= indices(c->functions) | indices(c->members);
   q = Array.uniq( q ); sort(map(q,strlen),q);
   foreach( reverse(q), string w ) S(w);
-
+  
   q = Array.uniq(indices(classes)|indices(constants));
   sort(map(q,strlen),q);
   foreach( reverse(q), string w ) S(w,1);
 
   traverse_class_tree( classes, build_pike_fadds );
-  
+
+  foreach( reverse(q), string w ) S(w);
+
+  mapping done = ([]);
+  foreach( values(classes), object c )
+    foreach( indices( c->signals) , string s )
+      if( !done[s] )
+        done[s] = c->signals[s];
+  q = indices( done ); sort(map(q,strlen),q);
+  foreach( reverse(q), string w ) S("s_"+w,1);
+  foreach( values( done ), object t )
+    initfun += t->pike_add();
   pre += get_string_data()+"\n\n";
-  
-// string initfun = "", exitfun="", type_switch="", toplevel ="";
   files = ({ "pgtk.c" }) + files;
+
+
   write_file( dir+"pgtk.c",
               pre + toplevel +
               "void pike_module_init() {\n"+make_initfun()+initfun+"}\n\n"

@@ -7,90 +7,52 @@ OBJS=dummy.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @DATABOX_LIBS@ @PGTK_LIBS@ @GNOME_LIBS@ @LIBGLADE_LIBS@
 MODULE_CFLAGS=@PGTK_CFLAGS@ @GNOME_CFLAGS@ @LIBGLADE_CFLAGS@
 CONFIG_HEADERS=config.h
-MODULE_CLEAN_EXTRA=pgtk*.c
+MODULE_CLEAN_EXTRA=p*.c
 
 # OK.. This is somewhat confusing
 #
 # WITH_GTK == 1
-#   override -> sources1 -> [SET OBJS] -> all
+#   override -> compile1 -> [SET OBJS] -> all
 #
 # WITH_GTK == 0
-#   override -> sources0 -> all
+#   override -> compile0 -> all
 #
 
 MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
 
 
-override:  sources@WITH_GTK@
+override:  compile@WITH_GTK@
 	@:
 
 @dynamic_module_makefile@
 
-sources1:
-	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR)/source
-	@$(MAKE) \
-          CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
-          SOURCES="`cat sources`" doit
-
-always_build_files_to_compile: $(SOURCES)
-	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR)
-
-doit: always_build_files_to_compile
-	@$(MAKE) OBJS="`cat files_to_compile`" all
-
-sources0:
+compile0:
 	@echo "Pike-GTK disabled."
 	$(MAKE) all
 
-docs: docs@WITH_GTK@
-	@:
 
-wmml: wmml@WITH_GTK@
-	@:
-
-docs1:
-	-@mkdir xmldocs
-	-$(MYRUNPIKE) $(SRCDIR)/dump_cursors.pike xmldocs/cursor_
-	$(MYRUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR) docs
-
-
-docs0:
-	@echo "Pike-GTK disabled."
-
-wmml1:
-	-@mkdir wmml
-	-@mkdir wmml/gtkimg
-	-$(MYRUNPIKE) $(SRCDIR)/dump_cursors.pike wmml/gtkimg/cursor_
-	$(MYRUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR) --wmml
-
-
-wmml0:
-	@echo "Pike-GTK disabled."
-pgtk_globals.o: pgtk_globals.c	 Makefile
-	@echo Building pgtk_globals.o with optimization $(OPTIMIZE); \
-	if $(CC) $(CFLAGS) $(OPTIMIZE) -c $< -o $@ ; then : ;\
-	else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
-	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
-	fi
-
+compile1:
+	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
+                   $(SRCDIR)/output/few.pike
+	@$(MAKE) OBJS="`cat files_to_compile`" \
+               CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g'" \
+                  all
 
 #
 # Many machines have problems compiling this file with full optimization.
+# They should not have that any longer  /Per
 #
-pgtk.o: pgtk.c Makefile
-	@echo "Compiling $< with less optimization" ;\
-	if $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ;\
-	else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
-	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
-	fi
-
+#pgtk.o: pgtk.c Makefile
+#	@echo "Compiling $< with less optimization" ;\
+#	if $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ;\
+#	else \
+#	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+#	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
+#	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
+#	fi
 
 # Some hand-made dependencies:
-$(OBJS) : \
+$(OBJS) : pgtk.h \
  $(SRCDIR)/../../global.h \
  $(SRCDIR)/../../svalue.h \
  $(SRCDIR)/../../program.h \

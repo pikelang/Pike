@@ -1,27 +1,30 @@
 require glarea;
-class gl_area;
-inherit drawing_area;
-ADD_INCLUDE(#include <gtkgl/gdkgl.h>);
-ADD_INCLUDE(#include <gtkgl/gtkglarea.h>);
+class GTK.GLArea;
+inherit GTK.DrawingArea;
+add_global {
 #include <gtkgl/gdkgl.h>
 #include <gtkgl/gtkglarea.h>
+}; %{
+#include <gtkgl/gdkgl.h>
+#include <gtkgl/gtkglarea.h>
+%}
 
-void create( intarray gloptions );
+void create( array(int) gloptions );
 void make_current();
 
-FUNCTION(swap_buffers, "function(void:object)");
+void swap_buffers()
 {
   gdk_gl_swap_buffers( GTK_WIDGET(THIS->obj)->window );
   RETURN_THIS();
 }
 
-FUNCTION(wait_gl, "function(void:object)");
+void wait_gl()
 {
   gdk_gl_wait_gl();
   RETURN_THIS();
 }
 
-FUNCTION(wait_gdk, "function(void:object)");
+void wait_gdk()
 {
   gdk_gl_wait_gdk();
   RETURN_THIS();
@@ -52,4 +55,5 @@ constant int GDK_GL_TRANSPARENT_RED_VALUE_EXT;
 constant int GDK_GL_TRANSPARENT_GREEN_VALUE_EXT;
 constant int GDK_GL_TRANSPARENT_BLUE_VALUE_EXT;
 constant int GDK_GL_TRANSPARENT_ALPHA_VALUE_EXT;
+
 

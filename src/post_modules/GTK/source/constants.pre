@@ -686,3 +686,5 @@ constant string GNOME_STOCK_MENU_TEXT_STRIKEOUT;
 constant string GNOME_STOCK_MENU_EXIT;
 constant string GNOME_STOCK_MENU_JUMP_TO;
 endrequire;
+
+

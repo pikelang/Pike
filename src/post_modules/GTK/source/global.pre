@@ -1,11 +1,9 @@
+%{
 #ifndef __NT__
 #include <gdk/gdkx.h>
 #else
 #include <gdk/win32/gdkwin32.h>
 #endif
-require gnome;
-#include <applet-widget.h>
-endrequire;
 /* The main stuff.. */
 
 int pigtk_is_setup = 0, gnome_is_setup = 0;
@@ -21,8 +19,8 @@ static void socket_ready_callback(int fd, void *f)
 int IS_OBJECT_PROGRAM(struct program *X)
 {
   return  !(((X) == pgtk_style_program)
-            || ((X) == pgtk_CTreeNode_program)
-            || ((X) == pgtk_CTreeRow_program)
+            || ((X) == pgtk_ctree_node_program)
+            || ((X) == pgtk_ctree_row_program)
             || ((X) == pgtk_selection_data_program));
 }
 
@@ -43,47 +41,9 @@ static void backend_callback(struct callback *_cb,void *_x,void *_y)
 }
 
 static struct callback *backend_cb;
-FUNCTION(parse_rc, "function(string:void)");
-NAME_ARGS(rc);
-// Takes a string and reads it as a gtkrc file.
-{
-  char *s;
-  get_all_args("parse_rc", args, "%s", &s );
-  gtk_rc_parse_string( s );
-  my_pop_n_elems(args);
-  push_int( 0 );
-/*   gtk_widget_propagate_default_style(); */
-}
 
 #include <errno.h>
 #include "builtin_functions.h"
-
-struct object *pgtk_root_window;
-FUNCTION(root_window, "function(void:object)");
-RETURNS(GDK.Window);
-// Returns the root window of the current display (as a GDK.Window)
-{
-  my_pop_n_elems( args );
-  if(pgtk_root_window)
-  {
-    ref_push_object( pgtk_root_window );
-    return;
-  }
-  pgtk_root_window = low_clone( pgtk_GdkWindow_program );
-  call_c_initializers( pgtk_root_window );
-  /* ugly...*/
-#ifdef GDK_ROOT_PARENT
-  ((struct object_wrapper *)pgtk_root_window->storage)->obj=
-    (void *)GDK_ROOT_PARENT();
-#else
-  ((struct object_wrapper *)pgtk_root_window->storage)->obj=
-    (void *)&gdk_root_parent;
-#endif
-
- add_ref(pgtk_root_window);
-  ref_push_object( pgtk_root_window );
-}
-
 static void do_error( void *dom, int level, char *err, void *data )
 {
   push_text( err );
@@ -95,19 +55,59 @@ static void do_error( void *dom, int level, char *err, void *data )
   pop_stack();
 }
 
+%}
+void parse_rc(string rc)
+//! Takes a string and reads it as a gtkrc file.
+{
+  char *s;
+  get_all_args("parse_rc", args, "%s", &s );
+  gtk_rc_parse_string( s );
+  my_pop_n_elems(args);
+  push_int( 0 );
+/*   gtk_widget_propagate_default_style(); */
+}
+
+
+GDK.Window root_window()
+//! Returns the root window of the current display (as a GDK.Window)
+{
+  static struct object *_pgtk_root_window;
+  my_pop_n_elems( args );
+  if(_pgtk_root_window && _pgtk_root_window->prog )
+  {
+    ref_push_object( _pgtk_root_window );
+    return;
+  } else if( _pgtk_root_window )
+    free_object( _pgtk_root_window );
+  _pgtk_root_window = low_clone( pgdk_window_program );
+  call_c_initializers( _pgtk_root_window );
+  /* ugly...*/
+#ifdef GDK_ROOT_PARENT
+  ((struct object_wrapper *)_pgtk_root_window->storage)->obj=
+    (void *)GDK_ROOT_PARENT();
+#else
+  ((struct object_wrapper *)_pgtk_root_window->storage)->obj=
+    (void *)&gdk_root_parent;
+#endif
+  add_ref( _pgtk_root_window  );
+  ref_push_object( _pgtk_root_window );
+}
+
 
 require gnome;
-
+%{
+#include <applet-widget.h>
 CORBA_Environment gnorba_environment;
+%}
 
-FUNCTION(gnome_init, "function(string,string,array(string),int|void:void)" );
-NAME_ARGS(app_id, app_version, argv, corba_init_flags);
-// Initializes the application. This sets up all of the GNOME
-// internals and prepares them (imlib, gdk/gtk, session-management,
-// triggers, sound, user preferences). If corba init flags are specified,
-// corba initialization is done as well as gnome initialization.
-// corba_init_flags is 0 or more of GNORBA_INIT_SERVER_FUNC (1),
-// GNORBA_INIT_DISABLE_COOKIES (2) and GNORBA_INIT_CORBA_PRIO_HIGH (4)
+void gnome_init(string app_id, string app_version,
+                array(string) argv, int corba_init_flags)
+//! Initializes the application. This sets up all of the GNOME
+//! internals and prepares them (imlib, gdk/gtk, session-management,
+//! triggers, sound, user preferences). If corba init flags are specified,
+//! corba initialization is done as well as gnome initialization.
+//! corba_init_flags is 0 or more of GNORBA_INIT_SERVER_FUNC (1),
+//! GNORBA_INIT_DISABLE_COOKIES (2) and GNORBA_INIT_CORBA_PRIO_HIGH (4)
 {
   char **data;
   char *id, *vers;
@@ -121,12 +121,12 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
     get_all_args("gnome_init", args, "%s%s%a%d", &id, &vers, &a, &flags);
   else
     get_all_args("gnome_init", args, "%s%s%a", &id, &vers, &a);
-  data = malloc(sizeof(char *)*(a->size+1));
+  data = g_malloc(sizeof(char *)*(a->size+1));
   for(argc=0; argc<a->size; argc++)
   {
     if(a->item[argc].type != PIKE_T_STRING)
     {
-      free(data);
+      g_free(data);
       Pike_error("Index %d in the array given as argument to setup_gtk "
 		 "is not a string.\n", argc);
     }
@@ -134,15 +134,6 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   }
   data[argc] = NULL;
 
-  atexit( (void (*)(void))_exit );
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
 
   gtk_set_locale();
   if( args == 4 )
@@ -150,51 +141,36 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   else
     gnome_init( id, vers, argc, data );
 
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
-  atexit( (void (*)(void))_exit );
-
   backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
 
   my_pop_n_elems(args);
-  free(data);
+  g_free(data);
   push_int( 0 );
 }
 
-FUNCTION(applet_widget_gtk_main_quit, "function(void:void)");
-// Exit from the applet_widget_gtk_main function on the next iteration.
+void applet_widget_gtk_main_quit()
+//! Exit from the applet_widget_gtk_main function on the next iteration.
 {
   gtk_main_quit();
 }
 
-FUNCTION(applet_widget_gtk_main, "function(void:void)");
-// Special corba main loop for gnome panel applets
+void applet_widget_gtk_main()
+//! Special corba main loop for gnome panel applets
 {
   applet_widget_gtk_main();
 }
 endrequire;
 
 
-FUNCTION(setup_gtk, "function(array|void,int|void:array)");
-NAME_ARGS(argv, do_not_parse_rc);
-// Initialize GTK, and all that comes with it.
-// Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
-// The single argument, if supplied, is the argument array passed to
-// the program. This is used to set default window titles etc.
-// The second argument, if supplied, indicates that pike specific *rc files
-// should <b>not</b> be parsed.
-// <p>
-// The most common usage is GTK.setup_gtk(argv);</p>
+void setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
+//! Initialize GTK, and all that comes with it.
+//! Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
+//! The single argument, if supplied, is the argument array passed to
+//! the program. This is used to set default window titles etc.
+//! The second argument, if supplied, indicates that pike specific *rc files
+//! should <b>not</b> be parsed.
+//! <p>
+//! The most common usage is GTK.setup_gtk(argv);</p>
 {
   char **data;
   int argc;
@@ -235,48 +211,26 @@ NAME_ARGS(argv, do_not_parse_rc);
     struct array *a;
     get_all_args("setup_gtk", args, "%a", &a);
 
-    data = malloc(sizeof(char *)*(a->size+1));
+    data = g_malloc(sizeof(char *)*(a->size+1));
     for(argc=0; argc<a->size; argc++)
     {
       if(a->item[argc].type != PIKE_T_STRING)
       {
-        free(data);
+        g_free(data);
         Pike_error("Index %d in the array given as argument to setup_gtk "
 		   "is not a string.\n", argc);
       }
       data[argc] = a->item[argc].u.string->str;
     }
   } else {
-    data = malloc(sizeof(char *)*2);
-    data[0] = "Pike GTK";
+    data = g_malloc(sizeof(char *)*2);
+    data[ 0 ] = "Pike GTK";
     argc=1;
   }
-  data[argc] = NULL;
+  data[ argc ] = NULL;
 
-/*  atexit( (void (*)(void))_exit ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
   gtk_set_locale();
   gtk_init( &argc, &data );
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
-/*   g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
-/*  atexit( (void (*)(void))_exit ); */
 
 #ifdef HAVE_SIGACTION
   for(sig=1;sig<NSIG;sig++)
@@ -297,8 +251,8 @@ NAME_ARGS(argv, do_not_parse_rc);
     Display *d = GDK_DISPLAY();
     int fd;
     if(!d) {
+      g_free(data);
       Pike_error("Failed to get GDK display.\n");
-      free(data);
     }
     fd = ConnectionNumber( d );
     set_read_callback( fd, socket_ready_callback, NULL );
@@ -310,13 +264,13 @@ NAME_ARGS(argv, do_not_parse_rc);
    * Now it's time to return the leftovers.
    */
   for( sig=0; sig<argc; sig++ )
-    push_text( data[sig] );
+    PGTK_PUSH_GCHAR( data[ sig ] );
   f_aggregate( argc );
-  free(data);
+  g_free(data);
 }
 
-FUNCTION(flush, "function(void:void)")
-// Flush GDK. Not normally needed, can be useful while doing calculations.
+void flush()
+//! Flush GDK. Not normally needed, can be useful while doing calculations.
 {
   gdk_flush();
   while(g_main_iteration( 0 ) );
@@ -324,8 +278,8 @@ FUNCTION(flush, "function(void:void)")
   push_int(0);
 }
 
-FUNCTION(low_flush, "function(void:void)")
-// Flush X. Not normally needed.
+void low_flush()
+//! Flush X. Not normally needed.
 {
 #ifndef __NT__
   XFlush( GDK_DISPLAY() );
@@ -334,64 +288,60 @@ FUNCTION(low_flush, "function(void:void)")
   push_int( 0 );
 }
 
-FUNCTION(gtk_init, "function(array|void,int|void:array)");
-NAME_ARGS(argc,no_pgtkrc);
-// Low level GTK init function (used by setup_gtk).
-// This function is more or less equivalent to the C-GTK+ function gtk_init
-// setup_gtk does some extra things (such as parsing ~/.pgtkrc).
+void gtk_init(array(string)|void argc, int|void no_pgtkrc)
+//! Low level GTK init function (used by setup_gtk).
+//! This function is more or less equivalent to the C-GTK+ function gtk_init.
+//! setup_gtk does some extra things (such as parsing ~/.pgtkrc).
 {
-  pgtk_global_setup_gtk( args );
+  pgtk_setup_gtk( args );
 }
 
 
-FUNCTION(main, "function(void:void)");
-// Start GTK in blocking mode.<br />
-// Doing this disables asynchronous I/O in pike.<br />
-// You can return -1 from main in pike to run GTK (and the rest of
-// pike) in asynchrounous mode.
+void main()
+//! Start GTK in blocking mode.<br />
+//! Doing this disables asynchronous I/O in pike.<br />
+//! You can return -1 from main in pike to run GTK (and the rest of
+//! pike) in asynchrounous mode.
 {
   gtk_main();
 }
 
-FUNCTION(main_quit, "function(void:void)");
-// Exit from the gtk_main function on the next iteration.
+void main_quit()
+//! Exit from the gtk_main function on the next iteration.
 {
   gtk_main_quit();
 }
 
-FUNCTION(main_level, "function(void:int)");
-// Return the current recursion depth.
+int main_level()
+//! Return the current recursion depth.
 {
   push_int( gtk_main_level() );
 }
 
-FUNCTION(main_iteration_do, "function(int:int)");
-NAME_ARGS(block);
-// Run one iteration in the mainloop. If block is true, wait for an
-// event before returning.
+int main_iteration_do(int block)
+//! Run one iteration in the mainloop. If block is true, wait for an
+//! event before returning.
 {
   INT_TYPE n;
   get_all_args( "gtk_main_iteration_do", args, "%d", &n );
   push_int( gtk_main_iteration_do( n ) );
 }
 
-FUNCTION(true, "function(void:int)");
-// Always returns true.
-// To be used as a signal function.
+int true()
+//! Always returns true.
+//! To be used as a signal function.
 {
   push_int( 1 );
 }
 
-FUNCTION(false, "function(void:int)");
-// Always returns false.
-// To be used as a signal function.
+int false()
+//! Always returns false.
+//! To be used as a signal function.
 {
   push_int( 0 );
 }
 
-FUNCTION(grab_add, "function(object:void)");
-ARGS(GTK.Widget);
-NAME_ARGS(widget);
+void grab_add(GTK.Widget widget)
 {
   struct object *o;
   get_all_args( "gtk_grab_add", args, "%o", &o );
@@ -399,12 +349,11 @@ NAME_ARGS(widget);
   my_pop_n_elems( args );
 }
 
-FUNCTION(grab_remove, "function(object:void)");
-ARGS(GTK.Widget);
-NAME_ARGS(widget);
+void grab_remove(GTK.Widget widget)
 {
   struct object *o;
   get_all_args( "gtk_grab_remove", args, "%o", &o );
   gtk_grab_remove( GTK_WIDGET( get_gtkobject( o ) ) );
   my_pop_n_elems( args );
 }
+

@@ -1,17 +1,21 @@
 require gtkdatabox;
-class databox;
-inherit vbox;
+class GTK.Databox;
+inherit GTK.Vbox;
+%{
 #include <gtkdatabox.h>
-ADD_INCLUDE(#include <gtkdatabox.h>);
-// GtkDatabox is designed to display large amounts of numerical data
-// fast and easy. Thousands of data points (X and Y coordinate) may be
-// displayed without any problems, zooming and scrolling as well as
-// optional rulers are already included.
-// <p>
-// The widget may be used as display for oscilloscopes or other
-// applications that need to display fast changes in their data.
-// </p>
-// IMG:   GTK.Databox x=GTK.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK.Color(Image.Color.red), GTK.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;
+%}
+add_global {
+#include <gtkdatabox.h>;
+};
+//! GtkDatabox is designed to display large amounts of numerical data
+//! fast and easy. Thousands of data points (X and Y coordinate) may be
+//! displayed without any problems, zooming and scrolling as well as
+//! optional rulers are already included.
+//! <p>
+//! The widget may be used as display for oscilloscopes or other
+//! applications that need to display fast changes in their data.
+//! </p>
+//! IMG:   GTK.Databox x=GTK.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK.Color(Image.Color.red), GTK.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;
 
 constant int GTK_DATABOX_NOT_DISPLAYED;
 constant int GTK_DATABOX_POINTS;
@@ -26,7 +30,7 @@ signal selection_stopped;
 signal selection_canceled;
 
 void create();
-// Create a new databox widget
+//! Create a new databox widget
 void show_rulers();
 void hide_rulers();
 
@@ -80,15 +84,14 @@ static void push_value( GtkDataboxValue v )
 }
 %}
 
-FUNCTION(data_get_value, "function(int,int:mapping)");
-NAME_ARGS(x,y);
+mapping(string:float) data_get_value(int x, int y)
 {
   GtkDataboxValue v;
   gtk_databox_data_get_value(GTK_DATABOX(THIS->obj), get_coord(0,args), &v );
   push_value( v );
 }
 
-FUNCTION(data_get_visible_extrema, "function(void:array(mapping))");
+array(mapping(string:float)) data_get_visible_extrema()
 {
   GtkDataboxValue v1,v2;
   gtk_databox_data_get_visible_extrema(GTK_DATABOX(THIS->obj), &v1, &v2 );
@@ -97,7 +100,7 @@ FUNCTION(data_get_visible_extrema, "function(void:array(mapping))");
   f_aggregate(2);
 }
 
-FUNCTION(data_get_extrema, "function(void:array(mapping))");
+array(mapping(string:float)) data_get_extrema()
 {
   GtkDataboxValue v1,v2;
   gtk_databox_data_get_extrema(GTK_DATABOX(THIS->obj), &v1, &v2 );
@@ -107,8 +110,8 @@ FUNCTION(data_get_extrema, "function(void:array(mapping))");
 }
 
 void rescale();
-FUNCTION(rescale_with_values, "function(float,float,float,float:object)");
-NAME_ARGS(minx,miny,maxx,maxy);
+
+void rescale_with_values( float minx, float miny, float maxx, float maxy )
 {
   gtk_databox_rescale_with_values(GTK_DATABOX(THIS->obj),
                                   get_value( 0, args ),
@@ -118,12 +121,17 @@ NAME_ARGS(minx,miny,maxx,maxy);
 
 int set_color(int index, *GDK.Color color );
 int set_data_type( int index, int type, int dot_size );
-// Type is one of CONST(GTK_DATABOX_)
-int data_add_x_y( int nelems, !floatarray x, !floatarray y, *GDK.Color color, int type, int dot_size );
-// Type is one of CONST(GTK_DATABOX_)
-int data_add_x( int nelems, !floatarray x, int shared_Y_index, *GDK.Color color, int type, int dot_size );
-// Type is one of CONST(GTK_DATABOX_)
-int data_add_y( int nelems, !floatarray y, int shared_X_index, *GDK.Color color, int type, int dot_size );
-// Type is one of CONST(GTK_DATABOX_)
+//! Type is one of CONST(GTK_DATABOX_)
+int data_add_x_y( int nelems, array(float,nofree) x, array(float,nofree) y,
+                  *GDK.Color color, int type, int dot_size );
+//! Type is one of CONST(GTK_DATABOX_)
+int data_add_x( int nelems, array(float,nofree) x,
+                int shared_Y_index, *GDK.Color color,
+                int type, int dot_size );
+//! Type is one of CONST(GTK_DATABOX_)
+int data_add_y( int nelems, array(float,nofree) y, int shared_X_index,
+                *GDK.Color color, int type, int dot_size );
+//! Type is one of CONST(GTK_DATABOX_)
 int data_destroy( int index );
 int data_destroy_all( );
+

@@ -83,9 +83,9 @@ static void encode_truecolor_32_argb_swapped( rgb_group *s,
 {
   int *dp = (int *)d;
 #if PIKE_BYTEORDER==1234
-  while(q--) *(dp++) = (s->r<<16) | (s->g<<8) | (s++)->b;
+  while(q--){ *(dp++) = (s->r<<16) | (s->g<<8) | (s)->b;s++;}
 #else
-  while(q--) *(dp++) = ((s->r) | (s->g<<8) | (s++)->b<<16)<<8;
+  while(q--){ *(dp++) = ((s->r) | (s->g<<8) | (s)->b<<16)<<8;s++;}
 #endif
 }
 
@@ -95,9 +95,9 @@ static void encode_truecolor_32_argb( rgb_group *s,
 {
   int *dp = (int *)d;
 #if PIKE_BYTEORDER==4321
-  while(q--) *(dp++) = (s->r<<16) | (s->g<<8) | (s++)->b;
+  while(q--) {*(dp++) = (s->r<<16) | (s->g<<8) | (s)->b;s++;}
 #else
-  while(q--) *(dp++) = ((s->r) | (s->g<<8) | (s++)->b<<16)<<8;
+  while(q--) {*(dp++) = ((s->r) | (s->g<<8) | (s)->b<<16)<<8;s++;}
 #endif
 }
 
@@ -132,13 +132,13 @@ static void encode_truecolor_32_abgr_swapped( rgb_group *s,
 static void encode_truecolor_##X##_##Y( rgb_group *s, unsigned char *d, int q,int w )           \
 {                                                                       \
   while(q--)                                                            \
-    *(d++)=(Z);                                                         \
+    {*(d++)=(Z);s++;}                                                     \
 }                                                                       \
                                                                         \
 static void encode_truecolor_##X##_##Y##_swapped( rgb_group *s, unsigned char *d, int q ,int w) \
 {                                                                       \
-  while(q--)                                                            \
-    *(d++)=(Z);                                                         \
+  while(q--)                                                        \
+    {*(d++)=(Z);s++;}                                                     \
 }
 
 
@@ -148,7 +148,7 @@ static void encode_truecolor_##X##_##Y( rgb_group *s, unsigned char *d, int q,in
 {                                                                       \
   unsigned short *dp = (unsigned short *)d;                             \
   while(q--)                                                            \
-    *(dp++) = (Z);                                                      \
+    {*(dp++) = (Z);s++;}                                                 \
 }                                                                       \
                                                                         \
 static void encode_truecolor_##X##_##Y##_swapped( rgb_group *s, unsigned char *d, int q ,int w) \
@@ -157,7 +157,7 @@ static void encode_truecolor_##X##_##Y##_swapped( rgb_group *s, unsigned char *d
   {                                                                     \
     unsigned short v = (Z);                                             \
     *(d++)=v&255;                                                       \
-    *(d++)=v>>8;                                                        \
+    *(d++)=v>>8;s++;                                                    \
   }                                                                     \
 }
 #else
@@ -168,7 +168,7 @@ static void encode_truecolor_##X##_##Y( rgb_group *s, unsigned char *d, int q,in
   {                                                                     \
     unsigned short v = (Z);                                             \
     *(d++)=v>>8;                                                        \
-    *(d++)=v&255;                                                       \
+    *(d++)=v&255;s++;                                                   \
   }                                                                     \
 }                                                                       \
                                                                         \
@@ -176,23 +176,23 @@ static void encode_truecolor_##X##_##Y##_swapped( rgb_group *s, unsigned char *d
 {                                                                       \
   unsigned short *dp = (unsigned short *)d;                             \
   while(q--)                                                            \
-    *(dp++) = (Z);                                                      \
+    {*(dp++) = (Z);s++;}                                                      \
 }
 #endif
 
-ENCODE_16(565,rgb,((s->r>>3)<<11) | (s->g>>2)<<5 | ((s++)->b>>3));
-ENCODE_16(565,bgr,((s->b>>3)<<11) | (s->g>>2)<<5 | ((s++)->r>>3));
-ENCODE_16(555,rgb,((s->r>>3)<<10) | (s->g>>3)<<5 | ((s++)->b>>3));
-ENCODE_16(555,bgr,((s->b>>3)<<10) | (s->g>>3)<<5 | ((s++)->r>>3));
+ENCODE_16(565,rgb,(((s->r>>3)<<6) | (s->g>>2))<<5 | (s->b>>3));
+ENCODE_16(565,bgr,(((s->b>>3)<<6) | (s->g>>2))<<5 | (s->r>>3));
+ENCODE_16(555,rgb,(((s->r>>3)<<5) | (s->g>>3))<<5 | (s->b>>3));
+ENCODE_16(555,bgr,(((s->b>>3)<<5) | (s->g>>3))<<5 | (s->r>>3));
 
-ENCODE_8(232,rgb,((s->r>>6)<<5) | (s->g>>5)<<2 | ((s++)->b>>6));
-ENCODE_8(332,rgb,((s->r>>5)<<5) | (s->g>>5)<<2 | ((s++)->b>>6));
-ENCODE_8(242,rgb,((s->r>>5)<<6) | (s->g>>4)<<2 | ((s++)->b>>6));
-ENCODE_8(233,rgb,((s->r>>5)<<6) | (s->g>>4)<<3 | ((s++)->b>>5));
-ENCODE_8(232,bgr,((s->b>>6)<<5) | (s->g>>5)<<2 | ((s++)->r>>6));
-ENCODE_8(332,bgr,((s->b>>5)<<5) | (s->g>>5)<<2 | ((s++)->r>>6));
-ENCODE_8(242,bgr,((s->b>>5)<<6) | (s->g>>4)<<2 | ((s++)->r>>6));
-ENCODE_8(233,bgr,((s->b>>5)<<6) | (s->g>>4)<<3 | ((s++)->r>>5));
+ENCODE_8(232,rgb,(((s->r>>6)<<3) | (s->g>>5))<<2 | (s->b>>6));
+ENCODE_8(332,rgb,(((s->r>>5)<<3) | (s->g>>5))<<2 | (s->b>>6));
+ENCODE_8(242,rgb,(((s->r>>5)<<4) | (s->g>>4))<<2 | (s->b>>6));
+ENCODE_8(233,rgb,(((s->r>>5)<<3) | (s->g>>4))<<3 | (s->b>>5));
+ENCODE_8(232,bgr,(((s->b>>6)<<3) | (s->g>>5))<<2 | (s->r>>6));
+ENCODE_8(332,bgr,(((s->b>>5)<<3) | (s->g>>5))<<2 | (s->r>>6));
+ENCODE_8(242,bgr,(((s->b>>5)<<4) | (s->g>>4))<<2 | (s->r>>6));
+ENCODE_8(233,bgr,(((s->b>>5)<<3) | (s->g>>4))<<3 | (s->r>>5));
 
 
 static void encode_truecolor_generic(int rbits, int rshift, int gbits, 
@@ -350,7 +350,7 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
         }
         break;
       case 1: 
-        while (x--) *(d++)=swap_bits[*d];      
+        while (x--) {*(d)=swap_bits[*d]; d++; }
         break;
      }
    }
@@ -375,16 +375,16 @@ void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl )
      for(y=0; y<i->ysize; y++)
      {
        unsigned char *d = dest+y*bpl;
-       for(x=0; x<i->xsize; x++)
-         *d = (s->r + s->g*2 + (s++)->b)>>2;
+       for(x=0; x<i->xsize; x++,s++)
+         *d = (s->r + (s->g<<1) + s->b)>>2;
      }
      return;
    case 2:
      for(y=0; y<i->ysize; y++)
      {
        unsigned short *d = (unsigned short *)(dest+y*bpl);
-       for(x=0; x<i->xsize; x++)
-         *d = (s->r + s->g*2 + (s++)->b)<<6;
+       for(x=0; x<i->xsize; x++,s++)
+         *d = (s->r + (s->g<<1) + s->b)<<6;
      }
      return;
    default:

@@ -1,13 +1,12 @@
-class radio_menu_item;
-inherit menu_item;
-// Exactly like W(RadioButton), but it is an menu item.
-// IMG: GTK.RadioMenuItem("Menu item")
-FUNCTION(create, "function(string|void,object|void:void)")
-NAME_ARGS(title,groupmember);
-// object GTK.RadioMenuItem(string title) - First button (with label)<br />
-// object GTK.RadioMenuItem()->add(widget) - First button (with widget)<br />
-// object GTK.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)<br />
-// object GTK.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
+class GTK.RadioMenuItem;
+inherit GTK.MenuItem;
+//! Exactly like W(RadioButton), but it is an menu item.
+//! IMG: GTK.RadioMenuItem("Menu item")
+void create( ?string title, ?GTK.RadioMenuItem groupmember )
+//! object GTK.RadioMenuItem(string title) - First button (with label)<br />
+//! object GTK.RadioMenuItem()->add(widget) - First button (with widget)<br />
+//! object GTK.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)<br />
+//! object GTK.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
 {
   GSList *mylist = NULL;
   gchar *label=NULL;
@@ -32,12 +31,11 @@ NAME_ARGS(title,groupmember);
   pgtk__init_this_object();
 }
 
-FUNCTION(set_group, "function(object:object)")
-NAME_ARGS(groupmember);
-// the argument is another radio menu item to whose group this button
-// should be added to. It is prefereable to use the second argument to
-// the constructor instead, but if you for some reason want to move
-// the button to another group, use this function.
+void set_group(GTK.RadioMenuItem groupmember)
+//! the argument is another radio menu item to whose group this button
+//! should be added to. It is prefereable to use the second argument to
+//! the constructor instead, but if you for some reason want to move
+//! the button to another group, use this function.
 {
   struct object *o;
   GSList *mylist;
@@ -46,4 +44,5 @@ NAME_ARGS(groupmember);
   gtk_radio_menu_item_set_group( GTK_RADIO_MENU_ITEM( THIS->obj ), mylist );
   RETURN_THIS();
 }
+
 

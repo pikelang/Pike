@@ -1,15 +1,14 @@
-class GdkRectangle;
-FUNCTION(create, "function(int,int,int,int:void)");
-NAME_ARGS(x,y,width,height);
-// Create a new rectangle
-//
-// NOIMG
+class GDK.Rectangle;
+void create(int x, int y, int width, int height)
+//! Create a new rectangle
+//!
+//! NOIMG
 {
   GdkRectangle *r;
   INT_TYPE x, y, w, h;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
-  THIS->obj = (void *)(r=malloc(sizeof(GdkRectangle)));
+  THIS->obj = (void *)(r=g_malloc(sizeof(GdkRectangle)));
   get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &x, &y, &w, &h );
   r->x = x;
   r->y = y;
@@ -18,10 +17,8 @@ NAME_ARGS(x,y,width,height);
   RETURN_THIS();
 }
 
-FUNCTION(set, "function(int,int,int,int:object)");
-RETURNS(GDK.Rectangle);
-NAME_ARGS(x,y,width,height);
-// Set the upper left corner and the size of the rectangle.
+void set(int x, int y, int width, int height )
+//! Set the upper left corner and the size of the rectangle.
 {
   GdkRectangle *r = (GdkRectangle *)THIS->obj;
   INT_TYPE x, y, w, h;
@@ -33,9 +30,8 @@ NAME_ARGS(x,y,width,height);
   RETURN_THIS();
 }
 
-FUNCTION(cast, "function(string:mixed)");
-NAME_ARGS(type);
-// Normally used like (mapping)rectangle or (array)rectangle.
+mixed cast(string type)
+//! Normally used like (mapping)rectangle or (array)rectangle.
 {
   char *type;
   GdkRectangle *r = (GdkRectangle *)THIS->obj;
@@ -65,7 +61,8 @@ NAME_ARGS(type);
   }
 }
 
-FUNCTION(destroy, "function(void:void)")
+void destroy()
 {
-  free(THIS->obj);
+  g_free(THIS->obj);
 }
+

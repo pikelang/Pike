@@ -1,5 +1,5 @@
-class GdkEvent;
-
+class GDK.Event;
+%{
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
 #define RETURN_NIL() do{ my_pop_n_elems( args );push_int( 0 );Pike_sp[-1].subtype=1;return; } while(0)
@@ -19,20 +19,28 @@ static void define_gdkeventstrings( )
 #include "gdkeventstrings.h"
 #undef STRING
 }
+static int last_event_time;
+int pgtk_last_event_time()
+{
+  return last_event_time;
+}
+%}
 
-FUNCTION(destroy, "function(void:void)");
+void destroy()
 {
   if( THIS->obj )
-    free( THIS->obj );
+    g_free( THIS->obj );
   THIS->obj = 0;
 }
 
-FUNCTION(_index, "function(string:mixed)");
+mixed _index(string ind)
 {
   struct pike_string *index;
   GdkEvent *e = (GdkEvent *)THIS->obj;
   if(!e) Pike_error("No event\n");
   get_all_args( "`[]", args, "%S", &index );
+  last_event_time = gdk_event_get_time( e );
+  
   if( !s_type ) define_gdkeventstrings();
   switch( e->type )
   {
@@ -208,7 +216,7 @@ FUNCTION(_index, "function(string:mixed)");
      if( index == s_context )
      {
        pop_n_elems( args );
-       push_gdkobject( e->dnd.context, DragContext);
+       push_gdkobject( e->dnd.context, drag_context);
        return;
      }
      break;
@@ -217,16 +225,16 @@ FUNCTION(_index, "function(string:mixed)");
 }
 
 
-FUNCTION(_sprintf, "function(int:string)" );
+string _sprintf(int flag)
 {
   pop_n_elems( args );
   push_text( "GDK.Event(" );
-  push_text( "type" ); pgtk_GdkEvent__index( 1 );
+  push_text( "type" ); pgdk_event__index( 1 );
   push_text( ")" );
   f_add( 3 );
 }
 
-FUNCTION(cast, "function(string:mixed)");
+mixed cast(string to)
 {
   struct svalue *osp = Pike_sp-args;
   char *a;
@@ -438,11 +446,12 @@ FUNCTION(cast, "function(string:mixed)");
      ref_push_string(s_send_event); push_int( e->dnd.send_event );
      ref_push_string(s_x_root); push_int( e->dnd.x_root );
      ref_push_string(s_y_root); push_int( e->dnd.y_root );
-     ref_push_string(s_context);push_gdkobject( e->dnd.context, DragContext);
+     ref_push_string(s_context);push_gdkobject( e->dnd.context, drag_context);
      break;
   }
   f_aggregate_mapping( Pike_sp - osp );
 }
+
 
 
 

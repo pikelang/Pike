@@ -13,6 +13,7 @@
 #include <stralloc.h>
 #include <mapping.h>
 #include <object.h>
+#include <bignum.h>
 #include <threads.h>
 #include <builtin_functions.h>
 #include <operators.h>
@@ -57,6 +58,7 @@ struct signal_data
 {
   struct svalue cb;
   struct svalue args;
+  int new_interface;
 };
 
 struct my_pixel
@@ -87,11 +89,11 @@ int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b );
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
                              int nparams, GtkArg *params);
 void pgtk_free_signal_data( struct signal_data *s);
+void pgtk_free_object(struct object *o);
 
 void push_gdk_event(GdkEvent *e);
 
-int pgtkbuttonfuncwrapper(GtkObject *obj, struct signal_data *d,  void *foo);
-void *get_swapped_string(struct pike_string *s, int force_wide);
+int pgtk_buttonfuncwrapper(GtkObject *obj, struct signal_data *d,  void *foo);
 int signal_func_wrapper(GtkObject *obj, struct signal_data *d,
                         int nparams, GtkArg *params);
 
@@ -99,8 +101,7 @@ int signal_func_wrapper(GtkObject *obj, struct signal_data *d,
 void pgtk__init_object( struct object *o );
 
 void *get_pgdkobject(struct object *from, struct program *type);
-#define get_gdkobject( X, Y ) \
-              (Gdk##Y *)get_pgdkobject( X, pgtk_Gdk##Y##_program )
+#define get_gdkobject( X, Y ) (void *)get_pgdkobject( X, pgdk_##Y##_program )
 
 
 GtkObject *get_pgtkobject(struct object *from, struct program *type);
@@ -110,10 +111,11 @@ GtkObject *get_pgtkobject(struct object *from, struct program *type);
 void push_gtkobjectclass(void *obj, struct program *def);
 #define push_gtkobject( o ) push_gtkobjectclass(o,pgtk_type_to_program((void*)o))
 
-void pgtk_default__sprintf( int a );
+void pgtk_clear_obj_struct(struct object *o);
+void pgtk_default__sprintf( int n, int a, int l );
 
 void push_pgdkobject(void *obj, struct program *def);
-#define push_gdkobject( X, Y ) push_pgdkobject( X, pgtk_Gdk##Y##_program )
+#define push_gdkobject( X, Y ) push_pgdkobject( X, pgdk_##Y##_program )
 
 
 GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i );
@@ -161,3 +163,43 @@ void pgtk_encode_truecolor_masks(struct image *i,
 # define TIMER_END()
 # define DEBUG_PF(X)
 #endif
+
+#ifdef PGTK_AUTO_UTF8
+void pgtk_push_gchar( gchar *s );
+gchar *pgtk_get_str( struct svalue *sv );
+void pgtk_free_str( gchar *s );
+# define PGTK_ISSTR( X ) ((X)->type == PIKE_T_STRING)
+# define PGTK_GETSTR(X)  pgtk_get_str( X )
+# define PGTK_FREESTR(X) pgtk_free_str( X )
+# define PGTK_PUSH_GCHAR(X) pgtk_push_gchar( X )
+#else
+# define PGTK_ISSTR( X ) (((X)->type==PIKE_T_STRING) && ((X)->u.string->size_shift==0))
+# define PGTK_GETSTR(X)  ((char *)((X)->u.string->str))
+# define PGTK_FREESTR(X)  
+# define PGTK_PUSH_GCHAR(X) push_text( X )
+#endif
+
+#if defined(AUTO_BIGNUM) && defined(INT64)
+/* Somewhat more complex than one could expect. Consider bignums. */
+# define PGTK_ISINT(X)    pgtk_is_int( X )
+# define PGTK_GETINT(X)   pgtk_get_int( X )
+INT64  pgtk_get_int( struct svalue *s );
+int pgtk_is_int( struct svalue *s );
+# define PGTK_PUSH_INT(X) push_int64( (INT64)(X) )
+#else
+# define PGTK_ISINT(X)  ((X)->type == PIKE_T_INT )
+# define PGTK_GETINT(X) ((X)->u.integer)
+# define PGTK_PUSH_INT(X) push_int( (INT_TYPE)(X) )
+#endif
+/* Somewhat more complex than one could expect. Can convert from int
+ * to float, and, if bignum is present, bignum to float.
+ */
+double pgtk_get_float( struct svalue *s );
+int pgtk_is_float( struct svalue *s );
+#define PGTK_ISFLT(X) pgtk_is_float( X )
+#define PGTK_GETFLT(X) pgtk_get_float( X )
+int pgtk_last_event_time();
+
+#define PSTR (char*)__pgtk_string_data
+#define PGTK_CHECK_TYPE(type_object, otype) (((GtkTypeObject*)(type_object))!=NULL &&PGTK_CHECK_CLASS_TYPE(((GtkTypeObject*) (type_object))->klass, (otype)))
+#define PGTK_CHECK_CLASS_TYPE(type_class, otype) (((GtkTypeClass*) (type_class)) != NULL && (((GtkTypeClass*) (type_class))->type == (otype)))

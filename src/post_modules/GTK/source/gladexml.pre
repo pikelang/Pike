@@ -1,23 +1,23 @@
 require libglade;
-class GladeXML;
+class GTK.GladeXML;
 
-// <a href="http://glade.pn.org/">Glade</a> is a free GUI builder for
-// GTK+ and Gnome. It's normally used to create C-code, but can also
-// produce code for other languages. <a
-// href="http://www.daa.com.au/~james/gnome/">Libglade</a> is a utility
-// library that builds the GUI from the Glade XML save files. This
-// module uses libglade and allows you to easily make GUI designs to
-// be used with your Pike applications. Since PiGTK doesn't
-// support Gnome yet, you can only use the normal GTK widgets.
+//! <a href="http://glade.pn.org/">Glade</a> is a free GUI builder for
+//! GTK+ and Gnome. It's normally used to create C-code, but can also
+//! produce code for other languages. <a
+//! href="http://www.daa.com.au/~james/gnome/">Libglade</a> is a utility
+//! library that builds the GUI from the Glade XML save files. This
+//! module uses libglade and allows you to easily make GUI designs to
+//! be used with your Pike applications. Since PiGTK doesn't
+//! support Gnome yet, you can only use the normal GTK widgets.
 
+%{
 #include <errno.h>
 #include "builtin_functions.h"
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.10 2000/12/05 21:08:47 per Exp $");
+RCSID("$Id: gladexml.pre,v 1.11 2000/12/18 17:54:05 per Exp $");
 
-%{
 /* This function is used by signal_autoconnect to handle signal
    connection Basically it uses a mapping and data from the stack to
    do signal callbacks exactly in the same way as normal signals in
@@ -59,7 +59,7 @@ static void pgtk__signal_connect(const gchar *handler_name,
 	    handler_name, signal_name);
     return;
   }
-  b = malloc(sizeof(struct signal_data));
+  b = xalloc(sizeof(struct signal_data));
   assign_svalue_no_free( &b->cb, cb);
   assign_svalue_no_free( &b->args, data);
 
@@ -80,15 +80,13 @@ static void pgtk__signal_connect(const gchar *handler_name,
 }
 %}
 
-FUNCTION(new_from_memory, "function(string,void|string,void|string:object)");
-NAME_ARGS(data, root, domain);
-RETURNS(GTK.GladeXML);
-// Creates a new GladeXML object (and the corresponding widgets) from
-// the string data. Optionally it will only build the interface from
-// the widget node root. This feature is useful if you only want to
-// build say a toolbar or menu from the XML document, but not the
-// window it is embedded in. The third optional argument is used to
-// specify a different translation domain from the default to be used.
+void new_from_memory(string data, string|void root, string|void domain)
+//! Creates a new GladeXML object (and the corresponding widgets) from
+//! the string data. Optionally it will only build the interface from
+//! the widget node root. This feature is useful if you only want to
+//! build say a toolbar or menu from the XML document, but not the
+//! window it is embedded in. The third optional argument is used to
+//! specify a different translation domain from the default to be used.
 {
   GladeXML *xml = 0;
   struct pike_string *data = NULL;
@@ -133,17 +131,15 @@ RETURNS(GTK.GladeXML);
   ref_push_object(Pike_fp->current_object);
 }
 
-FUNCTION(new, "function(string,void|string,void|string:object)");
-RETURNS(GTK.GladeXML);
-NAME_ARGS(filename, root, domain);
-// Creates a new GladeXML object (and the corresponding widgets) from
-// the XML file filename. Optionally it will only build the interface
-// from the widget node root. This feature is useful if you only want
-// to build say a toolbar or menu from the XML file, but not the
-// window it is embedded in. Note also that the XML parse tree is
-// cached to speed up creating another GladeXML object for the same
-// file. The third optional argument is used to specify a different
-// translation domain from the default to be used.
+void new(string filename, string|void root, string|void domain)
+//! Creates a new GladeXML object (and the corresponding widgets) from
+//! the XML file filename. Optionally it will only build the interface
+//! from the widget node root. This feature is useful if you only want
+//! to build say a toolbar or menu from the XML file, but not the
+//! window it is embedded in. Note also that the XML parse tree is
+//! cached to speed up creating another GladeXML object for the same
+//! file. The third optional argument is used to specify a different
+//! translation domain from the default to be used.
 {
   GladeXML *xml = 0;
   char *data = NULL, *root = NULL, *domain = NULL;
@@ -188,9 +184,9 @@ NAME_ARGS(filename, root, domain);
   ref_push_object(Pike_fp->current_object);
 }
 
-FUNCTION(create, "function(void|int:void)");
-// Create a new GladeXML object. The first time it is run the libglade
-// initializing function is automatically run.
+void create(void|int init_gnome)
+//! Create a new GladeXML object. The first time it is run the libglade
+//! initializing function is automatically run.
 {
   pgtk_verify_setup();
   if(!glade_is_setup)
@@ -210,11 +206,10 @@ FUNCTION(create, "function(void|int:void)");
 }
 
 
-FUNCTION(get_widget, "function(string:object)");
-NAME_ARGS(name);
-// This function is used to get get the widget
-// corresponding to name in the interface description. You would use
-// this if you have to do anything to the widget after loading.
+GTK.Widget get_widget(string name)
+//! This function is used to get get the widget
+//! corresponding to name in the interface description. You would use
+//! this if you have to do anything to the widget after loading.
 {
   GtkWidget *widget = NULL;
   GladeXML *xml;
@@ -230,14 +225,13 @@ NAME_ARGS(name);
 }
 
 
-FUNCTION(get_widget_by_long_name, "function(string:object)");
-NAME_ARGS(long_name);
-// This function is used to get the widget
-// corresponding to long_name in the interface description. You would
-// use this if you have to do anything to the widget after
-// loading. This function differs from GladeXML->get_widget, in that
-// you have to give the long form of the widget name, with all its
-// parent widget names, separated by periods.
+GTK.Widget get_widget_by_long_name(string long_name)
+//! This function is used to get the widget
+//! corresponding to long_name in the interface description. You would
+//! use this if you have to do anything to the widget after
+//! loading. This function differs from GladeXML->get_widget, in that
+//! you have to give the long form of the widget name, with all its
+//! parent widget names, separated by periods.
 {
   GtkWidget *widget = NULL;
   GladeXML *xml;
@@ -252,11 +246,9 @@ NAME_ARGS(long_name);
     Pike_error("GladeXML->get_widget_by_long_name(): Invalid argument, expected string.\n");
 }
 
-FUNCTION(get_widget_long_name, "function(object:string)");
-NAME_ARGS(widget);
-ARGS(GTK.Widget);
-// Used to get the long name of a widget that was generated by a
-// GladeXML object.
+string get_widget_long_name(GTK.Widget widget)
+//! Used to get the long name of a widget that was generated by a
+//! GladeXML object.
 {
   struct object *obj;
   GtkWidget *widget = NULL;
@@ -279,11 +271,9 @@ ARGS(GTK.Widget);
 }
 
 
-FUNCTION(get_widget_name, "function(object:string)");
-NAME_ARGS(widget);
-ARGS(GTK.Widget);
-// Used to get the name of a widget that was generated by a
-// GladeXML object.
+string get_widget_name(GTK.Widget widget)
+//! Used to get the name of a widget that was generated by a
+//! GladeXML object.
 {
   struct object *obj;
   GtkWidget *widget = NULL;
@@ -308,13 +298,11 @@ ARGS(GTK.Widget);
     push_int(0);
 }
 
-FUNCTION(signal_autoconnect, "function(mapping(string:function),mixed:void)");
-NAME_ARGS(callbacks,data);
-ARGS(mapping(string:function) callbacks,mixed data);
-RETURNS(void);
-// Try to connect functions to all signals in the interface. The mapping should
-// consist of handler name - function name pairs. The data argument will be
-// saved and sent as the first argument to all callback functions.
+void signal_autoconnect(mapping(string:function) callbacks, mixed data)
+//! Try to connect functions to all signals in the interface. The
+//! mapping should consist of handler name : function pairs. The
+//! data argument will be saved and sent as the first argument to all
+//! callback functions.
 {
   GladeXML *xml;
   if(args != 2 || Pike_sp[-args].type != PIKE_T_MAPPING)
@@ -323,7 +311,8 @@ RETURNS(void);
     Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
   glade_xml_signal_autoconnect_full(xml, pgtk__signal_connect, &args);
-  pop_n_elems(args);
+  RETURN_THIS();
 }
 
-// <p align="right"><font size="2"><i>$Id: gladexml.pre,v 1.10 2000/12/05 21:08:47 per Exp $</i></font></p>
+//! <p align="right"><font size="2"><i>$Id: gladexml.pre,v 1.11 2000/12/18 17:54:05 per Exp $</i></font></p>
+

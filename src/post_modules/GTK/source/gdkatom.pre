@@ -1,10 +1,9 @@
-class Gdk_Atom;
-// An X-atom. You most likely want to use GDK.Atom.atom_name
-// instead of Gdk_Atom(name).
-FUNCTION(create, "function(string,int|void:void)");
-NAME_ARGS(atom_name, only_if_exists);
-// Create a new low-level atom. You should normally not call this
-// function directly. Use GDK.Atom[name] instead of GDK._Atom(name,0).
+class GDK._Atom;
+//! An X-atom. You most likely want to use GDK.Atom.atom_name
+//! instead of GDK._Atom(name).
+void create(string atom_name,int|void only_if_exists)
+//! Create a new low-level atom. You should normally not call this
+//! function directly. Use GDK.Atom[name] instead of GDK._Atom(name,0).
 {
   char *atom_name;
   INT_TYPE only_if_exists;
@@ -16,9 +15,11 @@ NAME_ARGS(atom_name, only_if_exists);
   push_int(0);
 }
 
-FUNCTION(get_name, "function(void:string)");
-// Returns the name of the atom.
+string get_name()
+//! Returns the name of the atom.
 {
   my_pop_n_elems(args);
   push_text( gdk_atom_name( (GdkAtom)THIS->obj ) );
 }
+
+

@@ -14,7 +14,7 @@ GDK.Window root;
 float mdx, mdy; // Size of the root window.
 int windy, edx; // is it windy today? edx is the wind direction.
 
-#define I(X) Image.PNM.decode(Stdio.read_bytes("snow0" #X ".pbm"))->invert()
+#define I(X) Image.PNM.decode(Stdio.read_bytes("snow0" #X ".pbm"))->invert()->scale(1.5)
 
 array (GDK.GC) snow_flake_gcs = ({});
 array (Image.image) snow_flakes=({I(0), I(1), I(2),  I(3), I(4), I(5), I(6)});
@@ -117,11 +117,12 @@ int collided( Snowflake f )
   int x = (int)f->x, y = (int)f->y;
   int w = (int)f->xsize;
   int h = (int)f->ysize;
-  if( region->point_in( x, y+h ) || region->point_in( x+w, y+h ))
-  {
-    region |= GDK.Rectangle( x, y+h/2+h/4, w, h );
+//   if( region->point_in( x, y+h ) || region->point_in( x+w, y+h ))
+//   {
+//     region |= GDK.Rectangle( x, y+h/2+h/4, w, h );
+  if( y > 1200 )
     return 1;
-  }
+//   }
   return 0;
 }
 

@@ -84,49 +84,6 @@ int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
 }
 
 
-void *get_swapped_string( struct pike_string *s,int force_wide )
-{
-  int i;
-  unsigned short *res, *tmp;
-#if (BYTEORDER!=4321)
-  switch(s->size_shift)
-  {
-   default:
-     return 0;
-   case 1:
-     {
-       res= malloc(s->len * 2);
-       tmp = (unsigned short *)s->str;
-       for(i=0;i<s->len; i++)
-	 res[i] = htons( tmp[i] );
-       return res;
-     }
-  }
-#endif
-  if(force_wide)
-  {
-    switch(s->size_shift)
-    {
-     case 0:
-       res = malloc(s->len*2);
-       for(i=0;i<s->len;i++)
-	 res[i] = htons( (short)(((unsigned char *)s->str)[i]) );
-       return res;
-     case 1:
-       return 0;
-     case 2:
-       res = malloc(s->len*2);
-       for(i=0;i<s->len;i++)
-	 res[i] = htons( (short)(((unsigned int *)s->str)[i]) );
-       return res;
-    }
-  }
-#ifdef DEBUG
-  fatal("not reached\n");
-#endif
-  return 0;
-}
-
 struct object *pikeimage_from_gdkimage( GdkImage *img )
 {
   return NULL;
@@ -454,13 +411,13 @@ void pgtk_get_mapping_arg( struct mapping *map,
 
 GdkAtom get_gdkatom( struct object *o )
 {
-  if(get_gdkobject( o,_Atom ))
-    return (GdkAtom)get_gdkobject( o, _Atom );
+  if(get_gdkobject( o,_atom ))
+    return (GdkAtom)get_gdkobject( o, _atom );
   apply( o, "get_atom", 0);
   get_all_args( "internal_get_atom", 1, "%o", &o );
-  if(get_gdkobject( o,_Atom ))
+  if(get_gdkobject( o,_atom ))
   {
-    GdkAtom r = (GdkAtom)get_gdkobject( o,_Atom );
+    GdkAtom r = (GdkAtom)get_gdkobject( o,_atom );
     pop_stack();
     return r;
   }
@@ -514,7 +471,7 @@ struct my_pixel pgtk_pixel_from_xpixel( unsigned int pix, GdkImage *i )
 void push_atom( GdkAtom a )
 {
   /* this should really be inserted in the GDK.Atom mapping. */
-  push_pgdkobject( (void *)a, pgtk_Gdk_Atom_program );
+  push_pgdkobject( (void *)a, pgdk__atom_program );
 }
 
 void push_Xpseudo32bitstring( void *f, int nelems )
@@ -522,18 +479,18 @@ void push_Xpseudo32bitstring( void *f, int nelems )
   if( sizeof( long ) != 4 )
   {
     long *q = (long *)f;
-    int *res = malloc( nelems * 4 ), i;
+    int *res = (int *)xalloc( nelems * 4 ), i;
     for(i=0; i<nelems; i++ )
       res[i] = q[i];
     push_string( make_shared_binary_string2( res, nelems ) );
-    free( res );
+    xfree( res );
   } else {
     push_string( make_shared_binary_string2( f, nelems ) );
   }
 }
 
 
-int pgtkbuttonfuncwrapper(GtkObject *obj, struct signal_data *d, void *foo)
+gint pgtk_buttonfuncwrapper(GtkObject *obj, struct signal_data *d, void *foo)
 {
   int res;
   push_svalue(&d->args);
@@ -547,9 +504,9 @@ void push_gdk_event(GdkEvent *e)
 {
   if( e )
   {
-    GdkEvent *f = malloc( sizeof(GdkEvent) ); 
+    GdkEvent *f = g_malloc( sizeof(GdkEvent) ); 
     *f = *e;
-    push_gdkobject( f, Event );
+    push_gdkobject( f, event );
   } else
     push_int( 0 );
 }
@@ -571,14 +528,13 @@ static int pgtk_push_accel_group_param( GtkArg *a )
 
 static int pgtk_push_ctree_node_param( GtkArg *a )
 {
-  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_CTreeNode_program);
+  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_ctree_node_program);
   return PUSHED_VALUE;
 }
 
 static int pgtk_push_gdk_drag_context_param( GtkArg *a )
 {
-  push_gdkobject( GTK_VALUE_POINTER(*a), DragContext );
-/*   push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_GdkDragContext_program); */
+  push_gdkobject( GTK_VALUE_POINTER(*a), drag_context );
   return PUSHED_VALUE;
 }
 
@@ -735,13 +691,18 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
   struct svalue *osp = Pike_sp;
 
   if( !last_used_callback ) build_push_callbacks();
-
-  push_svalue(&d->args);
-  push_gtkobject( obj );
-
+  if( !d->new_interface )
+  {
+    push_svalue(&d->args);
+    push_gtkobject( obj );
+  }
   for(i=0; !return_value && (i<nparams); i++)
     return_value = push_param( params+i );
-
+  if( d->new_interface )
+  {
+    push_svalue(&d->args);
+    push_gtkobject( obj );
+  }
   apply_svalue(&d->cb, Pike_sp-osp);
   res = Pike_sp[-1].u.integer;
   pop_stack();
@@ -761,5 +722,118 @@ void pgtk_free_signal_data( struct signal_data *s)
 {
   free_svalue( &s->cb );
   free_svalue( &s->args );
-  free(s);
+  xfree(s);
+}
+
+#ifdef PGTK_AUTO_UTF8
+void pgtk_push_gchar( gchar *s )
+{
+  push_text( s ); push_int( 1 );
+  f_utf8_to_string( 2 );
+}
+
+gchar *pgtk_get_str( struct svalue *sv )
+{
+  struct pike_string *s;
+  int i;
+  gunichar *tmp;
+  gchar *res;
+  if( sv->type != PIKE_T_STRING )
+    return 0;
+  s = s->u.string;
+  switch( s->size_shift )
+  {
+   case 0:
+     tmp = g_malloc( 4*s->len );
+     for( i = 0; i<s->len; i++ )
+       tmp[i] = ((unsigned char *)s->str)[i];
+     break;
+   case 1:
+     tmp = g_malloc( 4*s->len );
+     for( i = 0; i<s->len; i++ )
+       tmp[i] = ((unsigned short *)s->str)[i];
+     break;
+   case 2:
+     tmp = (gunichar *)s->str;
+     nofree = 1;
+     break;
+  }
+  res = g_ucs4_to_utf8( tmp, s->len );
+  if(!nofree) g_free( tmp );
+  return res;
+}
+
+void pgtk_free_str( gchar *s )
+{
+  g_free( s );
+}
+#endif
+void pgtk_default__sprintf( int args, int offset, int len )
+{
+  my_pop_n_elems( args );
+  push_string( make_shared_binary_string( __pgtk_string_data+offset, len ) );
+}
+
+void pgtk_clear_obj_struct(struct object *o)
+{
+  MEMSET(Pike_fp->current_storage, 0, sizeof(struct object_wrapper));
+}
+
+
+#ifdef AUTO_BIGNUM
+#ifdef INT64
+INT64 pgtk_get_int( struct svalue *s )
+{
+  if( s->type == PIKE_T_INT )
+    return s->u.integer;
+  if( is_bignum_object_in_svalue( s ) )
+  {
+    INT64 res;
+    int64_from_bignum( &res, s->u.object );
+    return res;
+  }
+  return 0;
+}
+
+int pgtk_is_int( struct svalue *s )
+{
+  return ((s->type ==PIKE_T_INT) || is_bignum_object_in_svalue( s ));
+}
+#endif
+#endif
+
+/* double should be enough */
+double pgtk_get_float( struct svalue *s )
+{
+  if( s->type == PIKE_T_FLOAT )
+    return (double)s->u.float_number;
+  if( s->type == PIKE_T_INT )
+    return (double)s->u.integer;
+#ifdef AUTO_BIGNUM
+#ifdef INT64
+  if( is_bignum_object_in_svalue( s ) )
+  {
+    /* FIXME: Do a better job here. */
+    INT64 res;
+    int64_from_bignum( &res, s->u.object );
+    return (double)res;
+  }
+#endif
+#endif
+  return 0.0;
+}
+
+void pgtk_free_object(struct object *o)
+{
+  free_object( o );
+}
+
+int pgtk_is_float( struct svalue *s )
+{
+  return ((s->type ==PIKE_T_FLOAT) ||
+          (s->type ==PIKE_T_INT)
+#ifdef AUTO_BIGNUM
+          ||is_bignum_object_in_svalue( s )
+#endif
+         );
 }

@@ -1,27 +1,25 @@
-class accel_group;
-inherit data;
-// An AccelGroup stores keybindings.
-// A group is automatically created by W(MenuFactory)
-//
-// NOIMG
-FUNCTION(create, "function(void:void)")
-ARGS();
-// Create a new object
+class GTK.AccelGroup;
+inherit GTK.Data;
+//! An AccelGroup stores keybindings.
+//! A group is automatically created by W(MenuFactory)
+//!
+//! NOIMG
+void create()
+//! Create a new accelerator group
 {
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   THIS->obj = (void *)gtk_accel_group_new();
 /* add_ref(fp->current_object);   one extra ref... No, not really */
 }
-FUNCTION(add_accel, "function(object,string,int,int:object)");
-RETURNS(GTK.AccelGroup);
-ARGS(GTK.Widget,string,int,int,int);
-NAME_ARGS(widget,signal,key,modifiers,flags);
-// the widget is the one in which the signal specified by 'signal'
-// recides.
-// The key is the character code (such as 'a' for the a key and '@' for the @
-// key), and modifiers is a bitmap of one or more bits, the bits are
-// CONST(_MASK). Flags is one or more of CONST(GTK_ACCEL)
+void add_accel(GTK.Widget widget, string signal,
+               int key, int modifiers, int flags )
+//! the widget is the one in which the signal specified by 'signal'
+//! recides.
+//! 
+//! The key is the character code (such as 'a' for the a key and '@'
+//! for the @ key), and modifiers is a bitmap of one or more bits, the
+//! bits are CONST(_MASK). Flags is one or more of CONST(GTK_ACCEL)
 {
   struct object *o;
   INT_TYPE k;
@@ -33,11 +31,8 @@ NAME_ARGS(widget,signal,key,modifiers,flags);
                       get_gtkobject( o ), sig );
   RETURN_THIS();
 }
-FUNCTION(remove, "function(object,string:object)");
-ARGS(GTK.Widget,string);
-NAME_ARGS(object,key,modifiers);
-RETURNS(GTK.AccelGroup);
-// Remove all bindings for the specified key/mask in the specified object.
+void remove(GTK.Widget widget, int key, int modifiers )
+//! Remove all bindings for the specified key/mask in the specified object.
 {
   struct object *o;
   INT_TYPE k, mods;
@@ -45,8 +40,9 @@ RETURNS(GTK.AccelGroup);
   gtk_accel_group_remove((void *)THIS->obj, k,mods, get_gtkobject( o ));
   RETURN_THIS();
 }
-FUNCTION(destroy, "function(void:void)")
+void destroy()
 {
   gtk_accel_group_unref( (void *)THIS->obj );
   THIS->obj = 0;
 }
+
