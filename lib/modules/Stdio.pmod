@@ -96,6 +96,13 @@ class FILE {
       return o;
     }
 
+    int assign(object foo)
+    {
+      bpos=0;
+      b="";
+      return ::assign(foo);
+    }
+
     void set_nonblocking()
     {
       error("Cannot use nonblocking IO with buffered files.\n");
