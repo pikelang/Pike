@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.348 2004/05/25 15:28:53 mast Exp $
+// $Id: master.pike.in,v 1.349 2004/06/13 17:01:54 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1889,16 +1889,6 @@ class CompatResolver
       root_module->fallback_module = fallback_resolver->root_module;
     }
     predefines = initial_predefines;
-
-    // Kludge to avoid(?) recursive compilation problems. It was
-    // observed with a pike program containing
-    //
-    // #if constant (__builtin.security)
-    // #endif
-    //
-    // when using -V7.4. There was a cycle between resolving
-    // lib/modules/__builtin.pmod and lib/7.4/modules/__default.pmod.
-    get_default_module();
   }
 
   //! Add a directory to search for include files.
@@ -3252,7 +3242,9 @@ string describe_object(object o)
       }
     }
   };
-  if(objectp (objects[parent_fun]))
+  // When running with RESOLV_DEBUG this function may
+  // get called before objects has been initialized.
+  if(objects && objectp (objects[parent_fun]))
     if ((s = programs_reverse_lookup (parent_fun)) &&
 	(s=program_path_to_name(s, "", "", "()")))
       return s;
@@ -4376,6 +4368,16 @@ CompatResolver get_compilation_handler(int major, int minor)
 	compat_handler->add_module_path(combine_path(base,"modules"));
 	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
+
+	// Kludge to avoid(?) recursive compilation problems. It was
+	// observed with a pike program containing
+	//
+	// #if constant (__builtin.security)
+	// #endif
+	//
+	// when using -V7.4. There was a cycle between resolving
+	// lib/modules/__builtin.pmod and lib/7.4/modules/__default.pmod.
+	compat_handler->get_default_module();
 
 #ifndef RESOLVER_HACK
 	ret = compat_handler_cache[tmp] = compat_handler;
