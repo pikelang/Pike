@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.155 2001/06/20 23:13:52 mast Exp $");
+RCSID("$Id: threads.c,v 1.156 2001/08/21 09:38:00 per Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -540,9 +540,17 @@ PMOD_EXPORT int count_pike_threads(void)
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
+#ifdef HAVE_GETHRTIME
+  static long long last_;
+  if( gethrtime()-last_ < 50000000 ) /* 0.05s slice */
+    return;
+  last_ = gethrtime();
+#else
   static int div_;
-  if(div_++ & 255) return;
-
+  if(div_++ & 255)
+    return;
+#endif
+  
 #ifdef DEBUG
   if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
     fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!\n")
@@ -553,6 +561,9 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
   THREADS_ALLOW();
   /* Allow other threads to run */
+#ifdef HAVE_THR_YIELD
+  thr_yield();
+#endif
   THREADS_DISALLOW();
 
 #ifdef DEBUG
