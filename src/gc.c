@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.234 2003/09/24 00:57:58 mast Exp $
+|| $Id: gc.c,v 1.235 2003/09/24 00:59:31 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.234 2003/09/24 00:57:58 mast Exp $");
+RCSID("$Id: gc.c,v 1.235 2003/09/24 00:59:31 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -619,7 +619,7 @@ void describe_location(void *real_memblock,
   }
 
   if(memblock && depth>0)
-    describe_something(memblock,type,indent+2,depth-1,flags | DESCRIBE_MEM,inblock);
+    describe_something(memblock,type,indent+2,depth-1,flags,inblock);
 
 #ifdef DEBUG_MALLOC
   /* FIXME: Is the following call correct?
@@ -718,7 +718,7 @@ static void gdb_gc_stop_here(void *a, int weak)
       describe_location(gc_found_in , gc_found_in_type, gc_svalue_location,0,1,0);
     else {
       fputc('\n', stderr);
-      describe_something(gc_found_in, gc_found_in_type, 0, 0, DESCRIBE_MEM, 0);
+      describe_something(gc_found_in, gc_found_in_type, 0, 0, 0, 0);
     }
   }
   else
@@ -850,7 +850,8 @@ again:
 	  fprintf(stderr, "%*s**Zapped program pointer.\n", indent, "");
 	else
 #endif
-	  low_describe_something(p, T_PROGRAM, indent, depth, flags, 0);
+	  low_describe_something(p, T_PROGRAM, indent, depth,
+				 flags | DESCRIBE_SHORT, 0);
 
 	if((p->flags & PROGRAM_USES_PARENT) &&
 	   LOW_PARENT_INFO(((struct object *)a),p)->parent)
@@ -895,108 +896,110 @@ again:
 	free (tmp);
       }
 
-      fprintf (stderr, "%*s**Identifiers:\n", indent, "");
+      if (!(flags & DESCRIBE_SHORT)) {
+	fprintf (stderr, "%*s**Identifiers:\n", indent, "");
 
-      for (id_idx = 0; id_idx < p->num_identifier_references; id_idx++) {
-	struct reference *id_ref = p->identifier_references + id_idx;
-	struct inherit *id_inh;
-	struct identifier *id;
-	const char *type;
-	char prot[100], descr[120];
+	for (id_idx = 0; id_idx < p->num_identifier_references; id_idx++) {
+	  struct reference *id_ref = p->identifier_references + id_idx;
+	  struct inherit *id_inh;
+	  struct identifier *id;
+	  const char *type;
+	  char prot[100], descr[120];
 
-	while (next_inh < p->inherits + p->num_inherits &&
-	       id_idx == next_inh->identifier_level) {
-	  inh = next_inh++;
-	  inh_id_end = inh->identifier_level + inh->prog->num_identifier_references;
-	  if (inh->name) {
-	    fprintf (stderr, "%*s**%*s=== In inherit ",
-		     indent, "", inh->inherit_level + 1, "");
-	    push_string (inh->name);
-	    print_svalue (stderr, --Pike_sp);
-	    fprintf (stderr, ", program %d:\n", inh->prog->id);
+	  while (next_inh < p->inherits + p->num_inherits &&
+		 id_idx == next_inh->identifier_level) {
+	    inh = next_inh++;
+	    inh_id_end = inh->identifier_level + inh->prog->num_identifier_references;
+	    if (inh->name) {
+	      fprintf (stderr, "%*s**%*s=== In inherit ",
+		       indent, "", inh->inherit_level + 1, "");
+	      push_string (inh->name);
+	      print_svalue (stderr, --Pike_sp);
+	      fprintf (stderr, ", program %d:\n", inh->prog->id);
+	    }
+	    else
+	      fprintf (stderr, "%*s**%*s=== In nameless inherit, program %d:\n",
+		       indent, "", inh->inherit_level + 1, "", inh->prog->id);
+	  }
+
+	  while (id_idx == inh_id_end) {
+	    int cur_lvl = inh->inherit_level;
+	    if (inh->name) {
+	      fprintf (stderr, "%*s**%*s=== End of inherit ",
+		       indent, "", inh->inherit_level + 1, "");
+	      push_string (inh->name);
+	      print_svalue (stderr, --Pike_sp);
+	      fputc ('\n', stderr);
+	    }
+	    else
+	      fprintf (stderr, "%*s**%*s=== End of nameless inherit\n",
+		       indent, "", inh->inherit_level + 1, "");
+	    while (inh > p->inherits) { /* Paranoia. */
+	      if ((--inh)->inherit_level < cur_lvl) break;
+	    }
+	    inh_id_end = inh->identifier_level + inh->prog->num_identifier_references;
+	  }
+
+	  if (id_ref->id_flags & ID_HIDDEN ||
+	      (id_ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	      (ID_INHERITED|ID_PRIVATE)) continue;
+
+	  id_inh = INHERIT_FROM_PTR (p, id_ref);
+	  id = id_inh->prog->identifiers + id_ref->identifier_offset;
+
+	  if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags)) type = "fun";
+	  else if (IDENTIFIER_IS_FUNCTION (id->identifier_flags)) type = "cfun";
+	  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) type = "const";
+	  else if (IDENTIFIER_IS_ALIAS (id->identifier_flags))    type = "alias";
+	  else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags)) type = "var";
+	  else type = "???";
+
+	  prot[0] = prot[1] = 0;
+	  if (id_ref->id_flags & ID_PRIVATE) {
+	    strcat (prot, ",pri");
+	    if (!(id_ref->id_flags & ID_STATIC)) strcat (prot, ",!sta");
 	  }
 	  else
-	    fprintf (stderr, "%*s**%*s=== In nameless inherit, program %d:\n",
-		     indent, "", inh->inherit_level + 1, "", inh->prog->id);
-	}
+	    if (id_ref->id_flags & ID_STATIC) strcat (prot, ",sta");
+	  if (id_ref->id_flags & ID_NOMASK)    strcat (prot, ",nom");
+	  if (id_ref->id_flags & ID_PUBLIC)    strcat (prot, ",pub");
+	  if (id_ref->id_flags & ID_PROTECTED) strcat (prot, ",pro");
+	  if (id_ref->id_flags & ID_INLINE)    strcat (prot, ",inl");
+	  if (id_ref->id_flags & ID_OPTIONAL)  strcat (prot, ",opt");
+	  if (id_ref->id_flags & ID_EXTERN)    strcat (prot, ",ext");
+	  if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
+	  if (id_ref->id_flags & ID_ALIAS)     strcat (prot, ",ali");
 
-	while (id_idx == inh_id_end) {
-	  int cur_lvl = inh->inherit_level;
-	  if (inh->name) {
-	    fprintf (stderr, "%*s**%*s=== End of inherit ",
-		     indent, "", inh->inherit_level + 1, "");
-	    push_string (inh->name);
+	  sprintf (descr, "%s: %s", type, prot + 1);
+	  fprintf (stderr, "%*s**%*s%-18s name: ",
+		   indent, "", id_inh->inherit_level + 1, "", descr);
+
+	  if (id->name->size_shift) {
+	    push_string (id->name);
 	    print_svalue (stderr, --Pike_sp);
-	    fputc ('\n', stderr);
 	  }
 	  else
-	    fprintf (stderr, "%*s**%*s=== End of nameless inherit\n",
-		     indent, "", inh->inherit_level + 1, "");
-	  while (inh > p->inherits) { /* Paranoia. */
-	    if ((--inh)->inherit_level < cur_lvl) break;
+	    fprintf (stderr, "%-20s", id->name->str);
+
+	  if (id->identifier_flags & IDENTIFIER_C_FUNCTION)
+	    fprintf (stderr, "  addr: %p", id->func.c_fun);
+	  else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags))
+	    fprintf (stderr, "  rtt: %s  off: %"PRINTPTRDIFFT"d",
+		     get_name_of_type (id->run_time_type), id->func.offset);
+	  else if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags))
+	    fprintf (stderr, "  pc: %"PRINTPTRDIFFT"d", id->func.offset);
+	  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) {
+	    fputs ("  value: ", stderr);
+	    print_svalue_compact (stderr, &id_inh->prog->constants[id->func.offset].sval);
 	  }
-	  inh_id_end = inh->identifier_level + inh->prog->num_identifier_references;
+
+	  fputc ('\n', stderr);
+	  id_count++;
 	}
 
-	if (id_ref->id_flags & ID_HIDDEN ||
-	    (id_ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-
-	id_inh = INHERIT_FROM_PTR (p, id_ref);
-	id = id_inh->prog->identifiers + id_ref->identifier_offset;
-
-	if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags)) type = "fun";
-	else if (IDENTIFIER_IS_FUNCTION (id->identifier_flags)) type = "cfun";
-	else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) type = "const";
-	else if (IDENTIFIER_IS_ALIAS (id->identifier_flags))    type = "alias";
-	else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags)) type = "var";
-	else type = "???";
-
-	prot[0] = prot[1] = 0;
-	if (id_ref->id_flags & ID_PRIVATE) {
-	  strcat (prot, ",pri");
-	  if (!(id_ref->id_flags & ID_STATIC)) strcat (prot, ",!sta");
-	}
-	else
-	  if (id_ref->id_flags & ID_STATIC) strcat (prot, ",sta");
-	if (id_ref->id_flags & ID_NOMASK)    strcat (prot, ",nom");
-	if (id_ref->id_flags & ID_PUBLIC)    strcat (prot, ",pub");
-	if (id_ref->id_flags & ID_PROTECTED) strcat (prot, ",pro");
-	if (id_ref->id_flags & ID_INLINE)    strcat (prot, ",inl");
-	if (id_ref->id_flags & ID_OPTIONAL)  strcat (prot, ",opt");
-	if (id_ref->id_flags & ID_EXTERN)    strcat (prot, ",ext");
-	if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
-	if (id_ref->id_flags & ID_ALIAS)     strcat (prot, ",ali");
-
-	sprintf (descr, "%s: %s", type, prot + 1);
-	fprintf (stderr, "%*s**%*s%-18s name: ",
-		 indent, "", id_inh->inherit_level + 1, "", descr);
-
-	if (id->name->size_shift) {
-	  push_string (id->name);
-	  print_svalue (stderr, --Pike_sp);
-	}
-	else
-	  fprintf (stderr, "%-20s", id->name->str);
-
-	if (id->identifier_flags & IDENTIFIER_C_FUNCTION)
-	  fprintf (stderr, "  addr: %p", id->func.c_fun);
-	else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags))
-	  fprintf (stderr, "  rtt: %s  off: %"PRINTPTRDIFFT"d",
-		   get_name_of_type (id->run_time_type), id->func.offset);
-	else if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags))
-	  fprintf (stderr, "  pc: %"PRINTPTRDIFFT"d", id->func.offset);
-	else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) {
-	  fputs ("  value: ", stderr);
-	  print_svalue_compact (stderr, &id_inh->prog->constants[id->func.offset].sval);
-	}
-
-	fputc ('\n', stderr);
-	id_count++;
+	if (!id_count)
+	  fprintf (stderr, "%*s** (none)\n", indent, "");
       }
-
-      if (!id_count)
-	fprintf (stderr, "%*s** (none)\n", indent, "");
 
       if(flags & DESCRIBE_MEM)
       {
