@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.170 2003/09/08 20:05:21 mast Exp $
+|| $Id: mapping.c,v 1.171 2003/09/23 20:08:00 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.170 2003/09/08 20:05:21 mast Exp $");
+RCSID("$Id: mapping.c,v 1.171 2003/09/23 20:08:00 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1685,18 +1685,9 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       else notfirst = 1;
       for(d = 0; d < indent; d++)
 	my_putchar(' ');
-#if 0
-      /* describe_svalue might do anything. */
       describe_svalue(&k->ind, indent+2, &doing);
-      my_putchar(':');
+      my_strcat (": ");
       describe_svalue(&k->val, indent+2, &doing);
-#else
-      sprintf (buf, "<%d>", k->ind.type);
-      my_strcat (buf);
-      my_putchar(':');
-      sprintf (buf, "<%d>", k->val.type);
-      my_strcat (buf);
-#endif
     }
 
     my_putchar('\n');
@@ -1741,8 +1732,8 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 	my_putchar(' ');
     
       describe_svalue(ITEM(a)+e, indent+2, &doing);
-      my_putchar(':');
-      
+      my_strcat (": ");
+
       {
 	int save_t_flag=Pike_interpreter.trace_level;
 	Pike_interpreter.trace_level=0;
