@@ -1,0 +1,33 @@
+inherit @module@ : M;
+
+class oracle
+{
+  inherit M::oracle : O;
+
+  object big_query(object(compile_query)|string query,
+		      void|mapping(int|string:int|float|string|multiset(string)) binds,
+		      void|int autocommit)
+    {
+      if(stringp(query)) query=compile_query(query);
+      object ret=query->big_query(binds, autocommit, this_object());
+      if(query->_type == 1)
+      {
+	return ret;
+      }
+      else if(query->output_variables)
+      {
+	return Sql.sql_result( ({ query->output_variables }) );
+      }
+    }
+
+  object list_tables(void|string wild)
+    {
+      if(wild)
+      {
+	return big_query("select tname from tab where tname like :wild",
+			 ([":wild":wild]));
+      }else{
+	return big_query("select tname from tab");
+      }
+    }
+}
