@@ -1,5 +1,5 @@
 /*
- * $Id: smartlink.c,v 1.5 2000/02/20 00:08:47 hubbe Exp $
+ * $Id: smartlink.c,v 1.6 2000/03/25 22:46:29 hubbe Exp $
  *
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.5 2000/02/20 00:08:47 hubbe Exp $\n"
+	    "$Id: smartlink.c,v 1.6 2000/03/25 22:46:29 hubbe Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -132,8 +132,8 @@ int main(int argc, char **argv)
   rpath[0] = 0;
   lpath[0] = 0;
 
-  /* 5 extra args should be enough... */
-  if (!(new_argv = malloc(sizeof(char *)*(argc + 5)))) {
+  /* 150 extra args should be enough... */
+  if (!(new_argv = malloc(sizeof(char *)*(argc + 150)))) {
     fatal("Out of memory (5)!\n");
   }
 
@@ -214,7 +214,17 @@ int main(int argc, char **argv)
 	if (new_argv[i][0] == '-' && new_argv[i][1]=='W' &&
 	    new_argv[i][2]=='l' && new_argv[i][3]==',')
 	{
+	  char *ptr;
 	  new_argv[i]=new_argv[i]+4;
+
+	  while((ptr=strchr(new_argv[i],',')))
+	  {
+	    int e;
+	    *ptr=0;
+	    for(e=argc;e>=i;e--) new_argv[e+1]=new_argv[e];
+	    new_argv[i+1]=ptr+1;
+	    i++;
+	  }
 	}
       }
     }

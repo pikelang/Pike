@@ -72,7 +72,7 @@ while test "$#" != 0; do
       # Strip '-Wl,' if the linker is ld
 
       if test $LINKER_IS_LD = yes; then
-        LDOPTS="$LDOPTS `echo $1|sed -e 's/^-Wl,//'`"
+        LDOPTS="$LDOPTS `echo $1|sed -e 's/^-Wl,//'|sed -e 's/,/ /g'`"
       else
         LDOPTS="$LDOPTS $1"
       fi
