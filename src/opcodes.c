@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include <math.h>
 #include <ctype.h>
@@ -178,7 +179,11 @@ void cast(struct pike_string *s)
 	break;
 	
       case T_FUNCTION:
-	sp[-1].type = T_OBJECT;
+	if (sp[-1].subtype == FUNCTION_BUILTIN) {
+	  error("Cannot cast builtin functions to object.\n");
+	} else {
+	  sp[-1].type = T_OBJECT;
+	}
 	break;
       }
       break;
