@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.157 2002/10/25 15:16:27 nilsson Exp $
+|| $Id: html.c,v 1.158 2002/10/25 18:35:01 mast Exp $
 */
 
 #include "global.h"
@@ -336,8 +336,8 @@ struct parser_html_storage
     * mixed mode. */
    int out_max_shift;
 
-   /* Total length of all string in the output queue, or the number of
-    * values in it when in mixed mode. */
+   /* Total length of all strings in the output queue, or the number
+    * of values in it when in mixed mode. */
    ptrdiff_t out_length;
 
    /* The current context in the output queue. */
@@ -2454,7 +2454,7 @@ static newstate handle_result(struct parser_html_storage *this,
 
       default:
 	 Pike_error("Parser.HTML: illegal result from callback: "
-		    "not 0, string or array(string)\n");
+		    "not 0, string or array\n");
    }
    /* NOT_REACHED */
    return STATE_DONE;
@@ -5055,11 +5055,18 @@ static void html_mixed_mode(INT32 args)
      else
        if (o) {
 	 struct out_piece *f;
-	 for (f = THIS->out; f; f = f->next)
+	 int max_shift = 0;
+	 size_t length;
+	 for (f = THIS->out, length = 0; f; f = f->next) {
 	   if (f->v.type != T_STRING)
 	     Pike_error ("Cannot switch from mixed mode "
 			 "with nonstrings in the output queue.\n");
-	 THIS->out_max_shift = 0;
+	   if (f->v.u.string->size_shift > max_shift)
+	     max_shift = f->v.u.string->size_shift;
+	   length += f->v.u.string->len;
+	 }
+	 THIS->out_max_shift = max_shift;
+	 THIS->out_length = length;
        }
    }
    pop_n_elems(args);
