@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.22 1999/11/12 18:51:04 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.23 1999/11/14 18:44:00 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.22 1999/11/12 18:51:04 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.23 1999/11/14 18:44:00 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -720,11 +720,25 @@ void parse_data()
 			 post_fix_refs);
 	break;
       }
+      action = sprintf("#ifdef PIKE_DEBUG\n"
+		       "  if (l_flag > 4) {\n"
+		       "    fprintf(stderr, \"=> \"%O\"\\n\");\n"
+		       "  }\n"
+		       "#endif /* PIKE_DEBUG */\n", sprintf("%s", n2)) +
+	action;
     } else {
       // Null action.
       // Used to force code generation for eg NULL-detection.
+      // Obsolete.
       action = "";
     }
+
+    action = sprintf("#ifdef PIKE_DEBUG\n"
+		     "  if (l_flag > 4) {\n"
+		     "    fprintf(stderr, \"Match: \"%O\"\\n\");\n"
+		     "  }\n"
+		     "#endif /* PIKE_DEBUG */\n", sprintf("%s", n)) +
+      action;
 
     n->action = action;
 
