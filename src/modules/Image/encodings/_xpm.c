@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.27 2003/10/13 18:52:00 grubba Exp $
+|| $Id: _xpm.c,v 1.28 2003/10/14 02:37:44 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.27 2003/10/13 18:52:00 grubba Exp $");
+RCSID("$Id: _xpm.c,v 1.28 2003/10/14 02:37:44 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -43,6 +43,11 @@ RCSID("$Id: _xpm.c,v 1.27 2003/10/13 18:52:00 grubba Exp $");
 
 
 #define sp Pike_sp
+
+/*! @module Image
+ *!
+ *! @module _XPM
+ */
 
 extern struct program *image_program;
 
@@ -223,7 +228,7 @@ unsigned short extract_short( unsigned char *b )
   return (b[0]<<8)|b[1];
 }
 
-/*! _xpm_write_rows(Image.Image img, Image.Image alpha, @
+/*! @decl int(0..0) _xpm_write_rows(Image.Image img, Image.Image alpha, @
  *!                 int bpc, array(string) colors, array(string) pixels)
  */
 void f__xpm_write_rows( INT32 args )
@@ -410,17 +415,19 @@ void f__xpm_write_rows( INT32 args )
   push_int(0);
 }
 
+/*! @decl array(string) _xpm_trim_rows(array(string) rows)
+ */
 void f__xpm_trim_rows( INT32 args )
 {
   struct array *a;
   int i,j=0;
-  get_all_args("___", args, "%a", &a );
+  get_all_args("_xpm_trim_rows", args, "%a", &a );
   for(i=0; i<a->size; i++)
   {
     int len,start;
     struct pike_string *s = a->item[i].u.string;
     if(a->item[i].type != T_STRING)
-      Pike_error("Ajabaja\n");
+      Pike_error("Array must be array(string).\n");
     if(s->len > 4)
     {
       for(start=0; start<s->len; start++)
@@ -440,10 +447,15 @@ void f__xpm_trim_rows( INT32 args )
   pop_n_elems(args-1);
 }
 
+/*! @endmodule
+ *!
+ *! @endmodule
+ */
+
 void init_image__xpm( )
 {
    add_function( "_xpm_write_rows", f__xpm_write_rows, "mixed", 0); 
-  add_function( "_xpm_trim_rows", f__xpm_trim_rows, "mixed", 0);
+   add_function( "_xpm_trim_rows", f__xpm_trim_rows, "mixed", 0);
 }
 
 void exit_image__xpm(void)
