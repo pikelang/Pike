@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.25 2003/12/14 00:08:57 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.26 2003/12/15 00:00:35 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -392,10 +392,14 @@ PIKECLASS CBC
   }
 
   /*! @decl string name()
-   *! Returns the string @expr{"CBC"@}.
+   *! Returns the string @expr{"CBC(x)"@} where x is the
+   *! encapsulated algorithm.
    */
   PIKEFUN string name() {
-    push_constant_text("CBC");
+    push_constant_text("CBC(");
+    safe_apply(THIS->object, "name", 0);
+    push_constant_text(")");
+    f_add(3);
   }
 
   /*! @decl int block_size()
@@ -511,6 +515,11 @@ PIKECLASS Proxy {
   }
 
   /*! @decl void create(program|object|function cipher, mixed ... args)
+   *! Initialize the Proxy wrapper with a cipher algorithm. If it is a
+   *! program, an object will be instantiated with @[args] as arguments.
+   *! If it is an object that doesn't conform to the cipher API, but has
+   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
+   *! that function will be called with @[args] as arguments.
    */
   PIKEFUN void create(program|object|function cipher, mixed ... more) {
     THIS->object = make_cipher_object(args);
@@ -532,9 +541,14 @@ PIKECLASS Proxy {
   }
 
   /*! @decl string name()
+   *! Returns the string @expr{"CBC(x)"@} where x is the
+   *! encapsulated algorithm.
    */
   PIKEFUN string name() {
-    push_constant_text("Proxy");
+    push_constant_text("Proxy(");
+    safe_apply(THIS->object, "name", 0);
+    push_constant_text(")");
+    f_add(3);
   }
 
   /*! @decl int block_size()
