@@ -147,6 +147,9 @@ array(string) output( mapping(string:Class) classes,
   
   pre += Parser.Pike.simple_reconstitute( global_code );
 
+  // This code is here to optimize the global string data.
+  // Basically, make sure that the constants/classes/functions etc.
+  // is added in reverse length order.
   foreach( sort(indices(constants)), string c )
     if( mixed e = catch( initfun += constants[c]->pike_add()) )
       werror(constants[c]->file+":"+constants[c]->line+": Error: "+

@@ -1,11 +1,6 @@
 require gnome;
 class Gnome.MessageBox;
 inherit Gnome.Dialog;
-constant string GNOME_MESSAGE_BOX_INFO;
-constant string GNOME_MESSAGE_BOX_WARNING;
-constant string GNOME_MESSAGE_BOX_ERROR;
-constant string GNOME_MESSAGE_BOX_QUESTION;
-constant string GNOME_MESSAGE_BOX_GENERIC;
 //! The GnomeMessageBox widget creates dialog boxes (of type
 //! GnomeDialog) that contain a severity level (indicated by an icon
 //! and a title), a message to be displayed and a list of buttons that
@@ -21,6 +16,11 @@ constant string GNOME_MESSAGE_BOX_GENERIC;
 //! TIMG: Gnome.MessageBox( "This is a nice message", Gnome.MessageBoxInfo, Gnome.StockButtonOk,  Gnome.StockButtonCancel );
 //! TIMG: Gnome.MessageBox( "This is another not so nice message", Gnome.MessageBoxError, Gnome.StockButtonClose,  Gnome.StockButtonCancel );
 //! </p>
+constant string GNOME_MESSAGE_BOX_INFO;
+constant string GNOME_MESSAGE_BOX_WARNING;
+constant string GNOME_MESSAGE_BOX_ERROR;
+constant string GNOME_MESSAGE_BOX_QUESTION;
+constant string GNOME_MESSAGE_BOX_GENERIC;
 
 void create(string message, string messagebox_type, string(...) buttons)
 //! Creates a dialog box of type message_box_type with message. A

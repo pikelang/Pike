@@ -146,6 +146,11 @@ class Function(Class parent,
            return_type->pike_type()+")";
   }
 
+  string pike_name()
+  {
+    return name;
+  }
+
   int is_static()
   {
     return (name=="create"||(name[0]=='_'));
@@ -352,6 +357,8 @@ class Member( string name, Type type, int set,
 {
   string doc = "";
 
+  int is_static(){ return 0; }
+
   string pike_type( )
   {
     if( set )
@@ -372,6 +379,11 @@ class Member( string name, Type type, int set,
                    "0,OPT_EXTERNAL_DEPEND);\n",
                    S("get_"+name,0,1,27), strlen("get_"+name),
                    c_name(), S(tp,0,2,27), strlen(tp));
+  }
+
+  string pike_name()
+  {
+    return set ? "set_"+name : "get_"+name;
   }
 
   string c_name( )
@@ -870,7 +882,7 @@ class Class( string name, string file, int line )
   mapping(string:Function) functions = ([]);
   mapping(string:Signal)   signals   = ([]);
   mapping(string:Member)   members   = ([]);
-  string doc;
+  string doc = "";
 
   array pre  = ({});
   string post = "";
