@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.77 1999/12/05 15:38:21 mast Exp $
+ * $Id: master.pike.in,v 1.78 1999/12/05 21:20:29 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -178,7 +178,7 @@ mixed *master_file_stat(string x)
 mapping (string:string) environment=([]);
 
 
-mixed getenv(string|void s)
+string getenv(string|void s)
 {
   if(!s) return environment;
   return environment[s];
