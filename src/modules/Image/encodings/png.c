@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.5 1998/04/03 00:18:31 mirar Exp $");
+RCSID("$Id: png.c,v 1.6 1998/04/03 03:49:50 mirar Exp $");
 
 #include "config.h"
 
@@ -70,7 +70,7 @@ static INLINE INT32 call_gz_crc32(INT32 args)
    return z;
 }
 
-static INLINE void add_crc_string()
+static INLINE void add_crc_string(void)
 {
    push_svalue(sp-1);
    push_nbo_32bit(call_gz_crc32(1));
