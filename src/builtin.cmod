@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.174 2004/12/19 16:38:40 grubba Exp $
+|| $Id: builtin.cmod,v 1.175 2004/12/21 20:46:09 grubba Exp $
 */
 
 #include "global.h"
@@ -85,14 +85,16 @@ PIKEFUN string basetype(mixed x)
   optflags OPT_TRY_OPTIMIZE;
 {
   int t=x->type;
-  if(x->type == T_OBJECT && x->u.object->prog)
+  struct program *p;
+  if(x->type == T_OBJECT && (p = x->u.object->prog))
   {
-    ptrdiff_t fun=FIND_LFUN(x->u.object->prog, LFUN__SPRINTF);
+    ptrdiff_t fun = FIND_LFUN(p->inherits[x->subtype].prog, LFUN__SPRINTF);
     if(fun != -1)
     {
       push_int('t');
       f_aggregate_mapping(0);
-      apply_low(x->u.object, fun, 2);
+      apply_low(x->u.object,
+		fun + p->inherits[x->subtype].identifier_level, 2);
       if(Pike_sp[-1].type == T_STRING)
       {
 	stack_swap();
@@ -146,14 +148,16 @@ PIKEFUN string int2char(int|object x)
   optflags OPT_TRY_OPTIMIZE;
 {
   int c;
-  if(x->type == T_OBJECT && x->u.object->prog)
+  struct program *p;
+  if(x->type == T_OBJECT && (p = x->u.object->prog))
   {
-    ptrdiff_t fun=FIND_LFUN(x->u.object->prog, LFUN__SPRINTF);
+    ptrdiff_t fun = FIND_LFUN(p->inherits[x->subtype].prog, LFUN__SPRINTF);
     if(fun != -1)
     {
       push_int('c');
       f_aggregate_mapping(0);
-      apply_low(x->u.object, fun, 2);
+      apply_low(x->u.object,
+		fun + p->inherits[x->subtype].identifier_level, 2);
       if(Pike_sp[-1].type == T_STRING)
       {
 	stack_swap();
@@ -199,15 +203,17 @@ PIKEFUN string int2hex(int|object x)
   unsigned INT_TYPE n;
   int len;
   struct pike_string *s;
+  struct program *p;
 
-  if(x->type == T_OBJECT && x->u.object->prog)
+  if(x->type == T_OBJECT && (p = x->u.object->prog))
   {
-    ptrdiff_t fun=FIND_LFUN(x->u.object->prog, LFUN__SPRINTF);
+    ptrdiff_t fun = FIND_LFUN(p->inherits[x->subtype].prog, LFUN__SPRINTF);
     if(fun != -1)
     {
       push_int('x');
       f_aggregate_mapping(0);
-      apply_low(x->u.object, fun, 2);
+      apply_low(x->u.object,
+		fun + p->inherits[x->subtype].identifier_level, 2);
       if(Pike_sp[-1].type == T_STRING)
       {
 	stack_swap();
@@ -804,6 +810,7 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
    *
    *     or similar
    */
+  struct program *p;
   if( map->type == T_MAPPING )
   {
     struct svalue s;
@@ -813,14 +820,15 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
     Pike_sp++;
     dmalloc_touch_svalue(Pike_sp-1);
   }
-  else if (map->type == T_OBJECT && map->u.object->prog)
+  else if (map->type == T_OBJECT && (p = map->u.object->prog))
   {
-    int id = FIND_LFUN(map->u.object->prog, LFUN__M_DELETE);
+    int id = FIND_LFUN(p->inherits[map->subtype].prog, LFUN__M_DELETE);
 
     if( id == -1 )
       SIMPLE_BAD_ARG_ERROR("m_delete", 1, "object containing the _m_delete method");
     
-    apply_low( map->u.object, id, 1 );
+    apply_low(map->u.object,
+	      id + p->inherits[map->subtype].identifier_level, 1);
     stack_swap();
     pop_stack();
   } else {
