@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.50 2002/10/26 18:25:29 marcus Exp $
+|| $Id: dlopen.c,v 1.51 2002/10/26 21:04:58 grubba Exp $
 */
 
 #include <global.h>
@@ -107,7 +107,7 @@ static char *dlerr=0;
 FILE *dl_symlog;
 #endif
 
-/* Windows/IA64 dows not prepend symbols with "_". */
+/* Windows/IA64 does not prepend symbols with "_". */
 #ifdef _WIN64
 #define SYMBOL_PREFIX	""
 #else /* !_WIN64 */
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.50 2002/10/26 18:25:29 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.51 2002/10/26 21:04:58 grubba Exp $");
 
 #endif
 
@@ -1371,7 +1371,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
       for(r=0;r<data->sections[s].num_relocs;r++)
       {
 
-/* This should work fine on x86 and other processors which handles
+/* This should work fine on x86 and other processors which handle
  * unaligned memory access
  */
 #define RELOCS(X) (*(struct COFFReloc *)( 10*(X) + (char *)relocs ))
@@ -1504,24 +1504,46 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 	switch(RELOCS(r).type)
 	{
-	  default:
-	  {
-	    static char err[100];
-	    sprintf(err,"Unknown relocation type: %d",RELOCS(r).type);
-	    dlerr=err;
-	    return -1;
-	  }
+	  static char err[100];
 
+	default:
+	  sprintf(err,"Unknown relocation type: %d",RELOCS(r).type);
+	  dlerr=err;
+	  return -1;
+
+#define UNIMPLEMENTED_REL(X)						\
+	case X:								\
+	  sprintf(err, "Unimplemented relocation type: " #X " (%d)", X);\
+	  dlerr = err;							\
+	  return -1
 
 #ifdef _M_IA64
 
-	    /* We may need to support more types here */
-	  case COFFReloc_IA64_dir64:
+	  /* We will need to support more types here */
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_imm14);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_imm22);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_imm64);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_dir32);
+
+	case COFFReloc_IA64_dir64:
 #ifdef DLDEBUG
-	    fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
+	  fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
 #endif
-	    ((INT64 *)loc)[0]+=(INT64)ptr;
-	    break;
+	  ((INT64 *)loc)[0]+=(INT64)ptr;
+	  break;
+
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21b);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21m);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21f);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_gprel22);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_ltoff22);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_sect);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel22);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel64i);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel32);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_ltoff64);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_dir32nb);
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_addend);
 
 #elif defined(_M_IX86)
 
