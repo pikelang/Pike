@@ -1,4 +1,4 @@
-// $Id: GZipFile.pike,v 1.3 2002/10/15 12:44:28 jhs Exp $
+// $Id: GZipFile.pike,v 1.4 2002/10/15 13:03:44 jhs Exp $
 #pike __REAL_VERSION__
 
 //! Allows the user to open a Gzip archive and read and write
@@ -25,8 +25,19 @@ private int is_open;
 void create(mixed ... args) {
   ::create();
 
-  if (sizeof(args))
+  if(sizeof(args))
     open(@args);
+}
+
+string _sprintf()
+{
+  return sprintf("GZipFile(/*%s open */)", is_open ? "" : " not"); 
+}
+
+int close()
+{
+  is_open = 0;
+  return ::close();
 }
 
 void destroy() {
