@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.13 2001/05/09 13:04:25 hop Exp $
+### $Id: regional,v 1.14 2001/05/27 21:13:56 mirar Exp $
 
 ### =====================================================================
 ###
@@ -3405,6 +3405,19 @@ Region "se"
   Add   "c/easter eve"                -  # "Easter Eve"               Easter -1
   Event "se/valborg eve"              -    "Valborgsmässoafton"       Fixed Apr 30
   Event "se/mothers"                  -    "Mother's Day"             WDRel May Sun last
+
+# http://oresund.malmo.se/Regional_info/Fester/Svensk/maj.htm
+#  Mors dag firas den sista söndagen i maj. Mors dag lanserades 1905
+#  av den amerikanska lärarinnan Ann Jarvis och firades första gången
+#  i USA andra söndagen i maj 1907.I Sverige togs traditionen upp 1919
+#  på initiativ av Cecilia Bååth - Holmberg, som flyttade det till
+#  sista söndagen i maj. 1920 gav hon ut en handledning om hur man
+#  skulle fira Mors dag. Det är inte många fester som tillkommit genom
+#  att någon talat om hur firandet skall gå till. I våra dagar har de
+#  kommersiella intressena tagit över, men många mödrar får
+#  fortfarande kaffe på sängen och bjuds på middag och blommor.
+
+
   Add   "c/pentecost eve"             -  # "Pentecost Eve"            Easter +48
   Event "se/midsummers eve"           -    "Midsummer's Eve"          WDRel Jun 20 Fri +1
   Add   "saints/john the baptist"     -  # "St. John the Baptist"     Fixed Jun 24
