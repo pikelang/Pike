@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.92 2000/06/24 00:48:13 hubbe Exp $
+ * $Id: program.h,v 1.93 2000/06/26 16:43:09 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -308,6 +308,8 @@ extern struct program *first_program;
 extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 
+extern int compilation_depth;
+
 /* Flags for identifier finding... */
 #define SEE_STATIC 1
 #define SEE_PRIVATE 2
@@ -353,6 +355,7 @@ int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name,
 				       int flags);
+int find_inherit(struct program *p, struct pike_string *name);
 node *reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
