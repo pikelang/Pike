@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.217 2000/09/28 16:26:01 grubba Exp $");
+RCSID("$Id: las.c,v 1.218 2000/09/30 19:19:48 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -372,6 +372,15 @@ static void add_node(node *n)
 {
   size_t hval = n->hash % node_hash.size;
 
+#ifdef PIKE_DEBUG
+  node *probe = node_hash.table[hval];
+  while(probe) {
+    if (probe == n) {
+      fatal("add_node(%p): Node already added!\n");
+    }
+    probe = probe->next;
+  }
+#endif /* PIKE_DEBUG */
   n->next = node_hash.table[hval];
   node_hash.table[hval] = n;
 }
@@ -400,6 +409,7 @@ static void sub_node(node *n)
     }
     prior->next = n->next;
   }
+  n->next = NULL;
 }
 
 static node *freeze_node(node *orig)
