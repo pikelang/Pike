@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.20 2005/03/31 00:25:59 nilsson Exp $
+// $Id: URI.pike,v 1.21 2005/03/31 01:17:24 nilsson Exp $
 
 #pragma strict_types
 
@@ -347,7 +347,7 @@ mixed `[]=(string property, mixed value)
     case "password":
     case "host":
     case "port":
-      if(!stringp(value))
+      if(!stringp(value) && value!=0)
 	error("%s value not string.\n", property);
       ::`[]=(property, value);
       authority = (user ? user + (password ? ":" + password : "") + "@" : "") +
@@ -356,13 +356,14 @@ mixed `[]=(string property, mixed value)
 	return value;
 
     case "authority":
-      if(!stringp(value)) error("authority value not string.\n");
+      if(!stringp(value) && value!=0)
+	error("authority value not string.\n");
       authority = [string]value;
       parse_authority(); // Set user, password, host and port accordingly
       return value;
 
     case "base_uri":
-      if(!stringp(value) || !(objectp(value) && ([object]value)->reparse_uri))
+      if(!stringp(value) && value!=0 && !objectp(value))
 	error("base_uri value neither object nor string.\n");
       reparse_uri([object(this_program)|string]value);
       return base_uri;
@@ -375,7 +376,8 @@ mixed `[]=(string property, mixed value)
        * "http") for the sake of robustness but should only produce
        * lowercase scheme names for consistency.
        */
-      if(!stringp(value)) error("scheme value not string.\n");
+      if(!stringp(value) && value!=0)
+	error("scheme value not string.\n");
       value = lower_case([string]value);
 
       // FALL_THROUGH
@@ -385,8 +387,9 @@ mixed `[]=(string property, mixed value)
 }
 
 //! When cast to string, return the URI (in a canonicalized form).
-//! When cast to mapping, return a mapping with scheme, authority, user, password, host,
-//! port, path, query, fragment, raw_uri, base_uri as documented above.
+//! When cast to mapping, return a mapping with scheme, authority,
+//! user, password, host, port, path, query, fragment, raw_uri,
+//! base_uri as documented above.
 string|mapping cast(string to)
 {
   switch(to)
@@ -394,7 +397,8 @@ string|mapping cast(string to)
     case "string":
       return _sprintf('s');
     case "mapping":
-      array(string) i = ({ "scheme", "authority", "user", "password", "host", "port",
+      array(string) i = ({ "scheme", "authority", "user", "password",
+			   "host", "port",
 			   "path", "query", "fragment",
 			   "raw_uri", "base_uri",  });
       return mkmapping(i, rows(this, i));
@@ -406,6 +410,71 @@ string get_path_query()
 {
   return (path||"") + (query ? "?" + query : "");
 }
+
+//! Returns the query variables as a @expr{mapping(string:string)@}.
+mapping(string:string) get_query_variables() {
+  return (mapping(string:string))(((query||"")/"&")[*]/"=");
+}
+
+//! Sets the query variables from the provided mapping.
+void set_query_variables(mapping(string:string) vars) {
+  if(!sizeof(vars))
+    query = 0;
+  else
+    query = ((array)vars)[*]*"="*"&";
+}
+
+//! Adds the provided query variable to the already existing ones.
+//! Will overwrite an existing variable with the same name.
+void add_query_variable(string name, string value) {
+  set_query_variables(get_query_variables()+([name:value]));
+}
+
+//! Appends the provided set of query variables with the already
+//! existing ones. Will overwrite all existing variables with the same
+//! names.
+void add_query_variables(mapping(string:string) vars) {
+  set_query_variables(get_query_variables()|vars);
+}
+
+
+// HTTP stuff
+
+// RFC 1738, 2.2. URL Character Encoding Issues
+static constant url_non_corresponding = enumerate(0x21) +
+  enumerate(0x81,1,0x7f);
+static constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
+				'|', '\\', '^', '~', '[', ']', '`' });
+static constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
+
+// Encode these chars
+static constant url_chars = url_non_corresponding + url_unsafe +
+  url_reserved + ({ '+', '\'' });
+static constant url_from = sprintf("%c", url_chars[*]);
+static constant url_to   = sprintf("%%%02x", url_chars[*]);
+
+string http_encode(string in)
+{
+  // We shouldn't really have to soft case here. Bug(ish) in constant
+  // type generation...
+  return replace(in, [array(string)]url_from, [array(string)]url_to);
+}
+
+//! Return the query part, coded according to RFC 1738.
+string get_http_query() {
+  mapping out = ([]);
+  foreach(get_query_variables(); string name; string value)
+    out[http_encode(name)] = http_encode(value);
+  return ((array)out)[*]*"="*"&";
+}
+
+//! Return the path and query part of the URI, coded according to RFC
+//! 1738.
+string get_http_path_query() {
+  return http_encode(((path||"")/"/")[*])*"/" +
+    (query?"?"+get_http_query():"");
+}
+
 
 string _sprintf(int how, mapping|void args)
 {
