@@ -29,10 +29,10 @@ sources1:
 	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR)/source
 	$(MAKE) CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g'`" "SOURCES=`cat sources`" doit
 
-files_to_compile: $(SOURCES)
+always_build_files_to_compile: $(SOURCES)
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR)
 
-doit: files_to_compile
+doit: always_build_files_to_compile
 	$(MAKE) CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g'`" "OBJS=`cat files_to_compile`" all
 
 sources0:
