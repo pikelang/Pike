@@ -24,6 +24,7 @@
 /stamp-h
 /stamp-h.in
 /testsuite
+/treeopt.h
 /y.output
 /y.tab.c
 /y.tab.h
