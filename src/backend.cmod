@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.37 2003/10/15 18:25:59 grubba Exp $
+|| $Id: backend.cmod,v 1.38 2004/05/10 08:30:53 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.37 2003/10/15 18:25:59 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.38 2004/05/10 08:30:53 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2024,8 +2024,12 @@ PIKECLASS Backend
       THIS->active_set.num_in_poll=0;
 #endif /* !HAVE_POLL */
 
-      if(pike_make_pipe(THIS->wakeup_pipe) < 0)
-	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
+      if(pike_make_pipe(THIS->wakeup_pipe) < 0) {
+	if (default_backend)
+	  Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
+	else
+	  Pike_fatal("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
+      }
 
       set_nonblocking(THIS->wakeup_pipe[0],1);
       set_nonblocking(THIS->wakeup_pipe[1],1);
