@@ -155,7 +155,7 @@ string digest(void|function(int,int:void) progress_callback)
    }
 
    info->info=([]);
-   info->info->length=offset;
+   if (sizeof(targets)==1) info->info->length=offset;
    info->info->name=base;
    info->info["piece length"]=piece_size;
    info->info["pieces"]=info_sha1;
