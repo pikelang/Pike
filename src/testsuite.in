@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.160 1999/03/19 11:43:35 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.161 1999/03/20 03:14:46 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2593,6 +2593,13 @@ test_equal(Array.longest_ordered_sequence("dfgaokäpojghadjjioijrgxcvb"/""),
 test_equal(lower_case("foo"),"foo")
 test_equal(lower_case("Foo"),"foo")
 test_equal(lower_case("Foo1234-*~\n"),"foo1234-*~\n")
+test_equal(lower_case("foo\x3000"),"foo\x3000")
+test_equal(lower_case("Foo\x3000"),"foo\x3000")
+test_equal(lower_case("Foo1234-*~\n\x3000"),"foo1234-*~\n\x3000")
+test_equal(lower_case("foo\x13000"),"foo\x13000")
+test_equal(lower_case("Foo\x13000"),"foo\x13000")
+test_equal(lower_case("Foo1234-*~\n\x13000"),"foo1234-*~\n\x13000")
+test_equal(lower_case("Foo\x178"),"fooÿ")
 
 // - next_object
 test_true(objectp(next_object()))
@@ -2902,6 +2909,13 @@ test_eq(trace(0),0)
 test_equal(upper_case("fooq"),"FOOQ")
 test_equal(upper_case("FooR"),"FOOR")
 test_equal(upper_case("Foo1234-*~\n"),"FOO1234-*~\n")
+test_equal(upper_case("fooq\x3000"),"FOOQ\x3000")
+test_equal(upper_case("FooR\x3000"),"FOOR\x3000")
+test_equal(upper_case("Foo1234-*~\n\x3000"),"FOO1234-*~\n\x3000")
+test_equal(upper_case("fooq\x13000"),"FOOQ\x13000")
+test_equal(upper_case("FooR\x13000"),"FOOR\x13000")
+test_equal(upper_case("Foo1234-*~\n\x13000"),"FOO1234-*~\n\x13000")
+test_equal(upper_case("Fooÿ"),"FOO\x178")
 
 // - values
 test_equal(values("foo"),({'f','o','o'}))
