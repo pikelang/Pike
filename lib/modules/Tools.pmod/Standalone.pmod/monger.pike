@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: monger.pike,v 1.4 2004/04/22 21:04:32 bill Exp $
+// $Id: monger.pike,v 1.5 2004/08/11 16:50:48 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.4 $"/" ")[1];
+constant version = ("$Revision: 1.5 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -160,11 +160,12 @@ void do_query(string name, string|void version)
   mixed e; // for catching errors
   int module_id;
 
+
   mapping vi = get_module_action_data(name, version);
 
   write("%s: %s\n", vi->name, vi->description);
   write("Author/Owner: %s\n", vi->owner);
-  write("Version: %s (recommended)\t", vi->version);
+  write("Version: %s (%s)\t", vi->version, vi->version_type);
   write("License: %s\n", vi->license);
   write("Changes: %s\n\n", vi->changes);
   
@@ -197,7 +198,15 @@ mapping get_module_action_data(string name, string|void version)
 
   mapping info = x->get_module_info((int)module_id);
 
-  catch(v = x->get_recommended_module_version((int)module_id, pike_version));
+  mixed err=catch(v = x->get_recommended_module_version((int)module_id, pike_version));
+
+  if(err)
+    write("an error occurred while getting the recommended version.\n");
+
+  info->version_type="recommended";
+
+  if(version && version != v)
+    info->version_type="not recommended";
 
   if(version && use_force)
   {
@@ -222,7 +231,7 @@ mapping get_module_action_data(string name, string|void version)
     dv=v;
   }
   else
-    exit(1, "download error: no recommended version to %s.\n"
+    exit(1, "repository error: no recommended version to %s.\n"
 	 "use --force --version=ver to force %s of a particular version.\n",
          my_command, my_command);
 
@@ -412,8 +421,8 @@ class xmlrpc_handler
         r = c[n](@args);
       else
         r = c[n]();
-      if(objectp(r)) // we have an error. exit.
-        exit(1, r->fault_string);
+      if(objectp(r)) // we have an error, throw it.
+        error(r->fault_string);
       else return r[0];
     }
 
