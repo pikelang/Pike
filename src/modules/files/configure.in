@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.54 1998/07/06 21:56:11 grubba Exp $
+# $Id: configure.in,v 1.55 1998/07/16 19:27:27 hubbe Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -49,6 +49,7 @@ if test x$ac_cv_func_readdir_r = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <sys/types.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #else
