@@ -394,8 +394,9 @@ void move_cursor_abs( GDK.Window w, int dx, int dy )
 {
   int x, y;
   struct object *o;
+  GdkWindowPrivate *priv;
   get_all_args( "move_cursor_abs", args, "%o%d%d", &o, &x, &y );
-  GdkWindowPrivate *priv = (GdkWindowPrivate *)get_gdkobject( o, window );
+  priv = (GdkWindowPrivate *)get_gdkobject( o, window );
   if( !priv )
     Pike_error("No window specified!\n");
   XWarpPointer( GDK_DISPLAY(), None, priv->xwindow, 0, 0, 0, 0, x, y );
