@@ -378,6 +378,70 @@ INT32 gc_check(void *a)
   return getmark(a)->refs++;
 }
 
+static void init_gc(void)
+{
+  INT32 tmp3;
+  /* init hash , hashsize will be a prime between num_objects/8 and
+   * num_objects/4, this will assure that no re-hashing is needed.
+   */
+  tmp3=my_log2(num_objects);
+
+  if(!d_flag) tmp3-=2;
+  if(tmp3<0) tmp3=0;
+  if(tmp3>=(long)NELEM(hashprimes)) tmp3=NELEM(hashprimes)-1;
+  hashsize=hashprimes[tmp3];
+
+  hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
+  MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
+  markers_left_in_chunk=0;
+}
+
+static void exit_gc(void)
+{
+  struct marker_chunk *m;
+  /* Free hash table */
+  free((char *)hash);
+  while((m=chunk))
+  {
+    chunk=m->next;
+    free((char *)m);
+  }
+}
+
+void locate_references(void *a)
+{
+  if(!in_gc)
+    init_gc();
+  
+  fprintf(stderr,"**Looking for references:\n");
+  
+  check_for=a;
+  
+  found_where=" in an array";
+  gc_check_all_arrays();
+  
+  found_where=" in a multiset";
+  gc_check_all_multisets();
+  
+  found_where=" in a mapping";
+  gc_check_all_mappings();
+  
+  found_where=" in a program";
+  gc_check_all_programs();
+  
+  found_where=" in an object";
+  gc_check_all_objects();
+  
+  found_where=" in a module";
+  call_callback(& gc_callbacks, (void *)0);
+  
+  found_where="";
+  check_for=0;
+  
+  if(!in_gc)
+    exit_gc();
+}
+
 int gc_is_referenced(void *a)
 {
   struct marker *m;
@@ -392,29 +456,7 @@ int gc_is_referenced(void *a)
     fprintf(stderr,"**Something has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
     describe_something(a, t);
 
-    fprintf(stderr,"**Looking for references:\n");
-    check_for=a;
-
-    found_where=" in an array";
-    gc_check_all_arrays();
-
-    found_where=" in a multiset";
-    gc_check_all_multisets();
-
-    found_where=" in a mapping";
-    gc_check_all_mappings();
-
-    found_where=" in a program";
-    gc_check_all_programs();
-
-    found_where=" in an object";
-    gc_check_all_objects();
-
-    found_where=" in a module";
-    call_callback(& gc_callbacks, (void *)0);
-
-    found_where="";
-    check_for=0;
+    locate_references(a);
 
     fatal("Ref counts are wrong (has %d, found %d + %d external)\n",
 	  *(INT32 *)a,
@@ -474,8 +516,7 @@ int gc_do_free(void *a)
 void do_gc(void)
 {
   double tmp;
-  INT32 tmp2,tmp3;
-  struct marker_chunk *m;
+  INT32 tmp2;
   double multiplier;
 
   if(in_gc) return;
@@ -507,19 +548,7 @@ void do_gc(void)
   objects_freed += (double) num_objects;
 
 
-  /* init hash , hashsize will be a prime between num_objects/8 and
-   * num_objects/4, this will assure that no re-hashing is needed.
-   */
-  tmp3=my_log2(num_objects);
-
-  if(!d_flag) tmp3-=2;
-  if(tmp3<0) tmp3=0;
-  if(tmp3>=(long)NELEM(hashprimes)) tmp3=NELEM(hashprimes)-1;
-  hashsize=hashprimes[tmp3];
-
-  hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
-  MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
-  markers_left_in_chunk=0;
+  init_gc();
 
   /* First we count internal references */
   gc_check_all_arrays();
@@ -546,14 +575,7 @@ void do_gc(void)
   gc_free_all_unreferenced_programs();
   gc_free_all_unreferenced_objects();
 
-
-  /* Free hash table */
-  free((char *)hash);
-  while((m=chunk))
-  {
-    chunk=m->next;
-    free((char *)m);
-  }
+  exit_gc();
 
   destruct_objects_to_destruct();
   
