@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.84 2000/10/11 13:22:44 grubba Exp $
+// $Id: module.pmod,v 1.85 2001/06/13 11:59:15 grubba Exp $
 
 import String;
 
@@ -145,7 +145,7 @@ class File
     }
     _async_cb = callback;
     _async_args = args;
-    set_nonblocking(0, _async_connected, _async_failed);
+    set_nonblocking(0, _async_connected, _async_failed, _async_failed, 0);
     mixed err;
     int res;
     if (err = catch(res = connect(host, port))) {
