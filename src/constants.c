@@ -14,9 +14,10 @@
 #include "interpret.h"
 #include "mapping.h"
 #include "pike_error.h"
+#include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.29 2001/04/07 07:38:24 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.30 2001/04/13 19:56:49 grubba Exp $");
 
 struct mapping *builtin_constants = 0;
 
