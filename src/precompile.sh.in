@@ -87,7 +87,7 @@ case $method in
         if [ -x $dir/$p ]; then
           if [ "x$LAST_PIKE" = xpike ] ; then
             LAST_PIKE=$dir/$p
-            RUNPIKE="$dir/$p -DOLD=\"$SRCDIR\""
+            RUNPIKE="$dir/$p $OLD"
             break
           fi
 
