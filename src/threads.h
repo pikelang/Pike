@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.51 1998/08/26 18:43:49 marcus Exp $
+ * $Id: threads.h,v 1.52 1998/08/31 12:48:33 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -87,11 +87,17 @@ extern pthread_attr_t small_pattr;
 #ifdef HAVE_PTHREAD_COND_INIT
 #define COND_T pthread_cond_t
 
-#ifdef HAVE_PTHREAD_CONDATTR_DEFAULT
+#ifdef HAVE_PTHREAD_CONDATTR_DEFAULT_AIX
+/* AIX wants the & ... */
 #define co_init(X) pthread_cond_init((X), &pthread_condattr_default)
-#else
+#else /* !HAVE_PTHREAD_CONDATTR_DEFAULT_AIX */
+#ifdef HAVE_PTHREAD_CONDATTR_DEFAULT
+/* ... while FreeBSD doesn't. */
+#define co_init(X) pthread_cond_init((X), pthread_condattr_default)
+#else /* !HAVE_PTHREAD_CONDATTR_DEFAULT */
 #define co_init(X) pthread_cond_init((X), 0)
 #endif /* HAVE_PTHREAD_CONDATTR_DEFAULT */
+#endif /* HAVE_PTHREAD_CONDATTR_DEFAULT_AIX */
 
 #define co_wait(COND, MUTEX) pthread_cond_wait((COND), (MUTEX))
 #define co_signal(X) pthread_cond_signal(X)
