@@ -173,6 +173,18 @@ Examples:
 XML:          <example/>
 ________________________________________________________________________________
 
+Keyword:      @fixme
+Description:  Note about something that needs fixing in the manual.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @fixme
+                The return values of this function is not correctly documented.
+
+XML:          <fixme/>
+________________________________________________________________________________
+
 Keyword:      @note
 Description:  Important information about the documented item.
 Arguments:    -
@@ -368,6 +380,22 @@ XML:          `@member float "foo"' =>
               </member>
 ________________________________________________________________________________
 
+Keyword:      @ol - @endol
+Description:  Creates an ordered list.
+Children:     @item
+Groups with:  -
+Examples:     @ol
+                @item
+                  Open the door
+                @item
+                  Walk through
+                @item
+                  Close the door
+              @endol
+
+XML:          <ol>...</ol>
+________________________________________________________________________________
+
 Keyword:      @ref{ ... @}
 Description:  A reference to a Pike entity. There is also a shortcut for this
               keyword, since it is expected to be so common: @[ ... ]
@@ -417,6 +445,22 @@ Children:     Text that will be rendered in teletype.
 Examples:     Type @tt{rm -rf *@} to erase several days of work.
 
 XML:          <tt> ... </tt>
+________________________________________________________________________________
+
+Keyword:      @ul - @endul
+Description:  Creates an unordered list.
+Children:     @item
+Groups with:  -
+Examples:     @ul
+                @item
+                  2 oz light rum
+                @item
+                  Juice of ½ lime
+                @item
+                  Coca Cola
+              @endul
+
+XML:          <ul>...</ul>
 ________________________________________________________________________________
 
 Keyword:      @xml{ ... @}
