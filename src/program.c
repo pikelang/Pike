@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.570 2004/10/16 07:27:29 agehall Exp $
+|| $Id: program.c,v 1.571 2004/10/22 20:18:03 grubba Exp $
 */
 
 #include "global.h"
@@ -2655,7 +2655,7 @@ void dump_program_tables (struct program *p, int indent)
   }
   fprintf(stderr, "\n"
 	  "%*sConstant table:\n"
-	  "%*s  ####: Type Name\n",
+	  "%*s  ####: Type            Name\n",
 	  indent, "", indent, "");
   for (d = 0; d < p->num_constants; d++) {
     struct program_constant *c = p->constants + d;
