@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.47 2000/05/20 02:20:00 per Exp $");
+RCSID("$Id: backend.c,v 1.48 2000/05/20 18:52:13 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -261,6 +261,11 @@ void cleanup_backend(void)
     active_num_in_poll = 0;
   }
 #endif /* HAVE_POLL */
+  if (fds) {
+    free(fds);
+    fds = NULL;
+    fds_size = 0;
+  }
 }
 
 void set_read_callback(int fd,file_callback cb,void *data)
