@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.26 1999/11/18 17:45:39 grubba Exp $
+// $Id: treeopt.in,v 1.27 1999/11/19 00:38:30 grubba Exp $
 //
 // The tree optimizer
 //
@@ -18,6 +18,17 @@
 }
 ;
 
+// Attempt to call a void expression.
+// The compiler has already complained about it, so just make a valid node.
+F_APPLY(-, 0 = *):
+  F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
+
+
+// Attempt to return a void expression.
+// The compiler has already complained about it, so just make a valid node.
+F_RETURN(-, *):
+  F_RETURN(0, -);
+
 
 F_POP_VALUE(-, *):
   -;
@@ -26,13 +37,13 @@ F_POP_VALUE(-, *):
 F_POP_VALUE(0 = F_POP_VALUE, *):
   $0;
 
-// Don't push constants just to pop them.
-F_POP_VALUE(F_CONSTANT, *):
-  -;
-
 // Casts don't have side-effects.
 F_POP_VALUE(F_CAST(0, *), *):
   F_POP_VALUE($0, -);
+
+// Don't push constants just to pop them.
+F_POP_VALUE(F_CONSTANT, *):
+  -;
 
 // Popping of variables.
 F_POP_VALUE(F_LOCAL, *):
@@ -46,20 +57,62 @@ F_POP_VALUE(F_GLOBAL, *):
 F_POP_VALUE(F_EXTERNAL, *):
   -;
 
+// Popping of zero elements.
+// This set of rules also protects the rule
+//   F_COMMA(F_POP(0), F_POP(1)) => F_POP(F_COMMA(0, 1))
+F_POP_VALUE(0 = F_RETURN, *):
+  $0;
+
+F_POP_VALUE(0 = F_CONTINUE, *):
+  $0;
+
+F_POP_VALUE(0 = F_BREAK, *):
+  $0;
+
+F_POP_VALUE(0 = F_CASE, *):
+  $0;
+
+F_POP_VALUE(0 = F_DEFAULT, *):
+  $0;
+
+F_POP_VALUE(0 = F_FOR, *):
+  $0;
+
+F_POP_VALUE(0 = F_FOREACH, *):
+  $0;
+
+F_POP_VALUE(0 = F_INC_LOOP, *):
+  $0;
+
+F_POP_VALUE(0 = F_DEC_LOOP, *):
+  $0;
+
+F_POP_VALUE(0 = F_INC_NEQ_LOOP, *):
+  $0;
+
+F_POP_VALUE(0 = F_DEC_NEQ_LOOP, *):
+  $0;
+
+
 
 F_CAST(-,*):
   -;
 
 // Convert casts to void to F_POP_VALUE
-F_CAST[$$->type == void_type_string](0, *):
-  F_POP_VALUE($0, -);
+// Not needed -- done automatically by mkcastnode().
+// F_CAST[$$->type == void_type_string](0, *):
+//   F_POP_VALUE($0, -);
 
 // void can't be casted to anything else.
-F_CAST[$$->type != void_type_string](0 = +[$$->type == void_type_string], *):
-  $0;
+F_CAST(0 = +[$$->type == void_type_string], *):
+{
+  yywarning("Casting a void expression\n");
+  $$ = $0;
+}
+;
 
 // This one is probably not needed, since it's handled by mkcastnode()
-0 = F_CAST[$$->type != void_type_string](1 = +[$$->type == $0->type](*, *), *):
+0 = F_CAST(1 = +[$$->type == $0->type](*, *), *):
   $1;
 
 // Propagate casts towards the leaves
@@ -102,10 +155,6 @@ F_CAST[$$->type != void_type_string](0 = +[$$->type == void_type_string], *):
 // 		  0), *):
 // 	   $0;
 
-// Convert the argument-list to a comma-list.
-F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
-  F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
-
 
 F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[$$->u.sval.type == T_INT]
                                    [$$->u.sval.u.integer < 0])):
@@ -121,6 +170,7 @@ F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[$$->u.sval.type == T_FLOAT]
 }
 ;
 
+
 F_COMMA_EXPR(-, 0):
   $0;
 
@@ -133,6 +183,16 @@ F_COMMA_EXPR(F_CONSTANT, 0 = +):
 F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT), 1 = +):
   F_COMMA_EXPR($0, $1);
 
+// Join adjacent F_POP_VALUE's.
+// NOTE: These two rules work only since F_RETURN, F_BREAK and F_CONTINUE
+// have been stripped of F_POP_VALUE by rules above.
+F_COMMA_EXPR(F_POP_VALUE(0, *), F_POP_VALUE(1, *)):
+  F_POP_VALUE(F_COMMA_EXPR($0, $1), -);
+
+F_COMMA_EXPR(F_COMMA_EXPR(0, F_POP_VALUE(1, *)), F_POP_VALUE(2, *)):
+  F_COMMA_EXPR($0, F_POP_VALUE(F_COMMA_EXPR($1, $2), -));
+
+// The following two are disabled, since they are too general.
 // F_COMMA_EXPR(+[!($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|OPT_CASE|
 // 				     OPT_CONTINUE|OPT_BREAK|OPT_RETURN))], 0 = +):
 //   $0;
@@ -142,6 +202,10 @@ F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT), 1 = +):
 // 						     OPT_CONTINUE|OPT_BREAK|
 // 						     OPT_RETURN))]), 1 = +):
 //   F_COMMA_EXPR($0, $1);
+
+// Convert the argument-list to a comma-list.
+F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
+  F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
 // Ensure that the result value is at the top-node, to ensure
 // proper optimization.
@@ -288,6 +352,9 @@ F_LAND(0 = +[node_is_false($$)], *):
 '?'(0, -):
   $0;
 
+'?'(0, ':'(-, -)):
+  $0;
+
 '?'(F_NOT(0, *), ':'(1, 2)):
   '?'($0, ':'($2, $1));
 
@@ -308,6 +375,7 @@ F_LAND(0 = +[node_is_false($$)], *):
 
 '?'(0, ':'(F_COMMA_EXPR(1, 2), F_COMMA_EXPR(3, $2))):
   F_COMMA_EXPR('?'($0, ':'($1, $3)), $2);
+
 
 F_NOT(-, *):
   1;
@@ -346,6 +414,7 @@ F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
   F_DEC($0, -);
 
+
 // a += 0  ->  a
 F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
 	 [!($$->u.sval.u.integer)]):
@@ -360,6 +429,14 @@ F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
 F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
   F_INC($0, -);
+
+
+F_INDEX(-, 0 = *):
+  F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
+
+
+F_ARROW(-, 0 = *):
+  F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
 
 F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
 	    [$$->u.sval.u.object->prog],
@@ -404,10 +481,7 @@ F_DO(-, 0 = +[node_is_true($$)]):
 
 // No body -- No reason to loop...
 F_FOREACH(F_VAL_LVAL(0, *), -):
-{
-  $$ = mkcastnode(void_type_string, $0);
-}
-;
+  F_POP_VALUE($0, -);
 
 
 F_FOR(-, *):
@@ -415,6 +489,9 @@ F_FOR(-, *):
 
 F_FOR(0, ':'(-, -)):
   F_FOR($0, -);
+
+F_FOR(+[node_is_false($$)], *):
+  -;
 
 F_FOR(0 = +[node_is_true($$)], -):
 {
@@ -424,9 +501,6 @@ F_FOR(0 = +[node_is_true($$)], -):
 				0));
 }
 ;
-
-F_FOR(+[node_is_false($$)], *):
-  -;
 
 
 F_FOR(F_INC(0, *), -):
