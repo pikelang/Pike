@@ -68,7 +68,7 @@ PIKEFUN array column(array tmp, mixed val)
 
 PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   efun;
-  optflags OPT_TRY_OPTIMIZE;
+  optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
   RETURN mkmultiset(a);
 }
@@ -92,7 +92,7 @@ PIKEFUN string ctime(int x)
 
 PIKEFUN mapping(1:2) mkmapping(array(1=mixed) a, array(2=mixed) b)
   efun;
-  optflags OPT_TRY_OPTIMIZE;
+  optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
   if(a->size != b->size)
     bad_arg_error("mkmapping", sp-args, args, 2, "array", sp+1-args,
@@ -197,7 +197,7 @@ PIKEFUN 1 m_delete(mapping(mixed:1=mixed) m, mixed val)
 
 PIKEFUN int get_weak_flag(mixed m)
   efun;
-  optflags OPT_TRY_OPTIMIZE;
+  optflags OPT_EXTERNAL_DEPEND;
 {
   int flag;
   switch (m->type) {
