@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.84 1998/03/18 20:22:30 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.85 1998/03/18 20:26:28 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2404,7 +2404,7 @@ static void f_get_prof_info(INT32 args)
     error("get_profiling_info(): Too few arguments\n");
   }
   if (sp[-args].type == T_FUNCTION 
-      && s->subtype != FUNCTION_BUILTIN) {
+      && sp[-args].subtype != FUNCTION_BUILTIN) {
     prog = sp[-args].u.object->prog;
   } else if (sp[-args].type == T_OBJECT) {
     prog = sp[-args].u.object->prog;
