@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.54 1999/10/15 23:53:44 noring Exp $
+ * $Id: cpp.c,v 1.55 1999/10/24 13:36:02 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -1084,6 +1084,7 @@ void f_cpp(INT32 args)
 	}
 	data = sp[-1].u.string;
 	sp--;
+	dmalloc_touch_svalue(sp);
       } else if (sp[2-args].type == T_INT) {
 	auto_convert = sp[2-args].u.integer;
       } else {

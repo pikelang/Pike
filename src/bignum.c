@@ -22,6 +22,7 @@ static void resolve_auto_bignum_program(void)
     
     auto_bignum_program=sp[-1];
     sp--;
+    dmalloc_touch_svalue(sp);
   }
 }
 
@@ -91,6 +92,7 @@ void convert_svalue_to_bignum(struct svalue *s)
   free_svalue(s);
   *s=sp[-1];
   sp--;
+  dmalloc_touch_svalue(sp);
 }
 
 #endif /* AUTO_BIGNUM */
