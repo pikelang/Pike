@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.5 2003/03/18 15:41:57 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.6 2003/03/18 16:28:37 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -34,12 +34,12 @@ PIKECLASS aes
   CVAR struct aes_ctx ctx;
   CVAR void (*f)(struct aes_ctx *, unsigned length,
 		 uint8_t *dst, const uint8_t *src);
-  
+
   PIKEFUN string name()
     {
       push_string(make_shared_string("aes"));
     }
-
+  
   PIKEFUN int key_size()
     {
       /* Recommended key size. */
@@ -153,12 +153,14 @@ PIKE_MODULE_INIT
   INIT;
 #ifdef HAVE_LIBNETTLE
   hash_init();
+  cipher_init();
 #endif /* HAVE_LIBNETTLE */
 }
 
 PIKE_MODULE_EXIT
 {
 #ifdef HAVE_LIBNETTLE
+  cipher_exit();
   hash_exit();
 #endif /* HAVE_LIBNETTLE */
   EXIT;
