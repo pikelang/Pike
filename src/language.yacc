@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.46 1997/08/30 18:35:36 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.47 1997/09/10 20:48:45 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -204,6 +204,15 @@ void fix_comp_stack(int sp)
     fatal("Compiler stack frame underflow.");
   }
 }
+
+/*
+ * Kludge for Bison not using prototypes.
+ */
+#ifndef __GNUC__
+#ifndef __cplusplus
+static void __yy_memcpy(char *to, char *from, int count)
+#endif /* !__cplusplus */
+#endif /* !__GNUC__ */
 
 %}
 
