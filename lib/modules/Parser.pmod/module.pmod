@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.11 2001/10/22 14:01:49 nilsson Exp $
+ * $Id: module.pmod,v 1.12 2002/01/17 21:13:19 nilsson Exp $
  *
  */
 
@@ -200,6 +200,28 @@ class SGML
    {
       return data;
    }
+}
+
+static int(0..0) return_zero() {return 0;}
+static Parser.HTML xml_parser =
+  lambda() {
+    Parser.HTML p = Parser.HTML();
+    p->lazy_entity_end (1);
+    p->match_tag (0);
+    p->xml_tag_syntax (3);
+    p->add_quote_tag ("!--", return_zero, "--");
+    p->add_quote_tag ("![CDATA[", return_zero, "]]");
+    p->add_quote_tag ("?", return_zero, "?");
+    return p;
+  }();
+
+//! Returns a @[Parser.HTML] initialized for parsing XML. It has all
+//! the flags set properly for XML syntax and have callbacks to ignore
+//! comments, CDATA blocks and unknown PI tags, but it has no
+//! registered tags and doesn't decode any entities.
+Parser.HTML get_xml_parser()
+{
+  return xml_parser->clone();
 }
 
 //! @decl HTML html_entity_parser()
