@@ -1,25 +1,24 @@
 #pike __REAL_VERSION__
 
-//! module Image
-//! $Id: module.pmod,v 1.17 2001/03/30 01:42:24 per Exp $
+//! $Id: module.pmod,v 1.18 2001/04/27 13:41:35 grubba Exp $
 
-//! method Image.Layer load()
-//! method Image.Image load(object file)
-//! method Image.Image load(string filename)
-//! method Image.Layer load_layer()
-//! method Image.Layer load_layer(object file)
-//! method Image.Layer load_layer(string filename)
-//! method array(Image.Layer) load_layers()
-//! method array(Image.Layer) load_layers(object file)
-//! method array(Image.Layer) load_layers(string filename)
-//! method mapping _load()
-//! method mapping _load(object file)
-//! method mapping _load(string filename)
+//! @decl Image.Layer load()
+//! @decl Image.Image load(object file)
+//! @decl Image.Image load(string filename)
+//! @decl Image.Layer load_layer()
+//! @decl Image.Layer load_layer(object file)
+//! @decl Image.Layer load_layer(string filename)
+//! @decl array(Image.Layer) load_layers()
+//! @decl array(Image.Layer) load_layers(object file)
+//! @decl array(Image.Layer) load_layers(string filename)
+//! @decl mapping _load()
+//! @decl mapping _load(object file)
+//! @decl mapping _load(string filename)
 //!	Helper function to load an image from a file.
 //!	If no filename is given, Stdio.stdin is used.
 //! 	The result is the same as from the decode functions
-//!	in <ref>Image.ANY</ref>.
-//! note:
+//!	in @[Image.ANY].
+//! @note
 //! 	All data is read, ie nothing happens until the file is closed.
 //!	Throws upon error.
 

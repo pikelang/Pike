@@ -10,6 +10,7 @@ constant defined = __builtin.function_defined;
 //! was what it was invented for in the first place).
 //!
 //! @example
+//!   @code{
 //!   class Product(string name, string version)
 //!   {
 //!     string _sprintf()
@@ -24,7 +25,7 @@ constant defined = __builtin.function_defined;
 //!	 Product(pike/7.1.11),
 //!	 Product(whitefish/0.1)
 //!   })
-//! @endexample
+//!   @}
 //!
 //! @param args
 //!  the first arguments the function @tt{f@} expects

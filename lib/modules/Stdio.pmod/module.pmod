@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.112 2001/04/19 01:12:23 mast Exp $
+// $Id: module.pmod,v 1.113 2001/04/27 13:40:32 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -201,17 +201,17 @@ class File
   //! Open a file for read, write or append. The parameter @[mode] should
   //! contain one or more of the following letters:
   //! @string
-  //!   @member 'r'
+  //!   @value 'r'
   //!   Open file for reading.
-  //!   @member 'w'
+  //!   @value 'w'
   //!   Open file for writing.
-  //!   @member 'a'
+  //!   @value 'a'
   //!   Open file for append (use with @tt{'w'@}).
-  //!   @member 't'
+  //!   @value 't'
   //!   Truncate file at open (use with @tt{'w'@}).
-  //!   @member 'c'
+  //!   @value 'c'
   //!   Create file if it doesn't exist (use with @tt{'w'@}).
-  //!   @member 'x'
+  //!   @value 'x'
   //!   Fail if file already exists (use with @tt{'c'@}).
   //! @endstring
   //!
@@ -708,7 +708,9 @@ class File
   //! @seealso
   //! @[set_nonblocking()], @[set_read_callback]
 
+  //! @ignore
   CBFUNC(read_callback)
+  //! @endignore
 
   //! @decl void set_write_callback(function(mixed:void) write_cb)
   //!
@@ -733,7 +735,9 @@ class File
   //! @seealso
   //! @[set_nonblocking()], @[set_write_callback]
 
+  //! @ignore
   CBFUNC(write_callback)
+  //! @endignore
 
   //! @decl void set_read_oob_callback(function(mixed, string:void) read_oob_cb)
   //!
@@ -756,8 +760,10 @@ class File
   //!   Document this function.
 
 #if constant(files.__HAVE_OOB__)
+  //! @ignore
   CBFUNC(read_oob_callback)
   CBFUNC(write_oob_callback)
+  //! @endignore
 #endif
 
   //! @decl void set_close_callback(function(mixed:void) close_cb)
@@ -804,13 +810,13 @@ class File
   //!
   mixed query_id() { return ___id; }
 
-  //! @decl void set_nonblocking(function(mixed, string:void) read_callback,
-  //!                            function(mixed:void) write_callback,
+  //! @decl void set_nonblocking(function(mixed, string:void) read_callback, @
+  //!                            function(mixed:void) write_callback, @
   //!                            function(mixed:void) close_callback)
-  //! @decl void set_nonblocking(function(mixed, string:void) read_callback,
-  //!                            function(mixed:void) write_callback,
-  //!                            function(mixed:void) close_callback,
-  //!                            function(mixed, string:void) read_oob_callback,
+  //! @decl void set_nonblocking(function(mixed, string:void) read_callback, @
+  //!                            function(mixed:void) write_callback, @
+  //!                            function(mixed:void) close_callback, @
+  //!                            function(mixed, string:void) read_oob_callback, @
   //!                            function(mixed:void) write_oob_callback)
   //! @decl void set_nonblocking()
   //!
@@ -896,8 +902,8 @@ class File
     ::_enable_callbacks();
   }
 
-  //! @decl set_nonblocking_keep_callbacks()
-  //! @decl set_blocking_keep_callbacks()
+  //! @decl void set_nonblocking_keep_callbacks()
+  //! @decl void set_blocking_keep_callbacks()
   //!    toggle between blocking and nonblocking,
   //!    without changing the callbacks
 
@@ -930,8 +936,9 @@ class File
     }
     register_close_file (open_file_id);
   }
-};
+}
 
+//! Socket port
 class Port
 {
   inherit _port;
@@ -1002,10 +1009,12 @@ class Port
   }
 }
 
-object stderr=File("stderr");
-object stdout=File("stdout");
+File stderr=File("stderr");
+File stdout=File("stdout");
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
+
+//! Buffered I/O
 class FILE
 {
 #define BUFSIZE 8192
@@ -1178,7 +1187,7 @@ class FILE
   }
 
   //! This function does approximately the same as:
-  //! @tt{write(sprintf(format,@data))@}.
+  //! @code{@[write](@[sprintf](@[format],@@@[data]))@}.
   //!
   //! @seealso
   //! @[write()], @[sprintf()]
@@ -1242,7 +1251,7 @@ class FILE
 
     return b[bpos++];
   }
-};
+}
 
 FILE stdin=FILE("stdin");
 
@@ -2067,15 +2076,15 @@ static class nb_sendfile
   }
 }
 
-//! @decl object sendfile(array(string) headers
-//!                       File from, int offset, int len,
-//!                       array(string) trailers,
+//! @decl object sendfile(array(string) headers, @
+//!                       File from, int offset, int len, @
+//!                       array(string) trailers, @
 //!                       File to)
-//! @decl object sendfile(array(string) headers
-//!                       File from, int offset, int len,
-//!                       array(string) trailers,
-//!                       File to,
-//!                       function(int, mixed ...:void) callback,
+//! @decl object sendfile(array(string) headers, @
+//!                       File from, int offset, int len, @
+//!                       array(string) trailers, @
+//!                       File to, @
+//!                       function(int, mixed ...:void) callback, @
 //!                       mixed ... args)
 //!
 //! Sends @[headers] followed by @[len] bytes starting at @[offset]
@@ -2134,7 +2143,7 @@ object sendfile(array(string) headers,
   return nb_sendfile(headers, from, offset, len, trailers, to, cb, @args);
 }
 
-
+//! UDP (User Datagram Protocol) handling.
 class UDP
 {
   inherit files.UDP;
@@ -2154,8 +2163,8 @@ class UDP
   }
 
   //! @decl UDP set_nonblocking()
-  //! @decl UDP set_nonblocking(function(mapping(string:int|string),
-  //!                                    mixed ...:void) read_cb,
+  //! @decl UDP set_nonblocking(function(mapping(string:int|string), @
+  //!                                    mixed ...:void) read_cb, @
   //!                           mixed ... extra_args)
   //!
   //! Set this object to nonblocking mode.
@@ -2173,18 +2182,18 @@ class UDP
     return _set_nonblocking();
   }
 
-  //! @decl UDP set_read_callback(function(mapping(string:int|string),
-  //!                                      mixed...) read_cb,
+  //! @decl UDP set_read_callback(function(mapping(string:int|string), @
+  //!                                      mixed...) read_cb, @
   //!                             mixed ... extra_args);
   //!
   //! The @[read_cb] function will receive a mapping similar to the mapping
   //! returned by @[read()]:
   //! @mapping
-  //!   @member "data" string
+  //!   @member string "data"
   //!     Received data.
-  //!   @member "ip" string
+  //!   @member string "ip"
   //!     Data was sent from this IP.
-  //!   @member "port" int
+  //!   @member int "port"
   //!     Data was sent from this port.
   //! @endmapping
   //!
@@ -2215,4 +2224,5 @@ class UDP
 //! Write a message to stderr. Stderr is normally the console, even if
 //! the process output has been redirected to a file or pipe.
 //!
+
 constant werror=predef::werror;

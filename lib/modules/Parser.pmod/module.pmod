@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.5 2001/01/24 08:45:01 mirar Exp $
+ * $Id: module.pmod,v 1.6 2001/04/27 13:37:30 grubba Exp $
  *
  */
 
@@ -7,26 +7,23 @@
 
 inherit Parser._parser;
 
-//! module Parser
-
 class SGML
-//! class SGML
 //!  	This is a handy simple parser of SGML-like
 //!	syntax like HTML. It doesn't do anything advanced,
 //!	but finding the corresponding end-tags.
 //!	
 //!	It's used like this:
-//!	<pre>array res=Parser.SGML()->feed(string)->finish()->result();</pre>
+//!	@code{array res=Parser.SGML()->feed(string)->finish()->result();@}
 //!
 //!	The resulting structure is an array of atoms,
 //!	where the atom can be a string or a tag.
 //!	A tag contains a similar array, as data. 
 //!     
-//!	Example:
+//! @example
 //!	A string
-//!     <tt>"&lt;gat>&nbsp;&lt;gurka>&nbsp;&lt;/gurka>&nbsp;&lt;banan>&nbsp;&lt;kiwi>&nbsp;&lt;/gat>"</tt>
+//!     @tt{"<gat>&nbsp;<gurka>&nbsp;</gurka>&nbsp;<banan>&nbsp;<kiwi>&nbsp;</gat>"@}
 //!     results in 
-//!	<pre>
+//!	@pre{
 //!	({
 //!	    tag "gat" object with data:
 //!	    ({
@@ -44,20 +41,20 @@ class SGML
 //!             })
 //!         })
 //!     })
-//!	</pre>
+//!	@}
 //!             
 //!	ie, simple "tags" (not containers) are not detected,
 //!	but containers are ended implicitely by a surrounding
 //!	container _with_ an end tag.
 //!
 //! 	The 'tag' is an object with the following variables:
-//!	<pre>
+//!	@pre{
 //!	 string name;           - name of tag
 //!	 mapping args;          - argument to tag
 //!	 int line,char,column;  - position of tag
 //!	 string file;           - filename (see <ref>create</ref>)
 //!	 array(SGMLatom) data;  - contained data
-//!     </pre>
+//!     @}
 //!
 {
    string file;
@@ -148,12 +145,12 @@ class SGML
 
    private static object p=HTML();
 
-//! method void create()
-//! method void create(string filename)
-//!	This object is created with this filename.
-//!	It's passed to all created tags, for debug and trace purposes.
-//! note:
-//! 	No, it doesn't read the file itself. See <ref>feed</ref>.
+   //! @decl void create()
+   //! @decl void create(string filename)
+   //!	This object is created with this filename.
+   //!	It's passed to all created tags, for debug and trace purposes.
+   //! @note
+   //! 	No, it doesn't read the file itself. See @[feed()].
 
    static int i;
 
@@ -167,15 +164,15 @@ class SGML
 			    { if (data!="") res[0]+=({data}); return ({}); });
    }
 
-//! method object feed(string s)
-//! method array finish()
-//! method array result(string s)
-//!	Feed new data to the object, or finish the stream.
-//!	No result can be used until finish() is called.
-//!
-//! 	Both finish() and result() returns the computed data.
-//!
-//!	feed() returns the called object.
+   //! @decl object feed(string s)
+   //! @decl array(object(SGMLatom)|string) finish()
+   //! @decl array(object(SGMLatom)|string) result(string s)
+   //!	Feed new data to the object, or finish the stream.
+   //!	No result can be used until @[finish()] is called.
+   //!
+   //! 	Both @[finish()] and @[result()] return the computed data.
+   //!
+   //!	@[feed()] returns the called object.
 
    object feed(string s)
    {
@@ -183,7 +180,7 @@ class SGML
       return this_object();
    }
 
-   array finish()
+   array(object(SGMLatom)|string) finish()
    {
       p->finish();
       foreach ( tagstack, SGMLatom a )

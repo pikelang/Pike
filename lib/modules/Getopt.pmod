@@ -197,9 +197,9 @@ constant MAY_HAVE_ARG=3;
 //! Each element in the array @[options] should be an array on the
 //! following form:
 //! @array
-//!   @element string name
+//!   @elem string name
 //!     Name is a tag used to identify the option in the output.
-//!   @element int type
+//!   @elem int type
 //!     Type is one of @[Getopt.HAS_ARG], @[Getopt.NO_ARG] and
 //!     @[Getopt.MAY_HAVE_ARG] and it affects how the error handling
 //!     and parsing works.
@@ -207,7 +207,7 @@ constant MAY_HAVE_ARG=3;
 //!     similar. @[NO_ARG] should be used for options that do not need an
 //!     argument, such as @tt{--version@}. @[MAY_HAVE_ARG] should be used
 //!     for options that may or may not need an argument.
-//!   @element string|array(string) aliases
+//!   @elem string|array(string) aliases
 //!     This is a string or an array of string of options that will be
 //!     looked for. Short and long options can be mixed, and short options
 //!     can be combined into one string. Note that you must include the dashes
@@ -215,11 +215,11 @@ constant MAY_HAVE_ARG=3;
 //!     long and short options. Example: @tt{({"-tT","--test"})@}
 //!     This would make @[find_all_options] look for @tt{-t@},
 //!     @tt{-T@} and @tt{--test@}.
-//!   @element void|string|array(string) env_var
+//!   @elem void|string|array(string) env_var
 //!     This is a string or an array of strings containing names of
 //!     environment variables that can be used instead of the
 //!     command line option.
-//!   @element void|mixed default
+//!   @elem void|mixed default
 //!     This is the default value the option will have in the output
 //!     from this function. Options without defaults will be omitted
 //!     from the output if they are not found in argv.
@@ -232,9 +232,9 @@ constant MAY_HAVE_ARG=3;
 //! @[find_all_options()] returns an array where each element is an array on
 //! this form:
 //! @array
-//!   @element string name
+//!   @elem string name
 //!     Option identifier name from the input.
-//!   @element mixed value
+//!   @elem mixed value
 //!     Value given. If no value was specified, and no default has been
 //!     specified, the value will be 1.
 //! @endarray

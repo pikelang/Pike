@@ -1,10 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! module Protocols
-//! submodule DNS
-
-//! $Id: DNS.pmod,v 1.58 2001/04/09 19:50:04 marcus Exp $
+//! $Id: DNS.pmod,v 1.59 2001/04/27 13:38:40 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -390,12 +387,9 @@ class server
 #define RETRIES 12
 #define RETRY_DELAY 5
 
+//! 	Synchronous DNS client.
 class client 
 {
-//!
-//! class client
-//! 	Synchronous DNS client.
-//! 
 
   inherit protocol;
 
@@ -480,10 +474,8 @@ class client
     return(etc_hosts[lower_case(host)]);
   }
 
-  //!
-  //! method void create()
-  //! method void create(void|string|array server, void|int|array domain)
-  //!
+  //! @decl void create()
+  //! @decl void create(void|string|array server, void|int|array domain)
 
   array(string) nameservers = ({});
   array domains = ({});
@@ -644,16 +636,18 @@ class client
     return 0;
   }
   
-  //!
-  //! method array gethostbyname(string hostname)
-  //! method array gethostbyaddr(string hostip)
+  //! @decl array gethostbyname(string hostname)
+  //! @decl array gethostbyaddr(string hostip)
   //!	Querys the host name or ip from the default or given
-  //!	DNS server. The result is a mapping with three elements,
-  //!	<data_description type=array>
-  //!   <elem value=hostname type=string>hostname</elem>
-  //!   <elem value=ip type=array(string)>ip number(s)</elem>
-  //!   <elem value=ip type=array(string)>dns name(s)</elem>
-  //!	</data_description>
+  //!	DNS server. The result is an array with three elements,
+  //!	@array
+  //!     @elem string hostname
+  //!       Hostname.
+  //!     @elem array(string) ip
+  //!       IP number(s).
+  //!     @elem array(string) aliases
+  //!       DNS name(s).
+  //!	@endarray
   //!
 
   array gethostbyname(string s)
@@ -729,12 +723,11 @@ class client
     }
   }
 
-  //!
-  //! method string get_primary_mx(string hostname)
+  //! @decl string get_primary_mx(string hostname)
   //!	Querys the primary mx for the host.
-  //! returns the hostname of the primary mail exchanger
+  //! @returns
+  //!   Returns the hostname of the primary mail exchanger.
   //!
-
   string get_primary_mx(string host)
   {
     mapping m;

@@ -1,14 +1,13 @@
-/* $Id: randomness.pmod,v 1.18 2000/09/28 03:38:39 hubbe Exp $
+/* $Id: randomness.pmod,v 1.19 2001/04/27 13:35:23 grubba Exp $
  */
 
-//! module Crypto
-//! submodule randomness
 //!	Assorted stronger or weaker randomnumber generators.
 
-/* These devices tries to collect entropy from the environment.
+/* These devices try to collect entropy from the environment.
  * They differ in behaviour when they run low on entropy, /dev/random
  * will block if it can't provide enough random bits, while /dev/urandom
- * will degenerate into a reasonably strong pseudo random generator */
+ * will degenerate into a reasonably strong pseudo random generator
+ */
 
 #pike __REAL_VERSION__
 
@@ -16,7 +15,8 @@ static constant RANDOM_DEVICE = "/dev/random";
 static constant PRANDOM_DEVICE = "/dev/urandom";
 
 /* Collect somewhat random data from the environment. Unfortunately,
- * this is quite system dependent */
+ * this is quite system dependent
+ */
 static constant PATH = "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin";
 
 #ifndef __NT__
@@ -34,14 +34,14 @@ static constant SYSTEM_COMMANDS = ({
   "net user"
 });
 #endif
-			
-#define PRIVATE
-			
-PRIVATE object global_arcfour;
 
-// method string some_entropy()
+// *****************************			
+#define private
+			
+private object global_arcfour;
+
 //	Executes several programs to generate some entropy from their output.
-PRIVATE string some_entropy()
+private string some_entropy()
 {
 #ifdef __NT__
   object ctx = Crypto.nt.CryptAcquireContext(0, 0, Crypto.nt.PROV_RSA_FULL,
@@ -89,10 +89,9 @@ PRIVATE string some_entropy()
 }
 
 
-//! class pike_random
 //!	A pseudo random generator based on the ordinary random() function.
 class pike_random {
-  //! method string read(int len)
+
   //!	Returns a string of length len with pseudo random values.
   string read(int len)
   {
@@ -117,12 +116,11 @@ class pike_random {
 }
 
 #if constant(Crypto.arcfour)
-//! class arcfour_random
 //!	A pseudo random generator based on the arcfour crypto.
 class arcfour_random {
+
   inherit Crypto.arcfour : arcfour;
 
-  //! method void create(string secret)
   //!	Initialize and seed the arcfour random generator.
   void create(string secret)
   {
@@ -132,7 +130,6 @@ class arcfour_random {
     arcfour::set_encrypt_key(hash->digest());
   }
 
-  //! method string read(int len)
   //!	Return a string of the next len random characters from the
   //!	arcfour random generator.
   string read(int len)

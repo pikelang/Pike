@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.15 2001/04/07 00:55:52 nilsson Exp $
+// $Id: TELNET.pmod,v 1.16 2001/04/27 13:38:40 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -410,6 +410,7 @@ class protocol
     enable_write();									\
   }
 
+  //! @ignore
   CONTROL(remote,DO,DONT,WILL,WONT,YES,NO)
 
   CONTROL(remote,DONT,DO,WONT,WILL,NO,YES)
@@ -417,6 +418,7 @@ class protocol
   CONTROL(local,WILL,WONT,DO,DONT,YES,NO)
 
   CONTROL(local,WONT,WILL,DONT,DO,NO,YES)
+  //! @endignore
 
   void remote_option_callback(int opt, int onoff)
   {

@@ -326,9 +326,10 @@ object get_object(string project, string lang) {
   return locale_object;
 }
 
-mapping(string:object) get_objects(string lang) {
+mapping(string:object) get_objects(string lang)
   //! Reads in and returns a mapping with all the registred projects'  
   //! LocaleObjects in the language 'lang'
+{
   if(!lang)
     return 0;
   foreach(indices(projects), string project)
@@ -415,6 +416,8 @@ mapping cache_status() {
   ]);
 }
 
+//! This class simulates a multi-language "string".
+//! The actual language to use is determined as late as possible.
 class DeferredLocale( static string project,
 		      static function(void:string) get_lang,
 		      static string|int key,

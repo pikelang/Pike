@@ -1,13 +1,10 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.8 2000/11/11 03:07:54 jhs Exp $
-//! module Protocols
-//! submodule LysKOM
-//! submodule Request
-//!	This class contains nice abstraction for calls into the
-//!	server. They are named "<i>call</i>", 
-//!	"<tt>async_</tt><i>call</i>" or 
-//!	"<tt>async_cb_</tt><i>call</i>", depending on 
+//  $Id: Request.pmod,v 1.9 2001/04/27 13:38:41 grubba Exp $
+//!	This module contains nice abstraction for calls into the
+//!	server. They are named "@tt{@i{call@}@}",
+//!	"@tt{async_@i{call@}@}" or 
+//!	"@tt{async_cb_@i{call@}@}", depending on 
 //!	how you want the call to be done. 
 
 import .Helper;
@@ -15,38 +12,9 @@ import .ProtocolTypes;
 
 int _no=1;
 
-//! class _Request
 //!	This is the main request class. All lyskom request
-//!	classes inherits this class.
+//!	classes inherit this class.
 //!
-//! method void async(mixed ...args)
-//! method mixed sync(mixed ...args)
-//!	initialise an asynchronous or a synchronous call,
-//!	the latter is also evaluating the result. This calls
-//!	'indata' in itself, to get the correct arguments to 
-//!	the lyskom protocol call.
-//!
-//! method void _async(int call, mixed_data)
-//! method mixed _sync(int call, mixed_data)
-//!	initialise an asynchronous or a synchronous call,
-//!	the latter is also evaluating the result. These
-//!	are called by async and sync respectively.
-//!
-//! method mixed _reply(object|array what)
-//! method mixed reply(object|array what)
-//!	_reply is called as callback to evaluate the result, 
-//!	and calls reply in itself to do the real work.
-//!
-//! method mixed `()()
-//!	wait for the call to finish.
-//!
-//! variable int ok
-//!	tells if the call is executed ok
-//! variable object error
-//!	how the call failed
-//!	The call is completed if (ok||error).
-//!
-
 class _Request
 {
    private Stdio.File raw;
@@ -60,6 +28,19 @@ class _Request
 #endif
 
    function callback;
+
+   //! @decl void async(mixed ...args)
+   //! @decl mixed sync(mixed ...args)
+   //!	Initialise an asynchronous or a synchronous call,
+   //!	the latter is also evaluating the result. This calls
+   //!	@tt{indata()@} in itself, to get the correct arguments to 
+   //!	the lyskom protocol call.
+
+   //! @decl void _async(int call, mixed_data)
+   //! @decl mixed _sync(int call, mixed_data)
+   //!	Initialise an asynchronous or a synchronous call,
+   //!	the latter is also evaluating the result. These
+   //!	are called by async and sync respectively.
 
    void _async(int call,mixed ... data)
    {
@@ -76,6 +57,11 @@ class _Request
       return _reply(res);
 #endif
    }
+
+   //! @decl mixed _reply(object|array what)
+   //! @decl mixed reply(object|array what)
+   //!	@[_reply()] is called as callback to evaluate the result, 
+   //!	and calls @[reply()] in itself to do the real work.
 
    mixed _reply(object|array what)
    {
@@ -100,7 +86,10 @@ class _Request
 
    mixed reply(array what); // virtual
    void failure(object err); // virtual
-   array indata(mixed ...); // virtual
+   array indata(mixed ... args); // virtual
+
+   //! @decl mixed `()()
+   //!	Wait for the call to finish.
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
    mixed `()() // wait
@@ -122,7 +111,12 @@ class _Request
 
    // public
 
+   //!	Tells if the call has executed ok
    int(0..1) ok;
+
+   //!	How the call failed.
+   //!	The call has completed if @code{(ok||error)@}.
+   //!
    object error;
 
    void create(Stdio.File _raw)

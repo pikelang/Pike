@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.47 2001/04/07 00:57:08 nilsson Exp $
+ * $Id: Sql.pike,v 1.48 2001/04/27 13:39:20 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: Sql.pike,v 1.47 2001/04/07 00:57:08 nilsson Exp $
+//. RCSID:	$Id: Sql.pike,v 1.48 2001/04/27 13:39:20 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@roxen.com)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -38,6 +38,7 @@ int case_convert;
 
 //! @decl string quote(string s)
 //! Quote a string @[s] so that it can safely be put in a query.
+
 function(string:string) quote = .sql_util.quote;
 
 //! @decl string encode_time(int t, int|void is_utc)
@@ -47,6 +48,7 @@ function(string:string) quote = .sql_util.quote;
 //! @[is_utc] If nonzero then time is taken as a "full" unix time spec
 //! (where the date part is ignored), otherwise it's converted as a
 //! seconds-since-midnight value.
+
 function(int,void|int:string) encode_time;
 
 //! @decl int decode_time(string t, int|void want_utc)
@@ -54,47 +56,54 @@ function(int,void|int:string) encode_time;
 //! @[t] Time spec to decode.
 //! @[want_utc] Take the date part from this system time value. If zero, a
 //! seconds-since-midnight value is returned.
+
 function(string,void|int:int) decode_time;
 
 //! @decl string encode_date(int t)
 //! Converts a system time value to an appropriately formatted
 //! date-only spec for the database.
 //! @[t] Time to encode.
+
 function(int:string) encode_date;
 
 //! @decl int decode_date(string d)
 //! Converts a database date-only spec to a system time value.
 //! @[d] Date spec to decode.
+
 function(string:int) decode_date;
 
 //! @decl string encode_datetime(int t)
 //! Converts a system time value to an appropriately formatted
 //! date and time spec for the database.
 //! @[t] Time to encode.
+
 function(int:string) encode_datetime;
 
 //! @decl int decode_datetime(string datetime)
 //! Converts a database date and time spec to a system time value.
 //! @[datetime] Date and time spec to decode.
+
 function(string:int) decode_datetime;
 
-//! - create
 //!   Create a new generic SQL object.
-//! > host
+//!
+//! @param host
 //!   object - Use this object to access the SQL-database.
 //!   string - Connect to the server specified.
 //!            The string should be on the format:
-//!              [dbtype://][user[:password]@]hostname[:port][/database]
+//!              @tt{[dbtype://][user[:password]@@]hostname[:port][/database]@}
 //!            If dbtype isn't specified, use any available database server
 //!            on the specified host.
-//!            If the hostname is "", access through a UNIX-domain socket or
-//!            similar.
+//!            If the hostname is @tt{""@}, access through a UNIX-domain
+//!	       socket or similar.
 //!   zero   - Access through a UNIX-domain socket or similar.
-//! > database
+//!
+//! @param database
 //!   Select this database.
-//! > user
+//!
+//! @param user
 //!   User name to access the database as.
-//! > password
+//! @param password
 //!   Password to access the database.
 void create(void|string|object host, void|string db,
 	    void|string user, void|string password)

@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.15 2000/12/28 16:43:46 grubba Exp $
+ * $Id: Line.pmod,v 1.16 2001/04/27 13:38:40 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -311,6 +311,7 @@ class smtp_style
   //!
   //! Overload this constant as apropriate.
   //!
+
   constant errorcodes = ([]);
 
   //! Send an SMTP-style return-code.
