@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.30 1999/10/15 03:26:14 hubbe Exp $
+ * $Id: sendfile.c,v 1.31 1999/10/15 12:47:55 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -350,6 +350,7 @@ void worker(void *this_)
     }
 
 #else /* !HAVE_FREEBSD_SENDFILE */
+    /* HPUX_SENDFILE */
     struct iovec hdtr[2] = { NULL, 0, NULL, 0 };
     SF_DFPRINTF((stderr, "sendfile: Using HP/UX-style sendfile()\n"));
 
@@ -422,7 +423,7 @@ void worker(void *this_)
       this->sent += send_iov(this->to_fd, this->hd_iov, this->hd_cnt);
     }
     
-#if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE)
+#if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE)
     SF_DFPRINTF((stderr, "sendfile: Sending file with sendfile()\n"));
 
     {
@@ -437,7 +438,7 @@ void worker(void *this_)
       goto send_trailers;
     }
   normal:
-#endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE */
+#endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE && !HAVE_HPUX_SENDFILE */
     SF_DFPRINTF((stderr, "sendfile: Sending file by hand\n"));
 
 #if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
@@ -464,8 +465,10 @@ void worker(void *this_)
 	    len = MMAP_SIZE;
 	  }
 
-	  /* Hope this is a correct fix. /Hubbe */
-	  if(len == 0) goto send_trailers;
+	  if (!len) {
+	    /* Done */
+	    goto send_trailers;
+	  }
 
 	  mem = mmap(NULL, len, PROT_READ, MAP_FILE|MAP_SHARED,
 		     this->from_fd, this->offset);
@@ -473,9 +476,9 @@ void worker(void *this_)
 	    /* Try using read & write instead. */
 	    goto use_read_write;
 	  }
-#ifdef HAVE_MADVISE
+#if defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
 	  madvise(mem, len, MADV_SEQUENTIAL);
-#endif /* HAVE_MADVISE */
+#endif /* HAVE_MADVISE && MADV_SEQUENTIAL */
 	  buf = mem;
 	  buflen = len;
 	  while (buflen) {
@@ -498,7 +501,9 @@ void worker(void *this_)
 	  munmap(mem, len);
 	}
 
-	/* shouldn't there be a goto here ? /Hubbe */
+	/* Shouldn't there be a goto here ? /Hubbe */
+	/* True. Fixed. /grubba */
+	goto send_trailers;
       }
     }
   use_read_write:
