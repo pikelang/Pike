@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.73 1999/07/16 22:54:23 hubbe Exp $");
+RCSID("$Id: object.c,v 1.74 1999/08/14 09:02:44 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -274,8 +274,17 @@ struct object *get_master(void)
   if(!master_program)
   {
     struct pike_string *s,*s2;
-    char *tmp=xalloc(strlen(master_file)+3);
+    char *tmp;
     struct stat stat_buf;
+
+    if(!simple_mapping_string_lookup(get_builtin_constants(),
+				     "_static_modules"))
+    {
+      fprintf(stderr,"Cannot load master object yet!\n");
+      return 0; /* crash? */
+    }
+
+    tmp=xalloc(strlen(master_file)+3);
 
     MEMCPY(tmp, master_file, strlen(master_file)+1);
     strcat(tmp,".o");
