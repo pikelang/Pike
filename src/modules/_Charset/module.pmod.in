@@ -47,11 +47,25 @@ object(ascii) decoder(string name)
 
   program p = ([
     "utf-7": UTF7dec,
-    "utf-8": UTF8dec
+    "utf-8": UTF8dec,
+    "utf-7.5": UTF7_5dec,
+    "utf-7½": UTF7_5dec,
+    "shift_jis": ShiftJisDec,
   ])[name];
 
   if(p)
     return p();
+
+  if(name[..3]=="euc-" || name[..3]=="euc_") {
+    string sub = ([
+      "kr":"korean",
+      "jp":"x0208",
+      "cn":"chinese",
+    ])[name[4..]];
+
+    if(sub)
+      return EUCDec(sub);
+  }
 
   object o = rfc1345(name);
 
@@ -134,11 +148,25 @@ object(_encoder) encoder(string name, string|void replacement,
 
   program p = ([
     "utf-7": UTF7enc,
-    "utf-8": UTF8enc
+    "utf-8": UTF8enc,
+    "utf-7.5": UTF7_5enc,
+    "utf-7½": UTF7_5enc,
+    "shift_jis": ShiftJisEnc,
   ])[name];
 
   if(p)
     return p(replacement, repcb);
+
+  if(name[..3]=="euc-" || name[..3]=="euc_") {
+    string sub = ([
+      "kr":"korean",
+      "jp":"x0208",
+      "cn":"chinese",
+    ])[name[4..]];
+
+    if(sub)
+      return EUCEnc(sub, replacement, repcb);
+  }
 
   object o = rfc1345(name, 1, replacement, repcb);
 
