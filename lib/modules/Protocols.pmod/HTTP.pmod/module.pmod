@@ -269,15 +269,39 @@ string unentity(string s)
       );
 }
 
-string http_encode_query(mapping variables)
+//! method string http_encode_query(mapping variables)
+//!	Encodes a query mapping to a string;
+//!	this protects odd - in http perspective - characters
+//!	like '&' and '#' and control characters,
+//!	and packs the result together in a HTTP query string.
+//!
+//!	Example:
+//!	<pre>
+//!	&gt; Protocols.HTTP.http_encode_query( (["anna":"eva","lilith":"blue"]) );  
+//!     Result: "lilith=blue&anna=eva"
+//!     &gt; Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0"]) );  
+//!     Result: "%26amp%3b=%26&%27%3d%22=%00%00%00"
+//!	</pre>
+
+
+string http_encode_query(mapping(string:int|string) variables)
 {
-   return Array.map(indices(variables),
-		    lambda(string ind)
+   return Array.map((array)variables,
+		    lambda(array(string|int) v)
 		    {
-		       return http_encode_string(ind)+"="+
-			  http_encode_string(variables[ind]);
+		       if (intp(v[1]))
+			  return http_encode_string(v[0]);
+		       return http_encode_string(v[0])+"="+
+			  http_encode_string(v[1]);
 		    })*"&";
 }
+
+//! method string http_encode_string(string in)
+//!	This protects all odd - see <ref>http_encode_query</ref> - 
+//!	characters for transfer in HTTP.
+//!
+//!	Do not use this function to protect URLs, since
+//!	it will protect URL characters like '/' and '?'.
 
 string http_encode_string(string f)
 {
@@ -291,7 +315,8 @@ string http_encode_string(string f)
 	 "\210", "\211", "\212", "\213", "\214", "\215", "\216", "\217", 
 	 "\220", "\221", "\222", "\223", "\224", "\225", "\226", "\227", 
 	 "\230", "\231", "\232", "\233", "\234", "\235", "\236", "\237", 
-	 " ", "%", "'", "\"", "+" }),
+	 " ", "%", "'", "\"", "+", "&", "=", "/", 
+	 "#", ";", "\\", "<", ">" }),
       ({ 
 	 "%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07",    
 	 "%08", "%09", "%0a", "%0b", "%0c", "%0d", "%0e", "%0f", 
@@ -301,7 +326,8 @@ string http_encode_string(string f)
 	 "%88", "%89", "%8a", "%8b", "%8c", "%8d", "%8e", "%8f", 
 	 "%90", "%91", "%92", "%93", "%94", "%95", "%96", "%97", 
 	 "%98", "%99", "%9a", "%9b", "%9c", "%9d", "%9e", "%9f", 
-	 "%20", "%25", "%27", "%22", "%2b"}));
+	 "%20", "%25", "%27", "%22", "%2b", "%26", "%3d", "%2f", 
+	 "%23", "%3b", "%5c", "%3c", "%3e"}));
 }
 
 string http_encode_cookie(string f)
