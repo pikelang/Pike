@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.1 1999/03/15 17:15:53 marcus Exp $
+// $Id: Readline.pike,v 1.2 1999/03/15 17:25:16 marcus Exp $
 
 class OutputController
 {
@@ -928,8 +928,10 @@ void enable_history(object(History)|int hist)
 
 void destroy()
 {
-  destruct(input_controller);
-  destruct(output_controller);
+  if(input_controller)
+    destruct(input_controller);
+  if(output_controller)
+    destruct(output_controller);
 }
 
 void create(object|void infd, object|string|void interm,
