@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.206 2003/10/22 08:45:08 mirar Exp $
+|| $Id: image.c,v 1.207 2003/10/22 08:45:27 mirar Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.206 2003/10/22 08:45:08 mirar Exp $");
+RCSID("$Id: image.c,v 1.207 2003/10/22 08:45:27 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4431,7 +4431,7 @@ static void image_blur( INT32 args )
   if( !rgb )
     Pike_error("This object is not initialized\n");
     
-  if (sp[-args].type!=T_INT)  SIMPLE_BAD_ARG_ERROR("grey_blur",0,"integer");
+  if (sp[-args].type!=T_INT)  SIMPLE_BAD_ARG_ERROR("blur",0,"integer");
 
   t = sp[-args].u.integer;  /* times */
 
