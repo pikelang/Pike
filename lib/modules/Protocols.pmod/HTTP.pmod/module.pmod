@@ -57,6 +57,7 @@ constant HTTP_BAD_GW		= 502; // RFC 2616 10.5.3: Bad Gateway
 constant HTTP_UNAVAIL		= 503; // RFC 2616 10.5.4: Service Unavailable
 constant HTTP_GW_TIMEOUT	= 504; // RFC 2616 10.5.5: Gateway Timeout
 constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Supported
+constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
 constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 
 object do_method(string method,
