@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: dynamic_buffer.h,v 1.13 2002/05/31 22:41:23 nilsson Exp $
+ * $Id: dynamic_buffer.h,v 1.14 2002/10/06 12:58:26 grubba Exp $
  */
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H
@@ -44,6 +44,7 @@ PMOD_EXPORT char *make_buf_space(INT32 space);
 PMOD_EXPORT void my_putchar(char b);
 PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l);
 PMOD_EXPORT void my_strcat(const char *b);
+PMOD_EXPORT void initialize_global_buf(void);
 PMOD_EXPORT void init_buf(void);
 PMOD_EXPORT void init_buf_with_string(string s);
 PMOD_EXPORT char *debug_return_buf(void);

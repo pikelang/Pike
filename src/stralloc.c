@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.144 2002/09/11 22:42:13 neotron Exp $");
+RCSID("$Id: stralloc.c,v 1.145 2002/10/06 12:58:26 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1802,6 +1802,8 @@ void init_shared_string_table(void)
   }
 #endif
   empty_pike_string = make_shared_string("");
+
+  initialize_global_buf();
 }
 
 #ifdef DEBUG_MALLOC
