@@ -34,6 +34,10 @@
 
 */
 
+/* FIXME: The callback *_fun svalues ought to be registred with the
+ *        garbage_collector, and cleaned up on exit.
+ */
+
 #include "features.pike";
 #include "constants.pike";
 
@@ -409,7 +413,7 @@ array(string) gen_func(string name, string ty)
   }
   res += "  pop_n_elems(args);\n";
   res += (vret? "  "+vret+"(res);\n":/*"  push_int(0);\n"*/"");
-  res += "}\n\n";
+  res += "}\n";
   if(callback)
     res = callback+"\n\n"+res;
   return ({res,prot});
@@ -430,14 +434,19 @@ string gen()
   sort(fn);
   foreach(fn, string f) {
     array(string) r = gen_func(f, ty[f]);
-    res += r[0];
+    res += sprintf("#ifndef MISSING_%s\n", upper_case(f)) +
+      r[0] +
+      sprintf("#endif /* MISSING_%s */\n\n", upper_case(f));
     prot[f]=r[1];
   }
   res += "void add_auto_funcs_glut()\n{\n";
   res += "  pre_init();\n";
   foreach(fn, string f)
-    res += "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+
-      prot[f]+")\", OPT_SIDE_EFFECT);\n";
+    res +=
+      sprintf("#ifndef MISSING_%s\n", upper_case(f)) +
+      "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+
+      prot[f]+")\", OPT_SIDE_EFFECT);\n"
+      "#endif\n";
   foreach(sort(indices(constants)), string co)
     res += "  add_integer_constant(\""+co+"\", "+constants[co]+", 0);\n";
   res += "  post_init();\n";
