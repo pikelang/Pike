@@ -38,7 +38,7 @@ int mkdirhier(string dir)
     if(s[1]<0)
       return 1;
 
-    if(glob("*.pmod",to))
+    if(glob("*.pmod",dir))
     {
       if(!mv(dir,dir+".tmp"))
 	fail("mv(%s,%s)",dir,dir+".tmp");
@@ -154,11 +154,16 @@ void install_dir(string from, string to,int dump)
       if(file[0]=='#' && file[-1]=='#') continue;
       if(file[-1]=='~') continue;
       mixed stat=file_stat(combine_path(from,file));
-      if(stat[1]==-2)
-      {
-	install_dir(combine_path(from,file),combine_path(to,file),dump);
-      }else{
-	install_file(combine_path(from,file),combine_path(to,file),0755,dump);
+      if (stat) {
+	if(stat[1]==-2)
+	{
+	  install_dir(combine_path(from,file),combine_path(to,file),dump);
+	}else{
+	  install_file(combine_path(from,file),combine_path(to,file),0755,dump);
+	}
+      } else {
+	werror(sprintf("\nstat:0, from:%O, file:%O, combined:%O\n",
+		       from, file, combine_path(from, file)));
       }
     }
 }
