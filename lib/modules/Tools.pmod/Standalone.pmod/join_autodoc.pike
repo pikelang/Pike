@@ -1,11 +1,13 @@
 /*
- * $Id: join_autodoc.pike,v 1.10 2002/12/18 20:36:00 grubba Exp $
+ * $Id: join_autodoc.pike,v 1.11 2003/09/15 18:35:13 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
  * Usage: pike -x join_autodoc destination.xml builddir
  * Usage: pike -x join_autodoc --post-process dest.xml files_to_join.xml [...]
  */
+
+#pike __REAL_VERSION__
 
 constant description = "Joins AutoDoc extractions.";
 mapping sub_cache = ([]);

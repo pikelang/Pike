@@ -1,4 +1,6 @@
-// $Id: assemble_autodoc.pike,v 1.19 2002/12/18 20:36:00 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.20 2003/09/15 18:35:12 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 constant description = "Assembles AutoDoc output file.";
 

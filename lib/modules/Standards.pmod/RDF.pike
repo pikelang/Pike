@@ -1,4 +1,6 @@
-// $Id: RDF.pike,v 1.9 2003/04/10 23:39:22 nilsson Exp $
+// $Id: RDF.pike,v 1.10 2003/09/15 18:34:45 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.

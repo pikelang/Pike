@@ -1,3 +1,6 @@
+
+#pike __REAL_VERSION__
+
 int main(int argc, array(string) argv)
 {
   if(argc<2) { werror("Usage: pike -x pv files...\n"); return 1; }

@@ -1,10 +1,12 @@
 /*
- * $Id: extract_autodoc.pike,v 1.22 2002/12/18 20:36:00 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.23 2003/09/15 18:35:13 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
  * Henrik Grubbström 2001-01-08
  */
+
+#pike __REAL_VERSION__
 
 constant description = "Extracts autodoc from Pike or C code.";
 

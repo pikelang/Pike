@@ -1,7 +1,9 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif.pike,v 1.1 2002/09/05 15:26:51 marcus Exp $
+// -*- pike -*- $Id: rsif.pike,v 1.2 2003/09/15 18:35:13 nilsson Exp $
 
-string version = ("$Revision: 1.1 $"/" ")[1];
+#pike __REAL_VERSION__
+
+string version = ("$Revision: 1.2 $"/" ")[1];
 int verbosity = 1; // more output
 int overwrite = 1; // no backups
 

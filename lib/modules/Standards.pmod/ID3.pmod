@@ -1,7 +1,9 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.8 2003/09/04 15:16:27 nilsson Exp $
+//  $Id: ID3.pmod,v 1.9 2003/09/15 18:34:33 nilsson Exp $
 //
+
+#pike __REAL_VERSION__
 
 //! ID3 decoder/encoder.
 //! Supports versions 1.0, 1.1, 2.2-2.4.

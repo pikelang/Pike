@@ -4,9 +4,11 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.8 2002/11/29 00:30:59 nilsson Exp $
+  $Id: Codec.pmod,v 1.9 2003/09/15 18:36:00 nilsson Exp $
 
  */
+
+#pike __REAL_VERSION__
 
   mapping codec_map = ([
 #if constant(_Ffmpeg.ffmpeg1)

@@ -1,6 +1,8 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.7 2003/02/20 22:30:14 marcus Exp $
+// $Id: module.pike,v 1.8 2003/09/15 18:35:13 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 // Source directory
 string srcdir;

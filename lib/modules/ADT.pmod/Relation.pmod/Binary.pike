@@ -1,5 +1,7 @@
-// $Id: Binary.pike,v 1.5 2002/11/29 00:28:24 nilsson Exp $
+// $Id: Binary.pike,v 1.6 2003/09/15 18:33:58 nilsson Exp $
 // An abstract data type for binary relations.
+
+#pike __REAL_VERSION__
 
 private mapping val   = ([]);
 private mixed   id;

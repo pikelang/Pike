@@ -1,5 +1,7 @@
 //! SNMPv1 and v2c
 
+#pike __REAL_VERSION__
+
 #include "snmp_errors.h"
 #include "snmp_globals.h"
 

@@ -1,4 +1,6 @@
-/* $Id: MirarDocParser.pike,v 1.14 2002/12/18 20:35:59 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.15 2003/09/15 18:35:27 nilsson Exp $ */
+
+#pike __REAL_VERSION__
 
 /* MirarDoc documentation extractor.
  */

@@ -1,4 +1,6 @@
-// $Id: rsqld.pike,v 1.3 2002/12/17 12:45:31 grubba Exp $
+// $Id: rsqld.pike,v 1.4 2003/09/15 18:35:13 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 constant description = "Implements an rsql daemon.";
 
