@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.18 1998/05/21 00:07:00 neotron Exp $
+// $Id: manpages,v 1.19 1998/07/28 09:16:59 neotron Exp $
 
 #include "types.h"
 
@@ -158,14 +158,15 @@ void make_page(string base, TAG tag, string ind, string fbase)
      string *outfiles,*names,*s_outfiles;
      string obase=base;
      string q;
-
+     //     werror(sprintf("%s %s %s %s \n", tag->params->name, fbase, globalbase, base));
      outfiles=Array.map(names=tag->params->name/",",
 			lambda(string s,string t,string u,string base)
 			{
 			  s=replace(s,"->",".");
-			  sscanf(s,t+".%s",s);
+			  // We want the man pages to be Image.image.foo for example... a man page for "create" is kinda uninteresting...
+			  //			  sscanf(s,t+".%s",s);
 			  return u+"/"+s+"."+base;
-			},fbase,globalbase+base,base);
+			},fbase,globalbase,base);
 
      sscanf(outfiles[0],"%*s/man%*s/%s",q);
      if (q) {
@@ -181,15 +182,15 @@ void make_page(string base, TAG tag, string ind, string fbase)
      {
        base+=tag->params->mansuffix;
        fbase=(tag->params->name/",")[0];
-       mkdirhier(globalbase+base);
+       //       mkdirhier(globalbase+base);
      }
 
      // verbose = ((names*",") == "Thread.Mutex");
 
      string page=strip_empty_lines(make_manpage(base,tag->data,ind+" ",fbase));
 
-//   werror("creating "+outfiles[0]+"...\n"); 
-
+     //     werror("creating "+outfiles[0]+"...\n"); 
+   
      object f=Stdio.File(outfiles[0],"wtc");
      string t=ctime(time());
      f->write(strip_eightbit(".\\\" t\n"
@@ -204,7 +205,7 @@ void make_page(string base, TAG tag, string ind, string fbase)
      {
        string name;
        sscanf(outfiles[0], "man/%s", name);
-//     werror("creating "+s+" -> "+name+"...\n"); 
+       //     werror("creating "+s+" -> "+name+"...\n"); 
        object f=Stdio.File(s, "wtc");
        f->write(".so "+name+"\n");
        f->close();
@@ -238,10 +239,12 @@ void make_pages(string base, SGML data, string ind, string fbase)
 
 void output(string base, WMML data)
 {
-   globalbase="man/man";
-   mkdirhier("man/man3p");
+   globalbase="man/man3";
+   //   mkdirhier("man/man3p");
+   mkdirhier("man/man3");
    windex=Stdio.File("man/windex", "wtc");
    whatis=Stdio.File("man/whatis", "wtc");
+   //   make_pages("3p", data->data, "", "");
    make_pages("3p", data->data, "", "");
    werror("\n");
    // Used by Xman.
@@ -257,3 +260,4 @@ void output(string base, WMML data)
 		  "3pii\t(3PII) Pike Image.image Class\n");
    mandesc->close();
 }
+
