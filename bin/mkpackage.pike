@@ -158,8 +158,19 @@ class Package
 
     string setup = ("#!/bin/sh\n"
 		    "TARFILE=\"$1\"; shift\n"
-		    "SIZE=\"$1\"; shift\n"
 		    "ARGS=''\n"
+		    // Check size of package.
+		    "SIZE=\">>REQSIZE<<\"\n"
+		    "MY_SIZE=`wc -c <\"$TARFILE\"`\n"
+		    "if [ \"$MY_SIZE\" -lt \"$SIZE\" ]\n"
+		    "then\n"
+		    "    echo \"\n"
+		    "FATAL: File size mismatch; this file is only $MY_SIZE bytes but it\n"
+		    "       should at least be\" $SIZE \"bytes. Download problems? Exiting.\" >&2\n"
+		    "    rm -f "+setup_filename+"\n"
+		    "    exit 1\n"
+		    "fi\n"
+		    // Figure out the contents.
 		    "CONTENTS=`tar tf \"$TARFILE\" | sed -ne '/^"+
 		    replace(basename(install_filename), ".", "\\.")+"/,$p'`\n"
 		    // Check if we're going to use a special tar for e.g. --add.
@@ -177,18 +188,6 @@ class Package
 		    "MY_NAME='"+my_name+"'\n"
 		    "EXTRA_LICENSE="+sh_quote(extra_license)+"\n"
 		    "export EXTRA_LICENSE\n"
-#if 0
-		    // Check size of package.
-		    // FIXME: Update crc!
-		    "MY_SIZE=`wc -c <\"$TARFILE\"`\n"
-		    "if [ \"$MY_SIZE\" -lt \"$SIZE\" ]\n"
-		    "then\n"
-		    "    echo \"FATAL: File size mismatch; this file is only $MY_SIZE bytes but it\n"
-		    "should at least be $SIZE bytes. Download problems? Exiting.\" >&2\n"
-		    "    rm -f "+setup_filename+"\n"
-		    "    exit 1\n"
-		    "fi\n"
-#endif
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
@@ -238,8 +237,7 @@ class Package
     
     string bootstrap = sprintf("#!/bin/sh\n"
 			       "tar xf \"$0\" %s\n"
-			       "exec ./%s \"$0\" 1234567890 \"$@\"\n",
-			       setup_filename,
+			       "exec ./%s \"$0\" \"$@\"\n",
 			       setup_filename,
 			       setup_filename);
     
@@ -276,20 +274,18 @@ class Package
       main(3, ({ "tarfilter", package_filename, package_filename }));
 
     // Add size information.
+    constant header_size = 16384;
     Stdio.File f = Stdio.File(package_filename, "rw");
-    string tar_header = f->read(100);
-    if(!tar_header || sizeof(tar_header) != 100)
+    string tar_header = f->read(header_size);
+    if(!tar_header || sizeof(tar_header) != header_size)
       error("Failed to read tar header for %O\n", package_filename);
     if(f->seek(0) == -1)
       error("Failed to seek 0 in %O.\n", package_filename);
     int tar_size = Stdio.file_size(package_filename);
     if(tar_size <= 0)
       error("Failed figure out file size for %O.\n", package_filename);
-#if 0
-    // FIXME: Update crc!
-    tar_header = replace(tar_header, "1234567890", sprintf("%10d", tar_size));
-#endif
-    if(f->write(tar_header) != 100)
+    tar_header = replace(tar_header, ">>REQSIZE<<", sprintf("%11d", tar_size));
+    if(f->write(tar_header) != header_size)
       error("Failed to write back tar header for %O.\n", package_filename);
     f->close();
     
