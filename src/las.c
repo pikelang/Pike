@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.203 2000/09/08 17:06:29 hubbe Exp $");
+RCSID("$Id: las.c,v 1.204 2000/09/09 19:39:44 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -118,6 +118,9 @@ void check_tree(node *n, int depth)
 	  struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	  if (id) {
 #ifdef PIKE_DEBUG
+	    /* FIXME: This test crashes on valid code because the type of the
+	     * identifier can change in pass 2 - Hubbe
+	     */
 	    if(id->type != n->type)
 	    {
 	      printf("Type of external node is not matching it's identifier.\nid->type: ");
@@ -1014,7 +1017,10 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   res=freeze_node(res);
 
 #ifdef PIKE_DEBUG
-  if(id->type != res->type)
+  /* FIXME: This test crashes on valid code because the type of the
+   * identifier can change in pass 2 -Hubbe
+   */
+  if(d_flag && id->type != res->type)
   {
     printf("Type of external node is not matching it's identifier.\nid->type: ");
     simple_describe_type(id->type);
@@ -2828,6 +2834,9 @@ void fix_type_field(node *n)
 	    if (id && id->name) {
 	      name = id->name->str;
 #ifdef PIKE_DEBUG
+	      /* FIXME: This test crashes on valid code because the type of the
+	       * identifier can change in pass 2 -Hubbe
+	       */
 	      if(id->type != f)
 	      {
 		printf("Type of external node is not matching it's identifier.\nid->type: ");
