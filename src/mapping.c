@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.74 2000/04/15 09:34:02 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.75 2000/04/16 22:11:34 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -858,6 +858,8 @@ void check_mapping_for_destruct(struct mapping *m)
 	if((k->ind.type == T_OBJECT || k->ind.type == T_FUNCTION) &&
 	   !k->ind.u.object->prog)
 	{
+	  debug_malloc_touch(md);
+	  debug_malloc_touch(m);
 	  PREPARE_FOR_INDEX_CHANGE2();
 	  *prev=k->next;
 	  free_svalue(& k->ind);
@@ -867,8 +869,12 @@ void check_mapping_for_destruct(struct mapping *m)
 	  md->size--;
 #ifdef PIKE_DEBUG
 	  if(m->data ==md)
+	  {
 	    m->debug_size++;
+	    debug_malloc_touch(m);
+	  }
 #endif
+	  debug_malloc_touch(md);
 	}else{
 	  val_types |= 1 << k->val.type;
 	  ind_types |= 1 << k->ind.type;
@@ -1696,6 +1702,11 @@ void check_mapping(struct mapping *m)
   int e,num;
   struct keypair *k;
   struct mapping_data *md;
+
+  static int in_check_mapping;
+  if(in_check_mapping) return;
+  in_check_mapping=1;
+
   md=m->data;
 
   if(m->refs <=0)
@@ -1712,9 +1723,9 @@ void check_mapping(struct mapping *m)
 
   if(m->debug_size != md->size)
   {
-    fprintf(stderr,"--MAPPING ZAPPING, mapping:\n");
+    fprintf(stderr,"--MAPPING ZAPPING (%d!=%d), mapping:\n",m->debug_size,md->size);
     describe(m);
-    fprintf(stderr,"--MAPPING ZAPPING, mapping data:\n");
+    fprintf(stderr,"--MAPPING ZAPPING (%d!=%d), mapping data:\n",m->debug_size,md->size);
     describe(md);
     fatal("Mapping zapping detected (%d != %d)!\n",m->debug_size,md->size);
   }
@@ -1783,6 +1794,8 @@ void check_mapping(struct mapping *m)
   
   if(md->size != num)
     fatal("Shields are failing, hull integrity down to 20%%\n");
+
+  in_check_mapping=0;
 }
 
 void check_all_mappings(void)
