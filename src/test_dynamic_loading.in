@@ -18,6 +18,8 @@ define([[Tlow_test]],[[
       cat $c
       echo ----------------------------------------------------------
     done
+    echo "Archiving test files as dynload_[[]]TESTNUM[[]].tar"
+    tar cvf dynload_[[]]TESTNUM[[]].tar dynload*.{c,h,o,so}
   fi
 ]])dnl
 
@@ -88,7 +90,9 @@ Tprog([[
 
   extern int integer;
   extern char * strptr;
+  extern double dubbel;
   int neg_func(int x);
+  double double_neg_func(double x);
   int sub_one_func(int x);
   extern int (*funcptr)(int);
   int call_funcptr(int z);
@@ -99,10 +103,15 @@ Tprog([[
 #line 1
 
 int integer = 17;
-
 char *strptr="strptr";
+double dubbel=17.5;
 
 int neg_func(int x)
+{
+  return -x;
+}
+
+double double_neg_func(double x)
 {
   return -x;
 }
@@ -125,7 +134,7 @@ int main(int argc, char **argv)
   void *module,*fun;
   ARGV=argv;
   dlinit();
-  module=dlopen("./dynloadtestmod.so",RTLD_NOW);
+  module=dlopen("./dynloadtestmod.so",RTLD_NOW | RTLD_GLOBAL);
   if(!module)
   {
     fprintf(stderr,"Failed to link dlmodtest.so: %s\n",dlerror());
@@ -156,7 +165,7 @@ DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,fo
 define([[TTest]],[[Tlow_test(Tmod([[$1]]))]])
 
 TTest( [[ EXPORT int foo() { return 0; } ]] )
-TTest( [[ EXPORT int foo() { exit(0); } ]] )
+TTest( [[ EXPORT int foo() { exit(0); return 1; } ]] )
 TTest( [[ EXPORT int foo() { return integer != 17; } ]] )
 TTest( [[ EXPORT int foo() { return strcmp(strptr,"strptr"); } ]] )
 TTest( [[ EXPORT int foo() { return neg_func(-18) != 18; } ]] )
@@ -190,3 +199,19 @@ EXPORT int foo()
 }
 ]] )
 
+
+TTest( [[
+
+int gnork;
+int bar(int q) { return gnork; }
+
+EXPORT int foo()
+{
+  funcptr=bar;
+  gnork=4712;
+  return call_funcptr(-18) != 4712;
+}
+]] )
+
+
+TTest( [[ EXPORT int foo() { return neg_func(-4) * 4.0 + 1.5 != dubbel; } ]] )
