@@ -42,7 +42,7 @@ fi
 
 old_method="${method-}"
 
-OLD="-DOLD=\"`pwd|sed 's@/[^/]*@../@g'`$SRCDIR\""
+OLD="-DOLD=\"`/bin/pwd|sed 's@/[^/]*@../@g'`$SRCDIR\""
 OLD_RUNPIKE="$RUNPIKE"
 
 trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
