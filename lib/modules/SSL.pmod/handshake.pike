@@ -26,11 +26,11 @@ int handshake_state;
 
 constant CERT_none = 0;
 constant CERT_requested = 1;
-constant CERT_recieved = 2;
+constant CERT_received = 2;
 constant CERT_no_certificate = 3;
 int certificate_state;
 
-int expect_change_cipher; /* Reset to 0 if a change_cipher message is recieved */
+int expect_change_cipher; /* Reset to 0 if a change_cipher message is received */
 
 int reuse;
 
@@ -304,7 +304,7 @@ int handle_handshake(int type, string data, string raw)
      case HANDSHAKE_hello_v2:
       {
 #ifdef SSL3_DEBUG
-	werror("SSL.handshake: SSL2 hello message recieved\n");
+	werror("SSL.handshake: SSL2 hello message received\n");
 #endif
 	int ci_len;
 	int id_len;
@@ -422,7 +422,7 @@ int handle_handshake(int type, string data, string raw)
 #ifdef SSL3_DEBUG
 //      werror(sprintf("certificate_state: %d\n", certificate_state));
 #endif
-      if (certificate_state != CERT_recieved)
+      if (certificate_state != CERT_received)
       {
 	handshake_state = STATE_server_wait_for_finish;
 	expect_change_cipher = 1;
@@ -449,7 +449,7 @@ int handle_handshake(int type, string data, string raw)
 			   backtrace()));
 	 return -1;
        }	
-       certificate_state = CERT_recieved;
+       certificate_state = CERT_received;
        break;
      }
     }
