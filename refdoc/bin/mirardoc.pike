@@ -1,4 +1,4 @@
-/* $Id: mirardoc.pike,v 1.4 2001/10/16 15:54:30 nilsson Exp $ */
+/* $Id: mirardoc.pike,v 1.5 2001/10/23 21:24:13 nilsson Exp $ */
 
 string IMAGE_DIR = "../src_images/";
 string makepic1;
@@ -1063,8 +1063,8 @@ void create() {
     prefix = _prefix;
   }
 
-  string illustration(string|Image.Image img, mapping extra) {
-    string fn = prefix + \".\" + (img_counter++) + \".png\";
+  string illustration(string|Image.Image img, mapping extra, void|string suffix) {
+    string fn = prefix + \".\" + (img_counter++) + (suffix||\".png\");
     if(!stringp(img)) img = Image.PNG.encode(img);
     Stdio.write_file(fn, img);
     werror(\"Wrote %s from execute.\\n\", fn);
@@ -1072,7 +1072,7 @@ void create() {
   }
 
   string illustration_jpeg(Image.Image img, mapping extra) {
-    return illustration(Image.JPEG.encode(img, extra), extra);
+    return illustration(Image.JPEG.encode(img, extra), extra, \".jpeg\");
   }
 
   string mktag(string name, void|mapping args, void|string c) {
