@@ -2,7 +2,7 @@
  *
  */
 
-#define error(x) throw( ({ (x), backtrace() }) )
+#include "error.h"
 
 class request
 {
@@ -105,4 +105,39 @@ class MapWindow
 {
   inherit ResourceReq;
   constant type = 8;
+}
+
+class CreateGC
+{
+  inherit request;
+  constant type = 55;
+
+  int gid;
+  int drawable;
+  mapping attributes = ([ ]);
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%s", gid, drawable,
+				 build_value_list(attributes,
+						  _Xlib.gc_attributes)));
+  }
+}
+
+
+class PolyFillRectangle
+{
+  inherit request;
+  constant type = 70;
+
+  int drawable;
+  int gid;
+
+  array rectangles;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%@s", drawable, gid,
+				 rectangles->to_string()));
+  }
 }
