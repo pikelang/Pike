@@ -379,7 +379,7 @@ void create()
   add_efun("sum_arrays",sum_arrays);
   add_efun("system",system);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.0E-9"; });
+  add_efun("version",lambda() { return "uLPC v1.0E-8"; });
   add_efun("write_file",write_file);
 }
 
