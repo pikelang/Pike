@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.19 2000/08/06 21:42:18 grubba Exp $
+ * $Id: lexer.h,v 1.20 2000/08/07 12:13:37 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -191,6 +191,7 @@ static int char_const(void)
 	}
 	break;
       }
+      break;
 
     case 'd':
       c=0;
@@ -206,6 +207,7 @@ static int char_const(void)
 	}
 	break;
       }
+      break;
   }
   return c;
 }
