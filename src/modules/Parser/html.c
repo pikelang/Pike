@@ -1886,11 +1886,26 @@ static int scan_forward_arg(struct parser_html_storage *this,
       for (i=0; i<this->nargq; i++)
 	 if (ch==this->argq_start[i]) break;
       if (i==this->nargq) /* it was whitespace */
-      {
-	 DEBUG_MARK_SPOT("scan_forward_arg: end by ws or tag fin",
-			 destp[0],*d_p);
-	 break;
-      }
+	if (ch == this->tag_fin) {
+	  FORWARD_CHAR (*destp, *d_p, feed, c);
+	  if ((this->flags & FLAG_MATCH_TAG) && q ||
+	      index_shared_string (feed->s, c) != this->tag_end) {
+	    DEBUG_MARK_SPOT("scan_forward_arg: tag fin char",
+			    destp[0],*d_p);
+	    if (what == SCAN_ARG_PUSH) push_feed_range (*destp, *d_p, feed, c), n++;
+	    goto next;
+	  }
+	  else {
+	    DEBUG_MARK_SPOT("scan_forward_arg: end by tag fin",
+			    destp[0],*d_p);
+	    break;
+	  }
+	}
+	else {
+	  DEBUG_MARK_SPOT("scan_forward_arg: end by ws",
+			  destp[0],*d_p);
+	  break;
+	}
 
 in_quote_cont:
       DEBUG_MARK_SPOT("scan_forward_arg: quoted",destp[0],*d_p);

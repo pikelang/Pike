@@ -866,3 +866,8 @@ test_any([[{
   p->ws_before_tag_name (1);
   return p->finish("< t>")->read();
 }]], "T");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_tag ("/t", "T");
+  return p->finish("</t>")->read();
+}]], "T");
