@@ -23,7 +23,7 @@ Write an appendix about old functions, behaviors and keywords.
   ("How to convert from old versions of Pike")
 
 
-Missing funktions in the manual:
+Missing funktions in the manual: (tab before function means fixed)
 UNDEFINED
 _debug
 _describe
@@ -50,9 +50,9 @@ _typeof
     "`^",
     "`|",
     "`~",   (All these should be checked for updates in 5)
-abs
+	abs
 all_threads (link to threads)
-atan2
+	atan2
 atexit
 (chmod fixed /Mirar)
 chroot
@@ -86,8 +86,8 @@ gmtime
 hardlink
 initgroups
 innetgr
-max
-min
+	max
+	min
 object_variablep
 openlog
 readlink
@@ -123,13 +123,6 @@ typeof         (Not a function and is documented in one way in misc
 
 
 
-Wrongly placed functions:
-FIXED: _do_call_outs
-FIXED: new
-FIXED: basename  
-FIXED: cpp 
-
-
 Errors:
 explode_path (error in "explode_path - exit Pike interpreter")
 
@@ -144,8 +137,6 @@ this comment can be erased.
 
 Process.create_process ?
 
-Det står object(Stdio.File) överallt i manualen istället för
-Stdio.File.
 
 --> 
 
@@ -10826,6 +10817,18 @@ It is only used for debugging.
 
 
 
+<function name=abs title="absolute value">
+<man_syntax>
+float abs(float <I>f</I>);
+int abs(int <I>f</I>);
+object abs(object <I>f</I>);
+</man_syntax>
+<man_description>
+Return the absolute value for <i>f</i>. <i>f</i> can be a Gmp-object.
+</man_description>
+</function>
+
+
 <function name=acos title="trigonometrical inverse cosine">
 <man_syntax>
 float acos(float <I>f</I>);
@@ -11092,7 +11095,19 @@ float atan(float <I>f</I>);
 Returns the arcus tangent value for <i>f</i>.
 </man_description>
 <man_see>
-tan, asin, acos
+atan2, tan, asin, acos
+</man_see>
+</function>
+
+<function name=atan2 title="trigonometrical inverse tangent">
+<man_syntax>
+float atan2(float <I>f1</I>, float <I>f2</I>);
+</man_syntax>
+<man_description>
+Returns the arcus tangent value for <i>f1</i>/<i>f2</i>.
+</man_description>
+<man_see>
+atan, tan, asin, acos
 </man_see>
 </function>
 
@@ -12353,6 +12368,30 @@ Master is added by the master object to make it easier to access it.
 </man_description>
 </function>
 
+
+<function name=max title="return the greatest value">
+<man_syntax>
+mixed max(mixed ...arg)
+</man_syntax>
+<man_description>
+Returns the greatest value of its args.
+</man_description>
+<man_see>
+min
+</man_see>
+</function>
+
+<function name=min title="return the smallest value">
+<man_syntax>
+mixed min(mixed ...arg)
+</man_syntax>
+<man_description>
+Returns the smallest value of its args.
+</man_description>
+<man_see>
+max
+</man_see>
+</function>
 
 
 <function name=mkdir title="make directory">
@@ -14131,6 +14170,9 @@ an old Pike to a new one, not the other way around.
 <dt> query_host_name
 <dd> This is no longer a global function but is still present in
 the Simulate-module.
+
+<dt> Stdio.readline
+<dd> See Stdio.Readline.
 
 <dt> varargs
 <dd> The former keyword varargs is now removed. The syntax now is like
