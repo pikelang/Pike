@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.131 2003/05/12 11:45:36 grubba Exp $
+|| $Id: system.c,v 1.132 2003/10/16 15:44:36 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.131 2003/05/12 11:45:36 grubba Exp $");
+RCSID("$Id: system.c,v 1.132 2003/10/16 15:44:36 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1944,7 +1944,7 @@ static void f_system_nanosleep(INT32 args)
 #define PIKE_RLIM_T rlim_t
 #endif
 
-#if HAVE_GETRLIMIT || HAVE_SETRLIMIT
+#if defined(HAVE_GETRLIMIT) || defined(HAVE_SETRLIMIT)
 static struct pike_string *s_cpu=NULL;
 static struct pike_string *s_fsize=NULL;
 static struct pike_string *s_data=NULL;
@@ -2873,4 +2873,50 @@ PIKE_MODULE_EXIT
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_destroy(&gethostbyname_mutex);
 #endif
+#if defined(HAVE_GETRLIMIT) || defined(HAVE_SETRLIMIT)
+  if (s_cpu) {
+    free_string(s_cpu);
+    s_cpu=NULL;
+  }
+  if (s_fsize) {
+    free_string(s_fsize);
+    s_fsize=NULL;
+  }
+  if (s_data) {
+    free_string(s_data);
+    s_data=NULL;
+  }
+  if (s_stack) {
+    free_string(s_stack);
+    s_stack=NULL;
+  }
+  if (s_core) {
+    free_string(s_core);
+    s_core=NULL;
+  }
+  if (s_rss) {
+    free_string(s_rss);
+    s_rss=NULL;
+  }
+  if (s_nproc) {
+    free_string(s_nproc);
+    s_nproc=NULL;
+  }
+  if (s_nofile) {
+    free_string(s_nofile);
+    s_nofile=NULL;
+  }
+  if (s_memlock) {
+    free_string(s_memlock);
+    s_memlock=NULL;
+  }
+  if (s_as) {
+    free_string(s_as);
+    s_as=NULL;
+  }
+  if (s_vmem) {
+    free_string(s_vmem);
+    s_vmem=NULL;
+  }
+#endif /* HAVE_GETRLIMIT || HAVE_SETRLIMIT */
 }
