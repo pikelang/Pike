@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.55 1997/11/08 01:34:38 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.56 1997/12/22 17:35:23 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1435,7 +1435,6 @@ void apply_low(struct object *o, int fun, int args)
 /* new_frame.current_object->refs++;  Moved to beginning of function / Hubbe */
   new_frame.context.prog->refs++;
 
-#ifdef DEBUG
   if(t_flag)
   {
     char *file, *f;
@@ -1479,7 +1478,6 @@ void apply_low(struct object *o, int fun, int args)
     if(nonblock)
       set_nonblocking(2,1);
   }
-#endif
 
   fp = &new_frame;
 
@@ -1558,7 +1556,6 @@ void apply_low(struct object *o, int fun, int args)
 
   fp = new_frame.parent_frame;
 
-#ifdef DEBUG
   if(t_flag)
   {
     char *s;
@@ -1584,7 +1581,6 @@ void apply_low(struct object *o, int fun, int args)
     if(nonblock)
       set_nonblocking(2,1);
   }
-#endif
 }
 
 void safe_apply_low(struct object *o,int fun,int args)
@@ -1662,7 +1658,6 @@ void apply(struct object *o, char *fun, int args)
 
 void strict_apply_svalue(struct svalue *s, INT32 args)
 {
-#ifdef DEBUG
   struct svalue *save_sp;
   save_sp=sp-args;
   if(t_flag>1)
@@ -1706,7 +1701,6 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     if(nonblock)
       set_nonblocking(2,1);
   }
-#endif
 
   switch(s->type)
   {
@@ -1760,7 +1754,6 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     error("Call to non-function value type:%d.\n", s->type);
   }
 
-#ifdef DEBUG
   if(t_flag>1 && sp>save_sp)
   {
     char *s;
@@ -1785,7 +1778,6 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     if(nonblock)
       set_nonblocking(2,1);
   }
-#endif
 }
 
 void apply_svalue(struct svalue *s, INT32 args)
