@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.50 1999/03/26 19:28:05 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.51 1999/03/26 21:26:10 grubba Exp $
 #
 
 
@@ -24,6 +24,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) @CCSHARED
 all: dummy
 
 force:
+	@:;
 
 $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$?

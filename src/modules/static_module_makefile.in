@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.45 1999/03/26 19:28:06 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.46 1999/03/26 21:27:32 grubba Exp $
 #
 
 
@@ -22,6 +22,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 all: dummy
 
 force:
+	@:;
 
 $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$?
