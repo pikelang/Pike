@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: callback.c,v 1.31 2002/11/23 13:27:27 mast Exp $
+|| $Id: callback.c,v 1.32 2002/11/23 17:28:30 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.31 2002/11/23 13:27:27 mast Exp $");
+RCSID("$Id: callback.c,v 1.32 2002/11/23 17:28:30 mast Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -84,44 +84,49 @@ static void check_callback_chain(struct callback_list *lst)
       }
       len++;
     }
-    
-    for(tmp=callback_blocks;tmp;tmp=tmp->next)
-    {
-      for(e=0;e<CALLBACK_CHUNK;e++)
+
+    if (!PIKE_MEM_CHECKER()) {
+      /* Checking freed blocks below, which will cause false alarms
+       * from the memory checker. If one is used then this check is
+       * mostly superfluous anyway. */
+      for(tmp=callback_blocks;tmp;tmp=tmp->next)
       {
-	int d;
-	struct callback_block *tmp2;
-	
-	if(tmp->x[e].free_func == (callback_func)remove_callback)
+	for(e=0;e<CALLBACK_CHUNK;e++)
 	{
-	  if(!is_in_free_list(tmp->x+e))
-	    Pike_fatal("Lost track of a struct callback!\n");
-
-	  if(tmp->x[e].next &&
-	     !is_in_free_list(tmp->x[e].next))
-	    Pike_fatal("Free callback has next in Z'ha'dum!\n");
-
-	}else{
-	  if(is_in_free_list(tmp->x[e].next))
-	    Pike_fatal("Non-free callback has next in free list!\n");
-	}
+	  int d;
+	  struct callback_block *tmp2;
 	
-	if(tmp->x[e].next)
-	{
-	  d=CALLBACK_CHUNK;
-	  for(tmp2=callback_blocks;tmp2;tmp2=tmp2->next)
+	  if(tmp->x[e].free_func == (callback_func)remove_callback)
 	  {
-	    for(d=0;d<CALLBACK_CHUNK;d++)
-	    {
-	      if(tmp2->x+d == tmp->x[e].next)
-		break;
-	      
-	      if(d < CALLBACK_CHUNK) break;
-	    }
+	    if(!is_in_free_list(tmp->x+e))
+	      Pike_fatal("Lost track of a struct callback!\n");
+
+	    if(tmp->x[e].next &&
+	       !is_in_free_list(tmp->x[e].next))
+	      Pike_fatal("Free callback has next in Z'ha'dum!\n");
+
+	  }else{
+	    if(is_in_free_list(tmp->x[e].next))
+	      Pike_fatal("Non-free callback has next in free list!\n");
 	  }
+	
+	  if(tmp->x[e].next)
+	  {
+	    d=CALLBACK_CHUNK;
+	    for(tmp2=callback_blocks;tmp2;tmp2=tmp2->next)
+	    {
+	      for(d=0;d<CALLBACK_CHUNK;d++)
+	      {
+		if(tmp2->x+d == tmp->x[e].next)
+		  break;
+	      
+		if(d < CALLBACK_CHUNK) break;
+	      }
+	    }
 	  
-	  if(d == CALLBACK_CHUNK)
-	    Pike_fatal("Callback next pointer pointing to Z'ha'dum\n");
+	    if(d == CALLBACK_CHUNK)
+	      Pike_fatal("Callback next pointer pointing to Z'ha'dum\n");
+	  }
 	}
       }
     }
