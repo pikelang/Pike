@@ -22,8 +22,8 @@ log_end() {
   date >> build/xenofarm/mainlog.txt
 }
 
-xenofarm_low() {
-  log_start build
+xenofarm_build() {
+  log_start compile
   $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
   log_end
   if [ \! X$LAST = X0 ] ; then return 1; fi
@@ -46,8 +46,8 @@ xenofarm_low() {
 LC_CTYPE=C
 export LC_CTYPE
 log "FORMAT 2"
-log_start xenofarm
-xenofarm_low
+log_start build
+xenofarm_build
 log_end
 
 log_start response_assembly
