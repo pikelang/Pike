@@ -5,104 +5,63 @@
 #submit more tests.
 #
 
-
-GNU_M4=`echo "changequote([,])ifdef([__gnu__],yes,no)" | m4`
-if [ $GNU_M4 = "no" ]; then
-  echo "$0 requires GNU m4" 1>&2
-  exit 1
-fi
-
-
-
-
-
-
 m4 <<\EOTESTS
 divert(-1)
 
 changequote([[,]])
 changecom
 
-define(TESTNO,0)
-define(doquote,[[patsubst(patsubst(patsubst([[[[[[$1]]]]]],\\,\\\\),\",\\"),\
-,\\n)]])
+define(SEPARATOR,[[....]])
 
-define(test_any, [[define([[TESTNO]],incr(TESTNO))dnl
-  "=mixed a() { doquote([[$1]]); }\n"+	// test TESTNO
-  "mixed b() { return doquote([[$2]]); }",]])
-define(test_do, [[define([[TESTNO]],incr(TESTNO))dnl
-  "dmixed a() { doquote([[$1]]); }\n",	// test TESTNO]])
-define(test_true, [[define([[TESTNO]],incr(TESTNO))dnl
-  "tmixed a() { return doquote([[$1]]); }",	// test TESTNO]])
-define(test_false, [[define([[TESTNO]],incr(TESTNO))dnl
-  "fmixed a() { return doquote([[$1]]); }",	// test TESTNO]])
-define(test_eq, [[define([[TESTNO]],incr(TESTNO))dnl
-  "=mixed a() { return doquote([[$1]]); }\n"+	// test TESTNO
-  "mixed b() { return doquote([[$2]]); }",]])
-define(test_equal, [[define([[TESTNO]],incr(TESTNO))dnl
-  "emixed a() { return doquote([[$1]]); }\n"+	// test TESTNO
-  "mixed b() { return doquote([[$2]]); }",]])
-define(test_compile_error, [[define([[TESTNO]],incr(TESTNO))dnl
-  "cmixed a() { doquote([[$1]]); }\n",	// test TESTNO]])
-define(test_eval_error, [[define([[TESTNO]],incr(TESTNO))dnl
-  "Emixed a() { doquote([[$1]]); }\n",	// test TESTNO]])
-define(test_define_program, [[define([[TESTNO]],incr(TESTNO))dnl
-  "Pstring a() { return \"doquote([[$1]])\"; }\n"+	// test TESTNO
-  "string b() { return \"doquote([[$2]])\"; }",]])
-define(test_program, [[define([[TESTNO]],incr(TESTNO))dnl
-  "t\n"+"doquote([[$1]])\n",	// test TESTNO ]])
-
-
-
+define(DOTEST,[[dnl
 divert(0)dnl
-#!ulpc
-int main(int argc, string *argv)
-{
+define([[TESTNO]],incr(TESTNO))dnl
+test TESTNO, expected result: [[$1]]
+[[$2]]
+SEPARATOR
+divert(-1)dnl]])
 
-  int e, verbose, successes, errors, t;
-  string *tests;
-  program testprogram;
-  int start, fail;
+define(test_any, [[DOTEST(EQ,dnl
+mixed a() { [[$1]]; }
+mixed b() { return [[$2]]; })]])
 
-  for(e=1;e<argc;e++)
-  {
-    switch(argv[e])
-    {
-      case "-h":
-      case "--help":
-        perror("Usage: "+argv[e]+" [-v | --verbose] [-h | --help] [-t <testno>]\n");
-        return 0;
+define(test_eq,[[DOTEST(EQ,dnl
+mixed a() { return [[$1]]; }
+mixed b() { return [[$2]]; })]])
 
-      case "-v":
-      case "--verbose":
-        verbose++;
-        break;
+define(test_equal,[[DOTEST(EQUAL,dnl
+mixed a() { return [[$1]]; }
+mixed b() { return [[$2]]; })]])
 
-      case "-s":
-      case "--start-test":
-	sscanf(argv[++e],"%d",start);
-	start--;
-	break;
+define(test_do,[[DOTEST(RUN,dnl
+mixed a() { [[$1]]; })]])
 
-      case "-f":
-      case "--fail":
-	fail++;
-	break;
+define(test_true, [[DOTEST(TRUE,dnl
+mixed a() { return [[$1]]; })]])
 
+define(test_false, [[DOTEST(FALSE,dnl
+mixed a() { return [[$1]]; })]])
 
-      case "-t":
-      case "--trace":
-	t++;
-	break;
+define(test_compile_error,[[DOTEST(COMPILE_ERROR,dnl
+mixed a() { [[$1]]; })]])
 
-      default:
-        perror("Unnown argument "+argv[e]+" (try "+argv[0]+" --help for more info).\n");
+define(test_compile_error_low,[[DOTEST(COMPILE_ERROR,dnl
+[[$1]])]])
 
-    }
-  }
+define(test_eval_error,[[DOTEST(EVAL_ERROR,dnl
+mixed a() { [[$1]]; })]])
 
-   tests = ({
+define(test_define_program,[[DOTEST(RUN,dnl
+void a() { master()->add_precompiled_program("[[$1]]",class {
+  [[$2]]
+});})]])
 
+define(test_program, [[DOTEST(TRUE,dnl
+[[$1]])]])
+
+define(TESTNO,0)
+
+test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
 // signum, signame
 test_eq(signum("SIGKILL"),9)
@@ -226,7 +185,7 @@ test_true(!(1==2))
 test_true(""=="")
 test_true(!(""=="foo"))
 test_true(this_object()==this_object())
-// test_true(this_function()==main)
+test_true(this_function()==a)
 test_true(2.0==2.0)
 test_true(({})==({}))
 
@@ -1612,136 +1571,4 @@ test_program(inherit "/test"; inherit "/test2"; mixed a() { w=20; b=22; return g
 test_program(inherit "/test"; inherit "/test2"; mixed a() { setw(20); setb(22); return w==20 && b==22; })
 test_program(inherit "/test2"; inherit "/test"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
 test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); return w==20 && b==22; })
-
-
-  });
-
-  for(e=start;e<sizeof(tests);e++)
-  {
-    string test;
-    int type;
-    object o;
-    mixed a,b;
-
-    test=tests[e];
-    type=test[0];
-    test=test[1..strlen(test)-1];
-
-    if(verbose)
-    {
-      perror("Doing test "+(e+1)+"\n");
-      if(verbose>1)
-	perror(test+"\n");
-    }
-
-    switch(type)
-    {
-    case 'c':
-      master()->set_inhibit_compile_errors(1);
-      if(catch(compile_string(test,"Test "+(e+1))))
-      {
-	successes++;
-      }else{
-	perror("Test "+(e+1)+" failed.\n");
-	perror(test+"\n");
-	errors++;
-      }
-      master()->set_inhibit_compile_errors(0);
-      break;
-
-    case 'E':
-      master()->set_inhibit_compile_errors(1);
-      if(catch(clone(compile_string(test,"Test "+(e+1)))->a()))
-      {
-	successes++;
-      }else{
-	perror("Test "+(e+1)+" failed.\n");
-	perror(test+"\n");
-	errors++;
-      }
-      master()->set_inhibit_compile_errors(0);
-      break;
-
-    default:
-      o=clone(compile_string(test,"Test "+(e+1)));
-
-      if(t) trace(t);
-      a=b=0;
-      if(functionp(o->a)) a=o->a();
-      if(functionp(o->b)) b=o->b();
-      if(t) trace(0);
-      switch(type)
-      {
-      case 'P':
-	b=compile_string(b,"Test "+(e+1));
-	master()->add_precompiled_program(a,b);
-	successes++;
-	break;
-
-      case 'f':
-	a=!a;
-	
-      case 't':
-	if(!a)
-	{
-	  perror("Test "+(e+1)+" failed.\n");
-	  perror(test+"\n");
-	  errors++;
-	}else{
-	  successes++;
-	}
-	break;
-
-      case 'd':
-	successes++;
-	break;
-
-      case '=':
-	if(a!=b)
-	{
-	  perror("Test "+(e+1)+" failed.\n");
-	  perror(test+"\n");
-	  perror(sprintf("o->a(): %O\n",a));
-	  perror(sprintf("o->b(): %O\n",b));
-	  errors++;
-	}else{
-	  successes++;
-	}
-	break;
-      
-      case 'e':
-	if(!equal(a,b))
-	{
-	  perror("Test "+(e+1)+" failed.\n");
-          perror(test+"\n");
-	  perror(sprintf("o->a(): %O\n",a));
-	  perror(sprintf("o->b(): %O\n",b));
-	  errors++;
-	}else{
-	  successes++;
-	}
-	break;
-
-      default:
-	perror("Unknown test type.\n");
-	errors++;
-      }
-    }
-    if(fail && errors)
-      exit(1);
-  }
-
-  if(errors + successes != sizeof(tests))
-  {
-    perror("Errors + Successes != number of tests!\n");
-    errors++;
-  }
-  if(errors || verbose)
-  {
-    perror("Failed tests: "+errors+".\n");
-  }
-
-  return errors;
-}
-
 EOTESTS
