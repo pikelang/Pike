@@ -545,3 +545,318 @@ void resolveRefs(Node tree) {
   resolveFun(scopes, tree);
   scopes->leave();
 }
+
+// Call this method after the extraction and merge of the tree.
+void postProcess(Node tree) {
+  handleAppears(tree);
+  resolveRefs(tree);
+}
+
+
+//========================================================================
+// SPLITTING THE BIG TREE INTO DIRECTORIES AND FILES
+//========================================================================
+
+// Structure description file format:
+//
+// <!-- Top container has no name attribute, maps to the dir
+//      supplied as a parameter to the splitIntoDirHier function -->
+// <dir>
+//   <dir name="Process">
+//     <file name="create_process.xml">
+//       <!-- Only create and limit_value på den här sidan,
+//       in that order -->
+//       <target module="Process" class="create_process" entity="create"/>
+//       <target module="Process" class="create_process" entity="limit_value"/>
+//     </file>
+//   </dir>
+//   <dir name="Protocols">
+//     <file name="HTTP.xml">
+//       <!-- All in Protocols.HTTP, document order. -->
+//       <target module="Protocols.HTTP"/>
+//     </file>
+//   </dir>
+//   <dir name="Standards">
+//     <file name="URI.xml">
+//       <!-- All in Standards.URI, document order. -->
+//       <target module="Standards" class="URI"/>
+//     </file>
+//   </dir>
+// </dir>
+
+static class Target {
+  string type;         // "class", "module", or "entity"
+  int moduleNest = 0;  // How many idents (except last) are modules
+  int classNest = 0;   // How many idents (except last) are classes
+  string file = 0;     // relative to the virtual root
+  Node data = 0;       // the XML to insert in the file
+}
+
+static int splitError(string s, mixed ... args) {
+  s = sprintf(s, @args);
+  werror("split error: %s\n", s);
+  throw(s);
+}
+
+// // docXMLFile = the name of the file that contains the module tree.
+// structureXMLFile = the name of the file that contains the structure
+//   description for the file tree to be created.
+// rootDir = the name of the directory that maps to the <dir> element on
+//   the top level of the structure XML file.
+void splitIntoDirHier(string docXMLFile, string structureXMLFile,
+                      string rootDir)
+{
+  Node doc = parse_file(docXMLFile)[0];
+  Node struc = parse_file(structureXMLFile)[0];
+
+  // First we find and all targets
+
+  // If the value is a string, it's just the href to the file, because the
+  // entity was just moved together with something in its docgroup
+  mapping(string : Target | string) targets = ([]);
+
+  array(string) dirs = ({});
+  string fileName = 0;
+  struc->walk_preorder_2(
+    lambda(Node n) {
+      if (n->get_node_type() == XML_ELEMENT) {
+        mapping attr = n->get_attributes();
+        switch(n->get_any_name()) {
+          case "target":
+            {
+            Target t = Target();
+            array(string) ids = ({});
+            if (attr["module"])
+              t->moduleNest = sizeof(ids = attr["module"]/".");
+            if (attr["class"])
+              t->classNest = sizeof(ids += attr["class"]/".") - t->moduleNest;
+            if (attr["entity"]) {
+              ids += ({ attr["entity"] });
+              t->type = "entity";
+            }
+            else if (attr["class"]) {
+              t->type = "class";
+              --t->classNest;
+            }
+            else if (attr["module"]) {
+              t->type = "module";
+              --t->moduleNest;
+            }
+            else
+              splitError("Bad <target> tag");
+            t->file = dirs * "/" + "/" +
+              (fileName || splitError("<target> must be inside a <file>"));
+            targets[ids * "."] = t;
+            attr["full_ref"] = ids * ".";
+            break;
+            }
+          case "file":
+            attr["full_dir"] = rootDir + "/" + dirs * "/";
+            fileName = attr["name"]
+              || splitError("<file> must have a name attribute");
+            break;
+          case "dir":
+            if (attr["name"])
+              dirs += ({ attr["name"] });
+            break;
+          default:
+            splitError("Unknown structure tag <" + n->get_any_name() + ">");
+        }
+      }
+    },
+    lambda(Node n) {
+      if (n->get_node_type() == XML_ELEMENT)
+        switch (n->get_any_name()) {
+          case "file":
+            fileName = 0;
+            break;
+          case "dir":
+            if (n->get_attributes()["name"])
+              dirs = dirs[0..sizeof(dirs) - 2];
+            break;
+        }
+    }
+  );
+
+  // 2. For all targets, beginning with the most specific (most '.'s)
+  //   2.1 Remove the corresponding class/docgroup from the doc tree
+  //   2.2 Wrap it in placeholder class/modules
+  //   2.3 Put it in the Target.data member
+  array(string) sortedTargets =
+    Array.sort_array(indices(targets),
+                     lambda(string s1, string s2) {
+                       return sizeof(s1 / ".") < sizeof(s2 / ".");
+                     }
+                    );
+  foreach(sortedTargets, string target) {
+    object(Target)|string t = targets[target];
+    if (!objectp(t))
+      continue; // It was just a "moved along" entry in a docgroup!
+
+    array(string) ref = target / ".";
+    Node n = findStuff(doc, ref);
+    if (!n)
+      splitError("unable to find %O in the doc tree", target);
+
+    // Remove it from the <class> or <module> that it belongs to,
+    // replacing it with a placeholder.
+    Node parent = n->get_parent();
+    if (parent) {
+      mapping nattr = n->get_attributes();
+      mapping(string : string) attr = ([
+        "type" : "inner-placeholder",
+        "href" : t->file,
+      ]);
+      if (nattr["name"])
+        attr["name"] = nattr["name"];
+      Node placeHolder = Node(XML_ELEMENT, n->get_any_name(), attr, 0);
+      if (n->get_any_name() == "docgroup") {
+        // put some placeholder stuff inside it too...
+        foreach (n->get_children(), Node child)
+          if (child->get_node_type() == XML_ELEMENT && child->get_any_name() != "doc") {
+            // Reparse it to get a COPY of it ...
+            Node new = parse_input(child->html_of_node())[0];
+            mapping attr = new->get_attributes() || ([]);
+            // Should we really add it?
+            attr["type"] = "inner-placeholder";
+            placeHolder->add_child(new);
+          }
+      }
+      parent->replace_child(n, placeHolder);
+    }
+
+    if (n->get_any_name() == "docgroup") {
+      string container = sizeof(ref) > 1 ? ref[0 .. sizeof(ref) - 2] * "." + "." : "";
+      foreach (n->get_children(), Node child)
+        if (child->get_node_type() == XML_ELEMENT && child->get_any_name() != "doc") {
+          string name = (child->get_attributes() || ([])) ["name"];
+          if (name && name != ref[-1])
+            if (targets[container + name])
+              splitError("attempt to split docgroup of %s", container + name);
+            else
+              // Setting it to a string:
+              targets[container + name] = t->file;
+        }
+    }
+
+    // Traverse it, resolving all <ref> hrefs
+    n->walk_preorder(
+      lambda(Node n) {
+        if (n->get_any_name() == "ref" && n->get_node_type() == XML_ELEMENT) {
+          mapping(string : string) attr = n->get_attributes() || ([]);
+          if (attr["resolved"]) {
+            string href = findHref(targets, attr["resolved"] / ".");
+            if (!href)
+              werror("unable to find href to %O", attr["resolved"]);
+            else
+              attr["href"] = href;
+          }
+        }
+      }
+    );
+
+    // Wrap the stuff in placeholder classes and modules
+    for (int i = sizeof(ref) - 2; i >= 0; --i) {
+      mapping attr = ([]);
+      attr["href"] = findHref(targets, ref[0 .. i])
+        || (werror("unable to find href to %O", ref[0 .. i] * "."), 0);
+      attr["name"] = ref[i];
+      attr["type"] = "outer-placeholder";
+      Node newNode =
+        Node(XML_ELEMENT, i < t->moduleNest ? "module" : "class", attr, 0);
+      newNode->add_child(n);
+      n = newNode;
+    }
+    t->data = n;
+  }
+
+  // Traverse the tree again, creating the dirs, and writing the
+  // targets to the files.
+  string path;
+  Stdio.File file = Stdio.File();
+  struc->walk_preorder_2(
+    lambda(Node n) {
+      if (n->get_node_type() == XML_ELEMENT) {
+        mapping(string : string) attr = n->get_attributes();
+        switch (n->get_any_name()) {
+          case "file":
+            {
+            string dir = attr["full_dir"];
+            if (!Stdio.mkdirhier(dir))
+              splitError("unable to create directory %O", dir);
+            path = dir + "/" + attr["name"];
+            if (!file->open(path, "cwt"))
+              splitError("unable to open file %O for write access", path);
+            }
+            break;
+          case "target":
+            {
+            string target = attr["full_ref"];
+            object(Target)|string t = targets[target];
+            if (!objectp(t))
+              splitError("THIS SHOULDN'T HAPPEN!");
+            string xml = t->data->html_of_node();
+            if (file->write(xml) != strlen(xml))
+              splitError("unable to write to file %O", path);
+            }
+            break;
+        }
+      }
+    },
+    lambda(Node n) {
+      if (n->get_node_type() == XML_ELEMENT && n->get_any_name() == "file")
+        if (!file->close())
+          splitError("unable to close file %O", path);
+    }
+  );
+}
+
+// Find the file where the entity will have its documentation.
+static string findHref(mapping(string : Target|string) targets, array(string) ids) {
+  for (;;) {
+    string ent = ids * ".";
+    object(Target)|string t = targets[ent];
+    if (t)
+      return stringp(t) ? t : t->file;
+    if (sizeof(ids) <= 1)
+      break;
+    ids = ids[0 .. sizeof(ids) - 2];
+  }
+  return 0;
+}
+
+// If ref points to a class or module, return that <class> / <module>,
+// else the <docgroup> that contains the thing...
+static Node findStuff(Node root, array(string) ref) {
+  Node n = root;
+  while (sizeof(ref)) {
+    array(Node) children = n->get_children();
+    Node found = 0;
+    foreach (children, Node child) {
+      string tag = child->get_any_name();
+      if (tag == "module" || tag == "class") {
+        string name = child->get_attributes()["name"];
+        if (name && name == ref[0]) {
+          found = child;
+          break;
+        }
+      }
+    }
+    if (!found && sizeof(ref) == 1)
+      outerloop: foreach (children, Node child)
+        if (child->get_any_name() == "docgroup")
+          foreach (child->get_children(), Node thing)
+            if ((thing->get_attributes() || ([]))["name"] == ref[0])
+              if (child->get_attributes()["type"] == "inner-placeholder")
+                splitError("%s is in the same docgroup as another target, cannot", ref * ".");
+              else {
+                found = child;
+                break outerloop;
+              }
+    if (!found)
+      return 0;
+    n = found;
+    ref = ref[1..];
+  }
+  return n;
+}
