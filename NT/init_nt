@@ -33,6 +33,9 @@ NTDRIVE=${NTDRIVE-k:}
 # This variable MUST NOT end with a slash.
 NTMOUNT=${NTMOUNT-}
 
+# Where on the UNIX machine are the NT libraries available?
+NTLD_LIBRARY_PATH=${NTLD_LIBRARY_PATH-}
+
 # Use Simple Pike Remote SHell?
 USE_SPRSH=yes
 
@@ -176,7 +179,7 @@ IFS='
 
 export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE 
 export NTPORT USE_SPRSH NTMOUNT IFS REMOTE_METHOD watcom INCLUDE
-export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE
+export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE NT_LIBRARY_PATH
 
 if [ "$#" = "0" ]; then
   case /$SHELL-$TERM in
