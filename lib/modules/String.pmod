@@ -12,6 +12,7 @@ constant trim_all_whites = __builtin.string_trim_all_whites;
 constant Iterator = __builtin.string_iterator;
 constant SplitIterator = __builtin.string_split_iterator;
 constant Replace = __builtin.multi_string_replace;
+constant SingleReplace = __builtin.single_string_replace;
 
 /*
  * Implode an array of strings to an english 'list'

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.56 2001/07/02 11:38:01 grubba Exp $
+ * $Id: builtin.cmod,v 1.57 2001/07/05 13:04:42 grubba Exp $
  */
 
 #include "global.h"
@@ -1649,6 +1649,188 @@ PIKECLASS multi_string_replace
     THIS->v = NULL;
     THIS->v_sz = 0;
     THIS->sz = 0;
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @class SingleReplace
+ */
+PIKECLASS single_string_replace
+{
+  CVAR SearchMojt mojt;
+  CVAR struct pike_string *del;
+  CVAR struct pike_string *to;
+
+  INIT
+  {
+    THIS->mojt.vtab = NULL;
+    THIS->mojt.data = NULL;
+    THIS->del = NULL;
+    THIS->to = NULL;
+  }
+
+  EXIT
+  {
+    if (THIS->mojt.vtab) {
+      THIS->mojt.vtab->freeme(THIS->mojt.data);
+      THIS->mojt.vtab = NULL;
+      THIS->mojt.data = NULL;
+    }
+    if (THIS->del) {
+      free_string(THIS->del);
+      THIS->del = NULL;
+    }
+    if (THIS->to) {
+      free_string(THIS->to);
+      THIS->to = NULL;
+    }
+  }
+
+  PIKEFUN void create(string|void del_, string|void to_)
+  {
+    struct pike_string *del;
+    struct pike_string *to;
+
+    /* Clean up... */
+    exit_single_string_replace_struct();
+    
+    if (!del_) return;
+
+    if (!to_) {
+      SIMPLE_BAD_ARG_ERROR("String.SingleReplace->create", 2, "string");
+    }
+
+    if (del_->u.string == to_->u.string) {
+      /* No-op... */
+      return;
+    }
+
+    copy_shared_string(THIS->del, del = del_->u.string);
+    copy_shared_string(THIS->to, to = to_->u.string);
+
+    if (del->len) {
+      THIS->mojt = compile_memsearcher(MKPCHARP_STR(del),
+				       del->len,
+				       0x7fffffff,
+				       del);
+    }
+  }
+
+  /*** replace function ***/
+  typedef char *(* replace_searchfunc)(void *,void *,size_t);
+  PIKEFUN string `()(string str)
+  {
+    int shift;
+    struct pike_string *del = THIS->del;
+    struct pike_string *to = THIS->to;
+    struct pike_string *ret = NULL;
+
+    if (!str->len || !del || !to) {
+      /* The result is already on the stack in the correct place... */
+      return;
+    }
+
+    shift = MAXIMUM(str->size_shift, to->size_shift);
+
+    if (!del->len) {
+      int e, pos;
+      ret = begin_wide_shared_string(str->len + to->len * (str->len-1),
+				     shift);
+      low_set_index(ret, 0, index_shared_string(str, 0));
+      for(pos=e=1;e<str->len;e++)
+      {
+	pike_string_cpy(MKPCHARP_STR_OFF(ret,pos), to);
+	pos+=to->len;
+	low_set_index(ret,pos++,index_shared_string(str,e));
+      }
+    } else {
+      char *s, *end, *tmp;
+      replace_searchfunc f = (replace_searchfunc)0;
+      void *mojt_data = THIS->mojt.data;
+      PCHARP r;
+
+      end = str->str+(str->len<<str->size_shift);
+
+      switch(str->size_shift)
+      {
+      case 0: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
+      case 1: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
+      case 2: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
+#ifdef PIKE_DEBUG
+      default: fatal("Illegal shift.\n");
+#endif
+      }
+
+      if(del->len == to->len)
+      {
+	ret = begin_wide_shared_string(str->len, shift);
+      } else {
+	INT32 delimiters = 0;
+
+	s = str->str;
+
+	while((s = f(mojt_data, s, (end-s)>>str->size_shift)))
+	{
+	  delimiters++;
+	  s += del->len << str->size_shift;
+	}
+
+	if (!delimiters) {
+	  /* The result is already on the stack in the correct place... */
+	  return;
+	}
+
+	ret = begin_wide_shared_string(str->len +
+				       (to->len-del->len)*delimiters, shift);
+      }
+
+      s = str->str;
+      r = MKPCHARP_STR(ret);
+
+      while((tmp = f(mojt_data, s, (end-s)>>str->size_shift)))
+      {
+#ifdef PIKE_DEBUG
+	if(tmp + (del->len << str->size_shift) > end)
+	  fatal("generic_memory_search found a match beyond end of string!\n");
+#endif
+	generic_memcpy(r,MKPCHARP(s,str->size_shift),(tmp-s)>>str->size_shift);
+	INC_PCHARP(r,(tmp-s)>>str->size_shift);
+	pike_string_cpy(r,to);
+	INC_PCHARP(r,to->len);
+	s=tmp+(del->len << str->size_shift);
+      }
+      generic_memcpy(r,MKPCHARP(s,str->size_shift),(end-s)>>str->size_shift);
+    }
+    RETURN end_shared_string(ret);
+  }
+
+  PIKEFUN array(string) _encode()
+  {
+    if (THIS->del) {
+      ref_push_string(THIS->del);
+      ref_push_string(THIS->to);
+      f_aggregate(2);
+    } else {
+      push_int(0);
+    }
+  }
+
+  PIKEFUN void _decode(array(string)|int(0..0) encoded_)
+  {    
+    INT32 i = 0;
+    if (encoded_->type == PIKE_T_ARRAY) {
+      struct array *encoded = encoded_->u.array;
+
+      for (i=0; i < encoded->size; i++) {
+	push_svalue(encoded->item + i);
+	stack_swap();
+      }
+    }
+    pop_stack();
+      
+    f_single_string_replace_create(i);
   }
 }
 
