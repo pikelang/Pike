@@ -116,10 +116,10 @@ class Package
 		    "mkdir "+unpack_directory+"\n"
 		    "(cd "+unpack_directory+"\n"
 		    " tar xf \"$TARFILE\" $CONTENTS\n"
-		    " ./"+basename(pike_filename)+" "
-	                     "--script \"`pwd`\"/"+
-		                            basename(install_filename)+
-		    " $ARGS)\n"
+		    " eval \"./"+basename(pike_filename)+" "
+	                     "--script \\\"\\`pwd\\`/"+
+		                            basename(install_filename)+"\\\""
+		    " -- $ARGS\")\n"
 		    "rm -rf "+setup_filename+" "+unpack_directory+"\n");
     
     string bootstrap = sprintf("#!/bin/sh\n"
