@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.38 1998/05/04 16:28:40 mirar Exp $ */
+/* $Id: font.c,v 1.39 1998/06/03 13:21:32 grubba Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.38 1998/05/04 16:28:40 mirar Exp $
+**!	$Id: font.c,v 1.39 1998/06/03 13:21:32 grubba Exp $
 **! class font
 **!
 **! note
@@ -336,8 +336,11 @@ void font_load(INT32 args);
 
 void font_create(INT32 args)
 {
-   if (args) font_load(args);
-   pop_n_elems(1);
+   if (args) 
+   {
+     font_load(args);
+     pop_stack();
+   }
 }
 
 void font_load(INT32 args)
