@@ -77,8 +77,8 @@ if test "x$with_java" = xyes; then
     AC_MSG_WARN([If you are unsure, please unset \$THREADS_FLAG and rerun configure.])
   fi
 
-  changequote({,})dnl
   AC_MSG_CHECKING(for JAVA_HOME)
+  changequote({,})dnl
   AC_CACHE_VAL(pike_cv_java_java_home, {{
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
@@ -106,8 +106,8 @@ if test "x$with_java" = xyes; then
       fi
     fi
   }})
-  AC_MSG_RESULT($pike_cv_java_java_home)
   changequote([,])dnl
+  AC_MSG_RESULT($pike_cv_java_java_home)
 
   AC_MSG_CHECKING(for Java libraries)
   AC_CACHE_VAL(pike_cv_java_lib_dir, [
