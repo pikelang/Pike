@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.1 2003/02/07 03:15:15 nilsson Exp $
+dnl $Id: testsuite.in,v 1.2 2003/02/07 12:16:59 jhs Exp $
 
 test_any([[
 #pike 7.4

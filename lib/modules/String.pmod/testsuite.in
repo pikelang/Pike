@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.4 2002/12/29 22:31:21 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2003/02/07 12:16:59 jhs Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
