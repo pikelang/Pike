@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.147 2001/05/31 00:14:21 grubba Exp $
+ * $Id: master.pike.in,v 1.148 2001/06/21 10:10:52 wellhard Exp $
  * 
  * Master-file for Pike.
  *
@@ -493,6 +493,8 @@ program cast_to_program(string pname, string current_file, object|void handler)
   }
   if(IS_ABSOLUTE_PATH(pname))
   {
+    if (programs[pname])
+      return programs[pname];
     pname=combine_path("/",pname);
     return findprog(pname,ext,handler);
   }else{
