@@ -1,11 +1,11 @@
 #undef BLOCK_ALLOC
 #undef PTR_HASH_ALLOC
 
-#define BLOCK_ALLOC(DATA,SIZE)					\
-struct DATA *PIKE_CONCAT(alloc_,DATA)(void);			\
-void PIKE_CONCAT(really_free_,DATA)(struct DATA *d);	\
-void PIKE_CONCAT3(free_all_,DATA,_blocks)(void);
-void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *, INT32 *);	\
+#define BLOCK_ALLOC(DATA,SIZE)						\
+struct DATA *PIKE_CONCAT(alloc_,DATA)(void);				\
+void PIKE_CONCAT(really_free_,DATA)(struct DATA *d);			\
+void PIKE_CONCAT3(free_all_,DATA,_blocks)(void);			\
+void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num, INT32 *size);	\
 
 
 #define PTR_HASH_ALLOC(DATA,BSIZE)				\
