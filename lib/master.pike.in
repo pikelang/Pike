@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.71 1999/11/23 16:40:01 per Exp $
+/* $Id: master.pike.in,v 1.72 1999/11/26 21:42:47 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -235,6 +235,12 @@ mapping (string:program) programs=(["/master":object_program(this_object())]);
 
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 
+array(string) query_precompiled_names(string fname)
+{
+  // Filenames of potential precompiled files in priority order.
+  return ({ fname + ".o" });
+}
+
 static program low_findprog(string pname, string ext, object|void handler)
 {
   program ret;
@@ -255,29 +261,33 @@ static program low_findprog(string pname, string ext, object|void handler)
     {
     case "":
     case ".pike":
-      if(array s2=master_file_stat(fname+".o"))
-      {	
-	if(s2[1]>=0 && s2[3]>=s[3])
-	{
-	  mixed err=catch {
-            AUTORELOAD_CHECK_FILE(fname+".o");
-	    return programs[fname]=decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
-	  };
-	  if (handler) {
-	    handler->compile_warning(fname + ".o", 0,
-				     sprintf("Decode failed:\n"
-					     "\t%s", err[0]));
+      foreach(query_precompiled_names(fname), string oname) {
+	if(array s2=master_file_stat(oname))
+	{	
+	  if(s2[1]>=0 && s2[3]>=s[3])
+	  {
+	    mixed err=catch {
+	      AUTORELOAD_CHECK_FILE(oname);
+	      return programs[fname] =
+		decode_value(_static_modules.files()->Fd(oname,"r")->read(),
+			     Codec());
+	    };
+	    if (handler) {
+	      handler->compile_warning(oname, 0,
+				       sprintf("Decode failed:\n"
+					       "\t%s", err[0]));
+	    } else {
+	      compile_warning(oname, 0,
+			      sprintf("Decode failed:\n"
+				      "\t%s", err[0]));
+	    }
 	  } else {
-	    compile_warning(fname + ".o", 0,
-			    sprintf("Decode failed:\n"
-				    "\t%s", err[0]));
-	  }
-	} else {
-	  if (handler) {
-	    handler->compile_warning(fname + ".o", 0,
-				     "Compiled file is out of date\n");
-	  } else {
-	    compile_warning(fname + ".o", 0, "Compiled file is out of date\n");
+	    if (handler) {
+	      handler->compile_warning(oname, 0,
+				       "Compiled file is out of date\n");
+	    } else {
+	      compile_warning(oname, 0, "Compiled file is out of date\n");
+	    }
 	  }
 	}
       }
@@ -306,9 +316,8 @@ static program low_findprog(string pname, string ext, object|void handler)
     AUTORELOAD_FINISH(ret,programs,fname);
     
     return programs[fname]=ret;
-  }else{
-    return UNDEFINED;
   }
+  return UNDEFINED;
 }
 
 static program findprog(string pname, string ext, object|void handler)
