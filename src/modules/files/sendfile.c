@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.37 2000/03/21 22:34:13 grubba Exp $
+ * $Id: sendfile.c,v 1.38 2000/08/11 23:57:46 per Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -53,6 +53,7 @@
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
 
+#if 0
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #else /* !HAVE_SYS_MMAN_H */
@@ -65,7 +66,7 @@
 #endif /* HAVE_MMAP */
 #endif /* HAVE_LINUX_MMAN_H */
 #endif /* HAVE_SYS_MMAN_H */
-
+#endif
 
 /* #define SF_DEBUG */
 
@@ -413,6 +414,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 #endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE && !HAVE_HPUX_SENDFILE */
     SF_DFPRINTF((stderr, "sendfile: Sending file by hand\n"));
 
+#if 0
 #if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
     {
       struct stat st;
@@ -480,6 +482,7 @@ void low_do_sendfile(struct pike_sendfile *this)
     }
   use_read_write:
 #endif /* HAVE_MMAP && HAVE_MUNMAP */
+#endif
 
     SF_DFPRINTF((stderr, "sendfile: Using read() and write().\n"));
 
