@@ -111,7 +111,16 @@ lambda()
 
 test_true(rm("testsuite.tmp"))
 
+
 // Stdio.FakeFile
+
+test_true(Stdio.FakeFile("")->is_fake_file)
+test_any([[
+  object f=Stdio.FakeFile("");
+  int r = f->write("hej");
+  f->seek(0);
+  return r==3 && f->read()=="hej";
+]], 1)
 
 test_eq( Stdio.FakeFile("abc")->read(600), "abc" )
 test_any([[
