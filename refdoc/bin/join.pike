@@ -1,5 +1,5 @@
 /*
- * $Id: join.pike,v 1.3 2002/02/26 02:07:50 nilsson Exp $
+ * $Id: join.pike,v 1.4 2002/03/09 16:06:28 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -33,6 +33,7 @@ void recurse(string builddir, string save_to) {
   array files = ({});
   int mtime;
 
+  // Adding all /*/sub_manual.xml files to the file queue.
   foreach(get_dir(builddir), string fn) {
     Stdio.Stat stat = file_stat(builddir+fn);
     if(!stat->isdir) continue;
@@ -45,6 +46,7 @@ void recurse(string builddir, string save_to) {
     }
   }
 
+  // Adding all *.xml files to the file queue, except sub_manual.xml.
   werror("Joining in %s\n", builddir);
   foreach(filter(get_dir(builddir), has_suffix, ".xml"), string fn) {
     if(fn=="sub_manual.xml") continue;
