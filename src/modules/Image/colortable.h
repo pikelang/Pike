@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.2 1997/10/27 22:41:18 mirar Exp $
+**!	$Id: colortable.h,v 1.3 1997/10/29 02:56:36 mirar Exp $
 */
 
 #define COLORLOOKUPCACHEHASHSIZE 207
@@ -86,7 +86,9 @@ struct neo_colortable
    {
       NCTD_NONE,
       NCTD_FLOYD_STEINBERG,
-      NCTD_RANDOMCUBE
+      NCTD_RANDOMCUBE,
+      NCTD_RANDOMGREY,
+      NCTD_ORDERED
    } dither_type;
 
    union
@@ -99,10 +101,17 @@ struct neo_colortable
 	 float forward;
 	 int dir;
       } floyd_steinberg;
-      struct
+      struct nctd_randomcube
       {
 	 int r,g,b;
       } randomcube;
+      struct nctd_ordered
+      {
+	 int xs,ys;
+	 int *rdiff,*gdiff,*bdiff;
+	 int rx,ry,gx,gy,bx,by;
+	 int row;
+      } ordered;
    } du;
 };
 
@@ -144,10 +153,8 @@ struct nct_dither
 	 int dir;
 	 int currentdir;
       } floyd_steinberg;
-      struct
-      {
-	 int r,g,b;
-      } randomcube;
+      struct nctd_randomcube randomcube;
+      struct nctd_ordered ordered;
    } u;
 };
 

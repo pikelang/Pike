@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.10 1997/10/27 22:38:05 mirar Exp $ */
+/* $Id: colortable.c,v 1.11 1997/10/29 02:56:33 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.10 1997/10/27 22:38:05 mirar Exp $
+**!	$Id: colortable.c,v 1.11 1997/10/29 02:56:33 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.10 1997/10/27 22:38:05 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.11 1997/10/29 02:56:33 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1628,6 +1628,55 @@ static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
    return rgb;
 }
 
+static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
+					   int rowpos,
+					   rgb_group s)
+{
+   rgbl_group rgb;
+   int i;
+   int err=-(rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1;
+   i=(int)(s.r+err); 
+   rgb.r=i<0?0:(i>255?255:i); 			       
+   i=(int)(s.g+err); 
+   rgb.g=i<0?0:(i>255?255:i); 			       
+   i=(int)(s.b+err); 
+   rgb.b=i<0?0:(i>255?255:i);
+   return rgb;
+}
+
+static void dither_ordered_newline(struct nct_dither *dith,
+				   int *rowpos,
+				   rgb_group **s,
+				   rgb_group **d,
+				   int *cd)
+{
+   dith->u.ordered.row++;
+}
+
+static rgbl_group dither_ordered_encode(struct nct_dither *dith,
+					int rowpos,
+					rgb_group s)
+{
+   rgbl_group rgb;
+   int i;
+   int xs=dith->u.ordered.xs;
+   int ys=dith->u.ordered.ys;
+
+   i=(int)(s.r+dith->u.ordered.rdiff
+	          [((rowpos+dith->u.ordered.rx)%xs)+
+		   ((dith->u.ordered.row+dith->u.ordered.ry)%ys)*xs]); 
+   rgb.r=i<0?0:(i>255?255:i); 			       
+   i=(int)(s.g+dith->u.ordered.gdiff
+	          [((rowpos+dith->u.ordered.gx)%xs)+
+		   ((dith->u.ordered.row+dith->u.ordered.gy)%ys)*xs]); 
+   rgb.g=i<0?0:(i>255?255:i); 			       
+   i=(int)(s.b+dith->u.ordered.bdiff
+	          [((rowpos+dith->u.ordered.bx)%xs)+
+		   ((dith->u.ordered.row+dith->u.ordered.by)%ys)*xs]); 
+   rgb.b=i<0?0:(i>255?255:i);
+   return rgb;
+}
+
 
 static void dither_dummy_got(struct nct_dither *dith,
 			     int rowpos,
@@ -1676,12 +1725,53 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 return 1;
 
       case NCTD_RANDOMCUBE:
-	 dith->u.randomcube.r=THIS->du.randomcube.r;
-	 dith->u.randomcube.g=THIS->du.randomcube.g;
-	 dith->u.randomcube.b=THIS->du.randomcube.b;
+	 dith->u.randomcube=THIS->du.randomcube;
 
 	 dith->encode=dither_randomcube_encode;
 	 dith->got=dither_dummy_got;
+
+	 return 1;
+
+      case NCTD_RANDOMGREY:
+	 dith->u.randomcube=THIS->du.randomcube;
+
+	 dith->encode=dither_randomgrey_encode;
+	 dith->got=dither_dummy_got;
+
+	 return 1;
+
+      case NCTD_ORDERED:
+	 /* copy it all */
+	 dith->u.ordered=nct->du.ordered;
+
+	 /* make space and copy diff matrices */
+	 dith->u.ordered.rdiff=malloc(sizeof(int)*nct->du.ordered.xs*
+				      nct->du.ordered.ys);
+	 dith->u.ordered.gdiff=malloc(sizeof(int)*nct->du.ordered.xs*
+				      nct->du.ordered.ys);
+	 dith->u.ordered.bdiff=malloc(sizeof(int)*nct->du.ordered.xs*
+				      nct->du.ordered.ys);
+	 if (!dith->u.ordered.rdiff||
+	     !dith->u.ordered.gdiff||
+	     !dith->u.ordered.bdiff)
+	 {
+	    if (dith->u.ordered.rdiff) free(dith->u.ordered.rdiff);
+	    if (dith->u.ordered.gdiff) free(dith->u.ordered.gdiff);
+	    if (dith->u.ordered.bdiff) free(dith->u.ordered.bdiff);
+	    return 0;
+	 }
+	 MEMCPY(dith->u.ordered.rdiff,nct->du.ordered.rdiff,
+		sizeof(int)*nct->du.ordered.xs*nct->du.ordered.ys);
+	 MEMCPY(dith->u.ordered.gdiff,nct->du.ordered.gdiff,
+		sizeof(int)*nct->du.ordered.xs*nct->du.ordered.ys);
+	 MEMCPY(dith->u.ordered.bdiff,nct->du.ordered.bdiff,
+		sizeof(int)*nct->du.ordered.xs*nct->du.ordered.ys);
+
+	 dith->u.ordered.row=0;
+
+	 dith->encode=dither_ordered_encode;
+	 dith->got=dither_dummy_got;
+	 dith->newline=dither_ordered_newline;
 
 	 return 1;
    }
@@ -1700,6 +1790,7 @@ void image_colortable_free_dither(struct nct_dither *dith)
 	 free(dith->u.floyd_steinberg.nexterrors);
 	 break;
       case NCTD_RANDOMCUBE:
+      case NCTD_RANDOMGREY:
 	 break;
    }
 }
@@ -2315,15 +2406,23 @@ void image_colortable_cubicles(INT32 args)
 **!	<td><illustration> object c=Image.colortable(lena(),8)->floyd_steinberg(); return c*lena(); </illustration></td>
 **!	<td><illustration> object c=Image.colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
 **!	<td><illustration> object c=Image.colortable(lena(),32)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td>floyd-steinberg dither</td>
+**!	<td><ref>floyd_steinberg</ref> dither</td>
+**!	</tr><tr valign=center>
+**!	<td></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2)->ordered(60,60,60); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4)->ordered(45,45,45); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8)->ordered(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->ordered(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32)->ordered(15,15,15); return c*lena(); </illustration></td>
+**!	<td><ref>ordered</ref> dither</td>
 **!	</tr><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),2)->randomcube(250); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),4)->randomcube(200); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),8)->randomcube(70); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),16)->randomcube(40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.colortable(lena(),32)->randomcube(15); return c*lena(); </illustration></td>
-**!	<td>randomcube dither</td>
+**!	<td><illustration> object c=Image.colortable(lena(),2)->randomcube(60,60,60); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4)->randomcube(45,45,45); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8)->randomcube(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->randomcube(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32)->randomcube(15,15,15); return c*lena(); </illustration></td>
+**!	<td><ref>randomcube</ref> dither</td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
 **!	<td>2</td>
@@ -3318,35 +3417,74 @@ void image_colortable_nodither(INT32 args)
 /*
 **! method object randomcube()
 **! method object randomcube(int r,int g,int b)
+**! method object randomgrey()
+**! method object randomgrey(int err)
 **!	Set random cube dithering.
 **!	Color choosen is the closest one to color in picture
 **!	plus (flat) random error; <tt>color±random(error)</tt>.
 **!
+**!	The randomgrey method uses the same random error on red, green
+**!	and blue and the randomcube method has three random errors.
+**!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> object c=Image.colortable(4,4,4)->randomcube(); return c*lena(); </illustration></td>
-**!	</tr><tr valign=center>
+**!	<td><illustration> object c=Image.colortable(4,4,4)->randomgrey(); return c*lena(); </illustration></td>
+**!	</tr><tr valign=top>
 **!	<td>original</td>
-**!	<td>mapped to <tt>Image.colortable(4,4,4)-><wbr>randomcube();</td>
+**!	<td colspan=2>mapped to <br><tt>Image.colortable(4,4,4)-></tt></td>
+**!	</tr><tr valign=top>
+**!	<td></td>
+**!	<td>randomcube()</td>
+**!	<td>randomgrey()</td>
+**!	</tr><tr valign=top>
+**!	<td><illustration> 
+**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
+**!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
+**!		return i; 
+**!	</illustration></td>
+**!	<td><illustration> 
+**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
+**!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
+**!		object c=Image.colortable(4,4,4)->randomcube(); 
+**!		return c*i; 
+**!	</illustration></td>
+**!	<td><illustration> 
+**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
+**!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
+**!		object c=Image.colortable(4,4,4)->randomgrey(); 
+**!		return c*i; 
+**!	</illustration></td>
 **!	</tr></table>
 **!
 **! arg int r
 **! arg int g
 **! arg int b
+**! arg int err
 **!	The maximum error. Default is 32, or colorcube step.
 **!
 **! returns the called object
 **!
-**! see also: nodither, floyd_steinberg, create
+**! see also: ordered, nodither, floyd_steinberg, create
+**!
+**! note
+**!	<ref>randomgrey</ref> method needs colorcube size to be the same on
+**!	red, green and blue sides to work properly. It uses the
+**!	red colorcube value as default.
 **/
 
 void image_colortable_randomcube(INT32 args)
 {
+   THIS->dither_type=NCTD_NONE;
+
    if (args>=3)
       if (sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT||
 	  sp[2-args].type!=T_INT)
-	 error("Image.colortable->nodither(): illegal argument(s)\n");
+	 error("Image.colortable->randomcube(): illegal argument(s)\n");
       else
       {
 	 THIS->du.randomcube.r=sp[-args].u.integer;
@@ -3368,6 +3506,348 @@ void image_colortable_randomcube(INT32 args)
    }
 
    THIS->dither_type=NCTD_RANDOMCUBE;
+
+   pop_n_elems(args);
+   push_object(THISOBJ); THISOBJ->refs++;
+}
+
+void image_colortable_randomgrey(INT32 args)
+{
+   THIS->dither_type=NCTD_NONE;
+
+   if (args>=3)
+      if (sp[-args].type!=T_INT)
+	 error("Image.colortable->randomgrey(): illegal argument(s)\n");
+      else
+	 THIS->du.randomcube.r=sp[-args].u.integer;
+   else if (THIS->type==NCT_CUBE && THIS->u.cube.r)
+      THIS->du.randomcube.r=256/THIS->u.cube.r;
+   else
+      THIS->du.randomcube.r=32;
+
+   THIS->dither_type=NCTD_RANDOMGREY;
+
+   pop_n_elems(args);
+   push_object(THISOBJ); THISOBJ->refs++;
+}
+
+static int* ordered_calculate_errors(int dxs,int dys)
+{
+   int *src,*dest;
+   int sxs,sys;
+
+   static int errors2x1[2]={0,1};
+   static int errors2x2[4]={0,2,3,1};
+   static int errors3x1[3]={1,0,2};
+   static int errors3x2[6]={4,0,2,1,5,3};
+   static int errors3x3[9]={6,8,4,1,0,3,5,2,7};
+
+   int szx,szy,*errs,*errp,sz,*d,*s;
+   int xf,yf;
+   int x,y;
+   
+   src=malloc(sizeof(int)*dxs*dys);
+   dest=malloc(sizeof(int)*dxs*dys);
+
+   if (!src||!dest) 
+   {
+      if (src) free(src);
+      if (dest) free(dest);
+      return NULL;
+   }
+
+   *src=0;
+   sxs=sys=1;
+   MEMSET(src,0,sizeof(int)*dxs*dys);
+   MEMSET(dest,0,sizeof(int)*dxs*dys);
+
+   for (;;)
+   {
+      if (dxs==sxs) xf=1;
+      else if (((dxs/sxs)%2)==0) xf=2;
+      else if (((dxs/sxs)%3)==0) xf=3;
+      else break;
+      if (dys==sys) yf=1;
+      else if (((dys/sys)%2)==0) yf=2;
+      else if (((dys/sys)%3)==0) yf=3;
+      else break;
+
+      if (xf==1 && yf==1) break;
+
+      szx=xf; szy=yf;
+
+      switch (xf*yf)
+      {
+	 case 2: errs=errors2x1; break;
+	 case 3: errs=errors3x1; break;
+	 case 4: errs=errors2x2; break;
+	 case 6: errs=errors3x2; break;
+	 case 9: errs=errors3x3; break;
+	 default: return; /* uh<tm> (not in {x|x={1,2,3}*{1,2,3}}) */
+      }
+      
+      sz=sxs*sys;
+      d=dest;
+      s=src;
+
+      for (y=0; y<sys; y++)
+      {
+	 int *errq=errs;
+	 for (yf=0; yf<szy; yf++)
+	 {
+	    int *sd=s;
+	    for (x=0; x<sxs; x++)
+	    {
+	       int *errp=errq;
+	       for (xf=0; xf<szx; xf++)
+		  *(d++)=*sd+sz**(errp++);
+	       sd++;
+	    }
+	    errq+=szx;
+	 }
+	 s+=sxs;
+      }
+
+      sxs*=szx;
+      sys*=szy;
+
+      /* ok, rotate... */
+
+      errs=src;
+      src=dest;
+      dest=errs;
+   }
+
+#if 0
+   s=src;
+   for (y=0; y<dys; y++)
+   {
+      printf("(");
+      for (x=0; x<dxs; x++)
+         printf("%4d",*(s++));
+      printf(" )\n");
+   }
+#endif
+
+   return src;
+}
+
+static int *ordered_make_diff(int *errors,int sz,int err)
+{
+   /* ok, i want errors between -err and +err from 0 and sz-1 */
+
+   int *dest;
+   int *d;
+   int n=sz;
+   float q;
+
+   d=dest=(int*)malloc(sizeof(int)*sz);
+   if (!d) return d;
+
+   if (sz!=1) q=1.0/(sz-1); else q=1.0;
+
+   while (n--)
+      *(d++)=(int)((*(errors++)*q-0.5)*2*err);
+   
+   return dest;
+}
+
+/*
+**! method object ordered()
+**! method object ordered(int r,int g,int b)
+**! method object ordered(int r,int g,int b,int xsize,int ysize)
+**! method object ordered(int r,int g,int b,int xsize,int ysize,int x,int y)
+**! method object ordered(int r,int g,int b,int xsize,int ysize,int rx,int ry,int gx,int gy,int bx,int by)
+**!	Set ordered dithering, which gives a position-dependent error added
+**!	to the pixel values. 
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(6,6,6)->ordered(42,42,42,2,2); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(6,6,6)->ordered(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(6,6,6)->ordered(42,42,42,8,8,0,0,0,1,1,0); return c*lena(); </illustration></td>
+**!	</tr><tr valign=top>
+**!	<td>original</td>
+**!	<td colspan=2>mapped to <br><tt>Image.colortable(6,6,6)-></tt></td>
+**!	</tr><tr valign=top>
+**!	<td></td>
+**!	<td><tt>ordered<br> (42,42,42,2,2)</tt></td>
+**!	<td><tt>ordered()</tt></td>
+**!	<td><tt>ordered<br> (42,42,42, 8,8,<br> 0,0, 0,1, 1,0)</tt></td>
+**!	</tr><tr valign=top>
+**!	<td><illustration> 
+**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
+**!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
+**!		return i; 
+**!	</illustration></td>
+**!	<td><illustration> 
+**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
+**!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
+**!		object c=Image.colortable(6,6,6)->ordered(42,42,42,2,2); 
+**!		return c*i; 
+**!	</illustration></td>
+**!	<td><illustration> 
+**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
+**!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
+**!		object c=Image.colortable(6,6,6)->ordered(); 
+**!		return c*i; 
+**!	</illustration></td>
+**!	<td><illustration> 
+**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
+**!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
+**!		object c=Image.colortable(6,6,6)->ordered(42,42,42,8,8,0,0,0,1,1,0); 
+**!		return c*i; 
+**!	</illustration></td>
+**!	</tr></table>
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**!	The maximum error. Default is 32, or colorcube steps (256/size).
+**!
+**! arg int xsize
+**! arg int ysize
+**!	Size of error matrix. Default is 8×8.
+**!	Only values which factors to multiples of 2 and 3 are
+**!	possible to choose (2,3,4,6,8,12,...).
+**!
+**! arg int x
+**! arg int y
+**! arg int rx
+**! arg int ry
+**! arg int gx
+**! arg int gy
+**! arg int bx
+**! arg int by
+**!	Offset for the error matrix. <tt>x</tt> and <tt>y</tt> is for
+**!	both red, green and blue values, the other is individual.
+**!
+**! returns the called object
+**!
+**! see also: randomcube, nodither, floyd_steinberg, create
+**/
+
+void image_colortable_ordered(INT32 args)
+{
+   int *errors;
+   int r,g,b;
+   int xsize,ysize;
+
+   THIS->dither_type=NCTD_NONE;
+
+   if (args>=3)
+      if (sp[-args].type!=T_INT||
+	  sp[1-args].type!=T_INT||
+	  sp[2-args].type!=T_INT)
+	 error("Image.colortable->ordered(): illegal argument(s)\n");
+      else
+      {
+	 r=sp[-args].u.integer;
+	 g=sp[1-args].u.integer;
+	 b=sp[2-args].u.integer;
+      }
+   else if (THIS->type==NCT_CUBE && THIS->u.cube.r && 
+	    THIS->u.cube.g && THIS->u.cube.b)
+   {
+      r=256/THIS->u.cube.r;
+      g=256/THIS->u.cube.g;
+      b=256/THIS->u.cube.b;
+   }
+   else
+   {
+      r=32;
+      g=32;
+      b=32;
+   }
+
+   xsize=ysize=8;
+
+   THIS->du.ordered.rx=
+   THIS->du.ordered.ry=
+   THIS->du.ordered.gx=
+   THIS->du.ordered.gy=
+   THIS->du.ordered.bx=
+   THIS->du.ordered.by=0;
+
+   if (args>=5)
+   {
+      if (sp[3-args].type!=T_INT||
+	  sp[4-args].type!=T_INT)
+	 error("Image.colortable->ordered(): illegal argument(s)\n");
+      else
+      {
+	 xsize=MAX(sp[3-args].u.integer,1);
+	 ysize=MAX(sp[4-args].u.integer,1);
+      }
+   }
+
+   if (args>=11)
+   {
+      if (sp[5-args].type!=T_INT||
+	  sp[6-args].type!=T_INT||
+	  sp[7-args].type!=T_INT||
+	  sp[8-args].type!=T_INT||
+          sp[9-args].type!=T_INT||
+	  sp[10-args].type!=T_INT)
+	 error("Image.colortable->ordered(): illegal argument(s)\n");
+      else
+      {
+	 THIS->du.ordered.rx=sp[5-args].u.integer;
+	 THIS->du.ordered.ry=sp[6-args].u.integer;
+	 THIS->du.ordered.gx=sp[7-args].u.integer;
+	 THIS->du.ordered.gy=sp[8-args].u.integer;
+	 THIS->du.ordered.bx=sp[9-args].u.integer;
+	 THIS->du.ordered.by=sp[10-args].u.integer;
+      }
+   }
+   else if (args>=7)
+   {
+      if (sp[5-args].type!=T_INT||
+	  sp[6-args].type!=T_INT)
+	 error("Image.colortable->ordered(): illegal argument(s)\n");
+      else
+      {
+	 THIS->du.ordered.rx=
+	 THIS->du.ordered.gx=
+	 THIS->du.ordered.bx=sp[5-args].u.integer;
+	 THIS->du.ordered.ry=
+	 THIS->du.ordered.gy=
+	 THIS->du.ordered.by=sp[6-args].u.integer;
+      }
+   }
+
+   errors=ordered_calculate_errors(xsize,ysize);
+   if (!errors) 
+   {
+      error("out of memory\n");
+      return;
+   }
+
+   THIS->du.ordered.rdiff=ordered_make_diff(errors,xsize*ysize,r);
+   THIS->du.ordered.gdiff=ordered_make_diff(errors,xsize*ysize,g);
+   THIS->du.ordered.bdiff=ordered_make_diff(errors,xsize*ysize,b);
+
+   free(errors);
+
+   if (!THIS->du.ordered.rdiff||
+       !THIS->du.ordered.gdiff||
+       !THIS->du.ordered.bdiff)
+   {
+      if (THIS->du.ordered.rdiff) free(THIS->du.ordered.rdiff);
+      if (THIS->du.ordered.gdiff) free(THIS->du.ordered.gdiff);
+      if (THIS->du.ordered.bdiff) free(THIS->du.ordered.bdiff);
+      error("out of memory!\n");
+      return;
+   }
+
+   THIS->du.ordered.xs=xsize;
+   THIS->du.ordered.ys=ysize;
+
+   THIS->dither_type=NCTD_ORDERED;
 
    pop_n_elems(args);
    push_object(THISOBJ); THISOBJ->refs++;
@@ -3433,6 +3913,11 @@ void init_colortable_programs(void)
 		"|function(int,int|float,int|float,int|float,int|float:object)",0);
    add_function("randomcube",image_colortable_randomcube,
 		"function(:object)|function(int,int,int:object)",0);
+   add_function("randomgrey",image_colortable_randomgrey,
+		"function(:object)|function(int:object)",0);
+   add_function("ordered",image_colortable_ordered,
+		"function(:object)"
+		"|function(int,int,int:object)",0);
 
    /* tuning image */
    add_function("spacefactors",image_colortable_spacefactors,
