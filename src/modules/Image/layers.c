@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.75 2001/10/26 20:33:00 nilsson Exp $
+**!	$Id: layers.c,v 1.76 2001/11/19 16:22:58 nilsson Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -196,7 +196,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.75 2001/10/26 20:33:00 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.76 2001/11/19 16:22:58 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1151,6 +1151,10 @@ static void image_layer_available_modes(INT32 args)
    f_aggregate(LAYER_MODES);
 }
 
+/*
+**! method array(string) description()
+**!     Layer descriptions
+*/
 static void image_layer_descriptions(INT32 args)
 {
    int i;
@@ -1451,6 +1455,20 @@ static void image_layer_create(INT32 args)
 
 /*** layer object *****************************************/
 
+/*
+**! method mapping(string:mixed) cast()
+**! ([ "xsize":int,
+**!    "ysize":int,
+**!    "image":image,
+**!    "alpha":image,
+**!    "xoffset":int,
+**!    "yoffset":int,
+**!    "fill":image,
+**!    "fill_alpha":image
+**!    "tiled":int,
+**!    "mode":string
+**! ])
+ */
 static void image_layer_cast(INT32 args)
 {
    if (!args)
