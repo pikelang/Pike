@@ -16,6 +16,7 @@
 #include "main.h"
 #include "array.h"
 #include "gc.h"
+#include "backend.h"
 
 struct object *master_object = 0;
 struct object *first_object;
@@ -153,6 +154,10 @@ void destruct(struct object *o)
   int e;
   struct frame frame;
   struct program *p;
+
+#ifdef DEBUG
+  if(d_flag > 20) do_debug();
+#endif
 
   if(!o || !(p=o->prog)) return; /* Object already destructed */
 
@@ -642,9 +647,6 @@ struct array *object_values(struct object *o)
 
 #ifdef GC2
 
-void gc_check_object(struct object *o)
-{
-}
 
 void gc_mark_object_as_referenced(struct object *o)
 {
