@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.554 2004/05/13 23:31:04 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.555 2004/05/14 13:54:02 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.554 2004/05/13 23:31:04 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.555 2004/05/14 13:54:02 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3176,8 +3176,16 @@ PMOD_EXPORT void f_replace(INT32 args)
      if (args==2 &&
 	 Pike_sp[-1].type==T_MAPPING)
      {
-       /* FIXME: Check that the mapping is string:string here, otherwise
-	  the error message will mention the from/to array. */
+       struct mapping *m = Pike_sp[-1].u.mapping;
+       if( (m->data->ind_types & ~BIT_STRING) ||
+	   (m->data->val_types & ~BIT_STRING) ) {
+	 mapping_fix_type_field(Pike_sp[-1].u.mapping);
+	 if( (m->data->ind_types & ~BIT_STRING) ||
+	     (m->data->val_types & ~BIT_STRING) ) {
+	   SIMPLE_BAD_ARG_ERROR("replace", 2, "mapping(string:string)");
+	 }
+       }
+
 	stack_dup();
 	f_indices(1);
 	stack_swap();
