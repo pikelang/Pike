@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.55 1998/03/01 11:40:46 hubbe Exp $");
+RCSID("$Id: las.c,v 1.56 1998/04/06 20:31:58 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1482,7 +1482,7 @@ void fix_type_field(node *n)
       }
       else if(max_correct_args == args)
       {
-	my_yyerror("To few arguments to %s.\n",name);
+	my_yyerror("Too few arguments to %s.\n",name);
       }else{
 	my_yyerror("Bad argument %d to %s.",
 		   max_correct_args+1, name);
