@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.162 1999/03/20 16:24:08 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.163 1999/03/20 22:24:13 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2599,7 +2599,7 @@ test_equal(lower_case("Foo1234-*~\n\x3000"),"foo1234-*~\n\x3000")
 test_equal(lower_case("foo\x13000"),"foo\x13000")
 test_equal(lower_case("Foo\x13000"),"foo\x13000")
 test_equal(lower_case("Foo1234-*~\n\x13000"),"foo1234-*~\n\x13000")
-test_equal(lower_case("Foo\x178"),"fooÿ")
+test_equal(lower_case("Foo\x178"),"foo\xff")
 test_equal(lower_case((string) ({
 0x0000, 0x0041, 0x005b, 0x0061, 0x007b, 0x00c0, 0x00d7, 0x00d8,
 0x00df, 0x00e0, 0x00f7, 0x00f8, 0x00ff, 0x0100, 0x0130, 0x0131,
@@ -2976,7 +2976,7 @@ test_equal(upper_case("Foo1234-*~\n\x3000"),"FOO1234-*~\n\x3000")
 test_equal(upper_case("fooq\x13000"),"FOOQ\x13000")
 test_equal(upper_case("FooR\x13000"),"FOOR\x13000")
 test_equal(upper_case("Foo1234-*~\n\x13000"),"FOO1234-*~\n\x13000")
-test_equal(upper_case("Fooÿ"),"FOO\x178")
+test_equal(upper_case("Foo\xff"),"FOO\x178")
 test_equal(upper_case((string) ({
 0x0000, 0x0041, 0x005b, 0x0061, 0x007b, 0x00c0, 0x00d7, 0x00d8,
 0x00df, 0x00e0, 0x00f7, 0x00f8, 0x00ff, 0x0100, 0x0130, 0x0131,
