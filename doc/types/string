@@ -17,10 +17,10 @@ DESCRIPTION
 	A list of operators that applies to strings follow:
 	In this list a and b is used to represent a string expression:
 
-	a + b  : summation ( "a"+"b" returns "a"
+	a + b  : summation ( "a"+"b" returns "ab")
 	a - b  : subtraction ( same as replace(a,b,"") )
 	a / b  : division ( same thing as explode(a,b) )
-	! a    : boolean not, returns 1
+	! a    : boolean not, returns 0
 
 	The following operators compare two string alphabetically:	
 	a == b : return 1 if a is equal to b, 0 otherwise

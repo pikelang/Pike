@@ -14,11 +14,10 @@ clean:
 	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;"$(SRCDIR)/";;g' | sed 's;\.\./;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
-	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
-	config.status
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)/Makefile.in
 
 
+#Dependencies begin here, DO NOT REMOVE THIS LINE!!!!
 sprintf.o: sprintf.c global.h machine.h \
  config.h debug.h port.h error.h \
  svalue.h array.h las.h \

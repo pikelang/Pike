@@ -118,11 +118,20 @@ test_eq(AFJLLAF,17)
 test_do(add_efun("AFJLLAF"))
 test_do(signal(signum("SIGUSR1")))
 
+// class
+test_true(programp(class {}))
+test_true(functionp(clone(class { int foo() { return 1; }})->foo))
+test_true(clone(class { int foo() { return 1; }})->foo())
+test_true(clone(class { int i=1; })->i)
+test_false(clone(class { int foo() { return 1; }})->bar)
+test_eq(clone(clone(class { program foo=class { int i=20; }; })->foo)->i,20)
+
 // Not yet cataloged
+test_any(int i=10; { int i; } return i, 10)
 test_program(void foo(int a ,int b); function(int,int:void) a() { return foo; })
 test_program(void foo(int a, int ... b); function(int,int ...:void) a() { return foo; })
 test_program(void foo(); function(:void) a() { return foo; })
-test_compile_error(void foo(); function(:string) a() { return foo; })
+test_compile_error([[} void foo(); function(:string) a() { return foo;]])
 
 test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
 test_eq([[random_seed(17),random(20000)]],[[random_seed(17),random(20000)]])
@@ -519,19 +528,34 @@ test_any(if(({})) return 1; else return 0,1)
 test_any(if((<>)) return 1; else return 0,1)
 test_any(if(object_program(this_object())) return 1; else return 0,1)
 
-test_any(int e; for(e=0;e<10;e++) break; return e,0)
-test_any(int e; for(e=0;e<10;e++) continue; return e,10)
+// break
 test_any(while(1) break; return 1,1)
 test_any(while(1) if(1) break; return 1,1)
+
+// for
+test_any(int e; for(e=0;e<10;e++) break; return e,0)
+test_any(int e; for(e=0;e<10;e++) continue; return e,10)
 test_any(int e;string t=""; for(e=0;e<10;e++) t+=e; return t,"0123456789")
 test_any(int e;string t=""; for(e=0;e>-10;e--) t+=e; return t,"0-1-2-3-4-5-6-7-8-9")
+
+// foreach
 test_any([[int e;string t=""; foreach(({7,6,3,8}),e) t+=e; return t]],"7638")
 test_any([[string s;if(1) foreach(({}),s); else foreach(({}),s); return 1]],1)
+
+// do-whilte
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
+
+// while
 test_any(int e;string t=""; e=8; while(--e) t+=e; return t,"7654321";)
 test_any(int e;string t=""; e=8; while(e--) t+=e; return t,"76543210";)
 test_any(int e;string t=""; e=0; while(++e<6) t+=e; return t,"12345";)
 test_any(int e=1;string t=""; while(e<20){t+=e;e*=2;} return t,"124816";)
+
+// Switch
+test_any(switch("") { case 0: case "gazonk": return 0; } return 1,1)
+test_any(switch("") { case "gazonk": case 0: return 0; } return 1,1)
+test_any(switch(0) { case 0: case "gazonk": return 0; } return 1,0)
+test_any(switch("gazonk") { case "gazonk": case 0: return 0; } return 1,0)
 test_any(switch(0) { case "": } return 1,1)
 test_any(switch(1) { case 1: return 1; default: } return 0,1)
 test_any(switch(2) { case 1: return 0; default: return 1;} return 0,1)
@@ -556,6 +580,48 @@ test_any(switch('a') { case "a": return 1; case "b": return 2; case "c": return 
 test_any(switch('1') { case "a": return 1; case "b": return 2; case "c": return 3; case "d": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9,6)
 test_any(switch('0') { case "a": return 1; case "b": return 2; case "c": return 3; case "d": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9,7)
 test_any(switch('9') { case "a": return 1; case "b": return 2; case "c": return 3; case "d": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9,8)
+
+
+define(test_switch0,[[
+test_any(switch($1) { case $2: return $6; case $3: return $7; case $4: return $8; case $5: return $9; } return 0,$10)
+test_any(switch($1) { default: return 0; case $2: return $6; case $3: return $7; case $4: return $8; case $5: return $9; } return -1,$10)
+test_any(switch($1) { case $2: return $6; default: return 0; case $3: return $7; case $4: return $8; case $5: return $9; } return -1,$10)
+test_any(switch($1) { case $2: return $6; case $3: return $7; default: return 0; case $4: return $8; case $5: return $9; } return -1,$10)
+test_any(switch($1) { case $2: return $6; case $3: return $7; case $4: return $8; default: return 0; case $5: return $9; } return -1,$10)
+test_any(switch($1) { case $2: return $6; case $3: return $7; case $4: return $8; case $5: return $9; default: return 0; } return -1,$10)
+]])
+
+define(test_switch1,[[
+test_switch0($1, $2,$3,$4,$5, $6,$7,$8,$9, $10)
+test_switch0($1, $2,$3,$5,$4, $6,$7,$9,$8, $10)
+]])
+
+define(test_switch2,[[
+test_switch1($1, $2,$3,$4,$5, $6,$7,$8,$9, $10)
+test_switch1($1, $2,$4,$3,$5, $6,$8,$7,$9, $10)
+test_switch1($1, $2,$5,$4,$3, $6,$9,$8,$7, $10)
+]])
+
+define(test_switch3,[[
+test_switch2($1, $2,$3,$4,$5, 2,3,4,5, $6)
+test_switch2($1, $3,$2,$4,$5, 3,2,4,5, $6)
+test_switch2($1, $4,$3,$2,$5, 4,3,2,5, $6)
+test_switch2($1, $5,$3,$4,$2, 5,3,4,2, $6)
+]])
+
+define(test_switch4,[[
+test_switch3($1,$2,$3,$4,$5,0)
+test_switch3($2,$2,$3,$4,$5,2)
+test_switch3($3,$2,$3,$4,$5,3)
+test_switch3($4,$2,$3,$4,$5,4)
+test_switch3($5,$2,$3,$4,$5,5)
+]])
+
+test_switch4(17,18,19,20,21)
+test_switch4("a","b","c","d","e")
+test_switch4("a",0,"c","d","e")
+test_switch4(1.0,2.0,3.0,4.0,5.0)
+test_switch4(this_object(),"",0,4.0,1)
 
 test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4..8: } return t,"01239")
 test_any([[float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q]],0.1+1.1+2.1+3.1+8.1+9.1)

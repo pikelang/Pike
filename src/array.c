@@ -717,11 +717,6 @@ static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
 {
   INT32 tmp;
   if(tmp=(a->type - b->type)) return tmp;
-#ifdef NORMALIZED_FLOATS
-  if(tmp=(a->u.integer - b->u.integer)) return tmp;
-  if(a->type == T_FUNCTION ) return a->subtype - b->subtype;
-  return 0;
-#else
   switch(a->type)
   {
   case T_FLOAT:
@@ -730,18 +725,30 @@ static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
     return 0;
 
   case T_FUNCTION:
-    if(tmp=(a->u.integer - b->u.integer)) return tmp;
+    if(a->u.refs < b->u.refs) return -1;
+    if(a->u.refs > b->u.refs) return 1;
     return a->subtype - b->subtype;
 
-  default:
+  case T_INT:
     return a->u.integer - b->u.integer;
+
+  default:
+    if(a->u.refs < b->u.refs) return -1;
+    if(a->u.refs > b->u.refs) return 1;
+    return 0;
   }
-#endif
 }
 
-static int set_anything_cmpfun(union anything *a, union anything *b)
+static int set_anything_cmpfun_int(union anything *a, union anything *b)
 {
   return a->integer - b->integer;
+}
+
+static int set_anything_cmpfun_ptr(union anything *a, union anything *b)
+{
+  if(a->refs < b->refs) return -1;
+  if(a->refs > b->refs) return 1;
+  return 0;
 }
 
 static int set_anything_cmpfun_float(union anything *a, union anything *b)
@@ -751,25 +758,20 @@ static int set_anything_cmpfun_float(union anything *a, union anything *b)
   return 0;
 }
 
-#ifdef NORMALIZED_FLOATS
-
 static short_cmpfun get_set_cmpfun(TYPE_T t)
 {
-  return set_anything_cmpfun;
+  switch(t)
+  {
+  case T_FLOAT: return set_anything_cmpfun_float;
+  case T_INT: return set_anything_cmpfun_int;
+  default: return set_anything_cmpfun_ptr;
+  }
 }
-
-#else
-
-static short_cmpfun get_set_cmpfun(TYPE_T t)
-{
-  if(t == T_FLOAT) return set_anything_cmpfun_float;
-  return set_anything_cmpfun;
-}
-
-#endif
 
 static int switch_anything_cmpfun_string(union anything *a, union anything *b)
 {
+  if(!a->string || !b->string)
+    return set_anything_cmpfun_ptr(a,b);
   return my_strcmp(a->string, b->string);
 }
 
@@ -778,11 +780,9 @@ static short_cmpfun get_switch_cmpfun(TYPE_T t)
 {
   switch(t)
   {
-  case T_INT: return set_anything_cmpfun;
-  case T_FLOAT:
-    return set_anything_cmpfun_float;
-  case T_STRING:
-    return switch_anything_cmpfun_string;
+  case T_INT: return set_anything_cmpfun_int;
+  case T_FLOAT: return set_anything_cmpfun_float;
+  case T_STRING: return switch_anything_cmpfun_string;
   default:
     error("Illegal type in switch.\n");
     return 0; /* Make apcc happy */
@@ -809,7 +809,6 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
     return set_svalue_cmpfun(a,b);
   }
 }
-
 
 /*
  * return an 'order' suitable for making mappings, lists other sets
@@ -854,9 +853,10 @@ static INT32 low_lookup(struct array *v,
     if(a<v->size && fun(ITEM(v)+a,s)<0) a++;
     return ~a;
 
-  }else if(s->type == v->array_type){
+  }else if(s->type == v->array_type ||
+	   (s->type==T_INT && v->array_type != T_FLOAT)){
     short_cmpfun fun;
-    fun=backfun(s->type);
+    fun=backfun(v->array_type);
 
     a=0;
     b=v->size;
@@ -877,7 +877,7 @@ static INT32 low_lookup(struct array *v,
 
   }else{
     /* face it, it's not there */
-    if(s->type < v->array_type) return -1;
+    if((long)s->type < (long)v->array_type) return -1;
     return ~v->size;
   }
 }
@@ -970,6 +970,7 @@ void array_fix_type_field(struct array *v)
 struct array *compact_array(struct array *v)
 {
   INT32 e;
+  int type;
   struct array *ret;
   if(v->array_type != T_MIXED) return v;
 
@@ -977,28 +978,35 @@ struct array *compact_array(struct array *v)
 
   array_fix_type_field(v);
 
+  type=-1;
   switch(v->type_field)
   {
-  case BIT_INT | BIT_STRING:
-  case BIT_INT | BIT_ARRAY:
-  case BIT_INT | BIT_MAPPING:
-  case BIT_INT | BIT_LIST:
-  case BIT_INT | BIT_OBJECT:
-  case BIT_INT | BIT_PROGRAM:
+  case BIT_INT | BIT_STRING:  type=T_STRING; goto check_possible;
+  case BIT_INT | BIT_ARRAY:   type=T_ARRAY; goto check_possible;
+  case BIT_INT | BIT_MAPPING: type=T_MAPPING; goto check_possible;
+  case BIT_INT | BIT_LIST:    type=T_LIST; goto check_possible;
+  case BIT_INT | BIT_OBJECT:  type=T_OBJECT; goto check_possible;
+  case BIT_INT | BIT_PROGRAM: type=T_PROGRAM;
+
+  check_possible:
     for(e=0; e<v->size; e++)
       if(ITEM(v)[e].type == T_INT)
 	if(ITEM(v)[e].u.integer != 0)
 	  return v;
 
-  case BIT_INT:
-  case BIT_FLOAT:
-  case BIT_STRING:
-  case BIT_ARRAY:
-  case BIT_MAPPING:
-  case BIT_LIST:
-  case BIT_OBJECT:
-  case BIT_PROGRAM:
-    ret=allocate_array_no_init(v->size, 0, ITEM(v)[0].type);
+    goto do_compact;
+
+  case BIT_INT:     type=T_INT; goto do_compact;
+  case BIT_FLOAT:   type=T_FLOAT; goto do_compact;
+  case BIT_STRING:  type=T_STRING; goto do_compact;
+  case BIT_ARRAY:   type=T_ARRAY; goto do_compact;
+  case BIT_MAPPING: type=T_MAPPING; goto do_compact;
+  case BIT_LIST:    type=T_LIST; goto do_compact;
+  case BIT_OBJECT:  type=T_OBJECT; goto do_compact;
+  case BIT_PROGRAM: type=T_PROGRAM; goto do_compact;
+
+  do_compact:
+    ret=allocate_array_no_init(v->size, 0, type);
     for(e=0; e<v->size; e++)
       assign_to_short_svalue_no_free(SHORT_ITEM(ret)+e,
 				     ITEM(v)[e].type,

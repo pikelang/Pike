@@ -11,6 +11,12 @@
 /* Define if you have the <netinet/in.h> header file.  */
 #define HAVE_NETINET_IN_H 1
 
+/* Define if you have the <sys/straem.h> header file.  */
+#define HAVE_SYS_STREAM_H 1
+
+/* Define if you have the <sys/protosw.h> header file.  */
+#define HAVE_SYS_PROTOSW_H 1
+
 /* Define if you have dirent.h.  */
 #define HAVE_DIRENT_H 1
 
@@ -28,6 +34,12 @@
 
 /* Do we have socketpair() ? */
 #define HAVE_SOCKETPAIR 1
+
+/* Define if you have waitpid */
+#define HAVE_WAITPID 1
+
+/* Define if you have wait4 */
+/* #undef HAVE_WAIT4 */
 
 #endif
 

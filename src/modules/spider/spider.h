@@ -1,4 +1,18 @@
 /* spider.h.  Generated automatically by configure.  */
+#define HAVE_GETPGRP 1
+
+#define HAVE_GETPPID 1
+
+#define HAVE_GETGID 1
+
+#define HAVE_GETEGID 1
+
+#define HAVE_GETEUID 1
+
+#define HAVE_GETGID 1
+
+#define HAVE_GETUID 1
+
 #define HAVE_SYSLOG_H 1
 
 #define HAVE_SYSLOG 1
@@ -9,11 +23,12 @@
 
 #define HAVE_STRERROR 1
 
-/* Define if you have arpa/inhet.h */
 #define HAVE_ARPA_INET_H 1
 
-/* Define if you have the <sys/socketvar.h> header file.  */
 #define HAVE_SYS_SOCKETVAR_H 1
 
-/* Define if you have the <netinet/in.h> header file.  */
 #define HAVE_NETINET_IN_H 1
+
+#define HAVE_FCHROOT 1
+
+#define HAVE_SYS_MMAN_H 1

@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# Build a list of things to link from module subdirs
+# Modules that need extra libraries should create a file
+# 'linker_opts' in the build tree containing the required
+# linker options
+#
+
+fullnames=`cat $1`
+
+dirs=
+for dir in $fullnames
+do
+  dir="`echo $dir|sed 's,^.*/\([^/]*\)$,\1,'`"  # Portable (?) basename
+  dirs="$dirs $dir"
+done
+
+for dir in $fullnames
+do
+  echo modules/$modname/$modname.a
+done
+
+for dir in $fullnames
+do
+  if [ -f modules/$modname/linker_opts ]; then
+    cat modules/$modname/linker_opts
+  fi
+done
+

@@ -15,13 +15,23 @@ clean:
 	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
-	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
-	config.status
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)/Makefile.in
 
 
-sprintf.o: ./sprintf.c ./../../global.h ./../../config.h \
- ./../../machine.h ./../../port.h ./../../error.h ./../../svalue.h \
- ./../../array.h ./../../las.h ./../../dynamic_buffer.h \
- ./../../program.h ./../../stralloc.h ./../../lpc_types.h \
- ./../../add_efun.h ./../../hashtable.h ./../../interpret.h
+#Dependencies begin here, DO NOT REMOVE THIS LINE!!!!
+sprintf.o: sprintf.c \
+  global.h machine.h \
+  config.h \
+  debug.h \
+  port.h \
+  error.h \
+  svalue.h \
+  array.h \
+  las.h \
+  dynamic_buffer.h \
+  program.h \
+  stralloc.h \
+  lpc_types.h \
+  add_efun.h \
+  hashtable.h \
+  interpret.h

@@ -15,10 +15,17 @@ clean:
 	-rm -f *.o
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
-	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
-	config.status
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)/Makefile.in
 
-math.o: ./math.c ./../../interpret.h ./../../program.h \
- ./../../config.h ./../../machine.h ./../../types.h ./../../add_efun.h \
- ./../../svalue.h ./../../hashtable.h
+
+#Dependencies begin here, DO NOT REMOVE THIS LINE!!!!
+math.o: math.c \
+  interpret.h \
+  program.h \
+  config.h machine.h \
+  types.h \
+  add_efun.h \
+  svalue.h \
+  hashtable.h \
+  las.h \
+  dynamic_buffer.h

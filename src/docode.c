@@ -4,8 +4,6 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include "las.h"
 #include "program.h"
 #include "language.h"

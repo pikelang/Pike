@@ -3,7 +3,6 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -227,6 +226,8 @@ void backend()
     i=select(max_fd+1, &sets.read, &sets.write, 0, &timeout);
 
     current_time = get_current_time();
+    check_signals();
+
     if(i>=0)
     {
       for(i=0; i<max_fd+1; i++)

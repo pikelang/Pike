@@ -27,10 +27,6 @@
 #include <crypt.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 void f_equal(INT32 args)
 {
   int i;
@@ -820,8 +816,8 @@ void f_indices(INT32 args)
 
   qjump:
     a=allocate_array_no_init(size,0,T_INT);
-    while(size>0)
-      SHORT_ITEM(a)[--size].integer=size;
+    while(--size>=0)
+      SHORT_ITEM(a)[size].integer=size;
     break;
 
   case T_MAPPING:
@@ -852,8 +848,8 @@ void f_values(INT32 args)
   case T_STRING:
     size=sp[-args].u.string->len;
     a=allocate_array_no_init(size,0,T_INT);
-    while(size>0)
-      SHORT_ITEM(a)[--size].integer=EXTRACT_UCHAR(sp[-args].u.string->str+size);
+    while(--size>=0)
+      SHORT_ITEM(a)[size].integer=EXTRACT_UCHAR(sp[-args].u.string->str+size);
     break;
 
   case T_ARRAY:
@@ -945,11 +941,11 @@ void f_reverse(INT32 args)
   {
     INT32 e;
     e=sp[-args].u.integer;
-    e=((e & 0x55555555)<<1) + ((e & 0xaaaaaaaa)>>1);
-    e=((e & 0x33333333)<<2) + ((e & 0xcccccccc)>>2);
-    e=((e & 0x0f0f0f0f)<<4) + ((e & 0xf0f0f0f0)>>4);
-    e=((e & 0x00ff00ff)<<8) + ((e & 0xff00ff00)>>8);
-    e=((e & 0x0000ffff)<<16)+ ((e & 0xffff0000)>>16);
+    e=((e & 0x55555555UL)<<1) + ((e & 0xaaaaaaaaUL)>>1);
+    e=((e & 0x33333333UL)<<2) + ((e & 0xccccccccUL)>>2);
+    e=((e & 0x0f0f0f0fUL)<<4) + ((e & 0xf0f0f0f0UL)>>4);
+    e=((e & 0x00ff00ffUL)<<8) + ((e & 0xff00ff00UL)>>8);
+    e=((e & 0x0000ffffUL)<<16)+ ((e & 0xffff0000UL)>>16);
     sp[-args].u.integer=e;
     pop_n_elems(args-1);
     break;

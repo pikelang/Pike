@@ -39,7 +39,7 @@ struct svalue;
 #  include <alloca.h>
 # else
 #  ifdef _AIX
-#pragma alloca
+ #pragma alloca
 #  else
 #   ifndef alloca /* predefined by HP cc +Olibcalls */
 char *alloca ();

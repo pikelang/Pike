@@ -199,17 +199,17 @@ void f_getcwd(INT32 args)
   char *e;
   pop_n_elems(args);
 
-#ifdef HAVE_GETWD
+#ifdef HAVE_GETCWD
+  e=(char *)getcwd(0,1000); 
+#else
+
 #ifndef MAXPATHLEN
-#define MAXPATHLEN (32768)
+#define MAXPATHLEN 32768
 #endif
+
   e=(char *)getwd((char *)malloc(MAXPATHLEN+1));
   if(!e)
     fatal("Couldn't fetch current path.\n");
-#else
-#ifdef HAVE_GETCWD
-  e=(char *)getcwd(0,1000); 
-#endif
 #endif
   push_string(make_shared_string(e));
   free(e);
@@ -221,18 +221,6 @@ void f_fork(INT32 args)
   push_int(fork());
 }
 
-void f_kill(INT32 args)
-{
-  if(args < 2)
-    error("Too few arguments to kill().\n");
-  if(sp[-args].type != T_INT)
-    error("Bad argument 1 to kill().\n");
-  if(sp[1-args].type != T_INT)
-    error("Bad argument 1 to kill().\n");
-
-  sp[-args].u.integer=!kill(sp[-args].u.integer,sp[1-args].u.integer);
-  pop_n_elems(args-1);
-}
 
 void f_exece(INT32 args)
 {
@@ -360,6 +348,5 @@ void init_files_efuns()
   add_efun("cd",f_cd,"function(string:int)",OPT_SIDE_EFFECT);
   add_efun("getcwd",f_getcwd,"function(:string)",OPT_EXTERNAL_DEPEND);
   add_efun("fork",f_fork,"function(:int)",OPT_SIDE_EFFECT);
-  add_efun("kill",f_kill,"function(int,int:int)",OPT_SIDE_EFFECT);
   add_efun("exece",f_exece,"function(string,mixed*,void|mapping(string:string):int)",OPT_SIDE_EFFECT); 
 }

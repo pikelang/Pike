@@ -1426,7 +1426,8 @@ static void optimize(node *n)
 
 int eval_low(node *n)
 {
-  INT32 num_strings, jump, num_constants;
+  unsigned INT16 num_strings, num_constants;
+  INT32 jump;
   struct svalue *save_sp = sp;
   int ret;
 

@@ -1,0 +1,29 @@
+#!/usr/local/bin/ulpc
+
+int main(int argc, string *argv)
+{
+  mixed tmp;
+  int e;
+  string s=replace(version()," ","_");
+
+  tmp=explode(argv[0],"/");
+  tmp=reverse(tmp);
+  e=search(tmp,"ulpc");
+  if(e==-1)
+  {
+    perror("Couldn't find uLPC source dir.\n");
+    perror("Use export.lpc <sourcedir>.\n");
+    exit(1);
+  }
+  tmp=tmp[e+1..sizeof(tmp)-1];
+  tmp=reverse(tmp);
+  cd(tmp*"/");
+  perror("Sourcedir = "+tmp*"/"+"/ulpc\n");
+
+  perror("Cleaning up:\n");
+  system("find ulpc '(' -name '*~' -o -name '.*~' -o -name core ')' -print -exec /bin/rm '{}' ';'");
+  perror("Creating "+s+".tar.gz:\n");
+  system("tar cvzf ulpc/"+s+".tar.gz ulpc/README ulpc/src ulpc/lib ulpc/bin ulpc/doc");
+  perror("Done.\n");
+  return 0;
+}

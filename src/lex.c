@@ -82,6 +82,7 @@ struct keyword reserved_words[] =
 { "break",	F_BREAK, },
 { "case",	F_CASE, },
 { "catch",	F_CATCH, },
+{ "class",	F_CLASS, },
 { "continue",	F_CONTINUE, },
 { "default",	F_DEFAULT, },
 { "do",		F_DO, },
@@ -271,7 +272,7 @@ char *low_get_f_name(int n,struct program *p)
     return instrs[n-F_OFFSET].name;
   }else if(n >= F_MAX_OPCODE) {
     if(p &&
-       p->num_constants > n-F_MAX_OPCODE &&
+       (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
        p->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
        p->constants[n-F_MAX_OPCODE].subtype == -1 &&
        p->constants[n-F_MAX_OPCODE].u.efun)
@@ -295,7 +296,7 @@ char *get_f_name(int n)
     return instrs[n-F_OFFSET].name;
   }else if(n >= F_MAX_OPCODE) {
     if(fp && fp->context.prog &&
-       fp->context.prog->num_constants > n-F_MAX_OPCODE &&
+       (int)fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
        fp->context.prog->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
        fp->context.prog->constants[n-F_MAX_OPCODE].subtype == -1 &&
        fp->context.prog->constants[n-F_MAX_OPCODE].u.efun)
@@ -1932,12 +1933,6 @@ static void start_new()
 
   free_all_defines();
 
-  if(!local_variables)
-    local_variables=ALLOC_STRUCT(locals);
-  local_variables->next=0;
-  local_variables->current_number_of_locals=0;
-  local_variables->current_type=0;
-  local_variables->current_return_type=0;
   simple_add_define("__uLPC__", "1",0);
   
   for (tmpf=lpc_predefs; tmpf; tmpf=tmpf->next)
@@ -1977,25 +1972,10 @@ void start_new_string(char *s,INT32 len,struct lpc_string *name)
 
 void end_new_file()
 {
-  while(local_variables)
+  if(current_file)
   {
-    int e;
-    struct locals *l;
-    for(e=0;e<local_variables->current_number_of_locals;e++)
-    {
-      free_string(local_variables->variable[e].name);
-      free_string(local_variables->variable[e].type);
-    }
-  
-    if(local_variables->current_type)
-      free_string(local_variables->current_type);
-
-    if(local_variables->current_return_type)
-      free_string(local_variables->current_return_type);
-
-    l=local_variables->next;
-    free((char *)local_variables);
-    local_variables=l;
+    free_string(current_file);
+    current_file=0;
   }
 
   free_inputstate(istate);

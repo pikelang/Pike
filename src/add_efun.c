@@ -3,7 +3,6 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <stdlib.h>
 #include "add_efun.h"
 #include "macros.h"
 #include "program.h"

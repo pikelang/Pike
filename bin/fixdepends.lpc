@@ -1,0 +1,35 @@
+#!/usr/local/bin/ulpc
+
+#define FILESET "a-zA-Z0-9./,_-"
+#define DEPENDLINE "\n#Dependencies begin here, DO NOT REMOVE THIS LINE!!!!\n"
+
+int main(int argc, string *argv)
+{
+  string f,makefile,pre,file;
+  
+  if(argc<2)
+  {
+    perror("Usage: fixdepends <makefile>\n");
+    exit(1);
+  }
+
+  if(!file_stat(argv[1]))
+  {
+    perror("Makefile not found.\n");
+    exit(1);
+  }
+
+  // Read depends from stdin
+  f=clone((program)"/precompiled/file","stdin")->read(0x7fffffff);
+  makefile=read_bytes(argv[1]);
+  sscanf(makefile,"%s" DEPENDLINE,makefile);
+  mv(argv[1],argv[1]+"~");
+  makefile+=DEPENDLINE;
+  while(strlen(f) && sscanf(f,"%[^" FILESET "]%s",pre,f)==2)
+  {
+    sscanf(f,"%[" FILESET "]%s",file,f);
+    makefile+=pre+(explode(file,"/")[-1]);  // Basename
+  }
+  makefile+=f;
+  write_file(argv[1],makefile);
+}
