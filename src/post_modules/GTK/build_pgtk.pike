@@ -187,6 +187,11 @@ int _num_functions;
 void emit_program_block(mapping block, string cl)
 {
   line_id = "";
+
+  if( !block->_sprintf )
+    emit_function_def( "_sprintf", "pgtk_default__sprintf",
+                       "function(int:string)", 1 );
+
   foreach(sort(indices(block)), string f)
   {
     _num_functions++;
@@ -575,9 +580,9 @@ array (string) sort_dependencies( array bunch, mapping extra )
     fd->write("</ul>");
     fd->write("<h1>All classes in alphabetical order</h1>\n");
     fd->write("<ul>");
-    mapping ltos=mkmapping(Array.map(indices(struct),String.capitalize),
+    mapping ltos=mkmapping(map(indices(struct),String.capitalize),
                            indices(struct));
-    foreach(Array.sort_array(Array.map(indices(struct), String.capitalize),
+    foreach(Array.sort_array(map(indices(struct), String.capitalize),
                              fnamesfun), string s)
       if(s != "global")
         fd->write("<li> <a href="+ltos[s]+".html>"+classname(s)+"</a>\n");
@@ -585,7 +590,7 @@ array (string) sort_dependencies( array bunch, mapping extra )
     fd->write("<h1>All constants in alphabetical order</h1>\n");
     fd->write("<ul>");
     array consts =
-      Array.map(constants/"\n",
+          map(constants/"\n",
                 lambda(string s) {
                   if((sscanf(s, "%*[^\"]\"%s\"", s)==2) && strlen(s))
                     return s;
@@ -776,6 +781,9 @@ int main(int argc, array argv)
   string last_function;
   int skip_mode;
   string type_switch="";
+  string default_sprintf=
+"void pgtk_default__sprintf( INT32 args )\n{\n  pop_n_elems( args );\n";
+
   do_docs = argc > 2;
 
   foreach( argv[2..], string w )
@@ -1557,16 +1565,26 @@ int main(int argc, array argv)
 
     emit_nl("   set_init_callback(clear_obj_struct);\n");
     emit_program_block( q, w );
-    emit_nl("  add_program_constant(\""+String.capitalize(w)+"\",\n"
+    emit_nl("  add_program_constant((char*)_data+"+
+            data_offset(String.capitalize(w)+"\0")+",\n"
 	    "                       (pgtk_"+w+"_program = end_program()), 0);"
 	    "\n");
     pre += "/*ext*/ struct program *pgtk_"+w+"_program;\n";
+
+    default_sprintf +=
+                    "  if( fp->current_object->prog == pgtk_"+w+"_program )\n"
+                    "  {\n"
+                    "    push_string( make_shared_binary_string(_data+"+
+                    data_offset(classname(w))+", "+strlen(classname(w))+"));\n"
+                    "    return;\n"
+                    "  }\n\n";
+
     string flop = replace(upper_case(w),
 			  ({ "GDK_", "GDK" }),
 			  ({ "GDK", "GDK_" }));
     type_switch += "#ifdef GTK_TYPE_"+flop+"\n"
-      "  if(PGTK_CHECK_TYPE(widget, GTK_TYPE_"+flop+")) "
-      "return pgtk_"+w+"_program;\n#endif\n";
+                "  if(PGTK_CHECK_TYPE(widget, GTK_TYPE_"+flop+")) "
+                "return pgtk_"+w+"_program;\n#endif\n";
     emit_nl("}\n");
   }
   emit_nl( "void pike_module_init()\n{\n");
@@ -1580,6 +1598,9 @@ int main(int argc, array argv)
     "#define PGTK_CHECK_CLASS_TYPE(type_class, otype)  ("
     "((GtkTypeClass*) (type_class)) != NULL && "
     "(((GtkTypeClass*) (type_class))->type == (otype)))\n";
+
+  emit_nl( default_sprintf );
+  emit_nl( "  push_text( \"GTK.Object()\" );\n}\n\n" );
 
   emit_nl("\nstruct program *pgtk_type_to_program(GtkWidget *widget)\n{\n");
   emit_nl(type_switch);
@@ -1613,14 +1634,15 @@ int main(int argc, array argv)
   }
   rm("files_to_compile");
   Stdio.write_file("files_to_compile", replace(files, ".c", ".o"));
-//   mapping pi = get_profiling_info( object_program(this_object()) )[1];
-//   array q = ({});
-//   foreach( indices( pi ), string f )
-//     q += ({({ pi[f][2], pi[f][0], f })});
 
-//   foreach(reverse(sort(q)), array f )
-//   {
-//     write( "%-20s %6d  %4.2f\n",
-//            f[2], f[1], f[0]/1000000.0 );
-//   }
+#if constant( get_profiling_info )
+  mapping pi = get_profiling_info( object_program(this_object()) )[1];
+  array q = ({});
+  foreach( indices( pi ), string f )
+    q += ({({ pi[f][2], pi[f][0], f })});
+
+  foreach(reverse(sort(q)), array f )
+    write( "%-20s %6d  %4.2f\n",
+           f[2], f[1], f[0]/1000000.0 );
+#endif
 }
