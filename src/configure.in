@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.816 2004/03/11 22:29:32 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.817 2004/03/12 11:52:42 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7095,11 +7095,13 @@ $bundle_info])
 	    for f in `find . -type f \( -name Makefile -o -name makefile \) -print`; do
 	      echo "  Checking $f..."
 	      echo "  Checking $f..." >&AC_FD_CC
-	      if egrep '^[ 	]*SHELL[ 	]*=.*[ 	]*' $f >&AC_FD_CC; then
+	      if egrep '^SHELL[	 ]*=[ 	]*[^ 	]*[	 ]' $f >&AC_FD_CC; then
 	        # SHELL is set to something containing space.
 	        echo "  Patching $f..."
 	        echo "  Patching $f..." >&AC_FD_CC
-	        sed -e 's/SHELL/PIKE_SHELL/' <$f >$f.pike.patch || exit 1
+	        sed -e '/^SHELL[ 	]*=/s/^SHELL/PIKE_SHELL/' \
+		    -e 's/\$(SHELL)/\$(PIKE_SHELL)/g' <$f >$f.pike.patch \
+		  || exit 1
 		mv -f $f.pike.patch $f || exit 1
 	      fi
 	    done
