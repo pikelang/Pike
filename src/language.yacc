@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.144 1999/12/14 00:24:36 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.145 1999/12/14 08:38:47 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -214,7 +214,7 @@ RCSID("$Id: language.yacc,v 1.144 1999/12/14 00:24:36 grubba Exp $");
 #endif
 
 
-void add_local_name(struct pike_string *,struct pike_string *);
+void add_local_name(struct pike_string *,struct pike_string *,node *);
 static node *lexical_islocal(struct pike_string *);
 
 static int varargs;
@@ -376,6 +376,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> while
 %type <n> optional_comma_expr
 %type <n> low_program_ref
+%type <n> local_function
+%type <n> local_function2
 %%
 
 all: program { YYACCEPT; }
@@ -795,7 +797,7 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
       my_yyerror("Variable '%s' appears twice in argument list.",
 		 $3->u.sval.u.string->str);
     
-    add_local_name($3->u.sval.u.string, compiler_pop_type());
+    add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
     free_node($3);
   }
   ;
@@ -1149,7 +1151,7 @@ new_local_name: optional_stars F_IDENTIFIER
   {    
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
-    add_local_name($2->u.sval.u.string, compiler_pop_type());
+    add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
     $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string),0));
     free_node($2);
   }
@@ -1158,7 +1160,7 @@ new_local_name: optional_stars F_IDENTIFIER
   {
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
-    add_local_name($2->u.sval.u.string, compiler_pop_type());
+    add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
     $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string),0));
     free_node($2);
   }
@@ -1185,7 +1187,7 @@ new_local_name: optional_stars F_IDENTIFIER
 new_local_name2: F_IDENTIFIER
   {
     add_ref($<n>0->u.sval.u.string);
-    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
+    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string, 0);
     $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
@@ -1193,7 +1195,7 @@ new_local_name2: F_IDENTIFIER
   | F_IDENTIFIER '=' safe_expr0
   {
     add_ref($<n>0->u.sval.u.string);
-    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
+    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string, 0);
     $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
@@ -1300,6 +1302,7 @@ lambda: F_LAMBDA
     int f,e;
     struct pike_string *name;
     
+    debug_malloc_touch($4);
     $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
     type=find_return_type($4);
 
@@ -1352,6 +1355,144 @@ lambda: F_LAMBDA
     pop_compiler_frame();
   }
   ;
+
+local_function: F_IDENTIFIER
+  {
+    push_compiler_frame(1);
+
+    debug_malloc_touch(compiler_frame->current_return_type);
+    if(compiler_frame->current_return_type)
+      free_string(compiler_frame->current_return_type);
+    copy_shared_string(compiler_frame->current_return_type,$<n>0->u.sval.u.string);
+  }
+  func_args failsafe_block
+  {
+    struct pike_string *type;
+    char buf[40];
+    int f,e;
+    struct pike_string *name;
+    
+    $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
+
+    push_finished_type(compiler_frame->current_return_type);
+    
+    e=$3-1;
+    if(varargs)
+    {
+      push_finished_type(compiler_frame->variable[e].type);
+      e--;
+      varargs=0;
+      pop_type_stack();
+    }else{
+      push_type(T_VOID);
+    }
+    push_type(T_MANY);
+    for(; e>=0; e--)
+      push_finished_type(compiler_frame->variable[e].type);
+    
+    push_type(T_FUNCTION);
+    
+    type=compiler_pop_type();
+
+    sprintf(buf,"__lambda_%ld_%ld",
+	    (long)new_program->id,
+	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+    name=make_shared_string(buf);
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
+	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+    debug_malloc_touch($4);
+    f=dooptcode(name,
+		$4,
+		type,
+		ID_PRIVATE | ID_INLINE);
+
+    if(compiler_frame->lexical_scope == 2) {
+      $$ = mktrampolinenode(f);
+    } else {
+      $$ = mkidentifiernode(f);
+    }
+    debug_malloc_touch($$);
+    pop_compiler_frame();
+    add_local_name($1->u.sval.u.string, type, copy_node( $$ ));
+    free_node($1);
+    free_string(name);
+  }
+  ;
+
+local_function2: optional_stars F_IDENTIFIER
+  {
+    push_compiler_frame(1);
+    debug_malloc_touch(compiler_frame->current_return_type);
+    
+    push_finished_type($<n>0->u.sval.u.string);
+    while($1--) push_type(T_ARRAY);
+
+    if(compiler_frame->current_return_type)
+      free_string(compiler_frame->current_return_type);
+    compiler_frame->current_return_type=compiler_pop_type();
+  }
+  func_args failsafe_block
+  {
+    struct pike_string *type;
+    char buf[40];
+    int f,e;
+    struct pike_string *name;
+
+    debug_malloc_touch($5);
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
+
+    push_finished_type(compiler_frame->current_return_type);
+    
+    e=$4-1;
+    if(varargs)
+    {
+      push_finished_type(compiler_frame->variable[e].type);
+      e--;
+      varargs=0;
+      pop_type_stack();
+    }else{
+      push_type(T_VOID);
+    }
+    push_type(T_MANY);
+    for(; e>=0; e--)
+      push_finished_type(compiler_frame->variable[e].type);
+    
+    push_type(T_FUNCTION);
+    
+    type=compiler_pop_type();
+
+    sprintf(buf,"__lambda_%ld_%ld",
+	    (long)new_program->id,
+	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+    name=make_shared_string(buf);
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
+	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+    
+    debug_malloc_touch($5);
+    f=dooptcode(name,
+		$5,
+		type,
+		ID_PRIVATE | ID_INLINE);
+
+    if(compiler_frame->lexical_scope == 2) {
+      $$ = mktrampolinenode(f);
+    } else {
+      $$ = mkidentifiernode(f);
+    }
+    debug_malloc_touch($$);
+    pop_compiler_frame();
+    add_local_name($2->u.sval.u.string, type, copy_node( $$ ));
+    free_node($2);
+    free_string(name);
+  }
+  ;
+
 
 failsafe_program: '{' program end_block
                 | error { yyerrok; }
@@ -1629,6 +1770,8 @@ safe_comma_expr: comma_expr
 comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; free_node($1); }
   | simple_identifier_type local_name_list2 { $$=$2; free_node($1); }
+  | simple_identifier_type local_function { $$=$2; free_node($1); }
+  | simple_type2 local_function2 { $$=$2; free_node($1); }
   ;
           
 
@@ -2141,7 +2284,7 @@ lvalue: expr4
   | '[' low_lvalue_list ']' { $$=mknode(F_ARRAY_LVALUE, $2,0); }
   | type6 F_IDENTIFIER
   {
-    add_local_name($2->u.sval.u.string,compiler_pop_type());
+    add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     $$=mklocalnode(islocal($2->u.sval.u.string),0);
     free_node($2);
   }
@@ -2313,9 +2456,14 @@ void yyerror(char *str)
 
 /* argument must be a shared string */
 /* Note that this function eats a reference to 'type' */
+/* If def is nonzero, it also eats a ref to def */
 void add_local_name(struct pike_string *str,
-		    struct pike_string *type)
+		    struct pike_string *type,
+		    node *def)
 {
+  debug_malloc_touch(def);
+  debug_malloc_touch(type);
+  debug_malloc_touch(str);
   reference_shared_string(str);
   if (compiler_frame->current_number_of_locals == MAX_LOCAL)
   {
@@ -2326,6 +2474,7 @@ void add_local_name(struct pike_string *str,
 #endif /* PIKE_DEBUG */
     compiler_frame->variable[compiler_frame->current_number_of_locals].type = type;
     compiler_frame->variable[compiler_frame->current_number_of_locals].name = str;
+    compiler_frame->variable[compiler_frame->current_number_of_locals].def = def;
     compiler_frame->current_number_of_locals++;
     if(compiler_frame->current_number_of_locals > 
        compiler_frame->max_number_of_locals)
@@ -2359,6 +2508,8 @@ static node *lexical_islocal(struct pike_string *str)
       if(f->variable[e].name==str)
       {
 	struct compiler_frame *q=compiler_frame;
+	if(f->variable[e].def)
+	  return copy_node(f->variable[e].def);
 	while(q!=f) 
 	{
 	  q->lexical_scope=2;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.30 1999/11/23 03:24:47 grubba Exp $
+ * $Id: las.h,v 1.31 1999/12/14 08:39:24 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -34,6 +34,7 @@ struct local_variable
 {
   struct pike_string *name;
   struct pike_string *type;
+  node *def;
 };
 
 struct compiler_frame

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.141 1999/12/14 00:55:10 grubba Exp $");
+RCSID("$Id: las.c,v 1.142 1999/12/14 08:39:11 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1382,11 +1382,15 @@ node *debug_mksvaluenode(struct svalue *s)
  * optimizer
  */
 
-#ifdef DEAD_CODE
+#if 1 /*  DEAD_CODE - I need this /Hubbe */
 
 node *copy_node(node *n)
 {
   node *b;
+  debug_malloc_touch(n);
+  debug_malloc_touch(n->type);
+  debug_malloc_touch(n->u.node.a);
+  debug_malloc_touch(n->u.node.b);
   check_tree(n,0);
   if(!n) return n;
   switch(n->token)
@@ -1395,6 +1399,7 @@ node *copy_node(node *n)
   case F_IDENTIFIER:
   case F_TRAMPOLINE:
     b=mknewintnode(0);
+    if(b->type) free_string(b->type);
     *b=*n;
     copy_shared_string(b->type, n->type);
     return b;
@@ -1404,19 +1409,7 @@ node *copy_node(node *n)
     n->refs++;
     return n;
 #else /* !SHARED_NODES */
-  case F_CAST:
-    b=mkcastnode(n->type,copy_node(CAR(n)));
-    break;
 
-  case F_SOFT_CAST:
-    b=mksoftcastnode(n->type,copy_node(CAR(n)));
-    break;
-
-  case F_CONSTANT:
-    b=mksvaluenode(&(n->u.sval));
-    break;
-
-  default:
     switch((car_is_node(n) << 1) | cdr_is_node(n))
     {
     default: fatal("fooo?\n");
@@ -1439,6 +1432,20 @@ node *copy_node(node *n)
       copy_shared_string(b->type, n->type);
     else
       b->type=0;
+
+    break;
+
+  case F_CAST:
+    b=mkcastnode(n->type,copy_node(CAR(n)));
+    break;
+
+  case F_SOFT_CAST:
+    b=mksoftcastnode(n->type,copy_node(CAR(n)));
+    break;
+
+  case F_CONSTANT:
+    b=mksvaluenode(&(n->u.sval));
+    break;
 #endif /* SHARED_NODES */
   }
   if(n->name)
@@ -2265,7 +2272,18 @@ void fix_type_field(node *n)
       case F_IDENTIFIER:
 	name=ID_FROM_INT(new_program, CAR(n)->u.id.number)->name->str;
 	break;
-	
+
+	case F_ARROW:
+	case F_INDEX:
+	  if(CDAR(n)->token == F_CONSTANT &&
+	     CDAR(n)->u.sval.type == T_STRING)
+	  {
+	    name=CDAR(n)->u.sval.u.string->str;
+	  }else{
+	    name="dynamically resolved function";
+	  }
+	  break;
+
       case F_CONSTANT:
 	switch(CAR(n)->u.sval.type)
 	{

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.181 1999/12/13 23:08:04 grubba Exp $");
+RCSID("$Id: program.c,v 1.182 1999/12/14 08:41:58 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1925,6 +1925,18 @@ int add_constant(struct pike_string *name,
 
   n = isidentifier(name);
 
+  /*
+   * FIXME:
+   * No constants should be allowed to contain
+   * any fake objects. (Fake objects can be
+   * detected thus: fake_ob->next == fake_ob
+   *
+   * I would prefer to find a way to detect
+   * this without recursing through arrays,
+   * mapping etc. etc.
+   *
+   * /Hubbe
+   */
 
   if(new_program->flags & PROGRAM_PASS_1_DONE)
   {
@@ -3249,6 +3261,8 @@ void pop_local_variables(int level)
     e=--(compiler_frame->current_number_of_locals);
     free_string(compiler_frame->variable[e].name);
     free_string(compiler_frame->variable[e].type);
+    if(compiler_frame->variable[e].def)
+      free_node(compiler_frame->variable[e].def);
   }
 }
 
