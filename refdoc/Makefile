@@ -1,14 +1,14 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.26 2001/09/09 02:46:18 nilsson Exp $
+# $Id: Makefile,v 1.27 2001/09/17 23:22:10 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
 
 PIKE=pike
 
-all: tree-split html
+all: html
 
 tree-split: join _tree-split
 
@@ -21,7 +21,7 @@ _tree-split:
 	cp manual/images/* manual-tree-split/images
 	@cp src_images/next.gif src_images/prev.gif manual-tree-split/images
 
-html: html_manual
+html: html_manual manual.xml
 	cp manual/images/* html_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ manual.xml
 
@@ -33,17 +33,15 @@ recursive_join: images
 	@(cd build/src && $(MAKE) PIKE="$(PIKE)" join)
 	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" join)
 
-images: extract manual/images
+images: extract
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
 	  build/src/post_modules/GTK/refdoc/images
-	@(cd build/src && $(MAKE) PIKE="$(PIKE)" images)
-	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" images)
 
-extract: build/src/Makefile build/lib/Makefile
+extract: build/src/Makefile build/lib/Makefile manual/images
 	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
 	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
 
-manual.xml: autodoc.xml structure.xml bin/assembler.pike
+manual.xml: join structure.xml bin/assembler.pike
 	@$(PIKE) bin/assembler.pike structure.xml autodoc.xml > manual.xml
 
 autodoc.xml: $(XMLFILES) bin/join.pike
