@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.34 2002/11/06 17:58:03 grubba Exp $
+|| $Id: odbc_result.c,v 1.35 2002/11/06 17:59:13 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.34 2002/11/06 17:58:03 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.35 2002/11/06 17:59:13 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -40,9 +40,6 @@ RCSID("$Id: odbc_result.c,v 1.34 2002/11/06 17:58:03 grubba Exp $");
 #include "bignum.h"
 
 #include "precompiled_odbc.h"
-
-/* must be included last */
-#include "module_magic.h"
 
 #ifdef HAVE_ODBC
 
