@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.542 2004/04/29 01:05:29 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.543 2004/04/29 19:23:20 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.542 2004/04/29 01:05:29 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.543 2004/04/29 19:23:20 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3036,22 +3036,22 @@ static struct pike_string *replace_many(struct pike_string *str,
     return str;
   }
 
+  if(from->type_field & ~BIT_STRING) {
+    array_fix_type_field(from);
+    if(from->type_field & ~BIT_STRING)
+      Pike_error("replace: from array not array(string).\n");
+  }
+
+  if(to->type_field & ~BIT_STRING) {
+    array_fix_type_field(to);
+    if(to->type_field & ~BIT_STRING)
+      Pike_error("replace: to array not array(string).\n");
+  }
+
   v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
 
   for(num=e=0;e<from->size;e++)
   {
-    if(ITEM(from)[e].type != T_STRING)
-    {
-      free((char *)v);
-      Pike_error("Replace: from array is not array(string)\n");
-    }
-
-    if(ITEM(to)[e].type != T_STRING)
-    {
-      free((char *)v);
-      Pike_error("Replace: to array is not array(string)\n");
-    }
-
     if(ITEM(from)[e].u.string->size_shift > str->size_shift)
       continue;
 
@@ -3158,8 +3158,10 @@ PMOD_EXPORT void f_replace(INT32 args)
   if(args < 3)
   {
      if (args==2 &&
-	 Pike_sp[1-args].type==T_MAPPING)
+	 Pike_sp[-1].type==T_MAPPING)
      {
+       /* FIXME: Check that the mapping is string:string here, otherwise
+	  the error message will mention the from/to array. */
 	stack_dup();
 	f_indices(1);
 	stack_swap();
@@ -3193,7 +3195,7 @@ PMOD_EXPORT void f_replace(INT32 args)
     {
     default:
       SIMPLE_BAD_ARG_ERROR("replace", 2, "string|array");
-      
+
     case T_STRING:
       if(Pike_sp[2-args].type != T_STRING)
 	SIMPLE_BAD_ARG_ERROR("replace", 3, "string");
@@ -3516,11 +3518,22 @@ PMOD_EXPORT void f_callablep(INT32 args)
 	res = 1;
       break;
     case T_ARRAY:
-      /* FIXME: This is not completely finished. E.g. ({ 0 }) is
-	 callable, but isn't reported as such. */
-      if( Pike_sp[-args].u.array->type_field & (BIT_CALLABLE) ||
-	  !Pike_sp[-args].u.array->type_field)
+      array_fix_type_field(Pike_sp[-args].u.array);
+      if( (Pike_sp[-args].u.array->type_field==BIT_CALLABLE) ||
+	  !Pike_sp[-args].u.array->type_field) {
 	res = 1;
+      }
+      else if( !(Pike_sp[-args].u.array->type_field &
+		 ~(BIT_CALLABLE|BIT_INT)) ) {
+	struct array *a = Pike_sp[-args].u.array;
+	int i;
+	res = 1;
+	for(i=0; i<a->size; i++)
+	  if( ITEM(a)[i].type == T_INT && ITEM(a)[i].u.integer ) {
+	    res = 0;
+	    break;
+	  }
+      }
       break;
   }
   pop_n_elems(args);
@@ -4782,8 +4795,9 @@ PMOD_EXPORT void f_glob(INT32 args)
  *!
  *!   Interleave a sparse matrix.
  *!
- *!   Returns an array with offsets that describe how to interleave
- *!   the rows of @[tab].
+ *!   Returns an array with offsets that describe how to shift the
+ *!   rows of @[tab] so that only at most one non-zero value exists in
+ *!   every column.
  */
 static void f_interleave_array(INT32 args)
 {
@@ -8205,7 +8219,7 @@ void init_builtin_efuns(void)
 /* function(string:string)|function(int:int) */
   ADD_EFUN("upper_case",f_upper_case,
 	   tOr(tFunc(tStr,tStr),tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
-  
+
 /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("values",f_values,
 	   tOr(tFunc(tOr(tStr,tMultiset),tArr(tInt)),
