@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.98 2003/02/08 17:12:27 mast Exp $
+|| $Id: gc.h,v 1.99 2003/02/08 22:29:22 mast Exp $
 */
 
 #ifndef GC_H
@@ -13,6 +13,7 @@
 #include "queue.h"
 #include "threads.h"
 #include "interpret.h"
+#include "pike_rusage.h"
 
 /* 1: Normal operation. 0: Disable automatic gc runs. -1: Disable
  * completely. */
