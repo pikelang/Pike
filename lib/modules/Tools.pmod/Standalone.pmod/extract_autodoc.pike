@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.32 2002/12/30 15:33:04 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.33 2003/02/10 21:03:39 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -15,23 +15,46 @@ int verbosity = 2;
 
 int main(int n, array(string) args) {
 
-  if ((n == 6) && (args[1] == "-q")) {
-    // quiet.
-    verbosity = 0;
-    n = 5;
-    args = args[0..0] + args[2..];
-  } else if(n!=5) {
-    write("%s [-q] <srcdir> <imgsrc> <builddir> <imgdir>\n", args[0]);
-    exit(1);
+  string srcdir, builddir;
+
+  foreach(Getopt.find_all_options(args, ({
+    ({ "srcdir",     Getopt.HAS_ARG,      "--srcdir" }),
+    ({ "imgsrc",     Getopt.HAS_ARG,      "--imgsrc" }),
+    ({ "builddir",   Getopt.HAS_ARG,      "--builddir" }),
+    ({ "imgdir",     Getopt.NO_ARG,       "--imgdir" }),
+    ({ "quiet",      Getopt.NO_ARG,       "-q,--quiet"/"," }),
+    ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt)
+    switch(opt[0])
+    {
+    case "srcdir":
+      srcdir = combine_path(getcwd(), opt[1]);
+      if(srcdir[-1]!='/') srcdir += "/";
+      break;
+    case "imgsrc":
+      imgsrc = combine_path(getcwd(), opt[1]);
+      break;
+    case "builddir":
+      builddir = combine_path(getcwd(), opt[1]);
+      if(builddir[-1]!='/') builddir += "/";
+      break;
+    case "imgdir":
+      imgdir = combine_path(getcwd(), opt[1]);
+      if(imgdir[-1]!='/') imgdir += "/";
+      break;
+    case "quiet":
+      verbosity = 0;
+      break;
+    case "help":
+      return 0;
+    }
+
+  args = args[1..] - ({0});
+
+  if(!srcdir) {
+    werror("No source directory given.\n");
+    return 1;
   }
 
-  string srcdir = combine_path(getcwd(), args[1]);
-  imgsrc = combine_path(getcwd(), args[2]);
-  string builddir = combine_path(getcwd(), args[3]);
-  imgdir = combine_path(getcwd(), args[4]);
-  if(srcdir[-1]!='/') srcdir += "/";
-  if(builddir[-1]!='/') builddir += "/";
-  if(imgdir[-1]!='/') imgdir += "/";
   recurse(srcdir, builddir, 0, ({"predef::"}));
 }
 
@@ -105,13 +128,17 @@ string extract(string filename, string imgdest, int(0..1) rootless,
       (((i = search(file, "//! ""module ")) != -1) &&
        (sizeof(array_sscanf(file[i+11..],"%s\n%*s")[0]/" ") == 1))) {
     // Mirar-style markup.
-    Tools.AutoDoc.MirarDocParser mirar_parser =
-      Tools.AutoDoc.MirarDocParser(imgsrc, !verbosity);
-    int lineno = 1;
-    foreach(file/"\n", string line) {
-      mirar_parser->process_line(line, filename, lineno++);
+    if(imgsrc && imgdest) {
+      Tools.AutoDoc.MirarDocParser mirar_parser =
+	Tools.AutoDoc.MirarDocParser(imgsrc, !verbosity);
+      int lineno = 1;
+      foreach(file/"\n", string line) {
+	mirar_parser->process_line(line, filename, lineno++);
+      }
+      return mirar_parser->make_doc_files(builddir, imgdest, root[0]);
     }
-    return mirar_parser->make_doc_files(builddir, imgdest, root[0]);
+    else
+      error("Found Mirar style markup. Need imgsrc and imgdir.\n");
   }
 
   string name_sans_suffix, suffix;
@@ -170,7 +197,7 @@ string extract(string filename, string imgdest, int(0..1) rootless,
     return 0;
   }
 
-  if(result && sizeof(result))
+  if(result && sizeof(result) && imgdest)
     return Tools.AutoDoc.ProcessXML.moveImages(result, builddir,
 					       imgdest, !verbosity);
 
