@@ -111,8 +111,7 @@ LIBOBJS="${OLD_LIBOBJS}"
 
 AC_HAVE_FUNCS(memset memcpy memchr strchr strrchr fchmod getrusage \
  strcspn crypt _crypt getwd getcwd strtod strtok getenv vfprintf bzero bcopy \
- strtol index rindex vsprintf clock times setlocale strcoll getrlimit \
- setrlimit setdtablesize)
+ strtol index rindex vsprintf clock times setlocale strcoll getrlimit  setrlimit)
 
 define(MY_CHECK_HEADERS,
 [
