@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.29 2003/10/24 18:24:31 mast Exp $
+// $Id: connection.pike,v 1.30 2003/10/24 18:26:55 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -16,7 +16,7 @@ string left_over;
 Packet packet;
 
 int dying;
-int closing;
+int closing; // Bitfield: 1 if a close is sent, 2 of one is received.
 
 function(object,int|object,string:void) alert_callback;
 
@@ -93,6 +93,16 @@ static object recv_packet(string data)
 //! close_notifies.
 void send_packet(object packet, int|void priority)
 {
+  if (closing) {
+#ifdef SSL3_DEBUG
+    werror("SSL.connection->send_packet: ignoring packet after close\n");
+#endif
+    return;
+  }
+
+  if (packet->content_type == PACKET_alert &&
+      packet->description == ALERT_close_notify)
+    closing |= 1;
 
 #ifdef SSL3_FRAGDEBUG
   werror(" SSL.connection->send_packet: sizeof(packet)="+sizeof(packet)+"\n");
@@ -138,12 +148,11 @@ string|int to_write()
 {
   if (dying)
     return -1;
-  if (closing) {
-    return 1;
-  }
+
   object packet = alert::get() || urgent::get() || application::get();
-  if (!packet)
-    return "";
+  if (!packet) {
+    return closing ? 1 : "";
+  }
 
 #ifdef SSL3_DEBUG
   werror("SSL.connection: writing packet of type %d, %O\n",
@@ -153,9 +162,6 @@ string|int to_write()
   {
     if (packet->level == ALERT_fatal)
       dying = 1;
-    else
-      if (packet->description == ALERT_close_notify)
-	closing = 1;
   }
   string res = current_write_state->encrypt_packet(packet,version[1])->send();
   if (packet->content_type == PACKET_change_cipher_spec)
@@ -168,6 +174,18 @@ void send_close()
 {
   send_packet(Alert(ALERT_warning, ALERT_close_notify, version[1]),
 	      PRI_application,);
+}
+
+//! Send an application data packet. If the data block is too large
+//! then as much as possible of the beginning of it is sent. The size
+//! of the sent data is returned.
+int send_streaming_data (string data)
+{
+  Packet packet = Packet();
+  packet->content_type = PACKET_application_data;
+  int size = sizeof ((packet->fragment = data[..PACKET_MAX_SIZE-1]));
+  send_packet (packet);
+  return size;
 }
 
 int handle_alert(string s)
@@ -193,8 +211,10 @@ int handle_alert(string s)
 #ifdef SSL3_DEBUG
     werror("SSL.connection: Close notify  alert %d\n", description);
 #endif
-    return 0;
-//     return 1;			// looses data
+    if (!(closing & 1))
+      send_close();
+    closing |= 2;
+    return 1;
   }
   if (description == ALERT_no_certificate)
   {
@@ -249,6 +269,14 @@ string|int got_data(string|int s)
   if(!stringp(s)) {
     return s;
   }
+
+  if (closing & 2) {
+    return 1;
+  }
+  // If closing == 1 we continue to try to read a remote close
+  // message. That enables the caller to check for a clean close, and
+  // to get the leftovers after the SSL connection.
+
   /* If alert_callback is called, this data is passed as an argument */
   string alert_context = (left_over || "") + s;
 
@@ -289,7 +317,11 @@ string|int got_data(string|int s)
 
 	 alert_buffer = alert_buffer[i..];
 	 if (err)
-	   return err;
+	   if (err > 0 && sizeof (res))
+	     // If we get a close then we return the data we got so far.
+	     return res;
+	   else
+	     return err;
 	 break;
        }
       case PACKET_change_cipher_spec:
@@ -356,6 +388,6 @@ string|int got_data(string|int s)
       }
     }
   }
-  return res;
+  return closing ? 1 : res;
 }
 
