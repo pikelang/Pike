@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.8 2000/02/03 11:40:21 grubba Exp $
+ * $Id: rsa.c,v 1.9 2000/02/03 11:41:06 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -28,7 +28,7 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.8 2000/02/03 11:40:21 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.9 2000/02/03 11:41:06 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -396,8 +396,8 @@ static void f_decrypt(INT32 args)
 
     rsa_private_key.modulus.data = THIS->n->str;
     rsa_private_key.modulus.len = THIS->n->len;
-    rsa_private_key.modulus.data = THIS->d->str;
-    rsa_private_key.modulus.len = THIS->d->len;
+    rsa_private_key.exponent.data = THIS->d->str;
+    rsa_private_key.exponent.len = THIS->d->len;
 
     if ((err = B_SetKeyInfo(THIS->private_key, KI_RSAPublic,
 			    (POINTER)&rsa_private_key))) {
