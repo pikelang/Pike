@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.71 1999/04/30 07:22:19 hubbe Exp $");
+RCSID("$Id: main.c,v 1.72 1999/05/08 00:38:42 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -115,7 +115,7 @@ static void get_master_key(long cat)
 		       buffer,
 		       &len)==ERROR_SUCCESS)
     {
-      master_file=strdup(buffer);
+      dmalloc_accept_leak( master_file=strdup(buffer) );
     }
     RegCloseKey(k);
   }
