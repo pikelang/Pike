@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.75 2000/05/07 00:39:17 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.76 2000/07/05 23:01:48 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -281,7 +281,8 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    break;
 	    
 	  case T_STRING:
-	    f=STRTOD(sp[-1].u.string->str,0);
+	    f=STRTOD_PCHARP(MKPCHARP(sp[-1].u.string->str,
+				     sp[-1].u.string->size_shift),0);
 	    free_string(sp[-1].u.string);
 	    break;
 	    
