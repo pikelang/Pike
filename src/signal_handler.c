@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.179 2000/08/29 01:10:25 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.180 2000/09/04 00:11:48 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3299,7 +3299,7 @@ void init_signals(void)
   pid_mapping=allocate_mapping(2);
 
 #ifndef USE_WAIT_THREAD
-  pid_mapping->flags|=MAPPING_FLAG_WEAK;
+  mapping_set_flags(pid_mapping, MAPPING_FLAG_WEAK);
 #endif
 #endif
 
