@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.88 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: multiset.c,v 1.89 2004/09/30 02:33:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -16,6 +16,7 @@
 #include "gc.h"
 #include "interpret.h"
 #include "multiset.h"
+#include "mapping.h"
 #include "object.h"
 #include "opcodes.h"
 #include "pike_error.h"
