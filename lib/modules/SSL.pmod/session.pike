@@ -73,7 +73,6 @@ array generate_keys(string client_random, string server_random)
   werror(sprintf("client_random: '%s'\nserver_random: '%s'\n",
 		client_random, server_random));
 #endif
-
   /* client_write_MAC_secret */
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
   /* server_write_MAC_secret */
