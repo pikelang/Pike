@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.11 2002/11/29 20:40:21 jhs Exp $
+|| $Id: freetype.c,v 1.12 2002/11/29 20:56:24 jhs Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.11 2002/11/29 20:40:21 jhs Exp $");
+RCSID("$Id: freetype.c,v 1.12 2002/11/29 20:56:24 jhs Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -51,7 +51,9 @@ struct face
 
 /*! @module Image */
 
-/*! @module FreeType */
+/*! @module FreeType
+ *! Pike glue for the FreeType2 module, http://www.freetype.org/
+ */
 
 /*! @class Face
  *! A FreeType font face. We recommend using the more generic font handling
