@@ -1,0 +1,12 @@
+/* $Id: pgres_config.h.in,v 1.1.1.1 1997/10/14 22:07:21 grubba Exp $ */
+#undef STDC_HEADERS
+
+#undef HAVE_POSTGRES_H
+#undef HAVE_LIBPQ_FE_H
+#undef HAVE_LIBPQ
+
+
+/* End of autoconfigurable section */
+#if defined (HAVE_LIBPQ) && defined (HAVE_POSTGRES_H) && defined (HAVE_LIBPQ_FE_H)
+#define HAVE_POSTGRES
+#endif

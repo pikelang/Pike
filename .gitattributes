@@ -113,6 +113,10 @@ testfont binary
 /src/modules/Oracle/oracle.c foreign_ident
 /src/modules/Pipe/acconfig.h foreign_ident
 /src/modules/Pipe/pipe.c foreign_ident
+/src/modules/Postgres/Makefile.in foreign_ident
+/src/modules/Postgres/configure.in foreign_ident
+/src/modules/Postgres/pgres_config.h.in foreign_ident
+/src/modules/Postgres/postgres.c foreign_ident
 /src/modules/Regexp/acconfig.h foreign_ident
 /src/modules/Ssleay/ssleay.c foreign_ident
 /src/modules/Yp/acconfig.h foreign_ident

@@ -1,0 +1,65 @@
+Tue Jul  8 20:23:06 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* postgres.c:
+	Corrected a small bug which manifested itself when building in a
+	non_threaded environment.
+
+Mon Jun 30 13:57:08 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* configure.in, postgres.c, configure:
+	More configure.in fixes and postgres/6.1 compatibility issues addressed
+
+	* configure: *** empty log message ***
+
+	* configure.in:
+	Corretto un leggero baco nella versione aggiornata (un path sballato)
+
+	* configure.in, configure:
+	Razionalizzato configure.in, ora calcola il reasonable searchpath facendo
+	il merge di un insieme di directories. Dovrebbe essere impercettibilmente piu`
+	lento ma molto piu` flessibile e semplice da mantenere. Penso che esportero`
+	il meccanismo anche verso altri moduli.
+
+Fri Jun 27 09:55:51 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* quickmanual.txt: Quickmanual.txt: aggiornata la documentazione
+
+	* lib/postgres.pike: Postgres.pike:
+	- modificato in modo da gestire l'interfaccia con meno argomenti di
+	 Postgres.postgres
+	- modificato il costruttore: invece che
+	create(host,db,user,pass,port) (tutti facoltativi)
+	e`:
+	create([host[:port]],[db],[user],[pass])
+	Questo permette di funzionare al modulo SQL generico senza grossi problemi
+
+	* postgres.c:
+	Postgres.c: modificato in modo da prendere solo tre argomenti.
+	Tanto non e` interface-compliant in ogni caso, tanto vale fare una cosa
+	proprietaria ma semplice. Ci pensera` poi il modulo di interfaccia a
+	gestire la traduzione e a ottenere la compliancy.
+
+Thu Jun 19 12:35:12 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* lib/postgres.pike: Corretto un baco in lib/postgres.pike
+
+	* pgresult.c: *** empty log message ***
+
+	* pgresult.h: Aggiunto pgresult.h
+
+	* dependencies: Repackaging minore.
+
+	* lib/postgres_result.pike, lib/postgres.h, lib/postgres.pike, configure.in, pgresult.c, postgres.c, Makefile.in, configure:
+	Aggiornato a pike/0.5b8
+	Ora la classe in Sql.pmod puo` ereditare. Piu` efficiente, e migliore
+	controllo degli errori.
+
+Wed Apr  2 11:56:14 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* Makefile.in, configure, configure.in, extras/test_notify.pike, extras/test_schema.pike, lib/postgres.h, pg_types.h, pgres_config.h.in, pgresult.c, postgres.c, quickmanual.txt, testsuite.in:
+	Initial revision
+
+	* Makefile.in, configure, configure.in, extras/test_notify.pike, extras/test_schema.pike, lib/postgres.h, pg_types.h, pgres_config.h.in, pgresult.c, postgres.c, quickmanual.txt, testsuite.in:
+	Initial version of the Postgres module for Pike.
+	Apparently working.
+

@@ -1,0 +1,96 @@
+dnl $Id: configure.in,v 1.1.1.1 1997/10/14 22:07:21 grubba Exp $
+dnl (C) 1997 Francesco Chemolli <kinkie@comedia.it>
+
+AC_INIT(postgres.c)
+AC_CONFIG_HEADER(pgres_config.h)
+
+echo "Configuring Postgres module, (C) 1997 Francesco Chemolli <kinkie@comedia.it>"
+
+AC_ARG_WITH(postgres,[  --with(out)-postgres  postgres95 DB server support],
+	[],[with_postgres=yes])
+
+sinclude(../module_configure.in)
+
+ac_pike_postgres_skip=no
+
+dnl set up "reasonable" search paths
+pike_postgres_reasonable_prefixes="/usr/local /usr /opt"
+pike_postgres_reasonable_directories="postgres95 postgres pgsql /"
+pike_postgres_extra_include_directories="$HOME/include"
+pike_postgres_extra_lib_directories="$HOME/lib"
+
+for a in $pike_postgres_reasonable_prefixes
+do
+	for b in $pike_postgres_reasonable_directories
+	do
+		pike_postgres_reasonable_include_searchpath="$pike_postgres_reasonable_include_searchpath $a/$b/include"
+		pike_postgres_reasonable_lib_searchpath="$pike_postgres_reasonable_lib_searchpath $a/$b/lib"
+	done
+done
+pike_postgres_reasonable_include_searchpath="$pike_postgres_reasonable_include_searchpath $pike_postgres_extra_include_directories"
+pike_postgres_reasonable_lib_searchpath="$pike_postgres_reasonable_lib_searchpath $pike_postgres_extra_lib_directories"
+
+dnl start actual work
+if test x$with_postgres = xyes; then
+	OLD_CPPFLAGS=$CPPFLAGS
+	OLD_LIBS=$LIBS
+	OLD_LDFLAGS=$LDFLAGS
+
+	AC_MSG_CHECKING(for location of the Postgres include files)
+	AC_CACHE_VAL(pike_cv_pgres_include_dir, [
+		for pike_cv_pgres_include_dir in $pike_postgres_reasonable_include_searchpath no
+			do
+				if test -f $pike_cv_pgres_include_dir/postgres.h; then
+					break
+				fi
+			done
+			])
+	if test x$pike_cv_pgres_include_dir != xno; then
+		AC_MSG_RESULT(found.)
+	else
+		AC_MSG_RESULT(not found.)
+	fi
+	if test x$pike_cv_pgres_include_dir != xno; then
+		CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
+	fi
+	AC_CHECK_HEADERS(postgres.h)
+	AC_CHECK_HEADERS(libpq-fe.h)
+	if test x$ac_cv_header_libpq_fe_h = xno ; then
+		ac_cv_header_postgres_h=no
+		ac_pike_postgres_skip=yes
+	fi
+
+	if test x$ac_pike_postgres_skip = xno; then
+		AC_MSG_CHECKING(for location of the Postgres library)
+		AC_CACHE_VAL(pike_cv_pgres_lib_dir,[
+			for pike_cv_pgres_lib_dir in $pike_postgres_reasonable_lib_searchpath no
+			do
+				if test -f $pike_cv_pgres_lib_dir/libpq.a; then
+					break
+				fi
+			done
+			])
+		if test x$pike_cv_pgres_lib_dir != xno; then
+			AC_MSG_RESULT(found.)
+		else
+			AC_MSG_RESULT(not found.)
+		fi
+		if test x$pike_cv_pgres_lib_dir != xno; then
+			LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir"
+		fi
+		AC_CHECK_LIB(pq,PQclear)
+	fi
+fi
+
+if test  x$ac_cv_lib_pq_PQclear != xyes; then
+	CPPFLAGS=$OLD_CPPFLAGS
+	LDFLAGS=$OLD_LDFLAGS
+	LIBS=$OLD_LIBS
+	echo "Postgres not found. We won't support it."
+else
+	echo "Postgres found, module configured. Thank you for your collaboration."
+	POSTGRES_SUPPORTED="yes"
+fi
+
+AC_SUBST(POSTGRES_SUPPORTED)
+AC_OUTPUT(Makefile)
