@@ -1244,7 +1244,7 @@ void init_builtin_efuns()
   add_efun("all_efuns",f_all_efuns,"function(:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
   add_efun("allocate", f_allocate, "function(int, string|void:mixed *)", 0);
   add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
-  add_efun("backtrace",f_backtrace,"function(:array(array(function|int)))",OPT_EXTERNAL_DEPEND);
+  add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
   add_efun("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
   add_efun("call_out",f_call_out,"function(function,int,mixed...:void)",OPT_SIDE_EFFECT);
   add_efun("call_out_info",f_call_out_info,"function(:array*)",OPT_EXTERNAL_DEPEND);

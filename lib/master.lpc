@@ -242,7 +242,7 @@ string describe_backtrace(mixed *trace)
   }else{
     for(e=0;e<sizeof(trace);e++)
     {
-      mixed *tmp;
+      mixed tmp;
       string row;
 
       tmp=trace[e];

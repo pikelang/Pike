@@ -177,6 +177,8 @@ peep_engine.c: peep.in
 	echo "" >$(SRCDIR)/peep_engine.c
 	-$(RUNULPC) $(TMP_BINDIR)/mkpeep.lpc $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
+peep.o: peep_engine.c
+
 # make dependencies (requires compiled uLPC)
 depend: language.c
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
