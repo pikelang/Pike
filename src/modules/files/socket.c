@@ -3,6 +3,8 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#define NO_PIKE_SHORTHAND
+
 #include "global.h"
 #include "fdlib.h"
 #include "interpret.h"
@@ -19,7 +21,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.49 2000/07/07 13:58:29 grubba Exp $");
+RCSID("$Id: socket.c,v 1.50 2000/07/29 19:22:18 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -96,14 +98,14 @@ static void port_set_id(INT32 args)
   if(args < 1)
     error("Too few arguments to port->set_id()\n");
 
-  assign_svalue(& THIS->id, sp-args);
+  assign_svalue(& THIS->id, Pike_sp-args);
   pop_n_elems(args-1);
 }
 
 static void port_query_id(INT32 args)
 {
   pop_n_elems(args);
-  assign_svalue_no_free(sp++,& THIS->id);
+  assign_svalue_no_free(Pike_sp++,& THIS->id);
 }
 
 static void port_errno(INT32 args)
@@ -123,7 +125,7 @@ static void port_accept_callback(int fd,void *data)
 #endif
 #endif
 
-  assign_svalue_no_free(sp++, &f->id);
+  assign_svalue_no_free(Pike_sp++, &f->id);
   apply_svalue(& f->accept_callback, 1);
   pop_stack();
   return;
@@ -137,10 +139,10 @@ static void port_listen_fd(INT32 args)
   if(args < 1)
     error("Too few arguments to port->bind_fd()\n");
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != PIKE_T_INT)
     error("Bad argument 1 to port->bind_fd()\n");
 
-  fd=sp[-args].u.integer;
+  fd=Pike_sp[-args].u.integer;
 
   if(fd<0)
   {
@@ -160,7 +162,7 @@ static void port_listen_fd(INT32 args)
 
   if(args > 1)
   {
-    assign_svalue(& THIS->accept_callback, sp+1-args);
+    assign_svalue(& THIS->accept_callback, Pike_sp+1-args);
     set_nonblocking(fd,1);
     if(!IS_ZERO(& THIS->accept_callback))
     {
@@ -186,7 +188,7 @@ static void port_bind(INT32 args)
   if(args < 1)
     error("Too few arguments to port->bind()\n");
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != PIKE_T_INT)
     error("Bad argument 1 to port->bind()\n");
 
   fd=fd_socket(AF_INET, SOCK_STREAM, 0);
@@ -214,14 +216,14 @@ static void port_bind(INT32 args)
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
-  if(args > 2 && sp[2-args].type==T_STRING)
+  if(args > 2 && Pike_sp[2-args].type==PIKE_T_STRING)
   {
-    get_inet_addr(&addr, sp[2-args].u.string->str);
+    get_inet_addr(&addr, Pike_sp[2-args].u.string->str);
   }else{
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
   }
 
-  addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+  addr.sin_port = htons( ((u_short)Pike_sp[-args].u.integer) );
   addr.sin_family = AF_INET;
 
   THREADS_ALLOW_UID();
@@ -240,7 +242,7 @@ static void port_bind(INT32 args)
 
   if(args > 1)
   {
-    assign_svalue(& THIS->accept_callback, sp+1-args);
+    assign_svalue(& THIS->accept_callback, Pike_sp+1-args);
     if(!IS_ZERO(& THIS->accept_callback))
     {
       add_ref(Pike_fp->current_object);
@@ -259,15 +261,15 @@ static void port_create(INT32 args)
 {
   if(args)
   {
-    if(sp[-args].type == T_INT)
+    if(Pike_sp[-args].type == PIKE_T_INT)
     {
       port_bind(args);
       return;
     }else{
-      if(sp[-args].type != T_STRING)
+      if(Pike_sp[-args].type != PIKE_T_STRING)
 	error("Bad argument 1 to port->create()\n");
 
-      if(strcmp("stdin",sp[-args].u.string->str))
+      if(strcmp("stdin",Pike_sp[-args].u.string->str))
 	error("port->create() called with string other than 'stdin'\n");
 
       do_close(THIS,Pike_fp->current_object);
@@ -279,7 +281,7 @@ static void port_create(INT32 args)
       }else{
 	if(args > 1)
 	{
-	  assign_svalue(& THIS->accept_callback, sp+1-args);
+	  assign_svalue(& THIS->accept_callback, Pike_sp+1-args);
 	  if(!IS_ZERO(& THIS->accept_callback))
 	  {
 	    add_ref(Pike_fp->current_object);
@@ -358,12 +360,12 @@ static void socket_query_address(INT32 args)
 static void init_port_struct(struct object *o)
 {
   THIS->fd=-1;
-  THIS->id.type=T_INT;
+  THIS->id.type=PIKE_T_INT;
 #ifdef __CHECKER__
   THIS->id.subtype=0;
 #endif
   THIS->id.u.integer=0;
-  THIS->accept_callback.type=T_INT;
+  THIS->accept_callback.type=PIKE_T_INT;
   THIS->my_errno=0;
 }
 
@@ -372,8 +374,8 @@ static void exit_port_struct(struct object *o)
   do_close(THIS,o);
   free_svalue(& THIS->id);
   free_svalue(& THIS->accept_callback);
-  THIS->id.type=T_INT;
-  THIS->accept_callback.type=T_INT;
+  THIS->id.type=PIKE_T_INT;
+  THIS->accept_callback.type=PIKE_T_INT;
 }
 
 struct program *port_program;
@@ -388,8 +390,8 @@ void port_setup_program(void)
   INT32 offset;
   start_new_program();
   offset=ADD_STORAGE(struct port);
-  map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),T_MIXED);
-  map_variable("_id","mixed",0,offset+OFFSETOF(port,id),T_MIXED);
+  map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),PIKE_T_MIXED);
+  map_variable("_id","mixed",0,offset+OFFSETOF(port,id),PIKE_T_MIXED);
   /* function(int,void|mixed,void|string:int) */
   ADD_FUNCTION("bind",port_bind,tFunc(tInt tOr(tVoid,tMix) tOr(tVoid,tStr),tInt),0);
   /* function(int,void|mixed:int) */
