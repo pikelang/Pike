@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.31 2002/03/18 13:10:53 grubba Exp $
+# $Id: configure.in,v 1.32 2002/07/16 19:46:28 per Exp $
 #
 # Configure script for the mysql-module
 #
@@ -9,7 +9,7 @@
 #
 # NOTE: 
 #   Prior to 3.20.0          		After 3.20.0
-#   --------------------------------------------------------------
+#   -------------------------------------------------------------------
 #   /usr/local/mysql/mach-lib-threads	/usr/local/lib/mysql
 #   /usr/local/mysql/include		/usr/local/include/mysql
 #   libmysql.a				libmysqllib.a
@@ -92,7 +92,13 @@ else
 
   pike_cv_mysql="unknown"
 
-  AC_CHECK_LIB(mystrings, bchange, [
+
+  AC_CHECK_LIB(mysqlclient, bchange, [
+    LIBS="-lmysqlclient $LIBS"
+    MYSQL_LIBS="-lmysqlclient"
+    pike_cv_mysql="post3.20"
+  ], [
+    AC_CHECK_LIB(mystrings, bchange, [
     LIBS="-lmystrings $LIBS"
     MYSQL_LIBS="-lmystrings ${MYSQL_LIBS}"
     pike_cv_mysql="post3.20"
@@ -103,6 +109,7 @@ else
       pike_cv_mysql="pre3.20"
     ], [])
   ])
+])
 
   AC_MSG_CHECKING(Mysql version)
 
