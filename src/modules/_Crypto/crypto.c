@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.8 1996/11/11 19:25:11 grubba Exp $
+ * $Id: crypto.c,v 1.9 1996/11/27 11:55:49 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -408,7 +408,7 @@ static void f_unpad(INT32 args)
  * Module linkage
  */
 
-void init_module_efuns(void)
+void init_crypto_efuns(void)
 {
   /* add_efun()s */
 
@@ -426,7 +426,7 @@ void init_module_efuns(void)
   init_pipe_efuns();
 }
 
-void init_module_programs(void)
+void init_crypto_programs(void)
 {
   /*
    * start_new_program();
@@ -477,7 +477,7 @@ void init_module_programs(void)
   init_pipe_programs();
 }
 
-void exit_module(void)
+void exit_crypto(void)
 {
   /* free_program()s */
   exit_md2();
