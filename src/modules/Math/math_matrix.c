@@ -685,18 +685,18 @@ static void matrix_cross(INT32 args)
    FTYPE z;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`*",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`×",1);
 
    pop_n_elems(args-1); /* shouldn't be needed */
 
    if (sp[-1].type!=T_OBJECT ||
        !((mx=(struct matrix_storage*)
 	  get_storage(sp[-1].u.object,math_matrix_program))))
-      SIMPLE_BAD_ARG_ERROR("matrix->`*",1,"object(Math.Matrix)");
+      SIMPLE_BAD_ARG_ERROR("matrix->`×",1,"object(Math.Matrix)");
 
    if (mx->xsize*mx->ysize != 3 ||
        THIS->ysize*THIS->xsize != 3)
-      math_error("Matrix->cross",sp-args,args,0,
+      math_error("Matrix->`×",sp-args,args,0,
 		 "Matrices must both be of size 1x3 or 3x1");
 
    dmx=_push_new_matrix(THIS->xsize,THIS->ysize);
