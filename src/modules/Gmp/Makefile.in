@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.18 2001/08/13 23:33:47 hubbe Exp $
+# $Id: Makefile.in,v 1.19 2001/08/16 12:07:37 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
@@ -9,6 +9,9 @@ PRIME_LIMIT=1024
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+# UnixWare make needs help to find the source file...
+mpq.o: $(SRCDIR)/mpq.c
 
 next_prime.o: prime_table.out
 
