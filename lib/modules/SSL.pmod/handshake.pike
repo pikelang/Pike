@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.26 2001/11/02 11:06:13 grubba Exp $
+/* $Id: handshake.pike,v 1.27 2004/08/10 12:55:00 mast Exp $
  *
  */
 
@@ -689,7 +689,11 @@ int handle_handshake(int type, string data, string raw)
 		      backtrace()));
 	  return -1;
 	}
-	client_random = ("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge)[..31];
+
+	if (ch_len < 32)
+	  challenge = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge;
+	client_random = challenge[sizeof (challenge) - 32..];
+
 	{
 	  int err = reply_new_session(cipher_suites, ({ COMPRESSION_null }) );
 	  if (err)
