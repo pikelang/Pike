@@ -245,6 +245,7 @@ testfont binary
 /src/modules/Image/encodings/pvr.c foreign_ident
 /src/modules/Image/encodings/ras.c foreign_ident
 /src/modules/Image/encodings/tga.c foreign_ident
+/src/modules/Image/encodings/tim.c foreign_ident
 /src/modules/Image/encodings/wbf.c foreign_ident
 /src/modules/Image/encodings/x.c foreign_ident
 /src/modules/Image/encodings/xbm.c foreign_ident
