@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.33 2001/11/22 14:48:16 js Exp $
+// $Id: Utils.pmod,v 1.34 2002/02/20 17:31:08 js Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -67,7 +67,7 @@ class ProfileEntry {
     database_profile_id = _database_profile_id;
     query_profile_id = _query_profile_id;
     my_cache = _my_cache;
-    int last_stat = time(1);
+    int last_stat = time();
 
     // Prefetch..
     get_ranking();
@@ -76,8 +76,8 @@ class ProfileEntry {
   //! Checks if it is time to check if the profile values are
   //! to old.
   int(0..1) check_timeout() {
-    if(time(1)-last_stat < 5*60) return 0;
-    last_stat = time(1);
+    if(time()-last_stat < 5*60) return 0;
+    last_stat = time();
     return 1;
   }
 
@@ -300,14 +300,14 @@ class ProfileCache (string db_name) {
   //! Returns a list of available database profiles.
   array(string) list_db_profiles() {
     /*
-      if (time(1) - last_db_prof_stat < 5*60)
+      if (time() - last_db_prof_stat < 5*60)
       return indices(db_profile_names);*/
     array res = get_db()->query("SELECT name, id FROM profile WHERE type=2");
     db_profile_names = mkmapping(
       res->name,
       map(res->id, lambda(string s) { return (int) s; } ));
     if(sizeof(res))
-      last_db_prof_stat = time(1);
+      last_db_prof_stat = time();
     return res->name;
   }
 
@@ -317,12 +317,12 @@ class ProfileCache (string db_name) {
   array(string) list_query_profiles()
   {
     /*
-      if (time(1) - last_query_prof_stat < 5*60)
+      if (time() - last_query_prof_stat < 5*60)
       return indices(query_profile_names);*/    
     array res = get_db()->query("SELECT name, id FROM profile WHERE type=1");
     query_profile_names = mkmapping( res->name, (array(int)) res->id );
     if(sizeof(query_profile_names))
-      last_query_prof_stat = time(1);
+      last_query_prof_stat = time();
   }
 
   // Used when decoding text encoded pike data types.
@@ -464,8 +464,8 @@ class Scheduler {
     int would_be_indexed = time() + latency*60;
     foreach(profiles, int profile)
       crawl_queue[profile] = 0;
-    WERR("New entry.  time: "+(would_be_indexed-time(1))+" profiles: "+(array(string))profiles*",");
-    if(next_run && next_run < would_be_indexed)
+    WERR("New entry.  time: "+(would_be_indexed-time())+" profiles: "+(array(string))profiles*",");
+    if(next_run && next_run<would_be_indexed && next_run>=time())
       return;
     next_run = would_be_indexed;
     reschedule();
@@ -473,8 +473,8 @@ class Scheduler {
 
   private void reschedule() {
     remove_call_out(do_scheduled_stuff);
-    WERR("Scheduler runs next event in "+(next_run-time(1))+" seconds.");
-    call_out(do_scheduled_stuff, next_run-time(1));
+    WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
+    call_out(do_scheduled_stuff, next_run-time());
   }
 
   void unschedule() {
@@ -496,12 +496,12 @@ class Scheduler {
       int next = dbp->next_crawl();
       if(next != -1) {
 	crawl_queue[dbp->id] = next;
-	WERR(" Crawl: "+(next-time(1)));
+	WERR(" Crawl: "+(next-time()));
       }
       next = dbp->next_compact();
       if(next != -1) {
 	compact_queue[dbp->id] = next;
-	WERR(" Compact: "+(next-time(1)));
+	WERR(" Compact: "+(next-time()));
       }
       WERR("\n");
     }
