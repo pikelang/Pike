@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.94 2000/12/03 22:50:10 per Exp $
+// $Id: module.pmod,v 1.95 2000/12/03 23:55:56 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -625,7 +625,7 @@ class FILE
     }
     if( !get_data() )
     {
-      if( sizeof( cached_lines ) > lp )
+      if( sizeof( cached_lines ) > lp && cached_lines[lp] != "" )
 	return cached_lines[lp++];
       cached_lines = ({});
       lp = 0;
