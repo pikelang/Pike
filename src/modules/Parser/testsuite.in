@@ -595,6 +595,27 @@ test_parser([[{
     p->finish ("gnu");
     return p->read();
   }]], "foo" WIDENER "bargnu");
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 31 + WIDENER)->read();
+  ]], ({"x"}) * 31 + ({WIDENER}));
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 32 + WIDENER)->read();
+  ]], ({"x"}) * 32 + ({WIDENER}));
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 33 + WIDENER)->read();
+  ]], ({"x"}) * 33 + ({WIDENER}));
 
 // Matching tags and quotes
 test_parser([[
