@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.274 2000/02/09 18:52:12 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.275 2000/02/10 03:27:54 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1073,6 +1073,38 @@ test_any_equal([[
   o2->a += ({2});
   return o->a;
 ]], ({1,2}))
+
+test_any_equal([[
+  class A {
+    array a = ({1});
+    void `->= (string var, mixed val) {::`->= (var, val); a += ({17});}
+  };
+  class B {
+    inherit A;
+  };
+  object o = B();
+  o->a += ({2});
+  return o->a;
+]], ({1,2,17}))
+
+cond(0,[[
+dnl This test is not really right, since ::`->= is defined to look up
+dnl statically. Still, a variant of ::`->= that does a low-level dynamic
+dnl lookup instead would be really useful in cases like this.
+test_any_equal([[
+  class A {
+    int f;
+    void `->= (string var, mixed val) {::`->= (var, val); f = 17;}
+  };
+  class B {
+    inherit A;
+    array a = ({1});
+  };
+  object o = B();
+  o->a += ({2});
+  return o->a + ({o->f});
+]], ({1,2,17}))
+]])
 
 test_true(mappingp(_memory_usage()))
 test_true(_refs(""));
