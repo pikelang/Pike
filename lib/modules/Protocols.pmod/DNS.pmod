@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.80 2003/08/22 14:25:27 nilsson Exp $
+// $Id: DNS.pmod,v 1.81 2003/10/21 03:10:39 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -517,8 +517,8 @@ class server
     if (err = catch {
       q=decode_res(m->data);
     }) {
-      werror(sprintf("DNS: Failed to read UDP packet.\n"
-		     "%s\n", describe_backtrace(err)));
+      werror("DNS: Failed to read UDP packet.\n%s\n",
+	     describe_backtrace(err));
       if(m && m->data && sizeof(m->data)>=2)
 	send_reply((["rcode":1]),
 		   mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m);
@@ -717,8 +717,8 @@ class client
 		// Not an IP-number!
 		string host = rest;
 		if (!(rest = match_etc_hosts(host))) {
-		  werror(sprintf("Protocols.DNS.client(): "
-				 "Can't resolv nameserver \"%s\"\n", host));
+		  werror("Protocols.DNS.client(): "
+			 "Can't resolv nameserver \"%s\"\n", host);
 		  break;
 		}
 	      }
@@ -1141,9 +1141,8 @@ class async_client
       r->callback(r->domain,decode_res(m->data),@r->args);
       destruct(r);
     }) {
-      werror(sprintf("DNS: Failed to read UDP packet. Connection refused?\n"
-		     "%s\n",
-		     describe_backtrace(err)));
+      werror("DNS: Failed to read UDP packet. Connection refused?\n%s\n",
+	     describe_backtrace(err));
     }
   }
 
