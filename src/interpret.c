@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.101 1998/11/20 06:46:56 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.102 1998/11/20 07:39:18 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -185,6 +185,12 @@ use_malloc:
       spcb=add_gc_callback(gc_check_stack_callback,0,0);
     }
   }
+#endif
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+  accounted_time =0;
+  time_base =0;
+#endif
 #endif
 }
 
