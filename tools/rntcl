@@ -307,14 +307,14 @@ int main(int argc, array(string) argv)
 
     case "obj":
       if(!output)
-	output=remove_ext(argv[1])+".o";
+	output=basename(remove_ext(argv[1])+".o");
       cflags+=({"-Fo"+fixpath(output+"bj")});
       wantfile=output;
       break;
 
     case "asm":
       if(!output)
-        output=remove_ext(argv[1])+".s";
+        output=basename(remove_ext(argv[1])+".s");
       cflags+=({"-Fa"+fixpath(output)});
       wantfile=output;
       break;
