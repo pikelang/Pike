@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.8 2000/03/26 14:58:50 grubba Exp $
+ * $Id: requestobject.c,v 1.9 2000/11/02 14:03:57 grubba Exp $
  */
 
 #include "global.h"
@@ -50,6 +50,11 @@
 
 /* Used when fatal() can't be. */
 #define DWERROR(X)	write(2, X, sizeof(X) - sizeof(""))
+
+/* All current OS's have a broken sendfile(2). */
+#ifndef HAVE_BROKEN_SENDFILE
+#define HAVE_BROKEN_SENDFILE
+#endif /* !HAVE_BROKEN_SENDFILE */
 
 #ifdef HAVE_BROKEN_SENDFILE
 #ifdef HAVE_SENDFILE
