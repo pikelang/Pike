@@ -632,13 +632,13 @@ static string low_lpc_sprintf(char *format,
         l=1;
         if(fsp->width > 0) l=fsp->width;
 	fsp->b=(char *)alloca(l);
+	fsp->len=l;
 	GET_INT(tmp);
         while(--l>=0)
         {
           fsp->b[l]=tmp & 0xff;
           tmp>>=8;
         }
-	fsp->len=l;
 	break;
       }
 
