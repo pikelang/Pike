@@ -14,7 +14,7 @@
 #include <sys/time.h>
 #endif
 #include <time.h>
-define	FIT(x,y) while((x)<0)(x)+=(y);while((x)>(y))(x)-=(y)
+#define	FIT(x,y) while((x)<0)(x)+=(y);while((x)>(y))(x)-=(y)
 
 
 #define MAXPRECISION       7
