@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.93 2000/06/12 19:32:40 mast Exp $");
+RCSID("$Id: gc.c,v 1.94 2000/06/12 19:35:08 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -79,8 +79,8 @@ RCSID("$Id: gc.c,v 1.93 2000/06/12 19:32:40 mast Exp $");
  * will be freed. That's done before the live object destruct pass.
  */
 
-#define GC_VERBOSE
-#define GC_CYCLE_DEBUG
+/* #define GC_VERBOSE */
+/* #define GC_CYCLE_DEBUG */
 
 #if defined(GC_VERBOSE) && !defined(PIKE_DEBUG)
 #undef GC_VERBOSE
