@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.31 2002/12/21 17:28:30 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.32 2002/12/30 15:33:04 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -59,6 +59,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     if(fn[0]=='#' && fn[-1]=='#') continue;
 
     Stdio.Stat stat = file_stat(srcdir+fn, 1);
+
+    if (!stat) continue;
 
     if(stat->isdir) {
       if(!file_stat(builddir+fn)) mkdir(builddir+fn);
