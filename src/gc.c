@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.137 2000/09/30 16:50:29 mast Exp $");
+RCSID("$Id: gc.c,v 1.138 2000/09/30 17:26:49 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -249,6 +249,12 @@ void dump_gc_info(void)
   fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
 }
 
+#ifdef DEBUG_MALLOC
+#define VALID_PTR(P) ((P) && (int) (P) != 0x55555555)
+#else
+#define VALID_PTR(P) (P)
+#endif
+
 TYPE_T attempt_to_identify(void *something)
 {
   struct array *a;
@@ -262,23 +268,23 @@ TYPE_T attempt_to_identify(void *something)
   {
     if(a==(struct array *)something) return T_ARRAY;
     a=a->next;
-  }while(a!=&empty_array);
+  }while(VALID_PTR(a) && a!=&empty_array);
 
-  for(o=first_object;o;o=o->next)
+  for(o=first_object;VALID_PTR(o);o=o->next)
     if(o==(struct object *)something)
       return T_OBJECT;
 
-  for(p=first_program;p;p=p->next)
+  for(p=first_program;VALID_PTR(p);p=p->next)
     if(p==(struct program *)something)
       return T_PROGRAM;
 
-  for(m=first_mapping;m;m=m->next)
+  for(m=first_mapping;VALID_PTR(m);m=m->next)
     if(m==(struct mapping *)something)
       return T_MAPPING;
     else if (m->data == (struct mapping_data *) something)
       return T_MAPPING_DATA;
 
-  for(mu=first_multiset;mu;mu=mu->next)
+  for(mu=first_multiset;VALID_PTR(mu);mu=mu->next)
     if(mu==(struct multiset *)something)
       return T_MULTISET;
 
@@ -665,7 +671,7 @@ void low_describe_something(void *a,
 	fprintf(stderr,"%*s**Attempting to describe program object was instantiated from:\n",indent,"");
 #ifdef DEBUG_MALLOC
 	if ((int) p == 0x55555555)
-	  fprintf(stderr, "%*%s**Zapped program pointer\n", indent, "");
+	  fprintf(stderr, "%*s**Zapped program pointer.\n", indent, "");
 	else
 #endif
 	  low_describe_something(p, T_PROGRAM, indent, depth, flags);
@@ -790,23 +796,22 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
 	    get_name_of_type(t));
   } else
 #endif /* DEBUG_MALLOC */
-  if (((ptrdiff_t)a) & 3) {
-    fprintf(stderr,"%*s**Location: %p  Type: %s  Misaligned address\n",indent,"",a,
-	    get_name_of_type(t));
-  } else {
-    fprintf(stderr,"%*s**Location: %p  Type: %s  Refs: %d\n",indent,"",a,
-	    get_name_of_type(t),
-	    *(INT32 *)a);
-  }
+    if (((ptrdiff_t)a) & 3) {
+      fprintf(stderr,"%*s**Location: %p  Type: %s  Misaligned address\n",indent,"",a,
+	      get_name_of_type(t));
+    } else {
+      fprintf(stderr,"%*s**Location: %p  Type: %s  Refs: %d\n",indent,"",a,
+	      get_name_of_type(t),
+	      *(INT32 *)a);
 
 #ifdef DEBUG_MALLOC
-  if(!(flags & DESCRIBE_NO_DMALLOC))
-    debug_malloc_dump_references(a,indent+2,depth-1,flags);
+      if(!(flags & DESCRIBE_NO_DMALLOC))
+	debug_malloc_dump_references(a,indent+2,depth-1,flags);
 #endif
 
-  low_describe_something(a,t,indent,depth,flags);
+      low_describe_something(a,t,indent,depth,flags);
+    }
 
-  
   fprintf(stderr,"%*s*******************\n",indent,"");
   d_flag=tmp;
 }
