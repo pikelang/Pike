@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.7 1996/11/11 14:23:22 grubba Exp $
+ * $Id: crypto.c,v 1.8 1996/11/11 19:25:11 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -423,6 +423,7 @@ void init_module_efuns(void)
   init_invert_efuns();
 
   init_cbc_efuns();
+  init_pipe_efuns();
 }
 
 void init_module_programs(void)
@@ -473,6 +474,7 @@ void init_module_programs(void)
   init_invert_programs();
 
   init_cbc_programs();
+  init_pipe_programs();
 }
 
 void exit_module(void)
@@ -486,5 +488,6 @@ void exit_module(void)
   exit_invert();
 
   exit_cbc();
+  exit_pipe();
 }
 
