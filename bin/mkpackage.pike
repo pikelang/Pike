@@ -73,6 +73,9 @@ class Package
   {
     string setup_filename = unique_name('S')+".sh";
     string unpack_directory = unique_name('D');
+    
+    string features = Process.popen(pike_filename+" --features");
+    options[({ "--features" })] = "echo \""+(features || "")+"\"\nexit";
 
     string setup = ("#!/bin/sh\n"
 		    "TARFILE=\"$1\"; shift; ARGS=''\n"
@@ -116,9 +119,6 @@ class Package
 			       setup_filename);
 		    
     rmrf("#!", setup_filename);
-    
-    string features = Process.popen(pike_filename+" --features");
-    options[({ "--features" })] = "echo \""+(features || "")+"\"\nexit";
     
     if(!Stdio.write_file(setup_filename, setup))
       ERR(("Failed to write setup script %O., ", setup_filename));
