@@ -7,8 +7,6 @@ inherit _Crypto;
 
 #if constant(Nettle.HashInfo)
 
-import Nettle;
-
 constant HashState = Nettle.HashState;
 
 //! Abstract class for hash algorithms. Contains some tools useful
