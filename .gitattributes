@@ -100,11 +100,8 @@ testfont binary
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/Parser.pmod/C.pmod foreign_ident
 /lib/modules/Parser.pmod/LR.pmod/Grammar_parser.pmod foreign_ident
-/lib/modules/Parser.pmod/LR.pmod/Item.pike foreign_ident
-/lib/modules/Parser.pmod/LR.pmod/Parser.pike foreign_ident
-/lib/modules/Parser.pmod/LR.pmod/Priority.pike foreign_ident
-/lib/modules/Parser.pmod/LR.pmod/Rule.pike foreign_ident
 /lib/modules/Parser.pmod/LR.pmod/lr.pike foreign_ident
+/lib/modules/Parser.pmod/LR.pmod/module.pmod foreign_ident
 /lib/modules/Parser.pmod/MP3.pmod foreign_ident
 /lib/modules/Parser.pmod/Pike.pmod foreign_ident
 /lib/modules/Parser.pmod/RCS.pike foreign_ident
