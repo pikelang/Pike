@@ -1,7 +1,9 @@
-/* encode.pmod
+/* Encode.pmod
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
+
+/* FIXME: This file is obsolete. All code should use ASN1.Types instead. */
 
 #if 0
 #define WERROR werror
