@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.329 2004/09/18 20:50:56 nilsson Exp $
+|| $Id: file.c,v 1.330 2004/10/13 16:45:36 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3658,6 +3658,9 @@ static void f_get_all_active_fd(INT32 args)
 
 #ifdef HAVE_NOTIFICATIONS
 
+/*! @class File
+ */
+
 /*! @decl void notify(void|int notification, function(void:void) callback)
  *! Receive notification when change occur within the fd.
  *! To use, create a Stdio.File object of a directory like
@@ -3712,6 +3715,9 @@ void file_set_notify(INT32 args) {
 
   pop_n_elems(args);
 }
+
+/*! @endclass
+ */
 
 #endif /* HAVE_NOTIFICATIONS */
 
