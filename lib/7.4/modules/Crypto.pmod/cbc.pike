@@ -48,6 +48,4 @@ string decrypt_block(string data) {
 
 string crypt_block(string p) { return crypt(p); }
 
-#elif constant(Crypto.cbc)
-inherit Crypto.cbc;
 #endif

@@ -44,6 +44,4 @@ string unpad(string m) {
   return ::unpad(m);
 }
 
-#else
-inherit Crypto.crypto;
 #endif

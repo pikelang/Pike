@@ -33,7 +33,7 @@ string des_parity(string s) {
 }
 
 // These haven't been modified.
-#if 1
+#if 0
 constant des_cbc = Crypto.des_cbc;
 constant des3_cbc = Crypto.des3_cbc;
 constant dsa = Crypto.dsa;
