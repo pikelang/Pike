@@ -227,8 +227,6 @@ class Display
   /* This function leaves the socket in blocking mode */
   int flush()
   { /* FIXME: Not thread-safe */
-    werror("flush\n");
-    
     set_blocking();
     int written = write(buffer);
     if (written < strlen(buffer))
@@ -693,7 +691,6 @@ class Display
     array a;
     while(a = pending_actions->get())
       handle_action(a);
-    werror("process_pending_actions: nonblock\n");
     set_nonblocking(read_callback, write_callback, close_callback);
   }
 	  
@@ -749,7 +746,6 @@ class Display
       {
 	if (!is_local)
 	  open_socket();
-        werror("open: block\n");
 	set_nonblocking(0, 0, close_callback);
       }
     if(!is_local)
@@ -788,7 +784,6 @@ class Display
     send(msg);
     if (async)
       {
-	 werror("open: nonblock\n");
 	set_nonblocking(read_callback, write_callback, close_callback);
 	return 1;
       }
@@ -810,7 +805,6 @@ class Display
 	    {
 	    case ACTION_CONNECT:
 	      get_keyboard_mapping();
-	      werror("connect: nonblock\n");
 	      set_nonblocking(read_callback, write_callback, close_callback);
 	      return 1;
 	    case ACTION_CONNECT_FAILED:
@@ -830,7 +824,7 @@ class Display
 #ifdef DEBUG
     debug_requests[DEBUGREQ(sequence_number)] = data;
 #endif
-    return sequence_number++;
+    return (sequence_number++)&0xffff; // sequence number is just 2 bytes
   }
 
   array blocking_request(object req)
@@ -839,14 +833,11 @@ class Display
     mixed result = 0;
     int done = 0;
 
-    werror("br: %O\n",mkmapping(indices(req),values(req)));
-
     int n = send_request(req);
     flush();
 
     while(!done)
     {
-werror("waiting for reply on "+n+"...\n");
        string data = read(0x7fffffff, 1);
        if (!data)
        {
@@ -857,7 +848,6 @@ werror("waiting for reply on "+n+"...\n");
        array a;
        while (a = process())
        {
-werror("got reply "+a[0]+": "+a[1]->sequenceNumber+"...\n");
 	  if ((a[0] == ACTION_REPLY)
 	      && (a[1]->sequenceNumber == n))
 	  {
@@ -882,7 +872,6 @@ werror("got reply "+a[0]+": "+a[1]->sequenceNumber+"...\n");
       call_out(process_pending_actions, 0);
     else
     {
-       werror("blocking_request: nonblock\n");
        set_nonblocking(read_callback,write_callback,close_callback);
     }
 
