@@ -569,10 +569,10 @@ int main(int argc, string *argv)
   switch(install_type)
   {
     case "--traditional":
-      exec_prefix=vars->exec_prefix;
-      lib_prefix=vars->lib_prefix;
+      exec_prefix=vars->exec_prefix||prefix;
+      lib_prefix=vars->lib_prefix||prefix;
       include_prefix=combine_path(prefix,"include","pike");
-      man_prefix=vars->man_prefix;
+      man_prefix=vars->man_prefix||prefix;
       break;
 
     case "--interactive":
