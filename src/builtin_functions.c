@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.455 2003/01/04 15:24:51 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.456 2003/01/05 00:55:44 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.455 2003/01/04 15:24:51 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.456 2003/01/05 00:55:44 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -843,8 +843,10 @@ PMOD_EXPORT void f_has_index(INT32 args)
 {
   int t = 0;
   
-  if(args != 2)
-    PIKE_ERROR("has_index", "Bad number of arguments.\n", Pike_sp, args);
+  if(args < 2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("has_index", 2);
+  if(args > 2)
+    pop_n_elems(args-2);
 
   switch(Pike_sp[-2].type)
   {
@@ -927,8 +929,10 @@ PMOD_EXPORT void f_has_index(INT32 args)
  */
 PMOD_EXPORT void f_has_value(INT32 args)
 {
-  if(args != 2)
-    PIKE_ERROR("has_value", "Bad number of arguments.\n", Pike_sp, args);
+  if(args < 2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("has_value", 2);
+  if(args > 2)
+    pop_n_elems(args-2);
 
   switch(Pike_sp[-2].type)
   {
@@ -4201,12 +4205,11 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   if (args > 6) {
     if (Pike_sp[6-args].type != T_INT) {
-      PIKE_ERROR("mktime", "Bad argument 6 (expected int).\n", Pike_sp, args);
+      SIMPLE_BAD_ARG_ERROR("mktime", 6, "int");
     }
     if (args > 7) {
       if (Pike_sp[7-args].type != T_INT) {
-	PIKE_ERROR("mktime", "Bad argument 7 (expected int).\n",
-		   Pike_sp, args);
+	SIMPLE_BAD_ARG_ERROR("mktime", 7, "int");
       }
     }
   }
