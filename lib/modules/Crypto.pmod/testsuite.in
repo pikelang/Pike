@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.7 2003/08/08 10:26:16 grubba Exp $
+dnl $Id: testsuite.in,v 1.8 2003/08/10 20:08:32 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -33,7 +33,7 @@ cond([[ master()->resolv("Nettle") && master()->resolv("Nettle")["Yarrow"] ]], [
 
 
 dnl Crypto.Random
-cond([[ master()->resolv("Nettle") ]], [[
+cond([[ master()->resolv("Nettle")["Yarrow"] ]], [[
   test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
   test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
   test_eq( sizeof( Crypto.Random.random_string(128) ), 128)
