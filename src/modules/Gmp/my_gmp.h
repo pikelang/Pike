@@ -1,4 +1,4 @@
-/* $Id: my_gmp.h,v 1.7 2000/09/04 18:44:43 grubba Exp $
+/* $Id: my_gmp.h,v 1.8 2000/09/05 13:03:03 grubba Exp $
  *
  * These functions or something similar will hopefully be included
  * with Gmp-2.1 .
@@ -12,7 +12,8 @@
  * which leads to <gmp.h> using the wrong token concat method.
  */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_MPN_CONCAT(x,y)	x##y
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
 #define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
 
