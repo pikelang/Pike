@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.296 2001/06/13 14:25:06 grubba Exp $");
+RCSID("$Id: program.c,v 1.297 2001/06/14 16:13:36 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3307,12 +3307,19 @@ struct program *compile(struct pike_string *prog,
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
 	     (long)th_self(),compilation_depth));
 
+  low_init_threads_disable();
+  saved_threads_disabled = threads_disabled;
+
+#ifdef PIKE_DEBUG
+  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
+#endif
+
   error_handler = handler;
   compat_handler=0;
   
   if(error_handler)
   {
-    apply(error_handler,"get_default_module",0);
+    safe_apply(error_handler, "get_default_module", 0);
     if(IS_ZERO(Pike_sp-1))
     {
       pop_stack();
@@ -3321,13 +3328,6 @@ struct program *compile(struct pike_string *prog,
   }else{
     ref_push_mapping(get_builtin_constants());
   }
-
-  low_init_threads_disable();
-  saved_threads_disabled = threads_disabled;
-
-#ifdef PIKE_DEBUG
-  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
-#endif
 
   Pike_compiler->num_used_modules=0;
 
