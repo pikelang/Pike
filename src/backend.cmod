@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.137 2004/04/18 02:09:10 mast Exp $
+|| $Id: backend.cmod,v 1.138 2004/04/22 16:22:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.137 2004/04/18 02:09:10 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.138 2004/04/22 16:22:55 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2102,7 +2102,7 @@ PIKECLASS Backend
       backend_verify_call_outs(me);
       
       /* FIXME: OOB? */
-#ifndef HAVE_POLL
+#ifdef USE_SELECT
       for(e=0;e<=me->set.max_fd;e++)
       {
 	if(my_FD_ISSET(e, &me->set.read)
@@ -2134,8 +2134,8 @@ PIKECLASS Backend
 	  }
 	}
       }
-#else  /* HAVE_POLL */
-#ifndef USE_POLL_DEVICE
+#else  /* !USE_SELECT */
+#if defined(HAVE_POLL) && !defined(USE_POLL_DEVICE)
       for(e=0;e<me->set.num_in_poll;e++)
       {
 	int ret;
@@ -2163,8 +2163,8 @@ PIKECLASS Backend
 	  }
 	}
       }
-#endif /* !HAVE_SYS_DEVPOLL_H */
-#endif	/* !HAVE_POLL */
+#endif /* HAVE_POLL && !HAVE_SYS_DEVPOLL_H */
+#endif	/* USE_SELECT */
 
       {FOR_EACH_ACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
       {FOR_EACH_INACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
@@ -2652,7 +2652,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	}
 
-#if defined(PIKE_DEBUG) && !defined(USE_POLL_DEVICE)
+#if defined(PIKE_DEBUG) && !defined(USE_POLL_DEVICE) && !defined(USE_KQUEUE)
 	if (num_active) {
 	  fprintf(stderr, "[%d]BACKEND[%d]: %d more active fds than were handled.\n",
 		  getpid(), me->id, num_active);
@@ -2665,7 +2665,7 @@ PIKECLASS Backend
 		    (long)me->active_set.poll_fds[i].revents);
 	  }
 	}
-#endif /* PIKE_DEBUG && !USE_POLL_DEVICE */
+#endif /* PIKE_DEBUG && !USE_POLL_DEVICE && !USE_KQUEUE */
 
 #endif	/* USE_SELECT */
 
