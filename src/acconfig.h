@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.66 2000/10/13 19:40:07 hubbe Exp $
+ * $Id: acconfig.h,v 1.67 2000/10/28 15:51:40 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -30,7 +30,7 @@
 /* Define this if you want to enable the shared nodes mode of the optimizer. */
 #undef SHARED_NODES
 
-/* The following four are used by smartlink */
+/* The following USE_* are used by smartlink */
 /* Define this if your ld sets the run path with -rpath */
 #undef USE_RPATH
 
@@ -39,6 +39,9 @@
 
 /* Define this if your ld sets the run path with -YP, */
 #undef USE_YP_
+
+/* Define this if your ld sets the run path with +b */
+#undef USE_PLUS_b
 
 /* Define this if your ld uses -rpath, but your cc wants -Wl,-rpath, */
 #undef USE_Wl
