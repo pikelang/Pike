@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.5 2001/05/05 20:39:13 mirar Exp $ */
+/* $Id: mkxml.pike,v 1.6 2001/05/05 20:42:39 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -261,7 +261,7 @@ string make_nice_reference(string what,string prefix,string stuff)
    else 
       q=what;
 
-   return "<link to="+linkify(q)+">"+htmlify(stuff)+"</link>";
+   return "<ref to="+linkify(q)+">"+htmlify(stuff)+"</ref>";
 }
 
 string fixdesc(string s,string prefix,string where)
@@ -526,26 +526,26 @@ void docdecl(string enttype,
 	       case ',':
 		  array z=in[..i-1]/" "-({""});
 		  if (sizeof(z)==1)
-		     return "\n   <argument><type>"+doctype(z[0],"\n      ")+
+		     return "\n     <argument><type>"+doctype(z[0],"\n      ")+
 			"</type></argument>"+
 			paramlist(in[i+1..]);
 		  else
-		     return "\n   <argument name="+S(z[-1])+
+		     return "\n     <argument name="+S(z[-1])+
 			"><type>"+doctype(z[0..sizeof(z)-2]*"","\n      ")+
 			"</type></argument>"+
 			paramlist(in[i+1..]);
 	    }
 	 array z=in[..i-1]/" "-({""});
 	 if (sizeof(z)==1)
-	    return "\n   <argument><type>"+doctype(z[0])+
+	    return "\n     <argument><type>"+doctype(z[0])+
 	       "</type></argument>";
 	 else
-	    return "\n   <argument name="+S(z[-1])+
+	    return "\n     <argument name="+S(z[-1])+
 	       "><type>"+doctype(z[0..sizeof(z)-2]*"");
       };
 
-      f->write("<returntype>"+doctype(rv)+"</returntype>\n"
-	       "<arguments>"+paramlist(params)+"\n</arguments>\n");
+      f->write("\n   <returntype>"+doctype(rv,"\n      ")+"</returntype>\n"
+	       "   <arguments>"+paramlist(params)+"\n   </arguments>\n");
    }
    else
    {
