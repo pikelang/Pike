@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.214 2004/12/18 17:47:48 grubba Exp $
+|| $Id: svalue.c,v 1.215 2004/12/18 17:49:48 grubba Exp $
 */
 
 #include "global.h"
@@ -1467,7 +1467,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
-	      if (!obj->prog) prog = NULL
+	      if (!obj->prog) prog = NULL;
 	    }
 	    END_CYCLIC();
 	  }
@@ -1511,7 +1511,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    restore_buffer (&save_buf);
 	    Pike_interpreter.trace_level=save_t_flag;
 	    pop_stack();
-	    if (!obj->prog) prog = NULL
+	    if (!obj->prog) prog = NULL;
 	  }
 	  END_CYCLIC();
 	}
