@@ -4,6 +4,10 @@
 
 need_to_make_depend=no
 
+base=`echo $0 | sed 's@[^/]*$@@g'`
+if test "x$base" != "x" ; then
+  cd "$base"
+fi
 
 find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
 
