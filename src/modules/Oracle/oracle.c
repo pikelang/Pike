@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.66 2002/02/07 16:20:36 stewa Exp $
+ * $Id: oracle.c,v 1.67 2002/04/11 15:44:17 mast Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.66 2002/02/07 16:20:36 stewa Exp $");
+RCSID("$Id: oracle.c,v 1.67 2002/04/11 15:44:17 mast Exp $");
 
 
 /* User-changable defines: */
@@ -998,12 +998,12 @@ static void f_fetch_fields(INT32 args)
 	  type_name = "blob";
 	else
 	  type_name="clob";
-	if (rc = OCIDescriptorAlloc(
+	if ((rc = OCIDescriptorAlloc(
 				    (dvoid *) get_oracle_environment(),
 				    (dvoid **) &info->data.lob, 
 				    (ub4)OCI_DTYPE_LOB, 
 				    (size_t) 0, 
-				    (dvoid **) 0))
+				    (dvoid **) 0)))
 	  {
 #ifdef ORACLE_DEBUG
 	    fprintf(stderr,"OCIDescriptorAlloc failed!\n");
@@ -1199,7 +1199,7 @@ static void push_inout_value(struct inout *inout,
 	errfunc = "OCILobGetLength";
       } else {
 	amtp = loblen;
-	if(bufp = malloc(loblen)) {
+	if((bufp = malloc(loblen))) {
 	  if((ret = OCILobRead(dbcon->context,
 			       dbcon->error_handle,
 			       inout->lob, 
@@ -1867,13 +1867,30 @@ static void f_big_typed_query_create(INT32 args)
 	    break;
 	    
 	  case T_MULTISET:
-	    if(value->u.multiset->ind->size == 1 &&
-	       ITEM(value->u.multiset->ind)[0].type == T_STRING)
-	    {
-	      addr = (ub1 *)ITEM(value->u.multiset->ind)[0].u.string->str;
-	      len = ITEM(value->u.multiset->ind)[0].u.string->len;
-	      fty = SQLT_LBI;
-	      break;
+	    if(multiset_sizeof(value->u.multiset) == 1) {
+	      struct pike_string *s;
+#ifdef PIKE_NEW_MULTISETS
+	      {
+		struct svalue tmp;
+		if (use_multiset_index (value->u.multiset,
+					multiset_first (value->u.multiset),
+					tmp)->type == T_STRING)
+		  s = tmp.u.string;
+		else
+		  s = NULL;
+	      }
+#else
+	      if (ITEM(value->u.multiset->ind)[0].type == T_STRING)
+		s = ITEM(value->u.multiset->ind)[0].u.string;
+	      else
+		s = NULL;
+#endif
+	      if (s) {
+		addr = (ub1 *)s->str;
+		len = s->len;
+		fty = SQLT_LBI;
+		break;
+	      }
 	    }
 	    
 	  default:
