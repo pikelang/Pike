@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.218 2000/11/29 21:32:17 hubbe Exp $
+# $Id: Makefile.in,v 1.219 2000/11/30 20:13:38 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -537,6 +537,8 @@ las_t.o: las.c
 # The reason for the split is that some compilers (read lc) generate
 # better code then. Strange, but true.
 lex.o: lexer0.h lexer1.h lexer2.h
+
+lex.protos: lexer0.h lexer1.h lexer2.h
 
 lexer0.h: lexer.h
 	cp "$(SRCDIR)/lexer.h" "$@"
