@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.400 2005/01/06 17:42:06 grubba Exp $
+# $Id: Makefile.in,v 1.401 2005/01/08 15:38:47 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -287,8 +287,9 @@ pike.a: $(OBJ) modules/linker_options post_modules/linker_options
 
 #pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
 pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
-	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
+	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
+	-@if [ -f pike.exe ] ; then mv pike.exe pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
 #	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
