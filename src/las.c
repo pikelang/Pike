@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.47 1998/01/29 00:30:34 hubbe Exp $");
+RCSID("$Id: las.c,v 1.48 1998/01/29 04:07:48 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2233,7 +2233,11 @@ static struct svalue *is_stupid_func(node *n,
 
   n=CAR(n);
   if(!n || n->token != F_CONSTANT) return 0;
-  return &n->u.sval;
+
+  if((count_arguments(n->type) < 0) == !!vargs)
+    return &n->u.sval;
+
+  return 0;
 }
 
 int dooptcode(struct pike_string *name,
