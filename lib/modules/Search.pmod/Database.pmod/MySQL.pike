@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.41 2001/06/23 02:09:20 js Exp $
+// $Id: MySQL.pike,v 1.42 2001/06/23 02:11:58 js Exp $
 
 inherit .Base;
 
@@ -161,11 +161,9 @@ int allocate_field_id(string field)
   db->query("lock tables field write");
   for(int i=1; i<64; i++)
   {
-    werror("%d\n",i);
     array a=db->query("select name from field where id=%d",i);
     if(!sizeof(a))
     {
-      werror("Allocated: %s to %d\n", field,i);
       a=db->query("insert into field (id,name) values (%d,%s)",
 		  i, field);
       list_fields_cache=0;
@@ -345,7 +343,6 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
   if( sync_callback )
     sync_callback();
   werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
-  werror("db: %O\n", host);
 }
 
 static object old_thread;
