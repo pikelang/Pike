@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.3 2000/01/27 21:16:27 grubba Exp $
+ * $Id: rsa.c,v 1.4 2000/01/31 20:09:00 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -28,15 +28,62 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.3 2000/01/27 21:16:27 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.4 2000/01/31 20:09:00 grubba Exp $");
 
 struct pike_rsa_data
 {
   B_ALGORITHM_OBJ cipher;
   B_KEY_OBJ key;
+  unsigned int flags;
+  struct pike_string *n;	/* modulo */
+  struct pike_string *e;	/* public exponent */
+  struct pike_string *d;	/* private exponent (if known) */
 };
 
 #define THIS ((struct pike_rsa_data *)(fp->current_storage))
+
+/*
+ * RSA memory handling glue code.
+ */
+
+void T_free(POINTER block)
+{
+  free(block);
+}
+
+POINTER T_malloc(unsigned int len)
+{
+  return malloc(len);
+}
+
+int T_memcmp(POINTER firstBlock, POINTER secondBlock, unsigned int len)
+{
+  return MEMCMP(firstBlock, secondBlock, len);
+}
+
+void T_memcpy(POINTER output, POINTER input, unsigned int len)
+{
+  MEMCPY(output, input, len);
+}
+
+void T_memmove(POINTER output, POINTER input, unsigned int len)
+{
+  MEMMOVE(output, input, len);
+}
+
+void T_memset(POINTER output, int value, unsigned int len)
+{
+  MEMSET(output, value, len);
+}
+
+POINTER T_realloc(POINTER block, unsigned int len)
+{
+  return realloc(block, len);
+}
+
+/*
+ * Object init/exit code.
+ */
 
 static void init_pike_rsa(struct object *o)
 {
@@ -54,6 +101,15 @@ static void init_pike_rsa(struct object *o)
 
 static void exit_pike_rsa(struct object *o)
 {
+  if (THIS->n) {
+    free_string(THIS->n);
+  }
+  if (THIS->e) {
+    free_string(THIS->e);
+  }
+  if (THIS->d) {
+    free_string(THIS->d);
+  }
   if (THIS->cipher) {
     B_DestroyAlgorithmObject(&(THIS->cipher));
   }
@@ -62,6 +118,10 @@ static void exit_pike_rsa(struct object *o)
   }
   MEMSET(THIS, 0, sizeof(struct pike_rsa_data));
 }
+
+/*
+ * Public functions
+ */
 
 /* object set_public_key(bignum modulo, bignum pub) */
 static void f_set_public_key(INT32 args)
@@ -74,6 +134,15 @@ static void f_set_public_key(INT32 args)
 
   get_all_args("set_public_key", args, "%o%o", &modulo, &pub);
 
+  if (THIS->n) {
+    free_string(THIS->n);
+    THIS->n = NULL;
+  }
+  if (THIS->e) {
+    free_string(THIS->e);
+    THIS->e = NULL;
+  }
+
   push_int(256);
   apply(modulo, "digits", 1);
 
@@ -82,8 +151,13 @@ static void f_set_public_key(INT32 args)
     error("Unexpected return value from modulo->digits().\n");
   }
 
-  key_info.modulus.data = sp[-1].u.string->str;
-  key_info.modulus.len = sp[-1].u.string->len;
+  if (sp[-1].u.string->len < 12) {
+    error("Too small modulo.\n");
+  }
+
+  copy_shared_string(THIS->n, sp[-1].u.string);
+
+  pop_stack();
 
   push_int(256);
   apply(pub, "digits", 1);
@@ -93,14 +167,9 @@ static void f_set_public_key(INT32 args)
     error("Unexpected return value from pub->digits().\n");
   }
 
-  key_info.exponent.data = sp[-1].u.string->str;
-  key_info.exponent.len = sp[-1].u.string->len;
+  copy_shared_string(THIS->e, sp[-1].u.string);
 
-  if ((code = B_SetKeyInfo(THIS->key, KI_RSAPublic, (POINTER)&key_info))) {
-    error("Failed to set public key.\n");
-  }
-  
-  pop_n_elems(args + 2);
+  pop_n_elems(args + 1);
   ref_push_object(fp->current_object);
 }
 
@@ -115,18 +184,10 @@ static void f_set_private_key(INT32 args)
 
   get_all_args("set_private_key", args, "%o%a", &priv, &extra);
 
-#if 0
-  push_int(256);
-  apply(pub, "digits", 1);
-
-  if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
-      (sp[-1].u.string->size_shift)) {
-    error("Unexpected return value from pub->digits().\n");
+  if (THIS->d) {
+    free_string(THIS->d);
+    THIS->d = NULL;
   }
-
-  key_info.modulus.data = sp[-1].u.string->str;
-  key_info.modulus.len = sp[-1].u.string->len;
-#endif /* 0 */
 
   push_int(256);
   apply(priv, "digits", 1);
@@ -136,115 +197,181 @@ static void f_set_private_key(INT32 args)
     error("Unexpected return value from priv->digits().\n");
   }
 
-  key_info.exponent.data = sp[-1].u.string->str;
-  key_info.exponent.len = sp[-1].u.string->len;
+  copy_shared_string(THIS->d, sp[-1].u.string);
 
-  if ((code = B_SetKeyInfo(THIS->key, KI_RSAPrivate, (POINTER)&key_info))) {
-    error("Failed to set public key.\n");
-  }
-  
-  pop_n_elems(args + 2);
+  /* FIXME: extra is currently ignored */
+
+  pop_n_elems(args + 1);
   ref_push_object(fp->current_object);
 }
 
+/* int query_blocksize() */
 static void f_query_blocksize(INT32 args)
 {
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
   pop_n_elems(args);
-  push_int(0);
+  push_int(THIS->n->len - 3);
 }
 
+/* bignum rsa_pad(string message, int type, mixed|void random) */
 static void f_rsa_pad(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* string rsa_unpad(bignum block, int type) */
 static void f_rsa_unpad(INT32 args)
 {
-  pop_n_elems(args);
-  push_int(0);
+  struct object *block = NULL;
+  INT32 type;
+  int i;
+  struct pike_string *res;
+
+  get_all_args("rsa_unpad", args, "%o%i", &block, &type);
+
+  push_int(256);
+  apply(block, "digits", 1);
+
+  if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
+      (sp[-1].u.string->size_shift)) {
+    error("Unexpected return value from block->digits().\n");
+  }
+
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
+  if (((i = strlen(sp[-1].u.string->str)) < 9) ||
+      (sp[-1].u.string->len != THIS->n->len - 1) ||
+      (sp[-1].u.string->str[0] != type)) {
+    pop_n_elems(args + 1);
+    push_int(0);
+    return;
+  }
+
+  res = make_shared_binary_string(sp[-1].u.string->str + i + 1,
+				  sp[-1].u.string->len - i - 1);
+
+  pop_n_elems(args + 1);
+  push_string(res);
 }
 
+/* object raw_sign(string digest) */
 static void f_raw_sign(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* int raw_verify(string digest, object s) */
 static void f_raw_verify(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* object sign(string message, program h, mixed|void r) */
 static void f_sign(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* int verify(string msg, program h, object sign) */
 static void f_verify(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* string sha_sign(string message, mixed|void r) */
 static void f_sha_sign(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* int sha_verify(string message, string signature) */
 static void f_sha_verify(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* object generate_key(int bits, function|void r) */
 static void f_generate_key(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* string encrypt(string s, mixed|void r) */
 static void f_encrypt(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* string decrypt(string s) */
 static void f_decrypt(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* object set_encrypt_key(array(bignum) key) */
 static void f_set_encrypt_key(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* object set_decrypt_key(array(bignum) key) */
 static void f_set_decrypt_key(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* string crypt_block(string s) */
 static void f_crypt_block(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
 
+/* int rsa_size() */
 static void f_rsa_size(INT32 args)
 {
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
   pop_n_elems(args);
-  push_int(0);
+  push_int(THIS->n->len);
 }
 
+/* int public_key_equal (object rsa) */
 static void f_public_key_equal(INT32 args)
 {
+  error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
 }
