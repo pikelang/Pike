@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.440 2002/09/29 00:13:21 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.441 2002/10/03 15:23:34 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4021,6 +4021,11 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   t = tt;
   tm = gmtime(&t);
   pop_n_elems(args);
+
+  if (!tm) {
+    push_int (0);
+    return;
+  }
   encode_struct_tm(tm);
 
   push_string(make_shared_string("timezone"));
@@ -4059,6 +4064,10 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   	  Offset from UTC.
  *!   @endmapping
  *!
+ *! Zero is returned if the localtime(2) call failed on the system.
+ *! It's platform dependent what time ranges that function can handle,
+ *! e.g. Windows doesn't handle a negative @[timestamp].
+ *!
  *! @note
  *!   The field @tt{"timezone"@} may not be available on all platforms.
  *!
@@ -4076,6 +4085,11 @@ PMOD_EXPORT void f_localtime(INT32 args)
   t = tt;
   tm = localtime(&t);
   pop_n_elems(args);
+
+  if (!tm) {
+    push_int (0);
+    return;
+  }
   encode_struct_tm(tm);
 
 #ifdef STRUCT_TM_HAS_GMTOFF
