@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.576 2002/12/03 21:19:26 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.577 2002/12/11 21:54:40 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9203,7 +9203,18 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
-  test_any([[return allocate(10,thread_create)(lambda() { for(int x=0;x<10;x++) { for(int e=0;e<50;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;})->wait() - ({-1})]],({}))
+  test_any([[
+    return allocate(10, thread_create) (
+      lambda() {
+	for (int x=0; x<10; x++) {
+	  for (int e=0; e<50; e++)
+	    if (Process.create_process(({"/bin/cat","/dev/null"}))->wait())
+	      return e;
+	  __signal_watchdog();
+	}
+	return -1;
+      }
+    )->wait() - ({-1})]],({}))
 ]])
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
@@ -9304,6 +9315,7 @@ void test_resolv(string file, int base_size, object|void handler)
 
 void test_dir(string dir, int|void base_size, object|void handler)
 {
+  if (!Stdio.is_dir (dir)) return;
   // werror("Testing directory %O...\n", dir);
   if(!base_size) base_size=sizeof(dir);
   foreach(get_dir(dir), string s)
