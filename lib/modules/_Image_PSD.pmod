@@ -25,6 +25,7 @@ class Layer
   int mask_flags;
   int mask_xoffset, mask_yoffset;
   int mask_width, mask_height;
+  int mask_default_color;
 }
 
 
@@ -43,16 +44,18 @@ Layer decode_layer(mapping layer, mapping i)
   l->mode = layer->mode;
   l->flags = layer->flags;
   l->name = layer->name;
+  l->mask_flags = layer->mask_flags;
+  l->mask_default_color = layer->mask_default_color;
  
   l->mask_width = layer->mask_right-layer->mask_left;
   l->mask_height = layer->mask_bottom-layer->mask_top;
   l->mask_xoffset = layer->mask_left;
   l->mask_yoffset = layer->mask_top;
 
-  if( !(l->mask_flags & 1 ) ) // pos relative to layer
+  if(l->mask_flags & 1) // pos relative to layer
   {
-    l->mask_xoffset -= l->xoffset;
-    l->mask_yoffset -= l->yoffset;
+    l->mask_xoffset += l->xoffset;
+    l->mask_yoffset += l->yoffset;
   }
   array colors;
   int inverted;
@@ -132,6 +135,7 @@ Layer decode_layer(mapping layer, mapping i)
       tmp = ___decode_image_channel(l->width, l->height, c->data);
     else
       tmp = ___decode_image_channel(l->mask_width,l->mask_height,c->data);
+
     switch( c->id )
     {
      default:
@@ -153,20 +157,19 @@ Layer decode_layer(mapping layer, mapping i)
          l->alpha *= tmp;
        break;
      case -2: /* user mask */
-       if(!(l->mask_flags & 2 )) /* layer mask disabled */
+       if(!(l->mask_flags & 2)) /* layer mask disabled */
        {
-         array pad_color = ({ 0, 0, 0 });
-         if( (l->mask_flags & 4 ) ) {
-	   /* invert mask */
+	 array pad_color = ({ l->mask_default_color }) * 3;
+	 int x0 = l->xoffset - l->mask_xoffset;
+	 int y0 = l->yoffset - l->mask_yoffset;
+	 tmp = tmp->copy(x0, y0,
+			 x0 + l->image->xsize() - 1,
+			 y0 + l->image->ysize() - 1,
+			 @pad_color);
+	 
+         if(l->mask_flags & 4) /* invert mask */
            tmp = tmp->invert();
-	   pad_color = ({ 255, 255, 255 });
-	 }
-
-         tmp = tmp->copy( -l->mask_xoffset, -l->mask_yoffset, 
-                          l->image->xsize()-1, l->image->ysize()-1,
-                          @pad_color )
-           ->copy(0,0,l->image->xsize()-1,l->image->ysize()-1,
-                  @pad_color);
+	 
          if(!l->alpha)
            l->alpha = tmp;
          else
