@@ -152,7 +152,7 @@ mapping get_submenu_mapping(  )
 
 array(object) MenuFactory( MenuDef ... definition )
 {
-  GTK.Menu_bar bar = GTK.Menu_bar();
+  GTK.MenuBar bar = GTK.MenuBar();
   GTK.AccelGroup table= GTK.AccelGroup();
   menubar_objects = ([]);
   submenues = (["":bar]);
@@ -167,7 +167,7 @@ array(object) MenuFactory( MenuDef ... definition )
       path += segment+"/";
       if(!submenues[path])
       {
-	GTK.Menu_item i = GTK.Menu_item( segment );
+	GTK.MenuItem i = GTK.MenuItem( segment );
 	submenues[path] = GTK.Menu();
 	submenues[path]->set_accel_group( table );
 //         d->menu_obj = submenues[path];
@@ -192,7 +192,7 @@ array(object) MenuFactory( MenuDef ... definition )
        break;
      case "separator":
        i = GTK.MenuItem();
-       i->set_state( GTK.STATE_INSENSITIVE );
+       i->set_state( GTK.StateInsensitive );
        break;
      case "tearoff":
        i = GTK.TearoffMenuItem();
