@@ -68,8 +68,8 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   INT32 linklen[NELEM(s->set)];
   INT32 maxlinklength;
 
-  NEEDLE=needle;
-  NEEDLELEN=needlelen;
+  s->needle=needle;
+  s->needlelen=needlelen;
 
 #ifdef PIKE_DEBUG
   if(needlelen < 7)
@@ -161,8 +161,8 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 {
   ptrdiff_t e;
 
-  NEEDLE=needle;
-  NEEDLELEN=needlelen;
+  s->needle=needle;
+  s->needlelen=needlelen;
 
 #ifdef PIKE_DEBUG
   if(needlelen < 2)
