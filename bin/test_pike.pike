@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.82 2003/03/29 17:58:55 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.83 2003/05/17 13:33:15 grubba Exp $ */
 
 import Stdio;
 
@@ -257,6 +257,7 @@ int main(int argc, array(string) argv)
   array(string) args=backtrace()[0][3];
   array(string) testsuites=({});
   args=args[..sizeof(args)-1-argc];
+  add_constant("RUNPIKE_ARRAY", args);
   add_constant("RUNPIKE", map(args, Process.sh_quote)*" ");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -888,7 +889,7 @@ int main(int argc, array(string) argv)
 
   add_constant("regression");
   add_constant("_verbose");
-  add_constant("_signal_watchdog");
+  add_constant("__signal_watchdog");
   add_constant("RUNPIKE");
 
 #ifdef WATCHDOG_SIGNAL
