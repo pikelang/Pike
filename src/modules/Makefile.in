@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.19 1998/04/13 14:13:53 grubba Exp $
+# $Id: Makefile.in,v 1.20 1998/04/26 11:45:58 hubbe Exp $
 
 @SET_MAKE@
 
@@ -55,7 +55,7 @@ verbose_verify:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify ) || exit $$? ; done
 
 testsuites:
-	for a in $(MODULES) ; do $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; done
+	for a in $(MODULES) ; do echo $$a ; $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; done
 
 extra_tests:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests ) || exit $$? ; done
