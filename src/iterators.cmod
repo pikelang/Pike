@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.32 2003/04/18 16:17:12 mast Exp $
+|| $Id: iterators.cmod,v 1.33 2003/05/30 23:19:26 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.32 2003/04/18 16:17:12 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.33 2003/05/30 23:19:26 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1517,6 +1517,8 @@ PIKEFUN object Iterator(object|array|mapping|multiset|string data)
 /* sp[-4] = index; sp[-2] = value */
 int foreach_iterate(struct object *o)
 {
+  int fun;
+
   if(!o->prog)
     Pike_error("foreach on destructed iterator.\n");
   if(o->prog->flags & PROGRAM_HAS_C_METHODS)
@@ -1686,26 +1688,34 @@ int foreach_iterate(struct object *o)
   }
 
   /* Generic iteration */
-  apply_lfun(o,LFUN_NOT,0);
+  fun = FIND_LFUN (o->prog, LFUN_NOT);
+  if (fun < 0) Pike_error ("Iterator object lacks `!.\n");
+  apply_low(o, fun, 0);
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
     pop_stack();
 
     if(Pike_sp[-4].type != T_INT)
     {
-      apply(o,"index",0);
+      fun = find_identifier ("index", o->prog);
+      if (fun < 0) Pike_error ("Iterator object lacks index().\n");
+      apply_low(o, fun, 0);
       assign_lvalue(Pike_sp-5,Pike_sp-1);
       pop_stack();
     }
 
     if(Pike_sp[-2].type != T_INT)
     {
-      apply(o,"value",0);
+      fun = find_identifier ("value", o->prog);
+      if (fun < 0) Pike_error ("Iterator object lacks value().\n");
+      apply_low(o, fun, 0);
       assign_lvalue(Pike_sp-3,Pike_sp-1);
       pop_stack();
     }
 
     push_int(1);
+    fun = FIND_LFUN (o->prog, LFUN_ADD_EQ);
+    if (fun < 0) Pike_error ("Iterator object lacks `+=.\n");
     apply_lfun(o,LFUN_ADD_EQ,1);
     pop_stack();
     return 1;
