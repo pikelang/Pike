@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.17 2001/09/09 00:30:44 nilsson Exp $
+# $Id: Makefile.in,v 1.18 2001/09/17 23:21:27 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -24,27 +24,27 @@ extract: xml recurse
 
 .c.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pike.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pike.in.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pmod.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pmod.in.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 xml:
@@ -59,7 +59,7 @@ xml_dummy:
 
 join: recurse_join
 	@if ls */*.xml >/dev/null 2>&1; then \
-	  $(MAKE) PIKE="$(PIKE)" XMLFILES="`echo */*.xml`" sub_manual.xml || \
+	  $(MAKE) PIKE="$(PIKE) -d" XMLFILES="`echo */*.xml`" sub_manual.xml || \
 	    exit 1; \
 	fi
 
@@ -70,22 +70,6 @@ recurse_join:
 	@for d in */.; do \
 	  if test -d "$$d"; then \
 	    (cd $$d && make PIKE="$(PIKE)" join) || exit 1; \
-	  fi; \
-	done
-
-images: recurse_images
-	@if ls */*.xml >/dev/null 2>&1; then \
-	  $(MAKE) PIKE="$(PIKE)" XMLFILES="`echo */*.xml`" low_images || \
-	    exit 1; \
-	fi
-
-low_images: $(XMLFILES) $(ROOT)/bin/images.pike
-	@$(PIKE) $(ROOT)/bin/images.pike $(ROOT)/manual/images $(XMLFILES)
-
-recurse_images:
-	@for d in */.; do \
-	  if test -d "$$d"; then \
-	    (cd $$d && make PIKE="$(PIKE)" images) || exit 1; \
 	  fi; \
 	done
 
