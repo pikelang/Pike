@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.211 2000/10/10 21:10:27 mast Exp $
+# $Id: Makefile.in,v 1.212 2000/10/10 23:39:32 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -634,31 +634,28 @@ config.status: $(SRCDIR)/configure
 	./config.status --recheck
 
 modules/static_module_makefile: $(SRCDIR)/modules/static_module_makefile.in config.status
-	-@(echo foo > cfl.static_module_makefile; \
-	  while test "`echo cfl.*`" != cfl.static_module_makefile; do \
-	    echo "Waiting to run config.status serially:" cfl.*; \
-	    sleep 1; \
-	  done;)
+	-@(while :; do \
+	  echo foo > cfl.static_module_makefile; test "`echo cfl.*`" = cfl.static_module_makefile && break; \
+	  rm cfl.static_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	done;)
 	CONFIG_FILES=modules/static_module_makefile CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.static_module_makefile; exit $$EXITCODE)
 	-@rm cfl.static_module_makefile
 
 modules/dynamic_module_makefile: $(SRCDIR)/@dmmsrc@ config.status
-	-@(echo foo > cfl.dynamic_module_makefile; \
-	  while test "`echo cfl.*`" != cfl.dynamic_module_makefile; do \
-	    echo "Waiting to run config.status serially:" cfl.*; \
-	    sleep 1; \
-	  done;)
+	-@(while :; do \
+	  echo foo > cfl.dynamic_module_makefile; test "`echo cfl.*`" = cfl.dynamic_module_makefile && break; \
+	  rm cfl.dynamic_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	done;)
 	CONFIG_FILES=modules/dynamic_module_makefile:@dmmsrc@ CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.dynamic_module_makefile; exit $$EXITCODE)
 	-@rm cfl.dynamic_module_makefile
 
 Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
-	-@(echo foo > cfl.$@; \
-	  while test "`echo cfl.*`" != cfl.$@; do \
-	    echo "Waiting to run config.status serially:" cfl.*; \
-	    sleep 1; \
-	  done;)
+	-@(while :; do \
+	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	done;)
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
 	-@rm cfl.$@
@@ -667,11 +664,10 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	@exit 1
 
 precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
-	-@(echo foo > cfl.$@; \
-	  while test "`echo cfl.*`" != cfl.$@; do \
-	    echo "Waiting to run config.status serially:" cfl.*; \
-	    sleep 1; \
-	  done;)
+	-@(while :; do \
+	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	done;)
 	CONFIG_FILES=precompile.sh CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
 	-@rm cfl.$@
@@ -691,11 +687,10 @@ machine.h: stamp-h
 	fi
 
 stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
-	-@(echo foo > cfl.$@; \
-	  while test "`echo cfl.*`" != cfl.$@; do \
-	    echo "Waiting to run config.status serially:" cfl.*; \
-	    sleep 1; \
-	  done;)
+	-@(while :; do \
+	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	done;)
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
 	-@rm cfl.$@
