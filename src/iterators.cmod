@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.36 2003/04/18 15:39:34 mast Exp $
+|| $Id: iterators.cmod,v 1.37 2003/04/21 14:43:42 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.36 2003/04/18 15:39:34 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.37 2003/04/21 14:43:42 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -76,9 +76,6 @@ DECLARATIONS
 
 PIKECLASS Iterator
 {
-  /* FIXME: precompile.pike should be fixed to handle prototypes so
-   * that we can declare these functions. */
-
   /*! @decl void create (void|mixed data)
    *!
    *! Initialize this iterator to access a data set in @[data]. The
@@ -92,12 +89,18 @@ PIKECLASS Iterator
    *! The iterator need not support being reused, so this function is
    *! typically static.
    */
+  PIKEFUN void create(void|mixed data)
+    prototype;
+  {}
 
   /*! @decl int(0..1) `!()
    *!
    *! Returns @expr{0@} (zero) when the iterator points to an item,
    *! @expr{1@} otherwise.
    */
+  PIKEFUN int(0..1) `!()
+    prototype;
+  {}
 
   /*! @decl Iterator `+ (int steps)
    *!
@@ -106,6 +109,9 @@ PIKECLASS Iterator
    *! If the iterator doesn't support backward movement it should
    *! throw an exception in that case.
    */
+  PIKEFUN Iterator `+(int steps)
+    prototype;
+  {}
 
   /*! @decl Iterator `+= (int steps)
    *!
@@ -114,6 +120,9 @@ PIKECLASS Iterator
    *! iterator doesn't support backward movement it should throw an
    *! exception in that case.
    */
+  PIKEFUN Iterator `+=(int steps)
+    prototype;
+  {}
 
   /*! @decl optional Iterator `- (int steps)
    *!
@@ -122,6 +131,10 @@ PIKECLASS Iterator
    *! specified number of steps. The amount may be negative to move
    *! forward.
    */
+  PIKEFUN int(0..1) `-(int steps)
+    flags ID_OPTIONAL;
+    prototype;
+  {}
 
   /*! @decl mixed index()
    *!
@@ -131,12 +144,18 @@ PIKECLASS Iterator
    *! If there's no obvious index set then the index is the current
    *! position in the data set, counting from @expr{0@}.
    */
+  PIKEFUN mixed index()
+    prototype;
+  {}
 
   /*! @decl mixed value()
    *!
    *! Returns the current value, or @[UNDEFINED] if the iterator
    *! doesn't point to any item.
    */
+  PIKEFUN mixed value()
+    prototype;
+  {}
 
   /*! @decl optional int _sizeof()
    *!
@@ -144,6 +163,10 @@ PIKECLASS Iterator
    *! this iterator. If the size of the data set is unlimited or
    *! unknown then this function shouldn't be defined.
    */
+  PIKEFUN int _sizeof()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
 
   /*! @decl optional void _random()
    *!
@@ -152,8 +175,12 @@ PIKECLASS Iterator
    *! should be rectangular within that set, and the pseudorandom
    *! sequence provided by @[random] should be used.
    */
+  PIKEFUN void _random()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
 
-  /*! @decl optional int first()
+  /*! @decl optional int(0..1) first()
    *!
    *! If this function is defined then it resets the iterator to point
    *! to the first item. Returns zero it there are no items at all in
@@ -165,6 +192,10 @@ PIKECLASS Iterator
    *!   original start position then this function should not be
    *!   implemented.
    */
+  PIKEFUN int(0..1) first()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
 
   /* The following is left undocumented since it seems to be
    * superfluous. /mast */
