@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.533 2003/11/14 00:11:44 mast Exp $
+|| $Id: program.c,v 1.534 2003/11/14 04:45:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.533 2003/11/14 00:11:44 mast Exp $");
+RCSID("$Id: program.c,v 1.534 2003/11/14 04:45:05 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5795,29 +5795,20 @@ struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
 {
   struct pike_string *s = NULL;
 
-  if ((thrown->type == T_ARRAY) && thrown->u.array->size &&
-      (thrown->u.array->item[0].type == T_STRING)) {
-    /* Old-style backtrace */
-    s = thrown->u.array->item[0].u.string;
-  } else if (thrown->type == T_OBJECT) {
-    struct generic_error_struct *ge;
-    if ((ge = (struct generic_error_struct *)
-	 get_storage(thrown->u.object, generic_error_program))) {
-      s = ge->desc;
-    }
-  }
+  push_svalue (thrown);
+  SAFE_APPLY_MASTER ("describe_error", 1);
 
-  if (s) {
-    extern void f_string_trim_all_whites(INT32 args);
-    ref_push_string(s);
+  if (sp[-1].type == T_STRING) {
     f_string_trim_all_whites(1);
     push_constant_text("\n");
     push_constant_text(" ");
     f_replace(3);
-    s = (--sp)->u.string;
+    return (--sp)->u.string;
   }
-
-  return s;
+  else {
+    pop_stack();
+    return NULL;
+  }
 }
 
 void handle_compile_exception (const char *yyerror_fmt, ...)
@@ -5839,8 +5830,10 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   if (SAFE_IS_ZERO(sp-1)) {
     /* FIXME: Doesn't handle wide string error messages. */
     struct pike_string *s = format_exception_for_error_msg (&thrown);
-    if (!s->size_shift) yyerror (s->str);
-    free_string (s);
+    if (s) {
+      if (!s->size_shift) yyerror (s->str);
+      free_string (s);
+    }
   }
 
   pop_stack();
