@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.274 2001/10/05 15:16:58 grubba Exp $
+# $Id: Makefile.in,v 1.275 2001/10/27 19:40:27 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -187,12 +187,12 @@ all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 
 documentation: just-tinstall
-	@if [ -f "$(SRCDIR)/../autodoc/Makefile" ]; then \
+	@if [ -f "$(SRCDIR)/../refdoc/Makefile" ]; then \
 	  PIKE="`pwd`/test-pike"; \
 	  export PIKE; \
-	  (cd $(SRCDIR)/../autodoc && $(MAKE) PIKE="$$PIKE") || exit 1; \
+	  (cd $(SRCDIR)/../refdoc && $(MAKE) PIKE="$$PIKE") || exit 1; \
 	else \
-	  echo "Autodoc directory not found."; \
+	  echo "Refdoc directory not found."; \
 	  exit 1; \
 	fi
 
