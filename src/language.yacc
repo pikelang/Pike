@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.345 2004/10/23 02:25:11 nilsson Exp $
+|| $Id: language.yacc,v 1.346 2004/10/26 17:27:31 grubba Exp $
 */
 
 %pure_parser
@@ -118,6 +118,7 @@
 #include <memory.h>
 #endif
 
+#include "port.h"
 #include "interpret.h"
 #include "array.h"
 #include "object.h"
@@ -4014,7 +4015,7 @@ void yyerror(char *str)
 static void yyerror_reserved(char *keyword)
 {
   char fmt[100];
-  snprintf(fmt, sizeof(fmt), "%s is a reserved word.", keyword);
+  SNPRINTF(fmt, sizeof(fmt), "%s is a reserved word.", keyword);
   yyerror(fmt);
 }
 
