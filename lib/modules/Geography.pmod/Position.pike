@@ -19,10 +19,14 @@
 float lat;
 
 //! Longitude (W--E) of the position, in degrees.
-//! Positive number is east, negativa number is west.
+//! Positive number is east, negative number is west.
 float long;
 
-//! @decl void create(float lat, float long)
+//! Altitud of the position, in meters. Positive numbers
+//! is up. Zero is the shell of the current ellipsoid.
+float alt;
+
+//! @decl void create(float lat, float long, void|float alt)
 //! @decl void create(string lat, string long)
 //! @decl void create(string both)
 //!
@@ -30,7 +34,7 @@ float long;
 //! it will perform a dwim scan on the strings. If they
 //! fails to be understood, there will be an exception.
 //!
-void create(int|float|string _lat,void|int|float|string _long)
+void create(int|float|string _lat,void|int|float|string _long, void|float _alt)
 {
    if (stringp(_lat))
    {
@@ -55,6 +59,7 @@ void create(int|float|string _lat,void|int|float|string _long)
    }
    lat=(float)_lat;
    long=(float)_long;
+   alt=(float)_alt;
    set_ellipsoid("WGS 84");
 }
 
@@ -106,14 +111,18 @@ string prettyprint(float what,int n,string directions)
 //!
 //! Returns the nicely formatted latitude or longitude.
 //!
-//! @pre{
-//!  n    format
-//!  -    17°42.19'N       42°22.2'W
-//!  1    17.703°N         42.37°W
-//!  2    17°42.18'N       42°22.2'W
-//!  3    17°42'10.4"N     42°22'12"W
-//! -1    17.703           -42.37
-//! @}
+//! @int
+//!   @value 0
+//!     "17°42.19'N" / "42°22.2'W"
+//!   @value 1
+//!     "17.703°N" / "42.37°W"
+//!   @value 2
+//!     "17°42.18'N" / "42°22.2'W"
+//!   @value 3
+//!     "17°42'10.4"N" / "42°22'12"W"
+//!   @value -1
+//!     "17.703" / "-42.37"
+//! @endint
 
 string latitude(void|int n)
 {
@@ -154,16 +163,6 @@ float eccentricity_squared() {
   return 2*f - pow(f,2);
 }
 
-/*
-     "Australian National" : ({ 6378160, 0.006694542 }),
-     "Bessel 1841" : ({ 6377397, 0.006674372 }),
-     "Bessel 1841 (Nambia)" : ({ 6377484, 0.006674372 }),
-     "Helmert 1906" : ({ 6378200, 0.006693422 }),
-     "Modified Airy" : ({ 6377340, 0.00667054 }),
-     "Modified Everest" : ({ 6377304, 0.006637847 }),
-     "Modified Fischer 1960" : ({ 6378155, 0.006693422 }),
-*/
-
 //! A mapping with reference ellipsoids, which can be fed to the
 //! UTM converter. The mapping maps the name of the ellipsoid to
 //! an array where the first element is a float describing the
@@ -171,24 +170,40 @@ float eccentricity_squared() {
 //! the polar radius.
 //!
 constant ellipsoids = 
-  ([ "Airy 1830" : ({ 6377563.396, 6356256.909237 }),
+  ([ "Airy 1830" : ({ 6377563.396, 6356256.91 }),
+     "ATS77" : ({ 6378135.0, 6356750.304922 }),
+     "Australian National" : ({ 6378160.0, 6356774.719 }),
      "Bessel 1841" : ({ 6377397.155, 6356078.962818 }),
+     "Bessel 1841 Namibia" : ({ 6377483.865, 6356165.382966 }),
      "Clarke 1866" : ({ 6378206.4, 6356583.799999 }),
      "Clarke 1880" : ({ 6378249.145, 6356514.869550 }),
-     "Everest 1830" : ({ 6377276.345, 6356075.413140 }),
-     "Fisher 1960" : ({ 6378166.0, 6356784.283607 }),
-     "Fisher 1968" : ({ 6378150.0, 6356768.337244 }),
+     "Everest" : ({ 6377298.556, 6356097.550301 }),
+     "Everest 1830" : ({ 6377276.345, 6356075.4133 }),
+     "Everest 1948" : ({ 6377304.063, 6356103.039 }),
+     "Everest 1956" : ({ 6377301.243, 6356100.228368 }),
+     "Everest 1969" : ({ 6377295.664, 6356094.667915 }),
+     "Everest Pakistan" : ({ 6377309.613, 6356108.570542 }),
+     "Fisher 1960" : ({ 6378166.0, 6356784.283666 }),
+     "Fisher 1968" : ({ 6378150.0, 6356768.337303 }),
+     "GEM 10C" : ({ 6378137.0, 6356752.0 }),
      "G R S 1967" : ({ 6378160.0, 6356774.516091 }),
      "G R S 1975" : ({ 6378140.0, 6356755.288158 }),
      "G R S 1980" : ({ 6378137.0, 6356752.314140 }),
-     "Hough 1956" : ({ 6378270.0, 6356794.343434 }),
-     "International" : ({ 6378388.0, 6356911.946128 }),
+     "Helmert 1906" : ({ 6378200.0, 6356818.169628 }),
+     "Hough 1956" : ({ 6378270.0, 6356794.343479 }),
+     "Indonesian 1974" : ({ 6378160.0, 6356774.504086 }),
+     "International 1924" : ({ 6378388.0, 6356911.946130 }),
      "Krassovsky 1940" : ({ 6378245.0, 6356863.018773 }),
+     "Modified Airy" : ({ 6377340.189, 6356034.448 }),
+     "Modified Fisher 1960" : ({ 6378155.0, 6356773.3205 }),
+     "New International 1967" : ({ 6378157.5,  6356772.2 }),
+     "SGS 85" : ({ 6378136.0, 6356751.301569 }),
      "South American 1969" : ({ 6378160.0, 6356774.719195 }),
+     "Sphere" : ({ 6370997.0, 6370997.0 }),
      "WGS 60" : ({ 6378165.0, 6356783.286959 }),
-     "WGS 66" : ({ 6378145.0, 6356759.769489 }),
-     "WGS 72" : ({ 6378135.0, 6356750.520016 }),
-     "WGS 84" : ({ 6378137.0, 6356752.3142 }),
+     "WGS 66" : ({ 6378145.0, 6356759.769356 }),
+     "WGS 72" : ({ 6378135.0, 6356750.519915 }),
+     "WGS 84" : ({ 6378137.0, 6356752.314245 }),
   ]);
 
 private constant ellipsoid_sym =
@@ -210,12 +225,54 @@ private constant ellipsoid_sym =
 //! Sets the equatorial and polar radius to the provided values.
 //! A name can also be provided, in which case the radius will be looked
 //! up in the ellipsoid mapping. The function returns 1 upon success, 0 on
-//! failure. Warning: the longitude and lattitude are not converted to the
-//! new ellipsoid.
+//! failure.
+//!
+//! @string name
+//!   @value "Airy 1830"
+//!   @value "ATS77"
+//!   @value "Australian National"
+//!   @value "Bessel 1841"
+//!   @value "Bessel 1841 Namibia"
+//!   @value "Clarke 1866"
+//!   @value "Clarke 1880"
+//!   @value "Everest"
+//!   @value "Everest 1830"
+//!   @value "Everest 1848"
+//!   @value "Everest 1856"
+//!   @value "Everest 1869"
+//!   @value "Everest Pakistan"
+//!   @value "Fisher 1960"
+//!   @value "Fisher 1968"
+//!   @value "G R S 1967"
+//!   @value "G R S 1975"
+//!   @value "G R S 1980"
+//!   @value "Helmert 1906"
+//!   @value "Hough 1956"
+//!   @value "Indonesian 1974"
+//!   @value "Krassovsky 1940"
+//!   @value "Mercury"
+//!   @value "Modified Airy"
+//!   @value "Modified Fisher 1960"
+//!   @value "New International 1967"
+//!   @value "SGS 85"
+//!   @value "South American 1969"
+//!   @value "Sphere"
+//!   @value "WGS 60"
+//!   @value "WGS 66"
+//!   @value "WGS 72"
+//!   @value "WGS 84"
+//! @endstring
+//!
+//! @note
+//!  The longitude and lattitude are not converted to the new ellipsoid.
+//!
 int(0..1) set_ellipsoid(string|float er, float|void pr) {
   if(stringp(er)) {
     if(ellipsoid_sym[lower_case(er)])
       er = ellipsoid_sym[lower_case(er)];
+    if(!ellipsoids[er])
+      foreach(indices(ellipsoids), string ep)
+	if(lower_case(ep)==lower_case(er)) er=ep;
     if(ellipsoids[er])
       [er,pr] = ellipsoids[er];
     else
@@ -227,7 +284,7 @@ int(0..1) set_ellipsoid(string|float er, float|void pr) {
 }
 
 // The following code for UTM conversion is base on code by
-// Chuck Gants and equations from USGS Bulletin 1532.
+// Chuck Gantz and equations from USGS Bulletin 1532.
 
 //! Returns the UTM zone number for the current longitude, with
 //! correction for the Svalbard deviations.
@@ -303,7 +360,7 @@ array(float) UTM_offset() {
 //! Returns the current UTM coordinates position.
 //! An example output is
 //! "32T 442063.562 5247479.500"
-//! where the parts is zone number + zone designator,
+//! where the parts are zone number + zone designator,
 //! easting and northing.
 string UTM() {
   return sprintf("%d%s %f %f", UTM_zone_number(), UTM_zone_designator(),
@@ -349,20 +406,84 @@ void set_from_UTM(int zone_number, string zone_designator, float UTME, float UTM
   long = LongOrigin + long * 180/Math.pi;
 }
 
+//! Gives the full GEOREF position for the current position, e.g. "LDJA0511".
 string GEOREF() {
-  int x_square = (int)((90+lat)/15);
-  int y_square = (int)((180+long)/15);
-  int x_sub = (int)(90+lat - x_square*15);
-  int y_sub = (int)(180+long - y_square*15);
+  int x_square = (int)((180+long)/15);
+  int y_square = (int)((90+lat)/15);
+  int x_sub = (int)(180+long - x_square*15);
+  int y_sub = (int)(90+lat - y_square*15);
 
-  string pos = ("ABCDEFGHJKLM"/1)[ y_square ] + 
-    ("ABCDEFGHJKLMNPQRSTUVWXZY"/1)[ x_square ] +
-    ("ABCDEFGHJKLMNPQ"/1)[ y_sub ] +
-    ("ABCDEFGHJKLMNPQ"/1)[ x_sub ];
+  string pos = ("ABCDEFGHJKLMNPQRSTUVWXZY"/1)[ x_square ] +
+    ("ABCDEFGHJKLM"/1)[ y_square ] +
+    ("ABCDEFGHJKLMNPQ"/1)[ x_sub ] +
+    ("ABCDEFGHJKLMNPQ"/1)[ y_sub ];
 
-  return pos + (int)floor(60*(long-floor(long))) + (int)floor(60*(lat-floor(lat)));
+  return sprintf("%s%02d%02d", pos,
+		 (int)floor(60*(long-floor(long))),
+		 (int)floor(60*(lat-floor(lat))));
 }
 
+// Ten by Ten Degree WGS-84 Geoid Heights from -180 to +170 Degrees of Longitude.
+// Defense Mapping Agency. 12 Jan 1987. GPS UE Relevant WGS-84 Data Base Package.
+constant height_values = ({
+  ({ 13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13 }), // 90 deg N
+  ({ 3,1,-2,-3,-3,-3,-1,3,1,5,9,11,19,27,31,34,33,34,33,34,28,23,17,13,9,4,4,1,-2,-2,0,2,3,2,1,1 }),
+  ({ 2,2,1,-1,-3,-7,-14,-24,-27,-25,-19,3,24,37,47,60,61,58,51,43,29,20,12,5,-2,-10,-14,-12,-10,-14,-12,-6,-2,3,6,4 }),
+  ({ 2,9,17,10,13,1,-14,-30,-39,-46,-42,-21,6,29,49,65,60,57,47,41,21,18,14,7,-3,-22,-29,-32,-32,-26,-15,-2,13,17,19,6 }),
+  ({ -8,8,8,1,-11,-19,-16,-18,-22,-35,-40,-26,-12,24,45,63,62,59,47,48,42,28,12,-10,-19,-33,-43,-42,-43,-29,-2,17,23,22,6,2 }),
+  ({ -12,-10,-13,-20,-31,-34,-21,-16,-26,-34,-33,-35,-26,2,33,59,52,51,52,48,35,40,33,-9,-28,-39,-48,-59,-50,-28,3,23,37,18,-1,-11 }),
+  ({ -7,-5,-8,-15,-28,-40,-42,-29,-22,-26,-32,-51,-40,-17,17,31,34,44,36,28,29,17,12,-20,-15,-40,-33,-34,-34,-28,7,29,43,20,4,-6 }),
+  ({ 5,10,7,-7,-23,-39,-47,-34,-9,-10,-20,-45,-48,-32,-9,17,25,31,31,26,15,6,1,-29,-44,-61,-67,-59,-36,-11,21,39,49,39,22,10 }),
+  ({ 13,12,11,2,-11,-28,-38,-29,-10,3,1,-11,-41,-42,-16,3,17,33,22,23,2,-3,-7,-36,-59,-90,-95,-63,-24,12,53,60,58,46,36,26 }),
+
+  ({ 22,16,17,13,1,-12,-23,-20,-14,-3,14,10,-15,-27,-18,3,12,20,18,12,-13,-9,-28,-49,-62,-89,-102,-63,-9,33,58,73,74,63,50,32 }),
+
+  ({ 36,22,11,6,-1,-8,-10,-8,-11,-9,1,32,4,-18,-13,-9,4,14,12,13,-2,-14,-25,-32,-38,-60,-75,-63,-26,0,35,52,68,76,64,52 }),
+  ({ 51,27,10,0,-9,-11,-5,-2,-3,-1,9,35,20,-5,-6,-5,0,13,17,23,21,8,-9,-10,-11,-20,-40,-47,-45,-25,5,23,45,58,57,63 }),
+  ({ 46,22,5,-2,-8,-13,-10,-7,-4,1,9,32,16,4,-8,4,12,15,22,27,34,29,14,15,15,7,-9,-25,-37,-39,-23,-14,15,33,34,45 }),
+  ({ 21,6,1,-7,-12,-12,-12,-10,-7,-1,8,23,15,-2,-6,6,21,24,18,26,31,33,39,41,30,24,13,-2,-20,-32,-33,-27,-14,-2,5,20 }),
+  ({ -15,-18,-18,-16,-17,-15,-10,-10,-8,-2,6,14,13,3,3,10,20,27,25,26,34,39,45,45,38,39,28,13,-1,-15,-22,-22,-18,-15,-14,-10 }),
+  ({ -45,-43,-37,-32,-30,-26,-23,-22,-16,-10,-2,10,20,20,21,24,22,17,16,19,25,30,35,35,33,30,27,10,-2,-14,-23,-30,-33,-29,-35,-43 }),
+  ({ -61,-60,-61,-55,-49,-44,-38,-31,-25,-16,-6,1,4,5,4,2,6,12,16,16,17,21,20,26,26,22,16,10,-1,-16,-29,-36,-46,-55,-54,-59 }),
+  ({ -53,-54,-55,-52,-48,-42,-38,-38,-29,-26,-26,-24,-23,-21,-19,-16,-12,-8,-4,-1,1,4,4,6,5,4,2,-6,-15,-24,-33,-40,-48,-50,-53,-52 }),
+  ({ -30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30,-30 }) // 90 deg S
+});
+
+//! Returns a very crude approximation of where the ground level is
+//! at the current position, compared against the ellipsoid shell.
+//! WGS-84 is assumed, but the approximation is so bad that it doesn't
+//! matter which of the standard ellipsoids is used.
+float approx_height() {
+
+  int this_lat = (int)(lat/10)+9;
+  int next_lat = this_lat+1%18;
+  int this_long = (int)(long/10)+18;
+  int next_long = this_long+1%36;
+
+  float lat_dev = lat-(int)lat;
+  float long_dev = long-(int)long;
+
+  return height_values[this_lat][this_long] * lat_dev * long_dev +
+    height_values[this_lat][next_long] * lat_dev * (1-long_dev) +
+    height_values[next_lat][this_long] * (1-lat_dev) * long_dev +
+    height_values[next_lat][next_long] * (1-lat_dev) * (1-long_dev);
+}
+
+//! Returns the current position as Earth Centered Earth Fixed
+//! Cartesian Coordinates.
+//! @returns
+//!  ({ X, Y, Z })
+array(float) ECEF() {
+
+  float N = equatorial_radius /
+    sqrt(1-eccentricity_squared()*sin(lat)*sin(lat));
+
+  float X = (N + alt)*cos(lat)*cos(long);
+  float Y = (N + alt)*cos(lat)*sin(long);
+  float Z = (N*(1-eccentricity_squared())+alt) * sin(lat);
+
+  return ({ X, Y, Z });
+}
 
 // --- "Technical" methods --------------
 
