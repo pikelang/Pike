@@ -60,6 +60,10 @@
 # endif
 #endif
 
+#ifdef HAVE_PROCESS_H
+#include <process.h>
+#endif
+
 #include "dmalloc.h"
 
 struct array *encode_stat(struct stat *s)
@@ -659,7 +663,13 @@ void f_exece(INT32 args)
   my_set_close_on_exec(2,0);
 
   do_set_close_on_exec();
-  execve(argv[0],argv,env);
+
+#ifdef __NT__
+#define DOCAST(X) ((const char * const *)(X))
+#else
+#define DOCAST(X) (X)
+#endif
+  execve(argv[0],DOCAST(argv),DOCAST(env));
 
   free((char *)argv);
   if(env != environ) free((char *)env);
