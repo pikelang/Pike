@@ -1,3 +1,5 @@
+/* $Id: blit.c,v 1.5 1996/11/14 12:34:57 law Exp $ */
+/* $Id: blit.c,v 1.5 1996/11/14 12:34:57 law Exp $ */
 #include "global.h"
 
 #include <math.h>

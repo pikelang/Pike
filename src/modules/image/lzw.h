@@ -1,3 +1,5 @@
+/* $Id: lzw.h,v 1.3 1996/11/14 12:35:01 law Exp $ */
+
 #define GIF_LZW
 
 #ifdef GIF_LZW

@@ -1,3 +1,5 @@
+/* $Id: quant.c,v 1.12 1996/11/14 12:35:04 law Exp $ */
+
 /*
 
 quant, used by image when making gif's (mainly)

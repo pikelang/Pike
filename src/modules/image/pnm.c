@@ -1,3 +1,5 @@
+/* $Id: pnm.c,v 1.2 1996/11/14 12:35:03 law Exp $ */
+
 #include "global.h"
 
 #include <math.h>

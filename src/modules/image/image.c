@@ -1,3 +1,5 @@
+/* $Id: image.c,v 1.25 1996/11/14 12:34:58 law Exp $ */
+
 #include "global.h"
 
 #include <math.h>
@@ -5,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.24 1996/11/14 01:36:35 hubbe Exp $");
+RCSID("$Id: image.c,v 1.25 1996/11/14 12:34:58 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"

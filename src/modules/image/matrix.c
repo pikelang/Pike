@@ -1,3 +1,5 @@
+/* $Id: matrix.c,v 1.3 1996/11/14 12:35:02 law Exp $ */
+
 #include "global.h"
 
 #include <math.h>

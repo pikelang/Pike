@@ -34,7 +34,17 @@ testfont binary
 /src/modules/files/file.c foreign_ident
 /src/modules/gdbmmod/gdbmmod.c foreign_ident
 /src/modules/gmpmod/mpz_glue.c foreign_ident
+/src/modules/image/blit.c foreign_ident
+/src/modules/image/font.c foreign_ident
 /src/modules/image/image.c foreign_ident
+/src/modules/image/image.h foreign_ident
+/src/modules/image/lzw.c foreign_ident
+/src/modules/image/lzw.h foreign_ident
+/src/modules/image/matrix.c foreign_ident
+/src/modules/image/pattern.c foreign_ident
+/src/modules/image/pnm.c foreign_ident
+/src/modules/image/quant.c foreign_ident
+/src/modules/image/togif.c foreign_ident
 /src/modules/pipe/pipe.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
 /src/object.c foreign_ident

@@ -1,3 +1,4 @@
+/* $Id: image.h,v 1.9 1996/11/14 12:34:59 law Exp $ */
 
 #define MAX_NUMCOL 32768
 #define QUANT_MAP_BITS 4

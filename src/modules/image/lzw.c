@@ -1,3 +1,5 @@
+/* $Id: lzw.c,v 1.7 1996/11/14 12:35:00 law Exp $ */
+
 /*
 
 lzw, used by togif

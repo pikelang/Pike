@@ -1,3 +1,5 @@
+/* $Id: font.c,v 1.6 1996/11/14 12:34:57 law Exp $ */
+
 #include "global.h"
 
 #include <sys/types.h>
