@@ -62,7 +62,15 @@ static program low_findprog(string pname, string ext)
     {
     case "":
     case ".pike":
-      ret=compile_file(fname);
+      if ( mixed e=catch { ret=compile_file(fname); } )
+      {
+	if(arrayp(e) &&
+	   sizeof(e)==2 &&
+	   arrayp(e[1]) &&
+	   sizeof(e[1]) == sizeof(backtrace()))
+	  e[1]=({});
+	throw(e);
+      }
       break;
     case ".so":
       ret=load_module(fname);
