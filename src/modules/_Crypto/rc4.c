@@ -16,7 +16,7 @@
 
 #include "rc4.h"
 
-RCSID("$Id: rc4.c,v 1.4 1997/03/14 22:17:11 nisse Exp $");
+RCSID("$Id: rc4.c,v 1.5 1997/04/18 20:07:17 nisse Exp $");
 
 /* Module specific includes */
 #include "precompiled_crypto.h"
@@ -62,6 +62,8 @@ static void f_set_key(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to rc4->set_key()\n");
   }
+  if (!sp[-1].u.string->len)
+    error("Empty key to rc4_set_key()\n");
   rc4_set_key(THIS, (unsigned INT8 *) sp[-1].u.string->str, sp[-1].u.string->len);
 
   pop_n_elems(args);
