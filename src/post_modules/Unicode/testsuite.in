@@ -1,1 +1,5 @@
-test_false(Process.system(RUNPIKE+" \"SRCDIR/test.pike\" \"SRCDIR\""))
+test_tests(
+  array(int) a() {
+    return (array(int))(Process.popen(RUNPIKE+" \"SRCDIR/test.pike\" \"SRCDIR\"")/" ");
+  }
+  )

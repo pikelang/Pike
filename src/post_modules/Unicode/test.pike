@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-// $Id: test.pike,v 1.4 2002/04/23 08:58:26 grubba Exp $
+// $Id: test.pike,v 1.5 2002/05/09 13:31:09 per Exp $
 
 #define c1 c[0]
 #define c2 c[1]
@@ -12,11 +12,11 @@ void main(int argc, array argv)
 {
   int tests, fail, part, opl;
 
-  write("Performing Unicode normalization tests\n");
-  write("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
+  werror("Performing Unicode normalization tests\n");
+  werror("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
   if( argc<2 || has_value( argv, "--help" ) )
   {
-    write("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
+    werror("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
 	  argv[0]);
     exit(0);
   }
@@ -28,10 +28,10 @@ void main(int argc, array argv)
 
     if( l[0] == '@' )
     {
-      if( opl ) write("Done. "+(tests-opl+1)+" tests.\n" );
-      write("\n");
+      if( opl ) werror("Done. "+(tests-opl+1)+" tests.\n" );
+      werror("\n");
       opl = tests+1;
-      write( replace( l[1..], " #", ":") +"\n" );
+      werror( replace( l[1..], " #", ":") +"\n" );
       part++;
       continue;
     }
@@ -57,8 +57,8 @@ void main(int argc, array argv)
       foreach( t, string tt )
 	if( Unicode.normalize( tt, method ) != ok )
 	{
-	  write("\n");
-	  write("Test %d/%s failed:\n"
+	  werror("\n");
+	  werror("Test %d/%s failed:\n"
 		"expected: %s\n"
 		"got:      %s\n"
 		"input:    %s\n",tests/6,method,
@@ -79,11 +79,6 @@ void main(int argc, array argv)
     test( c5, "NFKD", c1, c2, c3, c4, c5 );
     tests += 6;
   }
-  write( "Done. "+(tests-opl+1)+" tests.\n" );
-  if( fail )
-  {
-    write( "Summary: %d/%d tests failed\n", fail, tests );
-    exit( 1 );
-  }
-  exit( 0 );
+  werror( "Done. "+(tests-opl+1)+" tests.\n" );
+  write( tests+" "+fail );
 }
