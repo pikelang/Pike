@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.5 2003/10/24 19:13:18 mast Exp $
+//  $Id: Cipher.pmod,v 1.6 2003/11/16 15:57:53 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -7,21 +7,27 @@
 
 import .Constants;
 
-//! @ignore
+//! Cipher algorithm interface.
 class CipherAlgorithm {
   this_program set_encrypt_key(string);
   this_program set_decrypt_key(string);
+  //! Set the key used for encryption/decryption, and
+  //! enter encryption mode.
+
   int(0..) query_block_size();
+  //! Return the block size for this crypto.
+
   optional string crypt(string);
   optional string unpad(string);
   optional string pad();
 }
 
+//! Message Authentication Code interface.
 class MACAlgorithm {
   string hash(object, Gmp.mpz);
 }
-//! @endignore
 
+//! Cipher specification.
 class CipherSpec {
   program(CipherAlgorithm) bulk_cipher_algorithm;
   int cipher_type;
@@ -43,7 +49,7 @@ class mac_none
 }
 #endif
 
-//!
+//! MAC using SHA.
 class MACsha
 {
   static constant pad_1 =  "6666666666666666666666666666666666666666";
@@ -98,7 +104,7 @@ class MACsha
   }
 }
 
-//!
+//! MAC using MD5.
 class MACmd5 {
   inherit MACsha;
 
@@ -259,10 +265,11 @@ ADT.struct anon_sign(object context, string cookie, ADT.struct struct)
   return struct;
 }
 
-//!
+//! Diffie-Hellman parameters.
 class DHParameters
 {
   Gmp.mpz p, g, order;
+  //!
 
   /* Default prime and generator, taken from the ssh2 spec:
    *
