@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.34 1999/12/21 20:40:39 grubba Exp $
+ * $Id: pike_types.h,v 1.35 1999/12/22 00:13:37 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -173,6 +173,7 @@ struct pike_string *check_call(struct pike_string *args,
 INT32 get_max_args(struct pike_string *type);
 struct pike_string *zzap_function_return(char *a, INT32 id);
 struct pike_string *get_type_of_svalue(struct svalue *s);
+struct pike_string *object_type_to_program_type(struct pike_string *obj_t);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);
 int type_may_overload(char *type, int lfun);
