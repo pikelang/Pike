@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.7 2000/12/27 09:51:29 mirar Exp $
+ * $Id: acconfig.h,v 1.8 2003/05/20 15:12:31 mast Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -44,5 +44,8 @@
 
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
+
+/* Define if syslog() might have races which makes it unsafe to run unlocked. */
+#undef MIGHT_HAVE_SYSLOG_RACES
 
 #endif /* SYSTEM_MACHINE_H */

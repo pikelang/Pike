@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.46 2003/03/04 12:42:38 grubba Exp $
+# $Id: configure.in,v 1.47 2003/05/20 15:12:31 mast Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -294,6 +294,21 @@ else
 fi
 fi
 
+AC_MSG_CHECKING(for GNU libc)
+AC_CACHE_VAL(pike_cv_glibc, [
+  AC_EGREP_CPP(no_glibc, [
+#include <features.h>
+#ifndef __GLIBC__
+no_glibc
+#endif
+  ], pike_cv_glibc=no, pike_cv_glibc=yes)
+])
+if test "$pike_cv_glibc" = yes; then
+  AC_MSG_RESULT(yes - disabling unlocked syslog calls)
+  AC_DEFINE(MIGHT_HAVE_SYSLOG_RACES)
+else
+  AC_MSG_RESULT(no)
+fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
