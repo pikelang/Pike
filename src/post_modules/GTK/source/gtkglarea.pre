@@ -9,7 +9,40 @@ add_global {
 #include <gtkgl/gtkglarea.h>
 %}
 
-void create( array(int) gloptions );
+void create( array(int) gloptions )
+{
+  int i;
+  struct array *_arg_list;
+  gint *arg_list;
+
+  pgtk_verify_setup();
+  if( (args < 1) ||
+      Pike_sp[0-args].type != PIKE_T_ARRAY )
+    Pike_error("Bad argument 0, expected array\n");
+
+  _arg_list = Pike_sp[0-args].u.array;
+  arg_list = g_malloc0( sizeof( arg_list[0] ) * (_arg_list->size+1));
+  for( i = 0; i < _arg_list->size; i++ )
+  {
+    if( !PGTK_ISINT(&_arg_list->item[i]) )
+    {
+      free( arg_list );
+      Pike_error("Wrong type array argument (index %d).\n", i );
+    }
+    arg_list[ i ] = (gint)PGTK_GETINT(&_arg_list->item[i]);
+  }
+  THIS->obj =  (void *)  gtk_gl_area_new( arg_list );
+  if( !THIS->obj )
+  {
+    g_free( arg_list );
+    Pike_error("Failed to initialize GLArea\n");
+  }
+  my_pop_n_elems( args );
+  push_int( 0 );
+  g_free( arg_list );
+  pgtk__init_object( Pike_fp->current_object );
+}
+
 void make_current();
 
 void swap_buffers()
