@@ -9,11 +9,17 @@ int debug_level;
 
 void send_line(string s)
 {
+  if (debug_level) {
+    werror(sprintf("IMAP.server::send_line(%O)\n", s));
+  }
   send(s + "\r\n");
 }
 
-void send_lines(string ...s)
+void send_lines(string ... s)
 {
+  if (debug_level) {
+    werror(sprintf("IMAP.server::send_lines(%O)\n", s));
+  }
   send_line(s * "\r\n");
 }
 
