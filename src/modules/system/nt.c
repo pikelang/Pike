@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.17 2000/01/10 00:43:12 hubbe Exp $
+ * $Id: nt.c,v 1.18 2000/06/29 00:13:01 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -38,6 +38,61 @@ static void f_cp(INT32 args)
   push_int(ret);
 }
 
+static void push_tchar(TCHAR *buf, DWORD len)
+{
+  push_string(make_shared_binary_pcharp(
+    MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
+}
+
+static void push_regvalue(DWORD type, char* buffer, DWORD len)
+{
+  switch(type)
+  {
+    case REG_RESOURCE_LIST:
+    case REG_NONE:
+    case REG_LINK:
+    case REG_BINARY:
+      push_string(make_shared_binary_string(buffer,len));
+      break;
+      
+    case REG_SZ:
+      push_string(make_shared_binary_string(buffer,len-1));
+      break;
+      
+    case REG_EXPAND_SZ:
+      type=ExpandEnvironmentStrings((LPCTSTR)buffer,
+				    buffer+len,
+				    sizeof(buffer)-len-1);
+      if(type>sizeof(buffer)-len-1 || !type)
+	error("RegGetValue: Failed to expand data.\n");
+      push_string(make_shared_string(buffer+len));
+      break;
+      
+    case REG_MULTI_SZ:
+      push_string(make_shared_binary_string(buffer,len-1));
+      push_string(make_shared_binary_string("\000",1));
+      f_divide(2);
+      break;
+      
+    case REG_DWORD_LITTLE_ENDIAN:
+      push_int(EXTRACT_UCHAR(buffer)+
+	       (EXTRACT_UCHAR(buffer+1)<<1)+
+	       (EXTRACT_UCHAR(buffer+2)<<2)+
+	       (EXTRACT_UCHAR(buffer+3)<<3));
+      break;
+      
+    case REG_DWORD_BIG_ENDIAN:
+      push_int(EXTRACT_UCHAR(buffer+3)+
+	       (EXTRACT_UCHAR(buffer+2)<<1)+
+	       (EXTRACT_UCHAR(buffer+1)<<2)+
+	       (EXTRACT_UCHAR(buffer)<<3));
+      break;
+      
+    default:
+      error("RegGetValue: cannot handle this data type.\n");
+  }
+}
+
 void f_RegGetValue(INT32 args)
 {
   long ret;
@@ -58,54 +113,106 @@ void f_RegGetValue(INT32 args)
   if(ret==ERROR_SUCCESS)
   {
     pop_n_elems(args);
-    switch(type)
-    {
-      case REG_RESOURCE_LIST:
-      case REG_NONE:
-      case REG_LINK:
-      case REG_BINARY:
-	push_string(make_shared_binary_string(buffer,len));
-	break;
-
-      case REG_SZ:
-	push_string(make_shared_binary_string(buffer,len-1));
-	break;
-
-      case REG_EXPAND_SZ:
-	type=ExpandEnvironmentStrings((LPCTSTR)buffer,
-				      buffer+len,
-				      sizeof(buffer)-len-1);
-	if(type>sizeof(buffer)-len-1 || !type)
-	  error("RegGetValue: Failed to expand data.\n");
-	push_string(make_shared_string(buffer+len));
-	break;
-
-      case REG_MULTI_SZ:
-	push_string(make_shared_binary_string(buffer,len-1));
-	push_string(make_shared_binary_string("\000",1));
-	f_divide(2);
-	break;
-
-      case REG_DWORD_LITTLE_ENDIAN:
-	push_int(EXTRACT_UCHAR(buffer)+
-	  (EXTRACT_UCHAR(buffer+1)<<1)+
-	  (EXTRACT_UCHAR(buffer+2)<<2)+
-	  (EXTRACT_UCHAR(buffer+3)<<3));
-	break;
-
-      case REG_DWORD_BIG_ENDIAN:
-	push_int(EXTRACT_UCHAR(buffer+3)+
-	  (EXTRACT_UCHAR(buffer+2)<<1)+
-	  (EXTRACT_UCHAR(buffer+1)<<2)+
-	  (EXTRACT_UCHAR(buffer)<<3));
-	break;
-
-      default:
-	error("RegGetValue: cannot handle this data type.\n");
-    }
+    push_regvalue(type, buffer, len);
   }else{
     error("RegQueryValueEx failed with error %d\n",ret);
   }
+}
+
+static void do_regclosekey(HKEY key)
+{
+  RegCloseKey(key);
+}
+
+void f_RegGetKeyNames(INT32 args)
+{
+  INT32 hkey;
+  char *key;
+  int i,ret;
+  HKEY new_key;
+  ONERROR tmp;
+  get_all_args("RegGetKeyNames",args,"%d%s",&hkey,&key);
+  ret=RegOpenKeyEx((HKEY)hkey, (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  if(ret != ERROR_SUCCESS)
+    error("RegOpenKeyEx failed with error %d\n",ret);
+
+  SET_ONERROR(tmp, do_regclosekey, new_key);
+
+  pop_n_elems(args);
+
+  for(i=0;;i++)
+  {
+    TCHAR buf[1024];
+    DWORD len=sizeof(buf)-1;
+    FILETIME tmp2;
+    THREADS_ALLOW();
+    ret=RegEnumKeyEx(new_key, i, buf, &len, 0,0,0, &tmp2);
+    THREADS_DISALLOW();
+    switch(ret)
+    {
+      case ERROR_SUCCESS:
+	check_stack(1);
+	push_tchar(buf,len);
+	continue;
+	
+      case ERROR_NO_MORE_ITEMS:
+	break;
+	
+      default:
+	error("RegEnumKeyEx failed with error %d\n",ret);
+    }
+    break;
+  }
+  CALL_AND_UNSET_ONERROR(tmp);
+  f_aggregate(i);
+}
+
+void f_RegGetValues(INT32 args)
+{
+  INT32 hkey;
+  char *key;
+  int i,ret;
+  HKEY new_key;
+  ONERROR tmp;
+
+  get_all_args("RegGetValues",args,"%d%s",&hkey,&key);
+  ret=RegOpenKeyEx((HKEY)hkey, (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  if(ret != ERROR_SUCCESS)
+    error("RegOpenKeyEx failed with error %d\n",ret);
+
+  SET_ONERROR(tmp, do_regclosekey, new_key);
+  pop_n_elems(args);
+
+  for(i=0;;i++)
+  {
+    TCHAR buf[1024];
+    char buffer[8192];
+    DWORD len=sizeof(buf)-1;
+    DWORD buflen=sizeof(buffer)-1;
+    DWORD type;
+
+    THREADS_ALLOW();
+    ret=RegEnumValue(new_key, i, buf, &len, 0,&type, buffer, &buflen);
+    THREADS_DISALLOW();
+    switch(ret)
+    {
+      case ERROR_SUCCESS:
+	check_stack(2);
+	push_tchar(buf,len);
+	push_regvalue(type,buffer,buflen);
+	continue;
+	
+      case ERROR_NO_MORE_ITEMS:
+	break;
+	
+      default:
+	RegCloseKey(new_key);
+	error("RegEnumKeyEx failed with error %d\n",ret);
+    }
+    break;
+  }
+  CALL_AND_UNSET_ONERROR(tmp);
+  f_aggregate_mapping(i*2);
 }
 
 static struct program *token_program;
@@ -2129,6 +2236,10 @@ void init_nt_system_calls(void)
   
 /* function(int,string,string:string|int|string*) */
   ADD_EFUN("RegGetValue",f_RegGetValue,tFunc(tInt tStr tStr,tOr3(tStr,tInt,tArr(tStr))),OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("RegGetValues",f_RegGetValues,tFunc(tInt tStr,tMap(tStr,tOr3(tStr,tInt,tArr(tStr)))),OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("RegGetKeyNames",f_RegGetKeyNames,tFunc(tInt tStr,tArr(tStr)),OPT_EXTERNAL_DEPEND);
 
 
   /* LogonUser only exists on NT, link it dynamically */
