@@ -20,8 +20,14 @@ class Fifo {
       tmp=buffer[ptr];
       buffer[ptr++] = 0;	// Throw away any references.
       ptr%=sizeof(buffer);
-      if(num-- == read_tres)
+      if(read_tres < sizeof(buffer))
+      {
+	if(num-- == read_tres)
+	  w_cond::broadcast();
+      }else{
+	num--;
 	w_cond::signal();
+      }
       return tmp;
     }
 
@@ -41,7 +47,7 @@ class Fifo {
       ptr=num=0;
       buffer=allocate(sizeof(buffer)); // Throw away any references.
     }
-    w_cond::signal();
+    w_cond::broadcast();
     return ret;
   }
   
@@ -50,8 +56,14 @@ class Fifo {
       object key=lock::lock();
       while(num == sizeof(buffer)) w_cond::wait(key);
       buffer[(ptr + num) % sizeof(buffer)]=v;
-      if(num++ == write_tres)
+      if(write_tres)
+      {
+	if(num++ == write_tres)
+	  r_cond::broadcast();
+      }else{
+	num++;
 	r_cond::signal();
+      }
     }
 
   void create(int|void size)

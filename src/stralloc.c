@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.52 1998/12/20 09:24:26 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.53 1999/06/30 23:43:47 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1604,7 +1604,7 @@ void string_builder_strcat(struct string_builder *s, char *str)
 
 void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str)
 {
-  string_build_mkspace(s,str->len,s->s->size_shift);
+  string_build_mkspace(s,str->len,str->size_shift);
 
   pike_string_cpy(MKPCHARP_STR_OFF(s->s,s->s->len), str);
   s->known_shift=MAXIMUM(s->known_shift,str->size_shift);
