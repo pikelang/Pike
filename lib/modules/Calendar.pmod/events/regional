@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.17 2003/09/25 18:07:56 mirar Exp $
+### $Id: regional,v 1.18 2004/10/30 17:12:48 mirar Exp $
 
 ### =====================================================================
 ###
@@ -3401,7 +3401,7 @@ Region "se"
   Event "se/crown princess birthtday" f    "Crown Princess' Birthday" Fixed Jul 14
   Event "se/crown princess nameday"   f    "Crown Princess' Nameday"  Fixed Mar 12
   Event "se/nobel"                    f    "Nobel Day"                Fixed Dec 10
-  Event "se/all saints"               h    "Alla helgons dag"         WDRel Nov Sat 1st
+  Event "se/all saints"               h    "Alla helgons dag"         WDRel Oct 31 Sat +1
   Add   "c/candlemas"                 -  # "Candlemas"                Fixed Feb  2
   Add   "saints/valentine"            -  # "St. Valentine"            Fixed Feb 14
   Add   "c/fat tuesday"               -  # "Fat Tuesday"              Easter -47
