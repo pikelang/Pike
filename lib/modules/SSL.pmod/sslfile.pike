@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.31 2001/06/25 18:56:13 noy Exp $
+/* $Id: sslfile.pike,v 1.32 2001/08/15 16:30:17 grubba Exp $
  *
  */
 
@@ -111,14 +111,17 @@ void close()
   write_callback = 0;
   close_callback = 0;
 
-  if (sizeof (write_buffer) && !blocking) {
-     ssl_write_callback(socket->query_id());
-   }
-  if(sizeof(write_buffer) && blocking) {
-    write_blocking();
-  }
+  if (socket) {
+    if (sizeof (write_buffer) && !blocking) {
+      ssl_write_callback(socket->query_id());
+    }
+    if(sizeof(write_buffer) && blocking) {
+      write_blocking();
+    }
 
-  socket->close();
+    socket->close();
+  }
+  socket = 0;
 }
 
 
