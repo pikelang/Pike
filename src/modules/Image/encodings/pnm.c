@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.24 2000/12/01 08:10:05 hubbe Exp $ */
+/* $Id: pnm.c,v 1.25 2001/03/15 16:56:08 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.24 2000/12/01 08:10:05 hubbe Exp $
+**!	$Id: pnm.c,v 1.25 2001/03/15 16:56:08 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.24 2000/12/01 08:10:05 hubbe Exp $");
+RCSID("$Id: pnm.c,v 1.25 2001/03/15 16:56:08 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -173,7 +173,15 @@ void img_pnm_decode(INT32 args)
    }
    else
    {
-     skip_to_eol(s,&pos);
+/*     skip_to_eol(s,&pos); */ 
+/* just skip one char:
+
+      - Whitespace is not allowed in the pixels area, and only a
+         single  character of whitespace (typically a newline) is
+         allowed after the maxval.
+
+   [man ppm]
+*/
      pos++;
    }
    d=new->img;
@@ -183,7 +191,10 @@ void img_pnm_decode(INT32 args)
    nx=x;
 
    if (type=='6' && maxval==255 && sizeof(rgb_group)==3)  /* optimize */
-      MEMCPY(d,s->str+pos,MINIMUM(n*3,s->len-pos));
+   {
+      if (pos<s->len)
+	 MEMCPY(d,s->str+pos,MINIMUM(n*3,s->len-pos));
+   }
    else while (n--)
    {
       switch (type)
