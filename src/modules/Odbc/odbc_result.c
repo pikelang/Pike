@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.25 2001/10/03 11:46:58 grubba Exp $
+ * $Id: odbc_result.c,v 1.26 2001/10/08 09:17:00 wellhard Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.25 2001/10/03 11:46:58 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.26 2001/10/08 09:17:00 wellhard Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -202,7 +202,6 @@ static void odbc_fix_fields(void)
       break;
     case SQL_VARCHAR:
       push_text("var string");
-      odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_DATE:
       push_text("date");
@@ -212,7 +211,6 @@ static void odbc_fix_fields(void)
       break;
     case SQL_LONGVARCHAR:
       push_text("var string");
-      odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_BINARY:
       push_text("binary");
@@ -434,7 +432,7 @@ static void f_fetch_row(INT32 args)
 	  }
 	  odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
 			   code, NULL);
-	  if (len == SQL_NULL_DATA) {
+	  if (code == SQL_NULL_DATA) {
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "ODBC:fetch_row(): NULL\n");
 #endif /* ODBC_DEBUG */
