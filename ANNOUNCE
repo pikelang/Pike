@@ -1,46 +1,46 @@
 Pike 0.5b
 
 Pike 0.5 is now available for public beta testing, though
-unfortunately a bit crippled. Unfortunately, we are not able to supply the
-cryptographic toolkit and the full library of algorithms, due to Swedish
-export restrictions. However an application is being processed by the
-the authorities and as soon as we get an export license we will
-make an updated distribution available. However, this document is a
-brief presentation of the major characteristics of Pike 0.5.
+unfortunately it is not quite complete. Due to Swedish export
+restrictions we are unable to supply the cryptographic toolkit and the
+full library of algorithms. An application is being processed by the
+authorities, and as we get an export license we will make an updated
+distribution available. This document is a brief presentation of the
+most important characteristics of Pike 0.5.
 
-In spite of its youth, Pike has matured over the last few years and
-the coordination of the development is now managed by a team at Idonex
-AB. Still, Pike is released under the GNU General Public License
-(GPL), and is freely distributed and will continue being so. In short,
-this means that you are free to use and modify the source code in any
-way you please, see the file COPYING for details. Though, Idonex
-maintains the right to the brand name and the copyright, which is a
-guarantee that Pike future will be continuously developed and enhanced
-and to remain free software.
+While still young, Pike matured over the last few years, and
+development is now co-ordinated by a team at Idonex AB. Pike is still
+released under the GNU General Public License (GPL). It is, and will
+continue to be, freely distributed. Briefly, this means that you are
+free to use and modify the source code in any way you please, see the
+file COPYING for details. Idonex maintains the right to the brand name
+and the copyright, guaranteeing that Pike will be continuously
+developed and enhanced, and remain free software.
 
-Pike is an easy programming language to learn. Just as easily Pike
-lets you develop powerful applications. Pike is designed to be useful
-and powerful. As the syntax of Pike is similar to C, most programmers
-will find it easy to use. Being a a high-level, interpreted and
-modular object-oriented language, powerful applications can be
-developed rapidly. Pike has evolved rather than been designed. The
-changes to Pike that have been made have been guided by its users'
-needs. In general, the better you get to know Pike, the better you
-will appreciate it, from a user's perspective.
+Pike is easily learned, and just as easily used to develop powerful
+applications. Pike is designed to be useful and powerful. As the
+syntax of Pike is similar to that of C, most programmers will find it
+easy to use. As Pike is a high-level, interpreted and modular
+object-oriented language, powerful applications can be rapidly
+developed. Pike has evolved rather than been designed. The changes to
+Pike that have been made have been guided by its users' needs. In
+general, the better you get to know Pike, the more you will appreciate
+it, from a user's perspective.
 
 Pike is just as suitable for intricate and large applications as for
 creating use-once scripts. When needed, you can also write
-Pike-modules in C, to gain better performance or access C
+Pike modules in C, to gain better performance or access C
 libraries. This is transparent to the module's users; the modules
 written in C and those written in Pike are accessed in exactly the
 same way.
 
-Pike comes with 0.5 comes a comprehensive manual, including both a
+Pike version 0.5 comes with a comprehensive manual, including both a
 tutorial and a reference. This will help you to quickly get the most
-out of Pike. A concise list of characteristics, or pros, of Pike:
+out of Pike. Below is concise list of characteristics, or pros, of
+Pike:
 
         + General Purpose Programming Language 
-	+ Freely distributed under the GPL
+	+ Freely distributed under GPL
         + Interpreted - No compilation and linking needed to run code
         + Object Oriented - Straightforward and powerful object
 	  orientation, including multiple inheritance
@@ -71,7 +71,7 @@ out of Pike. A concise list of characteristics, or pros, of Pike:
 How Pike relates to other programming languages:
 	
         + Optimized - Faster run-times than Perl, Python, tcl and Java
-        + Faster Development than in C or C++
+        + Faster Development than using C or C++
         + C-like Syntax - Easy to learn
 
 Below you will find a list of some desired but missing features, or
@@ -83,7 +83,8 @@ versions.
         - Limited image format import and export support
         - Not optimal for heavy numeric processing jobs
         - Not for GUI based applications
-        - Limited range special effect image filters for image processing
+        - Limited range of special effect image filters for image
+          processing
 
 
 Some successful applications using Pike include:
@@ -99,7 +100,7 @@ Some successful applications using Pike include:
 	+ Assorted Text Processing Utilities 
         + CGI Programs
 
-Pike is distributed with a set of modules that, some of whicha are
+Pike is distributed accompanied by a set of modules, some of which are
 described below.
 
 
@@ -107,9 +108,9 @@ Image - Image Processing Module
 
 The Image module lets you perform common image manipulation and
 processing operations from Pike programs. The supported operations
-include cut and paste, scaling, rotation, linear filtering of most
-kinds, rendering text, etc. All drawing uses anti-alias. Using the
-Image module, you can automate jobs that you would otherwise have
+include cutting and pasting, scaling, rotation, linear filtering of
+most kinds, rendering text, etc. All drawing uses anti-alias. Using
+the Image module, you can automate jobs that would otherwise have
 required tedious work in an interactive image processing program such
 as Adobe PhotoShop.
 
@@ -132,7 +133,7 @@ attachments.
 
 Gz - Data Compression Module
 
-With this module you can compress data. It's name is a little
+With this module you can compress data. Its name is slightly
 misleading, as it uses ZLIB. ZLIB uses the same compression algorithm
 as gzip, but the format for the compressed data is not compatible with
 gzip.
