@@ -1944,7 +1944,7 @@ int pre_install(array(string) argv)
     include_prefix = combine_path(prefix,"include","pike");
     make_master("lib/master.pike", "lib/master.pike.in",
 		lib_prefix, include_prefix);
-    status1("Intalling master done.");
+    status1("Installing master done.");
     return 0;
   case "--wix":
     make_wix();
