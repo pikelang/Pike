@@ -153,20 +153,20 @@ mixed decode(array a)
   }
 }
 
-array encode_call(object|string o, string|function f, array args, int async)
+array encode_call(object|string o, string|function f, array args, int type)
 {
-  int type = (async ? CTX_CALL_ASYNC : CTX_CALL_SYNC);
   if(objectp(o))
-    if(stringp(f))
+    if(stringp(f) || !f)
       return ({ type, encode(o), f, encode(args), counter++ });
     else
-      error("If the first argument is an object, the second must be a string");
+      error("If the first argument is an object, "
+	    "the second must be a string or zero");
   else if(stringp(o))
-    if(stringp(f))
+    if(stringp(f) || !f)
       return ({ type, ({ CTX_OBJECT, o }), f, encode(args), counter++ });
     else
       error("If the first argument is an object reference, "
-	    "the second must be a string");
+	    "the second must be a string or zero");
   else if(o)
     error("Error in arguments");
   else if(functionp(f)||programp(f))
@@ -176,7 +176,7 @@ array encode_call(object|string o, string|function f, array args, int async)
   error("Error in arguments");
 }
 
-function decode_call(array data)
+function|object decode_call(array data)
 {
   if((data[0] != CTX_CALL_SYNC) && (data[0] != CTX_CALL_ASYNC))
     error("This is not a call");
@@ -194,7 +194,10 @@ function decode_call(array data)
 #ifdef REMOTE_DEBUG
     if (!o) DEBUGMSG(id + " not found\n");
 #endif
-    return o && o[data[2]];
+    if (data[2])
+      return o && o[data[2]];
+    else
+      return o;
   }
   else {
     string id = data[2][1];
@@ -203,6 +206,36 @@ function decode_call(array data)
     if (!o) DEBUGMSG(id + " not found\n");
 #endif
     return o;
+  }
+}
+
+int decode_existp(array data)
+{
+  if(data[0] != CTX_EXISTS)
+    error("This is not an exists check");
+  if(data[1])
+  {
+    string id = data[1][1];
+    object o = id2val[id];
+    if (o)
+      DEBUGMSG(id + " found locally\n");
+    else if(!o && server_context && (o=server_context->object_for(id, con))) {
+      DEBUGMSG(id + " found in server_context\n");
+      val2id[o] = id;
+      id2val[id] = o;
+    }
+#ifdef REMOTE_DEBUG
+    if (!o) DEBUGMSG(id + " not found\n");
+#endif
+    return !!o;
+  }
+  else {
+    string id = data[2][1];
+    object o = id2val[id];
+#ifdef REMOTE_DEBUG
+    if (!o) DEBUGMSG(id + " not found\n");
+#endif
+    return !!o;
   }
 }
 
@@ -238,6 +271,9 @@ string describe(array data)
     return "<mapping "+sizeof(indices(data[1]))+">";
   case CTX_ARRAY:
     return "<array "+sizeof(data[1])+">";
+  case CTX_EXISTS:
+    return "exists["+(data[1] ? data[1][1]+"->"+data[2] :
+		      "<function "+data[2][1]+">")+"]";
   }
   return "<unknown "+data[0]+">";
 }

@@ -29,6 +29,12 @@ mixed `-> (string f)
   return get_function(f);
 }
 
+int exists()
+{
+  mixed data = ctx->encode_call(id, 0, ({}), CTX_EXISTS);
+  return con->call_sync(data);
+}
+
 void create(string i, object cn, object ct)
 {
   id  = i;

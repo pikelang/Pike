@@ -13,7 +13,8 @@ int _async;
 
 mixed `() (mixed ... args)
 {
-  mixed data = ctx->encode_call(objectid, name, args, _async);
+  mixed data = ctx->encode_call(objectid, name, args,
+				_async ? CTX_CALL_ASYNC : CTX_CALL_SYNC);
   if (_async)
     con->call_async(data);
   else
@@ -23,14 +24,20 @@ mixed `() (mixed ... args)
 
 mixed sync(mixed ... args)
 {
-  mixed data = ctx->encode_call(objectid, name, args, _async);
+  mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_SYNC);
   return con->call_sync(data);
 }
 
 void async(mixed ... args)
 {
-  mixed data = ctx->encode_call(objectid, name, args, 1);
+  mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_ASYNC);
   con->call_async(data);
+}
+
+int exists()
+{
+  mixed data = ctx->encode_call(objectid, name, ({}), CTX_EXISTS);
+  return con->call_sync(data);
 }
 
 int is_async()

@@ -165,7 +165,8 @@ void try_close()
     closed = -1;
     catch {
       // This should work with most older Remote implementations.
-      string s = encode_value(ctx->encode_call (0, "sOmE nOnSeNsE..", ({}), 0));
+      string s = encode_value(ctx->encode_call (0, "sOmE nOnSeNsE..", ({}),
+						CTX_CALL_SYNC));
       con->write (sprintf("%4c%s", sizeof(s), s));
     };
 #endif
@@ -405,6 +406,10 @@ void read_some(int ignore, string s)
        }
        break;
 
+     case CTX_EXISTS:
+       return_value (data[4], ctx->decode_existp (data));
+       break;
+
      default:
        error("Unknown message");
     }
@@ -454,10 +459,14 @@ void read_thread()
 
 void server_read_thread()
 {
-  DEBUGMSG("server_read_thread\n");
-  handshake (0, con->read (24, 1));
-  read_thread();
+  mixed err = catch {
+    DEBUGMSG("server_read_thread\n");
+    handshake (0, con->read (24, 1));
+    read_thread();
+  };
+  con = 0;
   DEBUGMSG("server_read_thread exit\n");
+  if (err) throw (err);
 }
 
 void call_thread()
