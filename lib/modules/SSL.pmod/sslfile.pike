@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.46 2002/06/10 13:56:50 grubba Exp $
+/* $Id: sslfile.pike,v 1.47 2002/07/03 14:53:56 per Exp $
  *
  */
 
@@ -38,6 +38,11 @@ int blocking;  /* 1 if in blocking mode.
 		* So far, there's no true blocking i/o, read and write
 		* requests are just queued up. */
 int is_closed;
+
+int query_fd()
+{
+  return -1;
+}
 
 private void ssl_write_callback(mixed id);
 
