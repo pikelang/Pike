@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.147 2000/03/24 02:29:30 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.148 2001/06/09 15:27:13 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -503,7 +504,8 @@ void f_combine_path(INT32 args)
   if(args<1)
     PIKE_ERROR("combine_path", "Too few arguments.\n", sp, args);
 
-  if(sp[-args].type != T_STRING)
+  if((sp[-args].type != T_STRING) ||
+     (sp[-args].u.string->size_shift))
     PIKE_ERROR("combine_path", "Bad argument 1.\n", sp, args);
 
   path=sp[-args].u.string->str;
@@ -511,7 +513,8 @@ void f_combine_path(INT32 args)
   for(e=1;e<args;e++)
   {
     char *newpath;
-    if(sp[e-args].type != T_STRING)
+    if((sp[e-args].type != T_STRING) ||
+       (sp[e-args].u.string->size_shift))
     {
       if(dofree) free(path);
       error("Bad argument %d to combine_path.\n",e);
