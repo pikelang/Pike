@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.76 2001/02/03 03:43:34 hubbe Exp $
+ * $Id: acconfig.h,v 1.77 2001/02/16 20:07:14 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -419,6 +419,14 @@
 #define errno (oserror())
 #endif /* HAVE_OSERROR && !errno */
 #endif /* _SGI_SPROC_THREADS */
+
+/* This macro is only provided for compatibility with
+ * Windows PreRelease. Use ALIGNOF() instead!
+ * (Needed for va_arg().)
+ */
+#ifndef __alignof
+#define __alignof(X) ((size_t)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
+#endif /* __alignof */
 
 #ifdef HAVE_FUNCTION_ATTRIBUTES
 #define ATTRIBUTE(X) __attribute__ (X)
