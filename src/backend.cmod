@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.93 2004/03/19 17:29:55 grubba Exp $
+|| $Id: backend.cmod,v 1.94 2004/03/20 17:34:31 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.93 2004/03/19 17:29:55 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.94 2004/03/20 17:34:31 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1148,7 +1148,7 @@ PIKECLASS Backend
      }
 
    /* Assumes current_time is correct on entry. */
-   int backend_do_call_outs(struct Backend_struct *me)
+   static int backend_do_call_outs(struct Backend_struct *me)
      {
        int call_count = 0;
        int args;
