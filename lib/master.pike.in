@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.178 2001/11/13 15:46:22 tomas Exp $
+ * $Id: master.pike.in,v 1.179 2001/11/19 00:15:18 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -2229,8 +2229,8 @@ string describe_program(program p)
   if(!p) return 0;
   if(s=search(programs,p))
   {
-    if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
-      return EXPLODE_PATH(reverse(rest))[-1];
+    if(has_suffix(s, ".pmod"))
+      return EXPLODE_PATH(s[..sizeof(s)-6])[-1];
     return trim_file_name(s);
   }
 
@@ -2248,7 +2248,6 @@ string describe_program(program p)
     }
   }
 
-
   if(s=_static_modules.Builtin()->program_defined(p))
     return EXPLODE_PATH(s)[-1];
 
@@ -2264,8 +2263,8 @@ string describe_function (function f)
 
   if(string s=search(programs,f))
   {
-    if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
-      name = EXPLODE_PATH(reverse(rest))[-1];
+    if(has_suffix(s, ".pmod"))
+      name = EXPLODE_PATH(s[..sizeof(s)-6])[-1];
     else
       name = trim_file_name(s);
   }
