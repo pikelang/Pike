@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.345 2000/02/19 23:59:55 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.346 2000/03/03 01:49:49 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -54,6 +54,38 @@ pike_cv_prog_CC_save="$CC"
 # The above has problems if the smartlink binary is removed. /grubba
 AC_PROG_CC
 AC_ISC_POSIX
+AC_PROG_CPP
+
+#############################################################################
+
+#
+# The purpose of this test is to check that there is no filesystem
+# caching preventing pike from compiling correctly.
+#
+AC_MSG_CHECKING([filesystem syncronization])
+
+AC_CACHE_VAL(pike_cv_filesystem_syncronization,
+[
+  pike_cv_filesystem_syncronization=working
+
+  AC_EGREP_CPP(true, [ true ], , pike_cv_filesystem_syncronization=broken)
+  AC_EGREP_CPP(false, [ false ], , pike_cv_filesystem_syncronization=broken)
+  AC_EGREP_CPP(yes, [ yes ], , pike_cv_filesystem_syncronization=broken)
+  AC_EGREP_CPP(no, [ no ], , pike_cv_filesystem_syncronization=broken)
+  AC_EGREP_CPP(near, [ far ], pike_cv_filesystem_syncronization=broken, )
+  AC_EGREP_CPP(up, [ up ], , pike_cv_filesystem_syncronization=broken)
+  AC_EGREP_CPP(down, [ down], , pike_cv_filesystem_syncronization=broken)
+])
+
+AC_MSG_RESULT($pike_cv_filesystem_syncronization)
+if test "x$pike_cv_filesystem_syncronization" = xbroken ; then
+  AC_MSG_ERROR([Filesystem caching is too aggressive. If you are using
+Samba, make sure to have the following line in your smb.conf:
+oplocks = False
+])
+  exit 1
+fi
+
 #############################################################################
 
 AC_CHECK_HEADERS(fnord/fnord/fnord.h)
@@ -64,7 +96,6 @@ if test "x$ac_cv_header_fnord_fnord_fnord_h" = xyes ; then
   exit 1
 fi
 AC_MSG_RESULT(yes)
-
 #############################################################################
 AC_MINIX
 
