@@ -484,6 +484,7 @@ class client
       string domain;
 
 #if __NT__
+      
       domain=get_tcpip_param("Domain");
       nameservers = replace(get_tcpip_param("NameServer"),","," ") / " ";
       nameservers-=({""});
