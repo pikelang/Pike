@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.348 2001/07/03 18:18:53 grubba Exp $");
+RCSID("$Id: program.c,v 1.349 2001/07/08 21:00:53 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2079,10 +2079,15 @@ static void add_compat_event_handler(void)
     unsigned int e,d;
     unsigned char *tmp=(unsigned char *)&Pike_compiler->new_program->event_handler;
 
-    for(d=0;d<NUM_PROG_EVENTS;d++)
+    for(d=0;d<NUM_PROG_EVENTS;d++) {
+      /* FIXME: This looks like it might be broken. */
+#ifdef HAVE_COMPUTED_GOTO
+      add_to_program(Pike_compiler->new_program->event_handler);
+#else /* !HAVE_COMPUTED_GOTO */
       for(e=0;e<sizeof(Pike_compiler->new_program->event_handler);e++)
 	add_to_program(tmp[e]);
-    
+#endif /* HAVE_COMPUTED_GOTO */
+    }    
     Pike_compiler->new_program->event_handler=compat_event_handler;
   }
 }
