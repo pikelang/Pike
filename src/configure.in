@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.634 2002/10/07 15:42:28 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.635 2002/10/09 10:03:16 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -622,10 +622,11 @@ fi
 case "$pike_cv_sys_os" in
    CYGWIN*)
       echo 'Cygwin host detected. Enabling workarounds...'
-      # winsock.h, winbase.h, winsock2.h, windows.h, wingdi.h
+      # winsock.h, winbase.h, winsock2.h, windows.h, wingdi.h, windef.h
       # are part of VC api but given as headers in cygwin. We
       # should detect them when using cygwin
       ac_cv_header_wingdi_h="no"
+      ac_cv_header_windef_h="no"
       ac_cv_header_winsock_h="no"
       ac_cv_header_winsock2_h="no"
       ac_cv_header_winbase_h="no"
