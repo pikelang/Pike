@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.51 2003/03/26 16:57:36 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.52 2003/03/26 18:03:00 nilsson Exp $
  *
  */
 
@@ -18,7 +18,6 @@ int unresolved;
 mapping profiling = ([]);
 #define PROFILE int profilet=gethrtime
 #define ENDPROFILE(X) profiling[(X)] += gethrtime()-profilet;
-
 
 string cquote(string n)
 {
@@ -86,9 +85,7 @@ class Node
     type = _type;
     name = _name;
     parent = _parent;
-    PROFILE();
     data = get_parser()->finish( _data )->read();
-    ENDPROFILE("Parsing");
 
     string path = raw_class_path();
     refs[path] = this_object();
@@ -267,13 +264,11 @@ class Node
   string make_filename_low()
   {
     if(_make_filename_low) return _make_filename_low;
-    PROFILE();
     if (type == "namespace") {
       _make_filename_low = parent->make_filename_low()+"/"+cquote(name+"::");
     } else {
       _make_filename_low = parent->make_filename_low()+"/"+cquote(name);
     }
-    ENDPROFILE("make_filename_low");
     return _make_filename_low;
   }
 
@@ -365,7 +360,6 @@ class Node
   string make_class_path(void|int(0..1) header)
   {
     if(_make_class_path) return _make_class_path;
-    PROFILE();
     array a = reverse(parent->get_ancestors());
 
     _make_class_path = "";
@@ -397,7 +391,6 @@ class Node
       _raw_class_path += "::";
     }
 
-    ENDPROFILE("make_class_path");
     return _make_class_path;
   }
   string raw_class_path(void|int(0..1) header)
@@ -411,7 +404,7 @@ class Node
   {
     if(!sizeof(children)) return "";
 
-    String.Buffer res = String.Buffer();
+    String.Buffer res = String.Buffer(3000);
     res->add("<tr><td nowrap='nowrap'><br /><b>", what, "</b></td></tr>\n");
 
     foreach(children, Node node)
@@ -432,7 +425,6 @@ class Node
 	res->add( "<a href='", make_link(node), "'>", my_name, "</a>" );
       res->add("</td></tr>\n");
     }
-
     return (string)res;
   }
 
@@ -545,28 +537,28 @@ class Node
   }
 
   static string make_content() {
-    string contents;
-
+    PROFILE();
     string err;
     Parser.XML.Tree.Node n;
     if(err = catch( n = Parser.XML.Tree.parse_input(data)[0] )) {
       werror(err + "\n" + data);
       exit(1);
     }
+    ENDPROFILE("XML.Tree");
 
     resolve_reference = my_resolve_reference;
 
     if(type=="appendix")
-      contents = parse_appendix(n, 1);
-    else {
-      contents = parse_children(n, "docgroup", parse_docgroup, 1);
-      contents += parse_children(n, "namespace", parse_namespace, 1);
-      contents += parse_children(n, "module", parse_module, 1);
-      contents += parse_children(n, "class", parse_class, 1);
-      contents += parse_children(n, "enum", parse_enum, 1);
-    }
+      return parse_appendix(n, 1);
 
-    return contents;
+    String.Buffer contents = String.Buffer(100000);
+    contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
+    contents->add( parse_children(n, "namespace", parse_namespace, 1) );
+    contents->add( parse_children(n, "module", parse_module, 1) );
+    contents->add( parse_children(n, "class", parse_class, 1) );
+    contents->add( parse_children(n, "enum", parse_enum, 1) );
+
+    return (string)contents;
   }
 
   void make_html(string template, string path)
@@ -619,6 +611,7 @@ class TopNode {
   array(Node) namespace_children = ({ });
 
   void create(string _data) {
+    PROFILE();
     Parser.HTML parser = Parser.HTML();
     parser->case_insensitive_tag(1);
     parser->xml_tag_syntax(3);
@@ -638,6 +631,7 @@ class TopNode {
 	method_children += x->method_children;
       }
     type = "autodoc";
+    ENDPROFILE("top_create");
   }
 
   Parser.HTML get_parser() {
@@ -667,7 +661,7 @@ class TopNode {
 
   string make_method_page(array(Node) children)
   {
-    String.Buffer res = String.Buffer();
+    String.Buffer res = String.Buffer(3500);
     foreach(children, Node node)
       res->add("&nbsp;<a href='", make_link(node), "'>",
 	       Parser.encode_html_entities(node->name),
@@ -694,9 +688,11 @@ class TopNode {
   }
 
   void make_html(string template, string path) {
+    PROFILE();
     appendix_children->make_html(template, path);
     namespace_children->make_html(template, path);
     ::make_html(template, path);
+    ENDPROFILE("top_make_html");
   }
 }
 
