@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.73 2000/05/07 21:09:33 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.74 2000/06/09 22:46:21 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1210,8 +1210,9 @@ void check_short_svalue(union anything *u, TYPE_T type)
   low_check_short_svalue(u,type);
 }
 
-void check_svalue(struct svalue *s)
+void debug_check_svalue(struct svalue *s)
 {
+  check_type(s->type);
   if(s->type<=MAX_REF_TYPE && (3 & (long)(s->u.refs)))
     fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
 
@@ -1220,83 +1221,6 @@ void check_svalue(struct svalue *s)
 }
 
 #endif
-
-TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
-{
-#ifdef PIKE_DEBUG
-  extern void * check_for;
-#endif
-  INT32 e;
-  TYPE_FIELD f;
-  f=0;
-
-  for(e=0;e<num;e++,s++)
-  {
-    check_type(s->type);
-    check_refs(s);
-
-#ifdef PIKE_DEBUG
-    gc_svalue_location=(void *)s;
-#endif
-    
-    switch(s->type)
-    {
-    case T_FUNCTION:
-      if(s->subtype == FUNCTION_BUILTIN)
-      {
-#ifdef PIKE_DEBUG
-	if(d_flag && check_for != (void *)1)
-	{
-	  if(!gc_check(s->u.efun))
-	  {
-	    gc_check(s->u.efun->name);
-	    gc_check(s->u.efun->type);
-	  }
-	}
-#endif
-	break;
-      }
-
-    case T_OBJECT:
-      if(s->u.object->prog)
-      {
-#ifdef PIKE_DEBUG
-	if(gc_check(s->u.object) == -2)
-	  fprintf(stderr,"(in svalue at %lx, type = %d)\n",(long)s,s->type);
-#else	  
-	  gc_check(s->u.object);
-#endif
-      }else{
-	free_svalue(s);
-	s->type=T_INT;
-	s->u.integer=0;
-      }
-      break;
-
-    case T_STRING:
-#ifdef PIKE_DEBUG
-      if(check_for == (void *)1) break;
-      if(!d_flag) break;
-#else
-      break;
-#endif
-    case T_PROGRAM:
-    case T_ARRAY:
-    case T_MULTISET:
-    case T_MAPPING:
-      gc_check(s->u.refs);
-      break;
-
-    }
-    f|= 1 << s->type;
-  }
-
-#ifdef PIKE_DEBUG
-  gc_svalue_location=0;
-#endif
-
-  return f;
-}
 
 #ifdef PIKE_DEBUG
 void real_gc_xmark_svalues(struct svalue *s, int num)
@@ -1309,21 +1233,134 @@ void real_gc_xmark_svalues(struct svalue *s, int num)
 
   for(e=0;e<num;e++,s++)
   {
-    check_type(s->type);
-    check_refs(s);
+    check_svalue(s);
     
-#ifdef PIKE_DEBUG
     gc_svalue_location=(void *)s;
-#endif
 
     if(s->type <= MAX_REF_TYPE)
       gc_external_mark2(s->u.refs,0,0);
   }
+  gc_svalue_location=0;
+}
+#endif
+
+
+/* Macro mania follows. We construct the gc 1) check, 2) mark, and 3)
+ * cycle check functions on 1) svalues and 2) short svalues containing
+ * 1) normal or 2) weak references. I.e. 12 very similar functions. */
+
+#define GC_CHECK_SWITCH(U, T, ZAP, GC_DO, PRE, DO_FUNC, DO_OBJ)		\
+  switch (T) {								\
+    case T_FUNCTION:							\
+      PRE DO_FUNC(U, T, ZAP, GC_DO)					\
+    case T_OBJECT:							\
+      PRE DO_OBJ(U, T, ZAP, GC_DO)					\
+    case T_STRING:							\
+      PRE DO_IF_DEBUG(if (d_flag) gc_check(U.string);) break;		\
+    case T_PROGRAM:							\
+    case T_ARRAY:							\
+    case T_MULTISET:							\
+    case T_MAPPING:							\
+      PRE GC_DO(U.refs); break;						\
+  }
+
+#define DO_CHECK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
+      if (s->subtype == FUNCTION_BUILTIN) {				\
+	DO_IF_DEBUG(							\
+	  if (d_flag && !gc_check(s->u.efun)) {				\
+	    gc_check(s->u.efun->name);					\
+	    gc_check(s->u.efun->type);					\
+	  }								\
+	)								\
+	break;								\
+      }									\
+      /* Fall through to T_OBJECT. */
+
+#define DO_FUNC_SHORT_SVALUE(U, T, ZAP, GC_DO)				\
+      fatal("Cannot have a function in a short svalue.\n");
+
+#define DO_CHECK_OBJ(U, T, ZAP, GC_DO)					\
+      if (U.object->prog)						\
+	GC_DO(U.object);						\
+      else ZAP();							\
+      break;
+
+#define DO_CHECK_OBJ_WEAK(U, T, ZAP, GC_DO)				\
+      if(U.object->prog)						\
+	if (U.object->prog->flags & PROGRAM_NO_WEAK_FREE)		\
+	  gc_check(U.object);						\
+	else								\
+	  gc_check_weak(U.object);					\
+      else ZAP();							\
+      break;
+
+#define ZAP_SVALUE()							\
+      do {								\
+	free_svalue(s);							\
+	s->type = T_INT;						\
+	s->u.integer = 0;						\
+	s->subtype = NUMBER_DESTRUCTED;					\
+      } while (0)
+
+#define ZAP_SHORT_SVALUE()						\
+      do {								\
+	free_short_svalue(u, type);					\
+	u->refs = 0;							\
+      } while (0)
+
+#define SET_SUB_SVALUE(V) s->subtype = (V)
+
+#define SET_SUB_SHORT_SVALUE(V)
+
+TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
+{
+#ifdef PIKE_DEBUG
+  extern void * check_for;
+#endif
+  INT32 e;
+  TYPE_FIELD f;
+  f=0;
+  for(e=0;e<num;e++,s++)
+  {
+    check_svalue(s);
+#ifdef PIKE_DEBUG
+    gc_svalue_location=(void *)s;
+#endif
+    GC_CHECK_SWITCH((s->u), (s->type), ZAP_SVALUE, gc_check,
+		    {}, DO_CHECK_FUNC_SVALUE,
+		    DO_CHECK_OBJ);
+    f|= 1 << s->type;
+  }
 #ifdef PIKE_DEBUG
   gc_svalue_location=0;
 #endif
+  return f;
 }
+
+TYPE_FIELD gc_check_weak_svalues(struct svalue *s, int num)
+{
+#ifdef PIKE_DEBUG
+  extern void * check_for;
 #endif
+  INT32 e;
+  TYPE_FIELD f;
+  f=0;
+  for(e=0;e<num;e++,s++)
+  {
+    check_svalue(s);
+#ifdef PIKE_DEBUG
+    gc_svalue_location=(void *)s;
+#endif
+    GC_CHECK_SWITCH((s->u), (s->type), ZAP_SVALUE, gc_check_weak,
+		    {}, DO_CHECK_FUNC_SVALUE,
+		    DO_CHECK_OBJ_WEAK);
+    f|= 1 << s->type;
+  }
+#ifdef PIKE_DEBUG
+  gc_svalue_location=0;
+#endif
+  return f;
+}
 
 void real_gc_check_short_svalue(union anything *u, TYPE_T type)
 {
@@ -1331,167 +1368,183 @@ void real_gc_check_short_svalue(union anything *u, TYPE_T type)
   extern void * check_for;
   gc_svalue_location=(void *)u;
 #endif
-  switch(type)
-  {
-  case T_FUNCTION:
-    fatal("Cannot have a function in a short svalue.\n");
-
-  case T_OBJECT:
-    if(!u->refs) return;
-    if(u->object->prog)
-    {
-      gc_check(u->object);
-    }else{
-      free_short_svalue(u,T_OBJECT);
-      u->object=0;
-    }
-    break;
-
-  case T_STRING:
-#ifdef PIKE_DEBUG
-    if(check_for == (void *)1) break;
-    if(!d_flag) break;
-#else
-    break;
-#endif
-  case T_ARRAY:
-  case T_MULTISET:
-  case T_MAPPING:
-  case T_PROGRAM: 
-    if(!u->refs) return;
-    gc_check(u->refs);
-    break;
-  }
+  debug_malloc_touch(u);
+  GC_CHECK_SWITCH((*u), type, ZAP_SHORT_SVALUE, gc_check,
+		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
+		  DO_CHECK_OBJ);
 #ifdef PIKE_DEBUG
   gc_svalue_location=0;
 #endif
 }
 
-void debug_gc_mark_svalues(struct svalue *s, int num)
+void gc_check_weak_short_svalue(union anything *u, TYPE_T type)
+{
+#ifdef PIKE_DEBUG
+  extern void * check_for;
+  gc_svalue_location=(void *)u;
+#endif
+  debug_malloc_touch(u);
+  GC_CHECK_SWITCH((*u), type, ZAP_SHORT_SVALUE, gc_check_weak,
+		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
+		  DO_CHECK_OBJ_WEAK);
+#ifdef PIKE_DEBUG
+  gc_svalue_location=0;
+#endif
+}
+
+#define GC_RECURSE_SWITCH(U,T,ZAP,FREE_WEAK,GC_DO,PRE,DO_FUNC,DO_STR)	\
+  switch (T) {								\
+    case T_FUNCTION:							\
+      PRE DO_FUNC(U, T, ZAP, GC_DO)					\
+    case T_OBJECT:							\
+      PRE								\
+      DO_IF_DEBUG(							\
+	if (!U.object->prog)						\
+	  gc_fatal(U.object, 0,						\
+		   "Unfreed destructed object in mark pass.\n");	\
+      )									\
+      FREE_WEAK(U, T, ZAP) GC_DO(U, object);				\
+      break;								\
+    case T_STRING:							\
+      DO_STR(U); break;							\
+    case T_PROGRAM:							\
+      PRE FREE_WEAK(U, T, ZAP) GC_DO(U, program); break;		\
+    case T_ARRAY:							\
+      PRE FREE_WEAK(U, T, ZAP) GC_DO(U, array); break;			\
+    case T_MULTISET:							\
+      PRE FREE_WEAK(U, T, ZAP) GC_DO(U, multiset); break;		\
+    case T_MAPPING:							\
+      PRE FREE_WEAK(U, T, ZAP) GC_DO(U, mapping); break;		\
+  }
+
+#define DO_MARK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
+      if (s->subtype == FUNCTION_BUILTIN) {				\
+	DO_IF_DEBUG(							\
+	  if (d_flag) {							\
+	    gc_mark(s->u.efun->name);					\
+	    gc_mark(s->u.efun->type);					\
+	  }								\
+	)								\
+	break;								\
+      }									\
+      /* Fall through to T_OBJECT. */
+
+#define DO_MARK_STRING(U)						\
+      DO_IF_DEBUG(if (U.refs && d_flag) gc_mark(U.string))
+
+#define GC_DO_MARK(U, TN)						\
+  enqueue(&gc_mark_queue,						\
+	  (queue_call) PIKE_CONCAT3(gc_mark_, TN, _as_referenced),	\
+	  U.TN)
+
+#define DONT_FREE_WEAK(U, T, ZAP)
+
+#define FREE_WEAK(U, T, ZAP)						\
+    if (gc_do_weak_free(U.refs)) {					\
+      ZAP();								\
+      freed = 1;							\
+      break;								\
+    }
+
+void real_gc_mark_svalues(struct svalue *s, int num)
 {
   INT32 e;
   for(e=0;e<num;e++,s++)
   {
-    switch(s->type)
-    {
-    case T_ARRAY: 
-      enqueue(&gc_mark_queue,
-	      (queue_call)gc_mark_array_as_referenced,
-	      debug_malloc_pass(s->u.array));
-      break;
-    case T_MULTISET:
-      enqueue(&gc_mark_queue,
-	      (queue_call)gc_mark_multiset_as_referenced,
-	      debug_malloc_pass(s->u.multiset));
-      break;
-    case T_MAPPING:
-      enqueue(&gc_mark_queue,
-	      (queue_call)gc_mark_mapping_as_referenced,
-	      debug_malloc_pass(s->u.mapping));
-      break;
-    case T_PROGRAM:
-      enqueue(&gc_mark_queue,
-	      (queue_call)gc_mark_program_as_referenced,
-	      debug_malloc_pass(s->u.program));
-      break;
-
-#ifdef PIKE_DEBUG
-    case T_STRING:
-      if(d_flag) gc_mark(s->u.string);
-      break;
-#endif      
-      
-    case T_FUNCTION:
-      if(s->subtype == FUNCTION_BUILTIN)
-      {
-#ifdef PIKE_DEBUG
-	if(d_flag)
-	{
-	  if(gc_mark(s->u.efun))
-	  {
-	    gc_mark(s->u.efun->name);
-	    gc_mark(s->u.efun->type);
-	  }
-	}
-#endif
-	break;
-      }
-
-    case T_OBJECT:
-      if(s->u.object->prog)
-      {
-	enqueue(&gc_mark_queue,
-		(queue_call)gc_mark_object_as_referenced,
-		debug_malloc_pass(s->u.object));
-      }
-#ifdef PIKE_DEBUG
-      else
-      {
-	describe(s->u.object);
-	fatal("Unfreed destructed object in GC mark pass??\n");
-      }
-#endif
-      break;
-    }
+    dmalloc_touch_svalue(s);
+    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+		      GC_DO_MARK, {},
+		      DO_MARK_FUNC_SVALUE, DO_MARK_STRING);
   }
 }
 
-void debug_gc_mark_short_svalue(union anything *u, TYPE_T type)
+TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, int num)
 {
-  switch(type)
+  TYPE_FIELD t = 0;
+  int freed = 0;
+  INT32 e;
+  for(e=0;e<num;e++,s++)
   {
-#ifdef PIKE_DEBUG
-    case T_STRING:
-      if(d_flag && u->refs) gc_mark(debug_malloc_pass(u->string));
-      break;
-#endif
-
-  case T_ARRAY: 
-    if(!u->refs) return;
-    enqueue(&gc_mark_queue,
-	    (queue_call)gc_mark_array_as_referenced,
-	    debug_malloc_pass(u->array));
-    break;
-  case T_MULTISET:
-    if(!u->refs) return;
-    enqueue(&gc_mark_queue,
-	    (queue_call)gc_mark_multiset_as_referenced,
-	    debug_malloc_pass(u->multiset));
-    break;
-  case T_MAPPING:
-    if(!u->refs) return;
-    enqueue(&gc_mark_queue,
-	    (queue_call)gc_mark_mapping_as_referenced,
-	    debug_malloc_pass(u->mapping));
-    break;
-  case T_PROGRAM:
-    if(!u->refs) return;
-    enqueue(&gc_mark_queue,
-	    (queue_call)gc_mark_program_as_referenced,
-	    debug_malloc_pass(u->program));
-    break;
-
-#ifdef PIKE_DEBUG
-  case T_FUNCTION:
-    fatal("gc_mark_short_svalue(%p, PIKE_T_FUNCTION).\n", u->refs);
-#endif /* PIKE_DEBUG */
-  case T_OBJECT:
-    if(!u->refs) return;
-    if(u->object->prog)
-    {
-      enqueue(&gc_mark_queue,
-	      (queue_call)gc_mark_object_as_referenced,
-	      debug_malloc_pass(u->object));
-    }
-#ifdef PIKE_DEBUG
-    else
-    {
-      describe(u->object);
-      fatal("Unfreed destructed object in GC mark pass??\n");
-    }
-#endif
-    break;
+    dmalloc_touch_svalue(s);
+    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
+		      GC_DO_MARK, {},
+		      DO_MARK_FUNC_SVALUE, DO_MARK_STRING);
+    t |= 1 << s->type;
   }
+  return freed ? t : 0;
+}
+
+void real_gc_mark_short_svalue(union anything *u, TYPE_T type)
+{
+  debug_malloc_touch(u);
+  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
+		    GC_DO_MARK, {if (!u->refs) return;},
+		    DO_FUNC_SHORT_SVALUE, DO_MARK_STRING);
+}
+
+int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
+{
+  int freed = 0;
+  debug_malloc_touch(u);
+  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
+		    GC_DO_MARK, {if (!u->refs) return 0;},
+		    DO_FUNC_SHORT_SVALUE, DO_MARK_STRING);
+  return freed;
+}
+
+#define DO_CYCLE_CHECK_FUNC_SVALUE(U, T, ZAP, GC_DO)			\
+      if (s->subtype == FUNCTION_BUILTIN) break;			\
+      /* Fall through to T_OBJECT. */
+
+#define DO_CYCLE_CHECK_STRING(U)
+
+#define GC_DO_CYCLE_CHECK(U, TN) PIKE_CONCAT(gc_cycle_check_, TN)(U.TN)
+#define GC_DO_CYCLE_CHECK_WEAK(U, TN) PIKE_CONCAT3(gc_cycle_check_, TN, _weak)(U.TN)
+
+void real_gc_cycle_check_svalues(struct svalue *s, int num)
+{
+  INT32 e;
+  for(e=0;e<num;e++,s++)
+  {
+    dmalloc_touch_svalue(s);
+    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+		      GC_DO_CYCLE_CHECK, {},
+		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK_STRING);
+  }
+}
+
+TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, int num)
+{
+  TYPE_FIELD t = 0;
+  int freed = 0;
+  INT32 e;
+  for(e=0;e<num;e++,s++)
+  {
+    dmalloc_touch_svalue(s);
+    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
+		      GC_DO_CYCLE_CHECK_WEAK, {},
+		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK_STRING);
+    t |= 1 << s->type;
+  }
+  return freed ? t : 0;
+}
+
+void real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
+{
+  debug_malloc_touch(u);
+  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
+		    GC_DO_CYCLE_CHECK, {if (!u->refs) return;},
+		    DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK_STRING);
+}
+
+int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
+{
+  int freed = 0;
+  debug_malloc_touch(u);
+  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
+		    GC_DO_CYCLE_CHECK_WEAK, {if (!u->refs) return 0;},
+		    DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK_STRING);
+  return freed;
 }
 
 INT32 pike_sizeof(struct svalue *s)

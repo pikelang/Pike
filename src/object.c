@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.121 2000/04/27 02:13:28 hubbe Exp $");
+RCSID("$Id: object.c,v 1.122 2000/06/09 22:43:05 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -71,6 +71,9 @@ RCSID("$Id: object.c,v 1.121 2000/04/27 02:13:28 hubbe Exp $");
 struct object *master_object = 0;
 struct program *master_program =0;
 struct object *first_object;
+
+struct object *gc_internal_object = 0;
+static struct object *gc_mark_object_pos = 0;
 
 struct object *low_clone(struct program *p)
 {
@@ -449,19 +452,49 @@ PTR_HASH_ALLOC(destroy_called_mark,128)
 static void call_destroy(struct object *o, int foo)
 {
   int e;
-  if(!o || !o->prog) return; /* Object already destructed */
+  if(!o || !o->prog) {
+#ifdef GC_VERBOSE
+    if (Pike_in_gc > GC_PASS_PREPARE)
+      fprintf(stderr, "|   Not calling destroy() in "
+	      "destructed %p with %d refs.\n", o, o->refs);
+#endif
+    return; /* Object already destructed */
+  }
 
   e=FIND_LFUN(o->prog,LFUN_DESTROY);
-  if(e != -1)
+  if(e != -1
+#ifdef DO_PIKE_CLEANUP
+     && evaluator_stack
+#endif
+    )
   {
+#ifdef PIKE_DEBUG
+    if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
+      fatal("Calling destroy() inside gc.\n");
+#endif
     if(check_destroy_called_mark_semafore(o))
     {
-      /* fprintf(stderr, "destruct(): Calling destroy().\n"); */
+#ifdef GC_VERBOSE
+      if (Pike_in_gc > GC_PASS_PREPARE)
+	fprintf(stderr, "|   Calling destroy() in %p with %d refs.\n",
+		o, o->refs);
+#endif
       if(foo) push_int(1);
       safe_apply_low(o, e, foo?1:0);
       pop_stack();
+#ifdef GC_VERBOSE
+      if (Pike_in_gc > GC_PASS_PREPARE)
+	fprintf(stderr, "|   Called destroy() in %p with %d refs.\n",
+		o, o->refs);
+#endif
     }
   }
+#ifdef GC_VERBOSE
+  else
+    if (Pike_in_gc > GC_PASS_PREPARE)
+      fprintf(stderr, "|   No destroy() to call in %p with %d refs.\n",
+	      o, o->refs);
+#endif
 }
 
 void low_destruct(struct object *o,int do_free)
@@ -471,8 +504,11 @@ void low_destruct(struct object *o,int do_free)
 
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
-  if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc <= GC_PASS_MARK)
-    fatal("Destructing object inside gc()\n");
+#endif
+#ifdef GC_VERBOSE
+  if (Pike_in_gc > GC_PASS_PREPARE)
+    fprintf(stderr, "|   Destructing %p with %d refs. do_free=%d\n",
+	    o, o->refs, do_free);
 #endif
 
   add_ref(o);
@@ -491,6 +527,11 @@ void low_destruct(struct object *o,int do_free)
   o->prog=0;
 
   LOW_PUSH_FRAME(o);
+
+#ifdef GC_VERBOSE
+  if (Pike_in_gc > GC_PASS_PREPARE)
+    fprintf(stderr, "|   Zapping references in %p with %d refs.\n", o, o->refs);
+#endif
 
   /* free globals and call C de-initializers */
   for(e=p->num_inherits-1; e>=0; e--)
@@ -528,9 +569,6 @@ void low_destruct(struct object *o,int do_free)
     }
   }
 
-
-  POP_FRAME();
-
   debug_malloc_touch(o);
   if(o->parent)
   {
@@ -538,6 +576,8 @@ void low_destruct(struct object *o,int do_free)
     free_object(o->parent);
     o->parent=0;
   }
+
+  POP_FRAME();
 
   free_program(p);
 }
@@ -548,7 +588,7 @@ void destruct(struct object *o)
 }
 
 
-static struct object *objects_to_destruct = 0;
+struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
 
 /* This function destructs the objects that are scheduled to be
@@ -561,12 +601,17 @@ void destruct_objects_to_destruct(void)
   struct object *o, *next;
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc != GC_PASS_DESTRUCT)
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_DESTRUCT)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
 
   while((o=objects_to_destruct))
   {
+#ifdef GC_VERBOSE
+    if (Pike_in_gc > GC_PASS_PREPARE)
+      fprintf(stderr, "|   Destructing %p on objects_to_destruct.\n", o);
+#endif
+
     /* Link object back to list of objects */
     DOUBLEUNLINK(objects_to_destruct,o);
     
@@ -576,7 +621,7 @@ void destruct_objects_to_destruct(void)
     /* call destroy, keep one ref */
     add_ref(o);
     call_destroy(o,0);
-    
+
     destruct(o);
     free_object(o);
   }
@@ -597,7 +642,26 @@ void destruct_objects_to_destruct(void)
 
 void really_free_object(struct object *o)
 {
+#ifdef PIKE_DEBUG
+  if (o->refs)
+    fatal("Object still got references in really_free_object().\n");
+#endif
+
   debug_malloc_touch(o);
+
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) {
+    /* It's easier for the gc if we just leave the object around for
+     * it to find and handle. */
+#ifdef GC_VERBOSE
+    fprintf(stderr, "|   Leaving %p around without refs.\n", o);
+#endif
+    return;
+  }
+
+  /* GC note: PROGRAM_DESTRUCT_IMMEDIATE isn't obeyed inside the
+   * sensitive gc parts, since we can't risk any changes in references
+   * then. It should happen for objects iff they only have weak
+   * references, which is an awkward situation anyway. */
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
     add_ref(o);
@@ -612,8 +676,14 @@ void really_free_object(struct object *o)
   if(o->prog)
   {
     DOUBLELINK(objects_to_destruct,o);
+
+#ifdef GC_VERBOSE
+    if (Pike_in_gc > GC_PASS_PREPARE)
+      fprintf(stderr, "|   Putting %p in objects_to_destruct.\n", o);
+#endif
+
     if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_DESTRUCT)
-      /* destruct_objects_to_destruct() done last in gc() instead. */
+      /* destruct_objects_to_destruct() called by gc instead. */
       return;
     if(!destruct_object_evaluator_callback)
     {
@@ -631,11 +701,16 @@ void really_free_object(struct object *o)
       o->parent=0;
     }
 
+#ifdef GC_VERBOSE
+    if (Pike_in_gc > GC_PASS_PREPARE)
+      fprintf(stderr, "|   Freeing storage for %p.\n", o);
+#endif
+
     FREE_PROT(o);
 
     free((char *)o);
 
-    GC_FREE(o);
+    GC_FREE();
   }
 }
 
@@ -1101,6 +1176,15 @@ void gc_mark_object_as_referenced(struct object *o)
     int e;
     struct program *p;
 
+    if (o == gc_mark_object_pos)
+      gc_mark_object_pos = o->next;
+    if (o == gc_internal_object)
+      gc_internal_object = o->next;
+    else {
+      DOUBLEUNLINK(first_object, o);
+      DOUBLELINK(first_object, o); /* Linked in first. */
+    }
+
     if(!o || !(p=o->prog)) return; /* Object already destructed */
 
     debug_malloc_touch(p);
@@ -1148,6 +1232,82 @@ void gc_mark_object_as_referenced(struct object *o)
   }
 }
 
+static void low_gc_cycle_check_object(struct object *o)
+{
+  int e;
+  struct program *p = o->prog;
+
+  if (p) {
+#if 0
+    struct object *o2;
+    for (o2 = gc_internal_object; o2 && o2 != o; o2 = o2->next) {}
+    if (!o2) fatal("Object not on gc_internal_object list.\n");
+#endif
+
+    if(o->parent)
+      gc_cycle_check_object_strong(o->parent);
+
+    LOW_PUSH_FRAME(o);
+
+    for(e=p->num_inherits-1; e>=0; e--)
+    {
+      int q;
+      
+      LOW_SET_FRAME_CONTEXT(p->inherits[e]);
+
+      if(pike_frame->context.prog->gc_marked)
+	pike_frame->context.prog->gc_marked(o);
+
+      for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+      {
+	int d=pike_frame->context.prog->variable_index[q];
+	
+	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+	{
+	  struct svalue *s;
+	  s=(struct svalue *)(pike_frame->current_storage +
+			      pike_frame->context.prog->identifiers[d].func.offset);
+	  dmalloc_touch_svalue(s);
+	  gc_cycle_check_svalues(s, 1);
+	}else{
+	  union anything *u;
+	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
+	  u=(union anything *)(pike_frame->current_storage +
+			       pike_frame->context.prog->identifiers[d].func.offset);
+#ifdef DEBUG_MALLOC
+	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+#endif
+	  gc_cycle_check_short_svalue(u, rtt);
+	}
+      }
+      LOW_UNSET_FRAME_CONTEXT();
+    }
+    
+    LOW_POP_FRAME();
+  }
+}
+
+void real_gc_cycle_check_object(struct object *o)
+{
+  GC_CYCLE_ENTER_OBJECT(o, 0) {
+    low_gc_cycle_check_object(o);
+  } GC_CYCLE_LEAVE;
+}
+
+void real_gc_cycle_check_object_weak(struct object *o)
+{
+  GC_CYCLE_ENTER_OBJECT(o, 1) {
+    low_gc_cycle_check_object(o);
+  } GC_CYCLE_LEAVE;
+}
+
+void real_gc_cycle_check_object_strong(struct object *o)
+{
+  GC_CYCLE_ENTER_OBJECT(o, -1) {
+    low_gc_cycle_check_object(o);
+  } GC_CYCLE_LEAVE;
+}
+
 static inline void gc_check_object(struct object *o)
 {
   int e;
@@ -1159,7 +1319,7 @@ static inline void gc_check_object(struct object *o)
 		      debug_malloc_pass(o))==-2)
       fprintf(stderr,"(in object at %lx -> parent)\n",(long)o);
 #else
-    gc_check(debug_malloc_pass(o->parent));
+    gc_check(o->parent);
 #endif
   }
 
@@ -1207,25 +1367,23 @@ static inline void gc_check_object(struct object *o)
 }
 
 #ifdef PIKE_DEBUG
-INT32 gc_touch_all_objects(void)
+unsigned gc_touch_all_objects(void)
 {
-  INT32 n = 0;
+  unsigned n = 0;
   struct object *o;
+  if (first_object && first_object->prev)
+    fatal("Error in object link list.\n");
   for (o = first_object; o; o = o->next) {
-    /* We need this if statement (or something like it)
-     * because a objects may become without all references in
-     * GC_PASS_DESTROY and thus hide in 'objects_to_destruct'
-     * until destruct_objects_to_destruct is called. If this
-     * happens the object has already been destructed, but
-     * not by free_all_unrefenced_objects
-     * -Hubbe
-     */
-    if(o->prog || Pike_in_gc != GC_PASS_POSTTOUCH)
-      debug_gc_touch(o);
+    debug_gc_touch(o);
     n++;
+    if (o->next && o->next->prev != o)
+      fatal("Error in object link list.\n");
   }
-  if (objects_to_destruct)
-    fatal("Shouldn't have any objects to destruct in touch pass.\n");
+  for (o = objects_to_destruct; o; o = o->next) {
+    n++;
+    if (o->next && o->next->prev != o)
+      fatal("Error in object link list.\n");
+  }
   return n;
 }
 #endif
@@ -1239,88 +1397,54 @@ void gc_check_all_objects(void)
 
 void gc_mark_all_objects(void)
 {
-  struct object *o;
-  for(o=first_object;o;o=o->next)
+  gc_mark_object_pos = gc_internal_object;
+  while (gc_mark_object_pos) {
+    struct object *o = gc_mark_object_pos;
+    gc_mark_object_pos = o->next;
     if(gc_is_referenced(o))
       gc_mark_object_as_referenced(o);
+  }
 
 #ifdef PIKE_DEBUG
-  if(d_flag)
+  if(d_flag) {
+    struct object *o;
     for(o=objects_to_destruct;o;o=o->next)
       debug_malloc_touch(o);
-#endif
-
-}
-
-int gc_destroy_all_unreferenced_objects(void)
-{
-  int n = 0;
-  struct object *o,*next;
-
-#ifdef PIKE_DEBUG
-  if(d_flag)
-  {
-    for(o=first_object;o;o=next)
-    {
-      if(!gc_do_free(o))
-      {
-	add_ref(o);
-	gc_check_object(o);
-	SET_NEXT_AND_FREE(o,free_object);
-      }else{
-	next=o->next;
-      }
-    }
   }
 #endif
-
-  for(o=first_object;o;o=o->next)
-  {
-#ifdef PIKE_DEBUG
-    get_marker(o)->flags |= GC_OBJ_DESTROY_CHECK;
-#endif
-    if(gc_do_free(o))
-    {
-      add_ref(o);
-#ifdef PIKE_DEBUG
-      get_marker(o)->flags |= GC_DO_FREE_OBJ;
-#endif
-      call_destroy(o,0);
-      n++;
-    }
-  }
-
-  return n;
 }
 
-int gc_free_all_unreferenced_objects(void)
+void gc_cycle_check_all_objects(void)
 {
-  int n = 0;
+  struct object *o;
+  for (o = gc_internal_object; o; o = o->next) {
+    real_gc_cycle_check_object(o);
+    run_lifo_queue(&gc_mark_queue);
+  }
+}
+
+void gc_free_all_unreferenced_objects(void)
+{
   struct object *o,*next;
 
-  for(o=first_object;o;o=next)
+  for(o=gc_internal_object; o; o=next)
   {
     if(gc_do_free(o))
     {
+      /* Got an extra ref from gc_cycle_pop_object(). */
 #ifdef PIKE_DEBUG
-      if (!(get_marker(o)->flags & (GC_OBJ_DESTROY_CHECK|GC_DO_FREE_OBJ))) {
-	extern char *fatal_after_gc;
-	fprintf(stderr,"**Object unexpectedly marked for gc. flags: %x\n",
-		get_marker(o)->flags);
-	describe(o);
-	locate_references(o);
-	fatal("Object unexpectedly marked for gc.\n");
-      }
+      if (o->prog && FIND_LFUN(o->prog, LFUN_DESTROY) != -1 &&
+	  !find_destroy_called_mark(o))
+	gc_fatal(o,0,"Can't free a live object in gc_free_all_unreferenced_objects().\n");
 #endif
       low_destruct(o,1);
-      n++;
+
+      gc_free_extra_ref(o);
       SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
     }
   }
-
-  return n;
 }
 
 void count_memory_in_objects(INT32 *num_, INT32 *size_)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.83 2000/05/11 14:09:46 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.84 2000/06/09 22:43:05 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -28,6 +28,9 @@ RCSID("$Id: mapping.c,v 1.83 2000/05/11 14:09:46 grubba Exp $");
 #define MAP_SLOTS(X) ((X)?((X)+((X)>>4)+8):0)
 
 struct mapping *first_mapping;
+
+struct mapping *gc_internal_mapping = 0;
+static struct mapping *gc_mark_mapping_pos = 0;
 
 #define unlink_mapping_data(M) do{				\
  struct mapping_data *md_=(M);					\
@@ -56,14 +59,15 @@ DO_IF_DEBUG(								\
 									\
   unlink_mapping_data(m->data);						\
 									\
-  if(m->prev)								\
-    m->prev->next = m->next;						\
-  else									\
-    first_mapping = m->next;						\
+  if (gc_internal_mapping) {						\
+    if (m == gc_internal_mapping)					\
+      gc_internal_mapping = m->next;					\
+    if (m == gc_mark_mapping_pos)					\
+      gc_mark_mapping_pos = m->next;					\
+  }									\
+  DOUBLEUNLINK(first_mapping, m);					\
 									\
-  if(m->next) m->next->prev = m->prev;					\
-									\
-  GC_FREE(m);
+  GC_FREE();
 
 
 #undef COUNT_OTHER
@@ -177,13 +181,10 @@ struct mapping *debug_allocate_mapping(int size)
   INITIALIZE_PROT(m);
   init_mapping(m,size);
 
-  m->next = first_mapping;
-  m->prev = 0;
   m->refs = 1;
   m->flags = 0;
 
-  if(first_mapping) first_mapping->prev = m;
-  first_mapping=m;
+  DOUBLELINK(first_mapping, m);
 
   return m;
 }
@@ -1821,6 +1822,55 @@ void check_all_mappings(void)
 #endif
 
 
+static void gc_recurse_weak_mapping(struct mapping *m,
+				    TYPE_FIELD (*recurse_fn)(struct svalue *, int))
+{
+  INT32 e;
+  struct keypair *k,**prev;
+  TYPE_FIELD ind_types = 0, val_types = 0;
+  struct mapping_data *md=m->data;
+
+#ifdef PIKE_DEBUG
+  if(!(m->flags & MAPPING_FLAG_WEAK))
+    fatal("Mapping is not weak.\n");
+#endif
+
+  /* no locking required (no is_eq) */
+  for(e=0;e<md->hashsize;e++)
+  {
+    for(prev= md->hash + e;(k=*prev);)
+    {
+      int i, v;
+      if((i = recurse_fn(&k->ind, 1)) | (v = recurse_fn(&k->val, 1)))
+      {
+	PREPARE_FOR_INDEX_CHANGE();
+	*prev=k->next;
+	if (!i) free_svalue(&k->ind);
+	if (!v) free_svalue(&k->val);
+	k->next=md->free_list;
+	md->free_list=k;
+	md->size--;
+#ifdef PIKE_DEBUG
+	if(m->data ==md)
+	  m->debug_size--;
+#endif
+      }else{
+	val_types |= 1 << k->val.type;
+	ind_types |= 1 << k->ind.type;
+	prev=&k->next;
+      }
+    }
+  }
+  md->val_types = val_types;
+  md->ind_types = ind_types;
+
+  if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
+  {
+    debug_malloc_touch(m);
+    rehash(m, MAP_SLOTS(md->size));
+  }
+}
+
 void gc_mark_mapping_as_referenced(struct mapping *m)
 {
   INT32 e;
@@ -1831,35 +1881,66 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
     fatal("Zero refs in mapping->data\n");
 #endif
 
-  if(gc_mark(m) && gc_mark(m->data))
-  {
-    if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
-    {
-      MAPPING_LOOP(m)
-      {
-	/* We do not want to count this key:index pair if
-	 * the index is a destructed object or function
-	 */
-	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
-	   !(k->ind.u.object->prog))
-	  continue;
+  if(gc_mark(m)) {
+    if (m == gc_mark_mapping_pos)
+      gc_mark_mapping_pos = m->next;
+    if (m == gc_internal_mapping)
+      gc_internal_mapping = m->next;
+    else {
+      DOUBLEUNLINK(first_mapping, m);
+      DOUBLELINK(first_mapping, m); /* Linked in first. */
+    }
 
-	if (m->flags & MAPPING_FLAG_WEAK)
+    if(gc_mark(m->data) &&
+       ((m->data->ind_types | m->data->val_types) & BIT_COMPLEX))
+    {
+      if (m->flags & MAPPING_FLAG_WEAK)
+	gc_recurse_weak_mapping(m, gc_mark_weak_svalues);
+      else
+	NEW_MAPPING_LOOP(m->data)
 	{
-	  if (k->ind.type == T_OBJECT &&
-	      k->ind.u.object->prog->flags & PROGRAM_NO_WEAK_FREE)
-	    gc_mark_svalues(&k->ind, 1);
-	  if (k->val.type == T_OBJECT && k->val.u.object->prog &&
-	      k->val.u.object->prog->flags & PROGRAM_NO_WEAK_FREE)
-	    gc_mark_svalues(&k->val, 1);
-	}
-	else {
 	  gc_mark_svalues(&k->ind, 1);
 	  gc_mark_svalues(&k->val, 1);
 	}
-      }
     }
   }
+}
+
+void low_gc_cycle_check_mapping(struct mapping *m)
+{
+#ifdef PIKE_DEBUG
+  if(m->data->refs <=0)
+    fatal("Zero refs in mapping->data\n");
+#endif
+
+  if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
+  {
+    INT32 e;
+    struct keypair *k;
+
+    if (m->flags & MAPPING_FLAG_WEAK)
+      gc_recurse_weak_mapping(m, gc_cycle_check_weak_svalues);
+    else
+      NEW_MAPPING_LOOP(m->data)
+      {
+	gc_cycle_check_svalues(&k->ind, 1);
+	gc_cycle_check_svalues(&k->val, 1);
+      }
+  }
+}
+
+void real_gc_cycle_check_mapping(struct mapping *m)
+{
+  GC_CYCLE_ENTER(m, 0) {
+    low_gc_cycle_check_mapping(m);
+  } GC_CYCLE_LEAVE;
+}
+
+void real_gc_cycle_check_mapping_weak(struct mapping *m)
+{
+  GC_CYCLE_ENTER(m, 1) {
+    low_gc_cycle_check_mapping(m);
+  } GC_CYCLE_LEAVE;
 }
 
 static void gc_check_mapping(struct mapping *m)
@@ -1869,9 +1950,25 @@ static void gc_check_mapping(struct mapping *m)
 
   if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
   {
-    if(gc_check(m->data)) return;
-    
-    MAPPING_LOOP(m)
+    if(debug_gc_check(m->data, T_MAPPING, m)) return;
+
+    if (m->flags & MAPPING_FLAG_WEAK) {
+      MAPPING_LOOP(m)
+      {
+	/* We do not want to count this key:index pair if
+	 * the index is a destructed object or function
+	 */
+	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
+	   !(k->ind.u.object->prog))
+	  continue;
+	
+	debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
+	m->data->val_types |=
+	  debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
+      }
+    }
+    else {
+      MAPPING_LOOP(m)
       {
 	/* We do not want to count this key:index pair if
 	 * the index is a destructed object or function
@@ -1881,19 +1978,27 @@ static void gc_check_mapping(struct mapping *m)
 	  continue;
 	
 	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
-	m->data->val_types |= debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
+	m->data->val_types |=
+	  debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
       }
+    }
+
+    check_mapping_for_destruct(m);
   }
 }
 
 #ifdef PIKE_DEBUG
-INT32 gc_touch_all_mappings(void)
+unsigned gc_touch_all_mappings(void)
 {
-  INT32 n = 0;
+  unsigned n = 0;
   struct mapping *m;
+  if (first_mapping && first_mapping->prev)
+    fatal("Error in mapping link list.\n");
   for (m = first_mapping; m; m = m->next) {
     debug_gc_touch(m);
     n++;
+    if (m->next && m->next->prev != m)
+      fatal("Error in mapping link list.\n");
   }
   return n;
 }
@@ -1922,10 +2027,22 @@ void gc_check_all_mappings(void)
 
 void gc_mark_all_mappings(void)
 {
-  struct mapping *m;
-  for(m=first_mapping;m;m=m->next)
+  gc_mark_mapping_pos = gc_internal_mapping;
+  while (gc_mark_mapping_pos) {
+    struct mapping *m = gc_mark_mapping_pos;
+    gc_mark_mapping_pos = m->next;
     if(gc_is_referenced(m))
       gc_mark_mapping_as_referenced(m);
+  }
+}
+
+void gc_cycle_check_all_mappings(void)
+{
+  struct mapping *m;
+  for (m = gc_internal_mapping; m; m = m->next) {
+    real_gc_cycle_check_mapping(m);
+    run_lifo_queue(&gc_mark_queue);
+  }
 }
 
 void gc_free_all_unreferenced_mappings(void)
@@ -1935,12 +2052,11 @@ void gc_free_all_unreferenced_mappings(void)
   struct mapping *m,*next;
   struct mapping_data *md;
 
-  for(m=first_mapping;m;m=next)
+  for(m=gc_internal_mapping;m;m=next)
   {
-    check_mapping_for_destruct(m);
     if(gc_do_free(m))
     {
-      add_ref(m);
+      /* Got an extra ref from gc_cycle_pop(). */
       md = m->data;
       /* Protect against unlink_mapping_data() recursing too far. */
       m->data=&empty_data;
@@ -1950,54 +2066,11 @@ void gc_free_all_unreferenced_mappings(void)
 #ifdef PIKE_DEBUG
       m->debug_size=0;
 #endif
-      SET_NEXT_AND_FREE(m, free_mapping);
-    }
-    else if(m->flags & MAPPING_FLAG_WEAK)
-    {
-      add_ref(m);
-      md=m->data;
-      /* no locking required (no is_eq) */
-      for(e=0;e<md->hashsize;e++)
-      {
-	for(prev= md->hash + e;(k=*prev);)
-	{
-	  if((k->val.type <= MAX_COMPLEX &&
-	      !(k->val.type == T_OBJECT &&
-		k->val.u.object->prog->flags & PROGRAM_NO_WEAK_FREE) &&
-	      gc_do_free(k->val.u.refs)) ||
-	     (k->ind.type <= MAX_COMPLEX &&
-	      !(k->ind.type == T_OBJECT &&
-		k->ind.u.object->prog->flags & PROGRAM_NO_WEAK_FREE) &&
-	      gc_do_free(k->ind.u.refs)))
-	  {
-	    PREPARE_FOR_INDEX_CHANGE();
-	    *prev=k->next;
-	    free_svalue(& k->ind);
-	    free_svalue(& k->val);
-	    k->next=md->free_list;
-	    md->free_list=k;
-	    md->size--;
-#ifdef PIKE_DEBUG
-	    if(m->data ==md)
-	      m->debug_size--;
-#endif
-	  }else{
-	    prev=&k->next;
-	  }
-	}
-      }
-      if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
-      {
-	debug_malloc_touch(m);
-	rehash(m, MAP_SLOTS(md->size));
-      }
+      gc_free_extra_ref(m);
       SET_NEXT_AND_FREE(m, free_mapping);
     }
     else
     {
-#ifdef PIKE_DEBUG
-      if(d_flag) gc_check_mapping(m);
-#endif
       next=m->next;
     }
   }
@@ -2018,8 +2091,8 @@ void simple_describe_mapping(struct mapping *m)
 
 void debug_dump_mapping(struct mapping *m)
 {
-  fprintf(stderr, "Refs=%d, next=%p, prev=%p",
-	  m->refs, m->next, m->prev);
+  fprintf(stderr, "Refs=%d, flags=0x%x, next=%p, prev=%p",
+	  m->refs, m->flags, m->next, m->prev);
   if (((int)m->data) & 3) {
     fprintf(stderr, ", data=%p (unaligned)\n", m->data);
   } else {

@@ -29,9 +29,9 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.84 2000/05/01 16:54:04 noring Exp $");
+RCSID("$Id: gc.c,v 1.85 2000/06/09 22:43:04 mast Exp $");
 
-/* Run garbage collect approximate every time we have
+/* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
  * garbage.
  */
@@ -41,6 +41,55 @@ RCSID("$Id: gc.c,v 1.84 2000/05/01 16:54:04 noring Exp $");
 #define MAX_ALLOC_THRESHOLD 10000000
 #define MULTIPLIER 0.9
 #define MARKER_CHUNK_SIZE 1023
+#define REF_CYCLE_CHUNK_SIZE 32
+
+/* The gc will free all things with no external references that isn't
+ * referenced by undestructed objects with destroy() lfuns (known as
+ * "live" objects). Live objects without external references are then
+ * destructed and garbage collected with normal refcount garbing
+ * (which might leave dead garbage around for the next gc). These live
+ * objects are destructed in an order that tries to be as well defined
+ * as possible using several rules:
+ *
+ * o  If an object A references B single way, then A is destructed
+ *    before B.
+ * o  If A and B are in a cycle, and there is a reference somewhere
+ *    from B to A that is weaker than any reference from A to B, then
+ *    A is destructed before B.
+ * o  Weak references are considered weaker than normal ones, and both
+ *    are considered weaker than strong references.
+ * o  Strong references are used in special cases like parent object
+ *    references. There can never be a cycle consisting only of strong
+ *    references. (This means the gc will never destruct a parent
+ *    object before all childs has been destructed.)
+ *
+ * The gc tries to detect and warn about cases where there are live
+ * objects with no well defined order between them. There are cases
+ * that are missed by this detection, though.
+ *
+ * Things that aren't live objects but are referenced from them are
+ * still intact during this destruct pass, so it's entirely possible
+ * to save these things by adding external references to them.
+ * However, it's not possible for live objects to save themselves or
+ * other live objects; all live objects that didn't have external
+ * references at the start of the gc pass will be destructed
+ * regardless of added references.
+ *
+ * Things that have only weak references at the start of the gc pass
+ * will be freed. That's done before the live object destruct pass.
+ */
+
+/* #define GC_VERBOSE */
+/* #define GC_CYCLE_DEBUG */
+
+#if defined(GC_VERBOSE) && !defined(PIKE_DEBUG)
+#undef GC_VERBOSE
+#endif
+#ifdef GC_VERBOSE
+#define GC_VERBOSE_DO(X) X
+#else
+#define GC_VERBOSE_DO(X)
+#endif
 
 INT32 num_objects = 1;		/* Account for empty_array. */
 INT32 num_allocs =0;
@@ -49,6 +98,16 @@ int Pike_in_gc = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
 
+static struct marker rec_list = {
+  0, 0, 0, 0, 0,
+#ifdef PIKE_DEBUG
+  0, 0,
+#endif
+  0, GC_RECURSING
+};
+struct marker *gc_rec_last = &rec_list;
+static struct marker *kill_list = 0;
+static unsigned last_cycle;
 
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
@@ -65,14 +124,23 @@ struct callback *debug_add_gc_callback(callback_func call,
 
 #undef INIT_BLOCK
 #ifdef PIKE_DEBUG
-#define INIT_BLOCK(X) (X)->flags=(X)->refs=(X)->xrefs=0; (X)->saved_refs=-1;
+#define INIT_BLOCK(X)					\
+  (X)->flags=(X)->refs=(X)->weak_refs=(X)->xrefs=0;	\
+  (X)->saved_refs=-1;					\
+  (X)->cycle = (unsigned INT16) -1;			\
+  (X)->link = (struct marker *) -1;
 #else
-#define INIT_BLOCK(X) (X)->flags=(X)->refs=0
+#define INIT_BLOCK(X)					\
+  (X)->flags=(X)->refs=(X)->weak_refs=0;
 #endif
 
 PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
 
 #ifdef PIKE_DEBUG
+
+int gc_in_cycle_check = 0;
+static unsigned weak_freed, checked, marked, cycle_checked, live_ref;
+static unsigned gc_extra_refs = 0;
 
 void dump_gc_info(void)
 {
@@ -129,7 +197,7 @@ static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
 char *fatal_after_gc=0;
-static int gc_debug = 0;
+int gc_debug = 0;
 
 #define DESCRIBE_MEM 1
 #define DESCRIBE_NO_REFS 2
@@ -319,6 +387,40 @@ void describe_location(void *real_memblock,
 #endif
 }
 
+static void describe_marker(struct marker *m)
+{
+  if (m)
+    fprintf(stderr, "marker at %p: flags=0x%04x, refs=%d, weak=%d, "
+	    "xrefs=%d, saved=%d, cycle=%d, link=%p\n",
+	    m, m->flags, m->refs, m->weak_refs,
+	    m->xrefs, m->saved_refs, m->cycle, m->link);
+  else
+    fprintf(stderr, "no marker\n");
+}
+
+void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
+{
+  va_list args;
+  struct marker *m = find_marker(a);
+
+  va_start(args, fmt);
+
+  fprintf(stderr, "**");
+  (void) VFPRINTF(stderr, fmt, args);
+
+  if (m) {
+    fprintf(stderr, "**Describing gc marker: ");
+    describe_marker(m);
+  }
+
+  describe(a);
+  if (flags & 1) locate_references(a);
+  if (flags & 2)
+    fatal_after_gc = "Fatal in garbage collector.\n";
+  else
+    debug_fatal("Fatal in garbage collector.\n");
+}
+
 static void gdb_gc_stop_here(void *a)
 {
   fprintf(stderr,"***One ref found%s.\n",found_where?found_where:"");
@@ -347,6 +449,17 @@ TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *dat
   return ret;
 }
 
+TYPE_FIELD debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data)
+{
+  TYPE_FIELD ret;
+  found_in=data;
+  found_in_type=t;
+  ret=gc_check_weak_svalues(s,num);
+  found_in_type=T_UNKNOWN;
+  found_in=0;
+  return ret;
+}
+
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data)
 {
   found_in=data;
@@ -356,6 +469,14 @@ void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void 
   found_in=0;
 }
 
+void debug_gc_check_weak_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data)
+{
+  found_in=data;
+  found_in_type=t;
+  gc_check_weak_short_svalue(u,type);
+  found_in_type=T_UNKNOWN;
+  found_in=0;
+}
 
 int debug_gc_check(void *x, TYPE_T t, void *data)
 {
@@ -395,6 +516,16 @@ void low_describe_something(void *a,
       if (((struct object *)a)->next == ((struct object *)a))
 	fprintf(stderr, "%*s**The object is fake.\n",indent,"");
 
+      {
+	struct object *o;
+	for (o = first_object; o && o != (struct object *) a; o = o->next) {}
+	if (!o)
+	  fprintf(stderr,"%*s**The object is not on the object link list.\n",indent,"");
+	for (o = objects_to_destruct; o && o != (struct object *) a; o = o->next) {}
+	if (o)
+	  fprintf(stderr,"%*s**The object is on objects_to_destruct.\n",indent,"");
+      }
+
       if(!p)
       {
 	fprintf(stderr,"%*s**The object is destructed.\n",indent,"");
@@ -423,6 +554,7 @@ void low_describe_something(void *a,
       int foo=0;
 
       fprintf(stderr,"%*s**Program id: %ld\n",indent,"",(long)(p->id));
+
       if(p->flags & PROGRAM_HAS_C_METHODS)
       {
 	fprintf(stderr,"%*s**The program was written in C.\n",indent,"");
@@ -466,7 +598,12 @@ void low_describe_something(void *a,
 
       break;
     }
-      
+
+    case T_MULTISET:
+      fprintf(stderr,"%*s**Describing array of multiset:\n",indent,"");
+      debug_dump_array(((struct multiset *)a)->ind);
+      break;
+
     case T_ARRAY:
       fprintf(stderr,"%*s**Describing array:\n",indent,"");
       debug_dump_array((struct array *)a);
@@ -580,71 +717,57 @@ void debug_describe_svalue(struct svalue *s)
 void debug_gc_touch(void *a)
 {
   struct marker *m;
-  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+  if (!a) fatal("Got null pointer.\n");
 
   m = find_marker(a);
   if (Pike_in_gc == GC_PASS_PRETOUCH) {
-    if (m) {
-      fprintf(stderr,"**Object touched twice.\n");
-      describe(a);
-      fatal("Object touched twice.\n");
-    }
+    if (m) gc_fatal(a, 0, "Object touched twice.\n");
     get_marker(a)->flags |= GC_TOUCHED;
   }
   else if (Pike_in_gc == GC_PASS_POSTTOUCH) {
     if (m) {
-      if (!(m->flags & GC_TOUCHED)) {
-	fprintf(stderr,"**An existing but untouched marker found for object in linked lists. flags: %x.\n", m->flags);
-	describe(a);
-	fatal("An existing but untouched marker found for object in linked lists.\n");
-      }
-      if ((m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED) {
-	fprintf(stderr,"**An object to garb is still around. flags: %x.\n", m->flags);
-	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
-	describe(a);
-	locate_references(a);
-	fprintf(stderr,"##### Continuing search for more bugs....\n");
-	fatal_after_gc="An object to garb is still around.\n";
-      }
+      if (!(m->flags & GC_TOUCHED))
+	gc_fatal(a, 2, "An existing but untouched marker found "
+		 "for object in linked lists.\n");
+      else if (m->flags & (GC_RECURSING|GC_LIVE_RECURSE|GC_WEAK_REF))
+	gc_fatal(a, 2, "Marker still got flag from recurse list.\n");
+      else if (m->flags & GC_REFERENCED)
+	return;
+      else if (m->flags & GC_XREFERENCED)
+	gc_fatal(a, 3, "A thing with external references "
+		 "got missed by mark pass.\n");
+      else if (!(m->flags & GC_CYCLE_CHECKED))
+	gc_fatal(a, 2, "A thing was missed by "
+		 "both mark and cycle check pass.\n");
+      else if (!(m->flags & GC_IS_REFERENCED))
+	gc_fatal(a, 2, "An unreferenced thing "
+		 "got missed by gc_is_referenced().\n");
+      else if (!(m->flags & GC_DO_FREE))
+	gc_fatal(a, 2, "An unreferenced thing "
+		 "got missed by gc_do_free().\n");
+      else if (m->flags & GC_GOT_EXTRA_REF)
+	gc_fatal(a, 2, "A thing still got an extra ref.\n");
+      else if (m->weak_refs >= m->saved_refs || m->flags & GC_IS_ONLY_WEAK)
+	gc_fatal(a, 3, "A thing which had only weak references is "
+		 "still around after gc.\n");
+      else if (!(m->flags & GC_LIVE))
+	gc_fatal(a, 3, "A thing to garb is still around.\n");
     }
   }
   else
     fatal("debug_gc_touch() used in invalid gc pass.\n");
 }
 
-#endif /* PIKE_DEBUG */
-
-INT32 real_gc_check(void *a)
+static INLINE struct marker *gc_check_debug(void *a)
 {
   struct marker *m;
 
-#ifdef PIKE_DEBUG
-  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+  if (!a) fatal("Got null pointer.\n");
   if(check_for)
   {
     if(check_for == a)
     {
       gdb_gc_stop_here(a);
-    }
-
-    m=get_marker(a);
-    if(check_for == (void *)1 &&
-       m && (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED)
-    {
-      int t=attempt_to_identify(a);
-      if(t != T_STRING && t != T_UNKNOWN)
-      {
-	fprintf(stderr,"**Reference to object to free in referenced object!\n");
-	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
-	describe(a);
-	locate_references(a);
-#if 1
-	fatal("Reference to object to free in referenced object!\n");
-#else
-	fprintf(stderr,"##### Continuing search for more bugs....\n");
-	fatal_after_gc="Reference to object to free in referenced object!\n";
-#endif
-      }
     }
     return 0;
   }
@@ -654,59 +777,48 @@ INT32 real_gc_check(void *a)
 
   m = get_marker(a);
 
-  if(m->saved_refs != -1)
-    if(m->saved_refs != *(INT32 *)a) {
-      fprintf(stderr,"**Refs changed in gc() pass %d. Expected %ld, got %ld.\n",
-	      Pike_in_gc, (long)m->saved_refs, (long)*(INT32 *)a);
-      describe(a);
-      locate_references(a);
-      fprintf(stderr,"##### Continuing search for more bugs....\n");
-      fatal_after_gc="Refs changed in gc()\n";
-    }
+  if (!*(INT32 *)a)
+    gc_fatal(a, 1, "GC check on thing without refs.\n");
+  if(m->saved_refs != -1 && m->saved_refs != *(INT32 *)a)
+    gc_fatal(a, 1, "Refs changed in gc.\n");
   m->saved_refs = *(INT32 *)a;
+  checked++;
+
+  return m;
+}
+
+#endif /* PIKE_DEBUG */
+
+INT32 real_gc_check(void *a)
+{
+  struct marker *m;
+#ifdef PIKE_DEBUG
+  if (!(m = gc_check_debug(a))) return 0;
 #else
   m = get_marker(a);
 #endif
+  return add_ref(m);
+}
 
-  m->flags |= GC_CHECKED;
+INT32 real_gc_check_weak(void *a)
+{
+  struct marker *m;
+#ifdef PIKE_DEBUG
+  if (!(m = gc_check_debug(a))) return 0;
+#else
+  m = get_marker(a);
+#endif
+  m->weak_refs++;
   return add_ref(m);
 }
 
 static void init_gc(void)
 {
-#if 0
-  INT32 tmp3;
-  /* init hash , hashsize will be a prime between num_objects/8 and
-   * num_objects/4, this will assure that no re-hashing is needed.
-   */
-  tmp3=my_log2(num_objects);
-
-  if(!d_flag) tmp3-=2;
-  if(tmp3<0) tmp3=0;
-  if(tmp3>=(long)NELEM(hashprimes)) tmp3=NELEM(hashprimes)-1;
-  hashsize=hashprimes[tmp3];
-
-  hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
-  MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
-  markers_left_in_chunk=0;
-#else
-/*  init_marker_hash(num_objects*8); */
   init_marker_hash();
-#endif
 }
 
 static void exit_gc(void)
 {
-#if 0
-  struct marker_chunk *m;
-  /* Free hash table */
-  free((char *)hash);
-  while((m=chunk))
-  {
-    chunk=m->next;
-    free((char *)m);
-  }
-#else
 #ifdef DO_PIKE_CLEANUP
   int e=0;
   struct marker *h;
@@ -715,7 +827,6 @@ static void exit_gc(void)
       remove_marker(marker_hash_table[e]->data);
 #endif
   exit_marker_hash();
-#endif
 }
 
 #ifdef PIKE_DEBUG
@@ -784,49 +895,64 @@ void locate_references(void *a)
 
 #ifdef PIKE_DEBUG
 
+void gc_add_extra_ref(void *a)
+{
+  struct marker *m = get_marker(a);
+  if (m->flags & GC_GOT_EXTRA_REF)
+    gc_fatal(a, 0, "Thing already got an extra gc ref.\n");
+  m->flags |= GC_GOT_EXTRA_REF;
+  if (m->saved_refs != -1) m->saved_refs++;
+  gc_extra_refs++;
+  ++*(INT32 *) a;
+}
+
+void gc_free_extra_ref(void *a)
+{
+  struct marker *m = get_marker(a);
+  if (!(m->flags & GC_GOT_EXTRA_REF))
+    gc_fatal(a, 0, "Thing haven't got an extra gc ref.\n");
+  m->flags &= ~GC_GOT_EXTRA_REF;
+  if (m->saved_refs != -1) m->saved_refs--;
+  gc_extra_refs--;
+}
+
+static INLINE void ref_count_check(void *a, struct marker *m)
+{
+  if(m->refs + m->xrefs > *(INT32 *)a ||
+     (Pike_in_gc == GC_PASS_CHECK &&
+      m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
+    gc_fatal(a, 1, "Ref counts are wrong.\n");
+}
+
 int debug_gc_is_referenced(void *a)
 {
   struct marker *m;
-  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+  if (!a) fatal("Got null pointer.\n");
+  if (Pike_in_gc != GC_PASS_MARK)
+    fatal("gc_is_referenced() called in invalid gc pass.\n");
 
-  m=get_marker(a);
-  if(m->refs + m->xrefs > *(INT32 *)a ||
-     (!(m->refs < *(INT32 *)a) && m->xrefs)  ||
-     (Pike_in_gc >= GC_PASS_CHECK && Pike_in_gc <= GC_PASS_MARK &&
-      m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
-  {
-    INT32 refs=m->refs;
-    INT32 xrefs=m->xrefs;
-    TYPE_T t=attempt_to_identify(a);
-    d_flag=0;
-
-    fprintf(stderr,"**Something has %ld refs, while gc() found %ld + %ld external.\n",
-	    (long)*(INT32 *)a,
-	    (long)refs,
-	    (long)xrefs);
-
-    if(m->saved_refs != *(INT32 *)a)
-      fprintf(stderr,"**In check pass it had %ld refs!!!\n",(long)m->saved_refs);
-
-    describe_something(a, t, 0,2,0);
-
-    locate_references(a);
-
-    fatal("Ref counts are wrong (has %d, found %d + %d external)\n",
-	  *(INT32 *)a,
-	  refs,
-	  xrefs);
+  if (gc_debug) {
+    m = find_marker(a);
+    if ((!m || !(m->flags & GC_TOUCHED)) &&
+	!safe_debug_findstring((struct pike_string *) a))
+      gc_fatal(a, 0, "Doing gc_is_referenced() on invalid object.\n");
+    if (!m) m = get_marker(a);
   }
+  else m = get_marker(a);
 
+  if (m->flags & GC_IS_REFERENCED)
+    gc_fatal(a, 0, "gc_is_referenced() called twice for thing.\n");
+  m->flags |= GC_IS_REFERENCED;
+  ref_count_check(a, m);
   return m->refs < *(INT32 *)a;
 }
-#endif
 
-#ifdef PIKE_DEBUG
 int gc_external_mark3(void *a, void *in, char *where)
 {
   struct marker *m;
-  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+  if (!a) fatal("Got null pointer.\n");
+  if (Pike_in_gc != GC_PASS_CHECK && Pike_in_gc != GC_PASS_LOCATE)
+    fatal("gc_external_mark() called in invalid gc pass.\n");
 
   if(check_for)
   {
@@ -845,44 +971,61 @@ int gc_external_mark3(void *a, void *in, char *where)
 
       return 1;
     }
-
-    m=get_marker(a);
-    if(check_for == (void *)1 &&
-       m && (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED)
-    {
-      int t=attempt_to_identify(a);
-      if(t != T_STRING && t != T_UNKNOWN)
-      {
-	fprintf(stderr,"EXTERNAL Reference to object to free%s!\n",in?(char *)in:"");
-	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
-	if(where) describe_location(0,T_UNKNOWN,where,4,1,0);
-	describe(a);
-	locate_references(a);
-#if 1
-	fatal("EXTERNAL Reference to object to free.\n");
-#else
-	fprintf(stderr,"##### Continuing search for more bugs....\n");
-	fatal_after_gc="EXTERNAL Reference to object to free.\n";
-#endif
-      }
-    }
-
     return 0;
   }
   m=get_marker(a);
   m->xrefs++;
   m->flags|=GC_XREFERENCED;
-  gc_is_referenced(a);
+  ref_count_check(a, m);
   return 0;
 }
+
+#endif /* PIKE_DEBUG */
+
+int gc_do_weak_free(void *a)
+{
+  struct marker *m;
+
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE)
+    fatal("gc_do_weak_free() called in invalid gc pass.\n");
+  if (gc_debug) {
+    if (!(m = find_marker(a)))
+      gc_fatal(a, 0, "gc_do_weak_free() got unknown object.\n");
+  }
+  else
 #endif
+    m = get_marker(a);
+
+  debug_malloc_touch(a);
+
+#ifdef PIKE_DEBUG
+  if (m->weak_refs > m->refs)
+    gc_fatal(a, 0, "More weak references than internal references.\n");
+  if (m->weak_refs > *(INT32 *) a)
+    gc_fatal(a, 0, "More weak references than references.\n");
+  ref_count_check(a, m);
+#endif
+
+  if (m->weak_refs >= *(INT32 *) a) {
+#ifdef PIKE_DEBUG
+    if (!(m->flags & GC_IS_ONLY_WEAK)) weak_freed++;
+    m->flags |= GC_IS_ONLY_WEAK;
+    /* Caller should free it after we return. */
+    if (m->saved_refs != -1) m->saved_refs--;
+    m->refs--, m->weak_refs--;
+#endif
+    return 1;
+  }
+  else return 0;
+}
 
 int gc_mark(void *a)
 {
   struct marker *m;
 
 #ifdef PIKE_DEBUG
-  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+  if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK)
     fatal("gc mark attempted in invalid pass.\n");
 #endif
@@ -893,69 +1036,648 @@ int gc_mark(void *a)
     return 0;
   }else{
     m->flags |= GC_REFERENCED;
+    DO_IF_DEBUG(marked++);
     return 1;
   }
 }
 
-#ifdef PIKE_DEBUG
-int debug_gc_do_free(void *a)
+#ifdef GC_CYCLE_DEBUG
+static int gc_cycle_indent = 0;
+#endif
+
+static void break_cycle (struct marker *beg, struct marker *pos)
 {
-  struct marker *m;
-  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+  /* There's a cycle from beg to gc_rec_last which should be broken at
+   * pos. Do it by removing the things from beg down to pos, to let
+   * them be handled again after gc_rec_last. (It's possible to be
+   * smarter here and put those things after gc_rec_last to avoid
+   * recursing through them again, but then it becomes tricky to know
+   * where the "stack top" is.) */
 
-  m=find_marker(debug_malloc_pass(a));
-  if (!m) return 0;		/* Object created after mark pass. */
+  struct marker *p, *q;
+#ifdef GC_CYCLE_DEBUG
+  fprintf(stderr, "%*sgc_cycle_push, break cycle:     %8p, [%8p] ",
+	  gc_cycle_indent, "", beg->data, gc_rec_last);
+  describe_marker(beg);
+#endif
+#ifdef PIKE_DEBUG
+  if (beg == pos)
+    gc_fatal(beg->data, 0, "Cycle already broken at requested position.\n");
+#endif
 
-  if( (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED &&
-      (m->flags & GC_XREFERENCED) )
-  {
-    INT32 refs=m->refs;
-    INT32 xrefs=m->xrefs;
-    TYPE_T t=attempt_to_identify(a);
-    if(t != T_STRING && t != T_UNKNOWN)
-    {
-      fprintf(stderr,
-	      "**gc_is_referenced failed, object has %ld references,\n"
-	      "** while gc() found %ld + %ld external. (type=%d, flags=%x)\n",
-	      (long)*(INT32 *)a,(long)refs,(long)xrefs,t,m->flags);
-      describe_something(a, t, 4,1,0);
+  if (beg->cycle) {
+#ifdef PIKE_DEBUG
+    if (pos->cycle == beg->cycle || gc_rec_last->cycle == beg->cycle)
+      gc_fatal(beg->data, 0, "Same cycle on both sides of broken link.\n");
+#endif
+    for (p = &rec_list; p->link->cycle != beg->cycle; p = p->link) {}
+  }
+  else
+    for (p = &rec_list; p->link != beg; p = p->link) {}
 
-      locate_references(a);
+  /* for (q = gc_rec_last; q->link; q = q->link) {} */
+  /* q->link = p->link; */
+  q = p->link;
+  p->link = pos;
 
-      fatal("GC failed object (has %d, found %d + %d external)\n",
-	    *(INT32 *)a,
-	    refs,
-	    xrefs);
+  while (q != pos) {
+    q->flags &= ~(GC_CYCLE_CHECKED|GC_RECURSING|GC_WEAK_REF);
+    q->cycle = 0;
+#ifdef GC_CYCLE_DEBUG
+    fprintf(stderr, "%*sgc_cycle_push, reset:           "
+	    "%8p,            ", gc_cycle_indent, "", q->data);
+    describe_marker(q);
+#endif
+#ifdef PIKE_DEBUG
+    p = q->link;
+    q->link = (struct marker *) -1;
+    q = p;
+#else
+    q = q->link;
+#endif
+  }
+}
+
+int gc_cycle_push(void *x, struct marker *m, int weak)
+{
+#ifdef PIKE_DEBUG
+  if (!x) fatal("Got null pointer.\n");
+  if (m->data != x) fatal("Got wrong marker.\n");
+  if (Pike_in_gc != GC_PASS_CYCLE)
+    fatal("GC cycle push attempted in invalid pass.\n");
+  if (gc_debug && !(m->flags & GC_TOUCHED))
+    gc_fatal(x, 0, "gc_cycle_push() called for untouched thing.\n");
+  if (m->flags & (GC_REFERENCED))
+    gc_fatal(x, 1, "Got a referenced marker to gc_cycle_push.\n");
+  if (m->flags & GC_XREFERENCED)
+    gc_fatal(x, 1, "Doing cycle check in externally referenced thing "
+	     "missed in mark pass.\n");
+  if (gc_debug) {
+    struct array *a;
+    struct object *o;
+    struct program *p;
+    struct mapping *m;
+    struct multiset *l;
+    for(a = gc_internal_array; a != &empty_array; a = a->next)
+      if(a == (struct array *) x) goto on_gc_internal_lists;
+    for(o = gc_internal_object; o; o = o->next)
+      if(o == (struct object *) x) goto on_gc_internal_lists;
+    for(p = gc_internal_program; p; p = p->next)
+      if(p == (struct program *) x) goto on_gc_internal_lists;
+    for(m = gc_internal_mapping; m; m = m->next)
+      if(m == (struct mapping *) x) goto on_gc_internal_lists;
+    for(l = gc_internal_multiset; l; l = l->next)
+      if(l == (struct multiset *) x) goto on_gc_internal_lists;
+    gc_fatal(x, 0, "gc_cycle_check() called for thing not on gc_internal lists.\n");
+  on_gc_internal_lists:
+  }
+#endif
+
+  if (gc_rec_last->flags & GC_LIVE_RECURSE) {
+#ifdef PIKE_DEBUG
+    if (!(gc_rec_last->flags & GC_LIVE))
+      gc_fatal(x, 0, "Doing live recursion from a dead thing.\n");
+#endif
+
+    if (m->flags & GC_CYCLE_CHECKED) {
+      if (!(m->flags & GC_LIVE)) {
+	/* Only recurse through things already handled; we'll get to the
+	 * other later in the normal recursion. */
+#ifdef PIKE_DEBUG
+	if (m->flags & GC_LIVE_RECURSE)
+	  gc_fatal(x, 0, "Mark live recursion attempted twice into thing.\n");
+#endif
+	goto live_recurse;
+      }
+#ifdef GC_CYCLE_DEBUG
+      fprintf(stderr, "%*sgc_cycle_push, no live recurse: %8p, [%8p] ",
+	      gc_cycle_indent, "", x, gc_rec_last);
+      describe_marker(m);
+#endif
+    }
+
+    else {
+      /* Nothing more to do. Unwind the live recursion. */
+      int flags;
+#ifdef GC_CYCLE_DEBUG
+      fprintf(stderr, "%*sgc_cycle_push, live rec done:   %8p, [%8p] ",
+	      gc_cycle_indent, "", x, gc_rec_last);
+      describe_marker(m);
+#endif
+      do {
+	gc_rec_last->flags &= ~GC_LIVE_RECURSE;
+#ifdef GC_CYCLE_DEBUG
+	gc_cycle_indent -= 2;
+	fprintf(stderr, "%*sgc_cycle_push, unwinding:       "
+		"%8p,            ", gc_cycle_indent, "", gc_rec_last->data);
+	describe_marker(gc_rec_last);
+#endif
+	gc_rec_last = (struct marker *)
+	  dequeue_lifo(&gc_mark_queue, (queue_call) gc_set_rec_last);
+#ifdef PIKE_DEBUG
+	if (!gc_rec_last)
+	  fatal("Expected a gc_set_rec_last entry in gc_mark_queue.\n");
+	gc_rec_last->link = (struct marker *) -1;
+#endif
+      } while (gc_rec_last->flags & GC_LIVE_RECURSE);
+      if (!dequeue_lifo(&gc_mark_queue,
+			(queue_call) gc_cycle_pop_object)) {
+#ifdef PIKE_DEBUG
+	fatal("Expected a gc_cycle_pop_object entry in gc_mark_queue.\n");
+#endif
+      }
+      gc_rec_last->link = 0;
+    }
+
+    return 0;
+  }
+
+  if (!(gc_rec_last->flags & GC_RECURSING))
+    /* The upward thing has been removed from rec_list, so we should
+     * ignore it and not do any recursion from it. */
+    return 0;
+
+  if (m->flags & GC_RECURSING) { /* A cycle is found. */
+    if (m != gc_rec_last) {
+      struct marker *p, *weak_ref = 0, *nonstrong_ref = 0;
+      if (!weak) {
+	struct marker *q;
+	for (q = m, p = m->link; p; q = p, p = p->link) {
+	  if (p->flags & (GC_WEAK_REF|GC_STRONG_REF)) {
+	    if (p->flags & GC_WEAK_REF) weak_ref = p;
+	    else if (!nonstrong_ref) nonstrong_ref = q;
+	  }
+	  if (p == gc_rec_last) break;
+	}
+      }
+
+      else if (weak < 0) {
+	for (p = m->link; p; p = p->link) {
+	  if (p->flags & GC_WEAK_REF) weak_ref = p;
+	  if (!(p->flags & GC_STRONG_REF)) nonstrong_ref = p;
+	  if (p == gc_rec_last) break;
+	}
+#ifdef PIKE_DEBUG
+	if (!nonstrong_ref)
+	  gc_fatal(x, 0, "Only strong links in cycle.\n");
+#endif
+      }
+
+      else {
+	struct marker *q;
+	for (q = m, p = m->link; p; q = p, p = p->link) {
+	  if (!(p->flags & GC_WEAK_REF) && !nonstrong_ref) nonstrong_ref = q;
+	  if (p == gc_rec_last) break;
+	}
+      }
+
+      if (p) {			/* It was a backward reference. */
+	if (weak_ref) {
+	  /* The backward link is normal or strong and there are one
+	   * or more weak links in the cycle. Let's break it at the
+	   * last one (to ensure that a sequence of several weak links
+	   * are broken at the last one). */
+#ifdef GC_CYCLE_DEBUG
+	  fprintf(stderr, "%*sgc_cycle_push, weak break:      %8p, [%8p] ",
+		  gc_cycle_indent, "", weak_ref->data, gc_rec_last);
+	  describe_marker(weak_ref);
+#endif
+	  break_cycle (m, weak_ref);
+	  goto normal_recurse;
+	}
+
+	else if (weak < 0) {
+	  /* The backward link is strong. Must break the cycle at the
+	   * last nonstrong link. */
+#ifdef GC_CYCLE_DEBUG
+	  fprintf(stderr, "%*sgc_cycle_push, nonstrong break: %8p, [%8p] ",
+		  gc_cycle_indent, "", nonstrong_ref->data, gc_rec_last);
+	  describe_marker(nonstrong_ref);
+#endif
+	  break_cycle (m, nonstrong_ref);
+	  if (m->flags & GC_STRONG_REF) nonstrong_ref->flags |= GC_STRONG_REF;
+	  goto normal_recurse;
+	}
+
+	else if (nonstrong_ref) {
+	  /* Either a nonweak cycle with a strong link in it or a weak
+	   * cycle with a nonweak link in it. Break before the first
+	   * link that's stronger than the others. */
+	  if (nonstrong_ref != m) {
+#ifdef GC_CYCLE_DEBUG
+	    fprintf(stderr, "%*sgc_cycle_push, weaker break:    %8p, [%8p] ",
+		    gc_cycle_indent, "", nonstrong_ref->data, gc_rec_last);
+	    describe_marker(nonstrong_ref);
+#endif
+	    break_cycle (m, nonstrong_ref);
+	    goto normal_recurse;
+	  }
+	}
+
+	else {
+	  /* A normal or weak cycle which will be destructed in
+	   * arbitrary order. */
+	  unsigned cycle = m->cycle ? m->cycle : ++last_cycle;
+#ifdef GC_CYCLE_DEBUG
+	  fprintf(stderr, "%*sgc_cycle_push, cycle:           %8p, [%8p] ",
+		  gc_cycle_indent, "", x, gc_rec_last);
+	  describe_marker(m);
+#endif
+	  for (p = m; p; p = p->link) {
+	    p->cycle = cycle;
+#ifdef GC_CYCLE_DEBUG
+	    fprintf(stderr, "%*sgc_cycle_push, mark cycle:      "
+		    "%8p,            ", gc_cycle_indent, "", p->data);
+	    describe_marker(p);
+#endif
+	  }}}}}			/* Mmm.. lisp ;) */
+
+  else
+    if (!(m->flags & GC_CYCLE_CHECKED)) {
+      struct marker *p;
+    normal_recurse:
+      m->flags |= gc_rec_last->flags & GC_LIVE;
+      if (weak) {
+	if (weak > 0) m->flags |= GC_WEAK_REF;
+	else m->flags |= GC_STRONG_REF;
+      }
+#ifdef PIKE_DEBUG
+      cycle_checked++;
+      if (m->flags & GC_LIVE_RECURSE)
+	gc_fatal(x, 0, "GC_LIVE_RECURSE set in normal recursion.\n");
+#endif
+      m->cycle = 0;
+      m->flags |= GC_CYCLE_CHECKED|GC_RECURSING;
+      m->link = 0;
+
+      /* Must add another variable to push and pop on gc_mark_queue to
+       * avoid this loop, and that could give more overhead than this.
+       * The linked list normally doesn't get very long anyway. */
+      for (p = gc_rec_last; p->link; p = p->link) {}
+      p->link = m;
+
+#ifdef GC_CYCLE_DEBUG
+      fprintf(stderr,"%*sgc_cycle_push, recurse%s  %8p, [%8p] ",
+	      gc_cycle_indent, "",
+	      weak > 0 ? " weak:  " : (weak < 0 ? " strong:" : ":       "),
+	      x, gc_rec_last);
+      describe_marker(m);
+      gc_cycle_indent += 2;
+#endif
+      gc_rec_last = m;
+      return 1;
+    }
+
+  /* Should normally not recurse now, but got to do that anyway if we
+   * must mark live things. */
+  if (!(gc_rec_last->flags & GC_LIVE) || m->flags & GC_LIVE) {
+#ifdef GC_CYCLE_DEBUG
+    fprintf(stderr, "%*sgc_cycle_push, no recurse:      %8p, [%8p] ",
+	    gc_cycle_indent, "", x, gc_rec_last);
+    describe_marker(m);
+#endif
+    return 0;
+  }
+
+live_recurse:
+#ifdef PIKE_DEBUG
+  if (m->flags & GC_LIVE)
+    fatal("Shouldn't live recurse when there's nothing to do.\n");
+#endif
+  m->flags |= GC_LIVE|GC_LIVE_RECURSE;
+
+  if (m->flags & GC_GOT_DEAD_REF) {
+    /* A thing previously popped as dead is now being marked live.
+     * Have to remove the extra ref added by gc_cycle_pop(). */
+    gc_free_extra_ref(x);
+    if (!--*(INT32 *) x) {
+#ifdef PIKE_DEBUG
+      gc_fatal(x, 0, "Thing got zero refs after removing the dead gc ref.\n");
+#endif
     }
   }
 
-  return (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED;
+  /* Recurse without linking m onto rec_list. */
+#ifdef GC_CYCLE_DEBUG
+  fprintf(stderr, "%*sgc_cycle_push, live recurse:    %8p, [%8p] ",
+	  gc_cycle_indent, "", x, gc_rec_last);
+  describe_marker(m);
+  gc_cycle_indent += 2;
+#endif
+  gc_rec_last = m;
+  return 1;
 }
+
+static void pop_cycle_to_kill_list()
+{
+  struct marker *base, *p, *q;
+
+  for (base = gc_rec_last;
+       base->cycle == base->link->cycle;
+       base = base->link) {}
+  p = base;
+
+  while ((q = p->link)) {
+#ifdef PIKE_DEBUG
+    if (q == (struct marker *) -1)
+      gc_fatal(p->data, 0, "Followed link to oblivion.\n");
+    if (q->cycle != base->link->cycle)
+      gc_fatal(q->data, 0, "Popping more than one cycle from rec_list.\n");
+    if (!(q->flags & GC_RECURSING))
+      gc_fatal(q->data, 0, "Marker being cycle popped doesn't have GC_RECURSING.\n");
+#endif
+    q->flags &= ~GC_RECURSING;
+    if (q->flags & GC_LIVE_OBJ) {
+      /* This extra ref is taken away in the kill pass. */
+      gc_add_extra_ref(q->data);
+#ifdef GC_CYCLE_DEBUG
+      fprintf(stderr, "%*spop_cycle_to_kill_list:         %8p, [%8p] ",
+	      gc_cycle_indent, "", q->data, base);
+      describe_marker(q);
+#endif
+      p = q;
+    }
+    else {
+#ifdef GC_CYCLE_DEBUG
+      fprintf(stderr, "%*spop_cycle_to_kill_list, ignore: %8p, [%8p] ",
+	      gc_cycle_indent, "", q->data, base);
+      describe_marker(q);
+#endif
+      p->link = q->link;
+    }
+  }
+
+  p->link = kill_list;
+  kill_list = base->link;
+  base->link = 0;
+}
+
+void gc_cycle_pop(void *a)
+{
+  struct marker *m = get_marker(a);
+
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_CYCLE)
+    fatal("GC cycle pop attempted in invalid pass.\n");
+  if (!(m->flags & GC_CYCLE_CHECKED))
+    gc_fatal(a, 0, "Marker being popped doesn't have GC_CYCLE_CHECKED.\n");
+  if (m->flags & (GC_REFERENCED))
+    gc_fatal(a, 1, "Got a referenced marker to gc_cycle_pop.\n");
+  if (m->flags & GC_XREFERENCED)
+    gc_fatal(a, 1, "Doing cycle check in externally referenced thing "
+	     "missed in mark pass.\n");
+#endif
+#ifdef GC_CYCLE_DEBUG
+  gc_cycle_indent -= 2;
 #endif
 
-void do_gc(void)
+  if (!(m->flags & GC_RECURSING)) {
+    m->flags &= ~GC_LIVE_RECURSE;
+#ifdef GC_CYCLE_DEBUG
+    fprintf(stderr, "%*sgc_cycle_pop, pop ignored:      %8p, [%8p] ",
+	    gc_cycle_indent, "", a, gc_rec_last);
+    describe_marker(m);
+#endif
+    return;
+  }
+
+  if (!(m->flags & GC_LIVE)) {
+    /* This extra ref is taken away in the free pass. This is done to
+     * not refcount garb the cycles themselves recursively, which in bad
+     * cases can consume a lot of C stack. */
+    gc_add_extra_ref(m->data);
+#ifdef PIKE_DEBUG
+    if (m->flags & GC_GOT_DEAD_REF)
+      gc_fatal(a, 0, "A thing already got an extra dead cycle ref.\n");
+#endif
+    m->flags |= GC_GOT_DEAD_REF;
+  }
+
+  if (m->cycle) {
+    /* Part of a cycle. Leave for now so we pop the whole cycle at once. */
+    m->flags &= ~GC_WEAK_REF;
+#ifdef GC_CYCLE_DEBUG
+    fprintf(stderr, "%*sgc_cycle_pop, in cycle:         %8p, [%8p] ",
+	    gc_cycle_indent, "", a, gc_rec_last);
+    describe_marker(m);
+#endif
+    if (!(gc_rec_last->flags & GC_RECURSING))
+      for (gc_rec_last = &rec_list;
+	   gc_rec_last->link != m && gc_rec_last->link->cycle != m->cycle;
+	   gc_rec_last = gc_rec_last->link) {}
+    if (gc_rec_last->cycle != m->cycle)
+      /* Time to pop the cycle. */
+      pop_cycle_to_kill_list();
+  }
+
+  else {
+    struct marker *p;
+    m->flags &= ~(GC_RECURSING|GC_WEAK_REF);
+    if (gc_rec_last->flags & GC_RECURSING) p = gc_rec_last;
+    else p = &rec_list;
+    for (; p->link != m; p = p->link) {
+#ifdef PIKE_DEBUG
+      if (!p->link || m->link)
+	gc_fatal(a, 0, "Thing not in cycle not last on rec_list.\n");
+#endif
+    }
+    p->link = 0;
+#ifdef GC_CYCLE_DEBUG
+    fprintf(stderr, "%*sgc_cycle_pop:                   %8p, [%8p] ",
+	    gc_cycle_indent, "", a, gc_rec_last);
+    describe_marker(m);
+#endif
+  }
+}
+
+void gc_cycle_pop_object(struct object *o)
+{
+  struct marker *m = get_marker(o);
+
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_CYCLE)
+    fatal("GC cycle pop attempted in invalid pass.\n");
+  if (!(m->flags & GC_CYCLE_CHECKED))
+    gc_fatal(o, 0, "Marker being popped doesn't have GC_CYCLE_CHECKED.\n");
+  if (m->flags & (GC_REFERENCED))
+    gc_fatal(o, 1, "Got a referenced marker to gc_cycle_pop_object.\n");
+  if (m->flags & GC_XREFERENCED)
+    gc_fatal(o, 1, "Doing cycle check in externally referenced thing "
+	     "missed in mark pass.\n");
+#endif
+#ifdef GC_CYCLE_DEBUG
+  gc_cycle_indent -= 2;
+#endif
+
+  if (!(m->flags & GC_RECURSING)) {
+    m->flags &= ~GC_LIVE_RECURSE;
+#ifdef GC_CYCLE_DEBUG
+    fprintf(stderr, "%*sgc_cycle_pop_object, pop ign:   %8p, [%8p] ",
+	    gc_cycle_indent, "", o, gc_rec_last);
+    describe_marker(m);
+#endif
+    return;
+  }
+
+  if (!(m->flags & GC_LIVE)) {
+    /* This extra ref is taken away in the free pass. This is done to
+     * not refcount garb the cycles themselves recursively, which in bad
+     * cases can consume a lot of C stack. */
+    gc_add_extra_ref(o);
+#ifdef PIKE_DEBUG
+    if (m->flags & GC_GOT_DEAD_REF)
+      gc_fatal(o, 0, "An object already got an extra dead cycle ref.\n");
+#endif
+    m->flags |= GC_GOT_DEAD_REF;
+  }
+
+  if (m->cycle) {
+    /* Part of a cycle. Leave for now so we pop the whole cycle at once. */
+    m->flags &= ~GC_WEAK_REF;
+#ifdef GC_CYCLE_DEBUG
+    fprintf(stderr,"%*sgc_cycle_pop_object, in cycle:  %8p, [%8p] ",
+	    gc_cycle_indent, "", o, gc_rec_last);
+    describe_marker(m);
+#endif
+    if (!(gc_rec_last->flags & GC_RECURSING))
+      for (gc_rec_last = &rec_list;
+	   gc_rec_last->link != m && gc_rec_last->link->cycle != m->cycle;
+	   gc_rec_last = gc_rec_last->link) {}
+    if (gc_rec_last->cycle != m->cycle)
+      /* Time to pop the cycle. */
+      pop_cycle_to_kill_list();
+  }
+
+  else {
+    struct marker *p;
+    m->flags &= ~(GC_RECURSING|GC_WEAK_REF);
+    if (gc_rec_last->flags & GC_RECURSING) p = gc_rec_last;
+    else p = &rec_list;
+    for (; p->link != m; p = p->link) {
+#ifdef PIKE_DEBUG
+      if (!p->link || m->link)
+	gc_fatal(o, 0, "Object not in cycle not last on rec_list.\n");
+#endif
+    }
+    p->link = 0;
+
+    if (m->flags & GC_LIVE_OBJ) {
+      gc_add_extra_ref(o); /* This extra ref is taken away in the kill pass. */
+      m->link = kill_list;
+      kill_list = m;
+#ifdef GC_CYCLE_DEBUG
+      fprintf(stderr, "%*sgc_cycle_pop_object, for kill:  %8p, [%8p] ",
+	      gc_cycle_indent, "", o, gc_rec_last);
+      describe_marker(m);
+    }
+    else {
+      fprintf(stderr,"%*sgc_cycle_pop_object:            %8p, [%8p] ",
+	      gc_cycle_indent, "", o, gc_rec_last);
+      describe_marker(m);
+#endif
+    }
+  }
+}
+
+void gc_set_rec_last(struct marker *m)
+{
+  gc_rec_last = m;
+}
+
+void do_gc_recurse_svalues(struct svalue *s, int num)
+{
+  gc_recurse_svalues(s, num);
+}
+
+void do_gc_recurse_short_svalue(union anything *u, TYPE_T type)
+{
+  gc_recurse_short_svalue(u, type);
+}
+
+int gc_do_free(void *a)
+{
+  struct marker *m;
+#ifdef PIKE_DEBUG
+  if (!a) fatal("Got null pointer.\n");
+  if (Pike_in_gc != GC_PASS_FREE)
+    fatal("gc free attempted in invalid pass.\n");
+#endif
+
+  m=find_marker(debug_malloc_pass(a));
+  if (!m) return 0;		/* Object created after cycle pass. */
+
+#ifdef PIKE_DEBUG
+  if (m->flags & GC_REFERENCED)
+    gc_fatal(a, 0, "gc_do_free() called for referenced thing.\n");
+  if (gc_debug &&
+      (m->flags & (GC_TOUCHED|GC_REFERENCED|GC_IS_REFERENCED)) == GC_TOUCHED)
+    gc_fatal(a, 0, "gc_do_free() called without prior call to "
+	     "gc_mark() or gc_is_referenced().\n");
+  if((m->flags & (GC_REFERENCED|GC_XREFERENCED)) == GC_XREFERENCED)
+    gc_fatal(a, 1, "Thing with external reference missed in gc mark pass.\n");
+  if ((m->flags & (GC_DO_FREE|GC_LIVE)) == GC_LIVE) live_ref++;
+  m->flags |= GC_DO_FREE;
+#endif
+
+  return !(m->flags & (GC_REFERENCED|GC_LIVE));
+}
+
+static void warn_bad_cycles()
+{
+  JMP_BUF uwp;
+  struct array *obj_arr = 0;
+  if (!SETJMP(uwp)) {
+    struct marker *p;
+    unsigned cycle = 0;
+    obj_arr = allocate_array(0);
+    for (p = kill_list; p;) {
+      if ((cycle = p->cycle)) {
+	push_object((struct object *) p->data);
+	obj_arr = append_array(obj_arr, --sp);
+      }
+      p = p->link;
+      if (p ? p->cycle != cycle : cycle) {
+	if (obj_arr->size >= 2) {
+	  push_constant_text("gc");
+	  push_constant_text("bad_cycle");
+	  push_array(obj_arr);
+	  SAFE_APPLY_MASTER("runtime_warning", 3);
+	  pop_stack();
+	  obj_arr = allocate_array(0);
+	}
+	else obj_arr = resize_array(obj_arr, 0);
+      }
+      if (!p) break;
+    }
+  }
+  UNSETJMP(uwp);
+  if (obj_arr) free_array(obj_arr);
+}
+
+int do_gc(void)
 {
   double tmp;
-  INT32 tmp2;
+  int objs, pre_kill_objs;
   double multiplier;
-  int destroyed, destructed;
-#ifdef HAVE_GETHRTIME
+  struct array *a;
+  struct multiset *l;
+  struct mapping *m;
+  struct program *p;
+  struct object *o;
 #ifdef PIKE_DEBUG
+#ifdef HAVE_GETHRTIME
   hrtime_t gcstarttime;
 #endif
+  unsigned destroy_count, obj_count;
 #endif
 
-  if(Pike_in_gc) return;
+  if(Pike_in_gc) return 0;
   init_gc();
   Pike_in_gc=GC_PASS_PREPARE;
 #ifdef PIKE_DEBUG
   gc_debug = d_flag;
 #endif
 
-  /* Make sure there will be no callback to this while we're in the
-   * gc. That can be fatal since this function links objects back to
-   * the object list, which causes that list to be reordered and the
-   * various gc loops over it might then miss things. */
   destruct_objects_to_destruct();
 
   if(gc_evaluator_callback)
@@ -964,11 +1686,13 @@ void do_gc(void)
     gc_evaluator_callback=0;
   }
 
-  tmp2=num_objects;
+  objs=num_objects;
+  last_cycle = 0;
 
 #ifdef PIKE_DEBUG
-  if(t_flag) {
+  if(GC_VERBOSE_DO(1 ||) t_flag) {
     fprintf(stderr,"Garbage collecting ... ");
+    GC_VERBOSE_DO(fprintf(stderr, "\n"));
 #ifdef HAVE_GETHRTIME
     gcstarttime = gethrtime();
 #endif
@@ -984,21 +1708,23 @@ void do_gc(void)
   objects_alloced += (double) num_allocs;
   
   objects_freed*=multiplier;
-  objects_freed += (double) num_objects;
 
-  /* Thread switches and object alloc/free are disallowed now. */
+  /* Thread switches, object alloc/free and any reference changes
+   * (except by the gc itself) are disallowed now. */
 
 #ifdef PIKE_DEBUG
+  weak_freed = checked = marked = cycle_checked = live_ref = 0;
   if (gc_debug) {
-    INT32 n;
+    unsigned n;
     Pike_in_gc = GC_PASS_PRETOUCH;
     n = gc_touch_all_arrays();
     n += gc_touch_all_multisets();
     n += gc_touch_all_mappings();
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
-    if (n != num_objects)
+    if (n != (unsigned) num_objects)
       fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
+    GC_VERBOSE_DO(fprintf(stderr, "| pretouch: %u things\n", n));
   }
 #endif
 
@@ -1024,7 +1750,19 @@ void do_gc(void)
    */
   call_callback(& gc_callbacks, (void *)0);
 
+  GC_VERBOSE_DO(fprintf(stderr, "| check: %u references checked\n", checked));
+
   Pike_in_gc=GC_PASS_MARK;
+
+  /* Anything after and including gc_internal_foo in the linked lists
+   * are considered to lack external references. The mark pass move
+   * externally referenced things in front of these pointers. */
+  gc_internal_array = empty_array.next;
+  gc_internal_multiset = first_multiset;
+  gc_internal_mapping = first_mapping;
+  gc_internal_program = first_program;
+  gc_internal_object = first_object;
+
   /* Next we mark anything with external references */
   gc_mark_all_arrays();
   run_queue(&gc_mark_queue);
@@ -1036,62 +1774,136 @@ void do_gc(void)
   run_queue(&gc_mark_queue);
   gc_mark_all_objects();
   run_queue(&gc_mark_queue);
+/*   if(gc_debug) */
+/*     gc_mark_all_strings(); */
 
-  if(d_flag)
-    gc_mark_all_strings();
+  GC_VERBOSE_DO(fprintf(stderr,
+			"| mark: %u markers referenced,\n"
+			"|       %u weak references freed, %d things really freed\n",
+			marked, weak_freed, objs - num_objects));
 
-  /* Thread switches and object alloc/free are allowed now. */
+  Pike_in_gc=GC_PASS_CYCLE;
+#ifdef PIKE_DEBUG
+  obj_count = num_objects;
+#endif
+
+  /* Now find all cycles in the internal structures */
+  /* Note: The order between types here is normally not significant,
+   * but the permuting destruct order tests in the testsuite won't be
+   * really effective unless objects are handled first. :P */
+  gc_cycle_check_all_objects();
+  gc_cycle_check_all_arrays();
+  gc_cycle_check_all_multisets();
+  gc_cycle_check_all_mappings();
+  gc_cycle_check_all_programs();
 
 #ifdef PIKE_DEBUG
-  check_for=(void *)1;
+  if (gc_mark_queue.first)
+    fatal("gc_mark_queue not empty at end of cycle check pass.\n");
+  if (rec_list.link || gc_rec_last != &rec_list)
+    fatal("Recurse list not empty or inconsistent after cycle check pass.\n");
 #endif
+
+  GC_VERBOSE_DO(fprintf(stderr,
+			"| cycle: %u internal things visited, %u cycle ids used,\n"
+			"|        %u weak references freed, %d things really freed\n",
+			cycle_checked, last_cycle, weak_freed, obj_count - num_objects));
+
+  /* Thread switches, object alloc/free and reference changes are
+   * allowed again now. */
+
   Pike_in_gc=GC_PASS_FREE;
+#ifdef PIKE_DEBUG
+  weak_freed = 0;
+  obj_count = num_objects;
+#endif
+
   /* Now we free the unused stuff */
   gc_free_all_unreferenced_arrays();
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();
   gc_free_all_unreferenced_programs();
-  Pike_in_gc=GC_PASS_DESTROY;
-  /* This is intended to happen before the freeing done above. But
-   * it's put here for the time being, since the problem of non-object
-   * objects getting external references from destroy code isn't
-   * solved yet. */
-  destroyed = gc_destroy_all_unreferenced_objects();
-  Pike_in_gc=GC_PASS_FREE;
-  destructed = gc_free_all_unreferenced_objects();
+  gc_free_all_unreferenced_objects();
+
+  GC_VERBOSE_DO(fprintf(stderr, "| free: %d really freed, %u left with live references\n",
+			obj_count - num_objects, live_ref));
+
+  gc_internal_array = &empty_array;
+  gc_internal_multiset = 0;
+  gc_internal_mapping = 0;
+  gc_internal_program = 0;
+  gc_internal_object = 0;
 
 #ifdef PIKE_DEBUG
-  if (destroyed != destructed)
-    fatal("destroy() called in %d objects in gc, but %d destructed.\n",
-	  destroyed, destructed);
-  check_for=0;
   if(fatal_after_gc) fatal(fatal_after_gc);
 #endif
 
-  Pike_in_gc=GC_PASS_DESTRUCT;
-  destruct_objects_to_destruct();
+  Pike_in_gc=GC_PASS_KILL;
+  /* Destruct the live objects in cycles, but first warn about any bad
+   * cycles. */
+  pre_kill_objs = num_objects;
+  if (last_cycle) {
+    objs -= num_objects;
+    warn_bad_cycles();
+    objs += num_objects;
+  }
+#ifdef PIKE_DEBUG
+  destroy_count = 0;
+#endif
+  for (; kill_list; kill_list = kill_list->link) {
+    struct object *o = (struct object *) kill_list->data;
+#ifdef PIKE_DEBUG
+    if ((kill_list->flags & (GC_LIVE|GC_LIVE_OBJ)) != (GC_LIVE|GC_LIVE_OBJ))
+      gc_fatal(o, 0, "Invalid thing in kill list.\n");
+#endif
+    GC_VERBOSE_DO(fprintf(stderr, "|   Killing %p with %d refs\n",
+			  o, o->refs));
+    destruct(o);
+    free_object(o);
+    gc_free_extra_ref(o);
+#ifdef PIKE_DEBUG
+    destroy_count++;
+#endif
+  }
 
-  /* Thread switches and object alloc/free are disallowed now. */
+  GC_VERBOSE_DO(fprintf(stderr, "| kill: %u objects killed, %d things really freed\n",
+			destroy_count, pre_kill_objs - num_objects));
+
+  Pike_in_gc=GC_PASS_DESTRUCT;
+  /* Destruct objects on the destruct queue. */
+  GC_VERBOSE_DO(obj_count = num_objects);
+  destruct_objects_to_destruct();
+  GC_VERBOSE_DO(fprintf(stderr, "| destruct: %d things really freed\n",
+			obj_count - num_objects));
 
 #ifdef PIKE_DEBUG
   if (gc_debug) {
-    INT32 n;
+    unsigned n;
     Pike_in_gc=GC_PASS_POSTTOUCH;
     n = gc_touch_all_arrays();
     n += gc_touch_all_multisets();
     n += gc_touch_all_mappings();
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
-    if (n != num_objects)
+    if (n != (unsigned) num_objects)
       fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
+    GC_VERBOSE_DO(fprintf(stderr, "| posttouch: %u things\n", n));
     if(fatal_after_gc) fatal(fatal_after_gc);
   }
+  if (gc_extra_refs)
+    fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
 #endif
 
   Pike_in_gc=0;
   exit_gc();
 
-  objects_freed -= (double) num_objects;
+  /* It's possible that more things got allocated in the kill pass
+   * than were freed. The count before that is a better measurement
+   * then. */
+  if (pre_kill_objs < num_objects) objs -= pre_kill_objs;
+  else objs -= num_objects;
+
+  objects_freed += (double) objs;
 
   tmp=(double)num_objects;
   tmp=tmp * GC_CONST/100.0 * (objects_alloced+1.0) / (objects_freed+1.0);
@@ -1109,15 +1921,15 @@ void do_gc(void)
   num_allocs=0;
 
 #ifdef PIKE_DEBUG
-  if(t_flag)
+  if(GC_VERBOSE_DO(1 ||) t_flag)
   {
 #ifdef HAVE_GETHRTIME
     fprintf(stderr,"done (freed %ld of %ld objects), %ld ms.\n",
-	    (long)(tmp2-num_objects),(long)tmp2,
+	    (long)objs,(long)objs + num_objects,
 	    (long)((gethrtime() - gcstarttime)/1000000));
 #else
     fprintf(stderr,"done (freed %ld of %ld objects)\n",
-	    (long)(tmp2-num_objects),(long)tmp2);
+	    (long)objs,(long)objs + num_objects);
 #endif
   }
 #endif
@@ -1127,6 +1939,8 @@ void do_gc(void)
 #else
   if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
+
+  return objs;
 }
 
 

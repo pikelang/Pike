@@ -16,9 +16,12 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.21 2000/04/27 02:13:28 hubbe Exp $");
+RCSID("$Id: multiset.c,v 1.22 2000/06/09 22:43:04 mast Exp $");
 
 struct multiset *first_multiset;
+
+struct multiset *gc_internal_multiset = 0;
+static struct multiset *gc_mark_multiset_pos = 0;
 
 int multiset_member(struct multiset *l, struct svalue *ind)
 {
@@ -33,12 +36,9 @@ struct multiset *allocate_multiset(struct array *ind)
   struct multiset *l;
   l=ALLOC_STRUCT(multiset);
   GC_ALLOC(l);
-  l->next = first_multiset;
-  l->prev = 0;
   l->refs = 1;
   l->ind=ind;
-  if(first_multiset) first_multiset->prev = l;
-  first_multiset=l;
+  DOUBLELINK(first_multiset, l);
 
   INITIALIZE_PROT(l);
 
@@ -58,15 +58,16 @@ void really_free_multiset(struct multiset *l)
   free_array(l->ind);
   FREE_PROT(l);
 
-  if(l->prev)
-    l->prev->next = l->next;
-  else
-    first_multiset = l->next;
+  if (gc_internal_multiset) {
+    if (l == gc_internal_multiset)
+      gc_internal_multiset = l->next;
+    if (l == gc_mark_multiset_pos)
+      gc_mark_multiset_pos = l->next;
+  }
+  DOUBLEUNLINK(first_multiset, l);
 
-  if(l->next)  l->next->prev = l->prev;
-    
   free((char *)l);
-  GC_FREE(l);
+  GC_FREE();
 }
 
 
@@ -287,18 +288,45 @@ struct multiset *copy_multiset_recursively(struct multiset *l,
 
 void gc_mark_multiset_as_referenced(struct multiset *l)
 {
-  if(gc_mark(l))
+  if(gc_mark(l)) {
+    if (l == gc_mark_multiset_pos)
+      gc_mark_multiset_pos = l->next;
+    if (l == gc_internal_multiset)
+      gc_internal_multiset = l->next;
+    else {
+      DOUBLEUNLINK(first_multiset, l);
+      DOUBLELINK(first_multiset, l); /* Linked in first. */
+    }
     gc_mark_array_as_referenced(l->ind);
+  }
+}
+
+void real_gc_cycle_check_multiset(struct multiset *l)
+{
+  GC_CYCLE_ENTER(l, 0) {
+    gc_cycle_check_array(l->ind);
+  } GC_CYCLE_LEAVE;
+}
+
+void real_gc_cycle_check_multiset_weak(struct multiset *l)
+{
+  GC_CYCLE_ENTER(l, 1) {
+    gc_cycle_check_array(l->ind);
+  } GC_CYCLE_LEAVE;
 }
 
 #ifdef PIKE_DEBUG
-INT32 gc_touch_all_multisets(void)
+unsigned gc_touch_all_multisets(void)
 {
-  INT32 n = 0;
+  unsigned n = 0;
   struct multiset *l;
+  if (first_multiset && first_multiset->prev)
+    fatal("Error in multiset link list.\n");
   for(l=first_multiset;l;l=l->next) {
     debug_gc_touch(l);
     n++;
+    if (l->next && l->next->prev != l)
+      fatal("Error in multiset link list.\n");
   }
   return n;
 }
@@ -308,35 +336,44 @@ void gc_check_all_multisets(void)
 {
   struct multiset *l;
   for(l=first_multiset;l;l=l->next)
-    gc_check(l->ind);
+    debug_gc_check(l->ind, T_MULTISET, l);
 }
 
 void gc_mark_all_multisets(void)
 {
-  struct multiset *l;
-  for(l=first_multiset;l;l=l->next)
+  gc_mark_multiset_pos = gc_internal_multiset;
+  while (gc_mark_multiset_pos) {
+    struct multiset *l = gc_mark_multiset_pos;
+    gc_mark_multiset_pos = l->next;
     if(gc_is_referenced(l))
       gc_mark_multiset_as_referenced(l);
+  }
+}
+
+void gc_cycle_check_all_multisets(void)
+{
+  struct multiset *l;
+  for (l = gc_internal_multiset; l; l = l->next) {
+    real_gc_cycle_check_multiset(l);
+    run_lifo_queue(&gc_mark_queue);
+  }
 }
 
 void gc_free_all_unreferenced_multisets(void)
 {
   struct multiset *l,*next;
 
-  for(l=first_multiset;l;l=next)
+  for(l=gc_internal_multiset;l;l=next)
   {
     if(gc_do_free(l))
     {
-      add_ref(l);
+      /* Got an extra ref from gc_cycle_pop(). */
       free_svalues(ITEM(l->ind), l->ind->size, l->ind->type_field);
       l->ind->size=0;
 
+      gc_free_extra_ref(l);
       SET_NEXT_AND_FREE(l, free_multiset);
     }else{
-#ifdef PIKE_DEBUG
-      extern int d_flag;
-      if(d_flag) gc_check(l->ind);
-#endif
       next=l->next;
     }
   }

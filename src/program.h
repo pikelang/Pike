@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.89 2000/05/23 21:12:05 hubbe Exp $
+ * $Id: program.h,v 1.90 2000/06/09 22:43:05 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -304,6 +304,7 @@ extern long local_class_counter;
 extern int catch_level;
 extern INT32 num_used_modules;
 extern struct program *pike_trampoline_program;
+extern struct program *gc_internal_program;
 
 /* Flags for identifier finding... */
 #define SEE_STATIC 1
@@ -379,6 +380,13 @@ int map_variable(char *name,
 		 INT32 flags,
 		 INT32 offset,
 		 INT32 run_time_type);
+int quick_map_variable(char *name,
+		       int name_length,
+		       INT32 offset,
+		       char *type,
+		       int type_length,
+		       INT32 run_time_type,
+		       INT32 flags);
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
 		    INT32 flags);
@@ -454,9 +462,12 @@ void check_all_programs(void);
 void init_program(void);
 void cleanup_program(void);
 void gc_mark_program_as_referenced(struct program *p);
-INT32 gc_touch_all_programs(void);
+unsigned gc_touch_all_programs(void);
 void gc_check_all_programs(void);
 void gc_mark_all_programs(void);
+void real_gc_cycle_check_program(struct program *p);
+void real_gc_cycle_check_program_weak(struct program *p);
+void gc_cycle_check_all_programs(void);
 void gc_free_all_unreferenced_programs(void);
 void count_memory_in_programs(INT32 *num_, INT32 *size_);
 void push_compiler_frame(int lexical_scope);
@@ -487,6 +498,9 @@ void *parent_storage(int depth);
 #define ADD_INT_CONSTANT(NAME,CONST,FLAGS) \
   quick_add_integer_constant(NAME,CONSTANT_STRLEN(NAME),CONST,FLAGS)
 
+#define MAP_VARIABLE(NAME,OFFSET,TYPE,RTTYPE,FLAGS) \
+  quick_map_variable(NAME,CONSTANT_STRLEN(NAME),OFFSET,TYPE,CONSTANT_STRLEN(TYPE),RTTYPE,FLAGS)
+
 #define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {				\
   DTYPE_START;									\
   {DTYPE}									\
@@ -507,9 +521,6 @@ void *parent_storage(int depth);
   new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
  }while(0)
 
-
-#endif /* PROGRAM_H */
-
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_pass(debug_end_program()))
 #define end_class(NAME, FLAGS) (debug_malloc_touch(new_program), debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS))
@@ -525,3 +536,10 @@ void *parent_storage(int depth);
 #define start_new_program() debug_start_new_program()
 #endif
 
+#define gc_cycle_check_program(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_program, (X))
+#define gc_cycle_check_program_weak(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_program_weak, (X))
+
+
+#endif /* PROGRAM_H */

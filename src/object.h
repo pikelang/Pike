@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.45 2000/04/23 03:01:25 mast Exp $
+ * $Id: object.h,v 1.46 2000/06/09 22:43:05 mast Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -36,6 +36,8 @@ struct object
 };
 
 extern struct object *first_object;
+extern struct object *gc_internal_object;
+extern struct object *objects_to_destruct;
 extern struct object *master_object;
 extern struct program *master_program;
 extern struct program *magic_index_program;
@@ -94,11 +96,14 @@ void cleanup_objects(void);
 struct array *object_indices(struct object *o);
 struct array *object_values(struct object *o);
 void gc_mark_object_as_referenced(struct object *o);
-INT32 gc_touch_all_objects(void);
+unsigned gc_touch_all_objects(void);
 void gc_check_all_objects(void);
 void gc_mark_all_objects(void);
-int gc_destroy_all_unreferenced_objects(void);
-int gc_free_all_unreferenced_objects(void);
+void real_gc_cycle_check_object(struct object *o);
+void real_gc_cycle_check_object_weak(struct object *o);
+void real_gc_cycle_check_object_strong(struct object *o);
+void gc_cycle_check_all_objects(void);
+void gc_free_all_unreferenced_objects(void);
 void count_memory_in_objects(INT32 *num_, INT32 *size_);
 struct magic_index_struct;
 void push_magic_index(struct program *type, int inherit_no, int parent_level);
@@ -122,6 +127,13 @@ void check_all_objects(void);
 #else
 #define master() debug_master()
 #endif
+
+#define gc_cycle_check_object(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_object, (X))
+#define gc_cycle_check_object_weak(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_object_weak, (X))
+#define gc_cycle_check_object_strong(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_object_strong, (X))
 
 #endif /* OBJECT_H */
 

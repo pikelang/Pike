@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.53 2000/04/19 17:31:21 grubba Exp $
+ * $Id: svalue.h,v 1.54 2000/06/09 22:46:21 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -256,6 +256,8 @@ do{ \
 extern void describe(void *); /* defined in gc.c */
 #define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal("Type error: %d\n",T)
 
+#define check_svalue(S) debug_check_svalue(debug_malloc_pass(&(struct svalue) *(S)))
+
 #define check_refs(S) do {\
  if((S)->type <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
  describe((S)->u.refs); \
@@ -277,6 +279,7 @@ if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
 
 #else
 
+#define check_svalue(S)
 #define check_type(T)
 #define check_refs(S)
 #define check_refs2(S,T)
@@ -348,17 +351,30 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 				      INT32 num,
 				      struct processing *p);
 void check_short_svalue(union anything *u, TYPE_T type);
-void check_svalue(struct svalue *s);
-TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num);
+void debug_check_svalue(struct svalue *s);
 void real_gc_xmark_svalues(struct svalue *s, int num);
+TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num);
 void real_gc_check_short_svalue(union anything *u, TYPE_T type);
-void debug_gc_mark_svalues(struct svalue *s, int num);
-void debug_gc_mark_short_svalue(union anything *u, TYPE_T type);
+TYPE_FIELD gc_check_weak_svalues(struct svalue *s, int num);
+void gc_check_weak_short_svalue(union anything *u, TYPE_T type);
+void real_gc_mark_svalues(struct svalue *s, int num);
+void real_gc_mark_short_svalue(union anything *u, TYPE_T type);
+TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, int num);
+int gc_mark_weak_short_svalue(union anything *u, TYPE_T type);
+void real_gc_cycle_check_svalues(struct svalue *s, int num);
+void real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type);
+TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, int num);
+int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
 INT32 pike_sizeof(struct svalue *s);
 /* Prototypes end here */
 
-#define gc_mark_svalues(S,N)	debug_gc_mark_svalues(debug_malloc_pass(S),N)
-#define gc_mark_short_svalue(U,N)	debug_gc_mark_short_svalue(debug_malloc_pass(U),N)
+#define gc_xmark_svalues(S,N) real_gc_xmark_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
+#define gc_check_svalues(S,N) real_gc_check_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
+#define gc_check_short_svalue(U,T) real_gc_check_short_svalue(debug_malloc_pass(&(union anything) *(U)),T)
+#define gc_mark_svalues(S,N) real_gc_mark_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
+#define gc_mark_short_svalue(U,T) real_gc_mark_short_svalue(debug_malloc_pass(&(union anything) *(U)),T)
+#define gc_cycle_check_svalues(S,N) real_gc_cycle_check_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
+#define gc_cycle_check_short_svalue(U,T) real_gc_cycle_check_short_svalue(debug_malloc_pass(&(union anything) *(U)),T)
 
 #ifndef NO_PIKE_SHORTHAND
 

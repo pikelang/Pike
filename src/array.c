@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.72 2000/05/24 02:20:43 hubbe Exp $");
+RCSID("$Id: array.c,v 1.73 2000/06/09 22:43:04 mast Exp $");
 
 struct array empty_array=
 {
@@ -39,6 +39,8 @@ struct array empty_array=
   0,			 /* no flags */
 };
 
+struct array *gc_internal_array = &empty_array;
+static struct array *gc_mark_array_pos = 0;
 
 
 /* Allocate an array, this might be changed in the future to
@@ -72,10 +74,7 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
   v->malloced_size=size+extra_space;
   v->size=size;
   v->refs=1;
-  v->prev=&empty_array;
-  v->next=empty_array.next;
-  empty_array.next=v;
-  v->next->prev=v;
+  LINK_ARRAY(v);
 
   INITIALIZE_PROT(v);
 
@@ -94,17 +93,17 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
  */
 static void array_free_no_free(struct array *v)
 {
-  struct array *next,*prev;
-
-  next = v->next;
-  prev = v->prev;
-
-  v->prev->next=next;
-  v->next->prev=prev;
+  if (gc_internal_array != &empty_array) {
+    if (v == gc_internal_array)
+      gc_internal_array = v->next;
+    if (v == gc_mark_array_pos)
+      gc_mark_array_pos = v->next;
+  }
+  UNLINK_ARRAY(v);
 
   free((char *)v);
 
-  GC_FREE(v);
+  GC_FREE();
 }
 
 /*
@@ -1781,30 +1780,16 @@ void check_all_arrays(void)
 #endif /* PIKE_DEBUG */
 
 
-void gc_mark_array_as_referenced(struct array *a)
-{
-  int e;
-  if(gc_mark(a) && a->type_field & BIT_COMPLEX)
-  {
-    if (a->flags & ARRAY_WEAK_FLAG)
-      for (e=0; e<a->size; e++)
-      {
-	if (a->item[e].type == T_OBJECT && a->item[e].u.object->prog &&
-	    a->item[e].u.object->prog->flags & PROGRAM_NO_WEAK_FREE)
-	  gc_mark_svalues(a->item + e, 1);
-      }
-    else
-      gc_mark_svalues(ITEM(a), a->size);
-  }
-}
-
 static void gc_check_array(struct array *a)
 {
   if(a->type_field & BIT_COMPLEX)
   {
     TYPE_FIELD t;
-    t=debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
-    
+    if (a->flags & ARRAY_WEAK_FLAG)
+      t=debug_gc_check_weak_svalues(ITEM(a), a->size, T_ARRAY, a);
+    else
+      t=debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
+
     /* Ugly, but we are not allowed to change type_field
      * at the same time as the array is being built...
      * Actually we just need better primitives for building arrays.
@@ -1816,14 +1801,108 @@ static void gc_check_array(struct array *a)
   }
 }
 
-#ifdef PIKE_DEBUG
-INT32 gc_touch_all_arrays(void)
+static void gc_recurse_weak_array(struct array *a,
+				  TYPE_FIELD (*recurse_fn)(struct svalue *, int))
 {
-  INT32 n = 0;
+  int e;
+  TYPE_FIELD t;
+
+#ifdef PIKE_DEBUG
+  if(!(a->flags & ARRAY_WEAK_FLAG))
+    fatal("Array is not weak.\n");
+#endif
+
+  if(a->flags & ARRAY_WEAK_SHRINK) {
+    int d=0;
+    t = 0;
+    for(e=0;e<a->size;e++)
+      if (!recurse_fn(a->item+e, 1)) {
+	a->item[d++]=a->item[e];
+	t |= 1 << a->item[e].type;
+      }
+    a->size=d;
+  }
+  else
+    if (!(t = recurse_fn(a->item, a->size)))
+      t = a->type_field;
+
+  /* Ugly, but we are not allowed to change type_field
+   * at the same time as the array is being built...
+   * Actually we just need better primitives for building arrays.
+   */
+  if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+    a->type_field = t;
+  else
+    a->type_field |= t;
+}
+
+void gc_mark_array_as_referenced(struct array *a)
+{
+  int e;
+  if(gc_mark(a)) {
+#ifdef PIKE_DEBUG
+    if (a == &empty_array) fatal("Trying to gc mark empty_array.\n");
+#endif
+
+    if (a == gc_mark_array_pos)
+      gc_mark_array_pos = a->next;
+    if (a == gc_internal_array)
+      gc_internal_array = a->next;
+    else {
+      UNLINK_ARRAY(a);
+      LINK_ARRAY(a);		/* Linked in first. */
+    }
+
+    if (a->type_field & BIT_COMPLEX)
+    {
+      if (a->flags & ARRAY_WEAK_FLAG)
+	gc_recurse_weak_array(a, gc_mark_weak_svalues);
+      else
+	gc_mark_svalues(ITEM(a), a->size);
+    }
+  }
+}
+
+static void low_gc_cycle_check_array(struct array *a)
+{
+  int e;
+#ifdef PIKE_DEBUG
+  if (a == &empty_array) fatal("Trying to gc cycle check empty_array.\n");
+#endif
+
+  if (a->type_field & BIT_COMPLEX)
+  {
+    if (a->flags & ARRAY_WEAK_FLAG)
+      gc_recurse_weak_array(a, gc_cycle_check_weak_svalues);
+    else
+      gc_cycle_check_svalues(ITEM(a), a->size);
+  }
+}
+
+void real_gc_cycle_check_array(struct array *a)
+{
+  GC_CYCLE_ENTER(a, 0) {
+    low_gc_cycle_check_array(a);
+  } GC_CYCLE_LEAVE;
+}
+
+void real_gc_cycle_check_array_weak(struct array *a)
+{
+  GC_CYCLE_ENTER(a, 1) {
+    low_gc_cycle_check_array(a);
+  } GC_CYCLE_LEAVE;
+}
+
+#ifdef PIKE_DEBUG
+unsigned gc_touch_all_arrays(void)
+{
+  unsigned n = 0;
   struct array *a = &empty_array;
   do {
     debug_gc_touch(a);
     n++;
+    if (!a->next || a->next->prev != a)
+      fatal("Error in array link list.\n");
     a=a->next;
   } while (a != &empty_array);
   return n;
@@ -1847,85 +1926,52 @@ void gc_check_all_arrays(void)
 
 void gc_mark_all_arrays(void)
 {
-  struct array *a;
-
-  a=&empty_array;
-  do
-  {
+  gc_mark_array_pos = gc_internal_array;
+  gc_mark(&empty_array);
+  while (gc_mark_array_pos != &empty_array) {
+    struct array *a = gc_mark_array_pos;
+#ifdef PIKE_DEBUG
+    if (!a) fatal("Null pointer in array list.\n");
+#endif
+    gc_mark_array_pos = a->next;
     if(gc_is_referenced(a))
       gc_mark_array_as_referenced(a);
-            
-    a=a->next;
-  } while (a != & empty_array);
+  }
+}
+
+void gc_cycle_check_all_arrays(void)
+{
+  struct array *a;
+  for (a = gc_internal_array; a != &empty_array; a = a->next) {
+    real_gc_cycle_check_array(a);
+    run_lifo_queue(&gc_mark_queue);
+  }
 }
 
 void gc_free_all_unreferenced_arrays(void)
 {
   struct array *a,*next;
 
-  a=&empty_array;
-  do
+  for (a = gc_internal_array; a != &empty_array; a = next)
   {
+#ifdef PIKE_DEBUG
+    if (!a)
+      fatal("Null pointer in array list.\n");
+#endif
     if(gc_do_free(a))
     {
-      add_ref(a);
+      /* Got an extra ref from gc_cycle_pop(). */
       free_svalues(ITEM(a), a->size, a->type_field);
       a->size=0;
 
+      gc_free_extra_ref(a);
       SET_NEXT_AND_FREE(a, free_array);
-
-      if (!(a = next))
-	fatal("Null pointer in array list.\n");
-    }
-    else if(a->flags & ARRAY_WEAK_FLAG)
-    {
-      int e;
-      add_ref(a);
-
-      if(a->flags & ARRAY_WEAK_SHRINK)
-      {
-	int d=0;
-	for(e=0;e<a->size;e++)
-	{
-	  if(a->item[e].type <= MAX_COMPLEX &&
-	     !(a->item[e].type == T_OBJECT && a->item[e].u.object->prog &&
-	       a->item[e].u.object->prog->flags & PROGRAM_NO_WEAK_FREE) &&
-	     gc_do_free(a->item[e].u.refs))
-	    free_svalue(a->item+e);
-	  else
-	    a->item[d++]=a->item[e];
-	}
-	a->size=d;
-      }else{
-	for(e=0;e<a->size;e++)
-	{
-	  if(a->item[e].type <= MAX_COMPLEX &&
-	     !(a->item[e].type == T_OBJECT && a->item[e].u.object->prog &&
-	       a->item[e].u.object->prog->flags & PROGRAM_NO_WEAK_FREE) &&
-	     gc_do_free(a->item[e].u.refs))
-	  {
-	    free_svalue(a->item+e);
-	    a->item[e].type=T_INT;
-	    a->item[e].u.integer=0;
-	    a->item[e].subtype=NUMBER_DESTRUCTED;
-	    a->type_field |= BIT_INT;
-	  }
-	}
-      }
-	  
-      SET_NEXT_AND_FREE(a, free_array);
-
-      if (!(a = next))
-	fatal("Null pointer in array list.\n");
     }
     else
     {
-#ifdef PIKE_DEBUG
-      if(d_flag) gc_check_array(a);
-#endif
-      a=a->next;
+      next=a->next;
     }
-  } while (a != & empty_array);
+  }
 }
 
 

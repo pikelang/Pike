@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: multiset.h,v 1.10 2000/04/23 03:01:25 mast Exp $
+ * $Id: multiset.h,v 1.11 2000/06/09 22:43:04 mast Exp $
  */
 #ifndef MULTISET_H
 #define MULTISET_H
@@ -23,6 +23,7 @@ struct multiset
 };
 
 extern struct multiset *first_multiset;
+extern struct multiset *gc_internal_multiset;
 
 #define free_multiset(L) do{ struct multiset *l_=(L); debug_malloc_touch(l_); if(!--l_->refs) really_free_multiset(l_); }while(0)
 
@@ -51,11 +52,19 @@ void f_aggregate_multiset(INT32 args);
 struct multiset *copy_multiset_recursively(struct multiset *l,
 				   struct processing *p);
 void gc_mark_multiset_as_referenced(struct multiset *l);
-INT32 gc_touch_all_multisets(void);
+unsigned gc_touch_all_multisets(void);
 void gc_check_all_multisets(void);
 void gc_mark_all_multisets(void);
+void real_gc_cycle_check_multiset(struct multiset *l);
+void real_gc_cycle_check_multiset_weak(struct multiset *l);
+void gc_cycle_check_all_multisets(void);
 void gc_free_all_unreferenced_multisets(void);
 void count_memory_in_multisets(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
-#endif
+#define gc_cycle_check_multiset(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_multiset, (X))
+#define gc_cycle_check_multiset_weak(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_multiset_weak, (X))
+
+#endif /* MULTISET_H */

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.24 2000/04/23 03:01:25 mast Exp $
+ * $Id: mapping.h,v 1.25 2000/06/09 22:43:05 mast Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -51,6 +51,7 @@ struct mapping
 
 
 extern struct mapping *first_mapping;
+extern struct mapping *gc_internal_mapping;
 
 #define map_delete(m,key) map_delete_no_free(m, key, 0)
 #define m_sizeof(m) ((m)->data->size)
@@ -145,15 +146,23 @@ void mapping_search_no_free(struct svalue *to,
 void check_mapping(struct mapping *m);
 void check_all_mappings(void);
 void gc_mark_mapping_as_referenced(struct mapping *m);
-INT32 gc_touch_all_mappings(void);
+unsigned gc_touch_all_mappings(void);
 void gc_check_all_mappings(void);
 void gc_mark_all_mappings(void);
+void real_gc_cycle_check_mapping(struct mapping *m);
+void real_gc_cycle_check_mapping_weak(struct mapping *m);
+void gc_cycle_check_all_mappings(void);
 void gc_free_all_unreferenced_mappings(void);
 void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
 void zap_all_mappings(void);
 /* Prototypes end here */
-#endif
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))
 
+#define gc_cycle_check_mapping(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_mapping, (X))
+#define gc_cycle_check_mapping_weak(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_mapping_weak, (X))
+
+#endif /* MAPPING_H */

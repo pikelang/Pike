@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.19 2000/04/23 03:01:25 mast Exp $
+ * $Id: array.h,v 1.20 2000/06/09 22:43:04 mast Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -37,12 +37,26 @@ struct array
 #define ARRAY_WEAK_SHRINK 8
 
 extern struct array empty_array;
+extern struct array *gc_internal_array;
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
 #define ITEM(X) (((struct array *)(debug_malloc_pass((X))))->item)
 #else
 #define ITEM(X) ((X)->item)
 #endif
+
+#define LINK_ARRAY(a) do {						\
+  (a)->prev = &empty_array;						\
+  (a)->next = empty_array.next;						\
+  empty_array.next = (a);						\
+  (a)->next->prev = (a);						\
+} while (0)
+
+#define UNLINK_ARRAY(a) do {						\
+  struct array *next = (a)->next, *prev = (a)->prev;			\
+  prev->next = next;							\
+  next->prev = prev;							\
+} while (0)
 
 /* These are arguments for the function 'merge' which merges two sorted
  * set stored in arrays in the way you specify
@@ -148,9 +162,12 @@ void array_replace(struct array *a,
 void check_array(struct array *a);
 void check_all_arrays(void);
 void gc_mark_array_as_referenced(struct array *a);
-INT32 gc_touch_all_arrays(void);
+unsigned gc_touch_all_arrays(void);
 void gc_check_all_arrays(void);
 void gc_mark_all_arrays(void);
+void real_gc_cycle_check_array(struct array *a);
+void real_gc_cycle_check_array_weak(struct array *a);
+void gc_cycle_check_all_arrays(void);
 void gc_free_all_unreferenced_arrays(void);
 void debug_dump_type_field(TYPE_FIELD t);
 void debug_dump_array(struct array *a);
@@ -160,5 +177,9 @@ struct array *explode_array(struct array *a, struct array *b);
 struct array *implode_array(struct array *a, struct array *b);
 /* Prototypes end here */
 
+#define gc_cycle_check_array(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_array, (X))
+#define gc_cycle_check_array_weak(X) \
+  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_array_weak, (X))
 
-#endif
+#endif /* ARRAY_H */

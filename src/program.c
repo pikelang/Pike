@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.239 2000/05/23 21:12:05 hubbe Exp $");
+RCSID("$Id: program.c,v 1.240 2000/06/09 22:43:05 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -165,6 +165,9 @@ struct program *new_program=0;
 struct object *fake_object=0;
 struct program *malloc_size_program=0;
 struct object *error_handler=0;
+
+struct program *gc_internal_program = 0;
+static struct program *gc_mark_program_pos = 0;
 
 int compiler_pass;
 int compilation_depth;
@@ -694,8 +697,7 @@ struct program *low_allocate_program(void)
   p->refs=1;
   p->id=++current_program_id;
 
-  if((p->next=first_program)) first_program->prev=p;
-  first_program=p;
+  DOUBLELINK(first_program, p);
   GETTIMEOFDAY(& p->timestamp);
   INITIALIZE_PROT(p);
   return p;
@@ -949,13 +951,13 @@ void really_free_program(struct program *p)
 	free_object(p->inherits[e].parent);
     }
 
-  if(p->prev)
-    p->prev->next=p->next;
-  else
-    first_program=p->next;
-
-  if(p->next)
-    p->next->prev=p->prev;
+  if (gc_internal_program) {
+    if (p == gc_internal_program)
+      gc_internal_program = p->next;
+    if (p == gc_mark_program_pos)
+      gc_mark_program_pos = p->next;
+  }
+  DOUBLEUNLINK(first_program, p);
 
   if(p->flags & PROGRAM_OPTIMIZED)
   {
@@ -972,7 +974,7 @@ void really_free_program(struct program *p)
   FREE_PROT(p);
   dmfree((char *)p);
 
-  GC_FREE(p);
+  GC_FREE();
 }
 
 #ifdef PIKE_DEBUG
@@ -1461,8 +1463,16 @@ void set_exit_callback(void (*exit)(struct object *))
 }
 
 /*
- * This callback is called to allow the object to mark all internal
- * structures as 'used'.
+ * This callback is used by the gc to traverse all references to
+ * objects. It should call some gc_recurse_* function exactly once for
+ * each reference that the pike internals doesn't know about.
+ *
+ * If a reference is shared between objects, it should be traversed
+ * once for every instance sharing it.
+ *
+ * The callback might be called more than once for the same instance
+ * during a gc pass. The gc assumes that the references are enumerated
+ * in the same order in that case.
  */
 void set_gc_mark_callback(void (*m)(struct object *))
 {
@@ -1470,7 +1480,15 @@ void set_gc_mark_callback(void (*m)(struct object *))
 }
 
 /*
- * Called for all objects and inherits in first pass of gc()
+ * This callback is used by the gc to count all references to objects.
+ * It should call gc_check, gc_check_(weak_)svalues or
+ * gc_check_(weak_)short_svalue exactly once for each reference that
+ * the pike internals doesn't know about.
+ *
+ * If a reference is shared between objects, it should be counted once
+ * for all shared instances. The return value from gc_check is useful
+ * to ensure this; it's zero when called the first time for its
+ * argument.
  */
 void set_gc_check_callback(void (*m)(struct object *))
 {
@@ -1972,6 +1990,30 @@ int map_variable(char *name,
 
   n=make_shared_string(name);
   t=parse_type(type);
+  ret=low_define_variable(n,t,flags,offset,run_time_type);
+  free_string(n);
+  free_string(t);
+  return ret;
+}
+
+int quick_map_variable(char *name,
+		       int name_length,
+		       INT32 offset,
+		       char *type,
+		       int type_length,
+		       INT32 run_time_type,
+		       INT32 flags)
+{
+  int ret;
+  struct pike_string *n,*t;
+
+#ifdef PROGRAM_BUILD_DEBUG
+  fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
+	   compilation_depth, "                ", compiler_pass, type, name);
+#endif
+
+  n=make_shared_binary_string(name,name_length);
+  t=make_shared_binary_string(type,type_length);
   ret=low_define_variable(n,t,flags,offset,run_time_type);
   free_string(n);
   free_string(t);
@@ -3392,14 +3434,11 @@ static void gc_check_trampoline(struct object *o)
 static void gc_mark_frame(struct pike_frame *f)
 {
   if(!f) return;
-  if(gc_mark(f))
-  {
-    if(f->current_object) gc_mark_object_as_referenced(f->current_object);
-    if(f->context.prog)   gc_mark_program_as_referenced(f->context.prog);
-    if(f->context.parent) gc_mark_object_as_referenced(f->context.parent);
-    if(f->malloced_locals)gc_mark_svalues(f->locals,f->num_locals);
-    if(f->scope)          gc_mark_frame(f->scope);
-  }
+  if(f->current_object) gc_recurse_object(f->current_object);
+  if(f->context.prog)   gc_recurse_program(f->context.prog);
+  if(f->context.parent) gc_recurse_object(f->context.parent);
+  if(f->malloced_locals)gc_recurse_svalues(f->locals,f->num_locals);
+  if(f->scope)          gc_mark_frame(f->scope);
 }
 
 static void gc_mark_trampoline(struct object *o)
@@ -3476,17 +3515,38 @@ void gc_mark_program_as_referenced(struct program *p)
   debug_malloc_touch(p);
 
   if (p->flags & PROGRAM_AVOID_CHECK) {
-    /* Program is in an inconsistant state.
+    /* Program is in an inconsistent state.
      * don't look closer at it.
      */
     debug_malloc_touch(p);
-    gc_mark(p);
+
+    if (gc_mark(p)) {
+      if (p == gc_mark_program_pos)
+	gc_mark_program_pos = p->next;
+      if (p == gc_internal_program)
+	gc_internal_program = p->next;
+      else {
+	DOUBLEUNLINK(first_program, p);
+	DOUBLELINK(first_program, p); /* Linked in first. */
+      }
+    }
+
     return;
   }
   
   if(gc_mark(p))
   {
     int e;
+
+    if (p == gc_mark_program_pos)
+      gc_mark_program_pos = p->next;
+    if (p == gc_internal_program)
+      gc_internal_program = p->next;
+    else {
+      DOUBLEUNLINK(first_program, p);
+      DOUBLELINK(first_program, p); /* Linked in first. */
+    }
+
     for(e=0;e<p->num_constants;e++)
       gc_mark_svalues(& p->constants[e].sval, 1);
 
@@ -3500,6 +3560,43 @@ void gc_mark_program_as_referenced(struct program *p)
     }
 
   }
+}
+
+void low_gc_cycle_check_program(struct program *p)
+{
+  int e;
+
+  if (p->flags & PROGRAM_AVOID_CHECK)
+    /* Program is in an inconsistent state.
+     * don't look closer at it.
+     */
+    return;
+
+  for(e=0;e<p->num_constants;e++)
+    gc_cycle_check_svalues(& p->constants[e].sval, 1);
+
+  for(e=0;e<p->num_inherits;e++)
+  {
+    if(p->inherits[e].parent)
+      gc_cycle_check_object(p->inherits[e].parent);
+
+    if(e && p->inherits[e].prog)
+      gc_cycle_check_program(p->inherits[e].prog);
+  }
+}
+
+void real_gc_cycle_check_program(struct program *p)
+{
+  GC_CYCLE_ENTER(p, 0) {
+    low_gc_cycle_check_program(p);
+  } GC_CYCLE_LEAVE;
+}
+
+void real_gc_cycle_check_program_weak(struct program *p)
+{
+  GC_CYCLE_ENTER(p, 1) {
+    low_gc_cycle_check_program(p);
+  } GC_CYCLE_LEAVE;
 }
 
 static void gc_check_program(struct program *p)
@@ -3563,14 +3660,18 @@ static void gc_check_program(struct program *p)
 }
 
 #ifdef PIKE_DEBUG
-INT32 gc_touch_all_programs(void)
+unsigned gc_touch_all_programs(void)
 {
-  INT32 n = 0;
+  unsigned n = 0;
   struct program *p;
   struct program_state *ps;
+  if (first_program && first_program->prev)
+    fatal("Error in program link list.\n");
   for (p = first_program; p; p = p->next) {
     debug_gc_touch(p);
     n++;
+    if (p->next && p->next->prev != p)
+      fatal("Error in program link list.\n");
   }
   /* Count the fake objects. They're not part of the gc, but they're
    * still counted by the gc. */
@@ -3584,16 +3685,27 @@ INT32 gc_touch_all_programs(void)
 void gc_check_all_programs(void)
 {
   struct program *p;
-  for(p=first_program;p;p=p->next)  gc_check_program(p);
+  for(p=first_program;p;p=p->next) gc_check_program(p);
 }
 
 void gc_mark_all_programs(void)
 {
-  struct program *p;
-  for(p=first_program;p;p=p->next) {
+  gc_mark_program_pos = gc_internal_program;
+  while (gc_mark_program_pos) {
+    struct program *p = gc_mark_program_pos;
+    gc_mark_program_pos = p->next;
     if(gc_is_referenced(p)) {
       gc_mark_program_as_referenced(debug_malloc_pass(p));
     }
+  }
+}
+
+void gc_cycle_check_all_programs(void)
+{
+  struct program *p;
+  for (p = gc_internal_program; p; p = p->next) {
+    real_gc_cycle_check_program(p);
+    run_lifo_queue(&gc_mark_queue);
   }
 }
 
@@ -3601,14 +3713,14 @@ void gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
 
-  for(p=first_program;p;p=next)
+  for(p=gc_internal_program;p;p=next)
   {
     debug_malloc_touch(p);
 
     if(gc_do_free(p))
     {
+      /* Got an extra ref from gc_cycle_pop_object(). */
       int e;
-      add_ref(p);
       for(e=0;e<p->num_constants;e++)
       {
 	free_svalue(& p->constants[e].sval);
@@ -3626,23 +3738,28 @@ void gc_free_all_unreferenced_programs(void)
       }
 
       /* FIXME: Is there anything else that needs to be freed here? */
+      gc_free_extra_ref(p);
       SET_NEXT_AND_FREE(p, free_program);
     }else{
+      next=p->next;
+    }
+  }
+
 #ifdef PIKE_DEBUG
+  if (gc_debug)
+    for (p = first_program; p != gc_internal_program; p = p->next) {
       int e,tmp=0;
+      if (!p)
+	fatal("gc_internal_program is bogus.\n");
       for(e=0;e<p->num_constants;e++)
       {
 	if(p->constants[e].sval.type == T_PROGRAM && p->constants[e].sval.u.program == p)
 	  tmp++;
       }
       if(tmp >= p->refs)
-	fatal("garbage collector failed to free program!!!\n");
-
-      if(d_flag) gc_check_program(p);
-#endif      
-      next=p->next;
+	gc_fatal(p, 1 ,"garbage collector failed to free program!!!\n");
     }
-  }
+#endif
 }
 
 #endif /* GC2 */
