@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.2 2002/04/11 15:11:10 nilsson Exp $
+//  $Id: ID3.pmod,v 1.3 2002/04/11 20:57:25 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -60,6 +60,8 @@ class Buffer(Stdio.File buffer) {
 
 //! Decodes a synchsafe integer, generated according to
 //! ID3v2.4.0-structure section 6.2.
+//! @seealso
+//!   @[int_to_synchsafe]
 int synchsafe_to_int(array(int) bytes) {
   int res;
   foreach(bytes, int byte)
@@ -69,6 +71,8 @@ int synchsafe_to_int(array(int) bytes) {
 
 //! Encodes a integer to a synchsafe integer according to
 //! ID3v2.4.0-structure section 6.2.
+//! @seealso
+//!   @[synchsafe_to_int]
 array(int) int_to_synchsafe(int in, void|int no_bytes) {
   array res = ({});
   while(in>>=7)
@@ -208,12 +212,16 @@ class ExtendedHeader {
 
 //! Reverses the effects of unsyncronisation
 //! done according to ID3v2.4.0-structure section 6.1.
+//! @seealso
+//!   @[unsynchronise]
 string resynchronise(string in) {
   return replace(in, "\0xff\0x00", "\0xff");
 }
 
 //! Unsynchronises the string according to
 //! ID3v2.4.0-structure section 6.1.
+//! @seealso
+//!   @[resynchronise]
 string unsynchronise(string in) {
   return replace(in, ([ "\0xff":"\0xff\0x00",
 			"\0xff\0x00":"\0xff\0x00\0x00" ]) );
@@ -221,6 +229,8 @@ string unsynchronise(string in) {
 
 //! Decodes the string @[in] from the @[type], according to
 //! ID3v2.4.0-structure section 4, into a wide string.
+//! @seealso
+//!   @[encode_string]
 string decode_string(string in, int type) {
   switch(type) {
   case 0:
@@ -240,6 +250,8 @@ string decode_string(string in, int type) {
 //! and the string is the encoded string. This function tries to
 //! minimize the size of the encoded string by selecting the most
 //! apropriate encoding method.
+//! @seealso
+//!   @[decode_string], @[encode_strings]
 array(string|int) encode_string(string in) {
   if(String.width(in)>8) return ({ 3, string_to_utf8(in) });
   return ({ 0, in });
@@ -249,6 +261,8 @@ array(string|int) encode_string(string in) {
 //! encodes all the strings with the same method, selected as in @[encoding_string].
 //! The first element in the resulting array is the selected method, while the
 //! following elements are the encoded strings.
+//! @seealso
+//!   @[decode_string], @[encode_string]
 array(string|int) encode_strings(array(string) in) {
   int width;
   foreach(in, string text)
