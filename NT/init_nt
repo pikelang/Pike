@@ -49,7 +49,7 @@ lib=$MSVC\\Lib;$local\\lib
     local='j:\winshare\WATCOM\local'
     REMOTE_VARIABLES="
 path=$watcom\\binnt;$watcom\\binw;
-include=$watcom\\h;$local\\h
+include=$watcom\\h;$watcom\\h\\nt;$local\\h
 lib=$watcom\\lib386;$local\\lib
 "
     export REMOTE_VARIABLES
