@@ -134,9 +134,6 @@ NOTA BENE
 	This function exists only if SUPPORT_FIELD_SEEK was defined when
 	compiling the mysql-module.
 
-BUGS
-	The "flags" entry should be parsed.
-
 SEE ALSO
 	mysql_result->fetch_fields, mysql_result->field_seek,
 	sql->list_fields
@@ -163,9 +160,6 @@ NOTA BENE
 
 	This function exists even if SUPPORT_FIELD_SEEK wasn't defined when
 	the Mysql-module was compiled.
-
-BUGS
-	See mysql_result->fetch_field.
 
 SEE ALSO
 	mysql_result->fetch_field, mysql_result->field_seek,
