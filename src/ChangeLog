@@ -2,6 +2,8 @@ Wed Nov 15 10:56:45 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
         * version 1.6E-12 released
 
+	* configure.in, machine.h.in: moved tests for waitpid and wait4
+          here from modules/files/file.c (no more zombie processes)
 	* program.c (end_program): fixed a memory leak
 
         * version 1.5E-12 released
