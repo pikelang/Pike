@@ -1,4 +1,4 @@
-?package(pike7.3-core):needs=text section=Apps/Programming\
-  title="Pike 7.3 HILFE" \
-  command="/usr/bin/pike7.3" \
-  icon="/usr/share/pixmaps/pike7.3/pike.png"
+?package(pike7.5-core):needs=text section=Apps/Programming\
+  title="Pike 7.5 HILFE" \
+  command="/usr/bin/pike7.5" \
+  icon="/usr/share/pixmaps/pike7.5/pike.png"

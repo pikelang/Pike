@@ -1,0 +1,3 @@
+usr/lib/pike7.5/*/include/postgres.h
+usr/lib/pike7.5/*/modules/Postgres.so
+usr/lib/pike7.5/*/modules/Sql.pmod/postgres*

@@ -6,13 +6,13 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.34 2002/11/25 18:15:21 grendel Exp $
+# $Id: rules,v 1.35 2002/12/06 04:21:21 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
 #export DH_VERBOSE=1
 
-PIKEV=7.3
+PIKEV=7.5
 PIKE=pike$(PIKEV)
 
 ifdef CCVER

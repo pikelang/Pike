@@ -1,4 +1,4 @@
-Source: pike7.3
+Source: pike7.5
 Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
@@ -6,142 +6,141 @@ Standards-Version: 3.5.6.1
 Build-Depends: debhelper (>> 3.0.0), libgdbmg1-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient-dev, libreadline-dev, perl5, bison, debhelper, glutg3-dev, libgnome-dev, xlibmesa-dev | libgl-dev, libgnorba-dev, libxpm4-dev, libpanel-applet-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, libdockapp-dev, autoconf, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng2-dev, gtkglarea5-dev, orbit, libtiff3g-dev, libungif4-dev, gdk-imlib1-dev
 Build-Conflicts: libutahglx-dev
 
-Package: pike7.3-core
+Package: pike7.5-core
 Architecture: any
 Depends: ${shlibs:Depends}
-Suggests: pike7.3-doc
-Recommends: pike7.3-image (=${Source-Version})
-Replaces: pike7.3-crypto (<=7.3.51-0), pike7.3-gz (<=7.3.51-0)
+Suggests: pike7.5-doc
+Recommends: pike7.5-image (=${Source-Version})
 Description: Powerful interpreted programming language
  Pike is an interpreted, object-oriented, dynamic programming language
  with a syntax similar to C. It includes many powerful data types and
  a module system that, for instance, provides image manipulation, 
  database connectivity and advanced cryptography. Note that some of the
- Pike features are found in other pike7.3-* packages (image processing,
+ Pike features are found in other pike7.5-* packages (image processing,
  mysql, postgresql, sane and more).
 
-Package: pike7.3
+Package: pike7.5
 Architecture: all
-Depends: pike7.3-core (=${Source-Version}), pike7.3-image (=${Source-Version}), pike7.3-gdbm (=${Source-Version})
-Recommends: pike7.3-doc (=${Source-Version})
-Suggests: pike7.3-mysql (=${Source-Version}), pike7.3-pg (=${Source-Version}), pike7.3-dev (=${Source-Version})
-Description: Recommended meta package for Pike 7.3
+Depends: pike7.5-core (=${Source-Version}), pike7.5-image (=${Source-Version}), pike7.5-gdbm (=${Source-Version})
+Recommends: pike7.5-doc (=${Source-Version})
+Suggests: pike7.5-mysql (=${Source-Version}), pike7.5-pg (=${Source-Version}), pike7.5-dev (=${Source-Version})
+Description: Recommended meta package for Pike 7.5
  This is a meta package which depends upon several other Pike
  packages that together make up the recommended Pike installation.
  If you want to install every packaged component of the Pike 
- distribution, please install the pike7.3-meta package.
+ distribution, please install the pike7.5-meta package.
  .
  If you want to remove several components this package depends
  upon, you can purge this package without worrying about the
  functionality loss in Pike and then remove the packages you
  don't need on your system.
 
-Package: pike7.3-mysql
+Package: pike7.5-mysql
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: Mysql module for Pike
  This Pike module provides access to Mysql databases.
 
-Package: pike7.3-pg
+Package: pike7.5-pg
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: Postgres module for Pike
  This Pike module provides access to Postgres databases.
 
-Package: pike7.3-odbc
+Package: pike7.5-odbc
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: Odbc module for Pike
  This Pike module provides glue to the iOdbc interface.
 
-Package: pike7.3-svg
+Package: pike7.5-svg
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
-Suggests: pike7.3-image (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
+Suggests: pike7.5-image (=${Source-Version})
 Description: SVG format support for Pike
  This module provides an SVG graphics format module. It has
- been separated from the pike7.3-image module because of its
+ been separated from the pike7.5-image module because of its
  quite extensive dependencies.
 
-Package: pike7.3-image
+Package: pike7.5-image
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
-Suggests: pike7.3-svg (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
+Suggests: pike7.5-svg (=${Source-Version})
 Description: Image module for Pike
  This module provides many powerful image processing functions to
  Pike programs.
 
-Package: pike7.3-sdl
+Package: pike7.5-sdl
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: SDL module for Pike
  This module provides the Pike interface to the SDL library.
 
-Package: pike7.3-gdbm
+Package: pike7.5-gdbm
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: Gdbm module for Pike
  This Pike module provides access to gdbm databases.
 
-Package: pike7.3-gtk
+Package: pike7.5-gtk
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: GTK module for Pike
  This Pike modules provides access to the GTK+ library.
 
-Package: pike7.3-gl
+Package: pike7.5-gl
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: Mesa module for Pike
  This Pike modules provides access to the Mesa 3D graphics library.
 
-Package: pike7.3-sane
+Package: pike7.5-sane
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: SANE module for Pike
  This Pike modules provides access to SANE.
 
-Package: pike7.3-perl
+Package: pike7.5-perl
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
 Description: Perl module for Pike
  This Pike modules enables one to embed perl in the pike
  programs.
 
-Package: pike7.3-dev
+Package: pike7.5-dev
 Architecture: all
 Depends: ${shlibs:Depends}
-Description: Development files for Pike 7.3
+Description: Development files for Pike 7.5
  This package contains files you will need to develop
  C extension modules for Pike. The package depends on
  the recommended set of packages for the Pike
  environment.
 
-Package: pike7.3-manual
+Package: pike7.5-manual
 Architecture: all
 Section: doc
-Description: Pike 7.3 manual
+Description: Pike 7.5 manual
  The Pike manual auto-generated from the sources.
 
-Package: pike7.3-reference
+Package: pike7.5-reference
 Architecture: all
 Section: doc
-Description: Pike 7.3 reference
+Description: Pike 7.5 reference
  The Pike reference auto-generated from the sources.
 
-Package: pike7.3-doc
+Package: pike7.5-doc
 Architecture: all
 Section: doc
-Depends: pike7.3-manual (=${Source-Version}), pike7.3-reference (=${Source-Version})
-Description: Pike 7.3 documentation meta package
- This package depends upon all the Pike 7.3 documentation
+Depends: pike7.5-manual (=${Source-Version}), pike7.5-reference (=${Source-Version})
+Description: Pike 7.5 documentation meta package
+ This package depends upon all the Pike 7.5 documentation
  packages. Note that the download and installation sizes
  might be very large.
 
-Package: pike7.3-meta
+Package: pike7.5-meta
 Architecture: all
-Depends: pike7.3 (=${Source-Version}), pike7.3-mysql (=${Source-Version}), pike7.3-pg (=${Source-Version}), pike7.3-odbc (=${Source-Version}), pike7.3-image (=${Source-Version}), pike7.3-sdl (=${Source-Version}), pike7.3-gdbm (=${Source-Version}), pike7.3-gtk (=${Source-Version}), pike7.3-gl (=${Source-Version}), pike7.3-sane (=${Source-Version}), pike7.3-doc (=${Source-Version}), pike7.3-dev (=${Source-Version})
-Description: Meta package for Pike 7.3
+Depends: pike7.5 (=${Source-Version}), pike7.5-mysql (=${Source-Version}), pike7.5-pg (=${Source-Version}), pike7.5-odbc (=${Source-Version}), pike7.5-image (=${Source-Version}), pike7.5-sdl (=${Source-Version}), pike7.5-gdbm (=${Source-Version}), pike7.5-gtk (=${Source-Version}), pike7.5-gl (=${Source-Version}), pike7.5-sane (=${Source-Version}), pike7.5-doc (=${Source-Version}), pike7.5-dev (=${Source-Version})
+Description: Meta package for Pike 7.5
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
  Pike components depend upon!
