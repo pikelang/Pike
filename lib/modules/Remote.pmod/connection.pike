@@ -94,16 +94,15 @@ void closed_connection(int|void ignore)
 string write_buffer = "";
 void write_some(int|void ignore)
 {
-  if(closed) return;
+  if(closed) {
+    write_buffer="";
+    return;
+  }
   int c;
   if (!sizeof(write_buffer))
     return;
   c = con->write(write_buffer);
-  if(c <= 0)
-  {
-    closed_connection();
-    return;
-  }
+  if(c <= 0) return;
   write_buffer = write_buffer[c..];
   DEBUGMSG("wrote "+c+" bytes\n");
 }
@@ -154,6 +153,7 @@ void return_error(int refno, mixed err)
 void return_value(int refno, mixed val)
 {
   string s = encode_value(ctx->encode_return(refno, val));
+  DEBUGMSG("return "+strlen(s)+" bytes ["+refno+"]\n");
   send(sprintf("%4c%s", sizeof(s), s));
 }
 
@@ -182,13 +182,14 @@ void read_some(int ignore, string s)
   if (!s) s = "";
   DEBUGMSG("read "+sizeof(s)+" bytes\n");
   read_buffer += s;
+  DEBUGMSG("has "+sizeof(read_buffer)+" bytes\n");
+  if(!strlen(read_buffer)) return;
 
   if (!request_size && sizeof(read_buffer) > 4)
   {
     sscanf(read_buffer, "%4c%s", request_size, read_buffer);
-    DEBUGMSG("reading message of size "+request_size+"\n");
   }
-
+  
   if (request_size && sizeof(read_buffer) >= request_size)
   {
     array data = decode_value(read_buffer[0..request_size-1]);
@@ -197,43 +198,44 @@ void read_some(int ignore, string s)
     DEBUGMSG("got message: "+ctx->describe(data)+"\n");
     switch(data[0]) {
 
-    case CTX_ERROR:
-      throw(({ "Remote error: "+data[1]+"\n", backtrace() }));
+     case CTX_ERROR:
+       throw(({ "Remote error: "+data[1]+"\n", backtrace() }));
       
-    case CTX_CALL_SYNC: // a synchrounous call
-      int refno = data[4];
-      object|function f = ctx->decode_call(data);
-      array args = ctx->decode(data[3]);
-      mixed res;
-      mixed e = catch { res = f(@args); };
-      if (e)
-	return_error(refno, e);
-      else
-	return_value(refno, res);
-      break;
+     case CTX_CALL_SYNC: // a synchrounous call
+       int refno = data[4];
+       object|function f = ctx->decode_call(data);
+       array args = ctx->decode(data[3]);
+       mixed res;
+       mixed e = catch { res = f(@args); };
+       if (e)
+	 return_error(refno, e);
+       else
+	 return_value(refno, res);
+       break;
 
-    case CTX_CALL_ASYNC: // an asynchrounous call
-      int refno = data[4];
-      object|function f = ctx->decode_call(data);
-      array args = ctx->decode(data[3]);
-      mixed e = catch { f(@args); };
-      if (e)
-	return_error(refno, e);
-      break;
+     case CTX_CALL_ASYNC: // an asynchrounous call
+       int refno = data[4];
+       object|function f = ctx->decode_call(data);
+       array args = ctx->decode(data[3]);
+       mixed e = catch { f(@args); };
+       if (e)
+	 return_error(refno, e);
+       break;
 
-    case CTX_RETURN: // a returned value
-      int refno = data[1];
-      mixed result = ctx->decode(data[2]);
-      if (!pending_calls[refno])
-	error("Got an answer I didn't ask for (refno="+refno+")");
-      DEBUGMSG("providing the result for request "+refno+": "+
-	       ctx->describe(data)+"\n");
-      provide_result(refno, result);
-      break;
+     case CTX_RETURN: // a returned value
+       int refno = data[1];
+       mixed result = ctx->decode(data[2]);
+       if (!pending_calls[refno])
+	 error("Got return for odd call: "+refno+"\n");
+       DEBUGMSG("providing the result for request "+refno+": "+
+		ctx->describe(data)+"\n");
+       provide_result(refno, result);
+       break;
 
-    default:
-      error("Unknown message");
+     default:
+       error("Unknown message");
     }
+    if(sizeof(read_buffer) > 4) read_some(ignore,"");
   }
 }
 
@@ -273,7 +275,7 @@ void call_async(array data)
 {
   if(closed) error("connection closed\n");
   string s = encode_value(data);
-  DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
+  DEBUGMSG("call_async "+ctx->describe(data)+"\n");
   send(sprintf("%4c%s", sizeof(s), s));
 }
 

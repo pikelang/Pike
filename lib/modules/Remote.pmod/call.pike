@@ -25,7 +25,7 @@ mixed sync(mixed ... args)
 
 void async(mixed ... args)
 {
-  mixed data = ctx->encode_call(objectid, name, args, _async);
+  mixed data = ctx->encode_call(objectid, name, args, 1);
   con->call_async(data);
 }
 
