@@ -273,7 +273,7 @@ class client {
 
   array(string) nameservers = ({});
   array domains = ({});
-  void create(void|string server)
+  void create(void|string|array(string) server, void|int|array(string) domain)
   {
     if(!server)
     {
@@ -342,7 +342,16 @@ class client {
 				     return d;
 				   });
     } else {
-      nameservers= ({ server });
+      if(arrayp(server))	
+	nameservers= server;
+      else
+	nameservers= ({ server });
+
+      if(arrayp(domain))	
+	domains = domain;
+      else
+	domains = ({ domains });
+	
     }
   }
 
@@ -458,15 +467,20 @@ class client {
   }
 }
 
+#define RETRIES 12
+#define RETRY_DELAY 5
+#define REMOVE_DELAY 120
+#define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
 class async_client
 {
   inherit client;
   inherit spider.dumUDP : udp;
   int id;
+  async_client next_client;
 
 #if constant(thread_create)
-  object lock = Thread.Mutex();
+  static private inherit Thread.Mutex : lock;
 #endif /* constant(thread_create) */
 
   class Request
@@ -475,11 +489,11 @@ class async_client
     string domain;
     function callback;
     int retries;
+    int timestamp;
     mixed *args;
   };
 
   mapping requests=([]);
-
 
   static private void remove(object(Request) r)
   {
@@ -494,9 +508,9 @@ class async_client
   {
     if(!r) return;
     if (nsno >= sizeof(nameservers)) {
-      if(r->retries++ > 12)
+      if(r->retries++ > RETRIES)
       {
-	call_out(remove,120,r);
+	call_out(remove,REMOVE_DELAY,r);
 	return;
       } else {
 	nsno = 0;
@@ -504,26 +518,63 @@ class async_client
     }
     
     send(nameservers[nsno],53,r->req);
-    call_out(retry,5,r,nsno+1);
+    call_out(retry,RETRY_DELAY,r,nsno+1);
   }
 
   void do_query(string domain, int cl, int type,
 		function(string,mapping,mixed...:void) callback,
 		mixed ... args)
   {
+    int lid;
 #if constant(thread_create)
-    object key = lock->lock();
+    object key=lock::lock();
 #endif /* constant(thread_create) */
-    id++;
-    id&=65535;
-    int lid = id;
-
+    for(int e=next_client ? 5 : 1024;e>=0;e--)
+    {
+      id++;
+      id&=65535;
+      lid=id;
+      
+      if(requests[lid])
+      {
+	if(time() - requests[lid]->timestamp > GIVE_UP_DELAY)
+	{
 #if constant(thread_create)
-    key = 0;
+	  // We need to unlock the lock for the remove operation...
+	  key=0;
 #endif /* constant(thread_create) */
+	  remove(requests[lid]);
+#if constant(thread_create)
+	  key=lock::lock();
+#endif /* constant(thread_create) */
+	  if(requests[lid]) continue;
+	}else{
+	  continue;
+	}
+      }
+      break;
+    }
 
     if(requests[lid])
-      throw(({"Cannot find an empty request slot.\n",backtrace()}));
+    {
+      /* We failed miserably to find a request id to use,
+       * so we create a second UDP port to be able to have more 
+       * requests 'in the air'. /Hubbe
+       */
+      if(!next_client)
+      {
+	next_client=async_client(nameservers,domains);
+	next_client->nameservers=nameservers;
+	next_client->domains=domains;
+      }
+
+#if constant(thread_create)
+      key=0;
+#endif /* constant(thread_create) */
+
+      next_client->do_query(domain, cl, type, callback, @args);
+      return;
+    }
 
     string req=low_mkquery(lid,domain,cl,type);
 
@@ -532,9 +583,10 @@ class async_client
     r->domain=domain;
     r->callback=callback;
     r->args=args;
+    r->timestamp=time();
     requests[lid]=r;
     udp::send(nameservers[0],53,r->req);
-    call_out(retry,5,r,1);
+    call_out(retry,RETRY_DELAY,r,1);
   }
 
   static private void rec_data()
@@ -607,12 +659,12 @@ class async_client
 	     @args);
   }
 
-  void create(void|string server)
+  void create(void|string|array(string) server, void|string|array(string) domain)
   {
     if(!udp::bind(0))
       throw(({"DNS: failed to bind a port.\n",backtrace()}));
 
     udp::set_read_callback(rec_data);
-    ::create(server);
+    ::create(server,domain);
   }
 };
