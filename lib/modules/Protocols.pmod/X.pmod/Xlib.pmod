@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.36 1998/10/17 03:12:55 grubba Exp $
+ * $Id: Xlib.pmod,v 1.37 1999/04/24 00:15:39 mirar Exp $
  */
 
 /*
@@ -749,7 +749,7 @@ class Display
 	    is_local = 1;
 	  } else {
 // 	    werror("Failed to use local transport.\n");
-	    host = "localhost";
+	    host = "127.0.0.1";
 	  }
       }
     /* Authentication */
@@ -777,13 +777,13 @@ class Display
     if(!is_local)
       {
 	int port =  XPORT + (int)fields[1];
-// 	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
+ 	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
 	if (!connect(host, port))
 	{
-//   	  werror(sprintf("Xlib: Connecting to %s:%d failed\n", host, port));
+   	  werror(sprintf("Xlib: Connecting to %s:%d failed\n", host, port));
 	  return 0;
  	}
-// 	werror(sprintf("Xlib: Connected to %s:%d\n", host, port));
+ 	werror(sprintf("Xlib: Connected to %s:%d\n", host, port));
       }
 
     set_buffer( 65536 );
