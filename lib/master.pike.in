@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.287 2003/06/05 01:07:16 mast Exp $
+// $Id: master.pike.in,v 1.288 2003/06/05 13:11:13 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1228,7 +1228,11 @@ class dirnode
   static array(string) _indices()
   {
     fill_cache();
-    return indices(filter(cache, lambda(mixed x) {return x != ZERO_TYPE;} ));
+    // Note: Cannot index cache at all here to filter out the
+    // ZERO_TYPE values since that can change the order in the
+    // mapping, and _indices() has to return the elements in the same
+    // order as a nearby _values() call.
+    return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
   static array(mixed) _values()
@@ -1341,7 +1345,9 @@ class joinnode
     }
     return ret;
   }
+
   static int _cache_full;
+
   void fill_cache()
   {
 #if 0
@@ -1360,11 +1366,17 @@ class joinnode
     }
     _cache_full = 1;
   }
+
   array(string) _indices()
   {
     fill_cache();
-    return indices(filter(cache, lambda(mixed x){ return x != ZERO_TYPE; }));
+    // Note: Cannot index cache at all here to filter out the
+    // ZERO_TYPE values since that can change the order in the
+    // mapping, and _indices() has to return the elements in the same
+    // order as a nearby _values() call.
+    return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
+
   array(mixed) _values()
   {
     fill_cache();
