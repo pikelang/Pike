@@ -16,7 +16,13 @@ do
     test -z "$d" && ac_dir=.
 
     if test -f $d/$m4; then
-      if echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/$m4 >/dev/null; then
+      # "m4.c 1.9 89/07/10 SMI" (of SunOS 4.1.1_U1) is broken and hangs
+      # during the quote test.
+      m4_ident="`strings $d/$m4|grep '@(#)m4.c' 2>/dev/null`"
+      if test "x$m4_ident" '!=' "x" && \
+	 echo "$m4_ident"|egrep 'm4.c 1\.[0-9] .* SMI' >/dev/null 2>&1; then
+	works=no
+      elif echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/$m4 >/dev/null; then
         works=yes
       else
         works=no
@@ -35,7 +41,13 @@ do
         ;;
       esac
     fi
+    if test "$HAVEGNU:$HAVEWORKS" = "yes:yes"; then
+      break
+    fi
   done
+  if test "$HAVEGNU:$HAVEWORKS" = "yes:yes"; then
+    break
+  fi
 done
 
 IFS="$save_ifs"
