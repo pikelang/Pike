@@ -35,6 +35,7 @@ mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data,
       "xnames":0, //array(string) ?
       "ynames":0, //array(string) ?
       "fontsize":10,
+      "graphlinewidth":1.0,
       "labelsize":0, //Default is set somewhere else
       "legendfontsize":0,
       "legend_texts":0,
@@ -104,7 +105,7 @@ mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data,
      m->type = "sumbars";
      break;
    default:
-     error("This error will never happen error in Diagram.pmod.\n");
+     error("This error will never happen error in Graphics.Graph.pmod.\n");
     }
 
 

@@ -50,7 +50,9 @@ backdatacolors An array of color that do something...
 textcolor  Color of the text. Defualt is black.
 labelcolor Color of the labeltexts.
 orient     Can be "hor" or "vert". 
-linewidth  Width of the lines.
+linewidth  Width of lines (the axis and their like).
+graphlinewidth  Width of the lines that draws data in Graph and line. 
+                Default is 1.0
 backlinewidth Width of the outline-lines. Defualt is 0.
 vertgrid   If the vertical grid should be present.
 horgrid    If the horizontal grid should be present.
