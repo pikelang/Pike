@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.474 2003/08/18 15:11:38 mast Exp $
+|| $Id: program.c,v 1.475 2003/08/19 15:15:37 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.474 2003/08/18 15:11:38 mast Exp $");
+RCSID("$Id: program.c,v 1.475 2003/08/19 15:15:37 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3741,7 +3741,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
   if (!c) {
     zero.type = T_INT;
-    zero.subtype = 0;
+    zero.subtype = NUMBER_LOCKED; /* Make sure we get a new unique entry. */
     zero.u.integer = 0;
     c = &zero;
   }
@@ -4548,8 +4548,6 @@ int store_constant(struct svalue *foo,
 		   int equal,
 		   struct pike_string *constant_name)
 {
-  struct program_constant tmp;
-  unsigned int e;
   JMP_BUF tmp2;
 
   if(SETJMP(tmp2))
@@ -4572,21 +4570,33 @@ int store_constant(struct svalue *foo,
     UNSETJMP(tmp2);
     return store_constant(&zero, equal, constant_name);
   }else{
-    for(e=0;e<Pike_compiler->new_program->num_constants;e++)
-    {
-      JMP_BUF tmp1;
-      /* Assume that if `==() throws an error, the svalues aren't equal. */
-      if (!SETJMP(tmp1)) {
-	struct program_constant *c= Pike_compiler->new_program->constants+e;
-	if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
-	   c->name == constant_name)
-	{
-	  UNSETJMP(tmp1);
-	  UNSETJMP(tmp2);
-	  return e;
+    struct program_constant tmp;
+    unsigned int e;
+
+    if ((foo->type == T_INT) && (foo->subtype == NUMBER_LOCKED)) {
+      /* Allocate a locked entry. */
+      e = Pike_compiler->new_program->num_constants;
+    } else {
+      for(e=0;e<Pike_compiler->new_program->num_constants;e++)
+      {
+	JMP_BUF tmp1;
+	/* Assume that if `==() throws an error, the svalues aren't equal. */
+	if (!SETJMP(tmp1)) {
+	  struct program_constant *c= Pike_compiler->new_program->constants+e;
+	  if ((c->sval.type == T_INT) && (c->sval.subtype == NUMBER_LOCKED)) {
+	    /* Never share locked entries. */
+	  } else {
+	    if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
+	       c->name == constant_name)
+	    {
+	      UNSETJMP(tmp1);
+	      UNSETJMP(tmp2);
+	      return e;
+	    }
+	  }
 	}
+	UNSETJMP(tmp1);
       }
-      UNSETJMP(tmp1);
     }
     assign_svalue_no_free(&tmp.sval,foo);
     if((tmp.name=constant_name)) add_ref(constant_name);

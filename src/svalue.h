@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.114 2002/12/01 00:00:31 mast Exp $
+|| $Id: svalue.h,v 1.115 2003/08/19 15:15:37 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -243,9 +243,10 @@ struct svalue
 /* Max type handled by svalue primitives */
 #define MAX_TYPE PIKE_T_FLOAT
 
-#define NUMBER_NUMBER 0
-#define NUMBER_UNDEFINED 1
+#define NUMBER_NUMBER     0
+#define NUMBER_UNDEFINED  1
 #define NUMBER_DESTRUCTED 2
+#define NUMBER_LOCKED     USHRT_MAX	/* NOTE: Kludge, only in Pike 7.4. */
 
 #define FUNCTION_BUILTIN USHRT_MAX
 
