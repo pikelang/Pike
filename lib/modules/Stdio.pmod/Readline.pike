@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.18 1999/06/06 09:05:48 mirar Exp $
+// $Id: Readline.pike,v 1.19 1999/06/09 16:23:31 marcus Exp $
 
 class OutputController
 {
@@ -1246,19 +1246,25 @@ void set_blocking()
   set_nonblocking(0);
 }
 
-string read()
+string edit(string data, string|void local_prompt)
 {
   if(newline_func == read_newline)
     return 0;
   function oldnl = newline_func;
-  output_controller->write(prompt);
+  output_controller->write(local_prompt||prompt);
   initline();
   newline_func = read_newline;
   readtext = "";
   output_controller->enable();
+  insert(data, 0);
   int res = input_controller->run_blocking();
   set_nonblocking(oldnl);
   return (res>=0 || sizeof(readtext)) && readtext;
+}
+
+string read(string|void prompt)
+{
+  return edit("", prompt);
 }
 
 void enable_history(object(History)|int hist)
