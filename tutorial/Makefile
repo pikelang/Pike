@@ -88,6 +88,9 @@ manpages: .DUMMY $(SRCFILES)
 mirar_tutorial: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml mirar_html tutorial
 
+js_tutorial: .DUMMY $(SRCFILES)
+	$(pike) ./wmmltohtml2 tutorial.wmml js_html tutorial
+
 the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
 
