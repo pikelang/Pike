@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.204 2004/07/04 20:58:28 srb Exp $
+|| $Id: main.c,v 1.205 2004/07/04 21:03:09 srb Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.204 2004/07/04 20:58:28 srb Exp $");
+RCSID("$Id: main.c,v 1.205 2004/07/04 21:03:09 srb Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -788,7 +788,7 @@ int dbm_main(int argc, char **argv)
 	describe_svalue(&t,0,0);
 	s=complex_free_buf(&buf);
 
-	fprintf(stderr, "%s", s.str);
+	fputs(s.str, stderr);
 	free(s.str);
       }
       else
