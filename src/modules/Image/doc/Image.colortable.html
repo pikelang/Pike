@@ -175,7 +175,7 @@ object <b>add</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, &nbsp;array(int)&nbsp;from
 <tt><a href=Image.colortable.html#create>create</a></tt> initiates a colortable object. 
      Default is that no colors are in the colortable. 
 
-<p>     <tt><a href=Image.colortable.html#add>add</a></tt> takes the same argument as
+<p>     <tt><a href=Image.colortable.html#add>add</a></tt> takes the same argument(s) as
      <tt><a href=Image.colortable.html#create>create</a></tt>, thus adding colors to the colortable.
 
 <p>     The colortable is mostly a list of colors,
@@ -188,7 +188,7 @@ object <b>add</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, &nbsp;array(int)&nbsp;from
 <p>     Example:
      <pre>
      ct=colortable(my_image,256); // the best 256 colors
-     ct=colortable(my_image,255,({0,0,0})); // black and the best other 255
+     ct=colortable(my_image,256,({0,0,0})); // black and the best other 255
 
 <p>     ct=colortable(({({0,0,0}),({255,255,255})})); // black and white
 
@@ -389,7 +389,7 @@ Set dithering method to floyd_steinberg.
      </tr><tr valign=center>
      <td>original</td>
      <td>floyd_steinberg to a 4󫶘 colorcube</td>
-     <td>floyd_steinberg to a 16 chosen colors</td>
+     <td>floyd_steinberg to 16 chosen colors</td>
      </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>

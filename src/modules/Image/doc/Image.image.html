@@ -63,27 +63,9 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#rgb_to_hsv>rgb_to_hsv</a></tt>,
      <tt><a href=Image.image.html#hsv_to_rgb>hsv_to_rgb</a></tt>
 
-<p>     converting to other datatypes: <tt><a href=Image.image.html#cast>cast</a></tt>,
-     <tt><a href=Image.image.html#fromgif>fromgif</a></tt>, 
-     <tt><a href=Image.image.html#frompnm>frompnm</a></tt>/<tt><a href=Image.image.html#fromppm>fromppm</a></tt>, 
-     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
-     <tt><a href=Image.image.html#gif_add_fs>gif_add_fs</a></tt>,
-     <tt><a href=Image.image.html#gif_add_fs_nomap>gif_add_fs_nomap</a></tt>,
-     <tt><a href=Image.image.html#gif_add_nomap>gif_add_nomap</a></tt>,
-     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
-     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
-     <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>,
-     <tt><a href=Image.image.html#gif_transparency>gif_transparency</a></tt>,
-     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
-     <tt><a href=Image.image.html#to8bit_closest>to8bit_closest</a></tt>, 
-     <tt><a href=Image.image.html#to8bit_fs>to8bit_fs</a></tt>,
-     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>, 
-     <tt><a href=Image.image.html#to8bit_rgbcube_rdither>to8bit_rgbcube_rdither</a></tt>,
-     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>, 
-     <tt><a href=Image.image.html#togif>togif</a></tt>,
-     <tt><a href=Image.image.html#togif_fs>togif_fs</a></tt>, 
-     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
-     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>
+<p>     converting to other datatypes: 
+     <tt><a href=Image.GIF.html>Image.GIF</a></tt>,
+     <tt><a href=Image.PNG.html>Image.PNG</a></tt>
 
 <p>     special pattern drawing:
      <tt><a href=Image.image.html#noise>noise</a></tt>,
@@ -577,31 +559,16 @@ the object called
 
 <hr>
 <a name=cast> </a>
-<a name=to8bit> </a>
-<a name=to8bit_closest> </a>
-<a name=to8bit_fs> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>string <b>cast</b>(string&nbsp;type)<br>
-string <b>to8bit</b>(array(array(int))&nbsp;colors)<br>
-string <b>to8bit_fs</b>(array(array(int))&nbsp;colors)<br>
-string <b>to8bit_closest</b>(array(array(int))&nbsp;colors)</tt>
+<tt>string <b>cast</b>(string&nbsp;type)</tt>
 </blockquote>
 
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Maps the image to the given colors and returns 
-     the 8 bit data.
-
-<p>     to8bit_fs uses floyd-steinberg dithering
-</blockquote>
 <h4>RETURNS</h4>
 
 
 <blockquote>
-the calculated string
+the image data as a string ("rgbrgbrgb...")
 </blockquote>
 
 
@@ -612,12 +579,11 @@ always casts to string...
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>,
+<blockquote>     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
+     <tt><a href=Image.image.html#togif>togif</a></tt>,
      <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
-     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
-     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>
+     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
+     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>
 </blockquote>
 
 <hr>
@@ -1019,46 +985,6 @@ the new image object
 </blockquote>
 
 <hr>
-<a name=fromgif> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>fromgif</b>(string&nbsp;gif)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Reads GIF data to the called image object.
-
-<p>     GIF animation delay or loops are ignored,
-     and the resulting image is the written result.
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>string pnm</tt>
-  <dd>pnm data, as a string
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the called object
-</blockquote>
-
-
-<h4>KNOWN BUGS</h4>
-<blockquote>
-yes, it does -- it may even do segment overrides...
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#togif>togif</a></tt>,
-     <tt><a href=Image.image.html#frompnm>frompnm</a></tt>
-</blockquote>
-
-<hr>
 <a name=frompnm> </a>
 <a name=fromppm> </a>
 <h4>SYNOPSIS</h4>
@@ -1145,7 +1071,7 @@ string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
 string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
 string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
 string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)</tt>
+string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s, rgb_group&nbsp;*transparent)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1209,125 +1135,51 @@ I (Mirar) recommend reading about the GIF file format before
 
 <hr>
 <a name=gif_begin> </a>
+<a name=gif_end> </a>
+<a name=gif_netscape_loop> </a>
+<a name=togif> </a>
+<a name=togif_fs> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>gif_begin</b>()<br>
 string <b>gif_begin</b>(int&nbsp;num_colors)<br>
-string <b>gif_begin</b>(array(array(int))&nbsp;colors)</tt>
+string <b>gif_begin</b>(array(array(int))&nbsp;colors)<br>
+string <b>gif_end</b>()<br>
+string <b>gif_netscape_loop</b>(int&nbsp;loops)<br>
+string <b>togif</b>()<br>
+string <b>togif</b>(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif</b>(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif_fs</b>()<br>
+string <b>togif_fs</b>(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif_fs</b>(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>togif_fs</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
 
 
 <blockquote>
-Makes GIF header. With no argument, there is no
-     global colortable (palette).
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int num_colors</tt>
-  <dd>number of colors to quantize to (default is 256) 
- array array(array(int)) colors
-     colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
-</dl></blockquote>
-<h4>RETURNS</h4>
+old GIF API compatibility function. Don't use 
+     in any new code. 
 
+<p>     <table>
+     <tr><td></td><td>is replaced by</td></tr>
+     <tr><td>gif_begin</td><td><tt><a href=Image.GIF.header_block.html>Image.GIF.header_block</a></tt></td></tr>
+     <tr><td>gif_end</td><td><tt><a href=Image.GIF.end_block.html>Image.GIF.end_block</a></tt></td></tr>
+     <tr><td>gif_netscape_loop</td><td><tt><a href=Image.GIF.netscape_loop_block.html>Image.GIF.netscape_loop_block</a></tt></td></tr>
+     <tr><td>togif</td><td><tt><a href=Image.GIF.encode.html>Image.GIF.encode</a></tt></td></tr>
+     <tr><td>togif_fs</td><td><tt><a href=Image.GIF.encode.html>Image.GIF.encode</a></tt>¹</td></tr>
+     </table>
 
-<blockquote>
-the GIF data
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
-     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
-     <tt><a href=Image.image.html#togif>togif</a></tt>,
-     <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>
-</blockquote>
-
-<hr>
-<a name=gif_end> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>gif_end</b>()</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Ends GIF data.
+<p>     ¹ Use <tt><a href=Image.colortable.html>Image.colortable</a></tt> to get whatever dithering
+     you want.
 </blockquote>
 <h4>RETURNS</h4>
 
 
 <blockquote>
-the GIF data.
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>
-</blockquote>
-
-<hr>
-<a name=gif_netscape_loop> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>gif_netscape_loop</b>()<br>
-string <b>gif_netscape_loop</b>(int&nbsp;loops)</tt>
-</blockquote>
-
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int loops</tt>
-  <dd>number of loops, default is 65535.
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-a gif chunk that defines that the GIF animation should loop
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
-     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
-     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>
-</blockquote>
-
-<hr>
-<a name=gif_transparency> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>gif_transparency</b>(int&nbsp;color)</tt>
-</blockquote>
-
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int color</tt>
-  <dd>index of color in the palette
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-a gif chunk that transparent a color in the next image chunk
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-Yes - i know this function is too hard to use. :/
-     The palette _is_ unknown mostly...
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
-     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
-     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>
+GIF data.
 </blockquote>
 
 <hr>
@@ -1515,151 +1367,22 @@ the object called
 
 <hr>
 <a name=map_closest> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>map_closest</b>(array(array(int))&nbsp;colors)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Maps all pixel colors to the colors given.
-
-<p>    Method to find the correct color is linear search
-    over the colors given, selecting the nearest in the
-    color cube. Slow...
-
-<p>     <table><tr valign=center>
-     <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_65.gif><img border=0 src=illustration_65.gif width=67 height=67></a></td>
-     </tr><tr valign=center>
-     <td>original</td>
-     <td>->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
-     </tr></table>
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>array(array(int)) color</tt>
-  <dd>list of destination (available) colors
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the new image object
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-this function may change slightly when <tt><a href=Image.image.html#colortable>Image.image->colortable</a></tt> 
-     is implemented (pike 0.6, probably)
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
-     <tt><a href=Image.image.html#map_fs>map_fs</a></tt>
-</blockquote>
-
-<hr>
 <a name=map_fast> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>map_fast</b>(array(array(int))&nbsp;colors)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Maps all pixel colors to the colors given.
-
-<p>    Method to find the correct color is to branch
-    in a binary space partitioning tree in the 
-    colorcube. This is fast, but in some cases
-    it gives the wrong color (mostly when few colors
-    are available).
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>array(array(int)) color</tt>
-  <dd>list of destination (available) colors
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the new image object
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-this function may change slightly when <tt><a href=Image.image.html#colortable>Image.image->colortable</a></tt> 
-     is implemented (pike 0.6, probably)
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>
-</blockquote>
-
-<hr>
 <a name=map_fs> </a>
+<a name=select_colors> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>map_fs</b>(array(array(int))&nbsp;colors)</tt>
+<tt>object <b>map_closest</b>(array(array(int))&nbsp;colors)<br>
+object <b>map_fast</b>(array(array(int))&nbsp;colors)<br>
+object <b>map_fs</b>(array(array(int))&nbsp;colors)<br>
+array <b>select_colors</b>(int&nbsp;num)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
 
 
 <blockquote>
-Maps all pixel colors to the colors given.
-
-<p>    Method to find the correct color is linear search
-    over the colors given, selecting the nearest in the
-    color cube. Slow...
-
-<p>    Floyd-steinberg error correction is added to create
-    a better-looking image, in many cases, anyway.
-
-<p>     <table><tr valign=center>
-     <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_67.gif><img border=0 src=illustration_67.gif width=67 height=67></a></td>
-     </tr><tr valign=center>
-     <td>original</td>
-     <td>->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
-     </tr></table>
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>array(array(int)) color</tt>
-  <dd>list of destination (available) colors
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the new image object
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-this function may change slightly when <tt><a href=Image.image.html#colortable>Image.image->colortable</a></tt> 
-     is implemented (pike 0.6, probably)
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
-     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>
+Compatibility functions. Do not use!
 </blockquote>
 
 <hr>
@@ -1676,7 +1399,7 @@ this function may change slightly when <tt><a href=Image.image.html#colortable>I
 mirrors an image:
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_69.gif><img border=0 src=illustration_69.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_65.gif><img border=0 src=illustration_65.gif width=67 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->mirrorx();</td>
@@ -1703,7 +1426,7 @@ the new image object
 mirrors an image:
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_71.gif><img border=0 src=illustration_71.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_67.gif><img border=0 src=illustration_67.gif width=67 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->mirrory();</td>
@@ -1732,7 +1455,7 @@ Recolor an image from intensity values.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_73.gif><img border=0 src=illustration_73.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_69.gif><img border=0 src=illustration_69.gif width=67 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->grey()->modify_by_intensity(1,0,0, 0,({255,0,0}),({0,255,0}));</td>
@@ -1781,7 +1504,7 @@ Gives a new image with the old image's size,
 
 <p>     Example: 
      <tt>->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.005,0,0,0.5 );</tt>
-     <br><a href=illustrations.html#illustration_74.gif><img border=0 src=illustration_74.gif width=200 height=100></a>
+     <br><a href=illustrations.html#illustration_70.gif><img border=0 src=illustration_70.gif width=200 height=100></a>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -1818,7 +1541,7 @@ Pastes a given image over the current image.
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object image</tt>
-  <dd>image to paste
+  <dd>image to paste (may be empty, needs to be an image object)
 <dt><tt>int x</tt>
 <dt><tt>int y</tt>
   <dd>where to paste the image; default is 0,0
@@ -2070,8 +1793,8 @@ Rotates an image a certain amount of degrees (360° is
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_76.gif><img border=0 src=illustration_76.gif width=87 height=88></a></td>
-     <td><a href=illustrations.html#illustration_77.gif><img border=0 src=illustration_77.gif width=87 height=88></a></td>
+     <td><a href=illustrations.html#illustration_72.gif><img border=0 src=illustration_72.gif width=87 height=88></a></td>
+     <td><a href=illustrations.html#illustration_73.gif><img border=0 src=illustration_73.gif width=87 height=88></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate(15,255,0,0);</td>
@@ -2115,7 +1838,7 @@ rotates an image counter-clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_79.gif><img border=0 src=illustration_79.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_75.gif><img border=0 src=illustration_75.gif width=67 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_ccw();</td>
@@ -2143,7 +1866,7 @@ rotates an image clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_81.gif><img border=0 src=illustration_81.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_77.gif><img border=0 src=illustration_77.gif width=67 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_cw();</td>
@@ -2215,57 +1938,6 @@ scales the image to a specified new size,
 
 <blockquote>
 the new image object
-</blockquote>
-
-<hr>
-<a name=select_colors> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>array(array(int)) <b>select_colors</b>(int&nbsp;num_colors)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Selects the best colors to represent the image.
-
-<p>
-     <table><tr valign=center>
-     <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_83.gif><img border=0 src=illustration_83.gif width=67 height=67></a></td>
-     <td><a href=illustrations.html#illustration_84.gif><img border=0 src=illustration_84.gif width=67 height=67></a></td>
-     <td><a href=illustrations.html#illustration_85.gif><img border=0 src=illustration_85.gif width=67 height=67></a></td>
-     </tr><tr valign=center>
-     <td>original</td>
-     <td>2</td>
-     <td>8</td>
-     <td>32</td>
-     </tr></table>
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int num_colors</tt>
-  <dd>number of colors to return
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-an array of colors
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-this function may change somewhat when <tt><a href=Image.image.html#colortable>Image.image->colortable</a></tt>
-     is implemented (pike 0.6, probably)
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>
 </blockquote>
 
 <hr>
@@ -2394,8 +2066,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_87.gif><img border=0 src=illustration_87.gif width=82 height=67></a></td>
-     <td><a href=illustrations.html#illustration_88.gif><img border=0 src=illustration_88.gif width=82 height=67></a></td>
+     <td><a href=illustrations.html#illustration_79.gif><img border=0 src=illustration_79.gif width=82 height=67></a></td>
+     <td><a href=illustrations.html#illustration_80.gif><img border=0 src=illustration_80.gif width=82 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewx(15,255,0,0);</td>
@@ -2447,8 +2119,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_90.gif><img border=0 src=illustration_90.gif width=67 height=82></a></td>
-     <td><a href=illustrations.html#illustration_91.gif><img border=0 src=illustration_91.gif width=67 height=82></a></td>
+     <td><a href=illustrations.html#illustration_82.gif><img border=0 src=illustration_82.gif width=67 height=82></a></td>
+     <td><a href=illustrations.html#illustration_83.gif><img border=0 src=illustration_83.gif width=67 height=82></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewy(15,255,0,0);</td>
@@ -2502,7 +2174,7 @@ Makes a black-white image.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_93.gif><img border=0 src=illustration_93.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_85.gif><img border=0 src=illustration_85.gif width=67 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->threshold(90,100,110);</td>
@@ -2525,143 +2197,6 @@ the new image object
 
 <h4>SEE ALSO</h4>
 <blockquote>     <tt><a href=Image.image.html#grey>grey</a></tt>
-</blockquote>
-
-<hr>
-<a name=to8bit_rgbcube> </a>
-<a name=to8bit_rgbcube_rdither> </a>
-<a name=tozbgr> </a>
-<a name=tozrgb> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>tozbgr</b>(array(array(int))&nbsp;colors)<br>
-string <b>tozrgb</b>(array(array(int))&nbsp;colors)<br>
-string <b>to8bit_rgbcube</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
-string <b>to8bit_rgbcube</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue, string&nbsp;map)<br>
-string <b>to8bit_rgbcube_rdither</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
-string <b>to8bit_rgbcube_rdither</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue, string&nbsp;map)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Maps the image into a colorcube with the given 
-     dimensions. Red is least significant, blue is most.
-
-<p>     The "rdither" type of method uses a random dither algoritm.
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int red</tt>
-<dt><tt>int green</tt>
-<dt><tt>int blue</tt>
-  <dd>The sides of the colorcube. Not the number of bits!
-<dt><tt>string map</tt>
-  <dd>Map this position in the colorcube to another value,
-     ie: say we have position red=1,green=2,blue=3 in a colorcube of
-     6×6×6, we have the index 1+2*6+3*6*6=121. If the 
-     map-string contains 'å' in position 121, the resulting
-     byte is 'å' or 229.
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the calculated string
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
-     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
-     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>
-</blockquote>
-
-<hr>
-<a name=tobitmap> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>tobitmap</b>();</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Maps the image to a bitmap.
-
-<p>     Bit 0 is the leftmost pixel, and the rows are aligned to 
-     bytes.
-
-<p>     Any pixel value other then black results in a set bit.
-</blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the calculated string
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
-     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
-     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>,
-     <tt><a href=Image.image.html#cast>cast</a></tt>
-</blockquote>
-
-<hr>
-<a name=togif> </a>
-<a name=togif_fs> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>togif</b>()<br>
-string <b>togif</b>(int&nbsp;num_colors)<br>
-string <b>togif</b>(array(array(int))&nbsp;colors)<br>
-string <b>togif</b>(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
-string <b>togif</b>(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
-string <b>togif</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
-string <b>togif_fs</b>()<br>
-string <b>togif_fs</b>(int&nbsp;num_colors)<br>
-string <b>togif_fs</b>(array(array(int))&nbsp;colors)<br>
-string <b>togif_fs</b>(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
-string <b>togif_fs</b>(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
-string <b>togif_fs</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Makes GIF data. The togif_fs variant uses floyd-steinberg 
-     dithereing.
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int num_colors</tt>
-  <dd>number of colors to quantize to (default is 256) 
- array array(array(int)) colors
-     colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
-<dt><tt>int trans_r</tt>
-<dt><tt>int trans_g</tt>
-<dt><tt>int trans_b</tt>
-  <dd>one color, that is to be transparent.
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the GIF data
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
-     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
-     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
-     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
-     <tt><a href=Image.image.html#fromgif>fromgif</a></tt>
 </blockquote>
 
 <hr>
@@ -2706,8 +2241,8 @@ Draws a filled rectangle with colors (and alpha values) tuned
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><a href=illustrations.html#illustration_95.gif><img border=0 src=illustration_95.gif width=67 height=67></a></td>
-     <td><a href=illustrations.html#illustration_96.gif><img border=0 src=illustration_96.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_87.gif><img border=0 src=illustration_87.gif width=67 height=67></a></td>
+     <td><a href=illustrations.html#illustration_88.gif><img border=0 src=illustration_88.gif width=67 height=67></a></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>solid tuning<br>(blue,red,green,yellow)</td>
@@ -2758,7 +2293,7 @@ gives a new image with the old image's size,
 
 <p>     Example: <br>
      <tt>->turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,0}) );</tt>
-     <br><a href=illustrations.html#illustration_97.gif><img border=0 src=illustration_97.gif width=200 height=100></a>
+     <br><a href=illustrations.html#illustration_89.gif><img border=0 src=illustration_89.gif width=200 height=100></a>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
