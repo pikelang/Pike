@@ -1046,7 +1046,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.16 2002/10/23 16:36:52 grubba Exp $\n"
+	 "$Id: pntld,v 1.17 2002/10/23 17:43:32 grubba Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -1193,8 +1193,9 @@ int main(int argc, array(string) argv)
   }else{
     foreach(global_directives, string dir)
       {
-	if(sscanf(dir,"-export:%s",string sym))
+	if(2==sscanf(lower_case(dir),"%*[-/]export:%*s"))
 	{
+	  string sym=dir[8..];
 	  int exported;
 //	  werror("Exporting symbol: %O\n",sym);
 	  if(global_symbols[sym])
