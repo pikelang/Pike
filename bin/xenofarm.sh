@@ -48,7 +48,7 @@ export LC_CTYPE
 log "FORMAT 2"
 log_start build
 xenofarm_build
-log_end $1
+log_end $?
 
 log_start response_assembly
   cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt
@@ -72,6 +72,6 @@ log_start response_assembly
       build/xenofarm/_core.txt ";"
   cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt
   cp buildid.txt build/xenofarm/
-log_end $1
+log_end $?
 
 log "END"
