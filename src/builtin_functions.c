@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.431 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.432 2002/06/13 21:54:32 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6508,72 +6508,69 @@ PMOD_EXPORT void f_map_array(INT32 args)
   push_array(ret);
 }
 
-/*! @decl array map(array arr, function|program|object|array fun, @
- *!                 mixed ... extra)
- *! @decl array map(array arr, multiset|mapping fun)
- *! @decl array map(array arr, string fun, mixed ... extra)
- *! @decl array map(array arr, void|zero null, mixed ... extra)
- *! @decl mapping map(mapping|program|function arr, mixed fun, mixed ... extra)
- *! @decl multiset map(multiset arr, mixed fun, mixed ... extra)
- *! @decl string map(string arr, mixed fun, mixed ... extra)
- *! @decl mixed map(object arr, mixed fun, mixed ... extra)
+/*! @decl mixed map(mixed arr, void|mixed fun, mixed ... extra)
  *!
- *!   Map a function over elements.
+ *!   Applies @[fun] to the elements in @[arr] and collects the results.
  *!
- *!   @section Basic use
- *!   	map() loops over all elements in arr and call the
- *!   	function fun with the element as first argument, with all "extra"
- *!   	arguments following. The result is the same datatype as "arr", but all
- *!   	elements is the result from the function call of the corresponding
- *!   	element.
- *!   @endsection
+ *!   @[arr] is treated as a set of elements, as follows:
  *!
- *!   @section Advanced use
- *!   	There are a wide number of valid combinations of types for the
- *!     arguments @[arr] and @[fun].
- *!   	@mixed arr
- *!   	  @type array
- *!   	  @mixed fun
- *!   	    @type function|program|object|array
- *!   	      @code{array ret; ret[i]=fun(arr[i],@@extra);@}
- *!   	    @type multiset|mapping
- *!   	      @code{array ret = rows(fun,arr);@}
- *!   	    @type string
- *!   	      @code{array ret = arr[fun](@@extra);@}
- *!   	    @type void|zero
- *!   	      @code{array ret = arr(@@extra);@}
- *!   	  @endmixed
- *!   	  @type mapping|program|function
- *!   	    @code{mapping ret = mkmapping(indices(arr),
- *!   					  map(values(arr),fun,@@extra));@}
- *!   	  @type multiset
- *!   	    @code{multiset ret = (multiset)(map(indices(arr),fun,@@extra));@}
- *!   	  @type string
- *!   	    @code{string ret = (string)map((array)arr,fun,@@extra);@}
- *!   	  @type object
- *!   	    If @[arr] implements @[_cast()], try casting in turn
- *!   	    @dl
- *!   	      @item
- *!   		@code{map((array)arr,fun,@@extra);@}
- *!   	      @item
- *!   		@code{map((mapping)arr,fun,@@extra);@}
- *!   	      @item
- *!   		@code{map((multiset)arr,fun,@@extra);@}
- *!   	    @enddl
- *!   	    If @[arr] implements both @[_sizeof()], and @[`[]()], 
- *!   	    assume @[arr] simulates an array.
- *!   	@endmixed
- *!   @endsection
+ *!   @dl
+ *!     @item array
+ *!     @item multiset
+ *!     @item string
+ *!       @[fun] is applied in order to each element. The results are
+ *!       collected, also in order, to a value of the same type as
+ *!       @[arr], which is returned.
  *!
- *! @returns
- *!   Generally the same datatype as given, but with the subtype set to
- *!   the return value of the function; the exception are program and
- *!   function that give a mapping back.
+ *!     @item mapping
+ *!       @[fun] is applied to the values, and each result is assigned
+ *!       to the same index in a new mapping, which is returned.
+ *!
+ *!     @item program
+ *!       The program is treated as a mapping containing the
+ *!       identifiers that are indexable from it and their values.
+ *!
+ *!     @item object
+ *!       If there is a @code{cast@} method in the object, it's called
+ *!       to try to cast the object to an array, a mapping, or a
+ *!       multiset, in that order, which is then handled as described
+ *!       above.
+ *!   @enddl
+ *!
+ *!   @[fun] is applied in different ways depending on its type:
+ *!
+ *!   @dl
+ *!     @item function
+ *!       @[fun] is called for each element. It gets the current
+ *!       element as the first argument and @[extra] as the rest. The
+ *!       result of the call is collected.
+ *!
+ *!     @item object
+ *!       @[fun] is used as a function like above, i.e. the
+ *!       @code{`()@} method in it is called.
+ *!
+ *!     @item multiset
+ *!     @item mapping
+ *!       @[fun] is indexed with each element. The result of that is
+ *!       collected.
+ *!
+ *!     @item "zero or left out"
+ *!       Each element that is callable is called with @[extra] as
+ *!       arguments. The result of the calls are collected. Elements
+ *!       that aren't callable gets zero as result.
+ *!
+ *!     @item string
+ *!       Each element is indexed with the given string. If the result
+ *!       of that is zero then a zero is collected, otherwise it's
+ *!       called with @[extra] as arguments and the result of that
+ *!       call is collected.
+ *!
+ *!       This is typically used when @[arr] is a collection of
+ *!       objects, and @[fun] is the name of some function in them.
+ *!   @enddl
  *!
  *! @note
- *!   You may get unexpected errors if you feed the function with
- *!   illegal values; for instance if @[fun] is an array of
- *!   non-callables.
+ *!   The function is never destructive on @[arr].
  *!
  *! @seealso
  *!   @[filter()], @[enumerate()], @[foreach()]
@@ -6883,46 +6880,81 @@ PMOD_EXPORT void f_map(INT32 args)
    }      
 }
 
-/*! @decl array filter(array arr, function fun, mixed ...extra)
- *! @decl mixed filter(mixed arr, void|mixed fun, void|mixed ...extra)
+/*! @decl mixed filter(mixed arr, void|mixed fun, mixed ...extra)
  *!
- *!   Map a function over elements and filters.
+ *!   Filters the elements in @[arr] through @[fun].
  *!
- *!   Calls the given function @[fun] for all elements in @[arr], and keeps the
- *!   elements in @[arr] that resulted in a non-zero value from the function. 
+ *!   @[arr] is treated as a set of elements to be filtered, as
+ *!   follows:
  *!
- *!   @mixed arr
- *!   	@type array
- *!   	  If @[fun] is an array:
- *!   	    @code{for (i=0; i<sizeof(@[arr]); i++) {
- *!   		    if (fun[i]) res += ({ @[arr][i]});
- *!   	    @}
- *!   	  otherwise:
- *!   	    @code{keep = map(@[arr], @[fun], @@@[extra]);
- *!   		  for (i=0; i < sizeof(@[arr]); i++) {
- *!   		    if (keep[i]) res += ({ @[arr][i]});
- *!   	    @}
- *!   	@type multiset
- *!   	  @code{(multiset)filter((array)@[arr], @[fun], @@@[extra])@}
- *!   	@type mapping|program|function
- *!   	  @code{ind = indices(@[arr]);
- *!   		val = values(@[arr]);
- *!   		keep = map(val, @[fun], @@@[extra]);
- *!   		for (i=0; i<sizeof(keep); i++) 
- *!   		  if (keep[i]) res[ind[i]] = val[i];
- *!   	  @}
- *!   	@type string
- *!   	  @code{(string)filter((array)@[arr], @[fun], @@@[extra])@}
- *!   	@type object
- *!   	  if @code{@[arr]->cast@}, try in turn:
- *!   	    @code{filter((array)@[arr], @[fun], @@@[extra])@}
- *!   	    @code{filter((mapping)@[arr], @[fun], @@@[extra])@}
- *!   	    @code{filter((multiset)@[arr], @[fun], @@@[extra])@}
- *!   @endmixed
+ *!   @dl
+ *!     @item array
+ *!     @item multiset
+ *!     @item string
+ *!       Each element is filtered with @[fun]. The return value is of
+ *!       the same type as @[arr] and it contains the elements that
+ *!       @[fun] accepted. @[fun] is applied in order to each element,
+ *!       and that order is retained between the kept elements.
  *!
- *! @returns
- *!   Returns the same datatype as given, the exceptions are program and
- *!   function that give a mapping back.
+ *!       If @[fun] is an array, it should have the same length as
+ *!       @[arr]. In this case, the elements in @[arr] are kept where
+ *!       the corresponding positions in @[fun] are nonzero. Otherwise
+ *!       @[fun] is used as described below.
+ *!
+ *!     @item mapping
+ *!       The values are filtered with @[fun], and the index/value
+ *!       pairs it accepts are kept in the returned mapping.
+ *!
+ *!     @item program
+ *!       The program is treated as a mapping containing the
+ *!       identifiers that are indexable from it and their values.
+ *!
+ *!     @item object
+ *!       If there is a @code{cast@} method in the object, it's called
+ *!       to try to cast the object to an array, a mapping, or a
+ *!       multiset, in that order, which is then filtered as described
+ *!       above.
+ *!   @enddl
+ *!
+ *!   Unless something else is mentioned above, @[fun] is used as
+ *!   filter like this:
+ *!
+ *!   @dl
+ *!     @item function
+ *!       @[fun] is called for each element. It gets the current
+ *!       element as the first argument and @[extra] as the rest. The
+ *!       element is kept if it returns true, otherwise it's filtered
+ *!       out.
+ *!
+ *!     @item object
+ *!       The object is used as a function like above, i.e. the
+ *!       @code{`()@} method in it is called.
+ *!
+ *!     @item multiset
+ *!     @item mapping
+ *!       @[fun] is indexed with each element. The element is kept if
+ *!       the result is nonzero, otherwise it's filtered out.
+ *!
+ *!     @item "zero or left out"
+ *!       Each element that is callable is called with @[extra] as
+ *!       arguments. The element is kept if the result of the call is
+ *!       nonzero, otherwise it's filtered out. Elements that aren't
+ *!       callable are also filtered out.
+ *!
+ *!     @item string
+ *!       Each element is indexed with the given string. If the result
+ *!       of that is zero then the element is filtered out, otherwise
+ *!       the result is called with @[extra] as arguments. The element
+ *!       is kept if the return value is nonzero, otherwise it's
+ *!       filtered out.
+ *!
+ *!       This is typically used when @[arr] is a collection of
+ *!       objects, and @[fun] is the name of some predicate function
+ *!       in them.
+ *!   @enddl
+ *!
+ *! @note
+ *!   The function is never destructive on @[arr].
  *!
  *! @seealso
  *!   @[map()], @[foreach()]
