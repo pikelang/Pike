@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.245 2004/03/17 19:27:23 mast Exp $
+|| $Id: gc.c,v 1.246 2004/03/19 02:23:26 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.245 2004/03/17 19:27:23 mast Exp $");
+RCSID("$Id: gc.c,v 1.246 2004/03/19 02:23:26 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -102,8 +102,8 @@ double gc_average_slowness = 0.9;
 #endif
 
 int num_objects = 3;		/* Account for *_empty_array. */
-unsigned LONGEST num_allocs =0;
-unsigned LONGEST alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
+ALLOC_COUNT_TYPE num_allocs =0;
+ALLOC_COUNT_TYPE alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 time_t last_gc;
@@ -2700,7 +2700,7 @@ static void warn_bad_cycles()
 
 size_t do_gc(void *ignored, int explicit_call)
 {
-  unsigned LONGEST start_allocs;
+  ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
   cpu_time_t gc_start_time;
   ptrdiff_t objs, pre_kill_objs;
@@ -3194,7 +3194,7 @@ size_t do_gc(void *ignored, int explicit_call)
     else if(new_threshold > GC_MAX_ALLOC_THRESHOLD)
       alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
     else
-      alloc_threshold = (unsigned LONGEST) new_threshold;
+      alloc_threshold = (ALLOC_COUNT_TYPE) new_threshold;
 
     if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
 #if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
@@ -3351,8 +3351,10 @@ void f__gc_status(INT32 args)
 void dump_gc_info(void)
 {
   fprintf(stderr,"Current number of things   : %d\n",num_objects);
-  fprintf(stderr,"Allocations since last gc  : %"PRINTLONGEST"u\n",num_allocs);
-  fprintf(stderr,"Threshold for next gc      : %"PRINTLONGEST"u\n",alloc_threshold);
+  fprintf(stderr,"Allocations since last gc  : "PRINT_ALLOC_COUNT_TYPE"\n",
+	  num_allocs);
+  fprintf(stderr,"Threshold for next gc      : "PRINT_ALLOC_COUNT_TYPE"\n",
+	  alloc_threshold);
   fprintf(stderr,"Projected current garbage  : %f\n",
 	  objects_freed * (double) num_allocs / (double) alloc_threshold);
 

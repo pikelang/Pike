@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.110 2004/03/17 19:27:23 mast Exp $
+|| $Id: gc.h,v 1.111 2004/03/19 02:23:26 mast Exp $
 */
 
 #ifndef GC_H
@@ -45,12 +45,30 @@ extern double gc_average_slowness;
  * Put a cap on that threshold to avoid very small intervals. */
 #define GC_MIN_ALLOC_THRESHOLD 1000
 
-#define GC_MAX_ALLOC_THRESHOLD MAX_ULONGEST
+/* The upper limit on the threshold is set to avoid wrap-around only.
+ * We need some space above it since num_allocs can go beyond the
+ * threshold if it takes a while until the gc can run. */
+#define GC_MAX_ALLOC_THRESHOLD (ALLOC_COUNT_TYPE_MAX - 10000000)
 
 /* #define GC_MARK_DEBUG */
 
+/* If we only have 32 bits we need to make good use of them for the
+ * alloc counter since it can get high, but if we have 64 it's best to
+ * stay away from unsigned since rotten compilers like MSVC haven't
+ * had the energy to implement conversion from that type to floating
+ * point. :P */
+#ifdef INT64
+#define ALLOC_COUNT_TYPE INT64
+#define ALLOC_COUNT_TYPE_MAX MAX_INT64
+#define PRINT_ALLOC_COUNT_TYPE "%"PRINTINT64"d"
+#else
+#define ALLOC_COUNT_TYPE unsigned long
+#define ALLOC_COUNT_TYPE_MAX ULONG_MAX
+#define PRINT_ALLOC_COUNT_TYPE "%lu"
+#endif
+
 extern INT32 num_objects;
-extern unsigned LONGEST num_allocs, alloc_threshold;
+extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_generation;
 extern int gc_trace, gc_debug;
