@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.547 2004/01/16 00:51:40 nilsson Exp $
+|| $Id: program.c,v 1.548 2004/01/16 21:20:08 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.547 2004/01/16 00:51:40 nilsson Exp $");
+RCSID("$Id: program.c,v 1.548 2004/01/16 21:20:08 mirar Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1195,7 +1195,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
     TYPE *tmp;								\
     if(m==(1<<(sizeof(NUMTYPE)*8))-2)					\
       Pike_error("Too many " #NAME ".\n");				\
-    m = MIN(m*2+1,(1<<(sizeof(NUMTYPE)*8))-2);				\
+    m = MINIMUM(m*2+1,(1<<(sizeof(NUMTYPE)*8))-2);			\
     tmp = realloc((void *)state->new_program->NAME,			\
 		  sizeof(TYPE) * m);					\
     if(!tmp) Pike_fatal("Out of memory.\n");				\
