@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.76 2003/08/31 22:38:54 nilsson Exp $
+|| $Id: socket.c,v 1.77 2003/09/30 20:42:42 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.76 2003/08/31 22:38:54 nilsson Exp $");
+RCSID("$Id: socket.c,v 1.77 2003/09/30 20:42:42 mast Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -277,7 +277,8 @@ static void port_bind(INT32 args)
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
     {
       THIS->my_errno=errno;
-      close(fd);
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = THIS->my_errno;
       pop_n_elems(args);
       push_int(0);
       return;
@@ -294,7 +295,8 @@ static void port_bind(INT32 args)
   if(tmp)
   {
     THIS->my_errno=errno;
-    fd_close(fd);
+    while (fd_close(fd) && errno == EINTR) {}
+    errno = THIS->my_errno;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -378,7 +380,7 @@ static void port_accept(INT32 args)
 {
   PIKE_SOCKADDR addr;
   struct port *this=THIS;
-  int fd;
+  int fd, err;
   struct object *o;
   ACCEPT_SIZE_T len=0;
 
@@ -387,12 +389,15 @@ static void port_accept(INT32 args)
 
   THREADS_ALLOW();
   len=sizeof(addr);
-  fd=fd_accept(this->fd, (struct sockaddr *)&addr, &len);
+  do {
+    fd=fd_accept(this->fd, (struct sockaddr *)&addr, &len);
+    err = errno;
+  } while (fd < 0 && err == EINTR);
   THREADS_DISALLOW();
 
   if(fd < 0)
   {
-    THIS->my_errno=errno;
+    THIS->my_errno=errno = err;
     pop_n_elems(args);
     push_int(0);
     return;
