@@ -1,1 +1,2 @@
-usr/lib/pike7.5/*/modules/GL*
+usr/lib/pike/*/lib/modules/GL*
+usr/share/pike/*/lib/modules/GL*

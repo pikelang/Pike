@@ -1,8 +1,16 @@
+Places to visit
+---------------
+ - http://pike.ida.liu.se/ - the main Pike site
+ - http://community.roxen.com - community site for users of the 
+   Roxen webserver and the Pike bugs database, information etc.
+ - http://caudium.net/ - website of the Caudium WebServer which is
+   written in Pike
+ - http://www.roxen.com/ - website of the Roxen IS, the company which
+   for a long time developed and maintained Pike as well as the Roxen
+   WebServer mentioned above.
+
 Notes for developers
 --------------------
-
-*** THIS PIKE DISTRIBUTION IS NOT PART OF THE DEBIAN GNU/LINUX SYSTEM ***
-*** THIS PIKE DISTRIBUTION CONTAINS EXPERIMENTAL PIKE TREE ***
 
 The postinst script created a few directories in /usr/local which you can
 use for your modules/include files. Once created by the postinst script
@@ -10,13 +18,13 @@ they will never be touched by any pike package again. The directories
 are:
 
 /usr/local/include/pike
-/usr/local/include/pike7.5
+/usr/local/include/pike7.4
 
 /usr/local/lib/pike/site_pike
-/usr/local/lib/pike7.5/site_pike
+/usr/local/lib/pike7.4/site_pike
 
 /usr/local/share/pike/site_pike
-/usr/local/share/pike7.5/site_pike
+/usr/local/share/pike7.4/site_pike
 
 
 Pike mode helper for Emacsen
@@ -34,4 +42,4 @@ and using the ~/.xemacs/ directory):
 That should do the trick for the Emacsen provided with Debian.
 
 ----
-$Id: README.Debian,v 1.3 2002/12/06 04:21:19 grendel Exp $
+$Id: README.Debian,v 1.4 2003/01/27 23:43:21 grendel Exp $

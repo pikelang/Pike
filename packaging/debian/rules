@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.36 2002/12/21 19:42:17 grendel Exp $
+# $Id: rules,v 1.37 2003/01/27 23:43:23 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -170,6 +170,7 @@ clean:
 	- rm src/post_modules/static_module_makefile
 	- rm src/post_modules/dynamic_module_makefile
 	- rm -rf build/
+	- rm $(CURDIR)/debian/links
 
 	-if [ -f patched-stamp ]; then \
 	    for f in $(CURDIR)/debian/patches/*.diff; do \
@@ -189,27 +190,18 @@ install: build
 
 	# Add here commands to install the package into debian/$(PIKE).
 	$(MAKE) -C$(BUILDDIR)/ buildroot=$(CURDIR)/debian/$(PIKE)-core \
-	        prefix=/usr \
-		share_prefix=/usr/lib/$(PIKE)/$(VERSION) \
-		lib_prefix=/usr/lib/$(PIKE)/$(VERSION) \
-		INSTALLARGS=--traditional install
-
-	# temporary hack
-	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*.o
-	#-$(RUNPIKE2) -DPIKE_FAKEROOT="$(PIKE_FAKEROOT)" -DPIKE_FAKEROOT_OMIT="$(PIKE_FAKEROOT_OMIT)" \
-	#            $(CURDIR)/src/dumpmodule.pike \
-	#            $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*
+	        prefix=/usr/lib pike_name=/usr/bin/$(PIKE) install
 
 	# Some cleaning
-	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/ -name ".autodoc" -type f -print`
-	-for f in `cat $(CURDIR)/debian/toremove.txt | sed -e 's/@PIKE@/$(PIKE)/g;s/@VERSION@/$(VERSION)/g'`; do \
+	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/ -name ".autodoc" -type f -print`
+	-@for f in `cat $(CURDIR)/debian/toremove.txt | sed -e 's/@PIKE@/$(PIKE)/g;s/@VERSION@/$(VERSION)/g'`; do \
 	    echo Removing $(CURDIR)/debian/$(PIKE)-core/$$f ; \
 	    rm -f $(CURDIR)/debian/$(PIKE)-core/$$f ; \
 	done
 
 	# an eye-candy
-	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/$(PIKE)
-	uudecode -o $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/$(PIKE)/pike.png $(CURDIR)/debian/pike.png.uu
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/pike
+	install -m 644 -o root -g root $(CURDIR)/debian/pike.xpm $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/pike/$(PIKE).xpm 
 
 	# install the docs
 	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-manual refdoc/traditional_manual/* usr/share/doc/$(PIKE)-doc/html/manual
@@ -218,33 +210,38 @@ install: build
 	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-reference refdoc/modref/* usr/share/doc/$(PIKE)-doc/html/reference
 	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
 
-	mv $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike debian/$(PIKE)-core/usr/bin/$(PIKE)
-	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/hilfe
-	mv $(CURDIR)/debian/$(PIKE)-core/usr/man/man1/pike.1 $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
-	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/man/
+	ln -sf ../lib/pike/$(VERSION)/bin/pike $(CURDIR)/debian/$(PIKE)-core/usr/bin/$(PIKE)
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/man/man1/pike.1 $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
+	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/man/
 
-	mkdir -p $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/include ; \
-	mv $(CURDIR)/debian/$(PIKE)-core/usr/include/pike \
-	   $(CURDIR)/debian/$(PIKE)-core/usr/include/$(PIKE) ; \
-	chmod 644 `find $(CURDIR)/debian/$(PIKE)-core/usr/include/$(PIKE)/ -type f -print`
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/include/pike \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION) ; \
+	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/include
+	chmod 644 `find $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/ -type f -print`
+
+	# move all the *.pmod and *.pike files to /usr/share recreating the structure
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)
+	for f in `(cd $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/ && find -name "*.pmod" -print -o -name "*.pike" -print)`; do \
+	    install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)/lib/`dirname $$f`/; \
+	    if [ -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/$$f ]; then \
+		mv $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/$$f $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)/lib/$$f; \
+		(echo /usr/share/pike/$(VERSION)/lib/$$f /usr/lib/pike/$(VERSION)/lib/$$f | sed -e 's#/./#/#g') >> $(CURDIR)/debian/links; \
+	    fi; \
+	done
+	dh_link && rm -f $(CURDIR)/debian/links
 
 	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-dev debian/pike.el usr/share/emacs
-	sed -e "`$(RUNPIKE) -e 'write("s#@CFLAGS@#%s#g;s/@LDFLAGS@//g;s/@MAJOR@/%d/g; s/@MINOR@/%d/g; s/@BUILD@/%d/g","-I" + master()->pike_include_path * " -I", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);'`" \
+	sed -e "`$(RUNPIKE) -e 'write("s#@CFLAGS@#%s#g;s/@LDFLAGS@//g;s/@MAJOR@/%d/g; s/@MINOR@/%d/g; s/@BUILD@/%d/g","-I/usr/include/pike/$(VERSION)/", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);'`" \
 		$(CURDIR)/debian/pike-config.in > $(CURDIR)/debian/$(PIKE)-dev/usr/bin/$(PIKE)-config
 
-  # Remove some files that shouldn't be there...
-
-	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/master.pike.in
-	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike-module
-	-rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/tools
-	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike.syms
-	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/rsif
-
-  # Fix permissions
-	find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE) -type f -exec chmod -x '{}' ';'
+	# Fix permissions
+	find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION) -type f -exec chmod -x '{}' ';'
+	chmod 755 $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/bin/pike
 
 	for f in `find $(CURDIR)/debian/$(PIKE)-core/usr/bin -type f` \
-                 `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE) -type f`; \
+                 `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION) -type f` \
+		 `find $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION) -type f`; \
 	do \
 	  file $$f | grep "script" >/dev/null \
             && perl -pi -e 's@#\!.*NOMODULE@#\!/usr/bin/$(PIKE)@' $$f \
