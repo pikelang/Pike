@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.66 2002/11/04 15:53:14 grubba Exp $
+|| $Id: dlopen.c,v 1.67 2003/01/21 17:10:39 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.66 2002/11/04 15:53:14 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.67 2003/01/21 17:10:39 grubba Exp $");
 
 #endif
 
@@ -2280,12 +2280,17 @@ static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
 
 static void init_dlopen(void)
 {
-  extern char ** ARGV;
+  static char pike_path[MAX_PATH];
   INT32 offset;
   struct DLObjectTempData objtmp;
   HINSTANCE h;
+  DWORD c;
+
+  c=GetModuleFileName(NULL, pike_path, MAX_PATH);
+  assert(c > 0);
+
 #ifdef DLDEBUG
-  fprintf(stderr,"dlopen_init(%s)\n",ARGV[0]);
+  fprintf(stderr,"dlopen_init(%s)\n",pike_path);
 #endif
 
 #ifdef DL_SYMBOL_LOG
@@ -2293,11 +2298,11 @@ static void init_dlopen(void)
 #endif
 
   global_dlhandle.refs=1;
-  global_dlhandle.filename=ARGV[0];
+  global_dlhandle.filename=pike_path;
   global_dlhandle.next=0;
   first=&global_dlhandle;
   
-  h=low_LoadLibrary(ARGV[0]);
+  h=GetModuleHandle(NULL);
 
 #undef data
 #define data (&objtmp)
@@ -2326,7 +2331,7 @@ static void init_dlopen(void)
 					   data->coff->sizeof_optheader);
     
     
-    buf= (unsigned char *)read_file(ARGV[0], &len);
+    buf= (unsigned char *)read_file(pike_path, &len);
     
     data->symbols=(struct COFFSymbol *)(buf +
 					data->coff->symboltable);
@@ -2431,9 +2436,9 @@ static void init_dlopen(void)
     }
     free(buf);
 #ifdef USE_PDB_SYMBOLS
-    if(strlen(ARGV[0])>4) {
-      char *pdb_name = alloca(strlen(ARGV[0])+1);
-      strcpy(pdb_name, ARGV[0]);
+    if(strlen(pike_path)>4) {
+      char *pdb_name = alloca(strlen(pike_path)+1);
+      strcpy(pdb_name, pike_path);
       strcpy(pdb_name+strlen(pdb_name)-4, ".PDB");
       buf= (unsigned char *)read_file(pdb_name, &len);
     } else buf = NULL;
@@ -2483,7 +2488,7 @@ static void init_dlopen(void)
 #ifdef DLDEBUG
     fprintf(stderr,"Couldn't find PE header.\n");
 #endif
-    append_dlllist(&global_dlhandle.dlls, ARGV[0]);
+    append_dlllist(&global_dlhandle.dlls, pike_path);
     global_dlhandle.htable=alloc_htable(997);
 
 #define EXPORT(X) \
@@ -2568,6 +2573,15 @@ static void init_dlopen(void)
   fprintf(stderr,"DL: init done\n");
 #endif
 }
+
+#ifdef HAVE__ALLDIV
+/* Strap to load symbols that might be needed from modules. */
+void _alldiv(void);
+void dl_dummy(void)
+{
+  _alldiv();
+}
+#endif
 
 /****************************************************************/
 
