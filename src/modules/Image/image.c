@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.167 2000/08/05 11:07:30 grubba Exp $ */
+/* $Id: image.c,v 1.168 2000/08/06 13:53:31 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.167 2000/08/05 11:07:30 grubba Exp $
+**!	$Id: image.c,v 1.168 2000/08/06 13:53:31 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.167 2000/08/05 11:07:30 grubba Exp $");
+RCSID("$Id: image.c,v 1.168 2000/08/06 13:53:31 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -450,9 +450,9 @@ j++;
 #ifdef MATRIX_DEBUG
 	 fprintf(stderr,"->%d,%d,%d\n",r/sumr,g/sumg,b/sumb);
 #endif
-	 r=default_rgb.r+(int)(r*qr+0.5); dp->r=testrange(r);
-	 g=default_rgb.g+(int)(g*qg+0.5); dp->g=testrange(g);
-	 b=default_rgb.b+(int)(b*qb+0.5); dp->b=testrange(b);
+	 r=default_rgb.r+DOUBLE_TO_INT(r*qr+0.5); dp->r=testrange(r);
+	 g=default_rgb.g+DOUBLE_TO_INT(g*qg+0.5); dp->g=testrange(g);
+	 b=default_rgb.b+DOUBLE_TO_INT(b*qb+0.5); dp->b=testrange(b);
 	 dp++;
       }
    }
@@ -2051,9 +2051,9 @@ static void image_gradients(INT32 args)
 
 	 z=1.0/z;
 
-	 d->r=(COLORTYPE)(r*z);
-	 d->g=(COLORTYPE)(g*z);
-	 d->b=(COLORTYPE)(b*z);
+	 d->r=DOUBLE_TO_COLORTYPE(r*z);
+	 d->g=DOUBLE_TO_COLORTYPE(g*z);
+	 d->b=DOUBLE_TO_COLORTYPE(b*z);
 	 d++;
       }
    }
@@ -2542,7 +2542,7 @@ void image_hsv_to_rgb(INT32 args)
    while (i--)
    {
      double h,sat,v;
-     float r,g,b;
+     double r,g,b;
      h = (s->r/255.0)*(360.0/60.0);
      sat = s->g/255.0;
      v = s->b/255.0;
@@ -2556,7 +2556,7 @@ void image_hsv_to_rgb(INT32 args)
 #define p (v * (1 - sat))
 #define q (v * (1 - (sat * f)))
 #define t (v * (1 - (sat * (1 -f))))
-	switch((int)i)
+	switch(DOUBLE_TO_INT(i))
 	{
 	   case 6: /* 360 degrees. Same as 0.. */
 	   case 0: r = v; g = t; b = p;	 break;
@@ -2575,7 +2575,7 @@ void image_hsv_to_rgb(INT32 args)
 #undef p
 #undef q
 #undef t
-#define FIX(X) ((X)<0.0?0:(X)>=1.0?255:(int)((X)*255.0))
+#define FIX(X) ((X)<0.0?0:(X)>=1.0?255:DOULE_TO_INT((X)*255.0))
      d->r = FIX(r);
      d->g = FIX(g);
      d->b = FIX(b);
@@ -2634,15 +2634,15 @@ void image_rgb_to_hsv(INT32 args)
       v = MAX3(r,g,b);
       delta = v - MIN3(r,g,b);
 
-      if(r==v)      h = (int)(((g-b)/(float)delta)*(255.0/6.0));
-      else if(g==v) h = (int)((2.0+(b-r)/(float)delta)*(255.0/6.0));
-      else h = (int)((4.0+(r-g)/(float)delta)*(255.0/6.0));
+      if(r==v)      h = DOUBLE_TO_INT(((g-b)/(float)delta)*(255.0/6.0));
+      else if(g==v) h = DOUBLE_TO_INT((2.0+(b-r)/(float)delta)*(255.0/6.0));
+      else h = DOUBLE_TO_INT((4.0+(r-g)/(float)delta)*(255.0/6.0));
       if(h<0) h+=255;
 
       /*     printf("hsv={ %d,%d,%d }\n", h, (int)((delta/(float)v)*255), v);*/
-      d->r = (int)h;
-      d->g=(int)((delta/(float)v)*255.0);
-      d->b=v;
+      d->r = DOUBLE_TO_INT(h);
+      d->g = DOUBLE_TO_INT((delta/(float)v)*255.0);
+      d->b = v;
       s++; d++;
    }
    THREADS_DISALLOW();
@@ -2966,8 +2966,8 @@ void image_bitscale( INT32 args )
       newx = oldx * sp[-1].u.integer;
       newy = oldy * sp[-1].u.integer;
     } else if( sp[-1].type == T_FLOAT ) {
-      newx = (int)(oldx * sp[-1].u.float_number);
-      newy = (int)(oldy * sp[-1].u.float_number);
+      newx = DOUBLE_TO_INT(oldx * sp[-1].u.float_number);
+      newy = DOUBLE_TO_INT(oldy * sp[-1].u.float_number);
     } else 
       error("The scale factor must be an integer less than 2^32, or a float\n");
   } else if( args == 2 ) {
@@ -2977,8 +2977,8 @@ void image_bitscale( INT32 args )
       (newx = sp[-2].u.integer),(newy = sp[-1].u.integer);
     else if( sp[-2].type  == T_FLOAT )
     {
-      newx = (int)(oldx*sp[-2].u.float_number);
-      newy = (int)(oldy*sp[-1].u.float_number);
+      newx = DOUBLE_TO_INT(oldx*sp[-2].u.float_number);
+      newy = DOUBLE_TO_INT(oldy*sp[-1].u.float_number);
 
     } else
       error( "Wrong type of arguments\n");
@@ -3854,7 +3854,7 @@ static void image_apply_curve( INT32 args )
 static void img_make_gammatable(COLORTYPE *d,double gamma)
 {
    static COLORTYPE last_gammatable[256];
-   static float last_gamma;
+   static double last_gamma;
    static int had_gamma=0;
 
    if (had_gamma && last_gamma==gamma)
@@ -3882,7 +3882,7 @@ void image_gamma(INT32 args)
    struct object *o;
    struct image *img;
    COLORTYPE _newg[256],_newb[256],*newg,*newb;
-   float gammar,gammab,gammag;
+   double gammar,gammab,gammag;
    COLORTYPE newr[256];
 
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;
@@ -4052,7 +4052,8 @@ void image_select_colors(INT32 args)
 
 void image_write_lsb_rgb(INT32 args)
 {
-   int n,l,b;
+   int n,b;
+   ptrdiff_t l;
    rgb_group *d;
    char *s;
 
@@ -4122,7 +4123,8 @@ void image_read_lsb_rgb(INT32 args)
 
 void image_write_lsb_grey(INT32 args)
 {
-   int n,l,b;
+   int n,b;
+   ptrdiff_t l;
    rgb_group *d;
    char *s;
 

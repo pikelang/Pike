@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.16 2000/08/03 21:25:32 grubba Exp $ */
+/* $Id: ilbm.c,v 1.17 2000/08/06 13:53:31 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.16 2000/08/03 21:25:32 grubba Exp $
+**!	$Id: ilbm.c,v 1.17 2000/08/06 13:53:31 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.16 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: ilbm.c,v 1.17 2000/08/06 13:53:31 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -95,7 +95,7 @@ static void image_ilbm___decode(INT32 args)
    struct pike_string *str;
    struct mapping *m;
    int n;
-   extern void parse_iff(char *, unsigned char *, INT32,
+   extern void parse_iff(char *, unsigned char *, ptrdiff_t,
 			 struct mapping *, char *);
 
    get_all_args("__decode", args, "%S", &str);
