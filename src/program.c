@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.312 2001/04/10 23:06:10 grubba Exp $");
+RCSID("$Id: program.c,v 1.313 2001/04/13 20:48:34 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1369,8 +1369,10 @@ static void exit_program_struct(struct program *p)
 
   if(p->parent)
   {
-    free_program(p->parent);
-    p->parent=0;
+    /* Make sure to break the circularity... */
+    struct program *parent = p->parent;
+    p->parent = NULL;
+    free_program(parent);
   }
 
 
