@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.67 2004/09/18 23:30:45 nilsson Exp $
+|| $Id: png.c,v 1.68 2004/09/22 21:48:22 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.67 2004/09/18 23:30:45 nilsson Exp $");
+RCSID("$Id: png.c,v 1.68 2004/09/22 21:48:22 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1373,7 +1373,11 @@ static void img_png_decode(INT32 args,int header_only)
 
 	 free(w1);
 	 w1=t1;
-	 if (wa1) { free(wa1); wa1=ta1; }
+	 if (wa1) {
+	   free(wa1); wa1=ta1;
+	 } else {
+	   free(ta1);
+	 }
 
 	 break;
       default:
