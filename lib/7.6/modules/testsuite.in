@@ -1,3 +1,4 @@
+START_MARKER
 
 test_eq(
 #pike 7.6
@@ -34,3 +35,5 @@ functionp(Standards.UUID.new))
 test_true(
 #pike 7.6
 functionp(Standards.UUID.new_string))
+
+END_MARKER
