@@ -641,6 +641,9 @@ int get_events();
 int is_ancestor( GTK.Widget of );
 //! Returns true if the specified widget is an ancestor of this widget.
 
+void set_style(GTK.Style cf);
+//! Set the style to be associated with this widget
+
 GTK.Style get_style();
 //! Return the style associated with this widget
 
