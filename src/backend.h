@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.31 2005/01/20 18:23:13 grubba Exp $
+|| $Id: backend.h,v 1.32 2005/01/20 19:00:01 mast Exp $
 */
 
 #ifndef BACKEND_H
@@ -63,7 +63,8 @@ struct fd_callback_box
   int fd;			/* Use change_fd_for_box to change this. May
 				 * be negative, in which case only the ref
 				 * magic on backend and ref_obj is done. The
-				 * backend might change a negative value. */
+				 * backend might change a negative value to a
+				 * different negative value. */
   int events;			/* Bitfield with wanted events. Always use
 				 * set_fd_callback_events to change this. It's
 				 * ok to have hooked boxes where no events are
