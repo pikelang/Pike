@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.3 2003/05/09 13:47:08 mast Exp $
+# $Id: common_module_makefile.in,v 1.4 2003/05/15 13:25:43 grubba Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -16,6 +16,12 @@ REAL_LDFLAGS=@LDFLAGS@
 REAL_LDSHARED=@LDSHARED@
 REAL_CFLAGS=@CFLAGS@
 REAL_CPPFLAGS=@CPPFLAGS@
+
+PREFLAGS=-I. -I$(SRCDIR) -I$(BUILD_BASE) -I$(PIKE_SRC_DIR) $(LINKAGE_CPPFLAGS) $(MODULE_CPPFLAGS) $(DEFINES)
+CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(OTHERFLAGS) $(LINKAGE_CFLAGS)
+NOOPT_CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(NOOPTFLAGS) $(LINKAGE_CFLAGS)
+
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) $(LINKAGE_CFLAGS)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
 
 MODULE_BASE=$(BUILD_BASE)/modules
 TMP_MODULE_BASE=$(TMP_LIBDIR)/modules
@@ -97,7 +103,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
+	AR="$(AR)" CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 module.pmod: Makefile
 	@echo "Making module.pmod" ; \
@@ -110,7 +116,7 @@ module.pmod: Makefile
 	      <./module.pmod.in >module.pmod; \
 	  else \
 	    echo >module.pmod  '// Generated automatically by'; \
-	    echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.3 2003/05/09 13:47:08 mast Exp $$'; \
+	    echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.4 2003/05/15 13:25:43 grubba Exp $$'; \
 	    echo >>module.pmod '#pike __REAL_VERSION__'; \
 	    echo >>module.pmod '#if constant($(MODULE_PROGRAM))'; \
 	    echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
