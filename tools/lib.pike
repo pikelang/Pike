@@ -504,8 +504,8 @@ string find_lib_location()
 
 string find_next_in_path(string argv0,string cmd)
 {
-  argv0=combine_path(getcwd(),argv0);
-  if(file_stat(argv0))
+  string full_argv0 = combine_path(getcwd(),argv0);
+  if(file_stat(full_argv0))
   {
     foreach((getenv("PATH")||"")/":",string x)
       {
@@ -514,9 +514,9 @@ string find_next_in_path(string argv0,string cmd)
 	{
 	  if(argv0)
 	  {
-	    if(argv0==fname)
+	    if(full_argv0==fname)
 	      argv0=0;
-	  }else{
+	  }else if (full_argv0 != fname) {
 	    return fname;
 	  }
 	}
