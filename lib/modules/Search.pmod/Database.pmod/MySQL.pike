@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.32 2001/06/11 13:56:43 js Exp $
+// $Id: MySQL.pike,v 1.33 2001/06/14 13:32:30 js Exp $
 
 inherit .Base;
 
@@ -278,7 +278,7 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
     mixed err=catch(db->query("insert into word_hit (word_id,first_doc_id,hits) "
 			      "values (%d,%d,%s)", i, w, d ));
     if(err)
-      werror(describe_backtrace(err));
+      werror("%O\n",describe_backtrace(err));
   } while( 1 );
 
   if( sync_callback )
@@ -368,7 +368,7 @@ class Queue
     create table "+table+#" (
         uri        blob not null,
 	template   varchar(255) not null default '',
-	md5        char(16) not null default '',
+	md5        char(32) not null default '',
 	recurse    tinyint not null,
 	stage      tinyint not null,
 	INDEX uri_ind (uri(64)),
@@ -396,6 +396,16 @@ class Queue
     if( r->query )         r->query = normalize_query( r->query );
     if(r->query && !strlen(r->query))  r->query = 0;
 
+    // Remove any trailing index filename
+    
+    string rpath=reverse(r->path);
+    // FIXME: Make these configurable?
+    foreach( ({"index.xml", "index.html", "index.htm"}),
+	     string index)
+      if(search(rpath,reverse(index))==0)
+	rpath=rpath[sizeof(index)..];
+    r->path=reverse(rpath);
+    
     if( check_link(uri, allow, deny) && !has_uri( r ) )
       db->query( "insert into "+table+
 		 " (uri,recurse,template) values (%s,%d,%s)",
