@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.119 1999/11/20 19:09:47 grubba Exp $");
+RCSID("$Id: las.c,v 1.120 1999/11/20 21:13:25 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2057,12 +2057,17 @@ void fix_type_field(node *n)
       function_type_max=0;
       low_build_function_type(CDR(n));
       push_type(T_FUNCTION);
-      s=pop_type();
-      f=CAR(n)->type?CAR(n)->type:mixed_type_string;
-      n->type=check_call(s,f);
-      args=count_arguments(s);
-      max_args=count_arguments(f);
-      if(max_args<0) max_args=0x7fffffff;
+      s = pop_type();
+      f = CAR(n)->type?CAR(n)->type:mixed_type_string;
+      n->type = check_call(s,f);
+      args = count_arguments(s);
+      max_args = count_arguments(f);
+      if(max_args<0) max_args = 0x7fffffff;
+
+      if (n->type) {
+	/* Type/argument-check OK. */
+	break;
+      }
 
       switch(CAR(n)->token)
       {
