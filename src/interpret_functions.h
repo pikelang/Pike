@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.105 2002/08/15 14:49:21 marcus Exp $
+ * $Id: interpret_functions.h,v 1.106 2002/09/14 01:54:59 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -139,7 +139,6 @@
 #define DO_RETURN {				\
   if(d_flag>3) do_gc();				\
   if(d_flag>4) do_debug();			\
-  check_threads_etc();				\
   DO_DUMB_RETURN;				\
 }
 #endif
@@ -1322,7 +1321,6 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local",0,{
      */
     if(d_flag>3) do_gc();
     if(d_flag>4) do_debug();
-    check_threads_etc();
     );
   if(Pike_fp->expendible <= Pike_fp->locals + arg1)
   {
