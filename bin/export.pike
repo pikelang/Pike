@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.22 1999/05/06 14:30:49 marcus Exp $ */
+/* $Id: export.pike,v 1.23 1999/05/12 05:09:44 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -93,6 +93,7 @@ int main(int argc, string *argv)
 
   tmp=reverse(argv[0]/"/");
   except_modules=mklist(argv[1..]);
+
   e=search(tmp,"pike");
   if(e==-1)
   {
