@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.26 2001/09/24 22:31:26 js Exp $
+//  $Id: Session.pike,v 1.27 2001/11/03 17:48:08 jhs Exp $
 
 import ".";
 
@@ -1005,8 +1005,9 @@ array(ProtocolTypes.ConfZInfo) try_complete_person(string orig)
 
 //! @decl object login(int user_no,string password)
 //! @decl object login(int user_no,string password,int invisible)
-//!	Performs a login. Returns 1 on success or throws a lyskom error.
-//! returns the called object
+//!   Performs a login. Throws a lyskom error if unsuccessful.
+//! @returns
+//!   The session object logged in.
 object login(int user_no,string password,
 	     void|int invisible)
 {
