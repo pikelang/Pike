@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.117 2002/11/12 11:48:20 grubba Exp $
+|| $Id: interpret_functions.h,v 1.118 2002/11/13 12:38:29 grubba Exp $
 */
 
 /*
@@ -2147,7 +2147,8 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT, {
   if(Pike_fp->current_object->prog != Pike_fp->context.prog)
   {
     PIKE_OPCODE_T *faddr = PROG_COUNTER+GET_JUMP();
-    ptrdiff_t args=faddr[-1];
+    ptrdiff_t num_locals = READ_INCR_BYTE(faddr);	/* ignored */
+    ptrdiff_t args = READ_INCR_BYTE(faddr);
 
     if(low_mega_apply(APPLY_LOW,
 		      args,
