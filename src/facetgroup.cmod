@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: facetgroup.cmod,v 1.1 2004/10/22 23:20:35 nilsson Exp $
+|| $Id: facetgroup.cmod,v 1.2 2004/10/22 23:29:28 nilsson Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@
 
 DECLARATIONS
 
-/*! @class facetgroup
+/*! @class FacetGroup
  *! 
  *! This class is used to handle facets in the system. All facets 
  *! in the system have to belong to a facet group. The facet 
@@ -41,17 +41,16 @@ DECLARATIONS
  *! example you can create a file MyFacetgroup.pmod with the following
  *! content:
  *!
- *! @tt{inherit facetgroup;
- *! int main() { ; } @}
+ *! @code{inherit FacetGroup; @}
  *!
  *! You can then use the facet group MyFacetGroup in a facet-class 
  *! like this:
  *!
- *! @tt{class A
+ *! @code{class A
  *! {
  *!   facet NameOfMyFacet : .MyFacetGroup; 
  *!   // Rest of class A 
- *! } @}
+ *! }@}
  *!
  */
 
