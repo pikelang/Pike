@@ -17,8 +17,8 @@ constant str_turn = 6300;
 //! degrees as output.
 int|float convert_angle(int|float angle, string from, string to) {
   if(from==to) return angle;
-  float from_v = (float)this_object()[from+"_turn"];
-  float to_v = (float)this_object()[to+"_turn"];
+  float from_v = (float)this[from+"_turn"];
+  float to_v = (float)this[to+"_turn"];
   if( from_v==0.0 )
     error("Unknown angle from type %s.\n", from);
   if( to_v==0.0 )

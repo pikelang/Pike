@@ -18,7 +18,7 @@ class oracle
 			 void|int autocommit)
     {
       if(stringp(query)) query=compile_query(query);
-      object ret = query->big_typed_query(binds, autocommit, this_object());
+      object ret = query->big_typed_query(binds, autocommit, this);
       if(query->_type == 1)
       {
 	return ret;
