@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.52 2003/10/29 13:23:32 grubba Exp $
+|| $Id: udp.c,v 1.53 2003/10/29 15:31:49 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.52 2003/10/29 13:23:32 grubba Exp $");
+RCSID("$Id: udp.c,v 1.53 2003/10/29 15:31:49 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -193,7 +193,6 @@ static void udp_bind(INT32 args)
 
   if(FD != -1)
   {
-    set_read_callback( FD, 0, 0 );
     set_backend_for_fd(FD, NULL);
     fd_close(FD);
     FD = -1;
@@ -607,7 +606,6 @@ void exit_udp(struct object *ignored)
 
   if(fd != -1)
   {
-    set_read_callback( fd, 0, 0 );
     set_backend_for_fd(fd, NULL);
 
     THREADS_ALLOW();
