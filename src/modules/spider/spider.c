@@ -1137,9 +1137,10 @@ void f_get_all_active_fd(INT32 args)
 {
   int i,fds;
   struct stat foo;
+  
   pop_n_elems(args);
   for (i=fds=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
-    if (!fstat(i,&foo))
+    if(!fstat(i,&foo))
     {
       push_int(i);
       fds++;
@@ -1190,39 +1191,54 @@ void f_mark_fd(INT32 args)
     struct sockaddr_in addr;
     char *tmp;
     char buf[20];
+    struct stat fs;
 
+    
     pop_stack();
-    if(fd_marks[fd])
+    if(!fstat(fd,&fs))
     {
-      fd_marks[fd]->refs++;
-      push_string(fd_marks[fd]);
+      if(fd_marks[fd])
+      {
+	fd_marks[fd]->refs++;
+	push_string(fd_marks[fd]);
+      } else {
+	push_text("");
+      }
+      
+      len=sizeof(addr);
+      if(! getsockname(fd, (struct sockaddr *) &addr, &len))
+      {
+	tmp=inet_ntoa(addr.sin_addr);
+	push_string(make_shared_string(" Local:"));
+	push_string(make_shared_string(tmp));
+	sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
+	push_string(make_shared_string(buf));
+	f_add(4);
+      }
+
+      if(! getpeername(fd, (struct sockaddr *) &addr, &len))
+      {
+	push_string(make_shared_string(" Remote:"));
+	tmp=inet_ntoa(addr.sin_addr);
+	push_string(make_shared_string(tmp));
+	sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
+	push_string(make_shared_string(buf));
+	f_add(4);
+      }
+      return;
     } else {
+      if(fd_marks[fd])
+      {
+	free_string(fd_marks[fd]);
+	fd_marks[fd]=0;
+      }
       push_int(0);
+      return;
     }
-
-    len=sizeof(addr);
-    if(! getsockname(fd, (struct sockaddr *) &addr, &len))
-    {
-      tmp=inet_ntoa(addr.sin_addr);
-      push_string(make_shared_string(" Local:"));
-      push_string(make_shared_string(tmp));
-      sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
-      push_string(make_shared_string(buf));
-      f_add(4);
-    }
-
-    if(! getpeername(fd, (struct sockaddr *) &addr, &len))
-    {
-      push_string(make_shared_string(" Remote:"));
-      tmp=inet_ntoa(addr.sin_addr);
-      push_string(make_shared_string(tmp));
-      sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
-      push_string(make_shared_string(buf));
-      f_add(4);
-    }
-
-    return;
   }
+  
+  
+  
   s=sp[-args+1].u.string;
   s->refs++;
   if(fd_marks[fd])
@@ -1537,6 +1553,32 @@ void f_alarm(INT32 args)
 }
 #endif
 
+void f_fcgi_create_listen_socket(INT32 args)
+{
+  int fd, true;
+  struct sockaddr_in addr;
+  if(!args)
+    error("No args?\n");
+  
+  true=1;
+  fd=socket(AF_INET, SOCK_STREAM, 0);
+  if(fd < 0)
+    error("socket() failed.\n");
+  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&true, sizeof(int));
+  get_inet_addr(&addr, "127.0.0.1");
+  addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
+     listen(fd, 4) < 0 )
+    error("Failed to bind() or listen\n");
+  if(fd)
+  {
+    dup2(fd, 0);
+    close(fd);
+  }
+  pop_n_elems(args);
+  push_int(1);
+}
+
 void f_decode_value(INT32 args);
 void f_encode_value(INT32 args);
 
@@ -1552,11 +1594,15 @@ void init_spider_efuns(void)
   make_shared_string("POST");
 #endif
 
+  add_efun("fcgi_create_listen_socket", f_fcgi_create_listen_socket,
+	   "function(int:int)", OPT_SIDE_EFFECT);
+	   
+
 #if defined(HAVE_PTHREAD_MUTEX_UNLOCK) || defined(HAVE_MUTEX_UNLOCK)
   add_efun("_lock", f_lock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_unlock", f_unlock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);
-  add_efun("_new_lock", f_newlock, "function(int:int)", OPT_SIDE_EFFECT);
+  add_efun("_new_lock", f_newlock, "function(int|void:int)", OPT_SIDE_EFFECT);
 #endif
 
   add_efun("encode_value", f_encode_value, "function(mixed:string)", 

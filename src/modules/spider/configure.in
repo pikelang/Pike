@@ -6,8 +6,9 @@ AC_PROG_RANLIB
 
 AC_CHECK_LIB(thread, mutex_unlock)
 AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
 
-if test x$ac_cv_lib_thread_mutex_inlock = xno ;  then
+if test x$ac_cv_lib_thread_mutex_unlock = xno ;  then
   AC_CHECK_LIB(pthread, pthread_mutex_unlock)
 fi
 

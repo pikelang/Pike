@@ -14,20 +14,64 @@
 
 #include "spider.h"
 
-#define strcat(buff, s, l) low_my_binary_strcat(s, l, buff)
-#define addchar(buff, t)   low_my_putchar(t,buff);
+#define strcat(buff, s, l) low_my_binary_strcat((s), (l), (buff))
+#define addchar(buff, t)   low_my_putchar((t),(buff))
 
-INLINE static void addint(dynamic_buffer *buff, int t)
+
+/*
+          byte 0          byte 1          byte 2          byte 3          byte 4     
+int x     8 7 6 5 4 3 2 1 8 7 6 5 4 3 2 1 8 7 6 5 4 3 2 1 8 7 6 5 4 3 2 1 8 7 6 5 4 3 2 1
+-----------------------------------------------------------------------------------------
+< 1<<7    1 x x x x x x x
+< 1<<8    0 0 0 0 0 0 0 1 x x x x x x x x
+< 1<<16   0 0 0 0 0 0 1 0 x x x x x x x x x x x x x x x x
+< 1<<24   0 0 0 0 0 0 1 1 x x x x x x x x x x x x x x x x x x x x x x x x
+< 1<<32   0 0 0 0 0 1 0 0 x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x
+
+
+< 0       0 0 0 0 1 as above
+*/
+
+INLINE static void add_int_to_buffer(dynamic_buffer *buff, INT32 t)
 {
-  t = htonl(t);
-  strcat(buff, (char *)(&t), sizeof(int));
+  int negbit = 0;
+
+  if((unsigned INT32)t < 0x80)
+  {
+    addchar(buff, (unsigned char)((((unsigned INT32)t)|0x80)&0xff));
+    return;
+  }
+
+  if(t<0)
+  {
+    negbit = 8;
+    t = -t;
+  }
+  
+  if((unsigned INT32)t < 0x100) {
+    addchar(buff, 1|negbit);
+    addchar(buff, (t&255));
+  } else if((unsigned INT32)t < 0x10000) {
+    addchar(buff, 2|negbit);
+    addchar(buff, (t>>8)&255);
+    addchar(buff, t&255);
+  } else if((unsigned INT32)t < 0x1000000) {
+    addchar(buff, 3|negbit);
+    addchar(buff, (t>>16)&255);
+    addchar(buff, (t>>8)&255);
+    addchar(buff, t&255);
+  } else {
+    addchar(buff, 4|negbit);
+    t = htonl(t);
+    strcat(buff, (char *)(&t), 4);
+  }
 }
 
-
-static void rec_save_value(struct svalue *val, dynamic_buffer *buff, struct processing *p)
+static void rec_save_value(struct svalue *val, dynamic_buffer *buff,
+			   struct processing *p)
 {
   struct processing doing;
-  int i;
+  INT32 i;
   
   if((1<<val->type)&BIT_COMPLEX)
   {
@@ -41,15 +85,12 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff, struct proc
   }
 
 
-#if 0
-  addchar(buff, ((unsigned char)(val->type)));
-#else
-  addint(buff, val->type);
-#endif
+  add_int_to_buffer(buff, val->type);
+
   switch(val->type)
   {
    case T_ARRAY:
-    addint(buff, val->u.array->size);
+     add_int_to_buffer(buff, val->u.array->size);
     for(i=0; i<val->u.array->size; i++)
       rec_save_value(ITEM(val->u.array)+i, buff, p);
     break;
@@ -61,7 +102,7 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff, struct proc
     push_mapping(val->u.mapping);
     f_values(1);
     
-    addint(buff, sp[-2].u.array->size);
+    add_int_to_buffer(buff, sp[-2].u.array->size);
     for(i=0; i<sp[-2].u.array->size; i++)
     {
       rec_save_value(ITEM(sp[-2].u.array)+i, buff, p); /* indices */
@@ -71,7 +112,7 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff, struct proc
     break;
 
    case T_LIST:
-    addint(buff, val->u.list->ind->size);
+    add_int_to_buffer(buff, val->u.list->ind->size);
     for(i=0; i<val->u.list->ind->size; i++)
       rec_save_value(ITEM(val->u.list->ind)+i, buff, p);
     break;
@@ -82,10 +123,10 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff, struct proc
     APPLY_MASTER("nameof", 1);
     if(sp[-1].type == T_STRING)
     {
-      addint(buff, sp[-1].u.string->len);
+      add_int_to_buffer(buff, sp[-1].u.string->len);
       strcat(buff, sp[-1].u.string->str, sp[-1].u.string->len);
     } else {
-      addint(buff, 0);
+      add_int_to_buffer(buff, 0);
     }
     pop_stack();
     break;
@@ -99,10 +140,10 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff, struct proc
     APPLY_MASTER("nameof", 1);
     if(sp[-1].type == T_STRING)
     {
-      addint(buff, sp[-1].u.string->len);
+      add_int_to_buffer(buff, sp[-1].u.string->len);
       strcat(buff, sp[-1].u.string->str, sp[-1].u.string->len);
     } else {
-      addint(buff, 0);
+      add_int_to_buffer(buff, 0);
     }
     pop_stack();
     break;
@@ -113,28 +154,28 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff, struct proc
     APPLY_MASTER("nameof", 1);
     if(sp[-1].type == T_STRING)
     {
-      addint(buff, sp[-1].u.string->len);
+      add_int_to_buffer(buff, sp[-1].u.string->len);
       strcat(buff, sp[-1].u.string->str, sp[-1].u.string->len);
     } else {
-      addint(buff, 0);
+      add_int_to_buffer(buff, 0);
     }
     pop_stack();
     break;
 
    case T_STRING:
-    addint(buff, val->u.string->len);
+    add_int_to_buffer(buff, val->u.string->len);
     strcat(buff, val->u.string->str, val->u.string->len);
     break;
 
    case T_INT:
-    addint(buff, val->u.integer);    
+    add_int_to_buffer(buff, val->u.integer);    
     break;
     
    case T_FLOAT:
     /* How to encode a float _correctly_? */
-    if(sizeof(int) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
+    if(sizeof(INT32) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
       error("Float architecture not supported.\n"); 
-    addint(buff, val->u.integer);
+    add_int_to_buffer(buff, val->u.integer);
     break;
   }
 }
@@ -155,37 +196,62 @@ void f_encode_value(INT32 args)
   push_string(low_free_buf(&buff));
 }
 
-static int extract_int(char **v, unsigned int *l)
-{
-  unsigned int j;
-  int t=0;
-  char *c = (char *)(&t);
-
-  if(*l<sizeof(int))
-    error("Format error, not enough place for integer.\n");
-
-  for(j=0; j<sizeof(int); j++)
-    c[j] = ((*v)[j]);
-
-  t = ntohl(t);
-
-  *l -= sizeof(int);
-  *v += sizeof(int);
-
-  return t;
-}
-
-static unsigned char extract_char(char **v, unsigned int *l)
+static unsigned char extract_char(char **v, unsigned INT32 *l)
 {
   if(!*l) error("Format error, not enough place for char.\n");
   else (*l)--;
-  *v++;
-  return (*v)[-1];
+  (*v)++;
+  return ((unsigned char *)(*v))[-1];
 }
 
-static void rec_restore_value(char **v, int *l)
+
+static INT32 extract_int(char **v, unsigned INT32 *l)
 {
-  int t,i;
+  unsigned INT32 j;
+  INT32 t=0;
+  char *c = (char *)(&t);
+
+  if(!*l)
+    error("Format error: not enough place for short integer.\n");
+
+  if((**v) & 0x80) /* (very) Short int. */
+    return extract_char(v,l) & 0x7f;
+
+  switch(extract_char(v,l))
+  {
+  case 1: /* char */
+    return extract_char(v,l);
+    
+  case 2: /* word */
+    return (extract_char(v,l)<<8) | (extract_char(v,l));
+    
+  case 3: /* 24 bit thingie */
+    return (extract_char(v,l)<<16) | (extract_char(v,l)<<8) | extract_char(v,l);
+
+  case 4: /* 32 bit number */
+    return (extract_char(v,l)<<24) |
+           (extract_char(v,l)<<16) | (extract_char(v,l)<<8) |
+            extract_char(v,l);
+    
+  case 9:  /* -char */
+    return -extract_char(v,l);
+  case 10: /* -word */
+    return -((extract_char(v,l)<<8) | (extract_char(v,l)));
+  case 11: /* -24 bit */
+    return -((extract_char(v,l)<<16) | (extract_char(v,l)<<8) | extract_char(v,l));
+  case 12: /* -32 bit thingie */
+    return -((extract_char(v,l)<<24) |
+	     (extract_char(v,l)<<16) | (extract_char(v,l)<<8) |
+	     extract_char(v,l));
+    
+  }
+  error("Format Error: Error in format string, invalid integer.\n");
+  return t;
+}
+
+static void rec_restore_value(char **v, INT32 *l)
+{
+  INT32 t,i;
 
   switch(extract_int(v,l))
   {
@@ -195,7 +261,7 @@ static void rec_restore_value(char **v, int *l)
     
    case T_FLOAT:
     /* How to encode a float _correctly_? */
-    if(sizeof(int) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
+    if(sizeof(INT32) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
       error("Float architecture not supported.\n"); 
     push_int(extract_int(v,l)); /* WARNING! */
     sp[-1].type = T_FLOAT;
@@ -205,7 +271,7 @@ static void rec_restore_value(char **v, int *l)
     t = extract_int(v,l);
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
-    *l-= t; *v+= t;
+    (*l)-= t; (*v)+= t;
     return;
     
    case T_ARRAY:
@@ -235,21 +301,21 @@ static void rec_restore_value(char **v, int *l)
    case T_OBJECT:
     t = extract_int(v,l);
     push_string(make_shared_binary_string(*v, t));
-    *l-= t; *v+= t;
+    (*l) -= t; (*v) += t;
     APPLY_MASTER("objectof", 1);
     return;
     
    case T_FUNCTION:
     t = extract_int(v,l);
     push_string(make_shared_binary_string(*v, t));
-    *l-= t; *v+= t;
+    (*l) -= t; (*v) += t;
     APPLY_MASTER("functionof", 1);
     return;
      
    case T_PROGRAM:
     t = extract_int(v,l);
     push_string(make_shared_binary_string(*v, t));
-    *l-= t; *v+= t;
+    (*l) -= t; (*v) += t;
     APPLY_MASTER("programof", 1);
     return;
     
@@ -262,7 +328,7 @@ void f_decode_value(INT32 args)
 {
   struct lpc_string *s;
   char *v;
-  int l;
+  INT32 l;
 
   if(args != 1 || (sp[-1].type != T_STRING))
     error("Illegal argument to restore_value(STRING)\n");

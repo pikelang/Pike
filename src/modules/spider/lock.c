@@ -32,59 +32,7 @@
 #include <sys/stat.h>
 
 #include <errno.h>
-
-#ifdef HAVE_MMAP
-char *my_shared_malloc(int size)
-{
-  int fd;
-  char *pointer;
-  char *scratch;
-
-  fd = open("/tmp/.spinnerlock", O_RDWR|O_CREAT, 0777);
-  if(fd == -1)
-  {
-    perror("my_shared_malloc::open");
-    error("my_shared_malloc(): Can't open() /tmp/.spinnerlock.\n");
-  }
-  unlink("/tmp/.spinnerlock");
-
-  scratch = malloc(size+sizeof(int));
-  write(fd, scratch, size+sizeof(int));
-  free(scratch);
-
-  pointer = mmap(NULL,(size+sizeof(int)),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-  if(pointer==MAP_FAILED)
-  {
-    perror("my_shared_malloc::mmap");
-    error("my_shared_malloc(): Can't mmap() /tmp/.spinnerlock.\n");
-  }
-  close(fd);
-  ((int *)pointer)[0] = size;
-  return pointer + sizeof(int);
-}
-
-void *my_shared_free(char *pointer)
-{
-  int size;
-  pointer -= sizeof(int);
-  size = *(int *)pointer;
-  if(munmap( pointer, size ) < 0)
-    perror("my_shared_free::munmap");
-}
-
-#else
-/* Should look for shmop, probably */
-char *my_shared_malloc(int size)
-{
-  return malloc(size); /* Incorrect, really. */
-}
-
-void *my_shared_free(char *pointer)
-{
-  free(pointer);
-}
-#endif
-
+#include "sharedmem.h"
 
 #ifdef HAVE_THREAD_H
 typedef mutex_t mylock_t;
@@ -92,22 +40,27 @@ typedef mutex_t mylock_t;
 typedef pthread_mutex_t mylock_t;
 #endif
 
-
+#define LOCK_HASH_TABLE_SIZE ((1<<10)-1) /* MUST BE ((1<<n)-1), 1<n<30 */
+ 
 struct _lock {
   mylock_t lock; /* MUST BE FIRST IN THE STRUCT */
   int id;
   struct _lock *next;
+  struct _lock *next_hash;  
+  struct _lock *prev_hash;
   struct _lock *prev;
 } *first_lock=NULL, *last_lock=NULL;
 
+struct _lock *lock_hash_table[LOCK_HASH_TABLE_SIZE+1];
+
 mylock_t *findlock( int id )
 {
-  struct _lock *current = first_lock;
+  struct _lock *current = lock_hash_table[ id & LOCK_HASH_TABLE_SIZE ];
   while(current)
   {
     if(current->id == id)
       return &current->lock;
-    current = current->next;
+    current = current->next_hash;
   }
   return NULL;
 }
@@ -115,7 +68,8 @@ mylock_t *findlock( int id )
 mylock_t *newlock( int id )
 {
   struct _lock *lock;
-  lock = (struct _lock *)my_shared_malloc( sizeof( struct _lock ) );
+  struct _lock *tmp=NULL;
+  lock = (struct _lock *)shared_malloc( sizeof( struct _lock ) );
   lock->id = id;
   if(!first_lock)
   {
@@ -125,8 +79,15 @@ mylock_t *newlock( int id )
     lock->prev = last_lock;
     lock->next = NULL;
     last_lock->next = lock;
-    last_lock = NULL;
+    last_lock = lock;
   }
+  if( tmp = lock_hash_table[ id & LOCK_HASH_TABLE_SIZE] )
+    tmp->prev_hash = lock;
+
+  lock_hash_table[ id & LOCK_HASH_TABLE_SIZE] = lock;
+  lock->next_hash = tmp;
+  lock->prev_hash = NULL;
+
 #ifdef HAVE_MUTEX_UNLOCK
   mutex_init( &lock->lock, USYNC_PROCESS, 0 );
 #else
@@ -172,12 +133,19 @@ void freelock( mylock_t *lock )
   if(rlock == last_lock)
     last_lock = rlock->prev;
 
+  if(rlock->next_hash)
+    rlock->next_hash->prev_hash= rlock->prev_hash;
+  if(rlock->prev_hash)
+    rlock->prev_hash->next_hash= rlock->next_hash;
+  if(lock_hash_table[ rlock->id & LOCK_HASH_TABLE_SIZE] == rlock)
+    lock_hash_table[ rlock->id & LOCK_HASH_TABLE_SIZE] = rlock->next_hash;
+
 #ifdef HAVE_MUTEX_UNLOCK
   mutex_destroy( lock );
 #else
   pthread_mutex_destroy( lock );
 #endif
-  my_shared_free( (char *)lock );
+  shared_free( (char *)lock );
 }
 
 void f_lock(INT32 args)
@@ -206,18 +174,17 @@ void f_newlock(INT32 args)
 {
   int res;
   int id;
-  mylock_t *lock;
-  if(!args) 
-    error("You have to supply the lock-key.\n");
-  id = sp[-1].u.integer;
-  pop_n_elems(args);
-  if(lock = findlock( id ))
+  if(args) 
   {
-    push_int(0);
-    return;
-  }
-  lock = newlock( id );
-  push_int(id);
+    id = sp[-1].u.integer;
+    pop_n_elems(args);
+  } else
+    id = 0;
+  while(findlock( id )) 
+    id+=rand(); /* This should limit the number of times we have to try. */
+
+  newlock( id );
+  push_int( id );
 }
 
 
