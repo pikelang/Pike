@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.32 2004/02/23 17:40:19 per Exp $
+// $Id: RCS.pike,v 1.33 2004/02/24 13:23:02 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -109,8 +109,8 @@ void create(string|void file_name, string|int(0..0)|void file_contents)
 //! initial chunk of an RCS file, see manpage rcsfile(5)) of an RCS
 //! file. After running @[parse_admin_section], the RCS object will be
 //! initialized with the values for @[head], @[branch], @[access],
-//! @[branches], @[tokenize], @[tags], @[locks], @[strict_locks], @[comment] and
-//! @[expand].
+//! @[branches], @[tokenize], @[tags], @[locks], @[strict_locks],
+//! @[comment] and @[expand].
 //! @param raw
 //!   The tokenized RCS file, or the raw RCS-file data.
 //! @returns
@@ -191,7 +191,8 @@ loop:
 //! @returns
 //!   The rest of the RCS file, delta sections removed.
 //! @seealso
-//!   @[parse_admin_section], @[tokenize], @[parse_deltatext_sections], @[parse], @[create]
+//!   @[parse_admin_section], @[tokenize], @[parse_deltatext_sections],
+//!   @[parse], @[create]
 //! @fixme
 //!   Does not handle rcsfile(5) newphrase skipping.
 array parse_delta_sections(array raw)
@@ -270,12 +271,13 @@ loop:
   return raw[i][2..];
 }
 
-//! @decl array(array(string)) tokenize(string data)
-//! Tokenize a RCS file into tokens suitable as argument to the various parse functions
+//! @decl array(array(string)) tokenize( string data )
+//! Tokenize an RCS file into tokens suitable as argument to the various
+//! parse functions
 //! @param data
 //!    The RCS file data
 //! @returns
-//!    An array with arrays with tokens
+//!    An array with arrays of tokens
 
 
 //! Lower-level API function for parsing only the deltatext sections
@@ -501,6 +503,171 @@ this_program parse(array raw, void|function(string:void) progress_callback)
     return this;
 }
 
+
+// Methods applying to Parser.RCS()->Revision moved out of that class so there
+// will be no cyclic references (to RCS->revisions) that forces the user to do
+// manual calls to gc().                                     / jhs, 2004-02-24
+
+//! Returns the file contents from the revision @[rev], without performing
+//! any keyword expansion.
+//! @seealso
+//!   @[expand_keywords_for_revision]
+string get_contents_for_revision( string|Revision rev )
+{
+  if( stringp( rev ) ) rev = revisions[rev];
+  if( !rev ) return 0;
+  if( rev->text ) return rev->text;
+  string revision = rev->revision, next = rev->next, ancestor = rev->ancestor;
+  Revision parent = revisions[String.count(revision,".")==1 ? next : ancestor];
+  string old = get_contents_for_revision( parent ), diff = rev->rcs_text;
+  String.Buffer new = String.Buffer();
+  function append = new->add;
+  int op, of, ot, dt, at, cnt, from, lines;
+  while( sizeof( diff ) )
+  {
+    sscanf( diff, "%c%d %d\n%s", op, from, lines, diff );
+    if( op == 'd' )
+    {
+      cnt = from - at - 1; // possibly scan forward past a few lines...
+      if( cnt && of < sizeof(old) )
+      {
+	ot = of - 1;
+	while( cnt-- )
+	{
+	  ot = search( old, "\n", ++ot );
+	  if( ot == -1 )
+	  {
+	    ot = sizeof( old );
+	    break;
+	  }
+	}
+	append( old[of..ot++] ); // ...who were intact since last rev...
+	of = ot;
+      }
+      at = from + lines - 1; // ...to the [lines] lines from line [at]...
+      while( lines-- )
+      {
+	of = search( old, "\n", of );
+	if( of == -1 )
+	{
+	  of = sizeof( old );
+	  break;
+	}
+	of++;
+      } // ...that should simply be deleted (not passed on to [new])
+    }
+    else // op == 'a'
+    {
+      cnt = from - at; // possibly scan forward past a few lines...
+      if( cnt && of < sizeof(old) )
+      {
+	ot = of - 1;
+	while( cnt-- )
+	{
+	  ot = search( old, "\n", ++ot );
+	  if(ot == -1)
+	  {
+	    ot = sizeof( old );
+	    break;
+	  }
+	}
+	append( old[of..ot++] ); // ...who were intact since last rev...
+	of = ot;
+      }
+      at = from; // ...to the line...
+      dt = -1;
+      while( lines-- )
+      {
+	dt = search( diff, "\n", ++dt );
+	if(dt == -1)
+	{
+	  dt = sizeof( diff );
+	  break;
+	}
+      }
+      append( diff[..dt++] ); // ...where we should add [lines] new rows.
+      diff = diff[dt..];
+    }
+  }
+  append( old[of..] );
+  return rev->text = new->get();
+}
+
+static string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
+					"Locker" /*"Log"*/ "RCSfile"
+					"Revision" "Source" "State"/1)) * "";
+
+//! Expand keywords and return the resulting text according to the
+//! expansion rules set for the file.
+//! @param rev
+//!   The revision to apply the expansion for.
+//! @param text
+//!   If supplied, substitute keywords for that text instead using values that
+//!   would apply for the given revision. Otherwise, revision @[rev] is used.
+//! @param override_binary
+//!   If 1, perform expansion even if the file was checked in as binary.
+//! @note
+//!   The Log keyword (which lacks sane quoting rules) is not
+//!   expanded. Keyword expansion rules set in CVSROOT/cvswrappers
+//!   are ignored. Only implements the -kkv and -kb expansion modes.
+//! @seealso
+//!   @[get_contents_for_revision]
+string expand_keywords_for_revision( string|Revision rev, string|void text,
+				     int|void override_binary )
+{
+  if( stringp( rev ) ) rev = revisions[rev];
+  if( !rev ) return 0;
+  if( !text ) text = get_contents_for_revision( rev );
+  if( rev->expand == "b" && !override_binary )
+    return text;
+  string before, delimiter, keyword, expansion, rest, result = "";
+  string date = replace( rev->time->format_time(), "-", "/" ),
+    file = basename( rcs_file_name );
+  mapping kws = ([ "Author"	: rev->author,
+		   "Date"	: date,
+		   "Header"	: ({ rcs_file_name, rev->revision, date,
+				     rev->author, rev->state }) * " ",
+		   "Id"		: ({ file, rev->revision, date,
+				     rev->author, rev->state }) * " ",
+		   "Name"	: "", // only applies to a checked-out file
+		   "Locker"	: search( locks, rev->revision ) || "",
+		   /*"Log"	: "A horrible mess, at best", */
+		   "RCSfile"	: file,
+		   "Revision"	: rev->revision,
+		   "Source"	: rcs_file_name,
+		   "State"	: rev->state ]);
+  while( sizeof( text ) )
+  {
+    if( sscanf( text, "%s$%["+kwchars+"]%[:$]%s",
+		before, keyword, delimiter, rest ) < 4 )
+    {
+      result += text;
+      break;
+    }
+    if( expansion = kws[keyword] )
+    {
+      if( has_value( delimiter, "$" ) )
+	result += sprintf( "%s$%s: %s $", before, keyword, expansion );
+      else
+      {
+	if( sscanf( rest, "%*[^\n]$%s", rest ) != 2 )
+	{
+	  result += text;
+	  break;
+	}
+	result += sprintf( "%s$%s: %s $", before, keyword, expansion );
+      }
+      text = rest;
+    }
+    else
+    {
+      result += before + "$" + keyword;
+      text = delimiter + rest; // delimiter could be the start of a keyword
+    }
+  }
+  return result;
+}
+
 //! All data tied to a particular revision of the file.
 class Revision
 {
@@ -553,165 +720,12 @@ class Revision
 
   string rcs_text; // the diff as stored in the rcs file
 
-  string text; // when parsed once, the text as it was checked in
+  string text; // when parsed once, the text, as it was checked in
 
   string _sprintf(int|void type)
   {
     if(type == 't')
       return "Revision";
     return sprintf("Revision(/* %s */)", revision||"uninitizlized");
-  }
-
-  //! Returns the file contents from this revision, without performing
-  //! any keyword expansion.
-  //! @seealso
-  //!   @[expand_keywords]
-  string get_contents()
-  {
-    if(text)
-      return text;
-    Revision parent = revisions[sizeof(revision/".")==2 ? next : ancestor];
-    string old = parent->get_contents(), diff = rcs_text, op;
-    String.Buffer new = String.Buffer();
-    function append = new->add;
-    int of, ot, dt, at, cnt, from, lines;
-    while(sizeof(diff))
-    {
-      sscanf(diff, "%[ad]%d %d\n%s", op, from, lines, diff);
-      if(op == "d")
-      {
-	cnt = from - at - 1; // possibly scan forward past a few lines...
-	if(cnt && of < sizeof(old))
-	{
-	  ot = of - 1;
-	  while(cnt--)
-	  {
-	    ot = search(old, "\n", ++ot);
-	    if(ot == -1)
-	    {
-	      ot = sizeof(old);
-	      break;
-	    }
-	  }
-	  append(old[of..ot++]); // ...who were intact since last rev...
-	  of = ot;
-	}
-	at = from + lines - 1; // ...to the [lines] lines from line [at]...
-	while(lines--)
-	{
-	  of = search(old, "\n", of);
-	  if(of == -1)
-	  {
-	    of = sizeof(old);
-	    break;
-	  }
-	  of++;
-	} // ...that should simply be deleted (not passed on to [new])
-      }
-      else // op == "a"
-      {
-	cnt = from - at; // possibly scan forward past a few lines...
-	if(cnt && of < sizeof(old))
-	{
-	  ot = of - 1;
-	  while(cnt--)
-	  {
-	    ot = search(old, "\n", ++ot);
-	    if(ot == -1)
-	    {
-	      ot = sizeof(old);
-	      break;
-	    }
-	  }
-	  append(old[of..ot++]); // ...who were intact since last rev...
-	  of = ot;
-	}
-	at = from; // ...to the line...
-	dt = -1;
-	while(lines--)
-	{
-	  dt = search(diff, "\n", ++dt);
-	  if(dt == -1)
-	  {
-	    dt = sizeof(diff);
-	    break;
-	  }
-	}
-	append(diff[..dt++]); // ...where we should add [lines] new rows.
-	diff = diff[dt..];
-      }
-    }
-    append(old[of..]);
-    return text = new->get();
-  }
-
-  static string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
-					  "Locker" /*"Log"*/ "RCSfile"
-					  "Revision" "Source" "State"/1)) * "";
-
-  //! Expand keywords and return the resulting text according to the
-  //! expansion rules set for the file.
-  //! @param text
-  //!   If supplied, substitutes keywords for that text instead, using values
-  //!   that would apply for this revision. Otherwise, this revision is used.
-  //! @param override_binary
-  //!   Perform expansion even if the file was checked in as binary.
-  //! @note
-  //!   The Log keyword (which lacks sane quoting rules) is not
-  //!   expanded. Keyword expansion rules set in CVSROOT/cvswrappers
-  //!   are ignored. Only implements the -kkv and -kb expansion modes.
-  //! @seealso
-  //!   @[get_contents]
-  string expand_keywords(string|void text, int|void override_binary)
-  {
-    if(!text)
-      text = get_contents();
-    if(expand == "b" && !override_binary)
-      return text;
-    string before, delimiter, keyword, expansion, rest, result = "";
-    string date = replace(time->format_time(), "-", "/"),
-	   file = basename(rcs_file_name);
-    mapping kws = ([ "Author"	: author,
-		     "Date"	: date,
-		     "Header"	: ({ rcs_file_name, revision, date,
-				     author, state }) * " ",
-		     "Id"	: ({ file, revision, date, author, state })*" ",
-		     "Name"	: "", // only applies to a checked-out file
-		     "Locker"	: search(locks, revision) || "",
-		     /*"Log"	: "A horrible mess, at best", */
-		     "RCSfile"	: file,
-		     "Revision"	: revision,
-		     "Source"	: rcs_file_name,
-		     "State"	: state ]);
-    while(sizeof(text))
-    {
-      if(sscanf(text, "%s$%["+kwchars+"]%[:$]%s",
-		before, keyword, delimiter, rest) < 4)
-      {
-	result += text;
-	break;
-      }
-      if(expansion = kws[keyword])
-      {
-	if(has_value(delimiter, "$"))
-	  result += sprintf("%s$%s: %s $", before, keyword, expansion);
-	else
-	{
-	  if(sscanf(rest, "%*[^\n]$%s", rest) != 2)
-	  {
-	    result += text;
-	    break;
-	  }
-	  result += sprintf("%s$%s: %s $", before, keyword, expansion);
-	}
-	text = rest;
-      }
-      else
-      {
-	result += before + "$" + keyword;
-	text = delimiter + rest; // delimiter could be the start of a keyword
-      }
-    }
-    return result;
   }
 }
