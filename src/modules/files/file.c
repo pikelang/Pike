@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.259 2004/08/18 14:14:26 mast Exp $
+|| $Id: file.c,v 1.260 2004/11/15 22:53:35 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.259 2004/08/18 14:14:26 mast Exp $");
+RCSID("$Id: file.c,v 1.260 2004/11/15 22:53:35 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2928,7 +2928,7 @@ static void file_connect(INT32 args)
   INT_TYPE dest_port = 0;
   INT_TYPE src_port = 0;
 
-  int tmp;
+  int tmp, was_closed = FD < 0;
 
   if (args < 4) {
     get_all_args("file->connect", args, "%S%i", &dest_addr, &dest_port);
@@ -2937,7 +2937,7 @@ static void file_connect(INT32 args)
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
 
-  if(FD < 0)
+  if(was_closed)
   {
     if (args < 4) {
       file_open_socket(0);
@@ -2973,6 +2973,11 @@ static void file_connect(INT32 args)
   {
     /* something went wrong */
     ERRNO=errno;
+    if (was_closed) {
+      while (fd_close (FD) && errno == EINTR) {}
+      change_fd_for_box (&THIS->box, -1);
+      errno = ERRNO;
+    }
     pop_n_elems(args);
     push_int(0);
   }else{
