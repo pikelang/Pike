@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.195 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: operators.c,v 1.196 2004/09/20 12:10:52 mast Exp $
 */
 
 #include "global.h"
@@ -223,39 +223,46 @@ void o_cast_to_int(void)
   switch(sp[-1].type)
   {
   case T_OBJECT:
-    {
-      struct pike_string *s;
-      REF_MAKE_CONST_STRING(s, "int");
-      push_string(s);
-      if(!sp[-2].u.object->prog)
-	Pike_error("Cast called on destructed object.\n");
-      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
-	Pike_error("No cast method in object.\n");
-      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
-      free_svalue(sp-2);
-      sp[-2]=sp[-1];
-      sp--;
-      dmalloc_touch_svalue(sp);
+    if(!sp[-1].u.object->prog) {
+      /* Casting a destructed object should be like casting a zero. */
+      pop_stack();
+      push_int (0);
     }
-    if(sp[-1].type != PIKE_T_INT)
-    {
-      if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
+
+    else {
       {
-	int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
-	if( f != -1)
-	{
-	  struct pike_string *s;
-	  REF_MAKE_CONST_STRING(s, "int");
-	  push_string(s);
-	  apply_low(sp[-2].u.object, f, 1);
-	  f=!UNSAFE_IS_ZERO(sp-1);
-	  pop_stack();
-	  if(f) return;
-	}
+	struct object *o = sp[-1].u.object;
+	struct pike_string *s;
+	int f = FIND_LFUN(o->prog,LFUN_CAST);
+	if(f == -1)
+	  Pike_error("No cast method in object.\n");
+	REF_MAKE_CONST_STRING(s, "int");
+	push_string(s);
+	apply_low(o, f, 1);
+	stack_pop_keep_top();
       }
-      Pike_error("Cast failed, wanted int, got %s\n",
-		 get_name_of_type(sp[-1].type));
+
+      if(sp[-1].type != PIKE_T_INT)
+      {
+	if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
+	{
+	  int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+	  if( f != -1)
+	  {
+	    struct pike_string *s;
+	    REF_MAKE_CONST_STRING(s, "int");
+	    push_string(s);
+	    apply_low(sp[-2].u.object, f, 1);
+	    f=!UNSAFE_IS_ZERO(sp-1);
+	    pop_stack();
+	    if(f) return;
+	  }
+	}
+	Pike_error("Cast failed, wanted int, got %s\n",
+		   get_name_of_type(sp[-1].type));
+      }
     }
+
     break;
 
   case T_FLOAT:
@@ -334,40 +341,52 @@ void o_cast_to_string(void)
     return;
 
   case T_OBJECT:
-    {
-      struct pike_string *s;
-      REF_MAKE_CONST_STRING(s, "string");
-      push_string(s);
-      if(!sp[-2].u.object->prog)
-	Pike_error("Cast called on destructed object.\n");
-      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
-	Pike_error("No cast method in object.\n");
-      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
-      free_svalue(sp-2);
-      sp[-2]=sp[-1];
-      sp--;
-      dmalloc_touch_svalue(sp);
+    if(!sp[-1].u.object->prog) {
+      /* Casting a destructed object should be like casting a zero. */
+      pop_stack();
+      push_int (0);
     }
-    if(sp[-1].type != PIKE_T_STRING)
-    {
-      if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
+
+    else {
       {
-	int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
-	if( f != -1)
-	{
-	  struct pike_string *s;
-	  REF_MAKE_CONST_STRING(s, "string");
-	  push_string(s);
-	  apply_low(sp[-2].u.object, f, 1);
-	  f=!UNSAFE_IS_ZERO(sp-1);
-	  pop_stack();
-	  if(f) return;
-	}
+	struct object *o = sp[-1].u.object;
+	struct pike_string *s;
+	int f = FIND_LFUN(o->prog,LFUN_CAST);
+	if(f == -1)
+	  Pike_error("No cast method in object.\n");
+	REF_MAKE_CONST_STRING(s, "string");
+	push_string(s);
+	apply_low(o, f, 1);
+	stack_pop_keep_top();
       }
-      Pike_error("Cast failed, wanted string, got %s\n",
-		 get_name_of_type(sp[-1].type));
+
+      if(sp[-1].type != PIKE_T_STRING)
+      {
+	if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
+	{
+	  int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+	  if( f != -1)
+	  {
+	    struct pike_string *s;
+	    REF_MAKE_CONST_STRING(s, "string");
+	    push_string(s);
+	    apply_low(sp[-2].u.object, f, 1);
+	    f=!UNSAFE_IS_ZERO(sp-1);
+	    pop_stack();
+	    if(f) return;
+	  }
+	}
+	Pike_error("Cast failed, wanted string, got %s\n",
+		   get_name_of_type(sp[-1].type));
+      }
+      return;
     }
-    return;
+
+    /* Fall through. */
+	    
+  case T_INT:
+    sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
+    break;
 
   case T_ARRAY:
     {
@@ -440,11 +459,7 @@ void o_cast_to_string(void)
       push_string(s);
     }
     return;
-	    
-  case T_INT:
-    sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
-    break;
-	    
+
   case T_FLOAT:
     sprintf(buf, "%f", (double)sp[-1].u.float_number);
     break;
@@ -464,20 +479,23 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
     if(run_time_type == T_MIXED)
       return;
 
+    if (sp[-1].type == T_OBJECT && !sp[-1].u.object->prog) {
+      /* Casting a destructed object should be like casting a zero. */
+      pop_stack();
+      push_int (0);
+    }
+
     if(sp[-1].type == T_OBJECT)
     {
+      struct object *o = sp[-1].u.object;
       struct pike_string *s;
+      int f = FIND_LFUN(o->prog,LFUN_CAST);
+      if(f == -1)
+	Pike_error("No cast method in object.\n");
       s=describe_type(type);
       push_string(s);
-      if(!sp[-2].u.object->prog)
-	Pike_error("Cast called on destructed object.\n");
-      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
-	Pike_error("No cast method in object.\n");
-      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
-      free_svalue(sp-2);
-      sp[-2]=sp[-1];
-      sp--;
-      dmalloc_touch_svalue(sp);
+      apply_lfun(o, f, 1);
+      stack_pop_keep_top();
     }else
 
     switch(run_time_type)
