@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.130 1998/10/15 18:40:47 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.131 1998/10/31 21:50:11 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2418,10 +2418,10 @@ test_eq(string_to_utf8("foo"), "foo")
 test_eq(string_to_utf8("blä"), "bl\303\244")
 test_eq(string_to_utf8("\77077"), "\347\270\277")
 test_eq(string_to_utf8("\7077077"), "\367\207\270\277")
-test_eq(string_to_utf8("\77077077", 1), "\370\277\207\270\277")
-test_eq(string_to_utf8("\7077077077", 1), "\374\270\277\207\270\277")
+test_eq(string_to_utf8("\77077077"), "\370\277\207\270\277")
+test_eq(string_to_utf8("\7077077077"), "\374\270\277\207\270\277")
 test_eq(string_to_utf8("\77077077077", 1), "\376\203\270\277\207\270\277")
-test_eq(utf8_to_string("\376\203\270\277\207\270\277"), "\77077077077")
+test_eq(utf8_to_string("\376\203\270\277\207\270\277", 1), "\77077077077")
 test_eq(utf8_to_string("\374\270\277\207\270\277"), "\7077077077")
 test_eq(utf8_to_string("\370\277\207\270\277"), "\77077077")
 test_eq(utf8_to_string("\367\207\270\277"), "\7077077")
@@ -2429,12 +2429,11 @@ test_eq(utf8_to_string("\347\270\277"), "\77077")
 test_eq(utf8_to_string("bl\303\244"), "blä")
 test_eq(utf8_to_string("foo"), "foo")
 
-test_eval_error(string_to_utf8("\77077077"))
-test_eval_error(string_to_utf8("\7077077077"))
 test_eval_error(string_to_utf8("\77077077077"))
+test_eval_error(utf8_to_string("\376\203\270\277\207\270\277"))
 test_eval_error(utf8_to_string("\277"));
 test_eval_error(utf8_to_string("\377"));
-test_eval_error(utf8_to_string("\376\203\270\277\207\270"));
+test_eval_error(utf8_to_string("\376\203\270\277\207\270", 1));
 test_eval_error(utf8_to_string("\374\270\277\207\270"));
 test_eval_error(utf8_to_string("\370\277\207\270"));
 test_eval_error(utf8_to_string("\367\207\270"));
