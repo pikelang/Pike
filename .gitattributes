@@ -304,7 +304,6 @@ testfont binary
 /src/constants.h foreign_ident
 /src/cpp.c foreign_ident
 /src/cpp.h foreign_ident
-/src/crypt.c foreign_ident
 /src/cyclic.c foreign_ident
 /src/cyclic.h foreign_ident
 /src/dlopen.c foreign_ident
