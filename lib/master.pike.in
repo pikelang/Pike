@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.257 2004/04/29 12:30:30 grubba Exp $
+// $Id: master.pike.in,v 1.258 2004/05/03 12:26:44 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -23,7 +23,8 @@
 #define FILE_STAT_CACHE
 
 // This define is searched and replaced by bin/install.pike.
-#undef PIKE_MODULE_RELOC
+// The PIKE_MODULE_RELOC stuff is curently broken.
+//#undef PIKE_MODULE_RELOC
 
 #ifndef PIKE_WARNINGS
 #define PIKE_WARNINGS 1
