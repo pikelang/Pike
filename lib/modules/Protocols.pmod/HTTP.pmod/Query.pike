@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.48 2003/07/30 16:28:56 anders Exp $
+// $Id: Query.pike,v 1.49 2004/11/30 17:44:34 mast Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -50,7 +50,7 @@ array extra_args;
 
 /****** internal stuff *********************************************/
 
-static void ponder_answer()
+static int ponder_answer()
 {
    // read until we have all headers
 
@@ -65,7 +65,25 @@ static void ponder_answer()
       if ((i=min(i,j))!=10000000) break;
 
       s=con->read(8192,1);
-      if (!s || s=="") { i=strlen(buf); break; }
+      if (!s) {
+	errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+	werror ("<- (read error: %s)\n", strerror (errno));
+#endif
+	return 0;
+      }
+      if (s=="") {
+	if (!sizeof (buf)) {
+	  // FIXME: Try to fake some kind of errno here, or HTTP
+	  // error?
+#ifdef HTTP_QUERY_DEBUG
+	  werror ("<- (premature EOF)\n");
+#endif
+	  return -1;
+	}
+	i=strlen(buf);
+	break;
+      }
 
       i=strlen(buf)-3;
       buf+=s;
@@ -104,6 +122,7 @@ static void ponder_answer()
    remove_call_out(async_timeout);
 
    if (request_ok) request_ok(this_object(),@extra_args);
+   return 1;
 }
 
 static void connect(string server,int port,int blocking)
@@ -119,8 +138,9 @@ static void connect(string server,int port,int blocking)
      success = con->connect(server, port, blocking);
 
    if(!success) {
+     errno = con->errno();
 #ifdef HTTP_QUERY_DEBUG
-     werror("<- (connect error)\n");
+     werror("<- (connect error: %s)\n", strerror (errno));
 #endif
      catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
      catch (con->close());
@@ -169,8 +189,14 @@ static void connect(string server,int port,int blocking)
    }
 #endif
 
-   con->write(request);
-   ponder_answer();
+   if (con->write(request) != sizeof (request)) {
+     errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+     werror ("-> (write error: %s)\n", strerror (errno));
+#endif
+   }
+   else
+     ponder_answer();
 }
 
 static void async_close()
@@ -202,7 +228,12 @@ static void async_write()
 #ifdef HTTP_QUERY_DEBUG
    werror("<- %O\n",request);
 #endif
-   con->write(request);
+   if (con->write(request) != sizeof (request)) {
+     errno = con->errno();
+#ifdef HTTP_QUERY_DEBUG
+     werror ("-> (write error: %s)\n", strerror (errno));
+#endif
+   }
    con->set_nonblocking(async_read,0,async_close);
 }
 
@@ -456,7 +487,7 @@ this_program thread_request(string server, int port, string query,
 
    con=Stdio.File();
    if (!con->open_socket())
-      error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
+     error("HTTP.Query(): can't open socket; "+strerror(con->errno())+"\n");
 
    string server1=dns_lookup(server);
 
@@ -499,7 +530,7 @@ object sync_request(string server, int port, string query,
 
   // start open the connection
 
-  if(con && con->_fd &&
+  if(con && con->is_open() &&
      con->query_address() == server + " " + port &&
      headers && headers->connection &&
      lower_case( headers->connection ) != "close")
@@ -546,8 +577,20 @@ object sync_request(string server, int port, string query,
 #ifdef HTTP_QUERY_DEBUG
     werror("<- %O\n",request);
 #endif
-    con->write( request );
-    ponder_answer();
+    if (con->write( request ) != sizeof (request)) {
+      errno = con->errno;
+#ifdef HTTP_QUERY_DEBUG
+      werror ("-> (write error: %s)\n", strerror (errno));
+#endif
+    }
+    else
+      if (ponder_answer() == -1) {
+	// The keepalive connection was closed from the server end.
+	// Retry with a new one.
+	con->close();
+	con = 0;
+	return sync_request (server, port, query, http_headers, data);
+      }
   } else
     connect(server, port,1);
 
