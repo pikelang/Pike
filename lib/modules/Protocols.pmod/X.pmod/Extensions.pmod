@@ -1,6 +1,6 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.7 1998/04/19 00:31:00 grubba Exp $
+ * $Id: Extensions.pmod,v 1.8 1998/04/21 03:00:30 per Exp $
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
@@ -39,7 +39,7 @@ static class extension
     dpy = d;
 
     array a =
-      d->blocking_request( Requests.QueryExtension( this_object()->name ) );
+      d->blocking_request( .Requests.QueryExtension( this_object()->name ) );
 
     if(!a[0]) return 0;
 
@@ -85,15 +85,15 @@ class Shape
 
   void ShapeRectangles( object window, int xo, int yo,
 			string kind, string operation,
-			object(Types.Rectangle)|
-			array(object(Types.Rectangle)) rectangles )
+			object(.Types.Rectangle)|
+			array(object(.Types.Rectangle)) rectangles )
   {
     int k = shape_kind[kind];
     int o = shape_op[operation];
     string rects = (objectp(rectangles)?rectangles->to_string():
 		    (rectangles->to_string())*"");
 
-    object req = Requests.ExtensionRequest( major, 0, 0 );
+    object req = .Requests.ExtensionRequest( major, 0, 0 );
     req->code = 1;
     req->data = sprintf("%c%c\0\0%4c%2c%2c%s",o,k,window->id,xo,yo,rects);
     dpy->send_request( req );
@@ -106,7 +106,7 @@ class Shape
     int k = shape_kind[kind];
     int o = shape_op[operation];
     
-    object req = Requests.ExtensionRequest( major, 0, 0 );
+    object req = .Requests.ExtensionRequest( major, 0, 0 );
     req->code = 2;
     req->data = 
       sprintf("%c%c\0\0%4c%2c%2c%4c",o,k,window->id,xo,yo,source?source->id:0);
@@ -123,7 +123,7 @@ class Shape
   {
     int k = shape_kind[kind];
     
-    object req = Requests.ExtensionRequest( major, 0, 0 );
+    object req = .Requests.ExtensionRequest( major, 0, 0 );
     req->code = 4;
     req->data = sprintf("%c\0\0\0%4c%2c%2c", k, window->id, xo, yo);
     dpy->send_request( req );
