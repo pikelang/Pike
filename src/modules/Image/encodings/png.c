@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.33 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: png.c,v 1.34 2000/08/03 21:25:32 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -47,7 +47,7 @@ static struct pike_string *param_background;
 **!	This module uses <tt>zlib</tt>.
 */
 
-static INLINE void push_nbo_32bit(unsigned long x)
+static INLINE void push_nbo_32bit(size_t x)
 {
    char buf[4];
    buf[0]=(char)(x>>24);
@@ -210,7 +210,7 @@ static void image_png___decode(INT32 args)
 {
    int nocrc=0;
    unsigned char *data;
-   unsigned long len;
+   size_t len;
    struct pike_string *str;
    int n=0;
    ONERROR uwp;
@@ -514,7 +514,7 @@ static int _png_write_rgb(rgb_group *w1,
 			  rgb_group *wa1,
 			  int type,int bpp,
 			  unsigned char *s,
-			  unsigned long len,
+			  size_t len,
 			  unsigned long width,
 			  unsigned long n,
 			  struct neo_colortable *ct,
@@ -1041,7 +1041,7 @@ static void img_png_decode(INT32 args,int header_only)
    {
       struct array *b;
       unsigned char *data;
-      unsigned long len;
+      size_t len;
 
       if (a->item[i].type!=T_ARRAY ||
 	  (b=a->item[i].u.array)->size!=3 ||
@@ -1050,8 +1050,8 @@ static void img_png_decode(INT32 args,int header_only)
 	  b->item[0].u.string->len!=4)
 	 error("Image.PNG._decode: Illegal stuff in array index %d\n",i);
 
-      data=(unsigned char*)b->item[1].u.string->str;
-      len=(unsigned long)b->item[1].u.string->len;
+      data = (unsigned char *)b->item[1].u.string->str;
+      len = (size_t)b->item[1].u.string->len;
 
       if (!i &&
 	  int_from_32bit((unsigned char*)b->item[0].u.string->str)

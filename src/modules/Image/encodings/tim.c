@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.7 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: tim.c,v 1.8 2000/08/03 21:25:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -172,13 +172,14 @@ void img_tim_decode(INT32 args, int header_only)
   struct pike_string *str;
   unsigned char *s, *clut;
   int n=0, hasalpha=0, bitpp=0, bsize=0;
-  INT32 len, attr;
+  ptrdiff_t len;
+  INT32 attr;
   unsigned int h, w, i;
   
   get_all_args("Image.TIM._decode", args, "%S", &str);
   clut=s=(unsigned char *)str->str;
   clut+=20;
-  len=str->len;
+  len = str->len;
   pop_n_elems(args-1);
   
   if(len < 12 || (s[0] != 0x10 || s[2] != 0 || s[3] != 0))

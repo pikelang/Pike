@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.17 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: psd.c,v 1.18 2000/08/03 21:25:32 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -62,7 +62,7 @@ extern struct program *image_program;
 
 struct buffer
 {
-  unsigned int len;
+  size_t len;
   unsigned char *str;
 };
 

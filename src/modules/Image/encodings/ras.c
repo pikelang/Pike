@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.7 2000/07/28 07:13:06 hubbe Exp $ */
+/* $Id: ras.c,v 1.8 2000/08/03 21:25:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.7 2000/07/28 07:13:06 hubbe Exp $
+**!	$Id: ras.c,v 1.8 2000/08/03 21:25:32 grubba Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.7 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: ras.c,v 1.8 2000/08/03 21:25:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -90,8 +90,8 @@ static void decode_ras_header(struct rasterfile *rs, unsigned char *p)
   }
 }
 
-static INT32 unpack_rle(unsigned char *src, INT32 srclen,
-			unsigned char *dst, INT32 dstlen)
+static ptrdiff_t unpack_rle(unsigned char *src, ptrdiff_t srclen,
+			    unsigned char *dst, ptrdiff_t dstlen)
 {
   unsigned char *dst0 = dst;
   while(srclen>0 && dstlen>0)
@@ -120,7 +120,8 @@ void img_ras_decode(INT32 args)
    struct image *img;
    rgb_group *rgb;
    unsigned char *src, *tmpdata=NULL;
-   INT32 len, x, y;
+   ptrdiff_t len;
+   INT32 x, y;
    unsigned int numcolors = 0;
    struct nct_flat_entry *entries = NULL;
 
@@ -368,8 +369,8 @@ static void encode_ras_header(struct rasterfile *rs, unsigned char *p)
   }
 }
 
-static INT32 pack_rle(unsigned char *src, INT32 srclen,
-		      unsigned char *dst, INT32 dstlen)
+static ptrdiff_t pack_rle(unsigned char *src, ptrdiff_t srclen,
+			  unsigned char *dst, ptrdiff_t dstlen)
 {
   unsigned char *dst0 = dst;
   while(srclen>0 && dstlen>0) {
@@ -543,7 +544,7 @@ static void image_ras_encode(INT32 args)
     unsigned char *pk = pkdata, *src = STR0(res2);
     INT32 pklen = 0, pkleft = rs.ras_length+16;
     for(y=0; y<img->ysize; y++) {
-      INT32 n = pack_rle(src, llen, pk, pkleft);
+      ptrdiff_t n = pack_rle(src, llen, pk, pkleft);
       src += llen;
       pk += n;
       pkleft -= n;

@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.52 2000/07/28 07:13:06 hubbe Exp $ */
+/* $Id: gif.c,v 1.53 2000/08/03 21:25:31 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.52 2000/07/28 07:13:06 hubbe Exp $
+**!	$Id: gif.c,v 1.53 2000/08/03 21:25:31 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.52 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: gif.c,v 1.53 2000/08/03 21:25:31 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1253,7 +1253,7 @@ void image_gif_netscape_loop_block(INT32 args)
 */
 
 static void _decode_get_extension(unsigned char **s,
-				  unsigned long *len)
+				  size_t *len)
 {
    int ext;
    unsigned long n,sz;
@@ -1291,7 +1291,7 @@ static void _decode_get_extension(unsigned char **s,
 }
 
 static void _decode_get_render(unsigned char **s,
-			       unsigned long *len)
+			       size_t *len)
 {
    int n=0,bpp;
    unsigned long sz;
@@ -1380,7 +1380,7 @@ static void image_gif___decode(INT32 args)
 {
    int xsize,ysize,globalpalette,colorres,bpp,bkgi,aspect;
    unsigned char *s;
-   unsigned long len;
+   size_t len;
    struct pike_string *str;
    int n;
    ONERROR uwp;
@@ -1391,7 +1391,7 @@ static void image_gif___decode(INT32 args)
 
    add_ref(str=sp[-args].u.string);
    s=(unsigned char *)str->str;
-   len=str->len;
+   len = str->len;
    pop_n_elems(args);
    SET_ONERROR(uwp,do_free_string,str);
 
@@ -1488,8 +1488,8 @@ static void image_gif___decode(INT32 args)
       if (*s==0x3b && len==1) break;
       switch (*s)
       {
-	 case 0x21: _decode_get_extension(&s,&len); n++; break;
-	 case 0x2c: _decode_get_render(&s,&len); n++; break;
+	 case 0x21: _decode_get_extension(&s, &len); n++; break;
+	 case 0x2c: _decode_get_render(&s, &len); n++; break;
 	 case 0x3b: 
 	    push_int(GIF_ERROR_TOO_MUCH_DATA);
 	    push_string(make_shared_binary_string((char *)s+1,len-1));
@@ -1594,12 +1594,12 @@ static void image_gif___decode(INT32 args)
 */
 
 static void _gif_decode_lzw(unsigned char *s,
-			    unsigned long len,
+			    size_t len,
 			    int obits,
 			    struct object *ncto,
 			    rgb_group *dest,
 			    rgb_group *alpha,
-			    unsigned long dlen,
+			    size_t dlen,
 			    int tidx)
 {
    struct neo_colortable *nct;
@@ -2351,8 +2351,8 @@ void image_gif__encode_extension(INT32 args)
       else
       {
 	 d=begin_shared_string(s->len-i+2);
-	 d->str[0]=s->len-i;
-	 MEMCPY(d->str+1,s->str+i,d->len-i);
+	 d->str[0] = s->len-i;
+	 MEMCPY(d->str+1, s->str+i, d->len-i);
 	 d->str[d->len-i+1]=0;
 	 push_string(end_shared_string(d));
 	 n++;
@@ -2476,7 +2476,8 @@ static void image_gif_lzw_decode(INT32 args)
 {
    unsigned char *s,*dest0,*dest;
    int earlychange=0;
-   signed long len,n;
+   ptrdiff_t len;
+   signed long n;
    signed long clearcode,endcode,last,q,bit,m,dlen,dlen0;
    unsigned int mask;
    struct lzwc *c;
@@ -2488,7 +2489,7 @@ static void image_gif_lzw_decode(INT32 args)
       error("Image.GIF.lzw_encode(): illegal argument\n");
 
    s=(unsigned char*)sp[-args].u.string->str;
-   len=(signed long)sp[-args].u.string->len;
+   len = (ptrdiff_t)sp[-args].u.string->len;
 
    if (args>=2 && !IS_ZERO(sp+1-args))
       earlychange=1;
@@ -2600,8 +2601,8 @@ static void image_gif_lzw_decode(INT32 args)
 	 
 	 if (myc->len>dlen) 
 	 {
-	    signed long p;
-	    p=(dest-dest0);
+	    ptrdiff_t p;
+	    p = (dest - dest0);
 
 #ifdef GIF_DEBUG
 	    fprintf(stderr,"increase at dlen left=%lu p=%ld dlen0=%d\n",dlen,p,dlen0);

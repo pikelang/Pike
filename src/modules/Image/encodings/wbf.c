@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: wbf.c,v 1.6 2000/08/03 21:25:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -38,7 +38,7 @@ extern struct program *image_program;
 
 struct buffer
 {
-  unsigned int len;
+  size_t len;
   unsigned char *str;
 };
 

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.h,v 1.7 1999/05/30 20:11:15 mirar Exp $
+**!	$Id: gif_lzw.h,v 1.8 2000/08/03 21:25:32 grubba Exp $
 */
 
 typedef unsigned short lzwcode_t; /* no more than 12 bits used */
@@ -45,6 +45,6 @@ struct gif_lzw
 /* returns number of strings written on stack */
 
 void image_gif_lzw_init(struct gif_lzw *lzw,int bits);
-void image_gif_lzw_add(struct gif_lzw *lzw,unsigned char *data,int len);
+void image_gif_lzw_add(struct gif_lzw *lzw, unsigned char *data, size_t len);
 void image_gif_lzw_finish(struct gif_lzw *lzw);
 void image_gif_lzw_free(struct gif_lzw *lzw);

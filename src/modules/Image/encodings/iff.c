@@ -1,9 +1,9 @@
-/* $Id: iff.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $ */
+/* $Id: iff.c,v 1.6 2000/08/03 21:25:32 grubba Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: iff.c,v 1.6 2000/08/03 21:25:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -68,7 +68,7 @@ void parse_iff(char *id, unsigned char *data, INT32 len,
 
 static struct pike_string *low_make_iff(struct svalue *s)
 {
-  INT32 len;
+  ptrdiff_t len;
   unsigned char lenb[4];
 
   if(s->type != T_ARRAY || s->u.array->size != 2 ||

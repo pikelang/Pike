@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $ */
+/* $Id: ilbm.c,v 1.16 2000/08/03 21:25:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $
+**!	$Id: ilbm.c,v 1.16 2000/08/03 21:25:32 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: ilbm.c,v 1.16 2000/08/03 21:25:32 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -91,7 +91,7 @@ struct BMHD {
 static void image_ilbm___decode(INT32 args)
 {
    unsigned char *s;
-   INT32 len;
+   ptrdiff_t len;
    struct pike_string *str;
    struct mapping *m;
    int n;
@@ -100,8 +100,8 @@ static void image_ilbm___decode(INT32 args)
 
    get_all_args("__decode", args, "%S", &str);
 
-   s=(unsigned char *)str->str;
-   len=str->len;
+   s = (unsigned char *)str->str;
+   len = str->len;
    pop_n_elems(args-1);
 
    for(n=0; n<5; n++)
@@ -126,8 +126,8 @@ static void image_ilbm___decode(INT32 args)
      error("Missing BODY chunk\n");
 
    /* Extract image size from BMHD */
-   s=(unsigned char *)STR0(sp[-5].u.string);
-   len=sp[-5].u.string->len;
+   s = (unsigned char *)STR0(sp[-5].u.string);
+   len = sp[-5].u.string->len;
 
    if(len<20)
      error("Short BMHD chunk\n");
@@ -162,7 +162,7 @@ static void image_ilbm___decode(INT32 args)
 **!
 */
 
-static void parse_bmhd(struct BMHD *bmhd, unsigned char *s, INT32 len)
+static void parse_bmhd(struct BMHD *bmhd, unsigned char *s, ptrdiff_t len)
 {
   if(len<20)
     error("Short BMHD chunk\n");
@@ -191,8 +191,8 @@ static void parse_bmhd(struct BMHD *bmhd, unsigned char *s, INT32 len)
 #endif
 }
 
-static INT32 unpackByteRun1(unsigned char *src, INT32 srclen,
-			    unsigned char *dest, int destlen, int depth)
+static ptrdiff_t unpackByteRun1(unsigned char *src, INT32 srclen,
+				unsigned char *dest, int destlen, int depth)
 {
   unsigned char d, *src0 = src;
 

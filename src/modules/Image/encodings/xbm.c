@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.10 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: xbm.c,v 1.11 2000/08/03 21:25:32 grubba Exp $");
 
 #define NO_PIKE_SHORTHAND
 
@@ -58,7 +58,7 @@ extern struct program *image_program;
 
 struct buffer
 {
-  unsigned int len;
+  size_t len;
   char *str;
 };
 

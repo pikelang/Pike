@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.12 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: _xpm.c,v 1.13 2000/08/03 21:25:31 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -55,7 +55,7 @@ static int hextoint( int what )
 
 struct buffer
 {
-  int len;
+  ptrdiff_t len;
   char *str;
 };
 

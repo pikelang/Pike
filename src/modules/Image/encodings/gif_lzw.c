@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.7 2000/07/28 07:13:06 hubbe Exp $
+**!	$Id: gif_lzw.c,v 1.8 2000/08/03 21:25:32 grubba Exp $
 */
 
 #include "global.h"
@@ -214,7 +214,7 @@ void image_gif_lzw_free(struct gif_lzw *lzw)
    if (lzw->code) free(lzw->code);
 }
 
-void image_gif_lzw_add(struct gif_lzw *lzw,unsigned char *data,int len)
+void image_gif_lzw_add(struct gif_lzw *lzw, unsigned char *data, size_t len)
 {
    while (len--) lzw_add(lzw,*(data++));
 }
