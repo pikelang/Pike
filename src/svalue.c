@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.43 2001/11/14 10:53:43 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.44 2004/09/25 19:21:41 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -535,6 +535,7 @@ int is_eq(struct svalue *a, struct svalue *b)
   switch(a->type)
   {
   case T_OBJECT:
+    if (a->u.object == b->u.object) return 1;
     if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       goto a_is_obj;
 
