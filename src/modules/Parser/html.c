@@ -18,7 +18,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#if 1
+#if 0
 #define DEBUG(X) fprintf X
 #else
 #define DEBUG(X) do; while(0)
