@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.29 2002/01/23 06:52:48 hop Exp $
+// $Id: client.pike,v 1.30 2002/01/23 06:59:29 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -125,7 +125,7 @@ int _prof_gtim;
     array(string) referrals;
 
     private string utf2s(string in) {
-    // catched variant of utf8_to_string needed for tagged octed string data
+    // catched variant of utf8_to_string needed for tagged octet string data
 
       string out = "";
       catch( out = utf8_to_string(in) );
@@ -358,7 +358,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.29 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.30 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
