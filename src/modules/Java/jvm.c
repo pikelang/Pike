@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.47 2003/01/03 17:48:22 grubba Exp $
+|| $Id: jvm.c,v 1.48 2003/01/03 17:50:45 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.47 2003/01/03 17:48:22 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.48 2003/01/03 17:50:45 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1629,7 +1629,7 @@ struct cpu_context {
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 			   void (*dispatch)(), int args)
 {
-  unsigned INT32 *p = &ctx->code[2];
+  unsigned INT32 *p = (unsigned INT32 *)&ctx->code[2];
 
   /* The stub gets 3 parameters in $16, $17 and $18,
    * and must shift them one register to $17, $18 and $19,
