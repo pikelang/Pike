@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.100 2003/03/12 09:12:56 agehall Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.101 2003/08/25 02:11:43 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1749,15 +1749,23 @@ class Evaluator {
 
   function reswrite = std_reswrite;
 
-  private class HilfeCompileHandler (int stack_level) {
+
+  private string hch_errors = "";
+  private string hch_warnings = "";
+  private class HilfeCompileHandler {
+
+    int stack_level;
+    void create(int _stack_level) {
+      stack_level = _stack_level;
+      hch_errors = "";
+      hch_warnings = "";
+    }
+
     mapping(string:mixed) hilfe_symbols;
 
     mapping(string:mixed) get_default_module() {
       return all_constants() + hilfe_symbols;
     }
-
-    string errors = "";
-    string warnings = "";
 
     string format(string file, int line, string err) {
       if(file=="HilfeInput")
@@ -1770,11 +1778,11 @@ class Evaluator {
     }
 
     void compile_error(string file, int line, string err) {
-      errors += "Compiler Error" + format(file, line, err);
+      hch_errors += "Compiler Error" + format(file, line, err);
     }
 
     void compile_warning(string file, int line, string warn) {
-      warnings += "Compiler Warning" + format(file, line, warn);
+      hch_warnings += "Compiler Warning" + format(file, line, warn);
     }
 
     int compile_exception (object|array trace)
@@ -1790,17 +1798,17 @@ class Evaluator {
 	    // somewhat odd frame "Optimizer:0 0()" at the top.
 	    trace[1] = trace[1][1..];
 	};
-	errors += "Compiler Exception: " + describe_backtrace (trace);
+	hch_errors += "Compiler Exception: " + describe_backtrace (trace);
       }
       return 1;
     }
 
     void show_errors() {
-      safe_write(errors);
+      safe_write(hch_errors);
     }
 
     void show_warnings() {
-      safe_write(warnings);
+      safe_write(hch_warnings);
     }
   };
 
