@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.409 2001/05/15 20:49:09 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.410 2001/05/17 16:58:39 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4839,6 +4839,36 @@ test_any([[
   return ret;
 ]],315)
 
+// String.SplitIterator
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
+  array res = ({});
+  foreach(it; int i; string part) {
+    res += ({ it });
+  }
+  return equal(res, "  foobar gazonk gurka baz  "/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
+  return sizeof(it);
+]], [[
+  return sizeof("  foobar gazonk gurka baz  "/" ");
+]])
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ', 1);
+  array res = ({});
+  foreach(it; int i; string part) {
+    res += ({ it });
+  }
+  return equal(res, "foobar gazonk gurka baz"/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
+  return sizeof(it);
+]], [[
+  return sizeof("foobar gazonk gurka baz"/" ");
+]])
+
 
 
 // do-while
@@ -7175,9 +7205,22 @@ cond([[all_constants()->_verify_internals]],
 test_program([[
 int ok=1;
 
+void test_resolv(string file, int base_size)
+{
+  string prg = replace( file[base_size+1..sizeof(file)-6],
+			([ "/":".", ".pmod":""]) );
+  if(prg[sizeof(prg)-7..]==".module")
+    prg = prg[..sizeof(prg)-8];
+  werror("Resolving %O...\n", prg);
+  if( catch( master()->resolv(prg) ) ) {
+    werror("test: failed to peek at %O\n", prg);
+    ok=0;
+  }
+}
+
 void test_dir(string dir, int|void base_size)
 {
-  //  werror("Testing directory %O...\n", dir);
+  werror("Testing directory %O...\n", dir);
   if(!base_size) base_size=sizeof(dir);
   foreach(get_dir(dir), string s)
   {
@@ -7202,9 +7245,12 @@ void test_dir(string dir, int|void base_size)
     if(!stat) continue;
     if(stat[1]==-2)
     {
+      if (glob("*.pmod", file)) {
+        test_resolv(file, base_size);
+      }
       test_dir(file, base_size);
     }else if(stat[1]>=0){
-      // werror("Testing file %O\n", file);
+      werror("Testing file %O\n", file);
       if(!glob("*/my_struct.pmod",file))
       {
         if(glob("*.pike",file) || glob("*.pmod",file))
@@ -7216,13 +7262,7 @@ void test_dir(string dir, int|void base_size)
               ok=0;
               continue;
            }
-           string prg = replace( file[base_size+1..sizeof(file)-6], ([ "/":".", ".pmod":""]) );
-           if(prg[sizeof(prg)-7..]==".module")
-             prg = prg[..sizeof(prg)-8];
-           if( catch( master()->resolv(prg) ) ) {
-             werror("test: failed to compile and peek at %O\n", prg);
-             ok=0;
-           }
+	   test_resolv(file, base_size);
         }
       }
     }
