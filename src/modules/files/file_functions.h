@@ -2,7 +2,7 @@
   FILE_FUNC("close",file_close,"function(string|void:int)")
   FILE_FUNC("read",file_read,"function(int|void,int|void:string)")
 #ifndef __NT__
-  FILE_FUNC("peek",file_peek,"function(void:int)")
+  FILE_FUNC("peek",file_peek,"function(float|int|void:int)")
 #endif
   FILE_FUNC("write",file_write,"function(string|array(string),void|mixed...:int)")
 #ifdef WITH_OOB
