@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.62 2000/08/16 22:03:40 mast Exp $
+ * $Id: gc.h,v 1.63 2000/08/22 17:21:26 grubba Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -151,6 +151,7 @@ void do_gc_recurse_short_svalue(union anything *u, TYPE_T type);
 int gc_do_free(void *a);
 int do_gc(void);
 void f__gc_status(INT32 args);
+void cleanup_gc(void);
 /* Prototypes end here */
 
 #define gc_fatal \
