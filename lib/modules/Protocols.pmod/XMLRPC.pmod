@@ -29,7 +29,7 @@
 //! implemented.
 
 //! Represents a function call made to a XML-RPC server.
-//
+//!
 //! @seealso
 //! @[XMLRPC.decode_call()]
 class Call(string method_name, array params)
@@ -44,13 +44,14 @@ class Call(string method_name, array params)
 
   string _sprintf()
   {
-    return sprintf("Protocols.XMLRPC.Call(%O, ...)", method_name);
+    return sprintf("Protocols.XMLRPC.Call(%O%s)", method_name,
+		   params ? ", " + sizeof(params) + " arguments" : "");
   }
 }
 
 //! Represents a fault response which can be one of the return values
 //! from a XML-RPC function call.
-//
+//!
 //! @seealso
 //! @[XMLRPC.decode_response()]
 class Fault(int fault_code, string fault_string)
@@ -69,7 +70,7 @@ class Fault(int fault_code, string fault_string)
 
 //! Decodes a XML-RPC representation of a function call and returns a
 //! @[XMLRPC.Call] object.
-//
+//!
 //! @seealso
 //! @[XMLRPC.Call]
 Call decode_call(string xml_input)
@@ -80,7 +81,7 @@ Call decode_call(string xml_input)
 
 //! Decodes a XML-RPC representation of a response and returns an
 //! array containing response values, or a @[Fault] object.
-//
+//!
 //! @seealso
 //! @[XMLRPC.Fault]
 array|Fault decode_response(string xml_input)
