@@ -6,7 +6,9 @@ AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 
 AC_CHECK_HEADERS(gmp.h)
-AC_CHECK_LIB(gmp, mpz_set_si)
+if test $ac_cv_header_gmp_h = yes ; then
+  AC_CHECK_LIB(gmp, mpz_set_d)
+fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
