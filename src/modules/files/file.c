@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.305 2003/10/28 00:01:01 mast Exp $
+|| $Id: file.c,v 1.306 2003/10/28 11:46:02 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.305 2003/10/28 00:01:01 mast Exp $");
+RCSID("$Id: file.c,v 1.306 2003/10/28 11:46:02 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -237,7 +237,7 @@ static void init_fd(int fd, int open_mode)
 #ifdef PIKE_DEBUG
   {
     struct Backend_struct *b = get_backend_for_fd (fd);
-    if (fd >= 0 && b && b != default_backend)
+    if (fd >= 0 && b)
       Pike_fatal ("Got unexpected backend %p for new fd %d\n", b, fd);
   }
 #endif
@@ -683,7 +683,8 @@ static struct pike_string *do_read_oob(int fd,
  *! as many bytes as you have asked for, but will merely return as
  *! much as the system read function will return. This mainly useful
  *! with stream devices which can return exactly one row or packet at
- *! a time.
+ *! a time. If @[not_all] is used in blocking mode, @[read()] will
+ *! only block if there's no data at all available.
  *!
  *! If something goes wrong and @[not_all] is set, zero will be
  *! returned. If something goes wrong and @[not_all] is zero or left
@@ -1050,17 +1051,29 @@ DO_DISABLE(write_oob_callback)
  *! Write data to a file or a stream.
  *!
  *! Writes @[data] and returns the number of bytes that were
- *! actually written.
+ *! actually written. It can be less than the size of the given data if
  *!
- *! If more than one argument is given, @[sprintf()] will be
- *! used to format them.
- *!
- *! If @[data] is an array, it will be concatenated, and then written.
- *!
- *! 0 is returned in nonblocking mode if it was not possible to write
- *! anything without blocking.
+ *! @ul
+ *!   @item
+ *!     some data was written successfully and then something went
+ *!     wrong, or
+ *!   @item
+ *!     nonblocking mode is used and not all data could be written
+ *!     without blocking.
+ *! @endul
  *!
  *! -1 is returned if something went wrong and no bytes were written.
+ *! If only some data was written due to an error and that error
+ *! persists, then a later call to @[write()] will fail and return -1.
+ *!
+ *! If everything went fine, a call to @[errno()] directly afterwards
+ *! will return zero.
+ *!
+ *! If @[data] is an array of strings, they will be written sequence.
+ *!
+ *! If more than one argument is given, @[sprintf()] will be used to
+ *! format them using @[format]. If @[format] is an array, the strings
+ *! in it are concatenated and the result is used as format string.
  *!
  *! @note
  *!   Writing of wide strings is not supported. You have to encode the
@@ -1117,6 +1130,7 @@ static void file_write(INT32 args)
 #ifdef HAVE_WRITEV
     } else if (!a->size) {
       /* Special case for empty array */
+      ERRNO = 0;
       pop_stack();
       push_int(0);
       return;
@@ -1293,13 +1307,20 @@ static void file_write(INT32 args)
  *!
  *! Write out-of-band data to a stream.
  *!
- *! Writes out-of-band data to a stream and returns how many bytes that were
- *! actually written.
+ *! Writes out-of-band data to a stream and returns how many bytes
+ *! that were actually written. It can be less than the size of the
+ *! given data if some data was written successfully and then
+ *! something went wrong.
+ *!
+ *! -1 is returned if something went wrong and no bytes were written.
+ *! If only some data was written due to an error and that error
+ *! persists, then a later call to @[write_oob()] will fail and return -1.
+ *!
+ *! If everything went fine, a call to @[errno()] directly afterwards
+ *! will return zero.
  *!
  *! If more than one argument is given, @[sprintf()] will be
  *! used to format them.
- *!
- *! -1 is returned if something went wrong and no bytes were written.
  *!
  *! @note
  *!   Out-of-band data was not be supported on Pike 0.5 and earlier,
@@ -2296,7 +2317,7 @@ struct object *file_make_object_from_fd(int fd, int mode, int guess)
 #ifdef PIKE_DEBUG
   {
     struct Backend_struct *b = get_backend_for_fd (fd);
-    if (fd >= 0 && b && b != default_backend)
+    if (fd >= 0 && b)
       Pike_fatal ("Got unexpected backend %p for new fd %d\n", b, fd);
   }
 #endif
