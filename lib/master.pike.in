@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.326 2004/01/12 16:56:17 nilsson Exp $
+// $Id: master.pike.in,v 1.327 2004/01/12 20:50:46 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -199,7 +199,7 @@ string unrelocate_module(string s)
 int is_absolute_path(string p)
 {
 #ifdef __amigaos__
-#define IS_ABSOLUTE_PATH(X) has_value((X),":")
+#define IS_ABSOLUTE_PATH(X) (search((X),":")>0)
   return IS_ABSOLUTE_PATH(p);
 #else
 #ifdef __NT__
