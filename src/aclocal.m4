@@ -1,13 +1,15 @@
 pushdef([AC_PROG_CC_WORKS],
 [
   popdef([AC_PROG_CC_WORKS])
-  if test "${ac_prog_cc_works_this_run-}" != "yes" ; then
-    AC_PROG_CC_WORKS
-    ac_prog_cc_works_this_run="${ac_cv_prog_cc_works-no}"
-    export ac_prog_cc_works_this_run
-  else
-    AC_MSG_CHECKING([whether the C compiler ($CC $CFLAGS $LDFLAGS) works])
-    AC_MSG_RESULT([(cached) yes])
+  if test "x$enable_binary" != "xno"; then
+    if test "${ac_prog_cc_works_this_run-}" != "yes" ; then
+      AC_PROG_CC_WORKS
+      ac_prog_cc_works_this_run="${ac_cv_prog_cc_works-no}"
+      export ac_prog_cc_works_this_run
+    else
+      AC_MSG_CHECKING([whether the C compiler ($CC $CFLAGS $LDFLAGS) works])
+      AC_MSG_RESULT([(cached) yes])
+    fi
   fi
 ])
 
@@ -41,9 +43,11 @@ pushdef([AC_PROG_CC],
 
 define([MY_AC_PROG_CC],
 [
-define(ac_cv_prog_CC,pike_cv_prog_CC)
-AC_PROG_CC
-undefine([ac_cv_prog_CC])
+  if test "x$enable_binary" != "xno"; then
+    define(ac_cv_prog_CC,pike_cv_prog_CC)
+    AC_PROG_CC
+    undefine([ac_cv_prog_CC])
+  fi
 ])
 
 pushdef([AC_CONFIG_HEADER],
@@ -93,6 +97,20 @@ EOF
     undefine([AC_CV_NAME])dnl
   else :; fi
   ORIG_AC_CHECK_SIZEOF($1,$2)
+])
+
+define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
+pushdef([AC_CHECK_HEADERS],
+[
+  if test "x$enable_binary" != "xno"; then
+    ORIG_CHECK_HEADERS($1,$2,$3)
+  else
+    for ac_hdr in $1
+    do
+      ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
+      eval "ac_cv_header_$ac_safe=yes"
+    done
+  fi
 ])
 
 AC_DEFUN(AC_MY_CHECK_TYPE,
@@ -146,15 +164,11 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.23 2001/01/26 01:38:40 mast Exp $
-
-if test "x$enable_binary" != "xno"; then
+# $Id: aclocal.m4,v 1.24 2001/01/27 03:57:18 mast Exp $
 
 MY_AC_PROG_CC
 
 AC_DEFINE(POSIX_SOURCE)
-
-fi
 
 AC_SUBST(CONFIG_HEADERS)
 
@@ -198,24 +212,10 @@ static_module_makefile=PIKE_INCLUDE_PATH/dynamic_module_makefile
   AC_MSG_RESULT(found)
 ])
 
-if test "x$enable_binary" != "xno"; then
-# Skip the rest of tests since we do not want to compile or anything,
-# just get Makefiles to run make depend. Wonder if we will get away
-# with this if statement which is balanced in AC_OUTPUT.
-define([ENABLE_BINARY_IF_OPEN], yes)
 ])
 
 pushdef([AC_OUTPUT],
 [
-  ifdef([ENABLE_BINARY_IF_OPEN],
-  [
-    if test "x$enable_binary" = "xno"; then
-      AC_MSG_ERROR([Didn't expect enable_binary to be "no" here.
-Probably unbalanced if between ac_module_init and ac_output.])
-    fi
-    fi #if test "x$enable_binary" != "xno"
-  ])
-
   AC_SET_MAKE
 
   AC_SUBST(prefix)
