@@ -1,4 +1,4 @@
-/* $Id: lzw.h,v 1.1 1997/02/11 08:35:44 hubbe Exp $ */
+/* $Id: lzw.h,v 1.2 1997/05/14 00:40:58 per Exp $ */
 
 #define GIF_LZW
 
@@ -32,6 +32,7 @@ struct lzw
 void lzw_add(struct lzw *lzw,int c);
 void lzw_quit(struct lzw *lzw);
 void lzw_init(struct lzw *lzw,int bits);
+void lzw_write_last(struct lzw *lzw);
 unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
 			 unsigned char *src,unsigned long srclen,
 			 int bits);

@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.26 1997/04/30 01:46:40 mirar Exp $ */
+/* $Id: image.c,v 1.27 1997/05/14 00:40:57 per Exp $ */
 
 /*
 **! module Image
@@ -66,6 +66,8 @@
 **!	<ref>map_fast</ref>, 
 **!	<ref>modify_by_intensity</ref>,
 **!	<ref>select_from</ref> 
+**!	<ref>rgb_to_hsv</ref> 
+**!	<ref>hsv_to_rgb</ref> 
 **!
 **!	converting to other datatypes: <ref>cast</ref>,
 **!	<ref>fromgif</ref>, 
@@ -98,7 +100,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.26 1997/04/30 01:46:40 mirar Exp $");
+RCSID("$Id: image.c,v 1.27 1997/05/14 00:40:57 per Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1519,6 +1521,114 @@ void image_threshold(INT32 args)
    push_object(o);
 }
 
+
+/*
+**! method object rgb_to_hsv()
+**! method object hsv_to_rgb()
+**!    Converts RGB data to HSV data, or the other way around.
+**!    When converting to HSV, the resulting data is stored like this:
+**!     pixel.r = h; pixel.g = s; pixel.b = v;
+**!
+**!    When converting to RGB, the input data is asumed to be placed in
+**!    the pixels as above.
+**!
+**!    HSV to RGB calculation:
+**!    <pre>
+**!    in = input pixel
+**!    out = destination pixel
+**!    h=-pos*c_angle*3.1415/(float)NUM_SQUARES;
+**!    out.r=(in.b+in.g*cos(in.r));
+**!    out.g=(in.b+in.g*cos(in.r + pi*2/3));
+**!    out.b=(in.b+in.g*cos(in.r + pi*4/3));
+**!    </pre>
+**!
+**!    RGB to HSV calculation: Hmm.
+**!    <pre>
+**!    </pre>
+**!
+**!     Example: Nice rainbow.
+**!    <pre>
+**!     object i = Image.image(200,200);
+**!     i = i->tuned_box(0,0, 200,200,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->hsv_to_rgb();
+**!     </pre>
+**! returns the new image object
+*/
+
+void image_hsv_to_rgb(INT32 args)
+{
+   INT32 i;
+   rgb_group *s,*d;
+   struct object *o;
+   struct image *img;
+   if (!THIS->img) error("no image\n");
+
+   o=clone_object(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+
+   d=img->img;
+   s=THIS->img;
+
+   THREADS_ALLOW();
+   i=img->xsize*img->ysize;
+   while (i--)
+   {
+     double h,sat,v;
+     float r,g,b;
+     h = (s->r/255.0)*(360.0/60.0);
+     sat = s->g/255.0;
+     v = s->b/255.0;
+     
+     if(sat==0.0)
+     {
+       r = g = b = v;
+     } else {
+#define i floor(h)
+#define f (h-i)
+#define p (v * (1 - sat))
+#define q (v * (1 - (sat * f)))
+#define t (v * (1 - (sat * (1 -f))))
+       switch((int)i)
+       {
+	case 6: // 360 degrees. Same as 0..
+	case 0:	 r = v;	 g = t;	 b = p;	 break;
+	case 1:	 r = q;	 g = v;	 b = p;	 break;
+	case 2:	 r = p;  g = v;	 b = t;	 break;
+	case 3:	 r = p;	 g = q;	 b = v;	 break;
+	case 4:	 r = t;	 g = p;	 b = v;	 break;
+	case 5:	 r = v;	 g = p;	 b = q;	 break;
+	default:
+	 error("Nope. Not possible");
+       }
+     }
+#undef i
+#undef f
+#undef p
+#undef q
+#undef t
+#define FIX(X) ((X)<0.0?0:(X)>=1.0?255:(int)((X)*255.0))
+     d->r = FIX(r);
+     d->g = FIX(g);
+     d->b = FIX(b);
+     s++; d++;
+   }
+   THREADS_DISALLOW();
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+
+
 /*
 **! method object distancesq()
 **! method object distancesq(int r,int g,int b)
@@ -2408,6 +2518,10 @@ void pike_module_init()
 		"function("RGB_TYPE":object)",0);
    add_function("distancesq",image_distancesq,
 		"function("RGB_TYPE":object)",0);
+
+/*   add_function("rgb_to_hsv",image_rgb_to_hsv, "function(void:object)",0);*/
+   add_function("hsv_to_rgb",image_hsv_to_rgb,"function(void:object)",0);
+
    add_function("select_from",image_select_from,
 		"function(int,int:object)",0);
 
