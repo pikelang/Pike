@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.58 1998/02/20 03:23:35 per Exp $");
+RCSID("$Id: spider.c,v 1.59 1998/02/20 03:45:21 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -801,7 +801,7 @@ void do_html_parse(struct pike_string *ss,
 }
 
 
-#define PARSE_RECURSE()	do {					\
+#define PARSE_RECURSE(END) do {					\
   copy_shared_string(ss2,sp[-1].u.string); 			\
   pop_stack();							\
   if (last!=i-1)						\
@@ -809,14 +809,14 @@ void do_html_parse(struct pike_string *ss,
     push_string(make_shared_binary_string(s+last,i-last-1));	\
     (*strings)++; 						\
   }								\
-  for (;i<m; i++) if (s[i]==10) line++;				\
-  i=last=j=m;							\
+  for (;i<END; i++) if (s[i]==10) line++;			\
+  i=last=j=END;							\
   do_html_parse_lines(ss2,cont,single,strings,			\
 		      recurse_left-1,extra_args,line);		\
 } while(0)
 
 
-#define PARSE_RETURN() do{					\
+#define PARSE_RETURN(END) do{					\
   push_text("");						\
   f_multiply(2);						\
   (*strings)++;							\
@@ -828,18 +828,18 @@ void do_html_parse(struct pike_string *ss,
     (*strings)++; 						\
     push_string(ss2);						\
   }								\
-  for (;i<j+k; i++) if (s[i]==10) line++;			\
-  i=last=j+k;							\
+  for (;i<END; i++) if (s[i]==10) line++;			\
+  i=last=END;							\
 } while(0)
 
-#define HANDLE_RETURN_VALUE() do {		\
+#define HANDLE_RETURN_VALUE(END) do {		\
   free_svalue(&sval1);                          \
   if (sp[-1].type==T_STRING)			\
   {						\
-    PARSE_RECURSE();				\
+    PARSE_RECURSE(END);				\
     continue;					\
   } else if (sp[-1].type==T_ARRAY) {		\
-    PARSE_RETURN();				\
+    PARSE_RETURN(END);				\
     continue;					\
   }						\
   pop_stack();					\
@@ -915,7 +915,7 @@ void do_html_parse_lines(struct pike_string *ss,
 #ifdef DEBUG
 	sval2.type=99;
 #endif
-	k=push_parsed_tag(s+j,len-j); 
+	k=push_parsed_tag(s+j,len-j);
 	push_int(line);
 	if (extra_args)
 	{
@@ -923,7 +923,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	  push_array_items(extra_args);
 	}
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
-	HANDLE_RETURN_VALUE();
+	HANDLE_RETURN_VALUE(j+k);
 	continue;
       }
       free_svalue(&sval1);
@@ -962,7 +962,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	  push_array_items(extra_args);
 	}
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
-	HANDLE_RETURN_VALUE();
+	HANDLE_RETURN_VALUE(m);
 	continue;
       }
       i=j;
