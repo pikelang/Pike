@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.204 2004/11/14 23:50:48 mast Exp $
+|| $Id: svalue.c,v 1.205 2004/11/16 02:11:37 mast Exp $
 */
 
 #include "global.h"
@@ -1090,48 +1090,31 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 
 static void dsv_add_string_to_buf (struct pike_string *str)
 {
-  char buf[16];
+  char buf[11];
   int i;
-  switch(str->size_shift)
-    {
-    case 0:
-      my_binary_strcat((char *)STR0(str), str->len);
-      break;
-      
-    case 1:
-      {
-	p_wchar1 *cp=STR1(str);
-	for(i=0;i<str->len;i++)
-	  {
-	    int c=cp[i];
-	    if(c<256) 
-	      my_putchar(c);
-	    else
-	      {
-		sprintf(buf,"<%d>",c);
-		my_strcat(buf);
-	      }
-	  }
-	break;
-      }
-
-    case 2:
-      {
-	p_wchar2 *cp=STR2(str);
-	for(i=0;i<str->len;i++)
-	  {
-	    int c=cp[i];
-	    if(c<256) 
-	      my_putchar(c);
-	    else
-	      {
-		sprintf(buf,"<%d>",c);
-		my_strcat(buf);
-	      }
-	  }
-	break;
-      }
+  ptrdiff_t len = str->len;
+  for(i=0; i < len; i++)
+  {
+    unsigned j = (unsigned) index_shared_string (str, i);
+    if (j == '\\' && i + 1 < len) {
+      int next = index_shared_string (str, i + 1);
+      my_putchar ('\\');
+      if (next == 'u' || next == 'U')
+	/* Quote existing unicode escapes for consistency. */
+	/* FIXME: This doesn't look at the number of preceding
+	 * backslashes, which is the method used in strings. */
+	my_putchar (next);
     }
+    else if (j < 256 && isprint (j))
+      my_putchar (j);
+    else {
+      if (j > 0xffff)
+	sprintf (buf, "\\U%08x", j);
+      else
+	sprintf (buf, "\\u%04x", j);
+      my_strcat (buf);
+    }
+  }
 }
 
 
@@ -1159,11 +1142,12 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
     case T_STRING:
       {
-	int i,j=0;
-        my_putchar('"');
+	int i;
+	my_putchar('"');
 	for(i=0; i < s->u.string->len; i++)
         {
-          switch(j=index_shared_string(s->u.string,i))
+	  unsigned j;
+	  switch(j = (unsigned) index_shared_string(s->u.string,i))
           {
 	  case '\n':
 	    my_putchar('\\');
@@ -1207,7 +1191,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      break;
 
             default:
-	      if(j>=0 && j<256) {
+	      if(j<256) {
 		if (isprint(j))
 		  my_putchar(j);
 
@@ -1231,8 +1215,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		/* Use unicode escapes for wide chars to avoid the
 		 * double quote trickery. Also, hex is easier to read
 		 * than octal. */
-		if (j < 0 || j > 0xffff)
-		  sprintf (buf, "\\U%08x", (unsigned) j);
+		if (j > 0xffff)
+		  sprintf (buf, "\\U%08x", j);
 		else
 		  sprintf (buf, "\\u%04x", j);
 		my_strcat (buf);
