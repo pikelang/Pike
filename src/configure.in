@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.795 2004/03/06 15:48:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.796 2004/03/07 12:39:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7007,7 +7007,7 @@ $bundle_info])
         if test "$f" = "no"; then
 	  break
 	fi
-        lib_name="`echo $f|sed -e 's/^lib\(.*\).a$/\1.lib/`"
+        lib_name="`echo $f|sed -e 's/^lib\(.*\)\.a$/\1.lib/'`"
 	if cmp "bundles/lib/$f" "bundles/lib/$lib_name" 2>/dev/null; then
 	  :
 	else
