@@ -1,9 +1,37 @@
-# $Id: configure.in,v 1.12 1998/09/20 08:31:07 hubbe Exp $
+# $Id: configure.in,v 1.13 1999/10/05 05:29:27 hubbe Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
 
 AC_MODULE_INIT()
+
+define([AC_CHECK_GZ],
+[
+done=no
+AC_MSG_CHECKING(working lib$1)
+AC_CACHE_VAL(pike_cv_working_$1,[
+OLDLIBS="${LIBS-}"
+LIBS="${LIBS-} -l$1"
+AC_TRY_RUN([
+#include "$srcdir/gz_test.c"
+],pike_cv_working_$1=yes,pike_cv_working_$1=no)])
+
+if test "x$pike_cv_working_$1" = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_LIBZ)
+  LIBS="${LIBS-} -l$1"
+  done=yes
+else
+  AC_MSG_RESULT(no)
+fi
+
+if test $done = no; then
+  $2
+  :
+fi
+
+])
+
 
 if test x$with_zlib = xyes ; then
   AC_CHECK_HEADERS(zlib.h)
@@ -14,6 +42,7 @@ if test x$with_zlib = xyes ; then
     ],[
 int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
     ],[ AC_MSG_RESULT(yes) ],[ AC_MSG_RESULT(no); ac_cv_header_zlib_h=no ])
+
     if test $ac_cv_header_zlib_h = yes ; then
       if test x$pike_cv_sys_os = xIRIX ; then
         # The libz.so supplied with IRIX 6.3 needs these obscure symbols
@@ -26,11 +55,8 @@ int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
 	AC_HAVE_FUNCS(__vtbl__9type_info)
 	AC_HAVE_FUNCS(__T_9__nothrow)
       fi
-      AC_CHECK_LIB(z, compress, [
-        AC_DEFINE(HAVE_LIBZ) 
-        LIBS="${LIBS-} -lz"
-      ] ,
-      AC_CHECK_LIB(gz, compress))
+
+      AC_CHECK_GZ(z,[AC_CHECK_GZ(gz)])
     fi
   fi
 fi
