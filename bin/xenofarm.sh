@@ -29,26 +29,33 @@ xenofarm_build() {
   [ $LASTERR = 0 ] || return 1
 }
 
+xenofarm_post_build() {
+  log_start verify
+  $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
+    build/xenofarm/verifylog.txt 2>&1
+  log_end $?
+  [ $LASTERR = 0 ] || return 1
+  
+  log_start export
+  $MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
+  log_end $?
+  [ $LASTERR = 0 ] || return 1
+}
+
 
 # main code
 
 LC_CTYPE=C
 export LC_CTYPE
 log "FORMAT 2"
+
 log_start build
 xenofarm_build
 log_end $?
 
-log_start verify
-$MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
-  build/xenofarm/verifylog.txt 2>&1
+log_start post_build
+xenofarm_post_build
 log_end $?
-[ $LASTERR = 0 ] || return 1
-
-log_start export
-$MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
-log_end $?
-[ $LASTERR = 0 ] || return 1
 
 log_start response_assembly
   cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt
