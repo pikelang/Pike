@@ -216,7 +216,8 @@ static constant prefix = ({ "bytes", "kb", "Mb", "Gb", "Tb", "Pb", "Eb", "Zb", "
 //!   Throws an error is @[size] is less than zero.
 string int2size( int size )
 {
-  if(size<0) error("Size less than zero.\n");
+  if(size<0)
+    return "-" + int2size(-size);
   if(size==1) return "1 byte";
   float s = (float)size;
   size=0;
