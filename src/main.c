@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.184 2003/11/14 04:45:40 mast Exp $
+|| $Id: main.c,v 1.185 2003/11/14 10:13:39 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.184 2003/11/14 04:45:40 mast Exp $");
+RCSID("$Id: main.c,v 1.185 2003/11/14 10:13:39 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -37,6 +37,7 @@ RCSID("$Id: main.c,v 1.184 2003/11/14 04:45:40 mast Exp $");
 #include "program.h"
 #include "pike_rusage.h"
 #include "module_support.h"
+#include "opcodes.h"
 
 #ifdef AUTO_BIGNUM
 #include "bignum.h"
@@ -699,9 +700,9 @@ int dbm_main(int argc, char **argv)
 
   init_types();
 
-  TRACE((stderr, "Init lexer...\n"));
+  TRACE((stderr, "Init opcodes...\n"));
 
-  init_lex();
+  init_opcodes();
 
   TRACE((stderr, "Init programs...\n"));
 
@@ -814,7 +815,7 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 
 #ifdef PIKE_DEBUG
   /* For profiling */
-  exit_lex();
+  exit_opcodes();
 #endif
 
 #ifdef INTERNAL_PROFILING

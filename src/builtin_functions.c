@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.518 2003/11/09 23:59:14 mast Exp $
+|| $Id: builtin_functions.c,v 1.519 2003/11/14 10:13:39 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.518 2003/11/09 23:59:14 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.519 2003/11/14 10:13:39 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2186,8 +2186,7 @@ void f__exit(INT32 args)
 #ifdef PIKE_DEBUG
   {
     /* This will allow -p to work with _exit -Hubbe */
-    extern void exit_lex(void);
-    exit_lex();
+    exit_opcodes();
   }
 #endif
 
