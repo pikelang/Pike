@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.12 2001/04/26 13:40:57 grubba Exp $
+ * $Id: autodoc.pike,v 1.13 2001/04/28 14:50:52 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -87,12 +87,17 @@ int main(int argc, array(string) argv)
 			// Usually not reached.
 			return p;
 		      });
-		foreach(reverse(segments), string seg) {
-		  Tools.AutoDoc.PikeObjects.Module m =
-		    Tools.AutoDoc.PikeObjects.Module();
-		  m->children = ({ info });
-		  m->name = seg;
-		  info = m;
+		foreach(reverse(segments) + ({ "" }), string seg) {
+		  if (info->name == "") {
+		    // Probably doesn't happen, but...
+		    info->name = seg;
+		  } else {
+		    Tools.AutoDoc.PikeObjects.Module m =
+		      Tools.AutoDoc.PikeObjects.Module();
+		    m->children = ({ info });
+		    m->name = seg;
+		    info = m;
+		  }
 		}
 		break;
 	      }
