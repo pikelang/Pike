@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.258 2000/08/24 19:06:21 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.259 2000/09/01 19:17:39 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5420,7 +5420,7 @@ void f_inherit_list(INT32 args)
   int parid,e,q=0;
 
   get_all_args("inherit_list",args,"%*",&arg);
-  if(sp[-args].type == T_OBJECT)
+  if(Pike_sp[-args].type == T_OBJECT)
     f_object_program(1);
   
   p=program_from_svalue(arg);
@@ -5440,65 +5440,53 @@ void f_inherit_list(INT32 args)
   for(e=0;e<p->num_inherits;e++)
   {
     struct inherit *in=p->inherits+e;
+
     if(in->inherit_level==1)
     {
-      if(in->parent_offset)
+      switch(in->parent_offset)
       {
-	struct inherit *inherit=in;
-	int accumulator;
-	struct object *o=par;
-	int i;
-
-	o=par;
-	i=in->parent_identifier;
-	accumulator=inherit->parent_offset - 1;
-	while(accumulator--)
+	default:
 	{
-	  struct program *p;
-	  if(inherit->parent_offset)
+	  struct external_variable_context tmp;
+	  if(!par)
 	  {
-	    i=o->parent_identifier;
-	    o=o->parent;
-	    accumulator+=inherit->parent_offset-1;
+	    ref_push_program(in->prog);
 	  }else{
-	    i=inherit->parent_identifier;
-	    o=inherit->parent;
-	  }
-	  if(!o || !o->prog || i<0) break;
-	  inherit=INHERIT_FROM_INT(o->prog, i);
-	}
-	if(o && o->prog && i>=0)
-	{
-	  ref_push_object(o);
-	  sp[-1].subtype=i;
-	  sp[-1].type=T_FUNCTION;
-#ifdef PIKE_DEBUG
-	  if(program_from_svalue(sp-1) != in->prog)
-	    fatal("Programming error in inherit_list!\n");
-#endif
-	  q++;
-	  continue;
-	}
-      }
+	    tmp.o=par;
+	    tmp.parent_identifier=parid;
+	    tmp.inherit=INHERIT_FROM_INT(par->prog,parid);
 
-      if(in->parent && in->parent->prog)
-      {
-	ref_push_object(in->parent);
-	sp[-1].subtype=in->parent_identifier;
-	sp[-1].type=T_FUNCTION;
-#ifdef PIKE_DEBUG
-	if(program_from_svalue(sp-1) != in->prog)
-	  fatal("Programming error in inherit_list!\n");
-#endif
-      }else{
-	ref_push_program(in->prog);
+	    find_external_context(&tmp, in->parent_offset-1);
+	    ref_push_object(tmp.o);
+	    Pike_sp[-1].subtype=in->parent_identifier + 
+	      tmp.inherit->identifier_level;
+	    Pike_sp[-1].type=T_FUNCTION;
+	  }
+	}
+	break;
+
+	case -17:
+	  ref_push_object(in->parent);
+	  Pike_sp[-1].subtype=in->parent_identifier;
+	  Pike_sp[-1].type=T_FUNCTION;
+	  break;
+	  
+	case -18:
+	  if(par)
+	  {
+	    ref_push_object(par);
+	    Pike_sp[-1].subtype=parid;
+	    Pike_sp[-1].type=T_FUNCTION;
+	  }else{
+	    ref_push_program(in->prog);
+	  }
+	  break;
       }
       q++;
     }
   }
   f_aggregate(q);
 }
-
 
 void f_program_implements(INT32 args)
 {
