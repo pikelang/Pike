@@ -11,7 +11,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.47 2002/08/16 00:34:50 mast Exp $");
+RCSID("$Id: module_support.c,v 1.48 2002/09/12 12:23:02 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -307,16 +307,14 @@ int va_get_args(struct svalue *s,
 }
 
 PMOD_EXPORT int get_args(struct svalue *s,
-	     INT32 num_args,
-	     char *fmt, ...)
+			 INT32 num_args,
+			 char *fmt, ...)
 {
   va_list ptr;
   int ret;
   va_start(ptr, fmt);
   ret=va_get_args(s, num_args, fmt, ptr);
-#ifndef __TenDRA__
-  va_end(fmt);
-#endif /* !__TenDRA */
+  va_end(ptr);
   return ret;
 }
 
