@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.289 2003/09/30 20:43:28 mast Exp $
+|| $Id: file.c,v 1.290 2003/10/05 19:32:56 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.289 2003/09/30 20:43:28 mast Exp $");
+RCSID("$Id: file.c,v 1.290 2003/10/05 19:32:56 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2502,9 +2502,13 @@ static void file_pipe(INT32 args)
   int i = 0;
 
   int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
+  int reverse;
 
   check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
   if(args) type = Pike_sp[-args].u.integer;
+
+  reverse = type & fd_REVERSE;
+  type &= ~fd_REVERSE;
 
   close_fd();
   pop_n_elems(args);
@@ -2517,6 +2521,11 @@ static void file_pipe(INT32 args)
     {
       i=fd_pipe(&inout[0]);
       if (i >= 0) {
+	if (type & fd_REVERSE) {
+	  int tmp = inout[0];
+	  inout[0] = inout[1];
+	  inout[1] = tmp;
+	}
 	type=PIPE_CAPABILITIES;
 	break;
       }
@@ -2565,8 +2574,18 @@ static void file_pipe(INT32 args)
     errno = ERRNO;
     push_int(0);
   }
-  else
+  else if (reverse) 
   {
+    init_fd(inout[1],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
+	    fd_query_properties(inout[1], type));
+
+    my_set_close_on_exec(inout[1],1);
+    my_set_close_on_exec(inout[0],1);
+    FD=inout[0];
+
+    ERRNO=0;
+    push_object(file_make_object_from_fd(inout[0], (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE,type));
+  } else {
     init_fd(inout[0],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
 	    fd_query_properties(inout[0], type));
 
@@ -3584,6 +3603,11 @@ void file_set_notify(INT32 args) {
  *! Document this constant.
  */
 
+/*! @decl constant PROP_REVERSE
+ *! @fixme
+ *! Document this constant.
+ */
+
 /*! @decl constant PROP_IPC
  *! @fixme
  *! Document this constant.
@@ -3811,6 +3835,7 @@ PIKE_MODULE_INIT
   add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
   add_integer_constant("PROP_BUFFERED",fd_BUFFERED,0);
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
+  add_integer_constant("PROP_REVERSE",fd_REVERSE,0);
 
   add_integer_constant("PROP_IS_NONBLOCKING", FILE_NONBLOCKING, 0);
 
