@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.14 2002/11/15 05:07:21 nilsson Exp $
+// $Id: EXIF.pmod,v 1.15 2002/11/15 06:16:15 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -11,6 +11,8 @@
 // http://www.ba.wakwak.com/~tsuruzoh/Computer/Digicams/exif-e.html
 // http://www.pima.net/standards/it10/PIMA15740/exif.htm
 // http://tsc.jeita.or.jp/WTO-01.htm
+// http://www.exif.org/
+// http://www.dicasoft.de/casiomn.htm
 
 static void add_field(mapping m, string field,
 		      mapping|array alts,
@@ -440,9 +442,13 @@ static mapping CASIO_MAKERNOTE = ([
   0x0001:       ({"MN_RecordingMode",           "MAP",
 		  ([ 1:"Single Shutter",
 		     2:"Panorama",
+		     7:"Panorama",
 		     3:"Night Scene",
+		     10:"Night Scene",
 		     4:"Portrait",
-		     5:"Landscape" ]) }),
+		     15:"Portrait",
+		     5:"Landscape",
+		     16:"Landscape" ]) }),
   0x0002:       ({"MN_Quality",                 "MAP",
 		  ([ 1:"Economy",
 		     2:"Normal",
@@ -701,7 +707,11 @@ static mapping TAG_INFO = ([
 		      "NIKON_E990":  ({"TAGS", NIKON_990_MAKERNOTE}),
 		      "NIKON":  ({"TAGS", NIKON_990_MAKERNOTE}),
 		      "Canon":  ({"TAGS", CANON_D30_MAKERNOTE}),
-		      "": ({ 0,([]) }) ]) }),
+		      "FUJIFILM": ({"TAGS", FUJIFILM_MAKERNOTE}),
+		      "OLYMPUS DIGITAL CAMERA": ({"TAGS", OLYMPUS_MAKERNOTE}),
+		      "SANYO DIGITAL CAMERA": ({"TAGS", SANYO_MAKERNOTE}),
+		      "CASIO": ({"TAGS", CASIO_MAKERNOTE}),
+		      "": ({ 0, ([]) }) ]) }),
   0x9286:       ({"UserComment",                0, ([]) }),
   0x9290:       ({"SubSecTime",                 0, ([]) }),
   0x9291:       ({"SubSecTimeOriginal",         0, ([]) }),
@@ -831,7 +841,7 @@ static mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
       [tag_format,tag_map]=tag_map[""];
   }
   
-  [string tag_type_name, int tag_type_len] = 
+  [string tag_type_name, int tag_type_len] =
      TAG_TYPE_INFO[tag_type];
 
   int tag_len=tag_type_len * tag_count;
