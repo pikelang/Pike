@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.41 2003/09/23 17:49:49 mast Exp $
+|| $Id: charsetmod.c,v 1.42 2004/07/24 22:55:32 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.41 2003/09/23 17:49:49 mast Exp $");
+RCSID("$Id: charsetmod.c,v 1.42 2004/07/24 22:55:32 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -30,7 +30,7 @@ RCSID("$Id: charsetmod.c,v 1.41 2003/09/23 17:49:49 mast Exp $");
 #define SIGNED
 #endif
 
-p_wchar1 *misc_charset_lookup(char *name, int *rlo, int *rhi);
+p_wchar1 *misc_charset_lookup(const char *name, int *rlo, int *rhi);
 
 static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
 static struct program *utf1_program = NULL, *utf1e_program = NULL;

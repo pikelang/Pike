@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.h,v 1.6 2003/12/17 00:15:44 marcus Exp $
+|| $Id: iso2022.h,v 1.7 2004/07/24 22:55:32 nilsson Exp $
 */
 
 #include "global.h"
@@ -30,5 +30,5 @@ typedef p_wchar1 UNICHAR;
 struct charset_def {
   char const *name;
   UNICHAR const *table;
-  int mode;
+  const int mode;
 };

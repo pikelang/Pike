@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.32 2004/04/14 12:07:50 grubba Exp $
+|| $Id: iso2022.c,v 1.33 2004/07/24 22:55:32 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.32 2004/04/14 12:07:50 grubba Exp $");
+RCSID("$Id: iso2022.c,v 1.33 2004/07/24 22:55:32 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -31,7 +31,7 @@ static struct program *iso2022dec_program = NULL;
 static struct program *iso2022enc_program = NULL;
 
 struct gdesc {
-  UNICHAR *transl;
+  const UNICHAR *transl;
   int mode, index;
 };
 
@@ -61,13 +61,13 @@ struct iso2022enc_stor {
 extern struct charset_def charset_map[];
 extern int num_charset_def;
 
-extern UNICHAR *iso2022_94[];
-extern UNICHAR *iso2022_96[];
-extern UNICHAR *iso2022_9494[];
-extern UNICHAR *iso2022_9696[];
+extern const UNICHAR *iso2022_94[];
+extern const UNICHAR *iso2022_96[];
+extern const UNICHAR *iso2022_9494[];
+extern const UNICHAR *iso2022_9696[];
 
-static UNICHAR **transltab[4] = { iso2022_94, iso2022_96,
-				  iso2022_9494, iso2022_9696 };
+static const UNICHAR **transltab[4] = { iso2022_94, iso2022_96,
+					iso2022_9494, iso2022_9696 };
 
 static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
 			  struct iso2022_stor *s, struct gdesc *g)
@@ -371,7 +371,7 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 		       "unsupported by encoding.\n",			\
 		       (unsigned long) ch, (pos));
 
-static unsigned INT32 jp2_tab[] = {
+static const unsigned INT32 jp2_tab[] = {
   0x000003c0,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
   0xffffff00,0x000003ff,0x00000000,0x00000000,0x00000000,0x00000000,
   0x00000000,0x00000000,0x00000000,0xfffc0000,0x000010ff,0x0000301c,
@@ -870,7 +870,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  /* Need to switch to another map */
 
 	  int mode=0, index=0, ch, ch2;
-	  UNICHAR *ttab = NULL, *ttt;
+	  const UNICHAR *ttab = NULL, *ttt;
 	  p_wchar1 *rmap = NULL;
 
 	  if(s->variant)
