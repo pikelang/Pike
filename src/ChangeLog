@@ -1,5 +1,8 @@
 Mon Sep 23 01:20:00 1996  Fredrik Hubinette  <hubbe@morpheus.infovav.se>
 
+	* testsuite genration changed so every module has it's own
+	  testsuite
+	* file module: fatal strerror bug fixed
 	* mapping.c: bug for destructed objects fixed
 	* builtin_functions.c (f_crypt): workaround for sun CC included
 	* v0.1 released
