@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.55 2001/04/04 13:33:29 leif Exp $
+ * $Id: oracle.c,v 1.56 2001/10/01 14:34:04 leif Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.55 2001/04/04 13:33:29 leif Exp $");
+RCSID("$Id: oracle.c,v 1.56 2001/10/01 14:34:04 leif Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -111,7 +111,7 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 }while(0)
 
 #define UNLOCK(X) do { \
-   fprintf(stderr,"unocking " #X "      from %s:%d\n",__FUNCTION__,__LINE__); \
+   fprintf(stderr,"unlocking " #X "      from %s:%d\n",__FUNCTION__,__LINE__);\
    mt_unlock( & (X) ); \
 }while(0)
 
@@ -362,6 +362,9 @@ struct dbcon
   OCISvcCtx *context;
 
   DEFINE_MUTEX(lock);
+
+  int resultobject_busy;
+  int timeout_limit;
 };
 
 static void init_dbcon_struct(struct object *o)
@@ -374,6 +377,7 @@ static void init_dbcon_struct(struct object *o)
 #endif
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
+  THIS_DBCON->timeout_limit = 30; /* default value */
   mt_init( & THIS_DBCON->lock );
 }
 
@@ -449,6 +453,7 @@ static void init_dbresult_struct(struct object *o)
 #endif
   THIS_RESULT->dbcon_lock=0;
   THIS_RESULT->dbquery_lock=0;
+  THIS_RESULT_DBCON->resultobject_busy = 1;
 }
 
 static void exit_dbresult_struct(struct object *o)
@@ -461,6 +466,7 @@ static void exit_dbresult_struct(struct object *o)
   if(THIS_RESULT->dbquery_lock && dbquery)
   {
     struct dbcon *dbcon=THIS_RESULT_DBCON;
+    dbcon->resultobject_busy = 0;
     UNLOCK( dbquery->lock );
     if(THIS_RESULT->dbcon_lock && dbcon)
     {
@@ -1288,6 +1294,28 @@ static void f_oracle_create(INT32 args)
 
   return;
 }
+
+static void f_dbcon_timeout_limit(INT32 args)
+{
+  struct dbcon *dbcon=THIS_DBCON;
+  int           new_timeout;
+  /* No arguments: get timeout. One argument: set timeout. */
+#ifdef ORACLE_DEBUG
+  fprintf(stderr, "%s, dbcon=%p, args=%d\n", __FUNCTION__, dbcon, args);
+#endif
+  if (args)
+  {
+    get_all_args("Oracle->timeout", args, "%i", &new_timeout);
+    if (new_timeout < 0)
+      Pike_error("Negative timeout specified.\n");
+    if (new_timeout > 3600) /* max one hour */
+      new_timeout = 3600;
+    dbcon->timeout_limit = new_timeout;
+  }
+  pop_n_elems(args);
+  push_int(dbcon->timeout_limit);
+}
+
 static void f_compile_query_create(INT32 args)
 {
   int rc;
@@ -1304,9 +1332,25 @@ static void f_compile_query_create(INT32 args)
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"f_compile_query_create: dbquery: %p\n",dbquery);
-  fprintf(stderr,"         dbcon:   %p\n",dbcon);
-  fprintf(stderr,"  error_handle: %p\n",dbcon->error_handle);
+  fprintf(stderr,"            dbcon: %p\n",dbcon);
+  fprintf(stderr,"     error_handle: %p\n",dbcon->error_handle);
+  fprintf(stderr,"resultobject_busy: %d\n", dbcon->resultobject_busy);
 #endif
+
+  if (dbcon->resultobject_busy)
+  {
+    int t, timeout_limit = threads_disabled ? 0 : dbcon->timeout_limit;
+
+    for(t = 0; t < timeout_limit && dbcon->resultobject_busy; ++t)
+    {
+      THREADS_ALLOW();
+      sleep(1);
+      THREADS_DISALLOW();
+    }
+    if (dbcon->resultobject_busy)
+      Pike_error("Oracle connection busy; previous result object "
+		 "still active.\n");
+  }
 
   THREADS_ALLOW();
   LOCK(dbcon->lock);
@@ -1351,7 +1395,11 @@ static void f_compile_query_create(INT32 args)
   }
   
   THREADS_DISALLOW();
+#ifdef ORACLE_DEBUG
+  fprintf(stderr, "    Unlock; rc = %d, OCI_SUCCESS = %d\n", rc, OCI_SUCCESS);
+#endif
   UNLOCK(dbcon->lock);
+
 
   if(rc != OCI_SUCCESS)
     ora_error_handler(dbcon->error_handle, rc, 0);
@@ -1906,7 +1954,7 @@ void pike_module_init(void)
     0, 0, 0, 0) != OCI_SUCCESS)
   {
 #ifdef ORACLE_DEBUG
-    fprintf(stderr,"OCIInitizlie failed\n");
+    fprintf(stderr,"OCIInitialize failed\n");
 #endif
     return;
   }
@@ -1971,6 +2019,9 @@ void pike_module_init(void)
       compile_query_program->flags|=PROGRAM_USES_PARENT;
 #endif
     }
+
+    ADD_FUNCTION("timeout_limit", f_dbcon_timeout_limit,
+		 tFunc(tOr(tInt,tVoid), tInt), ID_PUBLIC);
 
     ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid),tVoid), ID_PUBLIC);
     
