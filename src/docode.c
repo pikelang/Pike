@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.28 1998/01/29 02:47:43 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.29 1998/01/30 20:04:31 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -481,7 +481,7 @@ static int do_docode2(node *n,int flags)
   case F_NOT:
   case F_COMPL:
   case F_NEGATE:
-    fatal("Optimizer errror.\n");
+    fatal("Optimizer error.\n");
 
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
@@ -712,8 +712,15 @@ static int do_docode2(node *n,int flags)
       {
 	yyerror("No call_function efun.");
       }else{
-	tmp1=store_constant(& foo->u.sval, 1);
-	emit(F_APPLY, tmp1);
+	if(foo->u.sval.type == T_FUNCTION &&
+	   foo->u.sval.subtype == FUNCTION_BUILTIN &&
+	   foo->u.sval.u.efun->function == f_call_function)
+	{
+	  emit2(F_CALL_FUNCTION);
+	}else{
+	  tmp1=store_constant(& foo->u.sval, 1);
+	  emit(F_APPLY, tmp1);
+	}
       }
       free_node(foo);
       return 1;
