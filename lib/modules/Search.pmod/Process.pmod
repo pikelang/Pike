@@ -1,6 +1,6 @@
 static string pike_binary = replace( getenv("PIKE"), "\\", "/");
 
-class Indexer(Variable wa_var, void|function get_sb_workarea_view_url)
+class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configuration conf)
 {
   // Provided API
   public function done_cb;
@@ -12,8 +12,7 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url)
   public string log_db;
 
   static string userpass;
-  static Configuration conf;
-
+  
   void setup_conf()
   {
     string cf = (wa_var->query()/"/")[0];
@@ -22,7 +21,7 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url)
 	conf = _conf;
   }
   
-
+  
   int ping()
   {
     catch { // throws if crawler_remote is 0 or not really running.
@@ -50,11 +49,11 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url)
   {
     Standards.URI url = Standards.URI(_url);
     Standards.URI sb_url;
-    
     if(url->scheme=="sitebuilder" || url->scheme=="intrawise")
     {
-      if(url->scheme=="intrawise")
-	userpass = "Administrator:admin"; // Temporary
+        if(url->scheme=="intrawise")
+	    userpass = "Administrator:admin"; // Temporary
+      werror("userpass: %O\n", userpass);
       if(userpass && conf)
         headers["Authorization"]=sprintf("Basic %s", MIME.encode_base64(userpass));
       headers["Request-Metadata"]="";
@@ -70,7 +69,6 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url)
           hostcache[sb_url->host] = sb_url->host;
       }
       sb_url->host = hostcache[sb_url->host];
-      
       return ({ (string)sb_url, headers });
     }
     else
