@@ -66,7 +66,7 @@ _typeof
     "`|",
     "`~",   (All these should be checked for updates in 5)
 	abs
-all_threads (link to threads)
+	all_threads (link to threads)
 	atan2
 	atexit -fixed by hubbe
 (chmod fixed /Mirar) 	(Move to system module? -Hubbe)
@@ -122,9 +122,9 @@ setuid		need ref
 symlink
 syslog
 this_program (Well, not really a function. Don't know where it belongs. /mast)
-this_thread - doc exists, ptr from global list to module needed?
-thread_create - doc exists, ptr from global list to module needed?
-thread_local - doc exists, ptr from global list to module needed?
+	this_thread - doc exists, ptr from global list to module needed?
+	thread_create - doc exists, ptr from global list to module needed?
+	thread_local - doc exists, ptr from global list to module needed?
 thread_set_concurrency
 umask
 uname
@@ -5413,19 +5413,23 @@ a slow machine available for the server.
 
 <module name=Thread>
 <chapter title="Threads">
-Threads are used to run several Pike functions at the same time without having to start
-several Pike processes. Using threads often simplifies coding and because the
-threads are within the same process, data can be shared or sent to other threads
-very fast. Threads are not supported on all systems, you may test if you have
-thread support with the preprocessor construction <tt>#if constant(thread_create)</tt>.
-Pike needs POSIX or UNIX thread support when compiled to support threads.
+Threads are used to run several Pike functions at the same time
+without having to start several Pike processes. Using threads often
+simplifies coding and because the threads are within the same process,
+data can be shared or sent to other threads very fast. Threads are not
+supported on all systems, you may test if you have thread support with
+the preprocessor construction <tt>#if
+constant(Thread.thread_create)</tt>. Pike needs POSIX or UNIX thread
+support when compiled to support threads.
 <p>
 
 <section title="Starting a thread">
-Starting a thread is very easy. You simply call <tt>thread_create</tt> with a function
-pointer and any arguments it needs and that function will be executed in a
-separate thread. The function <tt>thread_create</tt> will return immediately and both
-the calling function and the called function will execute at the same time. Example:
+Starting a thread is very easy. You simply call
+<tt>Thread.thread_create</tt> with a function pointer and any
+arguments it needs and that function will be executed in a separate
+thread. The function <tt>Thread.thread_create</tt> will return
+immediately and both the calling function and the called function will
+execute at the same time. Example:
 <example language=pike>
 void foo(int x)
 {
@@ -5438,8 +5442,8 @@ void foo(int x)
 
 int main()
 {
-  thread_create(foo, 2);
-  thread_create(foo, 3);
+  Thread.thread_create(foo, 2);
+  Thread.thread_create(foo, 3);
   foo(1);
 }
 </example>
@@ -5495,7 +5499,7 @@ void worker(string lookfor)
 int main(int argc, array(string) argv)
 {
   for(int e=0;e&lt;4;e++)          // Start workers
-    thread_create(worker,argv[e]);
+    Thread.thread_create(worker,argv[e]);
   for(int e=2;e&lt;argc;e++)       // Feed workers
     Fifo::write(argv[1]);
   for(int e=0;e&lt;4;e++)          // Tell workers to die
@@ -5531,7 +5535,7 @@ This section describes all thread-related functions and classes.
 
 <function name=thread_create title="create a thread">
 <man_syntax>
-object thread_create(function <I>f</I>, mixed ... <I>args</I>);<br>
+Thread.Thread thread_create(function <I>f</I>, mixed ... <I>args</I>);<br>
 </man_syntax>
 <man_description>
 This function creates a new thread which will run simultaneously
@@ -5540,7 +5544,7 @@ to the rest of the program. The new thread will call the function
 to exist. All Pike functions are 'thread safe' meaning that running
 a function at the same time from different threads will not corrupt
 any internal data in the Pike process. The returned value will be
-the same as the return value of this_thread() for the new thread.
+the same as the return value of Thread.this_thread() for the new thread.
 </man_description>
 <man_note>
 This function is only available on systems with POSIX or UNIX threads support.
@@ -5551,7 +5555,7 @@ This function is only available on systems with POSIX or UNIX threads support.
 
 <function name=this_thread title="return thread id">
 <man_syntax>
-object this_thread();<br>
+Thread.Thread this_thread();
 </man_syntax>
 <man_description>
 This function returns the object that identifies this thread.
@@ -5561,7 +5565,7 @@ This function returns the object that identifies this thread.
 
 <function name=all_threads title="return all thread ids">
 <man_syntax>
-array(object) all_threads();<br>
+array(Thread.Thread) all_threads();
 </man_syntax>
 <man_description>
 This function returns an array with the thread ids of all threads.
@@ -5891,34 +5895,35 @@ This function returns how many values are currently in the queue.
 
 
 
-<class name=thread_local title="Thread local variable class">
+<class name=Local title="Thread local variable class">
 <man_description>
 This class allows you to have variables which are separate for each
 thread that uses it. It has two methods: get and set. A value stored
-in an instance of thread_local can only be retreived by that same thread.
+in an instance of Thread.Local can only be retreived by that same
+thread.
 </man_description>
 
 
-<method name=thread_local.set title="Set the thread_local value">
+<method name=set title="Set the thread local value">
 <man_syntax>
 mixed set(mixed <i>value</i>);
 </man_syntax>
 <man_description>
 This sets the value returned by the <tt>get</tt> method. Note that
-this value can only be retreived by the same thread. Calling this method
-does not affect the value returned by <tt>get</tt> when called by another
-thread.
+this value can only be retreived by the same thread. Calling this
+method does not affect the value returned by <tt>get</tt> when it's
+called by another thread. This function returns its argument.
 </man_description>
 </method>
 
 
-<method name=thread_local.get title="Get the thread_local value">
+<method name=get title="Get the thread local value">
 <man_syntax>
-mixed set(mixed <i>value</i>);
+mixed get();
 </man_syntax>
 <man_description>
-This returns the value prevoiusly stored in the thread_local by the
-<tt>set</tt> method by this thread.
+This returns the value prevoiusly stored in the Thread.Local object by
+the <tt>set</tt> method by this thread.
 </man_description>
 </method>
 </class>
@@ -6016,7 +6021,7 @@ int main(int argc, array(string) argv)
   }
 
   // Start worker threads
-  for(int e=1;e&lt;THREADS;e++) thread_create(worker,accept);
+  for(int e=1;e&lt;THREADS;e++) Thread.thread_create(worker,accept);
   worker(accept);
 }
 </example>
@@ -11395,6 +11400,20 @@ add_constant
 
 
 
+<function name=all_threads title="return all thread objects">
+<man_syntax>
+array(Thread.Thread) all_threads();
+</man_syntax>
+<man_description>
+See <link to=Thread.all_threads>Thread.all_threads</link>.
+</man_description>
+<man_see>
+Thread.all_threads
+</man_see>
+</function>
+
+
+
 <function name=allocate title="allocate an array">
 <man_syntax>
 array allocate(int <I>size</I>);
@@ -13922,6 +13941,48 @@ object this_object();
 <man_description>
 This function returns the object we are currently evaluating in.
 </man_description>
+</function>
+
+
+
+<function name=this_thread title="return the object for the current thread">
+<man_syntax>
+Thread.Thread this_thread();
+</man_syntax>
+<man_description>
+See <link to=Thread.this_thread>Thread.this_thread</link>.
+</man_description>
+<man_see>
+Thread.this_thread
+</man_see>
+</function>
+
+
+
+<function name=thread_create title="create a new thread">
+<man_syntax>
+Thread.Thread thread_create(function <I>f</I>, mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
+See <link to=Thread.thread_create>Thread.thread_create</link>.
+</man_description>
+<man_see>
+Thread.thread_create
+</man_see>
+</function>
+
+
+
+<function name=thread_local title="thread local storage">
+<man_syntax>
+Thread.Local thread_local();
+</man_syntax>
+<man_description>
+This is actually a class. See <link to=Thread.Local>Thread.Local</link>.
+</man_description>
+<man_see>
+Thread.Local
+</man_see>
 </function>
 
 
