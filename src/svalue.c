@@ -804,7 +804,7 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 #ifdef DEBUG
 void check_short_svalue(union anything *u,TYPE_T type)
 {
-  static inside=0;
+  static int inside=0;
 
   check_type(type);
   check_refs2(u,type);
