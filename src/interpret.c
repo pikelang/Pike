@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.137 2000/03/24 01:24:49 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.138 2000/04/04 00:26:09 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1203,7 +1203,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame->args = 0;
   new_frame->num_args=0;
   new_frame->num_locals=0;
-  new_frame->fun = -1;
+  new_frame->fun = o->prog->num_identifier_references?o->prog->num_identifier_references-1:0;
   new_frame->pc = 0;
   new_frame->current_storage=o->storage;
   new_frame->context.parent=0;
