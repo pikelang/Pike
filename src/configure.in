@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.122 1997/09/22 11:09:27 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.123 1997/09/26 01:27:44 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -197,7 +197,10 @@ if test $cflags_is_set = no; then
   # IRIX
   # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
   # AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt)
-  AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32)
+
+  # -n32 moved to smartlink so it will affekt cc as well as linker
+  # this way the user can override it by setting LDFLAGS and/or CFLAGS
+  # AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn)
   if test x$with_debug = xyes ; then

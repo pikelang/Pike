@@ -5,9 +5,15 @@ shift
 RPATH=""
 LDOPTS=""
 
-#Special for HP-UX
+#Special hack for HP-UX
 LD_PXDB=/dev/null
 export LD_PXDB
+
+#Special hack for SGI
+if test "${SGI_ABI:-}" = ""; then
+  SGI_ABI=-n32
+fi
+export SGI_API
 
 #set -x
 
@@ -58,11 +64,23 @@ if test x$# != x0 ; then
     shift
   done
 
-  if test -f /usr/bin/uname ; then
+  if test -x /usr/bin/uname ; then
     UNAME=`/usr/bin/uname -sr`
-   else
+  elif test -x /bin/uname ; then
+    UNAME=`/bin/uname -sr`
+  else
     UNAME=unknown
-   fi
+  fi
+
+  case "$LINKER $LDOPTS " in
+    *\ -c\ * | cpp\ * | *\ -E\ *)
+      LINKING=no
+    ;;
+
+    *)
+      LINKING=maybe
+    ;;
+  esac
 
   case "$UNAME" in
    OSF1\ V4.*)
@@ -70,6 +88,11 @@ if test x$# != x0 ; then
    ;;
    SunOS\ 5.*)
      LDOPTS="$LDOPTS -R$RPATH"
+   ;;
+   Linux\ 2.*)
+     if test x$LINKING != xno -a "x$RPATH" != x ; then
+      LDOPTS="$LDOPTS -Wl,-rpath,$RPATH"
+     fi
    ;;
    *)
     LD_LIBRARY_PATH="$RPATH"
