@@ -1,16 +1,18 @@
-/* $Id: iff.c,v 1.1 1999/04/06 17:24:32 marcus Exp $ */
+/* $Id: iff.c,v 1.2 1999/04/09 16:18:42 marcus Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.1 1999/04/06 17:24:32 marcus Exp $");
+RCSID("$Id: iff.c,v 1.2 1999/04/09 16:18:42 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
+#include "array.h"
 #include "error.h"
+#include "operators.h"
 
 
 static INT32 low_parse_iff(unsigned char *data, INT32 len, unsigned char *hdr,
@@ -59,4 +61,52 @@ void parse_iff(char *id, unsigned char *data, INT32 len,
     error("FORM is not %s\n", id);
 
   low_parse_iff(data+12, len-12, data, m, stopchunk);
+}
+
+static struct pike_string *low_make_iff(struct svalue *s)
+{
+  INT32 len;
+  unsigned char lenb[4];
+
+  if(s->type != T_ARRAY || s->u.array->size != 2 ||
+     s->u.array->item[0].type != T_STRING ||
+     s->u.array->item[1].type != T_STRING)
+    error("invalid chunk\n");
+
+  add_ref(s->u.array);
+  push_array_items(s->u.array);
+  len = sp[-1].u.string->len;
+  lenb[0] = (len & 0xff000000)>>24;
+  lenb[1] = (len & 0x00ff0000)>>16;
+  lenb[2] = (len & 0x0000ff00)>>8;
+  lenb[3] = (len & 0x000000ff);
+  push_string(make_shared_binary_string(lenb, 4));
+  stack_swap();
+  if(len&1) {
+    push_string(make_shared_binary_string("\0", 1));
+    f_add(4);
+  } else
+    f_add(3);
+  return (--sp)->u.string;
+}
+
+struct pike_string *make_iff(char *id, struct array *chunks)
+{
+  struct pike_string *res;
+  INT32 i;
+
+  push_text("FORM");
+  push_text(id);
+  if(chunks->size > 0) {
+    for(i=0; i<chunks->size; i++)
+      push_string(low_make_iff(&chunks->item[i]));
+    if(chunks->size > 1)
+      f_add(chunks->size);
+  } else
+    push_text("");
+  f_add(2);
+  f_aggregate(2);
+  res = low_make_iff(&sp[-1]);
+  pop_stack();
+  return res;
 }
