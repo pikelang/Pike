@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.89 2003/08/20 16:41:23 mast Exp $
+|| $Id: pike_types.h,v 1.90 2003/09/04 15:30:06 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -275,7 +275,7 @@ struct pike_type *check_call(struct pike_type *args,
 struct pike_type *zzap_function_return(struct pike_type *t, INT32 id);
 struct pike_type *get_type_of_svalue(struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
-char *get_name_of_type(int t);
+char *get_name_of_type(TYPE_T t);
 void cleanup_pike_types(void);
 void cleanup_pike_type_table(void);
 int type_may_overload(struct pike_type *type, int lfun);

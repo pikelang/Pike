@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.221 2003/08/20 16:41:23 mast Exp $
+|| $Id: pike_types.c,v 1.222 2003/09/04 15:30:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.221 2003/08/20 16:41:23 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.222 2003/09/04 15:30:06 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -136,7 +136,7 @@ struct pike_type *debug_compiler_pop_type(void)
   }
 }
 
-char *get_name_of_type(int t)
+char *get_name_of_type(TYPE_T t)
 {
   switch(t)
   {
