@@ -1,8 +1,10 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.31 2004/10/21 21:07:41 grubba Exp $ */
+/* $Id: socktest.pike,v 1.32 2005/01/14 20:46:11 grubba Exp $ */
 
 // #define OOB_DEBUG
+
+//#define SOCK_DEBUG
 
 import Stdio;
 import String;
@@ -10,6 +12,12 @@ import String;
 #if !efun(strerror)
 #define strerror(X) ("ERRNO = "+(string)(X))
 #endif
+
+#ifdef SOCK_DEBUG
+#define DEBUG_WERR(X...)	werror(X)
+#else /* !SOCK_DEBUG */
+#define DEBUG_WERR(X...)
+#endif /* SOCK_DEBUG */
 
 //int idnum;
 //mapping in_cleanup=([]);
@@ -68,7 +76,7 @@ class Socket {
     if(input_finished && output_finished)
     {
       finish();
-      //werror("Closing fd:%O\n", query_fd());
+      DEBUG_WERR("Closing fd:%O\n", query_fd());
       close();
       destruct(this_object());
     }
@@ -77,7 +85,7 @@ class Socket {
   void close_callback()
   {
     int err=errno();
-    //werror("close_callback[%O]\n", query_fd());
+    DEBUG_WERR("close_callback[%O]\n", query_fd());
     got_callback();
     if(input_buffer != expected_data)
     {
@@ -106,11 +114,12 @@ class Socket {
   void write_callback()
   {
     got_callback();
-    //werror("write_callback[%O]: output_buffer: %O\n", query_fd(), output_buffer);
+    DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
+	       query_fd(), output_buffer);
     if(sizeof(output_buffer))
     {
       int tmp=write(output_buffer);
-      //werror("write_callback(): Wrote %d bytes.\n", tmp, output_buffer);
+      DEBUG_WERR("write_callback(): Wrote %d bytes.\n", tmp, output_buffer);
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
@@ -129,7 +138,7 @@ class Socket {
   void read_callback(mixed id, string foo)
   {
     got_callback();
-    //werror("read_callback[%O]: Got %O\n", query_fd(), foo);
+    DEBUG_WERR("read_callback[%O]: Got %O\n", query_fd(), foo);
     input_buffer+=foo;
   }
 
@@ -225,7 +234,9 @@ int oob_sent;
 
 void send_oob0()
 {
-  //werror("S");
+#ifdef OOB_DEBUG
+  werror("S");
+#endif
   got_callback();
   expected = sprintf("%c", random(256));
   oob_originator->write_oob(expected);
@@ -235,7 +246,9 @@ void send_oob0()
 
 void got_oob1(mixed ignored, string got)
 {
-  //werror("G");
+#ifdef OOB_DEBUG
+  werror("G");
+#endif
   got_callback();
   if (got != expected) {
     werror(sprintf("loopback: Received unexpected oob data "
@@ -248,7 +261,9 @@ void got_oob1(mixed ignored, string got)
 
 void send_oob1()
 {
-  //werror("s");
+#ifdef OOB_DEBUG
+  werror("s");
+#endif
   got_callback();
   oob_loopback->write_oob(expected);
   oob_loopback->set_write_oob_callback(0);
@@ -257,7 +272,9 @@ void send_oob1()
 
 void got_oob0(mixed ignored, string got)
 {
-  //werror("s");
+#ifdef OOB_DEBUG
+  werror("s");
+#endif
   got_callback();
   if (got != expected) {
     werror(sprintf("loopback: Received unexpected oob data "
@@ -266,7 +283,13 @@ void got_oob0(mixed ignored, string got)
     exit(1);
   }
   oob_sent++;
-  if (oob_sent > 511) {
+  if (oob_sent >
+#ifdef OOB_DEBUG
+      5
+#else /* !OOB_DEBUG */
+      511
+#endif /* OOB_DEBUG */
+      ) {
     oob_loopback->set_blocking();
     oob_loopback->close();
     oob_originator->set_blocking();
