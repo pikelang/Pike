@@ -31,13 +31,17 @@ array(Standards.URI) filter_and_extract_links(Search.Database.Base db,
 					      string|Standards.URI uri,
 					      void|string language,
 					      string|Stdio.File data,
-					      string content_type)
+					      string content_type,
+					      mapping headers,
+					      string default_charset )
 {
   Search.Filter.Base filter=Search.get_filter(content_type);
   if(!filter)
     throw("No indexer for content type "+content_type);
 
-  Search.Filter.Base.Output filteroutput=filter->filter(uri, data, content_type);
+  Search.Filter.Base.Output filteroutput=
+    filter->filter(uri, data, content_type,
+		   headers, default_charset);
   index_document(db, uri, language, filteroutput->fields, filteroutput->uri_anchors);
   return filteroutput->links;
 }
