@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.9 2005/03/24 14:46:54 mast Exp $
+// $Id: module.pmod,v 1.10 2005/03/29 17:40:42 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -125,18 +125,18 @@ string ldap_decode_string (string str)
 //! @seealso
 //!   @[ldap_encode_string]
 {
-  string orig_str = str, res = "";
+  string rest = str, res = "";
   while (1) {
-    sscanf (str, "%[^\\]%s", string val, str);
+    sscanf (rest, "%[^\\]%s", string val, rest);
     res += val;
-    if (str == "") break;
-    // str[0] == '\\' now.
-    if (sscanf (str, "\\%1x%1x%s", int high, int low, str) == 3)
+    if (rest == "") break;
+    // rest[0] == '\\' now.
+    if (sscanf (rest, "\\%1x%1x%s", int high, int low, rest) == 3)
       // Use two %1x to force reading of exactly two hex digits;
       // something like %2.2x is currently not supported.
       res += sprintf ("%c", (high << 4) + low);
     else
-      ERROR ("Invalid backslash escape %O in string %O.\n", str[..2], orig_str);
+      ERROR ("Invalid backslash escape %O in string %O.\n", rest[..2], str);
   }
   return res;
 }
@@ -159,6 +159,147 @@ string encode_dn_value (string str)
   if (has_prefix (str, " ") || has_prefix (str, "#"))
     str = "\\" + str;
   return str;
+}
+
+string canonicalize_dn (string dn, void|int strict)
+//! Returns the given distinguished name on a canonical form, so it
+//! reliably can be used in comparisons for equality. This means
+//! removing surplus whitespace, lowercasing attributes, writing
+//! attribute values on and sorting the RDN parts separated by "+".
+//!
+//! The returned string follows RFC 2253. The input string may
+//! use legacy LDAPv2 syntax and is treated according to section 4 in
+//! RFC 2253.
+//!
+//! If @[strict] is set then errors will be thrown if the given DN is
+//! syntactically invalid. Otherwise the invalid parts remains
+//! untouched in the result.
+//!
+//! @note
+//! The result is not entirely canonical since no conversion is done
+//! from or to hexadecimal BER encodings of the attribute values. It's
+//! assumed that the input already has the suitable value encoding
+//! depending on the attribute type.
+//!
+//! @note
+//! No UTF-8 encoding or decoding is done. The function can be used on
+//! both encoded and decoded input strings, and the result will be
+//! likewise encoded or decoded.
+{
+  string rest = dn, tmp_rest = rest, res = "";
+  array(string) last_rdn = ({});
+
+parse_loop:
+  while (1) {
+    // Parse the attribute.
+
+    string attr;
+    if (sscanf (tmp_rest, "%*[ ]%[-A-Za-z0-9.]%*[ ]=%*[ ]%s", attr, tmp_rest) != 5)
+      break parse_loop;
+    if (strict && attr == "")
+      break parse_loop;
+    attr = lower_case (attr);
+    if (sscanf (attr, "oid.%*[0-9.]%*c") == 1)
+      attr = attr[sizeof ("oid.")..];
+
+    // Parse the value.
+
+    string val;
+
+    if (has_prefix (tmp_rest, "#")) {
+      sscanf (tmp_rest, "#%[0-9A-Fa-f]%s", val, tmp_rest);
+      if (strict && val == "")
+	break parse_loop;
+      // Slightly lenient: We don't check for an even number of hex chars.
+      last_rdn += ({attr + "=#" + val});
+      rest = tmp_rest;
+    }
+
+    else {
+      string val_fmt;
+      int quoted = has_prefix (tmp_rest, "\"");
+
+      if (quoted) {
+	val_fmt = "%[^\\\" ]%[ ]%s";
+	tmp_rest = tmp_rest[1..];
+      }
+      else
+	val_fmt = "%[^,=+<>#;\\\" ]%[ ]%s";
+
+      val = "";
+      string ws = "";
+      while (1) {
+	sscanf (tmp_rest, val_fmt, string piece, ws, tmp_rest);
+	val += piece;
+	if (ws != "")
+	  while (1) {
+	    sscanf (tmp_rest, val_fmt, piece, string new_ws, tmp_rest);
+	    if (piece == "") break;
+	    val += ws + piece;
+	    ws = new_ws;
+	  }
+	if (!has_prefix (tmp_rest, "\\")) break;
+	val += ws;
+	if (sscanf (tmp_rest, "\\%1x%1x%s", int high, int low, tmp_rest) == 3)
+	  // Use two %1x to force reading of exactly two hex digits;
+	  // something like %2.2x is currently not supported.
+	  val += sprintf ("%c", (high << 4) + low);
+	else {
+	  string quoted;
+	  if (sscanf (tmp_rest, "\\%1s%s", quoted, tmp_rest) != 2)
+	    break parse_loop;
+	  if (strict && !(<",", "=", "+", "<", ">", "#", ";", "\\", "\"", " ">)[quoted])
+	    break parse_loop;
+	  val += quoted;
+	}
+      }
+
+      if (quoted) {
+	if (has_prefix (tmp_rest, "\"")) {
+	  val += ws;
+	  sscanf (tmp_rest, "\"%*[ ]%s", tmp_rest);
+	}
+	else
+	  break parse_loop;
+      }
+
+      last_rdn += ({attr + "=" + encode_dn_value (val)});
+      rest = tmp_rest;
+    }
+
+    if (!has_prefix (tmp_rest, "+")) {
+      // Finish this rdn and prepare for another.
+
+      if (sizeof (last_rdn)) {
+	sort (last_rdn);
+	if (res != "") res += "," + (last_rdn * "+");
+	else res = last_rdn * "+";
+	last_rdn = ({});
+      }
+
+      if (!has_prefix (tmp_rest, ",") && !has_prefix (tmp_rest, ";"))
+	break parse_loop;
+    }
+
+    tmp_rest = tmp_rest[1..];
+  }
+
+  if (sizeof (last_rdn)) {
+    sort (last_rdn);
+    if (res) res += "," + (last_rdn * "+");
+    else res = last_rdn * "+";
+  }
+
+  if (rest != "") {
+    if (strict)
+      ERROR ("Syntax error at or after position %d in DN %O.\n",
+	     sizeof (dn) - sizeof (rest), dn);
+    else
+      res += rest;
+  }
+
+  //werror ("canonicalize \"%s\" -> \"%s\"\n", dn, res);
+  return res;
 }
 
 // Constants to make more human readable names for some known
