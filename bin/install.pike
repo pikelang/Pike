@@ -2,6 +2,10 @@
 
 #define USE_GTK
 
+#if !constant(GTK.parse_rc)
+#undef USE_GTK
+#endif
+
 int last_len;
 int redump_all;
 string pike;
@@ -13,7 +17,12 @@ array(string) to_export=({});
 int export;
 int no_gui;
 
+/* for progress bar */
+int files_to_install;
+int installed_files;
+
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
+
 
 int istty_cache;
 int istty()
@@ -40,11 +49,28 @@ int istty()
 #endif
 }
 
+constant progress_width = 45;
+
+void update_progress(string name, int cur, int max)
+{
+    float ratio = (float)cur/(float)max;
+    int bar = (int)(ratio * (float)progress_width);
+
+    int is_full = bar == progress_width;
+    
+    werror("\r   %s: |%s%c%s%s %4.1f %%  ",
+	   name,
+	   "="*bar,
+	   is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
+	   is_full ? "" : " "*(progress_width-bar-1),
+	   is_full ? "" : "|",
+	   100.0 * ratio);
+}
 
 void status1(string fmt, mixed ... args)
 {
   status_clear();
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
   if(label1)
   {
     label7->set_text(sprintf(fmt,@args)-"\n");
@@ -71,7 +97,7 @@ string some_strerror(int err)
 void fail(string fmt, mixed ... args)
 {
   int err=errno();
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
   if(label1)
   {
     status1(fmt,@args);
@@ -97,7 +123,7 @@ void fail(string fmt, mixed ... args)
 void status(string doing, void|string file, string|void msg)
 {
   if(!file) file="";
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
   if(label1)
   {
     last_len=1;
@@ -110,12 +136,19 @@ void status(string doing, void|string file, string|void msg)
   }
 #endif
 
-
   if(!istty()) return;
 
+  if(files_to_install)
+  {
+    update_progress("Installing",
+		    min(installed_files,files_to_install),
+		    files_to_install);
+    return;
+  }
+
   file=replace(file,"\n","\\n");
-  if(strlen(file)>49)
-    file="..."+file[strlen(file)-47..];
+  if(strlen(file)>45)
+    file=".."+file[strlen(file)-44..];
 
   if(msg) file+=" "+msg;
   if(doing) file=doing+": "+file;
@@ -193,6 +226,7 @@ int low_install_file(string from,
 		     string to,
 		     void|int mode)
 {
+  installed_files++;
   if(export)
   {
 //    werror("FROM: %O\n",from);
@@ -287,6 +321,7 @@ void install_dir(string from, string to,int dump)
   from=stripslash(from);
   to=stripslash(to);
 
+  installed_files++;
   mkdirhier(to);
 //  werror("\nFOO (from=%s, cwd=%s)\n",from,getcwd());
   foreach(get_dir(from),string file)
@@ -315,6 +350,7 @@ void install_dir(string from, string to,int dump)
 
 void install_header_files(string from, string to)
 {
+  installed_files++;
   from=stripslash(from);
   to=stripslash(to);
   mkdirhier(to);
@@ -743,7 +779,7 @@ class ReadInteractive
 }
 
 
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
 object window1;
 object vbox1;
 object label4;
@@ -939,7 +975,7 @@ int pre_install(array(string) argv)
 
     case "--interactive":
 
-#if constant(GTK.parse_rc) && defined(USE_GTK)
+#ifdef USE_GTK
       catch  {
 	if(!no_gui)
 	{
@@ -1101,9 +1137,13 @@ void do_install()
   {
     status1("Please wait, installing Pike in %s...\n", fakeroot(prefix));
   }
+  catch {
+    files_to_install = (int)Stdio.read_file("num_files_to_install");
+  };
 
   mixed err=catch {
-      
+
+    /* Ugly way to detect NT installation */
     string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
     if(Stdio.file_size(pike_bin_file) < 10000 &&
        file_stat(pike_bin_file+".exe"))
@@ -1201,6 +1241,12 @@ void do_install()
                                                      vars->fakeroot}):({})),
 				  master}), options)->wait();
     }
+
+    catch {
+      Stdio.write_file("num_files_to_install",
+		       sprintf("%d\n",installed_files));
+    };
+    files_to_install=0;
     
     if(sizeof(to_dump))
     {
@@ -1231,7 +1277,7 @@ void do_install()
 
       cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
 
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
 		label1?"--distquiet":
 #endif
 	"--quiet"});
@@ -1242,10 +1288,11 @@ void do_install()
       foreach(to_dump/50.0, array delta_dump)
 	{
 	  Process.create_process(cmd +
-				 ({
-				     "--progress-bar",
+				 ( istty() ? 
+				   ({
+				   "--progress-bar",
 				     sprintf("%d,%d", offset, sizeof(to_dump))
-				 }) +
+				     }) : ({"--quiet"}) ) +
 				 delta_dump, options)->wait();
 
 	  offset += sizeof(delta_dump);
