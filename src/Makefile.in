@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.183 2000/03/26 15:14:17 grubba Exp $
+# $Id: Makefile.in,v 1.184 2000/03/26 15:16:39 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -388,15 +388,15 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 	  fi ; \
 	done
 	@if [ -d share/. ]; then : ; else \
-	  echo "Creating symlink ./share"; \
 	  if [ "x`ls -d share 2>/dev/null || :`" = "x" ]; then :; else \
 	    if [ "x`ls -d share.old 2>/dev/null || :`" = "x" ]; then :; else \
 	      echo "Deleting share.old"; \
-	      $(RM) share.old; \
+	      $(RM) share.old || exit 1; \
 	    fi; \
 	    echo "Renaming share to share.old"; \
 	    mv share share.old || exit 1; \
 	  fi; \
+	  echo "Creating symlink ./share"; \
 	  ln -s "$(LIBDIR_SRC)" ./share || exit 1; \
 	fi
 	@echo "Done."
