@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.238 2001/08/02 22:21:05 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.239 2001/08/03 17:45:10 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -786,7 +786,7 @@ void *dummy_label;
        */							\
       return ((int (*)(void))(pc))();				\
     }								\
-  while(0)
+  } while(0)
 #endif /* !CALL_MACHINE_CODE */
 
 #define OPCODE0(O,N,C) \
