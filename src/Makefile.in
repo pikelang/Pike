@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.158 1999/10/15 23:37:52 mast Exp $
+# $Id: Makefile.in,v 1.159 1999/10/21 20:36:39 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -29,6 +29,9 @@ lib_prefix = $(prefix)/lib/pike
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
 man_prefix = $(prefix)/man
+
+# Arguments for test_pike.pike used by the verify targets.
+TESTARGS = -a
 
 #
 # use bison please, yacc isn't good enough.
@@ -309,7 +312,7 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: module_testsuites testsuite master.pike
-	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+d	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose $$args
 
 # verify & debug VERBOSE
@@ -319,7 +322,7 @@ gdb_verify: module_testsuites testsuite master.pike
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
 	@echo >>.gdbinit handle SIGLWP nostop noprint pass
 	@echo >>.gdbinit break debug_fatal
-	@echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike -v -v -f -a
+	@echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike -v -v -f $(TESTARGS)
 	gdb ./pike
 	@rm .gdbinit
 
