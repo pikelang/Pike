@@ -5740,7 +5740,7 @@ return res;<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function sorts an array after a compare-function <i>fun</i>
 which takes two arguments and should return 1 if the first argument
-is larger then the second. The rest of the arguments <i>args</i> will be
+is larger than the second. The rest of the arguments <i>args</i> will be
 sent as 3rd, 4th etc. argument to <i>fun</i>. If <i>fun</i> is omitted, `&lt; is used
 instead.
 <p>
