@@ -31,7 +31,7 @@ object parse_private_key(string key)
   WERROR(sprintf("rsa->parse_private_key: asn1 = %O\n", a));
   if (!a
       || (a[0] != "SEQUENCE")
-      || (sizeof(a[1]) != 10)
+      || (sizeof(a[1]) != 9)
       || (sizeof(column(a[1], 0) - ({ "INTEGER" })))
       || a[1][0][1])
     return 0;
