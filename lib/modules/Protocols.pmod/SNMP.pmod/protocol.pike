@@ -11,7 +11,7 @@
 //:      2570   : v3 description
 //:
 
-// $Id: protocol.pike,v 1.2 2001/05/09 13:52:03 hop Exp $
+// $Id: protocol.pike,v 1.3 2001/09/11 13:39:19 hop Exp $
 
 
 #include "snmp_globals.h"
@@ -163,7 +163,7 @@ inherit Stdio.UDP : snmp;
 //:
 //:  private variables
 //:
-int port = SNMP_DEFAULT_PORT;
+int port; // = SNMP_DEFAULT_PORT;
 string local_host = SNMP_DEFAULT_HOST;
 string remote_host;
 int request_id = 1;
@@ -335,19 +335,20 @@ int get_request(array(string) varlist, string|void rem_addr,
 
   foreach(varlist, string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
-	      ({Standards.ASN1.Types.asn1_identifier(@Array.map(varname/".", lambda(string el){ return((int)el);})),
+	      ({Standards.ASN1.Types.asn1_identifier(
+		  @Array.map(varname/".", lambda(string el){ return((int)el);})),
 		Standards.ASN1.Types.asn1_integer(1)}) //doesn't sense but req
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(0,
-							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-								 Standards.ASN1.Types.asn1_integer(0), // error-status
-								 Standards.ASN1.Types.asn1_integer(0), // error-index
-								 Standards.ASN1.Types.asn1_sequence(vararr)})
-							       );
+	       ({Standards.ASN1.Types.asn1_integer(id), // request-id
+		 Standards.ASN1.Types.asn1_integer(0), // error-status
+		 Standards.ASN1.Types.asn1_integer(0), // error-index
+		 Standards.ASN1.Types.asn1_sequence(vararr)})
+	       );
 
   // now we have PDU ...
-  flg = writemsg(rem_addr||remote_host, rem_port || port, pdu);
+  flg = writemsg(rem_addr||remote_host, rem_port || port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 
@@ -422,14 +423,14 @@ int get_response(mapping varlist, mapping origdata, int|void errcode, int|void e
     }
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(2,
-							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-								 Standards.ASN1.Types.asn1_integer(errcode), // error-status
-								 Standards.ASN1.Types.asn1_integer(erridx), // error-index
-								 Standards.ASN1.Types.asn1_sequence(vararr)})
-							       );
+	       ({Standards.ASN1.Types.asn1_integer(id), // request-id
+		 Standards.ASN1.Types.asn1_integer(errcode), // error-status
+		 Standards.ASN1.Types.asn1_integer(erridx), // error-index
+		 Standards.ASN1.Types.asn1_sequence(vararr)})
+	       );
 
   // now we have PDU ...
-  flg = writemsg(origdata[id]->ip||remote_host, origdata[id]->port||port, pdu);
+  flg = writemsg(origdata[id]->ip||remote_host, origdata[id]->port || port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 
@@ -448,19 +449,20 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
 
   foreach(varlist, string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
-	      ({Standards.ASN1.Types.asn1_identifier(@Array.map(varname/".", lambda(string el){ return((int)el);})),
+	      ({Standards.ASN1.Types.asn1_identifier(
+		 @Array.map(varname/".", lambda(string el){ return((int)el);})),
 		Standards.ASN1.Types.asn1_integer(1)}) //doesn't sense but req
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(1,
-							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-								 Standards.ASN1.Types.asn1_integer(0), // error-status
-								 Standards.ASN1.Types.asn1_integer(0), // error-index
-								 Standards.ASN1.Types.asn1_sequence(vararr)})
-							       );
+	       ({Standards.ASN1.Types.asn1_integer(id), // request-id
+		 Standards.ASN1.Types.asn1_integer(0), // error-status
+		 Standards.ASN1.Types.asn1_integer(0), // error-index
+		 Standards.ASN1.Types.asn1_sequence(vararr)})
+	       );
 
   // now we have PDU ...
-  flg = writemsg(rem_addr||remote_host, rem_port || port, pdu);
+  flg = writemsg(rem_addr||remote_host, rem_port || port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 
@@ -484,14 +486,14 @@ int set_request(mapping varlist, string|void rem_addr,
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(3,
-							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-								 Standards.ASN1.Types.asn1_integer(0), // error-status
-								 Standards.ASN1.Types.asn1_integer(0), // error-index
-								 Standards.ASN1.Types.asn1_sequence(vararr)})
-							       );
+	   ({Standards.ASN1.Types.asn1_integer(id), // request-id
+		 Standards.ASN1.Types.asn1_integer(0), // error-status
+		 Standards.ASN1.Types.asn1_integer(0), // error-index
+		 Standards.ASN1.Types.asn1_sequence(vararr)})
+       );
 
   // now we have PDU ...
-  flg = writemsg(rem_addr||remote_host, rem_port || port, pdu);
+  flg = writemsg(rem_addr||remote_host, rem_port || port || SNMP_DEFAULT_PORT, pdu);
 
   return id;
 }
@@ -499,12 +501,22 @@ int set_request(mapping varlist, string|void rem_addr,
 //:
 //: trap
 //:
-int trap(mapping varlist, string|void rem_addr,
-                         int|void rem_port) {
+int trap(mapping varlist, string oid, int type, int spectype, int ticks,
+         string|void locip, string|void remaddr, int|void remport) {
   //: Trap-PDU low call
   object pdu;
   int id = get_req_id(), flg;
   array vararr = ({});
+  string lip = "1234";
+
+//  DWRITE(sprintf("protocols.trap: varlist: %O, oid: %O, type: %O, spectype: %O,"
+//				  " ticks: %O, locip: %O, remaddr: %O, remport: %O\n",
+//		 varlist, oid, type, spectype, ticks, locip, remaddr, remport));
+  locip = locip || "0.0.0.0";
+  if (sizeof(locip/".") != 4)
+    locip = "0.0.0.0"; //FIXME: what for hell I want to do with such ugly value?
+  //sscanf(locip, "%d.%d.%d.%d", @lip);
+  sscanf(locip, "%d.%d.%d.%d", lip[0], lip[1], lip[2], lip[3]);
 
   foreach(indices(varlist), string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
@@ -512,16 +524,20 @@ int trap(mapping varlist, string|void rem_addr,
 		    @Array.map(varname/".", lambda(string el){ return((int)el);})),
 		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
-
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(4,
-							       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-								 Standards.ASN1.Types.asn1_integer(0), // error-status
-								 Standards.ASN1.Types.asn1_integer(0), // error-index
-								 Standards.ASN1.Types.asn1_sequence(vararr)})
-							       );
+	  ({
+		mk_asn1_val("oid", oid),			// enterprise OID
+		mk_asn1_val("ipaddr", lip),			// ip address (UGLY!)
+		mk_asn1_val("int", type),			// type (0 = coldstart, ...)
+		mk_asn1_val("int", spectype),			// enterprise type
+		mk_asn1_val("tick", ticks),			// uptime
+		Standards.ASN1.Types.asn1_sequence(vararr)	// optional vars
+	    })
+		   
+       );
 
   // now we have PDU ...
-  flg = writemsg(rem_addr||remote_host, rem_port || port, pdu);
+  flg = writemsg(remaddr||remote_host, remport || port || SNMP_DEFAULT_TRAPPORT, pdu);
 
   return id;
 }
