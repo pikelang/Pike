@@ -1,10 +1,11 @@
 #
-# $Id: Makefile,v 1.14 1999/08/13 22:05:55 mast Exp $
+# $Id: Makefile,v 1.15 1999/08/15 13:56:26 mast Exp $
 #
 # Meta Makefile
 #
 
 VPATH=.
+MAKE=make
 OS=`uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`
 BUILDDIR=build/$(OS)
 METATARGET=
@@ -14,7 +15,7 @@ CONFIGUREARGS=
 
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective.
-MAKE_PARALLEL=
+MAKE_PARALLEL=-j4
 
 # Used to avoid make compatibility problems.
 BIN_TRUE=":"
