@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.468 2002/12/11 20:26:45 grubba Exp $
+|| $Id: program.c,v 1.469 2002/12/20 19:07:07 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.468 2002/12/11 20:26:45 grubba Exp $");
+RCSID("$Id: program.c,v 1.469 2002/12/20 19:07:07 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -207,6 +207,69 @@ static char *raw_lfun_types[] = {
 };
 
 /*! @namespace lfun::
+ *!
+ *! Callback functions used to overload various builtin functions.
+ *!
+ *! The functions can be grouped into a few sets:
+ *!
+ *! @ul
+ *!   @item
+ *!     Object initialization and destruction.
+ *!
+ *!     @[__INIT()], @[create()], @[destroy()]
+ *!
+ *!   @item
+ *!     Unary operator overloading.
+ *!
+ *!     @[`~()], @[`!()],
+ *!     @[_values()], @[cast()],
+ *!     @[_sizeof()], @[_indices()],
+ *!     @[__hash()]
+ *!
+ *!   @item
+ *!     Binary assymetric operator overloading.
+ *!
+ *!     @[`+()], @[``+()],
+ *!     @[`-()], @[``-()],
+ *!     @[`&()], @[``&()],
+ *!     @[`|()], @[``|()],
+ *!     @[`^()], @[``^()],
+ *!     @[`<<()], @[``<<()],
+ *!     @[`>>()], @[``>>()],
+ *!     @[`*()], @[``*()],
+ *!     @[`/()], @[``/()],
+ *!     @[`%()], @[``%()]
+ *!
+ *!   @item
+ *!     Binary symetric operator overloading.
+ *!
+ *!     The optimizer will make assumptions about the relations
+ *!     between these functions.
+ *!
+ *!     @[`==()], @[_equal()], @[`<()], @[`>()]
+ *!
+ *!   @item
+ *!     Other binary operator overloading.
+ *!
+ *!     @[`[]()], @[`[]=()], @[`->()],
+ *!     @[`->=()], @[`+=()], @[`()()]
+ *!
+ *!   @item
+ *!     Overloading of other builtin functions.
+ *!     
+ *!     @[_is_type()], @[_sprintf()], @[_m_delete()],
+ *!     @[_get_iterator()]
+ *! @endul
+ *!
+ *! @note
+ *!   Although these functions are called from outside the object
+ *!   they exist in, they will still be used even if they are
+ *!   declared @tt{static@}. It is infact recommended to declare
+ *!   them @tt{static@}, since that will hinder them being used
+ *!   for other purposes.
+ *!
+ *! @seealso
+ *!   @[::]
  */
 
 /*! @decl void lfun::__INIT()
@@ -270,7 +333,7 @@ static char *raw_lfun_types[] = {
  *!   the garbage-collector decides to destruct the object.
  *!
  *! @seealso
- *!   @[lfun::create()], @[destruct()]
+ *!   @[lfun::create()], @[predef::destruct()]
  */
 
 /*! @decl mixed lfun::`+(zero ... args)
@@ -278,7 +341,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative addition operator callback.
  *!
  *! @seealso
- *!   @[lfun::``+()], @[`+()]
+ *!   @[lfun::``+()], @[predef::`+()]
  */
 
 /*! @decl mixed lfun::`-(zero ... args)
@@ -286,7 +349,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative subtraction operator callback.
  *!
  *! @seealso
- *!   @[lfun::``-()], @[`-()]
+ *!   @[lfun::``-()], @[predef::`-()]
  */
 
 /*! @decl mixed lfun::`&(zero ... args)
@@ -294,7 +357,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative and operator callback.
  *!
  *! @seealso
- *!   @[lfun::``&()], @[`&()]
+ *!   @[lfun::``&()], @[predef::`&()]
  */
 
 /*! @decl mixed lfun::`|(zero ... args)
@@ -302,7 +365,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative or operator callback.
  *!
  *! @seealso
- *!   @[lfun::``|()], @[`|()]
+ *!   @[lfun::``|()], @[predef::`|()]
  */
 
 /*! @decl mixed lfun::`^(zero ... args)
@@ -310,7 +373,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative exclusive or operator callback.
  *!
  *! @seealso
- *!   @[lfun::``^()], @[`^()]
+ *!   @[lfun::``^()], @[predef::`^()]
  */
 
 /*! @decl mixed lfun::`<<(zero arg)
@@ -318,7 +381,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative left shift operator callback.
  *!
  *! @seealso
- *!   @[lfun::``<<()], @[`<<()]
+ *!   @[lfun::``<<()], @[predef::`<<()]
  */
 
 /*! @decl mixed lfun::`>>(zero arg)
@@ -326,7 +389,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative right shift operator callback.
  *!
  *! @seealso
- *!   @[lfun::``>>()], @[`>>()]
+ *!   @[lfun::``>>()], @[predef::`>>()]
  */
 
 /*! @decl mixed lfun::`*(zero ... args)
@@ -334,7 +397,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative multiplication operator callback.
  *!
  *! @seealso
- *!   @[lfun::``*()], @[`*()]
+ *!   @[lfun::``*()], @[predef::`*()]
  */
 
 /*! @decl mixed lfun::`/(zero ... args)
@@ -342,7 +405,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative division operator callback.
  *!
  *! @seealso
- *!   @[lfun::``/()], @[`/()]
+ *!   @[lfun::``/()], @[predef::`/()]
  */
 
 /*! @decl mixed lfun::`%(zero ... args)
@@ -350,7 +413,7 @@ static char *raw_lfun_types[] = {
  *!   Left associative modulo operator callback.
  *!
  *! @seealso
- *!   @[lfun::``%()], @[`%()]
+ *!   @[lfun::``%()], @[predef::`%()]
  */
 
 /*! @decl mixed lfun::`~()
@@ -358,7 +421,7 @@ static char *raw_lfun_types[] = {
  *!   Inversion operator callback.
  *!
  *! @seealso
- *!   @[`~()]
+ *!   @[predef::`~()]
  */
 
 /*! @decl int(0..1) lfun::`==(mixed arg)
@@ -366,7 +429,7 @@ static char *raw_lfun_types[] = {
  *!   Equality operator callback.
  *!
  *! @seealso
- *!   @[`==()]
+ *!   @[predef::`==()]
  */
 
 /*! @decl int(0..1) lfun::`<(mixed arg)
@@ -374,7 +437,7 @@ static char *raw_lfun_types[] = {
  *!   Less than operator callback.
  *!
  *! @seealso
- *!   @[`<()]
+ *!   @[predef::`<()]
  */
 
 /*! @decl int(0..1) lfun::`>(mixed arg)
@@ -382,7 +445,7 @@ static char *raw_lfun_types[] = {
  *!   Greater than operator callback.
  *!
  *! @seealso
- *!   @[`>()]
+ *!   @[predef::`>()]
  */
 
 /*! @decl int lfun::__hash()
@@ -425,7 +488,7 @@ static char *raw_lfun_types[] = {
  *!   and @tt{0@} (zero) otherwise.
  *!
  *! @seealso
- *!   @[`!()]
+ *!   @[predef::`!()]
  */
 
 /*! @decl mixed lfun::`[](zero arg1, zero|void arg2)
@@ -433,7 +496,7 @@ static char *raw_lfun_types[] = {
  *!   Index/range operator callback.
  *!
  *! @seealso
- *!   @[`[]()]
+ *!   @[predef::`[]()]
  */
 
 /*! @decl mixed lfun::`[]=(zero arg1, zero arg2)
@@ -441,7 +504,7 @@ static char *raw_lfun_types[] = {
  *!   Index assignment operator callback.
  *!
  *! @seealso
- *!   @[`[]=()], @[lfun::`->=()]
+ *!   @[predef::`[]=()], @[lfun::`->=()]
  */
 
 /*! @decl mixed lfun::`->(string arg)
@@ -449,7 +512,7 @@ static char *raw_lfun_types[] = {
  *!   Arrow index operator callback.
  *!
  *! @seealso
- *!   @[`->()]
+ *!   @[predef::`->()]
  */
 
 /*! @decl mixed lfun::`->=(string arg1, zero arg2)
@@ -457,7 +520,7 @@ static char *raw_lfun_types[] = {
  *!   Arrow index assign operator callback.
  *!
  *! @seealso
- *!   @[`->=()], @[lfun::`[]=()]
+ *!   @[predef::`->=()], @[lfun::`[]=()]
  */
 
 /*! @decl int lfun::_sizeof()
@@ -472,7 +535,7 @@ static char *raw_lfun_types[] = {
  *!   Expected to return the number of valid indices in the object.
  *!
  *! @seealso
- *!   @[sizeof()]
+ *!   @[predef::sizeof()]
  */
 
 /*! @decl array lfun::_indices()
@@ -483,7 +546,7 @@ static char *raw_lfun_types[] = {
  *!   Expected to return an array with the valid indices in the object.
  *!
  *! @seealso
- *!   @[indices()], @[lfun::_values()]
+ *!   @[predef::indices()], @[lfun::_values()]
  */
 
 /*! @decl array lfun::_values()
@@ -495,7 +558,7 @@ static char *raw_lfun_types[] = {
  *!   the indices returned by @[lfun::_indices()].
  *!
  *! @seealso
- *!   @[values()], @[lfun::_indices()]
+ *!   @[predef::values()], @[lfun::_indices()]
  */
 
 /*! @decl mixed lfun::`()(zero ... args)
@@ -503,7 +566,7 @@ static char *raw_lfun_types[] = {
  *!   Function call operator callback.
  *!
  *! @seealso
- *!   @[`()]
+ *!   @[predef::`()]
  */
 
 /*! @decl mixed lfun::``+(zero ... args)
@@ -511,7 +574,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative addition operator callback.
  *!
  *! @seealso
- *!   @[lfun::`+()], @[`+()]
+ *!   @[lfun::`+()], @[predef::`+()]
  */
 
 /*! @decl mixed lfun::``-(zero ... args)
@@ -519,7 +582,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative subtraction operator callback.
  *!
  *! @seealso
- *!   @[lfun::`-()], @[`-()]
+ *!   @[lfun::`-()], @[predef::`-()]
  */
 
 /*! @decl mixed lfun::``&(zero ... args)
@@ -527,7 +590,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative and operator callback.
  *!
  *! @seealso
- *!   @[lfun::`&()], @[`&()]
+ *!   @[lfun::`&()], @[predef::`&()]
  */
 
 /*! @decl mixed lfun::``|(zero ... args)
@@ -535,7 +598,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative or operator callback.
  *!
  *! @seealso
- *!   @[lfun::`|()], @[`|()]
+ *!   @[lfun::`|()], @[predef::`|()]
  */
 
 /*! @decl mixed lfun::``^(zero ... args)
@@ -543,7 +606,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative exclusive or operator callback.
  *!
  *! @seealso
- *!   @[lfun::`^()], @[`^()]
+ *!   @[lfun::`^()], @[predef::`^()]
  */
 
 /*! @decl mixed lfun::``<<(zero arg)
@@ -551,7 +614,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative left shift operator callback.
  *!
  *! @seealso
- *!   @[lfun::`<<()], @[`<<()]
+ *!   @[lfun::`<<()], @[predef::`<<()]
  */
 
 /*! @decl mixed lfun::``>>(zero arg)
@@ -559,7 +622,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative right shift operator callback.
  *!
  *! @seealso
- *!   @[lfun::`>>()], @[`>>()]
+ *!   @[lfun::`>>()], @[predef::`>>()]
  */
 
 /*! @decl mixed lfun::``*(zero ... args)
@@ -567,7 +630,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative multiplication operator callback.
  *!
  *! @seealso
- *!   @[lfun::`*()], @[`*()]
+ *!   @[lfun::`*()], @[predef::`*()]
  */
 
 /*! @decl mixed lfun::``/(zero ... args)
@@ -575,7 +638,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative division operator callback.
  *!
  *! @seealso
- *!   @[lfun::`/()], @[`/()]
+ *!   @[lfun::`/()], @[predef::`/()]
  */
 
 /*! @decl mixed lfun::``%(zero ... args)
@@ -583,7 +646,7 @@ static char *raw_lfun_types[] = {
  *!   Right associative modulo operator callback.
  *!
  *! @seealso
- *!   @[lfun::`%()], @[`%()]
+ *!   @[lfun::`%()], @[predef::`%()]
  */
 
 /*! @decl mixed lfun::`+=(zero arg)
@@ -591,7 +654,7 @@ static char *raw_lfun_types[] = {
  *!   Self increment operator callback.
  *!
  *! @seealso
- *!   @[`+()], @[lfun::`+()]
+ *!   @[predef::`+()], @[lfun::`+()]
  */
 
 /*! @decl int(0..1) lfun::_is_type(string basic_type)
@@ -709,7 +772,7 @@ static char *raw_lfun_types[] = {
  *!   @endint
  *!
  *! @seealso
- *!    @[sprintf()]
+ *!    @[predef::sprintf()]
  */
 
 /*! @decl int lfun::_equal(mixed arg)
@@ -717,7 +780,7 @@ static char *raw_lfun_types[] = {
  *!   Equal callback.
  *!
  *! @seealso
- *!   @[equal()], @[lfun::`==()]
+ *!   @[predef::equal()], @[lfun::`==()]
  */
 
 /*! @decl mixed lfun::_m_delete(mixed arg)
@@ -725,7 +788,7 @@ static char *raw_lfun_types[] = {
  *!   Mapping delete callback.
  *!
  *! @seealso
- *!   @[m_delete()]
+ *!   @[predef::m_delete()]
  */
 
 /*! @decl object lfun::_get_iterator()
@@ -747,7 +810,7 @@ static char *raw_lfun_types[] = {
  *!   @enddl
  *!
  *! @seealso
- *!   @[Iterator], @[foreach()]
+ *!   @[predef::Iterator], @[predef::foreach()]
  */
 
 /*! @endnamespace
