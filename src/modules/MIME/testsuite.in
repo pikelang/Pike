@@ -46,8 +46,8 @@ test_eq([[MIME.encode_uue("fie    ")]],
 		[["begin 644 attachment\r\n'9FEE(\"`@(```\r\n`\r\nend\r\n"]])
 test_eq([[MIME.encode_uue("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?", "WOOD")]],
-	[["begin 644 WOOD\r\nM2&]W(&UU8V@@=V]O9\"!C;W5L9\"!A('=O;V1C:'5C:"
-	  "R!C:'5C:R!I9B!A('=O\r\n9;V1C:'5C:R!C;W5L9\"!C:'5C:R!W;V]D/P``"
+	[["begin 644 WOOD\r\nM2&]W\050&UU8V@@=V]O9\"!C;W5L9\"!A\050'=O;V1C:'5C:"
+	  "R!C:'5C:R!I9B!A\050'=O\r\n9;V1C:'5C:R!C;W5L9\"!C:'5C:R!W;V]D/P``"
 	  "\r\n`\r\nend\r\n"]])
 test_any([[string data=Stdio.read_file("Makefile");
 	return MIME.decode_uue(MIME.encode_uue(data, "foo bar"))==data]],1)
