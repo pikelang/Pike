@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.13 1998/03/28 15:08:12 grubba Exp $
+ * $Id: fdlib.h,v 1.14 1998/04/06 04:22:11 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -290,6 +290,18 @@ typedef struct my_fd_set_s
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#endif
+
+#ifndef SEEK_CUR
+#define SEEK_CUR 1
+#endif
+
+#ifndef SEEK_END
+#define SEEK_END 2
+#endif
 
 #endif
 
