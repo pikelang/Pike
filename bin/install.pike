@@ -875,8 +875,8 @@ files COPYING and COPYRIGHT in the Pike distribution for more details.
 		  rm -f "+tmpname+#".x
                   exit 0 ;;
 
-    --list-files) tar xbf 1 \"$TARFILE\" "+tmpname+#".tar.gz
-                  tar tbfz 1 "+tmpname+#".tar.gz
+    --list-files) tar xf \"$TARFILE\" "+tmpname+#".tar.gz
+                  tar tfz "+tmpname+#".tar.gz
                   rm -f "+tmpname+".x "+tmpname+#".tar.gz
                   exit 0 ;;
 
@@ -890,7 +890,7 @@ files COPYING and COPYRIGHT in the Pike distribution for more details.
 done
 "
 		   "echo \"   Loading installation script, please wait...\"\n"
-		   "tar xbf 1 \"$TARFILE\" "+tmpname+".tar.gz\n"
+		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
 		   "( cd '"+export_base_name+".dir'\n"
@@ -911,7 +911,7 @@ done
     );
   chmod(tmpname+".x",0755);
   string script=sprintf("#!/bin/sh\n"
-			"tar xbf 1 \"$0\" %s.x\n"
+			"tar xf \"$0\" %s.x\n"
 			"exec ./%s.x \"$0\" \"$@\"\n", tmpname, tmpname, tmpname);
   if(sizeof(script) >= 100)
   {
@@ -1353,6 +1353,9 @@ void make_master(string dest, string master, string lib_prefix,
 {
   status("Finalizing",master);
   string master_data=Stdio.read_file(master);
+  if (!master_data) {
+    error("Failed to read master template file %O\n", master);
+  }
   master_data=replace(master_data,
 		      ({"¤lib_prefix¤","¤include_prefix¤","¤share_prefix¤"}),
 		      ({replace(lib_prefix,"\\","\\\\"),
