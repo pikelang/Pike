@@ -213,9 +213,9 @@ class client {
 
   static private int is_ip(string ip)
   {
-    return(replace(rest,
+    return(replace(ip,
 		   ({ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." }),
-		   ({  "", "", "", "", "", "", "", "", ""; "", ""  })) == "");
+		   ({  "", "", "", "", "", "", "", "", "", "", ""  })) == "");
   }
 
   static private mapping etc_hosts;
@@ -225,17 +225,17 @@ class client {
     if (!etc_hosts) {
       string raw = Stdio.read_file("/etc/hosts");
 
-      etc_hosts = ([ "localhost", "127.0.0.1" ]);
+      etc_hosts = ([ "localhost":"127.0.0.1" ]);
 
       if (raw) {
 	foreach(raw/"\n", string line) {
 	  // Handle comments, and split the line on white-space
-	  line = replace((line/"#")[0], "\t", " ");
+	  line = lower_case(replace((line/"#")[0], "\t", " "));
 	  array arr = (line/" ") - ({ "" });
 
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
-	      foreach(arr[1..], name) {
+	      foreach(arr[1..], string name) {
 		etc_hosts[name] = arr[0];
 	      }
 	    } else {
@@ -247,7 +247,7 @@ class client {
 	// Couldn't read /etc/hosts.
       }
     }
-    return(etc_hosts[host]);
+    return(etc_hosts[lower_case(host)]);
   }
 
   array(string) nameservers = ({});
@@ -306,6 +306,12 @@ class client {
       }
       if(domain)
 	domains = ({ domain }) + domains;
+      domains = Array.map(domains, lambda(string d) {
+				     if (d[-1] == '.') {
+				       return d[..sizeof(d)-2];
+				     }
+				     return d;
+				   });
     } else {
       nameservers= ({ server });
     }
