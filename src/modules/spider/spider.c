@@ -40,7 +40,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.48 1997/12/07 21:56:42 grubba Exp $");
+RCSID("$Id: spider.c,v 1.49 1997/12/11 14:30:03 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -757,7 +757,7 @@ void do_html_parse(struct pike_string *ss,
 	  free_svalue(&sval1);
 	  free_svalue(&sval2);
 	  push_text("");
-	  f_multiply(1);
+	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
