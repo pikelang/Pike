@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.155 2004/03/15 22:47:15 mast Exp $
+|| $Id: array.c,v 1.156 2004/03/16 14:09:23 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.155 2004/03/15 22:47:15 mast Exp $");
+RCSID("$Id: array.c,v 1.156 2004/03/16 14:09:23 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1900,11 +1900,15 @@ void simple_describe_array(struct array *a)
 {
   dynamic_buffer save_buf;
   char *s;
-  init_buf(&save_buf);
-  describe_array_low(a,0,0);
-  s=simple_free_buf(&save_buf);
-  fprintf(stderr,"({\n%s\n})\n",s);
-  free(s);
+  if (a->size) {
+    init_buf(&save_buf);
+    describe_array_low(a,0,0);
+    s=simple_free_buf(&save_buf);
+    fprintf(stderr,"({\n%s\n})\n",s);
+    free(s);
+  }
+  else
+    fputs ("({ })\n", stderr);
 }
 
 void describe_index(struct array *a,
@@ -2496,7 +2500,7 @@ void debug_dump_array(struct array *a)
 	  a == &weak_empty_array ? " (the weak_empty_array)" :
 	  a == &weak_shrink_empty_array ? " (the weak_shrink_empty_array)" :
 	  "");
-  fprintf(stderr,"Type field = ");
+  fprintf(stderr,"Type field =");
   debug_dump_type_field(a->type_field);
   fprintf(stderr,"\n");
   simple_describe_array(a);

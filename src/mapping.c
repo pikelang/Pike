@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.176 2003/11/12 14:07:04 grubba Exp $
+|| $Id: mapping.c,v 1.177 2004/03/16 14:09:23 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.176 2003/11/12 14:07:04 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.177 2004/03/16 14:09:23 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2647,10 +2647,10 @@ void debug_dump_mapping(struct mapping *m)
   } else {
     fprintf(stderr, ", flags=0x%x, size=%d, hashsize=%d\n",
 	    m->data->flags, m->data->size, m->data->hashsize);
-    fprintf(stderr, "Indices type field = ");
+    fprintf(stderr, "Indices type field =");
     debug_dump_type_field(m->data->ind_types);
     fprintf(stderr, "\n");
-    fprintf(stderr, "Values type field = ");
+    fprintf(stderr, "Values type field =");
     debug_dump_type_field(m->data->val_types);
     fprintf(stderr, "\n");
     simple_describe_mapping(m);
