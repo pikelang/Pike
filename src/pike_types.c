@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.106 1999/12/19 16:08:22 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.107 1999/12/19 18:42:55 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2058,7 +2058,14 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
     }
 
   case T_NOT:
-    return !low_pike_types_le(a+1, b, array_cnt);
+    if (EXTRACT_UCHAR(b) == T_NOT) {
+      return low_pike_types_le(b+1, a+1, -array_cnt);
+    }
+    if (low_pike_types_le(a+1, b, array_cnt)) {
+      return 0;
+    }
+    /* FIXME: This is wrong... */
+    return low_pike_types_le(b, a+1, -array_cnt);
 
   case T_ASSIGN:
     ret=low_pike_types_le(a+2, b, array_cnt);
@@ -2126,7 +2133,11 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
     return low_pike_types_le(a, b, array_cnt);
 
   case T_NOT:
-    return !low_pike_types_le(a, b+1, array_cnt);
+    if (low_pike_types_le(a, b+1, array_cnt)) {
+      return 0;
+    }
+    /* FIXME: This is wrong... */
+    return low_pike_types_le(b+1, a, -array_cnt);
 
   case T_ASSIGN:
     ret=low_pike_types_le(a, b+2, array_cnt);
