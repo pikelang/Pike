@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.124 2000/08/02 11:06:36 grubba Exp $
+ * $Id: master.pike.in,v 1.125 2000/08/22 02:15:46 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1681,8 +1681,15 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  
 	  if(sizeof(tmp)>=3)
 	  {
-	    if(functionp(tmp[2]))
-	      data = function_name(tmp[2]);
+	    if(functionp(tmp[2])) {
+	      data = "";
+	      if (object o = function_object(tmp[2])) {
+		string s;
+		if (!catch (s = sprintf("%O",o)) && s != "object")
+		  data = s + "->";
+	      }
+	      data += function_name(tmp[2]);
+	    }
 	    else if (stringp(tmp[2])) {
 	      data= tmp[2];
 	    } else
