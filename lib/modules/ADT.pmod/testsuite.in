@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.9 2003/10/22 18:08:54 nilsson Exp $
+dnl $Id: testsuite.in,v 1.10 2003/12/01 19:48:17 nilsson Exp $
 
 dnl - ADT.History
 
@@ -263,6 +263,7 @@ test_eval_error( Test("a\0\0c") )
 test_eval_error( Test("a\0bbbb\0c") )
 test_eval_error( Test("a\0b\0") )
 test_eq( sizeof(Test("aa\0b\0c")), 6 )
+test_do( add_constant("Test"); )
 
 
 dnl - ADT.Table
