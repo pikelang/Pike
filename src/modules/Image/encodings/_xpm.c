@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.25 2003/10/13 16:13:55 grubba Exp $
+|| $Id: _xpm.c,v 1.26 2003/10/13 18:46:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.25 2003/10/13 16:13:55 grubba Exp $");
+RCSID("$Id: _xpm.c,v 1.26 2003/10/13 18:46:56 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -223,6 +223,9 @@ unsigned short extract_short( unsigned char *b )
   return (b[0]<<8)|b[1];
 }
 
+/*! _xpm_write_rows(Image.Image img, Image.Image alpha, @
+ *!                 int bpc, array(string) colors, array(string) pixels)
+ */
 void f__xpm_write_rows( INT32 args )
 {
   struct object *img;
@@ -240,6 +243,28 @@ void f__xpm_write_rows( INT32 args )
   ialpha = (struct image *)get_storage( alpha, image_program );
   if(!iimg || !ialpha)
     Pike_error("Sluta pilla på interna saker..\n");
+
+  if (pixels->size < iimg->ysize + colors->size) {
+    SIMPLE_ARG_ERROR("_xpm_write_rows", 5, "pixel array is too short.");
+  }
+
+  for(y = 0; y < pixels->size; y++) {
+    if (pixels->item[y].type != T_STRING) {
+      SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
+		       "pixel array contains elements other than strings.");
+    }
+    if (y < colors->size) {
+      if (colors->item[y].type != T_STRING) {
+	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
+			 "color array contains elements other than strings.");
+      }
+    } else {
+      if (pixels->item[y].u.string->len < iimg->xsize*bpc) {
+	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
+			 "pixel array contains too short string (bad bpc?).");
+      }
+    }
+  }
 
   dst = iimg->img;
   adst = ialpha->img;
