@@ -10623,7 +10623,7 @@ This is the BNF for Pike:
 <tr valign=top><td>constant_names</td><td>::=</td><td>constant_name { "," constant_name }</td></tr>
 <tr valign=top><td>constant_name</td><td>::=</td><td>identifer "=" expression</td></tr>
 <tr valign=top><td>class_def</td><td>::=</td><td>modifiers <b>class</b> [ ";" ] </td></tr>
-<tr valign=top><td>class</td><td>::=</td><td><b>class</b> [ identifier ] program</td></tr>
+<tr valign=top><td>class</td><td>::=</td><td><b>class</b> [ identifier ] "{" program "}"</td></tr>
 <tr valign=top><td>modifiers</td><td>::=</td><td> { <b>static</b> | <b>private</b> | <b>nomask</b> | <b>public</b> | <b>protected</b> | <b>inline</b> }</td></tr>
 <tr valign=top><td>block</td><td>::=</td><td>"{" { statement }  "}" </td></tr>
 <tr valign=top><td>statement</td><td>::=</td><td>expression2 ";" | cond | while | do_while | for | switch | case | default | return | block | foreach | break | continue | ";" </td></tr>
