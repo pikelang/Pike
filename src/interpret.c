@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.105 1998/11/20 08:11:41 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.106 1998/11/20 08:35:09 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -188,7 +188,8 @@ use_malloc:
 #endif
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
-  time_base = accounted_time =gethrtime();
+  time_base = gethrtime();
+  accounted_time =0;
 #endif
 #endif
 }
@@ -2116,8 +2117,8 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	self_time=time_passed - time_in_children;
 	accounted_time+=self_time;
 #ifdef DEBUG
-	if(self_time < 0)
-	  fatal("Self time is negative\n  self_time=%ld\n  time_passed=%ld\n  time_in_children=%ld\n  children_base=%ld\n  accounted_time=%ld!\n  time_base=%ld\n  start_time=%ld\n",
+	if(self_time < 0 || children_base <0 || accounted_time <0)
+	  fatal("Time is negative\n  self_time=%ld\n  time_passed=%ld\n  time_in_children=%ld\n  children_base=%ld\n  accounted_time=%ld!\n  time_base=%ld\n  start_time=%ld\n",
 		(long)(self_time/1000),
 		(long)(time_passed/1000),
 		(long)(time_in_children/1000),
