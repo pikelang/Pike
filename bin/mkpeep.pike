@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.35 2003/10/17 03:06:54 nilsson Exp $
+// $Id: mkpeep.pike,v 1.36 2003/10/17 03:49:09 nilsson Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -32,7 +32,7 @@ string make_multiline(string prefix, array(string)|string tokens,
   if(stringp(tokens))
     tokens = ((tokens/" ")/1)*({" "});
   tokens += ({ suffix });
-  tokens = linebreak([array(string)]tokens, 80-sizeof(prefix));
+  tokens = linebreak([array(string)]tokens, 79-sizeof(prefix));
   string ret = "";
   foreach(tokens; int r; string line)
     if(!r)
@@ -254,6 +254,9 @@ string treat(string expr)
   return tmp*"";
 }
 
+int function_serial;
+string functions = "";
+
 class Switch(string test) {
   constant is_switch = 1;
   mapping(string:array(Switch|Breakable)) cases = ([]);
@@ -262,7 +265,30 @@ class Switch(string test) {
     cases[c] = b;
   }
 
+  void make_child_fun() {
+    foreach(sort(indices(cases)), string c)
+      cases[c]->make_fun();
+  }
+
+  void make_fun() {
+    made_fun = ++function_serial;
+    functions += "inline static void _asm_peep_"+made_fun+"(void)\n{\n";
+    functions += make_switch(2);
+    functions += "}\n\n";
+  }
+
+  int made_fun;
   string get_string(int ind) {
+    if(made_fun) {
+      string ret = "";
+      ret += sprintf("%*n_asm_peep_%d();\n", ind, made_fun);
+      ret += sprintf("%*nreturn;\n", ind);
+      return ret;
+    }
+    return make_switch(ind);
+  }
+
+  string make_switch(int ind) {
     string ret = "";
     ret += sprintf("%*nswitch(%s)\n", ind, test);
     ret += sprintf("%*n{\n", ind);
@@ -405,7 +431,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
       }
       buf->add_line(" "*ind+"do_optimization(", opargs, "0);");
 
-      buf->add_line( sprintf("%*ncontinue;", ind) );
+      buf->add_line( sprintf("%*nreturn;", ind) );
       ind -= 2;
       buf->add_line( sprintf("%*n}", ind, test) );
     }
@@ -433,35 +459,19 @@ int main(int argc, array(string) argv)
     }
   }
 
-  write("  len=instrbuf.s.len/sizeof(p_instr);\n"
-      "  instructions=(p_instr *)instrbuf.s.str;\n"
-      "  instrbuf.s.str=0;\n"
-      "  fifo_len=0;\n"
-      "  init_bytecode();\n\n"
-      "  for(eye=0;eye<len || fifo_len;)\n  {\n"
-      "\n"
-      "#ifdef PIKE_DEBUG\n"
-      "    if(a_flag>6) {\n"
-      "      int e;\n"
-      "      fprintf(stderr, \"#%ld,%d:\",\n"
-      "              DO_NOT_WARN((long)eye),\n"
-      "              fifo_len);\n"
-      "      for(e=0;e<4;e++) {\n"
-      "        fprintf(stderr,\" \");\n"
-      "        dump_instr(instr(e));\n"
-      "      }\n"
-      "      fprintf(stderr,\"\\n\");\n"
-      "    }\n"
-      "#endif\n\n");
+  write("\n\n/* Generated from %s by mkpeep.pike\n   %s\n*/\n\n",
+	argv[1], Calendar.ISO.now()->format_time());
 
   array(Switch) a = [array(Switch)]make_switches(data);
-  if(sizeof(a)!=1) error("Expected one top switch.\n");
-  write( a[0]->get_string(4) );
+  if(sizeof(a)!=1 || !a[0]->is_switch) error("Expected one top switch.\n");
 
-  write("    advance();\n");
-  write("  }\n");
-  write("  for(eye=0;eye<len;eye++) free_string(instructions[eye].file);\n");
-  write("  free((char *)instructions);\n");
+  a[0]->make_child_fun();
+  write( functions );
+
+  write("inline static void low_asm_opt(void) {\n");
+  write( a[0]->get_string(2) );
+
+  write("}\n");
 
   return 0;
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.91 2003/10/10 01:39:01 mast Exp $
+|| $Id: peep.c,v 1.92 2003/10/17 03:49:26 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.91 2003/10/10 01:39:01 mast Exp $");
+RCSID("$Id: peep.c,v 1.92 2003/10/17 03:49:26 nilsson Exp $");
 
 static void asm_opt(void);
 
@@ -880,6 +880,7 @@ static void do_optimization(int topop, ...)
   DO_OPTIMIZATION_POSTQUEL(q);
 }
 
+#include "peep_engine.c"
 
 static void asm_opt(void)
 {
@@ -905,7 +906,35 @@ static void asm_opt(void)
   }
 #endif
 
-#include "peep_engine.c"
+  len=instrbuf.s.len/sizeof(p_instr);
+  instructions=(p_instr *)instrbuf.s.str;
+  instrbuf.s.str=0;
+  fifo_len=0;
+  init_bytecode();
+
+  for(eye=0;eye<len || fifo_len;)
+  {
+
+#ifdef PIKE_DEBUG
+    if(a_flag>6) {
+      int e;
+      fprintf(stderr, "#%ld,%d:",
+              DO_NOT_WARN((long)eye),
+              fifo_len);
+      for(e=0;e<4;e++) {
+        fprintf(stderr," ");
+        dump_instr(instr(e));
+      }
+      fprintf(stderr,"\n");
+    }
+#endif
+
+    low_asm_opt();
+    advance();
+  }
+
+  for(eye=0;eye<len;eye++) free_string(instructions[eye].file);
+  free((char *)instructions);
 
 #ifdef PIKE_DEBUG
   if(a_flag > 4)
