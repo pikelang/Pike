@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.44 2002/10/11 01:39:33 nilsson Exp $
+|| $Id: mapping.h,v 1.45 2002/10/20 23:42:54 marcus Exp $
 */
 
 #ifndef MAPPING_H
@@ -98,7 +98,6 @@ BLOCK_ALLOC(mapping, 511)
 
 
 
-static void check_mapping_type_fields(struct mapping *m);
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size);
 PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md);
 PMOD_EXPORT void do_free_mapping(struct mapping *m);
