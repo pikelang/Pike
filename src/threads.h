@@ -179,7 +179,6 @@ struct thread_state {
 
 #define SWAP_OUT_THREAD(_tmp) do { \
        (_tmp)->swapped=1; \
-\
        (_tmp)->evaluator_stack=evaluator_stack;\
        (_tmp)->evaluator_stack_malloced=evaluator_stack_malloced;\
        (_tmp)->fp=fp;\
@@ -193,7 +192,6 @@ struct thread_state {
 
 #define SWAP_IN_THREAD(_tmp) do {\
        (_tmp)->swapped=0; \
-\
        evaluator_stack=(_tmp)->evaluator_stack;\
        evaluator_stack_malloced=(_tmp)->evaluator_stack_malloced;\
        fp=(_tmp)->fp;\
@@ -204,6 +202,29 @@ struct thread_state {
        sp=(_tmp)->sp;\
        thread_id=(_tmp)->thread_id;\
      } while(0)
+
+#define SWAP_OUT_CURRENT_THREAD() \
+  do {\
+     struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
+     SWAP_OUT_THREAD(_tmp); \
+     THREADS_FPRINTF((stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
+			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+
+#define SWAP_IN_CURRENT_THREAD() \
+   THREADS_FPRINTF((stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
+		    __FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+   SWAP_IN_THREAD(_tmp);\
+ } while(0)
+
+#define THREADS_ALLOW() \
+  do {\
+     struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
+     if(num_threads > 1 && !threads_disabled) { \
+       SWAP_OUT_THREAD(_tmp); \
+       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x\n", \
+			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+       mt_unlock(& interpreter_lock); \
+     }
 
 #define THREADS_ALLOW() \
   do {\

@@ -1,3 +1,10 @@
+Sun Sep  7 17:55:47 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* array.c: sort() now handles the `< method
+	* thread.c: now works again, also less overhead
+	* lex.c: '\0x20' works now
+	* program.c: fixed a bug with handling inherited functions
+
 Thu Sep  4 18:07:34 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/spider/dumudp.c (udp_sendto): Fixed threading bug.

@@ -1,9 +1,17 @@
-test_true([["$Id: testsuite.in,v 1.49 1997/09/02 22:17:00 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.50 1997/09/08 19:08:57 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
 test_eq(1.1e1,11.0)
 test_eq(1e-1,0.1)
+test_eq('\x20',32)
+test_eq("\x20","\040")
+test_any([[
+class p1 { int foo() { return 1; }};
+class p2 { int foo() { return 2; }};
+class c1 { inherit p1; inherit p2; int foo() { return p1::foo()+p2::foo(); }};
+ class c2 { inherit c1; }; return c2()->foo();]],3)
+test_any([[class foo { int x=random(100); int `<(object o) { return x < o->x; } }; object *o=Array.map(allocate(100),foo); sort(o); for(int e=1;e<100;e++) if(o[e-1]->x > o[e]->x) return e; return -1;]],-1)
 test_compile_error([[void foo() { return destruct(this_object()); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
@@ -145,8 +153,8 @@ cond([[all_constants()->thread_create]],
   test_do(add_constant("_tmp_mutex_lock"))
   test_true(_tmp_mutex->trylock())
   test_do(add_constant("_tmp_mutex"))
-  test_true([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); destruct(k); }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]])
-  test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l; while (catch(l=data[2]->lock())) sleep(1); object ll=data[1]->lock(); return data[0]; ]],1)
+  test_any([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]],1)
+  test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l=data[2]->lock(1); object ll=data[1]->lock(); return data[0]; ]],1)
   test_any([[mixed *data=({1, Thread.Mutex()}); for(int e=0;e<3;e++) thread_create(lambda(mixed *data) { for(int e=0;e<1000;e++) { object o=data[1]->lock(); data[0]*=2; for(int d=0;d<5;d++) { data[0]--; data[0]*=2; } data[0]--; destruct(o); }}, data); return data[0];]],1)
 
 // /precompiled/condition
