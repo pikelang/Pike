@@ -678,6 +678,8 @@ static void file_set_blocking(INT32 args)
 
 static void file_set_close_on_exec(INT32 args)
 {
+  if(args < 0)
+    error("Too few arguments to file->set_close_on_exit()\n");
   if(FD <0)
     error("File not open.\n");
 
