@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.15 2001/04/07 16:22:44 grubba Exp $ */
+/* $Id: export.pike,v 1.16 2001/04/07 16:37:00 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -94,8 +94,6 @@ int main(int argc, string *argv)
   }
   werror("Sourcedir = "+tmp*"/"+"/pike\n");
 
-  vpath=replace(getversion()," ","-");
-
   if(file_stat("pike/CVS"))
   {
     werror("Bumping release number.\n");
@@ -105,21 +103,13 @@ int main(int argc, string *argv)
     Stdio.File("pike/src/version.c","wct")->write(pre+" release "+rel+post);
     system("cd pike/src ; cvs commit -m 'release number bumped by export.pike' version.c");
 
+    vpath=replace(replace(getversion()," ","-"),"-release-",".");
     string tag=replace(vpath,({"Pike-","."}),({"","_"}));
-#if 0
-    mapping x=localtime(time());
-    tag+=+"-"+sprintf("%02d%02d%02d-%02d%02d",
-		      x->year,
-		      x->mon+1,
-		      x->mday,
-		      x->hour,
-		      x->min);
-#else
-    tag+="-rel"+rel;
-#endif
 
     werror("Creating tag "+tag+" in the background.\n");
     system("cd pike ; cvs tag -R -F "+tag+"&");
+  } else {
+    vpath=replace(replace(getversion()," ","-"),"-release-",".");
   }
 
   fix_configure("pike/src");
