@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.5 1997/08/26 08:19:16 nisse Exp $
+ * $Id: md5.c,v 1.6 1997/09/07 19:51:57 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -20,6 +20,7 @@
 #include "interpret.h"
 #include "program.h"
 #include "error.h"
+#include "module_support.h"
 
 #include "md5.h"
 
@@ -56,7 +57,10 @@ static void f_create(INT32 args)
 	  
 static void f_update(INT32 args)
 {
-  md5_update(THIS, (unsigned INT8 *) (sp-args)->u.string->str, (sp-args)->u.string->len);
+  struct pike_string *s;
+  get_all_args("_Crypto.md5->update", args, "%S", &s);
+
+  md5_update(THIS, (unsigned INT8 *) s->str, s->len);
   pop_n_elems(args);
   push_object(this_object());
 }
