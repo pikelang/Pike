@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: termios.c,v 1.19 2002/11/23 15:47:58 mast Exp $
+|| $Id: termios.c,v 1.20 2003/01/05 14:09:36 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: termios.c,v 1.19 2002/11/23 15:47:58 mast Exp $");
+RCSID("$Id: termios.c,v 1.20 2003/01/05 14:09:36 nilsson Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -225,14 +225,15 @@ void file_tcsetattr(INT32 args)
       Pike_error("File not open.\n");
 
    if (!args)
-      Pike_error("too few arguments to tcsetattr\n");
+     SIMPLE_TOO_FEW_ARGS_ERROR("tcsetattr", 1);
 
-
-   if (args>=2)
+   if (args>1)
    {
+      if (args>2)
+	pop_n_elems(args-2);
       if (sp[-1].type!=T_STRING)
-	 Pike_error("illegal argument 2 to tcsetattr\n");
-	  
+	SIMPLE_BAD_ARG_ERROR("tcsetattr", 2, "string");
+
       if (!strcmp(sp[-1].u.string->str,"TCSANOW"))
 	 optional_actions=TCSANOW;
       else if (!strcmp(sp[-1].u.string->str,"TCSADRAIN"))
@@ -242,11 +243,11 @@ void file_tcsetattr(INT32 args)
       else
 	 Pike_error("illegal argument 2 to tcsetattr\n");
 
-      pop_n_elems(args-1);
+      pop_stack();
    }
 
    if (sp[-1].type!=T_MAPPING)
-      Pike_error("illegal argument 1 to tcsetattr\n");
+     SIMPLE_BAD_ARG_ERROR("tcsetattr", 1, "mapping");
 
    /* read attr to edit */
    if (tcgetattr(FD,&ti)) /* error */

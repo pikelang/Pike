@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.40 2002/11/26 21:12:22 grubba Exp $
+|| $Id: udp.c,v 1.41 2003/01/05 14:08:58 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.40 2002/11/26 21:12:22 grubba Exp $");
+RCSID("$Id: udp.c,v 1.41 2003/01/05 14:08:58 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -170,11 +170,11 @@ static void udp_bind(INT32 args)
   static int ip_proto_num = -1;
 #endif /* !SOL_IP && HAVE_GETPROTOBYNAME */
 
-  
-  if(args < 1) Pike_error("Too few arguments to udp->bind()\n");
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("UDP->bind", 1);
 
   if(Pike_sp[-args].type != PIKE_T_INT)
-    Pike_error("Bad argument 1 to udp->bind()\n");
+    SIMPLE_BAD_ARG_ERROR("UDP->bind", 1, "int");
 
   if(FD != -1)
   {
@@ -188,7 +188,7 @@ static void udp_bind(INT32 args)
   {
     pop_n_elems(args);
     THIS->my_errno=errno;
-    Pike_error("UDP.bind: failed to create socket\n");
+    Pike_error("UDP->bind: failed to create socket\n");
   }
 
   /* Make sure this fd gets closed on exec. */
@@ -199,7 +199,7 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    Pike_error("UDP.bind: setsockopt SO_REUSEADDR failed\n");
+    Pike_error("UDP->bind: setsockopt SO_REUSEADDR failed\n");
   }
 
 #ifndef SOL_IP
@@ -226,7 +226,7 @@ static void udp_bind(INT32 args)
 
   if (THIS->type==SOCK_RAW && THIS->protocol==255 /* raw */)
      if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&o, sizeof(int)))
-	Pike_error("UDP.bind: setsockopt IP_HDRINCL failed\n");
+	Pike_error("UDP->bind: setsockopt IP_HDRINCL failed\n");
 #endif /* IP_HDRINCL */
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
@@ -250,7 +250,7 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    Pike_error("UDP.bind: failed to bind to port %d\n",
+    Pike_error("UDP->bind: failed to bind to port %d\n",
 	       (u_short)Pike_sp[-args].u.integer);
     return;
   }
@@ -519,20 +519,11 @@ void udp_sendto(INT32 args)
     }
     if(Pike_sp[3-args].u.integer & ~3) {
       Pike_error("Illegal 'flags' value passed to "
-		 "udp->send(string to, int port, string message, int flags)\n");
+		 "UDP->send(string to, int port, string message, int flags)\n");
     }
   }
-  else if(args != 3)
-    Pike_error("Illegal number of arguments to udp->sendto(string to"
-	       ", int port, string message, void|int flags)\n");
 
-  if( Pike_sp[2-args].type!=PIKE_T_STRING ) 
-    Pike_error("Illegal type of argument to sendto, got non-string message.\n");
-
-  if( Pike_sp[-args].type==PIKE_T_STRING ) 
-    get_inet_addr(&to, Pike_sp[-args].u.string->str);
-  else
-    Pike_error("Illegal type of argument to sendto, got non-string to-address.\n");
+  get_inet_addr(&to, Pike_sp[-args].u.string->str);
 
   to.sin_port = htons( ((u_short)Pike_sp[1-args].u.integer) );
 
@@ -623,8 +614,10 @@ static void udp_set_read_callback(INT32 args)
   if(FD < 0)
     Pike_error("File is not open.\n");
 
-  if(args != 1)
-    Pike_error("Wrong number of arguments to file->set_read_callback().\n");
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("UDP->set_read_callback", 1);
+  if(args > 1)
+    pop_n_elems(args-1);
   
   if(UNSAFE_IS_ZERO(& THIS->read_callback))
     assign_svalue(& THIS->read_callback, Pike_sp-1);
@@ -635,7 +628,7 @@ static void udp_set_read_callback(INT32 args)
     set_read_callback(FD, 0, 0);
   else
     set_read_callback(FD, udp_read_callback, THIS);
-  pop_n_elems(args);
+  pop_stack();
   ref_push_object(THISOBJ);
 }
 
@@ -701,7 +694,7 @@ static void udp_connect(INT32 args)
      if(FD < 0)
      {
 	THIS->my_errno=errno;
-	Pike_error("UDP.connect: failed to create socket\n");
+	Pike_error("UDP->connect: failed to create socket\n");
      }
      set_close_on_exec(FD, 1);
   }
@@ -717,7 +710,7 @@ static void udp_connect(INT32 args)
   if(tmp < 0)
   {
     THIS->my_errno=errno;
-    Pike_error("UDP.connect: failed to connect\n");
+    Pike_error("UDP->connect: failed to connect\n");
   }else{
     THIS->my_errno=0;
     pop_n_elems(args);
@@ -740,7 +733,7 @@ static void udp_query_address(INT32 args)
   ACCEPT_SIZE_T len;
 
   if(fd <0)
-    Pike_error("socket->query_address(): Port not bound yet.\n");
+    Pike_error("UDP->query_address(): Port not bound yet.\n");
 
   THREADS_ALLOW();
 
@@ -785,9 +778,9 @@ static void udp_set_type(INT32 args)
    INT_TYPE type=0;
    INT_TYPE proto=0;
    if (args<2)
-      get_all_args("UDP.set_type",args,"%i",&type);
+      get_all_args("UDP->set_type",args,"%i",&type);
    else
-      get_all_args("UDP.set_type",args,"%i%i",&type,&proto);
+      get_all_args("UDP->set_type",args,"%i%i",&type,&proto);
 
    THIS->type=(int)type;
    THIS->protocol=(int)proto;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.117 2002/11/28 18:53:07 nilsson Exp $
+|| $Id: efuns.c,v 1.118 2003/01/05 14:10:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.117 2002/11/28 18:53:07 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.118 2003/01/05 14:10:19 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -163,9 +163,9 @@ void f_file_stat(INT32 args)
   struct pike_string *str;
   
   if(args<1)
-    Pike_error("Too few arguments to file_stat()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to file_stat()\n");
+    SIMPLE_BAD_ARG_ERROR("file_stat", 1, "string");
 
   str = sp[-args].u.string;
   l = (args>1 && !UNSAFE_IS_ZERO(sp+1-args))?1:0;
@@ -215,10 +215,12 @@ void f_file_truncate(INT32 args)
   struct pike_string *str;
   int res;
 
-  if(args<1 || sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to file_truncate(string filename,int length).\n");
-  if(args<2 || sp[1-args].type != T_INT)
-    Pike_error("Bad argument 2 to file_truncate(string filename,int length).\n");
+  if(args < 2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
+  if(sp[-args].type != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("file_truncate", 1, "string");
+  if(sp[1-args].type != T_INT)
+    SIMPLE_BAD_ARG_ERROR("file_truncate", 2, "int");
 
   str = sp[-args].u.string;
   len = sp[1-args].u.integer;
@@ -418,9 +420,9 @@ void f_filesystem_stat(INT32 args)
   struct pike_string *str;
 
   if(args<1)
-    Pike_error("Too few arguments to filesystem_stat()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("filesystem_stat", 1);
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to filesystem_stat()\n");
+    SIMPLE_BAD_ARG_ERROR("filesystem_stat", 1, "string");
 
   str = sp[-args].u.string;
 
@@ -540,9 +542,9 @@ void f_filesystem_stat(INT32 args)
 void f_werror(INT32 args)
 {
   if(!args)
-    Pike_error("Too few arguments to werror.\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("werror", 1);
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to werror().\n");
+    SIMPLE_BAD_ARG_ERROR("werror", 1, "string");
 
   if(args> 1)
   {
@@ -575,10 +577,10 @@ void f_rm(INT32 args)
   destruct_objects_to_destruct();
 
   if(!args)
-    Pike_error("Too few arguments to rm()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("rm", 1);
 
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to rm().\n");
+    SIMPLE_BAD_ARG_ERROR("rm", 1, "string");
 
   VALID_FILE_IO("rm","write");
 
@@ -656,10 +658,10 @@ void f_mkdir(INT32 args)
   int i;
 
   if(!args)
-    Pike_error("Too few arguments to mkdir()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
 
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to mkdir().\n");
+    SIMPLE_BAD_ARG_ERROR("mkdir", 1, "string");
 
   mode = 0777;			/* &'ed with ~umask anyway. */
 
@@ -971,10 +973,10 @@ void f_cd(INT32 args)
   struct pike_string *str;
 
   if(!args)
-    Pike_error("Too few arguments to cd()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("cd", 1);
 
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to cd()\n");
+    SIMPLE_BAD_ARG_ERROR("cd", 1, "string");
 
   VALID_FILE_IO("cd","status");
 
@@ -1071,7 +1073,7 @@ void f_exece(INT32 args)
   save_sp=sp-args;
 
   if(args < 2)
-    Pike_error("Too few arguments to exece().\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("exece", 2);
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -1085,26 +1087,26 @@ void f_exece(INT32 args)
   {
   default:
     if(sp[2-args].type != T_MAPPING)
-      Pike_error("Bad argument 3 to exece().\n");
+      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
     en=sp[2-args].u.mapping;
     mapping_fix_type_field(en);
 
     if(m_ind_types(en) & ~BIT_STRING)
-      Pike_error("Bad argument 3 to exece().\n");
+      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
     if(m_val_types(en) & ~BIT_STRING)
-      Pike_error("Bad argument 3 to exece().\n");
+      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
 
   case 2:
     if(sp[1-args].type != T_ARRAY)
-      Pike_error("Bad argument 2 to exece().\n");
+      SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
     array_fix_type_field(sp[1-args].u.array);
 
     if(sp[1-args].u.array->type_field & ~BIT_STRING)
-      Pike_error("Bad argument 2 to exece().\n");
+      SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
 
   case 1:
     if(sp[0-args].type != T_STRING)
-      Pike_error("Bad argument 1 to exece().\n");
+      SIMPLE_BAD_ARG_ERROR("exece", 1, "string");
   }
 
   argv=(char **)xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
@@ -1203,13 +1205,13 @@ void f_mv(INT32 args)
 #endif
 
   if(args<2)
-    Pike_error("Too few arguments to mv()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);
 
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to mv().\n");
+    SIMPLE_BAD_ARG_ERROR("mv", 1, "string");
 
   if(sp[-args+1].type != T_STRING)
-    Pike_error("Bad argument 2 to mv().\n");
+    SIMPLE_BAD_ARG_ERROR("mv", 2, "string");
 
   VALID_FILE_IO("mv","write");
 
@@ -1407,9 +1409,9 @@ void f_strerror(INT32 args)
   int err;
 
   if(!args) 
-    Pike_error("Too few arguments to strerror()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("strerror", 1);
   if(sp[-args].type != T_INT)
-    Pike_error("Bad argument 1 to strerror()\n");
+    SIMPLE_BAD_ARG_ERROR("strerror", 1, "int");
 
   err = sp[-args].u.integer;
   pop_n_elems(args);
