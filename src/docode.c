@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.83 2000/09/26 22:19:02 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.84 2000/11/08 20:03:45 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -958,6 +958,10 @@ static int do_docode2(node *n, INT16 flags)
 #endif
 
     f_aggregate(cases);
+
+    /* FIXME: get_switch_order might possibly be able to
+     * throw errors, add a catch around this! -Hubbe
+     */
     order=get_switch_order(Pike_sp[-1].u.array);
 
     if (!Pike_compiler->num_parse_error) {

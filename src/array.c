@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.92 2000/10/20 10:05:40 grubba Exp $");
+RCSID("$Id: array.c,v 1.93 2000/11/08 20:03:45 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -404,9 +404,6 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   struct array *a;
 
 #ifdef PIKE_DEBUG
-  if(v->refs>1)
-    fatal("Array remove on array with many references.\n");
-
   if(index<0 || index >= v->size)
     fatal("Illegal argument to array_remove.\n");
 #endif
@@ -660,54 +657,121 @@ INT32 *get_order(struct array *v, cmpfun fun)
   return current_order;
 }
 
-static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
+static INLINE int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
 {
-  INT32 tmp;
-  if((tmp=(a->type - b->type))) return tmp;
-  switch(a->type)
+  INT32 def,fun;
+  if(a->type == b->type)
   {
-  case T_FLOAT:
-    if(a->u.float_number < b->u.float_number) return -1;
-    if(a->u.float_number > b->u.float_number) return 1;
-    return 0;
+    switch(a->type)
+    {
+      case T_FLOAT:
+	if(a->u.float_number < b->u.float_number) return -1;
+	if(a->u.float_number > b->u.float_number) return 1;
+	return 0;
+	
+      case T_FUNCTION:
+	if(a->u.refs < b->u.refs) return -1;
+	if(a->u.refs > b->u.refs) return 1;
+	return a->subtype - b->subtype;
+	
+      case T_INT:
+	if(a->u.integer < b->u.integer) return -1;
+	if(a->u.integer > b->u.integer) return 1;
+	return 0;
+	
+      default:
+	if(a->u.refs < b->u.refs) return -1;
+	if(a->u.refs > b->u.refs) return 1;
+	return 0;
 
-  case T_FUNCTION:
-    if(a->u.refs < b->u.refs) return -1;
-    if(a->u.refs > b->u.refs) return 1;
-    return a->subtype - b->subtype;
+      case T_OBJECT:
+	if(a->u.object == b->u.object) return 0;
+	if(a->u.refs < b->u.refs) { def=-1; break; }
+	if(a->u.refs > b->u.refs) { def=1; break; }
+	def=0;
+	break;
+    }
+  }else{
+    def=a->type - b->type;
+  }
 
-  case T_INT:
-    if(a->u.integer < b->u.integer) return -1;
-    if(a->u.integer > b->u.integer) return 1;
-    return 0;
-
-  default:
-    if(a->u.refs < b->u.refs) return -1;
-    if(a->u.refs > b->u.refs) return 1;
+  if(a->type == T_OBJECT && a->u.object->prog && 
+     FIND_LFUN(a->u.object->prog,LFUN_LT) != -1)
+  {
+    push_svalue(b);
+    apply_lfun(a->u.object,LFUN_LT,1);
+    if(!IS_ZERO(sp-1))
+    {
+      pop_stack();
+      return -1;
+    }else{
+      pop_stack();
+    }
+    
+    push_svalue(b);
+    apply_lfun(a->u.object,LFUN_GT,1);
+    if(!IS_ZERO(sp-1))
+    {
+      pop_stack();
+      return 1;
+    }else{
+      pop_stack();
+    }
     return 0;
   }
+
+  if(b->type == T_OBJECT && b->u.object->prog && 
+     FIND_LFUN(b->u.object->prog,LFUN_LT) != -1)
+  {
+    push_svalue(a);
+    apply_lfun(b->u.object,LFUN_LT,1);
+    if(!IS_ZERO(sp-1))
+    {
+      pop_stack();
+      return 1;
+    }else{
+      pop_stack();
+    }
+    
+    push_svalue(a);
+    apply_lfun(b->u.object,LFUN_GT,1);
+    if(!IS_ZERO(sp-1))
+    {
+      pop_stack();
+      return -1;
+    }else{
+      pop_stack();
+    }
+    return 0;
+  }
+
+  return def;
 }
 
 static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
 {
-  if(a->type != b->type) return a->type - b->type;
-  switch(a->type)
+  if(a->type == b->type)
   {
-  case T_INT:
-    if(a->u.integer < b->u.integer) return -1;
-    if(a->u.integer > b->u.integer) return 1;
-    return 0;
-
-  case T_FLOAT:
-    if(a->u.float_number < b->u.float_number) return -1;
-    if(a->u.float_number > b->u.float_number) return 1;
-    return 0;
-
-  case T_STRING:
-    return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
-    
-  default:
-    return set_svalue_cmpfun(a,b);
+    switch(a->type)
+    {
+      case T_INT:
+	if(a->u.integer < b->u.integer) return -1;
+	if(a->u.integer > b->u.integer) return 1;
+	return 0;
+	
+      case T_FLOAT:
+	if(a->u.float_number < b->u.float_number) return -1;
+	if(a->u.float_number > b->u.float_number) return 1;
+	return 0;
+	
+      case T_STRING:
+	return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
+	
+      default:
+	return set_svalue_cmpfun(a,b);
+    }
+  }else{
+    return a->type - b->type;
   }
 }
 
@@ -826,13 +890,18 @@ INT32 set_lookup(struct array *a, struct svalue *s)
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
-  /* face it, it's not there */
-  if( (((2 << s->type) -1) & a->type_field) == 0)
-    return -1;
 
+  /* objects may have `< `> operators, evil stuff! */
+  if(s->type != T_OBJECT && !(a->flags & BIT_OBJECT))
+  {
+    /* face it, it's not there */
+    if( (((2 << s->type) -1) & a->type_field) == 0)
+      return -1;
+    
   /* face it, it's not there */
-  if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
-    return ~a->size;
+    if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+      return ~a->size;
+  }
 
   return low_lookup(a,s,set_svalue_cmpfun);
 }
@@ -843,12 +912,16 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
-  if( (((2 << s->type) -1) & a->type_field) == 0)
-    return -1;
+  /* objects may have `< `> operators, evil stuff! */
+  if(s->type != T_OBJECT && !(a->flags & BIT_OBJECT))
+  {
+    if( (((2 << s->type) -1) & a->type_field) == 0)
+      return -1;
 
-  /* face it, it's not there */
-  if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
-    return ~a->size;
+    /* face it, it's not there */
+    if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+      return ~a->size;
+  }
 
   return low_lookup(a,s,switch_svalue_cmpfun);
 }
@@ -982,6 +1055,7 @@ union anything *array_get_item_ptr(struct array *a,
  */
 INT32 * merge(struct array *a,struct array *b,INT32 opcode)
 {
+  ONERROR r;
   INT32 ap,bp,i,*ret,*ptr;
   
   ap=bp=0;
@@ -1011,6 +1085,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   }
 
   ptr=ret=(INT32 *)xalloc(sizeof(INT32)*(a->size + b->size + 1));
+  SET_ONERROR(r, free,ret);
   ptr++;
 
   while(ap < a->size && bp < b->size)
@@ -1033,6 +1108,8 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   if(opcode & PIKE_ARRAY_OP_B) while(bp<b->size) *(ptr++)=~(bp++);
 
   *ret = DO_NOT_WARN((INT32)(ptr-ret-1));
+
+  UNSET_ONERROR(r);
 
   return ret;
 }
@@ -1169,6 +1246,7 @@ static int array_merge_fun(INT32 *a, INT32 *b)
  */
 PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op)
 {
+  ONERROR r1,r2,r3;
   INT32 *zipper;
   struct array *tmpa,*tmpb,*ret;
 
@@ -1176,21 +1254,27 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *
   if(orderb) { free((char *)orderb); orderb=0; }
 
   ordera=get_set_order(a);
-  tmpa=reorder_and_copy_array(a,ordera);
-
   orderb=get_set_order(b);
+
+  tmpa=reorder_and_copy_array(a,ordera);
+  SET_ONERROR(r1,do_free_array,tmpa);
+
   tmpb=reorder_and_copy_array(b,orderb);
+  SET_ONERROR(r2,do_free_array,tmpb);
 
   zipper=merge(tmpa,tmpb,op);
+  SET_ONERROR(r3,free,zipper);
 
   fsort((char *)(zipper+1),*zipper,sizeof(INT32),(fsortfun)array_merge_fun);
-  free((char *)ordera);
+
   free((char *)orderb);
+  free((char *)ordera);
   orderb=ordera=0;
+
   ret=array_zip(tmpa,tmpb,zipper);
-  free_array(tmpa);
-  free_array(tmpb);
-  free((char *)zipper);
+  UNSET_ONERROR(r3);  free((char *)zipper);
+  UNSET_ONERROR(r2);  free_array(tmpb);
+  UNSET_ONERROR(r1);  free_array(tmpa);
   return ret;
 }
 
@@ -1211,6 +1295,7 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *
  */
 PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op)
 {
+  ONERROR r1,r2,r3,r4,r5;
   INT32 ap,bp,i;
   struct svalue *arra,*arrb;
   struct array *ret;
@@ -1223,12 +1308,16 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
   }
 #endif
 
+  SET_ONERROR(r1,do_free_array,a);
+  SET_ONERROR(r2,do_free_array,b);
+
   if(a->refs==1 || !a->size)
   {
     arra=ITEM(a);
   }else{
     arra=(struct svalue *)xalloc(a->size*sizeof(struct svalue));
     MEMCPY(arra,ITEM(a),a->size*sizeof(struct svalue));
+    SET_ONERROR(r3,free,arra);
   }
 
   if(b->refs==1 || !b->size)
@@ -1237,12 +1326,14 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
   }else{
     arrb=(struct svalue *)xalloc(b->size*sizeof(struct svalue));
     MEMCPY(arrb,ITEM(b),b->size*sizeof(struct svalue));
+    SET_ONERROR(r4,free,arrb);
   }
 
   set_sort_svalues(arra,arra+a->size-1);
   set_sort_svalues(arrb,arrb+b->size-1);
 
   ret=low_allocate_array(0,32);
+  SET_ONERROR(r5,do_free_array,ret);
   ap=bp=0;
 
   while(ap < a->size && bp < b->size)
@@ -1269,11 +1360,25 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
     while(bp<b->size)
       ret=append_array(ret,arrb + bp++);
 
-  if(arra != ITEM(a)) free((char *)arra);
-  if(arrb != ITEM(b)) free((char *)arrb);
+  UNSET_ONERROR(r5);
 
-  free_array(a);
+  if(arrb != ITEM(b))
+  {
+    UNSET_ONERROR(r4);
+    free((char *)arrb);
+  }
+
+  if(arra != ITEM(a))
+  {
+    UNSET_ONERROR(r3);
+    free((char *)arra);
+  }
+
+  UNSET_ONERROR(r2);
   free_array(b);
+
+  UNSET_ONERROR(r1);
+  free_array(a);
 
   return ret;
 }
@@ -1287,6 +1392,9 @@ PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 					INT32 op)
 {
 #if 0
+  /* FIXME: If this routine is ever reinstated, it has to be
+   * fixed to use ONERROR
+   */
   INT32 *zipper;
   struct array *tmpa,*tmpb,*ret;
 
@@ -1318,6 +1426,7 @@ PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 }
 
 /* subtract an array from another */
+
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
 {
 #ifdef PIKE_DEBUG

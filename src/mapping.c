@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.110 2000/11/01 23:30:36 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.111 2000/11/08 20:03:45 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1321,6 +1321,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 {
+  ONERROR r1,r2,r3,r4,r5;
   struct array *ai, *av;
   struct array *bi, *bv;
   struct array *ci, *cv;
@@ -1335,7 +1336,11 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
 #endif
 
   ai=mapping_indices(a);
+  SET_ONERROR(r1,do_free_array,ai);
+
   av=mapping_values(a);
+  SET_ONERROR(r2,do_free_array,av);
+
   if(ai->size > 1)
   {
     zipper=get_set_order(ai);
@@ -1345,7 +1350,11 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
   }
 
   bi=mapping_indices(b);
+  SET_ONERROR(r3,do_free_array,bi);
+
   bv=mapping_values(b);
+  SET_ONERROR(r4,do_free_array,bv);
+
   if(bi->size > 1)
   {
     zipper=get_set_order(bi);
@@ -1357,13 +1366,15 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
   zipper=merge(ai,bi,op);
 
   ci=array_zip(ai,bi,zipper);
-  free_array(ai);
-  free_array(bi);
+
+  UNSET_ONERROR(r4); free_array(bi);
+  UNSET_ONERROR(r3); free_array(ai);
 
   cv=array_zip(av,bv,zipper);
-  free_array(av);
-  free_array(bv);
-  
+
+  UNSET_ONERROR(r2); free_array(bv);
+  UNSET_ONERROR(r1); free_array(av);
+
   free((char *)zipper);
 
   m=mkmapping(ci, cv);
@@ -1376,13 +1387,16 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
 PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, 
 					    struct array *b, INT32 op)
 {
+  ONERROR r1,r2;
   struct array *ai, *av;
   struct array *ci = NULL, *cv = NULL;
   INT32 *zipper = NULL;
   struct mapping *m;
 
   ai=mapping_indices(a);
+  SET_ONERROR(r1,do_free_array,ai);
   av=mapping_values(a);
+  SET_ONERROR(r2,do_free_array,av);
   if(ai->size > 1)
   {
     zipper=get_set_order(ai);
@@ -1407,8 +1421,8 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 	fatal("merge_mapping_array on other than AND or SUB\n");
   }
 
-  free_array(ai);
-  free_array(av);
+  UNSET_ONERROR(r2); free_array(av);
+  UNSET_ONERROR(r1); free_array(ai);
   
   free((char *)zipper);
 
@@ -1422,6 +1436,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, 
 					      struct array *b, INT32 op)
 {
+  ONERROR r1;
   struct array *b_temp;
   INT32 *zipper;
   struct mapping *m;
@@ -1430,8 +1445,9 @@ PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
   {
     zipper=get_set_order(b);
     b_temp=reorder_and_copy_array(b,zipper);
+    SET_ONERROR(r1,do_free_array,b_temp);
     m=merge_mapping_array_ordered(a,b_temp,op);
-    free_array(b_temp);
+    UNSET_ONERROR(r1); free_array(b_temp);
   }
   else
     m=merge_mapping_array_ordered(a,b,op);
