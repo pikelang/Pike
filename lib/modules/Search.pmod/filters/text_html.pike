@@ -5,18 +5,18 @@
 
 constant contenttypes = ({ "text/html" });
 
-constant whtspaces = ({ "\n", "\r", "\t" });
-constant interpunc = ({ ".", ",", ";", ":", "-", "_", "!", "\"", "?",
+static constant whtspaces = ({ "\n", "\r", "\t" });
+static constant interpunc = ({ ".", ",", ";", ":", "-", "_", "!", "\"", "?",
 			"\\", "(", ")", "{", "}", "[", "]" });
 
-inline string normalize(string text)
+static string normalize(string text)
 {
   return replace(text,
 		 replace_entities+whtspaces+interpunc,
 		 replace_values+({" "})*sizeof(whtspaces+interpunc));
 }
 
-inline string remove_slash(string bar)
+inline static string remove_slash(string bar)
 {
   return replace(bar, "/", " ");
 }
@@ -32,8 +32,11 @@ class Filter
   void set_content(string c)
   {
     spider;
-    // Lazy preprocess...
-    c=parse_html(normalize(c), ([]), (["script":""]) );
+    Parser.HTML()->add_container("title",
+				 lambda(string t, mapping m, string c) {
+				   title=c;
+				 })->feed(c);
+    c=normalize(c);
 
     int counter=0;
     int p_con=T_NONE;
@@ -43,7 +46,7 @@ class Filter
     while (counter<sizeof(c))
     {
       next=search(c, "<", counter);
-      if(next==-1)
+      if(next==-1 && p_con!=-1)
       {
 	content+=({ remove_slash(c[counter+1..]) });
 	context+=({ p_con });
@@ -51,7 +54,7 @@ class Filter
 	break;
       }
 
-      if(counter!=next)
+      if(counter!=next && p_con!=-1)
       {
 	content+=({ remove_slash(c[counter+1..next-1]) });
 	context+=({ p_con });
@@ -62,9 +65,9 @@ class Filter
 
       // Alter context?
       zero=0;
-      string c4=lower_case(c[next..next+4]);
-      string c2=c4[..1];
-      if(c4=="title")
+      string c5=lower_case(c[next..next+4]);
+      string c2=c5[..1];
+      if(c5=="title")
 	p_con=T_TITLE;
       else if(c2=="h1")
 	p_con=T_H1;
@@ -80,6 +83,8 @@ class Filter
 	p_con=T_H6;
       else if(c2=="th")
 	p_con=T_TH;
+      else if(c5=="scrip" || c5=="style")
+	p_con=-1;
       else if(c[next+1]=='>' || c[next+1]=='/' || c[next+1]==' ') {
 	if(c[next]=='b' || c[next]=='B')
 	  p_con=T_B;
@@ -99,12 +104,12 @@ class Filter
       {
 	if(c2=="br")
 	  zero=0;
-	else if(c4[..2]=="img")
+	else if(c5[..2]=="img")
 	{
 	  zero=0;
 	  parse_atomic=1;
 	}
-	else if(c4[..3]=="meta")
+	else if(c5[..3]=="meta")
 	  parse_atomic=2;
       }
 
@@ -159,7 +164,7 @@ class Filter
   {
     content+=({ (c) });
     context+=({ t });
-    offset+=({ T_NONE });
+    offset+=({ offset[-1]+sizeof(content[-1]) });
   }
 			    
   array(array) get_filtered_content()
@@ -168,18 +173,20 @@ class Filter
   }
 
   array get_anchors() { return 0; }
+
   string get_title()
   { 
-    int pos=search(context, T_TITLE);
-    if (pos==-1) return "";
-    return content[pos];
+    if(title) return title;
+    return "";
   }
+
   string get_keywords()
   {
     int pos=search(context, T_KEYWORDS);
     if (pos==-1) return "";
     return content[pos];
   }
+
   string get_description()
   {
     int pos=search(context, T_DESC);
@@ -450,5 +457,9 @@ constant greek
      "&omega;":   "\x3C9",
 ]);
 
-constant replace_entities=indices( iso88591 )+indices( international )+indices( symbols )+indices( greek )+({"&lt;","&gt;","&amp;","&quot;","&apos;","&#x22;","&#34;","&#39;","&#0;"});
-constant replace_values  =values( iso88591 )+values( international )+values( symbols )+values( greek )+({"<",">","&","\"","\'","\"","\"","\'","\000"});
+constant replace_entities = indices( iso88591 )+indices( international )+
+  indices( symbols )+indices( greek )+
+  ({"&lt;","&gt;","&amp;","&quot;","&apos;","&#x22;","&#34;","&#39;","&#0;"});
+
+constant replace_values = values( iso88591 )+values( international )+
+  values( symbols )+values( greek )+({"<",">","&","\"","\'","\"","\"","\'","\000"});
