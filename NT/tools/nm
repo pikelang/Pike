@@ -1,4 +1,5 @@
 #!/usr/local/bin/pike
+/* -*- Pike -*- */
 
 inherit "lib.pike";
 
@@ -12,7 +13,9 @@ int main(int argc, string *argv)
     case "a":
     case "lib":
     case "dll":
-      argv[0]="wlib";
+    case "o":
+    case "obj":
+      argv[0]="dumpbin";
       exit(do_cmd( Array.map(argv,fixpath)));
 
     default:
