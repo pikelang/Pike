@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.129 2001/06/26 21:03:50 hubbe Exp $");
+RCSID("$Id: main.c,v 1.130 2001/06/30 07:05:55 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -414,6 +414,16 @@ int dbm_main(int argc, char **argv)
 
 	    case 't':
 	      debug_options|=NO_TAILRECURSION;
+	      p++;
+	      goto more_d_flags;
+
+	    case 'g':
+	      debug_options|=GC_RESET_DMALLOC;
+	      p++;
+	      goto more_d_flags;
+
+	    case 'p':
+	      debug_options|=NO_PEEP_OPTIMIZING;
 	      p++;
 	      goto more_d_flags;
 

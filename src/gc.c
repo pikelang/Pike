@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.159 2001/06/30 02:35:50 mast Exp $");
+RCSID("$Id: gc.c,v 1.160 2001/06/30 07:05:54 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2055,6 +2055,10 @@ int do_gc(void)
 #endif
 
   if(Pike_in_gc) return 0;
+#ifdef DEBUG_MALLOC
+  if(debug_options & GC_RESET_DMALLOC)
+    reset_debug_malloc();
+#endif
   init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;

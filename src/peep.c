@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.47 2001/06/23 10:33:11 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.48 2001/06/30 07:05:55 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -215,7 +215,7 @@ void assemble(void)
   INT32 *labels, *jumps, *uses;
   ptrdiff_t e, length;
   p_instr *c;
-  int reoptimize=1;
+  int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 #ifdef PIKE_DEBUG
   int synch_depth;
 #endif
