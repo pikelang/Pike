@@ -56,7 +56,7 @@
 #endif
 #include <sys/stat.h>
 
-/* #define POLL_DEBUG */
+#define POLL_DEBUG
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
@@ -1876,6 +1876,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "[%d]BACKEND[unhooked box]: change_fd_for_box: "
 		    "fd from %d to %d\n", getpid(), old_fd, new_fd));
       box->fd = new_fd;
+      box->revents = 0;
     }
 
     else {
@@ -1887,6 +1888,7 @@ PIKECLASS Backend
 	box->fd = new_fd;
 	add_fd_box (box);
 	new_fd = box->fd;
+	box->revents = 0;
 	if (new_fd >= 0) update_fd_set (box->backend, new_fd, 0, box->events);
       }
 
@@ -2411,9 +2413,8 @@ PIKECLASS Backend
       if (!i) {
 	/* Timeout */
       } else if (i>0) {
-#ifdef PIKE_DEBUG
 	int num_active = i;
-#endif /* PIKE_DEBUG */
+
 	done_something = 1;
 
 #ifdef USE_SELECT
@@ -2524,6 +2525,14 @@ PIKECLASS Backend
 
 #else  /* !USE_SELECT */
 
+	/* First clear revents for all the fds.
+	 *
+	 * FIXME: This is done for paranoia reasons. If all code that
+	 *        messes with fds clears revents, this isn't needed.
+	 *
+	 * Note: this needs to be a separate loop, since kqueue sends
+	 *       read and write in two separate events.
+	 */
 #if defined(USE_POLL_DEVICE) || defined(USE_KQUEUE)
 	while(i--)
 #define ACTIVE_POLLSET poll_fds
@@ -2534,9 +2543,24 @@ PIKECLASS Backend
 	{
 	  int fd = GET_FD(ACTIVE_POLLSET[i]);
 	  struct fd_callback_box *box;
-#ifdef PIKE_DEBUG
-	  int handled = 0;
-#endif /* PIKE_DEBUG */
+	  box = SAFE_GET_ACTIVE_BOX (me, fd);
+	  if (box) {
+	    check_box (box, fd);
+	    box->revents = 0;
+	  }
+	}
+
+	/* Then flag the active events.
+	 */
+#if defined(USE_POLL_DEVICE) || defined(USE_KQUEUE)
+	i = num_active;
+	while(i--)
+#else
+	for(i=0; i<me->active_set.num_in_poll; i++)
+#endif
+	{
+	  int fd = GET_FD(ACTIVE_POLLSET[i]);
+	  struct fd_callback_box *box;
 
 
 #ifdef POLL_DEBUG
@@ -2588,42 +2612,101 @@ PIKECLASS Backend
 #endif /* USE_KQUEUE */
 #endif /* POLL_DEBUG */
 
-	  /* FIXME: Use EV_ERROR for kqueue here? */
+	  if (!(box = SAFE_GET_ACTIVE_BOX (me, fd))) {
+	    /* The box is no longer active. */
+	    continue;
+	  }
+
 #ifdef MY_POLLNVAL
 	  if(CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL))
 	  {
+	    struct pollfd fds;
+	    int ret;
 	    /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLNVAL on %d\n",
 			  getpid(), me->id, fd));
 #ifdef PIKE_DEBUG
 #ifdef HAVE_POLL
 	    /* FIXME */
-	    if (SAFE_GET_ACTIVE_BOX (me, fd)) {
-	      /* It's still there... */
-	      struct pollfd fds;
-	      int ret;
-	      fds.fd=fd;
-	      fds.events=POLLIN;
-	      fds.revents=0;
-	      ret=poll(&fds, 1,1 );
-	      if(fds.revents & POLLNVAL)
-		Pike_fatal("Bad filedescriptor %d to poll().\n", fd);
-	      break;
-	    }
+
+	    fds.fd=fd;
+	    fds.events=POLLIN;
+	    fds.revents=0;
+	    ret=poll(&fds, 1,1 );
+	    if(fds.revents & POLLNVAL)
+	      Pike_fatal("Bad filedescriptor %d to poll().\n", fd);
 #endif
-	    handled = 1;
+	    /* Don't do anything further with this fd. */
+	    continue;
 #endif /* PIKE_DEBUG */
 	  }
 #endif /* MY_POLLNVAL */
 
-	  /* From the roxen-chat re: connecttest.pike/FreeBSD:
-	   *
-	   * kqueue is returning the correct info:
-	   * {7,EVFILT_READ,EV_ADD|EV_EOF,61,0x0,0x0}.
-	   * errno 61 is ECONNREFUSED
-	   */
-	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR))
-	  {
+	  check_box (box, fd);
+
+	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR)) {
+	    /* Errors are signalled on the first available callback,
+	     * and generally don't like other events.
+	     */
+	    box->revents = PIKE_BIT_FD_ERROR;
+	  } else {
+#ifdef PIKE_DEBUG
+	    int handled = 0;
+#endif /* PIKE_DEBUG */
+	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
+	      box->revents |= PIKE_BIT_FD_READ_OOB;
+	      DO_IF_DEBUG(handled = 1);
+	    }
+	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
+	      box->revents |= PIKE_BIT_FD_READ;
+	      DO_IF_DEBUG(handled = 1);
+	    }
+	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND) ||
+		CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	      box->revents |= PIKE_BIT_FD_WRITE_OOB;
+	      DO_IF_DEBUG(handled = 1);
+	    }
+	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT) ||
+		CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	      box->revents |= PIKE_BIT_FD_WRITE;
+	      DO_IF_DEBUG(handled = 1);
+	    }
+#ifdef PIKE_DEBUG
+	    if (!handled && GET_EVENTS(ACTIVE_POLLSET[i])) {
+	      fprintf(stderr, "[%d]BACKEND[%d]: fd %ld has revents 0x%08lx, "
+		      "but hasn't been handled.\n", getpid(), me->id,
+		      (long)GET_FD(ACTIVE_POLLSET[i]),
+		      (long)GET_EVENTS(ACTIVE_POLLSET[i]));
+	    }
+#endif /* PIKE_DEBUG */
+	  }
+	}
+
+	/* Call callbacks for the active events.
+	 */
+#if defined(USE_POLL_DEVICE) || defined(USE_KQUEUE)
+	i = num_active;
+	while(i--)
+#else
+	for(i=0; i<me->active_set.num_in_poll; i++)
+#endif
+	{
+	  int fd = GET_FD(ACTIVE_POLLSET[i]);
+	  struct fd_callback_box *box;
+
+	  if (!(box = SAFE_GET_ACTIVE_BOX (me, fd))) {
+	    /* The box is no longer active. */
+	    continue;
+	  }
+
+	  check_box (box, fd);
+
+	  if (!(box->events & box->revents)) continue;
+
+	  /* Make sure we don't lose the box during some callback. */
+	  if (box->ref_obj) add_ref(box->ref_obj);
+
+	  if (box->revents & PIKE_BIT_FD_ERROR) {
 	    /* Error */
 	    int old_events;
 	    int err;
@@ -2640,169 +2723,111 @@ PIKECLASS Backend
 	      fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
 		      fd, errno);
 #endif /* PIKE_DEBUG */
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    if (box) {
-	      check_box (box, fd);
-	      /* We don't want to keep this fd anymore.
-	       * Note: This disables any further callbacks.
-	       */
-	      old_events = box->events;
-	      set_fd_callback_events (box, box->events & PIKE_BIT_FD_ERROR);
-	      if (WANT_EVENT (box, ERROR)) {
-		IF_PD(fprintf(stderr,
-			      "[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
-			      getpid(), me->id, i, box->ref_obj));
-		if (box->callback (box, PIKE_FD_ERROR) == -1)
-		  goto backend_round_done;
-	      }
-	      /* The following is temporary compat stuff. */
-	      else if (old_events & PIKE_BIT_FD_READ
-#ifdef USE_KQUEUE
-		       && CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)
-#endif /* USE_KQUEUE */
-		       ) {
-		IF_PD(fprintf(stderr,
-			      "[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
-			      getpid(), me->id, fd, box->ref_obj, errno));
-		if (box->callback (box, PIKE_FD_READ) == -1)
-		  goto backend_round_done;
-	      } else if (old_events & PIKE_BIT_FD_WRITE
-#ifdef USE_KQUEUE
-			 && CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)
-#endif /* USE_KQUEUE */
-		       ) {
-		IF_PD(fprintf(stderr,
-			      "[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
-			      getpid(), me->id, fd, box->ref_obj, errno));
-		if (box->callback (box, PIKE_FD_WRITE) == -1)
-		  goto backend_round_done;
+
+	    box->revents = 0;
+	    
+	    /* We don't want to keep this fd anymore.
+	     * Note: This disables any further callbacks.
+	     */
+	    old_events = box->events;
+	    set_fd_callback_events (box, box->events & PIKE_BIT_FD_ERROR);
+	    if (WANT_EVENT (box, ERROR)) {
+	      IF_PD(fprintf(stderr,
+			    "[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
+			    getpid(), me->id, i, box->ref_obj));
+	      if (box->callback (box, PIKE_FD_ERROR) == -1) {
+		if (box->ref_obj) free_object(box->ref_obj);
+		goto backend_round_done;
 	      }
 	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
+	    /* The following is temporary compat stuff. */
+	    else if (old_events & PIKE_BIT_FD_READ) {
+	      IF_PD(fprintf(stderr,
+			    "[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
+			    getpid(), me->id, fd, box->ref_obj, errno));
+	      if (box->callback (box, PIKE_FD_READ) == -1) {
+		if (box->ref_obj) free_object(box->ref_obj);
+		goto backend_round_done;
+	      }
+	    } else if (old_events & PIKE_BIT_FD_WRITE) {
+	      IF_PD(fprintf(stderr,
+			    "[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
+			    getpid(), me->id, fd, box->ref_obj, errno));
+	      if (box->callback (box, PIKE_FD_WRITE) == -1) {
+		if (box->ref_obj) free_object(box->ref_obj);
+		goto backend_round_done;
+	      }
+	    }
+	    /* Don't call any other callbacks for this fd.
+	     */
+
+	    if (box->ref_obj) free_object(box->ref_obj);
+	    continue;
 	  }
 
-	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
+	  /* From the roxen-chat re: connecttest.pike/FreeBSD:
+	   *
+	   * kqueue is returning the correct info:
+	   * {7,EVFILT_READ,EV_ADD|EV_EOF,61,0x0,0x0}.
+	   * errno 61 is ECONNREFUSED
+	   */
+	  if (box->revents & box->events & PIKE_BIT_FD_READ_OOB) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
 			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (WANT_EVENT (box, READ_OOB))
-	    {
-	      errno = 0;
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      if (box->callback (box, PIKE_FD_READ_OOB) == -1)
-		goto backend_round_done;
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			  getpid(), me->id, fd, box->ref_obj));
+	    errno = 0;
+	    if (box->callback (box, PIKE_FD_READ_OOB) == -1) {
+	      if (box->ref_obj) free_object(box->ref_obj);
+	      goto backend_round_done;
 	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
 	  }
 
-	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
-	  {
+	  if (box->revents & box->events & PIKE_BIT_FD_READ) {
 	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	     *        the kqueue case.
 	     */
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
 			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (WANT_EVENT (box, READ)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_READ) == -1)
-		goto backend_round_done;
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
+			  getpid(), me->id, fd, box->ref_obj));
+	    errno = 0;
+	    if (box->callback (box, PIKE_FD_READ) == -1) {
+	      if (box->ref_obj) free_object(box->ref_obj);
+	      goto backend_round_done;
 	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
 	  }
 
-#ifdef WRBAND_IS_SPECIAL
-	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND) ||
-	      CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	  if (box->revents & box->events & PIKE_BIT_FD_WRITE_OOB) {
 	    IF_PD(fprintf(stderr,
 			  "[%d]BACKEND[%d]: POLLWRBAND|POLLHUP on %d\n",
 			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (WANT_EVENT (box, WRITE_OOB)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_WRITE_OOB) == -1)
-		goto backend_round_done;
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			  getpid(), me->id, fd, box->ref_obj));
+	    errno = 0;
+	    if (box->callback (box, PIKE_FD_WRITE_OOB) == -1) {
+	      if (box->ref_obj) free_object(box->ref_obj);
+	      goto backend_round_done;
 	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
 	  }
-#endif /* WRBAND_IS_SPECIAL */
 
-	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT) ||
-	     CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	  if (box->revents & box->events & PIKE_BIT_FD_WRITE) {
 	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	     *        the kqueue case.
 	     */
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLHUP on %d\n",
-			    getpid(), me->id, fd));
-	    } else {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT on %d\n",
-			    getpid(), me->id, fd));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT|POLLHUP on %d\n",
+			  getpid(), me->id, fd));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
+			  getpid(), me->id, fd, box->ref_obj));
+	    errno = 0;
+	    if (box->callback (box, PIKE_FD_WRITE) == -1) {
+	      if (box->ref_obj) free_object(box->ref_obj);
+	      goto backend_round_done;
 	    }
-#ifndef WRBAND_IS_SPECIAL
-	    if (WANT_EVENT(box, WRITE_OOB)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_WRITE_OOB) == -1)
-		goto backend_round_done;
-	    }
-#endif /* !WRBAND_IS_SPECIAL */
-	    if (WANT_EVENT(box, WRITE)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_WRITE) == -1)
-		goto backend_round_done;
-	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
 	  }
 
-#ifdef PIKE_DEBUG
-	  num_active -= handled;
-	  if (!handled && GET_EVENTS(ACTIVE_POLLSET[i])) {
-	    fprintf(stderr, "[%d]BACKEND[%d]: fd %ld has revents 0x%08lx, "
-		    "but hasn't been handled.\n", getpid(), me->id,
-		    (long)GET_FD(ACTIVE_POLLSET[i]),
-		    (long)GET_EVENTS(ACTIVE_POLLSET[i]));
-	  }
-#endif /* PIKE_DEBUG */
+	  if (box->ref_obj) free_object(box->ref_obj);
 	}
-
-#if defined(PIKE_DEBUG) && !defined(USE_POLL_DEVICE) && !defined(USE_KQUEUE)
-	if (num_active) {
-	  fprintf(stderr, "[%d]BACKEND[%d]: %d more active fds than were handled.\n",
-		  getpid(), me->id, num_active);
-	  for(i=0; i<me->active_set.num_in_poll; i++) {
-	    fprintf(stderr,
-		    "[%d]BACKEND[%d]: fd %ld, events 0x%08lx, revents 0x%08lx\n",
-		    getpid(), me->id,
-		    (long)me->active_set.poll_fds[i].fd,
-		    (long)me->active_set.poll_fds[i].events,
-		    (long)me->active_set.poll_fds[i].revents);
-	  }
-	}
-#endif /* PIKE_DEBUG && !USE_POLL_DEVICE && !USE_KQUEUE */
 
 #endif	/* USE_SELECT */
 
