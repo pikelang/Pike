@@ -280,8 +280,6 @@ static void creds_get_data_bits(INT32 args)
  *: 	void creds->apply(object|program|function|array|mapping|multiset o);
  *: DESCRIPTION
  *: 	Sets the credentials for <arg>o</arg>.
- *: <p>
- *: 	
  *: NOTE
  *: 	To perform this operation the current credentials needs to have the bit
  *:	<code language=pike>BIT_SECURITY</code> set, or have the same user
@@ -308,7 +306,20 @@ static void creds_apply(INT32 args)
   pop_n_elems(args);
 }
 
-/* object(Creds) get_object_creds(object|program|function|array|mapping|multiset o) */
+/*: <pikedoc>
+ *: </class>
+ *: </pikedoc>
+ */
+
+/*: <pikedoc type=txt>
+ *: FUNCTION get_object_creds get the credentials from an object, program etc.
+ *: SYNTAX
+ *: 	object(Creds) get_object_creds(object|program|function|array|mapping|multiset o)
+ *: DESCRIPTION
+ *: 	Retuns the credentials from <arg>o</arg>.
+ *: 	Returns 0 if <arg>o</arg> does not have any credentials.
+ *: </pikedoc>
+ */
 static void f_get_object_creds(INT32 args)
 {
   struct object *o;
@@ -325,10 +336,6 @@ static void f_get_object_creds(INT32 args)
   }
 }
 
-/*: <pikedoc>
- *: </class>
- *: </pikedoc>
- */
 
 static void init_creds_object(struct object *o)
 {
