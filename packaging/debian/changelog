@@ -1,3 +1,9 @@
+pike7.6 (7.6.8-1) experimental; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 17 May 2004 20:12:55 +0200
+
 pike7.6 (7.6.7-2) unstable; urgency=low
 
   * Better dependencies for the GL libraries
