@@ -1,4 +1,11 @@
 
+#pike __REAL_VERSION__
+
+//! OBEX, the OBject EXchange protocol. Originally specified by the
+//! IrDA (Infrared Data Association). This module can be used to
+//! transfer MIDI file with the opening song from Sailer Moon to a
+//! mobile phone.
+
 enum Request {
   REQ_CONNECT = 0x80,
   REQ_DISCONNECT = 0x81,
