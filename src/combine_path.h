@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: combine_path.h,v 1.13 2003/12/18 21:22:24 marcus Exp $
+|| $Id: combine_path.h,v 1.14 2004/01/12 22:56:48 marcus Exp $
 */
 
 /*
@@ -46,7 +46,7 @@ static int find_absolute(PCHARP s)
   {
     int l;
     for(l=2;INDEX_PCHARP(s,l) && !IS_SEP(INDEX_PCHARP(s,l));l++);
-    return l;
+    return INDEX_PCHARP(s,l)? l+1:l;
   }
 
   return 0;
@@ -108,20 +108,21 @@ static void APPEND_PATH(struct string_builder *s,
     s->known_shift=0;
     string_builder_append(s, path, tmp);
     from+=tmp;
-    abs++;
+    abs=tmp;
   }
 #ifdef IS_ROOT
   else if((tmp=IS_ROOT(path)))
   {
     int tmp2;
-    abs++;
     s->known_shift=0;
     if((tmp2=IS_ABS(MKPCHARP_STR(s->s))))
     {
       s->s->len=tmp2;
+      abs=tmp2;
     }else{
       s->s->len=0;
       string_builder_append(s, path, tmp);
+      abs=tmp;
     }
     from+=tmp;
   }
@@ -193,7 +194,6 @@ static void APPEND_PATH(struct string_builder *s,
 	    {
 	      /* Handle "..". */
 	      int tmp=s->s->len-1;
-
 	      if (tmp) {
 		while(--tmp>=0)
 		  if(IS_SEP(index_shared_string(s->s, tmp)))
@@ -203,15 +203,17 @@ static void APPEND_PATH(struct string_builder *s,
 		tmp++;
 	      }
 	      
-	      if ((tmp+1 < s->s->len) &&
-		  (index_shared_string(s->s,tmp)=='.') &&
-		  (index_shared_string(s->s,tmp+1)=='.') && 
-		  ( (tmp+2 == s->s->len) ||
-		    IS_SEP(index_shared_string(s->s,tmp+2))))
-		break;
+	      if (tmp < abs)
+		tmp = abs;
+	      else
+		if ((tmp+1 < s->s->len) &&
+		    (index_shared_string(s->s,tmp)=='.') &&
+		    (index_shared_string(s->s,tmp+1)=='.') && 
+		    ( (tmp+2 == s->s->len) ||
+		      IS_SEP(index_shared_string(s->s,tmp+2))))
+		  break;
 
-	      
-	      from+=2;
+	      from+=(c3? 3:2);
 	      s->s->len=tmp;
 	      s->known_shift=0;
 
@@ -240,7 +242,7 @@ static void APPEND_PATH(struct string_builder *s,
     if(from>=len) break;
     PUSH(INDEX_PCHARP(path, from++));
   }
-  if((s->s->len > 1) && 
+  if((s->s->len > 1) && (s->s->len > abs) &&
      !IS_SEP(INDEX_PCHARP(path, from-1)) &&
      IS_SEP(LAST_PUSHED()))
     s->s->len--;
@@ -253,6 +255,8 @@ static void APPEND_PATH(struct string_builder *s,
 #ifdef CHAR_CURRENT
     }else{
       PUSH(CHAR_CURRENT);
+      if(IS_SEP(INDEX_PCHARP(path, from-1)))
+	PUSH('/');
 #endif
     }
   }
