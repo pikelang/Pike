@@ -1101,7 +1101,10 @@ static INLINE void push_feed_range(struct piece *head,
    {
       if (head==tail)
       {
-	 push_string(string_slice(head->s,c_head,c_tail-c_head));
+	 if (c_head >= c_tail)
+	   ref_push_string(empty_string);
+	 else
+	   push_string(string_slice(head->s,c_head,c_tail-c_head));
 	 n++;
 	 break;
       }
@@ -1319,7 +1322,7 @@ static int scan_forward(struct piece *feed,
 		  case 0:
 		  {
 		     p_wchar0*s=((p_wchar0*)feed->s->str)+c;
-		     while (ce--)
+		     while (ce-- > 0)
 			if ((p_wchar2)*(s++)==f)
 			{
 			   c=feed->s->len-ce;
@@ -1330,7 +1333,7 @@ static int scan_forward(struct piece *feed,
 		  case 1:
 		  {
 		     p_wchar1*s=((p_wchar1*)feed->s->str)+c;
-		     while (ce--)
+		     while (ce-- > 0)
 			if ((p_wchar2)*(s++)==f)
 			{
 			   c=feed->s->len-ce;
@@ -1342,7 +1345,7 @@ static int scan_forward(struct piece *feed,
 		  {
 		     p_wchar2 f=(p_wchar2)*look_for;
 		     p_wchar2*s=((p_wchar2*)feed->s->str)+c;
-		     while (ce--)
+		     while (ce-- > 0)
 			if (*(s++)==f)
 			{
 			   c=feed->s->len-ce;
@@ -1370,7 +1373,7 @@ static int scan_forward(struct piece *feed,
 	       {
 		  int n;
 		  p_wchar0*s=((p_wchar0*)feed->s->str)+c;
-		  while (ce--)
+		  while (ce-- > 0)
 		  {
 		     for (n=0; n<num_look_for; n++)
 			if (((p_wchar2)*s)==look_for[n])
@@ -1387,7 +1390,7 @@ static int scan_forward(struct piece *feed,
 	       {
 		  int n;
 		  p_wchar1*s=((p_wchar1*)feed->s->str)+c;
-		  while (ce--)
+		  while (ce-- > 0)
 		  {
 		     for (n=0; n<num_look_for; n++)
 			if (((p_wchar2)*s)==look_for[n])
@@ -1404,7 +1407,7 @@ static int scan_forward(struct piece *feed,
 	       {
 		  int n;
 		  p_wchar2*s=((p_wchar2*)feed->s->str)+c;
-		  while (ce--)
+		  while (ce-- > 0)
 		  {
 		     for (n=2; n<num_look_for; n++)
 			if (((p_wchar2)*s)==look_for[n])
