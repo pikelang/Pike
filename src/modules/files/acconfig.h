@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.2 1997/06/01 22:57:26 grubba Exp $
+ * $Id: acconfig.h,v 1.3 1997/06/13 11:52:19 grubba Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -9,7 +9,7 @@
 @BOTTOM@
 
 /* Define if your statfs() call takes 4 arguments */
-#undef HAVE_SGI_STATFS
+#undef HAVE_SYSV_STATFS
 
 /* Define if your statfs struct has the f_bavail member */
 #undef HAVE_STATFS_F_BAVAIL

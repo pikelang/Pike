@@ -25,7 +25,9 @@
 #include <sys/types.h>
 #endif
 #include <sys/stat.h>
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <signal.h>
 #include <errno.h>
 
@@ -107,6 +109,9 @@ void f_file_stat(INT32 args)
 #ifdef HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
 #endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif /* HAVE_SYS_MOUNT_H */
@@ -143,11 +148,11 @@ void f_filesystem_stat(INT32 args)
   i = statvfs(s, &st);
 #else
 #ifdef HAVE_STATFS
-#ifdef HAVE_SGI_STATFS
+#ifdef HAVE_SYSV_STATFS
   i = statfs(s, &st, sizeof(st), 0);
 #else
   i = statfs(s, &st);
-#endif /* HAVE_SGI_STATFS */
+#endif /* HAVE_SYSV_STATFS */
 #else
 #ifdef HAVE_USTAT
   if (!(i = stat(s, &statbuf))) {
