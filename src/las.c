@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.173 2000/04/01 14:47:16 grubba Exp $");
+RCSID("$Id: las.c,v 1.174 2000/04/06 09:03:59 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3906,17 +3906,26 @@ int dooptcode(struct pike_string *name,
       if(foo->type == T_FUNCTION && foo->subtype==FUNCTION_BUILTIN)
       {
 	tmp.c_fun=foo->u.efun->function;
-	ret=define_function(name,
-			    type,
-			    modifiers,
+	if(tmp.c_fun != f_destruct &&
+	   tmp.c_fun != f_this_object &&
+	   tmp.c_fun != f_backtrace)
+	{
+	  ret=define_function(name,
+			      type,
+			      modifiers,
 			    IDENTIFIER_C_FUNCTION | vargs,
-			    &tmp);
-	free_node(n);
+			      &tmp);
+	  free_node(n);
 #ifdef PIKE_DEBUG
-	if(a_flag > 1)
-	  fprintf(stderr,"Identifer (C) = %d\n",ret);
+	  if(a_flag > 1)
+	    fprintf(stderr,"%s:%d: IDENTIFIER OPTIMIZATION %s == %s\n",
+		    lex.current_file->str,
+		    lex.current_line,
+		    name->str,
+		    foo->u.efun->name->str);
 #endif
-	return ret;
+	  return ret;
+	}
       }
     }
 
