@@ -50,21 +50,21 @@ test_true([[functionp(Crypto.randomness.really_random)]])
 
 // DES
 test_true([[objectp(Crypto.des())]])
-test_eq([[Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0101010101010180"))
-		->crypt_block(Crypto.hex_to_string("0000000000000000"))]],
-	[[Crypto.hex_to_string("9cc62df43b6eed74")]])
-test_eq([[Crypto.des()->set_encrypt_key(Crypto.hex_to_string("8001010101010101"))
-		->crypt_block(Crypto.hex_to_string("0000000000000040"))]],
-	[[Crypto.hex_to_string("a380e02a6be54696")]])
-test_eq([[Crypto.des()->set_encrypt_key(Crypto.hex_to_string("08192a3b4c5d6e7f"))
-		->crypt_block(Crypto.hex_to_string("0000000000000000"))]],
-	[[Crypto.hex_to_string("25DDAC3E96176467")]])
-test_eq([[Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt_block("Now is t")]],
-	[[Crypto.hex_to_string("3fa40e8a984d4815")]])
-test_eq([[Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt_block(Crypto.hex_to_string("0123456789abcde7"))]],
-	[[Crypto.hex_to_string("c95744256a5ed31d")]])
+test_eq([[Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0101010101010180"))
+		->crypt_block(Crypto.hex_to_string("0000000000000000")))]],
+	[["9cc62df43b6eed74"]])
+test_eq([[Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("8001010101010101"))
+		->crypt_block(Crypto.hex_to_string("0000000000000040")))]],
+	[["a380e02a6be54696"]])
+test_eq([[Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("08192a3b4c5d6e7f"))
+		->crypt_block(Crypto.hex_to_string("0000000000000000")))]],
+	[["25ddac3e96176467"]])
+test_eq([[Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
+		->crypt_block("Now is t"))]],
+	[["3fa40e8a984d4815"]])
+test_eq([[Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
+		->crypt_block(Crypto.hex_to_string("0123456789abcde7")))]],
+	[["c95744256a5ed31d"]])
 
 test_eq([[Crypto.des()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef"))
 		->crypt_block(Crypto.hex_to_string("3fa40e8a984d4815"))]],
