@@ -1197,6 +1197,11 @@ numbers 10, 11, 12, 13, 14 and 15. The ASCII notation gives the ASCII
 value of the character between the single quotes. In this case the character
 is <tt>N</tt> which just happen to be 78 in ASCII.
 <p>
+Integers are coded in 2-complement and overflows are silently ignored
+by Pike. This means that if your integers are 32-bit and you add 1 to
+the number 2147483647 you get the number -2147483648. This works exactly
+as in C or C++.
+<p>
 All the arithmetic, bitwise and comparison operators can be used on integers.
 Also note these functions:
 <dl>
@@ -1273,6 +1278,7 @@ up string comparisons. We have already seen how to write a constant
 string:
 <pre>
 	"hello world" // hello world
+	"he" "llo"    // hello
 	"\116"        // N (116 is the octal ASCII value for N)
 	"\t"          // A tab character
 	"\n"          // A newline character
@@ -1290,7 +1296,8 @@ a tab character, <tt>\\</tt> is used when you want one backslash and
 <tt>\"</tt> is used when you want a doublequote to be a part of the string
 instead of ending it. Also, <tt>\<i>XXX</i></tt> where <i>XXX</i> is an
 octal number from 000 to 377 lets you write any character you want in the
-string, even null characters.
+string, even null characters. If you write two constant strings after each
+other, they will be concatenated into one string.
 <p>
 Although a string is an array, you can not change the individual characters in the string. Instead you have to construct a new string, here is an example
 of how:
@@ -1891,6 +1898,10 @@ other function. Example:
 This is the same as the first two lines in the previous example, the keyword
 <tt>lambda</tt> allows you to write the function inside <tt>bar</tt>.
 <p>
+Note that unlike C++ and Java you can not use function overloading in Pike.
+This means that you cannot have one function called 'foo' which takes an
+integer argument and another function 'foo' which takes a float argument.
+<p>
 This is what you can do with a function pointer.
 <dl>
 <dt> calling ( <i>f</i> ( mixed ... <i>args</i> ) )
@@ -2283,7 +2294,9 @@ complex data type.
 <tr><td>Lookup</td>	<td>a -&gt;<i>identifier</i></td>	<td>`-&gt</td>	<td>Looks up the identifer. Same as a["<i>identifeir</i>"].</td></tr>
 <tr><td>Assign index</td>	<td>a [ b ] = c</td><td>`[]=;</td><td>Sets the index b in a to c.</td></tr>
 <tr><td>Assign index</td>	<td>a -&gt;<i>identifier</i> = c</td><td>`-&gt;=</td><td>Sets the index "<i>identifier</i>" in a to c.</td></tr>
-<tr><td>Range</td>	<td>a [ b .. c]</td>		<td>`[..]</td>		<td>Returns a slice of a starting at the index a and ending at b.</td></tr>
+<tr><td>Range</td>	<td>a [ b .. c]</td>		<td>`[..]</td>		<td>Returns a slice of a starting at the index b and ending at c.</td></tr>
+<tr><td>Range</td>	<td>a [ .. c]</td>		<td>`[..]</td>		<td>Returns a slice of a starting at the beginning av a and ending at b.</td></tr>
+<tr><td>Range</td>	<td>a [ b .. ]</td>		<td>`[..]</td>		<td>Returns a slice of a from the index b to the end of a.</td></tr>
 </table>
 <p>
 </center>
@@ -2978,11 +2991,11 @@ can not be implemented as a normal function.
 Whenever a percent is found in the format string, a match is according
 to the following table:
 <table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td> %d </td><td> gives an integer </td></tr>
-<tr valign=top><td> %o </td><td> gives an octal integer </td></tr>
-<tr valign=top><td> %x </td><td> gives a hexadecimal integer </td></tr>
-<tr valign=top><td> %D </td><td> gives an integer that is either octal (leading zero), hexadecimal (leading 0x) or decimal. </td></tr>
-<tr valign=top><td> %f </td><td> gives a float </td></tr>
+<tr valign=top><td> %d </td><td> reads an integer </td></tr>
+<tr valign=top><td> %o </td><td> reads an octal integer </td></tr>
+<tr valign=top><td> %x </td><td> reads a hexadecimal integer </td></tr>
+<tr valign=top><td> %D </td><td> reads an integer that is either octal (leading zero), hexadecimal (leading 0x) or decimal. </td></tr>
+<tr valign=top><td> %f </td><td> reads a float </td></tr>
 <tr valign=top><td> %c </td><td> matches one char and returns it as an integer </td></tr>
 <tr valign=top><td> %2c </td><td> matches two chars and returns them as an integer (short) </td></tr>
 <tr valign=top><td> %s </td><td> gives a string </td></tr>
@@ -2993,7 +3006,11 @@ to the following table:
 <p>If a * is put between the percent and the operator, the operator
 will not only match it's argument, not assign any variables.
 <p>
-sscanf returns the number of matches that were made.
+Sscanf does not use backtracking. Sscanf simply looks at the format string
+up to the next % and tries to match that with the string. It then proceeds
+to look at the next part. If a part does not match, sscanf immediately
+returns how many % were matched. If this happens, the lvalues for % that
+were not matched will not be changed.
 <p>
 Let's look at a couple of examples:
 <pre>
@@ -3005,6 +3022,10 @@ Let's look at a couple of examples:
 
 	// a will become "test"
 	sscanf(" \t test","%*[ \t]%s",a)
+
+	// Remove "the " from the beginning of a string
+	// If 'str' does not begin with "the " it will not be changed
+	sscanf(str,"the %s",str);
 </pre>
 <p>
 <encaps>SEE ALSO</encaps>: <a href=#sprintf>sprintf</a>
@@ -3060,9 +3081,10 @@ evaluate the expression at all, which might be someone confusing. Example:
 <pre>
 	typeof( exit(1) )
 </pre>
-This will return the string "void" since exit is function that returns void.
-It will not execute the function exit and exit the process as you might
-expect.
+This will return the string <tt>"void"</tt> since exit is function that
+returns void.
+It will not execute the function <tt>exit</tt> and exit the process as you
+might expect.
 </section>
 </a>
 
@@ -3280,7 +3302,7 @@ stream.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Open a file for read, write or append. The variable how should
+Open a file for read, write or append. The variable <i>how</i> should
 contain one or more of the following letters:
 <p><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td> 'r' </td><td> open file for reading </td></tr>
@@ -3427,7 +3449,7 @@ Return the current position in the file.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns the same information as the efun file_stat,
+This function returns the same information as the function file_stat,
 but for the file it is called in. If file is not an open file,
 zero will be returned. Zero is also returned if file is a pipe or
 socket.
@@ -3755,7 +3777,7 @@ o-&gt;dup2(Stdio.File("stdin"));<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function takes a clone of /precompiled/file and assigns all
+This function takes a clone of Stdio.File and assigns all
 variables of this file from it. It can be used together with file-&gt;dup
 to move files around.
 <p>
@@ -4565,7 +4587,7 @@ Append data to the string input. Then we check if we have received a
 a complete line yet. If so we parse this and start ouputting the file.
 <p>
 <pre>
-	    if(sscanf(input,"%s %s%*[\012\015 \t]",cmd,input))
+	    if(sscanf(input,"%s %s%*[\012\015 \t]",cmd,input)&gt;2)
 	    {
 </pre>
 This sscanf is pretty complicated, but in essense it means: put the
@@ -4696,7 +4718,7 @@ have to be resolved at run time.
 <pre>
 	  tmp_output=accept();
 </pre>
-The function accept  clones a /precompiled/file and makes this equal to the
+The function accept  clones a Stdio.File and makes this equal to the
 newly connected socket.
 <p>
 <pre>
@@ -4768,7 +4790,7 @@ Threads are used to run several Pike functions at the same time without having t
 several Pike processes. Using threads often simplifies coding and because the
 threads are within the same process, data can be shared or sent to other threads
 very fast. Threads are not supported on all systems, you may test if you have
-thread support with the preprocessor constructoin <tt>#if efun(thread_create)</tt>.
+thread support with the preprocessor constructoin <tt>#if constant(thread_create)</tt>.
 Pike needs POSIX or UNIX thread support when compiled to support threads.
 <p>
 
@@ -7439,7 +7461,7 @@ write(dom->match("passwd.byname", "root"));
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
   Return the 'order' number for the map map. This is usually a
-  time_t (see the efun time()). When the map is changed, this number
+  time_t (see the global function time()). When the map is changed, this number
   will change as well. <i>map</i> is
     the YP-map to search in. This must be the full map name, as an
     example, passwd.byname instead of just passwd.
@@ -7546,7 +7568,7 @@ or<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
     Return the 'order' number for this map. This is usually a
-    time_t (see the efun time())
+    time_t (see the global function time())
 </dl>
 </a>
 <hr noshade size=1>
@@ -14947,8 +14969,8 @@ Result: Pike v0.3<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Added by the master, it directly calls write in a clone of
-/precompiled/file
+Added by the master, it directly calls write in a
+<a href=Stdio.stdout>Stdio.stdout</a>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#Stdio.werror>Stdio.werror</a>
