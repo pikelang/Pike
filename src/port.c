@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.70 2003/04/02 00:55:09 mast Exp $
+|| $Id: port.c,v 1.71 2003/04/02 21:37:48 mast Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.70 2003/04/02 00:55:09 mast Exp $");
+RCSID("$Id: port.c,v 1.71 2003/04/02 21:37:48 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -403,7 +403,7 @@ PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e)
 
 
 #if !defined(HAVE_INDEX) && !defined(HAVE_STRCHR)
-PMOD_EXPORT char *STRCHR(char *s,char c)
+PMOD_EXPORT char *STRCHR(char *s,int c)
 {
   for(;*s;s++) if(*s==c) return s;
   return NULL;
