@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.23 2002/06/27 11:54:08 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.24 2002/07/09 18:38:32 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1209,6 +1209,9 @@ PIKECLASS string_split_iterator
     RETURN res;
   }
 
+  /*! @decl void create(string buffer, int|array(int)|multiset(int) slit_set,@
+   *!                   int|void flags, function(:string)|void feed)
+   */
   PIKEFUN void create(string buffer, int|array(int)|multiset(int) split_set,
 		      int|void flags, function(:string)|void feed)
     {
