@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.41 1997/09/17 13:04:14 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.42 1997/09/22 01:01:19 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -205,17 +205,13 @@ void f_mutex_lock(INT32 args)
 
   if(m->key)
   {
-    destruct_objects_to_destruct();
-    if(m->key)
+    SWAP_OUT_CURRENT_THREAD();
+    do
     {
-      SWAP_OUT_CURRENT_THREAD();
-      do
-      {
-	THREADS_FPRINTF((stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
-	co_wait(& m->condition, & interpreter_lock);
-      }while(m->key);
-      SWAP_IN_CURRENT_THREAD();
-    }
+      THREADS_FPRINTF((stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
+      co_wait(& m->condition, & interpreter_lock);
+    }while(m->key);
+    SWAP_IN_CURRENT_THREAD();
   }
   m->key=o;
   OB2KEY(o)->mut=m;
@@ -250,8 +246,6 @@ void f_mutex_trylock(INT32 args)
       error("Recursive mutex locks!\n");
     }
   }
-  if(m->key)
-    destruct_objects_to_destruct();
 
   if(!m->key)
   {
@@ -455,6 +449,7 @@ void th_init(void)
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=end_program();
+  mutex_key->flags|=PROG_DESTRUCT_IMMEDIATE;
   if(!mutex_key)
     fatal("Failed to initialize mutex_key program!\n");
 

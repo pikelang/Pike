@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: mkpeep.pike,v 1.5 1997/05/31 22:03:39 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.6 1997/09/22 01:00:49 hubbe Exp $ */
 
 import Simulate;
 
@@ -379,9 +379,7 @@ int main(int argc, string *argv)
   write("#ifdef DEBUG\n");
   write("    if(a_flag>5) {\n");
   write("      fprintf(stderr,\"#%d,%d:\",eye,fifo_len);\n");
-  write("      fprintf(stderr,\"%s(%d)\",  get_token_name(opcode(-2)),argument(-2));\n");
-  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(-1)),argument(-1));\n");
-  write("      fprintf(stderr,\" . %s(%d)\",  get_token_name(opcode(0)),argument(0));\n");
+  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(0)),argument(0));\n");
   write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(1)),argument(1));\n");
   write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(2)),argument(2));\n");
   write("      fprintf(stderr,\" %s(%d)\\n\",get_token_name(opcode(3)),argument(3));\n");

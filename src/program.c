@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.41 1997/09/11 22:51:40 hubbe Exp $");
+RCSID("$Id: program.c,v 1.42 1997/09/22 01:01:18 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -213,6 +213,7 @@ void setup_fake_program(void)
   fake_program.inherits[0].prog=&fake_program;
   fake_program.next=0;
   fake_program.prev=0;
+  fake_program.flags=0;
 /*
   fake_program.lfuns=0;
   fake_prog.num_lfuns=0;
@@ -607,6 +608,7 @@ struct program *end_program(void)
     *prog = fake_program;
     prog->total_size = size;
     prog->refs = 1;
+    prog->flags=0;
     p += MY_ALIGN(sizeof (struct program));
 
     INS_BLOCK(program,program_size,unsigned char,A_PROGRAM);

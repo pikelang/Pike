@@ -121,5 +121,6 @@ extern int stack_size;
 extern int evaluator_stack_malloced, mark_stack_malloced;
 struct callback;
 extern struct callback_list evaluator_callbacks;
+extern void call_callback(struct callback_list *, void *);
 #endif
 

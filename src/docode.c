@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.22 1997/09/19 06:45:31 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.23 1997/09/22 01:01:15 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -804,7 +804,7 @@ static int do_docode2(node *n,int flags)
     {
       if(order[e] < cases-1)
       {
-	int o1=order[e]+1;
+	int o1=order[e]*2+1;
 	if(current_switch_jumptable[o1]==current_switch_jumptable[o1+1] &&
 	   current_switch_jumptable[o1]==current_switch_jumptable[o1+2])
 	{

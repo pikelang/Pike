@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.22 1997/09/09 03:36:12 hubbe Exp $");
+RCSID("$Id: object.c,v 1.23 1997/09/22 01:01:16 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -289,6 +289,13 @@ void destruct_objects_to_destruct(void)
 
 void really_free_object(struct object *o)
 {
+  if(o->prog && (o->prog->flags & PROG_DESTRUCT_IMMEDIATE))
+  {
+    o->refs++;
+    destruct(o);
+    if(--o->refs > 0) return;
+  }
+
   if(o->prev)
     o->prev->next=o->next;
   else

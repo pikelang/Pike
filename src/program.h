@@ -134,6 +134,8 @@ struct inherit
   INT32 storage_offset;
 };
 
+#define PROG_DESTRUCT_IMMEDIATE 1
+
 struct program
 {
   INT32 refs;
@@ -163,6 +165,7 @@ struct program
   SIZE_T total_size;
   SIZE_T num_linenumbers;
   SIZE_T program_size;
+  unsigned INT16 flags;
   unsigned INT16 num_constants;
   unsigned INT16 num_strings;
   unsigned INT16 num_identifiers;
