@@ -33,7 +33,11 @@
 /* must be last include! */
 #include "module_magic.h"
 
-/**** CLASS HeaderParser */
+/*! @module _Roxen
+ */
+
+/*! @class HeaderParser
+ */
 
 #define THP ((struct header_buf *)Pike_fp->current_object->storage)
 struct  header_buf
@@ -43,7 +47,8 @@ struct  header_buf
   ptrdiff_t left;
 };
 
-
+/*! @decl array(string|mapping) feed(string data)
+ */
 static void f_hp_feed( INT32 args )
 {
   struct pike_string *str = Pike_sp[-1].u.string;
@@ -151,13 +156,22 @@ static void f_hp_feed( INT32 args )
   f_aggregate( 3 );             /* data, firstline, headers */
 }
 
+/*! @decl void create(void)
+ */
 static void f_hp_create( INT32 args )
 {
   THP->pnt = THP->headers;
   THP->left = 8192;
+  pop_n_elems(args);
+  push_int(0);
 }
-/**** END CLASS HeaderParser */
 
+/*! @endclass
+ */
+
+/*! @decl string @
+ *!          make_http_headers(mapping(string:string|array(string)) headers)
+ */
 static void f_make_http_headers( INT32 args )
 {
   int total_len = 0, e;
@@ -228,6 +242,10 @@ static void f_make_http_headers( INT32 args )
   push_string( end_shared_string( res ) );
 }
 
+/*! @decl string http_decode_string(string encoded)
+ *!
+ *! Decodes an http transport-encoded string.
+ */
 static void f_http_decode_string(INT32 args)
 {
    int proc;
@@ -263,6 +281,8 @@ static void f_http_decode_string(INT32 args)
    push_string(end_shared_string(newstr));
 }
 
+/*! @endmodule
+ */
 
 void pike_module_init()
 {
@@ -275,7 +295,7 @@ void pike_module_init()
   start_new_program();
   ADD_STORAGE( struct header_buf  );
   pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
-  pike_add_function( "create", f_hp_create, "function(void:void)", 0 );
+  pike_add_function( "create", f_hp_create, "function(:void)", ID_STATIC );
   end_class( "HeaderParser", 0 );
 }
 
