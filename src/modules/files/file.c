@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.324 2004/08/31 15:35:15 grubba Exp $
+|| $Id: file.c,v 1.325 2004/09/01 08:35:03 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.324 2004/08/31 15:35:15 grubba Exp $");
+RCSID("$Id: file.c,v 1.325 2004/09/01 08:35:03 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2782,7 +2782,9 @@ static void low_dup(struct object *toob,
   my_set_close_on_exec(to->box.fd, to->box.fd > 2);
 
   to->open_mode=from->open_mode;
-  to->flags=from->flags;
+  to->flags = from->flags & ~(FILE_NO_CLOSE_ON_DESTRUCT |
+			      FILE_LOCK_FD |
+			      FILE_NOT_OPENED);
 
   /* Note: This previously enabled all events for which there were
    * callbacks instead of copying the event settings from the source
