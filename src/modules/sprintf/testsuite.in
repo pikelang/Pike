@@ -49,6 +49,8 @@ test_eq(sprintf("%d %<d %<d",2),"2 2 2")
 test_true(stringp(sprintf("%O",({1,2,"foo"}))))
 test_true(stringp(sprintf("%O",([1:2,"foo":"bar"]))))
 
+test_eq(sprintf("test \0 \n"),"test \0 \n")
+
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
 test_eval_error(sprintf("%d"))

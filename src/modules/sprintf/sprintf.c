@@ -473,7 +473,7 @@ static string low_pike_sprintf(char *format,
 
     if(*a!='%')
     {
-      for(e=0;a[e] && a[e]!='%';e++);
+      for(e=0;a[e]!='%' && a+e<format+format_len;e++);
       fsp->b=a;
       fsp->len=e;
       fsp->width=e;
