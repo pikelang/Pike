@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.115 1998/09/01 20:26:47 hubbe Exp $
+# $Id: Makefile.in,v 1.116 1998/09/05 15:20:39 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -79,7 +79,6 @@ MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TM
 MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)" 
 
 # Add alloca.o if you don't have alloca() on your machine.
-# Add ualarm.o if you don't have ualarm() on your machine.
 #
 OBJ= \
  language.o \
