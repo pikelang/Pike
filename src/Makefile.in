@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.282 2002/01/27 00:53:58 mast Exp $
+# $Id: Makefile.in,v 1.283 2002/01/28 17:43:18 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -349,7 +349,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 # The .c file will not be created in the SOURCE directory otherwise.
 # -Hubbe
 #
-.cmod.c: precompile.sh-stamp precompile.pike
+.cmod.c: precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 	./precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 # This rule is used for some header files that are generated from the
