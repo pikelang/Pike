@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.131 2004/02/07 02:49:20 nilsson Exp $
+|| $Id: cpp.c,v 1.132 2004/03/22 22:25:42 mast Exp $
 */
 
 #include "global.h"
@@ -1313,7 +1313,7 @@ static void check_defined(struct cpp *this,
   }
 }
 
-static int do_safe_index_call(struct pike_string *s);
+static int do_safe_index_call(struct cpp *this, struct pike_string *s);
 
 static void check_constant(struct cpp *this,
 			  struct define *def,
@@ -1512,8 +1512,8 @@ static void check_constant(struct cpp *this,
         struct pike_string *s = begin_wide_shared_string(dlen, data.shift);
 	MEMCPY(s->str, data.ptr, dlen<<data.shift);
 	s = end_shared_string(s);
-	res=do_safe_index_call(s);
-        free_string(s);
+	res=do_safe_index_call(this, s);
+	free_string(s);
       }
     }else{
       cpp_error(this, "Garbage characters in constant()\n");
@@ -1526,18 +1526,18 @@ static void check_constant(struct cpp *this,
 }
 
 
-static int do_safe_index_call(struct pike_string *s)
+static int do_safe_index_call(struct cpp *this, struct pike_string *s)
 {
   int res;
   JMP_BUF recovery;
   if(!s) return 0;
 
   if (SETJMP_SP(recovery, 1)) {
-    /* FIXME: Maybe call compile_exception here, but then we probably
-     * want to provide some extra flag to it. */
+    if (!s->size_shift)
+      cpp_handle_exception (this, "Error indexing module with \"%s\".", s->str);
+    else
+      cpp_handle_exception (this, "Error indexing module in '.' operator.");
     res = 0;
-    free_svalue(&throw_value);
-    throw_value.type = T_INT;
     push_undefined();
   } else {
     ref_push_string(s);
