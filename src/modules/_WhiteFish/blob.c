@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.10 2001/05/25 14:29:14 per Exp $");
+RCSID("$Id: blob.c,v 1.11 2001/05/25 14:33:35 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -326,11 +326,11 @@ static void f_blob_add( INT32 args )
   int field = sp[-3].u.integer;
   int off = sp[-2].u.integer;
   int hash = sp[-1].u.integer;
-  short s;
+  unsigned short s;
   if( args != 4 )
     Pike_error( "Illegal number of arguments\n" );
 
-  switch( docid )
+  switch( field )
   {
     case 0:
       s = off>((1<<14)-1)?((1<<14)-1):off;
@@ -342,6 +342,7 @@ static void f_blob_add( INT32 args )
       s = (3<<14) | ((field-2)<<6) | (off>63?63:off);
       break;
   }
+  printf( "append %d %d\n", docid, s );
   _append_hit( THIS, docid, s );
 
   pop_n_elems( args );
