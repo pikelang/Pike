@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.29 2001/10/23 21:25:55 nilsson Exp $
+# $Id: Makefile,v 1.30 2001/10/27 20:04:18 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -10,24 +10,22 @@ PIKE=pike
 
 all: html traditional
 
-tree-split: build/autodoc.xml _tree-split
-
-_tree-split:
-	rm -rf manual-tree-split || /bin/true
+modref: build/modref.xml
+	rm -rf modref || /bin/true
 	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  manual.xml tree-split-template.html manual-tree-split
-	@cp tree-split-style.css manual-tree-split/style.css
-	@test -d manual-tree-split/images || mkdir manual-tree-split/images
-	cp build/images/* manual-tree-split/images
-	@cp src_images/next.gif src_images/prev.gif manual-tree-split/images
+	  build/modref.xml tree-split-template.html modref
+	@cp tree-split-style.css modref/style.css
+	@mkdir modref/images
+	cp build/images/* modref/images
+	@cp src_images/next.gif src_images/prev.gif modref/images
 
 html: html_manual manual.xml
 	cp build/images/* html_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ manual.xml
 
-traditional: traditional_manual traditional.xml
+traditional: traditional_manual build/traditional.xml
 	cp build/images/* traditional_manual/images/
-	@$(PIKE) presentation/make_html.pike --img=images/ traditional.xml
+	@$(PIKE) presentation/make_html.pike --img=images/ build/traditional.xml
 
 build/autodoc.xml: recursive_join
 	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml not_extracted/*.xml`" \
@@ -48,8 +46,11 @@ extract: build/src/Makefile build/lib/Makefile build/images
 manual.xml: build/autodoc.xml structure/onepage.xml bin/assembler.pike
 	@$(PIKE) bin/assembler.pike structure/onepage.xml build/autodoc.xml > manual.xml
 
-traditional.xml: build/autodoc.xml structure/traditional.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/traditional.xml build/autodoc.xml > traditional.xml
+build/traditional.xml: build/autodoc.xml structure/traditional.xml bin/assembler.pike
+	@$(PIKE) bin/assembler.pike structure/traditional.xml build/autodoc.xml > build/traditional.xml
+
+build/modref.xml: build/autodoc.xml structure/modref.xml bin/assembler.pike
+	@$(PIKE) bin/assembler.pike structure/modref.xml build/autodoc.xml > build/modref.xml
 
 autodoc.xml: $(XMLFILES) bin/join.pike
 	@$(PIKE) bin/join.pike --post-process build/autodoc.xml $(XMLFILES)
@@ -98,8 +99,7 @@ clean:
 
 spotless: clean
 	@rm -f manual.xml || /bin/true
-	@rm -f traditional.xml || /bin/true
 	@rm -rf manual || /bin/true
 	@rm -rf html_manual || /bin/true
-	@rm -rf manual-tree-split || /bin/true
+	@rm -rf modref || /bin/true
 	@rm -rf traditional_manual || /bin/true
