@@ -1154,7 +1154,7 @@ static INT32 low_cpp(struct cpp *this,
 	      if(GOBBLE('#'))
 	      {
 		extra=DEF_ARG_NOPRESPACE;
-		while(str.s.len && isspace(str.s.str[str.s.len-1]))
+		while(str.s.len && isspace(((unsigned char *)str.s.str)[str.s.len-1]))
 		  str.s.len--;
 		if(!str.s.len && sp-partbase>1)
 		{
@@ -1852,7 +1852,7 @@ static void check_constant(struct cpp *this,
   char *data=args[0].arg;
   int res,dlen,len=args[0].len;
 
-  while(len && isspace(data[0])) { data++; len--; }
+  while(len && isspace(((unsigned char *)data)[0])) { data++; len--; }
 
   if(!len)
     cpp_error(this,"#if constant() with empty argument.\n");
@@ -1884,7 +1884,7 @@ static void check_constant(struct cpp *this,
     data+=dlen;
     len-=dlen;
   
-    while(len && isspace(data[0])) { data++; len--; }
+    while(len && isspace(((unsigned char *)data)[0])) { data++; len--; }
 
     if(!len) break;
 
@@ -1893,7 +1893,7 @@ static void check_constant(struct cpp *this,
       data++;
       len--;
       
-      while(len && isspace(data[0])) { data++; len--; }
+      while(len && isspace(((unsigned char *)data)[0])) { data++; len--; }
 
       for(dlen=0;dlen<len;dlen++)
 	if(!isidchar(data[dlen]))

@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.27 1998/01/18 22:15:33 mirar Exp $ */
+/* $Id: gif.c,v 1.28 1998/01/20 15:53:17 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.27 1998/01/18 22:15:33 mirar Exp $
+**!	$Id: gif.c,v 1.28 1998/01/20 15:53:17 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.27 1998/01/18 22:15:33 mirar Exp $");
+RCSID("$Id: gif.c,v 1.28 1998/01/20 15:53:17 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1755,7 +1755,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	 last=n;
 
 	 m++;
-	 if (m>=maxcode) 
+	 if (m>=maxcode) {
 	    if (m==MAX_GIF_CODE)
 	    {
 #ifdef GIF_DEBUG
@@ -1777,6 +1777,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 		  break; /* error! too much codes */
 	       }
 	    }
+	 }
       }
 
 
