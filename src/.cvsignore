@@ -21,6 +21,7 @@ make_variables
 master.pike
 peep_engine.c
 pike
+pike.tmp
 qsort_template.h
 remake
 smartlink
