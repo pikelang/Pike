@@ -17,13 +17,15 @@ pike/%%PORTVERSION%%/lib/modules/CommonLog.so
 pike/%%PORTVERSION%%/lib/modules/Gdbm.so
 pike/%%PORTVERSION%%/lib/modules/Gettext.so
 pike/%%PORTVERSION%%/lib/modules/Gmp.so
-pike/%%PORTVERSION%%/lib/modules/Gz.so
 pike/%%PORTVERSION%%/lib/modules/HTTPLoop.so
 pike/%%PORTVERSION%%/lib/modules/Image.so
 pike/%%PORTVERSION%%/lib/modules/Java.pmod
 pike/%%PORTVERSION%%/lib/modules/___Java.so
-pike/%%PORTVERSION%%/lib/modules/MIME.pmod
 pike/%%PORTVERSION%%/lib/modules/___MIME.so
+pike/%%PORTVERSION%%/lib/modules/MIME.pmod/ext_to_media_type.pmod.o
+pike/%%PORTVERSION%%/lib/modules/MIME.pmod/ext_to_media_type.pmod
+pike/%%PORTVERSION%%/lib/modules/MIME.pmod/module.pmod.o
+pike/%%PORTVERSION%%/lib/modules/MIME.pmod/module.pmod
 pike/%%PORTVERSION%%/lib/modules/Math.pmod
 pike/%%PORTVERSION%%/lib/modules/___Math.so
 pike/%%PORTVERSION%%/lib/modules/Mird.pmod
@@ -54,12 +56,10 @@ pike/%%PORTVERSION%%/lib/modules/_Image_TTF.so
 pike/%%PORTVERSION%%/lib/modules/_Image_XFace.so
 pike/%%PORTVERSION%%/lib/modules/_Roxen.so
 pike/%%PORTVERSION%%/lib/modules/_math.pmod
-pike/%%PORTVERSION%%/lib/modules/call_out.pmod
 pike/%%PORTVERSION%%/lib/modules/files.pmod
 pike/%%PORTVERSION%%/lib/modules/spider.so
 pike/%%PORTVERSION%%/lib/modules/sprintf.pmod
 pike/%%PORTVERSION%%/lib/modules/sybase.so
-pike/%%PORTVERSION%%/lib/modules/system.pmod
 pike/%%PORTVERSION%%/lib/modules/Unicode.so
 pike/%%PORTVERSION%%/lib/modules/Colors.pmod
 pike/%%PORTVERSION%%/lib/modules/Array.pmod
@@ -73,7 +73,6 @@ pike/%%PORTVERSION%%/lib/modules/Gnome.pmod
 pike/%%PORTVERSION%%/lib/modules/Pike.pmod
 pike/%%PORTVERSION%%/lib/modules/Process.pmod
 pike/%%PORTVERSION%%/lib/modules/Program.pmod
-pike/%%PORTVERSION%%/lib/modules/String.pmod
 pike/%%PORTVERSION%%/lib/modules/Thread.pmod
 pike/%%PORTVERSION%%/lib/modules/_Image_PS.pmod
 pike/%%PORTVERSION%%/lib/modules/ADT.pmod/Priority_queue.pike
@@ -82,7 +81,6 @@ pike/%%PORTVERSION%%/lib/modules/ADT.pmod/Queue.pike
 pike/%%PORTVERSION%%/lib/modules/ADT.pmod/struct.pike
 pike/%%PORTVERSION%%/lib/modules/ADT.pmod/Stack.pike
 pike/%%PORTVERSION%%/lib/modules/ADT.pmod/Table.pmod
-pike/%%PORTVERSION%%/lib/modules/error.pmod
 pike/%%PORTVERSION%%/lib/modules/_Image_XCF.pmod
 pike/%%PORTVERSION%%/lib/modules/_Image_XPM.pmod
 pike/%%PORTVERSION%%/lib/modules/__builtin.pmod
@@ -183,21 +181,12 @@ pike/%%PORTVERSION%%/lib/modules/Graphics.pmod/Graph.pmod/doc.txt
 pike/%%PORTVERSION%%/lib/modules/Graphics.pmod/Graph.pmod/graph.h
 pike/%%PORTVERSION%%/lib/modules/Graphics.pmod/Graph.pmod/module.pmod
 pike/%%PORTVERSION%%/lib/modules/Graphics.pmod/Graph.pmod/polyline.pike
-pike/%%PORTVERSION%%/lib/modules/Graphics.pmod/Graph.pmod/test.pike
-pike/%%PORTVERSION%%/lib/modules/LR.pmod/Grammar_parser.pmod
-pike/%%PORTVERSION%%/lib/modules/LR.pmod/item.pike
-pike/%%PORTVERSION%%/lib/modules/LR.pmod/lr.pike
-pike/%%PORTVERSION%%/lib/modules/LR.pmod/parser.pike
-pike/%%PORTVERSION%%/lib/modules/LR.pmod/priority.pike
-pike/%%PORTVERSION%%/lib/modules/LR.pmod/rule.pike
-pike/%%PORTVERSION%%/lib/modules/LR.pmod/scanner.pike
 pike/%%PORTVERSION%%/lib/modules/Languages.pmod/PLIS.pmod
 pike/%%PORTVERSION%%/lib/modules/Locale.pmod/Charset.pmod
 pike/%%PORTVERSION%%/lib/modules/Locale.pmod/Gettext.pmod
 pike/%%PORTVERSION%%/lib/modules/Locale.pmod/module.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/HTTP.pmod/module.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/HTTP.pmod/Query.pike
-pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/IMAP.pmod/dummy_server.pike
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/IMAP.pmod/imap_server.pike
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/IMAP.pmod/parse_line.pike
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/IMAP.pmod/parser.pike
@@ -244,7 +233,6 @@ pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/AUTHORS
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/Atom.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/Auth.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/XImage.pmod
-pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/error.h
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/Types.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/XTools.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/Xlib.pmod
@@ -252,7 +240,6 @@ pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/_Types.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/_Xlib.pmod
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/X.pmod/keysyms.h
 pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/XMLRPC.pmod/module.pmod
-pike/%%PORTVERSION%%/lib/modules/Protocols.pmod/XMLRPC.pmod/test.pike
 pike/%%PORTVERSION%%/lib/modules/Remote.pmod/connection.pike
 pike/%%PORTVERSION%%/lib/modules/Remote.pmod/Client.pike
 pike/%%PORTVERSION%%/lib/modules/Remote.pmod/Server.pike
@@ -261,8 +248,6 @@ pike/%%PORTVERSION%%/lib/modules/Remote.pmod/context.pike
 pike/%%PORTVERSION%%/lib/modules/Remote.pmod/obj.pike
 pike/%%PORTVERSION%%/lib/modules/Remote.pmod/remote.h
 pike/%%PORTVERSION%%/lib/modules/SSL.pmod/connection.pike
-pike/%%PORTVERSION%%/lib/modules/SSL.pmod/VERSION
-pike/%%PORTVERSION%%/lib/modules/SSL.pmod/DOC
 pike/%%PORTVERSION%%/lib/modules/SSL.pmod/TODO
 pike/%%PORTVERSION%%/lib/modules/SSL.pmod/cipher.pike
 pike/%%PORTVERSION%%/lib/modules/SSL.pmod/alert.pike
@@ -322,7 +307,6 @@ pike/%%PORTVERSION%%/lib/modules/Tools.pmod/_PEM.pmod
 pike/%%PORTVERSION%%/lib/modules/Tools.pmod/sed.pmod
 pike/%%PORTVERSION%%/lib/modules/Web.pmod/Crawler.pmod
 pike/%%PORTVERSION%%/lib/modules/Yabu.pmod/module.pmod
-pike/%%PORTVERSION%%/lib/modules/Yabu.pmod/test.pike
 pike/%%PORTVERSION%%/lib/modules/_Image.pmod/module.pmod
 pike/%%PORTVERSION%%/lib/include/array.h
 pike/%%PORTVERSION%%/lib/include/fifo.h
@@ -377,7 +361,6 @@ pike/%%PORTVERSION%%/lib/7.2/modules/__default.pmod.o
 pike/%%PORTVERSION%%/lib/7.2/modules/__default.pmod
 pike/%%PORTVERSION%%/lib/7.2/modules/system.pmod.o
 pike/%%PORTVERSION%%/lib/7.2/modules/system.pmod
-pike/%%PORTVERSION%%/lib/tools/pike.el
 pike/%%PORTVERSION%%/lib/master.pike
 pike/%%PORTVERSION%%/lib/master.pike.o
 pike/%%PORTVERSION%%/lib/master.pike.in
@@ -457,7 +440,6 @@ pike/%%PORTVERSION%%/include/pike/lexer0.h
 pike/%%PORTVERSION%%/include/pike/lexer1.h
 pike/%%PORTVERSION%%/include/pike/lexer2.h
 pike/%%PORTVERSION%%/include/pike/aclocal.m4
-pike/%%PORTVERSION%%/man/man1/hilfe.1
 pike/%%PORTVERSION%%/man/man1/pike.1
 @unexec rm -rf %D/pike/%%PORTVERSION%%/lib/modules
 @dirrm pike/%%PORTVERSION%%/lib/include
