@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.109 2001/06/05 10:12:55 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.110 2001/06/16 13:49:40 per Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -269,7 +269,21 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	       we really want to reduce the number of number parsers
 	       around here. :) /Noring */
 #ifdef AUTO_BIGNUM
-	    convert_stack_top_string_to_inumber(10);
+
+
+	    /* The generic function is rather slow, so I added this
+	     * code for benchmark purposes. :-) /per
+	     */
+	    if( sp[-1].u.string->len < 10 &&
+		!sp[-1].u.string->size_shift )
+	    {
+	      i=atoi(sp[-1].u.string->str);
+	      free_string(sp[-1].u.string);
+	      sp[-1].type=T_INT;
+	      sp[-1].u.integer=i;
+	    }
+	    else
+	      convert_stack_top_string_to_inumber(10);
 	    return;   /* FIXME: OK to return? Cast tests below indicates
 			 we have to do this, at least for now... /Noring */
 	      /* Yes, it is ok to return, it is actually an optimization :)
