@@ -147,7 +147,7 @@ if test x$with_sybase != xno; then
   AC_CHECK_LIB(dl,dlopen)
   AC_CHECK_LIB(nsl,gethostbyname)
 
-  if test x$pike_cv_framework_sybaseopenclient; then
+  if test x$pike_cv_framework_sybaseopenclient = "yes"; then
     AC_DEFINE(HAVE_SYBASE)
     PIKE_FEATURE(sybase, [yes, SybaseOpenClient framework])
   else
