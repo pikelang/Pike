@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.c,v 1.8 1999/02/27 21:54:39 grubba Exp $
+ * $Id: stuff.c,v 1.9 1999/03/01 05:32:38 hubbe Exp $
  */
 #include "global.h"
 #include "stuff.h"
@@ -126,32 +126,3 @@ double my_strtod(char *nptr, char **endptr)
   return tmp;
 }
 
-double strtod_pcharp(PCHARP ptr, PCHARP *endptr)
-{
-  /* NOTE: Cuts at 63 digits */
-
-  char buff[64];
-  int i;
-  double res;
-  char *end_;
-
-  endptr->shift = ptr.shift;
-
-  if (!ptr.shift) {
-    return my_strtod(ptr.ptr, (char **)&endptr->ptr);
-  }
-
-  for (i=0; i < 63; i++) {
-    unsigned int c = INDEX_PCHARP(ptr, i);
-    if (!c || (c >= 256)) {
-      break;
-    }
-    buff[i] = c;
-  }
-  buff[i] = 0;
-
-  res = my_strtod(buff, &end_);
-
-  endptr->ptr = ptr.ptr + ((end_ - buff)<<ptr.shift);
-  return res;
-}

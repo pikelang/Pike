@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.31 1999/02/27 17:20:07 grubba Exp $
+ * $Id: stralloc.h,v 1.32 1999/03/01 05:32:37 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -230,6 +230,7 @@ void free_string_builder(struct string_builder *s);
 struct pike_string *finish_string_builder(struct string_builder *s);
 PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len);
 long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
+double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr);
 p_wchar0 *require_wstring0(struct pike_string *s,
 			   char **to_free);
 p_wchar1 *require_wstring1(struct pike_string *s,

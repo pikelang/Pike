@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.h,v 1.6 1999/02/27 20:36:14 grubba Exp $
+ * $Id: stuff.h,v 1.7 1999/03/01 05:32:40 hubbe Exp $
  */
 #ifndef STUFF_H
 #define STUFF_H
@@ -17,7 +17,6 @@ int my_log2(unsigned INT32 x);
 int count_bits(unsigned INT32 x);
 int is_more_than_one_bit(unsigned INT32 x);
 double my_strtod(char *nptr, char **endptr);
-double strtod_pcharp(PCHARP ptr, PCHARP *endptr);
 /* Prototypes end here */
 
 extern INT32 hashprimes[32];

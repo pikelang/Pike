@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.148 1999/02/24 01:52:55 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.149 1999/03/01 05:32:41 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -139,7 +139,7 @@ test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 
-test_compile([[int x=gauge { return; },1;]])
+test_compile([[int x=(gauge { return; },1);]])
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
   test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
@@ -153,10 +153,6 @@ test_any([[class G { mapping t=([]);
  class tO { void init(string name) { t[name]=this_object(); }}
  class W { inherit tO; void create() { init("foo"); }}
 }; object x=G(); x->W(); return objectp(x->t->foo)]],1)
-test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"# 1 \"-\"\n\n( (A) ) ( (B) )")
-test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
-test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
-test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
 
 test_program([[class foo { program x() { return class {}; }}; class bar { inherit foo; program x() { return class {}; }} int a() { return foo()->x != bar()->x(); }]])
 
@@ -1663,6 +1659,11 @@ cond([[all_constants()->_verify_internals]],
 ]])
 
 // testing preprocessor
+test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"# 1 \"-\"\n\n( (A) ) ( (B) )")
+test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
+test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
+test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
+
 test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
 test_any([[
 #include "conftest.h"
@@ -2114,7 +2115,6 @@ test_compile_any([[#include <simulate.h>
 test_compile_error([[
 #error Gurgel
 ]])
-
 
 // foop
 define(do_test_foop,[[

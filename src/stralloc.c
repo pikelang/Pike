@@ -14,9 +14,11 @@
 #include "gc.h"
 #include "stuff.h"
 
+#include <errno.h>
 #include <ctype.h>
+#include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.54 1999/02/27 22:27:02 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.55 1999/03/01 05:32:35 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1702,6 +1704,158 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   if (ptr) *ptr = str;
   return (neg ? val : -val);
 }
+
+/* Convert PCHARP to a double.  If ENDPTR is not NULL, a pointer to the
+   character after the last one used in the number is put in *ENDPTR.  */
+double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
+{
+  register PCHARP s;
+  short int sign;
+
+  /* The number so far.  */
+  double num;
+
+  int got_dot;      /* Found a decimal point.  */
+  int got_digit;    /* Seen any digits.  */
+
+  /* The exponent of the number.  */
+  long int exponent;
+
+  if (nptr.ptr == NULL)
+  {
+    errno = EINVAL;
+    goto noconv;
+  }
+
+  s = nptr;
+
+  /* Eat whitespace.  */
+  while (EXTRACT_PCHARP(s) <256 && ISSPACE(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
+
+  /* Get the sign.  */
+  sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
+  if (EXTRACT_PCHARP(s) == '-' || EXTRACT_PCHARP(s) == '+')
+    INC_PCHARP(s,1);
+
+  /* Get the sign.  */
+  sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
+  if (EXTRACT_PCHARP(s) == '-' || EXTRACT_PCHARP(s) == '+')
+    INC_PCHARP(s,1);
+
+  num = 0.0;
+  got_dot = 0;
+  got_digit = 0;
+  exponent = 0;
+  for (;; INC_PCHARP(s,1))
+  {
+    if (EXTRACT_PCHARP(s)<256 && isdigit (EXTRACT_PCHARP(s)))
+    {
+      got_digit = 1;
+
+      /* Make sure that multiplication by 10 will not overflow.  */
+      if (num > DBL_MAX * 0.1)
+	/* The value of the digit doesn't matter, since we have already
+	   gotten as many digits as can be represented in a `double'.
+	   This doesn't necessarily mean the result will overflow.
+	   The exponent may reduce it to within range.
+	   
+	   We just need to record that there was another
+	   digit so that we can multiply by 10 later.  */
+	++exponent;
+      else
+	num = (num * 10.0) + (EXTRACT_PCHARP(s) - '0');
+
+      /* Keep track of the number of digits after the decimal point.
+	 If we just divided by 10 here, we would lose precision.  */
+      if (got_dot)
+	--exponent;
+    }
+    else if (!got_dot && (char) EXTRACT_PCHARP(s) == '.')
+      /* Record that we have found the decimal point.  */
+      got_dot = 1;
+    else
+      /* Any other character terminates the number.  */
+      break;
+  }
+
+  if (!got_digit)
+    goto noconv;
+
+  if (EXTRACT_PCHARP(s) <256 && tolower(EXTRACT_PCHARP(s)) == 'e')
+    {
+      /* Get the exponent specified after the `e' or `E'.  */
+      int save = errno;
+      PCHARP end;
+      long int exp;
+
+      errno = 0;
+      INC_PCHARP(s,1);
+      exp = STRTOL_PCHARP(s, &end, 10);
+      if (errno == ERANGE)
+      {
+	/* The exponent overflowed a `long int'.  It is probably a safe
+	   assumption that an exponent that cannot be represented by
+	   a `long int' exceeds the limits of a `double'.  */
+	if (endptr != NULL)
+	  *endptr = end;
+	if (exp < 0)
+	  goto underflow;
+	else
+	  goto overflow;
+      }
+      else if (COMPARE_PCHARP(end,==,s))
+	/* There was no exponent.  Reset END to point to
+	   the 'e' or 'E', so *ENDPTR will be set there.  */
+	end = ADD_PCHARP(s,-1);
+      errno = save;
+      s = end;
+      exponent += exp;
+    }
+
+  if(got_dot && INDEX_PCHARP(s,-1)=='.') INC_PCHARP(s,-1);
+  if (endptr != NULL)
+    *endptr = s;
+
+  if (num == 0.0)
+    return 0.0;
+
+  /* Multiply NUM by 10 to the EXPONENT power,
+     checking for overflow and underflow.  */
+
+  if (exponent < 0)
+  {
+    if (num < DBL_MIN * pow(10.0, (double) -exponent))
+      goto underflow;
+  }
+  else if (exponent > 0)
+  {
+    if (num > DBL_MAX * pow(10.0, (double) -exponent))
+      goto overflow;
+  }
+
+  num *= pow(10.0, (double) exponent);
+
+  return num * sign;
+
+ overflow:
+  /* Return an overflow error.  */
+  errno = ERANGE;
+  return HUGE * sign;
+
+ underflow:
+  /* Return an underflow error.  */
+  if (endptr != NULL)
+    *endptr = nptr;
+  errno = ERANGE;
+  return 0.0;
+  
+ noconv:
+  /* There was no number.  */
+  if (endptr != NULL)
+    *endptr = nptr;
+  return 0.0;
+}
+
 
 p_wchar0 *require_wstring0(struct pike_string *s,
 			   char **to_free)

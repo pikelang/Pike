@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.3 1999/02/20 20:06:22 grubba Exp $
+ * $Id: lexer.h,v 1.4 1999/03/01 05:32:32 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -117,46 +117,20 @@ static int lex_atoi(char *buf)
 
 static long lex_strtol(char *buf, char **end, int base)
 {
-  /* NOTE: Cuts at 63 digits */
-  char buff[64];
-  int i;
-  long res;
-  char *end_;
-
-  for(i=0; i < 63; i++) {
-    int c = INDEX_CHARP(buf, i, SHIFT);
-    if ((c<=0) || (c >= 256)) {
-      break;
-    }
-    buff[i] = c;
-  }
-  buff[i] = 0;
-  
-  res = STRTOL(buff, &end_, base);
-  *end = buf + ((end_ - buff)<<SHIFT);
-  return(res);
+  PCHARP foo;
+  long ret;
+  ret=STRTOL_PCHARP(MKPCHARP(buf,SHIFT),&foo,base);
+  if(end) end[0]=foo.ptr;
+  return ret;
 }
 
 static double lex_strtod(char *buf, char **end)
 {
-  /* NOTE: Cuts at 63 digits */
-  char buff[64];
-  int i;
-  long res;
-  char *end_;
-
-  for(i=0; i < 63; i++) {
-    int c = INDEX_CHARP(buf, i, SHIFT);
-    if ((c<=0) || (c >= 256)) {
-      break;
-    }
-    buff[i] = c;
-  }
-  buff[i] = 0;
-  
-  res = my_strtod(buff, &end_);
-  *end = buf + ((end_ - buff)<<SHIFT);
-  return(res);
+  PCHARP foo;
+  double ret;
+  ret=STRTOD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
+  if(end) end[0]=foo.ptr;
+  return ret;
 }
 
 #endif /* SHIFT == 0 */

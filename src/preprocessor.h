@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.3 1999/02/28 03:22:30 grubba Exp $
+ * $Id: preprocessor.h,v 1.4 1999/03/01 05:32:34 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -169,9 +169,9 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, INT32 len)
 
 #define CHECKWORD2(X,LEN) \
  (!MEMCMP(X,data+pos,LEN<<SHIFT) && !WC_ISIDCHAR(data[pos+LEN]))
-#define WGOBBLE2(X,LEN) (CHECKWORD2(X,LEN) ? (pos+=LEN),1 : 0)
-#define GOBBLEOP2(X,LEN) \
- ((!MEMCMP(X,data+pos,LEN)) ? (pos += LEN),1 : 0)
+#define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
+#define GOBBLEOP2(X) \
+ ((!MEMCMP(X,data+pos,NELEM(X))) ? (pos += NELEM(X)),1 : 0)
 
 /*
  * Some prototypes
@@ -335,9 +335,9 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     long l;
     
     p = MKPCHARP(data+pos, SHIFT);
-    f = strtod_pcharp(p, &p1);
+    f = STRTOD_PCHARP(p, &p1);
     l = STRTOL_PCHARP(p, &p2, 0);
-    if(p1.ptr > p2.ptr)
+    if(COMPARE_PCHARP(p1,>,p2))
     {
       push_float(f);
       pos = ((WCHAR *)p1.ptr) - data;
@@ -479,14 +479,14 @@ static INT32 calc8(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     static WCHAR rsh_[] = { '>', '>' };
 
     FINDTOK();
-    if(GOBBLEOP2(lsh_, 2))
+    if(GOBBLEOP2(lsh_))
     {
       pos=calc9(this,data,len,pos);
       o_lsh();
       break;
     }
 
-    if(GOBBLEOP2(rsh_, 2))
+    if(GOBBLEOP2(rsh_))
     {
       pos=calc9(this,data,len,pos);
       o_rsh();
@@ -549,14 +549,14 @@ static INT32 calc7(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     static WCHAR ne_[] = { '!', '=' };
 
     FINDTOK();
-    if(GOBBLEOP2(eq_, 2))
+    if(GOBBLEOP2(eq_))
     {
       pos=calc7b(this,data,len,pos);
       f_eq(2);
       continue;
     }
 
-    if(GOBBLEOP2(ne_, 2))
+    if(GOBBLEOP2(ne_))
     {
       pos=calc7b(this,data,len,pos);
       f_ne(2);
@@ -616,7 +616,7 @@ static INT32 calc3(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   pos=calc4(this,data,len,pos);
 
   FINDTOK();
-  while(GOBBLEOP2(land_, 2))
+  while(GOBBLEOP2(land_))
   {
     check_destructed(sp-1);
     if(IS_ZERO(sp-1))
@@ -638,7 +638,7 @@ static INT32 calc2(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   pos=calc3(this,data,len,pos);
 
   FINDTOK();
-  while(GOBBLEOP2(lor_, 2))
+  while(GOBBLEOP2(lor_))
   {
     check_destructed(sp-1);
     if(!IS_ZERO(sp-1))
@@ -874,7 +874,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  if(d->args >= 0 && arg != d->args)
 	    cpp_error(this, "Wrong number of arguments to macro.");
 	  
-	  init_string_builder(&tmp, 0);
+	  init_string_builder(&tmp, SHIFT);
 	  if(d->magic)
 	  {
 	    d->magic(this, d, arguments, &tmp);
@@ -1030,7 +1030,7 @@ static INT32 lower_cpp(struct cpp *this,
       {
 	static WCHAR line_[] = { 'l', 'i', 'n', 'e' };
 
-	if(WGOBBLE2(line_, 4))
+	if(WGOBBLE2(line_))
 	{
 	  /* FIXME: Why not use SKIPSPACE()? */
 	  while(data[pos]==' ' || data[pos]=='\t') pos++;
@@ -1093,7 +1093,7 @@ static INT32 lower_cpp(struct cpp *this,
 	READSTRING2(nf);
 	if(OUTP())
 	{
-	  PUSH_STRING((WCHAR *)nf.s->str, nf.s->len, &this->buf);
+	  PUSH_STRING_SHIFT(nf.s->str, nf.s->len,nf.s->size_shift, &this->buf);
 	}
 	free_string_builder(&nf);
 	break;
@@ -1103,7 +1103,7 @@ static INT32 lower_cpp(struct cpp *this,
 	{
 	  WCHAR string_[] = { 's', 't', 'r', 'i', 'n', 'g' };
 
-	  if(WGOBBLE2(string_, 6))
+	  if(WGOBBLE2(string_))
 	  {
 	    tmp2=1;
 	    goto do_include;
@@ -1118,7 +1118,7 @@ static INT32 lower_cpp(struct cpp *this,
 	static WCHAR ifdef_[] = { 'i', 'f', 'd', 'e', 'f' };
 	static WCHAR ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };
 
-      if(WGOBBLE2(include_, 7))
+      if(WGOBBLE2(include_))
       {
 	tmp2=0;
       do_include:
@@ -1251,7 +1251,7 @@ static INT32 lower_cpp(struct cpp *this,
 	}
       }
 
-      if(WGOBBLE2(if_, 2))
+      if(WGOBBLE2(if_))
       {
 	struct string_builder save,tmp;
 	INT32 nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
@@ -1276,7 +1276,7 @@ static INT32 lower_cpp(struct cpp *this,
 	break;
       }
 
-      if(WGOBBLE2(ifdef_, 5))
+      if(WGOBBLE2(ifdef_))
 	{
 	  INT32 namestart,nflags;
 	  struct pike_string *s;
@@ -1300,7 +1300,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  break;
 	}
 
-      if(WGOBBLE2(ifndef_, 6))
+      if(WGOBBLE2(ifndef_))
 	{
 	  INT32 namestart,nflags;
 	  struct pike_string *s;
@@ -1334,7 +1334,7 @@ static INT32 lower_cpp(struct cpp *this,
 	static WCHAR elif_[] = { 'e', 'l', 'i', 'f' };
 	static WCHAR error_[] = { 'e', 'r', 'r', 'o', 'r' };
 
-      if(WGOBBLE2(endif_, 5))
+      if(WGOBBLE2(endif_))
       {
 	if(!(flags & CPP_EXPECT_ENDIF))
 	  cpp_error(this, "Unmatched #endif");
@@ -1342,7 +1342,7 @@ static INT32 lower_cpp(struct cpp *this,
 	return pos;
       }
 
-      if(WGOBBLE2(else_, 4))
+      if(WGOBBLE2(else_))
 	{
 	  if(!(flags & CPP_EXPECT_ELSE))
 	    cpp_error(this, "Unmatched #else");
@@ -1358,7 +1358,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  break;
 	}
 
-      if(WGOBBLE2(elif_, 4) || WGOBBLE2(elseif_, 6))
+      if(WGOBBLE2(elif_) || WGOBBLE2(elseif_))
       {
 	if(!(flags & CPP_EXPECT_ELSE))
 	  cpp_error(this, "Unmatched #elif");
@@ -1389,7 +1389,7 @@ static INT32 lower_cpp(struct cpp *this,
 	break;
       }
 
-      if(WGOBBLE2(error_, 5))
+      if(WGOBBLE2(error_))
 	{
           INT32 foo;
           SKIPSPACE();
@@ -1418,7 +1418,7 @@ static INT32 lower_cpp(struct cpp *this,
       {
 	static WCHAR define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 
-      if(WGOBBLE2(define_, 6))
+      if(WGOBBLE2(define_))
 	{
 	  struct string_builder str;
 	  INT32 namestart, tmp3, nameend, argno=-1;
@@ -1668,10 +1668,11 @@ static INT32 lower_cpp(struct cpp *this,
       }
     case 'u': /* undefine */
       {
+	static WCHAR undef_[] = { 'u', 'n', 'd', 'e', 'f' };
 	static WCHAR undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
 
 	/* NOTE: Reuses undefine_ for undef_ */
-      if(WGOBBLE2(undefine_, 8) || WGOBBLE2(undefine_, 5))
+      if(WGOBBLE2(undefine_) || WGOBBLE2(undef_))
 	{
 	  INT32 tmp;
 	  struct pike_string *s;
@@ -1704,7 +1705,7 @@ static INT32 lower_cpp(struct cpp *this,
       {
 	static WCHAR charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
 
-      if (WGOBBLE2(charset_, 7)) {
+      if (WGOBBLE2(charset_)) {
 	INT32 p;
 	struct pike_string *s;
 
@@ -1764,7 +1765,7 @@ static INT32 lower_cpp(struct cpp *this,
       {
 	static WCHAR pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
 
-	if(WGOBBLE2(pragma_, 6))
+	if(WGOBBLE2(pragma_))
 	{
 	  if(OUTP())
 	    STRCAT("#pragma", 7);

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.24 1998/08/08 20:09:19 grubba Exp $
+# $Id: Makefile.in,v 1.25 1999/03/01 05:32:44 hubbe Exp $
 
 @SET_MAKE@
 
@@ -19,7 +19,15 @@ $(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
 
 force:
 
-modules: force
+$MODULES: force
+	  echo Making $@; \
+	  ( cd $@; \
+	    rm remake >/dev/null 2>&1 || : ; \
+	    $(MAKE) $(MAKE_FLAGS) MODNAME=$@ || \
+	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$@ ) \
+	  ) || exit $$?;
+
+modules: $(MODULES)
 	@for a in $(MODULES) ; do \
 	  echo Making $$a; \
 	  ( cd $$a; \
