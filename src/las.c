@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.168 2000/03/07 08:13:18 hubbe Exp $");
+RCSID("$Id: las.c,v 1.169 2000/03/13 20:54:49 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1589,6 +1589,7 @@ node **last_cmd(node **a)
 static node **low_get_arg(node **a,int *nr)
 {
   node **n;
+  if (!a[0]) return NULL;
   if(a[0]->token != F_ARG_LIST)
   {
     if(!(*nr)--)
