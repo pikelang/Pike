@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.34 1998/04/20 18:53:29 grubba Exp $ */
+/* $Id: font.c,v 1.35 1998/04/24 13:50:21 mirar Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.34 1998/04/20 18:53:29 grubba Exp $
+**!	$Id: font.c,v 1.35 1998/04/24 13:50:21 mirar Exp $
 **! class font
 **!
 **! note
@@ -284,9 +284,8 @@ static INLINE long file_size(int fd)
   struct stat tmp;
   int res;
   if((!fd_fstat(fd, &tmp)) &&
-     (tmp.st_mode & S_IFREG)) {
-    return res = tmp.st_size;
-  }
+     (tmp.st_mode & S_IFREG)) 
+     return res = tmp.st_size;
   return -1;
 }
 
@@ -306,12 +305,11 @@ static INLINE void write_char(struct _char *ci,
       for (x=(INT32)ci->width; x>0; x--)
       {
 	 int r,c;
-	 if((c=255-*p)) {
+	 if((c=255-*p)) 
 	   if ((r=pos->r+c)>255)
 	     pos->r=pos->g=pos->b=255;
 	   else
 	     pos->r=pos->g=pos->b=r;
-	 }
 	 pos++;
 	 p++;
       }
@@ -372,7 +370,8 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
 	 fprintf(stderr,"FONT Malloced %p (%d)\n",new_font->mem,size);
 #endif
-	 if ((new_font->mem) && (!my_read(fd,new_font->mem,size))) {
+	 if ((new_font->mem) && (!my_read(fd,new_font->mem,size))) 
+	 {
 	   free(new_font->mem);
 	   new_font->mem = NULL;
 	 }

@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.16 1998/04/16 01:22:59 mirar Exp $ */
+/* $Id: matrix.c,v 1.17 1998/04/24 13:51:00 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.16 1998/04/16 01:22:59 mirar Exp $
+**!	$Id: matrix.c,v 1.17 1998/04/24 13:51:00 mirar Exp $
 **! class image
 */
 
@@ -89,12 +89,12 @@ static INLINE int getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
-   if (args-args_start>=4) {
+   if (args-args_start>=4) 
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
          img->alpha=sp[3-args+args_start].u.integer;
-   } else
+   else
       img->alpha=0;
    return 1;
 }
@@ -203,13 +203,15 @@ CHRONO("scale begin");
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group) +1);
-   if (d) {
+   if (d) 
+   {
 
 CHRONO("transfer begin");
 
      s=new;
      y=newx*newy;
-     while (y--) {
+     while (y--) 
+     {
        d->r=MINIMUM((int)(s->r+0.5),255);
        d->g=MINIMUM((int)(s->g+0.5),255);
        d->b=MINIMUM((int)(s->b+0.5),255);
@@ -224,9 +226,8 @@ CHRONO("transfer begin");
 CHRONO("scale end");
 
    THREADS_DISALLOW();
-   if (!d) {
-     error("Out of memory!\n");
-   }
+   if (!d) 
+      error("Out of memory!\n");
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -249,23 +250,24 @@ void img_scale2(struct image *dest, struct image *source)
    dest->xsize=newx;
    dest->ysize=newy;
    for (y = 0; y < newy; y++)
-     for (x = 0; x < newx; x++) {
-       pixel(dest,x,y).r = (COLORTYPE)
-	                    (((INT32) pixel(source,2*x+0,2*y+0).r+
-			      (INT32) pixel(source,2*x+1,2*y+0).r+
-			      (INT32) pixel(source,2*x+0,2*y+1).r+
-			      (INT32) pixel(source,2*x+1,2*y+1).r) >> 2);
-       pixel(dest,x,y).g = (COLORTYPE)
-	                    (((INT32) pixel(source,2*x+0,2*y+0).g+
-			      (INT32) pixel(source,2*x+1,2*y+0).g+
-			      (INT32) pixel(source,2*x+0,2*y+1).g+
-			      (INT32) pixel(source,2*x+1,2*y+1).g) >> 2);
-       pixel(dest,x,y).b = (COLORTYPE)
-	                    (((INT32) pixel(source,2*x+0,2*y+0).b+
-			      (INT32) pixel(source,2*x+1,2*y+0).b+
-			      (INT32) pixel(source,2*x+0,2*y+1).b+
-			      (INT32) pixel(source,2*x+1,2*y+1).b) >> 2);
-     }
+      for (x = 0; x < newx; x++) 
+      {
+	 pixel(dest,x,y).r = (COLORTYPE)
+	    (((INT32) pixel(source,2*x+0,2*y+0).r+
+	      (INT32) pixel(source,2*x+1,2*y+0).r+
+	      (INT32) pixel(source,2*x+0,2*y+1).r+
+	      (INT32) pixel(source,2*x+1,2*y+1).r) >> 2);
+	 pixel(dest,x,y).g = (COLORTYPE)
+	    (((INT32) pixel(source,2*x+0,2*y+0).g+
+	      (INT32) pixel(source,2*x+1,2*y+0).g+
+	      (INT32) pixel(source,2*x+0,2*y+1).g+
+	      (INT32) pixel(source,2*x+1,2*y+1).g) >> 2);
+	 pixel(dest,x,y).b = (COLORTYPE)
+	    (((INT32) pixel(source,2*x+0,2*y+0).b+
+	      (INT32) pixel(source,2*x+1,2*y+0).b+
+	      (INT32) pixel(source,2*x+0,2*y+1).b+
+	      (INT32) pixel(source,2*x+1,2*y+1).b) >> 2);
+      }
    THREADS_DISALLOW();
 }
 
@@ -307,14 +309,13 @@ void image_scale(INT32 args)
    o=clone_object(image_program,0);
    newimg=(struct image*)(o->storage);
 
-   if (args==1 && sp[-args].type==T_FLOAT) {
-     if (sp[-args].u.float_number == 0.5)
-       img_scale2(newimg,THIS);
-     else
-       img_scale(newimg,THIS,
-		 (INT32)(THIS->xsize*sp[-args].u.float_number),
-		 (INT32)(THIS->ysize*sp[-args].u.float_number));
-   }
+   if (args==1 && sp[-args].type==T_FLOAT) 
+      if (sp[-args].u.float_number == 0.5)
+	 img_scale2(newimg,THIS);
+      else
+	 img_scale(newimg,THIS,
+		   (INT32)(THIS->xsize*sp[-args].u.float_number),
+		   (INT32)(THIS->ysize*sp[-args].u.float_number));
    else if (args>=2 &&
 	    sp[-args].type==T_INT && sp[-args].u.integer==0 &&
 	    sp[1-args].type==T_INT)

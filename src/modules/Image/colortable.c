@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.44 1998/04/20 18:53:28 grubba Exp $ */
+/* $Id: colortable.c,v 1.45 1998/04/24 13:50:22 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.44 1998/04/20 18:53:28 grubba Exp $
+**!	$Id: colortable.c,v 1.45 1998/04/24 13:50:22 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.44 1998/04/20 18:53:28 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.45 1998/04/24 13:50:22 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2169,11 +2169,13 @@ void image_colortable_reduce(INT32 args)
    int numcolors;
 
    if (args) 
-     if (sp[-args].type!=T_INT) {
+     if (sp[-args].type!=T_INT) 
+     {
 	 error("Illegal argument to Image.colortable->reduce\n");
 	 /* Not reached, but keeps the compiler happy. */
 	 numcolors = 0;
-     } else
+     } 
+     else
 	 numcolors=sp[-args].u.integer;
    else
       numcolors=1293791; /* a lot */
@@ -3739,13 +3741,16 @@ void image_colortable_ordered(INT32 args)
    if (args>=3) 
       if (sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT||
-	  sp[2-args].type!=T_INT) {
+	  sp[2-args].type!=T_INT) 
+      {
 	 error("Image.colortable->ordered(): illegal argument(s)\n");
 	 /* Not reached, but keep the compiler happy */
 	 r = 0;
 	 g = 0;
 	 b = 0;
-      } else {
+      } 
+      else 
+      {
 	 r=sp[-args].u.integer;
 	 g=sp[1-args].u.integer;
 	 b=sp[2-args].u.integer;

@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.18 1998/01/16 22:09:15 grubba Exp $ */
+/* $Id: x.c,v 1.19 1998/04/24 13:50:18 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.18 1998/01/16 22:09:15 grubba Exp $");
+RCSID("$Id: x.c,v 1.19 1998/04/24 13:50:18 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -157,7 +157,7 @@ void image_to8bit_rgbcube(INT32 args)
   redgreen=red*green;
   redgreenblue=red*green*blue;
 
-  if (args>3) {
+  if (args>3) 
      if (sp[3-args].type!=T_STRING)
 	error("Illegal argument 4 to image->to8bit_rgbcube()"
 	      " (expected string or no argument)\n");
@@ -165,7 +165,7 @@ void image_to8bit_rgbcube(INT32 args)
 	error("map string is not long enough to image->to8bit_rgbcube()\n");
      else
 	map=(unsigned char *)sp[3-args].u.string->str;
-  }
+
   i=THIS->xsize*THIS->ysize;
   s=THIS->img;
   d=(unsigned char *)res->str;

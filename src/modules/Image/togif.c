@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.31 1998/04/20 18:53:34 grubba Exp $ 
+$Id: togif.c,v 1.32 1998/04/24 13:51:03 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.31 1998/04/20 18:53:34 grubba Exp $
+**!	$Id: togif.c,v 1.32 1998/04/24 13:51:03 mirar Exp $
 **! class image
 */
 
@@ -318,12 +318,12 @@ static INLINE void getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
-   if (args-args_start>=4) {
+   if (args-args_start>=4) 
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
          img->alpha=sp[3-args+args_start].u.integer;
-   } else
+   else
       img->alpha=0;
 }
 

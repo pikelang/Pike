@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.25 1998/04/20 18:53:33 grubba Exp $");
+RCSID("$Id: polyfill.c,v 1.26 1998/04/24 13:50:19 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.25 1998/04/20 18:53:33 grubba Exp $
+**!	$Id: polyfill.c,v 1.26 1998/04/24 13:50:19 mirar Exp $
 **! class image
 */
 
@@ -76,7 +76,7 @@ struct vertex
 
 #define VY(V,X) ((V)->above->y+(V)->dy*((X)-(V)->above->x))
 
-struct vertex *vertex_new(float x,float y,struct vertex **top)
+static struct vertex *vertex_new(float x,float y,struct vertex **top)
 {
    struct vertex *c;
    while (*top && (*top)->y<y) top=&((*top)->next);
@@ -130,17 +130,17 @@ static void vertex_connect(struct vertex *above,
 
 static INLINE float line_xmax(struct line_list *v,float yp,float *ydest)
 {
-   if (v->dx>0.0) {
+   if (v->dx>0.0) 
       if (v->below->y>yp+1.0+1e-10)
 	 return v->above->x+v->dx*((*ydest=(yp+1.0))-v->above->y);
       else
 	 return (*ydest=v->below->y),v->below->x;
-   } else if (v->dx<0.0) {
+   else if (v->dx<0.0) 
       if (v->above->y<yp-1e-10)
 	 return v->above->x+v->dx*((*ydest=yp)-v->above->y);
       else
 	 return (*ydest=v->above->y),v->above->x;
-   } else if (v->below->y>yp+1.0+1e-10) 
+   else if (v->below->y>yp+1.0+1e-10) 
       return (*ydest=yp+1.0),v->above->x;
    else
       return (*ydest=v->below->y),v->below->x;
@@ -148,17 +148,17 @@ static INLINE float line_xmax(struct line_list *v,float yp,float *ydest)
 
 static INLINE float line_xmin(struct line_list *v,float yp,float *ydest)
 {
-   if (v->dx<0.0) {
+   if (v->dx<0.0) 
       if (v->below->y>yp+1.0+1e-10)
 	 return v->above->x+v->dx*((*ydest=(yp+1.0))-v->above->y);
       else
 	 return (*ydest=v->below->y),v->below->x;
-   } else if (v->dx>0.0) {
+   else if (v->dx>0.0) 
       if (v->above->y<yp-1e-10)
 	 return v->above->x+v->dx*((*ydest=yp)-v->above->y);
       else
 	 return (*ydest=v->above->y),v->above->x;
-   } else if (v->above->y<yp-1e-10) 
+   else if (v->above->y<yp-1e-10) 
       return (*ydest=yp),v->above->x;
    else
       return (*ydest=v->above->y),v->above->x;
