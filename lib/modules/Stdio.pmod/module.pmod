@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.75 2000/02/17 23:11:54 nilsson Exp $
+// $Id: module.pmod,v 1.76 2000/02/29 03:18:42 hubbe Exp $
 
 import String;
 
@@ -725,6 +725,9 @@ int file_size(string s)
   return stat[1]; 
 }
 
+// Warning: This does not work on NT
+// (Consider paths like: k:/fnord)
+// -Hubbe
 string append_path(string p, string ... v)
 {
   return combine_path(p, @map(v, lambda(string s)
