@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.163 1999/12/14 17:40:04 hubbe Exp $");
+RCSID("$Id: file.c,v 1.164 2000/01/10 00:42:25 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1046,9 +1046,13 @@ static void file_write(INT32 args)
   for(written=0;written < str->len;check_signals(0,0,0))
   {
     int fd=FD;
+    int e;
     THREADS_ALLOW();
     i=fd_write(fd, str->str + written, str->len - written);
     THREADS_DISALLOW();
+
+    e=errno;
+    check_signals(0,0,0);
 
 #ifdef _REENTRANT
     if(FD<0) error("File destructed while in file->write.\n");
@@ -1056,10 +1060,10 @@ static void file_write(INT32 args)
 
     if(i<0)
     {
-      switch(errno)
+      switch(e)
       {
       default:
-	ERRNO=errno;
+	ERRNO=e;
 	pop_n_elems(args);
 	if (!written) {
 	  push_int(-1);
