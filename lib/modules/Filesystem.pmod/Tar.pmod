@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.5 1999/12/26 04:31:50 jhs Exp $
+ * $Id: Tar.pmod,v 1.6 2000/09/04 07:57:44 per Exp $
  */
 
 class _Tar  // filesystem
@@ -33,7 +33,7 @@ class _Tar  // filesystem
 
     void create(int p, int l)
     {
-      assign(fd->dup());
+      assign(fd/*->dup()*/);
       start = p;
       len = l;
       seek(0);
