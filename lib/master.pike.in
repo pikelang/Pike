@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.144 2001/02/13 12:28:51 mirar Exp $
+ * $Id: master.pike.in,v 1.145 2001/02/24 02:37:01 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -1419,6 +1419,7 @@ void _main(array(string) orig_argv, array(string) env)
 	
       case "execute":
 	  random_seed(time() + (getpid() * 0x11111111));
+	if(trace) predef::trace(trace);
 	compile_string("mixed create(){"+opts[1]+";}")();
 	exit(0);
 
