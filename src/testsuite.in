@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.744 2004/11/01 03:06:03 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.745 2004/11/02 00:59:33 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7978,6 +7978,8 @@ return 0;
 
 test_if_true(1)
 test_if_false(0)
+
+test_if_true('n' == 110)
 
 // #if ==
 test_if_true(1==1)
