@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.2 2003/04/05 13:17:28 grubba Exp $
+|| $Id: circular_list.cmod,v 1.3 2003/04/05 13:39:45 grubba Exp $
 */
 
 #include "global.h"
@@ -1113,29 +1113,6 @@ PIKECLASS CircularList
 	new->pos = new->list->size; 
       }
       RETURN o;
-    }
-
-    /*! @decl CircularListIterator `-=(int steps)
-     *!   Move this iterator @[steps] steps backwatds (negative value on 
-     *!   @[steps] will cause the iterator to move backwards) and return 
-     *!   the result as a new iterator.
-     *!
-     *! @returns
-     *!    This iterator positioned @[steps] steps forward.
-     */    
-
-    PIKEFUN object  `-=(int steps) //shall be `-=
-    {
-      THIS->pos-=steps;
-      if (THIS->pos < 0) 
-      { 
-	THIS->pos = 0;
-      }
-      else if (THIS->pos > THIS->list->size) 
-      { 
-	THIS->pos = THIS->list->size; 
-      }
-      REF_RETURN Pike_fp->current_object;
     }
 
     
