@@ -159,7 +159,7 @@ o Implicit lambda
        void do_something()
        {
          PushPop() {
-           glTranslate( ((1.0-0.08))/2, 0.0, 0.0 );
+           glTranslate( (1.0-0.08)/2, 0.0, 0.0 );
            draw_stuff();
          };
        }
