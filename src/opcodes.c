@@ -429,7 +429,7 @@ static INT32 low_sscanf(INT32 num_arg)
   int match_len;
   struct svalue sval;
   int e,cnt,matches,eye,arg;
-  int no_assign;
+  int no_assign,field_length;
   char set[256];
   struct svalue *argp;
   
@@ -473,245 +473,279 @@ static INT32 low_sscanf(INT32 num_arg)
     }
 #endif
 
+    no_assign=0;
+    field_length=-1;
+
     cnt++;
     if(cnt>=match_len)
       error("Error in sscanf format string.\n");
 
-    if(match[cnt]=='*')
+    while(1)
     {
-      no_assign=1;
-      cnt++;
-      if(cnt>=match_len)
-        error("Error in sscanf format string.\n");
-    }else{
-      no_assign=0;
-    }
-
-    switch(match[cnt])
-    {
-    case 'c':
-      if(eye>=input_len) return matches;
-      sval.type=T_INT;
-      sval.subtype=NUMBER_NUMBER;
-      sval.u.integer=EXTRACT_UCHAR(input+eye);
-      eye++;
-      break;
-
-    case 'd':
-    {
-      char * t;
-
-      if(eye>=input_len) return matches;
-      sval.u.integer=STRTOL(input+eye,&t,10);
-      if(input + eye == t) return matches;
-      eye=t-input;
-      sval.type=T_INT;
-      sval.subtype=NUMBER_NUMBER;
-      break;
-    }
-
-    case 'x':
-    {
-      char * t;
-
-      if(eye>=input_len) return matches;
-      sval.u.integer=STRTOL(input+eye,&t,16);
-      if(input + eye == t) return matches;
-      eye=t-input;
-      sval.type=T_INT;
-      sval.subtype=NUMBER_NUMBER;
-      break;
-    }
-
-    case 'o':
-    {
-      char * t;
-
-      if(eye>=input_len) return matches;
-      sval.u.integer=STRTOL(input+eye,&t,8);
-      if(input + eye == t) return matches;
-      eye=t-input;
-      sval.type=T_INT;
-      sval.subtype=NUMBER_NUMBER;
-      break;
-    }
-
-    case 'D':
-    {
-      char * t;
-
-      if(eye>=input_len) return matches;
-      sval.u.integer=STRTOL(input+eye,&t,0);
-      if(input + eye == t) return matches;
-      eye=t-input;
-      sval.type=T_INT;
-      sval.subtype=NUMBER_NUMBER;
-      break;
-    }
-
-    case 'f':
-    {
-      char * t;
-
-      if(eye>=input_len) return matches;
-      sval.u.float_number=STRTOD(input+eye,&t);
-      if(input + eye == t) return matches;
-      eye=t-input;
-      sval.type=T_FLOAT;
-#ifdef __CHECKER__
-      sval.subtype=0;
-#endif
-      break;
-    }
-
-    case 's':
-      if(cnt+1>=match_len)
+      switch(match[cnt])
       {
-	sval.type=T_STRING;
-#ifdef __CHECKER__
-	sval.subtype=0;
-#endif
-	sval.u.string=make_shared_binary_string(input+eye,input_len-eye);
+      case '*':
+	no_assign=1;
+	cnt++;
+	if(cnt>=match_len)
+	  error("Error in sscanf format string.\n");
+	continue;
+
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+      {
+	char *t;
+	field_length=STRTOL(match+cnt,&t,10);
+	cnt=t-match;
+	continue;
+      }
+
+      case 'c':
+	if(field_length == -1) field_length = 1;
+	if(eye+field_length > input_len) return matches;
+	sval.type=T_INT;
+	sval.subtype=NUMBER_NUMBER;
+	sval.u.integer=0;
+	while(--field_length >= 0)
+	{
+	  sval.u.integer<<=8;
+	  sval.u.integer|=EXTRACT_UCHAR(input+eye);
+	  eye++;
+	}
 	break;
-      }else{
-	char *end_str_start;
-	char *end_str_end;
-	char *s=0;		/* make gcc happy */
-	char *p=0;		/* make gcc happy */
-	int start,contains_percent_percent, new_eye;
 
-	start=eye;
-	end_str_start=match+cnt+1;
-          
-	s=match+cnt+1;
-      test_again:
-	if(*s=='%')
-	{
-	  s++;
-	  if(*s=='*') s++;
-	  switch(*s)
-	  {
-	  case 'n':
-	    s++;
-	    goto test_again;
-	      
-	  case 's':
-	    error("Illigal to have two adjecent %%s.\n");
-	    return 0;		/* make gcc happy */
-	      
-	    /* sscanf("foo-bar","%s%d",a,b) might not work as expected */
-	  case 'd':
-	    for(e=0;e<256;e++) set[e]=1;
-	    for(e='0';e<='9';e++) set[e]=0;
-	    set['-']=0;
-	    goto match_set;
+      case 'd':
+      {
+	char * t;
 
-	  case 'o':
-	    for(e=0;e<256;e++) set[e]=1;
-	    for(e='0';e<='7';e++) set[e]=0;
-	    goto match_set;
-
-	  case 'x':
-	    for(e=0;e<256;e++) set[e]=1;
-	    for(e='0';e<='9';e++) set[e]=0;
-	    for(e='a';e<='f';e++) set[e]=0;
-	    goto match_set;
-
-	  case 'D':
-	    for(e=0;e<256;e++) set[e]=1;
-	    for(e='0';e<='9';e++) set[e]=0;
-	    set['-']=0;
-	    set['x']=0;
-	    goto match_set;
-
-	  case 'f':
-	    for(e=0;e<256;e++) set[e]=1;
-	    for(e='0';e<='9';e++) set[e]=0;
-	    set['.']=set['-']=0;
-	    goto match_set;
-
-	  case '[':		/* oh dear */
-	    read_set(match,s-match+1,set,match_len);
-	    for(e=0;e<256;e++) set[e]=!set[e];
-	    goto match_set;
-	  }
-	}
-
-	contains_percent_percent=0;
-
-	for(e=cnt;e<match_len;e++)
-	{
-	  if(match[e]=='%')
-	  {
-	    if(match[e+1]=='%')
-	    {
-	      contains_percent_percent=1;
-	      e++;
-	    }else{
-	      break;
-	    }
-	  }
-	}
-	   
-	end_str_end=match+e;
-
-	if(!contains_percent_percent)
-	{
-	  s=my_memmem(end_str_start,
-		      end_str_end-end_str_start,
-		      input+eye,
-		      input_len-eye);
-	  if(!s) return matches;
-	  eye=s-input;
-	  new_eye=eye+end_str_end-end_str_start;
-	}else{
-	  for(;eye<input_len;eye++)
-	  {
-	    p=input+eye;
-	    for(s=end_str_start;s<end_str_end;s++,p++)
-	    {
-	      if(*s!=*p) break;
-	      if(*s=='%') s++;
-	    }
-	    if(s==end_str_end)
-	      break;
-	  }
-	  if(eye==input_len)
-	    return matches;
-	  new_eye=p-input;
-	}
-
-	sval.type=T_STRING;
-#ifdef __CHECKER__
-	sval.subtype=0;
-#endif
-	sval.u.string=make_shared_binary_string(input+start,eye-start);
-
-	cnt=end_str_end-match-1;
-	eye=new_eye;
+	if(eye>=input_len) return matches;
+	sval.u.integer=STRTOL(input+eye,&t,10);
+	if(input + eye == t) return matches;
+	eye=t-input;
+	sval.type=T_INT;
+	sval.subtype=NUMBER_NUMBER;
 	break;
       }
 
-    case '[':
-      cnt=read_set(match,cnt+1,set,match_len);
+      case 'x':
+      {
+	char * t;
 
-    match_set:
-      for(e=eye;eye<input_len && set[EXTRACT_UCHAR(input+eye)];eye++);
-      sval.type=T_STRING;
+	if(eye>=input_len) return matches;
+	sval.u.integer=STRTOL(input+eye,&t,16);
+	if(input + eye == t) return matches;
+	eye=t-input;
+	sval.type=T_INT;
+	sval.subtype=NUMBER_NUMBER;
+	break;
+      }
+
+      case 'o':
+      {
+	char * t;
+
+	if(eye>=input_len) return matches;
+	sval.u.integer=STRTOL(input+eye,&t,8);
+	if(input + eye == t) return matches;
+	eye=t-input;
+	sval.type=T_INT;
+	sval.subtype=NUMBER_NUMBER;
+	break;
+      }
+
+      case 'D':
+      {
+	char * t;
+
+	if(eye>=input_len) return matches;
+	sval.u.integer=STRTOL(input+eye,&t,0);
+	if(input + eye == t) return matches;
+	eye=t-input;
+	sval.type=T_INT;
+	sval.subtype=NUMBER_NUMBER;
+	break;
+      }
+
+      case 'f':
+      {
+	char * t;
+
+	if(eye>=input_len) return matches;
+	sval.u.float_number=STRTOD(input+eye,&t);
+	if(input + eye == t) return matches;
+	eye=t-input;
+	sval.type=T_FLOAT;
 #ifdef __CHECKER__
-      sval.subtype=0;
+	sval.subtype=0;
 #endif
-      sval.u.string=make_shared_binary_string(input+e,eye-e);
-      break;
+	break;
+      }
 
-    case 'n':
-      sval.type=T_INT;
-      sval.subtype=NUMBER_NUMBER;
-      sval.u.integer=eye;
-      break;
+      case 's':
+	if(field_length != -1)
+	{
+	  if(input_len - eye < field_length)
+	    return matches;
+
+	  sval.type=T_STRING;
+#ifdef __CHECKER__
+	  sval.subtype=0;
+#endif
+	  sval.u.string=make_shared_binary_string(input+eye,field_length);
+	  eye+=field_length;
+	  break;
+	}
+
+	if(cnt+1>=match_len)
+	{
+	  sval.type=T_STRING;
+#ifdef __CHECKER__
+	  sval.subtype=0;
+#endif
+	  sval.u.string=make_shared_binary_string(input+eye,input_len-eye);
+	  eye=input_len;
+	  break;
+	}else{
+	  char *end_str_start;
+	  char *end_str_end;
+	  char *s=0;		/* make gcc happy */
+	  char *p=0;		/* make gcc happy */
+	  int start,contains_percent_percent, new_eye;
+
+	  start=eye;
+	  end_str_start=match+cnt+1;
+          
+	  s=match+cnt+1;
+	test_again:
+	  if(*s=='%')
+	  {
+	    s++;
+	    if(*s=='*') s++;
+	    switch(*s)
+	    {
+	    case 'n':
+	      s++;
+	      goto test_again;
+	      
+	    case 's':
+	      error("Illigal to have two adjecent %%s.\n");
+	      return 0;		/* make gcc happy */
+	      
+	      /* sscanf("foo-bar","%s%d",a,b) might not work as expected */
+	    case 'd':
+	      for(e=0;e<256;e++) set[e]=1;
+	      for(e='0';e<='9';e++) set[e]=0;
+	      set['-']=0;
+	      goto match_set;
+
+	    case 'o':
+	      for(e=0;e<256;e++) set[e]=1;
+	      for(e='0';e<='7';e++) set[e]=0;
+	      goto match_set;
+
+	    case 'x':
+	      for(e=0;e<256;e++) set[e]=1;
+	      for(e='0';e<='9';e++) set[e]=0;
+	      for(e='a';e<='f';e++) set[e]=0;
+	      goto match_set;
+
+	    case 'D':
+	      for(e=0;e<256;e++) set[e]=1;
+	      for(e='0';e<='9';e++) set[e]=0;
+	      set['-']=0;
+	      set['x']=0;
+	      goto match_set;
+
+	    case 'f':
+	      for(e=0;e<256;e++) set[e]=1;
+	      for(e='0';e<='9';e++) set[e]=0;
+	      set['.']=set['-']=0;
+	      goto match_set;
+
+	    case '[':		/* oh dear */
+	      read_set(match,s-match+1,set,match_len);
+	      for(e=0;e<256;e++) set[e]=!set[e];
+	      goto match_set;
+	    }
+	  }
+
+	  contains_percent_percent=0;
+
+	  for(e=cnt;e<match_len;e++)
+	  {
+	    if(match[e]=='%')
+	    {
+	      if(match[e+1]=='%')
+	      {
+		contains_percent_percent=1;
+		e++;
+	      }else{
+		break;
+	      }
+	    }
+	  }
+	   
+	  end_str_end=match+e;
+
+	  if(!contains_percent_percent)
+	  {
+	    s=my_memmem(end_str_start,
+			end_str_end-end_str_start,
+			input+eye,
+			input_len-eye);
+	    if(!s) return matches;
+	    eye=s-input;
+	    new_eye=eye+end_str_end-end_str_start;
+	  }else{
+	    for(;eye<input_len;eye++)
+	    {
+	      p=input+eye;
+	      for(s=end_str_start;s<end_str_end;s++,p++)
+	      {
+		if(*s!=*p) break;
+		if(*s=='%') s++;
+	      }
+	      if(s==end_str_end)
+		break;
+	    }
+	    if(eye==input_len)
+	      return matches;
+	    new_eye=p-input;
+	  }
+
+	  sval.type=T_STRING;
+#ifdef __CHECKER__
+	  sval.subtype=0;
+#endif
+	  sval.u.string=make_shared_binary_string(input+start,eye-start);
+
+	  cnt=end_str_end-match-1;
+	  eye=new_eye;
+	  break;
+	}
+
+      case '[':
+	cnt=read_set(match,cnt+1,set,match_len);
+
+      match_set:
+	for(e=eye;eye<input_len && set[EXTRACT_UCHAR(input+eye)];eye++);
+	sval.type=T_STRING;
+#ifdef __CHECKER__
+	sval.subtype=0;
+#endif
+	sval.u.string=make_shared_binary_string(input+e,eye-e);
+	break;
+
+      case 'n':
+	sval.type=T_INT;
+	sval.subtype=NUMBER_NUMBER;
+	sval.u.integer=eye;
+	break;
     
-    default:
-      error("Unknown sscanf token %%%c\n",match[cnt]);
+      default:
+	error("Unknown sscanf token %%%c\n",match[cnt]);
+      }
+      break;
     }
     matches++;
 
