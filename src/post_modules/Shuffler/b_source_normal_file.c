@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.9 2003/03/27 18:25:09 mast Exp $
+|| $Id: b_source_normal_file.c,v 1.10 2003/12/13 22:54:29 nilsson Exp $
 */
 
 #include "global.h"
@@ -90,8 +90,8 @@ struct source *source_normal_file_make( struct svalue *s,
 
   if (!Fd_ref_program)
   {
-    push_text("files.Fd_ref"); push_int(0);
-    SAFE_APPLY_MASTER("resolv",2);
+    push_text("files.Fd_ref");
+    SAFE_APPLY_MASTER("resolv",1);
     Fd_ref_program = program_from_svalue(Pike_sp-1);
     if (!Fd_ref_program) {
       pop_stack();

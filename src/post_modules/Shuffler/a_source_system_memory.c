@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: a_source_system_memory.c,v 1.9 2003/03/14 15:57:49 grubba Exp $
+|| $Id: a_source_system_memory.c,v 1.10 2003/12/13 22:54:29 nilsson Exp $
 */
 
 #include "global.h"
@@ -69,8 +69,7 @@ struct source *source_system_memory_make( struct svalue *s,
 
   if (!shm_program) {
     push_text("System.Memory");
-    push_int(0);
-    SAFE_APPLY_MASTER("resolv", 2);
+    SAFE_APPLY_MASTER("resolv", 1);
     shm_program = program_from_svalue(Pike_sp - 1);
     if (!shm_program) {
       pop_stack();

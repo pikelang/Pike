@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.38 2003/10/13 17:24:07 grubba Exp $
+|| $Id: support.c,v 1.39 2003/12/13 22:54:57 nilsson Exp $
 */
 
 #include <version.h>
@@ -54,10 +54,7 @@ void pgtk_return_this( int n )
 void pgtk_get_image_module()
 {
   push_constant_text("Image");
-  push_int(0);
-  SAFE_APPLY_MASTER("resolv", 2);
-  if (Pike_sp[-1].type!=PIKE_T_OBJECT)
-    Pike_error("No Image module.\n");
+  SAFE_APPLY_MASTER("resolv_or_error", 1);
 }
 
 void pgtk_index_stack( char *what )
