@@ -1,11 +1,12 @@
 #include "global.h"
-
+#include "config.h"
 #include <math.h>
 #include <ctype.h>
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
-
+#endif
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.2 1999/04/15 02:40:08 per Exp $");
+RCSID("$Id: avs.c,v 1.3 1999/05/06 23:44:23 neotron Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
