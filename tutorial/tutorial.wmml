@@ -1683,9 +1683,10 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
      <tt>({1,9,11})</tt>.
 
 <dt> Union (<tt><i>a</i> | <i>b</i></tt>)
-<dd> Union works almost as summation, but it only concatenates elements not
+<dd> Union works almost as summation, but it only adds elements not
      already present in <i>a</i>. So, <tt>({1,2,3}) | ({1,3,5})</tt> will
-     return <tt>({1,2,3,5})</tt>.
+     return <tt>({1,2,3,5})</tt>. 
+     Note: the order of the elements in <i>a</i> can be changed!
 
 <dt> Xor (<tt><i>a</i> ^ <i>b</i></tt>)
 <dd>  This is also called symmetric difference. It returns an array with all
