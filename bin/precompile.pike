@@ -197,65 +197,174 @@ mapping(string:string) parse_arg(array x)
 }
 
 /* FIXME: this is not finished yet */
-string convert_type(array s)
+
+array(string|int) convert_basic_type(array s, int pos)
 {
-//  werror("%O\n",s);
-  switch(objectp(s[0])?s[0]->text:s[0])
+  string res;
+
+  switch(objectp(s[pos])?s[pos]->text:s[pos])
   {
     case "0": case "1": case "2": case "3": case "4":
     case "5": case "6": case "7": case "8": case "9":
-      if(sizeof(s)>1 && s[1]=="=")
+      if(sizeof(s)>(pos+1) && s[pos+1]=="=")
       {
-	return sprintf("tSetvar(%s,%s)",s[0],convert_type(s[2..]));
+	res = sprintf("tSetvar(%s,%s)",s[pos],convert_type(s[pos+2..]));
+	pos += 3;
       }else{
-	return sprintf("tVar(%s)",s[0]);
+	res = sprintf("tVar(%s)",s[pos]);
+	pos++;
       }
+      break;
 
-    case "int": return "tInt";
-    case "float": return "tFlt";
-    case "string": return "tStr";
+    case "int":
+      if ((sizeof(s) < pos + 2) || !arrayp(s[pos+1])) {
+	res = "tInt";
+	pos++;
+      } else {
+	array tmp = s[pos + 1];
+	pos += 2;
+
+	int pos2 = 1;
+	int low = -0x20000000;
+	if (tmp[pos2] != "..") {
+	  low = (int)(tmp[pos2]->text);
+	  pos2++;
+	  // The second is a workaround for a bug in Parser.Pike.
+	  if ((tmp[pos2] != "..") && (tmp[pos2] != ".. ")) {
+	    error(sprintf("Syntax error in int range got %O, "
+			  "expected \"..\".\n",
+			  tmp));
+	  }
+	}
+	pos2++;
+	int high = 0x1fffffff;
+	if (tmp[pos2] != ")") {
+	  high = (int)(tmp[pos2]->text);
+	  pos2++;
+	  if (tmp[pos2] != ")") {
+	    error(sprintf("Syntax error in int range got %O, "
+			  "expected \")\".\n",
+			  tmp));
+	  }
+	}
+	// NOTE! This piece of code KNOWS that PIKE_T_INT is 8!
+	res = sprintf("%O", sprintf("\8%4c%4c", low, high));
+      }
+      break;
+
+    case "float":
+      res = "tFlt";
+      pos++;
+      break;
+
+    case "string":
+      res = "tStr";
+      pos++;
+      break;
+
     case "array": 
-      if(sizeof(s)<2) return "tArray";
-      return "tArr("+convert_type(s[1][1..sizeof(s[1])-2])+")";
+      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
+	res = "tArray";
+	pos++;
+      } else {
+	res = "tArr("+convert_type(s[pos+1][1..sizeof(s[pos+1])-2])+")";
+	pos += 2;
+      }
+      break;
+
     case "multiset": 
-      if(sizeof(s)<2) return "tMultiset";
-      return "tSet("+convert_type(s[1][1..sizeof(s[1])-2])+")";
+      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
+	res = "tMultiset";
+	pos++;
+      } else {
+	res = "tSet("+convert_type(s[pos+1][1..sizeof(s[pos+1])-2])+")";
+	pos += 2;
+      }
+      break;
+
     case "mapping": 
-    {
-      if(sizeof(s)<2) return "tMapping";
-      mixed tmp=s[1][1..sizeof(s[1])-2];
-      return "tMap("+
-	convert_type((tmp/({":"}))[0])+","+
+      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
+	res = "tMapping";
+	pos ++;
+      } else {
+	mixed tmp=s[pos + 1][1..sizeof(s[pos + 1])-2];
+	res = "tMap("+
+	  convert_type((tmp/({":"}))[0])+","+
 	  convert_type((tmp/({":"}))[1])+")";
-    }
+	pos += 2;
+      }
+      break;
+    
     case "object": /* FIXME: support object is/implements */
-      return "tObj";
+      res =  "tObj";
+      pos++;
+      break;
 
     case "program": 
-      return "tProgram";
+      res = "tProgram";
+      pos++;
+      break;
+
     case "function": 
-    {
-      if(sizeof(s)<2) return "tFunction";
-      array args=s[1][1..sizeof(s[1])-2];
-      [ args, array ret ] = args / PC.Token(":");
-      if(args[-1]=="...")
-      {
-	return sprintf("tFunc(%s,%s)",
-		       map(convert_type,args)*" ",
-		       convert_type(ret));
-      }else{
-	return sprintf("tFuncV(%s,,%s)",
-		       map(convert_type,args[..sizeof(args)-2])*" ",
-		       convert_type(args[-1]),
-		       convert_type(ret));
+      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
+	res = "tFunction";
+	pos++;
+      } else {
+	array args=s[pos + 1][1..sizeof(s[pos + 1])-2];
+	[ args, array ret ] = args / PC.Token(":");
+	if(args[-1]=="...")
+	{
+	  res = sprintf("tFunc(%s,%s)",
+			map(convert_type,args)*" ",
+			convert_type(ret));
+	}else{
+	  res = sprintf("tFuncV(%s,,%s)",
+			map(convert_type,args[..sizeof(args)-2])*" ",
+			convert_type(args[-1]),
+			convert_type(ret));
+	}
+	pos += 2;
       }
-    }
+      break;
+
     case "mixed": 
-      return "tMix";
+      res = "tMix";
+      pos++;
+      break;
 
     default:
-      return sprintf("ERR%O",s);
+      res = sprintf("ERR%O",s);
+      pos++;
+      break;
+  }  
+  return ({ res, pos });
+}
+
+array(string|int) low_convert_type(array s, int pos)
+{
+  [string res, pos] = convert_basic_type(s, pos);
+  while (pos < sizeof(s)) {
+    if (s[pos] == "|") {
+      [string res2, pos] = low_convert_type(s, ++pos);
+      res = "tOr(" + res + "," + res2 + ")";
+    } else if (s[pos] == "&") {
+      [string res2, pos] = convert_basic_type(s, ++pos);
+      res = "tAnd(" + res + "," + res2 + ")";
+    }
   }
+  return ({ res, pos });
+}
+
+string convert_type(array s)
+{
+  // werror("%O\n",s);
+
+  [string ret, int pos] = low_convert_type(s, 0);
+  if (pos != sizeof(s)) {
+    error(sprintf("Failed to convert type: %{%O, %}, pos: %O, partial:%O\n",
+		  s, pos, ret));
+  }
+  return ret;
 }
 
 
