@@ -1,0 +1,68 @@
+/*
+ * $Id: module.pmod.in,v 1.1 1997/06/09 18:37:59 grubba Exp $
+ *
+ * YP (NIS) Functionality for Pike
+ *
+ * Per Hedbor & Henrik Grubbström 1996-1997
+ */
+
+class YpDomain {
+  inherit @module@;
+};
+
+class YpMap {
+  object(YpDomain) domain;
+  string ypmap;
+
+  void create(string map,string|void d)
+  {
+    if (d) {
+      domain = YpDomain(d);
+    } else {
+      domain = YpDomain();
+    }
+    ypmap = map;
+    // Force an error if the map does not exist.
+    domain->match(ypmap, "foo");
+  }
+  string match(string key)
+  {
+    return(domain->match(ypmap, key));
+  }
+  string `[](string key)
+  {
+    return(match(key));
+  }
+  mapping all()
+  {
+    return(domain->all(ypmap));
+  }
+  mapping cast_to_mapping()
+  {
+    return(domain->all(ypmap));
+  }
+  void map(function(string,string:void)|array(function(string,string:void)) fn)
+  {
+    return(domain->map(ypmap, fn));
+  }
+  string server()
+  {
+    return(domain->server());
+  }
+  int order()
+  {
+    return(domain->order(ypmap));
+  }
+  int sizeof()
+  {
+    return(sizeof(domain->all(ypmap)));
+  }
+  array(string) indices()
+  {
+    return(indices(domain->all(ypmap)));
+  }
+  array(string) values()
+  {
+    return(values(domain->all(ypmap));
+  }
+};

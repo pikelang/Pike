@@ -110,6 +110,7 @@ testfont binary
 /src/modules/Regexp/acconfig.h foreign_ident
 /src/modules/Ssleay/ssleay.c foreign_ident
 /src/modules/Yp/acconfig.h foreign_ident
+/src/modules/Yp/module.pmod.in foreign_ident
 /src/modules/_Crypto/StdCrypt.pike foreign_ident
 /src/modules/_Crypto/cbc.c foreign_ident
 /src/modules/_Crypto/crypto.c foreign_ident
