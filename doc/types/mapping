@@ -16,7 +16,7 @@ DESCRIPTION
 	Here follows a list of operators that applies to mappings:
 	In this list a and b is used to represent a mapping expression:
 
-	a + b	summation ( ([1:1]) + ([2:2,2:2]) returns ([1:1,2:2]) )
+	a + b	summation ( ([1:1]) + ([2:2,2:2]) returns ([1:1,2:2,2:2]) )
 	a - b	subtraction, returns a copy of a with all pairs whos
 		index is present in b removed.
 	a & b	intersection, return a mapping with all indices that are
