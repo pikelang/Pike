@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.740 2004/10/22 20:18:35 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.741 2004/10/30 11:38:28 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6906,7 +6906,7 @@ test_eq("foo"[1..10],"oo")
 test_eq("foo"[-100..0],"f")
 test_eq("foo"[-100..100],"foo")
 test_eq("foo"[1..0],"")
-test_eq("foo"[0..-100],"")
+test_any(int u=-100; return "foo"[0..u];,"") dnl Use variable to avoid warning.
 test_eq("foobargazonk"[0..],"foobargazonk")
 test_eq("foobargazonk"[1..],"oobargazonk")
 test_eq("foobargazonk"[5..],"rgazonk")
@@ -6931,7 +6931,69 @@ test_equal(({1,2,3})[2..10],({3}))
 test_equal(({1,2,3})[-100..0],({1}))
 test_equal(({1,2,3})[-100..100],({1,2,3}))
 test_equal(({1,2,3})[1..0],({}))
-test_equal(({1,2,3})[0..-100],({}))
+test_any_equal(int u=-100; return ({1,2,3})[0..u];,({})) dnl Use variable to avoid warning.
+
+test_eq("abcdef"[1..3],   "bcd")
+test_eq("abcdef"[1..<3],  "bc")
+test_eq("abcdef"[1..],    "bcdef")
+test_eq("abcdef"[<1..3],  "")
+test_eq("abcdef"[<1..<3], "")
+test_eq("abcdef"[<1..],   "ef")
+test_eq("abcdef"[<3..3],  "cd")
+test_eq("abcdef"[<3..<3], "c")
+test_eq("abcdef"[<3..],   "cdef")
+test_eq("abcdef"[..3],    "abcd")
+test_eq("abcdef"[..<3],   "abc")
+test_eq("abcdef"[..],     "abcdef")
+
+test_equal(`[..] ("abcdef"/"", 1, Pike.INDEX_FROM_BEG, 3, Pike.INDEX_FROM_BEG), "bcd"/"");
+test_equal(`[..] ("abcdef"/"", 1, Pike.INDEX_FROM_BEG, 3, Pike.INDEX_FROM_END), "bc"/"");
+test_equal(`[..] ("abcdef"/"", 1, Pike.INDEX_FROM_BEG, 3, Pike.OPEN_BOUND),     "bcdef"/"");
+test_equal(`[..] ("abcdef"/"", 3, Pike.INDEX_FROM_END, 3, Pike.INDEX_FROM_BEG), "cd"/"");
+test_equal(`[..] ("abcdef"/"", 3, Pike.INDEX_FROM_END, 3, Pike.INDEX_FROM_END), "c"/"");
+test_equal(`[..] ("abcdef"/"", 3, Pike.INDEX_FROM_END, 3, Pike.OPEN_BOUND),     "cdef"/"");
+test_equal(`[..] ("abcdef"/"", 1, Pike.OPEN_BOUND, 3, Pike.INDEX_FROM_BEG),     "abcd"/"");
+test_equal(`[..] ("abcdef"/"", 1, Pike.OPEN_BOUND, 3, Pike.INDEX_FROM_END),     "abc"/"");
+test_equal(`[..] ("abcdef"/"", 1, Pike.OPEN_BOUND, 3, Pike.OPEN_BOUND),         "abcdef"/"");
+
+define(test_new_style, [[
+  test_any_equal([[
+    object new_style = class {
+        array(int) `[..] (int... args) {return args;}
+      }();
+    return new_style $1;
+  ]], $2)
+]])
+test_new_style([1..3],   ({1, Pike.INDEX_FROM_BEG, 3, Pike.INDEX_FROM_BEG}))
+test_new_style([1..<3],  ({1, Pike.INDEX_FROM_BEG, 3, Pike.INDEX_FROM_END}))
+test_new_style([1..],    ({1, Pike.INDEX_FROM_BEG, 0, Pike.OPEN_BOUND}))
+test_new_style([<1..3],  ({1, Pike.INDEX_FROM_END, 3, Pike.INDEX_FROM_BEG}))
+test_new_style([<1..<3], ({1, Pike.INDEX_FROM_END, 3, Pike.INDEX_FROM_END}))
+test_new_style([<1..],   ({1, Pike.INDEX_FROM_END, 0, Pike.OPEN_BOUND}))
+test_new_style([..3],    ({0, Pike.OPEN_BOUND, 3, Pike.INDEX_FROM_BEG}))
+test_new_style([..<3],   ({0, Pike.OPEN_BOUND, 3, Pike.INDEX_FROM_END}))
+test_new_style([..],     ({0, Pike.OPEN_BOUND, 0, Pike.OPEN_BOUND}))
+undefine([[test_new_style]])
+
+define(test_old_style, [[
+  test_any_equal([[
+    object old_style = class {
+        int _sizeof() {return 6;}
+        array(int) `[] (int... args) {return args;}
+      }();
+    return old_style $1;
+  ]], $2)
+]])
+test_old_style([1..3],   ({1, 3}))
+test_old_style([1..<3],  ({1, 2}))
+test_old_style([1..],    ({1, Int.NATIVE_MAX})) dnl Upper bound might become larger.
+test_old_style([<1..3],  ({4, 3}))
+test_old_style([<1..<3], ({4, 2}))
+test_old_style([<1..],   ({4, Int.NATIVE_MAX})) dnl Upper bound might become larger.
+test_old_style([..3],    ({0, 3}))
+test_old_style([..<3],   ({0, 2}))
+test_old_style([..],     ({0, Int.NATIVE_MAX})) dnl Upper bound might become larger.
+undefine([[test_old_style]])
 
 // casting
 test_eq([[(int)1]],[[1]])

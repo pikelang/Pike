@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.h,v 1.15 2003/11/14 09:27:29 mast Exp $
+|| $Id: operators.h,v 1.16 2004/10/30 11:38:27 mast Exp $
 */
 
 #ifndef OPERATORS_H
@@ -18,6 +18,20 @@ struct string_assignment_storage
   struct svalue lval[2];
   struct pike_string *s;
 };
+
+/* Flags for the bitfield to o_range2. */
+#define RANGE_LOW_FROM_BEG	0x10
+#define RANGE_LOW_FROM_END	0x20
+#define RANGE_LOW_OPEN		0x40
+#define RANGE_HIGH_FROM_BEG	0x01
+#define RANGE_HIGH_FROM_END	0x02
+#define RANGE_HIGH_OPEN		0x04
+
+/* The bound type flags passed to `[..] */
+#define INDEX_FROM_BEG		0
+#define INDEX_FROM_END		1
+#define OPEN_BOUND		2
+#define tRangeBound tInt02
 
 /* Prototypes begin here */
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind);
@@ -58,15 +72,19 @@ PMOD_EXPORT void f_not(INT32 args);
 PMOD_EXPORT void o_compl(void);
 PMOD_EXPORT void f_compl(INT32 args);
 PMOD_EXPORT void o_negate(void);
-PMOD_EXPORT void o_range(void);
+PMOD_EXPORT void o_range2(int bound_types);
+PMOD_EXPORT void f_range (INT32 args);
 PMOD_EXPORT void f_index(INT32 args);
-PMOD_EXPORT void f_index_assign(INT32 args);
 PMOD_EXPORT void f_arrow(INT32 args);
+PMOD_EXPORT void f_index_assign(INT32 args);
 PMOD_EXPORT void f_arrow_assign(INT32 args);
 PMOD_EXPORT void f_sizeof(INT32 args);
 void init_operators(void);
 void exit_operators(void);
 /* Prototypes end here */
+
+/* Compat. */
+#define o_range() o_range2 (RANGE_LOW_FROM_BEG|RANGE_HIGH_FROM_BEG)
 
 #undef COMPARISON
 #endif

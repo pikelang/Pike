@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.237 2004/09/18 20:50:53 nilsson Exp $
+|| $Id: pike_types.c,v 1.238 2004/10/30 11:38:27 mast Exp $
 */
 
 #include "global.h"
@@ -667,7 +667,7 @@ void debug_push_type(unsigned int type)
   case T_OBJECT:
   case PIKE_T_NAME:
   default:
-    /* Should not occurr. */
+    /* Should not occur. */
     Pike_fatal("Unsupported argument to push_type().\n");
     break;
 
@@ -3635,12 +3635,14 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   while(t->type == PIKE_T_NAME) {
     t = t->cdr;
   }
-  while(index1_type->type == PIKE_T_NAME) {
-    index1_type = index1_type->cdr;
-  }
-  while(index2_type->type == PIKE_T_NAME) {
-    index2_type = index2_type->cdr;
-  }
+  if (index1_type)
+    while(index1_type->type == PIKE_T_NAME) {
+      index1_type = index1_type->cdr;
+    }
+  if (index2_type)
+    while(index2_type->type == PIKE_T_NAME) {
+      index2_type = index2_type->cdr;
+    }
 
   switch(t->type)
   {
@@ -3651,21 +3653,29 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
     if(p)
     {
       INT32 i;
-      if((i = FIND_LFUN(p, LFUN_INDEX)) != -1)
+
+      if((i = FIND_LFUN(p, LFUN_RANGE)) != -1)
       {
 	struct pike_type *call_type = NULL;
-	/* FIXME: function_type_string should be replaced with something
-	 * derived from type_string
-	 */
 	type_stack_mark();
 	push_finished_type(mixed_type_string);
 	push_finished_type(void_type_string);
 	push_type(T_OR);			/* Return type */
 	push_finished_type(void_type_string);	/* Many type */
 	push_type(T_MANY);
-	push_finished_type(index2_type);	/* arg2 type */
+	push_int_type (INDEX_FROM_BEG, OPEN_BOUND); /* arg4 type */
 	push_type(T_FUNCTION);
-	push_finished_type(index1_type);	/* arg1 type */
+	if (index2_type)			/* arg3 type */
+	  push_finished_type(index2_type);
+	else
+	  push_type (T_ZERO);
+	push_type(T_FUNCTION);
+	push_int_type (INDEX_FROM_BEG, OPEN_BOUND); /* arg2 type */
+	push_type(T_FUNCTION);
+	if (index1_type)			/* arg1 type */
+	  push_finished_type(index1_type);
+	else
+	  push_type (T_ZERO);
 	push_type(T_FUNCTION);
 	call_type = pop_unfinished_type();
 	
@@ -3677,6 +3687,43 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 	add_ref(mixed_type_string);
 	return mixed_type_string;
       }
+
+      if((i = FIND_LFUN(p, LFUN_INDEX)) != -1)
+      {
+	/* FIXME: Should check for a _sizeof operator if from-the-end
+	 * indexing is done. */
+
+	struct pike_type *call_type = NULL;
+	/* FIXME: function_type_string should be replaced with something
+	 * derived from type_string
+	 */
+	type_stack_mark();
+	push_finished_type(mixed_type_string);
+	push_finished_type(void_type_string);
+	push_type(T_OR);			/* Return type */
+	push_finished_type(void_type_string);	/* Many type */
+	push_type(T_MANY);
+	if (index2_type)			/* arg2 type */
+	  push_finished_type(index2_type);
+	else
+	  push_int_type (MAX_INT_TYPE, MAX_INT_TYPE);
+	push_type(T_FUNCTION);
+	if (index1_type)			/* arg1 type */
+	  push_finished_type(index1_type);
+	else
+	  push_type (T_ZERO);
+	push_type(T_FUNCTION);
+	call_type = pop_unfinished_type();
+	
+	if((tmp = check_call(call_type, ID_FROM_INT(p, i)->type, 0))) {
+	  free_type(call_type);
+	  return tmp;
+	}
+
+	add_ref(mixed_type_string);
+	return mixed_type_string;
+      }
+
       yywarning("Ranging object without index operator.");
       return 0;
     }
@@ -3710,7 +3757,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   case T_STRING:
     /* Check that the index types are compatible with int. */
     {
-      if (!low_match_types(int_type_string, index1_type, 0)) {
+      if (index1_type && !low_match_types(int_type_string, index1_type, 0)) {
 	struct pike_string *s = describe_type(t);
 	yywarning("Bad argument 1 to range operator on %s.",
 		  s->str);
@@ -3720,7 +3767,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 	/* Bad index1 type. */
 	return 0;
       }
-      if (!low_match_types(int_type_string, index2_type, 0)) {
+      if (index2_type && !low_match_types(int_type_string, index2_type, 0)) {
 	struct pike_string *s = describe_type(t);
 	yywarning("Bad argument 2 to range operator on %s.",
 		  s->str);
