@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.301 2002/04/12 07:53:10 grubba Exp $
+# $Id: Makefile.in,v 1.302 2002/04/17 20:31:38 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -589,9 +589,6 @@ snapshot_export: source
 	--exportlist=src/export_list --name=Pike-v%maj.%min-snapshot-%Y%M%D
 
 export: full_export
-
-all_exports: full_export
-	( cd .. && $(TMP_BINDIR)/makedists )
 
 bin_export: aclocal
 	@rm -f *.burk
