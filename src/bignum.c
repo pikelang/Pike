@@ -121,6 +121,7 @@ void convert_svalue_to_bignum(struct svalue *s)
 #define BIGNUM_INT64_MASK  0xffff
 #define BIGNUM_INT64_SHIFT 16
 
+#ifdef INT64
 void push_int64(INT64 i)
 {
   if(i == (INT_TYPE)i)
@@ -206,5 +207,6 @@ int int64_from_bignum(INT64 *i, struct object *bignum)
 
   return 1;   /* We may someday return 0 if the conversion fails. */
 }
+#endif /* INT64 */
 
 #endif /* AUTO_BIGNUM */
