@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.205 2000/07/18 06:02:16 mast Exp $");
+RCSID("$Id: language.yacc,v 1.206 2000/08/15 19:00:24 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -726,6 +726,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       int f;
       node *check_args = NULL;
       int save_line = lex.current_line;
+      int num_required_args = 0;
 #ifdef PIKE_DEBUG
       struct pike_string *save_file = lex.current_file;
       lex.current_file = $8->current_file;
@@ -743,33 +744,64 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	{
 	  my_yyerror("Missing name for argument %d.",e);
 	} else {
-	  if ($1 & ID_VARIANT) {
-	    /* FIXME: Generate code that checks the arguments. */
-	    /* If there is a bad argument, call the fallback, and return. */
-	  } else {
-	    /* FIXME: Should probably use some other flag. */
-	    if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		(Pike_compiler->compiler_pass == 2) &&
-		(Pike_compiler->compiler_frame->variable[e].type != mixed_type_string)) {
-	      node *local_node;
+	  if (Pike_compiler->compiler_pass == 2) {
+	    if ($1 & ID_VARIANT) {
+	      struct pike_string *arg_type =
+		Pike_compiler->compiler_frame->variable[e].type;
 
-	      /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+	      /* FIXME: Generate code that checks the arguments. */
+	      /* If there is a bad argument, call the fallback, and return. */
+	      if (! pike_types_le(void_type_string, arg_type)) {
+		/* Argument my not be void.
+		 * ie it's required.
+		 */
+		num_required_args++;
+	      }
+	    } else {
+	      /* FIXME: Should probably use some other flag. */
+	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+		  (Pike_compiler->compiler_frame->variable[e].type != mixed_type_string)) {
+		node *local_node;
 
-	      local_node = mklocalnode(e, 0);
+		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-	      /* The following is needed to go around the optimization in
-	       * mksoftcastnode().
-	       */
-	      free_string(local_node->type);
-	      copy_shared_string(local_node->type, mixed_type_string);
+		local_node = mklocalnode(e, 0);
 
-	      check_args =
-		mknode(F_COMMA_EXPR, check_args,
-		       mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
-				      local_node));
+		/* The following is needed to go around the optimization in
+		 * mksoftcastnode().
+		 */
+		free_string(local_node->type);
+		copy_shared_string(local_node->type, mixed_type_string);
+
+		check_args =
+		  mknode(F_COMMA_EXPR, check_args,
+			 mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
+					local_node));
+	      }
 	    }
 	  }
 	}
+      }
+
+      if ($1 & ID_VARIANT) {
+	int i = isidentifier($4->u.sval.u.string);
+	struct pike_string *bad_arg_str;
+	MAKE_CONSTANT_SHARED_STRING(bad_arg_str,
+				    "Bad number of arguments!\n");
+
+	fprintf(stderr, "Required args: %d\n", num_required_args);
+
+	check_args =
+	  mknode('?',
+		 mkopernode("`<",
+			    mkefuncallnode("query_num_arg", NULL),
+			    mkintnode(num_required_args)),
+		 mknode(':',
+			mkefuncallnode("throw",
+				       mkefuncallnode("aggregate",
+						      mkstrnode(bad_arg_str))),
+			NULL));
+	free_string(bad_arg_str);
       }
 
       if (check_args) {
@@ -1574,16 +1606,21 @@ lambda: TOK_LAMBDA push_compiler_frame1
       free_string(Pike_compiler->compiler_frame->current_return_type);
     copy_shared_string(Pike_compiler->compiler_frame->current_return_type,any_type_string);
   }
-  func_args failsafe_block
+  func_args
+  {
+    $<number>$ = Pike_compiler->varargs;
+    Pike_compiler->varargs = 0;
+  }
+  failsafe_block
   {
     struct pike_string *type;
     char buf[40];
     int f,e;
     struct pike_string *name;
     
-    debug_malloc_touch($5);
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
-    type=find_return_type($5);
+    debug_malloc_touch($6);
+    $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
+    type=find_return_type($6);
 
     if(type) {
       push_finished_type(type);
@@ -1592,15 +1629,15 @@ lambda: TOK_LAMBDA push_compiler_frame1
       push_type(T_MIXED);
     
     e=$4-1;
-    if(Pike_compiler->varargs)
+    if($<number>5)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      Pike_compiler->varargs=0;
       pop_type_stack();
     }else{
       push_type(T_VOID);
     }
+    Pike_compiler->varargs=0;
     push_type(T_MANY);
     for(; e>=0; e--)
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
@@ -1620,7 +1657,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
 #endif /* LAMBDA_DEBUG */
     
     f=dooptcode(name,
-		$5,
+		$6,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
