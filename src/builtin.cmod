@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.161 2004/09/02 14:34:59 grubba Exp $
+|| $Id: builtin.cmod,v 1.162 2004/09/10 15:24:42 grubba Exp $
 */
 
 #include "global.h"
@@ -31,6 +31,7 @@
 #include "fsort.h"
 #include "port.h"
 #include "gc.h"
+#include "block_alloc.h"
 #include <assert.h>
 
 /*! @decl array(array(int|string)) describe_program(program p)
@@ -2912,6 +2913,453 @@ PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
   low_automap(1,depth,fun,tmpargs,args-1);
   stack_unlink(args);
 }
+
+/* Linked list stuff.
+ */
+#undef INIT_BLOCK
+#define INIT_BLOCK(NODE) do {				\
+    (NODE)->next = (NODE)->prev = NULL;			\
+    (NODE)->refs = 1;					\
+    (NODE)->val.type = T_INT;				\
+    (NODE)->val.subtype = NUMBER_UNDEFINED;		\
+    (NODE)->val.u.integer = 0;				\
+  } while(0) 
+
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(NODE) do {				\
+    free_svalue(&(NODE)->val);				\
+  } while(0)
+
+BLOCK_ALLOC_FILL_PAGES(list_node, 4);
+
+PMOD_EXPORT void free_list_node(struct list_node *node)
+{
+  if (!sub_ref(node)) {
+    really_free_list_node(node);
+  }
+}
+
+PMOD_EXPORT void unlink_list_node(struct list_node *n)
+{
+#ifdef PIKE_DEBUG
+  if (!n) {
+    Pike_fatal("Unlinking NULL node.\n");
+  }
+  if (!n->next || !n->prev) {
+    Pike_fatal("Unlinking unlinked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  n->prev->next = n->next;
+  n->next->prev = n->prev;
+  n->next = n->prev = NULL;
+
+  /* We've lost two references. */
+  free_list_node(n);
+  free_list_node(n);
+}
+
+PMOD_EXPORT void prepend_list_node(struct list_node *node,
+				   struct list_node *new)
+{
+#ifdef PIKE_DEBUG
+  if (!node) {
+    Pike_fatal("No node to prepend.\n");
+  }
+  if (!node->prev) {
+    Pike_fatal("Prepending unhooked node.\n");
+  }
+  if (!new) {
+    Pike_fatal("Prepending NULL node.\n");
+  }
+  if (new->next || new->prev) {
+    Pike_fatal("Prepending hooked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  new->next = node;
+  new->prev = node->prev;
+  new->prev->next = node->prev = new;
+  add_ref(new);
+  add_ref(new);
+}
+
+PMOD_EXPORT void append_list_node(struct list_node *node,
+				  struct list_node *new)
+{
+#ifdef PIKE_DEBUG
+  if (!node) {
+    Pike_fatal("No node to append.\n");
+  }
+  if (!node->next) {
+    Pike_fatal("Appending unhooked node.\n");
+  }
+  if (!new) {
+    Pike_fatal("Appending NULL node.\n");
+  }
+  if (new->next || new->prev) {
+    Pike_fatal("Appending hooked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  new->next = node->next;
+  new->prev = node;
+  new->next->prev = node->next = new;
+  add_ref(new);
+  add_ref(new);
+}
+
+/*! @class List
+ *!
+ *!   Linked list of values.
+ */
+PIKECLASS List
+{
+  CVAR struct list_node *head;		/* Doubles as head sentinel->next. */
+  CVAR INT32 head_sentinel_refs;
+  CVAR struct list_node *tail;		/* NULL. head s->prev & tail s->next */
+  CVAR INT32 tail_sentinel_refs;
+  CVAR struct list_node *tail_pred;	/* Doubles as tail sentinel->prev. */
+
+#define HEAD_SENTINEL(this)	((struct list_node *)(&this->head))
+#define TAIL_SENTINEL(this)	((struct list_node *)(&this->tail))
+
+  INIT
+  {
+    THIS->tail = NULL;
+    THIS->head = TAIL_SENTINEL(THIS);
+    THIS->tail_pred = HEAD_SENTINEL(THIS);
+    THIS->head_sentinel_refs = THIS->tail_sentinel_refs = 1;
+  }
+
+  EXIT
+  {
+    struct list_node *node = THIS->head;
+    struct list_node *next;
+    while ((next = node->next)) {
+      unlink_list_node(node);
+      node = next;
+    }
+  }
+
+  /*! @decl void append(mixed ... values)
+   *!
+   *!   Append @[values] to the end of the list.
+   *!
+   *! @seealso
+   *!   @[insert()]
+   */
+  PIKEFUN void append(mixed ... values)
+  {
+    struct list_node *node = TAIL_SENTINEL(THIS);
+    while (args--) {
+      struct list_node *new = alloc_list_node();
+      new->val = *(--Pike_sp);
+      prepend_list_node(node, new);
+      free_list_node(node = new);
+    }
+    push_int(0);
+  }
+
+  /*! @decl void insert(mixed ... values)
+   *!
+   *!   Insert @[values] at the front of the list.
+   *!
+   *! @seealso
+   *!   @[append()]
+   */
+  PIKEFUN void insert(mixed ... values)
+  {
+    struct list_node *node = THIS->head;
+    while (args--) {
+      struct list_node *new = alloc_list_node();
+      new->val = *(--Pike_sp);
+      prepend_list_node(node, new);
+      free_list_node(node = new);
+    }
+    push_int(0);
+  }
+
+  /*! @decl void create(mixed ... values)
+   *!
+   *!   Create a new @[List], and initialize it with @[values].
+   *!
+   *! @fixme
+   *!   Ought to reset the @[List] if called multiple times.
+   */
+  PIKEFUN void create(mixed ... values)
+    flags ID_STATIC;
+  {
+    /* FIXME: Reset the list? */
+    apply_current(f_List_append_fun_num, args);
+  }
+
+  /*! @class _get_iterator
+   *!
+   *!   @[Iterator] that loops over the @[List].
+   */
+  PIKECLASS _get_iterator
+    program_flags PROGRAM_USES_PARENT;
+    flags ID_STATIC;
+  {
+    CVAR struct list_node *cur;
+    CVAR INT32 ind;
+
+    INIT
+    {
+      struct external_variable_context loc;
+      struct List_struct *parent;
+
+      /* Find our parent. */
+      loc.o = Pike_fp->current_object;
+      loc.parent_identifier = Pike_fp->fun;
+      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+      find_external_context(&loc, 1);
+      parent = (struct List_struct *)(loc.o->storage +
+				      loc.inherit->storage_offset);
+      add_ref(THIS->cur = parent->head);
+      THIS->ind = 0;
+    }
+
+    EXIT
+    {
+      if (THIS->cur) {
+	free_list_node(THIS->cur);
+	THIS->cur = NULL;
+      }
+    }
+
+    PIKEFUN int(0..1) `!()
+      flags ID_STATIC;
+    {
+      pop_n_elems(args);
+      push_int(!THIS->cur->next || !THIS->cur->prev);
+    }
+
+    PIKEFUN int(0..) index()
+    {
+      pop_n_elems(args);
+      if (THIS->cur->next && THIS->cur->prev) {
+	push_int(THIS->ind);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl mixed value()
+     *!
+     *! @returns
+     *!   Returns the value at the current position.
+     */
+    PIKEFUN mixed value()
+    {
+      pop_n_elems(args);
+      if (THIS->cur->next && THIS->cur->prev) {
+	push_svalue(&THIS->cur->val);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl int(0..1) first()
+     *!
+     *!   Reset the iterator.
+     *!
+     *! @returns
+     *!   Returns @expr{1@} if there are elements in the list,
+     *!   and @expr{0@} (zero) if the list is empty.
+     */
+    PIKEFUN int(0..1) first()
+    {
+      struct external_variable_context loc;
+      struct List_struct *parent;
+      pop_n_elems(args);
+
+      /* Find our parent. */
+      loc.o = Pike_fp->current_object;
+      loc.parent_identifier = Pike_fp->fun;
+      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+      find_external_context(&loc, 1);
+      parent = (struct List_struct *)(loc.o->storage +
+				      loc.inherit->storage_offset);
+      free_list_node(THIS->cur);
+      add_ref(THIS->cur = parent->head);
+      THIS->ind = 0;
+      pop_n_elems(args);
+      if (THIS->cur->next) {
+	push_int(1);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl int(0..1) next()
+     *!
+     *!   Advance to the next element in the list.
+     *!
+     *! @returns
+     *!   Returns @expr{1@} on success, and @expr{0@} (zero)
+     *!   at the end of the list.
+     *!
+     *! @seealso
+     *!   @[prev()]
+     */
+    PIKEFUN int(0..1) next()
+    {
+      struct list_node *next;
+      if ((next = THIS->cur->next)) {
+	free_list_node(THIS->cur);
+	add_ref(THIS->cur = next);
+	THIS->ind++;
+	if (next->next) {
+	  pop_n_elems(args);
+	  push_int(1);
+	  return;
+	}
+      }
+      pop_n_elems(args);
+      push_int(0);
+    }
+
+    /*! @decl int(0..1) prev()
+     *!
+     *!   Retrace to the previous element in the list.
+     *!
+     *! @returns
+     *!   Returns @expr{1@} on success, and @expr{0@} (zero)
+     *!   at the beginning of the list.
+     *!
+     *! @seealso
+     *!   @[next()]
+     */
+    PIKEFUN int(0..1) prev()
+    {
+      struct list_node *prev;
+      if ((prev = THIS->cur->prev)) {
+	free_list_node(THIS->cur);
+	add_ref(THIS->cur = prev);
+	THIS->ind--;
+	if (prev->prev) {
+	  pop_n_elems(args);
+	  push_int(1);
+	  return;
+	}
+      }
+      pop_n_elems(args);
+      push_int(0);
+    }
+
+    /*! @decl Iterator `+=(int steps)
+     *!
+     *!   Advance or retrace the specified number of @[steps].
+     *!
+     *! @seealso
+     *!   @[next()], @[prev]
+     */
+    PIKEFUN Iterator `+=(int steps)
+    {
+      if (!steps) return;
+      if (steps > 0) {
+	while (steps--) {
+	  apply_current(f_List_cq__get_iterator_next_fun_num, 0);
+	  pop_stack();
+	}
+      } else {
+	while (steps++) {
+	  apply_current(f_List_cq__get_iterator_prev_fun_num, 0);
+	  pop_stack();
+	}
+      }
+      pop_n_elems(args);
+      ref_push_object(Pike_fp->current_object);
+    }
+
+    /*! @decl void insert(mixed val)
+     *!
+     *!   Insert @[val] at the current position.
+     *!
+     *! @seealso
+     *!   @[append()], @[delete()], @[set()]
+     */
+    PIKEFUN void insert(mixed val)
+    {
+      struct list_node *new;
+      if (!THIS->cur->prev) {
+	Pike_error("Attempt to insert before the start sentinel.\n");
+      }
+      new = alloc_list_node();
+      assign_svalue_no_free(&new->val, val);
+      prepend_list_node(THIS->cur, new);
+      free_list_node(THIS->cur);
+      THIS->cur = new;
+      pop_n_elems(args);
+      push_int(0);
+    }
+
+    /*! @decl void append(mixed val)
+     *!
+     *!   Append @[val] after the current position.
+     *!
+     *! @seealso
+     *!   @[insert()], @[delete()], @[set()]
+     */
+    PIKEFUN void append(mixed val)
+    {
+      struct list_node *new;
+      if (!THIS->cur->next) {
+	Pike_error("Attempt to append after the end sentinel.\n");
+      }
+      new = alloc_list_node();
+      assign_svalue_no_free(&new->val, val);
+      append_list_node(THIS->cur, new);
+      free_list_node(new);
+      pop_n_elems(args);
+      push_int(0);
+    }
+
+    /*! @decl void delete()
+     *!
+     *!   Delete the current node.
+     *!
+     *!   The current position will advance to the next node.
+     *!   This function thus performes the reverse operation
+     *!   of @[insert()].
+     *!
+     *! @seealso
+     *!   @[insert()], @[append()], @[set()]
+     */
+    PIKEFUN void delete()
+    {
+      struct list_node *next;
+      if (!(next = THIS->cur->next) || !THIS->cur->prev) {
+	Pike_error("Attempt to delete a sentinel.\n");
+      }
+      unlink_list_node(THIS->cur);
+      free_list_node(THIS->cur);
+      add_ref(THIS->cur = next);
+      pop_n_elems(args);
+      push_int(0);
+    }
+
+    /*! @decl void set(mixed val)
+     *!
+     *!   Set the value of the current position to @[val].
+     *!
+     *! @seealso
+     *!   @[insert()], @[append()], @[delete()]
+     */
+    PIKEFUN void set(mixed val)
+    {
+      if (!THIS->cur->next || !THIS->cur->prev) {
+	Pike_error("Attempt to set a sentinel.\n");
+      }
+      assign_svalue(&THIS->cur->val, val);
+      pop_n_elems(args);
+      push_int(0);
+    }
+  }
+  /*! @endclass
+   */
+}
+/*! @endclass
+ */
 
 void init_builtin(void)
 {

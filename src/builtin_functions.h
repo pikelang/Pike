@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.30 2004/03/07 02:19:09 nilsson Exp $
+|| $Id: builtin_functions.h,v 1.31 2004/09/10 15:24:42 grubba Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -11,6 +11,7 @@
 #define TYPEP(ID,NAME,TYPE) PMOD_EXPORT void ID(INT32 args);
 
 #include "callback.h"
+#include "block_alloc_h.h"
 
 /* Weak flags for arrays, multisets and mappings. 1 is avoided for
  * compatibility reasons. */
@@ -158,6 +159,22 @@ void f_function_object(INT32 args);
 void f_function_program(INT32 args);
 void f_random(INT32 args);
 PMOD_EXPORT void f_backtrace(INT32 args);
+
+struct list_node
+{
+  /* NOTE: Unusual order of elements due to use of sentinels. */
+  struct list_node *next;
+  INT32 refs;
+  struct list_node *prev;
+  struct svalue val;
+};
+BLOCK_ALLOC_FILL_PAGES(list_node, 4);
+PMOD_EXPORT void free_list_node(struct list_node *node);
+PMOD_EXPORT void unlink_list_node(struct list_node *n);
+PMOD_EXPORT void prepend_list_node(struct list_node *node,
+				   struct list_node *new);
+PMOD_EXPORT void append_list_node(struct list_node *node,
+				  struct list_node *new);
 void init_builtin(void);
 void exit_builtin(void);
 
