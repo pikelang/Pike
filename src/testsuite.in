@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.555 2002/10/18 17:16:21 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.556 2002/10/28 22:01:33 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3373,6 +3373,11 @@ cond([[all_constants()->thread_create]],
       data[2]->wait(key);
     return data[0];
   ]],1)
+  test_any([[
+    object lock = Thread.Mutex()->lock();
+    gc();
+    return objectp (lock);
+  ]], 1)
 
 // /precompiled/condition
   test_true(Thread.Condition())
