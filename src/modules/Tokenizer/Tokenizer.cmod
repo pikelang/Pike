@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.19 2004/04/01 12:37:06 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.20 2004/07/08 13:08:27 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -126,7 +126,7 @@ PIKECLASS compiler
     }
     Pike_sp[-args].type = PIKE_T_STRING;
     Pike_sp[-args].subtype = 0;
-    f_werror(args);
+    APPLY_MASTER("werror", args);
     args = 1;
   }
 
