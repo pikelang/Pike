@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1999/11/18 08:03:35 hubbe Exp $
+# $Id: Makefile.in,v 1.3 2000/03/30 17:38:43 grubba Exp $
 
 @make_variables@
 
@@ -13,28 +13,38 @@ $(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
 force:
 	@:
 
-$(MODULES): force
-	  @echo Making $@; \
+$(MODULES) no : force
+	@if [ "$@" = "no" ]; then :; else \
+	  echo Making $@; \
 	  ( cd $@; \
 	    rm remake >/dev/null 2>&1 || : ; \
 	    $(MAKE) $(MAKE_FLAGS) MODNAME=$@ || \
 	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$@ ) \
-	  ) || exit $$?;
+	  ) || exit $$?; \
+	fi
 
 modules: $(MODULES)
 
 modlist.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
+	( for a in $(MODULES) no ; do \
+	    if [ "$$a" = "no" ]; then :; else \
+	      cat $$a/modlist_segment; \
+	    fi; \
+	  done ) >modlist.h
 
 modlist_headers.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) ; do \
-	    cat $$a/modlist_segment; \
+	( for a in $(MODULES) no ; do \
+	    if [ "$$a" = "no" ]; then :; else \
+	      cat $$a/modlist_segment; \
+	    fi; \
 	  done \
 	) | sed -e 's/^.*{.*,\(.*\),\(.*\).*}.*$$/void \1(void),\2(void);/' >modlist_headers.h
 
 linker_options: $(MODULE_LINKOPTS)
-	( for a in $(MODULES) ; do \
-	    cat $$a/linker_options; \
+	( for a in $(MODULES) no ; do \
+	    if [ "$$a" = "no" ]; then :; else \
+	      cat $$a/linker_options; \
+	    fi; \
 	  done \
 	) >linker_options
 
@@ -45,52 +55,68 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
 	@exit 1
 
 depend:
-	for a in $(MODULES) ; do \
-	  ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; \
+	  fi; \
 	done
 
 install:
-	for a in $(MODULES) ; do \
-	  ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; \
+	  fi; \
 	done
 
 clean:
-	for a in $(MODULES) ; do \
-	  ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; \
+	  fi; \
 	done
 	-rm -f linker_options modlist.h modlist_headers.h
 
 verify:
-	for a in $(MODULES) ; do \
-	  ( cd $$a ; \
-	    echo verifying $$a ; \
-	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify \
-	  ) || exit $$? ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    ( cd $$a ; \
+	      echo verifying $$a ; \
+	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify \
+	    ) || exit $$? ; \
+	  fi; \
 	done
 
 verbose_verify:
-	for a in $(MODULES) ; do \
-	  ( cd $$a ; \
-	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify \
-	  ) || exit $$? ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    ( cd $$a ; \
+	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify \
+	    ) || exit $$? ; \
+	  fi; \
 	done
 
 fdtestsuites:
-	for a in $(MODULES) ; do \
-	  echo $$a ; \
-	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    echo $$a ; \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
+	  fi; \
 	done	
 
 testsuites:
-	for a in $(MODULES) ; do \
-	  (cd $$a; make module_testsuite) ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    (cd $$a; make module_testsuite) ; \
+	  fi; \
 	done
 
 extra_tests:
-	for a in $(MODULES) ; do \
-	  ( cd $$a ; \
-	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests \
-	  ) || exit $$? ; \
+	for a in $(MODULES) no ; do \
+	  if [ "$$a" = "no" ]; then :; else \
+	    ( cd $$a ; \
+	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests \
+	    ) || exit $$? ; \
+	  fi; \
 	done
 
 
