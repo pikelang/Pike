@@ -13,6 +13,7 @@
 
    +XXXX = 3/4/array(3/4)
    +XXX  = 2/3/4/array(2/3/4)
+   +XX   = 1/2/array(1/2)
    +X    = 1/2/3/4/array(1/2/3/4)
    =XXXX = 4/array(4)
    =XXX  = 3/array(3)
@@ -102,6 +103,7 @@ array(string) gen_func(string name, string ty)
     break;
   case 'I':
   case 'O':
+  case 'E':
     prot=":int";
     vdec="INT32";
     vret="push_int";
@@ -145,6 +147,8 @@ array(string) gen_func(string name, string ty)
       switch(sizeof(ty[i+1..])) {
       case 1:
 	mi = 1; mx = 4; break;
+      case 2:
+	mi = 1; mx = 2; break;
       case 3:
 	mi = 2; mx = 4; break;
       case 4:

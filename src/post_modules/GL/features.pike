@@ -1,20 +1,30 @@
 array funcEV = ({
   "glBegin",
   "glCullFace",
-
+  "glDepthFunc",
   "glDisable",
+  "glDisableClientState",
+  "glDrawBuffer",
   "glEnable",
+  "glEnableClientState",
   "glFrontFace",
+  "glLogicOp",
   "glMatrixMode",
+  "glReadBuffer",
+  "glRenderMode",
   "glShadeModel",
 });
 array funcV = ({
   "glEnd",
-
   "glEndList",
+  "glFinish",
   "glFlush",
+  "glInitNames",
   "glLoadIdentity",
+  "glPopAttrib",
+  "glPopClientAttrib",
   "glPopMatrix",
+  "glPopName",
   "glPushMatrix",
 });
 array func_misc = ({
@@ -40,31 +50,62 @@ array func_misc = ({
   ({"glCopyTexSubImage1D", "VEIIIII"}),
   ({"glCopyTexSubImage2D", "VEIIIIIII"}),
   ({"glDeleteLists", "VII"}),
-
-  ({"glFrustum", "VDDDDDD"}),
-  ({"glOrtho", "VDDDDDD"}),
-  ({"glViewport", "VIIII"}),
-  ({"glTranslate", "V!RRR"}),
-  ({"glScale", "V!RRR"}),
-  ({"glRotate", "V!RRRR"}),
-  ({"glMaterial","VEE@Q"}),
+  ({"glDepthMask", "VO"}),
+  ({"glDepthRange", "VDD"}),
+  ({"glDrawArrays", "VEII"}),
+  ({"glDrawPixels", "Vwhfti"}),
+  ({"glEdgeFlag", "VO"}),
+  ({"glEvalCoord", "V+RR"}),
+  ({"glEvalPoint", "V+II"}),
   ({"glFog","VE@Q"}),
-  ({"glLightModel","VE@Q"}),
-  ({"glGenLists","II"}),
-  ({"glNewList","VIE"}),
-  ({"glNormal","V#ZZZ"}),
-  ({"glVertex","V+ZZZ"}),
-  ({"glIsEnabled","OE"}),
-  ({"glTexEnv","VEE@Q"}),
-  ({"glTexParameter","VEE@Q"}),
+  ({"glFrustum", "VDDDDDD"}),
+  ({"glGenLists", "II"}),
+  ({"glGetError", "E"}),
+  ({"glHint", "VEE"}),
+  ({"glIndexMask", "VI"}),
+  ({"glIsEnabled", "OE"}),
+  ({"glIsList", "OI"}),
+  ({"glIsTexture", "OI"}),
+  ({"glLight", "VEE@Q"}),
+  ({"glLightModel", "VE@Q"}),
+  ({"glLineStipple", "VII"}),
+  ({"glLineWidth", "VF"}),
+  ({"glListBase", "VI"}),
+  ({"glLoadName", "VI"}),
+  ({"glMaterial", "VEE@Q"}),
+  ({"glNewList", "VIE"}),
+  ({"glNormal", "V#ZZZ"}),
+  ({"glOrtho", "VDDDDDD"}),
+  ({"glPassThrough", "VF"}),
+  ({"glPixelZoom", "VFF"}),
+  ({"glPointSize", "VF"}),
+  ({"glPolygonMode", "VEE"}),
+  ({"glPolygonOffset", "VFF"}),
+  ({"glPushAttrib", "VB"}),
+  ({"glPushClientAttrib", "VB"}),
+  ({"glPushName", "VI"}),
+  ({"glRasterPos", "V+ZZZ"}),
+  ({"glRotate", "V!RRRR"}),
+  ({"glScale", "V!RRR"}),
+  ({"glScissor", "VIIII"}),
+  ({"glStencilFunc", "VEII"}),
+  ({"glStencilMask", "VI"}),
+  ({"glStencilOp", "VEEE"}),
   ({"glTexCoord", "V+Z"}),
+  ({"glTexEnv","VEE@Q"}),
   ({"glTexGen","VEE@Z"}),
   ({"glTexImage2D","VEIIwhIfti"}),
+  ({"glTexParameter","VEE@Q"}),
+  ({"glTexSubImage2D","VEIIIwhfti"}),
+  ({"glTranslate", "V!RRR"}),
+  ({"glVertex","V+ZZZ"}),
+  ({"glViewport", "VIIII"}),
 });
 mapping func_cat = ([
   "VE":funcEV,
   "V":funcV,
 ]);
+
 /*
   Not implemented:
 
@@ -72,5 +113,46 @@ mapping func_cat = ([
   glBitmap
   glCallLists
   glColorPointer
+  glDeleteTextures
+  glDrawElements
+  glEdgeFlagPointer
+  glEvalMesh
+  glFeedbackBuffer
+  glGenTextures
+  glGet
+  glGetClipPlane
+  glGetLight
+  glGetMap
+  glGetMaterial
+  glGetPixelMap
+  glGetPointer
+  glGetPolygonStipple
+  glGetString
+  glGetTexEnv
+  glGetTexGen
+  glGetTexImage
+  glGetTexLevelParameter
+  glGetTexParameter
+  glIndex
+  glIndexPointer
+  glInterleavedArrays
+  glLoadMatrix
+  glMap
+  glMapGrid
+  glMultMatrix
+  glNormalPointer
+  glPixelMap
+  glPolygonStipple
+  glPrioritizeTextures
+  glReadPixels
+  glRect
+  glSelectBuffer
+  glTexCoordPointer
+  glTexImage1D
+  glTexSubImage1D
+  glVertexPoint
+
+  glPixelStore
+  glPixelTransfer
 
 */

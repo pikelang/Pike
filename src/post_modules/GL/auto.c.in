@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.7 1999/07/18 15:08:42 marcus Exp $
+ * $Id: auto.c.in,v 1.8 1999/07/18 17:50:50 marcus Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.7 1999/07/18 15:08:42 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.8 1999/07/18 17:50:50 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -197,6 +197,8 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 #define glClearColor4v(f) glClearColor((f)[0], (f)[1], (f)[2], (f)[3])
 #define glClearAccum3v(f) glClearAccum((f)[0], (f)[1], (f)[2], 0.0)
 #define glClearAccum4v(f) glClearAccum((f)[0], (f)[1], (f)[2], (f)[3])
+#define glEvalPoint1v(i) glEvalPoint1((i)[0]);
+#define glEvalPoint2v(i) glEvalPoint2((i)[0], (i)[1]);
 
 static void pre_init()
 {
