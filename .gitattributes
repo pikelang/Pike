@@ -87,7 +87,6 @@ testfont binary
 /src/modules/Image/lzw.c foreign_ident
 /src/modules/Image/lzw.h foreign_ident
 /src/modules/Image/matrix.c foreign_ident
-/src/modules/Image/mkdoc.pike foreign_ident
 /src/modules/Image/mkwmml.pike foreign_ident
 /src/modules/Image/operator.c foreign_ident
 /src/modules/Image/pattern.c foreign_ident
