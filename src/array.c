@@ -1531,7 +1531,7 @@ void gc_free_all_unreferenced_arrays(void)
 void debug_dump_type_field(TYPE_FIELD t)
 {
   int e;
-  for(e=0;e<MAX_TYPE;e++)
+  for(e=0;e<=MAX_TYPE;e++)
     if(t & (1<<e))
       fprintf(stderr," %s",get_name_of_type(e));
 
