@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.36 1998/04/28 23:54:21 grubba Exp $");
+RCSID("$Id: array.c,v 1.37 1998/05/12 23:49:52 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -840,7 +840,10 @@ void array_fix_type_field(struct array *v)
 
 #ifdef DEBUG
   if(t & ~(v->type_field))
+  {
+    describe(v);
     fatal("Type field out of order!\n");
+  }
 #endif
   v->type_field = t;
 }
@@ -866,7 +869,10 @@ void array_check_type_field(struct array *v)
   }
 
   if(t & ~(v->type_field))
+  {
+    describe(v);
     fatal("Type field out of order!\n");
+  }
 }
 #endif
 
@@ -1346,10 +1352,12 @@ struct array *explode(struct pike_string *str,
   struct array *ret;
   char *s, *end, *tmp;
 
+#if 0
   if(!str->len)
   {
     return allocate_array_no_init(0,0);
   }
+#endif
   if(!del->len)
   {
     ret=allocate_array_no_init(str->len,0);
@@ -1699,10 +1707,12 @@ struct array *explode_array(struct array *a, struct array *b)
   struct array *tmp;
 
   q=start=0;
+#if 0
   if(!a->size)
   {
     return allocate_array_no_init(0,0);
   }
+#endif
   if(b->size)
   {
     for(e=0;e<=a->size - b->size;e++)
