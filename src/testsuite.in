@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.521 2002/06/10 20:46:42 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.522 2002/06/11 14:15:27 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -44,6 +44,17 @@ test_do([[
   else
     foo: break foo;
 ]])
+
+test_any([[
+  // bug 2690
+  array(function) foo(void|int b)
+  {
+    int add() { return b++; };
+    return ({ add, add });
+  };
+  array(function) bar = foo();
+  return equal(({`==(@bar),@bar()}), ({ 1, 0, 1 }));
+]], 1)
 
 test_any([[
   int f (int i) {i = 0; return i;};
