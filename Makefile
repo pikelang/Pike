@@ -1,12 +1,11 @@
 #
-# $Id: Makefile,v 1.44 2001/05/22 14:12:06 grubba Exp $
+# $Id: Makefile,v 1.45 2001/07/16 14:41:11 grubba Exp $
 #
 # Meta Makefile
 #
 
 VPATH=.
 MAKE=make
-MAKEFLAGS=
 OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/\" \"_\"`
 BUILDDIR=build/$(OS)
 METATARGET=
@@ -106,6 +105,10 @@ compile: configure
 	    }; \
 	  done; \
 	}
+
+documentation:
+	@test -f "$(BUILDDIR)/pike" || $(MAKE) $(MAKE_FLAGS) compile
+	@cd "$(BUILDDIR)" && $(MAKE) $(MAKE_FLAGS) documentation
 
 bin/pike: force
 	@builddir='$(BUILDDIR)'; \
