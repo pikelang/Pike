@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.12 1999/07/28 21:16:37 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.13 1999/07/28 21:34:34 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -498,13 +498,17 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	} else {
 	  /* Need to switch to another map */
 
-	  int mode, index=0, ch;
-	  UNICHAR *ttab = NULL;
+	  int mode, index=0, ch, ch2;
+	  UNICHAR *ttab = NULL, *ttt;
 	  p_wchar1 *rmap = NULL;
 
 	  if(c>=0x3000) {
 	    /* CJK */
-	    error("Not implemented.\n");
+
+	    /* FIXME:  Need to support Chinese and Korean, too... */
+	    mode = MODE_9494;
+	    index = 0x12;
+
 	  } else if(c<0x180) {
 	    unsigned char map1[] = {
 	      0x02, 0x00, 0x15, 0x00, 0xa0, 0xa0, 0x02, 0xff,
@@ -520,11 +524,32 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 
 	  if(index!=0 && (ttab = transltab[mode][index-0x10])!=NULL) {
 	    switch(mode) {
+	    case MODE_94:
+	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
+	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
+	      for(ch=0; ch<94; ch++)
+		if(ttab[ch]>=0x100 && ttab[ch]!=0xfffd)
+		  rmap[ttab[ch]-0x100]=ch+33;
+	      if(rmap[c-0x100]) {
+		string_builder_strcat(&s->strbuild, "\033(");
+		string_builder_putchar(&s->strbuild, 48+index);
+		string_builder_putchar(&s->strbuild, rmap[c-0x100]);
+		s->g[0].transl = ttab;
+		s->g[0].mode = MODE_94;
+		s->g[0].index = index;
+		if(s->r[0].map != NULL)
+		  free(s->r[0].map);
+		s->r[0].map = rmap;
+		s->r[0].lo = 0x100;
+		s->r[0].hi = 0x10000;
+	      } else
+		ttab = NULL;
+	      break;
 	    case MODE_96:
 	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
 	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
 	      for(ch=0; ch<96; ch++)
-		if(ttab[ch]>=0x100)
+		if(ttab[ch]>=0x100 && ttab[ch]!=0xfffd)
 		  rmap[ttab[ch]-0x100]=ch+32;
 	      if(rmap[c-0x100]) {
 		string_builder_strcat(&s->strbuild, "\033-");
@@ -532,6 +557,52 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		string_builder_putchar(&s->strbuild, rmap[c-0x100]|0x80);
 		s->g[1].transl = ttab;
 		s->g[1].mode = MODE_96;
+		s->g[1].index = index;
+		if(s->r[1].map != NULL)
+		  free(s->r[1].map);
+		s->r[1].map = rmap;
+		s->r[1].lo = 0x100;
+		s->r[1].hi = 0x10000;
+	      } else
+		ttab = NULL;
+	      break;
+	    case MODE_9494:
+	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
+	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
+	      for(ttt=ttab, ch=0; ch<94; ch++)
+		for(ch2=0; ch2<94; ch2++, ttt++)
+		if(*ttt>=0x100 && *ttt!=0xfffd)
+		  rmap[*ttt-0x100]=((ch+33)<<8)|(ch2+33);
+	      if(rmap[c-0x100]) {
+		string_builder_strcat(&s->strbuild, "\033$(");
+		string_builder_putchar(&s->strbuild, 48+index);
+		string_builder_putchar(&s->strbuild, rmap[c-0x100]>>8);
+		string_builder_putchar(&s->strbuild, rmap[c-0x100]&0xff);
+		s->g[0].transl = ttab;
+		s->g[0].mode = MODE_9494;
+		s->g[0].index = index;
+		if(s->r[0].map != NULL)
+		  free(s->r[0].map);
+		s->r[0].map = rmap;
+		s->r[0].lo = 0x100;
+		s->r[0].hi = 0x10000;
+	      } else
+		ttab = NULL;
+	      break;
+	    case MODE_9696:
+	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
+	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
+	      for(ttt=ttab, ch=0; ch<96; ch++)
+		for(ch2=0; ch2<96; ch2++, ttt++)
+		if(*ttt>=0x100 && *ttt!=0xfffd)
+		  rmap[*ttt-0x100]=((ch+32)<<8)|(ch2+32);
+	      if(rmap[c-0x100]) {
+		string_builder_strcat(&s->strbuild, "\033$-");
+		string_builder_putchar(&s->strbuild, 48+index);
+		string_builder_putchar(&s->strbuild, (rmap[c-0x100]>>8)|0x80);
+		string_builder_putchar(&s->strbuild, (rmap[c-0x100]&0xff)|0x80);
+		s->g[1].transl = ttab;
+		s->g[1].mode = MODE_9696;
 		s->g[1].index = index;
 		if(s->r[1].map != NULL)
 		  free(s->r[1].map);
