@@ -409,6 +409,130 @@ int fnamesfun( string a, string b )
           classname(String.capitalize(lower_case(b))));
 }
 
+string wmml_section( string w, mapping data )
+{
+  string wmml;
+  if( w != "global" )
+  {
+    wmml = (
+            "<anchor name=\""+classname(w)+"\">\n"
+            "<section name=\""+classname(w)+"\" title=\""+classname(w)+"\">\n"
+            "<class name=\""+classname(w)+"\" title=\"  \">\n"
+            );
+  } else {
+   wmml="<section name=\"Toplevel functions\" title=\"Toplevel functions\">\n";
+  }
+
+
+                 //"<class name=\""+classname(w)+"\" title=\""+classname(w)+
+                 //                 "\">\n");
+
+  int global;
+
+  if(w == "global")
+    global = 1;
+  
+  wmml += (docs[w]||"");
+  if(!docs[w])
+    werror(lines[ w ]+
+           ": Warning: No documentation for class\n");
+
+  if( data["inherit"] )
+  {
+    wmml += "<p>Inherits <ref to=\""+classname( data["inherit"] )+"\"><br>";
+  }
+
+  foreach(sort(indices(struct)), string a)
+    if(struct[a]["inherit"] == w)
+      wmml += ("Inherited by <ref to="+classname( a )+"><br>");
+
+  if( data->create )
+  {
+    string a = true_types[w+"create"][1];
+    if( (a-" ") == "void"  )
+      a = "";
+    if( warn->noargs )
+      if(strlen(a) && !named[ w + "create" ] )
+        werror(lines[ w + "create" ]+": Warning: Arguments not named\n");
+    wmml += "<method name=\""+classname(w)+"\">";
+    wmml += "<man_syntax>";
+    wmml += classname( w )+" "+classname( w )+
+         "( "+replace( a, ",", ", ")+");<br>";
+    wmml += "</man_syntax>";
+    wmml += "<man_description>"+docs[w+"create"]+"</man_description></method>";
+
+    if(!docs[w+"create"])
+      werror(lines[ w + "create" ]+
+             ": Warning: No documentation for constructor\n");
+  }
+  foreach( sort(indices(data)-({"create","inherit","destroy"})), string fun )
+  {
+    string a = true_types[w+fun][1],
+           b = true_types[w+fun][0];
+    if( (a-" ") == "void"  )
+      a = "";
+    if( warn->noargs )
+      if(strlen(a) && !named[ w + fun ] )
+        werror(lines[w+fun]+": Warning: Arguments not named\n");
+    if(!docs[w+fun] || !strlen(docs[w+fun]))
+    {
+      if( warn->nodocs )
+        werror(lines[ w + fun ]+
+               ": Warning: No documentation for "+fun+"\n");
+    
+    } else if( warn->cstyle ) {
+      if( search(docs[w+fun], "GTK_") != -1)
+        if(search( docs[w+fun], "C-") == -1)
+          werror(lines[ w + fun ]+
+                 ": Warning: Possible C-style GTK constant name\n");
+      if( search(docs[w+fun], "gtk_") != -1)
+        if(search( docs[w+fun], "C-") == -1)
+          werror(lines[ w + fun ]+
+                 ": Warning: Possible C-style GTK function name\n");
+    }
+    wmml += ("\n\n<method name="+fun+" title=\"\">\n<man_syntax>\n  "+
+             "<b>"+b+" "+(global?"GTK.":"")+fun+"( "+
+             replace( a, ",",", ")+" );</b>"
+             "\n</man_syntax>\n" +
+             "<man_description>\n"+docs[w+fun]+"\n</man_description>\n"
+             "</method>\n");
+  }
+  if( w != "global" )
+    wmml += "</class></section></anchor>";
+  else
+    wmml += "</section>";
+  return wmml ;
+}
+
+string rec_make_wmml_tree( array plane, mapping t )
+{
+  string wmml="\n<ul>";
+  foreach(sort(plane), string n)
+  {
+    wmml += ("<li><ref to=\""+classname(n)+"\">");
+    if(t[n])
+      wmml += rec_make_wmml_tree( sort(t[n]), t );
+  }
+  return wmml+"</ul>\n";
+}
+
+void make_wmml_docs( array root_widgets, mapping inheriting )
+{
+  string wmml="<anchor name=GTK><chapter title=\"GTK Reference\">";
+  wmml += 
+       "<section title=\"GTK Inheritance Tree\" name=tree>\n"
+       + rec_make_wmml_tree( root_widgets, inheriting ) +
+       "\n</section>";
+
+  wmml += wmml_section( "global", struct->global );
+
+  array in_order = indices(struct);
+  sort( map(map( in_order, classname ),lower_case), in_order );
+  foreach(in_order, string s)
+    wmml += wmml_section( s, struct[s] );
+  Stdio.write_file( "wmml/gtk_reference.wmml", wmml+"</chapter></anchor>" );
+}
+
 int do_docs;
 array (string) sort_dependencies( array bunch, mapping extra )
 {
@@ -416,13 +540,22 @@ array (string) sort_dependencies( array bunch, mapping extra )
   foreach(bunch, string s)
   {
     if(inheriting[extra[s]["inherit"]])
-      inheriting[extra[s]["inherit"]]+=({ s });
+      inheriting[extra[s]["inherit"]] += ({ s });
     else
-      inheriting[extra[s]["inherit"]]=({ s });
+      inheriting[extra[s]["inherit"]] = ({ s });
   }
   array (string) result = sort(inheriting[0]);
 
-  if(do_docs)
+  if( mkwmml )
+  {
+    array roots=
+          indices(inheriting)-
+          `+(({}),@values(inheriting));;
+    foreach( roots, mixed q )
+      make_wmml_docs( inheriting[q], inheriting );
+  }
+
+  if(do_docs && !mkwmml)
   {
     multiset roots=
       mkmultiset(indices(inheriting))-mkmultiset(`+(@values(inheriting)));;
@@ -507,19 +640,18 @@ string make_example_image(string from, int top)
   object mei;
   if(!mei)
     mei = (object)("make_example_image.pike");
-  if(file_stat( "docs/"+mei->file_name(from)))
-    return mei->tags(from);
+  mei->wmml = mkwmml;
+  if(file_stat( (mkwmml?"wmml/gtkimg":"docs")+"/"+mei->file_name(from)))
+    return mei->tags( from );
 
-  if(!PIKE) 
+  if(!PIKE)
     find_pike();
 
   string res=Process.popen(PIKE+" "+dirname(__FILE__)+
                            "/make_example_image.pike '"+from+"'"+
-                           (top?" TOP":""));
+                           (top?" TOP":" POT") + (mkwmml?" WMML":" HTML"));
   if(!strlen(res))
-  {
     werror("Failed to make example image from '"+from+"'\n");
-  }
   return res;
 }
 
@@ -607,21 +739,34 @@ string build_cursor( string a )
   sscanf( a, "GDK.%s", a );
   num = master()->resolv("GDK")[a];
 
-  return "<tr bgcolor="+(odd++%2?"#f6e0d0":"#faebd7")+
-    "><td><font color=black>GDK."+a+"</font></td>"
-    "<td><img src=cursor_"+num+".gif></td>"
-    "<td><img src=cursor_"+num+"_inv.gif></td>"
-    "<td><img src=cursor_"+num+"_red.gif></td>"
-    "<td><img src=cursor_"+num+"_red_inv.gif></td>"
-    "<td><img src=cursor_"+num+"_green.gif></td>"
-    "<td><img src=cursor_"+num+"_green_inv.gif></td>"
-    "<td><img src=cursor_"+num+"_blue.gif></td>"
-    "<td><img src=cursor_"+num+"_blue_inv.gif></td>"
-    "</tr>";
+  if( mkwmml )
+    return "<tr><td>GDK."+a+"</td>"
+           "<td><img src=gtkimg/cursor_"+num+".gif></td>"
+           "<td><img src=gtkimg/cursor_"+num+"_inv.gif></td>"
+           "<td><img src=gtkimg/cursor_"+num+"_red.gif></td>"
+           "<td><img src=gtkimg/cursor_"+num+"_red_inv.gif></td>"
+           "<td><img src=gtkimg/cursor_"+num+"_green.gif></td>"
+           "<td><img src=gtkimg/cursor_"+num+"_green_inv.gif></td>"
+           "<td><img src=gtkimg/cursor_"+num+"_blue.gif></td>"
+           "<td><img src=gtkimg/cursor_"+num+"_blue_inv.gif></td>"
+           "</tr>";
+  else
+    return "<tr bgcolor="+(odd++%2?"#f6e0d0":"#faebd7")+
+           "><td><font color=black>GDK."+a+"</font></td>"
+           "<td><img src=cursor_"+num+".gif></td>"
+           "<td><img src=cursor_"+num+"_inv.gif></td>"
+           "<td><img src=cursor_"+num+"_red.gif></td>"
+           "<td><img src=cursor_"+num+"_red_inv.gif></td>"
+           "<td><img src=cursor_"+num+"_green.gif></td>"
+           "<td><img src=cursor_"+num+"_green_inv.gif></td>"
+           "<td><img src=cursor_"+num+"_blue.gif></td>"
+           "<td><img src=cursor_"+num+"_blue_inv.gif></td>"
+           "</tr>";
 }
 
 
 string dir;
+int mkwmml;
 int main(int argc, array argv)
 {
   string progname = "global", extra_cpp="";
@@ -637,6 +782,11 @@ int main(int argc, array argv)
       warn[w] = 1;
     if( sscanf( w, "--no-warn-%s", w ) )
       warn[w] = 0;
+    if( w=="--wmml" )
+    {
+      mkwmml=1;
+      do_docs=1;
+    }
   }
 
   dir = argv[1];

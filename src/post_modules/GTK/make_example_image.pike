@@ -74,12 +74,22 @@ string indent(string what, int|void limit)
 
 string tags(string source)
 {
-  return ("<table cellpadding=1 bgcolor=black><tr><td><table bgcolor=#e0e0e0 cellpadding=8 cellspacing=0 border=0><tr><td><img src="+file_name(source)+">"
-	"</td></td><tr><td><font size=-1><pre>"+
-	replace(indent(source), ({"<",">","&"}), ({"&lt;", "&gt;", "&amp;"}))+
-	"</pre></font></td></tr></table></td></tr></table>");
+  if( !wmml )
+  {
+    return ("<table cellpadding=1 bgcolor=black><tr><td><table bgcolor=#e0e0e0 cellpadding=8 cellspacing=0 border=0><tr><td><img src="+file_name(source)+">"
+            "</td></td><tr><td><font size=-1><pre>"+
+            replace(indent(source), ({"<",">","&"}), ({"&lt;", "&gt;", "&amp;"}))+
+            "</pre></font></td></tr></table></td></tr></table>");
+  } else {
+    return ("<table framed=1><tr><td><img src=gtkimg/"+file_name(source)+">"
+            "</td></tr><tr><td><font size=-1>"
+            "<example language=pike>"+
+            replace(indent(source), ({"<",">","&"}), ({"&lt;", "&gt;", "&amp;"}))+
+            "</example></font></td></tr></table>");
+  }
 }
 
+int wmml;
 void grab(object w)
 {
   object i = GTK.GdkImage();
@@ -91,13 +101,15 @@ void grab(object w)
   i->grab( w, 20,20, w->xsize()-40, w->ysize()-40);
   object i = Image.PNM.decode( i->get_pnm() );
 
-  mkdir("docs");
-  rm("docs/"+file_name(source));
+  mkdir(wmml?"wmml/gtkimg":"docs");
+  rm((wmml?"wmml/gtkimg/":"docs/")+file_name(source));
   function fun;
 #if constant(Image.GIF.encode)
-  Stdio.write_file("docs/"+file_name(source), Image.GIF.encode(i));
+  Stdio.write_file((wmml?"wmml/gtkimg/":"docs/")+
+                   file_name(source), Image.GIF.encode(i));
 #else
-  Stdio.write_file("docs/"+file_name(source), i->togif_fs());
+  Stdio.write_file((wmml?"wmml/gtkimg/":"docs/")+
+                   file_name(source), i->togif_fs());
 #endif
   write(tags( source ));
   
@@ -120,15 +132,19 @@ void show_recursively(object w)
 int main(int argc, array (string) argv)
 {
   object w;
+  werror("IMAGE ["+argv[1]+"]\n");
   if(!write) write = Stdio.stdout->write;
   source = argv[1];
-  if(file_stat( "docs/"+file_name(argv[1])))
+  wmml = (argv[3] == "WMML");
+
+  if(file_stat( (wmml?"wmml/gtkimg/":"docs/")+file_name(argv[1])))
   {
     write(tags(argv[1]));
     exit(0);
   }
   GTK.setup_gtk( "make_gtkexample", 1 );
-  if(argc == 2)
+
+  if(argv[2] != "TOP")
   {
     w = GTK.Window( GTK.WINDOW_TOPLEVEL );
     w->set_title("Example image generation");
@@ -136,7 +152,7 @@ int main(int argc, array (string) argv)
     w->set_border_width(20);
   } else {
     w = get_widget_from( argv[1] );
-    w->set_border_width(20);
+    w->set_border_width( 20 );
   }
   show_recursively( w );
   w->signal_connect( "event", got_event );
