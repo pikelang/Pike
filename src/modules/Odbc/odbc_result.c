@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.27 2001/10/08 09:22:06 grubba Exp $
+ * $Id: odbc_result.c,v 1.28 2001/10/15 14:25:35 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.27 2001/10/08 09:22:06 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.28 2001/10/15 14:25:35 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -60,6 +60,12 @@ RCSID("$Id: odbc_result.c,v 1.27 2001/10/08 09:22:06 grubba Exp $");
  */
 
 struct program *odbc_result_program = NULL;
+
+/* BLOB buffer.
+ *
+ * This variable is global to avoid bugs with large autos in cl.
+ */
+static char blob_buf[BLOB_BUFSIZ+1];
 
 /*
  * Functions
@@ -412,13 +418,12 @@ static void f_fetch_row(INT32 args)
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
 	/* BLOB */
 	int num_strings = 0;
-	char buf[BLOB_BUFSIZ+1];
 	SQLLEN len = 0;
 
 	while(1) {
 	  code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
 			    PIKE_ODBC_RES->field_info[i].type,
-			    buf, BLOB_BUFSIZ, &len);
+			    blob_buf, BLOB_BUFSIZ, &len);
 	  if (code == SQL_NO_DATA_FOUND) {
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "ODBC:fetch_row(): NO DATA\n");
@@ -446,10 +451,10 @@ static void f_fetch_row(INT32 args)
 	    fprintf(stderr, "[%d] ", num_strings);
 #endif /* ODBC_DEBUG */
 	    if (len < BLOB_BUFSIZ) {
-	      push_string(make_shared_binary_string(buf, len));
+	      push_string(make_shared_binary_string(blob_buf, len));
 	      break;
 	    } else {
-	      push_string(make_shared_binary_string(buf, BLOB_BUFSIZ));
+	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
 	    }
 	  }
 	}
