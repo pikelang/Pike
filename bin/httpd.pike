@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: httpd.pike,v 1.3 1999/03/19 19:59:33 neotron Exp $ */
+/* $Id: httpd.pike,v 1.4 2002/12/01 01:38:28 nilsson Exp $ */
 
 /* A very small httpd capable of fetching files only.
  * Written by Fredrik Hübinette as a demonstration of Pike
@@ -98,7 +98,7 @@ void accept_callback()
   object tmp_output;
   tmp_output=accept();
   if(!tmp_output) return;
-  clone(output_class, tmp_output);
+  output_class(tmp_output);
   destruct(tmp_output);
 }
 
