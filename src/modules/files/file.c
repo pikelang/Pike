@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.84 1998/04/06 04:34:05 hubbe Exp $");
+RCSID("$Id: file.c,v 1.85 1998/04/06 16:58:19 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -108,7 +108,7 @@ static struct my_file *get_file_storage(struct object *o)
 
 #ifdef DEBUG
 #ifdef WITH_OOB
-#define OOBOP(X) (X)
+#define OOBOP(X) X
 #else
 #define OOBOP(X)
 #endif
@@ -116,10 +116,10 @@ static struct my_file *get_file_storage(struct object *o)
 do { if(o->prog && !get_storage(o,file_program)) fatal("%p is not a file object.\n",o); } while (0)
 #define DEBUG_CHECK_INTERNAL_REFERENCE(X) do {				\
   if( ((X)->fd!=-1 && (							\
-     query_read_callback((X)->fd)==file_read_callback ||		\
-     query_write_callback((X)->fd)==file_write_callback			\
-OOBOP( || query_read_oob_callback((X)->fd)==file_read_oob_callback ||	\
-     query_write_oob_callback((X)->fd)==file_write_oob_callback )))  !=	\
+     (query_read_callback((X)->fd)==file_read_callback) ||		\
+     (query_write_callback((X)->fd)==file_write_callback)		\
+OOBOP( || (query_read_oob_callback((X)->fd)==file_read_oob_callback) ||	\
+     (query_write_oob_callback((X)->fd)==file_write_oob_callback) ))) != \
   !!( (X)->flags & FILE_HAS_INTERNAL_REF ))				\
          fatal("Internal reference is wrong. %d\n",(X)->flags & FILE_HAS_INTERNAL_REF);		\
    } while (0)
@@ -1459,7 +1459,9 @@ static void init_file_struct(struct object *o)
   ERRNO=0;
   THIS->open_mode=0;
   THIS->flags=0;
+#ifdef HAVE_FD_FLOCK
   THIS->key=0;
+#endif /* HAVE_FD_FLOCK */
   THIS->myself=o;
   /* map_variable will take care of the rest */
 }
