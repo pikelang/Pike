@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.311 2003/07/31 14:28:50 tomas Exp $
+|| $Id: interpret.c,v 1.312 2003/08/02 01:08:03 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.311 2003/07/31 14:28:50 tomas Exp $");
+RCSID("$Id: interpret.c,v 1.312 2003/08/02 01:08:03 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -516,17 +516,17 @@ void my_describe_inherit_structure(struct program *p)
 #endif
 
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
-				       int arg2)
+				       int depth)
 {
   struct program *p;
 
-  TRACE((4, "-find_external_context(%d, inherit=%ld)\n", arg2,
+  TRACE((4, "-find_external_context(%d, inherit=%ld)\n", depth,
 	 DO_NOT_WARN((long)(loc->o->prog ? loc->inherit - loc->o->prog->inherits : 0))));
 
   if(!loc->o)
     Pike_error("Current object is destructed\n");
 
-  while(--arg2>=0)
+  while(--depth>=0)
   {
 #ifdef PIKE_DEBUG  
     if(Pike_interpreter.trace_level>8 && loc->o->prog)
@@ -567,13 +567,13 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	}
 	break;
 
-      case -17:
+      case INHERIT_PARENT:
 	TRACE((5,"-   Following inherit->parent\n"));
 	loc->parent_identifier=loc->inherit->parent_identifier;
 	loc->o=loc->inherit->parent;
 	break;
 
-      case -18:
+      case OBJECT_PARENT:
 	TRACE((5,"-   Following o->parent\n"));
 	if(((p=loc->o->prog) ||
 	    (p=get_program_for_object_being_destructed(loc->o))) &&
@@ -592,7 +592,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
       Pike_error("Parent was lost during cloning.\n");
     
     if(!(p=loc->o->prog))
-      Pike_error("Attempting to access variable in destructed object\n");
+      Pike_error("Attempting to access parent of destructed object.\n");
     
 #ifdef DEBUG_MALLOC
     if (loc->o->refs == 0x55555555) {
