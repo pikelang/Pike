@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.12 1999/11/30 23:06:06 hubbe Exp $
+// $Id: testsuite.in,v 1.13 2001/02/04 08:39:23 mirar Exp $
 
 
 // system.c:
@@ -149,4 +149,100 @@ cond([[ all_constants()->getpwuid && all_constants()->getpwnam ]], [[
 cond([[ system->NetSessionEnum ]],
 [[
   test_true( system.NetSessionEnum(0,0,0,0) )
+]])
+
+
+// memory.c: system.Memory
+
+test_true( system.Memory() )
+test_true( system.Memory(17) )
+test_true( system.Memory(8192) )
+test_any( [[
+  object mem=system.Memory();
+  mem->allocate(42);
+  return (string)mem; 
+]], "\0"*42 )
+test_any( [[
+  object mem=system.Memory();
+  mem->allocate(42);
+  mem->pwrite(38,"hopp");
+  return (string)mem; 
+]], "\0"*38+"hopp" )
+test_any( [[
+  object mem=system.Memory();
+  mem->allocate(42);
+  mem->pwrite(14,"hopp");
+  return mem->pread(13,6);
+]], "\0hopp\0" )
+
+cond([[ system.__MMAP__ ]],
+[[
+  test_any( [[
+    object f=Stdio.File();
+    f->open("testsuite1.mmap.tmp","wtc");
+    f->write("testing testing");
+    f->close();
+    object mem=system.Memory();
+    mem->mmap("testsuite1.mmap.tmp");
+    string s=(string)mem;
+    rm("testsuite1.mmap.tmp");
+    return s;
+  ]], "testing testing" )
+  test_equal( [[ lambda() {
+    object f=Stdio.File();
+    f->open("testsuite2.mmap.tmp","wtc");
+    f->write("testing testing");
+    f->close();
+    object mem=system.Memory();
+    mem->mmap("testsuite2.mmap.tmp");
+    array a=(array)mem;
+    rm("testsuite2.mmap.tmp");
+    return a; }()
+  ]], (array)("testing testing") )
+  test_any( [[
+    object f=Stdio.File();
+    f->open("testsuite3.mmap.tmp","wtc");
+    f->write("testing testing");
+    f->close();
+    object mem=system.Memory();
+    mem->mmap("testsuite3.mmap.tmp");
+    string s=mem->pread(4,6);
+    rm("testsuite3.mmap.tmp");
+    return s;
+  ]], "ing te" )
+  test_any( [[
+    object f=Stdio.File();
+    f->open("testsuite4.mmap.tmp","wtc");
+    f->write("testing testing");
+    f->close();
+    object mem=system.Memory();
+// private is always writeable
+    mem->mmap_private("testsuite4.mmap.tmp");
+    mem->pwrite(4,"nazota");
+    string s=mem->pread(4,6);
+    rm("testsuite4.mmap.tmp");
+    return s;
+  ]], "nazota" )
+
+  test_any( [[
+    object f=Stdio.File();
+    f->open("testsuite5.mmap.tmp","wtc");
+    f->write("testing testing");
+    f->close();
+    object mem=system.Memory();
+    mem->mmap("testsuite5.mmap.tmp");
+    if (mem->writeable())
+    {
+      mem->pwrite(4,"prosit");
+      mem->free();
+      f->open("testsuite5.mmap.tmp","r");
+      string s=f->read();
+      f->close();
+      rm("testsuite5.mmap.tmp");
+      return s;
+    }
+    rm("testsuite5.mmap.tmp");
+    werror("warning: failed to mmap writeable file writeable\n");
+    return "testprositsting";
+  ]], "testprositsting" )
 ]])
