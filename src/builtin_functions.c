@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.176 1999/07/27 19:44:36 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.177 1999/07/27 20:14:44 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4440,8 +4440,9 @@ void f_enumerate(INT32 args)
       args++;
    }
 
-   if (sp[1-args].type==T_INT &&
-       sp[2-args].type==T_INT)
+   if (args<=3 &&
+       (sp[1-args].type==T_INT &&
+	sp[2-args].type==T_INT))
    {
       int step,start;
 
@@ -4459,10 +4460,11 @@ void f_enumerate(INT32 args)
 	 start+=step;
       }
    }
-   else if ((sp[1-args].type==T_INT ||
-	     sp[1-args].type==T_FLOAT) &&
-	    (sp[2-args].type==T_INT ||
-	     sp[2-args].type==T_FLOAT) )
+   else if (args<=3 &&
+	    ((sp[1-args].type==T_INT ||
+	      sp[1-args].type==T_FLOAT) &&
+	     (sp[2-args].type==T_INT ||
+	      sp[2-args].type==T_FLOAT) ) )
    {
       float step,start;
 
@@ -4483,23 +4485,40 @@ void f_enumerate(INT32 args)
    else
    {
       get_all_args("enumerate",args,"%i",&n);
-      if (args>3) pop_n_elems(args-3);
-      if (n<0) 
-	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
-			      
-      push_array(d=allocate_array(n));
-      push_svalue(sp-2); /* start */
-      for (i=0; i<n; i++)
+      if (n<0) SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+      if (args>4) pop_n_elems(args-4);
+      if (args<4)
       {
-	 assign_svalue_no_free(d->item+i,sp-1);
-	 if (i<n-1)
+	 push_array(d=allocate_array(n));
+	 push_svalue(sp-2); /* start */
+	 for (i=0; i<n; i++)
 	 {
-	    push_svalue(sp-4); /* step */
-	    f_add(2);
+	    assign_svalue_no_free(d->item+i,sp-1);
+	    if (i<n-1)
+	    {
+	       push_svalue(sp-4); /* step */
+	       f_add(2);
+	    }
+	 }
+      }
+      else
+      {
+	 push_array(d=allocate_array(n));
+	 push_svalue(sp-3); /* start */
+	 for (i=0; i<n; i++)
+	 {
+	    assign_svalue_no_free(d->item+i,sp-1);
+	    if (i<n-1)
+	    {
+	       push_svalue(sp-3); /* function */
+	       stack_swap();
+	       push_svalue(sp-6); /* step */
+	       f_call_function(3);
+	    }
 	 }
       }
       pop_stack();
-      stack_pop_n_elems_keep_top(3);
+      stack_pop_n_elems_keep_top(4);
    }
 }
 
@@ -4888,8 +4907,10 @@ void init_builtin_efuns(void)
 		tFunc(tIntPos tInt tOr(tVoid,tInt),tArr(tInt)),
 		tFunc(tIntPos tFloat tOr3(tVoid,tInt,tFloat),tArr(tFloat)),
 		tFunc(tIntPos tOr(tInt,tFloat) tFloat,tArr(tFloat)),
-		tFunc(tIntPos tMix tObj,tArr(tMix)),
-		tFunc(tIntPos tObj tOr(tVoid,tMix),tArr(tMix))),
+		tFunc(tIntPos tMix tObj 
+		      tOr(tVoid,tFuncV(,tMix,tSetvar(1,tMix))),tArr(tVar(1))),
+		tFunc(tIntPos tObj tOr(tVoid,tMix)
+		      tOr(tVoid,tFuncV(,tMix,tSetvar(1,tMix))),tArr(tVar(1)))),
 	   OPT_TRY_OPTIMIZE);
 		
 
