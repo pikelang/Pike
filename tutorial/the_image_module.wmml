@@ -1,11 +1,17 @@
-<chapter title='the Image module'>
+<preface title="Preface">
+bla blahu blu bla blä
+</preface>
 
-<section title="bla bla">
-</section>
+<table-of-contents title="Table of contents">
 
-<section title="Reference">
+<introduction title="Introduction">
+bla blabla bla blah blah
+</introduction>
+
+<chapter title="Reference">
+[...]
 <include file=Image.wmml>
-</section>
-
 </chapter>
+
+
 
