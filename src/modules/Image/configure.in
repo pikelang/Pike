@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.26 2003/04/30 15:56:53 grubba Exp $
+# $Id: configure.in,v 1.27 2003/06/09 22:33:02 mast Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -29,6 +29,8 @@ else
     elif test "`uname -s`" = "OpenBSD"; then
       #nasm on OpenBSD is braindamaged
       AC_MSG_RESULT(no)
+    elif test x"${with_valgrind:-no}" != xno; then
+      AC_MSG_RESULT([no - valgrind is used])
     else
       ASSEMBLY_OBJECTS=assembly.o
       AC_DEFINE(ASSEMBLY_OK)
