@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.13 2001/04/23 19:06:52 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.14 2001/09/11 20:44:39 marcus Exp $");
 
 #endif
 
@@ -119,14 +119,30 @@ static struct Htable *alloc_htable(size_t size)
 static struct Htable *htable_add_space(struct Htable *h,
 				       size_t extra_space)
 {
-#if 0
+#if 1
   if(h->entries+extra_space > h->size)
   {
-    size_t new_size = (h->size * 2)+1;
+    struct Htable *ret;
+    size_t i, new_size = (h->size * 2)+1;
     if(h->entries+extra_space > new_size)
       new_size = (h->entries+extra_space) | 0x10101;
     /** rehashto new_size */
-
+    ret = alloc_htable(new_size);
+    for(i=0; i<h->size; i++) {
+      struct Sym *next, *curr = h->symbols[i];
+      while(curr) {
+	size_t hval;
+	DO_HASHMEM(hval, curr->name, curr->len, 128);
+	hval %= new_size;
+	next = curr->next;
+	curr->next = ret->symbols[hval];
+	ret->symbols[hval] = curr;
+	curr = next;
+      }
+    }
+    ret->entries = h->entries;
+    free(h);
+    h = ret;
   }
 #endif
   return h;
