@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.23 1999/12/07 21:22:16 hubbe Exp $
+ * $Id: fdlib.h,v 1.24 1999/12/07 21:26:19 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -257,7 +257,7 @@ extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 #define direct _WIN32_FIND_DATAA
 #define dirent direct
 #define MAXPATHLEN MAX_PATH
-#define NAMELEN(dirent) strlen((dirent)->d_name)
+#define NAMLEN(dirent) strlen((dirent)->d_name)
 
 typedef struct DIR_s
 {
