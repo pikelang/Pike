@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.271 2000/02/06 23:31:13 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.272 2000/02/08 04:20:35 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -722,6 +722,17 @@ test_any([[
   object zz = Z();
   return zz->x + zz->y + zz->z;
 ]], 7)
+
+test_do([[
+  class X {
+    constant foo = Foo;
+    class Foo {}
+    void bar()
+    {
+      foo f = Foo();
+    }
+  };
+]])
 
 test_any([[
 class X {
