@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.18 2001/08/17 19:30:41 per Exp $
+// $Id: HTML.pmod,v 1.19 2001/08/19 17:20:27 nilsson Exp $
 
 // Filter for text/html
 
@@ -42,9 +42,9 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   };
   */
   
-  string parse_meta(Parser.HTML p, mapping m )
+  array(string) parse_meta(Parser.HTML p, mapping m )
   {
-    string n = m["http-equiv"]||m->name;
+    string n = m->name||m["http-equiv"];
     switch(lower_case(n))
     {
       case "description": 
@@ -59,33 +59,110 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 	res->fields->robots = m->contents||m->content||m->data||"";
 	break;
     }
-    return "";
+    return ({ "" });
   };
 
-  if( headers["description"] )
-    res->fields->description=Parser.parse_html_entities(headers["description"]);
-
-  if( headers["keywords"] )
-    res->fields->keywords=Parser.parse_html_entities(headers["keywords"]);
-  
   _WhiteFish.LinkFarm lf = _WhiteFish.LinkFarm();
   function ladd = lf->add;
 
-  string parse_title(Parser.HTML p, mapping m, string c) {
+  array(string) parse_title(Parser.HTML p, mapping m, string c) {
     res->fields->title=Parser.parse_html_entities(c);
-    return "";
+    return ({ "" });
   };
-  string parse_a(Parser.HTML p, mapping m, string c)  {
+
+  // FIXME: Push the a contents to the description field of the
+  // document referenced to by this tag.
+  array(string) parse_a(Parser.HTML p, mapping m)  {
+    // FIXME: We should try to decode the source with the
+    // charset indicated in m->charset.
+    // FIXME: We should set the document language to the
+    // language indicated in m->hreflang.
     if(m->href) ladd( m->href );
-    return c;
+    // FIXME: Push the value of m->title to the title field of
+    // the referenced document instead.
+    if(m->title) return ({ " " + m->title + " " });
+    return ({ "" });
   };
-  string parse_frame(Parser.HTML p, mapping m, string c)  {
+
+  // FIXME: The longdesc information should be pushed to the
+  // description field of the frame src URL when it is indexed.
+  array(string) parse_frame(Parser.HTML p, mapping m)  {
     if(m->src) ladd( m->src );
-    return c;
+    if(m->longdesc) ladd( m->longdesc );
+    return ({ "" });
   };
-  string parse_img( Parser.HTML p, mapping m, string c)  {
-    if( m->alt ) return m->alt+c;
-    return c;
+
+  // FIXME: This information should be pushed to the body field
+  // of the image file, if it is indexed.
+  array(string) parse_img(Parser.HTML p, mapping m)  {
+    if( m->alt ) return ({ " " + m->alt + " " });
+    return ({ " " });
+  };
+
+  array(string) parse_applet(Parser.HTML p, mapping m) {
+    // FIXME: The alt information should be pushed to the body field
+    // of all the resources linked from this tag.
+    if( m->src ) ladd( m->src );
+    if( m->archive ) ladd( m->archive); // URL to a GNU-ZIP file with classes needed by the applet.
+    if( m->code ) ladd( m->code ); // URL to the applets code/class.
+    if( m->codebase ) ladd( m->codebase );
+    if( m->alt ) return ({ m->alt });
+    return ({ " " });
+  };
+
+  // <area>, <bgsound>
+  array(string) parse_src_alt(Parser.HTML p, mapping m) {
+    // FIXME: The alt information should be pushed to the body field
+    // of all the resources linked from this tag.
+    if( m->src ) ladd( m->src );
+    if( m->alt ) return ({ m->alt });
+    return ({ "" });
+  };
+
+  array(string) parse_background(Parser.HTML p, mapping m) {
+    if( m->background ) ladd( m->background );
+    return ({ " " });
+  };
+
+  array(string) parse_embedd(Parser.HTML p, mapping m) {
+    if( m->pluginspage ) ladd( m->pluginspage ); // Where the required plugin can be downloaded.
+    if( m->pluginurl ) ladd( m->pluginurl ); // Similar to pluginspage, but for java archives.
+    if( m->src ) ladd( m->src );
+    return ({ " " });
+  };
+
+  array(string) parse_layer(Parser.HTML p, mapping m) {
+    if( m->background ) ladd( m->background );
+    if( m->src ) ladd( m->src );
+    return ({ " " });
+  };
+
+  array(string) parse_object(Parser.HTML p, mapping m) {
+    if( m->archive ) ladd( m->archive );
+    if( m->classid ) ladd( m->classid );
+    if( m->code ) ladd( m->code );
+    if( m->codebase ) ladd( m->codebase );
+    if( m->data ) ladd( m->data );
+    if( m->standby ) return ({ " " + m->standby + " " });
+    return ({ " " });
+  };
+
+  array(string) parse_base(Parser.HTML p, mapping m)
+  {
+    if(m->href)
+      catch(uri = Standards.URI(m->href));
+    return ({ "" });
+  };
+
+  array(string) parse_q(Parser.HTML p, mapping m) {
+    if( m->cite ) ladd( m->cite );
+    return ({ "" });
+  };
+
+  array(string) parse_xml(Parser.HTML p, mapping m) {
+    if( m->ns ) ladd( m->ns );
+    if( m->src ) ladd( m->src );
+    return ({ " " });
   };
 
   String.Buffer databuf=String.Buffer();
@@ -94,18 +171,33 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->case_insensitive_tag(1);
 
   parser->match_tag(0);
-  parser->add_tag("meta",parse_meta );
   //  parser->add_container("rank",parse_rank);
   parser->add_container("title",parse_title);
-  parser->add_container("a",parse_a);
-  parser->add_container("frame",parse_frame);
-  parser->add_container("frameset",parse_frame);
-  parser->add_container("img",parse_img);
 
-  constant ignore_tags=({"noindex","script","style","no-index",});
-  parser->add_containers(mkmapping(ignore_tags,({""})*sizeof(ignore_tags)));
+  parser->add_tags( ([ "meta":parse_meta,
+		       "a":parse_a,
+		       "base": parse_base,
+		       "link":parse_a,
+		       "frame":parse_frame,
+		       "iframe":parse_frame,
+		       "layer":parse_layer,
+		       "ilayer":parse_layer,
+		       "img":parse_img,
+		       "applet":parse_applet,
+		       "area":parse_src_alt,
+		       "bgsound":parse_src_alt,
+		       "sound":parse_src_alt,
+		       "body":parse_background,
+		       "table":parse_background,
+		       "td":parse_background,
+		       "object": parse_object,
+		       "q":parse_q,
+  ]) );
 
-  function dadd = databuf->add;
+  constant ignore_tags = ({ "noindex", "script", "style", "no-index" });
+  parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
+
+  function(string:void) dadd = databuf->add;
   parser->_set_data_callback(lambda(object p, string data) {
 			       dadd(data);
 			     });
