@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.33 2002/02/27 11:51:03 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.34 2002/02/28 02:29:59 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -21,7 +21,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   end of that token can not be found.
 - Filter exit/quit from history. Could be done by adding a 'pop'
   method to Readline.History and call it from StdinHilfes' destroy.
-- Shorten backtraces that are outputted in hilfe.
 - Add some better multiline edit support.
 - Tab completion of variable and module names.
 ";
@@ -501,6 +500,8 @@ private class ParserState {
   private string last;
   private string block;
 
+  //  mapping low_state = ([]);
+
   //! Feed more tokens into the state.
   void feed(array(string) tokens) {
     foreach(tokens, string token) {
@@ -574,6 +575,7 @@ private class ParserState {
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
     if(pstack->ptr) return 0;
+    //    if(low_state->in_token) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
       pipeline = ({});
@@ -589,6 +591,7 @@ private class ParserState {
     ready = ({});
     last = 0;
     block = 0;
+    //    low_state = ([]);
   }
 
   //! Returns the current parser state. Used by "dump state".
@@ -765,10 +768,14 @@ class Evaluator {
   {
     // Tokanize the input
     array tokens;
+
     if(catch( tokens = Parser.Pike.split(s) )) {
       write("Hilfe Error: Could not tokanize input string.\n");
       return;
     }
+
+    if(!sizeof(tokens))
+      return;
 
     // See if first token is a command and not a defined entity.
     if(commands[tokens[0]] && zero_type(constants[tokens[0]]) &&
@@ -812,9 +819,14 @@ class Evaluator {
   private int(0..1) hilfe_error(mixed err) {
     if(!err) return 1;
     mixed err2 = catch {
-      if(arrayp(err) && sizeof(err)==2 && stringp(err[0]))
-	write(describe_backtrace(err));
-      else
+      if(arrayp(err) && sizeof(err)==2 && stringp(err[0])) {
+	array files = map(reverse(err[1]), lambda(mixed in) {
+					  if(in) return in[0];
+					  return 0;
+					});
+	int pos = search(files, "HilfeInput");
+	write(describe_backtrace( ({ err[0], err[1][sizeof(err[1])-pos..] }) ));
+     } else
 	write("Hilfe Error: Unknown format of thrown error (not backtrace).\n");
     };
     if(err2)
@@ -1043,10 +1055,6 @@ class Evaluator {
 		      };
 
   private object compile_handler = class {
-      void compile_error(string file, int line, string err) {
-	write(sprintf("Compiler Error: %s:%s:%s\n",master()->trim_file_name(file),
-		      line?(string)line:"-", err));
-      }
 
       mapping(string:mixed) hilfe_symbols;
 
@@ -1058,6 +1066,37 @@ class Evaluator {
 	if(type=='O' || type=='t') return "HilfeCompileHandler";
       }
     }();
+
+  private class ErrorContainer {
+    string errors = "";
+    string warnings = "";
+
+    string format(string file, int line, string err) {
+      if(file=="HilfeInput")
+	file = "";
+      else
+	file += ":";
+      if(err[-1]!='\n') err += "\n";
+      string linestr = line?(string)line:"-";
+      return sprintf(": %s%s:%s", file, linestr, err);
+    }
+
+    void compile_error(string file, int line, string err) {
+      errors += "Compiler Error" + format(file, line, err);
+    }
+
+    void compile_warning(string file, int line, string warn) {
+      warnings += "Compiler Warning" + format(file, line, warn);
+    }
+
+    void show_errors() {
+      write(errors);
+    }
+
+    void show_warnings() {
+      write(warnings);
+    }
+  };
 
   //! Creates a wrapper and compiles the pike code @[f] in it.
   //! If a new variable is compiled to be tested, it's name
@@ -1098,21 +1137,21 @@ class Evaluator {
     string prog =
       ("#pragma unpragma_strict_types\n" +
 
-       map(inherits, lambda(string f) { return "inherit "+f+";\n"; }) * "\n" + "\n" +
+       map(inherits, lambda(string f) { return "inherit "+f+";\n"; }) * "" +
 
-       map(imports, lambda(string f) { return "import "+f+";\n"; }) * "\n" + "\n" +
+       map(imports, lambda(string f) { return "import "+f+";\n"; }) * "" +
 
        map(indices(variables),
 	   lambda(string f) {
-	     return sprintf("%s %s=___hilfe.%s;", types[f], f, f);
-	   }) * "\n" + "\n" +
+	     return sprintf("%s %s=___hilfe.%s;\n", types[f], f, f);
+	   }) * "" +
 
        "\nmapping query_variables() { return ([\n"+
        map(indices(variables),
 	   lambda(string f) {
-	     return sprintf("    \"%s\":%s,",f,f);
-	   }) * "\n" +
-       "\n  ]);\n}\n" +
+	     return sprintf("    \"%s\":%s,\n",f,f);
+	   }) * "" +
+       "  ]);\n}\n" +
 
        "# 1\n" + f + "\n");
 
@@ -1125,24 +1164,23 @@ class Evaluator {
     program p;
     mixed err;
 
+    ErrorContainer e = ErrorContainer();
+    master()->set_inhibit_compile_errors(e);
     err = catch(p=compile_string(prog, "HilfeInput", compile_handler));
+    master()->set_inhibit_compile_errors(0);
 
     if(err)
     {
-      //      write(describe_backtrace(err));
-      //      write("Hilfe Error: Couldn't compile expression.\n");
+      e->show_warnings();
+      e->show_errors();
       return 0;
     }
 
     object o;
-    if(err=catch(o=clone(p)))
-    {
-      trace(0);
-      write(describe_backtrace(err));
-      return 0;
-    }
+    if(hilfe_error( catch(o=clone(p)) ))
+      return o;
 
-    return o;
+    return 0;
   }
 
   //! Compiles the Pike code @[a] and evaluate it by
