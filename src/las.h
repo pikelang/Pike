@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.31 1999/12/14 08:39:24 hubbe Exp $
+ * $Id: las.h,v 1.32 1999/12/26 18:55:35 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -20,6 +20,11 @@
 typedef void (*c_fun)(INT32);
 
 
+/* Flags used by yytype_error() */
+#define YYTE_IS_WARNING	1
+
+void yytype_error(char *msg, struct pike_string *expected_t,
+		  struct pike_string *got_t, unsigned int flags);
 void yyerror(char *s);
 int islocal(struct pike_string *str);
 int verify_declared(struct pike_string *str);
