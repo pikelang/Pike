@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.23 1998/10/21 19:47:41 hubbe Exp $
+ * $Id: stralloc.h,v 1.24 1998/10/22 00:33:34 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -65,14 +65,14 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 
 typedef struct p_wchar_p
 {
-  void *ptr;
+  char *ptr;
   int shift;
 } PCHARP;
 
 #define INDEX_PCHARP(X,Y) INDEX_CHARP((X).ptr,(Y),(X).shift)
 #define SET_INDEX_PCHARP(X,Y,Z) INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
 #define EXTRACT_PCHARP(X) INDEX_CHARP((X).ptr,(0),(X).shift)
-#define INC_PCHARP(X,Y) (((char *)(X).ptr)+=(Y) << (X).shift)
+#define INC_PCHARP(X,Y) (((X).ptr)+=(Y) << (X).shift)
 
 #define LOW_COMPARE_PCHARP(X,CMP,Y) (((char *)((X).ptr)) CMP ((char *)((Y).ptr)))
 #define LOW_SUBTRACT_PCHARP(X,Y) LOW_COMPARE_PCHARP((X),-,(Y))
@@ -151,19 +151,13 @@ INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *
 /* Prototypes begin here */
 INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos);
 INLINE void low_set_index(struct pike_string *s, int pos, int value);
-INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
+struct INLINE pike_string *debug_check_size_shift(struct pike_string *a,int shift);
 CONVERT(0,1)
 CONVERT(0,2)
 CONVERT(1,0)
 CONVERT(1,2)
 CONVERT(2,0)
 CONVERT(2,1)
-
-
-
-
-
-
 int generic_compare_strings(const void *a,int alen, int asize,
 			    const void *b,int blen, int bsize);
 void generic_memcpy(PCHARP to,
@@ -178,11 +172,11 @@ struct pike_string *debug_begin_wide_shared_string(int len, int shift);
 struct pike_string *low_end_shared_string(struct pike_string *s);
 struct pike_string *end_shared_string(struct pike_string *s);
 struct pike_string * debug_make_shared_binary_string(const char *str,int len);
-struct pike_string * debug_make_shared_binary_string1(const INT16 *str,int len);
-struct pike_string * debug_make_shared_binary_string2(const INT32 *str,int len);
+struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len);
+struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int len);
 struct pike_string *debug_make_shared_string(const char *str);
-struct pike_string *debug_make_shared_string1(const INT16 *str);
-struct pike_string *debug_make_shared_string2(const INT32 *str);
+struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
+struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
 void unlink_pike_string(struct pike_string *s);
 void really_free_string(struct pike_string *s);
 void debug_free_string(struct pike_string *s);
@@ -240,6 +234,12 @@ void free_string_builder(struct string_builder *s);
 struct pike_string *finish_string_builder(struct string_builder *s);
 PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len);
 long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
+p_wchar0 *require_wstring0(struct pike_string *s,
+			   char **to_free);
+p_wchar1 *require_wstring1(struct pike_string *s,
+			   char **to_free);
+p_wchar2 *require_wstring2(struct pike_string *s,
+			   char **to_free);
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC

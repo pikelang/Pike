@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.87 1998/10/02 15:02:47 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.88 1998/10/22 00:33:32 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -624,14 +624,6 @@ static void f_pid_status_pid(INT32 args)
 }
 
 #ifdef __NT__
-static TCHAR *convert_string(char *str, int len)
-{
-  int e;
-  TCHAR *ret=(TCHAR *)xalloc((len+1) * sizeof(TCHAR));
-  for(e=0;e<len;e++) ret[e]=EXTRACT_UCHAR(str+e);
-  ret[e]=0;
-  return ret;
-}
 
 static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
@@ -873,7 +865,7 @@ void f_create_process(INT32 args)
     {
       if(tmp=simple_mapping_string_lookup(optional, "cwd"))
 	if(tmp->type == T_STRING)
-	  dir=convert_string(tmp->u.string->str, tmp->u.string->len);
+	  dir=(TCHAR *)STR0(tmp->u.string);
 
       t1=get_inheritable_handle(optional, "stdin",1);
       if(t1!=INVALID_HANDLE_VALUE) info.hStdInput=t1;
@@ -932,9 +924,6 @@ void f_create_process(INT32 args)
 		      &proc);
     THREADS_DISALLOW_UID();
     
-    if(dir) free((char *)dir);
-    if(command_line) free((char *)command_line);
-    if(filename) free((char *)filename);
     if(env) pop_stack();
 
 #if 1

@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.46 1998/10/15 02:38:49 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.47 1998/10/22 00:33:33 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -83,9 +83,9 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, int pos
     case 0: return ((unsigned char *)str)[pos];
     case 1: return ((unsigned INT16 *)str)[pos];
     case 2: return ((unsigned INT32 *)str)[pos];
-    default:
-      fatal("Illegal shift size!\n");
   }
+  fatal("Illegal shift size!\n");
+  return 0;
 }
 
 INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
@@ -509,7 +509,7 @@ struct pike_string * debug_make_shared_binary_string(const char *str,int len)
   return s;
 }
 
-struct pike_string * debug_make_shared_binary_string1(const INT16 *str,int len)
+struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len)
 {
   struct pike_string *s;
   int h;
@@ -518,7 +518,7 @@ struct pike_string * debug_make_shared_binary_string1(const INT16 *str,int len)
   {
     /* Wrong size, convert */
     s=begin_shared_string(len);
-    convert_1_to_0(s->str,str,len);
+    convert_1_to_0(STR0(s),str,len);
     return end_shared_string(s);
   }
 
@@ -537,7 +537,7 @@ struct pike_string * debug_make_shared_binary_string1(const INT16 *str,int len)
   return s;
 }
 
-struct pike_string * debug_make_shared_binary_string2(const INT32 *str,int len)
+struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int len)
 {
   struct pike_string *s;
   int h;
@@ -547,7 +547,7 @@ struct pike_string * debug_make_shared_binary_string2(const INT32 *str,int len)
     case 0:
       /* Wrong size, convert */
       s=begin_shared_string(len);
-      convert_2_to_0(s->str,str,len);
+      convert_2_to_0(STR0(s),str,len);
       return end_shared_string(s);
 
     case 1:
@@ -577,14 +577,14 @@ struct pike_string *debug_make_shared_string(const char *str)
   return make_shared_binary_string(str, strlen(str));
 }
 
-struct pike_string *debug_make_shared_string1(const INT16 *str)
+struct pike_string *debug_make_shared_string1(const p_wchar1 *str)
 {
   INT32 len;
   for(len=0;str[len];len++);
   return debug_make_shared_binary_string1(str,len);
 }
 
-struct pike_string *debug_make_shared_string2(const INT32 *str)
+struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 {
   INT32 len;
   for(len=0;str[len];len++);
@@ -1271,10 +1271,9 @@ struct pike_string *string_slice(struct pike_string *s,
 
     case 2:
       return make_shared_binary_string2(STR2(s)+start,len);
-
-    default:
-      fatal("Illegal shift size!\n");
   }
+  fatal("Illegal shift size!\n");
+  return 0;
 }
 
 /*** replace function ***/
@@ -1632,11 +1631,11 @@ PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
   switch(ptr.shift)
   {
     case 0: return MKPCHARP(MEMCHR0(ptr.ptr,chr,len),0);
-    case 1: return MKPCHARP(MEMCHR1(ptr.ptr,chr,len),1);
-    case 2: return MKPCHARP(MEMCHR2(ptr.ptr,chr,len),2);
-    default:
-      fatal("Illegal shift in MEMCHR_PCHARP.\n");
+    case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
+    case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
+  fatal("Illegal shift in MEMCHR_PCHARP.\n");
+  return MKPCHARP(0,0); /* make wcc happy */
 }
 
 #define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
@@ -1697,3 +1696,71 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   if (ptr) *ptr = str;
   return (neg ? val : -val);
 }
+
+p_wchar0 *require_wstring0(struct pike_string *s,
+			   char **to_free)
+{
+  switch(s->size_shift)
+  {
+    case 0:
+      *to_free=0;
+      return STR0(s);
+    case 1:
+    case 2:
+      return 0;
+
+    default:
+      fatal("Illegal shift size in string.\n");
+  }
+  return 0;
+}
+
+p_wchar1 *require_wstring1(struct pike_string *s,
+			   char **to_free)
+{
+  switch(s->size_shift)
+  {
+    case 0:
+      *to_free=xalloc((s->len+1)*2);
+      convert_0_to_1((p_wchar1 *)*to_free, STR0(s),s->len+1);
+      return (p_wchar1 *)*to_free;
+
+    case 1:
+      *to_free=0;
+      return STR1(s);
+
+    case 2:
+      return 0;
+
+    default:
+      fatal("Illegal shift size in string.\n");
+  }
+  return 0;
+}
+
+
+p_wchar2 *require_wstring2(struct pike_string *s,
+			   char **to_free)
+{
+  switch(s->size_shift)
+  {
+    case 0:
+      *to_free=xalloc((s->len+1)*4);
+      convert_0_to_2((p_wchar2 *)*to_free, STR0(s),s->len+1);
+      return (p_wchar2 *)*to_free;
+
+    case 1:
+      *to_free=xalloc((s->len+1)*4);
+      convert_1_to_2((p_wchar2 *)*to_free, STR1(s),s->len+1);
+      return (p_wchar2 *)*to_free;
+
+    case 2:
+      *to_free=0;
+      return STR2(s);
+
+    default:
+      fatal("Illegal shift size in string.\n");
+  }
+  return 0;
+}
+

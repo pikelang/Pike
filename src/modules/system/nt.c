@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.5 1998/10/21 23:46:56 marcus Exp $
+ * $Id: nt.c,v 1.6 1998/10/22 00:33:55 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -183,7 +183,7 @@ static void low_encode_user_info_0(USER_INFO_0 *tmp)
 {
 #define SAFE_PUSH_WSTR(X) \ 
   if(X) \
-    push_string(make_shared_string1((INT16 *) X)); \
+    push_string(make_shared_string1((p_wchar1 *) X)); \
   else \
     push_int(0)
 
@@ -332,16 +332,10 @@ static netuserenumtype netuserenum;
 static netapibufferfreetype netapibufferfree;
 HINSTANCE netapilib;
 
-LPWSTR make_wstr(struct pike_string *s)
-{
-  LPWSTR ret=(LPWSTR)xalloc(sizeof(WCHAR)*(s->len+1));
-  INT32 e;
-  for(e=0;e<=s->len;e++) ret[e]=s->str[e];
-  return ret;
-}
 
 void f_NetUserGetInfo(INT32 args)
 {
+  char *to_free1,*to_free2;
   BYTE *tmp=0;
   DWORD level;
   LPWSTR server, user;
@@ -364,21 +358,28 @@ void f_NetUserGetInfo(INT32 args)
 
   if(sp[-args].type==T_STRING)
   {
-    server=make_wstr(sp[-args].u.string);
+    server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+    if(!server)
+      error("NetUserGetInfo, server name string is too wide.\n");
   }else{
     server=NULL;
   }
   
-  user=make_wstr(sp[1-args].u.string);
+  user=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
+  if(!user)
+  {
+    if(to_free1) free(to_free1);
+    error("NetUserGetInfo, user name string is too wide.\n");
+  }
 
   THREADS_ALLOW();
   ret=netusergetinfo(server,user,level,&tmp);
   THREADS_DISALLOW();
 
   pop_n_elems(args);
-  if(server) free(server);
-  free(user);
-  
+  if(to_free1) free(to_free1);
+  if(to_free2) free(to_free2);
+
   switch(ret)
   {
     case ERROR_ACCESS_DENIED:
@@ -405,6 +406,7 @@ void f_NetUserGetInfo(INT32 args)
 
 void f_NetUserEnum(INT32 args)
 {
+  char *to_free1;
   DWORD level=0;
   DWORD filter=0;
   LPWSTR server=NULL;
@@ -429,7 +431,7 @@ void f_NetUserEnum(INT32 args)
 
     case 1:
       if(sp[-args].type==T_STRING)
-	server=make_wstr(sp[-args].u.string);
+	server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
     case 0: break;
   }
@@ -464,10 +466,12 @@ void f_NetUserEnum(INT32 args)
     switch(ret)
     {
       case ERROR_ACCESS_DENIED:
+	if(to_free1) free(to_free1);
 	error("NetGetUserInfo: Access denied.\n");
 	break;
 	
       case NERR_InvalidComputer:
+	if(to_free1) free(to_free1);
 	error("NetGetUserInfo: Invalid computer.\n");
 	break;
 
@@ -490,6 +494,7 @@ void f_NetUserEnum(INT32 args)
     }
     break;
   }
+  if(to_free1) free(to_free1);
 }
 
 void init_nt_system_calls(void)

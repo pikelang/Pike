@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.58 1998/09/02 01:05:45 grubba Exp $");
+RCSID("$Id: main.c,v 1.59 1998/10/22 00:33:31 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -360,7 +360,7 @@ int dbm_main(int argc, char **argv)
   }
 #else /* !HAVE_GETRLIMIT || !RLIMIT_STACK */
   /* 128 MB seems a bit extreme, most OS's seem to have their limit at ~8MB */
-  stack_top += STACK_DIRECTION * (1024*1024 * 128 - 8192 * sizeof(char *));
+  stack_top += STACK_DIRECTION * (1024*1024 * 8 - 8192 * sizeof(char *));
 #ifdef STACK_DEBUG
   fprintf(stderr, "2: C-stack: 0x%08p - 0x%08p, direction:%d\n",
 	  &argv, stack_top, STACK_DIRECTION);
