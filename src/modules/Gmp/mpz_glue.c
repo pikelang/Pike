@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.86 2001/02/02 14:53:31 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.87 2001/02/04 11:40:35 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -665,8 +665,9 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
       )
     {
       if (s->u.object->prog) {
-	Pike_error("Wrong type of object (id:%d), cannot convert to mpz.\n",
-		   s->u.object->prog->id);
+	if(throw_error)
+	  Pike_error("Wrong type of object (id:%d), cannot convert to mpz.\n",
+		     s->u.object->prog->id);
       } else {
 	/* Destructed object. Use as zero. */
 	goto use_as_int;
