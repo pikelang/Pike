@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.8 1996/11/17 03:45:15 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.9 1996/11/25 21:34:23 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -329,7 +329,7 @@ program: program def optional_semi_colon
   ;
 
 optional_semi_colon: /* empty */
-  | ';' { yyerror("Extra ';'. Ignored."); }
+  | ';' 
   ;
 
 string_constant: low_string
@@ -360,24 +360,28 @@ program_ref: string_constant
   | idents
   {
     push_string(make_shared_string(""));
-    switch($1->token)
+    if(!$1)
     {
-    case F_CONSTANT:
-      if($1->u.sval.type == T_PROGRAM)
+      push_int(0);
+    }else{
+      switch($1->token)
       {
-	push_svalue(& $1->u.sval);
-      }else{
-	yyerror("Illegal program identifier");
-	push_int(0);
-      }
-      break;
-
-    case F_IDENTIFIER:
+      case F_CONSTANT:
+        if($1->u.sval.type == T_PROGRAM)
+        {
+	  push_svalue(& $1->u.sval);
+	}else{
+	  yyerror("Illegal program identifier");
+	  push_int(0);
+	}
+	break;
+	
+      case F_IDENTIFIER:
       {
 	struct identifier *i;
 	setup_fake_program();
 	i=ID_FROM_INT(& fake_program, $1->u.number);
-
+	
 	if(IDENTIFIER_IS_CONSTANT(i->flags))
 	{
 	  push_svalue(PROG_FROM_INT(&fake_program, $1->u.number)->constants +
@@ -388,8 +392,9 @@ program_ref: string_constant
 	}
 	break;
       }
+      }
+      free_node($1);
     }
-    free_node($1);
   }
   ;
           
@@ -928,7 +933,7 @@ optional_else_part: { $$=0; }
   | F_ELSE statement { $$=$2; }
   ;      
 
-foreach: F_FOREACH '(' expr0 ',' expr4 ')' statement
+foreach: F_FOREACH '(' expr0 ',' lvalue ')' statement
   {
     $$=mknode(F_FOREACH,mknode(F_VAL_LVAL,$3,$5),$7);
     $$->line_number=$1;
