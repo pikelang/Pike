@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.33 2001/10/03 22:21:32 nilsson Exp $
+ * $Id: dmalloc.h,v 1.34 2001/10/06 12:04:08 hubbe Exp $
  */
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
@@ -44,6 +44,7 @@ extern void dmalloc_free(void *p);
 extern int debug_malloc_touch_fd(int,  char *);
 extern int debug_malloc_register_fd(int,  char *);
 extern int debug_malloc_close_fd(int,  char *);
+extern int dmalloc_mark_as_free(void*,int);
 
 void *debug_malloc_update_location(void *, char *);
 void *debug_malloc_update_location_ptr(void *, ptrdiff_t, char *);
