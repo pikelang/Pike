@@ -475,7 +475,7 @@ static class DocParserClass {
       parseError(sprintf("@%s with too many parameters", keyword));
     for (int i = 0; i < sizeof(args); ++i)
       res[attrnames[i]] =  attributequote(args[i]);
-    foreach(required_attributes[keyword], string attrname) {
+    foreach(required_attributes[keyword]||({}), string attrname) {
       if (!res[attrname]) {
 	parseError(sprintf("@%s lacking required parameter %s",
 			   keyword, attrname));
