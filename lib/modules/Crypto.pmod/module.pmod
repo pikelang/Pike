@@ -81,6 +81,6 @@ class Cipher
 }
 
 constant CBC = Nettle.CBC;
-constant Proxy = Nettle.Proxy;
+constant Buffer = Nettle.Proxy;
 
 #endif /* constant(Nettle.HashInfo) */

@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.2 2004/02/04 00:32:45 nilsson Exp $
+/* $Id: RSA.pike,v 1.3 2004/02/04 21:37:09 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -287,7 +287,8 @@ Gmp.mpz get_prime(int bits, function(int:string) r)
 
 //! Generate a valid RSA key pair with the size @[bits]. A random
 //! function may be provided as arguemnt @[r], otherwise
-//! @[Crypto.Random.random_string] will be used.
+//! @[Crypto.Random.random_string] will be used. Keys must be at least
+//! 128 bits.
 this_program generate_key(int(128..) bits, function(int:string)|void r)
 {
   if (!r)

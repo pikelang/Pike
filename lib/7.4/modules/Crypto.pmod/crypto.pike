@@ -1,7 +1,7 @@
 #pike 7.5
 
-#if constant(Crypto.Proxy)
-inherit Crypto.Proxy;
+#if constant(Nettle.Proxy)
+inherit Nettle.Proxy;
 
 static class Wrapper(object a) {
   int _key_size;

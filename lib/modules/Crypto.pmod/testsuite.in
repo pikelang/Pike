@@ -1,12 +1,28 @@
-dnl $Id: testsuite.in,v 1.26 2004/02/04 13:10:42 nilsson Exp $
+dnl $Id: testsuite.in,v 1.27 2004/02/04 21:37:09 nilsson Exp $
 
 dnl Nettle.Yarrow
 
 cond_resolv( Nettle.CBC, [[
   test_true( programp(Crypto.CBC) )
-  test_true( programp(Crypto.Proxy) )
+  test_true( programp(Crypto.Buffer) )
   test_true( programp(Crypto.CipherState) )
   test_true( programp(Crypto.HashState) )
+]])
+
+cond_resolv( Nettle.Proxy, [[
+  test_any([[
+    object b1 = Crypto.Buffer(Crypto.AES);
+    object b2 = Crypto.Buffer(Crypto.AES);
+    b1->set_encrypt_key("A"*32);
+    b2->set_decrypt_key("A"*32);
+    for(int i=1; i<Crypto.AES->block_size(); i++) {
+      string p = random_string(i);
+      if(sizeof(b1->crypt(p))) error("Data returned (%O).\n", i);
+      string u = b2->unpad(b1->pad());
+      if(u!=p) error("Data differs (%O, %O, %O).\n", i,u,p);
+    }
+    return 1;
+  ]], 1)
 ]])
 
 cond_resolv( Nettle.Yarrow, [[
