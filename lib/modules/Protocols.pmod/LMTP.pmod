@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.4 2003/10/17 17:19:53 nilsson Exp $
+// $Id: LMTP.pmod,v 1.5 2003/10/28 10:06:33 vida Exp $
 //
 
 #pike __REAL_VERSION__
@@ -16,6 +16,7 @@ class Connection {
   // recipient and one outcode to display to the client per recipient
   // (that is LMTP specific)
   void message(string content) {
+    content = replace(content, "\r\n", "\n");
     MIME.Message message = low_message(content);
     if(!message) return;
 
