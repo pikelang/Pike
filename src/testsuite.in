@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.448 2001/08/09 18:53:04 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.449 2001/08/16 04:33:32 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -7342,7 +7342,7 @@ test_true(objectp(this_object()))
 test_eq(20,catch(throw(a())))
 
 // - catch compile-errors
-test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{compile_string("dfasfqw123");};master()->set_inhibit_compile_errors(0); return arrayp(res); ]], 1)
+test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{compile_string("dfasfqw123");};master()->set_inhibit_compile_errors(0); return arrayp(res)||objectp(res); ]], 1)
 
 // catch
 test_false([[class X { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
