@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.33 2002/05/11 00:24:25 nilsson Exp $");
+RCSID("$Id: charsetmod.c,v 1.34 2002/08/13 17:20:27 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1454,7 +1454,7 @@ void pike_module_init(void)
 {
   int i;
   struct svalue prog;
-  extern void iso2022_init();
+  extern void iso2022_init(void);
 
   iso2022_init();
 
@@ -1624,7 +1624,7 @@ void pike_module_init(void)
 
 void pike_module_exit(void)
 {
-  extern void iso2022_exit();
+  extern void iso2022_exit(void);
 
   if(utf7e_program != NULL)
     free_program(utf7e_program);

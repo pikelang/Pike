@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: module_support.h,v 1.11 2002/05/31 22:41:25 nilsson Exp $
+ * $Id: module_support.h,v 1.12 2002/08/13 17:07:28 grubba Exp $
  */
 #ifndef MODULE_SUPPORT_H
 #include <stdarg.h>
@@ -26,7 +26,7 @@ struct expect_result {
 
 /* This should be used in module_init */
 #define PIKE_MODULE_EXPORT(MOD, SYM) \
-  pike_module_export_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), SYM)
+  pike_module_export_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), (void *)SYM)
 
 #define PIKE_MODULE_IMPORT(MOD, SYM) \
   pike_module_import_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), #MOD, CONSTANT_STRLEN(#MOD))

@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.19 2002/05/11 00:27:02 nilsson Exp $
+ * $Id: requestobject.c,v 1.20 2002/08/13 17:04:05 grubba Exp $
  */
 
 #include "global.h"
@@ -702,7 +702,7 @@ struct send_args
 };
 
 static int num_send_args;
-struct send_args *new_send_args()
+struct send_args *new_send_args(void)
 {
   num_send_args++;
   return aap_malloc( sizeof( struct send_args ) );

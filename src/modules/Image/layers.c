@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.77 2002/05/11 00:19:57 nilsson Exp $
+**!	$Id: layers.c,v 1.78 2002/08/13 17:09:17 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -196,7 +196,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.77 2002/05/11 00:19:57 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.78 2002/08/13 17:09:17 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -3009,13 +3009,13 @@ void image_lay(INT32 args)
 
 /**  image-object operations  *************************/
 
-static INLINE struct layer *push_new_layer()
+static INLINE struct layer *push_new_layer(void)
 {
    push_object(clone_object(image_layer_program,0));
    return (struct layer*)get_storage(Pike_sp[-1].u.object,image_layer_program);
 }
 
-static INLINE struct layer *clone_this_layer()
+static INLINE struct layer *clone_this_layer(void)
 {
    struct layer *l;
    l=push_new_layer();

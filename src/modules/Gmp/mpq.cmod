@@ -4,7 +4,7 @@
 ||| for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.8 2002/07/09 17:04:00 grubba Exp $");
+RCSID("$Id: mpq.cmod,v 1.9 2002/08/13 17:01:41 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -58,7 +58,7 @@ PIKECLASS mpq
 				  struct pike_string *digits,
 				  int base)
     {
-      char *str;
+      p_wchar0 *str;
   
       if(digits->size_shift)
 	Pike_error("Illegal characters, cannot convert to Mpq.\n");

@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.14 2002/04/09 21:14:11 mikael%unix.pp.se Exp $
+ * $Id: pike_threadlib.h,v 1.15 2002/08/13 16:59:26 grubba Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -403,7 +403,7 @@ extern THREAD_T debug_locking_thread;
 
 #endif
 
-static inline int threads_disabled_wait()
+static inline int threads_disabled_wait(void)
 {
   do {
     THREADS_FPRINTF(1, (stderr, "Thread %d: Wait on threads_disabled\n",

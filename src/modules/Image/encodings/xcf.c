@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.39 2002/05/11 00:11:38 nilsson Exp $");
+RCSID("$Id: xcf.c,v 1.40 2002/08/13 17:12:59 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -133,7 +133,7 @@ static void f_substring_get_int( INT32 args )
   if( x > s->len>>2 )
     Pike_error("Index %d out of range", x );
 
-  p = s->s->str + s->offset + x*4;
+  p = ((unsigned char *)s->s->str) + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
   push_int( res );
 }
@@ -148,7 +148,7 @@ static void f_substring_get_uint( INT32 args )
   if( x > s->len>>2 )
     Pike_error("Index %d out of range", x );
 
-  p = s->s->str + s->offset + x*4;
+  p = ((unsigned char *)s->s->str) + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
   push_int64( res );
 }
@@ -162,7 +162,7 @@ static void f_substring_get_ushort( INT32 args )
   if( x > s->len>>1 )
     Pike_error("Index %d out of range", x );
 
-  p = s->s->str + s->offset + x*2;
+  p = ((unsigned char *)s->s->str) + s->offset + x*2;
   res = (p[2]<<8) | p[3];
   push_int( res );
 }
@@ -176,7 +176,7 @@ static void f_substring_get_short( INT32 args )
   if( x > s->len>>1 )
     Pike_error("Index %d out of range", x );
 
-  p = s->s->str + s->offset + x*2;
+  p = ((unsigned char *)s->s->str) + s->offset + x*2;
   res = (p[2]<<8) | p[3];
   push_int( res );
 }
@@ -1235,7 +1235,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     if(!tile_ss)
       continue;
 
-    tile.str = (tile_ss->s->str + tile_ss->offset);
+    tile.str = (unsigned char *)(tile_ss->s->str + tile_ss->offset);
     tile.len = tile_ss->len;
 
     ewidth = MINIMUM(TILE_WIDTH, (rxs-x));
@@ -1246,7 +1246,7 @@ void image_xcf_f__decode_tiles( INT32 args )
       struct buffer s = tile, od, d;
       int i;
       od.len = eheight*ewidth*bpp;  /* Max and only size, really */
-      df = od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 );
+      df = (char *)(od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 ));
       d = od;
 
       for(i=0; i<bpp; i++)

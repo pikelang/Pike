@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.7 2002/07/09 17:04:00 grubba Exp $");
+RCSID("$Id: mpf.cmod,v 1.8 2002/08/13 17:03:05 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -63,13 +63,13 @@ PIKECLASS mpf
 				  struct pike_string *digits,
 				  int base)
     {
-      char *str;
+      p_wchar0 *str;
   
       if(digits->size_shift)
 	Pike_error("Illegal characters, cannot convert to Mpf.\n");
       str=STR0(digits);
 
-      mpf_set_str(THISMPF, str, base);      
+      mpf_set_str(THISMPF, (char *)str, base);      
     }
 
   static void get_new_mpf(MP_FLT *tmp, struct svalue *s)
@@ -148,7 +148,7 @@ PIKECLASS mpf
 	{
 	  if(x->u.string->size_shift)
 	    Pike_error("First argument to Mpq.mpf must not be a wide string.\n");
-	  mpf_set_str(THISMPF, STR0(x->u.string), base);
+	  mpf_set_str(THISMPF, (char *)STR0(x->u.string), base);
 	}else{
 	  get_new_mpf(THISMPF, sp-args);
 	}
@@ -193,7 +193,7 @@ PIKECLASS mpf
       char *tmp=mpf_get_str(0, &expptr, 10, 0, THISMPF);
       int len=strlen(tmp);
       struct pike_string *ret=begin_shared_string(len + 32);
-      char *out=STR0(ret);
+      char *out = (char *)STR0(ret);
       char *outbase=out;
       char *in=tmp;
       if(in[0]=='-')

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.70 2002/06/25 14:26:40 grubba Exp $
+ * $Id: global.h,v 1.71 2002/08/13 17:29:26 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -49,6 +49,14 @@
 /* Get more declarations in GNU libc. */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
+/* Get more declarations from AIX libc. */
+#ifndef _ANSI_C_SOURCE
+#define _ANSI_C_SOURCE
+#endif
+#ifndef _ALL_SOURCE
+#define _ALL_SOURCE
 #endif
 
 /*

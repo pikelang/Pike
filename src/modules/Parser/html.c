@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.150 2002/05/11 00:27:03 nilsson Exp $ */
+/* $Id: html.c,v 1.151 2002/08/13 17:18:26 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -684,7 +684,7 @@ found_start:
   DEBUG ((stderr, "Using precalculated search chars:\n"); \
 	 debug_print_search_chars (this))
 
-static INLINE void init_calc_chars()
+static INLINE void init_calc_chars(void)
 {
   int i;
   for (i = 0; i < 1 << 3; i++)
@@ -697,7 +697,7 @@ static INLINE void init_calc_chars()
   tag_fin_string = make_shared_binary_string2 (&TAG_FIN (0), 1);
 }
 
-static INLINE void exit_calc_chars()
+static INLINE void exit_calc_chars(void)
 {
   free_string (tag_end_string);
   free_string (tag_fin_string);
