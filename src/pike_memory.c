@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.55 2000/03/20 21:00:04 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.56 2000/03/20 21:50:34 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -995,7 +995,7 @@ static int find_location(struct memhdr *mh, LOCATION location)
 
 static void add_location(struct memhdr *mh, LOCATION location)
 {
-  struct memloc *ml=0;
+  struct memloc *ml;
   unsigned long l;
 
 #ifndef __NT__
@@ -1051,7 +1051,10 @@ static void add_location(struct memhdr *mh, LOCATION location)
 	prev=&ml->next;
       }
     }
-    if(!ml) mh->misses=0;
+    if(ml) {
+      goto old_ml;
+    }
+    mh->misses=0;
   }
 #else
   for(ml=mh->locations;ml;ml=ml->next)
@@ -1060,27 +1063,27 @@ static void add_location(struct memhdr *mh, LOCATION location)
     add_location_seek++;
 #endif
     if(ml->location==location)
-      break;
+      goto old_ml;
   }
 #endif
 
-  if(!ml)
-  {
+  /* NOTE: At this point ml is always NULL or uninitialized. */
+
 #ifdef DMALLOC_PROFILE
-    add_location_new++;
+  add_location_new++;
 #endif
-    ml=alloc_memloc();
-    ml->times=0;
-    ml->location=location;
-    ml->next=mh->locations;
-    ml->mh=mh;
-    mh->locations=ml;
+  ml=alloc_memloc();
+  ml->times=0;
+  ml->location=location;
+  ml->next=mh->locations;
+  ml->mh=mh;
+  mh->locations=ml;
 
 #ifdef DMALLOC_AD_HOC
-    mh->misses++;
+  mh->misses++;
 #endif
 
-  }
+ old_ml:
   ml->times++;
   mlhash[l]=ml;
 }
