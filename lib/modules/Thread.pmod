@@ -2,9 +2,9 @@ constant Mutex=__builtin.Mutex;
 constant Condition=__builtin.Condition;
 
 class Fifo {
-  inherit Builtin.condition : r_cond;
-  inherit Builtin.condition: w_cond;
-  inherit Builtin.mutex: lock;
+  inherit Condition : r_cond;
+  inherit Condition: w_cond;
+  inherit Mutex: lock;
   
   mixed *buffer;
   int r_ptr, w_ptr;
@@ -38,8 +38,8 @@ class Fifo {
 };
 
 class Queue {
-  inherit Builtin.condition: r_cond;
-  inherit Builtin.mutex: lock;
+  inherit Condition: r_cond;
+  inherit Mutex: lock;
   
   mixed *buffer=allocate(16);
   int r_ptr, w_ptr;
