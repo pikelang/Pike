@@ -614,14 +614,18 @@ void resolveRefs(Node tree) {
 }
 
 void cleanUndocumented(Node tree) {
-  tree->walk_preorder(
-    lambda(Node n) {
-      if(n->get_tag_name()=="module" &&
-	 !sizeof(n->get_elements())) {
-	n->get_parent()->remove_child(n);
-	werror("Removed empty module %O\n", n->get_attributes()->name);
-      }
-    });
+
+  void check_node(Node n) {
+    if(n->get_tag_name()=="module" &&
+       !sizeof(n->get_elements())) {
+      Node p = n->get_parent();
+      p->remove_child(n);
+      werror("Removed empty module %O\n", n->get_attributes()->name);
+      check_node(p);
+    }
+  };
+
+  tree->walk_preorder( check_node );
 }
 
 // Call this method after the extraction and merge of the tree.
