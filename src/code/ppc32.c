@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.13 2002/04/08 03:08:50 marcus Exp $
+ * $Id: ppc32.c,v 1.14 2002/05/10 14:04:37 mast Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -382,7 +382,9 @@ void ins_f_byte(unsigned int b)
 
   addr = instrs[b].address;
 
-#ifndef PIKE_DEBUG
+#ifdef PIKE_DEBUG
+  if (d_flag < 3)
+#endif
   /* This is not very pretty */
   switch(b)
   {
@@ -420,15 +422,16 @@ void ins_f_byte(unsigned int b)
     addr = (void *)ppc32_escape_catch;
     break;
   }
-#endif
-  
+
   FLUSH_CODE_GENERATOR_STATE();
   ADD_CALL(addr);
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
-#ifndef PIKE_DEBUG
+#ifdef PIKE_DEBUG
+  if (d_flag < 3)
+#endif
   switch(a)
   {
    case F_MARK_AND_LOCAL:
@@ -489,7 +492,6 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
      ADD_CALL(Pike_compiler->new_program->constants[b].sval.u.efun->function);
      return;
   }
-#endif
   SET_REG(PPC_REG_ARG1, b);
   ins_f_byte(a);
   return;
@@ -499,7 +501,9 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    unsigned INT32 b,
 			    unsigned INT32 c)
 {
-#ifndef PIKE_DEBUG
+#ifdef PIKE_DEBUG
+  if (d_flag < 3)
+#endif
   switch(a)
   {
    case F_2_LOCALS:
@@ -507,7 +511,6 @@ void ins_f_byte_with_2_args(unsigned int a,
      ppc32_push_local(c);
      return;
   }
-#endif
   SET_REG(PPC_REG_ARG1, b);
   SET_REG(PPC_REG_ARG2, c);
   ins_f_byte(a);

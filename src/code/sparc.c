@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.c,v 1.9 2001/07/24 12:34:23 grubba Exp $
+ * $Id: sparc.c,v 1.10 2002/05/10 14:04:37 mast Exp $
  *
  * Machine code generator for sparc.
  *
@@ -58,7 +58,9 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
   addr = instrs[b].address;
 
-#ifndef PIKE_DEBUG
+#ifdef PIKE_DEBUG
+  if (d_flag < 3)
+#endif
   /* This is not very pretty */
   switch(b)
   {
@@ -76,8 +78,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     addr = (void *)f_add;
     break;
   }
-#endif
-  
+
   ADD_CALL(addr, delay_ok);
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.18 2002/04/08 00:56:12 mast Exp $
+ * $Id: ia32.c,v 1.19 2002/05/10 14:04:37 mast Exp $
  *
  * Machine code generator for IA32.
  *
@@ -352,7 +352,7 @@ void ia32_push_int(INT32 x)
   ia32_push_constant(&tmp);
 }
 
-void ia32_call_c_function(void *addr)
+static void ia32_call_c_function(void *addr)
 {
 /*  CALL_ABSOLUTE(instrs[b].address); */
   CALL_RELATIVE(addr);
@@ -389,7 +389,9 @@ void ins_f_byte(unsigned int b)
 
   addr=instrs[b].address;
 
-#ifndef PIKE_DEBUG
+#ifdef PIKE_DEBUG
+  if (d_flag < 3)
+#endif
   /* This is not very pretty */
   switch(b)
   {
@@ -428,13 +430,14 @@ void ins_f_byte(unsigned int b)
       }
       break;
   }
-#endif
   ia32_call_c_function(addr);
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
-#ifndef PIKE_DEBUG
+#ifdef PIKE_DEBUG
+  if (d_flag < 3)
+#endif
   switch(a)
   {
     case F_MARK_AND_LOCAL:
@@ -487,7 +490,6 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;
   }
-#endif
   update_arg1(b);
   ins_f_byte(a);
 }
@@ -496,7 +498,9 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    unsigned INT32 b,
 			    unsigned INT32 c)
 {
-#ifndef PIKE_DEBUG
+#ifdef PIKE_DEBUG
+  if (d_flag < 3)
+#endif
   switch(a)
   {
     case F_2_LOCALS:
@@ -505,7 +509,6 @@ void ins_f_byte_with_2_args(unsigned int a,
       ia32_push_local(c);
       return;
   }
-#endif
   update_arg1(b);
   update_arg2(c);
   ins_f_byte(a);
