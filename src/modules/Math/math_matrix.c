@@ -514,9 +514,10 @@ scalar_mult:
 
 void init_math_matrix()
 {
-   MAKE_CONSTANT_SHARED_STRING(s_array,"array");
-   MAKE_CONSTANT_SHARED_STRING(s__clr,"_clr");
-   MAKE_CONSTANT_SHARED_STRING(s_identity,"identity");
+#define MKSTR(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
+  dmalloc_accept_leak( s_array=MKSTR("array") );
+  dmalloc_accept_leak( s__clr=MKSTR("clr") );
+  dmalloc_accept_leak( s_identity=MKSTR("identity") );
 
    ADD_STORAGE(struct matrix_storage);
    
