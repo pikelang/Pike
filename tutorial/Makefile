@@ -2,18 +2,23 @@ all: tutorial.html tutorial_onepage.html
 
 # lenna.gif lenna-mirrorx.gif lenna-mirrory.gif lenna-rotate.gif lenna-skewx.gif lenna-skewy.gif
 
-.DUMMY: Image.wmml 
+SRCFILES=tutorial.wmml Image.wmml
 
-tutorial.html: .DUMMY
+.DUMMY: 
+
+tutorial.html: .DUMMY $(SRCFILES)
 	./wmmltohtml2 <tutorial.wmml html tutorial
 
-tutorial_onepage.html: .DUMMY
+tutorial_onepage.html: .DUMMY  $(SRCFILES)
 	./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
 
-tut.html: .DUMMY
+tut.html: .DUMMY $(SRCFILES)
 	./wmmltohtml2 <tutorial.wmml sitebuilder tut
 
-Image.wmml :
+manpages: .DUMMY $(SRCFILES)
+	./wmmltohtml2 <tutorial.wmml man man3P
+
+Image.wmml : 
 	(cd ../src/modules/Image; make wmml)
 
 the_image_module_onepage.html: Image.wmml the_image_module.wmml
