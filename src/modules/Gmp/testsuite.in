@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.17 2001/08/13 23:33:48 hubbe Exp $
+// $Id: testsuite.in,v 1.18 2001/09/05 05:40:38 hubbe Exp $
 
 // mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
@@ -96,6 +96,48 @@ cond( [[ master()->resolv("Gmp")->mpq ]],
   test_true(clone(Gmp.mpq,1))
 ]])
 
+cond( [[ master()->resolv("Gmp")->mpf ]],
+[[
+  test_true(programp(Gmp.mpf))
+  test_false(clone(Gmp.mpf))
+  test_false(!Gmp.mpf(1))
+  test_do(destruct(clone(Gmp.mpf)))
+
+  test_eq(Gmp.mpf(10),10)
+  test_eq(Gmp.mpf("10"),10)
+  test_eq(Gmp.mpf(10.0),10)
+  test_eq(Gmp.mpf("10",0,8),8)
+
+  test_eq(Gmp.mpf("17") == "foo", 0)
+  test_eq(Gmp.mpf("17") != "foo", 1)
+  test_true(catch(Gmp.mpf("17") < "foo"))
+
+  define([[test_binop]],[[
+    test_eq(Gmp.mpf($1) $2 $3, $4)
+    test_eq(Gmp.mpf($1) $2 $3.0, $4)
+    test_eq(Gmp.mpf($1) $2 Gmp.mpf($3), $4)
+    test_eq($1 $2 Gmp.mpf($3), $4)
+    test_eq($1.0 $2 Gmp.mpf($3), $4)
+    test_eq($1.0 $2 Gmp.mpf($3), $4)
+    test_eq($1 $2 $3,Gmp.mpf($4))
+  ]])
+
+  test_binop(99,+,1,100)
+  test_binop(100,*,10,1000)
+  test_binop(100,/,4,25)
+  test_binop(66,+,11,77)
+  test_binop(66,-,11,55)
+
+  test_eq([[`+(1,1,1,Gmp.mpf(1),1,1)]],6)
+  test_eq(-clone(Gmp.mpf,17),-17)
+  test_true(stringp((string)clone(Gmp.mpf,17)))
+  test_eq((string)clone(Gmp.mpf,17),"17")
+  test_true(intp((int)clone(Gmp.mpf,17)))
+  test_eq((int)clone(Gmp.mpf,17),17)
+  test_false(clone(Gmp.mpf,0))
+  test_true(clone(Gmp.mpf,1))
+]])
+
   define([[mpz_test_cmp]],[[
     cond( [[ master()->resolv("Gmp")->mpz ]],
     [[
@@ -127,6 +169,23 @@ cond( [[ master()->resolv("Gmp")->mpq ]],
     [[
     test_cmp3($1, Gmp.mpq($2), Gmp.mpq($3))
     test_cmp3(Gmp.mpq($1), Gmp.mpq($2), Gmp.mpq($3))
+    ]])
+
+
+    cond( [[ master()->resolv("Gmp")->mpq ]],
+    [[
+    test_cmp3(Gmp.mpf($1), $2, $3)
+    test_cmp3($1, Gmp.mpf($2), $3)
+    ]])
+    cond( [[ master()->resolv("Gmp")->mpq ]],
+    [[
+    test_cmp3(Gmp.mpf($1), Gmp.mpf($2), $3)
+    test_cmp3(Gmp.mpf($1), $2, Gmp.mpf($3))
+    ]])
+    cond( [[ master()->resolv("Gmp")->mpq ]],
+    [[
+    test_cmp3($1, Gmp.mpf($2), Gmp.mpf($3))
+    test_cmp3(Gmp.mpf($1), Gmp.mpf($2), Gmp.mpf($3))
     ]])
   ]])
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.95 2001/08/13 23:33:48 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.96 2001/09/05 05:40:38 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -228,6 +228,18 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
     break;
 
   case T_OBJECT:
+    if(s->u.object->prog == mpf_program)
+    {
+      mpz_set_f(tmp, OBTOMPF(s->u.object));
+      break;
+    }
+
+    if(s->u.object->prog == mpq_program)
+    {
+      mpz_set_q(tmp, OBTOMPQ(s->u.object));
+      break;
+    }
+
     if(s->u.object->prog != mpzmod_program
 #ifdef AUTO_BIGNUM
        && s->u.object->prog != bignum_program
@@ -1472,6 +1484,7 @@ static void exit_mpz_glue(struct object *o)
 
 void pike_module_exit(void)
 {
+  pike_exit_mpf_module();
   pike_exit_mpq_module();
 #if defined(USE_GMP) || defined(USE_GMP2)
   if(mpzmod_program)
@@ -1650,5 +1663,6 @@ void pike_module_init(void)
 #endif
 
   pike_init_mpq_module();
+  pike_init_mpf_module();
 }
 

@@ -1,8 +1,8 @@
-# $Id: Makefile.in,v 1.19 2001/08/16 12:07:37 grubba Exp $
+# $Id: Makefile.in,v 1.20 2001/09/05 05:40:37 hubbe Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-OBJS=mpz_glue.o next_prime.o my_mpz_xor.o mpq.o
+OBJS=mpz_glue.o next_prime.o my_mpz_xor.o mpq.o mpf.o
 
 PRIME_LIMIT=1024
 

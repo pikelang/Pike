@@ -1,0 +1,751 @@
+/*\
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
+#include "global.h"
+RCSID("$Id: mpf.cmod,v 1.1 2001/09/05 05:41:11 hubbe Exp $");
+#include "gmp_machine.h"
+
+#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
+#define USE_GMP2
+#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
+#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
+#define USE_GMP
+#endif /* HAVE_GMP_H && HAVE_LIBGMP */
+#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
+
+#if defined(USE_GMP) || defined(USE_GMP2)
+
+#include "interpret.h"
+#include "svalue.h"
+#include "stralloc.h"
+#include "array.h"
+#include "pike_macros.h"
+#include "program.h"
+#include "stralloc.h"
+#include "object.h"
+#include "pike_types.h"
+#include "pike_error.h"
+#include "builtin_functions.h"
+#include "opcodes.h"
+#include "module_support.h"
+#include "bignum.h"
+#include "operators.h"
+#include "mapping.h"
+
+#include "my_gmp.h"
+
+#include <limits.h>
+#include <math.h>
+
+/* This must be included last! */
+#include "module_magic.h"
+
+#define THISMPF (&(THIS->n))
+
+#ifndef CHAR_BITS
+#define CHAR_BITS 8
+#endif
+
+#define PUSH_REDUCED(o) push_object(o)
+
+/*  id PROG_GMP_MPF_ID; */
+PIKECLASS mpf
+{
+  CVAR MP_FLT n;
+
+  static void get_mpf_from_digits(MP_FLT *tmp,
+				  struct pike_string *digits,
+				  int base)
+    {
+      int exp;
+      char *str;
+  
+      if(digits->size_shift)
+	Pike_error("Illegal characters, cannot convert to Mpf.\n");
+      str=STR0(digits);
+
+      mpf_set_str(THISMPF, str, base);      
+    }
+
+  static void get_new_mpf(MP_FLT *tmp, struct svalue *s)
+    {
+      switch(s->type)
+      {
+	case T_FLOAT:
+	{
+	  mpf_set_d(tmp, (double) s->u.float_number);
+	  break;
+	}
+	  
+	case T_INT:
+	  mpf_set_si(tmp, (double) s->u.integer);
+	  break;
+	  
+	case T_OBJECT:
+	  if(s->u.object->prog == mpzmod_program)
+	  {
+	    mpf_set_z(tmp, OBTOMPZ(s->u.object));
+	    break;
+	  }
+
+	  if(s->u.object->prog == mpq_program)
+	  {
+	    mpf_set_q(tmp, OBTOMPQ(s->u.object));
+	    break;
+	  }
+	  
+	  if(s->u.object->prog == mpf_program)
+	  {
+	    mpf_set(tmp, OBTOMPF(s->u.object));
+	    break;
+	  }
+	  
+	  if (s->u.object->prog) {
+	    Pike_error("Wrong type of object (id:%d), cannot convert to mpf.\n",
+		       s->u.object->prog->id);
+	  } else {
+	    /* Destructed object. Use as zero. */
+	    mpf_set_si(tmp, 0);
+	  }
+	  break;
+	  
+	default:
+	  Pike_error("cannot convert argument to mpf.\n");
+      }
+    }
+  
+  /* FIXME: */
+  PIKEFUN void create(void|string|int|float|object x, void|int precision, void|int base)
+    type function(void|string|int|float|object,void|int(1..):void)|function(string,int(0..),int(2..36):void);
+  {
+    int base=0;
+	
+    switch(args)
+    {
+      case 3:
+	base=sp[2-args].u.integer;
+	if(base<2 || base>36)
+	  Pike_error("Bad argument 3 to Mpq.mpf, must be 2 <= base <= 36, not %d\n",base);
+	if(sp[-args].type != T_STRING)
+	  Pike_error("First argument to Mpq.mpf must be a string when specifying base.\n");
+
+      case 2:
+	if(sp[1-args].u.integer)
+	{
+	  if(sp[2-args].u.integer<0)
+	    Pike_error("Bad argument 2 to Mpq.mpf, must be >= 0\n");
+	  mpf_set_prec(THISMPF, sp[2-args].u.integer);
+	}
+
+      case 1:
+	if(x->type == T_STRING)
+	{
+	  if(x->u.string->size_shift)
+	    Pike_error("First argument to Mpq.mpf must not be a wide string.\n");
+	  mpf_set_str(THISMPF, STR0(x->u.string), base);
+	}else{
+	  get_new_mpf(THISMPF, sp-args);
+	}
+
+      case 0: break;
+    }
+  }
+  
+  PIKEFUN int __hash()
+    {
+      /* from hash_svalue */
+      RETURN 
+	DO_NOT_WARN((unsigned INT32)(mpf_get_d(THISMPF) *
+				     16843009.731757771173));
+    }
+
+  PIKEFUN int|object get_int()
+    {
+      struct object * ret;
+      ref_push_object(fp->current_object);
+#ifdef AUTO_BIGNUM
+      ret=clone_object(bignum_program, 1);
+      mpzmod_reduce(ret);
+#else
+      ret=clone_object(mpzmod_program, 1);
+      push_int(mpzmod_get_si(OBTOMPZ(o)));
+      free_object(ret);
+#endif
+    }
+
+
+  PIKEFUN float get_float()
+    {
+      RETURN (FLOAT_TYPE) mpf_get_d(THISMPF);
+    }
+
+  PIKEFUN string get_string()
+    {
+      /* Hmm, maybe I should have used a string builder instead? */
+      mp_exp_t expptr;
+      char *tmp=mpf_get_str(0, &expptr, 10, 0, THISMPF);
+      int len=strlen(tmp);
+      struct pike_string *ret=begin_shared_string(len + 32);
+      char *out=STR0(ret);
+      char *outbase=out;
+      char *in=tmp;
+      if(in[0]=='-')
+      {
+	*(out++)=*(in++);
+	len--;
+      }
+      /* This could be better, but for now I just try to
+       * avoid special cases
+       */
+      if(expptr == len)
+      {
+	/* Copy numbers straight */
+	if(len)
+	{
+	  MEMCPY(out,in,len);
+	  out+=len;
+	}else{
+	  *(out++)='0';
+	}
+      }else{
+	if(expptr >= len || expptr < 0)
+	{
+	  /* N.NNNNNNNeNNN */
+	  *(out++)=*(in++);
+	  *(out++)='.';
+	  MEMCPY(out,in,len-1);
+	  out+=len-1;
+	  in+=len+1;
+	  sprintf(out,"e%ld",(long)(expptr-1));
+	  out+=strlen(out);
+	}else{
+	  /* NNNNNNN.NNNNNNN */
+	  MEMCPY(out,in,expptr);
+	  out+=expptr;
+	  in+=expptr;
+	  *(out++)='.';
+	  MEMCPY(out,in,len-expptr);
+	}
+      }
+      *out=0;
+      free(tmp);
+      RETURN end_and_resize_shared_string(ret, out - outbase);
+    }
+
+  static int lookup(char *name,
+		    struct mapping *m,
+		    char *ind,
+		    int def)
+    {
+      struct svalue *sv;
+      if((sv=simple_mapping_string_lookup(m,ind)))
+      {
+	if(sv->type == T_INT)
+	{
+	  return sv->u.integer;
+	}else{
+	  Pike_error("\"%s\" argument to %s is not an integer.\n",ind,name);
+
+	}
+      }
+      return def;
+    }
+		    
+
+  PIKEFUN string _sprintf(int c, mapping flags)
+    {
+      INT_TYPE precision, width, base = 0, mask_shift = 0;
+      struct pike_string *s = 0;
+      INT_TYPE flag_left;
+      struct svalue *sv;
+
+      precision=lookup("Gmp.Mpf->_sprintf",flags,"precision",7);
+      width=lookup("Gmp.Mpf->_sprintf",flags,"width",-1);
+      flag_left=lookup("Gmp.Mpf->_sprintf",flags,"flag_left",0);
+      pop_n_elems(args);
+      
+      switch(c)
+      {
+	default:
+	  Pike_error("Gmp.Mpf->_sprintf, bad format character.\n");
+
+	  /* Fixme: Support g/e/E */
+	case 'O':
+	case 'g':
+	case 'e':
+	case 'E':
+	case 'f':
+	  f_mpf_get_string(0);
+	  return;
+      }
+    }
+  
+
+  PIKEFUN void _is_type(string arg)
+    {
+      push_constant_text("float");
+      f_eq(2);
+    }
+  
+  PIKEFUN void cast(string s)
+    {
+      add_ref(s);
+      
+      pop_n_elems(args);
+      
+      switch(s->str[0])
+      {
+	case 's':
+	  if(!strcmp(s->str, "string"))
+	  {
+	    free_string(s);
+	    f_mpf_get_string(0);
+	    return;
+	  }
+	  break;
+
+	case 'i':
+	  if(!strncmp(s->str, "int", 3))
+	  {
+	    free_string(s);
+	    f_mpf_get_int(0);
+	    return;
+	  }
+	  break;
+
+	case 'f':
+	  if(!strcmp(s->str, "float"))
+	  {
+	    free_string(s);
+	    f_mpf_get_float(0);
+	    return;
+	  }
+	  break;
+	  
+	case 'o':
+	  if(!strcmp(s->str, "object"))
+	  {
+	    push_object(this_object());
+	  }
+	  break;
+	  
+	case 'm':
+	  if(!strcmp(s->str, "mixed"))
+	  {
+	    push_object(this_object());
+	  }
+	  break;
+	  
+      }
+      
+      free_string(s);
+      
+      Pike_error("mpf->cast() to \"%s\" is other type than int, string or float.\n",
+		 s->str);
+    }
+
+#ifdef DEBUG_MALLOC
+#define get_mpf(X,Y,Z) \
+ (debug_get_mpf((X),(Y),(Z)),( (X)->type==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpf((X),(Y),(Z)))
+#else
+#define get_mpf debug_get_mpf 
+#endif
+
+  static struct object *get_mpf_with_prec(unsigned long int prec)
+    {
+      struct object *o=clone_object(mpf_program,0);
+      mpf_init2(OBTOMPF(o), prec);
+      return o;
+    }
+
+/* Converts an svalue, located on the stack, to an mpf object */
+  static MP_FLT *debug_get_mpf(struct svalue *s,
+			       int throw_error,
+			       unsigned long int default_prec)
+    {
+#define MPF_ERROR(x) if (throw_error) Pike_error(x)
+      struct object *o;
+      unsigned long int prec=1;
+      switch(s->type)
+      {
+	default:
+	  MPF_ERROR("Wrong type of value, cannot convert to mpf.\n");
+	  return 0;
+	  
+	case T_OBJECT:
+	  if(s->u.object->prog == mpf_program)
+	    return (MP_FLT *)s->u.object->storage;
+
+	  if(s->u.object->prog == mpzmod_program)
+	  {
+	    prec=mpz_size(OBTOMPZ(s->u.object)) * 
+	      sizeof(mp_limb_t) * CHAR_BITS;
+	    break;
+	  }
+
+	  /* This is tricky, how precice should we be? */
+	  if(s->u.object->prog == mpq_program)
+	  {
+	    if(default_prec)
+	      prec=default_prec;
+	    else
+	      prec=mpf_get_prec(THISMPF);
+	    break;
+	  }
+
+	  if(!throw_error && s->u.object->prog) return 0;
+	  break;
+
+	case T_INT:
+	  prec=sizeof(s->u.integer)*CHAR_BITS;
+	  break;
+
+	case T_FLOAT:
+	  prec=sizeof(s->u.float_number)*CHAR_BITS;
+	  break;
+      }
+      
+      o=get_mpf_with_prec(prec);
+      get_new_mpf(OBTOMPF(o), s);
+      free_svalue(s);
+      s->u.object=o;
+      s->type=T_OBJECT;
+      return (MP_FLT *)o->storage;
+    }
+
+
+#ifdef BIG_PIKE_INT
+#define TOOBIGTEST(X) || sp[X-args].u.integer>MAX_INT32 || sp[X-args].u.integer<0
+#else
+#define TOOBIGTEST(X) || sp[X-args].u.integer < 0
+#endif
+
+  static int add_convert_args(INT32 args)
+    {
+      INT32 e;
+      unsigned long int tmp;
+      unsigned long int prec=mpf_get_prec(THISMPF);
+
+      for(e=0; e<args; e++)
+      {
+	if(sp[e-args].type != T_INT TOOBIGTEST(e))
+	  tmp=mpf_get_prec( get_mpf(sp+e-args, 1, prec) );
+	else
+	  tmp=sizeof(sp[e-args].u.integer)*CHAR_BITS;
+	if(tmp>prec) prec=tmp;
+      }
+      return prec;
+    }
+
+
+  static void add_args(MP_FLT *res, INT32 args)
+    {
+      INT32 e;
+      for(e=0;e<args;e++)
+      {
+	if(sp[e-args].type == T_INT)
+	{
+	  if(sp[e-args].u.integer > 0)
+	    mpf_add_ui(res, res, sp[e-args].u.integer);
+	}else{
+	  mpf_add(res, res, OBTOMPF(sp[e-args].u.object));
+	}
+      }
+    }
+
+
+  PIKEFUN object `+(int|float|object ... a)
+    {
+      INT32 e;
+      struct object *res;
+
+      res = get_mpf_with_prec( add_convert_args(args) );
+      mpf_set(OBTOMPF(res), THISMPF);
+      add_args(OBTOMPF(res), args);
+      
+      RETURN res;
+    }
+  
+  PIKEFUN object ``+(int|float|object ... a)
+    {
+      INT32 e;
+      struct object *res;
+
+      res = get_mpf_with_prec( add_convert_args(args) );
+
+
+      mpf_set(OBTOMPF(res), THISMPF);
+      add_args(OBTOMPF(res), args);
+      
+      RETURN res;
+    }
+
+  PIKEFUN object `+=(int|float|object ... a)
+  {
+    INT32 e;
+    unsigned long int prec;
+    prec=add_convert_args(args);
+    if(prec > mpf_get_prec(THISMPF))
+      mpf_set_prec(THISMPF, prec);
+
+    add_args(THISMPF, args);
+    
+    REF_RETURN fp->current_object;
+  }
+
+  PIKEFUN object set_precision(int(1..) prec)
+    {
+      if(prec<1)
+	Pike_error("Precision must be greater than zero.\n");
+      mpf_set_prec(THISMPF, prec);
+      REF_RETURN fp->current_object;
+    }
+  
+  static void mult_args(MP_FLT *res,
+			INT32 args)
+    {
+      INT32 e;
+      for(e=0;e<args;e++)
+      {
+	if(sp[e-args].type == T_INT)
+	  mpf_mul_ui(res, res, sp[e-args].u.integer);
+	else
+	  mpf_mul(res, res, OBTOMPF(sp[e-args].u.object));
+      }
+    }
+  
+  PIKEFUN object `*(int|float|object ... a)
+    {
+      struct object *res;
+      res = get_mpf_with_prec( add_convert_args(args) );
+      mpf_set(OBTOMPF(res), THISMPF);
+      mult_args(OBTOMPF(res), args);
+      
+      RETURN res;
+    }
+
+  PIKEFUN object ``*(int|float|object ... a)
+    {
+      struct object *res;
+
+      res = get_mpf_with_prec( add_convert_args(args) );
+      mpf_set(OBTOMPF(res), THISMPF);
+      mult_args(OBTOMPF(res), args);
+
+      RETURN res;
+    }
+
+  PIKEFUN object `*=(int|float|object ... a)
+  {
+    unsigned long int prec;
+    prec=add_convert_args(args);
+
+    if(prec > mpf_get_prec(THISMPF))
+      mpf_set_prec(THISMPF, prec);
+
+    mult_args(THISMPF, args);
+    REF_RETURN fp->current_object;
+  }
+
+  static void sub_args(MP_FLT *res,
+			INT32 args)
+    {
+      INT32 e;
+      for(e=0;e<args;e++)
+      {
+	if(sp[e-args].type == T_INT)
+	  mpf_sub_ui(res, res, sp[e-args].u.integer);
+	else
+	  mpf_sub(res, res, OBTOMPF(sp[e-args].u.object));
+      }
+    }
+
+  PIKEFUN object `-(int|float|object ... a)
+    {
+      INT32 e;
+      struct object *res;
+      
+      res = get_mpf_with_prec( add_convert_args(args) );
+      
+      if(args)
+      {
+	mpf_set(OBTOMPF(res), THISMPF);
+	sub_args(OBTOMPF(res), args);
+      }else{
+	mpf_neg(OBTOMPF(res), THISMPF);
+      }
+      
+      RETURN res;
+    }
+
+  PIKEFUN object ``-(int|float|object sv)
+    {
+      struct object *res;
+      MP_FLT *a=get_mpf(sv,1, 0);
+      res = get_mpf_with_prec( MAXIMUM( mpf_get_prec(THISMPF),
+					mpf_get_prec(a) ));
+      mpf_sub(OBTOMPF(res), a, THISMPF);
+      RETURN res;
+    }
+
+  PIKEFUN object `/(int|float|object ... a)
+    {
+      INT32 e;
+      struct object *res;
+      unsigned long int tmp;
+      unsigned long int prec=mpf_get_prec(THISMPF);
+
+      for(e=0; e<args; e++)
+      {
+	if(sp[e-args].type != T_INT TOOBIGTEST(e))
+	{
+	  MP_FLT *a=get_mpf(sp+e-args, 1, prec);
+	  tmp=mpf_get_prec(a);
+	  if(!mpf_sgn(a))
+	    Pike_error("Division by zero.\n");
+	}else{
+	  tmp=sizeof(sp[e-args].u.integer)*CHAR_BITS;
+	  if(!sp[e-args].u.integer)
+	    Pike_error("Division by zero.\n");
+	}
+	if(tmp>prec) prec=tmp;
+      }
+
+      res=get_mpf_with_prec(prec);
+      mpf_set(OBTOMPF(res), THISMPF);
+      for(e=0;e<args;e++)
+      {
+	if(Pike_sp[e-args].type == T_INT)
+	{
+	  mpf_div_ui(OBTOMPF(res), OBTOMPF(res), sp[e-args].u.integer);
+	}else{
+	  mpf_div(OBTOMPF(res), OBTOMPF(res), OBTOMPF(sp[e-args].u.object));
+	}
+      }
+      
+      RETURN res;
+    }
+
+  /* Working here */
+  PIKEFUN object ``/(int|float|object sv)
+    {
+      MP_FLT *a;
+      struct object *res = NULL;
+      if(!mpf_sgn(THISMPF))
+	Pike_error("Division by zero.\n");
+      
+      a=get_mpf(sv,1,0);
+
+      res = get_mpf_with_prec( MAXIMUM( mpf_get_prec(THISMPF),
+					mpf_get_prec(a) ));
+
+      mpf_div(OBTOMPF(res), a, THISMPF);
+      
+      RETURN res;
+    }
+
+  /* mpf has no floor() operator, so modulo is kind of hard to
+   * implement. Need it? Send me an implementation. /Hubbe
+   */
+
+  
+  /* defined as -1-x */
+  PIKEFUN object `~()
+    {
+      struct object *o;
+      o=get_mpf_with_prec(mpf_get_prec(THISMPF));
+      mpf_set_si(OBTOMPF(o), -1);
+      mpf_sub(OBTOMPF(o),OBTOMPF(o), THISMPF);
+      
+      RETURN o;
+    }
+
+#define CMPOP(OP) 					\
+      ((q->type != T_INT TOOBIGTEST(0)) ?			\
+       mpf_cmp(THISMPF, get_mpf(q, 1, 0)) OP 0 :	\
+       mpf_cmp_ui(THISMPF, q->u.integer) OP 0)
+	
+  PIKEFUN int `>(int|float|object q)
+    {
+      RETURN CMPOP(>);
+    }
+
+  PIKEFUN int `<(int|float|object q)
+    {
+      RETURN CMPOP(<);
+    }
+  
+  PIKEFUN int `>=(int|float|object q)
+  {
+    RETURN CMPOP(>=);
+  }
+  
+  PIKEFUN int `<=(int|float|object q)
+  {
+    RETURN CMPOP(<=);
+  }
+
+
+  PIKEFUN int `==(int|float|object q)
+  {
+    MP_FLT *arg;
+    /* FIXME: We need separate TOOBIGTEST for *_si and *_ui */
+    if(q->type == T_INT TOOBIGTEST(0))
+      RETURN mpf_cmp_si(THISMPF, q->u.integer) == 0;
+    arg=get_mpf(q, 0, 0);
+    RETURN (arg && !mpf_cmp(THISMPF, arg));
+  }
+
+  PIKEFUN int `!=(int|float|object q)
+  {
+    MP_FLT *arg;
+    if(q->type == T_INT TOOBIGTEST(0))
+      RETURN mpf_cmp_si(THISMPF, q->u.integer) != 0;
+    arg=get_mpf(q, 0, 0);
+    RETURN (arg && !mpf_cmp(THISMPF, arg));
+  }
+
+  PIKEFUN int sgn()
+    {
+      RETURN mpf_sgn(THISMPF);
+    }
+
+  PIKEFUN int `!()
+    {
+      RETURN !mpf_sgn(THISMPF);
+    }
+
+  INIT
+    {
+#ifdef PIKE_DEBUG
+      if(!fp) fatal("ZERO FP\n");
+      if(!THISMPF) fatal("ZERO THISMPF\n");
+#endif
+      mpf_init(THISMPF);
+    }
+  
+  EXIT
+    {
+#ifdef PIKE_DEBUG
+      if(!fp) fatal("ZERO FP\n");
+      if(!THISMPF) fatal("ZERO THISMPF\n");
+#endif
+      mpf_clear(THISMPF);
+    }
+  
+}
+
+#endif /* USE_GMP */
+
+
+void pike_init_mpf_module(void)
+{
+  INIT
+}
+
+void pike_exit_mpf_module(void)
+{
+  EXIT
+}
