@@ -197,15 +197,25 @@ string syntax_magic(string s)
 
 
 /* HTML quoting / unquoting */
+string *from=({"&","<",">"});
+string *to=({"&amp;","&lt;","&gt;"});
 
 string html_quote(string s)
 {
-  return replace(s,({"&","<",">"}),({"&amp;","&lt;","&gt;"}));
+  return replace(s,from,to);
 }
 
 string html_unquote(string s)
 {
-  return replace(s,({"&amp;","&lt;","&gt;"}),({"&","<",">"}));
+  return replace(s,to, from);
+}
+
+string url_quote(string s)
+{
+  return replace(s, 
+		 ({" ","`","\"","%"}),
+		 ({"%20","%60","%22","%37"}));
+		 
 }
 
 string mkdocument(string s,string title)
@@ -314,6 +324,7 @@ string mkindex(string topic, int usehead)
   case "efuns":
     head="<b>All builtin functions:</b>\n";
     ret="<ul>\n";
+    efuns-=(<"lambda","switch">);
     foreach(my_sort(m_indices(efuns)),a)
     {
       a=html_quote(a);
@@ -485,7 +496,7 @@ string convert_page(string path, string fname)
 
 	case "SYNTAX":
 	case "SYNTAX EXAMPLE":
-	  if(search(rest,name+"(")) efuns[name]=1;
+	  if(search(rest,name+"(")!=-1) efuns[name]=1;
 	  rest=syntax_magic(rest);
 	  break;
 
@@ -516,7 +527,7 @@ string convert_page(string path, string fname)
       parts[partno]="<dl>\n"+sections*"\n"+"\n</dl>\n";
       if(part_name)
       {
-	parts[partno]="<a name="+part_name+">\n"+
+	parts[partno]="<a name="+url_quote(part_name)+">\n"+
 	  parts[partno]+
 	  "\n</a>\n";
       }
