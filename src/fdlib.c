@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.69 2005/01/05 17:27:06 grubba Exp $
+|| $Id: fdlib.c,v 1.70 2005/01/06 16:14:56 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include <math.h>
 #include <ctype.h>
 
-#if defined(HAVE_WINSOCK_H) && !defined(__GNUC__)
+#if defined(HAVE_WINSOCK_H)
 
 /* Old versions of the headerfiles don't have this constant... */
 #ifndef INVALID_SET_FILE_POINTER
@@ -39,6 +39,7 @@ int first_free_handle;
 #ifdef PIKE_DEBUG
 static int IsValidHandle(HANDLE h)
 {
+#ifndef __GNUC__
   __try {
     HANDLE ret;
     if(DuplicateHandle(GetCurrentProcess(),
@@ -56,6 +57,7 @@ static int IsValidHandle(HANDLE h)
   __except (1) {
     return 0;
   }
+#endif /* !__GNUC__ */
 
   return 1;
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.54 2005/01/05 17:27:06 grubba Exp $
+|| $Id: fdlib.h,v 1.55 2005/01/06 16:14:56 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -47,7 +47,7 @@
 #define fd_REVERSE	     32
 
 
-#if defined(HAVE_WINSOCK_H) && !defined(__GNUC__)
+#if defined(HAVE_WINSOCK_H)
 
 #define HAVE_FD_FLOCK
 
