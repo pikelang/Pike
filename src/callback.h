@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: callback.h,v 1.8 1999/05/02 08:11:34 hubbe Exp $
+ * $Id: callback.h,v 1.9 1999/09/25 23:49:48 grubba Exp $
  */
 #ifndef CALLBACK_H
 #define CALLBACK_H
@@ -24,8 +24,10 @@ extern struct callback_list fork_child_callback;
 
 typedef void (*callback_func)(struct callback *, void *,void *);
 
+#include "block_alloc_h.h"
 /* Prototypes begin here */
 struct callback;
+BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 void call_callback(struct callback_list *lst, void *arg);
 struct callback *debug_add_to_callback(struct callback_list *lst,
 				       callback_func call,
