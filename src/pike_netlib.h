@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_netlib.h,v 1.3 2003/04/23 23:50:37 marcus Exp $
+|| $Id: pike_netlib.h,v 1.4 2003/04/30 10:25:42 grubba Exp $
 */
 
 #ifndef PIKE_NETLIB_H
@@ -20,6 +20,16 @@
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif /* HAVE_NETINET_IN_H */
+
+#ifdef HAVE_WINSOCK2_H
+#include <WinSock2.h>
+#ifdef HAVE_WS2TCPIP_H
+/* Needed for IPv6 support. */
+#include <WS2tcpip.h>
+#endif
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
 
 typedef union {
   struct sockaddr sa;
