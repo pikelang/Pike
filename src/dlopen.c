@@ -20,6 +20,11 @@
 #include <memory.h>
 #include <sys/stat.h>
 #include <assert.h>
+#include <math.h>
+
+/* In case we're compiling with NDEBUG */
+_CRTIMP void __cdecl _assert(void*, void*, unsigned);
+
 
 static char *dlerr=0;
 
@@ -80,7 +85,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.19 2001/09/14 04:41:08 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.20 2001/09/14 19:59:23 marcus Exp $");
 
 #endif
 
