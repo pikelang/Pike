@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.3 2002/11/25 15:35:56 marcus Exp $
+// $Id: module.pmod,v 1.4 2002/12/13 12:24:32 marcus Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -244,15 +244,17 @@ static string remap(array(string) item)
 //!
 array(array(string)) decode_words_text( string txt )
 {
-  object r = Regexp("^((.*)[ \t\n\r]|)(=\\?[^\1- ?]*\\?[^\1- ?]*\\?"
-		    "[^\1- ?]*\\?=)[ \t\n\r]*(.*)");
+  object r = Regexp("^(.*[ \t\n\r]|)(=\\?[^\1- ?]*\\?[^\1- ?]*\\?"
+		    "[^\1- ?]*\\?=)(([ \t\n\r]+)(.*)|)$");
   array a, res = ({});
   while ((a = r->split(txt)))
   {
-    txt = a[1]||"";
-    array w = decode_word(a[2]);
-    if (sizeof(a[3]))
-      res = ({ w, ({ a[3], 0 }) }) + res;
+    if(!sizeof(a[2])) a = a[..2]+({"",""});
+    txt = a[0]||"";
+    if(!sizeof(res) || sizeof(a[4])) a[4]=a[3]+a[4];
+    array w = decode_word(a[1]);
+    if (sizeof(a[4]))
+      res = ({ w, ({ a[4], 0 }) }) + res;
     else
       res = ({ w }) + res;
   }
@@ -381,7 +383,23 @@ array(array(string|int))
 //!
 string encode_words_text(array(string|array(string)) phrase, string encoding)
 {
-  return Array.map(phrase, encode_word, encoding)*" ";
+  phrase = filter(phrase, lambda(string|array(string) w) {
+			    return stringp(w)? sizeof(w) :
+			      sizeof(w[0]) || w[1];
+			  });
+  array(string) ephrase = map(phrase, encode_word, encoding);
+  if(!encoding) return ephrase*"";
+  string res="";
+  for(int i=0; i<sizeof(ephrase); i++)
+    if(ephrase[i] != (stringp(phrase[i])? phrase[i] : phrase[i][0])) {
+      if(sizeof(res) && !(<' ','\t','\n','\r'>)[res[-1]])
+	res += " ";
+      res += ephrase[i];
+      if(i+1<sizeof(ephrase) && !(<' ','\t','\n','\r'>)[ephrase[i+1][0]])
+	res += " ";
+    } else
+      res += ephrase[i];
+  return res;
 }
 
 //! The inverse of @[decode_words_tokenized()], this functions accepts
