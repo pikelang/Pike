@@ -7831,17 +7831,17 @@ store its files. Yabu will create the directory if it does not exist,
 provided Yabu is opened in write and create mode (see below).<p>
 <li><i>mode</i> is a string specifying the mode in which Yabu will
 operate. There are five switches available:<p>
-<blockquote>
-"r" - Read mode. No database entries can be altered and no files will
+<ul>
+<li>"r" - Read mode. No database entries can be altered and no files will
 be modified.<p>
-"c" - Create mode. The database can create new tables. Create mode is
+<li>"c" - Create mode. The database can create new tables. Create mode is
 only used togheter with write mode.<p>
-"w" - Write mode. The database can be altered and the files will be
+<li>"w" - Write mode. The database can be altered and the files will be
 updates accordingly.<p>
-"t" - Transaction mode. The database now allows transactions.<p>
-"C" - Compress mode. Provided the <link to=Gz>Gz module</link> is
+<li>"t" - Transaction mode. The database now allows transactions.<p>
+<li>"C" - Compress mode. Provided the <link to=Gz>Gz module</link> is
 available, all records will be compressed before stored on to disk.<p>
-</blockquote>
+</ul>
 </ol>
 </man_description>
 
