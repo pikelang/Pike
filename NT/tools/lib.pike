@@ -364,7 +364,7 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 //      f->close("w");
 //      werror("Closing stdout.\n");
       destruct(f);
-      if(code > 127)
+      if(code > 255)
       {
 	werror("Software failure. Press left mouse button to continue.\r\n"
 	       "          Guru meditation #%s\r\n",
