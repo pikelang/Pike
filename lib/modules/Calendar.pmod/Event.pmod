@@ -10,6 +10,9 @@ constant M_ED=({({0,31,59,90,120,151,181,212,243,273,304,334,365}),
 constant M_NAME="---JanFebMarAprMayJunJulAugSepOctNovDec"/3;
 constant WD_NAME="---MonTueWedThuFriSatSun"/3;
 
+function(mixed...:TimeRange) std_day=master()->resolv("Calendar")["Day"];
+function(mixed...:TimeRange) std_second=master()->resolv("Calendar")["Second"];
+
 // ----------------------------------------------------------------
 // base classes
 // ----------------------------------------------------------------
@@ -53,8 +56,8 @@ class Event
 
    constant is_event=1;
 
-   TimeRange next(TimeRange from,void|int(0..1) including);
-   TimeRange previous(TimeRange from,void|int(0..1) including);
+   TimeRange next(void|TimeRange from,void|int(0..1) including);
+   TimeRange previous(void|TimeRange from,void|int(0..1) including);
 
 // what events in this period?
    array(TimeRange) scan(TimeRange in)
@@ -115,12 +118,12 @@ class NullEvent
       name=s;
    }
  
-   TimeRange next(TimeRange from,void|int(0..1) including)
+   TimeRange next(void|TimeRange from,void|int(0..1) including)
    {
       return 0;
    }
 
-   TimeRange previous(TimeRange from,void|int(0..1) including)
+   TimeRange previous(void|TimeRange from,void|int(0..1) including)
    {
       return 0;
    }
@@ -162,8 +165,9 @@ class Day_Event
    int scan_jd(Calendar realm,int jd,int(1..1)|int(-1..-1) direction);
 
 // find
-   TimeRange next(TimeRange from,void|int(0..1) including)
+   TimeRange next(void|TimeRange from,void|int(0..1) including)
    {
+      if (!from) from=std_day();
       int jd;
       if (including) jd=(int)(from->julian_day());
       else jd=(int)(from->end()->julian_day());
@@ -171,8 +175,9 @@ class Day_Event
       return (from->calendar()->Day)("julian_r",jd,from->ruleset())*nd;
    }
 
-   TimeRange previous(TimeRange from,void|int(0..1) including)
+   TimeRange previous(void|TimeRange from,void|int(0..1) including)
    {
+      if (!from) from=std_day();
       int jd;
       if (including) jd=(int)(from->end()->julian_day());
       else jd=(floatp(from->julian_day())
@@ -762,7 +767,7 @@ class Date_Weekday
 //! 	This class represents the event that a given gregorian 
 //!	day of month appears a given weekday.
 //!	For instance, 
-//!	<tt>Event.Date_Weekday(13,5)->next(Day())</tt>
+//!	<tt>Event.Monthday_Weekday(13,5)->next(Day())</tt>
 //!	finds the next friday the 13th.
 //! 
 //! method void create(int month_day,int weekday)
@@ -1255,3 +1260,134 @@ class SuperEvent
    }
 }
 
+class TZShift_Event
+{
+   inherit Event;
+
+   constant is_tzshift_event=1;
+
+   Ruleset.Timezone timezone;
+
+   void create(void|Ruleset.Timezone _tz)
+   {
+      timezone=_tz;
+   }
+
+   TimeRange next(void|TimeRange from,void|int(0..1) including)
+   {
+      if (!from) from=std_second();
+      return scan_shift(timezone||from->timezone(),
+			from,1,including);
+   }
+   TimeRange previous(void|TimeRange from,void|int(0..1) including)
+   {
+      if (!from) from=std_second();
+      return scan_shift(timezone||from->timezone(),
+			from,-1,including);
+   }
+
+   static TimeRange scan_shift(Ruleset.Timezone tz,
+			       TimeRange from,
+			       int direction,int including)
+   {
+      if (tz->whatrule)
+	 return scan_history(tz,from,direction,including);
+      return scan_rule(tz,from,direction,including);
+   }
+
+   static TimeRange scan_history(Ruleset.Timezone tz,
+				 TimeRange from,
+				 int direction,int(0..1) including)
+   {
+      int ux;
+
+      if ((direction==1) ^ (!!including))
+	 ux=(from=from->end())->unix_time();
+      else
+	 ux=from->unix_time();
+      
+      int nextshift=-1;
+      if (direction==1)
+      {
+	 foreach (tz->shifts,int z)
+	    if (z>=ux) { nextshift=z; break; }
+      }
+      else
+	 foreach (reverse(tz->shifts),int z)
+	    if (z<=ux) { nextshift=z; break; }
+
+      TimeRange btr=0;
+      if (nextshift!=-1)
+	 btr=from->calendar()->Second("unix",nextshift);
+      
+      TimeRange atr=from;
+      for (;;)
+      {
+	 Ruleset.Timezone atz=tz->whatrule(ux);
+	 atr=scan_rule(atz,atr,direction,including);
+	 if (!atr) break;
+	 if (direction==1)
+	    { if (atr>=from) break; }
+	 else
+	    if (atr<=from) break;
+      }
+
+      if (!btr)	
+	 return atr;
+      if (!atr) 
+	 return btr;
+      if ( (direction==1)^(btr>atr) )
+	 return btr; 
+      else
+	 return atr;
+   }
+
+   static TimeRange scan_rule(Ruleset.Timezone tz,
+			      TimeRange from,
+			      int direction,int including)
+   {
+      if (!tz->jd_year_periods)
+	 return 0; // non-shifting timezone
+
+      int jd;
+      if ((direction==1) ^ (!!including))
+	 jd=(int)(from=from->end())->julian_day();
+      else
+	 jd=(int)from->julian_day();
+      [int y,int yjd,int leap_year]=gregorian_yjd(jd);
+
+      for (;;)
+      {
+	 array(array) per=tz->jd_year_periods(yjd+1);
+	 if (sizeof(per)==1) // no shifts this year
+	 {
+            // sanity check, are we leaving all shifts behind?
+	    if (direction==-1 && y<tz->firstyear) return 0;
+	    if (direction==1 && y>tz->lastyear) return 0;
+	 }
+	 if (direction==1)
+	 {
+	    foreach (per[1..],array shift)
+	       if (shift[0]>=jd)
+	       {
+		  TimeRange atr=from->calendar()
+		     ->Second("unix",(shift[0]-2440588)*86400+shift[1]);
+		  if (atr>=from) return atr;
+	       }
+	 }
+	 else
+	 {
+	    foreach (reverse(per[1..]),array shift)
+	       if (shift[0]<=jd)
+	       {
+		  TimeRange atr=from->calendar()
+		     ->Second("unix",(shift[0]-2440588)*86400+shift[1]);
+		  if (atr<=from) return atr;
+	       }
+	 }
+	 [y,yjd,leap_year]=gregorian_year(y+direction);
+      }
+
+      return 0;
+   }
+}

@@ -361,7 +361,7 @@ function `-> = `[];
 // Don't load Geogrphy.Countries unless we have to
 object country_lookup=0;
 
-Event|Event.Namedays magic_event(string s)
+Event.Event|Event.Namedays magic_event(string s)
 {
    Event.Event e;
    if ( (e=loaded_events[s]) ) return e;
@@ -375,7 +375,9 @@ Event|Event.Namedays magic_event(string s)
       country_lookup=master()->resolv("Geography.Countries");
    object c=country_lookup->from_name(s);
    if (c && (e=find_region(lower_case(c->iso2)))) return e;
-
+   
+   if (s=="tzshift") 
+      return loaded_events->tzshift=Event.TZShift_Event();
 
    return ([])[0];
 }

@@ -642,6 +642,7 @@ class Runtime_timezone_compiler
 	 array sr=({});
 
 	 int mn=min(@indices(rules-(<NUL_YEAR>)));
+	 int firstyear=99999,lastyear=0;
 
 	 for (y=INF_YEAR;sizeof(r2);y--)
 	    if (r2[y])
@@ -659,6 +660,8 @@ class Runtime_timezone_compiler
 
 	       int y0=min(@(array)my);
 	       int y2=max(@(array)my);
+	       if (y0!=NUL_YEAR && y0<firstyear) firstyear=y0;
+	       if (y2!=INF_YEAR && y2>lastyear) lastyear=y2;
 	       for (; y0<=y2; y0++)
 		  if (my[y0])
 		  {
@@ -666,9 +669,11 @@ class Runtime_timezone_compiler
 		     while (my[++y1]);
 
 		     y1--;
-		  
+
+	       // figure first and last interesting year
 		     if (y0==NUL_YEAR)
 		     {
+			if (y1!=NUL_YEAR && y1<firstyear) firstyear=y1;
 			if (my[INF_YEAR])
 			   tr+=({"         default: // .."+max(y1,mn-1),
 				  " and ½½½..\n"});
@@ -678,8 +683,10 @@ class Runtime_timezone_compiler
 		     }
 		     else if (y0==y1)
 			tr+=({"         case "+y0+":\n"});
-		     else if (y1==2050)
+		     else if (y1==INF_YEAR)
 		     { 
+			if (y0>lastyear) lastyear=y0;
+		  
 			if (!my[NUL_YEAR]) 
 			   tr+=({"         case "+y0,"..:\n"}); 
 			else 
@@ -705,6 +712,8 @@ class Runtime_timezone_compiler
 	 ({"      }\n"
 	   "   }\n"
 	   "\n"
+	   "constant firstyear="+firstyear+";\n"
+	   "constant lastyear="+lastyear+";\n",
 	   "array(string) rule_s=\n"});
 
 	 multiset tzname=(<>);
@@ -1133,7 +1142,7 @@ class Runtime_timezone_compiler
 	       if (sscanf(line,"Rule%*[ \t]%[^ \t]%*[ \t]%s",a,b)==4 &&
 		   a==s)
   		  r->add(b);
-	       else 
+	       else if (sscanf(line,"%*[ ]#%*s")<2)
 		  break; // end of zone
 #ifdef RTTZC_TIMING
 	    float tf=time(t);
