@@ -92,10 +92,11 @@ static void f_tokenize( INT32 args )
 {
   struct array *res = allocate_array_no_init( 0, 128 );
   struct pike_string *left_s = 0; // Make gcc happy.
-  if( Pike_sp[-1].type != PIKE_T_STRING )
-    Pike_error("Expected string argument\n");
   int left;
   ONERROR tmp;
+
+  if( Pike_sp[-1].type != PIKE_T_STRING )
+    Pike_error("Expected string argument\n");
 
   SET_ONERROR(tmp, do_free_arrayptr, &res);
   
