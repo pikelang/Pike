@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.97 2002/12/07 15:44:15 grubba Exp $
+|| $Id: error.c,v 1.98 2002/12/16 12:12:37 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.97 2002/12/07 15:44:15 grubba Exp $");
+RCSID("$Id: error.c,v 1.98 2002/12/16 12:12:37 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -393,7 +393,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   if(Pike_sp && Pike_interpreter.evaluator_stack &&
      master_object && master_object->prog)
   {
-    fprintf(stderr,"Attempting to dump backlog (may fail)...\n");
     push_error("Backtrace at time of fatal:\n");
     APPLY_MASTER("describe_backtrace",1);
     if(Pike_sp[-1].type==PIKE_T_STRING)
@@ -658,6 +657,13 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   if(buf[sizeof(buf)-1])
     Pike_fatal("Buffer overflow in error()\n");
 #endif /* HAVE_VSNPRINTF */
+
+  if(in_error)
+  {
+    const char *tmp=in_error;
+    in_error=0;
+    Pike_fatal("Recursive error() calls, original error: %s",tmp);
+  }
   in_error=buf;
 
   if (!master_program) {
