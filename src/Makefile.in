@@ -58,7 +58,7 @@ LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike -M$(TMP_BUILDDIR)/modules $(PIKEOPTS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)"
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)"
 
 # Add alloca.o if you don't have alloca() on your machine.
 # Add ualarm.o if you don't have ualarm() on your machine.
