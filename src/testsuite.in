@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.71 1998/02/10 14:38:06 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.72 1998/02/11 00:56:20 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -30,6 +30,11 @@ test_eval_error(class c { static int foo=17; }()->foo=18;)
 test_equal( [[ ({ (["foo":"bar"]), (<"foo">), ([]) })->foo ]], [[ ({"bar",1,0}) ]])
 test_any([[mixed a=({([]),0}); a[1]=a; return a->foo[0];]],0)
 test_eval_error([[return column(({0}),"foo");]])
+
+test_any([[
+class A { constant a=0; int foo() { return a; } };
+class B { inherit A; constant a=1; };
+return B()->foo(); ]], 1)
 
 test_any([[
 class p1 { int foo() { return 1; }};
