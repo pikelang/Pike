@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.23 1998/04/17 17:17:39 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.24 1998/04/24 00:02:45 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -461,6 +461,7 @@ static struct memhdr *find_memhdr(void *p);
 
 int verbose_debug_malloc = 0;
 int verbose_debug_exit = 1;
+int debug_malloc_check_all = 0;
 
 #define HSIZE 1109891
 #define LHSIZE 1109891
@@ -510,7 +511,7 @@ static struct memhdr no_leak_memlocs;
 static int file_location_number=0;
 
 #if DEBUG_MALLOC_PAD - 0 > 0
-char *do_pad(char *mem, size_t size)
+char *do_pad(char *mem, long size)
 {
   long q,e;
   mem+=DEBUG_MALLOC_PAD;
@@ -529,18 +530,22 @@ char *do_pad(char *mem, size_t size)
   return mem;
 }
 
-void check_pad(struct memhdr *mh)
+void check_pad(struct memhdr *mh, int freeok)
 {
   long q,e;
   char *mem=mh->data;
-  size_t size;
-  if(mh->size < 0)
+  long size=mh->size;
+  if(size < 0)
   {
-    fprintf(stderr,"Freeing block %p twice (size %ld)!\n",mem, ~mh->size);
-    dump_memhdr_locations(mh, 0);
-    abort();
+    if(!freeok)
+    {
+      fprintf(stderr,"Access to free block: %p (size %ld)!\n",mem, ~mh->size);
+      dump_memhdr_locations(mh, 0);
+      abort();
+    }else{
+      size = ~size;
+    }
   }
-  size=mh->size;
   q= (((long)mem) ^ 0x555555) + (size * 9248339);
 
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
@@ -551,13 +556,13 @@ void check_pad(struct memhdr *mh)
     q=(q<<13) ^ ~(q>>5);
     if(mem[e-DEBUG_MALLOC_PAD] != tmp)
     {
-      fprintf(stderr,"Pre-padding overwritten for block at %p (size %d) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
+      fprintf(stderr,"Pre-padding overwritten for block at %p (size %ld) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
       dump_memhdr_locations(mh, 0);
       abort();
     }
     if(mem[size+e] != tmp)
     {
-      fprintf(stderr,"Post-padding overwritten for block at %p (size %d) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
+      fprintf(stderr,"Post-padding overwritten for block at %p (size %ld) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
       dump_memhdr_locations(mh, 0);
       abort();
     }
@@ -566,7 +571,7 @@ void check_pad(struct memhdr *mh)
 }
 #else
 #define do_pad(X,Y) (X)
-#define check_pad(M)
+#define check_pad(M,X)
 #endif
 
 static int location_number(const char *file, int line)
@@ -660,7 +665,22 @@ BLOCK_ALLOC(memhdr,16382)
 static struct memhdr *find_memhdr(void *p)
 {
   struct memhdr *mh,**prev;
-  unsigned long h=(long)p;
+  unsigned long h;
+
+#if DEBUG_MALLOC_PAD - 0 > 0
+  if(debug_malloc_check_all)
+  {
+    for(h=0;h<HSIZE;h++)
+    {
+      for(mh=hash[h]; mh; mh=mh->next)
+      {
+	check_pad(mh,1);
+      }
+    }
+  }
+#endif
+
+  h=(long)p;
   h%=HSIZE;
   for(prev=hash+h; (mh=*prev); prev=&mh->next)
   {
@@ -669,7 +689,7 @@ static struct memhdr *find_memhdr(void *p)
       *prev=mh->next;
       mh->next=hash[h];
       hash[h]=mh;
-      check_pad(mh);
+      check_pad(mh,0);
       return mh;
     }
   }
@@ -760,7 +780,7 @@ static int remove_memhdr(void *p, int already_gone)
     if(mh->data==p)
     {
       if(mh->size < 0) mh->size=~mh->size;
-      if(!already_gone) check_pad(mh);
+      if(!already_gone) check_pad(mh,0);
 
       *prev=mh->next;
       low_add_marks_to_memhdr(&no_leak_memlocs, mh);
