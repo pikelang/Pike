@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.109 1999/05/14 07:17:53 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.110 1999/05/14 20:39:23 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1462,6 +1462,7 @@ void f_create_process(INT32 args)
     THREADS_DISALLOW_UID();
     
     if(env) pop_stack();
+    if(command_line) free(command_line);
 
 #if 1
     if(t1!=INVALID_HANDLE_VALUE) CloseHandle(t1);
