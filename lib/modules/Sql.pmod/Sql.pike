@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.52 2002/03/18 13:16:42 grubba Exp $
+ * $Id: Sql.pike,v 1.53 2002/03/18 15:54:44 tomas Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -128,7 +128,7 @@ function(string:int) decode_datetime;
 //!
 void create(void|string|object host, void|string|mapping(string:int|string) db,
 	    void|string user, void|string password,
-	    mapping(string:int|string) options)
+	    void|mapping(string:int|string) options)
 {
   if (objectp(host)) {
     master_sql = host;
