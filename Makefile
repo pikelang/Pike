@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.74 2002/07/08 23:45:49 nilsson Exp $
+# $Id: Makefile,v 1.75 2002/07/15 14:55:05 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -257,17 +257,17 @@ xenofarm:
 	@gzip -f9 xenofarm_result.tar
 
 xenofarm_low:
-	@echo Begin build | tee -a build/xenofarm/xenofarmlog.txt
+	@echo "Begin build" | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
 	@$(MAKE) $(MAKE_FLAGS) > build/xenofarm/makelog.txt 2>&1
-	@echo Begin verify | tee -a build/xenofarm/xenofarmlog.txt
+	@echo "Begin verify" | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
 	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TESTARGS="-a -q" > \
 	  build/xenofarm/verifylog.txt 2>&1
-	@echo Begin export | tee -a build/xenofarm/xenofarmlog.txt
+	@echo "Begin export" | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
 	@$(MAKE) $(MAKE_FLAGS) bin_export > build/xenofarm/exportlog.txt 2>&1
-	@echo Xenofarm OK | tee -a build/xenofarm/xenofarmlog.txt
+	@echo "Xenofarm OK" | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
 
 clean:
