@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.111 2003/01/31 22:06:18 grubba Exp $
+# $Id: Makefile,v 1.112 2003/01/31 22:14:09 grubba Exp $
 #
 # Meta Makefile
 #
@@ -346,5 +346,5 @@ pikefun_TAGS:
 	cd src && etags -l none -r \
 	'/[ 	]*\(PMOD_PROTO \|PMOD_EXPORT \|static \|extern \)*void[ 	]\{1,\}f_\([a-zA-Z0-9_]*\)[ 	]*([ 	]*INT32/\2/' \
 	`find . -type f -name '*.[ch]' -print`
-	cd lib/modules && ../../bin/pike_etags \
+	cd lib/modules && ../../bin/pike_etags.sh \
 	  `find . -type f '(' -name '*.pmod' -o -name '*.pike' ')' -print`
