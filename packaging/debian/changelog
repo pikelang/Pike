@@ -1,3 +1,10 @@
+pike7.5 (7.5.19-2) experimental; urgency=low
+
+  * Creation of directories in /usr/local won't fail now
+    (closes: Bug#234694)
+
+ -- Marek Habersack <grendel@debian.org>  Thu, 26 Feb 2004 01:28:15 +0100
+
 pike7.5 (7.5.19-1) experimental; urgency=low
 
   * The latest upstream update

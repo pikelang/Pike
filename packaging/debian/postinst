@@ -3,7 +3,7 @@
 #
 # see: dh_installdeb(1)
 # 
-# $Id: postinst,v 1.7 2003/01/27 23:43:23 grendel Exp $
+# $Id: postinst,v 1.8 2004/02/26 00:27:40 grendel Exp $
 #
 
 set -e
@@ -34,9 +34,12 @@ case "$1" in
     configure)
     /usr/sbin/update-alternatives --install /usr/bin/pike pike /usr/bin/${PIKEBIN} 10 \
     --slave /usr/share/man/man1/pike.1.gz pike.1.gz /usr/share/man/man1/${PIKEBIN}.1.gz
+    #
+    # If the creation fails, so be it, user might have the filesystem mounted r/o
+    #
     for d in $LOCAL_DIRS; do
         if [ ! -d /usr/local/$d ]; then
-            install -d -m 755 -o root -g root /usr/local/$d
+            install -d -m 755 -o root -g root /usr/local/$d || true
         fi
     done
     ;;
