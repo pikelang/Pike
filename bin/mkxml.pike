@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.2 2001/05/05 17:54:36 mirar Exp $ */
+/* $Id: mkxml.pike,v 1.3 2001/05/05 19:23:09 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -482,6 +482,16 @@ string doctype(string type,void|string indent)
 	    nindent+"   <returntype>"+z[-1]+"</returntype>"+
 	    nindent+"</function>";
    }
+   if (b && a=="int")
+   {
+      if (sscanf(b,"%d..%d",int min,int max)==2)
+	 return nindent+"<int><min>"+min+"</min><max>"+max+"</max></int>";
+      if (sscanf(b,"..%d",int max)==1)
+	 return nindent+"<int><max>"+max+"</max></int>";
+      if (sscanf(b,"%d..%",int min)==1)
+	 return nindent+"<int><min>"+min+"</min></int>";
+   }
+
    if (b)
       werror("warning: confused type: %O\n",type);
 
@@ -608,9 +618,13 @@ void document(string enttype,
 
 // [DESCRIPTION]
 
+   if (huh->desc || huh->returns || huh->bugs || huh->added ||
+       huh["see_also"])
+      f->write("<doc>\n");
+
    if (huh->desc)
    {
-      f->write("<doc><text>\n");
+      f->write("<text>\n");
 
       if (huh->inherits)
       {
@@ -622,7 +636,7 @@ void document(string enttype,
       }
 
       f->write(fixdesc(huh->desc,prefix,huh->_line)+"\n");
-      f->write("</text></doc>\n");
+      f->write("</text>\n");
    }
 
 // [ARGUMENTS]
@@ -657,14 +671,15 @@ void document(string enttype,
 
       f->write("</man_arguments>\n\n");
    }
+#endif
 
 // [RETURN VALUE]
 
    if (huh->returns)
    {
-      f->write("<man_returns>\n");
+      f->write("<group><returns/>\n");
       f->write(fixdesc(huh->returns,prefix,huh->_line)+"\n");
-      f->write("</man_returns>\n\n");
+      f->write("</group>\n");
    }
 
 
@@ -672,18 +687,18 @@ void document(string enttype,
 
    if (huh->note && huh->note->desc)
    {
-      f->write("<man_note>\n");
+      f->write("<group><note/>\n");
       f->write(fixdesc(huh->note->desc,prefix,huh->_line)+"\n");
-      f->write("</man_note>\n\n");
+      f->write("</group>\n");
    }
 
 // [BUGS]
 
    if (huh->bugs && huh->bugs->desc)
    {
-      f->write("<man_bugs>\n");
+      f->write("<group><bugs/>\n");
       f->write(fixdesc(huh->bugs->desc,prefix,huh->_line)+"\n");
-      f->write("</man_bugs>\n\n");
+      f->write("</group>\n");
    }
 
 // [ADDED]
@@ -697,12 +712,14 @@ void document(string enttype,
 
    if (huh["see also"])
    {
-      f->write("<man_see exp>\n");
+      f->write("<group><see_also/>\n");
       f->write(htmlify(huh["see also"]*", "));
-      f->write("</man_see>\n\n");
+      f->write("</group>\n");
    }
 
-#endif
+   if (huh->desc || huh->returns || huh->bugs || huh->added ||
+       huh["see_also"])
+      f->write("</doc>\n");
 
 // ---childs----
 
