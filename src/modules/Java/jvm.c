@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.21 2000/07/07 13:13:23 grubba Exp $
+ * $Id: jvm.c,v 1.22 2000/07/07 15:19:28 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.21 2000/07/07 13:13:23 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.22 2000/07/07 15:19:28 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1673,21 +1673,21 @@ static void native_dispatch(struct native_method_context *ctx,
     /* Not a pike thread.  Create a temporary thread_id... */
     mt_lock_interpreter();
     init_interpreter();
-    stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
-    recoveries = NULL;
-    thread_id = low_clone(thread_id_prog);
-    call_c_initializers(thread_id);
-    SWAP_OUT_THREAD((struct Pike_interpreter *)thread_id->storage);
-    ((struct Pike_interpreter *)thread_id->storage)->swapped=0;
-    ((struct Pike_interpreter *)thread_id->storage)->id=th_self();
+    Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
+    Pike_interpreter.recoveries = NULL;
+    Pike_interpreter.thread_id = low_clone(thread_id_prog);
+    call_c_initializers(Pike_interpreter.thread_id);
+    SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id));
+    OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
+    OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
     num_threads++;
-    thread_table_insert(thread_id);
+    thread_table_insert(Pike_interpreter.thread_id);
     do_native_dispatch(ctx, env, cls, args, rc);
-    ((struct Pike_interpreter *)(thread_id->storage))->status=THREAD_EXITED;
-    co_signal(& ((struct Pike_interpreter *)(thread_id->storage))->status_change);
-    thread_table_delete(thread_id);
-    free_object(thread_id);
-    thread_id=NULL;
+    OBJ2THREAD(Pike_interpreter.thread_id)->status=THREAD_EXITED;
+    co_signal(& OBJ2THREAD(Pike_interpreter.thread_id)->status_change);
+    thread_table_delete(Pike_interpreter.thread_id);
+    free_object(Pike_interpreter.thread_id);
+    Pike_interpreter.thread_id=NULL;
     cleanup_interpret();
     num_threads--;
     mt_unlock_interpreter();
