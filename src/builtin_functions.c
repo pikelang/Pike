@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.265 2001/12/03 13:29:11 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.266 2001/12/03 14:19:55 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3010,7 +3010,7 @@ void f_mktime (INT32 args)
     date.tm_gmtoff=sp[7-args].u.integer;
   }else{
     time_t tmp = 0;
-    data.tm_gmtoff=localtime(&tmp)->tm_gmtoff;
+    date.tm_gmtoff=localtime(&tmp)->tm_gmtoff;
   }
   retval=mktime(&date);
 #else
