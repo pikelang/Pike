@@ -2929,7 +2929,7 @@ class Debug
 	for(int e=1;e<=current_frame->num_locals();e++)
         {
           if(locals[e-1]) 
-   	    write("@%d %s %s = %O\n",e, locals[e-1][0], locals[e-1][1], current_frame->get_local(e));
+   	    write("@%d line %d %s %s = %O\n",e, locals[e-1][2], locals[e-1][0], locals[e-1][1], current_frame->get_local(e));
           else
  	    write("@%d  = %O\n",e, current_frame->get_local(e));
          }
@@ -3127,7 +3127,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.22 2004/06/30 01:39:23 bill Exp $
+  write(#"UNBUG $Id: unbug,v 1.23 2004/07/01 01:06:08 bill Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2004, Department of Computer and Information Science,
                      Linköping University
@@ -3216,9 +3216,9 @@ array find_local_names(string file, int line)
 
   string f = Stdio.read_file(file);
   
-  int current_block=0;
+  int current_block = 0;
   int stop_line = line;
-
+  int func_block = 0;
   mapping current_locals;
 
   array t = Parser.Pike.tokenize(Parser.Pike.split(f), f);
@@ -3271,7 +3271,7 @@ array find_local_names(string file, int line)
 //         werror("%s: %s\n", token->text, x[1]*", ");
          i = x[0];     
          foreach(x[1], string vn)
-           current_locals->locals+=({ ({token->text, vn}) });
+           current_locals->locals+=({ ({token->text, vn, token->line}) });
        }
      xt=1;
      continue;
@@ -3307,7 +3307,8 @@ array find_local_names(string file, int line)
        {
          i = x[0];     
 //          werror("%s: %s\n", tx, x[1]*", ");
-          current_locals->locals+=({ ({token->text, x[1] * "," }) });
+         foreach(x[1], string vn)
+           current_locals->locals+=({ ({token->text, vn, token->line}) });
        }
    }
 
@@ -3353,7 +3354,7 @@ array get_var(array tokens, int loc, void|int obj)
 //      write("end of the line!\n");
       if(lt != 0) { 
 //         werror("adding %s to varnames\n", lt);
-         vn+=({lt});
+         vn+=({ lt });
       }
       if(sizeof(vn))
         return ({loc, vn});
@@ -3393,8 +3394,9 @@ array get_var(array tokens, int loc, void|int obj)
        continue;
     }
 
-    else if (state2 == HAD_LIMITATION && tokens[loc]->text =="(")
+    else if (state2 == HAD_LIMITATION && tokens[loc]->text =="(" && state != IDLE) // started a function, probably.
     {
+//      werror("parsing function, %s.\n", lt);
       state = IDLE;
       lt = 0;
       loc++;
