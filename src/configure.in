@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.566 2002/02/28 23:35:41 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.567 2002/03/06 01:01:25 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5825,6 +5825,11 @@ echo
 export LDFLAGS CFLAGS CPPFLAGS LIBS
 export prefix exec_prefix OTHERFLAGS
 export TMP_BINDIR DEFINES INSTALL
+
+PIKE_SRC_DIR=$srcdir
+export PIKE_SRC_DIR
+BUILD_BASE=`pwd`
+export BUILD_BASE
 
 default_master=$prefix/pike/%d.%d.%d/lib/master.pike
 AC_DEFINE_UNQUOTED(DEFAULT_MASTER,"$default_master")

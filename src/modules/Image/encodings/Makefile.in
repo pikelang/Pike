@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.34 2002/02/04 14:49:15 nilsson Exp $
+# $Id: Makefile.in,v 1.35 2002/03/06 01:01:26 mast Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 OBJS = pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o psd.o wbf.o ras.o pvr.o tim.o dsi.o
@@ -24,9 +24,9 @@ all: encodings.a
 	@echo "Compiling $<" ;\
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
 	else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2;\
-	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(CFLAGS) -c $< -o $@" >&2;\
+	  false;\
 	fi
 
 encodings.a : $(OBJS)

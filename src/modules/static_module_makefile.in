@@ -1,21 +1,19 @@
 #
-# $Id: static_module_makefile.in,v 1.73 2002/01/28 17:43:20 mast Exp $
+# $Id: static_module_makefile.in,v 1.74 2002/03/06 01:01:26 mast Exp $
 #
 
 
 CC=@CC@
 CPP=@CPP@
 AR=@AR@
-PIKE_SRC_DIR=$(SRCDIR)/../..
-BUILD_BASE=../..
-MODULE_BASE=..
-
 REAL_LDFLAGS=@LDFLAGS@
 REAL_CFLAGS=@CFLAGS@
 REAL_CPPFLAGS=@CPPFLAGS@
 
-PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES) 
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
+MODULE_BASE=$(BUILD_BASE)/modules
+
+PREFLAGS=-I. -I$(SRCDIR) -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES)
+CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(OTHERFLAGS)
 NOOPT_CFLAGS=$(PREFLAGS) $(NOOPTFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
@@ -96,7 +94,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" ./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 module.pmod: Makefile
 	@echo "Making module.pmod" ; if [ -f $(SRCDIR)/module.pmod.in ]; then \
