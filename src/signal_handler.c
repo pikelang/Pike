@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.270 2003/05/17 11:53:16 grubba Exp $
+|| $Id: signal_handler.c,v 1.271 2003/05/17 12:01:36 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.270 2003/05/17 11:53:16 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.271 2003/05/17 12:01:36 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1307,22 +1307,22 @@ static TH_RETURN_TYPE wait_thread(void *data)
      defined(_W_SLWTED) || defined(_W_SEWTED) || defined(_W_SFWTED))
       if (WIFSTOPPED(status) &&
 #if !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
+	  /* FreeBSD sends spurious SIGPROF signals to the child process
+	   * which interferes with the process trace startup code.
+	   */
 	  (WSTOPSIG(status) == SIGPROF)
 #else
+	  /* AIX has these...
+	   *   _W_SLWTED	Stopped after Load Wait TracED.
+	   *   _W_SEWTED	Stopped after Exec Wait TracED.
+	   *   _W_SFWTED	Stopped after Fork Wait TracED.
+	   *
+	   * Ignore them for now.
+	   */
 	  ((status & 0xff) != 0x7f)
 #endif
 	  ) {
-	/* FreeBSD sends spurious SIGPROF signals to the child process
-	 * which interferes with the process trace startup code.
-	 */
-	/* AIX has these...
-	 *   _W_SLWTED	Stopped after Load Wait TracED.
-	 *   _W_SEWTED	Stopped after Exec Wait TracED.
-	 *   _W_SFWTED	Stopped after Fork Wait TracED.
-	 *
-	 * Ignore them for now.
-	 */
-#ifdef !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
+#if !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
 #ifdef PROC_DEBUG
 	fprintf(stderr, "wait thread: Got SIGPROF from pid %d\n",pid);
 #endif /* PROC_DEBUG */
