@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.206 2000/12/16 22:40:48 marcus Exp $");
+RCSID("$Id: file.c,v 1.207 2001/01/16 09:23:39 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1037,6 +1037,8 @@ static void file_write(INT32 args)
   }
 
   str=Pike_sp[-args].u.string;
+  if(str->size_shift)
+    Pike_error("Stdio.File->write(): cannot output wide strings.\n");
 
   for(written=0;written < str->len;check_signals(0,0,0))
   {
@@ -1111,6 +1113,8 @@ static void file_write_oob(INT32 args)
 
   written=0;
   str=Pike_sp[-args].u.string;
+  if(str->size_shift)
+    Pike_error("Stdio.File->write_oob(): cannot output wide strings.\n");
 
   while(written < str->len)
   {
