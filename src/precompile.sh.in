@@ -11,7 +11,7 @@ INPUT="`eval echo \"\\$$#\"`"
 TMPOUTPUT="${INPUT}.compiled"
 
 if [ -f "$TMPOUTPUT" ]; then
-  if [ "`ls -1t $TMPOUTPUT $INPUT $SCRIPT | head -1`" = "`ls -1t $TMPOUTPUT`" ]; then
+  if [ "`ls -1t $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -1`" = "`ls -1t $TMPOUTPUT`" ]; then
     cat "$TMPOUTPUT" >&5
     exit 0
   fi
