@@ -4653,6 +4653,50 @@ indicates that it is a directory.
 </function>
 
 
+
+<function name=exist title="check if a path exists">
+<man_syntax>
+int exist(string <I>path</I>);<br>
+</man_syntax>
+<man_description>
+Returns true if the given path exists (is a directory or file),
+otherwise false.
+</man_description>
+<man_see>Stdio.is_dir, Stdio.is_file, Stdio.is_link</man_see>
+</function>
+
+<function name=is_dir title="check if a path is a directory">
+<man_syntax>
+int is_dir(string <I>path</I>);<br>
+</man_syntax>
+<man_description>
+Returns true if the given path is a directory, otherwise false.
+</man_description>
+<man_see>Stdio.exist, Stdio.is_file, Stdio.is_link</man_see>
+</function>
+
+<function name=is_file title="check if a path is a file">
+<man_syntax>
+int is_file(string <I>path</I>);<br>
+</man_syntax>
+<man_description>
+Returns true if the given path is a file, otherwise false.
+</man_description>
+<man_see>Stdio.exist, Stdio.is_dir, Stdio.is_link</man_see>
+</function>
+
+<function name=is_link title="check if a path is a symbolic link">
+<man_syntax>
+int is_link(string <I>path</I>);<br>
+</man_syntax>
+<man_description>
+Returns true if the given path is a symbolic link, otherwise false.
+</man_description>
+<man_see>Stdio.exist, Stdio.is_dir, Stdio.is_file</man_see>
+</function>
+
+
+
 <function name=perror title="print error">
 <man_syntax>
 void perror(string <I>s</I>);<br>
