@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.24 1998/07/03 11:42:28 grubba Exp $
+ * $Id: sql.pike,v 1.25 1998/07/03 20:03:51 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.24 1998/07/03 11:42:28 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.25 1998/07/03 20:03:51 mast Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -41,6 +41,80 @@ string quote(string s)
     return(master_sql->quote(s));
   }
   return(replace(s, "\'", "\'\'"));
+}
+
+//. - encode_time
+//.   Converts a system time value to an appropriately formatted time
+//.   spec for the database.
+//. > time - Time to encode.
+//. > date - If nonzero then time is taken as a "full" unix time spec
+//.   (where the date part is ignored), otherwise it's converted as a
+//.   seconds-since-midnight value.
+string encode_time (int time, void|int date)
+{
+  if (functionp (master_sql->encode_time))
+    return master_sql->encode_time (time, date);
+  else
+    throw_error ("sql->encode_time(): Not supported by this database\n");
+}
+
+//. - decode_time
+//.   Converts a database time spec to a system time value.
+//. > timestr - Time spec to decode.
+//. > date - Take the date part from this system time value. If zero, a
+//.   seconds-since-midnight value is returned.
+int decode_time (string timestr, void|int date)
+{
+  if (functionp (master_sql->decode_time))
+    return master_sql->decode_time (timestr, date);
+  else
+    throw_error ("sql->decode_time(): Not supported by this database\n");
+}
+
+//. - encode_date
+//.   Converts a system time value to an appropriately formatted
+//.   date-only spec for the database.
+//. > time - Time to encode.
+string encode_date (int time)
+{
+  if (functionp (master_sql->encode_date))
+    return master_sql->encode_date (time);
+  else
+    throw_error ("sql->encode_date(): Not supported by this database\n");
+}
+
+//. - decode_date
+//.   Converts a database date-only spec to a system time value.
+//. > datestr - Date spec to decode.
+int decode_date (string datestr)
+{
+  if (functionp (master_sql->decode_date))
+    return master_sql->decode_date (datestr);
+  else
+    throw_error ("sql->decode_date(): Not supported by this database\n");
+}
+
+//. - encode_datetime
+//.   Converts a system time value to an appropriately formatted
+//.   date and time spec for the database.
+//. > time - Time to encode.
+string encode_datetime (int time)
+{
+  if (functionp (master_sql->encode_datetime))
+    return master_sql->encode_datetime (time);
+  else
+    throw_error ("sql->encode_datetime(): Not supported by this database\n");
+}
+
+//. - decode_datetime
+//.   Converts a database date and time spec to a system time value.
+//. > datestr - Date and time spec to decode.
+int decode_datetime (string timestr)
+{
+  if (functionp (master_sql->decode_datetime))
+    return master_sql->decode_datetime (timestr);
+  else
+    throw_error ("sql->decode_datetime(): Not supported by this database\n");
 }
 
 //. - create
