@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.255 2003/02/26 16:04:57 nilsson Exp $
+// $Id: master.pike.in,v 1.256 2003/02/26 16:35:09 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1863,6 +1863,9 @@ void _main(array(string) orig_argv, array(string) env)
       case "execute":
 	random_seed(time() ^ (getpid()<<8));
 	argv = tmp->get_args(argv,1);
+#ifdef __AUTO_BIGNUM__
+	main_resolv( "Gmp", "bignum" );
+#endif /* __AUTO_BIGNUM__ */
 	if(trace) predef::trace(trace);
 	mixed ret;
 	if(currentversion <= Version(7,4))
@@ -1884,6 +1887,9 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(ret);
 
       case "preprocess":
+#ifdef __AUTO_BIGNUM__
+	main_resolv( "Gmp", "bignum" );
+#endif /* __AUTO_BIGNUM__ */
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
       }
@@ -2533,7 +2539,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 }
 
 //!
-string describe_object(object|program o)
+string describe_object(object o)
 {
   string s;
   if(zero_type (o)) return 0;	// Destructed.
