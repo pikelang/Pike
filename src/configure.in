@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.307 1999/08/11 22:13:19 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.308 1999/08/12 18:22:02 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2236,22 +2236,24 @@ else
 fi
 
 #############################################################################
-AC_MSG_CHECKING(Working MMX)
+if test "x$ac_cv_header_mmx_h" = xyes ; then
+  AC_MSG_CHECKING(Working MMX)
 
-AC_CACHE_VAL(pike_cv_sys_has_working_mmx,
-[
-AC_TRY_LINK([
+  AC_CACHE_VAL(pike_cv_sys_has_working_mmx,
+  [
+    AC_TRY_LINK([
 #include <mmx.h>
-],[
-{
-  mmx_t a;
-  mmx_t b;
-  paddw(a,b);
-}
-], pike_cv_sys_has_working_mmx=yes,pike_cv_sys_has_working_mmx=no)
-])
+    ],[
+    {
+      mmx_t a;
+      mmx_t b;
+      paddw(a,b);
+    }
+    ], pike_cv_sys_has_working_mmx=yes,pike_cv_sys_has_working_mmx=no)
+  ])
 
-AC_MSG_RESULT($pike_cv_sys_has_working_mmx)
+  AC_MSG_RESULT($pike_cv_sys_has_working_mmx)
+else :; fi
 
 if test "x$pike_cv_sys_has_working_mmx" = xyes ; then
   AC_DEFINE(TRY_USE_MMX)
