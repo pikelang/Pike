@@ -2,7 +2,7 @@
 
 inherit GTK.Window;
 
-typedef string|object(Image.Image)|object(Image.Layer)|array(Image.Layer) PVImage;
+typedef Standards.URI|string|Image.Image|Image.Layer|array(Image.Layer) PVImage;
 //! The image types accepted. If the image is a string, it is assumed
 //! to be a filename of a image that can be loaded with Image.load. 
 //! This includes URLs.
@@ -100,6 +100,8 @@ void set_alpha_colors( Image.Color.Color c1, Image.Color.Color|void c2 )
 }
 
 Image.Image get_as_image( PVImage i )
+//! Return the current image as a Image object, with the alpha
+//! combining done.
 {
   if( arrayp( i ) )
     i = Image.lay( i );
@@ -113,9 +115,15 @@ void set_image( PVImage i )
 //! Change the image.
 {
   if( !i ) return;
-  if( stringp( i ) )
-    i = Image.load_layers( i );
-
+  int is_uri;
+  if( stringp( i ) || (is_uri = (_typeof( i ) >= typeof(Standards.URI)) ) )
+  {
+    if( is_uri )
+      i = Image.decode_layers( Protocols.HTTP.get_url_data( i ) );
+    else
+      i = Image.load_layers( i );
+  }
+  
   old_image = i;
   i = get_as_image( i );
   if( scale_factor != 1.0 )
