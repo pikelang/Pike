@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.21 2000/05/01 08:54:37 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.22 2000/05/01 10:09:58 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1566,6 +1566,11 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
   struct svalue *locals=fp->locals;
   struct svalue *save_sp, **save_mark_sp;
 
+  /* FIXME:
+   * this test should actually test if this function is
+   * overloaded or not. Currently it only tests if
+   * this context is inherited or not.
+   */
   if(fp->current_object->prog != fp->context.prog)
   {
     apply_low(Pike_fp->current_object,
