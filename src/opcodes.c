@@ -3,9 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#include "global.h"
 #include <math.h>
 #include <ctype.h>
-#include "global.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
