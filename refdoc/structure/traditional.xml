@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.10 2002/02/15 00:18:06 mikael%unix.pp.se Exp $ -->
+<!-- $Id: traditional.xml,v 1.11 2002/03/12 03:24:54 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -13,6 +13,9 @@
     <chapter title="Table of Contents" unnumbered="1">
       <contents/>
     </chapter>
+  </file>
+  <file>
+    <chapter-ref file="not_extracted/introduction.xml"/>
   </file>
   <file>
     <chapter-ref file="not_extracted/control_structures.xml"/>
@@ -55,6 +58,14 @@
     </chapter>
   </file>
   <file>
+    <chapter title="Parsers">
+      <insert-move entity="Parser.XML"/>
+      <insert-move entity="Parser.HTML"/>
+      <insert-move entity="Parser"/>
+      <insert-move entity="LR"/>
+    </chapter>
+  </file>
+  <file>
     <chapter title="Image Module">
       <insert-move entity="Image.Image"/>
       <insert-move entity="Image.Layer"/>
@@ -70,6 +81,7 @@
   <file>
     <chapter title="Protocols">
       <insert-move entity="Protocols.HTTP"/>
+      <insert-move entity="SSL"/>
       <insert-move entity="Protocols.LysKOM"/>
       <insert-move entity="Protocols.DNS"/>
       <insert-move entity="Protocols"/>
@@ -94,12 +106,19 @@
     </chapter>
   </file>
   <file>
-    <chapter-ref file="not_extracted/modules.xml"/>
+    <chapter title="3D Vector Graphics">
+      <insert-move entity="GL"/>
+      <insert-move entity="GLU"/>
+<!--      <insert-move entity="GLUT"/> -->
+    </chapter>
   </file>
   <file>
     <chapter title="The rest">
       <insert-move entity=""/>
     </chapter>
+  </file>
+  <file>
+    <chapter-ref file="not_extracted/modules.xml"/>
   </file>
   <file>
     <chapter-ref file="not_extracted/autodoc.xml"/>
