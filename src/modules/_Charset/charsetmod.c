@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.29 2001/06/06 11:14:11 stewa Exp $");
+RCSID("$Id: charsetmod.c,v 1.30 2001/06/07 17:29:05 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -25,6 +25,7 @@ RCSID("$Id: charsetmod.c,v 1.29 2001/06/06 11:14:11 stewa Exp $");
 p_wchar1 *misc_charset_lookup(char *name, int *rlo, int *rhi);
 
 static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
+static struct program *utf1_program = NULL, *utf1e_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *utf7e_program = NULL, *utf8e_program = NULL;
 static struct program *utf7_5_program = NULL, *utf7_5e_program = NULL;
@@ -783,9 +784,9 @@ static void f_feed_9696(INT32 args)
   f_std_feed(args, feed_9696);
 }
 
-static INT32 feed_big5(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_big5(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
 {
-  UNICHAR *table =
+  UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
   while(l--) {
     p_wchar0 y, x = (*p++);
