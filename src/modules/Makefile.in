@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.37 2001/01/26 02:30:41 mast Exp $
+# $Id: Makefile.in,v 1.38 2001/01/26 22:31:56 mast Exp $
 
 @make_variables@
 
@@ -38,23 +38,17 @@ linker_options: $(MODULE_LINKOPTS)
 	  done \
 	) >linker_options
 
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status dynamic_module_makefile static_module_makefile
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again" >&2
 	@exit 1
 
-dynamic_module_makefile: $(SRCDIR)/dynamic_module_makefile.in
-	CONFIG_FILES=dynamic_module_makefile CONFIG_HEADERS="" ./config.status
-
-static_module_makefile: $(SRCDIR)/static_module_makefile.in
-	CONFIG_FILES=static_module_makefile CONFIG_HEADERS="" ./config.status
-
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(SRCDIR)/../aclocal.m4
 	cd $(SRCDIR) && autoconf --localdir=$(SRCDIR)/..
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" ./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" ./config.status --recheck
 
 depend:
 	@for a in $(MODULES) ; do \
