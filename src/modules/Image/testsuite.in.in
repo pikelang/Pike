@@ -399,7 +399,7 @@ ok();
 #test colortable - standard
    object img=Image.image(200,200)->test(42);
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-   object c=Image.colortable(img,1000)->cubicles(16,16,16,4);
+   object c=Image.Colortable(img,1000)->cubicles(16,16,16,4);
    if (sizeof(c)<200) fail("too few colors");
    object img1=(c*img);
    if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
@@ -408,7 +408,7 @@ ok();
 #test colortable - floyd-steinberg
    object img=Image.image(200,200)->test(42);
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-   object c=Image.colortable(32,32,32)->floyd_steinberg();
+   object c=Image.Colortable(32,32,32)->floyd_steinberg();
    object img1=(c*img);
    if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
@@ -416,7 +416,7 @@ ok();
 #test colortable - ordered
    object img=Image.image(200,200)->test(42);
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-   object c=Image.colortable(32,32,32)->ordered();
+   object c=Image.Colortable(32,32,32)->ordered();
    object img1=(c*img);
    if (!(img-img1<32)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
@@ -433,7 +433,7 @@ ok();
 
 #test Image.GIF.encode/decode
    object img=Image.image(100,100)->test(41);
-   object c=Image.colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
+   object c=Image.Colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
    img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img));
    if (img!=img1) fail("differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
@@ -441,7 +441,7 @@ ok();
 
 #test Image.GIF.encode/decode colortable 
    object img=Image.image(100,100)->test(42);
-   object c=Image.colortable(img,256)->cubicles(16,16,16,1);
+   object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
    img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img,c));
    if (img!=img1) fail("differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
@@ -449,16 +449,16 @@ ok();
 
 #test Image.GIF.encode/decode colortable w/ floyd-steinberg
    object img=Image.image(100,100)->test(43);
-   object c=Image.colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
+   object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
    img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img,c));
    if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
 
 //-----------------------------------------------------
-#chapter Image.color
+#chapter Image.Color
 
-#test Image.color
+#test Image.Color
    foreach (
     ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
        ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
@@ -470,9 +470,9 @@ ok();
        ({ "yellow", ({ 255, 255, 0 }), ({ 42, 255, 255 }), 214 }) }),
     array i)
    {
-      object c1=Image.color(i[0]);
-      object c2=Image.color(@i[1]);
-      object c3=Image.color.rgb(@i[1]);
+      object c1=Image.Color(i[0]);
+      object c2=Image.Color(@i[1]);
+      object c3=Image.Color.rgb(@i[1]);
 
       if (c1!=c2)
 	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
@@ -520,20 +520,20 @@ ok();
    };    
    ok();
 
-#test indices(Image.color)
-   if (!arrayp(indices(Image.color)))
+#test indices(Image.Color)
+   if (!arrayp(indices(Image.Color)))
       fail("wrong type\n");
-   if (!stringp(indices(Image.color)[0]))
+   if (!stringp(indices(Image.Color)[0]))
       fail("wrong type of elements\n");
-   if (sizeof(indices(Image.color))<8)
+   if (sizeof(indices(Image.Color))<8)
       fail("too few colors\n");
    ok();
 
-#test values(Image.color)
-   if (!arrayp(values(Image.color)))
+#test values(Image.Color)
+   if (!arrayp(values(Image.Color)))
       fail("wrong type\n");
-   if (!objectp(values(Image.color)[0]))
+   if (!objectp(values(Image.Color)[0]))
       fail("wrong type of elements\n");
-   if (sizeof(indices(Image.color))!=sizeof(values(Image.color)))
+   if (sizeof(indices(Image.Color))!=sizeof(values(Image.Color)))
       fail("not the same size of indices() and values()\n");
    ok();
