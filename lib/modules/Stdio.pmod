@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.33 1998/07/28 23:53:17 hubbe Exp $
+// $Id: Stdio.pmod,v 1.34 1998/09/01 17:13:10 hubbe Exp $
 
 #include <string.h>
 
@@ -19,6 +19,19 @@ class File
 
 #ifdef __STDIO_DEBUG
   string __closed_backtrace;
+#define CHECK_OPEN()								\
+    if(!_fd)									\
+    {										\
+      throw(({									\
+	"Stdio.File(): line "+__LINE__+" on closed file.\n"+				\
+	  (__closed_backtrace ? 						\
+	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :	\
+	   "This file has never been open.\n" ),				\
+	  backtrace()}));							\
+      										\
+    }
+#else
+#define CHECK_OPEN()
 #endif
 
   int errno()
@@ -175,15 +188,6 @@ class File
 #endif
     }
     return 1;
-#if 0
-    if(how)
-    {
-      if(::close(how))
-	_fd=0;
-    }else{
-      _fd=0;
-    }
-#endif
   }
 
   static void __stdio_read_callback()
@@ -225,6 +229,7 @@ class File
 #define CBFUNC(X)					\
   void set_##X (mixed l##X)				\
   {							\
+    CHECK_OPEN();                                       \
     SET( X , l##X );					\
   }							\
 							\
@@ -254,18 +259,7 @@ class File
 #endif
     )
   {
-#ifdef __STDIO_DEBUG
-    if(!_fd)
-    {
-      throw(({
-	"Stdio.File(): set_nonblocking on closed file.\n"+
-	  (__closed_backtrace ? 
-	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :
-	   "This file has never been open.\n" ),
-	  backtrace()}));
-      
-    }
-#endif
+    CHECK_OPEN();
     ::_disable_callbacks(); // Thread safing
 
     _SET(read_callback,rcb);
@@ -294,6 +288,7 @@ class File
 
   void set_blocking()
   {
+    CHECK_OPEN();
     SET(read_callback,0);
     SET(write_callback,0);
     ___close_callback=0;
