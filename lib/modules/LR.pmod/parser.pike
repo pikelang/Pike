@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.12 1998/11/14 18:52:47 grubba Exp $
+ * $Id: parser.pike,v 1.13 1998/11/15 00:07:32 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.12 1998/11/14 18:52:47 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.13 1998/11/15 00:07:32 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -210,7 +210,8 @@ class kernel {
 	  new_state->add_item(new_item);
 
 	  if ((offset != sizeof(r->symbols)) &&
-	      intp(lookahead = r->symbols[offset])) {
+	      intp(lookahead = r->symbols[offset]) &&
+	      !new_state->closure_set[lookahead]) {
 	    new_state->closure(lookahead);
 	  }
 	}
@@ -282,8 +283,9 @@ class state_queue {
   }
 }
 
-/* The grammar itself */
-static private mapping(int|string : array(object(rule))) grammar = ([]);
+//. + grammar
+//.   The grammar itself.
+mapping(int|string : array(object(rule))) grammar = ([]);
 
 /* Priority table for terminal symbols */
 static private mapping(string : object(priority)) operator_priority = ([]);
