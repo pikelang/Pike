@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.38 2004/01/27 10:59:15 grubba Exp $
+|| $Id: roxen.c,v 1.39 2004/01/27 12:12:50 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -346,11 +346,19 @@ static void f_http_decode_string(INT32 args)
 	 if (foo[2] != '0' || foo[3] != '0') {
 	   size_shift = 1;
 	 }
-	 adjust_len += 4;
-	 foo += 4;
+	 foo += 5;
+	 if (foo < end) {
+	   adjust_len += 5;
+	 } else {
+	   adjust_len = end - (foo - 4);
+	 }
        } else {
-	 adjust_len += 2;
 	 foo += 2;
+	 if (foo < end) {
+	   adjust_len += 2;
+	 } else {
+	   adjust_len = end - (foo - 1);
+	 }
        }
      }
    }
@@ -365,14 +373,14 @@ static void f_http_decode_string(INT32 args)
      for (proc=0; bar<end; dest++)
        if (*bar=='%') {
 	 if (bar[1] == 'u' || bar[1] == 'U') {
-	   if (bar<end-4)
-	     *dest = (((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<12)|
-	       (((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15))<<8)|
-	       (((bar[3]<'A')?(bar[3]&15):((bar[3]+9)&15))<<4)|
-	       ((bar[4]<'A')?(bar[4]&15):((bar[4]+9)&15));
+	   if (bar<end-5)
+	     *dest = (((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15))<<12)|
+	       (((bar[3]<'A')?(bar[3]&15):((bar[3]+9)&15))<<8)|
+	       (((bar[4]<'A')?(bar[4]&15):((bar[4]+9)&15))<<4)|
+	       ((bar[5]<'A')?(bar[5]&15):((bar[5]+9)&15));
 	   else
 	     *dest=0;
-	   bar+=3;
+	   bar+=6;
 	 } else {
 	   if (bar<end-2)
 	     *dest=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
@@ -390,7 +398,7 @@ static void f_http_decode_string(INT32 args)
        if (*bar=='%') {
 	 if (bar[1] == 'u' || bar[1] == 'U') {
 	   /* We know that the following two characters are zeros. */
-	   bar+=2;
+	   bar+=3;
 	 }
 	 if (bar<end-2)
 	   *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
