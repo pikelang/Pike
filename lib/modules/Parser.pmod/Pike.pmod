@@ -3,7 +3,7 @@
 inherit "C.pmod";
 
 #define UNKNOWN_TOKEN \
-  throw( ({sprintf("Unknown token %O\n",data[pos..pos+20]) }) )
+  throw( ({sprintf("Unknown pike token: %O\n",data[pos..pos+20]) }) )
 
 static mapping(string : int) backquoteops =
 (["/":1,
@@ -210,8 +210,7 @@ array(string) split(string data)
 
 	case '\'':
 	  pos++;
-	  if(data[pos]=='\\') pos++;
-	  if(data[pos..pos+1]=="''") pos++;
+	  if(data[pos]=='\\') pos+=2;
           int end=search(data, "'", pos)+1;
           if (!end) {
             --pos;

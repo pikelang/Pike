@@ -170,10 +170,10 @@ array(string) split(string data)
 
 	case '\'':
 	  pos++;
-	  if(data[pos]=='\\') pos++;
-          int end=search(data, "'", pos+1)+1;
+	  if(data[pos]=='\\') pos+=2;
+          int end=search(data, "'", pos)+1;
           if(!end)
-            throw( ({sprintf("Unknown token %O\n",data[pos-1..pos+19]) }) );
+            throw( ({sprintf("Unknown token: %O\n",data[pos-1..pos+19]) }) );
           pos=end;
           break;
 
