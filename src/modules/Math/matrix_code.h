@@ -9,6 +9,7 @@
  *
  *   FTYPE:     The type of the element
  *   PUSH_ELEM: Push a element on the stack
+ *   PTYPE:     the pike type as a string
  */
 
 
@@ -295,21 +296,17 @@ void matrixX(_vect)(INT32 args)
 
    if (!THIS->m)
    {
-      pop_n_elems(args);
       f_aggregate(0);
       return;
    }
    else
    {
-      int i,j;
+      int i;
       int xs=THIS->xsize,ys=THIS->ysize;
       FTYPE *m=THIS->m;
       check_stack(DO_NOT_WARN((long)(xs*ys)));
-      pop_n_elems(args);
-      for (i=0; i<ys; i++)
-	if( (sizeof(FTYPE) == sizeof(int)) && /* integer matrix */
-	    ((FTYPE)0x7ffffff == (int)0x7ffffff) )
-	  PUSH_ELEM(*(m++));
+      for (i=0; i<xs * ys; i++)
+	PUSH_ELEM(*(m++));
       f_aggregate(ys*xs);
       return;
    }
@@ -926,7 +923,7 @@ void Xmatrix(init_math_)(void)
    add_function("cast",matrixX(_cast),
 		"function(string:array(array(float)))",0);
    add_function("vect",matrixX(_vect),
-		"function(:array(float))",0);
+		"function(:array(" PTYPE "))",0);
    add_function("_sprintf",matrixX(__sprintf),
 		"function(int,mapping:string)",0);
 
@@ -943,11 +940,11 @@ void Xmatrix(init_math_)(void)
 		"function(:object)",0);
 
    add_function("sum",matrixX(_sum),
-		"function(:float)",0);
+		"function(:" PTYPE ")",0);
    add_function("max",matrixX(_max),
-		"function(:float)",0);
+		"function(:" PTYPE ")",0);
    add_function("min",matrixX(_min),
-		"function(:float)",0);
+		"function(:" PTYPE ")",0);
 
    add_function("add",matrixX(_add),
 		"function(object:object)",0);

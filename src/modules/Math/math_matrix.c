@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.31 2001/07/19 21:12:02 nilsson Exp $ */
+/* $Id: math_matrix.c,v 1.32 2001/09/07 22:16:28 hubbe Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -58,6 +58,7 @@ extern struct program *math_lmatrix_program;
 #endif /* INT64 */
 
 #define FTYPE double
+#define PTYPE "float"
 #define matrixX(X) PIKE_CONCAT(matrix,X)
 #define Xmatrix(X) PIKE_CONCAT(X,matrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,matrix,Y)
@@ -68,8 +69,10 @@ extern struct program *math_lmatrix_program;
 #undef Xmatrix
 #undef XmatrixY
 #undef FTYPE
+#undef PTYPE
 
 #define FTYPE int
+#define PTYPE "int"
 #define matrixX(X) PIKE_CONCAT(imatrix,X)
 #define Xmatrix(X) PIKE_CONCAT(X,imatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,imatrix,Y)
@@ -80,22 +83,26 @@ extern struct program *math_lmatrix_program;
 #undef matrixX
 #undef XmatrixY
 #undef FTYPE
+#undef PTYPE
 
 #ifdef INT64
 #define FTYPE INT64
+#define PTYPE "int"
 #define matrixX(X) PIKE_CONCAT(lmatrix,X)
 #define Xmatrix(X) PIKE_CONCAT(X,lmatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,lmatrix,Y)
-#define PUSH_ELEM( X )  push_int64( (INT_TYPE)(X) )
+#define PUSH_ELEM( X )  push_int64( (INT64)(X) )
 #include <matrix_code.h>
 #undef PUSH_ELEM
 #undef Xmatrix
 #undef matrixX
 #undef XmatrixY
 #undef FTYPE
+#undef PTYPE
 #endif /* INT64 */
 
 #define FTYPE float
+#define PTYPE "float"
 #define matrixX(X) PIKE_CONCAT(fmatrix,X)
 #define Xmatrix(X) PIKE_CONCAT(X,fmatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,fmatrix,Y)
@@ -106,8 +113,10 @@ extern struct program *math_lmatrix_program;
 #undef matrixX
 #undef XmatrixY
 #undef FTYPE
+#undef PTYPE
 
 #define FTYPE short
+#define PTYPE "int"
 #define matrixX(X) PIKE_CONCAT(smatrix,X)
 #define Xmatrix(X) PIKE_CONCAT(X,smatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,smatrix,Y)
@@ -118,6 +127,7 @@ extern struct program *math_lmatrix_program;
 #undef matrixX
 #undef XmatrixY
 #undef FTYPE
+#undef PTYPE
 
 /*
 **! method void create(array(array(int|float)) 2d_matrix)
