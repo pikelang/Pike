@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.103 2000/10/10 00:02:56 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.104 2000/10/10 01:19:03 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1366,16 +1366,20 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
 
   mojt=compile_memsearcher(MKPCHARP_STR(needle),
 			   needle->len,
-			   0x7fffffff,
+			   haystack->len,
 			   needle);
 
   r=mojt.vtab->funcN(mojt.data,
 		     ADD_PCHARP(MKPCHARP_STR(haystack), start),
-		     haystack->len).ptr;
+		     haystack->len - start).ptr;
 
   mojt.vtab->freeme(mojt.data);
 
   if(!r) return -1;
+#ifdef PIKE_DEBUG
+  if(r < haystack || (r-haystack->str)>>haystack->size_shift > haystack->len)
+    fatal("string_search did a bobo!\n");
+#endif
   return (r-haystack->str)>>haystack->size_shift;
 }
 
@@ -1415,6 +1419,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 }
 
 /*** replace function ***/
+typedef char *(* replace_searchfunc)(void *,void *,size_t);
 PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 				   struct pike_string *del,
 				   struct pike_string *to)
@@ -1423,7 +1428,8 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   char *s,*tmp,*end;
   PCHARP r;
   int shift;
-  struct generic_mem_searcher searcher;
+  SearchMojt mojt;
+  replace_searchfunc f;
 
   if(!str->len)
   {
@@ -1452,26 +1458,39 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 
   if(del->len == to->len)
   {
-    init_generic_memsearcher(&searcher,
-			     del->str,
+    mojt=compile_memsearcher(MKPCHARP_STR(del),
 			     del->len,
-			     del->size_shift,
 			     str->len,
-			     str->size_shift);
+			     del);
     ret=begin_wide_shared_string(str->len,shift);
+    switch(str->size_shift)
+    {
+      case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
+      case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
+      case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
+#ifdef PIKE_DEBUG
+      default: fatal("Illegal shift.\n");
+#endif
+    }
+
   }else{
     INT32 delimeters=0;
-    init_generic_memsearcher(&searcher,
-			     del->str,
+    mojt=compile_memsearcher(MKPCHARP_STR(del),
 			     del->len,
-			     del->size_shift,
 			     str->len*2,
-			     str->size_shift);
+			     del);
 
-    while((s=generic_memory_search(&searcher,
-				   s,
-				   (end-s)>>str->size_shift,
-				   str->size_shift)))
+    switch(str->size_shift)
+    {
+      case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
+      case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
+      case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
+#ifdef PIKE_DEBUG
+      default: fatal("Illegal shift.\n");
+#endif
+    }
+
+    while((s = f(mojt.data, s, (end-s)>>str->size_shift)))
     {
       delimeters++;
       s+=del->len << str->size_shift;
@@ -1479,6 +1498,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
     
     if(!delimeters)
     {
+      mojt.vtab->freeme(mojt.data);
       add_ref(str);
       return str;
     }
@@ -1488,10 +1508,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   s=str->str;
   r=MKPCHARP_STR(ret);
 
-  while((tmp=(char *)generic_memory_search(&searcher,
-					   s,
-					   (end-s)>>str->size_shift,
-					   str->size_shift)))
+  while((tmp = f(mojt.data, s, (end-s)>>str->size_shift)))
   {
 #ifdef PIKE_DEBUG
     if(tmp + (del->len << str->size_shift) > end)
@@ -1505,6 +1522,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   }
   generic_memcpy(r,MKPCHARP(s,str->size_shift),(end-s)>>str->size_shift);
 
+  mojt.vtab->freeme(mojt.data);
   return end_shared_string(ret);
 }
 
