@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.68 1999/11/23 23:04:13 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.69 1999/11/30 07:41:24 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -181,6 +181,13 @@ static void get_new_mpz(MP_INT *tmp, struct svalue *s)
 
 static void mpzmod_create(INT32 args)
 {
+#ifdef AUTO_BIGNUM
+  /* Alert bignum.c that we have been loaded /Hubbe */
+  extern int gmp_library_loaded;
+  if(THIS_PROGRAM == bignum_program)
+    gmp_library_loaded=1;
+#endif
+    
   switch(args)
   {
   case 1:
@@ -1364,7 +1371,6 @@ void pike_module_init(void)
 #ifdef AUTO_BIGNUM
   {
     int id;
-    extern int gmp_library_loaded;
 
     /* This program autoconverts to integers, Gmp.mpz does not!!
      * magic? no, just an if statement :)              /Hubbe
@@ -1384,9 +1390,6 @@ void pike_module_init(void)
     id=add_program_constant("bignum", bignum_program=end_program(), 0);
     bignum_program->flags |= PROGRAM_NO_WEAK_FREE|PROGRAM_NO_EXPLICIT_DESTRUCT;
     
-    /* Alert bignum.c that we have been loaded /Hubbe */
-    gmp_library_loaded=1;
-
 #if 0
     /* magic /Hubbe
      * This seems to break more than it fixes though... /Hubbe
