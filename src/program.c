@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.310 2002/04/12 09:30:13 grubba Exp $");
+RCSID("$Id: program.c,v 1.311 2002/04/15 15:53:02 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -917,6 +917,7 @@ void low_start_new_program(struct program *p,
     i.identifier_level=0;
     i.storage_offset=0;
     i.inherit_level=0;
+    i.identifier_ref_offset=0;
     i.parent=0;
     i.parent_identifier=-1;
     i.parent_offset=-18;
@@ -1335,17 +1336,19 @@ struct program *end_first_pass(int finish)
 
 
   /* Collect references to inherited __INIT functions */
-  for(e=Pike_compiler->new_program->num_inherits-1;e;e--)
-  {
-    int id;
-    if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
-    id=low_reference_inherited_identifier(0, e, s, SEE_STATIC);
-    if(id!=-1)
+  if (!(Pike_compiler->new_program->flags & PROGRAM_AVOID_CHECK)) {
+    for(e=Pike_compiler->new_program->num_inherits-1;e;e--)
     {
-      Pike_compiler->init_node=mknode(F_COMMA_EXPR,
-		       mkcastnode(void_type_string,
-				  mkapplynode(mkidentifiernode(id),0)),
-		       Pike_compiler->init_node);
+      int id;
+      if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
+      id=low_reference_inherited_identifier(0, e, s, SEE_STATIC);
+      if(id!=-1)
+      {
+	Pike_compiler->init_node=mknode(F_COMMA_EXPR,
+	  mkcastnode(void_type_string,
+		     mkapplynode(mkidentifiernode(id),0)),
+	  Pike_compiler->init_node);
+      }
     }
   }
 
@@ -1968,6 +1971,10 @@ void low_inherit(struct program *p,
     }
     add_to_inherits(inherit);
   }
+
+  /* This value is used by encode_value() to reverse the inherit operation. */
+  Pike_compiler->new_program->inherits[inherit_offset].identifier_ref_offset =
+    Pike_compiler->new_program->num_identifier_references;
 
   for (e=0; e < (int)p->num_identifier_references; e++)
   {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.115 2002/02/06 17:26:15 grubba Exp $
+ * $Id: program.h,v 1.116 2002/04/15 15:53:02 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -200,6 +200,7 @@ struct inherit
   INT16 identifier_level;
   INT16 parent_identifier;
   INT16 parent_offset;
+  size_t identifier_ref_offset;
   ptrdiff_t storage_offset;
   struct object *parent;
   struct program *prog;
