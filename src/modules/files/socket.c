@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.38 1998/08/06 23:20:49 grubba Exp $");
+RCSID("$Id: socket.c,v 1.39 1998/08/06 23:38:52 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -308,7 +308,7 @@ static void port_accept(INT32 args)
   struct port *this=THIS;
   int fd,tmp;
   struct object *o;
-  PIKE_ACCEPT_TYPE len=0;
+  ACCEPT_SIZE_T len=0;
 
   if(THIS->fd < 0)
     error("port->accept(): Port not open.\n");
@@ -346,7 +346,7 @@ static void socket_query_address(INT32 args)
   struct sockaddr_in addr;
   int i;
   char buffer[496],*q;
-  PIKE_ACCEPT_TYPE len;
+  ACCEPT_SIZE_T len;
 
   if(THIS->fd <0)
     error("socket->query_address(): Socket not bound yet.\n");
