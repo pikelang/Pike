@@ -137,8 +137,7 @@ void f_ceil(INT32 args)
 }
 
 
-void init_math_programs() {}
-void init_math_efuns()
+void pike_module_init()
 {
   add_efun("sin",f_sin,"function(float:float)",0);
   add_efun("asin",f_asin,"function(float:float)",0);
@@ -154,4 +153,4 @@ void init_math_efuns()
   add_efun("ceil",f_ceil,"function(float:float)",0);
 }
 
-void exit_math() {}
+void pike_module_exit() {}

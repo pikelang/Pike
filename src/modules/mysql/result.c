@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.15 1997/02/01 14:44:43 grubba Exp $
+ * $Id: result.c,v 1.16 1997/02/07 01:42:21 hubbe Exp $
  *
  * mysql query result
  *
@@ -74,7 +74,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.15 1997/02/01 14:44:43 grubba Exp $");
+RCSID("$Id: result.c,v 1.16 1997/02/07 01:42:21 hubbe Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -394,9 +394,6 @@ static void f_fetch_row(INT32 args)
  * Module linkage
  */
 
-void init_mysql_res_efuns(void)
-{
-}
 
 void init_mysql_res_programs(void)
 {
@@ -437,8 +434,8 @@ void init_mysql_res_programs(void)
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
 
-  mysql_result_program = end_c_program("/precompiled/sql/mysql_result");
-  mysql_result_program->refs++;
+  mysql_result_program = end_program();
+  add_program_constant("mysql_result",mysql_result_program, 0);
 }
 
 void exit_mysql_res(void)

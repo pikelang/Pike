@@ -74,7 +74,7 @@ static void f_readline(INT32 args)
   }
 }
 
-void init_readlinemod_efuns(void)
+void pike_module_init(void)
 {
   rl_bind_key('\t', rl_insert);
   add_efun("readline",f_readline,"function(string:string)",OPT_SIDE_EFFECT);
@@ -128,14 +128,13 @@ static void f_readline(INT32 args)
   push_int(0);
 }
 
-void init_readlinemod_efuns(void)
+void pike_module_init(void)
 {
   add_efun("readline",f_readline,"function(string:string)",OPT_SIDE_EFFECT);
 }
 
 #endif
 
-void exit_readlinemod(void) {}
-void init_readlinemod_programs(void) { }
+void pike_module_exit(void) {}
 
 

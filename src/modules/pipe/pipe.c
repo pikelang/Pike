@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.9 1997/01/29 20:19:35 per Exp $");
+RCSID("$Id: pipe.c,v 1.10 1997/02/07 01:42:42 hubbe Exp $");
 
 #include "stralloc.h"
 #include "types.h"
@@ -1074,7 +1074,7 @@ void f__pipe_debug(INT32 args)
   f_aggregate(7);
 }
 
-void init_pipe_programs()
+void pike_module_init()
 {
    start_new_program();
    add_storage(sizeof(struct pipe));
@@ -1105,12 +1105,8 @@ void init_pipe_programs()
    set_init_callback(init_pipe_struct);
    set_exit_callback(exit_pipe_struct);
    
-   pipe_program=end_c_program("/precompiled/pipe");
-   
-   pipe_program->refs++;
-   
-   /* Why is this here?? /Hubbe */
-   port_setup_program();
+   pipe_program=end_program();
+   add_program_constant("pipe",pipe_program, 0);
    
    offset_output_close_callback=find_identifier("_output_close_callback",
 						pipe_program);
@@ -1126,12 +1122,11 @@ void init_pipe_programs()
    add_storage(sizeof(struct output));
    set_init_callback(init_output_struct);
    set_exit_callback(exit_output_struct);
-   output_program=end_c_program("/precompiled/_output");
-   output_program->refs++;
+   output_program=end_program();
+   add_program_constant("__output",output_program, 0);
 }
 
-void init_pipe_efuns(void) {}
-void exit_pipe(void) 
+void pike_module_exit(void) 
 {
   if(pipe_program) free_program(pipe_program);
   pipe_program=0;

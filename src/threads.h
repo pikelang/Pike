@@ -217,7 +217,6 @@ void f_cond_signal(INT32 args);
 void f_cond_broadcast(INT32 args);
 void init_cond_obj(struct object *o);
 void exit_cond_obj(struct object *o);
-void th_init_programs();
 void th_cleanup();
 /* Prototypes end here */
 

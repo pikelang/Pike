@@ -516,7 +516,7 @@ void init_accessdb_program()
    add_function("debug", f_debug, "function(void:mapping)",OPT_EXTERNAL_DEPEND);
    set_init_callback(init_file_head);
    set_exit_callback(free_file_head);
-   end_c_program("/precompiled/AccessDB")->refs++;
+   end_class("accessdb",0);
 }
 
 void exit_accessdb_program()

@@ -371,6 +371,6 @@ void port_setup_program()
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
 
-  end_c_program("/precompiled/port");
+  end_class("port",0);
 }
 

@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.27 1997/01/29 21:45:27 hubbe Exp $");
+RCSID("$Id: file.c,v 1.28 1997/02/07 01:40:16 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1382,9 +1382,13 @@ static void file_create(INT32 args)
   }
 }
 
-void exit_files()
+void pike_module_exit()
 {
-  free_program(file_program);
+  if(file_program)
+  {
+    free_program(file_program);
+    file_program=0;
+  }
 }
 
 void mark_ids(struct callback *foo, void *bar, void *gazonk)
@@ -1397,7 +1401,9 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
   }
 }
 
-void init_files_programs()
+void init_files_efuns(void);
+
+void pike_module_init()
 {
   int e;
   for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
@@ -1410,6 +1416,7 @@ void init_files_programs()
   init_fd(1, FILE_WRITE);
   init_fd(2, FILE_WRITE);
 
+  init_files_efuns();
 
   start_new_program();
   add_storage(sizeof(struct file_struct));
@@ -1454,12 +1461,11 @@ void init_files_programs()
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);
 
-  file_program=end_c_program("/precompiled/file");
-
-  file_program->refs++;
+  file_program=end_program();
+  add_program_constant("file",file_program,0);
 
   port_setup_program();
-
+  
   add_gc_callback(mark_ids, 0, 0);
 }
 

@@ -1180,7 +1180,13 @@ void f__dump_obj_table(INT32 args)
   f_aggregate(n);
 }
 
-void init_spider_efuns(void) 
+#include "streamed_parser.h"
+
+static struct program *streamed_parser;
+
+extern void init_udp();
+
+void pike_module_init(void) 
 {
 #if 0
   add_efun("fcgi_create_listen_socket", f_fcgi_create_listen_socket,
@@ -1235,16 +1241,7 @@ void init_spider_efuns(void)
     _tz = g->tm_gmtoff;
 #endif
   }
-}
 
-#include "streamed_parser.h"
-
-static struct program *streamed_parser;
-
-extern void init_udp();
-
-void init_spider_programs()
-{
   init_udp();
   init_accessdb_program(); /* Accessed database */
 
@@ -1257,11 +1254,12 @@ void init_spider_programs()
    set_init_callback( streamed_parser_init );
    set_exit_callback( streamed_parser_destruct );
    
-   streamed_parser = end_c_program( "/precompiled/streamed_parser" );
-   streamed_parser->refs++;
+   streamed_parser = end_program();
+   add_program_constant("streamed_parser", streamed_parser,0);
 }
 
-void exit_spider(void)
+
+void pike_module_exit(void)
 {
   int i;
 

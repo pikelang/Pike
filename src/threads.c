@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.15 1997/02/06 03:53:48 grubba Exp $");
+RCSID("$Id: threads.c,v 1.16 1997/02/07 01:37:49 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -142,32 +142,6 @@ void f_this_thread(INT32 args)
   push_object(thread_id);
   thread_id->refs++;
 }
-
-void th_init()
-{
-#ifdef SGI_SPROC_THREADS
-#error /* Need to specify a filename */
-  us_cookie = usinit("");
-#endif /* SGI_SPROC_THREADS */
-  mt_lock( & interpreter_lock);
-#ifdef POSIX_THREADS
-  pthread_attr_init(&pattr);
-#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
-#endif
-  pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
-#endif
-
-  add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
-           OPT_SIDE_EFFECT);
-#ifdef UNIX_THREADS
-  add_efun("thread_set_concurrency",f_thread_set_concurrency,
-	   "function(int:void)", OPT_SIDE_EFFECT);
-#endif
-  add_efun("this_thread",f_this_thread,"function(:object)",
-           OPT_EXTERNAL_DEPEND);
-}
-
 
 #define THIS_MUTEX ((struct mutex_storage *)(fp->current_storage))
 
@@ -334,22 +308,46 @@ void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); 
 void init_cond_obj(struct object *o) { co_init(THIS_COND); }
 void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 
-void th_init_programs()
+void th_init()
 {
+  struct program *tmp;
+
+#ifdef SGI_SPROC_THREADS
+#error /* Need to specify a filename */
+  us_cookie = usinit("");
+#endif /* SGI_SPROC_THREADS */
+
+  mt_lock( & interpreter_lock);
+#ifdef POSIX_THREADS
+  pthread_attr_init(&pattr);
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+  pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
+#endif
+  pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
+#endif
+
+  add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
+           OPT_SIDE_EFFECT);
+#ifdef UNIX_THREADS
+  add_efun("thread_set_concurrency",f_thread_set_concurrency,
+	   "function(int:void)", OPT_SIDE_EFFECT);
+#endif
+  add_efun("this_thread",f_this_thread,"function(:object)",
+           OPT_EXTERNAL_DEPEND);
+
   start_new_program();
   add_storage(sizeof(struct mutex_storage));
   add_function("lock",f_mutex_lock,"function(:object)",0);
   add_function("trylock",f_mutex_trylock,"function(:object)",0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
-  end_c_program("/precompiled/mutex");
+  end_class("mutex");
 
   start_new_program();
   add_storage(sizeof(struct key_storage));
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
-  mutex_key=end_c_program("/precompiled/mutex_key");
-  mutex_key->refs++;
+  mutex_key=end_program();
 
   start_new_program();
   add_storage(sizeof(COND_T));
@@ -358,11 +356,10 @@ void th_init_programs()
   add_function("broadcast",f_cond_broadcast,"function(:void)",0);
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
-  end_c_program("/precompiled/condition");
+  end_class("condition");
 
   start_new_program();
-  thread_id_prog=end_c_program("/precompiled/thread");
-  thread_id_prog->refs++;
+  thread_id_prog=end_program();
 
   thread_id=clone(thread_id_prog,0);
 }

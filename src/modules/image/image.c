@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.39 1997/01/31 16:41:57 grubba Exp $ */
+/* $Id: image.c,v 1.40 1997/02/07 01:41:42 hubbe Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.39 1997/01/31 16:41:57 grubba Exp $");
+RCSID("$Id: image.c,v 1.40 1997/02/07 01:41:42 hubbe Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1626,7 +1626,7 @@ void image_select_colors(INT32 args)
 void init_font_programs(void);
 void exit_font(void);
 
-void init_image_programs()
+void pike_module_init()
 {
    int i;
 
@@ -1783,9 +1783,8 @@ void init_image_programs()
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
   
-   image_program=end_c_program("/precompiled/image");
-   
-   image_program->refs++;
+   image_program=end_program();
+   add_program_constant("image",image_program, 0);
   
    for (i=0; i<CIRCLE_STEPS; i++) 
       circle_sin_table[i]=(INT32)4096*sin(((double)i)*2.0*3.141592653589793/(double)CIRCLE_STEPS);
@@ -1793,9 +1792,7 @@ void init_image_programs()
    init_font_programs();
 }
 
-void init_image_efuns(void) {}
-
-void exit_image(void) 
+void pike_module_exit(void) 
 {
   if(image_program)
   {

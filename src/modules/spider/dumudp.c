@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.3 1997/01/27 07:59:58 per Exp $");
+RCSID("$Id: dumudp.c,v 1.4 1997/02/07 01:43:18 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -271,5 +271,5 @@ void init_udp()
   add_function("send",udp_sendto,"function(string,int,string,void|int:int)",0);
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
-  end_c_program("/precompiled/dumUDP");
+  end_class("dumUDP",0);
 }
