@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.257 2000/08/02 21:55:25 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.258 2000/08/24 19:06:21 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4830,6 +4830,7 @@ void f_map(INT32 args)
 	 sp--;                      /* allocate_multiset is destructive */
 	 dmalloc_touch_svalue(sp);
 	 push_multiset(allocate_multiset(sp->u.array));
+	 order_multiset(sp[-1].u.multiset);
 	 return;
 
       case T_STRING:
@@ -5166,6 +5167,7 @@ void f_filter(INT32 args)
 	 sp--;                      /* allocate_multiset is destructive */
 	 dmalloc_touch_svalue(sp);
 	 push_multiset(allocate_multiset(sp->u.array));
+	 order_multiset(sp[-1].u.multiset);
 	 return;
 
       case T_STRING:
@@ -6124,8 +6126,12 @@ void init_builtin_efuns(void)
 		       tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
 		       tFuncV(tString tSet(tMix),tMix,tString),
 		       tFuncV(tString tMap(tMix,tInt), tMix, tString) ),
-		 
-		 tFuncV(tArr(tStringIndicable) tString,tMix,tMix),
+
+		 tOr4 (tFuncV(tArr(tStringIndicable) tString,tMix,tArray),
+		       tFuncV(tMap(tSetvar(3,tMix),tStringIndicable) tString,tMix,
+			      tMap(tVar(3),tMix)),
+		       tFuncV(tSet(tStringIndicable) tString,tMix,tSet(tMix)),
+		       tFuncV(tOr(tProgram,tFunction) tString,tMix,tMapping)),
 
 		 tFuncV(tObj,tMix,tMix) ),
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
