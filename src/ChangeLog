@@ -1,3 +1,9 @@
+Thu Nov 21 15:35:04 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* interpret.c (init_interpreter): if opening /dev/zero fails
+	  stack will be malloc()ed instead.
+	* gc.c: recursive calls to gc() now prevented
+
 Mon Nov 18 03:39:38 1996  Niels Möller  <nisse@cuckoo.infovav.se>
 
 	* modules/gmpmod/mpz_glue.c (mpzmod_digits): Made base 10 default
