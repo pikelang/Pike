@@ -9,7 +9,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.19 1998/07/04 01:06:39 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.20 1998/07/15 13:59:12 grubba Exp $");
 
 #else
 #ifndef _LARGEFILE_SOURCE
@@ -58,7 +58,8 @@ int set_nonblocking(int fd,int which)
 {
 #ifdef DEBUG
   if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
-    fatal("Filedescriptor out of range.\n");
+    fatal("Filedescriptor %d out of range [0,%d).\n",
+	  fd, MAX_OPEN_FILEDESCRIPTORS);
 #endif
 
 #if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
