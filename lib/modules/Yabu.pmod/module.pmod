@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.6 1999/02/15 00:00:04 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.7 1999/02/15 00:03:35 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define WARN(msg) werror(msg)
@@ -1213,6 +1213,9 @@ class db {
   void destroy()
   {
     sync();
+    foreach(values(tables), object o)
+      if(o)
+	destruct(o);
   }
   
   int reorganize(float|void ratio)
