@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.233 1999/11/24 06:43:58 mast Exp $"]])
+test_true([["$Id: testsuite.in,v 1.234 1999/11/24 14:08:27 mirar Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1740,7 +1740,14 @@ test_any([[mixed a,b; sscanf("11foo","%d%s",a,b); return b]],"foo")
 test_any([[mixed a,b; return sscanf("foo","%c%s",b,a)]],2)
 test_any([[mixed a,b; sscanf("foo","%c%s",b,a); return b]],'f')
 test_any([[mixed a,b; sscanf("foo","%c%s",b,a); return a]],"oo")
-test_any([[mixed a,b; return sscanf("1.0","%f",a)]],1)
+test_any([[mixed a,b; return sscanf("1.0","%f",a),a]],1.0)
+test_any([[mixed a,b; return sscanf("-1.0","%f",a),a]],-1.0)
+test_any([[mixed a,b; return sscanf("1.25","%f",a),a]],1.25)
+test_any([[mixed a,b; return sscanf("-1.25","%f",a),a]],-1.25)
+test_any([[mixed a,b; return sscanf("1.25e3","%f",a),a]],1.25e3)
+test_any([[mixed a,b; return sscanf("-1.25e3","%f",a),a]],-1.25e3)
+test_any([[mixed a,b; return sscanf("1.25e-3","%f",a),a]],1.25e-3)
+test_any([[mixed a,b; return sscanf("-1.25e-3","%f",a),a]],-1.25e-3)
 test_any([[mixed a,b; sscanf("1.0","%f",a); return a]],1.0)
 test_any([[mixed a,b; sscanf("-z ","%[-z]%s",a,b); return a]],"-z")
 test_any([[mixed a,b; sscanf("-z ","%[z-]%s",a,b); return a]],"-z")
