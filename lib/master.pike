@@ -245,30 +245,53 @@ void _main(string *argv, string *env)
 
   foreach(tmp->find_all_options(argv,({
     ({"version",tmp->NO_ARG,({"-v","--version"})}),
-      ({"ignore",tmp->HAS_ARG,"-ms"}),
-	({"ignore",tmp->MAY_HAVE_ARG,"-Ddatp",0,1})}),1),
+      ({"help",tmp->NO_ARG,({"-h","--help"})}),
+	({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
+	  ({"ignore",tmp->HAS_ARG,"-ms"}),
+	    ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1),
 	  mixed *opts)
     {
       switch(opts[0])
       {
       case "version":
-	werror(version() + " Copyright (C) 1994-1997 Fredrik Hübinette\n");
-	werror("Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n");
-	werror("welcome to redistribute it under certain conditions; Read the files\n");
-	werror("COPYING and DISCLAIMER in the Pike distribution for more details.\n");
+	werror(version() + " Copyright (C) 1994-1997 Fredrik Hübinette\n"
+	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
+	       "welcome to redistribute it under certain conditions; Read the files\n"
+	       "COPYING and DISCLAIMER in the Pike distribution for more details.\n");
 	exit(0);
+
+      case "help":
+	werror("Usage: pike [-driver options] script [script arguments]\n"
+	       "Driver options include:\n"
+	       " -e --execute <cmd>   : Run the given command instead of a script.\n"
+	       " -h --help            : see this message\n"
+	       " -v --version         : See what version of pike you have.\n"
+	       " -s#                  : Set stack size\n"
+	       " -m <file>            : Use <file> as master object.\n"
+	       " -d -d#               : Increase debug (# is how much)\n"
+	       " -t -t#               : Increase trace level\n"
+	  );
+	exit(0);
+
+      case "execute":
+	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
+	exit(0);
+
       case "ignore":
 	break;
       }
     }
 
-  argv=tmp->get_args(argv,1)[1..];
+  argv=tmp->get_args(argv,1);
   destruct(tmp);
 
-  if(!sizeof(argv))
+  if(sizeof(argv)==1)
   {
-    werror("Usage: pike [-driver options] script [script arguments]\n");
-    exit(1);
+    argv=argv[0]/"/";
+    argv[-1]="hilfe";
+    argv=({ argv*"/" });
+  }else{
+    argv=argv[1..];
   }
   script=(object)argv[0];
 
