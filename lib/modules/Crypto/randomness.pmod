@@ -1,36 +1,44 @@
-/* randomness.pmod
- *
- * Assorted stronger or weaker randomnumber generators.
+/* $Id: randomness.pmod,v 1.11 1999/08/25 17:32:54 grubba Exp $
  */
+
+//! module Crypto
+//! submodule randomness
+//!	Assorted stronger or weaker randomnumber generators.
 
 /* These devices tries to collect entropy from the environment.
  * They differ in behaviour when they run low on entropy, /dev/random
  * will block if it can't provide enough random bits, while /dev/urandom
  * will degenerate into a reasonably strong pseudo random generator */
 
-#define RANDOM_DEVICE "/dev/random"
-#define PRANDOM_DEVICE "/dev/urandom"
+static constant RANDOM_DEVICE = "/dev/random";
+static constant PRANDOM_DEVICE = "/dev/urandom";
 
 /* Collect somewhat random data from the environment. Unfortunately,
  * this is quite system dependent */
-#define PATH  "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin"
+static constant PATH = "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin";
 
 #ifndef __NT__
-#define SYSTEM_COMMANDS ({ "last -256", "arp -a", \
-                        "netstat -anv","netstat -mv","netstat -sv", \
-                        "uptime","ps -fel","ps aux", \
-			"vmstat -s","vmstat -M", \
-			"iostat","iostat -cdDItx"})
+static constant SYSTEM_COMMANDS = ({
+  "last -256", "arp -a", 
+  "netstat -anv","netstat -mv","netstat -sv", 
+  "uptime","ps -fel","ps aux", 
+  "vmstat -s","vmstat -M", 
+  "iostat","iostat -cdDItx"
+});
 #else
-#define SYSTEM_COMMANDS ({ "mem /c", "arp -a", "vol", "dir", "net view", \
-    "net statistics workstation","net statistics server", "net view" \
-    "net user" })
+static constant SYSTEM_COMMANDS = ({
+  "mem /c", "arp -a", "vol", "dir", "net view",
+  "net statistics workstation","net statistics server",
+  "net user"
+});
 #endif
 			
 #define PRIVATE
 			
 PRIVATE object global_rc4;
 
+// method string some_entropy()
+//	Executes several programs to generate some entropy from their output.
 PRIVATE string some_entropy()
 {
   string res;
@@ -67,7 +75,11 @@ PRIVATE string some_entropy()
 }
 
 
+//! class pike_random
+//!	A pseudo random generator based on the ordinary random() function.
 class pike_random {
+  //! method string read(int len)
+  //!	Returns a string of length len with pseudo random values.
   string read(int len)
   {
     if (len > 16384) return read(len/2)+read(len-len/2);
@@ -75,9 +87,13 @@ class pike_random {
   }
 }
 
+//! class rc4_random
+//!	A pseudo random generator based on the rc4 crypto.
 class rc4_random {
   inherit Crypto.rc4 : rc4;
 
+  //! method void create(string secret)
+  //!	Initialize and seed the rc4 random generator.
   void create(string secret)
   {
     object hash = Crypto.sha();
@@ -86,12 +102,16 @@ class rc4_random {
     rc4::set_encrypt_key(hash->digest());
   }
 
+  //! method string read(int len)
+  //!	Return a string of the next len random characters from the
+  //!	rc4 random generator.
   string read(int len)
   {
     if (len > 16384) return read(len/2)+read(len-len/2);
     return rc4::crypt("\47" * len);
   }
 }
+
 
 object reasonably_random()
 {
