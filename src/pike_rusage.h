@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_rusage.h,v 1.11 2003/01/13 02:07:04 mast Exp $
+|| $Id: pike_rusage.h,v 1.12 2003/01/13 13:15:14 mast Exp $
 */
 
 #ifndef PIKE_RUSAGE_H
@@ -18,7 +18,7 @@ long *low_rusage(void);
 #ifdef INT64
 /* The time is returned in nanoseconds. (There's no guarantee that the
  * returned value has nanosecond resolution.) */
-typedef unsigned INT64 cpu_time_t;
+typedef INT64 cpu_time_t;
 #define LONG_CPU_TIME
 #define CPU_TIME_TICKS /* per second */ ((cpu_time_t) 1000000000)
 #define CPU_TIME_UNIT "ns"
