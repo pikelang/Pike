@@ -217,12 +217,12 @@ void fix_comp_stack(int sp)
 
 /* The following symbos return type information */
 
-%type <n> string expr01 expr00 comma_expr
+%type <n> string expr01 expr00 comma_expr comma_expr_or_zero
 %type <n> expr2 expr1 expr3 expr0 expr4 catch lvalue_list
 %type <n> lambda for_expr block  assoc_pair new_local_name
 %type <n> expr_list2 m_expr_list m_expr_list2 statement gauge sscanf
 %type <n> for do cond optional_else_part while statements
-%type <n> local_name_list class catch_arg
+%type <n> local_name_list class catch_arg comma_expr_or_maxint
 %type <n> unused2 foreach unused switch case return expr_list default
 %type <n> continue break block_or_semi typeof
 %%
@@ -244,7 +244,7 @@ string_constant: low_string
            }
            ;
 
-optional_rename_inherit: ':' F_IDENTIFIER { $$=$2 }
+optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
                        | { $$=0; }
                        ;
           
@@ -957,7 +957,7 @@ expr4: string
      }
      | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
      | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
-     | expr4 '['  comma_expr F_DOT_DOT comma_expr ']'
+     | expr4 '['  comma_expr_or_zero F_DOT_DOT comma_expr_or_maxint ']'
      {
        $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
      }
@@ -1019,7 +1019,15 @@ expr4: string
        free_string($2);
      }
      ;
-  
+
+comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
+                  | comma_expr
+                  ;
+
+comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
+                    | comma_expr
+                    ;
+
 gauge: F_GAUGE '(' unused ')'
   {
     $$=mknode(F_NEGATE,
