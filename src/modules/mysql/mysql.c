@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.6 1997/01/08 13:19:19 grubba Exp $
+ * $Id: mysql.c,v 1.7 1997/01/08 17:32:41 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -59,7 +59,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.6 1997/01/08 13:19:19 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.7 1997/01/08 17:32:41 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -499,7 +499,10 @@ static void f_list_tables(INT32 args)
 
   THREADS_DISALLOW();
 
-  PIKE_MYSQL->last_result = result;
+  if (!(PIKE_MYSQL->last_result = result)) {
+    error("mysql->list_tables(): Cannot list databases: %s\n",
+	  mysql_error(PIKE_MYSQL->socket));
+  }
 
   pop_n_elems(args);
 
@@ -547,7 +550,10 @@ static void f_list_fields(INT32 args)
 
   THREADS_DISALLOW();
 
-  PIKE_MYSQL->last_result = result;
+  if (!(PIKE_MYSQL->last_result = result)) {
+    error("mysql->list_fields(): Cannot list databases: %s\n",
+	  mysql_error(PIKE_MYSQL->socket));
+  }
 
   pop_n_elems(args);
 
@@ -571,7 +577,10 @@ static void f_list_processes(INT32 args)
 
   THREADS_DISALLOW();
 
-  PIKE_MYSQL->last_result = result;
+  if (!(PIKE_MYSQL->last_result = result)) {
+    error("mysql->list_processes(): Cannot list databases: %s\n",
+	  mysql_error(PIKE_MYSQL->socket));
+  }
 
   push_object(fp->current_object);
   fp->current_object->refs++;
