@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.58 1999/04/10 02:02:03 mirar Exp $ */
+/* $Id: colortable.c,v 1.59 1999/04/10 03:11:57 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.58 1999/04/10 02:02:03 mirar Exp $
+**!	$Id: colortable.c,v 1.59 1999/04/10 03:11:57 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.58 1999/04/10 02:02:03 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.59 1999/04/10 03:11:57 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3505,21 +3505,23 @@ void image_colortable_index_32bit(INT32 args)
    if (!src->img) 
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
 
-   ps=begin_shared_string(src->xsize*src->ysize*4);
-   ps->size_shift=2;
-   ps->len/=4;
+   if (sizeof(unsigned INT32)!=4)
+      fatal("INT32 isn't 32 bits (sizeof is %d)\n",sizeof(unsigned INT32));
+
+   ps=begin_wide_shared_string(src->xsize*src->ysize,2);
 
    if (!image_colortable_index_32bit_image(THIS,src->img,
-					   (unsigned short *)ps->str,
+					   (unsigned INT32 *)ps->str,
 					   src->xsize*src->ysize,src->xsize))
    {
       free_string(end_shared_string(ps));
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
+      return;
    }
 
    pop_n_elems(args);
 
-   push_string(ps);
+   push_string(end_shared_string(ps));
 }
 
 /*
