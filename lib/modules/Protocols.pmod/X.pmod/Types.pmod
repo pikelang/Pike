@@ -21,8 +21,11 @@ class XResource
   void Free()
   {
     object req = this_object()->FreeRequest();
-    req->id = id;
-    display->send_request( req );
+    if (req)
+      {
+	req->id = id;
+	display->send_request( req );
+      }
   }
 
   void destroy()
@@ -246,6 +249,8 @@ class Colormap
   }
 }
 
+/* Kludge */
+#define PIXMAP (_Types.get_pixmap_class())
 
 class Drawable
 {
@@ -306,7 +311,7 @@ class Drawable
   {
     object req = CreatePixmap_req(width, height, depth);
     display->send_request( req );
-    object p = Pixmap(display, req->pid, this_object(), colormap );
+    object p = PIXMAP(display, req->pid, this_object(), colormap );
     p->depth = depth;
     return p;
   }
@@ -441,7 +446,7 @@ class Window
   inherit Drawable;
   int currentInputMask;
 
-  function FreeRequest = lambda(){}; // FIXME!!
+  function FreeRequest = lambda(){ return 0; }; // FIXME!!
 
   /* Keys are event names, values are arrays of ({ priority, function }) */
   mapping(string:array(array)) event_callbacks = ([ ]);
@@ -653,7 +658,7 @@ class Window
     w->depth = d||depth||this_object()->rootDepth;
     w->colormap = c;
     w->currentInputMask = req->attributes->EventMask;
-    w->attributes = attributes;
+    w->attributes = attributes || ([]);
     return w;
   }
     
@@ -979,4 +984,8 @@ class RootWindow
   }
 }
 
-
+/* Kludge */
+void create()
+{
+  _Types.set_pixmap_class(Pixmap);
+}
