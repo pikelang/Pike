@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.125 2001/04/13 13:35:30 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.126 2001/06/05 10:12:56 hubbe Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -2266,7 +2266,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   if(!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
     return 0;   /* No number formed. */
   
-  if(implicit_base && c == '0' &&
+  if((base==16 || base == 2) && c == '0' &&
      INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
      isxdigit(INDEX_PCHARP(str,2)) &&
      ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
@@ -2276,6 +2276,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     INC_PCHARP(str,2);
     c=EXTRACT_PCHARP(str);
   }
+  str_start=str;
   
   for(val = -DIGIT(c);
       (INC_PCHARP(str,1), WIDE_ISALNUM(c = EXTRACT_PCHARP(str) )) &&
@@ -2318,16 +2319,12 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
      * in some situations that might not be desirable...
      * take care.
      * /Hubbe
+     *
+     * It could probably also be faster...
      */
-    if(implicit_base)
-    {
-      convert_stack_top_to_bignum();
-    }
-    else
-    {
-      push_int(base);
-      convert_stack_top_with_base_to_bignum();
-    }
+    push_int(base);
+    convert_stack_top_with_base_to_bignum();
+    if(neg) o_negate();
     
     *r = *--sp;
   }

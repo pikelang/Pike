@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.108 2001/05/28 18:15:07 marcus Exp $");
+RCSID("$Id: opcodes.c,v 1.109 2001/06/05 10:12:55 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1431,7 +1431,6 @@ CHAROPT2(								 \
 		  MEMSET(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
-		  set.c['x']=0;						 \
 		  goto match_set;					 \
 									 \
 		case 'f':						 \
