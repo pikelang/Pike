@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.85 1997/04/16 23:04:51 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.86 1997/04/17 02:17:00 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -103,11 +103,13 @@ AC_CACHE_VAL(pike_cv_sys_os,
 if test "$uname_prog" != "no"; then
   pike_cv_sys_os="`uname`"
 
-  if test "$pike_cv_sys_os" = "SunOS"; then
-    case "`uname -r`" in
-      5.*) pike_cv_sys_os="Solaris";
-    esac
-  fi
+  case "$pike_cv_sys_os" in
+    SunOS)
+      case "`uname -r`" in
+        5.*) pike_cv_sys_os="Solaris";
+      esac
+    ;;
+  esac
 else
   pike_cv_sys_os="Not Solaris"
 fi
@@ -1360,19 +1362,24 @@ AC_MSG_CHECKING(LDSHARED)
 if test -z "$LDSHARED"
 then
 	case "$pike_cv_sys_os" in
-	AIX*) LDSHARED="ld_so_aix \$(CC)";;
+	AIX*)
+	 # LDSHARED="ld_so_aix \$(CC)"
+	 LDSHARED="ld -G -bnogc -bnox"
+	;;
 	IRIX*) LDSHARED="ld -shared";;
 	SunOS*) LDSHARED="ld";;
 	Solaris) LDSHARED="ld -G";;
 	hp*|HP*) LDSHARED="ld -b";;
-	OSF*) LDSHARED="ld -shared -expect_unresolved '*'";;
+	OSF*)
+           LDSHARED="ld -expect_unresolved '*' -shared -msym -O3"
+        ;;
 	DYNIX/ptx*) LDSHARED="ld -G";;
 	next) LDSHARED='$(CC) $(CFLAGS) -nostdlib -r';;
 	Linux*) LDSHARED="gcc -shared";;
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
 	SCO_SV*) LDSHARED="cc -G -KPIC -Ki486 -belf -Wl,-Bexport";;
-	*)	LDSHARED="ld";;
+	*) LDSHARED="ld";;
 	esac
 fi
 AC_MSG_RESULT($LDSHARED)
@@ -1393,14 +1400,16 @@ if test -z "$CCSHARED" ; then
 fi
 AC_MSG_RESULT($CCSHARED)
 
+AC_MSG_CHECKING(LINKFORSHARED)
+
+AC_CACHE_VAL(pike_cv_sys_linkforshared,[
 # LINKFORSHARED are the flags passed to the $(CC) command that links
 # the pike executable -- this is only needed for a few systems
-AC_MSG_CHECKING(LINKFORSHARED)
 if test -z "$LINKFORSHARED"
 then
   if test "$GCC" = yes ; then
     case $pike_cv_sys_os in
-	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp";;
+#	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp";;
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
@@ -1408,7 +1417,7 @@ then
     esac
   else
     case $pike_cv_sys_os in
-	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp";;
+#	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp ";;
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
@@ -1416,6 +1425,16 @@ then
     esac
   fi
 fi
+
+
+   OLD_CFLAGS="$CFLAGS"
+   CFLAGS="$CFLAGS $LINKFORSHARED"
+    AC_TRY_RUN([int main() { exit(0); }], pike_cv_sys_dynamic_linkforshared="$LINKFORSHARED", pike_cv_sys_dynamic_loading='')
+   CFLAGS="$OLD_CFLAGS"
+])
+
+LINKFORSHARED="$pike_cv_sys_linkforshared"
+
 AC_MSG_RESULT($LINKFORSHARED)
 
 #############################################################################
@@ -1424,21 +1443,27 @@ cat >conftest.c <<EOF
 void testfunc(void) { exit(0); }
 EOF
 
-$CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o
-$BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO
-
-mv conftest.$SO myconftest.so
-
 AC_MSG_CHECKING(if dynamic loading works)
 AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 [
-   OLD_CFLAGS="$CFLAGS"
-   CFLAGS="$CFLAGS $LINKFORSHARED"
+  echo $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&5
+  $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&5 2>&5
+
+  echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&5
+  $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&5 2>&5
+
+  if test -f conftest.$SO ; then
+    mv conftest.$SO myconftest.so
+
+    OLD_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS $LINKFORSHARED"
     AC_TRY_RUN([
 #define TESTING
 #include "$srcdir/dynamic_load.c"
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no)
-   CFLAGS="$OLD_CFLAGS"
+    CFLAGS="$OLD_CFLAGS"
+  fi
+  rm -f myconftest.so >/dev/null 2>/dev/null
 ])
 AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 
@@ -1446,7 +1471,6 @@ if test x$pike_cv_sys_dynamic_loading = xno ; then
   with_dynamic_modules=no
 fi
 
-rm myconftest.so
 
 #############################################################################
 

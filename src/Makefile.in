@@ -160,9 +160,10 @@ spotless: clean
 	rm -f Makefile machine.h
 	find . -type f '(' -name '*~' -o -name '.*~' -o -name core -o -name '.nfs*' -name '#*#' ')' -print | xargs rm -f
 	-rm -f lexical.c mon.out *.ln config.status
-	-rm -f $(TMP_BINDIR)/driver $(TMP_BINDIR)/*~ $(TMP_BINDIR)/#*#
-	-rm -f .pure driver* l.outa*
+	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/#*#
+	-rm -f pike pike.old l.outa*
 	-rm -f modules/*/testsuite
+	-rm -rf lib
 
 # create tags
 tags:
