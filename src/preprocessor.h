@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.18 2000/02/11 00:04:00 grubba Exp $
+ * $Id: preprocessor.h,v 1.19 2000/02/17 00:31:14 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -662,8 +662,8 @@ static INT32 calc3(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   {
     /* DUMPPOS("inside calc3"); */
 
-    check_destructed(sp-1);
-    if(IS_ZERO(sp-1))
+    check_destructed(Pike_sp-1);
+    if(IS_ZERO(Pike_sp-1))
     {
       pos=calc4(this,data,len,pos);
       pop_stack();
@@ -688,8 +688,8 @@ static INT32 calc2(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   {
     /* DUMPPOS("inside calc2"); */
 
-    check_destructed(sp-1);
-    if(!IS_ZERO(sp-1))
+    check_destructed(Pike_sp-1);
+    if(!IS_ZERO(Pike_sp-1))
     {
       pos=calc3(this,data,len,pos);
       pop_stack();
@@ -716,8 +716,8 @@ static INT32 calc1(struct cpp *this, WCHAR *data, INT32 len, INT32 pos)
       cpp_error(this, "Colon expected.");
     pos=calc1(this,data,len,pos);
 
-    check_destructed(sp-3);
-    assign_svalue(sp-3,IS_ZERO(sp-3)?sp-1:sp-2);
+    check_destructed(Pike_sp-3);
+    assign_svalue(Pike_sp-3,IS_ZERO(Pike_sp-3)?Pike_sp-1:Pike_sp-2);
     pop_n_elems(2);
   }
   return pos;
@@ -750,7 +750,7 @@ static int calc(struct cpp *this, WCHAR *data, INT32 len, INT32 tmp)
     push_int(0);
   }else{
     pos=calc1(this,data,len,tmp);
-    check_destructed(sp-1);
+    check_destructed(Pike_sp-1);
   }
   UNSETJMP(recovery);
 
@@ -1196,7 +1196,7 @@ static INT32 lower_cpp(struct cpp *this,
 	tmp2=0;
       do_include:
 	{
-	  struct svalue *save_sp=sp;
+	  struct svalue *save_sp=Pike_sp;
 	  SKIPSPACE();
 	  
 	  check_stack(3);
@@ -1249,7 +1249,7 @@ static INT32 lower_cpp(struct cpp *this,
 	      break;
 	    }
 
-	  if(sp==save_sp) break;
+	  if(Pike_sp==save_sp) break;
 
 	  if(OUTP())
 	  {
@@ -1257,25 +1257,25 @@ static INT32 lower_cpp(struct cpp *this,
 
 	    SAFE_APPLY_MASTER("handle_include",3);
 	  
-	    if(sp[-1].type != PIKE_T_STRING)
+	    if(Pike_sp[-1].type != PIKE_T_STRING)
 	    {
 	      cpp_error(this, "Couldn't include file.");
-	      pop_n_elems(sp-save_sp);
+	      pop_n_elems(Pike_sp-save_sp);
 	      break;
 	    }
 	    
-	    new_file=sp[-1].u.string;
+	    new_file=Pike_sp[-1].u.string;
 
 	    /* Why not just use ref_push_string(new_file)? */
-	    assign_svalue_no_free(sp,sp-1);
-	    sp++;
+	    assign_svalue_no_free(Pike_sp,Pike_sp-1);
+	    Pike_sp++;
 	    
 	    SAFE_APPLY_MASTER("read_include",1);
 	    
-	    if(sp[-1].type != PIKE_T_STRING)
+	    if(Pike_sp[-1].type != PIKE_T_STRING)
 	    {
 	      cpp_error(this, "Couldn't read include file.");
-	      pop_n_elems(sp-save_sp);
+	      pop_n_elems(Pike_sp-save_sp);
 	      break;
 	    }
 	    
@@ -1296,35 +1296,35 @@ static INT32 lower_cpp(struct cpp *this,
 	      if(tmp2)
 	      {
 		/* #string */
-		struct pike_string *str = sp[-1].u.string;
+		struct pike_string *str = Pike_sp[-1].u.string;
 		PUSH_STRING_SHIFT(str->str, str->len, str->size_shift,
 				  &this->buf);
 	      }else{
 		/* #include */
 		if (auto_convert) {
-		  struct pike_string *new_str = recode_string(sp[-1].u.string);
-		  free_string(sp[-1].u.string);
-		  sp[-1].u.string = new_str;
+		  struct pike_string *new_str = recode_string(Pike_sp[-1].u.string);
+		  free_string(Pike_sp[-1].u.string);
+		  Pike_sp[-1].u.string = new_str;
 		} else if (charset) {
 		  ref_push_string(charset);
 		  SAFE_APPLY_MASTER("decode_charset", 2);
-		  if (sp[-1].type != PIKE_T_STRING) {
+		  if (Pike_sp[-1].type != PIKE_T_STRING) {
 		    cpp_error(this,
 			      "Charset decoding failed for included file.");
-		    pop_n_elems(sp - save_sp);
+		    pop_n_elems(Pike_sp - save_sp);
 		    break;
 		  }
 		}
-		if (sp[-1].u.string->size_shift) {
+		if (Pike_sp[-1].u.string->size_shift) {
 		  /* Get rid of any byte order marks (0xfeff) */
-		  struct pike_string *new_str = filter_bom(sp[-1].u.string);
-		  free_string(sp[-1].u.string);
-		  sp[-1].u.string = new_str;
+		  struct pike_string *new_str = filter_bom(Pike_sp[-1].u.string);
+		  free_string(Pike_sp[-1].u.string);
+		  Pike_sp[-1].u.string = new_str;
 		}
 		low_cpp(this,
-			sp[-1].u.string->str,
-			sp[-1].u.string->len,
-			sp[-1].u.string->size_shift,
+			Pike_sp[-1].u.string->str,
+			Pike_sp[-1].u.string->len,
+			Pike_sp[-1].u.string->size_shift,
 			flags&~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
 			auto_convert, charset);
 	      }
@@ -1343,7 +1343,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    }
 	  }
 
-	  pop_n_elems(sp-save_sp);
+	  pop_n_elems(Pike_sp-save_sp);
 	  
 	  break;
 	}
@@ -1403,7 +1403,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  break;
 	}
 	free_string_builder(&tmp);
-	if(IS_ZERO(sp-1)) nflags|=CPP_NO_OUTPUT;
+	if(IS_ZERO(Pike_sp-1)) nflags|=CPP_NO_OUTPUT;
 	pop_stack();
 	pos += lower_cpp(this, data+pos, len-pos, nflags,
 			 auto_convert, charset);
@@ -1530,7 +1530,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    break;
 	  }
 	  free_string_builder(&tmp);
-	  if(!IS_ZERO(sp-1)) flags&=~CPP_NO_OUTPUT;
+	  if(!IS_ZERO(Pike_sp-1)) flags&=~CPP_NO_OUTPUT;
 	  pop_stack();
 	}else{
 	  FIND_EOL();
@@ -1556,7 +1556,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    push_string(make_shared_binary_string2(data+foo, pos-foo));
 #endif /* SHIFT == 1 */
 #endif /* SHIFT == 0 */
-	    cpp_error(this, sp[-1].u.string->str);
+	    cpp_error(this, Pike_sp[-1].u.string->str);
 	  }
 	  break;
 	}
@@ -1572,7 +1572,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  struct string_builder str;
 	  INT32 namestart, tmp3, nameend, argno=-1;
 	  struct define *def;
-	  struct svalue *partbase,*argbase=sp;
+	  struct svalue *partbase,*argbase=Pike_sp;
 
 	  SKIPSPACE();
 
@@ -1642,7 +1642,7 @@ static INT32 lower_cpp(struct cpp *this,
 
 	  SKIPSPACE();
 
-	  partbase=sp;
+	  partbase=Pike_sp;
 	  init_string_builder(&str, 0);
 	  
 	  while(1)
@@ -1686,13 +1686,13 @@ static INT32 lower_cpp(struct cpp *this,
 		/* FIXME: Wide strings? */
 		while(str.s->len && isspace(((unsigned char *)str.s->str)[str.s->len-1]))
 		  str.s->len--;
-		if(!str.s->len && sp-partbase>1)
+		if(!str.s->len && Pike_sp-partbase>1)
 		{
 #ifdef PIKE_DEBUG
-		  if(sp[-1].type != PIKE_T_INT)
+		  if(Pike_sp[-1].type != PIKE_T_INT)
 		    fatal("Internal error in CPP\n");
 #endif
-		  sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
+		  Pike_sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
 		}
 	      }else{
 		extra=DEF_ARG_STRINGIFY;
@@ -1770,18 +1770,18 @@ static INT32 lower_cpp(struct cpp *this,
 	    def=alloc_empty_define(
 		  make_shared_binary_string((char *)data+namestart,
 					    nameend-namestart),
-		  (sp-partbase)/2);
+		  (Pike_sp-partbase)/2);
 #else /* SHIFT != 0 */
 #if (SHIFT == 1)
 	    def=alloc_empty_define(
 		  make_shared_binary_string1(data+namestart,
 					     nameend-namestart),
-		  (sp-partbase)/2);
+		  (Pike_sp-partbase)/2);
 #else /* SHIFT != 1 */
 	    def=alloc_empty_define(
 		  make_shared_binary_string2(data+namestart,
 					     nameend-namestart),
-		  (sp-partbase)/2);
+		  (Pike_sp-partbase)/2);
 #endif /* SHIFT == 1 */
 #endif /* SHIFT == 0 */
 	    copy_shared_string(def->first, partbase->u.string);
@@ -1810,7 +1810,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    this->defines=hash_insert(this->defines, & def->link);
 	    
 	  }
-	  pop_n_elems(sp-argbase);
+	  pop_n_elems(Pike_sp-argbase);
 	  break;
 	}
       
@@ -1892,12 +1892,12 @@ static INT32 lower_cpp(struct cpp *this,
 
 	  SAFE_APPLY_MASTER("decode_charset", 2);
 
-	  if (sp[-1].type != PIKE_T_STRING) {
+	  if (Pike_sp[-1].type != PIKE_T_STRING) {
 	    pop_stack();
 	    cpp_error(this, "Unknown charset.");
 	  } else {
-	    low_cpp(this, sp[-1].u.string->str, sp[-1].u.string->len,
-		    sp[-1].u.string->size_shift, flags,
+	    low_cpp(this, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len,
+		    Pike_sp[-1].u.string->size_shift, flags,
 		    auto_convert, charset);
 	    pop_stack();
 	  }

@@ -63,7 +63,7 @@ struct pike_creds
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))				\
   {									\
     int e;								\
-    struct svalue *base_sp=sp-args;					\
+    struct svalue *base_sp=Pike_sp-args;					\
 									\
     if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))			\
       error(name ": Permission denied.\n");				\
@@ -75,17 +75,17 @@ struct pike_creds
 									\
     safe_apply(OBJ2CREDS(current_creds)->user,"valid_io",args+2);	\
 									\
-    switch(sp[-1].type)							\
+    switch(Pike_sp[-1].type)							\
     {									\
       case PIKE_T_ARRAY:							\
       case PIKE_T_OBJECT:							\
       case PIKE_T_MAPPING:							\
-	assign_svalue(sp-args-1,sp-1);					\
+	assign_svalue(Pike_sp-args-1,Pike_sp-1);					\
 	pop_n_elems(args);						\
 	return;								\
 									\
       case PIKE_T_INT:							\
-	switch(sp[-1].u.integer)					\
+	switch(Pike_sp[-1].u.integer)					\
 	{								\
 	  case 0: /* return 0 */					\
 	    errno=EPERM;						\
@@ -114,7 +114,7 @@ struct pike_creds
 	error("Error in user->valid_io, wrong return type.\n");		\
 									\
       case PIKE_T_STRING:							\
-	assign_svalue(sp-args-1,sp-1);					\
+	assign_svalue(Pike_sp-args-1,Pike_sp-1);					\
         pop_stack();							\
     }									\
   }

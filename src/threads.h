@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.72 2000/02/04 21:46:15 grubba Exp $
+ * $Id: threads.h,v 1.73 2000/02/17 00:31:16 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -315,14 +315,14 @@ struct thread_state {
   struct mapping *thread_local;
 
   /* Swapped variables */
-  struct svalue *sp,*evaluator_stack;
-  struct svalue **mark_sp,**mark_stack;
-  struct pike_frame *fp;
+  struct svalue *Pike_sp,*Pike_evaluator_stack;
+  struct svalue **Pike_mark_sp,**Pike_mark_stack;
+  struct pike_frame *Pike_fp;
   int evaluator_stack_malloced;
   int mark_stack_malloced;
   JMP_BUF *recoveries;
   struct object * thread_id;
-  char *stack_top;
+  char *Pike_stack_top;
   DO_IF_SECURITY(struct object *current_creds;)
 
 #ifdef PROFILING
@@ -389,15 +389,15 @@ struct thread_state {
 
 #define SWAP_OUT_THREAD(_tmp) do { \
        (_tmp)->swapped=1; \
-       (_tmp)->evaluator_stack=evaluator_stack;\
+       (_tmp)->Pike_evaluator_stack=Pike_evaluator_stack;\
        (_tmp)->evaluator_stack_malloced=evaluator_stack_malloced;\
-       (_tmp)->fp=fp;\
-       (_tmp)->mark_sp=mark_sp;\
-       (_tmp)->mark_stack=mark_stack;\
+       (_tmp)->Pike_fp=Pike_fp;\
+       (_tmp)->Pike_mark_sp=Pike_mark_sp;\
+       (_tmp)->Pike_mark_stack=Pike_mark_stack;\
        (_tmp)->mark_stack_malloced=mark_stack_malloced;\
        (_tmp)->recoveries=recoveries;\
-       (_tmp)->sp=sp; \
-       (_tmp)->stack_top=stack_top; \
+       (_tmp)->Pike_sp=Pike_sp; \
+       (_tmp)->Pike_stack_top=Pike_stack_top; \
        (_tmp)->thread_id=thread_id;\
        DO_IF_PROFILING( (_tmp)->accounted_time=accounted_time; ) \
        DO_IF_PROFILING( (_tmp)->time_base = gethrtime() - time_base; ) \
@@ -407,15 +407,15 @@ struct thread_state {
 
 #define SWAP_IN_THREAD(_tmp) do {\
        (_tmp)->swapped=0; \
-       evaluator_stack=(_tmp)->evaluator_stack;\
+       Pike_evaluator_stack=(_tmp)->Pike_evaluator_stack;\
        evaluator_stack_malloced=(_tmp)->evaluator_stack_malloced;\
-       fp=(_tmp)->fp;\
-       mark_sp=(_tmp)->mark_sp;\
-       mark_stack=(_tmp)->mark_stack;\
+       Pike_fp=(_tmp)->Pike_fp;\
+       Pike_mark_sp=(_tmp)->Pike_mark_sp;\
+       Pike_mark_stack=(_tmp)->Pike_mark_stack;\
        mark_stack_malloced=(_tmp)->mark_stack_malloced;\
        recoveries=(_tmp)->recoveries;\
-       sp=(_tmp)->sp;\
-       stack_top=(_tmp)->stack_top;\
+       Pike_sp=(_tmp)->Pike_sp;\
+       Pike_stack_top=(_tmp)->Pike_stack_top;\
        thread_id=(_tmp)->thread_id;\
        DO_IF_PROFILING( accounted_time=(_tmp)->accounted_time; ) \
        DO_IF_PROFILING(  time_base =  gethrtime() - (_tmp)->time_base; ) \
@@ -443,7 +443,7 @@ struct thread_state {
  * environment.
  */
 #define HIDE_GLOBAL_VARIABLES() do { \
-   int sp = 0, evaluator_stack = 0, mark_sp = 0, mark_stack = 0, fp = 0; \
+   int Pike_sp = 0, Pike_evaluator_stack = 0, Pike_mark_sp = 0, Pike_mark_stack = 0, Pike_fp = 0; \
    void *evaluator_stack_malloced = NULL, *mark_stack_malloced = NULL; \
    int recoveries = 0, thread_id = 0; \
    int error = 0, xalloc = 0, low_my_putchar = 0, low_my_binary_strcat = 0; \
@@ -541,7 +541,7 @@ struct thread_state {
 #endif
 
 /* Prototypes begin here */
-int low_nt_create_thread(unsigned stack_size,
+int low_nt_create_thread(unsigned Pike_stack_size,
 			 unsigned (TH_STDCALL *func)(void *),
 			 void *arg,
 			 unsigned *id);

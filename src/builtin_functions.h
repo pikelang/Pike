@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: builtin_functions.h,v 1.11 2000/01/20 23:10:59 noring Exp $
+ * $Id: builtin_functions.h,v 1.12 2000/02/17 00:31:07 hubbe Exp $
  */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
@@ -17,7 +17,7 @@
 /* Prototypes begin here */
 #ifdef DEBUG_MALLOC
 void _f_aggregate(INT32 args);
-#define f_aggregate(X) do { _f_aggregate(X); debug_malloc_touch(sp[-1].u.refs); } while (0)
+#define f_aggregate(X) do { _f_aggregate(X); debug_malloc_touch(Pike_sp[-1].u.refs); } while (0)
 #else
 void f_aggregate(INT32 args);
 #endif
