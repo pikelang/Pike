@@ -24,23 +24,6 @@ mapping (string:program) programs=(["/master":object_program(this_object())]);
 
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 
-/* This function is called whenever a module has built a clonable program
- * with functions written in C and wants to notify the Pike part about
- * this. It also supplies a suggested name for the program.
- */
-void add_precompiled_program(string name, program p)
-{
-  programs[name]=p;
-
-  if(sscanf(name, "/precompiled/%s", name)) {
-    string const="";
-    foreach(reverse(name/"/"), string s) {
-      const = capitalize(s) + const;
-      add_constant(const, p);
-    }
-  }
-}
-
 static program findprog(string pname)
 {
   program ret;
@@ -55,11 +38,10 @@ static program findprog(string pname)
   {
     ret=compile_file(pname+".pike");
   }
-#if efun(load_module)
+#if constant(load_module)
   else if(file_stat(pname+".so"))
   {
-    load_module(pname+".so");
-    ret=programs[pname];
+    ret=load_module(pname+".so");
   }
 #endif
   if(ret)
@@ -152,7 +134,7 @@ program handle_inherit(string pname, string current_file)
   return cast_to_program(tmp*"/");
 }
 
-mapping (string:object) objects=(["/master.pike":this_object()]);
+mapping (string:object) objects=(["/master":this_object()]);
 
 /* This function is called when the drivers wants to cast a string
  * to an object because of an implict or explicit cast. This function
@@ -185,40 +167,111 @@ class dirnode
   }
 };
 
+class mergenode
+{
+  mixed *modules;
+  void create(mixed * m) { modules=m; }
+  mixed `[](string index)
+  {
+    foreach(modules, mixed mod)
+      if(mixed ret=mod[index]) return ret;
+    return UNDEFINED;
+  }
+};
+
 object findmodule(string fullname)
 {
   mixed *stat;
-  if(mixed *stat=file_stat(fullname))
-  {
-    if(stat[1]==-2) return dirnode(fullname);
-  }
   program p;
   if(p=(program)(fullname+".pmod"))
     return (object)(fullname+".pmod");
+
+#if constant(load_module)
+  if(file_stat(fullname+".so"))
+  {
+    return (object)(fullname);
+  }
+#endif
+
+  /* Hack for pre-install testing */
+  if(mixed *stat=file_stat(fullname))
+  {
+    if(stat[1]==-2)
+      return findmodule(fullname+"/module");
+  }
+
+  if(mixed *stat=file_stat(fullname+".pmd"))
+  {
+    if(stat[1]==-2)
+      return dirnode(fullname+".pmd");
+  }
+    
   return UNDEFINED;
+}
+
+static mixed idiresolv(string identifier)
+{
+  string path=combine_path(pike_library_path+"/modules",identifier);
+  if(mixed ret=findmodule(path)) return ret;
+  return _static_modules[identifier];
 }
 
 mixed resolv(string identifier, string current_file)
 {
   mixed ret;
   string *tmp,path;
+  multiset tested=(<>);
+  mapping tested=([]);
+  mixed *modules=({});
 
   tmp=current_file/"/";
   tmp[-1]=identifier;
   path=combine_path(getcwd(), tmp*"/");
-  if(ret=findmodule(path)) return tmp;
+  if(!tested[path])
+  {
+    tested[path]=1;
+    if(ret=findmodule(path)) modules+=({ret});
+  }
 
   if(path=getenv("PIKE_MODULE_PATH"))
   {
     foreach(path/":", path)
       {
+	if(!sizeof(path)) continue;
 	path=combine_path(path,identifier);
-	if(ret=findmodule(path)) return ret;
+	if(!tested[path])
+	{
+	  tested[path]=1;
+	  if(ret=findmodule(path)) modules+=({ret});
+	}
       }
   }
+  string path=combine_path(pike_library_path+"/modules",identifier);
+  if(!tested[path])
+  {
+    tested[path]=1;
+    if(ret=findmodule(path)) modules+=({ret});
+  }
+  if(ret=_static_modules[identifier]) modules+=({ret});
 
-  path=combine_path(pike_library_path+"/modules",identifier);
-  return findmodule(path);
+  switch(sizeof(modules))
+  {
+  default:
+    mixed tmp=mergenode(modules);
+    werror(sprintf("%O\n",tmp["file"]));
+    return tmp;
+  case 1:
+    return modules[0];
+  case 0:
+    switch(identifier)
+    {
+    case "readline":
+      if(!resolv("readlinemod", current_file))
+	werror("No readline module.\n");
+      return all_constants()->readline;
+    }
+    return UNDEFINED;
+  }
 }
 
 /* This function is called when all the driver is done with all setup
@@ -239,20 +292,21 @@ void _main(string *argv, string *env)
   add_constant("getenv",getenv);
   add_constant("putenv",putenv);
 
-  add_constant("write",cast_to_program("/precompiled/file")("stdout")->write);
+  add_constant("write",idiresolv("files")->file("stdout")->write);
 
   a=backtrace()[-1][0];
   q=a/"/";
   pike_library_path = q[0..sizeof(q)-2] * "/";
 
-  tmp=new(pike_library_path+"/include/getopt.pre.pike");
+  tmp=idiresolv("getopt");
 
   foreach(tmp->find_all_options(argv,({
     ({"version",tmp->NO_ARG,({"-v","--version"})}),
       ({"help",tmp->NO_ARG,({"-h","--help"})}),
 	({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
-	  ({"ignore",tmp->HAS_ARG,"-ms"}),
-	    ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1),
+	  ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
+	    ({"ignore",tmp->HAS_ARG,"-ms"}),
+	      ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1),
 	  mixed *opts)
     {
       switch(opts[0])
@@ -281,6 +335,10 @@ void _main(string *argv, string *env)
 	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
 	exit(0);
 
+      case "modpath":
+	putenv("PIKE_MODULE_PATH",opts[1]+":"+(getenv("PIKE_MODULE_PATH")||""));
+	break;
+
       case "ignore":
 	break;
       }
@@ -294,9 +352,22 @@ void _main(string *argv, string *env)
     argv=argv[0]/"/";
     argv[-1]="hilfe";
     argv=({ argv*"/" });
+    if(!file_stat(argv[0]))
+    {
+      if(file_stat("/usr/local/bin/hilfe"))
+	argv[0]="/usr/local/bin/hilfe";
+      else if(file_stat("../bin/hilfe"))
+	argv[0]="/usr/local/bin/hilfe";
+      else
+      {
+	werror("Couldn't find hilfe.\n");
+	exit(1);
+      }
+    }
   }else{
     argv=argv[1..];
   }
+
   script=(object)argv[0];
 
   if(!script->main)
@@ -366,6 +437,7 @@ string handle_include(string f,
     {
       foreach(path/":", path)
       {
+	if(!sizeof(path)) continue;
 	path=combine_path(path,f);
 	if(file_stat(path))
 	  break;
