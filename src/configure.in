@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.262 1999/02/01 03:13:40 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.263 1999/02/05 02:43:20 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -307,7 +307,7 @@ if test $cflags_is_set = no; then
  if test "x${GCC-}" = xyes ; then
   WARN="-W -Wall -Wpointer-arith -Wno-unused"
 
-  if "x${with_static_linking-}" = "xyes" ; then
+  if test "x${with_static_linking-}" = "xyes" ; then
     AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
   else
     :
@@ -353,7 +353,7 @@ if test $cflags_is_set = no; then
  else
 
 
-  if "x${with_static_linking-}" = "xyes" ; then
+  if test "x${with_static_linking-}" = "xyes" ; then
     DO_IF_OS(AIX,
     [
       AC_SYS_COMPILER_FLAG(-Wl,-bstatic,wl_link_static,CFLAGS)
