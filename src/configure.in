@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.753 2003/12/07 22:51:35 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.754 2003/12/10 13:19:21 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6526,15 +6526,6 @@ if test "x$with_dynamic_modules" != "xno" ; then
     with_dynamic_modules=no
   else
     with_dynamic_modules=yes
-    if test x$pike_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
-    then
-#     Dynamic loading is now WORKING (maybe)
-      if test x"$pike_cv_sys_os" = xWindows_NT ; then
-	LINKFORSHARED="${LINKFORSHARED} -rdynamic"
-      else
-        with_dynamic_modules=no
-      fi
-    fi
   fi
 fi
 
