@@ -21,6 +21,9 @@ MODULE_CLEAN_EXTRA=p*.c
 
 MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
 
+depend:
+	:
+
 override:  compile@WITH_GTK@
 	@:
 
