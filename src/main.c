@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.19 1997/03/17 03:04:40 hubbe Exp $");
+RCSID("$Id: main.c,v 1.20 1997/03/24 00:44:37 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -33,6 +33,7 @@ RCSID("$Id: main.c,v 1.19 1997/03/17 03:04:40 hubbe Exp $");
 
 
 char *master_file;
+char **ARGV;
 
 int d_flag=0;
 int c_flag=0;
@@ -57,6 +58,8 @@ void main(int argc, char **argv, char **env)
   int e, num;
   char *p;
   struct array *a;
+
+  ARGV=argv;
 
 #ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC

@@ -1,5 +1,6 @@
 Sun Mar 23 14:09:18 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
+	* configure.in: added test for dynamic loading of modules
 	* program.c (get_storage): new function
 
 Mon Mar 17 14:14:34 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
