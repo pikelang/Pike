@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.16 2002/09/21 15:08:31 mast Exp $
+ * $Id: Tar.pmod,v 1.17 2002/11/24 15:18:52 marcus Exp $
  */
 
 #pike __REAL_VERSION__
@@ -155,7 +155,7 @@ class _Tar  // filesystem
       sscanf(a[12], "%o", devmajor);
       sscanf(a[13], "%o", devminor);
 
-      fullpath = "/" + arch_name;
+      fullpath = combine_path_unix("/", arch_name);
       name = (fullpath/"/")[-1];
       atime = ctime = mtime;
 
