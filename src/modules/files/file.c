@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.212 2001/07/01 21:57:24 mast Exp $");
+RCSID("$Id: file.c,v 1.213 2001/09/06 18:23:47 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -919,7 +919,8 @@ static void file_write(INT32 args)
       o_multiply();
       Pike_sp--;
       dmalloc_touch_svalue(Pike_sp);
-      assign_svalue(Pike_sp-args, Pike_sp);
+      Pike_sp[-args] = *Pike_sp;
+      free_array(a);
 
 #ifdef PIKE_DEBUG
       if (Pike_sp[-args].type != PIKE_T_STRING) {
