@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.3 2001/03/12 14:32:38 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.4 2001/03/12 15:05:08 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -442,9 +442,15 @@ PIKECLASS Backend
   CVAR unsigned int hash_size;
   CVAR unsigned int hash_order;
   CVAR struct hash_ent *call_hash;
+
+  /* Should really exist only in PIKE_DEBUG, but 
+   * #ifdefs on the last cvar confuses precompile.pike.
+   *	/grubba 2001-03-12
+   */
+  CVAR int inside_call_out;
+
+
   
-
-
   /*
    * Call out defines
    */
@@ -460,17 +466,16 @@ PIKECLASS Backend
 #define SWAP(X,Y) do{ call_out *_tmp=CALL(X); (CALL(X)=CALL(Y))->pos=(X); (CALL(Y)=_tmp)->pos=(Y); } while(0)
 
 #ifdef PIKE_DEBUG
-  CVAR int inside_call_out;
 #define PROTECT_CALL_OUTS() \
    if(me->inside_call_out) fatal("Recursive call in call_out module.\n"); \
    me->inside_call_out=1
  
 #define UNPROTECT_CALL_OUTS() \
    me->inside_call_out=0
-#else
+#else /* !PIKE_DEBUG */
 #define PROTECT_CALL_OUTS()
 #define UNPROTECT_CALL_OUTS()
-#endif
+#endif /* PIKE_DEBUG */
 
 
   /* 
@@ -2044,16 +2049,18 @@ void do_call_outs(void)
     backend_do_call_outs(default_backend);
 }
 
+#ifdef PIKE_DEBUG
 void do_debug(void)
 {
   if(default_backend)
     backend_do_debug(default_backend);
 }
+#endif /* PIKE_DEBUG */
 
 
 void cleanup_backend(void)
 {
-  /* Used to free the poll sets
+  /* Used to free the poll sets here.
    *
    * This is now done in the exit callback for the Backend.
    */
@@ -2062,7 +2069,7 @@ void cleanup_backend(void)
   cleanup_close_on_exec();
 #endif /* HAVE_BROKEN_F_SETFD */
 
-  /* Used to free the fds array
+  /* Used to free the fds array here.
    *
    * This is now done in the exit callback from the Backend.
    */
