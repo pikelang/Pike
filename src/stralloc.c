@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.185 2004/11/06 17:55:34 grubba Exp $
+|| $Id: stralloc.c,v 1.186 2004/11/06 18:04:46 grubba Exp $
 */
 
 #include "global.h"
@@ -2398,7 +2398,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  flags |= APPEND_WIDTH_HALF;
 	  continue;
 
-	case 'w':	/* Same as l, but for %s. */
+	case 'w':	/* Same as l, but old-style, and only for %s. */
 	case 'l':
 	  if (flags & APPEND_WIDTH_LONG) {
 	    flags |= APPEND_WIDTH_LONG_LONG;
