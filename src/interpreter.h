@@ -14,20 +14,20 @@
 #ifdef HAVE_COMPUTED_GOTO
 
 #define CASE(OP)	PIKE_CONCAT(LABEL_,OP): FETCH
-#define FETCH		(instr = pc[0])
+#define FETCH		(instr = PROG_COUNTER[0])
 #ifdef PIKE_DEBUG
 #define DONE		continue
 #else /* !PIKE_DEBUG */
 #define DONE		do {	\
-    Pike_fp->pc = pc++;		\
+    Pike_fp->pc = PROG_COUNTER++;		\
     goto *instr;		\
   } while(0)
     
 #endif /* PIKE_DEBUG */
 
-#define LOW_GET_ARG()	((INT32)(ptrdiff_t)(*(pc++)))
-#define LOW_GET_JUMP()	((INT32)(ptrdiff_t)(*(pc)))
-#define LOW_SKIPJUMP()	(instr = (++pc)[0])
+#define LOW_GET_ARG()	((INT32)(ptrdiff_t)(*(PROG_COUNTER++)))
+#define LOW_GET_JUMP()	((INT32)(ptrdiff_t)(*(PROG_COUNTER)))
+#define LOW_SKIPJUMP()	(instr = (++PROG_COUNTER)[0])
 
 #define GET_ARG()	LOW_GET_ARG()
 #define GET_ARG2()	LOW_GET_ARG()
@@ -38,9 +38,9 @@
 #define DONE		break
 #define FETCH
 
-#define LOW_GET_ARG()	((pc++)[0])
-#define LOW_GET_JUMP()	EXTRACT_INT(pc)
-#define LOW_SKIPJUMP()	(pc += sizeof(INT32))
+#define LOW_GET_ARG()	((PROG_COUNTER++)[0])
+#define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
+#define LOW_SKIPJUMP()	(PROG_COUNTER += sizeof(INT32))
 
 #ifdef PIKE_DEBUG
 
@@ -70,32 +70,6 @@
 #endif /* PIKE_DEBUG */
 
 #endif /* HAVE_COMPUTED_GOTO */
-
-#ifdef PIKE_DEBUG
-
-#define GET_JUMP() (backlog[backlogp].arg=(\
-  (t_flag>3 ? sprintf(trace_buffer, "-    Target = %+ld\n", \
-                      (long)LOW_GET_JUMP()), \
-              write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0), \
-  LOW_GET_JUMP()))
-
-#define SKIPJUMP() (GET_JUMP(), LOW_SKIPJUMP())
-
-#else /* !PIKE_DEBUG */
-
-#define GET_JUMP() LOW_GET_JUMP()
-#define SKIPJUMP() LOW_SKIPJUMP()
-
-#endif /* PIKE_DEBUG */
-
-#define DOJUMP() do { \
-    INT32 tmp; \
-    tmp = GET_JUMP(); \
-    pc += tmp; \
-    FETCH; \
-    if(tmp < 0) \
-      fast_check_threads_etc(6); \
-  } while(0)
 
 #ifndef STEP_BREAK_LINE
 #define STEP_BREAK_LINE

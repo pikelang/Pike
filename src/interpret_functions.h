@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.75 2001/07/15 23:14:36 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.76 2001/07/16 19:48:57 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -55,6 +55,40 @@
 #ifndef INTER_RETURN
 #define INTER_RETURN return -1
 #endif
+
+#ifndef OVERRIDE_JUMPS
+
+#undef GET_JUMP
+#undef SKIPJUMP
+#undef DOJUMP
+
+#ifdef PIKE_DEBUG
+
+#define GET_JUMP() (backlog[backlogp].arg=(\
+  (t_flag>3 ? sprintf(trace_buffer, "-    Target = %+ld\n", \
+                      (long)LOW_GET_JUMP()), \
+              write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0), \
+  LOW_GET_JUMP()))
+
+#define SKIPJUMP() (GET_JUMP(), LOW_SKIPJUMP())
+
+#else /* !PIKE_DEBUG */
+
+#define GET_JUMP() LOW_GET_JUMP()
+#define SKIPJUMP() LOW_SKIPJUMP()
+
+#endif /* PIKE_DEBUG */
+
+#define DOJUMP() do { \
+    INT32 tmp; \
+    tmp = GET_JUMP(); \
+    PROG_COUNTER += tmp; \
+    FETCH; \
+    if(tmp < 0) \
+      fast_check_threads_etc(6); \
+  } while(0)
+
+#endif /* OVERRIDE_JUMPS */
 
 
 /* WARNING:
@@ -1851,70 +1885,119 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
   /* Assume that the number of arguments is correct */
   /* FIXME: Use new recursion stuff */
   OPCODE0_TAILJUMP(F_RECUR, "recur", {
-    instr = 0;
-
-    OPCODE0_TAILJUMP(F_RECUR_AND_POP, "recur & pop", {
-      PIKE_OPCODE_T opcode = instr;
-      PIKE_OPCODE_T *addr;
-      struct pike_frame *new_frame;
-
-      fast_check_threads_etc(6);
-      check_c_stack(8192);
-      check_stack(256);
-
-      new_frame=alloc_pike_frame();
-      new_frame[0]=Pike_fp[0];
-
-      new_frame->refs=1;
-      new_frame->next=Pike_fp;
-
-      new_frame->save_sp = new_frame->expendible =
-	new_frame->locals = *--Pike_mark_sp;
-      new_frame->num_args = new_frame->args =
-	DO_NOT_WARN((INT32)(Pike_sp - new_frame->locals));
-      new_frame->save_mark_sp = Pike_mark_sp;
-      new_frame->mark_sp_base = Pike_mark_sp;
-
-      addr = PROG_COUNTER+GET_JUMP();
-      new_frame->num_locals =
-	DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-2],
-				 EXTRACT_UCHAR(addr-2));
-
-      DO_IF_DEBUG({
-	if(new_frame->num_args !=
-	   DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
-				    EXTRACT_UCHAR(addr-1)))
-	  fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
-		new_frame->num_args,
-		DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
-					 EXTRACT_UCHAR(addr-1)));
-
-	if(t_flag > 3)
-	  fprintf(stderr,"-    Allocating %d extra locals.\n",
-		  new_frame->num_locals - new_frame->num_args);
-      });
-
-      Pike_fp->pc = PROG_COUNTER + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
-      PROG_COUNTER=addr;
-      FETCH;
-
-      clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
-      Pike_sp += new_frame->num_locals - new_frame->args;
-
-      if(new_frame->scope) add_ref(new_frame->scope);
-      add_ref(new_frame->current_object);
-      add_ref(new_frame->context.prog);
-      if(new_frame->context.parent)
-	add_ref(new_frame->context.parent);
-      Pike_fp=new_frame;
-      new_frame->flags=PIKE_FRAME_RETURN_INTERNAL;
-      if (opcode) {
-	/* F_RECUR_AND_POP */
-	new_frame->flags|=PIKE_FRAME_RETURN_POP;
-      }
+    PIKE_OPCODE_T *addr;
+    struct pike_frame *new_frame;
+    
+    fast_check_threads_etc(6);
+    check_c_stack(8192);
+    check_stack(256);
+    
+    new_frame=alloc_pike_frame();
+    new_frame[0]=Pike_fp[0];
+    
+    new_frame->refs=1;
+    new_frame->next=Pike_fp;
+    
+    new_frame->save_sp = new_frame->expendible =
+      new_frame->locals = *--Pike_mark_sp;
+    new_frame->num_args = new_frame->args =
+      DO_NOT_WARN((INT32)(Pike_sp - new_frame->locals));
+    new_frame->save_mark_sp = Pike_mark_sp;
+    new_frame->mark_sp_base = Pike_mark_sp;
+    
+    addr = PROG_COUNTER+GET_JUMP();
+    new_frame->num_locals =
+      DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-2],
+			       EXTRACT_UCHAR(addr-2));
+    
+    DO_IF_DEBUG({
+      if(new_frame->num_args !=
+	 DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
+				  EXTRACT_UCHAR(addr-1)))
+	fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
+	      new_frame->num_args,
+	      DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
+				       EXTRACT_UCHAR(addr-1)));
+      
+      if(t_flag > 3)
+	fprintf(stderr,"-    Allocating %d extra locals.\n",
+		new_frame->num_locals - new_frame->num_args);
     });
+    
+    Pike_fp->pc = PROG_COUNTER + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
+    PROG_COUNTER=addr;
+    FETCH;
+    
+    clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
+    Pike_sp += new_frame->num_locals - new_frame->args;
+    
+    if(new_frame->scope) add_ref(new_frame->scope);
+    add_ref(new_frame->current_object);
+    add_ref(new_frame->context.prog);
+    if(new_frame->context.parent)
+      add_ref(new_frame->context.parent);
+    Pike_fp=new_frame;
+    new_frame->flags=PIKE_FRAME_RETURN_INTERNAL;
   });
 });
+
+/* Ugly code duplication */
+OPCODE0_JUMP(F_RECUR_AND_POP, "recur & pop", {
+  PIKE_OPCODE_T *addr;
+  struct pike_frame *new_frame;
+  
+  fast_check_threads_etc(6);
+  check_c_stack(8192);
+  check_stack(256);
+  
+  new_frame=alloc_pike_frame();
+  new_frame[0]=Pike_fp[0];
+  
+  new_frame->refs=1;
+  new_frame->next=Pike_fp;
+  
+  new_frame->save_sp = new_frame->expendible =
+    new_frame->locals = *--Pike_mark_sp;
+  new_frame->num_args = new_frame->args =
+    DO_NOT_WARN((INT32)(Pike_sp - new_frame->locals));
+  new_frame->save_mark_sp = Pike_mark_sp;
+  new_frame->mark_sp_base = Pike_mark_sp;
+  
+  addr = PROG_COUNTER+GET_JUMP();
+  new_frame->num_locals =
+    DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-2],
+			     EXTRACT_UCHAR(addr-2));
+  
+  DO_IF_DEBUG({
+    if(new_frame->num_args !=
+       DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
+				EXTRACT_UCHAR(addr-1)))
+      fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
+	    new_frame->num_args,
+	    DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
+				     EXTRACT_UCHAR(addr-1)));
+    
+    if(t_flag > 3)
+      fprintf(stderr,"-    Allocating %d extra locals.\n",
+	      new_frame->num_locals - new_frame->num_args);
+  });
+  
+  Pike_fp->pc = PROG_COUNTER + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
+  PROG_COUNTER=addr;
+  FETCH;
+  
+  clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
+  Pike_sp += new_frame->num_locals - new_frame->args;
+  
+  if(new_frame->scope) add_ref(new_frame->scope);
+  add_ref(new_frame->current_object);
+  add_ref(new_frame->context.prog);
+  if(new_frame->context.parent)
+    add_ref(new_frame->context.parent);
+  Pike_fp=new_frame;
+  new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+});
+
 
 /* Assume that the number of arguments is correct */
 /* FIXME: adjust Pike_mark_sp */

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: lex.h,v 1.18 2001/07/09 14:19:16 grubba Exp $
+ * $Id: lex.h,v 1.19 2001/07/16 19:48:58 hubbe Exp $
  */
 #ifndef LEX_H
 #define LEX_H
@@ -17,6 +17,9 @@ struct keyword
   char *word;
   int token;
   int flags;
+#ifdef PIKE_USE_MACHINE_CODE
+  void *address;
+#endif
 };
 
 #define I_HASARG 1
@@ -40,6 +43,9 @@ struct instr
 #endif
   int flags;
   char *name;
+#ifdef PIKE_USE_MACHINE_CODE
+  void *address;
+#endif
 };
 
 #ifdef PIKE_DEBUG

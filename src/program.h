@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.138 2001/07/13 11:26:39 grubba Exp $
+ * $Id: program.h,v 1.139 2001/07/16 19:48:59 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -563,7 +563,12 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b);
 int yyexplain_not_implements(struct program *a, struct program *b, int flags);
 PMOD_EXPORT void *parent_storage(int depth);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
+void make_program_executable(struct program *p);
 /* Prototypes end here */
+
+#ifndef PIKE_USE_MACHINE_CODE
+#define make_program_executable(X)
+#endif
 
 #define ADD_FUNCTION(NAME, FUNC, TYPE, FLAGS) \
   quick_add_function(NAME, CONSTANT_STRLEN(NAME), FUNC, TYPE,\

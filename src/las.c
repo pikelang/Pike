@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.256 2001/07/13 14:29:56 grubba Exp $");
+RCSID("$Id: las.c,v 1.257 2001/07/16 19:48:58 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4974,6 +4974,8 @@ ptrdiff_t eval_low(node *n)
     /* This is how long we try to optimize before giving up... */
     foo.counter=10000;
     foo.yes=0;
+
+    make_program_executable(Pike_compiler->new_program);
 
     tmp_callback=add_to_callback(&evaluator_callbacks,
 				 check_evaluation_time,

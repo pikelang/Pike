@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.537 2001/07/13 18:19:06 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.538 2001/07/16 19:48:56 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -989,6 +989,11 @@ AC_ARG_WITH(security,    [  --with-security        enable internal pike security
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --without-shared-nodes disable the SHARED_NODES mode of the optimizer],[],[with_shared_nodes=yes])
 AC_ARG_WITH(computed-goto,[  --with-computed-goto   Enable use of gcc-style computed goto (EXPERIMENTAL).], [], [with_computed_goto=no])
+AC_ARG_WITH(computed-goto,[  --with-machine-code    Enable use of machine code when possible (EXPERIMENTAL).], [
+  if test "$with_machine_code" = "yes"; then
+    AC_DEFINE(PIKE_USE_MACHINE_CODE)
+  else :; fi
+], [])
 
 AC_ARG_WITH(keypair-loop,[  --with-keypair-loop    Enable use of the keypair mapping loop method (EXPERIMENTAL).],[
   if test "$with_keypair_loop" = "yes"; then

@@ -17,7 +17,7 @@
 #include "builtin_functions.h"
 #include "constants.h"
 
-RCSID("$Id: peep.c,v 1.53 2001/07/09 14:19:16 grubba Exp $");
+RCSID("$Id: peep.c,v 1.54 2001/07/16 19:48:59 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -135,6 +135,22 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
+
+#if defined(__i386__) && defined(__GNUC__)
+
+#define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
+#define PUSH_ADDR(X) PUSH_INT((X))
+#define PUSHL(X) add_to_program(0x68),PUSH_INT((X)
+#define CALL_ABSOLUTE(X) add_to_program(0x9a),PUSH_ADDR((X))
+#define RET() add_to_program(0xc3);
+#define POP(X) \
+  add_to_program(0x83),  /* Addl.b 0x4, %esp */ \
+  add_to_program(0xc4), \
+  add_to_program(-X)
+
+#endif
+
+
 void ins_f_byte(unsigned int b)
 {
 #ifdef PIKE_DEBUG
@@ -147,6 +163,14 @@ void ins_f_byte(unsigned int b)
   if(b>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
+
+#ifdef PIKE_USE_MACHINE_CODE
+#if defined(__i386__) && defined(__GNUC__)
+  CALL_ABSOLUTE(instrs[b].address);
+  return
+#endif
+#endif
+
 #ifdef HAVE_COMPUTED_GOTO
   add_to_program(fcode_to_opcode[b]);
 #else /* !HAVE_COMPUTED_GOTO */
@@ -156,6 +180,17 @@ void ins_f_byte(unsigned int b)
 
 static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
+#ifdef PIKE_USE_MACHINE_CODE
+#if defined(__i386__) && defined(__GNUC__)
+  add_to_program(0xc7);  /* movl $xxxx, (%esp) */
+  add_to_program(0x04); 
+  add_to_program(0x24); 
+  PUSH_INT(b);
+  ins_f_byte(a);
+  return;
+#endif
+#endif
+
 #ifndef HAVE_COMPUTED_GOTO
   switch(b >> 8)
   {
@@ -189,7 +224,19 @@ static void ins_f_byte_with_2_args(unsigned int a,
 				   unsigned INT32 c,
 				   unsigned INT32 b)
 {
-#ifndef HAVE_COMPUTED_GOTO
+#ifdef PIKE_USE_MACHINE_CODE
+#if defined(__i386__) && defined(__GNUC__)
+  add_to_program(0xc7);  /* movl $xxxx, 4(%esp) */
+  add_to_program(0x44);
+  add_to_program(0x24);
+  add_to_program(0x04);
+  PUSH_INT(c);
+  ins_f_byte_with_arg(a,b);
+  return
+#endif
+#endif
+
+#ifdef HAVE_COMPUTED_GOTO
   switch(b >> 8)
   {
   case 0 : break;

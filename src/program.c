@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.353 2001/07/13 11:26:39 grubba Exp $");
+RCSID("$Id: program.c,v 1.354 2001/07/16 19:48:59 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -991,7 +991,11 @@ void optimize_program(struct program *p)
 #include "program_areas.h"
 
   data=malloc(size);
-  if(!data) return; /* We are out of memory, but we don't care! */
+  if(!data) 
+  {
+    make_program_executable(p);
+    return; /* We are out of memory, but we don't care! */
+  }
 
   size=0;
 
@@ -1006,6 +1010,7 @@ void optimize_program(struct program *p)
   p->total_size=size + sizeof(struct program);
 
   p->flags |= PROGRAM_OPTIMIZED;
+  make_program_executable(p);
 }
 
 /* internal function to make the index-table */
@@ -3995,6 +4000,20 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   if(Pike_compiler->last_line != current_line ||
      Pike_compiler->last_file != current_file)
   {
+#ifdef PIKE_USE_MACHINE_CODE
+#if defined(__i386__) && defined(__GNUC__)
+    /* We need to update Pike_interpreter.frame_pointer->pc */
+    INT32 tmp=PC;
+    add_to_program(0x4c /* mov $xxxxx, %eax */);
+    ins_int((INT32)(&Pike_interpreter.frame_pointer), add_to_program);
+
+    add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */
+    add_to_program(0x40);
+    add_to_program(OFFSETOF(pike_frame, pc));
+    ins_int((INT32)tmp, add_to_program);
+#endif
+#endif
+
     if((Pike_compiler->last_file != current_file) ||
        (DO_NOT_WARN((INT32)(PC - Pike_compiler->last_pc)) == 127))
     {
@@ -5484,7 +5503,6 @@ PMOD_EXPORT void *parent_storage(int depth)
 }
 
 
-
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 {
   if(major == Pike_compiler->compat_major &&
@@ -5563,3 +5581,15 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
   Pike_compiler->compat_major=major;
   Pike_compiler->compat_minor=minor;
 }
+
+#ifdef PIKE_USE_MACHINE_CODE
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+void make_program_executable(struct program *p)
+{
+  mprotect(p->program, p->num_program, PROT_EXEC | PROT_READ | PROT_WRITE);
+}
+#endif

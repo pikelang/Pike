@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.219 2001/07/13 11:26:38 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.220 2001/07/16 19:48:57 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -744,6 +744,93 @@ static int o_catch(PIKE_OPCODE_T *pc);
 #define EVAL_INSTR_RET_CHECK(x)
 #endif
 
+
+#ifdef PIKE_USE_MACHINE_CODE
+
+#define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
+#define LOW_SKIPJUMP()	(PROG_COUNTER += sizeof(INT32))
+
+/* Labels to jump to to cause eval_instruction to return */
+/* FIXME: Replace these with assembler lables */
+void *do_inter_return_label;
+void *do_escape_catch_label;
+void *dummy_label;
+
+
+#define OPCODE0(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
+#define OPCODE1(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
+#define OPCODE2(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
+
+#define OPCODE0_JUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
+#define OPCODE1_JUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
+#define OPCODE2_JUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
+
+#define OPCODE0_TAIL(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
+#define OPCODE1_TAIL(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
+#define OPCODE2_TAIL(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
+
+#define OPCODE0_TAILJUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
+#define OPCODE1_TAILJUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
+#define OPCODE2_TAILJUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
+
+#undef HAVE_COMPUTED_GOTO
+
+#if defined(__i386__) && defined(__GNUC__)
+#define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
+
+static int eval_instruction(PIKE_OPCODE_T *pc)
+{
+  do_inter_return_label = && inter_return_label;
+  do_escape_catch_label = && inter_escape_catch_label;
+
+  /* This code does not clobber %eax, but
+   * the code jumped to does.
+   */
+  __asm__ __volatile__( "	sub $8,%%esp\n"
+			"	jmp *%0"
+			: "=m" (pc)
+			:
+			: "cc", "memory", "eax" );
+
+  /* This code is never reached, but will
+   * prevent gcc from optimizing the labels below too much
+   */
+
+  fprintf(stderr,"We have reached the end of the world!\n");
+  goto *dummy_label;
+
+  /* %%esp will be slightly buggered after
+   * returning from the function code (8 bytes off), but that
+   * should not matter to these return statements. -Hubbe
+   */
+
+ inter_return_label: return -1;
+ inter_escape_catch_label: return -2;
+}
+
+#endif
+
+#ifdef PIKE_USE_SPARC_GCC
+#define PROG_COUNTER reg_pc
+register void *reg_pc __asm__ ("%i7");
+#endif
+
+#undef DONE
+#undef FETCH
+#undef INTER_RETURN
+#undef INTER_ESCAPE_CATCH
+
+#define DONE return
+#define FETCH
+#define INTER_RETURN {PROG_COUNTER=do_inter_return_label;DONE;}
+#define INTER_ESCAPE_CATCH {PROG_COUNTER=do_escape_catch_label;DONE;}
+
+#include "interpret_functions_fixed.h"
+
+
+#else /* PIKE_USE_MACHINE_CODE */
+
+
 #ifdef HAVE_COMPUTED_GOTO
 int lookup_sort_fun(const void *a, const void *b)
 {
@@ -761,11 +848,20 @@ int lookup_sort_fun(const void *a, const void *b)
 
 #undef eval_instruction
 #define eval_instruction eval_instruction_without_debug
+
 #undef PIKE_DEBUG
+#undef NDEBUG
+#undef DO_IF_DEBUG
+#define DO_IF_DEBUG(X)
 #define print_return_value()
 #include "interpreter.h"
-#undef print_return_value
+
 #define PIKE_DEBUG
+#define NDEBUG
+#undef DO_IF_DEBUG
+#define DO_IF_DEBUG(X) X
+#undef print_return_value
+
 #undef eval_instruction
 
 static inline int eval_instruction(unsigned char *pc)
@@ -780,6 +876,9 @@ static inline int eval_instruction(unsigned char *pc)
 #else
 #include "interpreter.h"
 #endif
+
+
+#endif /* PIKE_USE_MACHINE_CODE */
 
 static void trace_return_value(void)
 {
@@ -2080,4 +2179,3 @@ void really_clean_up_interpret(void)
   free_all_pike_frame_blocks();
 #endif
 }
-

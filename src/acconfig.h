@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.91 2001/07/13 18:19:06 grubba Exp $
+ * $Id: acconfig.h,v 1.92 2001/07/16 19:48:56 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -238,6 +238,9 @@
 
 /* Define if you have gcc-style computed goto, and want to use them. */
 #undef HAVE_COMPUTED_GOTO
+
+/* Define this to use machine code */
+#undef PIKE_USE_MACHINE_CODE
 
 /* You have gcc-type function attributes? */
 #undef HAVE_FUNCTION_ATTRIBUTES

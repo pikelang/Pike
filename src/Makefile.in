@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.267 2001/07/13 18:19:07 grubba Exp $
+# $Id: Makefile.in,v 1.268 2001/07/16 19:48:56 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -717,6 +717,10 @@ $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 	touch $(SRCDIR)/language.c
+
+
+interpret_functions_fixed.h: interpret_functions.h
+	./precompile.sh make_interpret_functions.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c

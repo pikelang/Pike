@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.97 2001/07/15 23:14:37 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.98 2001/07/16 19:48:58 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -145,21 +145,64 @@ void exit_lex(void)
 #endif
 }
 
-#define OPCODE0(OP,DESC) { DESC, OP, 0 },
-#define OPCODE1(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE2(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#ifdef PIKE_USE_MACHINE_CODE
+#define ADDR(X) , (void *)PIKE_CONCAT(opcode_,X)
+#define NULLADDR , 0
 
-#define OPCODE0_TAIL(OP,DESC) { DESC, OP, 0 },
-#define OPCODE1_TAIL(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#define OPCODE0(OP,DESC) void PIKE_CONCAT(opcode_,OP)(void);
+#define OPCODE1(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32);
+#define OPCODE2(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32,INT32);
 
-#define OPCODE0_JUMP(OP,DESC) { DESC, OP, I_ISJUMP },
-#define OPCODE1_JUMP(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE2_JUMP(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#define OPCODE0_TAIL(OP,DESC) void PIKE_CONCAT(opcode_,OP)(void);
+#define OPCODE1_TAIL(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32);
+#define OPCODE2_TAIL(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32,INT32);
 
-#define OPCODE0_TAILJUMP(OP,DESC) { DESC, OP, I_ISJUMP },
-#define OPCODE1_TAILJUMP(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE2_TAILJUMP(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#define OPCODE0_JUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(void);
+#define OPCODE1_JUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32);
+#define OPCODE2_JUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32,INT32);
+
+#define OPCODE0_TAILJUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(void);
+#define OPCODE1_TAILJUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32);
+#define OPCODE2_TAILJUMP(OP,DESC) void PIKE_CONCAT(opcode_,OP)(INT32,INT32);
+
+#include "interpret_protos.h"
+
+#undef OPCODE0
+#undef OPCODE1
+#undef OPCODE2
+
+#undef OPCODE0_TAIL
+#undef OPCODE1_TAIL
+#undef OPCODE2_TAIL
+
+#undef OPCODE0_JUMP
+#undef OPCODE1_JUMP
+#undef OPCODE2_JUMP
+
+#undef OPCODE0_TAILJUMP
+#undef OPCODE1_TAILJUMP
+#undef OPCODE2_TAILJUMP
+
+#else
+#define ADDR(X)
+#define NULLADDR
+#endif
+
+#define OPCODE0(OP,DESC) { DESC, OP, 0 ADDR(OP) },
+#define OPCODE1(OP,DESC) { DESC, OP, I_HASARG ADDR(OP) },
+#define OPCODE2(OP,DESC) { DESC, OP, I_TWO_ARGS ADDR(OP) },
+
+#define OPCODE0_TAIL(OP,DESC) { DESC, OP, 0 ADDR(OP) },
+#define OPCODE1_TAIL(OP,DESC) { DESC, OP, I_HASARG ADDR(OP) },
+#define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS ADDR(OP) },
+
+#define OPCODE0_JUMP(OP,DESC) { DESC, OP, I_ISJUMP ADDR(OP) },
+#define OPCODE1_JUMP(OP,DESC) { DESC, OP, I_HASARG ADDR(OP) },
+#define OPCODE2_JUMP(OP,DESC) { DESC, OP, I_TWO_ARGS ADDR(OP) },
+
+#define OPCODE0_TAILJUMP(OP,DESC) { DESC, OP, I_ISJUMP ADDR(OP) },
+#define OPCODE1_TAILJUMP(OP,DESC) { DESC, OP, I_HASARG ADDR(OP) },
+#define OPCODE2_TAILJUMP(OP,DESC) { DESC, OP, I_TWO_ARGS ADDR(OP) },
 
 #define LEXER
 
@@ -168,48 +211,48 @@ struct keyword instr_names[]=
 #ifndef PIKE_PRECOMPILER
 #include "interpret_protos.h"
 #endif /* !PIKE_PRECOMPILER */
-{ "%=",			F_MOD_EQ,0 },	
-{ "&=",			F_AND_EQ,0 },	
-{ "|=",			F_OR_EQ,0 },	
-{ "*=",			F_MULT_EQ,0 },	
-{ "+=",			F_ADD_EQ,0 },	
-{ "-=",			F_SUB_EQ,0 },	
-{ "/=",			F_DIV_EQ,0 },	
-{ "<<=",		F_LSH_EQ,0 },	
-{ ">>=",		F_RSH_EQ,0 },	
-{ "^=",			F_XOR_EQ,0 },	
-{ "arg+=1024",		F_PREFIX_1024,0 },
-{ "arg+=256",		F_PREFIX_256,0 },
-{ "arg+=256*X",		F_PREFIX_CHARX256,0 },
-{ "arg+=256*XX",	F_PREFIX_WORDX256,0 },
-{ "arg+=256*XXX",	F_PREFIX_24BITX256,0 },
-{ "arg+=512",		F_PREFIX_512,0 },
-{ "arg+=768",		F_PREFIX_768,0 },
+{ "%=",			F_MOD_EQ,0 NULLADDR },	
+{ "&=",			F_AND_EQ,0 NULLADDR },	
+{ "|=",			F_OR_EQ,0 NULLADDR },	
+{ "*=",			F_MULT_EQ,0 NULLADDR },	
+{ "+=",			F_ADD_EQ,0 NULLADDR },	
+{ "-=",			F_SUB_EQ,0 NULLADDR },	
+{ "/=",			F_DIV_EQ,0 NULLADDR },	
+{ "<<=",		F_LSH_EQ,0 NULLADDR },	
+{ ">>=",		F_RSH_EQ,0 NULLADDR },	
+{ "^=",			F_XOR_EQ,0 NULLADDR },	
+{ "arg+=1024",		F_PREFIX_1024,0 NULLADDR },
+{ "arg+=256",		F_PREFIX_256,0 NULLADDR },
+{ "arg+=256*X",		F_PREFIX_CHARX256,0 NULLADDR },
+{ "arg+=256*XX",	F_PREFIX_WORDX256,0 NULLADDR },
+{ "arg+=256*XXX",	F_PREFIX_24BITX256,0 NULLADDR },
+{ "arg+=512",		F_PREFIX_512,0 NULLADDR },
+{ "arg+=768",		F_PREFIX_768,0 NULLADDR },
 
-{ "arg+=1024",		F_PREFIX2_1024,0 },
-{ "arg+=256",		F_PREFIX2_256,0 },
-{ "arg+=256*X",		F_PREFIX2_CHARX256,0 },
-{ "arg+=256*XX",	F_PREFIX2_WORDX256,0 },
-{ "arg+=256*XXX",	F_PREFIX2_24BITX256,0 },
-{ "arg+=512",		F_PREFIX2_512,0 },
-{ "arg+=768",		F_PREFIX2_768,0 },
+{ "arg+=1024",		F_PREFIX2_1024,0 NULLADDR },
+{ "arg+=256",		F_PREFIX2_256,0 NULLADDR },
+{ "arg+=256*X",		F_PREFIX2_CHARX256,0 NULLADDR },
+{ "arg+=256*XX",	F_PREFIX2_WORDX256,0 NULLADDR },
+{ "arg+=256*XXX",	F_PREFIX2_24BITX256,0 NULLADDR },
+{ "arg+=512",		F_PREFIX2_512,0 NULLADDR },
+{ "arg+=768",		F_PREFIX2_768,0 NULLADDR },
 
-{ "break",		F_BREAK,0 },	
-{ "case",		F_CASE,0 },	
-{ "continue",		F_CONTINUE,0 },	
-{ "default",		F_DEFAULT,0 },	
-{ "do-while",		F_DO,0 },	
-{ "for",		F_FOR,0 },
+{ "break",		F_BREAK,0 NULLADDR },	
+{ "case",		F_CASE,0 NULLADDR },	
+{ "continue",		F_CONTINUE,0 NULLADDR },	
+{ "default",		F_DEFAULT,0 NULLADDR },	
+{ "do-while",		F_DO,0 NULLADDR },	
+{ "for",		F_FOR,0 NULLADDR },
 
-{ "pointer",		F_POINTER, I_ISPOINTER },
-{ "data",		F_DATA, I_DATA },
-{ "byte",		F_BYTE, I_DATA },
-{ "lvalue_list",	F_LVALUE_LIST,0 },	
-{ "label",		F_LABEL,I_HASARG },
-{ "align",		F_ALIGN, I_HASARG },
-{ "nop",                F_NOP,0 },
-{ "function start",     F_START_FUNCTION,0 },
-{ "notreached!",        F_NOTREACHED, 0 },
+{ "pointer",		F_POINTER, I_ISPOINTER NULLADDR },
+{ "data",		F_DATA, I_DATA NULLADDR },
+{ "byte",		F_BYTE, I_DATA NULLADDR },
+{ "lvalue_list",	F_LVALUE_LIST,0 NULLADDR },	
+{ "label",		F_LABEL,I_HASARG NULLADDR },
+{ "align",		F_ALIGN, I_HASARG NULLADDR },
+{ "nop",                F_NOP,0 NULLADDR },
+{ "function start",     F_START_FUNCTION,0 NULLADDR },
+{ "notreached!",        F_NOTREACHED, 0 NULLADDR },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
@@ -248,6 +291,9 @@ void init_lex()
 
     instrs[instr_names[i].token - F_OFFSET].name = instr_names[i].word;
     instrs[instr_names[i].token - F_OFFSET].flags=instr_names[i].flags;
+#ifdef PIKE_USE_MACHINE_CODE
+    instrs[instr_names[i].token - F_OFFSET].address=instr_names[i].address;
+#endif
   }
 
 #ifdef PIKE_DEBUG
