@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.344 2005/03/09 23:10:41 nilsson Exp $
+|| $Id: file.c,v 1.345 2005/03/10 01:15:12 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1893,6 +1893,10 @@ void file_sync(INT32 args)
 }
 #endif /* HAVE_FSYNC */
 
+#if defined(INT64) && (defined(HAVE_LSEEK64) || defined(__NT__))
+#define SEEK64
+#endif
+
 /*! @decl int seek(int pos)
  *! @decl int seek(int unit, int mult)
  *! @decl int seek(int unit, int mult, int add)
@@ -1917,7 +1921,7 @@ void file_sync(INT32 args)
  */
 static void file_seek(INT32 args)
 {
-#if defined (INT64) || defined (HAVE_LSEEK64)
+#ifdef SEEK64
   INT64 to = 0;
 #else
   off_t to = 0;
@@ -1926,14 +1930,12 @@ static void file_seek(INT32 args)
   if( args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->seek", 1);
 
-#if defined (INT64) && defined (AUTO_BIGNUM)
-#if defined (HAVE_LSEEK64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
+#if defined (SEEK64) && defined (AUTO_BIGNUM)
   if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
     if (!int64_from_bignum(&to, Pike_sp[-args].u.object))
       Pike_error ("Bad argument 1 to Stdio.File->seek(). Offset too large.\n");
   }
   else
-#endif
 #endif
     if(Pike_sp[-args].type != PIKE_T_INT)
       SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 1, "int");
@@ -1958,7 +1960,7 @@ static void file_seek(INT32 args)
 
   ERRNO=0;
 
-#ifdef HAVE_LSEEK64
+#if defined(HAVE_LSEEK64) && !defined(__NT__)
   to = lseek64(FD,to,to<0 ? SEEK_END : SEEK_SET);
 #else
   to = fd_lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
@@ -2002,11 +2004,7 @@ static void file_tell(INT32 args)
   if(to<0) ERRNO=errno;
 
   pop_n_elems(args);
-#ifdef TELL64
   push_int64(to);
-#else
-  push_int(to);
-#endif
 }
 
 /*! @decl int(0..1) truncate(int length)
