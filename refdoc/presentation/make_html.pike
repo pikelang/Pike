@@ -150,6 +150,10 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       ret += parse_docgroup(c);
       break;
 
+    case "autodoc":
+      ret += parse_autodoc(c);
+      break;
+
     case "namespace":
       ret += parse_namespace(c);
       break;
@@ -215,6 +219,27 @@ string parse_appendix(Node n, void|int noheader) {
   return ret;
 }
 
+string parse_autodoc(Node n)
+{
+  string ret ="";
+
+  mapping m = n->get_attributes();
+
+  Node c = n->get_first_element("doc");
+  if(c)
+    ret += "<dl>" + parse_doc(c) + "</dl>";
+
+#ifdef DEBUG
+  if(sizeof(n->get_elements("doc"))>1)
+    error( "More than one doc element in autodoc node.\n" );
+#endif
+
+  ret += parse_children(n, "docgroup", parse_docgroup);
+  ret += parse_children(n, "namespace", parse_module);
+
+  return ret;
+}
+
 string parse_namespace(Node n, void|int noheader)
 {
   string ret = "";
@@ -251,7 +276,7 @@ string parse_module(Node n, void|int noheader) {
   string ret ="";
 
   mapping m = n->get_attributes();
-  int(0..1) header = !noheader && m->name!="" && !(m->hidden);
+  int(0..1) header = !noheader && !(m->hidden);
   if(header)
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
@@ -809,11 +834,21 @@ string render_class_path(Node n,int|void class_only)
   a = a[root+1..];
   if(sizeof(a) && a[0]->get_any_name() == "autodoc")
     a = a[1..];
-  string ret = a->get_attributes()->name * ".";
-  if(!sizeof(ret) || ret[-1]==':')
-    return ret;
-  if (a[-1]->get_any_name() == "namespace")
-    return ret+"::";
+  if (!sizeof(a)) return "";
+  string ret = "";
+  if (a[0]->get_any_name() == "namespace") {
+    a = a->get_attributes()->name;
+    a[0] += "::";
+    if ((<"::","lfun::">)[a[0]]) {
+      // Censor namespaces other than :: and lfun::
+      ret = a[0];
+    }
+    a = a[1..];
+  } else {
+    a = a->get_attributes()->name;
+  }
+  ret += a * ".";
+  if (!sizeof(ret) || ret[-1] == ':') return ret;
   if(n->get_any_name()=="class" || n->get_any_name()=="module")
     return ret + ".";
   if(n->get_parent()->get_parent()->get_any_name()=="class")
