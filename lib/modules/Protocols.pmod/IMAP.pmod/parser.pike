@@ -32,12 +32,12 @@ class line_handler
   mapping `()(object l)
     {
       line = l;
-      return process(@a);
+      return process(@args);
     }
 }
 
 /* Value is an integer */
-mapping get_number()
+mapping get_number(function c)
 {
   if (line)
     return c(line->get_number());
@@ -47,7 +47,7 @@ mapping get_number()
 }
   
 /* Value is a string */
-mapping get_atom(c)
+mapping get_atom(function c)
 {
   if (line)
     return c(line->get_atom());
@@ -65,14 +65,14 @@ class get_string_handler
       c = _c;
     }
 
-  mapping `()(string l)
+  mapping `()(string s)
     {
       return c(s);
     }
 }
 
 /* Value is a string */
-mapping get_string(c)
+mapping get_string(function c)
 {
   if (line)
   {
@@ -81,15 +81,15 @@ mapping get_string(c)
       return c(s);
 
     line = 0;
-    return ([ "action", "expect_literal",
-	      "length", s->length,
+    return ([ "action" : "expect_literal",
+	      "length" : s->length,
 	      "handler" : get_string_handler(c) ]);
   }
   return ([ "action" : "expect_line",
 	    "handler" : line_handler(get_string, c) ]);
 }
 
-mapping get_astring(c)
+mapping get_astring(function c)
 {
   if (line)
   {
@@ -98,16 +98,16 @@ mapping get_astring(c)
       return c(s);
 
     line = 0;
-    return ([ "action", "expect_literal",
-	      "length", s->length,
+    return ([ "action" : "expect_literal",
+	      "length" : s->length,
 	      "handler" : get_string_handler(c) ]);
   }
   return ([ "action" : "expect_line",
 	    "handler" : line_handler(get_astring, c) ]);
 }
 
-/* VAlue is a set object */
-mapping get_set
+/* Value is a set object */
+mapping get_set(function c)
 {
   if (line)
     return c(line->get_set());

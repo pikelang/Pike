@@ -5,6 +5,8 @@
 
 inherit Protocols.Line.imap_style;
 
+int debug_level;
+
 void send_line(string s)
 {
   send(s + "\r\n");
@@ -13,11 +15,6 @@ void send_line(string s)
 void send_lines(string ...s)
 {
   send_line(s * "\r\n");
-}
-
-void send_imap(string|object ...args)
-{
-  send_line(.types.imap_format_array(args));
 }
 
 void close_imap()
@@ -34,7 +31,9 @@ void do_timeout()
   }
 }
 
-string handle_request(object req);
+mapping(string:function) commands;
+
+function(object:void) request_callback;
 
 void recv_command(string s)
 {
@@ -44,11 +43,18 @@ void recv_command(string s)
   
   object line = .parse_line(s);
 
+  // trace(4711);
+
   string tag = line->get_atom();
+
+  if (debug_level)
+    werror("Read tag: %O\n", tag);
   
   if (!tag)
   {
+    // werror("Foo!\n");
     send_bad_response(tag, "No tag");
+    return;
   }
   
   string command = line->get_atom();
@@ -56,19 +62,21 @@ void recv_command(string s)
   if (!command)
   {
     send_bad_response(tag, "No command");
+    return;
   }
 
   if (debug_level)
-    werror("Read command: '%s'\n", command);
+    werror("Read command: %O\n", command);
     
-  function req = all_commands[state][lower_case(command)];
+  function req = commands[lower_case(command)];
 
   if (!req)
   {
     send_bad_response(tag, "Unknown command");
+    return;
   }
 
-  handle_request(req(tag, line));
+  request_callback(req(tag, line));
 }
 
 class recv_line
@@ -132,18 +140,28 @@ void use_commands(mapping(string:function) c)
 
 void get_request()
 {
-  handle_command = recv_command;
+  handle_line = recv_command;
 }
 
 void get_line(function handler)
 {
-  handle_command = recv_line(handler);
+  handle_line = recv_line(handler);
 }
 
 void get_literal(int length, function handler)
 {
   literal_length = length;
   handle_literal = recv_literal(handler);
+}
+
+void create(object f, int timeout,
+	    function(object:void) callback, int|void debug)
+{
+  ::create(f, timeout);
+  debug_level = debug;
+  request_callback = callback;
+  
+  get_request();
 }
 
 /* Old code */

@@ -63,11 +63,13 @@ class request
 {
   string tag;
   object parser;
-  object io;
   object server;
-  object session;
+  mapping session;
+
+  function send;
+
   
-  void create(string t, object l)
+  void create(string t, object line)
     {
       tag = t;
       parser = .parser(line);
@@ -78,14 +80,13 @@ class request
 
   constant arg_info = ({ });
 
-  string easy_process(object|mapping session, object server,
-		      function send, mixed ... args);
+  mapping easy_process(mixed ... args);
   
   array args;
   int argc;
 
-  string process_literal(string literal, object|mapping session, object server,
-			 object io)
+#if 0
+  mapping process_literal(string literal)
     {
       args[argc++] = literal;
       if (argc == sizeof(args))
@@ -95,29 +96,31 @@ class request
 		  "handler" : process_line ]);
     }
 
-  string process_line(object l, object|mapping session, object server,
-		      object io)
+  mapping process_line(object l)
     {
-      line = l;
+      with_line(line);
+
       return process(session, server, io);
     }
 
-  string get_literal(object io)
+  mapping get_literal()
     {
-      io->send_imap("+", ( (sizeof(arg_info[argc]) > 1)
-			   ? arg_info[argc][1] : "Ready") );
       return ([ "action" : "expect_literal",
+		"msg" :  ( (sizeof(arg_info[argc]) > 1)
+			   ? arg_info[argc][1]
+			   : "Ready" ), 
 		"length" : args[argc]->length,
 		"handler": process_literal,
       ]);
     }
+#endif
   
-  mapping process(object|mapping s, object db, object o)
+  mapping process(mapping s, object db, function io)
     {
       session = s;
       server = db;
-      io = o;
-
+      send = io;
+      
       return collect_args();
     }
 
@@ -141,7 +144,7 @@ class request
       return collect_args();
     }
   
-  mapping collect_args
+  mapping collect_args()
     {
       if (argc == sizeof(args))
 	return easy_process(@args);	
@@ -161,7 +164,7 @@ class request
       case "any":
 	/* A single atom or string or a list of atoms (with
 	 * options), lists. Used for fetch. */
-	return parser->get_any(append_arg);
+	return parser->get_any(arg_info[argc][1], 0, append_arg, );
       default:
 	throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
 			  arg_info[argc]), backtrace() }) );
@@ -227,20 +230,15 @@ class request
       return easy_process(session, server, send, @args);
     }
 #endif
-  void create(string tag, object line)
-    {
-      ::create(tag, line);
-      args = allocate(sizeof(arg_info));
-      argc = 0;
-    }
 }
 
 
 class noop
 {
   inherit request;
+  constant arg_info = ({ });
 
-  string process(object session, object server, function send)
+  mapping easy_process()
     {
       array status = server->update(session);
       
@@ -249,26 +247,27 @@ class noop
 	  send("*", @a);
       
       send(tag, "OK");
-      return "finished";
+      
+      return ([ "action" : "finished" ]);
     }
 }
 
 class capability
 {
   inherit request;
-
-  string process(object|mixed session, object server, function send)
+  constant arg_info = ({ });
+  
+  mapping easy_process()
     {
       send("*", "CAPABILITY", @server->capabilities(session));
       send(tag, "OK");
-      return "finished";
+      return ([ "action" : "finished" ]);
     }
 }
 
 class login
 {
-  inherit easy_request;
-
+  inherit request;
   constant arg_info = ({
     ({ "astring", "Ready for user name" }),
     ({ "astring", "Ready for pass word" }) });
@@ -276,8 +275,7 @@ class login
   mixed uid;
   mixed get_uid() { return uid; }
   
-  string easy_process(object|mapping session, object server,
-		      function send, string name, string passwd)
+  mapping easy_process(string name, string passwd)
     {
       /* Got name and passwd. Attempt authentication. */
       uid = server->login(session, name, passwd);
@@ -285,33 +283,33 @@ class login
       if (!uid)
       {
 	send(tag, "NO");
-	return "finished";
+	return ([ "action" : "finished" ]);
       }
       send(tag, "OK");
-      return "login";
+      return ([ "action" : "logged_in_state" ]);
     }
 }
 
 class logout
 {
   inherit request;
-
-  string process(object|mapping session, object server, function send)
+  constant arg_info = ({ });
+  
+  mapping easy_process()
     {
       send("*", "BYE");
       send(tag, "OK");
-      return "close";
+      return ([ "action" : "close" ]);
     }
 }
 
 class list
 {
-  inherit easy_request;
+  inherit request;
   constant arg_info = ({ ({ "astring", "Ready for mailbox name" }),
 			 ({ "astring" }) });
 
-  string easy_process(object|mapping session, object server,
-		      function send, string reference, string glob)
+  mapping easy_process(string reference, string glob)
     {
       /* Each element of the array should be an array with three elements,
        * attributes, hierarchy delimiter, and the name. */
@@ -327,18 +325,17 @@ class list
 	  send("*", @a);
       
       send(tag, "OK");
-      return "finished";
+      return ([ "action" : "finished" ]);
     }
 }
 
 class lsub
 {
-  inherit easy_request;
+  inherit request;
   constant arg_info = ({ ({ "astring", "Ready for mailbox name" }),
 			 ({ "astring" }) });
 
-  string easy_process(object|mapping session, object server,
-		      function send, string reference, string glob)
+  mapping easy_process(string reference, string glob)
     {
       /* Each element of the array should be an array with three elements,
        * attributes, hierarchy delimiter, and the name. */
@@ -354,18 +351,16 @@ class lsub
 	  send("*", @a);
       
       send(tag, "OK");
-      return "finished";
+      return ([ "action" : "finished" ]);
     }
 }
 
 class select
 {
-  inherit easy_request;
-
+  inherit request;
   constant arg_info = ({ ({ "astring" }) });
 
-  string easy_process(object|mapping session, object server,
-		      function send, string mailbox)
+  mapping easy_process(string mailbox)
     {
       if (lower_case(mailbox) == "inbox")
 	mailbox = "INBOX";
@@ -377,23 +372,20 @@ class select
 	foreach(info, array a)
 	  send("*", @a);
 	send(tag, "OK", imap_prefix( ({ "READ-WRITE" }) ) );
-	return "select";
+	return ([ "action" : "selected_state" ]);
       } else {
 	send(tag, "NO");
-	return "login";
+	return ([ "action" : "logged_in_state" ]);
       }
     }
 }
 
 class fetch
 {
-  inherit easy_request;
+  inherit request;
+  constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
 
-  constant arg_info = ({ ({ "set" }), ({ "simple_list"}) });
-
-  string easy_process(object|mapping session, object server,
-		      function send,
-		      object message_set, mapping request)
+  mapping easy_process(object message_set, mapping request)
     {
       array fetch_attrs = 0;
       switch(request->type)
@@ -424,7 +416,7 @@ class fetch
 	  if (!f)
 	  {
 	    send(tag, "BAD");
-	    return "finished";
+	    return ([ "action" : "finished" ]);
 	  }
 	  fetch_attrs = ({ f });
 	}
@@ -436,7 +428,7 @@ class fetch
 	  if (!(fetch_attrs[i] = process_fetch_attr(request->list[i])))
 	  {
 	    send(tag, "BAD");
-	    return "finished";
+	    return ([ "action" : "finished" ]);
 	  }
 	}
 	break;
@@ -456,8 +448,7 @@ class fetch
       {
 	if (stringp(e))
 	{
-	  send(tag, "BAD", e);
-	  return "finished";
+	  return ([ "action" : "bad", "msg" : e ]);
 	}
 	else throw(e);
       }
@@ -469,7 +460,7 @@ class fetch
       } else 
 	send(tag, "NO");
 
-      return "finished";
+      return ([ "action" : "finished" ]);
     }
 
   mapping process_fetch_attr(mapping atom)

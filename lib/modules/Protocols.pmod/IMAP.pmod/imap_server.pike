@@ -120,7 +120,7 @@ class connection
 	/* Fall through */
       case "finished":
 	/* Finished processing this request. Remain in the same state. */
-	get_request();
+	io->get_request();
 	break;
       case "expect_line":
 	/* Callback for next line recieved */
@@ -136,10 +136,10 @@ class connection
 	break;
 #endif
       case "logged_in_state":
-	use_commands(auth_commands);
+	io->use_commands(auth_commands);
 	break;
       case "selected_state":
-	use_commands(select_commands);
+	io->use_commands(select_commands);
 	break;
       default:
 	throw( ({ sprintf("IMAP.pmod: Internal error, action = %O\n",
@@ -152,7 +152,7 @@ class connection
       mapping action;
       
       mixed e;
-      if (e = catch(action = req->process(session, db, io)))
+      if (e = catch(action = req->process(session, db, io->send_imap)))
 	{
 	  show_backtrace(e);
 	  io->send_bad_response(req->tag, "Internal error");
@@ -164,18 +164,18 @@ class connection
   void create(object f, int timeout, object backend,
 	      mapping preauth, int|void debug)
     {
-      io = .server(f, timeout);
+      io = .server(f, timeout, handle_request, debug);
       db = backend;
 
       if (preauth)
       {
 	session = preauth->session;
-	use_commands(auth_commands);
+	io->use_commands(auth_commands);
 
-	imap_send("*", "PREAUTH", "IMAP4rev1", preauth->message);
+	io->send_imap("*", "PREAUTH", "IMAP4rev1", preauth->message);
       } else {
-	use_commands(unauth_commands);
-	imap_send("*", "OK", "IMAP4", "IMAP4rev1", "Service ready");
+	io->use_commands(unauth_commands);
+	io->send_imap("*", "OK", "IMAP4", "IMAP4rev1", "Service ready");
       }
     }
 }
@@ -365,6 +365,7 @@ class connection
 object db;
 
 int debug_level;
+int timeout;
 
 object port;
 
@@ -375,12 +376,13 @@ void accept_callback(mixed id)
 
   object f = port->accept();
   if (f)
-    connection(f, db, 0, debug_level);
+    connection(f, timeout, db, 0, debug_level);
 }
 
-void create(object p, int portnr, object server, int|void debug)
+void create(object p, int portnr, int t, object server, int|void debug)
 {
   port = p;
+  timeout = t;
   db = server;
   debug_level = debug;
 

@@ -170,7 +170,7 @@ mapping get_token(int eol)
   }
   case "{": {
     object s = get_string();
-    return s && ({ "type" : "literal", "length" : s->length; });
+    return s && ([ "type" : "literal", "length" : s->length ]);
   }
   default: {
     string atom = get_atom(1);
