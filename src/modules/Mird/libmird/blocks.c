@@ -6,7 +6,7 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: blocks.c,v 1.1 2001/03/26 12:32:40 mirar Exp $
+** $Id: blocks.c,v 1.2 2001/04/13 17:51:10 grubba Exp $
 **
 */ 
 
@@ -21,7 +21,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: blocks.c,v 1.1 2001/03/26 12:32:40 mirar Exp $";
+   "$Id: blocks.c,v 1.2 2001/04/13 17:51:10 grubba Exp $";
 
 #ifdef SUPERMASSIVE_DEBUG
 #define BLOCK_DEBUG
@@ -51,11 +51,12 @@ MIRD_RES mird_low_block_read(struct mird *db,UINT32 block,
    {
       MIRD_SYSCALL_COUNT(db,5);
       res=(MIRD_OFF_T)read(fd,(void*)dest,db->block_size*n);
-      if (res==-1)
+      if (res==-1) {
 	 if (errno==EINTR) 
 	    continue; /* try again */
 	 else 
 	    return mird_generate_error(MIRDE_DB_READ,block,errno,0);
+      }
       if (res!=(MIRD_OFF_T)(db->block_size*n))
 	 return mird_generate_error(MIRDE_DB_READ_SHORT,
 				    block,res,db->block_size*n);
@@ -86,12 +87,12 @@ MIRD_RES mird_low_block_write(struct mird *db,UINT32 block,
    {
       MIRD_SYSCALL_COUNT(db,6);
       res=(MIRD_OFF_T)write(fd,(void*)data,db->block_size*n);
-      if (res==-1)
+      if (res==-1) {
 	 if (errno==EINTR) 
 	    continue; /* try again */
 	 else 
 	    return mird_generate_error(MIRDE_DB_WRITE,block,errno,0);
-
+      }
       if (res!=(MIRD_OFF_T)(db->block_size*n))
 	 return mird_generate_error(MIRDE_DB_WRITE_SHORT,
 				     block,res,db->block_size*n);
@@ -380,7 +381,7 @@ static MIRD_RES mird_cache_zot(struct mird *db,
 	 }
 #ifdef FIRST_CLEAN
 #ifdef CLEAN_IS_NOT_FRAG
-	 else if ( // !(b->flags & BLOCK_CACHE_DIRTY) ||
+	 else if ( /* !(b->flags & BLOCK_CACHE_DIRTY) || */
 		   (READ_BLOCK_LONG(b->data,2)!=BLOCK_FRAG_PROGRESS &&
 		    READ_BLOCK_LONG(b->data,2)!=BLOCK_FRAG) )
 	    { if (!clean) clean=b; }
