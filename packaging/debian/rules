@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.42 2003/03/19 12:43:55 grendel Exp $
+# $Id: rules,v 1.43 2003/11/02 22:29:25 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -119,7 +119,7 @@ build-indep-stamp:
 	# It's ok not to do anything here, if you don't need to build
 	#  anything for this package.
 	#/usr/bin/docbook-to-man debian/$(PIKE).sgml > $(PIKE).1
-	$(MAKE) -C$(CURDIR)/refdoc PIKE="$(RUNPIKE)"
+	$(MAKE) PIKE="$(RUNPIKE)" doc
 
 	touch build-indep-stamp
 
