@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.20 2002/09/22 22:03:43 marcus Exp $
+ * $Id: ppc32.c,v 1.21 2002/09/26 11:32:05 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -265,7 +265,7 @@ void ppc32_push_global(INT32 arg)
   INCR_SP_REG(sizeof(struct svalue));
 }
 
-void ppc32_push_int(INT32 x)
+void ppc32_push_int(INT32 x, int s)
 {
   LOAD_SP_REG();
 
@@ -283,8 +283,8 @@ void ppc32_push_int(INT32 x)
   if(sizeof(struct svalue) <= 8 || x != 0)
     SET_REG(0, x);
   STW(0, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.integer));
-  if(x != MAKE_TYPE_WORD(PIKE_T_INT, 0))
-    SET_REG(0, MAKE_TYPE_WORD(PIKE_T_INT, 0));
+  if(x != MAKE_TYPE_WORD(PIKE_T_INT, s))
+    SET_REG(0, MAKE_TYPE_WORD(PIKE_T_INT, s));
   STW(0, PPC_REG_PIKE_SP, 0);
   INCR_SP_REG(sizeof(struct svalue));  
 }
@@ -428,15 +428,15 @@ void ins_f_byte(unsigned int b)
      return;
 
    case F_CONST0 - F_OFFSET:
-     ppc32_push_int(0);
+     ppc32_push_int(0, 0);
      return;
      
    case F_CONST1 - F_OFFSET:
-     ppc32_push_int(1);
+     ppc32_push_int(1, 0);
      return;
      
    case F_CONST_1 - F_OFFSET:
-     ppc32_push_int(-1);
+     ppc32_push_int(-1, 0);
      return;
      
   case F_MAKE_ITERATOR - F_OFFSET:
@@ -451,6 +451,8 @@ void ins_f_byte(unsigned int b)
     addr = (void *)f_add;
     break;
 
+  case F_EXIT_CATCH - F_OFFSET:
+    ppc32_push_int(0, 1);
   case F_ESCAPE_CATCH - F_OFFSET:
     ppc32_escape_catch();
     return;
@@ -499,11 +501,11 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
      return;
 
    case F_NUMBER:
-     ppc32_push_int(b);
+     ppc32_push_int(b, 0);
      return;
 
    case F_NEG_NUMBER:
-     ppc32_push_int(-b);
+     ppc32_push_int(-b, 0);
      return;
 
    case F_CONSTANT:
