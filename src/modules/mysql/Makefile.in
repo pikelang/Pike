@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.1 1997/01/18 21:52:08 hubbe Exp $
+# $Id: Makefile.in,v 1.2 1997/01/30 22:07:43 grubba Exp $
 #
 
 SRCDIR=@srcdir@
@@ -18,7 +18,7 @@ mysql.a: $(OBJS)
 	-@RANLIB@ mysql.a
 
 linker_options: Makefile
-	echo >linker_options "@LDFLAGS@ @LIBS@"
+	echo >linker_options "@LDFLAGS@ @MYSQL_LIBS@"
 
 verify:
 	@echo No tests for the mysql-module.
