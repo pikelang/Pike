@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.117 2001/06/16 13:48:31 per Exp $
+// $Id: module.pmod,v 1.118 2001/06/16 17:18:30 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -1234,14 +1234,23 @@ class FILE
     error("Cannot use nonblocking IO with buffered files.\n");
   }
 
-  int write( array(string)|string what  )
+  int write( array(string)|string what, mixed .. fmt  )
   {
     if( output_conversion )
+    {
+      if( sizeof( fmt ) )
+      {
+	if( arrayp( what ) )
+	  what *="";
+	what = sprintf( what, @fmt );
+      }
       if( arrayp( what ) )
 	what = map( what, output_conversion );
       else
 	what = output_conversion( what );
-    return ::write( what );
+      return ::write( what );
+    }
+    return ::write( what,@fmt );
   }
   //! This function does approximately the same as:
   //! @code{@[write](@[sprintf](@[format],@@@[data]))@}.
