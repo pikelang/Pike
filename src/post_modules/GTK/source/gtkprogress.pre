@@ -15,7 +15,7 @@ NAME_ARGS(format);
 // 
 // More or less like sprintf.<p>
 // %[field width][character]<p>
-// 0<=width<=2<p>
+// 0&lt;=width&gt;=2<p>
 // Supported characters:
 // <dl><dt><dd><pre>
 // %: Insert a %<br>

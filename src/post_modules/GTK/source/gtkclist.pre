@@ -139,7 +139,7 @@ NAME_ARGS(column,width);
 
 COMPLEX_FUNCTION(set_column_max_width, int, int);
 NAME_ARGS(column,width);
-// if width < 0 , there is no restriction
+// if width 6lt; 0 , there is no restriction
 
 SIMPLE_INT_FUNCTION(set_row_height);
 NAME_ARGS(pixels);
