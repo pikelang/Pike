@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.48 1999/10/21 11:16:45 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.49 1999/10/22 02:36:30 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -470,9 +470,12 @@ static void reduce(struct object *o)
   
   i = mpz_get_si(OBTOMPZ(o));
   if(mpz_cmp_si(OBTOMPZ(o), i) == 0)
+  {
+    free_object(o);
     push_int(i);
-  else
+  }else{
     push_object(o);
+  }
 }
 #define PUSH_REDUCED(o) reduce(o)
 #else
@@ -533,6 +536,7 @@ static void mpzmod_sub(INT32 args)
     mpz_neg(OBTOMPZ(res), OBTOMPZ(res));
   }
   pop_n_elems(args);
+  debug_malloc_touch(res);
   PUSH_REDUCED(res);
 }
 
