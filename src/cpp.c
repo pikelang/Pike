@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.48 1999/03/08 23:35:03 grubba Exp $
+ * $Id: cpp.c,v 1.49 1999/03/09 00:07:51 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -462,6 +462,285 @@ while(1)					\
   break;					\
   }while(1)
 
+static struct pike_string *recode_string(struct pike_string *data)
+{
+  /* Observations:
+   *
+   * * At least a prefix of two bytes need to be 7bit in a valid
+   *   Pike program.
+   *
+   * * NUL isn't valid in a Pike program.
+   */
+  /* Heuristic:
+   *
+   * Index 0 | Index 1 | Interpretation
+   * --------+---------+------------------------------------------
+   *       0 |       0 | 32bit wide string.
+   *       0 |      >0 | 16bit Unicode string.
+   *      >0 |       0 | 16bit Unicode string reverse byte order.
+   *    0xfe |    0xff | 16bit Unicode string.
+   *    0xff |    0xfe | 16bit Unicode string reverse byte order.
+   *    0x7b |    0x83 | EBCDIC-US ("#c").
+   *    0x7b |    0x40 | EBCDIC-US ("# ").
+   *    0x7b |    0x09 | EBCDIC-US ("#\t").
+   * --------+---------+------------------------------------------
+   *   Other |   Other | 8bit standard string.
+   *
+   * Note that the tests below are more lenient than the table above.
+   * This shouldn't matter, since the other cases would be erroneus
+   * anyway.
+   */
+
+  /* Add an extra reference to data, since we may return it as is. */
+  add_ref(data);
+
+  if ((!((unsigned char *)data->str)[0]) ||
+      (((unsigned char *)data->str)[0] == 0xfe) ||
+      (((unsigned char *)data->str)[0] == 0xff) ||
+      (!((unsigned char *)data->str)[1])) {
+    /* Unicode */
+    if ((!((unsigned char *)data->str)[0]) &&
+	(!((unsigned char *)data->str)[1])) {
+      /* 32bit Unicode (UCS4) */
+      struct pike_string *new_str;
+      int len;
+      int i;
+      int j;
+      p_wchar0 *orig = STR0(data);
+      p_wchar2 *dest;
+
+      if (data->len & 3) {
+	/* String len is not a multiple of 4 */
+	return data;
+      }
+      len = data->len/4;
+      new_str = begin_wide_shared_string(len, 2);
+
+      dest = STR2(new_str);
+
+      j = 0;
+      for(i=0; i<len; i++) {
+	dest[i] = (orig[j]<<24) | (orig[j+1]<<16) | (orig[j+2]<<8) | orig[j+3];
+	j += 4;
+      }
+
+      free_string(data);
+      return(end_shared_string(new_str));
+    } else {
+      /* 16bit Unicode (UCS2) */
+      if (data->len & 1) {
+	/* String len is not a multiple of 2 */
+	return data;
+      }
+      if ((!((unsigned char *)data->str)[1]) ||
+	  (((unsigned char *)data->str)[1] == 0xfe)) {
+	/* Reverse Byte-order */
+	struct pike_string *new_str = begin_shared_string(data->len);
+	int i;
+	for(i=0; i<data->len; i++) {
+	  new_str->str[i^1] = data->str[i];
+	}
+	free_string(data);
+	data = end_shared_string(new_str);
+      }
+      /* Note: We lose the extra reference to data here. */
+      push_string(data);
+      f_unicode_to_string(1);
+      add_ref(data = sp[-1].u.string);
+      pop_stack();
+      return data;
+    }
+  } else if (data->str[0] == '{') {
+    /* EBCDIC */
+    /* Notes on EBCDIC:
+     *
+     * * EBCDIC conversion needs to first convert the first line
+     *   according to EBCDIC-US, and then the rest of the string
+     *   according to the encoding specified by the first line.
+     *
+     * * It's an error for a program written in EBCDIC not to
+     *   start with a #charset directive.
+     *
+     * Obfuscation note:
+     *
+     * * This still allows the rest of the file to be written in
+     *   another encoding than EBCDIC.
+     */
+
+    /* First split out the first line.
+     *
+     * Note that codes 0x00 - 0x1f are the same in ASCII and EBCDIC.
+     */
+    struct pike_string *new_str;
+    char *p = strchr(data->str, '\n');
+    char *p2;
+    unsigned int len;
+
+    if (!p) {
+      return data;
+    }
+
+    len = p - data->str;
+
+    if (len < CONSTANT_STRLEN("#charset ")) {
+      return data;
+    }
+
+    new_str = begin_shared_string(len);
+
+    MEMCPY(new_str->str, data->str, len);
+
+    push_string(end_shared_string(new_str));
+
+    push_constant_text("ebcdic-us");
+
+    SAFE_APPLY_MASTER("decode_charset", 2);
+
+    /* Various consistency checks. */
+    if ((sp[-1].type != T_STRING) || (sp[-1].u.string->size_shift) ||
+	(((unsigned int)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
+	(sp[-1].u.string->str[0] != '#')) {
+      pop_stack();
+      return data;
+    }
+
+    /* At this point the decoded first line is on the stack. */
+
+    /* Extract the charset name */
+
+    p = sp[-1].u.string->str + 1;
+    while (*p && isspace(*((unsigned char *)p))) {
+      p++;
+    }
+
+    if (strncmp(p, "charset", CONSTANT_STRLEN("charset")) ||
+	!isspace(((unsigned char *)p)[CONSTANT_STRLEN("charset")])) {
+      pop_stack();
+      return data;
+    }
+
+    p += CONSTANT_STRLEN("charset") + 1;
+
+    while (*p && isspace(*((unsigned char *)p))) {
+      p++;
+    }
+
+    if (!*p) {
+      pop_stack();
+      return data;
+    }
+
+    /* Build a string of the trailing data
+     * NOTE:
+     *   Keep the newline, so the linenumber info stays correct.
+     */
+
+    new_str = begin_shared_string(data->len - len);
+
+    MEMCPY(new_str->str, data->str + len, data->len - len);
+
+    push_string(end_shared_string(new_str));
+
+    stack_swap();
+
+    /* Build a string of the charset name */
+
+    p2 = p;
+    while(*p2 && !isspace(*((unsigned char *)p2))) {
+      p2++;
+    }
+
+    len = p2 - p;
+
+    new_str = begin_shared_string(len);
+
+    MEMCPY(new_str->str, p, len);
+
+    pop_stack();
+    push_string(end_shared_string(new_str));
+		
+    /* Decode the string */
+
+    SAFE_APPLY_MASTER("decode_charset", 2);
+
+    if (sp[-1].type != T_STRING) {
+      pop_stack();
+      return data;
+    }
+
+    /* Accept the new string */
+
+    free_string(data);
+    add_ref(data = sp[-1].u.string);
+    pop_stack();
+  }
+  return data;
+}
+
+static struct pike_string *filter_bom(struct pike_string *data)
+{
+  /* More notes:
+   *
+   * * Character 0xfeff (ZERO WIDTH NO-BREAK SPACE = BYTE ORDER MARK = BOM)
+   *   needs to be filtered away before processing continues.
+   */
+  int i;
+  int j = 0;
+  int len = data->len;
+  struct string_builder buf;
+
+  /* Add an extra reference to data here, since we may return it as is. */
+  add_ref(data);
+
+  if (!data->size_shift) {
+    return(data);
+  }
+  
+  init_string_builder(&buf, data->size_shift);
+  if (data->size_shift == 1) {
+    /* 16 bit string */
+    p_wchar1 *ptr = STR1(data);
+    for(i = 0; i<len; i++) {
+      if (ptr[i] == 0xfeff) {
+	if (i != j) {
+	  string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
+	  j = i+1;
+	}
+      }
+    }
+    if ((j) && (i != j)) {
+      /* Add the trailing string */
+      string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
+      free_string(data);
+      data = finish_string_builder(&buf);
+    } else {
+      /* String didn't contain 0xfeff */
+      free_string_builder(&buf);
+    }
+  } else {
+    /* 32 bit string */
+    p_wchar2 *ptr = STR2(data);
+    for(i = 0; i<len; i++) {
+      if (ptr[i] == 0xfeff) {
+	if (i != j) {
+	  string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
+	  j = i+1;
+	}
+      }
+    }
+    if ((j) && (i != j)) {
+      /* Add the trailing string */
+      string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
+      free_string(data);
+      data = finish_string_builder(&buf);
+    } else {
+      /* String didn't contain 0xfeff */
+      free_string_builder(&buf);
+    }
+  }
+  return(data);
+}
+
 static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
 		     int flags, int auto_convert, struct pike_string *charset);
 
@@ -753,285 +1032,6 @@ static int do_safe_index_call(struct pike_string *s)
   }
   UNSETJMP(recovery);
   return res;
-}
-
-static struct pike_string *recode_string(struct pike_string *data)
-{
-  /* Observations:
-   *
-   * * At least a prefix of two bytes need to be 7bit in a valid
-   *   Pike program.
-   *
-   * * NUL isn't valid in a Pike program.
-   */
-  /* Heuristic:
-   *
-   * Index 0 | Index 1 | Interpretation
-   * --------+---------+------------------------------------------
-   *       0 |       0 | 32bit wide string.
-   *       0 |      >0 | 16bit Unicode string.
-   *      >0 |       0 | 16bit Unicode string reverse byte order.
-   *    0xfe |    0xff | 16bit Unicode string.
-   *    0xff |    0xfe | 16bit Unicode string reverse byte order.
-   *    0x7b |    0x83 | EBCDIC-US ("#c").
-   *    0x7b |    0x40 | EBCDIC-US ("# ").
-   *    0x7b |    0x09 | EBCDIC-US ("#\t").
-   * --------+---------+------------------------------------------
-   *   Other |   Other | 8bit standard string.
-   *
-   * Note that the tests below are more lenient than the table above.
-   * This shouldn't matter, since the other cases would be erroneus
-   * anyway.
-   */
-
-  /* Add an extra reference to data, since we may return it as is. */
-  add_ref(data);
-
-  if ((!((unsigned char *)data->str)[0]) ||
-      (((unsigned char *)data->str)[0] == 0xfe) ||
-      (((unsigned char *)data->str)[0] == 0xff) ||
-      (!((unsigned char *)data->str)[1])) {
-    /* Unicode */
-    if ((!((unsigned char *)data->str)[0]) &&
-	(!((unsigned char *)data->str)[1])) {
-      /* 32bit Unicode (UCS4) */
-      struct pike_string *new_str;
-      int len;
-      int i;
-      int j;
-      p_wchar0 *orig = STR0(data);
-      p_wchar2 *dest;
-
-      if (data->len & 3) {
-	/* String len is not a multiple of 4 */
-	return data;
-      }
-      len = data->len/4;
-      new_str = begin_wide_shared_string(len, 2);
-
-      dest = STR2(new_str);
-
-      j = 0;
-      for(i=0; i<len; i++) {
-	dest[i] = (orig[j]<<24) | (orig[j+1]<<16) | (orig[j+2]<<8) | orig[j+3];
-	j += 4;
-      }
-
-      free_string(data);
-      return(end_shared_string(new_str));
-    } else {
-      /* 16bit Unicode (UCS2) */
-      if (data->len & 1) {
-	/* String len is not a multiple of 2 */
-	return data;
-      }
-      if ((!((unsigned char *)data->str)[1]) ||
-	  (((unsigned char *)data->str)[1] == 0xfe)) {
-	/* Reverse Byte-order */
-	struct pike_string *new_str = begin_shared_string(data->len);
-	int i;
-	for(i=0; i<data->len; i++) {
-	  new_str->str[i^1] = data->str[i];
-	}
-	free_string(data);
-	data = end_shared_string(new_str);
-      }
-      /* Note: We lose the extra reference to data here. */
-      push_string(data);
-      f_unicode_to_string(1);
-      add_ref(data = sp[-1].u.string);
-      pop_stack();
-      return data;
-    }
-  } else if (data->str[0] == '{') {
-    /* EBCDIC */
-    /* Notes on EBCDIC:
-     *
-     * * EBCDIC conversion needs to first convert the first line
-     *   according to EBCDIC-US, and then the rest of the string
-     *   according to the encoding specified by the first line.
-     *
-     * * It's an error for a program written in EBCDIC not to
-     *   start with a #charset directive.
-     *
-     * Obfuscation note:
-     *
-     * * This still allows the rest of the file to be written in
-     *   another encoding than EBCDIC.
-     */
-
-    /* First split out the first line.
-     *
-     * Note that codes 0x00 - 0x1f are the same in ASCII and EBCDIC.
-     */
-    struct pike_string *new_str;
-    char *p = strchr(data->str, '\n');
-    char *p2;
-    unsigned int len;
-
-    if (!p) {
-      return data;
-    }
-
-    len = p - data->str;
-
-    if (len < CONSTANT_STRLEN("#charset ")) {
-      return data;
-    }
-
-    new_str = begin_shared_string(len);
-
-    MEMCPY(new_str->str, data->str, len);
-
-    push_string(end_shared_string(new_str));
-
-    push_constant_text("ebcdic-us");
-
-    SAFE_APPLY_MASTER("decode_charset", 2);
-
-    /* Various consistency checks. */
-    if ((sp[-1].type != T_STRING) || (sp[-1].u.string->size_shift) ||
-	(((unsigned int)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
-	(sp[-1].u.string->str[0] != '#')) {
-      pop_stack();
-      return data;
-    }
-
-    /* At this point the decoded first line is on the stack. */
-
-    /* Extract the charset name */
-
-    p = sp[-1].u.string->str + 1;
-    while (*p && isspace(*((unsigned char *)p))) {
-      p++;
-    }
-
-    if (strncmp(p, "charset", CONSTANT_STRLEN("charset")) ||
-	!isspace(((unsigned char *)p)[CONSTANT_STRLEN("charset")])) {
-      pop_stack();
-      return data;
-    }
-
-    p += CONSTANT_STRLEN("charset") + 1;
-
-    while (*p && isspace(*((unsigned char *)p))) {
-      p++;
-    }
-
-    if (!*p) {
-      pop_stack();
-      return data;
-    }
-
-    /* Build a string of the trailing data
-     * NOTE:
-     *   Keep the newline, so the linenumber info stays correct.
-     */
-
-    new_str = begin_shared_string(data->len - len);
-
-    MEMCPY(new_str->str, data->str + len, data->len - len);
-
-    push_string(end_shared_string(new_str));
-
-    stack_swap();
-
-    /* Build a string of the charset name */
-
-    p2 = p;
-    while(*p2 && !isspace(*((unsigned char *)p2))) {
-      p2++;
-    }
-
-    len = p2 - p;
-
-    new_str = begin_shared_string(len);
-
-    MEMCPY(new_str->str, p, len);
-
-    pop_stack();
-    push_string(end_shared_string(new_str));
-		
-    /* Decode the string */
-
-    SAFE_APPLY_MASTER("decode_charset", 2);
-
-    if (sp[-1].type != T_STRING) {
-      pop_stack();
-      return data;
-    }
-
-    /* Accept the new string */
-
-    free_string(data);
-    add_ref(data = sp[-1].u.string);
-    pop_stack();
-  }
-  return data;
-}
-
-static struct pike_string *filter_bom(struct pike_string *data)
-{
-  /* More notes:
-   *
-   * * Character 0xfeff (ZERO WIDTH NO-BREAK SPACE = BYTE ORDER MARK = BOM)
-   *   needs to be filtered away before processing continues.
-   */
-  int i;
-  int j = 0;
-  int len = data->len;
-  struct string_builder buf;
-
-  /* Add an extra reference to data here, since we may return it as is. */
-  add_ref(data);
-
-  if (!data->size_shift) {
-    return(data);
-  }
-  
-  init_string_builder(&buf, data->size_shift);
-  if (data->size_shift == 1) {
-    /* 16 bit string */
-    p_wchar1 *ptr = STR1(data);
-    for(i = 0; i<len; i++) {
-      if (ptr[i] == 0xfeff) {
-	if (i != j) {
-	  string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
-	  j = i+1;
-	}
-      }
-    }
-    if ((j) && (i != j)) {
-      /* Add the trailing string */
-      string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
-      free_string(data);
-      data = finish_string_builder(&buf);
-    } else {
-      /* String didn't contain 0xfeff */
-      free_string_builder(&buf);
-    }
-  } else {
-    /* 32 bit string */
-    p_wchar2 *ptr = STR2(data);
-    for(i = 0; i<len; i++) {
-      if (ptr[i] == 0xfeff) {
-	if (i != j) {
-	  string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
-	  j = i+1;
-	}
-      }
-    }
-    if ((j) && (i != j)) {
-      /* Add the trailing string */
-      string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
-      free_string(data);
-      data = finish_string_builder(&buf);
-    } else {
-      /* String didn't contain 0xfeff */
-      free_string_builder(&buf);
-    }
-  }
-  return(data);
 }
 
 /* string cpp(string data, string|void current_file, int|string|void charset) */
