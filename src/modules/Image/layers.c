@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.86 2003/06/08 06:37:27 mirar Exp $
+|| $Id: layers.c,v 1.87 2003/07/03 18:14:39 mirar Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.86 2003/06/08 06:37:27 mirar Exp $");
+RCSID("$Id: layers.c,v 1.87 2003/07/03 18:14:39 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1251,7 +1251,7 @@ static void image_layer_fill_alpha(INT32 args)
 
 static void image_layer_set_offset(INT32 args)
 {
-   get_all_args("Image.Layer->set_offset",args,"%i%i",
+   get_all_args("Image.Layer->set_offset",args,"%d%d", /* INT32! */
 		&(THIS->xoffs),&(THIS->yoffs));
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1414,7 +1414,8 @@ static void image_layer_create(INT32 args)
    {
       rgb_group col=black,alpha=white;
 
-      get_all_args("Image.Layer",args,"%i%i",&(THIS->xsize),&(THIS->ysize));
+      get_all_args("Image.Layer",args,"%d%d", /* watch the type: INT32 */
+		   &(THIS->xsize),&(THIS->ysize));
       if (args>2)
 	 if (!image_color_arg(2-args,&col))
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer",3,"Image.Color");
