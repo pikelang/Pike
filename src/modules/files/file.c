@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.292 2003/10/06 09:01:21 grubba Exp $
+|| $Id: file.c,v 1.293 2003/10/06 09:03:00 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.292 2003/10/06 09:01:21 grubba Exp $");
+RCSID("$Id: file.c,v 1.293 2003/10/06 09:03:00 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2571,7 +2571,7 @@ static void file_pipe(INT32 args)
   }
   else if (reverse) 
   {
-    init_fd(inout[1],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
+    init_fd(inout[1],FILE_WRITE | (type&fd_BIDIRECTIONAL?FILE_READ:0) |
 	    fd_query_properties(inout[1], type));
 
     my_set_close_on_exec(inout[1],1);
@@ -2579,7 +2579,7 @@ static void file_pipe(INT32 args)
     FD=inout[1];
 
     ERRNO=0;
-    push_object(file_make_object_from_fd(inout[0], (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE,type));
+    push_object(file_make_object_from_fd(inout[0], (type&fd_BIDIRECTIONAL?FILE_WRITE:0)| FILE_READ,type));
   } else {
     init_fd(inout[0],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
 	    fd_query_properties(inout[0], type));
