@@ -1,0 +1,3 @@
+Pike    		(c) 2004 IDA, Linköping University
+
+GPL, LGPL or MPL. Choose one.
