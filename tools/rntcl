@@ -173,8 +173,8 @@ int main(int argc, string *argv)
 
 	case "debug":
 	  cflags+=({
-	    "-Z7",
-//	    "-Zi",
+//	    "-Z7",
+	    "-Zi",
 	    "-FR",
 //	    "-Yd",
 	  });
