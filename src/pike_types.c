@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.209 2003/03/07 13:16:55 grubba Exp $
+|| $Id: pike_types.c,v 1.210 2003/03/08 20:38:02 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.209 2003/03/07 13:16:55 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.210 2003/03/08 20:38:02 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -4254,8 +4254,8 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
   case T_MAPPING:
     type_stack_mark();
     if (m_sizeof(s->u.mapping)) {
-      push_type_field(s->u.mapping->data->ind_types);
       push_type_field(s->u.mapping->data->val_types);
+      push_type_field(s->u.mapping->data->ind_types);
     }
     else {
       push_type(T_ZERO);
