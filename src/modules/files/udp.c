@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.11 2000/10/24 12:27:49 leif Exp $
+ * $Id: udp.c,v 1.12 2001/04/09 15:49:21 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.11 2000/10/24 12:27:49 leif Exp $");
+RCSID("$Id: udp.c,v 1.12 2001/04/09 15:49:21 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -277,7 +277,7 @@ void udp_wait(INT32 args)
   FD_ZERO(&rset);
   FD_SET(fd, &rset);
   tv.tv_sec = (int)timeout;
-  tv.tv_usec = (int)(timeout * 1000000.0);
+  tv.tv_usec = (int)((timeout - ((int)timeout)) * 1000000.0);
   res = select(fd+1, &rset, NULL, NULL, &tv);
   e = errno;
 
