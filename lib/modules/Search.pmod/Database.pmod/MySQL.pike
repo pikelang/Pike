@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.75 2003/01/27 15:10:09 mattias Exp $
+// $Id: MySQL.pike,v 1.76 2004/03/02 16:57:50 stewa Exp $
 
 inherit .Base;
 
@@ -60,7 +60,7 @@ static void init_fields()
     return;
 
   init_done=1;
-  foreach(({"uri"})+Search.get_filter_fields(), string field)
+  foreach(({"uri","path1","path2"})+Search.get_filter_fields(), string field)
     allocate_field_id(field);
 }
 
