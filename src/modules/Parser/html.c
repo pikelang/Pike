@@ -2987,7 +2987,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 /* skip ws to start of tag name */
 	 if (flags & FLAG_WS_BEFORE_TAG_NAME) {
 	   if (!scan_forward(*feed,st->c+1,&dst,&cdst,
-			     this->ws,-this->n_ws))
+			     this->ws,-this->n_ws) && !finished)
 	   {
 	     st->ignore_data=1;
 	     return STATE_WAIT; /* come again */
@@ -2995,7 +2995,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 }
 	 else {
 	   FORWARD_CHAR (*feed, st->c, dst, cdst);
-	   if (cdst >= dst->s->len) return STATE_WAIT;
+	   if (cdst >= dst->s->len && !finished) return STATE_WAIT;
 	 }
 
 	 if (m_sizeof(this->mapqtag)) {
@@ -4734,25 +4734,26 @@ static void html_splice_arg (INT32 args)
 **!
 **!	<li><b>xml_tag_syntax</b>: Whether or not to use XML syntax to
 **!	tell empty tags and container tags apart:
-**!	<ul>
-**!	  <li><b>0</b>: Use HTML syntax only. If there's a '/' last in
-**!	    a tag, it's just treated as any other argument.
-**!	  <li><b>1</b>: Use HTML syntax, but ignore a '/' if it comes
-**!	    last in a tag. This is the default.
-**!	  <li><b>2</b>: Use XML syntax, but when a tag that does not
-**!	    end with '/>' is found which only got a non-container tag
-**!	    callback, treat it as a non-container (i.e. don't start to
-**!	    seek for the container end).
-**!	  <li><b>3</b>: Use XML syntax only. If a tag got both
-**!	    container and non-container callbacks, the non-container
-**!	    callback is called when the empty element form (i.e. the
-**!	    one ending with '/>') is used, and the container callback
-**!	    otherwise. If only a container callback exists, it gets
-**!	    the empty string as content when there's none to be
-**!	    parsed. If only a non-container callback exists, it will
-**!	    be called (without the content argument) for both kinds of
-**!	    tags.
-**!	</ul>
+**!
+**!	<b>0</b>: Use HTML syntax only. If there's a '/' last in a
+**!	tag, it's just treated as any other argument.
+**!
+**!	<b>1</b>: Use HTML syntax, but ignore a '/' if it comes last
+**!	in a tag. This is the default.
+**!
+**!	<b>2</b>: Use XML syntax, but when a tag that does not end
+**!	with '/&gt;' is found which only got a non-container tag
+**!	callback, treat it as a non-container (i.e. don't start to
+**!	seek for the container end).
+**!
+**!	<b>3</b>: Use XML syntax only. If a tag got both container and
+**!	non-container callbacks, the non-container callback is called
+**!	when the empty element form (i.e. the one ending with '/&gt;')
+**!	is used, and the container callback otherwise. If only a
+**!	container callback exists, it gets the empty string as content
+**!	when there's none to be parsed. If only a non-container
+**!	callback exists, it will be called (without the content
+**!	argument) for both kinds of tags.
 **!
 **!	<li><b>ws_before_tag_name</b>: Allow whitespace between the
 **!	tag start character and the tag name.
