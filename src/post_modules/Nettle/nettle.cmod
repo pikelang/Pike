@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.32 2004/02/13 23:27:29 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.33 2004/02/14 07:33:57 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -182,8 +182,6 @@ PIKECLASS Yarrow
    */
   PIKEFUN string random_string(int length)
     optflags OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
-    /* We could however set this to not have side effect to allow
-       unused values from not getting generated. */
   {
     struct pike_string *rnd;
     if(length < 0)
