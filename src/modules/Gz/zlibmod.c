@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.65 2003/09/10 15:21:58 mast Exp $
+|| $Id: zlibmod.c,v 1.66 2004/03/19 14:36:24 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.65 2003/09/10 15:21:58 mast Exp $");
+RCSID("$Id: zlibmod.c,v 1.66 2004/03/19 14:36:24 nilsson Exp $");
 
 #include "zlib_machine.h"
 #include "module.h"
@@ -182,7 +182,7 @@ static int do_deflate(dynamic_buffer *buf,
    else
       do
       {
-	 this->gz.next_out=low_make_buf_space(
+	 this->gz.next_out=(Bytef *)low_make_buf_space(
 	    /* recommended by the zlib people */
 	    (this->gz.avail_out =
 	     this->gz.avail_in ?
@@ -531,7 +531,7 @@ static void gz_inflate(INT32 args)
       push_string(old_epilogue);
       this->epilogue = NULL;
     }
-    push_string(make_shared_binary_string(this->gz.next_in,
+    push_string(make_shared_binary_string((const char *)this->gz.next_in,
 					  this->gz.avail_in));
     if(old_epilogue)
       f_add(2);
