@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.300 2002/10/11 01:39:32 nilsson Exp $
+|| $Id: language.yacc,v 1.301 2002/10/11 13:39:05 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.300 2002/10/11 01:39:32 nilsson Exp $");
+RCSID("$Id: language.yacc,v 1.301 2002/10/11 13:39:05 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1633,6 +1633,7 @@ block:'{'
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   } 
+  empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -1649,9 +1650,9 @@ block:'{'
   {
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
-    if ($5) $5->line_number = $<number>4;
-    $$=$5;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
+    if ($6) $6->line_number = $<number>5;
+    $$=$6;
   }
   ;
 
@@ -2592,6 +2593,7 @@ cond: TOK_IF
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2601,14 +2603,14 @@ cond: TOK_IF
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$ = mknode('?', $5,
+    $$ = mknode('?', $6,
 		mknode(':',
-		       mkcastnode(void_type_string, $7),
-		       mkcastnode(void_type_string, $8)));
+		       mkcastnode(void_type_string, $8),
+		       mkcastnode(void_type_string, $9)));
     $$ = mkcastnode(void_type_string, $$);
     lex.current_line = i;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
   }
   ;
 
@@ -2648,6 +2650,7 @@ foreach: TOK_FOREACH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2655,18 +2658,18 @@ foreach: TOK_FOREACH
   }
   '(' expr0 foreach_lvalues end_cond statement
   {
-    if ($6) {
+    if ($7) {
       $$=mknode(F_FOREACH,
-		mknode(F_VAL_LVAL,$5,$6),
-		$8);
+		mknode(F_VAL_LVAL,$6,$7),
+		$9);
       $$->line_number=$1;
     } else {
       /* Error in lvalue */
-      free_node($5);
-      $$=$8;
+      free_node($6);
+      $$=$9;
     }
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -2703,6 +2706,7 @@ for: TOK_FOR
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2713,11 +2717,11 @@ for: TOK_FOR
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $5),
-	      mknode(F_FOR,$7,mknode(':',$11,$9)));
+    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6),
+	      mknode(F_FOR,$8,mknode(':',$12,$10)));
     lex.current_line=i;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -2727,6 +2731,7 @@ while:  TOK_WHILE
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2736,10 +2741,10 @@ while:  TOK_WHILE
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_FOR,$5,mknode(':',$7,NULL));
+    $$=mknode(F_FOR,$6,mknode(':',$8,NULL));
     lex.current_line=i;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -2752,6 +2757,7 @@ switch:	TOK_SWITCH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
+  empty
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
@@ -2759,10 +2765,10 @@ switch:	TOK_SWITCH
   }
   '(' safe_comma_expr end_cond statement
   {
-    $$=mknode(F_SWITCH,$5,$7);
+    $$=mknode(F_SWITCH,$6,$8);
     $$->line_number=$1;
     pop_local_variables($<number>2);
-    Pike_compiler->compiler_frame->last_block_level=$<number>3;
+    Pike_compiler->compiler_frame->last_block_level=$<number>4;
   }
   ;
 
@@ -3754,7 +3760,15 @@ bad_expr_ident:
   { yyerror("if is a reserved word."); }
   ;
 
+/*
+ * Kludge for bison 1.50.
+ *
+ * Bison 1.50 doesn't support having multiple action blocks
+ * in a sequence where a block refers to the value of its
+ * immediate predecessor.
+ */
 
+empty: /*empty*/;
 
 %%
 
