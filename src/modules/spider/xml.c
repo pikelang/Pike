@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.56 2002/11/27 13:32:15 grubba Exp $
+|| $Id: xml.c,v 1.57 2002/12/12 05:32:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -951,6 +951,7 @@ static int gobble(struct xmldata *data, char *s)
 	  if(THIS->entities)						 \
 	    mapping_string_insert_string(THIS->entities, name, s);	 \
 	  UNSET_ONERROR(tmp2);						 \
+          sub_ref(callbackinfo);                                         \
 	  free_string(s);						 \
 	}								 \
       }while(0);							 \
