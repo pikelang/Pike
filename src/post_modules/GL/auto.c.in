@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.12 1999/08/17 20:59:12 marcus Exp $
+ * $Id: auto.c.in,v 1.13 1999/08/18 15:16:20 marcus Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.12 1999/08/17 20:59:12 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.13 1999/08/18 15:16:20 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -55,8 +55,6 @@ struct zimage {
   GLvoid *pixels;
   int alloc;
 };
-
-static struct program *image_program=NULL;
 
 static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
 			  int rty, struct zvalue4 *ret)
@@ -148,6 +146,22 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   unsigned char *pp;
   struct { unsigned char r, g, b; } *p1, *p2;
   INT32 cnt;
+
+  static struct program *image_program=NULL;
+
+  if(image_program == NULL) {
+    push_string(make_shared_string("Image")); push_int(0);
+    SAFE_APPLY_MASTER("resolv",2);
+    if (sp[-1].type==T_OBJECT) 
+    {
+      push_string(make_shared_string("image"));
+      f_index(2);
+      image_program=program_from_svalue(sp-1);
+      pop_stack();
+    }
+    if(image_program == NULL)
+      error("%s: Can't resolve Image.image!\n", func);
+  }
 
   img->alloc = 0;
   if(a->type == T_MAPPING) {
@@ -334,16 +348,6 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 
 static void pre_init()
 {
-   image_program = NULL;
-   push_string(make_shared_string("Image")); push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
-   if (sp[-1].type==T_OBJECT) 
-   {
-     push_string(make_shared_string("image"));
-     f_index(2);
-     image_program=program_from_svalue(sp-1);
-     pop_stack();
-   }
 }
 
 static void post_init()
