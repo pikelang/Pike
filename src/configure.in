@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.130 1997/10/25 16:34:38 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.131 1997/11/02 18:45:10 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -189,6 +189,16 @@ if test $cflags_is_set = no; then
 
 ### Non-gcc thingies. This should probably be enhanced...
 
+  # Solaris
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-dalign,dalign)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-fast,fast)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-fd,fd)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-mt,mt)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-native,native)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-xdepend,xdepend)
+  AC_SYS_OS_COMPILER_FLAG(Solaris,-xtransition,xtransition)
+
   # HP-UX
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch)
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_Ofailsafe)
@@ -290,23 +300,27 @@ fi
 
 #############################################################################
 
+echo Searching for include-file directories...
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
-  for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /home/GNU /sw /usr/freeware
+  for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
   do
-    if test -d "$d/include" ; then
-      echo Adding $d/include to the include-path
+    AC_MSG_CHECKING($d/include)
+    if test -d "$d/include/." ; then
+      AC_MSG_RESULT(added)
       CPPFLAGS="${CPPFLAGS} -I$d/include"
     else
-      :
+      AC_MSG_RESULT(no)
     fi
   done
 else
   :
 fi
+
+echo Searching for library directories...
 if test $ldflags_is_set = no ; then
-  for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /home/GNU /sw /usr/freeware
+  for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
   do
-    if test -d "$d/lib" ; then
+    if test -d "$d/lib/." ; then
       echo Adding $d/lib to the library-path
       LDFLAGS="${LDFLAGS} -R$d/lib -L$d/lib"
     else
@@ -1641,6 +1655,7 @@ if test -z "$CCSHARED" ; then
 	hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
+	Solaris*) CCHARED="-KPIC -Bdynamic";;
     esac
   fi
 fi
