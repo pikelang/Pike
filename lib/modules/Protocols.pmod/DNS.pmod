@@ -1,5 +1,8 @@
 // Not yet finished -- Fredrik Hubinette
 
+//! module Protocols
+//! submodule DNS
+
 constant NOERROR=0;
 constant FORMERR=1;
 constant SERVFAIL=2;
@@ -211,7 +214,13 @@ class protocol
 #define RETRIES 12
 #define RETRY_DELAY 5
 
-class client {
+class client 
+{
+//!
+//! class client
+//! 	Synchronous DNS client.
+//! 
+
   inherit protocol;
 
   static private int is_ip(string ip)
@@ -225,54 +234,59 @@ class client {
 
 #ifdef __NT__
   string get_tcpip_param(string val)
+  {
+    foreach(({
+      "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+      "SYSTEM\\CurrentControlSet\\Services\\VxD\\MSTCP"
+    }),string key)
     {
-      foreach(({
-	"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
-	  "SYSTEM\\CurrentControlSet\\Services\\VxD\\MSTCP"
-	  }),string key)
-	{
-	  catch {
-	    return RegGetValue(HKEY_LOCAL_MACHINE, key, val);
-	  };
-	}
+      catch {
+	return RegGetValue(HKEY_LOCAL_MACHINE, key, val);
+      };
     }
+  }
 #endif
   
   static private string match_etc_hosts(string host)
-    {
-      if (!etc_hosts) {
-	string raw;
+  {
+    if (!etc_hosts) {
+      string raw;
 #ifdef __NT__
-	raw=get_tcpip_param("DataBasePath")+"\\hosts";
+      raw=get_tcpip_param("DataBasePath")+"\\hosts";
 #else
-	raw="/etc/hosts";
+      raw="/etc/hosts";
 #endif
-	raw = Stdio.read_file(raw);
+      raw = Stdio.read_file(raw);
 	
-	etc_hosts = ([ "localhost":"127.0.0.1" ]);
+      etc_hosts = ([ "localhost":"127.0.0.1" ]);
 	
-	if (raw && sizeof(raw)) {
-	  foreach(raw/"\n"-({""}), string line) {
-	    // Handle comments, and split the line on white-space
-		 line = lower_case(replace((line/"#")[0], "\t", " "));
-	    array arr = (line/" ") - ({ "" });
+      if (raw && sizeof(raw)) {
+	foreach(raw/"\n"-({""}), string line) {
+	  // Handle comments, and split the line on white-space
+	  line = lower_case(replace((line/"#")[0], "\t", " "));
+	  array arr = (line/" ") - ({ "" });
 	    
-	    if (sizeof(arr) > 1) {
-	      if (is_ip(arr[0])) {
-		foreach(arr[1..], string name) {
-		  etc_hosts[name] = arr[0];
-		}
-	      } else {
-		// Bad /etc/hosts entry ignored.
-		     }
+	  if (sizeof(arr) > 1) {
+	    if (is_ip(arr[0])) {
+	      foreach(arr[1..], string name) {
+		etc_hosts[name] = arr[0];
+	      }
+	    } else {
+	      // Bad /etc/hosts entry ignored.
 	    }
 	  }
-	} else {
-	  // Couldn't read /etc/hosts.
 	}
+      } else {
+	// Couldn't read /etc/hosts.
       }
-      return(etc_hosts[lower_case(host)]);
     }
+    return(etc_hosts[lower_case(host)]);
+  }
+
+  //!
+  //! method void create()
+  //! method void create(void|string|array server, void|int|array domain)
+  //!
 
   array(string) nameservers = ({});
   array domains = ({});
@@ -312,29 +326,29 @@ class client {
 	sscanf(line,"%s%*[ \t]%s",line,rest);
 	switch(line)
 	{
-	case "domain":
-	  // Save domain for later.
-	  domain = sizeof(rest) && rest;
-	  break;
-	case "search":
-	  rest = replace(rest, "\t", " ");
-	  domains += ((rest/" ") - ({""}));
-	  break;
+	  case "domain":
+	    // Save domain for later.
+	    domain = sizeof(rest) && rest;
+	    break;
+	  case "search":
+	    rest = replace(rest, "\t", " ");
+	    domains += ((rest/" ") - ({""}));
+	    break;
 	      
-	case "nameserver":
-	  if (!is_ip(rest)) {
-	    // Not an IP-number!
-	    string host = rest;
-	    if (!(rest = match_etc_hosts(host))) {
-	      werror(sprintf("Protocols.DNS.client(): "
-			     "Can't resolv nameserver \"%s\"\n", host));
-	      break;
+	  case "nameserver":
+	    if (!is_ip(rest)) {
+	      // Not an IP-number!
+	      string host = rest;
+	      if (!(rest = match_etc_hosts(host))) {
+		werror(sprintf("Protocols.DNS.client(): "
+			       "Can't resolv nameserver \"%s\"\n", host));
+		break;
+	      }
 	    }
-	  }
-	  if (sizeof(rest)) {
-	    nameservers += ({ rest });
-	  }
-	  break;
+	    if (sizeof(rest)) {
+	      nameservers += ({ rest });
+	    }
+	    break;
 	}
       }
 #endif
@@ -351,7 +365,9 @@ class client {
 				     }
 				     return d;
 				   });
-    } else {
+    } 
+    else 
+    {
       if(arrayp(server))	
 	nameservers = server;
       else
@@ -362,10 +378,8 @@ class client {
       else
 	if(stringp(domain))
 	  domains = ({ domain });
-	
     }
   }
-
 
   mapping do_sync_query(string s)
   {
@@ -390,6 +404,17 @@ class client {
     return 0;
   }
   
+  //!
+  //! method array gethostbyname(string hostname)
+  //! method array gethostbyaddr(string hostip)
+  //!	Querys the host name or ip from the default or given
+  //!	DNS server. The result is a mapping with three elements,
+  //!	<data_description type=array>
+  //!   <elem value=hostname type=string>hostname</elem>
+  //!   <elem value=ip type=array(string)>ip number(s)</elem>
+  //!   <elem value=ip type=array(string)>dns name(s)</elem>
+  //!	</data_description>
+  //!
 
   mixed *gethostbyname(string s)
   {
@@ -436,7 +461,7 @@ class client {
   {
     return reverse(arpa/".")[2..]*".";
   }
-  
+
   mixed *gethostbyaddr(string s)
   {
     mapping m=do_sync_query(mkquery(arpa_from_ip(s), C_IN, T_PTR));
@@ -463,6 +488,12 @@ class client {
       return({ 0, ({}), ({}) });
     }
   }
+
+  //!
+  //! method string get_primary_mx(string hostname)
+  //!	Querys the primary mx for the host.
+  //! returns the hostname of the primary mail exchanger
+  //!
 
   string get_primary_mx(string host)
   {
