@@ -1,13 +1,15 @@
 #pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.16 2001/10/08 05:37:38 per Exp $
+ * $Id: X509.pmod,v 1.17 2004/02/25 15:02:33 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
  */
 
 #if constant(Standards.ASN1.Types.asn1_sequence)
+
+constant dont_dump_module = 1;
 
 import Standards.ASN1.Types;
 import Standards.PKCS;
