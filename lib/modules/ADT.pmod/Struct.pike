@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.13 2004/05/28 09:40:03 grubba Exp $
+// $Id: Struct.pike,v 1.14 2004/08/21 16:00:43 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -171,6 +171,30 @@ class Byte {
   }
 }
 
+//! One byte, signed integer value between -128 and 127.
+class SByte {
+  inherit Item;
+  int size = 1;
+  static int(-128..127) value;
+
+  //! The byte can be initialized with an optional value.
+  static void create(void|int(-128..127) initial_value) {
+    set(initial_value);
+  }
+
+  void set(int(-128..127) in) {
+    if(in<-128 || in>127) error("Value %d out of bound (-128..127).\n", in);
+    value = in;
+  }
+  void decode(object f) { sscanf(f->read(1), "%+1c", value); }
+  string encode() { return sprintf("%1c", value); }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%d/%O)", this_program, value,
+			     (string)({value}));
+  }
+}
+
 //! One word (2 bytes) in network order, integer value between 0 and 65535.
 //! @seealso
 //! @[Drow]
@@ -198,6 +222,32 @@ class Word {
   }
 }
 
+//! One word (2 bytes) in network order, signed integer value between
+//! 0 and 65535.
+class SWord {
+  inherit Item;
+  int size = 2;
+  static int value;
+
+  //! The word can be initialized with an optional value.
+  static void create(void|int(-32768..32767) initial_value) {
+    set(initial_value);
+  }
+
+  void set(int(0..) in) {
+    if(in<-~(1<<size*8-1) || in>~((-1)<<size*8-1))
+      error("Value %d out of bound (%d..%d).\n",
+	    in, -~(1<<size*8-1), ~((-1)<<size*8-1));
+    value = in;
+  }
+  void decode(object f) { sscanf(f->read(size), "%+"+size+"c", value); }
+  string encode() { return sprintf("%+"+size+"c", value); }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%d)", this_program, value);
+  }
+}
+
 //! One word (2 bytes) in intel order, integer value between 0 and 65535.
 //! @seealso
 //! @[Word]
@@ -216,6 +266,18 @@ class Long {
 
   //! The longword can be initialized with an optional value.
   static void create(void|int(0..) initial_value) {
+    set(initial_value);
+  }
+}
+
+//! One longword (4 bytes) in network order, signed integer value
+//! -(2^31) <= x < 2^31-1.
+class SLong {
+  inherit SWord;
+  int size = 4;
+
+  //! The longword can be initialized with an optional value.
+  static void create(void|int initial_value) {
     set(initial_value);
   }
 }
@@ -300,6 +362,30 @@ class Varchars {
     return value + "\0";
   }
 }
+
+//! Alias for @[SByte]
+class int8   { inherit SByte; }
+
+//! Alias for @[Byte]
+class uint8  { inherit Byte; }
+
+//! Alias for @[SWord]
+class int16  { inherit SWord; }
+
+//! Alias for @[Word]
+class uint16 { inherit Word; }
+
+//! Alias for @[SLong]
+class int32  { inherit SLong; }
+
+//! Alias for @[Long]
+class uint32 { inherit Long; }
+
+//! 64 bit signed integer.
+class int64  { inherit SLong; int size = 8; }
+
+//! 64 bit unsigned integer.
+class uint64 { inherit Long; int size = 8; }
 
 static string _sprintf(int t) {
   if(t!='O') return UNDEFINED;
