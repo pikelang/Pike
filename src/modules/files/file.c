@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.232 2002/02/05 19:08:58 mast Exp $");
+RCSID("$Id: file.c,v 1.233 2002/04/06 21:18:16 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1609,15 +1609,6 @@ static void file_open(INT32 args)
 
      if(!Pike_fp->current_object->prog)
      {
-#ifdef DEBUG_MALLOC
-       extern int d_flag;
-       /* This is a temporary kluge */
-       if(d_flag)
-       {
-	 fprintf(stderr,"Possible gc() failure detected in open()\n");
-	 describe(Pike_fp->current_object);
-       }
-#endif
        if (fd >= 0)
 	 fd_close(fd);
        Pike_error("Object destructed in file->open()\n");
@@ -3287,15 +3278,6 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
   debug_malloc_touch(o);					\
   if(!o || !o->prog) { 						\
    /* This is a temporary kluge */                              \
-   DO_IF_DMALLOC(						\
-     extern int d_flag;                                         \
-     if(d_flag)							\
-     {								\
-       fprintf(stderr,"Possible gc() failure detected\n");	\
-       describe(Pike_fp->current_object);				\
-       if(o) describe(o);					\
-     }								\
-   );								\
    Pike_error("Stdio.File(): not open.\n");				\
   }								\
   if(o->prog != file_program)					\
