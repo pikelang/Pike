@@ -129,6 +129,8 @@ string cname(mixed type)
   if (sizeof(type / ({"|"})) > 1) {
     // werror("Found '|'.\n");
     btype = "mixed";
+  } else {
+    // werror("Not found.\n");
   }
 
   switch(objectp(btype) ? btype->text : btype)
@@ -960,6 +962,7 @@ array(string) convert_comments(array(string) tokens)
 int main(int argc, array(string) argv)
 {
   mixed x;
+
   file=argv[1];
   x=Stdio.read_file(file);
   x=PC.split(x);
