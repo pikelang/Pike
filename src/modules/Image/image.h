@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.4 1997/03/20 07:57:00 mirar Exp $ */
+/* $Id: image.h,v 1.5 1997/03/21 16:56:27 per Exp $ */
 
 #define MAX_NUMCOL 32768
 
@@ -164,3 +164,4 @@ void image_to8bit(INT32 args);
 void image_to8bit_fs(INT32 args);
 void image_tozbgr(INT32 args);
 void image_to8bit_rgbcube(INT32 args);
+void image_to8bit_rgbcube_rdither(INT32 args);
