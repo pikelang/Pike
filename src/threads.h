@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.46 1998/07/17 13:29:16 grubba Exp $
+ * $Id: threads.h,v 1.47 1998/08/06 19:46:56 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -87,7 +87,7 @@ extern pthread_attr_t small_pattr;
 #define COND_T pthread_cond_t
 
 #ifdef HAVE_PTHREAD_CONDATTR_DEFAULT
-#define co_init(X) pthread_cond_init((X), pthread_condattr_default)
+#define co_init(X) pthread_cond_init((X), &pthread_condattr_default)
 #else
 #define co_init(X) pthread_cond_init((X), 0)
 #endif /* HAVE_PTHREAD_CONDATTR_DEFAULT */
