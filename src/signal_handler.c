@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.53 1998/04/21 16:38:56 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.54 1998/04/22 16:38:22 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -974,7 +974,7 @@ void f_create_process(INT32 args)
 	fprintf(stderr, "Use setgroups\n");
 #endif /* PROC_DEBUG */
 #ifdef HAVE_SETGROUPS
-	if(tmp->type != T_ARRAY)
+	if(tmp->type == T_ARRAY)
 	{
 	  storage.wanted_gids_array=tmp->u.array;
 	  add_ref(storage.wanted_gids_array);
