@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.571 2004/10/15 15:36:04 grubba Exp $
+|| $Id: builtin_functions.c,v 1.572 2004/10/16 07:28:28 agehall Exp $
 */
 
 #include "global.h"
@@ -3085,8 +3085,8 @@ static struct pike_string *replace_many(struct pike_string *str,
    */
   if (from->size > (ptrdiff_t)(LONG_MAX/sizeof(struct tupel)))
     Pike_error("Array too large (size %" PRINTPTRDIFFT "d "
-	       "exceeds %" PRINTSIZET "d).\n",
-	       from->size, (LONG_MAX/sizeof(struct tupel)));
+	       "exceeds %" PRINTSIZET "u).\n",
+	       from->size, (size_t)(LONG_MAX/sizeof(struct tupel)));
   ctx.v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
   init_string_builder(&ctx.ret,str->size_shift);
   SET_ONERROR (uwp, free_replace_many_context, &ctx);
