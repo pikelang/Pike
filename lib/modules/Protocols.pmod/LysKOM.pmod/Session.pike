@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.25 2001/04/23 12:59:30 grubba Exp $
+//  $Id: Session.pike,v 1.26 2001/09/24 22:31:26 js Exp $
 
 import ".";
 
@@ -647,7 +647,12 @@ class Text
 
 object text(int no)
 {
-   return _text[no] || (_text[no]=Text(no));
+  if(_text[no])
+    return _text[no];
+  if(sizeof(_text)>1000)
+    _text = ([]);
+  
+  return (_text[no]=Text(no));
 }
 
 class Membership
