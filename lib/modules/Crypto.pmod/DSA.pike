@@ -59,7 +59,7 @@ this_program set_random(function(int:string) r)
 }
 
 //! Makes a DSA hash of the messge @[msg].
-Gmp.mpz dsa_hash(string msg)
+Gmp.mpz hash(string msg)
 {
   return [object(Gmp.mpz)](Gmp.mpz(.SHA1.hash(msg), 256) % q);
 }
@@ -76,9 +76,9 @@ static Gmp.mpz random_exponent()
 
 //! Sign the message @[h]. Returns the signature as two @[Gmp.mpz]
 //! objects.
-array(Gmp.mpz) raw_sign(Gmp.mpz h)
+array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
 {
-  Gmp.mpz k = random_exponent();
+  if(!k) k = random_exponent();
   
   Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
   Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + x*r)) % q);
@@ -105,7 +105,7 @@ int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 //! Make a RSA ref signature of message @[msg].
 string sign_rsaref(string msg)
 {
-  [Gmp.mpz r, Gmp.mpz s] = raw_sign(dsa_hash(msg));
+  [Gmp.mpz r, Gmp.mpz s] = raw_sign(hash(msg));
 
   return sprintf("%'\0'20s%'\0'20s", r->digits(256), s->digits(256));
 }
@@ -116,7 +116,7 @@ int(0..1) verify_rsaref(string msg, string s)
   if (sizeof(s) != 40)
     return 0;
 
-  return raw_verify(dsa_hash(msg),
+  return raw_verify(hash(msg),
 		    Gmp.mpz(s[..19], 256),
 		    Gmp.mpz(s[20..], 256));
 }
@@ -125,7 +125,7 @@ int(0..1) verify_rsaref(string msg, string s)
 string sign_ssl(string msg)
 {
   return Standards.ASN1.Types.asn1_sequence(
-    Array.map(raw_sign(dsa_hash(msg)),
+    Array.map(raw_sign(hash(msg)),
 	      Standards.ASN1.Types.asn1_integer))->get_der();
 }
 
@@ -142,7 +142,7 @@ int(0..1) verify_ssl(string msg, string s)
 		  ({ "INTEGER" }))))
     return 0;
 
-  return raw_verify(dsa_hash(msg),
+  return raw_verify(hash(msg),
 		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[0]->
 		      value,
 		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[1]->
@@ -272,5 +272,8 @@ int(0..1) public_key_equal (.DSA dsa)
   return (p == dsa->get_p()) && (q == dsa->get_q()) &&
     (g == dsa->get_g()) && (y == dsa->get_y());
 }
+
+//! Returns the string @expr{"DSA"@}.
+string name() { return "DSA"; }
 
 #endif
