@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.6 2001/09/24 17:03:59 grubba Exp $");
+RCSID("$Id: normalize.c,v 1.7 2001/11/22 14:52:18 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -270,6 +270,11 @@ struct buffer *unicode_compose_buffer( struct buffer *source, int how )
 struct pike_string *unicode_normalize( struct pike_string *source,
 				       int how )
 {
+  /* Special case for the empty string. */
+  if (!source->len) {
+    add_ref(source);
+    return source;
+  }
   /* What, me lisp? */
   if( how & COMPOSE_BIT )
     return
