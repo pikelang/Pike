@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operator.c,v 1.43 2002/10/21 17:06:14 marcus Exp $
+|| $Id: operator.c,v 1.44 2004/05/15 18:16:32 jonasw Exp $
 */
 
 /*
@@ -256,6 +256,7 @@ void image_operator_multiply(INT32 args)
    double q=1/255.0;
 STANDARD_OPERATOR_HEADER("`*")
   {
+#if 0
 #ifdef ASSEMBLY_OK
      if( image_cpuid & IMAGE_MMX )
      {
@@ -267,6 +268,7 @@ STANDARD_OPERATOR_HEADER("`*")
                     (((unsigned char *)s1)[i-nleft-1] * 
                      ((unsigned char *)s2)[i-nleft-1]) / 255;
      } else
+#endif
 #endif
      while (i--)
      {
@@ -280,6 +282,7 @@ STANDARD_OPERATOR_HEADER("`*")
             (rgb.g < 256) &&
             (rgb.b < 256) )
    {
+#if 0
 #ifdef ASSEMBLY_OK
      /* there is some overhead in setting this up */
      if( (image_cpuid & IMAGE_MMX) && (i>40) )
@@ -289,6 +292,7 @@ STANDARD_OPERATOR_HEADER("`*")
        i = i%4;
        d -= i;  s1 -= i;
      }
+#endif
 #endif
      while (i--)
      {
