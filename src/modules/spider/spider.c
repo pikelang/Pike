@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.97 2000/08/10 09:51:55 per Exp $");
+RCSID("$Id: spider.c,v 1.98 2000/08/12 06:17:18 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -102,52 +102,6 @@ void do_html_parse_lines(struct pike_string *ss,
 			 int *strings,int recurse_left,
 			 struct array *extra_args,
 			 int line);
-
-
-void f_nice(INT32 args)
-{
-#ifdef HAVE_NICE
-  int ta = sp[-1].u.integer;
-  if(!args) error("You must supply an argument to nice(int)!\n");
-  pop_n_elems(args);
-  push_int(nice(ta));
-#endif
-}
-
-void f_http_decode_string(INT32 args)
-{
-   int proc;
-   char *foo,*bar,*end;
-   struct pike_string *newstr;
-
-   if (!args || sp[-args].type != T_STRING)
-     error("Invalid argument to http_decode_string(STRING);\n");
-
-   foo=bar=sp[-args].u.string->str;
-   end=foo+sp[-args].u.string->len;
-
-   /* count '%' characters */
-   for (proc=0; foo<end; ) if (*foo=='%') { proc++; foo+=3; } else foo++;
-
-   if (!proc) { pop_n_elems(args-1); return; }
-
-   /* new string len is (foo-bar)-proc*2 */
-   newstr=begin_shared_string((foo-bar)-proc*2);
-   foo=newstr->str;
-   for (proc=0; bar<end; foo++)
-      if (*bar=='%')
-      {
-        if (bar<end-2)
-          *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
-            ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
-        else
-          *foo=0;
-        bar+=3;
-      }
-      else { *foo=*(bar++); }
-   pop_n_elems(args);
-   push_string(end_shared_string(newstr));
-}
 
 void f_parse_accessed_database(INT32 args)
 {
@@ -958,22 +912,6 @@ void do_html_parse_lines(struct pike_string *ss,
   }
 }
 
-#ifndef HAVE_INT_TIMEZONE
-int _tz;
-#else
-extern long int timezone;
-#endif
-
-void f_timezone(INT32 args)
-{
-  pop_n_elems(args);
-#ifndef HAVE_INT_TIMEZONE
-  push_int(_tz);
-#else
-  push_int(timezone);
-#endif
-}
-
 void f_get_all_active_fd(INT32 args)
 {
   int i,fds,q, ne;
@@ -1076,151 +1014,6 @@ void f__dump_obj_table(INT32 args)
 #define MIN(A,B) ((A)<(B)?(A):(B))
 #endif
 
-#ifdef ENABLE_STREAMED_PARSER
-#include "streamed_parser.h"
-
-static struct program *streamed_parser;
-
-#endif /* ENABLE_STREAMED_PARSER */
-
-extern void init_udp(void);
-extern void init_xml(void);
-extern void exit_xml(void);
-
-
-/* Hohum. Here we go. This is try number three for a more optimized Roxen. */
-
-#ifdef _REENTRANT
-#define BUFFER (8192)
-
-struct thread_args
-{
-  struct thread_args *next;
-  struct object *from;
-  struct object *to;
-  INT_TYPE to_fd, from_fd;
-  struct svalue cb;
-  struct svalue args;
-  INT_TYPE len;
-  INT_TYPE sent;
-  char buffer[BUFFER];
-};
-
-MUTEX_T done_lock STATIC_MUTEX_INIT;
-struct thread_args *done;
-
-/* WARNING! This function is running _without_ any stack etc. */
-
-#define MY_MIN(a,b) ((a)<(b)?(a):(b))
-void do_shuffle(void *_a)
-{
-  struct thread_args *a = (struct thread_args *)_a;
-
-#ifdef DIRECTIO_ON
-  if(a->len > (65536*2))
-    directio(a->from_fd, DIRECTIO_ON);
-#endif
-
-  while(a->len)
-  {
-    int nread, written=0;
-    nread = fd_read(a->from_fd, a->buffer, MY_MIN(BUFFER,a->len));
-    if(nread <= 0) {
-      if (!nread)
-	break;
-      if(errno == EINTR)
-	continue;
-      else
-	break;
-    }
-
-    while(nread)
-    {
-      int nsent = fd_write(a->to_fd, a->buffer+written, nread);
-      if(nsent < 0) {
-	if(errno != EINTR)
-	  goto end;
-	else
-	  continue;
-      }
-      written += nsent;
-      a->sent += nsent;
-      nread -= nsent;
-      a->len -= nsent;
-    }
-  }
-
-  /* We are done. It is up to the backend callback to call the
-   * finish function
-   */
- end:
-  mt_lock(&done_lock);
-  a->next = done;
-  done = a;
-  mt_unlock(&done_lock);
-  wake_up_backend();
-}
-
-static int num_shuffles = 0;
-static struct callback *my_callback;
-
-void finished_p(struct callback *foo, void *b, void *c)
-{
-  while(done)
-  {
-    struct thread_args *d;
-
-    mt_lock(&done_lock);
-    d = done;
-    done = d->next;
-    mt_unlock(&done_lock);
-
-    num_shuffles--;
-
-    push_int( d->sent );
-    *(sp++) = d->args;
-    push_object( d->from );
-    push_object( d->to );
-    apply_svalue( &d->cb, 4 );
-    free_svalue( &d->cb );
-    pop_stack();
-    free(d);
-  }
-
-  if(!num_shuffles)
-  {
-    remove_callback( foo );
-    my_callback = 0;
-  }
-}
-
-void f_shuffle(INT32 args)
-{
-  struct thread_args *a = malloc(sizeof(struct thread_args));
-  struct svalue *q, *w;
-  get_all_args("shuffle", args, "%o%o%*%*%d", &a->from, &a->to,&q,&w,&a->len);
-  a->sent = 0;
-
-  num_shuffles++;
-  apply(a->to, "query_fd", 0);
-  apply(a->from, "query_fd", 0);
-  get_all_args("shuffle", 2, "%d%d", &a->to_fd, &a->from_fd);
-
-  add_ref(a->from);
-  add_ref(a->to);
-
-  assign_svalue_no_free(&a->cb, q);
-  assign_svalue_no_free(&a->args, w);
-
-  th_farm(do_shuffle, (void *)a);
-
-  if(!my_callback)
-    my_callback = add_backend_callback( finished_p, 0, 0 );
-
-  pop_n_elems(args+2);
-}
-#endif
-
 
 void pike_module_init(void)
 {
@@ -1228,16 +1021,7 @@ void pike_module_init(void)
   empty_string = sp[-1];
   pop_stack();
 
-
-#ifdef _REENTRANT
-  /* function(object,object,function,mixed,int:void) */
-  ADD_FUNCTION("shuffle", f_shuffle,tFunc(tObj tObj tFunction tMix tInt,tVoid), 0);
-#endif
   ADD_EFUN("_low_program_name", f__low_program_name,tFunc(tProgram,tStr),0);
-
-/* function(string:string) */
-  ADD_EFUN("http_decode_string",f_http_decode_string,tFunc(tStr,tStr),
-	   OPT_TRY_OPTIMIZE);
 
 
 /* function(int:int) */
@@ -1298,64 +1082,25 @@ void pike_module_init(void)
 /* function(int,void|int:int) */
   ADD_EFUN("stardate", f_stardate,tFunc(tInt tOr(tVoid,tInt),tInt), 0);
 
-/* function(:int) */
-  ADD_EFUN("timezone", f_timezone,tFunc(tNone,tInt), 0);
-
 /* function(:array(int)) */
   ADD_EFUN("get_all_active_fd", f_get_all_active_fd,tFunc(tNone,tArr(tInt)),
 	   OPT_EXTERNAL_DEPEND);
 
-/* function(int:int) */
-  ADD_EFUN("nice", f_nice,tFunc(tInt,tInt),
-	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-
 /* function(int:string) */
   ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
-
-  /* timezone() needs */
   {
-    time_t foo = (time_t)0;
-    struct tm *g;
-
-    g = localtime(&foo);
-#ifndef HAVE_INT_TIMEZONE
-    _tz = g->tm_gmtoff;
-#endif
+    extern void init_xml();
+    init_xml();
   }
-
-#ifdef ENABLE_STREAMED_PARSER
-  start_new_program();
-  add_storage( sizeof (struct streamed_parser) );
-  /* function(mapping(string:function(string,mapping(string:string),mixed:mixed)),mapping(string:function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void) */
-  ADD_FUNCTION( "init", streamed_parser_set_data,tFunc(tMap(tStr,tFunc(tStr tMap(tStr,tStr) tMix,tMix)) tMap(tStr,tFunc(tStr tMap(tStr,tStr) tStr tMix,tMix)) tMap(tStr,tFunc(tStr tMix,tMix)),tVoid), 0 );
-  /* function(string,mixed:string) */
-  ADD_FUNCTION( "parse", streamed_parser_parse,tFunc(tStr tMix,tStr), 0 );
-  /* function(void:string) */
-  ADD_FUNCTION( "finish", streamed_parser_finish,tFunc(tVoid,tStr), 0 );
-  set_init_callback( streamed_parser_init );
-  set_exit_callback( streamed_parser_destruct );
-
-  streamed_parser = end_program();
-  add_program_constant("streamed_parser", streamed_parser,0);
-#endif /* ENABLE_STREAMED_PARSER */
-
-  init_xml();
 }
 
 
 void pike_module_exit(void)
 {
   int i;
-
   free_string(empty_string.u.string);
-
-#ifdef ENABLE_STREAMED_PARSER
-  if(streamed_parser)
   {
-    free_program(streamed_parser);
-    streamed_parser=0;
+    extern void exit_xml();
+    exit_xml();
   }
-#endif /* ENABLE_STREAMED_PARSER */
-
-  exit_xml();
 }
