@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.89 1998/04/16 21:39:45 hubbe Exp $");
+RCSID("$Id: file.c,v 1.90 1998/04/17 22:02:44 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1713,7 +1713,7 @@ static void file_connect(INT32 args)
   tmp=fd_connect(tmp, (struct sockaddr *)&addr, sizeof(addr));
   THREADS_DISALLOW();
 
-  if(tmp < 0)
+  if(tmp < 0 && !(errno==EINPROGRESS && (THIS->open_mode & FILE_NONBLOCKING)))
   {
     /* something went wrong */
     ERRNO=errno;
