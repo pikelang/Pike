@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.209 2002/07/16 18:47:20 hop Exp $
+// $Id: master.pike.in,v 1.210 2002/07/23 14:06:10 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1908,15 +1908,8 @@ void _main(array(string) orig_argv, array(string) env)
     exit(1);
   }
 
-  function(array(string):int) newmain;
-  if( _typeof(script->main) <= typeof(newmain) ) {
-    if(trace) predef::trace(trace);
-    i = script->main( argv );
-  }
-  else {
-    if(trace) predef::trace(trace);
-    i = script->main( sizeof(argv), argv, env );
-  }
+  if(trace) predef::trace(trace);
+  i=script->main(sizeof(argv),argv,env);
   if(i >=0) exit(i);
   _async=1;
   
