@@ -429,7 +429,16 @@ array decode_layers( string|object|mapping what, mapping|void opts,
       Image.Layer lay = l->image->get_layer( shrink );
       lay->set_mode( translate_mode( l->mode ) );
       if( l->opacity != 255 )
-        lay->set_alpha_value( l->opacity / 255.0 );
+      {
+        if( lay->alpha() )
+          lay->set_image( lay->image(), lay->alpha()*(l->opacity/255.0) );
+        else
+          lay->set_image( lay->image(), Image.Image( lay->xsize(),
+                                                     lay->yszize(),
+                                                     l->opacity,
+                                                     l->opacity,
+                                                     l->opacity));
+      }
       lay->set_offset( l->xoffset/shrink, l->yoffset/shrink );
 
       if(l->mask && l->flags->apply_mask)

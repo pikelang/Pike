@@ -292,8 +292,19 @@ array decode_layers( string|mapping what, mapping|void opts )
         lay->set_misc_value( "image_guides", what->resources->guides );
 
 	l->image = 0; l->alpha = 0;
+        
 	if( l->opacity != 255 )
-	  lay->set_alpha_value( 1.0 - l->opacity / 255.0 );
+        {
+	  float lo =  1.0 - l->opacity / 255.0;
+          if( lay->alpha() )
+            lay->set_image( lay->image(), lay->alpha()*lo );
+          else
+            lay->set_image( lay->image(), Image.Image( lay->xsize(),
+                                                       lay->yszize(),
+                                                       (int)(255*lo),
+                                                       (int)(255*lo),
+                                                       (int)(255*lo)));
+        }
 	lay->set_offset( l->xoffset, l->yoffset );
 	layers += ({ lay });
       }
