@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.42 1999/05/11 22:41:00 grubba Exp $
+ * $Id: acconfig.h,v 1.43 1999/06/19 19:54:59 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -120,6 +120,9 @@
 
 /* Define if you have ldexp.  */
 #undef HAVE_LDEXP
+
+/* Define if you have rint.  */
+#undef HAVE_RINT
 
 /* Define if you have frexp.  */
 #undef HAVE_FREXP

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.20 1998/11/22 11:03:13 hubbe Exp $
+ * $Id: port.h,v 1.21 1999/06/19 19:55:00 hubbe Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -36,6 +36,10 @@ void GETTIMEOFDAY(struct timeval *t);
 time_t TIME(time_t *);
 #else
 #  define TIME time
+#endif
+
+#ifndef HAVE_RINT
+#define rint(X) floor( (X) + 0.5 )
 #endif
 
 #if defined(HAVE_STRTOL) && defined(HAVE_WORKING_STRTOL)
