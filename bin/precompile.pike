@@ -133,7 +133,6 @@ mapping(string:string) strings = ([
   "__hash":"lfun_strings[LFUN___HASH]",
   "cast":"lfun_strings[LFUN_CAST]",
   "`!":"lfun_strings[LFUN_NOT]",
-  "`[..]":"lfun_strings[LFUN_RANGE",
   "`[]":"lfun_strings[LFUN_INDEX]",
   "`[]=":"lfun_strings[LFUN_ASSIGN_INDEX]",
   "`->":"lfun_strings[LFUN_ARROW]",
@@ -158,6 +157,7 @@ mapping(string:string) strings = ([
   "_equal":"lfun_strings[LFUN__EQUAL]",
   "_m_delete":"lfun_strings[LFUN__M_DELETE]",
   "_get_iterator":"lfun_strings[LFUN__GET_ITERATOR]",
+  "`[..]":"lfun_strings[LFUN_RANGE]",
   "_search":"lfun_strings[LFUN__SEARCH]",
 ]);
 int last_str_id = 0;
