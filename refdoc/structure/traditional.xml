@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.11 2002/03/12 03:24:54 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.12 2002/04/06 21:28:16 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -15,16 +15,16 @@
     </chapter>
   </file>
   <file>
-    <chapter-ref file="not_extracted/introduction.xml"/>
+    <chapter-ref file="chapters/introduction.xml"/>
   </file>
   <file>
-    <chapter-ref file="not_extracted/control_structures.xml"/>
+    <chapter-ref file="chapters/control_structures.xml"/>
   </file>
   <file>
-    <chapter-ref file="not_extracted/data_types.xml"/>
+    <chapter-ref file="chapters/data_types.xml"/>
   </file>
   <file>
-    <chapter-ref file="not_extracted/operators.xml"/>
+    <chapter-ref file="chapters/operators.xml"/>
   </file>
   <file>
     <chapter title="LFUN">
@@ -118,10 +118,13 @@
     </chapter>
   </file>
   <file>
-    <chapter-ref file="not_extracted/modules.xml"/>
+    <chapter-ref file="chapters/modules.xml"/>
   </file>
   <file>
-    <chapter-ref file="not_extracted/autodoc.xml"/>
+    <chapter-ref file="chapters/testsuite.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/autodoc.xml"/>
   </file>
   <file>
     <appendix-ref name="Image.Color colors"/>
@@ -130,7 +133,7 @@
     <appendix-ref name="Image.Layer modes"/>
   </file>
   <file>
-    <appendix-ref file="not_extracted/appendix_bnf.xml"/>
+    <appendix-ref file="chapters/appendix_bnf.xml"/>
   </file>
   </dir>
 
