@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.5 2001/08/08 15:09:02 noring Exp $
+// $Id: PDF.pmod,v 1.6 2001/08/14 17:29:56 js Exp $
 
 // Filter for application/pdf
 
@@ -28,7 +28,8 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
   string text =
     my_popen(({ combine_path(__FILE__,"../../../../bin/pdftotext"), fn, "-" }));
   
-  rm(fn);
+  if(!rm(fn))
+    werror("Search: Failed to remove temporary file: %s\n", fn);
 
   string md="", body="";
   array a=text/"\n----------";
