@@ -301,6 +301,18 @@ AC_SUBST(GNOME_LIBS)
 AC_SUBST(pgtk_has_gnome)
 AC_SUBST(pgtk_has_docklets)
 AC_PATH_PROG(GNOME_CONFIG,gnome-config,no)
+
+if test "$GNOME_CONFIG" = "no"; then
+  :
+else
+  case "`$GNOME_CONFIG --version`" in
+    gnome-libs\ 1.0.*)
+      GNOME_CONFIG=no
+      AC_MSG_WARN(Gnome 1.0.x not supported)
+    ;;
+  esac
+fi
+
 AC_MSG_CHECKING([gnome])
 
 if test "$GNOME_CONFIG" = "no"; then
