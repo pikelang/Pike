@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.6 1999/04/22 01:42:19 per Exp $");
+RCSID("$Id: image_tiff.c,v 1.7 1999/04/25 20:49:39 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -203,10 +203,13 @@ void low_image_tiff_encode( struct buffer *buf,
   char *buffer;
   rgb_group *is, *as = NULL;
   tif = TIFFClientOpen( "memoryfile", "w", buf,
-                        (void*)read_buffer, (void*)write_buffer,
-                        (void*)seek_buffer, (void*)close_buffer,
-                        (void*)size_buffer, (void*)map_buffer,
-                        (void*)unmap_buffer );
+                        (TIFFReadWriteProc)read_buffer,
+			(TIFFReadWriteProc)write_buffer,
+                        (TIFFSeekProc)seek_buffer,
+			(TIFFCloseProc)close_buffer,
+                        (TIFFSizeProc)size_buffer,
+			(TIFFMapFileProc)map_buffer,
+                        (TIFFUnmapFileProc)unmap_buffer );
   if(!tif)
     error("\"open\" of TIF file failed!\n");
   
