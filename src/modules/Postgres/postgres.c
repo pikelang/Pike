@@ -56,7 +56,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.13 1999/04/30 07:22:53 hubbe Exp $");
+RCSID("$Id: postgres.c,v 1.14 1999/04/29 15:09:26 mirar Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -474,10 +474,6 @@ void pike_module_init (void)
 	pgresult_init(); 
 }
 
-#else /* HAVE_POSTGRES */
-void pike_module_init(void) {}
-#endif /* HAVE_POSTGRES */
-
 void pike_module_exit(void)
 {
   extern struct program * pgresult_program;
@@ -494,3 +490,9 @@ void pike_module_exit(void)
     pgresult_program=0;
   }
 }
+
+#else /* HAVE_POSTGRES */
+void pike_module_init(void) {}
+void pike_module_exit(void) {}
+#endif /* HAVE_POSTGRES */
+
