@@ -158,6 +158,11 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
   return foo;
 }
 
+array uniq(array a)
+{
+  return indices(mkmapping(a,a));
+}
+
 
 void create()
 {
@@ -166,4 +171,5 @@ void create()
   add_constant("sum_arrays",sum_arrays);
   add_constant("search_array",search_array);
   add_constant("sort_array",sort_array);
+  add_constant("uniq",uniq);
 }
