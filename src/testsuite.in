@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.157 1999/03/06 03:16:15 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.158 1999/03/07 01:01:16 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -247,6 +247,58 @@ test_any([[
 object o=class {
   int i=17;
   mixed `[](string foo) { return ::`[]=; }
+  mixed `[]=(string ind, mixed foo) {}
+}();
+
+o[""]("i",99);
+return o->i;
+]],99)
+
+test_any([[
+object o=class {
+  int foo=7;
+  int bar=11;
+  int i=17;
+  int gazonk=12;
+  mixed `[](string foo) { return ::`[]=; }
+  mixed `[]=(string ind, mixed foo) {}
+}();
+
+o[""]("i",99);
+return o->i;
+]],99)
+
+test_any([[
+class Fonk {
+  int foo=1;
+  int bar=2;
+  int i=17;
+  int gazonk=3;
+};
+
+object o=class
+{
+  inherit Fonk;
+  mixed `[](string foo) { return ::`[]=; }
+  mixed `[]=(string ind, mixed foo) {}
+}();
+
+o[""]("i",99);
+return o->i;
+]],99)
+
+test_any([[
+class Fonk {
+  int foo=1;
+  int bar=2;
+  int i=17;
+  int gazonk=3;
+};
+
+object o=class
+{
+  inherit Fonk : zonk;
+  mixed `[](string foo) { return zonk::`[]=; }
   mixed `[]=(string ind, mixed foo) {}
 }();
 
@@ -2914,6 +2966,24 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") ]],
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create]],
 [[
   test_any([[return allocate(10,thread_create)(lambda() { int e; for(e=0;e<500;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;})->wait() - ({-1})]],({}))
+]])
+
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create]],
+[[
+  for(int q=0;q<100;q++)
+  {
+    Threads.Fifo fifo=Threads.Fifo();
+
+    for(int e=0;e<10;e++)
+    {
+      thread_create(lamba() {
+        Process.create_process(({"/bin/cat","/dev/null"}));
+        fifo->read();
+      });
+    }
+    for(int e=0;e<50;e++)  Stdio.Port()->bind(0);
+    for(int e=0;e<10;e++) fifo->write(1);
+  }
 ]])
 
 

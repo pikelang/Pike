@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.110 1999/02/18 16:34:36 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.111 1999/03/07 01:01:15 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -101,37 +101,35 @@ RCSID("$Id: signal_handler.c,v 1.110 1999/02/18 16:34:36 hubbe Exp $");
 
 /* #define PROC_DEBUG */
 
+#ifndef __NT__
+
+#define USE_PID_MAPPING
+
+#ifdef _REENTRANT
+#define USE_WAIT_THREAD
+#else
+#define USE_SIGCHILD
+#endif
+
+#endif
+
+
+
 /* Added so we are able to patch older versions of Pike. */
 #ifndef add_ref
 #define add_ref(X)	((X)->refs++)
 #endif /* add_ref */
 
 extern int fd_from_object(struct object *o);
+static int set_priority( int pid, char *to );
+
+
 
 static struct svalue signal_callbacks[MAX_SIGNALS];
-
 static unsigned char sigbuf[SIGNAL_BUFFER];
 static int firstsig, lastsig;
 static struct callback *signal_evaluator_callback =0;
-static int set_priority( int pid, char *to );
 
-#ifndef __NT__
-struct wait_data {
-  pid_t pid;
-  WAITSTATUSTYPE status;
-};
-
-static volatile struct wait_data wait_buf[WAIT_BUFFER];
-static volatile int firstwait=0;
-static volatile int lastwait=0;
-
-#endif /* ! NT */
-
-struct sigdesc
-{
-  int signum;
-  char *signame;
-};
 
 
 /*
@@ -145,6 +143,12 @@ struct sigdesc
 #endif
 
 #endif /* __NT__ */
+
+struct sigdesc
+{
+  int signum;
+  char *signame;
+};
 
 static struct sigdesc signal_desc []={
 #ifdef SIGHUP
@@ -342,6 +346,37 @@ static struct sigdesc signal_desc []={
 };
 
 
+static RETSIGTYPE receive_signal(int signum)
+{
+  int tmp;
+
+  if ((signum < 0) || (signum >= MAX_SIGNALS)) {
+    /* Some OSs (Solaris 2.6) send a bad signum sometimes.
+     * SIGCHLD is the safest signal to substitute.
+     *	/grubba 1998-05-19
+     */
+#ifdef SIGCHLD
+    signum = SIGCHLD;
+#else
+    signum = 0;
+#endif
+  }
+
+  tmp=firstsig+1;
+  if(tmp == SIGNAL_BUFFER) tmp=0;
+  if(tmp != lastsig)
+  {
+    sigbuf[tmp]=signum;
+    firstsig=tmp;
+  }
+  wake_up_backend();
+
+#ifndef SIGNAL_ONESHOT
+  my_signal(signum, receive_signal);
+#endif
+}
+
+/* This function is intended to work like signal(), but better :) */
 void my_signal(int sig, sigfunctype fun)
 {
 #ifdef HAVE_SIGACTION
@@ -382,73 +417,305 @@ void my_signal(int sig, sigfunctype fun)
 #endif
 }
 
-static RETSIGTYPE receive_signal(int signum)
+
+
+static int signalling=0;
+
+static void unset_signalling(void *notused) { signalling=0; }
+
+void check_signals(struct callback *foo, void *bar, void *gazonk)
 {
-  int tmp;
-
-  if ((signum < 0) || (signum >= MAX_SIGNALS)) {
-    /* Some OSs (Solaris 2.6) send a bad signum sometimes.
-     * SIGCHLD is the safest signal to substitute.
-     *	/grubba 1998-05-19
-     */
-#ifdef SIGCHLD
-    signum = SIGCHLD;
-#else
-    signum = 0;
+  ONERROR ebuf;
+#ifdef PIKE_DEBUG
+  extern int d_flag;
+  if(d_flag>5) do_debug();
 #endif
-  }
 
-  tmp=firstsig+1;
-  if(tmp == SIGNAL_BUFFER) tmp=0;
-  if(tmp != lastsig)
+  if(firstsig != lastsig && !signalling)
   {
-    sigbuf[tmp]=signum;
-    firstsig=tmp;
-  }
+    int tmp=firstsig;
+    signalling=1;
 
-#ifndef __NT__
-  if(signum==SIGCHLD)
-  {
-    pid_t pid;
-    WAITSTATUSTYPE status;
+    SET_ONERROR(ebuf,unset_signalling,0);
 
-  try_reap_again:
-    /* We carefully reap what we saw */
-#ifdef HAVE_WAITPID
-    pid=waitpid(-1,& status,WNOHANG);
-#else
-#ifdef HAVE_WAIT3
-    pid=wait3(&status,WNOHANG,0);
-#else
-#ifdef HAVE_WAIT4
-    pid=wait4(-1,&status,WNOHANG,0);
-#else
-    pid=-1;
-#endif
-#endif
-#endif
-
-    if(pid>0)
+    while(lastsig != tmp)
     {
-      int tmp2=firstwait+1;
-      if(tmp2 == WAIT_BUFFER) tmp2=0;
-      if(tmp2 != lastwait)
+      if(++lastsig == SIGNAL_BUFFER) lastsig=0;
+
+#ifdef USE_SIGCHLD
+      if(sigbuf[lastsig]==SIGCHLD)
       {
-	wait_buf[tmp2].pid=pid;
-	wait_buf[tmp2].status=status;
-	firstwait=tmp2;
-	goto try_reap_again;
+	int tmp2 = firstwait;
+	while(lastwait != tmp2)
+	{
+	  if(++lastwait == WAIT_BUFFER) lastwait=0;
+	  report_child(wait_buf[lastwait].pid,
+		       wait_buf[lastwait].status);
+	}
       }
+#endif
+
+      push_int(sigbuf[lastsig]);
+      apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
+      pop_stack();
+    }
+
+    UNSET_ONERROR(ebuf);
+
+    signalling=0;
+  }
+}
+
+/* Get the name of a signal given the number */
+static char *signame(int sig)
+{
+  int e;
+  for(e=0;e<(int)NELEM(signal_desc)-1;e++)
+  {
+    if(sig==signal_desc[e].signum)
+      return signal_desc[e].signame;
+  }
+  return 0;
+}
+
+/* Get the signal's number given the name */
+static int signum(char *name)
+{
+  int e;
+  for(e=0;e<(int)NELEM(signal_desc)-1;e++)
+  {
+    if(!STRCASECMP(name,signal_desc[e].signame) ||
+       !STRCASECMP(name,signal_desc[e].signame+3) )
+      return signal_desc[e].signum;
+  }
+  return -1;
+}
+
+static void f_signal(int args)
+{
+  int signum;
+  sigfunctype func;
+
+  check_signals(0,0,0);
+
+  if(args < 1)
+    error("Too few arguments to signal()\n");
+
+  if(sp[-args].type != T_INT)
+  {
+    error("Bad argument 1 to signal()\n");
+  }
+
+  signum=sp[-args].u.integer;
+  if(signum <0 ||
+     signum >=MAX_SIGNALS
+#if defined(__linux__) && defined(_REENTRANT)
+     || signum == SIGUSR1
+     || signum == SIGUSR2
+#endif
+    )
+  {
+    error("Signal out of range.\n");
+  }
+
+  if(!signal_evaluator_callback)
+  {
+    signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
+					      check_signals,
+					      0,0);
+  }
+
+  if(args == 1)
+  {
+    push_int(0);
+    args++;
+
+    switch(signum)
+    {
+#ifdef USE_SIGCHLD
+    case SIGCHLD:
+      func=receive_sigchild;
+      break;
+#endif
+
+#ifdef SIGPIPE
+    case SIGPIPE:
+      func=(sigfunctype) SIG_IGN;
+      break;
+#endif
+
+    default:
+      func=(sigfunctype) SIG_DFL;
+    }
+  } else {
+    if(IS_ZERO(sp+1-args))
+    {
+      func=(sigfunctype) SIG_IGN;
+    }else{
+      func=receive_signal;
+#ifdef USE_SIGCHLD
+      if(signum == SIGCHLD)
+	func=receive_sigchild;
+#endif
     }
   }
-#endif
-
-  wake_up_backend();
-
-#ifndef SIGNAL_ONESHOT
-  my_signal(signum, receive_signal);
-#endif
+  assign_svalue(signal_callbacks + signum, sp+1-args);
+  my_signal(signum, func);
+  pop_n_elems(args);
 }
+
+static void f_signum(int args)
+{
+  int i;
+  if(args < 1)
+    error("Too few arguments to signum()\n");
+
+  if(sp[-args].type != T_STRING)
+    error("Bad argument 1 to signum()\n");
+
+  i=signum(sp[-args].u.string->str);
+  pop_n_elems(args);
+  push_int(i);
+}
+
+static void f_signame(int args)
+{
+  char *n;
+  if(args < 1)
+    error("Too few arguments to signame()\n");
+
+  if(sp[-args].type != T_INT)
+    error("Bad argument 1 to signame()\n");
+
+  n=signame(sp[-args].u.integer);
+  pop_n_elems(args);
+  if(n)
+    push_string(make_shared_string(n));
+  else
+    push_int(0);
+}
+
+
+
+
+
+/* Process stuff */
+
+#if PIKE_DEBUG
+
+char process_info[65536];
+
+#define P_NOT_STARTED 0
+#define P_RUNNING 1
+#define P_DONE 2
+#define P_RUNNING_AGAIN 3
+#define P_DONE_AGAIN 4
+
+void process_started(pid_t pid)
+{
+  if(pid < 0 || pid > 65536)
+    fatal("Pid out of range: %ld\n",(long)pid);
+
+  switch(process_info[pid])
+  {
+    case P_NOT_STARTED:
+    case P_DONE:
+      process_info[pid]++;
+      break;
+
+    case P_DONE_AGAIN:
+      process_info[pid]=P_RUNNING_AGAIN;
+
+    default:
+      fatal("Process debug: Pid %ld started without stopping! (status=%d)\n",(long)pid,process_info[pid]);
+  }
+}
+
+void process_done(pid_t pid)
+{
+  if(pid < 0 || pid > 65536)
+    fatal("Pid out of range: %ld\n",(long)pid);
+  switch(process_info[pid])
+  {
+    case P_RUNNING:
+    case P_RUNNING_AGAIN:
+      process_info[pid]++;
+      break;
+
+    default:
+      fatal("Process debug: Unknown child %ld! (status=%d)\n",(long)pid,process_info[pid]);
+  }
+}
+
+#else
+
+#define process_started(PID)
+#define process_done(PID)
+
+#endif
+
+
+#ifdef HAVE_WAITPID
+#define WAITPID(PID,STATUS,OPT) waitpid(PID,STATUS,OPT)
+#else
+#ifdef HAVE_WAIT4
+#define WAITPID(PID,STATUS,OPT) wait4( (PID),(STATUS),(OPT),0 )
+#else
+#define WAITPID(PID,STATUS,OPT) -1
+#endif
+#endif
+
+#ifdef HAVE_WAITPID
+#define WAIT_ANY(STATUS,OPT) waitpid(-1,STATUS,OPT)
+#else
+#ifdef HAVE_WAIT3
+#define WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
+#else
+#ifdef HAVE_WAIT4
+#define WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
+#else
+#define WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
+#endif
+#endif
+#endif
+
+
+#ifndef USE_SIGCHILD
+
+struct wait_data {
+  pid_t pid;
+  WAITSTATUSTYPE status;
+};
+
+static volatile struct wait_data wait_buf[WAIT_BUFFER];
+static volatile int firstwait=0;
+static volatile int lastwait=0;
+
+static RETSIGTYPE receive_sigchild(int signum)
+{
+  pid_t pid;
+  WAITSTATUSTYPE status;
+  
+ try_reap_again:
+  /* We carefully reap what we saw */
+  pid=WAIT_ANY(&status, WNOHANG);
+  
+  if(pid>0)
+  {
+    int tmp2=firstwait+1;
+    if(tmp2 == WAIT_BUFFER) tmp2=0;
+    if(tmp2 != lastwait)
+    {
+      wait_buf[tmp2].pid=pid;
+      wait_buf[tmp2].status=status;
+      firstwait=tmp2;
+      goto try_reap_again;
+    }
+  }
+  receive_signal(SIGCHLD);
+}
+#endif
+
 
 #define PROCESS_UNKNOWN -1
 #define PROCESS_RUNNING 0
@@ -456,6 +723,10 @@ static RETSIGTYPE receive_signal(int signum)
 
 #undef THIS
 #define THIS ((struct pid_status *)fp->current_storage)
+
+#ifdef USE_PID_MAPPING
+static struct mapping *pid_mapping=0;
+#endif
 
 struct pid_status
 {
@@ -468,11 +739,7 @@ struct pid_status
 #endif
 };
 
-#ifndef __NT__
-static struct mapping *pid_mapping=0;
-#endif
 static struct program *pid_status_program=0;
-
 
 static void init_pid_status(struct object *o)
 {
@@ -487,7 +754,7 @@ static void init_pid_status(struct object *o)
 
 static void exit_pid_status(struct object *o)
 {
-#ifndef __NT__
+#ifdef USE_PID_MAPPING
   if(pid_mapping)
   {
     struct svalue key;
@@ -495,16 +762,18 @@ static void exit_pid_status(struct object *o)
     key.u.integer=THIS->pid;
     map_delete(pid_mapping, &key);
   }
-#else
+#endif
+
+#ifdef __NT__
   CloseHandle(THIS->handle);
 #endif
 }
 
-#ifndef __NT__
+#ifdef USE_PID_MAPPING
 static void report_child(int pid,
 			 WAITSTATUSTYPE status)
 {
-
+  process_done(pid);
   if(pid_mapping)
   {
     struct svalue *s, key;
@@ -533,6 +802,41 @@ static void report_child(int pid,
   }
 }
 #endif
+
+#ifdef USE_WAIT_THREAD
+static COND_T process_status_change;
+static COND_T start_wait_thread;
+static int num_pids;
+
+static void *wait_thread(void *data)
+{
+  mt_lock(&interpreter_lock);
+  while(!num_pids)
+    co_wait(&start_wait_thread, &interpreter_lock);
+
+  mt_unlock(&interpreter_lock);
+
+  while(1)
+  {
+    WAITSTATUSTYPE status;
+
+    int pid=WAIT_ANY(&status, 0);
+    if(pid>0)
+    {
+      mt_lock(&interpreter_lock);
+      num_pids--;
+      report_child(pid, status);
+      co_broadcast(& process_status_change);
+
+      while(!num_pids)
+	co_wait(&start_wait_thread, &interpreter_lock);
+
+      mt_unlock(&interpreter_lock);
+    }
+  }
+}
+#endif
+
 
 static void f_pid_status_wait(INT32 args)
 {
@@ -567,13 +871,18 @@ static void f_pid_status_wait(INT32 args)
   }
 #else
 
-#if 1
-#define BUGGY_WAITPID
+#ifdef USE_WAIT_THREAD
+
+  while(THIS->state == PROCESS_RUNNING)
+  {
+    SWAP_OUT_CURRENT_THREAD();
+    co_wait( & process_status_change, &interpreter_lock);
+    SWAP_IN_CURRENT_THREAD();
+  }
+
+#else
 
   {
-#ifdef BUGGY_WAITPID
-    int errorcount=0;
-#endif
     int err=0;
     while(THIS->state == PROCESS_RUNNING)
     {
@@ -583,36 +892,21 @@ static void f_pid_status_wait(INT32 args)
 
       if(err)
       {
-
-#ifdef BUGGY_WAITPID
 	struct svalue key,*s;
 	key.type=T_INT;
 	key.u.integer=pid;
 	s=low_mapping_lookup(pid_mapping, &key);
 	if(s && s->type == T_OBJECT && s->u.object == fp->current_object)
 	{
-	  errorcount++;
-	  if(errorcount==50)
-	    error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+	  error("Operating system failiuer: Pike lost track of a child, pid=%d, errno=%d, errorcount=%d.\n",pid,err,errorcount);
 
-	  if(!(errorcount%10)) sleep(1);
 	}
 	else
-#endif
-	error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+	  error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
       }
 
       THREADS_ALLOW();
-#ifdef HAVE_WAITPID
-      pid=waitpid(pid,& status,0);
-#else
-#ifdef HAVE_WAIT4
-      pid=wait4(pid,&status,0,0);
-#else
-      pid=-1;
-      errno=ENOTSUP;
-#endif
-#endif
+      pid=WAITPID(pid,& status,0);
       THREADS_DISALLOW();
       if(pid > -1)
       {
@@ -631,14 +925,6 @@ static void f_pid_status_wait(INT32 args)
       check_signals(0,0,0);
     }
   }
-#else
-  init_signal_wait();
-  while(THIS->state == PROCESS_RUNNING)
-  {
-    wait_for_signal();
-    check_threads_etc();
-  }
-  exit_signal_wait();
 #endif
   push_int(THIS->result);
 #endif /* __NT__ */
@@ -1757,7 +2043,7 @@ void f_create_process(INT32 args)
       error("Failed to create child communication pipe.\n");
     }
 
-#if 1
+#if 0 /* Changed to 0 by hubbe 990306 - why do we need it? */
     init_threads_disable(NULL);
     storage.disabled = 1;
 #endif
@@ -1782,6 +2068,7 @@ void f_create_process(INT32 args)
 
       error("Failed to start process.\n" "errno:%d\n", errno);
     } else if(pid) {
+      process_started(pid);  /* Debug */
       /*
        * The parent process
        */
@@ -1793,6 +2080,8 @@ void f_create_process(INT32 args)
 
       pop_n_elems(sp - stack_save);
 
+
+#ifdef USE_SIGCHILD
       /* FIXME: Can anything of the following throw an error? */
       if(!signal_evaluator_callback)
       {
@@ -1800,6 +2089,13 @@ void f_create_process(INT32 args)
 						  check_signals,
 						  0,0);
       }
+#endif
+
+#ifdef USE_WAIT_THREAD
+      if(!(num_pids++))
+	co_signal(& start_wait_thread);
+#endif
+
       THIS->pid = pid;
       THIS->state = PROCESS_RUNNING;
       ref_push_object(fp->current_object);
@@ -1962,10 +2258,10 @@ void f_create_process(INT32 args)
             if(dup2(stds[fd], fd) < 0)
               PROCERROR(PROCE_DUP2, fd);
         }
-/* Why? */
-/*         for(fd=0; fd<3; fd++) */
-/*           if(stds[fd] && stds[fd]>2) */
-/*             close( stds[fd] ); */
+/* Why? (Per) Because people might want to be able to close them! /Hubbe */
+	for(fd=0; fd<3; fd++)
+	  if(stds[fd] && stds[fd]>2)
+	    close( stds[fd] );
       }
 
       if(priority)
@@ -2106,12 +2402,21 @@ void f_fork(INT32 args)
   if(pid)
   {
     struct pid_status *p;
+
+#ifdef USE_SIGCHILD
     if(!signal_evaluator_callback)
     {
       signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						check_signals,
 						0,0);
     }
+#endif
+
+#ifdef USE_WAIT_THREAD
+      if(!(num_pids++))
+	co_signal(& start_wait_thread);
+#endif
+
     o=low_clone(pid_status_program);
     call_c_initializers(o);
     p=(struct pid_status *)get_storage(o,pid_status_program);
@@ -2149,16 +2454,6 @@ static void f_kill(INT32 args)
     pid = sp[-args].u.integer;
     break;
 
-  case T_OBJECT:
-  {
-    struct pid_status *p;
-    if((p=(struct pid_status *)get_storage(sp[-args].u.object,
-					  pid_status_program)))
-    {
-      pid=p->pid;
-      break;
-    }
-  }
   default:
     error("Bad argument 1 to kill().\n");
   }
@@ -2245,178 +2540,6 @@ void f_kill(INT32 args)
 #endif
 
 
-static int signalling=0;
-
-static void unset_signalling(void *notused) { signalling=0; }
-
-void check_signals(struct callback *foo, void *bar, void *gazonk)
-{
-  ONERROR ebuf;
-#ifdef PIKE_DEBUG
-  extern int d_flag;
-  if(d_flag>5) do_debug();
-#endif
-
-  if(firstsig != lastsig && !signalling)
-  {
-    int tmp=firstsig;
-    signalling=1;
-
-    SET_ONERROR(ebuf,unset_signalling,0);
-
-    while(lastsig != tmp)
-    {
-      if(++lastsig == SIGNAL_BUFFER) lastsig=0;
-
-#ifdef SIGCHLD
-      if(sigbuf[lastsig]==SIGCHLD)
-      {
-	int tmp2 = firstwait;
-	while(lastwait != tmp2)
-	{
-	  if(++lastwait == WAIT_BUFFER) lastwait=0;
-	  report_child(wait_buf[lastwait].pid,
-		       wait_buf[lastwait].status);
-	}
-      }
-#endif
-
-      push_int(sigbuf[lastsig]);
-      apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
-      pop_stack();
-    }
-
-    UNSET_ONERROR(ebuf);
-
-    signalling=0;
-  }
-}
-
-/* Get the name of a signal given the number */
-static char *signame(int sig)
-{
-  int e;
-  for(e=0;e<(int)NELEM(signal_desc)-1;e++)
-  {
-    if(sig==signal_desc[e].signum)
-      return signal_desc[e].signame;
-  }
-  return 0;
-}
-
-/* Get the signal's number given the name */
-static int signum(char *name)
-{
-  int e;
-  for(e=0;e<(int)NELEM(signal_desc)-1;e++)
-  {
-    if(!STRCASECMP(name,signal_desc[e].signame) ||
-       !STRCASECMP(name,signal_desc[e].signame+3) )
-      return signal_desc[e].signum;
-  }
-  return -1;
-}
-
-static void f_signal(int args)
-{
-  int signum;
-  sigfunctype func;
-
-  check_signals(0,0,0);
-
-  if(args < 1)
-    error("Too few arguments to signal()\n");
-
-  if(sp[-args].type != T_INT)
-  {
-    error("Bad argument 1 to signal()\n");
-  }
-
-  signum=sp[-args].u.integer;
-  if(signum <0 ||
-     signum >=MAX_SIGNALS
-#if defined(__linux__) && defined(_REENTRANT)
-     || signum == SIGUSR1
-     || signum == SIGUSR2
-#endif
-    )
-  {
-    error("Signal out of range.\n");
-  }
-
-  if(!signal_evaluator_callback)
-  {
-    signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
-					      check_signals,
-					      0,0);
-  }
-
-  if(args == 1)
-  {
-    push_int(0);
-    args++;
-
-    switch(signum)
-    {
-#ifdef SIGCHLD
-    case SIGCHLD:
-      func=receive_signal;
-      break;
-#endif
-
-#ifdef SIGPIPE
-    case SIGPIPE:
-      func=(sigfunctype) SIG_IGN;
-      break;
-#endif
-
-    default:
-      func=(sigfunctype) SIG_DFL;
-    }
-  } else {
-    if(IS_ZERO(sp+1-args))
-    {
-      func=(sigfunctype) SIG_IGN;
-    }else{
-      func=receive_signal;
-    }
-  }
-  assign_svalue(signal_callbacks + signum, sp+1-args);
-  my_signal(signum, func);
-  pop_n_elems(args);
-}
-
-static void f_signum(int args)
-{
-  int i;
-  if(args < 1)
-    error("Too few arguments to signum()\n");
-
-  if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to signum()\n");
-
-  i=signum(sp[-args].u.string->str);
-  pop_n_elems(args);
-  push_int(i);
-}
-
-static void f_signame(int args)
-{
-  char *n;
-  if(args < 1)
-    error("Too few arguments to signame()\n");
-
-  if(sp[-args].type != T_INT)
-    error("Bad argument 1 to signame()\n");
-
-  n=signame(sp[-args].u.integer);
-  pop_n_elems(args);
-  if(n)
-    push_string(make_shared_string(n));
-  else
-    push_int(0);
-}
-
 
 static void f_getpid(INT32 args)
 {
@@ -2496,8 +2619,14 @@ void init_signals(void)
 {
   int e;
 
-#ifdef SIGCHLD
-  my_signal(SIGCHLD, receive_signal);
+#ifdef USE_SIGCHLD
+  my_signal(SIGCHLD, receive_sigchild);
+#endif
+
+#ifdef USE_WAIT_THREAD
+  co_init(& process_status_change);
+  co_init(& start_wait_thread);
+  th_create_small(0,wait_thread,0);
 #endif
 
 #ifdef SIGPIPE
@@ -2524,6 +2653,7 @@ void init_signals(void)
 
 #ifndef __NT__
   pid_mapping=allocate_mapping(2);
+  pid_mapping->flags|=MAPPING_FLAG_WEAK;
 #endif
 
   start_new_program();
