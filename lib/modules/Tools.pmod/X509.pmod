@@ -53,8 +53,7 @@ object make_tbs(object issuer, object algorithm,
 			      keyinfo }) ));
 }
 
-#if 0
-string make_selfsigned_dss_certificate(object dss, int ttl, object name,
+string make_selfsigned_dsa_certificate(object dsa, int ttl, array name,
 				       array|void extensions)
 {
   object serial = asn1_integer(1); /* Hard coded serial number */
@@ -66,20 +65,21 @@ string make_selfsigned_dss_certificate(object dss, int ttl, object name,
   
   object keyinfo = asn1_sequence(
     ({ /* Use an identifier with parameters */
-       DSA.dsa_algorithm_identifier(dsa),
-       asn1_bit_string(DSA.dsa_public_key(dsa)) }) );
+       DSA.algorithm_identifier(dsa),
+       asn1_bit_string(DSA.public_key(dsa)) }) );
 
-  object tbs = make_tbs(name, signature_algorithm,
-			name, keyinfo,
+  object dn = Certificate.build_distinguished_name(@name);
+  
+  object tbs = make_tbs(dn, signature_algorithm,
+			dn, keyinfo,
 			serial, ttl, extensions);
   
   return asn1_sequence(
     ({ tbs,
-       asn1_sequence( ({ signature_algorithm }) );
+       asn1_sequence( ({ signature_algorithm }) ),
        asn1_bit_string(dsa
 		       ->sign_ssl(tbs->get_der())) }))->get_der();
 }
-#endif
 
 string rsa_sign_digest(object rsa, object digest_id, string digest)
 {
@@ -104,7 +104,7 @@ string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
   object keyinfo = asn1_sequence(
     ({ asn1_sequence( ({ Identifiers.rsa_id,
 			 asn1_null() }) ),
-       asn1_bit_string(RSA.rsa_public_key(rsa)) }) );
+       asn1_bit_string(RSA.public_key(rsa)) }) );
 
   object dn = Certificate.build_distinguished_name(@name);
   
