@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.17 1999/07/02 21:19:55 mirar Exp $ */
+/* $Id: pattern.c,v 1.18 1999/07/16 11:44:20 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.17 1999/07/02 21:19:55 mirar Exp $
+**!	$Id: pattern.c,v 1.18 1999/07/16 11:44:20 mirar Exp $
 **! class Image
 */
 
@@ -364,8 +364,6 @@ void image_noise(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("no image\n");
-
    if (args<1) error("too few arguments to image->noise()\n");
 
    scale=GET_FLOAT_ARG(sp,args,1,0.1,"image->noise");
@@ -445,8 +443,6 @@ void image_turbulence(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("no image\n");
-
    if (args<1) error("too few arguments to image->turbulence()\n");
 
    octaves=GET_INT_ARG(sp,args,1,3,"image->turbulence");
@@ -494,6 +490,8 @@ void image_turbulence(INT32 args)
 /*
 **! method object random()
 **! method object random(int seed)
+**! method object randomgrey()
+**! method object random(greyint seed)
 **! 	Gives a randomized image;<br>
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
@@ -541,6 +539,34 @@ void image_random(INT32 args)
       d->r=(COLORTYPE)my_rand();
       d->g=(COLORTYPE)my_rand();
       d->b=(COLORTYPE)my_rand();
+      d++;
+   }
+
+   THREADS_DISALLOW();
+
+   push_object(o);
+}
+
+void image_randomgrey(INT32 args)
+{
+   struct object *o;
+   struct image *img;
+   rgb_group *d;
+   INT32 n;
+
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   o=clone_object(image_program,2);
+   img=(struct image*)get_storage(o,image_program);
+   d=img->img;
+   if (args) f_random_seed(args);
+
+   THREADS_ALLOW();
+
+   n=img->xsize*img->ysize;
+   while (n--)
+   {
+      d->r=d->g=d->b=(COLORTYPE)my_rand();
       d++;
    }
 

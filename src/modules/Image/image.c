@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.151 1999/07/04 12:38:11 mirar Exp $ */
+/* $Id: image.c,v 1.152 1999/07/16 11:44:16 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.151 1999/07/04 12:38:11 mirar Exp $
+**!	$Id: image.c,v 1.152 1999/07/16 11:44:16 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.151 1999/07/04 12:38:11 mirar Exp $");
+RCSID("$Id: image.c,v 1.152 1999/07/16 11:44:16 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -483,6 +483,8 @@ THREADS_DISALLOW();
 **! method void create(int xsize,int ysize,Color color)
 **! method void create(int xsize,int ysize,int r,int g,int b)
 **! method void create(int xsize,int ysize,int r,int g,int b,int alpha)
+**
+**! method void create(int xsize,int ysize,string method,method ...)
 **! 	Initializes a new image object.
 **!
 **!	<table><tr valign=center>
@@ -492,6 +494,31 @@ THREADS_DISALLOW();
 **!	<td>Image.Image<wbr>(XSIZE,YSIZE)</td>
 **!	<td>Image.Image<wbr>(XSIZE,YSIZE,255,128,0)</td>
 **!	</tr></table>
+**!
+**!	The image can also be calculated from some special methods,
+**!	for convinience:
+**!
+**!	<pre>
+**!	channel modes; followed by a number of 1-char-per-pixel strings 
+**!	or image objects (where red channel will be used), 
+**!	or an integer value:
+**!	  "grey" : make a grey image (needs 1 source: grey)
+**!	  "rgb"  : make an rgb image (needs 3 sources: red, green and blue)
+**!	  "cmyk" : make a rgb image from cmyk (cyan, magenta, yellow, black)
+**!
+**!	generate modes; all extra arguments is given to the
+**!	generation function. These has the same name as the 
+**!	method:
+**!	  "<ref>test<ref>," 
+**!	  "<ref>gradients</ref>"
+**!	  "<ref>noise</ref>"
+**!	  "<ref>turbulence</ref>"
+**!	  "<ref>random</ref>"
+**!	  "<ref>randomgrey</ref>"
+**!	specials cases:
+**!	  "<ref>tuned_box</ref>" (coordinates is automatic)
+**!	</pre>
+**!
 **! arg int xsize
 **! arg int ysize
 **! 	size of (new) image in pixels
@@ -531,6 +558,269 @@ int image_too_big(INT_TYPE xsize,INT_TYPE ysize)
    return 0;
 }
 
+void img_read_get_channel(int arg,char *name,INT32 args,
+			  int *m,unsigned char **s,COLORTYPE *c)
+{
+   struct image *img;
+   if (arg>args)
+      SIMPLE_TOO_FEW_ARGS_ERROR("create_method",1+arg);
+   switch (sp[arg-args-1].type)
+   {
+      case T_INT:
+	 *c=(COLORTYPE)sp[arg-args-1].u.integer;
+	 *s=c;
+	 *m=0;
+	 break;
+      case T_STRING:
+	 if (sp[arg-args-1].u.string->size_shift)
+	    error("create_method: argument %d (%s channel): "
+		  "wide strings are not supported (yet)\n",arg+1,name);
+	 if (sp[arg-args-1].u.string->len!=THIS->xsize*THIS->ysize)
+	    error("create_method: argument %d (%s channel): "
+		  "string is %d characters, expected %d\n",
+		  arg+1,name,sp[arg-args-1].u.string->len,
+		  THIS->xsize*THIS->ysize);
+	 *s=sp[arg-args-1].u.string->str;
+	 *m=1;
+	 break;
+      case T_OBJECT:
+	 img=(struct image*)get_storage(sp[arg-args-1].u.object,image_program);
+	 if (!img) 
+	    error("create_method: argument %d (%s channel): "
+		  "not an image object\n",arg+1,name);
+	 if (!img->img) 
+	    error("create_method: argument %d (%s channel): "
+		  "uninitialized image object\n",arg+1,name);
+	 if (img->xsize!=THIS->xsize || img->ysize!=THIS->ysize) 
+	    error("create_method: argument %d (%s channel): "
+		  "size is wrong, %dx%d; expected %dx%d\n",
+		  arg+1,name,img->xsize,img->ysize,
+		  THIS->xsize,THIS->ysize);
+	 *s=(COLORTYPE*)img->img;
+	 *m=sizeof(rgb_group);
+	 break;
+      default:
+	 error("create_method: argument %d (%s channel): "
+	       "illegal type\n",arg+1,name);
+   }
+}
+
+void img_read_grey(INT32 args)
+{
+   int m1;
+   COLORTYPE c1;
+   unsigned char *s1;
+   int n=THIS->xsize*THIS->ysize;
+   rgb_group *d;
+   img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+   switch (m1)
+   {
+      case 0: MEMSET(d,c1,n*sizeof(rgb_group)); break;
+      case 1: while (n--) { d->r=d->g=d->b=*(s1++); d++; } break;
+      default: while (n--) { d->r=d->g=d->b=*s1; s1+=m1; d++; }
+   }
+}
+
+void img_read_rgb(INT32 args)
+{
+   int m1,m2,m3;
+   unsigned char *s1,*s2,*s3;
+   int n=THIS->xsize*THIS->ysize;
+   rgb_group *d,rgb;
+   img_read_get_channel(1,"red",args,&m1,&s1,&(rgb.r));
+   img_read_get_channel(2,"green",args,&m2,&s2,&(rgb.g));
+   img_read_get_channel(3,"blue",args,&m3,&s3,&(rgb.b));
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+
+   switch (m1|(m2<<4)|(m3<<4))
+   {
+      case 0: /* all constant */
+	 while (n--) *(d++)=rgb;
+	 break;
+      case 0x111: /* all is one-byte */
+	 while (n--)
+	 {
+	    d->r=*(s1++);
+	    d->g=*(s2++);
+	    d->b=*(s3++);
+	    d++;
+	 }
+	 break;
+      case 0x333: /* all is rgb-source */
+	 while (n--)
+	 {
+	    d->r=*s1;
+	    d->g=*s2;
+	    d->b=*s3;
+	    s1+=3;
+	    s2+=3;
+	    s3+=3;
+	    d++;
+	 }
+	 break;
+      default:
+	 while (n--)
+	 {
+	    d->r=*s1;
+	    d->g=*s2;
+	    d->b=*s3;
+	    s1+=m1;
+	    s2+=m2;
+	    s3+=m3;
+	    d++;
+	 }
+	 break;
+   }
+}
+
+void img_read_cmyk(INT32 args)
+{
+   int m1,m2,m3,m4;
+   unsigned char *s1,*s2,*s3,*s4;
+   int n=THIS->xsize*THIS->ysize;
+   rgb_group *d,rgb;
+   COLORTYPE k;
+   img_read_get_channel(1,"cyan",args,&m1,&s1,&(rgb.r));
+   img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
+   img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
+   img_read_get_channel(4,"black",args,&m4,&s4,&k);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+
+   while (n--)
+   {
+      d->r=COLORMAX-*s1-*s4;
+      d->g=COLORMAX-*s2-*s4;
+      d->b=COLORMAX-*s3-*s4;
+      s1+=m1;
+      s2+=m2;
+      s3+=m3;
+      s4+=m4;
+      d++;
+   }
+}
+
+void img_read_cmy(INT32 args)
+{
+   int m1,m2,m3;
+   unsigned char *s1,*s2,*s3;
+   int n=THIS->xsize*THIS->ysize;
+   rgb_group *d,rgb;
+   img_read_get_channel(1,"cyan",args,&m1,&s1,&(rgb.r));
+   img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
+   img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+
+   while (n--)
+   {
+      d->r=COLORMAX-*s1;
+      d->g=COLORMAX-*s2;
+      d->b=COLORMAX-*s3;
+      s1+=m1;
+      s2+=m2;
+      s3+=m3;
+      d++;
+   }
+}
+
+static void image_gradients(INT32 args);
+static void image_tuned_box(INT32 args);
+static void image_test(INT32 args);
+
+void image_create_method(INT32 args)
+{
+   static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_cmy;
+   static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
+      *s_random,*s_randomgrey,*s_tuned_box;
+   struct image *img;
+
+   if (!args)
+      SIMPLE_TOO_FEW_ARGS_ERROR("create_method",1);
+
+   if (sp[-args].type!=T_STRING)
+      SIMPLE_BAD_ARG_ERROR("create_method",1,"string");
+
+   MAKE_CONSTANT_SHARED_STRING(s_grey,"grey");
+   MAKE_CONSTANT_SHARED_STRING(s_rgb,"rgb");
+   MAKE_CONSTANT_SHARED_STRING(s_cmyk,"cmyk");
+   MAKE_CONSTANT_SHARED_STRING(s_cmy,"cmy");
+   MAKE_CONSTANT_SHARED_STRING(s_test,"test");
+   MAKE_CONSTANT_SHARED_STRING(s_gradients,"gradients");
+   MAKE_CONSTANT_SHARED_STRING(s_noise,"noise");
+   MAKE_CONSTANT_SHARED_STRING(s_turbulence,"turbulence");
+   MAKE_CONSTANT_SHARED_STRING(s_random,"random");
+   MAKE_CONSTANT_SHARED_STRING(s_randomgrey,"randomgrey");
+   MAKE_CONSTANT_SHARED_STRING(s_tuned_box,"tuned_box");
+
+   if (THIS->xsize<=0 || THIS->ysize<=0)
+      error("create_method: image size is too small\n");
+
+   if (sp[-args].u.string==s_grey)
+   {
+      img_read_grey(args-1);
+      pop_n_elems(2);
+      ref_push_object(THISOBJ);
+      return;
+   }
+   if (sp[-args].u.string==s_rgb)
+   {
+      img_read_rgb(args-1);
+      pop_n_elems(2);
+      ref_push_object(THISOBJ);
+      return;
+   }
+   if (sp[-args].u.string==s_cmyk)
+   {
+      img_read_cmyk(args-1);
+      pop_n_elems(2);
+      ref_push_object(THISOBJ);
+      return;
+   }
+   if (sp[-args].u.string==s_cmy)
+   {
+      img_read_cmyk(args-1);
+      pop_n_elems(2);
+      ref_push_object(THISOBJ);
+      return;
+   }
+
+   if (sp[-args].u.string==s_test)
+      image_test(args-1);
+   else if (sp[-args].u.string==s_gradients)
+      image_gradients(args-1);
+   else if (sp[-args].u.string==s_noise)
+      image_noise(args-1);
+   else if (sp[-args].u.string==s_turbulence)
+      image_turbulence(args-1);
+   else if (sp[-args].u.string==s_random)
+      image_random(args-1);
+   else if (sp[-args].u.string==s_randomgrey)
+      image_randomgrey(args-1);
+   else if (sp[-args].u.string==s_tuned_box)
+   {
+      if (args<2) push_int(0);
+
+      THIS->img=(rgb_group*)
+	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+      if (args>2) pop_n_elems(args-2);
+      push_int(0); stack_swap();
+      push_int(0); stack_swap();
+      push_int(THIS->xsize-1); stack_swap();
+      push_int(THIS->ysize-1); stack_swap();
+      image_tuned_box(5);
+   }
+   else 
+      error("create_method: unknown method\n");
+
+   /* on stack: "string" image */
+   /* want: put that image in this, crap that image */
+   img=(struct image*)get_storage(sp[-1].u.object,image_program);
+   THIS->img=img->img;
+   img->img=NULL;
+   pop_n_elems(2);
+   ref_push_object(THISOBJ);
+}
+
 void image_create(INT32 args)
 {
    if (args<2) return;
@@ -539,9 +829,7 @@ void image_create(INT32 args)
       bad_arg_error("Image.Image->create",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Image->create()\n");
 
-   getrgb(THIS,2,args,args,"Image.Image->create()"); 
-
-   if (THIS->img) free(THIS->img);
+   if (THIS->img) { free(THIS->img); THIS->img=NULL; }
 	
    THIS->xsize=sp[-args].u.integer;
    THIS->ysize=sp[1-args].u.integer;
@@ -550,6 +838,17 @@ void image_create(INT32 args)
 
    if (image_too_big(THIS->xsize,THIS->ysize)) 
       error("Image.Image->create(): image too large (>2Gpixels)\n");
+
+   if (args>2 && sp[2-args].type==T_STRING &&
+       !image_color_svalue(sp+2-args,&(THIS->rgb))) 
+      /* don't try method "lightblue", etc */
+   {
+      image_create_method(args-2);
+      pop_n_elems(3);
+      return ;
+   }
+   else
+      getrgb(THIS,2,args,args,"Image.Image->create()"); 
 
    THIS->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize +1);
    if (!THIS->img)
@@ -1260,10 +1559,14 @@ void image_circle(INT32 args)
 static INLINE void get_rgba_group_from_array_index(rgba_group *rgba,struct array *v,INT32 index)
 {
    struct svalue s,s2;
+
    array_index_no_free(&s,v,index);
    if (s.type!=T_ARRAY||
-       s.u.array->size<3) 
-      rgba->r=rgba->b=rgba->g=rgba->alpha=0; 
+       s.u.array->size<=3) 
+   {
+      rgba->alpha=0;
+      image_color_svalue(&s,(rgb_group*)&rgba);
+   }
    else
    {
       array_index_no_free(&s2,s.u.array,0);
@@ -3660,7 +3963,8 @@ void init_image_image(void)
    ADD_STORAGE(struct image);
 
    ADD_FUNCTION("create",image_create,
-		tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),0);
+		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
+		    tFuncV(tInt tInt tString,tMixed,tVoid)),0);
    ADD_FUNCTION("clone",image_clone,
 		tFunc(tInt tInt tRGB,tObj),0);
    ADD_FUNCTION("new",image_clone, /* alias */
@@ -3808,6 +4112,8 @@ void init_image_image(void)
 		      tOr(tInt,tVoid) tOr(tFlt,tVoid) 
 		      tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid),tObj),0);
    ADD_FUNCTION("random",image_random,
+		tFunc(tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("randomgrey",image_randomgrey,
 		tFunc(tOr(tVoid,tInt),tObj),0);
 
    ADD_FUNCTION("dct",image_dct,

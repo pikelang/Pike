@@ -17,6 +17,9 @@ IMAGE_CLASS("Layer",      init_image_layers,     exit_image_layers,
 IMAGE_CLASS("Font",       init_image_font,       exit_image_font,
 	    image_font_program )
 
+IMAGE_CLASS("Poly",       init_image_poly,       exit_image_poly,
+	    image_poly_program )
+
 IMAGE_SUBMODULE("Color", init_image_colors, exit_image_colors )
 
 IMAGE_SUBMODULE("ANY",   init_image_any,  exit_image_any  ) 
@@ -42,3 +45,5 @@ IMAGE_FUNCTION("lay",image_lay,
 	       tOr(tFunc(tArr(tOr(tObj,tLayerMap)),tObj),
 		   tFunc(tArr(tOr(tObj,tLayerMap))
 			 tInt tInt tInt tInt,tObj)),0)
+
+

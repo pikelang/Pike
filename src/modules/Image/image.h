@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.33 1999/06/21 18:03:50 mirar Exp $
+**!	$Id: image.h,v 1.34 1999/07/16 11:44:18 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -147,6 +147,7 @@ void image_x_encode_pseudocolor(INT32 args);
 void image_noise(INT32 args);
 void image_turbulence(INT32 args);
 void image_random(INT32 args);
+void image_randomgrey(INT32 args);
 void image_noise_init(void);
 
 /* dct.c */

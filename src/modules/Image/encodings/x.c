@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.23 1999/06/09 19:44:43 mirar Exp $ */
+/* $Id: x.c,v 1.24 1999/07/16 11:44:22 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.23 1999/06/09 19:44:43 mirar Exp $
+**!	$Id: x.c,v 1.24 1999/07/16 11:44:22 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.23 1999/06/09 19:44:43 mirar Exp $");
+RCSID("$Id: x.c,v 1.24 1999/07/16 11:44:22 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -459,8 +459,8 @@ static void image_x_encode_truecolor_masks(INT32 args)
 **! arg object colortable
 **!	colortable to get indices for pseudocolor
 **! arg string translate
-**!	translate table for colors. Length of this string
-**!	should be 1&lt;&lt;vbpp (or 2&lt;&lt;vbpp if vbpp are greater than 8).
+**!	translate table for colors. Length of this string should be
+**!	1&lt;&lt;vbpp (or 2&lt;&lt;vbpp if vbpp are greater than 8).
 **!
 **! note
 **!	currently, only upto 16 bits pseudocolor are supported.
@@ -469,7 +469,8 @@ static void image_x_encode_truecolor_masks(INT32 args)
 static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
 						   struct image *img,
 						   struct neo_colortable *nct,
-						   int bpp,int vbpp,int alignbits,
+						   int bpp,int vbpp,
+						   int alignbits,
 						   unsigned char* translate)
 {
    struct pike_string *dest;
