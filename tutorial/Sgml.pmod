@@ -13,6 +13,11 @@ class Tag
   array(object) data;
   string file;
 
+  string location()
+  {
+    return "pos "+pos+" in file "+file;
+  }
+
   varargs void create(string t, mapping p, int po, array(object) d, string f)
   {
     tag=t;

@@ -303,7 +303,7 @@ SGML convert(SGML data)
 	  m_delete(data->params,"to");
 	  if(!link_to_page[to])
 	  {
-	    werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	    werror("Warning: Cannot find link "+to+" (near "+data->location()+")\n");
 	  }
 	  data->params->href=mkfilename(link_to_page[to])+"#"+to;
 	  break;
@@ -315,7 +315,7 @@ SGML convert(SGML data)
 	  TAG t2=link_to_data[to];
 	  if(!t2)
 	  {
-	    werror("Warning: Cannot find ref "+to+" (near pos "+data->pos+")\n");
+	    werror("Warning: Cannot find ref "+to+" (near "+data->location()+")\n");
 	  }
 	  if(t2)
 	    data->data=({t2->tag+" "+t2->params->number+" \""+t2->params->title+"\""});

@@ -3,6 +3,7 @@ import Sgml;
 
 SGML low_make_concrete_wmml(SGML data);
 
+
 static private int verify_any(SGML data, string in)
 {
   int i=1;
@@ -12,7 +13,7 @@ static private int verify_any(SGML data, string in)
     {
       if(strlen(x->tag) && x->tag[0]=='/')
       {
-	werror("Unmatched "+x->tag+" near pos "+x->pos+"\n");
+	werror("Unmatched "+x->tag+" near "+x->location()+"\n");
 	werror(in);
 	i=0;
 	continue;
@@ -20,7 +21,7 @@ static private int verify_any(SGML data, string in)
       switch(x->tag)
       {
       default:
-	werror("Unknown tag "+x->tag+" near pos "+x->pos+".\n");
+	werror("Unknown tag "+x->tag+" near "+x->location()+".\n");
 	werror(in);
 	i=0;
 	break;
@@ -75,7 +76,7 @@ static private int verify_any(SGML data, string in)
       case "example":
 	if(!x->data)
 	{
-	  werror("Tag "+x->tag+" not closed near pos "+x->pos+".\n");
+	  werror("Tag "+x->tag+" not closed near "+x->location()+".\n");
 	  werror(in);
 	  i=0;
 	}
@@ -96,7 +97,7 @@ static private int verify_any(SGML data, string in)
       case "index":
 	if(x->data)
 	{
-	  werror("Tag "+x->tag+" should not be closed near pos "+x->pos+"\n");
+	  werror("Tag "+x->tag+" should not be closed near "+x->location()+"\n");
 	  werror(in);
 	  i=0;
 	}
@@ -105,7 +106,7 @@ static private int verify_any(SGML data, string in)
       }
 
       if(x->data)
-	if(!verify_any(x->data,"  In tag "+(x->tag=="anchor"?x->tag+" (name="+x->params->name+")":x->tag)+" near pos "+x->pos+"\n"+in))
+	if(!verify_any(x->data,"  In tag "+(x->tag=="anchor"?x->tag+" (name="+x->params->name+")":x->tag)+" near "+x->location()+"\n"+in))
 	  i=0;
     }
   }
@@ -135,7 +136,7 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
 	  if(taken[new_name])
 	  {
 	    int n=2;
-//	    werror("Warning, duplicate "+real_name+" near pos "+data->pos+".\n");
+//	    werror("Warning, duplicate "+real_name+" near "+data->location()+".\n");
 	    while(taken[new_name+"_"+n]) n++;
 	    new_name+="_"+n;
 	  }
@@ -549,6 +550,7 @@ SGML low_make_concrete_wmml(SGML data)
 	{
 	  string filename=tag->params->file;
 	  SGML tmp=group(lex(Stdio.read_file(filename),filename));
+	  verify(tmp);
 	  ret+=low_make_concrete_wmml(tmp);
 	  continue;
 	}
@@ -838,7 +840,7 @@ string image_to_gif(TAG data, float dpi)
   {
     if(!params->src)
     {
-      werror("Image without source near pos "+data->pos+".\n");
+      werror("Image without source near "+data->location()+".\n");
       return "";
     }
     string ext=reverse(params->src);
