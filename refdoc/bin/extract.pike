@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.13 2002/03/09 15:55:12 nilsson Exp $
+ * $Id: extract.pike,v 1.14 2002/05/30 15:21:39 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -90,10 +90,13 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
   }
 
   string suffix;
+  if (has_suffix(filename, ".in")) {
+    filename = filename[..sizeof(filename)-4];
+  }
   if(!has_value(filename, "."))
     error("No suffix in file %O.\n", filename);
-  sscanf((filename/"/")[-1], "%*s.%s", suffix);
-  if( !(< "c", "pike", "pike.in", "pmod", "pmod.in" >)[suffix] )
+  suffix = ((filename/"/")[-1]/".")[-1];
+  if( !(< "c", "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
 
   string result;
@@ -105,17 +108,14 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
       if(catch(parents = rootless?({}):find_root(dirname(filename))) )
 	parents = ({});
 
-      string type = ([ "pike":"class",
-		       "pike.in":"class",
-		       "pmod":"module",
-		       "pmod.in":"module" ])[suffix];
+      string type = ([ "pike":"class", "pmod":"module", ])[suffix];
 
       string name = (filename/"/")[-1];
-      if(name == "master.pike.in")
+      if(name == "master.pike")
 	name = "/master";
-      else
-	foreach( ({ "pike", "pike.in", "pmod", "pmod.in" }), string ext)
-	  sscanf(name, "%s."+ext, name);
+      else {
+	name = name[..sizeof(name)-(sizeof(suffix)+2)];
+      }
       if(name == "module" && !rootless) {
 	if(!sizeof(parents))
 	  error("Unknown module parent name.\n");
