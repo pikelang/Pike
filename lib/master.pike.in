@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.162 2001/08/15 20:59:15 mast Exp $
+ * $Id: master.pike.in,v 1.163 2001/08/15 22:19:56 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1758,6 +1758,10 @@ void compile_warning(string file,int line,string err)
 //! this function returns zero.
 int compile_exception (array|object trace)
 {
+  if (objectp (trace) && trace->is_cpp_error)
+    // Errors thrown by cpp() are normally not interesting; they've
+    // already been reported to compile_error.
+    return 1;
   if (mixed val = get_inhibit_compile_errors()) {
     if (objectp (val) && val->compile_exception)
       return val->compile_exception (trace);
