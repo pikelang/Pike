@@ -18,17 +18,17 @@ class NSNode {
   static mapping(string:mapping(string:string)) ns_attrs;
 
   //! Returns the namespace in which the current element is defined in.
-  string get_namespace() { return element_ns; }
+  string get_ns() { return element_ns; }
 
   //! Returns the default namespace in the current scope.
-  string get_default_namespace() { return default_ns; }
+  string get_default_ns() { return default_ns; }
 
   //! Returns a mapping with all the namespaces defined in the current
   //! scope, except the default namespace.
   //! @note
   //!   The return mapping is the same as the one in the node, so
   //!   destructive changes will affect the node.
-  mapping(string:string) get_defined_namespaces() {
+  mapping(string:string) get_defined_nss() {
     return nss;
   }
 
@@ -95,8 +95,10 @@ class NSNode {
 	default_ns = value;
 	m_delete(attr, name);
       }
-      else if(has_prefix(name, "xmlns:"))
+      else if(has_prefix(name, "xmlns:")) {
 	nss = nss + ([ name[6..]:value ]); // No destructive changes.
+	continue;
+      }
 
       // Move namespaved attributes to a mapping of their own.
       string ns, m;
