@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.25 1999/05/19 14:24:19 mirar Exp $");
+RCSID("$Id: fdlib.c,v 1.26 1999/06/02 21:22:52 marcus Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -520,6 +520,7 @@ long debug_fd_lseek(FD fd, long pos, int where)
 long debug_fd_ftruncate(FD fd, long len)
 {
   long ret;
+  LONG oldfp_lo, oldfp_hi;
   mt_lock(&fd_mutex);
   if(fd_type[fd]!=FD_FILE)
   {
@@ -530,15 +531,25 @@ long debug_fd_ftruncate(FD fd, long len)
   ret=da_handle[fd];
   mt_unlock(&fd_mutex);
 
-  would you mind filling this one out? /Mirar
-
-  ret=i dont know((HANDLE)ret, len);
-  if(ret == 0xffffffff)
-  {
+  oldfp_hi = 0;
+  oldfp_lo = SetFilePointer((HANDLE)ret, 0, &oldfp_hi, FILE_CURRENT);
+  if(oldfp_lo == 0xffffffff) {
     errno=GetLastError();
+    if(errno != NO_ERROR)
+      return -1;
+  }
+  if(SetFilePointer((HANDLE)ret, len, NULL, FILE_BEGIN) == 0xffffffff ||
+     !SetEndOfFile((HANDLE)ret)) {
+    errno=GetLastError();
+    SetFilePointer((HANDLE)ret, oldfp_lo, &oldfp_hi, FILE_BEGIN);
     return -1;
   }
-  return ret;
+  if(SetFilePointer((HANDLE)ret, oldfp_lo, &oldfp_hi, FILE_BEGIN) == 0xffffffff) {
+    errno=GetLastError();
+    if(errno != NO_ERROR)
+      return -1;
+  }
+  return 0;
 }
 
 int debug_fd_flock(FD fd, int oper)

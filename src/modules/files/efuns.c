@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.70 1999/05/30 22:41:54 per Exp $");
+RCSID("$Id: efuns.c,v 1.71 1999/06/02 21:22:51 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -159,8 +159,27 @@ void f_file_truncate(INT32 args)
 
   VALID_FILE_IO("file_truncate","write");
 
+#ifdef __NT__
+  {
+    HANDLE h = CreateFile(s, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
+			  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if(h == INVALID_HANDLE_VALUE) {
+      errno = GetLastError();
+      res=-1;
+    } else {
+      if(SetFilePointer(h, len, NULL, FILE_BEGIN) != 0xffffffff &&
+	 SetEndOfFile(h))
+	res=0;
+      else {
+	errno = GetLastError();
+	res=-1;
+      }
+      CloseHandle(h);
+    }
+  }
+#else  /* !__NT__ */
   res=truncate(s,len);
-  /* NT: fixme?  /Mirar */
+#endif /* __NT__ */
 
   pop_n_elems(args);
 
