@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.41 2001/12/10 02:26:45 mast Exp $");
+RCSID("$Id: multiset.c,v 1.42 2001/12/10 02:36:14 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -3986,7 +3986,7 @@ void gc_mark_all_multisets (void)
 
 void real_gc_cycle_check_multiset (struct multiset *l, int weak)
 {
-  GC_CYCLE_ENTER (l, T_MULTISET, weak) {
+  GC_CYCLE_ENTER (l, weak) {
     struct multiset_data *msd = l->msd;
 
     if (msd->root && ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
@@ -5163,7 +5163,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.41 2001/12/10 02:26:45 mast Exp $");
+RCSID("$Id: multiset.c,v 1.42 2001/12/10 02:36:14 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -5502,7 +5502,7 @@ void gc_mark_multiset_as_referenced(struct multiset *l)
 
 void real_gc_cycle_check_multiset(struct multiset *l, int weak)
 {
-  GC_CYCLE_ENTER(l, T_MULTISET, weak) {
+  GC_CYCLE_ENTER(l, weak) {
     gc_cycle_check_array(l->ind, 0);
   } GC_CYCLE_LEAVE;
 }
