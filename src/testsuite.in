@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.365 2001/01/11 17:17:18 js Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.366 2001/01/14 20:35:20 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1549,7 +1549,10 @@ for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(mixed *data) {
 
   test_any([[object o=Thread.Queue(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
   test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
+]])
 
+cond([[0]],
+[[
   test_any([[
   // test if read() hangs when fd is closed by other thread
        object f=Stdio.File();
