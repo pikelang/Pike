@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.235 2000/02/03 19:09:12 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.236 2000/02/22 17:02:56 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2392,6 +2392,11 @@ void f_sleep(INT32 args)
 #define TIME_ELAPSED ((tv.tv_sec-t0.tv_sec) + (tv.tv_usec-t0.tv_usec)*1e-6)
 #endif
 
+#define FIX_LEFT() \
+       GET_TIME_ELAPSED; \
+       left = delay - TIME_ELAPSED; \
+       if (do_microsleep) left-=POLL_SLEEP_LIMIT;
+
    switch(sp[-args].type)
    {
       case T_INT:
@@ -2403,6 +2408,14 @@ void f_sleep(INT32 args)
 	 break;
    }
 
+   /* Special case, sleep(0) means 'yield' */
+   if(delay == 0.0)
+   {
+     check_threads_etc();
+     pop_n_elems(args);
+     return;
+   }
+
    do_microsleep=delay<10;
 
    pop_n_elems(args);
@@ -2410,29 +2423,38 @@ void f_sleep(INT32 args)
 
    if (delay>POLL_SLEEP_LIMIT)
    {
-      /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
-      THREADS_ALLOW();
-      for (;;)
-      {
-	 double left = delay - TIME_ELAPSED;
-	 if (do_microsleep) left-=POLL_SLEEP_LIMIT;
-	 if (left<0.0) break; 
+     while(1)
+     {
+       double left;
+       /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
+       THREADS_ALLOW();
+
+       FIX_LEFT();
+       if(left<=0.0) break;
+
 #ifdef __NT__
-	 Sleep((int)(left*1000));
+       Sleep((int)(left*1000));
 #elif defined(HAVE_POLL)
-	 poll(NULL,0,(int)(left*1000));
+       poll(NULL,0,(int)(left*1000));
 #else
-	 {
-	    struct timeval t3;
-	    t3.tv_sec=left;
-	    t3.tv_usec=(int)((delay-(int)left)*1e6);
-	    select(0,0,0,0,&t3);
-	 }
+       {
+	 struct timeval t3;
+	 t3.tv_sec=left;
+	 t3.tv_usec=(int)((left - (int)left)*1e6);
+	 select(0,0,0,0,&t3);
+       }
 #endif
-	 GET_TIME_ELAPSED;
-      }
-      THREADS_DISALLOW();
-      GET_TIME_ELAPSED; /* same goes for DISALLOW */
+       THREADS_DISALLOW();
+       
+       FIX_LEFT();
+       
+       if(left<=0.0)
+       {
+	 break;
+       }else{
+	 check_signals(0,0,0);
+       }
+     }
    }
 
    if (do_microsleep)
