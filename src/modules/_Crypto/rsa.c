@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.10 2000/02/03 19:03:37 grubba Exp $
+ * $Id: rsa.c,v 1.11 2000/02/04 22:26:43 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -28,17 +28,15 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.10 2000/02/03 19:03:37 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.11 2000/02/04 22:26:43 grubba Exp $");
 
 struct pike_rsa_data
 {
   B_ALGORITHM_OBJ cipher;
   B_KEY_OBJ public_key;
   B_KEY_OBJ private_key;
-  unsigned int flags;
   struct pike_string *n;	/* modulo */
-  struct pike_string *e;	/* public exponent */
-  struct pike_string *d;	/* private exponent (if known) */
+  struct pike_string *e;	/* exponent. Needed for comparison. */
 };
 
 /* Flags */
@@ -128,12 +126,6 @@ static void init_pike_rsa(struct object *o)
 
   MEMSET(THIS, 0, sizeof(struct pike_rsa_data));
 
-  if ((code = B_CreateKeyObject(&(THIS->public_key)))) {
-    error("Crypto.rsa(): Failed to create public key object: %04x\n", code);
-  }
-  if ((code = B_CreateKeyObject(&(THIS->private_key)))) {
-    error("Crypto.rsa(): Failed to create private key object: %04x\n", code);
-  }
   if ((code = B_CreateAlgorithmObject(&(THIS->cipher)))) {
     error("Crypto.rsa(): Failed to create cipher object: %04x\n", code);
   }
@@ -144,14 +136,11 @@ static void init_pike_rsa(struct object *o)
 
 static void exit_pike_rsa(struct object *o)
 {
-  if (THIS->n) {
-    free_string(THIS->n);
-  }
   if (THIS->e) {
     free_string(THIS->e);
   }
-  if (THIS->d) {
-    free_string(THIS->d);
+  if (THIS->n) {
+    free_string(THIS->n);
   }
   if (THIS->cipher) {
     B_DestroyAlgorithmObject(&(THIS->cipher));
@@ -172,8 +161,7 @@ static void exit_pike_rsa(struct object *o)
 /* object set_public_key(bignum modulo, bignum pub) */
 static void f_set_public_key(INT32 args)
 {
-  A_RSA_KEY key_info;
-  ONERROR tmp;
+  A_RSA_KEY rsa_public_key;
   struct object *modulo = NULL;
   struct object *pub = NULL;
   int code;
@@ -184,25 +172,26 @@ static void f_set_public_key(INT32 args)
     free_string(THIS->n);
     THIS->n = NULL;
   }
-  if (THIS->e) {
-    free_string(THIS->e);
-    THIS->e = NULL;
-  }
 
-  THIS->flags |= P_RSA_KEY_NOT_SET;
+  if (THIS->private_key) {
+    B_DestroyKeyObject(&(THIS->private_key));
+    THIS->private_key = NULL;
+  }
 
   push_int(256);
   apply(modulo, "digits", 1);
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Unexpected return value from modulo->digits().\n");
+    error("Crypto.rsa.set_public_key(): "
+	  "Unexpected return value from modulo->digits().\n");
   }
 
   if (sp[-1].u.string->len < 12) {
-    error("Too small modulo.\n");
+    error("Crypto.rsa.set_public_key(): Too small modulo.\n");
   }
 
+  /* We need to remember the modulus for the private key. */
   copy_shared_string(THIS->n, sp[-1].u.string);
 
   pop_stack();
@@ -212,7 +201,24 @@ static void f_set_public_key(INT32 args)
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Unexpected return value from pub->digits().\n");
+    error("Crypto.rsa.set_public_key(): "
+	  "Unexpected return value from pub->digits().\n");
+  }
+
+  if ((code = B_CreateKeyObject(&(THIS->public_key)))) {
+    error("Crypto.rsa.set_public_key(): "
+	  "Failed to create public key object: %04x\n", code);
+  }
+
+  rsa_public_key.modulus.data = (POINTER)THIS->n->str;
+  rsa_public_key.modulus.len = THIS->n->len;
+  rsa_public_key.exponent.data = (POINTER)sp[-1].u.string->str;
+  rsa_public_key.exponent.len = sp[-1].u.string->len;
+
+  if ((code = B_SetKeyInfo(THIS->public_key, KI_RSAPublic,
+			   (POINTER)&rsa_public_key))) {
+    error("Crypto.rsa.set_public_key(): "
+	  "Failed to set public key: %04x\n", code);
   }
 
   copy_shared_string(THIS->e, sp[-1].u.string);
@@ -224,30 +230,46 @@ static void f_set_public_key(INT32 args)
 /* object set_private_key(bignum priv, array(bignum)|void extra) */
 static void f_set_private_key(INT32 args)
 {
-  A_RSA_KEY key_info;
-  ONERROR tmp;
+  A_RSA_KEY rsa_private_key;
   struct object *priv = NULL;
   struct array *extra = NULL;
   int code;
 
   get_all_args("set_private_key", args, "%o%a", &priv, &extra);
 
-  if (THIS->d) {
-    free_string(THIS->d);
-    THIS->d = NULL;
+  if (THIS->private_key) {
+    B_DestroyKeyObject(&(THIS->private_key));
+    THIS->private_key = NULL;
   }
 
-  THIS->flags |= P_RSA_PRIVATE_KEY_NOT_SET;
+  if (!THIS->n) {
+    error("Crypto.rsa.set_private_key(): Public key hasn't been set.\n");
+  }
 
   push_int(256);
   apply(priv, "digits", 1);
 
   if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
       (sp[-1].u.string->size_shift)) {
-    error("Unexpected return value from priv->digits().\n");
+    error("Crypto.rsa.set_private_key(): "
+	  "Unexpected return value from priv->digits().\n");
   }
 
-  copy_shared_string(THIS->d, sp[-1].u.string);
+  if ((code = B_CreateKeyObject(&(THIS->private_key)))) {
+    error("Crypto.rsa.set_private_key(): "
+	  "Failed to create private key object: %04x\n", code);
+  }
+
+  rsa_private_key.modulus.data = (POINTER)THIS->n->str;
+  rsa_private_key.modulus.len = THIS->n->len;
+  rsa_private_key.exponent.data = (POINTER)sp[-1].u.string->str;
+  rsa_private_key.exponent.len = sp[-1].u.string->len;
+
+  if ((code = B_SetKeyInfo(THIS->private_key, KI_RSAPublic,
+			   (POINTER)&rsa_private_key))) {
+    error("Crypto.rsa.set_private_key(): "
+	  "Failed to set private key: %04x\n", code);
+  }
 
   /* FIXME: extra is currently ignored */
 
@@ -383,29 +405,14 @@ static void f_decrypt(INT32 args)
   unsigned char *buffer;
   unsigned int len;
   unsigned int flen;
-  int i;
+  unsigned int i;
 
-  if ((!THIS->n) || (!THIS->d)) {
+  if (!THIS->private_key) {
     error("Private key has not been set.\n");
   }
 
   get_all_args("decrypt", args, "%S", &s);
   
-  if (THIS->flags & P_RSA_PRIVATE_KEY_NOT_SET) {
-    A_RSA_KEY rsa_private_key;
-
-    rsa_private_key.modulus.data = (POINTER)THIS->n->str;
-    rsa_private_key.modulus.len = THIS->n->len;
-    rsa_private_key.exponent.data = (POINTER)THIS->d->str;
-    rsa_private_key.exponent.len = THIS->d->len;
-
-    if ((err = B_SetKeyInfo(THIS->private_key, KI_RSAPublic,
-			    (POINTER)&rsa_private_key))) {
-      error("Failed to set private key: %04x\n", err);
-    }
-    THIS->flags &= P_RSA_PRIVATE_KEY_NOT_SET;
-  }
-
   if ((err = B_DecryptInit(THIS->cipher, THIS->private_key, rsa_chooser,
 			   (A_SURRENDER_CTX *)NULL_PTR))) {
     error("Failed to initialize decrypter: %04x\n", err);
@@ -451,7 +458,8 @@ static void f_decrypt(INT32 args)
 
   /* FIXME: Enforce i being 1? */
   if ((buffer[i] != 2) ||
-      ((i += strlen((char *)buffer + i)) < 9) || (len != THIS->n->len)) {
+      ((i += strlen((char *)buffer + i)) < 9) ||
+      (len != (unsigned int)THIS->n->len)) {
 #ifdef PIKE_RSA_DEBUG
     fprintf(stderr, "Decrypt failed: i:%d, len:%d, n->len:%d, buffer[0]:%d\n",
 	    i, len, THIS->n->len, buffer[0]);
@@ -459,7 +467,6 @@ static void f_decrypt(INT32 args)
     low_dump_string("buffer", buffer, s->len+1);
     low_dump_string("n", THIS->n->str, THIS->n->len);
     low_dump_string("e", THIS->e->str, THIS->e->len);
-    low_dump_string("d", THIS->d->str, THIS->d->len);
 #endif /* PIKE_RSA_DEBUG */
     pop_n_elems(args);
     push_int(0);
