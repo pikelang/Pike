@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.140 2004/04/06 15:37:54 nilsson Exp $
+|| $Id: acconfig.h,v 1.141 2004/04/14 11:42:22 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -606,14 +606,6 @@
 #else /* !HAVE_DECLSPEC */
 #define DECLSPEC(X)
 #endif /* HAVE_DECLSPEC */
-
-#ifndef HAVE_WORKING___FUNC__
-#ifdef HAVE_WORKING___FUNCTION__
-#define __func__	__FUNCTION__
-#else /* !HAVE_WORKING___FUNCTION__ */
-#define __func__	"unknown"
-#endif /* HAVE_WORKING___FUNCTION__ */
-#endif /* !HAVE_WORKING___FUNC__ */
 
 #ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
