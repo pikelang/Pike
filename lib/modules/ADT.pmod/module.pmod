@@ -1,10 +1,13 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+
+//! Various Abstract Data Types.
+
 #if constant(_ADT)
 inherit _ADT;
 #endif /* _ADT */
 
-//! Various Abstract Data Types.
+constant List = __builtin.List;
 
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.

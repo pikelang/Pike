@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.166 2004/09/14 15:26:08 grubba Exp $
+|| $Id: builtin.cmod,v 1.167 2004/09/14 17:21:36 grubba Exp $
 */
 
 #include "global.h"
@@ -3058,6 +3058,9 @@ PMOD_EXPORT void append_list_node(struct list_node *node,
   add_ref(new);
 }
 
+/*! @module ADT
+ */
+
 /*! @class List
  *!
  *!   Linked list of values.
@@ -3628,6 +3631,9 @@ PIKECLASS List
    */
 }
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 void init_builtin(void)
