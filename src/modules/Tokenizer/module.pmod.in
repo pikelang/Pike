@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.21 2003/10/07 14:43:19 grubba Exp $
+// $Id: module.pmod.in,v 1.22 2003/10/31 14:56:59 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -400,6 +400,30 @@ class TokenList
     int(0..) index()
     {
       return pos;
+    }
+
+    //! Insert a new token or group immediately before the current
+    //! position.
+    //!
+    //! @note
+    //!   The index for the current position will change.
+    //!
+    //! @seealso
+    //!   @[append()]
+    void insert(Token|Group val)
+    {
+      tokens = tokens[..pos-1] + ({ val }) + tokens[pos..];
+      pos++;
+    }
+
+    //! Insert a new token or group immediately after the current
+    //! position.
+    //!
+    //! @seealso
+    //!   @[insert()]
+    void append(Token|Group val)
+    {
+      tokens = tokens[..pos] + ({ val }) + tokens[pos+1..];
     }
 
     string _sprintf()
@@ -806,6 +830,9 @@ class PikeCompiler
     if (!(<".","::">)[(token = tokens_left->value())->symbol]) {
       expr = LiteralExpression(token);
       tokens_left->`+=(1);
+      if (token->parse_meta_program) {
+	token->parse_meta_program(0, tokens_left, 0);
+      }
       if (!tokens_left ||
 	  !(<".","..">)[(token = tokens_left->value())->symbol]) {
 	return expr;
@@ -1056,7 +1083,7 @@ class PikeCompiler
     Token token;
 
     if (tokens_left && ((token = tokens_left->value())->is_identifier)) {
-      current_scope->add_identifier(0, token, (VariableDecl(token, type, 0));
+      current_scope->add_identifier(0, token, VariableDecl(token, type, 0));
       tokens_left->`+=(1);
       return LiteralExpression(token);
     }
@@ -1158,6 +1185,178 @@ class PikeCompiler
   }
 
   // Start of metaprograms.
+
+  class LiteralType
+  {
+    inherit IdentifierToken;
+
+    void parse_meta_program(Scope current_scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+    }
+  }
+
+  class VoidType
+  {
+    inherit LiteralType;
+  }
+
+  class MixedType
+  {
+    inherit LiteralType;
+  }
+
+  class StringType
+  {
+    inherit LiteralType;
+  }
+
+  class FloatType
+  {
+    inherit LiteralType;
+  }
+
+  class OptionalArgType
+  {
+    inherit LiteralType;
+
+    // Called when parameters are missing.
+    Group default_args();
+
+    // Called at
+    //   type_literal · '(' arguments ')'
+    //   type_literal ·
+    void parse_meta_program(Scope current_scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !(token = tokens_left->value())->group_start ||
+	  (token->group_start->symbol != "(")) {
+	tokens_left->append(default_args());
+      }
+    }
+  }
+
+  class ArrayType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ')'.
+      Group group = Group(Token("(","(","(", pos));
+      group->contents->tokens = ({ 
+	MixedType("mixed","mixed","mixed", pos),
+      });
+      group->group_end = Token(")", ")", ")", pos);
+      return group;
+    }
+  }
+
+  class FunctionType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' '|' 'void' '...' ':' 'mixed' '|' 'void' ')'.
+      Group group = Group(Token("(","(","(", pos));
+      group->contents->tokens = ({ 
+	MixedType("mixed","mixed","mixed", pos),
+	Token("|","|","|", pos),
+	VoidType("void","void","void", pos),
+	Token("...","...","...", pos),
+	MixedType("mixed","mixed","mixed", pos),
+	Token("|","|","|", pos),
+	VoidType("void","void","void", pos),
+      });
+      group->group_end = Token(")", ")", ")", pos);
+      return group;
+    }
+  }
+
+  class IntType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' '..' ')'.
+      Group group = Group(Token("(","(","(", pos));
+      group->contents->tokens = ({ 
+	Token("..","..","..", pos),
+      });
+      group->group_end = Token(")", ")", ")", pos);
+      return group;
+    }
+  }
+
+  class MappingType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ':' 'mixed' ')'.
+      Group group = Group(Token("(","(","(", pos));
+      group->contents->tokens = ({ 
+	MixedType("mixed","mixed","mixed", pos),
+	Token(":",":",":", pos),
+	MixedType("mixed","mixed","mixed", pos),
+      });
+      group->group_end = Token(")", ")", ")", pos);
+      return group;
+    }
+  }
+
+  class MultisetType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ')'.
+      Group group = Group(Token("(","(","(", pos));
+      group->contents->tokens = ({ 
+	MixedType("mixed","mixed","mixed", pos),
+      });
+      group->group_end = Token(")", ")", ")", pos);
+      return group;
+    }
+  }
+
+  class ObjectType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ')'.
+      Group group = Group(Token("(","(","(", pos));
+      group->contents->tokens = ({ 
+	MixedType("mixed","mixed","mixed", pos),
+      });
+      group->group_end = Token(")", ")", ")", pos);
+      return group;
+    }
+  }
+
+  class ProgramType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'object' ')'.
+      Group group = Group(Token("(","(","(", pos));
+      group->contents->tokens = ({ 
+	ObjectType("object","object","object", pos),
+      });
+      group->group_end = Token(")", ")", ")", pos);
+      return group;
+    }
+  }
 
   class NameSpace
   {
@@ -1426,6 +1625,57 @@ class PikeCompiler
       }
       tokens_left->`+=(1);
       parse_statement(this_object(), tokens_left, current_modifiers);      
+    }
+  }
+
+  class Break
+  {
+    inherit IdentifierToken;
+    Token label;
+
+    // Called at
+    //   break · ';'
+    //   break · label ';'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (tokens_left &&
+	  ((token = tokens_left->value())->token == "identifier")) {
+	label = token;
+	tokens_left->`+=(1);
+	if (tokens_left) {
+	  token = tokens_left->value();
+	}
+      }
+      if (!tokens_left ||
+	  token->token != ";") {
+	SYNTAX_ERROR("Expected semicolon after break.");
+	return;
+      }
+      tokens_left->`+=(1);
+    }
+  }
+
+  // Compat for 7.0 and earlier.
+  class BreakNoLabel
+  {
+    inherit Break;
+
+    // Called at
+    //   break · ';'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (!tokens_left ||
+	  ((token = tokens_left->value())->token != ";")) {
+	SYNTAX_ERROR("Expected semicolon after break.");
+	return;
+      }
+      tokens_left->`+=(1);
     }
   }
 
@@ -1717,8 +1967,8 @@ class PikeCompiler
     static {
       // Symbol ==> TokenClass
       mapping(string:program(Token)) Pike_0_1_Tokens = ([
-	//"array":ArrayType,
-	//"break":Break,
+	"array":ArrayType,
+	"break":BreakNoLabel,
 	//"case":Case,
 	//"catch":Catch,
 	"class":Class,
@@ -1727,33 +1977,33 @@ class PikeCompiler
 	//"do":Do,
 	//"predef":Predef,
 	"else":Else,
-	//"float":FloatType,
+	"float":FloatType,
 	//"for":For,
 	"foreach":Foreach,
-	//"function":FunctionType,
+	"function":FunctionType,
 	//"gauge":Gauge,
 	"if":If,
 	"inherit":NameSpace,
 	"inline":Modifier,
-	//"int":IntType,
+	"int":IntType,
 	"lambda":Lambda,
-	//"multiset":MultisetType,
-	//"mapping":MappingType,
-	//"mixed":MixedType,
+	"mapping":MappingType,
+	"multiset":MultisetType,
+	"mixed":MixedType,
 	"nomask":Modifier,
-	//"object":ObjectType,
+	"object":ObjectType,
 	"private":Modifier,
-	//"program":ProgramType,
+	"program":ProgramType,
 	"protected":Modifier,
 	"public":Modifier,
 	//"return":Return,
 	//"sscanf":Sscanf,
 	"static":Modifier,
-	//"string":StringType,
+	"string":StringType,
 	//"switch":Switch,
 	//"typeof":Typeof,
 	"varargs":Modifier,
-	//"void":VoidType,
+	"void":VoidType,
 	//"while":While,
       ]);
 
@@ -1779,6 +2029,7 @@ class PikeCompiler
 
       mapping(string:program(Token)) Pike_7_1_Tokens = Pike_0_7_Tokens + ([
 	"variant":Modifier,	// 7.1.3
+	"break":Break,		// 7.1.34
       ]);
 
       mapping(string:program(Token)) Pike_7_2_Tokens = Pike_7_1_Tokens + ([
