@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.61 2000/03/29 05:17:44 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.62 2000/03/29 22:15:46 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1196,7 +1196,9 @@ static void low_pike_sprintf(struct format_stack *fs,
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);
 	  tf=RINT(tf*m)/m;
-	}
+	} else if (fs->fsp->precision==0) {
+	  tf=RINT(tf);
+        }
 	
 	sprintf(x,buffer,1,fs->fsp->precision<0?0:fs->fsp->precision,tf);
 	fs->fsp->len=strlen(x);
