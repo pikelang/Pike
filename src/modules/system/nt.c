@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.35 2001/10/05 13:17:07 tomas Exp $
+ * $Id: nt.c,v 1.36 2003/06/18 12:09:28 tomas Exp $
  *
  * NT system calls for Pike
  *
@@ -17,6 +17,9 @@
 #include <windows.h>
 #include <accctrl.h>
 #include <lm.h>
+#define SECURITY_WIN32
+#define SEC_SUCCESS(Status) ((Status) >= 0)
+#include <sspi.h>
 
 /*
  * Get some wrappers for functions not implemented in old versions
@@ -2382,6 +2385,325 @@ static void f_GetNamedSecurityInfo(INT32 args)
   if(desc) LocalFree(desc);
 }
 
+
+/**************************/
+/* start Security context */
+
+struct sctx_storage {
+  CredHandle hcred;
+  int        hcred_alloced;
+  CtxtHandle hctxt;
+  int        hctxt_alloced;
+  TCHAR      lpPackageName[1024];
+  DWORD      cbMaxMessage;
+  char *     buf;
+  int        cBuf;
+  int        done;
+  int        lastError;
+};
+
+#define THIS_SCTX ((struct sctx_storage *)fp->current_storage)
+static struct program *sctx_program;
+static void init_sctx(struct object *o)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+
+  memset(sctx, 0, sizeof(struct sctx_storage));
+}
+
+static void exit_sctx(struct object *o)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+
+  if (sctx->hctxt_alloced) {
+    DeleteSecurityContext (&sctx->hctxt);
+    sctx->hctxt_alloced = 0;
+  }
+  if (sctx->hcred_alloced) {
+    FreeCredentialHandle (&sctx->hcred);
+    sctx->hcred_alloced = 0;
+  }
+  if (sctx->buf) {
+    free(sctx->buf);
+    sctx->buf = 0;
+  }
+}
+
+
+static void f_sctx_create(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  SECURITY_STATUS ss;
+  PSecPkgInfo     pkgInfo;
+  TimeStamp       Lifetime;
+  char *          pkgName;
+
+  get_all_args("system.SecurityContext->create",args,"%s",&pkgName);
+
+  lstrcpy(sctx->lpPackageName, pkgName);
+  ss = QuerySecurityPackageInfo ( sctx->lpPackageName, &pkgInfo);
+  
+  if (!SEC_SUCCESS(ss)) 
+  {
+    Pike_error("Could not query package info for %s, error 0x%08x\n",
+               sctx->lpPackageName, ss);
+  }
+  
+  sctx->cbMaxMessage = pkgInfo->cbMaxToken;
+  if (sctx->buf)
+    free(sctx->buf);
+  sctx->buf = (PBYTE)malloc(sctx->cbMaxMessage);
+
+  FreeContextBuffer(pkgInfo);
+
+  if (sctx->hcred_alloced)
+    FreeCredentialHandle (&sctx->hcred);
+  ss = AcquireCredentialsHandle (
+                                 NULL, 
+                                 sctx->lpPackageName,
+                                 SECPKG_CRED_INBOUND,
+                                 NULL, 
+                                 NULL, 
+                                 NULL, 
+                                 NULL, 
+                                 &sctx->hcred,
+                                 &Lifetime);
+
+  if (!SEC_SUCCESS (ss))
+  {
+    Pike_error("AcquireCreds failed: 0x%08x\n", ss);
+  }
+  sctx->hcred_alloced = 1;
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+
+BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
+                       BOOL *pfDone, BOOL fNewConversation)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  SECURITY_STATUS   ss;
+  TimeStamp         Lifetime;
+  SecBufferDesc     OutBuffDesc;
+  SecBuffer         OutSecBuff;
+  SecBufferDesc     InBuffDesc;
+  SecBuffer         InSecBuff;
+  ULONG             Attribs = 0;
+ 
+  //----------------------------------------------------------------
+  // Prepare output buffers
+  //
+
+  OutBuffDesc.ulVersion = 0;
+  OutBuffDesc.cBuffers = 1;
+  OutBuffDesc.pBuffers = &OutSecBuff;
+
+  OutSecBuff.cbBuffer = *pcbOut;
+  OutSecBuff.BufferType = SECBUFFER_TOKEN;
+  OutSecBuff.pvBuffer = pOut;
+
+  //----------------------------------------------------------------
+  // Prepare input buffers
+  //
+
+  InBuffDesc.ulVersion = 0;
+  InBuffDesc.cBuffers = 1;
+  InBuffDesc.pBuffers = &InSecBuff;
+
+  InSecBuff.cbBuffer = cbIn;
+  InSecBuff.BufferType = SECBUFFER_TOKEN;
+  InSecBuff.pvBuffer = pIn;
+
+  *pcbOut = 0;
+  *pfDone = 0;
+
+  ss = AcceptSecurityContext (&sctx->hcred,
+                              fNewConversation ? NULL : &sctx->hctxt,
+                              &InBuffDesc,
+                              Attribs, 
+                              SECURITY_NATIVE_DREP,
+                              &sctx->hctxt,
+                              &OutBuffDesc,
+                              &Attribs,
+                              &Lifetime);
+
+  if (!SEC_SUCCESS (ss))  
+  {
+    sctx->lastError = ss;
+    return FALSE;
+  }
+  sctx->hctxt_alloced = 1;
+
+  //----------------------------------------------------------------
+  // Complete token -- if applicable
+  //
+   
+  if ((SEC_I_COMPLETE_NEEDED == ss) 
+      || (SEC_I_COMPLETE_AND_CONTINUE == ss))  
+  {
+    ss = CompleteAuthToken (&sctx->hctxt, &OutBuffDesc);
+    if (!SEC_SUCCESS(ss))  
+    {
+      sctx->lastError = ss;
+      return FALSE;
+    }
+  }
+
+  *pcbOut = OutSecBuff.cbBuffer;
+
+  *pfDone = !((SEC_I_CONTINUE_NEEDED == ss) 
+              || (SEC_I_COMPLETE_AND_CONTINUE == ss));
+
+/*   fprintf(stderr, "AcceptSecurityContext result = 0x%08x\n", ss); */
+
+  return TRUE;
+
+} // end GenServerContext
+
+
+static void f_sctx_gencontext(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  struct pike_string *in;
+  BOOL new_conversation = 0;
+
+  check_all_args("system.SecurityContext->gen_context()", args,
+                 BIT_STRING,0);
+  
+  in = Pike_sp[-1].u.string;
+  if (in->size_shift != 0)
+    Pike_error("system.SecurityContext->gen_context(): wide strings is not allowed.\n");
+  sctx->cBuf = sctx->cbMaxMessage;
+  if (!GenServerContext (in->str, in->len, sctx->buf, &sctx->cBuf, 
+                         &sctx->done, !sctx->hctxt_alloced))
+  {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+  
+  pop_n_elems(args);
+
+  push_int(sctx->done?1:0);
+  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  f_aggregate(2);
+}
+
+
+static void f_sctx_getlastcontext(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  check_all_args("system.SecurityContext->get_last_context", args, 0);
+  
+  pop_n_elems(args);
+
+  if (sctx->lastError)
+  {
+    push_int(0);
+    return;
+  }
+  push_int(sctx->done?1:0);
+  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  f_aggregate(2);
+}
+
+
+static void f_sctx_isdone(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  check_all_args("system.SecurityContext->is_done", args, 0);
+  
+  pop_n_elems(args);
+
+  push_int(sctx->done?1:0);
+}
+
+
+static void f_sctx_type(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  check_all_args("system.SecurityContext->type", args, 0);
+  
+  pop_n_elems(args);
+
+  push_string(make_shared_string(sctx->lpPackageName));
+}
+
+
+static void f_sctx_getusername(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  SECURITY_STATUS   ss;
+  SecPkgContext_Names name;
+
+  check_all_args("system.SecurityContext->get_username", args, 0);
+
+  pop_n_elems(args);
+
+  if (!sctx->hctxt_alloced)
+  {
+    push_int(0);
+    return;
+  }
+
+  ss = QueryContextAttributes(&sctx->hctxt, SECPKG_ATTR_NAMES, &name);
+  if (ss != SEC_E_OK)
+  {
+    push_int(0);
+    return;
+  }
+
+  push_string(make_shared_string(name.sUserName));
+
+  FreeContextBuffer(name.sUserName);
+}
+
+
+static void f_sctx_getlasterror(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  LPVOID lpMsgBuf;
+  char buf[100];
+  check_all_args("system.SecurityContext->last_error", args, 0);
+  
+  pop_n_elems(args);
+
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+                FORMAT_MESSAGE_FROM_SYSTEM | 
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL,
+                sctx->lastError,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+                (LPTSTR) &lpMsgBuf,
+                0,
+                NULL 
+                );
+  sprintf(buf, "0x%04x: ", sctx->lastError);
+  push_string(make_shared_string(buf));
+  push_string(make_shared_string(lpMsgBuf));
+  f_add(2);
+  LocalFree(lpMsgBuf);
+}
+
+
+static void f_GetComputerName(INT32 args)
+{
+  char  name[MAX_COMPUTERNAME_LENGTH + 1];
+  DWORD len = sizeof(name);
+
+  check_all_args("system.GetComputerName", args, 0);
+
+  pop_n_elems(args);
+
+  if (!GetComputerName(name, &len))
+    push_int(0);
+
+  push_string(make_shared_binary_string(name, len));
+}
+
+
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
 #define SIMPCONST(X) \
@@ -2499,7 +2821,7 @@ void init_nt_system_calls(void)
     {
       start_new_program();
       set_init_callback(init_sid);
-      set_init_callback(exit_sid);
+      set_exit_callback(exit_sid);
       ADD_STORAGE(PSID);
       add_function("`==",f_sid_eq,"function(mixed:int)",0);
       add_function("account",f_sid_account,"function(:array(string|int))",0);
@@ -2662,6 +2984,23 @@ void init_nt_system_calls(void)
       }
     }
   }
+
+  {
+    start_new_program();
+    set_init_callback(init_sctx);
+    set_exit_callback(exit_sctx);
+    ADD_STORAGE(struct sctx_storage);
+    add_function("create",f_sctx_create,"function(string:void)",0);
+    add_function("gen_context",f_sctx_gencontext,"function(string:array(string|int))",0);
+    add_function("get_last_context",f_sctx_getlastcontext,"function(void:array(string|int))",0);
+    add_function("is_done",f_sctx_isdone,"function(void:int)",0);
+    add_function("type",f_sctx_type,"function(void:string)",0);
+    add_function("get_username",f_sctx_getusername,"function(void:string)",0);
+    add_function("get_last_error",f_sctx_getlasterror,"function(void:int)",0);
+    add_program_constant("SecurityContext",sctx_program=end_program(),0);
+  }
+
+  ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
 }
 
 void exit_nt_system_calls(void)
@@ -2711,6 +3050,11 @@ void exit_nt_system_calls(void)
       netgetdcname=0;
       netgetanydcname=0;
     }
+  }
+  if(sctx_program)
+  {
+    free_program(sctx_program);
+    sctx_program=0;
   }
 }
 
