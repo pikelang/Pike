@@ -18,7 +18,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#if 0
+#if 1
 #define DEBUG(X) fprintf X
 #else
 #define DEBUG(X) do; while(0)
@@ -361,9 +361,9 @@ static void push_feed_range(struct piece *head,
       }
       ref_push_string(string_slice(head->s,c_head,head->s->len-c_head));
       n++;
-      if (n==10)
+      if (n==32)
       {
-	 f_add(10);
+	 f_add(32);
 	 n=1;
       }
       c_head=0;
@@ -796,7 +796,7 @@ static int do_try_feed(struct parser_html_storage *this,
 
    recheck_scan(this,&scan_entity,&scan_tag);
 
-   while (*feed)
+   for (;;)
    {
       DEBUG((stderr,"%*d do_try_feed scan loop "
 	     "scan_entity=%d scan_tag=%d ignore_data=%d\n",
@@ -812,10 +812,13 @@ static int do_try_feed(struct parser_html_storage *this,
 
 	 /* we are to get data first */
 	 /* look for tag or entity */
-	 n=0;
-	 if (scan_entity) look_for[n++]=this->entity_start;
-	 if (scan_tag) look_for[n++]=this->tag_start;
-	 scan_forward(*feed,st->c,&dst,&cdst,look_for,n);
+	 if (*feed)
+	 {
+	    n=0;
+	    if (scan_entity) look_for[n++]=this->entity_start;
+	    if (scan_tag) look_for[n++]=this->tag_start;
+	    scan_forward(*feed,st->c,&dst,&cdst,look_for,n);
+	 }
       
 	 if (this->callback__data.type!=T_INT)
 	 {
@@ -824,9 +827,11 @@ static int do_try_feed(struct parser_html_storage *this,
 		   *feed,st->c,dst,cdst));
 
 	    ref_push_object(thisobj);
-	    push_feed_range(*feed,st->c,dst,cdst);
+	    if (*feed)
+	       push_feed_range(*feed,st->c,dst,cdst);
+	    else
+	       push_text("");
 	    apply_svalue(&(this->callback__data),2);
-	    st->ignore_data=1;
 	    
 	    if ((res=handle_result(this,st,
 				   feed,&(st->c),dst,cdst)))
@@ -834,21 +839,24 @@ static int do_try_feed(struct parser_html_storage *this,
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
 		      res,*feed,st->c));
+	       st->ignore_data=(res==1);
 	       return res;
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
 	 }
 	 else
 	 {
-	    put_out_feed_range(this,*feed,st->c,dst,cdst);
-	    skip_feed_range(st,feed,&(st->c),dst,cdst);
+	    if (*feed)
+	    {
+	       put_out_feed_range(this,*feed,st->c,dst,cdst);
+	       skip_feed_range(st,feed,&(st->c),dst,cdst);
+	    }
 	 }
 
 	 DEBUG((stderr,"%*d do_try_feed scan data done %p:%d\n",
 		this->stack_count,this->stack_count,
 		*feed,st->c));
       }
-      st->ignore_data=0;
       /* at end, entity or tag */
 
       if (!*feed)
@@ -891,7 +899,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
 		      res,*feed,st->c));
-	       st->ignore_data=1;
+	       st->ignore_data=(res==1);
 	       return res;
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
@@ -938,7 +946,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
 		      res,*feed,st->c));
-	       st->ignore_data=1;
+	       st->ignore_data=(res==1);
 	       return res;
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
@@ -953,8 +961,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	    skip_feed_range(st,feed,&(st->c),dst,cdst+1);
 	 }
       }
+      st->ignore_data=0;
    }
-   return 0; /* done */
 }
 
 static void try_feed(int finished)
@@ -1125,6 +1133,11 @@ static void html_read(INT32 args)
       n-=THIS->out->s->len;
       ref_push_string(THIS->out->s);
       m++;
+      if (m==32)
+      {
+	 f_add(32);
+	 m=1;
+      }
       z=THIS->out;
       THIS->out=THIS->out->next;
       free(z);
