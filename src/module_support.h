@@ -8,7 +8,9 @@
 #include <stdarg.h>
 
 /* Prototypes begin here */
-void check_args(const char *fnname, int args, int minargs, ... );
+int va_check_args(struct svalue *s, int minargs, va_list arglist);
+int check_args(int args, int minargs, ...);
+void check_all_args(const char *fnname, int args, int minargs, ... );
 int va_get_args(struct svalue *s,
 		INT32 num_args,
 		char *fmt,
