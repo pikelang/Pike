@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.38 2003/10/17 04:34:08 nilsson Exp $
+// $Id: mkpeep.pike,v 1.39 2004/06/01 23:36:44 nilsson Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -277,7 +277,7 @@ class Switch(string test) {
 
   void make_fun() {
     made_fun = ++function_serial;
-    functions += "inline static void _asm_peep_"+made_fun+"(void)\n{\n";
+    functions += "INLINE static void _asm_peep_"+made_fun+"(void)\n{\n";
     functions += make_switch(2);
     functions += "}\n\n";
   }
