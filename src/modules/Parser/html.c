@@ -736,11 +736,11 @@ static INLINE void push_feed_range(struct piece *head,
    {
       if (head==tail)
       {
-	 ref_push_string(string_slice(head->s,c_head,c_tail-c_head));
+	 push_string(string_slice(head->s,c_head,c_tail-c_head));
 	 n++;
 	 break;
       }
-      ref_push_string(string_slice(head->s,c_head,head->s->len-c_head));
+      push_string(string_slice(head->s,c_head,head->s->len-c_head));
       n++;
       if (n==32)
       {
