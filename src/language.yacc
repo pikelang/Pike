@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.232 2001/03/05 21:32:52 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.233 2001/03/17 06:25:58 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -316,6 +316,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> sscanf
 %type <n> statement
 %type <n> statements
+%type <n> statement_with_semicolon
 %type <n> switch
 %type <n> typeof
 %type <n> unused
@@ -1610,6 +1611,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
     {
       int tmp=Pike_compiler->compiler_pass;
       $3=mknode(F_COMMA_EXPR,$3,0);
+      optimize_node($3);
       Pike_compiler->compiler_pass=tmp;
       type=$3->u.node.a->type;
     }
@@ -1664,11 +1666,21 @@ statements: { $$=0; }
   }
   ;
 
+statement_with_semicolon: unused2 optional_block
+  {
+    if($2)
+    {
+      $$=recursive_add_call_arg($1,$2);
+    }else{
+      $$=$1;
+    }
+  }
+;
 
-normal_label_statement: unused2 ';'
+normal_label_statement: statement_with_semicolon
   | import { $$=0; }
   | cond
-  | return expected_semicolon
+  | return
   | local_constant { $$=0; }
   | block
   | break expected_semicolon
@@ -2540,7 +2552,7 @@ expected_colon: ':'
   }
   ;
 
-return: TOK_RETURN
+return: TOK_RETURN expected_semicolon
   {
     if(!TEST_COMPAT(0,6) &&
        !match_types(Pike_compiler->compiler_frame->current_return_type,
@@ -2550,7 +2562,7 @@ return: TOK_RETURN
     }
     $$=mknode(F_RETURN,mkintnode(0),0);
   }
-  | TOK_RETURN safe_comma_expr
+  | TOK_RETURN safe_comma_expr expected_semicolon
   {
     $$=mknode(F_RETURN,$2,0);
   }
@@ -2730,7 +2742,7 @@ expr3: expr4
  * -Hubbe
  */
 
-optional_block: /* EMPTY */ { $$=0; }
+optional_block: ';' /* EMPTY */ { $$=0; }
   | '{' push_compiler_frame0
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
@@ -2813,9 +2825,8 @@ expr4: string
   | lambda
   | class
   | idents2
-  | expr4 '(' expr_list  ')' optional_block
+  | expr4 '(' expr_list  ')'
     {
-      if($5) $3=mknode(F_ARG_LIST, $3, $5);
       $$=mkapplynode($1,$3);
     }
   | expr4 '(' error ')' { $$=mkapplynode($1, NULL); yyerrok; }
@@ -3198,6 +3209,7 @@ typeof: TOK_TYPEOF '(' expr0 ')'
      * tree properly -Hubbe
      */
     tmp=mknode(F_COMMA_EXPR, $3, 0);
+    optimize_node(tmp);
 
     t=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
     if(TEST_COMPAT(7,0))

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.47 2001/02/19 23:50:01 grubba Exp $
+ * $Id: las.h,v 1.48 2001/03/17 06:25:58 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -105,9 +105,10 @@ extern struct node_hash_table node_hash;
 #define OPT_DEFROSTED	    0x4000 /* Node may be a duplicate */
 #define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
 
-#define OPT_CUSTOM_LABELS   0x10000
+
 /* This is a statement which got custom break/continue label handling.
- * Set in compiler_frame. */
+ * Set in compiler_frame. Beware: This is not a node flag! -Hubbe */
+#define OPT_CUSTOM_LABELS   0x10000
 
 #define SCOPE_LOCAL 1
 #define SCOPE_SCOPED 2
@@ -142,6 +143,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
+node *recursive_add_call_arg(node *n, node *arg);
 node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
 node *debug_mktypenode(struct pike_type *t);
@@ -149,6 +151,8 @@ node *debug_mkconstantsvaluenode(struct svalue *s);
 node *debug_mkliteralsvaluenode(struct svalue *s);
 node *debug_mksvaluenode(struct svalue *s);
 node *copy_node(node *n);
+node *defrost_node(node *n);
+void optimize_node(node *);
 int is_const(node *n);
 int node_is_tossable(node *n);
 int node_is_true(node *n);
@@ -211,6 +215,7 @@ void resolv_program(node *n);
 #define ADD_NODE_REF(n)	(n?add_ref(n):0)
 #define ADD_NODE_REF2(n, code)	do { n?add_ref(n):0; code; } while(0)
 #else /* !SHARED_NODES */
+#define defrost_node(n) (n)
 #define ADD_NODE_REF(n)	(n = 0)
 #define ADD_NODE_REF2(n, code)	do { code; n = 0;} while(0)
 #endif /* SHARED_NODES */

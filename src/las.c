@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.245 2001/03/13 13:24:11 grubba Exp $");
+RCSID("$Id: las.c,v 1.246 2001/03/17 06:25:58 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -629,7 +629,7 @@ void debug_free_node(node *n)
     if(l_flag>9)
       print_tree(n);
 
-    if (!(n->tree_info & OPT_NOT_SHARED)) {
+    if (!(n->tree_info & (OPT_NOT_SHARED | OPT_DEFROSTED))) {
       size_t hash;
       if ((hash = hash_node(n)) != n->hash) {
 	fprintf(stderr, "Hash-value is bad 0x%08lx != 0x%08lx\n",
@@ -653,7 +653,7 @@ void debug_free_node(node *n)
       print_tree(n);
 
 #ifdef SHARED_NODES
-    if (!(n->tree_info & OPT_NOT_SHARED)) {
+    if (!(n->tree_info & (OPT_NOT_SHARED | OPT_DEFROSTED))) {
       size_t hash;
       if ((hash = hash_node(n)) != n->hash) {
 	fprintf(stderr, "Hash-value is bad 0x%08lx != 0x%08lx\n",
@@ -800,7 +800,7 @@ void debug_free_node(node *n)
 node *debug_check_node_hash(node *n)
 {
 #if defined(PIKE_DEBUG) && defined(SHARED_NODES)
-  if (n && !(n->tree_info & OPT_NOT_SHARED) && (n->hash != hash_node(n))) {
+  if (n && !(n->tree_info & (OPT_DEFROSTED|OPT_NOT_SHARED)) && (n->hash != hash_node(n))) {
     fprintf(stderr,"Bad node hash at %p, (%s:%d) (token=%d).\n",
 	    n, n->current_file->str, n->line_number,
 	    n->token);
@@ -1038,12 +1038,16 @@ node *debug_mknode(short token, node *a, node *b)
 #endif
 
   check_tree(res,0);
-  if(!Pike_compiler->num_parse_error && Pike_compiler->compiler_pass==2 &&
+
+#if 0
+  if(!Pike_compiler->num_parse_error &&
+     Pike_compiler->compiler_pass==2 &&
      (res->node_info & OPT_TRY_OPTIMIZE))
   {
     optimize(res);
     check_tree(res,0);
   }
+#endif
 
 #ifdef PIKE_DEBUG
   if(d_flag > 3)
@@ -1561,6 +1565,83 @@ void resolv_program(node *n)
   }
 }
 
+node *recursive_add_call_arg(node *n, node *arg)
+{
+  node *tmp;
+
+  switch(n->token)
+  {
+    case F_ASSIGN:
+    case F_INC:
+    case F_DEC:
+    case F_POP_VALUE:
+      tmp=recursive_add_call_arg(CAR(n), arg);
+#ifdef SHARED_NODES
+      if(tmp != n)
+      {
+	n=defrost_node(n);
+	_CAR(n)=tmp;
+	n=freeze_node(n);
+      }
+#else
+      _CAR(n)=tmp;
+#endif
+      break;
+
+    case F_APPLY:
+      if(CAR(n)->token == F_CONSTANT &&
+	 CAR(n)->u.sval.type == T_FUNCTION &&
+	 CAR(n)->u.sval.subtype == FUNCTION_BUILTIN &&
+	 CAR(n)->u.sval.u.efun->name &&
+	 CAR(n)->u.sval.u.efun->name->str[0]=='`')
+      {
+	/* FALL THROUGH */
+      }else{
+	tmp=mknode(F_ARG_LIST, CDR(n), arg);
+#ifdef SHARED_NODES
+	n=defrost_node(n);
+	_CDR(n)=tmp;
+	n=freeze_node(n);
+#else
+	_CDR(n)=tmp;
+#endif
+	break;
+      }
+      
+    case F_OR_EQ:
+    case F_XOR_EQ:
+    case F_LSH_EQ:
+    case F_RSH_EQ:
+    case F_ADD_EQ:
+    case F_SUB_EQ:
+    case F_MULT_EQ:
+    case F_MOD_EQ:
+    case F_DIV_EQ:
+    case F_ARG_LIST:
+    case F_LOR:
+    case F_LAND:
+    case F_CAST:
+    case F_SOFT_CAST:
+      tmp=recursive_add_call_arg(CDR(n), arg);
+#ifdef SHARED_NODES
+      {
+	n=defrost_node(n);
+	_CDR(n)=tmp;
+	n=freeze_node(n);
+      }
+#else
+      _CDR(n)=tmp;
+#endif
+      break;
+      
+    default:
+      yyerror("Syntax error in implicit lambda.");
+      free_node(arg);
+      break;
+  }
+
+  return n;
+}
 
 
 node *index_node(node *n, char *node_name, struct pike_string *id)
@@ -1729,7 +1810,7 @@ node *debug_mktypenode(struct pike_type *t)
   return freeze_node(res);
 }
 
-node *debug_mkconstantsvaluenode(struct svalue *s)
+node *low_mkconstantsvaluenode(struct svalue *s)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
@@ -1740,20 +1821,22 @@ node *debug_mkconstantsvaluenode(struct svalue *s)
     res->node_info|=OPT_EXTERNAL_DEPEND;
   }
   res->type = get_type_of_svalue(s);
-  return freeze_node(res);
+  return res;
+}
+
+node *debug_mkconstantsvaluenode(struct svalue *s)
+{
+  return freeze_node(low_mkconstantsvaluenode(s));
 }
 
 node *debug_mkliteralsvaluenode(struct svalue *s)
 {
-  node *res = mkconstantsvaluenode(s);
+  node *res = low_mkconstantsvaluenode(s);
 
-  /* FIXME: The following affects other instances of this node,
-   * but probably not too much.
-   */
   if(s->type!=T_STRING && s->type!=T_INT && s->type!=T_FLOAT)
     res->node_info|=OPT_EXTERNAL_DEPEND;
 
-  return res;
+  return freeze_node(res);
 }
 
 node *debug_mksvaluenode(struct svalue *s)
@@ -1813,7 +1896,6 @@ node *debug_mksvaluenode(struct svalue *s)
  * optimizer
  */
 
-#if 1 /*  DEAD_CODE - I need this /Hubbe */
 
 /* FIXME: Ought to use parent pointer to avoid recursion.
  * In the SHARED_NODES case there's no need of course.
@@ -1845,7 +1927,7 @@ node *copy_node(node *n)
 #else /* !SHARED_NODES */
 
     fatal_check_c_stack(16384);
-
+    
     switch((car_is_node(n) << 1) | cdr_is_node(n))
     {
     default: fatal("fooo?\n");
@@ -1865,7 +1947,7 @@ node *copy_node(node *n)
       b=mknode(n->token, CAR(n), CDR(n));
     }
     if(n->type)
-      copy_shared_string(b->type, n->type);
+      copy_type(b->type, n->type);
     else
       b->type=0;
 
@@ -1880,7 +1962,7 @@ node *copy_node(node *n)
     break;
 
   case F_CONSTANT:
-    b=mksvaluenode(&(n->u.sval));
+    b=mkconstantsvaluenode(&(n->u.sval));
     break;
 #endif /* SHARED_NODES */
   }
@@ -1898,7 +1980,86 @@ node *copy_node(node *n)
   return b;
 }
 
-#endif /* DEAD_CODE */
+/* 
+ * Defrost a node, beware that this is not
+ * a recursive function
+ */
+#ifdef SHARED_NODES
+node *defrost_node(node *n)
+{
+  node *b;
+  debug_malloc_touch(n);
+  debug_malloc_touch(n->type);
+  debug_malloc_touch(n->u.node.a);
+  debug_malloc_touch(n->u.node.b);
+  check_tree(n,0);
+  if(!n) return n;
+
+  if(n->refs == 1)
+  {
+    sub_node(n);
+    n->node_info |= OPT_DEFROSTED;
+    n->node_info &=~ OPT_OPTIMIZED;
+    n->tree_info &=~ OPT_OPTIMIZED;
+    return n;
+  }
+
+  switch(n->token)
+  {
+  case F_LOCAL:
+  case F_IDENTIFIER:
+  case F_TRAMPOLINE:
+    b=mknewintnode(0);
+    if(b->type) free_type(b->type);
+    *b=*n;
+    copy_type(b->type, n->type);
+    return b;
+
+  default:
+    fatal_check_c_stack(16384);
+
+    b=mkemptynode();
+    if(car_is_node(n)) _CAR(b)=copy_node(CAR(n));
+    if(cdr_is_node(n)) _CDR(b)=copy_node(CDR(n));
+
+    if(n->type)
+      copy_type(b->type, n->type);
+    else
+      b->type=0;
+
+    break;
+
+  case F_CAST:
+  case F_SOFT_CAST:
+    b=mkemptynode();
+    _CAR(b)=copy_node(CAR(n));
+    _CDR(b)=copy_node(CDR(n));
+    if(n->type)
+      copy_type(b->type, n->type);
+    else
+      b->type=0;
+    break;
+
+  case F_CONSTANT:
+    b=low_mkconstantsvaluenode(&(n->u.sval));
+    break;
+  }
+  if(n->name)
+  {
+    if(b->name) free_string(b->name);
+    add_ref(b->name=n->name);
+  }
+  /* FIXME: Should b->name be kept if n->name is NULL?
+   * /grubba 1999-09-22
+   */
+  b->line_number = n->line_number;
+  b->node_info = n->node_info & ~OPT_OPTIMIZED;
+  b->tree_info = n->tree_info & ~OPT_OPTIMIZED;
+  b->node_info |= OPT_DEFROSTED;
+  free_node(n);
+  return b;
+}
+#endif
 
 
 int is_const(node *n)
@@ -4660,6 +4821,18 @@ static void optimize(node *n)
 #endif /* PIKE_DEBUG */
 }
 
+void optimize_node(node *n)
+{
+  if(n &&
+     !Pike_compiler->num_parse_error &&
+     Pike_compiler->compiler_pass==2 &&
+     (n->node_info & OPT_TRY_OPTIMIZE))
+  {
+    optimize(n);
+    check_tree(n,0);
+  }
+}
+
 struct timer_oflo
 {
   INT32 counter;
@@ -4952,6 +5125,8 @@ int dooptcode(struct pike_string *name,
   union idptr tmp;
   int args, vargs, ret;
   struct svalue *foo;
+
+  optimize_node(n);
 
   check_tree(check_node_hash(n),0);
 

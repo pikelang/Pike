@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.394 2001/03/12 10:51:29 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.395 2001/03/17 06:25:58 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1575,6 +1575,14 @@ test_eq([[function f;
 	for(int i = 0; i < 2; i++)
 	  { {int _i = i; f = lambda(int j) { return _i+j; }; } int FEL; }
 	return f(17);]]);
+
+
+test_any([[
+   int x=1;
+   void for10(function f) { for(int e=0;e<10;e++) f(); };
+   for10() { x++; }
+   return x;
+]], 11)
 
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
 test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
