@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.112 2002/11/10 20:19:18 grubba Exp $
+|| $Id: lex.c,v 1.113 2003/03/20 17:44:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.112 2002/11/10 20:19:18 grubba Exp $");
+RCSID("$Id: lex.c,v 1.113 2003/03/20 17:44:54 mast Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -76,7 +76,7 @@ struct instr_counter *init_instr_storage_pointers(int depth)
   return d;
 }
 
-void add_runned(PIKE_OPCODE_T instr)
+void add_runned(PIKE_INSTR_T instr)
 {
   int e;
   struct instr_counter **tmp=&instr_counter_storage;
@@ -432,7 +432,7 @@ char *get_f_name(int n)
 }
 
 #ifdef HAVE_COMPUTED_GOTO
-char *get_opcode_name(PIKE_OPCODE_T n)
+char *get_opcode_name(PIKE_INSTR_T n)
 {
   int fcode;
   int low = 0;

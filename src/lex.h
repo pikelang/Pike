@@ -2,13 +2,15 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.26 2002/11/02 15:21:01 grubba Exp $
+|| $Id: lex.h,v 1.27 2003/03/20 17:44:54 mast Exp $
 */
 
 #ifndef LEX_H
 #define LEX_H
 
 #include <stdio.h>
+
+#include "program.h"
 
 struct keyword
 {
@@ -81,12 +83,8 @@ struct instr
 #ifdef PIKE_DEBUG
 #define ADD_COMPILED(X) instrs[(X)-F_OFFSET].compiles++
 #ifdef INSTR_PROFILING
-extern void add_runned(PIKE_OPCODE_T);
-#ifdef HAVE_COMPUTED_GOTO
-#define ADD_RUNNED(X)	add_runned(X)
-#else /* !HAVE_COMPUTED_GOTO */
-#define ADD_RUNNED(X) add_runned((X)-F_OFFSET)
-#endif /* HAVE_COMPUTED_GOTO */
+extern void add_runned(PIKE_INSTR_T);
+#define ADD_RUNNED(X) add_runned(X)
 #else
 #define ADD_RUNNED(X)
 #endif
@@ -127,9 +125,9 @@ void init_lex(void);
 char *low_get_f_name(int n,struct program *p);
 char *get_f_name(int n);
 #ifdef HAVE_COMPUTED_GOTO
-char *get_opcode_name(PIKE_OPCODE_T n);
+char *get_opcode_name(PIKE_INSTR_T n);
 #else /* !HAVE_COMPUTED_GOTO */
-#define get_opcode_name(n)	get_f_name(n)
+#define get_opcode_name(n) get_f_name(n + F_OFFSET)
 #endif /* HAVE_COMPUTED_GOTO */
 char *get_token_name(int n);
 
