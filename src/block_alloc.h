@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.37 2001/09/08 11:33:15 grubba Exp $ */
+/* $Id: block_alloc.h,v 1.38 2001/09/25 21:23:30 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -89,11 +89,27 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
   return ret;								\
 })									\
 									\
+DO_IF_DMALLOC(                                                          \
+static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
+{                                                                       \
+  struct PIKE_CONCAT(DATA,_block) *tmp;					\
+  for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                  \
+  {                                                                     \
+    if( (char *)d < (char *)tmp) continue;                              \
+    if( (char *)d >= (char *)(tmp->x+BSIZE)) continue;                  \
+    return;                                                             \
+  }                                                                     \
+  fatal("really_free_%s called on non-block_alloc region (%p).\n",      \
+         #DATA, d);                                                     \
+}                                                                       \
+)									\
+									\
 DO_IF_RUN_UNLOCKED(                                                     \
 void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
 {									\
   EXIT_BLOCK(d);							\
-  DO_IF_DMALLOC( dmalloc_unregister(d, 1);  )				\
+  DO_IF_DMALLOC( PIKE_CONCAT(check_free_,DATA)(d);                      \
+                 dmalloc_unregister(d, 1);  )				\
   d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
   PRE_INIT_BLOCK(d);							\
   PIKE_CONCAT3(free_,DATA,s)=d;						\
@@ -103,7 +119,8 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 {									\
   EXIT_BLOCK(d);							\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
-  DO_IF_DMALLOC( dmalloc_unregister(d, 1);  )				\
+  DO_IF_DMALLOC( PIKE_CONCAT(check_free_,DATA)(d);                      \
+                 dmalloc_unregister(d, 1);  )				\
   d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
   PRE_INIT_BLOCK(d);							\
   PIKE_CONCAT3(free_,DATA,s)=d;						\
