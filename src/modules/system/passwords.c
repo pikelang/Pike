@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.2 1997/04/16 03:14:05 hubbe Exp $
+ * $Id: passwords.c,v 1.3 1997/07/10 14:55:35 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -15,7 +15,7 @@
 
 #include <global.h>
 
-RCSID("$Id: passwords.c,v 1.2 1997/04/16 03:14:05 hubbe Exp $");
+RCSID("$Id: passwords.c,v 1.3 1997/07/10 14:55:35 grubba Exp $");
 
 #include <module_support.h>
 #include <interpret.h>
@@ -100,7 +100,7 @@ void f_getpwuid(INT32 args)
 }
 #endif
  
-#ifdef HAVE_GETPWENT
+#ifdef HAVE_SETPWENT
 /* int setpwent() */
 void f_setpwent(INT32 args)
 {
@@ -108,7 +108,9 @@ void f_setpwent(INT32 args)
   pop_n_elems(args);
   push_int(0);
 }
+#endif /* HAVE_SETPWENT */
  
+#ifdef HAVE_GETPWENT
 /* int endpwent() */
 void f_endpwent(INT32 args)
 {
@@ -131,5 +133,5 @@ void f_getpwent(INT32 args)
   push_pwent(foo);
 }
 
-#endif
+#endif /* HAVE_GETPWENT */
  

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.18 1997/06/03 14:26:08 grubba Exp $
+ * $Id: system.c,v 1.19 1997/07/10 14:54:43 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.18 1997/06/03 14:26:08 grubba Exp $");
+RCSID("$Id: system.c,v 1.19 1997/07/10 14:54:43 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -294,7 +294,9 @@ void f_seteuid(INT32 args)
 #endif /* HAVE_SETEUID */
   pop_n_elems(args-1);
 }
+#endif /* HAVE_SETEUID || HAVE_SETRESUID */
  
+#if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
 void f_setegid(INT32 args)
 {
   int id;
@@ -309,14 +311,14 @@ void f_setegid(INT32 args)
     id = sp[-args].u.integer;
   }
  
-#ifdef HAVE_SETEUID
+#ifdef HAVE_SETEGID
   setegid(id);
 #else
   setresgid(-1, id, -1);
 #endif /* HAVE_SETEUID */
   pop_n_elems(args-1);
 }
-#endif /* HAVE_SETEUID || HAVE_SETRESUID */
+#endif /* HAVE_SETEGID || HAVE_SETRESGID */
 
 #if defined(HAVE_GETPGID) || defined(HAVE_GETPGRP)
 void f_getpgrp(INT32 args)
@@ -375,6 +377,7 @@ get(getppid)
  
 #undef get
 
+#ifdef HAVE_CHROOT
 /* int chroot(string|object newroot) */
 void f_chroot(INT32 args)
 {
@@ -413,6 +416,7 @@ void f_chroot(INT32 args)
       }
 #endif /* HAVE_FCHROOT */
 }
+#endif /* HAVE_CHROOT */
  
 #ifdef HAVE_UNAME
 #ifdef HAVE_SYS_UTSNAME_H
@@ -719,8 +723,10 @@ void pike_module_init(void)
   add_efun("setgid", f_setgid, "function(int:void)", OPT_SIDE_EFFECT);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
   add_efun("seteuid", f_seteuid, "function(int:void)", OPT_SIDE_EFFECT);
-  add_efun("setegid", f_setegid, "function(int:void)", OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
+#if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
+  add_efun("setegid", f_setegid, "function(int:void)", OPT_SIDE_EFFECT);
+#endif /* HAVE_SETEGID || HAVE_SETRESGID */
 
   add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
   add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
@@ -738,9 +744,11 @@ void pike_module_init(void)
 #ifdef HAVE_GETPGRP
   add_efun("getpgrp", f_getpgrp, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPGRP */
- 
+
+#ifdef HAVE_CHROOT 
   add_efun("chroot", f_chroot, "function(string|object:int)", 
            OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_CHROOT */
  
 #ifdef HAVE_UNAME
   add_efun("uname", f_uname, "function(:mapping)", OPT_TRY_OPTIMIZE);
@@ -774,13 +782,14 @@ void pike_module_init(void)
 	   OPT_EXTERNAL_DEPEND);
   add_efun("getpwuid", f_getpwuid, "function(int:array)", OPT_EXTERNAL_DEPEND);
 #endif
-#ifdef HAVE_SETPWENT
+#ifdef HAVE_GETPWENT
   add_efun("getpwent", f_getpwent, "function(void:int|array)",
            OPT_EXTERNAL_DEPEND);
-  add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
 #endif
-
+#ifdef HAVE_SETPWENT
+  add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif
 }
 
 void pike_module_exit(void)
