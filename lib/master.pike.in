@@ -6,7 +6,7 @@
 // Pike is distributed as GPL (General Public License)
 // See the files COPYING and DISCLAIMER for more information.
 //
-// $Id: master.pike.in,v 1.197 2002/05/01 00:30:38 mast Exp $
+// $Id: master.pike.in,v 1.198 2002/05/15 14:50:42 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -20,7 +20,7 @@
 #undef PIKE_MODULE_RELOC
 
 #ifndef PIKE_WARNINGS
-#define PIKE_WARNINGS 0
+#define PIKE_WARNINGS 1
 #endif /* PIKE_WARNINGS */
 
 
@@ -1228,7 +1228,6 @@ class CompatResolver
   array(string) pike_module_path=({});
   array(string) pike_program_path=({});
   mapping(string:string) predefines = ([]);
-  int want_warnings = PIKE_WARNINGS;
   string ver;
 
   //! The ComparResolver is initialized with a value that can be
