@@ -11,4 +11,5 @@
 /master_lib_dirs
 /modlist.h
 /modlist_headers.h
+/remake
 /static_module_makefile
