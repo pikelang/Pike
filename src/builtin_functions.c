@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.96 1998/04/14 22:09:05 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.97 1998/04/15 19:10:27 hedda Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2539,7 +2539,7 @@ void f_splice(INT32 args)
 
   for(i=0;i<args;i++)
     if (sp[i-args].type!=T_ARRAY) 
-      error("Illegal argument to splice.\n");
+      error("Illegal argument %d to splice.\n", (i+1));
     else
       if (sp[i-args].u.array->size < size)
 	size=sp[i-args].u.array->size;
