@@ -1,3 +1,10 @@
+pike7.4 (7.4.13-4) unstable; urgency=low
+
+  * Disabled the machine code generation for the sparc platform. It was
+    causing segfaults.
+
+ -- Marek Habersack <grendel@debian.org>  Wed,  5 Feb 2003 03:07:59 +0100
+
 pike7.4 (7.4.13-3) unstable; urgency=low
 
   * A bug in the sparc machine code causing a segfault was fixed.
