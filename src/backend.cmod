@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.35 2003/10/15 15:17:30 grubba Exp $
+|| $Id: backend.cmod,v 1.36 2003/10/15 16:44:19 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.35 2003/10/15 15:17:30 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.36 2003/10/15 16:44:19 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1898,6 +1898,7 @@ PIKECLASS Backend
        for(e=0;e<me->num_pending_calls;e++)
        {
 	 struct array *v;
+	 int i;
 	 v=allocate_array_no_init(CALL(e)->args->size+2, 0);
 	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - current_time.tv_sec;
 	 
@@ -1914,8 +1915,10 @@ PIKECLASS Backend
 				ITEM(CALL(e)->args),
 				CALL(e)->args->size,BIT_MIXED);
 
-	 array_fix_type_field(v);
-	 
+	 for(i = 2; i < v->size; i++) {
+	   v->type_field |= 1<<ITEM(v)[i].type;
+	 }
+
 	 ITEM(ret)[e].type=T_ARRAY;
 	 ITEM(ret)[e].u.array=v;
        }
