@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.28 2003/10/14 02:37:44 nilsson Exp $
+|| $Id: _xpm.c,v 1.29 2003/10/14 09:09:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.28 2003/10/14 02:37:44 nilsson Exp $");
+RCSID("$Id: _xpm.c,v 1.29 2003/10/14 09:09:40 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -230,6 +230,34 @@ unsigned short extract_short( unsigned char *b )
 
 /*! @decl int(0..0) _xpm_write_rows(Image.Image img, Image.Image alpha, @
  *!                 int bpc, array(string) colors, array(string) pixels)
+ *!
+ *! Fills in @[img] and @[alpha] according to xpm data in @[bpc], @[colors]
+ *! and @[pixels].
+ *!
+ *! @param bpc
+ *!   Bytes per color. Number of bytes used to encode each color in @[pixels].
+ *!
+ *! @param colors
+ *!   Array of color definitions.
+ *!
+ *!   A color definition is on the format @tt{"ee c #RRGGBB"@},
+ *!   where @tt{ee@} is a @[bpc] long string used to encode the color,
+ *!   @tt{c@} is a literal @tt{"c"@}, and @tt{RRGGBB@} is a hexadecimal
+ *!   RGB code.
+ *!
+ *! @param pixels
+ *!   Raw picture information.
+ *!
+ *!   @array pixels
+ *!     @item 0
+ *!       Size information on the format
+ *!         (@expr{sprintf("%d %d %d %d", h, w, ncolors, bpn)@}).
+ *!     @item 1..ncolors
+ *!       Same as @[colors].
+ *!     @item ncolors+1..ncolors+h
+ *!       Line information. Strings of length @[bpn]*w with encoded
+ *!       pixels for each line.
+ *!   @endarray
  */
 void f__xpm_write_rows( INT32 args )
 {
@@ -244,6 +272,20 @@ void f__xpm_write_rows( INT32 args )
   get_all_args("_xpm_write_rows",args,"%o%o%i%a%a",
                &img,&alpha,&bpc,&colors,&pixels);
 
+#if 0
+  fprintf(stderr, "_xpm_write_rows(");
+  print_svalue(stderr, Pike_sp-5);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-4);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-3);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-2);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-1);
+  fprintf(stderr, ")\n");
+#endif /* 0 */
+
   iimg = (struct image *)get_storage( img, image_program );
   ialpha = (struct image *)get_storage( alpha, image_program );
   if(!iimg || !ialpha)
@@ -253,7 +295,7 @@ void f__xpm_write_rows( INT32 args )
     SIMPLE_ARG_ERROR("_xpm_write_rows", 5, "pixel array is too short.");
   }
 
-  for(y = 0; y < pixels->size; y++) {
+  for(y = 0; y < iimg->ysize + colors->size + 1; y++) {
     if ((pixels->item[y].type != T_STRING) ||
 	(pixels->item[y].u.string->size_shift)) {
       SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
@@ -265,7 +307,7 @@ void f__xpm_write_rows( INT32 args )
 	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
 			 "Color array contains elements other than 8bit strings.");
       }
-    } else {
+    } else if (y > colors->size) {
       if (pixels->item[y].u.string->len < iimg->xsize*bpc) {
 	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
 			 "Pixel array contains too short string (bad bpc?).");
