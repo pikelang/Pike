@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.12 2001/07/11 20:10:09 js Exp $
+// $Id: Utils.pmod,v 1.13 2001/07/12 16:41:22 js Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -131,7 +131,41 @@ class Logger {
     52 : "Filter did not get any connection from the process.",
     53 : "Filter-to-indexer buffer did not get any connection from the process.",
     54 : "Indexer did not get any connection from the process.",
+
+    300: "300 Redirection: Multiple Choices (%s)",
+    301: "301 Redirection: Moved Permanently (%s)",
+    302: "302 Redirection: Found (%s)",
+    303: "303 Redirection: See Other (%s)",
+    304: "304 Redirection: Not Modified (%s)",
+    305: "305 Redirection: Use Proxy (%s)",
+    306: "306 Redirection: (Unused) (%s)",
+    307: "307 Redirection: Temporary Redirect (%s)",
+    400: "400 Client Error: Bad Request (%s)",
+    401: "401 Client Error: Unauthorized (%s)",
+    402: "402 Client Error: Payment Required (%s)",
+    403: "403 Client Error: Forbidden (%s)",
+    404: "404 Client Error: Not Found (%s)",
+    405: "405 Client Error: Method Not Allowed (%s)",
+    406: "406 Client Error: Not Acceptable (%s)",
+    407: "407 Client Error: Proxy Authentication Required (%s)",
+    408: "408 Client Error: Request Timeout (%s)",
+    409: "409 Client Error: Conflict (%s)",
+    410: "410 Client Error: Gone (%s)",
+    411: "411 Client Error: Length Required (%s)",
+    412: "412 Client Error: Precondition Failed (%s)",
+    413: "413 Client Error: Request Entity Too Large (%s)",
+    414: "414 Client Error: Request-URI Too Long (%s)",
+    415: "415 Client Error: Unsupported Media Type (%s)",
+    416: "416 Client Error: Requested Range Not Satisfiable (%s)",
+    417: "417 Client Error: Expectation Failed (%s)",
+    500: "500 Server Error: Internal Server Error (%s)",
+    501: "501 Server Error: Not Implemented (%s)",
+    502: "502 Server Error: Bad Gateway (%s)",
+    503: "503 Server Error: Service Unavailable (%s)",
+    504: "504 Server Error: Gateway Timeout (%s)",
+    505: "505 Server Error: HTTP Version Not Supported (%s)",
   ]);
+    
 
   array(array(string|int)) get_log( int profile, array(string) types,
 				int from, int to ) {
