@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.142 2000/08/10 17:37:38 grubba Exp $");
+RCSID("$Id: object.c,v 1.143 2000/08/15 15:50:24 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -302,7 +302,7 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   debug_malloc_touch(o);
   o->parent=parent;
   add_ref(parent);
-  o->parent_identifier=parent_identifier;
+  o->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
   call_c_initializers(o);
   call_pike_initializers(o,args);
   UNSET_ONERROR(tmp);

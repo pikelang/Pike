@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.103 2000/08/15 11:14:37 grubba Exp $
+ * $Id: program.h,v 1.104 2000/08/15 15:53:10 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -431,7 +431,7 @@ PMOD_EXPORT int add_object_constant(char *name,
 			struct object *o,
 			INT32 flags);
 PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
-PMOD_EXPORT int debug_end_class(char *name, int namelen, INT32 flags);
+PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
 		      INT16 flags,
