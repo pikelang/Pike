@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.8 1998/04/15 14:16:54 grubba Exp $
+/* $Id: master.pike.in,v 1.9 1998/04/16 02:13:09 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -805,9 +805,10 @@ string describe_program(program p)
     return s;
   }
 
-  if(mixed tmp=function_object(p))
-    if(s=describe_program(object_program(tmp)))
-      return s+"."+function_name(p);
+  if(functionp(p))
+    if(mixed tmp=function_object(p))
+      if(s=describe_program(object_program(tmp)))
+	return s+"."+function_name(p);
   return 0;
 }
 
