@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.51 1997/10/02 04:33:27 hubbe Exp $
+/* $Id: master.pike,v 1.52 1997/10/06 07:51:38 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -38,9 +38,13 @@ string combine_path_with_cwd(string path)
 }
 
 #ifdef FILE_STAT_CACHE
+
+#define FILE_STAT_CACHE_TIME 20
+
+int invalidate_time;
 mapping(string:multiset(string)) dir_cache = ([]);
 
-mixed *file_stat(string x)
+mixed *master_file_stat(string x)
 {
   string file, dir=reverse(combine_path_with_cwd(x));
   if(sscanf(dir,"%*[/]%s/%s", file, dir)!=3)
@@ -50,6 +54,11 @@ mixed *file_stat(string x)
   dir=reverse(dir);
 
   multiset(string) d;
+  if(time() > invalidate_time)
+  {
+    dir_cache=([]);
+    invalidate_time=time()+FILE_STAT_CACHE_TIME;
+  }
   if(zero_type(d=dir_cache[dir]))
   {
     if(string *tmp=get_dir(dir))
@@ -64,6 +73,8 @@ mixed *file_stat(string x)
 
   return predef::file_stat(x);
 }
+#else
+#define master_file_stat file_stat
 #endif
 
 mapping (string:string) environment=([]);
@@ -133,7 +144,7 @@ static program low_findprog(string pname, string ext)
   program ret;
   string fname=pname+ext;
   if(ret=programs[fname]) return ret;
-  if(file_stat(fname))
+  if(master_file_stat(fname))
   {
     switch(ext)
     {
@@ -354,7 +365,7 @@ object findmodule(string fullname)
     return o;
   }
 
-  if(mixed *stat=file_stat(fullname+".pmod"))
+  if(mixed *stat=master_file_stat(fullname+".pmod"))
   {
     if(stat[1]==-2)
       return fc[fullname]=dirnode(fullname+".pmod",this_object());
@@ -364,7 +375,7 @@ object findmodule(string fullname)
     return fc[fullname]=o;
     
 #if constant(load_module)
-  if(file_stat(fullname+".so"))
+  if(master_file_stat(fullname+".so"))
     return fc[fullname]=low_cast_to_object(fullname,"/.");
 #endif
 
@@ -523,11 +534,11 @@ void _main(string *argv, string *env)
     argv=argv[0]/"/";
     argv[-1]="hilfe";
     argv=({ argv*"/" });
-    if(!file_stat(argv[0]))
+    if(!master_file_stat(argv[0]))
     {
-      if(file_stat("/usr/local/bin/hilfe"))
+      if(master_file_stat("/usr/local/bin/hilfe"))
 	argv[0]="/usr/local/bin/hilfe";
-      else if(file_stat("../bin/hilfe"))
+      else if(master_file_stat("../bin/hilfe"))
 	argv[0]="/usr/local/bin/hilfe";
       else
       {
@@ -608,14 +619,14 @@ string handle_include(string f,
     tmp=current_file/"/";
     tmp[-1]=f;
     path=combine_path_with_cwd(tmp*"/");
-    if(!file_stat(path)) return 0;
+    if(!master_file_stat(path)) return 0;
   }
   else
   {
     foreach(pike_include_path, path)
       {
 	path=combine_path(path,f);
-	if(file_stat(path))
+	if(master_file_stat(path))
 	  break;
 	else
 	  path=0;
@@ -624,7 +635,7 @@ string handle_include(string f,
     if(!path)
     {
       path=combine_path(pike_library_path+"/include",f);
-      if(!file_stat(path)) path=0;
+      if(!master_file_stat(path)) path=0;
     }
   }
 
@@ -633,7 +644,7 @@ string handle_include(string f,
     /* Handle preload */
 
     if(path[-1]=='h' && path[-2]=='.' &&
-       file_stat(path[0..sizeof(path)-2]+"pre.pike"))
+       master_file_stat(path[0..sizeof(path)-2]+"pre.pike"))
     {
       cast_to_object(path[0..sizeof(path)-2]+"pre.pike","/");
     }
