@@ -77,6 +77,7 @@ INT32 array_find_destructed_object(struct array *v);
 INT32 *get_order(struct array *v, cmpfun fun);
 INT32 *get_set_order(struct array *a);
 INT32 *get_switch_order(struct array *a);
+INT32 *get_alpha_order(struct array *a);
 INT32 set_lookup(struct array *a, struct svalue *s);
 INT32 switch_lookup(struct array *a, struct svalue *s);
 struct array *order_array(struct array *v, INT32 *order);

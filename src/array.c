@@ -542,7 +542,9 @@ static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
     return a->subtype - b->subtype;
 
   case T_INT:
-    return a->u.integer - b->u.integer;
+    if(a->u.integer < b->u.integer) return -1;
+    if(a->u.integer > b->u.integer) return 1;
+    return 0;
 
   default:
     if(a->u.refs < b->u.refs) return -1;
@@ -557,7 +559,9 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
   switch(a->type)
   {
   case T_INT:
-    return a->u.integer - b->u.integer;
+    if(a->u.integer < b->u.integer) return -1;
+    if(a->u.integer > b->u.integer) return 1;
+    return 0;
 
   case T_FLOAT:
     if(a->u.float_number < b->u.float_number) return -1;
@@ -566,6 +570,35 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
 
   case T_STRING:
     return my_strcmp(a->u.string, b->u.string);
+    
+  default:
+    return set_svalue_cmpfun(a,b);
+  }
+}
+
+static int alpha_svalue_cmpfun(struct svalue *a, struct svalue *b)
+{
+  if(a->type != b->type) return a->type - b->type;
+  switch(a->type)
+  {
+  case T_INT:
+    if(a->u.integer < b->u.integer) return -1;
+    if(a->u.integer > b->u.integer) return  1;
+    return 0;
+
+  case T_FLOAT:
+    if(a->u.float_number < b->u.float_number) return -1;
+    if(a->u.float_number > b->u.float_number) return  1;
+    return 0;
+
+  case T_STRING:
+    return my_strcmp(a->u.string, b->u.string);
+
+  case T_ARRAY:
+    if(a==b) return 0;
+    if(!a->u.array->size) return -1;
+    if(!b->u.array->size) return  1;
+    return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
     
   default:
     return set_svalue_cmpfun(a,b);
@@ -586,6 +619,15 @@ INT32 *get_set_order(struct array *a)
 INT32 *get_switch_order(struct array *a)
 {
   return get_order(a, switch_svalue_cmpfun);
+}
+
+
+/*
+ * return an 'order' suitable for sorting.
+ */
+INT32 *get_alpha_order(struct array *a)
+{
+  return get_order(a, alpha_svalue_cmpfun);
 }
 
 
