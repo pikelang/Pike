@@ -79,6 +79,8 @@ static int eval_instruction(unsigned char *pc)
       add_ref(Pike_fp->context.prog);
       backlog[backlogp].instruction=instr;
       backlog[backlogp].pc=pc;
+      backlog[backlogp].stack = sp - evaluator_stack;
+      backlog[backlogp].mark_stack = mark_sp - mark_stack;
 #ifdef _REENTRANT
       backlog[backlogp].thread_id=thread_id;
 #endif

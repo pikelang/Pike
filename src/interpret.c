@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.150 2000/05/01 10:28:26 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.151 2000/05/03 09:03:16 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -484,7 +484,7 @@ void reset_evaluator(void)
 }
 
 #ifdef PIKE_DEBUG
-#define BACKLOG 512
+#define BACKLOG 1024
 struct backlog
 {
   INT32 instruction;
@@ -494,6 +494,8 @@ struct backlog
 #ifdef _REENTRANT
   struct object *thread_id;
 #endif
+  int stack;
+  int mark_stack;
 };
 
 struct backlog backlog[BACKLOG];
@@ -539,28 +541,21 @@ void dump_backlog(void)
       }
 
 
+      fprintf(stderr,"%s:%ld: %s",
+	      file,
+	      (long)line,
+	      low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program));
       if(instrs[backlog[e].instruction].flags & I_HASARG2)
       {
-	fprintf(stderr,"%s:%ld: %s(%ld,%ld)\n",
-		file,
-		(long)line,
-		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
+	fprintf(stderr,"(%ld,%ld)",
 		(long)backlog[e].arg,
 		(long)backlog[e].arg2);
       }
       else if(instrs[backlog[e].instruction].flags & I_HASARG)
       {
-	fprintf(stderr,"%s:%ld: %s(%ld)\n",
-		file,
-		(long)line,
-		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
-		(long)backlog[e].arg);
-      }else{
-	fprintf(stderr,"%s:%ld: %s\n",
-		file,
-		(long)line,
-		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program));
+	fprintf(stderr,"(%ld)", (long)backlog[e].arg);
       }
+      fprintf(stderr," %d, %d", backlog[e].stack, backlog[e].mark_stack);
     }
   }while(e!=backlogp);
 }
