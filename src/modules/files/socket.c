@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.80 2003/10/24 19:05:41 mast Exp $
+|| $Id: socket.c,v 1.81 2003/10/27 23:25:35 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.80 2003/10/24 19:05:41 mast Exp $");
+RCSID("$Id: socket.c,v 1.81 2003/10/27 23:25:35 mast Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -492,7 +492,7 @@ void port_exit_program(void)
 void port_setup_program(void)
 {
   ptrdiff_t offset;
-  start_new_program();
+  START_NEW_PROGRAM_ID (STDIO_PORT);
   offset=ADD_STORAGE(struct port);
   map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),PIKE_T_MIXED);
   map_variable("_id","mixed",0,offset+OFFSETOF(port,id),PIKE_T_MIXED);

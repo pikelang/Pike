@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.63 2003/10/15 18:13:41 grubba Exp $
+|| $Id: sendfile.c,v 1.64 2003/10/27 23:25:35 mast Exp $
 */
 
 /*
@@ -1024,7 +1024,7 @@ static void sf_create(INT32 args)
 void init_sendfile(void)
 {
 #ifdef _REENTRANT
-  start_new_program();
+  START_NEW_PROGRAM_ID (STDIO_SENDFILE);
   ADD_STORAGE(struct pike_sendfile);
   map_variable("_args", "array(mixed)", 0, OFFSETOF(pike_sendfile, args),
 	       T_ARRAY);

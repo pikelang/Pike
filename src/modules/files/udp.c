@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.50 2003/10/24 19:05:41 mast Exp $
+|| $Id: udp.c,v 1.51 2003/10/27 23:25:35 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.50 2003/10/24 19:05:41 mast Exp $");
+RCSID("$Id: udp.c,v 1.51 2003/10/27 23:25:35 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -832,7 +832,7 @@ static void udp_get_type(INT32 args)
 
 void init_udp(void)
 {
-  start_new_program();
+  START_NEW_PROGRAM_ID (STDIO_UDP);
 
   ADD_STORAGE(struct udp_storage);
 
@@ -878,7 +878,7 @@ void init_udp(void)
 
   end_class("UDP",0);
 
-  start_new_program();
+  START_NEW_PROGRAM_ID (STDIO_SOCK);
 #ifdef SOCK_STREAM
   add_integer_constant("STREAM",SOCK_STREAM,0);
 #endif
@@ -902,7 +902,7 @@ void init_udp(void)
    simple_add_constant("SOCK",Pike_sp-1,0);
    pop_stack();
 
-   start_new_program();
+   START_NEW_PROGRAM_ID (STDIO_IPPROTO);
    add_integer_constant("IP",0,0);       /* Dummy protocol for TCP.  */
    add_integer_constant("HOPOPTS",0,0);  /* IPv6 Hop-by-Hop options.  */
    add_integer_constant("ICMP",1,0);     /* Internet Control Message Protocol.  */
