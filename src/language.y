@@ -1137,6 +1137,7 @@ void free_all_local_names()
     local_variables->variable[e].type=0;
   }
   local_variables->current_number_of_locals = 0;
+  local_variables->max_number_of_locals = 0;
 }
 
 static void push_locals()

@@ -981,6 +981,8 @@ void apply_low(struct object *o, int fun, int args)
     clear_svalues(sp, num_locals - args);
     sp += num_locals - args;
 #ifdef DEBUG
+    if(num_locals < num_args)
+      fatal("Wrong number of arguments or locals in function def.\n");
     fp->num_locals=num_locals;
     fp->num_args=num_args;
 #endif

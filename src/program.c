@@ -116,9 +116,10 @@ void start_new_program()
   low_my_binary_strcat((char *)&name,sizeof(name),&inherit_names);
   num_parse_error=0;
 
-    local_variables=ALLOC_STRUCT(locals);
+  local_variables=ALLOC_STRUCT(locals);
   local_variables->next=0;
   local_variables->current_number_of_locals=0;
+  local_variables->max_number_of_locals=0;
   local_variables->current_type=0;
   local_variables->current_return_type=0;
 }
@@ -532,7 +533,6 @@ void set_exit_callback(void (*exit)(char *,struct object *))
 {
   fake_program.exit=exit;
 }
-
 
 
 int low_reference_inherited_identifier(int e,struct lpc_string *name)
