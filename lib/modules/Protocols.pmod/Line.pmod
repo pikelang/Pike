@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.12 2000/12/16 22:32:01 nilsson Exp $
+ * $Id: Line.pmod,v 1.13 2000/12/23 17:03:05 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -8,23 +8,64 @@
 
 #pike __REAL_VERSION__
 
+//! Simple nonblocking line-oriented I/O.
 class simple
 {
   static object con;
-  static constant newline = "\r\n";
+  static constant line_separator = "\r\n";
 
-  function handle_data;
-  void handle_command(string data);
+  //! If this variable has been set, multiple lines will be accumulated,
+  //! until a line with a single @tt{.@} (period) is received. @[handle_data()]
+  //! will then be called with the accumulated data as the argument.
+  //!
+  //! @note
+  //! @[handle_data()] is one-shot, ie it will be cleared when it is called.
+  //!
+  //! The line with the single @tt{.@} (period) will not be in the
+  //! accumulated data.
+  //!
+  //! @seealso
+  //! @[handle_command()]
+  //!
+  function(string:void) handle_data;
+
+  //! This function will be called once for every line that is received.
+  //!
+  //! Overload this function as appropriate.
+  //!
+  //! @note
+  //! It will not be called if @[handle_data()] has been set.
+  //!
+  //! @[line] will not contain the line separator.
+  //!
+  //! @seealso
+  //! @[handle_data()]
+  //!
+  void handle_command(string line);
 
   static int timeout;		// Idle time before timeout.
   static int timeout_time;	// Time at which next timeout will occur.
 
+  //! Queue some data to send.
+  //!
+  //! @seealso
+  //! @[handle_commend()], @[handle_data()], @[disconnect()]
+  //!
   static void send(string s)
   {
     send_q->put(s);
     con->set_write_callback(write_callback);
   }
 
+  //! This function is called when a timeout occurrs.
+  //! 
+  //! Overload this function as appropriate.
+  //!
+  //! The default action is to shut down the connection immediately.
+  //!
+  //! @seealso
+  //! @[create()], @[touch_time()]
+  //!
   static void do_timeout()
   {
     if (con) {
@@ -58,6 +99,11 @@ class simple
     }
   }
 
+  //! Reset the timeout timer.
+  //!
+  //! @seealso
+  //! @[create()], @[do_timeout()]
+  //!
   void touch_time()
   {
     if (timeout > 0) {
@@ -70,9 +116,9 @@ class simple
   {
     if (handle_data) {
       if (line != ".") {
-	multi_line_buffer += line + newline;
+	multi_line_buffer += line + line_separator;
       } else {
-	function handle = handle_data;
+	function(string:void) handle = handle_data;
 	string data = multi_line_buffer;
 	handle_data = 0;
 	multi_line_buffer = "";
@@ -87,12 +133,13 @@ class simple
 
   static string read_line()
   {
-    int i = search(read_buffer, newline);
+    // FIXME: Should probably keep track of where the search ended last time.
+    int i = search(read_buffer, line_separator);
     if (i == -1) {
       return 0;
     }
-    string data = read_buffer[..i-1];			// Not the newline.
-    read_buffer = read_buffer[i+sizeof(newline)..];
+    string data = read_buffer[..i-1];		// Not the line separator.
+    read_buffer = read_buffer[i+sizeof(line_separator)..];
 
     return data;
   }
@@ -109,6 +156,15 @@ class simple
       _handle_command(line);
   }
 
+  //! Queue of data that is pending to send.
+  //!
+  //! The elements in the queue are either strings with data to send,
+  //! or @tt{0@} (zero) which is the end of file marker. The connection
+  //! will be closed when the end of file marker is reached.
+  //!
+  //! @seealso
+  //! @[send()], @[disconnect()]
+  //!
   object(ADT.Queue) send_q = ADT.Queue();
 
   static string write_buffer = "";
@@ -160,6 +216,17 @@ class simple
     }
   }
 
+  //! Disconnect the connection.
+  //!
+  //! Pushes an end of file marker onto the send queue @[send_q].
+  //!
+  //! @note
+  //! Note that the actual closing of the connection is delayed
+  //! until all data in the send queue has been sent.
+  //!
+  //! No more data will be read from the other end after this function
+  //! has been called.
+  //!
   void disconnect()
   {
     // Delayed disconnect.
@@ -168,6 +235,14 @@ class simple
     con->set_read_callback(0);
   }
     
+  //! This function is called when the connection has been closed
+  //! at the other end.
+  //!
+  //! Overload this function as appropriate.
+  //!
+  //! The default action is to shut down the connection on this side
+  //! as well.
+  //!
   static void close_callback()
   {
     if (handle_data || sizeof(read_buffer) || sizeof(multi_line_buffer)) {
@@ -178,10 +253,22 @@ class simple
     con = 0;
   }
 
-  void create(object con_, int|void timeout_)
+  //! Create a simple nonblocking line-based protocol handler.
+  //!
+  //! @[con] is the connection.
+  //!
+  //! @[timeout] is an optional timeout in seconds after which the connection
+  //! will be closed if there has been no data sent or received.
+  //!
+  //! If @[timeout] is @tt{0@} (zero), no timeout will be in effect.
+  //!
+  //! @seealso
+  //! @[touch_time()], @[do_timeout()]
+  //!
+  void create(object(Stdio.File) con, int|void timeout)
   {
-    con = con_;
-    timeout = timeout_;
+    local::con = con;
+    local::timeout = timeout;
 
     // Start the timeout handler.
     touch_time();
