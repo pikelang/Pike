@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.4 1998/11/16 18:59:12 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.5 1998/11/16 21:39:34 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -50,7 +50,8 @@ struct utf7_stor {
 static SIZE_T utf7_stor_offs = 0;
 
 static SIGNED char rev64t['z'-'+'+1];
-
+static char fwd64t[64]=
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static void f_create(INT32 args)
 {
@@ -582,6 +583,179 @@ static void f_feed_utf8e(INT32 args)
   push_object(this_object());
 }
 
+static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
+		       struct pike_string *str, struct pike_string *rep)
+{
+  INT32 l = str->len, dat = u7->dat;
+  int shift = u7->shift, datbit = u7->datbit;
+
+  switch(str->size_shift) {
+  case 0:
+    {
+      p_wchar0 c, *p = STR0(str);
+      while(l--)
+	if((c=*p++)>=33 && c<=125 && c!=43 && c!=92) {
+	  if(shift) {
+	    if(datbit) {
+	      string_builder_putchar(sb, fwd64t[dat<<(6-datbit)]);
+	      dat=0;
+	      datbit=0;
+	    }
+	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
+	      string_builder_putchar(sb, '-');
+	    shift = 0;  
+	  }
+	  string_builder_putchar(sb, c);
+	} else if(c==43 && !shift) {
+	  string_builder_putchar(sb, '+');
+	  string_builder_putchar(sb, '-');
+	} else {
+	  if(!shift) {
+	    string_builder_putchar(sb, '+');
+	    shift = 1;
+	  }
+	  dat=(dat<<16)|c;
+	  string_builder_putchar(sb, fwd64t[dat>>(datbit+10)]);
+	  string_builder_putchar(sb, fwd64t[(dat>>(datbit+4))&0x3f]);
+	  if((datbit+=4)>=6) {
+	    string_builder_putchar(sb, fwd64t[(dat>>(datbit-6))&0x3f]);
+	    datbit-=6;
+	  }
+	  dat&=(1<<datbit)-1;
+	}
+    }
+    break;
+  case 1:
+    {
+      p_wchar1 c, *p = STR1(str);
+      while(l--)
+	if((c=*p++)>=33 && c<=125 && c!=43 && c!=92) {
+	  if(shift) {
+	    if(datbit) {
+	      string_builder_putchar(sb, fwd64t[dat<<(6-datbit)]);
+	      dat=0;
+	      datbit=0;
+	    }
+	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
+	      string_builder_putchar(sb, '-');
+	    shift = 0;  
+	  }
+	  string_builder_putchar(sb, c);
+	} else if(c==43 && !shift) {
+	  string_builder_putchar(sb, '+');
+	  string_builder_putchar(sb, '-');
+	} else {
+	  if(!shift) {
+	    string_builder_putchar(sb, '+');
+	    shift = 1;
+	  }
+	  dat=(dat<<16)|c;
+	  string_builder_putchar(sb, fwd64t[dat>>(datbit+10)]);
+	  string_builder_putchar(sb, fwd64t[(dat>>(datbit+4))&0x3f]);
+	  if((datbit+=4)>=6) {
+	    string_builder_putchar(sb, fwd64t[(dat>>(datbit-6))&0x3f]);
+	    datbit-=6;
+	  }
+	  dat&=(1<<datbit)-1;
+	}
+    }
+    break;
+  case 2:
+    {
+      p_wchar2 c, *p = STR2(str);
+      while(l--)
+	if((c=*p++)>=33 && c<=125 && c!=43 && c!=92) {
+	  if(shift) {
+	    if(datbit) {
+	      string_builder_putchar(sb, fwd64t[dat<<(6-datbit)]);
+	      dat=0;
+	      datbit=0;
+	    }
+	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
+	      string_builder_putchar(sb, '-');
+	    shift = 0;  
+	  }
+	  string_builder_putchar(sb, c);
+	} else if(c==43 && !shift) {
+	  string_builder_putchar(sb, '+');
+	  string_builder_putchar(sb, '-');
+	} else if(c>0x10ffff) {
+	  if(rep != NULL) {
+	    u7->dat = dat;
+	    u7->shift = shift;
+	    u7->datbit = datbit;
+	    feed_utf7e(u7, sb, rep, NULL);
+	    dat = u7->dat;
+	    shift = u7->shift;
+	    datbit = u7->datbit;
+	  } else
+	    error("Character unsupported by encoding.\n");
+	} else {
+	  if(!shift) {
+	    string_builder_putchar(sb, '+');
+	    shift = 1;
+	  }
+	  if(c>0xffff) {
+	    dat=(dat<<16)|(0xd800+(c>>10)-64);
+	    string_builder_putchar(sb, fwd64t[dat>>(datbit+10)]);
+	    string_builder_putchar(sb, fwd64t[(dat>>(datbit+4))&0x3f]);
+	    if((datbit+=4)>=6) {
+	      string_builder_putchar(sb, fwd64t[(dat>>(datbit-6))&0x3f]);
+	      datbit-=6;
+	    }
+	    dat&=(1<<datbit)-1;
+	    c=0xdc00+(c&1023);
+	  }
+	  dat=(dat<<16)|c;
+	  string_builder_putchar(sb, fwd64t[dat>>(datbit+10)]);
+	  string_builder_putchar(sb, fwd64t[(dat>>(datbit+4))&0x3f]);
+	  if((datbit+=4)>=6) {
+	    string_builder_putchar(sb, fwd64t[(dat>>(datbit-6))&0x3f]);
+	    datbit-=6;
+	  }
+	  dat&=(1<<datbit)-1;
+	}
+    }
+    break;
+  }
+
+  u7->dat = dat;
+  u7->shift = shift;
+  u7->datbit = datbit;
+}
+
+static void f_feed_utf7e(INT32 args)
+{
+  struct pike_string *str;
+  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+
+  get_all_args("feed()", args, "%W", &str);
+
+  feed_utf7e((struct utf7_stor *)(((char*)fp->current_storage)+utf7_stor_offs),
+	     &cs->strbuild, str, cs->replace);
+
+  pop_n_elems(args);
+  push_object(this_object());
+}
+
+static void f_drain_utf7e(INT32 args)
+{
+  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+  struct utf7_stor *u7 =
+    (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
+
+  if(u7->shift) {
+    if(u7->datbit) {
+      string_builder_putchar(&cs->strbuild, fwd64t[u7->dat<<(6-u7->datbit)]);
+      u7->dat=0;
+      u7->datbit=0;
+    }
+    string_builder_putchar(&cs->strbuild, '-');
+    u7->shift = 0;  
+  }
+  f_drain(args);
+}
+
 void pike_module_init(void)
 {
   int i;
@@ -606,8 +780,7 @@ void pike_module_init(void)
 
   memset(rev64t, -1, sizeof(rev64t));
   for(i=0; i<64; i++)
-    rev64t["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	  "0123456789+/"[i]-'+']=i;
+    rev64t[fwd64t[i]-'+']=i;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
@@ -622,9 +795,13 @@ void pike_module_init(void)
   add_function("feed", f_feed_utf8, "function(string:object)", 0);
   add_program_constant("UTF8dec", utf8_program = end_program(), ID_STATIC|ID_NOMASK);
 
+  prog.u.program = utf7_program;
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_function("feed", f_feed_utf7e, "function(string:object)", 0);
+  add_function("drain", f_drain_utf7e, "function(:string)", 0);
   add_program_constant("UTF7enc", utf7e_program = end_program(), ID_STATIC|ID_NOMASK);
+  prog.u.program = std_cs_program;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
