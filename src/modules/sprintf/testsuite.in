@@ -41,7 +41,7 @@ test_eq(sprintf("%-=3s","f o bar gaz"),"f o\nbar\ngaz")
 dnl test_eq(sprintf("%/3s","f o bargaz"),"f o\nbar\ngaz")
 test_true(stringp(sprintf("%3#s","f\no\nbargaz\nonk")))
 test_true(stringp(sprintf("%3$s","f\no\nbargaz\nonk")))
-test_eq(sprintf("%-$79s\n","foo\nbar\ngazonk"),"foo    bar    gazonk\n")
+test_eq(sprintf("%-$79s","foo\nbar\ngazonk"),"foo    bar    gazonk\n")
 
 test_eq(sprintf("%*d",3,3),"  3")
 test_eq(sprintf("%'FOO'10s","BAR"),"FOOFOOFBAR")
