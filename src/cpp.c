@@ -358,6 +358,38 @@ while(1)					\
   break;					\
 }
 
+#define READSTRING2(nf)				\
+while(1)					\
+{						\
+  pos++;					\
+  if(pos>=len)					\
+  {						\
+    cpp_error(this,"End of file in string.");	\
+    break;					\
+  }						\
+						\
+  switch(data[pos])				\
+  {						\
+  case '"':  break;				\
+  case '\\':					\
+  {						\
+    int tmp;					\
+    READCHAR(tmp);				\
+    low_my_putchar(tmp, &nf);			\
+    continue;					\
+  }						\
+						\
+  case '\n':					\
+    PUTNL();					\
+    this->current_line++;			\
+  default:					\
+    low_my_putchar(data[pos], &nf);		\
+    continue;					\
+  }						\
+  pos++;					\
+  break;					\
+}
+
 void PUSH_STRING(char *str,
 		 INT32 len,
 		 dynamic_buffer *buf)
@@ -477,7 +509,7 @@ static INT32 low_cpp(struct cpp *this,
 		    INT32 len,
 		    int flags)
 {
-  INT32 pos, tmp, e;
+  INT32 pos, tmp, e, tmp2;
   
   for(pos=0;pos<len;)
   {
@@ -505,12 +537,21 @@ static INT32 low_cpp(struct cpp *this,
       break;
 
       /* Minor optimization */
-    case '!': case '@': case '$': case '%': case '^': case '&':
-    case '*': case '(': case ')': case '-': case '=': case '+':
-    case '{': case '}': case ':': case '?': case '`': case ';':
-    case '<': case '>': case ',': case '.': case '~': case '[':
-    case ']': case '|':
-      PUTC(data[pos-1]);
+      case '<':
+	if(data[pos]=='<'  &&
+	   data[pos+1]=='<'  &&
+	   data[pos+2]=='<'  &&
+	   data[pos+3]=='<'  &&
+	   data[pos+4]=='<'  &&
+	   data[pos+5]=='<')
+	  cpp_error(this,"CVS conflict detected");
+	
+      case '!': case '@': case '$': case '%': case '^': case '&':
+      case '*': case '(': case ')': case '-': case '=': case '+':
+      case '{': case '}': case ':': case '?': case '`': case ';':
+      case '>': case ',': case '.': case '~': case '[':
+      case ']': case '|':
+	PUTC(data[pos-1]);
       break;
       
     default:
@@ -795,16 +836,41 @@ static INT32 low_cpp(struct cpp *this,
       break;
     }
 
+      case '"':
+      {
+	dynamic_buffer nf;
+	initialize_buf(&nf);
+	
+	READSTRING2(nf);
+	PUSH_STRING(nf.s.str,
+		    nf.s.len,
+		    &this->buf);
+	toss_buffer(&nf);
+	break;
+      }
+
+      case 's':
+	if(WGOBBLE("string"))
+	{
+	  tmp2=1;
+	  goto do_include;
+	}
+	
+      goto unknown_preprocessor_directive;
+
     case 'i': /* include, if, ifdef */
       if(WGOBBLE("include"))
+      {
+	tmp2=0;
+      do_include:
 	{
 	  struct svalue *save_sp=sp;
 	  SKIPSPACE();
-
+	  
 	  check_stack(3);
-
+	  
 	  switch(data[pos++])
-	    {
+	  {
 	    case '"':
 	      {
 		dynamic_buffer nf;
@@ -871,7 +937,6 @@ static INT32 low_cpp(struct cpp *this,
 	      break;
 	    }
 	    
-	    
 	    {
 	      char buffer[47];
 	      struct pike_string *save_current_file;
@@ -884,12 +949,17 @@ static INT32 low_cpp(struct cpp *this,
 	      low_my_binary_strcat("# 1 ",4,&this->buf);
 	      PUSH_STRING(new_file->str,new_file->len, & this->buf);
 	      low_my_putchar('\n',&this->buf);
-	      
-	      
-	      low_cpp(this,
-		      sp[-1].u.string->str,
-		      sp[-1].u.string->len,
-		      flags&~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+	      if(tmp2)
+	      {
+		PUSH_STRING(sp[-1].u.string->str,
+			    sp[-1].u.string->len,
+			    &this->buf);
+	      }else{
+		low_cpp(this,
+			sp[-1].u.string->str,
+			sp[-1].u.string->len,
+			flags&~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+	      }
 	      
 	      free_string(this->current_file);
 	      this->current_file=save_current_file;
@@ -906,6 +976,7 @@ static INT32 low_cpp(struct cpp *this,
 	  
 	  break;
 	}
+      }
 
       if(WGOBBLE("if"))
       {
