@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.23 2002/12/09 15:14:47 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.24 2002/12/10 12:42:29 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -8,8 +8,9 @@
 
 array(string) find_root(string path) {
   if(file_stat(path+"/.autodoc")) {
-    return replace((Stdio.read_file(path+"/.autodoc")/"\n")[0],
-		   " ", ".")/"." - ({""});
+    // Note .autodoc files are space-separated to allow for mudulenames like
+    //      "7.0".
+    return (Stdio.read_file(path+"/.autodoc")/"\n")[0]/" " - ({""});
   }
   if (!sizeof(path)) return ({});
   array(string) parts = path/"/";
@@ -115,6 +116,11 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
       array(string) parents = rootless?({}):find_root(dirname(filename));
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];
+#if 0
+      werror("parents: %{%O, %}\n"
+	     "type: %O\n"
+	     "name: %O\n", parents, type, name);
+#endif /* 0 */
       if(name == "master.pike")
 	name = "/master";
       if(name == "module" && (filename/"/")[-1] != "module.pike" && !rootless) {
