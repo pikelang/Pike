@@ -4,7 +4,11 @@
 #include "interpret.h"
 
 #include "shuffler.h"
-/* $Id: a_source_pikestring.c,v 1.2 2002/05/29 05:47:26 per Exp $ */
+/* $Id: a_source_pikestring.c,v 1.3 2002/05/29 07:39:51 per Exp $ */
+
+/* Source: String
+ * Argument: 8-bit string
+ */
 
 struct ps_source
 {
