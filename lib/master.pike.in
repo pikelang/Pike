@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.234 2002/12/01 23:47:00 mast Exp $
+// $Id: master.pike.in,v 1.235 2002/12/03 21:17:58 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1059,7 +1059,7 @@ class dirnode
 
   string _sprintf(int as)
     {
-      return sprintf("master()->dirnode(%O)",dirname);
+      return as=='O' && sprintf("master()->dirnode(%O)",dirname);
     }
   
 };
@@ -1074,7 +1074,7 @@ class joinnode
 
   string _sprintf(int as)
     {
-      return sprintf("master()->joinnode(%O)",joined_modules);
+      return as=='O' && sprintf("master()->joinnode(%O)",joined_modules);
     }
 
   void create(array(object|mapping) _joined_modules)
@@ -1518,9 +1518,9 @@ class CompatResolver
 	return master_read_file(f);
     }
 
-  string _sprintf()
+  string _sprintf(int t)
     {
-      return sprintf("CompatResolver(%s)",ver);
+      return t=='O' && sprintf("CompatResolver(%O)",ver);
     }
 }
 
@@ -2855,7 +2855,12 @@ class Version
   int `==(Version v) { return CMP(v)== 0; }
   int _hash() { return major * 4711 + minor ; }
 
-  string _sprintf() { return sprintf("%d.%d",major,minor); }
+  string _sprintf(int t) {
+    switch(t) {
+    case 's': return sprintf("%d.%d",major,minor);
+    case 'O': return sprintf("%O(%s)", this_program, this_object());
+    }
+  }
 
   //! The version object can be casted into a string.
   mixed cast(string type)
@@ -2978,7 +2983,10 @@ CompatResolver get_compilation_handler(int major, int minor)
   return ret;
 }
 
-string _sprintf()
+string _sprintf(int t)
 {
-  return "master()";
+  switch(t) {
+  case 't': return "master";
+  case 'O': return "master()";
+  }
 }
