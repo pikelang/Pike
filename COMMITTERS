@@ -30,7 +30,7 @@ Commit access for specific areas:
 
          grendel   Marek Habersack <grendel@caudium.net> (deb packages)
             kiwi   Xavier Beaudouin <kiwi@oav.net>       (*BSD ports)
-         finnman   Andreas Finnman <x02andfi@ida.liu.se> (wvware lib)
+         finnman   Andreas Finnman <x02andfi@ida.liu.se> (bzip2 lib)
             peta   Andreas Pettersson <andpe445@student.liu.se> (ADT)
 
 Since Pike/7.2 still is hosted by Roxen Internet Software, this
@@ -87,3 +87,6 @@ People who have committed to Pike historically by order of appearance:
             bill   Bill Welliver <Bill.Welliver@fairchildsemi.com>
          grendel   Marek Habersack <grendel@caudium.net>
             kiwi   Xavier Beaudouin <kiwi@oav.net>
+         finnman   Andreas Finnman <x02andfi@ida.liu.se>
+          norrby   Mattias Norrby <norrby@lysator.liu.se>
+            peta   Andreas Pettersson <andpe445@student.liu.se>
