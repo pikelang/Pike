@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.125 2003/11/14 00:15:06 mast Exp $
+|| $Id: cpp.c,v 1.126 2003/11/14 00:41:26 mast Exp $
 */
 
 #include "global.h"
@@ -24,6 +24,7 @@
 #include "time.h"
 #include "stuff.h"
 #include "version.h"
+#include "pike_types.h"
 
 #include <ctype.h>
 
