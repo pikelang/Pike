@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.21 2001/12/14 11:31:26 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.22 2002/01/01 21:49:28 nilsson Exp $
  *
  */
 
@@ -55,6 +55,8 @@ class Node
     sort(method_children->name, method_children);
 
     method_children = check_uniq(method_children);
+
+    /*
     foreach(method_children, Node m)
       if( (<"create","destroy">)[m->name] ) {
 	method_children -= ({ m });
@@ -63,6 +65,8 @@ class Node
 	if(d)
 	  data += "<docgroup" + d + "/docgroup>";
       }
+    */
+
     data = make_faked_wrapper(data);
   }
 
@@ -109,7 +113,9 @@ class Node
   array(string) my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
     if(m["homogen-type"]) {
-      if( m["homogen-type"]=="method" ) {
+      switch( m["homogen-type"] ) {
+
+      case "method":
 	if( m["homogen-name"] ) {
 	  string name = m["homogen-name"];
 	  if(m->belongs) {
@@ -134,20 +140,32 @@ class Node
 	    ({ Node( "method", name, c, this_object() ) });
 	}
 	return ({ "" });
-      }
-      else if( m["homogen-type"]=="constant" ) {
+	break;
+
+      case "constant":
+      case "variable":
 	string path = make_class_path();
 	if(sizeof(path)) path += ".";
-	consts[path + m["homogen-name"]] = 1;
-      }
-      else if( m["homogen-type"]=="variable" ) {
-	string path = make_class_path();
-	if(sizeof(path)) path += ".";
-	consts[path + m["homogen-name"]] = 1;
+	if(!m["homogen-name"]) {
+	  Parser.HTML()->add_tags
+	    ( ([ "constant":
+		 lambda(Parser.HTML p, mapping m, string c) {
+		   consts[path + m->name] = 1;
+		 },
+		 "variable":
+		 lambda(Parser.HTML p, mapping m, string c) {
+		   consts[path + m->name] = 1;
+		 }
+	    ]) )->finish(c);
+	}
+	else
+	  consts[path + m["homogen-name"]] = 1;
+	break;
+
       }
     }
-    else
-      return 0;
+
+    return 0;
   }
 
   static Parser.HTML get_parser() {
