@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.640 2002/11/18 15:10:06 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.641 2002/11/18 19:01:35 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1822,6 +1822,10 @@ if test x$"pike_cv_sys_os" != xWindows_NT ; then
 
 echo Searching for include-file directories...
 
+#Don't add include dirs if they give us warnings...
+OLD_ac_c_preproc_warn_flag="$ac_c_preproc_warn_flag"
+ac_c_preproc_warn_flag=yes
+
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
   real_include_dirs=''
   for d in `echo ${with_include_path} | sed 's/:/ /g'` \
@@ -1877,6 +1881,9 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
 else
   :
 fi
+
+#Restore preprocessor warning sensitivity
+ac_c_preproc_warn_flag="$OLD_ac_c_preproc_warn_flag"
 
 #CPPFLAGS="${CPPFLAGS} -I$srcdir -I`pwd`"
 
