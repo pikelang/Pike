@@ -1,4 +1,10 @@
-/* $Id: operator.c,v 1.4 1997/03/25 06:13:48 mirar Exp $ */
+/* $Id: operator.c,v 1.5 1997/04/03 07:00:33 mirar Exp $ */
+
+/*
+**! module Image
+**! class image
+*/
+
 #include "global.h"
 
 #include <math.h>
@@ -34,7 +40,14 @@ extern struct program *image_program;
 					   			\
    if (!THIS->img) error("no image\n");	   			\
    		   			   			\
-   if (args && sp[-args].type==T_ARRAY				\
+   if (args && sp[-args].type==T_INT)				\
+   {								\
+      rgb.r=sp[-args].u.integer;				\
+      rgb.g=sp[-args].u.integer;				\
+      rgb.b=sp[-args].u.integer;				\
+      oper=NULL;						\
+   }								\
+   else if (args && sp[-args].type==T_ARRAY			\
        && sp[-args].u.array->size>=3				\
        && sp[-args].u.array->item[0].type==T_INT		\
        && sp[-args].u.array->item[1].type==T_INT		\
@@ -77,9 +90,27 @@ extern struct program *image_program;
    if (oper)
 
 
+/*
+**! method object `-(object operand)
+**! method object `-(array(int) color)
+**! method object `-(int value)
+**!	makes a new image out of the difference
+**! returns the new image object
+**!
+**! object operand
+**!	the other image to compare with;
+**!	the images must have the same size.
+**! array(int) color
+**!	an array in format ({r,g,b}), this is equal
+**!	to using an uniform-colored image.
+**! int value
+**!	equal to ({value,value,value}).
+**! see also: `+, `|, `&, `*, add_layers
+*/
+
 void image_operator_minus(INT32 args)
 {
-STANDARD_OPERATOR_HEADER("'-")
+STANDARD_OPERATOR_HEADER("`-")
    while (i--)
    {
       d->r=absdiff(s1->r,s2->r);
@@ -98,9 +129,26 @@ STANDARD_OPERATOR_HEADER("'-")
    THREADS_DISALLOW();
 }
 
+/*
+**! method object `+(object operand)
+**! method object `+(array(int) color)
+**! method object `+(int value)
+**!	adds two images; values are truncated at 255.
+**! returns the new image object
+**!
+**! object operand
+**!	the image which to add.
+**! array(int) color
+**!	an array in format ({r,g,b}), this is equal
+**!	to using an uniform-colored image.
+**! int value
+**!	equal to ({value,value,value}).
+**! see also: `-, `|, `&, `*, add_layers
+*/
+
 void image_operator_plus(INT32 args)
 {
-STANDARD_OPERATOR_HEADER("'+")
+STANDARD_OPERATOR_HEADER("`+")
    while (i--)
    {
       d->r=min(s1->r+s2->r,255);
@@ -119,10 +167,34 @@ STANDARD_OPERATOR_HEADER("'+")
    THREADS_DISALLOW();
 }
 
+/*
+**! method object `*(object operand)
+**! method object `*(array(int) color)
+**! method object `*(int value)
+**!	Multiplies pixel values and creates a new image.
+**! returns the new image object
+**!
+**!	This can be useful to lower the values of an image,
+**!	making it greyer, for instance:
+**!
+**!	<pre>image=image*128+64;</pre>
+**!
+**! object operand
+**!	the other image to multiply with;
+**!	the images must have the same size.
+**! array(int) color
+**!	an array in format ({r,g,b}), this is equal
+**!	to using an uniform-colored image.
+**! int value
+**!	equal to ({value,value,value}).
+**!
+**! see also: `-, `+, `|, `&, add_layers
+*/
+
 void image_operator_multiply(INT32 args)
 {
    double q=1/255.0;
-STANDARD_OPERATOR_HEADER("'+")
+STANDARD_OPERATOR_HEADER("`*")
    while (i--)
    {
       d->r=floor(s1->r*q*s2->r+0.5);
@@ -141,9 +213,28 @@ STANDARD_OPERATOR_HEADER("'+")
    THREADS_DISALLOW();
 }
 
+/*
+**! method object `|(object operand)
+**! method object `|(array(int) color)
+**! method object `|(int value)
+**!	makes a new image out of the maximum pixels values
+**!	
+**! returns the new image object
+**!
+**! object operand
+**!	the other image to compare with;
+**!	the images must have the same size.
+**! array(int) color
+**!	an array in format ({r,g,b}), this is equal
+**!	to using an uniform-colored image.
+**! int value
+**!	equal to ({value,value,value}).
+**! see also: `-, `+, `&, `*, add_layers
+*/
+
 void image_operator_maximum(INT32 args)
 {
-STANDARD_OPERATOR_HEADER("'| 'maximum'")
+STANDARD_OPERATOR_HEADER("`| 'maximum'")
    while (i--)
    {
       d->r=max(s1->r,s2->r);
@@ -162,9 +253,28 @@ STANDARD_OPERATOR_HEADER("'| 'maximum'")
    THREADS_DISALLOW();
 }
 
+/*
+**! method object `&(object operand)
+**! method object `&(array(int) color)
+**! method object `&(int value)
+**!	makes a new image out of the minimum pixels values
+**!	
+**! returns the new image object
+**!
+**! object operand
+**!	the other image to compare with;
+**!	the images must have the same size.
+**! array(int) color
+**!	an array in format ({r,g,b}), this is equal
+**!	to using an uniform-colored image.
+**! int value
+**!	equal to ({value,value,value}).
+**! see also: `-, `+, `|, `*, add_layers
+*/
+
 void image_operator_minimum(INT32 args)
 {
-STANDARD_OPERATOR_HEADER("'& 'minimum'")
+STANDARD_OPERATOR_HEADER("`& 'minimum'")
    while (i--)
    {
       d->r=min(s1->r,s2->r);

@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.5 1997/03/25 06:59:06 mirar Exp $ */
+/* $Id: blit.c,v 1.6 1997/04/03 07:00:08 mirar Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -556,8 +556,8 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 
 
 /*
-**! method object add_layers(array(array(int|object)) layers)
-**! method object add_layers(array(array(int|object)) layers,int x1,int y1,int x2,int y2)
+**! method object add_layers(array(int|object)) layer0,...)
+**! method object add_layers(int x1,int y1,int x2,int y2,array(int|object)) layer0,...)
 **!	Using the called object as base, adds layers using masks,
 **!	opaque channel values and special methods.
 **!
@@ -591,13 +591,13 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 **!
 **! returns a new image object
 **!
-**! object image
+**! arg array(int|object) layer0
 **!	image to paste
-**! object mask
-**!	mask image
-**! int x
-**! int y
-**!	where to paste the image; default is 0,0
+**! arg int x1
+**! arg int y1
+**! arg int x2
+**! arg int y2
+**!	rectangle for cropping
 **!
 **! see also: paste_mask, paste_alpha, paste_alpha_color, `|, `&, `*, `+, `-
 */
@@ -686,7 +686,7 @@ void image_add_layers(INT32 args)
 	  || a->item[0].u.object->prog!=image_program)
       {
 	 free(layer);
-	 error("Illegal array contents (wrong or no image) to image->add_layers()\n");
+	 error("Illegal array contents, layer %d (argument %d) (wrong or no image) to image->add_layers()\n",layers-i,args-i+1);
       }
       img=(struct image*)a->item[0].u.object->storage;
       if (!img->img 
@@ -694,7 +694,7 @@ void image_add_layers(INT32 args)
 	  || img->ysize != THIS->ysize)
       {
 	 free(layer);
-	 error("Illegal array contents (no image or wrong image size) to image->add_layers()\n");
+	 error("Illegal array contents, layer %d (argument %d) (no image or wrong image size) to image->add_layers()\n",layers-i,args-i+1);
       }
       layer[j].s=img->img;
 
@@ -710,7 +710,7 @@ void image_add_layers(INT32 args)
 	     || a->item[1].u.object->prog!=image_program)
 	 {
 	    free(layer);
-	    error("Illegal array contents (wrong or no image for mask) to image->add_layers()\n");
+	    error("Illegal array contents, layer %d (argument %d) (wrong or no image for mask) to image->add_layers()\n",layers-i,args-i+1);
 	 }
 	 img=(struct image*)a->item[1].u.object->storage;
 	 if (!img->img 
@@ -718,7 +718,7 @@ void image_add_layers(INT32 args)
 	     || img->ysize != THIS->ysize)
 	 {
 	    free(layer);
-	    error("Illegal array contents (no mask or wrong mask size) to image->add_layers()\n");
+	    error("Illegal array contents, layer %d (argument %d) (no mask or wrong mask size) to image->add_layers()\n",layers-i,args-i+1);
 	 }
 	 layer[j].m=img->img;
       }
@@ -728,7 +728,7 @@ void image_add_layers(INT32 args)
 	 if (a->item[2].type!=T_INT)
 	 {
 	    free(layer);
-	    error("Illegal array contents (illegal opaque) to image->add_layers()\n");
+	    error("Illegal array contents, layer %d (argument %d) (illegal opaque) to image->add_layers()\n",layers-i,args-i+1);
 	 }
 	 layer[j].opaque=a->item[2].u.integer;
       }
@@ -740,15 +740,13 @@ void image_add_layers(INT32 args)
 	 if (a->item[3].type!=T_INT)
 	 {
 	    free(layer);
-	    error("Illegal array contents (illegal method) to image->add_layers()\n");
+	    error("Illegal array contents, layer %d (argument %d) (illegal method) to image->add_layers()\n",layers-i,args-i+1);
 	 }
 	 layer[j].method=a->item[3].u.integer;
       }
       else
 	 layer[j].method=LAYER_NOP;
    }
-
-   pop_n_elems(args);
 
    push_int(1+x2-x1);
    push_int(1+y2-y1);
@@ -824,6 +822,8 @@ void image_add_layers(INT32 args)
 #include "blit_layer_include.h"
    }
 
+
+   pop_n_elems(args);
 
    free(layer);
 

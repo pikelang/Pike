@@ -4,8 +4,13 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.5 1997/03/18 17:36:23 mirar Exp $ 
+$Id: togif.c,v 1.6 1997/04/03 07:00:43 mirar Exp $ 
 
+*/
+
+/*
+**! module Image
+**! class image
 */
 
 #include "global.h"
@@ -447,6 +452,19 @@ int image_decode_gif(struct image *dest,struct image *dest_alpha,
 
 
 
+/*
+**! method object fromgif(string gif)
+**!	Reads GIF data to the called image object.
+**!
+**!	GIF animation delay or loops are ignored,
+**!	and the resulting image is the written result.
+**! returns the called object
+**! arg string pnm
+**!	pnm data, as a string
+**! see also: togif, frompnm
+**! known bugs: yes, it does -- it may even do segment overrides...
+*/
+
 void image_fromgif(INT32 args)
 {
    if (sp[-args].type!=T_STRING)
@@ -481,6 +499,34 @@ static INLINE void getrgb(struct image *img,
    else
       img->alpha=0;
 }
+
+/*
+**! method string togif()
+**! method string togif(int num_colors)
+**! method string togif(array(array(int)) colors)
+**! method string togif(int trans_r,int trans_g,int trans_b)
+**! method string togif(int num_colors,int trans_r,int trans_g,int trans_b)
+**! method string togif(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
+**! method string togif_fs()
+**! method string togif_fs(int num_colors)
+**! method string togif_fs(array(array(int)) colors)
+**! method string togif_fs(int trans_r,int trans_g,int trans_b)
+**! method string togif_fs(int num_colors,int trans_r,int trans_g,int trans_b)
+**! method string togif_fs(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
+**!	Makes GIF data. The togif_fs variant uses floyd-steinberg 
+**!	dithereing.
+**! returns the GIF data
+**!
+**! arg int num_colors
+**!	number of colors to quantize to (default is 256) 
+**! array array(array(int)) colors
+**!	colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
+**! arg int trans_r
+**! arg int trans_g
+**! arg int trans_b
+**!	one color, that is to be transparent.
+**! see also: togif_begin, togif_add, togif_end, toppm, fromgif
+*/
 
 void image_togif(INT32 args)
 {
@@ -535,6 +581,27 @@ void image_togif_fs(INT32 args)
    push_string( image_encode_gif( THIS,ct, transparent, 1, closest) );
    colortable_free(ct);
 }
+
+/*
+**! method string gif_begin()
+**! method string gif_begin(int num_colors)
+**! method string gif_begin(array(array(int)) colors)
+**!	Makes GIF header. With no argument, there is no
+**!	global colortable (palette).
+**! returns the GIF data
+**!
+**! arg int num_colors
+**!	number of colors to quantize to (default is 256) 
+**! array array(array(int)) colors
+**!	colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
+**! see also: gif_add, gif_end, togif, gif_netscape_loop
+**!
+**!
+**! method string gif_end()
+**!	Ends GIF data.
+**! returns the GIF data.
+**! see also: gif_begin
+*/
 
 void image_gif_begin(INT32 args)
 {
@@ -599,6 +666,17 @@ void image_gif_end(INT32 args)
    push_string(make_shared_binary_string(";",1));
 }
 
+/*
+**! method string gif_netscape_loop()
+**! method string gif_netscape_loop(int loops)
+**!	
+**! returns a gif chunk that defines that the GIF animation should loop
+**!
+**! arg int loops
+**!	number of loops, default is 65535.
+**! see also: gif_add, gif_begin, gif_end
+*/
+
 void image_gif_netscape_loop(INT32 args)
 {
    unsigned short loops=0;
@@ -634,7 +712,8 @@ CHRONO("gif add init");
    initialize_buf(&buf);
 
    if (args==0) x=y=0;
-   else if (sp[-args].type!=T_INT
+   else if (args<2
+	    || sp[-args].type!=T_INT
 	    || sp[1-args].type!=T_INT)
       error("Illegal argument(s) to image->gif_add()\n");
    else 
@@ -768,6 +847,59 @@ CHRONO("done");
    pop_n_elems(args);
    push_string(low_free_buf(&buf));
 }
+
+/*
+**! method string gif_add()
+**! method string gif_add(int x,int y)
+**! method string gif_add(int x,int y,int delay_cs)
+**! method string gif_add(int x,int y,float delay_s)
+**! method string gif_add(int x,int y,int num_colors,int delay_cs)
+**! method string gif_add(int x,int y,int num_colors,float delay_s)
+**! method string gif_add(int x,int y,array(array(int)) colors,int delay_cs)
+**! method string gif_add(int x,int y,array(array(int)) colors,float delay_s)
+**! method string gif_add_fs()
+**! method string gif_add_fs(int x,int y)
+**! method string gif_add_fs(int x,int y,int delay_cs)
+**! method string gif_add_fs(int x,int y,float delay_s)
+**! method string gif_add_fs(int x,int y,int num_colors,int delay_cs)
+**! method string gif_add_fs(int x,int y,int num_colors,float delay_s)
+**! method string gif_add_fs(int x,int y,array(array(int)) colors,int delay_cs)
+**! method string gif_add_fs(int x,int y,array(array(int)) colors,float delay_s)
+**! method string gif_add_nomap()
+**! method string gif_add_nomap(int x,int y)
+**! method string gif_add_nomap(int x,int y,int delay_cs)
+**! method string gif_add_nomap(int x,int y,float delay_s)
+**! method string gif_add_nomap(int x,int y,int num_colors,int delay_cs)
+**! method string gif_add_nomap(int x,int y,int num_colors,float delay_s)
+**! method string gif_add_nomap(int x,int y,array(array(int)) colors,int delay_cs)
+**! method string gif_add_nomap(int x,int y,array(array(int)) colors,float delay_s)
+**! method string gif_add_fs_nomap()
+**! method string gif_add_fs_nomap(int x,int y)
+**! method string gif_add_fs_nomap(int x,int y,int delay_cs)
+**! method string gif_add_fs_nomap(int x,int y,float delay_s)
+**! method string gif_add_fs_nomap(int x,int y,int num_colors,int delay_cs)
+**! method string gif_add_fs_nomap(int x,int y,int num_colors,float delay_s)
+**! method string gif_add_fs_nomap(int x,int y,array(array(int)) colors,int delay_cs)
+**! method string gif_add_fs_nomap(int x,int y,array(array(int)) colors,float delay_s)
+**!	Makes a GIF (sub)image data chunk, to be placed 
+**!	at the given position. The "fs" versions uses
+**!	floyd-steinberg dithering, and the "nomap" versions
+**!	have no local colormap.
+**! returns the GIF data
+**!
+**! arg int x
+**! arg int y
+**!	the location of this subimage
+**! arg int delay_cs
+**!     frame delay in centiseconds 
+**! arg float delay_s
+**!     frame delay in seconds
+**! arg int num_colors
+**!	number of colors to quantize to (default is 256) 
+**! arg array array(array(int)) colors
+**!	colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
+**! see also: gif_add, gif_end, gif_netscape_loop, togif
+*/
 
 void image_gif_add(INT32 args)
 {

@@ -1,4 +1,9 @@
-/* $Id: x.c,v 1.5 1997/03/23 14:32:04 mirar Exp $ */
+/* $Id: x.c,v 1.6 1997/04/03 07:00:46 mirar Exp $ */
+
+/*
+**! module Image
+**! class image
+*/
 
 #include "global.h"
 
@@ -7,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.5 1997/03/23 14:32:04 mirar Exp $");
+RCSID("$Id: x.c,v 1.6 1997/04/03 07:00:46 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -26,6 +31,13 @@ struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
+/*
+**! method string cast(string type)
+**! returns the image data as a string ("rgbrgbrgb...")
+**! see also: toppm, togif, tozbgr, to8bit, to8bit_rgbcube
+**! known bugs: always casts to string...
+*/
+
 void image_cast(INT32 args)
 {
   /* CHECK TYPE TO CAST TO HERE! FIXME FIXME FIXME! */
@@ -34,6 +46,18 @@ void image_cast(INT32 args)
 					THIS->xsize*THIS->ysize
 					*sizeof(rgb_group)));
 }
+
+/*
+**! method string to8bit(array(array(int)) colors)
+**! method string to8bit_fs(array(array(int)) colors)
+**! method string to8bit_closest(array(array(int)) colors)
+**!     Maps the image to the given colors and returns 
+**!	the 8 bit data.
+**!
+**!	to8bit_fs uses floyd-steinberg dithering
+**! returns the calculated string
+**! see also: to8bit_rgbcube, tozbgr, map_fast, map_closest, select_colors, tobitmap
+*/
 
 void image_to8bit_closest(INT32 args)
 {
@@ -155,6 +179,12 @@ void image_to8bit_fs(INT32 args)
 }
 
 
+/*
+**! method string tozbgr(array(array(int)) colors)
+**! returns the image data as a string ("zbgrzbgr...", where z is zero...)
+**! see also: cast, to8bit, to8bit_rgbcube, tobitmap
+*/
+
 void image_tozbgr(INT32 args)
 {
    unsigned char *d;
@@ -182,6 +212,29 @@ void image_tozbgr(INT32 args)
 
    push_string(end_shared_string(sres));
 }
+
+/*
+**! method string to8bit_rgbcube(int red,int green,int blue)
+**! method string to8bit_rgbcube(int red,int green,int blue,string map)
+**! method string to8bit_rgbcube_rdither(int red,int green,int blue)
+**! method string to8bit_rgbcube_rdither(int red,int green,int blue,string map)
+**!     Maps the image into a colorcube with the given 
+**!	dimensions. Red is least significant, blue is most.
+**!
+**!	The "rdither" type of method uses a random dither algoritm.
+**! arg int red
+**! arg int green
+**! arg int blue
+**!	The sides of the colorcube. Not the number of bits!
+**! arg string map
+**!	Map this position in the colorcube to another value,
+**!	ie: say we have position red=1,green=2,blue=3 in a colorcube of
+**!	6󬝲, we have the index 1+2*6+3*6*6=121. If the 
+**!	map-string contains '�' in position 121, the resulting
+**!	byte is '�' or 229.
+**! returns the calculated string
+**! see also: tozbgr, to8bit, tobitmap
+*/
 
 void image_to8bit_rgbcube(INT32 args)
 /*
@@ -337,6 +390,18 @@ void image_to8bit_rgbcube_rdither(INT32 args)
   pop_n_elems(args);
   push_string(end_shared_string(res));
 }
+
+/*
+**! method string tobitmap();
+**!     Maps the image to a bitmap.
+**!
+**!	Bit 0 is the leftmost pixel, and the rows are aligned to 
+**!	bytes.
+**!
+**!	Any pixel value other then black results in a set bit.
+**! returns the calculated string
+**! see also: tozbgr, to8bit, to8bit_rgbcube, cast
+*/
 
 void image_tobitmap(INT32 args)
 {

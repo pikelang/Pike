@@ -1,6 +1,11 @@
 #include <config.h>
 
-/* $Id: font.c,v 1.4 1997/03/17 03:08:00 hubbe Exp $ */
+/*
+**! module Image
+**! class font
+*/
+
+/* $Id: font.c,v 1.5 1997/04/03 07:00:17 mirar Exp $ */
 
 #include "global.h"
 

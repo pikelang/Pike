@@ -1,4 +1,9 @@
-/* $Id: dct.c,v 1.4 1997/03/17 03:07:59 hubbe Exp $ */
+/* $Id: dct.c,v 1.5 1997/04/03 07:00:13 mirar Exp $ */
+
+/*
+**! module Image
+**! class image
+*/
 
 #include "global.h"
 
@@ -28,6 +33,30 @@ extern struct program *image_program;
 
 static const double c0=0.70710678118654752440;
 static const double pi=3.14159265358979323846;
+
+/*
+**! method object dct(int newx,int newy)
+**!	Scales the image to a new size.
+**!	
+**!	Method for scaling is rather complex;
+**!	the image is transformed via a cosine transform,
+**!	and then resampled back.
+**!
+**!	This gives a quality-conserving upscale,
+**!	but the algorithm used is n*n+n*m, where n
+**!	and m is pixels in the original and new image.
+**!
+**!	Recommended wrapping algorithm is to scale
+**!	overlapping parts of the image-to-be-scaled.
+**!
+**!	This functionality is actually added as an
+**!	true experiment, but works...
+**! returns the new image object
+**! arg int newx
+**! arg int newy
+**!	new image size in pixels
+**!
+*/
 
 void image_dct(INT32 args)
 {
@@ -67,7 +96,8 @@ void image_dct(INT32 args)
    }
    else error("Illegal arguments to image->dct()\n");
 
-   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1)))
+   if (!(img->img=(rgb_group*)malloc(sizeof(rgb_group)*
+				     img->xsize*img->ysize+1)))
    {
       free(area);
       free(costbl);

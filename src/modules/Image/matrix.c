@@ -1,4 +1,9 @@
-/* $Id: matrix.c,v 1.3 1997/03/17 03:08:01 hubbe Exp $ */
+/* $Id: matrix.c,v 1.4 1997/04/03 07:00:26 mirar Exp $ */
+
+/*
+**! module Image
+**! class image
+*/
 
 #include "global.h"
 
@@ -113,7 +118,7 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
 #define _scale_add_rgb(dest,src,factor) \
    ((dest)->r+=(src)->r*(factor), \
     (dest)->g+=(src)->g*(factor), \
-    (dest)->b+=(src)->b*(factor)) 
+    (dest)->b+=(src)->b*(factor))
 #define scale_add_pixel(dest,dx,src,sx,factor) \
    _scale_add_rgb(dest,src,factor)
 
@@ -132,7 +137,7 @@ static INLINE void scale_add_line(rgbd_group *new,INT32 yn,INT32 newx,
 	 xndxd=py*(1.0-decimals(xn));
 	 if (xndxd)
 	    scale_add_pixel(new,(INT32)xn,img,x,xndxd);
-	 if (dx>=1.0 && (xd=(INT32)(xn+dx)-(INT32)(xn))>1) 
+	 if (dx>=1.0 && (xd=(INT32)(xn+dx)-(INT32)(xn))>1)
             while (--xd)
 	    {
 	       new++;
@@ -167,11 +172,11 @@ CHRONO("scale begin");
    new=malloc(newx*newy*sizeof(rgbd_group) +1);
    if (!new) error("Out of memory!\n");
 
-   for (y=0; y<newx*newy; y++) 
+   for (y=0; y<newx*newy; y++)
       new[y].r=new[y].g=new[y].b=0.0;
-   
-   dx=((double)newx-0.000001)/source->xsize; 
-   dy=((double)newy-0.000001)/source->ysize; 
+
+   dx=((double)newx-0.000001)/source->xsize;
+   dy=((double)newy-0.000001)/source->ysize;
 
    for (y=0,yn=0; y<source->ysize; y++,yn+=dy)
    {
@@ -180,7 +185,7 @@ CHRONO("scale begin");
 	 if (1.0-decimals(yn))
 	    scale_add_line(new,(INT32)(yn),newx,source->img,y,source->xsize,
 			   (1.0-decimals(yn)),dx);
-	 if ((yd=(INT32)(yn+dy)-(INT32)(yn))>1) 
+	 if ((yd=(INT32)(yn+dy)-(INT32)(yn))>1)
             while (--yd)
    	       scale_add_line(new,(INT32)yn+yd,newx,source->img,y,source->xsize,
 			      1.0,dx);
@@ -224,7 +229,7 @@ void img_scale2(struct image *dest, struct image *source)
    INT32 x, y, newx, newy;
    newx = source->xsize >> 1;
    newy = source->ysize >> 1;
-   
+
    if (dest->img) { free(dest->img); dest->img=NULL; }
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
 
@@ -258,13 +263,38 @@ void img_scale2(struct image *dest, struct image *source)
 }
 
 
+/*
+**! method object scale(float factor)
+**! method object scale(0.5)
+**! method object scale(float xfactor,float yfactor)
+**!	scales the image with a factor,
+**!	0.5 is an optimized case.
+**! returns the new image object
+**! arg float factor
+**!	factor to use for both x and y
+**! arg float xfactor
+**! arg float yfactor
+**!	separate factors for x and y
+**!
+**! method object scale(int newxsize,int newysize)
+**! method object scale(0,int newysize)
+**! method object scale(int newxsize,0)
+**!	scales the image to a specified new size,
+**!	if one of newxsize or newysize is 0,
+**!	the image aspect ratio is preserved.
+**! returns the new image object
+**! arg int newxsize
+**! arg int newysize
+**!	new image size in pixels
+**!
+*/
 
 void image_scale(INT32 args)
 {
    float factor;
    struct object *o;
    struct image *newimg;
-   
+
    o=clone_object(image_program,0);
    newimg=(struct image*)(o->storage);
 
@@ -314,6 +344,14 @@ void image_scale(INT32 args)
    pop_n_elems(args);
    push_object(o);
 }
+
+/*
+**! method object ccw()
+**!	rotates an image counter-clockwise, 90 degrees.
+**! returns the new image object
+**!
+**!
+*/
 
 void image_ccw(INT32 args)
 {
@@ -406,6 +444,14 @@ void img_ccw(struct image *is,struct image *id)
    THREADS_DISALLOW();
 }
 
+/*
+**! method object cw()
+**!	rotates an image clockwise, 90 degrees.
+**! returns the new image object
+**!
+**!
+*/
+
 void image_cw(INT32 args)
 {
    INT32 i,j,xs,ys;
@@ -443,6 +489,20 @@ void image_cw(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object mirrorx()
+**!	mirrors an image:
+**!	<pre>
+**!	+--+     +--+
+**!	|x | <-> | x|
+**!	| .|     |. |
+**!	+--+     +--+
+**!	</pre>
+**! returns the new image object
+**!
+**!
+*/
+
 void image_mirrorx(INT32 args)
 {
    rgb_group *src,*dest;
@@ -462,7 +522,7 @@ void image_mirrorx(INT32 args)
       free_object(o);
       error("Out of memory\n");
    }
-   
+
    i=THIS->ysize;
    src=THIS->img+THIS->xsize-1;
    dest=img->img;
@@ -478,6 +538,19 @@ void image_mirrorx(INT32 args)
 
    push_object(o);
 }
+
+/*
+**! method object mirrorx()
+**!	mirrors an image:
+**!	<pre>
+**!	+--+     +--+
+**!	|x | <-> | .|
+**!	| .|     |x |
+**!	+--+     +--+
+**!	</pre>
+**!
+**!
+*/
 
 void image_mirrory(INT32 args)
 {
@@ -498,7 +571,7 @@ void image_mirrory(INT32 args)
       free_object(o);
       error("Out of memory\n");
    }
-   
+
    i=THIS->ysize;
    src=THIS->img+THIS->xsize*(THIS->ysize-1);
    dest=img->img;
@@ -513,7 +586,7 @@ void image_mirrory(INT32 args)
    THREADS_DISALLOW();
 
    push_object(o);
- 
+
 }
 
 
@@ -530,9 +603,9 @@ static void img_skewx(struct image *src,
    rgb_group rgb;
 
    if (dest->img) free(dest->img);
-   if (diff<0) 
+   if (diff<0)
       dest->xsize=ceil(-diff)+src->xsize,x0=-diff;
-   else 
+   else
       dest->xsize=ceil(diff)+src->xsize,x0=0;
    dest->ysize=src->ysize;
    len=src->xsize;
@@ -568,7 +641,7 @@ static void img_skewx(struct image *src,
 	    d->g=ROUND(rgb.g*xm+s->g*xn),
 	    d->b=ROUND(rgb.b*xm+s->b*xn);
 	 d++;
-	 for (j=len-1; j--;) 
+	 for (j=len-1; j--;)
 	 {
 	    d->r=ROUND(s->r*xm+s[1].r*xn),
 	    d->g=ROUND(s->g*xm+s[1].g*xn),
@@ -606,9 +679,9 @@ static void img_skewy(struct image *src,
    rgb_group rgb;
 
    if (dest->img) free(dest->img);
-   if (diff<0) 
+   if (diff<0)
       dest->ysize=ceil(-diff)+src->ysize,y0=-diff;
-   else 
+   else
       dest->ysize=ceil(diff)+src->ysize,y0=0;
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
@@ -616,7 +689,7 @@ static void img_skewy(struct image *src,
    d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize);
    if (!d) return;
    s=src->img;
-   
+
    THREADS_ALLOW();
    ymod=diff/src->xsize;
    rgb=dest->rgb;
@@ -644,7 +717,7 @@ CHRONO("skewy begin\n");
 	    d->g=ROUND(rgb.g*ym+s->g*yn),
 	    d->b=ROUND(rgb.b*ym+s->b*yn);
 	 d+=xsz;
-	 for (j=len-1; j--;) 
+	 for (j=len-1; j--;)
 	 {
 	    d->r=ROUND(s->r*ym+s[xsz].r*yn),
 	    d->g=ROUND(s->g*ym+s[xsz].g*yn),
@@ -674,6 +747,37 @@ CHRONO("skewy end\n");
 
 }
 
+/*
+**! method object skewx(int x)
+**! method object skewx(int yfactor)
+**! method object skewx(int x,int r,int g,int b)
+**! method object skewx(int yfactor,int r,int g,int b)
+**! method object skewx_expand(int x)
+**! method object skewx_expand(int yfactor)
+**! method object skewx_expand(int x,int r,int g,int b)
+**! method object skewx_expand(int yfactor,int r,int g,int b)
+**!	Skews an image an amount of pixels or a factor;
+**!	a skew-x is a transformation:
+**!	<pre>
+**!	+--+         +--+
+**!	|  |  <->   /  /
+**!	|  |       /  /
+**!	+--+      +--+
+**!	</pre>
+**! returns the new image object
+**! arg int x
+**!    the number of pixels
+**!	The "expand" variant of functions stretches the 
+**!	image border pixels rather then filling with 
+**!	the given or current color.
+**! arg float yfactor
+**!    best described as: x=yfactor*this->ysize()
+**! arg int r
+**! arg int g
+**! arg int b
+**!    color to fill with; default is current
+*/
+
 void image_skewx(INT32 args)
 {
    float diff=0;
@@ -700,6 +804,40 @@ void image_skewx(INT32 args)
    pop_n_elems(args);
    push_object(o);
 }
+
+/*
+**! method object skewy(int y)
+**! method object skewy(int xfactor)
+**! method object skewy(int y,int r,int g,int b)
+**! method object skewy(int xfactor,int r,int g,int b)
+**! method object skewy_expand(int y)
+**! method object skewy_expand(int xfactor)
+**! method object skewy_expand(int y,int r,int g,int b)
+**! method object skewy_expand(int xfactor,int r,int g,int b)
+**!	Skews an image an amount of pixels or a factor;
+**!	a skew-y is a transformation:
+**!	<pre>
+**!	             +
+**!	       	    /|
+**!	+--+       / |
+**!	|  |  <-> +  +
+**!     |  |      | /
+**!	+--+      |/
+**!		  +
+**!	</pre>
+**!	The "expand" variant of functions stretches the 
+**!	image border pixels rather then filling with 
+**!	the given or current color.
+**! returns the new image object
+**! arg int y
+**!    the number of pixels
+**! arg float xfactor
+**!    best described as: t=xfactor*this->xsize()
+**! arg int r
+**! arg int g
+**! arg int b
+**!    color to fill with; default is current
+*/
 
 void image_skewy(INT32 args)
 {
@@ -805,24 +943,24 @@ void img_rotate(INT32 args,int xpn)
 
    if (angle<-135) angle-=360*(int)((angle-225)/360);
    else if (angle>225) angle-=360*(int)((angle+135)/360);
-   if (angle<-45) 
-   { 
-      img_ccw(THIS,&dest2); 
-      angle+=90; 
-   }
-   else if (angle>135) 
+   if (angle<-45)
    {
-      img_ccw(THIS,&d0); 
-      img_ccw(&d0,&dest2);  
+      img_ccw(THIS,&dest2);
+      angle+=90;
+   }
+   else if (angle>135)
+   {
+      img_ccw(THIS,&d0);
+      img_ccw(&d0,&dest2);
       angle-=180;
    }
-   else if (angle>45) 
-   { 
-      img_cw(THIS,&dest2);  
-      angle-=90; 
+   else if (angle>45)
+   {
+      img_cw(THIS,&dest2);
+      angle-=90;
    }
    else dest2=*THIS;
-   
+
    angle=(angle/180.0)*3.141592653589793;
 
    o=clone_object(image_program,0);
@@ -843,6 +981,34 @@ void img_rotate(INT32 args,int xpn)
    push_object(o);
 }
 
+/*
+**! method object rotate(int|float angle)
+**! method object rotate(int|float angle,int r,int g,int b)
+**! method object rotate_expand(int|float angle)
+**! method object rotate_expand(int|float angle,int r,int g,int b)
+**!	Rotates an image a certain amount of degrees (360° is 
+**!	a complete rotation) counter-clockwise:
+**!	<pre>
+**!	       	    x
+**!	+--+       / \
+**!	|  |  <-> x   x
+**!     |  |       \ /
+**!	+--+        x
+**!	</pre>
+**!	The "expand" variant of functions stretches the 
+**!	image border pixels rather then filling with 
+**!	the given or current color.
+**!
+**!	This rotate uses the skewx() and skewy() functions.
+**! returns the new image object
+**! arg int|float angle
+**!    the number of degrees to rotate
+**! arg int r
+**! arg int g
+**! arg int b
+**!    color to fill with; default is current
+*/
+
 void image_rotate(INT32 args)
 {
    img_rotate(args,0);
@@ -862,7 +1028,7 @@ void img_translate(INT32 args,int expand)
    rgb_group *s,*d;
 
    if (args<2) error("illegal number of arguments to image->translate()\n");
-   
+
    if (sp[-args].type==T_FLOAT) xt=sp[-args].u.float_number;
    else if (sp[-args].type==T_INT) xt=sp[-args].u.integer;
    else error("illegal argument 1 to image->translate()\n");
@@ -875,7 +1041,7 @@ void img_translate(INT32 args,int expand)
 
    xt-=floor(xt);
    yt-=floor(yt);
-   
+
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
 
