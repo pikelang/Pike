@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.405 2001/05/07 11:18:32 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.406 2001/05/07 21:45:07 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1169,8 +1169,6 @@ void low_generate(int depth,
 int a()
 {
   werror("Testing vtables and scope access.\n");
-
-  return 0;
 
   string testargs=getenv()->TESTARGS;
   if(testargs &&
