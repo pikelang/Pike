@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.255 2000/04/12 15:14:35 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.256 2000/04/13 19:03:04 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2517,22 +2517,23 @@ void f_sleep(INT32 args)
        double left;
        /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
        THREADS_ALLOW();
-
-       FIX_LEFT();
-       if(left<=0.0) break;
+       do {
+	 FIX_LEFT();
+	 if(left<=0.0) break;
 
 #ifdef __NT__
-       Sleep((int)(left*1000));
+	 Sleep((int)(left*1000));
 #elif defined(HAVE_POLL)
-       poll(NULL,0,(int)(left*1000));
+	 poll(NULL,0,(int)(left*1000));
 #else
-       {
-	 struct timeval t3;
-	 t3.tv_sec=left;
-	 t3.tv_usec=(int)((left - (int)left)*1e6);
-	 select(0,0,0,0,&t3);
-       }
+	 {
+	   struct timeval t3;
+	   t3.tv_sec=left;
+	   t3.tv_usec=(int)((left - (int)left)*1e6);
+	   select(0,0,0,0,&t3);
+	 }
 #endif
+       } while(0);
        THREADS_DISALLOW();
        
        FIX_LEFT();
