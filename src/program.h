@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.95 2000/07/12 16:09:36 grubba Exp $
+ * $Id: program.h,v 1.96 2000/07/18 05:48:20 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -471,9 +471,9 @@ void gc_mark_program_as_referenced(struct program *p);
 unsigned gc_touch_all_programs(void);
 void gc_check_all_programs(void);
 void gc_mark_all_programs(void);
-void real_gc_cycle_check_program(struct program *p);
-void real_gc_cycle_check_program_weak(struct program *p);
+void real_gc_cycle_check_program(struct program *p, int weak);
 void gc_cycle_check_all_programs(void);
+void gc_zap_ext_weak_refs_in_programs(void);
 void gc_free_all_unreferenced_programs(void);
 void count_memory_in_programs(INT32 *num_, INT32 *size_);
 void push_compiler_frame(int lexical_scope);
@@ -542,10 +542,8 @@ void *parent_storage(int depth);
 #define start_new_program() debug_start_new_program()
 #endif
 
-#define gc_cycle_check_program(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_program, (X))
-#define gc_cycle_check_program_weak(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_program_weak, (X))
+#define gc_cycle_check_program(X, WEAK) \
+  gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_program, (X), (WEAK))
 
 /* This can be used for backwards compatibility
  *  (if added to program.h in Pike 0.6 and Pike 7.0

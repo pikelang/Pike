@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.77 2000/07/11 03:45:09 mast Exp $");
+RCSID("$Id: array.c,v 1.78 2000/07/18 05:48:20 mast Exp $");
 
 struct array empty_array=
 {
@@ -1861,40 +1861,28 @@ void gc_mark_array_as_referenced(struct array *a)
   }
 }
 
-static void low_gc_cycle_check_array(struct array *a)
+void real_gc_cycle_check_array(struct array *a, int weak)
 {
-  int e;
+  GC_CYCLE_ENTER(a, weak) {
+    int e;
 #ifdef PIKE_DEBUG
-  if (a == &empty_array) fatal("Trying to gc cycle check empty_array.\n");
+    if (a == &empty_array) fatal("Trying to gc cycle check empty_array.\n");
 #endif
 
-  if (a->type_field & BIT_COMPLEX)
-  {
-    if (a->flags & ARRAY_WEAK_FLAG)
-      gc_recurse_weak_array(a, gc_cycle_check_weak_svalues);
-    else {
-      TYPE_FIELD t;
-      if ((t = gc_cycle_check_svalues(ITEM(a), a->size))) {
-	if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
-	  a->type_field = t;
-	else
-	  a->type_field |= t;
+    if (a->type_field & BIT_COMPLEX)
+    {
+      if (a->flags & ARRAY_WEAK_FLAG)
+	gc_recurse_weak_array(a, gc_cycle_check_weak_svalues);
+      else {
+	TYPE_FIELD t;
+	if ((t = gc_cycle_check_svalues(ITEM(a), a->size))) {
+	  if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	    a->type_field = t;
+	  else
+	    a->type_field |= t;
+	}
       }
     }
-  }
-}
-
-void real_gc_cycle_check_array(struct array *a)
-{
-  GC_CYCLE_ENTER(a, 0) {
-    low_gc_cycle_check_array(a);
-  } GC_CYCLE_LEAVE;
-}
-
-void real_gc_cycle_check_array_weak(struct array *a)
-{
-  GC_CYCLE_ENTER(a, 1) {
-    low_gc_cycle_check_array(a);
   } GC_CYCLE_LEAVE;
 }
 
@@ -1948,27 +1936,25 @@ void gc_cycle_check_all_arrays(void)
 {
   struct array *a;
   for (a = gc_internal_array; a != &empty_array; a = a->next) {
-    real_gc_cycle_check_array(a);
-    run_lifo_queue(&gc_mark_queue);
+    real_gc_cycle_check_array(a, 0);
+    gc_cycle_run_queue();
   }
+}
+
+void gc_zap_ext_weak_refs_in_arrays(void)
+{
+  gc_mark_array_pos = empty_array.next;
+  while (gc_mark_array_pos != gc_internal_array && gc_ext_weak_refs) {
+    struct array *a = gc_mark_array_pos;
+    gc_mark_array_pos = a->next;
+    gc_mark_array_as_referenced(a);
+  }
+  discard_queue(&gc_mark_queue);
 }
 
 void gc_free_all_unreferenced_arrays(void)
 {
   struct array *a,*next;
-
-  if (gc_ext_weak_refs) {
-    /* Have to go through all marked things if we got external weak
-     * references to otherwise unreferenced things, so the mark
-     * functions can free those references. */
-    gc_mark_array_pos = empty_array.next;
-    while (gc_mark_array_pos != gc_internal_array && gc_ext_weak_refs) {
-      struct array *a = gc_mark_array_pos;
-      gc_mark_array_pos = a->next;
-      gc_mark_array_as_referenced(a);
-    }
-    discard_queue(&gc_mark_queue);
-  }
 
   for (a = gc_internal_array; a != &empty_array; a = next)
   {

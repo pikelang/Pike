@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.106 2000/07/11 04:42:37 mast Exp $");
+RCSID("$Id: gc.c,v 1.107 2000/07/18 05:48:20 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -41,7 +41,7 @@ RCSID("$Id: gc.c,v 1.106 2000/07/11 04:42:37 mast Exp $");
 #define MAX_ALLOC_THRESHOLD 10000000
 #define MULTIPLIER 0.9
 #define MARKER_CHUNK_SIZE 1023
-#define REF_CYCLE_CHUNK_SIZE 32
+#define GC_LINK_CHUNK_SIZE 31
 
 /* The gc will free all things with no external references that isn't
  * referenced by undestructed objects with destroy() lfuns (known as
@@ -82,6 +82,8 @@ RCSID("$Id: gc.c,v 1.106 2000/07/11 04:42:37 mast Exp $");
 /* #define GC_VERBOSE */
 /* #define GC_CYCLE_DEBUG */
 
+/* #define GC_STACK_DEBUG */
+
 #if defined(GC_VERBOSE) && !defined(PIKE_DEBUG)
 #undef GC_VERBOSE
 #endif
@@ -98,33 +100,85 @@ int Pike_in_gc = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
 
-static struct marker rec_list = {0, 0, 0};
-struct marker *gc_rec_last = &rec_list;
-static struct marker *kill_list = 0;
+struct gc_frame
+{
+  struct gc_frame *back;	/* Previous stack frame. */
+  void *data;
+  union {
+    struct {			/* Pop frame. */
+      struct gc_frame *prev;	/* Previous frame in rec_list. */
+      struct gc_frame *next;	/* Next pointer in rec_list and kill_list. */
+      unsigned INT16 cycle;	/* Cycle id number. */
+    } pop;
+    struct {			/* Link frame. */
+      gc_cycle_check_cb *checkfn;
+      int weak;
+    } link;
+  } u;
+  unsigned INT16 frameflags;
+};
+
+#define GC_POP_FRAME		0x01
+#define GC_WEAK_REF		0x02
+#define GC_STRONG_REF		0x04
+#define GC_OFF_STACK		0x08
+#ifdef PIKE_DEBUG
+#define GC_LINK_FREED		0x10
+#define GC_FOLLOWED_NONSTRONG	0x20
+#endif
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT back
+
+BLOCK_ALLOC(gc_frame,GC_LINK_CHUNK_SIZE)
+
+#define PREV(frame) ((frame)->u.pop.prev)
+#define NEXT(frame) ((frame)->u.pop.next)
+#define CYCLE(frame) ((frame)->u.pop.cycle)
+
+#ifdef PIKE_DEBUG
+#define CHECK_POP_FRAME(frame) do {					\
+  if ((frame)->frameflags & GC_LINK_FREED)				\
+    gc_fatal((frame)->data, 0, "Accessing freed gc_frame.\n");		\
+  if (!((frame)->frameflags & GC_POP_FRAME))				\
+    gc_fatal((frame)->data, 0, #frame " is not a pop frame.\n");	\
+  if (NEXT(PREV(frame)) != (frame))					\
+    gc_fatal((frame)->data, 0,						\
+	     "Pop frame pointers are inconsistent.\n");			\
+} while (0)
+#else
+#define CHECK_POP_FRAME(frame) do {} while (0)
+#endif
+
+static struct gc_frame rec_list = {0, 0, {{0, 0, 0}}, GC_POP_FRAME};
+static struct gc_frame *gc_rec_last = &rec_list, *gc_rec_top = 0;
+static struct gc_frame *kill_list = 0;
+
 static unsigned last_cycle;
 size_t gc_ext_weak_refs;
 
-/* rec_list is a linked list of the markers currently being recursed
- * through in the cycle check pass. gc_rec_last points at the
- * innermost marker being visited. A new marker is linked in after
- * gc_rec_last, except when that's inside a cycle, in which case it's
- * linked in after that cycle. A cycle is always treated as one atomic
- * unit, e.g. it's either popped whole or not at all.
+/* gc_frame objects are used as frames in a recursion stack during the
+ * cycle check pass. gc_rec_top points to the current top of the
+ * stack. When a thing is recursed, a pop frame is first pushed on the
+ * stack and then the gc_cycle_check_* function fills in with link
+ * frames for every reference the thing contains.
  *
- * Two ranges of markers next to each other may swap places to break a
- * cyclic reference at a chosen point. Some markers thus get a place
- * earlier on the list even though their corresponding stack frames
- * are later than some other markers they have references to. These
- * markers are flagged to make them stay on the list when they're
- * popped from the stack. They'll get popped eventually since all
- * markers in the gap between the top one and it's previous
- * gc_rec_last point are popped.
+ * rec_list is a double linked list of the pop frames on the stack,
+ * and that list represents the current prospective destruct order.
+ * gc_rec_last points at the last frame in the list and new frames are
+ * linked in after it. A cycle is always treated as one atomic unit,
+ * e.g. it's either popped whole or not at all. That means that
+ * rec_list may contain frames that are no longer on the stack.
  *
- * Markers for live objects are linked into the beginning of kill_list
+ * A range of frames which always ends at the end of the list, may be
+ * rotated a number of slots to break a cyclic reference at a chosen
+ * point. The stack of link frames are rotated simultaneously.
+ *
+ * Frames for live objects are linked into the beginning of kill_list
  * when they're popped from rec_list.
  *
  * The cycle check functions might recurse another round through the
- * markers that have been recursed already, to propagate the GC_LIVE
+ * frames that have been recursed already, to propagate the GC_LIVE
  * flag to things that have been found to be referenced from live
  * objects. rec_list is not touched at all in this extra round.
  */
@@ -141,17 +195,22 @@ struct callback *debug_add_gc_callback(callback_func call,
   return add_to_callback(&gc_callbacks, call, arg, free_func);
 }
 
+static void gc_cycle_pop(void *a);
+
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT next
 
 #undef INIT_BLOCK
 #ifdef PIKE_DEBUG
 #define INIT_BLOCK(X)					\
   (X)->flags=(X)->refs=(X)->weak_refs=(X)->xrefs=0;	\
   (X)->saved_refs=-1;					\
-  (X)->cycle = (unsigned INT16) -1;			\
-  (X)->link = (struct marker *) -1;
+  (X)->frame = 0;
 #else
 #define INIT_BLOCK(X)					\
-  (X)->flags=(X)->refs=(X)->weak_refs=0;
+  (X)->flags=(X)->refs=(X)->weak_refs=0;		\
+  (X)->frame = 0;
 #endif
 
 PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
@@ -160,6 +219,7 @@ PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
 
 int gc_in_cycle_check = 0;
 static unsigned weak_freed, checked, marked, cycle_checked, live_ref;
+static unsigned max_gc_frames, num_gc_frames = 0;
 static unsigned gc_extra_refs = 0;
 
 void dump_gc_info(void)
@@ -407,13 +467,32 @@ void describe_location(void *real_memblock,
 #endif
 }
 
+static void describe_gc_frame(struct gc_frame *l)
+{
+  if (l->frameflags & GC_POP_FRAME)
+    fprintf(stderr, "back=%p, prev=%p, next=%p, data=%p, cycle=%u, flags=0x%02x",
+	    l->back, PREV(l), NEXT(l), l->data, CYCLE(l), l->frameflags);
+  else
+    fprintf(stderr, "LINK back=%p, data=%p, weak=%d, flags=0x%02x",
+	    l->back, l->data, l->u.link.weak, l->frameflags);
+}
+
 static void describe_marker(struct marker *m)
 {
-  if (m)
+  if (m) {
     fprintf(stderr, "marker at %p: flags=0x%06x, refs=%d, weak=%d, "
-	    "xrefs=%d, saved=%d, cycle=%d, link=%p\n",
+	    "xrefs=%d, saved=%d, frame=%p",
 	    m, m->flags, m->refs, m->weak_refs,
-	    m->xrefs, m->saved_refs, m->cycle, m->link);
+	    m->xrefs, m->saved_refs, m->frame);
+#ifdef PIKE_DEBUG
+    if (m->frame) {
+      fputs(" [", stderr);
+      describe_gc_frame(m->frame);
+      putc(']', stderr);
+    }
+#endif
+    putc('\n', stderr);
+  }
   else
     fprintf(stderr, "no marker\n");
 }
@@ -749,9 +828,9 @@ void debug_gc_touch(void *a)
       if (!(m->flags & GC_TOUCHED))
 	gc_fatal(a, 2, "An existing but untouched marker found "
 		 "for object in linked lists.\n");
-      else if (m->flags & (GC_ON_STACK|GC_IN_REC_LIST|GC_DONT_POP|
-			   GC_LIVE_RECURSE|GC_WEAK_REF|GC_STRONG_REF))
-	gc_fatal(a, 2, "Marker still got flag from recurse list.\n");
+      else if (m->flags & GC_LIVE_RECURSE ||
+	       (m->frame && m->frame->frameflags & (GC_WEAK_REF|GC_STRONG_REF)))
+	gc_fatal(a, 2, "Thing still got flag from recurse list.\n");
       else if (m->flags & GC_MARKED)
 	return;
       else if (!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_XREFERENCED)
@@ -866,6 +945,7 @@ INT32 real_gc_check_weak(void *a)
 static void init_gc(void)
 {
   init_marker_hash();
+  get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
 }
 
 static void exit_gc(void)
@@ -878,6 +958,10 @@ static void exit_gc(void)
       remove_marker(marker_hash_table[e]->data);
 #endif
   exit_marker_hash();
+  free_all_gc_frame_blocks();
+#ifdef GC_VERBOSE
+  num_gc_frames = 0;
+#endif
 }
 
 #ifdef PIKE_DEBUG
@@ -1030,7 +1114,7 @@ int gc_do_weak_free(void *a)
 
   if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
-      Pike_in_gc != GC_PASS_FREE)
+      Pike_in_gc != GC_PASS_ZAP_WEAK)
     fatal("gc_do_weak_free() called in invalid gc pass.\n");
   if (gc_debug) {
     if (!(m = find_marker(a)))
@@ -1042,7 +1126,7 @@ int gc_do_weak_free(void *a)
   if (m->weak_refs > m->refs)
     gc_fatal(a, 0, "More weak references than internal references.\n");
 
-  if (Pike_in_gc != GC_PASS_FREE) {
+  if (Pike_in_gc != GC_PASS_ZAP_WEAK) {
     if (m->weak_refs == -1) {
       gc_ext_weak_refs--;
       return 1;
@@ -1060,6 +1144,22 @@ int gc_do_weak_free(void *a)
   return 0;
 }
 
+void debug_really_free_gc_frame(struct gc_frame *l)
+{
+  if (l->frameflags & GC_LINK_FREED)
+    gc_fatal(l->data, 0, "Freeing freed gc_frame.\n");
+  l->frameflags |= GC_LINK_FREED;
+  l->back = PREV(l) = NEXT(l) = (struct gc_frame *) -1;
+  really_free_gc_frame(l);
+#ifdef GC_VERBOSE
+  num_gc_frames--;
+#endif
+}
+
+#else  /* PIKE_DEBUG */
+
+#define debug_really_free_gc_frame(l) really_free_gc_frame(l)
+
 #endif /* PIKE_DEBUG */
 
 int gc_mark(void *a)
@@ -1068,22 +1168,22 @@ int gc_mark(void *a)
 
 #ifdef PIKE_DEBUG
   if (!a) fatal("Got null pointer.\n");
-  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_FREE)
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
     fatal("gc mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
   if (m->weak_refs == -1)
     gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
-  if (Pike_in_gc == GC_PASS_FREE && !(m->flags & GC_MARKED))
-    gc_fatal(a, 0, "gc_mark() called for thing in free pass "
+  if (Pike_in_gc == GC_PASS_ZAP_WEAK && !(m->flags & GC_MARKED))
+    gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
 	     "that wasn't marked before.\n");
 #endif
 
-  if (Pike_in_gc == GC_PASS_FREE)
-    /* Things are visited in the free pass through the mark functions
-     * to free refs to internal things that only got weak external
-     * references. That happens only when a thing also have internal
-     * cyclic non-weak refs. */
+  if (Pike_in_gc == GC_PASS_ZAP_WEAK)
+    /* Things are visited in the zap weak pass through the mark
+     * functions to free refs to internal things that only got weak
+     * external references. That happens only when a thing also have
+     * internal cyclic non-weak refs. */
     if (m->flags & GC_FREE_VISITED)
       return 0;
     else {
@@ -1109,10 +1209,75 @@ int gc_mark(void *a)
   }
 }
 
+void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak)
+{
+  struct gc_frame *l = alloc_gc_frame();
+#ifdef GC_VERBOSE
+  if (++num_gc_frames > max_gc_frames) max_gc_frames = num_gc_frames;
+#endif
+  l->data = data;
+  l->u.link.checkfn = checkfn;
+  l->u.link.weak = weak;
+  l->frameflags = 0;
+  l->back = gc_rec_top;
+#ifdef GC_STACK_DEBUG
+  fprintf(stderr, "enqueue %p [%p]: ", l, gc_rec_top);
+  describe_gc_frame(l);
+  fputc('\n', stderr);
+#endif
+  gc_rec_top = l;
+}
+
+static struct gc_frame *gc_cycle_enqueue_pop(void *data)
+{
+  struct gc_frame *l = alloc_gc_frame();
+#ifdef GC_VERBOSE
+  if (++num_gc_frames > max_gc_frames) max_gc_frames = num_gc_frames;
+#endif
+  l->data = data;
+  PREV(l) = gc_rec_last;
+  NEXT(l) = 0;
+  CYCLE(l) = 0;
+  l->frameflags = GC_POP_FRAME;
+  l->back = gc_rec_top;
+#ifdef GC_STACK_DEBUG
+  fprintf(stderr, "enqueue %p [%p]: ", l, gc_rec_top);
+  describe_gc_frame(l);
+  fputc('\n', stderr);
+#endif
+  gc_rec_top = l;
+  return l;
+}
+
+void gc_cycle_run_queue()
+{
+  while (gc_rec_top) {
+#ifdef GC_STACK_DEBUG
+    fprintf(stderr, "dequeue %p [%p]: ", gc_rec_top, gc_rec_top->back);
+    describe_gc_frame(gc_rec_top);
+    fputc('\n', stderr);
+#endif
+    if (gc_rec_top->frameflags & GC_POP_FRAME) {
+      struct gc_frame *l = gc_rec_top->back;
+      gc_cycle_pop(gc_rec_top->data);
+      gc_rec_top = l;
+    } else {
+      struct gc_frame l = *gc_rec_top;
+#ifdef PIKE_DEBUG
+      if (l.frameflags & GC_LINK_FREED)
+	gc_fatal(l.data, 0, "Accessing freed gc_frame.\n");
+#endif
+      debug_really_free_gc_frame(gc_rec_top);
+      gc_rec_top = l.back;
+      l.u.link.checkfn(l.data, l.u.link.weak);
+    }
+  }
+}
+
 #ifdef GC_CYCLE_DEBUG
 static int gc_cycle_indent = 0;
 #define CYCLE_DEBUG_MSG(M, TXT) do {					\
-  fprintf(stderr, "%*s%-33s %p [%p] ", gc_cycle_indent, "",		\
+  fprintf(stderr, "%*s%-35s %p [%p] ", gc_cycle_indent, "",		\
 	  (TXT), (M) ? (M)->data : 0, gc_rec_last->data);		\
   describe_marker(M);							\
 } while (0)
@@ -1120,59 +1285,99 @@ static int gc_cycle_indent = 0;
 #define CYCLE_DEBUG_MSG(M, TXT) do {} while (0)
 #endif
 
-static struct marker *break_cycle (struct marker *beg, struct marker *pos)
+static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
+/* Rotates the marker list and the cycle stack so the bit from pos
+ * down to the end gets before the bit from beg down to pos. */
 {
-  /* There's a cycle from beg to gc_rec_last which should be broken at
-   * pos. Do it by switching places of the markers before and after pos. */
-  struct marker *p, *q;
+  struct gc_frame *l;
+
 #ifdef PIKE_DEBUG
+  CHECK_POP_FRAME(beg);
+  CHECK_POP_FRAME(pos);
   if (beg == pos)
     gc_fatal(beg->data, 0, "Cycle already broken at requested position.\n");
+  if (NEXT(gc_rec_last))
+    gc_fatal(gc_rec_last->data, 0, "gc_rec_last not at end.\n");
 #endif
 
-  if (beg->cycle) {
-    for (q = &rec_list; q->link->cycle != beg->cycle; q = q->link) {}
-    beg = q->link;
-    if (beg->cycle == pos->cycle) {
+#ifdef GC_STACK_DEBUG
+  fprintf(stderr,"Stack before:\n");
+  for (l = gc_rec_top; l; l = l->back) {
+    fprintf(stderr, "  %p ", l);
+    describe_gc_frame(l);
+    fputc('\n', stderr);
+  }
+#endif
+
+  if (CYCLE(beg)) {
+    for (l = beg; CYCLE(PREV(l)) == CYCLE(beg); l = PREV(l))
+      CHECK_POP_FRAME(l);
+    CHECK_POP_FRAME(l);
+    if (CYCLE(l) == CYCLE(pos)) {
       /* Breaking something previously marked as a cycle. Clear it
        * since we're no longer sure it's an ambigious cycle. */
-      unsigned cycle = beg->cycle;
-      for (p = beg; p && p->cycle == cycle; p = p->link)
-	p->cycle = 0;
+      unsigned cycle = CYCLE(l);
+      for (; l && CYCLE(l) == cycle; l = NEXT(l)) {
+	CHECK_POP_FRAME(l);
+#ifdef GC_CYCLE_DEBUG
+	if (CYCLE(l))
+	  CYCLE_DEBUG_MSG(find_marker(l->data), "> rotate_rec_list, clear cycle");
+#endif
+	CYCLE(l) = 0;
+      }
     }
+    else beg = l;		/* Keep the cycle continuous. */
   }
-  else
-    for (q = &rec_list; q->link != beg; q = q->link) {}
 
-  q->link = pos;
-
-  CYCLE_DEBUG_MSG(beg, "> break_cycle, begin at");
-
-  for (p = beg; p->link != pos; p = p->link) {}
-
-  for (q = pos;; q = q->link) {
-    q->flags |= GC_MOVED_BACK|GC_DONT_POP;
-    CYCLE_DEBUG_MSG(q, "> break_cycle, mark for don't pop");
-    if (q == gc_rec_last) break;
-  }
+  CYCLE_DEBUG_MSG(find_marker(beg->data), "> rotate_rec_list, begin at");
 
   {
-    struct marker *m = q->link;
-    q->link = beg;
-    p->link = m;
+    struct gc_frame *b = beg, *p = pos, *old_rec_top;
+    while (b->frameflags & GC_OFF_STACK) {
+      if ((b = NEXT(b)) == pos) goto done;
+      CHECK_POP_FRAME(b);
+    }
+    while (p->frameflags & GC_OFF_STACK) {
+      if (!(p = NEXT(p))) goto done;
+      CHECK_POP_FRAME(p);
+    }
+    old_rec_top = gc_rec_top;
+    gc_rec_top = p->back;
+    p->back = b->back;
+    b->back = old_rec_top;
+  }
+done:
+
+  {
+    struct gc_frame *new_rec_last = PREV(pos);
+    NEXT(PREV(beg)) = pos;
+    PREV(pos) = PREV(beg);
+    NEXT(gc_rec_last) = beg;
+    PREV(beg) = gc_rec_last;
+    gc_rec_last = new_rec_last;
+    NEXT(gc_rec_last) = 0;
   }
 
-  if (beg->flags & GC_WEAK_REF) {
-    beg->flags &= ~GC_WEAK_REF;
-    pos->flags |= GC_WEAK_REF;
-    CYCLE_DEBUG_MSG(pos, "> break_cycle, moved weak flag");
+  if (beg->frameflags & GC_WEAK_REF) {
+    beg->frameflags &= ~GC_WEAK_REF;
+    pos->frameflags |= GC_WEAK_REF;
+    CYCLE_DEBUG_MSG(get_marker(pos->data), "> rotate_rec_list, moved weak flag");
   }
 
-  return beg;
+#ifdef GC_STACK_DEBUG
+  fprintf(stderr,"Stack after:\n");
+  for (l = gc_rec_top; l; l = l->back) {
+    fprintf(stderr, "  %p ", l);
+    describe_gc_frame(l);
+    fputc('\n', stderr);
+  }
+#endif
 }
 
 int gc_cycle_push(void *x, struct marker *m, int weak)
 {
+  struct marker *last = find_marker(gc_rec_last->data);
+
 #ifdef PIKE_DEBUG
   if (!x) fatal("Got null pointer.\n");
   if (m->data != x) fatal("Got wrong marker.\n");
@@ -1208,9 +1413,9 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
   }
 #endif
 
-  if (gc_rec_last->flags & GC_LIVE_RECURSE) {
+  if (last->flags & GC_LIVE_RECURSE) {
 #ifdef PIKE_DEBUG
-    if (!(gc_rec_last->flags & GC_LIVE))
+    if (!(last->flags & GC_LIVE))
       gc_fatal(x, 0, "Doing live recursion from a dead thing.\n");
 #endif
 
@@ -1232,32 +1437,37 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       int flags;
       CYCLE_DEBUG_MSG(m, "gc_cycle_push, live rec done");
       do {
-	gc_rec_last->flags &= ~GC_LIVE_RECURSE;
+	last->flags &= ~GC_LIVE_RECURSE;
 #ifdef GC_CYCLE_DEBUG
 	gc_cycle_indent -= 2;
-	CYCLE_DEBUG_MSG(gc_rec_last, "> gc_cycle_push, unwinding live");
+	CYCLE_DEBUG_MSG(find_marker(gc_rec_last->data),
+			"> gc_cycle_push, unwinding live");
 #endif
-	gc_rec_last = (struct marker *)
-	  dequeue_lifo(&gc_mark_queue, (queue_call) gc_set_rec_last);
+	while (1) {
+	  struct gc_frame *l = gc_rec_top;
 #ifdef PIKE_DEBUG
-	if (!gc_rec_last)
-	  fatal("Expected a gc_set_rec_last entry in gc_mark_queue.\n");
+	  if (!gc_rec_top)
+	    fatal("Expected a gc_cycle_pop entry in gc_rec_top.\n");
 #endif
-      } while (gc_rec_last->flags & GC_LIVE_RECURSE);
-      if (!dequeue_lifo(&gc_mark_queue, (queue_call) gc_cycle_pop)) {
-#ifdef PIKE_DEBUG
-	fatal("Expected a gc_cycle_pop entry in gc_mark_queue.\n");
-#endif
-      }
+	  gc_rec_top = l->back;
+	  if (l->frameflags & GC_POP_FRAME) {
+	    gc_rec_last = PREV(l);
+	    debug_really_free_gc_frame(l);
+	    break;
+	  }
+	  debug_really_free_gc_frame(l);
+	}
+	last = find_marker(gc_rec_last->data);
+      } while (last->flags & GC_LIVE_RECURSE);
     }
 
     return 0;
   }
 
 #ifdef PIKE_DEBUG
-  if (weak >= 0 && gc_rec_last->flags & GC_FOLLOWED_STRONG)
-    gc_fatal(x, 0, "Followed strong link too early.\n");
-  if (weak < 0) gc_rec_last->flags |= GC_FOLLOWED_STRONG;
+  if (weak < 0 && gc_rec_last->frameflags & GC_FOLLOWED_NONSTRONG)
+    gc_fatal(x, 0, "Followed strong link too late.\n");
+  if (weak >= 0) gc_rec_last->frameflags |= GC_FOLLOWED_NONSTRONG;
 #endif
 
   if (weak > 0) {
@@ -1269,20 +1479,24 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     gc_ext_weak_refs--;
   }
 
-  if (m->flags & GC_IN_REC_LIST) { /* A cyclic reference is found. */
+  if (m->frame && !(m->frame->frameflags & GC_OFF_STACK)) {
+    /* A cyclic reference is found. */
 #ifdef PIKE_DEBUG
-    if (m == &rec_list || gc_rec_last == &rec_list)
+    if (gc_rec_last == &rec_list)
       gc_fatal(x, 0, "Cyclic ref involves dummy rec_list marker.\n");
+    CHECK_POP_FRAME(gc_rec_last);
+    CHECK_POP_FRAME(m->frame);
 #endif
 
-    if (m != gc_rec_last) {
-      struct marker *p, *weak_ref = 0, *nonstrong_ref = 0;
+    if (m != last) {
+      struct gc_frame *p, *weak_ref = 0, *nonstrong_ref = 0;
       if (!weak) {
-	struct marker *q;
+	struct gc_frame *q;
 	CYCLE_DEBUG_MSG(m, "gc_cycle_push, search normal");
-	for (q = m, p = m->link; p; q = p, p = p->link) {
-	  if (p->flags & (GC_WEAK_REF|GC_STRONG_REF)) {
-	    if (p->flags & GC_WEAK_REF) weak_ref = p;
+	for (q = m->frame, p = NEXT(q);; q = p, p = NEXT(p)) {
+	  CHECK_POP_FRAME(p);
+	  if (p->frameflags & (GC_WEAK_REF|GC_STRONG_REF)) {
+	    if (p->frameflags & GC_WEAK_REF) weak_ref = p;
 	    else if (!nonstrong_ref) nonstrong_ref = q;
 	  }
 	  if (p == gc_rec_last) break;
@@ -1291,9 +1505,10 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 
       else if (weak < 0) {
 	CYCLE_DEBUG_MSG(m, "gc_cycle_push, search strong");
-	for (p = m->link; p; p = p->link) {
-	  if (p->flags & GC_WEAK_REF) weak_ref = p;
-	  if (!(p->flags & GC_STRONG_REF)) nonstrong_ref = p;
+	for (p = NEXT(m->frame);; p = NEXT(p)) {
+	  CHECK_POP_FRAME(p);
+	  if (p->frameflags & GC_WEAK_REF) weak_ref = p;
+	  if (!(p->frameflags & GC_STRONG_REF)) nonstrong_ref = p;
 	  if (p == gc_rec_last) break;
 	}
 #ifdef PIKE_DEBUG
@@ -1303,105 +1518,83 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       }
 
       else {
-	struct marker *q;
+	struct gc_frame *q;
 	CYCLE_DEBUG_MSG(m, "gc_cycle_push, search weak");
-	for (q = m, p = m->link; p; q = p, p = p->link) {
-	  if (!(p->flags & GC_WEAK_REF) && !nonstrong_ref) nonstrong_ref = q;
+	for (q = m->frame, p = NEXT(q);; q = p, p = NEXT(p)) {
+	  CHECK_POP_FRAME(p);
+	  if (!(p->frameflags & GC_WEAK_REF) && !nonstrong_ref)
+	    nonstrong_ref = q;
 	  if (p == gc_rec_last) break;
 	}
       }
 
-      if (p == gc_rec_last) {	/* It was a backward reference. */
-	if (weak_ref) {
-	  /* The backward link is normal or strong and there are one
-	   * or more weak links in the cycle. Let's break it at the
-	   * last one (to ensure that a sequence of several weak links
-	   * are broken at the last one). */
-	  CYCLE_DEBUG_MSG(weak_ref, "gc_cycle_push, weak break");
-	  break_cycle (m, weak_ref);
-	}
+      if (weak_ref) {
+	/* The backward link is normal or strong and there are one
+	 * or more weak links in the cycle. Let's break it at the
+	 * last one (to ensure that a sequence of several weak links
+	 * are broken at the last one). */
+	CYCLE_DEBUG_MSG(find_marker(weak_ref->data),
+			"gc_cycle_push, weak break");
+	rotate_rec_list(m->frame, weak_ref);
+      }
 
-	else if (weak < 0) {
-	  /* The backward link is strong. Must break the cycle at the
-	   * last nonstrong link. */
-	  if (m->flags & GC_STRONG_REF)
-	    nonstrong_ref->flags =
-	      (nonstrong_ref->flags & ~GC_WEAK_REF) | GC_STRONG_REF;
-	  else
-	    m->flags = (m->flags & ~GC_WEAK_REF) | GC_STRONG_REF;
-	  CYCLE_DEBUG_MSG(nonstrong_ref, "gc_cycle_push, nonstrong break");
-	  break_cycle (m, nonstrong_ref);
-	}
+      else if (weak < 0) {
+	/* The backward link is strong. Must break the cycle at the
+	 * last nonstrong link. */
+	if (m->frame->frameflags & GC_STRONG_REF)
+	  nonstrong_ref->frameflags =
+	    (nonstrong_ref->frameflags & ~GC_WEAK_REF) | GC_STRONG_REF;
+	else
+	  m->frame->frameflags =
+	    (m->frame->frameflags & ~GC_WEAK_REF) | GC_STRONG_REF;
+	CYCLE_DEBUG_MSG(find_marker(nonstrong_ref->data),
+			"gc_cycle_push, nonstrong break");
+	rotate_rec_list(m->frame, nonstrong_ref);
+      }
 
-	else if (nonstrong_ref) {
-	  /* Either a nonweak cycle with a strong link in it or a weak
-	   * cycle with a nonweak link in it. Break before the first
-	   * link that's stronger than the others. */
-	  if (nonstrong_ref != m) {
-	    CYCLE_DEBUG_MSG(nonstrong_ref, "gc_cycle_push, weaker break");
-	    break_cycle (m, nonstrong_ref);
-	  }
-	}
-
-	else if (!weak) {
-	  /* A normal cycle which will be destructed in arbitrary
-	   * order. For reasons having to do with strong links we
-	   * can't mark weak cycles this way. */
-	  unsigned cycle = m->cycle ? m->cycle : ++last_cycle;
-	  if (cycle == gc_rec_last->cycle)
-	    CYCLE_DEBUG_MSG(m, "gc_cycle_push, old cycle");
-	  else {
-	    unsigned replace_cycle = gc_rec_last->cycle;
-	    CYCLE_DEBUG_MSG(m, "gc_cycle_push, cycle");
-	    for (p = m;; p = p->link) {
-	      p->cycle = cycle;
-	      CYCLE_DEBUG_MSG(p, "> gc_cycle_push, mark cycle");
-	      if (p == gc_rec_last) break;
-	    }
-	    if (replace_cycle && replace_cycle != cycle)
-	      for (p = p->link; p && p->cycle == replace_cycle; p = p->link) {
-		p->cycle = cycle;
-		CYCLE_DEBUG_MSG(p, "> gc_cycle_push, re-mark cycle");
-	      }}}}		/* Mmm.. lisp ;) */
-
-      else {			/* A forward reference. */
-	CYCLE_DEBUG_MSG(m, "gc_cycle_push, forward ref");
-	if (m->flags & GC_ON_STACK &&
-	    !(gc_rec_last->cycle && gc_rec_last->cycle == m->cycle)) {
-	  /* Since it's not part of the same cycle it's a reference to
-	   * a marker that has been swapped further down the list by
-	   * break_cycle(). In that case we must mark gc_rec_last to
-	   * stay on the list. */
-	  gc_rec_last->flags |= GC_DONT_POP;
-	  CYCLE_DEBUG_MSG(gc_rec_last, "gc_cycle_push, mark for don't pop");
+      else if (nonstrong_ref) {
+	/* Either a nonweak cycle with a strong link in it or a weak
+	 * cycle with a nonweak link in it. Break before the first
+	 * link that's stronger than the others. */
+	if (nonstrong_ref != m->frame) {
+	  CYCLE_DEBUG_MSG(find_marker(nonstrong_ref->data),
+			  "gc_cycle_push, weaker break");
+	  rotate_rec_list(m->frame, nonstrong_ref);
 	}
       }
-    }
-  }
+
+      else if (!weak) {
+	/* A normal cycle which will be destructed in arbitrary
+	 * order. For reasons having to do with strong links we
+	 * can't mark weak cycles this way. */
+	unsigned cycle = CYCLE(m->frame) ? CYCLE(m->frame) : ++last_cycle;
+	if (cycle == CYCLE(gc_rec_last))
+	  CYCLE_DEBUG_MSG(m, "gc_cycle_push, old cycle");
+	else {
+	  CYCLE_DEBUG_MSG(m, "gc_cycle_push, cycle");
+	  for (p = m->frame;; p = NEXT(p)) {
+	    CYCLE(p) = cycle;
+	    CYCLE_DEBUG_MSG(find_marker(p->data), "> gc_cycle_push, mark cycle");
+	    if (p == gc_rec_last) break;
+	  }}}}}			/* Mmm.. lisp ;) */
 
   else
     if (!(m->flags & GC_CYCLE_CHECKED)) {
-      struct marker *p;
-      m->flags |= gc_rec_last->flags & GC_LIVE;
-      if (weak) {
-	if (weak > 0) m->flags |= GC_WEAK_REF;
-	else m->flags |= GC_STRONG_REF;
-      }
+      struct gc_frame *l, *prev_rec_last = gc_rec_last;
 #ifdef PIKE_DEBUG
       cycle_checked++;
-      if (m->flags & GC_ON_STACK)
-	gc_fatal(x, 0, "Recursing twice into thing.\n");
-      if (m->flags & GC_LIVE_RECURSE)
-	gc_fatal(x, 0, "GC_LIVE_RECURSE set in normal recursion.\n");
+      if (m->frame)
+	gc_fatal(x, 0, "Marker already got a frame.\n");
+      if (NEXT(gc_rec_last))
+	gc_fatal(gc_rec_last->data, 0, "Not at end of list.\n");
 #endif
 
-      p = gc_rec_last;
-      if (p->cycle)
-	for (; p->link && p->link->cycle == p->cycle; p = p->link) {}
-      m->link = p->link;
-      p->link = m;
-      m->flags |= GC_CYCLE_CHECKED|GC_ON_STACK|GC_IN_REC_LIST;
-      m->cycle = 0;
+      NEXT(gc_rec_last) = m->frame = l = gc_cycle_enqueue_pop(x);
+      m->flags |= GC_CYCLE_CHECKED | (last->flags & GC_LIVE);
+      if (weak) {
+	if (weak > 0) l->frameflags |= GC_WEAK_REF;
+	else l->frameflags |= GC_STRONG_REF;
+      }
 
 #ifdef GC_CYCLE_DEBUG
       if (weak > 0) CYCLE_DEBUG_MSG(m, "gc_cycle_push, recurse weak");
@@ -1409,13 +1602,13 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       else CYCLE_DEBUG_MSG(m, "gc_cycle_push, recurse");
       gc_cycle_indent += 2;
 #endif
-      gc_rec_last = m;
+      gc_rec_last = l;
       return 1;
     }
 
   /* Should normally not recurse now, but got to do that anyway if we
    * must mark live things. */
-  if (!(gc_rec_last->flags & GC_LIVE) || m->flags & GC_LIVE) {
+  if (!(last->flags & GC_LIVE) || m->flags & GC_LIVE) {
     CYCLE_DEBUG_MSG(m, "gc_cycle_push, no recurse");
     return 0;
   }
@@ -1438,34 +1631,26 @@ live_recurse:
     }
   }
 
-  /* Recurse without linking m onto rec_list. */
+  {
+    /* Recurse without linking onto rec_list. */
+    struct gc_frame *l = gc_cycle_enqueue_pop(x);
 #ifdef GC_CYCLE_DEBUG
-  CYCLE_DEBUG_MSG(m, "gc_cycle_push, live recurse");
-  gc_cycle_indent += 2;
+    CYCLE_DEBUG_MSG(m, "gc_cycle_push, live recurse");
+    gc_cycle_indent += 2;
 #endif
-  gc_rec_last = m;
+    gc_rec_last = l;
+  }
+
   return 1;
 }
 
-/* Add an extra ref when a dead thing is popped. It's taken away in
- * the free pass. This is done to not refcount garb the cycles
- * themselves recursively, which in bad cases can consume a lot of C
- * stack. */
-#define ADD_REF_IF_DEAD(M)						\
-  if (!(M->flags & GC_LIVE)) {						\
-    DO_IF_DEBUG(							\
-      if (M->flags & GC_GOT_DEAD_REF)					\
-	gc_fatal(M->data, 0, "A thing already got an extra dead cycle ref.\n"); \
-    );									\
-    gc_add_extra_ref(M->data);						\
-    M->flags |= GC_GOT_DEAD_REF;					\
-  }
-
-void gc_cycle_pop(void *a)
+static void gc_cycle_pop(void *a)
 {
-  struct marker *m = find_marker(a), *p, *q, *base;
+  struct marker *m = find_marker(a);
+  struct gc_frame *here, *base, *p;
 
 #ifdef PIKE_DEBUG
+  if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_CYCLE)
     fatal("GC cycle pop attempted in invalid pass.\n");
   if (!(m->flags & GC_CYCLE_CHECKED))
@@ -1483,97 +1668,80 @@ void gc_cycle_pop(void *a)
 
   if (m->flags & GC_LIVE_RECURSE) {
     m->flags &= ~GC_LIVE_RECURSE;
-    CYCLE_DEBUG_MSG(m, "gc_cycle_pop, live pop");
+    CYCLE_DEBUG_MSG(m, "gc_cycle_pop_live");
+    gc_rec_last = PREV(gc_rec_top);
+    debug_really_free_gc_frame(gc_rec_top);
     return;
   }
 
+  here = m->frame;
 #ifdef PIKE_DEBUG
-  if (!(m->flags & GC_ON_STACK))
+  if (!here || here->data != a)
+    gc_fatal(a, 0, "Marker being popped has no or invalid frame.\n");
+  CHECK_POP_FRAME(here);
+  CHECK_POP_FRAME(gc_rec_last);
+  if (here->frameflags & GC_OFF_STACK)
     gc_fatal(a, 0, "Marker being popped isn't on stack.\n");
-  if (m->flags & GC_GOT_DEAD_REF)
-    gc_fatal(a, 0, "Didn't expect a dead extra ref.\n");
+  here->back = (struct gc_frame *) -1;
 #endif
-  m->flags &= ~GC_ON_STACK;
+  here->frameflags |= GC_OFF_STACK;
 
-  if (m->flags & GC_DONT_POP) {
-#ifdef PIKE_DEBUG
-    if (!m->link)
-      gc_fatal(a, 0, "Found GC_DONT_POP marker on top of list.\n");
-#endif
-    CYCLE_DEBUG_MSG(m, "gc_cycle_pop, keep in list");
-    if (!(m->flags & GC_MOVED_BACK)) {
-      gc_rec_last->flags |= GC_DONT_POP;
-      CYCLE_DEBUG_MSG(gc_rec_last, "gc_cycle_pop, propagate don't pop");
-    }
-    return;
-  }
-
-  for (base = gc_rec_last, p = base->link;; base = p, p = p->link) {
-    if (base == m) {
-#ifdef GC_CYCLE_DEBUG
+  for (base = PREV(here), p = here;; base = p, p = NEXT(p)) {
+    if (base == here) {
+      /* Part of a cycle; wait until the cycle is complete before
+       * unlinking it from rec_list. */
+      DO_IF_DEBUG(m->frame->back = (struct gc_frame *) -1);
       CYCLE_DEBUG_MSG(m, "gc_cycle_pop, keep cycle");
-#endif
       return;
     }
-    if (!(p->cycle && p->cycle == base->cycle))
+    CHECK_POP_FRAME(p);
+    if (!(CYCLE(p) && CYCLE(p) == CYCLE(base)))
       break;
   }
 
-  q = base;
-  while (1) {
-    p = q->link;
+  gc_rec_last = base;
+  while ((p = NEXT(base))) {
+    struct marker *pm = find_marker(p->data);
 #ifdef PIKE_DEBUG
-    if (p->flags & (GC_ON_STACK|GC_LIVE_RECURSE))
-      gc_fatal(p->data, 0, "Marker still got an on-stack flag at pop.\n");
+    if (pm->frame != p)
+      gc_fatal(p->data, 0, "Bogus marker for thing being popped.\n");
+    if (pm->flags & GC_GOT_DEAD_REF)
+      gc_fatal(p->data, 0, "Didn't expect a dead extra ref.\n");
 #endif
-
-    if (!p->cycle && !(p->flags & GC_LIVE_OBJ)) {
-      ADD_REF_IF_DEAD(p);
-      p->flags &= ~(GC_IN_REC_LIST|GC_DONT_POP|GC_WEAK_REF|GC_STRONG_REF);
-      q->link = p->link;
-      DO_IF_DEBUG(p->link = (struct marker *) -1);
-      CYCLE_DEBUG_MSG(p, "gc_cycle_pop, pop off");
+    p->frameflags &= ~(GC_WEAK_REF|GC_STRONG_REF);
+    if (pm->flags & GC_LIVE_OBJ) {
+      /* This extra ref is taken away in the kill pass. */
+      gc_add_extra_ref(p->data);
+      base = p;
+      DO_IF_DEBUG(PREV(p) = (struct gc_frame *) -1);
+      CYCLE_DEBUG_MSG(pm, "gc_cycle_pop, put on kill list");
     }
-    else q = p;
-
-    if (p == m) break;
+    else {
+      if (!(pm->flags & GC_LIVE)) {
+	/* Add an extra ref which is taken away in the free pass. This
+	 * is done to not refcount garb the cycles themselves
+	 * recursively, which in bad cases can consume a lot of C
+	 * stack. */
+#ifdef PIKE_DEBUG
+	if (pm->flags & GC_GOT_DEAD_REF)
+	  gc_fatal(pm->data, 0,
+		   "A thing already got an extra dead cycle ref.\n");
+#endif
+	gc_add_extra_ref(pm->data);
+	pm->flags |= GC_GOT_DEAD_REF;
+      }
+      NEXT(base) = NEXT(p);
+      CYCLE_DEBUG_MSG(pm, "gc_cycle_pop, pop off");
+      pm->frame = 0;
+      debug_really_free_gc_frame(p);
+    }
   }
 
-  if (base != q) {
-    q = base;
-    while ((p = q->link)) {
-#ifdef PIKE_DEBUG
-      if (!(p->flags & GC_IN_REC_LIST))
-	gc_fatal(p->data, 0, "Marker being cycle popped doesn't have GC_IN_REC_LIST.\n");
-      if (p->flags & GC_GOT_DEAD_REF)
-	gc_fatal(p->data, 0, "Didn't expect a dead extra ref.\n");
-#endif
-      p->flags &= ~GC_IN_REC_LIST;
-
-      p->flags &= ~(GC_DONT_POP|GC_WEAK_REF|GC_STRONG_REF);
-      if (p->flags & GC_LIVE_OBJ) {
-	/* This extra ref is taken away in the kill pass. */
-	gc_add_extra_ref(p->data);
-	q = p;
-	CYCLE_DEBUG_MSG(p, "gc_cycle_pop, put on kill list");
-      }
-      else {
-	ADD_REF_IF_DEAD(p);
-	q->link = p->link;
-	DO_IF_DEBUG(p->link = (struct marker *) -1);
-	CYCLE_DEBUG_MSG(p, "gc_cycle_pop, cycle pop off");
-      }
-    }
-
-    q->link = kill_list;
-    kill_list = base->link;
-    base->link = p;
+  if (base != gc_rec_last) {
+    NEXT(base) = kill_list;
+    kill_list = NEXT(gc_rec_last);
+    NEXT(gc_rec_last) = 0;
   }
-}
-
-void gc_set_rec_last(struct marker *m)
-{
-  gc_rec_last = m;
 }
 
 void do_gc_recurse_svalues(struct svalue *s, int num)
@@ -1622,17 +1790,17 @@ static void warn_bad_cycles()
   struct array *obj_arr = 0;
 
   if (!SETJMP(uwp)) {
-    struct marker *p;
+    struct gc_frame *p;
     unsigned cycle = 0;
     obj_arr = allocate_array(0);
 
     for (p = kill_list; p;) {
-      if ((cycle = p->cycle)) {
+      if ((cycle = CYCLE(p))) {
 	push_object((struct object *) p->data);
 	obj_arr = append_array(obj_arr, --sp);
       }
-      p = p->link;
-      if (p ? p->cycle != cycle : cycle) {
+      p = NEXT(p);
+      if (p ? CYCLE(p) != cycle : cycle) {
 	if (obj_arr->size >= 2) {
 	  push_constant_text("gc");
 	  push_constant_text("bad_cycle");
@@ -1786,6 +1954,7 @@ int do_gc(void)
   Pike_in_gc=GC_PASS_CYCLE;
 #ifdef PIKE_DEBUG
   obj_count = num_objects;
+  max_gc_frames = 0;
 #endif
 
   /* Now find all cycles in the internal structures */
@@ -1799,16 +1968,44 @@ int do_gc(void)
   gc_cycle_check_all_programs();
 
 #ifdef PIKE_DEBUG
-  if (gc_mark_queue.first)
-    fatal("gc_mark_queue not empty at end of cycle check pass.\n");
-  if (rec_list.link || gc_rec_last != &rec_list)
+  if (gc_rec_top)
+    fatal("gc_rec_top not empty at end of cycle check pass.\n");
+  if (NEXT(&rec_list) || gc_rec_last != &rec_list || gc_rec_top)
     fatal("Recurse list not empty or inconsistent after cycle check pass.\n");
 #endif
 
   GC_VERBOSE_DO(fprintf(stderr,
 			"| cycle: %u internal things visited, %u cycle ids used,\n"
-			"|        %u weak references freed, %d things really freed\n",
-			cycle_checked, last_cycle, weak_freed, obj_count - num_objects));
+			"|        %u weak references freed, %d things really freed,\n"
+			"|        space for %u gc frames used\n",
+			cycle_checked, last_cycle, weak_freed, obj_count - num_objects,
+			max_gc_frames));
+
+  if (gc_ext_weak_refs) {
+    size_t to_free = gc_ext_weak_refs;
+#ifdef PIKE_DEBUG
+    obj_count = num_objects;
+#endif
+    Pike_in_gc = GC_PASS_ZAP_WEAK;
+    /* Zap weak references from external to internal things. That
+     * doesn't occur very often; only when something have both
+     * external weak refs and nonweak cyclic refs from internal
+     * things. */
+    gc_zap_ext_weak_refs_in_arrays();
+    /* Multisets handled as arrays. */
+    if (gc_ext_weak_refs) {
+      gc_zap_ext_weak_refs_in_mappings();
+      if (gc_ext_weak_refs) {
+	gc_zap_ext_weak_refs_in_programs();
+	if (gc_ext_weak_refs)
+	  gc_zap_ext_weak_refs_in_objects();
+      }
+    }
+    GC_VERBOSE_DO(
+      fprintf(stderr,
+	      "| zap weak: freed %u external weak refs, %d things really freed\n",
+	      to_free - gc_ext_weak_refs, obj_count - num_objects));
+  }
 
   /* Thread switches, object alloc/free and reference changes are
    * allowed again now. */
@@ -1851,11 +2048,15 @@ int do_gc(void)
 #ifdef PIKE_DEBUG
   destroy_count = 0;
 #endif
-  for (; kill_list; kill_list = kill_list->link) {
+  for (; kill_list; kill_list = NEXT(kill_list)) {
     struct object *o = (struct object *) kill_list->data;
 #ifdef PIKE_DEBUG
-    if ((kill_list->flags & (GC_LIVE|GC_LIVE_OBJ)) != (GC_LIVE|GC_LIVE_OBJ))
+    if ((get_marker(kill_list->data)->flags & (GC_LIVE|GC_LIVE_OBJ)) !=
+	(GC_LIVE|GC_LIVE_OBJ))
       gc_fatal(o, 0, "Invalid thing in kill list.\n");
+    if (o->parent && !o->parent->prog &&
+	get_marker(o->parent)->flags & GC_LIVE_OBJ)
+      gc_fatal(o, 0, "GC destructed parent prematurely.\n");
 #endif
     GC_VERBOSE_DO(fprintf(stderr, "|   Killing %p with %d refs\n",
 			  o, o->refs));

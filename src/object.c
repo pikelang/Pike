@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.135 2000/07/11 03:45:10 mast Exp $");
+RCSID("$Id: object.c,v 1.136 2000/07/18 05:48:20 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1279,80 +1279,61 @@ void gc_mark_object_as_referenced(struct object *o)
   }
 }
 
-static void low_gc_cycle_check_object(struct object *o)
+void real_gc_cycle_check_object(struct object *o, int weak)
 {
-  int e;
-  struct program *p = o->prog;
+  GC_CYCLE_ENTER_OBJECT(o, weak) {
+    int e;
+    struct program *p = o->prog;
 
-  if (p) {
+    if (p) {
 #if 0
-    struct object *o2;
-    for (o2 = gc_internal_object; o2 && o2 != o; o2 = o2->next) {}
-    if (!o2) fatal("Object not on gc_internal_object list.\n");
+      struct object *o2;
+      for (o2 = gc_internal_object; o2 && o2 != o; o2 = o2->next) {}
+      if (!o2) fatal("Object not on gc_internal_object list.\n");
 #endif
 
-    /* This must be first. */
-    if(o->parent)
-      gc_cycle_check_object_strong(o->parent);
+      LOW_PUSH_FRAME(o);
 
-    LOW_PUSH_FRAME(o);
-
-    for(e=p->num_inherits-1; e>=0; e--)
-    {
-      int q;
-      
-      LOW_SET_FRAME_CONTEXT(p->inherits[e]);
-
-      if(pike_frame->context.prog->gc_recurse_func)
-	pike_frame->context.prog->gc_recurse_func(o);
-
-      for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+      for(e=p->num_inherits-1; e>=0; e--)
       {
-	int d=pike_frame->context.prog->variable_index[q];
-	
-	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+	int q;
+      
+	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
+
+	if(pike_frame->context.prog->gc_recurse_func)
+	  pike_frame->context.prog->gc_recurse_func(o);
+
+	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
-	  struct svalue *s;
-	  s=(struct svalue *)(pike_frame->current_storage +
-			      pike_frame->context.prog->identifiers[d].func.offset);
-	  dmalloc_touch_svalue(s);
-	  gc_cycle_check_svalues(s, 1);
-	}else{
-	  union anything *u;
-	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
-	  u=(union anything *)(pike_frame->current_storage +
-			       pike_frame->context.prog->identifiers[d].func.offset);
+	  int d=pike_frame->context.prog->variable_index[q];
+	
+	  if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+	  {
+	    struct svalue *s;
+	    s=(struct svalue *)(pike_frame->current_storage +
+				pike_frame->context.prog->identifiers[d].func.offset);
+	    dmalloc_touch_svalue(s);
+	    gc_cycle_check_svalues(s, 1);
+	  }else{
+	    union anything *u;
+	    int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
+	    u=(union anything *)(pike_frame->current_storage +
+				 pike_frame->context.prog->identifiers[d].func.offset);
 #ifdef DEBUG_MALLOC
-	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
 #endif
-	  gc_cycle_check_short_svalue(u, rtt);
+	    gc_cycle_check_short_svalue(u, rtt);
+	  }
 	}
+	LOW_UNSET_FRAME_CONTEXT();
       }
-      LOW_UNSET_FRAME_CONTEXT();
-    }
     
-    LOW_POP_FRAME();
-  }
-}
+      LOW_POP_FRAME();
 
-void real_gc_cycle_check_object(struct object *o)
-{
-  GC_CYCLE_ENTER_OBJECT(o, 0) {
-    low_gc_cycle_check_object(o);
-  } GC_CYCLE_LEAVE;
-}
-
-void real_gc_cycle_check_object_weak(struct object *o)
-{
-  GC_CYCLE_ENTER_OBJECT(o, 1) {
-    low_gc_cycle_check_object(o);
-  } GC_CYCLE_LEAVE;
-}
-
-void real_gc_cycle_check_object_strong(struct object *o)
-{
-  GC_CYCLE_ENTER_OBJECT(o, -1) {
-    low_gc_cycle_check_object(o);
+      /* This must be last. */
+      if(o->parent)
+	gc_cycle_check_object(o->parent, -1);
+    }
   } GC_CYCLE_LEAVE;
 }
 
@@ -1468,28 +1449,26 @@ void gc_cycle_check_all_objects(void)
 {
   struct object *o;
   for (o = gc_internal_object; o; o = o->next) {
-    real_gc_cycle_check_object(o);
-    run_lifo_queue(&gc_mark_queue);
+    real_gc_cycle_check_object(o, 0);
+    gc_cycle_run_queue();
   }
+}
+
+void gc_zap_ext_weak_refs_in_objects(void)
+{
+  gc_mark_object_pos = first_object;
+  while (gc_mark_object_pos != gc_internal_object && gc_ext_weak_refs) {
+    struct object *o = gc_mark_object_pos;
+    gc_mark_object_pos = o->next;
+    if (o->refs)
+      gc_mark_object_as_referenced(o);
+  }
+  discard_queue(&gc_mark_queue);
 }
 
 void gc_free_all_unreferenced_objects(void)
 {
   struct object *o,*next;
-
-  if (gc_ext_weak_refs) {
-    /* Have to go through all marked things if we got external weak
-     * references to otherwise unreferenced things, so the mark
-     * functions can free those references. */
-    gc_mark_object_pos = first_object;
-    while (gc_mark_object_pos != gc_internal_object && gc_ext_weak_refs) {
-      struct object *o = gc_mark_object_pos;
-      gc_mark_object_pos = o->next;
-      if (o->refs)
-	gc_mark_object_as_referenced(o);
-    }
-    discard_queue(&gc_mark_queue);
-  }
 
   for(o=gc_internal_object; o; o=next)
   {

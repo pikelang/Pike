@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.54 2000/07/11 03:45:10 mast Exp $
+ * $Id: gc.h,v 1.55 2000/07/18 05:48:20 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -61,23 +61,20 @@ extern void *gc_svalue_location;
   num_objects-- ;							\
 }while(0)
 
+struct gc_frame;
+
 struct marker
 {
   struct marker *next;
-  struct marker *link;		/* Next pointer used in rec_list and destroy_list. */
+  struct gc_frame *frame;	/* Pointer into the cycle check stack. */
   void *data;
   INT32 refs;			/* Internal references. */
   INT32 weak_refs;		/* Weak (implying internal) references. */
 #ifdef PIKE_DEBUG
   INT32 xrefs;			/* Known external references. */
-  INT32 saved_refs;		/* Object refcount during check and mark pass. */
+  INT32 saved_refs;		/* Object refcount during check pass. */
 #endif
-  unsigned INT16 cycle;		/* Cycle id number. */
-#ifdef PIKE_DEBUG
-  unsigned INT32 flags;
-#else
   unsigned INT16 flags;
-#endif
 };
 
 #define GC_MARKED		0x0001
@@ -85,29 +82,24 @@ struct marker
 #define GC_CYCLE_CHECKED	0x0004
 #define GC_LIVE			0x0008
 #define GC_LIVE_OBJ		0x0010
-#define GC_ON_STACK		0x0020
-#define GC_IN_REC_LIST		0x0040
-#define GC_MOVED_BACK		0x0080
-#define GC_DONT_POP		0x0100
-#define GC_LIVE_RECURSE		0x0200
-#define GC_WEAK_REF		0x0400
-#define GC_STRONG_REF		0x0800
-#define GC_GOT_DEAD_REF		0x1000
-#define GC_FREE_VISITED		0x2000
+#define GC_LIVE_RECURSE		0x0020
+#define GC_GOT_DEAD_REF		0x0040
+#define GC_FREE_VISITED		0x0080
 
-/* Debug mode flags. */
-#define GC_TOUCHED		0x010000
-#define GC_IS_REFERENCED	0x020000
-#define GC_XREFERENCED		0x040000
-#define GC_DO_FREE		0x080000
-#define GC_GOT_EXTRA_REF	0x100000
-#define GC_FOLLOWED_STRONG	0x200000
+#ifdef PIKE_DEBUG
+#define GC_TOUCHED		0x0100
+#define GC_IS_REFERENCED	0x0200
+#define GC_XREFERENCED		0x0400
+#define GC_DO_FREE		0x0800
+#define GC_GOT_EXTRA_REF	0x1000
+#endif
 
 #include "block_alloc_h.h"
 PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
 
-extern struct marker *gc_rec_last;
 extern size_t gc_ext_weak_refs;
+
+typedef void gc_cycle_check_cb (void *data, int weak);
 
 /* Prototypes begin here */
 struct callback *debug_add_gc_callback(callback_func call,
@@ -138,7 +130,6 @@ int gc_external_mark3(void *a, void *in, char *where);
 int gc_do_weak_free(void *a);
 int gc_mark(void *a);
 int gc_cycle_push(void *x, struct marker *m, int weak);
-void gc_cycle_pop(void *a);
 void gc_set_rec_last(struct marker *m);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, TYPE_T type);
@@ -146,6 +137,8 @@ int gc_do_free(void *a);
 int gc_is_internal(void *a);
 int do_gc(void);
 void f__gc_status(INT32 args);
+void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
+void gc_cycle_run_queue();
 /* Prototypes end here */
 
 #define gc_fatal \
@@ -167,9 +160,10 @@ void f__gc_status(INT32 args);
   (Pike_in_gc == GC_PASS_MARK ?						\
    gc_mark_weak_short_svalue((U), (T)) : gc_cycle_check_weak_short_svalue((U), (T)))
 
-#define GC_RECURSE_THING(V,T)						\
+#define GC_RECURSE_THING(V, T)						\
   (Pike_in_gc == GC_PASS_MARK ?						\
-   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) : PIKE_CONCAT(gc_cycle_check_, T)(V))
+   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) :			\
+   PIKE_CONCAT(gc_cycle_check_, T)(V, 0))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
 #define gc_recurse_mapping(V) GC_RECURSE_THING((V), mapping)
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
@@ -189,7 +183,7 @@ void f__gc_status(INT32 args);
 #define gc_is_referenced(X) debug_gc_is_referenced(debug_malloc_pass(X))
 #else
 #define gc_is_referenced(X) !(get_marker(X)->flags & GC_NOT_REFERENCED)
-#define gc_do_weak_free(X) (Pike_in_gc != GC_PASS_FREE ?		\
+#define gc_do_weak_free(X) (Pike_in_gc != GC_PASS_ZAP_WEAK ?		\
 			    get_marker(X)->weak_refs == -1 :		\
 			    !(get_marker(X)->flags & GC_MARKED))
 #endif
@@ -210,6 +204,7 @@ void f__gc_status(INT32 args);
 #define GC_PASS_CHECK		100
 #define GC_PASS_MARK		200
 #define GC_PASS_CYCLE		250
+#define GC_PASS_ZAP_WEAK	270
 #define GC_PASS_FREE		300
 #define GC_PASS_KILL		400
 #define GC_PASS_DESTRUCT	500
@@ -223,8 +218,8 @@ extern int gc_in_cycle_check;
 
 /* Use WEAK < 0 for strong links. The gc makes these assumptions about
  * those:
- * 1.  All strong links are recursed after any other links, i.e.
- *     strong links should be pushed first into the lifo queue.
+ * 1.  All strong links are recursed before any other links, i.e.
+ *     strong links must be passed to gc_cycle_check_* last.
  * 2.  There can never be a cycle consisting of only strong links.
  */
 
@@ -232,42 +227,29 @@ extern int gc_in_cycle_check;
   void *_thing_ = (X);							\
   struct marker *_m_ = get_marker(_thing_);				\
   if (!(_m_->flags & GC_MARKED)) {					\
-    struct marker *_old_last_ = gc_rec_last;				\
-    if (gc_cycle_push(_thing_, _m_, (WEAK))) {				\
-      DO_IF_DEBUG(							\
-	if (gc_in_cycle_check)						\
-	  fatal("Recursing immediately in gc cycle check.\n");		\
-	gc_in_cycle_check = 1;						\
-      );								\
-      enqueue_lifo(&gc_mark_queue,					\
-		   (queue_call) gc_cycle_pop, _thing_);			\
-      enqueue_lifo(&gc_mark_queue,					\
-		   (queue_call) gc_set_rec_last, _old_last_);		\
-      {
+    DO_IF_DEBUG(							\
+      if (gc_in_cycle_check)						\
+	fatal("Recursing immediately in gc cycle check.\n");		\
+      gc_in_cycle_check = 1;						\
+    );									\
+    if (gc_cycle_push(_thing_, _m_, (WEAK))) {
 
 #define GC_CYCLE_ENTER_OBJECT(X, WEAK) do {				\
   struct object *_thing_ = (X);						\
   struct marker *_m_ = get_marker(_thing_);				\
   if (!(_m_->flags & GC_MARKED)) {					\
-    struct marker *_old_last_ = gc_rec_last;				\
     if (_thing_->prog && FIND_LFUN(_thing_->prog, LFUN_DESTROY) != -1)	\
       _m_->flags |= GC_LIVE|GC_LIVE_OBJ;				\
-    if (gc_cycle_push(_thing_, _m_, (WEAK))) {				\
-      DO_IF_DEBUG(							\
-	if (gc_in_cycle_check)						\
-	  fatal("Recursing immediately in gc cycle check.\n");		\
-	gc_in_cycle_check = 1;						\
-      );								\
-      enqueue_lifo(&gc_mark_queue,					\
-		   (queue_call) gc_cycle_pop, _thing_);			\
-      enqueue_lifo(&gc_mark_queue,					\
-		   (queue_call) gc_set_rec_last, _old_last_);		\
-      {
+    DO_IF_DEBUG(							\
+      if (gc_in_cycle_check)						\
+	fatal("Recursing immediately in gc cycle check.\n");		\
+      gc_in_cycle_check = 1;						\
+    );									\
+    if (gc_cycle_push(_thing_, _m_, (WEAK))) {
 
 #define GC_CYCLE_LEAVE							\
-      }									\
-      DO_IF_DEBUG(gc_in_cycle_check = 0);				\
     }									\
+    DO_IF_DEBUG(gc_in_cycle_check = 0);					\
   }									\
 } while (0)
 

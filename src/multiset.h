@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: multiset.h,v 1.12 2000/07/06 23:25:26 mast Exp $
+ * $Id: multiset.h,v 1.13 2000/07/18 05:48:20 mast Exp $
  */
 #ifndef MULTISET_H
 #define MULTISET_H
@@ -56,16 +56,13 @@ void gc_mark_multiset_as_referenced(struct multiset *l);
 unsigned gc_touch_all_multisets(void);
 void gc_check_all_multisets(void);
 void gc_mark_all_multisets(void);
-void real_gc_cycle_check_multiset(struct multiset *l);
-void real_gc_cycle_check_multiset_weak(struct multiset *l);
+void real_gc_cycle_check_multiset(struct multiset *l, int weak);
 void gc_cycle_check_all_multisets(void);
 void gc_free_all_unreferenced_multisets(void);
 void count_memory_in_multisets(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 
-#define gc_cycle_check_multiset(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_multiset, (X))
-#define gc_cycle_check_multiset_weak(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_multiset_weak, (X))
+#define gc_cycle_check_multiset(X, WEAK) \
+  gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_multiset, (X), (WEAK))
 
 #endif /* MULTISET_H */

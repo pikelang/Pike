@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.26 2000/07/06 23:25:26 mast Exp $
+ * $Id: mapping.h,v 1.27 2000/07/18 05:48:20 mast Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -150,9 +150,9 @@ void gc_mark_mapping_as_referenced(struct mapping *m);
 unsigned gc_touch_all_mappings(void);
 void gc_check_all_mappings(void);
 void gc_mark_all_mappings(void);
-void real_gc_cycle_check_mapping(struct mapping *m);
-void real_gc_cycle_check_mapping_weak(struct mapping *m);
+void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 void gc_cycle_check_all_mappings(void);
+void gc_zap_ext_weak_refs_in_mappings(void);
 void gc_free_all_unreferenced_mappings(void);
 void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
@@ -161,9 +161,7 @@ void zap_all_mappings(void);
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))
 
-#define gc_cycle_check_mapping(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_mapping, (X))
-#define gc_cycle_check_mapping_weak(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_mapping_weak, (X))
+#define gc_cycle_check_mapping(X, WEAK) \
+  gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_mapping, (X), (WEAK))
 
 #endif /* MAPPING_H */

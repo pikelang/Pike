@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.250 2000/07/12 12:38:41 grubba Exp $");
+RCSID("$Id: program.c,v 1.251 2000/07/18 05:48:20 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3586,40 +3586,28 @@ void gc_mark_program_as_referenced(struct program *p)
   }
 }
 
-void low_gc_cycle_check_program(struct program *p)
+void real_gc_cycle_check_program(struct program *p, int weak)
 {
-  int e;
+  GC_CYCLE_ENTER(p, weak) {
+    int e;
 
-  if (p->flags & PROGRAM_AVOID_CHECK)
-    /* Program is in an inconsistent state.
-     * don't look closer at it.
-     */
-    return;
+    if (p->flags & PROGRAM_AVOID_CHECK)
+      /* Program is in an inconsistent state.
+       * don't look closer at it.
+       */
+      return;
 
-  for(e=0;e<p->num_constants;e++)
-    gc_cycle_check_svalues(& p->constants[e].sval, 1);
+    for(e=0;e<p->num_constants;e++)
+      gc_cycle_check_svalues(& p->constants[e].sval, 1);
 
-  for(e=0;e<p->num_inherits;e++)
-  {
-    if(p->inherits[e].parent)
-      gc_cycle_check_object(p->inherits[e].parent);
+    for(e=0;e<p->num_inherits;e++)
+    {
+      if(p->inherits[e].parent)
+	gc_cycle_check_object(p->inherits[e].parent, 0);
 
-    if(e && p->inherits[e].prog)
-      gc_cycle_check_program(p->inherits[e].prog);
-  }
-}
-
-void real_gc_cycle_check_program(struct program *p)
-{
-  GC_CYCLE_ENTER(p, 0) {
-    low_gc_cycle_check_program(p);
-  } GC_CYCLE_LEAVE;
-}
-
-void real_gc_cycle_check_program_weak(struct program *p)
-{
-  GC_CYCLE_ENTER(p, 1) {
-    low_gc_cycle_check_program(p);
+      if(e && p->inherits[e].prog)
+	gc_cycle_check_program(p->inherits[e].prog, 0);
+    }
   } GC_CYCLE_LEAVE;
 }
 
@@ -3723,27 +3711,25 @@ void gc_cycle_check_all_programs(void)
 {
   struct program *p;
   for (p = gc_internal_program; p; p = p->next) {
-    real_gc_cycle_check_program(p);
-    run_lifo_queue(&gc_mark_queue);
+    real_gc_cycle_check_program(p, 0);
+    gc_cycle_run_queue();
   }
+}
+
+void gc_zap_ext_weak_refs_in_programs(void)
+{
+  gc_mark_program_pos = first_program;
+  while (gc_mark_program_pos != gc_internal_program && gc_ext_weak_refs) {
+    struct program *p = gc_mark_program_pos;
+    gc_mark_program_pos = p->next;
+    gc_mark_program_as_referenced(p);
+  }
+  discard_queue(&gc_mark_queue);
 }
 
 void gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
-
-  if (gc_ext_weak_refs) {
-    /* Have to go through all marked things if we got external weak
-     * references to otherwise unreferenced things, so the mark
-     * functions can free those references. */
-    gc_mark_program_pos = first_program;
-    while (gc_mark_program_pos != gc_internal_program && gc_ext_weak_refs) {
-      struct program *p = gc_mark_program_pos;
-      gc_mark_program_pos = p->next;
-      gc_mark_program_as_referenced(p);
-    }
-    discard_queue(&gc_mark_queue);
-  }
 
   for(p=gc_internal_program;p;p=next)
   {

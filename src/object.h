@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.48 2000/06/24 00:48:13 hubbe Exp $
+ * $Id: object.h,v 1.49 2000/07/18 05:48:20 mast Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -100,10 +100,9 @@ void gc_mark_object_as_referenced(struct object *o);
 unsigned gc_touch_all_objects(void);
 void gc_check_all_objects(void);
 void gc_mark_all_objects(void);
-void real_gc_cycle_check_object(struct object *o);
-void real_gc_cycle_check_object_weak(struct object *o);
-void real_gc_cycle_check_object_strong(struct object *o);
+void real_gc_cycle_check_object(struct object *o, int weak);
 void gc_cycle_check_all_objects(void);
+void gc_zap_ext_weak_refs_in_objects(void);
 void gc_free_all_unreferenced_objects(void);
 void count_memory_in_objects(INT32 *num_, INT32 *size_);
 struct magic_index_struct;
@@ -129,12 +128,8 @@ void check_all_objects(void);
 #define master() debug_master()
 #endif
 
-#define gc_cycle_check_object(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_object, (X))
-#define gc_cycle_check_object_weak(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_object_weak, (X))
-#define gc_cycle_check_object_strong(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_object_strong, (X))
+#define gc_cycle_check_object(X, WEAK) \
+  gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_object, (X), (WEAK))
 
 #endif /* OBJECT_H */
 

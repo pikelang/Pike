@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.313 2000/07/11 20:42:58 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.314 2000/07/18 05:48:20 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1945,7 +1945,7 @@ ifefun(gc,
       string id;
       void create (int i) {id = sprintf (\"dead[%d]\", i);}
       mixed a = 1, b = 1; // Mustn't be zero at destruct time.
-      mixed x, y;
+      mixed x, y, z;
       array v = set_weak_flag (({1}), 1); // Mustn't be zero at destruct time.
       array w = set_weak_flag (({0, 0}), 1);
       function(object:mixed) checkfn;
@@ -1962,6 +1962,7 @@ ifefun(gc,
 	  if (objectp (b) && !checked[b]) b->check_live (checked);
 	  if (objectp (x) && !checked[x]) x->check_live (checked);
 	  if (objectp (y) && !checked[y]) y->check_live (checked);
+	  if (objectp (z) && !checked[z]) z->check_live (checked);
 	  if (objectp (v[0]) && !checked[v[0] ]) v[0]->check_live (checked);
 	  if (objectp (w[0]) && !checked[w[0] ]) w[0]->check_live (checked);
 	  if (objectp (w[1]) && !checked[w[1] ]) w[1]->check_live (checked);
@@ -2476,6 +2477,34 @@ ifefun(gc,
 		      live_nested[1]->x = dead_nested[0];
 		      dead_nested[0]->x = live_nested[0];
 		    }}),
+      ({2, 0, 2, 0, lambda() {	// 72
+		      live[0]->x = live[1];
+		      live[1]->x = live_nested[1];
+		      live_nested[1]->x = live[0];
+		      live_nested[0]->x = live[1];
+		    }}),
+      ({2, 0, 4, 0, lambda() {	// 73
+		      live[0]->x = live[1], live[0]->y = live_nested[2], live[0]->z = live_nested[3];
+		      live[1]->x = live[0];
+		      live_nested[1]->x = live[0];
+		    }}),
+      ({2, 0, 4, 0, lambda() {	// 74
+		      live[0]->y = live[1], live[0]->z = live_nested[2], live[0]->x = live_nested[3];
+		      live[1]->x = live[0];
+		      live_nested[1]->x = live[0];
+		    }}),
+      ({2, 0, 4, 0, lambda() {	// 75
+		      live[0]->z = live[1], live[0]->x = live_nested[2], live[0]->y = live_nested[3];
+		      live[1]->x = live[0];
+		      live_nested[1]->x = live[0];
+		    }}),
+      ({2, 1, 2, 0, lambda() {	// 76
+		      dead[0]->x = dead[0], dead[0]->a = live_nested[0];
+		      live_nested[0]->y = live_nested[1], live_nested[0]->x = live[1];
+		      live_nested[1]->x = live[0];
+		      live[0]->x = live_nested[0];
+		      live[1]->x = live[0];
+		    }}),
       //       ({3, 0, 0, 0, lambda() { // Not possible without weak refs directly in objects.
       // 		   live[0]->x = live[0], live[0]->v[0] = live[1];
       // 		   live[1]->x = live[1], live[1]->w[0] = live[2];
@@ -2541,8 +2570,8 @@ ifefun(gc,
 	}
       }
     }
-    werror ("%60s\r", "");
     if (test_failed) error ("GC destruct order test failed.\n");
+    werror ("%60s\r", "");
   }]])
 
   test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);

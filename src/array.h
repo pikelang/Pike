@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.20 2000/06/09 22:43:04 mast Exp $
+ * $Id: array.h,v 1.21 2000/07/18 05:48:20 mast Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -165,9 +165,9 @@ void gc_mark_array_as_referenced(struct array *a);
 unsigned gc_touch_all_arrays(void);
 void gc_check_all_arrays(void);
 void gc_mark_all_arrays(void);
-void real_gc_cycle_check_array(struct array *a);
-void real_gc_cycle_check_array_weak(struct array *a);
+void real_gc_cycle_check_array(struct array *a, int weak);
 void gc_cycle_check_all_arrays(void);
+void gc_zap_ext_weak_refs_in_arrays(void);
 void gc_free_all_unreferenced_arrays(void);
 void debug_dump_type_field(TYPE_FIELD t);
 void debug_dump_array(struct array *a);
@@ -177,9 +177,7 @@ struct array *explode_array(struct array *a, struct array *b);
 struct array *implode_array(struct array *a, struct array *b);
 /* Prototypes end here */
 
-#define gc_cycle_check_array(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_array, (X))
-#define gc_cycle_check_array_weak(X) \
-  enqueue_lifo(&gc_mark_queue, (queue_call) real_gc_cycle_check_array_weak, (X))
+#define gc_cycle_check_array(X, WEAK) \
+  gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_array, (X), (WEAK))
 
 #endif /* ARRAY_H */

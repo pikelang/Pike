@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.92 2000/07/11 03:45:10 mast Exp $");
+RCSID("$Id: mapping.c,v 1.93 2000/07/18 05:48:20 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -846,7 +846,7 @@ void check_mapping_for_destruct(struct mapping *m)
     fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE &&
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK &&
       Pike_in_gc != GC_PASS_MARK)
     fatal("check_mapping_for_destruct called in wrong pass inside gc.\n");
 #endif
@@ -1910,45 +1910,33 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
   }
 }
 
-void low_gc_cycle_check_mapping(struct mapping *m)
+void real_gc_cycle_check_mapping(struct mapping *m, int weak)
 {
+  GC_CYCLE_ENTER(m, weak) {
 #ifdef PIKE_DEBUG
-  if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    if(m->data->refs <=0)
+      fatal("Zero refs in mapping->data\n");
 #endif
 
-  if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
-  {
-    INT32 e;
-    struct keypair *k;
+    if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
+    {
+      INT32 e;
+      struct keypair *k;
 
-    if (m->flags & MAPPING_FLAG_WEAK)
-      gc_recurse_weak_mapping(m, gc_cycle_check_weak_svalues);
-    else
-      NEW_MAPPING_LOOP(m->data)
-      {
-	if (gc_cycle_check_svalues(&k->ind, 1) ||
-	    gc_cycle_check_svalues(&k->val, 1)) {
+      if (m->flags & MAPPING_FLAG_WEAK)
+	gc_recurse_weak_mapping(m, gc_cycle_check_weak_svalues);
+      else
+	NEW_MAPPING_LOOP(m->data)
+	{
+	  if (gc_cycle_check_svalues(&k->ind, 1) ||
+	      gc_cycle_check_svalues(&k->val, 1)) {
 #ifdef PIKE_DEBUG
-	  fatal("Looks like check_mapping_for_destruct "
-		"didn't do its job properly.\n");
+	    fatal("Looks like check_mapping_for_destruct "
+		  "didn't do its job properly.\n");
 #endif
+	  }
 	}
-      }
-  }
-}
-
-void real_gc_cycle_check_mapping(struct mapping *m)
-{
-  GC_CYCLE_ENTER(m, 0) {
-    low_gc_cycle_check_mapping(m);
-  } GC_CYCLE_LEAVE;
-}
-
-void real_gc_cycle_check_mapping_weak(struct mapping *m)
-{
-  GC_CYCLE_ENTER(m, 1) {
-    low_gc_cycle_check_mapping(m);
+    }
   } GC_CYCLE_LEAVE;
 }
 
@@ -2049,9 +2037,20 @@ void gc_cycle_check_all_mappings(void)
 {
   struct mapping *m;
   for (m = gc_internal_mapping; m; m = m->next) {
-    real_gc_cycle_check_mapping(m);
-    run_lifo_queue(&gc_mark_queue);
+    real_gc_cycle_check_mapping(m, 0);
+    gc_cycle_run_queue();
   }
+}
+
+void gc_zap_ext_weak_refs_in_mappings(void)
+{
+  gc_mark_mapping_pos = first_mapping;
+  while (gc_mark_mapping_pos != gc_internal_mapping && gc_ext_weak_refs) {
+    struct mapping *m = gc_mark_mapping_pos;
+    gc_mark_mapping_pos = m->next;
+    gc_mark_mapping_as_referenced(m);
+  }
+  discard_queue(&gc_mark_queue);
 }
 
 void gc_free_all_unreferenced_mappings(void)
@@ -2060,19 +2059,6 @@ void gc_free_all_unreferenced_mappings(void)
   struct keypair *k,**prev;
   struct mapping *m,*next;
   struct mapping_data *md;
-
-  if (gc_ext_weak_refs) {
-    /* Have to go through all marked things if we got external weak
-     * references to otherwise unreferenced things, so the mark
-     * functions can free those references. */
-    gc_mark_mapping_pos = first_mapping;
-    while (gc_mark_mapping_pos != gc_internal_mapping && gc_ext_weak_refs) {
-      struct mapping *m = gc_mark_mapping_pos;
-      gc_mark_mapping_pos = m->next;
-      gc_mark_mapping_as_referenced(m);
-    }
-    discard_queue(&gc_mark_queue);
-  }
 
   for(m=gc_internal_mapping;m;m=next)
   {

@@ -16,7 +16,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.24 2000/07/11 03:45:10 mast Exp $");
+RCSID("$Id: multiset.c,v 1.25 2000/07/18 05:48:20 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -307,17 +307,10 @@ void gc_mark_multiset_as_referenced(struct multiset *l)
   }
 }
 
-void real_gc_cycle_check_multiset(struct multiset *l)
+void real_gc_cycle_check_multiset(struct multiset *l, int weak)
 {
-  GC_CYCLE_ENTER(l, 0) {
-    gc_cycle_check_array(l->ind);
-  } GC_CYCLE_LEAVE;
-}
-
-void real_gc_cycle_check_multiset_weak(struct multiset *l)
-{
-  GC_CYCLE_ENTER(l, 1) {
-    gc_cycle_check_array(l->ind);
+  GC_CYCLE_ENTER(l, weak) {
+    gc_cycle_check_array(l->ind, 0);
   } GC_CYCLE_LEAVE;
 }
 
@@ -360,17 +353,14 @@ void gc_cycle_check_all_multisets(void)
 {
   struct multiset *l;
   for (l = gc_internal_multiset; l; l = l->next) {
-    real_gc_cycle_check_multiset(l);
-    run_lifo_queue(&gc_mark_queue);
+    real_gc_cycle_check_multiset(l, 0);
+    gc_cycle_run_queue();
   }
 }
 
 void gc_free_all_unreferenced_multisets(void)
 {
   struct multiset *l,*next;
-
-  /* No gc_ext_weak_refs stuff here; it's been taken care of by
-   * gc_free_all_unreferenced_arrays(). */
 
   for(l=gc_internal_multiset;l;l=next)
   {
