@@ -1,6 +1,6 @@
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.5 2000/12/01 08:09:56 hubbe Exp $");
+RCSID("$Id: clf.c,v 1.6 2002/02/05 15:28:05 nilsson Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -87,7 +87,59 @@ void pike_module_exit( void )
 
 /** Functions implementing Pike functions **/
 
-/* CommonLog.read() */
+/*! @module CommonLog
+ *!
+ *! The CommonLog module is used to parse the lines in a www server's logfile,
+ *! which must be in "common log" format -- such as used by default for the access log by
+ *! Roxen, Caudium, Apache et al.
+ */
+
+/*! @decl int read(function(array(int|string), int : void ) callback,@
+ *!            Stdio.File|string logfile, void|int offset)
+ *!
+ *! Reads the log file and calls the callback function for every parsed line. For lines that
+ *! fails to be parsed the callback is not called not is any error thrown. The number of
+ *! bytes read are returned.
+ *!
+ *! @param callback
+ *! The callbacks first argument is an array with the different parts of the log entry.
+ *! @array
+ *!   @elem string remote_host
+ *!
+ *!   @elem int(0..0)|string ident_user
+ *!
+ *!   @elem int(0..0)|string auth_user
+ *!
+ *!   @elem int year
+ *!
+ *!   @elem int month
+ *!
+ *!   @elem int day
+ *!
+ *!   @elem int hours
+ *!
+ *!   @elem int minutes
+ *!
+ *!   @elem int seconds
+ *!
+ *!   @elem int timezone
+ *!
+ *!   @elem int(0..0)|string method
+ *!     One of "GET", "POST", "HEAD" etc.
+ *!   @elem int(0..0)|string path
+ *!
+ *!   @elem string protocol
+ *!     E.g. "HTTP/1.0"
+ *!   @elem int reply_code
+ *!     One of 200, 404 etc.
+ *!   @elem int bytes
+ *! @endarray
+ *!
+ *! The second callback argument is the current offset to the end of the current line.
+ *!
+ *! @param offset
+ *! The position in the file where the parser should begin.
+ */
 
 static void f_read_clf( INT32 args )
 {
@@ -722,6 +774,5 @@ static void f_read_clf( INT32 args )
   push_int64(offs0);
 }
 
-
-
-
+/*! @endmodule
+ */
