@@ -10,31 +10,49 @@ mapping appendix_queue = ([]);
 
 Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
 
-// array( array(name,file) )
+// array( array(name,file,(subchapters)) )
 array toc = ({});
 class TocNode {
   inherit Node;
   string path;
+  int(1..3) depth;
 
   int|void walk_preorder_2(mixed ... args) {
     mChildren = ({});
+    int chapter;
     foreach(toc, array ent) {
       string file = ent[1][sizeof(String.common_prefix( ({ path, ent[1] }) ))..];
       if(file[0]=='/') file = file[1..];
+
+      Node dt = Node( XML_ELEMENT, "dt", ([]), 0 );
       Node link = Node( XML_ELEMENT, "url", ([ "href" : file ]), 0 );
-      link->add_child( Node( XML_TEXT, 0, 0, ent[0] ) );
-      add_child(link);
-      add_child( Node( XML_ELEMENT, "br", ([]), 0 ));
+      link->add_child( Node( XML_TEXT, 0, 0, (++chapter)+". "+ent[0] ) );
+      dt->add_child( link );
+      add_child( dt );
       add_child( Node( XML_TEXT, 0, 0, "\n" ) );
+
+      int sub;
+      if(sizeof(ent)>2 && depth>1)
+	foreach(ent[2..], string subtit) {
+	  Node dd = Node( XML_ELEMENT, "dd", ([]), 0 );
+	  Node link = Node( XML_ELEMENT, "url", ([ "href" : file ]), 0 );
+	  link->add_child( Node( XML_TEXT, 0, 0, chapter+"."+(++sub)+". "+subtit ) );
+	  dd->add_child( link );
+	  add_child( dd );
+	  add_child( Node( XML_TEXT, 0, 0, "\n" ) );
+
+	  // TODO: Add depth 3 here
+	}
     }
     ::walk_preorder_2( @args );
   }
 
   int count_children() { return sizeof(toc)*3; }
 
-  void create(string _path) {
+  void create(string _path, int(1..3) _depth) {
     path = _path;
-    ::create(XML_ELEMENT, "p", ([]), "");
+    depth = _depth;
+    ::create(XML_ELEMENT, "dl", ([]), "");
   }
 }
 
@@ -170,11 +188,12 @@ void chapter_ref_expansion(Node n, string dir) {
       break;
 
     case "contents":
-      c->replace_node( TocNode(dir) );
+      c->replace_node( TocNode(dir, 3) );
       break;
 
     case "section":
       c->get_attributes()->number = (string)++section;
+      toc[chapter] += ({ c->get_attributes()->title });
       section_ref_expansion(c);
       break;
 
@@ -232,8 +251,8 @@ void ref_expansion(Node n, string dir, void|string file) {
     case "chapter":
       if(c->get_attributes()->unnumbered!="1")
 	c->get_attributes()->number = (string)++chapter;
-      chapter_ref_expansion(c, dir);
       toc += ({ ({ c->get_attributes()->title, file }) });
+      chapter_ref_expansion(c, dir);
       break;
 
     case "appendix-ref":
