@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.54 2000/08/03 12:17:04 grubba Exp $
+ * $Id: interpret.h,v 1.55 2000/08/03 12:36:30 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -96,7 +96,8 @@ struct pike_frame
 
 #define pop_n_elems(X)							\
  do { ptrdiff_t x_=(X); if(x_) { 					\
-   check__positive(x_, ("Popping negative number of args.... (%ld) \n", x_)); \
+   check__positive(x_, ("Popping negative number of args.... (%ld) \n",	\
+		   (long)x_));						\
    Pike_sp -= x_; debug_check_stack();					\
    free_svalues(Pike_sp, x_, BIT_MIXED);				\
  } } while (0)
