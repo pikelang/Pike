@@ -5,7 +5,7 @@ static private inherit "./module.pmod";
 //static constant OrNode    = Search.Grammar.OrNode;
 //static constant AndNode   = Search.Grammar.AndNode;
 //static constant TextNode  = Search.Grammar.TextNode;
-//
+
 #include "debug.h"
 
 // =========================================================================
@@ -64,7 +64,7 @@ static private inherit "./module.pmod";
 
 static array(array(Token|string)) tokens;
 static array(string) fieldstack;
-mapping(string:string) options;
+mapping(string:mixed) options;
 
 static array(Token|string) peek(void|int lookahead) {
   if (lookahead >= sizeof(tokens))
@@ -77,8 +77,18 @@ static void advance() {
     tokens = tokens[1 .. ];
 }
 
-static void create(mapping(string:string)|void opt) {
-  options = opt || ([]);
+static int lookingAtFieldStart(void|int offset) {
+  multiset(string) fields = options["fields"];
+  //  SHOW(tokens);
+  return peek(offset)[0] == TOKEN_WORD
+    && fields[ lower_case(peek(offset)[1]) ]
+    && peek(offset + 1)[0] == TOKEN_COLON;
+}
+
+static void create(mapping(string:mixed)|void opt) {
+  options = opt || ([ "implicit" : "or" ]);
+  if (!options["fields"])
+    options["fields"] = getDefaultFields();
 }
 
 ParseNode parse(string q) {
@@ -88,6 +98,7 @@ ParseNode parse(string q) {
 }
 
 static ParseNode parseQuery() {
+  //  TRACE;
   ParseNode or = OrNode();
   for (;;) {
     ParseNode n = parseExpr0();
@@ -103,6 +114,7 @@ static ParseNode parseQuery() {
 }
 
 static ParseNode parseExpr0() {
+  //  TRACE;
   ParseNode and = AndNode();
   for (;;) {
     ParseNode n = parseExpr1();
@@ -121,16 +133,17 @@ static ParseNode parseExpr0() {
 }
 
 static ParseNode parseExpr1() {
+  //  TRACE;
   return parseExpr2();
 }
 
 static ParseNode parseExpr2() {
+  //  TRACE;
 
   // field ':' expr3
-  if (peek()[0] == TOKEN_WORD
-      && isFieldSpecWord(peek()[1])
-      && peek(1)[0] == TOKEN_COLON)
+  if (lookingAtFieldStart())
   {
+    //    TRACE;
     fieldstack = ({ peek()[1] }) + fieldstack;
     advance();
     advance();
@@ -153,16 +166,15 @@ static ParseNode parseExpr2() {
 }
 
 static ParseNode parseExpr3() {
-  if (peek()[0] == TOKEN_WORD
-      && peek(1)[0] == TOKEN_COLON)
+  //  TRACE;
+  if (lookingAtFieldStart())
     return 0;
   ParseNode or = OrNode();
   for (;;) {
     ParseNode n = parseExpr4();
     or->addChild(n);
     if (peek()[0] == TOKEN_OR)
-      if (peek(1)[0] == TOKEN_WORD
-          && peek(2)[0] == TOKEN_COLON)
+      if (lookingAtFieldStart(1))
         break; // it was a higher level OR
       else
         advance();
@@ -175,14 +187,14 @@ static ParseNode parseExpr3() {
 }
 
 static ParseNode parseExpr4() {
+  //  TRACE;
   ParseNode and = AndNode();
   for (;;) {
     ParseNode n = parseExpr5();
     and->addChild(n);
     // NOTE: No implicit and here!
     if (peek()[0] == TOKEN_AND
-        && !(peek(1)[0] == TOKEN_WORD
-             && peek(2)[0] == TOKEN_COLON    // it was a higher level AND
+        && !(lookingAtFieldStart(1)            // it was a higher level AND
              || peek(1)[0] == TOKEN_LPAREN))
       advance();
     else
@@ -194,6 +206,7 @@ static ParseNode parseExpr4() {
 }
 
 static ParseNode parseExpr5() {
+  //  TRACE;
   ParseNode text = TextNode();
   text->field = fieldstack[0];
   for (;;) {
@@ -202,8 +215,7 @@ static ParseNode parseExpr5() {
             TOKEN_RPAREN,
             TOKEN_AND,
             TOKEN_OR >) [ peek()[0] ]
-         || (peek()[0] == TOKEN_WORD
-             && peek(1)[0] == TOKEN_COLON)
+         || lookingAtFieldStart()
          || (peek()[0] == TOKEN_LPAREN))
       break; // it was a higher level IMPLICIT AND
     if (peek()[0] == TOKEN_OR)
@@ -225,6 +237,7 @@ static ParseNode parseExpr5() {
 }
 
 static void parseExpr6(TextNode node) {
+  //  TRACE;
   int prefix = 0;
 
   if (peek()[0] == TOKEN_MINUS) {
@@ -267,14 +280,14 @@ static void parseExpr6(TextNode node) {
 }
 
 static ParseNode parseDate() {
+  //  TRACE;
   DateNode n = DateNode();
   n->date = "";
 loop:
   for (;;) {
     switch (peek()[0]) {
       case TOKEN_WORD:
-        if (isFieldSpecWord(peek()[1])
-            && peek(1)[0] == TOKEN_COLON)
+        if (lookingAtFieldStart())
           break loop;  // it's a field specifier
         break;
       case TOKEN_UNKNOWN:

@@ -69,15 +69,8 @@ class TextNode {
   }
 }
 
-static int isFieldSpecWord(string word) {
-  return (<
-    "any",
-    "date",
-    "title",
-    "description",
-    "url",
-    "keywords",
-  >) [lower_case(word)];
+static multiset getDefaultFields() {
+  return (< "anchor", "any", "body", "keywords", "title", "url",  >);
 }
 
 // Splits a string into its words...
