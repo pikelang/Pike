@@ -162,6 +162,7 @@ test_true(rm("testsuite.tmp"))
 // Stdio.FakeFile
 
 test_true(Stdio.FakeFile("")->is_fake_file)
+test_do( Stdio.File f = Stdio.FakeFile(""); )
 test_any([[
   object f=Stdio.FakeFile("");
   int r = f->write("hej");
