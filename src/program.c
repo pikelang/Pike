@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.312 2002/04/17 16:21:00 grubba Exp $");
+RCSID("$Id: program.c,v 1.313 2002/05/06 14:35:32 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -584,6 +584,37 @@ char *find_program_name(struct program *p, INT32 *line)
 }
 #endif
 
+int override_identifier (struct reference *ref, struct pike_string *name, int cur_id)
+{
+  int id = -1;
+  /* This loop could possibly be optimized by looping over
+   * each inherit and looking up 'name' in each inherit
+   * and then see if should be overwritten
+   * /Hubbe
+   */
+
+  for(;cur_id<Pike_compiler->new_program->num_identifier_references;cur_id++)
+  {
+    /* Do not zapp hidden identifiers */
+    if(Pike_compiler->new_program->identifier_references[cur_id].id_flags & ID_HIDDEN)
+      continue;
+
+    /* Do not zapp inline ('local') identifiers */
+    if(Pike_compiler->new_program->identifier_references[cur_id].inherit_offset &&
+       (Pike_compiler->new_program->identifier_references[cur_id].id_flags & ID_INLINE))
+      continue;
+
+    /* Do not zapp functions with the wrong name... */
+    if(ID_FROM_INT(Pike_compiler->new_program, cur_id)->name != name)
+      continue;
+
+    Pike_compiler->new_program->identifier_references[cur_id]=*ref;
+    id = cur_id;
+  }
+
+  return id;
+}
+
 void fixate_program(void)
 {
   INT32 i,e,t;
@@ -592,6 +623,15 @@ void fixate_program(void)
   if(Pike_compiler->new_program->flags & PROGRAM_OPTIMIZED)
     fatal("Cannot fixate optimized program\n");
 #endif
+
+  /* Fixup identifier overrides. */
+  for (i = 0; i < Pike_compiler->new_program->num_identifier_references; i++) {
+    struct reference *ref = Pike_compiler->new_program->identifier_references + i;
+    if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->inherit_offset != 0) continue;
+    override_identifier (ref, ID_FROM_PTR (Pike_compiler->new_program, ref)->name,
+			 i + 1);
+  }
 
   /* Ok, sort for binsearch */
   for(e=i=0;i<(int)Pike_compiler->new_program->num_identifier_references;i++)
@@ -1156,6 +1196,83 @@ static ptrdiff_t alignof_variable(int run_time_type)
 }
 
 #ifdef PIKE_DEBUG
+
+void dump_program_tables (struct program *p, int indent)
+{
+  int d;
+
+  fprintf(stderr,
+	  "%*sProgram flags: 0x%04x\n\n",
+	  indent, "", p->flags);
+
+  fprintf(stderr,
+	  "%*sReference table:\n"
+	  "%*s  ####: Flags Inherit Identifier\n",
+	  indent, "", indent, "");
+  for (d=0; d < p->num_identifier_references; d++) {
+    struct reference *ref = p->identifier_references + d;
+
+    fprintf(stderr, "%*s  %4d: %5x %7d %10d  %s\n",
+	    indent, "",
+	    d, ref->id_flags, ref->inherit_offset,
+	    ref->identifier_offset,
+	    ID_FROM_PTR(p,ref)->name->size_shift ? "(wide)" :
+	    ID_FROM_PTR(p,ref)->name->str);
+    if (IDENTIFIER_IS_PIKE_FUNCTION(ID_FROM_PTR(p,ref)->identifier_flags)) {
+      INT32 line;
+      struct program *inh_p = INHERIT_FROM_PTR(p,ref)->prog;
+      char *file = get_line (ID_FROM_PTR(p,ref)->func.offset + inh_p->program,
+			     inh_p, &line);
+      fprintf (stderr, "%*s                                  %s:%d\n",
+	       indent, "", file, line);
+    }
+  }
+  fprintf(stderr, "\n"
+	  "%*sInherit table:\n"
+	  "%*s  ####: Level id_level offset ref_offset\n",
+	  indent, "", indent, "");
+  for (d=0; d < p->num_inherits; d++) {
+    struct inherit *inh = p->inherits + d;
+
+    fprintf(stderr, "%*s  %4d: %5d %8d %6d %10d\n",
+	    indent, "",
+	    d, inh->inherit_level, inh->identifier_level,
+	    inh->storage_offset, inh->identifier_ref_offset);
+  }
+  fprintf(stderr, "\n"
+	  "%*sIdentifier table:\n"
+	  "%*s  ####: Flags Offset Type Name\n",
+	  indent, "", indent, "");
+  for (d=0; d < p->num_identifiers; d++) {
+    struct identifier *id = p->identifiers + d;
+
+    fprintf(stderr, "%*s  %4d: %5x %6d %4d \"%s\"\n",
+	    indent, "",
+	    d, id->identifier_flags, id->func.offset,
+	    id->run_time_type, id->name->str);
+  }
+  fprintf(stderr, "\n"
+	  "%*sVariable table:\n"
+	  "%*s  ####: Index\n",
+	  indent, "", indent, "");
+  for (d = 0; d < p->num_variable_index; d++) {
+    fprintf(stderr, "%*s  %4d: %5d\n",
+	    indent, "",
+	    d, p->variable_index[d]);
+  }
+  fprintf(stderr, "\n"
+	  "%*sConstant table:\n"
+	  "%*s  ####: Type Name\n",
+	  indent, "", indent, "");
+  for (d = 0; d < p->num_constants; d++) {
+    struct program_constant *c = p->constants + d;
+    fprintf(stderr, "%*s  %4d: %4d %s%s%s\n",
+	    indent, "",
+	    d, c->sval.type,
+	    c->name?"\"":"",c->name?c->name->str:"NULL",c->name?"\"":"");
+  }
+  fprintf(stderr, "\n");
+}
 
 void check_program(struct program *p)
 {
@@ -2522,6 +2639,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
   if(n != -1)
   {
+    int overridden;
+
     if(IDENTIFIERP(n)->id_flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
@@ -2540,12 +2659,13 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       return n;
     }
 
-    if(!(IDENTIFIERP(n)->id_flags & ID_INLINE))
-    {
-      /* override */
-      Pike_compiler->new_program->identifier_references[n]=ref;
-
-      return n;
+    /* override */
+    if ((overridden = override_identifier (&ref, name, 0)) >= 0) {
+#ifdef PIKE_DEBUG
+      if(MEMCMP(Pike_compiler->new_program->identifier_references+n, &ref,sizeof(ref)))
+	fatal("New constant overriding algorithm failed!\n");
+#endif
+      return overridden;
     }
   }
   n=Pike_compiler->new_program->num_identifier_references;
@@ -2743,6 +2863,27 @@ INT32 define_function(struct pike_string *name,
     funp=ID_FROM_INT(Pike_compiler->new_program, i);
     ref=Pike_compiler->new_program->identifier_references[i];
 
+    /* isidentifier is buggy and doesn't return the local identifier
+     * we might have in this program. We therefore search some more to
+     * always redefine the local identifier if it exists. (In 7.3,
+     * isidentifier uses a more sane lookup that avoids this
+     * problem.) */
+    if (ref.inherit_offset != 0) {
+      int j;
+      for (j = i - 1; j >= 0; j--) {
+	struct reference *r = Pike_compiler->new_program->identifier_references + j;
+	if(r->id_flags & ID_HIDDEN)
+	  continue;
+	if(r->inherit_offset != 0)
+	  continue;
+	if(ID_FROM_INT(Pike_compiler->new_program, j)->name == name) {
+	  funp = ID_FROM_INT(Pike_compiler->new_program, j);
+	  ref = *r;
+	  break;
+	}
+      }
+    }
+
     if(ref.inherit_offset == 0) /* not inherited */
     {
 
@@ -2819,41 +2960,10 @@ INT32 define_function(struct pike_string *name,
 
     ref.inherit_offset = 0;
     ref.id_flags = flags;
-#if 0
-    Pike_compiler->new_program->identifier_references[i]=ref;
-#else
-    {
-      int z;
-      /* This loop could possibly be optimized by looping over
-       * each inherit and looking up 'name' in each inherit
-       * and then see if should be overwritten
-       * /Hubbe
-       */
-
-      for(z=0;z<Pike_compiler->new_program->num_identifier_references;z++)
-      {
-	/* Do zapp hidden identifiers */
-	if(Pike_compiler->new_program->identifier_references[z].id_flags & ID_HIDDEN)
-	  continue;
-
-	/* Do not zapp inline ('local') identifiers */
-	if(Pike_compiler->new_program->identifier_references[z].inherit_offset &&
-	   (Pike_compiler->new_program->identifier_references[z].id_flags & ID_INLINE))
-          continue;
-
-	/* Do not zapp functions with the wrong name... */
-	if(ID_FROM_INT(Pike_compiler->new_program, z)->name != name)
-	  continue;
-
-	Pike_compiler->new_program->identifier_references[z]=ref;
-      }
-
+    override_identifier (&ref, name, 0);
 #ifdef PIKE_DEBUG
-      if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
-	fatal("New function overloading algorithm failed!\n");
-#endif
-
-    }
+    if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
+      fatal("New function overriding algorithm failed!\n");
 #endif
     return i;
   }

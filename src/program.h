@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.118 2002/04/18 09:33:38 grubba Exp $
+ * $Id: program.h,v 1.119 2002/05/06 14:35:33 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -177,7 +177,8 @@ struct program_constant
 #define ID_PUBLIC          0x08
 #define ID_PROTECTED       0x10
 #define ID_INLINE          0x20
-#define ID_HIDDEN          0x40	/* needed? */
+#define ID_HIDDEN          0x40	/* Symbol is locally hidden. Used e.g.
+				 * for static references like Foo::bar. */
 #define ID_INHERITED       0x80
 #define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
 #define ID_EXTERN         0x200	/* Symbol is defined later */
@@ -341,6 +342,7 @@ struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
 int program_function_index_compare(const void *a,const void *b);
 char *find_program_name(struct program *p, INT32 *line);
+int override_identifier (struct reference *ref, struct pike_string *name, int cur_id);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
@@ -351,6 +353,7 @@ PMOD_EXPORT void debug_start_new_program(PROGRAM_LINE_ARGS);
 PMOD_EXPORT void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
+void dump_program_tables (struct program *p, int indent);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
