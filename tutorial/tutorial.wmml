@@ -8682,33 +8682,33 @@ characters.
 
 <man_example>
 <example language=pike>
-array(string) fält = ({ "Frukt", "Leverantör", "Antal" });
-array(mapping) typ = ({ 0, 0, ([ "type":"num" ]) });
-array(array) tabell = ({ ({ "Avocado", "Frukt AB",        314 }),
-			 ({ "Banan",   "Banankompaniet", 4276 }),
-  			 ({ "Apelsin", "Frukt AB",         81 }),
-  			 ({ "Banan",   "Frukt AB",       1174 }),
-  			 ({ "Apelsin", "General Food",    523 }) });
+array(string) cols   = ({ "Fruit", "Provider", "Quantity" });
+array(mapping) types = ({ 0, 0, ([ "type":"num" ]) });
+array(array) table   = ({ ({ "Avocado", "Frukt AB",        314 }),
+                          ({ "Banana",  "Banankompaniet", 4276 }),
+  			  ({ "Orange",  "Frukt AB",         81 }),
+  			  ({ "Banana",  "Frukt AB",       1174 }),
+  			  ({ "Orange",  "General Food",    523 }) });
 
-object t = .Table.table(tabell, fält, typ);
+object t = ADT.Table.table(table, cols, types);
 
-write("FRUKT & GRÖNT\n\n");
-write(.Table.ASCII.encode(t, ([ "indent":4 ])));
+write("FRUITS\n\n");
+write(ADT.Table.ASCII.encode(t, ([ "indent":4 ])));
 
-write("\nLEVERANTÖRER\n\n");
-write(.Table.ASCII.encode(t->select("leverantör", "antal")->
-    			  sum("antal")->rename("antal", "Summa antal")->
-    			  rsort("summa antal")));
+write("\nPROVIDERS\n\n");
+write(ADT.Table.ASCII.encode(t->select("provider", "quantity")->
+    			     sum("quantity")->rsort("quantity")));
 
-write("\nLEVERANTÖRER\n\n"+
-      .Table.ASCII.encode(t->select("leverantör", "antal")->
-  			  sum("antal")->rename("antal", "Summa antal")->
-  			  where("summa antal", `>, 1000)->
-  			  rsort("summa antal")));
+write("\nBIG PROVIDERS\n\n"+
+      ADT.Table.ASCII.encode(t->select("provider", "quantity")->
+  			     sum("quantity")->
+  			     where("quantity", `>, 1000)->
+  			     rsort("quantity")));
 
-write("\nLEVERANSER\n\n");
-write(.Table.ASCII.encode(t->select("frukt")->distinct("frukt")->
-  			  sort("frukt"), ([ "indent":4 ])));
+write("\nASSORTMENT\n\n");
+
+write(ADT.Table.ASCII.encode(t->select("fruit")->distinct("fruit")->
+  			     sort("fruit"), ([ "indent":4 ])));
 </example>
 </man_example>
 
