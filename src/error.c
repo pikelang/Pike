@@ -24,7 +24,7 @@ jmp_buf *init_recovery(JMP_BUF *r)
   r->previous=recoveries;
   r->onerror=onerror_stack;
   recoveries=r;
-  return & r->recovery;
+  return & ( r->recovery );
 }
 
 void throw()
