@@ -4,10 +4,11 @@
 #define DEBUG
 
 function resolve_reference; 
+string image_path = "images/";
 
 string image_prefix()
 {
-  return "images/";
+  return image_path;
 } 
 
 string quote(string in) {
@@ -212,8 +213,19 @@ string parse_text(Node n) {
       ret += sprintf("<img%{ %s='%s'%} />", (array)m);
       break;
 
+    case "url": // Not in XSLT
+#ifdef DEBUG
+      if(c->count_children()!=1 && c->get_node_type()!=XML_ELEMENT)
+	throw( ({ sprintf("url node has not one child. %O\n", c->html_of_node()),
+		  backtrace() }) );
+#endif
+      m = c->get_attributes();
+      if(!m->href)
+	m->href=c[0]->get_text();
+      ret += sprintf("<a%{ %s='%s'%}>%s</a>", (array)m, c[0]->get_text());
+
     case "section":
-    case "url":
+      //      werror(c->html_of_node()+"\n");
       // Found...
       break;
 
@@ -221,7 +233,6 @@ string parse_text(Node n) {
     case "br":
       ret += sprintf("<%s%{ %s='%s'%} />", c->get_any_name(), (array)c->get_attributes());
       break;
-    case "a":
     case "table":
     case "ul":
     case "sub":
@@ -237,7 +248,6 @@ string parse_text(Node n) {
 
 
     case "source-position":
-      // Ignore...
       break;
 
     default:
@@ -363,7 +373,7 @@ string parse_type(Node n, void|string debug) {
     if(c || d) {
       ret += "(";
       if(c) ret += map(c->get_children(), parse_type)*", ";
-      ret += " : ";
+      ret += ":";
       if(d) ret += parse_type( get_first_element(d) );
       ret += ")";
     }
@@ -548,8 +558,9 @@ int main(int num, array args) {
 
   args = args[1..];
   foreach(args, string arg) {
-    if(has_prefix(arg, "--img=")) {
-//        image_prefix = arg[6..];
+    string tmp;
+    if(sscanf(arg, "--img=%s", tmp)) {
+      image_path = tmp;
       args -= ({ arg });
     }
     if(arg=="--help") {
