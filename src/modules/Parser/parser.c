@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.5 1999/12/30 20:42:03 mast Exp $");
+RCSID("$Id: parser.c,v 1.6 2000/05/24 01:21:38 hubbe Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -144,7 +144,12 @@ static void parser_magic_index(INT32 args)
       push_int(0);
       SAFE_APPLY_MASTER("resolv",2);
       stack_swap();
-      f_index(2);
+      if(sp[-2].type == T_INT)
+      {
+	pop_stack();
+      }else{
+	f_index(2);
+      }
    }
    stack_swap();
    pop_stack();
