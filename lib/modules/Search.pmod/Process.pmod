@@ -33,7 +33,8 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
   {
     setup_conf();
     mapping acvar = roxen->query_var("AC");
-    return acvar->loaders[conf]->online_db->acdb->open_backdoor(0x7fffffff);
+    object acmodule = acvar->loaders[conf];
+    return acmodule && acmodule->online_db->acdb->open_backdoor(0x7fffffff);
   }
 
   static void remove_backdoor_userpass(string userpass)
