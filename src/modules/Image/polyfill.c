@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.32 2000/07/28 07:12:44 hubbe Exp $");
+RCSID("$Id: polyfill.c,v 1.33 2000/08/07 14:03:35 grubba Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -40,7 +40,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.32 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: polyfill.c,v 1.33 2000/08/07 14:03:35 grubba Exp $
 **! class Image
 */
 
@@ -330,8 +330,8 @@ static INLINE void polyfill_row_add(float *buf,
 				    float add)
 {
    int i;
-   int xmin_i = (int)floor(xmin);
-   int xmax_i = (int)floor(xmax);
+   int xmin_i = DOUBLE_TO_INT(floor(xmin));
+   int xmax_i = DOUBLE_TO_INT(floor(xmax));
    if (xmax_i<0) return;
    if (xmin_i == xmax_i)
       buf[xmin_i] += (xmax-xmin)*add;
@@ -355,8 +355,8 @@ static INLINE void polyfill_slant_add(float *buf,
 				      float dy)
 {
    int i;
-   int xmin_i = (int)floor(xmin);
-   int xmax_i = (int)floor(xmax);
+   int xmin_i = DOUBLE_TO_INT(floor(xmin));
+   int xmax_i = DOUBLE_TO_INT(floor(xmax));
 
    if (xmax_i<0) return;
    if (xmin_i == xmax_i) {
@@ -365,7 +365,7 @@ static INLINE void polyfill_slant_add(float *buf,
    }
    else if (xmin_i>=0)
    {
-      float dx = (1.0 - (xmin-((float)xmin_i)));
+      float dx = DO_NOT_WARN(1.0 - (xmin-((float)xmin_i)));
       buf[xmin_i] += lot*(y1+dy*dx/2.0)*dx;
       y1 += dy*dx;
       for (i=xmin_i+1; i<xmax_i; i++) {
@@ -489,7 +489,9 @@ static int polyfill_event(float xmin,
 		 c->above->x,c->above->y,c->below->x,c->below->y,
 		 xmin,y1,xmax,y2,(tog?-1.0:1.0)*((y1+y2)/2.0-yp));
 #endif	 
-	 polyfill_slant_add(buf,xmin,xmax,(tog?-1.0:1.0),(yp+1)-y1,-c->dy);
+	 polyfill_slant_add(buf,xmin,xmax,
+			    DO_NOT_WARN(tog?-1.0:1.0),
+			    (yp+1)-y1,-c->dy);
 	 tog=!tog;
       }
       if (c->xmin>xmax) break; /* skip the rest */
@@ -625,8 +627,8 @@ static void polyfill_some(struct image *img,
 	 tog=polyfill_event(xmin,xmax,&ll,tog,yp,buf);
 	 
 	 /* shift to get next event */
-	 xmin=xmax;
-	 xmax=xmin-1.0;
+	 xmin = xmax;
+	 xmax = DO_NOT_WARN(xmin - 1.0);
       }
       
       
@@ -645,9 +647,9 @@ static void polyfill_some(struct image *img,
 #ifdef POLYDEBUG
 	 fprintf(stderr,"%3.2f ",buf[i]);
 #endif
-	 d->r=(COLORTYPE)((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
-	 d->g=(COLORTYPE)((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
-	 d->b=(COLORTYPE)((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
+	 d->r = DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
+	 d->g = DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
+	 d->b = DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
 	 d++;
       }
 #ifdef POLYDEBUG
@@ -715,13 +717,17 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
 
 #define POINT(A,N) (((A)->item[N].type==T_FLOAT)?((A)->item[N].u.float_number):((float)((A)->item[N].u.integer)))
 
-   last=first=vertex_new(POINT(a,0),POINT(a,1),&top);
+   last = first = vertex_new(DO_NOT_WARN(POINT(a,0)),
+			     DO_NOT_WARN(POINT(a,1)),
+			     &top);
 
    if (!last) return NULL;
 
    for (n=2; n+1<a->size; n+=2)
    {
-      cur=vertex_new(POINT(a,n),POINT(a,n+1),&top);
+      cur = vertex_new(DO_NOT_WARN(POINT(a,n)),
+		       DO_NOT_WARN(POINT(a,n+1)),
+		       &top);
       if (!cur) return NULL;
       if (cur->y<last->y)
 	 vertex_connect(cur,last);

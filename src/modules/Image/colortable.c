@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.82 2000/08/07 13:49:58 grubba Exp $ */
+/* $Id: colortable.c,v 1.83 2000/08/07 13:58:00 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.82 2000/08/07 13:49:58 grubba Exp $
+**!	$Id: colortable.c,v 1.83 2000/08/07 13:58:00 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.82 2000/08/07 13:49:58 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.83 2000/08/07 13:58:00 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3529,7 +3529,7 @@ void image_colortable_map(INT32 args)
       struct object *o;
       struct pike_string *ps=sp[-args].u.string;
       struct image *img;
-      int n;
+      ptrdiff_t n;
       struct neo_colortable *nct=THIS;
       rgb_group *d;
 
@@ -3789,12 +3789,12 @@ void image_colortable_floyd_steinberg(INT32 args)
    if (fabs(sum)<1e-10) sum=1.0;
    sum/=factor;
 
-   THIS->du.floyd_steinberg.forward=forward/sum;
-   THIS->du.floyd_steinberg.downforward=downforward/sum;
-   THIS->du.floyd_steinberg.down=down/sum;
-   THIS->du.floyd_steinberg.downback=downback/sum;
+   THIS->du.floyd_steinberg.forward = DO_NOT_WARN(forward/sum);
+   THIS->du.floyd_steinberg.downforward = DO_NOT_WARN(downforward/sum);
+   THIS->du.floyd_steinberg.down = DO_NOT_WARN(down/sum);
+   THIS->du.floyd_steinberg.downback = DO_NOT_WARN(downback/sum);
 
-   THIS->dither_type=NCTD_FLOYD_STEINBERG;
+   THIS->dither_type = NCTD_FLOYD_STEINBERG;
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -4060,10 +4060,10 @@ static int *ordered_make_diff(int *errors,int sz,int err)
    d=dest=(int*)malloc(sizeof(int)*sz);
    if (!d) return d;
 
-   if (sz!=1) q=1.0/(sz-1); else q=1.0;
+   if (sz!=1) q = DO_NOT_WARN(1.0/(sz-1)); else q=1.0;
 
    while (n--)
-      *(d++)=(int)((*(errors++)*q-0.5)*2*err);
+      *(d++) = DOUBLE_TO_INT((*(errors++)*q-0.5)*2*err);
    
    return dest;
 }
