@@ -596,6 +596,7 @@ mapping _decode( string|mapping|object(GimpImage) what, mapping|void opts )
 //   destruct( data );
   return
   ([
+    "type":"image/x-gimp-image",
     "image":img,
     "alpha":alpha,
   ]);
