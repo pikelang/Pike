@@ -209,7 +209,7 @@ class Token
   string file;
   string trailing_whitespaces="";
 
-  void create(string t, int l, void|string f, void|string space)
+  void create(string t, void|int l, void|string f, void|string space)
     {
       text=t;
       line=l;
