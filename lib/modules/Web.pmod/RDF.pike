@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.42 2004/04/05 22:52:02 nilsson Exp $
+// $Id: RDF.pike,v 1.43 2004/04/05 23:18:43 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -677,7 +677,7 @@ static mapping(string:string) namespaces = ([]); // url-prefix:name
 static string common_ns = ""; // The most common namespace
 
 // W3C must die!
-static Node add_xml_children(Node p, string rdfns, string base) {
+static Node add_xml_children(Node p, string base) {
   mapping rdf_m = p->get_ns_attributes(rdf_ns);
   base = p->get_ns_attributes("xml")->base || base;
   if(rdf_m->about && rdf_m->ID)
@@ -694,14 +694,10 @@ static Node add_xml_children(Node p, string rdfns, string base) {
   } else
     subj = Resource();
 
-  if(rdfns && p->get_ns()!=rdfns) {
+  if(p->get_ns()!=rdf_ns)
     add_statement( subj, rdf_type,
 		   make_resource(p->get_ns()+p->get_any_name()) );
-  }
-  else
-    rdfns = p->get_ns();
-
-  if(rdfns==rdf_ns) {
+  else {
     string name = p->get_any_name();
     if( name == "Seq" )
       add_statement(subj, rdf_type, rdf_Seq);
@@ -722,28 +718,28 @@ static Node add_xml_children(Node p, string rdfns, string base) {
     if(c->get_ns()==rdf_ns) {
       string name = c->get_any_name();
       if(name=="type" || name=="first") {
-	string obj_uri = c->get_ns_attributes(rdfns)->resource;
+	string obj_uri = c->get_ns_attributes(rdf_ns)->resource;
 	if(!obj_uri) error("rdf:%s missing resource attribute.\n", name);
 	add_statement( subj, this["rdf_"+name], make_resource(obj_uri) );
 	continue;
       }
       if(name=="rest") {
-	string obj_uri = c->get_ns_attributes(rdfns)->resource;
+	string obj_uri = c->get_ns_attributes(rdf_ns)->resource;
 	if(obj_uri) add_statement( subj, rdf_rest, make_resource(obj_uri) );
 	array(Node) dcs = c->get_elements();
 	foreach(dcs, Node dc)
-	  add_statement( subj, rdf_rest, add_xml_children(dc, rdfns, base) );
+	  add_statement( subj, rdf_rest, add_xml_children(dc, base) );
 	continue;
       }
       else if(sscanf(name, "_%*d")) {
-	string obj_uri = c->get_ns_attributes(rdfns)->resource;
+	string obj_uri = c->get_ns_attributes(rdf_ns)->resource;
 	if(!obj_uri) error("rdf:_n missing resource attribute.\n");
 	add_statement( subj, make_resource(rdf_ns+name),
 		       make_resource(obj_uri) );
 	continue;
       }
       else if(name=="li") {
-	string obj_uri = c->get_ns_attributes(rdfns)->resource;
+	string obj_uri = c->get_ns_attributes(rdf_ns)->resource;
 	if(!obj_uri) error("rdf:li missing resource attribute.\n");
 	add_statement( subj, make_resource(rdf_ns+"_"+(++li_counter)),
 		       make_resource(obj_uri) );
@@ -753,24 +749,24 @@ static Node add_xml_children(Node p, string rdfns, string base) {
 	// We are required to ignore unknown rdf elements.
 	error("Can not handle rdf:%s\n", c->get_any_name());
       }
-    }
+    } // c->get_ns()==rdf_ns
 
     string pred_uri = c->get_ns() + c->get_any_name();
     Resource obj;
-    string obj_uri = c->get_ns_attributes()[rdfns] &&
-      c->get_ns_attributes()[rdfns]->resource;
+    string obj_uri = c->get_ns_attributes()[rdf_ns] &&
+      c->get_ns_attributes()[rdf_ns]->resource;
     if(obj_uri) {
       obj = make_resource(obj_uri);
       mapping m = c->get_ns_attributes();
       foreach(m; string ns; mapping m) {
-	if(ns==rdfns) continue;
+	if(ns==rdf_ns) continue;
 	foreach(m; string pred; string subobj)
 	  add_statement( obj, make_resource(ns+pred),
 			 LiteralResource(subobj) );
       }
     }
     else {
-      string ptype = c->get_ns_attributes(rdfns)->parseType;
+      string ptype = c->get_ns_attributes(rdf_ns)->parseType;
       if( !(< "Literal", "Resource", "Collection", 0 >)[ptype] )
 	error("Illegal parserType value %O.\n", ptype);
 
@@ -779,7 +775,7 @@ static Node add_xml_children(Node p, string rdfns, string base) {
 	if(sizeof(dcs)) {
 	  foreach(dcs, Node dc)
 	    add_statement( subj, make_resource(pred_uri),
-			   add_xml_children(dc, rdfns, base) );
+			   add_xml_children(dc, base) );
 	  continue;
 	}
       }
@@ -789,7 +785,7 @@ static Node add_xml_children(Node p, string rdfns, string base) {
 	Resource n = Resource();
 	add_statement( subj, make_resource(pred_uri), n );
 	foreach(dcs; int pos; Node dc) {
-	  add_statement( n, rdf_first, add_xml_children(dc, rdfns, base) );
+	  add_statement( n, rdf_first, add_xml_children(dc, base) );
 	  if(pos<sizeof(dcs)-1)
 	    add_statement( n, rdf_rest, n=Resource() );
 	}
@@ -800,10 +796,10 @@ static Node add_xml_children(Node p, string rdfns, string base) {
       // ptype == "Literal"
 
       obj = LiteralResource((array(string))c->get_children()*"");
-      obj->datatype = c->get_ns_attributes(rdfns)->datatype;
+      obj->datatype = c->get_ns_attributes(rdf_ns)->datatype;
     }
     add_statement( subj, make_resource(pred_uri), obj );
-  }
+  } // foreach
 
   return subj;
 }
@@ -838,10 +834,8 @@ this_program parse_xml(string|Node in, void|string base) {
       break;
     }
 
-  string rdfns = n->get_ns();
-
   foreach(n->get_elements(), Node c)
-    add_xml_children(c, rdfns, base);
+    add_xml_children(c, base);
 
   return this;
 }
