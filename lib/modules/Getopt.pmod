@@ -131,8 +131,8 @@ constant MAY_HAVE_ARG=3;
 #define ENV 3
 #define DEF 4
 
-mixed *find_all_options(string *argv, mixed *options,
-			void|int posix_me_harder, void|int throw_errors)
+array find_all_options(array(string) argv, array options,
+		       void|int posix_me_harder, void|int throw_errors)
 {
   mapping quick=([]);
   foreach(options, mixed opt)
@@ -153,7 +153,7 @@ mixed *find_all_options(string *argv, mixed *options,
 	}
     }
 
-  mixed *ret=({});
+  array ret=({});
   for(int e=1;e<sizeof(argv);e++)
   {
     if(!argv[e]) continue;
@@ -188,11 +188,11 @@ mixed *find_all_options(string *argv, mixed *options,
 	  ret+=({ ({ option[0], arg || 1 }) });
 	}
       }else{
-	string *foo=argv[e]/"";
+	array(string) foo=argv[e]/"";
 	for(int j=1;j<strlen(foo);j++)
 	{
 	  string opt="-"+foo[j];
-	  if(mixed *option=quick[opt])
+	  if(array option=quick[opt])
 	  {
 	    foo[j]=0;
 	    string arg;
@@ -232,7 +232,7 @@ mixed *find_all_options(string *argv, mixed *options,
   }
 
   multiset done=mkmultiset(column(ret, 0));
-  foreach(options, string *option)
+  foreach(options, array(string) option)
     {
       string name=option[NAME];
       if(done[name]) continue;
@@ -262,7 +262,8 @@ mixed *find_all_options(string *argv, mixed *options,
 }
 
 
-string *get_args(string *argv, void|int posix_me_harder, void|int throw_errors)
+array(string) get_args(array(string) argv, void|int posix_me_harder,
+		       void|int throw_errors)
 {
   int i;
   for(i=1;i<sizeof(argv);i++)
