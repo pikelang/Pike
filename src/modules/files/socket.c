@@ -60,7 +60,7 @@ static void do_close(struct port *p)
   if(p->fd >= 0)
   {
     if(close(p->fd) < 0)
-      if(errno == RETRY)
+      if(errno == EINTR)
 	goto retry;
 
     set_read_callback(p->fd,0,0);

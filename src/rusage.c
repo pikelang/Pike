@@ -3,17 +3,17 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#include "global.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef HAVE_SYS_TIME
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <fcntl.h>
-#ifdef HAVE_TIME
+#ifdef HAVE_TIME_H
 #include <time.h>
 #endif
 #include <errno.h>
-#include "global.h"
 #include "types.h"
 #include "rusage.h"
 

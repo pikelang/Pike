@@ -291,7 +291,7 @@ static void f_signal(int args)
   assign_svalue(signal_callbacks + signum, sp+1-args);
   if(IS_ZERO(sp+1-args))
   {
-    switch(sig)
+    switch(signum)
     {
     case SIGCHLD:
       func=sig_child;
@@ -307,7 +307,7 @@ static void f_signal(int args)
   }else{
     func=receive_signal;
   }
-  my_signal(sig, func);
+  my_signal(signum, func);
   pop_n_elems(args);
 }
 
