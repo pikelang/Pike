@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $ */
+/* $Id: image_gif.c,v 1.1 2000/09/11 17:48:21 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $
+**!	$Id: image_gif.c,v 1.1 2000/09/11 17:48:21 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -27,11 +27,15 @@
 */
 #include "global.h"
 
+#include "config.h"
+
+#ifdef WITH_GIF
+
 #include <math.h>
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $");
+RCSID("$Id: image_gif.c,v 1.1 2000/09/11 17:48:21 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -42,18 +46,25 @@ RCSID("$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $");
 #include "error.h"
 #include "threads.h"
 
-#include "image.h"
-#include "colortable.h"
+#include "../Image/image.h"
+#include "../Image/colortable.h"
+
 #include "builtin_functions.h"
+#include "operators.h"
 #include "mapping.h"
+#include "bignum.h"
 
 #include "gif_lzw.h"
 
-extern struct program *image_colortable_program;
+#ifdef DYNAMIC_MODULE
+static struct program *image_program = NULL;
+static struct program *image_colortable_program = NULL;
+static struct program *image_layer_program = NULL;
+#else
 extern struct program *image_program;
+extern struct program *image_colortable_program;
 extern struct program *image_layer_program;
-
-extern void f_add(INT32 args);
+#endif /* DYNAMIC_MODULE */
 
 enum 
 {
@@ -147,7 +158,7 @@ void image_gif_header_block(INT32 args)
    int xs,ys,bkgi=0,aspect=0,gif87a=0;
    struct neo_colortable *nct=NULL;
    int globalpalette=0;
-   int numcolors=0;
+   long numcolors=0;
    int bpp=1;
    char buf[20];
    struct pike_string *ps;
@@ -216,7 +227,9 @@ void image_gif_header_block(INT32 args)
    }
 
    if (numcolors+alphaentry>256)
-      error("Image.GIF.header_block(): too many colors (%d%s)\n",numcolors+alphaentry,alphaentry?" including alpha channel color":"");
+      error("Image.GIF.header_block(): too many colors (%ld%s)\n",
+	    (long)(numcolors + alphaentry),
+	    alphaentry?" including alpha channel color":"");
 
    while ((1<<bpp)<numcolors+alphaentry) bpp++;
 
@@ -667,9 +680,9 @@ void image_gif_render_block(INT32 args)
 {
    struct image *img=NULL,*alpha=NULL;
    struct neo_colortable *nct=NULL;
-   int numcolors;
+   long numcolors;
    int localpalette,xpos,ypos;
-   int alphaidx=-1;
+   long alphaidx=-1;
    rgb_group alphacolor;
    int alphaentry=0;
    int transparency;
@@ -711,7 +724,9 @@ CHRONO("gif render_block begin");
    if (numcolors==0)
       error("Image.GIF.render_block(): no colors in colortable\n");
    else if (numcolors>256)
-      error("Image.GIF.render_block(): too many colors in given colortable: %d (256 is max)\n",numcolors);
+      error("Image.GIF.render_block(): too many colors in given colortable: "
+	    "%ld (256 is max)\n",
+	    (long)numcolors);
 
    if (args>=5)
    {
@@ -823,7 +838,10 @@ CHRONO("gif render_block begin");
       /* write gce control block */
    {
       push_int(transparency);
-      if (alphaidx!=-1) push_int(alphaidx); else push_int(0);
+      if (alphaidx!=-1)
+	push_int64(alphaidx);
+      else
+	push_int(0);
       push_int(delay);
       push_int(user_input);
       push_int(disposal);
@@ -845,7 +863,7 @@ CHRONO("render_block index end");
       while (n2--)
       {
 	 if (!(a->r||a->g||a->b))
-	    *d=(unsigned char)alphaidx;
+	    *d = (unsigned char)alphaidx;
 	 d++;
 	 a++;
       }
@@ -974,7 +992,7 @@ void _image_gif_encode(INT32 args,int fs)
    rgbl_group ac={0,0,0};
    int alphaentry=0;
    int trans=0;
-   int tridx=0;
+   long tridx=0;
 
    int n=0;
    int arg=2;
@@ -1112,7 +1130,7 @@ void _image_gif_encode(INT32 args,int fs)
       image_gif_header_block(3);
    else if (trans==1)
    {
-      push_int(tridx); 
+      push_int64(tridx); 
       push_int(0);
       push_int(0);
       push_int(0);
@@ -1123,7 +1141,7 @@ void _image_gif_encode(INT32 args,int fs)
    }
    else
    {
-      push_int(tridx); 
+      push_int64(tridx); 
       image_gif_header_block(4);
    }
 
@@ -1148,7 +1166,7 @@ void _image_gif_encode(INT32 args,int fs)
       else
       {
 	 push_int(0);
-	 push_int(tridx);
+	 push_int64(tridx);
 	 image_gif_render_block(7);
       }
 
@@ -1387,7 +1405,7 @@ static void image_gif___decode(INT32 args)
 
    add_ref(str=sp[-args].u.string);
    s=(unsigned char *)str->str;
-   len=str->len;
+   len = str->len;
    pop_n_elems(args);
    SET_ONERROR(uwp,do_free_string,str);
 
@@ -1484,8 +1502,8 @@ static void image_gif___decode(INT32 args)
       if (*s==0x3b && len==1) break;
       switch (*s)
       {
-	 case 0x21: _decode_get_extension(&s,&len); n++; break;
-	 case 0x2c: _decode_get_render(&s,&len); n++; break;
+	 case 0x21: _decode_get_extension(&s, &len); n++; break;
+	 case 0x2c: _decode_get_render(&s, &len); n++; break;
 	 case 0x3b: 
 	    push_int(GIF_ERROR_TOO_MUCH_DATA);
 	    push_string(make_shared_binary_string((char *)s+1,len-1));
@@ -2347,8 +2365,8 @@ void image_gif__encode_extension(INT32 args)
       else
       {
 	 d=begin_shared_string(s->len-i+2);
-	 d->str[0]=s->len-i;
-	 MEMCPY(d->str+1,s->str+i,d->len-i);
+	 d->str[0] = s->len - i;
+	 MEMCPY(d->str+1, s->str+i, d->len-i);
 	 d->str[d->len-i+1]=0;
 	 push_string(end_shared_string(d));
 	 n++;
@@ -2472,8 +2490,10 @@ static void image_gif_lzw_decode(INT32 args)
 {
    unsigned char *s,*dest0,*dest;
    int earlychange=0;
-   signed long len,n;
-   signed long clearcode,endcode,last,q,bit,m,dlen,dlen0;
+   long len;
+   signed long n;
+   signed long clearcode,endcode,last,q,bit,m;
+   long dlen,dlen0;
    unsigned int mask;
    struct lzwc *c;
    signed long bits,obits=8;
@@ -2484,7 +2504,7 @@ static void image_gif_lzw_decode(INT32 args)
       error("Image.GIF.lzw_encode(): illegal argument\n");
 
    s=(unsigned char*)sp[-args].u.string->str;
-   len=(signed long)sp[-args].u.string->len;
+   len = (long)sp[-args].u.string->len;
 
    if (args>=2 && !IS_ZERO(sp+1-args))
       earlychange=1;
@@ -2596,8 +2616,8 @@ static void image_gif_lzw_decode(INT32 args)
 	 
 	 if (myc->len>dlen) 
 	 {
-	    signed long p;
-	    p=(dest-dest0);
+	    long p;
+	    p = (dest - dest0);
 
 #ifdef GIF_DEBUG
 	    fprintf(stderr,"increase at dlen left=%lu p=%ld dlen0=%d\n",dlen,p,dlen0);
@@ -2638,7 +2658,7 @@ static void image_gif_lzw_decode(INT32 args)
 	 last=n;
 
 	 m++;
-	 if (m>=maxcode - earlychange) 
+	 if (m>=maxcode - earlychange) {
 	    if (m==MAX_GIF_CODE - earlychange)
 	    {
 #ifdef GIF_DEBUG
@@ -2660,6 +2680,7 @@ static void image_gif_lzw_decode(INT32 args)
 		  break; /* error! too much codes */
 	       }
 	    }
+	 }
       }
 
       if (reversebits)
@@ -2680,69 +2701,99 @@ static void image_gif_lzw_decode(INT32 args)
 
 struct program *image_encoding_gif_program=NULL;
 
-void init_image_gif(void)
+void pike_module_init(void)
 {
+#ifdef DYNAMIC_MODULE
+   push_string(make_shared_string("Image"));
+   push_int(0);
+   SAFE_APPLY_MASTER("resolv",2);
+   if (sp[-1].type==T_OBJECT) 
+   {
+      stack_dup();
+      stack_dup();
+      push_string(make_shared_string("Image"));
+      f_index(2);
+      image_program=program_from_svalue(sp-1);
+      pop_stack();
+      push_string(make_shared_string("Colortable"));
+      f_index(2);
+      image_colortable_program=program_from_svalue(sp-1);
+      pop_stack();
+      push_string(make_shared_string("Layer"));
+      f_index(2);
+      image_layer_program=program_from_svalue(sp-1);
+   }
+   pop_stack();
+#endif /* DYNAMIC_MODULE */
+
+   if (image_program && image_colortable_program && image_layer_program) {
+      add_function("render_block",image_gif_render_block,
+ 		   "function(object,object,void|int,void|int,void|int,void|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)"
+ 		   "|function(object,object,void|int,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
+      add_function("_gce_block",image_gif__gce_block,
+ 		   "function(int,int,int,int,int:string)",0);
+      add_function("_render_block",image_gif__render_block,
+ 		   "function(int,int,int,int,string,void|string,int:string)",0);
+      add_function("header_block",image_gif_header_block,
+ 		   "function(int,int,int|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
+      add_function("end_block",image_gif_end_block,
+ 		   "function(:string)",0);
+      add_function("encode",image_gif_encode,
+ 		   "function(object,mixed...:string)",0);
+      add_function("encode_trans",image_gif_encode,
+ 		   "function(object,mixed...:string)",0);
+      add_function("encode_fs",image_gif_encode_fs,
+ 		   "function(object,mixed...:string)",0);
+      add_function("netscape_loop_block",image_gif_netscape_loop_block,
+ 		   "function(int|void:string)",0);
    
-   add_function("render_block",image_gif_render_block,
-		"function(object,object,void|int,void|int,void|int,void|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)"
-		"|function(object,object,void|int,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
-   add_function("_gce_block",image_gif__gce_block,
-		"function(int,int,int,int,int:string)",0);
-   add_function("_render_block",image_gif__render_block,
-		"function(int,int,int,int,string,void|string,int:string)",0);
-   add_function("header_block",image_gif_header_block,
-		"function(int,int,int|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
-   add_function("end_block",image_gif_end_block,
-		"function(:string)",0);
-   add_function("encode",image_gif_encode,
-		"function(object,mixed...:string)",0);
-   add_function("encode_trans",image_gif_encode,
-		"function(object,mixed...:string)",0);
-   add_function("encode_fs",image_gif_encode_fs,
-		"function(object,mixed...:string)",0);
-   add_function("netscape_loop_block",image_gif_netscape_loop_block,
-		"function(int|void:string)",0);
-
-   add_function("__decode",image_gif___decode,
-		"function(string:array)",0);
-   add_function("_decode",image_gif__decode,
-		"function(string|array:array)",0);
-   add_function("decode",image_gif_decode,
-		"function(string|array:object)",0);
-   add_function("decode_layers",image_gif_decode_layers,
-		"function(string|array:array(object))",0);
-   add_function("decode_layer",image_gif_decode_layer,
-		"function(string|array:object)",0);
-   add_function("decode_map",image_gif_decode_map,
-		"function(string|array:mapping)",0);
-
-   add_function("_encode",image_gif__encode,
-		"function(array:string)",0);
-   add_function("_encode_render",image_gif__encode_render,
-		"function(array:string)",0);
-   add_function("_encode_extension",image_gif__encode_extension,
-		"function(array:string)",0);
-
-   add_function("lzw_encode",image_gif_lzw_encode,
-		"function(string,void|int,void|int:string)",0);
-   add_function("lzw_decode",image_gif_lzw_decode,
-		"function(string,void|int,void|int:string)",0);
-
-   /** constants **/
-
-   add_integer_constant("RENDER",GIF_RENDER,0);
-   add_integer_constant("EXTENSION",GIF_EXTENSION,0);
-
-   add_integer_constant("LOOSE_GCE",GIF_LOOSE_GCE,0);
-   add_integer_constant("NETSCAPE_LOOP",GIF_NETSCAPE_LOOP,0);
-
-   add_integer_constant("ERROR_PREMATURE_EOD",GIF_ERROR_PREMATURE_EOD,0);
-   add_integer_constant("ERROR_UNKNOWN_DATA",GIF_ERROR_UNKNOWN_DATA,0);
-   add_integer_constant("ERROR_TOO_MUCH_DATA",GIF_ERROR_TOO_MUCH_DATA,0);
-
-   /** done **/
+      add_function("__decode",image_gif___decode,
+ 		   "function(string:array)",0);
+      add_function("_decode",image_gif__decode,
+ 		   "function(string|array:array)",0);
+      add_function("decode",image_gif_decode,
+ 		   "function(string|array:object)",0);
+      add_function("decode_layers",image_gif_decode_layers,
+ 		   "function(string|array:array(object))",0);
+      add_function("decode_layer",image_gif_decode_layer,
+ 		   "function(string|array:object)",0);
+      add_function("decode_map",image_gif_decode_map,
+ 		   "function(string|array:mapping)",0);
+   
+      add_function("_encode",image_gif__encode,
+ 		   "function(array:string)",0);
+      add_function("_encode_render",image_gif__encode_render,
+ 		   "function(array:string)",0);
+      add_function("_encode_extension",image_gif__encode_extension,
+ 		   "function(array:string)",0);
+   
+      add_function("lzw_encode",image_gif_lzw_encode,
+ 		   "function(string,void|int,void|int:string)",0);
+      add_function("lzw_decode",image_gif_lzw_decode,
+ 		   "function(string,void|int,void|int:string)",0);
+   
+      /** constants **/
+   
+      add_integer_constant("RENDER",GIF_RENDER,0);
+      add_integer_constant("EXTENSION",GIF_EXTENSION,0);
+   
+      add_integer_constant("LOOSE_GCE",GIF_LOOSE_GCE,0);
+      add_integer_constant("NETSCAPE_LOOP",GIF_NETSCAPE_LOOP,0);
+   
+      add_integer_constant("ERROR_PREMATURE_EOD",GIF_ERROR_PREMATURE_EOD,0);
+      add_integer_constant("ERROR_UNKNOWN_DATA",GIF_ERROR_UNKNOWN_DATA,0);
+      add_integer_constant("ERROR_TOO_MUCH_DATA",GIF_ERROR_TOO_MUCH_DATA,0);
+   
+      /** done **/
+   }
 }
 
-void exit_image_gif(void)
+#else /* !WITH_GIF */
+void pike_module_init(void)
+{
+}
+#endif /* WITH_GIF */
+
+void pike_module_exit(void)
 {
 }

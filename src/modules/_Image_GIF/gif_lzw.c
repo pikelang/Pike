@@ -1,11 +1,15 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.6 1999/05/30 20:11:14 mirar Exp $
+**!	$Id: gif_lzw.c,v 1.1 2000/09/11 17:48:20 grubba Exp $
 */
 
 #include "global.h"
-#include "image_machine.h"
+#include "config.h"
+
+#ifdef WITH_GIF
+
+#include "../Image/image_machine.h"
 #include "gif_lzw.h"
 
 #define DEFAULT_OUTBYTES 16384
@@ -128,7 +132,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       lzw->codes=(1L<<lzw->bits)+2;
       
       /* output clearcode, 1000... (bits) */
-      lzw_output(lzw,1L<<lzw->bits);
+      lzw_output(lzw, (lzwcode_t)(1L<<lzw->bits));
 
       lzw->codebits=lzw->bits+1;
       lzw->current=c;
@@ -188,14 +192,14 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    lzw->lastout=0;
    lzw->earlychange=0;
    lzw->reversebits=0;
-   lzw_output(lzw,1L<<bits);
+   lzw_output(lzw, (lzwcode_t)(1L<<bits));
 }
 
 void image_gif_lzw_finish(struct gif_lzw *lzw)
 {
    if (lzw->current!=LZWCNULL)
       lzw_output(lzw,lzw->current);
-   lzw_output( lzw, (1L<<lzw->bits)+1 ); /* GIF end code */
+   lzw_output( lzw, (lzwcode_t)(1L<<lzw->bits)+1 ); /* GIF end code */
    if (lzw->outbit)
    {
       if (lzw->reversebits)
@@ -211,7 +215,9 @@ void image_gif_lzw_free(struct gif_lzw *lzw)
    if (lzw->code) free(lzw->code);
 }
 
-void image_gif_lzw_add(struct gif_lzw *lzw,unsigned char *data,int len)
+void image_gif_lzw_add(struct gif_lzw *lzw, unsigned char *data, unsigned long len)
 {
    while (len--) lzw_add(lzw,*(data++));
 }
+
+#endif /* WITH_GIF */

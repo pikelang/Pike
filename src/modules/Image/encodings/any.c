@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.16 2000/03/22 18:12:19 peter Exp $ */
+/* $Id: any.c,v 1.17 2000/09/11 17:48:17 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.16 2000/03/22 18:12:19 peter Exp $
+**!	$Id: any.c,v 1.17 2000/09/11 17:48:17 grubba Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.16 2000/03/22 18:12:19 peter Exp $");
+RCSID("$Id: any.c,v 1.17 2000/09/11 17:48:17 grubba Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -129,7 +129,15 @@ void image_any__decode(INT32 args)
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 image_gif_decode_map(1);
+	 push_text("Image");
+	 push_int(0);
+	 SAFE_APPLY_MASTER("resolv", 2);
+	 push_text("GIF");
+	 f_index(2);
+	 push_text("decode_map");
+	 f_index(2);
+	 stack_swap();
+	 f_call_function(2);
 	 return;
 
       case CHAR2('F','O'):
@@ -249,7 +257,15 @@ void image_any_decode_header(INT32 args)
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 image_gif_decode_map(1);
+	 push_text("Image");
+	 push_int(0);
+	 SAFE_APPLY_MASTER("resolv",2);
+	 push_text("GIF");
+	 f_index(2);
+	 push_text("decode_map");
+	 f_index(2);
+	 stack_swap();
+	 f_call_function(2);
 	 return;
 
       case CHAR2('F','O'):

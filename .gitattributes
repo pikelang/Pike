@@ -237,9 +237,6 @@ testfont binary
 /src/modules/Image/encodings/bmp.c foreign_ident
 /src/modules/Image/encodings/configure.in foreign_ident
 /src/modules/Image/encodings/gd.c foreign_ident
-/src/modules/Image/encodings/gif.c foreign_ident
-/src/modules/Image/encodings/gif_lzw.c foreign_ident
-/src/modules/Image/encodings/gif_lzw.h foreign_ident
 /src/modules/Image/encodings/hrz.c foreign_ident
 /src/modules/Image/encodings/iff.c foreign_ident
 /src/modules/Image/encodings/ilbm.c foreign_ident
@@ -407,6 +404,12 @@ testfont binary
 /src/modules/_Crypto/rsa.c foreign_ident
 /src/modules/_Crypto/sha.c foreign_ident
 /src/modules/_Crypto/test_crypto.pike foreign_ident
+/src/modules/_Image_GIF/Makefile.in foreign_ident
+/src/modules/_Image_GIF/acconfig.h foreign_ident
+/src/modules/_Image_GIF/configure.in foreign_ident
+/src/modules/_Image_GIF/gif_lzw.c foreign_ident
+/src/modules/_Image_GIF/gif_lzw.h foreign_ident
+/src/modules/_Image_GIF/image_gif.c foreign_ident
 /src/modules/_Image_JPEG/Makefile.in foreign_ident
 /src/modules/_Image_JPEG/acconfig.h foreign_ident
 /src/modules/_Image_JPEG/configure.in foreign_ident
