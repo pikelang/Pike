@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.91 2001/01/10 23:31:55 mast Exp $");
+RCSID("$Id: docode.c,v 1.92 2001/01/11 14:12:30 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1240,6 +1240,7 @@ static int do_docode2(node *n, INT16 flags)
 	yyerror("Continue outside loop.");
 	return 0;
       continue_label_found:
+	;
       }
 
     for (p = current_label; p != label; p = p->prev)
