@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.115 2001/09/24 12:47:52 grubba Exp $
+ * $Id: system.c,v 1.116 2001/11/07 21:36:21 nilsson Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.115 2001/09/24 12:47:52 grubba Exp $");
+RCSID("$Id: system.c,v 1.116 2001/11/07 21:36:21 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -714,7 +714,8 @@ void f_getgroups(INT32 args)
 /*! @decl int innetgr(string netgroup, string|void machine, @
  *!                   string|void user, string|void domain)
  *!
- *! 
+ *! @fixme
+ *!   Document this function.
  */
 void f_innetgr(INT32 args)
 {
@@ -951,6 +952,9 @@ void f_setpgrp(INT32 args)
 
 #if defined(HAVE_GETSID)
 /*! @decl int getsid(int|void pid)
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 void f_getsid(INT32 args)
 {
@@ -969,6 +973,9 @@ void f_getsid(INT32 args)
 
 #if defined(HAVE_SETSID)
 /*! @decl int setsid()
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 void f_setsid(INT32 args)
 {
@@ -985,6 +992,9 @@ void f_setsid(INT32 args)
 
 #ifdef HAVE_SETRESUID
 /*! @decl int setresuid(int ruid, int euid, int suid)
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 void f_setresuid(INT32 args)
 {
@@ -1006,6 +1016,9 @@ void f_setresuid(INT32 args)
 
 #ifdef HAVE_SETRESGID
 /*! @decl int setresgid(int rgid, int egid, int sgid)
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 void f_setresgid(INT32 args)
 {
@@ -1030,32 +1043,50 @@ void f_setresgid(INT32 args)
 
 #ifdef HAVE_GETUID
 /*! @decl int getuid()
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 f_get(f_getuid, getuid)
 #endif
 
 #ifdef HAVE_GETGID
 /*! @decl int getgid()
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 f_get(f_getgid, getgid)
 #endif
  
 #ifdef HAVE_GETEUID
 /*! @decl int geteuid()
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 f_get(f_geteuid, geteuid)
 
 /*! @decl int getegid()
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 f_get(f_getegid, getegid)
 #endif
 
 /*! @decl int getpid()
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 f_get(f_getpid, getpid)
 
 #ifdef HAVE_GETPPID
 /*! @decl int getppid()
+ *!
+ *! @fixme
+ *!   Document this function.
  */
 f_get(f_getppid, getppid)
 #endif
@@ -2337,8 +2368,8 @@ static void f_get_netinfo_property(INT32 args)
 #ifdef HAVE_RDTSC
 
 /*! @decl int rdtsc()
- *! executes the rdtsc (clock pulse counter) instruction
- *! and returns the result
+ *! Executes the rdtsc (clock pulse counter) instruction
+ *! and returns the result.
  */
 
 #define RDTSC(l,h)							\
@@ -2374,7 +2405,7 @@ struct timeval
 #endif
 
 /*! @decl array(int) gettimeoday()
- *! calls gettimeofday(); the result is an array of
+ *! Calls gettimeofday(); the result is an array of
  *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
  *! as given by the gettimeofday(2) system call 
  *! (read the man page).
