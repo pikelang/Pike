@@ -1,4 +1,4 @@
-inherit "GTK.so";
+inherit .GTK;
 #define INDEX(x) predef::`->(this_object(),(x))
 
 object Atom = class 
