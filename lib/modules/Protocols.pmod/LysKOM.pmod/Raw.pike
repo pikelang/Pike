@@ -311,29 +311,16 @@ void connection_lost()
 
 void create(string server,void|int port,void|string whoami)
 {
-   mixed err;
-
    if (!port) port=4894;
    con=Stdio.File();
-   err=catch {
-      if (!con->connect(server,port))
-      {
-	 object err=LysKOMError(-1,strerror(con->errno())-"\n",
-				"Failed to connect to server "
-				+server+".\n");
-	 throw(err);
-	 return;
-      }
-   };
-   if (err)
+   if (!con->connect(server,port))
    {
-      if (objectp(err) && err->iserror) throw(err);
-      err=LysKOMError(-1,err[0]-"\n",
-		      "Failed to connect to server "
-		      +server+".\n");
-      throw(err);
+     object err=LysKOMError(-1,strerror(con->errno())-"\n",
+			    "Failed to connect to server "
+			    +server+".\n");
+     throw(err);
+     return;
    }
-   
 
    conwrite("A"+H(whoami||
 #if constant(getpwuid) && constant(getuid)
