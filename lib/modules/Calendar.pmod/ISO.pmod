@@ -18,6 +18,23 @@ class Year
    }
 }
 
+class Month
+{
+   inherit Gregorian::Month;
+
+   string name()
+   {
+      return sprintf("%04d-%02d",
+		     (int)this->year(),
+		     (int)this);
+   }
+  
+   string short_name()
+   {
+      return name()-"-";
+   }
+}
+  
 class Week
 {
    inherit Gregorian::Week;
@@ -33,7 +50,19 @@ class Week
    {
        return ({1,2,3,4,5,6,7});
    }
-
+  
+   string name()
+   {
+      return sprintf("%04d-W%02d",
+		     (int)this->year(),
+		     (int)this);
+   }
+  
+   string short_name()
+   {
+      return name()-"-";
+   }
+  
    object day(int|string|object n)
    {
       if (stringp(n)) 
@@ -73,6 +102,39 @@ class Day
       return week_day_names[(this->week_day()+6)%7];
    }
 
+   string name()
+   {
+      return sprintf("%04d-%02d-%02d",
+		     (int)this->year(),
+		     (int)this->month(),
+		     (int)this->month_day());
+   }
+
+   string short_name()
+   {
+      return name()-"-";
+   }
+
+   string name_by_week()
+   {
+      return sprintf("%04d-W%02d-%d",
+		     (int)this->year(),
+		     (int)this->week(),
+		     (int)this->week_day());
+   }
+  
+   string name_by_yearday()
+   {
+      return sprintf("%04d-%03d",
+		     (int)this->year(),
+		     (int)this->year_day());
+   }
+  
+   string short_name_by_yearday()
+   {
+      return name_by_yearday()-"-";
+   }
+  
    object week()
    {
       int n;
@@ -83,5 +145,101 @@ class Day
       else if (n<=0)
 	 return ye->prev()->week(-1);
       return vWeek(y,n);
+   }
+}
+
+static private class _Day
+{
+   // FIXME: Kludge because the day object does not exist in
+   // Minute and Second. This function will be shadowed in Hour.
+   object day()
+   {
+      return this_object()->hour()->day();
+   }
+}
+
+static private class Name
+{
+   object this = this_object();
+
+   string name()
+   {
+      return this->day()->name()+this->_name();
+   }
+  
+   string short_name()
+   {
+      return this->day()->short_name()+this->_short_name();
+   }
+  
+   string name_by_week()
+   {
+      return this->day()->name_by_week()+this->_name();
+   }
+  
+   string name_by_yearday()
+   {
+      return this->day()->name_by_yearday()+this->_name();
+   }
+  
+   string short_name_by_yearday()
+   {
+      return this->day()->short_name_by_yearday()+this->_short_name();
+   }
+}
+
+class Hour
+{
+   inherit Gregorian::Hour;
+   inherit Name;
+
+   string _name()
+   {
+      return sprintf("T%02d",
+		     (int)this);
+   }
+
+   string _short_name()
+   {
+      return _name();
+   }
+}
+
+class Minute
+{
+   inherit _Day;
+   inherit Gregorian::Minute;
+   inherit Name;
+
+   string _name()
+   {
+      return sprintf("T%02d:%02d",
+		     (int)this->hour(),
+		     (int)this);
+   }
+
+   string _short_name()
+   {
+      return _name()-":";
+   }
+}
+
+class Second
+{
+   inherit _Day;
+   inherit Gregorian::Second;
+   inherit Name;
+
+   string _name()
+   {
+      return sprintf("T%02d:%02d:%02d",
+		     (int)this->hour(),
+		     (int)this->minute(),
+		     (int)this);
+   }
+
+   string _short_name()
+   {
+      return _name()-":";
    }
 }
