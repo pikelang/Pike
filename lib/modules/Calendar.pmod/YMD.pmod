@@ -130,7 +130,6 @@ class YMD
 //! method int month_day()
 //! method int month_no()
 //! method int second_no()
-//! method int unix_time()
 //! method int utc_offset()
 //! method int week_day()
 //! method int week_no()
@@ -150,6 +149,10 @@ class YMD
    {
       return jd;
    }
+
+//! function method int unix_time()
+//!     Returns the unix time integer corresponding to the start
+//!	of the time range object. (An unix time integer is UTC.)
 
    int unix_time()
    {
