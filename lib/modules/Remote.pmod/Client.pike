@@ -1,7 +1,6 @@
 #pike __REAL_VERSION__
-
-
 #include "remote.h"
+import ".";
 
 int connected = 0;
 object con;

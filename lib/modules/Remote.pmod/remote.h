@@ -10,11 +10,6 @@
 # define DEBUGMSG(X)
 #endif
 
-program Context = ((program)"context");
-program Connection = ((program)"connection");
-program Call = ((program)"call");
-program Obj = ((program)"obj");
-
 #define CTX_ERROR      0
 #define CTX_OTHER      1
 #define CTX_OBJECT     2
@@ -25,5 +20,5 @@ program Obj = ((program)"obj");
 #define CTX_RETURN     6
 #define CTX_MAPPING    7
 #define CTX_CALL_ASYNC 8
-#define CTX_EXISTS  9
+#define CTX_EXISTS     9
 #define CTX_EXIST_RES  10
