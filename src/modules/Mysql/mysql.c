@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.49 2001/10/28 18:33:43 nilsson Exp $
+ * $Id: mysql.c,v 1.50 2001/11/15 10:57:46 tomas Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.49 2001/10/28 18:33:43 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.50 2001/11/15 10:57:46 tomas Exp $");
 
 /*! @module Mysql
  *!
@@ -246,6 +246,9 @@ static void pike_mysql_reconnect(void)
 
   if (!mysql) {
     mysql = PIKE_MYSQL->mysql = (MYSQL *)xalloc(sizeof(MYSQL));
+#if defined(HAVE_MYSQL_REAL_CONNECT)
+    mysql_init(mysql);
+#endif /* HAVE_MYSQL_REAL_CONNECT */
   }
 
   socket = PIKE_MYSQL->socket;
@@ -275,7 +278,12 @@ static void pike_mysql_reconnect(void)
   }
 #endif /* HAVE_MYSQL_UNIX_PORT */
 
+#ifdef HAVE_MYSQL_REAL_CONNECT
+  socket = mysql_real_connect(mysql, host, user, password,
+                              NULL, port, portptr, 0);
+#else
   socket = mysql_connect(mysql, host, user, password);
+#endif /* HAVE_MYSQL_REAL_CONNECT */
 
 #ifdef HAVE_MYSQL_PORT
   if (port) {
