@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 inherit _ADT;
 
 //! String buffer with the possibility to read and write data
@@ -102,7 +103,7 @@ class struct {
   //! Reads an unsigned integer from the buffer.
   int(0..) get_uint(int len)
   {
-    mixed i;
+    int(0..) i;
     if ( (sizeof(buffer) - index) < len)
       error("No data.\n");
     sscanf(buffer, "%*" + (string) index +"s%" + (string) len + "c", i);
