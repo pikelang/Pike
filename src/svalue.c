@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.121 2001/09/10 21:50:23 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.122 2001/09/10 22:51:18 hubbe Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1144,7 +1144,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       if(s->u.object->prog)
       {
 	int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
-	if(fun != -1 || !Pike_interpreter.evaluator_stack)
+	if(fun != -1 && Pike_interpreter.evaluator_stack)
 	{
 	  /* We require some tricky coding to make this work
 	   * with tracing...
