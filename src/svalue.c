@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.154 2003/01/09 15:21:27 grubba Exp $
+|| $Id: svalue.c,v 1.155 2003/01/10 19:27:43 grubba Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.154 2003/01/09 15:21:27 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.155 2003/01/10 19:27:43 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -531,9 +531,9 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
     }
   default:
 #if SIZEOF_CHAR_P > 4
-    q=DO_NOT_WARN((unsigned INT32)((ptrdiff_t)s->u.refs >> 2));
+    q=DO_NOT_WARN((unsigned INT32)((((char *)s->u.refs)-(char *)0) >> 2));
 #else
-    q=DO_NOT_WARN((unsigned INT32)((ptrdiff_t)s->u.refs));
+    q=DO_NOT_WARN((unsigned INT32)(((char *)s->u.refs)-(char *)0));
 #endif
     break;
   case T_INT:   q=s->u.integer; break;
