@@ -10,6 +10,8 @@
 
 #ifndef TESTING
 #include "global.h"
+#else
+#undef DEBUG
 #endif
 
 #ifdef HAVE_FCNTL_H
