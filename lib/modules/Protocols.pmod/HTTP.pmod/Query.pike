@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.49 2003/02/07 01:00:04 nilsson Exp $
+// $Id: Query.pike,v 1.50 2003/02/21 21:11:13 mirar Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -311,26 +311,27 @@ void async_fetch_close()
 string headers_encode(mapping h)
 {
    if (!h || !sizeof(h)) return "";
-   return Array.map( indices(h),
-		     lambda(string hname,mapping headers)
-		     {
-			if (stringp(headers[hname]) ||
-			    intp(headers[hname]))
-			   return String.capitalize(replace(hname,"_","-")) +
-			      ": " + headers[hname];
-			if (arrayp(headers[hname]))
-			{
-			   return map(headers[hname],
-				      lambda(string b,string hname)
-				      {
-					 return String.capitalize(
-					    replace(hname,"_","-")) +
-					    ": " + b;
-				      },hname)*"\r\n";
-			}
-			error("bad type in headers: %O=%O\n",
-			      hname,headers[hname]);
-		     }, h )*"\r\n" + "\r\n";
+   return (Array.map( 
+	      indices(h),
+	      lambda(string hname,mapping headers)
+	      {
+		 if (stringp(headers[hname]) ||
+		     intp(headers[hname]))
+		    return String.capitalize(replace(hname,"_","-")) +
+		       ": " + headers[hname];
+		 if (arrayp(headers[hname]))
+		 {
+		    return map(headers[hname],
+			       lambda(string b,string hname)
+			       {
+				  return String.capitalize(
+				     replace(hname,"_","-")) +
+				     ": " + b;
+			       },hname)*"\r\n";
+		 }
+		 error("bad type in headers: %O=%O\n",
+		       hname,headers[hname]);
+	      }, h )-({""}))*"\r\n" + "\r\n";
 }
 
 /****** helper methods *********************************************/
