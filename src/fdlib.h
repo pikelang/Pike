@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.25 1999/06/02 19:51:03 marcus Exp $
+ * $Id: fdlib.h,v 1.26 1999/06/19 19:59:39 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -111,6 +111,8 @@ int debug_fd_connect (FD fd, struct sockaddr *a, int len);
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
+SOCKFUN2(getsockname,struct sockaddr *,int *)
+SOCKFUN2(getpeername,struct sockaddr *,int *)
 SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
 SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
@@ -225,6 +227,40 @@ extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 #ifndef S_IFSOCK
 #define S_IFSOCK 0140000
 #endif
+
+#ifndef S_IFIFO
+#define S_IFIFO 0010000
+#endif
+
+
+/* This may be inaccurate! /Hubbe */
+#ifdef __NT__
+#define EMULATE_DIRECT
+#endif
+
+#ifdef EMULATE_DIRECT
+
+#define d_name cFileName
+#define direct _WIN32_FIND_DATAA
+#define dirent direct
+#define MAXPATHLEN MAX_PATH
+
+typedef struct DIR_s
+{
+  int first;
+  WIN32_FIND_DATA find_data;
+  HANDLE h;
+} DIR;
+
+DIR *opendir(char *dir);
+int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d);
+void closedir(DIR *dir);
+
+#define HAVE_POSIX_READDIR_R
+
+#endif
+
+
 
 #else /* HAVE_WINSOCK */
 

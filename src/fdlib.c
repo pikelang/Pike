@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.26 1999/06/02 21:22:52 marcus Exp $");
+RCSID("$Id: fdlib.c,v 1.27 1999/06/19 19:59:38 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -325,8 +325,8 @@ SOCKFUN2(bind, struct sockaddr *, int)
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
-SOCKFUN2(getsockname,struct sockaddr *,int)
-SOCKFUN2(getpeername,struct sockaddr *,int)
+SOCKFUN2(getsockname,struct sockaddr *,int *)
+SOCKFUN2(getpeername,struct sockaddr *,int *)
 SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
 SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
@@ -361,7 +361,7 @@ int debug_fd_close(FD fd)
   long h;
   int type;
   mt_lock(&fd_mutex);
-  h=(HANDLE)da_handle[fd];
+  h=(long)da_handle[fd];
   FDDEBUG(fprintf(stderr,"Closing %d (%d)\n",fd,da_handle[fd]));
   type=fd_type[fd];
   mt_unlock(&fd_mutex);
@@ -655,7 +655,7 @@ int debug_fd_fstat(FD fd, struct stat *s)
 	  s->st_mtime=convert_filetime_to_time_t(m);
 	  break;
 	case FILE_TYPE_CHAR:    s->st_mode=S_IFCHR;  break;
-	case FILE_TYPE_PIPE:    s->st_mode=S_IFFIFO; break;
+	case FILE_TYPE_PIPE:    s->st_mode=S_IFIFO; break;
       }
   }
   s->st_mode |= 0666;
@@ -706,7 +706,7 @@ FD debug_fd_dup(FD from)
   if(fd_type[from]>=FD_NO_MORE_FREE)
     fatal("fd_dup() on file which is not open!\n");
 #endif
-  if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,NULL,0,DUPLICATE_SAME_ACCESS))
+  if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
     errno=GetLastError();
     return -1;
@@ -726,7 +726,7 @@ FD debug_fd_dup(FD from)
 FD debug_fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
-  if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,NULL,0,DUPLICATE_SAME_ACCESS))
+  if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
     errno=GetLastError();
     return -1;
@@ -762,6 +762,62 @@ FD debug_fd_dup2(FD from, FD to)
 }
 
 #endif /* HAVE_WINSOCK_H */
+
+#ifdef EMULATE_DIRECT
+DIR *opendir(char *dir)
+{
+  int len=strlen(dir);
+  char *foo;
+  DIR *ret=(DIR *)malloc(sizeof(DIR) + len+5);
+  if(!ret)
+  {
+    errno=ENOMEM;
+    return 0;
+  }
+  foo=sizeof(DIR) + (char *)ret;
+  MEMCPY(foo, dir, len);
+
+  if(len && foo[len-1]!='/') foo[len++]='/';
+  foo[len++]='*';
+  foo[len]=0;
+/*  fprintf(stderr,"opendir(%s)\n",foo); */
+
+  /* This may require appending a slash and a star... */
+  ret->h=FindFirstFile( (LPCTSTR) foo, & ret->find_data);
+  if(ret->h == INVALID_HANDLE_VALUE)
+  {
+    errno=ENOENT;
+    free((char *)ret);
+    return 0;
+  }
+  ret->first=1;
+  return ret;
+}
+
+int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
+{
+  if(dir->first)
+  {
+    *d=&dir->find_data;
+    dir->first=0;
+    return 0;
+  }else{
+    if(FindNextFile(dir->h,tmp))
+    {
+      *d=tmp;
+      return 0;
+    }
+    *d=0;
+    return 0;
+  }
+}
+
+void closedir(DIR *dir)
+{
+  FindClose(dir->h);
+  free((char *)dir);
+}
+#endif
 
 #if 0
 
