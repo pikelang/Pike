@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.31 2000/05/16 08:34:49 hubbe Exp $
+ * $Id: mktreeopt.pike,v 1.32 2001/03/28 16:56:58 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -236,7 +236,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.31 2000/05/16 08:34:49 hubbe Exp $\n"
+" * $Id: mktreeopt.pike,v 1.32 2001/03/28 16:56:58 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -613,7 +613,7 @@ string fix_action(string s)
 
     array(string) b = new_node/"$";
 
-    multiset(string) used_nodes = (<>);
+    mapping(string:int) used_nodes = ([]);
 
     for(int j=1; j < sizeof(b); j++) {
       int tag = -1;
@@ -623,7 +623,7 @@ string fix_action(string s)
       }
       if (sizeof(marks[tag])) {
 	string expr = sprintf("C%sR(n)", marks[tag]);
-	used_nodes[expr] = 1;
+	used_nodes[expr]++;
 	b[j] = expr + b[j];
       } else {
 	fail("%s:%d: Use of the main node to generate a new node "
@@ -638,9 +638,15 @@ string fix_action(string s)
     string post_cleanup = "\n";
 
     if (sizeof(used_nodes)) {
-      pre_cleanup = "\n  ADD_NODE_REF2(" +
-	(indices(used_nodes) * ",\n  ADD_NODE_REF2(") + ",\n  ";
-      post_cleanup = "\n  " + (")" * sizeof(used_nodes)) + ";\n";
+      pre_cleanup = "\n";
+      post_cleanup = "\n  ";
+      foreach(indices(used_nodes), string used_node) {
+	pre_cleanup += ("  ADD_NODE_REF2(" + used_node + ",\n")*
+	  used_nodes[used_node];
+	post_cleanup += ")" * used_nodes[used_node];
+      }
+      pre_cleanup += "  ";
+      post_cleanup += ";\n";
     }
     a[i] = pre_cleanup +
       "  tmp1" + new_node +
@@ -1096,17 +1102,17 @@ string generate_match(array(object(node)) rule_set, string indent)
 	res += indent;
       }
       res+=
-      sprintf("if ((CD%sR(n) == %s)\n"
-	      "#ifdef SHARED_NODES_MK2\n" + indent +
-	      "  || (CD%sR(n) && %s &&\n" + indent +
-	      "      ((CD%sR(n)->master?CD%sR(n)->master:CD%sR(n))==\n" +
-	      indent + "       (%s->master?%s->master:%s)))\n"
-	      "#endif /* SHARED_NODES_MK2 */\n" +
-	      indent + "  ) {\n",
-	      tpos, expr,
-	      tpos, expr,
-	      tpos, tpos, tpos,
-	      expr, expr, expr);
+	sprintf("if ((CD%sR(n) == %s)\n"
+		"#ifdef SHARED_NODES_MK2\n" + indent +
+		"  || (CD%sR(n) && %s &&\n" + indent +
+		"      ((CD%sR(n)->master?CD%sR(n)->master:CD%sR(n))==\n" +
+		indent + "       (%s->master?%s->master:%s)))\n"
+		"#endif /* SHARED_NODES_MK2 */\n" +
+		indent + "  ) {\n",
+		tpos, expr,
+		tpos, expr,
+		tpos, tpos, tpos,
+		expr, expr, expr);
       res += generate_match(exacts[expr], indent + "  ");
       res += indent + "}";
     }
