@@ -46,6 +46,7 @@ IMAGE_SUBMODULE("DSI",   init_image_dsi,  exit_image_dsi  )
 IMAGE_SUBMODULE("XWD",   init_image_xwd,  exit_image_xwd  ) 
 IMAGE_SUBMODULE("_XPM",  init_image__xpm, exit_image__xpm ) 
 IMAGE_SUBMODULE("WBF",   init_image_wbf,  exit_image_wbf ) 
+IMAGE_SUBMODULE("WBMP",  init_image_wbf,  exit_image_wbf ) 
 
 IMAGE_SUBMODMAG("PNG",   init_image_png,  exit_image_png  )
 
