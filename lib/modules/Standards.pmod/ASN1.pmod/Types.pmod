@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.30 2004/01/27 22:01:53 nilsson Exp $
+// $Id: Types.pmod,v 1.31 2004/02/22 17:13:23 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -464,14 +464,14 @@ class Identifier
   mixed _encode() { return id; }
   void _decode(array(int) data) { id=data; }
 
-  //! @fixme
-  //!   document me!
+  //! Returns a new @[Identifier] object with @[args] appended to the
+  //! ID path.
   this_program append(int ... args) {
     return this_program(@id, @args);
   }
 
   string der_encode() {
-    return build_der(sprintf("%c%@s", 40 * id[0] + id[1],
+    return build_der(sprintf("%s%@s", to_base_128(40 * id[0] + id[1]),
 			     map(id[2..], to_base_128)));
   }
 
