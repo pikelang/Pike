@@ -1,6 +1,6 @@
 #include "../../modules/Image/image.h"
 
-struct object_wrapper 
+struct object_wrapper
 {
   GtkObject *obj;
   int extra_int;
@@ -14,11 +14,12 @@ struct signal_data
   struct svalue args;
 };
 
-struct my_pixel 
+struct my_pixel
 {
   unsigned char r;
   unsigned char g;
   unsigned char b;
+  unsigned char padding;
 };
 
 extern int pigtk_is_setup;
@@ -43,7 +44,7 @@ void push_gdk_event(GdkEvent *e);
 
 int pgtkbuttonfuncwrapper(GtkObject *obj, struct signal_data *d,  void *foo);
 void *get_swapped_string(struct pike_string *s, int force_wide);
-int signal_func_wrapper(GtkObject *obj, struct signal_data *d, 
+int signal_func_wrapper(GtkObject *obj, struct signal_data *d,
                         int nparams, GtkArg *params);
 
 #define pgtk__init_this_object() pgtk__init_object(fp->current_object)
@@ -59,7 +60,7 @@ GtkObject *get_pgtkobject(struct object *from, struct program *type);
 
 
 void push_gtkobjectclass(void *obj, struct program *def);
-#define push_gtkobject( o ) push_gtkobjectclass(o,pgtk_object_program)
+#define push_gtkobject( o ) push_gtkobjectclass(o,pgtk_type_to_program(o))
 
 void push_pgdkobject(void *obj, struct program *def);
 #define push_gdkobject( X, Y ) push_pgdkobject( X, pgtk_Gdk##Y##_program )
@@ -93,7 +94,7 @@ void pgtk_encode_truecolor_masks(struct image *i,
                                  unsigned int red_mask,
                                  unsigned int green_mask,
                                  unsigned int blue_mask,
-                                 unsigned char *buffer, 
+                                 unsigned char *buffer,
                                  int debuglen);
 
 
@@ -107,6 +108,5 @@ void pgtk_encode_truecolor_masks(struct image *i,
 # define TIMER_INIT(X)
 # define PFTIME(X)
 # define TIMER_END()
-# define DEBUG_PF(X) 
+# define DEBUG_PF(X)
 #endif
-
