@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.11 2004/07/20 17:06:36 grubba Exp $");
+RCSID("$Id: blobs.c,v 1.12 2004/10/26 20:39:10 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -191,12 +191,12 @@ static void f_blobs_read( INT32 args )
   t->next_h = THIS->next_h->next;
 }
 
-static void init_blobs_struct( )
+static void init_blobs_struct(struct object *o)
 {
   MEMSET( THIS, 0, sizeof( struct blobs ) );
 }
 
-static void exit_blobs_struct( )
+static void exit_blobs_struct(struct object *o)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.23 2004/07/21 12:07:43 grubba Exp $");
+RCSID("$Id: resultset.c,v 1.24 2004/10/26 20:41:33 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -140,13 +140,13 @@ struct object *wf_resultset_new( )
   return o;
 }
 
-static void init_rs( )
+static void init_rs(struct object *o)
 {
   THIS->d = 0;
   THIS->allocated_size = 0;
 }
 
-static void free_rs()
+static void free_rs(struct object *o)
 {
   THIS->allocated_size = 0;
   if( THIS->d )  free( THIS->d );

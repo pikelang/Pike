@@ -1,9 +1,9 @@
-/* $Id: linkfarm.c,v 1.4 2004/07/20 17:06:37 grubba Exp $
+/* $Id: linkfarm.c,v 1.5 2004/10/26 20:39:45 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.4 2004/07/20 17:06:37 grubba Exp $");
+RCSID("$Id: linkfarm.c,v 1.5 2004/10/26 20:39:45 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -196,12 +196,12 @@ static void f_linkfarm_read( INT32 args )
 }
 
 
-static void init_linkfarm_struct( )
+static void init_linkfarm_struct(struct object *o)
 {
   MEMSET( THIS, 0, sizeof( struct linkfarm ) );
 }
 
-static void exit_linkfarm_struct( )
+static void exit_linkfarm_struct(struct object *o)
 {
   int i;
 

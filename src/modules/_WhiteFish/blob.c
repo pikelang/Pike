@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.33 2004/07/20 17:06:36 grubba Exp $");
+RCSID("$Id: blob.c,v 1.34 2004/10/26 20:40:38 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -530,12 +530,12 @@ static void f_blob__cast( INT32 args )
   wf_buffer_free( res );
 }
 
-static void init_blob_struct( )
+static void init_blob_struct(struct object *o)
 {
   MEMSET( THIS, 0, sizeof( struct blob_data ) );
 }
 
-static void exit_blob_struct( )
+static void exit_blob_struct(struct object *o)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
