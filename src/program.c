@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.8 1996/11/18 23:12:32 hubbe Exp $");
+RCSID("$Id: program.c,v 1.9 1996/11/19 09:35:24 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -22,7 +22,8 @@ RCSID("$Id: program.c,v 1.8 1996/11/18 23:12:32 hubbe Exp $");
 #include "main.h"
 #include "gc.h"
 #include "threads.h"
-#include <stdio.h>
+
+#include <errno.h>
 #include <fcntl.h>
 
 #define FILE_STATE

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.10 1996/11/18 23:12:31 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.11 1996/11/19 09:35:22 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -29,6 +29,7 @@ RCSID("$Id: interpret.c,v 1.10 1996/11/18 23:12:31 hubbe Exp $");
 #include "callback.h"
 
 #include <fcntl.h>
+#include <errno.h>
 
 #ifdef HAVE_MMAP
 #ifdef HAVE_SYS_TYPES_H
