@@ -20,6 +20,8 @@ class asn1_object
 
   string to_base_128(int n)
     {
+      if (!n)
+	return "\0";
       /* Convert tag number to base 128 */
       array(int) digits = ({ });
 
@@ -75,6 +77,10 @@ class asn1_compound
   void create(object ...args)
     {
       elements = args;
+      foreach(elements, mixed o)
+	if (!o || !objectp(o))
+	  throw( ({ "asn1_compound: Non-object argument!\n",
+		    backtrace() }) );
       WERROR(sprintf("asn1_compound: %O\n", elements));
     }
 }
@@ -195,7 +201,11 @@ class asn1_sequence
 
   string der()
     {
-      return build_der(`+("", @Array.map(elements, "der")));
+      WERROR(sprintf("asn1_sequence->der: elements = '%O\n",
+		     elements));
+      array(string) a = Array.map(elements, "der");
+      WERROR(sprintf("asn1_sequence->der: der(elements) = '%O\n", a));
+      return build_der(`+("", @ a));
     }
 }
 
@@ -223,10 +233,9 @@ class asn1_set
     {
       WERROR(sprintf("asn1_set->der: elements = '%O\n",
 		     elements));
-      WERROR(sprintf("asn1_set->der: der(elements) = '%O\n",
-		     Array.map(elements, "der")));
-      return build_der(`+("", @Array.sort_array(Array.map(elements, "der"),
-						compare_octet_strings)));
+      array(string) a = Array.map(elements, "der");
+      WERROR(sprintf("asn1_set->der: der(elements) = '%O\n", a));
+      return build_der(`+("", @Array.sort_array(a, compare_octet_strings)));
     }
 }
 
