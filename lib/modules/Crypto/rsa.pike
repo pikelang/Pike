@@ -1,8 +1,6 @@
-/* $Id: rsa.pike,v 1.11 1997/10/12 14:39:47 grubba Exp $
+/* $Id: rsa.pike,v 1.12 1997/11/28 10:04:31 nisse Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
- * However, PKCS#1 style signing (involving ISO Object Identifiers) is
- * not yet implemented.
  */
 
 #define bignum object(Gmp.mpz)
@@ -12,6 +10,11 @@ bignum n;  /* modulo */
 bignum e;  /* public exponent */
 bignum d;  /* private exponent (if known) */
 int size;
+
+/* Extra info associated with a private key. Not currently used. */
+   
+bignum p;
+bignum q;
 
 int encrypt_mode; /* For block cipher compatible functions */
 
@@ -26,9 +29,14 @@ object set_public_key(bignum modulo, bignum pub)
   return this_object();
 }
 
-object set_private_key(bignum priv)
+object set_private_key(bignum priv, array(bignum)|void extra)
 {
   d = priv;
+  if (extra)
+  {
+    p = extra[0];
+    q = extra[1];
+  }
   return this_object();
 }
 
@@ -55,14 +63,24 @@ bignum rsa_pad(string message, int type, mixed|void random)
     throw( ({ "Crypto.rsa->rsa_pad: Too large block.\n",
 		backtrace() }) );
 
-  if (random)
-    cookie = replace(random(len), "\0", "\1");
-  else
-    cookie = sprintf("%@c", Array.map(allocate(len), lambda(int dummy)
-				      {
-					return random(255) + 1;
-				      } ));
-  
+  switch(type)
+  {
+  case 1:
+    cookie = sprintf("%@c", replace(allocate(len), 0, 0xff));
+    break;
+  case 2:
+    if (random)
+      cookie = replace(random(len), "\0", "\1");
+    else
+      cookie = sprintf("%@c", Array.map(allocate(len), lambda(int dummy)
+					{
+					  return random(255) + 1;
+					} ));
+    break;
+  default:
+    throw( ({ "Crypto.rsa->rsa_pad: Unknown type.\n",
+		backtrace() }) );
+  }    
   return BIGNUM(sprintf("%c", type) + cookie + "\0" + message, 256);
 }
 
@@ -83,8 +101,13 @@ object sign(string message, program h, mixed|void r)
 
 int verify(string msg, program h, object sign)
 {
+  // werror(sprintf("msg: '%s'\n", Crypto.string_to_hex(msg)));
   string s = pkcs.build_digestinfo(msg, h());
-  return s == rsa_unpad(sign->powm(e, n), 1);
+  // werror(sprintf("rsa: s = '%s'\n", s));
+  // werror(sprintf("decrypted: '%s'\n", sign->powm(e, n)->digits(256)));
+  string s2 = rsa_unpad(sign->powm(e, n), 1);
+  // werror(sprintf("rsa: s2 = '%s'\n", s2));
+  return s == s2;
 }
 
 string sha_sign(string message, mixed|void r)
@@ -123,8 +146,8 @@ object generate_key(int bits, function|void r)
   
   do
   {
-    bignum p = get_prime(bits, r);
-    bignum q = get_prime(bits, r);
+    p = get_prime(bits, r);
+    q = get_prime(bits, r);
     bignum phi = Gmp.mpz(p-1)*Gmp.mpz(q-1);
 
     array gs; /* gcd(pub, phi), and pub^-1 mod phi */
