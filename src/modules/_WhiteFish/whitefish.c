@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.11 2001/05/25 10:38:53 per Exp $");
+RCSID("$Id: whitefish.c,v 1.12 2001/05/25 12:13:07 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -139,7 +139,7 @@ static struct object *low_do_query_merge( Blob **blobs,
     int min = blobs[0]->docid;
     
     for( i = 1; i<nblobs; i++ )
-      if( blobs[i]->docid < min )
+      if( !blobs[i]->eof && blobs[i]->docid < min )
 	min = blobs[i]->docid;
 
     for( j = 0, i = 0; i < nblobs; i++ )
