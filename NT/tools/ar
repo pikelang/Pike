@@ -9,6 +9,21 @@ shift
 OUTPUT=$1
 shift
 
+case "$CC" in
+  *rntcl)
+    case "E$OPTIONS" in
+      *d*) exit 1 ;;
+      *x*) exit 1 ;;
+      *q*|*r*)
+        do_cmd lib "-OUT:`fixpath $OUTPUT`" `fixpath $@`
+        exit $?
+      ;;
+    esac
+
+  ;;
+
+  *rntcc)
+
 XOPTS="-b -c"
 
 case "E$OPTIONS" in
@@ -64,3 +79,9 @@ if [ $CLEANUP = yes ]; then
     rm $XFILE
   fi
 fi
+  ;;
+  *)
+    echo Unknown C compiler: $CC
+  ;;
+esac
+

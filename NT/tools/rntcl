@@ -1,0 +1,279 @@
+#!/usr/local/bin/pike
+
+// RNTCC, a front-end to MS VC++ with options similar to GCC
+// Written by Fredrik Hubinette.
+
+inherit "lib.pike";
+
+// Verbose is default for now, this can be turned off one this
+// frontend has been refined to where it does not require more
+// debugging.
+
+int verbose=0;
+
+// Temporary variable
+int linking_failed;
+
+// Files to remove upon exit
+string *tmpfiles=({});
+
+void exit(int code)
+{
+  if(getenv("CLEANUP")!="no")
+    Array.map(tmpfiles,rm);
+
+  predef::exit(code);
+}
+
+string get_ext(string file)
+{
+  sscanf(file=lower_case(reverse(file)),"%s.",file);
+  return reverse(file);
+}
+
+string remove_ext(string file)
+{
+  sscanf(file=reverse(file),"%*s.%s",file,file);
+  return reverse(file);
+}
+
+
+int main(int argc, string *argv)
+{
+  string *cflags=({
+    "-Zm300",
+    "-F8388608",
+    "-Ge",
+    "-D__WIN32__",
+    "-D_WIN32",
+    "-D__NT__",
+    "-nologo",
+  });
+
+  string target="exe";
+  int debug,optimize,share;
+  string output, wantfile;
+
+  mixed *opts=Getopt.find_all_options(argv, aggregate(
+    ({"oper_pre",Getopt.NO_ARG, ({"-E"}) }),
+    ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),	
+    ({"verbose",Getopt.NO_ARG, ({"-v"}) }),	
+    ({"debug",Getopt.MAY_HAVE_ARG, ({"-g"}) }),
+    ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
+    ({"include",Getopt.HAS_ARG, ({"-I"}) }),
+    ({"link",Getopt.HAS_ARG, ({"-l"}) }),
+    ({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
+    ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
+    ({"ignore",Getopt.HAS_ARG, ({"-R","-L","-r"}) }),
+    ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
+    ({"define",Getopt.HAS_ARG, ({"-D"}) }),
+    ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
+    ({"output",Getopt.HAS_ARG, ({"-o"}) }),
+    ({"export",Getopt.HAS_ARG, ({"--export"}) })
+    ));
+  foreach(opts, mixed *option)
+    {
+      switch(option[0])
+      {
+	case "verbose":
+	  verbose++;
+	  break;
+
+	case "export": // fixme
+//	  ldopts+=({"export",option[1]+"_"});
+	  break;
+
+	case "share": // fixme
+	  share=1;
+	  target="dll";
+	  break;
+	  
+	case "oper_pre":
+	  cflags+=({ "-E" });
+	  target="-";
+	  break;
+
+	case "oper_comp":
+	  target="obj";
+	  cflags+=({ "-c" });
+	  break;
+
+	case "debug":
+	  cflags+=({
+	    "-Z7",
+//	    "-Yd",
+	  });
+	  debug=1;
+	  break;
+	  
+	case "optimize":
+	  if(!option[1]) option[1]=1;
+	  switch(optimize=(int)option[1])
+	  {
+	    case 0: optimize=0; break;
+	    case 1: cflags+=({"-O1"}); break;
+	    case 2: cflags+=({"-Ob2gity","-GB"}); break;
+	    case 3..:
+	      break;
+	  }
+	  break;
+	  
+	case "include":
+	  // Avoid searching 'local' include dirs.
+	  // This is not a very pretty solution.
+	  if(sscanf(option[1],"/usr/include/%*s") ||
+	     sscanf(option[1],"/usr/local/%*s"))
+	    break;
+	  
+	  cflags+=({"-I"+fixpath(option[1])});
+	  break;
+	  
+	case "link":
+	  // -lm and -lc are automatically handled ?
+	  if(option[1]=="m" || option[1]=="c") break;
+
+	  // We optimiza a little, no need to bring in the same
+	  // library many times in a row.
+//	  if(cflags[-1]!=option[1]+".lib")
+//	  if(search(cflags,option[1]+".lib")!=-1)
+	    cflags-=({option[1]+".lib"});
+	    cflags+=({option[1]+".lib"});
+	  break;
+	  
+        case "warn":
+	  if(option[1])
+	  {
+	    // This allows us to pass options to the linker
+	    if(sscanf(option[1],"l,%s",string tmp))
+	    {
+	      // This was done for my convenience, it can be taken
+	      // out once smartlink has been fixed to not use absoute
+	      // paths for the 'uname' binary.
+	      if(sscanf(tmp,"-rpath%*s")) break;
+	      
+	      cflags+=({tmp});
+	      break;
+	    }
+	  }
+
+	  // More options should be recognized, options which are not
+	  // recognized should generate warning/error messages.
+	  switch(option[1])
+	  {
+	    case "all": cflags+=({"-W3"}); break;
+	    default: cflags+=({"-W2"}); break;
+	  }
+	  break;
+	  
+	case "define": cflags+=({"-D"+option[1]}); break;
+	case "undefine": cflags+=({"-U"+option[1]}); break;
+	case "output":
+	  output=option[1];
+	  break;
+      }
+    }
+
+  // Scan through the remaining arguments
+  argv=Getopt.get_args(argv);
+  cflags+=Array.map(argv[1..],fixpath);
+
+  foreach(argv[1..], string tmp)
+  {
+    if(tmp[0]=='-')
+    {
+      werror("Unrecognized option "+tmp+".\n");
+      exit(1);
+    }
+  }
+
+  switch(target)
+  {
+    case "exe":
+      if(!output) output="a.out";
+      cflags+=({"-Fe"+fixpath(output)+".exe"});
+//      cflags+=({"-MT" + (debug?"d":"") });
+      wantfile=output+".exe";
+      break;
+
+    case "obj":
+      if(output)
+	cflags+=({"-Fo"+fixpath(output)});
+      else
+	output=remove_ext(argv[1])+".obj";
+      wantfile=output;
+      break;
+
+    case "dll":
+      if(output)
+	cflags+=({"-Fe"+fixpath(output)});
+      else
+	output=remove_ext(argv[1])+".dll";
+
+//      cflags+=({"-MD" + (debug?"d":"") });
+      wantfile=output;
+      break;
+
+    case "-":
+  }
+
+
+  cflags+=({"-MT" + (debug?"d":"") });
+
+  if(output) rm(output);
+
+  array(string) cmd=({"cl"})+cflags;
+
+  switch(target)
+  {
+    case "exe":
+    case "dll":
+      if(debug)
+      {
+	cmd+=({
+	  "-link",
+//	  "-PDB:NONE",
+	  "-DEBUGTYPE:BOTH",
+	  "-DEBUG",
+	  });
+      }
+  }
+
+  int ret;
+  if(verbose && target!="-")
+    ret=do_cmd(cmd);
+  else
+    ret=silent_do_cmd(cmd);
+
+
+  if(ret)
+  {
+    werror("CL returned error code %d.\n",ret);
+    exit(ret);
+  }
+
+  if(wantfile)
+  {
+    if(!file_stat(wantfile))
+    {
+      werror("RNTCL: output file not generated.\n");
+      exit(1);
+    }
+  }
+
+  if(target=="exe" && !share)
+  {
+    rm(output);
+    Stdio.write_file(output,
+		     "#!/usr/local/bin/pike\n"
+		     "inherit \""+find_lib_location()+"\";\n"
+		     "int main(int argc, string *argv) {\n"
+		     "argv[0]+=\".exe\";\n"
+		     "argv[0]=getenv(\"NTDRIVE\")+fixpath(combine_path(getcwd(),argv[0]));\n"
+		     "  int ret=silent_do_cmd(argv);\n"
+		     "  exit(ret);\n"
+		     "}\n");
+    chmod(output,0755);
+  }
+
+  exit(ret);
+}
