@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.35 2003/07/03 16:52:39 grubba Exp $
+|| $Id: auto.c.in,v 1.36 2003/07/03 16:53:18 grubba Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.35 2003/07/03 16:52:39 grubba Exp $");
+RCSID("$Id: auto.c.in,v 1.36 2003/07/03 16:53:18 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -421,6 +421,8 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 #define glEvalPoint1v(i) glEvalPoint1((i)[0]);
 #define glEvalPoint2v(i) glEvalPoint2((i)[0], (i)[1]);
 
+static void my_glFrustum(INT32 args);
+
 static void pre_init()
 {
   add_function_constant("glFrustum", my_glFrustum,
@@ -431,8 +433,6 @@ static void pre_init()
 static void post_init()
 {
 }
-
-static void my_glFrustum(INT32 args);
 
 @@
 
