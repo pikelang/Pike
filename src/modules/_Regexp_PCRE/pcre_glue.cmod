@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.5 2003/09/21 09:56:55 mirar Exp $
+|| $Id: pcre_glue.cmod,v 1.6 2003/09/21 11:27:17 mirar Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.5 2003/09/21 09:56:55 mirar Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.6 2003/09/21 11:27:17 mirar Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -130,7 +130,6 @@ PIKECLASS _pcre
 	 RETURN this_object();
       }
 
-#if 0
 /*! @decl static string _sprintf(int c, mapping flags)
  */
    PIKEFUN string _sprintf(int c, mapping flags)
@@ -159,7 +158,6 @@ PIKECLASS _pcre
 	    return;
       }
    }
-#endif
 
    PIKEFUN mapping info()
       {
@@ -270,8 +268,8 @@ PIKECLASS _pcre
 
 #define OVECTOR_SIZE 3000 /* multiple of three; possible hits*3 */
 
-   PIKEFUN int|array exec(string subject,
-			  void|int startoffset)
+   PIKEFUN int|array(int) exec(string subject,
+			       void|int startoffset)
       {
 	 struct array *res;
 
@@ -328,6 +326,8 @@ PIKECLASS _pcre
 	 RETURN pcre_get_stringnumber(THIS->re,stringname->str);
       }
 
+/* init and exit */
+
    INIT
       {
 	 THIS->re=NULL;
@@ -347,6 +347,40 @@ PIKECLASS _pcre
  */
 
 #endif /* HAVE_LIBPCRE */
+
+/*!
+ *! convenience function: 
+ *! splits a subject string on the result from _pcre->exec()
+ *! 
+ *! equal to
+ *! map(previous_result/2,
+ *!     lambda(array v) { return subject[v[0]..v[1]-1]; })
+ */
+
+PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
+{
+   int i,j;
+   int sz=previous_result->size/2;
+   struct array *res;
+
+   for (j=0; i<sz*2; i++)
+      if (ITEM(previous_result)[i].type!=T_INT)
+	 SIMPLE_BAD_ARG_ERROR("split_subjects",2,"array(int)");
+
+   res=allocate_array(sz);   
+   for (i=j=0; j<sz; i+=2,j++)
+   {
+      ITEM(res)[j].type=T_STRING;
+      ITEM(res)[j].subtype=0;
+      ITEM(res)[j].u.string=
+	 string_slice(subject,
+		      ITEM(previous_result)[i].u.integer,
+		      ITEM(previous_result)[i+1].u.integer-
+		      ITEM(previous_result)[i].u.integer);
+   }
+
+   RETURN res;
+}
 
 /*** module init & exit & stuff *****************************************/
 
