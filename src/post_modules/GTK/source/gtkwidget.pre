@@ -49,9 +49,9 @@ signal add_accelerator;
 signal remove_accelerator;
 //! Called when an accelerator (keyboard shortcut) is removed from the widget
 signal size_request;
-//! Called when the widget should calculate how big it want's to be
+//! Called when the widget should calculate how big it wants to be
 signal size_allocate;
-//! Called when the widget get's the size it should be
+//! Called when the widget gets the size it should be
 signal state_changed;
 signal parent_set;
 //! Called when the parent widget is changed
@@ -118,7 +118,7 @@ signal drag_data_get;
 signal drag_data_received;
 //! Called on the receiving side when the drop is finished.
 signal visibility_notify_event;
-//! The widget has been mapped, unmapped, hidden, or otherwise had it's visibility modified
+//! The widget has been mapped, unmapped, hidden, or otherwise had its visibility modified
 signal debug_msg;
 signal other_event;
 signal client_event;
@@ -300,7 +300,7 @@ GDK.Window get_gdkwindow()
 
 
 void shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset )
-//! Set the shape of the widget, or, rather, it's window, to that of
+//! Set the shape of the widget, or, rather, its window, to that of
 //! the supplied bitmap. Notice how the window behind the example
 //! window can be seen because of the rather odd shape the example window has.
 //! TIMG: GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)
@@ -389,7 +389,7 @@ void set_usize( int xsize, int ysize );
 //! preferable to use set_default_size
 
 void set_uposition( int xpos, int ypos );
-//! Set the absolute coordinates of the widget relative to it's parent.
+//! Set the absolute coordinates of the widget relative to its parent.
 
 void set_name( string name );
 //! Set the name of the widget. The name is used when the rc-file is
@@ -555,11 +555,11 @@ void set_bitmap_cursor( GDK.Bitmap source, GDK.Bitmap mask,
 }
 
 void unparent();
-//! Remove this widget from it's parent
+//! Remove this widget from its parent
 void realize();
-//! Realize this widget, and it's children, if nessesary
+//! Realize this widget, and its children, if nessesary
 void unrealize();
-//! Unrealize this widget, and it's children, if nessesary
+//! Unrealize this widget, and its children, if nessesary
 void queue_draw();
 //! Force a redraw of the widget
 void queue_draw_area( int x, int y, int width, int height );
@@ -577,9 +577,9 @@ void show_now();
 void hide();
 //! Hide this widget
 void show_all();
-//! Show this widget and all it's children
+//! Show this widget and all its children
 void hide_all();
-//! Hide this widget and all it's children
+//! Hide this widget and all its children
 void map();
 //! Map the widget. Should normally not be called directly.
 void unmap();
@@ -587,7 +587,7 @@ void unmap();
 void activate();
 //! Activate the widget. This either activates the widget, if possible
 //! (as an example, buttons can be activated), or activates the default
-//! widget of it's parent (or it's parent, or it's parents parent
+//! widget of its parent (or its parent, or its parents parent
 //! etc.)
 
 void grab_focus();
