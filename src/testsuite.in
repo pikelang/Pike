@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.579 2003/01/09 16:50:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.580 2003/01/29 17:18:48 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -96,6 +96,36 @@ test_any([[
 
   return Y()->Ack(2,2);
 ]],7)
+
+test_any([[
+  // Test that loop optimizer isn't too aggressive.
+  // Thanks to Alexander Demenshin <aldem-pike@aldem.net>
+  int x,y,a;
+  for(;x<10000;x++) {
+    y += (x - a++);
+  }
+  return a;
+]], 10000)
+
+test_any([[
+  // Test that loop optimizer isn't too aggressive.
+  // Thanks to Alexander Demenshin <aldem-pike@aldem.net>
+  mapping m = ([]);
+  for(;m->x<10000;m->x++) {
+    m->y += (m->x - m->a++);
+  }
+  return m->a;
+]], 10000)
+
+test_any([[
+  // Test that loop optimizer isn't too aggressive.
+  // Thanks to me.  / Marcus
+  for(int i=0; i<3.0; i++)
+    if(i>4.0)
+      return -1;
+  return 0;
+]], 0)
+
 
 dnl FIXME: Add test that local and local:: in combination
 dnl        with recursion works correctly.
