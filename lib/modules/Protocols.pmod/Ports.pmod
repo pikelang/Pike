@@ -1,5 +1,5 @@
 /*
- * $Id: Ports.pmod,v 1.2 1998/06/23 21:46:45 grubba Exp $
+ * $Id: Ports.pmod,v 1.3 1999/11/04 13:57:34 grubba Exp $
  *
  * IP port assignments
  *
@@ -1020,6 +1020,7 @@ constant tcp = ([
   "rmonitor":         560,	//    rmonitord
   "monitor":          561,	//
   "chshell":          562,	//    chcmd
+  "snews":	      563,	//    NNTP over SSL
   "9pfs":             564,	//    plan 9 file service
   "whoami":           565,	//    whoami
   "meter":            570,	//    demon
