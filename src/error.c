@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.137 2004/11/05 03:34:28 mast Exp $
+|| $Id: error.c,v 1.138 2004/11/11 16:02:16 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -301,38 +301,53 @@ PMOD_EXPORT void Pike_vsnprintf(char *str, size_t size,
 /* FIXME: NOTE: This function uses a static buffer.
  * Check sizes of arguments passed!
  */
-void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
+void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
+     ATTRIBUTE((noreturn))
 {
-  char buf[4096];
+  struct string_builder s;
+
   SWAP_IN_THREAD_IF_REQUIRED();
   if(in_error)
   {
     const char *tmp=in_error;
-    in_error=0;
+    in_error = NULL;
     Pike_fatal("Recursive error() calls, original error: %s",tmp);
   }
 
-  in_error=buf;
-  VSNPRINTF (buf, sizeof (buf), fmt, args);
+  in_error=fmt;
+  init_string_builder(&s, 0);
+  string_builder_vsprintf(&s, fmt, args);
 
   if(!Pike_interpreter.recoveries)
   {
+    /* FIXME: Why not use Pike_fatal() here? */
 #ifdef PIKE_DEBUG
     if (d_flag) {
-      fprintf(stderr,"No error recovery context!\n%s",buf);
+      fprintf(stderr,"No error recovery context!\n%s",s.s->str);
       dump_backlog();
     }
 #endif
 
-    fprintf(stderr,"No error recovery context!\n%s",buf);
+    fprintf(stderr,"No error recovery context!\n%s",s.s->str);
     exit(99);
   }
 
-  low_error(buf);
+  push_string(finish_string_builder(&s));
+  f_backtrace(0);
+  f_aggregate(2);
+  free_svalue(&throw_value);
+  move_svalue(&throw_value, --Pike_sp);
+  throw_severity = THROW_ERROR;
+  in_error = NULL;
+  pike_throw();	/* Hope someone is catching, or we will be out of balls. */
 }
 
-PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp,
-	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn))
+PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
+					      const char *text,
+					      struct svalue *oldsp,
+					      INT32 args,
+					      const char *file,
+					      int line) ATTRIBUTE((noreturn))
 {
   int i;
 
@@ -399,6 +414,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
 
   f_aggregate(2);
 
+  free_svalue(&throw_value);
   move_svalue (&throw_value, --Pike_sp);
   throw_severity=THROW_ERROR;
 
