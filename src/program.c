@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.552 2004/01/19 12:15:40 grubba Exp $
+|| $Id: program.c,v 1.553 2004/01/19 12:28:30 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.552 2004/01/19 12:15:40 grubba Exp $");
+RCSID("$Id: program.c,v 1.553 2004/01/19 12:28:30 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1205,7 +1205,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
   if(m == state->new_program->PIKE_CONCAT(num_,NAME)) {			\
     TYPE *tmp;								\
     if(m==MAXVARS(NUMTYPE)) {						\
-      yyerror("Too many " #NAME ".\n");					\
+      yyerror("Too many " #NAME ".");					\
       return;								\
     }									\
     m = MINIMUM(m*2+1,MAXVARS(NUMTYPE));				\
