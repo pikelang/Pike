@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.225 2003/11/11 19:21:02 grubba Exp $
+|| $Id: pike_types.c,v 1.226 2003/11/12 15:47:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.225 2003/11/11 19:21:02 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.226 2003/11/12 15:47:41 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2634,7 +2634,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case T_OBJECT:
 #if 0
-#if 0
     if(a->cdr || b->cdr)
     {
       fprintf(stderr,"Type match1: ");
@@ -2647,30 +2646,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     /* object(* 0) matches any object */
     if(!a->cdr || !b->cdr) break;
 
-    /* object(x *) =? object(x *) */
-    if(a->car == b->car)
-    {
-      /* x? */
-      if(a->car)
-      {
-	/* object(1 x) =? object(1 x) */
-	if(a->cdr != b->cdr) return 0;
-      }else{
-	/* object(0 *) =? object(0 *) */
-#if 0
-	/* This is known to cause trouble in some cases when comparing
-	 * the same function prototype in the first and second passes
-	 * (got "Prototype doesn't match for function foo" even though
-	 * there was no other prototype for that function). /mast */
-	struct program *ap,*bp;
-	ap = id_to_program(CDR_TO_INT(a));
-	bp = id_to_program(CDR_TO_INT(b));
-	if (!is_compatible(ap, bp)) return 0;
-#endif
-	break;
-      }
-    }
-
     {
       struct program *ap,*bp;
       ap = id_to_program(CDR_TO_INT(a));
@@ -2678,24 +2653,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
       if(!ap || !bp) break;
 
-#if 0
-      /* FIXME: Temporary kludge.
-       * match_types() currently seems to need to be symetric.
-       */
-      if (!implements(ap,bp) && !implements(bp,ap))
+      if (!is_compatible(implements_a=ap,implements_b=bp))
 	return 0;
-#else /* !1 */
-      if(a->car)
-      {
-	if (!is_compatible(implements_a=ap,implements_b=bp))
-	  return 0;
-      }else{
-	if(!is_compatible(implements_a=bp,implements_b=ap))
-	  return 0;
-      }
-#endif /* 1 */
     }
-#endif /* 0 */
     break;
 
   case T_INT:
