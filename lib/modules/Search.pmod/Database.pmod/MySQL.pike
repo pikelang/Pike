@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.16 2001/05/25 20:55:34 js Exp $
+// $Id: MySQL.pike,v 1.17 2001/05/25 21:02:49 per Exp $
 
 // inherit Search.Database.Base;
 
@@ -187,10 +187,10 @@ void remove_document(string uri)
 }
 
 
-int sync()
+static void low_sync( array(int) ts )
 {
-  werror("----------- sync() --------------\n");
-  foreach(indices(blobs), int word_id)
+  Sql.Sql db = Sql.sql( host );
+  foreach(ts, int word_id)
   {
     werror(".");
     array a=db->query("select hits from word_hit where word_id=%d",word_id);
@@ -200,7 +200,21 @@ int sync()
     db->query("replace into word_hit (word_id,first_doc_id,hits) "
 	      "values (%d,%d,%s)", word_id, 0, blobs[word_id]->data());
   }
+}
+
+int sync()
+{
+  werror("----------- sync() --------------\n");
+#if constant(thread_create)
+  array threads = ({});
+  array ts = indices(blobs);
+  foreach( ts/ (sizeof(ts)/5), ts )
+    threads += ({thread_create( low_sync, ts ) });
+  threads->wait();
+#else
+  low_sync( indices( blobs ) );
   blobs=([]);
+#endif
 }
 
 string get_blob(int word_id, int num)
