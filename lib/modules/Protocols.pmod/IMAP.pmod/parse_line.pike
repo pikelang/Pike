@@ -168,7 +168,7 @@ mapping get_token(int eol, int accept_options)
     string s = get_string();
     return s && ([ "type" : "string", "string" : s ]);
   }
-  case "{": {
+  case '{': {
     object s = get_string();
     return s && ([ "type" : "literal", "length" : s->length ]);
   }
