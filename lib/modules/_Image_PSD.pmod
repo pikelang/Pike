@@ -275,9 +275,10 @@ array decode_layers( string|mapping what, mapping|void opts )
 
   foreach(reverse(what->layers), object l)
   {
-    string m;
-    if( (!(l->flags & LAYER_FLAG_INVISIBLE) && l->opacity)
-	|| opts->draw_all_layers )
+    string m = translate_mode( l->mode );
+    if( m &&
+	((!(l->flags & LAYER_FLAG_INVISIBLE) && l->opacity)
+	 || opts->draw_all_layers ))
     {
       Image.Layer lay = Image.Layer( l->image, l->alpha, m );
       l->image = 0; l->alpha = 0;
