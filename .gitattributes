@@ -86,6 +86,7 @@ testfont binary
 /lib/modules/Graphics.pmod/Graph.pmod/create_pie.pike foreign_ident
 /lib/modules/Graphics.pmod/Graph.pmod/graph.h foreign_ident
 /lib/modules/Graphics.pmod/Graph.pmod/polyline.pike foreign_ident
+/lib/modules/Graphics.pmod/Graph.pmod/testsuite.in foreign_ident
 /lib/modules/Local.pmod foreign_ident
 /lib/modules/Locale.pmod/Language.pmod/abstract.pike foreign_ident
 /lib/modules/Locale.pmod/Language.pmod/cat.pike foreign_ident
