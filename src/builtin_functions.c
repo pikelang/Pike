@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.251 2000/04/08 14:51:07 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.252 2000/04/08 15:00:00 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5234,7 +5234,7 @@ static node *fix_map_node_info(node *n)
 {
   int argno;
   node **cb_;
-  int node_info = 0;
+  int node_info = OPT_SIDE_EFFECT;	/* Assume worst case. */
 
   /* Note: argument 2 has argno 1. */
   for (argno = 1; cb_ = my_get_arg(&_CDR(n), argno); argno++) {
@@ -5248,16 +5248,12 @@ static node *fix_map_node_info(node *n)
 	continue;
       }
       node_info = cb->u.sval.u.efun->flags & OPT_SIDE_EFFECT;
-    } else {
-      /* Could be anything. Assume worst case. */
-      node_info = OPT_SIDE_EFFECT;
     }
     break;
   }
 
   if (!cb_) {
     yyerror("Too few arguments to map() or filter()!\n");
-    node_info = OPT_SIDE_EFFECT;
   }
 
   n->node_info |= node_info;
