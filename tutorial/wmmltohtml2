@@ -11,6 +11,9 @@ int main(int argc, string *argv)
 {	
   mixed *ER=catch {
     program output=(program)argv[2];
+    if (!output) error("can't cast %O to program\n",argv[2]);
+    object out=output();
+    if (!out->output) error("%O doesn't have an output method",argv[2]);
     werror("Reading ");
     string input=Stdio.read_file(argv[1]);
     werror("Lexing ");

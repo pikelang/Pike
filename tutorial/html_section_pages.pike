@@ -1,4 +1,8 @@
-inherit "html.pike";
+#include "types.h"
+#if __VERSION__ >= 0.6
+import ".";
+#endif /* __VERSION__ >= 0.6 */
+inherit "html";
 
 void split_and_remove_section(object t,object prev)
 {
