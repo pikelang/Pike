@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.233 2003/09/23 22:27:50 mast Exp $
+|| $Id: gc.c,v 1.234 2003/09/24 00:57:58 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.233 2003/09/23 22:27:50 mast Exp $");
+RCSID("$Id: gc.c,v 1.234 2003/09/24 00:57:58 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -598,6 +598,22 @@ void describe_location(void *real_memblock,
 	  fputc('\n', stderr);
 	  break;
 	}
+      break;
+    }
+
+    case T_PIKE_FRAME: {
+      struct pike_frame *f = (struct pike_frame *) descblock;
+      if (f->locals) {		/* Paranoia. */
+	ptrdiff_t pos = (struct svalue *) location - f->locals;
+	if (pos >= 0) {
+	  if (pos < f->num_args)
+	    fprintf (stderr, "%*s  **In argument %"PRINTPTRDIFFT"d\n",
+		     indent, "", pos);
+	  else
+	    fprintf (stderr, "%*s  **At position %"PRINTPTRDIFFT"d among locals\n",
+		     indent, "", pos - f->num_args);
+	}
+      }
       break;
     }
   }
