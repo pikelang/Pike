@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.790 2004/02/29 12:33:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.791 2004/02/29 16:10:59 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7001,8 +7001,8 @@ $bundle_info])
     if test -r "$cache_file"; then
       for varname in `cat $bundle_info|sed -e 's/^[[ 	]]*//'|sort|uniq` no; do
         if test "$varname" = "no"; then :; else
-          sed -e '/^'"$varname"'=/d' <"$cache_file" >"$cachefile.new" && \
-            mv -f "$cachefile.new" "$cachefile" || exit 1
+          sed -e '/^'"$varname"'=/d' <"$cache_file" >"$cache_file.new" && \
+            mv -f "$cache_file.new" "$cache_file" || exit 1
         fi
       done
     fi
