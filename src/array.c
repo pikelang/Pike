@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.161 2004/09/22 12:13:22 mast Exp $
+|| $Id: array.c,v 1.162 2004/09/22 18:00:48 nilsson Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.161 2004/09/22 12:13:22 mast Exp $");
+RCSID("$Id: array.c,v 1.162 2004/09/22 18:00:48 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1201,13 +1201,10 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
   int e;
   TYPE_FIELD t;
 
-  t=0;
-
   if(v->flags & ARRAY_LVALUE)
-  {
-    v->type_field=BIT_MIXED|BIT_UNFINISHED;
-    return;
-  }
+    return v->type_field=BIT_MIXED|BIT_UNFINISHED;
+
+  t=0;
 
   for(e=0; e<v->size; e++) {
     check_svalue (ITEM(v) + e);
