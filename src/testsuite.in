@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.431 2001/07/01 18:34:20 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.432 2001/07/01 23:42:41 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2921,6 +2921,21 @@ ifefun(gc,
     gc(), gc();
     if (all_constants()->my_little_error)
       error (all_constants()->my_little_error);
+  }]]);
+
+  test_do([[{
+  object o = compile_string(#"
+      class Foo
+      {
+	int i;
+	class Bar
+	{
+	  int j = i++;		// Ensure parent pointer.
+	}
+	inherit Bar;
+      }")();
+    o = 0;
+    gc();
   }]]);
 ]])
 
