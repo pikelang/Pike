@@ -1,5 +1,5 @@
 /*
- * $Id: smartlink.c,v 1.6 2000/03/25 22:46:29 hubbe Exp $
+ * $Id: smartlink.c,v 1.7 2000/06/17 13:39:55 grubba Exp $
  *
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.6 2000/03/25 22:46:29 hubbe Exp $\n"
+	    "$Id: smartlink.c,v 1.7 2000/06/17 13:39:55 grubba Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -259,6 +259,18 @@ int main(int argc, char **argv)
 #ifdef USE_RPATH
     new_argv[new_argc++] = "-rpath";
     new_argv[new_argc++] = rpath;
+#elif defined(USE_YP_)
+    if (linking) {
+      new_argv[new_argc++] = "-YP,";
+      new_argv[new_argc++] = rpath;
+    }
+#elif defined(USE_XLINKER_YP_)
+    if (linking) {
+      new_argv[new_argc++] = "-Xlinker";
+      new_argv[new_argc++] = "-YP,";
+      new_argv[new_argc++] = "-Xlinker";
+      new_argv[new_argc++] = rpath;
+    }
 #elif defined(USE_Wl)
     if (linking) {
       new_argv[new_argc++] = full_rpath;
