@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.61 2002/04/08 18:05:16 mikael%unix.pp.se Exp $
+# $Id: Makefile,v 1.62 2002/04/13 18:12:38 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -222,9 +222,9 @@ feature_list:
 
 autobuild:
 	@test -d build || mkdir build
-	@rm -rf build/autobuild || /bin/true
+	-@rm -rf build/autobuild
 	@mkdir build/autobuild
-	@$(MAKE) $(MAKE_FLAGS) autobuild_low || /bin/true
+	-@$(MAKE) $(MAKE_FLAGS) autobuild_low
 	@echo Begin response assembly | tee -a build/autobuild/autobuildlog.txt
 	@date >> build/autobuild/autobuildlog.txt
 # AIX (hactar) FIXME: Better recognition needed.
@@ -233,10 +233,11 @@ autobuild:
 #	  mv tmp makelog.txt ; \
 #	else : ; \
 #	fi;
-	@cp "$(BUILDDIR)/config.info" build/autobuild/configinfo.txt || /bin/true
-# Add all config.log and config.cache?
-	@cp "$(BUILDDIR)/testsuite" build/autobuild/testsuite.txt || /bin/true
-	@cp "$(BUILDDIR)/dumpmodule.log" build/autobuild/dumplog.txt || /bin/true
+	-@cp "$(BUILDDIR)/config.info" build/autobuild/configinfo.txt
+	-@cp "$(BUILDDIR)/config.cache" build/autobuild/configcache.txt
+	-@cp "$(BUILDDIR)/testsuite" build/autobuild/testsuite.txt
+	-@cp "$(BUILDDIR)/dumpmodule.log" build/autobuild/dumplog.txt
+	-@cp export.stamp build/autobuild/exportstamp.txt
 	@tar -c build/autobuild/*.txt > autobuild_result.tar
 	@gzip -f9 autobuild_result.tar
 
@@ -249,7 +250,7 @@ autobuild_low:
 	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TERM=dumb TESTARGS="-a -q" > build/autobuild/verifylog.txt 2>&1
 	@echo Begin export | tee -a build/autobuild/autobuildlog.txt
 	@date >> build/autobuild/autobuildlog.txt
-	@$(MAKE) $(MAKE_FLAGS) TERM=dumb export > build/autobuild/exportlog.txt 2>&1
+	@$(MAKE) $(MAKE_FLAGS) TERM=dumb bin_export > build/autobuild/exportlog.txt 2>&1
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
