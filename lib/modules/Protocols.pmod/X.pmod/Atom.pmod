@@ -1,6 +1,6 @@
 /* Atom.pmod
  *
- * X Atoms $Id: Atom.pmod,v 1.11 2002/06/13 20:21:17 bill Exp $
+ * X Atoms $Id: Atom.pmod,v 1.12 2002/06/15 05:35:14 bill Exp $
  *
  */
 
@@ -62,8 +62,7 @@ class pending_intern
   {
     if (!success)
       {
-	throw( ({ "Atom.pending_intern->handle_reply: InternAtom failed!\n",
-		    backtrace() })  );
+	error( "Atom.pending_intern->handle_reply: InternAtom failed!\n" );
       }
     atom->id = reply;
     display->remember_atom(atom);
@@ -80,8 +79,7 @@ class pending_name_lookup
   {
     if (!success)
       {
-	throw( ({ "Atom.pending_intern->handle_reply: InternAtom failed!\n",
-		    backtrace() })  );
+	error( "Atom.pending_intern->handle_reply: InternAtom failed!\n" );
       }
     atom->name = reply;
     display->remember_atom(atom);
