@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.274 2003/04/30 00:58:20 nilsson Exp $
+// $Id: master.pike.in,v 1.275 2003/05/03 15:27:24 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1552,6 +1552,8 @@ class CompatResolver
 		    object|void current_handler)
     {
 //      werror("Resolv_base(%O)\n",identifier);
+      if (identifier == "_static_modules") return _static_modules;
+
       array(mixed) tmp = ({});
       string dir=current_file ? dirname(current_file) : "/";
 
