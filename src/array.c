@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.158 2004/04/06 15:37:54 nilsson Exp $
+|| $Id: array.c,v 1.159 2004/05/13 23:28:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.158 2004/04/06 15:37:54 nilsson Exp $");
+RCSID("$Id: array.c,v 1.159 2004/05/13 23:28:49 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1184,7 +1184,7 @@ PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order)
 }
 
 /* Maybe I should have a 'clean' flag for this computation */
-PMOD_EXPORT void array_fix_type_field(struct array *v)
+PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
 {
   int e;
   TYPE_FIELD t;
@@ -1194,7 +1194,7 @@ PMOD_EXPORT void array_fix_type_field(struct array *v)
   if(v->flags & ARRAY_LVALUE)
   {
     v->type_field=BIT_MIXED|BIT_UNFINISHED;
-    return;
+    return BIT_MIXED|BIT_UNFINISHED;
   }
 
   for(e=0; e<v->size; e++) {
@@ -1211,6 +1211,7 @@ PMOD_EXPORT void array_fix_type_field(struct array *v)
   }
 #endif
   v->type_field = t;
+  return t;
 }
 
 #ifdef PIKE_DEBUG
@@ -1772,10 +1773,9 @@ PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b)
 int array_is_constant(struct array *a,
 		      struct processing *p)
 {
-  array_fix_type_field(a);
   return svalues_are_constant(ITEM(a),
 			      a->size,
-			      a->type_field,
+			      array_fix_type_field(a),
 			      p);
 }
 
@@ -1784,11 +1784,10 @@ node *make_node_from_array(struct array *a)
   struct svalue s;
   INT32 e;
 
-  array_fix_type_field(a);
   if(!a->size)
       return mkefuncallnode("aggregate",0);
     
-  if(a->type_field == BIT_INT)
+  if(array_fix_type_field(a) == BIT_INT)
   {
     debug_malloc_touch(a);
     for(e=0; e<a->size; e++)
