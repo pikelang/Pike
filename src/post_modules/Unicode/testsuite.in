@@ -1,0 +1,1 @@
+test_false(Process.system(RUNPIKE+" SRCDIR/test.pike"))
