@@ -591,7 +591,7 @@ test_eq(
        crypt_block(String.hex2string("fc222f3584addf1a5f974e104a3e2231")),
    "F"*16 )
 // Rijndael CBC decrypt
-test_eq([[
+test_any([[
 #pike 7.4
   object aes_cbc = Crypto.cbc(Crypto.aes());
   aes_cbc->set_decrypt_key(String.hex2string("00000000000000000000000000000000"));
