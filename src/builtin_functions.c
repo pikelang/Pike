@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.216 1999/12/06 16:02:42 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.217 1999/12/06 21:03:18 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1997,94 +1997,68 @@ void f_functionp(INT32 args)
 
 void f_sleep(INT32 args)
 {
-  struct timeval t1,t2,t3;
-  INT32 a,b;
-#ifdef HAVE_NANOSLEEP
-  struct timespec ts;
-#endif
+#define POLL_SLEEP_LIMIT 0.02
 
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("sleep", 1);
-
-  switch(sp[-args].type)
-  {
-  case T_INT:
-    t2.tv_sec=sp[-args].u.integer;
-    t2.tv_usec=0;
-    break;
-
-  case T_FLOAT:
-  {
-    FLOAT_TYPE f;
-    f=sp[-args].u.float_number;
-    t2.tv_sec=floor(f);
-    t2.tv_usec=(long)(1000000.0*(f-floor(f)));
-#ifdef HAVE_NANOSLEEP
-    ts.tv_nsec=(long)(1e9*(f-floor(f)));
-#endif
-    break;
-  }
-
-  default:
-    SIMPLE_BAD_ARG_ERROR("sleep", 1, "int|float");
-  }
-  pop_n_elems(args);
-
-  if (t2.tv_sec==0) {
-     if (t2.tv_usec<1000) /* very short sleep */
-     {
-#ifdef HAVE_NANOSLEEP
-	ts.tv_sec=0;
-	nanosleep(&ts,NULL);
-#endif
-	return;
-	/* or if we can't sleep that short */
-     } 
-#ifdef HAVE_USLEEP
-     else if (t2.tv_usec<100000) /* short sleep */
-     {
-	usleep(t2.tv_usec);
-	return; /* don't care about signals... */
-     }
-#endif
-  }
-
-  if( args >1 && !IS_ZERO(sp-args+1))
-  {
-    THREADS_ALLOW();
-#ifdef __NT__
-    Sleep(t2.tv_sec * 1000 + t2.tv_usec / 1000);
-#elif defined(HAVE_POLL)
-    poll(NULL, 0, t2.tv_sec * 1000 + t2.tv_usec / 1000);
+#ifdef HAVE_GETHRTIME
+   hrtime_t t0,tv;
 #else
-    select(0,0,0,0,&t2);
+   struct timeval t0,tv;
 #endif
-    THREADS_DISALLOW();
-  }else{
-    GETTIMEOFDAY(&t1);
-    my_add_timeval(&t1, &t2);
-    
-    while(1)
-    {
-      GETTIMEOFDAY(&t2);
-      if(my_timercmp(&t1, <= , &t2))
-	return;
-      
-      t3=t1;
-      my_subtract_timeval(&t3, &t2);
-      
-      THREADS_ALLOW();
-#ifdef __NT__
-      Sleep(t3.tv_sec * 1000 + t3.tv_usec / 1000);
-#elif defined(HAVE_POLL)
-      poll(NULL, 0, t3.tv_sec * 1000 + t3.tv_usec / 1000);
+
+   double delay=0.0;
+   double target;
+   int do_microsleep;
+
+#ifdef HAVE_GETHRTIME
+   t0=tv=gethrtime();
+#define GET_TIME_ELAPSED tv=gethrtime()
+#define TIME_ELAPSED (tv-t0)*1e-9
 #else
-      select(0,0,0,0,&t3);
+   GETTIMEOFDAY(&t0);
+   tv=t0;
+#define GET_TIME_ELAPSED GETTIMEOFDAY(&tv)
+#define TIME_ELAPSED ((tv.tv_sec-t0.tv_sec) + (tv.tv_usec-t0.tv_usec)*1e-6)
 #endif
-      THREADS_DISALLOW();
-      check_signals(0,0,0);
-    }
-  }
+
+   switch(sp[-args].type)
+   {
+      case T_INT:
+	 delay=(double)sp[-args].u.integer;
+	 break;
+
+      case T_FLOAT:
+	 delay=(double)sp[-args].u.float_number;
+	 break;
+   }
+
+   do_microsleep=delay<10;
+
+   pop_n_elems(args);
+
+   if (delay>POLL_SLEEP_LIMIT)
+      for (;;)
+      {
+	 double left = delay - TIME_ELAPSED;
+	 if (do_microsleep) left-=POLL_SLEEP_LIMIT;
+	 if (left<0.0) break; 
+#ifdef __NT__
+	 Sleep((int)(left*1000));
+#elif defined(HAVE_POLL)
+	 poll(NULL,0,(int)(left*1000));
+#else
+	 {
+	    struct timeval t3;
+	    t3.tv_sec=left;
+	    t3.tv_usec=(int)((delay-(int)left)*1e6);
+	    select(0,0,0,0,&t3);
+	 }
+#endif
+	 GET_TIME_ELAPSED;
+      }
+
+   if (do_microsleep)
+      while (delay>TIME_ELAPSED) 
+	 GET_TIME_ELAPSED;
 }
 
 void f_gc(INT32 args)
