@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.115 2002/11/14 21:28:52 marcus Exp $
+|| $Id: interpret.h,v 1.116 2002/11/23 14:43:12 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -161,7 +161,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #ifdef PIKE_DEBUG
 #define STACK_LEVEL_START(depth)	\
   do { \
-    struct svalue *save_stack_level = Pike_sp - (depth);
+    struct svalue *save_stack_level = (Pike_sp - (depth))
 
 #define STACK_LEVEL_DONE(depth)		\
     STACK_LEVEL_CHECK(depth);		\
