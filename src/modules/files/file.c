@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.15 1996/12/04 04:22:30 hubbe Exp $");
+RCSID("$Id: file.c,v 1.16 1996/12/04 08:18:14 per Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -283,8 +283,10 @@ static struct pike_string *do_read(int fd,
     {
       return end_shared_string(str);
     }else{
+      struct pike_string *foo; /* Per */
+      foo = make_shared_binary_string(str->str,bytes_read);
       free((char *)str);
-      return make_shared_binary_string(str->str,bytes_read);
+      return foo;
     }
     
   }else{

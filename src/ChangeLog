@@ -1,3 +1,7 @@
+Wed Dec  4 09:15:42 1996  Per Hedbor  <per@skuld.infovav.se>
+
+	* modules/files/file.c (do_read): Fixed memory corrupton error.
+
 Tue Dec  3 16:27:30 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* las.c, language.yacc: fixed a memory leak and added more debug
