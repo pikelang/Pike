@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.21 1999/01/31 22:47:20 grubba Exp $
+ * $Id: object.h,v 1.22 1999/01/31 22:50:30 grubba Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -23,13 +23,15 @@ struct object
   INT32 refs;                    /* Reference count, must be first. */
 #ifdef PIKE_SECURITY
   struct object *prot;
-  char *pad;		/* FIXME: Kluge to get longlong alignment of storage */
 #endif
   struct program *prog;
   struct object *parent;
   INT16 parent_identifier;
   struct object *next;
   struct object *prev;
+#ifdef PIKE_SECURITY
+  char *pad;		/* FIXME: Kluge to get longlong alignment of storage */
+#endif
   char storage[1];
 };
 
