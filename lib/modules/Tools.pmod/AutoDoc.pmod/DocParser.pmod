@@ -72,6 +72,7 @@ mapping(string : int) keywordtype =
   "mixed" : CONTAINERKEYWORD, "type" : DELIMITERKEYWORD,
 
   "dl" : CONTAINERKEYWORD, "item" : DELIMITERKEYWORD,
+  "list" : CONTAINERKEYWORD,
 ]);
 
 mapping(string : array(string)) attributenames =
@@ -107,6 +108,7 @@ mapping(string : multiset(string)) allowedChildren =
   "string"  : (< "value" >),
   "mixed"   : (< "type" >),
   "dl"      : (< "item" >),
+  "list"    : (< "item" >),
 ]);
 
 mapping(string : multiset(string)) allowGrouping =
