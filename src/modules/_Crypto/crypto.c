@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.18 1997/03/17 03:11:15 hubbe Exp $
+ * $Id: crypto.c,v 1.19 1997/03/23 18:18:55 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -93,7 +93,7 @@ static void check_functions(struct object *o, const char **requiered)
   p = o->prog;
 
   while (*requiered) {
-    if (find_identifier(*requiered, p) < 0) {
+    if (find_identifier( (char *) *requiered, p) < 0) {
       error("/precompiled/crypto: Object is missing identifier \"%s\"\n",
 	    *requiered);
     }
