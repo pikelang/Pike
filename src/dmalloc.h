@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.47 2004/04/03 15:22:12 mast Exp $
+|| $Id: dmalloc.h,v 1.48 2004/04/03 15:55:15 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -37,6 +37,8 @@ extern size_t dmalloc_tracelogptr;
 extern int verbose_debug_exit;
 #endif
 
+typedef void describe_block_fn (void *);
+
 #ifdef DEBUG_MALLOC
 struct memhdr;
 
@@ -57,7 +59,7 @@ extern void *debug_realloc(void *, size_t, LOCATION);
 extern void debug_free(void *, LOCATION, int);
 extern char *debug_strdup(const char *, LOCATION);
 extern void reset_debug_malloc(void);
-void dmalloc_check_block_free(void *, LOCATION);
+void dmalloc_check_block_free(void *, LOCATION, char *, describe_block_fn *);
 extern void dmalloc_free(void *p);
 extern int debug_malloc_touch_fd(int, LOCATION);
 extern int debug_malloc_register_fd(int, LOCATION);

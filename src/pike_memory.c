@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.150 2004/04/03 15:23:05 mast Exp $
+|| $Id: pike_memory.c,v 1.151 2004/04/03 15:55:15 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.150 2004/04/03 15:23:05 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.151 2004/04/03 15:55:15 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1653,7 +1653,8 @@ void debug_free(void *p, LOCATION location, int mustfind)
   mt_unlock(&debug_malloc_mutex);
 }
 
-void dmalloc_check_block_free(void *p, LOCATION location)
+void dmalloc_check_block_free(void *p, LOCATION location,
+			      char *struct_name, describe_block_fn *describer)
 {
   struct memhdr *mh;
   mt_lock(&debug_malloc_mutex);
@@ -1663,7 +1664,9 @@ void dmalloc_check_block_free(void *p, LOCATION location)
   {
     if(!(mh->flags & MEM_IGNORE_LEAK))
     {
-      fprintf(stderr,"Freeing storage for small block still in use %p at %s.\n",p,LOCATION_NAME(location));
+      fprintf(stderr, "Freeing %s still in use %p at %s.\n",
+	      struct_name ? struct_name : "small block", p, LOCATION_NAME(location));
+      if (describer) describer (p);
       debug_malloc_dump_references(p,0,2,0);
     }
     mh->flags |= MEM_FREE | MEM_IGNORE_LEAK;
