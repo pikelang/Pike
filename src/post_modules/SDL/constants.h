@@ -28,6 +28,13 @@ void init_sdl_constants() {
   add_integer_constant("GRAB_OFF", SDL_GRAB_OFF, 0);
   add_integer_constant("GRAB_ON", SDL_GRAB_ON, 0);
   add_integer_constant("GRAB_FULLSCREEN", SDL_GRAB_FULLSCREEN, 0);
+
+  /* GL related constants */
+  add_integer_constant( "GL_RED_SIZE", SDL_GL_RED_SIZE, 0 );
+  add_integer_constant( "GL_GREEN_SIZE", SDL_GL_GREEN_SIZE, 0 );
+  add_integer_constant( "GL_BLUE_SIZE", SDL_GL_BLUE_SIZE, 0 );
+  add_integer_constant( "GL_DEPTH_SIZE", SDL_GL_DEPTH_SIZE, 0 );
+  add_integer_constant( "GL_DOUBLEBUFFER", SDL_GL_DOUBLEBUFFER, 0 );
   
   /* Init related constants */
   /* TIMER is disabled because Pike doesn't need that functionality.
