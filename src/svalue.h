@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.41 1999/11/25 17:05:38 mast Exp $
+ * $Id: svalue.h,v 1.42 1999/12/10 22:55:53 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -86,14 +86,17 @@ struct svalue
 #define PIKE_T_FUNCTION 4
 #define PIKE_T_PROGRAM 5
 #define PIKE_T_STRING 6
-#define PIKE_T_FLOAT 7
-#define PIKE_T_INT 8
+#define PIKE_T_TYPE 7		/* Not supported yet */
+#define PIKE_T_FLOAT 8
+#define PIKE_T_INT 9
 
 #define PIKE_T_ZERO  14	/* Can return 0, but nothing else */
 #define T_UNFINISHED 15	/* Reserved for the garbage-collector */
 #define T_VOID       16	/* Can't return any value */
 #define T_MANY       17
 
+#define PIKE_T_SCOPE 243	/* Not supported yet */
+#define PIKE_T_TUPLE 244	/* Not supported yet */
 #define T_ASSIGN 245
 #define T_DELETED 246
 #define T_NOT 247
@@ -117,6 +120,10 @@ struct svalue
 #define tFuncV(ARGS,REST,RET) MagictFuncV(RET,REST,ARGS)
 #define tFunc(ARGS,RET) MagictFunc(RET,ARGS)
 
+#define tTuple(T1,T2)		"\364" T1 T2
+#define tTriple(T1,T2,T3)	tTuple(T1, tTuple(T2, T3))
+#define tQuad(T1,T2,T3,T4)	tTriple(tTuple(T1, T2), T3, T4)
+
 /* These two magic funcions are used to make MSVC++ work
  * even if 'ARGS' is empty.
  */
@@ -128,19 +135,21 @@ struct svalue
 #define tProgram "\005"
 #define tStr "\006"
 #define tString "\006"
-#define tFlt "\007"
-#define tFloat "\007"
-#define tInt "\010\200\000\000\000\177\377\377\377"
-#define tInt0 "\010\000\000\000\000\000\000\000\000"
-#define tInt1 "\010\000\000\000\001\000\000\000\001"
-#define tInt01 "\010\000\000\000\000\000\000\000\001"
-#define tIntPos "\010\000\000\000\000\177\377\377\377"
-#define tByte "\010\000\000\000\000\000\000\000\377"
+#define tType "\007"
+#define tFlt "\010"
+#define tFloat "\010"
+#define tInt "\011\200\000\000\000\177\377\377\377"
+#define tInt0 "\011\000\000\000\000\000\000\000\000"
+#define tInt1 "\011\000\000\000\001\000\000\000\001"
+#define tInt01 "\011\000\000\000\000\000\000\000\001"
+#define tIntPos "\011\000\000\000\000\177\377\377\377"
+#define tByte "\011\000\000\000\000\000\000\000\377"
 
 #define tZero "\016"
 #define tVoid "\020"
 #define tVar(X) #X
 #define tSetvar(X,Y) "\365" #X Y
+#define tScope(X,T) "\363" #X Y
 #define tNot(X) "\367" X
 #define tAnd(X,Y) "\370" X Y
 #define tOr(X,Y) "\373" X Y
@@ -165,6 +174,7 @@ struct svalue
 #define BIT_FUNCTION (1<<PIKE_T_FUNCTION)
 #define BIT_PROGRAM (1<<PIKE_T_PROGRAM)
 #define BIT_STRING (1<<PIKE_T_STRING)
+#define BIT_TYPE (1<<PIKE_T_TYPE)
 #define BIT_INT (1<<PIKE_T_INT)
 #define BIT_FLOAT (1<<PIKE_T_FLOAT)
 
@@ -186,14 +196,14 @@ struct svalue
 
 #define BIT_NOTHING 0
 #define BIT_MIXED 0x7fff
-#define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING)
+#define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING|BIT_TYPE)
 #define BIT_COMPLEX (BIT_ARRAY|BIT_MULTISET|BIT_OBJECT|BIT_PROGRAM|BIT_MAPPING|BIT_FUNCTION)
 #define BIT_CALLABLE (BIT_FUNCTION|BIT_PROGRAM|BIT_ARRAY|BIT_OBJECT)
 
 /* Max type which contains svalues */
 #define MAX_COMPLEX PIKE_T_PROGRAM
 /* Max type with ref count */
-#define MAX_REF_TYPE PIKE_T_STRING
+#define MAX_REF_TYPE PIKE_T_TYPE
 /* Max type handled by svalue primitives */
 #define MAX_TYPE PIKE_T_INT
 
@@ -339,12 +349,16 @@ INT32 pike_sizeof(struct svalue *s);
 #define T_FUNCTION PIKE_T_FUNCTION
 #define T_PROGRAM  PIKE_T_PROGRAM
 #define T_STRING   PIKE_T_STRING
+#define T_TYPE     PIKE_T_TYPE
 #define T_FLOAT    PIKE_T_FLOAT
 #define T_INT      PIKE_T_INT
 
 #define T_ZERO	   PIKE_T_ZERO
 
-#endif
+#define T_TUPLE	   PIKE_T_TUPLE
+#define T_SCOPE	   PIKE_T_SCOPE
+
+#endif /* !NO_PIKE_SHORTHAND */
 
 
-#endif
+#endif /* !SVALUE_H */
