@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.157 1999/03/19 16:41:45 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.158 1999/03/19 17:48:21 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -158,7 +158,7 @@ void f_lower_case(INT32 args)
   INT32 i;
   struct pike_string *orig;
   struct pike_string *ret;
-  get_all_args("lower_case",args,"%s",&orig);
+  get_all_args("lower_case", args, "%S", &orig);
 
   ret = begin_shared_string(orig->len);
   MEMCPY(ret->str, orig->str, orig->len);
@@ -177,7 +177,7 @@ void f_upper_case(INT32 args)
   INT32 i;
   struct pike_string *orig;
   struct pike_string *ret;
-  get_all_args("upper_case",args,"%s",&orig);
+  get_all_args("upper_case",args,"%S",&orig);
 
   ret=begin_shared_string(orig->len);
   MEMCPY(ret->str, orig->str, orig->len);
