@@ -7378,6 +7378,7 @@ The encoding can be any of
 <li>binary
 <li>quoted-printable
 <li>x-uue
+<li>x-uuencode
 </ul></tt>
 The encoding string is not case sensitive.
 <p>
@@ -7512,6 +7513,7 @@ The encoding can be any of
 <li>binary
 <li>quoted-printable
 <li>x-uue
+<li>x-uuencode
 </ul></tt>
 The encoding string is not case sensitive.  For the <tt>x-uue</tt> encoding,
 an optional filename string may be supplied.  If a nonzero value is passed
@@ -7656,8 +7658,9 @@ specified.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Some pre-RFC1521 mailers provide only a type and no subtype in the
 Content-Type header field.  This function can be used to obtain a
-reasonable default subtype given type type of a message.  Currently,
-the function uses the following guesses:
+reasonable default subtype given the type of a message.  (This is done
+automatically by the MIME.Message class.)  Currently, the function uses
+the following guesses:
 <table border=1>
 <tr><th>type</th><th>subtype</th></tr>
 <tr><td>text</td><td>plain</td></tr>
@@ -7668,6 +7671,30 @@ the function uses the following guesses:
 </dl>
 </anchor>
 
+<hr newpage>
+<anchor name=MIME.parse_headers>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>MIME.parse_headers</tt> - Separate a bytestream into headers and body
+<p>
+<dt><encaps>SYNTAX</encaps><dd>
+<tt>array(mapping(string:string)|string) parse_headers(string <i>message</i>);<br>
+</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+This is a low level function that will separate the headers from the body
+of an encoded message.  It will also translate the headers into a mapping.
+It will however not try to analyze the meaning of any particular header,
+This also means that the body is returned as is, with any transfer-encoding
+intact.  It is possible to call this function with just the header part
+of a message, in which case an empty body will be returned.
+<p>
+The result is returned in the form of an array containing two elements.
+The first element is a mapping containing the headers found.  The second
+element is a string containing the body.
+<p>
+</dl>
+</anchor>
 
 <hr newpage>
 <anchor name=MIME.quote>
