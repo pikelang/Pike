@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.78 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.79 2000/08/07 09:44:49 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -977,23 +977,24 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
 static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
                          PIKE_CONCAT(p_wchar, INPUT_SHIFT) *input,	 \
-			 long input_len,				 \
+			 ptrdiff_t input_len,				 \
 			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	 \
-			 long match_len,				 \
-			 long *chars_matched,				 \
+			 ptrdiff_t match_len,				 \
+			 ptrdiff_t *chars_matched,			 \
 			 int *success)					 \
 {									 \
   struct svalue sval;							 \
-  int e,cnt,matches,eye,arg;						 \
+  int matches, arg;							 \
+  ptrdiff_t cnt, eye, e;						 \
   int no_assign = 0, field_length = 0, minus_flag = 0;			 \
   struct sscanf_set set;						 \
   struct svalue *argp;							 \
 									 \
 									 \
-  set.a=0;								 \
-  success[0]=0;								 \
+  set.a = 0;								 \
+  success[0] = 0;							 \
 									 \
-  arg=eye=matches=0;							 \
+  eye = arg = matches = 0;						 \
 									 \
   for(cnt = 0; cnt < match_len; cnt++)					 \
   {									 \
@@ -1326,7 +1327,8 @@ CHAROPT2(								 \
 	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_end;		 \
 	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *s=0;			 \
 	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *p=0;			 \
-	    int start,contains_percent_percent, new_eye;		 \
+	    int contains_percent_percent;				 \
+            ptrdiff_t start, new_eye;					 \
 									 \
 	    start=eye;							 \
 	    end_str_start=match+cnt+1;					 \
