@@ -1,4 +1,4 @@
-/* $Id: mirardoc.pike,v 1.2 2001/09/17 23:21:08 nilsson Exp $ */
+/* $Id: mirardoc.pike,v 1.3 2001/10/14 16:37:49 nilsson Exp $ */
 
 string IMAGE_DIR = "../src_images/";
 string makepic1;
@@ -445,7 +445,7 @@ void docdecl(string enttype,
 	     t = doctype(t[..sizeof(t)-2]);
 	     break;
 	   }
-	   if(br==-1 || in[i]==',') {
+	   if(br==-1 || (in[i]==',' && !br)) {
 	     if(String.trim_all_whites(t)==")")
 	       return res;
 	     if(String.trim_all_whites(t[..sizeof(t)-2])=="void" && res=="")
