@@ -4,6 +4,7 @@ config.h.in
 config.log
 config.status
 configure
+conftest.c
 conftest.h
 dependencies
 language.c

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.101 1997/06/12 14:59:05 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.102 1997/07/09 00:57:04 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1507,7 +1507,13 @@ AC_MSG_RESULT($LINKFORSHARED)
 #############################################################################
 
 cat >conftest.c <<EOF
-void testfunc(void) { testfunc2(); exit(1); }
+#include <stdio.h>
+void testfunc(void) {
+  fprintf(stderr,"Calling testfunc2\n");
+  testfunc2();
+  fprintf(stderr,"testfunc2 returned!\n");
+  exit(1);
+}
 EOF
 
 AC_MSG_CHECKING(if dynamic loading works)

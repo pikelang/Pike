@@ -510,6 +510,27 @@ struct pike_string *string_replace(struct pike_string *str,
   char *s,*tmp,*r,*end;
   struct mem_searcher searcher;
 
+  if(!str->len)
+  {
+    str->refs++;
+    return str;
+  }
+
+  if(!del->len)
+  {
+    int e;
+    ret=begin_shared_string(str->len + to->len * (str->len -1));
+    s=ret->str;
+    *(s++)=str->str[0];
+    for(e=1;e<str->len;e++)
+    {
+      MEMCPY(s,to->str,to->len);
+      s+=to->len;
+      *(s++)=str->str[e];
+    }
+    return end_shared_string(ret);
+  }
+
   s=str->str;
   end=s+str->len;
 

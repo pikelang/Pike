@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.44 1997/06/12 23:08:10 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.45 1997/07/09 00:57:07 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -20,6 +20,7 @@ test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 
 test_true(encode_value(0))
 test_true(encode_value(0)[0]=='\266')
 define(test_encode, [[ test_equal($1, decode_value(encode_value($1))) ]])
+test_eq(replace("foobar","","X"),"fXoXoXbXaXr")
 test_encode(0)
 test_encode("")
 test_encode(0.0)

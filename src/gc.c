@@ -257,7 +257,8 @@ void do_gc()
   hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
   MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
   markers_left_in_chunk=0;
-  
+
+  /* First we count internal references */
   gc_check_all_arrays();
   gc_check_all_multisets();
   gc_check_all_mappings();
@@ -265,6 +266,7 @@ void do_gc()
   gc_check_all_objects();
   call_callback(& gc_callbacks, (void *)0);
 
+  /* Next we mark anything with external references */
   gc_mark_all_arrays();
   gc_mark_all_multisets();
   gc_mark_all_mappings();
@@ -274,6 +276,7 @@ void do_gc()
   if(d_flag)
     gc_mark_all_strings();
 
+  /* Now we free the unused stuff */
   gc_free_all_unreferenced_arrays();
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();

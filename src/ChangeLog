@@ -1,3 +1,9 @@
+Tue Jul  8 17:51:06 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* stralloc.c: fixed a bug in replace() (if 'from' is an empty string)
+	* testsuite.in: added a test for the above
+	* configure.in: added more debug to dynamic module tests
+
 Fri Jun 27 19:30:52 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/Sql/sql.pike (create): The host argument can now use the

@@ -183,7 +183,9 @@ int main()
     fprintf(stderr,"Failed to find function testfunc: %s\n",dlerror());
     exit(1);
   }
+  fprintf(stderr,"Calling testfunc\n");
   ((void (*)(void))fun)();
+  fprintf(stderr,"testfunc returned!\n");
   exit(1);
 }
 #endif
