@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.29 2003/03/21 13:37:21 grubba Exp $
+|| $Id: ia32.c,v 1.30 2003/03/21 14:36:01 mast Exp $
 */
 
 /*
@@ -397,9 +397,14 @@ static void maybe_update_pc(void)
 {
   static int last_prog_id=-1;
   static size_t last_num_linenumbers=-1;
-  if(last_prog_id != Pike_compiler->new_program->id ||
-     last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
-  {
+  if(
+#ifdef PIKE_DEBUG
+    /* Update the pc more often for the sake of the opcode level trace. */
+    d_flag ||
+#endif
+    last_prog_id != Pike_compiler->new_program->id ||
+    last_num_linenumbers != Pike_compiler->new_program->num_linenumbers
+  ) {
     last_prog_id=Pike_compiler->new_program->id;
     last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
     UPDATE_PC();
@@ -412,38 +417,23 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
   int flags = instrs[instr].flags;
 
   if (flags & I_HASARG2) {
-    add_to_program (0xc7);	/* movl $xxxx, 0xc(%esp) */
-    add_to_program (0x44);
-    add_to_program (0x24);
-    add_to_program (0x0c);
-    PUSH_INT (arg2);
-  }
-  if (flags & I_HASARG) {
     add_to_program (0xc7);	/* movl $xxxx, 0x8(%esp) */
     add_to_program (0x44);
     add_to_program (0x24);
     add_to_program (0x08);
+    PUSH_INT (arg2);
+  }
+  if (flags & I_HASARG) {
+    add_to_program (0xc7);	/* movl $xxxx, 0x4(%esp) */
+    add_to_program (0x44);
+    add_to_program (0x24);
+    add_to_program (0x04);
     PUSH_INT (arg1);
   }
-  add_to_program (0xc7);	/* movl $xxxx, 0x4(%esp) */
-  add_to_program (0x44);
-  add_to_program (0x24);
+  add_to_program (0xc7);	/* movl $xxxx, (%esp) */
   add_to_program (0x04);
+  add_to_program (0x24);
   PUSH_INT (instr);
-
-  if(ia32_reg_eax != REG_IS_FP)
-    MOV2EAX(Pike_interpreter.frame_pointer);
-
-  add_to_program (0x8b);	/* mov yy(%eax),%eax */
-  if (OFFSETOF (pike_frame, pc)) {
-    add_to_program (0x40);
-    add_to_program (OFFSETOF (pike_frame, pc));
-  }
-  else
-    add_to_program (0x00);
-  add_to_program (0x89);	/* mov %eax,(%esp) */
-  add_to_program (0x04);
-  add_to_program (0x24);
 
   if (flags & I_HASARG2)
     ia32_call_c_function (simple_debug_instr_prologue_2);

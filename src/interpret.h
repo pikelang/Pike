@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.133 2003/03/20 17:43:42 mast Exp $
+|| $Id: interpret.h,v 1.134 2003/03/21 14:36:01 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -391,11 +391,9 @@ void dump_backlog(void);
 BLOCK_ALLOC(pike_frame,128)
 
 #if defined (PIKE_DEBUG) && defined (PIKE_USE_MACHINE_CODE)
-void simple_debug_instr_prologue_0 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr);
-void simple_debug_instr_prologue_1 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr,
-				    INT32 arg);
-void simple_debug_instr_prologue_2 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr,
-				    INT32 arg1, INT32 arg2);
+void simple_debug_instr_prologue_0 (PIKE_INSTR_T instr);
+void simple_debug_instr_prologue_1 (PIKE_INSTR_T instr, INT32 arg);
+void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2);
 #endif
 
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
