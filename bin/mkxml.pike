@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.33 2001/07/28 06:46:07 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.34 2001/07/28 14:11:50 nilsson Exp $ */
 
 string IMAGE_DIR = "../autodoc/src_images/";
 string makepic1;
@@ -295,8 +295,9 @@ string doctype(string type,void|string indent)
    };
    string combine_or(string a,string b)
    {
-      if (b[..3]=="<or>") b=b[4..strlen(b)-6];
-      return "<or>"+a+b+"</or>";
+     b = String.trim_all_whites(b);
+     if (b[..3]=="<or>") b=b[4..strlen(b)-6];
+     return "<or>"+a+b+"</or>";
    };
    array(string) paramlist(string in,string indent)
    {
