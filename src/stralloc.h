@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.29 1999/02/10 21:46:55 hubbe Exp $
+ * $Id: stralloc.h,v 1.30 1999/02/27 00:31:39 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -76,7 +76,7 @@ typedef struct p_wchar_p
 #define INC_PCHARP(X,Y) (((X).ptr)+=(Y) << (X).shift)
 
 #define LOW_COMPARE_PCHARP(X,CMP,Y) (((char *)((X).ptr)) CMP ((char *)((Y).ptr)))
-#define LOW_SUBTRACT_PCHARP(X,Y) LOW_COMPARE_PCHARP((X),-,(Y))
+#define LOW_SUBTRACT_PCHARP(X,Y) (LOW_COMPARE_PCHARP((X),-,(Y))>>(X).shift)
 
 #ifdef PIKE_DEBUG
 #define SUBTRACT_PCHARP(X,Y)    ((X).shift!=(Y).shift?(fatal("Subtracting different size charp!\n")),0:LOW_SUBTRACT_PCHARP((X),(Y)))
