@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.158 2004/01/14 00:42:35 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.159 2004/02/17 08:41:11 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.158 2004/01/14 00:42:35 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.159 2004/02/17 08:41:11 mirar Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1223,7 +1223,23 @@ static void mpzmod_div(INT32 args)
   for(e=0;e<args;e++)	
   {
     if(sp[e-args].type == T_INT)
+#ifdef BIG_PIKE_INT
+    {
+       INT_TYPE i=sp[e-args].u.integer;
+       if ( (unsigned long int)i == i)
+       {
+	  mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), i);
+       }
+       else
+       {
+	  MP_INT *tmp=get_mpz(sp+e-args,1,"Gmp.mpz->`/",e,e);
+	  mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
+/* will this leak? there is no simple way of poking at the references to tmp */
+       }
+    }
+#else
       mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), sp[e-args].u.integer);
+#endif
    else
       mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
   }
