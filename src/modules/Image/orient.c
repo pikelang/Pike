@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.7 1998/03/23 19:12:43 hedda Exp $ */
+/* $Id: orient.c,v 1.8 1998/04/13 14:12:26 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.7 1998/03/23 19:12:43 hedda Exp $
+**!	$Id: orient.c,v 1.8 1998/04/13 14:12:26 grubba Exp $
 **! class image
 */
 
@@ -169,8 +169,11 @@ void image_orient(INT32 args)
       mag=sp[-args].u.integer;
     else if (sp[-args].type==T_FLOAT)
       mag=sp[-args].u.float_number;
-    else
+    else {
       error("Illegal argument 1 to image->orient\n");
+      /* Not reached, but keeps the compiler happy. */
+      mag = 0.0;
+    }
   }
   else mag=1.0;
 
