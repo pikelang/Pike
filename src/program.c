@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.427 2002/05/10 15:39:24 grubba Exp $");
+RCSID("$Id: program.c,v 1.428 2002/05/10 22:39:30 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4608,7 +4608,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 	shift = *cnt;
 	file = ++cnt;
 	cnt += len<<shift;
-	if (a_flag > 10) {
+	if (a_flag > 100) {
 	  fprintf(stderr, "Filename entry:\n"
 		  "  len: %d, shift: %d\n",
 		  len, shift);
