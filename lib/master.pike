@@ -65,6 +65,7 @@ program cast_to_program(string pname)
 
   if(pname[0]=='/')
   {
+    pname=combine_path("/",pname);
     return findprog(pname);
   }else{
     if(search(pname,"/")==-1)
