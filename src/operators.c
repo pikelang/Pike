@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.167 2002/12/12 17:19:37 nilsson Exp $
+|| $Id: operators.c,v 1.168 2002/12/30 12:46:50 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.167 2002/12/12 17:19:37 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.168 2002/12/30 12:46:50 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1645,7 +1645,7 @@ PMOD_EXPORT void o_or(void)
  *! @decl mapping `|(mapping arg1, mapping arg2)
  *! @decl multiset `|(multiset arg1, multiset arg2)
  *! @decl array `|(array arg1, array arg2)
- *! @decl string `|(string arg1, atring arg2)
+ *! @decl string `|(string arg1, string arg2)
  *! @decl type `|(program|type arg1, program|type arg2)
  *! @decl mixed `|(mixed arg1, mixed arg2, mixed ... extras)
  *!
@@ -1854,7 +1854,7 @@ PMOD_EXPORT void o_xor(void)
  *! @decl mapping `^(mapping arg1, mapping arg2)
  *! @decl multiset `^(multiset arg1, multiset arg2)
  *! @decl array `^(array arg1, array arg2)
- *! @decl string `^(string arg1, atring arg2)
+ *! @decl string `^(string arg1, string arg2)
  *! @decl type `^(program|type arg1, program|type arg2)
  *! @decl mixed `^(mixed arg1, mixed arg2, mixed ... extras)
  *!
@@ -2615,7 +2615,7 @@ PMOD_EXPORT void o_divide(void)
  *! @decl array(string) `/(string arg1, float arg2)
  *! @decl array(array) `/(array arg1, int arg2)
  *! @decl array(array) `/(array arg1, float arg2)
- *! @decl array(string) `/(string arg1, atring arg2)
+ *! @decl array(string) `/(string arg1, string arg2)
  *! @decl array(array) `/(array arg1, array arg2)
  *! @decl float `/(float arg1, int|float arg2)
  *! @decl float `/(int arg1, float arg2)
