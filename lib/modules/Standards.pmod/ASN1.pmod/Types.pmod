@@ -99,7 +99,7 @@ class asn1_object
 
   void create(mixed ...args)
     {
-      werror(sprintf("asn1_object[%s]->create\n", type_name));
+      WERROR(sprintf("asn1_object[%s]->create\n", type_name));
       if (sizeof(args))
 	init(@args);
     }
@@ -221,7 +221,7 @@ class asn1_integer
   object init(int|object n)
     {
       value = Gmp.mpz(n);
-      werror(sprintf("i = %s\n", value->digits()));
+      WERROR(sprintf("i = %s\n", value->digits()));
       return this_object();
     }
 
@@ -387,11 +387,11 @@ class asn1_identifier
       return "IDENTIFIER " + (array(string)) id * ".";
     }
 
-  string `==(object other)
+  int `==(object other)
     {
       return (object_program(this_object())
-	      == object_program(other)
-	      && equal(id, other->id));
+	      == object_program(other))
+	&& equal(id, other->id);
     }
 }
 
