@@ -19,13 +19,16 @@ Programming, using and understanding
 <h2> Preface </h2>
 
 This book was written with with the intention to make anybody with a little
-programming experience able to use Pike. It should hopefully be possible to
+programming experience able to use Pike. It should also be possible to
 gain a deep understanding of how Pike works and to some extent why it works
 like it does from this book. It also teaches you how to write your own
 extentions to Pike. I have been trying for years to get someone else to
 write this book, but since it seems impossible without paying a fortune for
-it I will have to do it myself. I hope that you will bear with me through
-this book, and maybe we can both learn something. The book assumes that
+it I will have to do it myself. 
+A big thanks goes to Ian Carr-de Avelon for helping me iron out some
+of the rough spots. 
+
+The book assumes that
 you have programmed some other programming language before and that you
 have some experience with UNIX.
 <p>
@@ -427,7 +430,6 @@ or anytime afterwards like this,
 	arr[index]=data;
 </pre>
 where index is an integer, i.e. entry number index is set to data. The first index of an array is 0 (zero). A negative index will count from the end of the array rather than from the beginning, -1 being the last element.
-Note that arrays are shared and use reference counts to keep track of their references. This will have the effect that you can have two variables pointing at the same array, and when you change an index in it, both variables will reflect the change.
 To indicate an array of a certain type of value you can use the * operator, e.g.
 <pre>
 	string *i;
@@ -536,7 +538,13 @@ Now, it would be better and more general if we could enter more records into our
 <p>
 <h2>add_record()</h2>
 Using the builtin function <tt>readline()</tt> we wait for input which will be put into the variable <tt>record_name</tt>. The argument to <tt>readline()</tt> is printed as a prompt in front of the user's input. Readline takes everything up to a newline character.
-Now we use the control structure <tt>while</tt> to check whether we should continue inputting songs. The <tt>while(1)</tt> can be interpreted as "while everything is ok". When something has been read into the variable song it is checked. If it is a "." we return a null value that will be used in the while statement to indicate that it is not ok to continue asking for song names. If it is not a dot, the string will be added to the array of songs for this record, unless it's an empty string.
+Now we use the control structure <tt>while</tt> to check whether we should continue inputting songs.
+The <tt>while(1)</tt> means "loop forever", because 1 is always <b>true</b>.
+This program does not in fact loop forever, because it uses <tt>return</tt>
+to exit the function from within the loop when you type a period.
+When something has been read into the variable song it is checked.
+If it is a "." we return a null value that will be used in the while statement to indicate that it is not ok to continue asking for song names.
+If it is not a dot, the string will be added to the array of songs for this record, unless it's an empty string.
 Note the <tt>+=</tt> operator. It is the same as saying
 <tt>records[record_name]=records[record_name]+({song})</tt>.
 <pre>
@@ -1137,7 +1145,10 @@ Also, these functions operates on floats:
 <dd> The trigonometric functions are: <tt>sin</tt>, <tt>asin</tt>,
      <tt>cos</tt>, <tt>acos</tt>, <tt>tan</tt> and <tt>atan</tt>.
      If you do not know what these functions do you probably don't
-     need them.
+     need them. Asin, acos and atan are of course short for
+     arc sine, arc cosine and arc tangent. On a calculator they
+     are often known as inverse sine, inverse cosine and
+     inverse tangent.
 
 <dt><tt>float log(float <i>x</i>)</tt>
 <dd>This function computes the natural logarithm of <i>x</i>,
@@ -1253,7 +1264,6 @@ Also, these functions operates on strings:
     to upper case.
 </dl>
 
-
 <h2>Pointer types</h2>
 The basic types are, as the name implies, very basic. They are foundation,
 most of the pointer types are merely interesting ways to store the basic
@@ -1353,7 +1363,9 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
     in it on <i>ind</i> and builds an array of the results. So if you have
     an array <i>a</i> in which each element is a also an array. This function
     will take a cross section, by picking out element <i>ind</i> from each
-    of the arrays in <i>a</i>.
+    of the arrays in <i>a</i>. Example:
+    <tt>column( ({ ({1,2,3}), ({4,5,6}), ({7,8,9}) }), 2)</tt> will return
+    <tt>({3,6,9})</tt>.
 
 <dt><tt>int equal(mixed <i>a</i>, mixed <i>b</i>)</tt>
 <dd> This function returns 1 if if <i>a</i> and <i>b</i> look the same. They
@@ -1531,9 +1543,21 @@ which is the next data type we will discuss.
 fig 4.4
 </center>
 Writing a <tt>program</tt> is easy, in fact, every example we have tried so
-far has been a <tt>program</tt>. Casting a string file name with a file name
-in it will compile the file and return the resulting program. Note that if
-the program was already compiled, the same program will be returned again.
+far has been a <tt>program</tt>. To load such a program into memory, we can
+use <tt>compile_file</tt> which takes a file name, compiles the file
+and returns the compiled program. It could look something like this:
+<pre>
+	program p = compile_file("hello_world.pike");
+</pre>
+You can also use the <b>cast</b> operator like this:
+<pre>
+	program p = (program) "hello_world";
+</pre>
+This will also load the program <tt>hello_world.pike</tt>, the only differance
+is that it will cache the result so that next time you do <tt>(program)"hello_world"</tt> you will receive the _same_ program. If you call
+<tt>compile_file("hello_world.pike")</tt> repeatedly you will get a new program
+for each time.
+<p>
 There is also a way to write programs inside programs with the help of the
 <tt>class</tt> keyword:
 <pre>
@@ -1541,12 +1565,15 @@ There is also a way to write programs inside programs with the help of the
 	  <i>inherits, variables and functions </i>
 	}
 </pre>
-Writing a program like this can be used almost the same way as structs are
-used in C. The <tt>class</tt> keyword can be written as a separate entity
+The <tt>class</tt> keyword can be written as a separate entity
 outside of all functions, but it is also an expression which returns the
 <tt>program</tt> written between the brackets. The <i>class_name</i> is
 optinal. If used you can later refer to that <tt>program</tt> by the name
-<i>class_name</i>. Let's look at an example:
+<i>class_name</i>.
+This is very similar to how classes are written in C++ and can be used
+in much the same way. It can also be used to create <b>structs</b>.
+(or records if you program Pascal) 
+ Let's look at an example:
 <pre>
 	class record {
 	  string title;
@@ -1555,6 +1582,11 @@ optinal. If used you can later refer to that <tt>program</tt> by the name
 	}
 
 	array(object(record)) records = ({});
+
+	void add_empty_record()
+	{
+	  records+=({ record() });
+	}
 
 	void show_record(object(record) rec)
 	{
@@ -1565,17 +1597,15 @@ optinal. If used you can later refer to that <tt>program</tt> by the name
 	    write("   "+song+"\n");
 	}
 
-	void add_empty_record()
-	{
-	  records+=({ record() });
-	}
 </pre>
 This could be a small part of a better record register program. It is not
 a complete executable program in itself.  In this example we create a
 <tt>program</tt> called <tt>record</tt> which has three identifiers.
-<tt>Show_record</tt> writes the contents of an object cloned from 
-<tt>record</tt>.  In <tt>add_empty_record</tt> a new object is created
-by calling <tt>record</tt>.
+In <tt>add_empty_record</tt> a new object is created
+by calling <tt>record</tt>. This is called <b>cloning</b> and it
+allocates space to store the variables defined in the <tt>class record</tt>.
+<tt>Show_record</tt> takes a one of the records created in <tt>add_empty_record</tt> and shows the contents of it. As you can see, the arrow operator
+is used to access the data allocated in <tt>add_empty_record</tt>.
 <p>
 
 <dl>
@@ -1758,6 +1788,35 @@ This is what you can do with a function pointer.
      This is normally only used with <b>lambda</b> functions because they
      do not have a name.
 </dl>
+
+<h2>Sharing data</h2>
+As mention in the beginning of this chapter, the assignment operator
+(<tt>=</tt>) does not copy anything when you use it on a pointer type.
+Instead it just creates another reference to the memory object.
+In most situations this does not present a problem, and it speeds up
+Pike performance. However, you must be aware of this when programming.
+This can be illustrated with an example:
+<pre>
+	int main(int argc, array(string) argv)
+	{
+	  array(string) tmp;
+	  tmp=argv;
+	  argv[0]="Hello world.\n";
+	  write(tmp[0]);
+	}
+</pre>
+This program will of course write <tt>Hello world.</tt>
+<p>
+Sometimes you want to create a copy of a mapping, array or object. To
+do so you simply call <tt>copy_value</tt> with whatever you want to copy
+as argument. Copy_value is recursive, which means that if you have an
+array containing arrays, copies will be made of all those arrays.
+<p>
+If you don't want to copy recursively, or you know you don't have to
+copy recursively, you can use the plus operator instead. For instance,
+to create a copy of an array you simply add an empty array to it, like this:
+<tt>copy_of_arr = arr + ({});</tt> If you need to copy a mapping you use
+an empty mapping, and for a multiset you use an empty multiset.
 
 <p>
 <HR NEWPAGE>
@@ -5359,7 +5418,7 @@ output. See your unix/C manual for details on popen.
 
 </a>
 <hr noshade size=1>
-a name=Process.system>
+<a name=Process.system>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>Process.system</tt> - run an external program
@@ -10546,7 +10605,70 @@ as variable or function names.
 
 <HR NEWPAGE>
 <h2> Appendix D: BNF for Pike </h2>
-program:
+
+BNF is short for "Backus Naur Form". It is a precise way of describing syntax.
+This is the BNF for Pike:
+
+<table>
+<tr valign=top><td>program</td><td>::=</td><td>{ definition }</td></tr>
+<tr valign=top><td>definition</td><td>::=</td><td>import | inheritace | function_declaration | function_definition | variables | constant | class_def</td></tr>
+<tr valign=top><td>import</td><td>::=</td><td>modifiers <b>import</b> constant_identifier ";"</td></tr>
+<tr valign=top><td>inheritance</td><td>::=</td><td>modifiers <b>inherit</b> program_specifier [ ":" identifier ] ";" </td></tr>
+<tr valign=top><td>function_declaration</td><td>::=</td><td>modifiers type identifier "(" arguments ")" ";"</td></tr>
+<tr valign=top><td>function_definition</td><td>::=</td><td>modifiers type identifier "(" arguments ")" block </td></tr>
+<tr valign=top><td>variables</td><td>::=</td><td>modifiers type variable_names ";"</td></tr>
+<tr valign=top><td>variable_names</td><td>::=</td><td>variable_name { "," variable_name }</td></tr>
+<tr valign=top><td>variable_name</td><td>::=</td><td>{ "*" } identifier [ "=" expression ]</td></tr>
+<tr valign=top><td>constant</td><td>::=</td><td>modifiers <b>constant</b> constant_names ";" </td></tr>
+<tr valign=top><td>constant_names</td><td>::=</td><td>constant_name { "," constant_name }</td></tr>
+<tr valign=top><td>constant_name</td><td>::=</td><td>identifer "=" expression</td></tr>
+<tr valign=top><td>class_def</td><td>::=</td><td>modifiers <b>class</b> [ ";" ] </td></tr>
+<tr valign=top><td>class</td><td>::=</td><td><b>class</b> [ identifier ] program</td></tr>
+<tr valign=top><td>modifiers</td><td>::=</td><td> { <b>static</b> | <b>private</b> | <b>nomask</b> | <b>public</b> | <b>protected</b> | <b>inline</b> }</td></tr>
+<tr valign=top><td>block</td><td>::=</td><td>"{" { statement }  "}" </td></tr>
+<tr valign=top><td>statement</td><td>::=</td><td>expression2 ";" | cond | while | do_while | for | switch | case | default | return | block | foreach | break | continue | ";" </td></tr>
+<tr valign=top><td>cond</td><td>::=</td><td><b>if</b> statement </b> [ <b>else</b> statement ]</td></tr>
+<tr valign=top><td>while</td><td>::=</td><td><b>while</b> "(" expression ")" statement</td></tr>
+<tr valign=top><td>do_while</td><td>::=</td><td><b>do</b> statement <b>while</b> "(" expression ")" ";" </td></tr>
+<tr valign=top><td>for</td><td>::=</td><td><b>for</b> "(" [ expression ] ";" [ expression ] ";" [ expression ] ")" statement</td></tr>
+<tr valign=top><td>switch</td><td>::=</td><td><b>switch</b> "(" expression ")" block</td></tr>
+<tr valign=top><td>case</td><td>::=</td><td><b>case</b> expression [ ".." expression ] ":"</td></tr>
+<tr valign=top><td>default</td><td>::=</td><td><b>default</b> ":"</td></tr>
+<tr valign=top><td>foreach</td><td>::=</td><td><b>foreach</b> "(" expression ":" expression6 ")" statement</td></tr>
+<tr valign=top><td>break</td><td>::=</td><td><b>break</b> ";"</td></tr>
+<tr valign=top><td>continue</td><td>::=</td><td><b>continue</b> ";"</td></tr>
+<tr valign=top><td>expression</td><td>::=</td><td>expression2 { "," expression2 }</td></tr>
+<tr valign=top><td>expression2</td><td>::=</td><td>{ expression6 ( "=" | "+=" | "*=" | "/=" | "&amp;=" | "|=" | "^=" | "&lt;&lt;=" | "&gt;&gt;=" | "%=" ) } expression3</td></tr>
+<tr valign=top><td>expression3</td><td>::=</td><td>expression4 '?' expression3 ":" expression3 </td></tr>
+<tr valign=top><td>expression4</td><td>::=</td><td>{ expression5 ( "||" | "&amp;&amp;" | "|" | "^" | "&amp;" | "==" | "!=" | "&gt;" | "&lg;" | "&gt;=" | "&lt;=" | "&lt;&lt;" | "&gt;&gt;" | "+" | "*" | "/" | "%" ) } expression5</td></tr>
+<tr valign=top><td>expression5</td><td>::=</td><td>expression6 | "(" type ")" expression5 | "--" expression6 | "++" expression6 | expression6 "--" | expression6 "++" | "~" expression5 | "-" expression5 </td></tr>
+<tr valign=top><td>expression6</td><td>::=</td><td>string | number | float | catch | guage | typeof | sscanf | lambda | class | constant_identifer | call | index | mapping | multiset | array | parenthesis | arrow </td></tr>
+<tr valign=top><td>number</td><td>::=</td><td>digit { digit } | "0x" { digits } | "'" character "'" </td></tr>
+<tr valign=top><td>float</td><td>::=</td><td>digit { digit } "." { digit }</td></tr>
+<tr valign=top><td>catch</td><td>::=</td><td><b>catch</b> ( "(" expression ")" | block )</td></tr>
+<tr valign=top><td>gauge</td><td>::=</td><td><b>gauge</b> ( "(" expression ")" | block )</td></tr>
+<tr valign=top><td>sscanf</td><td>::=</td><td><b>sscanf</b> "(" expression2 "," expression2 { "," expression6 } ")" </td></tr>
+<tr valign=top><td>lambda</td><td>::=</td><td><b>lambda</b> "(" arguments ")" block</td></tr>
+<tr valign=top><td>constant_identifer</td><td>::=</td><td>identifer { "." identifer }</td></tr>
+<tr valign=top><td>call</td><td>::=</td><td>expression6 "(" expression_list ")" </td></tr>
+<tr valign=top><td>index</td><td>::=</td><td>expression6 "[" expression [ ".." expression ] "]"</td></tr>
+<tr valign=top><td>array</td><td>::=</td><td>"({" expression_list "})"</td></tr>
+<tr valign=top><td>multiset</td><td>::=</td><td>"(&lt;" expression_list "&gt;)"</td></tr>
+<tr valign=top><td>mapping</td><td>::=</td><td>"([" [ expression : expression { "," expression ":" expression } ] [ "," ] "])"</td></tr>
+<tr valign=top><td>arrow</td><td>::=</td><td>expressoin6 "-&gt;" identifier</td></tr>
+<tr valign=top><td>expression_list</td><td>::=</td><td> [ splice_expression { "," splice_expression } ] [ "," ]</td></tr>
+<tr valign=top><td>splice_expression</td><td>::=</td><td>[ "@" ] expression2</td></tr>
+<tr valign=top><td>type</td><td>::=</td><td> ( <b>int</b> | <b>string</b> | <b>float</b> | <b>program</b> | <b>object</b> [ "(" program_specifier ")" ] | mapping [ "(" type ":" type ")" | array [ "(" type ")" ] | multiset [ "(" type ")" ] | function [ function_type ] ) { "*" }</td></tr>
+<tr valign=top><td>function_type</td><td>::=</td><td>"(" [ type { "," type } [ "..." ] ")"</td></tr>
+<tr valign=top><td>arguments</td><td>::=</td><td>[ argument { "," argument } ] [","]</td></tr>
+<tr valign=top><td>argument</td><td>::=</td><td>type [ "..." ] [ identifier ]</td></tr>
+<tr valign=top><td>program_specifier</td><td>::=</td><td>string_constant | constant_identifier</td></tr>
+<tr valign=top><td>string</td><td>::=</td><td>string_literal { string_literal }</td></tr>
+<tr valign=top><td>identifer</td><td>::=</td><td>letter { letter | digit }</td></tr>
+<tr valign=top><td>letter</td><td>::=</td><td>"a"-"z" | "A"-"Z" | "_"</td></tr>
+<tr valign=top><td>digit</td><td>::=</td><td>"0"-"9"</td></tr>
+</table>
+
 
 <HR NEWPAGE>
 <h2> Appendix E: How to install Pike</h2>
