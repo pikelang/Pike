@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.15 2002/11/09 14:07:55 grubba Exp $
+|| $Id: dvb.c,v 1.16 2002/11/19 16:11:29 hop Exp $
 */
 
 /*
@@ -710,9 +710,9 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
     u[0].fd = fd;
     u[0].events = POLLIN;
 
-    THREAD_ALLOW();
+    THREADS_ALLOW();
     n = poll(u,1,20000);
-    THREAD_DISALLOW();
+    THREADS_DISALLOW();
     if (n < 0)
     {
       perror("poll error");
@@ -726,9 +726,9 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
 
     buffer[0] = 0;
 
-    THREAD_ALLOW();
+    THREADS_ALLOW();
     n = read(fd,buffer+1,length-1);
-    THREAD_DISALLOW();
+    THREADS_DISALLOW();
     if (n < 0)
     {
       perror("read error");
