@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.215 2004/12/18 17:49:48 grubba Exp $
+|| $Id: svalue.c,v 1.216 2004/12/19 16:39:48 grubba Exp $
 */
 
 #include "global.h"
@@ -465,27 +465,33 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
   switch(s->type)
   {
   case T_OBJECT:
-    if(!s->u.object->prog)
     {
-      q=0;
-      break;
-    }
+      struct program * p;
+      int fun;
 
-    if(FIND_LFUN(s->u.object->prog,LFUN___HASH) != -1)
-    {
-      STACK_LEVEL_START(0);
-      safe_apply_low2(s->u.object, FIND_LFUN(s->u.object->prog, LFUN___HASH),
-		      0, 1);
-      STACK_LEVEL_CHECK(1);
-      if(sp[-1].type == T_INT)
+      if(!(p = s->u.object->prog))
       {
-	q=sp[-1].u.integer;
-      }else{
 	q=0;
+	break;
       }
-      pop_stack();
-      STACK_LEVEL_DONE(0);
-      break;
+
+      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN___HASH)) != -1)
+      {
+	STACK_LEVEL_START(0);
+	safe_apply_low2(s->u.object,
+			fun + p->inherits[s->subtype].identifier_level,
+			0, 1);
+	STACK_LEVEL_CHECK(1);
+	if(sp[-1].type == T_INT)
+	{
+	  q=sp[-1].u.integer;
+	}else{
+	  q=0;
+	}
+	pop_stack();
+	STACK_LEVEL_DONE(0);
+	break;
+      }
     }
     /* FALL THROUGH */
   default:
@@ -545,21 +551,26 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
     return 1;
 
   case T_OBJECT:
-    if(!s->u.object->prog) return 0;
-
-    if(FIND_LFUN(s->u.object->prog,LFUN_NOT)!=-1)
     {
-      apply_lfun(s->u.object, LFUN_NOT, 0);
-      if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+      struct program *p;
+      int fun;
+
+      if(!(p = s->u.object->prog)) return 0;
+
+      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN_NOT)) != -1)
       {
-	pop_stack();
-	return 1;
-      } else {
-	pop_stack();
-	return 0;
+	apply_low(s->u.object,
+		  fun + p->inherits[s->subtype].identifier_level, 0);
+	if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+	{
+	  pop_stack();
+	  return 1;
+	} else {
+	  pop_stack();
+	  return 0;
+	}
       }
     }
-
   default:
     return 1;
   }
@@ -603,18 +614,24 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
     return 1;
 
   case T_OBJECT:
-    if(!s->u.object->prog) return 0;
-
-    if(FIND_LFUN(s->u.object->prog,LFUN_NOT)!=-1)
     {
-      safe_apply_low2(s->u.object,FIND_LFUN(s->u.object->prog,LFUN_NOT),0,1);
-      if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+      struct program *p;
+      int fun;
+
+      if(!(p = s->u.object->prog)) return 0;
+
+      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN_NOT)) != -1)
       {
-	pop_stack();
-	return 1;
-      } else {
-	pop_stack();
-	return 0;
+	safe_apply_low2(s->u.object,
+			fun + p->inherits[s->subtype].identifier_level, 0, 1);
+	if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+	{
+	  pop_stack();
+	  return 1;
+	} else {
+	  pop_stack();
+	  return 0;
+	}
       }
     }
 
@@ -631,9 +648,11 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
   if(a->type != b->type) return 0;
   switch(a->type)
   {
+  case T_OBJECT:
+    return (a->u.refs == b->u.refs) && (a->subtype == b->subtype);
+
   case T_TYPE:
   case T_STRING:
-  case T_OBJECT:
   case T_MULTISET:
   case T_PROGRAM:
   case T_ARRAY:
@@ -685,21 +704,28 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     case TWO_TYPES(BIT_OBJECT, BIT_STRING):
     case TWO_TYPES(BIT_OBJECT, BIT_INT):
     case TWO_TYPES(BIT_OBJECT, BIT_FLOAT):
-      if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       {
+	struct program *p;
+	int fun;
+
       a_is_obj:
-	push_svalue(b);
-	apply_lfun(a->u.object, LFUN_EQ, 1);
-	if(UNSAFE_IS_ZERO(sp-1))
+	if ((p = a->u.object->prog) &&
+	    ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ)) != -1))
 	{
-	  pop_stack();
-	  return 0;
-	}else{
-	  pop_stack();
-	  return 1;
+	  push_svalue(b);
+	  apply_low(a->u.object,
+		    fun + p->inherits[a->subtype].identifier_level, 1);
+	  if(UNSAFE_IS_ZERO(sp-1))
+	  {
+	    pop_stack();
+	    return 0;
+	  }else{
+	    pop_stack();
+	    return 1;
+	  }
 	}
+	if(b->type != T_OBJECT) return 0;
       }
-    if(b->type != T_OBJECT) return 0;
 
     case TWO_TYPES(BIT_ARRAY,BIT_OBJECT):
     case TWO_TYPES(BIT_MAPPING,BIT_OBJECT):
@@ -709,18 +735,25 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     case TWO_TYPES(BIT_STRING,BIT_OBJECT):
     case TWO_TYPES(BIT_INT,BIT_OBJECT):
     case TWO_TYPES(BIT_FLOAT,BIT_OBJECT):
-      if(FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1)
       {
+	struct program *p;
+	int fun;
+
       b_is_obj:
-	push_svalue(a);
-	apply_lfun(b->u.object, LFUN_EQ, 1);
-	if(UNSAFE_IS_ZERO(sp-1))
+	if ((p = b->u.object->prog) &&
+	    ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ)) != -1))
 	{
-	  pop_stack();
-	  return 0;
-	}else{
-	  pop_stack();
-	  return 1;
+	  push_svalue(a);
+	  apply_low(b->u.object,
+		    fun + p->inherits[b->subtype].identifier_level, 1);
+	  if(UNSAFE_IS_ZERO(sp-1))
+	  {
+	    pop_stack();
+	    return 0;
+	  }else{
+	    pop_stack();
+	    return 1;
+	  }
 	}
       }
     }
@@ -730,15 +763,21 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
   switch(a->type)
   {
   case T_OBJECT:
-    if (a->u.object == b->u.object) return 1;
-    /* FIXME: What if both have lfun::`==(), and they disagree? */
-    if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
-      goto a_is_obj;
+    {
+      struct program *p;
 
-    if(FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1)
-      goto b_is_obj;
-    return 0;
+      if ((a->u.object == b->u.object) &&
+	  (a->type == b->type) && (a->subtype == b->subtype)) return 1;
+      /* FIXME: What if both have lfun::`==(), and they disagree? */
+      if((p = a->u.object->prog) &&
+	 (FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ) != -1))
+	goto a_is_obj;
 
+      if((p = b->u.object->prog) &&
+	 (FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ) != -1))
+	goto b_is_obj;
+      return 0;
+    }
   case T_MULTISET:
   case T_PROGRAM:
   case T_ARRAY:
@@ -790,41 +829,53 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 }
 
 PMOD_EXPORT int low_is_equal(const struct svalue *a,
-		 const struct svalue *b,
-		 struct processing *p)
+			     const struct svalue *b,
+			     struct processing *p)
 {
   check_type(a->type);
   check_type(b->type);
   check_refs(a);
   check_refs(b);
 
-  if(a->type == T_OBJECT && a->u.object->prog &&
-     FIND_LFUN(a->u.object->prog, LFUN__EQUAL) != -1)
   {
-    push_svalue(b);
-    apply_lfun(a->u.object, LFUN__EQUAL, 1);
-    if(UNSAFE_IS_ZERO(sp-1))
-    {
-      pop_stack();
-      return 0;
-    }else{
-      pop_stack();
-      return 1;
-    }
-  }
+    struct program *p;
+    int fun;
 
-  if(b->type == T_OBJECT && b->u.object->prog &&
-     FIND_LFUN(b->u.object->prog, LFUN__EQUAL) != -1)
-  {
-    push_svalue(a);
-    apply_lfun(b->u.object, LFUN__EQUAL, 1);
-    if(UNSAFE_IS_ZERO(sp-1))
+    if(a->type == T_OBJECT) {
+      if ((a->type == b->type) && (a->subtype == b->subtype) &&
+	  (a->u.object == b->u.object)) return 1;
+
+      if ((p = a->u.object->prog) &&
+	  (fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN__EQUAL)) != -1)
+      {
+	push_svalue(b);
+	apply_low(a->u.object,
+		  fun + p->inherits[a->subtype].identifier_level, 1);
+	if(UNSAFE_IS_ZERO(sp-1))
+	{
+	  pop_stack();
+	  return 0;
+	}else{
+	  pop_stack();
+	  return 1;
+	}
+      }
+    }
+
+    if(b->type == T_OBJECT && (p = b->u.object->prog) &&
+       (fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN__EQUAL)) != -1)
     {
-      pop_stack();
-      return 0;
-    }else{
-      pop_stack();
-      return 1;
+      push_svalue(a);
+      apply_low(b->u.object,
+		fun + p->inherits[b->subtype].identifier_level, 1);
+      if(UNSAFE_IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return 0;
+      }else{
+	pop_stack();
+	return 1;
+      }
     }
   }
 
@@ -944,16 +995,21 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 
     if(a->type == T_OBJECT)
     {
+      struct program *p;
+      int fun;
+
     a_is_object:
 #if 0
       /* safe_check_destructed should avoid this. */
       if(!a->u.object->prog)
 	Pike_error("Comparison on destructed object.\n");
 #endif
-      if(FIND_LFUN(a->u.object->prog,LFUN_LT) != -1)
+      p = a->u.object->prog;
+      if((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_LT)) != -1)
       {
 	push_svalue(b);
-	apply_lfun(a->u.object, LFUN_LT, 1);
+	apply_low(a->u.object,
+		  fun + p->inherits[a->subtype].identifier_level, 1);
 	if(UNSAFE_IS_ZERO(sp-1))
 	{
 	  if(!sp[-1].subtype)
@@ -977,12 +1033,17 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 
     if(b->type == T_OBJECT)
     {
+      struct program *p;
+      int fun;
+
 #if 0
       /* safe_check_destructed should avoid this. */
       if(!b->u.object->prog)
 	Pike_error("Comparison on destructed object.\n");
 #endif
-      if(FIND_LFUN(b->u.object->prog,LFUN_GT) == -1) {
+      p = b->u.object->prog;
+
+      if((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_GT)) == -1) {
 	if (a_is_obj_without_lt)
 	  Pike_error ("Object a lacks `< and object b lacks `> "
 		      "in comparison on the form a < b.\n");
@@ -991,7 +1052,8 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 		      "in comparison on the form a < b.\n");
       }
       push_svalue(a);
-      apply_lfun(b->u.object, LFUN_GT, 1);
+      apply_lfun(b->u.object,
+		 fun + p->inherits[b->subtype].identifier_level, 1);
       if(UNSAFE_IS_ZERO(sp-1))
       {
 	if(!sp[-1].subtype)
@@ -2316,18 +2378,24 @@ PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
   case T_MAPPING: return m_sizeof(s->u.mapping);
   case T_MULTISET: return l_sizeof(s->u.multiset);
   case T_OBJECT:
-    if(!s->u.object->prog)
-      Pike_error("sizeof() on destructed object.\n");
-    if(FIND_LFUN(s->u.object->prog,LFUN__SIZEOF) == -1)
     {
-      return s->u.object->prog->num_identifier_index;
-    }else{
-      apply_lfun(s->u.object, LFUN__SIZEOF, 0);
-      if(sp[-1].type != T_INT)
-	Pike_error("Bad return type from o->_sizeof() (not int)\n");
-      dmalloc_touch_svalue(Pike_sp-1);
-      sp--;
-      return sp->u.integer;
+      struct program *p;
+      int fun;
+
+      if(!(p = s->u.object->prog))
+	Pike_error("sizeof() on destructed object.\n");
+      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN__SIZEOF)) == -1)
+      {
+	return p->inherits[s->subtype].prog->num_identifier_index;
+      }else{
+	apply_low(s->u.object,
+		  fun + p->inherits[s->subtype].identifier_level, 0);
+	if(sp[-1].type != T_INT)
+	  Pike_error("Bad return type from o->_sizeof() (not int)\n");
+	dmalloc_touch_svalue(Pike_sp-1);
+	sp--;
+	return sp->u.integer;
+      }
     }
   default:
     Pike_error("Bad argument 1 to sizeof().\n");
