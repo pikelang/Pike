@@ -12,7 +12,7 @@ void exece(string cmd, array(string) args)
 string fixpath(string s)
 {
   string mnt=getenv("NTMOUNT");
-  array st;
+  mixed st;
 
   while ((st = file_stat(s, 1)) && (st[1] == -3)) {
     string new_s = readlink(s);
@@ -392,7 +392,7 @@ string find_next_in_path(string argv0,string cmd)
     foreach((getenv("PATH")||"")/":",string x)
       {
 	string fname=combine_path(getcwd(),x,cmd);
-	if(array s=file_stat(fname))
+	if(mixed s=file_stat(fname))
 	{
 	  if(argv0)
 	  {
@@ -407,7 +407,7 @@ string find_next_in_path(string argv0,string cmd)
     foreach((getenv("PATH")||"")/":",string x)
       {
 	string fname=combine_path(getcwd(),x,cmd);
-	if(array s=file_stat(fname))
+	if(mixed s=file_stat(fname))
 	{
 	  if(Stdio.File(fname,"r")->read(2)=="#!")
 	    continue;
@@ -419,7 +419,7 @@ string find_next_in_path(string argv0,string cmd)
   foreach((getenv("PATH")||"")/":",string x)
     {
       string fname=combine_path(getcwd(),x,cmd);
-      if(array s=file_stat(fname))
+      if(mixed s=file_stat(fname))
 	return fname;
     }
 
