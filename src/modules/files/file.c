@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.97 1998/05/19 20:35:39 hubbe Exp $");
+RCSID("$Id: file.c,v 1.98 1998/05/22 08:25:54 neotron Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -174,7 +174,7 @@ static void init_fd(int fd, int open_mode)
   THIS->write_oob_callback.type=T_INT;
   THIS->write_oob_callback.u.integer=0;
 #endif /* WITH_OOB */
-#ifdef HAVE_FD_FLOCK
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
   THIS->key=0;
 #endif
 }
@@ -196,7 +196,7 @@ void reset_variables(void)
 
 static void free_fd_stuff(void)
 {
-#ifdef HAVE_FD_FLOCK
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
   if(THIS->key)
   {
     destruct(THIS->key);
@@ -1464,7 +1464,7 @@ static void init_file_struct(struct object *o)
   ERRNO=0;
   THIS->open_mode=0;
   THIS->flags=0;
-#ifdef HAVE_FD_FLOCK
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
   THIS->key=0;
 #endif /* HAVE_FD_FLOCK */
   THIS->myself=o;
@@ -1936,7 +1936,7 @@ void create_proxy_pipe(struct object *o, int for_reading)
 
 #endif
 
-#ifdef HAVE_FD_FLOCK
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
 
 static struct program * file_lock_key_program;
 
@@ -1974,7 +1974,11 @@ static void low_file_lock(INT32 args, int flags)
   o=clone_object(file_lock_key_program,0);
 
   THREADS_ALLOW();
+#ifdef HAVE_FD_FLOCK
   ret=fd_flock(fd, flags);
+#else
+  ret=fd_lockf(fd, flags);
+#endif  
   THREADS_DISALLOW();
 
   if(ret<0)
@@ -1996,10 +2000,19 @@ static void file_lock(INT32 args)
   low_file_lock(args,fd_LOCK_EX);
 }
 
+// If (fd_LOCK_EX | fd_LOCK_NB) is used with lockf, the result will be
+// F_TEST, which only tests for the existance of a lock on the file.
+#ifdef HAVE_FD_FLOCK
 static void file_trylock(INT32 args)
 {
   low_file_lock(args,fd_LOCK_EX | fd_LOCK_NB);
 }
+#else
+static void file_trylock(INT32 args)
+{
+  low_file_lock(args, fd_LOCK_NB);
+}
+#endif
 
 #define THIS_KEY ((struct file_lock_key_storage *)(fp->current_storage))
 static void init_file_lock_key(struct object *o)
@@ -2025,7 +2038,11 @@ static void exit_file_lock_key(struct object *o)
     THREADS_ALLOW();
     do
     {
+#ifdef HAVE_FD_FLOCK
       err=fd_flock(fd, fd_LOCK_UN);
+#else
+      err=fd_lockf(fd, fd_LOCK_UN);
+#endif
     }while(err<0 && errno==EINTR);
     THREADS_DISALLOW();
 

@@ -44,7 +44,7 @@
   FILE_FUNC("proxy",file_proxy,"function(object:void)")
 #endif
 
-#ifdef HAVE_FD_FLOCK
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
   FILE_FUNC("lock",file_lock,"function(void|int:object)")
   FILE_FUNC("trylock",file_trylock,"function(void|int:object)")
 #endif

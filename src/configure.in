@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.188 1998/05/17 23:15:58 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.189 1998/05/22 08:25:52 neotron Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -994,6 +994,7 @@ AC_CHECK_FUNCS( \
  fork \
  fork1 \
  flock \
+ lockf \
  setuid getuid seteuid geteuid \
  setgid getgid setegid getegid \
  getpwent getpwnam getpwuid \

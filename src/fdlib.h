@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.14 1998/04/06 04:22:11 hubbe Exp $
+ * $Id: fdlib.h,v 1.15 1998/05/22 08:25:53 neotron Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -206,7 +206,7 @@ extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 #define S_IFSOCK 0140000
 #endif
 
-#else
+#else // HAVE_WINSOCK
 
 
 typedef int FD;
@@ -259,15 +259,25 @@ typedef int FD;
 #define fd_FD_ISSET FD_ISSET
 #define fd_FD_ZERO FD_ZERO
 
+#ifdef HAVE_FLOCK
+#define HAVE_FD_FLOCK
 #define fd_flock flock
 #define fd_LOCK_SH LOCK_SH
 #define fd_LOCK_EX LOCK_EX
 #define fd_LOCK_UN LOCK_UN
 #define fd_LOCK_NB LOCK_NB
-
-#ifdef HAVE_FLOCK
-#define HAVE_FD_FLOCK
+#else
+#ifdef HAVE_LOCKF
+#define HAVE_FD_LOCKF
+#define fd_LOCK_EX F_LOCK
+#define fd_LOCK_UN F_ULOCK
+#define fd_LOCK_NB F_TLOCK
+#define fd_lockf(fd,mode) lockf(fd,mode,0)
 #endif
+#endif
+
+
+
 
 #define fd_shutdown_read 0
 #define fd_shutdown_write 1
@@ -303,6 +313,6 @@ typedef struct my_fd_set_s
 #define SEEK_END 2
 #endif
 
-#endif
+#endif // Don't HAVE_WINSOCK
 
-#endif
+#endif // FDLIB_H

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.10 1998/04/06 04:34:05 hubbe Exp $
+ * $Id: file.h,v 1.11 1998/05/22 08:25:55 neotron Exp $
  */
 
 #ifndef FILE_H
@@ -41,7 +41,7 @@ struct my_file
   struct svalue write_oob_callback;
 #endif /* WITH_OOB */
 
-#ifdef HAVE_FD_FLOCK
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
   struct object *key;
 #endif
   struct object *myself;
