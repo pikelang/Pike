@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.21 2000/08/03 17:07:56 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.22 2000/08/09 21:05:54 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -41,30 +41,30 @@ struct std_cs_stor {
 struct std_rfc_stor {
   UNICHAR const *table;
 };
-static SIZE_T std_rfc_stor_offs = 0;
+static size_t std_rfc_stor_offs = 0;
 
 struct std_misc_stor {
   int lo, hi;
 };
-static SIZE_T std_misc_stor_offs = 0;
+static size_t std_misc_stor_offs = 0;
 
 struct utf7_stor {
   INT32 dat, surro;
   int shift, datbit;
 };
-static SIZE_T utf7_stor_offs = 0;
+static size_t utf7_stor_offs = 0;
 
 struct std8e_stor {
   p_wchar0 *revtab;
   unsigned int lowtrans, lo, hi;
 };
-static SIZE_T std8e_stor_offs = 0;
+static size_t std8e_stor_offs = 0;
 
 struct std16e_stor {
   p_wchar1 *revtab;
   unsigned int lowtrans, lo, hi;
 };
-static SIZE_T std16e_stor_offs = 0;
+static size_t std16e_stor_offs = 0;
 
 static SIGNED char rev64t['z'-'+'+1];
 static char fwd64t[64]=
@@ -177,12 +177,13 @@ static void exit_stor(struct object *o)
   free_string(finish_string_builder(&s->strbuild));
 }
 
-static void f_std_feed(INT32 args, INT32 (*func)(const p_wchar0 *, INT32 n,
-						 struct std_cs_stor *))
+static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
+						     ptrdiff_t n,
+						     struct std_cs_stor *))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
   struct pike_string *str, *tmpstr = NULL;
-  INT32 l;
+  ptrdiff_t l;
 
   get_all_args("feed()", args, "%W", &str);
 
@@ -245,7 +246,8 @@ static void f_feed_utf8(INT32 args)
   f_std_feed(args, feed_utf8);
 }
 
-static INT32 feed_utf7(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_utf7(const p_wchar0 *p, ptrdiff_t l,
+			   struct std_cs_stor *s)
 {
   struct utf7_stor *u7 = (struct utf7_stor *)(((char*)s)+utf7_stor_offs);
   INT32 dat = u7->dat, surro = u7->surro;
@@ -650,7 +652,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 		       struct pike_string *str, struct pike_string *rep,
 		       struct svalue *repcb)
 {
-  INT32 l = str->len;
+  ptrdiff_t l = str->len;
 
   switch(str->size_shift) {
   case 0:
@@ -738,7 +740,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 		       struct pike_string *str, struct pike_string *rep,
 		       struct svalue *repcb)
 {
-  INT32 l = str->len, dat = u7->dat;
+  ptrdiff_t l = str->len, dat = u7->dat;
   int shift = u7->shift, datbit = u7->datbit;
 
   switch(str->size_shift) {
@@ -931,7 +933,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 		       struct pike_string *str, struct pike_string *rep,
 		       struct svalue *repcb)
 {
-  INT32 l = str->len;
+  ptrdiff_t l = str->len;
   p_wchar0 *tab = s8->revtab;
   unsigned int lowtrans = s8->lowtrans, lo = s8->lo, hi = s8->hi;
   p_wchar0 ch;
@@ -1017,7 +1019,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 			struct pike_string *str, struct pike_string *rep,
 			struct svalue *repcb)
 {
-  INT32 l = str->len;
+  ptrdiff_t l = str->len;
   p_wchar1 *tab = s16->revtab;
   unsigned int lowtrans = s16->lowtrans, lo = s16->lo, hi = s16->hi;
   p_wchar1 ch;
