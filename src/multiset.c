@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.72 2003/04/26 16:04:02 mast Exp $
+|| $Id: multiset.c,v 1.73 2003/05/12 12:17:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.72 2003/04/26 16:04:02 mast Exp $");
+RCSID("$Id: multiset.c,v 1.73 2003/05/12 12:17:49 nilsson Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -2708,7 +2708,7 @@ struct array *multiset_range_values (struct multiset *l,
 {
   struct multiset_data *msd;
   struct array *values;
-  union msnode *beg, *end;
+  union msnode *end;
   int msd_size, range_size;
 
 #ifdef PIKE_DEBUG
@@ -5291,7 +5291,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.72 2003/04/26 16:04:02 mast Exp $");
+RCSID("$Id: multiset.c,v 1.73 2003/05/12 12:17:49 nilsson Exp $");
 
 struct multiset *first_multiset;
 
