@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.163 1999/11/08 22:07:25 grubba Exp $
+# $Id: Makefile.in,v 1.164 1999/11/08 23:21:55 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -165,7 +165,7 @@ all: module_objects hilfe
 	  rm -f dummy_engine >/dev/null 2>&1
 #	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) new_peep_engine
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_modules
+	$(MAKE) $(MAKE_FLAGS) "MAKE_PARALLEL=$(MAKE_PARALLEL)" post_modules
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 
 post_modules: force
