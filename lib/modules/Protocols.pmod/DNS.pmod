@@ -1,4 +1,5 @@
 // Not yet finished -- Fredrik Hubinette
+// RFC 1035
 
 //! module Protocols
 //! submodule DNS
@@ -22,6 +23,9 @@ constant T_MF=4;
 constant T_CNAME=5;
 constant T_SOA=6;
 constant T_MB=7;
+constant T_MG=8;
+constant T_MR=9;
+constant T_NULL=10;
 constant T_PTR=12;
 constant T_HINFO=13;
 constant T_MINFO=14;
@@ -39,31 +43,126 @@ class protocol
     return sprintf("%c%s",strlen(s),s);
   }
 
+  static private string mkname(string|array(string) labels, int pos,
+			       mapping(string:int) comp)
+  {
+    if(stringp(labels))
+      labels = labels/"."-({""});
+    if(!labels || !sizeof(labels))
+      return "\0";
+    string n = labels*".";
+    if(comp[n])
+      return sprintf("%2c", comp[n]|0xc000);
+    else {
+      if(pos<0x4000)
+	comp[n]=pos;
+      string l = mklabel(labels[0]);
+      return l + mkname(labels[1..], pos+strlen(l), comp);
+    }
+  }
+
+  static private string mkrdata(mapping entry, int pos, mapping(string:int) c)
+  {
+    switch(entry->type) {
+     case T_CNAME:
+       return mkname(entry->cname, pos, c);
+     case T_PTR:
+       return mkname(entry->ptr, pos, c);
+     case T_NS:
+       return mkname(entry->ns, pos, c);
+     case T_MD:
+       return mkname(entry->md, pos, c);
+     case T_MF:
+       return mkname(entry->mf, pos, c);
+     case T_MB:
+       return mkname(entry->mb, pos, c);
+     case T_MG:
+       return mkname(entry->mg, pos, c);
+     case T_MR:
+       return mkname(entry->mr, pos, c);
+     case T_MX:
+       return sprintf("%2c", entry->preference)+mkname(entry->mx, pos+2, c);
+     case T_HINFO:
+       return sprintf("%1c%s%1c%s", strlen(entry->cpu||""), entry->cpu||"",
+		      strlen(entry->os||""), entry->os||"");
+     case T_MINFO:
+       string rmailbx = mkname(entry->rmailbx, pos, c);
+       return rmailbx + mkname(entry->emailbx, pos+strlen(rmailbx), c);
+     case T_A:
+     case T_AAAA:
+       return sprintf("%@1c", (array(int))((entry->a||"0.0.0.0")/".")[0..3]);
+     case T_SOA:
+       string mname = mkname(entry->mname, pos, c);
+       return mname + mkname(entry->rname, pos+strlen(mname), c) +
+	 sprintf("%4c%4c%4c%4c%4c", entry->serial, entry->refresh,
+		 entry->retry, entry->expire, entry->minimum);
+     case T_TXT:
+       return Array.map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
+			lambda(string t) {
+			  return sprintf("%1c%s", strlen(t), t);
+			})*"";
+     default:
+       return "";
+    }
+  }
+
+  static private string encode_entries(array(mapping) entries, int pos,
+				       mapping(string:int) comp)
+  {
+    string res="";
+    foreach(entries, mapping entry) {
+      string e = mkname(entry->name, pos, comp)+
+	sprintf("%2c%2c%4c", entry->type, entry->cl, entry->ttl);
+      pos += strlen(e)+2;
+      string rd = entry->rdata || mkrdata(entry, pos, comp);
+      res += e + sprintf("%2c", strlen(rd)) + rd;
+      pos += strlen(rd);
+    }
+    return res;
+  }
+
+  string low_low_mkquery(mapping q)
+  {
+    array qd = q->qd && (arrayp(q->qd)? q->qd : ({q->qd}));
+    array an = q->an && (arrayp(q->an)? q->an : ({q->an}));
+    array ns = q->ns && (arrayp(q->ns)? q->ns : ({q->ns}));
+    array ar = q->ar && (arrayp(q->ar)? q->ar : ({q->ar}));
+    string r = sprintf("%2c%c%c%2c%2c%2c%2c", q->id,
+		       ((q->rd)&1)|(((q->tc)&1)<<1)|(((q->aa)&1)<<2)|
+		       (((q->opcode)&15)<<3)|(((q->qr)&1)<<7),
+		       ((q->rcode)&15)|(((q->cd)&1)<<4)|(((q->ad)&1)<<5)|
+		       (((q->ra)&1)<<7),
+		       qd && sizeof(qd), an && sizeof(an),
+		       ns && sizeof(ns), ar && sizeof(ar));
+    mapping(string:int) c = ([]);
+    if(qd)
+      foreach(qd, mapping _qd)
+	r += mkname(_qd->name, strlen(r), c) +
+	sprintf("%2c%2c", _qd->type, _qd->cl);
+    if(an)
+      r+=encode_entries(an, strlen(r), c);
+    if(ns)
+      r+=encode_entries(ns, strlen(r), c);
+    if(ar)
+      r+=encode_entries(ar, strlen(r), c);
+    return r;
+  }
+
   string low_mkquery(int id,
 		    string dname,
 		    int cl,
 		    int type)
   {
-    if ( dname[-1] == '.') dname = dname[..sizeof(dname)-2];
-    return sprintf("%2c%c%c%2c%2c%2c%2c%s\000%2c%2c",
-		   id,
-		   1,0,
-		   1,
-		   0,
-		   0,
-		   0,
-		   Array.map(dname/".",mklabel)*"",
-		   type,cl);
-
+    return low_low_mkquery((["id":id, "rd":1,
+			     "qd":(["name":dname, "cl":cl, "type":type])]));
   }
 
-  // This will have to be generalized for
-  // the server part...
-  string mkquery(string dname,
-		 int cl,
-		 int type)
+  string mkquery(string|mapping dnameorquery, int|void cl, int|void type)
   {
-    return low_mkquery(random(65536),dname,cl,type);
+    if(mappingp(dnameorquery))
+      return low_low_mkquery(dnameorquery);
+    else
+      return low_mkquery(random(65536),dnameorquery,cl,type);
   }
 
   string decode_domain(string msg, array(int) n)
@@ -212,6 +311,76 @@ class protocol
     return m;
   }
 };
+
+class server
+{
+  inherit protocol;
+  inherit Stdio.UDP : udp;
+
+  static void send_reply(mapping r, mapping q, mapping m)
+  {
+    // FIXME: Needs to handle truncation somehow.
+    if(!r)
+      r = (["rcode":4]);
+    r->id = q->id;
+    r->qr = 1;
+    r->opcode = q->opcode;
+    r->rd = q->rd;
+    r->qd = r->qd || q->qd;
+    string s = mkquery(r);
+    udp::send(m->ip, m->port, s);
+  }
+
+  static mapping reply_query(mapping q, mapping m)
+  {
+    // Override this function.
+    //
+    // Return mapping may contain:
+    // aa, ra, {ad, cd,} rcode, an, ns, ar
+
+    return 0;
+  }
+
+  static void handle_query(mapping q, mapping m)
+  {
+    mapping r = reply_query(q, m);
+    send_reply(r, q, m);
+  }
+
+  static void handle_response(mapping r, mapping m)
+  {
+    // This is a stub intended to simplify servers which allow recursion
+  }
+
+  static private void rec_data(mapping m)
+  {
+    mixed err;
+    mapping q;
+    if (err = catch {
+      q=decode_res(m->data);
+    }) {
+      werror(sprintf("DNS: Failed to read UDP packet.\n"
+		     "%s\n", describe_backtrace(err)));
+      if(m && m->data && sizeof(m->data)>=2)
+	send_reply((["rcode":1]),
+		   mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m);
+    }
+    else if(q->qr)
+      handle_response(q, m);
+    else
+      handle_query(q, m);
+  }
+
+  void create(int|void port)
+  {
+    if(!port)
+      port = 53;
+    if(!udp::bind(port))
+      throw(({"DNS: failed to bind port "+port+".\n",backtrace()}));
+    udp::set_read_callback(rec_data);
+  }
+
+}
 
 
 #define RETRIES 12
