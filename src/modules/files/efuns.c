@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.120 2004/05/13 20:38:14 mast Exp $
+|| $Id: efuns.c,v 1.121 2004/10/04 08:13:27 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.120 2004/05/13 20:38:14 mast Exp $");
+RCSID("$Id: efuns.c,v 1.121 2004/10/04 08:13:27 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -421,9 +421,11 @@ void f_filesystem_stat( INT32 args )
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif /* HAVE_SYS_MOUNT_H */
+#if !defined(HAVE_STATVFS) && !defined(HAVE_STATFS)
 #ifdef HAVE_USTAT_H
 #include <ustat.h>
 #endif /* HAVE_USTAT_H */
+#endif /* !HAVE_STATVFS && !HAVE_STATFS */
 void f_filesystem_stat(INT32 args)
 {
 #ifdef HAVE_STATVFS
