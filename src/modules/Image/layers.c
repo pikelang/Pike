@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.74 2001/09/24 11:35:00 grubba Exp $
+**!	$Id: layers.c,v 1.75 2001/10/26 20:33:00 nilsson Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -31,9 +31,11 @@
 **! {
 **!    longdesc = replace(longdesc, ([ "&lt;":"&amp;lt;", "&gt;":"&amp;gt;", "&amp;":"&amp;amp;" ]));
 **!    write(begin_tag("tr"));
-**!    write(mktag("td",(["align":"right","valign":"center"]),
+**!    write(mktag("td",(["align":"left","colspan":"2"]),
 **!          mktag("b",0,desc)));
-**!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0]))));
+**!    write(end_tag());
+**!    write(begin_tag("tr"));
+**!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0,"quality":90]))));
 **!    write(mktag("td",(["align":"left","valign":"center"]),longdesc));
 **           (replace(longdesc,({",",";",")"}),
 **                    ({",<wbr>",";<wbr>",")<wbr>"}))/
@@ -52,7 +54,6 @@
 **!
 **!    object circle=load(fix_image_path("circle50.pnm"));
 **!    object image_test=load(fix_image_path("image_ill.pnm"));
-**!    object ryoki=load_layer(fix_image_path("ryoki_carrot.png"));
 **!
 **!    object lc1=
 **! 	     Layer((["image":circle->clear(255,0,0),
@@ -70,17 +71,6 @@
 **! 		  "alpha":circle*({0,0,255}),
 **! 		  "xoffset":25,
 **! 		  "yoffset":25]));
-**!
-**!    object lr1=
-**! 	  Layer((["image":circle->test(63)->scale(1.25),
-**! 		  "alpha":circle->scale(1.25),
-**! 		  "xoffset":10,
-**! 		  "yoffset":5]));
-**!    object lr2=
-**! 	  Layer((["image":ryoki->image(),
-**! 		  "alpha":ryoki->alpha(),
-**! 		  "xoffset":5,
-**! 		  "yoffset":20]));
 **!
 **!    object li1=
 **! 	  Layer((["image":image_test->scale(80,0),
@@ -153,35 +143,25 @@
 **! 		  lay(({lc1}),0,0,80,80)->set_offset(80,0),
 **! 		  lay(({li1}),0,0,80,80)->set_offset(160,0),
 **! 		  lay(({li1}),0,0,80,80)->set_offset(240,0),
-**! 		  lay(({lr1}),0,0,80,80)->set_offset(320,0),
-**! 		  lzo0->set_offset(400,0)}),
-**! 	       0,0,560,80);
+**! 		  lzo0->set_offset(320,0)}),
+**! 	       0,0,480,80);
 **!
 **!    object b=
 **! 	  lay( ({ lay(({lc2}),0,0,80,80),
 **! 		  lay(({lc2b}),0,0,80,80)->set_offset(80,0),
 **! 		  lay(({li2}),0,0,80,80)->set_offset(160,0),
 **! 		  lay(({li2b}),0,0,80,80)->set_offset(240,0),
-**! 		  lay(({lr2}),0,0,80,80)->set_offset(320,0),
-**! 		  lzo1->set_offset(400,0)}),
-**! 	       0,0,560,80);
+**! 		  lzo1->set_offset(320,0)}),
+**! 	       0,0,480,80);
 **!
 **    xv(a); xv(b);
 **!
 **!    write(begin_tag("table",(["cellspacing":"0","cellpadding":"1"])));
 **!
-**! //    write_image("top layer image","bi",b->image());
-**! //    write_image("top layer alpha","ba",b->alpha());
-**!
-**! //    write_image("bottom layer image","ai",a->image());
-**! //    write_image("bottom layer alpha","aa",b->alpha());
-**!
 **!    write_image("top layer","b",lay(({ltrans,b}))->image(),
 **!		   "");
 **!    write_image("bottom layer","a",lay(({ltrans,a}))->image(),
 **!                "");
-**!
-**!    write(mktag("tr",0,mktag("td",0,"\240")));
 **!
 **!    foreach (Array.transpose(({Layer()->available_modes(),
 **!                               Layer()->descriptions()})),
@@ -191,16 +171,15 @@
 **!	        "dissolve","screen","logic_equal">)[mode])
 **!          write(mktag("tr",0,mktag("td",0,"\240")));
 **!
-**! 	  ({lc2,lc2b,li2,li2b,lr2,lzo1})->set_mode(mode);
+**! 	  ({lc2,lc2b,li2,li2b,lzo1})->set_mode(mode);
 **!
 **! 	  object r=
 **! 	     lay( ({ lay(({lca1,lc2}),0,0,80,80),
 **! 		     lay(({lc1,lc2b}),0,0,80,80)->set_offset(80,0),
 **! 		     lay(({li1,li2}),0,0,80,80)->set_offset(160,0),
 **! 		     lay(({li1,li2b}),0,0,80,80)->set_offset(240,0),
-**! 		     lay(({lr1,lr2}),0,0,80,80)->set_offset(320,0),
-**! 		     lay(({lzo0,lzo1}),400,0,160,80) }),
-**! 		  0,0,560,80);
+**! 		     lay(({lzo0,lzo1}),320,0,160,80) }),
+**! 		  0,0,480,80);
 **       xv(r);
 **!
 **! 	  write_image(mode,mode,lay(({ltrans,r}))->image(),desc);
@@ -217,7 +196,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.74 2001/09/24 11:35:00 grubba Exp $");
+RCSID("$Id: layers.c,v 1.75 2001/10/26 20:33:00 nilsson Exp $");
 
 #include "image_machine.h"
 
