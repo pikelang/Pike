@@ -242,9 +242,7 @@ STATIC void     regoptail();
  * Beware that the optimization-preparation code in here knows about some
  * of the structure of the compiled regexp.
  */
-regexp *regcomp(exp,excompat)
-char   *exp;
-int		excompat;	/* \( \) operators like in unix ex */
+regexp *pike_regcomp(char *exp,int excompat)
 {
     register regexp *r;
     register char  *scan;
@@ -784,9 +782,7 @@ STATIC char    *regprop();
 /*
  - regexec - match a regexp against a string
  */
-int regexec(prog, string)
-register regexp *prog;
-register char  *string;
+int pike_regexec(regexp *prog, char *string)
 {
     register char  *s;
 
@@ -1316,19 +1312,8 @@ char           *op;
 /*
  - regsub - perform substitutions after a regexp match
  */
-#ifdef __STDC__
 
-char *regsub(regexp *prog, char *source, char *dest, int n)
-
-#else
-
-char *regsub(prog, source, dest, n)
-regexp         *prog;
-char           *source;
-char           *dest;
-int		n;
-
-#endif
+char *pike_regsub(regexp *prog, char *source, char *dest, int n)
 {
     register char  *src;
     register char  *dst;
@@ -1389,20 +1374,3 @@ int		n;
     return dst;
 }
 
-
-#if 0	/* Use the local regerror() in ed.c */
-#ifdef __STDC__
-
-void regerror(char *s)
-
-#else
-
-void regerror(s)
-char           *s;
-
-#endif
-{
-    fprintf(stderr, "regexp(3): %s", s);
-    exit(1);
-}
-#endif /* 0 */

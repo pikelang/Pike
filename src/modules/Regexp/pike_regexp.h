@@ -26,8 +26,10 @@ typedef struct regexp
 
 
 
-extern regexp *regcomp();
-extern int regexec();
-extern char *regsub();
-extern void regerror();
+/* Prototypes begin here */
+regexp *pike_regcomp(char *exp,int excompat);
+int pike_regexec(regexp *prog, char *string);
+char *pike_regsub(regexp *prog, char *source, char *dest, int n);
+/* Prototypes end here */
+
 #endif

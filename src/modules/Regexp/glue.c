@@ -79,7 +79,7 @@ static void regexp_create(INT32 args)
       THIS->num_paren = i;
     }
 #else
-    THIS->regexp=regcomp(sp[-args].u.string->str, 0);
+    THIS->regexp=pike_regcomp(sp[-args].u.string->str, 0);
 #endif
   }
 }
@@ -87,7 +87,7 @@ static void regexp_create(INT32 args)
 static void regexp_match(INT32 args)
 {
   int i;
-  const char *str;
+  char *str;
 #ifdef USE_SYSTEM_REGEXP
   regex_t *regexp = &(THIS->regexp);
 #else
@@ -101,7 +101,7 @@ static void regexp_match(INT32 args)
   i = !regexec(regexp, str, 0, NULL, 0);
   DISALLOW_THREADS();
 #else
-  i=regexec(regexp, str);
+  i=pike_regexec(regexp, str);
 #endif /* USE_SYSTEM_REGEXP */
   pop_n_elems(args);
   push_int(i);
@@ -151,7 +151,7 @@ static void regexp_split(INT32 args)
     push_int(0);
   }
 #else
-  if(regexec(r=THIS->regexp, s->str))
+  if(pike_regexec(r=THIS->regexp, s->str))
   {
     int i,j;
     s->refs++;
