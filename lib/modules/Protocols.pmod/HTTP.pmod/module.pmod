@@ -264,15 +264,21 @@ string unentity(string s)
 //!	</pre>
 
 
-string http_encode_query(mapping(string:int|string) variables)
+string http_encode_query(mapping(string:int|string|array(string)) variables)
 {
    return Array.map((array)variables,
-		    lambda(array(string|int) v)
+		    lambda(array(string|int|array(string)) v)
 		    {
 		       if (intp(v[1]))
 			  return http_encode_string(v[0]);
+		       if (arrayp(v[1]))
+			 return map(v[1], lambda (string val) {
+					    return 
+					      http_encode_string(v[0])+"="+
+					      http_encode_string(val);
+					  })*"&";
 		       return http_encode_string(v[0])+"="+
-			  http_encode_string(v[1]);
+			 http_encode_string(v[1]);
 		    })*"&";
 }
 
