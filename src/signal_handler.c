@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.240 2003/02/28 18:48:29 grubba Exp $
+|| $Id: signal_handler.c,v 1.241 2003/02/28 19:32:31 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.240 2003/02/28 18:48:29 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.241 2003/02/28 19:32:31 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -148,7 +148,7 @@ RCSID("$Id: signal_handler.c,v 1.240 2003/02/28 18:48:29 grubba Exp $");
 #define PIKE_BADF_LIMIT	1024
 #endif /* !PIKE_BADF_LIMIT */
 
-#define PROC_DEBUG
+/* #define PROC_DEBUG */
 
 #ifndef __NT__
 #define USE_PID_MAPPING
