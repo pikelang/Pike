@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.28 2001/04/18 14:30:41 noy Exp $
+/* $Id: sslfile.pike,v 1.29 2001/06/15 11:05:51 wellhard Exp $
  *
  */
 
@@ -358,7 +358,6 @@ private void ssl_write_callback(mixed id)
 #ifdef SSL3_DEBUG
     werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
 #endif
-    werror("Calling HLP write_callback now!!!, which is: %O \n",write_callback);
     write_callback(id);
     if (!this_object()) {
       // We've been destructed.
