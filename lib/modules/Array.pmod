@@ -699,7 +699,7 @@ int|mapping(mixed:int) count(array|mapping|multiset haystack,
 array common_prefix(array(array) arrs)
 {
   if(!sizeof(arrs))
-    return 0;
+    return ({});
 
   array arrs0 = arrs[0];
   int n, i;
