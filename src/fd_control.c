@@ -9,9 +9,9 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.20 1998/07/15 13:59:12 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.21 1998/09/01 20:28:08 hubbe Exp $");
 
-#else
+#else /* TESTING */
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
 #  define _LARGEFILE_SOURCE 1
@@ -53,6 +53,13 @@ RCSID("$Id: fd_control.c,v 1.20 1998/07/15 13:59:12 grubba Exp $");
 #ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
 #endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
 
 int set_nonblocking(int fd,int which)
 {
@@ -182,23 +189,6 @@ RETSIGTYPE sigalrm_handler1(int tmp)
   fprintf(stderr,"Failed in alarm handler 1\n");
   exit(1);
 }
-#ifdef HAVE_SOCKETPAIR
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#endif /* HAVE_SOCKETPAIR */
 
 int main()
 {
