@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.31 2000/06/17 00:25:20 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.32 2000/06/17 02:20:58 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -277,8 +277,8 @@ int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   FDDEBUG(fprintf(stderr,"New pipe: %d (%d) -> %d (%d)\n",fds[0],files[0], fds[1], fds[1]));;
 
 #ifdef DEBUG_MALLOC
-  debug_malloc_register_fd( fds[0], dmalloc_file, dmalloc_line );
-  debug_malloc_register_fd( fds[1], dmalloc_file, dmalloc_line );
+  debug_malloc_register_fd( fds[0], DMALLOC_LOCATION());
+  debug_malloc_register_fd( fds[1], DMALLOC_LOCATION());
 #endif
   
   return 0;
