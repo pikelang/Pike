@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.126 1997/10/03 10:55:41 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.127 1997/10/03 23:39:21 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -118,10 +118,18 @@ AC_MSG_RESULT($pike_cv_sys_os)
 
 case "$pike_cv_sys_os" in
   SCO*)
-     case "$CC" in
+     case "$CFLAGS" in
        *-belf*) ;;
        *)
-          CC="$CC -belf"
+	  echo "Adding -belf option."
+          CFLAGS="$CFLAGS -belf"
+       ;;
+     esac
+     case "$LDFLAGS" in
+       *-belf*) ;;
+       *)
+	  echo "Adding -belf option."
+          LDFLAGS="$LDFLAGS -belf"
        ;;
      esac
   ;;
