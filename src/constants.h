@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.6 1998/03/28 15:36:02 grubba Exp $
+ * $Id: constants.h,v 1.7 1998/06/06 03:14:42 hubbe Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -14,7 +14,6 @@
 #include "hashtable.h"
 #include "las.h" /* For OPT_SIDE_EFFECT etc. */
 
-typedef void (*c_fun)(INT32);
 typedef int (*docode_fun)(node *n);
 typedef node *(*optimize_fun)(node *n);
 
