@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.4 2001/02/04 18:31:17 mirar Exp $
+ * $Id: memory.c,v 1.5 2001/02/04 21:40:48 mirar Exp $
  */
 
 //! module system
@@ -14,7 +14,7 @@
 //!	Don't blame Pike if you shoot your foot off.
 
 #include "global.h"
-RCSID("$Id: memory.c,v 1.4 2001/02/04 18:31:17 mirar Exp $");
+RCSID("$Id: memory.c,v 1.5 2001/02/04 21:40:48 mirar Exp $");
 
 #include "system_machine.h"
 
@@ -776,7 +776,7 @@ static void memory_index_write(INT32 args)
 	     ps->len != pos2-pos1+1)
 	    Pike_error("Memory.`[]=: source and destination "
 		       "not equally long (%d v/s %d; can't resize memory)\n",
-		       ps->len,(int)pos2-(int)pos1);
+		       (int)ps->len,(int)pos2-(int)pos1);
 	 else
 	    MEMCPY(THIS->p+pos1,ps->str,ps->len);
 

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.105 2001/02/03 23:08:40 mirar Exp $
+ * $Id: system.c,v 1.106 2001/02/04 21:41:24 mirar Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.105 2001/02/03 23:08:40 mirar Exp $");
+RCSID("$Id: system.c,v 1.106 2001/02/04 21:41:24 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1699,6 +1699,7 @@ static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
 #endif
 
 extern void init_passwd(void);
+extern void init_system_memory(void);
 
 
 #ifdef HAVE_SLEEP
