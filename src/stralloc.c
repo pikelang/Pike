@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.169 2004/11/05 15:23:15 grubba Exp $
+|| $Id: stralloc.c,v 1.170 2004/11/05 16:00:49 grubba Exp $
 */
 
 #include "global.h"
@@ -2300,6 +2300,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
 		   "'%c' 0x%x.\n", *fmt, *fmt);
       }
+      fmt++;
     } else {
       const char *start = fmt;
       while (*fmt && (*fmt != '%'))
