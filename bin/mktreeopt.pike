@@ -1,9 +1,73 @@
 /*
- * $Id: mktreeopt.pike,v 1.7 1999/11/08 17:07:41 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.8 1999/11/08 21:19:05 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
  * Henrik Grubbström 1999-11-06
+ */
+
+/*
+ * Notes about the generated code:
+ *
+ * The node to be examined can have 4 basic configurations:
+ *
+ *      X      X      X      X
+ *     / \    / \    / \    / \
+ *    -   -  -   X  X   -  X   X
+ *
+ * The node is then matched against the 9 kinds of match nodes:
+ *
+ *      X      X      X
+ *     / \    / \    / \
+ *    -   -  -   X  -   *
+ *
+ *      X      X      X
+ *     / \    / \    / \
+ *    X   -  X   X  X   *
+ *
+ *      X      X      X
+ *     / \    / \    / \
+ *    *   -  *   X  *   *
+ *
+ * The match-order is determined by the manhattan distance from the node
+ *
+ *      X
+ *     / \
+ *    -   -
+ *
+ * in the table above.
+ *
+ *
+ * Pseudocode: (Real code needs fixing...)
+ *
+ *   if (!car(n)) {
+ *     if (!cdr(n)) {
+ *       // Code for NULL-NULL
+ *     } else {
+ *       // Code for NULL-X
+ *     }
+ *     // Code for NULL-ANY
+ *     if (!cdr(n)) {
+ *       goto ANY_NULL;
+ *     }
+ *     goto ANY_X;
+ *   } else if (!cdr(n)) {
+ *     // Code for X-NULL
+ *   ANY_NULL:
+ *     // Code for ANY-NULL
+ *     if (car(n)) {
+ *       goto X_ANY;
+ *     }
+ *   } else {
+ *     // Code for X-X
+ *   X_ANY:
+ *     // Code for X-ANY
+ *     if (cdr(n)) {
+ *     ANY_X:
+ *       // Code for ANY-X
+ *     }
+ *   }
+ *   // Code for ANY-ANY
  */
 
 mapping(string: mixed) rules = ([]);
@@ -418,7 +482,7 @@ void parse_data()
 
     object(node) n = read_node();
 
-    werror(sprintf("%s:\n", n));
+    // werror(sprintf("%s:\n", n));
 
     if (rules[n->token]) {
       rules[n->token] += ({ n });
@@ -692,10 +756,14 @@ string generate_car_match(array(object(node)) rule_set, string indent)
     
     if (label) {
       res += indent + label + ":\n";
-    }
 
-    if (sizeof(car_any_cdr_null)) {
       res += generate_car_match(car_any_cdr_null, indent + "  ");
+
+      // We need to skip past the any-section.
+
+      label = sprintf("label_%d", label_cnt++);
+
+      res += indent + "  goto " + label + ";\n";
     }
 
     res += indent + "}";
@@ -731,6 +799,11 @@ string generate_car_match(array(object(node)) rule_set, string indent)
     // The car part is ignored.
     // Generate code for the cdr part instead.
     res += generate_cdr_match(cdr_follow, indent);
+  }
+
+  if (label) {
+    res += indent[2..] + label + ":\n" +
+      indent + ";\t/* Keep compiler happy */\n";
   }
 
   return res;
