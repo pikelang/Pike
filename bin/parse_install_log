@@ -72,7 +72,13 @@ int main(int argc, string *argv)
   mkdir(dirname+"/files");
   chmod(dirname+"/files",0755);
   
-  Process.system("cp "+srcdir+"/install-sh "+srcdir+"/../ANNOUNCE "+dirname);
+  Process.system("cp "+
+	srcdir+"/install-sh "+
+	srcdir+"/COPYING "+
+	srcdir+"/COPYRIGHT "+
+	srcdir+"/DISCLAIMER "+
+	srcdir+"/../ANNOUNCE "+
+	dirname);
   chmod(dirname+"/install-sh",0755);
 
   mapping new_install_from=([]);
