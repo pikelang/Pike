@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.121 2004/12/03 18:25:05 grubba Exp $
+// $Id: install.pike,v 1.122 2004/12/03 22:09:24 grubba Exp $
 
 #define USE_GTK
 
@@ -521,8 +521,13 @@ void do_export()
     // Clean up dumped files and modules on uninstall.
     recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
 
-    // Make sure the kludge directory exists (forward compat).
-    root->extra_ids["KLUDGE_TARGETDIR"] = 1;
+    // We need to have a unique name for the TARGETDIR
+    // due to light not rewriting [TARGETDIR] in the
+    // property custom action below.
+    //
+    // Note: The directory we get merged into must also have
+    //       this id as long as the bug exists.
+    root->extra_ids["PIKE_TARGETDIR"] = 1;
 
     // Generate the XML directory tree.
     WixNode xml_root =
@@ -538,7 +543,7 @@ void do_export()
       add_child(WixNode("CustomAction", ([
 			  "Id":"SetFinalizePike",
 			  "Property":"FinalizePike",
-			  "Value":"[TARGETDIR]",
+			  "Value":"[PIKE_TARGETDIR]",
 			  "Execute":"immediate",
 			])))->
       add_child(Standards.XML.Wix.line_feed)->
@@ -556,9 +561,9 @@ void do_export()
 			  //       rather than the root directory due to
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
-			  "Directory":"KLUDGE_TARGETDIR",
+			  "Directory":"PIKE_TARGETDIR",
 			  "Execute":"deferred",//"commit",
-			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
+			  "ExeCommand":"[PIKE_TARGETDIR]\\bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
 			  "--finalize BASEDIR=. TMP_BUILDDIR=bin",
 			])))->
@@ -569,9 +574,9 @@ void do_export()
 			  //       rather than the root directory due to
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
-			  "Directory":"KLUDGE_TARGETDIR",
+			  "Directory":"PIKE_TARGETDIR",
 			  "Execute":"deferred",//"commit",
-			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
+			  "ExeCommand":"[PIKE_TARGETDIR]\\bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
 			  "--install-master BASEDIR=.",
 			])))->
