@@ -249,26 +249,28 @@ void do_export()
   status("Creating","script glue");
 
   Stdio.write_file(tmpname+".x",
-		   "#!/bin/sh\n"+
-		   "echo Unpacking...\n"+
-		   "tar xf \"$1\" "+tmpname+".tar.gz\n"+
-		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"+
-		   "rm -rf "+tmpname+".tar.gz\n"+
-		   "shift\n"+
-		   "( cd "+export_base_name+".dir\n"+
-		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike -Mbuild/lib/modules -Mlib/modules bin/install.pike --interactive \\\n"+
-		   "  TMP_LIBDIR=\"build/lib\"\\\n"+
-		   "  LIBDIR_SRC=\"lib\"\\\n"+
-		   "  SRCDIR=\"src\"\\\n"+
-		   "  TMP_BINDIR=\"bin\"\\\n"+
-		   "  TMP_BUILDDIR=\"build\"\\\n"+
-		   "  MANDIR_SRC=\"man\"\\\n"+
-		   "  \"$@\"\n"+
-		   ")\n"+
+		   "#!/bin/sh\n"
+		   "echo Unpacking...\n"
+		   "tar xf \"$1\" "+tmpname+".tar.gz\n"
+		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
+		   "rm -rf "+tmpname+".tar.gz\n"
+		   "shift\n"
+		   "( cd "+export_base_name+".dir\n"
+		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike -Mbuild/lib/modules -Mlib/modules bin/install.pike --interactive \\\n"
+		   "  TMP_LIBDIR=\"build/lib\"\\\n"
+		   "  LIBDIR_SRC=\"lib\"\\\n"
+		   "  SRCDIR=\"src\"\\\n"
+		   "  TMP_BINDIR=\"bin\"\\\n"
+		   "  TMP_BUILDDIR=\"build\"\\\n"
+		   "  MANDIR_SRC=\"man\"\\\n"
+		   "  \"$@\"\n"
+		   ")\n"
 		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
     );
   chmod(tmpname+".x",0755);
-  string script=sprintf("#!/bin/sh\ntar xf \"$0\" %s.x\nexec ./%s.x \"$0\" \"$@\"\n",tmpname,tmpname,tmpname);
+  string script=sprintf("#!/bin/sh\n"
+			"tar xf \"$0\" %s.x\n"
+			"exec ./%s.x \"$0\" \"$@\"\n",tmpname,tmpname,tmpname);
   if(strlen(script) >= 100)
   {
     werror("Script too long!!\n");
