@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.24 2000/10/10 20:50:54 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.25 2000/10/17 20:07:20 per Exp $");
 
 #include "image_machine.h"
 
@@ -327,10 +327,10 @@ static struct buffer read_string( struct buffer *data )
 {
   struct buffer res = *data;
   res.len = xcf_read_int( data );
-  res.base_len = res.len;
-  res.base_offset = data->base_offset+(data->base_len-data->len);
+  res.base_offset = (data->base_offset+(data->base_len-data->len));
   res.str = (unsigned char *)read_data( data, res.len );
-  if(res.len > 0) res.len--; /* len includes ending \0 */
+  if(res.len > 0)  res.len--;  /* len includes ending \0 */
+  res.base_len = res.len;
   if(!res.str)
     error("String read failed\n");
   return res;
