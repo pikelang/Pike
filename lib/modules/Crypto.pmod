@@ -8,11 +8,13 @@ private mixed crypto_module;
 
 static mixed `[](string name)
 {
-    catch {
+    mixed err = catch {
       return (crypto_module[name]
 	      || ((program) combine_path( __FILE__, "..", "Crypto" , name + ".pike"))
 	      || ((object) combine_path( __FILE__, "..","Crypto", name + ".pmod")));
     };
+    if( file_stat("Crypto/"+name) || file_stat("Crypto/"+name+".pmod") )
+      throw(err);
     return UNDEFINED;
 }
 
