@@ -589,14 +589,20 @@ static void build_push_callbacks( )
   CB( GTK_TYPE_ACCEL_GROUP,      pgtk_push_accel_group_param );
   /*#ifndef HAS_GTK_20*/
   CB( GTK_TYPE_CTREE_NODE,       pgtk_push_ctree_node_param );
-#ifndef HAVE_GTK_20
+#ifdef HAVE_GTK_20
+  CB( GDK_TYPE_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
+  /*#endif*/
+  CB( GDK_TYPE_EVENT,        pgtk_push_gdk_event_param );
+#else
   CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
   /*#endif*/
   CB( GTK_TYPE_GDK_EVENT,        pgtk_push_gdk_event_param );
 #endif
 
   CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
-#ifndef HAVE_GTK_20
+#ifdef HAVE_GTK_20
+  CB( GDK_TYPE_MODIFIER_TYPE,pgtk_push_int_param );
+#else
   CB( GTK_TYPE_GDK_MODIFIER_TYPE,pgtk_push_int_param );
 #endif
 
