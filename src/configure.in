@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.484 2001/02/15 07:53:04 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.485 2001/02/15 09:49:15 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5182,6 +5182,8 @@ fi
 echo "PAD_FEATURE([debug])$with_debug" >>config.info
 echo "PAD_FEATURE([dmalloc])$with_dmalloc" >>config.info
 echo "PAD_FEATURE([rtldebug])$with_rtldebug" >>config.info
+
+touch confdefs.h 2>/dev/null
 
 AC_TRY_RUN([
 #include "global.h"
