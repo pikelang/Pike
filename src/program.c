@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.485 2004/03/13 13:22:39 grubba Exp $
+|| $Id: program.c,v 1.486 2004/03/18 19:31:38 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.485 2004/03/13 13:22:39 grubba Exp $");
+RCSID("$Id: program.c,v 1.486 2004/03/18 19:31:38 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1407,6 +1407,11 @@ void fixate_program(void)
     Pike_fatal("Cannot fixate optimized program\n");
 #endif
 
+  /* FIXME: This segment of code should probably be enabled, but it
+   *        breaks the testsuite without further backports from Pike 7.5.
+   *        /grubba 2004-03-18
+   */
+#if 0
   /* Fixup identifier overrides. */
   for (i = 0; i < p->num_identifier_references; i++) {
     struct reference *ref = p->identifier_references + i;
@@ -1414,6 +1419,7 @@ void fixate_program(void)
     if (ref->inherit_offset != 0) continue;
     override_identifier (ref, ID_FROM_PTR (p, ref)->name);
   }
+#endif /* 0 */
 
   /* Ok, sort for binsearch */
   for(e=i=0;i<(int)p->num_identifier_references;i++)
