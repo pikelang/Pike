@@ -9,7 +9,7 @@
 #  include "main.h"
 #  include "constants.h"
 
-RCSID("$Id: dynamic_load.c,v 1.54 2001/09/10 15:51:23 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.55 2001/09/11 05:42:20 hubbe Exp $");
 
 #else /* TESTING */
 
@@ -345,10 +345,15 @@ static modfun CAST_TO_FUN(void *ptr)
  */
 void f_load_module(INT32 args)
 {
+  extern int compilation_depth;
+  extern int global_callable_flags;
+
   void *module;
   modfun init, exit;
   struct module_list *new_module;
   const char *module_name;
+
+  int save_depth=compilation_depth;
 
   if(sp[-args].type != T_STRING)
     Pike_error("Bad argument 1 to load_module()\n");
@@ -401,12 +406,10 @@ void f_load_module(INT32 args)
   new_module->init=init;
   new_module->exit=exit;
 
+  compilation_depth=-1;
   start_new_program();
 
-  {
-    extern int global_callable_flags;
-    global_callable_flags|=CALLABLE_DYNAMIC;
-  }
+  global_callable_flags|=CALLABLE_DYNAMIC;
 
 #ifdef PIKE_DEBUG
   { struct svalue *save_sp=sp;
@@ -422,6 +425,7 @@ void f_load_module(INT32 args)
 
   pop_n_elems(args);
   push_program(end_program());
+  compilation_depth=save_depth;
 }
 
 #endif /* USE_DYNAMIC_MODULES */
