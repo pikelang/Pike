@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.87 2002/07/26 16:22:11 grubba Exp $
+# $Id: static_module_makefile.in,v 1.88 2002/08/14 16:56:57 grubba Exp $
 #
 
 
@@ -38,7 +38,7 @@ dummy:	Makefile linker_options modlist_headers modlist_segment module.pmod modul
 	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
 	$(TMP_BINDIR)/install_module module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
 
-.SUFFIXES: .c .o .cmod
+.SUFFIXES: .c .o .cmod .protos
 
 .cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
@@ -65,6 +65,12 @@ dummy:	Makefile linker_options modlist_headers modlist_segment module.pmod modul
 	    exit $$status; \
 	  fi; \
 	fi
+
+.c.protos: $(BUILD_BASE)/precompile.sh-stamp
+	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
+	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
+	  { rm "$@"; exit 1; }
 
 linker_options: Makefile $(MODULE_ARCHIVES)
 	echo >linker_options `pwd`/module.a $(MODULE_LDFLAGS)

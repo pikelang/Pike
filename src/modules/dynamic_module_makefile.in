@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.96 2002/07/26 16:22:11 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.97 2002/08/14 16:57:14 grubba Exp $
 #
 
 
@@ -49,7 +49,7 @@ dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment module.s
 	fi ; \
 	$(TMP_BINDIR)/install_module module.so $(TMP_LIBDIR)/modules/$$tmp2.so
 
-.SUFFIXES: .c .o .cmod
+.SUFFIXES: .c .o .cmod .protos
 
 .cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
@@ -77,6 +77,13 @@ dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment module.s
 	    exit $$status; \
 	  fi; \
 	fi
+
+.c.protos: $(BUILD_BASE)/precompile.sh-stamp
+	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
+	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
+	  { rm "$@"; exit 1; }
+
 
 linker_options: Makefile
 	@if test "x$(LINKER_OPTIONS)" != x ; then echo "LINKER_OPTIONS+=$(LINKER_OPTIONS)" ; else : ; fi ; echo "$(LINKER_OPTIONS)" >linker_options
