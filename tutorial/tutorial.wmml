@@ -1745,12 +1745,22 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
      do not have to be pointers to the same array, as long as they are the same
      size and contain equal data.
 
-<dt><tt>array Array.filter(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
-<dd> <tt>filter</tt> returns every element in <i>a</i> for which <i>func</i> returns <b>true</b> when called with that element as first argument, and <i>args</i> for the second, third, etc. arguments.
+<dt><tt>array filter(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
+<dd><tt>filter</tt> returns every element in <i>a</i> for which
+    <i>func</i> returns <b>true</b> when called with that element as
+    first argument, and <i>args</i> for the second, third, etc.
+    arguments. (Both <i>a</i> and <i>func</i> can be other things; see
+    the reference for <tt><link to=filter>filter</link></tt> for
+    details about that.)
 
-<dt><tt>array Array.map(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
-<dd> This function works similar to <tt>Array.filter</tt> but returns the results
-     of the function <i>func</i> instead of returning the elements from <i>a</i> for which <i>func</i> returns <b>true</b>.
+<dt><tt>array map(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
+<dd>
+    This function works similar to <tt>filter</tt> but returns the
+    results of the function <i>func</i> instead of returning the
+    elements from <i>a</i> for which <i>func</i> returns <b>true</b>.
+    (Like <tt>filter</tt>, this function accepts other things for
+    <i>a</i> and <i>func</i>; see the reference for <link
+    to=map>map</link>.)
 
 <dt><tt>array replace(array <i>a</i>, mixed <i>from</i>, mixed <i>to</i>)</tt>
 <dd>This function will create a copy of <i>a</i> with all elements equal to
@@ -6327,31 +6337,6 @@ Array.splice, `/
 </function>
 
 
-
-<function name=Array.filter title="filter an array or mapping through a function">
-<man_syntax>
-array filter(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-array filter(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-array filter(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
-</man_syntax>
-<man_description>
-First syntax:<br>
-Filter array returns an array holding the items of arr for which
-fun returns true.
-<p>Second syntax:<br>
-Filter array calls fun in all the objects in the array arr, and
-return all objects that returned true.
-<p>Third syntax:<br>
-Filter array calls all function pointers in the array arr, and
-return all that returned true.
-</man_description>
-<man_see>
-Array.sum_arrays, Array.map
-</man_see>
-</function>
-
-
-
 <function name=Array.longest_ordered_sequence
  title="find the longest ordered sequence of elements">
 <man_syntax>
@@ -6396,30 +6381,6 @@ Result: ({ /* 6 elements */
 </man_example>
 <man_see>
 Array.diff
-</man_see>
-</function>
-
-
-
-<function name=Array.map title="map an array or mapping over a function">
-<man_syntax>
-array map(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-array map(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-array map(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
-</man_syntax>
-<man_description>
-First syntax:<br>
-Map array returns an array holding the items of arr mapped through
-the function fun. i.e. arr[x]=fun(arr[x], @args) for all x.
-<p>Second syntax:<br>
-Map array calls function fun in all objects in the array arr.
-i.e. arr[x]=arr[x]-&gt;fun(@ args);
-<p>Third syntax:<br>
-Map array calls the functions in the array arr:
-arr[x]=arr[x]-&gt;fun(@ args);
-</man_description>
-<man_see>
-Array.sum_arrays, Array.filter
 </man_see>
 </function>
 
@@ -6499,17 +6460,15 @@ Array.reduce
 
 <function name=Array.search_array title="search for something in an array">
 <man_syntax>
-int search_array(array <I>arr</I>,function <I>fun</I>,mixed <I>arg</I>, ...);<br>
-int search_array(array(object) <I>arr</I>,string <I>fun</I>,mixed <I>arg</I>, ...);<br>
-int search_array(array(function) <I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);
+int search_array(mixed <I>arr</I>,mixed <I>fun</I>,mixed <I>arg</I>, ...);<br>
 </man_syntax>
 <man_description>
-search_array works like map_array, only it returns the index of the
-first call that returned true instead or returning an array of the
-returned values. If no call returns true, -1 is returned.
+search_array works like map, only it returns the index of the first
+call that returned true instead. If no call returns true, -1 is
+returned.
 </man_description>
 <man_see>
-Array.sum_arrays, Array.filter
+Array.sum_arrays, map
 </man_see>
 </function>
 
@@ -6545,7 +6504,7 @@ sent as 3rd, 4th etc. argument to <i>fun</i>. If <i>fun</i> is omitted, `&gt; is
 instead.
 </man_description>
 <man_see>
-Array.map, sort
+map, sort
 </man_see>
 </function>
 
@@ -6615,7 +6574,7 @@ array sum_arrays(function fun,array arr1,...)
 <p>Simple ehh?
 </man_description>
 <man_see>
-Array.map, Array.filter, Array.search_array
+map, filter, Array.search_array
 </man_see>
 </function>
 
@@ -9616,8 +9575,8 @@ be applied to individual encoded words.
 </man_description>
 <man_example>
 <example language=pike>
-&gt; Array.map("=?iso-8859-1?b?S2lscm95?= was =?us-ascii?q?h=65re?="/" ",
-            MIME.decode_word);
+&gt; map("=?iso-8859-1?b?S2lscm95?= was =?us-ascii?q?h=65re?="/" ",
+      MIME.decode_word);
 Result: ({ /* 3 elements */
     ({ /* 2 elements */
         "Kilroy",
@@ -10499,10 +10458,10 @@ array filter_array(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args<
 array filter_array(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
 </man_syntax>
 <man_description>
-Filter array is the same function as Array.filter.
+Filter array is the same function as filter.
 </man_description>
 <man_see>
-Array.filter
+filter
 </man_see>
 </function>
 
@@ -10580,10 +10539,10 @@ array map_array(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>
 array map_array(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);
 </man_syntax>
 <man_description>
-This function is the same as Array.map.
+This function is the same as map.
 </man_description>
 <man_see>
-Array.map
+map
 </man_see>
 </function>
 
@@ -11686,7 +11645,7 @@ array column(array data,mixed index)
 <man_description>
 This function is exactly equivalent to:
 <example language=pike>
-map_array(data, lambda(mixed x,mixed y) { return x[y]; }, index)
+map(data, lambda(mixed x,mixed y) { return x[y]; }, index)
 </example>
 Except of course it is a lot shorter and faster.
 That is, it indices every index in the array data on the value of
@@ -12199,9 +12158,13 @@ elements in <i>arr</i> that resulted in a non-zero value from the function.
 <tr><th>arr</th><th>result</th></tr>
 
 <tr><td valign=top>array</td>
-    <td valign=top>keep=map(arr,fun,@extra);
-        for (i=0; i&lt;sizeof(arr); i++) 
-           if (keep[i]) res+=({arr[i]});
+    <td valign=top>if fun is an array:<br>
+           for (i=0; i&lt;sizeof(arr); i++)<br>
+              if (fun[i]) res+=({arr[i]});<br>
+        if fun is not an array:<br>
+           keep=map(arr,fun,@extra);<br>
+           for (i=0; i&lt;sizeof(arr); i++)<br>
+              if (keep[i]) res+=({arr[i]});
 </td></tr>        
 
 <tr><td valign=top>multiset</td>
@@ -12216,7 +12179,7 @@ elements in <i>arr</i> that resulted in a non-zero value from the function.
 </td></tr>        
 
 <tr><td valign=top>string</td>
-    <td valign=top>(string)filter( (array)arr,fun,@extra );
+    <td valign=top>(string)filter((array)arr,fun,@extra);
 </td></tr>
    
 <tr><td valign=top>object</td>
@@ -12765,9 +12728,9 @@ element.<p>
     <td valign=top>array ret; ret[i]=arr[i][fun](@extra);</td></tr>
 
 <tr><td valign=top>array</td>	<td>void|int(0)</td>	
-    <td valign=top>array ret; ret=arr(@extra)</td></tr>
+    <td valign=top>array ret; ret[i]=arr[i](@extra)</td></tr>
 
-<tr><td valign=top>mapping |</td>	<td>*</td>	
+<tr><td valign=top>mapping</td>	<td>*</td>	
     <td valign=top>mapping ret = 
         mkmapping(indices(arr),		     
 	map(values(arr),fun,@extra));</td></tr>
@@ -13394,7 +13357,7 @@ array rows(mixed data, array index);
 </man_syntax>
 <man_description>
 This function is exactly equivalent to:
-<p>map_array(index,lambda(mixed x,mixed y) { return y[x]; },data)
+<p>map(index,lambda(mixed x,mixed y) { return y[x]; },data)
 <p>Except of course it is a lot shorter and faster.
 That is, it indices data on every index in the array index and
 returns an array with the results.
