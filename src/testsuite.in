@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.559 2002/11/07 17:03:28 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.560 2002/11/07 17:14:09 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1015,6 +1015,11 @@ test_program([[
   class A {this_program clone() {return this_program();}}
   class B {inherit A;}
   int a() {return object_program (B()->clone()) == B;}
+]])
+test_program([[
+  class A {this_program clone() {return this_program();}}
+  class B {inherit A;}
+  int a() {return typeof(B()->clone()) <= B;}
 ]])
 
 test_program([[
