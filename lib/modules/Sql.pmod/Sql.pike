@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.54 2002/03/18 13:09:24 grubba Exp $
+ * $Id: Sql.pike,v 1.55 2002/03/18 13:15:30 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -162,7 +162,7 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
 
       // The hostname is on the format:
       //
-      // [dbtype://][user[:password]@]hostname[:port][/database]
+      // dbtype://[user[:password]@]hostname[:port][/database]
 
       array(string) arr = host/"://";
       if ((sizeof(arr) > 1) && (arr[0] != "")) {
