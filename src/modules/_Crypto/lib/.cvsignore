@@ -9,6 +9,8 @@ desQuickFips.c
 desSmallCore.c
 desSmallFips.c
 desdata
+desdata_yes
+desdata_no
 keymap.h
 make_variables
 parity.h
