@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.68 2000/08/14 16:01:56 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.69 2001/01/26 02:31:13 mast Exp $
 #
 
 
@@ -116,7 +116,18 @@ depend:
 	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
 	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
 	>$(SRCDIR)/dependencies
-	for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo making depend in $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) depend ) ; fi ; done
+	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	@for a in '' $(MODULE_SUBDIRS) ; do \
+	  if test "x$$a" = "x"; then :; else \
+	    echo making depend in $$a; \
+	    ( cd $$a && { \
+	      rm -f remake; \
+	      $(MAKE) $(MAKE_FLAGS) MODNAME=$$a depend || \
+		if test -f remake; then $(MAKE) $(MAKE_FLAGS) MODNAME=$$a depend; \
+		else exit $$?; fi; \
+	    }); \
+	  fi; \
+	done
 
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE)
