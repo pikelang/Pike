@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.112 2001/09/10 23:18:16 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.113 2001/09/20 19:06:51 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -647,6 +647,15 @@ char *debug_qalloc(size_t size)
  */
 char *dmalloc_tracelog[DMALLOC_TRACELOGSIZE];
 size_t dmalloc_tracelogptr=0;
+
+/*
+ * This variable can be used to debug stack trashing,
+ * simply insert:
+ * {extern int dmalloc_print_trace; dmalloc_print_trace=1;}
+ * somewhere before the code occurs, and from that point,
+ * dmalloc will output all checkpoints to stderr.
+ */
+int dmalloc_print_trace;
 #endif
 
 
@@ -1311,6 +1320,8 @@ static void add_location(struct memhdr *mh, LOCATION location)
   unsigned long l;
 
 #ifdef DMALLOC_TRACE
+  if(dmalloc_print_trace)
+    fprintf(stderr,"%s\n",location);
   DMALLOC_TRACE_LOG(location);
 #endif
 
@@ -1680,10 +1691,13 @@ void dmalloc_check_block_free(void *p, char *location)
   mt_lock(&debug_malloc_mutex);
   mh=my_find_memhdr(p,0);
 
-  if(mh && mh->size>=0 && !(mh->flags & MEM_IGNORE_LEAK))
+  if(mh && mh->size>=0)
   {
-    fprintf(stderr,"Freeing storage for small block still in use %p at %s.\n",p,LOCATION_NAME(location));
-    debug_malloc_dump_references(p,0,2,0);
+    if(!(mh->flags & MEM_IGNORE_LEAK))
+    {
+      fprintf(stderr,"Freeing storage for small block still in use %p at %s.\n",p,LOCATION_NAME(location));
+      debug_malloc_dump_references(p,0,2,0);
+    }
     mh->flags |= MEM_FREE | MEM_IGNORE_LEAK;
     mh->size = ~mh->size;
   }
@@ -1943,7 +1957,6 @@ static void low_search_all_memheaders_for_references(void)
 {
   unsigned long h;
   struct memhdr *m;
-
   
   for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
     for(m=memhdr_hash_table[h];m;m=m->next)
@@ -1961,9 +1974,26 @@ static void low_search_all_memheaders_for_references(void)
       {
 	if(m->size > 0)
 	{
-	  for(e=0;e<m->size/sizeof(void *);e++)
-	    if((tmp=find_memhdr(p[e])))
-	      tmp->flags |= MEM_REFERENCED;
+#ifdef __NT__
+	  __try {
+#endif
+	    for(e=0;e<m->size/sizeof(void *);e++)
+	      if((tmp=find_memhdr(p[e])))
+		tmp->flags |= MEM_REFERENCED;
+#ifdef __NT__
+	  }
+	  __except( 1 ) {
+	    fprintf(stderr,"*** DMALLOC memory access error ***\n");
+	    fprintf(stderr,"Failed to access this memory block:\n");
+	    fprintf(stderr,"Location: %p, size=%ld, gc_generation=%d, flags=%d\n",
+		    m->data,
+		    m->size,
+		    m->gc_generation,
+		    m->flags);
+	    dump_memhdr_locations(m, 0, 0);
+	    fprintf(stderr,"-----------------------------------\n");
+	  }
+#endif
 	}
       }
     }
