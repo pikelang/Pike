@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.117 2000/01/02 23:36:44 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.118 2000/01/04 01:19:38 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3295,8 +3295,6 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
       if((tmp=zzap_function_return(a, s->u.program->id)))
 	return tmp;
       tmp=describe_type(ID_FROM_INT(s->u.program, id)->type);
-      yywarning ("zzap_function_return() failed on the create() type: %s",
-		 tmp->str);
       free_string(tmp);
     }
 
