@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.64 2003/03/15 16:18:32 grubba Exp $
+|| $Id: block_alloc.h,v 1.65 2003/03/16 19:17:07 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -396,6 +396,39 @@ struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				     \
   }                                                                          \
   hval %= (PIKE_HASH_T)PIKE_CONCAT(DATA,_hash_table_size);		     \
   p=PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(ptr, hval);		     \
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
+  return p;								     \
+}									     \
+									     \
+static inline struct DATA *						     \
+ PIKE_CONCAT3(just_find_,DATA,_unlocked)(void *ptr,			     \
+					 PIKE_HASH_T hval)		     \
+{									     \
+  struct DATA *p,**pp;							     \
+  p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
+  if(!p || p->PTR_HASH_ALLOC_DATA == ptr)				     \
+  {                                                                          \
+    DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
+    return p;                                                                \
+  }                                                                          \
+  while((p=p->BLOCK_ALLOC_NEXT)) 	                                     \
+  {									     \
+    if(p->PTR_HASH_ALLOC_DATA==ptr) return p;				     \
+  }									     \
+  return 0;								     \
+}									     \
+									     \
+static struct DATA *PIKE_CONCAT(just_find_,DATA)(void *ptr)		     \
+{									     \
+  struct DATA *p;                                                            \
+  PIKE_HASH_T hval = (PIKE_HASH_T)(((char *)ptr)-(char *)0);		     \
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
+  if(!PIKE_CONCAT(DATA,_hash_table_size)) {                                  \
+    DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
+    return 0;                                                                \
+  }                                                                          \
+  hval %= (PIKE_HASH_T)PIKE_CONCAT(DATA,_hash_table_size);		     \
+  p=PIKE_CONCAT3(just_find_,DATA,_unlocked)(ptr, hval);			     \
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
   return p;								     \
 }									     \
