@@ -343,9 +343,9 @@ class client {
 				   });
     } else {
       if(arrayp(server))	
-	nameservers= server;
+	nameservers = server;
       else
-	nameservers= ({ server });
+	nameservers = ({ server });
 
       if(arrayp(domain))	
 	domains = domain;
@@ -548,7 +548,7 @@ class async_client
 #if constant(thread_create)
 	  key=lock::lock();
 #endif /* constant(thread_create) */
-	  if(requests[lid]) continue;
+	  if(requests[lid]) continue;	/* Another thread has stolen lid */
 	}else{
 	  continue;
 	}
