@@ -10,8 +10,8 @@ static mixed `[](string name)
 {
     catch {
       return (crypto_module[name]
-	      || ((program) ("Crypto/" + name))
-	      || ((object) ("Crypto/" + name + ".pmod")));
+	      || ((program) combine_path( __FILE__, "..", "Crypto" , name + ".pike"))
+	      || ((object) combine_path( __FILE__, "..","Crypto", name + ".pmod")));
     };
     return UNDEFINED;
 }
@@ -32,9 +32,9 @@ static array(string) _indices() {
 static void create()
 {
 #if constant(_Crypto)
-  crypto_module=master()->resolv("_Crypto");
+  crypto_module = _Crypto;
 #else
-  crypto_module=master()->resolv("_Lobotomized_Crypto");
+  crypto_module = _Lobotomized_Crypto;
 #endif
 }
 
