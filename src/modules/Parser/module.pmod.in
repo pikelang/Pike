@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.2 1999/06/12 19:13:08 mirar Exp $
+ * $Id: module.pmod.in,v 1.3 1999/06/12 19:44:30 mirar Exp $
  *
  */
 
@@ -126,8 +126,8 @@ class SGML
 
    private static object p=HTML();
 
-//! static void create()
-//! static void create(string filename)
+//! method void create()
+//! method void create(string filename)
 //!	This object is created with this filename.
 //!	It's passed to all created tags, for debug and trace purposes.
 //! note:
@@ -142,9 +142,9 @@ class SGML
 			    { if (data!="") res[0]+=({data}); return ({}); });
    }
 
-//! static object feed(string s)
-//! static array finish()
-//! static array result(string s)
+//! method object feed(string s)
+//! method array finish()
+//! method array result(string s)
 //!	Feed new data to the object, or finish the stream.
 //!	No result can be used until finish() is called.
 //!

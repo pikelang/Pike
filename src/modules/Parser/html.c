@@ -42,6 +42,18 @@ extern struct program *parser_html_program;
 /*
 **! module Parser
 **! class HTML
+**!	This is a simple parser for SGML structured markups.
+**!	It's not really HTML, but it's useful for that 
+**!	purpose. 
+**!
+**!	The simple way to use it is to give it some information
+**!	about available tags and containers, and what 
+**!	callbacks those is to call. 
+**!
+**!	The object is easily reused, by calling the <ref>clone</ref>()
+**!	function. 
+**!
+**! see also: add_tag, add_container, clone
 */
 
 struct location
@@ -397,9 +409,9 @@ static void exit_html_struct(struct object *o)
 /****** setup callbacks *****************************/
 
 /*
-**! method _set_tag_callback(function to_call)
-**! method _set_entity_callback(function to_call)
-**! method _set_data_callback(function to_call)
+**! method void _set_tag_callback(function to_call)
+**! method void _set_entity_callback(function to_call)
+**! method void _set_data_callback(function to_call)
 **!	This functions set up the parser object to
 **!	call the given callbacks upon tags, entities
 **!	and/or data. 
@@ -411,6 +423,9 @@ static void exit_html_struct(struct object *o)
 **!	Note that no parsing of the contents has been done.
 **!	Both endtags and normal tags are called, there is
 **!	no container parsing.
+**! note:
+**!	The callbacks will _only_ be called if there isn't
+**!	another tag/container/entity handler for these.
 **!
 */
 
@@ -567,6 +582,14 @@ static void html_add_entities(INT32 args)
    
    pop_n_elems(args);
 }
+
+/*
+**! method mapping tags()
+**! method mapping containers()
+**! method mapping entities()
+**!	Returns the current callback settings.
+**! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
+*/
 
 static void html_tags(INT32 args)
 {
