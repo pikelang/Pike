@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.155 1999/09/25 20:27:25 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.156 1999/10/03 05:24:48 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -137,7 +137,7 @@ RCSID("$Id: signal_handler.c,v 1.155 1999/09/25 20:27:25 grubba Exp $");
 
 #define BEGIN_FIFO_PUSH(pre,TYPE) do { \
   int PIKE_CONCAT(pre,_tmp_)=PIKE_CONCAT(pre,_first) + 1; \
-  if(PIKE_CONCAT(pre,_tmp_) > SIGNAL_BUFFER) PIKE_CONCAT(pre,_tmp_)=0
+  if(PIKE_CONCAT(pre,_tmp_) >= SIGNAL_BUFFER) PIKE_CONCAT(pre,_tmp_)=0
 
 #define FIFO_DATA(pre,TYPE) ( PIKE_CONCAT(pre,buf)[PIKE_CONCAT(pre,_tmp_)] )
 
