@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.565 2002/02/13 20:27:17 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.566 2002/02/28 23:35:41 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1226,7 +1226,11 @@ if test "$cflags_is_set" = "no"; then
   AC_SYS_COMPILER_FLAG(-Wimplicit-function-declaration,Wimplicit_function_declaration,WARN)
   AC_SYS_COMPILER_FLAG(-Wmultichar,Wmultichar,WARN)
   AC_SYS_COMPILER_FLAG(-Wswitch,Wswitch,WARN)
-  AC_SYS_COMPILER_FLAG(-Wuninitialized,Wuninitialized,WARN)
+  if test "x$with_copt" != xno; then
+    # gcc complains that it doesn't support this when compiling
+    # without optimizations.
+    AC_SYS_COMPILER_FLAG(-Wuninitialized,Wuninitialized,WARN)
+  fi
   AC_SYS_COMPILER_FLAG(-Wpointer-arith,Wpointer_arith,WARN)
   AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
   AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
