@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.42 2002/12/20 19:09:08 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.43 2002/12/21 18:16:21 grubba Exp $
  *
  */
 
@@ -36,9 +36,20 @@ string cquote(string n)
 }
 
 string create_reference(string from, string to, string text) {
+  array a = (to/"::");
+  if (sizeof(a) != 2) {
+    // Expect namespace...
+    error("Bad reference: %O\n", to);
+  }
+  if (sizeof(a[1])) {
+    // Split trailing module path.
+    a = a[0..0] + a[1]/".";
+  } else {
+    // Get rid of trailing "".
+    a = a[0..0];
+  }
   return "<font face='courier'><a href='" +
-    "../"*max(sizeof(from/"/") - 2, 0) +
-    map(replace(to, "::", "::.")/"." - ({ "" }), cquote)*"/" + ".html'>" +
+    "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
     text +
     "</a></font>";
 }
@@ -415,7 +426,8 @@ class Node
     {
       res += make_hier_list(node->parent);
 
-      string my_class_path = (node->name!="")?node->make_class_path():"[Top]";
+      string my_class_path =
+	(node->type=="autodoc")?"[Top]":node->make_class_path();
 
       if(node == this_object())
 	res += sprintf("<b>%s</b><br />\n",
