@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.243 2002/12/30 15:06:50 grubba Exp $
+// $Id: master.pike.in,v 1.244 2003/01/01 17:29:26 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -69,6 +69,7 @@ int compat_minor=-1;
 
 #define Stat _static_modules.files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
+#define write(X) _static_modules.files()->_stdout->write(X)
 
 //! @appears error
 //! Throws an error. A more readable version of the code
@@ -1594,6 +1595,7 @@ object backend_thread()
 }
 #endif
 
+
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver
@@ -1845,15 +1847,20 @@ void _main(array(string) orig_argv, array(string) env)
 	    opts[1]+";}")(sizeof(argv),argv,env);
 	else
 	  ret = compile_string(
+	    "#define NOT(X) !(X)\n"
+	    "#define CHAR(X) 'X'\n"
             "mixed run(int argc, array(string) argv,"
             "mapping(string:string) env){"+
 	    opts[1]+";}")()->run(sizeof(argv),argv,getenv());
+	if(stringp(ret)) {
+	  write(ret);
+	  if(ret[-1]!='\n') write("\n");
+	}
 	if(!intp(ret) || ret<0) ret=0;
 	exit(ret);
 
       case "preprocess":
-	_static_modules.files()->_stdout->write(cpp(master_read_file(opts[1]),
-						    opts[1]));
+	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
       }
     }
@@ -1873,23 +1880,19 @@ void _main(array(string) orig_argv, array(string) env)
   switch (postparseaction)
   {
      case "features":
-	_static_modules.files()->_stdout->
-	  write( main_resolv( "Tools.Install.features"/"." )()*"\n"+"\n" );
-	exit(0);
+       write( main_resolv( "Tools.Install.features"/"." )()*"\n"+"\n" );
+       exit(0);
 
      case "info":
-	function w=_static_modules.files()->_stdout->write;
-	w("Software......Pike\n"
-	  "Version......."+version()+"\n"
-	  "WWW...........http://pike.ida.liu.se/\n"
-	  "\n");
-
-	w("pike binary..."+_pike_file_name+"\n");
-	w( format_paths() + "\n");
-
-	w("Features......"+
-	  main_resolv( "Tools.Install.features"/"." )()*"\n              "+
-	  "\n");
+       write("Software......Pike\n"
+	     "Version......."+version()+"\n"
+	     "WWW...........http://pike.ida.liu.se/\n"
+	     "\n"
+	     "pike binary..."+_pike_file_name+"\n"+
+	      format_paths() + "\n"
+	     "Features......"+
+	     main_resolv( "Tools.Install.features"/"." )()*"\n              "+
+	     "\n");
 	exit(0);
   }
 
