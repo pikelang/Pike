@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.13 1999/10/23 06:51:22 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.14 1999/12/19 11:02:46 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -247,6 +247,7 @@ void PIKE_CONCAT3(exit_,DATA,_hash)(void)				     \
   PIKE_CONCAT3(free_all_,DATA,_blocks)();				     \
   free(PIKE_CONCAT(DATA,_hash_table));					     \
   PIKE_CONCAT(DATA,_hash_table)=0;					     \
+  PIKE_CONCAT(num_,DATA)=0;						     \
 }
 
 #define BLOCK_ALLOC_NEXT next
