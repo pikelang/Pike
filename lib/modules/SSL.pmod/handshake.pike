@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.37 2004/01/14 19:37:05 bill Exp $
+/* $Id: handshake.pike,v 1.38 2004/01/23 18:08:08 bill Exp $
  *
  */
 
@@ -23,17 +23,6 @@ import .Constants;
 #else /*! SSL3_DEBUG */
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
-
-/* For client authentication */
-
-//! Policy for client authentication. One of AUTHLEVEL_none,
-//! AUTHLEVEL_ask and AUTHLEVEL_require.
-int auth_level;
-
-//! Array of authorities that are accepted for client certificates.
-//! The client will only send certificates that are signed by any of
-//! these authorities. The string is the DER-encoded issuer.
-array(string) authorities;
 
 object session;
 object context;
@@ -310,15 +299,15 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   if (key_exchange) {
     send_packet(key_exchange);
   }
-  if (auth_level >= AUTHLEVEL_ask)
+  if (context->auth_level >= AUTHLEVEL_ask)
   {
     /* Send a CertificateRequest message */
     object struct = Struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
-    int len = `+(@ Array.map(authorities, sizeof));
-    struct->put_uint(len + 2 * sizeof(authorities), 2);
-    foreach(authorities, string auth)
+    int len = `+(@ Array.map(context->authorities, sizeof));
+    struct->put_uint(len + 2 * sizeof(context->authorities), 2);
+    foreach(context->authorities, string auth)
       struct->put_var_string(auth, 2);
     send_packet(handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data()));
@@ -1113,10 +1102,6 @@ void create(int is_server, void|SSL.context ctx)
 #endif 
   version=({0,0});
   context = ctx;
-  auth_level = context->auth_level;
-
-  if(context->authorities)
-    authorities = context->authorities;
 
   if (is_server)
     handshake_state = STATE_server_wait_for_hello;
