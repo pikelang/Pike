@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.47 2004/02/29 02:56:04 nilsson Exp $
+/* $Id: handshake.pike,v 1.48 2004/06/05 17:21:15 nilsson Exp $
  *
  */
 
@@ -233,7 +233,9 @@ Packet client_key_exchange_packet()
   case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
+#ifdef SSL3_DEBUG
     werror("FIXME: Not handled yet\n");
+#endif
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
@@ -442,8 +444,10 @@ string server_derive_master_secret(string data)
 	* Finished-message (or some other invalid message) has been *
 	* received. */
 
+#ifdef SSL3_DEBUG
        werror("SSL.handshake: Invalid premaster_secret! "
 	      "A chosen ciphertext attack?\n");
+#endif
        premaster_secret = context->random(48);
        rsa_message_was_bad = 1;
 
@@ -1081,7 +1085,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  }
 	else
 	  {
-	    werror("Other certificates than rsa not supported!\n");
+#ifdef SSL3_DEBUG
+	    werror("Other certificates than RSA not supported!\n");
+#endif
 	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			      "SSL.session->handle_handshake: unexpected message\n",
 			      backtrace()));
@@ -1091,7 +1097,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       if(error)
 	{
+#ifdef SSL3_DEBUG
 	  werror("Failed to decode certificate!\n");
+#endif
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
@@ -1129,7 +1137,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
     case HANDSHAKE_certificate_request:
       {
+#ifdef SSL3_DEBUG
 	werror("Certificate request not yet implemented.\n");
+#endif
 	array(int) cert_types = input->get_var_uint_array(1, 1);
 //       int num_distinguished_names = input->get_uint(2);
 //       array(string) distinguished_names =

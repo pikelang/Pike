@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.35 2004/04/19 23:01:03 agehall Exp $
+// $Id: connection.pike,v 1.36 2004/06/05 17:21:15 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -236,8 +236,10 @@ int handle_alert(string s)
       return -1;
     }
   }
+#ifdef SSL3_DEBUG
   else
     werror("SSL.connection: Received warning alert %d\n", description);
+#endif
   return 0;
 }
 
