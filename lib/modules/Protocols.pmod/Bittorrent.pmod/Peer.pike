@@ -7,14 +7,15 @@ string id;
 
 string mode;
 int online=0;
-int choked=0;
-int interested=0;
-int peer_choked=1;
+int were_choking=0;
+int were_interested=0;
+int peer_choking=1;
 int peer_interested=0;
+int peer_choking_since=0;
+int uploading=0;
 
 string bitfield;
-int bandwidth_out=0; // bytes/s
-int bandwidth_in=0;  // bytes/s
+int is_complete=0;
 
 // #define BT_PEER_DEBUG
 
@@ -32,8 +33,15 @@ constant MSG_CANCEL = 8;
 typedef int(0..8) message_id;
 
 function(string,mixed...:void|mixed) warning=werror;
+int cancelled=0;
+
+int bandwidth_out=0; // bytes/s
+int bandwidth_in=0;  // bytes/s
+array(int) bandwidth_out_a=({});
+array(int) bandwidth_in_a=({});
 
 constant BANDWIDTH_O_METER_DELAY=0.5;
+constant BANDWIDTH_O_METER_C=(int)(20/BANDWIDTH_O_METER_DELAY);
 
 // ----------------------------------------------------------------
 
@@ -48,6 +56,7 @@ void create(Torrent _parent,mapping m)
    _status("created");
 
    warning=parent->warning;
+   bitfield="\0"*strlen(parent->all_pieces_bits);
 }
 
 private static inline void _status(string type,void|string|int data)
@@ -68,6 +77,16 @@ int is_connectable()
 int is_online() 
 { 
    return !!online;
+}
+
+int is_completed()
+{
+   return is_complete;
+}
+
+int is_useful()
+{
+   return !peer_choking;
 }
 
 //! connect to the peer; this is done async. 
@@ -92,6 +111,9 @@ void connect()
       {
 	 if (success)
 	 {
+	    bandwidth_in_a=({});
+	    bandwidth_out_a=({});
+
 	    online=1;
 	    peer_connected();
 	    _status("connected");
@@ -113,7 +135,8 @@ void disconnect()
    {
       fd->close();
       online=0;
-      Array.uniq(values(piece_callback))(0,0,0); // abort 
+      werror("%O call disconnected %O\n",this_object(),piece_callback);
+      Array.uniq(values(piece_callback))(-1,0,"disconnected",this_object()); 
       piece_callback=([]);
       parent->peer_lost(this_object());
       remove_call_out(keepalive); 
@@ -143,7 +166,7 @@ static private void transmit(string fmt,mixed ...args)
    {
       sendbuf=fmt;
 
-      if (!choked) fd->set_write_callback(peer_write);
+      fd->set_write_callback(peer_write);
    }
    else
       sendbuf+=fmt;
@@ -171,7 +194,11 @@ static private void peer_write()
 {
    if (sendbuf=="")
    {
-      if (!sizeof(queued_pieces)) return; // huh?
+      if (!sizeof(queued_pieces) || were_choking) 
+      {
+	 fd->set_write_callback(0);
+	 return; // we shouldn't do anything
+      }
 
       remove_call_out(fill_queue);
       if (queued_pieces[0][3]==0)
@@ -193,7 +220,10 @@ static private void peer_write()
    sendbuf=sendbuf[i..];
    
    if (sendbuf=="")
+   {
       fd->set_write_callback(0);
+      if (!queued_pieces) uploading=0;
+   }
 }
 
 static private string readbuf="";
@@ -231,8 +261,8 @@ static private void peer_read(mixed dummy,string s)
 
 	 send_message(MSG_BITFIELD, 
 		      parent->file_got_bitfield());
-	 if (!parent->default_is_choked)
-	    send_message(MSG_UNCHOKE,""); 
+// 	 if (!parent->default_is_choked)
+// 	    send_message(MSG_UNCHOKE,""); 
 	 send_message(MSG_INTERESTED,""); 
 
 	 _status("online");
@@ -275,13 +305,26 @@ void got_message_from_peer(string msg)
    switch (msg[0])
    {
       case MSG_CHOKE:
-	 peer_choked=1;
-	 if (sendbuf) fd->set_write_callback(0);
+	 if (!peer_choking)
+	 {
+	    peer_choking=1;
+	    peer_choking_since=time(1);
+
+	    werror("%O choke %O\n",this_object(),piece_callback,this_object());
+
+	    Array.uniq(values(piece_callback))
+	       (-1,0,"choked",this_object()); // choked
+	 }
 	 _status("online","choked");
 	 break;
       case MSG_UNCHOKE:
-	 peer_choked=0;
-	 if (sendbuf) fd->set_write_callback(peer_write);
+	 if (peer_choking)
+	 {
+	    peer_choking=0;
+	    werror("%O unchoke %O\n",this_object(),piece_callback);
+	    Array.uniq(values(piece_callback))
+	       (-1,0,"unchoked",this_object()); // choked
+	 }
 	 _status("online","unchoked");
 	 break;
       case MSG_INTERESTED:
@@ -300,7 +343,8 @@ void got_message_from_peer(string msg)
 	       warning,"%O gave us HAVE but no BITFIELD\n",ip);
 	    break;
 	 }
-	 bitfield[n/8]=bitfield[n/8]|(1<<(n&7));
+	 bitfield[n/8]=bitfield[n/8]|(128>>(n&7));
+	 is_complete=(bitfield==parent->all_pieces_bits);
 
 	 if (!parent->file_available[n])
 	    parent->peer_have(this_object(),n);
@@ -310,6 +354,7 @@ void got_message_from_peer(string msg)
 	 bitfield=msg[1..];
 	 online=2;
 	 parent->peer_gained(this_object());
+	 is_complete=(bitfield==parent->all_pieces_bits);
 	 break;
       case MSG_REQUEST:
 	 if (sscanf(msg,"%*c%4c%4c%4c",n,o,l)<4)
@@ -355,17 +400,21 @@ void peer_close()
    {
       if (online==2)
       {
-	 Array.uniq(values(piece_callback))(0,0,0); // abort 
+	 online=0;
+	 werror("%O call disconnected %O\n",this_object(),piece_callback);
+	 Array.uniq(values(piece_callback))
+	    (-1,0,"disconnected",this_object()); 
 	 piece_callback=([]);
       }
-      online=0;
+      else
+	 online=0;
 
       if (mode=="connected")
 	 _status("failed","remote host closed connection in handshake");
       else
       {
-// 	 werror("%O disconnected: last message was %d:%O\n",
-// 		ip,@lastmsg);
+	 werror("%O disconnected: last message was %d:%O\n",
+		ip,@lastmsg);
 	 _status("disconnected","peer");
       }
    }
@@ -374,17 +423,10 @@ void peer_close()
 static private void keepalive()
 {
    call_out(keepalive,KEEPALIVE_DELAY);
-   if (!choked)
-   {
 #ifdef BT_PEER_DEBUG
-      werror("%O: sending keepalive\n",ip);
+   werror("%O: sending keepalive\n",ip);
 #endif
-      transmit("\0\0\0\0"); // keepalive empty message
-   }
-#ifdef BT_PEER_DEBUG
-   else
-      werror("%O: would send keepalive, but is choked\n",ip);
-#endif
+   transmit("\0\0\0\0"); // keepalive empty message
 }
 
 //! send a have message to tell I now have piece n
@@ -396,12 +438,20 @@ void send_have(int n)
 }
 
 // ----------------------------------------------------------------
-mapping(string:function(int,int,string:void|mixed)) piece_callback=([]);
+mapping(string:function(int,int,string,object:void|mixed)) piece_callback=([]);
 
 //! called to request a chunk from this peer
 void request(int piece,int offset,int bytes,
-	     function(int,int,string:void|mixed) callback)
+	     function(int,int,string,object:void|mixed) callback)
 {
+   foreach (map(values(piece_callback),function_object)->peer;;Peer p)
+      if (p!=this_object())
+      {
+	 werror("%O: funny thing in queue: %O\n",
+		this_object(),piece_callback);
+	 exit(1);
+      }
+
    piece_callback[piece+":"+offset+":"+bytes]=callback;
    send_message(MSG_REQUEST,
 		"%4c%4c%4c",piece,offset,bytes);
@@ -409,19 +459,31 @@ void request(int piece,int offset,int bytes,
 
 void got_piece_from_peer(int piece,int offset,string data)
 {
-   function(int,int,string:void|mixed) f;
+   function(int,int,string,object:void|mixed) f;
    string s;
    if ((f=piece_callback[s=piece+":"+offset+":"+strlen(data)]))
    {
       m_delete(piece_callback,s);
-      f(piece,offset,data);
+      werror("%O got piece %O\n",this_object(),piece);
+      f(piece,offset,data,this_object());
    }
+   else if (cancelled) 
+      cancelled--;
    else
    {
       Function.call_callback(
 	 warning,"%O: got unrequested piece %d/%d+%db\n",
-	 piece,offset,strlen(data));
+	 ip,piece,offset,strlen(data));
    }
+}
+
+void cancel_requests()
+{
+   send_message(MSG_CANCEL,"");
+   if (readbuf!="") cancelled=1; // expect one more without complaint
+   piece_callback=([]);
+
+   werror("%O cancel_requests\n",this_object());
 }
 
 // ----------------------------------------------------------------
@@ -440,6 +502,9 @@ static void queue_piece(int piece,int offset,int length)
       return;
    }
 
+   werror("%O: request for %d:o %d %db\n",
+	  ip,piece,offset,length);
+
    queued_pieces+=({({piece,offset,length,0})});
    if (queued_pieces[0][3]==0)
    {
@@ -447,8 +512,10 @@ static void queue_piece(int piece,int offset,int length)
       fill_queue();
    }
 
-   if (sendbuf=="" && !choked)
+   if (sendbuf=="")
       fd->set_write_callback(peer_write);
+
+   uploading=1;
 }
 
 static void fill_queue()
@@ -481,7 +548,12 @@ void progress(int pieceno,int byte,int total)
 
 string _sprintf(int t)
 {
-   if (t=='O') return sprintf("Bittorrent.Peer(%s:%d)",ip,port);
+   if (t=='O') 
+      return sprintf("Bittorrent.Peer(%s:%d %O%s%s d%d u%db/s)",
+		     ip,port,mode,
+		     parent->activated_peers[this_object]?" dl":"",
+		     uploading?" ul":"",
+		     bandwidth_in,bandwidth_out);
    return 0;
 }
 
@@ -506,8 +578,16 @@ void bandwidth_o_meter()
    float t1=time(bandwidth_t0);
    float t=t1-bandwidth_t;
    if (t<0.001) return;
-   bandwidth_in=(int)(bandwidth_in_count/t);
-   bandwidth_out=(int)(bandwidth_out_count/t);
+   bandwidth_in_a+=({(int)(bandwidth_in_count/t)});
+   bandwidth_out_a+=({(int)(bandwidth_out_count/t)});
+   if (sizeof(bandwidth_in_a)>BANDWIDTH_O_METER_C)
+   {
+      bandwidth_in_a=bandwidth_in_a[1..];
+      bandwidth_out_a=bandwidth_out_a[1..];
+   }
+
+   bandwidth_in=Array.sum(bandwidth_in_a)/sizeof(bandwidth_in_a);
+   bandwidth_out=Array.sum(bandwidth_out_a)/sizeof(bandwidth_out_a);
 
    bandwidth_in_count=0;
    bandwidth_out_count=0;

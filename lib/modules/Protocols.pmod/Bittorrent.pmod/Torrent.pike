@@ -9,6 +9,8 @@ int total_bytes;
 string info_sha1;
 array(Target) targets;
 
+string all_pieces_bits=0; // to compare to see which hosts are complete
+
 string my_peer_id=generate_peer_id();
 
 string my_ip;
@@ -22,8 +24,6 @@ string datamode="rw";
 
 function(this_program,mapping:object(.Peer)) peer_program=.Peer;
 mapping(string:object(.Peer)) peers=([]);
-
-int(0..1) default_is_choked=0; // new peers are choked per default
 
 //! if set, called when we got another piece downloaded (no args)
 function pieces_update_status=0;
@@ -259,6 +259,8 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
    file_want=(multiset)filter(indices(file_got),
 			      lambda(int i) { return !file_got[i]; });
 
+   all_pieces_bits=bits2string(replace(file_got,0,1));
+
    return search(targets->created,0)==-1 ? 2 : 1;
 }
 
@@ -288,10 +290,10 @@ void verify_targets(void|function(int,int:void) progress_callback)
 // 					 info["piece length"])*"");
 // 	 exit(1);
 //       }
-      if (n<352)
+//       if (n<352)
 	 file_got+=({want_sha1==sha1});
-      else
-	 file_got+=({0});
+//       else
+// 	 file_got+=({0});
       n++;
    }
    if (progress_callback) progress_callback(n,sizeof(want_sha1s));
@@ -430,16 +432,33 @@ void start_download()
 }
 
 int downloads=0;
-int max_downloads=4;
-multiset activated_peers=(<>);
-multiset available_peers=(<>);
-multiset file_downloading=(<>);
+int max_downloads=10;
+int min_completed_peers=2;
+mapping(.Peer:int) activated_peers=([]);
+multiset(.Peer) available_peers=(<>);
+multiset(int) file_downloading=(<>);
+
+multiset(.Peer) completed_peers;
+
+// downloads lost by disconnect or choking that needs to be taken up again
+mapping(int:PieceDownload) lost_in_space=([]);
+
 void download_more()
 {
    int did=0;
 
+   completed_peers=(multiset)filter(values(peers),"is_completed");
+
+   werror("downloads: %d  available: %d  complete: %d  activated: %d\n",
+	  downloads,sizeof(available_peers),
+	  sizeof(completed_peers),sizeof(activated_peers));
+
    for (;;)
    {
+//       werror("no downloading? %O>=%O peers:%O (%O)\n",
+// 	     downloads,max_downloads,sizeof(available_peers),
+// 	     sizeof(available_peers & completed_peers));
+
       if (!downloading || downloads>=max_downloads ||
 	  !sizeof(available_peers))
 	 break;
@@ -461,20 +480,40 @@ int start_another_download()
    array w=map(values(file_peers),sizeof);
    sort(w,v);
 
+   multiset from_peers=filter(available_peers,"is_useful");
+
    array choices=({});
-   int min=0;
+   int minp=0;
 
-   foreach (v;;int n)
+
+   if (sizeof(completed_peers & (multiset)indices(activated_peers))
+       < min(sizeof(completed_peers & available_peers),
+	     min_completed_peers) ||
+       sizeof(file_want) == sizeof(file_got)) // first seed
+      from_peers&=completed_peers;
+
+   if (!sizeof(from_peers)) 
+     return 0;
+
+   if (sizeof(lost_in_space))
+      werror("lost_in_space= %O\n",lost_in_space);
+
+   for (int i=!sizeof(lost_in_space); i<2 && !sizeof(choices); i++)
    {
-      if (file_downloading[n]) continue;
-      multiset(Peer) p=file_peers[n];
+      array u=v;
+      if (!i) u&=indices(lost_in_space); // restrain
+      foreach (u;;int n)
+      {
+	 if (file_downloading[n]) continue;
+	 multiset(Peer) p=file_peers[n];
 
-      if (!min) min=sizeof(p);
-      else if (min<sizeof(p) && sizeof(choices)) break;
+	 if (!minp) minp=sizeof(p);
+	 else if (minp<sizeof(p) && sizeof(choices)) break;
 
-      multiset(Peer) p2=p&available_peers;
-      if (!sizeof(p2)) continue;
-      choices+=({({n,(sizeof(p2)!=sizeof(p))?p2:p})});
+	 multiset(Peer) p2=p&from_peers;
+	 if (!sizeof(p2)) continue;
+	 choices+=({({n,(sizeof(p2)!=sizeof(p))?p2:p})});
+      }
    }
 
    if (sizeof(choices))
@@ -488,7 +527,13 @@ int start_another_download()
 
       Peer peer=v[random(sizeof(v))];
 
-      PieceDownload(peer,n);
+      if (lost_in_space[n])
+      {
+	 lost_in_space[n]->reactivate(peer);
+	 m_delete(lost_in_space,n);
+      }
+      else
+	 PieceDownload(peer,n);
 
       return 1;
    }
@@ -518,7 +563,7 @@ class PieceDownload
       peer=_peer;
       piece=n;
 
-      activated_peers[peer]=1;
+      activated_peers[peer]++;
       available_peers[peer]=0;
       file_downloading[piece]=1;
       downloads++;
@@ -538,6 +583,21 @@ class PieceDownload
       queue_chunks();
    }
 
+   void reactivate(Peer _peer)
+   {
+      werror("reactivate lost download: %O %O %O\n",
+	     peer,piece,indices(chunks));
+
+      peer=_peer;
+
+      activated_peers[peer]++;
+      available_peers[peer]=0;
+      file_downloading[piece]=1;
+      downloads++;
+
+      queue_chunks();
+   }
+
    void queue_chunks()
    {
       foreach (sort(indices(expect_chunks-chunks-queued_chunks));;int i)
@@ -552,17 +612,41 @@ class PieceDownload
       if (!handed_over &&
 	  sizeof(queued_chunks)<download_chunk_max_queue)
       {
-   // hand over to queue some more from some other piece
-	 available_peers[peer]=1;
-	 downloads--;
 	 handed_over=1;
-	 download_more();
+	 disjoin();
       }
    }
 
-   void got_data(int n,int i,string data)
+// seconds before aborting if choked and not unchoked
+   constant choke_abort_delay=10; 
+
+   void got_data(int n,int i,string data,object from)
    {
-      if (!data) { abort(); return; } // abort
+      if (!peer || peer!=from) 
+      {
+	 werror("you shouldn't call me!!\n");
+	 exit(1);
+      }
+      if (n==-1)
+	 switch (data)
+	 {
+	    case "choked":
+	       if (find_call_out(abort)==-1)
+	       {
+		  call_out(abort,choke_abort_delay);
+		  werror("call_out abort\n");
+	       }
+	       return;
+	    case "unchoked":
+	       werror("remove_call_out abort\n");
+	       remove_call_out(abort);
+	       return;
+	    case "disconnected":
+	       abort(); 
+	       return; 
+	    default:
+	       error("unknown message from Peer: %O\n",data);
+	 }
 
       if (piece==n && expect_chunks[i]==strlen(data))
       {
@@ -613,27 +697,75 @@ class PieceDownload
 
    void abort()
    {
-// do something nicer, maybe?
-// like using another peer to recapture what we miss
-      finish();
+      if (!this_object()) werror("abort in destructed\n");
+      werror("%O abort\n",this_object());
+
+      remove_call_out(abort);
+      if (sizeof(chunks))
+      {
+	 if (!peer) return; // we're already lost in space, wtf?
+
+   // ok, put us in the queue-to-fill
+	 lost_in_space[piece]=this_object();
+
+   // cancel outstanding
+	 werror("%O %O->cancel\n",this_object(),peer);
+	 peer->cancel_requests();
+
+   // reset some stuff
+	 disjoin();
+
+	 peer=0;
+	 queued_chunks=([]);
+
+	 download_more();
+      }
+      else // we didn't get any, just drop it
+      {
+	 peer->cancel_requests();
+	 finish(); 
+      }
+   }
+
+   void disjoin()
+   {
+      werror("%O disjoin\n",this_object());
+      if (!handed_over)
+      {
+	 available_peers[peer]=1;
+      }
+      activated_peers[peer]--;
+      if (!activated_peers[peer])
+	 m_delete(activated_peers,peer);
+      file_downloading[piece]=0;
+
+      if (!peer->online)
+      {
+	 available_peers[peer]=0;
+	 m_delete(activated_peers,peer);
+      }
+      downloads--;
+
+      Function.call_callback(downloads_update_status);
    }
 
    void finish()
    {
-      if (!handed_over)
-      {
-	 available_peers[peer]=1;
-	 downloads--;
-      }
-      if (available_peers[peer])
-	 activated_peers[peer]=0;
-      file_downloading[piece]=0;
-
-      Function.call_callback(downloads_update_status);
-
+      werror("finish\n");
+      disjoin();
       download_more();
-      
       destruct(this_object());
+   }
+
+   string _sprintf(int t)
+   {
+      if (t=='O') 
+	 return sprintf(
+	    piece+"  "+
+	    "Torrent/PieceDownload(%d/%d done from %d from %O)",
+			sizeof(chunks),sizeof(expect_chunks),
+			piece,peer);
+      return 0;
    }
 }
 
@@ -645,18 +777,23 @@ multiset(int) file_available=(<>);
 
 void peer_lost(Peer peer)
 {
-   if (!peer->bitfield) return;
+   if (!file_peers) return;
    foreach ( file_want & ((multiset)string2arr(peer->bitfield)); 
 	     int i; )
    {
       multiset m;
-      (m=file_peers[i])[peer]=0;
+      m=file_peers[i];
+      if (!m) continue;
+      m[peer]=0;
       if (!sizeof(m))
       {
 	 m_delete(file_peers,i);
 	 file_available[i]=0;
       }
    }
+
+   available_peers[peer]=0;
+   m_delete(activated_peers,peer);
 }
 
 void peer_gained(Peer peer)
