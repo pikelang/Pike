@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.60 1998/10/27 16:09:10 per Exp $");
+RCSID("$Id: efuns.c,v 1.61 1998/10/30 14:36:31 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -419,30 +419,63 @@ void f_rm(INT32 args)
 void f_mkdir(INT32 args)
 {
   char *s;
-  INT32 i;
+  int mode;
+  int i;
+
   if(!args)
     error("Too few arguments to mkdir()\n");
 
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to mkdir().\n");
 
-  i=0770;
+  mode = 0770;
 
   if(args > 1)
   {
     if(sp[1-args].type != T_INT)
       error("Bad argument 2 to mkdir.\n");
 
-    i=sp[1-args].u.integer;
+    mode = sp[1-args].u.integer;
   }
   s=sp[-args].u.string->str;
-  THREADS_ALLOW_UID();
 #if MKDIR_ARGS == 2
-  i=mkdir(s, i) != -1;
-#else
-  i=mkdir(s) != -1;
-#endif
+  THREADS_ALLOW_UID();
+  i = mkdir(s, mode) != -1;
   THREADS_DISALLOW_UID();
+#else
+  /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
+  i = mkdir(s) != -1;
+  if (i) {
+    /* Attempt to set the mode.
+     *
+     * This code needs to be as paranoid as possible.
+     */
+    struct stat statbuf1;
+    struct stat statbuf2;
+    int mask = umask(0);
+    umask(mask);
+    i = lstat(s, &statbuf1) != -1;
+    if (i) {
+      i = ((statbuf1.st_mode & S_IFMT) == S_IFDIR);
+    }
+    if (i) {
+      mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
+      i = chmod(s, mode) != -1;
+    }
+    if (i) {
+      i = lstat(s, &statbuf2) != -1;
+    }
+    if (i) {
+      i = (statbuf2.st_mode == mode) && (statbuf1.st_ino == statbuf2.st_ino);
+      if (!i) {
+	errno = EPERM;
+      }
+    }
+    if (!i) {
+      rmdir(s);
+    }
+  }  
+#endif
   pop_n_elems(args);
   push_int(i);
 }
