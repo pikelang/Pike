@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.84 1999/12/13 04:58:31 per Exp $
+ * $Id: master.pike.in,v 1.85 1999/12/13 22:15:31 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -398,7 +398,7 @@ program cast_to_program(string pname, string current_file, object|void handler)
  * ({ error_string, backtrace }) where backtrace is the output from the
  * backtrace() efun.
  */
-void handle_error(mixed *trace)
+void handle_error(array(mixed)|object trace)
 {
   predef::trace(0);
   if(mixed x=catch {
