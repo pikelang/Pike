@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.159 2003/10/10 14:16:30 grubba Exp $
+|| $Id: interpret_functions.h,v 1.160 2003/10/10 14:50:53 grubba Exp $
 */
 
 /*
@@ -1890,7 +1890,7 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
 
 #define MKAPPLY2(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
 									   \
-MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			           \
+MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3);			           \
 									   \
 PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, \
 		      I_PC_AT_NEXT|I_UPDATE_ALL, {		\
