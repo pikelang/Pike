@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.23 1999/05/12 05:09:44 hubbe Exp $ */
+/* $Id: export.pike,v 1.24 1999/06/10 23:14:49 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -78,7 +78,7 @@ void bump_version()
   rel++;
   Stdio.File("pike/src/version.c","wct")->write(pre+" release "+rel+post);
   Process.create_process(({"cvs","commit","-m",
-			     "release number bumped by export.pike",
+			     "release number bumped to "+rel+" by export.pike",
 			     "version.c"}),
 			 (["cwd":"pike/src"]))->wait();
 }
