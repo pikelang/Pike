@@ -35,14 +35,15 @@
  * The corresponding cleanup code will be inserted instead of the word EXIT.
  *
  * Currently, the following attributes are understood:
- *   efun;     makes this function a global constant (no value)
- *   flags;    ID_STATIC | ID_NOMASK etc.
- *   optflags; OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
- *   type;     tInt, tMix etc. use this type instead of automatically
- *             generating a type from the prototype
- *             FIXME: this doesn't quite work
- *   errname;  The name used when throwing errors.
- *   name;     The name used when doing add_function.
+ *   efun;      makes this function a global constant (no value)
+ *   flags;     ID_STATIC | ID_NOMASK etc.
+ *   optflags;  OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
+ *   type;      tInt, tMix etc. use this type instead of automatically
+ *              generating a type from the prototype
+ *              FIXME: this doesn't quite work
+ *   errname;   The name used when throwing errors.
+ *   name;      The name used when doing add_function.
+ *   prototype; Ignore the function body, just add a prototype entry.
  *
  * POLYMORPHIC FUNCTION OVERLOADING
  *   You can define the same function several times with different
@@ -866,6 +867,7 @@ array recursive(mixed func, array data, mixed ... args)
  * ([
  *   "attributename":"foo bar gazonk",
  *   "attributename2":"foo2 bar2 gazonk2",
+ *   "attrflagname":1,
  * ])
  */
 mapping parse_attributes(array attr, void|string location)
@@ -883,8 +885,8 @@ mapping parse_attributes(array attr, void|string location)
 		   attr[0][0]->file,
 		   attr[0][0]->line);
 	    if(location)
-	      werror("%s: This is where the attrbutes belongs\n",location);
-	    werror("This is what I got: %O\n",attr[0]);
+	      werror("%s: This is where the attributes belong\n", location);
+	    werror("This is what I got: %O\n", attr[0]);
 	    exit(1);
 	  }
 	  attributes[(string)attr[0]]=1;
@@ -1468,7 +1470,7 @@ class ParseBlock
 	array body=func[p];
 	array rest=func[p+1..];
 
-	// Not all versions of Pike allows Token objects
+	// Not all versions of Pike allow Token objects
 	// to be indexed.
 	catch {
 	  foreach(proto, string t)
@@ -1517,10 +1519,8 @@ class ParseBlock
 //    werror("  args=%O\n",args);
 
 	ret+=({
-	  sprintf("#define %s\n",define),
-	    sprintf("void %s(INT32 args) ",funcname),
-	    "{","\n",
-	    });
+	  sprintf("#define %s\n",define)
+	});
 
 	// werror("%O %O\n",proto,args);
 	int last_argument_repeats;
@@ -1534,7 +1534,7 @@ class ParseBlock
 	}
 	array(Argument) args=map(args_tmp,Argument);
 	// werror("%O %O\n",proto,args);
-//	werror("parsed args: %O\n", args);
+	// werror("parsed args: %O\n", args);
 
 	// FIXME: support ... types
 	PikeType type;
@@ -1567,80 +1567,93 @@ class ParseBlock
 //	werror("type: %O\n", type);
 //	werror("C type: %O\n", type->output_c_type());
 
-	int min_args=sizeof(args);
-	int max_args=sizeof(args);
-	int repeat_arg = -1;
-
-	if(last_argument_repeats)
-	{
-	  min_args--;
-	  max_args=0x7fffffff;
-	  repeat_arg = min_args;
-	}
-
-	while(min_args>0 && args[min_args-1]->may_be_void())
-	  min_args--;
-
-	foreach(args, Argument arg)
+	if (attributes->prototype) {
+	  funcname = "NULL";
+	} else {
 	  ret+=({
-	    PC.Token(sprintf("%s %s;\n",arg->c_type(), arg->name()),arg->line()),
-	      });
+	    sprintf("void %s(INT32 args) ",funcname),
+	    "{","\n",
+	  });
 
+	  int min_args=sizeof(args);
+	  int max_args=sizeof(args);
+	  int repeat_arg = -1;
 
-	int argnum;
-
-	argnum=0;
-	string argbase;
-	string num_arguments;
-	if(min_args == max_args)
-	{
-	  ret+=({
-	    PC.Token(sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
-			     sizeof(args),
-			     attributes->errname || name,
-			     sizeof(args)), proto[0]->line)
-	      });
-	  argbase=(string) (-sizeof(args));
-	  num_arguments=(string)sizeof(args);
-	}else{
-	  argbase="-args";
-	  num_arguments="args";
-	  if(min_args > 0) {
-	    ret+=({
-	      PC.Token(sprintf("if(args < %d) wrong_number_of_args_error(%O,args,%d);\n",
-			       min_args,
-			       name,
-			       min_args), proto[0]->line)
-		});
+	  if(last_argument_repeats)
+	  {
+	    min_args--;
+	    max_args=0x7fffffff;
+	    repeat_arg = min_args;
 	  }
 
-	  if(max_args != 0x7fffffff && max_args != -1) {
+	  while(min_args>0 && args[min_args-1]->may_be_void())
+	    min_args--;
+
+	  foreach(args, Argument arg)
 	    ret+=({
-	      PC.Token(sprintf("if(args > %d) wrong_number_of_args_error(%O,args,%d);\n",
-			       max_args,
-			       name,
-			       max_args), proto[0]->line)
-		});
+	      PC.Token(sprintf("%s %s;\n",arg->c_type(), arg->name()),
+		       arg->line()),
+	    });
+
+
+	  int argnum;
+
+	  argnum=0;
+	  string argbase;
+	  string num_arguments;
+	  if(min_args == max_args)
+	  {
+	    ret+=({
+	      PC.Token(sprintf("if(args != %d) "
+			       "wrong_number_of_args_error(%O,args,%d);\n",
+			       sizeof(args),
+			       attributes->errname || name,
+			       sizeof(args)), proto[0]->line)
+	    });
+	    argbase=(string) (-sizeof(args));
+	    num_arguments=(string)sizeof(args);
+	  }else{
+	    argbase="-args";
+	    num_arguments="args";
+	    if(min_args > 0) {
+	      ret+=({
+		PC.Token(sprintf("if(args < %d) "
+				 "wrong_number_of_args_error(%O,args,%d);\n",
+				 min_args,
+				 name,
+				 min_args), proto[0]->line)
+	      });
+	    }
+
+	    if(max_args != 0x7fffffff && max_args != -1) {
+	      ret+=({
+		PC.Token(sprintf("if(args > %d) "
+				 "wrong_number_of_args_error(%O,args,%d);\n",
+				 max_args,
+				 name,
+				 max_args), proto[0]->line)
+	      });
+	    }
 	  }
-	}
 
-	string check_argbase = argbase;
+	  string check_argbase = argbase;
 
-	foreach(args, Argument arg)
+	  foreach(args, Argument arg)
 	  {
 	    if(arg->may_be_void() && "mixed" != (string)arg->basetype())
 	    {
 	      ret+=({
 		PC.Token(sprintf("if(args > %s) ",argnum)),
-		  });
+	      });
 	    }
 	    if (argnum == repeat_arg) {
 	      // Begin the argcnt loop.
-	      ret += ({ PC.Token(sprintf("{\n"
-					 "  INT32 argcnt;\n"
-					 "  for (argcnt=0; argcnt < %s-%d; argcnt++) {\n",
-					 num_arguments, argnum),
-				 arg->line()) });
+	      ret += ({
+		PC.Token(sprintf("{\n"
+				 "  INT32 argcnt;\n"
+				 "  for (argcnt=0; argcnt < %s-%d; argcnt++) {\n",
+				 num_arguments, argnum),
+			 arg->line()) });
 	      check_argbase = "+argcnt"+argbase;
 	    }
 	    if(arg->is_c_type() && arg->basetype() == "string")
@@ -1654,41 +1667,41 @@ class ParseBlock
 				 argnum,check_argbase,
 				 argnum,check_argbase,
 				 upper_case(arg->basetype())),arg->line())
-		  });
+	      });
 	    }else
 
 	      switch(arg->basetype())
 	      {
-		default:
-		  ret+=({
-		    PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_%s)",
-				     argnum,check_argbase,
-				     upper_case(arg->basetype())),arg->line())
-		      });
-		  break;
+	      default:
+		ret+=({
+		  PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_%s)",
+				   argnum,check_argbase,
+				   upper_case(arg->basetype())),arg->line())
+		});
+		break;
 
-		case "program":
-		  ret+=({
-		    PC.Token(sprintf("if(!( %s=program_from_svalue(Pike_sp%+d%s)))",
-				     arg->name(),argnum,check_argbase),
-			     arg->line())
-		      });
-		  break;
+	      case "program":
+		ret+=({
+		  PC.Token(sprintf("if(!( %s=program_from_svalue(Pike_sp%+d%s)))",
+				   arg->name(),argnum,check_argbase),
+			   arg->line())
+		});
+		break;
 
-		case "mixed":
+	      case "mixed":
 	      }
 	    switch(arg->basetype())
 	    {
-	      default:
-		ret+=({
-		  PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d%s,%O);\n",
-				   attributes->errname || attributes->name || name,
-				   argnum+1,
-				   (argnum == repeat_arg)?"+argcnt":"",
-				   arg->typename()),arg->line()),
-		    });
+	    default:
+	      ret+=({
+		PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d%s,%O);\n",
+				 attributes->errname || attributes->name || name,
+				 argnum+1,
+				 (argnum == repeat_arg)?"+argcnt":"",
+				 arg->typename()),arg->line()),
+	      });
 
-	      case "mixed":
+	    case "mixed":
 	    }
 
 	    if (argnum == repeat_arg) {
@@ -1700,59 +1713,58 @@ class ParseBlock
 	    {
 	      ret+=({
 		PC.Token(sprintf("if(args > %d) { ",argnum)),
-		  });
+	      });
 	    }
 
 	    switch(arg->basetype())
 	    {
-	      case "int":
-		ret+=({
-		  sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name(),
-			  argnum,argbase)
-		    });
-		break;
+	    case "int":
+	      ret+=({
+		sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name(),
+			argnum,argbase)
+	      });
+	      break;
 
-	      case "float":
-		ret+=({
-		  sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
-			  arg->name(),
-			  argnum,argbase)
-		    });
-		break;
+	    case "float":
+	      ret+=({
+		sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
+			arg->name(),
+			argnum,argbase)
+	      });
+	      break;
 
+	    case "mixed":
+	      ret+=({
+		PC.Token(sprintf("%s=Pike_sp%+d%s; dmalloc_touch_svalue(Pike_sp%+d%s);\n",
+				 arg->name(),
+				 argnum,argbase,argnum,argbase),arg->line()),
+	      });
+	      break;
 
-	      case "mixed":
+	    default:
+	      if(arg->is_c_type() && arg->basetype() == "string")
+	      {
+		/* some sort of 'char *' */
+		/* This will have to be amended when we want to support
+		 * wide strings
+		 */
 		ret+=({
-		  PC.Token(sprintf("%s=Pike_sp%+d%s; dmalloc_touch_svalue(Pike_sp%+d%s);\n",
+		  PC.Token(sprintf("%s=Pike_sp[%d%s].u.string->str; debug_malloc_touch(Pike_sp[%d%s].u.string)\n",
 				   arg->name(),
-				   argnum,argbase,argnum,argbase),arg->line()),
-		    });
-		break;
-
-	      default:
-		if(arg->is_c_type() && arg->basetype() == "string")
-		{
-		  /* some sort of 'char *' */
-		  /* This will have to be amended when we want to support
-		   * wide strings
-		   */
-		  ret+=({
-		    PC.Token(sprintf("%s=Pike_sp[%d%s].u.string->str; debug_malloc_touch(Pike_sp[%d%s].u.string)\n",
-				     arg->name(),
-				     argnum,argbase,
-				     argnum,argbase),arg->line())
-		      });
+				   argnum,argbase,
+				   argnum,argbase),arg->line())
+		});
 	      
-		}else{
-		  ret+=({
-		    PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d%s].u.%s);\n",
-				     arg->name(),
-				     argnum,argbase,
-				     arg->basetype()),arg->line())
-		      });
-		}
+	      }else{
+		ret+=({
+		  PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d%s].u.%s);\n",
+				   arg->name(),
+				   argnum,argbase,
+				   arg->basetype()),arg->line())
+		});
+	      }
 
-	      case "program":
+	    case "program":
 	    }
 
 	    if(arg->may_be_void())
@@ -1765,65 +1777,65 @@ class ParseBlock
 	    argnum++;
 	  }
     
-	body=recursive(fix_return,body,rettype, num_arguments); 
-	if(sizeof(body))
-	  ret+=({body});
-	ret+=({ "}\n" });
-
+	  body=recursive(fix_return,body,rettype, num_arguments); 
+	  if(sizeof(body))
+	    ret+=({body});
+	  ret+=({ "}\n" });
 
 #ifdef FUNC_OVERLOAD
-	if(name_occurances[common_name] > 1)
-	{
-	  FuncData d=FuncData();
-	  d->name=name;
-	  d->define=define;
-	  d->type=type;
-	  d->attributes=attributes;
-	  d->max_args=max_args;
-	  d->min_args=min_args;
-	  d->args=args;
-	  name_data[common_name]=( name_data[common_name] || ({}) ) + ({d});
-
-	  if(name_occurances[common_name]!=name_occurances[common_name+".cnt"])
+	  if(name_occurances[common_name] > 1)
 	  {
-	    ret+=rest;
-	    continue;
-	  }
-	  array(FuncData) tmp=map(name_data[common_name],
-				  lambda(FuncData fun) {
-				    fun->name = mkname(base, fun->name);
-				    return fun;
-				  });
-	  /* Generate real funcname here */
-	  name=common_name;
-	  funcname=mkname("f",base,common_name);
-	  define=make_unique_name("f",base,common_name,"defined");
-	  array(string) defines=({});
-	  
-	  type=PikeType(PC.Token("|"), tmp->type);
-	  attributes=`|(@ tmp->attributes);
+	    FuncData d=FuncData();
+	    d->name=name;
+	    d->define=define;
+	    d->type=type;
+	    d->attributes=attributes;
+	    d->max_args=max_args;
+	    d->min_args=min_args;
+	    d->args=args;
+	    name_data[common_name]=( name_data[common_name] || ({}) ) + ({d});
 
-	  array out=generate_overload_func_for(tmp,
-					       2,
-					       0,
-					       0x7fffffff,
-					       common_name,
-					       attributes);
+	    if(name_occurances[common_name]!=name_occurances[common_name+".cnt"])
+	    {
+	      ret+=rest;
+	      continue;
+	    }
+	    array(FuncData) tmp=map(name_data[common_name],
+				    lambda(FuncData fun) {
+				      fun->name = mkname(base, fun->name);
+				      return fun;
+				    });
+	    /* Generate real funcname here */
+	    name=common_name;
+	    funcname=mkname("f",base,common_name);
+	    define=make_unique_name("f",base,common_name,"defined");
+	    array(string) defines=({});
 	  
-	  /* FIXME: This definition should be added
-	   * somewhere outside of all #ifdefs really!
-	   * -Hubbe
-	   */
-	  ret+=IFDEF(tmp->define, ({
-	    sprintf("#define %s\n",define),
+	    type=PikeType(PC.Token("|"), tmp->type);
+	    attributes=`|(@ tmp->attributes);
+
+	    array out=generate_overload_func_for(tmp,
+						 2,
+						 0,
+						 0x7fffffff,
+						 common_name,
+						 attributes);
+	  
+	    /* FIXME: This definition should be added
+	     * somewhere outside of all #ifdefs really!
+	     * -Hubbe
+	     */
+	    ret+=IFDEF(tmp->define, ({
+	      sprintf("#define %s\n",define),
 	      sprintf("void %s(INT32 args) ",funcname),
 	      "{\n",
-	      })+out+({
-		"}\n",
-		  }));
+	    })+out+({
+	      "}\n",
+	    }));
 	  
-	}
+	  }
 #endif
+	}
 	ret+=rest;
 	
 
