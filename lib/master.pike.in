@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.180 2001/12/13 11:05:56 mast Exp $
+ * $Id: master.pike.in,v 1.181 2001/12/13 15:51:35 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -1164,6 +1164,8 @@ mixed handle_import(string what, string|void current_file, object|void handler)
     tmp=EXPLODE_PATH(current_file);
     tmp[-1]=what;
     path=combine_path_with_cwd( tmp*"/");
+  } else {
+    path = combine_path_with_cwd(what);
   }
   if (handler) {
     return dirnode(path, handler);
