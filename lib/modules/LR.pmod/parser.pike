@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.4 1998/11/12 01:30:43 grubba Exp $
+ * $Id: parser.pike,v 1.5 1998/11/12 02:22:07 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.4 1998/11/12 01:30:43 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.5 1998/11/12 02:22:07 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -73,6 +73,10 @@ class state_queue {
   //. The queue/set itself.
   array(object(LR.kernel)) arr=allocate(64);
 
+  //. + members
+  //.   Hashes of the states that are members.
+  mapping(string:int) members = ([]);
+
   //. - memberp
   //.   Returns the index of the state in arr if present.
   //.   Returns -1 on failure.
@@ -80,14 +84,13 @@ class state_queue {
   //.   State to search for.
   int|object(LR.kernel) memberp(object(LR.kernel) state)
   {
-    int j;
-
-    for (j = 0; j<tail; j++) {
-      if (state->equalp(arr[j])) {
-	return(j);
-      }
+    if (!state->kernel_hash) {
+      state->make_kernel_hash();
     }
-    return(-1);
+    if (zero_type(members[state->kernel_hash])) {
+      return(-1);
+    }
+    return(members[state->kernel_hash]);
   }
 
   //. - push_if_new
@@ -104,6 +107,7 @@ class state_queue {
       if (tail == sizeof(arr)) {
 	arr += allocate(tail);
       }
+      members[state->kernel_hash] = tail;
       arr[tail++] = state;
 
       return(state);
