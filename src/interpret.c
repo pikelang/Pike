@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.148 2000/04/25 09:32:46 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.149 2000/04/27 02:12:30 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -501,6 +501,10 @@ int backlogp=BACKLOG-1;
 
 void dump_backlog(void)
 {
+#ifdef _REENTRANT
+  struct object *thread=0;
+#endif
+
   int e;
   if(!d_flag || backlogp<0 || backlogp>=BACKLOG)
     return;
@@ -516,17 +520,20 @@ void dump_backlog(void)
       char *file;
       INT32 line;
 
+#ifdef _REENTRANT
+      if(thread != backlog[e].thread_id)
+      {
+	fprintf(stderr,"[Thread swap, thread_id=%p]\n",backlog[e].thread_id);
+	thread = backlog[e].thread_id;
+      }
+#endif
+
       file=get_line(backlog[e].pc-1,backlog[e].program, &line);
       if(backlog[e].instruction < 0 || backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
       {
-	fprintf(stderr,"%s:%ld: %p ILLEGAL INSTRUCTION %d\n",
+	fprintf(stderr,"%s:%ld: ILLEGAL INSTRUCTION %d\n",
 		file,
 		(long)line,
-#ifdef _REENTRANT
-		backlog[e].thread_id,
-#else
-		0,
-#endif
 		backlog[e].instruction + F_OFFSET);
 	continue;
       }
@@ -534,39 +541,24 @@ void dump_backlog(void)
 
       if(instrs[backlog[e].instruction].flags & I_HASARG2)
       {
-	fprintf(stderr,"%s:%ld: %p %s(%ld,%ld)\n",
+	fprintf(stderr,"%s:%ld: %s(%ld,%ld)\n",
 		file,
 		(long)line,
-#ifdef _REENTRANT
-		backlog[e].thread_id,
-#else
-		0,
-#endif
 		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
 		(long)backlog[e].arg,
 		(long)backlog[e].arg2);
       }
       else if(instrs[backlog[e].instruction].flags & I_HASARG)
       {
-	fprintf(stderr,"%s:%ld: %p %s(%ld)\n",
+	fprintf(stderr,"%s:%ld: %s(%ld)\n",
 		file,
 		(long)line,
-#ifdef _REENTRANT
-		backlog[e].thread_id,
-#else
-		0,
-#endif
 		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
 		(long)backlog[e].arg);
       }else{
-	fprintf(stderr,"%s:%ld: %p %s\n",
+	fprintf(stderr,"%s:%ld: %s\n",
 		file,
 		(long)line,
-#ifdef _REENTRANT
-		backlog[e].thread_id,
-#else
-		0,
-#endif
 		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program));
       }
     }
