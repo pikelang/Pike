@@ -482,11 +482,8 @@ static INLINE void output_finish(struct object *obj)
       apply(o->obj,"set_id",1);
       pop_stack();
 
-      if(IS_ZERO(&THIS->done_callback))
-      {
-	apply(o->obj,"close",0);
-	pop_stack();
-      }
+      apply(o->obj,"close",0);
+      pop_stack();
 
       if(!THISOBJ->prog)
 	error("Pipe done callback destructed pipe.\n");
