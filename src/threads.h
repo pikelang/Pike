@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.41 1998/04/13 14:32:35 grubba Exp $
+ * $Id: threads.h,v 1.42 1998/04/30 16:31:20 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -460,6 +460,7 @@ void f_all_threads(INT32 args);
 #define th_init_programs()
 #define th_self() ((void*)0)
 #define co_signal(X)
+#define co_broadcast(X)
 #endif /* _REENTRANT */
 
 #ifdef __NT__
