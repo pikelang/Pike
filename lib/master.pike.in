@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.161 2001/07/28 14:11:14 nilsson Exp $
+ * $Id: master.pike.in,v 1.162 2001/08/15 20:59:15 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1750,6 +1750,23 @@ void compile_warning(string file,int line,string err)
   } else if (objectp(val) && val->compile_warning) {
     val->compile_warning(file, line, err);
   }
+}
+
+
+//! This function is called when an exception is catched during
+//! compilation. Its message is also reported to @[compile_error] if
+//! this function returns zero.
+int compile_exception (array|object trace)
+{
+  if (mixed val = get_inhibit_compile_errors()) {
+    if (objectp (val) && val->compile_exception)
+      return val->compile_exception (trace);
+  }
+  else {
+    handle_error (trace);
+    return 1;
+  }
+  return 0;
 }
 
 
