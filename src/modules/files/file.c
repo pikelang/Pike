@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.172 2000/04/14 16:38:36 hubbe Exp $");
+RCSID("$Id: file.c,v 1.173 2000/08/23 12:57:09 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1286,6 +1286,14 @@ static void file_open(INT32 args)
   if (sp[-args].type==T_STRING)
   {
      str=sp[-args].u.string;
+
+     if (strlen(str->str) != (size_t)str->len) {
+       /* Filenames with NUL are not supported. */
+       ERRNO = ENOENT;
+       pop_n_elems(args);
+       push_int(0);
+       return;
+     }
 
 #ifdef PIKE_SECURITY
      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))

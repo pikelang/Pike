@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.80 2000/06/17 03:16:45 hubbe Exp $");
+RCSID("$Id: efuns.c,v 1.81 2000/08/23 12:57:10 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -113,6 +113,7 @@ void f_file_stat(INT32 args)
 {
   struct stat st;
   int i, l;
+  struct pike_string *str;
   char *s;
   
   if(args<1)
@@ -122,9 +123,18 @@ void f_file_stat(INT32 args)
 
   VALID_FILE_IO("file_stat","read");
 
-  s = sp[-args].u.string->str;
+  str = sp[-args].u.string;
+
+  s = str->str;
   l = (args>1 && !IS_ZERO(sp+1-args))?1:0;
 
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
 
   THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
@@ -151,6 +161,7 @@ void f_file_truncate(INT32 args)
 #else
   INT32 len;
 #endif
+  struct pike_string *str;
   char *s;
   int res;
 
@@ -159,8 +170,17 @@ void f_file_truncate(INT32 args)
   if(args<2 || sp[1-args].type != T_INT)
     error("Bad argument 2 to file_truncate(string filename,int length).\n");
 
-  s = sp[-args].u.string->str;
+  str = sp[-args].u.string;
+  s = str->str;
   len = sp[1-args].u.integer;
+
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
 
   VALID_FILE_IO("file_truncate","write");
 
@@ -195,6 +215,7 @@ void f_file_truncate(INT32 args)
 
 void f_filesystem_stat( INT32 args )
 {
+  struct pike_string *str;
   char *path;
   DWORD sectors_per_cluster = -1;
   DWORD bytes_per_sector = -1;
@@ -207,9 +228,19 @@ void f_filesystem_stat( INT32 args )
 
   VALID_FILE_IO("filesystem_stat","read");
 
-  get_all_args( "filesystem_stat", args, "%s", &path );
+  get_all_args( "filesystem_stat", args, "%S", &str );
 
-  if(sp[-1].u.string->len < 2 || path[1] != ':')
+  path = str->str;
+
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  if(str->len < 2 || path[1] != ':')
   {
     p = 0;
   } else {
@@ -303,6 +334,7 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
+  struct pike_string *str;
   int i;
   char *s;
 
@@ -311,7 +343,17 @@ void f_filesystem_stat(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to filesystem_stat()\n");
 
-  s = sp[-args].u.string->str;
+  str = sp[-args].u.string;
+  s = str->str;
+
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
   THREADS_ALLOW();
 #ifdef HAVE_STATVFS
   i = statvfs(s, &st);
@@ -438,6 +480,7 @@ void f_rm(INT32 args)
   struct stat st;
   INT32 i;
   char *s;
+  struct pike_string *str;
 
   if(!args)
     error("Too few arguments to rm()\n");
@@ -447,8 +490,17 @@ void f_rm(INT32 args)
 
   VALID_FILE_IO("rm","write");
 
-  s = sp[-args].u.string->str;
+  str = sp[-args].u.string;
+  s = str->str;
   
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
   THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
   i=fd_lstat(s, &st) != -1;
@@ -472,6 +524,7 @@ void f_rm(INT32 args)
 
 void f_mkdir(INT32 args)
 {
+  struct pike_string *str;
   char *s;
   int mode;
   int i;
@@ -494,7 +547,17 @@ void f_mkdir(INT32 args)
 
   VALID_FILE_IO("mkdir","write");
 
-  s=sp[-args].u.string->str;
+  str = sp[-args].u.string;
+  s = str->str;
+
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = EINVAL;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
 #if MKDIR_ARGS == 2
   THREADS_ALLOW_UID();
   i = mkdir(s, mode) != -1;
@@ -562,11 +625,21 @@ void f_get_dir(INT32 args)
   DIR *dir;
   struct dirent *d;
   struct array *a=0;
+  struct pike_string *str;
   char *path;
 
   VALID_FILE_IO("get_dir","read");
 
-  get_all_args("get_dir",args,"%s",&path);
+  get_all_args("get_dir", args, "%S", &str);
+  path = str->str;
+
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
 
 #if defined(_REENTRANT) && defined(HAVE_READDIR_R)
   THREADS_ALLOW_UID();
@@ -736,6 +809,8 @@ void f_get_dir(INT32 args)
 void f_cd(INT32 args)
 {
   INT32 i;
+  struct pike_string *str;
+
   if(!args)
     error("Too few arguments to cd()\n");
 
@@ -744,7 +819,17 @@ void f_cd(INT32 args)
 
   VALID_FILE_IO("cd","status");
 
-  i=chdir(sp[-args].u.string->str) != -1;
+  str = sp[-args].u.string;
+
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  i = chdir(str->str) != -1;
   pop_n_elems(args);
   push_int(i);
 }
@@ -902,6 +987,9 @@ void f_exece(INT32 args)
 void f_mv(INT32 args)
 {
   INT32 i;
+  struct pike_string *str1;
+  struct pike_string *str2;
+
   if(args<2)
     error("Too few arguments to mv()\n");
 
@@ -913,8 +1001,23 @@ void f_mv(INT32 args)
 
   VALID_FILE_IO("mv","write");
 
-  i=rename((char *)sp[-args].u.string->str, 
-	   (char *)sp[-args+1].u.string->str);
+  str1 = sp[-args].u.string;
+  str2 = sp[1-args].u.string;
+  
+  if ((strlen(str1->str) != (size_t)str1->len) ||
+      (strlen(str2->str) != (size_t)str2->len)) {
+    /* Filenames with NUL are not supported. */
+    if (strlen(str1->str) != (size_t)str1->len) {
+      errno = ENOENT;
+    } else {
+      errno = EINVAL;
+    }
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  i=rename(str1->str, str2->str);
 
   pop_n_elems(args);
   push_int(!i);
