@@ -41,6 +41,17 @@ pushdef([AC_PROG_CC],
   fi
 ])
 
+dnl option, descr, with, without, default
+define([MY_AC_ARG_WITH], [
+  AC_ARG_WITH([$1], [$2], [
+    if test "x$withval" = "xno"; then
+      $4
+    else
+      $3
+    fi
+  ], [$5])
+])
+
 define([MY_AC_PROG_CC],
 [
   if test "x$enable_binary" != "xno"; then
@@ -208,7 +219,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.30 2001/05/10 22:15:11 hubbe Exp $
+# $Id: aclocal.m4,v 1.31 2001/10/05 16:38:29 grubba Exp $
 
 MY_AC_PROG_CC
 
