@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.85 2005/03/23 19:23:03 mast Exp $
+// $Id: client.pike,v 1.86 2005/03/24 14:46:54 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -107,7 +107,7 @@ import Protocols.LDAP;
   private {
     int binded = 0;	// flag for v2 operations
     string ldap_basedn = "";	// baseDN
-    int ldap_scope = 0;		// 0: base, 1: onelevel, 2: subtree
+    int ldap_scope = 0;		// SCOPE_*
     int ldap_deref = 0;		// 0: ...
     int ldap_sizelimit = 0;
     int ldap_timelimit = 0;
@@ -487,7 +487,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.85 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.86 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1645,8 +1645,13 @@ array(string) read_attr (string object_name,
 //! Return the LDAP protocol version in use.
 int get_protocol_version() {return ldap_version;}
 
-  //! @param base_dn
-  //!   base DN for search
+  //! Sets the base DN for searches using @[search] and schema queries
+  //! using @[get_attr_type_descr].
+  //!
+  //! @note
+  //!   For compatibility, the old base DN is returned. However, if
+  //!   LDAPv3 is used, the value is UTF-8 encoded. Use @[get_basedn]
+  //!   separately instead.
   string set_basedn (string base_dn) {
 
     string old_dn = ldap_basedn;
@@ -1659,16 +1664,19 @@ int get_protocol_version() {return ldap_version;}
     return old_dn;
   }
 
-//! Return the current base DN for searching.
+//! Returns the current base DN for searches using @[search] and
+//! schema queries using @[get_attr_type_descr].
 string get_basedn() {return utf8_to_string (ldap_basedn);}
 
   //!
   //! Sets value of scope for search operation.
   //!
   //! @param scope
-  //!  Value can be integer or its corresponding string value.
-  //!  0: base, 1: one, 2: sub
+  //!  The value can be one of the @expr{SCOPE_*@} constants or a
+  //!  string @expr{"base"@}, @expr{"one"@} or @expr{"sub"@}.
   //!
+  //! @returns
+  //!   Returns the @expr{SCOPE_*@} constant for the old scope.
   int set_scope (int|string scope) {
 
     int old_scope = ldap_scope;
@@ -1676,14 +1684,14 @@ string get_basedn() {return utf8_to_string (ldap_basedn);}
     // support for string based values
     if(stringp(scope))
       switch (lower_case(scope)) {
-	case "sub": scope = 2; break;
-	case "one": scope = 1; break;
-	case "base": scope = 0; break;
-	default: return -1;
+	case "sub": scope = SCOPE_SUB; break;
+	case "one": scope = SCOPE_ONE; break;
+	case "base": scope = SCOPE_BASE; break;
+	default: ERROR ("Invalid scope %O.\n", scope);
       }
     else
-     if(scope != 0 && scope != 1 && scope != 2)
-       return -1;
+      if (!(<SCOPE_BASE, SCOPE_ONE, SCOPE_SUB>)[scope])
+	ERROR ("Invalid scope %O.\n", scope);
  
     ldap_scope = scope;
     DWRITE_HI("client.SET_SCOPE = " + (string)scope + "\n");
@@ -1692,7 +1700,8 @@ string get_basedn() {return utf8_to_string (ldap_basedn);}
 
 //! Return the currently set scope as a string @expr{"base"@},
 //! @expr{"one"@}, or @expr{"sub"@}.
-string get_scope() {return ([0: "base", 1: "one", 2: "sub"])[ldap_scope];}
+string get_scope()
+  {return ([SCOPE_BASE: "base", SCOPE_ONE: "one", SCOPE_SUB: "sub"])[ldap_scope];}
 
   //! @param option_type
   //!   LDAP_OPT_xxx
@@ -1746,6 +1755,12 @@ string get_scope() {return ([0: "base", 1: "one", 2: "sub"])[ldap_scope];}
 
     return -1;
   }
+
+mapping(string:mixed) get_parsed_url() {return lauth;}
+//! Returns a mapping containing the data parsed from the LDAP URL
+//! passed to @[create]. The mapping has the same format as the return
+//! value from @[parse_url]. Don't be destructive on the returned
+//! value.
 
   private int|string send_modify_op(string dn,
 				    mapping(string:array(mixed)) attropval) {
@@ -1941,9 +1956,36 @@ string get_scope() {return ([0: "base", 1: "one", 2: "sub"])[ldap_scope];}
     return 0;
   }
 
-  //! @param  ldapuri
-  //!   LDAP URL
-  mapping|int parse_url (string ldapuri) {
+  //! Parses an LDAP URL and returns its fields in a mapping.
+  //!
+  //! @returns
+  //!   The returned mapping contains these fields:
+  //!
+  //!   @mapping
+  //!   @member string scheme
+  //!     The URL scheme, either @expr{"ldap"@} or @expr{"ldaps"@}.
+  //!   @member string host
+  //!   @member int port
+  //!   @member string basedn
+  //!     Self-explanatory.
+  //!   @member array(string) attributes
+  //!     Array containing the attributes. Undefined if none was
+  //!     specified.
+  //!   @member int scope
+  //!     The scope as one of the @expr{SEARCH_*@} constants.
+  //!     Undefined if none was specified.
+  //!   @member string filter
+  //!     The search filter. Undefined if none was specified.
+  //!   @member mapping(string:string|int(1..1)) extensions
+  //!     The extensions. Undefined if none was specified. The mapping
+  //!     values are @expr{1@} for extensions without values. Critical
+  //!     extensions are checked and the leading @expr{"!"@} do not
+  //!     remain in the mapping indices.
+  //!   @endmapping
+  //!
+  //! @seealso
+  //!   @[get_parsed_url]
+  mapping(string:mixed) parse_url (string ldapuri) {
 
   // ldap://machine.at.home.cz:123/c=cz?attr1,attr2,attr3?sub?(uid=*)?!bindname=uid=hop,dc=unibase,dc=cz"
 
@@ -1981,7 +2023,9 @@ string get_scope() {return ([0: "base", 1: "one", 2: "sub"])[ldap_scope];}
 		res->ext = extensions;
 	      }
       case 4: res->filter = _Roxen.http_decode_string (ar[3]);
-      case 3: res->scope = (["base": 0, "one": 1, "sub": 2])[ar[2]];
+      case 3: res->scope = (["base": SCOPE_BASE,
+			     "one": SCOPE_ONE,
+			     "sub": SCOPE_SUB])[ar[2]];
       case 2: if (sizeof(ar[1])) res->attributes =
 				   map (ar[1] / ",", _Roxen.http_decode_string);
       case 1: res->basedn = _Roxen.http_decode_string (ar[0]);
