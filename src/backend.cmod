@@ -5,7 +5,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.143 2004/08/23 12:36:35 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.144 2004/09/18 14:26:16 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1415,7 +1415,7 @@ PIKECLASS Backend
  *!
  *! This function finds the first call to the function @[f] in the call_out
  *! queue and removes it.  You can also give a call out id as argument (as
- *! returned by call_out).
+ *! returned by @[call_out()] or @[find_call_out()]).
  *!
  *! @returns
  *!   The remaining time in seconds left to that call out will be returned.
@@ -2802,6 +2802,9 @@ PIKECLASS Backend
   /*! @decl float|int(0..0) `()(void|float|int(0..0) sleep_time)
    *!   Perform one pass through the backend.
    *!
+   *!   Calls any outstanding call-outs and non-blocking I/O
+   *!   callbacks that are registred in this backend object.
+   *!
    *! @param sleep_time
    *!   Wait at most @[sleep_time] seconds. The default when
    *!   unspecified or the integer @expr{0@} is no time limit.
@@ -2810,6 +2813,9 @@ PIKECLASS Backend
    *!   If the backend did call any callbacks or call outs then the
    *!   time spent in the backend is returned as a float. Otherwise
    *!   the integer @expr{0@} is returned.
+   *!
+   *! @seealso
+   *!   @[Pike.DefaultBackend], @[main()]
    */
   PIKEFUN float|int(0..0) `()(void|float|int(0..0) sleep_time)
   {
@@ -2866,10 +2872,18 @@ PIKECLASS Backend
   }
 
   /*! @decl void add_file(Stdio.File|Stdio.FILE f)
+   *!
+   *! Register a file to be handled by this backend.
    *! 
-   *! Add @[f] to this backend. This simply does
-   *! @expr{f->set_backend(backend)@} where @expr{backend@} is this
-   *! object.
+   *! @param f
+   *!   File to register.
+   *!
+   *! Registers @[f] to be handled by this backend.
+   *! This simply does @expr{f->set_backend(backend)@} where
+   *! @expr{backend@} is this object.
+   *!
+   *! @seealso
+   *!   @[Pike.DefaultBackend], @[main()]
    */
   PIKEFUN void add_file(object f)
   {
