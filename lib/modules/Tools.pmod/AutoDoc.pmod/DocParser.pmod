@@ -51,6 +51,8 @@ mapping(string : int) keywordtype =
   "tt" : BRACEKEYWORD,
   "url" : BRACEKEYWORD,
   "pre" : BRACEKEYWORD,
+  "sub" : BRACEKEYWORD,
+  "sup" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
   "xml" : BRACEKEYWORD,  // well, not really, but....
   "expr" : BRACEKEYWORD,
