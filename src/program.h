@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.206 2004/06/02 00:11:26 nilsson Exp $
+|| $Id: program.h,v 1.207 2004/06/30 00:16:27 nilsson Exp $
 */
 
 #ifndef PROGRAM_H
@@ -793,10 +793,9 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 						       int fun, INT32 *linep);
 void va_yyerror(const char *fmt, va_list args);
-void my_yyerror(const char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
+void my_yyerror(const char *fmt,...);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
-void handle_compile_exception (const char *yyerror_fmt, ...)
-  ATTRIBUTE((format(printf,1,2)));
+void handle_compile_exception (const char *yyerror_fmt, ...);
 struct supporter_marker;
 void verify_supporters(void);
 void init_supporter(struct Supporter *s,
@@ -846,7 +845,7 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
 PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s);
 struct find_child_cache_s;
 int find_child(struct program *parent, struct program *child);
-void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
+void yywarning(char *fmt, ...);
 struct implements_cache_s;
 PMOD_EXPORT int implements(struct program *a, struct program *b);
 PMOD_EXPORT int is_compatible(struct program *a, struct program *b);

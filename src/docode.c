@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.177 2004/06/02 00:09:48 nilsson Exp $
+|| $Id: docode.c,v 1.178 2004/06/30 00:17:21 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.177 2004/06/02 00:09:48 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.178 2004/06/30 00:17:21 nilsson Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1839,7 +1839,7 @@ static int do_docode2(node *n, int flags)
 	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
 	  if (lbl_name->str == name)
 	    goto label_found_1;
-      my_yyerror("No surrounding statement labeled '%s'.", name->str);
+      my_yyerror("No surrounding statement labeled %S.", name);
       return 0;
 
     label_found_1:

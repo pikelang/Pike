@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.48 2004/03/24 20:29:25 grubba Exp $
+|| $Id: lexer.h,v 1.49 2004/06/30 00:17:42 nilsson Exp $
 */
 
 /*
@@ -625,14 +625,8 @@ static int low_yylex(YYSTYPE *yylval)
 #error Unsupported SHIFT.
 #endif /* SHIFT == 2 */
 #endif /* SHIFT == 1 */
-	  if (!dir->size_shift) {
 #endif /* SHIFT == 0 */
-	    my_yyerror("Unknown preprocessor directive #%s.", dir->str);
-#if (SHIFT != 0)
-	  } else {
-	    yyerror("Unknown preprocessor directive.");
-	  }
-#endif /* SHIFT != 0 */
+	  my_yyerror("Unknown preprocessor directive %S.", dir);
 	  free_string(dir);
 	} else {
 	  yyerror("Unknown preprocessor directive.");

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.564 2004/05/29 18:13:41 grubba Exp $
+|| $Id: program.c,v 1.565 2004/06/30 00:16:27 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.564 2004/05/29 18:13:41 grubba Exp $");
+RCSID("$Id: program.c,v 1.565 2004/06/30 00:16:27 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1362,13 +1362,9 @@ static struct node_s *index_modules(struct pike_string *ident,
 		Pike_sp[-1].u.object == placeholder_object) ||
 	       (Pike_sp[-1].type == T_PROGRAM &&
 		Pike_sp[-1].u.program == placeholder_program))) {
-	    if (!ident->size_shift)
-	      my_yyerror("Got placeholder %s (resolver problem) "
-			 "when indexing a module with '%s'.",
-			 get_name_of_type (Pike_sp[-1].type), ident->str);
-	    else
-	      my_yyerror("Got placeholder %s (resolver problem).",
-			 get_name_of_type (Pike_sp[-1].type));
+	    my_yyerror("Got placeholder %s (resolver problem) "
+		       "when indexing a module with %S.",
+		       get_name_of_type (Pike_sp[-1].type), ident);
 	    ret = 0;
 	  }
 	  else {
@@ -1469,8 +1465,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     node *ret=0;
     if(BEGIN_CYCLIC(ident, lex.current_file))
     {
-      my_yyerror("Recursive module dependency in %s.",
-		 ident->str);
+      my_yyerror("Recursive module dependency in %S.", ident);
     }else{
       SET_CYCLIC_RET(1);
 
@@ -1488,13 +1483,9 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	      Pike_sp[-1].u.object == placeholder_object) ||
 	     (Pike_sp[-1].type == T_PROGRAM &&
 	      Pike_sp[-1].u.program == placeholder_program))) {
-	  if (!ident->size_shift)
-	    my_yyerror("Got placeholder %s (resolver problem) "
-		       "when resolving '%s'.",
-		       get_name_of_type (Pike_sp[-1].type), ident->str);
-	  else
-	    my_yyerror("Got placeholder %s (resolver problem).",
-		       get_name_of_type (Pike_sp[-1].type));
+	  my_yyerror("Got placeholder %s (resolver problem) "
+		     "when resolving %S.",
+		     get_name_of_type (Pike_sp[-1].type), ident->str);
 	}
 	else {
 	  if(!resolve_cache)
@@ -1510,16 +1501,13 @@ struct node_s *resolve_identifier(struct pike_string *ident)
       }
       else
 	if(Pike_compiler->compiler_pass==2) {
-	  if (throw_value.type == T_STRING && !throw_value.u.string->size_shift) {
-	    yyerror(throw_value.u.string->str);
+	  if (throw_value.type == T_STRING) {
+	    my_yyerror("%O", throw_value);
 	    free_svalue(&throw_value);
 	    throw_value.type = T_INT;
 	  }
 	  else {
-	    if (!ident->size_shift)
-	      handle_compile_exception ("Error resolving '%s'.", ident->str);
-	    else
-	      handle_compile_exception ("Error resolving identifier.");
+	    handle_compile_exception ("Error resolving %S.", ident);
 	  }
 	}
     }
@@ -1829,10 +1817,8 @@ int override_identifier (struct reference *ref, struct pike_string *name)
        */
       Pike_compiler->new_program->identifier_references[cur_id].id_flags |=
 	ID_INLINE|ID_HIDDEN;
-      yywarning("Attempt to override a non local variable %s%s%swith a non variable.",
-		(name&&!name->size_shift)?"\"":"",
-		(name&&!name->size_shift)?name->str:"",
-		(name&&!name->size_shift)?"\" ":"");
+      yywarning("Attempt to override a non local variable %S "
+		"with a non variable.", name);
       continue;
     }
 
@@ -1924,9 +1910,9 @@ void fixate_program(void)
     }
     if ((fun->func.offset == -1) && (funp->id_flags & ID_INLINE) &&
 	IDENTIFIER_IS_PIKE_FUNCTION(fun->identifier_flags)) {
-      if (!fun->name->size_shift && fun->name->len < 900) {
-	my_yyerror("Missing definition for local function %s().",
-		   fun->name->str);
+      if (fun->name->len < 900) {
+	my_yyerror("Missing definition for local function %S.",
+		   fun->name);
       } else {
 	yyerror("Missing definition for local function.");
       }
@@ -1962,10 +1948,10 @@ void fixate_program(void)
 
 	if((e != i) && (e != -1))
 	{
-	  if(name->len < 1024 && !name->size_shift)
-	    my_yyerror("Illegal to redefine final identifier %s",name->str);
+	  if(name->len < 1024)
+	    my_yyerror("Illegal to redefine final identifier %S", name);
 	  else
-	    my_yyerror("Illegal to redefine final identifier (unable to output name of identifier).");
+	    my_yyerror("Illegal to redefine final identifier (name too large to print).");
 	}
       }
     }
@@ -3952,10 +3938,7 @@ int call_handle_inherit(struct pike_string *s)
       return 1;
     else {
       pop_stack();
-      if (!s->size_shift)
-	my_yyerror("Couldn't find program: %s",s->str);
-      else
-	yyerror("Couldn't find program");
+      my_yyerror("Couldn't find program %S", s);
     }
   else {
     handle_compile_exception ("Error finding program");
@@ -4148,7 +4131,7 @@ int define_variable(struct pike_string *name,
     if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
     {
       if (!((IDENTIFIERP(n)->id_flags | flags) & ID_EXTERN)) {
-	my_yyerror("Identifier '%s' defined twice.",name->str);
+	my_yyerror("Identifier %S defined twice.",name);
 	return n;
       }
       if (flags & ID_EXTERN) {
@@ -4160,9 +4143,10 @@ int define_variable(struct pike_string *name,
     if (!(IDENTIFIERP(n)->id_flags & ID_EXTERN)) {
       if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
 	my_yyerror("Illegal to redefine 'nomask/final' "
-		   "variable/functions \"%s\"", name->str);
+		   "variable/functions %S", name);
 
-      if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || Pike_compiler->compiler_pass!=1)
+      if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) ||
+	 Pike_compiler->compiler_pass!=1)
       {
 	int n2;
 
@@ -4171,12 +4155,12 @@ int define_variable(struct pike_string *name,
 			  ID_FROM_INT(Pike_compiler->new_program, n)->type)) {
 	  if (!match_types(ID_FROM_INT(Pike_compiler->new_program, n)->type,
 			   type)) {
-	    my_yyerror("Illegal to redefine inherited variable '%s' "
-		       "with different type.", name->str);
+	    my_yyerror("Illegal to redefine inherited variable %S "
+		       "with different type.", name);
 	    return n;
 	  } else {
-	    yywarning("Redefining inherited variable '%s' "
-		      "with different type.", name->str);
+	    yywarning("Redefining inherited variable %S "
+		      "with different type.", name);
 	  }
 	}
 	
@@ -4477,20 +4461,19 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     int overridden;
 
     if(IDENTIFIERP(n)->id_flags & ID_NOMASK)
-      my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
+      my_yyerror("Illegal to redefine 'nomask' identifier %S", name);
 
     if(!TEST_COMPAT(7,2) &&
        IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
 					  n)->identifier_flags))
     {
-      my_yyerror("Illegal to redefine variable \"%s\" as constant.",
-		 name->str);
+      my_yyerror("Illegal to redefine variable %S as constant.", name);
     }
 
     /* not inherited */
     if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
     {
-      my_yyerror("Identifier '%s' defined twice.",name->str);
+      my_yyerror("Identifier %S defined twice.", name);
       return n;
     }
 
@@ -4707,12 +4690,10 @@ INT32 define_function(struct pike_string *name,
 #endif /* PIKE_DEBUG */
     if (!pike_types_le(type, lfun_type->u.type)) {
       if (!match_types(type, lfun_type->u.type)) {
-	my_yyerror("Type mismatch for callback function %s():",
-		   name->str);
+	my_yyerror("Type mismatch for callback function %S:", name);
 	yytype_error(NULL, lfun_type->u.type, type, 0);
       } else if (lex.pragmas & ID_STRICT_TYPES) {
-	yywarning("Type mismatch for callback function %s():",
-		  name->str);
+	yywarning("Type mismatch for callback function %S:", name);
 	yytype_error(NULL, lfun_type->u.type, type,
 		     YYTE_IS_WARNING);
       }
@@ -4756,7 +4737,7 @@ INT32 define_function(struct pike_string *name,
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
       {
-	my_yyerror("Identifier '%s' defined twice.",name->str);
+	my_yyerror("Identifier %S defined twice.", name);
 	return i;
       }
 
@@ -4766,7 +4747,7 @@ INT32 define_function(struct pike_string *name,
 	if(!match_types(type, funp->type))
 	{
 	  if (!(flags & ID_VARIANT)) {
-	    my_yyerror("Prototype doesn't match for function %s.", name->str);
+	    my_yyerror("Prototype doesn't match for function %S.", name);
 	    yytype_error(NULL, funp->type, type, 0);
 	  }
 	}
@@ -4797,7 +4778,7 @@ INT32 define_function(struct pike_string *name,
 #endif
 	)
       {
-	my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
+	my_yyerror("Illegal to redefine 'nomask' function %S.", name);
       }
 
 
@@ -5079,7 +5060,7 @@ int lfun_lookup_id(struct pike_string *lfun_name)
   struct svalue *id = low_mapping_string_lookup(lfun_ids, lfun_name);
   if (!id) return -1;
   if (id->type == T_INT) return id->u.integer;
-  my_yyerror("Bad entry in lfun lookup table for %s.", lfun_name->str);
+  my_yyerror("Bad entry in lfun lookup table for %S.", lfun_name);
   return -1;
 }
 
@@ -5870,11 +5851,11 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 void va_yyerror(const char *fmt, va_list args)
 {
   char buf[8192];
-  VSNPRINTF (buf, sizeof (buf), fmt, args);
+  Pike_vsnprintf (buf, sizeof (buf), fmt, args);
   yyerror(buf);
 }
 
-void my_yyerror(const char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
+void my_yyerror(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
@@ -5919,10 +5900,9 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
 
   if (SAFE_IS_ZERO(sp-1)) {
-    /* FIXME: Doesn't handle wide string error messages. */
     struct pike_string *s = format_exception_for_error_msg (&thrown);
     if (s) {
-      if (!s->size_shift) yyerror (s->str);
+      my_yyerror("%S", s);
       free_string (s);
     }
   }
@@ -7562,7 +7542,7 @@ int find_child(struct program *parent, struct program *child)
   return -1;
 }
 
-void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
+void yywarning(char *fmt, ...)
 {
   char buf[4711];
   va_list args;
@@ -7575,7 +7555,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
   if (Pike_compiler->num_parse_error) return;
 
   va_start(args,fmt);
-  VSNPRINTF (buf, sizeof (buf), fmt, args);
+  Pike_vsnprintf (buf, sizeof (buf), fmt, args);
   va_end(args);
 
   if ((error_handler && error_handler->prog) || get_master()) {
@@ -7811,11 +7791,9 @@ void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
       if (flags & YYTE_IS_WARNING)
-	yywarning("Identifier \"%s\" is incompatible.",
-		  bid->name->str);
+	yywarning("Identifier %S is incompatible.", bid->name);
       else
-	my_yyerror("Identifier \"%s\" is incompatible.",
-		   bid->name->str);
+	my_yyerror("Identifier %S is incompatible.", bid->name);
       yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, flags);
     }
   }
@@ -7849,20 +7827,19 @@ void yyexplain_not_implements(struct program *a, struct program *b, int flags)
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
 	continue;		/* It's ok... */
       if(flags & YYTE_IS_WARNING)
-	yywarning("Missing identifier \"%s\".", bid->name->str);
+	yywarning("Missing identifier %S.", bid->name);
       else
-	my_yyerror("Missing identifier \"%s\".", bid->name->str);
+	my_yyerror("Missing identifier %S.", bid->name);
       continue;
     }
 
     if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
-	my_yyerror("Type of identifier \"%s\" does not match.",
-		   bid->name->str);
+	my_yyerror("Type of identifier %S does not match.", bid->name);
 	yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, 0);
       } else {
-	yywarning("Type of identifier \"%s\" is not strictly compatible.",
-		  bid->name->str);
+	yywarning("Type of identifier %S is not strictly compatible.",
+		  bid->name);
 	yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, YYTE_IS_WARNING);
       }
       continue;

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.346 2004/05/29 18:13:41 grubba Exp $
+|| $Id: las.c,v 1.347 2004/06/30 00:19:27 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.346 2004/05/29 18:13:41 grubba Exp $");
+RCSID("$Id: las.c,v 1.347 2004/06/30 00:19:27 nilsson Exp $");
 
 #include "interpret.h"
 #include "las.h"
@@ -1523,7 +1523,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 
     if(type==n->type) {
       struct pike_string *t1 = describe_type(type);
-      yywarning("Soft cast to %s is a noop.", t1->str);
+      yywarning("Soft cast to %S is a noop.", t1);
       free_string(t1);
       return n;
     }
@@ -1532,8 +1532,8 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
       if (!check_soft_cast(type, n->type)) {
 	struct pike_string *t1 = describe_type(type);
 	struct pike_string *t2 = describe_type(n->type);
-	yywarning("Soft cast to %s isn't a restriction of %s.",
-		  t1->str, t2->str);
+	yywarning("Soft cast to %S isn't a restriction of %S.",
+		  t1, t2);
 	free_string(t2);
 	free_string(t1);
       }
@@ -1626,7 +1626,6 @@ void resolv_constant(node *n)
 
     default:
     {
-      char fnord[1000];
       if(is_const(n))
       {
 	ptrdiff_t args=eval_low(n,1);
@@ -1644,9 +1643,8 @@ void resolv_constant(node *n)
 	  }
 	}
       }
-	
-      sprintf(fnord,"Expected constant, got something else (%d)",n->token);
-      yyerror(fnord);
+
+      my_yyerror("Expected constant, got something else (%d)",n->token);
       push_int(0);
       return;
     }
@@ -1670,7 +1668,7 @@ void resolv_constant(node *n)
 	push_int(0);
       }
     }else{
-      my_yyerror("Identifier '%s' is not a constant", i->name->str);
+      my_yyerror("Identifier %S is not a constant", i->name);
       push_int(0);
     }
   }
@@ -1846,13 +1844,13 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     case T_INT:
       if(!Pike_compiler->num_parse_error) {
 	if (node_name) {
-	  my_yyerror("Failed to index module '%s' with '%s' "
+	  my_yyerror("Failed to index module \"%s\" with %S "
 		     "(module doesn't exist?)",
-		     node_name, id->str);
+		     node_name, id);
 	} else {
-	  my_yyerror("Failed to index module with '%s' "
+	  my_yyerror("Failed to index module with %S "
 		     "(module doesn't exist?)",
-		     id->str);
+		     id);
 	}
       }
       break;
@@ -1903,7 +1901,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
       c = PTR_TO_INT(BEGIN_CYCLIC(Pike_sp[-1].u.refs, id));
       if(c>1)
       {
-	my_yyerror("Recursive module dependency in '%s'.",id->str);
+	my_yyerror("Recursive module dependency in %S.", id);
 	pop_stack();
 	push_int(0);
       }else{
@@ -1937,10 +1935,10 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  {
 	    if (!exception) {
 	      if (node_name) {
-		my_yyerror("Index '%s' not present in module '%s'.",
-			   id->str, node_name);
+		my_yyerror("Index %S not present in module \"%s\".",
+			   id, node_name);
 	      } else {
-		my_yyerror("Index '%s' not present in module.", id->str);
+		my_yyerror("Index %S not present in module.", id);
 	      }
 	    }
 	  }else if (!(Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)) {
@@ -1965,14 +1963,14 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 		 (!node_name || strcmp (node_name, "predef"))) {
 	  if (node_name)
 	    my_yyerror("Got placeholder %s (resolver problem) "
-		       "when indexing module '%s' with '%s'.",
+		       "when indexing module \"%s\" with %S.",
 		       get_name_of_type (Pike_sp[-1].type),
-		       node_name, id->str);
+		       node_name, id);
 	  else
 	    my_yyerror("Got placeholder %s (resolver problem) "
-		       "when indexing a module with '%s'.",
+		       "when indexing a module with %S.",
 		       get_name_of_type (Pike_sp[-1].type),
-		       id->str);
+		       id);
 	}
       }
       END_CYCLIC();
@@ -3519,8 +3517,8 @@ void fix_type_field(node *n)
       if (!check_soft_cast(old_type, CAR(n)->type)) {
 	struct pike_string *t1 = describe_type(old_type);
 	struct pike_string *t2 = describe_type(CAR(n)->type);
-	yywarning("Soft cast to %s isn't a restriction of %s.",
-		  t1->str, t2->str);
+	yywarning("Soft cast to %S isn't a restriction of %S.",
+		  t1, t2);
 	free_string(t2);
 	free_string(t1);
       }
@@ -3581,9 +3579,8 @@ void fix_type_field(node *n)
 	    print_tree(n);
 	  }
 #endif /* PIKE_DEBUG */
-	  yywarning("An expression type %s cannot be assigned to "
-		    "a variable of type %s.",
-		    t1->str, t2->str);
+	  yywarning("An expression type %S cannot be assigned to "
+		    "a variable of type %S.", t1, t2);
 	  free_string(t2);
 	  free_string(t1);
 	}
@@ -3966,8 +3963,8 @@ void fix_type_field(node *n)
 	break;
       }
       if (!(op_node = find_module_identifier(op_string, 0))) {
-	my_yyerror("Internally used efun undefined for token %d: %s()",
-		   n->token, op_string->str);
+	my_yyerror("Internally used efun undefined for token %d: %S",
+		   n->token, op_string);
 	copy_pike_type(n->type, mixed_type_string);
 	break;
       }
@@ -3995,7 +3992,7 @@ void fix_type_field(node *n)
 	free_type(call_type);
 	break;
       }
-      my_yyerror("Bad arguments to %s=().", op_string->str);
+      my_yyerror("Bad arguments to %S.", op_string);
       yytype_error(NULL, op_node->type ? op_node->type : mixed_type_string,
 		   call_type, 0);
       free_node(op_node);
@@ -4249,7 +4246,7 @@ void fix_type_field(node *n)
 		!pike_types_le(CAAR(n)->type, array_type_string)) {
 	      struct pike_string *t = describe_type(CAAR(n)->type);
 	      yywarning("Argument 1 to foreach() is not always an array.");
-	      yywarning("Got: %s", t->str);
+	      yywarning("Got: %S", t);
 	      free_string(t);
 	    }
 	    

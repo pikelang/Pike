@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.336 2004/03/23 15:14:00 mast Exp $
+|| $Id: language.yacc,v 1.337 2004/06/30 00:17:04 nilsson Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.336 2004/03/23 15:14:00 mast Exp $");
+RCSID("$Id: language.yacc,v 1.337 2004/06/30 00:17:04 nilsson Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -721,8 +721,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	      simple_describe_type(s);
 #endif
 	    } else {
-	      my_yyerror("Lost identifier %s (%d).",
-			 $4->u.sval.u.string->str, i);
+	      my_yyerror("Lost identifier %O (%d).", $4->u.sval, i);
 	    }
 	  } else {
 	    fprintf(stderr, "Not defined.\n");
@@ -752,8 +751,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 #endif
 	  }
 	} else {
-	  my_yyerror("Identifier %s lost after first pass.",
-		     $4->u.sval.u.string->str);
+	  my_yyerror("Identifier %S lost after first pass.", $4->u.sval);
 	}
       }
 
@@ -998,8 +996,7 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
 
     if($3->u.sval.u.string->len &&
        islocal($3->u.sval.u.string) >= 0)
-      my_yyerror("Variable '%s' appears twice in argument list.",
-		 $3->u.sval.u.string->str);
+      my_yyerror("Variable %O appears twice in argument list.", $3->u.sval);
     
     add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
     free_node($3);
@@ -1420,8 +1417,7 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
       if (Pike_compiler->compiler_pass!=1) {
 	if ((Pike_sp[-2].type == T_STRING) && (Pike_sp[-2].u.string->len > 0) &&
 	    (Pike_sp[-2].u.string->len < 256)) {
-	  my_yyerror("Not a valid program specifier: '%s'",
-		     Pike_sp[-2].u.string->str);
+	  my_yyerror("Not a valid program specifier: %S", Pike_sp[-2]);
 	} else {
 	  yyerror("Not a valid program specifier.");
 	}
@@ -2254,8 +2250,8 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     type=compiler_pop_type();
 
     if(islocal($5->u.sval.u.string) >= 0)
-      my_yyerror("Variable '%s' appears twice in create argument list.",
-		 $5->u.sval.u.string->str);
+      my_yyerror("Variable %O appears twice in create argument list.",
+		 $5->u.sval);
 
     /* Add the identifier both globally and locally. */
     define_variable($5->u.sval.u.string, type,
@@ -3328,8 +3324,8 @@ idents2: idents
       }
     } else {
       if (Pike_compiler->compiler_pass == 2) {
-	my_yyerror("'%s' not defined in local scope.",
-		   Pike_compiler->last_identifier->str);
+	my_yyerror("%S not defined in local scope.",
+		   Pike_compiler->last_identifier);
 	$$ = 0;
       } else {
 	$$ = mknode(F_UNDEFINED, 0, 0);
@@ -3404,7 +3400,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
     }
     if (e == -1) {
       if (TEST_COMPAT (7, 2))
-	my_yyerror("No such inherit %s.", $1->u.sval.u.string->str);
+	my_yyerror("No such inherit %O.", $1->u.sval);
       else {
 	if ($1->u.sval.u.string == this_program_string) {
 	  inherit_state = Pike_compiler;
@@ -3412,7 +3408,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 	  e = 0;
 	}
 	else
-	  my_yyerror("No inherit or surrounding class %s.", $1->u.sval.u.string->str);
+	  my_yyerror("No inherit or surrounding class %O.", $1->u.sval);
       }
     }
     free_node($1);
@@ -3440,11 +3436,11 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 #endif /* 0 */
       if (!e) {
 	if (inherit_state->new_program->inherits[$1].name) {
-	  my_yyerror("No such inherit %s::%s.",
-		     inherit_state->new_program->inherits[$1].name->str,
-		     $2->u.sval.u.string->str);
+	  my_yyerror("No such inherit %S::%O.",
+		     inherit_state->new_program->inherits[$1].name,
+		     $2->u.sval);
 	} else {
-	  my_yyerror("No such inherit %s.", $2->u.sval.u.string->str);
+	  my_yyerror("No such inherit %O.", $2->u.sval);
 	}
 	$$ = -1;
       } else {
@@ -3470,8 +3466,8 @@ low_idents: TOK_IDENTIFIER
 					      Pike_compiler->last_identifier, 0))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	 (Pike_compiler->compiler_pass==2)) {
-	my_yyerror("Undefined identifier \"%s\".",
-		   Pike_compiler->last_identifier->str);
+	my_yyerror("Undefined identifier %S.",
+		   Pike_compiler->last_identifier);
 	/* FIXME: Add this identifier as a constant in the current program to
 	 *        avoid multiple reporting of the same identifier.
 	 * NOTE: This should then only be done in the second pass.
@@ -3534,12 +3530,12 @@ low_idents: TOK_IDENTIFIER
 	if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	    (Pike_compiler->compiler_pass == 2)) {
 	  if (inherit_state->new_program->inherits[$1].name) {
-	    my_yyerror("Undefined identifier \"%s::%s\".",
-		       inherit_state->new_program->inherits[$1].name->str,
-		       Pike_compiler->last_identifier->str);
+	    my_yyerror("Undefined identifier %S::%S.",
+		       inherit_state->new_program->inherits[$1].name,
+		       Pike_compiler->last_identifier);
 	  } else {
-	    my_yyerror("Undefined identifier \"%s\".",
-		       Pike_compiler->last_identifier->str);
+	    my_yyerror("Undefined identifier %S.",
+		       Pike_compiler->last_identifier);
 	  }
 	  $$=0;
 	}
@@ -3581,11 +3577,9 @@ low_idents: TOK_IDENTIFIER
       {
 	if (Pike_compiler->compiler_pass == 2) {
 	  if (TEST_COMPAT(7,2)) {
-	    yywarning("Undefined identifier \"::%s.\"",
-		      $2->u.sval.u.string->str);
+	    yywarning("Undefined identifier ::%O.", $2->u.sval);
 	  } else {
-	    my_yyerror("Undefined identifier \"::%s\".",
-		       $2->u.sval.u.string->str);
+	    my_yyerror("Undefined identifier ::%O.", $2->u.sval);
 	  }
 	}
 	$$=mkintnode(0);
@@ -3966,22 +3960,14 @@ int low_add_local_name(struct compiler_frame *frame,
     int tmp=low_islocal(frame,str);
     if(tmp>=0 && tmp >= frame->last_block_level)
     {
-      if(str->size_shift)
-	my_yyerror("Duplicate local variable, "
-		   "previous declaration on line %d\n",
-		   frame->variable[tmp].line);
-      else
-	my_yyerror("Duplicate local variable '%s', "
-		   "previous declaration on line %d\n",
-		   STR0(str), frame->variable[tmp].line);
+      my_yyerror("Duplicate local variable %S, "
+		 "previous declaration on line %d\n",
+		 str, frame->variable[tmp].line);
     }
 
     if(type == void_type_string)
     {
-      if(str->size_shift)
-	my_yyerror("Local variables cannot be of type of 'void'.\n");
-      else
-	my_yyerror("Local variable '%s' is void.\n",STR0(str));
+      my_yyerror("Local variable %S is void.\n", str);
     }
   }
 
@@ -4121,10 +4107,7 @@ static int call_handle_import(struct pike_string *s)
       return 1;
     else {
       pop_stack();
-      if (!s->size_shift)
-	my_yyerror("Couldn't find module to import: %s",s->str);
-      else
-	yyerror("Couldn't find module to import");
+      my_yyerror("Couldn't find module to import: %S", s);
     }
   else
     handle_compile_exception ("Error finding module to import");
