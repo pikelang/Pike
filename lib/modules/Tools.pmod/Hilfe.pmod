@@ -4,11 +4,14 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.64 2002/04/09 20:42:40 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.65 2002/04/15 23:22:48 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
   int a = sscanf(\"12\", \"%d\", int b);
+- The variable scope is not correctly adjusted for sscanf
+  constructions like sscanf(x, \"%2d%2d\", int a, int b);
+- int x=x; does not generate an error when x is undefined.
 - Hilfe can not handle enums.
 - Hilfe can not handle typedefs.
 - Hilfe can not handle generated types, e.g.
@@ -619,14 +622,16 @@ private class Expression {
     return sizeof(positions);
   }
 
-  // We do not test for out of boundary indexing here...
   // Returns a token or a token range without whitespaces.
   string `[](int f, void|int t) {
+    if(f>sizeof(positions) || -f>sizeof(positions))
+      return 0;
     if(!t)
       return tokens[positions[f]];
     if(t>=sizeof(positions))
       t = sizeof(positions)-1;
 
+    // Negative t not boundry checked.
     return tokens[positions[f]..positions[t]]*"";
   }
 
@@ -651,15 +656,6 @@ private class Expression {
     return tokens*"";
   }
 
-  // Returns the first complex entity in the expression,
-  // e.g. ({ "Stdio", ".", "File" }) is returned from
-  // ({ "Stdio", ".", "File", " ", "f", ";" }).
-  array(string) first_complex() {
-    int p = search(tokens, " ");
-    if(p==-1) p = sizeof(tokens)-1;
-    return tokens[..p];
-  }
-
   //! Returns at which position the type declaration that
   //! begins at position @[position] ends. A return value of
   //! -1 means that the token or tokens from @[position]
@@ -671,22 +667,25 @@ private class Expression {
       // We are in a type declaration.
       position++;
 
-      if( `[](position)!="(" )
+      if( !(< "(", "|" >)[`[](position)] )
         return position-1;
 
       int plevel;
       for(; position<sizeof(positions); position++) {
         if( `[](position)=="(" ) plevel++;
         if( `[](position)==")" ) plevel--;
+	// We will not index outside the array, since "|" can't be the last entry.
+	if( `[](position)=="|" ) position++;
 	if( !plevel ) break;
       }
       return position;
     }
 
     if( (< "break", "continue", "class", "!", "-",
-           "(", "~", "[" >)[ `[](position) ] )
+           "(", "~", "[", "`" >)[ `[](position) ] )
       return -1;
 
+    // FIXME: Foo.Bar|int
     for(; position<sizeof(positions); position++) {
       if( (< "(", "->", "[", ":", ";", "+", "-",
              "%", "/", "&", "&&", "|", "||",
@@ -695,7 +694,7 @@ private class Expression {
              "~=", "<<", ">>", "<<=", ">>=", "<=",
 	     ">=", "^", "^=" >)[ `[](position) ] )
         return -1;
-      if( `[](position)=="." ) {
+      if( `[](position+1)=="." ) {
         position++;
         continue;
       }
@@ -706,6 +705,43 @@ private class Expression {
     // wasn't used for anything except perhaps loading
     // a module into pike, e.g. "spider;"
     return -1;
+  }
+
+  // Returns the position of the matching parenthesis of
+  // the given kind, starting from the given position. The
+  // position should be the position after the opening
+  // parenthesis, or later. Assuming balanced code. Returns
+  // -1 on failure.
+  int(-1..) find_matching(string token, int(0..)|void pos) {
+    string find = ([ "(":")", "{":"}", "[":"]",
+		     "({":"})", "([":"])", "(<":">)" ])[token];
+    int plevel=1;
+    while( pos<sizeof(positions) ) {
+      if( `[](pos)==token ) plevel++;
+      if( `[](pos)==find ) plevel--;
+      if(!plevel) return pos;
+      pos++;
+    }
+    return -1;
+  }
+
+  // Is there a block starting at @[pos]?
+  int(0..1) is_block(int(0..) pos) {
+
+    if( (< "for", "foreach", "switch", "while", "lambda", "class",
+	   "do", "gauge", "catch" >)[ `[](pos) ] )
+      return 1;
+
+    if( `[](pos+1)=="{" )
+      return 1;
+    if( `[](pos+1)!="(" )
+      return 0;
+    pos = find_matching("(", pos);
+    if( pos==-1 )
+      return 0;
+    if( `[](pos)=="{" )
+      return 1;
+    return 0;
   }
 
   string _sprintf(int t) {
@@ -971,7 +1007,7 @@ class Evaluator {
   void print_version()
   {
     write(version()+
-	  " running Hilfe v3.2 (Incremental Pike Frontend)\n");
+	  " running Hilfe v3.3 (Incremental Pike Frontend)\n");
   }
 
   //! Clears the current state, history and removes all locally
@@ -1125,80 +1161,148 @@ class Evaluator {
       vtype[var] = old_value;
   }
 
-  private constant object_ops = (< ";", "->", "[",
-				   "+", "-", "/", "*",
-				   "&", "|", "^", "<<", ">>",
-				   "%", "~", "==", "<", ">" >);
-
-
   // Rewrites "dangerous" tokens (int/string/float-variables) to
   // operate directly in the variable mapping. It rewrites all other
-  // variables as well, but we didn't have to. Note that this
-  // throws the object orientation out the door, since we apply
-  // knowledge of the internals of the wrapper here.
-  private int relocate( Expression expr, int p, multiset(string) symbols ) {
-    multiset next_symbols = (<>);
-    int plevel;
-    int scanf;
-    for( ; p<sizeof(expr); p++) {
+  // variables as well, but we didn't have to.
+  private int rel_parser( Expression expr, multiset(string) symbols, void|int p ) {
+    int top = !p;
+    while( p<sizeof(expr)) {
+      if( expr->is_block(p) ) {
+	p++;
 
-      if(expr[p]=="(") {
+	string type = expr[p++];
+	multiset(string) new_scope = symbols+(<>);
+
+	// No () for catch, gauge, do and possibly class.
+	// Get variable names for next scope clobber.
+	if(expr[p]=="(") {
+	  p++;
+
+	  switch(type) {
+
+	  case "foreach":
+	    p = relocate(expr, symbols, new_scope, p, ",");
+	    if(expr[p]!=")") {
+	      p = relocate(expr, symbols, new_scope, p);
+	      p = relocate(expr, symbols, new_scope, p);
+	    }
+	    break;
+
+	  case "for":
+	    p = relocate(expr, symbols, new_scope, p);
+	    p = relocate(expr, symbols, new_scope, p);
+	    p = relocate(expr, symbols, new_scope, p);
+	    break;
+
+	  case "lambda":
+	  case "class":
+	    while(expr[p]!=")")
+	      p = relocate(expr, symbols, new_scope, p, ",");
+	    break;
+
+	  // FIXME: Detect named lambdas.
+
+	  default:
+	    p = relocate(expr, symbols, new_scope, p);
+	    break;
+	  }
+
+	}
+
+	if(expr[p]=="{") {
+	  p++;
+	  p = rel_parser(expr, new_scope, p);
+	  p++;
+	  continue;
+	}
+
+	p = relocate(expr, new_scope, 0, p);
+	p++;
+	continue;
+      }
+
+      // expr is an expression
+      p = relocate(expr, symbols, symbols, p, 0, top);
+      p++;
+    }
+  }
+
+  private int relocate( Expression expr, multiset(string) symbols,
+			multiset(string) next_symbols, int p, void|string safe_word,
+			void|int(0..1) top) {
+    int plevel;
+    for( ; p<sizeof(expr); p++) {
+      string t = expr[p];
+
+      if( (< "(", "{" >)[t] ) {
 	plevel++;
-	if(p && expr[p-1]=="sscanf") scanf=1;
 	continue;
       }
-      if(expr[p]==")") {
+
+      if( (< "}", ")" >)[t] ) {
+	if(!plevel) return p;
 	plevel--;
-	scanf=0;
 	continue;
       }
+
+      if( t=="{" )
+	error("HilfeError: Error in relocation parser (relocate:'}')");
+
+      if( !plevel && (t==safe_word || t==";") )
+	return p;
 
       // Rewrite variable
       // FIXME: Possibly soft cast value to declare variable type.
-      if(symbols[expr[p]]) {
-	expr[p] = "(___hilfe->"+expr[p]+")";
+      if(symbols[t]) {
+	expr[p] = "(___hilfe->" + t + ")";
 	continue;
       }
 
       // Skip tokens preceded by . or ->
-      if( (< ".", "->" >)[expr[p]] ) {
+      if( (< ".", "->" >)[t] ) {
 	p++;
 	continue;
       }
 
-      // Clobber variables
-      // FIXME: Doesn't handle variable clobber typed as program name.
-      if( (< "int", "float", "string", "mapping", "array", "multiset",
-	     "program", "object" >)[expr[p]] ) {
-	p++;
-	// Skip type declaration
-	while(expr[p]=="." || expr[p]=="|" || expr[p]=="(") {
-	  if(expr[p]=="." || expr[p]=="|")
-	    p += 2;
-	  else
-	    do {
-	      if(expr[p]=="(") plevel++;
-	      else if(expr[p]==")") plevel--;
-	      p++;
-	    } while(plevel);
+      // FIXME: Handle variable declarations in sprintf.
+
+      int pos = expr->endoftype(p);
+      if(pos>=0) {
+	pos++;
+
+	if( (< ";", ",", "=" >)[expr[pos+1]] ) {
+	  // We are declaring the variable expr[pos]
+	  while(pos<sizeof(expr)) {
+	    int from = pos;
+	    int plevel;
+	    while((expr[pos]!="," && expr[pos]!=";") || plevel) {
+	      if(expr[pos]=="(" || expr[pos]=="{") plevel++;
+	      else if(expr[pos]==")" || expr[pos]=="}") plevel--;
+	      pos++;
+	      if(pos==sizeof(expr)) {
+		// Something went wrong. End relocation completely.
+		return pos;
+	      }
+	    }
+
+	    for(int i=from+1; i<pos; i++)
+	      if(symbols[expr[i]])
+		expr[i] = "(___hilfe->"+expr[i]+")";
+	    if(next_symbols)
+	      next_symbols[expr[from]] = 0;
+	    else
+	      symbols[expr[from]] = top;
+	    if(top)
+	      symbols[expr[from]] = 1;
+	    pos++;
+	  }
+	  p = pos;
+	  continue;
 	}
-
-	if(plevel && !scanf)
-	  next_symbols[expr[p]] = 1;
-	else
-	  symbols[expr[p]] = 0;
-
-	// FIXME [bug 2941]: comma-seperated list of variables.
       }
 
-      // Handle scopes
-      if(expr[p]=="}")
-	return p;
-      if(expr[p]=="{") {
-	p = relocate(expr, p+1, symbols-next_symbols);
-	next_symbols = (<>);
-      }
     }
+    return p;
   }
 
   //! Parses a Pike expression. Returns 0 if everything went well,
@@ -1209,7 +1313,7 @@ class Evaluator {
     expr->check_modifiers();
 
     // Rewrite variables for the Hilfe wrapper
-    relocate(expr, 0, (multiset)(indices(variables)) );
+    rel_parser(expr, (multiset)(indices(variables)) );
 
     switch(expr[0])
     {
@@ -1281,6 +1385,8 @@ class Evaluator {
 	    if(pos==sizeof(expr))
 	      return "Hilfe Error: Bug in variable handling or error in variable assignment.\n";
 	  }
+	  if(constants[expr[from]])
+	    return "Hilfe Error: \"" + expr[from] + "\" already defined as constant.\n";
 	  add_hilfe_variable(type, [string]expr[from..pos-1], expr[from]);
 	  pos++;
 	}
@@ -1336,8 +1442,8 @@ class Evaluator {
 #endif
 
   void std_reswrite(function w, string sres, int num, mixed res) {
-    w( "Result %d: %s\n", num,
-       replace(sres, "\n", "\n         "+(" "*sizeof(""+num))) );
+    w( "(%d) Result: %s\n", num,
+       replace(sres, "\n", "\n           "+(" "*sizeof(""+num))) );
   }
 
   function reswrite = std_reswrite;
@@ -1834,7 +1940,7 @@ ___HilfeWrapper  A wrapper around the entered expression.
 
 
 Type \"help hilfe todo\" to get a list of known Hilfe bugs/lackings.
-Type \"help about hilfe\" to extended version information.
+Type \"help about hilfe\" to get an extended version information.
 ";
 
 constant documentation_dump =
