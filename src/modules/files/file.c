@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.171 2000/04/11 17:17:56 hubbe Exp $");
+RCSID("$Id: file.c,v 1.172 2000/04/11 21:00:57 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2779,6 +2779,14 @@ int pike_make_pipe(int *fds)
   if (res < 0) return res;
   if ((fds[0] >= MAX_OPEN_FILEDESCRIPTORS) ||
       (fds[1] >= MAX_OPEN_FILEDESCRIPTORS)) {
+#ifdef PIKE_DEBUG
+    /* FIXME: This function is currently only used to create the backend pipe,
+     * so this debug shouldn't hurt much...
+     */
+    fprintf(stderr,
+	    "pike_make_pipe() failed: fd's out of range [0,%d): %d, %d\n",
+	    MAX_OPEN_FILEDESCRIPTORS, fds[0], fds[1]);
+#endif /* PIKE_DEBUG */
     close(fds[0]);
     close(fds[1]);
 #ifdef EMFILE
