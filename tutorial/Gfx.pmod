@@ -46,6 +46,7 @@ string cached_write(string data, string ext)
     }
 
   image_num++;
+  mkdir("gfx");
   string filename="gfx/i"+image_num+"."+ext;
   rm(filename);
   werror("Writing "+filename+".\n");
