@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.324 2003/08/08 11:02:15 mast Exp $
+|| $Id: interpret.c,v 1.325 2003/08/08 13:21:49 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.324 2003/08/08 11:02:15 mast Exp $");
+RCSID("$Id: interpret.c,v 1.325 2003/08/08 13:21:49 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1741,7 +1741,7 @@ void low_return_pop(void)
   }
 
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
-  sub_ref (o);
+  free_object (o);
 #endif
 }
 
