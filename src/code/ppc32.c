@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.26 2002/10/23 14:58:26 marcus Exp $
+|| $Id: ppc32.c,v 1.27 2002/11/04 17:05:31 marcus Exp $
 */
 
 /*
@@ -382,7 +382,7 @@ static void ppc32_escape_catch(void)
 static void maybe_update_pc(void)
 {
   static int last_prog_id=-1;
-  static int last_num_linenumbers=-1;
+  static unsigned int last_num_linenumbers=~0;
   if(last_prog_id != Pike_compiler->new_program->id ||
      last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
   {
@@ -550,14 +550,46 @@ void ins_f_byte_with_2_args(unsigned int a,
   return;
 }
 
-INT32 ppc32_ins_f_jump(unsigned int b)
+INT32 ppc32_ins_f_jump(unsigned int a)
 {
   INT32 ret;
-  if(b != F_BRANCH) return -1;
+  int (*test_func)(void);
+  if(a == F_BRANCH)
+    test_func = NULL;
+  else if(a == F_CATCH || a == F_RECUR ||
+	  a == F_RECUR_AND_POP || a == F_TAIL_RECUR)
+    return -1;
+  else
+    if(a<F_OFFSET || !(instrs[a-F_OFFSET].flags & I_BRANCH) ||
+       !(test_func = instrs[a-F_OFFSET].address))
+      Pike_fatal("ppc32_ins_f_jump: invalid branch op %d\n", a);
   FLUSH_CODE_GENERATOR_STATE();
+  if(test_func) {
+    ADD_CALL(test_func);
+    /* cmplwi r3,0 */
+    CMPLI(0, PPC_REG_RET, 0);
+    /* beq .+8 */
+    BC(12, 2, 2);
+  }
   ret=DO_NOT_WARN( (INT32) PIKE_PC );
+  /* b . */
   B(0);
   return ret;
+}
+
+INT32 ppc32_ins_f_jump_with_arg(unsigned int a, unsigned INT32 b)
+{
+  if(a == F_COND_RECUR) return -1;
+  SET_REG(PPC_REG_ARG1, b);
+  return ppc32_ins_f_jump(a);
+}
+
+INT32 ppc32_ins_f_jump_with_2_args(unsigned int a, unsigned INT32 b,
+				   unsigned INT32 c)
+{
+  SET_REG(PPC_REG_ARG1, b);
+  SET_REG(PPC_REG_ARG2, c);
+  return ppc32_ins_f_jump(a);
 }
 
 void ppc32_update_f_jump(INT32 offset, INT32 to_offset)

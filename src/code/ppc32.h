@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.18 2002/10/23 14:58:26 marcus Exp $
+|| $Id: ppc32.h,v 1.19 2002/11/04 17:05:31 marcus Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -70,7 +70,7 @@
 
 #define PPC_SPREG_LR 8
 
-#define PPC_REG_RET 0
+#define PPC_REG_RET 3
 
 #define PPC_REG_ARG1 3
 #define PPC_REG_ARG2 4
@@ -179,10 +179,14 @@ void ppc32_flush_code_generator_state(void);
 #define ins_byte(VAL)	  add_to_program((INT32)(VAL))
 #define ins_data(VAL)	  add_to_program((INT32)(VAL))
 
-INT32 ppc32_ins_f_jump(unsigned int b);
+INT32 ppc32_ins_f_jump(unsigned int a);
+INT32 ppc32_ins_f_jump_with_arg(unsigned int a, unsigned INT32 b);
+INT32 ppc32_ins_f_jump_with_2_args(unsigned int a, unsigned INT32 b, unsigned INT32 c);
 void ppc32_update_f_jump(INT32 offset, INT32 to_offset);
 INT32 ppc32_read_f_jump(INT32 offset);
 #define INS_F_JUMP ppc32_ins_f_jump
+#define INS_F_JUMP_WITH_ARG ppc32_ins_f_jump_with_arg
+#define INS_F_JUMP_WITH_TWO_ARGS ppc32_ins_f_jump_with_2_args
 #define UPDATE_F_JUMP ppc32_update_f_jump
 #define READ_F_JUMP ppc32_read_f_jump
 
@@ -243,3 +247,6 @@ void ppc32_decode_program(struct program *p);
 			: "ctr", "lr", "cc", "memory", "r31", "r0",	    \
 			  "r3", "r4", "r5", "r6", "r7", "r8", "r9",	    \
 			  "r10", "r11", "r12")
+
+#define OPCODE_INLINE_BRANCH
+
