@@ -557,51 +557,6 @@ void f_allocate(INT32 args)
   push_array( allocate_array(size) );
 }
 
-void f_sizeof(INT32 args)
-{
-  INT32 tmp;
-  if(args<1)
-    error("Too few arguments to sizeof()\n");
-
-  pop_n_elems(args-1);
-  switch(sp[-1].type)
-  {
-  case T_STRING:
-    tmp=sp[-1].u.string->len;
-    free_string(sp[-1].u.string);
-    break;
-
-  case T_ARRAY:
-    tmp=sp[-1].u.array->size;
-    free_array(sp[-1].u.array);
-    break;
-
-  case T_MAPPING:
-    tmp=m_sizeof(sp[-1].u.mapping);
-    free_mapping(sp[-1].u.mapping);
-    break;
-
-  case T_LIST:
-    tmp=sp[-1].u.list->ind->size;
-    free_list(sp[-1].u.list);
-    break;
-
-  case T_OBJECT:
-    if(!sp[-1].u.object->prog)
-      error("sizeof() on destructed object.\n");
-    tmp=sp[-1].u.object->prog->num_identifier_indexes;
-    free_object(sp[-1].u.object);
-    break;
-
-  default:
-    error("Bad argument 1 to sizeof().\n");
-    return; /* make apcc happy */
-  }
-  sp[-1].type=T_INT;
-  sp[-1].subtype=NUMBER_NUMBER;
-  sp[-1].u.integer=tmp;
-}
-
 void f_rusage(INT32 args)
 {
   INT32 *rus,e;
@@ -1524,7 +1479,6 @@ void init_builtin_efuns()
   add_efun("rows",f_rows,"function(mixed,array:array)",0);
   add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
   add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
-  add_efun("sizeof", f_sizeof, "function(string|list|array|mapping|object:int)",0);
   add_efun("sleep", f_sleep, "function(float|int:void)",OPT_SIDE_EFFECT);
   add_efun("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
@@ -1547,5 +1501,8 @@ void init_builtin_efuns()
 #ifdef GC2
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
 #endif
+
+
+
 }
 

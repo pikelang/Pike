@@ -34,7 +34,6 @@ void f_function_name(INT32 args);
 void f_zero_type(INT32 args);
 void f_all_efuns(INT32 args);
 void f_allocate(INT32 args);
-void f_sizeof(INT32 args);
 void f_rusage(INT32 args);
 void f_this_object(INT32 args);
 void f_throw(INT32 args);
