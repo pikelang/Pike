@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.503 2002/04/29 14:59:25 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.504 2002/04/29 15:07:14 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -7806,6 +7806,9 @@ test_equal(lower_case("Foo1234-*~\n\x13000"),"foo1234-*~\n\x13000")
 test_equal(lower_case("Foo\x178"),"foo\xff")
 test_equal(lower_case("Foo\x39c"),"foo\x3bc")
 test_equal(lower_case((string) ({
+// These characters correspond to the cases in case_info.h
+// Please update this and the corresponding upper_case table
+// when UnicodeData.txt is changed.
 0x0000, 0x0041, 0x005b, 0x0061, 0x007b, 0x00b5, 0x00b6, 0x00c0, 
 0x00d7, 0x00d8, 0x00df, 0x00e0, 0x00f7, 0x00f8, 0x00ff, 0x0100, 
 0x0130, 0x0131, 0x0132, 0x0138, 0x0139, 0x0149, 0x014a, 0x0178, 
@@ -8493,6 +8496,9 @@ test_equal(upper_case("Foo1234-*~\n\x13000"),"FOO1234-*~\n\x13000")
 test_equal(upper_case("Foo\xff"),"FOO\x178")
 test_equal(upper_case("Foo\xb5"),"FOO\x39c")
 test_equal(upper_case((string) ({
+// These characters correspond to the cases in case_info.h
+// Please update this and the corresponding lower_case table
+// when UnicodeData.txt is changed.
 0x0000, 0x0041, 0x005b, 0x0061, 0x007b, 0x00b5, 0x00b6, 0x00c0, 
 0x00d7, 0x00d8, 0x00df, 0x00e0, 0x00f7, 0x00f8, 0x00ff, 0x0100, 
 0x0130, 0x0131, 0x0132, 0x0138, 0x0139, 0x0149, 0x014a, 0x0178, 
