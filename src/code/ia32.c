@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.13 2001/07/27 08:32:03 hubbe Exp $
+ * $Id: ia32.c,v 1.14 2001/08/02 22:24:54 hubbe Exp $
  *
  * Machine code generator for IA32.
  *
@@ -412,12 +412,21 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
       }
       break;
 
+      /*
+       * And this would work nicely for all non-dynamically loaded
+       * functions. Unfortunately there is no way to know if it is
+       * dynamically loaded or not at this point...
+       */
     case F_MARK_CALL_BUILTIN:
+      if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
+	break;
       update_arg1(0);
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;
 
     case F_CALL_BUILTIN1:
+      if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
+	break;
       update_arg1(1);
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;

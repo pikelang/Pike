@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.18 2001/07/02 04:09:47 hubbe Exp $
+ * $Id: constants.h,v 1.19 2001/08/02 22:24:54 hubbe Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -18,13 +18,16 @@
 typedef int (*docode_fun)(node *n);
 typedef node *(*optimize_fun)(node *n);
 
+#define CALLABLE_DYNAMIC 1
+
 struct callable
 {
   PIKE_MEMORY_OBJECT_MEMBERS;
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;
-  INT16 flags;
+  INT16 flags; /* OPT_* */
+  INT16 internal_flags;
 #ifdef PIKE_DEBUG
   INT8 may_return_void;
   long compiles;
