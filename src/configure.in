@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.852 2004/12/11 18:03:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.853 2004/12/11 21:00:27 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1925,6 +1925,11 @@ if test "$cflags_is_set" = "no"; then
       # Disable excessive warnings from Linux's header files:
       #   warning #1292: attribute "__nothrow__" ignored
       AC_SYS_COMPILER_FLAG(-wd1292,wd1292,WARN)
+      # And from Pike:
+      #   remark #177: function "MKPCHARP" was declared but never referenced
+      AC_SYS_COMPILER_FLAG(-wd177,wd177,WARN)
+      #   remark #279: controlling expression is constant
+      AC_SYS_COMPILER_FLAG(-wd279,wd279,WARN)
 
       AC_SYS_COMPILER_FLAG(-Ob2,Ob2,OPTIMIZE)
       AC_SYS_COMPILER_FLAG(-ipo,ipo,OPTIMIZE)
