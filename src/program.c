@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.131 1999/07/01 22:12:56 grubba Exp $");
+RCSID("$Id: program.c,v 1.132 1999/07/01 22:14:56 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -39,7 +39,7 @@ RCSID("$Id: program.c,v 1.131 1999/07/01 22:12:56 grubba Exp $");
 #define ATTRIBUTE(X)
 
 
-#define COMPILER_DEBUG
+/* #define COMPILER_DEBUG */
 
 #ifdef COMPILER_DEBUG
 #define CDFPRINTF(X)	fprintf X
