@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.243 2001/04/03 11:48:16 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.244 2001/04/03 11:52:49 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2476,7 +2476,7 @@ enum: modifiers TOK_ENUM
     if ($4) {
       ref_push_type_value(t);
       add_constant($4->u.sval.u.string, Pike_sp-1,
-		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_LOCAL);
+		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
       pop_stack();
       free_node($4);
     }
@@ -2497,7 +2497,7 @@ typedef: modifiers TOK_TYPEDEF full_type simple_identifier ';'
     if ($4) {
       ref_push_type_value(t);
       add_constant($4->u.sval.u.string, Pike_sp-1,
-		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_LOCAL);
+		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
       pop_stack();
       free_node($4);
     }
