@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.159 1999/11/16 20:51:36 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.160 1999/11/16 21:28:53 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -86,6 +86,7 @@ RCSID("$Id: signal_handler.c,v 1.159 1999/11/16 20:51:36 grubba Exp $");
 #define MAX_SIGNALS NSIG
 #else
 #define MAX_SIGNALS 256
+#define NSIG 256
 #endif
 
 #define SIGNAL_BUFFER 16384
@@ -2584,13 +2585,14 @@ void f_create_process(INT32 args)
       {
 	/* Restore the signals to the defaults. */
 #ifdef HAVE_SIGNAL
-#ifndef NSIG
-#define NSIG 60
-#endif /* !NSIG */
+#ifdef _sys_nsig
+        for(i=0; i<_sys_nsig; i++)
+          signal(i, SIG_DFL);
+#else /* !_sys_nsig */
         for(i=0; i<NSIG; i++)
           signal(i, SIG_DFL);
-#else
-#endif
+#endif /* _sys_nsig */
+#endif /* HAVE_SIGNAL */
       }
 
       if(tmp_cwd)
