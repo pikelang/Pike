@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.20 2002/01/16 02:54:09 nilsson Exp $
+ * $Id: constants.h,v 1.21 2002/01/27 18:25:43 mast Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -69,6 +69,7 @@ PMOD_EXPORT struct callable *quick_add_efun(char *name, ptrdiff_t name_length,
 					    INT16 flags,
 					    optimize_fun optimize,
 					    docode_fun docode);
+void init_builtin_constants(void);
 void cleanup_added_efuns(void);
 /* Prototypes end here */
 

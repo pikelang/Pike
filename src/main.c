@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.145 2002/01/16 02:54:14 nilsson Exp $");
+RCSID("$Id: main.c,v 1.146 2002/01/27 18:25:43 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -243,6 +243,7 @@ int dbm_main(int argc, char **argv)
 #ifdef PIKE_NEW_MULTISETS
     init_multiset();
 #endif
+    init_builtin_constants();
   }
 
 #ifdef SHARED_NODES

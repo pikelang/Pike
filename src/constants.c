@@ -17,24 +17,18 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.34 2002/01/16 02:54:09 nilsson Exp $");
+RCSID("$Id: constants.c,v 1.35 2002/01/27 18:25:43 mast Exp $");
 
 struct mapping *builtin_constants = 0;
 
 PMOD_EXPORT struct mapping *get_builtin_constants(void)
 {
-  if(!builtin_constants)
-    builtin_constants=allocate_mapping(20);
-
   return builtin_constants;
 }
 
 void low_add_efun(struct pike_string *name, struct svalue *fun)
 {
   struct svalue s;
-
-  if(!builtin_constants)
-    builtin_constants=allocate_mapping(20);
 
   s.type=T_STRING;
   s.subtype=0;
@@ -191,6 +185,11 @@ void present_constant_profiling(void)
   }
 }
 #endif
+
+void init_builtin_constants(void)
+{
+  builtin_constants = allocate_mapping(20);
+}
 
 void cleanup_added_efuns(void)
 {
