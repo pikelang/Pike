@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.22 2002/11/26 16:28:23 nilsson Exp $
+dnl $Id: testsuite.in,v 1.23 2003/01/25 23:59:00 nilsson Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -134,80 +134,38 @@ cond( [[ master()->resolv("Gmp")->mpf ]],
   test_true(Gmp.mpf(1))
 ]])
 
-  define([[mpz_test_cmp]],[[
-    cond( [[ master()->resolv("Gmp")->mpz ]],
-    [[
-    test_cmp3(Gmp.mpz($1), $2, $3)
-    test_cmp3($1, Gmp.mpz($2), $3)
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpz ]],
-    [[
-    test_cmp3(Gmp.mpz($1), Gmp.mpz($2), $3)
-    test_cmp3(Gmp.mpz($1), $2, Gmp.mpz($3))
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpz ]],
-    [[
-    test_cmp3($1, Gmp.mpz($2), Gmp.mpz($3))
-    test_cmp3(Gmp.mpz($1), Gmp.mpz($2), Gmp.mpz($3))
+  define([[mpx_test_cmp]],[[
+    cond( [[ master()->resolv("Gmp")->mpz ]],[[
+      test_cmp3($1, Gmp.mpz($2), $3)
+      test_cmp3(Gmp.mpz($1), Gmp.mpz($2), Gmp.mpz($3))
     ]])
 
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpq($1), $2, $3)
-    test_cmp3($1, Gmp.mpq($2), $3)
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpq($1), Gmp.mpq($2), $3)
-    test_cmp3(Gmp.mpq($1), $2, Gmp.mpq($3))
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3($1, Gmp.mpq($2), Gmp.mpq($3))
-    test_cmp3(Gmp.mpq($1), Gmp.mpq($2), Gmp.mpq($3))
+    cond( [[ master()->resolv("Gmp")->mpq ]],[[
+      test_cmp3($1, Gmp.mpq($2), $3)
+      test_cmp3(Gmp.mpq($1), Gmp.mpq($2), Gmp.mpq($3))
     ]])
 
 
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpf($1), $2, $3)
-    test_cmp3($1, Gmp.mpf($2), $3)
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpf($1), Gmp.mpf($2), $3)
-    test_cmp3(Gmp.mpf($1), $2, Gmp.mpf($3))
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3($1, Gmp.mpf($2), Gmp.mpf($3))
-    test_cmp3(Gmp.mpf($1), Gmp.mpf($2), Gmp.mpf($3))
+    cond( [[ master()->resolv("Gmp")->mpf ]],[[
+      test_cmp3($1, Gmp.mpf($2), $3)
+      test_cmp3(Gmp.mpf($1), Gmp.mpf($2), Gmp.mpf($3))
     ]])
   ]])
 
-  define([[mpz_test_type1]],[[
-    mpz_test_cmp($1,$2,$3)
-    mpz_test_cmp($1.0,$2,$3)
+  define([[mpx_test]],[[
+    mpx_test_cmp($1.0,$2,$4($3))
+    mpx_test_cmp($1,$2.0,$4($3.0))
   ]])
 
-  define([[mpz_test_type2]],[[
-    mpz_test_type1($1,$2,$3)
-    mpz_test_type1($1,$2.0,$3)
+  define([[mpx_mega_test]],[[
+    mpx_test($1,$2,$3,)
+    mpx_test($1,$2,$3,Gmp.mpz)
+dnl    mpx_test($1,$2,$3,Gmp.mpq)
+dnl    mpx_test($1,$2,$3,Gmp.mpf)
   ]])
 
-  define([[mpz_test_type3]],[[
-    mpz_test_type2($1,$2,$3)
-    mpz_test_type2($1,$2,$3.0)
-  ]])
-
-  define([[mpz_test_type4]],[[
-    mpz_test_type2($1,$2,$3)
-    mpz_test_type2($1,$2,Gmp.mpz($3))
-  ]])
-
-  mpz_test_type4(1,2,3)
-  mpz_test_type4(-2,1,4)
-  mpz_test_type4(-2,-1,4)
+  mpx_mega_test(1,2,3)
+  mpx_mega_test(-2,-1,4)
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
