@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.274 2001/12/12 09:23:49 grubba Exp $");
+RCSID("$Id: las.c,v 1.275 2001/12/13 11:19:18 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1520,7 +1520,7 @@ void resolv_constant(node *n)
 	}
 	if(!state)
 	{
-	  yyerror("Failed to resolv external constant");
+	  yyerror("Failed to resolve external constant");
 	  push_int(0);
 	  return;
 	}
