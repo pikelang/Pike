@@ -47,7 +47,7 @@ void do_gc(void);
 #define GC_FREE() do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); }while(0)
 #else
 #define debug_gc_check_svalues(S,N,T,V) gc_check_svalues(S,N)
-#define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalues(S,N)
+#define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue(S,N)
 #define debug_gc_xmark_svalue(S,N,X) gc_xmark_svalue(S,N)
 #define GC_FREE() do { num_objects-- ; }while(0)
 #endif
