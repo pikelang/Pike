@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.22 1999/04/17 16:23:45 grubba Exp $
+// $Id: manpages,v 1.23 1999/04/17 17:10:07 grubba Exp $
 
 #include "types.h"
 
@@ -62,22 +62,37 @@ void mkdirhier(string what)
 
 int stripws=1;
 
-string make_manpage(string base, SGML data, string ind, string fbase)
+string make_manpage(string base, string|SGML data, string ind, string fbase)
 {
   string res="";
 
   if (verbose) {
-    werror(sprintf("data:%O\n", data));
+    werror(sprintf("data:%O, stripws:%d\n", data, stripws));
   }
 
   if (stringp(data)) {
-    if (stripws) {
-      sscanf(data,"%*[ \t\n\r]%s",data);
+    if (sizeof(data)) {
+      if (stripws) {
+	string d2 = data;
+	sscanf(data,"%*[ \t\n\r]%s",data);
+	if (stripws == -1) {
+	  stripws = 1;
+	  if (d2[0] == ' ') {
+	    // Keep a single whitespace.
+	    data = " " + data;
+	  }
+	}
+      }
+      res+=quote_text(data);
     }
-    mixed d = data;	// Fool Pikes type-checker.
-    res+=quote_text(d);
   } else if(arrayp(data)) {
-    foreach (data, TAG tag) {
+    int n;
+    for (n = 0; n < sizeof(data); n++) {
+      TAG tag = data[n];
+      if (stripws && n) {
+	// Keep a single whitespace between tags.
+	stripws = -1;
+      }
       if (objectp(tag)) {
 	if (verbose) {
 	  werror(sprintf("tag:%O, params:%O\n", tag->tag, tag->params));
@@ -149,8 +164,20 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	}
 	res+=make_manpage(base,tag->data,ind,fbase);
       } else if (stringp(tag)) {
-	if (stripws) sscanf(tag,"%*[ \t\n\r]%s",tag);
-	res+=quote_text(tag);
+	if (sizeof(tag)) {
+	  if (stripws) {
+	    string t2 = tag;
+	    sscanf(tag,"%*[ \t\n\r]%s",tag);
+	    if (stripws == -1) {
+	      stripws = 1;
+	      if (t2[0] == ' ') {
+		// Keep a single whitespace.
+		tag = " " + tag;
+	      }
+	    }
+	  }
+	  res+=quote_text(tag);
+	}
 	stripws=0;
       }
     }
@@ -181,6 +208,8 @@ void make_page(string base, TAG tag, string ind, string fbase)
 			  //			  sscanf(s,t+".%s",s);
 			  return u+"/"+s+"."+base;
 			},fbase,globalbase,base);
+
+     verbose = (names[0] == "Stdio.sendfile");
 
      sscanf(outfiles[0],"%*s/man%*s/%s",q);
      if (q) {
