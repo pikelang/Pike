@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.55 1999/11/04 20:05:25 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.56 1999/11/16 00:51:55 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -995,6 +995,19 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
       sprintf(buf,"<Unknown %d>",s->type);
       my_strcat(buf);
   }
+}
+
+void print_svalue (FILE *out, struct svalue *s)
+{
+  string orig_str;
+  string str;
+  orig_str = complex_free_buf();
+  init_buf();
+  describe_svalue (s, 0, 0);
+  str = complex_free_buf();
+  if (orig_str.str) init_buf_with_string (orig_str);
+  fwrite (str.str, str.len, 1, out);
+  free (str.str);
 }
 
 void clear_svalues(struct svalue *s, INT32 num)
