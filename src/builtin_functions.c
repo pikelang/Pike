@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.290 2000/07/19 13:09:53 lange Exp $");
+RCSID("$Id: builtin_functions.c,v 1.291 2000/07/19 16:48:51 lange Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -183,7 +183,7 @@ static struct case_info *find_ci(int c)
       hi = mid;
     }
   }
-  return(cache = case_info + lo);
+  return(cache = (struct case_info *)case_info + lo);
 }
 
 #define DO_LOWER_CASE(C) do {\
