@@ -1,5 +1,4 @@
-function write;
-string source, outfile, outdir;
+string outfile, outdir;
 
 object get_widget_from( string what )
 {
@@ -53,12 +52,16 @@ object w, ex;
 int main(int argc, array (string) argv)
 {
   werror("IMAGE ["+argv[1]+"]\n");
-  if(!write)
-    write = Stdio.stdout.write;
-  source = argv[1];
+  string source = argv[1];
+  outdir = argv[3];
+  outfile = argv[4];
 
-  if(search( argv[1], "Gnome" ) != -1 )
+  if(search( source, "Gnome" ) != -1 )
+#if constant(Gnome.init)
     Gnome.init( "example", "1.0", ({ "example image" }),0 );
+#else
+    return 1;
+#endif
   else
     GTK.setup_gtk( "make_gtkexample", 1 );
 
@@ -66,7 +69,7 @@ int main(int argc, array (string) argv)
   {
     w = GTK.Window( GTK.WindowToplevel );
     w->set_title("Example image generation");
-    w->add( ex=get_widget_from( argv[1] ) );
+    w->add( ex=get_widget_from( source ) );
     w->set_border_width(20);
   }
   else
@@ -74,8 +77,6 @@ int main(int argc, array (string) argv)
     ex = w = get_widget_from( argv[1] );
     w->set_border_width( 20 );
   }
-  outdir = argv[3];
-  outfile = argv[4];
   w->signal_connect( "map_event", got_event, w );
   w->signal_connect( "destroy", _exit, 1 );
   show_recursively( w );
