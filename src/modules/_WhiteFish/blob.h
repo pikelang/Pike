@@ -66,7 +66,7 @@ int wf_blob_eof( Blob *b );
 void wf_blob_low_add( struct object *o, int docid, int field, int off );
 /* Add a hit */
 
-int wf_blob_low_memsize( struct object *o );
+size_t wf_blob_low_memsize( struct object *o );
 /* Returns the size of the blob */
 
 void init_blob_program();

@@ -1,7 +1,9 @@
+/* $Id: linkfarm.c,v 1.4 2004/07/20 17:06:37 grubba Exp $
+ */
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.3 2003/02/18 10:36:32 mast Exp $");
+RCSID("$Id: linkfarm.c,v 1.4 2004/07/20 17:06:37 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -41,8 +43,8 @@ struct linkfarm
 
 static struct hash *new_hash( struct pike_string *id )
 {
-  struct hash *res =  malloc( sizeof( struct hash ) );
-  res->s = id;
+  struct hash *res = xalloc( sizeof( struct hash ) );
+  copy_shared_string(res->s, id);
   res->next = 0;
   return res;
 }
@@ -58,25 +60,24 @@ static void free_hash( struct hash *h )
   }
 }
 
-static int find_hash( struct linkfarm *d, struct pike_string *s )
+static void find_hash( struct linkfarm *d, struct pike_string *s )
 {
-  int r = ((int)((long)s>>3)) % HSIZE;
+  unsigned int r = (((unsigned int)s>>3)) % HSIZE;
   struct hash *h = d->hash[ r ];
   while( h )
   {
     if( h->s == s )
-      return 0;
+      return;
     h = h->next;
   }
   d->size++;
   h = new_hash( s );
   h->next = d->hash[ r ];
   d->hash[ r ] = h;
-  return 0;
 }
 
-static int low_add( struct linkfarm *t,
-		    struct pike_string *s )
+static void low_add( struct linkfarm *t,
+		     struct pike_string *s )
 {
   int ret=0, i;
 
@@ -88,8 +89,8 @@ static int low_add( struct linkfarm *t,
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
-	    if( !i ) return 1;
-	    s = make_shared_binary_string0( d, i );
+	    if( !i ) return;
+	    s = make_shared_binary_string0(d, i);
 	    ret = 1;
 	    break;
 	  }
@@ -101,8 +102,8 @@ static int low_add( struct linkfarm *t,
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
-	    if( !i ) return 1;
-	    s = make_shared_binary_string1( d, i );
+	    if( !i ) return;
+	    s = make_shared_binary_string1(d, i);
 	    ret = 1;
 	    break;
 	  }
@@ -114,20 +115,16 @@ static int low_add( struct linkfarm *t,
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
-	    if( !i ) return 1;
-	    s = make_shared_binary_string2( d, i );
+	    if( !i ) return;
+	    s = make_shared_binary_string2(d, i);
 	    ret = 1;
 	    break;
 	  }
       };
       break;
   };
-  if( find_hash( t, s ) )
-  {
-    if( ret ) free_string( s );
-    return 1;
-  }
-  return ret;
+  find_hash(t, s);
+  if (ret) free_string(s);
 }
 
 
@@ -135,13 +132,12 @@ static void f_linkfarm_add( INT32 args )
 {
   struct pike_string *s;
   struct linkfarm *f = THIS;
-  if( Pike_sp[-1].type != T_STRING )
-    return;
 
-  if( low_add( f, Pike_sp[-1].u.string ) )
-    pop_stack();
-  else
-    Pike_sp--;
+  get_all_args("LinkFarm()->add", args, "%W", &s);
+
+  low_add(f, s);
+
+  pop_n_elems(args);
 }
 
 
@@ -225,7 +221,7 @@ void init_linkfarm_program()
   start_new_program();
   ADD_STORAGE(struct linkfarm);
   add_function("add",f_linkfarm_add,
-	       "function(int,array,int,int:void)",0 );
+	       "function(string:void)",0 );
   add_function("memsize", f_linkfarm_memsize, "function(void:int)", 0 );
   add_function("read", f_linkfarm_read, "function(void:array(string))", 0 );
   set_init_callback( init_linkfarm_struct );

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.10 2003/06/30 17:10:24 mast Exp $");
+RCSID("$Id: blobs.c,v 1.11 2004/07/20 17:06:36 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -23,7 +23,7 @@ static void exit_blobs_struct( );
 
 #define HSIZE 4711
 #define THIS ((struct blobs *)Pike_fp->current_storage)
-#define HASH(X) (((long)(X)>>3) % HSIZE)
+#define HASH(X) (((unsigned int)(X)>>3) % HSIZE)
 
 extern struct program *blob_program;
 
@@ -54,7 +54,7 @@ static struct hash *new_hash( struct pike_string *id )
 
 static void insert_hash( struct blobs *d, struct hash *h )
 {
-  int r = HASH(h->id);
+  unsigned int r = HASH(h->id);
   h->next = d->hash[ r ];
   d->hash[ r ] = h;
 }
@@ -73,7 +73,7 @@ static void free_hash( struct hash *h )
 
 static struct hash *find_hash( struct blobs *d, struct pike_string *id )
 {
-  int r = HASH(id);
+  unsigned int r = HASH(id);
   struct hash *h = d->hash[ r ];
   while( h )
   {
@@ -121,7 +121,7 @@ static void f_blobs_memsize( INT32 args )
  *! Returns the in-memory size of the blobs
  */
 {
-  int size = HSIZE*sizeof(void *); /* htable.. */
+  size_t size = HSIZE*sizeof(void *); /* htable.. */
   int i;
   struct hash *h;
   struct blobs *bl = THIS;
@@ -133,10 +133,10 @@ static void f_blobs_memsize( INT32 args )
     {
       if( h->id )
       {
-	int tt = ((int *)h->bl->storage)[1];
+	size_t tt = ((int *)h->bl->storage)[1];
 	size += ((sizeof( struct hash )+7)/8)*8+4+
 	         (h->id->len<<h->id->size_shift)    /* and the string */
-		 + OFFSETOF(pike_string, str);
+	  + OFFSETOF(pike_string, str);
 	size += tt ? tt : wf_blob_low_memsize( h->bl );
       }
       else

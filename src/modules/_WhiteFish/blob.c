@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.32 2003/02/18 10:36:32 mast Exp $");
+RCSID("$Id: blob.c,v 1.33 2004/07/20 17:06:36 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -10,6 +10,7 @@ RCSID("$Id: blob.c,v 1.32 2003/02/18 10:36:32 mast Exp $");
 #include "operators.h"
 #include "fsort.h"
 #include "array.h"
+#include "module_support.h"
 
 #include "config.h"
 
@@ -194,14 +195,14 @@ struct hash
 struct blob_data
 {
   int size;
-  int memsize;
+  size_t memsize;
   struct hash *hash[HSIZE];
 };
 
 struct program *blob_program;
 static struct hash *low_new_hash( int doc_id )
 {
-  struct hash *res =  malloc( sizeof( struct hash ) );
+  struct hash *res = xalloc( sizeof( struct hash ) );
   res->doc_id = doc_id;
   res->next = 0;
   res->data = wf_buffer_new();
@@ -211,7 +212,7 @@ static struct hash *low_new_hash( int doc_id )
 
 static struct hash *new_hash( int doc_id )
 {
-  struct hash *res =  low_new_hash( doc_id );
+  struct hash *res = low_new_hash( doc_id );
   wf_buffer_wint( res->data, doc_id );
   wf_buffer_wbyte( res->data, 0 );
   return res;
@@ -219,14 +220,14 @@ static struct hash *new_hash( int doc_id )
 
 static void insert_hash( struct blob_data *d, struct hash *h )
 {
-  int r = h->doc_id % HSIZE;
+  unsigned int r = ((unsigned int)h->doc_id) % HSIZE;
   h->next = d->hash[r];
   d->hash[r] = h;
 }
 
 static struct hash *find_hash( struct blob_data *d, int doc_id )
 {
-  int r = doc_id % HSIZE;
+  unsigned int r = ((unsigned int)doc_id) % HSIZE;
   struct hash *h = d->hash[ r ];
   
   while( h )
@@ -258,7 +259,6 @@ static void free_hash( struct hash *h )
 static void _append_hit( struct blob_data *d, int doc_id, int hit )
 {
   struct hash *h = find_hash( d, doc_id );
-
   int nhits = ((unsigned char *)h->data->data)[4];
 
   /* Max 255 hits */
@@ -309,10 +309,15 @@ static void f_blob_merge( INT32 args )
 
 static void f_blob_remove( INT32 args )
 {
-  int doc_id = sp[-1].u.integer;
-  int r = doc_id % HSIZE;
-  struct hash *h = THIS->hash[r], *p = 0;
+  int doc_id;
+  unsigned int r;
+  struct hash *h;
+  struct hash *p = NULL;
 
+  get_all_args("remove", args, "%d", &doc_id);
+  r = ((unsigned int)doc_id) % HSIZE;
+  h = THIS->hash[r];
+ 
   pop_n_elems(args);
 
   while( h )
@@ -339,16 +344,24 @@ static void f_blob_remove( INT32 args )
 
 static void f_blob_remove_list( INT32 args )
 {
-  struct array *docs = sp[-1].u.array;
+  struct array *docs;
   int i;
-  if( sp[-1].type != T_ARRAY )
-    Pike_error("Expected array\n");
+
+  get_all_args("remove_list", args, "%a", &docs);
 
   for( i = 0; i<docs->size; i++ )
   {
-    int doc_id = docs->item[i].u.integer;
-    int r = doc_id % HSIZE;
-    struct hash *h = THIS->hash[r], *p = 0;
+    int doc_id;
+    unsigned int r;
+    struct hash *h;
+    struct hash *p = NULL;
+
+    if (docs->item[i].type != T_INT)
+      Pike_error("Bad argument 1 to remove_list, expected array(int).\n");
+
+    doc_id = docs->item[i].u.integer;
+    r = ((unsigned int)doc_id) % HSIZE;
+    h = THIS->hash[r];
 
     while( h )
     {
@@ -389,11 +402,10 @@ void wf_blob_low_add( struct object *o,
 
 static void f_blob_add( INT32 args )
 {
-  int docid = sp[-3].u.integer;
-  int field = sp[-2].u.integer;
-  int off = sp[-1].u.integer;
-  if( args != 3 )
-    Pike_error( "Illegal number of arguments\n" );
+  int docid;
+  int field;
+  int off;
+  get_all_args("add", args, "%d%d%d", &docid, &field, &off);
   wf_blob_low_add( Pike_fp->current_object, docid, field, off );
   pop_n_elems( args );
   push_int( 0 );
@@ -422,7 +434,7 @@ int cmp_hit( unsigned char *a, unsigned char *b )
   tmp = (X)[1];  (X)[1] = (Y)[1];  (Y)[1] = tmp;\
 } while(0)
 
-int wf_blob_low_memsize( struct object *o )
+size_t wf_blob_low_memsize( struct object *o )
 {
   struct blob_data *tt = ((struct blob_data *)o->storage);
 
@@ -431,7 +443,7 @@ int wf_blob_low_memsize( struct object *o )
   else
   {
     struct hash *h;
-    int size = HSIZE*sizeof(void *);
+    size_t size = HSIZE*sizeof(void *);
     int i;
     for( i = 0; i<HSIZE; i++ )
     {
@@ -463,7 +475,7 @@ static void f_blob__cast( INT32 args )
   struct hash *h;
   struct buffer *res;
 
-  zipp = malloc( THIS->size * sizeof( zipp[0] ) );
+  zipp = xalloc( THIS->size * sizeof( zipp[0] ) );
 
   for( i = 0; i<HSIZE; i++ )
   {
