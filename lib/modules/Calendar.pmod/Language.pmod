@@ -2025,7 +2025,7 @@ Ruleset.Language `[](string lang)
    if (!cl && sscanf(lang,"%S_UNICODE",lang))
        cl=::`[]("c"+lang);
 
-   if (!cl) { return ([])[0]; }
+   if (!cl) { return UNDEFINED; }
 
    l=_cache[lang]=cl();
    

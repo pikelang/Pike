@@ -37,7 +37,7 @@ object Atom = class
 
 mixed `[](string what)
 {
-  if(what == "_module_value") return ([])[0];
+  if(what == "_module_value") return UNDEFINED;
   if(what == "Atom") return Atom;
   if(!zero_type(INDEX("Gdk"+what)))
     return INDEX("Gdk"+what);
@@ -45,7 +45,7 @@ mixed `[](string what)
     return INDEX("GDK_"+what);
   if(!zero_type(INDEX("GDK_"+upper_case(GTK->unsillycaps(what)))))
     return INDEX("GDK_"+upper_case(GTK->unsillycaps(what)));
-  return ([])[0];
+  return UNDEFINED;
 //   return  GDKSupport[what];
 }
 

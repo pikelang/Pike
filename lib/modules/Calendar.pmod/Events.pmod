@@ -184,7 +184,7 @@ Event.Namedays find_namedays(string region)
    string all=read_all_namedays();
 
    int i=search(all,"\nRegion \""+region+"\"");
-   if (i==-1) return ([])[0]; // not found
+   if (i==-1) return UNDEFINED; // not found
 
    int i2=search(all,"\nRegion",i+1);
    if (i2==-1) i2=strlen(all)-1;
@@ -279,7 +279,7 @@ Event.Event find_event(string s)
       return find_namedays(s[9..]);
 
    int i=search(all_data,sprintf("Event %O",s));
-   if (i==-1) return ([])[0];
+   if (i==-1) return UNDEFINED;
    
    int j=search(all_data,"\n",i);
    if (j==-1) j=0x7fffffff;
@@ -294,7 +294,7 @@ Event.Event find_region(string c)
    if (!all_data) read_all_data();
 
    int i=search(all_data,sprintf("\nRegion %O",c));
-   if (i==-1) return ([])[0];
+   if (i==-1) return UNDEFINED;
    
    int j=search(all_data,"\nRegion \"",i+1);
    if (j==-1) j=0x7fffffff;
@@ -394,7 +394,7 @@ Event.Event|Event.Namedays magic_event(string s)
    if (s=="tzshift") 
       return loaded_events->tzshift=Event.TZShift_Event();
 
-   return ([])[0];
+   return UNDEFINED;
 }
 
 Event.SuperEvent country(string s)

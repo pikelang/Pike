@@ -1,4 +1,4 @@
-/* $Id: Queue.pike,v 1.4 2001/11/22 20:00:58 nilsson Exp $
+/* $Id: Queue.pike,v 1.5 2002/02/14 17:20:20 nilsson Exp $
  *
  * A simple FIFO queue. 
  */
@@ -55,7 +55,7 @@ mixed get()
 //  werror(sprintf("Queue->get: %O\n", l[tail..head-1]));
   mixed res;
   if (tail == head)
-    return ([])[0];
+    return UNDEFINED;
   res = l[tail];
   l[tail++] = 0;
   return res;

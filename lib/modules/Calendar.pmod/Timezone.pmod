@@ -259,7 +259,7 @@ class Timezone_Encapsule
 static private Ruleset.Timezone _make_new_timezone_i(string tz,int plusminus)
 {
    object(Ruleset.Timezone) z=`[](tz);
-   if (!z) return ([])[0];
+   if (!z) return UNDEFINED;
    return make_new_timezone(z,plusminus);
 }
 
@@ -1069,7 +1069,7 @@ class Runtime_timezone_compiler
       werror("Searching for zone %O\n",s);
 #endif
       if (zone_cache[s]) return zone_cache[s];
-      if (s=="") return ([])[0];
+      if (s=="") return UNDEFINED;
 
       if (!all_rules) all_rules=get_all_rules();
 
@@ -1087,7 +1087,7 @@ class Runtime_timezone_compiler
 	 werror("hit at: %O\n",n);
 #endif
 	 if (n==-1) 
-	    return ([])[0];
+	    return UNDEFINED;
 	 int i=max(n-100,0)-1,j;
 	 do i=search(all_rules,"\nZone",(j=i)+1); while (i<n && i!=-1);
 
@@ -1179,7 +1179,7 @@ class Runtime_timezone_compiler
 	 werror("hit at: %O\n",n);
 #endif
 	 if (n==-1) 
-	    return ([])[0];
+	    return UNDEFINED;
 
 	 int i=max(n-100,0)-1,j;
 	 do i=search(all_rules,"\nRule",(j=i)+1); while (i<n && i!=-1);

@@ -50,7 +50,7 @@ mixed `[](string what)
       else
 	 default_rules->timezone=tz; // destructive!
    }
-   if ( !magic[what] || (stage && what!="default_rules")) return ([])[0];
+   if ( !magic[what] || (stage && what!="default_rules")) return UNDEFINED;
    switch (what)
    {
       case "ISO_UTC":

@@ -351,8 +351,8 @@ class Namedays
 	    [y,yjd,leap]=gregorian_yjd(jd);
 	    if (y<leapdayshift) ld=55-1; // 24 feb
 	    else ld=60-1;        // 29 feb
-	    if (last_year!=-1 && y>last_year) return ([])[0];
-	    if (first_year!=-1 && y<first_year) return ([])[0];
+	    if (last_year!=-1 && y>last_year) return UNDEFINED;
+	    if (first_year!=-1 && y<first_year) return UNDEFINED;
 	 }
 
 	 array(string) n;
@@ -451,7 +451,7 @@ class SuperNamedays
       array(TimeRange) a=map(namedayss,"next",from,including)-({0});
       switch (sizeof(a))
       {
-	 case 0: return ([])[0];
+	 case 0: return UNDEFINED;
 	 case 1: return a[0];
 	 default: return min(@a);
       }
@@ -462,7 +462,7 @@ class SuperNamedays
       array(TimeRange) a=map(namedayss,"previous",from,including)-({0});
       switch (sizeof(a))
       {
-	 case 0: return ([])[0];
+	 case 0: return UNDEFINED;
 	 case 1: return a[0];
 	 default: return max(@a);
       }
@@ -1105,7 +1105,7 @@ class SuperEvent
    mapping(Event:multiset(string)) flags=([]);
 
    array(Event) events=({});
-   mapping(string:Event) id2event=([])[0];
+   mapping(string:Event) id2event=UNDEFINED;
 
    array(Event) day_events=({});
    array(Namedays) namedays=({});

@@ -4,7 +4,7 @@
 
 mixed `[](string what)
 {
-  if(what == "_module_value") return ([])[0];
+  if(what == "_module_value") return UNDEFINED;
   return (GTK["Gnome"+what] || GTK["gnome_"+what]);
 }
 

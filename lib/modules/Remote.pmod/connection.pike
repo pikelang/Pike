@@ -544,7 +544,7 @@ mixed call_sync(array data)
     if (!nice)
       error("Could not read");
     else
-      return ([])[0];
+      return UNDEFINED;
   }
   return get_result(refno);
 }
