@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.34 2000/02/22 16:49:15 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.35 2000/02/28 04:20:18 hubbe Exp $ */
 
 import Stdio;
 
@@ -389,9 +389,8 @@ int main(int argc, string *argv)
 	  if(check > 1) _verify_internals();
 	
 	  shift++;
-	  shift%=3;
 	  string fname = argv[f] + ": Test " + (e + 1) +
-	    " (shift " + shift + ")";
+	    " (shift " + (shift%3) + ")";
 
 	  string widener = ([ 0:"",
 			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
@@ -414,6 +413,13 @@ int main(int argc, string *argv)
 	  string linetester="int __cpp_line=__LINE__; int __rtl_line=[int]backtrace()[-1][1];\n";
 
 	  string to_compile = test + linetester + widener;
+
+	  if((shift/3)&1)
+	  {
+	    fname+=" (CRNL)";
+	    to_compile=replace(to_compile,"\n","\r\n");
+	  }
+	    
 	  switch(type)
 	  {
 	    case "COMPILE":
