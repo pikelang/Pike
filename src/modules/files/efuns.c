@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.69 1999/05/19 14:23:26 mirar Exp $");
+RCSID("$Id: efuns.c,v 1.70 1999/05/30 22:41:54 per Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -160,7 +160,7 @@ void f_file_truncate(INT32 args)
   VALID_FILE_IO("file_truncate","write");
 
   res=truncate(s,len);
-  // NT: fixme?  /Mirar
+  /* NT: fixme?  /Mirar */
 
   pop_n_elems(args);
 
