@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.72 2000/01/07 21:51:26 grubba Exp $
+// $Id: module.pmod,v 1.73 2000/01/12 04:28:32 mast Exp $
 
 import String;
 
@@ -822,6 +822,30 @@ void async_cp(string from, string to,
     return;
   }
   sendfile(0, from_file, 0, -1, 0, to_file, call_cp_cb, cb, @args);
+}
+
+int mkdirhier (string dir, void|int mode)
+{
+  if (zero_type (mode)) mode = 0777; // &'ed with umask anyway.
+  if (!sizeof (dir)) return 0;
+  string path;
+  if (dir[0] == '/') dir = dir[1..], path = "/";
+  else path = "";
+  foreach (dir / "/", string name) {
+    path += name;
+    if (!exist (path) && !mkdir (path, mode)) return 0;
+    path += "/";
+  }
+  return is_dir (path);
+}
+
+int recursive_rm (string path)
+{
+  int res = 1;
+  if (array(string) sub = get_dir (path))
+    foreach (sub, string name)
+      if (!recursive_rm (path + "/" + name)) res = 0;
+  return res && rm (path);
 }
 
 /*
