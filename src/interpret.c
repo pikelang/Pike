@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.361 2004/12/30 13:44:20 grubba Exp $
+|| $Id: interpret.c,v 1.362 2005/01/25 18:01:24 grubba Exp $
 */
 
 #include "global.h"
@@ -183,11 +183,10 @@ static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazon
  */
 static int eval_instruction(PIKE_OPCODE_T *pc);
 
-PMOD_EXPORT void init_interpreter(void)
+PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter *interpreter)
 {
 #ifdef USE_MMAP_FOR_STACK
   static int fd = -1;
-
 
 #ifndef MAP_VARIABLE
 #define MAP_VARIABLE 0
@@ -211,8 +210,8 @@ PMOD_EXPORT void init_interpreter(void)
       if(fd >= 0) break;
       if(errno != EINTR)
       {
-	Pike_interpreter.evaluator_stack=0;
-	Pike_interpreter.mark_stack=0;
+	interpreter->evaluator_stack=0;
+	interpreter->mark_stack=0;
 	goto use_malloc;
 #define NEED_USE_MALLOC_LABEL
       }
@@ -222,42 +221,68 @@ PMOD_EXPORT void init_interpreter(void)
   }
 #endif
 
-#define MMALLOC(X,Y) (Y *)mmap(0,X*sizeof(Y),PROT_READ|PROT_WRITE, MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, fd, 0)
+#define MMALLOC(X,Y)							\
+  (Y *)mmap(0, (X)*sizeof(Y), PROT_READ|PROT_WRITE,			\
+	    MAP_NORESERVE|MAP_PRIVATE|MAP_ANONYMOUS, fd, 0)
 
-  Pike_interpreter.evaluator_stack_malloced=0;
-  Pike_interpreter.mark_stack_malloced=0;
-  Pike_interpreter.evaluator_stack=MMALLOC(Pike_stack_size,struct svalue);
-  Pike_interpreter.mark_stack=MMALLOC(Pike_stack_size, struct svalue *);
-  if((char *)MAP_FAILED == (char *)Pike_interpreter.evaluator_stack) Pike_interpreter.evaluator_stack=0;
-  if((char *)MAP_FAILED == (char *)Pike_interpreter.mark_stack) Pike_interpreter.mark_stack=0;
+  interpreter->evaluator_stack_malloced = 0;
+  interpreter->mark_stack_malloced = 0;
+  interpreter->evaluator_stack = MMALLOC(Pike_stack_size,struct svalue);
+  interpreter->mark_stack = MMALLOC(Pike_stack_size, struct svalue *);
+  if((char *)MAP_FAILED == (char *)interpreter->evaluator_stack) {
+    interpreter->evaluator_stack = 0;
+    interpreter->evaluator_stack_malloced = 1;
+  }
+  if((char *)MAP_FAILED == (char *)interpreter->mark_stack) {
+    interpreter->mark_stack = 0;
+    interpreter->mark_stack_malloced = 1;
+  }
 
 #ifdef NEED_USE_MALLOC_LABEL
 use_malloc:
 #endif /* NEED_USE_MALLOC_LABEL */
 
 #else /* !USE_MMAP_FOR_STACK */
-  Pike_interpreter.evaluator_stack=0;
-  Pike_interpreter.mark_stack=0;
+  interpreter->evaluator_stack = 0;
+  interpreter->evaluator_stack_malloced = 1;
+  interpreter->mark_stack = 0;
+  interpreter->mark_stack_malloced = 1;
 #endif /* USE_MMAP_FOR_STACK */
 
-  if(!Pike_interpreter.evaluator_stack)
+  if(!interpreter->evaluator_stack)
   {
-    Pike_interpreter.evaluator_stack=(struct svalue *)xalloc(Pike_stack_size*sizeof(struct svalue));
-    Pike_interpreter.evaluator_stack_malloced=1;
+    if (!(interpreter->evaluator_stack =
+	  (struct svalue *)malloc(Pike_stack_size*sizeof(struct svalue))))
+      return 1;	/* Out of memory (evaluator stack). */
   }
 
-  if(!Pike_interpreter.mark_stack)
+  if(!interpreter->mark_stack)
   {
-    Pike_interpreter.mark_stack=(struct svalue **)xalloc(Pike_stack_size*sizeof(struct svalue *));
-    Pike_interpreter.mark_stack_malloced=1;
+    if (!(interpreter->mark_stack =
+	  (struct svalue **)malloc(Pike_stack_size*sizeof(struct svalue *))))
+      return 2;	/* Out of memory (mark stack). */
   }
 
-  Pike_sp=Pike_interpreter.evaluator_stack;
-  Pike_mark_sp=Pike_interpreter.mark_stack;
-  Pike_fp=0;
+  interpreter->stack_pointer = interpreter->evaluator_stack;
+  interpreter->mark_stack_pointer = interpreter->mark_stack;
+  interpreter->frame_pointer = 0;
 
-  Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
-  Pike_interpreter.c_stack_margin = C_STACK_MARGIN;
+  interpreter->svalue_stack_margin = SVALUE_STACK_MARGIN;
+  interpreter->c_stack_margin = C_STACK_MARGIN;
+
+#ifdef PROFILING
+  interpreter->unlocked_time = 0;
+  interpreter->accounted_time = 0;
+#endif
+
+  return 0;	/* OK. */
+}
+
+PMOD_EXPORT void init_interpreter(void)
+{
+  if (low_init_interpreter(&Pike_interpreter)) {
+    Pike_fatal("Out of memory initializing the interpreter stack.\n");
+  }
 
 #ifdef PIKE_DEBUG
   {
@@ -268,10 +293,6 @@ use_malloc:
       dmalloc_accept_leak(spcb);
     }
   }
-#endif
-#ifdef PROFILING
-  Pike_interpreter.unlocked_time = 0;
-  Pike_interpreter.accounted_time = 0;
 #endif
 #if defined(HAVE_COMPUTED_GOTO) || defined(PIKE_USE_MACHINE_CODE)
   {
@@ -303,7 +324,6 @@ use_malloc:
   }
 #endif /* HAVE_COMPUTED_GOTO || PIKE_USE_MACHINE_CODE */
 }
-
 
 /*
  * lvalues are stored in two svalues in one of these formats:
@@ -2835,8 +2855,10 @@ PMOD_EXPORT void cleanup_interpret(void)
   }
 #endif
 
-  if(Pike_interpreter.evaluator_stack) free((char *)Pike_interpreter.evaluator_stack);
-  if(Pike_interpreter.mark_stack) free((char *)Pike_interpreter.mark_stack);
+  if(Pike_interpreter.evaluator_stack)
+    free((char *)Pike_interpreter.evaluator_stack);
+  if(Pike_interpreter.mark_stack)
+    free((char *)Pike_interpreter.mark_stack);
 
   Pike_interpreter.mark_stack=0;
   Pike_interpreter.evaluator_stack=0;
