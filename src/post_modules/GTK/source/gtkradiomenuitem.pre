@@ -1,7 +1,7 @@
-PROGRAM(radio_menu_item);
+class radio_menu_item;
+inherit menu_item;
 // Exactly like W(RadioButton), but it is an menu item.
 // IMG: GTK.RadioMenuItem("Menu item")
-INHERIT(menu_item);
 FUNCTION(create, "function(string|void,object|void:void)")
 NAME_ARGS(title,groupmember);
 // object GTK.RadioMenuItem(string title) - First button (with label)<br>
@@ -47,4 +47,3 @@ NAME_ARGS(groupmember);
   RETURN_THIS();
 }
 
-/* TODO: group, g_list of members */

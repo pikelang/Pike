@@ -1,4 +1,5 @@
-PROGRAM(statusbar);
+class statusbar;
+inherit hbox;
 // Statusbars are simple widgets used to display a text message. They
 // keep a stack of the messages pushed onto them, so that popping the
 // current message will re-display the previous text message.
@@ -12,23 +13,19 @@ PROGRAM(statusbar);
 //  <p>
 // IMG: lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");return sb;}()
 // IMG: lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");sb->pop(id);return sb;}()
-SIGNAL("text_pushed", "");
-SIGNAL("text_poped", "");
-INHERIT(hbox);
-COMPLEX_FUNCTION(create);
+signal text_pushed;
+signal text_poped;
+void create();
 // Create a new statusbar widget
-int COMPLEX_FUNCTION(get_context_id, string);
-NAME_ARGS(context);
+int get_context_id( string context );
 // Create a new context id (or get the id of an old one). The argument
 // is any string. The return value can be used for -&gt;push() -&gt;pop()
 // and -&gt;remove later on.
-int COMPLEX_FUNCTION(push,int,string);
-NAME_ARGS(context,data);
+int push( int context, string data );
 // Push a message onto the statusbar. The return value is an id that
 // can be passed to remove later on.
-COMPLEX_FUNCTION(pop, int);
-NAME_ARGS(context);
+void pop( int context );
 // Remove the topmost message.
-COMPLEX_FUNCTION(remove, int, int);
-NAME_ARGS(context,id);
+void remove( int context, int id );
 // Remove the specified message (the message id is the second argument).
+

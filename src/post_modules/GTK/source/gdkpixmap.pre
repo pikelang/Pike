@@ -1,5 +1,5 @@
-PROGRAM(GdkPixmap);
-INHERIT(GdkDrawable);
+class GdkPixmap;
+inherit GdkDrawable;
 // This class creates a GDK.Pixmap from either an GDK.Image or
 // Image.image object (or a numeric ID, see your X-manual for XIDs).
 // <p> The GDK.Pixmap object can be used in a lot
@@ -7,6 +7,7 @@ INHERIT(GdkDrawable);
 // widget.
 //
 // NOIMG
+%{
 GdkImage *pgtk_pixmap_setup( struct object *o, int *free)
 {
   if(get_gdkobject( o, Image ))
@@ -30,6 +31,7 @@ void pgtk__pixmap_draw( GdkImage *i )
   gdk_draw_image( (GdkWindow *)THIS->obj, gc, i, 0, 0, 0, 0,
 		  i->width, i->height);
 }
+%}
 
 FUNCTION(create, "function(int|object:void)")
 ARGS(object(GDK.Image)|object(Image.image)|int);
@@ -97,3 +99,5 @@ FUNCTION(destroy, "function(void:void)");
     gdk_gc_destroy( (void *)THIS->extra_data );
   THIS->extra_data = 0;
 }
+
+

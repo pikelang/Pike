@@ -1,9 +1,9 @@
-PROGRAM(GdkWindow);
+class GdkWindow;
+inherit GdkDrawable;
 #include <gdk/gdkx.h>
 // a GDK.Window object.
 //
 // NOIMG
-INHERIT(GdkDrawable);
 FUNCTION(create, "function(mixed...:void)");
 ARGS(int|object,void|mapping);
 NAME_ARGS(XWindowID|parent,void|atrributes);
@@ -187,8 +187,7 @@ NAME_ARGS(mask,xoffset,yoffset);
   RETURN_THIS();
 }
 
-GList*
-pgdk_window_get_children (GdkWindow *window)
+static GList *pgdk_window_get_children (GdkWindow *window)
 {
   GdkWindowPrivate *private;
   GdkWindow *child;
@@ -252,7 +251,7 @@ RETURNS(array(GDK.Window));
 }
 
 FUNCTION(set_events, "function(int:object)");
-NAME_ARGS( events );
+NAME_ARGS(events);
 // events is a bitwise or of one or more of the following constants:
 // GDK.ExposureMask,
 // GDK.PointerMotionMask,
@@ -373,7 +372,7 @@ RETURNS(GDK.Window);
 
 FUNCTION(get_property, "function(object,int|void,int|void:mapping)");
 ARGS( GDK.Atom, int|void, int|void );
-NAME_ARGS( property, offset, delete_when_done );
+NAME_ARGS(property, offset, delete_when_done);
 // Returns the value (as a string) of the specified property.
 // The arguments are:
 // <p>
@@ -514,3 +513,6 @@ NAME_ARGS(background);
 
   RETURN_THIS();
 }
+
+
+

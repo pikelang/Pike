@@ -1,4 +1,5 @@
-PROGRAM(toggle_button);
+class toggle_button;
+inherit button;
 // Toggle buttons are derived from normal buttons and are very
 // similar, except they will always be in one of two states,
 // alternated by a click. They may be depressed, and when you click
@@ -7,8 +8,7 @@ PROGRAM(toggle_button);
 // <p>
 // IMG: GTK.ToggleButton("Toggle button")
 // IMG: GTK.ToggleButton("Toggle button")->set_active( 1 )
-SIGNAL("toggled", "");
-INHERIT(button);
+signal toggled;
 FUNCTION(create, "function(string|void:void)");
 NAME_ARGS(label);
 // If you supply a string, a label will be created and inserted in the button.
@@ -26,13 +26,12 @@ NAME_ARGS(label);
   }
   pgtk__init_this_object();
 }
-COMPLEX_FUNCTION(set_mode, int);
-NAME_ARGS(mode);
+void set_mode( int mode );
 // If true, draw indicator
-COMPLEX_FUNCTION(set_active, int);
-NAME_ARGS(activep);
+void set_active( int activep );
 // If activep is true, the toggle button will be activated.
-CLASSMEMBER(active, int);
+member int active;
 // returns 1 if the button is pressed, 0 otherwise.
-SIMPLE_FUNCTION(toggled);
+void toggled();
 // emulate a 'toggle' of the button. This will emit a 'toggled' signal.
+

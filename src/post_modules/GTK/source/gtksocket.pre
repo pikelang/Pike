@@ -1,4 +1,5 @@
-PROGRAM(socket);
+class socket;
+inherit container;
 #include <gdk/gdkx.h>
 // Together with W(Plug), GTK.Socket provides the ability to embed
 // widgets from one process into another process in a fashion that is
@@ -19,10 +20,8 @@ PROGRAM(socket);
 //  top-level windows using steal(), though the integration when this
 //  is done will not be as close as between a W(Plug) and a
 //  GTK.Socket
-INHERIT(container);
-COMPLEX_FUNCTION(create);
-COMPLEX_FUNCTION(steal, int);
-NAME_ARGS(window_id);
+void create();
+void steal( int window_id );
 // Reparents a pre-existing toplevel window (not nessesarily a GTK
 // window) into a socket.
 FUNCTION(id, "function(void:int)");
@@ -45,7 +44,7 @@ FUNCTION(has_plug, "function(void:int)");
   else
     push_int( 0 );
 }
-
-CLASSMEMBER(same_app,int);
+member int same_app;
 // return 1 if the widow contained in this socket comes from this
 // process.
+

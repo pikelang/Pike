@@ -1,4 +1,5 @@
-PROGRAM(hbox);
+class hbox;
+inherit box;
 // Most packing is done by creating boxes. These are invisible widget
 // containers that we can pack our widgets into which come in two
 // forms, a horizontal box, and a vertical box. This is the horizontal
@@ -9,9 +10,8 @@ PROGRAM(hbox);
 // IMG: GTK.Hbox(0,0)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))
 // IMG: GTK.Hbox(1,0)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))
 // IMG: GTK.Hbox(1,40)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))
-INHERIT(box);
-COMPLEX_FUNCTION(create, int, int);
-NAME_ARGS(all_same_size, hpadding);
+void create( int all_same_size, int hpadding );
 // Create a new horizontal box widget.
 // If all_same_size is true, all widgets will have exactly the same size.
 // hpadding is added to the left and right of the children.
+

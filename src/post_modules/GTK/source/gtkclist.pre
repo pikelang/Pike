@@ -1,4 +1,5 @@
-PROGRAM(clist);
+class clist;
+inherit container;
 
 // The GtkCList widget is a multi-column list widget that is capable
 // of handling literally thousands of rows of information. Each column
@@ -7,164 +8,141 @@ PROGRAM(clist);
 
 // IMG: GTK.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)
 
-SIGNAL("select_row", "Called when a row is selected");
-SIGNAL("unselect_row", "Called when a row is deselected");
-SIGNAL("click_column", "Called when a column is clicked");
-SIGNAL("resize_column", "Called when a column is resized");
-SIGNAL("toggle_focus_row", "");
-SIGNAL("select_all",       "");
-SIGNAL("unselect_all",     "");
-SIGNAL("undo_selection",   "");
-SIGNAL("start_selection",  "");
-SIGNAL("end_selection",    "");
-SIGNAL("toggle_add_mode",  "");
-SIGNAL("extend_selection", "");
-SIGNAL("scroll_vertical",  "");
-SIGNAL("scroll_horizontal",   "");
-SIGNAL("abort_column_resize", "");
+signal select_row;
+// Called when a row is selected
+signal unselect_row;
+// Called when a row is deselected
+signal click_column;
+// Called when a column is clicked
+signal resize_column;
+// Called when a column is resized
+signal toggle_focus_row;
+signal select_all;
+signal unselect_all;
+signal undo_selection;
+signal start_selection;
+signal end_selection;
+signal toggle_add_mode;
+signal extend_selection;
+signal scroll_vertical;
+signal scroll_horizontal;
+signal abort_column_resize;
 
 
-INHERIT(container);
 /* FIXME: add with titles later on.. */
-COMPLEX_FUNCTION(create, int);
-NAME_ARGS(columns);
-// Create a new empty clist, columns columns wide.  
-// <p> 
+void create( int columns );
+// Create a new empty clist, columns columns wide.
+// <p>
 // Not all
 // columns have to be visible, some can be used to store data that is
 // related to a certain cell in the list.
 
-COMPLEX_FUNCTION(set_hadjustment, adjustment);
-NAME_ARGS(adjustment);
+void set_hadjustment( adjustment adjustment );
 // Set the W(Adjustment) object used for horizontal scrolling
-COMPLEX_FUNCTION(set_vadjustment, adjustment);
-NAME_ARGS(adjustment);
+void set_vadjustment( adjustment adjustment );
 // Set the W(Adjustment) object used for vertical scrolling
 
-adjustment COMPLEX_FUNCTION(get_hadjustment);
+adjustment get_hadjustment();
 // Return the W(Adjustment) object used for horizontal scrolling
-adjustment COMPLEX_FUNCTION(get_vadjustment);
+adjustment get_vadjustment();
 // Return the W(Adjustment) object used for vertical scrolling
 
 
-SIMPLE_INT_FUNCTION(set_shadow_type);
-NAME_ARGS(shadowtype);
+void set_shadow_type( int shadowtype );
 // One of CONST(GTK_SHADOW)
 
-SIMPLE_INT_FUNCTION(set_selection_mode);
-NAME_ARGS(mode);
+void set_selection_mode( int mode );
 // One of CONST(GTK_SELECTION)<br>
 
-COMPLEX_FUNCTION(set_reorderable, int);
-NAME_ARGS(reorderablep);
+void set_reorderable( int reorderablep );
 // If true, the user can drag around the rows in the list.
-COMPLEX_FUNCTION(set_use_drag_icons, int);
-NAME_ARGS(dragiconsp);
+void set_use_drag_icons( int dragiconsp );
 // If true, hard coded drag icons will be used.
-COMPLEX_FUNCTION(set_button_actions, int, int);
-NAME_ARGS(button,action);
+void set_button_actions( int button, int action );
 // Action is a bitwise or of CONST(GTK_BUTTON)<br>
 // Button is the mouse button (normally 1-3, 4 and 5 sometimes beeing
 // scroll wheel up and scroll wheel down)
 
-SIMPLE_FUNCTION(freeze);
+void freeze();
 // freeze all visual updates of the list, and then thaw the list after
 // you have made a number of changes and the updates wil occure in a
 // more efficent mannor than if you made them on a unfrozen list
-SIMPLE_FUNCTION(thaw);
+void thaw();
 // freeze all visual updates of the list, and then thaw the list after
 // you have made a number of changes and the updates wil occure in a
 // more efficent mannor than if you made them on a unfrozen list
 
-SIMPLE_FUNCTION(column_titles_show);
+void column_titles_show();
 // Show the column titles.
-SIMPLE_FUNCTION(column_titles_hide);
+void column_titles_hide();
 // Hide the column titles
-SIMPLE_FUNCTION(column_titles_active);
+void column_titles_active();
 // The column titles can be pressed
-SIMPLE_FUNCTION(column_titles_passive);
+void column_titles_passive();
 // The column titles can't be pressed
 
-SIMPLE_INT_FUNCTION(column_title_active);
-NAME_ARGS(column);
+void column_title_active( int column );
 // Make a specific column title active
 
-SIMPLE_INT_FUNCTION(column_title_passive);
-NAME_ARGS(column);
+void column_title_passive( int column );
 // Make a specific column title passive
 
-COMPLEX_FUNCTION(set_column_title, int, string);
-NAME_ARGS(column,title);
+void set_column_title( int column, string title );
 // Set the column title of a specified column. It is a good idea to
 // set the titles before the column title buttons are shown.
 
-string COMPLEX_FUNCTION(get_column_title, int );
-NAME_ARGS(column);
+string get_column_title( int column );
 // Returns the title of a specified column.
-COMPLEX_FUNCTION(set_column_widget, int, widget);
-NAME_ARGS(column,widget);
+void set_column_widget( int column, widget widget );
 // Put a widget as a column title. The widget will be added to a
 // W(Button).
 
-widget COMPLEX_FUNCTION(get_column_widget, int );
-NAME_ARGS(column);
+widget get_column_widget( int column );
 // Return the widget for the specified column title
-COMPLEX_FUNCTION(set_column_visibility, int, int);
-NAME_ARGS(column,visiblep);
+void set_column_visibility( int column, int visiblep );
 // Hide or show a column
-COMPLEX_FUNCTION(set_column_resizeable, int, int);
-NAME_ARGS(column,resizeablep);
+void set_column_resizeable( int column, int resizeablep );
 // Make a column resizable, or remove it's the resizability.
 
-COMPLEX_FUNCTION(set_column_auto_resize, int, int);
-NAME_ARGS(column,autoresizep);
+void set_column_auto_resize( int column, int autoresizep );
 // Automatically resize a column to the width of it's widest contents.
 
-int COMPLEX_FUNCTION(columns_autosize);
+int columns_autosize();
 // Resize all columns according to their contents
-int COMPLEX_FUNCTION(optimal_column_width, int);
-NAME_ARGS(column);
+int optimal_column_width( int column );
 // Return the optimal width of the specified column
 
-COMPLEX_FUNCTION(set_column_justification, int, int);
-NAME_ARGS(column,justification);
+void set_column_justification( int column, int justification );
 // justification is one of CONST(GTK_JUSTIFY)
 
-COMPLEX_FUNCTION(set_column_width, int, int);
-NAME_ARGS(column,width);
+void set_column_width( int column, int width );
 // Width in pixels
-COMPLEX_FUNCTION(set_column_min_width, int, int);
-NAME_ARGS(column,width);
+void set_column_min_width( int column, int width );
 // Width in pixels
 
-COMPLEX_FUNCTION(set_column_max_width, int, int);
-NAME_ARGS(column,width);
+void set_column_max_width( int column, int width );
 // if width 6lt; 0 , there is no restriction
 
-SIMPLE_INT_FUNCTION(set_row_height);
-NAME_ARGS(pixels);
+void set_row_height( int pixels );
 // in pixels
 
-COMPLEX_FUNCTION(moveto, int, int,float,float);
-NAME_ARGS(row,column,xpos,ypos);
+void moveto( int row, int column, float xpos, float ypos );
 // Make the specified row and column visible, and place it relative to
 // xpos and ypos in the area the Clist occupies.  <p> xpos and ypos
 // are relative, 0.0 == top, 1.0 == bottom
 
-int COMPLEX_FUNCTION(get_cell_type, int, int);
-NAME_ARGS(row, column);
+int get_cell_type( int row, int column );
 // Return value is one of CONST(GTK_CELL)
 
-COMPLEX_FUNCTION(set_text, int, int, string);
-NAME_ARGS(row,column,text);
+void set_text( int row, int column, string text );
 // Set the text for the specified cell. Please note that even if auto
 // sorting is enabled, the row will not be resorted. Use the 'sort()'
 // function.
 FUNCTION(get_text, "function(int,int:string)");
-NAME_ARGS( row, column );
+NAME_ARGS(row, column);
 // Return the text associated with a specific cell.
 {
-  int x, y;  
+  int x, y;
   gchar *p = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
@@ -175,8 +153,6 @@ NAME_ARGS( row, column );
   else
     push_int(0);
 }
-
-
 
 FUNCTION(set_pixmap, "function(int,int,object,object|void:object)");
 ARGS(int,int,GDK.Pixmap,void|object(GDK.Bitmap));
@@ -195,17 +171,17 @@ NAME_ARGS(row,column,image,mask);
 
   img = get_gdkobject( a, Pixmap );
   if(b) mask = get_gdkobject( b, Bitmap );
-  
+
   gtk_clist_set_pixmap( GTK_CLIST( THIS->obj ), y, x, img, mask );
 
   RETURN_THIS();
 }
 
 FUNCTION(get_pixmap, "function(int,int:mapping)");
-NAME_ARGS( row, column );
+NAME_ARGS(row, column);
 // Return the pixmap for the specified cell
 {
-  int x, y;  
+  int x, y;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
@@ -231,9 +207,6 @@ NAME_ARGS( row, column );
   f_aggregate_mapping( 2 );
 }
 
-
-
-
 FUNCTION(set_pixtext, "function(int,int,string,int,object,object|void:object)")
 ARGS(int,int,string,int,GDK.Pixmap,void|object(GDK.Bitmap));
 RETURNS(GTK.Clist);
@@ -254,18 +227,18 @@ NAME_ARGS(row,column,text,spacing,image,mask);
 
   img = get_gdkobject( a, Pixmap );
   if(b) mask = get_gdkobject( b, Bitmap );
-  
+
   gtk_clist_set_pixtext( GTK_CLIST( THIS->obj ), y, x, t,s, img, mask );
 
   RETURN_THIS();
 }
 
 FUNCTION(get_pixtext, "function(int,int:mapping)");
-NAME_ARGS( row, column );
+NAME_ARGS(row, column);
 // Return the pixmap and text for the specified cell as a mapping:<br>
 // ([ "spacing":spacing, "text":text, "pixmap":pixmap ])
 {
-  int x, y;  
+  int x, y;
   gchar *t = NULL;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
@@ -303,7 +276,6 @@ NAME_ARGS( row, column );
   f_aggregate_mapping( 8 );
 }
 
-
 FUNCTION(set_foreground, "function(int,object:object)")
 ARGS(int,GDK.Color);
 RETURNS(GTK.Clist);
@@ -336,49 +308,39 @@ NAME_ARGS(row,color);
   RETURN_THIS();
 }
 
-COMPLEX_FUNCTION(set_cell_style, int, int, style );
-NAME_ARGS(row,column,style);
+void set_cell_style( int row, int column, style style );
 // Set a W(Style) for a specific cell
-style COMPLEX_FUNCTION(get_cell_style, int, int );
-NAME_ARGS(row,col);
+style get_cell_style( int row, int col );
 // return the W(Style) associated with a specific cell
-COMPLEX_FUNCTION(set_row_style, int, style );
-NAME_ARGS(row,style);
-style COMPLEX_FUNCTION(get_row_style, int );
-NAME_ARGS(row);
+void set_row_style( int row, style style );
+style get_row_style( int row );
 // Return the W(style) object associated with the specified row
-COMPLEX_FUNCTION(set_shift, int, int, int, int);
-NAME_ARGS(row,column,yshift,xshift);
+void set_shift( int row, int column, int yshift, int xshift );
 // The contents of the specified cell will be drawn shifted (indented)
 // the specifid number of pixels.
 // <p>
 // This can be useful to generate a tree-like layout when you do not
 // want to make a W(Ctree)
-COMPLEX_FUNCTION(set_selectable, int, int);
-NAME_ARGS(row, selectablep);
+void set_selectable( int row, int selectablep );
 // If true, the row can be selected by the user, otherwise it cannot
 // be selected, only focused.
-int COMPLEX_FUNCTION(get_selectable, int);
-NAME_ARGS(row);
+int get_selectable( int row );
 // Return 1 if the specified row can be selected by the user.
-int COMPLEX_FUNCTION(append, stringarray/GTK_CLIST{THIS->obj}->columns);
-NAME_ARGS(columns);
+int append( stringarray/GTK_CLIST{THIS->obj}->columns columns );
 //  The return value of indicates the index of the row that was just
 //  added.
 // <p>
 // 'columns' are the texts we want to put in the columns. The size of
 // the array should equal the number of columns in the list.
 
-int COMPLEX_FUNCTION(prepend, stringarray/GTK_CLIST{THIS->obj}->columns);
-NAME_ARGS(columns);
+int prepend( stringarray/GTK_CLIST{THIS->obj}->columns columns );
 //  The return value of indicates the index of the row that was just
 //  added.
 // <p>
 // 'columns' are the texts we want to put in the columns. The size of
 // the array should equal the number of columns in the list.
 
-int COMPLEX_FUNCTION(insert, int, stringarray/GTK_CLIST{THIS->obj}->columns);
-NAME_ARGS(row,columns);
+int insert( int row, stringarray/GTK_CLIST{THIS->obj}->columns columns );
 // Insert a row after a specified row.<p>
 //  The return value of indicates the index of the row that was just
 //  added, please note that this is not nessasarily the same row as
@@ -388,15 +350,16 @@ NAME_ARGS(row,columns);
 // 'columns' are the texts we want to put in the columns. The size of
 // the array should equal the number of columns in the list.
 
-COMPLEX_FUNCTION(remove, int);
-NAME_ARGS(row);
+void remove( int row );
 // Delete a specified row. If you want to remove all rows in a Clist,
 // use 'clear()' instead of calling remove multiple times.
 
+%{
 static void freeit(struct object *o)
 {
   free_object( o );
 }
+%}
 
 FUNCTION(set_row_data, "function(int,object:void)");
 NAME_ARGS(row,data);
@@ -410,7 +373,7 @@ NAME_ARGS(row,data);
   struct object *obj;
   get_all_args( "set_row_data", args, "%d%o", &row, &obj );
  add_ref(obj);
-  gtk_clist_set_row_data_full( GTK_CLIST( THIS->obj ), row, obj, 
+  gtk_clist_set_row_data_full( GTK_CLIST( THIS->obj ), row, obj,
                                (void *)freeit );
   RETURN_THIS();
 }
@@ -444,20 +407,17 @@ NAME_ARGS(data);
   push_int( row );
 }
 
-COMPLEX_FUNCTION(select_row, int, int);
-NAME_ARGS(row,column);
+void select_row( int row, int column );
 // Select the given row. The column is sent to the signal handler, but
 // ignored for all other purposes.
 
-
-COMPLEX_FUNCTION(unselect_row, int, int);
-NAME_ARGS(row,column);
+void unselect_row( int row, int column );
 // Unselect the given row. The column is sent to the signal handler,
 // but ignored for all other purposes.
 
-SIMPLE_FUNCTION(undo_selection);
+void undo_selection();
 // Undo the previous selection
-SIMPLE_FUNCTION(clear);
+void clear();
 // remove all rows
 
 FUNCTION(get_selection_info, "function(int,int:mapping)");
@@ -479,13 +439,12 @@ RETURNS(mapping(string:int));
   f_aggregate_mapping( 4 );
 }
 
-SIMPLE_FUNCTION(select_all);
+void select_all();
 // Select all rows
-SIMPLE_FUNCTION(unselect_all);
+void unselect_all();
 // Unselect all rows
 
-COMPLEX_FUNCTION(row_move, int, int);
-NAME_ARGS(from_row, to_row);
+void row_move( int from_row, int to_row );
 // Move the specified row to just before the specified destination
 // row.
 
@@ -547,20 +506,20 @@ NAME_ARGS(row);
     push_int( 0 );
   }
 }
-
+%{
 static gint please_do_compare_with_pike_func( GtkCList *clist,
                                               GtkCListRow *row1,
                                               GtkCListRow *row2 )
 {
-  /* 
+  /*
      Asume we are called from a thread that started it's life in pike.
      Also asume that we have the interpreter lock.
      Otherwise, we are toasted. Really toasted.
-     We could of course start a new thread here for just the compare 
+     We could of course start a new thread here for just the compare
      function. That might not be desireable.
   */
   int ret;
-  struct svalue *sf = gtk_object_get_data(GTK_OBJECT(THIS->obj), 
+  struct svalue *sf = gtk_object_get_data(GTK_OBJECT(THIS->obj),
                                           "pike_clist_sort_fun");
   struct svalue *op = sp;
 
@@ -633,6 +592,7 @@ static void my_free_svalue( struct svalue *s )
   free_svalue( s );
   free( s );
 }
+%}
 
 FUNCTION(set_compare_func, "function(function|void:object)");
 NAME_ARGS(cmpfun);
@@ -659,7 +619,7 @@ NAME_ARGS(cmpfun);
   } else {
     gtk_object_set_data_full(THIS->obj, "pike_clist_sort_fun",
                              (void*)my_dup_svalue(sp-1), (void*)my_free_svalue);
-    gtk_clist_set_compare_func( GTK_CLIST( THIS->obj ), 
+    gtk_clist_set_compare_func( GTK_CLIST( THIS->obj ),
                                 (void *)please_do_compare_with_pike_func );
   }
   RETURN_THIS();
@@ -680,40 +640,37 @@ RETURNS(array(int));
   f_aggregate( nelems );
 }
 
-COMPLEX_FUNCTION(set_sort_type, int);
-NAME_ARGS( direction );
+void set_sort_type( int direction );
 // Ascending or descending (One of CONST(GTK_SORT))
-COMPLEX_FUNCTION(set_sort_column, int);
-NAME_ARGS(column);
-COMPLEX_FUNCTION(sort);
+void set_sort_column( int column );
+void sort();
 // Set the column on which all sorting will be performed
-COMPLEX_FUNCTION(set_auto_sort, int);
-NAME_ARGS( sortp );
+void set_auto_sort( int sortp );
 // If true, the clist will automatically be re-sorted when new rows
 // are inserted. Please note that it will not be resorted if the text
 // in cells are changed, use 'sort()' to force a reorder. The sort
 // function is stable.
-
-CLASSMEMBER(shadow_type, int);
+member int shadow_type;
 // Return the curreent shadow type. One of CONST(GTK_SHADOW)
-CLASSMEMBER(selection_mode, int);
+member int selection_mode;
 // Return the selection mode. One of CONST(GTK_SELECTION)
-CLASSMEMBER(drag_button, int);
+member int drag_button;
 // Return the button used to drag items (by default 1)
-CLASSMEMBER(focus_row, int);
+member int focus_row;
 // The currently focused row
-CLASSMEMBER(sort_type, int);
+member int sort_type;
 // The sort method, one of CONST(GTK_SORT)
-CLASSMEMBER(sort_column, int);
+member int sort_column;
 // The column that will be used to sort the rows
-CLASSMEMBER(flags, int);
+member int flags;
 // Return the flags. A bitwise or of CONST(GTK_CLIST_)
-CLASSMEMBER(rows, int);
+member int rows;
 // Return the number of rows
-CLASSMEMBER(row_height, int);
+member int row_height;
 // Return the height of the row
-CLASSMEMBER(row_center_offset, int);
+member int row_center_offset;
 // Return the number of pixels from the top of the row to the center
 // of the row.
-CLASSMEMBER(columns, int);
+member int columns;
 // Return the number of columns in this clist
+

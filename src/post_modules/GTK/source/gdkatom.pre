@@ -1,5 +1,5 @@
-PROGRAM(Gdk_Atom);
-// An X-atom. You most likely want to use GDK.Atom.atom_name 
+class Gdk_Atom;
+// An X-atom. You most likely want to use GDK.Atom.atom_name
 // instead of Gdk_Atom(name).
 FUNCTION(create, "function(string,int|void:void)");
 NAME_ARGS(atom_name, only_if_exists);
@@ -21,3 +21,6 @@ FUNCTION(get_name, "function(void:string)");
   my_pop_n_elems(args);
   push_text( gdk_atom_name( (GdkAtom)THIS->obj ) );
 }
+
+
+

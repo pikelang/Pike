@@ -1,11 +1,9 @@
-/* -*- c -*- */
-
-PROGRAM(object);
+class object;
 // The basic GTK class.
 // All other GTK classes inherit this class.
 // The only user-callable functions are the signal related ones.
-SIGNAL("destroy", "Called when the object is destroyed");
-
+signal destroy;
+// Called when the object is destroyed
 
 FUNCTION(destroy, "function(void:void)");
 {
@@ -17,7 +15,6 @@ FUNCTION(destroy, "function(void:void)");
   my_pop_n_elems(args);
   push_int(0);
 }
-
 
 FUNCTION(signal_emit_stop, "function(string:object)")
 RETURNS(GTK.Object);
@@ -70,7 +67,7 @@ NAME_ARGS(signal_id);
 FUNCTION(signal_connect, "function(string,function,mixed|void:mixed)");
 NAME_ARGS(signal_name,callback_function,callback_arg);
 // Connect a signal to a pike function. The function will be called with
-// the last argument to this function as it's first argument (defaults 
+// the last argument to this function as it's first argument (defaults
 // to 0), the second argument is always the widget, any other
 // arguments are the ones supplied by GTK.
 // <p>
@@ -93,7 +90,7 @@ NAME_ARGS(signal_name,callback_function,callback_arg);
 
   assign_svalue_no_free( &b->cb, tmp1 );
   assign_svalue_no_free( &b->args, tmp2 );
-  
+
   signal_id = gtk_signal_lookup (a, GTK_OBJECT_TYPE (THIS->obj));
   if(!signal_id)
   {
@@ -101,11 +98,10 @@ NAME_ARGS(signal_name,callback_function,callback_arg);
     error("Signal \"%s\" not defined in the `%s' class ancestry\n",
 	  a, gtk_type_name (GTK_OBJECT_TYPE(THIS->obj)));
   }
-  id = gtk_signal_connect_full(THIS->obj, a, 0, 
+  id = gtk_signal_connect_full(THIS->obj, a, 0,
                                (void *)pgtk_signal_func_wrapper, b,
 			       (void *)pgtk_free_signal_data, FALSE, FALSE);
   my_pop_n_elems(args);
   push_int( id );
 }
-
 

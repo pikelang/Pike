@@ -1,15 +1,13 @@
-PROGRAM(drawing_area);
+class drawing_area;
+inherit widget;
 // The drawing area is a window you can draw in.
 // Please note that you <b>must</b> handle refresh and resize events
 // on your own. Use W(pDrawingArea) for a drawingarea with automatic
 // refresh/resize handling.
 // IMG: GTK.DrawingArea()->set_usize(100,100)
-INHERIT(widget);
-COMPLEX_FUNCTION(create);
-COMPLEX_FUNCTION(size, int, int);
-NAME_ARGS(width,height);
+void create();
+void size( int width, int height );
 // The reason for this function eludes me. Use set_usize instead.
-
 
 #define TWIN GTK_WIDGET(THIS->obj)->window
 #define GC(X) ((GdkGC*)get_gdkobject(X,GC))
@@ -43,7 +41,7 @@ NAME_ARGS(gc,x,y);
   struct object *g;
   int x, y;
   get_all_args("draw_point", args, "%o%d%d", &g, &x, &y);
-  
+
   gdk_draw_point( TWIN, GC(g), x, y );
   RETURN_THIS();
 }
@@ -59,7 +57,7 @@ NAME_ARGS(gc,x1,y1,x2,y2);
   struct object *g;
   int x, y, x2, y2;
   get_all_args("draw_line", args, "%o%d%d%d%d", &g, &x, &y, &x2, &y2);
-  
+
   gdk_draw_line( TWIN, GC(g), x, y, x2, y2 );
   RETURN_THIS();
 }
@@ -106,7 +104,7 @@ NAME_ARGS(gc,font,x,y,text,forcewide);
 // y is used as the baseline for the text.
 // If forcewide is true, the string will be expanded to a wide string
 // even if it is not already one. This is useful when writing text
-// using either unicode or some other 16 bit font. 
+// using either unicode or some other 16 bit font.
 {
   struct object *g,*f;
   int x, y, force_wide=0;
@@ -165,5 +163,6 @@ NAME_ARGS(gc,image,xsrc,ysrc,xdest,ydest,width,height);
 /* FUNCTION(draw_polygon, "function(object,int,array(array(int)))"); */
 /* // gc, filledp, array with xy pairs */
 /* { */
-  
+
 /* } */
+

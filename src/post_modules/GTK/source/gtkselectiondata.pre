@@ -1,7 +1,5 @@
-PROGRAM(selection_data);
+class selection_data;
 // The data associated with a selection.
-/* do not... INHERIT(data); */
-
 FUNCTION(data, "function(void:string)");
 // Returns the selection in the data.
 // The return value is always a string, but the width can vary (8, 16
@@ -32,7 +30,6 @@ FUNCTION(data, "function(void:string)");
      break;
   }
 }
-
 FUNCTION(format, "function(void:int)");
 // Returns the selction format.<br>
 // The format is the number of bits per character.
@@ -40,7 +37,6 @@ FUNCTION(format, "function(void:int)");
   my_pop_n_elems( args );
   push_int( ((GtkSelectionData *)THIS->obj)->format );
 }
-
 FUNCTION(length, "function(void:int)");
 // Return the size of the selection data, in bytes.
 // <p>
@@ -50,7 +46,6 @@ FUNCTION(length, "function(void:int)");
   my_pop_n_elems( args );
   push_int( ((GtkSelectionData *)THIS->obj)->length );
 }
-
 FUNCTION(set, "function(string:object)");
 NAME_ARGS(data);
 //  Store new data into a GtkSelectionData object. Should _only_ by
@@ -66,23 +61,20 @@ NAME_ARGS(data);
                           (s->len * 1<<s->size_shift) );
   RETURN_THIS();
 }
-
-
+%{
 #define RETURN_GDKATOM(X) my_pop_n_elems(args); push_pgdkobject( ((void *)((GtkSelectionData *)THIS->obj)->X), pgtk_Gdk_Atom_program );
-
+%}
 
 FUNCTION(target, "function(void:object)");
 // The target, as a GDK(Atom).
 {
   RETURN_GDKATOM( target );
 }
-
 FUNCTION(type, "function(void:object)");
 // The selection type, as a GDK(Atom).
 {
   RETURN_GDKATOM( type );
 }
-
 FUNCTION(selection, "function(void:object)");
 // The selection id, as a GDK(Atom).
 {

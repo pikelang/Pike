@@ -1,7 +1,7 @@
-COND_WIDGET(gnome);
-PROGRAM(gnome_color_picker);
-INHERIT(button);
-SIGNAL("color-set","This signal is emitted when the user changes the color on the color selector. The values passed to this signal are the red, green, blue and alpha channels selected in integer form in the range 0 to 65535.");
+require gnome;
+class gnome_color_picker;
+inherit button;
+
 // This widget provides color selection facilities to your
 // application. The widget appears as a button which contains a "color
 // swatch" of the currently selected color. When the button is
@@ -14,7 +14,13 @@ SIGNAL("color-set","This signal is emitted when the user changes the color on th
 // 255, depending on your needs.
 // IMG: Gnome.ColorPicker();
 
-COMPLEX_FUNCTION(create);
+signal color_set;
+// This signal is emitted when the user changes the color on the color
+// selector. The values passed to this signal are the red, green, blue
+// and alpha channels selected in integer form in the range 0 to
+// 65535.
+
+void create();
 // Creates a new GNOME color picker widget. This returns a widget in
 // the form of a small button containing a swatch representing the
 // current selected color. When the button is clicked, a
@@ -22,31 +28,26 @@ COMPLEX_FUNCTION(create);
 // color. The swatch will be updated to reflect the new color when the
 // user finishes.
 
-COMPLEX_FUNCTION(set_d, float, float, float, float );
-NAME_ARGS(r,g,b,a);
+void set_d( float r, float g, float b, float a );
 // Set color shown in the color picker widget using floating point values.
 // The values range between 0.0 and 1.0.
 
-COMPLEX_FUNCTION(set_i8, int, int, int, int );
-NAME_ARGS(r,g,b,a);
+void set_i8( int r, int g, int b, int a);
 // Set color shown in the color picker widget using integer values.
 // The values range between 0 and 255.
 
-COMPLEX_FUNCTION(set_i16, int, int, int, int );
-NAME_ARGS(r,g,b,a);
+void set_i16( int r, int g, int b, int a );
 // Set color shown in the color picker widget using integer values.
 // The values range between 0 and 65535.
 
-COMPLEX_FUNCTION(set_dither, int);
-NAME_ARGS(dither);
+void set_dither( int dither );
 // Sets whether the picker should dither the color sample or just
 // paint a solid rectangle.
 
-COMPLEX_FUNCTION(set_use_alpha, int );
-NAME_ARGS(use_alpha);
+void set_use_alpha( int use_alpha );
 // Sets whether or not the picker should use the alpha channel.
 
-COMPLEX_FUNCTION(set_title, string);
+void set_title( string title );
 // Sets the title for the color selection dialog
 
 FUNCTION(get, "function(void:mapping)");
@@ -85,4 +86,3 @@ FUNCTION(get, "function(void:mapping)");
   f_aggregate_mapping( 8 );
   f_aggregate_mapping( 6 );
 }
-END_COND_WIDGET(gnome);

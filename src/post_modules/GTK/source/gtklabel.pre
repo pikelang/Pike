@@ -1,40 +1,33 @@
-PROGRAM(label);
+class label;
+inherit misc;
 // A simple text label.
 // IMG: GTK.Label("A simple text label")
 // IMG: GTK.Label("Multi\nline text\nlabel here")
 // IMG: GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_LEFT)
 // IMG: GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_RIGHT)
-INHERIT(misc);
-COMPLEX_FUNCTION(create, string);
-NAME_ARGS(text);
+void create( string text );
 // Creates a new label.
-COMPLEX_FUNCTION(set_text, string);
-NAME_ARGS(text);
+void set_text( string text );
 // Set the text in the label
 #ifndef gtk_label_set
 # define gtk_label_set gtk_label_set_text
 #endif
-COMPLEX_FUNCTION(set, string);
-NAME_ARGS(text);
+void set( string text );
 // <b>DEPRECATED</b> Compatibility function to set the text in the label. Use
 // set_text. This function can dissapear in the future.
-COMPLEX_FUNCTION(set_justify, int);
-NAME_ARGS(justify);
+void set_justify( int justify );
 // one of CONST(GTK_JUSTIFY)
-COMPLEX_FUNCTION(set_line_wrap, int);
-NAME_ARGS(wrapp);
+void set_line_wrap( int wrapp );
 // Should the label autolinewrap?
-
-COMPLEX_FUNCTION(set_pattern, string);
-NAME_ARGS(pattern_string);
+void set_pattern( string pattern_string );
 // A string with either spaces or underscores.<br>
 // It should be of the same length as the text.
 // <p>
 // When a character in the text has a matching _ in the pattern, the
 // character in the label will be underlined.
 // <p>
-int COMPLEX_FUNCTION(parse_uline, string);
-NAME_ARGS(uline_string);
+int parse_uline( string uline_string );
 // Convenience function to set the text and pattern by parsing
 // a string with embedded underscores, returns the appropriate
 // key symbol for the accelerator.
+

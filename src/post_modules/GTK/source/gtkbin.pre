@@ -1,5 +1,7 @@
-PROGRAM(bin);
+class bin;
 // A container that can only contain one child.
-INHERIT(container);
-SUBWIDGET(child, widget);
+inherit container;
+subwidget widget child;
 // Returns the (one and only) child of this container.
+
+

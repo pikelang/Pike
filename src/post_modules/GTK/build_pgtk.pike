@@ -31,13 +31,16 @@ string classname( string what )
   if(what[0] == 'p' && upper_case(what[1..1])==what[1..1])
     return "GTK."+what;
   string base = "GTK.";
-  sscanf(what, "%s.", what);
+
+  if( sscanf(what, "%s.%s", base, what) == 2)
+    base = base+".";
+
   if(sscanf(what, "Gdk_%s", what) ||
      sscanf(what, "Gdk%s", what))
     base = "GDK.";
-  if(sscanf(what, "gnome_%s", what) || sscanf(what, "GNOME_%s", what))
+  else if(sscanf(what, "gnome_%s", what) || sscanf(what, "GNOME_%s", what))
     base = "Gnome.";
-  if(what == "Atom")
+  else if(what == "Atom" || what == "GDK.Atom")
     return "GDK._Atom";
   return base+sillycaps( what, 1 );
 }
@@ -711,18 +714,13 @@ string handle_img(string line)
     normal_slot += line+"\n";
   return "";
 }
-
+array constants_name = ({});
 string find_constants(string prefix)
 {
   array res = ({});
-  foreach(constants/"\n", string c)
-    if(search(c,prefix) != -1)
-    {
-      sscanf(c, "%*[ \t]%*s\"%s,", c);
-      sscanf(c, "GTK_%s", c);
-      sscanf(c, "%[^\"]", c);
+  foreach(constants_name, string c)
+    if(search(c,prefix) == 0)
       res += ({ classname(String.capitalize(lower_case(c))) });
-    }
 
   if(!sizeof(res))
   {
@@ -753,8 +751,8 @@ string read_indata()
       emit_nl("#line 1 \""+dir+"/source/"+f+"\"\n"+
               Stdio.read_bytes( dir+"/source/"+f ));
     else if(f[-1] == 'e'  && f != "global.pre")
-      data += gödsla_med_line(Stdio.read_bytes( dir+"/source/"+f ),
-                              dir+"/source/"+f );
+      data += gödsla_med_line(Stdio.read_bytes( dir+"/source/"+f )+
+                              "\nendrequire", dir+"/source/"+f );
   return data;
 }
 
@@ -807,10 +805,11 @@ int main(int argc, array argv)
   string progname = "global", extra_cpp="";
   string types;
   string last_function;
-  int skip_mode;
+  int skip_mode, verbatim_mode;
   string type_switch="";
   string default_sprintf=
 "void pgtk_default__sprintf( INT32 args )\n{\n  pop_n_elems( args );\n";
+  string signal_doc;
 
   do_docs = argc > 2;
 
@@ -843,22 +842,37 @@ int main(int argc, array argv)
     string fn, rest;
     ln++;
 
-
     if( line[0..4] == "#line" )
       sscanf( line, "#line %d \"%s\"", rl, rf );
 
-
-    if(sscanf(line, "END_COND_WIDGET%s", line))
+    if((String.trim_whites(line)-";") == "endrequire")
     {
       skip_mode=0;
       continue;
     }
+
     if(skip_mode)
+      continue;
+
+    if( line == "%{" )
     {
+      verbatim_mode = 1;
       continue;
     }
-    if(sscanf(line, "COND_WIDGET(%s);", line))
+    else if( line == "%}" )
     {
+      verbatim_mode = 0;
+      continue;
+    }
+    if( verbatim_mode )
+    {
+      emit( line+"\n");
+      continue;
+    }
+
+    if(sscanf(line, "require %s;", line))
+    {
+      line = String.trim_whites( line );
       if(!has_cond_widget(line))
         skip_mode=1;
     }
@@ -866,8 +880,9 @@ int main(int argc, array argv)
     {
       extra_cpp += line+"\n";
     }
-    else if(sscanf(line, "PROGRAM(%[^)]s)", line))
+    else if(sscanf(line, "class %s;", line))
     {
+      line = String.trim_whites( line );
       end_last_program();
       begin_new_program( line );
       last_function="";
@@ -897,18 +912,15 @@ int main(int argc, array argv)
       sscanf(line, "\"function(%s:%s)\"", a, b);
       true_types[progname+fn] = ({ b, a });
     }
-    else if(sscanf(line, "SIGNAL(%s\")", line))
+    else if(sscanf(line, "signal %s;", string name))
     {
-      string name;
-      string doc;
-      sscanf(line, "\"%s\",%s", name, doc);
-      sscanf(doc, "%*[ \t]\"%s", doc);
+      signal_doc = name;
       if(signals[progname])
-	signals[progname][name] = doc;
+	signals[progname][signal_doc] = "";
       else
-	signals[progname] = ([ name:doc ]);
+	signals[progname] = ([ name:"" ]);
     }
-    else if(sscanf(line, "INHERIT(%s)", line))
+    else if(sscanf(line, "inherit %s;", line))
     {
       emit("/* "+oline+" */\n");
       struct[progname]["inherit"] = line;
@@ -917,7 +929,6 @@ int main(int argc, array argv)
     {
       if(do_docs)
       {
-
 	sscanf(line, "%*[ \t]%s", line);
 	string a, b;
 	if(in_img)
@@ -954,16 +965,19 @@ int main(int argc, array argv)
 	  while(sscanf(line, "%sGDK(%s)%s", a, b, line)==3)
 	    line = a+"<a href=Gdk"+b+".html>GDK."+b+"</a>"+line;
         }
-	if(!docs[progname+last_function])
+        if( signal_doc )
+          signals[progname][signal_doc] += line;
+        else if(!docs[progname+last_function])
 	  docs[progname+last_function] = line;
 	else
 	  docs[progname+last_function] += "\n"+line;
       }
     }
-    else if(sscanf(line, "CLASSMEMBER(%[^,],%s)", line, string type))
+    else if(sscanf(line, "member %s %s;", string type, line ) )
     {
-      type -= " ";
-      line -= " ";
+      signal_doc=0;
+      line = String.trim_whites( line );
+      type = String.trim_whites( type );
       last_function="get_"+line;
       NUMBER_FUNCTION();
       struct[progname]["get_"+line] = "\"function(void:"+type+")\"";
@@ -978,10 +992,11 @@ int main(int argc, array argv)
            +"( THIS->obj )->"+line+");\n");
       emit("}\n");
     }
-    else if(sscanf(line, "SETCLASSMEMBER(%[^,],%s)", line, string type))
+    else if(sscanf(line, "setmember %s %s;", string type, line))
     {
-      type -= " ";
-      line -= " ";
+      signal_doc=0;
+      line = String.trim_whites( line );
+      type = String.trim_whites( type );
       last_function="set_"+line;
       NUMBER_FUNCTION();
       struct[progname]["set_"+line] = "\"function("+type+":"+type+")\"";
@@ -1011,10 +1026,11 @@ int main(int argc, array argv)
       emit("  push_"+(type=="string"?"text":type)+"( old );\n");
       emit("}\n");
     }
-    else if(sscanf(line, "SUBWIDGET(%[^,],%s)", line, string type))
+    else if(sscanf(line, "subwidget %s %s;", string type, line))
     {
-      type -= " ";
-      line -= " ";
+      signal_doc=0;
+      line = String.trim_whites( line );
+      type = String.trim_whites( type );
       last_function=line;
       NUMBER_FUNCTION();
       struct[progname][line] = "\"function(void:object)\"";
@@ -1029,11 +1045,9 @@ int main(int argc, array argv)
            +"( THIS->obj )->"+line+", pgtk_"+type+"_program );\n");
       emit("}\n");
     }
-    else if((sscanf(line, "%sCOMPLEX_FUNCTION(%[^,],%s)",
-                    rest,fn,types)==3)  ||
-            ((sscanf(line, "%sCOMPLEX_FUNCTION(%[^,)])",
-                     rest,fn)==2)&&(types="")))
+    else if(sscanf(line, "%[^ ] %s(%s);", rest, fn, types ) == 3)
     {
+      signal_doc=0;
       string return_type;
       string argument_list = "";
       string fundef = "";
@@ -1043,8 +1057,22 @@ int main(int argc, array argv)
       string post = "", fin="", zap="";
       int na, i_added, free_res;
 
+
+      types = String.trim_whites( types );
       rest = String.trim_whites( rest );
       fn = String.trim_whites( fn );
+
+      if(!strlen(rest) || rest[0] == '#' || rest == "extern")
+      {
+        emit( line+"\n" );
+        continue;
+      }
+
+//       werror(rest+" "+fn+" ( "+types+" )\n");
+
+      if( rest == "void" )
+        rest = "";
+
       if(!strlen(rest))
       {
         rest = 0;
@@ -1065,7 +1093,15 @@ int main(int argc, array argv)
       if(fn == "create")
 	fin = "  pgtk__init_object( fp->current_object );\n";
       int last_was_optional;
-      foreach(((types-" ")/"," - ({""})), string t)
+      array tmp = map( (types/","-({""})),
+                       lambda( string q ) {
+                         return (String.trim_whites(q)/" "-({""}))+({"",""});
+                       } );
+      array types = column(tmp,0);
+      tmp = column(tmp,1);
+//       werror("%O\n", types );
+
+      foreach(types-({""}), string t)
       {
 	na++;
         last_was_optional=0;
@@ -1112,7 +1148,6 @@ int main(int argc, array argv)
              post += "  arg"+na+"[_i] = NULL;\n";
 	   break;
 	 case "floatarray":
-	   string size = ", ^^arg"+na+"->size";
            if(!i_added++)
              args += "  int _i;\n";
 	   fundef += ",array(float)";
@@ -1120,9 +1155,8 @@ int main(int argc, array argv)
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
 	   args += "  gfloat *arg"+na+";\n";
-	   zap += size;
 	   fin += " free(arg"+na+");\n";
-	   sargs += (size+", &_arg"+na);
+	   sargs += (",&_arg"+na);
 	   post += ("  arg"+na+"=malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
@@ -1135,15 +1169,12 @@ int main(int argc, array argv)
 		    "  }\n");
 	   break;
 	 case "intarray":
-	   string size = ", ^^arg"+na+"->size";
-           if(!i_added++)
-             args += "  int _i;\n";
+           if(!i_added++) args += "  int _i;\n";
 	   fundef += ",array(int)";
 	   argument_list += ", array(int)";
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
 	   args += "  gint *arg"+na+";\n";
-	   zap += size;
 	   fin += " free(arg"+na+");\n";
 	   sargs += (",&_arg"+na);
 	   post += ("  arg"+na+"=malloc(sizeof(gint)* (1+_arg"+na+"->size));\n"
@@ -1234,7 +1265,7 @@ int main(int argc, array argv)
              last_was_optional = 1;
              format_string += "%O";
            }
-           if(sscanf( t, "Gdk%s", t ))
+           if(sscanf( t, "Gdk%s", t ) || sscanf(t,"GDK.%s",t))
            {
              t = String.capitalize(lower_case(t));
              sargs += ", &"+(star?"*":"")+"_arg"+na;
@@ -1290,7 +1321,13 @@ int main(int argc, array argv)
          break;
       }
 
-      true_types[progname+fn] = ({ return_type, argument_list[2..] });
+      int ti;
+      true_types[progname+fn] = ({ return_type,
+                                   map((argument_list[2..]/","-({""})),
+                                       lambda( string q ) {
+                                         return q+(sizeof(tmp)>ti?" "+tmp[ti++]:"");
+                                       }) });
+//       werror("arguments: %O\n",true_types[progname+fn]);
       struct[progname][fn] = "\"function("+
                            (strlen(fundef[1..])?fundef[1..]:"void")
                            +":"+srt+")\"";
@@ -1366,68 +1403,39 @@ int main(int argc, array argv)
         }
       }
       emit("}\n\n");
-    } else if(sscanf(line, "CONSTANT(%s)", line)==1) {
+    }
+    else if(sscanf(line, "constant string %s;", line)==1)
+    {
+      signal_doc=0;
       if(!sscanf(line, "GTK_%s", fn))
 	fn = line;
-      constants += ("  add_integer_constant((char*)_data+"+
-                    data_offset(fn+"\0")+", "+line+", 0);\n");
-    } else if(sscanf(line, "SCONSTANT(%s)", line)==1) {
-      if(!sscanf(line, "GTK_%s", fn))
-	fn = line;
+      constants_name += ({ fn });
       constants += ("  add_string_constant((char*)_data+"+
                     data_offset(fn+"\0")+", "+line+", 0);\n");
-    } else if(sscanf(line, "SIMPLE%sFUNCTION(%s)", line, fn)==2) {
-      last_function=fn;
-      NUMBER_FUNCTION();
-      emit("/* "+oline+" */\n");
-      emit_proto("void pgtk_"+progname+"_"+fn+"(int args)\n");
-      emit("{\n");
-      switch(line)
-      {
-       case "_":
-	 /* void function.... */
-	 true_types[progname+fn] = ({ classname(progname), "" });
-	 struct[progname][fn] = "\"function(void:object)\"";
-         emit("  pgtk_verify_inited();\n");
-	 emit("  "+funname("gtk_"+progname+"_"+fn)+"("+
-              castname("GTK_"+upper_case(progname))+"(THIS->obj));\n");
-	 break;
-       case "_INT_":
-	 emit("  int i;\n");
-	 struct[progname][fn] = "\"function(int:object)\"";
-	 true_types[progname+fn] = ({ classname(progname), "int" });
-         emit("  pgtk_verify_inited();\n");
-	 emit("  get_all_args(\""+fn+"\",args, \"%D\", &i);\n");
-	 emit("  "+funname("gtk_"+progname+"_"+fn)+"( "+
-              castname("GTK_"+upper_case(progname))+
-	      "( THIS->obj ), i );\n");
-	 break;
-       default:
-	 line-="_";
-	 emit("  struct object *o;\n");
-	 struct[progname][fn] = "\"function(object:object)\"";
-	 true_types[progname+fn]=({ classname(progname),
-				    "<a href=\""+lower_case(line)+".html\">"+
-				    classname(lower_case(line))+"</a>" });
-	 emit("  GtkObject *f;\n");
-         emit("  pgtk_verify_inited();\n");
-	 emit("  get_all_args(\""+fn+"\", args, \"%o\", &o);\n");
-	 emit("  f = get_gtkobject( o );\n");
-	 emit("  if(!f)\n"
-	      "    error(\"Expected "+classname(line)+", got NULL\\n\");\n");
-	 emit("  "+funname("gtk_"+progname+"_"+fn)+"( "+
-              castname("GTK_"+upper_case(progname))+
-              "( THIS->obj ), "+castname("GTK_"+upper_case(line))
-              +"( f ) );\n");
-      }
-
-      emit("  RETURN_THIS();\n");
-      emit("}\n");
-    } else if(sscanf(line, "ARGS(%s);", line)==1) {
+    }
+    else if(sscanf(line, "constant int %s;", line)==1 ||
+            sscanf(line, "constant %[^ ];", line)==1)
+    {
+      signal_doc=0;
+      if(!sscanf(line, "GTK_%s", fn))
+	fn = line;
+      constants_name += ({ fn });
+      constants += ("  add_integer_constant((char*)_data+"+
+                    data_offset(fn+"\0")+", "+line+", 0);\n");
+    }
+    else if(sscanf(line, "ARGS(%s);", line)==1)
+    {
+      signal_doc=0;
       true_types[progname+last_function][1] = line;
-    } else if(sscanf(line, "RETURNS(%s);", line)==1) {
+    }
+    else if(sscanf(line, "RETURNS(%s);", line)==1)
+    {
+      signal_doc=0;
       true_types[progname+last_function][0] = line;
-    } else if(sscanf(line, "NAME_ARGS(%s);", line)==1) {
+    }
+    else if(sscanf(line, "NAME_ARGS(%s);", line)==1)
+    {
+      signal_doc=0;
       array a = line / ",";
       array b = true_types[progname+last_function][1] / ",";
       int i;

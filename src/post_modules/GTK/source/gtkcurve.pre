@@ -1,12 +1,10 @@
-PROGRAM(curve);
-INHERIT(drawing_area);
+class curve;
+inherit drawing_area;
 // IMG: GTK.Curve()
-COMPLEX_FUNCTION(create);
-SIMPLE_FUNCTION(reset);
-COMPLEX_FUNCTION(set_gamma,float);
-NAME_ARGS(gamma);
-COMPLEX_FUNCTION(set_range,float,float,float,float);
-NAME_ARGS(min_x,max_x,min_y,max_y);
+void create();
+void reset();
+void set_gamma( float gamma );
+void set_range( float min_x, float max_x, float min_y, float max_y );
 FUNCTION(get_vector, "function(int:array(float))");
 NAME_ARGS(num_points);
 {
@@ -21,8 +19,6 @@ NAME_ARGS(num_points);
   f_aggregate(num_points);
   free(vector);
 }
-COMPLEX_FUNCTION(set_vector, floatarray);
-NAME_ARGS(curve);
-COMPLEX_FUNCTION(set_curve_type,int);
-NAME_ARGS(type);
+void set_vector( floatarray curve, int nelems );
+void set_curve_type( int type );
 // One of CONST(GTK_CURVE_TYPE);

@@ -1,4 +1,4 @@
-PROGRAM(GdkGC);
+class GdkGC;
 // A GC, or Graphics Context, is used for most low-level drawing operation.
 // <p>
 // As an example, the foreground color, background color and drawing
@@ -110,3 +110,5 @@ RETURNS(GDK.GC);
   RETURN_THIS();
 }
 /* TODO: a lot of functions left.. */
+
+

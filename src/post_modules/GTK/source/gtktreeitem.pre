@@ -1,10 +1,10 @@
-PROGRAM(tree_item);
+class tree_item;
+inherit item;
 // A item to be places in a W(Tree).
 // <br>The item can have a subtree attached to it.
 // <br>A subtree is a normal tree.
-SIGNAL("expand", "");
-SIGNAL("collapse", "");
-INHERIT(item);
+signal expand;
+signal collapse;
 FUNCTION(create, "function(string|void:void)");
 NAME_ARGS(label);
 // If you specify a string it is used as a label, otherwise pack a widget
@@ -22,23 +22,23 @@ NAME_ARGS(label);
   }
   pgtk__init_this_object();
 }
-COMPLEX_FUNCTION(set_subtree, tree);
-NAME_ARGS(tree);
-// Sets the subtree. 
-SIMPLE_FUNCTION(remove_subtree);
-// Removes the subtree. 
-SIMPLE_FUNCTION(select);
+void set_subtree( tree tree );
+// Sets the subtree.
+void remove_subtree();
+// Removes the subtree.
+void select();
 // Select this item. The item must be realized (the tree and all it's
 // parents shown) for this to work.<br>
 // This generates a 'select' event.
-SIMPLE_FUNCTION(deselect);
+void deselect();
 // Deselect this item.<br>
 // This generates a 'deselect' event.
-SIMPLE_FUNCTION(expand);
+void expand();
 // Expand this subtree. The item must be realized (the tree and all it's
 // parents shown) for this to work.<br>
 // This generates a 'expand' event.
-SIMPLE_FUNCTION(collapse);
+void collapse();
 // Collapse this subtree. The item must be realized (the tree and all it's
 // parents shown) for this to work.<br>
 // This generates a 'collapse' event.
+

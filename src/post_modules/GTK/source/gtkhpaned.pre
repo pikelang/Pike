@@ -1,4 +1,5 @@
-PROGRAM(hpaned);
+class hpaned;
+inherit paned;
 // The paned window widgets are useful when you want to divide an area
 // into two parts, with the relative size of the two parts controlled
 // by the user. A groove is drawn between the two portions with a
@@ -8,5 +9,5 @@ PROGRAM(hpaned);
 // See W(Paned) for details.
 // <p>
 // IMG: GTK.Hpaned()->add1(GTK.Label("Left\nSide\nOf\nPane"))->add2(GTK.Label("Right\nSide\nOf\nPane"))->set_usize(100,100)
-INHERIT(paned);
-COMPLEX_FUNCTION(create);
+void create();
+

@@ -1,13 +1,12 @@
-PROGRAM(paned);
+class paned;
+inherit container;
 // GTK.Paned is the base class for widgets with two panes, arranged
 // either horizontally (W(HPaned)) or vertically (W(VPaned)). Child
 // widgets are added to the panes of the widget with pack1() and
 // pack2(). The division beween the two children is set by default
 // from the size requests of the children, but it can be adjusted by
 // the user.
-
 // <p>
-
 // A paned widget draws a separator between the two child widgets and
 // a small handle that the user can drag to adjust the division. It
 // does not draw any relief around the children or around the
@@ -15,9 +14,7 @@ PROGRAM(paned);
 // gutter). Often, it is useful to put each child inside a W(Frame)
 // with the shadow type set to GTK.ShadowIn so that the gutter
 // appears as a ridge.
-
 // <p>
-
 // Each child has two options that can be set, resize and shrink. If
 // resize is true, then when the GTK.Paned is resized, that child will
 // expand or shrink along with the paned widget. If shrink is true,
@@ -25,52 +22,41 @@ PROGRAM(paned);
 // the user. Setting shrink to 0 allows the application to set a
 // minimum size. If resize is false for both children, then this is
 // treated as if resize is true for both children.
-
 // <p>
-
 // The application can set the position of the slider as if it were
 // set by the user, by calling set_position().
-INHERIT(container);
-COMPLEX_FUNCTION(add1, widget);
-NAME_ARGS(left_or_top);
+void add1( widget left_or_top );
 // Set the left or topmost item.<br>
 // This is equivalent to pack1(left_or_top,0,1)
-COMPLEX_FUNCTION(add2, widget);
-NAME_ARGS(right_or_bottom);
+void add2( widget right_or_bottom );
 // Set the right or bottommost item<br>
 // This is equivalent to pack2(left_or_top,0,1)
-COMPLEX_FUNCTION(set_handle_size, int);
-NAME_ARGS(hsize);
+void set_handle_size( int hsize );
 // The size of the handle in pixels
-COMPLEX_FUNCTION(set_gutter_size, int);
-NAME_ARGS(gsize);
+void set_gutter_size( int gsize );
 // Set the width of the gutter. (The area between the two panes).
-COMPLEX_FUNCTION(set_position, int);
-NAME_ARGS(position);
+void set_position( int position );
 // Set the position of the separator, as if set by the user. If
 // position is negative, the remembered position is forgotten, and
 // the division is recomputed from the the requisitions of the
 // children.
-COMPLEX_FUNCTION(pack1, widget, int, int);
-NAME_ARGS(widget,resize, shrink);
+void pack1( widget widget, int resize, int shrink );
 // Add a child to the top or left pane.
-COMPLEX_FUNCTION(pack2, widget, int, int);
-NAME_ARGS(widget,resize, shrink);
+void pack2( widget widget, int resize, int shrink );
 // Add a child to the bottom or right pane.
-CLASSMEMBER(handle_size, int);
+
+member int handle_size;
 // The size of the handle, in pixels
-CLASSMEMBER(gutter_size, int);
+member int gutter_size;
 // The size of the gutter, in pixels
-
-CLASSMEMBER(handle_xpos, int);
+member int handle_xpos;
 // The xpos of the handle, in pixels
-CLASSMEMBER(handle_ypos, int);
+member int handle_ypos;
 // The ypos of the handle, in pixels
-
-CLASSMEMBER(min_position, int);
+member int min_position;
 // The minimum handle position possible.
-CLASSMEMBER(max_position, int);
+member int max_position;
 // The maximum handle position possible.
-
-CLASSMEMBER(in_drag, int);
+member int in_drag;
 // Return 1 if the user is dragging the handle
+

@@ -1,0 +1,15 @@
+require gnome;
+class gnome_scores;
+inherit gnome_dialog;
+// This is a high-scores dialog box. The GNOME libraries also handle
+// loading/saving systemwide high scores in a secure way.
+// <p>
+// Gnome.Scores( 17, ({ "per" })*17, map((array(float))indices(allocate(17)),`*,42), map(indices(allocate(17), `*, 10 )), 1 )
+
+void create(int n_scores,stringarray names,floatarray scores,intarray times,int clear);
+void set_logo_pixmap( string logofile );
+void set_logo_widget( widget widget );
+void set_color( int pos, GDK.Color color );
+void set_def_color( GDK.Color color );
+void set_logo_label_title( string txt );
+void set_current_player( int index );

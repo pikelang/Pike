@@ -1,4 +1,5 @@
-PROGRAM(color_selection);
+class color_selection;
+inherit vbox;
 // The color selection widget is, not surprisingly, a widget for
 // interactive selection of colors.  This composite widget lets the
 // user select a color by manipulating RGB (Red, Green, Blue) and HSV
@@ -6,23 +7,16 @@ PROGRAM(color_selection);
 // single values with sliders or entries, or by picking the desired
 // color from a hue-saturation wheel/value bar.  Optionally, the
 // opacity of the color can also be set.
-
 // <p>
-
-
 // The color selection widget currently emits only one signal,
 // "color_changed", which is emitted whenever the current color in the
 // widget changes, either when the user changes it or if it's set
 // explicitly through set_color().
-
 // <p>
-
 // IMG: GTK.ColorSelection()
-INHERIT(vbox);
-COMPLEX_FUNCTION(create);
+void create();
 // Create a new color selection.
-COMPLEX_FUNCTION(set_update_policy,int);
-NAME_ARGS(policy);
+void set_update_policy( int policy );
 // one of CONST(GTK_UPDATE).
 // <p>
 // The default policy is GTK.UpdateContinuous which means that the
@@ -30,9 +24,7 @@ NAME_ARGS(policy);
 // sliders or presses the mouse and drags in the hue-saturation wheel
 // or value bar. If you experience performance problems, you may want
 // to set the policy to GTK.UpdateDiscontinuous or GTK.UpdateDelayed.
-
-COMPLEX_FUNCTION(set_opacity,int);
-NAME_ARGS(opacity);
+void set_opacity( int opacity );
 // The color selection widget supports adjusting the opacity of a
 // color (also known as the alpha channel). This is disabled by
 // default. Calling this function with use_opacity set to 1 enables
@@ -67,17 +59,12 @@ RETURNS(GTK.ColorDialog);
   struct array *a;
   get_all_args( "set_color", args, "%a", &a );
   for(i=0; i<a->size; i++)
-    if(i>3) 
+    if(i>3)
       break;
     else
       vals[i] = a->item[i].u.float_number;
   gtk_color_selection_set_color( GTK_COLOR_SELECTION( THIS->obj ), vals );
-  
+
   RETURN_THIS();
 }
-/*
- * SUBWIDGET( wheel_area, container );
- * SUBWIDGET( value_area, container );
- * SUBWIDGET( sample_area, container );
- * SUBWIDGET( sample_area_eb, container );
- */
+

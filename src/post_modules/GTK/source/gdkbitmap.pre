@@ -1,5 +1,5 @@
-PROGRAM(GdkBitmap);
-INHERIT(GdkDrawable);
+class GdkBitmap;
+inherit GdkDrawable;
 // A bitmap is a black and white pixmap. Most commonly used as masks
 // for images, widgets and pixmaps.
 //
@@ -7,7 +7,7 @@ INHERIT(GdkDrawable);
 FUNCTION(create, "function(int|object,int|void,string|void:void)")
 ARGS(object(Image.image)|int,void|int,void|string);
 NAME_ARGS(image|xsize, void|ysize, void|xbitmapdata);
-// Create a new gdkBitmap object. 
+// Create a new gdkBitmap object.
 // Argument is either an Image.image object, or {xsisze,ysize,xbitmapdata}.
 {
   int x, y;
@@ -43,4 +43,6 @@ FUNCTION(destroy, "function(void:void)");
     gdk_bitmap_unref( (void *)THIS->obj );
   THIS->obj = 0;
 }
+
+
 

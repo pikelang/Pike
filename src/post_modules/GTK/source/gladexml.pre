@@ -1,6 +1,5 @@
-/* This is -*- c -*- code */
-COND_WIDGET(libglade);
-PROGRAM(GladeXML);
+require libglade;
+class GladeXML;
 
 // <a href=http://glade.pn.org/>Glade</a> is a free GUI builder for
 // GTK+ and Gnome. It's normally used to create C-code, but can also
@@ -9,29 +8,29 @@ PROGRAM(GladeXML);
 // library that builds the GUI from the Glade XML save files. This
 // module uses libglade and allows you to easily make GUI designs to
 // be used with your Pike applications. Since PiGTK doesn't
-// support Gnome yet, you can only use the normal GTK widgets. 
+// support Gnome yet, you can only use the normal GTK widgets.
 
 #include <errno.h>
 #include "builtin_functions.h"
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.4 2000/02/15 03:45:44 neotron Exp $");
+RCSID("$Id: gladexml.pre,v 1.5 2000/03/08 00:28:09 per Exp $");
 
-
+%{
 /* This function is used by signal_autoconnect to handle signal
    connection Basically it uses a mapping and data from the stack to
    do signal callbacks exactly in the same way as normal signals in
    PiGTK.
-   
+
  */
-void pgtk__signal_connect(const gchar *handler_name,
-			  GtkObject *obj,
-			  const gchar *signal_name,
-			  const gchar *signal_data,
-			  GtkObject *connect_object,
-			  gboolean after,
-			  gpointer args)
+static void pgtk__signal_connect(const gchar *handler_name,
+                                 GtkObject *obj,
+                                 const gchar *signal_name,
+                                 const gchar *signal_data,
+                                 GtkObject *connect_object,
+                                 gboolean after,
+                                 gpointer args)
 {
   struct mapping *callbacks;
   struct svalue *data;
@@ -63,7 +62,7 @@ void pgtk__signal_connect(const gchar *handler_name,
   b = malloc(sizeof(struct signal_data));
   assign_svalue_no_free( &b->cb, cb);
   assign_svalue_no_free( &b->args, data);
-  
+
   signal_id = gtk_signal_lookup (signal_name, GTK_OBJECT_TYPE (obj));
   if(!signal_id)
   {
@@ -75,10 +74,11 @@ void pgtk__signal_connect(const gchar *handler_name,
 	    signal_name, gtk_type_name (GTK_OBJECT_TYPE(obj)));
 #endif
   }
-  id = gtk_signal_connect_full(obj, signal_name, 0, 
+  id = gtk_signal_connect_full(obj, signal_name, 0,
                                (void *)pgtk_signal_func_wrapper, b,
 			       (void *)pgtk_free_signal_data, FALSE, after);
 }
+%}
 
 FUNCTION(new_from_memory, "function(string,void|string,void|string:object)");
 NAME_ARGS(data, root, domain);
@@ -89,12 +89,11 @@ RETURNS(GTK.GladeXML);
 // build say a toolbar or menu from the XML document, but not the
 // window it is embedded in. The third optional argument is used to
 // specify a different translation domain from the default to be used.
-
 {
   GladeXML *xml = 0;
   struct pike_string *data = NULL;
   char *root = NULL, *domain = NULL;
-  
+
   if(THIS->obj)
     error("GladeXML->new_from_memory(): Already initialized!\n");
 
@@ -148,7 +147,7 @@ NAME_ARGS(filename, root, domain);
 {
   GladeXML *xml = 0;
   char *data = NULL, *root = NULL, *domain = NULL;
-  
+
   if(THIS->obj)
     error("GladeXML->new: Already initialized!\n");
 
@@ -169,7 +168,7 @@ NAME_ARGS(filename, root, domain);
       args--;
     } else
       error("GladeXML->new(): Invalid argument 2, expected string.\n");
-    
+
    case 1:
     if(sp[-1].type == T_STRING) {
       data = sp[-1].u.string->str;
@@ -225,7 +224,7 @@ NAME_ARGS(name);
     widget = glade_xml_get_widget(xml, sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
-  } else 
+  } else
     error("GladeXML->get_widget(): Invalid argument, expected string.\n");
 }
 
@@ -248,7 +247,7 @@ NAME_ARGS(long_name);
     widget = glade_xml_get_widget_by_long_name(xml, sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
-  } else 
+  } else
     error("GladeXML->get_widget_by_long_name(): Invalid argument, expected string.\n");
 }
 
@@ -275,7 +274,7 @@ ARGS(GTK.Widget);
     s = make_shared_string(name);
     push_string(s);
   } else
-    push_int(0);  
+    push_int(0);
 }
 
 
@@ -305,7 +304,7 @@ ARGS(GTK.Widget);
 #endif
     push_string(s);
   } else
-    push_int(0);  
+    push_int(0);
 }
 
 FUNCTION(signal_autoconnect, "function(mapping(string:function),mixed:void)");
@@ -314,17 +313,17 @@ ARGS(mapping(string:function) callbacks,mixed data);
 RETURNS(void);
 // Try to connect functions to all signals in the interface. The mapping should
 // consist of handler name - function name pairs. The data argument will be
-// saved and sent as the first argument to all callback functions. 
+// saved and sent as the first argument to all callback functions.
 {
   GladeXML *xml;
   if(args != 2 || sp[-args].type != T_MAPPING)
     error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
   if(!THIS->obj)
     error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
-  xml = (GladeXML *)THIS->obj;  
+  xml = (GladeXML *)THIS->obj;
   glade_xml_signal_autoconnect_full(xml, pgtk__signal_connect, &args);
   pop_n_elems(args);
 }
 
-// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.4 2000/02/15 03:45:44 neotron Exp $</i></font>
-END_COND_WIDGET(libglade);
+// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.5 2000/03/08 00:28:09 per Exp $</i></font>
+

@@ -1,4 +1,5 @@
-PROGRAM(hscale);
+class hscale;
+inherit scale;
 // The GTK.HScale widget is used to allow the user to select a value
 // using a horizontal slider. A GTK.Adjustment is used to set the
 // initial value, the lower and upper bounds, and the step and page
@@ -10,9 +11,7 @@ PROGRAM(hscale);
 // places shown can be set using the parent W(Scale) class's
 // functions.
 // IMG: GTK.Hscale(GTK.Adjustment())->set_usize(300,30)
-INHERIT(scale);
-COMPLEX_FUNCTION(create, ?adjustment);
-NAME_ARGS(settings);
+void create( ?adjustment settings );
 // Used to create a new hscale widget.
 // The adjustment argument can either be an existing W(Adjustment), or
 // 0, in which case one will be created for you. Specifying 0 might
@@ -20,3 +19,4 @@ NAME_ARGS(settings);
 // automatically created adjustment to the constructor function of
 // some other widget which will configure it for you, such as a text
 // widget.
+

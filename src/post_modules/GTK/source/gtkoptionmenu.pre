@@ -1,23 +1,22 @@
-PROGRAM(option_menu);
+class option_menu;
+inherit button;
 // A OptionMenu is a widget that allows the user to choose from a
 // list of valid choices. The OptionMenu displays the selected
 // choice. When activated the OptionMenu displays a popup W(Menu)
 // which allows the user to make a new choice.
 // <p>
 // IMG: GTK.OptionMenu()->set_menu(GTK.Menu()->add( GTK.Menu_item("Option 1") ));
-INHERIT(button);
-COMPLEX_FUNCTION(create);
+void create();
 // Create a new option menu widget
-COMPLEX_FUNCTION(set_menu, menu);
-NAME_ARGS(menu);
+void set_menu( menu menu );
 // Provides the GtkMenu that is popped up to allow the user to choose
 // a new value. You should provide a simple menu avoiding the use of
 // tearoff menu items, submenus, and accelerators.
-SIMPLE_FUNCTION(remove_menu);
+void remove_menu();
 // Remove the menu.
-COMPLEX_FUNCTION(set_history, int);
-NAME_ARGS(index);
+void set_history( int index );
 // Selects the menu item specified by index making it the newly
 // selected value for the option menu.
-menu COMPLEX_FUNCTION(get_menu);
+menu get_menu();
 // Returns the W(Menu) associated with the OptionMenu.
+

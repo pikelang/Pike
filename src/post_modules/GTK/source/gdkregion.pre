@@ -1,4 +1,4 @@
-PROGRAM(GdkRegion);
+class GdkRegion;
 
 static void return_gdkregion( int n, void *r )
 {
@@ -13,7 +13,7 @@ static void return_gdkregion( int n, void *r )
 
 FUNCTION(create, "function(void:void)");
 // Create a new (empty) region
-// 
+//
 // NOIMG
 {
   pgtk_verify_setup();
@@ -106,8 +106,8 @@ ARGS(GDK.Region|GDK.Rectangle);
 RETURNS(GDK.Region);
 NAME_ARGS(with);
 // Computes the union of the given rectangle or region and the region.
-// Also available as region | rectangle, region | region, region + region 
-// and region + rectangle. 
+// Also available as region | rectangle, region | region, region + region
+// and region + rectangle.
 {
   struct object *o;
   void *v;
@@ -182,3 +182,6 @@ NAME_ARGS(with);
   return_gdkregion( args, r );
   return;
 }
+
+
+

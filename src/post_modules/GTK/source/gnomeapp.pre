@@ -1,6 +1,6 @@
-COND_WIDGET(gnome);
-PROGRAM(gnome_app);
-INHERIT(window);
+require gnome;
+class gnome_app;
+inherit window;
 // Toplevel GNOME applications would normally use one Gnome.App widget
 // as their toplevel window. You can create as many Gnome.App widgets
 // as you want, for example, some people use one GnomeApp per document
@@ -21,26 +21,24 @@ INHERIT(window);
 // create those yourself and use the set_menus(), add_toolbar(),
 // set_toolbar(), add_dock_item() and add_docked().
 
-COMPLEX_FUNCTION(create, string, string );
-NAME_ARGS( appname, ?title );
+void create( string appname, ?string title );
 // Create a new (empty) application window. You must specify the
 // application's name (used internally as an identifier). title can be
 // left as 0, in which case the window's title will not be set.
 
-COMPLEX_FUNCTION(set_menus, menu_bar );
-NAME_ARGS( menu_bar );
+void set_menus( menu_bar menu_bar );
 // Sets the menu bar of the application window.
 
-COMPLEX_FUNCTION(set_toolbar, toolbar );
-NAME_ARGS( toolbar );
+void set_toolbar( toolbar toolbar );
 // Sets the main toolbar of the application window.
 
-COMPLEX_FUNCTION(set_statusbar, widget );
-NAME_ARGS( statusbar );
+void set_statusbar( widget statusbar );
 // Sets the status bar of the application window.
 
-COMPLEX_FUNCTION(add_toolbar, toolbar, string, int, int, int, int, int );
-NAME_ARGS( toolbar, name, behavior, placement, band_num, band_position, offset );
+void set_contents( widget contents );
+// Sets the status bar of the application window.
+
+void add_toolbar( toolbar toolbar, string name, int behavior, int placement, int band_num, int band_position, ?int offset );
 // Create a new Gnome.DockItem widget containing toolbar, and add it
 // to app's dock with the specified layout information. Notice that,
 // if automatic layout configuration is enabled, the layout is
@@ -55,8 +53,7 @@ NAME_ARGS( toolbar, name, behavior, placement, band_num, band_position, offset )
 // band_position : Position of the new dock item in band band_num
 // offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
 
-COMPLEX_FUNCTION(add_docked, widget, string, int, int, int, int, int );
-NAME_ARGS( widget, name, behavior, placement, band_num, band_position, offset );
+void add_docked( widget widget, string name, int behavior, int placement, int band_num, int band_position, ?int offset );
 // Create a new Gnome.DockItem widget containing widget, and add it
 // to app's dock with the specified layout information. Notice that,
 // if automatic layout configuration is enabled, the layout is
@@ -71,8 +68,7 @@ NAME_ARGS( widget, name, behavior, placement, band_num, band_position, offset );
 // band_position : Position of the new dock item in band band_num
 // offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
 
-COMPLEX_FUNCTION(add_dock_item, gnome_dock_item, int, int, int, int );
-NAME_ARGS( item, placement, band_num, band_position, offset );
+void add_dock_item( gnome_dock_item item, int placement, int band_num, int band_position, ?int offset );
 // Create a new Gnome.DockItem widget containing widget, and add it
 // to app's dock with the specified layout information. Notice that,
 // if automatic layout configuration is enabled, the layout is
@@ -85,15 +81,11 @@ NAME_ARGS( item, placement, band_num, band_position, offset );
 // band_position : Position of the new dock item in band band_num
 // offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
 
-COMPLEX_FUNCTION(enable_layout_config, int );
-NAME_ARGS(enable);
+void enable_layout_config( int enable );
 // Specify whether the the dock's layout configuration should be
 // automatically saved via gnome-config whenever it changes, or not.
 
-gnome_dock COMPLEX_FUNCTION(get_dock );
+gnome_dock get_dock();
 // retrieved the Gnome.Dock widget contained in the App
 
-gnome_dock_item COMPLEX_FUNCTION(get_dock_item_by_name, string );
-NAME_ARGS( name );
-
-END_COND_WIDGET(gnome);
+gnome_dock_item get_dock_item_by_name( string name );

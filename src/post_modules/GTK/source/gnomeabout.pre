@@ -1,6 +1,6 @@
-COND_WIDGET(gnome);
-PROGRAM(gnome_about);
-INHERIT(gnome_dialog);
+require gnome;
+class gnome_about;
+inherit gnome_dialog;
 // A standard way of providing a small about box for your
 // application. You provide the name of your application, version,
 // copyright, a list of authors and some comments about your
@@ -8,12 +8,11 @@ INHERIT(gnome_dialog);
 // displayed.
 // <p>
 // TIMG: Gnome.About( "Example", "1.0", "(c) Roxen IS 2000", ({"Per Hedbor"}), "Some nice documentation\nabout this example" );
-COMPLEX_FUNCTION(create, string, string, string, nullstringarray, string, ?string);
-NAME_ARGS(title, version, copyright, authors, comments, logo );
+
+void create( string title, string version, string copyright, nullstringarray authors, string comment, ?string logo );
 // Creates a new GNOME About dialog. title, version, copyright, and
 // authors are displayed first, in that order. comments is typically
 // the location for multiple lines of text, if necessary. (Separate
 // with "\n".) logo is the filename of a optional pixmap to be
 // displayed in the dialog, typically a product or company logo of
 // some sort; omit this argument if no logo file is available.
-END_COND_WIDGET(gnome);

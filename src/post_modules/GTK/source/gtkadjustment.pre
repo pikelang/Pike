@@ -1,4 +1,5 @@
-PROGRAM(adjustment);
+class adjustment;
+inherit data;
 // The GtkAdjustment object represents a value which has an associated
 // lower and upper bound, together with step and page increments, and
 // a page size. It is used within several GTK+ widgets, including
@@ -14,13 +15,12 @@ PROGRAM(adjustment);
 // bounds. This results in the emission of the "value_changed" or
 // "changed" signal respectively.
 // <p>
-/*
-  // Example:
-  // IMG: lambda() {object a;object h = GTK.Hbox(0,0);h->add(GTK.Text(GTK.Adjustment(),(a=GTK.Adjustment())))->add(GTK.Vscrollbar( a ));return h;}()
-*/
-SIGNAL("changed", "The adjustment changed in some way");
-SIGNAL("value_changed", "The value changed.");
-INHERIT(data);
+signal changed;
+// The adjustment changed in some way
+
+signal value_changed;
+// The value changed
+
 FUNCTION(create, "function(void|float,void|float,void|float,void|float,void|float,void|float:void)")
 NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
 // Normal operaion: w(Adjustment);
@@ -37,49 +37,38 @@ NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
 
   if(THIS->obj) error("GTK.Adjustment->create() can only be called once.\n");
   THIS->obj = GTK_OBJECT( gtk_adjustment_new( l, u, v, si, pi, ps ) );
-  if(!THIS->obj) 
+  if(!THIS->obj)
     error("Failed to initiate adjustment\n");
   pgtk__init_this_object();
   my_pop_n_elems(args);
   push_int( 0 );
 }
-COMPLEX_FUNCTION(set_value, float);
-NAME_ARGS(to);
+void set_value( float to );
 // Set the value component.
-CLASSMEMBER(value,float);
+member float value;
 // Get the value component.
-CLASSMEMBER(lower, float);
-// Get the lower limit.
-CLASSMEMBER(upper, float);
-// Get the upper limit.
-CLASSMEMBER(step_increment, float);
-// Get the step increment (arrow click)
-CLASSMEMBER(page_increment, float);
-// Get the page increment (page down or through click)
-CLASSMEMBER(page_size, float);
-// Get the page size (the actual size of a page)
-SETCLASSMEMBER(lower, float);
-NAME_ARGS(new_lower);
+member float lower;
+// Get the lower limit
+setmember float lower;
 // Set the lower limit.
-// <br>Returns the old value.
-SETCLASSMEMBER(upper, float);
-NAME_ARGS(new_upper);
+setmember float upper;
 // Set the upper limit.
-// <br>Returns the old value.
-SETCLASSMEMBER(step_increment, float);
-NAME_ARGS(new_increment);
+member float upper;
+// get the upper limit.
+setmember float step_increment;
 // Set the step increment (arrow click)
-// <br>Returns the old value.
-SETCLASSMEMBER(page_increment, float);
-NAME_ARGS(new_increment);
+member float step_increment;
+// Get the step increment (arrow click)
+setmember float page_increment;
 // Set the page increment (page down or through click)
-// <br>Returns the old value.
-SETCLASSMEMBER(page_size, float);
-NAME_ARGS(new_size);
+member float page_increment;
+// Get the page increment (page down or through click)
+setmember float page_size;
 // Set the page size (the actual size of a page)
-// <br>Returns the old value.
-COMPLEX_FUNCTION(clamp_page, float, float);
-NAME_ARGS(lower, upper);
+member float page_size;
+// Get the page size (the actual size of a page)
+
+void clamp_page( float lower, float upper );
 // Updates the GtkAdjustment value to ensure that the range between
 // lower and upper is in the current page (i.e. between value and
 // value + page_size). If the range is larger than the page size, then

@@ -1,14 +1,14 @@
-PROGRAM(GdkRectangle);
+class GdkRectangle;
 FUNCTION(create, "function(int,int,int,int:void)");
 NAME_ARGS(x,y,width,height);
 // Create a new rectangle
-// 
+//
 // NOIMG
 {
   GdkRectangle *r;
   pgtk_verify_setup();
   THIS->obj = (void *)(r=malloc(sizeof(GdkRectangle)));
-  get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &r->x, &r->y, 
+  get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &r->x, &r->y,
 		&r->width, &r->height );
 }
 
@@ -18,7 +18,7 @@ NAME_ARGS(x,y,width,height);
 // Set the upper left corner and the size of the rectangle.
 {
   GdkRectangle *r = (GdkRectangle *)THIS->obj;
-  get_all_args( "GDK.Rectangle->set", args, "%d%d%d%d", &r->x, &r->y, 
+  get_all_args( "GDK.Rectangle->set", args, "%d%d%d%d", &r->x, &r->y,
 		&r->width, &r->height );
   RETURN_THIS();
 }
@@ -60,4 +60,5 @@ FUNCTION(destroy, "function(void:void)")
   free(THIS->obj);
 }
 
-/* TODO: gdk_region_polygon (GdkPoint    *points, ...*/
+
+

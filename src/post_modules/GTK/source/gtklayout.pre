@@ -1,29 +1,17 @@
-PROGRAM(layout);
-// Similar to the tcl/tk packing method.
-INHERIT(container);
-COMPLEX_FUNCTION(create, adjustment, adjustment);
-NAME_ARGS(hadjustment,vadjustment);
-COMPLEX_FUNCTION(put, widget, int, int);
-NAME_ARGS(widget, x, y);
+class layout;
+inherit container;
+void create( adjustment hadjustment, adjustment vadjustment );
+void put( widget widget, int x, int y );
+void move( widget widget, int x, int y );
+void set_size( int xsize, int ysize );
+void freeze();
+void thaw();
+adjustment get_hadjustment();
+adjustment get_vadjustment();
+void set_hadjustment( adjustment adj );
+void set_vadjustment( adjustment adj );
+member int width;
+member int height;
+member int xoffset;
+member int yoffset;
 
-COMPLEX_FUNCTION(move, widget, int, int);
-NAME_ARGS(widget, x, y);
-
-COMPLEX_FUNCTION(set_size, int, int);
-NAME_ARGS(xsize, ysize);
-
-SIMPLE_FUNCTION(freeze);
-SIMPLE_FUNCTION(thaw);
-
-adjustment COMPLEX_FUNCTION(get_hadjustment);
-adjustment COMPLEX_FUNCTION(get_vadjustment);
-COMPLEX_FUNCTION(set_hadjustment, adjustment);
-NAME_ARGS(adj);
-COMPLEX_FUNCTION(set_vadjustment, adjustment);
-NAME_ARGS(adj);
-
-CLASSMEMBER( width, int );
-CLASSMEMBER( height, int );
-
-CLASSMEMBER( xoffset, int );
-CLASSMEMBER( yoffset, int );

@@ -1,14 +1,15 @@
-PROGRAM(hbutton_box);
+class hbutton_box;
+inherit button_box;
 // A HbuttonBox is very similar to a Hbox.
 // The major diffference is that the button box
-// is made to pack buttons in, and has a few convenience function for 
+// is made to pack buttons in, and has a few convenience function for
 // normal button layouts.
-// 
+//
 // IMG: GTK.HbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_usize(400,30)
 // IMG: GTK.HbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_SPREAD)->set_usize(400,30)
 // IMG: GTK.HbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_EDGE)->set_usize(400,30)
 // IMG: GTK.HbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_START)->set_usize(400,30)
 // IMG: GTK.HbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_END)->set_usize(400,30)
-INHERIT(button_box);
-COMPLEX_FUNCTION(create);
+void create();
 // Create a new horizontal button box
+

@@ -1,67 +1,54 @@
-PROGRAM(spin_button);
+class spin_button;
+inherit entry;
 // The Spin Button widget is generally used to allow the user to
 // select a value from a range of numeric values. It consists of a
 // text entry box with up and down arrow buttons attached to the
 // side. Selecting one of the buttons causes the value to "spin" up
 // and down the range of possible values. The entry box may also be
 // edited directly to enter a specific value.
-
 // <p>
-
 // The Spin Button allows the value to have zero or a number of
 // decimal places and to be incremented/decremented in configurable
 // steps. The action of holding down one of the buttons optionally
 // results in an acceleration of change in the value according to how
 // long it is depressed.
-
 // <p>
-
-// The Spin Button uses an Adjustment object to hold information about
+// The Spin Button uses an W(Adjustment) object to hold information about
 // the range of values that the spin button can take.
-
 // <p>
-
-// The attributes of an Adjustment are used by the Spin Button in the
+// The attributes of an W(Adjustment) are used by the Spin Button in the
 // following way:
-// <ul><li>value: initial value for the Spin Button 
-//     <li>lower: lower range value 
-//     <li>upper: upper range value 
-//     <li>step_increment: value to increment/decrement when pressing mouse button 1 on a button 
-//     <li>page_increment: value to increment/decrement when pressing mouse button 2 on a button 
+// <ul><li>value: initial value for the Spin Button
+//     <li>lower: lower range value
+//     <li>upper: upper range value
+//     <li>step_increment: value to increment/decrement when pressing mouse button 1 on a button
+//     <li>page_increment: value to increment/decrement when pressing mouse button 2 on a button
 //     <li>page_size: unused
 // </ul>
 // <p>
 // The argument order for the W(Adjustment) constructor is:<br>
 // value, lower, upper, step_increment, page_increment, page_size<br>
-// 
+//
 // IMG: GTK.SpinButton( GTK.Adjustment(),0.1, 1 )->set_usize(60,20)
 // <p>
-INHERIT(entry);
-COMPLEX_FUNCTION(create, adjustment, float, int);
-NAME_ARGS(range,climb_rate,precision);
+void create( adjustment range, float climb_rate, int precision );
 //  The climb_rate argument take a value between 0.0 and 1.0 and
 //  indicates the amount of acceleration that the Spin Button has. The
 //  digits argument specifies the number of decimal places to which
 //  the value will be displayed.
-COMPLEX_FUNCTION(configure, adjustment, float, int);
-NAME_ARGS(range,climb_rate,precision);
+void configure( adjustment range, float climb_rate, int precision );
 // Adjustment (with the lower/upper/increse values), climb_rate and digits
-COMPLEX_FUNCTION(set_adjustment, adjustment);
-NAME_ARGS(range);
+void set_adjustment( adjustment range );
 // Set a new adjustment.
-COMPLEX_FUNCTION(set_digits, int);
-NAME_ARGS(precision);
+void set_digits( int precision );
 // Set the number of digits to show to the user.
-float COMPLEX_FUNCTION(get_value_as_float);
+float get_value_as_float();
 // The current value of a Spin Button can be retrieved as a float.
-int COMPLEX_FUNCTION(get_value_as_int);
+int get_value_as_int();
 // The current value of a Spin Button can be retrieved as a int.
-
-COMPLEX_FUNCTION(set_value, float);
-NAME_ARGS(to);
+void set_value( float to );
 // Set the value.
-COMPLEX_FUNCTION(set_update_policy, int);
-NAME_ARGS(policy);
+void set_update_policy( int policy );
 // The possible values of policy are either GTK.UpdateAlways or
 // GTK.UpdateIfValid.
 // <p>
@@ -71,18 +58,16 @@ NAME_ARGS(policy);
 // <p>
 // In the case of GTK.UpdateIfValid the Spin Button value only gets
 // changed if the text input is a numeric value that is within the
-// range specified by the Adjustment. Otherwise the text is reset 
-// to the current value. 
+// range specified by the Adjustment. Otherwise the text is reset
+// to the current value.
 // <p>
 // In case of GTK.UpdateAlways errors are ignored while converting text
 // into a numeric value.
-COMPLEX_FUNCTION(set_numeric, int);
-NAME_ARGS(numericp);
+void set_numeric( int numericp );
 // If true, it is a numeric value.  This prevents a user from typing
 // anything other than numeric values into the text box of a Spin
 // Button
-COMPLEX_FUNCTION(spin, int, float);
-NAME_ARGS(direction,increment);
+void spin( int direction, float increment );
 // If you want to alter the value of a Spin Value relative to its
 // current value, then this ffunction can be used.
 // <p>
@@ -104,31 +89,30 @@ NAME_ARGS(direction,increment);
 // <p>
 // GTK.SpinUserDefined simply alters the value of the Spin Button by
 // the specified amount.
-COMPLEX_FUNCTION(set_wrap, int);
-NAME_ARGS(wrapp);
+void set_wrap( int wrapp );
 // If true, the spin button will wrap from the lowest to the highest
 // value, and the highest to the lowest.
-COMPLEX_FUNCTION(set_shadow_type,int);
-NAME_ARGS(type);
+void set_shadow_type( int type );
 // Type is one of CONST(GTK_SHADOW)
-COMPLEX_FUNCTION(set_snap_to_ticks,int);
-NAME_ARGS(snapp);
+void set_snap_to_ticks( int snapp );
 // Set the Spin Button to round the value to the nearest
 // step_increment, which is set within the Adjustment object used with
 // the Spin Button
-COMPLEX_FUNCTION(update);
+void update();
 // Explicitly request that the Spin Button updates itself
-
-CLASSMEMBER( climb_rate, float);
+member float climb_rate;
 // The amount of acceleration that the Spin Button has. 0.0 is no
 // accelleration and 1.0 is highest accelleration.
-CLASSMEMBER( update_policy, int);
+member int update_policy;
 // The update policy. GTK_UPDATE_ALWAYS or GTK_UPDATE_IF_VALID.
-CLASSMEMBER( digits, int);
+member int digits;
 // The number of decimal places to which the value will be displayed.
-CLASSMEMBER( numeric, int);
+member int numeric;
 // If != 0 the user can not enter anything but numeric values.
-CLASSMEMBER( wrap, int);
-// If != 0 the Spin Button will wrap around between the upper and lower range values.
-CLASSMEMBER( snap_to_ticks, int);
-// If != 0 the Spin Button will round the value to the nearest step_increment.
+member int wrap;
+// If != 0 the Spin Button will wrap around between the upper and
+// lower range values.
+member int snap_to_ticks;
+// If != 0 the Spin Button will round the value to the nearest
+// step_increment.
+

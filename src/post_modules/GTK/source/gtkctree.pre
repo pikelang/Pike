@@ -1,5 +1,5 @@
-PROGRAM(ctree);
-INHERIT(clist);
+class ctree;
+inherit clist;
 // The GtkCTree widget is used for showing a hierarchical tree to the
 // user, for example a directory tree.
 // <p>
@@ -25,30 +25,33 @@ INHERIT(clist);
 #define GtkCtreenode GtkCTreeNode
 
 
-SIGNAL("tree_select_row", "Called when a node is selected.");
-SIGNAL("tree_unselect_row", "Called when a node is unselected.");
-SIGNAL("tree_expand", "Called when a node is expanded");
-SIGNAL("tree_collapse", "Called when a node is collapsed");
-SIGNAL("tree_move", "Called when a node is moved (using DND, as an example)");
-SIGNAL("change_focus_row_expansion", "Changed when the focused row is either expanded or collapsed");
+signal tree_select_row;
+// Called when a node is selected.
+signal tree_unselect_row;
+// Called when a node is unselected.
+signal tree_expand;
+// Called when a node is expanded
+signal tree_collapse;
+// Called when a node is collapsed
+signal tree_move;
+// Called when a node is moved (using DND, as an example)
+signal change_focus_row_expansion;
+// Changed when the focused row is either expanded or collapsed
 
-CLASSMEMBER(tree_indent,int);
+member int tree_indent;
 // The number of pixels to indent the tree levels.
-CLASSMEMBER(tree_spacing,int);
+member int tree_spacing;
 // The number of pixels between the tree and the columns
-CLASSMEMBER(tree_column,int);
+member int tree_column;
 // The column that is the tree column (the one with the expand/collapse icons)
-CLASSMEMBER(line_style,int);
+member int line_style;
 // The style of the lines, one of CONST(GTK_CTREE_LINES)
-CLASSMEMBER(expander_style,int);
+member int expander_style;
 // The style of the expander buttons, one of CONST(GTK_CTREE_EXPANDER)
-CLASSMEMBER(show_stub,int);
+member int show_stub;
 // Will stubs be shows?
 
-
-
-COMPLEX_FUNCTION(create,int,int);
-NAME_ARGS(columns,tree_column);
+void create( int columns, int tree_column );
 // tree_column is the column that has the tree graphics (lines and
 // expander buttons).
 
@@ -68,10 +71,10 @@ RETURNS(GTK.CTreeNode);
   struct array *text = NULL;
   gchar **text_arr = NULL;
   int is_leaf, expanded;
-  
+
   if(args < 5)
     error("Too few arguments to insert_node\n");
-   
+
   if(sp[-args].type == T_OBJECT)
     parent = get_pgdkobject( sp[-args].u.object, pgtk_CTreeNode_program );
   if(sp[-args+1].type == T_OBJECT)
@@ -80,7 +83,7 @@ RETURNS(GTK.CTreeNode);
     text = sp[-args+2].u.array;
   is_leaf =sp[-args+3].u.integer;
   expanded =sp[-args+4].u.integer;
-  
+
   if(text)
   {
     int i;
@@ -107,82 +110,61 @@ RETURNS(GTK.CTreeNode);
   push_pgdkobject( sibling, pgtk_CTreeNode_program );
 }
 
-COMPLEX_FUNCTION(remove_node, ?CTreeNode);
-NAME_ARGS(node);
+void remove_node( ?CTreeNode node );
 // Remove a node and it's subnodes from the tree.
 // The nodes will be destroyed, so you cannot add them again.
-int COMPLEX_FUNCTION(is_viewable, ?CTreeNode);
-NAME_ARGS(node);
+int is_viewable( ?CTreeNode node );
 // Returns 1 if a certain node can be viewed (with or without
 // scrolling of the tree).<p>
-// Returns 0 if the node is in a folded part of the tree. 
-CTreeNode COMPLEX_FUNCTION(last, ?CTreeNode);
-NAME_ARGS(node);
+// Returns 0 if the node is in a folded part of the tree.
+CTreeNode last( ?CTreeNode node );
 // Returns the last child of the last child of the last child... of
 // the given node.
-CTreeNode COMPLEX_FUNCTION(find_node_ptr, ?CTreeRow);
-NAME_ARGS(node);
+CTreeNode find_node_ptr( ?CTreeRow node );
 // Given a W(CTreeRow) (deprectated structure in PiGTK), return the
 // W(CTreeNode) associated with the row.
-CTreeNode COMPLEX_FUNCTION(node_nth, int);
-NAME_ARGS(row);
+CTreeNode node_nth( int row );
 // Return the node that is currently visible on the specified row.
-int COMPLEX_FUNCTION(find, CTreeNode, ?CTreeNode);
-NAME_ARGS(node, start);
+int find( CTreeNode node, ?CTreeNode start );
 // Returns true if the node is a child of the start node.
 // <br>If you omit the starting node, the tree will be searched from
 // the root.
-int COMPLEX_FUNCTION(is_ancestor, CTreeNode, CTreeNode);
-NAME_ARGS(node, child);
+int is_ancestor( CTreeNode node, CTreeNode child );
 // Returns true if <b>node</b> is an ancestor of <b>child</b>
-int COMPLEX_FUNCTION(is_hot_spot, int, int);
-NAME_ARGS(x,y);
+int is_hot_spot( int x, int y );
 // Returns true if the given coordinates lie on an expander button
-COMPLEX_FUNCTION(move, CTreeNode, ?CTreeNode, ?CTreeNode);
-NAME_ARGS(node,new_parent,new_sibling);
+void move( CTreeNode node, ?CTreeNode new_parent, ?CTreeNode new_sibling );
 // Move a node. Coordinates work as for insert.
 
-COMPLEX_FUNCTION(expand, ?CTreeNode);
-NAME_ARGS(node);
+void expand( ?CTreeNode node );
 // Expand the node, showing it's children.
 // If no node is given, expand the toplevel of the tree
-COMPLEX_FUNCTION(expand_recursive, ?CTreeNode);
-NAME_ARGS(node);
+void expand_recursive( ?CTreeNode node );
 // Expand the node, showing it's children, it's childrens children, etc.
 // If no node is given, expand the whole tree
-COMPLEX_FUNCTION(expand_to_depth, ?CTreeNode, int);
-NAME_ARGS(node,depth);
+void expand_to_depth( ?CTreeNode node, int depth );
 // Expand depth levels of the tree, starting with the specified node.
 // If no node is given, start with the toplevel node.
-COMPLEX_FUNCTION(collapse, ?CTreeNode);
-NAME_ARGS(node);
+void collapse( ?CTreeNode node );
 // Collapse the node, hiding it's children.
 // If no node is given, expand the toplevel of the tree
-COMPLEX_FUNCTION(collapse_recursive, ?CTreeNode);
-NAME_ARGS(node);
+void collapse_recursive( ?CTreeNode node );
 // Collapse the node, showing it's children, it's childrens children, etc.
 // If no node is given, collapse the whole tree
-COMPLEX_FUNCTION(collapse_to_depth, ?CTreeNode,int);
-NAME_ARGS(node,depth);
+void collapse_to_depth( ?CTreeNode node, int depth );
 // Collapse depth levels of the tree, starting with the specified node.
 // If no node is given, start with the toplevel node.
-COMPLEX_FUNCTION(toggle_expansion, ?CTreeNode);
-NAME_ARGS(node);
+void toggle_expansion( ?CTreeNode node );
 // If the node is expanded, collapse it, and if it's collapsed, expand it.
-COMPLEX_FUNCTION(toggle_expansion_recursive, ?CTreeNode);
-NAME_ARGS(node);
+void toggle_expansion_recursive( ?CTreeNode node );
 // Toggle the expansion of the whole subtree, starting with node.
-COMPLEX_FUNCTION(select, CTreeNode);
-NAME_ARGS(node);
+void select( CTreeNode node );
 // Select a node.
-COMPLEX_FUNCTION(select_recursive, CTreeNode);
-NAME_ARGS(node);
+void select_recursive( CTreeNode node );
 // Select a node and it's children.
-COMPLEX_FUNCTION(unselect, CTreeNode);
-NAME_ARGS(node);
+void unselect( CTreeNode node );
 // Unselect a node.
-COMPLEX_FUNCTION(unselect_recursive, CTreeNode);
-NAME_ARGS(node);
+void unselect_recursive( CTreeNode node );
 // Unselect a node and it's children.
 
 
@@ -209,49 +191,13 @@ NAME_ARGS(data,root);
     push_pgdkobject( row, pgtk_CTreeNode_program );
 }
 
-
-
-/*
-GList * gtk_ctree_find_all_by_row_data           (GtkCTree     *ctree,
-						  GtkCTreeNode *node,
-						  gpointer      data);
-
-GtkCTreeNode * gtk_ctree_find_by_row_data_custom (GtkCTree     *ctree,
-						  GtkCTreeNode *node,
-						  gpointer      data,
-						  GCompareFunc  func);
-
-void gtk_ctree_post_recursive                    (GtkCTree     *ctree, 
-						  GtkCTreeNode *node,
-						  GtkCTreeFunc  func,
-						  gpointer      data);
-void gtk_ctree_post_recursive_to_depth           (GtkCTree     *ctree, 
-						  GtkCTreeNode *node,
-						  gint          depth,
-						  GtkCTreeFunc  func,
-						  gpointer      data);
-void gtk_ctree_pre_recursive                     (GtkCTree     *ctree, 
-						  GtkCTreeNode *node,
-						  GtkCTreeFunc  func,
-						  gpointer      data);
-void gtk_ctree_pre_recursive_to_depth            (GtkCTree     *ctree, 
-						  GtkCTreeNode *node,
-						  gint          depth,
-						  GtkCTreeFunc  func,
-						  gpointer      data);
-*/
-
-COMPLEX_FUNCTION(node_set_text, CTreeNode, int, string);
-NAME_ARGS(node,column,text);
+void node_set_text( CTreeNode node, int column, string text );
 // Set the text in a cell
-COMPLEX_FUNCTION(node_set_pixmap, CTreeNode, int, GdkPixmap, ?Gdkbitmap);
-NAME_ARGS(node,column,pixmap,mask);
+void node_set_pixmap( CTreeNode node, int column, GdkPixmap pixmap, ?Gdkbitmap mask );
 // Set the pixmap in a cell
-COMPLEX_FUNCTION(node_set_pixtext, CTreeNode, int, string, int, GdkPixmap, ?Gdkbitmap);
-NAME_ARGS(node,column,text,spacing,pixmap,mask);
+void node_set_pixtext( CTreeNode node, int column, string text, int spacing, GdkPixmap pixmap, ?Gdkbitmap mask );
 // Set the pixmap and text in a cell
-COMPLEX_FUNCTION(set_node_info, CTreeNode, string, int, ?GdkPixmap, ?GdkBitmap, ?GdkPixmap, ?GdkBitmap, int, int);
-NAME_ARGS(node,text,spacing,pixmap_closed,mask_closed,pixmap_opened,mask_opened,is_leaf,expanded);
+void set_node_info( CTreeNode node, string text, int spacing, ?GdkPixmap pixmap_closed, ?GdkBitmap mask_closed, ?GdkPixmap pixmap_opened, ?GdkBitmap mask_opened, int is_leaf, int expanded );
 // <table>
 // <tr><td> text :</td><td>The texts to be shown in each column.</td></tr>
 // <tr><td>spacing :</td>
@@ -270,32 +216,27 @@ NAME_ARGS(node,text,spacing,pixmap_closed,mask_closed,pixmap_opened,mask_opened,
 // <td>Whether this node should start out expanded or not.</td></tr>
 // </table>
 
-COMPLEX_FUNCTION(node_set_shift, CTreeNode, int, int, int);
-NAME_ARGS(node,column,vertical,horizontal);
+void node_set_shift( CTreeNode node, int column, int vertical, int horizontal );
 // Shift the given cell the given amounts in pixels.
-COMPLEX_FUNCTION(node_set_selectable, CTreeNode, int);
-NAME_ARGS(node,selectablep);
+void node_set_selectable( CTreeNode node, int selectablep );
 // Whether this node can be selected by the user.
-int COMPLEX_FUNCTION(node_get_selectable, CTreeNode);
-NAME_ARGS(node);
+int node_get_selectable( CTreeNode node );
 // Return whether or not this node can be selcted by the user
-int COMPLEX_FUNCTION(node_get_cell_type, CTreeNode, int);
-NAME_ARGS(node,column);
+int node_get_cell_type( CTreeNode node, int column );
 // Return the celltype of this node.
 
-
 FUNCTION(node_get_text, "function(object,int:string)");
-NAME_ARGS( node, column );
+NAME_ARGS(node, column);
 // Returns the text of the specified node
 {
   struct object *x;
-  int y;  
+  int y;
   gchar *p = NULL;
   get_all_args( "get_*", args, "%o%d", &x, &y );
 
   my_pop_n_elems( args );
-  gtk_ctree_node_get_text( GTK_CTREE( THIS->obj ), 
-                           get_pgdkobject(x,pgtk_CTreeNode_program), 
+  gtk_ctree_node_get_text( GTK_CTREE( THIS->obj ),
+                           get_pgdkobject(x,pgtk_CTreeNode_program),
                            y, &p );
   if(p)
     push_text(p);
@@ -304,18 +245,18 @@ NAME_ARGS( node, column );
 }
 
 FUNCTION(node_get_pixmap, "function(object,int:mapping)");
-NAME_ARGS( row, column );
+NAME_ARGS(row, column);
 // Returns the pixmap and mask of this node in a mapping:<br>
 // ([ "pixmap":the_pixmap, "mask":the_bitmap ])
 {
   struct object *x;
-  int y;  
+  int y;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
   my_pop_n_elems( args );
-  gtk_ctree_node_get_pixmap( GTK_CTREE( THIS->obj ), 
+  gtk_ctree_node_get_pixmap( GTK_CTREE( THIS->obj ),
                              get_pgdkobject(x,pgtk_CTreeNode_program),
                              y, &p, &b );
   push_text( "pixmap" );
@@ -340,19 +281,19 @@ NAME_ARGS( row, column );
 
 
 FUNCTION(node_get_pixtext, "function(object,int:mapping)");
-NAME_ARGS( row, column );
+NAME_ARGS(row, column);
 // Returns the pixmap, mask and text of this node in a mapping:<br>
 // ([ "pixmap":the_pixmap, "mask":the_bitmap, "text":the_text ])
 {
   struct object *x;
-  int y;  
+  int y;
   gchar *t = NULL;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
   guint8 s = 0;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
-  gtk_ctree_node_get_pixtext( GTK_CTREE( THIS->obj ), 
+  gtk_ctree_node_get_pixtext( GTK_CTREE( THIS->obj ),
                               get_pgdkobject(x,pgtk_CTreeNode_program),
                               y, &t, &s, &p, &b );
   my_pop_n_elems( args );
@@ -385,46 +326,25 @@ NAME_ARGS( row, column );
   f_aggregate_mapping( 8 );
 }
 
-
-
-/*
-gint gtk_ctree_get_node_info                     (GtkCTree     *ctree,
-						  GtkCTreeNode *node,
-						  gchar       **text,
-						  guint8       *spacing,
-						  GdkPixmap   **pixmap_closed,
-						  GdkBitmap   **mask_closed,
-						  GdkPixmap   **pixmap_opened,
-						  GdkBitmap   **mask_opened,
-						  gboolean     *is_leaf,
-						  gboolean     *expanded);
-*/
-
-COMPLEX_FUNCTION(node_set_row_style, CTreeNode, style);
-NAME_ARGS(node,style);
+void node_set_row_style( CTreeNode node, style style );
 // Set the style of a row
-style COMPLEX_FUNCTION(node_get_row_style, CTreeNode);
-NAME_ARGS(node);
+style node_get_row_style( CTreeNode node );
 // Return the style of a row
-COMPLEX_FUNCTION(node_set_cell_style, CTreeNode, int, style);
-NAME_ARGS(node,col,style);
+void node_set_cell_style( CTreeNode node, int col, style style );
 // Set the style of a cell
-style COMPLEX_FUNCTION(node_get_cell_style, CTreeNode,int);
-NAME_ARGS(node,col);
+style node_get_cell_style( CTreeNode node, int col );
 // Return the style of a cell
-
-COMPLEX_FUNCTION(node_set_foreground, CTreeNode, GdkColor);
-NAME_ARGS(node,col);
+void node_set_foreground( CTreeNode node, GdkColor col );
 // Set the foreground of a row
-COMPLEX_FUNCTION(node_set_background, CTreeNode, GdkColor);
-NAME_ARGS(node,color);
+void node_set_background( CTreeNode node, GdkColor color );
 // Set the background of a row
 
-
+%{
 static void freeit(struct object *o)
 {
   free_object( o );
 }
+%}
 
 FUNCTION(node_set_row_data, "function(object,object:void)");
 NAME_ARGS(node,data);
@@ -438,9 +358,9 @@ NAME_ARGS(node,data);
   struct object *obj;
   get_all_args( "set_row_data", args, "%o%o", &row, &obj );
  add_ref(obj);
-  gtk_ctree_node_set_row_data_full( GTK_CTREE( THIS->obj ), 
-                                    get_pgdkobject(row,pgtk_CTreeNode_program), 
-                                    obj, 
+  gtk_ctree_node_set_row_data_full( GTK_CTREE( THIS->obj ),
+                                    get_pgdkobject(row,pgtk_CTreeNode_program),
+                                    obj,
                                     (void *)freeit );
   RETURN_THIS();
 }
@@ -453,7 +373,7 @@ NAME_ARGS(node);
   struct object *o;
   get_all_args( "get_row_data", args, "%o", &row );
 
-  o = gtk_ctree_node_get_row_data( GTK_CTREE( THIS->obj ),  
+  o = gtk_ctree_node_get_row_data( GTK_CTREE( THIS->obj ),
                                    get_pgdkobject(row,pgtk_CTreeNode_program));
   my_pop_n_elems( args );
   if(o)
@@ -463,31 +383,22 @@ NAME_ARGS(node);
 }
 
 
-COMPLEX_FUNCTION(node_moveto, CTreeNode, int, float, float);
-NAME_ARGS(row,column,row_align,col_align);
+void node_moveto( CTreeNode row, int column, float row_align, float col_align );
 // Scroll the tree so a specified node (and column) is visible.
 // If the node is folded, it's first visible parent will be shown.
-
-int COMPLEX_FUNCTION(node_is_visible, CTreeNode);
-NAME_ARGS(node);
+int node_is_visible( CTreeNode node );
 // Return 1 if the node is currently visible
-COMPLEX_FUNCTION(set_indent, int);
-NAME_ARGS(npixels);
+void set_indent( int npixels );
 // Set the indentation level
-COMPLEX_FUNCTION(set_spacing, int);
-NAME_ARGS(npixels);
+void set_spacing( int npixels );
 // Set the spacing between the tree column and the other columns
-COMPLEX_FUNCTION(set_show_stub, int);
-NAME_ARGS(stubp);
+void set_show_stub( int stubp );
 // If true, the 'stub' will be shown. The stub is the small line that
 // goes horizontally from the expand or collapse button to the actual
 // contents of the tree
-
-COMPLEX_FUNCTION(set_line_style, int);
-NAME_ARGS(style);
+void set_line_style( int style );
 // Set the line style, one of CONST(GTK_CTREE_LINES)
-COMPLEX_FUNCTION(set_expander_style, int);
-NAME_ARGS(style);
+void set_expander_style( int style );
 // Set the expander style, one of CONST(GTK_CTREE_EXPANDER)
 
 /*
@@ -495,15 +406,12 @@ void gtk_ctree_set_drag_compare_func (GtkCTree     	      *ctree,
 				      GtkCTreeCompareDragFunc  cmp_func);
 */
 
-COMPLEX_FUNCTION(sort_node, ?CTreeNode);
-NAME_ARGS(node);
+void sort_node( ?CTreeNode node );
 // Sort the specified node.
-COMPLEX_FUNCTION(sort_recursive, ?CTreeNode);
-NAME_ARGS(node);
+void sort_recursive( ?CTreeNode node );
 // Sort the specified node and it's children.
 
-
-PROGRAM(CTreeNode);
+class CTreeNode;
 // This is one of the nodes (branch or leaf) of the CTree.<br>
 // They are the equivalent of row numbers in a normal CList.
 #define GTK_CTREENODE(X) ((GtkCTreeNode *)X)
@@ -522,7 +430,7 @@ RETURNS(GTK.CTreeNode);
 // Returns the parent node
 {
   my_pop_n_elems(args);
-  push_pgdkobject( GTK_CTREE_NODE(GTK_CTREE_ROW( THIS->obj )->parent), 
+  push_pgdkobject( GTK_CTREE_NODE(GTK_CTREE_ROW( THIS->obj )->parent),
                    pgtk_CTreeNode_program );
 }
 
@@ -531,7 +439,7 @@ RETURNS(GTK.CTreeNode);
 // Returns the first child node
 {
   my_pop_n_elems(args);
-  push_pgdkobject( GTK_CTREE_NODE(GTK_CTREE_ROW( THIS->obj )->children), 
+  push_pgdkobject( GTK_CTREE_NODE(GTK_CTREE_ROW( THIS->obj )->children),
                    pgtk_CTreeNode_program );
 }
 
@@ -555,23 +463,23 @@ RETURNS(GTK.CTreeNode);
 #undef  GTK_CTREENODE
 #define GTKCtreenode GtkCTreeRow
 #define GTK_CTREENODE(X) ((GtkCTreeRow *)X)
-CLASSMEMBER(level,int);
+member int level;
 // Returns the depth of this node in the tree
-CLASSMEMBER(is_leaf,int);
+member int is_leaf;
 // Is this node a leaf?
-CLASSMEMBER(expanded,int);
+member int expanded;
 // Is this node expanded?
-
-PROGRAM(CTreeRow);
+class CTreeRow;
 // This class is deprecated.
 #define GTK_CTREEROW(X) ((GtkCTreeRow *)X)
-SUBWIDGET(parent,CTreeNode);
+subwidget CTreeNode parent;
 // Return the parent node of this node
-SUBWIDGET(children,CTreeNode);
+subwidget CTreeNode children;
 // Return the first child
-CLASSMEMBER(level,int);
+member int level;
 // Return the level of this node (0 for root, 1 for a child of the root, etc)
-CLASSMEMBER(is_leaf,int);
+member int is_leaf;
 // Return 1 if the node is a leaf node
-CLASSMEMBER(expanded,int);
+member int expanded;
 // Return 1 if the node is expanded
+

@@ -1,18 +1,23 @@
-PROGRAM(button);
+class button;
+inherit container;
 // A container that can only contain one child, and accepts events.
 // draws a bevelbox around itself.
 // IMG: GTK.Button("A button")
 // IMG: GTK.Button("A button\nwith multiple lines\nof text")
 // IMG: GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.image(100,40)->test())))
-INHERIT(container);
-SUBWIDGET(child, widget);
-// Returns the (one and only) child of this container.
 
-SIGNAL("pressed", "Called when the button is pressed");
-SIGNAL("released", "Called when the button is released");
-SIGNAL("clicked", "Called when the button is pressed, and then released");
-SIGNAL("enter", "Called when the mouse enters the button");
-SIGNAL("leave", "Called when the mouse leaves the button");
+subwidget widget child;
+// The (one and only) child of this container.
+signal pressed;
+// Called when the button is pressed
+signal released;
+// Called when the button is released
+signal clicked;
+// Called when the button is pressed, and then released
+signal enter;
+// Called when the mouse enters the button
+signal leave;
+// Called when the mouse leaves the button
 
 FUNCTION(create, "function(string|void:void)")
 NAME_ARGS(label_text);
@@ -30,18 +35,19 @@ NAME_ARGS(label_text);
   }
   pgtk__init_this_object();
 }
-SIMPLE_FUNCTION(pressed);
+void pressed();
 // Emulate a 'press' event.
-SIMPLE_FUNCTION(released);
+void released();
 // Emulate a 'release' event.
-SIMPLE_FUNCTION(clicked);
-// Emulate a 'clicked' event (press followed by release). 
-SIMPLE_FUNCTION(enter);
+void clicked();
+// Emulate a 'clicked' event (press followed by release).
+void enter();
 // Emulate a 'enter' event.
-SIMPLE_FUNCTION(leave);
+void leave();
 // Emulate a 'leave' event.
-SIMPLE_INT_FUNCTION(set_relief);
-NAME_ARGS(newstyle);
+void set_relief( int newstyle );
 // One of CONST(GTK_RELIEF)
-int COMPLEX_FUNCTION(get_relief);
+int get_relief();
 // One of CONST(GTK_RELIEF), set with set_relief()
+
+

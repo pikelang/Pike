@@ -1,5 +1,5 @@
-PROGRAM(draw);
-INHERIT(data);
-
-#define GTK_DRAW(X) ((GtkStyle *)(X))
+/* class draw; */
+/* inherit data; */
+/* #define GTK_DRAW(X) ((GtkStyle *)(X)) */
 /* TBD */
+

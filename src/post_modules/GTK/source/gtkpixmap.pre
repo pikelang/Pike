@@ -1,35 +1,29 @@
-PROGRAM(pixmap);
-INHERIT(misc);
+class pixmap;
+inherit misc;
 // Pixmaps are data structures that contain pictures. These pictures
 // can be used in various places, but most visibly as icons on the
 // X-Windows desktop, or as cursors. A bitmap is a 2-color pixmap.
 // <p>
 // To use pixmaps in GTK, you must first build a GDK.Pixmap object
 // using GDK.Pixmap.
-
 // <p>
-
 // The pixels in a GTK.Pixmap cannot be manipulated by the application
 // after creation, since under the X Window system the pixel data is
 // stored on the X server and so is not available to the client
 // application. If you want to create graphical images which can be
 // manipulated by the application, look at W(Image).
-
 // <p>
-
 // IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()) )
 // IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()), GDK.Bitmap(Image.image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
 
-COMPLEX_FUNCTION(create, GdkPixmap, ?GdkBitmap);
-NAME_ARGS(pixmap,mask);
+void create( GdkPixmap pixmap, ?GdkBitmap mask );
 // Create a new pixmap object, and sets the image and the mask.
 
-COMPLEX_FUNCTION(set, GdkPixmap, ?GdkBitmap);
-ARGS(GDK.Pixmap,GDK.Bitmap);
-NAME_ARGS(pixmap,mask);
+void set( GdkPixmap pixmap, ?GdkBitmap mask );
+ARGS(GDK.Pixmap,GDK.Bitmap|void);
 // Sets the GDK.Pixmap image and the optinal GDK.Bitmap mask
 
-CLASSMEMBER(build_insensitive, int);
+member int build_insensitive;
 
 FUNCTION(get, "function(void:mapping)");
 // Returns ([ <br>
@@ -70,8 +64,7 @@ FUNCTION(get, "function(void:mapping)");
   f_aggregate_mapping( 6 );
 }
 
-COMPLEX_FUNCTION(set_build_insensitive, int);
-NAME_ARGS(buildp);
+void set_build_insensitive( int buildp );
 // Set to TRUE if an extra pixmap should be automatically created to
 // use when the pixmap is insensitive.
 
@@ -85,7 +78,7 @@ RETURNS(GTK.Pixmap);
   get_all_args( "set_pixmap_insensitive", args, "%o", &o );
   if(!get_gdkobject( o, Pixmap ))
     error("This is not a GDK.Pixmap\n");
-  if( GTK_PIXMAP( THIS->obj )->pixmap_insensitive != 
+  if( GTK_PIXMAP( THIS->obj )->pixmap_insensitive !=
       get_gdkobject( o, Pixmap ) )
   {
     gdk_pixmap_ref( get_gdkobject( o, Pixmap ) );
@@ -95,3 +88,4 @@ RETURNS(GTK.Pixmap);
   }
   RETURN_THIS();
 }
+

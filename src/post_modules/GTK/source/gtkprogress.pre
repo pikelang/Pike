@@ -1,18 +1,15 @@
-PROGRAM(progress);
-INHERIT(widget);
-COMPLEX_FUNCTION(set_show_text, int);
-NAME_ARGS(textp);
+class progress;
+inherit widget;
+void set_show_text( int textp );
 // If true, write a text in the progress bar.
-COMPLEX_FUNCTION(set_text_alignment, float, float);
-NAME_ARGS(xalign, yalign);
+void set_text_alignment( float xalign, float yalign );
 // The location for the text in the progress bar.<br>
 // xalign is between 0.0 (leftmost) and 1.0 (rightmost)<br>
 // yalign is between 0.0 (topmost) and 1.0 (bottommost)<br>
 // <p>
 // Default is xalign == yalign == 0.5
-COMPLEX_FUNCTION(set_format_string, string);
-NAME_ARGS(format);
-// 
+void set_format_string( string format );
+//
 // More or less like sprintf.<p>
 // %[field width][character]<p>
 // 0&lt;=width&gt;=2<p>
@@ -25,18 +22,14 @@ NAME_ARGS(format);
 // u or U: The higer value (from the adjustment)
 // %: Insert a %
 // </pre></dl>The default format is '%P%%'
-COMPLEX_FUNCTION(set_adjustment, Adjustment);
-NAME_ARGS(adjustment);
+void set_adjustment( Adjustment adjustment );
 // Sets the adjustment to use. See the adjustment documentation for more info
-COMPLEX_FUNCTION(configure, float, float, float);
-NAME_ARGS(value, min, max);
+void configure( float value, float min, float max );
 // Sets the current value, the minimum value and the maximum value.
 // The default min and max are 0.0 and 1.0 respectively.
-COMPLEX_FUNCTION(set_percentage, float);
-NAME_ARGS(pct);
+void set_percentage( float pct );
 // Sets the value (between 0.0 and 1.0). Uses the min and max values.
-COMPLEX_FUNCTION(set_activity_mode, int);
-NAME_ARGS(modep);
+void set_activity_mode( int modep );
 // As well as indicating the amount of progress that has occured, the
 // progress bar may be set to just indicate that there is some
 // activity. This can be useful in situations where progress cannot be
@@ -44,30 +37,26 @@ NAME_ARGS(modep);
 // Mode is:<br>
 // 1: active<br>
 // 0: inactive<br>
-COMPLEX_FUNCTION(set_value,float);
-NAME_ARGS(value);
+void set_value( float value );
 // Set the value.
-float COMPLEX_FUNCTION(get_value);
+float get_value();
 // Return the current value
-string COMPLEX_FUNCTION(get_current_text);
+string get_current_text();
 // Return the current text (see set_format_string)
-string COMPLEX_FUNCTION(get_text_from_value, float);
-NAME_ARGS(value);
+string get_text_from_value( float value );
 // Formats 'value' and returns it as a text.
-float COMPLEX_FUNCTION(get_current_percentage);
+float get_current_percentage();
 // Returns a float between 0.0 and 1.0
-float COMPLEX_FUNCTION(get_percentage_from_value, float);
-NAME_ARGS(value);
+float get_percentage_from_value( float value );
 // Returns a float between 0.0 and 1.0
-/* SUBWIDGET(adjustment, adjustment); */
-
-CLASSMEMBER(show_text, int);
+member int show_text;
 // 1 if the text will be shown
-CLASSMEMBER(activity_mode, int);
+member int activity_mode;
 // The currently set activity mode.
-CLASSMEMBER(x_align, float);
+member float x_align;
 // The text alignment, 0.0 is leftmost, 1.0 is rightmost
-CLASSMEMBER(y_align, float);
+member float y_align;
 // The text alignment, 0.0 is topmost, 1.0 is bottommost
-CLASSMEMBER(format, string);
+member string format;
 // The format used to convert the value to a the text
+

@@ -1,12 +1,13 @@
-PROGRAM(item);
+class item;
+inherit bin;
 // This class is inherited by all 'item' type of widgets.
-SIGNAL("select", "");
-SIGNAL("delselect", "");
-SIGNAL("toggle", "");
-INHERIT(bin);
-SIMPLE_FUNCTION(select);
+signal select;
+signal delselect;
+signal toggle;
+void select();
 // Emulate a 'select' event.
-SIMPLE_FUNCTION(deselect);
+void deselect();
 // Emulate a 'deselect' event.
-SIMPLE_FUNCTION(toggle);
+void toggle();
 // Emulate a 'toggle' event.
+

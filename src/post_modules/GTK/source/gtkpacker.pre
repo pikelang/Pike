@@ -1,41 +1,30 @@
-PROGRAM(packer);
-INHERIT(container);
-COMPLEX_FUNCTION(create);
+class packer;
+inherit container;
 
-COMPLEX_FUNCTION(add_defaults, widget, int, int, int);
-NAME_ARGS(widget, side, anchor, options);
+void create();
+
+void add_defaults( widget widget, int side, int anchor, int options );
 // side is one of CONST(GTK_SIDE), anchor is one of CONST(GTK_ANCHOR),
 // options is a bitwise or of GTK.PackExpand, GTK.FillX and GTK.FillY
 
-COMPLEX_FUNCTION(add, widget, int, int, int,int,int,int,int,int);
-NAME_ARGS(widget, side, anchor, options,border_width,pad_x,pad_y,i_pad_x,i_pad_y);
+void add( widget widget, int side, int anchor, int options, int border_width, int pad_x, int pad_y, int i_pad_x, int i_pad_y );
 // side is one of CONST(GTK_SIDE), anchor is one of CONST(GTK_ANCHOR),
 // options is a bitwise or of GTK.PackExpand, GTK.FillX and GTK.FillY
 
-COMPLEX_FUNCTION(set_child_packing, widget, int, int, int,int,int,int,int,int);
-NAME_ARGS(child, side, anchor, options,border_width,pad_x,pad_y,i_pad_x,i_pad_y);
+void set_child_packing( widget child, int side, int anchor, int options, int border_width, int pad_x, int pad_y, int i_pad_x, int i_pad_y );
 // side is one of CONST(GTK_SIDE), anchor is one of CONST(GTK_ANCHOR),
 // options is a bitwise or of GTK.PackExpand, GTK.FillX and GTK.FillY
 
-COMPLEX_FUNCTION(reorder_child, widget, int);
-NAME_ARGS(child,pos);
+void reorder_child( widget child, int pos );
+void set_spacing( int new_spacing );
+void set_default_border_width( int border );
+void set_default_pad( int xpad, int ypad );
+void set_default_ipad( int xpad, int ypad );
 
-COMPLEX_FUNCTION(set_spacing, int);
-NAME_ARGS(new_spacing);
+member int spacing;
+member int default_border_width;
+member int default_pad_x;
+member int default_pad_y;
+member int default_i_pad_x;
+member int default_i_pad_y;
 
-COMPLEX_FUNCTION(set_default_border_width, int);
-NAME_ARGS(border);
-
-COMPLEX_FUNCTION(set_default_pad, int, int);
-NAME_ARGS(xpad,ypad);
-
-COMPLEX_FUNCTION(set_default_ipad, int, int);
-NAME_ARGS(xpad,ypad);
-
-
-CLASSMEMBER(spacing, int);
-CLASSMEMBER(default_border_width, int);
-CLASSMEMBER(default_pad_x, int);
-CLASSMEMBER(default_pad_y, int);
-CLASSMEMBER(default_i_pad_x, int);
-CLASSMEMBER(default_i_pad_y, int);

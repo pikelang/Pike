@@ -1,4 +1,5 @@
-PROGRAM(font_selection_dialog);
+class font_selection_dialog;
+inherit window;
 // The GtkFontSelectionDialog widget is a dialog box for selecting a font.
 // <p>
 // To set the font which is initially selected, use set_font_name().
@@ -20,15 +21,14 @@ PROGRAM(font_selection_dialog);
 // the 'Filter' page of the dialog.
 // <font size=-1></i>
 // TIMG: GTK.FontSelectionDialog("Select a font")
-INHERIT(window);
-SUBWIDGET(fontsel, font_selection);
+subwidget font_selection fontsel;
 // The W(FontSelection) widget
-SUBWIDGET(ok_button, button);
+subwidget button ok_button;
 // The ok button
-SUBWIDGET(apply_button, button);
+subwidget button apply_button;
 // The apply button
-SUBWIDGET(cancel_button, button);
+subwidget button cancel_button;
 // The cancel button
-COMPLEX_FUNCTION(create, string);
-NAME_ARGS(title);
+void create( string title );
 // Create a new font selection dialog with the specified window title
+

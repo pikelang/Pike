@@ -1,15 +1,6 @@
-/* -*- c -*- */
 #include <gdk/gdkx.h>
-
-/*
-GLOBAL_CFUN( button_box_set_child_size_default, int, int );
-GLOBAL_CFUN( button_box_set_child_ipadding_default, int, int );
-GLOBAL_FUN( button_box_get_child_size_default, "function(void:mapping)");
-GLOBAL_FUN( button_box_get_child_ipadding_default, "function(void:mapping)");
-*/
-
 /* The main stuff.. */
-void socket_ready_callback(int fd, void *f)
+static void socket_ready_callback(int fd, void *f)
 {
   g_main_iteration(1);
 }
@@ -76,9 +67,9 @@ static void do_error( void *dom, int level, char *err, void *data )
 
 int pigtk_is_setup = 0;
 
-COND_WIDGET(gnome);
+require gnome;
 FUNCTION(gnome_init, "function(string,string,array(string):void)" );
-NAME_ARGS( app_id, app_version, argv );
+NAME_ARGS(app_id, app_version, argv);
 // Initializes the application. This sets up all of the GNOME
 // internals and prepares them (imlib, gdk/gtk, session-management,
 // triggers, sound, user preferences)
@@ -135,7 +126,7 @@ NAME_ARGS( app_id, app_version, argv );
   free(data);
   push_int( 0 );
 }
-END_COND_WIDGET(gnome);
+endrequire;
 
 
 FUNCTION(setup_gtk, "function(array|void,int|void:array)");

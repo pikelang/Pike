@@ -1,10 +1,13 @@
-PROGRAM(list);
+class list;
 // This class is not yet finished enough to be usable.
-SIGNAL("selection_changed", "...");
-SIGNAL("select_child", "...");
-SIGNAL("unselect_child", "...");
-INHERIT(container);
-COMPLEX_FUNCTION(create);
+signal selection_changed;
+// ...
+signal select_child;
+// ...
+signal unselect_child;
+// ...
+inherit container;
+void create();
 FUNCTION(selection, "function(void:array(object))");
 RETURNS(array(GTK.Widget));
 {
@@ -20,24 +23,19 @@ RETURNS(array(GTK.Widget));
   f_aggregate( j );
 }
 
-int COMPLEX_FUNCTION(child_position, widget);
-NAME_ARGS(child);
-COMPLEX_FUNCTION(extend_selection, int,float,int);
-NAME_ARGS(scroll_type, position, auto_start_selection);
-SIMPLE_FUNCTION(start_selection);
-SIMPLE_FUNCTION(end_selection);
-SIMPLE_FUNCTION(select_all);
-SIMPLE_FUNCTION(unselect_all);
-COMPLEX_FUNCTION(scroll_horizontal, int, float);
-NAME_ARGS(scroll_type, position);
-COMPLEX_FUNCTION(scroll_vertical, int, float);
-NAME_ARGS(scroll_type, position);
-SIMPLE_FUNCTION(toggle_add_mode);
-SIMPLE_FUNCTION(toggle_focus_row);
-COMPLEX_FUNCTION(toggle_row, widget);
-NAME_ARGS(child);
-SIMPLE_FUNCTION(undo_selection);
-SIMPLE_FUNCTION(end_drag_selection);
+int child_position( widget child );
+void extend_selection( int scroll_type, float position, int auto_start_selection );
+void start_selection();
+void end_selection();
+void select_all();
+void unselect_all();
+void scroll_horizontal( int scroll_type, float position );
+void scroll_vertical( int scroll_type, float position );
+void toggle_add_mode();
+void toggle_focus_row();
+void toggle_row( widget child );
+void undo_selection();
+void end_drag_selection();
 
 FUNCTION(insert_items, "function(array(object),int:object)");
 ARGS(array(GTK.ListItem),int);
@@ -121,27 +119,23 @@ NAME_ARGS(items,position);
 }
 
 
-COMPLEX_FUNCTION(clear_items, int, int);
-NAME_ARGS(start,end);
-COMPLEX_FUNCTION(select_item, int);
-NAME_ARGS(item);
-COMPLEX_FUNCTION(unselect_item, int);
-NAME_ARGS(item);
-COMPLEX_FUNCTION(select_child, widget);
-NAME_ARGS(child);
-COMPLEX_FUNCTION(unselect_child, widget);
-NAME_ARGS(child);
-COMPLEX_FUNCTION(set_selection_mode, int);
-NAME_ARGS(selection_mode);
+void clear_items( int start, int end );
+void select_item( int item );
+void unselect_item( int item );
+void select_child( widget child );
+void unselect_child( widget child );
+void set_selection_mode( int selection_mode );
 
-SUBWIDGET(last_focus_child, list_item);
-SUBWIDGET(undo_focus_child, list_item);
+subwidget list_item last_focus_child;
+subwidget list_item undo_focus_child;
 
-CLASSMEMBER(htimer,int);
-CLASSMEMBER(vtimer,int);
-CLASSMEMBER(anchor,int);
-CLASSMEMBER(drag_pos,int);
-CLASSMEMBER(anchor_state,int);
-CLASSMEMBER(selection_mode,int);
-CLASSMEMBER(drag_selection,int);
-CLASSMEMBER(add_mode,int);
+member int htimer;
+member int vtimer;
+member int anchor;
+member int drag_pos;
+member int anchor_state;
+member int selection_mode;
+member int drag_selection;
+member int add_mode;
+
+

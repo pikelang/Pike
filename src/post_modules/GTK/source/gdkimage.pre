@@ -1,4 +1,4 @@
-PROGRAM(GdkImage);
+class GdkImage;
 // A gdk (low level) image.
 // Mainly used for W(Image) objects.
 //
@@ -43,7 +43,7 @@ FUNCTION(destroy, "function(void:void)");
 }
 
 #define HEADER "P6\n%d %d\n255\n"
-#define HEADER_SIZE 20 
+#define HEADER_SIZE 20
 
 FUNCTION(get_pnm, "function(void:string)")
 // Returns the data in the image as a pnm object.
@@ -61,7 +61,7 @@ FUNCTION(get_pnm, "function(void:string)")
   p = res = malloc(len);
   strcpy(res, header);
   p+=strlen(header);
-  
+
   for(y=0; y<i->height; y++)
     for(x=0; x<i->width; x++)
     {
@@ -120,14 +120,14 @@ NAME_ARGS(image|xsize,void|ysize);
   {
     get_all_args("init", args, "%o", &img);
     /* Might throw an error!*/
-    THIS->obj = (void *)gdkimage_from_pikeimage( img, THIS->extra_int, 
+    THIS->obj = (void *)gdkimage_from_pikeimage( img, THIS->extra_int,
 						 (void *)THIS->obj );
   } else {
     int x, y;
     get_all_args("gdkImage", args, "%d%d", &x, &y);
     if(THIS->obj)
       gdk_image_destroy( (void *)THIS->obj );
-    THIS->obj = (void *)gdk_image_new(THIS->extra_int, 
+    THIS->obj = (void *)gdk_image_new(THIS->extra_int,
 				      gdk_visual_get_system(),
 				      x, y);
     if(!THIS->obj)
@@ -161,4 +161,5 @@ NAME_ARGS(x,y,pixel);
   gdk_image_put_pixel( (void *)THIS->obj, x, y, to );
   RETURN_THIS();
 }
+
 

@@ -1,16 +1,16 @@
-COND_WIDGET(gnome);
-PROGRAM(gnome_dialog);
-INHERIT(window);
+require gnome;
+class gnome_dialog;
+inherit window;
 // Gnome.Dialog gives dialogs a consistent look and feel, while making
 // them more convenient to program. Gnome.Dialog makes it easy to use
 // stock buttons, makes it easier to handle delete_event, and adds
 // some cosmetic touches (such as a separator above the buttons, and a
 // bevel around the edge of the window).
 
-SIGNAL("clicked", "");
-SIGNAL("close", "");
+signal clicked;
+signal close;
 
-SUBWIDGET( vbox, vbox );
+subwidget vbox vbox;
 
 FUNCTION(create, "function(string, string ...:object)");
 NAME_ARGS(title, buttons);
@@ -45,8 +45,7 @@ NAME_ARGS(title, buttons);
   push_int( 0 );
 }
 
-COMPLEX_FUNCTION( set_parent, window );
-NAME_ARGS( parent );
+void set_parent( window parent );
 // Dialogs have "parents," usually the main application window which
 // spawned them. This function will let the window manager know about
 // the parent-child relationship. Usually this means the dialog must
@@ -55,12 +54,11 @@ NAME_ARGS( parent );
 // parent window (vs. at the mouse position, or at a default window
 // manger location).
 
-COMPLEX_FUNCTION( button_connect, int, callback );
-NAME_ARGS( button, callback, data );
+void button_connect( int button, callback callback );
 // Simply a signal_connect to the "clicked" signal of the specified button.
 
-int COMPLEX_FUNCTION( run );
-// Blocks until the user clicks a button, or closes the dialog with
+int  run( );
+// Blocks until the user clicks a button or closes the dialog with
 // the window manager's close decoration (or by pressing Escape).
 // <p>
 // You need to set up the dialog to do the right thing when a button
@@ -76,26 +74,22 @@ int COMPLEX_FUNCTION( run );
 // change the close() behavior to hide instead of destroy. You can do
 // this with close_hides().
 
-int COMPLEX_FUNCTION( run_and_close );
+int run_and_close( );
 // See run(). The only difference is that this function calls close()
-// before returning, if the dialog was not already closed.
+// before returning if the dialog was not already closed.
 
-COMPLEX_FUNCTION(set_default, int );
-NAME_ARGS( button );
+void set_default( int button );
 // The default button will be activated if the user just presses
 // return. Usually you should make the least-destructive button the
 // default. Otherwise, the most commonly-used button.
 
-
-COMPLEX_FUNCTION(set_sensitive, int, int );
-NAME_ARGS( button, sensitive );
+void set_sensitive( int button, int sensitive );
 // Calls set_sensitive() on the specified button number.
 
-COMPLEX_FUNCTION(set_accelerator, int, int, int);
-NAME_ARGS(button, accelerator_key, accelerator_mods );
+void set_accelerator( int button, int accelerator_key, int accelerator_mode);
 
-COMPLEX_FUNCTION(close);
-// See also close_hides(). This function emits the "close" signal,
+void close();
+// See also close_hides(). This function emits the "close" signal(
 // which either hides or destroys the dialog (destroy by default). If
 // you connect to the "close" signal, and your callback returns TRUE,
 // the hide or destroy will be blocked. You can do this to avoid
@@ -105,8 +99,7 @@ COMPLEX_FUNCTION(close);
 // catch all sources of dialog closure, including delete_event and
 // button clicks, and handle them in a central location.
 
-COMPLEX_FUNCTION(set_close, int);
-NAME_ARGS(click_closes);
+void set_close( int click_closes );
 // This is a convenience function so you don't have to connect
 // callbacks to each button just to close the dialog. By default,
 // Gnome.Dialog has this parameter set the FALSE and it will not close
@@ -114,16 +107,11 @@ NAME_ARGS(click_closes);
 // Gnome.Dialog subclasses, such as Gnome.MessageBox and
 // Gnome.PropertyBox, have this parameter set to TRUE by default.
 
-COMPLEX_FUNCTION(editable_enters, editable );
+void editable_enters( editable widget );
 // Normally if there's an editable widget (such as GtkEntry) in your
 // dialog, pressing Enter will activate the editable rather than the
 // default dialog button. However, in most cases, the user expects to
 // type something in and then press enter to close the dialog. This
 // function enables that behavior.
 
-COMPLEX_FUNCTION(append_button_with_pixmap, string, string );
-NAME_ARGS( name, pixmap_file );
-
-
-
-END_COND_WIDGET(gnome);
+void append_button_with_pixmap( string name, string pixmap_file );

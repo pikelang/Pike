@@ -1,10 +1,11 @@
-PROGRAM(check_menu_item);
+class check_menu_item;
+inherit menu_item;
 // A check menu item is more or less identical to a check button, but it
 // should be used in menus.
 // IMG: GTK.CheckMenuItem("Hi there")
 // IMG: GTK.CheckMenuItem("Hi there")->set_active(1)
-SIGNAL("toggled", "Called when the state of the menu item is changed");
-INHERIT(menu_item);
+signal toggled;
+// Called when the state of the menu item is changed
 FUNCTION(create, "function(string|void:void)")
 NAME_ARGS(label);
 // The argument, if specified, is the label of the item.
@@ -23,11 +24,10 @@ NAME_ARGS(label);
   }
   pgtk__init_this_object();
 }
-SIMPLE_INT_FUNCTION(set_active);
-NAME_ARGS(new_state);
+void set_active( int new_state );
 // State is either 1 or 0. If 1, the button will be 'pressed'.
-SIMPLE_INT_FUNCTION(set_show_toggle);
+void set_show_toggle( int togglep );
 // If true, the toggle indicator will be shown
-NAME_ARGS(togglep);
-SIMPLE_FUNCTION(toggled);
+void toggled();
 // Emulate a toggled event
+

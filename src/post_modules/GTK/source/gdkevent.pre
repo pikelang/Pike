@@ -1,4 +1,4 @@
-PROGRAM(GdkEvent);
+class GdkEvent;
 
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
@@ -461,3 +461,6 @@ FUNCTION(cast, "function(string:mixed)");
   }
   f_aggregate_mapping( sp - osp );
 }
+
+
+

@@ -1,6 +1,6 @@
-PROGRAM(GdkColor);
+class GdkColor;
 // The GDK.Color object is used to represent a color.
-// When you call GDK.Color(r,g,b) the color will be allocated 
+// When you call GDK.Color(r,g,b) the color will be allocated
 // from the X-server. The constructor can return an  exception if there are
 // no more colors to allocate.
 // NOIMG
@@ -28,7 +28,7 @@ NAME_ARGS(r|color,g,b);
     g*=257;
     b*=257;
   }
-    
+
   c = malloc(sizeof(GdkColor));
   THIS->obj = (void *)c;
   c->red   = r;
@@ -80,8 +80,8 @@ FUNCTION(image_color_object, "function(void:object)");
 // Return a Image.Color.Color instance.<br>
 // This gives better precision than the rgb function.
 {
-  unsigned char colorname[4+4+4+2]; 
-  sprintf( colorname, "#%04x%04x%04x", 
+  unsigned char colorname[4+4+4+2];
+  sprintf( colorname, "#%04x%04x%04x",
            ((GdkColor *)THIS->obj)->red,
            ((GdkColor *)THIS->obj)->green,
            ((GdkColor *)THIS->obj)->blue );
@@ -102,3 +102,5 @@ FUNCTION(destroy, "function(void:void)")
     THIS->obj = 0;
   }
 }
+
+

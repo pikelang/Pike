@@ -1,4 +1,4 @@
-PROGRAM(GdkDragContext);
+class GdkDragContext;
 // The drag context contains all information about the drag'n'drop
 // connected to the signal to which it is an argument.
 // <p>
@@ -19,7 +19,7 @@ RETURNS(GDK.DragContext);
 NAME_ARGS(success,del,time);
 // If success is true, the drag succeded.
 // If del is true, the source should be deleted.
-// time is the current time. 
+// time is the current time.
 {
   int a, b, t;
   get_all_args("drag_finish", args, "%d%d%d", &a, &b, &t );
@@ -29,10 +29,10 @@ NAME_ARGS(success,del,time);
 
 FUNCTION(drag_status, "function(int,int|void:object)");
 RETURNS(GDK.DragContext);
-NAME_ARGS( action );
+NAME_ARGS(action);
 {
   time_t curtime = time(0);
-  gdk_drag_status( ((GdkDragContext *)THIS->obj), 
+  gdk_drag_status( ((GdkDragContext *)THIS->obj),
                    (args?sp[-1].u.integer:
                     ((GdkDragContext *)THIS->obj)->suggested_action),
                    curtime);
@@ -68,8 +68,6 @@ NAME_ARGS(ok,time);
   RETURN_THIS();
 }
 
-
-
 FUNCTION(drag_set_icon_widget, "function(object,int,int,int:object)");
 NAME_ARGS(widget,hot_x,hot_y);
 ARGS(GTK.Widget,int,int);
@@ -78,7 +76,7 @@ ARGS(GTK.Widget,int,int);
 {
   struct object *_o;
   int x, y;
-  get_all_args( "drag_set_icon_window", args, "%o%d%d", 
+  get_all_args( "drag_set_icon_window", args, "%o%d%d",
                 &_o, &x, &y);
   gtk_drag_set_icon_widget( ((GdkDragContext *)THIS->obj),
                             GTK_WIDGET(get_pgtkobject( _o, pgtk_widget_program )),
@@ -98,7 +96,7 @@ RETURNS(GTK.Widget);
 ARGS(GTK.Pixmap,GTK.Bitmap,int,int);
 NAME_ARGS(image,mask,hot_x,hot_y);
 // Set the drag pixmap, and optionally mask.<br>
-// The hot_x and hot_y coordinates will be the location of the mouse pointer, 
+// The hot_x and hot_y coordinates will be the location of the mouse pointer,
 // relative to the upper left corner of the pixmap.
 {
   struct object *p=NULL, *m=NULL;
@@ -120,16 +118,18 @@ NAME_ARGS(image,mask,hot_x,hot_y);
   RETURN_THIS();
 }
 
-
-CLASSMEMBER(suggested_action, int);
+member int suggested_action;
 // One of CONST(GDK_ACTION);
-CLASSMEMBER(actions, int);
+member int actions;
 // A bitwise or of one or more of CONST(GDK_ACTION);
-CLASSMEMBER(action, int);
+member int action;
 // One of CONST(GDK_ACTION);
-CLASSMEMBER(start_time, int);
+member int start_time;
 // The start time of this drag, as a unix time_t (seconds since 0:00 1/1 1970)
-CLASSMEMBER(protocol, int);
+member int protocol;
 // One of CONST(GDK_DRAG_PROTO)
-CLASSMEMBER(is_source, int);
+member int is_source;
 // Is this application the source?
+
+
+

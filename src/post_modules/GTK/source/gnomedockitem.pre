@@ -1,37 +1,36 @@
-COND_WIDGET(gnome);
-PROGRAM(gnome_dock_item);
-INHERIT(bin);
-SIGNAL("dock-drag-begin", "This signal is emitted as soon as the user starts dragging the dock item.");
-SIGNAL("dock-drag-end", "This signal is emitted at the end of a dock item drag.");
-SIGNAL("dock-drag-motion", "This signal is emitted while the item is being dragged and reports that the pointer position has changed.");
-SIGNAL("dock-detatch", "This signal is emitted when an item is detached from its parent dock band and thus becomes a floating item.");
+require gnome;
+class gnome_dock_item;
+inherit bin;
+
+signal dock_drag_begin;
+// This signal is emitted as soon as the user starts dragging the dock item.
+signal dock_drag_end;
+// This signal is emitted at the end of a dock item drag.
+signal dock_drag_motion;
+// This signal is emitted while the item is being dragged and reports
+// that the pointer position has changed.
+signal dock_detatch;
+// This signal is emitted when an item is detached from its parent
+// dock band and thus becomes a floating item.
 
 
-COMPLEX_FUNCTION( create, string, int );
-NAME_ARGS(name, behaviour);
+void create( string name, int behavior );
 // Create a new GnomeDockItem named name, with the specified behavior.<p>
-//     Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. <p>
-//     Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. <p>
-//     Gnome.DockItemBehNeverVertical specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.<p>
-//     Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.<p>
-//     Gnome.DockItemBehLocked specifies that users cannot drag the item around.<p>
+//  Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. <p>
+//  Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. <p>
+//  Gnome.DockItemBehNeverVertical specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.<p>
+//  Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.<p>
+//  Gnome.DockItemBehLocked specifies that users cannot drag the item around.<p>
 
-widget COMPLEX_FUNCTION( get_child );
+widget get_child( );
 // Retrieve the child of the item.
 
-string COMPLEX_FUNCTION( get_name );
+string get_name( );
 // Retrieve the name
-COMPLEX_FUNCTION( set_shadow_type, int );
-NAME_ARGS(shadow_type);
+void set_shadow_type( int shadow_type);
 // One of CONST(GTK_SHADOW)
-int COMPLEX_FUNCTION( get_shadow_type );
+int  get_shadow_type( );
 // One of CONST(GTK_SHADOW)
-
-COMPLEX_FUNCTION( set_orientation, int );
-NAME_ARGS( orientation );
-
-int COMPLEX_FUNCTION( get_orientation );
-int COMPLEX_FUNCTION( get_behavior );
-
-
-END_COND_WIDGET(gnome);
+void set_orientation( int orientation);
+int get_orientation( );
+int get_behavior( );

@@ -1,4 +1,4 @@
-PROGRAM(GdkDrawable);
+class GdkDrawable;
 #include <gdk/gdkx.h>
 // The GDK.Bitmap, GDK.Window and GDK.Pixmap classes are all GDK drawables.
 // <br>
@@ -241,3 +241,6 @@ FUNCTION(get_geometry, "function(void:mapping(string:int))");
   push_text("depth"); push_int(d);
   f_aggregate_mapping( 10 );
 }
+
+
+

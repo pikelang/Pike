@@ -1,11 +1,10 @@
-PROGRAM(hscrollbar);
+class hscrollbar;
+inherit scrollbar;
 // A horizontal scrollbar.<p>
 // General documentation: See W(Scrollbar)
 // IMG: GTK.Hscrollbar(GTK.Adjustment())->set_usize(300,15)
 //
-INHERIT(scrollbar);
-COMPLEX_FUNCTION(create, ?adjustment);
-NAME_ARGS(adjustment);
+void create( ?adjustment adjustment );
 // Used to create a new vscale widget.
 // The adjustment argument can either be an existing W(Adjustment), or
 // 0, in which case one will be created for you. Specifying 0 might
@@ -13,3 +12,4 @@ NAME_ARGS(adjustment);
 // automatically created adjustment to the constructor function of
 // some other widget which will configure it for you, such as a text
 // widget.
+

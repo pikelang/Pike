@@ -1,26 +1,25 @@
-PROGRAM(scale);
+class scale;
 // The GTK.Scale widget is an abstract class, used only for deriving
 // the subclasses GTK.Hscale and GTK.Vscale.
 // <p>
 // See W(Range) for generic range documentation
 // <p>
-INHERIT(range);
-COMPLEX_FUNCTION(set_digits, int);
-NAME_ARGS(precision);
+inherit range;
+void set_digits( int precision );
 // Sets the number of decimal places that are displayed in the value.
-COMPLEX_FUNCTION(set_draw_value, int);
-NAME_ARGS(drawp);
+void set_draw_value( int drawp );
 //  Specifies whether the current value is displayed as a string next
 //  to the slider.
-COMPLEX_FUNCTION(set_value_pos, int);
-NAME_ARGS(where);
+void set_value_pos( int where );
 // Sets the position in which the current value is displayed. One of
 // CONST(GTK_POS)
-int COMPLEX_FUNCTION(get_value_width);
+int get_value_width();
 // An internal function used to get the maximum width needed to
 // display the value string. Not normaly used by applications.
-CLASSMEMBER(draw_value, int);
+member int draw_value;
 // non-zero if the scale's current value is displayed next to the slider.
-CLASSMEMBER(value_pos, int);
+member int value_pos;
 // The position in which the textual value is displayed, selected from
 // CONST(GTK_POS)
+
+

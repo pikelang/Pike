@@ -1,5 +1,5 @@
-PROGRAM(accel_group);
-INHERIT(data);
+class accel_group;
+inherit data;
 // An AccelGroup stores keybindings.
 // A group is automatically created by W(MenuFactory)
 //
@@ -9,7 +9,7 @@ ARGS();
 // Create a new object
 {
   THIS->obj = (void *)gtk_accel_group_new();
- add_ref(fp->current_object); /* one extra ref... */
+/* add_ref(fp->current_object);   one extra ref... No, not really */
 }
 FUNCTION(add_accel, "function(object,string,int,int:object)");
 RETURNS(GTK.AccelGroup);
@@ -27,11 +27,10 @@ NAME_ARGS(widget,signal,key,modifiers,flags);
   int mods;
   int flags;
   get_all_args("add_accel", args, "%o%s%d%d", &o, &sig, &k, &mods, &flags );
-  gtk_accel_group_add((void *)THIS->obj, k, mods, flags, 
+  gtk_accel_group_add((void *)THIS->obj, k, mods, flags,
                       get_gtkobject( o ), sig );
   RETURN_THIS();
 }
-
 FUNCTION(remove, "function(object,string:object)");
 ARGS(GTK.Widget,string);
 NAME_ARGS(object,key,modifiers);
@@ -44,31 +43,10 @@ RETURNS(GTK.AccelGroup);
   gtk_accel_group_remove((void *)THIS->obj, k,mods, get_gtkobject( o ));
   RETURN_THIS();
 }
-/* FUNCTION(check, "function(int,int:int)"); */
-/* NAME_ARGS(key,modifiers); */
-/* // Returns true if there is a shortcut for the specified key and modifiers. */
-/* { */
-/*   int k, mod; */
-/*   get_all_args("check", args, "%d%d", &k, &mod ); */
-/*   my_pop_n_elems(args); */
-/*   push_int( gtk_accelerator_table_check( (void *)THIS->obj, k, mod ) ); */
-/* } */
-/* FUNCTION(set_mod_mask, "function(int:object)") */
-/* NAME_ARGS(mask); */
-/* RETURNS(GTK.AcceleratorTable); */
-/* // sets the default modifier mask. All modifiers are masked with this mask */
-/* // before the shortcut specific masks are tested. */
-/* { */
-/*   int mod; */
-/*   get_all_args("set_mask", args, "%d", &mod ); */
-/*   gtk_accelerator_set_default*-,pd_maskerator_table_set_mod_mask( (void *)THIS->obj, mod ); */
-/*   RETURN_THIS(); */
-/* } */
-
 FUNCTION(destroy, "function(void:void)")
 {
   gtk_accel_group_unref( (void *)THIS->obj );
   THIS->obj = 0;
 }
 
-/* TODO: Some functions left... */
+

@@ -1,4 +1,5 @@
-PROGRAM(input_dialog);
+class input_dialog;
+inherit dialog;
 // This dialog is used to enable XInput devices.  By default, no
 // extension devices are enabled. We need a mechanism to allow users
 // to enable and configure their extension devices. GTK provides the
@@ -22,12 +23,14 @@ PROGRAM(input_dialog);
 // }
 // </font></pre>
 // TIMG: GTK.InputDialog()
-SIGNAL("enable_device", "This signal is emitted when the user changes the mode of a device from GDK_MODE_DISABLED to a GDK_MODE_SCREEN or GDK_MODE_WINDOW.");
-SIGNAL("disable_device", "his signal is emitted when the user changes the mode of a device from a GDK_MODE_SCREEN or GDK_MODE_WINDOW to GDK_MODE_ENABLED");
-INHERIT(dialog);
-COMPLEX_FUNCTION(create);
+signal enable_device;
+// This signal is emitted when the user changes the mode of a device from GDK_MODE_DISABLED to a GDK_MODE_SCREEN or GDK_MODE_WINDOW.
+signal disable_device;
+// his signal is emitted when the user changes the mode of a device from a GDK_MODE_SCREEN or GDK_MODE_WINDOW to GDK_MODE_ENABLED
+void create();
 // Create a new input dialog window.
-SUBWIDGET(close_button, button);
+subwidget button close_button;
 // The 'close' button of the dialog.
-SUBWIDGET(save_button, button);
+subwidget button save_button;
 // The 'save' button of the dialog.
+

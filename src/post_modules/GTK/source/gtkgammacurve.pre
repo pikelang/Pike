@@ -1,4 +1,4 @@
-PROGRAM(gamma_curve);
+class gamma_curve;
 // A gamma curve widget.. Rather complex.
 // <p>
 // Lets the user edit a gamma curve (a one-to-one mapping usually used
@@ -9,10 +9,12 @@ PROGRAM(gamma_curve);
 // unique) output value specified.
 //
 // IMG: GTK.GammaCurve()->set_usize(210,130)
-INHERIT(vbox);
-COMPLEX_FUNCTION(create);
+inherit vbox;
+void create();
 // Create a new gamma curve
-SUBWIDGET(curve, curve);
+subwidget curve curve;
 // The actual curve
-CLASSMEMBER(gamma, float);
+member float gamma;
 // The current gamma value
+
+

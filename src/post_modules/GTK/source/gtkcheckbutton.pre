@@ -1,11 +1,11 @@
-PROGRAM(check_button);
+class check_button;
 // Check buttons inherent many properties and functions from the the
 // toggle buttons, but look a little different. Rather than
 // being buttons with text inside them, they are small squares with
 // the text to the right of them. These are often used for toggling
 // options on and off in applications.
 // IMG: GTK.Check_button( "title" )
-INHERIT(toggle_button);
+inherit toggle_button;
 FUNCTION(create, "function(string|void:void)")
 NAME_ARGS(label);
 // The argument, if specified, is the label of the item.
@@ -24,4 +24,6 @@ NAME_ARGS(label);
   }
   pgtk__init_this_object();
 }
+
+
 

@@ -1,7 +1,7 @@
-PROGRAM(menu_item);
+class menu_item;
+inherit item;
 // Menu items, to be added to menues.
 // <p>
-INHERIT(item);
 FUNCTION(create, "function(string|void:void)")
 NAME_ARGS(label);
 // If a string is supplied, a W(Label) widget is created using that
@@ -21,37 +21,35 @@ NAME_ARGS(label);
   pgtk__init_this_object();
 }
 
-COMPLEX_FUNCTION(set_submenu, widget);
-NAME_ARGS(menu);
+void set_submenu( widget menu );
 // Set the submenu for this menu button.
-COMPLEX_FUNCTION(remove_submenu);
+void remove_submenu();
 // Remove the submenu for this menu button.
-COMPLEX_FUNCTION(set_placement,int);
-NAME_ARGS(dir);
+void set_placement( int dir );
 // (sub menu placement) One of CONST(GTK_DIRECTION)
-COMPLEX_FUNCTION(configure, int,int);
-NAME_ARGS(toggle_indicator, submenu_indicator);
+void configure( int toggle_indicator, int submenu_indicator );
 // First argument is 'show_toggle_indicator', second is
 // 'show_submenu_indicator'.
-SIMPLE_FUNCTION(select);
+void select();
 // Emulate a select signal
-SIMPLE_FUNCTION(deselect);
+void deselect();
 // Emulate a deselect signal
-SIMPLE_FUNCTION(activate);
+void activate();
 // Emulate an activate signal
-SIMPLE_FUNCTION(right_justify);
+void right_justify();
 // Make the menu item stick to the right edge of it's container.
-CLASSMEMBER(right_justify, int);
+member int right_justify;
 // Is the widget right justified?
-CLASSMEMBER(submenu_direction, int);
+member int submenu_direction;
 // The direction the submenu will be shown in. One of CONST(GTK_DIR_)
-CLASSMEMBER(submenu_placement, int);
-// The placement of the submenu. 
-CLASSMEMBER(show_submenu_indicator, int);
+member int submenu_placement;
+// The placement of the submenu.
+member int show_submenu_indicator;
 // Should the submenu indicator be shown?
-CLASSMEMBER(show_toggle_indicator, int);
+member int show_toggle_indicator;
 // Should the toggle indicator be shown?
-CLASSMEMBER(toggle_size, int);
+member int toggle_size;
 // The size of the toggle indicator
-CLASSMEMBER(accelerator_width, int);
+member int accelerator_width;
 // The width of the accelerator string, in pixels
+

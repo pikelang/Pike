@@ -1,40 +1,30 @@
-/* -*- c -*- */
-
-PROGRAM(box);
+class box;
 // A box is a container that can contain more than one child.
 // The basic 'Box' class cannot be instantiated, it is a virtual class
 // that only defines some common 'Box' functions shared with all other
 // Box widgets.
-INHERIT(container);
-COMPLEX_FUNCTION(pack_start, WIDGET,int,int,int);
-NAME_ARGS(widget, expandp, fillp, padding);
-// Pack from the left (or top) of the box. 
+inherit container;
+void pack_start(widget widget,int expandp,int fillp,int padding);
+// Pack from the left (or top) of the box.
 // Argument are widget, expand, fill, padding
 // pack(widget,1,1,0) is equivalent to 'add' or 'pack_start_defaults'
-COMPLEX_FUNCTION(pack_end, WIDGET,int,int,int);
-NAME_ARGS(widget, expandp, fillp, padding);
-// Pack from the right (or bottom) of the box. 
+void pack_end( widget widget,int expandp,int fillp,int padding);
+// Pack from the right (or bottom) of the box.
 // Arguments are widget, expand, fill, paddingb
 // widget, expand, fill, padding
-SIMPLE_WIDGET_FUNCTION(pack_start_defaults);
-NAME_ARGS(widget);
+void pack_start_defaults( widget widget );
 // The argument is the widget to add. This function is equivalent to 'add'
-SIMPLE_WIDGET_FUNCTION(pack_end_defaults);
-NAME_ARGS(widget);
+void pack_end_defaults( widget widget );
 // The argument is the widget to add.
-SIMPLE_INT_FUNCTION(set_homogeneous);
-NAME_ARGS(homogeneousp);
+void set_homogeneous(int homogeneousp);
 // If true, all widgets in the box will get exactly the same amount of space
-SIMPLE_INT_FUNCTION(set_spacing);
-NAME_ARGS(spacing);
+void set_spacing( int spacing );
 // This is the amount of spacing (in pixels) inserted beween all widgets
-COMPLEX_FUNCTION(reorder_child, widget, int);
-NAME_ARGS(child_widget,new_position);
-// Move widget to pos, pos is an integer, 
+void reorder_child( widget child, int new_position);
+// Move widget to pos, pos is an integer,
 // between 0 and sizeof(box->children())-1
-COMPLEX_FUNCTION(set_child_packing, WIDGET,int,int,int,int);
-NAME_ARGS(child_widget,expandp,fillp,padding,pack_type);
-// widget, expand, fill, padding, pack_type. 
+void set_child_packing(widget child_widget,int expandp,int fillp,int padding,int pack_type);
+// widget, expand, fill, padding, pack_type.
 // If exand is true, the widget will be expanded when the box is resized.
 // If 'fill' is true, the widget will be resized to fill up all available
 // space. Padding is the amount of padding to use, and pack_type is
@@ -53,7 +43,7 @@ RETURNS("mapping(string:int)");
   gboolean ex, fi;
   GtkPackType ty;
   get_all_args( "query_child_packing", args, "%o", &o);
-  gtk_box_query_child_packing( GTK_BOX( THIS->obj ), 
+  gtk_box_query_child_packing( GTK_BOX( THIS->obj ),
                                GTK_WIDGET( get_gtkobject( o ) ),
                                &ex, &fi, &pa, &ty );
   my_pop_n_elems( args );
@@ -67,4 +57,5 @@ RETURNS("mapping(string:int)");
   push_int( ty );
   f_aggregate_mapping( 6 );
 }
+
 

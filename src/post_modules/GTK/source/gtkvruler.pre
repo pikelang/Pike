@@ -1,4 +1,5 @@
-PROGRAM(vruler);
+class vruler;
+inherit ruler;
 // Ruler widgets are used to indicate the location of the mouse
 // pointer in a given window. A window can have a vertical ruler
 // spanning across the width and a horizontal ruler spanning down the
@@ -8,6 +9,6 @@ PROGRAM(vruler);
 // IMG: GTK.Vruler()->set_metric(GTK.PIXELS)->set_range(0.0,100.0,50.0,100.0)->draw_ticks()->draw_pos()->set_usize(30,50)
 // IMG: GTK.Vruler()->set_metric(GTK.CENTIMETERS)->set_range(0.0,100.0,50.0,100.0)->draw_ticks()->draw_pos()->set_usize(30,50)
 // IMG: GTK.Vruler()->set_usize(30,50)
-INHERIT(ruler);
-COMPLEX_FUNCTION(create);
+void create();
 // Used to create a new vruler widget.
+

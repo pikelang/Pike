@@ -1,19 +1,17 @@
-PROGRAM(image);
+class image;
+inherit misc;
 // An image is a image object stored in client, not X server, memory.
 // A pixmap, on the other hand, is a image object stored in the X-server.
 // See GDK.Image and GDK.Pixmap.
 //<p>
 // IMG: GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );
-INHERIT(misc);
 
-COMPLEX_FUNCTION(create, GdkImage, ?GdkBitmap);
-NAME_ARGS(image,mask);
+void create( GdkImage image, ?GdkBitmap mask );
 // You can skip the mask. The mask is used to mask the drawing of the image
 // on it's background. It will not make the container transparent, though.
 // Use shape_combine_mask on the container with the mask for that.
 
-COMPLEX_FUNCTION(set, GdkImage, ?GdkBitmap);
-NAME_ARGS(image,mask);
+void set( GdkImage image, ?GdkBitmap mask );
 // Args: GDK.Image and GDK.Bitmap, respectively.
 // You can skip the mask. The mask is used to mask the drawing of the image
 // on it's background. It will not make the container transparent, though.
@@ -33,10 +31,7 @@ FUNCTION(get, "function(void:mapping)");
   gtk_image_get( GTK_IMAGE( THIS->obj ), &v, &m );
   push_text( "image" );
   if(v)
-  {
     push_gdkobject( v, Image );
-/*     gdk_image_ref( v );  we cannot do this.. */
-  }
   else
     push_int(0);
   push_text( "mask" );
@@ -48,3 +43,4 @@ FUNCTION(get, "function(void:mapping)");
   else
     push_int(0);
 }
+

@@ -1,72 +1,55 @@
-PROGRAM(window);
+class window;
+inherit bin;
 // The basic window. Nothing much to say about it. It can only contain
 // one child widget. Show the main window last to avoid annoying
 // flashes when the subwidet (and it's subwidgets) are added to it,
 // this is done automatically by calling 'window->show_all' when you
 // are done with your widget packing.
-SIGNAL("move_resize", "");
-SIGNAL("set_focus", "");
-INHERIT(bin);
+signal move_resize;
+signal set_focus;
 
-COMPLEX_FUNCTION(create, int);
-NAME_ARGS(window_type);
+void create( int window_type );
 // Argument is one of CONST(GTK_WINDOW)
-COMPLEX_FUNCTION(set_wmclass, string, string);
-NAME_ARGS(name,class);
+void set_wmclass( string name, string class );
 // Set the window manager application name and class.
-COMPLEX_FUNCTION(set_title, string);
-NAME_ARGS(title);
+void set_title( string title );
 // Set the window title. The default title is the value sent to
 // setup_gtk, or if none is sent, Pike GTK.
-COMPLEX_FUNCTION(set_focus, widget);
-NAME_ARGS(child);
+void set_focus( widget child );
 // Set the focus widget to the specified child. Please note that this
 // is normaly handled automatically.
-int COMPLEX_FUNCTION(activate_focus);
+int activate_focus();
 // Activate the focus widget
-int COMPLEX_FUNCTION(activate_default);
+int activate_default();
 // Activate the default widget
-COMPLEX_FUNCTION(add_accel_group, accel_group);
-NAME_ARGS(group);
+void add_accel_group( accel_group group );
 // This function adds an accelerator group to the window. The shortcuts in
 // the table will work in the window, it's child, and all children of
 // it's child that do not select keyboard input.
-
-COMPLEX_FUNCTION(set_transient_for, window);
-NAME_ARGS(parent);
+void set_transient_for( window parent );
 // Mark this window as a transient window for the parent window.
 // Most window managers renders transient windows differently (different
 // borders, sometimes no resize widgets etc)
 // <p>
 // Useful for short lived dialogs.
-COMPLEX_FUNCTION(set_default_size, int,int);
-NAME_ARGS(width,height);
+void set_default_size( int width, int height );
 // The following differs from set_usize, in that
 // set_usize() overrides the requisition, and thus sets a minimum
 // size, while this only sets the size requested from the WM.
-COMPLEX_FUNCTION(set_modal, int);
-NAME_ARGS(modalp);
+void set_modal( int modalp );
 /// Is this a modal dialog?
-
-COMPLEX_FUNCTION(remove_embedded_xid, int);
-NAME_ARGS(x_window_id);
+void remove_embedded_xid( int x_window_id );
 // Remove the embeded X window
-COMPLEX_FUNCTION(add_embedded_xid, int);
-NAME_ARGS(x_window_id);
+void add_embedded_xid( int x_window_id );
 // Add an embedded X-window
-
-COMPLEX_FUNCTION(remove_accel_group, accel_group);
-NAME_ARGS(table);
+void remove_accel_group( accel_group table );
 // Remove a previously installed table.
-COMPLEX_FUNCTION(set_default, widget);
-NAME_ARGS(default_widget);
+void set_default( widget default_widget );
 // Set the default widget to the specified widget.
 // The specified widget <b>must</b> have the GTK.CanDefault flag set.
-COMPLEX_FUNCTION(set_position, int);
-NAME_ARGS(pos);
+void set_position( int pos );
 // one of CONST(GTK_WIN)
-COMPLEX_FUNCTION(set_policy, int,int,int);
-NAME_ARGS(allow_shrink,allow_grow,auto_shrink);
+void set_policy( int allow_shrink, int allow_grow, int auto_shrink );
 // If allow shrink is true, the user can resize the window to a
 // smaller size. If allow_grow is true, the window can resize itself,
 // and the user can resize the window, to a bigger size. It auto
@@ -130,27 +113,27 @@ ARGS(GDK.Pixmap,GDK.Bitmap,GDK.Window);
   RETURN_THIS();
 }
 
-CLASSMEMBER(modal, int);
+member int modal;
 // If true, this is a modal dialog window
-CLASSMEMBER(auto_shrink, int);
+member int auto_shrink;
 // If true, the window will shrink if possible
-CLASSMEMBER(allow_shrink, int);
+member int allow_shrink;
 // If true, the window can be shrunk by the user
-CLASSMEMBER(allow_grow, int);
+member int allow_grow;
 // If true, the window can grow if nessesary
-CLASSMEMBER(type, int);
+member int type;
 // The window type, one of CONST(GTK_WINDOW)
-
-CLASSMEMBER(wmclass_name, string);
+member string wmclass_name;
 // The window manager name of this application.
-CLASSMEMBER(wmclass_class, string);
+member string wmclass_class;
 // The window manager class of this application.
-CLASSMEMBER(title, string);
+member string title;
 // The title of the window
-SUBWIDGET(focus_widget, widget);
+subwidget widget focus_widget;
 // The focus widget
-SUBWIDGET(default_widget, widget);
+subwidget widget default_widget;
 // The default widget
-SUBWIDGET(transient_parent, window);
+subwidget window transient_parent;
 // The parent window for this window if this is a transient window, 0
 // otherwise.
+
