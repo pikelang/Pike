@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.40 1998/10/11 19:07:26 marcus Exp $ */
+/* $Id: font.c,v 1.41 1998/11/03 08:38:05 per Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.40 1998/10/11 19:07:26 marcus Exp $
+**!	$Id: font.c,v 1.41 1998/11/03 08:38:05 per Exp $
 **! class font
 **!
 **! note
@@ -560,30 +560,39 @@ void font_write(INT32 args)
 	 to_write0 = STR0(sp[j-args].u.string);
 	 for (i = 0; i < to_write_len; i++)
 	 {
-	   if (xsize+char_width(this,to_write0[i]) > max)
-	     max=xsize+char_width(this,to_write0[i]);
-	   xsize += char_space(this,to_write0[i]);
-	   if (xsize > max) max=xsize;
+	   if (to_write0[i] < (INT32)this->chars)
+	   {
+	     if (xsize+char_width(this,to_write0[i]) > max)
+	       max=xsize+char_width(this,to_write0[i]);
+	     xsize += char_space(this,to_write0[i]);
+	     if (xsize > max) max=xsize;
+	   }
 	 }
 	 break;
        case 1:
 	 to_write1 = STR1(sp[j-args].u.string);
 	 for (i = 0; i < to_write_len; i++)
 	 {
-	   if (xsize+char_width(this,to_write1[i]) > max)
-	     max=xsize+char_width(this,to_write1[i]);
-	   xsize += char_space(this,to_write1[i]);
-	   if (xsize > max) max=xsize;
+	   if (to_write1[i] < (INT32)this->chars)
+	   {
+	     if (xsize+char_width(this,to_write1[i]) > max)
+	       max=xsize+char_width(this,to_write1[i]);
+	     xsize += char_space(this,to_write1[i]);
+	     if (xsize > max) max=xsize;
+	   }
 	 }
 	 break;
        case 2:
 	 to_write2 = STR2(sp[j-args].u.string);
 	 for (i = 0; i < to_write_len; i++)
 	 {
-	   if (xsize+char_width(this,to_write2[i]) > max)
-	     max=xsize+char_width(this,to_write2[i]);
-	   xsize += char_space(this,to_write2[i]);
-	   if (xsize > max) max=xsize;
+	   if (to_write2[i] < (unsigned INT32)this->chars)
+	   {
+	     if (xsize+char_width(this,to_write2[i]) > max)
+	       max=xsize+char_width(this,to_write2[i]);
+	     xsize += char_space(this,to_write2[i]);
+	     if (xsize > max) max=xsize;
+	   }
 	 }
 	 break;
        default:
