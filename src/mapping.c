@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.180 2004/04/15 00:12:04 nilsson Exp $
+|| $Id: mapping.c,v 1.181 2004/07/02 17:36:22 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.180 2004/04/15 00:12:04 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.181 2004/07/02 17:36:22 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2053,12 +2053,10 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
   add_ref(md);
   NEW_MAPPING_LOOP(md)
   {
-    copy_svalues_recursively_no_free(Pike_sp,&k->ind, 1, &doing);
-    Pike_sp++;
-    dmalloc_touch_svalue(Pike_sp-1);
-    copy_svalues_recursively_no_free(Pike_sp,&k->val, 1, &doing);
-    Pike_sp++;
-    dmalloc_touch_svalue(Pike_sp-1);
+    push_int(0);
+    push_int(0);
+    copy_svalues_recursively_no_free(Pike_sp-2,&k->ind, 1, &doing);
+    copy_svalues_recursively_no_free(Pike_sp-1,&k->val, 1, &doing);
     
     low_mapping_insert(ret, Pike_sp-2, Pike_sp-1, 2);
     pop_n_elems(2);
