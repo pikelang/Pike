@@ -221,7 +221,7 @@ static mixed decode(string xml_input, string dtd_input)
                                      return value->s;
                                    return value;
                                  }
-                               return data[0];
+                               return sizeof(data)?data[0]:"";
 			     case "i4":
 			     case "int":
 			     case "boolean":
