@@ -91,3 +91,12 @@ test_true(arrayp(get_dir(".")))
 // - getcwd
 test_true(stringp(getcwd()))
 test_eq('/',getcwd()[0])
+
+// strerror
+cond([[all_efuns()->strerror]],
+[[
+test_do(strerror(1))
+test_true(stringp(strerror(2)||""))
+]])
+
+
