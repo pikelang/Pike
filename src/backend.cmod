@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.8 2001/03/12 16:46:33 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.9 2001/03/12 18:31:06 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -584,7 +584,7 @@ PIKECLASS Backend
 	set_backend_for_fd(fd, me);
 	if(!was_set)
 	{
-	  MY_FD_SET(&me->set, fd, POLLOUT);
+	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
 	  backend_wake_up_backend(me);
 	}
       } else {
@@ -593,7 +593,7 @@ PIKECLASS Backend
 	    && !me->fds[fd].write_oob.callback
 #endif
 	  )
-	  MY_FD_CLR(&me->set, fd, POLLOUT);
+	  MY_FD_CLR(&me->set, fd, MY_POLLOUT);
       }
     }
 
@@ -938,7 +938,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 #ifndef HAVE_POLL
 	/* FIXME: OOB? */
-	for(i=0; i<max_fd+1; i++)
+	for(i=0; i <= me->active_set.max_fd; i++)
 	{
 #ifdef WITH_OOB
 	  if(fd_FD_ISSET(i, &me->active_set.eset) &&
@@ -1864,7 +1864,8 @@ PIKECLASS Backend
 #ifdef WITH_OOB
       my_FD_ZERO(&THIS->set.except);
 #endif /* WITH_OOB */
-      THIS->set.num_fds=0;
+      /* FIXME: Should there be something else here? */
+      /* THIS->set.num_fds=0; */
 #else /* HAVE_POLL */
       THIS->set.poll_fds=0;
       THIS->set.poll_fd_size=0;
