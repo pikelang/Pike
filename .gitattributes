@@ -465,6 +465,11 @@ testfont binary
 /src/post_modules/GL/auto.c.in foreign_ident
 /src/post_modules/GL/configure.in foreign_ident
 /src/post_modules/GL/top.c foreign_ident
+/src/post_modules/GLUT/Makefile.in foreign_ident
+/src/post_modules/GLUT/acconfig.h foreign_ident
+/src/post_modules/GLUT/auto.c.in foreign_ident
+/src/post_modules/GLUT/configure.in foreign_ident
+/src/post_modules/GLUT/top.c foreign_ident
 /src/post_modules/GTK/acconfig.h foreign_ident
 /src/post_modules/GTK/dummy.c foreign_ident
 /src/post_modules/GTK/source/gladexml.pre foreign_ident

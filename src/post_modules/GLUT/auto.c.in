@@ -1,0 +1,49 @@
+/*
+ * $Id: auto.c.in,v 1.1 1999/11/14 00:01:49 per Exp $
+ *
+ */
+
+#include "global.h"
+
+#include "config.h"
+
+RCSID("$Id: auto.c.in,v 1.1 1999/11/14 00:01:49 per Exp $");
+#include "stralloc.h"
+#include "pike_macros.h"
+#include "object.h"
+#include "program.h"
+#include "interpret.h"
+#include "builtin_functions.h"
+#include "error.h"
+#include "module_support.h"
+#include "operators.h"
+
+#define GLUT_API_VERSION 4
+
+#ifdef HAVE_GL_GLUT_H
+#include <GL/glut.h>
+#endif
+
+static void pre_init()
+{
+}
+
+static void f_glutInit(INT32 args)
+{
+  int argc = 1;
+  extern char ** ARGV;
+  glutInit(&argc,ARGV);
+  pop_n_elems(args);
+}
+
+static void post_init()
+{
+  add_function_constant("glutInit", f_glutInit,
+			"function(void:void)", OPT_SIDE_EFFECT);
+}
+
+
+
+
+@@
+

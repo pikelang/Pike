@@ -1,0 +1,51 @@
+# $Id: configure.in,v 1.1 1999/11/14 00:01:49 per Exp $
+AC_INIT(top.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_SUBST(AUTO)
+AC_PATH_XTRA()
+AC_ARG_WITH(GLUT,  [  --without-GLUT    no support for GLUT],[without_GLUT=yes],[without_GLUT=no])
+
+if test x$without_GLUT = xyes; then
+  :
+else
+
+AC_CHECK_LIB(X11, main)
+AC_CHECK_LIB(Xmu, main)
+AC_CHECK_LIB(GL,  main)
+AC_CHECK_LIB(OpenGL,  main)
+AC_CHECK_LIB(MesaGL,  main)
+AC_CHECK_LIB(MesaGLU,  main)
+AC_CHECK_LIB(Xinput, main)
+AC_CHECK_LIB(Xi, main)
+AC_CHECK_LIB(Xext, main)
+
+AC_CHECK_HEADERS(GL/glut.h)
+
+oldLIBS="$LIBS"
+AC_MSG_CHECKING(for glutSolidTeapot in -lglut)
+AC_CACHE_VAL(pike_cv_lib_glut, [
+  LIBS="$oldLIBS -lglut"
+  AC_TRY_LINK([
+#ifdef HAVE_GL_GLUT_H
+#include <GL/glut.h>
+#endif /* HAVE_GL_GLUT_H */
+], [ glutSolidTeapot(1.0) ], [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
+])
+LIBS="$oldLIBS"
+if test x"$pike_cv_lib_glut" = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
+  LIBS="-lglut $LIBS"
+  AUTO=auto.o
+else
+  AC_MSG_RESULT(no)
+  AUTO=""
+fi
+else
+  AUTO=""
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
