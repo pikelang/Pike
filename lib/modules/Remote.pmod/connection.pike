@@ -3,10 +3,12 @@
 
 object con;
 object ctx;
+array(function) close_callbacks = ({ });
 
 void handshake(int ignore, string s);
 void read_some(int ignore, string s);
 void write_some(int|void ignore);
+void closed_connection(int|void ignore);
 
 // - connect
 //
@@ -30,6 +32,7 @@ int connect(string host, int port)
   if((sscanf(s,"Pike remote server %4s\n", sv) == 1) && (sv == PROTO_VERSION))
   {
     ctx = Context(replace(con->query_address(1), " ", "-"), this_object());
+    con->set_nonblocking(read_some, write_some, closed_connection);
     return 1;
   }
   return 0;
@@ -51,9 +54,34 @@ void start_server(object c, object cx)
   con->write("Pike remote server "+PROTO_VERSION+"\n");
   ctx = cx;
 
-  con->set_nonblocking(handshake, write_some, 0);
+  con->set_nonblocking(handshake, write_some, closed_connection);
 }
 
+// - add_close_callback
+//
+// Add a function that is called when the connection is closed.
+//
+void add_close_callback(function f)
+{
+  close_callbacks += ({ f });
+}
+
+// - remove_close_callback
+//
+// Remove a function that is called when the connection is closed.
+//
+void remove_close_callback(function f)
+{
+  close_callbacks -= ({ f });
+}
+
+
+void closed_connection(int|void ignore)
+{
+  DEBUGMSG("connection closed\n");
+  foreach(close_callbacks, function f)
+    f();
+}
 
 string write_buffer = "";
 void write_some(int|void ignore)
@@ -136,6 +164,7 @@ void handshake(int ignore, string s)
 
 void read_some(int ignore, string s)
 {
+  if (!s) s = "";
   DEBUGMSG("read "+sizeof(s)+" bytes\n");
   read_buffer += s;
 
@@ -153,10 +182,10 @@ void read_some(int ignore, string s)
     DEBUGMSG("got message: "+ctx->describe(data)+"\n");
     switch(data[0]) {
 
-    case 0:
+    case CTX_ERROR:
       throw(({ "Remote error: "+data[1]+"\n", backtrace() }));
       
-    case 4: // a call
+    case CTX_CALL_SYNC: // a synchrounous call
       int refno = data[4];
       object|function f = ctx->decode_call(data);
       array args = ctx->decode(data[3]);
@@ -168,7 +197,16 @@ void read_some(int ignore, string s)
 	return_value(refno, res);
       break;
 
-    case 6: // a returned value
+    case CTX_CALL_ASYNC: // an asynchrounous call
+      int refno = data[4];
+      object|function f = ctx->decode_call(data);
+      array args = ctx->decode(data[3]);
+      mixed e = catch { f(@args); };
+      if (e)
+	return_error(refno, e);
+      break;
+
+    case CTX_RETURN: // a returned value
       int refno = data[1];
       mixed result = ctx->decode(data[2]);
       if (!pending_calls[refno])
@@ -193,15 +231,30 @@ mixed call_sync(array data)
 {
   int refno = data[4];
   string s = encode_value(data);
+  con->set_blocking();
   DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
   pending_calls[refno] = 17; // a mutex lock key maybe?
   send(sprintf("%4c%s", sizeof(s), s));
   while(zero_type(finished_calls[refno]))
   {
     string s = con->read(8192,1);
+    if(!s)
+      error("Could not read");
     read_some(0,s);
   }
+  con->set_nonblocking(read_some, write_some, closed_connection);
   return get_result(refno);
+}
+
+// - call_async
+//
+// Make a call but don't wait for the result
+//
+void call_async(array data)
+{
+  string s = encode_value(data);
+  DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
+  send(sprintf("%4c%s", sizeof(s), s));
 }
 
 // - get_named_object
