@@ -23,11 +23,14 @@ int mkdirhier(string path, int|void mod)
   return r || (query_num_arg() == 2 && (chmod(path, mod),1));
 }
 
-
-
 void rmrf(string ... path)
 {
   Process.create_process(({ "rm","-rf", @path }))->wait();
+}
+
+string sh_quote(string s)
+{
+  return "'"+replace(s, "'", "'\"'\"'")+"'";
 }
 
 class Package(string my_name,
@@ -35,7 +38,8 @@ class Package(string my_name,
 	      string install_filename, 
 	      string extra_help, 
 	      string extra_advanced_help, 
-	      string extra_flags)
+	      string extra_flags,
+	      string extra_license)
 {
   static private mapping(array(string):string) options =
   ([ ({ "-h", "--help" }):
@@ -127,6 +131,8 @@ class Package(string my_name,
 		    "    ;;\n"
 		    "esac\n"
 		    "MY_NAME='"+my_name+"'\n"
+		    "EXTRA_LICENSE="+sh_quote(extra_license)+"\n"
+		    "export EXTRA_LICENSE\n"
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
@@ -234,14 +240,16 @@ int main(int argc, array(string) argv)
 	  "Environment variables:\n"
 	  "  EXTRA_PACKAGE_HELP\n"
 	  "  EXTRA_PACKAGE_ADVANCED_HELP\n"
-	  "  EXTRA_PACKAGE_FLAGS\n");
+	  "  EXTRA_PACKAGE_FLAGS\n"
+	  "  EXTRA_PACKAGE_LICENSE\n");
     return 1;
   }
   
   Package(argv[1], argv[2], argv[3],
 	  getenv("EXTRA_PACKAGE_HELP") || "",
 	  getenv("EXTRA_PACKAGE_ADVANCED_HELP") || "",
-	  getenv("EXTRA_PACKAGE_FLAGS") || "")->
+	  getenv("EXTRA_PACKAGE_FLAGS") || "",
+	  getenv("EXTRA_PACKAGE_LICENSE") || "")->
     add_packages(@argv[4..])->make(argv[1]);
   
   return 0;
