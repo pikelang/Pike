@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.52 2001/05/10 22:14:37 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.53 2001/05/11 12:21:10 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1705,7 +1705,7 @@ OPCODE0_TAILJUMP(F_RECUR_AND_POP,"recur & pop")
 {
 #if 1
   int opcode = instr;
-  char *addr;
+  unsigned char *addr;
   struct pike_frame *new_frame;
 
   fast_check_threads_etc(6);
@@ -1814,7 +1814,7 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 {
   int x;
   INT32 num_locals;
-  char *addr;
+  unsigned char *addr;
   int args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
 
   fast_check_threads_etc(6);

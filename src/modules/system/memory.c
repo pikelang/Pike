@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.10 2001/04/15 13:59:09 grubba Exp $
+ * $Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $
  */
 
 /*! @module system
@@ -16,7 +16,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.10 2001/04/15 13:59:09 grubba Exp $");
+RCSID("$Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $");
 
 #include "system_machine.h"
 
@@ -322,7 +322,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    MEMORY_FREE(THIS);
 
    THIS->size=size;
-   THIS->p=mem;
+   THIS->p = (unsigned char *)mem;
    THIS->flags=resflags;
 
    RETURN(1); /* ok */
@@ -368,13 +368,13 @@ static void memory_allocate(INT32 args)
    if (size>1024*1024) /* threshold */
    {
       THREADS_ALLOW();
-      mem=xalloc(size);
+      mem = (unsigned char *)xalloc(size);
       MEMSET(mem,c,size);
       THREADS_DISALLOW();
    }
    else
    {
-      mem=xalloc(size);
+      mem = (unsigned char *)xalloc(size);
       MEMSET(mem,c,size);
    }
 
@@ -447,7 +447,7 @@ static void memory_cast(INT32 args)
    if (strncmp(s,"string",5)==0)
    {
       pop_n_elems(args);
-      push_string(make_shared_binary_string(THIS->p,THIS->size));
+      push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
       return;
    }
    if (strncmp(s,"array",5)==0)
@@ -582,8 +582,8 @@ static void copy_reverse_string1_to_2(unsigned char *d,
       struct pike_string *ps;						\
       unsigned char *d;							\
       ps=begin_wide_shared_string(len,N);				\
-      d=ps->str;							\
-      copy_reverse_string##N(ps->str,s,len);				\
+      d = (unsigned char *)ps->str;					\
+      copy_reverse_string##N(ps->str, (unsigned char *)s, len);		\
       return end_shared_string(ps);					\
    }
 
@@ -649,23 +649,28 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
       switch (ps->size_shift*10 + shift)
       {
 	 case 22: /* 2 -> 2 */
-	    if (reverse) copy_reverse_string2(d,ps->str,ps->len);
+	    if (reverse)
+	      copy_reverse_string2(d, (unsigned char *)ps->str, ps->len);
 	    else MEMCPY(d,ps->str,ps->len*4);
 	    break;
 	 case 12: /* 1 -> 2 */
-	    if (reverse) copy_reverse_string1_to_2(d,ps->str,ps->len);
+	    if (reverse)
+	      copy_reverse_string1_to_2(d, (unsigned char *)ps->str, ps->len);
 	    else convert_1_to_2((p_wchar2*)d,(p_wchar1*)ps->str,ps->len);
 	    break;
 	 case 02: /* 0 -> 2 */
-	    if (reverse) copy_reverse_string0_to_2(d,ps->str,ps->len);
+	    if (reverse)
+	      copy_reverse_string0_to_2(d, (unsigned char *)ps->str, ps->len);
 	    else convert_0_to_2((p_wchar2*)d,ps->str,ps->len);
 	    break;
 	 case 11: /* 1 -> 1 */
-	    if (reverse) copy_reverse_string1(d,ps->str,ps->len);
+	    if (reverse)
+	      copy_reverse_string1(d, (unsigned char *)ps->str,ps->len);
 	    else MEMCPY(d,ps->str,ps->len*2);
 	    break;
 	 case 01: /* 0 -> 1 */
-	    if (reverse) copy_reverse_string0_to_1(d,ps->str,ps->len);
+	    if (reverse)
+	      copy_reverse_string0_to_1(d, (unsigned char *)ps->str,ps->len);
 	    else convert_0_to_1((p_wchar1*)d,ps->str,ps->len);
 	    break;
 	 case 00:
@@ -743,7 +748,8 @@ static void memory_index(INT32 args)
 	 if (pos2<pos1)
 	    push_text("");
 	 else
-	    push_string(make_shared_binary_string(THIS->p+pos1,pos2-pos1+1));
+	    push_string(make_shared_binary_string((char *)THIS->p+pos1,
+						  pos2-pos1+1));
       }
    }
    stack_pop_n_elems_keep_top(args);
