@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.155 1999/09/28 22:34:47 grubba Exp $");
+RCSID("$Id: program.c,v 1.156 1999/09/28 23:19:55 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1106,10 +1106,20 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
   offset=DO_ALIGN(new_program->storage_needed-modulo,alignment)+modulo;
 
   if(!new_program->storage_needed) {
-    /* FIXME: Shouldn't new_program->storage_needed be set here?
+    /* Shouldn't new_program->storage_needed be set here?
      * Otherwise the debug code below ought to be trigged.
      * But since it isn't, I guess this is dead code?
      *	/grubba 1999-09-28
+     *
+     * No, the below offset represents the storage in the beginning
+     * of obj->storage which is not used because of alignment constraints.
+     * However, for historical reasons, prog->storage_offset needs to
+     * contain this unused space as well. This means that the real
+     * space used by all variables in an object is really:
+     * o->prog->storage_needed - o->prog->inherits[0].storage_offset,
+     * This can also be written as STORAGE_NEEDED(o->prog)
+     * STORAGE_NEEDED() is defined in program.h.
+     * /Hubbe 1999-09-29
      */
     new_program->inherits[0].storage_offset=offset;
   }
