@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.205 2000/08/14 05:31:34 mast Exp $
+# $Id: Makefile.in,v 1.206 2000/08/14 16:01:14 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -345,7 +345,7 @@ install_interactive: pike hilfe pike-module aclocal
 
 # tidy up a bit
 tidy:
-	-rm -f *.o *.pp *.protos core y.output y.tab.c y.tab.h
+	-rm -f *.o *.obj *.pp *.protos core y.output y.tab.c y.tab.h
 	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ testsuite
 
 # make clean

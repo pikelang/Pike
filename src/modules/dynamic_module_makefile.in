@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.67 2000/07/28 07:11:41 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.68 2000/08/14 16:01:56 grubba Exp $
 #
 
 
@@ -106,7 +106,7 @@ module.so: $(OBJS)  $(MODULE_ARCHIVES)
 $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
 clean:
-	-rm -f *.o *.a *.so module.so linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
+	-rm -f *.o *.obj *.a *.so module.so linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
 	for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 
