@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.1 2003/09/24 12:46:47 mirar Exp $
+// $Id: module.pmod.in,v 1.2 2003/09/30 23:42:57 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -15,7 +15,6 @@ inherit @module@; // C-module
 //!
 //! There are subclasses that adds wrappers for widestrings,
 //! and to optimize the regexp pattern.
-
 class Plain
 {
    inherit _pcre;
@@ -54,7 +53,6 @@ class Plain
 //!              "ke",
 //!              "f"
 //!          })
-
    array(string)|int(0..0) split2(string subject,void|int startoffset)
    {
       array(int)|int v=exec(subject,startoffset);
@@ -78,7 +76,6 @@ class Plain
 //! (4) Result: ({
 //!                 0
 //!             })
-
    array(string)|int(0..0) split(string subject,void|int startoffset)
    {
       array(string)|int(0..0) v=split2(subject,startoffset);
@@ -95,7 +92,6 @@ class Plain
 //! Result: 1
 //! > Regexp.PCRE.Plain("is fun")->match("pike isn't fun");
 //! Result: 0
-
    int(0..1) match(string subject,void|int startoffset)
    {
       array(int)|int v=exec(subject,startoffset);
@@ -116,7 +112,6 @@ class Plain
 //! "boom"
 //! "badoom"
 //! Result: "agurka-gurka-fooagurka"
-
    string replace(string subject,string|function(string:string) with)
    {
       int i=0;
@@ -145,7 +140,6 @@ class Plain
 //! example:
 //! > Regexp.PCRE("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka");
 //! Result: "agurka-boom-fooabadoom"
-
    string replace1(string subject,string|function(string:string) with)
    {
       array(int)|int v=exec(subject,0);
@@ -192,7 +186,6 @@ class Plain
 //!     "\1234"
 //! })
 //! Result: Regexp.PCRE.StudiedWidestring("b(a*)([^-Ê\234]*)(Ê\234*)m")
-
    this_program matchall(string subject,
 			 function(array(string)|void,
 				  array(int)|void:mixed|void) callback)
@@ -226,7 +219,6 @@ class Plain
 //! Same as Plain,
 //! but will be studied to match faster; useful if you're doing
 //! many matches on the same pattern
-
 class Studied
 {
    inherit Plain;
@@ -252,7 +244,6 @@ class Studied
 //!
 //! Widestring support and this class will not be implemented if the
 //! linked libpcre lacks UTF8 support.
-
 class Widestring
 {
    inherit Plain;
@@ -284,7 +275,6 @@ class Widestring
 
 //! The exec function is wrapped to give the correct indexes for 
 //! the widestring. 
-
    array(int)|int exec(string subject,void|int startoffset)
    {
       string subject_utf8=string_to_utf8(subject);
@@ -323,7 +313,6 @@ static array(int)|int
 //! Same as Widestring,
 //! but will be studied to match faster; useful if you're doing
 //! many matches on the same pattern
-
 class StudiedWidestring
 {
    inherit Widestring;
