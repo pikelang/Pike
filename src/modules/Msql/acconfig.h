@@ -2,18 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msql_config.h.in,v 1.5 2002/11/25 01:02:46 nilsson Exp $
+|| $Id: acconfig.h,v 1.1 2003/01/09 16:02:56 marcus Exp $
 */
 
 #undef STDC_HEADERS
 
-#undef HAVE_MSQL_H
-
-#undef HAVE_LIBMSQL
-
-#undef HAVE_MSQLLISTINDEX
-
-#undef HAVE_PIKE_SVALUE_H
+@TOP@
+@BOTTOM@
 
 /* End of autoconfigurable section */
 #undef HAVE_MSQL

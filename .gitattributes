@@ -355,8 +355,8 @@ testfont binary
 /src/modules/Gettext/configure.in foreign_ident
 /src/modules/Gettext/gettext.c foreign_ident
 /src/modules/Gmp/Makefile.in foreign_ident
+/src/modules/Gmp/acconfig.h foreign_ident
 /src/modules/Gmp/configure.in foreign_ident
-/src/modules/Gmp/gmp_machine.h.in foreign_ident
 /src/modules/Gmp/mpf.cmod foreign_ident
 /src/modules/Gmp/mpq.cmod foreign_ident
 /src/modules/Gmp/mpz_glue.c foreign_ident
@@ -501,8 +501,8 @@ testfont binary
 /src/modules/Mird/mird_glue.c foreign_ident
 /src/modules/Mird/module.pmod.in foreign_ident
 /src/modules/Msql/Makefile.in foreign_ident
+/src/modules/Msql/acconfig.h foreign_ident
 /src/modules/Msql/configure.in foreign_ident
-/src/modules/Msql/msql_config.h.in foreign_ident
 /src/modules/Msql/msqlmod.c foreign_ident
 /src/modules/Msql/test_msqlmod.pike foreign_ident
 /src/modules/Msql/version.h foreign_ident
@@ -546,11 +546,11 @@ testfont binary
 /src/modules/Pipe/configure.in foreign_ident
 /src/modules/Pipe/pipe.c foreign_ident
 /src/modules/Postgres/Makefile.in foreign_ident
+/src/modules/Postgres/acconfig.h foreign_ident
 /src/modules/Postgres/configure.in foreign_ident
 /src/modules/Postgres/extras/test_notify.pike foreign_ident
 /src/modules/Postgres/extras/test_schema.pike foreign_ident
 /src/modules/Postgres/pg_types.h foreign_ident
-/src/modules/Postgres/pgres_config.h.in foreign_ident
 /src/modules/Postgres/pgresult.c foreign_ident
 /src/modules/Postgres/pgresult.h foreign_ident
 /src/modules/Postgres/postgres.c foreign_ident

@@ -9,4 +9,7 @@ modlist_headers
 modlist_segment
 testsuite
 msql_config.h
+msql_config.h.in
 remake
+stamp-h
+stamp-h.in

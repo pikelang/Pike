@@ -2,23 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgres_config.h.in,v 1.8 2002/11/25 01:01:46 nilsson Exp $
+|| $Id: acconfig.h,v 1.1 2003/01/09 16:08:29 marcus Exp $
 */
 
 #undef STDC_HEADERS
 
-/* Define if you have the <postgres.h> header file.  */
-#undef HAVE_POSTGRES_H
-/* Define if you have the <postgres_fe.h> header file.  */
-#undef HAVE_POSTGRES_FE_H
-/* Define if you have the <libpq-fe.h> header file.  */
-#undef HAVE_LIBPQ_FE_H
-/* Define if you have the pq library (-lpq).  */
-#undef HAVE_LIBPQ
-/* Define if you have the PQsetdbLogin function.  */
-#undef HAVE_PQSETDBLOGIN
-/* Define if you have the PGsetnonblocking function.  */
-#undef HAVE_PQSETNONBLOCKING
+@TOP@
+@BOTTOM@
+
 /* Define if we are running PostgreSQL 7.2 or newer */
 #undef HAVE_PG72
 

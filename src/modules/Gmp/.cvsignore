@@ -5,6 +5,7 @@ config.status
 configure
 dependencies
 gmp_machine.h
+gmp_machine.h.in
 linker_options
 make_variables
 modlist_headers
@@ -16,6 +17,7 @@ prime_table_no
 prime_tbale_yes
 remake
 stamp-h
+stamp-h.in
 *.compiled
 mpf.c
 mpq.c

@@ -9,4 +9,7 @@
 /modlist_segment
 /testsuite
 /pgres_config.h
+/pgres_config.h.in
 /remake
+/stamp-h
+/stamp-h.in
