@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.14 1997/09/01 14:14:49 per Exp $ */
+/* $Id: font.c,v 1.15 1997/09/01 19:24:40 per Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.14 1997/09/01 14:14:49 per Exp $<br>
+**!	$Id: font.c,v 1.15 1997/09/01 19:24:40 per Exp $<br>
 **! class font
 **!
 **! note
@@ -498,8 +498,8 @@ void font_write(INT32 args)
 
    for (j=0; j<args; j++)
    {
-     THREADS_ALLOW();
      to_write = sp[j-args].u.string->str;
+     THREADS_ALLOW();
      switch(this->justification)
      {
       case J_LEFT: xsize = 0; break;
