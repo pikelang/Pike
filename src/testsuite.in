@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.70 1998/01/29 23:37:05 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.71 1998/02/10 14:38:06 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1757,6 +1757,9 @@ test_true(objectp(this_object()))
 
 // - throw
 test_eq(20,catch(throw(a())))
+
+// - catch compile-errors
+test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{compile_string("dfasfqw123");};master()->set_inhibit_compile_errors(0); return arrayp(res); ]], 1)
 
 // - time
 test_true(intp(time()))
