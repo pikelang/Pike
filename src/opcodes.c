@@ -338,6 +338,45 @@ static INT32 low_sscanf(INT32 num_arg)
       char * t;
 
       if(eye>=input_len) return matches;
+      sval.u.integer=STRTOL(input+eye,&t,10);
+      if(input + eye == t) return matches;
+      eye=t-input;
+      sval.type=T_INT;
+      sval.subtype=NUMBER_NUMBER;
+      break;
+    }
+
+    case 'x':
+    {
+      char * t;
+
+      if(eye>=input_len) return matches;
+      sval.u.integer=STRTOL(input+eye,&t,16);
+      if(input + eye == t) return matches;
+      eye=t-input;
+      sval.type=T_INT;
+      sval.subtype=NUMBER_NUMBER;
+      break;
+    }
+
+    case 'o':
+    {
+      char * t;
+
+      if(eye>=input_len) return matches;
+      sval.u.integer=STRTOL(input+eye,&t,8);
+      if(input + eye == t) return matches;
+      eye=t-input;
+      sval.type=T_INT;
+      sval.subtype=NUMBER_NUMBER;
+      break;
+    }
+
+    case 'D':
+    {
+      char * t;
+
+      if(eye>=input_len) return matches;
       sval.u.integer=STRTOL(input+eye,&t,0);
       if(input + eye == t) return matches;
       eye=t-input;
@@ -401,6 +440,24 @@ static INT32 low_sscanf(INT32 num_arg)
 	    for(e=0;e<256;e++) set[e]=1;
 	    for(e='0';e<='9';e++) set[e]=0;
 	    set['-']=0;
+	    goto match_set;
+
+	  case 'o':
+	    for(e=0;e<256;e++) set[e]=1;
+	    for(e='0';e<='7';e++) set[e]=0;
+	    goto match_set;
+
+	  case 'x':
+	    for(e=0;e<256;e++) set[e]=1;
+	    for(e='0';e<='9';e++) set[e]=0;
+	    for(e='a';e<='f';e++) set[e]=0;
+	    goto match_set;
+
+	  case 'D':
+	    for(e=0;e<256;e++) set[e]=1;
+	    for(e='0';e<='9';e++) set[e]=0;
+	    set['-']=0;
+	    set['x']=0;
 	    goto match_set;
 
 	  case 'f':
