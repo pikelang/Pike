@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.553 2001/09/23 00:39:59 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.554 2001/10/05 17:03:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -889,26 +889,26 @@ AC_ARG_WITH(root,              [  --with-root=path                 specify a cro
     ;;
   esac
 ],[with_root=""])
-AC_ARG_WITH(relocatable_dumped_modules, [  --with-relocatable-dumped-modules     make dumped modules relocatable],[with_relocatable_dumped_modules=yes],[])
-AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[])
-AC_ARG_WITH(static_linking,    [  --with-static-linking            link statically, if possible],[with_static_linking=yes],[])
+MY_AC_ARG_WITH(relocatable_dumped_modules, [  --with-relocatable-dumped-modules     make dumped modules relocatable],[with_relocatable_dumped_modules=yes])
+AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically])
+MY_AC_ARG_WITH(static_linking,    [  --with-static-linking            link statically, if possible],[with_static_linking=yes])
 AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
 AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for libraries.])
 
-AC_ARG_WITH(double-precision, [  --with-double-precision          use double precision floats ], [ AC_DEFINE(WITH_DOUBLE_PRECISION_SVALUE) ] )
-AC_ARG_WITH(long-double-precision,[  --with-long-double-precision          use long double precision floats ], [ AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE) ] )
+MY_AC_ARG_WITH(double-precision, [  --with-double-precision          use double precision floats ], [ AC_DEFINE(WITH_DOUBLE_PRECISION_SVALUE) ])
+MY_AC_ARG_WITH(long-double-precision,[  --with-long-double-precision          use long double precision floats ], [ AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE) ])
 
-AC_ARG_WITH(long-int,         [  --with-long-int                  use long native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_LONG_INT) ] )
-AC_ARG_WITH(long-long-int,    [  --with-long-long-int             use long long native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_LONG_LONG_INT) ] )
-AC_ARG_WITH(short-int,        [  --with-short-int                 use short native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_SHORT_INT) ] )
-AC_ARG_WITH(int-int,          [  --with-int-int                   use int native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_INT_INT) ] )
+MY_AC_ARG_WITH(long-int,         [  --with-long-int                  use long native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_LONG_INT) ])
+MY_AC_ARG_WITH(long-long-int,    [  --with-long-long-int             use long long native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_LONG_LONG_INT) ])
+MY_AC_ARG_WITH(short-int,        [  --with-short-int                 use short native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_SHORT_INT) ])
+MY_AC_ARG_WITH(int-int,          [  --with-int-int                   use int native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_INT_INT) ])
 
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
-AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[with_debug="yes" AC_DEFINE(DEBUG_MALLOC,10)],[])
-AC_ARG_WITH(dmalloc-malloc,[  --without-dmalloc-malloc Disable overloading malloc(3)],[ ],[ AC_DEFINE(ENCAPSULATE_MALLOC,1) ])
-AC_ARG_WITH(dmalloc-malloc-leaks,[  --with-malloc-leaks    Report memory allocated by malloc(3) as leaks.],[ AC_DEFINE(REPORT_ENCAPSULATED_MALLOC,1) ],[])
-AC_ARG_WITH(dmalloc-trace,[  --with-dmalloc-trace   enable tracepoints],[with_dmalloc_trace="yes" AC_DEFINE(DMALLOC_TRACE,10)],[])
+MY_AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[with_debug="yes" AC_DEFINE(DEBUG_MALLOC,10)])
+MY_AC_ARG_WITH(dmalloc-malloc,[  --without-dmalloc-malloc Disable overloading malloc(3)],[],[ AC_DEFINE(ENCAPSULATE_MALLOC,1) ])
+MY_AC_ARG_WITH(dmalloc-malloc-leaks,[  --with-malloc-leaks    Report memory allocated by malloc(3) as leaks.],[ AC_DEFINE(REPORT_ENCAPSULATED_MALLOC,1) ])
+MY_AC_ARG_WITH(dmalloc-trace,[  --with-dmalloc-trace   enable tracepoints],[with_dmalloc_trace="yes" AC_DEFINE(DMALLOC_TRACE,10)])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
 AC_ARG_WITH(rtldebug,    [  --with-rtldebug        enable run time self tests],[],[with_rtldebug=])
 AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[
@@ -943,12 +943,12 @@ Use --with-threads to force threads support.
    fi
 ])
 AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
-AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
+AC_ARG_WITH(ssleay,      [  --with-ssleay          support for the secure socket protocol (OBSOLETE)],[],[with_ssleay=no])
 AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
-AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing instead of lzw],[],[])
-AC_ARG_WITH(rsaref,      [  --with-rsaref[=path]   Support for RSAREF],[],[])
+AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing instead of lzw])
+AC_ARG_WITH(rsaref,      [  --with-rsaref[=path]   Support for RSAREF])
 AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
-AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
+MY_AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)])
 AC_ARG_WITH(pg,          [  --with-pg              Use the gcc -pg option],
 [
   if test "x$with_pg" = xyes; then
@@ -981,7 +981,7 @@ AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[
     ;;
   esac
 ])
-AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
+AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval])
 AC_ARG_WITH(oob,	 [  --without-oob          disable out-of-band data handling],[
   if test "$pike_cv_sys_os" = "Windows_NT"; then
     if test "$with_oob" = "no"; then
@@ -990,24 +990,16 @@ AC_ARG_WITH(oob,	 [  --without-oob          disable out-of-band data handling],[
   else :; fi
 ],[with_oob=yes])
 AC_ARG_WITH(thread-trace,[  --without-thread-trace disable individual tracing of threads],[],[with_thread_trace=yes])
-AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
-AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
+MY_AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)])
+AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)])
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --without-shared-nodes disable the SHARED_NODES mode of the optimizer],[],[with_shared_nodes=yes])
 AC_ARG_WITH(computed-goto,[  --with-computed-goto   Enable use of gcc-style computed goto (EXPERIMENTAL).], [], [with_computed_goto=no])
-AC_ARG_WITH(machine-code,[  --with-machine-code    Enable use of machine code when possible (EXPERIMENTAL).], [], [])
+AC_ARG_WITH(machine-code,[  --with-machine-code    Enable use of machine code when possible (EXPERIMENTAL).])
 
-AC_ARG_WITH(keypair-loop,[  --with-keypair-loop    Enable use of the keypair mapping loop method (EXPERIMENTAL).],[
-  if test "$with_keypair_loop" = "yes"; then
-    AC_DEFINE(PIKE_MAPPING_KEYPAIR_LOOP)
-  else :; fi
-],[])
+MY_AC_ARG_WITH(keypair-loop,[  --with-keypair-loop    Enable use of the keypair mapping loop method (EXPERIMENTAL).],[AC_DEFINE(PIKE_MAPPING_KEYPAIR_LOOP)])
 
-AC_ARG_WITH(lock,        [  --without-lock         Enable experimental code for multicpu machines (EXPERIMENTAL).],[
-  if test "$with_lock" = "no"; then
-    AC_DEFINE(PIKE_RUN_UNLOCKED)
-  else :; fi
-],[])
+MY_AC_ARG_WITH(lock,        [  --without-lock         Enable experimental code for multicpu machines (EXPERIMENTAL).],[],[AC_DEFINE(PIKE_RUN_UNLOCKED)])
 
 # This makes configure default to --without-Perl
 # Remove this when the Perl module stops crashing and hanging. -Hubbe
@@ -1017,7 +1009,7 @@ AC_ARG_WITH(perl,        [  --with-perl            enable the embedded Perl modu
 ]
 )
 
-AC_ARG_WITH(pike-type,   [  --without-pike-type       disable struct pike_type.], [], [])
+AC_ARG_WITH(pike-type,   [  --without-pike-type       disable struct pike_type.])
 
 if test "x$with_pike_type" = "xno"; then :; else
   echo 'Enabling the USE_PIKE_TYPE mode of the compiler.'
