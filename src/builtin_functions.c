@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.238 2000/03/08 14:22:17 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.239 2000/03/08 15:47:04 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4432,12 +4432,11 @@ static void f_get_prof_info(INT32 args)
   if(!prog)
     SIMPLE_BAD_ARG_ERROR("get_profiling_info", 1, "program|function|object");
 
-  add_ref(prog);
-
-  pop_n_elems(args);
-
   /* ({ num_clones, ([ "fun_name":({ num_calls, total_time, self_time }) ]) })
    */
+
+  pop_n_elems(args-1);
+  args = 1;
 
   push_int(prog->num_clones);
 
@@ -4455,6 +4454,9 @@ static void f_get_prof_info(INT32 args)
   }
   f_aggregate_mapping(num_functions * 2);
   f_aggregate(2);
+
+  stack_swap();
+  pop_stack();
 }
 #endif /* PROFILING */
 
