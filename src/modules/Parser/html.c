@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.162 2003/03/12 09:23:36 agehall Exp $
+|| $Id: html.c,v 1.163 2003/09/01 14:43:16 mast Exp $
 */
 
 #include "global.h"
@@ -3001,7 +3001,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       }
       /* at end, entity or tag */
 
-      if (!*feed)
+      if (!*feed || cdst == dst->s->len)
       {
 	 DEBUG((stderr,"%*d do_try_feed end\n",
 		this->stack_count,this->stack_count));
