@@ -28,7 +28,7 @@ object make_time(int t)
 /* Returns a mapping similar to that returned by gmtime */
 mapping parse_time(object asn1)
 {
-  if ((asn1->tag_name != "UTCTime")
+  if ((asn1->type_name != "UTCTime")
       || (strlen(asn1->value) != 13))
     return 0;
 
@@ -36,8 +36,10 @@ mapping parse_time(object asn1)
   if ( (strlen(s) != 12) && (c != 'Z') )
     return 0;
 
+  /* NOTE: This relies on pike-0.7 not interpreting leading zeros as
+   * an octal prefix. */
   mapping m = mkmapping( ({ "year", "mon", "mday", "hour", "min", "sec" }),
-			 (array(string)) (s/2));
+			 (array(int)) (s/2));
 
   if (m->year < 50)
     m->year += 50;
@@ -77,6 +79,13 @@ int time_compare(mapping t1, mapping t2)
 	 
 object extension_sequence = meta_explicit(2, 3);
 object version_integer = meta_explicit(2, 0);
+
+object rsa_md5_algorithm = asn1_sequence( ({ Identifiers.rsa_md5_id,
+					     asn1_null() }) );
+
+object rsa_sha1_algorithm = asn1_sequence( ({ Identifiers.rsa_sha1_id,
+					      asn1_null() }) );
+
 
 object make_tbs(object issuer, object algorithm,
 		object subject, object keyinfo,
@@ -168,13 +177,13 @@ string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
 
   object dn = Certificate.build_distinguished_name(@name);
   
-  object tbs = make_tbs(dn, signature_algorithm,
+  object tbs = make_tbs(dn, rsa_sha1_algorithm,
 			dn, keyinfo,
 			serial, ttl, extensions);
   
   return asn1_sequence(
     ({ tbs,
-       signature_algorithm,
+       rsa_sha1_algorithm,
        asn1_bit_string(rsa_sign_digest(rsa, Identifiers.sha1_id,
 				       Crypto.sha()->update(tbs->get_der())
 				       ->digest())) }) )->get_der();
@@ -195,11 +204,11 @@ class rsa_verifier
   int verify(object algorithm, string msg, string signature)
     {
       {
-	if (algorithm->get_der() == Identifiers.rsa_md5_id)
+	if (algorithm->get_der() == rsa_md5_algorithm->get_der())
 	  return rsa_verify_digest(rsa, Identifiers.md5_id,
 				   Crypto.md5()->update(msg)->digest(),
 				   signature);
-	else if (algorithm->get_der() == Identifiers.rsa_sha1_id)
+	else if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
 	  return rsa_verify_digest(rsa, Identifiers.sha1_id,
 				   Crypto.sha()->update(msg)->digest(),
 				   signature);
@@ -242,7 +251,7 @@ object make_verifier(object keyinfo)
 	     != asn1_null()->get_der()))
       return 0;
     
-    return rsa_verifier(keyinfo->elements[1]->value);
+    return rsa_verifier()->init(keyinfo->elements[1]->value);
   }
   else if (keyinfo->elements[0]->elements[0]->get_der()
 	   == Identifiers.dsa_sha_id->get_der())
@@ -278,6 +287,8 @@ class TBSCertificate
 	return 0;
 
       array a = asn1->elements;
+      werror("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
+      
       if (sizeof(a) < 6)
 	return 0;
 
@@ -287,7 +298,7 @@ class TBSCertificate
 	if (!a[0]->constructed
 	    || (a[0]->get_combinded_tag() != make_combined_tag(2, 0))
 	    || (sizeof(a[0]->elements) != 1)
-	    || (a[0]->elements[0]->tag_name != "INTEGER"))
+	    || (a[0]->elements[0]->type_name != "INTEGER"))
 	  return 0;
 
 	version = (int) a[0]->elements[0]->value + 1;
@@ -297,22 +308,29 @@ class TBSCertificate
       } else
 	version = 1;
 
-      if (a[0]->tag_name != "INTEGER")
+      werror("TBSCertificate: version = %d\n", version);
+      if (a[0]->type_name != "INTEGER")
 	return 0;
       serial = a[0]->value;
+
+      werror("TBSCertificate: serial = %s\n", (string) serial);
       
-      if ((a[1]->tag_name != "SEQUENCE")
+      if ((a[1]->type_name != "SEQUENCE")
 	  || !sizeof(a[1]->elements )
-	  || (a[1]->elements[0]->tag_name != "OBJECT IDENTIFIER"))
+	  || (a[1]->elements[0]->type_name != "OBJECT IDENTIFIER"))
 	return 0;
 
       algorithm = a[1];
 
-      if (a[2]->tag_name != "SEQUENCE")
+      werror("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+
+      if (a[2]->type_name != "SEQUENCE")
 	return 0;
       issuer = a[2];
 
-      if ((a[3]->tag_name != "SEQUENCE")
+      werror("TBSCertificate: issuer = %s\n", issuer->debug_string());
+
+      if ((a[3]->type_name != "SEQUENCE")
 	  || (sizeof(a[3]->elements) != 2))
 	return 0;
 
@@ -322,16 +340,28 @@ class TBSCertificate
       if (!not_before)
 	return 0;
       
+      werror("TBSCertificate: not_before = %O\n", not_before);
+
       not_after = parse_time(validity[0]);
       if (!not_after)
 	return 0;
-      
+
+      werror("TBSCertificate: not_after = %O\n", not_after);
+
+      if (a[4]->type_name != "SEQUENCE")
+	return 0;
       subject = a[4];
+
+      werror("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
+      
       public_key = make_verifier(a[5]);
 
       if (!public_key)
 	return 0;
-      
+
+      werror("TBSCertificate: parsed public key. type = %s\n",
+	     public_key->type);      
+
       int i = 6;
       if (i == sizeof(a))
 	return this_object();
@@ -393,7 +423,7 @@ object verify_certificate(string s, mapping authorities)
 
   object(TBSCertificate) tbs = TBSCertificate()->init(cert->elements[0]);
 
-  if (!tbs || cert->elements[1]->get_der() != tbs->algorithm->get_der())
+  if (!tbs || (cert->elements[1]->get_der() != tbs->algorithm->get_der()))
     return 0;
 
   object v;
@@ -401,6 +431,7 @@ object verify_certificate(string s, mapping authorities)
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
     /* A self signed certificate */
+    werror("Self signed certificate\n");
     v = tbs->public_key;
   }
   else
