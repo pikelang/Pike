@@ -1,5 +1,5 @@
 /*
- * $Id: math_module.c,v 1.1 1999/03/31 19:27:18 mirar Exp $
+ * $Id: math_module.c,v 1.2 1999/05/08 00:50:52 hubbe Exp $
  */
 
 #include "global.h"
@@ -48,3 +48,4 @@ void pike_module_init(void)
       else free_program(p);
    }
 }
+
