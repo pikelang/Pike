@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.216 2002/02/05 19:15:23 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.217 2002/02/08 15:40:44 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1026,12 +1026,12 @@ static void report_child(int pid,
 	if((p=(struct pid_status *)get_storage(s->u.object,
 					       pid_status_program)))
 	{
-	  p->state = PROCESS_EXITED;
 	  if(WIFEXITED(status)) {
 	    p->result = WEXITSTATUS(status);
 	  } else {
 	    p->result=-1;
 	  }
+	  p->state = PROCESS_EXITED;
 	}
       }
       /* FIXME: Is this a good idea?
@@ -1252,8 +1252,58 @@ static void f_pid_status_wait(INT32 args)
 	  {
 	    case EINTR: break;
 	      
+#if defined(USE_SIGCHLD) && defined(_REENTRANT)
+	    case ECHILD:
+	      /* Linux stupidity...
+	       * child might be forked by another thread (aka process).
+	       *
+	       * SIGCHILD will be sent to all threads on Linux.
+	       * The sleep in the loop below will thus be awakened by EINTR.
+	       */
+	      pid = THIS->pid;
+	      while ((THIS->state == PROCESS_RUNNING) &&
+		     (!kill(pid, 0))) {
+#ifdef PROC_DEBUG
+		fprintf(stderr, "wait(%s): Sleeping...\n", pid);
+#endif /* PROC_DEBUG */
+		THREADS_ALLOW();
+#ifdef HAVE_POLL
+		poll(NULL, 0, 10000);
+#else /* !HAVE_POLL */
+		sleep(10);
+#endif /* HAVE_POLL */
+		THREADS_DISALLOW();
+	      }
+	      /* The process has died. */
+#ifdef PROC_DEBUG
+	      fprintf(stderr, "wait(%d): Process dead.\n", pid);
+#endif /* PROC_DEBUG */
+	      if (THIS->state == PROCESS_RUNNING) {
+		/* The child hasn't been reaped yet.
+		 * Try waiting some more, and if that
+		 * doesn't work, let the main loop complain.
+		 */
+#ifdef PROC_DEBUG
+		fprintf(stderr, "wait(%d): ... but not officially, yet.\n"
+			"wait(%d): Sleeping some more...\n",
+			pid, pid);
+#endif /* PROC_DEBUG */
+		THREADS_ALLOW();
+#ifdef HAVE_POLL
+		poll(NULL, 0, 100);
+#else /* !HAVE_POLL */
+		sleep(1);
+#endif /* HAVE_POLL */
+		THREADS_DISALLOW();
+		/* In case of failure, report this as an ECHILD error. */
+		err = ECHILD;
+	      }
+	      break;
+#endif /* USE_SIGCHLD && _REENTRANT */
+
 	    default:
 	      err=errno;
+	      break;
 	  }
 	}else{
 	  /* This should not happen! */
