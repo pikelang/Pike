@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.85 1998/05/25 10:38:45 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.86 1998/06/01 20:49:33 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1684,6 +1684,9 @@ static int eval_instruction(unsigned char *pc)
       switch(sp[-args].type)
       {
 	case T_INT:
+	  if (!sp[-args].u.integer) {
+	    PIKE_ERROR("`()", "Attempt to call the NULL-value\n", sp, args);
+	  }
 	case T_STRING:
 	case T_FLOAT:
 	case T_MAPPING:
