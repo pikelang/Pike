@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.22 1999/05/23 17:47:01 mirar Exp $ */
+/* $Id: x.c,v 1.23 1999/06/09 19:44:43 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.22 1999/05/23 17:47:01 mirar Exp $
+**!	$Id: x.c,v 1.23 1999/06/09 19:44:43 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.22 1999/05/23 17:47:01 mirar Exp $");
+RCSID("$Id: x.c,v 1.23 1999/06/09 19:44:43 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1086,6 +1086,56 @@ void image_x_decode_pseudocolor(INT32 args)
    }
 }
 
+void image_x_encode_bitmap(INT32 args)
+{
+   int xs;
+   int i,j,left,bit,dbits;
+   struct pike_string *res;
+   unsigned char *d;
+   rgb_group *s;
+   struct image *img;
+
+   if (!args)
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.X.encode_bitmap",1);
+
+   if (sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object");
+
+   if (!img->img)
+      SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object with image");
+
+   xs=(img->xsize+7)>>3;
+
+   res=begin_shared_string(xs*img->ysize);
+   d=(unsigned char *)res->str;
+
+   s=img->img;
+
+   j=img->ysize;
+   while (j--)
+   {
+      i=img->xsize;
+      while (i)
+      {
+	 left=8;
+	 bit=1;
+	 dbits=0;
+	 while (left-- && i)
+	 {
+	    if (s->r||s->g||s->b) dbits|=bit;
+	    bit<<=1;
+	    s++;
+	    i--;
+	 }
+	 *(d++)=(unsigned char)dbits;
+      }
+   }
+
+   pop_n_elems(args);
+   push_string(end_shared_string(res));
+}
+
 /**** init module ********************************************/
 
 struct program *image_x_module_program=NULL;
@@ -1099,9 +1149,11 @@ void init_image_x(void)
    add_function("encode_pseudocolor",image_x_encode_pseudocolor,
 		"function(object,int,int,int,object,void|string:string)",0);
 
+   add_function("encode_bitmap",image_x_encode_bitmap,
+		"function(object:object)",0);
+
    add_function("examine_mask",image_x_call_examine_mask,
 		"function(int:array(int))",0);
-
 }
 
 void exit_image_x(void)
