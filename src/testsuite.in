@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.372 2001/01/17 17:38:47 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.373 2001/01/18 17:38:37 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -751,7 +751,6 @@ int a()
      (has_value(testargs/" ", "-q") ||
       has_value(testargs/" ", "-quiet") ) )
     quiet=1;
-  return 1;
 
   int total_tests;
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
@@ -3034,7 +3033,6 @@ ifefun(gc,
        (has_value(testargs/" ", "-q") ||
         has_value(testargs/" ", "-quiet") ) )
       quiet=1;
-    return 1;
 
     int test_failed = 0;
     for (int test = 0; test < sizeof (destruct_order_tests); test++) {
