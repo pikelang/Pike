@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.45 2002/03/19 22:09:28 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.46 2002/03/20 20:57:18 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -489,10 +489,10 @@ private class Expression {
 
   // Returns the first complex entity in the expression,
   // e.g. "Stdio.File" is returned from ({ "Stdio", ".", "File", " ", "f", ";" }).
-  string first_complex() {
+  array(string) first_complex() {
     int p = search(tokens, " ");
     if(p==-1) p = sizeof(tokens)-1;
-    return tokens[..p]*"";
+    return tokens[..p];
   }
 
   string _sprintf(int t) {
@@ -636,7 +636,7 @@ private class ParserState {
   string status() {
     string ret = "Current parser state\n";
     ret += sprintf("Parenthesis stack: %s\n", pstack->arr[..pstack->ptr]*" ");
-    ret += sprintf("Current pipline: %O\n", pipeline);
+    ret += sprintf("Current pipeline: %O\n", pipeline);
     ret += sprintf("Last token: %O\n", last);
     ret += sprintf("Current block: %O\n", block);
     return ret;
