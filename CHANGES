@@ -49,6 +49,9 @@ o Bugfix when iterators are used in foreach. They are now incremented
   This will now write "0 0", "1 1", etc. In previous versions of 7.4
   it wrote "0 1", "1 2", etc since the iterator has already been
   incremented to point to the next element.
+o Bugfixes in Calendar.Fraction, which prevously lost track of the
+  fraction component in Fraction()->set_timezone() and always returned
+  0.0 in Fraction()->fraction_no().
 
 Changes since Pike 7.4.10:
 ----------------------------------------------------------------------
