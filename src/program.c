@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.147 1999/09/16 04:38:30 hubbe Exp $");
+RCSID("$Id: program.c,v 1.148 1999/09/16 04:45:06 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -937,7 +937,8 @@ void check_program(struct program *p)
       int offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
       size=sizeof_variable(i->run_time_type);
 
-      if(offset+size > p->storage_needed || offset<0)
+      if(offset+size - p->inherits[0].storage_offset >
+	 p->storage_needed || offset<0)
 	fatal("Variable outside storage! (%s)\n",i->name->str);
 
       for(q=0;q<size;q++)
