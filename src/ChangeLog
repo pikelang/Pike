@@ -1,5 +1,11 @@
 Wed Nov 15 10:56:45 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
+        * version 1.6E-12 released
+
+	* program.c (end_program): fixed a memory leak
+
+        * version 1.5E-12 released
+
 	* sprintf.c: now includes memory.h (for xalloc)
 	* configure.in: added check to see if -pipe works, fixed caching of
           oneshot signal tests.
