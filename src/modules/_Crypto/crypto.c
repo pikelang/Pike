@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.5 1996/11/08 18:32:26 grubba Exp $
+ * $Id: crypto.c,v 1.6 1996/11/08 22:59:24 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -571,7 +571,7 @@ static void f_cbc_decrypt(INT32 args)
   while (soffset + PIKE_CRYPTO->block_size <= sp[-1].u.string->len) {
 
     cbc_decrypt_step((const unsigned char *)sp[-1].u.string->str + soffset,
-		     result);
+		     result + roffset);
     soffset += PIKE_CRYPTO->block_size;
     roffset += PIKE_CRYPTO->block_size;
   }
@@ -603,6 +603,7 @@ void init_module_efuns(void)
   init_md5_efuns();
   init_idea_efuns();
   init_des_efuns();
+  init_invert_efuns();
 }
 
 void init_module_programs(void)
@@ -652,6 +653,7 @@ void init_module_programs(void)
   init_md5_programs();
   init_idea_programs();
   init_des_programs();
+  init_invert_programs();
 }
 
 void exit_module(void)
@@ -661,4 +663,5 @@ void exit_module(void)
   exit_md5();
   exit_idea();
   exit_des();
+  exit_invert();
 }
