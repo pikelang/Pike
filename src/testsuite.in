@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.593 2003/01/29 13:42:41 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.594 2003/01/29 17:18:55 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -116,6 +116,16 @@ test_any([[
   }
   return m->a;
 ]], 10000)
+
+test_any([[
+  // Test that loop optimizer isn't too aggressive.
+  // Thanks to me.  / Marcus
+  for(int i=0; i<3.0; i++)
+    if(i>4.0)
+      return -1;
+  return 0;
+]], 0)
+
 
 dnl FIXME: Add test that local and local:: in combination
 dnl        with recursion works correctly.
