@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.19 1999/06/19 22:11:35 grubba Exp $
+**!	$Id: layers.c,v 1.20 1999/06/21 18:03:19 mirar Exp $
 **! class Layer
 */
 
@@ -9,7 +9,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.19 1999/06/19 22:11:35 grubba Exp $");
+RCSID("$Id: layers.c,v 1.20 1999/06/21 18:03:19 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -104,6 +104,18 @@ LMFUNC(lm_max);
 LMFUNC(lm_bitwise_and);
 LMFUNC(lm_bitwise_or);
 LMFUNC(lm_bitwise_xor);
+LMFUNC(lm_equal);
+LMFUNC(lm_not_equal);
+LMFUNC(lm_less);
+LMFUNC(lm_more);
+LMFUNC(lm_less_or_equal);
+LMFUNC(lm_more_or_equal);
+LMFUNC(lm_logic_equal);
+LMFUNC(lm_logic_not_equal);
+LMFUNC(lm_logic_strict_less);
+LMFUNC(lm_logic_strict_more);
+LMFUNC(lm_logic_strict_less_or_equal);
+LMFUNC(lm_logic_strict_more_or_equal);
 
 LMFUNC(lm_replace);
 LMFUNC(lm_red);
@@ -142,9 +154,21 @@ struct layer_mode_desc
    {"difference",    lm_difference,    1, NULL            }, 
    {"max",           lm_max,           1, NULL            }, 
    {"min",           lm_min,           1, NULL            }, 
-   {"bitwize_and",   lm_bitwise_and,   1, NULL            }, 
-   {"bitwize_or",    lm_bitwise_or,    1, NULL            }, 
-   {"bitwize_xor",   lm_bitwise_xor,   1, NULL            }, 
+   {"bitwise_and",   lm_bitwise_and,   1, NULL            }, 
+   {"bitwise_or",    lm_bitwise_or,    1, NULL            }, 
+   {"bitwise_xor",   lm_bitwise_xor,   1, NULL            }, 
+   {"equal",         lm_equal,         0, NULL            },
+   {"not_equal",     lm_not_equal,     0, NULL            },
+   {"less",          lm_less,          0, NULL            },
+   {"more",          lm_more,          0, NULL            },
+   {"less_or_equal", lm_less_or_equal, 0, NULL            },
+   {"more_or_equal", lm_more_or_equal, 0, NULL            },
+   {"logic_equal",   lm_logic_equal,   0, NULL            },
+   {"logic_not_equal",lm_logic_not_equal,0, NULL          },
+   {"logic_strict_less",lm_logic_strict_less,0, NULL      },
+   {"logic_strict_more",lm_logic_strict_more,0, NULL      },
+   {"logic_strict_less_equal",lm_logic_strict_less_or_equal,0, NULL      },
+   {"logic_strict_more_equal",lm_logic_strict_more_or_equal,0, NULL      },
 
    {"replace",       lm_replace,       1, NULL            },
    {"red",           lm_red,           1, NULL            },
@@ -589,9 +613,9 @@ static void image_layer_alpha_value(INT32 args)
 **!  	"difference",     
 **!  	"max",            
 **!  	"min",            
-**!  	"bitwize_and",    
-**!  	"bitwize_or",     
-**!  	"bitwize_xor",    
+**!  	"bitwise_and",    
+**!  	"bitwise_or",     
+**!  	"bitwise_xor",    
 **!  			 
 **!  	"replace",       
 **!  	"red",           
@@ -1168,6 +1192,116 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+#define LM_FUNC lm_equal
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) (((A)==(B))?COLORMAX:0)
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_not_equal
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) (((A)!=(B))?COLORMAX:0)
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_less
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) (((A)>(B))?COLORMAX:0)
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_more
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) (((A)<(B))?COLORMAX:0)
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_less_or_equal
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) (((A)>=(B))?COLORMAX:0)
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_more_or_equal
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) (((A)<=(B))?COLORMAX:0)
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+/* logic functions */
+
+#define L_LOGIC(A,B,C) (((A)&&(B)&&(C))?white:black)
+#define LM_FUNC lm_logic_equal
+#define L_OPER(A,B) ((A)==(B))
+#define L_TRANS white
+#include "layer_oper.h"
+#undef L_TRANS
+#undef L_OPER
+#undef LM_FUNC
+#undef L_LOGIC
+
+#define L_LOGIC(A,B,C) (((A)||(B)||(C))?white:black)
+#define LM_FUNC lm_logic_not_equal
+#define L_OPER(A,B) ((A)!=(B))
+#define L_TRANS black
+#include "layer_oper.h"
+#undef L_TRANS
+#undef L_OPER
+#undef LM_FUNC
+#undef L_LOGIC
+
+#define L_LOGIC(A,B,C) (((A)&&(B)&&(C))?white:black)
+#define LM_FUNC lm_logic_strict_less
+#define L_OPER(A,B) ((A)>(B))
+#define L_TRANS white
+#include "layer_oper.h"
+#undef L_TRANS
+#undef L_OPER
+#undef LM_FUNC
+#undef L_LOGIC
+
+#define L_LOGIC(A,B,C) (((A)&&(B)&&(C))?white:black)
+#define LM_FUNC lm_logic_strict_more
+#define L_OPER(A,B) ((A)<(B))
+#define L_TRANS white
+#include "layer_oper.h"
+#undef L_TRANS
+#undef L_OPER
+#undef LM_FUNC
+#undef L_LOGIC
+
+#define L_LOGIC(A,B,C) (((A)&&(B)&&(C))?white:black)
+#define LM_FUNC lm_logic_strict_less_or_equal
+#define L_OPER(A,B) ((A)>=(B))
+#define L_TRANS white
+#include "layer_oper.h"
+#undef L_TRANS
+#undef L_OPER
+#undef LM_FUNC
+#undef L_LOGIC
+
+#define L_LOGIC(A,B,C) (((A)&&(B)&&(C))?white:black)
+#define LM_FUNC lm_logic_strict_more_or_equal
+#define L_OPER(A,B) ((A)<=(B))
+#define L_TRANS white
+#include "layer_oper.h"
+#undef L_TRANS
+#undef L_OPER
+#undef LM_FUNC
+#undef L_LOGIC
+
 /* channels from template */
 
 /* replace rgb by alpha channel */
@@ -1514,7 +1648,6 @@ static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
 	    la++; sa++; da++;
 	 }
 }
-
 
 /*** the add-layer function ***************************/
 
@@ -1958,17 +2091,6 @@ void image_lay(INT32 args)
 
 /**  image-object operations  *************************/
 
-/*
-**! method object crop(int xoff,int yoff,int xsize,int ysize)
-**!	Crops this layer at this offset and size.
-**!	Offset is not relative the layer offset, so this
-**!	can be used to crop a number of layers simuntaneously.
-**! returns a new layer object
-**! note:
-**!	The new layer object may have the same image object,
-**!	if there was no cropping to be done.
-*/
-
 static INLINE struct layer *push_new_layer()
 {
    push_object(clone_object(image_layer_program,0));
@@ -2000,6 +2122,20 @@ static INLINE struct layer *clone_this_layer()
    return l;
 }
 
+/*
+**! method object crop(int xoff,int yoff,int xsize,int ysize)
+**!	Crops this layer at this offset and size.
+**!	Offset is not relative the layer offset, so this
+**!	can be used to crop a number of layers simuntaneously.
+**!
+**!	The <ref>fill</ref> values are used if the layer is
+**!	enlarged.
+**! returns a new layer object
+**! note:
+**!	The new layer object may have the same image object,
+**!	if there was no cropping to be done.
+*/
+
 static void image_layer_crop(INT32 args)
 {
    struct layer *l;
@@ -2023,7 +2159,7 @@ static void image_layer_crop(INT32 args)
    l->yoffs=y;
    fprintf(stderr,"crop %d,%d + %d,%d zot=%d\n",xi,yi,xz,yz,zot);
 
-   if (l->image)
+   if (zot && l->image)
    {
       ref_push_object(l->image);
       push_constant_text("copy");
@@ -2032,7 +2168,10 @@ static void image_layer_crop(INT32 args)
       push_int(yi);
       push_int(xz+xi-1);
       push_int(yz+yi-1);
-      f_call_function(5);
+      push_int(THIS->fill.r);
+      push_int(THIS->fill.g);
+      push_int(THIS->fill.b);
+      f_call_function(8);
       if (sp[-1].type!=T_OBJECT ||
 	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
 	 error("No image returned from image->copy\n");
@@ -2047,7 +2186,7 @@ static void image_layer_crop(INT32 args)
       l->img=img;
    }
 
-   if (l->alpha)
+   if (zot && l->alpha)
    {
       ref_push_object(l->alpha);
       push_constant_text("copy");
@@ -2056,7 +2195,10 @@ static void image_layer_crop(INT32 args)
       push_int(yi);
       push_int(xz+xi-1);
       push_int(yz+yi-1);
-      f_call_function(5);
+      push_int(THIS->fill_alpha.r);
+      push_int(THIS->fill_alpha.g);
+      push_int(THIS->fill_alpha.b);
+      f_call_function(8);
       if (sp[-1].type!=T_OBJECT ||
 	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
 	 error("No image returned from alpha->copy\n");
@@ -2070,8 +2212,90 @@ static void image_layer_crop(INT32 args)
       l->alp=img;
    }
 
+   l->xoffs=x;
+   l->yoffs=y;
+   l->xsize=xz;
+   l->ysize=yz;
+
    stack_pop_n_elems_keep_top(args);
 }
+
+/*
+**! method object autocrop()
+**! method object autocrop(int(0..1) left,int(0..1) right,int(0..1) top,int(0..1) bottom)
+**! method array(int) find_autocrop()
+**! method array(int) find_autocrop(int(0..1) left,int(0..1) right,int(0..1) top,int(0..1) bottom)
+**!	This crops (of finds) a suitable crop, non-destructive crop.
+**!	The layer alpha channel is checked, and edges that is
+**!	transparent is removed.
+**!	
+**!	(What really happens is that the image and alpha channel is checked, 
+**!	and edges equal the fill setup is cropped away.)
+**!
+**!	<ref>find_autocrop</ref>() returns an array of xoff,yoff,xsize,ysize,
+**!	which can be fed to <ref>crop</ref>().
+**!
+**! note:
+**!	A tiled image will not be cropped at all.
+**!
+**!	<tt>left</tt>...<tt>bottom</tt> arguments can be used
+**!	to tell what sides cropping are ok on.
+**!
+**! see also:
+**!	crop, Image.Image->autocrop
+*/
+
+static void image_layer_find_autocrop(INT32 args)
+{
+   int x1=0,y1=0,x2=THIS->xsize-1,y2=THIS->ysize-1;
+   int l=1,r=1,t=1,b=1;
+
+   if (args>3)
+      get_all_args("find_autocrop",args,"%d%d%d%d",&l,&r,&t,&b);
+
+   if (!THIS->tiled)
+      if (THIS->alpha)
+      {
+	 img_find_autocrop(THIS->alp, &x1,&y1,&x2,&y2,
+			   0,l,r,t,b,1,THIS->fill_alpha);
+	 if (THIS->image &&
+	     (THIS->fill_alpha.r!=0 ||
+	      THIS->fill_alpha.g!=0 ||  /* non-transparent fill */
+	      THIS->fill_alpha.b!=0))   /* check image too      */
+	 {
+	    int ix1,iy1,ix2,iy2;
+	    img_find_autocrop(THIS->img, &ix1,&iy1,&ix2,&iy2,
+			      0,l,r,t,b,1,THIS->fill);
+	    if (ix1<x1) x1=ix1;
+	    if (ix2>x2) x2=ix2;
+	    if (iy1<y1) y1=iy1;
+	    if (iy2>y2) y2=iy2;
+	 }
+      }
+      else if (THIS->image && /* image alpha is 'white'... */
+	       (THIS->fill_alpha.r==255 ||
+		THIS->fill_alpha.g==255 ||  /* opaque fill */
+		THIS->fill_alpha.b==255))   /* we may be able to crop */
+      {
+	 img_find_autocrop(THIS->img, &x1,&y1,&x2,&y2,
+			   0,l,r,t,b,1,THIS->fill);
+      }
+
+   push_int(x1+THIS->xoffs);
+   push_int(y1+THIS->yoffs);
+   push_int(x2-x1+1);
+   push_int(y2-y1+1);
+   f_aggregate(4);
+}
+
+void image_layer_autocrop(INT32 args)
+{
+   image_layer_find_autocrop(args);
+   sp--;
+   push_array_items(sp->u.array); /* frees */
+   image_layer_crop(4);
+}
+
 
 /******************************************************/
 
@@ -2136,16 +2360,16 @@ void init_image_layers(void)
 
    ADD_FUNCTION("crop",image_layer_crop,
 		tFunc(tInt tInt tInt tInt,tObj),0);
+   ADD_FUNCTION("autocrop",image_layer_autocrop,
+		tFuncV(,tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("find_autocrop",image_layer_find_autocrop,
+		tFuncV(,tOr(tVoid,tInt),tObj),0);
 
    /*
    ADD_FUNCTION("rotate",image_layer_rotate,tFunc(tOr(tInt,tFloat),tObj),0);
    ADD_FUNCTION("scale",image_layer_scale,tOr3(tFunc(tInt tInt,tObj),
 					       tFunc(tFloat,tObj),
 					       tFunc(tFloat,tFloat,tObj)),0);
-   ADD_FUNCTION("autocrop",image_layer_autocrop,
-		tFuncV(,tOr(tVoid,tInt),tObj),0);
-   ADD_FUNCTION("find_autocrop",image_layer_autocrop,
-		tFuncV(,tOr(tVoid,tInt),tObj),0);
    ADD_FUNCTION("translate",image_layer_translate,
 		tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),0);
    */

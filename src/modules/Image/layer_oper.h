@@ -4,6 +4,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    rgb_group *sa,rgb_group *la,rgb_group *da,
 		    int len,double alpha)
 {
+#ifndef L_LOGIC
    if (alpha==0.0)
    {
       MEMCPY(d,s,sizeof(rgb_group)*len);
@@ -29,9 +30,10 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	       d->r=L_TRUNC(L_OPER(s->r,l->r));
 	       d->g=L_TRUNC(L_OPER(s->g,l->g));
 	       d->b=L_TRUNC(L_OPER(s->b,l->b));
-	       *da=white;
 #ifdef L_USE_SA
 	       *da=*sa;
+#else
+	       *da=white;
 #endif
 	    }
 	    else if (la->r==0 && la->g==0 && la->b==0)
@@ -85,71 +87,35 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    l++; s++; la++; sa++; da++; d++;
 	 }
    }
-}
-/* old code */
-#if 0 
-
-static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
-		    rgb_group *sa,rgb_group *la,rgb_group *da,
-		    int len,double alpha)
-{
+#else /* L_LOGIC */
    if (alpha==0.0)
    {
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      smear_color(d,L_TRANS,len);
+      smear_color(da,L_TRANS,len);
       return; 
    }
-   else if (alpha==1.0)
+   else 
    {
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
 	 {
-	    d->r=L_TRUNC(L_OPER(COMBINE(s->r,sa->r),l->r));
-	    d->g=L_TRUNC(L_OPER(COMBINE(s->g,sa->g),l->g));
-	    d->b=L_TRUNC(L_OPER(COMBINE(s->b,sa->b),l->b));
-	    *da=white;
+	    *da=*d=L_LOGIC(L_OPER(s->r,l->r),
+			   L_OPER(s->g,l->g),
+			   L_OPER(s->b,l->b));
 	    l++; s++; sa++; da++; d++;
 	 }
       else
 	 while (len--)
 	 {
-	    d->r=L_TRUNC(L_OPER(COMBINE(s->r,sa->r),COMBINE(l->r,la->r)));
-	    d->g=L_TRUNC(L_OPER(COMBINE(s->g,sa->g),COMBINE(l->g,la->g)));
-	    d->b=L_TRUNC(L_OPER(COMBINE(s->b,sa->b),COMBINE(l->b,la->b)));
-	    da->r=COMBINE_ALPHA_SUM(la->r,sa->r);
-	    da->g=COMBINE_ALPHA_SUM(la->g,sa->g);
-	    da->b=COMBINE_ALPHA_SUM(la->b,sa->b);
+	    if (la->r==0 && la->g==0 && la->b==0)
+	       *d=*da=L_TRANS;
+	    else
+	       *da=*d=L_LOGIC(L_OPER(s->r,l->r),
+			      L_OPER(s->g,l->g),
+			      L_OPER(s->b,l->b));
 	    l++; s++; la++; sa++; da++; d++;
 	 }
    }
-   else
-   {
-      if (!la)  /* no layer alpha => full opaque */
-	 while (len--)
-	 {
-	    d->r=L_TRUNC(L_OPER(COMBINE(s->r,sa->r),COMBINE_A(l->r,alpha)));
-	    d->g=L_TRUNC(L_OPER(COMBINE(s->g,sa->g),COMBINE_A(l->g,alpha)));
-	    d->b=L_TRUNC(L_OPER(COMBINE(s->b,sa->b),COMBINE_A(l->b,alpha)));
-	    da->r=COMBINE_ALPHA_SUM_V(COLORMAX,sa->r,alpha);
-	    da->g=COMBINE_ALPHA_SUM_V(COLORMAX,sa->g,alpha);
-	    da->b=COMBINE_ALPHA_SUM_V(COLORMAX,sa->b,alpha);
-	    l++; s++; sa++; da++; d++;
-	 }
-      else
-	 while (len--)
-	 {
-	    d->r=L_TRUNC(L_OPER(COMBINE(s->r,sa->r),
-				COMBINE_V(l->r,la->r,alpha)));
-	    d->g=L_TRUNC(L_OPER(COMBINE(s->g,sa->g),
-				COMBINE_V(l->g,la->g,alpha)));
-	    d->b=L_TRUNC(L_OPER(COMBINE(s->g,sa->b),
-				COMBINE_V(l->b,la->b,alpha)));
-	    da->r=COMBINE_ALPHA_SUM_V(la->r,sa->r,alpha);
-	    da->g=COMBINE_ALPHA_SUM_V(la->g,sa->g,alpha);
-	    da->b=COMBINE_ALPHA_SUM_V(la->b,sa->b,alpha);
-	    l++; s++; la++; sa++; da++; d++;
-	 }
-   }
+#endif /* L_LOGIC */
 }
 
-#endif

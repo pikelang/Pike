@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.147 1999/06/19 20:24:46 hubbe Exp $ */
+/* $Id: image.c,v 1.148 1999/06/21 18:03:15 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.147 1999/06/19 20:24:46 hubbe Exp $
+**!	$Id: image.c,v 1.148 1999/06/21 18:03:15 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.147 1999/06/19 20:24:46 hubbe Exp $");
+RCSID("$Id: image.c,v 1.148 1999/06/21 18:03:15 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -832,48 +832,28 @@ static void image_change_color(INT32 args)
    push_object(o);
 }
 
-static INLINE int try_autocrop_vertical(INT32 x,INT32 y,INT32 y2,
-					INT32 rgb_set,rgb_group *rgb)
-{
-   if (!rgb_set) *rgb=pixel(THIS,x,y);
-   for (;y<=y2; y++)
-      if (pixel(THIS,x,y).r!=rgb->r ||
-	  pixel(THIS,x,y).g!=rgb->g ||
-	  pixel(THIS,x,y).b!=rgb->b) return 0;
-   return 1;
-}
-
-static INLINE int try_autocrop_horisontal(INT32 y,INT32 x,INT32 x2,
-					  INT32 rgb_set,rgb_group *rgb)
-{
-   if (!rgb_set) *rgb=pixel(THIS,x,y);
-   for (;x<=x2; x++)
-      if (pixel(THIS,x,y).r!=rgb->r ||
-	  pixel(THIS,x,y).g!=rgb->g ||
-	  pixel(THIS,x,y).b!=rgb->b) return 0;
-   return 1;
-}
-
 /*
 **! method object autocrop()
 **! method object autocrop(int border)
-**! method object autocrop(int border,int r,int g,int b)
+**! method object autocrop(int border,Color color)
 **! method object autocrop(int border,int left,int right,int top,int bottom)
-**! method object autocrop(int border,int left,int right,int top,int bottom,int r,int g,int b)
+**! method object autocrop(int border,int left,int right,int top,int bottom,Color color)
+**! method array(int) find_autocrop()
+**! method array(int) find_autocrop(int border)
+**! method array(int) find_autocrop(int border,int left,int right,int top,int bottom)
 **! 	Removes "unneccesary" borders around the image, adds one of
 **!	its own if wanted to, in selected directions.
 **!
 **!	"Unneccesary" is all pixels that are equal -- ie if all the same pixels
 **!	to the left are the same color, that column of pixels are removed.
 **!
+**!	The find_autocrop() function simply returns x1,y1,x2,y2 for the
+**!	kept area. (This can be used with <ref>copy</ref> later.)
+**!
 **! returns the new image object
 **!
 **! arg int border
 **!     added border size in pixels
-**! arg int r
-**! arg int g
-**! arg int b
-**!     color of the new border
 **! arg int left
 **! arg int right
 **! arg int top
@@ -882,9 +862,109 @@ static INLINE int try_autocrop_horisontal(INT32 y,INT32 x,INT32 x2,
 **!	a typical example is removing the top and bottom unneccesary
 **!	pixels:
 **!	<pre>img=img->autocrop(0, 0,0,1,1);</pre>
+**!
 **! see also: copy
 */
 
+static INLINE int try_autocrop_vertical(struct image *this,
+					INT32 x,INT32 y,INT32 y2,
+					INT32 rgb_set,rgb_group *rgb)
+{
+   if (!rgb_set) *rgb=pixel(THIS,x,y);
+   for (;y<=y2; y++)
+      if (pixel(this,x,y).r!=rgb->r ||
+	  pixel(this,x,y).g!=rgb->g ||
+	  pixel(this,x,y).b!=rgb->b) return 0;
+   return 1;
+}
+
+static INLINE int try_autocrop_horisontal(struct image *this,
+					  INT32 y,INT32 x,INT32 x2,
+					  INT32 rgb_set,rgb_group *rgb)
+{
+   if (!rgb_set) *rgb=pixel(THIS,x,y);
+   for (;x<=x2; x++)
+      if (pixel(this,x,y).r!=rgb->r ||
+	  pixel(this,x,y).g!=rgb->g ||
+	  pixel(this,x,y).b!=rgb->b) return 0;
+   return 1;
+}
+
+void img_find_autocrop(struct image *this,
+		       int *px1,int *py1,int *px2,int *py2,
+		       int border,
+		       int left,int right,
+		       int top,int bottom,
+		       int rgb_set,
+		       rgb_group rgb)
+{
+   int done;
+   INT32 x1=0,y1=0,x2=this->xsize-1,y2=this->ysize-1;
+
+   while (x2>x1 && y2>y1)
+   {
+      done=0;
+      if (left &&
+	  try_autocrop_vertical(this,x1,y1,y2,rgb_set,&rgb)) 
+	 x1++,done=rgb_set=1;
+      if (right &&
+	  x2>x1 && 
+	  try_autocrop_vertical(this,x2,y1,y2,rgb_set,&rgb)) 
+	 x2--,done=rgb_set=1;
+      if (top &&
+	  try_autocrop_horisontal(this,y1,x1,x2,rgb_set,&rgb)) 
+	 y1++,done=rgb_set=1;
+      if (bottom &&
+	  y2>y1 && 
+	  try_autocrop_horisontal(this,y2,x1,x2,rgb_set,&rgb)) 
+	 y2--,done=rgb_set=1;
+      if (!done) break;
+   }
+
+   x2+=border;
+   y2+=border;
+   x1-=border;
+   y1-=border;
+
+   if (x2<x1||y2<y1) px1[0]=py1[0]=0,px2[0]=py2[0]=-1;
+   else px1[0]=x1,py1[0]=y1,px2[0]=x2,py2[0]=y2;
+}
+
+static void image_find_autocrop(INT32 args)
+{
+   INT32 border=0,x1,y1,x2,y2;
+   rgb_group rgb={0,0,0};
+   int left=1,right=1,top=1,bottom=1;
+
+   if (args) 
+      if (sp[-args].type!=T_INT)
+         bad_arg_error("find_autocrop",sp-args,args,0,"",sp-args,
+		"Bad arguments to find_autocrop()\n");
+      else
+         border=sp[-args].u.integer; 
+
+   if (args>=5)
+   {
+      left=!(sp[1-args].type==T_INT && sp[1-args].u.integer==0);
+      right=!(sp[2-args].type==T_INT && sp[2-args].u.integer==0);
+      top=!(sp[3-args].type==T_INT && sp[3-args].u.integer==0);
+      bottom=!(sp[4-args].type==T_INT && sp[4-args].u.integer==0);
+   }
+
+   if (!THIS->img)
+      error("Called Image.Image object is not initialized\n");;
+
+   img_find_autocrop(THIS,&x1,&y1,&x2,&y2,
+		     border,left,right,top,bottom,0,rgb);
+
+
+   pop_n_elems(args);
+   push_int(x1);
+   push_int(y1);
+   push_int(x2);
+   push_int(y2);
+   f_aggregate(4);
+}
 
 void image_autocrop(INT32 args)
 {
@@ -895,56 +975,26 @@ void image_autocrop(INT32 args)
    struct image *img;
    int left=1,right=1,top=1,bottom=1;
 
-   if (args) 
-      if (sp[-args].type!=T_INT)
-         bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
-      else
-         border=sp[-args].u.integer; 
-
    if (args>=5)
-   {
-      left=!(sp[1-args].type==T_INT && sp[1-args].u.integer==0);
-      right=!(sp[2-args].type==T_INT && sp[2-args].u.integer==0);
-      top=!(sp[3-args].type==T_INT && sp[3-args].u.integer==0);
-      bottom=!(sp[4-args].type==T_INT && sp[4-args].u.integer==0);
       getrgb(THIS,5,args,args,"Image.Image->autocrop()"); 
-   }
-   else getrgb(THIS,1,args,args,"Image.Image->autocrop()"); 
+   else 
+      getrgb(THIS,1,args,args,"Image.Image->autocrop()"); 
 
-   if (!THIS->img)
-   {
-      error("Called Image.Image object is not initialized\n");;
-      return;
-   }
+   image_find_autocrop(args);
+   args++;
+   
+   x1=sp[-1].u.array->item[0].u.integer;
+   y1=sp[-1].u.array->item[1].u.integer;
+   x2=sp[-1].u.array->item[2].u.integer;
+   y2=sp[-1].u.array->item[3].u.integer;
 
-   x1=y1=0;
-   x2=THIS->xsize-1;
-   y2=THIS->ysize-1;
-
-   while (x2>x1 && y2>y1)
-   {
-      done=0;
-      if (left &&
-	  try_autocrop_vertical(x1,y1,y2,rgb_set,&rgb)) x1++,done=rgb_set=1;
-      if (right &&
-	  x2>x1 && 
-	  try_autocrop_vertical(x2,y1,y2,rgb_set,&rgb)) x2--,done=rgb_set=1;
-      if (top &&
-	  try_autocrop_horisontal(y1,x1,x2,rgb_set,&rgb)) y1++,done=rgb_set=1;
-      if (bottom &&
-	  y2>y1 && 
-	  try_autocrop_horisontal(y2,x1,x2,rgb_set,&rgb)) y2--,done=rgb_set=1;
-      if (!done) break;
-   }
-
-   o=clone_object(image_program,0);
+   push_object(o=clone_object(image_program,0));
    img=(struct image*)(o->storage);
 
-   img_crop(img,THIS,x1-border,y1-border,x2+border,y2+border);
-
-   pop_n_elems(args);
-   push_object(o);
+   if (x2==-1 && y2==-1 && x1==0 && y1==0) /* magic, equal image */
+      img_crop(img,THIS,0,0,0,0);
+   else
+      img_crop(img,THIS,x1,y1,x2,y2);
 }
 
 
@@ -965,8 +1015,8 @@ void image_autocrop(INT32 args)
 void image_setcolor(INT32 args)
 {
    if (args<3)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("Image.Image->setcolor",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Image->setcolor()\n");
    getrgb(THIS,0,args,args,"Image.Image->setcolor()");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1003,8 +1053,8 @@ void image_setpixel(INT32 args)
    if (args<2||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("setpixel",sp-args,args,0,"",sp-args,
+		"Bad arguments to setpixel()\n");
    getrgb(THIS,2,args,args,"Image.Image->setpixel()");   
    if (!THIS->img) return;
    x=sp[-args].u.integer;
@@ -1963,16 +2013,17 @@ void image_invert(INT32 args)
 /*
 **! method object threshold()
 **! method object threshold(int r,int g,int b)
+**! method object threshold(Color color)
 **! 	Makes a black-white image. 
 **!
-**! 	If all red, green, blue parts of a pixel
-**!    	is larger or equal then the given value, the pixel will become
+**! 	If any of red, green, blue parts of a pixel
+**!    	is larger then the given value, the pixel will become
 **!	white, else black.
 **!
 **!	This method works fine with the grey method.
 **!
-**!	If no arguments are given, the current color is used 
-**!	for threshold values.
+**!	If no arguments are given, it will paint all non-black
+**!	pixels white. (Ie, default is 0,0,0.)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
@@ -1984,12 +2035,12 @@ void image_invert(INT32 args)
 **!
 **! returns the new image object
 **!
-**! arg int r
-**! arg int g
-**! arg int b
-**! 	red, green, blue threshold values
-**!
 **! see also: grey
+**!
+**! note: 
+**!	The above statement "any ..." was changed from "all ..."
+**!	in Pike 0.7 (9906). It also uses 0,0,0 as default input,
+**!	instead of current color. This is more useful.
 */
 
 
@@ -2002,7 +2053,10 @@ void image_threshold(INT32 args)
 
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
-   getrgb(THIS,0,args,args,"Image.Image->threshold()");
+   if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
+      rgb.r=rgb.g=rgb.b=0;
+   else
+      rgb=THIS->rgb;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2015,15 +2069,14 @@ void image_threshold(INT32 args)
 
    d=img->img;
    s=THIS->img;
-   rgb=THIS->rgb;
 
    x=THIS->xsize*THIS->ysize;
    THREADS_ALLOW();
    while (x--)
    {
-      if (s->r>=rgb.r &&
-	  s->g>=rgb.g &&
-	  s->b>=rgb.b)
+      if (s->r>rgb.r ||
+	  s->g>rgb.g ||
+	  s->b>rgb.b)
 	 d->r=d->g=d->b=255;
       else
 	 d->r=d->g=d->b=0;
@@ -3603,7 +3656,9 @@ void init_image_image(void)
 		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt) 
 		      tOr(tVoid,tInt) tRGB,tObj),0);
    ADD_FUNCTION("autocrop",image_autocrop,
-		tFuncV(tNone,tOr(tVoid,tInt),tObj),0);
+		tFuncV(,tOr(tVoid,tArr(tInt)),tObj),0);
+   ADD_FUNCTION("find_autocrop",image_find_autocrop,
+		tFuncV(,tOr(tVoid,tArr(tInt)),tObj),0);
    ADD_FUNCTION("scale",image_scale,
 		tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
    ADD_FUNCTION("translate",image_translate,
