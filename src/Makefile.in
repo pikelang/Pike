@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.68 1998/04/08 08:13:21 hubbe Exp $
+# $Id: Makefile.in,v 1.69 1998/04/08 20:51:50 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -72,7 +72,7 @@ AR=@AR@
 LD=@LD@
 LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
-RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike -M$(LIBDIR_SRC)/modules -I$(LIBDIR_SRC)/include $(PIKEOPTS)
+RUNPIKE=$(TMP_BUILDDIR)/pike -m$(TMP_LIBDIR)/master.pike -M$(LIBDIR_SRC)/modules -I$(LIBDIR_SRC)/include $(PIKEOPTS)
 
 MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "NOOPTFLAGS=$(NOOPTFLAGS)" "AR=$(AR)"
 MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)" 
@@ -321,7 +321,7 @@ verbose_verify: module_testsuites testsuite extra_module_tests
 gdb_verify: module_testsuites testsuite
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f modules/*/module_testsuite
+	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m$(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f modules/*/module_testsuite
 	gdb ./pike
 	@rm .gdbinit
 
