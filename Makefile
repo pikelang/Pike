@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.106 2002/12/01 23:43:08 mast Exp $
+# $Id: Makefile,v 1.107 2002/12/02 20:19:18 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -259,6 +259,11 @@ solaris_pkg: solaris_pkg_configure bin/pike
 	@bin/pike bin/make_solaris_pkg.pike --prefix="/opt" --installroot="`pwd`/${BUILDDIR}/solaris_pkg_build"  --pkgdest="`pwd`"
 	@test -d "${BUILDDIR}/solaris_pkg_build" && rm -rf "${BUILDDIR}/solaris_pkg_build"
 	@ls -l *pkg
+
+xenofarm_feature:
+	$(MAKE) MAKE="$(MAKE)" BUILDDIR="$(BUILDDIR)" \
+	  CONFIGUREARGS="$(CONFIGUREARGS) --with-cdebug --with-security --with-double-precision --with-profiling --with-keypair-loop --with-new-multisets" \
+	  xenofarm
 
 xenofarm:
 	test -d build || mkdir build
