@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.77 1998/04/13 14:28:24 grubba Exp $");
+RCSID("$Id: program.c,v 1.78 1998/04/13 15:34:31 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2065,7 +2065,7 @@ struct program *compile(struct pike_string *prog)
   }
 
   threads_disabled--;
-  fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth);
+  /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
   co_signal(&threads_disabled_change);
 
   UNSET_ONERROR(just_in_case);
