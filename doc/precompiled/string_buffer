@@ -1,0 +1,56 @@
+NAME
+	/precompiled/string_buffer - incremental string buffer
+
+DESCRIPTION
+	string_buffer implements a fast way to build strings by appending
+	strings or chars to the end of the buffer.
+
+BUGS
+	This object is not thread-safe, if several threads access the same
+	buffer they have to protect the accesses with mutex locks.
+
+============================================================================
+NAME
+	create - initielize the buffer
+
+SYNTAX
+	#include <string.h>
+
+	void string_buffer->create();
+	or
+	object clone(String_buffer);
+
+DESCRIPTION
+	This function initializes the string buffer. You can call this
+	function to clear the contents of the buffer once it has been
+	used.
+
+============================================================================
+NAME
+	append - append a string to the buffer
+
+SYNTAX
+	#include <string.h>
+
+	void string_buffer->append(string s);
+
+DESCRIPTION
+	This function appends the string s to the end of the buffer.
+
+============================================================================
+NAME
+	get_buffer - get the contents of the buffer as a string.
+
+SYNTAX
+	#include <string.h>
+
+	mixed string_buffer->get_buffer();
+	or
+	(string)string_buffer;
+
+DESCRIPTION
+	This function retreives the content of the buffer. Note that it does
+	not clear the contents of the buffer. You have to do that yourself
+	with create().
+
+============================================================================
