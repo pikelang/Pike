@@ -1,3 +1,14 @@
+Sat Apr 13 04:00:45 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* operators.c: optimization fixed for operators
+	* crypt() should now work with BSD crypt() I hope
+	* lots of files: added a peephole optimizer
+
+Tue Apr  2 17:01:10 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* signal.c: alarm() added
+	* language.y: gauge() fixed
+
 Sun Mar 31 22:12:43 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
 
 	* uLPC v1.0E-10 released.
