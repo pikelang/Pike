@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.423 2001/06/08 12:51:14 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.424 2001/06/11 18:18:42 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1631,6 +1631,13 @@ test_eq([[function f;
 	  { {int _i = i; f = lambda(int j) { return _i+j; }; } int FEL; }
 	return f(17);]]);
 
+
+test_any([[
+   int x=1;
+   void for10(function f) { for(int e=0;e<10;e++) f(); };
+   for10(lambda() { x++; });
+   return x;
+]], 11)
 
 test_any([[
    int x=1;
@@ -6107,6 +6114,7 @@ test_eq([[combine_path("./.","..")]],"..")
 test_eq([[combine_path("/","../../foo")]],"/foo")
 test_eq([[combine_path("./foobar/.","..")]],".")
 test_eq([[combine_path("/","foo","bar","gazonk")]],"/foo/bar/gazonk")
+test_eq([[combine_path("/", "foo", "")]], "/foo/")
 
 test_eq([[combine_path("/","/foo/bar/ga\11111zonk/../../")]],"/foo/")
 test_eq([[combine_path("/","/fo\1111/bar/ga\11111zonk/../../")]],"/fo\1111/")
