@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.136 1999/05/23 17:46:41 mirar Exp $ */
+/* $Id: image.c,v 1.137 1999/05/24 12:22:49 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.136 1999/05/23 17:46:41 mirar Exp $
+**!	$Id: image.c,v 1.137 1999/05/24 12:22:49 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.136 1999/05/23 17:46:41 mirar Exp $");
+RCSID("$Id: image.c,v 1.137 1999/05/24 12:22:49 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -796,7 +796,7 @@ static void image_change_color(INT32 args)
    if (!THIS->img) error("no image\n");
 
    to=THIS->rgb;   
-   if (!(arg=getrgb(THIS,0,MAXIMUM(args,3),"Image.Image->change_color()")))
+   if (!(arg=getrgb(THIS,0,MINIMUM(args,3),"Image.Image->change_color()")))
       error("too few arguments to Image.Image->change_color()\n");
    from=THIS->rgb;
    if (getrgb(THIS,arg,args,"Image.Image->change_color()"))

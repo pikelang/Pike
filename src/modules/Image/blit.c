@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.32 1999/05/20 17:34:34 mirar Exp $ */
+/* $Id: blit.c,v 1.33 1999/05/24 12:22:51 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.32 1999/05/20 17:34:34 mirar Exp $
+**!	$Id: blit.c,v 1.33 1999/05/24 12:22:51 mirar Exp $
 **! class Image
 */
 
@@ -97,6 +97,9 @@ static INLINE int getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
+
+fprintf(stderr,"args=%d args_start=%d diff=%d\n",
+	args,args_start,args-args_start);
    if (args-args_start>=4) 
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
@@ -562,14 +565,14 @@ void image_paste_alpha_color(INT32 args)
    if (!mask->img) return;
 
    if (args==6 || args==4 || args==2 || args==3) /* color at arg 2.. */
-      arg=1+getrgb(THIS,1,args,"image->paste_alpha_color()\n");
+      arg=1+getrgb(THIS,1,MINIMUM(args,4),"image->paste_alpha_color()\n");
    if (args>arg+1) 
    {
       if (sp[arg-args].type!=T_INT
-	  || sp[arg-args].type!=T_INT)
+	  || sp[1+arg-args].type!=T_INT)
          error("illegal coordinate arguments to image->paste_alpha_color()\n");
       x1=sp[arg-args].u.integer;
-      y1=sp[arg-args].u.integer;
+      y1=sp[1+arg-args].u.integer;
    }
    else x1=y1=0;
    
