@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.352 2000/12/13 15:14:24 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.353 2000/12/13 15:15:22 noring Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5438,7 +5438,6 @@ test_equal(reverse(({1,5,9})),({9,5,1}))
 test_equal(reverse(({})),({}))
 test_equal(reverse(({42})),({42}))
 test_equal(reverse(({42,4711})),({4711,42}))
-test_equal(reverse(({42,4711,76})),({76,4711,42}))
 test_equal(reverse(0x12345678),0x1e6a2c48)
 
 // - rusage
