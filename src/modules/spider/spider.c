@@ -42,7 +42,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.57 1998/07/13 15:40:47 grubba Exp $");
+RCSID("$Id: spider.c,v 1.58 1998/07/16 18:22:38 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -785,7 +785,7 @@ void do_html_parse(struct pike_string *ss,
 	    push_string(make_shared_binary_string(s+last,i-last-1)); 
 	    (*strings)++; 
 	  }
-	  i=last=j+k;
+	  i=last=j=m;
 	  push_string(ss2);
 	  (*strings)++;
 	  continue;
