@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.58 2000/04/13 22:19:23 grubba Exp $");
+RCSID("$Id: gc.c,v 1.59 2000/04/13 23:52:29 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -534,6 +534,8 @@ void debug_describe_svalue(struct svalue *s)
 
 INT32 real_gc_check(void *a)
 {
+  struct marker *m=get_marker(a);
+;
 #ifdef PIKE_DEBUG
   if(check_for)
   {
@@ -558,8 +560,10 @@ INT32 real_gc_check(void *a)
     }
     return 0;
   }
+  m->flags |= GC_CHECKED;
 #endif
-  return add_ref(get_marker(a));
+  
+  return add_ref(m);
 }
 
 static void init_gc(void)
@@ -763,7 +767,8 @@ int debug_gc_do_free(void *a)
 
   m=get_marker(debug_malloc_pass(a));
 
-  if( !(m->flags & GC_REFERENCED)  && (m->flags & GC_XREFERENCED))
+  if( !(m->flags & GC_REFERENCED)  &&
+      ((m->flags & GC_XREFERENCED) || !(m->flags & GC_CHECKED)))
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
@@ -772,8 +777,8 @@ int debug_gc_do_free(void *a)
     {
       fprintf(stderr,
 	      "**gc_is_referenced failed, object has %ld references,\n"
-	      "** while gc() found %ld + %ld external. (type=%d)\n",
-	      (long)*(INT32 *)a,(long)refs,(long)xrefs,t);
+	      "** while gc() found %ld + %ld external. (type=%d, flags=%d)\n",
+	      (long)*(INT32 *)a,(long)refs,(long)xrefs,t,m->flags);
       describe_something(a, t, 1);
 
       locate_references(a);

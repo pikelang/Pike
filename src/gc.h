@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.25 2000/04/12 18:40:12 hubbe Exp $
+ * $Id: gc.h,v 1.26 2000/04/13 23:52:29 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -89,6 +89,7 @@ void f__gc_status(INT32 args);
 
 #define GC_REFERENCED 1
 #define GC_XREFERENCED 2
+#define GC_CHECKED 4
 
 
 #ifdef PIKE_DEBUG
