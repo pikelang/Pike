@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.127 1998/10/15 04:31:21 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.128 1998/10/15 13:53:49 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2398,7 +2398,22 @@ test_do(sleep(0.5))
 test_any([[int x=time(); sleep(2); return x!=time()]],1)
 test_any([[int x=time(); sleep(2); return x!=time()]],1)
 
-// - string_to_unicode, string_to_utf8, unicode_to_string, utf8_to_string
+// - string_to_unicode, unicode_to_string
+test_eq(string_to_unicode("foo"), "\0f\0o\0o")
+test_eq(string_to_unicode("blä"), "\0b\0l\oä")
+test_eq(string_to_unicode("\77077"), "\176\77")
+test_eq(string_to_unicode("\777077"), "\330\277\336\77")
+// Enable when unicode_to_string() understands surrogates.
+// test_eq(unicode_to_string("\330\277\336\77"), "\777077")
+// Disable when unicode_to_string() understands surrogates.
+test_eq(unicode_to_string("\330\277\336\77"), "\154277\157077")
+test_eq(unicode_to_string("\176\77"), "\77077")
+test_eq(unicode_to_string("\0b\0l\0ä"), "blä")
+test_eq(unicode_to_string("\0f\0o\0o"), "foo")
+
+test_eval_error(string_to_unicode("\7077077"))
+
+// - string_to_utf8, utf8_to_string
 test_eq(string_to_utf8("foo"), "foo")
 test_eq(string_to_utf8("blä"), "bl\303\244")
 test_eq(string_to_utf8("\77077"), "\347\270\277")
