@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.5 2003/02/01 20:05:18 marcus Exp $
+// $Id: module.pmod,v 1.6 2003/04/14 13:58:42 marcus Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1073,8 +1073,15 @@ class Message {
     if (boundary && type=="multipart" && !body_parts &&
        (encoded_data || decoded_data)) {
       array(string) parts = ("\n"+getdata())/("\n--"+boundary);
-      if (parts[-1][0..2]!="--\n" && parts[-1][0..3]!="--\r\n" &&
-	  parts[-1]!="--" && !guess)
+      if (sizeof(parts)<2)
+	if (guess)
+	  parts = ({parts[0], "--"});
+	else
+	  error("boundary missing from multipart-body\n");
+      string epilogue = parts[-1];
+      if ((sscanf(epilogue, "--%*[ \t]%s", epilogue)<2 ||
+	   (epilogue != "" && epilogue[0] != '\n' &&
+	    epilogue[0..1] != "\r\n")) && !guess)
 	error("multipart message improperly terminated (%O)\n", parts[-1]);
       encoded_data = 0;
       decoded_data = parts[0][1..];
@@ -1083,6 +1090,7 @@ class Message {
       body_parts = map(parts[1..sizeof(parts)-2], lambda(string part){
 	if(sizeof(part) && part[-1]=='\r')
 	  part = part[..sizeof(part)-2];
+	sscanf(part, "%*[ \t]%s", part);
 	if(has_prefix(part, "\r\n"))
 	  part = part[2..];
 	else if(has_prefix(part, "\n"))
