@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.9 2001/07/28 10:29:31 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.10 2001/07/28 11:27:53 nilsson Exp $
  *
  */
 
@@ -38,12 +38,10 @@ class Node
     parent = _parent;
     data = get_parser()->finish( _data )->read();
 
-    string path = make_class_path();
-    refs[path] = this_object();
-    if(has_suffix(path, "()")) {
+    string path = replace(make_class_path(), "()->", ".");
+    if(has_suffix(path, "()"))
       path = path[..sizeof(path)-3];
-      refs[path] = this_object();
-    }
+    refs[path] = this_object();
 
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
@@ -152,21 +150,10 @@ class Node
     if(vars->param)
       return "<font face='courier'>" + _reference + "</font>";
 
-    int(0..1) valid(string ref) {
-      if(refs[ref]) return 1;
-
-      foreach(find_siblings(), Node sibling)
-	if(sibling->name==ref ||
-	   sibling->name+"()"==ref)
-	  return 1;
-
-      return 0;
-    };
-
-    if(vars->resolved && valid(vars->resolved)) {
+    if(vars->resolved && refs[vars->resolved]) {
       return "<font face='courier'><a href='" +
-	"../"*(sizeof(make_filename()/"/") - 1) +
-	map(vars->resolved/".", cquote)*"/" + "'>" + vars->resolved +
+	"../"*(sizeof(make_filename()/"/") - 2) +
+	map(vars->resolved/".", cquote)*"/" + ".html'>" + vars->resolved +
 	"</a></font>";
     }
 
