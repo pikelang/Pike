@@ -9,7 +9,9 @@ subdirs:
 	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; fi ; done
 
 dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
-	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
+	tmp="$(INSTALL_NAME)" ;\
+	if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ;\
+	$(INSTALL) module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
 
 linker_options: Makefile $(MODULE_ARCHIVES)
 	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS)
@@ -27,7 +29,11 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
 	@exit 1
 
 module.pmod: Makefile
-	echo >module.pmod "inherit _static_modules.$(MODNAME);"
+	if [ -f $(SRCDIR)/module.pmod.in ]; then \
+	   sed -e "s/@module@/_static_modules.$(MODNAME)/" <$(SRCDIR)/module.pmod.in >module.pmod ;\
+	else \
+	  echo >module.pmod "inherit _static_modules.$(MODNAME);" ;\
+	fi
 
 module.a: $(OBJS)
 	-rm -f module.a

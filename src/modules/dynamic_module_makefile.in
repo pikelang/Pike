@@ -9,7 +9,10 @@ subdirs:
 	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; fi ; done
 
 dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
-	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.so $(TMP_LIBDIR)/modules/$$tmp.so
+	tmp="$(INSTALL_NAME)" ; \
+	if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ;\
+	$(INSTALL) module.so $(TMP_LIBDIR)/modules/$$tmp.so ;\
+	if [ -f $(SRCDIR)/module.pmod.in ]; then sed -e "s/@module@/\"$$tmp\"/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; fi
 
 linker_options: Makefile
 	echo "$(LINKER_OPTIONS)" >linker_options
@@ -57,3 +60,4 @@ gdb_verify: module_testsuite
 
 install: $(MODULE_INSTALL)
 	$(INSTALL) module.so @prefix@/lib/pike/modules/$(MODNAME).so
+
