@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.111 1998/05/20 02:14:29 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.112 1998/05/24 21:41:09 noring Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1354,7 +1354,7 @@ test_any(int e;string t=""; for(e=0;e>-10;e--) t+=e; return t,"0-1-2-3-4-5-6-7-8
 test_any([[int e;string t=""; foreach(({7,6,3,8}),e) t+=e; return t]],"7638")
 test_any([[string s;if(1) foreach(({}),s); else foreach(({}),s); return 1]],1)
 
-// do-whilte
+// do-while
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
 
 // while
@@ -2379,3 +2379,6 @@ cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
+
+// - Yabu
+// test_true(compile_file("../lib/modules/Yabu.pmod/module.pmod")()->main())
