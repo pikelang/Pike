@@ -173,7 +173,7 @@ array(string) split(string data)
 	  if(data[pos]=='\\') pos++;
           int end=search(data, "'", pos+1)+1;
           if(!end)
-            throw( ({sprintf("Unknown token %O\n",data[pos..pos+20]) }) );
+            throw( ({sprintf("Unknown token %O\n",data[pos-1..pos+19]) }) );
           pos=end;
           break;
 

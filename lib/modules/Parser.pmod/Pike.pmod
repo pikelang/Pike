@@ -205,8 +205,10 @@ array(string) split(string data)
 	  pos++;
 	  if(data[pos]=='\\') pos++;
           int end=search(data, "'", pos)+1;
-          if (!end)
+          if (!end) {
+            --pos;
             UNKNOWN_TOKEN;
+          }
           pos=end;
 	  break;
 
