@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.161 2004/08/19 23:02:29 nilsson Exp $
+|| $Id: array.c,v 1.162 2004/08/20 01:39:03 nilsson Exp $
 */
 
 #include "global.h"
@@ -25,8 +25,9 @@
 #include "bignum.h"
 #include "cyclic.h"
 #include "multiset.h"
+#include "mapping.h"
 
-RCSID("$Id: array.c,v 1.161 2004/08/19 23:02:29 nilsson Exp $");
+RCSID("$Id: array.c,v 1.162 2004/08/20 01:39:03 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2117,7 +2118,7 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
   bb.type = T_ARRAY;
   bb.subtype = 0;
   bb.u.array = ret;
-  low_mapping_insert(m, &aa, &bb);
+  low_mapping_insert(m, &aa, &bb, 1);
 
   ret->flags = a->flags & ~ARRAY_LVALUE;
 
