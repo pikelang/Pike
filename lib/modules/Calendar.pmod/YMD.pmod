@@ -2314,8 +2314,8 @@ class cSuperTimeRange
 //!	WST          Australia/Perth      [UTC+8]
 //!	</pre>
 //!
-//!	This mapping is modifiable in the ruleset, 
-//!	see <ref>Ruleset.set_abbr2zone</ref>.
+//!	This mapping is modifiable in the ruleset, see 
+//!	<ref>Ruleset.set_abbr2zone</ref>.
 
 
 // this API may change without further notice

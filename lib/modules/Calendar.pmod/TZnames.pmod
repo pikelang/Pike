@@ -21,9 +21,8 @@
 //!        <i>[...]</i> }),
 //!	</pre>
 //!
-//! note: 
-//!	Loading all the timezones can take some time, since
-//!	they are generated and compiled on the fly.
+//!	Please note that loading all the timezones can take some 
+//!	time, since they are generated and compiled on the fly.
 
 mapping zones=
 ([
@@ -117,8 +116,7 @@ mapping zones=
 //!        <i>[...]</i> }),
 //!	</pre>
 //!
-//! note:
-//!	Just because it's noted "CST" doesn't mean it's a
+//!	Note this: Just because it's noted "CST" doesn't mean it's a
 //!	unique timezone. There is about 7 *different* timezones that
 //!	uses "CST" as abbreviation; not at the same time,
 //!	though, so the DWIM routines checks this before
@@ -127,6 +125,9 @@ mapping zones=
 //!     For most timezones, there is a number of region timezones that for the
 //!     given time are equal. This is because region timezones include rules
 //!     about local summer time shifts and possible historic shifts.
+//!
+//!	The <ref>YMD.parse</ref> functions can handle timezone abbreviations
+//!	by guessing.
 
 mapping abbr2zones=
 ([

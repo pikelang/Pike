@@ -720,9 +720,9 @@ class Monthday_Weekday
 //!	"monday", "tuesday", "wednesday", "thursday", 
 //!	"friday", "saturday" and "sunday".
 //! 
-//! method void create(int month_day,int weekday)
-//!	The event is created by a given month day,
-//!	and a weekday number (1=Monday, 7=Sunday).
+//! method void create(int weekday)
+//!	The event is created by a given 
+//!	weekday number (1=Monday, 7=Sunday).
 //!
 //! note:
 //!	The week day numbers used
