@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.178 1999/06/30 18:33:45 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.179 1999/07/01 14:52:09 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2430,6 +2430,48 @@ test_eq([[combine_path("/","foo","bar","gazonk")]],"/foo/bar/gazonk")
 
 // - compile_string
 // see test for clone()
+
+cond([[all_constants()->thread_create]],
+[[
+  test_any([[
+    string file = #"
+/*
+ * Attempt to trigg the lex.current_file == NULL bug.
+ *
+ * Henrik Grubbström 1999-07-01
+ */
+
+string file = Stdio.File(__FILE__, \"r\")->read();
+
+void thread_func()
+{
+  int i;
+
+  for (i=0; i < 100; i++) {
+    compile_string(file);
+  }
+}
+
+int main(int argc, array(string) argv)
+{
+  array(object) a = allocate(100, thread_create)(thread_func);
+
+  a->wait();
+
+  return 0;
+}
+
+";
+  allocate(100, thread_create)(lambda() {
+    int i;
+    for(i = 0; i < 100; i++) {
+      compile_string(file);
+    }
+  } )->wait();
+
+  return 0;
+  ]], 0)
+]])
 
 // - copy_value
 test_eq(copy_value(1),1)
