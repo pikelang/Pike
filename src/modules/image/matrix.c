@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.9 1997/01/07 00:41:43 law Exp $ */
+/* $Id: matrix.c,v 1.10 1997/01/08 00:58:06 law Exp $ */
 
 #include "global.h"
 
@@ -157,12 +157,13 @@ void img_scale(struct image *dest,
    INT32 y,yd;
    double yn,dx,dy;
 
-   THREADS_ALLOW();
 CHRONO("scale begin");
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
 
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
+
+   THREADS_ALLOW();
    new=malloc(newx*newy*sizeof(rgbd_group) +1);
    if (!new) error("Out of memory!\n");
 
@@ -224,9 +225,10 @@ void img_scale2(struct image *dest, struct image *source)
    newx = source->xsize >> 1;
    newy = source->ysize >> 1;
    
-   THREADS_ALLOW();
    if (dest->img) { free(dest->img); dest->img=NULL; }
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
+
+   THREADS_ALLOW();
    new=malloc(newx*newy*sizeof(rgb_group) +1);
    if (!new) error("Out of memory\n");
    MEMSET(new,0,newx*newy*sizeof(rgb_group));
@@ -527,7 +529,6 @@ static void img_skewx(struct image *src,
    rgb_group *s,*d;
    rgb_group rgb;
 
-   THREADS_ALLOW();
    if (dest->img) free(dest->img);
    if (diff<0) 
       dest->xsize=ceil(-diff)+src->xsize,x0=-diff;
@@ -540,6 +541,7 @@ static void img_skewx(struct image *src,
    if (!d) return;
    s=src->img;
 
+   THREADS_ALLOW();
    xmod=diff/src->ysize;
    rgb=dest->rgb;
 
@@ -603,7 +605,6 @@ static void img_skewy(struct image *src,
    rgb_group *s,*d;
    rgb_group rgb;
 
-   THREADS_ALLOW();
    if (dest->img) free(dest->img);
    if (diff<0) 
       dest->ysize=ceil(-diff)+src->ysize,y0=-diff;
@@ -616,6 +617,7 @@ static void img_skewy(struct image *src,
    if (!d) return;
    s=src->img;
    
+   THREADS_ALLOW();
    ymod=diff/src->xsize;
    rgb=dest->rgb;
 
