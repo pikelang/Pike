@@ -21,7 +21,7 @@ constant enumerate = predef::enumerate;
 
 //! @[reduce()] sends the first two elements in @[arr] to @[fun],
 //! then the result and the next element in @[arr] to @[fun] and
-//! so on. Then it returns the result. The function will return 
+//! so on. Then it returns the result. The function will return
 //! @[zero] if @[arr] is the empty array. If @[arr] has
 //! only one element, that element will be returned.
 //!
@@ -39,7 +39,7 @@ mixed reduce(function fun, array arr, mixed|void zero)
 
 //! @[rreduce()] sends the last two elements in @[arr] to @[fun],
 //! then the third last element in @[arr] and the result to @[fun] and
-//! so on. Then it returns the result. The function will return 
+//! so on. Then it returns the result. The function will return
 //! @[zero] if @[arr] is the empty array. If @[arr] has
 //! only one element, that element will be returned.
 //!
@@ -134,7 +134,7 @@ array sum_arrays(function sum, array(mixed) ... args)
 //! If @[cmp] is omitted, @[`>()] is used instead.
 //!
 //! @seealso
-//! @[map()], @[sort()], @[`>()]
+//! @[map()], @[sort()], @[`>()], @[dwim_sort_func], @[lyskom_sort_func]
 //!
 array sort_array(array foo, function|void cmp, mixed ... args)
 {
@@ -172,7 +172,7 @@ array sort_array(array foo, function|void cmp, mixed ... args)
       fooend=barp;
       barend=barp+len;
       if(barend > length) barend=length;
-      
+
       while(1)
       {
 	if(([function(mixed,mixed,mixed...:int)]cmp)(foo[foop],foo[barp],@args)
@@ -414,7 +414,7 @@ array(array(array)) diff3_old(array mid,array left,array right)
 	 l++;
 	 lpos=0;
       }
-      while (r<sizeof(rmid) && rpos>=sizeof(rmid[r])) 
+      while (r<sizeof(rmid) && rpos>=sizeof(rmid[r]))
       {
 	 if (sizeof(rdst[r])>rpos)
 	    res+=({({({}),({}),rdst[r][rpos..]})});
@@ -441,7 +441,7 @@ array(array(array)) diff3_old(array mid,array left,array right)
 	 eq=rmid[r][rpos..rpos+x-1];
 	 res+=({({eq,ldst[l][lpos..lpos+x-1],eq})});
       }
-      else 
+      else
       {
 	 res+=({({lmid[l][lpos..lpos+x-1],
 		  ldst[l][lpos..lpos+x-1],
@@ -450,28 +450,29 @@ array(array(array)) diff3_old(array mid,array left,array right)
 
 //        werror(sprintf("-> %-5{%O%} %-5{%O%} %-5{%O%}"
 //  		     " x=%d l=%d:%d r=%d:%d \n",@res[-1],x,l,lpos,r,rpos));
-	 
+
       rpos+=x;
       lpos+=x;
       n+=x;
    }
-   
+
    return transpose(res);
 }
 
-//! Sort without 
+//! Sort without respect to number formatting (most notably leading
+//! zeroes).
 int dwim_sort_func(string a, string b)
 {
    if (a==b) return 0;
    array aa=({}), bb=({});
    int state, oi;
-   
+
    for( int i = 0; i<sizeof(a); i++ )
      if( (<'0','1','2','3','4','5','6','7','8','9'>)[a[i]] != state )
      {
        state = !state;
        if( i )
-	 if( state ) 
+	 if( state )
 	   aa += ({ a[oi..i-1] });
 	 else
 	   aa += ({ (int)a[oi..i-1] });
@@ -484,13 +485,13 @@ int dwim_sort_func(string a, string b)
 
 
    oi = state = 0;
-   
+
    for( int i = 0; i<sizeof(b); i++ )
      if( (<'0','1','2','3','4','5','6','7','8','9'>)[b[i]] != state )
      {
        state = !state;
        if( i )
-	 if( state ) 
+	 if( state )
 	   bb += ({ b[oi..i-1] });
 	 else
 	   bb += ({ (int)b[oi..i-1] });
@@ -500,7 +501,7 @@ int dwim_sort_func(string a, string b)
      bb += ({ (int)b[oi..] });
    else
      bb += ({ b[oi..] });
-     
+
    for( int i = 0; i<sizeof( aa ); i++ )
    {
      if( i >= sizeof( bb ) )  return 1; // a is definately bigger.
@@ -521,7 +522,7 @@ int lyskom_sort_func(string a,string b)
    string a0=a,b0=b;
    a=replace(lower_case(a),"][\\}{|"/1,"едцедц"/1);
    b=replace(lower_case(b),"][\\}{|"/1,"едцедц"/1);
-   
+
    while (sscanf(a0=a,"%*[ \t](%*[^)])%*[ \t]%s",a)==4 && a0!=a);
    while (sscanf(b0=b,"%*[ \t](%*[^)])%*[ \t]%s",b)==4 && b0!=b);
    a0=b0="";
@@ -558,7 +559,14 @@ mixed sum(array a)
    }
 }
 
-//! Perform the same action as the Unix uniq command on an array, 
+//! @decl array uniq(array a)
+//! Perform uniq on an array:
+//! aabbbcaababb -> abc
+
+//! Perform the same action as the Unix uniq command on an array,
+//! that is, fold consecutive occurrences of the same element into
+//! a single element of the result array:
+//!
 //! aabbbcaababb -> abcabab.
 //!
 //! See also the @[uniq] function.
