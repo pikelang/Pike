@@ -519,6 +519,90 @@ mixed a(){
 
 
 #331 "testsuite.in.in"
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+array z=(array)c;
+if (sizeof(z)!=2) 
+do { werror("failure; Image.image/colortable/colortable - black/white init & cast: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.image/colortable/colortable - black/white init & cast: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 25, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#341 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.image/colortable/colortable - black/white normal: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.image/colortable/colortable - black/white normal: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 26, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#353 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+c->floyd_steinberg();
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.image/colortable/colortable - black/white floyd-steinberg: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.image/colortable/colortable - black/white floyd-steinberg: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 27, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#366 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+c->ordered();
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.image/colortable/colortable - black/white ordered: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.image/colortable/colortable - black/white ordered: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 28, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#379 "testsuite.in.in"
 object img=Image.image(200,200)->test(42);
 img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
 object c=Image.Colortable(img,1000)->cubicles(16,16,16,4);
@@ -531,12 +615,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 25, expected result: EQ
+test 29, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#340 "testsuite.in.in"
+#388 "testsuite.in.in"
 object img=Image.image(200,200)->test(42);
 img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
 object c=Image.Colortable(32,32,32)->floyd_steinberg();
@@ -548,12 +632,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 26, expected result: EQ
+test 30, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#348 "testsuite.in.in"
+#396 "testsuite.in.in"
 object img=Image.image(200,200)->test(42);
 img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
 object c=Image.Colortable(32,32,32)->ordered();
@@ -567,12 +651,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 27, expected result: EQ
+test 31, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#360 "testsuite.in.in"
+#408 "testsuite.in.in"
 object img=Image.image(100,100)->test(40);
 object img1=Image.PNM.decode(Image.PNM.encode(img));
 if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode: "+( "differ" )+"\n"); return 0; } while (0);
@@ -582,12 +666,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 28, expected result: EQ
+test 32, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#366 "testsuite.in.in"
+#414 "testsuite.in.in"
 object img=Image.image(100,100)->test(41);
 object c=Image.Colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
 img=c*img;
@@ -599,12 +683,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 29, expected result: EQ
+test 33, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#374 "testsuite.in.in"
+#422 "testsuite.in.in"
 object img=Image.image(100,100)->test(42);
 object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
 img=c*img;
@@ -616,12 +700,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 30, expected result: EQ
+test 34, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#382 "testsuite.in.in"
+#430 "testsuite.in.in"
 object img=Image.image(100,100)->test(43);
 object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
 img=c*img;
@@ -629,17 +713,186 @@ object img1=Image.GIF.decode(Image.GIF.encode(img,c));
 if (!(img-img1<50)) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable w/ floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
 return 1;
 
+}
+mixed b() { return 1; }
+
+....
+test 35, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#438 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.AVS.decode(Image.AVS.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.AVS.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
 
 }
 mixed b() { return 1; }
 
 ....
-test 31, expected result: EQ
+test 36, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#393 "testsuite.in.in"
+#443 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (truecolor): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 37, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#448 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(img,256);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (8bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 38, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#455 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 39, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#462 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(img,2);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (1bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 40, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#469 "testsuite.in.in"
+object img=Image.image(256,240)->test(43);
+img=Image.Colortable( ({"white","black","red","green"}) )*img;
+xv(img);
+xv(Image.HRZ.decode(Image.HRZ.encode(img)));
+xv(Image.HRZ.decode(Image.HRZ.encode(img))-img);
+if (Image.HRZ.decode(Image.HRZ.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.HRZ.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 41, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#478 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.ILBM.decode(Image.ILBM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.ILBM.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 42, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#485 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.PCX.decode(Image.PCX.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PCX.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 43, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#490 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.PNM.decode(Image.PNM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 44, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#495 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.TGA.decode(Image.TGA.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.TGA.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 45, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#500 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+img=c*img;
+if (Image.XBM.decode(Image.XBM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.XBM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+
+
+}
+mixed b() { return 1; }
+
+....
+test 46, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#511 "testsuite.in.in"
 foreach (
 ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
 ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
@@ -705,12 +958,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 32, expected result: EQ
+test 47, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#455 "testsuite.in.in"
+#573 "testsuite.in.in"
 if (!arrayp(indices(Image.Color)))
 do { werror("failure; Image.image/Image.Color/indices(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
 if (!stringp(indices(Image.Color)[0]))
@@ -723,18 +976,48 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 33, expected result: EQ
+test 48, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#464 "testsuite.in.in"
+#582 "testsuite.in.in"
 if (!arrayp(values(Image.Color)))
 do { werror("failure; Image.image/Image.Color/values(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
 if (!objectp(values(Image.Color)[0]))
 do { werror("failure; Image.image/Image.Color/values(Image.Color): "+( "wrong type of elements\n" )+"\n"); return 0; } while (0);
 if (sizeof(indices(Image.Color))!=sizeof(values(Image.Color)))
 do { werror("failure; Image.image/Image.Color/values(Image.Color): "+( "not the same size of indices() and values()\n" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 49, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#591 "testsuite.in.in"
+foreach (
+({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
+({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
+({ "cyan", ({ 0, 255, 255 }), ({ 127, 255, 255 }), 168 }),
+({ "green", ({ 0, 255, 0 }), ({ 85, 255, 255 }), 127 }),
+({ "magenta", ({ 255, 0, 255 }), ({ 212, 255, 255 }), 128 }),
+({ "red", ({ 255, 0, 0 }), ({ 0, 255, 255 }), 87 }),
+({ "white", ({ 255, 255, 255 }), ({ 0, 0, 255 }), 255 }),
+({ "yellow", ({ 255, 255, 0 }), ({ 42, 255, 255 }), 214 }) }),
+array i)
+foreach ( ({Image.Color(i[0]),Image.Color.rgb(@i[1])}), object z)
+{
+z->light();
+z->dark();
+z->neon();
+z->dull();
+z->bright();
+}
 return 1;
 
 }

@@ -327,6 +327,54 @@ ok();
 //-----------------------------------------------------
 #chapter colortable
 
+#test colortable - black/white init & cast
+   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+   array z=(array)c;
+   if (sizeof(z)!=2) 
+      fail("didn't get two colors (black and white): "+((array(string))c)*", ");
+   if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+       (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+      fail("didn't get black and white: "+((array(string))c)*", ");
+   ok();
+
+#test colortable - black/white normal
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+   img=c*img;
+   array z=(array)Image.Colortable(img);
+   if (sizeof(z)!=2) 
+      fail("didn't get two colors (black and white): "+((array(string))c)*", ");
+   if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+       (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+      fail("didn't get black and white: "+((array(string))c)*", ");
+   ok();
+
+#test colortable - black/white floyd-steinberg
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+   c->floyd_steinberg();
+   img=c*img;
+   array z=(array)Image.Colortable(img);
+   if (sizeof(z)!=2) 
+      fail("didn't get two colors (black and white): "+((array(string))c)*", ");
+   if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+       (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+      fail("didn't get black and white: "+((array(string))c)*", ");
+   ok();
+
+#test colortable - black/white ordered
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+   c->ordered();
+   img=c*img;
+   array z=(array)Image.Colortable(img);
+   if (sizeof(z)!=2) 
+      fail("didn't get two colors (black and white): "+((array(string))c)*", ");
+   if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+       (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+      fail("didn't get black and white: "+((array(string))c)*", ");
+   ok();
+
 #test colortable - standard
    object img=Image.image(200,200)->test(42);
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
@@ -385,6 +433,76 @@ ok();
    object img1=Image.GIF.decode(Image.GIF.encode(img,c));
    if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
+
+#test Image.AVS.encode/decode 
+   object img=Image.image(100,100)->test(43);
+   if (Image.AVS.decode(Image.AVS.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (truecolor)
+   object img=Image.image(100,100)->test(43);
+   if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (8bpp)
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(img,256);
+   img=c*img;
+   if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (4bpp)
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(img,16);
+   img=c*img;
+   if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (1bpp)
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(img,2);
+   img=c*img;
+   if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.HRZ.encode/decode 
+   object img=Image.image(256,240)->test(43);
+   img=Image.Colortable( ({"white","black","red","green"}) )*img;
+	xv(img);
+	xv(Image.HRZ.decode(Image.HRZ.encode(img)));
+	xv(Image.HRZ.decode(Image.HRZ.encode(img))-img);
+   if (Image.HRZ.decode(Image.HRZ.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.ILBM.encode/decode (4bpp)
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(img,16);
+   img=c*img;
+   if (Image.ILBM.decode(Image.ILBM.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.PCX.encode/decode 
+   object img=Image.image(100,100)->test(43);
+   if (Image.PCX.decode(Image.PCX.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.PNM.encode/decode 
+   object img=Image.image(100,100)->test(43);
+   if (Image.PNM.decode(Image.PNM.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.TGA.encode/decode 
+   object img=Image.image(100,100)->test(43);
+   if (Image.TGA.decode(Image.TGA.encode(img))!=img) fail("differ");
+   ok();
+
+#test Image.XBM.encode/decode 
+   object img=Image.image(100,100)->test(43);
+   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+   img=c*img;
+   if (Image.XBM.decode(Image.XBM.encode(img))!=img) fail("differ");
+   ok();
+
 
 //-----------------------------------------------------
 #chapter Image.Color
@@ -467,4 +585,25 @@ ok();
       fail("wrong type of elements\n");
    if (sizeof(indices(Image.Color))!=sizeof(values(Image.Color)))
       fail("not the same size of indices() and values()\n");
+   ok();
+
+#test modifiers (no-crash)
+   foreach (
+    ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
+       ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
+       ({ "cyan", ({ 0, 255, 255 }), ({ 127, 255, 255 }), 168 }),
+       ({ "green", ({ 0, 255, 0 }), ({ 85, 255, 255 }), 127 }),
+       ({ "magenta", ({ 255, 0, 255 }), ({ 212, 255, 255 }), 128 }),
+       ({ "red", ({ 255, 0, 0 }), ({ 0, 255, 255 }), 87 }),
+       ({ "white", ({ 255, 255, 255 }), ({ 0, 0, 255 }), 255 }),
+       ({ "yellow", ({ 255, 255, 0 }), ({ 42, 255, 255 }), 214 }) }),
+    array i)
+      foreach ( ({Image.Color(i[0]),Image.Color.rgb(@i[1])}), object z)
+      {
+	 z->light();
+	 z->dark();
+	 z->neon();
+	 z->dull();
+	 z->bright();
+      }
    ok();
