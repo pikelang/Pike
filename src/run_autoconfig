@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.35 2003/01/09 16:17:59 marcus Exp $
+# $Id: run_autoconfig,v 1.36 2003/02/06 17:06:12 grubba Exp $
 #
 # Bootstrap script
 
@@ -42,6 +42,9 @@ autoheader=autoheader
 
 autoconf_version="`\"$autoconf\" --version|head -1|awk '{ print $NF }'`"
 
+extra_ac_args=""
+extra_ah_args=""
+
 if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
      "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "10" -o \
      "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -ge "50" ]; then
@@ -52,7 +55,21 @@ if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
     echo "Get and install autoconf 2.52 or later." >&2
     # Abort
     exit 1
-  else:; fi;
+  elif [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" = "2" -a \
+         "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -ge "53" ]; then
+    echo "Warning: Autoconf 2.53 and later use parts written in Perl," >&2
+    echo "         and are notoriously broken." >&2
+    # NB: autoheader 2.53 is stupid, and has broken handling of warnings.
+    #     1) The warning flags are not passed along to autoconf.
+    #     2) The option --warnings is misspelled by missing the last 's'.
+    extra_ac_args="-Wno-obsolete"
+    extra_ah_args="-Wno-obsolete"
+    # Attempt to kludge around Perl's stupid warnings about locale settings.
+    LANGUAGE=C LC_CTYPE=C LANG=C export LANGUAGE LC_CTYPE LANG
+    LC_MONETARY=C LC_NUMERIC=C export LC_MONETARY LC_NUMERIC
+    LC_MESSAGES=C LC_COLLATE=C export LC_MESSAGES LC_COLLATE
+    LC_TIME=C LC_ALL=C export LC_TIME LC_ALL
+  fi;
 else :; fi
 
 autoheader_version="`\"$autoconf\" --version|head -1|awk '{ print $NF }'`"
@@ -76,13 +93,13 @@ IFS=''
 
   if [ -f $dir/configure.in ] && grep AC_CONFIG_HEADER $dir/configure.in >/dev/null; then
     echo "Running $autoheader in $dir"
-    ( cd $dir ; "$autoheader" && echo foo >stamp-h.in )
+    ( cd $dir ; "$autoheader" $extra_ah_args && echo foo >stamp-h.in )
   fi
 
   if [ -f $dir/configure.in ]; then
     if grep AC_INIT $dir/configure.in >/dev/null; then
       echo "Running $autoconf in $dir"
-      ( cd $dir ; "$autoconf" --localdir=$localdir )
+      ( cd $dir ; "$autoconf" $extra_ac_args --localdir=$localdir )
     else
       echo "$dir seems to use Cygnus-configure."
     fi
