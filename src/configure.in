@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.763 2004/01/25 19:18:16 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.764 2004/02/04 13:08:15 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2437,7 +2437,7 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 		 stddef.h mmx.h asm/mmx.h sys/termio.h sys/termios.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
-		 mach/mach_init.h sys/devpoll.h)
+		 mach/mach_init.h sys/devpoll.h sys/epoll.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])
