@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.7 1999/04/09 14:16:11 per Exp $ */
+/* $Id: colortable_lookup.h,v 1.8 1999/04/09 16:17:37 mirar Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.7 1999/04/09 14:16:11 per Exp $
+**!	$Id: colortable_lookup.h,v 1.8 1999/04/09 16:17:37 mirar Exp $
 **! class colortable
 */
 
@@ -527,3 +527,83 @@ done_pixel:
    CHRONO("end cube map");
 }
 
+void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
+   (rgb_group *s,
+    NCTLU_DESTINATION *d,
+    int n,
+    struct neo_colortable *nct,
+    struct nct_dither *dith,
+    int rowlen)
+{
+   switch (nct->type)
+   {
+      case NCT_CUBE: 
+	 return NCTLU_CUBE_NAME;
+      case NCT_FLAT:
+         switch (nct->lookup_mode)
+	 {
+	    case NCT_FULL:
+	       return NCTLU_FLAT_FULL_NAME;
+	    case NCT_RIGID:
+	       return NCTLU_FLAT_RIGID_NAME;
+	    case NCT_CUBICLES:
+	       return NCTLU_FLAT_CUBICLES_NAME;
+	 }
+      default:
+	 fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
+	       __FILE__,__LINE__);
+   }
+}
+
+int NCTLU_EXECUTE_FUNCTION(struct neo_colortable *nct,
+			   rgb_group *s,
+			   NCTLU_DESTINATION *d,
+			   int len,
+			   int rowlen)
+{
+   struct nct_dither dith;
+
+   if (nct->type==NCT_NONE) return 0;
+
+   image_colortable_initiate_dither(nct,&dith,rowlen);
+   (NCTLU_SELECT_FUNCTION(nct))(s,d,len,nct,&dith,rowlen);
+   image_colortable_free_dither(&dith);
+
+   return 1;
+}
+
+#ifdef NCTLU_EXECUTE
+
+void NCTLU_EXECUTE(INT32 args)
+{
+   struct image *src=NULL;
+   struct pike_string *ps;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("Colortable."NCTLU_EXECUTE_NAME,1);
+   if (sp[-args].type!=T_OBJECT ||
+       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      SIMPLE_BAD_ARG_ERROR("Colortable."NCTLU_EXECUTE_NAME,1,"image object");
+
+   if (!src->img) 
+      SIMPLE_BAD_ARG_ERROR("Colortable."NCTLU_EXECUTE_NAME,1,"non-empty image object");
+
+   ps=begin_shared_string(src->xsize*src->ysize*sizeof(NCTLU_DESTINATION));
+   while ((1<<ps->size_shift)<sizeof(NCTLU_DESTINATION))
+      ps->size_shift++;
+   ps->len>>=ps->size_shift;
+
+   if (!NCTLU_EXECUTE_FUNCTION(THIS,src->img,
+			       (unsigned short *)ps->str,
+			       src->xsize*src->ysize,src->xsize))
+   {
+      free_string(end_shared_string(ps));
+      error("colortable->index_16bit(): called colortable is not initiated\n");
+   }
+
+   pop_n_elems(args);
+
+   push_string(ps);
+}
+
+#endif /* NCTLU_EXECUTE */
