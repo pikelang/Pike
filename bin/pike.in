@@ -14,4 +14,4 @@ case "$BUILDDIR" in
   *) BUILDDIR="BASEDIR"/"$BUILDDIR";;
 esac
 
-exec "$BUILDDIR/pike" -DNOT_INSTALLED "-m$BUILDDIR/master.pike" "$@"
+exec "$BUILDDIR/pike" "-m$BUILDDIR/master.pike" "$@"
