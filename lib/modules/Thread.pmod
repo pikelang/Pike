@@ -1,5 +1,5 @@
-constant Mutex=_static_modules.Builtin.Mutex;
-constant Condition=_static_modules.Builtin.Condition;
+constant Mutex=__builtin.Mutex;
+constant Condition=__builtin.Condition;
 
 class Fifo {
   inherit Builtin.condition : r_cond;
