@@ -9,7 +9,7 @@
 #include "global.h"
 #include "fsort.h"
 
-RCSID("$Id: fsort.c,v 1.10 1998/04/27 22:33:17 hubbe Exp $");
+RCSID("$Id: fsort.c,v 1.11 1998/04/28 15:36:41 grubba Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun
@@ -89,7 +89,7 @@ void fsort(void *base,
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(elmSize)
 #else
-  switch( (((unsigned long)base) % elmSize) ? 0 : size )
+  switch( (((unsigned long)base) % elmSize) ? 0 : elmSize )
 #endif
   {
   case  1:  fsort_1(( B1_T *)base,(elms-1)+( B1_T *)base, cmpfunc); break;
