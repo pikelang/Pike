@@ -3,6 +3,8 @@
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
 
+#if constant(Gmp.mpz)
+
 #if 0
 #define WERROR werror
 #else
@@ -1107,3 +1109,5 @@ class meta_explicit
       valid_types = types;
     }
 }
+
+#endif /* Gmp.mpz */
