@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.228 2000/10/01 08:55:04 hubbe Exp $");
+RCSID("$Id: program.c,v 1.229 2000/10/25 21:50:36 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4071,6 +4071,9 @@ void *parent_storage(int depth)
       error("Cannot access parent of destructed object.\n");
     }
   }
+
+  if(Pike_fp->fun == -1)
+    error("Cannot access parent storage!\n");
 
   loc.parent_identifier=Pike_fp->fun;
   loc.inherit=INHERIT_FROM_INT(p, Pike_fp->fun);
