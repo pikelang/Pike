@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.5 1997/05/31 22:03:53 grubba Exp $
+/* $Id: connection.pike,v 1.6 1997/08/01 07:34:17 nisse Exp $
  *
  * SSL packet layer
  */
@@ -11,6 +11,8 @@ object packet;
 
 int dying;
 int closing;
+
+function(object,int|object,string:void) alert_callback;
 
 inherit "constants";
 inherit "handshake";
@@ -34,6 +36,16 @@ void create(int is_server)
   application::create();
   current_read_state = State(this_object());
   current_write_state = State(this_object());
+}
+
+/* Called with alert object, sequence number of bad packet,
+ * and raw data as arguments, if a bad packet is received.
+ *
+ * Can be used to support a fallback redirect https->http
+ */
+void set_alert_callback(function(object,int|object,string:void) callback)
+{
+  alert_callback = callback;
 }
 
 object recv_packet(string data)
@@ -190,6 +202,9 @@ int handshake_finished = 0;
  * -1 if a fatal error occured */
 string|int got_data(string s)
 {
+  /* If alert_callback is called, this data is passed as an argument */
+  string alert_context = (left_over || "") + s;
+  
   string res = "";
   object packet;
   while (packet = recv_packet(s))
@@ -202,6 +217,8 @@ string|int got_data(string s)
       werror("SSL.connection: Bad received packet\n");
 #endif
       send_packet(packet);
+      if (alert_callback)
+	alert_callback(packet, current_read_state->seq_num, alert_context);
       if (packet->level == ALERT_fatal)
 	return -1;
     }
