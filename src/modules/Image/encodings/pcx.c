@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.1 1999/04/06 03:50:50 per Exp $");
+RCSID("$Id: pcx.c,v 1.2 1999/04/09 04:50:43 hubbe Exp $");
 
 #include "config.h"
 
@@ -230,12 +230,6 @@ static void load_palette_pcx( struct pcx_header *hdr, struct buffer *b,
   free(line);
   THREADS_DISALLOW();
 }
-
-void do_free_object( struct object *o )
-{
-  free_object(o);
-}
-
 
 static struct object *low_pcx_decode( struct pike_string *data )
 {
