@@ -139,7 +139,7 @@ object put_url(string|Standards.URI url,
 	       void|mapping request_headers,
 	       void|Protocols.HTTP.Query con)
 {
-  return do_method("PUT", url, query_variables, request_headers, con);
+  return do_method("PUT", url, query_variables, request_headers, con, file);
 }
 
 object delete_url(string|Standards.URI url,
