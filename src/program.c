@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.475 2003/08/19 15:15:37 grubba Exp $
+|| $Id: program.c,v 1.476 2003/08/20 16:55:15 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.475 2003/08/19 15:15:37 grubba Exp $");
+RCSID("$Id: program.c,v 1.476 2003/08/20 16:55:15 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3835,7 +3835,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	id->type = get_type_of_svalue(c);
 	id->run_time_type = c->type;
 	id->func.offset = store_constant(c, 0, 0);
-	fprintf (stderr, "b\n");
       }
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf (stderr, "%.*sstored constant #%d at %d\n",
