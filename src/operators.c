@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.111 2000/10/15 14:19:24 grubba Exp $");
+RCSID("$Id: operators.c,v 1.112 2000/11/12 04:02:43 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -544,6 +544,7 @@ static node *optimize_not(node *n)
     if((more_args=is_call_to(*first_arg, X)))	\
     {						\
       node *tmp=*more_args;			\
+      if(count_args(*more_args) > 2) return 0;  \
       ADD_NODE_REF(*more_args);			\
       return mkopernode(Y,tmp,0);		\
     } } while(0)
