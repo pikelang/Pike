@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.200 2001/05/24 22:39:00 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.201 2001/06/08 12:23:01 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1494,6 +1494,7 @@ static int o_catch(unsigned char *pc)
     UNSETJMP(tmp);
     Pike_fp->expendible=expendible;
     Pike_fp->flags=flags;
+    destruct_objects_to_destruct();
     return 0;
   }else{
     struct svalue **save_mark_sp=Pike_mark_sp;
@@ -1534,13 +1535,18 @@ PMOD_EXPORT void call_handle_error(void)
     Pike_interpreter.svalue_stack_margin = 0;
     Pike_interpreter.c_stack_margin = 0;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(Pike_sp++, & throw_value);
+    *(Pike_sp++) = throw_value;
+    throw_value.type=T_INT;
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
     Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
     Pike_interpreter.c_stack_margin = C_STACK_MARGIN;
     t_flag = old_t_flag;
+  }
+  else {
+    free_svalue(&throw_value);
+    throw_value.type=T_INT;
   }
 }
 
@@ -1599,7 +1605,7 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
   throw_value.type=T_INT;
   if(SETJMP(recovery))
   {
-    if(throw_value.type == T_ARRAY)
+    if(throw_value.type != T_INT)
       call_handle_error();
     Pike_sp->u.integer = 0;
     Pike_sp->subtype=NUMBER_NUMBER;
