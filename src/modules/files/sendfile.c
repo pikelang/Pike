@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.35 2000/03/13 19:12:00 grubba Exp $
+ * $Id: sendfile.c,v 1.36 2000/03/17 13:41:21 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -111,6 +111,7 @@
 #ifdef __FreeBSD_version
 #if __FreeBSD_version <= 400016
 #undef HAVE_FREEBSD_SENDFILE
+#undef HAVE_SENDFILE
 #endif /* __FreeBSD_version <= 400016 */
 #endif /* __FreeBSD_version */
 #endif /* HAVE_FREEBSD_SENDFILE */
