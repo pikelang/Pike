@@ -1,0 +1,17 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+PREFLAGS=-I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
+
+FILES=math.o
+
+math.a: $(FILES)
+	-rm -f math.a
+	ar cq math.a $(FILES)
+	-@RANLIB@ math.a
+
+clean:
+	-rm -f *.o
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
