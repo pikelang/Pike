@@ -38,16 +38,21 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	  
 	  while(num > 16)
 	  {
-	    moveq_m2r(*source, mm0);
-	    moveq_m2r(source[8], mm1);
+	    movq_m2r(*source, mm0);
+	    source+=8;
+	    movq_m2r(*source, mm1);
+	    source += 8;
 	    L_MMX_OPER(*sourcel, mm0);
-	    L_MMX_OPER(sourcel[8], mm1); /* paddusb_m2r */
-	    moveq_r2m(mm0,*dest);
-	    moveq_r2m(mm1,dest[8]);
-	    source+=16;
-	    sourcel+=16;
-	    dest+=16;
+	    sourcel+=8;
+	    L_MMX_OPER(*sourcel, mm1);
+	    sourcel+=8;
+	    movq_r2m(mm0,*dest);
+            dest += 8;
+	    movq_r2m(mm1,*dest);
+            dest += 8;
+            num-=16;
 	  }
+
 	  if (num > 8)
 	  {
 	    movq_m2r(*source, mm0);
@@ -58,6 +63,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    dest+=8;
 	    num-=8;
 	  }
+
           emms();
 	  while (num-->0)
 	  {

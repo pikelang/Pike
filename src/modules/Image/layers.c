@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.36 1999/08/12 14:01:33 mirar Exp $
+**!	$Id: layers.c,v 1.37 1999/08/13 05:58:00 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -214,11 +214,8 @@
 #include "global.h"
 
 #include <math.h> /* floor */
-#ifdef TRY_USE_MMX
-#include <mmx.h>
-#endif
 
-RCSID("$Id: layers.c,v 1.36 1999/08/12 14:01:33 mirar Exp $");
+RCSID("$Id: layers.c,v 1.37 1999/08/13 05:58:00 per Exp $");
 
 #include "image_machine.h"
 
@@ -238,6 +235,11 @@ RCSID("$Id: layers.c,v 1.36 1999/08/12 14:01:33 mirar Exp $");
 #include "opcodes.h"
 
 #include "image.h"
+
+
+#ifdef TRY_USE_MMX
+#include <mmx.h>
+#endif
 
 extern struct program *image_program;
 extern struct program *image_layer_program;
@@ -1357,7 +1359,9 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_subtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
 #define L_OPER(A,B) ((A)-(int)(B))
+#define L_MMX_OPER(A,MMXR) psubusb_m2r(A,MMXR)
 #include "layer_oper.h"
+#undef L_MMX_OPER
 #undef LM_FUNC
 #undef L_TRUNC
 #undef L_OPER
