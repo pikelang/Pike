@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.207 2003/12/15 20:28:05 nilsson Exp $
+|| $Id: encode.c,v 1.208 2003/12/16 10:40:28 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.207 2003/12/15 20:28:05 nilsson Exp $");
+RCSID("$Id: encode.c,v 1.208 2003/12/16 10:40:28 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -4353,6 +4353,9 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
  *!   old-style @[encode_value()]'ed data.
  */
 
+/*! @endclass
+ */
+
 /*! @class Codec
  *!
  *!   Codec objects are used by @[encode_value()] and @[decode_value()]
@@ -4457,9 +4460,6 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
  *!   object must be a clone of @[__null_program]. When the program is
  *!   finished, the placeholder object will be converted to a clone of
  *!   it. This is used for pike module objects.
- */
-
-/*! @endclass
  */
 
 /*! @endclass
