@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.729 2004/05/27 19:03:21 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.730 2004/05/28 17:28:09 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3740,6 +3740,17 @@ test_eq((["static":42])->static,42)
 
 test_compile_any(class A {}; class B { inherit A; })
 
+test_any([[
+  // Check that indexing of objects works as expected.
+  object m = master();
+  array(mixed) val = values(m);
+  foreach(indices(m); int i; string ind) {
+    if (m[ind] != val[i]) {
+      error("Indexing error: master()[%O]:%O != %O.\n",
+	    ind, m[ind], val[i]);
+    }
+  }
+]], 0)
 
 // Automap tests
 
@@ -8672,6 +8683,11 @@ test_any([[
    array a=({0,0,0});
    array b=copy_value(a); b[0]=17; b[1]=42; b[2]=128;
    return equal( ({0,0,0}), a) && equal( ({17,42,128}), b);
+]], 1)
+test_any([[
+  // Bug 3693
+  array(mapping) a = ({([])})*2;
+  return a[0] == a[1];
 ]], 1)
 
 // - cos
