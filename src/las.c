@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.139 1999/12/14 00:23:42 grubba Exp $");
+RCSID("$Id: las.c,v 1.140 1999/12/14 00:45:51 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -191,7 +191,28 @@ struct pike_string *find_return_type(node *n)
   check_tree(n,0);
 
   if(!n) return 0;
+
+  if (n->token == F_RETURN) {
+    if (CAR(n)) {
+      if (CAR(n)->type) {
+	copy_shared_string(a, CAR(n)->type);
+      } else {
+#ifdef PIKE_DEBUG
+	if (l_flag > 2) {
+	  fprintf(stderr, "Return with untyped argument.\n");
+	  print_tree(n);
+	}
+#endif /* PIKE_DEBUG */
+	copy_shared_string(a, mixed_type_string);
+      }
+    } else {
+      copy_shared_string(a, zero_type_string);
+    }
+    return a;
+  }
+
   if(!(n->tree_info & OPT_RETURN)) return 0;
+
   if(car_is_node(n))
     a=find_return_type(CAR(n));
   else
@@ -204,15 +225,15 @@ struct pike_string *find_return_type(node *n)
 
   if(a)
   {
-    if(b && a!=b) return or_pike_types(a, b, 1);
-    add_ref(a);
+    if(b && a!=b) {
+      struct pike_string *res = or_pike_types(a, b, 1);
+      free_string(a);
+      free_string(b);
+      return res;
+    }
     return a;
   }
-  if (b) {
-    add_ref(b);
-    return b;
-  }
-  return 0;
+  return b;
 }
 
 
