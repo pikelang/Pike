@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.8 1998/03/02 19:40:42 grubba Exp $
+/* $Id: sslfile.pike,v 1.9 1998/03/14 05:40:46 nisse Exp $
  *
  */
 
@@ -131,14 +131,12 @@ private void ssl_read_callback(mixed id, string s)
       if (accept_callback)
 	accept_callback(this_object());
     }
-    if (strlen(data))
+
+    read_buffer += data;
+    if (!blocking && read_callback && strlen(read_buffer))
     {
-      read_buffer += data;
-      if (!blocking && read_callback && strlen(read_buffer))
-      {
-	read_callback(id, read_buffer + data);
-	read_buffer = "";
-      }
+      read_callback(id, read_buffer);
+      read_buffer = "";
     }
   } else {
     if (data > 0)
