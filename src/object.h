@@ -39,7 +39,7 @@ extern struct program *master_program;
 /* Prototypes begin here */
 void setup_fake_object(void);
 struct object *low_clone(struct program *p);
-struct object *clone_object(struct program *p, int args);
+struct object *debug_clone_object(struct program *p, int args);
 struct object *get_master(void);
 struct object *master(void);
 void destruct(struct object *o);
@@ -74,6 +74,12 @@ void gc_mark_all_objects(void);
 void gc_free_all_unreferenced_objects(void);
 void count_memory_in_objects(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
+
+#ifdef MALLOC_DEBUG
+#define clone_object(X,Y) ((struct object *)debug_malloc_touch(debug_clone_object((X),(Y))))
+#else
+#define clone_object debug_clone_object
+#endif
 
 #endif /* OBJECT_H */
 

@@ -92,7 +92,7 @@ node *mklocalnode(int var);
 node *mkidentifiernode(int i);
 node *mkcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
-node *index_node(node *n, struct pike_string * id);
+node *debug_index_node(node *n, struct pike_string * id);
 int node_is_eq(node *a,node *b);
 node *mkconstantsvaluenode(struct svalue *s);
 node *mkliteralsvaluenode(struct svalue *s);
@@ -140,5 +140,11 @@ INT32 get_opt_info(void);
 #define PC (areas[A_PROGRAM].s.len)
 
 extern dynamic_buffer areas[NUM_AREAS];
+
+#ifdef DEBUG_MALLOC
+#define index_node(X,Y) ((node *)debug_malloc_touch(debug_index_node((node *)debug_malloc_touch(X),(struct pike_string *)debug_malloc_touch(Y))))
+#else
+#define index_node debug_index_node
+#endif
 
 #endif

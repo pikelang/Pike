@@ -45,6 +45,12 @@ struct svalue;
 #define GC2
 #endif
 
+#if defined(i386)
+#ifndef HANDLES_UNALIGNED_MEMORY_ACCESS
+#define HANDLES_UNALIGNED_MEMORY_ACCESS
+#endif
+#endif
+
 /* AIX requires this to be the first thing in the file.  */
 #ifdef __GNUC__
 # ifdef alloca
@@ -70,6 +76,11 @@ char *alloca ();
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #undef HAVE_STDLIB_H
+#endif
+
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#undef HAVE_MALLOC_H
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -121,8 +132,39 @@ char *alloca ();
 #define TYPE_FIELD unsigned INT16
 
 #define FLOAT_TYPE float
+#define INT_TYPE INT32
 
+#define B1_T char
 
+#if SIZEOF_SHORT == 2
+#define B2_T short
+#elif SIZEOF_INT == 2
+#define B2_T int
+#endif
+
+#if SIZEOF_SHORT == 4
+#define B4_T short
+#elif SIZEOF_INT == 4
+#define B4_T int
+#elif SIZEOF_LONG == 4
+#define B4_T long
+#endif
+
+#if SIZEOF_INT == 8
+#define B8_T int
+#elif SIZEOF_LONG == 8
+#define B8_T long
+#elif SIZEOF_CHAR_P == 8
+#define B8_T char *
+#elif defined(B4_T)
+struct b8_t_s { B4_T x,y; };
+#define B8_T struct b8_t_s
+#endif
+
+#if defined(B8_T)
+struct b16_t_s { B8_T x,y; };
+#define B16_T struct b16_t_s
+#endif
 
 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
@@ -144,6 +186,7 @@ char *alloca ();
 #endif
 
 #include "port.h"
+#include "dmalloc.h"
 
 
 #ifdef BUFSIZ

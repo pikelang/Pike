@@ -15,7 +15,7 @@ struct multiset
   struct array *ind;
 };
 
-#define free_multiset(L) do{ struct multiset *l_=(L); if(!--l_->refs) really_free_multiset(l_); }while(0)
+#define free_multiset(L) do{ struct multiset *l_=(L); debug_malloc_touch(l_); if(!--l_->refs) really_free_multiset(l_); }while(0)
 
 #define l_sizeof(L) ((L)->ind->size)
 

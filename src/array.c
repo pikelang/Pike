@@ -37,7 +37,7 @@ struct array empty_array=
  * NOTE: the new array have zero references
  */
 
-struct array *low_allocate_array(INT32 size,INT32 extra_space)
+struct array *debug_low_allocate_array(INT32 size,INT32 extra_space)
 {
   struct array *v;
   INT32 e;

@@ -10,6 +10,7 @@
 #include "lex.h"
 #include "pike_memory.h"
 #include "peep.h"
+#include "dmalloc.h"
 
 struct p_instr_s
 {

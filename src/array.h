@@ -48,7 +48,7 @@ extern struct array empty_array;
 #define OP_SUB MINTERM(OP_TAKE_A,OP_SKIP_A ,OP_SKIP_B)
 
 
-#define free_array(V) do{ struct array *v_=(V); if(!--v_->refs) really_free_array(v_); }while(0)
+#define free_array(V) do{ struct array *v_=(V); debug_malloc_touch(v_); if(!--v_->refs) really_free_array(v_); }while(0)
 
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
@@ -59,7 +59,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
 
 /* Prototypes begin here */
-struct array *low_allocate_array(INT32 size,INT32 extra_space);
+struct array *debug_low_allocate_array(INT32 size,INT32 extra_space);
 void really_free_array(struct array *v);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
@@ -139,5 +139,10 @@ struct array *explode_array(struct array *a, struct array *b);
 struct array *implode_array(struct array *a, struct array *b);
 /* Prototypes end here */
 
+#ifdef DEBUG_MALLOC
+#define low_allocate_array(X,Y) ((struct array *)debug_malloc_touch(debug_low_allocate_array((X),(Y))))
+#else
+#define low_allocate_array debug_low_allocate_array
+#endif
 
 #endif

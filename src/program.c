@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.46 1997/11/08 01:34:43 hubbe Exp $");
+RCSID("$Id: program.c,v 1.47 1998/03/03 11:24:40 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -144,8 +144,7 @@ int find_module_identifier(struct pike_string *ident)
     while(--e>=0)
     {
       push_svalue(modules+e);
-      push_string(ident);
-      ident->refs++;
+      ref_push_string(ident);
       f_index(2);
       
       if(!IS_UNDEFINED(sp-1))
@@ -623,7 +622,7 @@ if((prog->PTRS = areas[AREA].s.len/sizeof(TYPE))) \
   p+=MY_ALIGN(areas[AREA].s.len); \
 }
 
-struct program *end_program(void)
+struct program *debug_end_program(void)
 {
   struct pike_string **names;
   int size, i,e,t;

@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $ */
+/* $Id: colortable.c,v 1.29 1998/03/03 11:24:42 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $
+**!	$Id: colortable.c,v 1.29 1998/03/03 11:24:42 hubbe Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.28 1997/11/30 22:05:33 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.29 1998/03/03 11:24:42 hubbe Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2896,6 +2896,8 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    } while (0)
 
 #include "colortable_lookup.h"
+
+#include "dmalloc.h"
 
 #undef NCTLU_DESTINATION
 #undef NCTLU_CACHE_HIT_WRITE

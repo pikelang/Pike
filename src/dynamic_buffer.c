@@ -54,7 +54,7 @@ void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
   MEMCPY(low_make_buf_space(l,buf),b,l);
 }
 
-void initialize_buf(dynamic_buffer *buf)
+void debug_initialize_buf(dynamic_buffer *buf)
 {
   buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
   *(buf->s.str)=0;
@@ -110,7 +110,7 @@ char *simple_free_buf(void)
   return complex_free_buf().str;
 }
 
-struct pike_string *low_free_buf(dynamic_buffer *buf)
+struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
 {
   struct pike_string *q;
   if(!buf->s.str) return 0;
@@ -121,14 +121,14 @@ struct pike_string *low_free_buf(dynamic_buffer *buf)
   return q;
 }
 
-struct pike_string *free_buf(void) { return low_free_buf(&buff); }
+struct pike_string *debug_free_buf(void) { return low_free_buf(&buff); }
 char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
 void my_putchar(char b) { low_my_putchar(b,&buff); }
 void my_binary_strcat(const char *b,INT32 l) { low_my_binary_strcat(b,l,&buff); }
 void my_strcat(const char *b) { my_binary_strcat(b,strlen(b)); }
 void init_buf(void) { low_reinit_buf(&buff); }
 void init_buf_with_string(string s) { low_init_buf_with_string(s,&buff); }
-char *return_buf(void)
+char *debug_return_buf(void)
 {
   my_putchar(0);
   return buff.s.str;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.60 1998/02/24 00:47:36 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.61 1998/03/03 11:24:28 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -670,6 +670,14 @@ void f_exit(INT32 args)
   exit_modules();
 
   UNSET_ONERROR(tmp);
+
+#ifdef DEBUG_MALLOC
+  {
+    extern cleanup_memhdrs(void);
+    cleanup_memhdrs();
+  }
+#endif
+
   exit(i);
 }
 

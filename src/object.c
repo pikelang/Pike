@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.29 1997/11/08 01:34:42 hubbe Exp $");
+RCSID("$Id: object.c,v 1.30 1998/03/03 11:24:36 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -115,7 +115,7 @@ static void init_object(struct object *o, int args)
   pop_stack();
 }
 
-struct object *clone_object(struct program *p, int args)
+struct object *debug_clone_object(struct program *p, int args)
 {
   struct object *o=low_clone(p);
   init_object(o,args);

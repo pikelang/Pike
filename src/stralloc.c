@@ -124,7 +124,7 @@ static void rehash(void)
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
-struct pike_string *begin_shared_string(int len)
+struct pike_string *debug_begin_shared_string(int len)
 {
   struct pike_string *t;
   t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
@@ -165,7 +165,7 @@ struct pike_string *end_shared_string(struct pike_string *s)
   return s;
 }
 
-struct pike_string * make_shared_binary_string(const char *str,int len)
+struct pike_string * debug_make_shared_binary_string(const char *str,int len)
 {
   struct pike_string *s;
   int h=StrHash(str,len);
@@ -183,7 +183,7 @@ struct pike_string * make_shared_binary_string(const char *str,int len)
   return s;
 }
 
-struct pike_string *make_shared_string(const char *str)
+struct pike_string *debug_make_shared_string(const char *str)
 {
   return make_shared_binary_string(str, strlen(str));
 }

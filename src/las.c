@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.39 1997/10/05 03:39:25 grubba Exp $");
+RCSID("$Id: las.c,v 1.40 1998/03/03 11:24:32 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -143,9 +143,10 @@ void free_all_nodes(void)
     struct node_chunk *tmp2;
     int e=0;
 
-
+#ifndef DEBUG
     if(cumulative_parse_error)
     {
+#endif
       
       for(tmp2=node_chunks;tmp2;tmp2=tmp2->next) e+=NODES;
       for(tmp=free_nodes;tmp;tmp=CAR(tmp)) e--;
@@ -166,7 +167,9 @@ void free_all_nodes(void)
 #ifdef DEBUG
 	      if(!cumulative_parse_error)
 	      {
-		fprintf(stderr,"Free node at %p.\n",tmp);
+		fprintf(stderr,"Free node at %p, (%d) (token=%d).\n",tmp, tmp->line_number, tmp->token);
+		if(tmp->token==F_CONSTANT)
+		  print_tree(tmp);
 	      }
 	      else
 #endif
@@ -175,6 +178,7 @@ void free_all_nodes(void)
 		/* Make sure we don't free any nodes twice */
 		if(car_is_node(tmp)) CAR(tmp)=0;
 		if(cdr_is_node(tmp)) CDR(tmp)=0;
+		debug_malloc_touch(tmp->type);
 		free_node(tmp);
 	      }
 	    }
@@ -185,7 +189,9 @@ void free_all_nodes(void)
 	  fatal("Failed to free %d nodes when compiling!\n",e2);
 #endif
       }
+#ifndef DEBUG
     }
+#endif
     while(node_chunks)
     {
       tmp2=node_chunks;
@@ -488,7 +494,7 @@ void resolv_constant(node *n)
   }
 }
 
-node *index_node(node *n, struct pike_string * id)
+node *debug_index_node(node *n, struct pike_string * id)
 {
   node *ret;
   JMP_BUF tmp;

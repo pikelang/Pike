@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.27 1997/11/08 01:34:40 hubbe Exp $");
+RCSID("$Id: main.c,v 1.28 1998/03/03 11:24:33 hubbe Exp $");
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -56,7 +56,7 @@ struct callback *add_post_master_callback(callback_func call,
 }
 
 
-void main(int argc, char **argv, char **env)
+void dbm_main(int argc, char **argv, char **env)
 {
   JMP_BUF back;
   int e, num;

@@ -157,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.50 1997/10/27 09:59:21 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.51 1998/03/03 11:24:31 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -193,7 +193,7 @@ struct locals *local_variables = 0;
 
 static int varargs;
 static INT32  current_modifiers;
-static struct pike_string *last_identifier=0;
+struct pike_string *last_identifier=0;
 
 void fix_comp_stack(int sp)
 {
@@ -385,8 +385,7 @@ program_ref: string_constant
   {
     if(last_identifier)
     {
-      push_string(last_identifier);
-      last_identifier->refs++;
+      ref_push_string(last_identifier);
     }else{
       push_text("");
     }
@@ -1321,14 +1320,13 @@ gauge: F_GAUGE catch_arg
 
 typeof: F_TYPEOF '(' expr0 ')'
   {
+    struct pike_string *s;
     node *tmp;
     tmp=mknode(F_ARG_LIST,$3,0);
-    if($3 && $3->type)
-    {
-       $$=mkstrnode(describe_type($3->type));
-    }else{
-       $$=mkstrnode(describe_type(mixed_type_string));
-    }
+
+    s=describe_type( $3 && $3->type ? $3->type : mixed_type_string);
+    $$=mkstrnode(s);
+    free_string(s);
     free_node(tmp);
   } ;
  

@@ -40,7 +40,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.50 1998/03/02 00:29:02 grubba Exp $");
+RCSID("$Id: spider.c,v 1.51 1998/03/03 11:24:48 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -80,6 +80,8 @@ RCSID("$Id: spider.c,v 1.50 1998/03/02 00:29:02 grubba Exp $");
 #include <errno.h>
 
 #include "accesseddb.h"
+
+#include "dmalloc.h"
 
 #define MAX_PARSE_RECURSE 102
 

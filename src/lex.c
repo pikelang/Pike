@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.34 1997/12/20 19:36:48 grubba Exp $");
+RCSID("$Id: lex.c,v 1.35 1998/03/03 11:24:33 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -57,6 +57,10 @@ static void calc1(void);
 
 void exit_lex(void)
 {
+  extern struct pike_string *last_identifier;
+  free_string(last_identifier);
+  last_identifier=0;
+
 #ifdef DEBUG
   if(p_flag)
   {
@@ -93,6 +97,16 @@ void exit_lex(void)
 
   if(current_file) free_string(current_file);
   free_reswords();
+
+  while(pike_predefs)
+  {
+    struct pike_predef_s *tmp;
+    tmp=pike_predefs;
+    pike_predefs=tmp->next;
+    free(tmp->name);
+    free(tmp->value);
+    free(tmp);
+  }
 }
 
 struct keyword reserved_words[] =
@@ -1848,7 +1862,7 @@ static void low_lex(void)
 
       if(!strcmp("efun",my_yylval.str) || !strcmp("constant",my_yylval.str))
       {
-	int res = 0;
+	volatile int res = 0;
 	struct svalue *oldsp = sp;
 	struct svalue *sv;
 

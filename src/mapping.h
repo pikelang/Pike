@@ -21,11 +21,11 @@ struct mapping
 #define m_ind_types(m) ((m)->ind_types)
 #define m_val_types(m) ((m)->val_types)
 
-#define free_mapping(M) do{ struct mapping *m_=(M); if(!--m_->refs) really_free_mapping(m_); }while(0)
+#define free_mapping(M) do{ struct mapping *m_=(M); debug_malloc_touch(m_); if(!--m_->refs) really_free_mapping(m_); }while(0)
 
 /* Prototypes begin here */
 struct keypair;
-struct mapping *allocate_mapping(int size);
+struct mapping *debug_allocate_mapping(int size);
 void really_free_mapping(struct mapping *m);
 void mapping_fix_type_field(struct mapping *m);
 void mapping_insert(struct mapping *m,
@@ -71,4 +71,11 @@ void gc_free_all_unreferenced_mappings(void);
 void zap_all_mappings(void);
 void count_memory_in_mappings(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
+
+#ifdef DEBUG_MALLOC
+#define allocate_mapping(X) ((struct mapping *)debug_malloc_touch(debug_allocate_mapping(X)))
+#else
+#define allocate_mapping debug_allocate_mapping
+#endif
+
 #endif

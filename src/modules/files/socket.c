@@ -46,6 +46,8 @@
 #include <sys/socketvar.h>
 #endif
 
+#include "dmalloc.h"
+
 struct port
 {
   int fd;

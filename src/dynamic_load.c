@@ -157,7 +157,9 @@ void exit_dynamic_load(void)
     struct module_list *tmp=dynamic_module_list;
     dynamic_module_list=tmp->next;
     (*tmp->exit)();
+#ifndef DEBUG_MALLOC
     dlclose(tmp->module);
+#endif
     free((char *)tmp);
   }
 #endif

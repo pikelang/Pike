@@ -208,7 +208,7 @@ void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
 void toss_current_program(void);
 void check_program(struct program *p);
-struct program *end_program(void);
+struct program *debug_end_program(void);
 SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
@@ -293,3 +293,8 @@ void my_yyerror(char *fmt,...) ATTRIBUTE((format (printf, 1, 2)));
 
 
 
+#ifdef DEBUG_MALLOC
+#define end_program() ((struct program *)debug_malloc_touch(debug_end_program()))
+#else
+#define end_program debug_end_program
+#endif
