@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.480 2001/02/14 18:27:34 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.481 2001/02/14 20:44:49 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5153,9 +5153,9 @@ echo "cc............ $CC" >>config.info
 echo "ld............ $LD" >>config.info
 echo "pike.......... $PIKE" >>config.info
 echo "install....... $INSTALL" >>config.info
-echo "shared object. .$SO"
-echo "libs.......... $LIBS"
-echo "optimize...... $OPTIMIZE"
+echo "shared object. .$SO" >>config.info
+echo "libs.......... $LIBS" >>config.info
+echo "optimize...... $OPTIMIZE" >>config.info
 
 echo >>config.info
 echo "features:" >>config.info
