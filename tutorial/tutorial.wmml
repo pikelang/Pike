@@ -29,6 +29,8 @@ Write an appendix about old functions, behaviors and keywords.
 
 Missing funktions in the manual: (tab before function means fixed)
 UNDEFINED
+Stdio.append_path
+Regexp->replace
 _sqrt
 _is_type
 _sprintf
