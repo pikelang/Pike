@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.54 1998/02/11 00:27:01 per Exp $");
+RCSID("$Id: spider.c,v 1.55 1998/02/17 20:33:29 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1285,7 +1285,7 @@ struct thread_args
 MUTEX_T done_lock;
 struct thread_args *done;
 
-// WARNING! This function is running _without_ any stack etc.
+/* WARNING! This function is running _without_ any stack etc. */
 void *do_shuffle(void *_a)
 {
   struct thread_args *a = (struct thread_args *)_a;
@@ -1321,8 +1321,9 @@ void *do_shuffle(void *_a)
   }
   a->sent = sent;
 
-  // We are done. It is up to the backend callback to call the 
-  // finish function
+  /* We are done. It is up to the backend callback to call the 
+   * finish function
+   */
   mt_lock(&done_lock);
   a->next = done;
   done = a;
