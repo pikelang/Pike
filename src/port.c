@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.78 2004/09/18 20:50:53 nilsson Exp $
+|| $Id: port.c,v 1.79 2004/11/11 15:59:28 grubba Exp $
 */
 
 /*
@@ -704,6 +704,9 @@ PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
 PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
 {
   int res;
+  if (!size) {
+    buf = alloca(size=1000);
+  }
   buf[size - 1] = 0;
   res = VSPRINTF (buf, fmt, args);
   if (buf[size - 1]) Pike_fatal ("Buffer overflow in VSPRINTF.\n");
