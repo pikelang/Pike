@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.81 1998/03/16 22:11:17 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.82 1998/03/16 22:11:48 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -41,7 +41,7 @@ RCSID("$Id: builtin_functions.c,v 1.81 1998/03/16 22:11:17 grubba Exp $");
 #include <crypt.h>
 #endif
 
-#define DIFF_DEBUG
+/* #define DIFF_DEBUG */
 
 
 void f_equal(INT32 args)
