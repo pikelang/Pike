@@ -243,7 +243,7 @@ int main(int argc, string *argv)
       else
 	output=remove_ext(argv[1])+".dll";
 
-      cflags+=({"-MD" + (debug?"d":""), "-LD" + (debug?"d":"")});
+      cflags+=({"-MD" + (/*debug?"d":*/""), "-LD" + (/*debug?"d":*/"")});
       wantfile=output;
       break;
 
@@ -251,7 +251,7 @@ int main(int argc, string *argv)
   }
 
 
-  cflags+=({"-MT" + (debug?"d":"") });
+  cflags+=({"-MT" /* + (debug?"d":"") */ });
 
   if(output) rm(output);
 
@@ -267,7 +267,7 @@ int main(int argc, string *argv)
 		     "libcmt.lib","libcmtd.lib",
 		     "msvcrt.lib","msvcrtd.lib"});
 
-	string lib=(debug?"libcmtd.lib":"libcmt.lib");
+	string lib=(/*debug?"libcmtd.lib":*/"libcmt.lib");
 	libs-=({ lib });
 	for(int e=0;e<sizeof(libs);e++)
 	  ldopts+=({"-nodefaultlib:"+libs[e]});
