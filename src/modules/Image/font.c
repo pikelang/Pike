@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.53 1999/06/19 20:24:45 hubbe Exp $ */
+/* $Id: font.c,v 1.54 1999/09/14 13:55:08 mirar Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.53 1999/06/19 20:24:45 hubbe Exp $
+**!	$Id: font.c,v 1.54 1999/09/14 13:55:08 mirar Exp $
 **! class Font
 **!
 **! note
@@ -140,9 +140,7 @@ Kerningtable types:
  */
 
 
-
-
-#include "fdlib.h"
+#include "image_machine.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -165,8 +163,6 @@ Kerningtable types:
 
 #include <errno.h>
 
-#include "image_machine.h"
-
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -183,6 +179,8 @@ Kerningtable types:
 #endif
 
 #include "dmalloc.h"
+
+#include "fdlib.h"
 
 extern struct program *font_program;
 extern struct program *image_program;
