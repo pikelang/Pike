@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.36 2000/08/03 18:56:04 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.37 2000/08/07 10:03:01 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -261,7 +261,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
   int e,c;
   call_out *new,**p,**pos;
   struct array *args;
-  unsigned long hval;
+  size_t hval;
 
   PROTECT_CALL_OUTS();
   if(num_pending_calls==call_buffer_size)
@@ -302,7 +302,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
 	{
 	  call_out *c=CALL(e);
 	  
-	  hval=(unsigned long)c->args;
+	  hval=(size_t)c->args;
 	  hval%=hash_size;
 	  
 	  if((c->next_arr=call_hash[hval].arr))
@@ -329,7 +329,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
   new->pos=num_pending_calls;
 
   {
-    hval=(unsigned long)args;
+    hval=(size_t)args;
     hval%=hash_size;
 
     if((new->next_arr=call_hash[hval].arr))
@@ -548,14 +548,14 @@ static int find_call_out(struct svalue *fun)
       return e;
 
 #else
-  unsigned long hval;
+  size_t hval;
   call_out *c;
 
   if(!num_pending_calls) return -1;
 
   if(fun->type == T_ARRAY)
   {
-    hval=(unsigned long)fun->u.array;
+    hval=(size_t)fun->u.array;
     hval%=hash_size;
     for(c=call_hash[hval].arr;c;c=c->next_arr)
     {
