@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.1 2004/02/23 18:07:13 nilsson Exp $
+// $Id: BitBuffer.pike,v 1.2 2004/02/24 07:46:36 nilsson Exp $
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way
@@ -21,7 +21,7 @@ void create(void|string _data) {
 
 //! Adds full bytes to the buffer.
 this_program feed( string x ) {
-  if(.width(x)!=8) error("Only eight bits wide characters allowed.\n");
+  if(String.width(x)!=8) error("Only eight bits wide characters allowed.\n");
   if(bob)
     foreach(x; int p; int c)
       put(c,8);
@@ -38,7 +38,7 @@ string drain() {
   if(bib+bob==0)
     d = data;
   else {
-    .Buffer b = .Buffer(sizeof(data)+1);
+    String.Buffer b = String.Buffer(sizeof(data)+1);
     while(_sizeof()>8)
       b->putchar(get(8));
     d = b->get();
