@@ -1,17 +1,10 @@
-/* $Id: mkxml.pike,v 1.23 2001/05/09 14:02:05 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.24 2001/07/17 03:50:43 nilsson Exp $ */
 
 import Stdio;
 import Array;
 
-mapping parse=([]);
+mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
-
-mapping manpage_suffix=
-([
-   "Image":"i",
-   "Image.image":"i",
-]);
-
 
 function verbose=werror;
 
@@ -45,7 +38,7 @@ Quoting: Only '<' must be quoted as '&lt;'.
 
 */
 
-mapping moduleM, classM, methodM, argM, nowM, descM;
+mapping moduleM, classM, methodM, argM, nowM, descM, appendixM;
 
 mapping focM(mapping dest,string name,string line)
 {
@@ -56,21 +49,25 @@ mapping focM(mapping dest,string name,string line)
 
 string stripws(string s)
 {
-   return desc_stripws(s);
-}
+  if (s=="") return s;
 
-string desc_stripws(string s)
-{
-   if (s=="") return s;
-   array lines = s / "\n";
-   int m=10000;
-   foreach (lines,string s)
-      if (s!="")
-      {
-	 sscanf(s,"%[ ]%s",string a,string b);
-	 if (b!="") m=min(strlen(a),m);
-      }
-   return map(lines,lambda(string s) { return s[m..]; })*"\n";
+  array lines = s / "\n";
+
+  lines = map(lines, lambda(string s) {
+		       s = reverse(s);
+		       sscanf(s, "%*[ \t\r]%s", s);
+		       s = reverse(s);
+		       return s; });
+
+  int m=10000;
+  foreach (lines,string s)
+    if (s!="")
+    {
+      sscanf(s,"%[ ]%s",string a,string b);
+      if (b!="") m=min(strlen(a),m);
+    }
+
+  return map(lines,lambda(string s) { return s[m..]; })*"\n";
 }
 
 mapping lower_nowM()
@@ -98,6 +95,9 @@ mapping keywords=
 	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
 	  werror("mkxml: Version: "+file_version+"\n");
 	},
+  "appendix":lambda(string arg,string line) {
+	       descM=nowM=appendixM=focM(parse[" appendix"],stripws(arg),line);
+	       report("appendix "+arg);},
   "module":lambda(string arg,string line) 
 	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line); 
 	    methodM=0; 
@@ -198,43 +198,7 @@ string getridoftabs(string s)
    return res+s;
 }
 
-
-object(File) make_file(string filename)
-{
-   stderr->write("creating "+filename+"...\n");
-   if (file_size(filename)>0)
-   {
-      rm(filename+"~");
-      mv(filename,filename+"~");
-   }
-   object f=File();
-   if (!f->open(filename,"wtc"))
-   {
-      stderr->write("failed.");
-      exit(1);
-   }
-   return f;
-}
-
-string synopsis_to_html(string s,mapping huh)
-{
-   string type,name,arg;
-   s=replace(s,({"<",">"}),({"&lt;","&gt;"}));
-   if (sscanf(s,"%s%*[ \t]%s(%s",type,name,arg)!=4)
-   {
-      sscanf(s,"%s(%s",name,arg),type="";
-      werror(sprintf(huh->_line+": suspicios method %O\n",(s/"(")[0]));
-   }
-   if (arg[..1]==")(") name+="()",arg=arg[2..];
-
-   if (!arg) arg="";
-
-   return 
-      type+" <b>"+name+"</b>("+
-      replace(arg,({","," "}),({", ","\240"}));
-}
-
-string htmlify(string s) 
+string htmlify(string s)
 {
 #define HTMLIFY(S) \
    (replace((S),({"&lt;","&gt;",">","&","\240"}),({"&lt;","&gt;","&gt;","&amp;","&nbsp;"})))
@@ -273,67 +237,59 @@ string make_nice_reference(string what,string prefix,string stuff)
 
 string fixdesc(string s,string prefix,string where)
 {
-   s=desc_stripws(s);
+   s=htmlify(stripws(replace(s, "<p>", "\n")));
 
-   string t,u,v,q;
+   Parser.HTML p = Parser.HTML();
+   p->add_container("illustration",
+     lambda(Parser.HTML p, mapping args, string c)
+     {
+       return ({ sprintf("<illustration %s%{ %s='%s'%}>%s</illustration>",
+			 where, (array)args, replace(c, "lena()", "src")) });
+     });
 
-   t=s; s="";
+   foreach( ({ "pre", "table", "execute", "ul" }), string tag)
+     p->add_container(tag,
+       lambda(Parser.HTML p, mapping args, string c)
+       {
+	 return ({ sprintf("<%s%{ %s='%s'%}>%s</%s>", tag,
+			   (array)args, safe_newlines(c), tag) });
+       });
 
-// we don't need to parse 'ref' at all
-//     while (sscanf(t,"%s<ref%s>%s</ref>%s",t,q,u,v)==4)
-//     {
-//        if (search(u,"<ref")!=-1)
-//        {
-//  	 werror("warning: unclosed <ref>\n%O\n",s);
-//  	 u=replace(u,"<ref","&lt;ref");
-//        }
-      
-//        if (sscanf(q," to=%s",q))
-//  	 s+=htmlify(t)+make_nice_reference(q,prefix,u);
-//        else
-//  	 s+=htmlify(t)+make_nice_reference(u,prefix,u);
-//        t=v;
-//     }
-//     if (search(s,"<ref")!=-1)
-//     {
-//        werror("%O\n",s);
-//        error("buu\n");
-//     }
-
-   s+=htmlify(t);
-
-   t=s; s="";
-   for (;;)
-   {
-      string a,b,c;
-      if (sscanf(t,"%s<%s>%s",a,b,c)<3) break;
-      
-      if (b[..11]=="illustration" &&
-	  sscanf(t,"%s<illustration%s>%s</illustration>%s",t,q,u,v)==4)
+   p->add_container("data_description",
+      lambda(Parser.HTML p, mapping args, string c)
       {
-	 s+=replace(t,"\n\n","\n\n<p>")+
-	    "<illustration "+where+" src='image_ill.pnm"+q+"'>\n"
-	    +replace(u,"lena()","src")+"</illustration>";
-	 t=v;
-      }
-      else if (b[..2]=="pre" &&
-	  sscanf(t,"%s<pre%s>%s</pre>%s",t,q,u,v)==4)
-      {
-	 s+=replace(t,"\n\n","\n\n<p>")+
-	    "<pre"+q+">\n"+u+"</pre>";
-	 t=v;
-      }
-      else
-      {
-	 s+=replace(a,"\n\n","\n\n<p>")+"<"+b+">";
-	 t=c;
-      }
-   }
-   s+=replace(t,"\n\n","\n\n<p>");
+	if(args->type=="mapping") {
+	  Parser.HTML i = Parser.HTML()->
+	    add_container("elem",
+              lambda(Parser.HTML p, mapping args, string c)
+	      {
+		if(!args->type)
+		  throw("mkxml: Type attribute missing on elem tag.");
+		if(args->type!="int" && args->type!="float" &&
+		   args->type!="string")
+		  throw("mkxml: Unknown type "+args->type+" in elem type attribute.\n");
+		if(!args->name)
+		  throw("mkxml: Name attribute missing on elem tag.");
+		return "<group>\n<member><type><" + args->type +
+		  "/></type><index>\"" + args->name + "\"</index></member>\n"
+		  "<text><p>" + c + "</p></text>\n</group>\n";
+	      });
+	  return ({ "<mapping>\n " +
+		    safe_newlines(i->finish(c)->read()) +
+		    "</mapping>\n " });
+	}
+	throw("mkxml: Unknown data_description type "+args->type+".\n");
+      });
 
-   if (where) {
+
+
+
+   s = p->finish(s)->read();
+   s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
+
+   if (where)
       return "<source-position " + where + file_version + "/>\n"+s;
-   }
+
    return s;
 }
 
@@ -350,7 +306,7 @@ multiset(string) get_method_names(string *decls)
    return names;
 }
 
-string *nice_order(string *arr)
+array(string) nice_order(string *arr)
 {
    sort(map(arr,replace,({"_","`"}),({"ÿ","þ"})),
 	arr);
@@ -360,29 +316,6 @@ string *nice_order(string *arr)
 string addprefix(string suffix,string prefix)
 {
    return prefix+suffix;
-}
-
-array fix_dotstuff(array(string) in)
-{
-   if (!sizeof(in)) return ({});
-   array(string) last;
-   in=Array.map(in,replace,({"->",">","<"}),({".","&lt;","&gt;"}));
-   last=in[0]/"."; 
-   last=last[..sizeof(last)-2];
-   int i;
-   array res=in[..0];
-   for (i=1; i<sizeof(in); i++)
-   {
-      array(string) z=in[i]/".";
-      if (equal(z[..sizeof(z)-2],last))
-	 res+=({"."+z[-1]});
-      else
-      {
-	 last=z[..sizeof(z)-2];
-	 res+=in[i..i];
-      }
-   }
-   return res;
 }
 
 #define S(X) ("'"+(X)+"'") /* XML arg quote */
@@ -428,7 +361,7 @@ string doctype(string type,void|string indent)
    if (!indent) indent="\n "; 
    string nindent=indent+"  ";
 
-   if (type[..2]=="...") 
+   if (type[..2]=="...")
       return nindent+"<varargs>"+doctype(type[3..])+"</varargs>";
 
    string a=type,b=0,c,o=0;
@@ -584,7 +517,7 @@ void document(string enttype,
 	      mapping huh,string name,string prefix,
 	      object f)
 {
-   string *names;
+   array(string) names;
 
    if (huh->names)
       names=map(indices(huh->names),addprefix,name);
@@ -602,6 +535,9 @@ void document(string enttype,
 
    switch (enttype)
    {
+      case "appendix":
+	f->write("<"+enttype+" name="+S(name)+">\n");
+	break;
       case "class":
       case "module":
 	 f->write("<"+enttype+" name="+S(canname)+">\n");
@@ -814,6 +750,7 @@ void document(string enttype,
 
    switch (enttype)
    {
+      case "appendix":
       case "class":
       case "module":
 	 f->write("</"+enttype+">\n\n");
@@ -824,12 +761,27 @@ void document(string enttype,
    }
 }
 
+array(string) tag_quote_args(Parser.HTML p, mapping args) {
+  return ({ sprintf("<%s%{ %s='%s'%}>", p->tag_name(), (array)args) });
+}
+
 void make_doc_files()
 {
    html2xml=Parser.HTML();
-   html2xml->add_tag("p",lambda(mixed...) { return ({"</p><p>"}); });
    html2xml->add_tag("br",lambda(mixed...) { return ({"<br/>"}); });
    html2xml->add_tag("wbr",lambda(mixed...) { return ({"<wbr/>"}); });
+
+   html2xml->add_tags( ([ "dl":tag_quote_args,
+			  "dt":tag_quote_args,
+			  "dd":tag_quote_args,
+			  "table":tag_quote_args,
+			  "tr":tag_quote_args,
+			  "th":tag_quote_args,
+			  "td":tag_quote_args,
+			  "a":tag_quote_args,
+			  "ref":tag_quote_args ]) );
+
+   /*
    html2xml->add_tag("dl",
       lambda(Parser.HTML p, mapping args)
       {
@@ -840,11 +792,33 @@ void make_doc_files()
       {
 	return ({ sprintf("<dt%{ %s='%s'%}>", (array)args) });
       });
+   html2xml->add_tag("table",
+      lambda(Parser.HTML p, mapping args)
+      {
+	return ({ sprintf("<table%{ %s='%s'%}>", (array)args) });
+      });
    html2xml->add_tag("tr",
       lambda(Parser.HTML p, mapping args)
       {
 	return ({ sprintf("<tr%{ %s='%s'%}>", (array)args) });
       });
+   html2xml->add_tag("td",
+      lambda(Parser.HTML p, mapping args)
+      {
+	return ({ sprintf("<td%{ %s='%s'%}>", (array)args) });
+      });
+   html2xml->add_tag("th",
+      lambda(Parser.HTML p, mapping args)
+      {
+	return ({ sprintf("<th%{ %s='%s'%}>", (array)args) });
+      });
+   html2xml->add_tag("ref",
+      lambda(Parser.HTML p, mapping args)
+      {
+	return ({ sprintf("<ref%{ %s='%s'%}>", (array)args) });
+      });
+   */
+
    html2xml->add_container(
       "text",
       lambda(Parser.HTML p,mapping args,string cont)
@@ -864,18 +838,30 @@ void make_doc_files()
 	 while (t!=res);
 	 return ({res});
       });
+   html2xml->add_container("link",
+      lambda(Parser.HTML p, mapping args, string c)
+      {
+	return ({ sprintf("<ref%{ %s=\"%s\"%}>%s</ref>", (array)args, c) });
+      });
+   html2xml->add_container("execute",
+      lambda(Parser.HTML p, mapping args, string c)
+      {
+	return ({ c });
+      });
 
-   stderr->write("modules: "+sort(indices(parse))*", "+"\n");
+   stderr->write("modules: "+sort(indices(parse)-({" appendix"}))*", "+"\n");
 
    stdout->write("<module name=''>\n");
    
-   foreach (sort(indices(parse)-({"_order"})),string module)
+   foreach (sort(indices(parse)-({"_order", " appendix"})),string module)
       document("module",parse[module],module,module+".",stdout);
+
+   if(appendixM)
+     foreach(parse[" appendix"]->_order, string title)
+       document("appendix",parse[" appendix"][title],title,"",stdout);
 
    stdout->write("</module>\n");
 }
-
-int inpre=0;
 
 void process_line(string s,string currentfile,int line)
 {
@@ -896,7 +882,6 @@ void process_line(string s,string currentfile,int line)
 			  currentfile+"file='"+currentfile+"' line="+line);
 	    exit(1);
 	 }
-	 inpre=0;
       }
       else if (s[i+3..]!="")
       {
@@ -924,11 +909,20 @@ void process_line(string s,string currentfile,int line)
    }
 }
 
+string safe_newlines(string in) {
+  string old;
+  do {
+    old = in;
+    in = replace(in, "\n\n", "\n \n");
+  } while(old!=in);
+  return in;
+}
+
 int main(int ac,string *files)
 {
    string s,t;
    int line;
-   string *ss=({""});
+   array(string) ss=({""});
    object f;
 
    string currentfile;
@@ -947,7 +941,6 @@ int main(int ac,string *files)
    for (;;)
    {
       int i;
-      inpre=0;
 
       if (!f) 
       {
