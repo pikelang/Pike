@@ -7193,12 +7193,194 @@ Yp.
 
 <hr noshade size=1>
 
+<module name=Table>
+<section title="Table">
+
+Table is a generic module for manipulating tables. Each table contains one
+or several columns. Each column is associated with a name, the field name.
+Optionally, one can provide a field type. The Table module can do a number
+of operations on a given table, like computing the sum of a column, grouping,
+sorting etc.
+
+All column references are case insensitive. A column can be referred to by
+its position (a number).
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;create title="create table object">
+<man_syntax>
+void create(array(array) <i>table</i>, array(string) <i>field_names</i>);<br>
+void create(array(array) <i>table</i>, array(string) <i>field_names</i>, array(mapping) <i>field_types</i>);<br>
+</man_syntax>
+<man_description>
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;_indices title="give the field names">
+<man_syntax>
+array(string) _indices();<br>
+</man_syntax>
+<man_description>
+This method returns the field names for the table.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;_values title="give the contents of a table">
+<man_syntax>
+array(array) _values();<br>
+</man_syntax>
+<man_description>
+This method returns the contents of a table as a two dimensional array.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;_sizeof title="gives the number of rows in the table">
+<man_syntax>
+int _sizeof();<br>
+</man_syntax>
+<man_description>
+This method returns the number of rows in the table.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;reverse title="reverse the table rows">
+<man_syntax>
+object reverse();<br>
+</man_syntax>
+<man_description>
+This method reverses the rows in the table and returns a new table object.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;rename title="rename a column">
+<man_syntax>
+object rename(string|int <i>from</i>, string <i>to</i>);<br>
+</man_syntax>
+<man_description>
+This method renames the column named <i>from</i> to <i>to</i> and
+returns a new table object.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;truncate title="truncate the table">
+<man_syntax>
+object truncate(int <i>n</i>);<br>
+</man_syntax>
+<man_description>
+This method truncates the table to <i>n</i> rows and returns a new object.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;sort title="sort the table on one or several columns">
+<man_syntax>
+object sort(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
+</man_syntax>
+<man_description>
+This method sorts the table in ascendent order on one or several columns and returns a new
+table object. The left most column is sorted last. Note that the sort is
+stable.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;rsort title="sort the table in reversed order on one or several columns">
+<man_syntax>
+object rsort(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
+</man_syntax>
+<man_description>
+Like <link to=Table.table-&gt;sort>sort</link>, but the order is descendent.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;distinct title="keep unique columns only">
+<man_syntax>
+object distinct(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
+</man_syntax>
+<man_description>
+This method groups by the given columns and returns a table with only
+unique rows. When no columns are given, all rows will be unique.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;sum title="computes the sum of the columns">
+<man_syntax>
+object sum(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
+</man_syntax>
+<man_description>
+This method sums all non unique rows. The table will be grouped by the
+columns not listed. The result will be returned as a new table object.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;map title="map the table over functions">
+<man_syntax>
+object map(mapping(string|int:funcion) <i>fus</i>, string|int <i>column1</i>, mixed ... <i>arg</i>)
+object map(mapping(string|int:funcion) <i>fus</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>)
+</man_syntax>
+<man_description>
+This method calls the function for each column each time a non uniqe row
+will be joined. The table will be grouped by the columns not listed. The
+result will be returned as a new table object.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;filter title="filter the table through a function">
+<man_syntax>
+object filter(funcion <i>fu</i>, string|int <i>column1</i>, mixed ... <i>arg</i>)
+object filter(funcion <i>fu</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>)
+</man_syntax>
+<man_description>
+This method calls the function for each row. If the function returns zero,
+the row will be thrown away. If the function returns something non-zero,
+the row will be kept. The result will be returned as a new table object.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;select title="keep only the given columns">
+<man_syntax>
+object select(string|int <i>column1</i>, string|int <i>column2</i>, ...)
+</man_syntax>
+<man_description>
+This method returns a new table object with the selected columns only.
+</man_description>
+</method>
+
+</section>
+</module>
+
+<hr noshade size=1>
+
 <module name=MIME>
 <section title="MIME">
 
 <a href="http://www.roxen.com/rfc/rfc1521.txt">RFC1521</a>, the
 <b>Multipurpose Internet Mail Extensions</b> memo, defines a
-structure is the base for all messages read and written by modern mail
+structure which is the base for all messages read and written by modern mail
 and news programs.  It is also partly the base for the HTTP protocol.
 Just like <a href="http://www.roxen.com/rfc/rfc822.txt">RFC822</a>,
 MIME declares that a message should consist of two entities,
