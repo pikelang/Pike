@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.43 1999/10/25 10:26:23 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.44 1999/11/03 19:26:30 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -739,9 +739,43 @@ static int my_extract_char(struct decode_data *data)
   }while(0)					\
 
 
+static void restore_type_stack(unsigned char *old_stackp)
+{
+#if 0
+  fprintf(stderr, "Restoring type-stack: %p => %p\n",
+	  type_stackp, old_stackp);
+#endif /* 0 */
+#ifdef PIKE_DEBUG
+  if (old_stackp > type_stackp) {
+    fatal("type stack out of sync!\n");
+  }
+#endif /* PIKE_DEBUG */
+  type_stackp = old_stackp;
+}
+
+static void restore_type_mark(unsigned char **old_type_mark_stackp)
+{
+#if 0
+  fprintf(stderr, "Restoring type-mark: %p => %p\n",
+	  pike_type_mark_stackp, old_type_mark_stackp);
+#endif /* 0 */
+#ifdef PIKE_DEBUG
+  if (old_type_mark_stackp > pike_type_mark_stackp) {
+    fatal("type mark_stack out of sync!\n");
+  }
+#endif /* PIKE_DEBUG */
+  pike_type_mark_stackp = old_type_mark_stackp;
+}
+
 static void low_decode_type(struct decode_data *data)
 {
   int tmp;
+  ONERROR err1;
+  ONERROR err2;
+
+  SET_ONERROR(err1, restore_type_stack, type_stackp);
+  SET_ONERROR(err2, restore_type_mark, pike_type_mark_stackp);
+
 one_more_type:
   push_type(tmp=GETC());
   switch(tmp)
@@ -806,6 +840,7 @@ one_more_type:
     case T_OBJECT:
     {
       INT32 x;
+
       push_type(GETC());
       decode_value2(data);
       type_stack_mark();
@@ -826,6 +861,9 @@ one_more_type:
       type_stack_reverse();
     }
   }
+
+  UNSET_ONERROR(err2);
+  UNSET_ONERROR(err1);
 }
 
 /* This really needs to disable threads.... */
@@ -921,6 +959,7 @@ static void decode_value2(struct decode_data *data)
 	decode_value2(data);
 	ITEM(a)[e]=sp[-1];
 	sp--;
+	dmalloc_touch_svalue(sp);
       }
       ref_push_array(a);
       return;
@@ -970,6 +1009,7 @@ static void decode_value2(struct decode_data *data)
       mapping_insert(data->decoded, & data->counter, &tmp);
       data->counter.u.integer++;
       m->refs--;
+      debug_malloc_touch(m);
       
       for(e=0;e<num;e++)
       {
@@ -1109,6 +1149,8 @@ static void decode_value2(struct decode_data *data)
 	  SIZE_T size=0;
 	  char *dat;
 	  struct program *p;
+	  ONERROR err1;
+	  ONERROR err2;
 
 #ifdef _REENTRANT
 	  ONERROR err;
@@ -1256,12 +1298,14 @@ static void decode_value2(struct decode_data *data)
 		add_ref(p->inherits[d].prog);
 		p->inherits[d].parent=sp[-1].u.object;
 		sp--;
+		dmalloc_touch_svalue(sp);
 		break;
 
 	      case T_PROGRAM:
 		p->inherits[d].parent_identifier=0;
 		p->inherits[d].prog=sp[-1].u.program;
 		sp--;
+		dmalloc_touch_svalue(sp);
 		break;
 	      default:
 		error("Failed to decode inheritance.\n");
@@ -1272,6 +1316,9 @@ static void decode_value2(struct decode_data *data)
 	  
 	  debug_malloc_touch(dat);
 
+	  SET_ONERROR(err1, restore_type_stack, type_stackp);
+	  SET_ONERROR(err2, restore_type_mark, pike_type_mark_stackp);
+
 	  for(d=0;d<p->num_identifiers;d++)
 	  {
 	    getdata(p->identifiers[d].name);
@@ -1281,12 +1328,16 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifiers[d].func.offset,data);
 	  }
 
+	  UNSET_ONERROR(err2);
+	  UNSET_ONERROR(err1);
+
 	  debug_malloc_touch(dat);
 	  
 	  for(d=0;d<p->num_constants;d++)
 	  {
 	    decode_value2(data);
 	    p->constants[d].sval=*--sp;
+	    dmalloc_touch_svalue(sp);
 	    getdata3(p->constants[d].name);
 	  }
 	  data->pickyness--;
@@ -1308,6 +1359,10 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  p->flags |= PROGRAM_FINISHED;
 	  ref_push_program(p);
+
+#ifdef PIKE_DEBUG
+	  check_program(p);
+#endif /* PIKE_DEBUG */
 
 #ifdef _REENTRANT
 	  UNSET_ONERROR(err);
