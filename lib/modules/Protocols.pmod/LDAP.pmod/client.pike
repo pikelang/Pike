@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.28 2001/09/14 12:56:24 hop Exp $
+// $Id: client.pike,v 1.29 2001/10/04 19:35:59 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -93,11 +93,6 @@ int _prof_gtim;
 #define ASN1_GET_ATTR_ARRAY(X)		(array)((X)->elements[1]->elements)
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 
- //! module Protocols
- //! submodule LDAP
- //!
- //! class client
- //!
  //! Contains the client implementation of the LDAP protocol.
  //! All of the version 2 protocol features are implemented
  //! but only the base parts of the version 3. 
@@ -247,12 +242,12 @@ int _prof_gtim;
     int count_entries() { return(entrycnt - actnum); }
 
     //! @decl mapping(string:array(string)) fetch()
-    //! @decl mapping(string:array(string)) fetch(int)
+    //! @decl mapping(string:array(string)) fetch(int index)
     //!
     //! Returns a mapping with an entry for each attribute.
     //! Each entry is an array of values of the attribute.
     //!
-    //! @param idx
+    //! @param index
     //!  Optional argument can be used for direct access
     //!  to the entry other then currently pointed by cursor.
     int|mapping(string:array(string)) fetch(int|void idx) {
@@ -336,8 +331,8 @@ int _prof_gtim;
   mapping info;
 
   //! @decl void create()
-  //! @decl void create(string)
-  //! @decl void create(string, object)
+  //! @decl void create(string url)
+  //! @decl void create(string url, object context)
   //!
   //! Create object. The first optional argument can be used later
   //! for subsequence operations. The second one can specify
@@ -355,7 +350,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.28 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.29 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -432,8 +427,8 @@ int _prof_gtim;
   }
 
   //! @decl int bind()
-  //! @decl int bind(string, string)
-  //! @decl int bind(string, string, version)
+  //! @decl int bind(string dn, string password)
+  //! @decl int bind(string dn, string password, int version)
   //!
   //! Authenticates connection to the direcory.
   //!
