@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.14 2002/12/12 16:40:41 nilsson Exp $
+dnl $Id: testsuite.in,v 1.15 2002/12/12 21:18:46 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -414,24 +414,6 @@ define(test_encoding,[[
   ]])
 ]])
 
-test_encoding(PNM,,)
-test_encoding(GIF,[[
-  img = Image.Colortable(img,250)->cubicles(10,10,10,1)->
-    floyd_steinberg()*img;
-]],)
-test_encoding(GIF,[[
-  object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
-  img=c*img;
-]],[[,c]])
-
-test_any([[
-   object img=Image.Image(100,100)->test(43);
-   object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
-   img=c*img;
-   object img1=Image.GIF.decode(Image.GIF.encode(img,c));
-   return img-img1<50;
-]],1)
-
 test_encoding(AVS,,)
 test_encoding(BMP,,)
 test_encoding(BMP,[[
@@ -468,6 +450,23 @@ test_encoding(BMP,[[
   img=c*img;
 ]],[[,(["bpp":4,"rle":1])]])
 
+test_encoding(GIF,[[
+  img = Image.Colortable(img,250)->cubicles(10,10,10,1)->
+    floyd_steinberg()*img;
+]],)
+test_encoding(GIF,[[
+  object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
+  img=c*img;
+]],[[,c]])
+
+test_any([[
+   object img=Image.Image(100,100)->test(43);
+   object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
+   img=c*img;
+   object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+   return img-img1<50;
+]],1)
+
 test_any([[
   object img=Image.Image(256,240)->test(43);
   img=Image.Colortable( ({"white","black","red","green"}) )*img;
@@ -477,18 +476,33 @@ test_any([[
 test_encoding(ILBM,[[
   img=Image.Colortable(img,16)*img;
 ]],)
+
+cond( master()->resolv("Image.JPEG")->encode,[[
+  test_any([[
+    object img=Image.Image(100,100)->test(43);
+    object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
+    return img-img1<10;
+  ]],1)
+]])
+
 test_encoding(PCX,,)
+test_encoding(PNG,,)
 test_encoding(PNM,,)
+dnl test_encoding(PVR,,)
+test_encoding(RAS,,)
 test_encoding(TGA,,)
+dnl test_encoding(WBF,[[
+dnl   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+dnl   img=c*img;
+dnl ]],)
+dnl test_encoding(WBMP,[[
+dnl   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+dnl   img=c*img;
+dnl ]],)
 test_encoding(XBM,[[
   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
   img=c*img;
 ]],)
-test_encoding(XPM,[[
-  object c=Image.Colortable(16,16,16);	
-  img=c*img;
-]],[[,(["colortable":c]) ]])
-test_encoding(TIFF,,)
 
 cond( master()->resolv("Image.XFace")->encode,[[
   test_any([[
@@ -500,10 +514,8 @@ cond( master()->resolv("Image.XFace")->encode,[[
   ]],1)
 ]])
 
-cond( master()->resolv("Image.JPEG")->encode,[[
-  test_any([[
-    object img=Image.Image(100,100)->test(43);
-    object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
-    return img-img1<10;
-  ]],1)
-]])
+test_encoding(XPM,[[
+  object c=Image.Colortable(16,16,16);	
+  img=c*img;
+]],[[,(["colortable":c]) ]])
+test_encoding(TIFF,,)
