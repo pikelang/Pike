@@ -1,5 +1,5 @@
 /*
- * $Id: mysqls.pike,v 1.1 2003/04/26 17:01:07 agehall Exp $
+ * $Id: mysqls.pike,v 1.2 2003/04/26 17:44:45 agehall Exp $
  *
  * Glue for the Mysql-module using SSL
  */
@@ -28,9 +28,6 @@ void create(string host,
 
   if (!opts->mysql_config_file)
     opts->mysql_config_file = "/etc/my.cnf";
-
-  werror("Calling ::create('%s','%s','%s',PASSWORD,%O);",
-	 host, db, user, opts);
 
   ::create(host||"", db||"", user||"", password||"", opts);
 }
