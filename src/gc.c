@@ -3,7 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-
+/**/
 #include "global.h"
 
 struct callback *gc_evaluator_callback=0;
@@ -21,13 +21,14 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_types.h"
 #include "time_stuff.h"
 #include "constants.h"
-#include "block_alloc.h"
 
 #include "gc.h"
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.42 1999/05/02 08:11:41 hubbe Exp $");
+#include "block_alloc.h"
+
+RCSID("$Id: gc.c,v 1.43 1999/09/25 20:50:15 grubba Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
