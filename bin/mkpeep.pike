@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.14 2000/04/20 02:41:27 hubbe Exp $ */
+/* $Id: mkpeep.pike,v 1.15 2000/04/28 17:47:07 hubbe Exp $ */
 
 #define JUMPBACK 3
 
@@ -201,7 +201,11 @@ array(int|string|array(string)) split(string s)
       case '(':
 	array tmp=explode_comma_expr(a[e][1..strlen(a[e])-2]);
 	for(int x=0;x<sizeof(tmp);x++)
-	  newa+=({ sprintf("(%s)==$%d%c",tmp[x], i, 'a'+x) });
+	{
+	  string arg=sprintf("$%d%c", i, 'a'+x);
+	  if(arg != tmp[x] && strlen(tmp[x]))
+	    newa+=({ sprintf("(%s)==%s",tmp[x], arg) });
+	}
       break;
 
     case '[':
