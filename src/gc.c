@@ -93,8 +93,27 @@ static struct marker *getmark(void *a)
   return m;
 }
 
+#ifdef DEBUG
+static void *check_for =0;
+
+static void gdb_gc_stop_here(void *a)
+{
+  fprintf(stderr,"One ref found.\n");
+}
+#endif
+
 void gc_check(void *a)
 {
+#ifdef DEBUG
+  if(check_for)
+  {
+    if(check_for == a)
+    {
+      gdb_gc_stop_here(a);
+    }
+    return;
+  }
+#endif
   getmark(a)->refs++;
 }
 
@@ -104,7 +123,18 @@ int gc_is_referenced(void *a)
   m=getmark(a);
 #ifdef DEBUG
   if(m->refs > *(INT32 *)a)
+  {
+    check_for=a;
+
+    gc_check_all_arrays();
+    gc_check_all_multisets();
+    gc_check_all_mappings();
+    gc_check_all_programs();
+    gc_check_all_objects();
+
+    check_for=0;
     fatal("Ref counts are totally wrong!!!\n");
+  }
 #endif
   return m->refs < *(INT32 *)a;
 }

@@ -869,6 +869,9 @@ void gc_check_short_svalue(union anything *u, TYPE_T type)
   if(!u->refs) return;
   switch(type)
   {
+  case T_FUNCTION:
+    fatal("Cannot have a function in a short svalue.\n");
+
   case T_OBJECT:
     if(u->object->prog)
     {

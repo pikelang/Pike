@@ -19,7 +19,7 @@ extern INT32 alloc_threshold;
 #ifdef ALWAYS_GC
 #define CHECK_FOR_GC(); do { do_gc(); } while(0)
 #else
-#define CHECK_FOR_GC(); do { if(num_allocs > alloc_threshold || d_flag > 2) do_gc(); } while(0)
+#define CHECK_FOR_GC(); do { if(num_allocs > alloc_threshold || d_flag > 3) do_gc(); } while(0)
 #endif
 
 /* Prototypes begin here */
