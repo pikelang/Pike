@@ -417,6 +417,8 @@ string convert_page(string path, string fname)
 	    subpages[fname+"-&gt;"+part_name]=path+"#"+part_name;
 	  }
 
+	case "RETURN VALUE":
+	case "RETURN VALUES":
 	case "DESCRIPTION":
 	case "NOTA BENE":
 	case "BUGS":
