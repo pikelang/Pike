@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.76 2001/02/19 23:50:03 grubba Exp $
+ * $Id: svalue.h,v 1.77 2001/03/03 00:27:16 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -87,7 +87,7 @@ struct svalue
 #define PIKE_T_FUNCTION 4
 #define PIKE_T_PROGRAM 5
 #define PIKE_T_STRING 6
-#define PIKE_T_TYPE 7		/* Not supported yet */
+#define PIKE_T_TYPE 7
 #define PIKE_T_INT 8
 #define PIKE_T_FLOAT 9
 
