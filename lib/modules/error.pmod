@@ -1,6 +1,7 @@
 // Moahahahah!
-// $Id: error.pmod,v 1.1 1998/04/30 07:02:33 per Exp $
-void `()(mixed ... args)
+// $Id: error.pmod,v 1.2 1999/08/10 00:27:43 mast Exp $
+void `()(string f, mixed ... args)
 {
-  throw( ({ sprintf(@args), backtrace() }) );
+  array(array) b = backtrace();
+  throw( ({ sprintf(f, @args), b[..sizeof(b)-2] }) );
 }
