@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.226 1998/08/06 16:28:17 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.227 1998/08/07 00:17:40 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1116,6 +1116,36 @@ AC_CHECK_FUNCS( \
  signbit \
  nice \
 )
+
+AC_MSG_CHECKING(if the last argument to accept is a size_t *)
+AC_CACHE_VAL(pike_cv_accept_size_t, [
+  AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+/* Here's the actual test: */
+int accept(int, struct sockaddr *, size_t *);
+  ], [
+    /* EMPTY */
+  ], pike_cv_accept_size_t=size_t, pike_cv_accept_size_t=int)
+])
+AC_MSG_RESULT($pike_cv_type_accept)
+AC_DEFINE_UNQUOTED(ACCEPT_SIZE_T, $pike_cv_accept_size_t)
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
  AC_DEFINE(HAVE_LOADLIBRARY)
