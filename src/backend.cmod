@@ -4,6 +4,12 @@
 || for more information.
 */
 
+/*
+ * $Id: backend.cmod,v 1.158 2005/01/19 18:38:10 grubba Exp $
+ *
+ * Backend object.
+ */
+
 #include "global.h"
 #include "fdlib.h"
 #include "backend.h"
@@ -56,7 +62,7 @@
 #endif
 #include <sys/stat.h>
 
-#define POLL_DEBUG
+/* #define POLL_DEBUG */
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x

@@ -300,6 +300,7 @@ testfont binary
 /src/apply_low.h foreign_ident
 /src/array.c foreign_ident
 /src/array.h foreign_ident
+/src/backend.cmod foreign_ident
 /src/backend.h foreign_ident
 /src/bignum.c foreign_ident
 /src/bignum.h foreign_ident
