@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.99 1999/01/08 05:59:07 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.100 1999/01/08 07:08:12 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -566,7 +566,12 @@ static void f_pid_status_wait(INT32 args)
 #else
 
 #if 1
+#define BUGGY_WAITPID
+
   {
+#ifdef BUGGY_WAITPID
+    int errorcount=0;
+#endif
     int err=0;
     while(THIS->state == PROCESS_RUNNING)
     {
@@ -577,17 +582,22 @@ static void f_pid_status_wait(INT32 args)
       if(err)
       {
 
-#define BUGGY_WAITPID
-
 #ifdef BUGGY_WAITPID
 	struct svalue key,*s;
 	key.type=T_INT;
 	key.u.integer=pid;
 	s=low_mapping_lookup(pid_mapping, &key);
-	if(!s || s->type != T_OBJECT || s->u.object != fp->current_object)
-#endif
-	  error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
+	if(s && s->type == T_OBJECT || s->u.object == fp->current_object)
+	{
+	  errorcount++;
+	  if(errorcount==50)
+	    error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
 
+	  if(!(errorcount%10)) sleep(1);
+	}
+	else
+#endif
+	error("Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
       }
 
       THREADS_ALLOW();
