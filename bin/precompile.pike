@@ -304,7 +304,7 @@ array convert(array x, string base)
   array declarations=({});
   array ret=x;
 
-  array x=ret/({"PIKECLASS"});
+  x=ret/({"PIKECLASS"});
   ret=x[0];
 
   for(int f=1;f<sizeof(x);f++)
