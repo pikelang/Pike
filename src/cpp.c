@@ -256,7 +256,6 @@ static void simple_add_define(struct cpp *this,
 		  fflush(stderr)
 
 #define FIND_EOL() do {				\
-    this->current_line++;			\
     while(pos < len && data[pos]!='\n') pos++;	\
   } while(0)
 
@@ -753,6 +752,8 @@ static INT32 low_cpp(struct cpp *this,
     {
       char *foo=data+pos;
       this->current_line=STRTOL(foo, &foo, 10)-1;
+      low_my_putchar('#',&this->buf);
+      low_my_binary_strcat(data+pos, foo-(data+pos), &this->buf);
       pos=foo-data;
       SKIPSPACE();
       
@@ -765,6 +766,9 @@ static INT32 low_cpp(struct cpp *this,
 
 	free_string(this->current_file);
 	this->current_file=low_free_buf(&nf);
+
+	low_my_putchar(' ',&this->buf);
+	PUSH_STRING(this->current_file->str,this->current_file->len,&this->buf);
       }
       
       FIND_EOL();

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.38 1998/01/16 22:33:04 grubba Exp $");
+RCSID("$Id: lex.c,v 1.39 1998/01/16 23:02:39 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -429,9 +429,9 @@ int yylex(YYSTYPE *yylval)
   t=yylex2(yylval);
   if(t<256)
   {
-    fprintf(stderr,"yylex() -> '%c' (%d)\n",t,t);
+    fprintf(stderr,"YYLEX: '%c' (%d) at %s:%d\n",t,t,lex.current_file->str,lex.current_line);
   }else{
-    fprintf(stderr,"yylex() -> %s (%d)\n",get_f_name(t),t);
+    fprintf(stderr,"YYLEX: %s (%d) at %s:%d\n",low_get_f_name(t,0),t,lex.current_file->str,lex.current_line);
   }
   return t;
 }

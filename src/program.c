@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.49 1998/01/14 07:53:52 hubbe Exp $");
+RCSID("$Id: program.c,v 1.50 1998/01/16 23:02:40 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1632,7 +1632,7 @@ static void insert_small_number(INT32 a)
   {
     add_to_linenumbers(a);
   }else if(a>=-32768 && a<32768){
-    add_to_linenumbers(a);
+    add_to_linenumbers(-127);
     ins_short(a, add_to_linenumbers);
   }else{
     add_to_linenumbers(-128);
