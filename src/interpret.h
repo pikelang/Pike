@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.126 2003/02/08 03:49:22 mast Exp $
+|| $Id: interpret.h,v 1.127 2003/02/15 17:33:33 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -24,7 +24,8 @@ struct Pike_interpreter {
   int mark_stack_malloced;
   JMP_BUF *recoveries;
 #ifdef PIKE_THREADS
-  struct object * thread_id;
+  struct object *thread_obj;	/* Object containing the thread state. */
+  struct thread_state *thread_state;
 #endif
   char *stack_top;
   DO_IF_SECURITY(struct object *current_creds;)

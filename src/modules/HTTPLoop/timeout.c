@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.10 2002/10/21 17:06:13 marcus Exp $
+|| $Id: timeout.c,v 1.11 2003/02/15 17:33:34 grubba Exp $
 */
 
 #include "config.h"
@@ -219,7 +219,7 @@ void aap_exit_timeouts(void)
   fprintf(stderr, "AAP: aap_exit_timeouts.\n");
 #endif /* AAP_DEBUG */
   aap_time_to_die = 1;
-  if (Pike_interpreter.thread_id) {
+  if (Pike_interpreter.thread_state) {
     THREADS_ALLOW();
     th_join(aap_timeout_thread, &res);
     THREADS_DISALLOW();

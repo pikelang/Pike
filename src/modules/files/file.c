@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.253 2003/01/11 04:29:15 nilsson Exp $
+|| $Id: file.c,v 1.254 2003/02/15 17:33:34 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.253 2003/01/11 04:29:15 nilsson Exp $");
+RCSID("$Id: file.c,v 1.254 2003/02/15 17:33:34 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3117,7 +3117,7 @@ static void low_file_lock(INT32 args, int flags)
   {
     if(THIS->key
 #ifdef _REENTRANT
-       && OB2KEY(THIS->key)->owner == Pike_interpreter.thread_id
+       && OB2KEY(THIS->key)->owner == Pike_interpreter.thread_obj
 #endif
       )
     {
@@ -3202,8 +3202,8 @@ static void init_file_lock_key(struct object *o)
 {
   THIS_KEY->f=0;
 #ifdef _REENTRANT
-  THIS_KEY->owner=Pike_interpreter.thread_id;
-  add_ref(Pike_interpreter.thread_id);
+  THIS_KEY->owner=Pike_interpreter.thread_obj;
+  add_ref(Pike_interpreter.thread_obj);
 #endif
 }
 

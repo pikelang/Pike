@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.123 2003/02/10 17:10:40 mast Exp $
+|| $Id: threads.h,v 1.124 2003/02/15 17:33:33 grubba Exp $
 */
 
 #ifndef THREADS_H
@@ -35,6 +35,7 @@ struct thread_state {
   THREAD_T id;
   struct mapping *thread_local;
   struct thread_state *hashlink, **backlink;
+  struct svalue result;
 #ifdef PROFILING
 #if SIZEOF_LONG_LONG - 0 != 0
   long long time_base;
@@ -62,8 +63,8 @@ void init_interleave_mutex(IMUTEX_T *im);
 void exit_interleave_mutex(IMUTEX_T *im);
 void thread_table_init(void);
 unsigned INT32 thread_table_hash(THREAD_T *tid);
-PMOD_EXPORT void thread_table_insert(struct object *o);
-PMOD_EXPORT void thread_table_delete(struct object *o);
+PMOD_EXPORT void thread_table_insert(struct thread_state *s);
+PMOD_EXPORT void thread_table_delete(struct thread_state *s);
 PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid);
 PMOD_EXPORT struct object *thread_for_id(THREAD_T tid);
 PMOD_EXPORT void f_all_threads(INT32 args);

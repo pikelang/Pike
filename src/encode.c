@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.163 2003/01/26 16:22:50 mirar Exp $
+|| $Id: encode.c,v 1.164 2003/02/15 17:33:33 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.163 2003/01/26 16:22:50 mirar Exp $");
+RCSID("$Id: encode.c,v 1.164 2003/02/15 17:33:33 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1621,7 +1621,7 @@ struct decode_data
   struct pike_string *raw;
   struct decode_data *next;
 #ifdef PIKE_THREADS
-  struct object *thread_id;
+  struct thread_state *thread_state;
 #endif
 #ifdef ENCODE_DEBUG
   int debug, depth;
@@ -3648,7 +3648,7 @@ static void free_decode_data(struct decode_data *data)
     free((char *)tmp);
   }
 #ifdef PIKE_THREADS
-  free_object(data->thread_id);
+  data->thread_state = NULL;
 #endif
 
   free( (char *) data);
@@ -3684,7 +3684,7 @@ static INT32 my_decode(struct pike_string *tmp,
   for (data = current_decode; data; data=data->next) {
     if (data->raw == tmp && data->codec == codec
 #ifdef PIKE_THREADS
-	&& data->thread_id == Pike_interpreter.thread_id
+	&& data->thread_state == Pike_interpreter.thread_state
 #endif
        ) {
       struct svalue *res;
@@ -3718,7 +3718,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->raw = tmp;
   data->next = current_decode;
 #ifdef PIKE_THREADS
-  data->thread_id = Pike_interpreter.thread_id;
+  data->thread_state = Pike_interpreter.thread_state;
 #endif
 #ifdef ENCODE_DEBUG
   data->debug = debug;
@@ -3735,10 +3735,6 @@ static INT32 my_decode(struct pike_string *tmp,
     free( (char *) data);
     return 0;
   }
-
-#ifdef PIKE_THREADS
-  add_ref(Pike_interpreter.thread_id);
-#endif
 
   data->decoded=allocate_mapping(128);
 

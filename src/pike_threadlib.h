@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.29 2003/02/08 03:40:00 mast Exp $
+|| $Id: pike_threadlib.h,v 1.30 2003/02/15 17:33:33 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -516,7 +516,7 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
 
 #define SWAP_OUT_CURRENT_THREAD() \
   do {\
-     struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
+     struct thread_state *_tmp = Pike_interpreter.thread_state; \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
 			 __FILE__, __LINE__, (unsigned int)_tmp->id))
@@ -583,19 +583,16 @@ extern void dumpmem(char *desc, void *x, int size);
 #define REVEAL_GLOBAL_VARIABLES()
 #endif /* PIKE_DEBUG */
 
-#define	OBJ2THREAD(X) \
-  ((struct thread_state *)((X)->storage+thread_storage_offset))
-
-#define THREADSTATE2OBJ(X) ((X)->state.thread_id)
+#define THREADSTATE2OBJ(X) ((X)->state.thread_obj)
 
 PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \
-     struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
+     struct thread_state *_tmp = Pike_interpreter.thread_state; \
      DO_IF_DEBUG({ \
-       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
-	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!" \
+       if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) \
+	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed!" \
                " %p != %p\n", \
-               thread_for_id(th_self()), Pike_interpreter.thread_id); \
+               thread_for_id(th_self()), Pike_interpreter.thread_obj); \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
 	 Pike_fatal("Threads allowed during garbage collection.\n"); \
      }) \
@@ -625,16 +622,16 @@ PMOD_EXPORT extern int Pike_in_gc;
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
-     DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
-        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; ) \
+     DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) \
+        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ; ) \
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
-     struct thread_state *_tmp_uid=OBJ2THREAD(Pike_interpreter.thread_id); \
+     struct thread_state *_tmp_uid = Pike_interpreter.thread_state; \
      DO_IF_DEBUG({ \
-       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) { \
-	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n", \
-               thread_for_id(th_self()),Pike_interpreter.thread_id); \
+       if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) { \
+	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n", \
+               thread_for_id(th_self()),Pike_interpreter.thread_obj); \
        } \
        if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
          fprintf(stderr, __FILE__ ":" DEFINETOSTR(__LINE__) ": Fatal error:\n"); \

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.202 2003/02/15 17:04:48 grubba Exp $
+|| $Id: threads.c,v 1.203 2003/02/15 17:33:33 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.202 2003/02/15 17:04:48 grubba Exp $");
+RCSID("$Id: threads.c,v 1.203 2003/02/15 17:33:33 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -232,7 +232,6 @@ static void really_low_th_init(void)
 #define THIS_THREAD ((struct thread_state *)CURRENT_STORAGE)
 
 static struct callback *threads_evaluator_callback=0;
-int thread_id_result_variable;
 
 int th_running = 0;
 #ifdef PIKE_DEBUG
@@ -255,8 +254,9 @@ PMOD_EXPORT clock_t thread_start_clock = 0;
 
 struct thread_starter
 {
-  struct object *id;
-  struct array *args;
+  struct object *thread_obj;		/* Object holding the thread_state. */
+  struct thread_state *thread_state;	/* State of the thread. */
+  struct array *args;			/* Arguments passed to the thread. */
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
   int euid, egid;
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
@@ -280,7 +280,7 @@ void low_init_threads_disable(void)
     THREADS_FPRINTF(0,
 		    (stderr, "low_init_threads_disable(): Locking IM's...\n"));
 
-    if (Pike_interpreter.thread_id) {
+    if (Pike_interpreter.thread_obj) {
       /* Threads have been enabled. */
 
       IMUTEX_T *im;
@@ -481,9 +481,8 @@ void dumpmem(char *desc, void *x, int size)
 #endif
 
 
-PMOD_EXPORT void thread_table_insert(struct object *o)
+PMOD_EXPORT void thread_table_insert(struct thread_state *s)
 {
-  struct thread_state *s = OBJ2THREAD(o);
   unsigned INT32 h = thread_table_hash(&s->id);
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
@@ -506,9 +505,8 @@ PMOD_EXPORT void thread_table_insert(struct object *o)
   mt_unlock( & thread_table_lock );  
 }
 
-PMOD_EXPORT void thread_table_delete(struct object *o)
+PMOD_EXPORT void thread_table_delete(struct thread_state *s)
 {
-  struct thread_state *s = OBJ2THREAD(o);
 /*  dumpmem("thread_table_delete",&s->id, sizeof(THREAD_T)); */
   mt_lock( & thread_table_lock );
   num_pike_threads--;
@@ -641,7 +639,8 @@ void debug_list_all_threads(void)
 
   fprintf(stderr,"--Listing all threads--\n");
   dumpmem("Current thread: ",&self, sizeof(self));
-  fprintf(stderr,"Current thread obj: %p\n",Pike_interpreter.thread_id);
+  fprintf(stderr,"Current thread obj: %p\n",Pike_interpreter.thread_obj);
+  fprintf(stderr,"Current thread state: %p\n",Pike_interpreter.thread_state);
   fprintf(stderr,"Current thread hash: %d\n",thread_table_hash(&self));
   fprintf(stderr,"Current stack pointer: %p\n",&self);
   for(x=0; x<THREAD_TABLE_SIZE; x++)
@@ -685,12 +684,12 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #endif
 
 #ifdef DEBUG
-  if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+  if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
     debug_list_all_threads();
-    Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+    Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
   }
 
-  if(Pike_interpreter.backlink != OBJ2THREAD(Pike_interpreter.thread_id))
+  if(Pike_interpreter.backlink != Pike_interpreter.thread_state)
     Pike_fatal("Hashlink is wrong!\n");
 #endif
 
@@ -706,13 +705,13 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #endif
 
   DO_IF_DEBUG(
-    if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+    if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
       debug_list_all_threads();
-      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
     } )
 }
 
-TH_RETURN_TYPE new_thread_func(void * data)
+TH_RETURN_TYPE new_thread_func(void *data)
 {
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
@@ -739,41 +738,46 @@ TH_RETURN_TYPE new_thread_func(void * data)
 	  errno
 #endif
 	  );
-  SWAP_IN_THREAD(OBJ2THREAD(arg.id)); /* Init struct */
+  SWAP_IN_THREAD(arg.thread_state); /* Init struct */
   init_interpreter();
-  Pike_interpreter.thread_id=arg.id;
+  add_ref(Pike_interpreter.thread_obj = arg.thread_obj);
+  Pike_interpreter.thread_state=arg.thread_state;
 #ifdef PROFILING
   Pike_interpreter.stack_bottom=((char *)&data);
 #endif
   Pike_interpreter.stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   Pike_interpreter.recoveries = NULL;
-  SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
-  OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
+  SWAP_OUT_THREAD(Pike_interpreter.thread_state); /* Init struct */
+  Pike_interpreter.thread_state->swapped = 0;
+
+  Pike_interpreter.thread_state->status = THREAD_RUNNING;
+  co_broadcast(& Pike_interpreter.thread_state->status_change);
 
 #if defined(PIKE_DEBUG)
   if(d_flag)
     {
       THREAD_T self = th_self();
 
-      if( Pike_interpreter.thread_id && !th_equal( OBJ2THREAD(Pike_interpreter.thread_id)->id, self) )
+      if( Pike_interpreter.thread_state &&
+	  !th_equal(Pike_interpreter.thread_state->id, self) )
 	Pike_fatal("Current thread is wrong. %lx %lx\n",
-	      (long)OBJ2THREAD(Pike_interpreter.thread_id)->id, (long)self);
+	      (long)Pike_interpreter.thread_state->id, (long)self);
 	
-      if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+      if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
 	debug_list_all_threads();
-	Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+	Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
       }
     }
 #endif
 
   Pike_interpreter.trace_level = default_t_flag;
 
-  THREADS_FPRINTF(0, (stderr,"THREAD %08x INITED\n",(unsigned int)Pike_interpreter.thread_id));
+  THREADS_FPRINTF(0, (stderr,"THREAD %08x INITED\n",(unsigned int)Pike_interpreter.thread_obj));
 
   DO_IF_DEBUG(
-    if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+    if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
       debug_list_all_threads();
-      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
     } )
 
 
@@ -793,42 +797,41 @@ TH_RETURN_TYPE new_thread_func(void * data)
     arg.args=0;
     f_call_function(args);
 
-    /* copy return value to the Pike_interpreter.thread_id here */
-    object_low_set_index(Pike_interpreter.thread_id,
-			 thread_id_result_variable,
-			 Pike_sp-1);
+    /* copy return value to the Pike_interpreter.thread_state here */
+    assign_svalue(&Pike_interpreter.thread_state->result, Pike_sp-1);
     pop_stack();
   }
 
   DO_IF_DEBUG(
-    if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+    if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
       debug_list_all_threads();
-      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
     } )
 
 
-  if(OBJ2THREAD(Pike_interpreter.thread_id)->thread_local != NULL) {
-    free_mapping(OBJ2THREAD(Pike_interpreter.thread_id)->thread_local);
-    OBJ2THREAD(Pike_interpreter.thread_id)->thread_local = NULL;
+  if(Pike_interpreter.thread_state->thread_local != NULL) {
+    free_mapping(Pike_interpreter.thread_state->thread_local);
+    Pike_interpreter.thread_state->thread_local = NULL;
   }
 
-   OBJ2THREAD(Pike_interpreter.thread_id)->status=THREAD_EXITED;
-   co_broadcast(& OBJ2THREAD(Pike_interpreter.thread_id)->status_change);
+  Pike_interpreter.thread_state->status = THREAD_EXITED;
+  co_broadcast(& Pike_interpreter.thread_state->status_change);
 
   free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);
 
   THREADS_FPRINTF(0, (stderr,"THREADS_ALLOW() Thread %08x done\n",
-		      (unsigned int)Pike_interpreter.thread_id));
+		      (unsigned int)Pike_interpreter.thread_obj));
 
   cleanup_interpret();
   DO_IF_DMALLOC(
-    SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* de-Init struct */
-    OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
+    SWAP_OUT_THREAD(Pike_interpreter.thread_state); /* de-Init struct */
+    Pike_interpreter.thread_state->swapped=0;
     )
-  thread_table_delete(Pike_interpreter.thread_id);
-  free_object(Pike_interpreter.thread_id);
-  Pike_interpreter.thread_id=0;
+  thread_table_delete(Pike_interpreter.thread_state);
+  free_object(Pike_interpreter.thread_obj);
+  Pike_interpreter.thread_obj = NULL;
+  Pike_interpreter.thread_state = NULL;
   num_threads--;
   if(!num_threads && threads_evaluator_callback)
   {
@@ -845,7 +848,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   mt_unlock_interpreter();
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
-  return(0);
+  return 0;
 }
 
 #ifdef UNIX_THREADS
@@ -880,11 +883,22 @@ int num_lwps = 1;
 void f_thread_create(INT32 args)
 {
   struct thread_starter *arg;
+  struct thread_state *thread_state =
+    (struct thread_state *)Pike_fp->current_storage;
+  ONERROR err;
   int tmp;
+
+  if (thread_state->status != THREAD_NOT_STARTED) {
+    Pike_error("Threads can not be restarted.\n");
+  }
+
   arg = ALLOC_STRUCT(thread_starter);
-  arg->args=aggregate_array(args);
-  arg->id=clone_object(thread_id_prog,0);
-  OBJ2THREAD(arg->id)->status=THREAD_RUNNING;
+  SET_ONERROR(err, free, arg);
+
+  arg->args = aggregate_array(args);
+  arg->thread_obj = Pike_fp->current_object;
+  arg->thread_state = thread_state;
+  arg->thread_state->status=THREAD_RUNNING;
 
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
   arg->euid = geteuid();
@@ -892,7 +906,7 @@ void f_thread_create(INT32 args)
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
 
   do {
-    tmp = th_create(& OBJ2THREAD(arg->id)->id,
+    tmp = th_create(&arg->thread_state->id,
 		    new_thread_func,
 		    arg);
     if (tmp == EINTR) check_threads_etc();
@@ -901,7 +915,7 @@ void f_thread_create(INT32 args)
   if(!tmp)
   {
     num_threads++;
-    thread_table_insert(arg->id);
+    thread_table_insert(arg->thread_state);
 
     if(!threads_evaluator_callback)
     {
@@ -909,14 +923,23 @@ void f_thread_create(INT32 args)
 						 check_threads, 0,0);
       dmalloc_accept_leak(threads_evaluator_callback);
     }
-    ref_push_object(arg->id);
+    UNSET_ONERROR(err);
+
+    /* Wait for the thread to start properly.
+     * so that we can avoid races.
+     */
+    while (thread_state->status == THREAD_NOT_STARTED) {
+      THREADS_FPRINTF(0, (stderr, "THREAD_CREATE waiting...\n"));
+      low_co_wait_interpreter(&thread_state->status_change);
+    }
+
     THREADS_FPRINTF(0, (stderr, "THREAD_CREATE -> t:%08x\n",
-			(unsigned int)arg->id));
+			(unsigned int)arg->thread_obj));
+    push_int(0);
   } else {
-    free_object(arg->id);
     free_array(arg->args);
-    free((char *)arg);
-    Pike_error("Failed to create thread (errno = %d).\n",tmp);
+    CALL_AND_UNSET_ONERROR(err);
+    Pike_error("Failed to create thread (errno = %d).\n", tmp);
   }
 }
 
@@ -952,7 +975,7 @@ void f_thread_set_concurrency(INT32 args)
 PMOD_EXPORT void f_this_thread(INT32 args)
 {
   pop_n_elems(args);
-  ref_push_object(Pike_interpreter.thread_id);
+  ref_push_object(Pike_interpreter.thread_obj);
 }
 
 #define THIS_MUTEX ((struct mutex_storage *)(CURRENT_STORAGE))
@@ -1031,9 +1054,9 @@ void f_mutex_lock(INT32 args)
   INT_TYPE type;
 
   DO_IF_DEBUG(
-    if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+    if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
       debug_list_all_threads();
-      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
     } )
 
   m=THIS_MUTEX;
@@ -1051,14 +1074,14 @@ void f_mutex_lock(INT32 args)
 
     case 0:
     case 2:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_id)
+      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_obj)
       {
 	THREADS_FPRINTF(0,
 			(stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 			 (unsigned int)OB2KEY(m->key),
 			 (unsigned int)m,
 			 (unsigned int)OB2KEY(m->key)->mut,
-			 (unsigned int) Pike_interpreter.thread_id));
+			 (unsigned int) Pike_interpreter.thread_obj));
 
 	if(type==0) Pike_error("Recursive mutex locks!\n");
 
@@ -1076,9 +1099,9 @@ void f_mutex_lock(INT32 args)
   o=fast_clone_object(mutex_key);
 
   DO_IF_DEBUG(
-    if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+    if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
       debug_list_all_threads();
-      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
     } )
 
   if(m->key)
@@ -1102,16 +1125,16 @@ void f_mutex_lock(INT32 args)
   add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
 
   DO_IF_DEBUG(
-    if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
+    if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) {
       debug_list_all_threads();
-      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ;
     } )
 
   THREADS_FPRINTF(1, (stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 		      (unsigned int)OB2KEY(o),
 		      (unsigned int)m,
 		      (unsigned int)OB2KEY(m->key)->mut,
-		      (unsigned int)Pike_interpreter.thread_id));
+		      (unsigned int)Pike_interpreter.thread_obj));
   pop_n_elems(args);
   push_object(o);
 }
@@ -1151,7 +1174,7 @@ void f_mutex_trylock(INT32 args)
 		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
     case 0:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_id)
+      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_obj)
       {
 	Pike_error("Recursive mutex locks!\n");
       }
@@ -1244,10 +1267,10 @@ void exit_mutex_obj(struct object *o)
 void init_mutex_key_obj(struct object *o)
 {
   THREADS_FPRINTF(1, (stderr, "KEY k:%08x, o:%08x\n",
-		      (unsigned int)THIS_KEY, (unsigned int)Pike_interpreter.thread_id));
+		      (unsigned int)THIS_KEY, (unsigned int)Pike_interpreter.thread_obj));
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
-  add_ref(THIS_KEY->owner=Pike_interpreter.thread_id);
+  add_ref(THIS_KEY->owner=Pike_interpreter.thread_obj);
   THIS_KEY->initialized=1;
 }
 
@@ -1256,7 +1279,7 @@ void exit_mutex_key_obj(struct object *o)
   THREADS_FPRINTF(1, (stderr, "UNLOCK k:%08x m:(%08x) t:%08x o:%08x\n",
 		      (unsigned int)THIS_KEY,
 		      (unsigned int)THIS_KEY->mut,
-		      (unsigned int)Pike_interpreter.thread_id,
+		      (unsigned int)Pike_interpreter.thread_obj,
 		      (unsigned int)THIS_KEY->owner));
   if(THIS_KEY->mut)
   {
@@ -1411,7 +1434,7 @@ void f_thread_backtrace(INT32 args)
 
   pop_n_elems(args);
 
-  if(foo->state.thread_id == Pike_interpreter.thread_id)
+  if(foo->state.thread_obj == Pike_interpreter.thread_obj)
   {
     f_backtrace(0);
   }
@@ -1487,9 +1510,7 @@ static void f_thread_id_result(INT32 args)
     check_threads_etc();
   }
 
-  low_object_index_no_free(Pike_sp,
-			   Pike_fp->current_object, 
-			   thread_id_result_variable);
+  assign_svalue_no_free(Pike_sp, &th->result);
   Pike_sp++;
 }
 
@@ -1498,6 +1519,9 @@ void init_thread_obj(struct object *o)
   MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter));
   THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
+  THIS_THREAD->result.type = T_INT;
+  THIS_THREAD->result.subtype = NUMBER_UNDEFINED;
+  THIS_THREAD->result.u.integer = 0;
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
 #if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
@@ -1603,8 +1627,8 @@ void f_thread_local_get(INT32 args)
   key.type = T_INT;
   key.subtype = NUMBER_NUMBER;
   pop_n_elems(args);
-  if(Pike_interpreter.thread_id != NULL &&
-     (m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local) != NULL)
+  if(Pike_interpreter.thread_state != NULL &&
+     (m = Pike_interpreter.thread_state->thread_local) != NULL)
     mapping_index_no_free(Pike_sp++, m, &key);
   else {
     push_int(0);
@@ -1643,11 +1667,11 @@ void f_thread_local_set(INT32 args)
   else if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Thread.Local.set", 1);
 
-  if(Pike_interpreter.thread_id == NULL)
+  if(Pike_interpreter.thread_obj == NULL)
     Pike_error("Trying to set Thread.Local without thread!\n");
 
-  if((m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local) == NULL)
-    m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local =
+  if((m = Pike_interpreter.thread_state->thread_local) == NULL)
+    m = Pike_interpreter.thread_state->thread_local =
       allocate_mapping(4);
 
   mapping_insert(m, &key, &Pike_sp[-1]);
@@ -1919,7 +1943,12 @@ void th_init(void)
 
   START_NEW_PROGRAM_ID(THREAD_ID);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
-  thread_id_result_variable=simple_add_variable("result","mixed",0);
+  PIKE_MAP_VARIABLE("result", OFFSETOF(thread_state, result),
+		    tMix, T_MIXED, 0);
+  /* function(mixed ...:void) */
+  ADD_FUNCTION("create",f_thread_create,
+	       tFuncV(tNone,tMixed,tVoid),
+	       ID_STATIC);
   /* function(:array) */
   ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);
   /* function(:mixed) */
@@ -1937,10 +1966,8 @@ void th_init(void)
   add_ref(thread_id_prog);
   end_class("thread_id", 0);
 
-  /* function(mixed ...:object(Pike_interpreter.thread_id)) */
-  ADD_EFUN("thread_create",f_thread_create,
-	   tFuncV(tNone,tMixed,tObjIs_THREAD_ID),
-	   OPT_SIDE_EFFECT);
+  /* Backward compat... */
+  add_global_program("thread_create", thread_id_prog);
 
   /* function(:object(Pike_interpreter.thread_id)) */
   ADD_EFUN("this_thread",f_this_thread,
@@ -1960,23 +1987,30 @@ void th_init(void)
   if(!mutex_key)
     Pike_fatal("Failed to initialize thread program!\n");
 
-  Pike_interpreter.thread_id=clone_object(thread_id_prog,0);
-  SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
-  OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
-  OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
-  thread_table_insert(Pike_interpreter.thread_id);
+  Pike_interpreter.thread_obj = fast_clone_object(thread_id_prog);
+  Pike_interpreter.thread_state =
+    (struct thread_state *)(Pike_interpreter.thread_obj->storage +
+			    thread_storage_offset);
+  SWAP_OUT_THREAD(Pike_interpreter.thread_state); /* Init struct */
+  Pike_interpreter.thread_state->id = th_self();
+  Pike_interpreter.thread_state->swapped = 0;
+  thread_table_insert(Pike_interpreter.thread_state);
 }
 
 void th_cleanup(void)
 {
   th_running = 0;
 
-  if(Pike_interpreter.thread_id)
+  if (Pike_interpreter.thread_state) {
+    thread_table_delete(Pike_interpreter.thread_state);
+    Pike_interpreter.thread_state = NULL;
+  }
+
+  if(Pike_interpreter.thread_obj)
   {
-    thread_table_delete(Pike_interpreter.thread_id);
-    destruct(Pike_interpreter.thread_id);
-    free_object(Pike_interpreter.thread_id);
-    Pike_interpreter.thread_id=0;
+    destruct(Pike_interpreter.thread_obj);
+    free_object(Pike_interpreter.thread_obj);
+    Pike_interpreter.thread_obj = NULL;
     destruct_objects_to_destruct_cb();
   }
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.207 2003/02/14 05:31:27 mast Exp $
+|| $Id: gc.c,v 1.208 2003/02/15 17:33:33 grubba Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.207 2003/02/14 05:31:27 mast Exp $");
+RCSID("$Id: gc.c,v 1.208 2003/02/15 17:33:33 grubba Exp $");
 
 int gc_enabled = 1;
 
@@ -2927,7 +2927,7 @@ size_t do_gc(void *ignored, int explicit_call)
 
     if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
 #if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
-      OBJ2THREAD(Pike_interpreter.thread_id)->auto_gc_time += last_gc_time;
+      Pike_interpreter.thread_state->auto_gc_time += last_gc_time;
 #elif CPU_TIME_IS_THREAD_LOCAL == PIKE_NO
       auto_gc_time += last_gc_time;
 #endif
