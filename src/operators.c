@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.23 1998/01/26 19:59:57 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.24 1998/02/20 01:00:42 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -936,6 +936,41 @@ void o_multiply(void)
 {
   switch(TWO_TYPES(sp[-2].type,sp[-1].type))
   {
+    case TWO_TYPES(T_ARRAY, T_INT):
+      {
+	struct array *ret;
+	struct svalue *pos;
+	INT32 e;
+	if(sp[-1].u.integer < 0)
+	  error("Cannot multiply array by negative number.\n");
+	ret=allocate_array(sp[-2].u.array->size * sp[-1].u.integer);
+	pos=ret->item;
+	for(e=0;e<sp[-1].u.integer;e++,pos+=sp[-2].u.array->size)
+	  assign_svalues_no_free(pos,
+				 sp[-2].u.array->item,
+				 sp[-2].u.array->size,
+				 sp[-2].u.array->type_field);
+	ret->type_field=sp[-2].u.array->type_field;
+	pop_n_elems(2);
+	push_array(ret);
+	return;
+      }
+    case TWO_TYPES(T_STRING, T_INT):
+      {
+	struct pike_string *ret;
+	char *pos;
+	INT32 e;
+	if(sp[-1].u.integer < 0)
+	  error("Cannot multiply string by negative number.\n");
+	ret=begin_shared_string(sp[-2].u.string->len * sp[-1].u.integer);
+	pos=ret->str;
+	for(e=0;e<sp[-1].u.integer;e++,pos+=sp[-2].u.string->len)
+	  MEMCPY(pos,sp[-2].u.string->str,sp[-2].u.string->len);
+	pop_n_elems(2);
+	push_string(end_shared_string(ret));
+	return;
+      }
+
   case TWO_TYPES(T_ARRAY,T_STRING):
     {
       struct pike_string *ret;
@@ -954,7 +989,7 @@ void o_multiply(void)
     ret=implode_array(sp[-2].u.array, sp[-1].u.array);
     pop_n_elems(2);
     push_array(ret);
-    break;
+    return;
   }
 
   case TWO_TYPES(T_FLOAT,T_FLOAT):
@@ -1028,6 +1063,170 @@ void o_divide(void)
   {
     if(call_lfun(LFUN_DIVIDE, LFUN_RDIVIDE))
       return;
+
+    switch(TWO_TYPES(sp[-2].type,sp[-1].type))
+    {
+      case TWO_TYPES(T_STRING,T_INT):
+      {
+	struct array *a;
+	char *pos=sp[-2].u.string->str;
+	INT32 size,e,len;
+
+	len=sp[-1].u.integer;
+	if(!len)
+	  error("Division by zero.\n");
+
+	size=sp[-2].u.string->len / len;
+	if(len<0)
+	{
+	  len=-len;
+	  pos+=size % len;
+	}
+	a=allocate_array(size);
+	for(e=0;e<size;e++)
+	{
+	  a->item[e].u.string=make_shared_binary_string(pos,len);
+	  a->item[e].type=T_STRING;
+	  pos+=len;
+	}
+	a->type_field=BIT_STRING;
+	pop_n_elems(2);
+	push_array(a);
+	return;
+      }
+
+      case TWO_TYPES(T_STRING,T_FLOAT):
+      {
+	struct array *a;
+	INT32 last,pos,e,size;
+	double len;
+
+	len=sp[-1].u.float_number;
+	if(len==0.0)
+	  error("Division by zero.\n");
+
+	if(len<0)
+	{
+	  len=-len;
+	  size=(INT32)ceil( ((double)sp[-2].u.string->len) / len);
+	  a=allocate_array(size);
+	  
+	  for(last=sp[-2].u.string->len,e=0;e<size;e++)
+	  {
+	    pos=sp[-2].u.string->len - (INT32)((e+1)*len);
+	    a->item[e].u.string=make_shared_binary_string(
+	      sp[-2].u.string->str + pos,
+	      last-pos);
+	    last=pos;
+	  }
+	  pos=0;
+	  a->item[e].u.string=make_shared_binary_string(
+	    sp[-2].u.string->str + pos,
+	    last-pos);
+	}else{
+	  size=(INT32)ceil( ((double)sp[-2].u.string->len) / len);
+	  a=allocate_array(size);
+	  
+	  for(last=0,e=0;e<size;e++)
+	  {
+	    pos=(INT32)((e+1)*len);
+	    a->item[e].u.string=make_shared_binary_string(
+	      sp[-2].u.string->str + last,
+	      pos-last);
+	    last=pos;
+	  }
+	  pos=sp[2].u.string->len;
+	  a->item[e].u.string=make_shared_binary_string(
+	    sp[-2].u.string->str + last,
+	    pos-last);
+	}
+	a->type_field=BIT_STRING;
+	pop_n_elems(2);
+	push_array(a);
+	break;
+      }
+	  
+
+      case TWO_TYPES(T_ARRAY, T_INT):
+      {
+	struct array *a;
+	INT32 size,e,len,pos=0;
+
+	len=sp[-1].u.integer;
+	if(!len)
+	  error("Division by zero.\n");
+
+	size=sp[-2].u.array->size / len;
+	if(len<0)
+	{
+	  len=-len;
+	  pos+=size % len;
+	}
+	a=allocate_array(size);
+	for(e=0;e<size;e++)
+	{
+	  a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
+						  pos,
+						  pos+len);
+	  a->item[e].type=T_ARRAY;
+	  pos+=len;
+	}
+	a->type_field=BIT_ARRAY;
+	pop_n_elems(2);
+	push_array(a);
+	return;
+      }
+
+      case TWO_TYPES(T_ARRAY,T_FLOAT):
+      {
+	struct array *a;
+	INT32 last,pos,e,size;
+	double len;
+
+	len=sp[-1].u.float_number;
+	if(len==0.0)
+	  error("Division by zero.\n");
+
+	if(len<0)
+	{
+	  len=-len;
+	  size=(INT32)ceil( ((double)sp[-2].u.array->size) / len);
+	  a=allocate_array(size);
+	  
+	  for(last=sp[-2].u.array->size,e=0;e<size;e++)
+	  {
+	    pos=sp[-2].u.array->size - (INT32)((e+1)*len);
+	    a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
+						    pos,
+						    last);
+	    last=pos;
+	  }
+	  a->item[e].u.array=slice_array(sp[-2].u.array,
+					 0,
+					 last);
+	}else{
+	  size=(INT32)ceil( ((double)sp[-2].u.array->size) / len);
+	  a=allocate_array(size);
+	  
+	  for(last=0,e=0;e<size;e++)
+	  {
+	    pos=(INT32)((e+1)*len);
+	    a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
+						    last,
+						    pos);
+	    last=pos;
+	  }
+	  a->item[e].u.array=slice_array(sp[-2].u.array,
+					 last,
+					 sp[2].u.array->size);
+	}
+	a->type_field=BIT_ARRAY;
+	pop_n_elems(2);
+	push_array(a);
+	break;
+      }
+    }
+      
     error("Division on different types.\n");
   }
 
@@ -1110,6 +1309,40 @@ void o_mod(void)
   {
     if(call_lfun(LFUN_MOD, LFUN_RMOD))
       return;
+
+    switch(TWO_TYPES(sp[-2].type,sp[-1].type))
+    {
+      case TWO_TYPES(T_STRING,T_INT):
+      {
+	struct pike_string *s=sp[-2].u.string;
+	INT32 tmp,base;
+	if(!sp[-1].u.integer)
+	  error("Modulo by zero.\n");
+
+	tmp=s->len % sp[-1].u.integer;
+	base=s->len<0 ? 0 : s->len - tmp;
+	s=make_shared_binary_string(s->str + base, tmp);
+	pop_n_elems(2);
+	push_string(s);
+	return;
+      }
+
+
+      case TWO_TYPES(T_ARRAY,T_INT):
+      {
+	struct array *a=sp[-2].u.array;
+	INT32 tmp,base;
+	if(!sp[-1].u.integer)
+	  error("Modulo by zero.\n");
+
+	tmp=a->size % sp[-1].u.integer;
+	base=a->size<0 ? 0 : a->size - tmp;
+	a=slice_array(a,base,base+tmp);
+	pop_n_elems(2);
+	push_array(a);
+	return;
+      }
+    }
 
     error("Modulo on different types.\n");
   }
@@ -1464,9 +1697,25 @@ void init_operators(void)
   add_efun2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
   add_efun2("`>>",f_rsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_rsh);
 
-  add_efun2("`*",f_multiply,"!function(!object...:mixed)&function(mixed...:mixed)|function(array(array),array:array)|function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
+  add_efun2("`*",f_multiply,
+	    "!function(!object...:mixed)&function(mixed...:mixed)|"
+	    "function(array(array),array:array)|"
+	    "function(int...:int)|"
+	    "!function(int...:mixed)&function(float|int...:float)|"
+	    "function(string*,string:string)|"
+	    "function(array,int:array)|"
+	    "function(string,int:string)",
+	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
-  add_efun2("`/",f_divide,"function(mixed,object:mixed)|function(array,array:array(array))|function(object,mixed:mixed)|function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",OPT_TRY_OPTIMIZE,0,generate_divide);
+  add_efun2("`/",f_divide,
+	    "function(mixed,object:mixed)|"
+	    "function(array,array|int|float:array(array))|"
+	    "function(object,mixed:mixed)|"
+	    "function(int,int:int)|"
+	    "function(float|int,float:float)|"
+	    "function(float,int:float)|"
+	    "function(string,string|int|float:string*)",
+	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   add_efun2("`%",f_mod,"function(mixed,object:mixed)|function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
 
