@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.150 1998/01/14 01:30:23 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.151 1998/01/16 21:40:13 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -951,6 +951,8 @@ AC_CHECK_FUNCS( \
  alarm \
  fork \
  fork1 \
+ setuid getuid seteuid geteuid \
+ setgid getgid setegid getegid \
 )
 
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then

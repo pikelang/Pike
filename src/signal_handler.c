@@ -17,6 +17,8 @@
 #include "threads.h"
 #include "signal_handler.h"
 #include "module_support.h"
+#include "operators.h"
+#include "builtin_functions.h"
 #include <signal.h>
 
 #ifdef HAVE_WINBASE_H
@@ -535,6 +537,7 @@ void f_create_process(INT32 args)
     int ret;
     TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
     struct pike_string *p1,*p2;
+    void *env=NULL;
 
 
     /* FIX QUOTING LATER */
@@ -566,6 +569,38 @@ void f_create_process(INT32 args)
       t3=get_inheritable_handle(optional, "stderr");
       if(t3!=INVALID_HANDLE_VALUE) info.hStdError=t3;
 
+	if((tmp=simple_mapping_string_lookup(optional, "env")))
+	{
+	  if(tmp->type == T_MAPPING)
+	  {
+	    struct mapping *m=tmp->u.mapping;
+	    struct array *i,*v;
+	    int ptr=0;
+	    i=mapping_indices(m);
+	    v=mapping_indices(m);
+
+	    for(e=0;e<i->size;e++)
+	    {
+	      if(ITEM(i)[e].type == T_STRING && ITEM(v)[e].type == T_STRING)
+	      {
+		check_stack(3);
+		push_string(ITEM(i)[e].u.string);
+		push_string(make_shared_string("="));
+		push_string(ITEM(v)[e].u.string);
+		f_add(3);
+		ptr++;
+	      }
+	    }
+	    free_array(i);
+	    free_array(v);
+	    push_string(make_shared_binary_string("\0\0",1));
+	    f_aggregate(ptr+1);
+	    push_string(make_shared_binary_string("\0\0",1));
+	    o_multiply();
+	    env=(void *)sp[-1].u.string->str;
+	  }
+	}
+
       /* FIX: env, cleanup */
     }
 
@@ -576,7 +611,7 @@ void f_create_process(INT32 args)
 		      NULL,  /* thread security attribute */
 		      1,     /* inherithandles */
 		      0,     /* create flags */
-		      NULL,  /* environment */
+		      env,  /* environment */
 		      dir,   /* current dir */
 		      &info,
 		      &proc);
@@ -585,6 +620,7 @@ void f_create_process(INT32 args)
     if(dir) free((char *)dir);
     if(command_line) free((char *)command_line);
     if(filename) free((char *)filename);
+    if(env) pop_stack();
 
 #if 1
     if(t1!=INVALID_HANDLE_VALUE) CloseHandle(t1);
@@ -625,10 +661,12 @@ void f_create_process(INT32 args)
       mapping_insert(pid_mapping,sp-1, sp-2);
       pop_n_elems(2);
     }else{
+      int euid;
       char **argv;
 #ifdef DECLARE_ENVIRON
       extern char **environ;
 #endif
+      char **env;
       extern void my_set_close_on_exec(int,int);
       extern void do_set_close_on_exec(void);
 
@@ -645,16 +683,90 @@ void f_create_process(INT32 args)
 	argv[e]=ITEM(cmd)[e].u.string->str;
       
       argv[e]=0;
-      
+
+      euid=geteuid();
+
       if(optional)
       {
 	int toclose[3];
 	int fd;
 
+#ifdef HAVE_SETGID
+	if((tmp=simple_mapping_string_lookup(optional, "gid")))
+	{
+	  if(tmp->type == T_INT)
+	  {
+#ifdef HAVE_SETEUID
+	    seteuid(0);
+#endif
+	    if(!setgid(tmp->u.integer)
+#ifdef HAVE_SETEGID
+	       || !setegid(tmp->u.integer)
+#endif
+		 )
+	    {
+	      exit(69);
+	    }
+	  }
+	}
+#endif
+
+#ifdef HAVE_SETUID
+	if((tmp=simple_mapping_string_lookup(optional, "uid")))
+	{
+	  if(tmp->type == T_INT)
+	  {
+#ifdef HAVE_SETEUID
+	    seteuid(0);
+#endif
+	    if(!setuid(euid=tmp->u.integer) 
+#ifdef HAVE_SETEUID
+	       || ! seteuid(tmp->u.integer)
+#endif
+	      )
+	    {
+	      exit(69);
+	    }
+	  }
+	}
+#endif
+
 	if((tmp=simple_mapping_string_lookup(optional, "cwd")))
 	  if(tmp->type == T_STRING)
 	    if(!chdir(tmp->u.string->str))
 	      exit(69);
+
+
+	if((tmp=simple_mapping_string_lookup(optional, "env")))
+	{
+	  if(tmp->type == T_MAPPING)
+	  {
+	    struct mapping *m=tmp->u.mapping;
+	    struct array *i,*v;
+	    int ptr=0;
+	    i=mapping_indices(m);
+	    v=mapping_indices(m);
+
+	    env=(char **)xalloc((1+m_sizeof(m)) * sizeof(char *));
+	    for(e=0;e<i->size;e++)
+	    {
+	      if(ITEM(i)[e].type == T_STRING &&
+		 ITEM(v)[e].type == T_STRING)
+	      {
+		check_stack(3);
+		push_string(ITEM(i)[e].u.string);
+		push_string(make_shared_string("="));
+		push_string(ITEM(v)[e].u.string);
+		f_add(3);
+		env[ptr++]=sp[-1].u.string->str;
+	      }
+	    }
+	    env[ptr++]=0;
+	    free_array(i);
+	    free_array(v);
+	    environ=env;
+	  }
+	}
 
 	for(fd=0;fd<3;fd++)
 	{
@@ -689,11 +801,18 @@ void f_create_process(INT32 args)
 	  if(f2 == fd)
 	    close(toclose[fd]);
 	}
-	
-	/* Left to do: env, cleanup */
+
+	/* Left to do: cleanup? */
       }
-      
-      
+
+#if defined(HAVE_SETEUID) && defined(HAVE_GETEUID) && defined(HAVE_SETUID) && defined(HAVE_SETEUID)
+      /* Protect us from harm */
+      seteuid(0);
+      setgid(geteuid());
+      setuid(euid);
+      seteuid(euid);
+#endif
+
       my_set_close_on_exec(0,0);
       my_set_close_on_exec(1,0);
       my_set_close_on_exec(2,0);

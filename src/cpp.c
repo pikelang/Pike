@@ -32,6 +32,7 @@
 #define CPP_REALLY_NO_OUTPUT 8
 #define CPP_END_AT_NEWLINE 16
 #define CPP_DO_IF 32
+#define CPP_NO_EXPAND 64
 
 #define OUTP() (!(flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)))
 #define PUTNL() low_my_putchar('\n', &this->buf)
@@ -222,7 +223,7 @@ static void simple_add_define(struct cpp *this,
   int e=0;							\
   while(1)							\
   {								\
-    if(pos+1>=len)						\
+    if(pos>=len)						\
     {								\
       cpp_error(this,"End of file in character constant.");	\
       break;							\
@@ -259,10 +260,10 @@ static void simple_add_define(struct cpp *this,
     while(pos < len && data[pos]!='\n') pos++;	\
   } while(0)
 
-#define SKIPWHITE() do {			\
-    if(!isspace(data[pos])) break;		\
-    PUTNL();					\
-    pos++;					\
+#define SKIPWHITE() do {					\
+    if(!isspace(data[pos])) break;				\
+    if(data[pos]=='\n') { PUTNL(); this->current_line++; }	\
+    pos++;							\
   } while(0)
 
 #define SKIPSPACE() \
@@ -1763,6 +1764,49 @@ static void check_defined(struct cpp *this,
   }
 }
 
+static void dumpdef(struct cpp *this,
+		    struct define *def,
+		    struct define_argument *args,
+		    dynamic_buffer *tmp)
+{
+  struct pike_string *s;
+  struct define *d;
+  s=binary_findstring(args[0].arg, args[0].len);
+  if(s && (d=find_define(s)))
+  {
+    int e;
+    char buffer[42];
+    PUSH_STRING(d->link.s->str,d->link.s->len, tmp);
+    if(d->magic)
+    {
+      low_my_binary_strcat(" defined magically ",19, tmp);
+    }else{
+      low_my_binary_strcat(" defined as ",12, tmp);
+      
+      if(d->first)
+	PUSH_STRING(d->first->str, d->first->len, tmp);
+      for(e=0;e<d->num_parts;e++)
+      {
+	if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
+	  low_my_putchar(' ',tmp);
+	
+	if(d->parts[e].argument & DEF_ARG_STRINGIFY)
+	  low_my_putchar('#',tmp);
+	
+	sprintf(buffer,"%ld",(long)(d->parts[e].argument & DEF_ARG_MASK));
+	
+	if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
+	  low_my_putchar(' ',tmp);
+	
+	low_my_binary_strcat(buffer,strlen(buffer), tmp);
+	PUSH_STRING(d->parts[e].postfix->str, d->parts[e].postfix->len, tmp);
+      } 
+    }
+  }else{
+    low_my_binary_strcat(" 0 ",3, tmp);
+  }
+}
+
 static int do_safe_index_call(struct pike_string *s);
 
 static void check_constant(struct cpp *this,
@@ -1881,6 +1925,13 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
+
+  {
+    struct define* def=alloc_empty_define(make_shared_string("__dumpdef"),0);
+    def->magic=dumpdef;
+    def->args=1;
+    this.defines=hash_insert(this.defines, & def->link);
+  }
 
   simple_add_define(&this,"__PIKE__"," 1 ");
 #ifdef __NT__
