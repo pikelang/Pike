@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.96 2000/08/11 13:44:03 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.97 2000/08/11 13:52:17 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -103,14 +103,18 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, ptrdiff
   return 0;
 }
 
-PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, ptrdiff_t pos)
+PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s,
+						      ptrdiff_t pos)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
     if (s->len) {
-      fatal("String index %d is out of range [0 - %d]!\n", pos, s->len-1);
+      fatal("String index %ld is out of range [0 - %ld]!\n",
+	    DO_NOT_WARN((long)pos),
+	    DO_NOT_WARN((long)s->len-1));
     } else {
-      fatal("Attempt to index the empty string with %d!\n", pos);
+      fatal("Attempt to index the empty string with %ld!\n",
+	    DO_NOT_WARN((long)pos));
     }
   }
 #endif
@@ -185,7 +189,8 @@ PMOD_EXPORT void generic_memcpy(PCHARP to,
 {
 #ifdef PIKE_DEBUG
   if(len<0)
-    fatal("Cannot copy %d bytes!\n",len);
+    fatal("Cannot copy %ld bytes!\n",
+	  DO_NOT_WARN((long)len));
 #endif
 
   switch(TWO_SIZES(from.shift,to.shift))
@@ -1379,7 +1384,10 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 #ifdef PIKE_DEBUG
   if(start < 0 || len<0 || start+len>s->len )
   {
-    fatal("string_slice, start = %d, len = %d, s->len = %d\n",start,len,s->len);
+    fatal("string_slice, start = %ld, len = %ld, s->len = %ld\n",
+	  DO_NOT_WARN((long)start),
+	  DO_NOT_WARN((long)len),
+	  DO_NOT_WARN((long)s->len));
   }
 #endif
 
@@ -1614,9 +1622,10 @@ static void string_build_mkspace(struct string_builder *s,
     free((char *)s->s);
     s->s=n;
   }
-  else if(s->s->len+chars > s->malloced)
+  else if(((size_t)s->s->len+chars) > ((size_t)s->malloced))
   {
-    ptrdiff_t newlen = MAXIMUM(s->malloced*2, s->s->len + chars);
+    size_t newlen = MAXIMUM((size_t)(s->malloced*2),
+			    (size_t)(s->s->len + chars));
 
     s->s=(struct pike_string *)realloc((char *)s->s,
 				       sizeof(struct pike_string)+
@@ -1641,7 +1650,7 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 {
   ptrdiff_t i;
   string_build_mkspace(s,1,min_magnitude(ch));
-  s->known_shift=MAXIMUM(min_magnitude(ch),s->known_shift);
+  s->known_shift=MAXIMUM((size_t)min_magnitude(ch),s->known_shift);
   i = s->s->len++;
   low_set_index(s->s,i,ch);
 }
@@ -1736,7 +1745,7 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   string_build_mkspace(s,str->len,str->size_shift);
 
   pike_string_cpy(MKPCHARP_STR_OFF(s->s,s->s->len), str);
-  s->known_shift=MAXIMUM(s->known_shift,str->size_shift);
+  s->known_shift=MAXIMUM(s->known_shift,(size_t)str->size_shift);
   s->s->len+=str->len;
 }
 
@@ -1755,7 +1764,7 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s)
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
   low_set_index(s->s,s->s->len,0);
-  if(s->known_shift == s->s->size_shift)
+  if(s->known_shift == (size_t)s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
 }
