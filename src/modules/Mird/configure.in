@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2001/03/30 18:45:47 grubba Exp $
+# $Id: configure.in,v 1.9 2003/01/05 09:07:15 mirar Exp $
 AC_INIT(mird_glue.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -13,39 +13,42 @@ AC_CHECK_LIB(mird,mird_sync)
 
 if test "x$ac_cv_header_mird_h" != "xyes" -o "x$ac_cv_lib_mird_mird_sync" != "xyes"; then
 
-  AC_MSG_CHECKING(if we can build libmird on this system)
-  AC_CACHE_VAL(pike_cv_nice_mird_system,
-  	      [pike_cv_nice_mird_system=no;
-  	       AC_TRY_RUN([
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <fcntl.h>
-int main() 
-{
-int fd;
-fd=open("conftest.tmp",O_CREAT|O_TRUNC|O_APPEND|O_RDWR,0666);
-write(fd,"hejsan",3);
-close(fd);
-return 0;
-}],
-  	      [mird_cv_nice_mird_system=yes],[:],[:])])
-  AC_MSG_RESULT($mird_cv_nice_mird_system)
+   PIKE_FEATURE(Mird,[no (libmird/mird.h not found)])
 
-  if test "x$mird_cv_nice_mird_system" != "xyes"; then
-     PIKE_FEATURE(Mird,[no (no system libmird, can not use included)])
-  else
-    PIKE_FEATURE(Mird,[yes (included libmird)])
-    AC_CONFIG_SUBDIRS(libmird)
-    MODULE_SUBDIRS=libmird
-    MODULE_ARCHIVES=libmird/libmird.a
-    
-    CPPFLAGS='-I./libmird'" ${CPPFLAGS}"
-    AC_DEFINE(HAVE_LIBMIRD)
-    AC_DEFINE(HAVE_MIRD_H)
-  fi
+dnl   AC_MSG_CHECKING(if we can build libmird on this system)
+dnl   AC_CACHE_VAL(pike_cv_nice_mird_system,
+dnl   	      [pike_cv_nice_mird_system=no;
+dnl   	       AC_TRY_RUN([
+dnl #include <unistd.h>
+dnl #include <sys/types.h>
+dnl #include <sys/file.h>
+dnl #include <fcntl.h>
+dnl int main() 
+dnl {
+dnl int fd;
+dnl fd=open("conftest.tmp",O_CREAT|O_TRUNC|O_APPEND|O_RDWR,0666);
+dnl write(fd,"hejsan",3);
+dnl close(fd);
+dnl return 0;
+dnl }],
+dnl   	      [mird_cv_nice_mird_system=yes],[:],[:])])
+dnl   AC_MSG_RESULT($mird_cv_nice_mird_system)
+dnl 
+dnl   if test "x$mird_cv_nice_mird_system" != "xyes"; then
+dnl      PIKE_FEATURE(Mird,[no (no system libmird, can not use included)])
+dnl   else
+dnl     PIKE_FEATURE(Mird,[yes (included libmird)])
+dnl     AC_CONFIG_SUBDIRS(libmird)
+dnl     MODULE_SUBDIRS=libmird
+dnl     MODULE_ARCHIVES=libmird/libmird.a
+dnl     
+dnl     CPPFLAGS='-I./libmird'" ${CPPFLAGS}"
+dnl     AC_DEFINE(HAVE_LIBMIRD)
+dnl     AC_DEFINE(HAVE_MIRD_H)
+dnl   fi
+
 else
-  PIKE_FEATURE(Mird,[yes (system libmird)])
+   PIKE_FEATURE(Mird,[yes (system libmird)])
 fi
 
 AC_SUBST(CPPFLAGS)
