@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.199 2000/08/27 22:36:00 grubba Exp $");
+RCSID("$Id: file.c,v 1.200 2000/09/18 15:06:06 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -260,9 +260,14 @@ static void just_close_fd(void)
 
 	case EBADF:
 	  error("Internal error: Closing a non-active file descriptor %d.\n",fd);
+#ifdef SOLARIS
+       // it's actually OK. This is a bug in Solaris 8.
+       case EAGAIN:
+         break;
+#endif
 
-	case EINTR:
-	  continue;
+       case EINTR:
+         continue;
       }
     }
     break;
