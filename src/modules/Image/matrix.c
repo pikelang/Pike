@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.13 1998/01/13 22:59:23 hubbe Exp $ */
+/* $Id: matrix.c,v 1.14 1998/01/16 22:09:12 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.13 1998/01/13 22:59:23 hubbe Exp $
+**!	$Id: matrix.c,v 1.14 1998/01/16 22:09:12 grubba Exp $
 **! class image
 */
 
@@ -89,12 +89,12 @@ static INLINE int getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
-   if (args-args_start>=4)
+   if (args-args_start>=4) {
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
          img->alpha=sp[3-args+args_start].u.integer;
-   else
+   } else
       img->alpha=0;
    return 1;
 }

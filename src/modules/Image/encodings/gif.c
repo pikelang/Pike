@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.24 1998/01/14 16:30:01 mirar Exp $ */
+/* $Id: gif.c,v 1.25 1998/01/16 22:09:16 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.24 1998/01/14 16:30:01 mirar Exp $
+**!	$Id: gif.c,v 1.25 1998/01/16 22:09:16 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.24 1998/01/14 16:30:01 mirar Exp $");
+RCSID("$Id: gif.c,v 1.25 1998/01/16 22:09:16 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -218,19 +218,19 @@ void image_gif_header_block(INT32 args)
    else
       error("Image.GIF.header_block(): illegal argument 3 (expected int or colortable object)\n");
 
-   if (args>=4)
+   if (args>=4) {
       if (sp[3-args].type!=T_INT)
 	 error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
       else
 	 bkgi=sp[3-args].u.integer;
-
-   if (args>=5)
+   }
+   if (args>=5) {
       if (sp[4-args].type!=T_INT)
 	 error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
       else
 	 gif87a=sp[4-args].u.integer;
-
-   if (args>=7)
+   }
+   if (args>=7) {
       if (sp[5-args].type!=T_INT ||
 	  sp[6-args].type!=T_INT)
 	 error("Image.GIF.header_block(): illegal argument(s) 5..6 (expected int)\n");
@@ -241,7 +241,7 @@ void image_gif_header_block(INT32 args)
 	    aspect=(64*sp[5-args].u.integer)/sp[6-args].u.integer-15;
 	    if (aspect>241) aspect=241; else if (aspect<1) aspect=1;
 	 }
-
+   }
    if (args>=10)
    {
       if (sp[7-args].type!=T_INT ||
@@ -795,47 +795,51 @@ CHRONO("gif render_block begin");
 
       if (args>n) /* interlace and gce arguments */
       {
-	 if (args>n)
+	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
 	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       delay=sp[n-args].u.integer;
+	 }
 	 n++;
 	 if (!alpha)
 	 {
-	    if (args>n)
-	    if (sp[n-args].type!=T_INT)
-	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
-	    else
-	    {
-	       alphaidx=sp[n-args].u.integer;
-	       alpha=0;
-	       alphaentry=0;
-	       transparency=1;
-	       if (alphaidx!=-1 && numcolors<=alphaidx)
-		  error("Image.GIF.render_block(): illegal index to transparent color\n");
-	       n=6;
+	    if (args>n) {
+	       if (sp[n-args].type!=T_INT)
+	          error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
+	       else
+	       {
+	          alphaidx=sp[n-args].u.integer;
+	          alpha=0;
+	          alphaentry=0;
+	          transparency=1;
+	          if (alphaidx!=-1 && numcolors<=alphaidx)
+		     error("Image.GIF.render_block(): illegal index to transparent color\n");
+	          n=6;
+	       }
 	    }
 	    n++;
 	 }
-	 if (args>n)
+	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
 	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       interlace=!!sp[n-args].u.integer;
+	 }
 	 n++;
-	 if (args>n)
+	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
 	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       user_input=!!sp[n-args].u.integer;
+	 }
 	 n++;
-	 if (args>n)
+	 if (args>n) {
 	    if (sp[n-args].type!=T_INT)
 	       error("Image:GIF.render_block(): Illegal argument %d (expected int)\n",n+1);
 	    else
 	       disposal=sp[n-args].u.integer&7;
-
+	 }
       }
    }
    else 
@@ -1016,7 +1020,7 @@ void _image_gif_encode(INT32 args,int fs)
    imgobj->refs++;
 
    
-   if (args>=2)
+   if (args>=2) {
       if (sp[1-args].type==T_INT)
       {
 	 if (args!=4)
@@ -1047,9 +1051,9 @@ void _image_gif_encode(INT32 args,int fs)
 	 nctobj=NULL;
 	 arg=1;
       }
-
+   }
    /* check transparency arguments */
-   if (args-arg>0)
+   if (args-arg>0) {
       if (sp[arg-args].type==T_OBJECT &&
 	  (alpha=(struct image*)
 	   get_storage(alphaobj=sp[arg-args].u.object,image_program)))
@@ -1112,7 +1116,7 @@ void _image_gif_encode(INT32 args,int fs)
 	 tridx=trd;
 	 trans=2;
       }
-
+   }
    /* make a colortable if we don't have one */
    if (!nct)
    {
@@ -1213,12 +1217,12 @@ void image_gif_netscape_loop_block(INT32 args)
 {
    unsigned short loops=0;
    char buf[30];
-   if (args)
+   if (args) {
       if (sp[-args].type!=T_INT) 
 	 error("Image.GIF.netscape_loop_block: illegal argument (exected int)\n");
       else
 	 loops=sp[-args].u.integer;
-   else
+   } else
       loops=65535;
    pop_n_elems(args);
 
@@ -1355,7 +1359,7 @@ static void _decode_get_render(unsigned char **s,
    bpp=((*s)[9]&7)+1;
    push_int( !!((*s)[9]&64) );
 
-   if ( ((*s)[9]&128) )
+   if ( ((*s)[9]&128) ) {
       if ((*len)>10+(unsigned long)(3<<bpp) )
       {
 	 push_string(make_shared_binary_string((*s)+10,3<<bpp));
@@ -1371,8 +1375,7 @@ static void _decode_get_render(unsigned char **s,
 	 f_aggregate(10);
 	 return;
       }
-   else
-   {
+   } else {
       push_int(0);
       (*s)+=10;
       (*len)-=10;
@@ -1676,7 +1679,7 @@ static void _gif_decode_lzw(unsigned char *s,
 	 c[n].len=c[last].len+1;
       }
       else if (n>=m) break; /* illegal code */
-      if (!c[n].len)
+      if (!c[n].len) {
 	 if (n==clearcode) 
 	 {
 	    bits=obits+1;
@@ -1685,8 +1688,7 @@ static void _gif_decode_lzw(unsigned char *s,
 	    last=clearcode;
 	 }
 	 else break; /* endcode */
-      else
-      {
+      } else {
 	 struct lzwc *myc;
 	 rgb_group *d,*da=NULL;
 	 unsigned short lc;
@@ -1703,11 +1705,12 @@ static void _gif_decode_lzw(unsigned char *s,
 	    lc=myc->c;
 	    if (lc<nct->u.flat.numentries)
 	       *(--d)=nct->u.flat.entries[lc].color;
-	    if (alpha)
+	    if (alpha) {
 	       if (tidx==lc)
 		  *(--da)=black;
 	       else
 		  *(--da)=white;
+	    }
 	    if (myc->prev==0xffff) break;
 	    myc=c+myc->prev;
 	 }

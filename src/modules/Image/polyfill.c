@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.18 1998/01/13 22:59:24 hubbe Exp $");
+RCSID("$Id: polyfill.c,v 1.19 1998/01/16 22:09:13 grubba Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.18 1998/01/13 22:59:24 hubbe Exp $
+**!	$Id: polyfill.c,v 1.19 1998/01/16 22:09:13 grubba Exp $
 **! class image
 */
 
@@ -128,17 +128,17 @@ static void vertex_connect(struct vertex *above,
 
 static INLINE float vertex_xmax(struct vertex_list *v,float yp,float *ydest)
 {
-   if (v->dx>0.0)
+   if (v->dx>0.0) {
       if (v->below->y>yp+1.0+1e-10)
 	 return v->above->x+v->dx*((*ydest=(yp+1.0))-v->above->y);
       else
 	 return (*ydest=v->below->y),v->below->x;
-   else if (v->dx<0.0)
+   } else if (v->dx<0.0) {
       if (v->above->y<yp-1e-10)
 	 return v->above->x+v->dx*((*ydest=yp)-v->above->y);
       else
 	 return (*ydest=v->above->y),v->above->x;
-   else if (v->below->y>yp+1.0+1e-10) 
+   } else if (v->below->y>yp+1.0+1e-10) 
       return (*ydest=yp+1.0),v->above->x;
    else
       return (*ydest=v->below->y),v->below->x;
@@ -146,17 +146,17 @@ static INLINE float vertex_xmax(struct vertex_list *v,float yp,float *ydest)
 
 static INLINE float vertex_xmin(struct vertex_list *v,float yp,float *ydest)
 {
-   if (v->dx<0.0)
+   if (v->dx<0.0) {
       if (v->below->y>yp+1.0+1e-10)
 	 return v->above->x+v->dx*((*ydest=(yp+1.0))-v->above->y);
       else
 	 return (*ydest=v->below->y),v->below->x;
-   else if (v->dx>0.0)
+   } else if (v->dx>0.0) {
       if (v->above->y<yp-1e-10)
 	 return v->above->x+v->dx*((*ydest=yp)-v->above->y);
       else
 	 return (*ydest=v->above->y),v->above->x;
-   else if (v->above->y<yp-1e-10) 
+   } else if (v->above->y<yp-1e-10) 
       return (*ydest=yp),v->above->x;
    else
       return (*ydest=v->above->y),v->above->x;

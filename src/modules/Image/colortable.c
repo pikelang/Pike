@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.33 1998/01/13 22:59:21 hubbe Exp $ */
+/* $Id: colortable.c,v 1.34 1998/01/16 22:09:08 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.33 1998/01/13 22:59:21 hubbe Exp $
+**!	$Id: colortable.c,v 1.34 1998/01/16 22:09:08 grubba Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.33 1998/01/13 22:59:21 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.34 1998/01/16 22:09:08 grubba Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -431,17 +431,19 @@ static int reduce_recurse(struct nct_flat_entry *src,
    diff.b*=DIFF_B_MULT;
    gdiff=(gdiff*DIFF_GREY_MULT)/(sq(sf.r+sf.g+sf.b));
 
-   if (diff.r > diff.g)
-      if (diff.r > diff.b)
+   if (diff.r > diff.g) {
+      if (diff.r > diff.b) {
 	 if (diff.r > gdiff) st=SORT_R; else st=SORT_GREY;
-      else 
+      } else {
 	 if (diff.b > gdiff) st=SORT_B; else st=SORT_GREY;
-   else 
-      if (diff.g > diff.b)
+      }
+   } else {
+      if (diff.g > diff.b) {
 	 if (diff.g > gdiff) st=SORT_G; else st=SORT_GREY;
-      else 
+      } else {
 	 if (diff.b > gdiff) st=SORT_B; else st=SORT_GREY;
-
+      }
+   }
 #ifdef COLORTABLE_REDUCE_DEBUG
    fprintf(stderr,"COLORTABLE%*s diff=%d,%d,%d,%ld sort=%d\n",level,"",diff.r,diff.g,diff.b,gdiff,st);
 #endif
@@ -525,13 +527,14 @@ static int reduce_recurse(struct nct_flat_entry *src,
 #endif
 
       n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type);
-      if (n!=oldn)
+      if (n!=oldn) {
 	 if (n<oldn) /* i certainly hope so */
 	    MEMMOVE(dest+n,dest+oldn,sizeof(struct nct_flat_entry)*m);
 	 else /* huh? */
 	    /* this is the only case we don't have them already */
 	    m=reduce_recurse(src+left,dest+n,src_size-left,
 			     target_size-n,level+2,sf,newpos2,space,type);
+      }
 #ifdef COLORTABLE_REDUCE_DEBUG
       fprintf(stderr,"COLORTABLE%*s ->%d+%d=%d (retried for %d+%d=%d)\n",level,"",n,m,n+m,i,target_size-i,target_size);
 #endif
@@ -2024,7 +2027,7 @@ static void image_colortable_add(INT32 args)
 		get_storage(sp[-args].u.object,image_program)))
       {
 	 /* get colors from image */
-	 if (args>=2)
+	 if (args>=2) {
 	    if (sp[1-args].type==T_INT)
 	    {
 	       int numcolors=sp[1-args].u.integer;
@@ -2079,6 +2082,7 @@ static void image_colortable_add(INT32 args)
 	    }
 	    else 
 	       error("Illegal argument 2 to Image.colortable->add|create\n");
+         }
 	 else
 	 {
 	    THIS->u.flat=_img_get_flat_from_image(img,256); 
@@ -2488,7 +2492,7 @@ void image_colortable_cubicles(INT32 args)
       colortable_free_lookup_stuff(THIS);
       THIS->lookup_mode=NCT_CUBICLES;
    }
-   if (args)
+   if (args) {
       if (args>=3 && 
 	  sp[-args].type==T_INT &&
 	  sp[2-args].type==T_INT &&
@@ -2505,6 +2509,7 @@ void image_colortable_cubicles(INT32 args)
       }
       else
 	 error("Illegal arguments to colortable->cubicles()\n");
+   }
    else
    {
       THIS->lu.cubicles.r=CUBICLE_DEFAULT_R;
@@ -3287,22 +3292,22 @@ void image_colortable_floyd_steinberg(INT32 args)
    float factor=0.95;
    THIS->dither_type=NCTD_NONE;
 
-   if (args>=1)
+   if (args>=1) {
       if (sp[-args].type!=T_INT) 
 	 error("colortable->spacefactors(): Illegal argument 1\n");
       else 
 	 THIS->du.floyd_steinberg.dir=sp[-args].u.integer;
-   else
+   } else {
       THIS->du.floyd_steinberg.dir=0;
-
-   if (args>=6)
+   }
+   if (args>=6) {
       if (sp[5-args].type==T_FLOAT)
 	 factor=(float)sp[5-args].u.float_number;
       else if (sp[5-args].type==T_INT)
 	 factor=(float)sp[5-args].u.integer;
       else
 	 error("colortable->spacefactors(): Illegal argument 6\n");
-
+   }
    if (args>=5)
    {
       if (sp[1-args].type==T_FLOAT)
@@ -3437,7 +3442,7 @@ void image_colortable_randomcube(INT32 args)
 {
    THIS->dither_type=NCTD_NONE;
 
-   if (args>=3)
+   if (args>=3) {
       if (sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT||
 	  sp[2-args].type!=T_INT)
@@ -3448,6 +3453,7 @@ void image_colortable_randomcube(INT32 args)
 	 THIS->du.randomcube.g=sp[1-args].u.integer;
 	 THIS->du.randomcube.b=sp[2-args].u.integer;
       }
+   }
    else if (THIS->type==NCT_CUBE && THIS->u.cube.r && 
 	    THIS->u.cube.g && THIS->u.cube.b)
    {
@@ -3472,12 +3478,12 @@ void image_colortable_randomgrey(INT32 args)
 {
    THIS->dither_type=NCTD_NONE;
 
-   if (args)
+   if (args) {
       if (sp[-args].type!=T_INT)
 	 error("Image.colortable->randomgrey(): illegal argument(s)\n");
       else
 	 THIS->du.randomcube.r=sp[-args].u.integer;
-   else if (THIS->type==NCT_CUBE && THIS->u.cube.r)
+   } else if (THIS->type==NCT_CUBE && THIS->u.cube.r)
       THIS->du.randomcube.r=256/THIS->u.cube.r;
    else
       THIS->du.randomcube.r=32;
@@ -3698,7 +3704,7 @@ void image_colortable_ordered(INT32 args)
 
    THIS->dither_type=NCTD_NONE;
 
-   if (args>=3)
+   if (args>=3) {
       if (sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT||
 	  sp[2-args].type!=T_INT)
@@ -3709,8 +3715,8 @@ void image_colortable_ordered(INT32 args)
 	 g=sp[1-args].u.integer;
 	 b=sp[2-args].u.integer;
       }
-   else if (THIS->type==NCT_CUBE && THIS->u.cube.r && 
-	    THIS->u.cube.g && THIS->u.cube.b)
+   } else if (THIS->type==NCT_CUBE && THIS->u.cube.r && 
+	      THIS->u.cube.g && THIS->u.cube.b)
    {
       r=256/THIS->u.cube.r;
       g=256/THIS->u.cube.g;

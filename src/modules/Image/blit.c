@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.26 1998/01/13 22:59:21 hubbe Exp $ */
+/* $Id: blit.c,v 1.27 1998/01/16 22:09:07 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.26 1998/01/13 22:59:21 hubbe Exp $
+**!	$Id: blit.c,v 1.27 1998/01/16 22:09:07 grubba Exp $
 **! class image
 */
 
@@ -91,12 +91,12 @@ static INLINE void getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
-   if (args-args_start>=4)
+   if (args-args_start>=4) {
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
          img->alpha=sp[3-args+args_start].u.integer;
-   else
+   } else
       img->alpha=0;
 }
 
@@ -394,11 +394,12 @@ void image_paste_alpha(INT32 args)
        for (ix=0; ix<mx; ix++)
        {
 	 x = ix + x1; y = iy + y1;
-	 if(x>=0 && y>=0 && x<xs && y<ys)
+	 if(x>=0 && y>=0 && x<xs && y<ys) {
 	   if(this->alpha)
 	     set_rgb_group_alpha(this->img[x+y*xs],*(source),this->alpha);
 	   else
 	     this->img[x+y*xs]=*(source);
+	 }
 	 source++;
        }
      THREADS_DISALLOW();
