@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.81 2004/04/14 19:45:15 mast Exp $
+|| $Id: dynamic_load.c,v 1.82 2004/04/15 13:21:25 grubba Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "lex.h"
 #  include "object.h"
 
-RCSID("$Id: dynamic_load.c,v 1.81 2004/04/14 19:45:15 mast Exp $");
+RCSID("$Id: dynamic_load.c,v 1.82 2004/04/15 13:21:25 grubba Exp $");
 
 #else /* TESTING */
 
@@ -593,7 +593,13 @@ void f_load_module(INT32 args)
     compilation_depth = save.compilation_depth;
     lex = save.lex;
     if (p) {
-      if (p->num_identifier_references) {
+      if (
+#if 0
+	  p->num_identifier_references
+#else /* !0 */
+	  1
+#endif /* 0 */
+	  ) {
 	push_program(p);
 	add_ref(new_module->module_prog = Pike_sp[-1].u.program);
       } else {
