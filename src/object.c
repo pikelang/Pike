@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.198 2002/02/14 00:35:41 nilsson Exp $");
+RCSID("$Id: object.c,v 1.199 2002/04/03 12:11:53 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1028,7 +1028,7 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
     break;
 
   default:
-    Pike_error("Lookup on non-string value.\n");
+    Pike_error("Lookup in object with non-string index.\n");
   }
 
   if(f < 0)
