@@ -11,8 +11,8 @@ AccelGroup add_accel( GTK.Widget widget, string signal, int key, int modifiers, 
 //! the widget is the one in which the signal specified by 'signal'
 //! recides.
 //! 
-//! The key is the character code (such as 'a' for the a key and '@'
-//! for the @ key), and modifiers is a bitmap of one or more bits, the
+//! The key is the character code (such as 'a' for the a key and '@@'
+//! for the @@ key), and modifiers is a bitmap of one or more bits, the
 //! bits are . Flags is one or more of @[ACCEL_VISIBLE], @[ACCEL_SIGNAL_VISIBLE] and @[ACCEL_LOCKED]
 //!
 //!
