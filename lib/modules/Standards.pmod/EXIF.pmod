@@ -3,14 +3,11 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.24 2004/08/10 13:18:16 nilsson Exp $
+// $Id: EXIF.pmod,v 1.25 2004/08/10 13:26:13 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
 // Some URLs:
-// http://www.ba.wakwak.com/~tsuruzoh/Computer/Digicams/exif-e.html
-// http://www.pima.net/standards/it10/PIMA15740/exif.htm
-// http://tsc.jeita.or.jp/WTO-01.htm
 // http://www.exif.org/
 // http://www.dicasoft.de/casiomn.htm
 // http://www.dalibor.cz/minolta/
