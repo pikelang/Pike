@@ -30,6 +30,7 @@
    :n  set field size & precision
    ;n  Set column width
     *  if n is a * then next argument is used
+    ~  get pad string from argument list
    'X'  Set a pad string. ' cannot be a part of the pad_string (yet)
     <  Use same arg again
     ^  repeat this on every line produced
@@ -428,14 +429,27 @@ INLINE static int do_one(struct format_info *f)
 #define DO_OP() \
    if(fsp->flags & SNURKEL) \
    { \
-     if(!v) \
+     struct array *_v; \
+     string _b; \
+     _b.str=0; \
+     _b.len=0; \
+     GET_ARRAY(_v); \
+     for(tmp=0;tmp<_v->size;tmp++) \
      { \
-       GET_ARRAY(v); \
-       pos=0; \
+       struct svalue *save_sp=sp; \
+       array_index_no_free(sp,_v,tmp); \
+       sp++; \
+       _b=low_pike_sprintf(begin,a-begin+1,sp-1,1,_b,nosnurkel+1); \
+       if(save_sp < sp) pop_stack(); \
      } \
-     if(pos>=v->size) { fsp--; break; } \
-     array_index(& temp_svalue, v, pos++ ); \
-     arg=&temp_svalue; \
+     fsp->b=_b.str; \
+     fsp->len=_b.len; \
+     fsp->free_string=fsp->b; \
+     fsp->pad_string=" "; \
+     fsp->pad_length=1; \
+     fsp->column_width=0; \
+     fsp->pos_pad=fsp->flags=fsp->width=fsp->precision=0; \
+     break; \
    }
 
 
@@ -448,20 +462,22 @@ static string low_pike_sprintf(char *format,
 			       int format_len,
 			       struct svalue *argp,
 			       int num_arg,
-			       string prefix)
+			       string prefix,
+			       int nosnurkel)
 {
   int tmp,setwhat,pos,d,e;
-  char *a;
+  char *a,*begin;
   char buffer[40];
   struct format_info *f,*start;
   float tf;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
-  struct array *v;
 
   start=fsp;
   for(a=format;a<format+format_len;a++)
   {
+    int num_snurkel;
+
     fsp++;
     if(fsp-format_info_stack==FORMAT_INFO_STACK_SIZE)
       sprintf_error("Sprintf stack overflow.\n");
@@ -480,9 +496,10 @@ static string low_pike_sprintf(char *format,
       a+=e-1;
       continue;
     }
+    num_snurkel=0;
     arg=NULL;
-    v=NULL;
     setwhat=pos=0;
+    begin=a;
 
     for(a++;;a++)
     {
@@ -532,14 +549,17 @@ static string low_pike_sprintf(char *format,
       case '+': fsp->pos_pad='+'; continue;
       case '!': fsp->flags^=DO_TRUNC; continue;
       case '^': fsp->flags|=REPEAT; continue;
-      case '@': fsp->flags|=SNURKEL; continue;
       case '>': fsp->flags|=MULTI_LINE_BREAK; continue;
       case '_': fsp->flags|=WIDTH_OF_DATA; continue;
+      case '@':
+	if(++num_snurkel > nosnurkel)
+	  fsp->flags|=SNURKEL;
+	continue;
 
       case '\'':
 	tmp=0;
 	for(a++;a[tmp]!='\'';tmp++)
-	  if(!a[tmp])
+	  if(a >= format + format_len )
 	    sprintf_error("Unfinished pad string in format string.\n");
 	if(tmp)
 	{
@@ -548,6 +568,15 @@ static string low_pike_sprintf(char *format,
 	}
 	a+=tmp;
 	continue;
+
+      case '~':
+      {
+	struct pike_string *s;
+	GET_STRING(s);
+	fsp->pad_string=s->str;
+	fsp->pad_length=s->len;
+	continue;
+      }
 
       case '<':
 	if(!lastarg)
@@ -603,7 +632,7 @@ static string low_pike_sprintf(char *format,
 	      array_index_no_free(sp,w,tmp);
 	      sp++;
 	    }
-	    b=low_pike_sprintf(a+1,e-2,s,sp-s,b);
+	    b=low_pike_sprintf(a+1,e-2,s,sp-s,b,0);
 	    pop_n_elems(sp-s);
 	  }
 	  fsp->b=b.str;
@@ -711,17 +740,6 @@ static string low_pike_sprintf(char *format,
 	break;
       }
       }
-      if((fsp->flags & SNURKEL) && v->size>pos)
-      {
-        check_signals();
-        fsp++;
-        if(fsp-format_info_stack==FORMAT_INFO_STACK_SIZE)
-          sprintf_error("Format stack overflow.\n");
-        fsp[0]=fsp[-1];
-        fsp->free_string=NULL;	/* we don't want to free it twice */
-        a--;
-        continue;
-      }
       break;
     }
   }
@@ -796,7 +814,7 @@ string pike_sprintf(char *format,struct svalue *argp,int num_arg)
 
   free_sprintf_strings();
   fsp=format_info_stack-1;
-  return low_pike_sprintf(format,strlen(format),argp,num_arg,prefix);
+  return low_pike_sprintf(format,strlen(format),argp,num_arg,prefix,0);
 }
 
 /* The efun */
@@ -815,10 +833,11 @@ static void f_sprintf(INT32 num_arg)
     error("Bad argument 1 to sprintf.\n");
 
   s=low_pike_sprintf(argp->u.string->str,
-		    argp->u.string->len,
-		    argp+1,
-		    num_arg-1,
-		    prefix);
+		     argp->u.string->len,
+		     argp+1,
+		     num_arg-1,
+		     prefix,
+		     0);
   free_svalue(&temp_svalue);
   temp_svalue.type=T_INT;
   pop_n_elems(num_arg);
