@@ -19,17 +19,7 @@ int IS_OBJECT_PROGRAM(struct program *X)
   return  !(((X) == pgtk_style_program)
             || ((X) == pgtk_CTreeNode_program)
             || ((X) == pgtk_CTreeRow_program)
-            || ((X) == pgtk_selection_data_program)
-require gtkextra;
-            /* Only when we have GTK+Extra (a lot of stuff in there that
-             * is not really objects... I don't really like it... 
-            */
-            || ((X) == pgtk_icon_list_item_program)
-            || ((X) == pgtk_plot_dataset_program)
-            || ((X) == pgtk_psfont_program)
-            || ((X) == pgtk_sheet_child_program)
-endrequire;
-            );
+            || ((X) == pgtk_selection_data_program));
 }
 
 static void backend_callback()

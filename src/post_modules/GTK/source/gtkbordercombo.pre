@@ -1,9 +1,0 @@
-require gtkextra;
-class border_combo;
-inherit combo_box;
-// It is a W(ComboBox) subclass with a variety of border styles in the
-// popdown window arranged in a table of togglebuttons.
-// IMG: GTK.BorderCombo()
-signal changed;
-void create();
-// Create a new border combo

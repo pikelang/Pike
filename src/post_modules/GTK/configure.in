@@ -325,28 +325,6 @@ AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
 # End of gnome dependent stuff.
 fi
 
-AC_PATH_PROG(GTKEXTRA_CONFIG,gtkextra-config,no)
-
-AC_SUBST(pgtk_has_gtkextra)
-AC_SUBST(GTKEXTRA_LIBS)
-AC_SUBST(GTKEXTRA_CFLAGS)
-
-if test "$GTKEXTRA_CONFIG" = "no"; then
-  pgtk_has_gtkextra=nogtkextra
-  GTKEXTRA_LIBS=""
-  GTKEXTRA_CFLAGS=""
-else
-  GTKEXTRA_LIBS="`$GTKEXTRA_CONFIG --libs`"
-  save_CFLAGS=$CFLAGS
-  GTKEXTRA_CFLAGS="`$GTKEXTRA_CONFIG --cflags`"
-  CFLAGS="`$GTKEXTRA_CONFIG --cflags`"
-AC_CHECK_HEADERS(gtkextra/gtkextra.h)
-  CFLAGS=$save_CFLAGS
-  pgtk_has_gtkextra=gtkextra
-fi
-
-
-
 AC_CHECK_LIB(gtkdatabox, main,,,`gtk-config --libs`)
 AC_CHECK_HEADERS(gtkdatabox.h)
 
