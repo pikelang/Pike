@@ -28,7 +28,7 @@ constant can be written in several ways:</p>
 <r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Description</b></c></r>
 <r><c>-?[1-9][0-9]*</c><c>78</c><c>Decimal number</c></r>
 <r><c>-?0[0-9]*</c><c>0116</c><c>Octal number</c></r>
-<r><c>-?0[xX][0-9a-eA-E]+</c><c>0x4e</c><c>Hexadecimal number</c></r>
+<r><c>-?0[xX][0-9a-fA-F]+</c><c>0x4e</c><c>Hexadecimal number</c></r>
 <r><c>-?0[bB][01]+</c><c>0b1001110</c><c>Binary number</c></r>
 <r><c>-?'\\?.'</c><c>'N'</c><c>ASCII character</c></r>
 </matrix>
@@ -41,15 +41,21 @@ numbers 10, 11, 12, 13, 14 and 15. In binary notation every digit is worth
 twice the value of the succeding digit, but only 1:s and 0:s are used. The
 ASCII notation gives the ASCII value of the character between the single
 quotes. In this case the character is <tt>N</tt> which just happens to be
-78 in ASCII.</p>
+78 in ASCII. Some characters, like special characters as newlines, can not
+be placed within single quotes. The special generation sequence for those
+characters, listed under strings, must be used instead. Specifically this
+applies to the single quote character itself, which has to be written as
+<expr>'\''</expr>.</p>
 
-<p>Integers are coded in 2-complement and overflows are silently ignored
-by Pike. This means that if your integers are 32-bit and you add 1 to
-the number 2147483647 you get the number -2147483648. This works exactly
-as in C or C++.</p>
+<p>Integers in Pike never overflows or underflows when they reach the
+systems maxint/minint. Instead they are silently converted into bignums.
+Integers are usually implemented as 2-complement 32-bits integers, and
+thus are limited within -2147483648 and 2147483647. This may however vary
+between platforms, especially 64-bit platforms. <fixme>Conversion back
+to normal integer?</fixme></p>
 
-<p>All the arithmetic, bitwise and comparison operators can be used on integers.
-Also note these functions:</p>
+<p>All the arithmetic, bitwise and comparison operators can be used on
+integers. Also note these functions:</p>
 
 <dl>
 <dt><tt>int intp(mixed <i>x</i>)</tt></dt>
@@ -64,27 +70,27 @@ Also note these functions:</p>
 </subsection>
 
 <subsection title="float">
-<!-- FIXME: Du borde skriva något om att float och int inte är kompatibla och ingen 
-implicit casting sker som i C++ -->
 <p>Although most programs only use integers, they are unpractical when doing
 trigonometric calculations, transformations or anything else where you
-need decimals. For this purpose you use <tt>float</tt>. Floats are normally
-32 bit floating point numbers, which means that they can represent very large
-and very small numbers, but only with 9 accurate digits. To write a floating
-point constant, you just put in the decimals or write it in the exponential
-form:</p>
+need decimals. For this purpose you use <expr>float</expr>. Floats are
+normally 32 bit floating point numbers, which means that they can represent
+very large and very small numbers, but only with 9 accurate digits. To write
+a floating point constant, you just put in the decimals or write it in the
+exponential form:</p>
 
-<example>
-3.14159265358979323846264338327950288419716939937510 // Pi
-1.0e9  // A billion
-1.0e-9 // A billionth
-</example>
+<matrix>
+<r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Equals</b></c></r>
+<r><c>-?[0-9]+\.[0-9]+</c><c>3.1415926</c><c>3.1415926</c></r>
+<r><c>-?[0-9]+e-?[0-9]+</c><c>-5e3</c><c>-5000.0</c></r>
+<r><c>-?[0-9]+\.[0-9]+e-?[0-9]+</c><c>1.022e-2</c><c>0.01022</c></r>
+</matrix>
 
-<p>Of course you do not need this many decimals, but it doesn't hurt either.
+<p>Of course you can have any number of decimals to increase the accuracy.
 Usually digits after the ninth digit are ignored, but on some architectures
-<tt>float</tt> might have higher accuracy than that. In the exponential form,
-<tt>e</tt> means "times 10 to the power of", so <tt>1.0e9</tt> is equal to
-"1.0 times 10 to the power of 9".</p>
+<expr>float</expr> might have higher accuracy than that. In the exponential
+form, <expr>e</expr> means "times 10 to the power of", so <expr>1.0e9</expr>
+is equal to "1.0 times 10 to the power of 9". <fixme>float and int is not
+compatible and no implicit cast like in C++</fixme></p>
 
 <p>All the arithmetic and comparison operators can be used on floats.
 Also, these functions operates on floats:</p>
@@ -156,6 +162,24 @@ string:</p>
 "\xffffff"    // the character 16777215
 "\116""3"     // 'N' followed by a '3'
 </example>
+
+<matrix>
+<r><c><b>Pattern</b></c><c><b>Example</b></c></r>
+<r><c>.</c><c>N</c></r>
+<r><c>\\[0-7]+</c><c>\116</c></r>
+<r><c>\\x[0-9a-fA-F]+</c><c>\x4e</c></r>
+<r><c>\\d[0-9]+</c><c>\d78</c></r>
+</matrix>
+
+<matrix>
+<r><c><b>Sequence</b></c><c><b>ASCII code</b></c><c><b>Charcter</b></c></r>
+<r><c>\b</c><c>8</c><c>A backspace character</c></r>
+<r><c>\t</c><c>9</c><c>A tab character</c></r>
+<r><c>\n</c><c>10</c><c>A newline character</c></r>
+<r><c>\r</c><c>13</c><c>A carriage return character</c></r>
+<r><c>\"</c><c>34</c><c>A double quote character</c></r>
+<r><c>\\</c><c>92</c><c>A backslash character</c></r>
+</matrix>
 
 <p>As you can see, any sequence of characters within double quotes is a string.
 The backslash character is used to escape characters that are not allowed or
