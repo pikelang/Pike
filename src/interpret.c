@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.9 1996/11/14 01:24:09 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.10 1996/11/18 23:12:31 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -83,8 +83,13 @@ void init_interpreter()
 #define MAP_ANONYMOUS 0
   if(fd == -1)
   {
-    fd=open("/dev/zero",O_RDONLY);
-    if(fd < 0) fatal("Failed to open /dev/zero.\n");
+    while(1)
+    {
+      fd=open("/dev/zero",O_RDONLY);
+      if(fd >= 0) break;
+      if(errno != EINTR)
+	fatal("Failed to open /dev/zero.\n");
+    }
   }
 #endif
 

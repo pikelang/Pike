@@ -60,7 +60,9 @@ static void new_shared_chunk(int len)
 
   sprintf(fname, "/tmp/.spinnerlock_%d", (int)getuid());
   unlink(fname);
-  fd = open(fname, O_RDWR|O_CREAT, 0777);
+  do {
+    fd = open(fname, O_RDWR|O_CREAT, 0777);
+  } while(fd < 0 && errno == EINTR);
   unlink(fname);
 
   lseek(fd, len, SEEK_SET);

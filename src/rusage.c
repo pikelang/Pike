@@ -34,17 +34,14 @@ INT32 *low_rusage()
   prusage_t  pru;
   prstatus_t prs;
 
-  if(proc_fd < 0)
+  while(proc_fd < 0)
   {
     char proc_name[30];
 
     sprintf(proc_name, "/proc/%05ld", (long)getpid());
     proc_fd = open(proc_name, O_RDONLY);
-    if(proc_fd < 0)
-    {
-      /* fprintf(stderr, "Couldn't open %s\n", proc_name); */
-      return 0;
-    }
+    if(proc_fd >= 0) break;
+    if(errno != EINTR) return 0;
   }
 
   while(ioctl(proc_fd, PIOCUSAGE, &pru) < 0)

@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.12 1996/11/16 05:17:11 hubbe Exp $");
+RCSID("$Id: file.c,v 1.13 1996/11/18 23:13:05 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -491,9 +491,10 @@ static void file_open(INT32 args)
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     error("Must open file for at least one of read and write.\n");
 
- retry:
   THREADS_ALLOW();
-  fd=open(str->str,map(flags), 00666);
+  do {
+    fd=open(str->str,map(flags), 00666);
+  } while(fd < 0 && errno == EINTR);
   THREADS_DISALLOW();
 
   if(!fp->current_object->prog)
@@ -507,9 +508,6 @@ static void file_open(INT32 args)
   }
   else if(fd < 0)
   {
-    if(errno == EINTR)
-      goto retry;
-
     ERRNO=EBADF;
   }
   else

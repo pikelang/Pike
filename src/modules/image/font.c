@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.6 1996/11/14 12:34:57 law Exp $ */
+/* $Id: font.c,v 1.7 1996/11/18 23:13:21 hubbe Exp $ */
 
 #include "global.h"
 
@@ -165,8 +165,11 @@ void font_load(INT32 args)
       free_font_struct(THIS);
       THIS=NULL;
    }
+   do {
+     fd = open(sp[-args].u.string->str,O_RDONLY);
+   } while(fd < 0 && errno == EINTR);
 
-   if ( (fd = open(sp[-args].u.string->str,O_RDONLY)) > -1)
+   if (fd >= 0)
    {
       long size;
       size = file_size(fd);
