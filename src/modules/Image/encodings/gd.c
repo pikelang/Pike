@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: gd.c,v 1.5 2000/12/01 08:10:04 hubbe Exp $");
+RCSID("$Id: gd.c,v 1.6 2001/05/06 18:59:30 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -36,7 +36,7 @@ extern struct program *image_program;
 **! 	Handle encoding and decoding of GD images.
 **! 
 **! 	GD is the internal format of libgd by Thomas Boutell,
-**!     <a href=http://www.boutell.com/gd/><tt>http://www.boutell.com/gd/</tt></a>
+**!     <a href='http://www.boutell.com/gd/'><tt>http://www.boutell.com/gd/</tt></a>
 **! 	It is a rather simple, uncompressed, palette
 **!     format. 
 */
