@@ -1,10 +1,9 @@
 /*
- * $Id: math_module.c,v 1.5 2000/07/28 07:13:32 hubbe Exp $
+ * $Id: math_module.c,v 1.6 2001/07/15 20:20:44 per Exp $
  */
 
 #include "global.h"
 #include "config.h"
-
 #include "program.h"
 
 #include "math_module.h"
@@ -17,6 +16,10 @@
 /* add other parsers here */
 
 struct program *math_matrix_program;
+struct program *math_imatrix_program;
+struct program *math_fmatrix_program;
+struct program *math_smatrix_program;
+struct program *math_lmatrix_program;
 
 static struct math_class
 {
@@ -25,6 +28,10 @@ static struct math_class
    struct program **pd;
 } sub[] = {
    {"Matrix",init_math_matrix,&math_matrix_program},
+   {"IMatrix",init_math_imatrix,&math_imatrix_program},
+   {"LMatrix",init_math_lmatrix,&math_lmatrix_program},
+   {"FMatrix",init_math_fmatrix,&math_fmatrix_program},
+   {"SMatrix",init_math_smatrix,&math_smatrix_program},
 };
 
 void pike_module_exit(void)
@@ -35,6 +42,9 @@ void pike_module_exit(void)
 	 free_program(sub[i].pd[0]);
 
    exit_math_matrix();
+   exit_math_imatrix();
+   exit_math_fmatrix();
+   exit_math_smatrix();
 }
 
 void pike_module_init(void)
