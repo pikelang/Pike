@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.28 2001/05/31 00:33:44 js Exp $");
+RCSID("$Id: whitefish.c,v 1.29 2001/05/31 17:15:26 norlin Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -413,7 +413,7 @@ static void f_do_query_phrase( INT32 args )
   struct array *_words, *_field;
 
   /* 1: Get all arguments. */
-  get_all_args( "do_query_merge", args, "%a%a%*",
+  get_all_args( "do_query_phrase", args, "%a%a%*",
 		&_words, &_field, &cb);
 
   if( _field->size != 66 )
@@ -442,7 +442,7 @@ static void f_do_query_phrase( INT32 args )
 }
 
 static void f_do_query_and( INT32 args )
-/*! @decl ResultSet do_query_merge( array(int) words,          @
+/*! @decl ResultSet do_query_and( array(int) words,          @
  *!                          array(int) field_coefficients,       @
  *!                          array(int) proximity_coefficients,   @
  *!                          function(int:string) blobfeeder)   
@@ -591,7 +591,7 @@ static void f_do_query_or( INT32 args )
   struct array *_words, *_field, *_prox;
 
   /* 1: Get all arguments. */
-  get_all_args( "do_query_merge", args, "%a%a%a%d%*",
+  get_all_args( "do_query_or", args, "%a%a%a%d%*",
 		&_words, &_field, &_prox, &cutoff, &cb);
 
   if( _field->size != 66 )
