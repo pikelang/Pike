@@ -94,34 +94,30 @@ void skipNewlines() {
 // PARSING OF PIKE SOURCE FILES
 //========================================================================
 
-class Token {
-  SourcePosition position;
-  string text;
-  string _sprintf() { return sprintf("Token(%O, %O)", position, text); }
-}
-
 SourcePosition currentPosition = 0;
 
 static int parseError(string message, mixed ... args) {
   message = sprintf(message, @args);
   // werror("parseError! \n");
   // werror("%s\n", describe_backtrace(backtrace()));
-  throw (AutoDocError(currentPosition, "PikeParser", message));
+  error("PikeParser: %s (%d)\n", message, positions[tokenPtr]);
 }
 
-static private int tokenPtr = 0;
-static private array(Token) tokens;
+private int tokenPtr = 0;
+private array(string) tokens;
+private array(int) positions;
+private string filename;
 constant WITH_NL = 1;
 
 string lookAhead(int offset, int | void with_newlines) {
   if (with_newlines)
-    return tokens[min(tokenPtr + offset, sizeof(tokens) - 1)]->text;
+    return tokens[min(tokenPtr + offset, sizeof(tokens) - 1)];
   int i = tokenPtr;
   for (;;) {
-    while (tokens[i]->text == "\n")
+    while (tokens[i] == "\n")
       ++i;
     if (offset <= 0)
-      return tokens[i]->text;
+      return tokens[i];
     --offset;
     ++i;
     if (i >= sizeof(tokens))
@@ -134,48 +130,35 @@ string peekToken(int | void with_newlines) {
 
   if (tokenPtr >= sizeof(tokens))
     return EOF;
-  Token t;
-  if (with_newlines)
-    t = tokens[tokenPtr];
-  else {
-    int i = tokenPtr;
-    while (tokens[i]->text == "\n")
-      ++i;
-    t = tokens[i];
-    at = i;
-  }
 
-#if TOKEN_DEBUG
-  werror("    peek:[%d]%O  %s\n", at, t->text, with_newlines ? "(WNL)" : "");
-#endif
+  if (!with_newlines)
+    while (tokens[at] == "\n")
+      ++at;
 
-  currentPosition = t->position;
-  return t->text;
+  currentPosition = SourcePosition( filename, positions[at] );
+  return tokens[at];
 }
 
 static int nReadDocComments = 0;
 int getReadDocComments() { return nReadDocComments; }
+
 string readToken(int | void with_newlines) {
   if (tokenPtr >= sizeof(tokens))
     return EOF;
-  Token t;
+
+  int pos;
   if (with_newlines)
-    t = tokens[tokenPtr++];
+    pos = tokenPtr++;
   else {
-    while (tokens[tokenPtr]->text == "\n")
+    while (tokens[tokenPtr] == "\n")
       ++tokenPtr;
-    t = tokens[tokenPtr++];
+    pos = tokenPtr++;
   }
-  if (isDocComment(t->text))
+  if (isDocComment(tokens[pos]))
     ++nReadDocComments;
 
-#if TOKEN_DEBUG
-  werror("    read:[%d]%O  %s\n", tokenPtr - 1, t->text,
-         with_newlines ? "(WNL)" : "");
-#endif
-
-  currentPosition = t->position;
-  return t->text;
+  currentPosition = SourcePosition( filename, positions[pos] );
+  return tokens[pos];
 }
 
 // consume one token, error if not (one of) the expected
@@ -660,15 +643,18 @@ static private array(string) special(array(string) in) {
   return ret;
 }
 
-array(Token) tokenize(string s, string filename, int line) {
+array(array(string)|array(int)) tokenize(string s, string filename, int line) {
   array(string) a = special(Parser.Pike.split(s)) + ({ EOF });
-  array(Token) t = ({ });
+
+  array(string) t = ({ });
+  array(int) p = ({ } );
+
   for(int i = 0; i < sizeof(a); ++i) {
     string s = a[i];
-    Token tok = Token();
-    tok->position = SourcePosition(filename, line);
-    tok->text = s;
+    int pos = line;
+
     line += sizeof(s / "\n") - 1;
+
     // remove preprocessor directives:
     if (strlen(s) > 1 && s[0..0] == "#")
       continue;
@@ -677,13 +663,16 @@ array(Token) tokenize(string s, string filename, int line) {
         (s[0..1] == "/*" || s[0..1] == "//") &&
         !isDocComment(s))
       continue;
-    t += ({ tok });
+
+    t += ({ s });
+    p += ({ pos });
   }
-  return t;
+  return ({ t, p });
 }
 
-void setTokens(array(Token) t) {
+void setTokens(array(string) t, array(int) p) {
   tokens = t;
+  positions = p;
   tokenPtr = 0;
 #if TOKEN_DEBUG
   werror("PikeParser::setTokens(), tokens = \n%O\n", tokens);
@@ -702,11 +691,9 @@ static void create(string|void s,
       filename = filename->filename;
     }
     if (!line)
-    {
-      werror("PikeParser::create() called without line arg: %s", describe_backtrace(backtrace()));
-      exit(1);
-    }
-    tokens = tokenize(s, filename, line);
+      error("PikeParser::create() called without line arg.\n");
+
+    [tokens, positions] = tokenize(s, filename, line);
   }
   else
     tokens = ({});

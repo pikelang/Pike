@@ -21,13 +21,18 @@ static private class Extractor {
 
   static void create(string s, string filename) {
     parser = .PikeParser();
-    array(object/*. PikeParser.Token */) a = parser->tokenize(s, filename, 1);
-    array(object) tokens = ({});
-    // the source positions of the @ignore directives.
+
+    array(string) tokens;
+    array(int) positions;
+    [tokens, positions] = parser->tokenize(s, filename, 1);
+
+    array(string) new_tokens = ({});
+    array(int) new_positions = ({});
+
     array(SourcePosition) ignores = ({});
-    foreach(a, object token) {
-      string s = token->text;
-      SourcePosition pos = token->position;
+    for(int i; i<sizeof(tokens); i++) {
+      string s = tokens[i];
+      int pos = positions[i];
       int ignoreline = 0;
       if (has_prefix(s, DOC_COMMENT)) {
         s = String.trim_all_whites(s[strlen(DOC_COMMENT) .. ]);
@@ -38,23 +43,25 @@ static private class Extractor {
           if (sizeof(ignores))
             ignores = ignores[1 .. ];
           else
-            throw (AutoDocError(pos, "PikeExtractor",
-                                "@endignore without matching @ignore"));
+            error("PikeExtractor: @endignore without matching @ignore in line %d.\n", pos);
         else
           ignoreline = 0;
       }
-      if (sizeof(ignores) == 0 && !ignoreline)
-        tokens += ({ token });
+      if (sizeof(ignores) == 0 && !ignoreline) {
+        new_tokens += ({ tokens[i] });
+	new_positions += ({ pos });
+      }
     }
+
     if (sizeof(ignores))
-      throw (AutoDocError(ignores[0], "PikeExtractor",
-                          "@ignore without matchin @endignore"));
-    parser->setTokens(tokens);
+      error("PikeExtractor: @ignore without matchin @endignore in %s.\n", ignores[0]);
+
+    parser->setTokens(new_tokens, new_positions);
   }
 
   static void extractorError(string message, mixed ... args) {
     message = sprintf(message, @args);
-    throw (AutoDocError(parser->currentPosition, "PikeExtractor", message));
+    error("PikeExtractor: %s (%s)\n", message, parser->currentPosition);
   }
 
   static int isDocComment(string s) {
