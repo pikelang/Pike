@@ -370,7 +370,7 @@ string nameprep(string s, int(0..1)|void allow_unassigned)
 //! @param s
 //!   The sequence of Unicode code points to transform.
 //! @param allow_unassigned
-//!   Set this flag the the string to transform is a "query string",
+//!   Set this flag if the the string to transform is a "query string",
 //!   and not a "stored string".  See RFC 3454.
 //! @param use_std3_ascii_rules
 //!   Set this flag to enforce the restrictions on ASCII characters in

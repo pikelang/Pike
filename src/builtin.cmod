@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.122 2003/02/18 23:01:41 marcus Exp $
+|| $Id: builtin.cmod,v 1.123 2003/02/19 16:30:17 grubba Exp $
 */
 
 #include "global.h"
@@ -2483,7 +2483,7 @@ PIKECLASS bootstring
    *! @param skew
    *!   The skew term for the bias adapation.  Must be >= 1.
    *! @param damp
-   *!   The damping factor for the bias adaption.  Bust be >= 2.
+   *!   The damping factor for the bias adaption.  Must be >= 2.
    *! @param initial_bias
    *!   The initial bias for the variable-length integer thresholding.
    *!   initial_bias % base must be <= base - tmin.
