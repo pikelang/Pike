@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.36 2000/08/09 12:55:13 grubba Exp $");
+RCSID("$Id: png.c,v 1.37 2000/08/11 18:22:02 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1484,8 +1484,8 @@ static void image_png_encode(INT32 args)
 
    if (ct)
    {
-      int sz;
-      sz=image_colortable_size(ct);
+      ptrdiff_t sz;
+      sz = image_colortable_size(ct);
       if (sz>256)
 	 error("Image.PNG.encode: palette size to large; "
 	       "PNG doesn't support bigger palettes then 256 colors\n");

@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.27 2000/08/09 11:23:40 grubba Exp $ */
+/* $Id: matrix.c,v 1.28 2000/08/11 18:44:04 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.27 2000/08/09 11:23:40 grubba Exp $
+**!	$Id: matrix.c,v 1.28 2000/08/11 18:44:04 grubba Exp $
 **! class Image
 */
 
@@ -206,7 +206,7 @@ CHRONO("scale begin");
 			   source->xsize, (1.0-decimals(yn)),dx);
 	 if ((yd = DOUBLE_TO_INT(yn+dy) - DOUBLE_TO_INT(yn))>1)
             while (--yd)
-   	       scale_add_line(new, (INT32)(yn+yd), newx, source->img, y,
+   	       scale_add_line(new, DOUBLE_TO_INT(yn+yd), newx, source->img, y,
 			      source->xsize, 1.0, dx);
 	 if (decimals(yn+dy))
 	    scale_add_line(new, DOUBLE_TO_INT(yn+dy), newx, source->img, y,
@@ -1015,8 +1015,8 @@ void img_rotate(INT32 args,int xpn)
 
    dest2.img=d0.img=NULL;
 
-   if (angle<-135) angle-=360*(int)((angle-225)/360);
-   else if (angle>225) angle-=360*(int)((angle+135)/360);
+   if (angle<-135) angle-=360*DOUBLE_TO_INT((angle-225)/360);
+   else if (angle>225) angle-=360*DOUBLE_TO_INT((angle+135)/360);
    if (angle<-45)
    {
       img_ccw(THIS,&dest2);

@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.61 2000/08/10 09:51:53 per Exp $ */
+/* $Id: font.c,v 1.62 2000/08/11 18:42:54 grubba Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.61 2000/08/10 09:51:53 per Exp $
+**!	$Id: font.c,v 1.62 2000/08/11 18:42:54 grubba Exp $
 **! class Font
 **!
 **! note
@@ -204,8 +204,8 @@ struct font
 #endif
    void *mem;         /* pointer to mmaped/malloced memory */
    unsigned long chars;       /* number of characters */
-  float xspacing_scale; /* Fraction of spacing to use */
-  float yspacing_scale; /* Fraction of spacing to use */
+  double xspacing_scale; /* Fraction of spacing to use */
+  double yspacing_scale; /* Fraction of spacing to use */
   enum {
     J_LEFT,
     J_RIGHT,
@@ -253,7 +253,7 @@ static void exit_font_struct(struct object *obj)
 static INLINE int char_space(struct font *this, INT32 c)
 {
   if(c==0x20)
-    return (int)((double)(this->height*this->xspacing_scale)/4.5);
+    return DOUBLE_TO_INT((double)(this->height*this->xspacing_scale)/4.5);
   else if(c==0x20+128)
     return (this->height*this->xspacing_scale)/18;
   return this->charinfo[c].spacing*this->xspacing_scale;
@@ -266,7 +266,7 @@ static INLINE int char_width(struct font *this, INT32 c)
 }  
 
 #ifndef HAVE_MMAP
-static INLINE int my_read(int from, void *t, int towrite)
+static INLINE int my_read(int from, void *t, size_t towrite)
 {
   int res;
   while((res = fd_read(from, t, towrite)) < 0)
@@ -310,11 +310,12 @@ static INLINE void write_char(struct _char *ci,
       for (x=(INT32)ci->width; x>0; x--)
       {
 	 int r,c;
-	 if((c=255-*p)) 
+	 if((c=255-*p)) {
 	   if ((r=pos->r+c)>255)
 	     pos->r=pos->g=pos->b=255;
 	   else
 	     pos->r=pos->g=pos->b=r;
+	 }
 	 pos++;
 	 p++;
       }
@@ -473,8 +474,8 @@ loading_default:
 
 		  for (i=0; i<THIS->chars; i++)
 		  {
-		     if (i*sizeof(INT32)<(unsigned long)size
-			 && ntohl(fh->o[i])<(unsigned long)size
+		     if (i*sizeof(INT32)<(size_t)size
+			 && ntohl(fh->o[i])<(size_t)size
 			 && ! ( ntohl(fh->o[i]) % 4) ) /* must be aligned */
 		     {
 			ch=(struct char_head*)
@@ -561,7 +562,7 @@ void font_write(INT32 args)
    p_wchar0 *to_write0;
    p_wchar1 *to_write1;
    p_wchar2 *to_write2;
-   int to_write_len;
+   ptrdiff_t to_write_len;
    INT32 c;
    struct font *this = (*(struct font **)(Pike_fp->current_storage));
    if (!this)
@@ -639,7 +640,9 @@ void font_write(INT32 args)
    img = ((struct image*)o->storage);
    img->xsize = maxwidth2;
    if(args>1)
-     img->ysize = this->height+((double)this->height*(double)(args-1)*(double)this->yspacing_scale)+1;
+     img->ysize = DOUBLE_TO_INT(this->height+
+				((double)this->height*(double)(args-1)*
+				 (double)this->yspacing_scale)+1);
    else
      img->ysize = this->height;
    img->rgb.r=img->rgb.g=img->rgb.b=255;
@@ -775,7 +778,7 @@ void font_text_extents(INT32 args)
      p_wchar0 *to_write0;
      p_wchar1 *to_write1;
      p_wchar2 *to_write2;
-     int to_write_len;
+     ptrdiff_t to_write_len;
      if (sp[j-args].type!=T_STRING)
 	bad_arg_error("font->write",sp-args,args,0,"",sp-args,
 		"Bad arguments to font->write()\n");

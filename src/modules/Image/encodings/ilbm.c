@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.17 2000/08/06 13:53:31 grubba Exp $ */
+/* $Id: ilbm.c,v 1.18 2000/08/11 18:34:07 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.17 2000/08/06 13:53:31 grubba Exp $
+**!	$Id: ilbm.c,v 1.18 2000/08/11 18:34:07 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.17 2000/08/06 13:53:31 grubba Exp $");
+RCSID("$Id: ilbm.c,v 1.18 2000/08/11 18:34:07 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -246,7 +246,7 @@ static void planar2chunky(unsigned char *src, int srcmod, int depth,
   }
 }
 
-static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
+static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
 		       struct image *img, struct image *alpha,
 		       struct neo_colortable *ctable, int ham)
 {
@@ -255,7 +255,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
   int eplanes = (bmhd->masking == mskHasMask? bmhd->nPlanes+1:bmhd->nPlanes);
   unsigned char *line=0;
   unsigned INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(unsigned INT32));
-  INT32 suse=0;
+  ptrdiff_t suse=0;
   rgb_group *dest = img->img;
   rgb_group *adest = (alpha==NULL? NULL : alpha->img);
 
@@ -339,7 +339,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
 	  /* HAM7/HAM8 */
 	  rgb_group hold;
 	  int clr;
-	  unsigned int numcolors = ctable->u.flat.numentries;
+	  size_t numcolors = ctable->u.flat.numentries;
 	  struct nct_flat_entry *entries = ctable->u.flat.entries;
 	  hold.r = hold.g = hold.b = 0;
 	  for(x=0; x<bmhd->w; x++)
@@ -372,7 +372,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
 	  /* HAM5/HAM6 */	  
 	  rgb_group hold;
 	  int clr;
-	  unsigned int numcolors = ctable->u.flat.numentries;
+	  size_t numcolors = ctable->u.flat.numentries;
 	  struct nct_flat_entry *entries = ctable->u.flat.entries;
 	  hold.r = hold.g = hold.b = 0;
 	  for(x=0; x<bmhd->w; x++)
@@ -404,7 +404,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
 	}
       else {
 	/* normal palette */
-	unsigned int numcolors = ctable->u.flat.numentries;
+	size_t numcolors = ctable->u.flat.numentries;
 	struct nct_flat_entry *entries = ctable->u.flat.entries;
 	for(x=0; x<bmhd->w; x++)
 	  if(*cptr<numcolors)
@@ -495,7 +495,8 @@ static void image_ilbm__decode(INT32 args)
 
   if(ITEM(arr)[3].type == T_STRING && ITEM(arr)[3].u.string->size_shift == 0) {
     unsigned char *pal = STR0(ITEM(arr)[3].u.string);
-    INT32 col, ncol = ITEM(arr)[3].u.string->len/3, mcol = 1<<bmhd.nPlanes;
+    INT32 col, mcol = 1<<bmhd.nPlanes;
+    ptrdiff_t ncol = ITEM(arr)[3].u.string->len/3;
     if((camg & CAMG_HAM))
       mcol = (bmhd.nPlanes>6? 64:16);
     else if((camg & CAMG_EHB))
@@ -775,7 +776,7 @@ static void image_ilbm_encode(INT32 args)
     ct = NULL;
 
   if(ct) {
-    int sz = image_colortable_size(ct);
+    ptrdiff_t sz = image_colortable_size(ct);
     for(bpp=1; (1<<bpp)<sz; bpp++);
   } else
     bpp = 24;

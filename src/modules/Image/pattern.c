@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.21 2000/08/10 16:47:00 grubba Exp $ */
+/* $Id: pattern.c,v 1.22 2000/08/11 18:49:46 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.21 2000/08/10 16:47:00 grubba Exp $
+**!	$Id: pattern.c,v 1.22 2000/08/11 18:49:46 grubba Exp $
 **! class Image
 */
 
@@ -289,9 +289,10 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    *vp=v[0]+1+1.0/(COLORRANGE_LEVELS-1);
    lrgb=*rgbp=rgb[0]; /* back to original color */
 
-   for (k=1,i=v[0]*(COLORRANGE_LEVELS-1); k<=s->u.array->size/2; k++)
+   for (k=1,i=DOUBLE_TO_INT(v[0]*(COLORRANGE_LEVELS-1));
+	k<=s->u.array->size/2; k++)
    {
-      n=v[k]*COLORRANGE_LEVELS;
+      n = DOUBLE_TO_INT(v[k]*COLORRANGE_LEVELS);
 
       if (n>i)
       {
@@ -303,9 +304,9 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 
 	 for (b=0;i<n && i<COLORRANGE_LEVELS;i++,b++)
 	 {
-	    cr[i&(COLORRANGE_LEVELS-1)].r=(unsigned char)(lrgb.r+fr*b);
-	    cr[i&(COLORRANGE_LEVELS-1)].g=(unsigned char)(lrgb.g+fg*b);
-	    cr[i&(COLORRANGE_LEVELS-1)].b=(unsigned char)(lrgb.b+fb*b);
+	    cr[i&(COLORRANGE_LEVELS-1)].r = DOUBLE_TO_COLORTYPE(lrgb.r+fr*b);
+	    cr[i&(COLORRANGE_LEVELS-1)].g = DOUBLE_TO_COLORTYPE(lrgb.g+fg*b);
+	    cr[i&(COLORRANGE_LEVELS-1)].b = DOUBLE_TO_COLORTYPE(lrgb.b+fb*b);
 	 }
       }
       lrgb=rgb[k];
@@ -331,7 +332,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    ( (args>n) \
       ? ( (sp[n-args].type==T_INT) ? sp[n-args].u.integer \
 	  : ( (sp[n-args].type==T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
-	      : ( error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
+	      : ( error("illegal argument(s) to %s\n", where), 0 ) ) ) \
       : def )
 
 /*

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.21 2000/08/10 20:05:05 grubba Exp $
+**!	$Id: colortable.h,v 1.22 2000/08/11 18:51:24 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -19,7 +19,7 @@
 
 #define COLORLOOKUPCACHEHASHSIZE 207
 
-typedef unsigned long nct_weight_t;
+typedef size_t nct_weight_t;
 
 struct nct_flat_entry /* flat colorentry */
 {

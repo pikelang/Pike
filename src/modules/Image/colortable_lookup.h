@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.11 2000/08/10 17:01:27 grubba Exp $ */
+/* $Id: colortable_lookup.h,v 1.12 2000/08/11 19:11:42 grubba Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.11 2000/08/10 17:01:27 grubba Exp $
+**!	$Id: colortable_lookup.h,v 1.12 2000/08/11 19:11:42 grubba Exp $
 **! class colortable
 */
 
@@ -174,7 +174,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
    {
       int rgbr,rgbg,rgbb;
       int mindist;
-      int m;
+      ptrdiff_t m;
       struct nct_flat_entry *fe;
       struct lookupcache *lc;
 	 
@@ -223,7 +223,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 	    {
 	       lc->dest=fe->color;
 	       mindist=dist;
-	       lc->index=fe->no;
+	       lc->index = DO_NOT_WARN((int)fe->no);
 	       NCTLU_CACHE_HIT_WRITE;
 	    }
 	 
@@ -473,9 +473,9 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	       if (sc->no[i]>=nc) 
 	       {
 		  double f= i * sc->mqsteps;
-		  int drgbr=sc->low.r+(int)(sc->vector.r*f);
-		  int drgbg=sc->low.g+(int)(sc->vector.g*f);
-		  int drgbb=sc->low.b+(int)(sc->vector.b*f);
+		  int drgbr = sc->low.r + DOUBLE_TO_INT(sc->vector.r*f);
+		  int drgbg = sc->low.g + DOUBLE_TO_INT(sc->vector.g*f);
+		  int drgbb = sc->low.b + DOUBLE_TO_INT(sc->vector.b*f);
 
 		  int ldist=sf.r*SQ(val.r-drgbr)+
 		     sf.g*SQ(val.g-drgbg)+sf.b*SQ(val.b-drgbb);

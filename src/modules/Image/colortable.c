@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.89 2000/08/10 17:05:40 grubba Exp $ */
+/* $Id: colortable.c,v 1.90 2000/08/11 18:59:59 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.89 2000/08/10 17:05:40 grubba Exp $
+**!	$Id: colortable.c,v 1.90 2000/08/11 18:59:59 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.89 2000/08/10 17:05:40 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.90 2000/08/11 18:59:59 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -79,7 +79,7 @@ RCSID("$Id: colortable.c,v 1.89 2000/08/10 17:05:40 grubba Exp $");
 #endif
 
 #define SQ(x) ((x)*(x))
-static INLINE int sq(int x) { return x*x; }
+static INLINE ptrdiff_t sq(ptrdiff_t x) { return x*x; }
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -306,7 +306,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    rgbl_group sum={0,0,0},diff={0,0,0};
    rgbl_group min={256,256,256},max={0,0,0};
    size_t mmul,tot=0;
-   INT32 gdiff=0;
+   ptrdiff_t gdiff=0;
    ptrdiff_t left, right;
    enum { SORT_R,SORT_G,SORT_B,SORT_GREY } st;
    rgbd_group newpos1,newpos2;
@@ -501,8 +501,8 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
          while (left<right) 
 	 { 
 	    struct nct_flat_entry tmp; 
-	    if ((INT32)(src[left].color.r*sf.r+src[left].color.g*sf.g+
-			src[left].color.b*sf.b)>(INT32)g)  
+	    if ((ptrdiff_t)(src[left].color.r*sf.r+src[left].color.g*sf.g+
+			    src[left].color.b*sf.b)>(ptrdiff_t)g)  
 	       tmp=src[left],src[left]=src[right],src[right--]=tmp; 
 	    else left++; 
 	 } 
@@ -635,7 +635,7 @@ struct color_hash_entry
 {
   rgb_group color;
   unsigned long pixels;
-  int no;
+  ptrdiff_t no;
 };
 
 static INLINE struct color_hash_entry *insert_in_hash(rgb_group rgb,
@@ -2511,7 +2511,7 @@ void image_colortable_cast_to_mapping(struct neo_colortable *nct)
    for (i=0; i<flat.numentries; i++)
       if (flat.entries[i].no!=-1)
       {
-	 push_int(flat.entries[i].no);
+	 push_int64(flat.entries[i].no);
 	 _image_make_rgb_color(flat.entries[i].color.r,
 			       flat.entries[i].color.g,
 			       flat.entries[i].color.b);
@@ -2536,7 +2536,7 @@ ptrdiff_t image_colortable_size(struct neo_colortable *nct)
 void image_colortable__sizeof(INT32 args)
 {
    pop_n_elems(args);
-   push_int(image_colortable_size(THIS));
+   push_int64(image_colortable_size(THIS));
 }
 
 void image_colortable_write_rgb(struct neo_colortable *nct,
@@ -2937,7 +2937,8 @@ static void _cub_add_cs_2cub_recur(int *i,int *p,
 				   int rp,int gp,int bp,
 				   int rd1,int gd1,int bd1,
 				   int rd2,int gd2,int bd2,
-				   int *a,int *b,int *c,int *d,
+				   ptrdiff_t *a, ptrdiff_t *b,
+				   ptrdiff_t *c, ptrdiff_t *d,
 				   rgbl_group sf,
 				   int accur)
 {
@@ -2948,7 +2949,7 @@ static void _cub_add_cs_2cub_recur(int *i,int *p,
  1 |   |
    c-j-d */
 
-   int e=-1,f=-1,g=-1,h=-1,j=-1;
+   ptrdiff_t e=-1,f=-1,g=-1,h=-1,j=-1;
    int rm1,gm1,bm1;
    int rm2,gm2,bm2;
 
@@ -2985,13 +2986,13 @@ static void _cub_add_cs_2cub_recur(int *i,int *p,
    _cub_add_cs_2cub_recur(i,p,p2,n2,fe, rp+rd2+rd1,gp+gd2+gd1,bp+bd2+bd1, rm1,gm1,bm1, rm2,gm2,bm2, &f,&g,&j,d,sf,accur);
 }
 
-static INLINE int _cub_find_full_add(int **pp,int *i,int *p,int n,
-				     struct nct_flat_entry *fe,
-				     int r,int g,int b,
-				     rgbl_group sf)
+static INLINE ptrdiff_t _cub_find_full_add(int **pp,int *i,int *p,int n,
+					   struct nct_flat_entry *fe,
+					   int r,int g,int b,
+					   rgbl_group sf)
 {
    int mindist=256*256*100; /* max dist is 256²*3 */
-   int c=0;
+   ptrdiff_t c = 0;
 
    while (n--)
       if (fe->no==-1) fe++;
@@ -3028,7 +3029,8 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
 				   int rp,int gp,int bp,
 				   int rd1,int gd1,int bd1,
 				   int rd2,int gd2,int bd2,
-				   int *a,int *b,int *c,int *d,
+				   ptrdiff_t *a, ptrdiff_t *b,
+				   ptrdiff_t *c, ptrdiff_t *d,
 				   rgbl_group sf,
 				   int accur)
 {
@@ -3041,7 +3043,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
    c-i-d
  */
 
-   int e,f,g,h,j;
+   ptrdiff_t e,f,g,h,j;
    int rm1,gm1,bm1;
    int rm2,gm2,bm2;
 
@@ -3095,7 +3097,7 @@ static INLINE void _cub_add_cs(struct neo_colortable *nct,
 			       int rd1,int gd1,int bd1,
 			       int rd2,int gd2,int bd2)
 {
-   int a=-1,b=-1,c=-1,d=-1;
+   ptrdiff_t a=-1,b=-1,c=-1,d=-1;
 #if 0
    fprintf(stderr,
 	   " _cub_add_cs %d,%d,%d %d,%d,%d, %d,%d,%d, %d,%d,%d, %d,%d,%d\n",
@@ -3581,7 +3583,7 @@ void image_colortable_map(INT32 args)
 	    
 	    while (n--)
 	    {
-	       if (*s < nct->u.flat.numentries)
+	       if ((size_t)*s < (size_t)nct->u.flat.numentries)
 		  *(d++)=nct->u.flat.entries[*s].color;
 	       else 
 		  d++; /* it's black already, and this is illegal */
@@ -3748,7 +3750,7 @@ void image_colortable_floyd_steinberg(INT32 args)
 	 THIS->du.floyd_steinberg.dir=sp[-args].u.integer;
    else 
       THIS->du.floyd_steinberg.dir=0;
-   if (args>=6) 
+   if (args>=6) {
       if (sp[5-args].type==T_FLOAT)
 	 factor = sp[5-args].u.float_number;
       else if (sp[5-args].type==T_INT)
@@ -3756,6 +3758,7 @@ void image_colortable_floyd_steinberg(INT32 args)
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
+   }
    if (args>=5)
    {
       if (sp[1-args].type==T_FLOAT)

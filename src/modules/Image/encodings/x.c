@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.29 2000/08/04 10:48:14 grubba Exp $ */
+/* $Id: x.c,v 1.30 2000/08/11 18:21:29 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.29 2000/08/04 10:48:14 grubba Exp $
+**!	$Id: x.c,v 1.30 2000/08/11 18:21:29 grubba Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.29 2000/08/04 10:48:14 grubba Exp $");
+RCSID("$Id: x.c,v 1.30 2000/08/11 18:21:29 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -271,12 +271,12 @@ static void image_x_encode_truecolor(INT32 args)
    }
    else
    {
-      INT32 rfshift,gfshift,bfshift,rzshift,gzshift,bzshift;
-      INT32 bpshift,blinemod,bit;
+      ptrdiff_t rfshift,gfshift,bfshift,rzshift,gzshift,bzshift;
+      ptrdiff_t bpshift,blinemod,bit;
 
-      rfshift=rshift-(sizeof(COLORTYPE)*8-rbits);
-      gfshift=gshift-(sizeof(COLORTYPE)*8-gbits);
-      bfshift=bshift-(sizeof(COLORTYPE)*8-bbits);
+      rfshift = rshift-(sizeof(COLORTYPE)*8-rbits);
+      gfshift = gshift-(sizeof(COLORTYPE)*8-gbits);
+      bfshift = bshift-(sizeof(COLORTYPE)*8-bbits);
       if (rfshift<0) rzshift=-rfshift,rfshift=0; else rzshift=0;
       if (gfshift<0) gzshift=-gfshift,gfshift=0; else gzshift=0;
       if (bfshift<0) bzshift=-bfshift,bfshift=0; else bzshift=0;

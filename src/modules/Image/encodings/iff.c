@@ -1,9 +1,9 @@
-/* $Id: iff.c,v 1.7 2000/08/06 13:53:31 grubba Exp $ */
+/* $Id: iff.c,v 1.8 2000/08/11 18:36:19 grubba Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.7 2000/08/06 13:53:31 grubba Exp $");
+RCSID("$Id: iff.c,v 1.8 2000/08/11 18:36:19 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -70,7 +70,7 @@ void parse_iff(char *id, unsigned char *data, ptrdiff_t len,
 
 static struct pike_string *low_make_iff(struct svalue *s)
 {
-  ptrdiff_t len;
+  size_t len;
   unsigned char lenb[4];
 
   if(s->type != T_ARRAY || s->u.array->size != 2 ||
@@ -81,10 +81,10 @@ static struct pike_string *low_make_iff(struct svalue *s)
   add_ref(s->u.array);
   push_array_items(s->u.array);
   len = sp[-1].u.string->len;
-  lenb[0] = (len & 0xff000000)>>24;
-  lenb[1] = (len & 0x00ff0000)>>16;
-  lenb[2] = (len & 0x0000ff00)>>8;
-  lenb[3] = (len & 0x000000ff);
+  lenb[0] = DO_NOT_WARN((unsigned char)((len & 0xff000000)>>24));
+  lenb[1] = DO_NOT_WARN((unsigned char)((len & 0x00ff0000)>>16));
+  lenb[2] = DO_NOT_WARN((unsigned char)((len & 0x0000ff00)>>8));
+  lenb[3] = DO_NOT_WARN((unsigned char)(len & 0x000000ff));
   push_string(make_shared_binary_string((char *)lenb, 4));
   stack_swap();
   if(len&1) {
