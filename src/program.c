@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.424 2002/05/09 14:37:45 mast Exp $");
+RCSID("$Id: program.c,v 1.425 2002/05/09 14:52:10 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4001,7 +4001,6 @@ INT32 define_function(struct pike_string *name,
       fatal("New function overloading algorithm failed!\n");
 #endif
     }
-#endif
     return i;
   }
 make_a_new_def:
