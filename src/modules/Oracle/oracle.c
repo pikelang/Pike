@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.3 1997/06/05 22:14:54 grubba Exp $
+ * $Id: oracle.c,v 1.4 1997/06/12 19:29:48 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -34,7 +34,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.3 1997/06/05 22:14:54 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.4 1997/06/12 19:29:48 marcus Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -518,6 +518,16 @@ static void f_big_query(INT32 args)
 void pike_module_init(void)
 {
 #ifdef HAVE_ORACLE
+
+#ifdef ORACLE_HOME
+  if(getenv("ORACLE_HOME")==NULL)
+    putenv("ORACLE_HOME="ORACLE_HOME);
+#endif
+#ifdef ORACLE_SID
+  if(getenv("ORACLE_SID")==NULL)
+    putenv("ORACLE_SID="ORACLE_SID);
+#endif
+
   /*  opinit(OCI_EV_TSF); */
 
   start_new_program();
