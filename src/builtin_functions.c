@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.568 2004/10/11 16:50:02 mast Exp $
+|| $Id: builtin_functions.c,v 1.569 2004/10/11 16:50:07 mast Exp $
 */
 
 #include "global.h"
