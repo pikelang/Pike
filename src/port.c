@@ -156,16 +156,18 @@ char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack,
   case 0: return haystack;
   case 1: return MEMCHR(haystack,needle[0],haystacklen);
   default:
-   SIZE_T i, j;
-   for(i=0; i<haystacklen-needlelen; i++)
-   {
-     for(j=0; j<needlelen; j++)
-       if(haystack[i] != needle[j])
-	 break;
-     if(j==needlelen)
-       return haystack+i;
-   }
-   return 0;
+  {
+    SIZE_T i, j;
+    for(i=0; i<haystacklen-needlelen; i++)
+    {
+      for(j=0; j<needlelen; j++)
+	if(haystack[i] != needle[j])
+	  break;
+      if(j==needlelen)
+	return haystack+i;
+    }
+    return 0;
+  }
  }
 }
 #else 
