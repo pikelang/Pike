@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.32 2000/10/25 14:20:46 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.33 2000/11/29 21:31:04 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -93,7 +93,6 @@ static void f_substring__sprintf( INT32 args )
 {
   int x;
   struct substring *s = SS(fp->current_object);
-  extern void f_sprintf( INT32 args );
 
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
