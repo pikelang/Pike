@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.95 1999/01/07 23:32:31 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.96 1999/01/08 00:18:27 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1472,6 +1472,9 @@ void f_create_process(INT32 args)
       buf[0] = 0;
       while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
 	;
+
+      if(e!=1)
+	error("Child process died prematurely. (e=%d errno=%d)\n",e,errno);
 
       /* Wait for exec or error */
       while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
