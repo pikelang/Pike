@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.102 2001/07/05 01:57:15 mast Exp $");
+RCSID("$Id: svalue.c,v 1.103 2001/09/02 14:45:44 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -509,6 +509,16 @@ PMOD_EXPORT int svalue_is_true(struct svalue *s)
   case T_FUNCTION:
     if (s->subtype == FUNCTION_BUILTIN) return 1;
     if(!s->u.object->prog) return 0;
+    if (s->u.object->prog == pike_trampoline_program) {
+      /* Trampoline */
+      struct pike_trampoline *tramp =
+	get_storage(s->u.object, pike_trampoline_program);
+      if (!tramp || !tramp->frame || !tramp->frame->current_object ||
+	  !tramp->frame->current_object->prog) {
+	/* Uninitialized trampoline, or trampoline to destructed object. */
+	return 0;
+      }
+    }
     return 1;
 
   case T_OBJECT:
@@ -1035,9 +1045,26 @@ PMOD_EXPORT void describe_svalue(struct svalue *s,int indent,struct processing *
       }else{
 	if(s->u.object->prog)
 	{
-	  struct pike_string *name;
-	  name=ID_FROM_INT(s->u.object->prog,s->subtype)->name;
-	  my_binary_strcat(name->str,name->len);
+	  if (s->u.object->prog == pike_trampoline_program) {
+	    /* Trampoline */
+	    struct pike_trampoline *tramp = (struct pike_trampoline *)
+	      get_storage(s->u.object, pike_trampoline_program);
+	    if (!tramp || !tramp->frame || !tramp->frame->current_object ||
+		!tramp->frame->current_object->prog) {
+	      /* Uninitialized trampoline, or
+	       * trampoline to destructed object. */
+	      my_strcat("0");
+	    } else {
+	      struct pike_string *name;
+	      name = ID_FROM_INT(tramp->frame->current_object->prog,
+				 tramp->func)->name;
+	      my_binary_strcat(name->str, name->len);
+	    }
+	  } else {
+	    struct pike_string *name;
+	    name = ID_FROM_INT(s->u.object->prog,s->subtype)->name;
+	    my_binary_strcat(name->str,name->len);
+	  }
 	}else{
 	  my_strcat("0");
 	}
