@@ -878,8 +878,8 @@ static int gobble(struct xmldata *data, char *s)
 	}else{								    \
           struct pike_string *s=sp[-1].u.string;			    \
 	  struct xmldata my_tmp=*data;					    \
-	  debug_malloc_touch(s);					    \
 	  ONERROR tmp2;							    \
+	  debug_malloc_touch(s);					    \
 	  sp--;								    \
           IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str));    \
 	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			    \
