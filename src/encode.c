@@ -25,9 +25,12 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.88 2002/04/12 11:31:45 grubba Exp $");
+RCSID("$Id: encode.c,v 1.89 2002/04/15 08:39:20 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
+
+/* Use the old encoding method for programs. */
+#define OLD_PIKE_ENCODE_PROGRAM
   
 #ifdef ENCODE_DEBUG
 /* Pass a nonzero integer as the third arg to encode_value,
@@ -734,6 +737,106 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    fprintf(stderr, "%*sencode: encoding program\n",
 		    data->depth, ""));
 
+#ifdef OLD_PIKE_ENCODE_PROGRAM
+
+	/* Type 1 -- Old-style encoding. */
+        code_entry(type_to_tag(val->type), 1,data);
+        f_version(0);
+        encode_value2(Pike_sp-1,data);
+        pop_stack();
+        code_number(p->flags,data);
+        code_number(p->storage_needed,data);
+        code_number(p->alignment_needed,data);
+        code_number(p->timestamp.tv_sec,data);
+        code_number(p->timestamp.tv_usec,data);
+
+#define FOO(X,Y,Z) \
+        code_number( p->PIKE_CONCAT(num_,Z), data);
+#include "program_areas.h"
+
+        adddata2(p->program, p->num_program);
+        adddata2(p->linenumbers, p->num_linenumbers);
+
+        for(d=0;d<p->num_identifier_index;d++)
+          code_number(p->identifier_index[d],data);
+
+        for(d=0;d<p->num_variable_index;d++)
+          code_number(p->variable_index[d],data);
+
+        for(d=0;d<p->num_identifier_references;d++)
+        {
+          code_number(p->identifier_references[d].inherit_offset,data);
+          code_number(p->identifier_references[d].identifier_offset,data);
+          code_number(p->identifier_references[d].id_flags,data);
+          EDB(3,fprintf(stderr,"IDREF%x > %d: { %d, %d, %d }\n",
+                      p->id,d,
+                      p->identifier_references[d].inherit_offset,
+                      p->identifier_references[d].identifier_offset,
+                      p->identifier_references[d].id_flags););
+        }
+
+        for(d=0;d<p->num_strings;d++) adddata(p->strings[d]);
+
+        for(d=0;d<p->num_inherits;d++)
+        {
+          code_number(p->inherits[d].inherit_level,data);
+          code_number(p->inherits[d].identifier_level,data);
+          code_number(p->inherits[d].parent_offset,data);
+          code_number(p->inherits[d].parent_identifier,data);
+          code_number(p->inherits[d].storage_offset,data);
+
+          if(p->inherits[d].parent)
+          {
+            ref_push_object(p->inherits[d].parent);
+            Pike_sp[-1].subtype=p->inherits[d].parent_identifier;
+            Pike_sp[-1].type=T_FUNCTION;
+            EDB(3,fprintf(stderr,"INHERIT%x coded as func { %p, %d }\n",
+                        p->id, p->inherits[d].parent, p->inherits[d].parent_iden
+tifier););
+          }else if(p->inherits[d].prog){
+            ref_push_program(p->inherits[d].prog);
+          }else{
+            Pike_error("Failed to encode inherit #%d\n", d);
+            push_int(0);
+          }
+          encode_value2(Pike_sp-1,data);
+          pop_stack();
+
+          adddata3(p->inherits[d].name);
+
+          EDB(3,fprintf(stderr,"INHERIT%x > %d: %d id=%d\n",
+                      p->id,d,
+                      p->inherits[d].prog->num_identifiers,
+                      p->inherits[d].prog->id););
+        }
+
+        for(d=0;d<p->num_identifiers;d++)
+        {
+          adddata(p->identifiers[d].name);
+          encode_type(p->identifiers[d].type->str, data);
+          code_number(p->identifiers[d].identifier_flags,data);
+          code_number(p->identifiers[d].run_time_type,data);
+          code_number(p->identifiers[d].opt_flags,data);
+          if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION)) {
+            code_number(p->identifiers[d].func.offset,data);
+          } else {
+            Pike_error("Cannot encode functions implemented in C "
+                       "(identifier='%s').\n",
+                       p->identifiers[d].name->str);
+          }
+        }
+
+        for(d=0;d<NUM_LFUNS;d++)
+          code_number(p->lfuns[d], data);
+
+        for(d=0;d<p->num_constants;d++)
+        {
+          encode_value2(& p->constants[d].sval, data);
+          adddata3(p->constants[d].name);
+        }
+
+#else /* !OLD_PIKE_ENCODE_PROGRAM */
+
 	/* Type 2 -- Portable encoding. */
 	code_entry(type_to_tag(val->type), 2, data);
 
@@ -1090,6 +1193,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    }
 	  }
 	}
+#endif /* OLD_PIKE_ENCODE_PROGRAM */
       }else{
 	code_entry(type_to_tag(val->type), 0,data);
 	encode_value2(Pike_sp-1, data);
