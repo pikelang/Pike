@@ -448,6 +448,7 @@ void do_export()
     TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
     TRANSLATE(vars->MANDIR_SRC,tmpdir+"/man"),
     TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
+    "unpack_master.pike":tmpdir+"/build/master.pike",
     "":tmpdir+"/build",
     ]);
     
@@ -1175,9 +1176,19 @@ void do_install()
     
     if(export)
     {
+#ifdef __NT__
+      make_master("unpack_master.pike", master,
+                  "~piketmp/build/lib", "~piketmp/build",
+                  "~piketmp/lib");
+#else
       make_master("master.pike", master, "build/lib", "build", "lib");
+#endif
       to_export+=({master,
+#ifdef __NT__
+                   "unpack_master.pike",
+#else
 		   "master.pike",
+#endif
 		   //combine_path(vars->TMP_BUILDDIR,"master.pike"),
 		   combine_path(vars->SRCDIR,"COPYING"),
 		   combine_path(vars->SRCDIR,"install-welcome"),
