@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.393 2000/08/11 23:49:31 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.394 2000/08/17 18:59:11 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -670,9 +670,9 @@ if test $cflags_is_set = no; then
 
  if test "x${GCC-}" = xyes ; then
   # Do not use -Wall, since that produces a lot of warnings that are not
-  # really interresting (such as the warning for if( ... ) ... else if(
+  # really interresting (such as the warning for if( ... ) ... if(
   # ... ) .... else
-  WARN="-Wcomment -Wformat -Wimplicit-function-declaration -Wmultichar -Wswitch -Wuninitialized -Wpointer-arith -Wchar-subscripts -Wno-long-long"
+  WARN="-W -Wall -Wno-unused -Wcomment -Wformat -Wimplicit-function-declaration -Wmultichar -Wswitch -Wuninitialized -Wpointer-arith -Wchar-subscripts -Wno-long-long"
 
   if test "x${with_static_linking-}" = "xyes" ; then
     AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
@@ -1330,7 +1330,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h net/socket.h sys/mman.h setjmp.h \
-limits.h pthread.h crt/signal.h \
+limits.h pthread.h crt/signal.h sys/id.h \
 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
