@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.261 2000/04/15 18:32:31 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.262 2000/04/16 22:53:18 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5037,7 +5037,7 @@ void f_map(INT32 args)
 	       (* fun)(1+splice);
 	       if(sp>spbase)
 	       {
-		 dmalloc_touch_svalue(sp);
+		 dmalloc_touch_svalue(sp-1);
 		 d->item[i]=*--sp;
 		 pop_n_elems(sp-spbase);
 	       }
@@ -5049,7 +5049,7 @@ void f_map(INT32 args)
 	       (* fun)(1);
 	       if(sp>spbase)
 	       {
-		 dmalloc_touch_svalue(sp);
+		 dmalloc_touch_svalue(sp-1);
 		 d->item[i]=*--sp;
 		 pop_n_elems(sp-spbase);
 	       }
@@ -5069,7 +5069,7 @@ void f_map(INT32 args)
 	     {
 	       apply_svalue(mysp-2,1);
 	     }
-	     dmalloc_touch_svalue(sp);
+	     dmalloc_touch_svalue(sp-1);
 	     d->item[i]=*--sp;
 	   }
 	 }
