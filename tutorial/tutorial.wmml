@@ -7,8 +7,12 @@
 <!--
 TODO: Add a section about casts
 
+Explain that we have bignums
 An Appendix about kompiling
 Running Pike on NT
+
+sprintf does not work like it used to do since it has been updated
+for bignum functionality.
 
 Hedda-notes: 
 
@@ -25,6 +29,9 @@ Write an appendix about old functions, behaviors and keywords.
 
 Missing funktions in the manual: (tab before function means fixed)
 UNDEFINED
+_sqrt
+_is_type
+_sprintf
 _debug
 _describe
 _static_modules
@@ -13144,10 +13151,9 @@ generally speaking have one %&lt;modifiers&gt;&lt;operator&gt; (examples:
 <p><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td> %% </td><td> percent </td></tr>
 <tr valign=top><td> %d </td><td> signed decimal int </td></tr>
-<tr valign=top><td> %u </td><td> unsigned decimal int (doesn't really exist in Pike) </td></tr>
-<tr valign=top><td> %o </td><td> unsigned octal int </td></tr>
-<tr valign=top><td> %x </td><td> lowercase unsigned hexadecimal int </td></tr>
-<tr valign=top><td> %X </td><td> uppercase unsigned hexadecimal int </td></tr>
+<tr valign=top><td> %o </td><td> signed octal int </td></tr>
+<tr valign=top><td> %x </td><td> lowercase signed hexadecimal int </td></tr>
+<tr valign=top><td> %X </td><td> uppercase signed hexadecimal int </td></tr>
 <tr valign=top><td> %c </td><td> char (or short with %2c, %3c gives 3 bytes etc.) </td></tr>
 <tr valign=top><td> %f </td><td> float </td></tr>
 <tr valign=top><td> %g </td><td> heuristically chosen representation of float </td></tr>
