@@ -722,7 +722,7 @@ static void file_set_buffer(INT32 args)
 extern int errno;
 int socketpair(int family, int type, int protocol, int sv[2])
 {
-  struct sockaddr_in addr,addr2;
+  struct sockaddr_in addr,addr2, addr3;
   int len, fd;
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
@@ -753,6 +753,7 @@ int socketpair(int family, int type, int protocol, int sv[2])
   if(bind(sv[1], (struct sockaddr *)&addr2, sizeof(addr2)) < 0) return -1;
 
   /* Check what ports we got.. */
+  len=sizeof(addr);
   if(getsockname(fd,(struct sockaddr *)&addr,&len) < 0) return -1;
   if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
 
@@ -769,14 +770,15 @@ int socketpair(int family, int type, int protocol, int sv[2])
    * just the right time... uLPC is supposed to be
    * pretty safe...
    */
+  addr3=addr2;
   do
   {
     len=sizeof(addr2);
     sv[0]=accept(fd,(struct sockaddr_in *)&addr2,&len);
     if(sv[0] < 0) return -1;
   } while(len < sizeof(addr2) ||
-	  addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
-	  addr2.sin_port != addr.sin_port);
+	  addr2.sin_addr.s_addr != addr3.sin_addr.s_addr ||
+	  addr2.sin_port != addr3.sin_port);
 
   if(close(fd) <0) return -1;
 
