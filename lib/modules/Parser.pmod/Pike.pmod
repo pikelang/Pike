@@ -146,6 +146,7 @@ array(string) split(string data)
 	  case "++": case "--":
 	  case "&&": case "||":
 	  case "->":
+          case "::":
 	    pos++;
 	  default:
 	    pos++;
