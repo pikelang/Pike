@@ -74,8 +74,12 @@ class Package
     string setup_filename = unique_name('S')+".sh";
     string unpack_directory = unique_name('D');
 
-    string features = Process.popen(pike_filename+" --features");
-    options[({ "--features" })] = "echo \""+(features || "")+"\"\nexit";
+    string features = Process.popen(pike_filename+" --features")||"-unknown-";
+    if(features[-1] == '\n')
+      // Remove final newline since echo will provide it.
+      features = features[..sizeof(features)-2];
+    options[({ "--features" })] =
+      (sizeof(features) ? "echo \""+features+"\"\n" : "") + "exit";
     
     string setup = ("#!/bin/sh\n"
 		    "TARFILE=\"$1\"; shift; ARGS=''\n"
