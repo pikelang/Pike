@@ -8,6 +8,7 @@ TMP_BUILDDIR="@BUILDDIR@"
 TMP_BINDIR="@BINDIR@"
 LIBDIR_SRC="@LIBDIR@"
 SRCDIR="@srcdir@"
+PREDIR="$TMP_BUILDDIR/precompile"
 
 export TMP_BUILDDIR
 export LIBDIR_SRC
@@ -21,10 +22,39 @@ if test "@CROSS@" = "yes"; then
   retries="....."
 else :; fi
 
-if test -f "$TMP_BUILDDIR/precompile-method" ; then
-  . "$TMP_BUILDDIR/precompile-method"
+test -d "$PREDIR" || mkdir "$PREDIR"
+
+if test -f "$PREDIR/method" ; then
+  . "$PREDIR/method"
 else
   :
+fi
+
+#
+# By linking these two files to the current predir directory I can
+# make $SCRIPT work with older versions of Pike - Hubbe
+#
+
+if test -f "$PREDIR/C.pmod" ; then
+  :
+else
+  rm "$PREDIR/C.pmod" 2>/dev/null
+  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" "$PREDIR/C.pmod"; then :; else
+    # We might be on a filesystem that doesn't support symlinks (eg FAT).
+    echo "Trying copying instead..."
+    cp "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" "$PREDIR/C.pmod"
+  fi
+fi
+
+if test -f "$PREDIR/Pike.pmod" ; then
+  :
+else
+  rm "$PREDIR/Pike.pmod" 2>/dev/null
+  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" "$PREDIR/Pike.pmod"; then :; else
+    # We might be on a filesystem that doesn't support symlinks (eg FAT).
+    echo "Trying copying instead..."
+    cp "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" "$PREDIR/Pike.pmod"
+  fi
 fi
 
 old_method="${method-}"
@@ -50,10 +80,10 @@ case "$SCRIPT" in
   ;;
   *)
     if test -f ./$SCRIPT ; then
-      OLD="-DOLD=\"`/bin/pwd|sed 's@/[^/]*@../@g'`$SRCDIR\""
+      OLD="-DOLD=\"`/bin/pwd|sed 's@/[^/]*@../@g'`$PREDIR\""
     elif test -f "$TMP_BINDIR/$SCRIPT"; then
       SCRIPT="$TMP_BINDIR/$SCRIPT"
-      OLD="-DOLD=\"`( cd $TMP_BINDIR; /bin/pwd; )|sed 's@/[^/]*@../@g'`$SRCDIR\""
+      OLD="-DOLD=\"`( cd $TMP_BINDIR; /bin/pwd; )|sed 's@/[^/]*@../@g'`$PREDIR\""
     else
       echo "Script $SCRIPT neither found in the current directory nor in $TMP_BINDIR."
       exit 1
@@ -141,33 +171,6 @@ case $method in
   ;;
 esac
 
-#
-# By linking these two files to the current directory I can make
-# $SCRIPT work with older versions of Pike - Hubbe
-#
-
-if test -f $SRCDIR/C.pmod ; then
-  :
-else
-  rm $SRCDIR/C.pmod 2>/dev/null
-  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" $SRCDIR/C.pmod; then :; else
-    # We might be on a filesystem that doesn't support symlinks (eg FAT).
-    echo "Trying copying instead..."
-    cp "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" $SRCDIR/C.pmod
-  fi
-fi
-
-if test -f $SRCDIR/Pike.pmod ; then
-  :
-else
-  rm $SRCDIR/Pike.pmod 2>/dev/null
-  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" $SRCDIR/Pike.pmod; then :; else
-    # We might be on a filesystem that doesn't support symlinks (eg FAT).
-    echo "Trying copying instead..."
-    cp "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" $SRCDIR/Pike.pmod
-  fi
-fi
-
 if test "x${RUNPIKE-}" != x ; then
 echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
@@ -179,8 +182,8 @@ fi
 
 if [ $? = 0 ]; then
 
-cat > "$TMP_BUILDDIR/precompile-method.$$" <<EOF && \
-  mv "$TMP_BUILDDIR/precompile-method.$$" "$TMP_BUILDDIR/precompile-method"
+cat > "$PREDIR/method.$$" <<EOF && \
+  mv "$PREDIR/method.$$" "$PREDIR/method"
 LAST_PIKE="$LAST_PIKE"
 method="$method"
 #retries="$retries"
