@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.51 2003/06/30 17:06:10 mast Exp $
+|| $Id: port.h,v 1.52 2003/08/04 16:13:23 mast Exp $
 */
 
 #ifndef PORT_H
@@ -167,15 +167,21 @@ PMOD_EXPORT char *STRTOK(char *s1,char *s2);
 #endif
 
 #ifndef HAVE_VFPRINTF
-PMOD_EXPORT int VFPRINTF(FILE *f,char *s,va_list args);
+PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args);
 #else
 #  define VFPRINTF vfprintf
 #endif
 
 #ifndef HAVE_VSPRINTF
-PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args);
+PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args);
 #else
 #  define VSPRINTF vsprintf
+#endif
+
+#ifndef HAVE_VSNPRINTF
+PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args);
+#else
+#  define VSNPRINTF vsnprintf
 #endif
 
 

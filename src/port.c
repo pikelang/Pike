@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.72 2003/06/30 17:06:10 mast Exp $
+|| $Id: port.c,v 1.73 2003/08/04 16:13:23 mast Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.72 2003/06/30 17:06:10 mast Exp $");
+RCSID("$Id: port.c,v 1.73 2003/08/04 16:13:23 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -607,7 +607,7 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 }
 
 #ifndef HAVE_VSPRINTF
-PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args)
+PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
 {
   char *b=buf;
   char *s;
@@ -678,15 +678,24 @@ PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args)
 }
 #endif
 
-#ifndef HAVE_VFPRINTF
-PMOD_EXPORT int VFPRINTF(FILE *f,char *s,va_list args)
+#ifndef HAVE_VSNPRINTF
+/* Warning: It's possible to trick this with something like
+ * snprintf("...%c...", 0). */
+PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
 {
-  int i;
+  int res;
+  buf[size - 1] = 0;
+  res = VSPRINTF (buf, fmt, args);
+  if (buf[size - 1]) Pike_fatal ("Buffer overflow in VSPRINTF.\n");
+  return res;
+}
+#endif
+
+#ifndef HAVE_VFPRINTF
+PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args)
+{
   char buffer[10000];
-  VSPRINTF(buffer,s,args);
-  i=strlen(buffer);
-  if(i+1>sizeof(buffer))
-    Pike_fatal("Buffer overflow.\n");
+  VSNPRINTF(buffer,sizeof(buffer),s,args);
   return fwrite(buffer,i,1,f);
 }
 #endif
