@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.90 2001/04/28 21:33:19 mast Exp $
+ * $Id: svalue.h,v 1.91 2001/04/30 17:38:26 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -76,6 +76,9 @@ union anything
 #ifndef STRUCT_SVALUE_DECLARED
 #define STRUCT_SVALUE_DECLARED
 #endif
+
+/* Note: At least rbtree overlays the type field and uses the top 4
+ * bits in it internally. */
 
 struct svalue
 {
