@@ -262,6 +262,7 @@ static struct array *resize_array(struct array *a, INT32 size)
   if(size > a->size)
   {
     /* We should grow the array */
+
     if(a->malloced_size >= size)
     {
       for(;a->size < size; a->size++)
@@ -274,7 +275,7 @@ static struct array *resize_array(struct array *a, INT32 size)
       return a;
     }else{
       struct array *ret;
-      ret=allocate_array_no_init(size, (size>>3)+1);
+      ret=low_allocate_array(size, (size>>3)+1);
       MEMCPY(ITEM(ret),ITEM(a),sizeof(struct svalue)*a->size);
       ret->type_field = a->type_field | BIT_INT;
       a->size=0;

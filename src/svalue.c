@@ -178,20 +178,29 @@ void assign_svalues_no_free(struct svalue *to,
 			    INT32 num,
 			    INT32 type_hint)
 {
-  if((type_hint & ~(BIT_INT | BIT_FLOAT))==0)
+#ifdef DEBUG
+  if(d_flag)
+  {
+    INT32 e,t;
+    for(t=e=0;e<num;e++) t|=1<<from[e].type;
+    if(t & ~type_hint)
+      fatal("Type hint lies!\n");
+  }
+#endif
+  if((type_hint & ((2<<MAX_REF_TYPE)-1)) == 0)
   {
     MEMCPY((char *)to, (char *)from, sizeof(struct svalue) * num);
     return;
   }
 
-  if(((type_hint & (BIT_INT | BIT_FLOAT))==0))
+  if((type_hint & ((2<<MAX_REF_TYPE)-1)) == type_hint)
   {
     while(--num >= 0)
     {
       struct svalue tmp;
       tmp=*(from++);
       *(to++)=tmp;
-      tmp.u.refs++;
+      tmp.u.refs[0]++;
     }
     return;
   }
