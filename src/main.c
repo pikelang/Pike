@@ -94,6 +94,27 @@ void main(int argc, char **argv, char **env)
 	  }
 	  break;
 
+	case 's':
+	  if(!p[1])
+	  {
+	    e++;
+	    if(e >= argc)
+	    {
+	      fprintf(stderr,"Missing argument to -s\n");
+	      exit(1);
+	    }
+	    p=argv[e];
+	  }
+	  stack_size=STRTOL(p+1,&p,0);
+	  p+=strlen(p);
+
+	  if(stack_size < 256)
+	  {
+	    fprintf(stderr,"Stack size must at least be 256.\n");
+	    exit(1);
+	  }
+	  break;
+
 	case 'd':
 	  if(p[1]>='0' && p[1]<='9')
 	    d_flag+=STRTOL(p+1,&p,10);
