@@ -25,7 +25,7 @@
  */
 
 #include "types.h"
-#include "idea.h"
+#include <idea.h>
 
 #include <string.h>
 
@@ -211,8 +211,8 @@ idea_invert(unsigned INT16 *d,
 /*	IDEA encryption/decryption algorithm */
 /* Note that in and out can be the same buffer */
 void
-idea_crypt(unsigned INT8 *dest,
-	   const unsigned INT16 *key,
+idea_crypt(const unsigned INT16 *key,
+	   unsigned INT8 *dest,
 	   const unsigned INT8 *src)
 {
   register unsigned INT16 x1, x2, x3, x4, s2, s3;
