@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.231 2001/07/03 17:12:28 grubba Exp $");
+RCSID("$Id: program.c,v 1.232 2001/07/11 18:44:51 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -235,13 +235,19 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,		\
 void ins_int(INT32 i, void (*func)(char tmp))
 {
   int e;
-  for(e=0;e<(long)sizeof(i);e++) func(EXTRACT_UCHAR(((char *)&i)+e));
+  unsigned char *p = (unsigned char *)&i;
+  for(e=0;e<(long)sizeof(i);e++) {
+    func(p[e]);
+  }
 }
 
 void ins_short(INT16 i, void (*func)(char tmp))
 {
   int e;
-  for(e=0;e<(long)sizeof(i);e++) func(EXTRACT_UCHAR(((char *)&i)+e));
+  unsigned char *p = (unsigned char *)&i;
+  for(e=0;e<(long)sizeof(i);e++) {
+    func(p[e]);
+  }
 }
 
 void use_module(struct svalue *s)
