@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.76 2001/11/19 16:22:58 nilsson Exp $
+**!	$Id: layers.c,v 1.77 2002/05/11 00:19:57 nilsson Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -196,7 +196,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.76 2001/11/19 16:22:58 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.77 2002/05/11 00:19:57 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -217,12 +217,12 @@ RCSID("$Id: layers.c,v 1.76 2001/11/19 16:22:58 nilsson Exp $");
 
 #include "image.h"
 
-/* This must be included last! */
-#include "module_magic.h"
-
 #ifdef TRY_USE_MMX
 #include <mmx.h>
 #endif
+
+/* This must be included last! */
+#include "module_magic.h"
 
 extern struct program *image_program;
 extern struct program *image_layer_program;
@@ -3237,12 +3237,12 @@ static void image_layer__sprintf( INT32 args )
   int x;
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
-  if (sp[-args].type!=T_INT)
+  if (Pike_sp[-args].type!=T_INT)
     SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
-  if (sp[1-args].type!=T_MAPPING)
+  if (Pike_sp[1-args].type!=T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 
-  x = sp[-2].u.integer;
+  x = Pike_sp[-2].u.integer;
 
   pop_n_elems( 2 );
   switch( x )

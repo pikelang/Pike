@@ -26,7 +26,7 @@
 /* This must be included last! */
 #include "module_magic.h"
 
-RCSID("$Id: discdate.c,v 1.9 2001/02/14 15:05:25 grubba Exp $");
+RCSID("$Id: discdate.c,v 1.10 2002/05/11 00:16:47 nilsson Exp $");
 
 struct disc_time
 {
@@ -56,7 +56,7 @@ void f_discdate(INT32 argc)
     exit(1);
   } else {
     struct tm *eris;
-    t=sp[-argc].u.integer;
+    t=Pike_sp[-argc].u.integer;
     eris=localtime(&t);
     bob=eris->tm_yday;		/* days since Jan 1. */
     raw=eris->tm_year;		/* years since 1980 */
