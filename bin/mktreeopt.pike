@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.27 2000/02/13 06:14:21 hubbe Exp $
+ * $Id: mktreeopt.pike,v 1.28 2000/04/08 17:51:03 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -7,6 +7,115 @@
  */
 
 #pragma strict_types
+
+/*
+ * Input format:
+ *
+ * Input is first stripped of //-style comments.
+ * Then it is parsed with the following pseudo-BNF grammar:
+ *
+ * source:
+ *       | source rule;
+ *
+ * rule: match ':' transform ';'
+ *     | match ':' action ';';
+ *
+ * match: tag '=' id conditionals children
+ *      | tag conditionals children
+ *      | id conditionals children
+ *      | '$' tag conditionals children
+ *      | '-' conditionals;
+ *
+ * tag: number
+ *    | tag number;
+ *
+ * number: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+ *
+ * id: identifier
+ *   | '\'' any '\''
+ *   | '\'' '\\' any '\''
+ *   | '*'
+ *   | '+';
+ *
+ * identifier: uppercase
+ *           | identifier uppercase;
+ *
+ * conditionals:
+ *             | conditionals conditional;
+ *
+ * conditional: '[' expression ']';
+ *
+ * children:
+ *         | '(' match ',' match ')';
+ *
+ * transform: identifier '(' transform ',' transform ')'
+ *          | '\'' any '\'' '(' transform ',' transform ')'
+ *          | '\'' '\\' any '\'' '(' transform ',' transform ')'
+ *          | '-'
+ *          | '$' tag
+ *          | tag;
+ *
+ * action: '{' code '}';
+ *
+ * uppercase: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I'
+ *          | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R'
+ *          | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '_';
+ *
+ */
+
+/*
+ * Matching:
+ *
+ * A tag without conditionals has the implicit symbol '*'.
+ * A tag with conditionals has the implicit symbol '+'.
+ * A rule must begin with a token match.
+ *
+ *   Symbol		Matches against
+ *   ----------------------------------------------------------------------
+ *   identifier		node->token.
+ *   '\'' any '\''	node->token.
+ *   '\'' '\\' any '\''	node->token.
+ *   '-'		NULL.
+ *   '*'		ANY.
+ *   '+'		NOT NULL.
+ *   '$' tag		Prior occurrance of the tag (SHARED_NODES).
+ *
+ */
+
+/*
+ * Conditionals:
+ *
+ * During evaluation of the expression $$ referrs to the current node,
+ * and $tag to prior tagged nodes.
+ *
+ */
+
+/*
+ * Transforms:
+ *
+ *   Symbol		Resulting node
+ *   ----------------------------------------------------------------------
+ *   identifier		New node with identifier as the token.
+ *   '\'' any '\''	New node with symbol as the token.
+ *   '\'' '\\' any '\''	New node with symbol as the token.
+ *   '$' tag		Node tagged during matching.
+ *   tag		New integer node.
+ *   '-'		NULL.
+ *
+ */
+
+/*
+ * Actions:
+ *
+ * During actions $tag referrs to nodes tagged during matching, and $$ to
+ * the result node.
+ *
+ * NOTE: Code after the assignment of $$ will not be executed
+ *       (a goto will be inserted).
+ *
+ * NOTE: $tag nodes used in the $$ assignment expression will be freed
+ *       as needed.
+ */
 
 /*
  * Notes about the generated code:
@@ -127,7 +236,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.27 2000/02/13 06:14:21 hubbe Exp $\n"
+" * $Id: mktreeopt.pike,v 1.28 2000/04/08 17:51:03 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -803,7 +912,7 @@ string generate_match(array(object(node)) rule_set, string indent)
   // Group the nodes by their class:
 
   array(array(object(node))) node_classes =
-    [array(array(object(node)))]allocate(11, allocate)(0);
+    allocate(11, allocate)(0);
 
   foreach(rule_set, object(node) n) {
     int car_kind = ANY;
