@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.90 1999/09/19 21:11:47 grubba Exp $");
+RCSID("$Id: las.c,v 1.91 1999/09/19 22:59:44 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1037,7 +1037,11 @@ node *copy_node(node *n)
     else
       b->type=0;
   }
-  if(n->name) add_ref(b->name=n->name);
+  if(n->name)
+  {
+    if(b->name) free_string(b->name);
+    add_ref(b->name=n->name);
+  }
   b->line_number = n->line_number;
   b->node_info = n->node_info;
   b->tree_info = n->tree_info;

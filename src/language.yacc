@@ -182,7 +182,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.123 1999/09/18 09:21:20 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.124 1999/09/19 22:59:11 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -423,6 +423,7 @@ low_program_ref: string_constant
 		 $1->u.sval.u.string->str);
     free_node($1);
     $$=mksvaluenode(sp-1);
+    if($$->name) free_string($$->name);
     add_ref( $$->name=sp[-2].u.string );
     pop_stack();
   }
@@ -1266,7 +1267,7 @@ class: modifiers F_CLASS optional_identifier
 	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
 	{
 	  struct svalue *s;
-	  s=PROG_FROM_INT(new_program,i)->constants+id->func.offset;
+	  s=&PROG_FROM_INT(new_program,i)->constants[id->func.offset].sval;
 	  if(s->type==T_PROGRAM)
 	  {
 	    low_start_new_program(s->u.program, $3->u.sval.u.string, $1);
@@ -1737,6 +1738,8 @@ low_idents: F_IDENTIFIER
     tmp.u.mapping=get_builtin_constants();
     tmp2=mkconstantsvaluenode(&tmp);
     $$=index_node(tmp2, "predef", $3->u.sval.u.string);
+    if(!$$->name)
+      add_ref( $$->name=$3->u.sval.u.string );
     free_node(tmp2);
     free_node($3);
   }
