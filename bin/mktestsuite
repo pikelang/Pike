@@ -57,10 +57,20 @@ m4exit(1)
 
 changecom
 
+define(checkarg,[[dnl
+ifelse(eval(len([[\$3]])>4096),0,,[[dnl
+errprint(__file__:__line__: [[
+Argument \$2 to \$1 has ]]len([[\$3]])[[ characters,
+some m4 implementations only allow 4096.
+]])m4exit(1)]])dnl
+]])
+
 define(SEPARATOR,[[....]])
 define(CONDITION,[[]])
 
 define(DOTEST,[[dnl
+checkarg([[DOTEST]],1,[[\$1]])dnl
+checkarg([[DOTEST]],2,[[\$2]])dnl
 divert(0)dnl
 define([[TESTNO]],incr(TESTNO))dnl
 CONDITION()__file__:__line__: test TESTNO, expected result: [[\$1]]
@@ -126,6 +136,8 @@ define(test_tests, [[DOTEST(RUNCT,dnl
 [[\$1]])]])
 
 define(cond,[[
+checkarg([[cond]],1,[[\$1]])dnl
+checkarg([[cond]],2,[[\$2]])dnl
 define([[CONDITION]],[[COND \$1
 ]])
 \$2
@@ -201,4 +213,4 @@ test_equal(max(\$2,\$1,\$3), \$3)
 include($1)
 EOF
 ) | (shift ; $M4 "$@" - )
-
+exit $?
