@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.79 2001/06/30 22:06:37 mast Exp $
+ * $Id: gc.h,v 1.80 2001/07/01 18:23:32 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -358,11 +358,14 @@ extern int gc_in_cycle_check;
 #endif
 
 /* Use WEAK < 0 for strong links. The gc makes these assumptions about
- * those:
+ * them:
  * 1.  All strong links are recursed before any other links, i.e.
  *     strong links must be passed to gc_cycle_check_* last.
  * 2.  There can never be a cycle consisting of only strong links.
- */
+ *
+ * Warning: This is unusable other than internally; you'll never be
+ * able to guarantee the second assumption since strong links are used
+ * internally for parent object and program relations. */
 
 #define GC_CYCLE_ENTER(X, WEAK) do {					\
   void *_thing_ = (X);							\
