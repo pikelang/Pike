@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.43 2003/06/30 17:06:08 mast Exp $
+|| $Id: backend.cmod,v 1.44 2003/07/23 15:11:24 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.43 2003/06/30 17:06:08 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.44 2003/07/23 15:11:24 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -435,6 +435,11 @@ static void copy_selectors(struct active_selectors *to,
 #endif
 
 
+/*! @module Pike
+ */
+
+/*! @class Backend
+ */
 PIKECLASS Backend
 {
   /*
@@ -1294,13 +1299,22 @@ PIKECLASS Backend
       backend_do_call_outs(me);
       call_callback(& me->backend_callbacks, (void *)(ptrdiff_t)1);
     }
-  
+
+  /*! @decl void `()(float sleep_time)
+   *!   Perform one pass through the backend.
+   *!
+   *! @param sleep_time
+   *!   Wait at most @[sleep_time] seconds.
+   */
   PIKEFUN void `()(float sleep_time)
     {
       /* FIXME: Add a mutex !!!! */
       low_backend_once(THIS, sleep_time);
     }
 
+  /*! @decl void add_file(Stdio.File|Stdio.FILE f)
+   *!   Add @[f] to this backend.
+   */
   PIKEFUN void add_file(object f)
     {
       int fd=fd_from_object(f);
@@ -2000,7 +2014,7 @@ PIKECLASS Backend
 #endif /* !HAVE_POLL */
 
       if(pike_make_pipe(THIS->wakeup_pipe) < 0)
-	Pike_error("Couldn't create backend wakup pipe! errno=%d.\n",errno);
+	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
       set_nonblocking(THIS->wakeup_pipe[0],1);
       set_nonblocking(THIS->wakeup_pipe[1],1);
@@ -2058,6 +2072,42 @@ PIKECLASS Backend
 
     }
 }
+
+/*! @endclass
+ */
+
+/*! @module DefaultBackend
+ *!   This is the @[Backend] object that files and call_outs are
+ *!   handled by by default.
+ *!
+ *!   This is also the @[Backend] object that will be used if @[main()]
+ *!   returns @expr{-1@}.
+ *!
+ *! @seealso
+ *!   @[Backend], @[Stdio.File()->set_nonblocking()], @[call_out()]
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+/*! @decl mixed call_out(function f, float|int delay, mixed ... args)
+ *! @decl void _do_call_outs()
+ *! @decl int find_call_out(function f)
+ *! @decl int find_call_out(mixed id)
+ *! @decl int remove_call_out(function f)
+ *! @decl int remove_call_out(function id)
+ *! @decl array(array) call_out_info()
+ *!   These are aliases for the corresponding functions in
+ *!   @[Pike.DefaultBackend].
+ *!
+ *! @seealso
+/*!   @[Pike.Backend()->call_out()], @[Pike.Backend()->_do_call_outs()],
+ *!   @[Pike.Backend()->find_call_out()], @[Pike.Backend()->remove_call_out()],
+ *!   @[Pike.Backend()->call_out_info()]
+ */
 
 /* This doesn't need to be here */
 PMOD_EXPORT int write_to_stderr(char *a, size_t len)
