@@ -5,6 +5,8 @@ config.log
 config.status
 configure
 dependencies
+image_machine.h
+image_machine.h.in
 linker_options
 modlist_headers
 modlist_segment
