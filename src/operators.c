@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.72 1999/12/11 19:28:43 grubba Exp $");
+RCSID("$Id: operators.c,v 1.73 1999/12/13 19:58:44 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -807,6 +807,16 @@ void o_and(void)
     return;
   }
 
+  case T_TYPE:
+  {
+    struct pike_string *t;
+    t = and_pike_types(sp[-2].u.string, sp[-1].u.string);
+    pop_n_elems(2);
+    push_string(t);
+    sp[-1].type = T_STRING;
+    return;
+  }
+
 #define STRING_BITOP(OP,STROP)						  \
   case T_STRING:							  \
   {									  \
@@ -995,6 +1005,16 @@ void o_or(void)
     return;
   }
 
+  case T_TYPE:
+  {
+    struct pike_string *t;
+    t = or_pike_types(sp[-2].u.string, sp[-1].u.string, 0);
+    pop_n_elems(2);
+    push_string(t);
+    sp[-1].type = T_TYPE;
+    return;
+  }
+
   STRING_BITOP(|,"OR")
 
   default:
@@ -1085,6 +1105,25 @@ void o_xor(void)
     a=merge_array_with_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_XOR);
     pop_n_elems(2);
     push_array(a);
+    return;
+  }
+
+  case T_TYPE:
+  {
+    /* a ^ b  ==  (a&!b)|(!a&b) */
+    struct pike_string *a;
+    struct pike_string *b;
+    copy_shared_string(a, sp[-2].u.string);
+    copy_shared_string(b, sp[-1].u.string);
+    o_not();		/* !b */
+    o_and();		/* a&!b */
+    push_string(a);
+    sp[-1].type = T_TYPE;
+    o_not();		/* !a */
+    push_string(b);
+    sp[-1].type = T_TYPE;
+    o_and();		/* !a&b */
+    o_or();		/* (a&!b)|(!a&b) */
     return;
   }
 
@@ -1787,6 +1826,15 @@ void o_not(void)
     }
     break;
 
+  case T_TYPE:
+    type_stack_mark();
+    push_unfinished_type(sp[-1].u.string);
+    push_type(T_NOT);
+    pop_stack();
+    push_string(pop_unfinished_type());
+    sp[-1].type = T_TYPE;
+    break;
+
   default:
     free_svalue(sp-1);
     sp[-1].type=T_INT;
@@ -2160,13 +2208,13 @@ void init_operators(void)
 	   0); /* OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE); ? */
 
   /* function(mixed...:int) */
-  ADD_EFUN2("`==",f_eq,tFuncV(tNone,tMix,tInt),OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
+  ADD_EFUN2("`==",f_eq,tFuncV(tNone,tMix,tInt01),OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
-  ADD_EFUN2("`!=",f_ne,tFuncV(tNone,tMix,tInt),OPT_TRY_OPTIMIZE,0,generate_comparison);
+  ADD_EFUN2("`!=",f_ne,tFuncV(tNone,tMix,tInt01),OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
-  add_efun2("`!",f_not,"function(mixed:int(0..1))",OPT_TRY_OPTIMIZE,optimize_not,generate_not);
+  add_efun2("`!",f_not,"function(!type:int(0..1))|function(type:type)",OPT_TRY_OPTIMIZE,optimize_not,generate_not);
 
-#define CMP_TYPE "!function(!(object|mixed)...:mixed)&function(mixed...:int(0..1))|function(int|float...:int(0..1))|function(string...:int(0..1))"
+#define CMP_TYPE "!function(!(object|mixed)...:mixed)&function(mixed...:int(0..1))|function(int|float...:int(0..1))|function(string...:int(0..1))|function(type,type,type...:int(0..1))"
   add_efun2("`<", f_lt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`<=",f_le,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
@@ -2200,7 +2248,7 @@ void init_operators(void)
 		 tFuncV(tStr,tStr,tStr)),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
-#define LOG_TYPE "function(mixed,object...:mixed)|function(object,mixed...:mixed)|function(int...:int)|function(mapping(0=mixed:1=mixed)...:mapping(0:1))|function(multiset(2=mixed)...:multiset(2))|function(array(3=mixed)...:array(3))|function(string...:string)"
+#define LOG_TYPE "function(mixed,object...:mixed)|function(object,mixed...:mixed)|function(int...:int)|function(mapping(0=mixed:1=mixed)...:mapping(0:1))|function(multiset(2=mixed)...:multiset(2))|function(array(3=mixed)...:array(3))|function(string...:string)|function(type,type...:type)"
 
   add_efun2("`&",f_and,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 

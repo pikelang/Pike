@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.56 1999/11/16 00:51:55 mast Exp $");
+RCSID("$Id: svalue.c,v 1.57 1999/12/13 19:59:12 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -565,6 +565,10 @@ int is_eq(struct svalue *a, struct svalue *b)
   case T_STRING:
     return is_same_string(a->u.string,b->u.string);
 
+  case T_TYPE:
+    return pike_types_le(a->u.string, b->u.string) &&
+      pike_types_le(b->u.string, a->u.string);
+
   case T_FUNCTION:
     return (a->subtype == b->subtype && a->u.object == b->u.object);
       
@@ -768,6 +772,9 @@ int is_lt(struct svalue *a,struct svalue *b)
 
   case T_STRING:
     return my_strcmp(a->u.string, b->u.string) < 0;
+
+  case T_TYPE:
+    return !pike_types_le(b->u.string, a->u.string);
 
   case T_FLOAT:
     return a->u.float_number < b->u.float_number;
