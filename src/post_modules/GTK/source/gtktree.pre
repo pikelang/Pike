@@ -11,11 +11,11 @@ signal select_child;
 signal unselect_child;
 void create();
 // Used to create a new tree widget.
-void append( tree_item child );
+void append( widget child );
 // Add a new tree item at insertion point
-void prepend( tree_item child );
+void prepend( widget child );
 // Add a new tree item from end (same as 'add')
-void insert( tree_item child, int pos );
+void insert( widget child, int pos );
 // Insert a new tree item at the specified position
 void clear_items( int start, int end );
 // Remove the items from position start to position end from a Tree.
@@ -23,11 +23,11 @@ void select_item( int pos );
 // Select a specified (by index) item
 void unselect_item( int pos );
 // Unselect a specified (by index) item
-void select_child( tree_item child );
+void select_child( widget child );
 // Select a specified (by object) item
-void unselect_child( tree_item child );
+void unselect_child( widget child );
 // Unselect a specified (by object) item
-int child_position( tree_item child );
+int child_position( widget child );
 // Unselect a specified (by object) item
 void set_selection_mode( int selection_mode );
 // One of CONST(GTK_SELECTION)
