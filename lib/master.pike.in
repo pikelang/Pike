@@ -1,4 +1,6 @@
-/* $Id: master.pike.in,v 1.75 1999/11/29 18:40:18 neotron Exp $
+/* -*- Pike -*-
+ *	
+ * $Id: master.pike.in,v 1.76 1999/12/01 09:14:04 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -546,7 +548,10 @@ class dirnode
 
   object|program ind(string index)
   {
-    if(module) if(object o=module[index]) return o;
+    if(module) {
+      object o;
+      if(!zero_type(o=module[index])) return o;
+    }
 
     index = dirname+"/"+index;
     if(object o=findmodule(index))
@@ -562,7 +567,7 @@ class dirnode
     mixed ret;
     if(!zero_type(ret=cache[index]))
     {
-      if(ret) return ret;
+      if(ret!=0) return ret;
       return UNDEFINED;
     }
     return cache[index]=ind(index);
@@ -605,7 +610,7 @@ class dirnode
   array(string) _indices()
   {
     fill_cache();
-    return indices(filter(cache, lambda(mixed x){ return x; }));
+    return indices(filter(cache, lambda(mixed x){ return x!=0; }));
   }
   array(mixed) _values()
   {
