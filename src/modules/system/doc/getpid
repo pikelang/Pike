@@ -1,0 +1,14 @@
+NAME
+	getpid - get the process ID
+
+SYNTAX
+	int getpid();
+
+DESCRIPTION
+	Returns the process ID of this process.
+
+KEYWORDS
+	Processes
+
+SEE ALSO
+	system/getppid, system/getpgrp
