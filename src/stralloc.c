@@ -140,7 +140,45 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,i
 #ifdef DEBUG
 struct pike_string *debug_findstring(const struct pike_string *foo)
 {
-  return propagate_shared_string(foo, foo->hval % HTABLE_SIZE);
+  struct pike_string *tmp;
+  tmp=propagate_shared_string(foo, foo->hval % HTABLE_SIZE);
+
+#if 0
+  if(!tmp)
+  {
+    int e;
+    struct pike_string *tmp2;
+    fprintf(stderr,"String %p %ld %ld %s\n",
+	    foo,
+	    (long)foo->hval,
+	    (long)foo->len,
+	    foo->str);
+    StrHash(foo->str,foo->len);
+    fprintf(stderr,"------ %p %ld\n",
+	    base_table[foo->hval %HTABLE_SIZE],
+	    (long)full_hash_value);
+    for(tmp2=base_table[foo->hval % HTABLE_SIZE];tmp2;tmp2=tmp2->next)
+    {
+      if(tmp2 == tmp)
+	fprintf(stderr,"!!%p!!->",tmp2);
+      else
+	fprintf(stderr,"%p->",tmp2);
+    }
+    fprintf(stderr,"0\n");
+
+    for(e=0;e<HTABLE_SIZE;e++)
+    {
+      for(tmp2=base_table[e];tmp2;tmp2=tmp2->next)
+      {
+	if(tmp2 == tmp)
+	  fprintf(stderr,"String found in hashbin %ld (not %ld)\n",
+		  (long)e,
+		  (long)(foo->hval % HTABLE_SIZE));
+      }
+    }
+  }
+#endif
+  return tmp;
 }
 #endif
 
