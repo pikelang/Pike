@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.95 1999/11/05 17:06:43 grubba Exp $");
+RCSID("$Id: las.c,v 1.96 1999/11/05 23:22:04 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -122,6 +122,7 @@ INT32 count_args(node *n)
   if(!n) return 0;
   switch(n->token)
   {
+  case F_COMMA_EXPR:
   case F_VAL_LVAL:
   case F_ARG_LIST:
     a=count_args(CAR(n));
@@ -1092,17 +1093,20 @@ node **last_cmd(node **a)
   node **n;
   if(!a || !*a) return (node **)NULL;
   if((*a)->token == F_CAST) return last_cmd(&CAR(*a));
-  if((*a)->token != F_ARG_LIST) return a;
+  if(((*a)->token != F_ARG_LIST) &&
+     ((*a)->token != F_COMMA_EXPR)) return a;
   if(CDR(*a))
   {
-    if(CDR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST)
+    if(CDR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST &&
+       CAR(*a)->token != F_COMMA_EXPR)
       return &CDR(*a);
     if((n=last_cmd(&CDR(*a))))
       return n;
   }
   if(CAR(*a))
   {
-    if(CAR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST)
+    if(CAR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST &&
+       CAR(*a)->token != F_COMMA_EXPR)
       return &CAR(*a);
     if((n=last_cmd(&CAR(*a))))
       return n;
@@ -1206,6 +1210,7 @@ static void low_print_tree(node *foo,int needlval)
     break;
   }
 
+  case F_COMMA_EXPR:
   case F_ARG_LIST:
     low_print_tree(CAR(foo),0);
     if(CAR(foo) && CDR(foo))
@@ -1565,6 +1570,7 @@ static int cntargs(node *n)
   case F_INC_LOOP:
   case F_DEC_LOOP:  return 0;
 
+  case F_COMMA_EXPR:
   case F_VAL_LVAL:
   case F_LVALUE_LIST:
   case F_ARG_LIST:
@@ -1590,6 +1596,7 @@ static void low_build_function_type(node *n)
   }
   switch(n->token)
   {
+  case F_COMMA_EXPR:
   case F_ARG_LIST:
     low_build_function_type(CDR(n));
     low_build_function_type(CAR(n));
@@ -1806,6 +1813,7 @@ void fix_type_field(node *n)
     n->type = get_type_of_svalue(& n->u.sval);
     break;
 
+  case F_COMMA_EXPR:
   case F_ARG_LIST:
     if(!CAR(n) || CAR(n)->type==void_type_string)
     {
@@ -1936,6 +1944,23 @@ static void optimize(node *n)
       }
       break;
 
+    case F_COMMA_EXPR:
+      if(!CAR(n)) goto use_cdr;
+      if(!CDR(n)) goto use_car;
+
+      /* const , X  ->  X */
+      if (CAR(n)->token == F_CONSTANT) {
+	goto use_cdr;
+      }
+      /* (X , const) , Y  ->  X , Y */
+      if (CAR(n)->token == F_COMMA_EXPR &&
+	  CDAR(n)->token == F_CONSTANT) {
+	tmp1 = mknode(F_COMMA_EXPR, CAAR(n), CDR(n));
+	CAAR(n) = CDR(n) = 0;
+	goto use_tmp1;
+      }
+
+      /* FALL_THROUGH */
     case F_ARG_LIST:
     case F_LVALUE_LIST:
       if(!CAR(n)) goto use_cdr;
@@ -1971,6 +1996,14 @@ static void optimize(node *n)
       if (node_is_false(CAR(n))) goto use_cdr;
       /* 1 || Y  ->  1 */
       if (node_is_true(CAR(n))) goto use_car;
+      /* (X = 0) || Y  ->  (X = 0) , Y */
+      if ((CAR(n)->token == F_ASSIGN) && node_is_false(CDAR(n))) {
+	tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, CAR(n)),
+		      CDR(n));
+	CAR(n) = 0;
+	CDR(n) = 0;
+	goto use_tmp1;
+      }
       break;
 
     case F_LAND: 
@@ -1985,6 +2018,14 @@ static void optimize(node *n)
       if (node_is_false(CAR(n))) goto use_car;
       /* 1 && Y  ->  Y */
       if (node_is_true(CAR(n))) goto use_cdr;
+      /* (X = 1) && Y  ->  (X = 1) , Y */
+      if ((CAR(n)->token == F_ASSIGN) && node_is_true(CDAR(n))) {
+	tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, CAR(n)),
+		      CDR(n));
+	CAR(n) = 0;
+	CDR(n) = 0;
+	goto use_tmp1;
+      }
       break;
 
     case '?':
