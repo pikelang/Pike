@@ -28,6 +28,33 @@ void describe_class_tree( Class c )
   rec_describe_tree( c, 1, ({c}) );
 }
 
+// Like Stdio.write_file, but does not overwrite with identical data, 
+// thus avoiding unessesary recompilations.
+void write_file( string file, string data )
+{
+  string trim( string f ){
+    array q = f/"/";
+    return q[sizeof(q)-2..]*"/";
+  };
+  Stdio.File f = Stdio.File();
+
+  if( f->open( file, "r" ) )
+    if( f->read() != data )
+      werror("  Updating "+trim(file)+"\n");
+    else
+      return;
+  else
+    werror("  Creating "+trim(file)+"\n");
+
+  f = Stdio.File( );
+  if( !f->open( file, "wct" ) )
+  {
+    werror("Failed to open "+file+"\n");
+    exit(1);
+  }
+  f->write( data );
+}
+
 void traverse_class_tree( mapping(string:Class) classes, function cb )
 {
   mapping done = ([]);

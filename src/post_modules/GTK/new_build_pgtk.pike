@@ -1,3 +1,4 @@
+string destination_dir = "";
 #!/usr/bin/env pike
 #define COMPOSE(X) Parser.Pike.reconstitute_with_line_numbers( X )
 #define SPLIT(X,FN) Parser.Pike.group(Parser.Pike.hide_whitespaces(Parser.Pike.tokenize(Parser.Pike.split(X),FN)))
@@ -41,9 +42,40 @@ string indent( string what, int amnt )
   return q+((what/"\n")*("\n"+q));
 }
 
+string make_c_string( string from )
+{
+  string line = "\"";
+  string res = "";
+  int c;
+  for( int i=0; i<strlen( from ); i++ )
+  {
+    switch( (c=from[i]) )
+    {
+     case '.':
+     case 'a'..'z':
+     case 'A'..'Z':
+     case '0'..'9':
+     case 0300..0376: // 377 breaks some versions of gcc.
+     case '_': case ' ':
+       line += from[i..i];
+       break;
+     default:
+       line += sprintf("\\%o", c );
+       break;
+    }
+    if( strlen( line ) > 75 )
+    {
+      res += line+"\"\n";
+      line="\"";
+    }
+  }
+  return res+line+"\"";
+}
+
 string get_string_data()
 {
-  return gbl_data;
+  return "const char __pgtk_string_data[] =\n"+
+         make_c_string(gbl_data)+";\n\n\n";
 }
 
 string gbl_data = "";
@@ -67,7 +99,9 @@ int data_offset( string what )
 
 string S( string what, int|void nul, int|void nq, int|void ind )
 {
-  return sprintf("/* %O */\n%s(char*)__pgtk_string_data+0x%x",
+  if( nq == 2 )
+    return sprintf("((char *)__pgtk_string_data+0x%x)",data_offset(what+(nul?"\0":"")));
+  return sprintf("/* %O */\n%s((char*)__pgtk_string_data+0x%x)",
                  (nq?what:replace(what,"%","%%")),
                  " "*ind,
                  (data_offset(what+(nul?"\0":"")))
@@ -77,6 +111,11 @@ string S( string what, int|void nul, int|void nq, int|void ind )
 string unsillycaps(string what)
 {
   string res=upper_case(what[0..0]);
+  if( what[0] == '_' )
+  {
+    res += what[1..1];
+    what = what[1..];
+  }
   foreach(what[1..]/"", string q)
     if(lower_case(q)==q)
       res += q;
@@ -99,6 +138,27 @@ class Function(Class parent,
   static string _sprintf()
   {
     return sprintf("Function( %O, %O )",name, return_type );
+  }
+
+  string pike_type( )
+  {
+    return "function("+(arg_types->pike_type()*",")+":"+
+           return_type->pike_type()+")";
+  }
+
+  int is_static()
+  {
+    return (name=="create"||(name[0]=='_'));
+  }
+
+  string pike_add( )
+  {
+    string type = function_type( pike_type( ) );
+    return sprintf("    quick_add_function(%s,%d,p%s,%s,%d,"
+                   "%s,OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);\n",
+                   S(name,0,1,27), strlen(name),
+                   c_name(), S(type,0,2,27),
+                   strlen(type), (is_static()?"ID_STATIC":"0"));
   }
 
   static string prefix( Class c )
@@ -173,8 +233,12 @@ class Function(Class parent,
       if( return_type->name != "void" )
       {
         emit("  {\n");
-        emit("  "+return_type->c_declare( rv = a+1 ));
+        emit("  "+return_type->c_declare( rv = a+1 ) );
         emit("    a"+rv+" = ");
+        if( classes[ return_type->name ] )
+        {
+          emit( " ("+classes[ return_type->name ]->c_type()+" *)" );
+        }
       }
 
       emit( "  "+c_name() + "( " );
@@ -219,16 +283,49 @@ class Signal( string name )
 {
   string doc = "";
 
+  string pike_name( )
+  {
+    return replace( name, "-", "_" );
+  }
+
+  string pike_add( )
+  {
+    return "  add_string_constant( "+S("s_"+pike_name(),1)+", "+
+           S(pike_name(),1)+", 0 );\n";
+  }
+
   static string _sprintf()
   {
     return sprintf("Signal( %O )",name );
   }
 }
   
+string function_type( string what )
+{
+  what = reverse( what ); sscanf( what, "%*[ \t\n\r\"]%s", what );
+  what = reverse( what ); sscanf( what, "%*[ \t\n\r\"]%s", what );
+  return __parse_pike_type( what );
+}
+
 class Member( string name, Type type, int set,
               string file, int line, Class parent )
 {
   string doc = "";
+
+  string pike_type( )
+  {
+    return "function(void:"+type->pike_type()+")";
+  }
+
+  string pike_add( )
+  {
+    string type = function_type( pike_type( ) );
+    return sprintf("    quick_add_function(%s,%d,p%s,%s,%d,"
+                   "0,OPT_EXTERNAL_DEPEND);\n",
+                   S(name,0,1,27), strlen(name),
+                   c_name(), S(type,0,2,27),
+                   strlen(type));
+  }
 
   string c_name( )
   {
@@ -250,7 +347,7 @@ class Member( string name, Type type, int set,
       "  if( args )\n"
       "    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
       +type->direct_push( parent->c_cast( "THIS->obj" ) +"->"+name )+
-      "}\n\n";
+      "\n}\n\n";
   }
 
   static string _sprintf()
@@ -270,6 +367,36 @@ class Type
   string modifiers;
   
   array _s_modifiers;
+
+  string pike_type( )
+  {
+    switch( name )
+    {
+     case "uint":  case "int":     return "int";
+     case "float": case "double":  return "float";
+     case "string":                return "string";
+     case "array":
+       {
+         if( !c_inited ) catch(c_init());
+         if( array_type )
+           return "array("+array_type->pike_type()+")";
+         return "array";
+       }
+     case "mapping":
+       return "mapping";
+     case "callback":
+       return "function,mixed";
+     case "function":
+       if( search( get_modifiers(), "callback" ) )
+         return "function,mixed";
+       return "function";
+     default:
+       if( classes[ name ] )
+         return "object";
+       return "mixed";
+    }
+  }
+
   void create( string n )
   {
     array q = n/"|";
@@ -367,7 +494,7 @@ class Type
 
        string res ="  {\n  "+c_declare(256);
        if( copy )
-         res += "    a256 = xalloc( sizeof( a256[0] ) );\n"
+         res += "    a256 = (void *)xalloc( sizeof( a256[0] ) );\n"
                 "    *a256=*("+vv+");\n";
        else
          res += "    a256 = ("+vv+");\n";
@@ -451,13 +578,12 @@ class Type
        /* Fallthrough */
      case "callback": /* actually 2 args */
        consumed = 2;
-       declare = ("struct signal_data *cb%d = 0;\n"
-                  "struct svalue *cb_tmp1 = 0, *cb_tmp2 = 0;\n");
-       fetch =("  cb%[0]d = xalloc( sizeof( struct signal_data ) );\n"
-               "  assign_svalue_no_free( &b->cb, Pike_sp[%[0]d-args] );\n"
-               "  assign_svalue_no_free( &b->args,Pike_sp[%[0]d-args+1] );\n");
+       declare = ("  struct signal_data *cb%[0]d = 0;\n");
+       fetch =("  cb%[0]d = (void*)xalloc( sizeof( struct signal_data ) );\n"
+               "  assign_svalue_no_free(&cb%[0]d->cb,  Pike_sp+%[0]d-args);\n"
+               "  assign_svalue_no_free(&cb%[0]d->args,Pike_sp+%[0]d+1-args);\n");
 
-       pass  = ("(void *)pgtk_button_func_wrapper, cb");
+       pass  = ("(void *)pgtk_buttonfuncwrapper, cb%[0]d");
        break;
 
      case "int":
@@ -509,28 +635,35 @@ class Type
               break;
             case "int":
               array_type = parse_type( SPLIT("int","type") );
-              sub = "gint **a%[0]d;";
+              sub = "gint *a%[0]d;";
               pt = 0;
               check = "PGTK_ISINT(&_a%[0]d->item[_i%[0]d])";
               process = "(gint)PGTK_GETINT(&_a%[0]d->item[_i%[0]d])";
               break;
+            case "time_t":
+              array_type = parse_type( SPLIT("int","type") );
+              sub = "time_t *a%[0]d;";
+              pt = 0;
+              check = "PGTK_ISINT(&_a%[0]d->item[_i%[0]d])";
+              process = "(time_t)PGTK_GETINT(&_a%[0]d->item[_i%[0]d])";
+              break;
             case "uint":
               array_type = parse_type( SPLIT("uint","type") );
-              sub = "guint **a%[0]d;";
+              sub = "guint *a%[0]d;";
               pt = 0;
               check = "PGTK_ISINT(&_a%[0]d->item[_i%[0]d])";
               process = "(guint)PGTK_GETINT(&_a%[0]d->item[_i%[0]d])";
               break;
             case "float":
               array_type = parse_type( SPLIT("float","type") );
-              sub = "gfloat **a%[0]d;";
+              sub = "gfloat *a%[0]d;";
               pt = 0;
               check = "PGTK_ISFLT(&_a%[0]d->item[_i%[0]d])";
               process = "(gfloat)PGTK_GETFLT(&_a%[0]d->item[_i%[0]d])";
               break;
             case "double":
               array_type = parse_type( SPLIT("double","type") );
-              sub = "gfloat **a%[0]d;";
+              sub = "gfloat *a%[0]d;";
               pt = 0;
               check = "PGTK_ISFLT(&_a%[0]d->item[_i%[0]d])";
               process = "(gdouble)PGTK_GETFLT(&_a%[0]d->item[_i%[0]d])";
@@ -560,10 +693,10 @@ class Type
               break;
            }
          }
-         if(!sub && !array_type)
-         {
-           throw( sprintf("Cannot push %O", this_object()) );
-         }
+//          if(!sub && !array_type)
+//          {
+//            throw( sprintf("Cannot push %O", this_object()) );
+//          }
          declare = "  int _i%[0]d;\n  struct array *_a%[0]d = 0;\n  " +
                  sub+"\n";
          pass = "a%d";
@@ -662,6 +795,42 @@ class Class( string name, string file, int line )
   string _cdcl;
 
 
+  string pike_name()
+  {
+    if( sscanf(name, "GTK.%s", string pn ) )
+      return pn;
+    return (replace(name,"GDK","Gdk")-".");
+  }
+
+
+  void create_default_sprintf( )
+  {
+    if( name == "_global" ) return 0;
+    add_function( Function(this_object(),
+                           "_sprintf",
+                           Type("string"), ({
+                             Type("int"),
+                             Type("mapping")
+                           }), ({
+                             "flags",
+                             "options",
+                           }),
+                           SPLIT(
+                             "{\n  pgtk_default__sprintf( args, "+
+                             data_offset( name )+","+strlen(name)+
+                             " );\n}\n",
+                             file),
+                           ({}),
+                           "Not normally called directly, used by sprintf()",
+                           file, line ) );
+  }
+  
+  string c_type_define()
+  {
+    array q = c_name()/"_";
+    return upper_case( q[0]+"_TYPE_"+(q[1..]*"_") );
+  }
+
   int is_gtkobject()
   {
     if( name == "GTK.Object" )
@@ -680,9 +849,10 @@ class Class( string name, string file, int line )
     string cn = (name/".")[-1];
     if( mn == cn )
       return mn;
-    if( mn == "gnome" && (search( lower_case(cn), "applet" ) == 0) )
-      return unsillycaps(lower_case(cn));
-    cn = replace( cn, ({ "GL", "GC","XML" }), ({ "Gl","Gc","Xml"}) );
+    if( mn == "Gnome" && (search( cn, "Applet" ) == 0) )
+      return lower_case(unsillycaps(cn));
+    cn = replace( cn, ({ "GL", "GC","XML","CList","CTree" }),
+                      ({ "Gl","Gc","Xml","Clist","Ctree"}) );
     return _cname = (lower_case(mn)+"_"+lower_case(unsillycaps(cn)));
   }
 
@@ -709,7 +879,7 @@ class Class( string name, string file, int line )
   if( Pike_sp[ %[0]d - args ].type != PIKE_T_OBJECT )
     a%[0]d = NULL;
   else
-    a%[0]d = get_gdkobject(Pike_sp[%[0]d-args].u.object, "+s+");\n";
+    a%[0]d = get_gdkobject(Pike_sp[%[0]d-args].u.object,"+lower_case(s)+");\n";
       }
     }
     if( i < 0 ) return _fetch;
@@ -723,21 +893,29 @@ class Class( string name, string file, int line )
     return sprintf( _pass, i );
   }
 
+  string c_type( )
+  {
+    string bt = name-".";
+    bt = replace(bt, "GTK", "Gtk" );
+    bt = replace(bt, "GDK", "Gdk" );
+    bt = replace(bt, "GNOME", "Gnome" );
+    return bt;
+  }
+
   string c_declare( int n )
   {
-    if( !_cdcl ) {
-      _cdcl = "  "+(name-".")+" *a%[0]d = 0;\n";
-      _cdcl = replace(_cdcl, "GTK", "Gtk" );
-      _cdcl = replace(_cdcl, "GDK", "Gdk" );
-      _cdcl = replace(_cdcl, "GNOME", "Gnome" );
-    }
+    if( !_cdcl )
+      _cdcl = "  "+c_type()+" *a%[0]d = 0;\n";
     if( n < 0 )  return _cdcl;
     return sprintf( _cdcl, n );
   }
 
   string c_cast( string x )
   {
-    return upper_case(c_name())+"("+x+")";
+    string f = upper_case(c_name())+"("+x+")";
+    if( !search(f,"GDK_") )
+      return "((Gdk"+((name-"_")/".")[1]+"*)"+x+")";
+    return f;
   }
 
   string _push;
@@ -749,7 +927,7 @@ class Class( string name, string file, int line )
     switch( mn )
     {
      case "GDK":
-       _push="  push_gdkobject( %s, "+nn+" );";
+       _push="  push_gdkobject( %s, "+lower_case(nn)+" );";
        break;
      case "GTK":
      case "Gnome":
@@ -806,12 +984,35 @@ mapping(string:Class) classes = ([]);
 mapping(string:Constant) constants = ([]);
 array global_pre = ({});
 
-class Constant( string name, Type t, string file, int line )
+class Constant( string name, Type type, string file, int line )
 {
   string doc = "";
+
+  string pike_name( )
+  {
+    string pn;
+    if( sscanf( name, "GTK_%s", pn ) )
+      return pn;
+    return name;
+  }
+
+  string pike_add( )
+  {
+    switch( type->name )
+    {
+     case "string":
+       return "  add_string_constant( "+S(pike_name(),1,0,30)+", "+name+", 0 );\n";
+     case "int":
+       return "  add_integer_constant( "+S(pike_name(),1,0,30)+", "+name+", 0 );\n";
+     default:
+       werror(file+":"+line+":\tCannot add consatnt of type %O\n",type);
+       exit(1);
+    }
+  }
+
   static string _sprintf()
   {
-    return sprintf("Constant( %O /* %O */ )",name,t );
+    return sprintf("Constant( %O /* %O */ )",name,type );
   }
 }
 
@@ -883,6 +1084,7 @@ Type parse_type( mixed t )
   switch( ty->name )
   {
    case "int":
+   case "uint":
    case "mapping":
    case "object":
    case "mixed":
@@ -921,9 +1123,10 @@ multiset options;
 int verify_required( array r )
 {
   if(!options)
-    options = mkmultiset( ((Stdio.read_bytes( "options" )||"")-" ")/"\n" );
+    options = mkmultiset( ((Stdio.read_bytes( destination_dir+"options" )||"")
+                           -" ")/"\n" );
   foreach( r, string opt )
-    if( !sscanf( opt, "define %s", opt ) && !options[ opt ] )
+    if( !options[ opt- " " ] )
       return 0;
   return 1;
 }
@@ -994,6 +1197,7 @@ string parse_pre_file( string file )
     array(string) arg_names;
     mixed tk,token = GOBBLE();
     string doc = "";
+
     if( objectp( token ) )
     {
       switch( token->text )
@@ -1003,11 +1207,20 @@ string parse_pre_file( string file )
          while( (tk = GOBBLE() ) != ";" )
            q += ({ tk });
          current_require += ({ (q->text*" ") });
-         break;
+         continue;
        case "endrequire":
          current_require = current_require[ .. sizeof(current_require)-2 ];
          SEMICOLON("endrequire");
-         break;
+         continue;
+      }
+    }
+    if( sizeof( current_require ) && !verify_required( current_require ) )
+      continue;
+
+    if( objectp( token ) )
+    {
+      switch( token->text )
+      {
        case "class":
          tk = GOBBLE();
          while( PEEK() != ";" )
@@ -1088,9 +1301,8 @@ string parse_pre_file( string file )
          if( token[-2] != "%" || token[-1] != "}" )
            SYNTAX( "Expected '%}' after '%{'", token[-1] );
          token = token[1..sizeof(token)-3];
-         if( verify_required( current_require ) )
-           if( current_class )
-             current_class->pre += token;
+         if( current_class )
+           current_class->pre += token;
          break;
        default:
          if( token->text[..1] == "/*" ) // comment
@@ -1155,7 +1367,6 @@ string parse_pre_file( string file )
     }
     else /* token is an array (group) */
     {
-      werror("UGT: %O\n", token );
       SYNTAX(token[0]->text+" not expected here",token[0]);
     }
   } while( i < sizeof(t) );
@@ -1165,7 +1376,6 @@ string parse_pre_file( string file )
 void main(int argc, array argv)
 {
   string source_dir = "source/";
-  string destination_dir = "";
   string output;
   foreach( argv[1..], string option )
   {
@@ -1254,7 +1464,7 @@ void main(int argc, array argv)
           output_plugin->output( classes, constants, global_pre );
     if( files )
       Stdio.write_file( destination_dir+"/files_to_compile",
-                        replace(files*"\n",".c",".o") );
+                        replace(files*" ",".c",".o") );
   };
   werror("Total time spent...        %4.1fs\n",t1+t2);
 }
