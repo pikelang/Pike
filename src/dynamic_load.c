@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.78 2004/03/21 19:44:23 grubba Exp $
+|| $Id: dynamic_load.c,v 1.79 2004/03/22 17:42:07 mast Exp $
 */
 
 #ifdef TESTING
@@ -23,8 +23,9 @@
 #  include "constants.h"
 #  include "language.h"
 #  include "lex.h"
+#  include "object.h"
 
-RCSID("$Id: dynamic_load.c,v 1.78 2004/03/21 19:44:23 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.79 2004/03/22 17:42:07 mast Exp $");
 
 #else /* TESTING */
 
@@ -440,7 +441,7 @@ void f_load_module(INT32 args)
 
   if((Pike_sp[-args].type != T_STRING) ||
      (module_name->size_shift) ||
-     (strlen(module_name->str) != module_name->len)) {
+     ((INT32) strlen(module_name->str) != module_name->len)) {
     Pike_error("Bad argument 1 to load_module()\n");
   }
 
@@ -463,13 +464,31 @@ void f_load_module(INT32 args)
 
   if(!module)
   {
+    struct object *err_obj = low_clone (dlopen_error_program);
+#define DLERR_STRUCT(OBJ) \
+    ((struct dlopen_error_struct *) (err_obj->storage + dlopen_error_offset))
+
     const char *err = dlerror();
-    if(!err) err = "Unknown reason";
+    if (err) {
+      if (err[strlen (err) - 1] == '\n')
+	push_string (make_shared_binary_string (err, strlen (err) - 1));
+      else
+	push_text (err);
+    }
+    else
+      push_constant_text ("Unknown reason");
+
+    add_ref (DLERR_STRUCT (err_obj)->path = Pike_sp[-args - 1].u.string);
+    add_ref (DLERR_STRUCT (err_obj)->dlerror = Pike_sp[-1].u.string);
+
     if (Pike_sp[-args].u.string->len < 1024) {
-      Pike_error("load_module(\"%s\") failed: %s\n",
-		 module_name->str, err);
+      throw_error_object (err_obj, "load_module", Pike_sp - args - 1, args,
+			  "load_module(\"%s\") failed: %s\n",
+			  module_name->str, Pike_sp[-1].u.string->str);
     } else {
-      Pike_error("load_module() failed: %s\n", err);
+      throw_error_object (err_obj, "load_module", Pike_sp - args - 1, args,
+			  "load_module() failed: %s\n",
+			  Pike_sp[-1].u.string->str);
     }
   }
 

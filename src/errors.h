@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.24 2003/11/14 04:10:32 mast Exp $
+|| $Id: errors.h,v 1.25 2004/03/22 17:42:07 mast Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -126,6 +126,12 @@ DECLARE_ERROR(cpp, ERR_INHERIT(generic), EMPTY)
 DECLARE_ERROR(compilation, ERR_INHERIT(generic), EMPTY)
 
 DECLARE_ERROR(master_load, ERR_INHERIT (generic), EMPTY)
+
+DECLARE_ERROR (dlopen,
+	       ERR_INHERIT (generic),
+  ERR_VAR (struct pike_string *, string, PIKE_T_STRING, path)
+  ERR_VAR (struct pike_string *, string, PIKE_T_STRING, dlerror)
+)
 
 #undef DECLARE_ERROR
 #undef ERR_INHERIT

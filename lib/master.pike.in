@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.336 2004/03/15 13:04:55 mast Exp $
+// $Id: master.pike.in,v 1.337 2004/03/22 17:42:06 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -820,10 +820,11 @@ static program low_findprog(string pname,
       DEC_RESOLV_MSG_DEPTH();
       resolv_debug ("low_findprog %s: compilation ok\n", fname);
       break;
+
 #if constant(load_module)
     case ".so":
       if (fname == "") {
-	werror( "low_findprog(\"%s\", \"%s\") => load_module(\"\")\n"
+	werror( "low_findprog(%O, %O) => load_module(\"\")\n"
 		"%s\n", pname, ext, describe_backtrace(backtrace()) );
       }
 
@@ -832,9 +833,23 @@ static program low_findprog(string pname,
 	resolv_debug ("low_findprog %s: failed to load binary\n", fname);
 	objects[ret] = no_value;
 	ret=programs[fname]=0;	// Negative cache.
-	compile_cb_rethrow (err);
+	if (objectp (err) && err->is_dlopen_error)
+	  // Do not treat errors from dlopen(3) as exceptions since in
+	  // a dist we can have .so files that are dynamically linked
+	  // against libraries that don't exist on the system, and in
+	  // that case we should just treat the module as nonexisting.
+	  //
+	  // What we really want is to do this only for errors that
+	  // are due to nonexisting files, but the error reporting
+	  // from dlerror(3) doesn't allow us to tell those from other
+	  // errors.
+	  call_compile_warning (handler, fname,
+				"Failed to load library: %s\n", err->__dlerror);
+	else
+	  compile_cb_rethrow (err);
       }
-      resolv_debug ("low_findprog %s: loaded binary\n", fname);
+      else
+	resolv_debug ("low_findprog %s: loaded binary\n", fname);
 #endif /* load_module */
     }
 
