@@ -2,7 +2,7 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: dvb.c,v 1.10 2002/10/08 20:22:29 nilsson Exp $
+||| $Id: dvb.c,v 1.11 2002/10/09 07:44:36 hop Exp $
 \*/
 
 /*
@@ -1169,6 +1169,14 @@ static void f__sprintf(INT32 args) {
  */
 
 /*! @class Stream
+ *!
+ *! Represents an elementary data stream.
+ *!
+ *! @note
+ *!   Because of license policy the current stream code is dumb.
+ *!   For reviving of code you must replace psparser.c source
+ *!   file with one from http://hop.at.unibase.cz/moje/dvb/
+ *!   and recompile Pike.
  */
 
 /*  @decl int set_buffer(int len)
@@ -1388,6 +1396,8 @@ static void f_stream_info(INT32 args) {
  */
 
 /*! @class Audio
+ *!
+ *! Object for controlling an audio subsystem on full featured cards.
  */
 
 /*! @decl void create(int card_number)
