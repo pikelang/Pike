@@ -296,14 +296,6 @@ o ADT.Relation.Binary
                       5
                   })
 
-Array.common_prefix
-Array.count
-Array.greedy_diff
-Array.oid_sort_func
-Array.arrayify
-Array.uniq2
-Array.sum
-
 o Audio.Codec and Audio.Format
     Contain decoders/encoders and format parsers for audio.
     Currently WAV and MP3.
@@ -420,11 +412,18 @@ o MIME
     Added method ext_to_media_type, which returns the MIME media type for
     a given extension
 
-o MIME.Message
-    Guess mode added. *FIXME: expand on this jhs*
-
 o Oracle
     The Oracle database glue now supports CLOBs and BLOBs.
+
+o Parser
+    Added a few methods: get_xml_parser, which returns a Parser.HTML
+    set up to parse XML, parse_html_entities and
+    decode_numeric_xml_entity, which decode XML and HTML entities
+    respectively.
+
+    Examples:
+      Parser.decode_numeric_xml_entity("#x7a") => "z"
+      Parser.parse_html_entities("&gt;")       => ">"
 
 o Parser.Python
     Splits Python source code into text tokens.
@@ -436,12 +435,17 @@ o Parser.XML.NSTree
     This is an extended version of Parser.XML.Tree that can handle
     namespaces according to the W3C namespace specification.
 
+o Protocols.XMLRPC
+     Implements most features of the XML-RPC standard.
+
+o Protocols.HTTP
+    All methods in Protocols.HTTP that take a header mapping can now
+    handle array values (signifying multiple headers of that type).
+
 o SDL
     Wrapper for a subset of Simple DirectMedia Layer
     functionality. Useful for writing games, movie players and other
     graphically intensive applications.
-
-o Shuffler
 
 o Standards.CIFF
     Experimental module to read Canon Camera Image File Format data.
@@ -476,11 +480,6 @@ o Stdio
     Moved get_all_active_fd() from spider to Stdio.
     Added methods to Stdio.File: sync(), line_iterator()
 
-Stdio.connect_unix
-Stdio.simplify_path
-Stdio.file_equal
-Stdio.FILE.set_charset
-
 o Stdio.expand_symlinks(string path)
     Expands all symlinks along a path (returns 0 for broken links).
     (Only available on systems with readlink.)
@@ -497,12 +496,6 @@ o Stdio.File->grantpt()
       Process.create_process( ({ "/bin/bash" }), ([
         "stdin":fd2,  "stdout":fd2, "stderr":fd2, "setsid":fd2, 
       ]) );
-
-o String.SplitIterator
-    FIXME: grubba
-
-o String.Replace, String.SingleReplace
-    FIXME
 
 o String
     Added a few new methods: int2char, int2hex, int2roman, int2size, which
@@ -526,6 +519,12 @@ o String.Buffer
 o String.HTML
     Contains methods that help in generating HTML.
 
+o System
+    The following methods where added: normalize_path, which work on NT
+    style paths. get_netinfo_property, which queries a NetInfo server on
+    MacOS X. gettimeofday, which uses the system gettimeofday to retrieve
+    the time.
+
 o System.Time
     Used to get the current time with sub second precision.
 
@@ -546,6 +545,10 @@ o Tools.PV
 
     The Pike Viewer tool is also accessible via "pike -x pv".
 
+o Web.Crawler
+    A generic asynchronus web crawler that supports the /robots.txt
+    standard.
+
 
 Optimizations:
 --------------
@@ -557,6 +560,7 @@ o Machine code generation
     performance boost compared to other systems.
 
 o Computed goto
+    FIXME
 
 o Better module dumping
 
@@ -661,16 +665,6 @@ o Thread.Condition()->wait()
     contain a race; it doesn't work to e.g. rely on the internal
     interpreter lock in this case.
 
-o Protocols.SNMP
-    FIXME
-
-o Protocols.X.KeySyms
-    FIXME
-
-o Protocols.HTTP
-    All methods in Protocols.HTTP that take a header mapping can now
-    handle array values (signifying multiple headers of that type).
-
 o Protocols.LDAP.client
     The return code from all methods was changed to follow Pike's
     logic better. 0 is now a failure. The old behavior is emulated in
@@ -758,8 +752,10 @@ o Some global symbols have been renamed to avoid name clashes.
     empty_string -> empty_pike_string
 
 o --with-internal-profiling
+    FIXME: Expand on this.
 
 o Module symbols not available from other modules.
+    FIXME: Expand on this.
 
 
 Bugs fixed:
@@ -770,9 +766,9 @@ o Reworked trampolines to cause less circular references. (solves 1937)
 o Works with Autoconf 2.50
 
 (To browse bug tickets, either visit
-http://community.roxen.com/crunch/ - or append the ticket id to
-"http://bugs.roxen.com/" for an address directly to the ticket
-itself.)
+ http://community.roxen.com/crunch/ - or append the ticket id to
+ "http://bugs.roxen.com/" for an address directly to the ticket
+ itself.)
 
 
 
@@ -791,13 +787,8 @@ o Added low lowel glue for the Ffmpeg library.
 
 o Calendar.verify  *FIXME: remove?*
 
-System.normalize_path
-System.gettimeofday
-System.get_netinfo_property (Max OS X)
 System.usleep/nanosleep
    FIXME: per?
-
-Nilsson does lib:
 
 master.pike
 - add_predefine/remove_predefine
@@ -810,19 +801,35 @@ Pike.Security
 Pike.BacktraceFrame
 Pike.WEAK_INDICES, WEAK_VALUES, WEAK
 
-o String.SingleReplace
-o String.Replace
-o String.SplitIterator
 o String.soundex
 
-Audio
+o String.SplitIterator
+    FIXME: grubba
 
+o String.Replace, String.SingleReplace
+    FIXME
 
-Parser.decode_numeric_xml_entity
-Parser.get_xml_parser
-Parser.parse_html_entities
-Parser.XML.NSTree
+o MIME.Message
+    Guess mode added. *FIXME: expand on this jhs*
 
-Protocols.XMLRPC
+o Protocols.SNMP
+    FIXME
 
-Web.Crawler
+o Protocols.X.KeySyms
+    FIXME
+
+o Shuffler
+
+Array.common_prefix
+Array.count
+Array.greedy_diff
+Array.oid_sort_func
+Array.arrayify
+Array.uniq2
+Array.sum
+
+Stdio.connect_unix
+Stdio.simplify_path
+Stdio.file_equal
+Stdio.FILE.set_charset
+
