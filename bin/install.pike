@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.122 2004/12/03 22:09:24 grubba Exp $
+// $Id: install.pike,v 1.123 2004/12/04 16:33:52 grubba Exp $
 
 #define USE_GTK
 
@@ -553,34 +553,6 @@ void do_export()
 			  "VBScriptCall":"FinalizePike",
 			  "Execute":"deferred",
 			])))->
-#if 0
-      add_child(Standards.XML.Wix.line_feed)->
-      add_child(WixNode("CustomAction", ([
-			  "Id":"OldFinalizePike",
-			  // Note: Need to use the kludge directory here
-			  //       rather than the root directory due to
-			  //       bugs in light.
-			  //	/grubba 2004-11-08
-			  "Directory":"PIKE_TARGETDIR",
-			  "Execute":"deferred",//"commit",
-			  "ExeCommand":"[PIKE_TARGETDIR]\\bin\\pike "
-			  "-mlib\\master.pike bin\\install.pike "
-			  "--finalize BASEDIR=. TMP_BUILDDIR=bin",
-			])))->
-      add_child(Standards.XML.Wix.line_feed)->
-      add_child(WixNode("CustomAction", ([
-			  "Id":"OldInstallMaster",
-			  // Note: Need to use the kludge directory here
-			  //       rather than the root directory due to
-			  //       bugs in light.
-			  //	/grubba 2004-11-08
-			  "Directory":"PIKE_TARGETDIR",
-			  "Execute":"deferred",//"commit",
-			  "ExeCommand":"[PIKE_TARGETDIR]\\bin\\pike "
-			  "-mlib\\master.pike bin\\install.pike "
-			  "--install-master BASEDIR=.",
-			])))->
-#endif /* 0 */
       add_child(Standards.XML.Wix.line_feed)->
       add_child(WixNode("Binary", ([
 			  "Id":"PikeInstaller",
@@ -597,13 +569,6 @@ void do_export()
 				    "Action":"FinalizePike",
 				    "After":"SetFinalizePike",
 				  ]), "REMOVE=\"\""))->
-#if 0
-		add_child(Standards.XML.Wix.line_feed)->
-		add_child(WixNode("Custom", ([
-				    "Action":"InstallMaster",
-				    "After":"FinalizePike",
-				  ]), "REMOVE=\"\""))->
-#endif /* 0 */
 		add_child(Standards.XML.Wix.line_feed))->
       add_child(Standards.XML.Wix.line_feed);
 
