@@ -13,10 +13,6 @@ pike-object-documentation:
 **! arg <type> <name>     - multiple for a method
 **! <description>¹        /
 **!
-**! example
-**! <example>
-**! end example
-**!
 **! note
 **! <note>
 **! 

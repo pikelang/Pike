@@ -3,9 +3,27 @@
 /*
 **! module Image
 **! class font
+**!
+**! 	Short technical documentation on a font file:
+**!	       struct file_head 
+**!	       {
+**!		  unsigned INT32 cookie;   - 0x464f4e54 
+**!		  unsigned INT32 version;  - 1 
+**!		  unsigned INT32 chars;    - number of chars
+**!		  unsigned INT32 height;   - height of font
+**!		  unsigned INT32 baseline; - font baseline
+**!		  unsigned INT32 o[1];     - position of char_head's
+**!	       } *fh;
+**!	       struct char_head
+**!	       {
+**!		  unsigned INT32 width;    - width of this character
+**!		  unsigned INT32 spacing;  - spacing to next character
+**!		  unsigned char data[1];   - pixmap data (1byte/pixel)
+**!	       } *ch;
+**!
 */
 
-/* $Id: font.c,v 1.5 1997/04/03 07:00:17 mirar Exp $ */
+/* $Id: font.c,v 1.6 1997/04/09 01:49:47 mirar Exp $ */
 
 #include "global.h"
 
@@ -165,6 +183,15 @@ static inline write_char(struct _char *ci,
 }
 
 /***************** methods *************************************/
+
+/*
+**! method object|int load(string filename)
+**! 	Loads a font file to this font object.
+**! returns zero upon failure, font object upon success
+**! arg string filename
+**!	Font file
+**! see also: write
+*/
 
 
 void font_load(INT32 args)
@@ -333,6 +360,16 @@ void font_load(INT32 args)
    return;
 }
 
+/*
+**! method object write(string text,...)
+**! 	Writes some text; thus creating an image object
+**!	that can be used as mask or as a complete picture.
+**! returns an <ref>Image::image</ref> object
+**! arg string text, ...
+**!	One or more lines of text.
+**! see also: text_extents, load, image::paste_mask, image::paste_alpha_color
+*/
+
 void font_write(INT32 args)
 {
    struct object *o;
@@ -414,6 +451,12 @@ void font_write(INT32 args)
    push_object(o);
 }
 
+/*
+**! method int height()
+**! returns font height
+**! see also: baseline, text_extents
+*/
+
 void font_height(INT32 args)
 {
    pop_n_elems(args);
@@ -422,6 +465,17 @@ void font_height(INT32 args)
    else
       push_int(0);
 }
+
+/*
+**! method  text_extents(string text,...)
+**!	Calculate extents of a text-image,
+**!	that would be created by calling <ref>write</ref>
+**!	with the same arguments.
+**! returns an array of width and height 
+**! arg string text, ...
+**!	One or more lines of text.
+**! see also: write, height, baseline
+*/
 
 void font_text_extents(INT32 args)
 {
@@ -454,10 +508,23 @@ void font_text_extents(INT32 args)
     if (xsize>maxwidth) maxwidth=xsize;
     if (maxwidth>maxwidth2) maxwidth2=maxwidth;
   }
+  pop_n_elems(args);
   push_int(maxwidth2);
   push_int(args * THIS->height * THIS->yspacing_scale);
+  f_aggregate(2);
 }
 
+
+
+/*
+**! method void set_xspacing_scale(float scale)
+**! method void set_yspacing_scale(float scale)
+**! 	Set spacing scale to write characters closer
+**!	or more far away. This does not change scale
+**!	of character, only the space between them.
+**! arg float scale
+**!	what scale to use
+*/
 
 void font_set_xspacing_scale(INT32 args)
 {
@@ -488,6 +555,12 @@ void font_set_yspacing_scale(INT32 args)
   pop_stack();
 }
 
+
+/*
+**! method int baseline()
+**! returns font baseline (pixels from top)
+**! see also: height, text_extents
+*/
 void font_baseline(INT32 args)
 {
    pop_n_elems(args);

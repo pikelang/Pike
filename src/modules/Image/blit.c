@@ -1,5 +1,10 @@
-/* $Id: blit.c,v 1.6 1997/04/03 07:00:08 mirar Exp $ */
+/* $Id: blit.c,v 1.7 1997/04/09 01:49:42 mirar Exp $ */
 #include "global.h"
+
+/*
+**! module Image
+**! class image
+*/
 
 #include <math.h>
 #include <ctype.h>

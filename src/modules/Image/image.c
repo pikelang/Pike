@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.21 1997/04/07 20:36:56 mirar Exp $ */
+/* $Id: image.c,v 1.22 1997/04/09 01:49:51 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.21 1997/04/07 20:36:56 mirar Exp $");
+RCSID("$Id: image.c,v 1.22 1997/04/09 01:49:51 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -697,9 +697,7 @@ static INLINE int try_autocrop_horisontal(INT32 y,INT32 x,INT32 x2,
 **!	which borders to scan and cut the image; 
 **!	a typical example is removing the top and bottom unneccesary
 **!	pixels:
-**! example
-**!	img=img->autocrop(0, 0,0,1,1);
-**! end example
+**!	<pre>img=img->autocrop(0, 0,0,1,1);</pre>
 **! see also: copy
 */
 
