@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.37 2001/05/27 16:58:57 grubba Exp $
+ * $Id: mapping.h,v 1.38 2001/06/04 23:59:56 mast Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -13,7 +13,11 @@
 #include "las.h"
 #include "block_alloc_h.h"
 
-#define MAPPING_FLAG_WEAK 1
+/* Compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
+#define MAPPING_WEAK_INDICES	2
+#define MAPPING_WEAK_VALUES	4
+#define MAPPING_WEAK		6
+#define MAPPING_FLAG_WEAK	6 /* Compat. */
 
 struct keypair
 {

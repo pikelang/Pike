@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.123 2001/05/27 16:58:57 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.124 2001/06/04 23:59:56 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -136,8 +136,12 @@ static void check_mapping_type_fields(struct mapping *m)
 
 static struct mapping_data empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0,0 };
-static struct mapping_data weak_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0,1 };
+static struct mapping_data weak_ind_empty_data =
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES};
+static struct mapping_data weak_val_empty_data =
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES};
+static struct mapping_data weak_both_empty_data =
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK };
 
 /* This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
@@ -193,11 +197,11 @@ static void init_mapping(struct mapping *m,
     md->hardlinks=0;
     md->num_keypairs=size;
   }else{
-    if(flags & MAPPING_FLAG_WEAK)
-    {
-      md=&weak_empty_data;
-    }else{
-      md=&empty_data;
+    switch (flags & MAPPING_WEAK) {
+      case 0: md = &empty_data; break;
+      case MAPPING_WEAK_INDICES: md = &weak_ind_empty_data; break;
+      case MAPPING_WEAK_VALUES: md = &weak_val_empty_data; break;
+      default: md = &weak_both_empty_data; break;
     }
   }
   add_ref(md);
@@ -615,7 +619,7 @@ PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
     COPYMAP2();
   }
 #ifdef PIKE_DEBUG
-  if(flags & MAPPING_FLAG_WEAK)
+  if(flags & MAPPING_WEAK)
   {
     debug_malloc_touch(m);
     debug_malloc_touch(md);
@@ -1507,7 +1511,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
 
     if(md->size == 0) continue;
 
-    if(!(md->flags  & MAPPING_FLAG_WEAK))
+    if(!(md->flags  & MAPPING_WEAK))
     {
 #if 1 /* major optimization */
       if(e==md->size)
@@ -2028,66 +2032,70 @@ void check_all_mappings(void)
   }									\
 } while (0)
 
-#define GC_RECURSE_WEAK(md, recurse_fn, ind_types, val_types) do {	\
+#define GC_RECURSE(MD, REC_KEYPAIR, TYPE, IND_TYPES, VAL_TYPES) do {	\
   INT32 e;								\
+  int remove;								\
   struct keypair *k,**prev;						\
   /* no locking required (no is_eq) */					\
-  for(e=0;e<md->hashsize;e++)						\
+  for(e=0;e<MD->hashsize;e++)						\
   {									\
-    for(prev= md->hash + e;(k=*prev);)					\
+    for(prev= MD->hash + e;(k=*prev);)					\
     {									\
-      int i = recurse_fn(&k->ind, 1);					\
-      int v = recurse_fn(&k->val, 1);					\
-      if(i || v)							\
+      REC_KEYPAIR(remove,						\
+		  PIKE_CONCAT(TYPE, _svalues),				\
+		  PIKE_CONCAT(TYPE, _weak_svalues),			\
+		  PIKE_CONCAT(TYPE, _without_recurse),			\
+		  PIKE_CONCAT(TYPE, _weak_without_recurse));		\
+      if (remove)							\
       {									\
 	*prev=k->next;							\
-	if (!i) gc_free_svalue(&k->ind);				\
-	if (!v) gc_free_svalue(&k->val);				\
-        FREE_KEYPAIR(md, k);						\
-        md->free_list->ind.type = T_INT;				\
-        md->free_list->val.type = T_INT;				\
-	md->size--;							\
+        FREE_KEYPAIR(MD, k);						\
+        MD->free_list->ind.type = T_INT;				\
+        MD->free_list->val.type = T_INT;				\
+	MD->size--;							\
 	DO_IF_MAPPING_SIZE_DEBUG(					\
-	  if(m->data ==md)						\
+	  if(m->data ==MD)						\
 	    m->debug_size--;						\
-	)								\
+	);								\
       }else{								\
-	val_types |= 1 << k->val.type;					\
-	ind_types |= 1 << k->ind.type;					\
+	VAL_TYPES |= 1 << k->val.type;					\
+	IND_TYPES |= 1 << k->ind.type;					\
 	prev=&k->next;							\
       }									\
     }									\
   }									\
 } while (0)
 
-#define GC_RECURSE(md, recurse_fn, ind_types, val_types) do {		\
-  INT32 e;								\
-  struct keypair *k,**prev;						\
-  /* no locking required (no is_eq) */					\
-  for(e=0;e<md->hashsize;e++)						\
-  {									\
-    for(prev= md->hash + e;(k=*prev);)					\
-    {									\
-      if (recurse_fn(&k->ind, 1))					\
-      {									\
-	*prev=k->next;							\
-	gc_free_svalue(&k->val);					\
-        FREE_KEYPAIR(md, k);						\
-        md->free_list->ind.type = T_INT;				\
-        md->free_list->val.type = T_INT;				\
-	md->size--;							\
-	DO_IF_MAPPING_SIZE_DEBUG(					\
-	  if(m->data ==md)						\
-	    m->debug_size--;						\
-	)								\
-      }else{								\
-	recurse_fn(&k->val, 1);						\
-	val_types |= 1 << k->val.type;					\
-	ind_types |= 1 << k->ind.type;					\
-	prev=&k->next;							\
-      }									\
-    }									\
-  }									\
+#define GC_REC_KP(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
+  if ((REMOVE = N_REC(&k->ind, 1)))					\
+    gc_free_svalue(&k->val);						\
+  else									\
+    N_REC(&k->val, 1);							\
+} while (0)
+
+#define GC_REC_KP_IND(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
+  if ((REMOVE = W_REC(&k->ind, 1)))					\
+    gc_free_svalue(&k->val);						\
+  else									\
+    N_REC(&k->val, 1);							\
+} while (0)
+
+#define GC_REC_KP_VAL(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
+  if ((REMOVE = N_TST(&k->ind))) /* Don't recurse now. */		\
+    gc_free_svalue(&k->val);						\
+  else if ((REMOVE = W_REC(&k->val, 1)))				\
+    gc_free_svalue(&k->ind);						\
+  else									\
+    N_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
+} while (0)
+
+#define GC_REC_KP_BOTH(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
+  if ((REMOVE = W_TST(&k->ind))) /* Don't recurse now. */		\
+    gc_free_svalue(&k->val);						\
+  else if ((REMOVE = W_REC(&k->val, 1)))				\
+    gc_free_svalue(&k->ind);						\
+  else									\
+    W_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
 } while (0)
 
 void gc_mark_mapping_as_referenced(struct mapping *m)
@@ -2112,18 +2120,29 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
     if(gc_mark(md) && ((md->ind_types | md->val_types) & BIT_COMPLEX)) {
       TYPE_FIELD ind_types = 0, val_types = 0;
       if (MAPPING_DATA_IN_USE(md)) {
-	/* Must leave destructed indices intact if the mapping data is busy. */
+	/* Must leave the mapping data untouched if it's busy. */
 	GC_RECURSE_MD_IN_USE(md, gc_mark_svalues, ind_types, val_types);
 	gc_assert_checked_as_nonweak(md);
       }
-      else if (md->flags & MAPPING_FLAG_WEAK) {
-	GC_RECURSE_WEAK(md, gc_mark_weak_svalues, ind_types, val_types);
-	gc_assert_checked_as_weak(md);
-      }
-      else {
-	GC_RECURSE(md, gc_mark_svalues, ind_types, val_types);
-	gc_assert_checked_as_nonweak(md);
-      }
+      else
+	switch (md->flags & MAPPING_WEAK) {
+	  case 0:
+	    GC_RECURSE(md, GC_REC_KP, gc_mark, ind_types, val_types);
+	    gc_assert_checked_as_nonweak(md);
+	    break;
+	  case MAPPING_WEAK_INDICES:
+	    GC_RECURSE(md, GC_REC_KP_IND, gc_mark, ind_types, val_types);
+	    gc_assert_checked_as_weak(md);
+	    break;
+	  case MAPPING_WEAK_VALUES:
+	    GC_RECURSE(md, GC_REC_KP_VAL, gc_mark, ind_types, val_types);
+	    gc_assert_checked_as_weak(md);
+	    break;
+	  default:
+	    GC_RECURSE(md, GC_REC_KP_BOTH, gc_mark, ind_types, val_types);
+	    gc_assert_checked_as_weak(md);
+	    break;
+	}
       md->val_types = val_types;
       md->ind_types = ind_types;
     }
@@ -2143,20 +2162,29 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
     if ((md->ind_types | md->val_types) & BIT_COMPLEX) {
       TYPE_FIELD ind_types = 0, val_types = 0;
       if (MAPPING_DATA_IN_USE(md)) {
-	/* Must leave destructed indices intact if the mapping data is busy. */
+	/* Must leave the mapping data untouched if it's busy. */
 	GC_RECURSE_MD_IN_USE(md, gc_cycle_check_svalues, ind_types, val_types);
 	gc_assert_checked_as_nonweak(md);
       }
-      else if (md->flags & MAPPING_FLAG_WEAK) {
-	/* We don't remove any entries due to weak refs in this case,
-	 * since they are kept intact in internal structures. */
-	GC_RECURSE(md, gc_cycle_check_weak_svalues, ind_types, val_types);
-	gc_assert_checked_as_weak(md);
-      }
-      else {
-	GC_RECURSE(md, gc_cycle_check_svalues, ind_types, val_types);
-	gc_assert_checked_as_nonweak(md);
-      }
+      else
+	switch (md->flags & MAPPING_WEAK) {
+	  case 0:
+	    GC_RECURSE(md, GC_REC_KP, gc_cycle_check, ind_types, val_types);
+	    gc_assert_checked_as_nonweak(md);
+	    break;
+	  case MAPPING_WEAK_INDICES:
+	    GC_RECURSE(md, GC_REC_KP_IND, gc_cycle_check, ind_types, val_types);
+	    gc_assert_checked_as_weak(md);
+	    break;
+	  case MAPPING_WEAK_VALUES:
+	    GC_RECURSE(md, GC_REC_KP_VAL, gc_cycle_check, ind_types, val_types);
+	    gc_assert_checked_as_weak(md);
+	    break;
+	  default:
+	    GC_RECURSE(md, GC_REC_KP_BOTH, gc_cycle_check, ind_types, val_types);
+	    gc_assert_checked_as_weak(md);
+	    break;
+	}
       md->val_types = val_types;
       md->ind_types = ind_types;
     }
@@ -2174,22 +2202,39 @@ static void gc_check_mapping(struct mapping *m)
 
     if(debug_gc_check(md, T_MAPPING, m)) return;
 
-    if (md->flags & MAPPING_FLAG_WEAK && !MAPPING_DATA_IN_USE(md)) {
+    if (!(md->flags & MAPPING_WEAK) || MAPPING_DATA_IN_USE(md))
       /* Disregard the weak flag if the mapping data is busy; we must
        * leave it untouched in that case anyway. */
-      NEW_MAPPING_LOOP(md)
-      {
-	debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
-	debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
-      }
-      gc_checked_as_weak(md);
-    }
-    else {
       NEW_MAPPING_LOOP(md)
       {
 	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
 	debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
       }
+    else {
+      switch (md->flags & MAPPING_WEAK) {
+	case MAPPING_WEAK_INDICES:
+	  NEW_MAPPING_LOOP(md)
+	  {
+	    debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
+	    debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
+	  }
+	  break;
+	case MAPPING_WEAK_VALUES:
+	  NEW_MAPPING_LOOP(md)
+	  {
+	    debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
+	    debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
+	  }
+	  break;
+	default:
+	  NEW_MAPPING_LOOP(md)
+	  {
+	    debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
+	    debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
+	  }
+	  break;
+      }
+      gc_checked_as_weak(md);
     }
   }
 }
