@@ -4,29 +4,66 @@
 #include "svalue.h"
 #include "stralloc.h"
 
-void check_args(const char *fnname, int args, int minargs, ... )
+/* Checks that minargs arguments are OK.
+ *
+ * Returns the number of the first bad argument,
+ * or 0 if all arguments were OK.
+ */
+int va_check_args(struct svalue *s, int minargs, va_list arglist)
 {
-  va_list arglist;
   int argno;
-  
-  if (args < minargs) {
-    error("Too few arguments to %s()\n", fnname);
-  }
-
-  va_start(arglist, minargs);
 
   for (argno=0; argno < minargs; argno++)
   {
     int type_mask = va_arg(arglist, unsigned INT32);
 
-    if (!((1UL << sp[argno-args].type) & type_mask))
+    if (!((1UL << s[argno].type) & type_mask))
     {
-      va_end(arglist);
-      error("Bad argument %d to %s()\n", argno+1, fnname);
+      return(argno+1);
     }
   }
 
+  return(0);
+}
+
+/* Returns the number of the first bad argument,
+ * or 0 if all arguments were OK.
+ */
+int check_args(int args, int minargs, ...)
+{
+  va_list arglist;
+  int argno;
+  
+  if (args < minargs) {
+    return(args+1);
+  }
+
+  va_start(arglist, minargs);
+  argno = va_check_args(sp - args, minargs, arglist);
   va_end(arglist);
+
+  return(argno);
+}
+
+/* This function generates errors if any of the minargs first arguments
+ * is not OK.
+ */
+void check_all_args(const char *fnname, int args, int minargs, ... )
+{
+  va_list arglist;
+  int argno;
+
+  if (args < minargs) {
+    error("Too few arguments to %s()\n", fnname);
+  }
+
+  va_start(arglist, minargs);
+  argno = va_check_args(sp - args, minargs, arglist);
+  va_end(arglist);
+
+  if (argno) {
+    error("Bad argument %d to %s()\n", argno, fnname);
+  }
 }
 
 /* This function does NOT generate errors, it simply returns how
