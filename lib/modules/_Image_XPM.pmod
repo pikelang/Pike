@@ -1,68 +1,67 @@
-static mapping parse_color( array color )
-{
-  mapping res = ([]);
-  for(int i=0; i<sizeof(color); i+=2 )
-    if(lower_case(color[i+1]) != "none")
-      res[color[i]] = Colors.parse_color( color[i+1] );
-  return sizeof(res)?res:0;
-}
+inherit Image._XPM;
+#if 0
+#define TE( X )  write("XPM profile: %-20s ... ", (X));
 
-static array find_color( mapping in, string space )
-{
-  if(!in) return 0;
-  switch(space)
-  {
-   default:
-   case "s":
-     if(in->s) return in->s;
-   case "c":
-     if(in->c) return in->c;
-   case "g":
-     if(in->g) return in->g;
-   case "g4":
-     if(in->g4) return in->g4;
-   case "m":
-     if(in->m) return in->m;
-     if(in->s) return in->s;
-  }
-  if(sizeof(in))
-    return values(in)[0];
-  return 0;
-}
+int old_time = gethrtime();
+#define TI() old_time = gethrtime();
+#define TD( X ) do{\
+ write("%3.02f\n", (gethrtime()-old_time)/1000000.0);\
+ TE(X);  \
+ old_time = gethrtime(); \
+} while(0);
+#else
+#define TI()
+#define TD(X)
+#define TE(X)
+#endif
+
 
 mapping _decode( string what, void|mapping opts )
 {
+  array e;
   array data;
   mapping retopts = ([ ]);
   if(!opts)
     opts = ([]);
-  if(sscanf(what, "%*s/*%*[ \t]XPM%*[ \t]*/%*[ \t]\n%s", what)  != 5)
+
+  TE("Scan for header");
+  if(sscanf(what, "%*s/*%*[ \t]XPM%*[ \t]*/%*s{%s", what)  != 5)
     error("This is not a XPM image (1)\n");
-  if(sscanf(what, "%*s{%s", what) != 2)
-    error("This is not a XPM image (2)\n");
 
-  sscanf(what, "%s\n/* XPM */", what ) ||
-    sscanf(what, "%s\n/*\tXPM\t*/", what ) ||
-    sscanf(what, "%s\n/*\tXPM */", what )||
-    sscanf(what, "%s\n/* XPM */", what );
+  if(strlen(what)<100000)
+  {
+    TD("Extra scan for small images");
+    sscanf(what, "%s\n/* XPM */", what ) ||
+      sscanf(what, "%s\n/*\tXPM\t*/", what ) ||
+      sscanf(what, "%s\n/*\tXPM */", what )||
+      sscanf(what, "%s\n/* XPM */", what );
 
-  what = reverse(what);
-  if(sscanf(what, "%*s}%s", what) != 2)
-    error("This is not a XPM image (3)\n");
-  what = reverse(what);
+    /* This is just a sanity check... */
+    what = reverse(what);
+    if(sscanf(what, "%*s}%s", what) != 2)
+      error("This is not a XPM image (3)\n");
+    what = reverse(what);
+  }
 
-  
-  master()->set_inhibit_compile_errors(1);
-  if(catch {
-    data = compile_string( "mixed foo(){ return ({"+what+"}); }" )()->foo();
-  })
-    error("This is not a XPM image\n");
-  master()->set_inhibit_compile_errors(0);
-  
+  TD("Explode");
+  data = what/"\n";
+  what = 0;
+  int len = sizeof(data);
+  int r, sp;
+
+  TD("Trim");
+  for(int i = 0; i<len; i++)
+    if(strlen(data[i]) &&
+       data[i][0] != '/' && 
+       (sp=search(data[i], "\"")) != -1)
+      data[r++] = (data[i][sp+1..]/"\"")[0];
+
   array values = (array(int))(replace(data[0], "\t", " ")/" "-({""}));
-  data = data[1..];
   int width = values[0];
   int height = values[1];
+  if(!width || !height)
+    error("Width or height == 0\n");
+  
   int ncolors = values[2];
   int cpp = values[3];
   if(sizeof(values)>5)
@@ -70,32 +69,21 @@ mapping _decode( string what, void|mapping opts )
     retopts->hot_x = values[4];
     retopts->hot_y = values[5];
   }
-  mapping colors = ([]);
-  for(int i = 0; i<ncolors; i++ )
-  {
-    if(i > sizeof(data))
-      error("Too few elements in array to decode color values\n");
-    string color_id = data[i][0..cpp-1];
-    array color = replace(data[i][cpp..], "\t", " ")/" "-({""});
-    colors[color_id] = parse_color( color );
-  }
-  data = data[ncolors..];
+  TD("Colors");
+  mixed colors = ([]);
+  if(sizeof(data) < ncolors+2)
+    error("Too few elements in array to decode color values\n");
 
+  colors = sort(data[1..ncolors]);
+  TD("Creating images");
   object i = Image.image( width, height );
   object a = Image.image( width, height,255,255,255 );
-
+  mixed cs = opts->colorspace;
+  array c;
+  TD("Decoding image");
   for(int y = 0; y<height && y<sizeof(data); y++)
-  {
-    string line = data[y];
-    for(int x = 0; x<width ; x++)
-    {
-      array c;
-      if( c = find_color(colors[line[x*cpp..x*cpp+cpp-1]], opts->colorspace) )
-        i->setpixel( x, y, @c );
-      else
-        a->setpixel( x, y, 0, 0, 0 );
-    }
-  }
+    _xpm_write_row( y, i, a, data[ncolors+y+1]/cpp, colors );
+  TD("Done");
   retopts->image = i;
   retopts->alpha = a;
   return retopts;
