@@ -1,3 +1,5 @@
+/* -*- c -*- */
+
 #include "global.h"
 #include "interpret.h"
 #include "svalue.h"
