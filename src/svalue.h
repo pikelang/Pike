@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.40 1999/11/25 00:56:26 hubbe Exp $
+ * $Id: svalue.h,v 1.41 1999/11/25 17:05:38 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -156,6 +156,7 @@ struct svalue
 #define tStringIndicable tOr5(tMapping,tObj,tFunction,tProgram,tMultiset)
 #define tRef tOr(tString,tComplex)
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
+#define tAny tOr(tVoid,tMix)
 
 #define BIT_ARRAY (1<<PIKE_T_ARRAY)
 #define BIT_MAPPING (1<<PIKE_T_MAPPING)
