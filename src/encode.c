@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.30 1999/03/07 20:19:43 grubba Exp $");
+RCSID("$Id: encode.c,v 1.31 1999/04/12 02:24:14 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -886,7 +886,12 @@ static void decode_value2(struct decode_data *data)
 	  
 	case 1:
 	  decode_value2(data);
-	  f_arrow(2);
+	  if(sp[-2].type==T_INT)
+	  {
+	    pop_stack();
+	  }else{
+	    f_arrow(2);
+	  }
 	  break;
 	  
 	default:

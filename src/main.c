@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.69 1999/04/08 23:54:29 hubbe Exp $");
+RCSID("$Id: main.c,v 1.70 1999/04/12 02:24:15 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -505,7 +505,9 @@ void low_init_main(void)
 
 void exit_main(void)
 {
+#ifdef DO_PIKE_CLEANUP
   cleanup_objects();
+#endif
 }
 
 void init_main(void)
@@ -514,6 +516,7 @@ void init_main(void)
 
 void low_exit_main(void)
 {
+#ifdef DO_PIKE_CLEANUP
   void cleanup_added_efuns(void);
   void cleanup_pike_types(void);
   void cleanup_program(void);
@@ -611,7 +614,7 @@ void low_exit_main(void)
 #endif
 
   really_clean_up_interpret();
-#ifdef DO_PIKE_CLEANUP
+
   cleanup_callbacks();
   free_all_callable_blocks();
   exit_destroy_called_mark_hash();

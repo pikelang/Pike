@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.16 1999/03/06 05:55:39 hubbe Exp $
+ * $Id: array.h,v 1.17 1999/04/12 02:24:11 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -31,8 +31,10 @@ struct array
   struct svalue item[1];
 };
 
-#define ARRAY_CYCLIC 1
-#define ARRAY_LVALUE 2
+#define ARRAY_WEAK_FLAG 1
+#define ARRAY_CYCLIC 2
+#define ARRAY_LVALUE 4
+#define ARRAY_WEAK_SHRINK 8
 
 extern struct array empty_array;
 

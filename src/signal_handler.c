@@ -22,9 +22,10 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "security.h"
+#include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.122 1999/04/09 04:48:43 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.123 1999/04/12 02:24:17 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -119,8 +120,8 @@ extern int fd_from_object(struct object *o);
 static int set_priority( int pid, char *to );
 
 
-
 static struct svalue signal_callbacks[MAX_SIGNALS];
+static void (*default_signals[MAX_SIGNALS])(INT32);
 static unsigned char sigbuf[SIGNAL_BUFFER];
 static int firstsig, lastsig;
 static struct callback *signal_evaluator_callback =0;
@@ -452,20 +453,8 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
 
       if(IS_ZERO(signal_callbacks + sigbuf[lastsig]))
       {
-	switch(sigbuf[lastsig])
-	{
-#ifdef SIGINT
-	  case SIGINT:
-#endif
-#ifdef SIGHUP
-	  case SIGHUP:
-#endif
-#ifdef SIGQUIT
-	  case SIGQUIT:
-#endif
-	    push_int(1);
-	    f_exit(1);
-	}
+	if(default_signals[sigbuf[lastsig]])
+	  default_signals[sigbuf[lastsig]](sigbuf[lastsig]);
       }else{
 	push_int(sigbuf[lastsig]);
 	apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
@@ -551,35 +540,29 @@ static void f_signal(int args)
     switch(signum)
     {
 #ifdef USE_SIGCHLD
-    case SIGCHLD:
-      func=receive_sigchild;
-      break;
-#endif
-
-#ifdef SIGPIPE
-    case SIGPIPE:
-      func=(sigfunctype) SIG_IGN;
-      break;
-#endif
-
-#ifdef SIGHUP
-      case SIGHUP:
-#endif
-#ifdef SIGINT
-      case SIGINT:
-#endif
-#ifdef SIGQUIT
-      case SIGQUIT:
-#endif
-	func=receive_signal;
+      case SIGCHLD:
+	func=receive_sigchild;
 	break;
-
-    default:
-      func=(sigfunctype) SIG_DFL;
+#endif
+	
+#ifdef SIGPIPE
+      case SIGPIPE:
+	func=(sigfunctype) SIG_IGN;
+	break;
+#endif
+	
+      default:
+	if(default_signals[signum])
+	  func=receive_signal;
+	else
+	  func=(sigfunctype) SIG_DFL;
+	break;
     }
   } else {
     if(IS_ZERO(sp+1-args))
     {
+      /* Fixme: this can disrupt sigchild and other important signal handling
+       */
       func=(sigfunctype) SIG_IGN;
     }else{
       func=receive_signal;
@@ -592,6 +575,15 @@ static void f_signal(int args)
   assign_svalue(signal_callbacks + signum, sp+1-args);
   my_signal(signum, func);
   pop_n_elems(args);
+}
+
+void set_default_signal_handler(int signum, void (*func)(INT32))
+{
+  int is_on=!!IS_ZERO(signal_callbacks+signum);
+  int want_on=!!func;
+  default_signals[signum]=func;
+  if(is_on!=want_on)
+    my_signal(signum, want_on ? receive_signal : (sigfunctype) SIG_DFL);
 }
 
 static void f_signum(int args)
@@ -2734,6 +2726,52 @@ static RETSIGTYPE fatal_signal(int signum)
 }
 #endif
 
+
+
+static struct array *atexit_functions;
+
+static void run_atexit_functions(struct callback *cb, void *arg,void *arg2)
+{
+  if(atexit_functions)
+  {
+    push_array(atexit_functions);
+    atexit_functions=0;
+    f_reverse(1);
+    f_call_function(1);
+    pop_stack();
+  }
+}
+
+static void do_signal_exit(INT32 sig)
+{
+  push_int(sig);
+  f_exit(1);
+}
+
+void f_atexit(INT32 args)
+{
+  if(!atexit_functions)
+  {
+#ifdef SIGHUP
+    set_default_signal_handler(SIGHUP, do_signal_exit);
+#endif
+#ifdef SIGINT
+    set_default_signal_handler(SIGINT, do_signal_exit);
+#endif
+#ifdef SIGQUIT
+    set_default_signal_handler(SIGQUIT, do_signal_exit);
+#endif
+    add_exit_callback(run_atexit_functions,0,0);
+    atexit_functions=low_allocate_array(0,1);
+  }
+
+  f_aggregate(args);
+  atexit_functions=append_array(atexit_functions,sp-1);
+  atexit_functions->flags |= ARRAY_WEAK_FLAG | ARRAY_WEAK_SHRINK;
+  pop_stack();
+}
+
+
 void init_signals(void)
 {
   int e;
@@ -2769,17 +2807,6 @@ void init_signals(void)
   my_signal(SIGFPE, SIG_IGN);
 #endif
 
-#ifdef SIGINT
-  my_signal(SIGINT, receive_signal);
-#endif
-
-#ifdef SIGHUP
-  my_signal(SIGHUP, receive_signal);
-#endif
-
-#ifdef SIGQUIT
-  my_signal(SIGQUIT, receive_signal);
-#endif
 
   for(e=0;e<MAX_SIGNALS;e++)
     signal_callbacks[e].type=T_INT;
@@ -2854,6 +2881,8 @@ void init_signals(void)
   
 /* function(int:int) */
   ADD_EFUN("ualarm",f_ualarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
+
+  ADD_EFUN("atexit",f_atexit,tFuncV( ,tMix,tVoid),OPT_SIDE_EFFECT);
 #endif
 }
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.165 1999/04/03 06:10:04 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.166 1999/04/12 02:24:12 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1872,21 +1872,26 @@ void f_mkmapping(INT32 args)
   push_mapping(m);
 }
 
+#define SETFLAG(FLAGS,FLAG,ONOFF) \
+  FLAGS = (FLAGS & ~FLAG) | ( ONOFF ? FLAG : 0 )
 void f_set_weak_flag(INT32 args)
 {
   int ret;
-  struct mapping *m;
-  get_all_args("set_weak_flag",args,"%m%i",&m,&ret);
-  if(ret)
+  struct svalue *s;
+  get_all_args("set_weak_flag",args,"%*%i",&s,&ret);
+
+  switch(s->type)
   {
-    ret=m->flags & MAPPING_FLAG_WEAK;
-    m->flags|=MAPPING_FLAG_WEAK;
-  }else{
-    ret=m->flags & MAPPING_FLAG_WEAK;
-    m->flags&=~MAPPING_FLAG_WEAK;
+    case T_ARRAY:
+      SETFLAG(s->u.array->flags,ARRAY_WEAK_FLAG,ret);
+      break;
+    case T_MAPPING:
+      SETFLAG(s->u.mapping->flags,MAPPING_FLAG_WEAK,ret);
+      break;
+    default:
+      SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping");
   }
-  pop_n_elems(args);
-  push_int(!!ret);
+  pop_n_elems(args-1);
 }
 
 
@@ -3936,6 +3941,7 @@ void f_map_array(INT32 args)
   push_array(ret);
 }
 
+
 void init_builtin_efuns(void)
 {
   ADD_EFUN("gethrtime", f_gethrtime,tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
@@ -4053,7 +4059,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("mkmapping",f_mkmapping,tFunc(tArr(tSetvar(1,tMix)) tArr(tSetvar(2,tMix)),tMap(tVar(1),tVar(2))),OPT_TRY_OPTIMIZE);
   
 /* function(mapping,int:int) */
-  ADD_EFUN("set_weak_flag",f_set_weak_flag,tFunc(tMapping tInt,tInt),OPT_SIDE_EFFECT);
+  ADD_EFUN("set_weak_flag",f_set_weak_flag,tFunc(tSetvar(1,tMix) tInt,tVar(1)),OPT_SIDE_EFFECT);
   
 /* function(void|object:object) */
   ADD_EFUN("next_object",f_next_object,tFunc(tOr(tVoid,tObj),tObj),OPT_EXTERNAL_DEPEND);

@@ -20,7 +20,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.45 1999/03/19 11:40:12 hubbe Exp $");
+RCSID("$Id: array.c,v 1.46 1999/04/12 02:24:10 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1685,7 +1685,7 @@ void check_all_arrays(void)
 
 void gc_mark_array_as_referenced(struct array *a)
 {
-  if(gc_mark(a))
+  if(gc_mark(a) && !(a->flags & ARRAY_WEAK_FLAG))
     if(a->type_field & BIT_COMPLEX)
       gc_mark_svalues(ITEM(a), a->size);
 }
@@ -1751,7 +1751,45 @@ void gc_free_all_unreferenced_arrays(void)
 
       free_array(a);
       a=next;
-    }else{
+    }
+    else if(a->flags & ARRAY_WEAK_FLAG)
+    {
+      int e;
+      add_ref(a);
+
+      if(a->flags & ARRAY_WEAK_SHRINK)
+      {
+	int d=0;
+	for(e=0;e<a->size;e++)
+	{
+	  if(a->item[e].type <= MAX_COMPLEX && gc_do_free(a->item[e].u.refs))
+	    free_svalue(a->item+e);
+	  else
+	    a->item[d++]=a->item[e];
+	}
+	a->size=e;
+      }else{
+	for(e=0;e<a->size;e++)
+	{
+	  if(a->item[e].type <= MAX_COMPLEX && gc_do_free(a->item[e].u.refs))
+	  {
+	    free_svalue(a->item+e);
+	    a->item[e].type=T_INT;
+	    a->item[e].u.integer=0;
+	    a->item[e].subtype=NUMBER_DESTRUCTED;
+	    a->type_field |= BIT_INT;
+	  }
+	}
+      }
+	  
+      if(!(next=a->next))
+	fatal("Null pointer in array list.\n");
+
+      free_array(a);
+      a=next;
+    }
+    else
+    {
       a=a->next;
     }
   } while (a != & empty_array);
