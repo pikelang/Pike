@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.11 1997/11/30 05:41:30 hubbe Exp $ */
+/* $Id: export.pike,v 1.12 1997/12/22 18:42:33 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -48,43 +48,70 @@ void fix_configure(string dir)
   {
     if(!config || config_in[3] > config[3])
     {
-      perror("Fixing configure in "+dir+".\n");
+      werror("Fixing configure in "+dir+".\n");
       system("cd "+dir+" ; autoconf");
     }
   }
 }
+
+string getversion()
+{
+  string s=Stdio.read_file("pike/src/version.c");
+  if(!sscanf(s,"%*spush_text(\"%s\")",s))
+  {
+    werror("Failed to get Pike version.\n");
+    exit(1);
+  }
+  return s;
+}
+
 
 int main(int argc, string *argv)
 {
   mixed tmp;
   int e;
   string *files;
-  vpath=replace(version()," ","-");
-
-  mapping x=localtime(time());
-  string tag=replace(vpath,({"Pike-","."}),({"","_"}))+"-"+
-       sprintf("%02d%02d%02d-%02d%02d",
-		   x->year,
-		   x->mon+1,
-		   x->mday,
-		   x->hour,
-		   x->min);
 
   tmp=reverse(argv[0]/"/");
   except_modules=mklist(argv[1..]);
   e=search(tmp,"pike");
   if(e==-1)
   {
-    perror("Couldn't find Pike source dir.\n");
-    perror("Use /full/path/export.pike <except modules>.\n");
+    werror("Couldn't find Pike source dir.\n");
+    werror("Use /full/path/export.pike <except modules>.\n");
     exit(1);
   }
   tmp=reverse(tmp[e+1..]);
   cd(tmp*"/");
-  perror("Sourcedir = "+tmp*"/"+"/pike\n");
-  
-  perror("Creating tag "+tag+" in the background.\n");
-  system("cd pike ; cvs tag -R -F "+tag+"&");
+  werror("Sourcedir = "+tmp*"/"+"/pike\n");
+
+  vpath=replace(getversion()," ","-");
+
+  if(file_stat("pike/CVS"))
+  {
+    werror("Bumping release number.\n");
+    string s=Stdio.read_file("pike/src/version.c");
+    sscanf(s,"%s release %d%s",string pre, int rel, string post);
+    rel++;
+    Stdio.File("pike/src/version.c","wct")->write(pre+" release "+rel+post);
+    system("cd pike/src ; cvs commit -m 'release number bumped by export.pike' version.c");
+
+    string tag=replace(vpath,({"Pike-","."}),({"","_"}));
+#if 0
+    mapping x=localtime(time());
+    tag+=+"-"+sprintf("%02d%02d%02d-%02d%02d",
+		      x->year,
+		      x->mon+1,
+		      x->mday,
+		      x->hour,
+		      x->min);
+#else
+    string tag+="-rel"+rel;
+#endif
+
+    werror("Creating tag "+tag+" in the background.\n");
+    system("cd pike ; cvs tag -R -F "+tag+"&");
+  }
 
   fix_configure("pike/src");
 
@@ -99,9 +126,9 @@ int main(int argc, string *argv)
 	    get_files(vpath+"/lib"),
 	    get_files(vpath+"/bin"));
 
-  perror("Creating "+vpath+".tar.gz:\n");
+  werror("Creating "+vpath+".tar.gz:\n");
   system("tar cvf - "+files*" "+" | gzip -9 >pike/"+vpath+".tar.gz");
   rm(vpath);
-  perror("Done.\n");
+  werror("Done.\n");
   return 0;
 }
