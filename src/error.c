@@ -20,7 +20,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.45 2000/04/12 18:40:12 hubbe Exp $");
+RCSID("$Id: error.c,v 1.46 2000/04/16 22:10:31 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -273,10 +273,19 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
     (void)VFPRINTF(stderr, fmt, args);
     abort();
   }
+
   in_fatal = 1;
 #ifdef PIKE_DEBUG
   dump_backlog();
 #endif
+
+  {
+    extern int Pike_in_gc;
+    if(Pike_in_gc)
+    {
+      fprintf(stderr,"Pike was in GC stage %d when this fatal occured:\n",Pike_in_gc);
+      Pike_in_gc=0;
+    }
 
   (void)VFPRINTF(stderr, fmt, args);
 
