@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.109 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: object.c,v 1.110 2000/04/15 07:45:52 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -151,6 +151,18 @@ struct object *low_clone(struct program *p)
   pike_frame->context.parent=0;
   
 
+#define LOW_SET_FRAME_CONTEXT(X)						\
+  pike_frame->context=(X);							\
+  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset;	\
+  pike_frame->context.parent=0;
+
+#define LOW_UNSET_FRAME_CONTEXT()		\
+  pike_frame->context.parent=0;			\
+  pike_frame->context.prog=0;			\
+  pike_frame->current_storage=0;		\
+  pike_frame->context.parent=0;
+  
+
 #ifdef DEBUG
 #define CHECK_FRAME() if(pike_frame != fp) fatal("Frame stack out of whack.\n");
 #else
@@ -162,6 +174,11 @@ struct object *low_clone(struct program *p)
   fp=pike_frame->next;				\
   pike_frame->next=0;				\
   free_pike_frame(pike_frame); }while(0)
+
+#define LOW_POP_FRAME()				\
+  add_ref(fp->current_object); \
+  POP_FRAME();
+
 
 
 void call_c_initializers(struct object *o)
@@ -1075,7 +1092,6 @@ void gc_mark_object_as_referenced(struct object *o)
     struct program *p;
 
     if(!o || !(p=o->prog)) return; /* Object already destructed */
-    add_ref(o);
 
     debug_malloc_touch(p);
 
@@ -1088,7 +1104,7 @@ void gc_mark_object_as_referenced(struct object *o)
     {
       int q;
       
-      SET_FRAME_CONTEXT(p->inherits[e]);
+      LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
       if(pike_frame->context.prog->gc_marked)
 	pike_frame->context.prog->gc_marked(o);
@@ -1115,9 +1131,10 @@ void gc_mark_object_as_referenced(struct object *o)
 	  gc_mark_short_svalue(u, rtt);
 	}
       }
+      LOW_UNSET_FRAME_CONTEXT();
     }
     
-    POP_FRAME();
+    LOW_POP_FRAME();
   }
 }
 
@@ -1140,12 +1157,12 @@ static inline void gc_check_object(struct object *o)
   {
     debug_malloc_touch(p);
 
-    PUSH_FRAME(o);
+    LOW_PUSH_FRAME(o);
     
     for(e=p->num_inherits-1; e>=0; e--)
     {
       int q;
-      SET_FRAME_CONTEXT(p->inherits[e]);
+      LOW_SET_FRAME_CONTEXT(p->inherits[e]);
       
       if(pike_frame->context.prog->gc_check_func)
 	pike_frame->context.prog->gc_check_func(o);
@@ -1172,37 +1189,28 @@ static inline void gc_check_object(struct object *o)
 	  debug_gc_check_short_svalue(u, rtt, T_OBJECT, debug_malloc_pass(o));
 	}
       }
+      LOW_UNSET_FRAME_CONTEXT();
+
     }
-    POP_FRAME();
+    LOW_POP_FRAME();
   }
 }
 
 void gc_check_all_objects(void)
 {
-  struct object *o,*next;
+  struct object *o;
 
-  for(o=first_object;o;o=next)
-  {
-    add_ref(o);
+  for(o=first_object;o;o=o->next)
     gc_check_object(o);
-    SET_NEXT_AND_FREE(o,free_object);
-  }
 }
 
 void gc_mark_all_objects(void)
 {
-  struct object *o,*next;
-  for(o=first_object;o;o=next)
-  {
+  struct object *o;
+  for(o=first_object;o;o=o->next)
     if(gc_is_referenced(o))
-    {
-      add_ref(o);
       gc_mark_object_as_referenced(o);
-      SET_NEXT_AND_FREE(o,free_object);
-    }else{
-      next=o->next;
-    }
-  }
+
 }
 
 void gc_free_all_unreferenced_objects(void)

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.30 2000/04/15 06:02:27 hubbe Exp $
+ * $Id: gc.h,v 1.31 2000/04/15 07:45:52 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -43,6 +43,7 @@ struct marker
   INT32 refs;
 #ifdef PIKE_DEBUG
   INT32 xrefs;
+  INT32 saved_refs;
 #endif
   INT32 flags;
   void *data;

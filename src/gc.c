@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.66 2000/04/15 05:22:00 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.67 2000/04/15 07:45:52 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -65,7 +65,7 @@ struct callback *debug_add_gc_callback(callback_func call,
 
 #undef INIT_BLOCK
 #ifdef PIKE_DEBUG
-#define INIT_BLOCK(X) (X)->flags=(X)->refs=(X)->xrefs=0
+#define INIT_BLOCK(X) (X)->flags=(X)->refs=(X)->xrefs=0; (X)->saved_refs=-1;
 #else
 #define INIT_BLOCK(X) (X)->flags=(X)->refs=0
 #endif
@@ -565,7 +565,7 @@ void debug_describe_svalue(struct svalue *s)
 INT32 real_gc_check(void *a)
 {
   struct marker *m=get_marker(a);
-;
+  
 #ifdef PIKE_DEBUG
   if(check_for)
   {
@@ -590,8 +590,10 @@ INT32 real_gc_check(void *a)
     }
     return 0;
   }
+
+  m->saved_refs = *(INT32 *)a;
 #endif
-  
+
   m->flags |= GC_CHECKED;
   return add_ref(m);
 }
@@ -706,14 +708,22 @@ int debug_gc_is_referenced(void *a)
   m=get_marker(a);
 
   if(m->refs + m->xrefs > *(INT32 *)a ||
-     (!(m->refs < *(INT32 *)a) && m->xrefs) )
+     (!(m->refs < *(INT32 *)a) && m->xrefs)  ||
+     (Pike_in_gc < 3  && m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
     TYPE_T t=attempt_to_identify(a);
     d_flag=0;
 
-    fprintf(stderr,"**Something has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
+    fprintf(stderr,"**Something has %ld refs, while gc() found %ld + %ld external.\n",
+	    (long)*(INT32 *)a,
+	    (long)refs,
+	    (long)xrefs);
+
+    if(m->saved_refs != *(INT32 *)a)
+      fprintf(stderr,"**In pass one it had %ld refs!!!\n",m->saved_refs);
+
     describe_something(a, t, 0,2,0);
 
     locate_references(a);
