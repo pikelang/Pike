@@ -196,17 +196,19 @@ if test "x$with_java" = xyes; then
   fi
 
   if test "$pike_cv_java" = yes; then
-    if test "x$pike_cv_sys_os" = xWindows_NT ; then
-      CPPFLAGS="$CPPFLAGS -D__NTJAVA__"
-    else
-      :
-    fi
     AC_MSG_CHECKING(if the JVM really works)
     AC_CACHE_VAL(pike_cv_java_working, [
       AC_TRY_RUN([#ifdef HAVE_JNI_H
 #include <jni.h>
 #endif
 #include <stdio.h>
+#ifdef __NT__
+#include <windows.h>
+#define JNI_CreateJavaVM createjavavm
+typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
+static createjavavmtype JNI_CreateJavaVM = NULL;
+static HINSTANCE jvmdll = NULL;
+#endif
         int main(int argc, char *argv[])
         {
           JavaVM *jvm;
@@ -214,11 +216,55 @@ if test "x$with_java" = xyes; then
           JavaVMInitArgs vm_args;
           JavaVMOption vm_options[2];
 	  jint res;
+#ifdef __NT__
+	  {
+            char *libname="jvm";
+            LPCSTR keyname=(LPCSTR)"SOFTWARE\\JavaSoft\\Java Runtime Environment\\1.2";
+            HKEY key;
+            char buffer[2*MAX_PATH+32];
+            DWORD type, len = sizeof(buffer)-1;
+
+            if(RegOpenKeyEx(HKEY_CURRENT_USER, keyname, 0,
+	                    KEY_READ, &key) == ERROR_SUCCESS ||
+               RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0,
+		            KEY_READ, &key) == ERROR_SUCCESS) {
+              if(ERROR_SUCCESS == RegQueryValueEx(key, "RuntimeLib", 0, &type,
+					          buffer, &len))
+	        switch(type) {
+	          case REG_SZ:
+	            libname = buffer;
+	            break;
+                  case REG_EXPAND_SZ:
+	            type = ExpandEnvironmentStrings((LPCTSTR)buffer,
+					            buffer+len,
+					            sizeof(buffer)-len-1);
+	            if(type && type<=sizeof(buffer)-len-1)
+	              libname = buffer+len;
+	            break;
+	        }
+              RegCloseKey(key);
+            }
+            if((jvmdll=LoadLibrary(libname))==NULL) {
+              fprintf(stderr, "Can't load library %s\n", libname);
+              exit(1);
+            } else {
+              FARPROC proc;
+              if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
+                JNI_CreateJavaVM = (createjavavmtype)proc;
+              else {
+                if(FreeLibrary(jvmdll))
+                  jvmdll = NULL;
+	        fprintf(stderr, "Can't GetProcAddress %s\n", "JNI_CreateJavaVM");
+                exit(1);
+              }
+            }
+          }
+#endif
           vm_args.version = 0x00010002;
           vm_args.nOptions = 0;
           vm_args.options = vm_options;
           vm_args.ignoreUnrecognized = JNI_TRUE;
-#ifndef __NTJAVA__
+#ifndef __NT__
           vm_options[0].optionString = "-Djava.library.path=$JAVA_LIBPATH";
           vm_options[0].extraInfo = NULL;
 	  vm_args.nOptions++;
