@@ -255,22 +255,28 @@ verify_modules:
 verbose_verify_modules:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) verbose_verify )
 
-verify: testsuite verify_modules
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
+module_testsuites:
+	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
+
+extra_module_tests:
+	( cd modules ; $(MAKE) $(MAKE_FLAGS) extra_tests )
+
+verify: module_testsuites testsuite  extra_module_tests
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
 
 check: verify
 
 sure: verify
 
 # verify / debug verbose
-verbose_verify: testsuite verbose_verify_modules
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
+verbose_verify: module_testsuites testsuite extra_module_tests
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose modules */*/module_testsuite testsuite 
 
 # verify & debug VERBOSE
-gdb_verify: testsuite
+gdb_verify: module_testsuites testsuite
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f
+	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f */*/module_testsuite
 	gdb ./pike
 	@rm .gdbinit
 
@@ -284,7 +290,7 @@ feature_list:
 lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)/include
 	cp -r $(LIBDIR_SRC) .
 	-cvs_dirs="`find lib -type d -name CVS`"; if test "x$$cvs_dirs" = "x" ; then : ; else rm -r $$cvs_dirs; fi
-	-files="`find lib -type f -name '*~'` `find lib -type f -name '.#*'` `find lib -type f -name '#*#'`"; if test "x$files" = "x" ; then : ; else rm $files; fi
+	-files="`find lib -type f -name '*~'` `find lib -type f -name '.#*'` `find lib -type f -name '#*#'`"; if test "x$$files" = "x" ; then : ; else rm $$files; fi
 	-touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
 
 # make export archive (requires compiled Pike)
