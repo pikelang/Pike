@@ -1,4 +1,5 @@
-dnl $Id: testsuite.in,v 1.17 2004/03/20 12:57:41 grubba Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.18 2004/05/02 18:44:54 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -524,3 +525,4 @@ test_encoding(XPM,[[
   img=c*img;
 ]],[[,(["colortable":c]) ]])
 test_encoding(TIFF,,)
+END_MARKER

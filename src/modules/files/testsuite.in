@@ -1,3 +1,4 @@
+START_MARKER
 dnl tests for file module
 
 test_true(programp(Stdio.File))
@@ -305,3 +306,4 @@ test_any([[
   s->size = -0x100000000;
   return s->size == -0x100000000;
 ]], 1)
+END_MARKER

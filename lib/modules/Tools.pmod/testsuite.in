@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.10 2004/04/25 15:16:37 nilsson Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.11 2004/05/02 18:29:46 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -187,3 +188,4 @@ test_eval_error([[ Tools.Legal.Copyright.add( "Basun", ({ "Muckey Mice" }) ); ]]
 test_equal([[ Tools.Legal.Copyright.get_all()->Basun ]], [[ ({ "Dunald Dock" }) ]])
 
 test_true([[ stringp( Tools.Legal.License.get_text() ) ]])
+END_MARKER

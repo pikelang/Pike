@@ -1,3 +1,4 @@
+START_MARKER
 // Nettle
 test_true([[objectp(Nettle)]])
 
@@ -193,3 +194,4 @@ test_tests(
   }
 )
 ]])
+END_MARKER

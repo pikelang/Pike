@@ -1,3 +1,4 @@
+START_MARKER
 
 test_any([[
   #pike 7.2
@@ -22,3 +23,4 @@ test_any([[
   return String.strmult("foo",4);
 ]], "foofoofoofoo")
 test_eval_error( String.strmult("foo",4); )
+END_MARKER

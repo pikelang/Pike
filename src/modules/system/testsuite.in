@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.16 2002/09/18 04:35:56 nilsson Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.17 2004/05/02 18:41:59 nilsson Exp $
 
 
 // system.c:
@@ -246,3 +247,4 @@ cond([[ System["__MMAP__"] ]],
     return "testprositsting";
   ]], "testprositsting" )
 ]])
+END_MARKER

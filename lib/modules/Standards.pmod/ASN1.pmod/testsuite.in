@@ -1,4 +1,5 @@
-dnl $Id: testsuite.in,v 1.7 2004/02/23 11:10:50 nilsson Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.8 2004/05/02 18:30:14 nilsson Exp $
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 
@@ -74,3 +75,4 @@ test_any([[
   "311d" "301b""060355040a""13144578616d706c65204f7267616e697a6174696f6e"
   "3114" "3012""060355040b""130b5465737420557365722031"
 ))
+END_MARKER

@@ -1,3 +1,4 @@
+START_MARKER
 
 cond_resolv( Image.SVG.decode, [[
 
@@ -11,3 +12,4 @@ cond_resolv( Image.SVG.decode, [[
   test_true( objectp(Image.SVG.decode_layers( #string "SRCDIR/pike.svg" )[0]) )
 
 ]])
+END_MARKER

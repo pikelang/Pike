@@ -1,3 +1,4 @@
+START_MARKER
 
 dnl --- Security
 
@@ -98,3 +99,4 @@ test_call_0(alarm)
 test_call_0(ualarm)
 
 ]])
+END_MARKER

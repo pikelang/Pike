@@ -1,3 +1,4 @@
+START_MARKER
 
 test_eq(_Roxen.html_encode_string (0), "0")
 test_eq(_Roxen.html_encode_string (""), "")
@@ -43,3 +44,4 @@ test_mkhttp( (["":""]), ({": "}) )
 test_mkhttp( (["a":"1","b":"2"]), ({"a: 1","b: 2"}) )
 test_mkhttp( (["a":"1","b":({"2","3"})]), ({"a: 1","b: 2","b: 3"}) )
 test_mkhttp( (["a":"1","b":({"2","2"})]), ({"a: 1","b: 2","b: 2"}) )
+END_MARKER

@@ -1,3 +1,5 @@
+START_MARKER
 cond([[ master()->resolv("_Image_GIF")->encode ]],
 [[
 ]])
+END_MARKER

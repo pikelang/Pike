@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.3 2003/03/08 21:01:03 grubba Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.4 2004/05/02 18:23:27 nilsson Exp $
 
 test_do([[ Yabu.db("test.db", "wct")->purge(); ]])
 test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])
@@ -81,3 +82,4 @@ test_do( add_constant("multi") )
 test_do( add_constant("trans") )
 test_do( add_constant("table") )
 test_do( add_constant("db") )
+END_MARKER

@@ -1,4 +1,5 @@
-test_true([["$Id: testsuite.in,v 1.11 2003/10/14 23:51:51 nilsson Exp $"]]);
+START_MARKER
+test_true([["$Id: testsuite.in,v 1.12 2004/05/02 18:30:04 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -122,3 +123,4 @@ test_eq([[Standards.IDNA.Punycode.decode("b1abfaaepdrnnbgefbaDotcwatmq2g4l")]],
           "\x43D\x435\x433\x43E\x432\x43E\x440\x44F\x442\x43F\x43E"
           "\x440\x443\x441\x441\x43A\x438"]]) // I
 
+END_MARKER

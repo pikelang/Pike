@@ -1,3 +1,6 @@
+
+START_MARKER
+
 // Crypto
 test_true([[
 #pike 7.4
@@ -766,3 +769,5 @@ test_do( C->set_null_chars(0.2, "xyz"/1) )
 test_eq( C->decode(C->encode("A"*100)), "A"*100 )
 
 test_do( add_constant("C") )
+
+END_MARKER

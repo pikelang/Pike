@@ -1,4 +1,5 @@
-dnl $Id: testsuite.in,v 1.7 2004/02/28 14:58:34 nilsson Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.8 2004/05/02 18:28:17 nilsson Exp $
 
 test_any([[
 #pike 7.4
@@ -84,3 +85,4 @@ dnl       error("Failed\n");
 dnl     /* How to kill the process if running on windows? */
 dnl     p->kill(15);
 dnl   ]])
+END_MARKER

@@ -1,4 +1,5 @@
-dnl $Id: testsuite.in,v 1.28 2003/12/20 14:02:11 marcus Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.29 2004/05/02 18:44:40 nilsson Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -249,3 +250,4 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(Gmp.mpz(10403)->small_factor(),101)
 ]]);
 
+END_MARKER

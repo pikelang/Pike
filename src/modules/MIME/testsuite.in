@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.8 2002/07/03 09:59:57 grubba Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.9 2004/05/02 18:45:09 nilsson Exp $
 
 // MIME
 test_true([[objectp(MIME)]])
@@ -138,3 +139,4 @@ test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->getencoded()]], "foo
 test_equal([[MIME.Message((string)MIME.Message("foo\r\n",
 		(["mImE-veRsion":"1.0"])))->headers]],
 	(["mime-version":"1.0","content-length":"5"]))
+END_MARKER

@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.37 2004/04/28 19:36:56 nilsson Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.38 2004/05/02 18:27:35 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -630,3 +631,4 @@ test_any([[
 
 test_do( add_constant( "H" ) )
 test_do( add_constant( "S" ) )
+END_MARKER

@@ -1,4 +1,5 @@
-test_true([["$Id: testsuite.in,v 1.724 2004/05/01 14:51:59 mast Exp $"]]);
+START_MARKER
+test_true([["$Id: testsuite.in,v 1.725 2004/05/02 18:35:12 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10785,3 +10786,4 @@ test_any_equal([[
   };
   return X()->test(1,2);
 ]],[[ ({}) ]])
+END_MARKER

@@ -1,3 +1,4 @@
+START_MARKER
 test_true(objectp(spider))
 
 dnl set_start_quote
@@ -46,3 +47,4 @@ test_any([[
 ]],[[1]])
 
 
+END_MARKER

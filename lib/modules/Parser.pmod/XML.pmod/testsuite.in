@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.4 2003/12/23 15:20:04 grubba Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.5 2004/05/02 18:31:43 nilsson Exp $
 
 // DOM
 
@@ -199,3 +200,4 @@ for(int i; i<120; i++)
 // Simple
 
 // Validating
+END_MARKER

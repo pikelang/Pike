@@ -1,4 +1,5 @@
-dnl $Id: testsuite.in,v 1.14 2004/05/01 16:02:30 nilsson Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.15 2004/05/02 18:26:43 nilsson Exp $
 
 dnl - ADT.BitBuffer
 
@@ -364,3 +365,4 @@ test_eval_error([[
   s->get_rest();
   s->get_fix_string(1);
 ]])
+END_MARKER

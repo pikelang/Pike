@@ -1,4 +1,5 @@
-dnl $Id: testsuite.in,v 1.11 2003/07/17 19:26:37 marcus Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.12 2004/05/02 18:42:26 nilsson Exp $
 
 define(exarg,[[test_any([[
   function x=$1;
@@ -201,3 +202,4 @@ test_eq(sgn("bar","foo"),-1)
 test_eq(sgn("foo","foo"),0)
 test_eq(sgn("gazonk","foo"),1)
 exarg(sgn)
+END_MARKER

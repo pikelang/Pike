@@ -1,3 +1,4 @@
+START_MARKER
 cond( [[ master()->resolv("Perl")->Perl ]],
 [[
   test_true(Perl.Perl)
@@ -18,3 +19,4 @@ cond( [[ master()->resolv("Perl")->Perl ]],
             return p->get_hash_item("foo", "a") == 17;
             ]])
 ]])
+END_MARKER

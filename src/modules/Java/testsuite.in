@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.5 2003/02/21 18:49:55 marcus Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.6 2004/05/02 18:45:03 nilsson Exp $
 
 cond( [[ master()->resolv("Java")->jvm ]],
 [[
@@ -34,3 +35,4 @@ AAIAJg==
   }()]],935.5)
   test_do(rm("conftest.class"))
 ]])
+END_MARKER

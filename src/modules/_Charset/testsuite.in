@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.7 2003/12/17 02:05:23 nilsson Exp $
+START_MARKER
+// $Id: testsuite.in,v 1.8 2004/05/02 18:43:41 nilsson Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -516,3 +517,4 @@ dnl test_codec(iso-ir-228)
 dnl test_codec(iso-ir-229)
 dnl test_codec(iso-ir-230)
 dnl test_codec(iso-ir-231)
+END_MARKER

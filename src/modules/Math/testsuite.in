@@ -1,3 +1,4 @@
+START_MARKER
 define(MATRIX_EQUAL,[[
   (max(@map(Array.flatten( (array) (($1)-($2)) ),abs))<1e-5)
 ]])
@@ -139,3 +140,4 @@ test_convert(90, "deg", "rad")
 test_convert(90, "rad", "gon")
 test_convert(90, "gon", "str")
 test_convert(90, "str", "deg")
+END_MARKER

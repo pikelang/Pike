@@ -1,4 +1,6 @@
 
+START_MARKER
+
 test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz") ]], "../foo/bar/baz")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz", "../fie/../faz") ]], "../foo/bar/baz/faz")
@@ -181,3 +183,5 @@ test_any([[
   x->read(2);
   return x->read(2);
 ]], "c")
+
+END_MARKER

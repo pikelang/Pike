@@ -1,3 +1,4 @@
+START_MARKER
 cond([[ master()->resolv("Regexp.PCRE.Plain") ]],
 [[
    test_eq(Regexp.PCRE("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka"),
@@ -11,3 +12,4 @@ cond([[ master()->resolv("Regexp.PCRE.Widestring") ]],
    test_eq(Regexp.PCRE("\1234[^-]*m")->replace("a\1234\567m-\1234oom-fooa\1234adoom","g\1234rka"),
            "ag\1234rka-g\1234rka-fooag\1234rka")
 ]])
+END_MARKER

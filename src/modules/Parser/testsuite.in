@@ -1,3 +1,4 @@
+START_MARKER
 // -*- Pike -*-
 
 define(test_parser, [[
@@ -1292,3 +1293,4 @@ test_any(
     p2->add_quote_tag ("?", lambda () {return ({"p2"});}, "?");
     return p1->finish("<??>")->read();
   ]], "p1")
+END_MARKER

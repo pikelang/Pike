@@ -1,3 +1,4 @@
+START_MARKER
 // - sprintf module
 
 dnl This really belongs to sscanf, but...
@@ -248,3 +249,4 @@ dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
 test_eval_error(return sprintf("%d");)
 
+END_MARKER
