@@ -21,8 +21,9 @@
 #include "fsort.h"
 #include "threads.h"
 #include "stuff.h"
+#include "version.h"
 
-RCSID("$Id: encode.c,v 1.22 1998/05/01 16:20:27 grubba Exp $");
+RCSID("$Id: encode.c,v 1.23 1998/05/16 08:23:44 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -404,6 +405,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	if(p->init || p->exit || p->gc_marked || p->gc_check ||
 	   (p->flags & PROGRAM_HAS_C_METHODS))
 	  error("Cannot encode C programs.\n");
+	f_version(0);
+	encode_value2(sp-1,data);
+	pop_stack();
 	code_entry(val->type, 1,data);
 	code_number(p->flags,data);
 	code_number(p->storage_needed,data);
@@ -911,6 +915,12 @@ static void decode_value2(struct decode_data *data)
 	  data->counter.u.integer++;
 	  p->refs--;
 	  
+	  decode_value2(data);
+	  f_version(0);
+	  if(!is_eq(sp-1,sp-2))
+	    error("Cannot decode programs encoded with other driver version.\n");
+	  pop_n_elems(2);
+
 	  decode_number(p->flags,data);
 	  p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED);
 	  decode_number(p->storage_needed,data);
