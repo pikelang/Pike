@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.22 1997/01/14 15:23:52 law Exp $ */
+/* $Id: quant.c,v 1.23 1997/01/14 16:20:18 law Exp $ */
 
 /*
 
@@ -30,6 +30,8 @@ David Kågedal, kg@infovav.se
 #define QUANT_DEBUG
 #define QUANT_DEBUG_RGB
 */
+
+#define QUANT_MAXIMUM_NUMBER_OF_COLORS 65535
 
 /**********************************************************************/
 
@@ -91,6 +93,41 @@ static INLINE int hash_enter(rgb_entry *rgbe,rgb_entry *end,
 
    re=rgbe+hash(rgb,len);
 /*   fprintf(stderr,"%d\n",hash(rgb,len));*/
+
+   while (re->count && !same_col(re->rgb,rgb))
+      if (++re==end) re=rgbe;
+
+   if (!re->count)  /* allocate it */
+   {
+      re->rgb=rgb; 
+      re->count=1; 
+      return 1; 
+   }
+
+   re->count++;
+   return 0;
+}
+
+static INLINE int hash_enter_strip(rgb_entry *rgbe,rgb_entry *end,
+				   int len,rgb_group rgb,int strip)
+{
+   register rgb_entry *re;
+
+   unsigned char strip_r[24]=
+{ 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
+  0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
+   unsigned char strip_g[24]=
+{ 0xff, 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
+  0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
+   unsigned char strip_b[24]=
+{ 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
+  0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
+
+   rgb.r&=strip_r[strip];
+   rgb.g&=strip_g[strip];
+   rgb.b&=strip_b[strip];
+
+   re=rgbe+hash(rgb,len);
 
    while (re->count && !same_col(re->rgb,rgb))
       if (++re==end) re=rgbe;
@@ -510,6 +547,7 @@ struct colortable *colortable_quant(struct image *img,int numcol)
    CHRONO("quant");
 
    if (numcol<2) numcol=2;
+
    if (numcol>MAX_NUMCOL) numcol=MAX_NUMCOL; 
 
    ct = colortable_allocate(numcol);
@@ -517,12 +555,18 @@ struct colortable *colortable_quant(struct image *img,int numcol)
 #ifdef QUANT_DEBUG
    fprintf(stderr,"Moving colors into hashtable\n");
 #endif
-   CHRONO("hash init");
 
-   tbl = img_rehash(NULL, 8192);
-
-   if (1)
+   for (;;)
    {
+      int strip=0;
+rerun:
+      entries=0;
+
+
+      CHRONO("hash init");
+      
+      tbl = img_rehash(NULL, 8192);
+      
       p=img->img;
       i=sz;
       do
@@ -538,19 +582,48 @@ struct colortable *colortable_quant(struct image *img,int numcol)
 	 len=tbl->len;
 	 trig=(len*2)/10; /* 20% full => rehash bigger */
 	 end=(rgbe=tbl->tbl)+tbl->len;
-     
-	 while (i--)
-	    if ( (entries+=hash_enter(rgbe,end,len,*(p++))) > trig )
-	    {
+
+	 if (!strip)
+	 {
+	    while (i--)
+	       if ( (entries+=hash_enter(rgbe,end,len,*(p++))) > trig )
+	       {
 #ifdef QUANT_DEBUG
-	       fprintf(stderr,"rehash: 20%% = %d / %d...\n",entries,len);
+		  fprintf(stderr,"rehash: 20%% = %d / %d...\n",entries,len);
 #endif
-	       CHRONO("rehash...");
-	       tbl=img_rehash(tbl,len<<2); /* multiple size by 4 */
-	       break;
-	    }
+		  CHRONO("rehash...");
+		  if ((len<<2) > QUANT_MAXIMUM_NUMBER_OF_COLORS)
+		  {
+		     strip++;
+		     fprintf(stderr,"strip: %d\n",strip);
+		     free(tbl);
+		     goto rerun;
+		  }
+		  tbl=img_rehash(tbl,len<<2); /* multiple size by 4 */
+		  break;
+	       }
+	 }
+	 else
+	    while (i--)
+	       if ( (entries+=hash_enter_strip(rgbe,end,len,*(p++),strip)) > trig )
+	       {
+#ifdef QUANT_DEBUG
+		  fprintf(stderr,"rehash: 20%% = %d / %d...\n",entries,len);
+#endif
+		  CHRONO("rehash...");
+		  if ((len<<2) > QUANT_MAXIMUM_NUMBER_OF_COLORS)
+		  {
+		     strip++;
+		     fprintf(stderr,"strip: %d\n",strip);
+		     free(tbl);
+		     goto rerun;
+		  }
+		  tbl=img_rehash(tbl,len<<2); /* multiple size by 4 */
+		  break;
+	       }
       }
       while (i>=0);
+      break;
    }
      
    /* Compact the hash table */
