@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.51 1997/08/30 18:36:21 grubba Exp $");
+RCSID("$Id: file.c,v 1.52 1997/09/06 23:50:29 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -961,8 +961,8 @@ static void file_set_buffer(INT32 args)
  * No AF_UNIX sockets ?
  * No hope ?
  *
- * Don't dispair, socketpair_ultra is here!
- * Tests done in an independant institute in europe shows
+ * Don't despair, socketpair_ultra is here!
+ * Tests done by an independant institute in Europe show that
  * socketpair_ultra is 50% more portable than other leading
  * brands of socketpair.
  *                                                   /Hubbe
