@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.39 1999/11/24 12:09:54 jonasw Exp $
+**!	$Id: layers.c,v 1.40 2000/01/30 22:14:05 hubbe Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.39 1999/11/24 12:09:54 jonasw Exp $");
+RCSID("$Id: layers.c,v 1.40 2000/01/30 22:14:05 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -928,7 +928,7 @@ static void image_layer_descriptions(INT32 args)
    pop_n_elems(args);
       
    for (i=0; i<LAYER_MODES; i++)
-      ref_push_string(make_shared_string(layer_mode[i].desc));
+     push_string(make_shared_string(layer_mode[i].desc));
 
    f_aggregate(LAYER_MODES);
 }
