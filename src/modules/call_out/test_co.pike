@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_co.pike,v 1.5 2000/09/05 02:16:48 hubbe Exp $ */
+/* $Id: test_co.pike,v 1.6 2001/01/15 15:19:01 nilsson Exp $ */
 
 void verify();
 
@@ -25,7 +25,7 @@ FUN(f8)
 FUN(f9)
 
 
-mixed *fn=({f0,f1,f2,f3,f4,f5,f6,f7,f8,f9});
+array fn=({f0,f1,f2,f3,f4,f5,f6,f7,f8,f9});
 
 void verify()
 {
