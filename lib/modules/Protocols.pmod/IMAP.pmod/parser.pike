@@ -59,6 +59,15 @@ mapping get_atom(function c)
 	    "handler" : line_handler(get_atom, c) ]);
 }
 
+mapping get_list(function c)
+{
+  if (line)
+    return c(line->get_simple_list(1));
+
+  return ([ "action" : "expect_line",
+	    "handler" : line_handler(get_list, c) ]);
+}
+
 // FIXME: This looks like the identity function to me.
 class get_string_handler
 {
