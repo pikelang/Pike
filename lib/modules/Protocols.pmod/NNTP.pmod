@@ -21,7 +21,8 @@ class protocol
   string *read_body_lines()
   {
     string *ret=({});
-    while(string s=news::gets())
+    string s;
+    while(s = news::gets())
     {
       if(s=="." || s==".\r") return ret;
       sscanf(s,".%s",s);
@@ -53,7 +54,7 @@ class protocol
 
   int command(string cmd)
   {
-    news::write(cmd+"\n");
+    news::write(cmd+"\r\n");
     return readreturncode();
   }
 

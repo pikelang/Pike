@@ -50,7 +50,7 @@ class client
     return r;
   }
 
-  void create(void|string server)
+  void create(void|string server, int|void port)
   {
     if(!server)
     {
@@ -59,7 +59,10 @@ class client
       server=dns->get_primary_mx(gethostname());
     }
 
-    if(!connect(server,25))
+    if(!port)
+      port = 25;
+
+    if(!connect(server, port))
     {
       throw(({"Failed to connect to mail server.\n",backtrace()}));
     }
