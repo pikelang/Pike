@@ -76,8 +76,7 @@ class NSNode {
 
   static string make_prefix(string ns) {
     // FIXME: Cache?
-    return Crypto.string_to_hex(Crypto.md5()->
-				update(ns)->digest())[..10];
+    return String.string2hex(Crypto.MD5->hash(ns))[..10];
   }
 
   //! Returns the element name as it occurs in xml files. E.g.

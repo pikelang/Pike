@@ -132,7 +132,7 @@ void build_sha1s(void|function(int,int:void) progress_callback)
    for (int i=0; i<offset; i+=piece_size)
    {
       if (progress_callback) progress_callback(i,offset);
-      info_sha1+=SHA1(targets->pread(i,piece_size)*"");
+      info_sha1+=Crypto.SHA->hash(targets->pread(i,piece_size)*"");
    }
    if (progress_callback && n<offset) progress_callback(offset,offset);
 }

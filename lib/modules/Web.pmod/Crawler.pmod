@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.19 2004/01/11 00:39:34 nilsson Exp $
+// $Id: Crawler.pmod,v 1.20 2004/02/02 23:36:38 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -525,7 +525,7 @@ class ComplexQueue(Stats stats, Policy policy)
 
     string do_md5(string in)
     {
-      return Crypto.md5()->update(in)->digest();
+      return Crypto.MD5->hash(in);
     }
 
     void push(mixed val)
