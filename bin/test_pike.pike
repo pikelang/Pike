@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.55 2001/06/23 21:52:43 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.56 2001/06/27 16:09:17 hubbe Exp $ */
 
 import Stdio;
 
@@ -84,7 +84,12 @@ array find_testsuites(string dir)
 }
 
 // 20 minutes should be enough..
+#if !constant(_reset_dmalloc)
 #define WATCHDOG_TIMEOUT 60*20
+#else
+// ... unless we're running dmalloc
+#define WATCHDOG_TIMEOUT 60*80
+#endif
 
 #if constant(thread_create)
 #define WATCHDOG
