@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.12 2000/04/13 19:08:03 per Exp $
+/* $Id: connection.pike,v 1.13 2000/08/04 19:07:11 sigge Exp $
  *
  * SSL packet layer
  */
@@ -30,12 +30,12 @@ inherit Queue : application;
 
 void create(int is_server)
 {
-  handshake::create(is_server);
   alert::create();
   urgent::create();
   application::create();
   current_read_state = State(this_object());
   current_write_state = State(this_object());
+  handshake::create(is_server);
 }
 
 /* Called with alert object, sequence number of bad packet,
@@ -53,7 +53,7 @@ object recv_packet(string data)
   mixed res;
 
 #ifdef SSL3_DEBUG
-//  werror(sprintf("SSL.connection->recv_packet('%s')\n", data));
+//  werror(sprintf("SSL.connection->recv_packet(%O)\n", data));
 #endif
   if (left_over || !packet)
   {
@@ -129,7 +129,7 @@ string|int to_write()
     return "";
   
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.connection: writing packet of type %d, '%s'\n",
+  werror(sprintf("SSL.connection: writing packet of type %d, %O\n",
 		 packet->content_type, packet->fragment[..6]));
 #endif
   if (packet->content_type == PACKET_alert)
@@ -171,7 +171,8 @@ int handle_alert(string s)
   }
   if (description == ALERT_close_notify)
   {
-    return 1;
+    return 0;
+//     return 1;			// looses data
   }
   if (description == ALERT_no_certificate)
   {
@@ -216,7 +217,7 @@ string|int got_data(string s)
 {
   /* If alert_callback is called, this data is passed as an argument */
   string alert_context = (left_over || "") + s;
-  
+
   string res = "";
   object packet;
   while (packet = recv_packet(s))
