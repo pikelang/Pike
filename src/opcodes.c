@@ -24,7 +24,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.44 1999/10/19 22:21:30 noring Exp $");
+RCSID("$Id: opcodes.c,v 1.45 1999/10/22 09:42:28 noring Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -195,7 +195,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  case T_FLOAT:
 	    i=(int)(sp[-1].u.float_number);
 #ifdef AUTO_BIGNUM
-	    if((i < 0 ? -i : i) < fabs(floor(sp[-1].u.float_number)))
+	    if((i < 0 ? -i : i) < floor(fabs(sp[-1].u.float_number)))
 	    {
 	      /* Note: This includes the case when i = 0x80000000, i.e.
 		 the absolute value is not computable. */
