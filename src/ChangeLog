@@ -1,3 +1,10 @@
+Wed Apr 01 00:47:18 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* mkpeep.pike: peep.in is now processed by cpp().
+	* cpp.c (low_cpp): Macro argument bugfix, and improved error message.
+	* docode.c (do_docode2): Optimizations.
+	* interpret.c, lex.c: New opcodes, and some bugfixes.
+
 Thu Mar 26 00:25:29 1998  Henrik Grubbström  <grubba@idonex.se>
 
 	* threads.c (init_threads_disable): Fixed some bugs.
