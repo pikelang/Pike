@@ -39,7 +39,6 @@ make_interpret_functions.pike
 metatest
   Utility that permutates over a number of configure
   flags and compiles and verifies all the produced Pikes.
-  [FIXME: Update with more interesting flags?]
 
 mkpackage.pike
   Utility for creating executable installation scripts
