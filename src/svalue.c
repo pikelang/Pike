@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.60 2000/01/10 00:51:34 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.61 2000/01/27 23:12:08 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -471,6 +471,36 @@ int svalue_is_true(struct svalue *s)
 }
 
 #define TWO_TYPES(X,Y) (((X)<<8)|(Y))
+
+int is_identical(struct svalue *a, struct svalue *b)
+{
+  if(a->type != b->type) return 0;
+  switch(a->type)
+  {
+  case T_TYPE:
+  case T_STRING:
+  case T_OBJECT:
+  case T_MULTISET:
+  case T_PROGRAM:
+  case T_ARRAY:
+  case T_MAPPING:
+    return a->u.refs == b->u.refs;
+
+  case T_INT:
+    return a->u.integer == b->u.integer;
+
+  case T_FUNCTION:
+    return (a->subtype == b->subtype && a->u.object == b->u.object);
+      
+  case T_FLOAT:
+    return a->u.float_number == b->u.float_number;
+
+  default:
+    fatal("Unknown type %x\n",a->type);
+    return 0; /* make gcc happy */
+  }
+
+}
 
 int is_eq(struct svalue *a, struct svalue *b)
 {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.46 2000/01/02 23:29:19 mast Exp $
+ * $Id: svalue.h,v 1.47 2000/01/27 23:12:08 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -316,6 +316,7 @@ void assign_short_svalue(union anything *to,
 			 TYPE_T type);
 unsigned INT32 hash_svalue(struct svalue *s);
 int svalue_is_true(struct svalue *s);
+int is_identical(struct svalue *a, struct svalue *b);
 int is_eq(struct svalue *a, struct svalue *b);
 int low_is_equal(struct svalue *a,
 		 struct svalue *b,
@@ -327,7 +328,7 @@ int low_short_is_equal(const union anything *a,
 int is_equal(struct svalue *a,struct svalue *b);
 int is_lt(struct svalue *a,struct svalue *b);
 void describe_svalue(struct svalue *s,int indent,struct processing *p);
-void print_svalue(FILE *out, struct svalue *s);
+void print_svalue (FILE *out, struct svalue *s);
 void clear_svalues(struct svalue *s, INT32 num);
 void clear_svalues_undefined(struct svalue *s, INT32 num);
 void copy_svalues_recursively_no_free(struct svalue *to,
