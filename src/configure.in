@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.503 2001/03/19 12:29:43 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.504 2001/03/19 13:48:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -82,8 +82,17 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   [
     OLD_CFLAGS="[$]CFLAGS"
     CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_RUN([int foo; int main(){exit(0);}],
-      pike_cv_option_$2=yes,
+    AC_TRY_RUN([
+      int foo;
+      int main(int argc, char **argv)
+      {
+        /* The following code triggs gcc's generation of aline opcodes,
+	 * which some versions of as does not support.
+	 */
+	if (argc > 0) argc = 0;
+	return argc;
+      }
+    ],pike_cv_option_$2=yes,
       pike_cv_option_$2=no, [
       AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
     ])
