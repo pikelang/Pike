@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.40 1999/12/07 01:33:03 grubba Exp $");
+RCSID("$Id: error.c,v 1.41 2000/01/29 08:43:37 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -181,6 +181,8 @@ void new_error(const char *name, const char *text, struct svalue *oldsp,
 #endif
 
     fprintf(stderr,"No error recovery context!\n%s():%s",name,text);
+    if(file)
+      fprintf(stderr,"at %s:%d\n",file,line);
     exit(99);
   }
 
