@@ -500,7 +500,7 @@ SGML make_concrete_wmml(SGML data)
 		     ({
 		       Sgml.Tag("dl",([]),tag->pos,
 				  ({
-				    Sgml.Tag("man_title",(["title":upper_case(tag->tag)),tag->pos,
+				    Sgml.Tag("man_title",(["title":upper_case(tag->tag)]),tag->pos,
 					     ({
 					       Sgml.Tag("tt",([]),tag->pos,({fullname})),
 						 " - ",
