@@ -6,3 +6,7 @@ o Process.popen
    argument is provided a file object will be opened witht that mode
    and return, enabling for two way communication with the new
    process.
+
+o PIKE_PORTABLE_BYTECODE
+   --with-portable-bytecode is now the default. Pike programs that have
+   been dumped on one architecture now can be decoded on another.
