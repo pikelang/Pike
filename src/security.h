@@ -135,6 +135,7 @@ void init_pike_security(void);
 #define CHECK_DATA_SECURITY_OR_ERROR(DATA,BIT,ERR)
 
 #define init_pike_security()
+#define exit_pike_security()
 
 #define VALID_FILE_IO(name, type)
 

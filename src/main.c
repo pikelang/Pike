@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.67 1999/03/26 19:29:51 hubbe Exp $");
+RCSID("$Id: main.c,v 1.68 1999/04/08 22:27:07 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -536,9 +536,11 @@ void low_exit_main(void)
   cleanup_backend();
 
   do_gc();
+  exit_pike_security();
   free_svalue(& throw_value);
   throw_value.type=T_INT;
 
+  exit_destroy_called_mark_hash();
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
   {

@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.9 1999/04/02 20:53:12 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.10 1999/04/08 22:27:06 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -109,10 +109,12 @@ struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				\
 									\
 									\
 									\
-struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
+struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	        \
 {									\
   struct DATA *p;							\
 									\
+  DO_IF_DEBUG( if(!PIKE_CONCAT(DATA,_hash_table))                       \
+    fatal("Hash table error!\n"); )                                     \
   PIKE_CONCAT(num_,DATA)++;						\
 									\
   if(( PIKE_CONCAT(num_,DATA)>>2 ) >=					\
@@ -132,9 +134,9 @@ struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
 	 sizeof(struct DATA *)*PIKE_CONCAT(DATA,_hash_table_size));	\
       while(e-- >=0)							\
       {									\
-	while((p=old_hash[e]))		        \
+	while((p=old_hash[e]))		                                \
 	{								\
-	  old_hash[e]=p->next;                 \
+	  old_hash[e]=p->next;                                          \
 	  hval=(long)(p-> data);					\
 	  hval%=PIKE_CONCAT(DATA,_hash_table_size);			\
 	  p->next=PIKE_CONCAT(DATA,_hash_table)[hval];			\
@@ -143,15 +145,15 @@ struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
       }									\
       hval=(long)ptr;							\
       hval%=PIKE_CONCAT(DATA,_hash_table_size);				\
-      free((char *)old_hash);\
+      free((char *)old_hash);                                           \
     }else{								\
-      PIKE_CONCAT(DATA,_hash_table)=old_hash;	\
+      PIKE_CONCAT(DATA,_hash_table)=old_hash;	                        \
       PIKE_CONCAT(DATA,_hash_table_size)=e;				\
     }									\
   }									\
 									\
   p=PIKE_CONCAT(alloc_,DATA)();	        				\
-  p->data=ptr; \
+  p->data=ptr;                                                          \
   p->next=PIKE_CONCAT(DATA,_hash_table)[hval];				\
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				\
   return p;								\
@@ -184,6 +186,7 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				\
 {									\
   struct DATA *p;							\
   int hval=(long)ptr;							\
+  if(!PIKE_CONCAT(DATA,_hash_table)) return 0;                          \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				\
   if((p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))			\
   {									\

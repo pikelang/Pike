@@ -264,4 +264,15 @@ void init_pike_security(void)
   free_program(tmpp);
 }
 
+void exit_pike_security()
+{
+#ifdef DO_PIKE_CLEANUP
+  if(creds_program)
+  {
+    free_program(creds_program);
+    creds_program=0;
+  }
+#endif
+}
+
 #endif

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.68 1999/04/07 23:10:08 hubbe Exp $");
+RCSID("$Id: object.c,v 1.69 1999/04/08 22:27:08 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -377,7 +377,7 @@ static void call_destroy(struct object *o, int foo)
   }
 }
 
-void destruct(struct object *o)
+void low_destruct(struct object *o,int do_free)
 {
   int e;
   struct program *p;
@@ -420,6 +420,8 @@ void destruct(struct object *o)
     if(pike_frame->context.prog->exit)
       pike_frame->context.prog->exit(o);
 
+    if(!do_free) continue;
+
     for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
     {
       int d=pike_frame->context.prog->variable_index[q];
@@ -442,6 +444,11 @@ void destruct(struct object *o)
   POP_FRAME();
 
   free_program(p);
+}
+
+void destruct(struct object *o)
+{
+  low_destruct(o,1);
 }
 
 
@@ -978,14 +985,20 @@ void cleanup_objects(void)
     free_object(o);
   }
 
-#ifdef DO_PIKE_CLEANUP
   for(o=first_object;o;o=next)
   {
     add_ref(o);
-    destruct(o);
+    low_destruct(o,
+#ifdef DO_PIKE_CLEANUP
+		 1
+#else
+		 0
+#endif
+      );
     next=o->next;
     free_object(o);
   }
+#ifdef DO_PIKE_CLEANUP
   free_object(master_object);
   master_object=0;
   free_program(master_program);
@@ -1383,5 +1396,4 @@ void exit_object(void)
     free_program(magic_set_index_program);
     magic_set_index_program=0;
   }
-  exit_destroy_called_mark_hash();
 }
