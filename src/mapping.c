@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.50 2000/01/28 00:46:26 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.51 2000/01/28 21:00:44 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -184,6 +184,12 @@ void really_free_mapping_data(struct mapping_data *md)
   INT32 e;
   struct keypair *k;
   debug_malloc_touch(md);
+#ifdef PIKE_DEBUG
+  if (md->refs) {
+    fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
+	  md->refs);
+  }
+#endif /* PIKE_DEBUG */
   NEW_MAPPING_LOOP(md)
   {
     free_svalue(& k->val);
@@ -231,7 +237,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 
   if(d_flag>1)  check_mapping(m);
 #endif
@@ -242,6 +248,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   md=m->data;
   if(md->refs>1)
   {
+    debug_malloc_touch(md);
     md=m->data=copy_mapping_data(m->data);
     debug_malloc_touch(md);
   }
@@ -481,7 +488,7 @@ void mapping_insert(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   h2=hash_svalue(key);
@@ -571,7 +578,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 
   if(d_flag>1)  check_mapping(m);
 
@@ -671,7 +678,7 @@ void map_delete_no_free(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
 #endif
 
@@ -741,7 +748,7 @@ void check_mapping_for_destruct(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
 #endif
 
@@ -796,7 +803,7 @@ struct svalue *low_mapping_lookup(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
 #endif
 
@@ -863,7 +870,7 @@ struct svalue *mapping_mapping_lookup(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   if(!s || !s->type==T_MAPPING)
@@ -938,7 +945,7 @@ struct array *mapping_indices(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   a=allocate_array(m->data->size);
@@ -965,7 +972,7 @@ struct array *mapping_values(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   a=allocate_array(m->data->size);
@@ -992,7 +999,7 @@ struct array *mapping_to_array(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   a=allocate_array(m->data->size);
@@ -1021,7 +1028,7 @@ void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   md=m->data;
@@ -1092,15 +1099,17 @@ struct mapping *copy_mapping(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   n=allocate_mapping(0);
+  debug_malloc_touch(n->data);
   free_mapping_data(n->data);
   n->data=m->data;
   n->data->refs++;
   n->data->valrefs++;
   n->data->hardlinks++;
+  debug_malloc_touch(n->data);
   return n;
 }
 
@@ -1116,9 +1125,9 @@ struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 
 #ifdef PIKE_DEBUG
   if(a->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
   if(b->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   ai=mapping_indices(a);
@@ -1198,9 +1207,9 @@ int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
 
 #ifdef PIKE_DEBUG
   if(a->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
   if(b->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   if(a==b) return 1;
@@ -1253,7 +1262,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   if(! m->data->size)
@@ -1312,14 +1321,14 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   my_strcat("])");
 }
 
-node * make_node_from_mapping(struct mapping *m)
+node *make_node_from_mapping(struct mapping *m)
 {
   struct keypair *k;
   INT32 e;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   mapping_fix_type_field(m);
@@ -1392,7 +1401,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   doing.next=p;
@@ -1418,7 +1427,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
   md=m->data;
   md->valrefs++;
   add_ref(md);
-  MAPPING_LOOP(m)
+  MAPPING_LOOP(m)	/* FIXME: Shouldn't NEW_MAPPING_LOOP() be used? */
   {
     copy_svalues_recursively_no_free(sp,&k->ind, 1, p);
     sp++;
@@ -1444,7 +1453,7 @@ void mapping_search_no_free(struct svalue *to,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
   md=m->data;
 
@@ -1524,6 +1533,9 @@ void check_mapping(struct mapping *m)
 
   if(!m->data)
     fatal("Mapping has no data block.\n");
+
+  if (!m->data->refs)
+    fatal("Mapping data block has zero refs.\n");
 
   if(m->next && m->next->prev != m)
     fatal("Mapping ->next->prev != mapping.\n");
@@ -1605,7 +1617,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs i mapping->data\n");
+    fatal("Zero refs in mapping->data\n");
 #endif
 
   if(gc_mark(m))
