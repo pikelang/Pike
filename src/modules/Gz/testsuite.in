@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.7 1999/06/19 20:23:39 hubbe Exp $
+// $Id: testsuite.in,v 1.8 1999/06/24 23:55:01 hubbe Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -19,13 +19,14 @@ define(dotest,[[
   dotest(sprintf("%'fomp'1000n"))
   dotest(sprintf("%'fomp'100000n"))
 
-  cond([[ master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
-  [[
-    dotest(Crypto.randomness.pike_random()->read(32768))
+]])
+
+cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
+[[
+  dotest(Crypto.randomness.pike_random()->read(32768))
 
 dnl  These two causes 'out of memory' errors /Hubbe
 dnl
 dnl    dotest(Crypto.randomness.pike_random()->read(524288))
 dnl    dotest(Crypto.randomness.pike_random()->read(8388608))
-  ]])
 ]])
