@@ -62,6 +62,7 @@ array func_misc = ({
   ({"glGenLists", "II"}),
   ({"glGetError", "E"}),
   ({"glGetString", "SE"}),
+  ({"glGetTexImage", "VEIII&"}),
   ({"glHint", "VEE"}),
   ({"glIndex", "VZ"}),
   ({"glIndexMask", "VI"}),
@@ -132,7 +133,6 @@ mapping func_cat = ([
   glGetPolygonStipple
   glGetTexEnv
   glGetTexGen
-  glGetTexImage
   glGetTexLevelParameter
   glGetTexParameter
   glIndexPointer

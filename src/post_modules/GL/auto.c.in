@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.29 2003/05/12 12:38:22 grubba Exp $
+|| $Id: auto.c.in,v 1.30 2003/05/31 13:10:51 per Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.29 2003/05/12 12:38:22 grubba Exp $");
+RCSID("$Id: auto.c.in,v 1.30 2003/05/31 13:10:51 per Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -141,6 +141,8 @@ static void img_init()
   img_inited=1;
 }
 
+static struct program *shm_program=NULL;
+
 static void check_img_arg(struct svalue *a, struct zimage *img,
 			  int arg, const char *func)
 {
@@ -157,7 +159,6 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   INT32 cnt;
 
   static struct program *image_program=NULL;
-  static struct program *shm_program=NULL;
 
   if(image_program == NULL) {
     push_string(make_shared_string("Image")); push_int(0);
@@ -319,6 +320,30 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   if(!img_inited)
     img_init();
 }
+
+static void *get_mem_object( struct svalue *x )
+{
+  struct {
+    unsigned char *p;
+    size_t size;
+  } *stor_mem;
+
+  if(shm_program == NULL)
+  {
+    push_string(make_shared_string("System.Memory")); push_int(0);
+    SAFE_APPLY_MASTER("resolv",2);
+    shm_program=program_from_svalue(sp-1);
+    pop_stack();
+    if(shm_program == NULL)
+      Pike_error("Can't resolve System.Memory!\n");
+  }
+  if( x->type != T_OBJECT ||
+      !(stor_mem = (void *)get_storage( x->u.object, shm_program ) ) )
+    Pike_error("Expected System.Memory object\n");
+  return stor_mem->p;
+}
+    
+
 
 static void release_img(struct zimage *img)
 {

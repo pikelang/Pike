@@ -247,7 +247,10 @@ array(string) gen_func(string name, string ty)
       img_obj=1;
       args += ({ "img.pixels" });
       break;
-
+    case '&':
+      argt += ({"object"});
+      args += ({ "get_mem_object(Pike_sp+("+(a-1)+"-args))" });
+      break;
     default:
       error("%s: Unknown parameter type '%c'.", name, ty[i]);
     }
