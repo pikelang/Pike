@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.438 2001/07/04 12:32:25 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.439 2001/07/04 13:00:43 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -337,7 +337,7 @@ test_any([[
   class Foo
   {
     int foo();
-    function f()
+    int(0..1) f()
     {
       return !foo;
     }
