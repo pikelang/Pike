@@ -9,7 +9,7 @@ class request
   constant type = 0;
   constant expect_reply = 0;
 
-  string build_value_list(mapping m, array(string) fields)
+  array build_value_list(mapping m, array(string) fields)
   {
     int mask = 0;
     int bit = 1;
@@ -26,7 +26,7 @@ class request
 	  }
 	bit <<= 1;
       }
-    return sprintf("%4c%@4c", mask, v);
+    return ({ mask, sprintf("%@4c", v) });
   }
 
   string build_request(string req, void|int data)
@@ -75,12 +75,13 @@ class CreateWindow
   string to_string()
   {
     return build_request
-      (sprintf("%4c%4c" "%2c%2c" "%2c%2c%2c" "%2c%4c" "%s",
+      (sprintf("%4c%4c" "%2c%2c" "%2c%2c%2c" "%2c%4c" "%4c%s",
 		      wid, parent,
 		      x, y,
 		      width, height, borderWidth,
 		      c_class, visual,
-		      build_value_list(attributes, _Xlib.window_attributes) ),
+		      @build_value_list(attributes,
+					_Xlib.window_attributes) ),
        depth);
   }
 }
@@ -96,8 +97,9 @@ class ChangeWindowAttributes
   string to_string()
   {
     return build_request
-      (sprintf("%4c%s", window,
-	       build_value_list(attributes, _Xlib.window_attributes)));
+      (sprintf("%4c%4c%s", window,
+	       @build_value_list(attributes,
+				 _Xlib.window_attributes)));
   }
 }
 
@@ -105,6 +107,23 @@ class MapWindow
 {
   inherit ResourceReq;
   constant type = 8;
+}
+
+class ConfigureWindow
+{
+  inherit request;
+  constant type = 12;
+
+  int window;
+  mapping attributes;
+
+  string to_string()
+  {
+    return build_request
+      (sprintf("%4c%2c\0\0%s", window,
+	       @build_value_list(attributes,
+				 _Xlib.window_configure_attributes)));
+  }
 }
 
 class CreateGC
@@ -118,8 +137,8 @@ class CreateGC
 
   string to_string()
   {
-    return build_request(sprintf("%4c%4c%s", gc, drawable,
-				 build_value_list(attributes,
+    return build_request(sprintf("%4c%4c%4c%s", gc, drawable,
+				 @build_value_list(attributes,
 						  _Xlib.gc_attributes)));
   }
 }
@@ -134,10 +153,33 @@ class ChangeGC
 
   string to_string()
   {
-    return build_request(sprintf("%4c%s", gc, 
-				 build_value_list(attributes,
+    return build_request(sprintf("%4c%4c%s", gc, 
+				 @build_value_list(attributes,
 						  _Xlib.gc_attributes)));
   }
+}
+
+class PolyPoint
+{
+  inherit request;
+  constant type = 64;
+
+  int coordMode;
+  int drawable;
+  int gc;
+  array(object) points;
+  
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%@s", drawable, gc,
+				 points->to_string()), coordMode);
+  }
+}
+
+class PolyLine
+{
+  inherit PolyPoint;
+  constant type = 65;
 }
 
 class FillPoly
