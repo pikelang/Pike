@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.54 2003/10/09 19:26:14 grubba Exp $
+// $Id: Readline.pike,v 1.55 2004/02/26 21:51:17 agehall Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -517,8 +517,12 @@ class InputController
 	string oldprefix = prefix;
 	prefix = "";
 	prefix = process_input(oldprefix);
-	infd->set_read_callback( read_cb );
-	infd->set_close_callback( close_cb );
+	if ((!infd->set_read_callback || !infd->set_close_callback) && infd->set_nonblocking)
+	  infd->set_nonblocking( read_cb, 0, close_cb );
+	else {
+	  infd->set_read_callback( read_cb );
+	  infd->set_close_callback( close_cb );
+	}
       }
       else
 	infd->set_blocking();
