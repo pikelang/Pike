@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.59 1999/08/17 01:05:56 mast Exp $");
+RCSID("$Id: operators.c,v 1.60 1999/10/01 20:45:06 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -838,7 +838,7 @@ static void speedup(INT32 args, void (*func)(void))
 {
   switch(sp[-args].type)
   {
-    case T_ARRAY:
+    /* This method can be used for types where a op b === b op a */
     case T_MULTISET:
     {
       int e=-1;
@@ -860,6 +860,10 @@ static void speedup(INT32 args, void (*func)(void))
       return;
     }
     
+    /* Binary balanced tree method for types where
+     * a op b may or may not be equal to b op a
+     */
+    case T_ARRAY:
     case T_MAPPING:
       r_speedup(args,func);
       return;
