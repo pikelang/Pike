@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.117 2001/06/08 14:26:41 mast Exp $");
+RCSID("$Id: mapping.c,v 1.118 2001/06/27 00:01:33 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1869,13 +1869,13 @@ void check_mapping(struct mapping *m)
     fatal("md->valrefs  < 0\n");
 
   if(md->hardlinks <0)
-    fatal("md->valrefs  < 0\n");
+    fatal("md->hardlinks  < 0\n");
 
   if(md->refs < md->valrefs+1)
     fatal("md->refs < md->valrefs+1\n");
 
   if(md->valrefs < md->hardlinks)
-    fatal("md->refs < md->valrefs+1\n");
+    fatal("md->valrefs < md->hardlinks\n");
 
   if(md->hashsize < 0)
     fatal("Assert: I don't think he's going to make it Jim.\n");
@@ -2166,7 +2166,6 @@ unsigned gc_touch_all_mappings(void)
     fatal("Error in mapping link list.\n");
   for (m = first_mapping; m; m = m->next) {
     debug_gc_touch(m);
-    debug_gc_touch(m->data);
     n++;
     if (m->next && m->next->prev != m)
       fatal("Error in mapping link list.\n");
