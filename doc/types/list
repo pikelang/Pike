@@ -11,25 +11,28 @@ DESCRIPTION
 	Here follows a list of operators that applies to lists:
 	In this list a and b is used to represent a list expression:
 
-	a + b  : summation ( (<1>) + (<2>) returns (<1,2>) )
-	a - b  : subtraction, returns a copy of a with all values that are
-                 present in b removed.
-        a & b  : intersection, return a list with all values that are
-                 present in both a & b.
-        a | b  : union, return a list with all values that are present in
-                 a or b, differs from summation in that values that are
-                 present in both a and b are only returned once.
-        a ^ b  : xor, return a list with all indices that are present in
-                 a or b but not in both.
-        a == b : returns 1 if a is the same list as b, same size and values
-                 is not enough.
-        a != b : returns 1 if a is the same list as b, same size and values
-                 is not enough.
-        ! a    : boolean not, returns 0
-	a[c]   : indexing, returns 1 c is present in the list a.
-	a[c]=d : setting, if d is true, c is added to the list if it is not
-		 present already. If d is false, it is removed if it is
-                 present.
+	a + b	summation ( (<1>) + (<2>) returns (<1,2>) )
+	a - b	subtraction, returns a copy of a with all values that are
+		present in b removed.
+	a & b	intersection, return a list with all values that are
+		present in both a & b.
+	a | b	union, return a list with all values that are present in
+		a or b, differs from summation in that values that are
+		present in both a and b are only returned once.
+	a ^ b	xor, return a list with all indices that are present in
+		a or b but not in both.
+	a == b	returns 1 if a is the same list as b, same size and values
+		is not enough.
+	a != b	returns 1 if a is the same list as b, same size and values
+		is not enough.
+	! a	boolean not, returns 0
+	a[c]	indexing, returns 1 c is present in the list a.
+	a[c]=d	setting, if d is true, c is added to the list if it is not
+		present already. If d is false, it is removed if it is
+		present.
+
+KEYWORDS
+	type
 
 SEE ALSO
 	mapping, array, builtin/indices, builtin/sizeof

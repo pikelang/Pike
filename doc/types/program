@@ -8,6 +8,9 @@ DESCRIPTION
 	arguments to clone() and the only operators that applies to programs
 	are == and !=.
 
+KEYWORDS
+	type
+
 SEE ALSO
 	object, function, builtin/compile_file, builtin/compile_string,
 	builtin/clone

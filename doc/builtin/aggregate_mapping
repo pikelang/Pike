@@ -4,7 +4,7 @@ NAME
 SYNTAX
 	mapping aggregate_mapping(mixed ... elems);
 	or
-	(< key1:val1, key2:val2, ... >)
+	([ key1:val1, key2:val2, ... ])
 
 DESCRIPTION
 	Groups the arguments together two and two to key-index pairs and

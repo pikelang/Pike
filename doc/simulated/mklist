@@ -15,5 +15,8 @@ EXAMPLE
 	    3
 	>)
 
+KEYWORDS
+	list
+
 SEE ALSO
 	builtin/aggregate_list

@@ -7,3 +7,6 @@ SYNTAX
 DESCRIPTION
 	Returns the index of the first occurence of item in array arr.
 	If not found, then -1 is returned.
+
+KEYWORDS
+	array

@@ -13,5 +13,8 @@ DESCRIPTION
 	first call that returned true instead or returning an array of the
 	returned values. If no call returns true, -1 is returned.
 
+KEYWORDS
+	array
+
 SEE ALSO
 	sum_arrays, filter_array, member_array

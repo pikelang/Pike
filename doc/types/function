@@ -13,6 +13,9 @@ DESCRIPTION
 	become 0. If you try to call a functionpointer that has is 0 then 0
 	will be returned.
 
+KEYWORDS
+	type
+
 SEE ALSO
 	object, builtin/call_function, builtin/functionp,
 	builtin/function_object, builtin/function_name

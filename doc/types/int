@@ -14,23 +14,26 @@ DESCRIPTION
 
 	In this list a and b is used to represent an integer expression:
 
-	a + b  : summation
-	a - b  : subtraction
-	a * b  : multiplication
-	a / b  : integer division
-	a % b  : modulo ( same thing as  a - ( a / b ) * b )
-	a | b  : bitwise or
-	a & b  : bitwise and
-	a ^ b  : bitwise xor
-	! a    : boolean not, returns 1 if a is zero 0 otherwise
-	~ a    : bitwise complement
-	- a    : negation
-	a == b : return 1 if a is equal to b, 0 otherwise
-	a != b : return 0 if a is equal to b, 1 otherwise
-	a < b  : returns 1 if a is lesser than b, 0 otherwise
-	a <= b : returns 1 if a is lesser or equal to b, 0 otherwise
-	a > b  : returns 1 if a is greater than b, 0 otherwise
-	a >= b : returns 1 if a is greater or equal to b, 0 otherwise
+	a + b	summation
+	a - b	subtraction
+	a * b	multiplication
+	a / b	integer division
+	a % b	modulo ( same thing as  a - ( a / b ) * b )
+	a | b	bitwise or
+	a & b	bitwise and
+	a ^ b	bitwise xor
+	! a	boolean not, returns 1 if a is zero 0 otherwise
+	~ a	bitwise complement
+	- a	negation
+	a == b	return 1 if a is equal to b, 0 otherwise
+	a != b	return 0 if a is equal to b, 1 otherwise
+	a < b	returns 1 if a is lesser than b, 0 otherwise
+	a <= b	returns 1 if a is lesser or equal to b, 0 otherwise
+	a > b	returns 1 if a is greater than b, 0 otherwise
+	a >= b	returns 1 if a is greater or equal to b, 0 otherwise
+
+KEYWORDS
+	type
 
 SEE ALSO
 	float	

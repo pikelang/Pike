@@ -9,5 +9,8 @@ DESCRIPTION
 	does not exist, or that it is not readable by you. Size -2
 	indicates that it is a directory.
 
+KEYWORDS
+	file
+
 SEE ALSO
 	write_file, read_bytes

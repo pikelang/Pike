@@ -17,18 +17,22 @@ DESCRIPTION
 	A list of operators that applies to strings follow:
 	In this list a and b is used to represent a string expression:
 
-	a + b  : summation ( "a"+"b" returns "ab")
-	a - b  : subtraction ( same as replace(a,b,"") )
-	a / b  : division ( same thing as explode(a,b) )
-	! a    : boolean not, returns 0
+	a + b	summation ( "a"+"b" returns "ab")
+	a - b	subtraction ( same as replace(a,b,"") )
+	a / b	division ( same thing as explode(a,b) )
+	! a	boolean not, returns 0
 
-	The following operators compare two string alphabetically:	
-	a == b : return 1 if a is equal to b, 0 otherwise
-	a != b : return 0 if a is equal to b, 1 otherwise
-	a < b  : returns 1 if a is lesser than b, 0 otherwise
-	a <= b : returns 1 if a is lesser or equal to b, 0 otherwise
-	a > b  : returns 1 if a is greater than b, 0 otherwise
-	a >= b : returns 1 if a is greater or equal to b, 0 otherwise
+	The following operators compare two string alphabetically:
+
+	a == b	return 1 if a is equal to b, 0 otherwise
+	a != b	return 0 if a is equal to b, 1 otherwise
+	a < b	returns 1 if a is lesser than b, 0 otherwise
+	a <= b	returns 1 if a is lesser or equal to b, 0 otherwise
+	a > b	returns 1 if a is greater than b, 0 otherwise
+	a >= b	returns 1 if a is greater or equal to b, 0 otherwise
+
+KEYWORDS
+	type
 
 SEE ALSO
 	builtin/indices, builtin/values, builtin/sscanf, builtin/sprintf,

@@ -21,5 +21,8 @@ DESCRIPTION
 	Map array calls the functions in the array arr:
 	arr[x]=arr[x]->fun(@ args);
 
+KEYWORDS
+	array
+
 SEE ALSO
 	sum_arrays, filter_array

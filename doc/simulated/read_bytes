@@ -8,6 +8,9 @@ DESCRIPTION
 	Read len number of bytes from file file staring at byte start and
 	return it as a string.
 
+KEYWORDS
+	file
+
 SEE ALSO
 	write_file
 

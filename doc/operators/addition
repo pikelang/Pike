@@ -15,8 +15,8 @@ DESCRIPTION
 	the number is converted to a printable string first.
 
 EXAMPLES
-	"a"+10		returns "a10"
-	10+20		returns 30
+	"a"+10  	returns "a10"
+	10+20   	returns 30
 	({1})+({2})	returns ({1,2})
 	(<1>)+(<1>)	returns (<1,1>)
 

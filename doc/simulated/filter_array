@@ -21,5 +21,8 @@ DESCRIPTION
 	Filter array calls all functionpointers in the array arr, and
 	return all that returned true.
 
+KEYWORDS
+	array
+
 SEE ALSO
 	sum_arrays, map_array

@@ -9,13 +9,17 @@ DESCRIPTION
 	separated by "%d,%s,%c and %f. Every % corresponds to one of var1,
 	var2...
 
-	%d gives an integer
-	%f gives a float
-	%c matches one char but returns an integer
-	%s gives a string
-	%[set] matches a string containing a given set of characters.
-	 (thos given inside the brackets) %[^set] means any character
-	 ecept those inside brackets. %[0-9H] means any number or 'H'.
+	%d	gives an integer
+	%o	gives an octal integer
+	%x	gives a hexadecimal integer
+	%D	gives an integer that is either octal (leading zero),
+		hexadecimal (leading 0x) or decimal.
+	%f	gives a float
+	%c	matches one char and returns it as an integer
+	%s	gives a string
+	%[set]	matches a string containing a given set of characters.
+		(thos given inside the brackets) %[^set] means any character
+		ecept those inside brackets. %[0-9H] means any number or 'H'.
 
 	If a * is put between the percent and the operator, the operator
 	will not only match it's argument, not assign any variables.

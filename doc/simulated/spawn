@@ -17,6 +17,6 @@ DESCRIPTION
 	should go.
 
 SEE ALSO
-	popen, files/fork, files/exec, files/files->pipe,
-	files/files->dup2
+	popen, files/fork, files/exec, files/file->pipe,
+	files/file->dup2
 

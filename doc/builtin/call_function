@@ -12,5 +12,8 @@ DESCRIPTION
 	you will never have to write call_function(), because you will use the
 	second syntax instead.
 
+KEYWORDS
+	function
+
 SEE ALSO
 	backtrace, get_function

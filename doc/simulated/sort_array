@@ -11,5 +11,8 @@ DESCRIPTION
 	sent as 3rd, 4th etc. argument to fun. If fun is omitted, < is unsed
 	instead.
 
+KEYWORDS
+	array
+
 SEE ALSO
 	map_array, filter_array

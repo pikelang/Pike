@@ -6,3 +6,6 @@ SYNTAX
 
 DESCRIPTION
 	Defined as: return o[name];
+
+KEYWORDS
+	function

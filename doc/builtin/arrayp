@@ -11,5 +11,5 @@ KEYWORDS
 	array
 
 SEE ALSO
-	allocate, intp, programp, floatp, stringp, objectp, regexpp,
-	mappingp, listp, functionp
+	allocate, intp, programp, floatp, stringp, objectp, mappingp,
+	listp, functionp

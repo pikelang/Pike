@@ -8,5 +8,8 @@ DESCRIPTION
 	Convert the first character in str to upper case, and return the
 	new string.
 
+KEYWORDS
+	string
+
 SEE ALSO
 	builtin/lower_case, builtin/upper_case

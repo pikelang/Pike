@@ -8,5 +8,8 @@ DESCRIPTION
 	Return the position of str2 in str1, if str2 can't be found in str1
 	-1 is returned.
 
+KEYWORDS
+	string
+
 SEE ALSO
 	builtin/sscanf, builtin/explode
