@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.89 1998/11/22 11:03:17 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.90 1998/11/23 00:06:15 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -58,6 +58,22 @@ RCSID("$Id: signal_handler.c,v 1.89 1998/11/22 11:03:17 hubbe Exp $");
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#ifdef __amigaos__
+#define timeval amigaos_timeval
+#include <exec/types.h>
+#include <dos/dos.h>
+#include <dos/dostags.h>
+#include <dos/exall.h>
+#include <clib/dos_protos.h>
+#include <inline/dos.h>
+#undef timeval
+#endif
+
 
 #ifdef NSIG
 #define MAX_SIGNALS NSIG
@@ -623,6 +639,61 @@ static void f_pid_status_pid(INT32 args)
   push_int(THIS->pid);
 }
 
+#ifdef __amigaos__
+
+extern struct DosLibrary *DOSBase;
+
+static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
+{
+  char buf[32];
+  long ext;
+  struct svalue *tmp;
+  BPTR b;
+
+  if((tmp=simple_mapping_string_lookup(optional, name)))
+  {
+    if(tmp->type == T_OBJECT)
+    {
+      fd = fd_from_object(tmp->u.object);
+
+      if(fd == -1)
+	error("File for %s is not open.\n",name);
+    }
+  }
+
+  if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
+    error("File for %s can not be externalized.\n", name);
+  
+  sprintf(buf, "IXPIPE:%lx", ext);
+
+  /* It's a kind of magic... */
+  if((b = Open(buf, 0x4242)) == 0)
+    error("File for %s can not be internalized.\n", name);
+
+  return b;
+}
+
+struct perishables
+{
+  BPTR stdin_b;
+  BPTR stdout_b;
+  BPTR stderr_b;
+  BPTR cwd_lock;
+  dynamic_buffer cmd_buf;
+};
+
+static void free_perishables(struct perishables *storage)
+{
+  if(storage->stdin_b!=0) Close(storage->stdin_b);
+  if(storage->stdout_b!=0) Close(storage->stdout_b);
+  if(storage->stderr_b!=0) Close(storage->stderr_b);
+  if(storage->cwd_lock!=0)
+    UnLock(storage->cwd_lock);
+  low_free_buf(&storage->cmd_buf);
+}
+
+#else /* !__amigaos__ */
+
 #ifdef __NT__
 
 static HANDLE get_inheritable_handle(struct mapping *optional,
@@ -733,6 +804,8 @@ static void free_perishables(struct perishables *storage)
   
 #endif
 }
+
+#endif
 
 #endif
 
@@ -942,6 +1015,81 @@ void f_create_process(INT32 args)
     }
   }
 #else /* !__NT__ */
+#ifdef __amigaos__
+  {
+    ONERROR err;
+    struct perishables storage;
+    int d, e;
+
+    storage.stdin_b = storage.stdout_b = storage.stderr_b = 0;
+    storage.cwd_lock = 0;
+    initialize_buf(&storage.cmd_buf);
+
+    SET_ONERROR(err, free_perishables, &storage);
+
+    for(e=0;e<cmd->size;e++)
+    {
+      if(e)
+        low_my_putchar(' ', &storage.cmd_buf);
+      if(STRCHR(STR0(ITEM(cmd)[e].u.string),'"') || STRCHR(STR0(ITEM(cmd)[e].u.string),' ')) {
+        low_my_putchar('"', &storage.cmd_buf);
+	for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
+	{
+	  switch(STR0(ITEM(cmd)[e].u.string)[d])
+	  {
+	    case '*':
+	    case '"':
+	      low_my_putchar('*', &storage.cmd_buf);
+            default:
+	      low_my_putchar(STR0(ITEM(cmd)[e].u.string)[d], &storage.cmd_buf);
+	  }
+	}
+        low_my_putchar('"', &storage.cmd_buf);	
+      } else
+        low_my_binary_strcat(STR0(ITEM(cmd)[e].u.string),
+			     ITEM(cmd)[e].u.string->len,
+			     &storage.cmd_buf);
+    }
+    low_my_putchar('\0', &storage.cmd_buf);
+
+    if((tmp=simple_mapping_string_lookup(optional, "cwd")))
+      if(tmp->type == T_STRING)
+        if((storage.cwd_lock=Lock((char *)STR0(tmp->u.string), ACCESS_READ))==0)
+	  error("Failed to lock cwd \"%s\".\n", STR0(tmp->u.string));
+
+    storage.stdin_b = get_amigados_handle(optional, "stdin", 0);
+    storage.stdout_b = get_amigados_handle(optional, "stdout", 1);
+    storage.stderr_b = get_amigados_handle(optional, "stderr", 2);
+
+#ifdef PROC_DEBUG
+    fprintf(stderr, "SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
+	storage.cmd_buf.s.str, storage.stdin_b, storage.stdout_b, storage.stderr_b,
+	(storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
+	storage.cwd_lock);
+#endif /* PROC_DEBUG */
+
+    if(SystemTags(storage.cmd_buf.s.str, SYS_Asynch, TRUE,
+		  NP_Input, storage.stdin_b, NP_Output, storage.stdout_b,
+		  NP_Error, storage.stderr_b,
+	          (storage.cwd_lock!=0? NP_CurrentDir:TAG_IGNORE),
+		  storage.cwd_lock, TAG_END))
+      error("Failed to start process (%ld).\n", IoErr());
+
+    UNSET_ONERROR(err);
+
+    /*
+
+     * Ideally, these resources should be freed here.
+     * But that would cause dos.library to go nutzoid, so
+     * we better not...
+
+      if(storage.cwd_lock!=0)
+        UnLock(storage.cwd_lock);
+      low_free_buf(&storage.cmd_buf);
+
+    */
+  }
+#else /* !__amigaos__ */
   {
     struct svalue *stack_save=sp;
     ONERROR err;
@@ -1497,6 +1645,7 @@ void f_create_process(INT32 args)
       exit(69);
     }
   }
+#endif /* __amigaos__ */
 #endif /* __NT__ */
   pop_n_elems(args);
   push_int(0);
