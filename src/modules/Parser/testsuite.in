@@ -299,6 +299,54 @@ test_parser([[{
       "0|0|0|f/o 0|0|0|fo/ 0|0|0|fo/"
       WIDENER));
 
+// Result reparsing
+test_parser([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->add_tag ("t", "T");
+  p->add_container ("c", "C");
+  p->add_entity ("e", "E");
+  p->add_quote_tag ("q", "Q", "q");
+  return p->finish ("a<t>b<c>c</c>d&e;e<qfq>" WIDENER)->read();
+}]], "[a]T[b]C[d]E[e]Q[" WIDENER "]");
+test_parser([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->reparse_strings (1);
+  p->add_tag ("t", "T");
+  p->add_container ("c", "C");
+  p->add_entity ("e", "E");
+  p->add_quote_tag ("q", "Q", "q");
+  return p->finish ("a<t>b<c>c</c>d&e;e<qfq>" WIDENER)->read();
+}]], "[a][Tb][Cd][Ee][Q" WIDENER "]");
+test_parser([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->add_tag ("t", lambda () {return "T";});
+  p->add_container ("c", lambda () {return "C";});
+  p->add_entity ("e", lambda () {return "E";});
+  p->add_quote_tag ("q", lambda () {return "Q";}, "q");
+  return p->finish ("a<t>b<c>c</c>d&e;e<qfq>" WIDENER)->read();
+}]], "[a][Tb][Cd][Ee][Q" WIDENER "]");
+test_parser([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->add_tag ("t", lambda () {return ({"T"});});
+  p->add_container ("c", lambda () {return ({"C"});});
+  p->add_entity ("e", lambda () {return ({"E"});});
+  p->add_quote_tag ("q", lambda () {return ({"Q"});}, "q");
+  return p->finish ("a<t>b<c>c</c>d&e;e<qfq>" WIDENER)->read();
+}]], "[a]T[b]C[d]E[e]Q[" WIDENER "]");
+test_parser([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->add_tag ("t", lambda () {return 0;});
+  p->add_container ("c", lambda () {return 0;});
+  p->add_entity ("e", lambda () {return 0;});
+  p->add_quote_tag ("q", lambda () {return 0;}, "q");
+  return p->finish ("a<t>b<c>c</c>d&e;e<qfq>" WIDENER)->read();
+}]], "[a]<t>[b]<c>[c]</c>[d]&e;[e]<qfq>[" WIDENER "]");
+
 // Local feeds
 test_parser([[
   object p = Parser.HTML();
