@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.74 1998/04/06 04:17:25 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.75 1998/04/10 18:06:05 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1282,7 +1282,8 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_FOREACH) /* array, lvalue , i */
       {
-	if(sp[-4].type != T_ARRAY) error("Bad argument 1 to foreach()\n");
+	if(sp[-4].type != T_ARRAY)
+	  ERROR("foreach", "Bad argument 1.\n", sp-3, 1);
 	if(sp[-1].u.integer < sp[-4].u.array->size)
 	{
 	  fast_check_threads_etc(10);
@@ -1422,7 +1423,8 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_ADD_NEG_INT); push_int(-GET_ARG()); f_add(2); break;
 
       CASE(F_PUSH_ARRAY);
-      if(sp[-1].type!=T_ARRAY) error("Bad argument to @\n");
+      if(sp[-1].type!=T_ARRAY)
+	ERROR("@", "Bad argument.\n", sp, 1);
       sp--;
       push_array_items(sp->u.array);
       break;
@@ -1541,7 +1543,7 @@ static int eval_instruction(unsigned char *pc)
     {
       INT32 args=sp - *--mark_sp;
       if(!args)
-	error("Too few arguments to call_function()\n");
+	ERROR("`()", "Too few arguments.\n", sp, 0);
       switch(sp[-args].type)
       {
 	case T_INT:
@@ -1549,7 +1551,7 @@ static int eval_instruction(unsigned char *pc)
 	case T_FLOAT:
 	case T_MAPPING:
 	case T_MULTISET:
-	  error("Attempting to call a non-function value (%s).\n",get_name_of_type(sp[-args].type));
+	  ERROR("`()", "Attempt to call a non-function value.\n", sp, args);
       }
       return args;
     }
@@ -1628,8 +1630,8 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   {
   case APPLY_STACK:
   apply_stack:
-  if(!args)
-    error("Too few arguments to `()\n");
+    if(!args)
+      ERROR("`()", "Too few arguments.\n", sp, 0);
     args--;
     if(sp-save_sp-args > (args<<2) + 32)
     {
@@ -1649,7 +1651,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
     case T_INT:
       if (!s->u.integer) {
-	error("Attempt to call the NULL-value\n");
+	ERROR("0", "Attempt to call the NULL-value\n", sp, args);
       } else {
 	error("Attempt to call the value %d\n", s->u.integer);
       }
@@ -1663,7 +1665,8 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     case T_MAPPING:
       error("Attempt to call a mapping\n");
     default:
-      error("Call to non-function value type:%d.\n", s->type);
+      error("Call to non-function value type:%s.\n",
+	    get_name_of_type(s->type));
       
     case T_FUNCTION:
       if(s->subtype == FUNCTION_BUILTIN)
@@ -1723,7 +1726,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       fatal("Apply lfun on illegal value!\n");
 #endif
     if(!o->prog)
-      error("Apply on destructed object.\n");
+      ERROR("destructed object", "Apply on destructed object.\n", sp, args);
     fun=FIND_LFUN(o->prog,fun);
     goto apply_low;
   
@@ -1756,7 +1759,8 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
       p=o->prog;
       if(!p)
-	error("Cannot call functions in destructed objects.\n");
+	ERROR("destructed object->function",
+	      "Cannot call functions in destructed objects.\n", sp, args);
 #ifdef DEBUG
       if(fun>=(int)p->num_identifier_references)
 	fatal("Function index out of range.\n");
@@ -1802,7 +1806,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       fp = &new_frame;
       
       if(function->func.offset == -1)
-	error("Calling undefined function '%s'.\n",function->name->str);
+	ERROR(function->name->str, "Calling undefined function.\n", sp, args);
       
       tailrecurse=-1;
       switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
@@ -2069,7 +2073,7 @@ void apply_lfun(struct object *o, int fun, int args)
     fatal("Apply lfun on illegal value!\n");
 #endif
   if(!o->prog)
-    error("Apply on destructed object.\n");
+    ERROR("destructed object", "Apply on destructed object.\n", sp, args);
 
   apply_low(o, (int)FIND_LFUN(o->prog,fun), args);
 }
