@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.74 2000/06/24 00:48:13 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.75 2000/07/07 01:28:57 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -273,7 +273,7 @@ static int do_docode2(node *n,int flags)
 
   /* Stack check */
   {
-    long x_= ((char *)&x_) + STACK_DIRECTION * (32768) - stack_top ;
+    long x_= ((char *)&x_) + STACK_DIRECTION * (32768) - Pike_interpreter.stack_top ;
     x_*=STACK_DIRECTION;						
     if(x_>0)
     {
@@ -879,7 +879,7 @@ static int do_docode2(node *n,int flags)
     INT32 break_save = current_break;
     struct pike_string *prev_switch_type = current_switch_type;
 #ifdef PIKE_DEBUG
-    struct svalue *save_sp=sp;
+    struct svalue *save_sp=Pike_sp;
 #endif
 
     if(do_docode(CAR(n),0)!=1)
@@ -913,12 +913,12 @@ static int do_docode2(node *n,int flags)
     DO_CODE_BLOCK(CDR(n));
     
 #ifdef PIKE_DEBUG
-    if(sp-save_sp != cases)
+    if(Pike_sp-save_sp != cases)
       fatal("Count cases is wrong!\n");
 #endif
 
     f_aggregate(cases);
-    order=get_switch_order(sp[-1].u.array);
+    order=get_switch_order(Pike_sp[-1].u.array);
 
     if (!Pike_compiler->num_parse_error) {
       /* Check for cases inside a range */
@@ -945,7 +945,7 @@ static int do_docode2(node *n,int flags)
       if(current_switch_jumptable[e]==-1)
 	current_switch_jumptable[e]=current_switch_default;
 
-    order_array(sp[-1].u.array,order);
+    order_array(Pike_sp[-1].u.array,order);
 
     reorder((void *)(current_switch_jumptable+2),cases,sizeof(INT32)*2,order);
     free((char *)order);
@@ -953,7 +953,7 @@ static int do_docode2(node *n,int flags)
     for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch_jumptable[e]);
 
-    update_arg(tmp1, store_constant(sp-1,1,0));
+    update_arg(tmp1, store_constant(Pike_sp-1,1,0));
 
     pop_stack();
     free((char *)jumptable);
@@ -969,7 +969,7 @@ static int do_docode2(node *n,int flags)
 
     current_break=break_save;
 #ifdef PIKE_DEBUG
-    if(recoveries && sp-evaluator_stack < recoveries->sp)
+    if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
       fatal("Stack error after F_SWITCH (underflow)\n");
 #endif
     return 0;
@@ -1010,7 +1010,7 @@ static int do_docode2(node *n,int flags)
 	pop_n_elems(tmp1-1);
 	current_switch_values_on_stack++;
 	for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
-	  if(is_equal(sp-tmp1, sp-1))
+	  if(is_equal(Pike_sp-tmp1, Pike_sp-1))
 	    yyerror("Duplicate case.");
       } else {
 	push_int(0);
@@ -1044,7 +1044,7 @@ static int do_docode2(node *n,int flags)
 	    pop_n_elems(tmp1-1);
 	    current_switch_values_on_stack++;
 	    for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
-	      if(is_equal(sp-tmp1, sp-1))
+	      if(is_equal(Pike_sp-tmp1, Pike_sp-1))
 		yyerror("Duplicate case.");
 	  } else {
 	    push_int(0);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.156 2000/07/07 00:54:54 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.157 2000/07/07 01:24:14 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -71,17 +71,17 @@ int mark_stack_malloced = 0;
 
 void push_sp_mark(void)
 {
-  if(Pike_interpreter.mark_sp == Pike_interpreter.mark_stack + stack_size)
+  if(Pike_mark_sp == Pike_interpreter.mark_stack + stack_size)
     error("No more mark stack!\n");
-  *Pike_interpreter.mark_sp++=Pike_sp;
+  *Pike_mark_sp++=Pike_sp;
 }
 int pop_sp_mark(void)
 {
 #ifdef PIKE_DEBUG
-  if(Pike_interpreter.mark_sp < Pike_interpreter.mark_stack)
+  if(Pike_mark_sp < Pike_interpreter.mark_stack)
     fatal("Mark stack underflow!\n");
 #endif
-  return Pike_sp - *--Pike_interpreter.mark_sp;
+  return Pike_sp - *--Pike_mark_sp;
 }
 
 
@@ -167,7 +167,7 @@ use_malloc:
   }
 
   Pike_sp=Pike_interpreter.evaluator_stack;
-  Pike_interpreter.mark_sp=Pike_interpreter.mark_stack;
+  Pike_mark_sp=Pike_interpreter.mark_stack;
   Pike_fp=0;
 
 #ifdef PIKE_DEBUG
@@ -1086,11 +1086,11 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	check_threads_etc();
 
 	{
-	  struct svalue **save_mark_sp=Pike_interpreter.mark_sp;
+	  struct svalue **save_mark_sp=Pike_mark_sp;
 	  tailrecurse=eval_instruction(pc);
-	  Pike_interpreter.mark_sp=save_mark_sp;
+	  Pike_mark_sp=save_mark_sp;
 #ifdef PIKE_DEBUG
-	  if(Pike_interpreter.mark_sp < save_mark_sp)
+	  if(Pike_mark_sp < save_mark_sp)
 	    fatal("Popped below save_mark_sp!\n");
 #endif
 	}
@@ -1213,15 +1213,15 @@ static int o_catch(unsigned char *pc)
     Pike_fp->expendible=expendible;
     return 0;
   }else{
-    struct svalue **save_mark_sp=Pike_interpreter.mark_sp;
+    struct svalue **save_mark_sp=Pike_mark_sp;
     int x;
     Pike_fp->expendible=Pike_fp->locals + Pike_fp->num_locals;
     x=eval_instruction(pc);
 #ifdef PIKE_DEBUG
-    if(Pike_interpreter.mark_sp < save_mark_sp)
+    if(Pike_mark_sp < save_mark_sp)
       fatal("mark Pike_sp underflow in catch.\n");
 #endif
-    Pike_interpreter.mark_sp=save_mark_sp;
+    Pike_mark_sp=save_mark_sp;
     Pike_fp->expendible=expendible;
     if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
     UNSETJMP(tmp);
@@ -1261,9 +1261,9 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   {
     ret=1;
   }else{
-    struct svalue **save_mark_sp=Pike_interpreter.mark_sp;
+    struct svalue **save_mark_sp=Pike_mark_sp;
     int tmp=eval_instruction(o->prog->program + offset);
-    Pike_interpreter.mark_sp=save_mark_sp;
+    Pike_mark_sp=save_mark_sp;
     if(tmp!=-1) mega_apply(APPLY_STACK, tmp, 0,0);
     
 #ifdef PIKE_DEBUG
@@ -1398,16 +1398,16 @@ void slow_check_stack(void)
 	  "(%d entries on stack, stack_size is %d entries)\n",
 	  Pike_sp-Pike_interpreter.evaluator_stack,stack_size);
 
-  if(Pike_interpreter.mark_sp > &(Pike_interpreter.mark_stack[stack_size]))
+  if(Pike_mark_sp > &(Pike_interpreter.mark_stack[stack_size]))
     fatal("Mark stack overflow.\n");
 
-  if(Pike_interpreter.mark_sp < Pike_interpreter.mark_stack)
+  if(Pike_mark_sp < Pike_interpreter.mark_stack)
     fatal("Mark stack underflow.\n");
 
   for(s=Pike_interpreter.evaluator_stack;s<Pike_sp;s++) check_svalue(s);
 
   s=Pike_interpreter.evaluator_stack;
-  for(m=Pike_interpreter.mark_stack;m<Pike_interpreter.mark_sp;m++)
+  for(m=Pike_interpreter.mark_stack;m<Pike_mark_sp;m++)
   {
     if(*m < s)
       fatal("Mark stack failure.\n");

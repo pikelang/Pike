@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.75 2000/07/06 23:25:25 mast Exp $");
+RCSID("$Id: array.c,v 1.76 2000/07/07 01:26:39 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -187,11 +187,11 @@ void simple_array_index_no_free(struct svalue *s,
     {
       check_stack(4);
       ref_push_array(a);
-      assign_svalue_no_free(sp++,ind);
+      assign_svalue_no_free(Pike_sp++,ind);
       f_column(2);
-      s[0]=sp[-1];
-      sp--;
-      dmalloc_touch_svalue(sp);
+      s[0]=Pike_sp[-1];
+      Pike_sp--;
+      dmalloc_touch_svalue(Pike_sp);
       break;
     }
 	
@@ -258,11 +258,11 @@ void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
     {
       INT32 i, n;
       check_stack(2);
-      sp++->type = T_VOID;
+      Pike_sp++->type = T_VOID;
       push_svalue(ind);
       for (i = 0, n = a->size; i < n; i++) {
-	assign_svalue(sp-2, &a->item[i]);
-	assign_lvalue(sp-2, s);
+	assign_svalue(Pike_sp-2, &a->item[i]);
+	assign_lvalue(Pike_sp-2, s);
       }
       pop_n_elems(2);
       break;
@@ -1455,13 +1455,13 @@ void push_array_items(struct array *a)
   check_array_for_destruct(a);
   if(a->refs == 1)
   {
-    MEMCPY(sp,ITEM(a),sizeof(struct svalue)*a->size);
-    sp += a->size;
+    MEMCPY(Pike_sp,ITEM(a),sizeof(struct svalue)*a->size);
+    Pike_sp += a->size;
     a->size=0;
     free_array(a);
   }else{
-    assign_svalues_no_free(sp, ITEM(a), a->size, a->type_field);
-    sp += a->size;
+    assign_svalues_no_free(Pike_sp, ITEM(a), a->size, a->type_field);
+    Pike_sp += a->size;
     free_array(a);
   }
 }
@@ -1536,10 +1536,10 @@ struct array *aggregate_array(INT32 args)
   struct array *a;
 
   a=allocate_array_no_init(args,0);
-  MEMCPY((char *)ITEM(a),(char *)(sp-args),args*sizeof(struct svalue));
+  MEMCPY((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
   a->type_field=BIT_MIXED;
-  sp-=args;
-  DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(sp + args));
+  Pike_sp-=args;
+  DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));
   return a;
 }
 
@@ -1705,14 +1705,14 @@ void apply_array(struct array *a, INT32 args)
   struct array *ret;
   INT32 argp;
 
-  argp=sp-args - evaluator_stack;
+  argp=Pike_sp-args - Pike_interpreter.evaluator_stack;
 
   check_stack(a->size + args + 1);
   check_array_for_destruct(a);
   for(e=0;e<a->size;e++)
   {
-    assign_svalues_no_free(sp,evaluator_stack+argp,args,BIT_MIXED);
-    sp+=args;
+    assign_svalues_no_free(Pike_sp,Pike_interpreter.evaluator_stack+argp,args,BIT_MIXED);
+    Pike_sp+=args;
     apply_svalue(ITEM(a)+e,args);
   }
   ret=aggregate_array(a->size);

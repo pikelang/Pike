@@ -20,20 +20,19 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.51 2000/05/25 02:18:35 hubbe Exp $");
+RCSID("$Id: error.c,v 1.52 2000/07/07 01:24:14 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
-JMP_BUF *recoveries=0;
 
 #ifdef PIKE_DEBUG
 void check_recovery_context(void)
 {
   char foo;
-#define TESTILITEST ((((char *)recoveries)-((char *)&foo))*STACK_DIRECTION)
-  if(recoveries && TESTILITEST > 0)
-    fatal("Recoveries is out biking (recoveries=%p, sp=%p, %d)!\n",recoveries, &foo,TESTILITEST);
+#define TESTILITEST ((((char *)Pike_interpreter.recoveries)-((char *)&foo))*STACK_DIRECTION)
+  if(Pike_interpreter.recoveries && TESTILITEST > 0)
+    fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %d)!\n",Pike_interpreter.recoveries, &foo,TESTILITEST);
 
   /* Add more stuff here when required */
 }
@@ -51,57 +50,57 @@ JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
   r->file=file;
   OED_FPRINTF((stderr, "init_recovery(%p) %s:%d\n", r, file, line));
 #endif
-  r->fp=fp;
-  r->sp=sp-evaluator_stack;
-  r->mark_sp=mark_sp - mark_stack;
-  r->previous=recoveries;
+  r->frame_pointer=Pike_fp;
+  r->stack_pointer=Pike_sp-Pike_interpreter.evaluator_stack;
+  r->mark_sp=Pike_mark_sp - Pike_interpreter.mark_stack;
+  r->previous=Pike_interpreter.recoveries;
   r->onerror=0;
   r->severity=THROW_ERROR;
-  recoveries=r;
+  Pike_interpreter.recoveries=r;
   check_recovery_context();
   return r;
 }
 
 void pike_throw(void) ATTRIBUTE((noreturn))
 {
-  while(recoveries && throw_severity > recoveries->severity)
+  while(Pike_interpreter.recoveries && throw_severity > Pike_interpreter.recoveries->severity)
   {
-    while(recoveries->onerror)
+    while(Pike_interpreter.recoveries->onerror)
     {
-      (*recoveries->onerror->func)(recoveries->onerror->arg);
-      recoveries->onerror=recoveries->onerror->previous;
+      (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
+      Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
     }
     
-    recoveries=recoveries->previous;
+    Pike_interpreter.recoveries=Pike_interpreter.recoveries->previous;
   }
 
-  if(!recoveries)
+  if(!Pike_interpreter.recoveries)
     fatal("No error recovery context.\n");
 
 #ifdef PIKE_DEBUG
-  if(sp - evaluator_stack < recoveries->sp)
+  if(Pike_sp - Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
     fatal("Stack error in error.\n");
 #endif
 
-  while(fp != recoveries->fp)
+  while(Pike_fp != Pike_interpreter.recoveries->frame_pointer)
   {
 #ifdef PIKE_DEBUG
-    if(!fp)
+    if(!Pike_fp)
       fatal("Popped out of stack frames.\n");
 #endif
     POP_PIKE_FRAME();
   }
 
-  pop_n_elems(sp - evaluator_stack - recoveries->sp);
-  mark_sp = mark_stack + recoveries->mark_sp;
+  pop_n_elems(Pike_sp - Pike_interpreter.evaluator_stack - Pike_interpreter.recoveries->stack_pointer);
+  Pike_mark_sp = Pike_interpreter.mark_stack + Pike_interpreter.recoveries->mark_sp;
 
-  while(recoveries->onerror)
+  while(Pike_interpreter.recoveries->onerror)
   {
-    (*recoveries->onerror->func)(recoveries->onerror->arg);
-    recoveries->onerror=recoveries->onerror->previous;
+    (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
+    Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
   }
 
-  longjmp(recoveries->recovery,1);
+  longjmp(Pike_interpreter.recoveries->recovery,1);
 }
 
 void push_error(char *description)
@@ -119,7 +118,7 @@ void low_error(char *buf) ATTRIBUTE((noreturn))
 {
   push_error(buf);
   free_svalue(& throw_value);
-  throw_value = *--sp;
+  throw_value = *--Pike_sp;
   throw_severity = THROW_ERROR;
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
@@ -147,7 +146,7 @@ void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
   VSPRINTF(buf, fmt, args);
 #endif /* HAVE_VSNPRINTF */
 
-  if(!recoveries)
+  if(!Pike_interpreter.recoveries)
   {
 #ifdef PIKE_DEBUG
     dump_backlog();
@@ -179,7 +178,7 @@ void new_error(const char *name, const char *text, struct svalue *oldsp,
 
   in_error=text;
 
-  if(!recoveries)
+  if(!Pike_interpreter.recoveries)
   {
 #ifdef PIKE_DEBUG
     dump_backlog();
@@ -216,7 +215,7 @@ void new_error(const char *name, const char *text, struct svalue *oldsp,
   f_aggregate(2);
 
   free_svalue(& throw_value);
-  throw_value = *--sp;
+  throw_value = *--Pike_sp;
   throw_severity=THROW_ERROR;
 
   in_error=0;
@@ -295,13 +294,13 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
   (void)VFPRINTF(stderr, fmt, args);
 
   d_flag=t_flag=0;
-  if(Pike_sp && evaluator_stack)
+  if(Pike_sp && Pike_interpreter.evaluator_stack)
   {
     fprintf(stderr,"Attempting to dump backlog (may fail)...\n");
     push_error("Backtrace at time of fatal:\n");
     APPLY_MASTER("describe_backtrace",1);
-    if(sp[-1].type==T_STRING)
-      write_to_stderr(sp[-1].u.string->str, sp[-1].u.string->len);
+    if(Pike_sp[-1].type==T_STRING)
+      write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
   }else{
     fprintf(stderr,"No stack - no backtrace.\n");
   }
@@ -346,7 +345,7 @@ void f_error_index(INT32 args)
       ref_push_array(GENERIC_ERROR_THIS->backtrace);
       break;
     default:
-      index_error("error->`[]", sp-args, args, NULL, sp-args,
+      index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		  "Index %d is out of range 0 - 1.\n", ind);
       break;
   }
@@ -356,7 +355,7 @@ void f_error_index(INT32 args)
 void f_error_describe(INT32 args)
 {
   pop_n_elems(args);
-  ref_push_object(fp->current_object);
+  ref_push_object(Pike_fp->current_object);
   APPLY_MASTER("describe_backtrace",1);
 }
 
@@ -448,12 +447,12 @@ void generic_error_va(struct object *o,
     f_add(2);
   }
 
-  if(sp[-1].type!=T_ARRAY)
+  if(Pike_sp[-1].type!=T_ARRAY)
     fatal("Error failed to generate a backtrace!\n");
 
-  ERROR_STRUCT(generic,o)->backtrace=sp[-1].u.array;
-  sp--;
-  dmalloc_touch_svalue(sp);
+  ERROR_STRUCT(generic,o)->backtrace=Pike_sp[-1].u.array;
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
 
   free_svalue(& throw_value);
   throw_value.type=T_OBJECT;
@@ -562,7 +561,7 @@ void wrong_number_of_args_error(char *name, int args, int expected)
     msg="Too many arguments";
   }
 
-  new_error(name, msg, sp-args, args, 0,0);
+  new_error(name, msg, Pike_sp-args, args, 0,0);
 }
 
 #ifdef PIKE_DEBUG
