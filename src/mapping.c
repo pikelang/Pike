@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.87 2000/06/20 03:26:16 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.88 2000/07/03 16:50:09 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -840,6 +840,8 @@ void check_mapping_for_destruct(struct mapping *m)
     fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc != GC_PASS_MARK)
+    fatal("check_mapping_for_destruct called in wrong pass inside gc.\n");
 #endif
 
   /* no is_eq -> no locking */
@@ -1871,6 +1873,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
 #endif
 
   if(gc_mark(m)) {
+    check_mapping_for_destruct(m);
     if (m == gc_mark_mapping_pos)
       gc_mark_mapping_pos = m->next;
     if (m == gc_internal_mapping)
@@ -1950,7 +1953,7 @@ static void gc_check_mapping(struct mapping *m)
 	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
 	   !(k->ind.u.object->prog))
 	  continue;
-	
+
 	debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
 	m->data->val_types |=
 	  debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
@@ -1965,14 +1968,12 @@ static void gc_check_mapping(struct mapping *m)
 	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
 	   !(k->ind.u.object->prog))
 	  continue;
-	
+
 	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
 	m->data->val_types |=
 	  debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
       }
     }
-
-    check_mapping_for_destruct(m);
   }
 }
 
@@ -2009,7 +2010,7 @@ void gc_check_all_mappings(void)
 
     gc_check_mapping(m);
 #ifdef PIKE_DEBUG
-      if(d_flag > 1) check_mapping_type_fields(m);
+    if(d_flag > 1) check_mapping_type_fields(m);
 #endif
   }
 }
@@ -2022,6 +2023,10 @@ void gc_mark_all_mappings(void)
     gc_mark_mapping_pos = m->next;
     if(gc_is_referenced(m))
       gc_mark_mapping_as_referenced(m);
+    else
+      /* Done in gc_mark_mapping_as_referenced() otherwise (and it has
+       * to be done there). */
+      check_mapping_for_destruct(m);
   }
 }
 

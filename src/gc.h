@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.51 2000/07/02 02:24:06 mast Exp $
+ * $Id: gc.h,v 1.52 2000/07/03 16:50:09 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -49,7 +49,7 @@ extern void *gc_svalue_location;
 } while(0)
 #endif
 
-#define GC_FREE() do {							\
+#define LOW_GC_FREE() do {						\
   DO_IF_DEBUG(								\
     extern int d_flag;							\
     if(d_flag) CHECK_INTERPRETER_LOCK();				\
@@ -58,6 +58,14 @@ extern void *gc_svalue_location;
   )									\
   num_objects-- ;							\
 }while(0)
+
+#define GC_FREE() do {							\
+  DO_IF_DEBUG(								\
+    if(Pike_in_gc == GC_PASS_CHECK)					\
+      fatal("Freeing objects in this gc pass is not allowed.\n");	\
+  );									\
+  LOW_GC_FREE();							\
+} while (0)
 
 struct marker
 {
@@ -68,6 +76,7 @@ struct marker
   INT32 weak_refs;		/* Weak (implying internal) references. */
 #ifdef PIKE_DEBUG
   INT32 xrefs;			/* Known external references. */
+  INT32 saved_refs;		/* Object refcount during check and mark pass. */
 #endif
   unsigned INT16 cycle;		/* Cycle id number. */
 #ifdef PIKE_DEBUG
@@ -77,18 +86,19 @@ struct marker
 #endif
 };
 
-#define GC_REFERENCED		0x0001
-#define GC_CYCLE_CHECKED	0x0002
-#define GC_LIVE			0x0004
-#define GC_LIVE_OBJ		0x0008
-#define GC_ON_STACK		0x0010
-#define GC_IN_REC_LIST		0x0020
-#define GC_MOVED_BACK		0x0040
-#define GC_DONT_POP		0x0080
-#define GC_LIVE_RECURSE		0x0100
-#define GC_WEAK_REF		0x0200
-#define GC_STRONG_REF		0x0400
-#define GC_GOT_DEAD_REF		0x0800
+#define GC_MARKED		0x0001
+#define GC_NOT_REFERENCED	0x0002
+#define GC_CYCLE_CHECKED	0x0004
+#define GC_LIVE			0x0008
+#define GC_LIVE_OBJ		0x0010
+#define GC_ON_STACK		0x0020
+#define GC_IN_REC_LIST		0x0040
+#define GC_MOVED_BACK		0x0080
+#define GC_DONT_POP		0x0100
+#define GC_LIVE_RECURSE		0x0200
+#define GC_WEAK_REF		0x0400
+#define GC_STRONG_REF		0x0800
+#define GC_GOT_DEAD_REF		0x1000
 
 /* Debug mode flags. */
 #define GC_TOUCHED		0x010000
@@ -182,8 +192,8 @@ void f__gc_status(INT32 args);
 #ifdef PIKE_DEBUG
 #define gc_is_referenced(X) debug_gc_is_referenced(debug_malloc_pass(X))
 #else
-#define gc_is_referenced(X) (get_marker(X)->refs < *(INT32 *)(X))
-#define gc_do_weak_free(X) (get_marker(X)->weak_refs >= *(INT32 *) (X))
+#define gc_is_referenced(X) !(get_marker(X)->flags & GC_NOT_REFERENCED)
+#define gc_do_weak_free(X) (get_marker(X)->weak_refs == -1)
 #endif
 
 #define gc_do_weak_free_svalue(S) \
@@ -226,7 +236,7 @@ extern int gc_in_cycle_check;
 #define GC_CYCLE_ENTER(X, WEAK) do {					\
   void *_thing_ = (X);							\
   struct marker *_m_ = get_marker(_thing_);				\
-  if (!(_m_->flags & GC_REFERENCED)) {					\
+  if (!(_m_->flags & GC_MARKED)) {					\
     struct marker *_old_last_ = gc_rec_last;				\
     if (gc_cycle_push(_thing_, _m_, (WEAK))) {				\
       DO_IF_DEBUG(							\
@@ -243,7 +253,7 @@ extern int gc_in_cycle_check;
 #define GC_CYCLE_ENTER_OBJECT(X, WEAK) do {				\
   struct object *_thing_ = (X);						\
   struct marker *_m_ = get_marker(_thing_);				\
-  if (!(_m_->flags & GC_REFERENCED)) {					\
+  if (!(_m_->flags & GC_MARKED)) {					\
     struct marker *_old_last_ = gc_rec_last;				\
     if (_thing_->prog && FIND_LFUN(_thing_->prog, LFUN_DESTROY) != -1)	\
       _m_->flags |= GC_LIVE|GC_LIVE_OBJ;				\
