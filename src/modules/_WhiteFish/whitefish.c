@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.27 2001/05/31 00:26:33 js Exp $");
+RCSID("$Id: whitefish.c,v 1.28 2001/05/31 00:33:44 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -244,7 +244,7 @@ static void handle_phrase_hit( Blob **blobs,
 
   free( nhits );  
 
-  if( accum >= 0.01 )
+  if( accum > 0.0 )
     wf_resultset_add( res, docid, (int)(accum*100) );
 }
 
