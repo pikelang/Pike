@@ -1,0 +1,225 @@
+<chapter title="Preprocessor">
+
+<p>Before the Pike code is sent to the compiler it is fed through the
+preprocessor. The preprocessor converts the source code from its
+character encoding into the Pike internal representation, performs
+some simple normalizations and consistency checks and executes the
+"preprocessor directives" that the programmer may have put into the
+file. The preprocessor directives are like a very simple programming
+language that allows for simple code generation and manipulation.
+The code preprocessor can be called from within Pike with the
+<ref>cpp</ref> call.</p>
+
+<section title="Charset Heuristics">
+
+<p>Pike code is Unicode enabled, so the first thing the preprocessor
+has to do is to try to determine the character encoding of the file.
+It will first look at the two first bytes of the file and interpret
+them according to this chart.</p>
+
+<matrix>
+<r><c><b>Byte 0</b></c><c><b>Byte 1</b></c><c><b>Interpretation</b></c></r>
+<r><c>0</c><c>0</c><c>32bit wide string.</c></r>
+<r><c>0</c><c>&gt;0</c><c>16bit Unicode string.</c></r>
+<r><c>&gt;0</c><c>0</c><c>16bit Unicode string in reverse byte order.</c></r>
+<r><c>0xfe</c><c>0xff</c><c>16bit Unicode string.</c></r>
+<r><c>0xff</c><c>0xfe</c><c>16bit Unicode string in reverse byte order.</c></r>
+<r><c>0x7b</c><c>0x83</c><c>EBCDIC-US ("#c").</c></r>
+<r><c>0x7b</c><c>0x40</c><c>EBCDIC-US ("# ").</c></r>
+<r><c>0x7b</c><c>0x09</c><c>EBCDIC-US ("#\t").</c></r>
+</matrix>
+
+<ul>
+<li>With any other combination of bytes the preprocessor will assume
+iso-8859-1 encoding until a #charset directive has been found.</li>
+<li>The file must be an multiple of 4 or 2 bytes in order to be correctly
+decoded as 32bit or 16bit wide string.</li>
+<li>It's an error for a program written in EBCDIC not to start with a
+#charset directive.</li>
+<li>Obfuscation note: It is possible to encode the #charset directive in
+EBCDIC and the rest of the file in any other charset stated in the
+#charset directive.</li>
+</ul>
+
+</section>
+
+<section title="Whitespace Normalization">
+
+<p>The preprocessor collapses all consecutive white space characters
+except for newlines single space characters. All // and /**/ comments
+are removed, as is #! lines. Pike considers ANSI/DEC escape sequences
+as white spaces and will thus be disregarded from. Supported formats
+are &lt;ESC&gt;[\040-\077]+[\100-\177] and
+&lt;CSI&gt;[\040-\077]*[\100-\177]. Note that this means that it is
+possible to do color markup in the actual source file.</p>
+
+<p>The preprocessor will treat seven consecutive &gt; characters
+outside of a string as an CVS conflict error and will return "CVS
+conflict detected."</p>
+
+</section>
+
+<section title="Defines and Macros">
+
+<p>Defining macros or constants is one of the most used preprocessor
+features. It enables you to make abstractions on a code generation
+level as well as altering constants cross-application. The simplest
+use of the #define directive however is to declare a "define" as
+present.</p>
+
+<example>
+#define DO_OVERSAMPLING
+</example>
+
+<p>The existence of this definition can now be used by e.g. #ifdef and
+#ifndef to activate or deactivate blocks of program code.</p>
+
+<example>
+#ifdef DO_OVERSAMPLING
+  // This code is not always run.
+  img->render(size*4)->shrink(4);
+#endif
+</example>
+
+<p>Note that defines can be given to pike at execution time. In order
+to set DO_OVERSAMPLING from a command line, the option
+-DDO_OVERSAMPLING is added before the name of the pike program. E.g.
+<tt>pike -DDO_OVERSAMPLING my_program.pike</tt>.</p>
+
+<p>A define can also be given a specific value, which will be inserted
+everywhere the define is placed in the source code.</p>
+
+<example>
+#define CYCLES 20
+
+void do_stuff() {
+  for(int i; i&lt;CYCLES; i++) do_other_stuff();
+}
+</example>
+
+<p>Finally #define can also be used to define macros. Macros are just
+text expansion with arguments, but it is often very useful to make a
+cleaner looking code and to write less.</p>
+
+<example>
+#define VAR(X) id-&gt:misc-&gt;variable[X]
+#define ROL(X,Y) (((X)&lt;&lt;(Y))&7+((X)&gt;&gt;(8-(Y))))
+#define PLACEHOLDER(X) void X(mixed ... args) { \
+  error("Method " #X " is not implemented yet.\n"); }
+#define ERROR(X,Y ...) werror("MyClass" X "\n", Y)
+#define NEW_CONSTANTS(X) do{ int i=sizeof(all_constants()); \
+    X \
+    werror("Constant diff is %d\n", sizeof(all_constants())-i); \
+  }while(0)
+#define MY_FUNC(X,Y) void my##X##Y()
+</example>
+
+<ul>
+<li>A macro can have up to 255 arguments.</li>
+<li>It can be wise to put extra parenthesis around the arguments
+expension since it is a purely textual expansion. I.e. if the macro
+DOUBLE(X) is defined as X*2, then DOUBLE(2+3) will produce 2+3*2.</li>
+<li>A backslash (\) can be used to make the definition span several
+lines.</li>
+<li>A hash (#) in front of a macro variable "casts" it to a string.</li>
+<li>It is possible to define macros with a variable list of arguments
+by using the ... syntax.</li>
+<li>Macros are often formulated so that a semicolon after it is
+apropriate.</li>
+<li>In Pike code macros and defines are most often written in all caps.</li>
+<li>If a macro expands into several expressions it is often safest to
+group them together in a bigger block, such as do-while(0).</li>
+<li>A double hash (##) in front of a macro variable concatenates it with
+the text before it.</li>
+</ul>
+
+</section>
+
+<section title="Preprocessor Directives">
+
+<p>All the preprocessor directives should be at the beginning of the
+line. Although indentation is allowed currently, it is possible that
+it will generate warnings or errors in the future. It is however
+allowed to put spaces after the hash character to create indentation
+in code.</p>
+
+<subsection title="#!">
+<p>All lines beginning with #! will be regarded as comments, to enable
+shell integration. It is recommended that Pike applications begin with
+the line "#! /bin/env pike" for maximum cross platform
+compatibility.</p>
+</subsection>
+
+<subsection title="#&lt;integer&gt;">
+<p>A hash character followed by a number will make the preprocessor
+line counter set this number as the line number for the current line
+and adjust the following lines accordingly. All error messages from
+Pike will use these line numbers. Optionally the number may be
+followed by a file name, e.g. <tt>#1
+"/home/pike/program.pike.in"</tt>. Then this filename will be used
+instead of the current file for error messages.</p>
+</subsection>
+
+<subsection title="#line">
+<p>Works just as the #&lt;integer&gt; preprocessor directive above.</p>
+</subsection>
+
+<subsection title='#""'>
+<p>If a string literal is opened with #" newlines in the string will
+end up in the string literal, instead of triggering a "neline in
+string" error. Newlines will be converted to \n characters if the
+newlines in the file is something else. This preprocessor directive
+may appear anywhere a string may appear.</p>
+</subsection>
+
+<subsection title="#string">
+<p>The preprocessor #string will load the file in the string that
+follows and insert its contents as a string. This preprocessor
+directive may appear anywhere a string may appear.</p>
+<example>
+do_something(#string "the_file.wks");
+</example>
+</subsection>
+
+
+</section>
+
+
+<!--
+<section title="Predefined defines">
+  <insert-move entity="define::"/>
+</section>
+-->
+
+<!--
+
+#if
+  defined(X)
+  efun(X)
+  constant(X)
+
+#include
+ " "
+ < >
+#ifdef
+#ifndef
+#endif
+#else
+#elseif
+#elif
+#error
+#undef
+#undefine
+#charset
+#pragma
+  all_inline
+  all_nomask
+  strict_types
+  save_parent
+  dont_save_parent
+#pike
+
+
+-->
+
+</chapter>
