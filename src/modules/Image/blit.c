@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.16 1997/10/27 22:41:16 mirar Exp $ */
+/* $Id: blit.c,v 1.17 1997/11/06 19:25:50 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.16 1997/10/27 22:41:16 mirar Exp $
+**!	$Id: blit.c,v 1.17 1997/11/06 19:25:50 mirar Exp $
 **! class image
 */
 
@@ -229,7 +229,7 @@ void img_clone(struct image *newimg,struct image *img)
 **! returns the object called
 **!
 **! arg object image
-**!	image to paste
+**!	image to paste (may be empty, needs to be an image object)
 **! arg int x
 **! arg int y
 **!	where to paste the image; default is 0,0
@@ -244,17 +244,16 @@ void image_paste(INT32 args)
 
    if (args<1
        || sp[-args].type!=T_OBJECT
-       || !sp[-args].u.object
-       || sp[-args].u.object->prog!=image_program)
+       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       error("illegal argument 1 to image->paste()\n");
    if (!THIS->img) return;
 
-   img=(struct image*)sp[-args].u.object->storage;
-   if (!img) return;
+   if (!img->img) return;
 
-   if (args>=3)
+   if (args>1)
    {
-      if (sp[1-args].type!=T_INT
+      if (args<3 
+	  || sp[1-args].type!=T_INT
 	  || sp[2-args].type!=T_INT)
          error("illegal arguments to image->paste()\n");
       x1=sp[1-args].u.integer;
@@ -320,18 +319,16 @@ void image_paste(INT32 args)
 void image_paste_alpha(INT32 args)
 {
    struct image *img;
-   INT32 x1,y1,x,y;
+   INT32 x1,y1;
 
    if (args<2
        || sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
-       || sp[-args].u.object->prog!=image_program
+       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program))
        || sp[1-args].type!=T_INT)
       error("illegal arguments to image->paste_alpha()\n");
    if (!THIS->img) return;
-
-   img=(struct image*)sp[-args].u.object->storage;
-   if (!img) return;
+   if (!img->img) return;
    THIS->alpha=(unsigned char)(sp[1-args].u.integer);
    
    if (args>=4)
@@ -415,19 +412,15 @@ CHRONO("image_paste_mask init");
    if (args<2)
       error("illegal number of arguments to image->paste_mask()\n");
    if (sp[-args].type!=T_OBJECT
-       || !sp[-args].u.object
-       || sp[-args].u.object->prog!=image_program)
+       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       error("illegal argument 1 to image->paste_mask()\n");
    if (sp[1-args].type!=T_OBJECT
-       || !sp[1-args].u.object
-       || sp[1-args].u.object->prog!=image_program)
+       || !(mask=(struct image*)get_storage(sp[1-args].u.object,image_program)))
       error("illegal argument 2 to image->paste_mask()\n");
    if (!THIS->img) return;
 
-   img=(struct image*)sp[-args].u.object->storage;
-   mask=(struct image*)sp[1-args].u.object->storage;
-   if ((!img)||(!img->img)) error("argument 1 has no image\n");
-   if ((!mask)||(!mask->img)) error("argument 2 (alpha) has no image\n");
+   if (!mask->img) return;
+   if (!img->img) return;
    
    if (args>=4)
    {
@@ -521,9 +514,10 @@ void image_paste_alpha_color(INT32 args)
       error("illegal number of arguments to image->paste_alpha_color()\n");
    if (sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
-       || sp[-args].u.object->prog!=image_program)
+       || !(mask=(struct image*)get_storage(sp[-args].u.object,image_program)))
       error("illegal argument 1 to image->paste_alpha_color()\n");
    if (!THIS->img) return;
+   if (!mask->img) return;
 
    if (args==6 || args==4) /* colors at arg 2..4 */
       getrgb(THIS,1,args,"image->paste_alpha_color()\n");
@@ -544,9 +538,6 @@ void image_paste_alpha_color(INT32 args)
       y1=sp[5-args].u.integer;
    }
    else x1=y1=0;
-
-   mask=(struct image*)sp[-args].u.object->storage;
-   if (!mask||!mask->img) error("argument 1 (alpha) has no image\n");
    
    x2=min(THIS->xsize-x1,mask->xsize);
    y2=min(THIS->ysize-y1,mask->ysize);
@@ -728,15 +719,14 @@ void image_add_layers(INT32 args)
 	 error("Illegal size of array argument to image->add_layers()\n");
       }
 
-      if (a->item[0].type!=T_OBJECT 
-	  || !a->item[0].u.object
-	  || a->item[0].u.object->prog!=image_program)
+      if (a->item[0].type!=T_OBJECT)
       {
 	 free(layer);
 	 error("Illegal array contents, layer %d (argument %d) (wrong or no image) to image->add_layers()\n",layers-i,args-i+1);
       }
-      img=(struct image*)a->item[0].u.object->storage;
-      if (!img->img 
+      img=(struct image*)get_storage(a->item[0].u.object,image_program);
+      if (!img 
+	  || !img->img 
 	  || img->xsize != THIS->xsize 
 	  || img->ysize != THIS->ysize)
       {
@@ -752,15 +742,14 @@ void image_add_layers(INT32 args)
       }
       else
       {
-	 if (a->item[1].type!=T_OBJECT 
-	     || !a->item[1].u.object
-	     || a->item[1].u.object->prog!=image_program)
+	 if (a->item[1].type!=T_OBJECT)
 	 {
 	    free(layer);
 	    error("Illegal array contents, layer %d (argument %d) (wrong or no image for mask) to image->add_layers()\n",layers-i,args-i+1);
 	 }
-	 img=(struct image*)a->item[1].u.object->storage;
-	 if (!img->img 
+	 img=(struct image*)get_storage(a->item[1].u.object,image_program);
+	 if (!img 
+	     || !img->img 
 	     || img->xsize != THIS->xsize 
 	     || img->ysize != THIS->ysize)
 	 {
@@ -798,7 +787,7 @@ void image_add_layers(INT32 args)
    push_int(1+x2-x1);
    push_int(1+y2-y1);
    o=clone_object(image_program,2);
-   d=((struct image*)(o->storage))->img;
+   d=((struct image*)get_storage(o,image_program))->img;
 
 
    mod=THIS->xsize-(x2-x1+1);
