@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.1 2003/04/04 15:15:06 peta Exp $
+|| $Id: circular_list.cmod,v 1.2 2003/04/05 13:17:28 grubba Exp $
 */
 
 #include "global.h"
@@ -210,11 +210,12 @@ PIKECLASS CircularList
           
       //put the added array in a CircularList and return it
       push_array(a);
-      struct object *o=clone_object(CircularList_program, 1);
-      OBJ2_CIRCULARLIST(o)->size = THIS->size+l->size;
+      {
+	struct object *o=clone_object(CircularList_program, 1);
+	OBJ2_CIRCULARLIST(o)->size = THIS->size+l->size;
       
-      push_object(o);
-    
+	push_object(o);
+      }
     }
     else
     {
