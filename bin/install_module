@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# install_module <from> <to>
+
+
+FROM="$1"
+TO="$2"
+
+DIRS_TO_MAKE=
+
+DIR="$TO"
+while :
+do
+  DIR=`echo $DIR | sed -e 's@/[^/]*$@@'`
+
+  case "$DIR" in
+    *.pmod)
+      if [ -d "$DIR" ]; then
+         break
+      else
+         :
+      fi
+
+
+      if [ -f "$DIR" ]; then
+        mv "$DIR" "$DIR-foo"
+        mkdir $DIR
+        mv "$DIR-foo" "$DIR/module.pmod"
+        break
+      fi
+
+      BASE=`echo $DIR | sed -e 's/\.[^.]*$//'`
+
+      if [ -f "$BASE.so" ]; then
+        mkdir "$DIR"
+        mv "$BASE.so" "$DIR/module.so"
+        break
+      fi
+
+#FIXME: Add sed expression to quote spaces, quotes etc. in $DIR
+      DIRS_TO_MAKE="$DIR $DIRS_TO_MAKE"
+    ;;
+    *) break ;;
+  esac
+
+done
+
+BASE=`echo $TO | sed -e 's/\.[^.]*$//'`
+
+if test "x$DIRS_TO_MAKE" != x; then
+  mkdir $DIRS_TO_MAKE
+else
+  :
+fi
+
+if [ -d "$BASE.pmod" ]; then
+  EXT=`echo $TO | sed -e 's@(\.[^.]$)@\1@/'`
+  TO="$BASE.pmod/module.$EXT"
+fi
+
+
+exec cp "$FROM" "$TO"
