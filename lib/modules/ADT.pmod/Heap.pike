@@ -53,6 +53,8 @@ static void adjust_down(int elem)
 static int adjust_up(int elem)
 {
   int parent=(elem-1)/2;
+
+  if(!elem) return 0;
   
   if(values[elem] < values[parent])
   {
@@ -72,7 +74,7 @@ static int adjust_up(int elem)
 void push(mixed value)
 {
   if(num_values >= sizeof(values))
-    values+=allocate(10+sizeof(values)/16);
+    values+=allocate(10+sizeof(values)/4);
   
   values[num_values++]=value;
   adjust_up(num_values-1);
