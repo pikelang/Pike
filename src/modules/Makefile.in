@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.36 2000/10/10 21:01:42 mast Exp $
+# $Id: Makefile.in,v 1.37 2001/01/26 02:30:41 mast Exp $
 
 @make_variables@
 
@@ -38,11 +38,17 @@ linker_options: $(MODULE_LINKOPTS)
 	  done \
 	) >linker_options
 
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status dynamic_module_makefile static_module_makefile
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again" >&2
 	@exit 1
+
+dynamic_module_makefile: $(SRCDIR)/dynamic_module_makefile.in
+	CONFIG_FILES=dynamic_module_makefile CONFIG_HEADERS="" ./config.status
+
+static_module_makefile: $(SRCDIR)/static_module_makefile.in
+	CONFIG_FILES=static_module_makefile CONFIG_HEADERS="" ./config.status
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(SRCDIR)/../aclocal.m4
 	cd $(SRCDIR) && autoconf --localdir=$(SRCDIR)/..
@@ -51,8 +57,12 @@ config.status: $(SRCDIR)/configure
 	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" ./config.status --recheck
 
 depend:
-	for a in $(MODULES) ; do \
-	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; \
+	@for a in $(MODULES) ; do \
+	  ( cd $$a && { \
+	    rm -f remake; \
+	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend || \
+	      if test -f remake; then ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend; else exit $$?; fi; \
+	  }); \
 	done
 
 install:
