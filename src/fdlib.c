@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.64 2003/08/20 11:58:53 grubba Exp $
+|| $Id: fdlib.c,v 1.65 2003/09/16 16:45:36 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.64 2003/08/20 11:58:53 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.65 2003/09/16 16:45:36 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -781,9 +781,9 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
     case FD_FILE:
     case FD_PIPE:
       ret=0;
-      if(!ReadFile(handle, to,
-		   DO_NOT_WARN((DWORD)len),
-		   &ret,0) && ret<=0)
+      if(len && !ReadFile(handle, to,
+			  DO_NOT_WARN((DWORD)len),
+			  &ret,0) && ret<=0)
       {
 	errno=GetLastError();
 	switch(errno)
