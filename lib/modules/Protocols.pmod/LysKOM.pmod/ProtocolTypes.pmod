@@ -20,7 +20,7 @@ class LysKOMTime
    string print(void|int long)
    {
      string res=sprintf("%d-%02d-%02d %02d:%02d",
-			1900+year,month,day,hours,minutes);
+			1900+year,month+1,day,hours,minutes);
      if(long)
        res+=sprintf(":%02d",seconds);
      return res;
