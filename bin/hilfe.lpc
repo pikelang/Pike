@@ -322,6 +322,7 @@ mixed parse_function(string fun)
   case "int":
   case "void":
   case "object":
+  case "array":
   case "mapping":
   case "string":
   case "list":
@@ -391,6 +392,7 @@ mixed parse_statement(string ex)
   case "int":
   case "void":
   case "object":
+  case "array":
   case "mapping":
   case "string":
   case "list":
