@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.18 2001/06/15 03:16:56 per Exp $");
+RCSID("$Id: resultset.c,v 1.19 2001/07/03 16:09:33 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -34,7 +34,7 @@ RCSID("$Id: resultset.c,v 1.18 2001/06/15 03:16:56 per Exp $");
 struct result_set_p {  int allocated_size; ResultSet *d; };
 struct program *resultset_program;
 
-#define THIS ((struct result_set_p*)Pike_fp->current_object->storage)
+#define THIS ((struct result_set_p*)Pike_fp->current_storage)
 #define T(o) ((struct result_set_p*)o->storage)
 
 #define RETURN_THIS() pop_n_elems(args); ref_push_object(Pike_fp->current_object)

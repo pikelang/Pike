@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.1 2001/05/28 12:33:40 per Exp $");
+RCSID("$Id: linkfarm.c,v 1.2 2001/07/03 16:09:33 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -39,7 +39,7 @@ struct linkfarm
   struct hash *hash[HSIZE];
 };
 
-#define THIS ((struct linkfarm *)Pike_fp->current_object->storage)
+#define THIS ((struct linkfarm *)Pike_fp->current_storage)
 
 static struct hash *new_hash( struct pike_string *id )
 {

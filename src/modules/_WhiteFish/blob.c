@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.23 2001/05/30 23:51:09 per Exp $");
+RCSID("$Id: blob.c,v 1.24 2001/07/03 16:09:33 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -183,7 +183,7 @@ void wf_blob_free( Blob *b )
 
 /* Pike interface to build blobs. */
 
-#define THIS ((struct blob_data *)Pike_fp->current_object->storage)
+#define THIS ((struct blob_data *)Pike_fp->current_storage)
 
 struct hash
 {
