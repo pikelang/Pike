@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.8 2001/04/17 09:00:50 per Exp $");
+RCSID("$Id: wbf.c,v 1.9 2001/11/07 22:03:03 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -30,11 +30,12 @@ RCSID("$Id: wbf.c,v 1.8 2001/04/17 09:00:50 per Exp $");
 
 extern struct program *image_program;
 
-/*
-**! module Image
-**! submodule WBMP
-**!   WAP WBMP format
-*/
+/*! @module Image
+ */
+
+/*! @module WBMP
+ *! WAP bitmap format - WBMP.
+ */
 
 struct buffer
 {
@@ -291,15 +292,40 @@ static void low_image_f_wbf_decode( int args, int mode )
   }
 }
 
+/*! @decl object decode(string image)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
+
 static void image_f_wbf_decode( int args )
 {
   low_image_f_wbf_decode( args, 2 );
 }
 
+/*! @decl mapping _decode(string image)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
+
 static void image_f_wbf__decode( int args )
 {
   low_image_f_wbf_decode( args, 1 );
 }
+
+/*! @decl mapping decode_header(string image)
+ *!
+ *! @returns
+ *!   @mapping
+ *!     @member string "format"
+ *!       The MIME type and encoding for the image, e.g. "image/x-wap.wbmp; type=0".
+ *!     @member int "xsize"
+ *!     @member int "ysize"
+ *!     @member int "fix_header_field"
+ *!     @member int "ext_header_field"
+ *!  @endmapping
+ */
 
 static void image_f_wbf_decode_header( int args )
 {
@@ -351,6 +377,13 @@ static void push_wap_type0_image_data( struct image *i )
 					  i->ysize * (i->xsize+7)/8 ) );
 }
 
+/*! @decl string encode(object image, void|mapping args)
+ *! @decl string _encode(object image, void|mapping args)
+ *!
+ *! @fixme
+ *!  Document this function.
+ */
+
 static void image_f_wbf_encode( int args )
 {
   struct object *o;
@@ -387,6 +420,12 @@ static void image_f_wbf_encode( int args )
   if( options ) free_mapping( options );
   free_object( o );
 }
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 void init_image_wbf()
 {
