@@ -38,7 +38,7 @@ struct  header_buf
 {
   char headers[8192];
   char *pnt;
-  int left;
+  ptrdiff_t left;
 };
 
 static void f_hp_feed( INT32 args )
@@ -48,7 +48,7 @@ static void f_hp_feed( INT32 args )
   char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
-  int os=0,i,j,l;
+  ptrdiff_t os=0, i, j, l;
   unsigned char *in;
 
   if( Pike_sp[-1].type != PIKE_T_STRING )
@@ -167,7 +167,7 @@ static void f_make_http_headers( INT32 args )
     else if( k->val.type == PIKE_T_ARRAY )
     {
       struct array *a = k->val.u.array;
-      int i, kl = k->ind.u.string->len + 2 ;
+      ptrdiff_t i, kl = k->ind.u.string->len + 2 ;
       for( i = 0; i<a->size; i++ )
         if( a->item[i].type != PIKE_T_STRING||a->item[i].u.string->size_shift )
           error("Wrong argument type to make_http_headers("
@@ -191,7 +191,7 @@ static void f_make_http_headers( INT32 args )
   NEW_MAPPING_LOOP( m->data )
   {
     char *s;
-    int l, c;
+    ptrdiff_t l, c;
     if( k->val.type == PIKE_T_STRING )
     {
       STRADD( k->ind ); *(pnt++) = ':'; *(pnt++) = ' ';
@@ -200,7 +200,7 @@ static void f_make_http_headers( INT32 args )
     else
     {
       struct array *a = k->val.u.array;
-      int i, kl = k->ind.u.string->len + 2;
+      ptrdiff_t i, kl = k->ind.u.string->len + 2;
       for( i = 0; i<a->size; i++ )
       {
         STRADD( k->ind );    *(pnt++) = ':'; *(pnt++) = ' ';
