@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.18 2002/10/21 17:06:27 marcus Exp $
+|| $Id: memory.c,v 1.19 2003/03/02 21:11:04 grubba Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.18 2002/10/21 17:06:27 marcus Exp $");
+RCSID("$Id: memory.c,v 1.19 2003/03/02 21:11:04 grubba Exp $");
 
 #include "system_machine.h"
 
@@ -40,10 +40,6 @@ RCSID("$Id: memory.c,v 1.18 2002/10/21 17:06:27 marcus Exp $");
 
 #ifdef HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
-#endif
-
-#ifdef HAVE_SYS_USER_H
-#include <sys/user.h>
 #endif
 
 #ifdef HAVE_SYS_SHM_H
