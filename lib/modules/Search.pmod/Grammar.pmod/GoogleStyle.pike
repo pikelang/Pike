@@ -22,7 +22,7 @@ private array build_tree(string query)
        break;
     }
   }
-  return stack->get();
+  return stack->get() || ({});
 }
 
 private mapping(string:Search.Document) evaluate_tree(Search.Database db, array tree)
@@ -67,7 +67,7 @@ private mapping(string:Search.Document) evaluate_tree(Search.Database db, array 
       }
     }
   }
-  return result;
+  return result || ([]);
 }
 
 
@@ -76,7 +76,7 @@ private mapping(string:Search.Document) evaluate_tree(Search.Database db, array 
 mapping do_query(Search.Database db, string query)
 {
   int t0=gethrtime();
-  array tree=build_tree(query);
+  array tree=build_tree(string_to_utf8(lower_case(query)));
   mapping tmp=evaluate_tree(db, tree);
   werror("Query took %.1f ms.\n",(gethrtime()-t0)/1000.0);
   return tmp;
