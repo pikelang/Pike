@@ -1121,7 +1121,7 @@ class NScopeStack
   {
     int(1..1)|NScope scope = top->symbols[symbol];
     if (!scope) {
-      error("No such symbol: %O in scope %O\n", symbol, top);
+      error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
     }
     if (!objectp(scope)) {
       error("Symbol %O is not a scope\n", symbol);
@@ -1230,6 +1230,12 @@ class NScopeStack
   }
   string resolveInherits()
   {
+    int removed_self;
+    string name = sizeof(stack) && splitRef(top->name)[-1];
+    if (sizeof(stack) && (stack[-1]->symbols[name] == top)) {
+      removed_self = 1;
+      m_delete(stack[-1]->symbols, name);
+    }
     foreach(top->inherits||([]); string inh; string|NScope scope) {
       if (stringp(scope)) {
 	if (sizeof(scope) && scope[0] == '"') {
@@ -1238,22 +1244,58 @@ class NScopeStack
 	  string path = resolve(splitRef(scope));
 	  if (path) {
 	    int(1..1)|NScope nscope = lookup(path);
-	    // Avoid loops...
-	    if (objectp(nscope) && nscope != top) {
-	      top->inherits[inh] = nscope;
-	      continue;
+	    if (objectp(nscope)) {
+	      // Avoid loops...
+	      if (nscope != top) {
+		top->inherits[inh] = nscope;
+		continue;
+	      }
+	      werror("Failed to lookup inherit %O (loop).\n"
+		     "  Top: %O\n"
+		     "  Scope: %O\n"
+		     "  Path: %O\n"
+		     "  NewScope: %O\n"
+		     "  Stack: %O\n",
+		     inh, top, scope, path, nscope, stack);
+	    } else {
+	      werror("Failed to lookup inherit %O.\n"
+		     "  Top: %O\n"
+		     "  Scope: %O\n"
+		     "  Path: %O\n"
+		     "  NewScope: %O\n"
+		     "  Stack: %O\n",
+		     inh, top, scope, path, nscope, stack);
 	    }
-	    werror("Failed to lookup inherit %O.\n"
-		   "Top: %O Scope: %O Path: %O NewScope: %O\n",
-		   inh, top, scope, path, nscope);
 	  } else {
-	    werror("Failed to resolve inherit %O. Top: %O Scope: %O\n",
-		   inh, top, scope);
+	    werror("Failed to resolve inherit %O.\n"
+		   "  Top: %O\n"
+		   "  Scope: %O\n"
+		   "  Stack: %O\n",
+		   inh, top, scope, stack);
 	  }
 	}
 	m_delete(top->inherits, inh);
       }
     }
+    if (removed_self) {
+      stack[-1]->symbols[name] = top;
+    }
+    array(NScope) old_stack = stack;
+    NScope old_top = top;
+    foreach(top->inherits||([]); string inh; NScope scope) {
+      if (sizeof(filter(scope->inherits||({}), stringp))) {
+	// We've inherited a scope with unresolved inherits.
+	// We need to resolve them before we can resolve
+	// stuff in ourselves.
+	reset();
+	foreach(splitRef(scope->name), string sym) {
+	  enter(sym);
+	}
+	resolveInherits();
+      }
+    }
+    top = old_top;
+    stack = old_stack;
     foreach(top->symbols; string sym; int(1..1)|NScope scope) {
       if (objectp(scope)) {
 	enter(sym);
