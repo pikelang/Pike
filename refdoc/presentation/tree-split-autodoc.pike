@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.39 2002/12/11 16:47:25 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.40 2002/12/11 17:03:50 grubba Exp $
  *
  */
 
@@ -38,7 +38,7 @@ string cquote(string n)
 string create_reference(string from, string to, string text) {
   return "<font face='courier'><a href='" +
     "../"*max(sizeof(from/"/") - 2, 0) +
-    map(to/".", cquote)*"/" + ".html'>" + text +
+    map(replace(to, "::", "::.")/".", cquote)*"/" + ".html'>" + text +
     "</a></font>";
 }
 
@@ -251,7 +251,11 @@ class Node
   {
     if(_make_filename_low) return _make_filename_low;
     PROFILE();
-    _make_filename_low = parent->make_filename_low()+"/"+cquote(name);
+    if (type == "namespace") {
+      _make_filename_low = parent->make_filename_low()+"/"+cquote(name+"::");
+    } else {
+      _make_filename_low = parent->make_filename_low()+"/"+cquote(name);
+    }
     ENDPROFILE("make_filename_low");
     return _make_filename_low;
   }
