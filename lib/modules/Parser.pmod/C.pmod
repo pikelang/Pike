@@ -259,7 +259,20 @@ array group(array(Token) tokens, void|mapping groupings)
   return ret;
 }
 
+/* This module must work with Pike 7.0 */
+#if constant(Array.flatten)
+#define FLATTEN Array.flatten
+#else
+#define FLATTEN flatten
+array flatten(array a)
+{
+  array ret=({});
+  foreach(a, a) ret+=arrayp(a)?flatten(a):({a});
+  return ret;
+}
+#endif
+
 string simple_reconstitute(array(Token) tokens)
 {
-  return Array.flatten(tokens->text) * "";
+  return FLATTEN(tokens->text) * "";
 }
