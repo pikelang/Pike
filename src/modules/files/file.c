@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.104 1998/05/28 04:25:05 hubbe Exp $");
+RCSID("$Id: file.c,v 1.105 1998/06/25 14:56:36 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -225,9 +225,9 @@ static void just_close_fd(void)
   while(1)
   {
     int i;
-    THREADS_ALLOW();
+    THREADS_ALLOW_UID();
     i=fd_close(fd);
-    THREADS_DISALLOW();
+    THREADS_DISALLOW_UID();
     
     if(i < 0)
     {
