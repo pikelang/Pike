@@ -1,4 +1,4 @@
-/* $Id: mkdoc.pike,v 1.10 1997/05/31 22:04:04 grubba Exp $ */
+/* $Id: mkdoc.pike,v 1.11 1997/10/27 22:40:34 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -15,6 +15,7 @@ module : mapping <- moduleM
 	"desc" : text
 	"see also" : array of references 
 	"note" : mapping of "desc": text
+	"modules" : same as classes (below)
 	"classes" : mapping 
 		class : mapping <- classM
 	        	"see also" : array of references 
@@ -68,12 +69,22 @@ void report(string s)
 
 mapping keywords=
 (["module":lambda(string arg,int line) 
-	  { descM=nowM=moduleM=focM(parse,stripws(arg),line); classM=methodM=0; 
-	    if (!nowM->classes) nowM->classes=([]); report("module "+arg); },
+	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line); 
+	    methodM=0; 
+	    if (!nowM->classes) nowM->classes=([]); 
+	    if (!nowM->modules) nowM->modules=([]); 
+	    report("module "+arg); },
   "class":lambda(string arg,int line) 
 	  { if (!moduleM) return complain("class w/o module");
 	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),line); 
 	    methodM=0; report("class "+arg); },
+  "submodule":lambda(string arg,int line) 
+	  { if (!moduleM) return complain("submodule w/o module");
+	    classM=descM=nowM=moduleM=focM(moduleM->modules,stripws(arg),line);
+	    methodM=0;
+	    if (!nowM->classes) nowM->classes=([]); 
+	    if (!nowM->modules) nowM->modules=([]); 
+	    report("submodule "+arg); },
   "method":lambda(string arg,int line)
 	  { if (!classM) return complain("method w/o class");
 	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM) 
@@ -242,25 +253,6 @@ string standard_doc(mapping info,string myprefix)
    return res;
 }
 
-void make_an_index(string title,
-		   string file,
-		   mapping info,
-		   string prefix,
-		   string *refs)
-{
-   object f=make_file(file);
-   f->write("<title>Pike documentation: "+title+"</title>\n"+
-	    "<h2>"+title+"</h2>\n"+
-	    standard_doc(info,prefix));
-   if (sizeof(refs))
-   {
-      f->write("<h3>More documentation:</h3>\n <i>" +
-	       map(map(refs,addprefix,prefix),
-		   make_nice_reference,prefix)*"</tt></i><br>\n <i><tt>" +
-	       "</i>\n\n");
-   }
-   f->close();
-}
 		   
 multiset(string) get_method_names(string *decls)
 {
@@ -405,47 +397,126 @@ void document_class(string title,
 
 }
 
+void make_an_index(string title,
+		   string file,
+		   mapping info,
+		   string prefix,
+		   string *refs)
+{
+   object f=make_file(file);
+   f->write("<title>Pike documentation: "+title+"</title>\n"+
+	    "<h2>"+title+"</h2>\n"+
+	    standard_doc(info,prefix));
+//    if (sizeof(refs))
+//    {
+//       f->write("<h3>More documentation:</h3>\n <i>" +
+// 	       map(map(refs,addprefix,prefix),
+// 		   make_nice_reference,prefix)*"</tt></i><br>\n <i><tt>" +
+// 	       "</i>\n\n");
+//    }
+
+
+   // postprocess methods to get names
+
+   multiset(string) method_names=(<>);
+   string *method_names_arr,method_name;
+   mapping method;
+
+   if (info->methods) 
+      foreach (info->methods,method)
+	 method_names|=(method->names=get_method_names(method->decl));
+
+   method_names_arr=sort(indices(method_names));
+
+/*   f->write("\n<hr>\n   <i><tt>"+*/
+/*	    map(method_names_arr,make_nice_reference,prefix)**/
+/*	       "</tt></i><br>\n   <i><tt>"+"</tt></i><br>\n\n");*/
+   // alphabetically
+
+   foreach (method_names_arr,method_name)
+      if (method_names[method_name])
+      {
+	 // find it
+	 foreach (info->methods,method)
+	    if ( method->names[method_name] )
+	    {
+	       document_method(f,method,prefix);
+	       method_names-=method->names;
+	    }
+	 if (method_names[method_name])
+	    stderr->write("failed to find "+method_name+" again, wierd...\n");
+      }
+
+   f->close();
+}
+
+void document_module(mapping mod,string module,string dir)
+{
+   string clas;
+
+   make_an_index("module "+module,
+		 dir+module+".html", mod,
+		 module+".", sort(indices(mod->classes||([]))));
+
+   stdout->write("module "+module+" class(es): "+
+		 sort(indices(mod->classes||([])))*", "+"\n");
+   
+   foreach (sort(indices(mod->classes||([]))),clas)
+      document_class(module+"."+clas,
+		     dir+module+"."+clas+".html",
+		     mod->classes[clas],
+		     module+"."+clas);
+
+   foreach (sort(indices(mod->modules||([]))),clas)
+      document_module(mod->modules[clas],module+"."+clas,dir);
+}
+
 void make_doc_files(string dir)
 {
    stdout->write("modules: "+sort(indices(parse))*", "+"\n");
 
-   string module,clas;
+   string module;
    
    foreach (sort(indices(parse)),module)
-   {
-      make_an_index("module "+module,
-		    dir+module+".html", parse[module],
-		    module+".", sort(indices(parse[module]->classes)));
-
-      stdout->write("module "+module+" class(es): "+
-		    sort(indices(parse[module]->classes))*", "+"\n");
-
-      foreach (sort(indices(parse[module]->classes)),clas)
-	 document_class(module+"."+clas,
-			dir+module+"."+clas+".html",
-			parse[module]->classes[clas],
-			module+"."+clas);
-   }
+      document_module(parse[module],module,dir);
 }
 
-int main()
+int main(int ac,string *files)
 {
    string s,t;
    int line;
    string *ss=({""});
+   object f;
+
+   string currentfile;
 
    nowM=parse;
 
    stdout->write("reading and parsing data...\n");
 
+   files=files[1..];
+
    for (;;)
    {
       int i;
 
+      if (!f) 
+      {
+	 if (!sizeof(files)) break;
+	 stdout->write("reading "+files[0]+"...\n");
+	 f=File();
+	 currentfile=files[0];
+	 files=files[1..];
+	 if (!f->open(currentfile,"r")) { f=0; continue; }
+	 t=0;
+	 ss=({""});
+	 line=0;
+      }
+
       if (sizeof(ss)<2)
       {
-	 if (t=="") break;
-	 t=stdin->read(8192);
+	 if (t=="") { f=0; continue; }
+	 t=f->read(8192);
 	 s=ss[0];
 	 ss=t/"\n";
 	 ss[0]=s+ss[0];
@@ -461,15 +532,15 @@ int main()
 	 if (keywords[kw])
 	 {
 	    string err;
-	    if ( (err=keywords[kw](arg,line)) )
+	    if ( (err=keywords[kw](arg,currentfile+" line "+line)) )
 	    {
-	       stderr->write("Error on line "+line+": "+err+"\n");
+	       stderr->write(currentfile+" line "+line+": "+err+"\n");
 	       return 1;
 	    }
 	 }
 	 else 
 	 {
-	    if (search(s,"$Id")!=-1) report("Id: "+s);
+//	    if (search(s,"$Id")!=-1) report("Id: "+s);
 	    if (!descM) descM=methodM;
 	    if (!descM)
 	    {
