@@ -1,0 +1,17 @@
+--- pike7.4-7.4.21.orig/src/modules/sprintf/Makefile.in	1999-11-18 09:03:18.000000000 +0100
++++ pike7.4-7.4.21/src/modules/sprintf/Makefile.in	2003-04-11 19:49:31.000000000 +0200
+@@ -8,3 +8,14 @@
+ 
+ @static_module_makefile@
+ @dependencies@
++
++#
++# Workarounds for buggy optimizer in gcc on those architectures
++#
++ifeq ($(DEB_BUILD_ARCH),arm)
++OPTIMIZE = -O
++endif
++
++ifeq ($(DEB_BUILD_ARCH),m68k)
++OPTIMIZE = -O
++endif
