@@ -11985,6 +11985,7 @@ if it can't encode to a canonical form.
 <man_see>
 encode_value, decode_value
 </man_see>
+</function>
 
 
 <function name=enumerate title="create an array with an enumeration">
