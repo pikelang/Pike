@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.218 2003/05/12 12:18:41 nilsson Exp $
+|| $Id: gc.c,v 1.219 2003/06/05 21:52:03 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.218 2003/05/12 12:18:41 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.219 2003/06/05 21:52:03 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1249,6 +1249,12 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
     }
     return 0;
   }
+
+#if 0
+  fprintf (stderr, "Ref: %s %p -> %p%s\n",
+	   get_name_of_type (found_in_type), found_in, a,
+	   found_where ? found_where : "");
+#endif
 
   if (Pike_in_gc != GC_PASS_CHECK)
     Pike_fatal("gc check attempted in invalid pass.\n");
