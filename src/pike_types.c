@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.66 1999/11/21 18:04:16 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.67 1999/11/21 21:06:56 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1074,8 +1074,13 @@ static int low_and_push_complex_pike_type(char *type)
   int is_complex = 0;
   while(EXTRACT_UCHAR(type) == T_OR)
   {
+    int new_complex;
     type++;
-    is_complex |= low_and_push_complex_pike_type(type);
+    new_complex |= low_and_push_complex_pike_type(type);
+    if (new_complex) {
+      push_type(T_OR);
+      is_complex = 1;
+    }
     type += type_length(type);
   }
   switch(EXTRACT_UCHAR(type)) {
