@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.327 2003/03/08 17:24:46 grubba Exp $
+|| $Id: las.c,v 1.328 2003/03/08 17:28:12 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.327 2003/03/08 17:24:46 grubba Exp $");
+RCSID("$Id: las.c,v 1.328 2003/03/08 17:28:12 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1870,7 +1870,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  p=Pike_sp[-1].u.program;
 
 	if (p == Pike_compiler->new_program) {
-	  /* We're looking at ourselves... */
+	  /* We're looking at ourselves...
+	   *
+	   * FIXME: This code isn't correct since it changes the reference
+	   *        to a local reference, and not a global reference.
+	   */
 	  int i = really_low_find_shared_string_identifier(id, p, 0);
 	  UNSETJMP(tmp);
 	  pop_stack();
