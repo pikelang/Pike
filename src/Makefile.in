@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.107 1998/08/02 15:20:14 grubba Exp $
+# $Id: Makefile.in,v 1.108 1998/08/02 16:18:59 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -153,7 +153,7 @@ quant: $(OBJ) module_objects
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 atom: pike
-	atom pike -tool atom -env threads -g -v `find lib/modues -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
+	atom pike -tool atom -env threads -g -v `find lib/modules -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
 	mv pike pike.pre-atom
 	mv pike.third.threads pike
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
@@ -288,11 +288,12 @@ tidy:
 
 # make clean
 clean: tidy
-	-( cd modules; ${MAKE} $(MAKE_FLAGS) clean )
+	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
 	-rm -f TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike
 	find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
+#	-rm -f lib/master.pike
 
 # make _really_ clean
 spotless: clean
@@ -300,16 +301,20 @@ spotless: clean
 	  sed -e 's/\.in$$//' | xargs rm -f
 	find . -type f '(' -name 'Makefile' -o -name '*~' -o -name '.*~' -o \
 	  -name core -o -name '.nfs*' -name '#*#' -o -name '.pure' -o \
-	  -name 'conftest.*' ')' -exec rm -f \{\} \;
+	  -name 'conftest.*' -o -name 'stamp-h' ')' -exec rm -f \{\} \;
 	-rm -f lexical.c mon.out *.ln config.status
 	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/\#*\#
 	-rm -f pike pike.old l.outa*
 	-rm -f modules/*/testsuite
+	-rm -f modules/static_module_makefile modules/dynamic_module_makefile
 	-rm -rf lib
 
 distclean: spotless
 	find . -type f '(' -name 'config.log' -o -name 'config.status' -o \
-	  -name 'config.cache' -name 'stamp-h' ')' -exec rm -f \{\} \;
+	  -name 'config.cache' ')' -exec rm -f \{\} \;
+
+cvsclean: distclean
+# FIXME: Zap things that are in .cvsignore here.
 
 # create tags
 tags:
@@ -451,13 +456,14 @@ manpages: wmml
 lobotomize_crypto:
 	( cd $(SRCDIR)/modules/_Crypto ; ./.build_lobotomized_crypto  )
 	( cd $(SRCDIR)/modules/_Lobotomized_Crypto ; autoconf )
+
 #
 # Pike internal targets
 #
 module_objects: machine.h global.h modules/static_module_makefile modules/dynamic_module_makefile $(SRCDIR)/language.h lib master.pike
 	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
-	   ${MAKE} $(MAKE_FLAGS) || \
-	     ( test -f remake && ${MAKE} $(MAKE_FLAGS) ) ) || exit $$?
+	   $(MAKE) $(MAKE_FLAGS) || \
+	     ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) || exit $$?
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
@@ -475,7 +481,7 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h
 run_yacc: $(SRCDIR)/language.c
 
 modules/modlist.h:
-	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
+	( cd modules ; $(MAKE) $(MAKE_FLAGS) )
 
 modules/modlist_headers.h: modules/modlist.h
 	touch modules/modlist_headers.h
