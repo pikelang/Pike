@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.10 2004/06/18 13:05:50 grubba Exp $
+// $Id: ldap_privates.pmod,v 1.11 2004/10/14 00:16:17 bill Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -35,7 +35,6 @@
 //import Standards.ASN1.Encode;
 
 #if constant(Standards.ASN1.Types)
-
 class asn1_enumerated
 {
   inherit Standards.ASN1.Types.asn1_integer;
@@ -343,6 +342,8 @@ static mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
     13 : asn1_application_sequence,	// [13] ModifyDNResponse
     15 : asn1_application_sequence,	// [15] CompareResponse
     19 : asn1_application_sequence,	// [19] SearchResultReference
+    23 : asn1_application_sequence,	// [23] ExtendedRequest
+    24 : asn1_application_sequence,	// [24] ExtendedResponse
   ]),
   2:([
     0 : asn1_sequence,
