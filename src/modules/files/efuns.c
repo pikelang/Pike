@@ -252,12 +252,11 @@ void f_exece(INT32 args)
     if(sp[2-args].type != T_MAPPING)
       error("Bad argument 3 to exece().\n");
     en=sp[2-args].u.mapping;
-    array_fix_type_field(en->ind);
-    array_fix_type_field(en->val);
+    mapping_fix_type_field(en);
 
-    if(en->ind->type_field & ~BIT_STRING)
+    if(m_ind_types(en) & ~BIT_STRING)
       error("Bad argument 3 to exece().\n");
-    if(en->val->type_field & ~BIT_STRING)
+    if(m_val_types(en) & ~BIT_STRING)
       error("Bad argument 3 to exece().\n");
 
   case 2:
@@ -287,24 +286,26 @@ void f_exece(INT32 args)
 
   if(en)
   {
-    env=(char **)xalloc((1+en->ind->size) * sizeof(char *));
+    INT32 e;
+    struct array *i,*v;
 
-    for(e=0;e<en->ind->size;e++)
+    env=(char **)xalloc((1+m_sizeof(en)) * sizeof(char *));
+
+    i=mapping_indices(en);
+    v=mapping_values(en);
+    
+    for(e=0;e<i->size;e++)
     {
-      union anything *a;
-      a=low_array_get_item_ptr(en->ind,e,T_STRING);
-      push_string(a->string);
-      a->string->refs++;
-
+      push_string(ITEM(i)[e].u.string);
       push_string(make_shared_string("="));
-      a=low_array_get_item_ptr(en->val,e,T_STRING);
-      push_string(a->string);
-      a->string->refs++;
-
+      push_string(ITEM(v)[e].u.string);
       f_add(3);
-
       env[e]=sp[-1].u.string->str;
+      sp--;
     }
+      
+    free_array(i);
+    free_array(v);
     env[e]=0;
   }else{
     env=environ;
