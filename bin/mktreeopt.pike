@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.9 1999/11/08 23:51:51 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.10 1999/11/08 23:58:47 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -84,6 +84,16 @@
  *   }
  *   // Code for ANY-ANY
  */
+
+constant header =
+"/* Tree transformation code.\n"
+" *\n"
+" * This file was generated from %O by\n"
+" * $Id: mktreeopt.pike,v 1.10 1999/11/08 23:58:47 grubba Exp $\n"
+" *\n"
+" * Do NOT edit!\n"
+" */\n"
+"\n";
 
 mapping(string: mixed) rules = ([]);
 
@@ -903,7 +913,7 @@ int main(int argc, array(string) argv)
     }
   }
 
-  string result = generate_code();
+  string result = sprintf(header, fname) + generate_code();
 
   object dest = Stdio.File();
 
