@@ -13,8 +13,8 @@ log_start() {
 }
 
 log_end() {
-  LAST=$?
-  if [ "$LAST" = "0" ] ; then
+  LASTERR=$1
+  if [ "$1" = "0" ] ; then
     log "PASS"
   else
     log "FAIL"
@@ -25,19 +25,19 @@ log_end() {
 xenofarm_build() {
   log_start compile
   $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
-  log_end
-  if [ \! X$LAST = X0 ] ; then return 1; fi
+  log_end $?
+  if [ \! $LAST = 0 ] ; then return 1; fi
 
   log_start verify
   $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
     build/xenofarm/verifylog.txt 2>&1
-  log_end
-  if [ \! X$LAST = X0 ] ; then return 1; fi
+  log_end $?
+  if [ \! $LASTERR = 0 ] ; then return 1; fi
 
   log_start export
   $MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
-  log_end
-  if [ \! X$LAST = X0 ] ; then return 1; fi
+  log_end $?
+  if [ \! $LASTERR = 0 ] ; then return 1; fi
 }
 
 
@@ -48,15 +48,14 @@ export LC_CTYPE
 log "FORMAT 2"
 log_start build
 xenofarm_build
-log_end
+log_end $1
 
 log_start response_assembly
   cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt
   if test ! -f "build/xenofarm/verifylog.txt"; then
     cp "$BUILDDIR/config.cache" build/xenofarm/configcache.txt; \
-      builddir="$BUILDDIR"; \
-    for f in `cd "$$builddir" && find . -name config.log -print`; do
-      cp $$builddir/$$f build/xenofarm/configlog`echo $$f|tr '[/]' '[_]'`.txt;\
+    for f in `find $BUILDDIR -name config.log -print`; do
+      cp $f build/xenofarm/configlog`echo $f|tr '[/]' '[_]'`.txt;\
     done;
   fi
   if test ! -f "build/xenofarm/exportlog.txt"; then
@@ -73,6 +72,6 @@ log_start response_assembly
       build/xenofarm/_core.txt ";"
   cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt
   cp buildid.txt build/xenofarm/
-log_end
+log_end $1
 
 log "END"
