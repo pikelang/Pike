@@ -157,7 +157,7 @@ string quote(string s)
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
   if(bindings)
-    q=.sql_util.emulate_bindings(q,bindings,this_object());
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
   mixed qid = do_request('Q', q);
   return qid && class {
@@ -219,7 +219,7 @@ void create(string|void host, string|void db, string|void user, string|void pw)
   // Reconstruct the original URL (minus rsql://)
 
   if(!host) {
-    destruct(this_object());
+    destruct(this);
     return;
   }
   if(db)
@@ -231,7 +231,7 @@ void create(string|void host, string|void db, string|void user, string|void pw)
 
   array(string) arr = host/"/";
   if(sizeof(arr)<2) {
-    destruct(this_object());
+    destruct(this);
     return;
   }
 

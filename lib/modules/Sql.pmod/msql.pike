@@ -11,7 +11,7 @@ array(mapping(string:mixed)) query(string q,
                                    mapping(string|int:mixed)|void bindings) {
   if (!bindings)
     return ::query(q);
-  return ::query(.sql_util.emulate_bindings(q,bindings),this_object());
+  return ::query(.sql_util.emulate_bindings(q,bindings),this);
 }
 
 #endif /* constant(Msql.msql) */

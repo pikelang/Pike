@@ -2,7 +2,7 @@
  * Sybase driver for the Pike programming language.
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  *
- * $Id: sybase.pike,v 1.7 2002/11/27 15:40:34 mast Exp $
+ * $Id: sybase.pike,v 1.8 2003/12/31 00:10:26 nilsson Exp $
  *
  */
 
@@ -101,7 +101,7 @@ void create(void|string host, void|string db, void|string user,
 int|object big_query(string q, mapping(string|int:mixed)|void bindings) {
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings,this_object()));
+  return ::big_query(.sql_util.emulate_bindings(q,bindings,this));
 }
 
 #endif
