@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.12 1999/04/25 08:29:28 neotron Exp $
+// $Id: Readline.pike,v 1.13 1999/04/25 15:48:41 marcus Exp $
 
 class OutputController
 {
@@ -618,7 +618,7 @@ class DefaultEditKeys
     _readline->insert(reverse(c), p-1);
   }
 
-  array find_word_to_manipulate()
+  static array find_word_to_manipulate()
   {
     int p = _readline->getcursorpos();
     int ep;
@@ -641,21 +641,21 @@ class DefaultEditKeys
       _readline->insert(String.capitalize(lower_case(word)), pos);
   }
 
-  void upper_case_word()
+  void upcase_word()
   {
     [string word, string pos]= find_word_to_manipulate();
     if(word)
       _readline->insert(upper_case(word), pos);
   }
 
-  void lower_case_word()
+  void downcase_word()
   {
     [string word, string pos]= find_word_to_manipulate();
     if(word)
       _readline->insert(lower_case(word), pos);
   }
   
-  int forward_find_word()
+  static int forward_find_word()
   {
     int p, n;
     string line = _readline->gettext();
@@ -667,7 +667,7 @@ class DefaultEditKeys
     return p;
   }
 
-  int backward_find_word()
+  static int backward_find_word()
   {
     int p = _readline->getcursorpos()-1;
     string line = _readline->gettext();
@@ -693,7 +693,7 @@ class DefaultEditKeys
     _readline->setcursorpos(backward_find_word());
   }
 
-  void forward_delete_word()
+  void delete_word()
   {
     _readline->delete(_readline->getcursorpos(), forward_find_word());
   }
@@ -732,6 +732,20 @@ class DefaultEditKeys
     ({ "^[[B", down_history }),
     ({ "^[[C", forward_char }),
     ({ "^[[D", backward_char }),
+    ({ "^[C", capitalize_word }),
+    ({ "^[c", capitalize_word }),
+    ({ "^[U", upcase_word }),
+    ({ "^[u", upcase_word }),
+    ({ "^[L", downcase_word }),
+    ({ "^[l", downcase_word }),
+    ({ "^[D", delete_word }),
+    ({ "^[^H", backward_delete_word }),
+    ({ "^[^?", backward_delete_word }),
+    ({ "^[d", delete_word }),
+    ({ "^[F", forward_word }),
+    ({ "^[B", backward_word }),
+    ({ "^[f", forward_word }),
+    ({ "^[b", backward_word }),
     ({ "^A", beginning_of_line }),
     ({ "^B", backward_char }),
     ({ "^D", delete_char_or_eof }),
@@ -753,20 +767,6 @@ class DefaultEditKeys
     ({ "\\!kd", down_history }),
     ({ "\\!kr", forward_char }),
     ({ "\\!kl", backward_char }),
-    ({ "^[C", capitalize_word }),
-    ({ "^[c", capitalize_word }),
-    ({ "^[U", upper_case_word }),
-    ({ "^[u", upper_case_word }),
-    ({ "^[L", lower_case_word }),
-    ({ "^[l", lower_case_word }),
-    ({ "^[D", forward_delete_word }),
-    ({ "^[^H", backward_delete_word }),
-    ({ "^[^?", backward_delete_word }),
-    ({ "^[d", forward_delete_word }),
-    ({ "^[F", forward_word }),
-    ({ "^[B", backward_word }),
-    ({ "^[f", forward_word }),
-    ({ "^[b", backward_word }),
   });
 
   static void set_default_bindings()
