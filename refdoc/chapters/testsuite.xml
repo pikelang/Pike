@@ -11,10 +11,61 @@
 
 <section title="Writing new tests">
 
-  <subsection title="test_any" />
-  <subsection title="test_any_equal" />
-  <subsection title="test_eq" />
-  <subsection title="test_equal" />
+  <p>Whenever you write a new function in a module or in Pike itself it is
+  good to add a few test cases in the test suite to ensure that regressions
+  are spotted as soon as they appear or to aid in finding problems when porting
+  Pike to another platform. Since you have written the code, you are the one
+  best suited to come up with tricky tests cases. A good test suite for a function
+  includes both some trivial tests to ensure that the basic functionality works and
+  some nasty tests to test the borderlands of what the function is capable of. Don't
+  hesitate to add a few tests that triggers various compilation errors as well.</p>
+
+  <p>Also, when a bug in Pike has been found, a minimized test case the triggers the
+  bug should also be added to the test suite. After all, this test case has proven to
+  be a useful once.</p>
+
+  <subsection title="test_any">
+    <p>The test_any macro tests if the result of two pike expressions are
+    similar, e.g. if a==b. Technically the actual test preformed is !(a!=b).
+    The first expression should be a complete block, that returns a value, while
+    the other expression should be a simple pike statement.</p>
+    <example>
+test_any([[
+  int f (int i) {i = 0; return i;};
+  return f (1);
+]],0)
+</example>
+  </subsection>
+
+  <subsection title="test_any_equal">
+    <p>The test_any_equal tests if the result of two pike expressions are
+    identical, e.g. if equal(a,b). The first expression should be a complete
+    block, while the other expression should be a simple pike statement.</p>
+    <example>
+test_any_equal([[
+  mixed a=({1,2,3});
+  a[*] += 1;
+  return a;
+]], [[ ({2,3,4}) ]])
+</example>
+  </subsection>
+
+  <subsection title="test_eq">
+    <p>The test_eq tests if the result of two pike statements are similar,
+    e.g. if a==b. Technicaly the actual test performed is !(a!=b).</p>
+<example>
+test_eq(1e1,10.0);
+</example>
+  </subsection>
+
+  <subsection title="test_equal">
+    <p>The test_equal tests if the result of two pike statements are identical,
+    e.g. if equal(a,b).</p>
+<example>
+test_equal([[ ({10,20})[*] + 30  ]], [[ ({40, 50}) ]])
+</example>
+  </subsection>
+
   <subsection title="test_do" />
   <subsection title="test_true" />
   <subsection title="test_false" />
@@ -22,11 +73,14 @@
   <subsection title="test_compile_any" />
   <subsection title="test_compile_error" />
   <subsection title="test_compile_error_any" />
+  <subsection title="test_compile_warning" />
+  <subsection title="test_compile_warning_any" />
   <subsection title="test_eval_error" />
   <subsection title="test_define_program" />
   <subsection title="test_program" />
   <subsection title="cond" />
   <subsection title="ifefun" />
+  <subsection title="nonregression" />
 
 </section>
 
