@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.106 2002/11/18 16:40:54 grubba Exp $");
+RCSID("$Id: docode.c,v 1.107 2003/09/19 14:00:23 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -438,6 +438,7 @@ int do_lfun_call(int id,node *args)
 static int do_docode2(node *n, INT16 flags)
 {
   ptrdiff_t tmp1,tmp2,tmp3;
+  int ret;
 
   if(!n) return 0;
 
@@ -858,7 +859,8 @@ static int do_docode2(node *n, INT16 flags)
   }
 
   case ' ':
-    return do_docode(CAR(n),0)+do_docode(CDR(n),DO_LVALUE);
+    ret = do_docode(CAR(n),0);
+    return ret + do_docode(CDR(n),DO_LVALUE);
 
   case F_FOREACH:
   {
@@ -1481,7 +1483,8 @@ static int do_docode2(node *n, INT16 flags)
   }
 
   case F_LVALUE_LIST:
-    return do_docode(CAR(n),DO_LVALUE)+do_docode(CDR(n),DO_LVALUE);
+    ret = do_docode(CAR(n),DO_LVALUE);
+    return ret + do_docode(CDR(n),DO_LVALUE);
 
     case F_ARRAY_LVALUE:
       tmp1=do_docode(CAR(n),DO_LVALUE);
