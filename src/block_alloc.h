@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.36 2001/09/06 21:22:59 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.37 2001/09/08 11:33:15 grubba Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -401,4 +401,4 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, size_t hval)   \
   p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
   return p;								     \
-}									     \
+}
