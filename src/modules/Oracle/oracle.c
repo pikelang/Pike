@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.8 1998/02/02 18:07:42 marcus Exp $
+ * $Id: oracle.c,v 1.9 1998/02/02 21:39:28 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -34,7 +34,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.8 1998/02/02 18:07:42 marcus Exp $");
+RCSID("$Id: oracle.c,v 1.9 1998/02/02 21:39:28 marcus Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -453,7 +453,7 @@ static void f_big_query(INT32 args)
   struct pike_string *query;
   struct dbcurs *curs;
   sword rc;
-  INT32 cols=0;
+  /*  INT32 cols=0; */
 
   get_all_args("Oracle.oracle->big_query", args, "%S", &query);
 
@@ -494,6 +494,8 @@ static void f_big_query(INT32 args)
 
   push_object(this_object());
 
+  /*
+
   for(;;) {
     text cbuf[32];
     sb4 siz, cbufl=sizeof(cbuf), dispsz;
@@ -519,9 +521,12 @@ static void f_big_query(INT32 args)
     cols++;
   }
 
+  */
+
   curs->next = THIS->cdas;
   THIS->cdas = curs;
 
+  /*
   if(!cols) {
     ocan(&curs->cda);
     pop_n_elems(1);
@@ -530,12 +535,79 @@ static void f_big_query(INT32 args)
   }
 
   f_aggregate(cols*2);
+  */
 
   THIS->share_cda = curs;
 
-  push_object(clone_object(oracle_result_program, 2));
+  push_object(clone_object(oracle_result_program, 1));
 
   THIS->cdas = curs->next;
+
+}
+
+static void f_list_tables(INT32 args)
+{
+  struct pike_string *wild;
+  struct dbcurs *curs;
+  sword rc;
+
+  if(args)
+    get_all_args("Oracle.oracle->list_tables", args, "%S", &wild);
+  else
+    wild = NULL;
+
+  if(!(curs = THIS->cdas))
+    curs = make_cda(THIS);
+
+  THIS->cdas = curs->next;
+
+  THREADS_ALLOW();
+
+  ocan(&curs->cda);
+
+  if(wild) {
+    rc = oparse(&curs->cda, "select tname from tab where tname like :wild",
+		-1, 1, 2);
+    if(!rc)
+      rc = obndrv(&curs->cda, ":wild", -1, wild->str, wild->len, SQLT_CHR,
+		  -1, NULL, NULL, -1, 0);
+  } else
+    rc = oparse(&curs->cda, "select tname from tab", -1, 1, 2);
+ 
+  THREADS_DISALLOW();
+   
+  if(rc) {
+    curs->next = THIS->cdas;
+    THIS->cdas = curs;
+    error_handler(THIS, curs->cda.rc);
+  }
+
+  THREADS_ALLOW();
+
+  rc = oexec(&curs->cda);
+
+  THREADS_DISALLOW();
+
+  if(rc) {
+    rc = curs->cda.rc;
+    ocan(&curs->cda);
+    curs->next = THIS->cdas;
+    THIS->cdas = curs;
+    error_handler(THIS, rc);
+  }
+
+  pop_n_elems(args);
+
+  push_object(this_object());
+
+  curs->next = THIS->cdas;
+  THIS->cdas = curs;
+  THIS->share_cda = curs;
+
+  push_object(clone_object(oracle_result_program, 1));
+
+  THIS->cdas = curs->next;
+
 }
 
 #endif
@@ -560,6 +632,7 @@ void pike_module_init(void)
 
   add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);
   add_function("big_query", f_big_query, "function(string:object)", ID_PUBLIC);
+  add_function("list_tables", f_list_tables, "function(void|string:object)", ID_PUBLIC);
 
   set_init_callback(init_dbcon_struct);
   set_exit_callback(exit_dbcon_struct);
@@ -582,6 +655,8 @@ void pike_module_init(void)
 #endif
 }
 
+static void call_atexits();
+
 void pike_module_exit(void)
 {
 #ifdef HAVE_ORACLE
@@ -595,5 +670,33 @@ void pike_module_exit(void)
     oracle_result_program = NULL;
   }
 #endif
+  call_atexits();
 }
+
+#ifdef DYNAMIC_MODULE
+
+static int atexit_cnt=0;
+static void (*atexit_fnc[32])(void);
+
+int atexit(void (*func)(void))
+{
+  if(atexit_cnt==32)
+    return -1;
+  atexit_fnc[atexit_cnt++]=func;
+  return 0;
+}
+
+static void call_atexits()
+{
+  while(atexit_cnt)
+    (*atexit_fnc[--atexit_cnt])();
+}
+
+#else
+
+static void call_atexits()
+{
+}
+
+#endif
 
