@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.36 2000/12/23 07:36:25 hubbe Exp $");
+RCSID("$Id: port.c,v 1.37 2001/09/28 09:34:36 tomas Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -31,14 +31,17 @@ time_t time PROT((time_t *));
 
 void GETTIMEOFDAY(struct timeval *t)
 {
-  double t2;
-  FILETIME tmp;
-  GetSystemTimeAsFileTime(&tmp);
-  t2=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
-  t2/=10000000.0;
-  t2-=11644473600.0;
-  t->tv_sec = DO_NOT_WARN(floor(t2));
-  t->tv_usec = DO_NOT_WARN((t2 - t->tv_sec)*1000000.0);
+  union {
+    unsigned __int64 ft_scalar;
+    FILETIME ft_struct;
+  } ft;
+
+  GetSystemTimeAsFileTime(&ft.ft_struct);
+
+  ft.ft_scalar /= 10;
+  ft.ft_scalar -= 11644473600000000i64;
+  t->tv_sec = (long)(ft.ft_scalar / 1000000i64);
+  t->tv_usec = (long)(ft.ft_scalar % 1000000i64);
 }
 
 #else
