@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.185 1998/05/17 20:37:38 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.186 1998/05/17 20:37:55 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1449,7 +1449,7 @@ AC_MSG_CHECKING([for union wait (old BSD convention)])
 AC_CACHE_VAL(pike_cv_union_wait, [ AC_TRY_COMPILE([
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
-#endif /* AHVE_SYS_WAIT_H */
+#endif /* HAVE_SYS_WAIT_H */
 ], [
   union wait status;
   exit(0);
