@@ -5,6 +5,7 @@ Fri Nov  1 15:47:48 1996  Fredrik Hubinette  <hubbe@tymin.blarg.com>
 	* f_upper_case/f_lower_case now uses EXTRACT_UCHAR
 	* some documentation about pike internals added
 	* htmlify_docs.pike fixed to handle internal docs
+	* mpz->powm fixed
 	
 Tue Oct 29 16:12:03 1996  Fredrik Hubinette  <hubbe@tymin.blarg.com>
 
