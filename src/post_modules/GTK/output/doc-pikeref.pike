@@ -21,11 +21,11 @@ static string make_example_image( string data, int toplevel )
     Process.create_process( ({"pike",
 			      combine_path(__FILE__,
 					   "../../make_example_image.pike"),
-			      data,
+			      replace(data, "@@", "@"),
 			      toplevel?"TOP":"SUB",
 			      dir, tim
 			    }))->wait();
-  return ("@code{"+replace(data,"@}", "@@}")+"@}\n"
+  return ("@code{" + data + "@}\n"
 	  "@xml{<image src='../"+tim+"'/>@}\n");
 }
 
@@ -67,6 +67,7 @@ static string fix_const( string s )
 static string trim_xml( string what )
 {
   string a, b, c;
+  what = replace(what, "@", "@@");
   while( sscanf( what, "%s<br%*s>%s", a, b ) == 3 ) what = a+b;
   while( sscanf( what, "%s<p>%s", a, b ) == 2 )     what = a+b;
   while( sscanf( what, "%s</p>%s", a, b ) == 2 )    what = a+b;
@@ -141,7 +142,7 @@ static string make_function_doc( Function f, Class c )
       return vtype;
     if( parent->classes[ t->name ] )
       return class_name(parent->classes[ t->name ]);
-    return t->pike_type( 1 );
+    return t->doc_type();
   };
 
   if( c->name == "_global" )
