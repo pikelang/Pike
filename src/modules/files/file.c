@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.59 1997/10/21 18:39:34 grubba Exp $");
+RCSID("$Id: file.c,v 1.60 1997/11/07 19:42:21 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -1049,6 +1049,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
       int tmp;
       len=sizeof(addr);
       tmp=accept(fd,(struct sockaddr *)&addr,&len);
+
       if(tmp!=-1) close(tmp);
       if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr))>=0)
 	break;
@@ -1071,7 +1072,11 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   {
     len=sizeof(addr);
     sv[0]=accept(fd,(struct sockaddr *)&addr,&len);
-    if(sv[0] < 0) return -1;
+
+    if(sv[0] < 0) {
+      close(sv[1]);
+      return -1;
+    }
 
     /* We do not trust accept */
     len=sizeof(addr);
@@ -1125,10 +1130,12 @@ static void file_pipe(INT32 args)
     ERRNO=errno;
     push_int(0);
   }
-  else if(i >= MAX_OPEN_FILEDESCRIPTORS)
+  else if((inout[0] >= MAX_OPEN_FILEDESCRIPTORS) ||
+	  (inout[1] >= MAX_OPEN_FILEDESCRIPTORS))
   {
     ERRNO=EBADF;
-    close(i);
+    close(inout[0]);
+    close(inout[1]);
     push_int(0);
   }
   else
