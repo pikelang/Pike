@@ -3,7 +3,12 @@
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
 #define DEBUG
 
-string image_prefix = "images/";
+function resolve_reference; 
+
+string image_prefix()
+{
+  return "images/";
+} 
 
 string quote(string in) {
   if(in-" "-"\t"=="") return "";
@@ -33,12 +38,14 @@ Node get_first_element(Node n) {
   throw( ({ "Node had no element child.\n", backtrace() }) );
 }
 
-string parse_module(Node n) {
-  string ret = "<dl><dt>"
-    "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
-    "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; MODULE <b>" +
-    n->get_attributes()->name + "</b></font></td></tr></table><br />\n"
-    "</dt><dd>";
+string parse_module(Node n, void|int noheader) {
+  string ret ="";
+  if(!noheader)
+    ret += "<dl><dt>"
+      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; MODULE <b>" +
+      n->get_attributes()->name + "</b></font></td></tr></table><br />\n"
+      "</dt><dd>";
 
   Node c = get_tag(n, "doc");
   if(c)
@@ -49,20 +56,25 @@ string parse_module(Node n) {
     throw( ({ "More than one doc element in module node.\n", backtrace() }) );
 #endif
 
-  ret += parse_children(n, "docgroup", parse_docgroup);
-  ret += parse_children(n, "class", parse_class);
-  ret += parse_children(n, "module", parse_module);
+  ret += parse_children(n, "docgroup", parse_docgroup, noheader);
+  ret += parse_children(n, "class", parse_class, noheader);
+  ret += parse_children(n, "module", parse_module, noheader);
 
-  return ret + "</dd></dl>";
+  if(!noheader)
+    ret = ret + "</dd></dl>"; 
+
+  return ret;
 }
 
-string parse_class(Node n) {
-  string ret = "<dl><dt>"
-    "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
-    "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; CLASS <b><font color='#005080'>" +
-    quote(reverse(n->get_ancestors(1)->get_attributes()->name)[2..]*".") +
-    "</font></b></font></td></tr></table><br />\n"
-    "</dt><dd>";
+string parse_class(Node n, void|int noheader) {
+  string ret ="";
+  if(!noheader)
+    ret += "<dl><dt>"
+      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; CLASS <b><font color='#005080'>" +
+      quote(reverse(n->get_ancestors(1)->get_attributes()->name)[2..]*".") +
+      "</font></b></font></td></tr></table><br />\n"
+      "</dt><dd>";
 
   Node c = get_tag(n, "doc");
   if(c)
@@ -82,9 +94,11 @@ string parse_class(Node n) {
   }
 
   ret += parse_children(n, "docgroup", parse_docgroup);
-  ret += parse_children(n, "class", parse_class);
+  ret += parse_children(n, "class", parse_class, noheader);
 
-  return ret + "</dd></dl>";
+  if(!noheader)
+    ret = ret + "</dd></dl>";
+  return ret;
 }
 
 string parse_text(Node n) {
@@ -121,7 +135,10 @@ string parse_text(Node n) {
       ret += "<font face='courier'><"+name+">" + parse_text(c) + "</"+name+"></font>";
       break;
     case "ref":
-      ret += "<font face='courier' size='-1'>" + parse_text(c) + "</font>";
+      string ref = parse_text(c);
+      if(resolve_reference && resolve_reference(ref))
+	ref = sprintf("<a href='%s'>%s</a>", resolve_reference(ref), ref);
+      ret += "<font face='courier'>" + ref + "</font>";
       break;
     case "dl":
       ret += "<dl>" + map(get_tags(c, "group"), parse_text)*"" + "</dl>";
@@ -191,7 +208,7 @@ string parse_text(Node n) {
 
     case "image": // Not in XSLT
       mapping m = c->get_attributes();
-      m->src = image_prefix + m_delete(m, "file");
+      m->src = image_prefix() + m_delete(m, "file");
       ret += sprintf("<img%{ %s='%s'%} />", (array)m);
       break;
 
@@ -424,7 +441,7 @@ string parse_not_doc(Node n) {
       ret += "<tt>" + parse_type(get_first_element(get_tag(c, "returntype"))); // Check for more children
       ret += " ";
       ret += render_class_path(c);
-      ret += "<b><font color='#0000E0'>" + c->get_attributes()->name + "</font>(</b>";
+      ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
       ret += parse_not_doc( get_tag(c, "arguments") );
       ret += "<b>)</b></tt>";
       break;
@@ -503,11 +520,12 @@ string parse_docgroup(Node n) {
   return ret + "</dl>\n";
 }
 
-string parse_children(Node n, string tag, function cb) {
+string parse_children(Node n, string tag, function cb, mixed ... args) {
   string ret = "";
   foreach(n->get_children(), Node c)
     if(c->get_node_type()==XML_ELEMENT && c->get_any_name()==tag)
-      ret += cb(c);
+      ret += cb(c, @args);
+
   return ret;
 }
 
@@ -531,7 +549,7 @@ int main(int num, array args) {
   args = args[1..];
   foreach(args, string arg) {
     if(has_prefix(arg, "--img=")) {
-      image_prefix = arg[6..];
+//        image_prefix = arg[6..];
       args -= ({ arg });
     }
     if(arg=="--help") {
