@@ -1217,6 +1217,8 @@ class cHour
 
    inherit TimeofDay;
 
+   int __hash() { return ux/(60*60); }
+
    void create_unixtime_default(int unixtime)
    {
       create_unixtime(unixtime,3600);
@@ -1327,6 +1329,8 @@ class cMinute
 
    inherit TimeofDay;
 
+   int __hash() { return ux/60; }
+
    static void create_unixtime(int _ux,int _len)
    {
       ::create_unixtime(_ux,_len);
@@ -1431,6 +1435,8 @@ class cSecond
 //! inherits TimeofDay
 
    inherit TimeofDay;
+
+  int __hash() { return ux; }
 
    void create_unixtime_default(int unixtime)
    {
