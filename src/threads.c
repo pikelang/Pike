@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.75 1998/07/10 15:52:06 grubba Exp $");
+RCSID("$Id: threads.c,v 1.76 1998/07/16 23:46:15 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -207,12 +207,18 @@ void init_threads_disable(struct object *o)
 
   THREADS_FPRINTF(0, (stderr, "init_threads_disable(): threads_disabled:%d\n",
 		      threads_disabled));
-  while (live_threads) {
-    THREADS_FPRINTF(0,
-		    (stderr,
-		     "_disable_threads(): Waiting for %d threads to finish\n",
-		     live_threads));
-    co_wait(&live_threads_change, &interpreter_lock);
+
+  if(live_threads)
+  {
+    SWAP_OUT_CURRENT_THREAD();
+    while (live_threads) {
+      THREADS_FPRINTF(0,
+		      (stderr,
+		       "_disable_threads(): Waiting for %d threads to finish\n",
+		       live_threads));
+      co_wait(&live_threads_change, &interpreter_lock);
+    }
+    SWAP_IN_CURRENT_THREAD();
   }
 }
 
