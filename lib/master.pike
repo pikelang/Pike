@@ -148,7 +148,7 @@ object cast_to_object(string oname)
 {
   object ret;
 
-  if(oname[0]=='/')
+  if(oname[0]!='/')
     oname=combine_path(getcwd(),oname);
 
   if(oname[sizeof(oname)-3..sizeof(oname)]==".pike")
