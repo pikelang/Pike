@@ -18,6 +18,7 @@ testfont binary
 /NT/tools/install-sh foreign_ident
 /bin/export.pike foreign_ident
 /bin/httpd.pike foreign_ident
+/bin/make_ci.pike foreign_ident
 /bin/mkpeep.pike foreign_ident
 /bin/mkwmml.pike foreign_ident
 /bin/test_pike.pike foreign_ident
@@ -106,6 +107,7 @@ testfont binary
 /src/dmalloc.h foreign_ident
 /src/docode.c foreign_ident
 /src/docode.h foreign_ident
+/src/dummy_ci.h foreign_ident
 /src/dynamic_buffer.c foreign_ident
 /src/dynamic_buffer.h foreign_ident
 /src/dynamic_load.c foreign_ident
