@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.210 2000/09/12 17:06:38 grubba Exp $");
+RCSID("$Id: las.c,v 1.211 2000/09/13 12:13:57 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -547,59 +547,179 @@ void free_all_nodes(void)
   }
 }
 
-/* FIXME: Ought to use parent pointer to avoid recursion. */
 void debug_free_node(node *n)
 {
   if(!n) return;
-#ifdef PIKE_DEBUG
-  if(l_flag>9)
-    print_tree(n);
 
 #ifdef SHARED_NODES
-  {
-    size_t hash;
-    if ((hash = hash_node(n)) != n->hash) {
-      fprintf(stderr, "Hash-value is bad 0x%08lx != 0x%08lx\n",
-	      DO_NOT_WARN((unsigned long)hash),
-	      DO_NOT_WARN((unsigned long)n->hash));
+  if (--n->refs) {
+#ifdef PIKE_DEBUG
+    if(l_flag>9)
       print_tree(n);
-      fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
-	    n->token, _CAR(n), _CDR(n), n->current_file->str, n->line_number);
+
+    {
+      size_t hash;
+      if ((hash = hash_node(n)) != n->hash) {
+	fprintf(stderr, "Hash-value is bad 0x%08lx != 0x%08lx\n",
+		DO_NOT_WARN((unsigned long)hash),
+		DO_NOT_WARN((unsigned long)n->hash));
+	print_tree(n);
+	fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
+	      n->token, _CAR(n), _CDR(n), n->current_file->str, n->line_number);
+      }
     }
+#endif /* PIKE_DEBUG */
+    return;
   }
+#endif /* SHARED_NODES */
+
+  n->parent = NULL;
+
+  do {
+#ifdef PIKE_DEBUG
+    if(l_flag>9)
+      print_tree(n);
+
+#ifdef SHARED_NODES
+    {
+      size_t hash;
+      if ((hash = hash_node(n)) != n->hash) {
+	fprintf(stderr, "Hash-value is bad 0x%08lx != 0x%08lx\n",
+		DO_NOT_WARN((unsigned long)hash),
+		DO_NOT_WARN((unsigned long)n->hash));
+	print_tree(n);
+	fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
+	      n->token, _CAR(n), _CDR(n), n->current_file->str, n->line_number);
+      }
+    }
 #endif /* SHARED_NODES */
 #endif /* PIKE_DEBUG */
 
-#ifdef SHARED_NODES
-  if (dmalloc_touch(node *, n) && --(n->refs)) {
-    return;
-  }
-  sub_node(dmalloc_touch(node *, n));
+    dmalloc_touch(node *, n);
+
+#if defined(SHARED_NODES) && defined(PIKE_DEBUG)
+    if (n->refs) {
+      fatal("Node with refs left about to be killed: %8p\n", n);
+    }
+    sub_node(dmalloc_touch(node *, n));
 #endif /* SHARED_NODES */
 
-  fatal_check_c_stack(16384);
+    switch(n->token)
+    {
+    case USHRT_MAX:
+      fatal("Freeing node again!\n");
+      break;
 
-  switch(n->token)
-  {
-  case USHRT_MAX:
-    fatal("Freeing node again!\n");
-    break;
+    case F_CONSTANT:
+      free_svalue(&(n->u.sval));
+      break;
+    }
 
-  case F_CONSTANT:
-    free_svalue(&(n->u.sval));
-    break;
+    if (car_is_node(n)) {
+      /* Free CAR */
 
-  default:
-    if(car_is_node(n)) free_node(CAR(n));
-    if(cdr_is_node(n)) free_node(CDR(n));
-  }
-  n->token=USHRT_MAX;
-  if(n->type) free_string(n->type);
-  if(n->name) free_string(n->name);
+#ifdef SHARED_NODES
+      if (--_CAR(n)->refs) {
+	_CAR(n) = NULL;
+      } else {
+#endif /* SHARED_NODES */
+	_CAR(n)->parent = n;
+	n = _CAR(n);
+	_CAR(n->parent) = NULL;
+	continue;
+#ifdef SHARED_NODES
+      }
+#endif /* SHARED_NODES */
+    }
+    if (cdr_is_node(n)) {
+      /* Free CDR */
+
+#ifdef SHARED_NODES
+      if (--_CDR(n)->refs) {
+	_CDR(n) = NULL;
+      } else {
+#endif /* SHARED_NODES */
+	_CDR(n)->parent = n;
+	n = _CDR(n);
+	_CDR(n->parent) = NULL;
+	continue;
+#ifdef SHARED_NODES
+      }
+#endif /* SHARED_NODES */
+    }
+  backtrack:
+    while (n->parent && !cdr_is_node(n->parent)) {
+      /* Kill the node and backtrack */
+      node *dead = n;
+
+#if defined(SHARED_NODES) && defined(PIKE_DEBUG)
+      if (dead->refs) {
+	fatal("Killed node %08p still has refs: %d\n", dead, dead->refs);
+      }
+#endif /* SHARED_NODES && PIKE_DEBUG */
+
+      n = n->parent;
+
+      if(dead->type) free_string(dead->type);
+      if(dead->name) free_string(dead->name);
 #ifdef PIKE_DEBUG
-  if(n->current_file) free_string(n->current_file);
+      if(dead->current_file) free_string(dead->current_file);
 #endif
-  really_free_node_s(n);
+      dead->token=USHRT_MAX;
+      really_free_node_s(dead);
+    }
+    if (n->parent && cdr_is_node(n->parent)) {
+      /* Kill node and jump to the sibling. */
+      node *dead = n;
+
+#if defined(SHARED_NODES) && defined(PIKE_DEBUG)
+      if (dead->refs) {
+	fatal("Killed node %08p still has refs: %d\n", dead, dead->refs);
+      }
+#endif /* SHARED_NODES && PIKE_DEBUG */
+
+      n = n->parent;
+      if(dead->type) free_string(dead->type);
+      if(dead->name) free_string(dead->name);
+#ifdef PIKE_DEBUG
+      if(dead->current_file) free_string(dead->current_file);
+#endif
+      dead->token=USHRT_MAX;
+      really_free_node_s(dead);
+
+#ifdef SHARED_NODES
+      if (--_CDR(n)->refs) {
+	_CDR(n) = NULL;
+	goto backtrack;
+      } else {
+#endif /* SHARED_NODES */
+	_CDR(n)->parent = n;
+	n = _CDR(n);
+	_CDR(n->parent) = NULL;
+	continue;
+#ifdef SHARED_NODES
+      }
+#endif /* SHARED_NODES */
+    }
+
+    /* Kill root node. */
+
+#if defined(SHARED_NODES) && defined(PIKE_DEBUG)
+    if (n->refs) {
+      fatal("Killed node %08p still has refs: %d\n", n, n->refs);
+    }
+#endif /* SHARE_NODES && PIKE_DEBUG */
+
+    if(n->type) free_string(n->type);
+    if(n->name) free_string(n->name);
+#ifdef PIKE_DEBUG
+    if(n->current_file) free_string(n->current_file);
+#endif
+
+    n->token=USHRT_MAX;
+    really_free_node_s(n);
+    break;
+  } while (n->parent);
 }
 
 
