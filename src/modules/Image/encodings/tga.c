@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.10 2000/03/09 22:13:25 per Exp $
+ * $Id: tga.c,v 1.11 2000/03/10 04:53:16 per Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -77,7 +77,7 @@
 #include "image.h"
 #include "colortable.h"
 
-RCSID("$Id: tga.c,v 1.10 2000/03/09 22:13:25 per Exp $");
+RCSID("$Id: tga.c,v 1.11 2000/03/10 04:53:16 per Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -184,9 +184,9 @@ static struct image_alpha load_image(struct pike_string *str)
   if(buffer.len < ((sizeof(struct tga_footer)+sizeof(struct tga_header))))
     error("Data (%d bytes) is too short\n", buffer.len);
 
-/*   footer = *(struct tga_footer *)(buffer.str + */
-/*                                   (buffer.len-sizeof(struct tga_footer))); */
-/*   write(2, footer.signature, 16 ); */
+
+/*   MEMCPY(&footer, (buffer.str+(buffer.len-sizeof(struct tga_footer))), */
+/*          sizeof( struct tga_footer) ); */
 
   hdr = *((struct tga_header *)buffer.str);
   buffer.len -= sizeof(struct tga_header);
@@ -194,7 +194,13 @@ static struct image_alpha load_image(struct pike_string *str)
   buffer.str += hdr.idLength;
   buffer.len -= hdr.idLength;
 
-  if(buffer.len < 10)
+  if( (hdr.bpp != 8) && (hdr.bpp != 16) && (hdr.bpp != 24) && (hdr.bpp != 32) )
+    error("Unsupported TGA file (bpp==%d)\n", hdr.bpp);
+
+  if( hdr.imageType > 11 )
+    error("Unsupported TGA image type\n");
+
+  if(buffer.len < 3)
     error("Not enough data in buffer to decode a TGA image\n");
 
   return ReadImage (&buffer, &hdr);
@@ -547,7 +553,6 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
    default:
      error ("TGA: unrecognized image type %d\n", hdr->imageType);
   }
-
   /* Check that we have a color map only when we need it. */
   if (itype == INDEXED)
   {
@@ -595,18 +600,22 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
   /* Allocate the data. */
   data = (guchar *) malloc (ROUNDUP_DIVIDE((width * height * bpp), 8));
+  if(!data)
+    error("TGA: malloc failed\n");
 
   if (rle)
     myfread = rle_fread;
   else
     myfread = std_fread;
 
-  npels = ROUNDUP_DIVIDE((width * height * bpp), 8);
-
+  npels = width*height;
+  bypp = ROUNDUP_DIVIDE(bpp,8);
  /* Suck in the data. */
-  pels = (*myfread)(data+read_so_far, 1, npels, fp);
+  pels = (*myfread)(data+read_so_far,bypp,npels,fp);
+  read_so_far += pels;
   npels -= pels;
-  if(npels) MEMSET( data+read_so_far, 0, npels );
+  if(npels)
+    MEMSET( data+(read_so_far*bypp), 0, npels*bypp );
 
   /* Now convert the data to two image objects.  */
   {
@@ -627,74 +636,19 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     i.ao = clone_object( image_program, 5 );
     i.alpha = (struct image*)get_storage(i.ao,image_program);
 
-
     id = i.img->img;
     ad = i.alpha->img;
-
-    if ((abpp && abpp != 8) ||
-        (itype == RGB && pbpp != 24) ||
-        ((itype == GRAY  || itype == INDEXED) && pbpp != 8))
+    if( bpp == 16 && pbpp == 15 && itype == RGB )
     {
-      int bitoffset = 0;
-      if( bpp == 16 && pbpp == 15 && itype == RGB )
-      {
-        for( y = 0; y<height; y++ )
-          for(x = 0; x<width; x++)
-          {
-            unsigned short pixel = extract_le_short(&sd);
-            id->b = c5to8bit( pixel&31 );
-            id->g = c5to8bit((pixel & 922)>>5);
-            id->r = c5to8bit((pixel & 31744)>>10);
-            id++;
-          }
-      }
-      else switch( itype )
-      {
-       case INDEXED:
-         for(y = 0; y<height; y++)
-           for(x = 0; x<width; x++)
-           {
-             int cmapind = (getbits(&sd,pbpp,&bitoffset,bpp))*pelbytes;
-             id->b = cmap[cmapind++];
-             id->g = cmap[cmapind++];
-             (id++)->r = cmap[cmapind++];
-             if(pelbytes>3)
-             {
-               ad->r = ad->g = (ad++)->b = cmap[cmapind];
-             }
-           }
-         break;
-       case GRAY:
-         for(y = 0; y<height; y++)
-           for(x = 0; x<width; x++)
-           {
-             id->r = id->g =(id++)->b=getbits(&sd,pbpp,&bitoffset,8);
-             if(abpp)
-             {
-               if( really_no_alpha )
-                 getbits(&sd,abpp,&bitoffset,abpp);
-               else
-                 ad->r = ad->g = (ad++)->b = getbits(&sd,abpp,&bitoffset,8);
-             }
-           }
-         break;
-       case RGB:
-         for(y = 0; y<height; y++)
-           for(x = 0; x<width; x++)
-           {
-             if(abpp)
-             {
-               if( !really_no_alpha )
-                 ad->r = ad->g = (ad++)->b = getbits(&sd, abpp, &bitoffset,8 );
-               else
-                 getbits(&sd, abpp, &bitoffset,8 );
-             }
-             id->b = getbits(&sd, pbpp/3, &bitoffset,8 );
-             id->g = getbits(&sd, pbpp/3, &bitoffset,8 );
-             id->r = getbits(&sd, pbpp/3, &bitoffset,8 );
-             id++;
-           }
-      }
+      for( y = 0; y<height; y++ )
+        for(x = 0; x<width; x++)
+        {
+          unsigned short pixel = extract_le_short(&sd);
+          id->b = c5to8bit( pixel&31 );
+          id->g = c5to8bit((pixel & 922)>>5);
+          id->r = c5to8bit((pixel & 31744)>>10);
+          id++;
+        }
     }
     else /* 8 bits / channel. Simple and fast implementation.  */
     {
@@ -733,7 +687,8 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
              id->b = *(sd++);
              id->g = *(sd++);
              (id++)->r = *(sd++);
-             if(abpp) {
+             if(abpp)
+             {
                if( !really_no_alpha )
                  ad->r = ad->g = (ad++)->b = *sd;
                sd++;
