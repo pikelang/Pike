@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.73 2003/11/17 20:06:04 mast Exp $
+|| $Id: backend.cmod,v 1.74 2003/11/17 22:21:19 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.73 2003/11/17 20:06:04 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.74 2003/11/17 22:21:19 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1141,76 +1141,76 @@ PIKECLASS Backend
 	     * POSIX does. FIXME: What bits will be set for errors on GNU
 	     * systems, then? Should we always check for that? */
 	    ACCEPT_SIZE_T len = sizeof (err);
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: exception on %d\n", me->id, fd));
-	    if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: exception on %d\n", me->id, i));
+	    if (!getsockopt (i, SOL_SOCKET, SO_ERROR, &err, &len)) {
 	      IF_PD (fprintf (stderr, "BACKEND[%d]: error on %d, error=%d\n",
-			      me->id, fd, err));
+			      me->id, i, err));
 	    }
 
 	    else {
 	      if (me->fds[i].read_oob.callback) {
 		errno = 0;
 		IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			      me->id, fd, me->fds[fd].read_oob.data));
+			      me->id, i, me->fds[i].read_oob.data));
 		if ((*(me->fds[i].read_oob.callback))(i, me->fds[i].read_oob.data) == -1)
 		  goto backend_round_done;
 	      }
 	      else if (!me->fds[i].read.callback && !me->fds[i].write.callback)
-		MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+		MY_FD_CLR(&me->set, i, MY_POLLEXCEPT);
 	    }
 	  }
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.rset)) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: read on %d\n", me->id, fd));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: read on %d\n", me->id, i));
 	    if (me->fds[i].read.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
-			    me->id, fd, me->fds[fd].read.data));
+			    me->id, i, me->fds[i].read.data));
 	      errno = 0;
 	      if ((*(me->fds[i].read.callback))(i, me->fds[i].read.data) == -1)
 		goto backend_round_done;
 	    }
 	    else
-	      MY_FD_CLR(&me->set, fd, MY_POLLIN);
+	      MY_FD_CLR(&me->set, i, MY_POLLIN);
 	  }
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: write on %d\n", me->id, fd));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: write on %d\n", me->id, i));
 	    if (me->fds[i].write_oob.callback) {
 	      /* OOB can by BSD definition always be written, so if we can
 	       * write normal data it's reasonable to assume OOB can be
 	       * written too without too much risk of being thrown away. */
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
-			    me->id, fd, me->fds[fd].write_oob.data));
+			    me->id, i, me->fds[i].write_oob.data));
 	      errno = 0;
 	      if ((*(me->fds[i].write_oob.callback))(i, me->fds[i].write_oob.data) == -1)
 		goto backend_round_done;
 	    }
 	    else if (me->fds[i].write.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
-			    me->id, fd, me->fds[fd].write.data));
+			    me->id, i, me->fds[i].write.data));
 	      errno = 0;
 	      if ((*(me->fds[i].write.callback))(i, me->fds[i].write.data) == -1)
 		goto backend_round_done;
 	    }
 	    else
-	      MY_FD_CLR(&me->set, fd, MY_POLLOUT);
+	      MY_FD_CLR(&me->set, i, MY_POLLOUT);
 	  }
 
 	  if (err) {
 	    errno = err;
 	    /* We don't want to keep this fd anymore. */
-	    MY_FD_CLR(&me->set, fd, MY_POLLIN);
-	    MY_FD_CLR(&me->set, fd, MY_POLLOUT);
-	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
-	    if (me->fds[fd].read.callback) {
+	    MY_FD_CLR(&me->set, i, MY_POLLIN);
+	    MY_FD_CLR(&me->set, i, MY_POLLOUT);
+	    MY_FD_CLR(&me->set, i, MY_POLLEXCEPT);
+	    if (me->fds[i].read.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
-			    me->id, fd, me->fds[fd].read.data));
-	      if ((*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data) == -1)
+			    me->id, i, me->fds[i].read.data));
+	      if ((*(me->fds[i].read.callback))(i,me->fds[i].read.data) == -1)
 		goto backend_round_done;
-	    } else if (me->fds[fd].write.callback) {
+	    } else if (me->fds[i].write.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
-			    me->id, fd, me->fds[fd].write.data));
-	      if ((*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data) == -1)
+			    me->id, i, me->fds[i].write.data));
+	      if ((*(me->fds[i].write.callback))(i, me->fds[i].write.data) == -1)
 		goto backend_round_done;
 	    }
 	  }
