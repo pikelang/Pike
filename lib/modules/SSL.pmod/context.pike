@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.25 2004/01/27 22:33:12 bill Exp $
+// $Id: context.pike,v 1.26 2004/01/30 01:01:15 bill Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -37,6 +37,9 @@ void set_authorities(array(string) a)
   update_authorities();
 }
 
+//! When set, require the chain to be known, even if the root is self signed.
+int require_trust=0;
+
 //! Get the list of allowed authorities. See @[set_authorities]. 
 array(string) get_authorities()
 {
@@ -44,7 +47,7 @@ array(string) get_authorities()
 }
 
 static array(string) authorities = ({});
-static array(object) authorities_cache = ({});
+array(object) authorities_cache = ({});
 
 //! Sets the list of trusted certificate issuers. 
 //!
@@ -70,7 +73,7 @@ array(array(string)) get_trusted_issuers()
 }
 
 static array(array(string)) trusted_issuers = ({});
-static array(array(object)) trusted_issuers_cache = ({});
+array(array(object)) trusted_issuers_cache = ({});
 
 //! Temporary, non-certified, private keys, used with a
 //! server_key_exchange message. The rules are as follows:
@@ -237,6 +240,7 @@ private void update_authorities()
   {
     authorities_cache += ({ Tools.X509.decode_certificate(a)});
   }
+
 }
 
 // update the cached decoded issuers list
@@ -246,6 +250,11 @@ private void update_trusted_issuers()
   foreach(trusted_issuers, array(string) i)
   {
     array(array) chain = ({});
+    // make sure the chain is valid and intact.
+    mapping result = Tools.X509.verify_certificate_chain(i, ([]), 0);
+
+    if(!result->verified)
+      error("Broken trusted issuer chain!\n");
 
     foreach(i, string chain_element)
     {

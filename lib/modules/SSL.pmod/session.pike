@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.30 2004/01/24 23:52:38 nilsson Exp $
+// $Id: session.pike,v 1.31 2004/01/30 01:01:15 bill Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -39,11 +39,13 @@ int ke_method;
 //! deriving the actual keys.
 string master_secret;
 
+//! information about the certificate in use by the peer, such as issuing authority, and verification status.
+mapping cert_data;
+
 array(int) version;
 
 //!
-array(string) client_certificate_chain;
-array(string) server_certificate_chain;
+array(string) peer_certificate_chain;
 
 //! Sets the proper authentication method and cipher specification
 //! for the given cipher @[suite] and @[verison].

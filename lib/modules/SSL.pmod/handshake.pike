@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.42 2004/01/27 22:33:12 bill Exp $
+/* $Id: handshake.pike,v 1.43 2004/01/30 01:01:15 bill Exp $
  *
  */
 
@@ -303,6 +303,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   if (context->auth_level >= AUTHLEVEL_ask)
   {
     // if we have no authorities, this is all rather pointless. throw an error.
+
     if(!context->authorities_cache || !sizeof(context->authorities_cache))
       error("No certificate authorities provided.\n");
  
@@ -538,26 +539,30 @@ string describe_type(int i)
 #endif
 
 // verify that a certificate chain is acceptable
+//
 int verify_certificate_chain(array(string) certs)
 {
   int issuer_known = 0;
 
   // step one: see if the issuer of the certificate is acceptable.
+  // this means the issuer of the certificate must be one of the authorities.
   string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
     ->get_der();
 
-  foreach(context->authorities_cache, object c)
+  foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
   {
     if((r == (c->subject->get_der()))) // we have a trusted issuer
     {
-      werror("subject of an authority is issuer of certificate.\n");
       issuer_known = 1;
       break;
     }
   }
 
-  if(!issuer_known) return 0;
-  
+  if(issuer_known==0)
+  {
+    return 0;
+  }
+
   // ok, so we have a certificate chain whose client certificate is 
   // issued by an authority known to us.
   
@@ -565,15 +570,19 @@ int verify_certificate_chain(array(string) certs)
 
   mapping auth=([]);
 
-  foreach(context->trusted_issuers_cache, object i)
+  foreach(context->trusted_issuers_cache, array(Tools.X509.TBSCertificate) i)
   {
-    auth[i->subject->get_der()] = i->public_key;
+    // we want the first item, the top level
+    auth[i[-1]->subject->get_der()] = i[-1]->public_key;
   }
 
-  mapping result = Tools.X509.verify_certificate_chain(certs, auth);
+  mapping result = Tools.X509.verify_certificate_chain(certs, auth, context->require_trust);
 
   if(result->verified)
+  {
+    session->cert_data = result;
     return 1;
+  }
   else return 0;  
 
 }
@@ -898,7 +907,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  // we have the certificate chain in hand, now we must verify them.
           if(!verify_certificate_chain(certs))
           {
-	werror("bad certificate received.\n");
 	     send_packet(Alert(ALERT_fatal, ALERT_bad_certificate, version[1],
 			       "SSL.session->handle_handshake: bad certificate\n",
 			       backtrace()));
@@ -906,8 +914,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
           }
           else
           {
-	werror("good certificate received.\n");
-           session->client_certificate_chain = certs;
+           session->peer_certificate_chain = certs;
           }
        } || !input->is_empty())
        {
@@ -1027,12 +1034,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       while(!input->is_empty())
 	certs += ({ input->get_var_string(3) });
 
-      session->server_certificate_chain = certs;
+      session->peer_certificate_chain = certs;
       
       mixed error=catch
       {
 	Tools.X509.Verifier public_key = Tools.X509.decode_certificate(
-                session->server_certificate_chain[0])->public_key;
+                session->peer_certificate_chain[0])->public_key;
 
 	if(public_key->type == "rsa")
 	  {
