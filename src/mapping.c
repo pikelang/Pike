@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.11 1997/01/29 21:43:07 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.12 1997/02/07 01:11:43 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -1042,13 +1042,14 @@ void zap_all_mappings()
 
     for(e=0;e<m->hashsize;e++)
     {
-      for(k=m->hash[e];k;k=k->next)
+      while(k=m->hash[e])
       {
+	m->hash[e]=k->next;
+	k->next=m->free_list;
+	m->free_list=k;
 	free_svalue(&k->ind);
 	free_svalue(&k->val);
       }
-      k->next=m->free_list;
-      m->hash[e]=0;
     }
     m->size=0;
     
