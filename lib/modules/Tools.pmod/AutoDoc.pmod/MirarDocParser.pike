@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.12 2002/12/05 16:29:36 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.13 2002/12/05 16:52:34 grubba Exp $ */
 
 /* MirarDoc documentation extractor.
  */
@@ -806,7 +806,7 @@ void process_line(string s,string currentfile,int line)
    s=getridoftabs(s);
 
    int i;
-   if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
+   if ((i=search(s,"**""!"))!=-1 || (i=search(s,"//""!"))!=-1)
    {
       string kw,arg;
 
