@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.462 2003/08/19 09:38:16 tomas Exp $
+|| $Id: builtin_functions.c,v 1.463 2003/09/19 12:27:50 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.462 2003/08/19 09:38:16 tomas Exp $");
+RCSID("$Id: builtin_functions.c,v 1.463 2003/09/19 12:27:50 jonasw Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3476,7 +3476,11 @@ PMOD_EXPORT void f_sleep(INT32 args)
 #ifdef __NT__
        Sleep(DO_NOT_WARN((int)(left*1000)));
 #elif defined(HAVE_POLL)
-       poll(NULL,0,(int)(left*1000));
+       {
+	 /* MacOS X is stupid, and requires a non-NULL pollfd pointer. */
+	 struct pollfd sentinel;
+	 poll(&sentinel, 0, (int)(left*1000));
+       }
 #else
        {
 	 struct timeval t3;
@@ -3590,7 +3594,11 @@ PMOD_EXPORT void f_delay(INT32 args)
 #ifdef __NT__
 	 Sleep(DO_NOT_WARN((int)(left*1000)));
 #elif defined(HAVE_POLL)
-	 poll(NULL,0,(int)(left*1000));
+	 {
+	   /* MacOS X is stupid, and requires a non-NULL pollfd pointer. */
+	   struct pollfd sentinel;
+	   poll(&sentinel, 0, (int)(left*1000));
+	 }
 #else
 	 {
 	   struct timeval t3;
@@ -4344,7 +4352,7 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
 	case '\'':
 	case '+':
 	case '~':
-	  break;
+	  continue;
 	  /* Attributes */
 	case '.':
 	case ':':

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.10 2002/10/21 17:06:13 marcus Exp $
+|| $Id: timeout.c,v 1.11 2003/09/19 12:27:51 jonasw Exp $
 */
 
 #include "config.h"
@@ -184,7 +184,11 @@ static void *handle_timeouts(void *ignored)
     }
     mt_unlock( &aap_timeout_mutex );
 #ifdef HAVE_POLL
-    poll(0,0,1000);
+    {
+      /*  MacOS X is stupid, and requires a non-NULL pollfd pointer. */
+      struct pollfd sentinel;
+      poll(&sentinel,0,1000);
+    }
 #else
     sleep(1);
 #endif
