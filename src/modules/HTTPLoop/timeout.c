@@ -137,7 +137,7 @@ void aap_remove_timeout_thr(int *to)
 
     if(t)
     {
-      debug_print_timeout_queue( t );
+/*       debug_print_timeout_queue( t ); */
       if( t == first_timeout )
       {
         first_timeout = t->next;
