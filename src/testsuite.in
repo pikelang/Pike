@@ -40,7 +40,7 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.19 1997/02/12 05:33:50 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.20 1997/02/13 02:12:32 hubbe Exp $"]])
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
@@ -129,12 +129,8 @@ cond([[all_constants()->thread_create]],
   test_do(Builtin.condition()->broadcast())
 
 // /precompiled/fifo
-test_any([[
-#include <fifo.h>
-return 0;
-]],0)
-  test_true(objectp(clone(Fifo)))
-  test_true(objectp(clone(Queue)))
+  test_true(objectp(clone(Fifo.Fifo)))
+  test_true(objectp(clone(Fifo.Queue)))
 ]])
 
 
