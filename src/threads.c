@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.122 2000/04/19 16:03:31 mast Exp $");
+RCSID("$Id: threads.c,v 1.123 2000/05/20 13:28:36 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -219,6 +219,9 @@ struct thread_starter
 {
   struct object *id;
   struct array *args;
+#ifdef BROKEN_LINUX_THREAD_EUID
+  int euid, egid;
+#endif /* BROKEN_LINUX_THREAD_EUID */
 };
 
 struct thread_local
@@ -562,6 +565,16 @@ TH_RETURN_TYPE new_thread_func(void * data)
 
   THREADS_FPRINTF(0, (stderr,"THREADS_DISALLOW() Thread %08x created...\n",
 		      (unsigned int)arg.id));
+
+#ifdef BROKEN_LINUX_THREAD_EUID
+  /* Work-around for Linux's pthreads not propagating the
+   * effective uid & gid.
+   */
+  if (!geteuid()) {
+    setegid(arg->egid);
+    seteuid(arg->euid);
+  }
+#endif /* BROKEN_LINUX_THREAD_EUID */
   
   if((tmp=mt_lock_interpreter()))
     fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
@@ -677,6 +690,11 @@ void f_thread_create(INT32 args)
   arg->args=aggregate_array(args);
   arg->id=clone_object(thread_id_prog,0);
   OBJ2THREAD(arg->id)->status=THREAD_RUNNING;
+
+#ifdef BROKEN_LINUX_THREAD_EUID
+  arg->euid = geteuid();
+  arg->egid = getegid();
+#endif /* BROKEN_LINUX_THREAD_EUID */
 
   do {
     tmp = th_create(& OBJ2THREAD(arg->id)->id,
