@@ -899,7 +899,7 @@ static int gobble(struct xmldata *data, char *s)
       callbackinfo=copy_mapping(data->input.callbackinfo);               \
       SET_ONERROR(tmp4, do_free_mapping, callbackinfo);                  \
       push_constant_text("previous");                                    \
-      push_mapping(data->input.callbackinfo);                            \
+      ref_push_mapping(data->input.callbackinfo);                        \
       mapping_insert(callbackinfo, sp-2, sp-1);                          \
       pop_n_elems(2);                                                    \
 									 \
@@ -1175,7 +1175,7 @@ static int read_smeg_pereference(struct xmldata *data)
     callbackinfo=copy_mapping(data->input.callbackinfo);
     SET_ONERROR(tmp4, do_free_mapping, callbackinfo);
     push_constant_text("previous");
-    push_mapping(data->input.callbackinfo);
+    ref_push_mapping(data->input.callbackinfo);
     mapping_insert(callbackinfo, sp-2, sp-1);
     pop_n_elems(2);
     
