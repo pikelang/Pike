@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.90 1999/12/12 00:26:08 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.91 1999/12/12 18:31:33 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -24,6 +24,7 @@ RCSID("$Id: pike_types.c,v 1.90 1999/12/12 00:26:08 mast Exp $");
 #include "lex.h"
 #include "pike_memory.h"
 #include "bignum.h"
+#include "main.h"
 
 /* #define PIKE_TYPE_DEBUG */
 
@@ -1414,75 +1415,78 @@ static char *low_match_types(char *a,char *b, int flags)
 {
   int e;
   char *s;
-  char *low_match_types2(char *a,char *b, int flags);
+  static char *low_match_types2(char *a,char *b, int flags);
 
-  init_buf();
-  for(e=0;e<indent;e++) my_strcat("  ");
-  my_strcat("low_match_types(");
-  low_describe_type(a);
-  if(type_length(a) + type_length(b) > 10)
-  {
-    my_strcat(",\n");
+  if (l_flag) {
+    init_buf();
     for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("                ");
-    low_describe_type(b);
-    my_strcat(",\n");
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("                ");
-  }else{
-    my_strcat(", ");
-    low_describe_type(b);
-    my_strcat(", ");
+    my_strcat("low_match_types(");
+    low_describe_type(a);
+    if(type_length(a) + type_length(b) > 10)
+    {
+      my_strcat(",\n");
+      for(e=0;e<indent;e++) my_strcat("  ");
+      my_strcat("                ");
+      low_describe_type(b);
+      my_strcat(",\n");
+      for(e=0;e<indent;e++) my_strcat("  ");
+      my_strcat("                ");
+    }else{
+      my_strcat(", ");
+      low_describe_type(b);
+      my_strcat(", ");
+    }
+    if (flags) {
+      int f = 0;
+      if (flags & A_EXACT) {
+	my_strcat("A_EXACT");
+	f = 1;
+      }
+      if (flags & B_EXACT) {
+	if (f) {
+	  my_strcat(" | ");
+	}
+	my_strcat("B_EXACT");
+	f = 1;
+      }
+      if (flags & NO_MAX_ARGS) {
+	if (f) {
+	  my_strcat(" | ");
+	}
+	my_strcat("NO_MAX_ARGS");
+	f = 1;
+      }
+      if (flags & NO_SHORTCUTS) {
+	if (f) {
+	  my_strcat(" | ");
+	}
+	my_strcat("NO_SHORTCUTS");
+	f = 1;
+      }
+    } else {
+      my_strcat("0");
+    }
+    my_strcat(");\n");
+    fprintf(stderr,"%s",(s=simple_free_buf()));
+    free(s);
+    indent++;
   }
-  if (flags) {
-    int f = 0;
-    if (flags & A_EXACT) {
-      my_strcat("A_EXACT");
-      f = 1;
-    }
-    if (flags & B_EXACT) {
-      if (f) {
-	my_strcat(" | ");
-      }
-      my_strcat("B_EXACT");
-      f = 1;
-    }
-    if (flags & NO_MAX_ARGS) {
-      if (f) {
-	my_strcat(" | ");
-      }
-      my_strcat("NO_MAX_ARGS");
-      f = 1;
-    }
-    if (flags & NO_SHORTCUTS) {
-      if (f) {
-	my_strcat(" | ");
-      }
-      my_strcat("NO_SHORTCUTS");
-      f = 1;
-    }
-  } else {
-    my_strcat("0");
-  }
-  my_strcat(");\n");
-  fprintf(stderr,"%s",(s=simple_free_buf()));
-  free(s);
-  indent++;
 
   a=low_match_types2(a,b,flags);
 
-  indent--;
-  init_buf();
-  for(e=0;e<indent;e++) my_strcat("  ");
-  my_strcat("= ");
-  if(a)
-    low_describe_type(a);
-  else
-    my_strcat("NULL");
-  my_strcat("\n");
-  fprintf(stderr,"%s",(s=simple_free_buf()));
-  free(s);
-
+  if (l_flag) {
+    indent--;
+    init_buf();
+    for(e=0;e<indent;e++) my_strcat("  ");
+    my_strcat("= ");
+    if(a)
+      low_describe_type(a);
+    else
+      my_strcat("NULL");
+    my_strcat("\n");
+    fprintf(stderr,"%s",(s=simple_free_buf()));
+    free(s);
+  }
   return a;
 }
 
@@ -1538,7 +1542,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 	a_markers[m]=pop_unfinished_type();
 
 #ifdef PIKE_TYPE_DEBUG
-	{
+	if (l_flag) {
 	  char *s;
 	  int e;
 	  init_buf();
@@ -1622,7 +1626,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 	free_string(tmp);
 	b_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-	{
+	if (l_flag) {
 	  char *s;
 	  int e;
 	  init_buf();
@@ -1835,9 +1839,11 @@ static char *low_match_types2(char *a,char *b, int flags)
       if(EXTRACT_UCHAR(a+1))
       {
 	/* object(1 x) =? object(1 x) */
+	/* FIXME: Ought to check if a inherits b or b inherits a. */
 	if(extract_type_int(a+2) != extract_type_int(b+2)) return 0;
       }else{
 	/* object(0 *) =? object(0 *) */
+	/* FIXME: Ought to check the implements relation */
 	break;
       }
     }
@@ -1849,6 +1855,13 @@ static char *low_match_types2(char *a,char *b, int flags)
 
       if(!ap || !bp) break;
 
+#if 1
+      /* FIXME: Temporary kludge.
+       * match_types() currently seems to need to be symetric.
+       */
+      if (!implements(ap,bp) && !implements(bp,ap))
+	return 0;
+#else /* !1 */
       if(EXTRACT_UCHAR(a+1))
       {
 	if(!implements(ap,bp))
@@ -1857,6 +1870,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 	if(!implements(bp,ap))
 	  return 0;
       }
+#endif /* 1 */
     }
     
     break;
@@ -1914,35 +1928,38 @@ static int low_pike_types_le(char *a,char *b)
 {
   int e;
   char *s;
-  int low_pike_types_le2(char *a,char *b);
+  static int low_pike_types_le2(char *a,char *b);
   int res;
 
-  init_buf();
-  for(e=0;e<indent;e++) my_strcat("  ");
-  my_strcat("low_pike_types_le(");
-  low_describe_type(a);
-  if(type_length(a) + type_length(b) > 10)
-  {
-    my_strcat(",\n");
+  if (l_flag) {
+    init_buf();
     for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("                ");
-    low_describe_type(b);
-  }else{
-    my_strcat(", ");
-    low_describe_type(b);
+    my_strcat("low_pike_types_le(");
+    low_describe_type(a);
+    if(type_length(a) + type_length(b) > 10)
+    {
+      my_strcat(",\n");
+      for(e=0;e<indent;e++) my_strcat("  ");
+      my_strcat("                ");
+      low_describe_type(b);
+    }else{
+      my_strcat(", ");
+      low_describe_type(b);
+    }
+    my_strcat(");\n");
+    fprintf(stderr,"%s",(s=simple_free_buf()));
+    free(s);
+    indent++;
   }
-  my_strcat(");\n");
-  fprintf(stderr,"%s",(s=simple_free_buf()));
-  free(s);
-  indent++;
 
   res=low_pike_types_le2(a,b);
 
-  indent--;
+  if (l_flag) {
+    indent--;
 
-  for(e=0;e<indent;e++) fprintf(stderr, "  ");
-  fprintf(stderr, "= %d\n", res);
-
+    for(e=0;e<indent;e++) fprintf(stderr, "  ");
+    fprintf(stderr, "= %d\n", res);
+  }
   return res;
 }
 
@@ -1984,14 +2001,14 @@ static int low_pike_types_le2(char *a,char *b)
       type_stack_mark();
       push_unfinished_type_with_markers(b, b_markers);
       tmp=pop_unfinished_type();
-
+      
       type_stack_mark();
       medium_or_pike_types(a_markers[m], tmp, 0);
       if(a_markers[m]) free_string(a_markers[m]);
       free_string(tmp);
       a_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-      {
+      if (l_flag) {
 	char *s;
 	int e;
 	init_buf();
@@ -2056,7 +2073,7 @@ static int low_pike_types_le2(char *a,char *b)
       free_string(tmp);
       b_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-      {
+      if (l_flag) {
 	char *s;
 	int e;
 	init_buf();
@@ -2137,7 +2154,6 @@ static int low_pike_types_le2(char *a,char *b)
 
   if(EXTRACT_UCHAR(a) != EXTRACT_UCHAR(b)) return 0;
 
-  ret=1;
   switch(EXTRACT_UCHAR(a))
   {
   case T_FUNCTION:
@@ -2173,7 +2189,7 @@ static int low_pike_types_le2(char *a,char *b)
       }
 
       if (EXTRACT_UCHAR(a_tmp) != T_VOID) {
-	if (EXTRACT_UCHAR(b_tmp) == T_VOID) return 0;
+	/* if (EXTRACT_UCHAR(b_tmp) == T_VOID) return 0; */
 	if (!low_pike_types_le(b_tmp, a_tmp)) return 0;
       }
     }
@@ -2213,6 +2229,14 @@ static int low_pike_types_le2(char *a,char *b)
     }
 #endif
 
+    /*
+     * object(0|1 x) <= object(0|1 0)
+     * object(0|1 0) <=! object(0|1 !0)
+     * object(1 x) <= object(0|1 x)
+     * object(1 x) <= object(1 y)	iff x inherits y
+     * object(0|1 x) <= object(0 y)	iff x implements y
+     */
+
     /* object(* 0) matches any object */
     if(!extract_type_int(b+2))
       return 1;
@@ -2220,38 +2244,32 @@ static int low_pike_types_le2(char *a,char *b)
     if(!extract_type_int(a+2))
       return 0;
     
+    if ((EXTRACT_UCHAR(a+1) || !EXTRACT_UCHAR(b+1)) &&
+	(extract_type_int(a+2) == extract_type_int(b+2)))
+      return 1;
 
-    /* object(x *) =? object(x *) */
-    if(EXTRACT_UCHAR(a+1) == EXTRACT_UCHAR(b+1))
-    {
-      /* x? */
-      if(EXTRACT_UCHAR(a+1))
-      {
-	/* object(1 x) =? object(1 x) */
-	if(extract_type_int(a+2) != extract_type_int(b+2)) return 0;
-      }else{
-	/* object(0 *) =? object(0 *) */
-	break;
+    if (EXTRACT_UCHAR(b+1)) {
+      if (!EXTRACT_UCHAR(a+1)) {
+	/* We can't guarantee the inherit relation. */
+	return 0;
       }
     }
 
     {
-      struct program *ap,*bp;
-      ap=id_to_program(extract_type_int(a+2));
-      bp=id_to_program(extract_type_int(b+2));
+      struct program *ap = id_to_program(extract_type_int(a+2));
+      struct program *bp = id_to_program(extract_type_int(b+2));
 
-      if(!ap || !bp) break;
-
-      if(EXTRACT_UCHAR(a+1))
-      {
-	if(!implements(ap,bp))
-	  return 0;
-      }else{
-	if(!implements(bp,ap))
-	  return 0;
+      if (!ap || !bp) {
+	/* Shouldn't happen... */
+	return 0;
+      }
+      if (EXTRACT_UCHAR(b+1)) {
+	/* FIXME: Should probably have a better test here. */
+	return low_get_storage(ap, bp) != -1;
+      } else {
+	return implements(ap, bp);
       }
     }
-    
     break;
 
   case T_INT:
@@ -2283,7 +2301,25 @@ static int low_pike_types_le2(char *a,char *b)
   default:
     fatal("error in type string.\n");
   }
-  return ret;
+  return 1;
+}
+
+/*
+ * Check the function parameters.
+ * Note: The difference between this function, and pike_types_le()
+ *       is the more lenient check for T_OR, and the handling of T_ARRAY.
+ */
+int strict_check_call(char *fun_type, char *arg_type)
+{
+  while ((EXTRACT_UCHAR(fun_type) == T_OR) ||
+	 (EXTRACT_UCHAR(fun_type) == T_ARRAY)) {
+    if (EXTRACT_UCHAR(fun_type++) == T_OR) {
+      int res = strict_check_call(fun_type, arg_type);
+      if (res) return res;
+      fun_type += type_length(fun_type);
+    }
+  }
+  return low_pike_types_le(fun_type, arg_type);
 }
 
 /*
@@ -2825,6 +2861,19 @@ struct pike_string *check_call(struct pike_string *args,
   
   if(low_get_return_type(type->str,args->str))
   {
+    if (lex.pragmas & ID_STRICT_TYPES) {
+      if (type == mixed_type_string) {
+	yywarning("Calling mixed.");
+      } else if (!strict_check_call(type->str, args->str)) {
+	struct pike_string *arg_t = describe_type(args);
+	struct pike_string *type_t = describe_type(type);
+	yywarning("Arguments not strictly compatible.");
+	yywarning("Expected: %s", type_t->str);
+	yywarning("Got     : %s", arg_t->str);
+	free_string(type_t);
+	free_string(arg_t);
+      }
+    }
     return pop_unfinished_type();
   }else{
     pop_stack_mark();
