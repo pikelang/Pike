@@ -611,7 +611,7 @@ done
 
   status("Filtering to root/root ownership", tmpname+".tar");
   tarfilter(tmpname+".tar");
-  
+
   status("Creating",tmpname+".tar.gz");
 
   Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
@@ -622,7 +622,7 @@ done
 
   Process.create_process( ({ "tar","cf", export_base_name})+ to_export)
     ->wait();
-  
+
   status("Filtering to root/root ownership", export_base_name);
   tarfilter(export_base_name);
 
@@ -999,6 +999,84 @@ void make_master(string dest, string master, string lib_prefix)
   status("Finalizing",master,"done");
 }
 
+/* dump modules (and master) */
+void dump_modules()
+{
+  string master=combine_path(lib_prefix,"master.pike");
+  mixed s1=file_stat(master);
+  mixed s2=file_stat(master+".o");
+  mapping(string:mapping(string:string)) options = ([ 
+    "env":getenv()-([
+      "PIKE_PROGRAM_PATH":"",
+      "PIKE_MODULE_PATH":"",
+      "PIKE_INCLUDE_PATH":"",
+      "PIKE_MASTER":"",
+      ]) ]); 
+  
+  
+  if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
+  {
+    Process.create_process( ({fakeroot(pike),"-m",
+				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
+				@(vars->fakeroot?({"--fakeroot="+
+                                                     vars->fakeroot}):({})),
+				master}), options)->wait();
+  }
+
+  if(sizeof(to_dump))
+  {
+    rm("dumpmodule.log");
+    
+    foreach(to_dump, string mod)
+      rm(mod+".o");
+      
+    /* Dump 50 modules at a time */
+
+    array cmd=({fakeroot(pike) });
+
+    if(vars->fakeroot)
+      cmd+=({
+	sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
+	  sprintf("-DPIKE_FAKEROOT_OMIT=%O",
+		  Array.map( ({
+		    getcwd(),
+		      vars->LIBDIR_SRC,
+		      vars->SRCDIR,
+		      vars->TMP_BINDIR,
+		      vars->MANDIR_SRC,
+		      vars->TMP_LIBDIR,
+		      vars->fakeroot,
+		      }), globify)*":"),
+	  "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
+	  });
+
+    cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
+
+#ifdef USE_GTK
+	      label1?"--distquiet":
+#endif
+      "--quiet"});
+
+//      werror("%O\n",cmd);
+
+    int offset = 1;
+    foreach(to_dump/50.0, array delta_dump)
+      {
+	Process.create_process(cmd +
+			       ( istty() ? 
+				 ({
+				   "--progress-bar",
+				     sprintf("%d,%d", offset, sizeof(to_dump))
+				     }) : ({"--quiet"}) ) +
+			       delta_dump, options)->wait();
+
+	offset += sizeof(delta_dump);
+      }
+      
+    status_clear(1);
+  }
+}
+
 void do_install()
 {
   pike=combine_path(exec_prefix,"pike");
@@ -1007,7 +1085,7 @@ void do_install()
     status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
   }
   catch {
-    files_to_install = (int)Stdio.read_file("num_files_to_install");
+    files_to_install = (int)Stdio.read_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"));
     
     if(!export && files_to_install)
       progress_bar =
@@ -1089,90 +1167,20 @@ void do_install()
 
   if(err) throw(err);
 
+  catch {
+    Stdio.write_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
+		     sprintf("%d\n",installed_files));
+    to_export+=({ combine_path(vars->TMP_BUILDDIR,"num_files_to_install") });
+  };
+
+  files_to_install=0;
 
   if(export)
   {
     do_export();
   }else{
-    string master=combine_path(lib_prefix,"master.pike");
-    mixed s1=file_stat(master);
-    mixed s2=file_stat(master+".o");
-    mapping(string:mapping(string:string)) options = ([ 
-      "env":getenv()-([
-        "PIKE_PROGRAM_PATH":"",
-        "PIKE_MODULE_PATH":"",
-        "PIKE_INCLUDE_PATH":"",
-        "PIKE_MASTER":"",
-      ]) ]); 
-
-
-    if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
-    {
-      Process.create_process( ({fakeroot(pike),"-m",
-				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
-				  @(vars->fakeroot?({"--fakeroot="+
-                                                     vars->fakeroot}):({})),
-				  master}), options)->wait();
-    }
-
-    catch {
-      Stdio.write_file("num_files_to_install",
-		       sprintf("%d\n",installed_files));
-    };
-    files_to_install=0;
+    dump_modules();
     
-    if(sizeof(to_dump))
-    {
-      rm("dumpmodule.log");
-      
-      foreach(to_dump, string mod)
-	  rm(mod+".o");
-      
-      /* Dump 50 modules at a time */
-
-      array cmd=({fakeroot(pike) });
-
-      if(vars->fakeroot)
-	cmd+=({
-	  sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
-	    sprintf("-DPIKE_FAKEROOT_OMIT=%O",
-		    Array.map( ({
-				  getcwd(),
-				    vars->LIBDIR_SRC,
-				    vars->SRCDIR,
-				    vars->TMP_BINDIR,
-				    vars->MANDIR_SRC,
-				    vars->TMP_LIBDIR,
-				    vars->fakeroot,
-				    }), globify)*":"),
-	    "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
-	    });
-
-      cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
-
-#ifdef USE_GTK
-		label1?"--distquiet":
-#endif
-	"--quiet"});
-
-//      werror("%O\n",cmd);
-
-      int offset = 1;
-      foreach(to_dump/50.0, array delta_dump)
-	{
-	  Process.create_process(cmd +
-				 ( istty() ? 
-				   ({
-				   "--progress-bar",
-				     sprintf("%d,%d", offset, sizeof(to_dump))
-				     }) : ({"--quiet"}) ) +
-				 delta_dump, options)->wait();
-
-	  offset += sizeof(delta_dump);
-	}
-      
-      status_clear(1);
-    }
 
     if(progress_bar)
       /* The last files copied does not really count (should
