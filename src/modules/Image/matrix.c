@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.32 2001/01/22 17:40:42 mirar Exp $ */
+/* $Id: matrix.c,v 1.33 2001/03/30 11:47:25 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.32 2001/01/22 17:40:42 mirar Exp $
+**!	$Id: matrix.c,v 1.33 2001/03/30 11:47:25 grubba Exp $
 **! class Image
 */
 
@@ -138,9 +138,9 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
 #define scale_add_pixel(dest,dx,src,sx,factor) \
    _scale_add_rgb(dest,src,factor)
 
-static INLINE void scale_add_line(rgbd_group *new,INT32 yn,INT32 newx,
-				  rgb_group *img,INT32 y,INT32 xsize,
-				  double py,double dx)
+static INLINE void scale_add_line(double py,double dx,
+				  rgbd_group *new,INT32 yn,INT32 newx,
+				  rgb_group *img,INT32 y,INT32 xsize)
 {
    INT32 x,xd;
    double xn,xndxd;
@@ -201,19 +201,20 @@ CHRONO("scale begin");
       if (DOUBLE_TO_INT(yn)<DOUBLE_TO_INT(yn+dy))
       {
 	 if (1.0-decimals(yn))
-	    scale_add_line(new, DOUBLE_TO_INT(yn), newx, source->img, y,
-			   source->xsize, (1.0-decimals(yn)),dx);
+	    scale_add_line((1.0-decimals(yn)),dx,
+			   new, DOUBLE_TO_INT(yn), newx,
+			   source->img, y, source->xsize);
 	 if ((yd = DOUBLE_TO_INT(yn+dy) - DOUBLE_TO_INT(yn))>1)
             while (--yd)
-   	       scale_add_line(new, DOUBLE_TO_INT(yn+yd), newx, source->img, y,
-			      source->xsize, 1.0, dx);
+   	       scale_add_line(1.0, dx, new, DOUBLE_TO_INT(yn+yd), newx,
+			      source->img, y, source->xsize);
 	 if (decimals(yn+dy))
-	    scale_add_line(new, DOUBLE_TO_INT(yn+dy), newx, source->img, y,
-			   source->xsize, (decimals(yn+dy)), dx);
+	    scale_add_line((decimals(yn+dy)), dx, new, DOUBLE_TO_INT(yn+dy),
+			   newx, source->img, y, source->xsize);
       }
       else
-	 scale_add_line(new, DOUBLE_TO_INT(yn), newx, source->img, y,
-			source->xsize, dy, dx);
+	 scale_add_line(dy, dx, new, DOUBLE_TO_INT(yn), newx,
+			source->img, y, source->xsize);
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group) +1);
