@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.146 2003/04/07 19:33:09 grubba Exp $
+|| $Id: interpret_functions.h,v 1.147 2003/04/08 08:37:36 grubba Exp $
 */
 
 /*
@@ -721,11 +721,15 @@ OPCODE0(F_ADD_TO, "+=", 0, {
        FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ) != -1)
     {
       apply_lfun(Pike_sp[-2].u.object, LFUN_ADD_EQ, 1);
-      goto add_to_set_lvalue;
+      /* NB: The lvalue already contains the object, so
+       *     no need to reassign it.
+       */
+      pop_stack();
+      stack_pop_n_elems_keep_top(2);
+      goto add_to_done;
     }
   }
   f_add(2);
- add_to_set_lvalue:
   assign_lvalue(Pike_sp-3,Pike_sp-1);
   stack_pop_n_elems_keep_top(2);
  add_to_done:
@@ -767,17 +771,20 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
     s.subtype=0;
     s.u.integer=0;
     assign_lvalue(Pike_sp-4,&s);
-  } else if (Pike_sp[-2].type == T_OBJECT) {
+  } else if (Pike_sp[-2].type == PIKE_T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
     if(Pike_sp[-2].u.object->refs <= 2 &&
        FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ) != -1)
     {
       apply_lfun(Pike_sp[-2].u.object, LFUN_ADD_EQ, 1);
-      goto add_to_and_pop_set_lvalue;
+      /* NB: The lvalue already contains the object, so
+       *     no need to reassign it.
+       */
+      pop_n_elems(4);
+      goto add_to_and_pop_done;
     }
   }
   f_add(2);
- add_to_and_pop_set_lvalue:
   assign_lvalue(Pike_sp-3,Pike_sp-1);
   pop_n_elems(3);
  add_to_and_pop_done:
