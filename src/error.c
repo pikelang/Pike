@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.115 2003/09/08 20:05:20 mast Exp $
+|| $Id: error.c,v 1.116 2003/09/19 12:24:59 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.115 2003/09/08 20:05:20 mast Exp $");
+RCSID("$Id: error.c,v 1.116 2003/09/19 12:24:59 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -191,6 +191,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noretu
   free_svalue(& throw_value);
   dmalloc_touch_svalue(Pike_sp-1);
   throw_value = *--Pike_sp;
+  dmalloc_touch_svalue(&throw_value);
+
   throw_severity = THROW_ERROR;
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
@@ -280,7 +282,14 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
     push_int(0);
 
   for (i=-args; i; i++) {
-    push_svalue(oldsp + i);
+    if (oldsp[i].type <= PIKE_T_FLOAT) {
+      push_svalue(oldsp + i);
+    } else {
+      char buffer[50];
+      sprintf(buffer, "<Svalue:0x%04x:0x%04x:%p>",
+	      oldsp[i].type, oldsp[i].subtype, oldsp[i].u.ptr);
+      push_text(buffer);
+    }
   }
 
   f_aggregate(args + 3);
