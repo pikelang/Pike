@@ -20,7 +20,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.49 2000/04/17 21:06:24 hubbe Exp $");
+RCSID("$Id: error.c,v 1.50 2000/04/19 21:26:19 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -295,7 +295,7 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
   (void)VFPRINTF(stderr, fmt, args);
 
   d_flag=t_flag=0;
-  if(!Pike_sp)
+  if(Pike_sp && evaluator_stack)
   {
     fprintf(stderr,"Attempting to dump backlog (may fail)...\n");
     push_error("Backtrace at time of fatal:\n");
