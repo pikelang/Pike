@@ -1285,6 +1285,22 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_CAST); f_cast(); break;
 
+      CASE(F_SOFT_CAST);
+#ifdef PIKE_DEBUG
+      if (d_flag) {
+	/* FIXME: Perform a type-check here */
+	/* Stack: type_string, value */
+	if (d_flag > 1) {
+	  struct pike_string *t = describe_type(sp[-2].u.string);
+	  fprintf(stderr, "Soft cast to %s\n", t->str);
+	  free_string(t);
+	}
+      }
+#endif /* PIKE_DEBUG */
+      stack_swap();
+      pop_stack();
+      break;
+
       CASE(F_RANGE); o_range(); break;
       CASE(F_COPY_VALUE);
       {
