@@ -403,6 +403,26 @@ class TimeRange
       else return how_many(x);
    }
 
+//! method int offset_to(TimeRange x)
+//!	Calculates offset to x; this compares
+//!	two timeranges and gives the integer offset
+//!	between the two starting points.
+//!	
+//!	This is true for suitable a and b:
+//!	<tt>a+a->offset_to(b)==b</tt>
+//!
+//!	By suitable means that a and b are of the same
+//!	type and size. This is obviously true only
+//!	if a+n has b as a possible result for any n.
+
+   int offset_to(TimeRange x)
+   {
+      if (x==this_object()) return 0;
+      if (x<this_object())
+	 return -(x->distance(this_object())/this_object());
+      return this_object()->distance(x)/this_object();
+   }
+
 //! method TimeRange beginning()
 //! method TimeRange end()
 //!	This gives back the zero-sized beginning
