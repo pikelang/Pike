@@ -1,11 +1,15 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.28 1999/10/21 21:19:12 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.29 1999/10/22 02:35:41 hubbe Exp $ */
 
 import Stdio;
 
-#if !efun(_verify_internals)
+#if !constant(_verify_internals)
 #define _verify_internals()
+#endif
+
+#if !constant(_dmalloc_set_name)
+void _dmalloc_set_name(mixed ... args) {}
 #endif
 
 int foo(string opt)
@@ -228,22 +232,28 @@ int main(int argc, string *argv)
 	  switch(type)
 	  {
 	    case "COMPILE":
+	      _dmalloc_set_name(fname,0);
 	      if(catch(compile_string(test + widener, fname)))
 	      {
+		_dmalloc_set_name();
 		werror(fname + " failed.\n");
 		bzot(test);
 		errors++;
 	      }else{
+		_dmalloc_set_name();
 		successes++;
 	      }
 	      break;
 	    
 	    case "COMPILE_ERROR":
 	      master()->set_inhibit_compile_errors(1);
+	      _dmalloc_set_name(fname,0);
 	      if(catch(compile_string(test + widener, fname)))
 	      {
+		_dmalloc_set_name();
 		successes++;
 	      }else{
+		_dmalloc_set_name();
 		werror(fname + " failed.\n");
 		bzot(test);
 		errors++;
@@ -253,10 +263,13 @@ int main(int argc, string *argv)
 	    
 	    case "EVAL_ERROR":
 	      master()->set_inhibit_compile_errors(1);
+	      _dmalloc_set_name(fname,0);
 	      if(catch(clone(compile_string(test + widener, fname))->a()))
 	      {
+		_dmalloc_set_name();
 		successes++;
 	      }else{
+		_dmalloc_set_name();
 		werror(fname + " failed.\n");
 		bzot(test);
 		errors++;
@@ -267,14 +280,19 @@ int main(int argc, string *argv)
 	    default:
 	      mixed err;
 	      if (err = catch{
+		_dmalloc_set_name(fname,0);
 		o=clone(compile_string(test + widener,fname));
+		_dmalloc_set_name();
 	    
 		if(check > 1) _verify_internals();
 	    
 		a=b=0;
 		if(t) trace(t);
+		_dmalloc_set_name(fname,1);
 		if(functionp(o->a)) a=o->a();
 		if(functionp(o->b)) b=o->b();
+		_dmalloc_set_name();
+
 		if(t) trace(0);
 		if(check > 1) _verify_internals();
 	      }) {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.84 1999/10/18 19:15:41 hubbe Exp $");
+RCSID("$Id: object.c,v 1.85 1999/10/22 02:35:55 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -205,6 +205,7 @@ struct object *debug_clone_object(struct program *p, int args)
   call_c_initializers(o);
   debug_malloc_touch(o);
   call_pike_initializers(o,args);
+  debug_malloc_touch(o);
   UNSET_ONERROR(tmp);
   return o;
 }
