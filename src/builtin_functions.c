@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.328 2001/01/08 19:12:23 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.329 2001/01/09 00:21:44 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2718,6 +2718,21 @@ node *fix_object_program_type(node *n)
   return NULL;
 }
 
+/*! @decl string reverse(string s)
+ *! @decl array reverse(array a)
+ *! @decl int reverse(int i)
+ *!
+ *! Reverses a string, array or int.
+ *!
+ *! This function reverses a string, char by char, an array, value
+ *! by value or an int, bit by bit and returns the result.
+ *!
+ *! Reversing strings can be particularly useful for parsing difficult
+ *! syntaxes which require scanning backwards.
+ *!
+ *! @seealso
+ *! @[sscanf()]
+ */
 PMOD_EXPORT void f_reverse(INT32 args)
 {
   if(args < 1)
@@ -2964,6 +2979,30 @@ static struct pike_string * replace_many(struct pike_string *str,
   return finish_string_builder(&ret);
 }
 
+/*! @decl string replace(string s, string from, string to)
+ *! @decl string replace(string s, array(string) from, array(string) to)
+ *! @decl array replace(array a, mixed from, mixed to)
+ *! @decl mapping replace(mapping a, mixed from, mixed to)
+ *!
+ *! Generic replace function.
+ *!
+ *! This function can do several kinds replacement operations, the
+ *! different syntaxes do different things as follows:
+ *! 
+ *! If all the arguments are strings, a copy of @[s] with every occurrence
+ *! of @[from] replaced with @[to] will be returned.
+ *!
+ *! If the first argument is a string, and the others array(string), a string
+ *! with every occurrance of @[from][@i{i@}] in @[s] replaced with
+ *! @[to][@i{i@}] will be returned.
+ *!
+ *! If the first argument is an array or mapping, the values of @[a] which
+ *! are @[`==()] with @[from] will be replaced with @[to] destructively.
+ *! @[a] will then be returned.
+ *!
+ *! @note
+ *! Note that @[replace()] on arrays and mappings is a destructive operation.
+ */
 PMOD_EXPORT void f_replace(INT32 args)
 {
   if(args < 3)
@@ -3033,6 +3072,32 @@ PMOD_EXPORT void f_replace(INT32 args)
   }
 }
 
+/*! @decl program compile(string source, object|void handler,
+ *!                       int|void major, int|void minor)
+ *!
+ *! Compile a string to a program.
+ *!
+ *! This function takes a piece of Pike code as a string and
+ *! compiles it into a clonable program.
+ *!
+ *! The optional argument @[handler] is used to specify an alternative
+ *! error handler. If it is not specified the current master object will
+ *! be used.
+ *!
+ *! The optional arguments @[major] and @[minor] are used to tell the compiler
+ *! to attempt to be compatible with Pike @[major].@[minor].
+ *!
+ *! @note
+ *! Note that @[source] must contain the complete source for a program.
+ *! It is not possible to compile a single expression or statement.
+ *!
+ *! Also note that @[compile()] does not preprocess the program.
+ *! To preprocess the program you can use @[compile_string()] or
+ *! call the preprocessor manually by calling @[cpp()].
+ *!
+ *! @seealso
+ *! @[compile_string()], @[compile_file()], @[cpp()], @[master()]
+ */
 PMOD_EXPORT void f_compile(INT32 args)
 {
   struct program *p;
@@ -3073,6 +3138,16 @@ PMOD_EXPORT void f_compile(INT32 args)
   push_program(p);
 }
 
+
+/*! @decl array|mapping|multiset set_weak_flag(array|mapping|multiset m,
+ *!                                            int(0..1) state)
+ *!
+ *! Set the value @[m] to hold weak references if @[state] is @tt{1@}.
+ *! Reset to strong references otherwise.
+ *!
+ *! @returns
+ *! @[m] will be returned.
+ */
 #define SETFLAG(FLAGS,FLAG,ONOFF) \
   FLAGS = (FLAGS & ~FLAG) | ( ONOFF ? FLAG : 0 )
 void f_set_weak_flag(INT32 args)
@@ -3102,8 +3177,14 @@ void f_set_weak_flag(INT32 args)
   pop_n_elems(args-1);
 }
 
-
-
+/*! @decl int objectp(mixed arg)
+ *!
+ *! Returns @tt{1@} if @[arg] is an object, @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *! @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[functionp()],
+ *! @[multisetp()], @[floatp()], @[intp()]
+ */
 PMOD_EXPORT void f_objectp(INT32 args)
 {
   if(args<1)
@@ -3149,6 +3230,16 @@ PMOD_EXPORT void f_functionp(INT32 args)
 #undef HAVE_POLL
 #endif
 
+/*! @decl void sleep(int|float s)
+ *!
+ *! This function makes the program stop for @[s] seconds.
+ *!
+ *! Only signal handlers can interrupt the sleep. Other callbacks are
+ *! not called during sleep.
+ *!
+ *! @seealso
+ *! @[signal()]
+ */
 PMOD_EXPORT void f_sleep(INT32 args)
 {
 #define POLL_SLEEP_LIMIT 0.02
@@ -3245,6 +3336,20 @@ PMOD_EXPORT void f_sleep(INT32 args)
 	 GET_TIME_ELAPSED;
 }
 
+/*! int gc()
+ *!
+ *! Force garbage collection.
+ *!
+ *! This function checks all the memory for cyclic structures such
+ *! as arrays containing themselves and frees them if appropriate.
+ *! It also frees up destructed objects. It then returns how many
+ *! arrays/objects/programs/etc. it managed to free by doing this.
+ *!
+ *! Normally there is no need to call this function since Pike will
+ *! call it by itself every now and then. (Pike will try to predict
+ *! when 20% of all arrays/object/programs in memory is 'garbage'
+ *! and call this routine then.)
+ */
 void f_gc(INT32 args)
 {
   INT32 tmp;
@@ -3303,7 +3408,6 @@ void ID(INT32 args) \
  *! @[mappingp()], @[intp()], @[arrayp()], @[stringp()], @[objectp()],
  *! @[multisetp()], @[floatp()], @[functionp()]
  */
-
 PMOD_EXPORT void f_programp(INT32 args)
 {
   if(args<1)
@@ -3398,7 +3502,34 @@ TYPEP(f_multisetp, "multisetp", T_MULTISET)
 TYPEP(f_stringp, "stringp", T_STRING)
 TYPEP(f_floatp, "floatp", T_FLOAT)
 #endif /* AUTO_BIGNUM */
-     
+
+/*! @decl array sort(array(mixed) index, array(mixed) ... data)
+ *!
+ *! Sort arrays destructively.
+ *!
+ *! This function sorts the array @[index] destructively. That means
+ *! that the array itself is changed and returned, no copy is created.
+ *!
+ *! If extra arguments are given, they are supposed to be arrays of the
+ *! same size as @[index]. Each of these arrays will be modified in the
+ *! same way as @[index]. I.e. if index 3 is moved to position 0 in @[index]
+ *! index 3 will be moved to position 0 in all the other arrays as well.
+ *!
+ *! @[sort()] can sort strings, integers and floats in ascending order.
+ *! Arrays will be sorted first on the first element of each array.
+ *! Objects will be sorted in ascending order according to @[`<()], @[`>()]
+ *! and @[`==()].
+ *!
+ *! @returns
+ *! The first argument will be returned.
+ *! 
+ *! @note
+ *! The sorting algorithm used is not stable, ie elements that are equal
+ *! may get reordered.
+ *!
+ *! @seealso
+ *! @[reverse()]
+ */
 PMOD_EXPORT void f_sort(INT32 args)
 {
   INT32 e,*order;
@@ -3427,6 +3558,20 @@ PMOD_EXPORT void f_sort(INT32 args)
   }
 }
 
+/*! @decl array rows(mixed data, array index)
+ *!
+ *! Select a set of rows from an array.
+ *!
+ *! This function is en optimized equivalent to:
+ *!
+ *! @code{map(@[index], lambda(mixed x) { return @[data][x]; })@}
+ *!
+ *! That is, it indices data on every index in the array index and
+ *! returns an array with the results.
+ *!
+ *! @seealso
+ *! @[column()]
+ */
 PMOD_EXPORT void f_rows(INT32 args)
 {
   INT32 e;
@@ -3464,6 +3609,18 @@ PMOD_EXPORT void f_rows(INT32 args)
 
 
 #ifdef PIKE_DEBUG
+/*! @decl void _verify_internals()
+ *!
+ *! Perform sanity checks.
+ *!
+ *! This function goes through most of the internal Pike structures and
+ *! generates a fatal error if one of them is found to be out of order.
+ *! It is only used for debugging.
+ *!
+ *! @note
+ *! This function is only available if the Pike runtime has been compiled
+ *! with RTL debug.
+ */
 PMOD_EXPORT void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
@@ -3476,6 +3633,17 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl int _debug(int(0..) level)
+ *!
+ *! Set the run-time debug level.
+ *!
+ *! @returns
+ *! The old debug level will be returned.
+ *! 
+ *! @note
+ *! This function is only available if the Pike runtime has been compiled
+ *! with RTL debug.
+ */
 PMOD_EXPORT void f__debug(INT32 args)
 {
   INT_TYPE d;
@@ -3489,6 +3657,17 @@ PMOD_EXPORT void f__debug(INT32 args)
   d_flag = d;
 }
 
+/*! @decl int _optimizer_debug(int(0..) level)
+ *!
+ *! Set the optimizer debug level.
+ *!
+ *! @returns
+ *! The old optimizer debug level will be returned.
+ *! 
+ *! @note
+ *! This function is only available if the Pike runtime has been compiled
+ *! with RTL debug.
+ */
 PMOD_EXPORT void f__optimizer_debug(INT32 args)
 {
   INT_TYPE l;
@@ -3504,6 +3683,17 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
 
 #ifdef YYDEBUG
 
+/*! @decl int _compiler_trace(int(0..) level)
+ *!
+ *! Set the compiler trace level.
+ *!
+ *! @returns
+ *! The old compiler trace level will be returned.
+ *! 
+ *! @note
+ *! This function is only available if the Pike runtime has been compiled
+ *! with RTL debug.
+ */
 PMOD_EXPORT void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
@@ -3546,6 +3736,16 @@ static void encode_struct_tm(struct tm *tm)
 #endif
 
 #ifdef HAVE_GMTIME
+/*! @decl mapping(string:int) gmtime(int timestamp)
+ *!
+ *! Convert seconds since 1970 into components.
+ *!
+ *! This function works like @[localtime()] but the result is
+ *! not adjusted for the local time zone.
+ *!
+ *! @seealso
+ *! @[localtime()], @[time()], @[ctime()], @[mktime()]
+ */
 PMOD_EXPORT void f_gmtime(INT32 args)
 {
   struct tm *tm;
@@ -3566,6 +3766,41 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 #endif
 
 #ifdef HAVE_LOCALTIME
+/*! @decl mapping(string:int) localtime(int timestamp)
+ *!
+ *! Convert seconds since 1970 into components.
+ *!
+ *! @returns
+ *! This function returns a mapping with the following components:
+ *! @mapping
+ *!   @elem int(0..60) "sec"
+ *!     Seconds over the minute.
+ *!   @elem int(0..59) "min"
+ *!     Minutes over the hour.
+ *!   @elem int(0..23) "hour"
+ *!     Hour of the day.
+ *!   @elem int(1..31) "mday"
+ *!     Day of the month.
+ *!   @elem int(0..11) "mon"
+ *!     Month of the year.
+ *!   @elem int(0..) "year"
+ *!     Year since 1900.
+ *!   @elem int(0..6) "wday"
+ *!     Day of week (0 = Sunday).
+ *!   @elem int(0..365) "yday"
+ *!     Day of the year.
+ *!   @elem int(0..1) "isdst"
+ *!     Is daylight savings time.
+ *!   @elem int "timezone"
+ *!     Offset from UTC.
+ *! @endmapping
+ *!
+ *! @note
+ *! The field @tt{"timezone"@} may not be available on all platforms.
+ *!
+ *! @seealso
+ *! @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
+ */
 PMOD_EXPORT void f_localtime(INT32 args)
 {
   struct tm *tm;
@@ -3596,6 +3831,39 @@ PMOD_EXPORT void f_localtime(INT32 args)
 #endif
 
 #ifdef HAVE_MKTIME
+/*! @decl int mktime(mapping(string:int) tm)
+ *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year,
+ *!                  int isdst, int tz)
+ *!
+ *! This function converts information about date and time into an integer
+ *! which contains the number of seconds since the beginning of 1970.
+ *!
+ *! You can either call this function with a mapping containing the
+ *! following elements:
+ *! @mapping
+ *!   @elem int(0..60) "sec"
+ *!     Seconds over the minute.
+ *!   @elem int(0..59) "min"
+ *!     Minutes over the hour.
+ *!   @elem int(0..23) "hour"
+ *!     Hour of the day.
+ *!   @elem int(1..31) "mday"
+ *!     Day of the month.
+ *!   @elem int(0..11) "mon"
+ *!     Month of the year.
+ *!   @elem int(0..) "year"
+ *!     Year since 1900.
+ *!   @elem int(0..1) "isdst"
+ *!     Is daylight savings time.
+ *!   @elem int(-12..12) "timezone"
+ *!     The timezone offset from UTC in hours.
+ *! @endmapping
+ *!
+ *! Or you can just send them all on one line as the second syntax suggests.
+ *!
+ *! @seealso
+ *! @[time()], @[ctime()], @[localtime()], @[gmtime()]
+ */
 PMOD_EXPORT void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year, isdst;
@@ -3775,6 +4043,10 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
   return i;
 }
 
+/*! @decl array parse_format(string fmt)
+ *!
+ *! Parse a sprintf/sscanf-style format string
+ */
 static void f_parse_format(INT32 args)
 {
   struct pike_string *s = NULL;
@@ -3832,6 +4104,23 @@ static int does_match(struct pike_string *s,int j,
   return j==s->len;
 }
 
+/*! @decl int(0..1) glob(string glob, string str)
+ *! @decl array(string) glob(string glob, array(string) arr)
+ *!
+ *! Match strings against globs.
+ *!
+ *! In a glob string a question sign matches any character and
+ *! an asterisk matches any string.
+ *!
+ *! When the second argument is a string and @[str] matches
+ *! the glob @[glob] @tt{1@} will be returned, @tt{0@} (zero) otherwise.
+ *!
+ *! If the second array is an array and array containing the strings in
+ *! @[arr] that match @[glob] will be returned.
+ *!
+ *! @seealso
+ *! @[sscanf()], @[Regexp]
+ */
 PMOD_EXPORT void f_glob(INT32 args)
 {
   INT32 i,matches;
