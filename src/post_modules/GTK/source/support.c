@@ -307,15 +307,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
   return i;
 }
 
-#define IS_OBJECT_PROGRAM(X)                 \
-!( ((X) == pgtk_style_program)               \
-|| ((X) == pgtk_CTreeNode_program)           \
-|| ((X) == pgtk_CTreeRow_program)            \
-|| ((X) == pgtk_icon_list_item_program)      \
-|| ((X) == pgtk_plot_dataset_program)        \
-|| ((X) == pgtk_psfont_program)              \
-|| ((X) == pgtk_selection_data_program)      \
-|| ((X) == pgtk_sheet_child_program))
+int IS_OBJECT_PROGRAM(struct program *X);
 
 void push_gtkobjectclass(void *obj, struct program *def)
 {
