@@ -1,11 +1,11 @@
 #include <config.h>
-/* $Id: quant.c,v 1.12 1997/09/01 14:17:55 per Exp $ */
+/* $Id: quant.c,v 1.13 1997/10/06 23:37:51 grubba Exp $ */
 /* (optimized) color quantization and following lookup */
 
 /*
 **! module Image
 **! note
-**!	$Id: quant.c,v 1.12 1997/09/01 14:17:55 per Exp $<br>
+**!	$Id: quant.c,v 1.13 1997/10/06 23:37:51 grubba Exp $<br>
 */
 
 #ifdef HAVE_UNISTD_H
@@ -756,6 +756,9 @@ struct colortable *colortable_from_array(struct array *arr,char *from)
 
 int colortable_rgb(struct colortable *ct,rgb_group rgb)
 {
+  /* NOTE:
+   *	This code MUST be MT-SAFE!
+   */
    int i,best;
 
    if (ct->cache->index.r==rgb.r &&
@@ -858,6 +861,9 @@ int colortable_rgb(struct colortable *ct,rgb_group rgb)
 
 int colortable_rgb_nearest(struct colortable *ct,rgb_group rgb)
 {
+  /* NOTE:
+   *	This code MUST be MT-SAFE!
+   */
    int i,best=0,di,di2;
    rgb_group *prgb;
 
