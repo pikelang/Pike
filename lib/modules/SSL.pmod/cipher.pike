@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.16 2001/04/18 14:30:41 noy Exp $
+/* $Id: cipher.pike,v 1.17 2003/10/23 09:45:13 jonasw Exp $
  *
  */
 
@@ -122,7 +122,7 @@ class mac_hmac_md5 {
 // Hashfn is either a Crypto.md5 or Crypto.sha 
 static string P_hash(object hashfn,int hlen,string secret,string seed,int len) {
    
-  Crypto.hmac hmac=Crypto.hmac(hashfn);
+  object /*Crypto.hmac*/ hmac = Crypto.hmac(hashfn);
   string temp=seed;
   string res="";
   
