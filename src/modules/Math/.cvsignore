@@ -13,3 +13,5 @@ module_testsuite
 remake
 stamp-h
 stamp-h.in
+transforms.c
+transforms.cmod.compiled
