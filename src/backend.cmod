@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.61 2003/10/28 00:00:25 mast Exp $
+|| $Id: backend.cmod,v 1.62 2003/10/28 15:58:40 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.61 2003/10/28 00:00:25 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.62 2003/10/28 15:58:40 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1002,7 +1002,7 @@ PIKECLASS Backend
 	SET_ONERROR (uwp, low_backend_cleanup, me);
 
 	if (timeout->tv_sec < 0) {
-	  next_timeout.tv_sec = LONG_MAX;
+	  next_timeout.tv_sec = 100000000;
 	  next_timeout.tv_usec = 999999;
 	}
 	else {
@@ -1036,7 +1036,7 @@ PIKECLASS Backend
 	}
 
 #ifdef HAVE_POLL
-	if (next_timeout.tv_sec == LONG_MAX && next_timeout.tv_usec == 999999)
+	if (next_timeout.tv_sec >= 100000000)
 	  /* Take this as waiting forever. */
 	  poll_msec = -1;
 	else if(next_timeout.tv_sec < 0)
@@ -1083,8 +1083,7 @@ PIKECLASS Backend
 		      &me->active_set.rset,
 		      &me->active_set.wset, 
 		      &me->active_set.eset,
-		      (select_timeout.tv_sec == LONG_MAX &&
-		       select_timeout.tv_usec == 999999) ?
+		      select_timeout.tv_sec >= 100000000 ?
 		      NULL : &select_timeout);
 #endif	/* HAVE_POLL */
 
