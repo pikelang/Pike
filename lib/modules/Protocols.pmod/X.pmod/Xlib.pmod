@@ -236,16 +236,18 @@ class Display
   {
     int wid;
     object w;
-
-//     werror(sprintf("Event: %s\n", event->type));
+    array a;
+    
+    werror(sprintf("Event: %s\n", event->type));
     if (event->wid && (w = lookup_id(event->wid))
-	&& ((w->event_callbacks["_"+event->type])
-	    ||(w->event_callbacks[event->type])))
+	&& (a = (w->event_callbacks[event->type])))
       {
-	if(w->event_callbacks["_"+event->type])
-	  w->event_callbacks["_"+event->type](event,this_object());
-	if(w->event_callbacks[event->type])
-	  w->event_callbacks[event->type](event,this_object());
+	foreach(a, function f)
+	  {
+	    if (!(event = f(event, this_object())))
+	      return;
+	  }
+	// FIXME: Should event be forwarded to parent or not?
       }
     else
       if (misc_event_handler)
@@ -412,6 +414,7 @@ class Display
 		    break;
 		  }
 #endif
+		werror(sprintf("Xlib: Received error %O\n", m));
 		return ({ ACTION_ERROR, m });
 	      }
 	    else if (type == "Reply")
@@ -437,23 +440,39 @@ class Display
 		  case "KeyRelease":
 		  case "ButtonPress":
 		  case "ButtonRelease":
-		  case "MotionNotify": {
-		    int root, child;
-		    sscanf(msg, "%*c%c%2c%4c" "%4c%4c%4c"
-			   "%2c%2c%2c%2c" "%2c%c",
-			   event->detail, event->sequenceNumber, event->time,
-			   root, event->wid, child,
-			   event->rootX, event->rootY, event->eventx, 
-			   event->eventY, event->state, event->sameScreen);
-		    event->root = lookup_id(root);
-		    event->event = lookup_id(event->wid);
-		    event->child = child && lookup_id(child);
-		    break;
-		  }
-#if 0
+		  case "MotionNotify":
+		    {
+		      int root, child;
+		      sscanf(msg, "%*c%c%2c%4c" "%4c%4c%4c"
+			     "%2c%2c%2c%2c" "%2c%c",
+			     event->detail, event->sequenceNumber, event->time,
+			     root, event->wid, child,
+			     event->rootX, event->rootY, event->eventX, 
+			     event->eventY, event->state, event->sameScreen);
+		      event->root = lookup_id(root);
+		      event->event = lookup_id(event->wid);
+		      event->child = child && lookup_id(child);
+		      break;
+		    }
 		  case "EnterNotify":
 		  case "LeaveNotify":
-		    ...;
+		    {
+		      int root, child, flags;
+		      sscanf(msg, "%*4c%4c%4c%4c%4c" "%2c%2c%2c%2c" "%2c%c%c",
+			     event->time, root, event->wid, child,
+			     event->rootX, event->rootY, event->eventX, event->eventY,
+			     event->state, event->mode, flags);
+		      event->root = lookup_id(root);
+		      event->event = lookup_id(event->wid);
+		      event->child = child && lookup_id(child);
+		      event->flags = (< >);
+		      if (flags & 1)
+			event->flags->Focus = 1;
+		      if (flags & 2)
+			event->flags->SameScreen = 1;
+		      break;
+		    }
+#if 0
 		  case "FocusIn":
 		  case "FocusOut":
 		    ...;
@@ -461,14 +480,15 @@ class Display
 		  case "KeymapNotify":
 		    event->map = msg[1..];
 		    break;
-		  case "Expose": {
-		    sscanf(msg, "%*4c%4c" "%2c%2c%2c%2c" "%2c",
-			   event->wid,
-			   event->x, event->y, event->width, event->height,
-			   event->count);
-		    event->window = lookup_id(event->wid);
-		    break;
-		  }
+		  case "Expose":
+		    {
+		      sscanf(msg, "%*4c%4c" "%2c%2c%2c%2c" "%2c",
+			     event->wid,
+			     event->x, event->y, event->width, event->height,
+			     event->count);
+		      event->window = lookup_id(event->wid);
+		      break;
+		    }
 #if 0		
 		  case "GraphicsExpose":
 		    ...;
