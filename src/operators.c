@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.170 2003/01/15 16:01:09 nilsson Exp $
+|| $Id: operators.c,v 1.171 2003/01/26 17:04:03 nilsson Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.170 2003/01/15 16:01:09 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.171 2003/01/26 17:04:03 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3734,9 +3734,10 @@ multiset & mapping -> mapping
   ADD_EFUN2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
 #define SHIFT_TYPE							\
-   tOr(tOr(tFuncV(tMix tObj,tMix,tMix),					\
- 	   tFuncV(tObj tMix,tMix,tMix)),				\
-       tFuncV(tInt,tInt,tInt))
+   tOr(tAnd(tNot(tFuncV(tNone, tNot(tObj), tMix)),			\
+	    tOr(tFunc(tMix tObj,tMix),					\
+		tFunc(tObj tMix,tMix))),				\
+       tFunc(tInt tInt,tInt))
 
   ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
 	    may_have_side_effects, generate_lsh);
