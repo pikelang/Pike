@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.77 1998/07/16 20:47:42 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.78 1998/07/16 21:28:04 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -979,8 +979,6 @@ void f_create_process(INT32 args)
     storage.wanted_gids_array=0;
 #endif
 
-    SET_ONERROR(err, free_perishables, &storage);
-
 #ifdef HAVE_GETEUID
     wanted_uid=geteuid();
 #else
@@ -995,6 +993,8 @@ void f_create_process(INT32 args)
 #ifdef PROC_DEBUG
     fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
 #endif /* PROC_DEBUG */
+
+    SET_ONERROR(err, free_perishables, &storage);
 
     if(optional)
     {
