@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.39 2002/03/08 19:47:45 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.40 2002/03/08 23:04:32 mast Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -1075,7 +1075,7 @@ class Evaluator {
 			       replace(sres, "\n", "\n        ") );
 		      };
 
-  private class HilfeCompileHandler {
+  private class HilfeCompileHandler (int stack_level) {
     mapping(string:mixed) hilfe_symbols;
 
     mapping(string:mixed) get_default_module() {
@@ -1106,10 +1106,18 @@ class Evaluator {
     int compile_exception (object|array trace)
     {
       if (!objectp (trace) ||
-	  !trace->is_cpp_error && !trace->is_compilation_error)
+	  !trace->is_cpp_error && !trace->is_compilation_error) {
 	// Errors thrown directly by cpp() and compile() are normally not
 	// interesting; they've already been reported to compile_error.
+	catch {
+	  trace = ({trace[0], trace[1][stack_level + 1..]});
+	  if (trace[1][0][0] == "Optimizer")
+	    // When the compiler evaluates constants there's a
+	    // somewhat odd frame "Optimizer:0 0()" at the top.
+	    trace[1] = trace[1][1..];
+	};
 	errors += "Compiler Exception: " + describe_backtrace (trace);
+      }
       return 1;
     }
 
@@ -1183,7 +1191,7 @@ class Evaluator {
 
        "# 1\n" + f + "\n");
 
-    HilfeCompileHandler handler = HilfeCompileHandler();
+    HilfeCompileHandler handler = HilfeCompileHandler (sizeof (backtrace()));
 
     handler->hilfe_symbols = symbols;
     handler->hilfe_symbols->___Hilfe = this_object();
