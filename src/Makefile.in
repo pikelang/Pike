@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.81 1998/04/21 11:38:51 grubba Exp $
+# $Id: Makefile.in,v 1.82 1998/04/23 23:53:00 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -157,7 +157,7 @@ atom: pike
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
 
 pixie: pike
-	atom pike -tool pixie -env threads -g -v `find lib/modues -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
+	atom pike -tool pixie -env threads -g -v `find lib/modules -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
 	mv pike pike.pre-pixie
 	mv pike.pixie.threads pixie
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
