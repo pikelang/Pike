@@ -4,6 +4,7 @@ Changes since Pike 7.4.20:
 o Generation of LDSHARED bugfixed so that building of 3:rd party
   modules works.
 o Bugfixes to String.Buffer.`+ and String.Buffer.`+=.
+o Bugfix in String.Buffer wide string handling.
 o is_absolute_path can now handle empty strings.
 o FakeFile works as Stdio.File when reading more than what is stored
   in the file.
@@ -12,6 +13,33 @@ o The MIME module supports transport padding after delimiter.
 o Buffer overflow fixed in _Roxen.
 o Several iterator bugs fixed.
 o Array.lyskom_sort_func bug fixed.
+o Bug fixes in Microsoft Windows installation.
+o Made -e and --execute work on IRIX for large pids.
+o Fixed PSD decoding bug for images with small masks.
+o Bugfix for ID3v2 tag decoding.
+o Corrected Stdio.FakeFile API to be more like Stdio.File.
+o Bugfixes in Web.Crawler.
+o The fd flags are now cleared before calling callbacks on POLLERR and
+  POLLHUP to prevent nonblocking I/O to hang on fds where errors have
+  occured earlier.
+o Several minor stability fixes (use less stack, better argument
+  checking, etc) in some functions.
+o The Foo::this implementation is reworked to work correctly with
+  parent pointers through inherits.
+o Better object file dumping.
+o Removed an overoptimization that could cause some casts to disappear
+  even when they might have effect.
+o Fixed a bug that caused has_index((<1>),1) to return 0.
+o Fixed a memory leak that appeared when doing `- or `& on a mapping
+  or multiset.
+o Fixed a core dump when doing `[]= on a string with invalid index.
+o Fixed a bug that in rare cases would make identifiers disappear from
+  programs.
+o Fixed a bug that could cause the parser to hang when a tag callback
+  returned the empty string and there's a data callback registered.
+o Bugfix for handling of NUL in %{%} in sprintf.
+o Added kludge to avoid race condition in syslog(2) in
+  glibc/linuxthreads.
 
 
 Changes since Pike 7.4.10:
