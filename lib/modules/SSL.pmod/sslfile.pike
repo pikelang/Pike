@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.7 1997/11/19 22:36:40 grubba Exp $
+/* $Id: sslfile.pike,v 1.8 1998/03/02 19:40:42 grubba Exp $
  *
  */
 
@@ -156,9 +156,11 @@ private void ssl_read_callback(mixed id, string s)
 	return;
       }
   }
-  int res = queue_write();
-  if (res)
-    die(res);
+  if (this_object()) {
+    int res = queue_write();
+    if (res)
+      die(res);
+  }
 }
   
 private void ssl_write_callback(mixed id)
