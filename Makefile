@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.127 2004/02/28 12:39:47 grubba Exp $
+# $Id: Makefile,v 1.128 2004/02/28 13:36:19 grubba Exp $
 #
 # Meta Makefile
 #
@@ -243,7 +243,6 @@ xenofarm_export:
 	    cp -f "$$f" bundles/; \
 	  fi; \
 	done >>export_result.txt
-	-cp "$$HOME/pike_bundles/"* bundles
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
 	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" \
