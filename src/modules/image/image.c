@@ -1546,6 +1546,43 @@ void image_threshold(INT32 args)
    push_object(o);
 }
 
+void image_distancesq(INT32 args)
+{
+   INT32 i;
+   rgb_group *s,*d,rgb;
+   struct object *o;
+   struct image *img;
+
+   if (!THIS->img) error("no image\n");
+
+   getrgb(THIS,0,args,"image->threshold()");
+
+   o=clone(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+
+   d=img->img;
+   s=THIS->img;
+   rgb=THIS->rgb;
+
+   i=img->xsize*img->ysize;
+   while (i--)
+   {
+#define DISTANCE(A,B) \
+   (sq((long)(A).r-(B).r)+sq((long)(A).g-(B).g)+sq((long)(A).b-(B).b))
+      d->r=d->g=d->b=testrange(DISTANCE(*s,rgb)/255);
+      d++; s++;
+   }
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
 void image_apply_matrix(INT32 args)
 {
    int width,height,i,j;
@@ -2043,6 +2080,8 @@ void init_image_programs()
    add_function("invert",image_invert,
 		"function("RGB_TYPE":object)",0);
    add_function("threshold",image_threshold,
+		"function("RGB_TYPE":object)",0);
+   add_function("distancesq",image_distancesq,
 		"function("RGB_TYPE":object)",0);
 
    add_function("apply_matrix",image_apply_matrix,

@@ -23,8 +23,9 @@ David Kågedal, kg@infovav.se
 
 /*
 #define QUANT_DEBUG
-#define QUANT_CHRONO
+#define QUANT_DEBUG_DEEP
 */
+#define QUANT_CHRONO
 
 /**********************************************************************/
 
@@ -334,9 +335,9 @@ static void sort_tbl(rgb_hashtbl *ht,
       }
 
       g1=gap>>1;
-      if (pos+1<g1) g1=pos+1;
-      else if (len-pos-1<gap-g1) g1=pos+1;
-      g2=gap-g1;
+      if (pos+1<g1) g1=pos+1,g2=gap-g1;
+      else if (len-pos-1<gap-g1) g2=(len-pos)+1,g1=gap-g2;
+      else g2=gap-g1;
 
       sort_tbl(ht,start,pos+1,
 	       level+1,idx,g1,dir,
