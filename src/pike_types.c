@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.38 1998/04/10 22:24:21 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.39 1998/04/14 22:10:49 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -645,7 +645,15 @@ char *low_describe_type(char *t)
     case T_FLOAT: my_strcat("float"); break;
     case T_PROGRAM: my_strcat("program"); break;
     case T_OBJECT:
-      my_strcat("object");
+      if(EXTRACT_INT(t+1))
+      {
+	char buffer[100];
+	sprintf(buffer,"object(%s %ld)",*t?"is":"implements",(long)EXTRACT_INT(t+1));
+	my_strcat(buffer);
+      }else{
+	my_strcat("object");
+      }
+      
       t+=sizeof(INT32)+1;
       /* Prog id */
       break;
@@ -856,12 +864,7 @@ static struct pike_string *low_object_fun_type(char *t,
   if(!p) return 0;
   i=FIND_LFUN(p, LFUN_CALL);
 
-  if(EXTRACT_UCHAR(t+1) ||
-     (p->identifier_references[i].id_flags & ID_NOMASK) ||
-    (ID_FROM_INT(p, i)->identifier_flags & IDENTIFIER_PROTOTYPED))
-    return ID_FROM_INT(p, i)->type;
-
-  return 0;
+  return ID_FROM_INT(p, i)->type;
 }
 
 static struct pike_string *low_object_lfun_type(char *t, short lfun)
@@ -872,12 +875,7 @@ static struct pike_string *low_object_lfun_type(char *t, short lfun)
   if(!p) return 0;
   i=FIND_LFUN(p, LFUN_CALL);
 
-  if(EXTRACT_UCHAR(t+1) ||
-     (p->identifier_references[i].id_flags & ID_NOMASK) ||
-    (ID_FROM_INT(p, i)->identifier_flags & IDENTIFIER_PROTOTYPED))
-    return ID_FROM_INT(p, i)->type;
-
-  return 0;
+  return ID_FROM_INT(p, i)->type;
 }
 
 #define A_EXACT 1
@@ -1090,10 +1088,10 @@ static char *low_match_types(char *a,char *b, int flags)
       
       if(EXTRACT_UCHAR(a+1))
       {
-	if(low_get_storage(bp,ap)==-1)
+	if(!implements(ap,bp))
 	  return 0;
       }else{
-	if(low_get_storage(ap,bp)==-1)
+	if(!implements(bp,ap))
 	  return 0;
       }
     }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.39 1998/04/10 22:24:22 hubbe Exp $
+ * $Id: program.h,v 1.40 1998/04/14 22:10:50 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -360,6 +360,8 @@ struct program *program_from_svalue(struct svalue *s);
 struct find_child_cache_s;
 int find_child(struct program *parent, struct program *child);
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
+struct implements_cache_s;
+int implements(struct program *a, struct program *b);
 /* Prototypes end here */
 
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.79 1998/04/14 19:24:12 grubba Exp $");
+RCSID("$Id: program.c,v 1.80 1998/04/14 22:10:50 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2023,12 +2023,19 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 
 struct program *compile(struct pike_string *prog)
 {
+#ifdef DEBUG
+  JMP_BUF tmp;
+#endif
   struct program *p;
   struct lex save_lex;
   int save_depth=compilation_depth;
   int saved_threads_disabled = threads_disabled;
   void yyparse(void);
-  ONERROR just_in_case;
+
+#ifdef DEBUG
+  if(SETJMP(tmp))
+    fatal("Compiler exited with longjump!\n");
+#endif
 
   save_lex=lex;
 
@@ -2037,11 +2044,6 @@ struct program *compile(struct pike_string *prog)
   lex.current_file=make_shared_string("-");
   lex.pragmas=0;
 
-  threads_disabled++;
-  SET_ONERROR(just_in_case, restore_threads_disabled, saved_threads_disabled);
-
-  /* fprintf(stderr, "compile() Enter: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
-
   start_new_program();
   compilation_depth=0;
 
@@ -2049,6 +2051,7 @@ struct program *compile(struct pike_string *prog)
 
   compiler_pass=1;
   lex.pos=prog->str;
+
   yyparse();  /* Parse da program */
 
   p=end_first_pass(0);
@@ -2074,12 +2077,14 @@ struct program *compile(struct pike_string *prog)
   /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
   co_signal(&threads_disabled_change);
 
-  UNSET_ONERROR(just_in_case);
-
   free_string(lex.current_file);
   lex=save_lex;
 
   compilation_depth=save_depth;
+
+#ifdef DEBUG
+  UNSETJMP(tmp);
+#endif
 
   if(!p) error("Compilation failed.\n");
   return p;
@@ -2466,4 +2471,50 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
     SAFE_APPLY_MASTER("compile_warning",3);
     pop_stack();
   }
+}
+
+
+
+/* returns 1 if a implements b */
+static int low_implements(struct program *a, struct program *b)
+{
+  int e,num=0;
+  struct pike_string *s=findstring("__INIT");
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid=ID_FROM_INT(b,e);
+    int i;
+    if(s==bid->name) continue;
+    i=find_shared_string_identifier(bid->name,a);
+    if(i!=-1)
+    {
+      if(!match_types(ID_FROM_INT(a,i)->type, bid->type))
+	return 0;
+      fprintf(stderr,"%s\n",bid->name->str);
+      num++;
+    }
+  }
+  return num;
+}
+
+#define IMPLEMENTS_CACHE_SIZE 4711
+struct implements_cache_s { INT32 aid, bid, ret; };
+static struct implements_cache_s implements_cache[IMPLEMENTS_CACHE_SIZE];
+
+/* returns 1 if a implements b, but faster */
+int implements(struct program *a, struct program *b)
+{
+  unsigned long hval;
+  if(!a || !b) return -1;
+  if(a==b) return 1;
+  hval = a->id*9248339 + b->id;
+  hval %= IMPLEMENTS_CACHE_SIZE;
+  if(implements_cache[hval].aid==a->id && implements_cache[hval].bid==b->id)
+  {
+    return implements_cache[hval].ret;
+  }
+  /* Do it the tedious way */
+  implements_cache[hval].aid=a->id;
+  implements_cache[hval].bid=b->id;
+  return implements_cache[hval].ret=low_implements(a,b);
 }
