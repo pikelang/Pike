@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.144 2005/01/27 16:50:08 mast Exp $
+|| $Id: backend.cmod,v 1.145 2005/02/08 18:46:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.144 2005/01/27 16:50:08 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.145 2005/02/08 18:46:44 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -59,12 +59,19 @@ RCSID("$Id: backend.cmod,v 1.144 2005/01/27 16:50:08 mast Exp $");
 #include <sys/stat.h>
 
 /* #define POLL_DEBUG */
+/* #define CALL_OUT_DEBUG */
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
 #else /* !POLL_DEBUG */
 #define IF_PD(x)
 #endif /* POLL_DEBUG */
+
+#ifdef CALL_OUT_DEBUG
+#define IF_CO(X) X
+#else
+#define IF_CO(X)
+#endif
 
 #ifdef PIKE_THREADS
 #define THR_NO PTR_TO_INT (THREAD_T_TO_PTR (th_self()))
@@ -1153,10 +1160,20 @@ PIKECLASS Backend
        struct timeval tmp;
        GETTIMEOFDAY(&tmp);
        my_add_timeval(& new->tv, &tmp);
+       IF_CO (fprintf (stderr, "BACKEND[%d]: Adding call out at %ld.%ld "
+		       "(current time is %ld.%ld)\n", me->id,
+		       new->tv.tv_sec, new->tv.tv_usec,
+		       tmp.tv_sec, tmp.tv_usec));
      }else
 #endif
+     {
        my_add_timeval(& new->tv, &current_time);
-     
+       IF_CO (fprintf (stderr, "BACKEND[%d]: Adding call out at %ld.%ld "
+		       "(current_time is %ld.%ld)\n", me->id,
+		       new->tv.tv_sec, new->tv.tv_usec,
+		       current_time.tv_sec, current_time.tv_usec));
+     }
+
      if(Pike_fp && Pike_fp->current_object)
      {
        add_ref(new->caller=Pike_fp->current_object);
@@ -1286,7 +1303,7 @@ PIKECLASS Backend
 	 check_destructed(Pike_sp - args);
 	 if(Pike_sp[-args].type!=T_INT)
 	 {
-	   IF_PD(
+	   IF_CO(
 	     fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
 		     "calling call out ", THR_NO, me->id);
 	     print_svalue (stderr, Pike_sp - args);
@@ -1303,7 +1320,7 @@ PIKECLASS Backend
 	   else
 	     pop_stack();
 	 }else{
-	   IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
+	   IF_CO(fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
 			 "ignoring destructed call out\n", THR_NO, me->id));
 	   pop_n_elems(args);
 	 }
@@ -1312,6 +1329,21 @@ PIKECLASS Backend
 	 GETTIMEOFDAY(&current_time);
 	 if(my_timercmp(&current_time, > , &tmp)) break;
        }
+
+       IF_CO (
+	 if (me->num_pending_calls)
+	   fprintf (stderr, "BACKEND[%d]: backend_do_call_outs: stopping with %d "
+		    "call outs left, closest with time %ld.%ld "
+		    "(current_time %ld.%ld, limit at %ld.%ld)\n",
+		    me->id, me->num_pending_calls,
+		    CALL(0)->tv.tv_sec, CALL(0)->tv.tv_usec,
+		    current_time.tv_sec, current_time.tv_usec,
+		    tmp.tv_sec, tmp.tv_usec);
+	 else
+	   fprintf (stderr, "BACKEND[%d]: backend_do_call_outs: "
+		    "no outstanding call outs\n");
+       );
+
        return call_count;
      }
 
@@ -1450,6 +1482,10 @@ PIKECLASS Backend
        backend_verify_call_outs(me);
        if(e!=-1)
        {
+	 IF_CO (fprintf (stderr, "BACKEND[%d]: Removing call out at %ld.%ld "
+			 "(current_time is %ld.%ld)\n", me->id,
+			 CALL(e)->tv.tv_sec, CALL(e)->tv.tv_usec,
+			 current_time.tv_sec, current_time.tv_usec));
 	 pop_n_elems(args);
 	 push_int(CALL(e)->tv.tv_sec - current_time.tv_sec);
 	 free_array(CALL(e)->args);
