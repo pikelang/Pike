@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.34 1998/09/01 17:13:10 hubbe Exp $
+// $Id: Stdio.pmod,v 1.35 1998/10/21 22:13:54 grubba Exp $
 
 #include <string.h>
 
@@ -11,7 +11,7 @@ class File
   mixed ___read_callback;
   mixed ___write_callback;
   mixed ___close_callback;
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
   mixed ___read_oob_callback;
   mixed ___write_oob_callback;
 #endif
@@ -142,12 +142,12 @@ class File
 	_fd->_write_callback=__stdio_write_callback;
 
       ___close_callback = o->___close_callback;
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
       if(___read_oob_callback = o->___read_oob_callback)
-	_fd->_read_oob_callback = __stdio_read_oob_callbac;
+	_fd->_read_oob_callback = __stdio_read_oob_callback;
 
       if(___write_oob_callback = o->___write_oob_callback)
-	_fd->_write_oob_callback = __stdio_write_oob_callbac;
+	_fd->_write_oob_callback = __stdio_write_oob_callback;
 #endif
       ___id = o->___id;
       
@@ -166,7 +166,7 @@ class File
       _fd->_write_callback=to->__stdio_write_callback;
 
     to->___close_callback = ___close_callback;
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
     if(to->___read_oob_callback = ___read_oob_callback)
       _fd->_read_oob_callback=to->__stdio_read_oob_callback;
 
@@ -208,7 +208,7 @@ class File
 
   static void __stdio_write_callback() { ___write_callback(___id); }
 
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
   static void __stdio_read_oob_callback()
   {
     string s=::read_oob(8192,1);
@@ -240,7 +240,7 @@ class File
 
   CBFUNC(read_callback)
   CBFUNC(write_callback)
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
   CBFUNC(read_oob_callback)
   CBFUNC(write_oob_callback)
 #endif
@@ -253,7 +253,7 @@ class File
   void set_nonblocking(mixed|void rcb,
 		       mixed|void wcb,
 		       mixed|void ccb,
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
 		       mixed|void roobcb,
 		       mixed|void woobcb
 #endif
@@ -266,7 +266,7 @@ class File
     _SET(write_callback,wcb);
     ___close_callback=ccb;
 
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
     _SET(read_oob_callback,roobcb);
     _SET(write_oob_callback,woobcb);
 #endif
@@ -292,7 +292,7 @@ class File
     SET(read_callback,0);
     SET(write_callback,0);
     ___close_callback=0;
-#if constant(__HAVE_OOB__)_
+#if constant(files.__HAVE_OOB__)
     SET(read_oob_callback,0);
     SET(write_oob_callback,0);
 #endif
