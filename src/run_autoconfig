@@ -4,38 +4,26 @@
 
 need_to_make_depend=no
 
-fix()
-{
-  if [ -f $1/acconfig.h ]; then
-    echo "Running autoheader in $1"
-    ( cd $1 ; autoheader && echo foo >stamp-h.in )
+
+find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
+  if [ -f $dir/acconfig.h ]; then
+    echo "Running autoheader in $dir"
+    ( cd $dir ; autoheader && echo foo >stamp-h.in )
   fi
 
-  if [ -f $1/configure.in ]; then
-    echo "Running autoconf in $1"
-    ( cd $1 ; autoconf )
+  if [ -f $dir/configure.in ]; then
+    echo "Running autoconf in $dir"
+    ( cd $dir ; autoconf )
   fi
 
-  if [ ! -f $1/dependencies ]; then
-    touch $1/dependencies
+  if [ -f $dir/Makefile.in -a ! -f $dir/dependencies ] && egrep @dependencies@ $dir/Makefile.in >/dev/null; then
+    touch $dir/dependencies
     need_to_make_depend=yes
-  fi
-}
-
-
-fix .
-fix modules
-for a in modules/*
-do
-  if test -d $a ; then
-    case $a in
-      */CVS) ;;
-      */RCS) ;;
-      *) fix $a ;;
-    esac
   fi
 done
 
-if test x$need_to_make_depend = xyes ; then
+if test "x$need_to_make_depend" = "xyes" ; then
   echo You need to run \"make depend\" after \"configure\", and then \"configure\" again.
-else :; fi
+fi
+
+exit 0
