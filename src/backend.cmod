@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.102 2004/04/03 12:51:36 grubba Exp $
+|| $Id: backend.cmod,v 1.103 2004/04/03 16:37:58 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.102 2004/04/03 12:51:36 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.103 2004/04/03 16:37:58 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -271,6 +271,8 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #define WRBAND_IS_SPECIAL
 #endif
 
+#define TIMEOUT_IS_MILLISECONDS
+
 #if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
 /*
  * Backend using /dev/poll-style poll device.
@@ -289,6 +291,18 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #define POLL_EVENT	struct pollfd
 #define OPEN_POLL_DEVICE()	open(PIKE_POLL_DEVICE, O_RDWR)
 #define CHILD_NEEDS_TO_REOPEN
+
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE];	\
+  struct dvpoll poll_request = {	\
+    poll_fds,				\
+    POLL_SET_SIZE,			\
+    0,					\
+  }
+
+#define MY_POLL(PFD, TIMEOUT)					\
+  ((poll_request.dp_timeout = (TIMEOUT)),			\
+   (ioctl(PFD, DP_POLL, &poll_request, sizeof(poll_request))))
 
 int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 {
@@ -326,7 +340,7 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
   return e;
 }
 	
-#elif defined(HAVE_SYS_EPOLL_H) && defined(WITH_EPOLL)
+#elif defined(HAVE_SYS_EPOLL_H)
 /*
  * Backend using /dev/epoll-style poll device.
  *
@@ -393,6 +407,12 @@ _syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
 /* FIXME: Might want another value instead on POLL_SET_SIZE. */
 #define OPEN_POLL_DEVICE()	epoll_create(POLL_SET_SIZE)
 
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE]
+
+#define MY_POLL(PFD, TIMEOUT)				\
+  epoll_wait(PFD, poll_fds, POLL_SET_SIZE, TIMEOUT)
+
 int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 {
   int e;
@@ -443,6 +463,9 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
  * This is used on most older SVR4- or POSIX-style systems.
  */
 
+#define MY_POLL(SET, TIMEOUT)				\
+  poll((SET).poll_fds, (SET).num_in_poll, (TIMEOUT))
+
 struct selectors
 {
   struct pollfd *poll_fds;
@@ -453,8 +476,8 @@ struct selectors
 #define active_selectors selectors
 
 static void MY_FD_SET(struct selectors *me,
-			int fd,
-			short add)
+		      int fd,
+		      short add)
 {
   int i;
   IF_PD(fprintf(stderr, "BACKEND: MY_FD_SET(%d, 0x%04x)\n", fd, add));
@@ -592,6 +615,8 @@ static void copy_selectors(struct active_selectors *to,
 #define OPEN_POLL_DEVICE()	kqueue()
 #define CHILD_NEEDS_TO_REOPEN
 
+#define TIMEOUT_IS_TIMEVAL
+
 #define MY_POLLIN	EVFILT_READ
 #define MY_POLLOUT	EVFILT_WRITE
 
@@ -601,16 +626,32 @@ static void copy_selectors(struct active_selectors *to,
 #define MY_POLLWREXCEPT	EVFILT_WRITE
 #define MY_POLLWRBAND	EVFILT_WRITE
 
-#define MY_SELECT(fds, R, W, E, T)	kqueue(pfd, NULL, 0, evs, nevs, (T))
+#define MY_POLL(SET, TIMEOUT)	kqueue((SET), NULL, 0, evs, nevs, (TIMEOUT))
 
 int MY_FD_CLR(int pfd, int fd, int filter)
 {
   struct kevent ev;
-  int e;
 
+  /* Note: Use EV_DISABLE in preference to EV_DELETE, since
+   *       odds are that the fd will be reenabled, and the
+   *       filter is deleted anyway when the fd is closed.
+   */
   EV_SET(&ev, fd, filter, EV_DISABLE, 0, 0, 0);
   
   return kqueue(pfd, &ev, 1, NULL, 0, NULL);
+}
+
+int MY_FD_SET(int pfd, int fd, int filter)
+{
+  struct kevent ev[2];
+
+  EV_SET(ev, fd, filter, EV_ADD, 0, 0, 0);
+  /* Note: EV_ADD unfortunately doesn't reenable EV_DISABLED
+   *       filters.
+   */
+  EV_SET(ev+1, fd, filter, EV_ENABLE, 0, 0, 0);
+  
+  return kqueue(pfd, ev, 2, NULL, 0, NULL);
 }
 
 #else  /* !HAVE_POLL && !HAVE_KQUEUE */
@@ -620,6 +661,9 @@ int MY_FD_CLR(int pfd, int fd, int filter)
  *
  * This is used on most older BSD-style systems, and WIN32.
  */
+
+#define USE_SELECT
+#define TIMEOUT_IS_TIMEVAL
 
 struct selectors
 {
@@ -649,7 +693,9 @@ struct active_selectors
 
 #define RDBAND_IS_SPECIAL
 
-#define MY_SELECT(fds,R,W,E,T) fd_select((fds),(R),(W),(E),(T))
+#define MY_POLL(SET, TIMEOUT)	\
+  fd_select((SET).max_fd + 1, &(SET).rset, &(SET).wset, &(SET).eset,	\
+	    (TIMEOUT).tv_sec >= 100000000 ? NULL : &(TIMEOUT))
 
 void MY_FD_CLR(struct selectors *me, int fd, my_fd_set *s)
 {
@@ -740,6 +786,7 @@ PIKECLASS Backend
    */
 #ifdef USE_POLL_DEVICE
   CVAR int set;
+#define active_set set
 #else /* !USE_POLL_DEVICE */
   CVAR struct selectors set;
   CVAR struct active_selectors active_set;
@@ -1854,20 +1901,10 @@ PIKECLASS Backend
     {
       int i, done_something = 0;
       struct timeval start_time;
-#ifdef HAVE_POLL
-#ifdef USE_POLL_DEVICE
-      POLL_EVENT poll_fds[POLL_SET_SIZE];
-#ifdef USE_DEVPOLL
-      struct dvpoll poll_request = {
-	poll_fds,
-	POLL_SET_SIZE,
-	0,
-      };
-#endif /* USE_DEVPOLL */
-#endif /* USE_POLL_DEVICE */
-#else /* !HAVE_POLL */
-      struct timeval select_timeout;
-#endif
+#ifdef DECLARE_POLL_EXTRAS
+      /* Declare any extra variables needed by MY_POLL(). */
+      DECLARE_POLL_EXTRAS;
+#endif /* DECLARE_POLL_EXTRAS */
 
       alloca(0);			/* Do garbage collect */
 #ifdef PIKE_DEBUG
@@ -1888,9 +1925,13 @@ PIKECLASS Backend
 
       {
 	ONERROR uwp;
-#ifdef HAVE_POLL
-	int poll_msec;
-#endif
+#ifdef TIMEOUT_IS_MILLISECONDS
+	int poll_timeout;
+#elif defined(TIMEOUT_IS_TIMEVAL)
+	struct timeval poll_timeout;
+#else
+#error Unknown timeout method.
+#endif /* TIMEOUT_IS_* */
 #ifdef PIKE_DEBUG
 	struct timeval max_timeout;
 #endif
@@ -1949,27 +1990,25 @@ PIKECLASS Backend
 	  next_timeout.tv_sec = 0;
 	}
 
-#ifdef HAVE_POLL
+#ifdef TIMEOUT_IS_MILLISECONDS
 	if (next_timeout.tv_sec >= 100000000)
 	  /* Take this as waiting forever. */
-	  poll_msec = -1;
+	  poll_timeout = -1;
 	else if(next_timeout.tv_sec < 0)
-	  poll_msec=0;
+	  poll_timeout = 0;
 	else if(next_timeout.tv_sec > (INT_MAX/1002))
-	  poll_msec=INT_MAX;
+	  poll_timeout = INT_MAX;
 	else
-	  poll_msec= (next_timeout.tv_sec*1000) +
+	  poll_timeout = (next_timeout.tv_sec*1000) +
 	    next_timeout.tv_usec/1000;
-#ifdef USE_DEVPOLL
-	poll_request.dp_timeout = poll_msec;
-#endif
-#else  /* !HAVE_POLL */
-	select_timeout = next_timeout;
-#endif
+#elif defined(TIMEOUT_IS_TIMEVAL)
+	poll_timeout = next_timeout;
+#else
+#error Unknown timeout method.
+#endif /* TIMEOUT_IS_* */
 
-#if defined (HAVE_POLL) && defined (POLL_DEBUG)
-	fprintf (stderr, "BACKEND[%d]: Doing poll on fds:\n", me->id);
-#ifndef USE_POLL_DEVICE
+	IF_PD(fprintf (stderr, "BACKEND[%d]: Doing poll on fds:\n", me->id));
+#if defined(HAVE_POLL) && defined(POLL_DEBUG) && !defined(USE_POLL_DEVICE)
 	{
 	  int i;
 	  for (i = 0; i < me->active_set.num_in_poll; i++) {
@@ -1986,31 +2025,15 @@ PIKECLASS Backend
 	fprintf(stderr, "BACKEND[%d]: poll(%p, %d, %d)...", me->id,
 		me->active_set.poll_fds,
 		me->active_set.num_in_poll,
-		poll_msec);
-#endif
-#endif	/* defined (HAVE_POLL) && defined (POLL_DEBUG) */
+		poll_timeout);
+#endif /* HAVE_POLL && POLL_DEBUG && !USE_POLL_DEVICE */
 
 	THREADS_ALLOW();
 
-#ifdef HAVE_POLL
-#ifdef USE_DEVPOLL
-	i = ioctl(me->set, DP_POLL, poll_request, sizeof(poll_request));
-#elif defined(USE_DEVEPOLL)
-	i = epoll_wait(me->set, poll_fds, POLL_SET_SIZE, poll_msec);
-#else /* !USE_DEVPOLL && !USE_DEVEPOLL */
-	i = poll(me->active_set.poll_fds,
-		 me->active_set.num_in_poll,
-		 poll_msec);
-#endif /* USE_DEVPOLL || USE_DEVEPOLL */
+	/* Note: The arguments to MY_POLL may be evaluated multiple times. */
+	i = MY_POLL(me->active_set, poll_timeout);
+
 	IF_PD(fprintf(stderr, " => %d\n", i));
-#else  /* !HAVE_POLL */
-	i = MY_SELECT(me->active_set.max_fd+1,
-		      &me->active_set.rset,
-		      &me->active_set.wset, 
-		      &me->active_set.eset,
-		      select_timeout.tv_sec >= 100000000 ?
-		      NULL : &select_timeout);
-#endif	/* HAVE_POLL */
 
 	THREADS_DISALLOW();
 
@@ -2339,16 +2362,13 @@ PIKECLASS Backend
 #endif
 	  case EBADF:
 	    /* TODO: Fix poll version! */
-#ifndef HAVE_POLL
+#ifdef USE_SELECT
+
 	    copy_selectors(& me->active_set, &me->set);
 
-	    select_timeout.tv_usec=0;
-	    select_timeout.tv_sec=0;
-	    if(MY_SELECT(me->active_set.max_fd+1,
-			 &me->active_set.rset,
-			 &me->active_set.wset, 
-			 &me->active_set.eset,
-			 &select_timeout) < 0)
+	    timeout.tv_usec=0;
+	    timeout.tv_sec=0;
+	    if(MY_POLL(me->active_set, *timeout) < 0)
 	    {
 	      switch(errno)
 	      {
@@ -2380,14 +2400,10 @@ PIKECLASS Backend
 		    if(my_FD_ISSET(i, &me->set.except))
 		      fd_FD_SET(i, & me->active_set.eset);
 		    
-		    select_timeout.tv_usec=0;
-		    select_timeout.tv_sec=0;
+		    timeout.tv_usec=0;
+		    timeout.tv_sec=0;
 		    
-		    if(MY_SELECT(me->active_set.max_fd+1,
-				 &me->active_set.rset,
-				 &me->active_set.wset, 
-				 &me->active_set.eset,
-				 &select_timeout) < 0)
+		    if(MY_POLL(me->active_set, *timeout) < 0)
 		    {
 		      switch(errno)
 		      {
@@ -2422,7 +2438,7 @@ PIKECLASS Backend
 	      Pike_fatal("Bad filedescriptor to select().\n");
 #endif /* _REENTRANT */
 	    }
-#endif	/* HAVE_POLL */
+#endif	/* USE_SELECT */
 	    break;
 	    
 	}
