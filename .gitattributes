@@ -200,6 +200,7 @@ testfont binary
 /lib/modules/String.pmod/HTML.pmod foreign_ident
 /lib/modules/String.pmod/testsuite.in foreign_ident
 /lib/modules/System.pmod foreign_ident
+/lib/modules/Tools.pmod/AutoDoc.pmod/MirarDocParser.pike foreign_ident
 /lib/modules/Tools.pmod/Hilfe.pmod foreign_ident
 /lib/modules/Tools.pmod/Legal.pmod/Copyright.pmod foreign_ident
 /lib/modules/Tools.pmod/Legal.pmod/License.pmod/GPL.pmod foreign_ident
