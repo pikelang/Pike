@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.160 2001/07/27 14:42:19 nilsson Exp $
+ * $Id: master.pike.in,v 1.161 2001/07/28 14:11:14 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -19,11 +19,15 @@
 #endif /* !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0) */
 constant bt_max_string_len = BT_MAX_STRING_LEN;
 
+//! @decl constant bt_max_string_len = int
+
 // Enables the out of date warning in low_find_prog().
 #ifndef OUT_OF_DATE_WARNING
 #define OUT_OF_DATE_WARNING 1
 #endif /* OUT_OF_DATE_WARNING */
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
+
+//! @decl constant out_of_date_warning = int(0..1)
 
 #ifndef PIKE_WARNINGS
 #define PIKE_WARNINGS 0
@@ -116,6 +120,7 @@ string basename(string x)
 #define UNDEFINED (([])[0])
 #define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
 
+//!
 int want_warnings = PIKE_WARNINGS;
 
 #ifdef PIKE_AUTORELOAD
@@ -150,7 +155,10 @@ mapping(string:int) load_time=([]);
 
 #endif
 
+//!
 int compat_major=-1;
+
+//!
 int compat_minor=-1;
 
 //! @appears compile_string
@@ -172,7 +180,7 @@ program compile_string(string source, void|string filename,
 		 compat_minor);
 }
 
-
+//!
 string master_read_file(string file)
 {
   object o=_static_modules.files()->Fd();
@@ -550,11 +558,10 @@ program low_cast_to_program(string pname,
 }
 
 
-/* This function is called when the driver wants to cast a string
- * to a program, this might be because of an explicit cast, an inherit
- * or a implict cast. In the future it might receive more arguments,
- * to aid the master finding the right program.
- */
+//! This function is called when the driver wants to cast a string
+//! to a program, this might be because of an explicit cast, an inherit
+//! or a implict cast. In the future it might receive more arguments,
+//! to aid the master finding the right program.
 program cast_to_program(string pname,
 			string current_file, 
 			object|void handler)
@@ -563,9 +570,8 @@ program cast_to_program(string pname,
 }
 
 
-/* This function is called when an error occurs that is not caught
- * with catch().
- */
+//! This function is called when an error occurs that is not caught
+//! with catch().
 void handle_error(array(mixed)|object trace)
 {
   if(mixed x=catch {
@@ -700,16 +706,15 @@ void create()
 #endif
 }
 
-/*
- * This function is called whenever a inherit is called for.
- * It is supposed to return the program to inherit.
- * The first argument is the argument given to inherit, and the second
- * is the file name of the program currently compiling. Note that the
- * file name can be changed with #line, or set by compile_string, so
- * it can not be 100% trusted to be a filename.
- * previous_object(), can be virtually anything in this function, as it
- * is called from the compiler.
- */
+
+//! This function is called whenever a inherit is called for.
+//! It is supposed to return the program to inherit.
+//! The first argument is the argument given to inherit, and the second
+//! is the file name of the program currently compiling. Note that the
+//! file name can be changed with #line, or set by compile_string, so
+//! it can not be 100% trusted to be a filename.
+//! previous_object(), can be virtually anything in this function, as it
+//! is called from the compiler.
 program handle_inherit(string pname, string current_file, object|void handler)
 {
   return cast_to_program(pname, current_file, handler);
@@ -729,10 +734,9 @@ object low_cast_to_object(string oname, string current_file,
   return o;
 }
 
-/* This function is called when the drivers wants to cast a string
- * to an object because of an implict or explicit cast. This function
- * may also receive more arguments in the future.
- */
+//! This function is called when the drivers wants to cast a string
+//! to an object because of an implict or explicit cast. This function
+//! may also receive more arguments in the future.
 object cast_to_object(string oname, string current_file)
 {
   if(object o=low_cast_to_object(oname, current_file))
@@ -1221,10 +1225,9 @@ class CompatResolver
       return ret;
     }
 
-  /* This function is called whenever an #include directive is encountered
-   * it receives the argument for #include and should return the file name
-   * of the file to include
-   */
+  //! This function is called whenever an #include directive is encountered
+  //! it receives the argument for #include and should return the file name
+  //! of the file to include
   string handle_include(string f,
 			string current_file,
 			int local_include)
@@ -1269,8 +1272,8 @@ class CompatResolver
 
 inherit CompatResolver;
 
-// These are useful if you want to start other Pike processes
-// with the same options as this one was started with.
+//! These are useful if you want to start other Pike processes
+//! with the same options as this one was started with.
 string _pike_file_name;
 string _master_file_name;
 
@@ -1281,24 +1284,24 @@ int asyncp() {
   return _async;
 }
 
-// The backend_thread() function is useful to determine if you are
-// the backend thread - important when doing async/sync protocols
-
 #if constant(thread_create)
 // this must be done in __init if someone inherits the master
 static object _backend_thread=this_thread();
+
+//! The backend_thread() function is useful to determine if you are
+//! the backend thread - important when doing async/sync protocols.
+//! This method is only available if thread_create is present.
 object backend_thread()
 {
    return _backend_thread;
 }
 #endif
 
-/* This function is called when all the driver is done with all setup
- * of modules, efuns, tables etc. etc. and is ready to start executing
- * _real_ programs. It receives the arguments not meant for the driver
- * and an array containing the environment variables on the same form as
- * a C program receives them.
- */
+//! This function is called when all the driver is done with all setup
+//! of modules, efuns, tables etc. etc. and is ready to start executing
+//! _real_ programs. It receives the arguments not meant for the driver
+//! and an array containing the environment variables on the same form as
+//! a C program receives them.
 void _main(array(string) orig_argv, array(string) env)
 {
   array(string) argv=copy_value(orig_argv);
@@ -1705,12 +1708,11 @@ function(string:string) set_trim_file_name_callback(function(string:string) s)
    return f;
 }
 
-/*
- * This function is called whenever a compiling error occurs.
- * Nothing strange about it.
- * Note that previous_object cannot be trusted in ths function, because
- * the compiler calls this function.
- */
+
+//! This function is called whenever a compiling error occurs.
+//! Nothing strange about it.
+//! Note that previous_object cannot be trusted in ths function, because
+//! the compiler calls this function.
 void compile_error(string file,int line,string err)
 {
   mixed val;
@@ -1731,12 +1733,11 @@ void compile_error(string file,int line,string err)
   }
 }
 
-/*
- * This function is called whenever a compiling warning occurs.
- * Nothing strange about it.
- * Note that previous_object cannot be trusted in ths function, because
- * the compiler calls this function.
- */
+
+//! This function is called whenever a compiling warning occurs.
+//! Nothing strange about it.
+//! Note that previous_object cannot be trusted in ths function, because
+//! the compiler calls this function.
 void compile_warning(string file,int line,string err)
 {
   mixed val;
@@ -1751,12 +1752,11 @@ void compile_warning(string file,int line,string err)
   }
 }
 
-/*
- * Called for every runtime warning. The first argument identifies
- * where the warning comes from, the second identifies the specific
- * message, and the rest depends on that. See code below for currently
- * implemented warnings.
- */
+
+//! Called for every runtime warning. The first argument identifies
+//! where the warning comes from, the second identifies the specific
+//! message, and the rest depends on that. See code below for currently
+//! implemented warnings.
 void runtime_warning (string where, string what, mixed... args)
 {
   if (want_warnings)
@@ -1776,9 +1776,9 @@ void runtime_warning (string where, string what, mixed... args)
 
 
 static mixed _charset_mod;
-/* This function is called by cpp() when it wants to do
- * character code conversion.
- */
+
+//! This function is called by cpp() when it wants to do
+//! character code conversion.
 string decode_charset(string data, string charset)
 {
   // werror(sprintf("decode_charset(%O, %O)\n", data, charset));
@@ -2034,6 +2034,7 @@ class Describer
   }
 }
 
+//!
 string describe_object(object o)
 {
   string s;
@@ -2044,6 +2045,7 @@ string describe_object(object o)
   return 0;
 }
 
+//!
 string describe_program(program p)
 {
   string s;
@@ -2076,6 +2078,7 @@ string describe_program(program p)
   return 0;
 }
 
+//!
 string describe_function (function f)
 {
   if (!f) return 0;
