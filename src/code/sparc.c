@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.26 2002/11/08 17:29:59 grubba Exp $
+|| $Id: sparc.c,v 1.27 2002/11/08 17:37:00 grubba Exp $
 */
 
 /*
@@ -256,6 +256,17 @@ int sparc_last_pc = 0;
 			    SPARC_CODEGEN_SP_IS_SET|		\
 			    SPARC_CODEGEN_MARK_SP_IS_SET))
 
+void sparc_flush_codegen_state(void)
+{
+  SPARC_FLUSH_UNSTORED();
+  sparc_codegen_state = 0;
+}
+
+#define ADJUST_PIKE_PC(NEW_PC)	do {			\
+    sparc_last_pc = NEW_PC;				\
+    sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;	\
+  } while(0)
+
 /*
  * Allocate a stack frame.
  *
@@ -474,7 +485,6 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   /* This is not very pretty */
   switch(b)
   {
-#if 0
   case F_MARK2 - F_OFFSET:
     sparc_mark(0);
     /* FALL_THROUGH */
@@ -508,7 +518,6 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   case F_BIGNUM - F_OFFSET:
     sparc_push_int(0x7fffffff, 0);
     return;
-#endif /* 0 */
 
 #define F_ALIAS(F_FUN, O_FUN)	\
   case F_FUN - F_OFFSET:	\
@@ -559,7 +568,6 @@ void ins_f_byte(unsigned int opcode)
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
-#if 0
   switch(a) {
   case F_NUMBER:
     sparc_push_int(b, 0);
@@ -574,7 +582,6 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     sparc_mark(-b);
     return;
   }
-#endif /* 0 */
   SET_REG(SPARC_REG_O0, b);
   low_ins_f_byte(a, 1);
   return;

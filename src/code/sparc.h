@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.19 2002/11/08 11:31:39 grubba Exp $
+|| $Id: sparc.h,v 1.20 2002/11/08 17:37:00 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -28,15 +28,8 @@ extern int sparc_last_pc;
 #define SPARC_CODEGEN_SP_NEEDS_STORE		32
 #define SPARC_CODEGEN_MARK_SP_NEEDS_STORE	64
 
-#define FLUSH_CODE_GENERATOR_STATE()	do {	\
-    sparc_codegen_state = 0;			\
-    sparc_last_pc = 0;				\
-  } while(0)
-
-#define ADJUST_PIKE_PC(NEW_PC)	do {			\
-    sparc_last_pc = NEW_PC;				\
-    sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;	\
-  } while(0)
+void sparc_flush_codegen_state(void);
+#define FLUSH_CODE_GENERATOR_STATE()	sparc_flush_codegen_state()
 
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
 #define ENTRY_PROLOGUE_SIZE	1
