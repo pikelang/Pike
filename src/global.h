@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.37 1999/07/15 18:56:53 grubba Exp $
+ * $Id: global.h,v 1.38 1999/08/06 23:04:05 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -107,6 +107,11 @@ char *alloca ();
 #   endif
 #  endif
 # endif
+#endif
+
+#ifdef __NT__
+/* We are running NT */
+#define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
 #include <stdio.h>
