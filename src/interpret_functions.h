@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.78 2001/07/18 11:36:01 grubba Exp $
+ * $Id: interpret_functions.h,v 1.79 2001/07/18 17:42:36 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -103,12 +103,17 @@
   {							\
     int f=Pike_fp->flags;				\
     low_return();					\
+    if (t_flag)						\
+      fprintf(stderr, "Returning to 0x%p\n",		\
+	      Pike_fp->pc);				\
     SET_PROG_COUNTER(Pike_fp->pc);			\
     FETCH;						\
     if(f & PIKE_FRAME_RETURN_POP)			\
       pop_stack();					\
     DONE;                                               \
   }							\
+  if (t_flag)						\
+    fprintf(stderr, "Inter return\n");			\
   INTER_RETURN;						\
 }
 
@@ -224,8 +229,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", {
 OPCODE0(F_FLOAT, "push float", {
   /* FIXME, this opcode uses 'PROG_COUNTER' which is not allowed.. */
   MEMCPY((void *)&Pike_sp->u.float_number, PROG_COUNTER, sizeof(FLOAT_TYPE));
-  SET_PROG_COUNTER(PROG_COUNTER +
-		   DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(FLOAT_TYPE)));
+  SET_PROG_COUNTER((PIKE_OPCODE_T *)(((FLOAT_TYPE *)PROG_COUNTER) + 1));
   FETCH;
   Pike_sp->type=PIKE_T_FLOAT;
   Pike_sp++;
@@ -1089,7 +1093,7 @@ OPCODE0_JUMP(F_EQ_AND, "==&&", {
 });
 
 OPCODE0_JUMP(F_CATCH, "catch", {
-  switch (o_catch(PROG_COUNTER+DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32))))
+  switch (o_catch((PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER)+1)))
   {
   case 1:
     /* There was a return inside the evaluated code */
@@ -1863,8 +1867,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
    */
   if(Pike_fp->current_object->prog != Pike_fp->context.prog)
   {
-    SET_PROG_COUNTER(PROG_COUNTER +
-		     DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32)));
+    SET_PROG_COUNTER((PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1));
     if(low_mega_apply(APPLY_LOW,
 		      DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		      Pike_fp->current_object,
@@ -1906,25 +1909,20 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
     new_frame->mark_sp_base = Pike_mark_sp;
     
     addr = PROG_COUNTER+GET_JUMP();
-    new_frame->num_locals =
-      DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-2],
-			       EXTRACT_UCHAR(addr-2));
+    new_frame->num_locals = (ptrdiff_t)addr[-2];
     
     DO_IF_DEBUG({
-      if(new_frame->num_args !=
-	 DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
-				  EXTRACT_UCHAR(addr-1)))
+      if(new_frame->num_args != (ptrdiff_t)addr[-1])
 	fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
 	      new_frame->num_args,
-	      DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
-				       EXTRACT_UCHAR(addr-1)));
+	      (ptrdiff_t)addr[-1]);
       
       if(t_flag > 3)
 	fprintf(stderr,"-    Allocating %d extra locals.\n",
 		new_frame->num_locals - new_frame->num_args);
     });
     
-    Pike_fp->pc = PROG_COUNTER + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
+    Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);
     SET_PROG_COUNTER(addr);
     FETCH;
     
@@ -1964,16 +1962,13 @@ OPCODE0_JUMP(F_RECUR_AND_POP, "recur & pop", {
   new_frame->mark_sp_base = Pike_mark_sp;
   
   addr = PROG_COUNTER+GET_JUMP();
-  new_frame->num_locals =
-    DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-2],
-			     EXTRACT_UCHAR(addr-2));
+  new_frame->num_locals = (ptrdiff_t)addr[-2];
   
   DO_IF_DEBUG({
     if(new_frame->num_args != (ptrdiff_t)addr[-1])
       fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
 	    new_frame->num_args,
-	    DO_IF_ELSE_COMPUTED_GOTO((ptrdiff_t)addr[-1],
-				     EXTRACT_UCHAR(addr-1)));
+	    (ptrdiff_t)addr[-1]);
     
     if(t_flag > 3)
       fprintf(stderr,"-    Allocating %d extra locals.\n",

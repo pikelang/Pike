@@ -18,7 +18,7 @@
 #include "constants.h"
 #include "interpret.h"
 
-RCSID("$Id: peep.c,v 1.59 2001/07/17 22:03:33 grubba Exp $");
+RCSID("$Id: peep.c,v 1.60 2001/07/18 17:42:36 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -186,7 +186,7 @@ void update_arg(int instr,INT32 arg)
     } else {								\
       /* sethi %hi(val_), reg */					\
       add_to_program(0x01000000|(reg_<<25)|((val_ >> 10)&0x3fffff));	\
-      if (val_ & 0x3ff) {						\
+      if (1 || (val_ & 0x3ff)) {					\
 	/* or reg, %lo(val_), reg */					\
 	add_to_program(0x80102000|(reg_<<25)|(reg_<<14)|(val_ & 0x0fff)); \
       }									\
@@ -205,7 +205,7 @@ void update_arg(int instr,INT32 arg)
     add_to_program(0x01000000);					\
   } while(0)
 
-#if 0
+#if 1
 #define UPDATE_PC() do {						\
     INT32 tmp = PC;							\
     SET_REG(REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	\
@@ -508,7 +508,9 @@ void assemble(void)
       break;
     case F_ALIGN:
 #ifndef HAVE_COMPUTED_GOTO
+#if !(defined(PIKE_USE_MACHINE_CODE) && defined(sparc))
       while(PC % c->arg) add_to_program(0);
+#endif /* !(PIKE_USE_MACHINE_CODE && sparc) */
 #endif /* HAVE_COMPUTED_GOTO */
       break;
 
