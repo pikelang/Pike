@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.54 2002/04/29 18:44:35 mast Exp $ */
+/* $Id: export.pike,v 1.55 2002/07/18 00:46:51 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -130,7 +130,7 @@ array(string) build_file_list(string vpath, string list_file)
     return 0;
   }
   return ret;
-}  
+}
 
 constant stamp=#"Pike export stamp
 major:%maj
@@ -172,14 +172,14 @@ int main(int argc, array(string) argv)
 	  if(basename(srcdir)=="src")
 	    srcdir=dirname(srcdir);
 	  pike_base_name=".";
-	  
+	
 	  cd(srcdir);
 	  break;
-	  
+	
         case "exportlist":
 	  export_list=opt[1];
 	  break;
-	  
+	
         case "filename":
 	  filename=opt[1];
 	  break;
@@ -187,7 +187,7 @@ int main(int argc, array(string) argv)
 	case "rebuild":
 	  rebuild=1;
 	  break;
-	  
+	
         case "force":
 	  ignore_missing=1;
 	  break;
@@ -195,13 +195,13 @@ int main(int argc, array(string) argv)
         case "tag":
 	  tag=1;
 	  break;
-	  
+	
         case "help":
 	  write(documentation);
 	  return 0;
       }
     }
-      
+
 
   argv -= ({ 0 });
   except_modules = (multiset)argv[1..];
@@ -247,7 +247,7 @@ int main(int argc, array(string) argv)
     "%m":sprintf("%02d",m->min),
     "%s":sprintf("%02d",m->sec)
   ]);
-    
+
   vpath=replace(filename,symbols);
 
   fix_configure(pike_base_name+"/src");
@@ -261,7 +261,7 @@ int main(int argc, array(string) argv)
   files = build_file_list(vpath,export_list);
   if(!files) // Unable to build file list.
     return 1;
-  
+
   Stdio.write_file("export.stamp", replace(stamp, symbols));
   files += ({ vpath+"/export.stamp" });
 
@@ -315,7 +315,7 @@ Usage: export.pike <arguments> <except modules>
 Creates a pike distribution. Needs one tar and one gzip binary in the path.
 Mandatory arguments:
 
---name=<name> 
+--name=<name>
 	Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
 	are replaced with apropiate values).
 --exportlist=<listfile>
@@ -325,7 +325,7 @@ Mandatory arguments:
 
 Optional arguments:
 
---rebuild    
+--rebuild
 	Not implemented.
 --tag	Bump the Pike build version and tag the CVS tree.
 --force
