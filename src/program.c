@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.357 2001/07/19 16:20:27 grubba Exp $");
+RCSID("$Id: program.c,v 1.358 2001/07/19 19:06:04 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -641,7 +641,7 @@ int get_small_number(char **q);
     PIKE_OPCODE_T *op_ = NEW;					\
     struct program *p_ = P;					\
     size_t rel_ = p_->num_relocations;				\
-    INT32 delta_ = (((char *)p_->program)-((char *)op_)) >> 2;	\
+    INT32 delta_ = p_->program - op_;				\
     while (rel_--) {						\
       DO_IF_DEBUG(						\
         if ((op_[p_->relocations[rel_]] & 0xc0000000) !=	\
