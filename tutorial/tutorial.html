@@ -569,7 +569,7 @@ Note the <tt>+=</tt> operator. It is the same as saying
 The main function now does not care about any command line arguments. Instead we use <tt>readline()</tt> to prompt the user for instructions and arguments. The available instructions are "add", "list" and "quit". What you enter into the variables cmd and args is checked in the <tt>switch()</tt> block. If you enter something that is not covered in any of the case statements the program just silently ignores it and asks for a new command.
 In a <tt>switch()</tt> the argument (in this case cmd) is checked in the case statements. The first case where the expression equals cmd (the argument) then executes the statement after the colon. If no expression is equal, we just fall through without any action.
 The only command that takes an argument is "list" which works like the first version of the program; if there is an argument that record is shown along with its songs, and if there isn't the program sends a list of the records in the database. When the program returns from either of the listing functions, the break instruction tells the program to jump out of the <tt>switch()</tt> block.
-"Add" of course turns control over to the function descibed above.
+"Add" of course turns control over to the function described above.
 If the command given is "quit" the <tt>exit(0)</tt> statement stops the execution of the program and returns 0 (zero) to the operating systems, telling it that everything was ok.
 <pre>
 	int main(int argc, string * argv)
