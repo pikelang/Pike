@@ -6542,7 +6542,7 @@ Getopt.find_option
 
 <hr noshade size=1>
 
-<anchor name=Gz>
+<module name=Gz>
 <section title="Gz">
 The Gz module contains functions to compress and uncompress strings using
 the same algorithm as the program <tt>gzip</tt>. Packing can be done in
@@ -6554,58 +6554,44 @@ Note that these functions use the same <i>algorithm</i> as gzip, they do
 not use the exact same format however, so you cannot directly unzip gzipped
 files with these routines. Support for this will be added in the future.
 <p>
-<anchor name=Gz.deflate>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gz.deflate</tt> - string packer
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<class name=Gz.deflate title="string packer">
+<man_description>
 Gz.inflate is a builtin program written in C. It interfaces the
 packing routines in the libz library.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This program is only available if libz was available and found when
 Pike was compiled.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.inflate>Gz.inflate</link>
-<p>
-</dl>
+</man_note>
+<man_see>
+Gz.inflate
+</man_see>
+</class>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gz.deflate.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gz.deflate-&gt;create</tt> - initialize packer
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void create(int X)<br>
-or<br>
+
+<method name=Gz.deflate.create title="initialize packer">
+<man_syntax>
+void create(int X)<br>
 object(Gz.deflate) Gz.deflate(int X)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function is called when a new Gz.deflate is created.
 If given, X should be a number from 0 to 9 indicating the packing /
 CPU ratio. Zero means no packing, 2-3 is considered 'fast', 6 is
 default and higher is considered 'slow' but gives better packing.
 <p>This function can also be used to re-initialize a Gz.deflate object
 so it can be re-used.
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gz.deflate.deflate>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gz.deflate-&gt;deflate</tt> - pack data
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string deflate(string <I>data</I>, int <I>flush</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gz.deflate-&gt;deflate title="pack data">
+<man_syntax>
+string deflate(string <I>data</I>, int <I>flush</I>);<br>
+</man_syntax>
+<man_description>
 This function performs gzip style compression on a string and
 returns the packed data. Streaming can be done by calling this
 function several times and concatenating the returned data.
@@ -6621,69 +6607,54 @@ The optional 'flush' argument should be one f the following:
 <p>Using flushing will degrade packing. Normally NO_FLUSH should be
 used until the end of the data when FINISH should be used. For
 interactive data PARTIAL_FLUSH should be used.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.inflate.inflate>Gz.inflate-&gt;inflate</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Gz.inflate-&gt;inflate
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gz.inflate>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gz.inflate</tt> - string unpacker
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<class name=Gz.inflate title="string unpacker">
+<man_description>
 Gz.inflate is a builtin program written in C. It interfaces the
 packing routines in the libz library.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This program is only available if libz was available and found when
 Pike was compiled.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.deflate>Gz.deflate</link>
-<p>
-</dl>
+</man_note>
+<man_see>
+Gz.deflate
+</man_see>
+</class>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gz.inflate.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gz.inflate-&gt;create</tt> - initialize unpacker
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void create()<br>
-or<br>
+
+<method name=Gz.inflate.create title="initialize unpacker">
+<man_syntax>
+void create()<br>
 object(Gz.inflate) Gz.inflate()<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function is called when a new Gz.inflate is created.
 It can also be called after the object has been used to re-initialize
 it.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gz.inflate.inflate>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gz.inflate-&gt;inflate</tt> - unpack data
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string inflate(string <I>data</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gz.inflate-&gt;inflate title="unpack data">
+<man_syntax>
+string inflate(string <I>data</I>);<br>
+</man_syntax>
+<man_description>
 This function performs gzip style decompression. It can inflate
 a whole file at once or in blocks.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>import Stdio;<br>
+</man_description>
+<man_example>
+import Stdio;<br>
 // whole file<br>
 write(Gz.inflate()-&gt;inflate(stdin-&gt;read());<br>
 
@@ -6691,16 +6662,16 @@ write(Gz.inflate()-&gt;inflate(stdin-&gt;read());<br>
 function inflate=Gz.inflate()-&gt;inflate;<br>
 while(string s=stdin-&gt;read(8192))<br>
 <dl><dt><dd>write(inflate(s));<br>
-</dl></tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gz.deflate.deflate>Gz.deflate-&gt;deflate</link>
-<p>
 </dl>
+</man_example>
+<man_see>
+Gz.deflate-&gt;deflate
+</man_see>
+</method>
 
-</anchor>
 </section>
-</anchor>
+</module>
+
 <hr noshade size=1>
 
 <anchor name=Yp>
