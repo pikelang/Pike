@@ -1,7 +1,7 @@
 #! /usr/local/bin/pike
-// -*- pike -*- $Id: rsif,v 1.4 2002/04/06 21:45:46 jhs Exp $
+// -*- pike -*- $Id: rsif,v 1.5 2002/04/06 21:54:42 jhs Exp $
 
-string version = ("$Revision: 1.4 $"/" ")[1];
+string version = ("$Revision: 1.5 $"/" ")[1];
 int verbosity = 1; // interactive
 int overwrite = 1; // no backups
 
@@ -59,7 +59,7 @@ int main(int argc, array(string) argv)
     return 0;
   }
 
-  int failures = 0;
+  int failures, mode;
   if(verbosity > 1)
     werror("Replaced strings in these files:\n");
   foreach(argv[3..], string filename)
@@ -71,8 +71,9 @@ int main(int argc, array(string) argv)
 	if(verbosity > 0)
 	  write("%s\n", filename);
     	file = replace(file, argv[1], argv[2]);
+	mode = file_stat(filename)->mode;
 	if(overwrite || mv(filename, filename + "~"))
-	  failures += !Stdio.write_file(filename, file);
+	  failures += !Stdio.write_file(filename, file, mode);
 	else
 	{
 	  werror("Failed to create backup file.\n");
