@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.189 2000/06/21 15:01:58 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.190 2000/06/22 17:31:39 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -291,6 +291,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> gauge
 %type <n> idents
 %type <n> idents2
+%type <n> inherit_specifier
 %type <n> lambda
 %type <n> local_name_list
 %type <n> local_name_list2
@@ -2354,6 +2355,49 @@ idents: low_idents
   | idents '.' error {}
   ;
 
+inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
+  {
+    /* FIXME: The following doesn't work...
+    struct program *p = find_named_inherit(new_program, $1->u.sval.u.string);
+
+    if (!p) {
+      my_yyerror("No such inherit \"%s\".", $1->u.sval.u.string->str);
+      $$ = 0;
+    } else {
+      struct svalue s;
+      s.type = T_PROGRAM;
+      s.subtype = 0;
+      s.u.program = p;
+      $$ = mkconstantsvaluenode(&s);
+    }
+    free_node($1);
+    */
+  }
+  | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
+  {
+    /* FIXME: This doesn't work either...
+    if ($1) {
+      struct program *p = find_named_inherit($1->u.sval.u.program,
+					     $2->u.sval.u.string);
+
+      if (!p) {
+	my_yyerror("No such inherit \"%s\".", $2->u.sval.u.string->str);
+	free_node($1);
+	$$ = 0;
+      } else {
+	struct svalue s;
+	s.type = T_PROGRAM;
+	s.subtype = 0;
+	s.u.program = p;
+	$$ = mkconstantsvaluenode(&s);
+      }
+    }
+    */
+    yywarning("Multi-level ::-resolving not yet supported.");
+    free_node($2);
+  }
+  ;
+
 low_idents: TOK_IDENTIFIER
   {
     int i;
@@ -2404,27 +2448,27 @@ low_idents: TOK_IDENTIFIER
   {
     $$=0;
   }
-  | TOK_IDENTIFIER TOK_COLON_COLON TOK_IDENTIFIER
+  | inherit_specifier TOK_IDENTIFIER
   {
     if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $3->u.sval.u.string);
+    copy_shared_string(last_identifier, $2->u.sval.u.string);
 
-    $$=reference_inherited_identifier($1->u.sval.u.string,
-				     $3->u.sval.u.string);
+    $$ = reference_inherited_identifier($1->u.sval.u.string,
+					$2->u.sval.u.string);
 
     if (!$$)
     {
-      my_yyerror("Undefined identifier %s::%s", 
+      my_yyerror("Undefined identifier %s::%s.", 
 		 $1->u.sval.u.string->str,
-		 $3->u.sval.u.string->str);
+		 $2->u.sval.u.string->str);
       $$=0;
     }
 
     free_node($1);
-    free_node($3);
+    free_node($2);
   }
-  | TOK_IDENTIFIER TOK_COLON_COLON bad_identifier
-  | TOK_IDENTIFIER TOK_COLON_COLON error
+  | inherit_specifier bad_identifier
+  | inherit_specifier error
   | TOK_COLON_COLON TOK_IDENTIFIER
   {
     int e,i;
