@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.22 2002/05/11 00:12:38 nilsson Exp $ */
+/* $Id: any.c,v 1.23 2002/07/13 23:46:16 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.22 2002/05/11 00:12:38 nilsson Exp $
+**!	$Id: any.c,v 1.23 2002/07/13 23:46:16 nilsson Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.22 2002/05/11 00:12:38 nilsson Exp $");
+RCSID("$Id: any.c,v 1.23 2002/07/13 23:46:16 nilsson Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -200,6 +200,12 @@ void image_any__decode(INT32 args)
 	 goto unknown_format;
 
       default:
+	if( sp[-args].u.string->str[0] == 10 ) {
+	  /* PCX */
+	  image_pcx_decode(1);
+	  push_text("image/x-pcx");
+	  goto simple_image;
+	}
 unknown_format:
 	 Pike_error("Unknown image format.\n");	 
    }
