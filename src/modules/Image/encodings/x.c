@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.1 1998/01/07 03:08:39 mirar Exp $ */
+/* $Id: x.c,v 1.2 1998/01/08 16:04:54 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.1 1998/01/07 03:08:39 mirar Exp $
+**!	$Id: x.c,v 1.2 1998/01/08 16:04:54 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.1 1998/01/07 03:08:39 mirar Exp $");
+RCSID("$Id: x.c,v 1.2 1998/01/08 16:04:54 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -266,12 +266,12 @@ THREADS_ALLOW();
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
-	       *d|=(unsigned char)((b>>24)&(((1<<(8-bit))-1)<<bit));
+	       *d|=(unsigned char)(b>>(24+bit));
 	       b<<=8-bit;
 	       bp-=8-bit;
 	       *(++d)=0; bit=0;
 	    }
-	    *d|=b>>(24-(8-bp)+bit); 
+	    *d|=b>>24; 
 	    bit+=bp;
 	    if (bit==8) *(++d)=0,bit=0;
 	    s++;
@@ -459,7 +459,8 @@ static void x_encode_pseudocolor_1byte(INT32 args,
    INT32 blinemod=(alignbits-((img->xsize*bpp+alignbits-1)%alignbits)-1);
    unsigned char *d;
    unsigned char *s;
-   INT32 y,x,bit,bp,b;
+   INT32 y,x,bit,bp;
+   unsigned long b;
    struct pike_string *dest2;
 
    dest=begin_shared_string(img->xsize*img->ysize);
@@ -491,12 +492,12 @@ static void x_encode_pseudocolor_1byte(INT32 args,
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
-	       *d|=(unsigned char)((b>>24)&(((1<<(8-bit))-1)<<bit));
+	       *d|=(unsigned char)(b>>(24+bit));
 	       b<<=8-bit;
 	       bp-=8-bit;
 	       *(++d)=0; bit=0;
 	    }
-	    *d|=b>>(24-(8-bp)+bit); 
+	    *d|=b>>24; 
 	    bit+=bp;
 	    if (bit==8) *(++d)=0,bit=0;
 	 }
@@ -506,18 +507,22 @@ static void x_encode_pseudocolor_1byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b=(*(s++))<<(32-vbpp); 
+	    b=(*(s++))<<(32-bpp); 
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
-	       *d|=(unsigned char)((b>>24)&(((1<<(8-bit))-1)<<bit));
+/*fprintf(stderr,"   b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
+	       *d|=(unsigned char)(b>>(24+bit));
 	       b<<=8-bit;
 	       bp-=8-bit;
+/*fprintf(stderr,">  b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
 	       *(++d)=0; bit=0;
 	    }
-	    *d|=b>>(24-(8-bp)+bit); 
+/*fprintf(stderr," - b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
+	    *d|=b>>24; 
 	    bit+=bp;
 	    if (bit==8) *(++d)=0,bit=0;
+/*fprintf(stderr,"^- b=%08x *d=%02x bp=%d bit=%d\n",b,*d,bp,bit);*/
 	 }
       }
       bp=blinemod;
@@ -541,7 +546,8 @@ static void x_encode_pseudocolor_2byte(INT32 args,
    INT32 blinemod=(alignbits-((img->xsize*bpp+alignbits-1)%alignbits)-1);
    unsigned char *d;
    unsigned char *s;
-   INT32 y,x,bit,bp,b;
+   unsigned long b;
+   INT32 y,x,bit,bp;
    struct pike_string *dest2;
 
    dest=begin_shared_string(img->xsize*img->ysize);
@@ -573,12 +579,12 @@ static void x_encode_pseudocolor_2byte(INT32 args,
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
-	       *d|=(unsigned char)((b>>24)&(((1<<(8-bit))-1)<<bit));
+	       *d|=(unsigned char)(b>>(24+bit));
 	       b<<=8-bit;
 	       bp-=8-bit;
 	       *(++d)=0; bit=0;
 	    }
-	    *d|=b>>(24-(8-bp)+bit); 
+	    *d|=b>>24; 
 	    bit+=bp;
 	    if (bit==8) *(++d)=0,bit=0;
 	 }
@@ -588,16 +594,16 @@ static void x_encode_pseudocolor_2byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b=(*(s++))<<(32-vbpp); 
+	    b=(*(s++))<<(32-bpp); 
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
-	       *d|=(unsigned char)((b>>24)&(((1<<(8-bit))-1)<<bit));
+	       *d|=(unsigned char)(b>>(24+bit));
 	       b<<=8-bit;
 	       bp-=8-bit;
 	       *(++d)=0; bit=0;
 	    }
-	    *d|=b>>(24-(8-bp)+bit); 
+	    *d|=b>>24; 
 	    bit+=bp;
 	    if (bit==8) *(++d)=0,bit=0;
 	 }
