@@ -52,7 +52,7 @@ int main(int argc, string *argv)
   mixed tmp;
   int e;
   string *files;
-  string s=replace(version()," ","_");
+  string s=replace(version()," ","-");
 
   tmp=reverse(argv[0]/"/");
   except_modules=mklist(argv[1..]);
@@ -73,14 +73,17 @@ int main(int argc, string *argv)
     if(file_size("pike/src/modules/"+tmp) == -2)
       fix_configure("modules/"+tmp);
 
-  files=sum(({ "pike/README" }),
-	    get_files("pike/src"),
-	    get_files("pike/doc"),
-	    get_files("pike/lib"),
-	    get_files("pike/bin"));
+  system("ln -s pike "+s);
+
+  files=sum(({ s+"/README" }),
+	    get_files(s+"/src"),
+	    get_files(s+"/doc"),
+	    get_files(s+"/lib"),
+	    get_files(s+"/bin"));
 
   perror("Creating "+s+".tar.gz:\n");
   system("tar cvzf pike/"+s+".tar.gz "+files*" ");
+  rm(s);
   perror("Done.\n");
   return 0;
 }
