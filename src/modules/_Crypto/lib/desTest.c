@@ -7,15 +7,15 @@
  */
 
 #ifndef	lint
-static char desTest_cRcs[] = "$Id: desTest.c,v 1.1 1997/02/12 06:24:47 nisse Exp $";
+static char desTest_cRcs[] = "$Id: desTest.c,v 1.2 1998/01/21 19:47:03 hubbe Exp $";
 #endif
 
-extern printf();
-
 #include	"des.h"
+#include <stdio.h>
 
 /* define now(w) to be the elapsed time in hundredths of a second */
 
+#ifndef __NT__
 #include	<sys/time.h>
 #include	<sys/resource.h>
 extern getrusage();
@@ -25,6 +25,10 @@ static struct rusage usage;
 		usage.ru_utime.tv_sec  * 100 +			\
 		usage.ru_utime.tv_usec / 10000			\
 	)
+#else
+#include       <windows.h>
+#define now(w) 0
+#endif
 
 /* test data
  * the tests (key0-3, text0-3) are cribbed from code which is (c) 1988 MIT
@@ -81,8 +85,8 @@ byte *src, *dst;
 }
 
 static void
-decode(src, dst)
-byte *src, *dst;
+decode(src, dst, check)
+byte *src, *dst, *check;
 {
 	int j;
 
@@ -95,7 +99,11 @@ byte *src, *dst;
 	(void)printf("\tclear:\t");
 	for (j = 0; j < 8; j++)
 		(void)printf("%02X ", dst[j]);
-	(void)printf("\n");
+
+        if(!memcmp(dst,check,8))
+           printf("Ok\n");
+        else
+           printf("FAIL\n");
 }
 
 /* run the tests */
@@ -151,27 +159,28 @@ main()
 		method(key0);
 		(void)printf("cipher?\t%s\n", expect[(n % 2) + 0]);
 		encode(text0, cipher);
-		decode(cipher, output);
+		decode(cipher, output, text0);
 
 		method(key1);
 		(void)printf("cipher?\t%s\n", expect[(n % 2) + 2]);
 		encode(text1, cipher);
-		decode(cipher, output);
+		decode(cipher, output, text1);
 
 		method(key2);
 		(void)printf("cipher?\t%s\n", expect[(n % 2) + 4]);
 		encode(text2, cipher);
-		decode(cipher, output);
+		decode(cipher, output, text2);
 
 		method(key3);
 		(void)printf("cipher?\t%s\n", expect[(n % 2) + 6]);
 		encode(text3, cipher);
-		decode(cipher, output);
+		decode(cipher, output, text3);
 
 		(void)printf("%c", "\n\f\n\0"[n]);
 
 	} while ( ++n < 4 );
 
 	DesQuickDone();
+	fflush(stdout);
 	return 0;
 }

@@ -55,13 +55,14 @@ desTest:	desCore.a desTest.o
 
 # test all performance enhancement flags
 sure:
-		rm *.i; make 'CPPFLAGS=-Di386    -Umc68000 -Usparc'
-		rm *.i; make 'CPPFLAGS=-Dvax     -Umc68000 -Usparc'
-		rm *.i; make 'CPPFLAGS=-Dmc68000 -Usparc'
-		rm *.i; make 'CPPFLAGS=-Dsparc   -Umc68000'
+		make clean ; make desTest 'CPPFLAGS=-Di386    -Umc68000 -Usparc'
+		make clean ; make desTest 'CPPFLAGS=-Dvax     -Umc68000 -Usparc'
+		make clean ; make desTest 'CPPFLAGS=-Dmc68000 -Usparc'
+		make clean ; make desTest 'CPPFLAGS=-Dsparc   -Umc68000'
+		make clean ; make desTest
 
 clean:
-	-rm -f *.o *.i *.x *.a
+	-rm -f *.o *.i *.x *.a ./desTest
 
 depend:
 
@@ -83,7 +84,7 @@ desdata:	desdata.o
 
 # new rules  (note: tr|sed|tr is NOT necessary,  just there so .i is readable)
 .c.i:
-	$(CPP) $(CFLAGS) $< > $*.x
+	$(CPP) $(CFLAGS) $(CPPFLAGS) $< > $*.x
 	@tr ';'\\012 \\012';' < $*.x |			\
 	 sed	-e 's/[ 	][ 	]*/ /g'		\
 		-e 's/^ //'				\
