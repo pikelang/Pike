@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.75 2004/03/19 15:41:51 grubba Exp $
+|| $Id: math.c,v 1.76 2004/03/19 15:47:06 grubba Exp $
 */
 
 #include "global.h"
@@ -37,7 +37,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.75 2004/03/19 15:41:51 grubba Exp $");
+RCSID("$Id: math.c,v 1.76 2004/03/19 15:47:06 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -391,7 +391,6 @@ void f_sqrt(INT32 args)
     }
     sp[-1].u.float_number = FL1(sqrt,sp[-1].u.float_number);
   }
-#ifdef AUTO_BIGNUM
   else if(sp[-1].type == T_OBJECT)
   {
     stack_dup();
@@ -404,7 +403,6 @@ void f_sqrt(INT32 args)
     stack_swap();
     pop_stack();
   }
-#endif /* AUTO_BIGNUM */
   else
   {
     SIMPLE_BAD_ARG_ERROR("sqrt", 1, "int|float|object");
@@ -465,17 +463,8 @@ void f_pow(INT32 args)
   switch(Pike_sp[-2].type * 16 + Pike_sp[-1].type)
   {
     case T_INT * 17:
-#ifdef AUTO_BIGNUM
-    case T_OBJECT * 17:
     case T_INT * 16 + T_OBJECT:
-    case T_OBJECT * 16 + T_INT:
-    case T_OBJECT * 16 + T_FLOAT:
-      stack_swap();
-      push_constant_text("pow");
-      f_index(2);
-      stack_swap();
-      f_call_function(2);
-#else
+#ifndef AUTO_BIGNUM
       ref_push_type_value(float_type_string);
       stack_swap();
       f_cast();
@@ -489,7 +478,16 @@ void f_pow(INT32 args)
       f_pow(2);
 
       o_cast_to_int();
+      return;
 #endif
+    case T_OBJECT * 17:
+    case T_OBJECT * 16 + T_INT:
+    case T_OBJECT * 16 + T_FLOAT:
+      stack_swap();
+      push_constant_text("pow");
+      f_index(2);
+      stack_swap();
+      f_call_function(2);
       return;
 
     case T_FLOAT * 16 + T_INT:
