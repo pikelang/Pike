@@ -11,14 +11,13 @@ IMAGE_CLASS("Image",      init_image_image,      exit_image_image,
 IMAGE_CLASS("Colortable", init_image_colortable, exit_image_colortable, 
 	    image_colortable_program )
 
-IMAGE_CLASS("Color",      init_image_colors,     exit_image_colors,
-	    image_colors_program )
-
 IMAGE_CLASS("Layer",      init_image_layers,     exit_image_layers,
 	    image_layer_program )
 
 IMAGE_CLASS("font",       init_image_font,       exit_image_font,
 	    image_font_program )
+
+IMAGE_SUBMODULE("Color", init_image_colors, exit_image_colors )
 
 IMAGE_SUBMODULE("ANY",   init_image_any,  exit_image_any  ) 
 IMAGE_SUBMODULE("AVS",   init_image_avs,  exit_image_avs  ) 
@@ -33,7 +32,7 @@ IMAGE_SUBMODULE("PSD",   init_image_psd,  exit_image_psd  )
 IMAGE_SUBMODULE("TGA",   init_image_tga,  exit_image_tga  ) 
 IMAGE_SUBMODULE("X",     init_image_x,    exit_image_x    ) 
 IMAGE_SUBMODULE("XBM",   init_image_xbm,  exit_image_xbm  ) 
-IMAGE_SUBMODULE("XCF",   init_image_xcf,  exit_image_xcf  ) 
+IMAGE_SUBMODULE("_XCF",  init_image_xcf,  exit_image_xcf  ) 
 IMAGE_SUBMODULE("XWD",   init_image_xwd,  exit_image_xwd  ) 
 IMAGE_SUBMODULE("_XPM",  init_image__xpm, exit_image__xpm ) 
 
