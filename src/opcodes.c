@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.165 2004/09/30 14:09:07 mast Exp $
+|| $Id: opcodes.c,v 1.166 2004/12/30 13:41:08 grubba Exp $
 */
 
 #include "global.h"
 #include "constants.h"
 #include "interpret.h"
 #include "opcodes.h"
-#include "main.h"
+#include "pike_embed.h"
 
 #ifdef INSTR_PROFILING
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.182 2004/12/18 18:21:57 grubba Exp $
+|| $Id: docode.c,v 1.183 2004/12/30 13:41:08 grubba Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include "pike_error.h"
 #include "pike_memory.h"
 #include "svalue.h"
-#include "main.h"
+#include "pike_embed.h"
 #include "builtin_functions.h"
 #include "peep.h"
 #include "docode.h"

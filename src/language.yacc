@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.352 2004/12/22 18:46:15 grubba Exp $
+|| $Id: language.yacc,v 1.353 2004/12/30 13:41:08 grubba Exp $
 */
 
 %pure_parser
@@ -132,7 +132,7 @@
 #include "pike_error.h"
 #include "docode.h"
 #include "machine.h"
-#include "main.h"
+#include "pike_embed.h"
 #include "opcodes.h"
 #include "operators.h"
 #include "bignum.h"

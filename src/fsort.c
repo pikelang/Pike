@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort.c,v 1.23 2004/09/18 20:50:50 nilsson Exp $
+|| $Id: fsort.c,v 1.24 2004/12/30 13:41:08 grubba Exp $
 */
 
 /* fsort- a smarter quicksort /Hubbe */
@@ -11,7 +11,7 @@
 #include "global.h"
 #include "pike_error.h"
 #include "fsort.h"
-#include "main.h"
+#include "pike_embed.h"
 #include "pike_macros.h"
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )

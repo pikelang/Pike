@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.360 2004/12/22 18:46:15 grubba Exp $
+|| $Id: interpret.c,v 1.361 2004/12/30 13:44:20 grubba Exp $
 */
 
 #include "global.h"
@@ -20,7 +20,7 @@
 #include "backend.h"
 #include "operators.h"
 #include "opcodes.h"
-#include "main.h"
+#include "pike_embed.h"
 #include "lex.h"
 #include "builtin_functions.h"
 #include "signal_handler.h"

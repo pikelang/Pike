@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.104 2004/09/18 20:50:53 nilsson Exp $
+|| $Id: peep.c,v 1.105 2004/12/30 13:41:08 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "program.h"
 #include "las.h"
 #include "docode.h"
-#include "main.h"
+#include "pike_embed.h"
 #include "pike_error.h"
 #include "lex.h"
 #include "pike_memory.h"
