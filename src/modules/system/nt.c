@@ -1,17 +1,25 @@
 /*
- * $Id: nt.c,v 1.1 1998/07/26 10:29:49 hubbe Exp $
+ * $Id: nt.c,v 1.2 1998/07/27 21:57:46 hubbe Exp $
  *
  * NT system calls for Pike
  *
  * Fredrik Hubinette, 1998-08-22
  */
 
-#include #include "global.h"
+#include "global.h"
 
 #include "system_machine.h"
 #include "system.h"
 
 #ifdef __NT__
+
+#include "interpret.h"
+#include "object.h"
+#include "program.h"
+#include "svalue.h"
+#include "stralloc.h"
+#include "las.h"
+#include "threads.h"
 
 #include <winsock.h>
 #include <windows.h>
@@ -124,7 +132,7 @@ void f_LogonUser(INT32 args)
   pw=(LPTSTR)sp[2-args].u.string->str;
 
   logonprovider=LOGON32_PROVIDER_DEFAULT;
-  logintype=LOGON32_LOGON_NETWORK;
+  logontype=LOGON32_LOGON_NETWORK;
 
   switch(args)
   {
@@ -133,7 +141,7 @@ void f_LogonUser(INT32 args)
     case 3:
     case 2:
     case 1:
-    case 0:
+    case 0: break;
   }
 
   THREADS_ALLOW();
@@ -144,7 +152,7 @@ void f_LogonUser(INT32 args)
     struct object *o;
     pop_n_elems(args);
     o=low_clone(token_program);
-    (*(HANDLE *)o->storage)[0]=x;
+    (*(HANDLE *)(o->storage))=x;
     push_object(o);
   }else{
     errno=GetLastError();
@@ -171,8 +179,8 @@ void init_nt_system_calls(void)
   set_init_callback(init_token);
   set_exit_callback(exit_token);
   token_program=end_program();
-  add_program_constant("UserToken",file_program,0);
-  toek_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  add_program_constant("UserToken",token_program,0);
+  token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   add_function("cp",f_cp,"function(string,string:int)", 0);
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
@@ -184,9 +192,9 @@ void init_nt_system_calls(void)
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT",HKEY_CLASSES_ROOT);
   add_efun("RegGetValue",f_RegGetValue,"function(int,string,string:string|int|string*)",OPT_EXTERNAL_DEPEND);
 
-  add_function("LogonUser",f_LogonUser,"function(string,string,string,int,void|int:object)",0);
+  add_function("LogonUser",f_LogonUser,"function(string,string,string,int|void,void|int:object)",0);
 #define SIMPCONST(X) \
-  add_integer_constant(#X,X);
+  add_integer_constant(#X,X,0);
 
   SIMPCONST(LOGON32_LOGON_BATCH);
   SIMPCONST(LOGON32_LOGON_INTERACTIVE);
@@ -197,6 +205,11 @@ void init_nt_system_calls(void)
 
 void exit_nt_system_calls(void)
 {
+  if(token_program)
+  {
+    free_program(token_program);
+    token_program=0;
+  }
 }
 
 
