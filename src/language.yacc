@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.194 2000/06/29 00:08:15 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.195 2000/07/07 00:53:21 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -372,13 +372,13 @@ low_program_ref: string_constant
       SAFE_APPLY_MASTER("handle_inherit", 2);
     }
 
-    if(sp[-1].type != T_PROGRAM)
+    if(Pike_sp[-1].type != T_PROGRAM)
       my_yyerror("Couldn't cast string \"%s\" to program",
 		 $1->u.sval.u.string->str);
     free_node($1);
-    $$=mksvaluenode(sp-1);
+    $$=mksvaluenode(Pike_sp-1);
     if($$->name) free_string($$->name);
-    add_ref( $$->name=sp[-2].u.string );
+    add_ref( $$->name=Pike_sp[-2].u.string );
     pop_stack();
   }
   | idents
@@ -408,7 +408,7 @@ inheritance: modifiers TOK_INHERIT low_program_ref optional_rename_inherit ';'
     }
     if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
     {
-      struct pike_string *s=sp[-1].u.string;
+      struct pike_string *s=Pike_sp[-1].u.string;
       if($4) s=$4->u.sval.u.string;
       compiler_do_inherit($3,$1,s);
     }
@@ -443,7 +443,7 @@ import: TOK_IMPORT idents ';'
   {
     resolv_constant($2);
     free_node($2);
-    use_module(sp-1);
+    use_module(Pike_sp-1);
     pop_stack();
   }
   | TOK_IMPORT string ';'
@@ -457,7 +457,7 @@ import: TOK_IMPORT idents ';'
     } else {
       SAFE_APPLY_MASTER("handle_import", 2);
     }
-    use_module(sp-1);
+    use_module(Pike_sp-1);
     pop_stack();
   }
   | TOK_IMPORT error ';' { yyerrok; }
@@ -498,7 +498,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 	  yyerror("Error in constant definition.");
 	}else{
 	  pop_n_elems(tmp-1);
-	  add_constant($1->u.sval.u.string, sp-1,
+	  add_constant($1->u.sval.u.string, Pike_sp-1,
 		       current_modifiers & ~ID_EXTERN);
 	  pop_stack();
 	}
@@ -708,7 +708,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 		  check_node_hash($<n>9)->u.sval.u.string,
 		  $1);
 #ifdef PIKE_DEBUG
-      if(recoveries && sp-evaluator_stack < recoveries->sp)
+      if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
 	fatal("Stack error (underflow)\n");
 
       if(Pike_compiler->compiler_pass == 1 && f!=Pike_compiler->compiler_frame->current_function_number)
@@ -1000,15 +1000,15 @@ identifier_type: idents
   { 
     resolv_constant($1);
 
-    if (sp[-1].type == T_TYPE) {
+    if (Pike_sp[-1].type == T_TYPE) {
       /* "typedef" */
-      push_finished_type(sp[-1].u.string);
+      push_finished_type(Pike_sp[-1].u.string);
     } else {
       /* object type */
       struct program *p = NULL;
 
-      if (sp[-1].type == T_OBJECT) {
-	if(!sp[-1].u.object->prog)
+      if (Pike_sp[-1].type == T_OBJECT) {
+	if(!Pike_sp[-1].u.object->prog)
 	{
 	  pop_stack();
 	  push_int(0);
@@ -1019,9 +1019,9 @@ identifier_type: idents
 	}
       }
 
-      switch(sp[-1].type) {
+      switch(Pike_sp[-1].type) {
       case T_FUNCTION:
-	if((p = program_from_function(sp-1)))
+	if((p = program_from_function(Pike_sp-1)))
 	  break;
       
       default:
@@ -1032,7 +1032,7 @@ identifier_type: idents
 	break;
 	
       case T_PROGRAM:
-	p = sp[-1].u.program;
+	p = Pike_sp[-1].u.program;
 	break;
       }
 
@@ -1137,19 +1137,19 @@ opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
   | '(' program_ref ')'
   {
     /* NOTE: On entry, there are two items on the stack:
-     *   sp-2:	Name of the program reference (string).
-     *   sp-1:	The resolved program (program|function|zero).
+     *   Pike_sp-2:	Name of the program reference (string).
+     *   Pike_sp-1:	The resolved program (program|function|zero).
      */
-    struct program *p=program_from_svalue(sp-1);
+    struct program *p=program_from_svalue(Pike_sp-1);
     if(p)
     {
       push_type_int(p->id);
     }else{
       if (Pike_compiler->compiler_pass!=1) {
-	if ((sp[-2].type == T_STRING) && (sp[-2].u.string->len > 0) &&
-	    (sp[-2].u.string->len < 256)) {
+	if ((Pike_sp[-2].type == T_STRING) && (Pike_sp[-2].u.string->len > 0) &&
+	    (Pike_sp[-2].u.string->len < 256)) {
 	  my_yyerror("Not a valid program specifier: '%s'",
-		     sp[-2].u.string->str);
+		     Pike_sp[-2].u.string->str);
 	} else {
 	  yyerror("Not a valid program specifier.");
 	}
@@ -2290,10 +2290,10 @@ idents2: idents
 	funp.id_flags |= ID_HIDDEN;
 	i = -1;
 	for(d = 0; d < (int)Pike_compiler->new_program->num_identifier_references; d++) {
-	  struct reference *fp;
-	  fp = Pike_compiler->new_program->identifier_references + d;
+	  struct reference *refp;
+	  refp = Pike_compiler->new_program->identifier_references + d;
 
-	  if(!MEMCMP((char *)fp,(char *)&funp,sizeof funp)) {
+	  if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) {
 	    i = d;
 	    break;
 	  }
@@ -2346,7 +2346,7 @@ idents: low_idents
     } else {
       SAFE_APPLY_MASTER("handle_import", 2);
     }
-    tmp=mkconstantsvaluenode(sp-1);
+    tmp=mkconstantsvaluenode(Pike_sp-1);
     pop_stack();
     $$=index_node(tmp, ".", $2->u.sval.u.string);
     free_node(tmp);
@@ -2366,9 +2366,8 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 
     for (inherit_depth = -1; inherit_depth < compilation_depth;
 	 inherit_depth++, inherit_state = inherit_state->previous) {
-      if (e = find_inherit(inherit_state->new_program, $1->u.sval.u.string)) {
+      if ((e = find_inherit(inherit_state->new_program, $1->u.sval.u.string)))
 	break;
-      }
     }
     if (!e) {
       my_yyerror("No such inherit %s.", $1->u.sval.u.string->str);
@@ -2835,7 +2834,7 @@ void yyerror(char *str)
   extern int cumulative_parse_error;
 
 #ifdef PIKE_DEBUG
-  if(recoveries && sp-evaluator_stack < recoveries->sp)
+  if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
     fatal("Stack error (underflow)\n");
 #endif
 

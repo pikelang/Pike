@@ -37,8 +37,11 @@ static int eval_instruction(unsigned char *pc)
     {
 #ifdef _REENTRANT
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
-        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+      if(OBJ2THREAD(Pike_interpreter.thread_id)->state.thread_id != Pike_interpreter.thread_id)
+	fatal("Arglebargle glop glyf, thread swap problem!\n");
+
+      if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_id)
+        fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id);
 #endif
 
       Pike_sp[0].type=99; /* an invalid type */
@@ -46,25 +49,32 @@ static int eval_instruction(unsigned char *pc)
       Pike_sp[2].type=99;
       Pike_sp[3].type=99;
       
-      if(Pike_sp<Pike_evaluator_stack || Pike_mark_sp < Pike_mark_stack || Pike_fp->locals>Pike_sp)
-	fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
+      if(Pike_sp<Pike_interpreter.evaluator_stack || Pike_interpreter.mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
+	fatal("Stack error (generic) Pike_sp=%p/%p Pike_interpreter.mark_sp=%p/%p locals=%p.\n",
 	      Pike_sp,
-	      Pike_evaluator_stack,
-	      Pike_mark_sp,
-	      Pike_mark_stack,
+	      Pike_interpreter.evaluator_stack,
+	      Pike_interpreter.mark_sp,
+	      Pike_interpreter.mark_stack,
 	      Pike_fp->locals);
       
-      if(Pike_sp > Pike_evaluator_stack+Pike_stack_size)
-	fatal("Stack error (overflow).\n");
+      if(Pike_interpreter.mark_sp > Pike_interpreter.mark_stack+Pike_stack_size)
+	fatal("Mark Stack error (overflow).\n");
+
+
+      if(Pike_interpreter.mark_sp < Pike_interpreter.mark_stack)
+	fatal("Mark Stack error (underflow).\n");
+
+      if(Pike_sp > Pike_interpreter.evaluator_stack+Pike_stack_size)
+	fatal("stack error (overflow).\n");
       
       if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
 	 Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
 	fatal("Stack error (stupid!).\n");
 
-      if(recoveries && Pike_sp-Pike_evaluator_stack < recoveries->Pike_sp)
+      if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
 	fatal("Stack error (underflow).\n");
 
-      if(Pike_mark_sp > Pike_mark_stack && Pike_mark_sp[-1] > Pike_sp)
+      if(Pike_interpreter.mark_sp > Pike_interpreter.mark_stack && Pike_interpreter.mark_sp[-1] > Pike_sp)
 	fatal("Stack error (underflow?)\n");
       
       if(d_flag > 9) do_debug();
@@ -79,10 +89,10 @@ static int eval_instruction(unsigned char *pc)
       add_ref(Pike_fp->context.prog);
       backlog[backlogp].instruction=instr;
       backlog[backlogp].pc=pc;
-      backlog[backlogp].stack = sp - evaluator_stack;
-      backlog[backlogp].mark_stack = mark_sp - mark_stack;
+      backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
+      backlog[backlogp].mark_stack = Pike_interpreter.mark_sp - Pike_interpreter.mark_stack;
 #ifdef _REENTRANT
-      backlog[backlogp].thread_id=thread_id;
+      backlog[backlogp].thread_id=Pike_interpreter.thread_id;
 #endif
 
       debug_malloc_touch(Pike_fp->current_object);
@@ -114,8 +124,8 @@ static int eval_instruction(unsigned char *pc)
 	      file,(long)linep,
 	      (long)(pc-Pike_fp->context.prog->program-1),
 	      get_f_name(instr + F_OFFSET),
-	      (long)(Pike_sp-Pike_evaluator_stack),
-	      (long)(Pike_mark_sp-Pike_mark_stack));
+	      (long)(Pike_sp-Pike_interpreter.evaluator_stack),
+	      (long)(Pike_interpreter.mark_sp-Pike_interpreter.mark_stack));
     }
 
     if(instr + F_OFFSET < F_MAX_OPCODE) 

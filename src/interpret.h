@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.45 2000/07/07 00:21:48 hubbe Exp $
+ * $Id: interpret.h,v 1.46 2000/07/07 00:51:40 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -24,7 +24,9 @@ struct Pike_interpreter {
   int evaluator_stack_malloced;
   int mark_stack_malloced;
   JMP_BUF *recoveries;
+#ifdef PIKE_THREADS
   struct object * thread_id;
+#endif
   char *stack_top;
   DO_IF_SECURITY(struct object *current_creds;)
 
@@ -246,7 +248,9 @@ extern struct Pike_interpreter Pike_interpreter;
 
 #define Pike_sp Pike_interpreter.stack_pointer
 #define Pike_fp Pike_interpreter.frame_pointer
-
+#ifdef PIKE_THREADS
+#define Pike_thread_id Pike_interpreter.thread_id
+#endif
 
 #ifndef NO_PIKE_SHORTHAND
 
