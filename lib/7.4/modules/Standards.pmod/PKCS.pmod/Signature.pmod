@@ -3,6 +3,7 @@
 
 inherit Standards.PKCS.Signature;
 
+//! In Pike 7.6 the @[hash] is required to be a @[Crypto.Hash] object.
 string build_digestinfo(string msg, object hash) {
   string d = hash->update(msg)->digest();
   string id = hash->identifier();

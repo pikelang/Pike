@@ -1,10 +1,10 @@
-// $Id: module.pmod,v 1.3 2004/04/12 12:34:20 grubba Exp $
+// $Id: module.pmod,v 1.4 2004/05/04 00:11:38 nilsson Exp $
 #pike 7.5
 
-// Emulate the old life length of the Fd instance. In newer versions
-// it's always the same as for the File instance. That can
-// theoretically cause incompatibilities in code that uses File.dup
-// and File.assign, which are deprecated and very rarely used.
+//! The life length of the Fd instance has changed. In newer versions
+//! it's always the same as for the File instance. That can
+//! theoretically cause incompatibilities in code that uses File.dup
+//! and File.assign, which are deprecated and very rarely used.
 class File
 {
   inherit Stdio.File;
