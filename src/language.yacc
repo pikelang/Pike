@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.103 1998/08/29 22:22:49 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.104 1998/11/05 17:56:08 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -651,17 +651,17 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
   | import {}
   | constant {}
   | class { free_node($1); }
-  | error ';'
-  {
-    reset_type_stack();
-    yyerrok;
-/*     if(num_parse_error>5) YYACCEPT; */
-  }
   | error F_LEX_EOF
   {
     reset_type_stack();
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file");
+  }
+  | error ';'
+  {
+    reset_type_stack();
+    yyerrok;
+/*     if(num_parse_error>5) YYACCEPT; */
   }
   | error '}'
   {
@@ -1317,6 +1317,18 @@ do: F_DO statement F_WHILE '(' safe_comma_expr end_cond expected_semicolon
   {
     $$=mknode(F_DO,$2,$5);
     $$->line_number=$1;
+  }
+  | F_DO statement F_WHILE F_LEX_EOF
+  {
+    $$=0;
+    yyerror("Missing '(' in do-while loop.");
+    yyerror("Unexpected end of file.");
+  }
+  | F_DO statement F_LEX_EOF
+  {
+    $$=0;
+    yyerror("Missing 'while' in do-while loop.");
+    yyerror("Unexpected end of file.");
   }
   ;
 
