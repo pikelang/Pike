@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.129 2004/04/06 15:52:15 mast Exp $
+|| $Id: backend.cmod,v 1.130 2004/04/06 16:17:02 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.129 2004/04/06 15:52:15 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.130 2004/04/06 16:17:02 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2467,23 +2467,19 @@ PIKECLASS Backend
 	  {
 	    /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
 #ifdef PIKE_DEBUG
-#ifndef USE_POLL_DEVICE
+#ifdef HAVE_POLL
 	    /* FIXME */
-	    int j;
-	    for(j=0;j<me->set.num_in_poll;j++)
-	    {
-	      if(me->set.poll_fds[j].fd == fd) /* It's still there... */
-	      {
-		struct pollfd fds;
-		int ret;
-		fds.fd=fd;
-		fds.events=POLLIN;
-		fds.revents=0;
-		ret=poll(&fds, 1,1 );
-		if(fds.revents & POLLNVAL)
-		  Pike_fatal("Bad filedescriptor %d to poll().\n", fd);
-		break;
-	      }
+	    if (SAFE_GET_ACTIVE_BOX (me, fd)) {
+	      /* It's still there... */
+	      struct pollfd fds;
+	      int ret;
+	      fds.fd=fd;
+	      fds.events=POLLIN;
+	      fds.revents=0;
+	      ret=poll(&fds, 1,1 );
+	      if(fds.revents & POLLNVAL)
+		Pike_fatal("Bad filedescriptor %d to poll().\n", fd);
+	      break;
 	    }
 #endif
 	    handled = 1;
