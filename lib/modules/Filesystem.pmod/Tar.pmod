@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.6 2000/09/18 14:19:32 per Exp $
+ * $Id: Tar.pmod,v 1.7 2000/09/18 17:50:27 grubba Exp $
  */
 
 class _Tar  // filesystem
@@ -217,7 +217,7 @@ class _TarFS
     parent = _parent;
   }
 
-  Filesystem.Stat stat(string file)
+  Filesystem.Stat stat(string file, int|void lstat)
   {
     file = combine_path(wd, file);
     return tar->filename_to_entry[root+file];
