@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.112 1999/05/20 18:27:56 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.113 1999/05/24 19:50:30 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1895,7 +1895,7 @@ void f_create_process(INT32 args)
       error("Failed to create child communication pipe.\n");
     }
 
-#if 1
+#if 0 /* Why do we need it? (and it does seem to break some things...) /Hubbe */
     init_threads_disable(NULL);
     storage.disabled = 1;
 #endif
@@ -2119,10 +2119,10 @@ void f_create_process(INT32 args)
             if(dup2(stds[fd], fd) < 0)
               PROCERROR(PROCE_DUP2, fd);
         }
-/* Why? */
-/*         for(fd=0; fd<3; fd++) */
-/*           if(stds[fd] && stds[fd]>2) */
-/*             close( stds[fd] ); */
+/* Why? - Because /Hubbe */
+         for(fd=0; fd<3; fd++)
+           if(stds[fd] && stds[fd]>2)
+             close( stds[fd] );
       }
 
       if(priority)
