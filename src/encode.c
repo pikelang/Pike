@@ -28,6 +28,40 @@
 
 #include <math.h>
 
+#ifdef HAVE_FREXP
+#define FREXP frexp
+#else
+double frexp(double x, int *exp)
+{
+  double ret;
+  *exp=(int)ceil(log(x)/log(2.0));
+  ret=(x*pow(2.0,(float)-*exp));
+  return tmp;
+}
+#endif
+
+#ifdef HAVE_FREXP
+#define FREXP frexp
+#else
+double FREXP(double x, int *exp)
+{
+  double ret;
+  *exp=(int)ceil(log(x)/log(2.0));
+  ret=(x*pow(2.0,(float)-*exp));
+  return tmp;
+}
+#endif
+
+#if HAVE_LDEXP
+#define LDEXP ldexp
+#else
+double LDEXP(double x, int exp)
+{
+  return x * pow(2.0,(double)exp);
+}
+#endif
+
+
 struct encode_data
 {
   struct svalue counter;
@@ -117,9 +151,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       code_entry(T_FLOAT,0,data);
       code_entry(T_FLOAT,0,data);
     }else{
-      INT32 x,y;
-      y=(int)ceil(log(val->u.float_number)/log(2.0))-30;
-      x=(int)((val->u.float_number)*pow(2.0,(float)-y));
+      INT32 x;
+      int y;
+      double tmp;
+
+      tmp=FREXP((double)val->u.float_number, &y);
+      x=(INT32)((1<<30)*tmp);
+      y-=30;
       while(x && y && !(x&1))
       {
 	x>>=1;
@@ -280,7 +318,7 @@ static void decode_value2(struct decode_data *data)
     data->counter.u.integer++;
 
     DECODE();
-    push_float(num2 * pow(2.0, (double) num));
+    push_float(LDEXP((double)num2, num));
     break;
   }
 
