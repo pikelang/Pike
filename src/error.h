@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.21 1998/07/16 21:56:15 grubba Exp $
+ * $Id: error.h,v 1.22 1998/07/16 22:00:45 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -34,6 +34,12 @@ struct frame;
 #define THROW_THREAD_KILLED 30
 #define THROW_EXIT 40
 #define THROW_MAX_SEVERITY 100
+
+#ifdef ONERROR_DEBUG
+#define OED_FPRINTF(X)	fprintf X
+#else /* !ONERROR_DEBUG */
+#define OED_FPRINTF(X)
+#endif /* ONERROR_DEBUG */
 
 typedef struct ONERROR
 {
@@ -67,8 +73,8 @@ extern int throw_severity;
 #ifdef DEBUG
 #define SET_ONERROR(X,Y,Z) \
   do{ \
-     fprintf(stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n", \
-             &(X), (Y), (Z), __FILE__, __LINE__); \
+     OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n", \
+                  &(X), (Y), (Z), __FILE__, __LINE__)); \
      if(!recoveries) break; \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
@@ -79,7 +85,8 @@ extern int throw_severity;
   }while(0)
 
 #define UNSET_ONERROR(X) do {\
-    fprintf(stderr, "UNSET_ONERROR(%p) %s:%d\n", &(X), __FILE__, __LINE__); \
+    OED_FPRINTF((stderr, "UNSET_ONERROR(%p) %s:%d\n", \
+                 &(X), __FILE__, __LINE__)); \
     if(!recoveries) break; \
     if(recoveries->onerror != &(X)) { \
       if (recoveries->onerror) { \
