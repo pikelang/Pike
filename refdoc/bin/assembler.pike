@@ -104,7 +104,7 @@ class cpEntry {
 
 void enqueue_move(string source, Node target) {
   mapping bucket = queue;
-  array path = source/".";
+  array path = map(source/".", replace, "-", ".");
   if(source != "")
     foreach(path, string node) {
       if(!bucket[node])
