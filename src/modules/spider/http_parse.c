@@ -78,7 +78,7 @@ static int get_word(char c)
       }
     }
   else
-    while(!isspace(buff[buff_pos]))
+    while(!ISSPACE(buff[buff_pos]))
     {
       n++;
       if(++buff_pos >= buff_len)
@@ -100,7 +100,7 @@ static int to_eol()
   int oldest_pos, old_pos;
   oldest_pos = buff_pos;
   if(buff_pos >= buff_len) return 0; 
-  while(isspace(buff[buff_pos]))
+  while(ISSPACE(buff[buff_pos]))
     if(++buff_pos >= buff_len)
     {
       buff_pos = oldest_pos;

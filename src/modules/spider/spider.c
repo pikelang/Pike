@@ -340,7 +340,7 @@ void f_set_start_quote(INT32 args)
        strs++;\
        j=i;\
      } }while(0)
-#define SKIP_SPACE()  while (i<len && s[i]!='>' && isspace(s[i])) i++
+#define SKIP_SPACE()  while (i<len && s[i]!='>' && ISSPACE(s[i])) i++
 
 int extract_word(char *s, int i, int len)
 {
@@ -552,7 +552,7 @@ void do_html_parse(struct pike_string *ss,
     {
       /* skip all spaces */
       i++;
-      for (j=i; j<len && s[j]!='>' && !isspace(s[j]); j++);
+      for (j=i; j<len && s[j]!='>' && !ISSPACE(s[j]); j++);
 
       if (j==len) break; /* end of string */
 
