@@ -12,6 +12,21 @@ o New `[..] operator function.
   the range bounds are specified. For compatibility, if there is no
   `[..] then `[] is still called for range operations.
 
+o Generalized this and this_program.
+  It is now possible to refer to inherits in objects. Example:
+    class A {
+      int a;
+      void foo() { werror("A\n"); }
+    }
+    class B {
+      inherit A;
+      int b;
+      void foo() { werror("B\n"); }
+      A::this_program get_a() { return A::this; }
+    }
+  In the above B()->get_a() will return an object with two symbols,
+  'a' and 'foo', but B()->get_a()->foo() will still write "B\n".
+
 o Unicode escapes.
   Pike now understands the common way to escape unicode chars, using
   \uxxxx and \Uxxxxxxxx escapes. These escapes works both in string
