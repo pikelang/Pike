@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.172 2003/04/26 15:24:18 marcus Exp $
+// $Id: module.pmod,v 1.173 2003/05/15 15:23:53 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -210,6 +210,37 @@ class File
     debug_bits = bits;
     return ::open(file,mode,bits);
   }
+
+#if constant(files.__HAVE_OPENPT__)
+  //! @decl int openpt(string mode)
+  //!
+  //! Open the master end of a pseudo-terminal pair.  The parameter
+  //! @[mode] should contain one or more of the following letters:
+  //! @string
+  //!   @value "r"
+  //!   Open terminal for reading.
+  //!   @value "w"
+  //!   Open terminal for writing.
+  //! @endstring
+  //!
+  //! @[mode] should always contain at least one of the letters
+  //! @expr{"r"@} or @expr{"w"@}.
+  //!
+  //! @seealso
+  //! @[grantpt()]
+  //!
+  int openpt(string mode)
+  {
+    _fd=Fd();
+    register_open_file ("pty master", open_file_id, backtrace());
+    is_file = 0;
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
+    debug_file = "pty master";  debug_mode = mode; debug_bits=0;
+    return ::openpt(mode);
+  }
+#endif
 
   //! This makes this file into a socket ready for connections. The reason
   //! for this function is so that you can set the socket to nonblocking

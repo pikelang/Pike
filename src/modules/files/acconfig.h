@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.20 2003/05/14 20:21:15 marcus Exp $
+|| $Id: acconfig.h,v 1.21 2003/05/15 15:24:06 marcus Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -80,8 +80,11 @@
 /* Filesystem notifications */
 #undef HAVE_NOTIFICATIONS
 
-/* Defined to path of pt_chmod to use pt_chmod directly rather than
-   calling grantpt (needed on Solaris) */
+/* Define to path of pseudo terminal master device if available */
+#undef PTY_MASTER_PATHNAME
+
+/* Define to path of pt_chmod/chgpt to use pt_chmod directly rather than
+   calling grantpt (needed on SysV) */
 #undef USE_PT_CHMOD
 
 #endif

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.277 2003/05/15 13:25:59 marcus Exp $
+|| $Id: file.c,v 1.278 2003/05/15 15:24:06 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.277 2003/05/15 13:25:59 marcus Exp $");
+RCSID("$Id: file.c,v 1.278 2003/05/15 15:24:06 marcus Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1470,7 +1470,7 @@ static int do_close(int flags)
 
 /*! @decl string grantpt()
  *!
- *!  If this file has been created by opening /dev/ptmx, return the
+ *!  If this file has been created by calling @[openpt()], return the
  *!  filename of the associated pts-file. This function should only be
  *!  called once.
  */
@@ -1705,6 +1705,68 @@ static void file_open(INT32 args)
   pop_n_elems(args);
   push_int(fd>=0);
 }
+
+#if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
+/*! @decl int openpt(string mode)
+ *!
+ *! Open the master end of a pseudo-terminal pair.
+ *!
+ *! @seealso
+ *!   @[grantpt()]
+ */
+static void file_openpt(INT32 args)
+{
+  int flags,fd;
+  struct pike_string *flag_str;
+  close_fd();
+
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->openpt", 2);
+
+  if(Pike_sp[-args].type != PIKE_T_STRING)
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->openpt", 1, "string");
+
+#ifdef HAVE_POSIX_OPENPT
+  flags = parse((flag_str = Pike_sp[1-args].u.string)->str);
+  
+  if(!( flags &  (FILE_READ | FILE_WRITE)))
+    Pike_error("Must open file for at least one of read and write.\n");
+
+  do {
+    THREADS_ALLOW_UID();
+    fd=posix_openpt(map(flags));
+    THREADS_DISALLOW_UID();
+    if ((fd < 0) && (errno == EINTR))
+      check_threads_etc();
+  } while(fd < 0 && errno == EINTR);
+
+  if(!Pike_fp->current_object->prog)
+  {
+    if (fd >= 0)
+      fd_close(fd);
+    Pike_error("Object destructed in Stdio.File->open()\n");
+  }
+
+  if(fd < 0)
+  {
+    ERRNO=errno;
+  }
+  else
+  {
+    init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
+    set_close_on_exec(fd,1);
+  }
+  pop_n_elems(args);
+  push_int(fd>=0);
+#else
+  if(args > 1)
+    pop_n_elems(args - 1);
+  push_constant_text(PTY_MASTER_PATHNAME);
+  stack_swap();
+  file_open(2);
+#endif
+}
+#endif
 
 #ifdef HAVE_FSYNC
 /*! @decl int(0..1) sync()
@@ -3806,6 +3868,10 @@ PIKE_MODULE_INIT
 #endif
 #ifdef HAVE_SYS_UN_H
   add_integer_constant("__HAVE_CONNECT_UNIX__",1,0);
+#endif
+
+#if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
+  add_integer_constant("__HAVE_OPENPT__",1,0);
 #endif
 
   /* function(:array(int)) */

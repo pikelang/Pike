@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.87 2003/05/15 13:25:41 marcus Exp $
+# $Id: configure.in,v 1.88 2003/05/15 15:24:06 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -18,8 +18,9 @@ AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
- grantpt unlockpt ptsname socketpair writev sendfile munmap madvise poll \
- setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa inet_ntop)
+ grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
+ madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
+ inet_ntop)
 
 AC_FUNC_MMAP
 
@@ -1123,6 +1124,25 @@ if test "$pike_cv_have_notifications" = "yes"; then
   AC_DEFINE(HAVE_NOTIFICATIONS)
 else
   AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(for pty master device)
+AC_CACHE_VAL(pike_cv_pty_master_pathname, [
+  pike_cv_pty_master_pathname=no
+  for i in ptmx ptc; do
+    if test -c /dev/$i; then
+      pike_cv_pty_master_pathname="/dev/$i"
+      break
+    else
+      :
+    fi
+  done
+])
+AC_MSG_RESULT($pike_cv_pty_master_pathname)
+if test no = "$pike_cv_pty_master_pathname"; then
+  :
+else
+  AC_DEFINE_UNQUOTED(PTY_MASTER_PATHNAME, "$pike_cv_pty_master_pathname")
 fi
 
 if test yes = "$ac_cv_func_grantpt"; then
