@@ -257,17 +257,22 @@ class fetch
 	  /* No attributes except BODY and BODY.PEEK can take any options */
 	  switch(lower_case(request->atom))
 	  {
+#define ATTR(x) ([ "wanted" : (x) ])
 	  case "all":
-	    fetch_attrs = ({ "flags", "internaldate",
-			     "rfc822.size", "envelope" });
+	    fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
+			     ATTR("rfc822.size"), ATTR("envelope") });
 	    break;
 	  case "fast":
-	    fetch_attrs = ({ "flags", "internaldate", "rfc822.size" });
+	    fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
+			     ATTR("rfc822.size"), });
 	    break;
 	  case "full":
-	    fetch_attrs = ({ "flags", "internaldate",
-			     "rfc822.size", "envelope", "body" });
+	    fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
+			     ATTR("rfc822.size"), ATTR("envelope"),
+			     ([ "wanted" : "bodystructure",
+				"no_extention_data" : 1 ]) });
 	    break;
+#undef ATTR
 	  default:
 	    /* Handled below */
 	  }
@@ -332,7 +337,7 @@ class fetch
       string wanted = lower_case(atom->atom);
       mapping res = ([ "wanted" : wanted ]);
 
-      /* Should requesting any part of the body realy vount as reading it? */
+      /* Should requesting any part of the body really count as reading it? */
       if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
 	res->mark_as_read = 1;
 
@@ -342,6 +347,7 @@ class fetch
 	if (!atom->options)
 	{
 	  res->wanted = "bodystructure";
+	  res->raw_wanted = "body";  // What to say in the response
 	  res->no_extention_data = 1;
 	  return res;
 	}
@@ -349,7 +355,7 @@ class fetch
       case "body.peek":
 	if (!atom->options)
 	  return 0;
-	
+
 	if (sizeof(atom->options)
 	    && ( (atom->options[0]->type != atom)
 		 || (atom->options[0]->options)))
@@ -369,6 +375,7 @@ class fetch
 	  part_number += ({ n });
 	}
 
+	res->raw_options = atom->options;
 	res->section = path[i..];
 	res->part = part_number;
 	res->options = atom->options[1..];
@@ -378,18 +385,27 @@ class fetch
       default:
 	/* Handle below */
       }
-      
+
       /* No commands except BODY[.PEEK] accepts any options */
       if (atom->options)
 	return 0;
 
-      return (< "envelope",
-		"flags",
-		"internaldate",
-		"rfc822.header", "rfc822.size", "rfc822.text",
-		"bodystructure",
-		"uid" >)[wanted]
-	&& res;
+      array path = wanted / ".";
+
+      if (sizeof(path) == 1)
+	return (< "envelope",
+		  "flags",
+		  "internaldate",
+		  // "rfc822.header", "rfc822.size", "rfc822.text",
+		  "bodystructure",
+		  "uid" >)[wanted]
+	  && res;
+
+      res->raw_wanted = wanted;
+      
+      res->wanted = path[0];
+      res->section = path[1..];
+      return (res->wanted == "rfc822") && res;
     }
 }
   
