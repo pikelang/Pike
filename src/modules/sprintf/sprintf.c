@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.68 2000/08/09 10:25:50 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.69 2000/08/09 12:30:03 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -145,10 +145,10 @@ struct format_info
   struct pike_string *to_free_string;
   PCHARP b;
   ptrdiff_t len;
-  int width;
+  ptrdiff_t width;
   int precision;
   PCHARP pad_string;
-  int pad_length;
+  ptrdiff_t pad_length;
   int column_entries;
   short flags;
   char pos_pad;
@@ -366,11 +366,11 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
 
 INLINE static void fix_field(struct string_builder *r,
 			     PCHARP b,
-			     int len,
+			     ptrdiff_t len,
 			     int flags,
-			     int width,
+			     ptrdiff_t width,
 			     PCHARP pad_string,
-			     int pad_length,
+			     ptrdiff_t pad_length,
 			     char pos_pad)
 {
   int e,d;
@@ -419,7 +419,7 @@ INLINE static void fix_field(struct string_builder *r,
     e=(width-e)/2;
     if(e>0)
     {
-      string_builder_fill(r,e,pad_string, pad_length, 0);
+      string_builder_fill(r, e, pad_string, pad_length, 0);
       width-=e;
     }
     flags|=FIELD_LEFT;
@@ -508,7 +508,7 @@ INLINE static int do_one(struct format_stack *fs,
 			 struct format_info *f)
 {
   PCHARP rest;
-  int e,d,lastspace;
+  ptrdiff_t e, d, lastspace;
 
   rest.ptr=0;
   if(f->flags & (LINEBREAK|ROUGH_LINEBREAK))
@@ -1211,9 +1211,9 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);
-	  tf=RINT(tf*m)/m;
+	  tf = RINT(tf*m)/m;
 	} else if (fs->fsp->precision==0) {
-	  tf=RINT(tf);
+	  tf = RINT(tf);
         }
 	
 	sprintf(x,buffer,1,fs->fsp->precision<0?0:fs->fsp->precision,tf);
@@ -1222,7 +1222,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	/* Make sure that the last digits really are zero. */
 	if(fs->fsp->precision<0)
 	{
-	  INT32 i, j;
+	  ptrdiff_t i, j;
 	  /* Find the ending of the number.  Yes, this can be made
 	     simpler now when the alignment bug for floats is fixed. */
 	  for(i=fs->fsp->len-1; i>=0; i--)
