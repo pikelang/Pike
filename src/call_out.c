@@ -7,6 +7,7 @@
 #include "interpret.h"
 #include "error.h"
 #include "builtin_efuns.h"
+#include "sys/types.h"
 
 call_out **pending_calls=0;      /* pointer to first busy pointer */
 int num_pending_calls;           /* no of busy pointers in buffer */
