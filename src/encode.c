@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.84 2001/07/16 21:53:40 mast Exp $");
+RCSID("$Id: encode.c,v 1.85 2001/07/16 21:57:55 mast Exp $");
 
 /* #define ENCODE_DEBUG */
   
@@ -1961,6 +1961,8 @@ static void decode_value2(struct decode_data *data)
 		  if(o->prog->flags & PROGRAM_FINISHED)
 		  {
 		    apply_lfun(o, LFUN___INIT, 0);
+		    pop_stack();
+		    apply_lfun(o,LFUN_CREATE, 0);
 		    pop_stack();
 		  }else{
 		    ptr=&l->next;
