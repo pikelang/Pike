@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.18 1998/02/27 20:21:27 mirar Exp $");
+RCSID("$Id: zlibmod.c,v 1.19 1998/03/24 22:16:09 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -351,12 +351,12 @@ static void gz_crc32(INT32 args)
        sp[-args].type!=T_STRING)
       error("Gz.crc32: illegal or missing argument 1 (expected string)\n");
 
-   if (args>1)
+   if (args>1) {
       if (sp[1-args].type!=T_INT)
 	 error("Gz.crc32: illegal argument 2 (expected integer)\n");
       else
 	 crc=(unsigned INT32)sp[1-args].u.integer;
-   else
+   } else
       crc=0;
 	 
    crc=crc32(crc,
