@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.78 1998/03/20 22:33:16 hubbe Exp $");
+RCSID("$Id: file.c,v 1.79 1998/03/22 03:25:25 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -423,6 +423,8 @@ static void file_read(INT32 args)
     if(sp[-args].type != T_INT)
       error("Bad argument 1 to file->read().\n");
     len=sp[-args].u.integer;
+    if(len<0)
+      error("Cannot read negative number of args.\n");
   }
 
   if(args > 1 && !IS_ZERO(sp+1-args))
