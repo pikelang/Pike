@@ -15,8 +15,6 @@
 
 typedef unsigned char pike_security_bits;
 
-struct pike_uid {};
-
 struct pike_creds
 {
   struct object *user;
@@ -29,7 +27,6 @@ struct pike_creds
 #define CHECK_VALID_UID(X) (X)
 
 #define OBJ2CREDS(O) ((struct pike_creds *)(CHECK_VALID_CREDS(O)->storage))
-#define OBJ2UID(O) ((struct pike_uid *)(CHECK_VALID_UID(O)->storage))
 
 
 /* Do we need a 'may never' ? */

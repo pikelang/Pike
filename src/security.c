@@ -10,8 +10,8 @@
 #include "multiset.h"
 #include "security.h"
 #include "module_support.h"
+#include "constants.h"
 
-static struct program *uid_program;
 static struct program *creds_program;
 
 struct object *current_creds=0;
@@ -54,24 +54,41 @@ static void get_default_creds(INT32 args)
 static void set_default_creds(INT32 args)
 {
   struct object *o;
+  INT_TYPE may,data;
 
-  get_all_args("set_default_creds",args,"%o",&o);
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("init_creds: permission denied.\n"));
 
-  if(get_storage(o, creds_program) != o->storage)
-    error("set_default_creds: Not a valid creds object.\n");
+  get_all_args("init_creds",args,"%o%i%i",&o,&may,&data);
+  if(THIS->user)
+    error("You may only call init_creds once.\n");
+  
+  add_ref(THIS->user=o);
+  THIS->may_always=may;
+  THIS->data_bits=data;
+  pop_n_elems(args);
+}
 
-  /* There is really no techincal reason for this, should we allow it? */
-  if(OBJ2CREDS(o)->user != THIS->user)
-    error("set_default_creds: You cannot use somebody elses creds!\n");
+static void init_creds_object(struct object *o)
+{
+  THIS->user=0;
+  THIS->default_creds=0;
+  THIS->data_bits=0;
+  THIS->may_always=0;
+}
 
-  if(THIS->default_creds) free_object(THIS->default_creds);
-  if(o == fp->current_object)
+static void exit_creds_object(struct object *o)
+{
+  if(THIS->user)
   {
-    add_ref(THIS->default_creds = o);
-  }else{
+    free_object(THIS->user);
+    THIS->user=0;
+  }
+
+  if(THIS->default_creds)
+  {
+    free_object(THIS->default_creds);
     THIS->default_creds=0;
   }
-  pop_n_elems(args);
 }
 
 void init_pike_security(void)
@@ -82,11 +99,20 @@ void init_pike_security(void)
   add_storage(sizeof(struct pike_creds));
   add_function("set_default_creds",set_default_creds,"function(object:void)",0);
   add_function("get_default_creds",get_default_creds,"function(:object)",0);
+  add_function("init_creds",init_creds,"function(object,int,int:void)",0);
+  set_init_callback(init_creds_object);
+  set_exit_callback(exit_creds_object);
   creds_program=end_program();
 
-  start_new_program();
-  add_storage(sizeof(struct pike_uid));
-  uid_program=end_program();
+  add_efun("set_current_creds",f_set_current_creds,"function(object:void)",OPT_SIDE_EFFECT);
+
+#define CONST(X) add_integer_constant("BIT_" #X,SECURITY_BIT_##X,0)
+  CONST(INDEX);
+  CONST(SET_INDEX);
+  CONST(CALL);
+  CONST(SECURITY);
+  CONST(NOT_SETUID);
+  CONST(CONDITIONAL_IO);
 
   end_class("security",0);
 }
