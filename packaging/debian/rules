@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.50 2004/05/11 14:13:39 grendel Exp $
+# $Id: rules,v 1.51 2004/06/18 17:38:03 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -19,6 +19,10 @@ ifdef CCVER
 CC=gcc-$(CCVER)
 else
 CC=gcc
+endif
+
+ifdef SSP
+SSP_FLAGS=-fstack-protector
 endif
 
 EXTRA_ARGS=--with-security
@@ -72,7 +76,7 @@ RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/
 PIKE_FAKEROOT=$(CURDIR)/debian/$(PIKE)-core
 PIKE_FAKEROOT_OMIT=$(BUILDDIR)*:$(CURDIR)/lib*:$(CURDIR)/src*:$(CURDIR)/bin*:$(CURDIR)/man*:$(BUILDDIR)/lib*:$(CURDIR)*:$(CURDIR)/debian/$(PIKE)-core*
 
-CFLAGS=-O2 -s
+CFLAGS=-O2 -s $(SSP_FLAGS)
 # Temporary workaround for hppa linker issues
 ifeq ($(DEB_BUILD_ARCH),hppa)
 CFLAGS+=-ffunction-sections
