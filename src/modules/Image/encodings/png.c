@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.3 1998/04/01 05:37:25 mirar Exp $");
+RCSID("$Id: png.c,v 1.4 1998/04/02 01:07:03 mirar Exp $");
 
 #include "config.h"
 
@@ -198,8 +198,8 @@ static void image_png___decode(INT32 args)
       error("Image.PNG.__decode: illegal argument 1\n");
    
    if (args==2 &&
-       sp[1-args].type!=T_INT ||
-       sp[1-args].u.integer!=0)
+       (sp[1-args].type!=T_INT ||
+	sp[1-args].u.integer!=0))
       nocrc=1;
    
    (str=sp[-args].u.string)->refs++;
@@ -243,7 +243,7 @@ static void image_png___decode(INT32 args)
       push_string(make_shared_binary_string((char*)data,x));
       if (!nocrc && x+4<=len)
 	 push_int( my_crc32(my_crc32(0,NULL,0),data-4,x+4) ==
-		   int_from_32bit(data+x) );
+		   (INT32)int_from_32bit(data+x) );
       else
 	 push_int(0);
       if (x+4>len) break;
