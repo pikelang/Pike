@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.67 2002/04/16 17:16:06 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.68 2002/04/18 12:35:01 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -604,6 +604,12 @@ private constant termblock = (< "catch", "do", "gauge", "lambda", "class stop" >
 private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
+private constant notype = (< "(", "->", "[", ":", ";", "+", "++", "-", "--",
+			     "%", "/", "&", "&&", "||", ",",
+			     "<", ">", "==", "=", "!=", "?",
+			     "+=", "-=", "%=", "/=", "&=", "|=",
+			     "~=", "<<", ">>", "<<=", ">>=", "<=",
+			     ">=", "^", "^=" >);
 
 private class Expression {
   private array(string) tokens;
@@ -662,9 +668,10 @@ private class Expression {
   // -1 means that the token or tokens from @[position]
   // can not be a type declaration.
   int(-1..) endoftype(int(-1..) position) {
+    string t = `[](position);
     if( (< "int", "float", "string",
            "array", "mapping", "multiset",
-           "function", "object", "program" >)[ `[](position) ] ) {
+           "function", "object", "program" >)[ t ] ) {
       // We are in a type declaration.
       position++;
 
@@ -682,22 +689,22 @@ private class Expression {
       return position;
     }
 
+    // Any sequence beginning with any of these can't be
+    // a type declaration.
     if( (< "break", "continue", "class", "!", "-",
-           "(", "~", "[", "`" >)[ `[](position) ] )
+           "(", "~", "[", "`" >)[ t ] )
+      return -1;
+    if( notype[ t ] )
       return -1;
 
     for(; position<sizeof(positions); position++) {
-      if( (< "(", "->", "[", ":", ";", "+", "-",
-             "%", "/", "&", "&&", "||",
-             "<", ">", "==", "=", "!=", "?",
-             "+=", "-=", "%=", "/=", "&=", "|=",
-             "~=", "<<", ">>", "<<=", ">>=", "<=",
-	     ">=", "^", "^=" >)[ `[](position) ] )
+      if( notype[ `[](position+1) ] )
         return -1;
       if( `[](position+1)=="." ) {
         position++;
         continue;
       }
+      // FIXME: On | we should recurse.
       return position;
     }
 
@@ -1168,7 +1175,6 @@ class Evaluator {
     int top = !p;
     while( p<sizeof(expr)) {
       if( expr->is_block(p) ) {
-	p++;
 
 	string type = expr[p++];
 	multiset(string) new_scope = symbols+(<>);
@@ -1182,22 +1188,30 @@ class Evaluator {
 
 	  case "foreach":
 	    p = relocate(expr, symbols, new_scope, p, ",");
-	    if(expr[p]!=")") {
-	      p = relocate(expr, symbols, new_scope, p);
+	    if(expr[p]==";") {
+	      p++;
 	      p = relocate(expr, symbols, new_scope, p);
 	    }
+	    p++;
+	    p = relocate(expr, symbols, new_scope, p);
+	    p++;
 	    break;
 
 	  case "for":
 	    p = relocate(expr, symbols, new_scope, p);
-	    p = relocate(expr, symbols, new_scope, p);
-	    p = relocate(expr, symbols, new_scope, p);
+	    p++;
+	    p = relocate(expr, new_scope, new_scope, p);
+	    p++;
+	    p = relocate(expr, new_scope, new_scope, p);
+	    p++;
 	    break;
 
 	  case "lambda":
 	  case "class":
-	    while(expr[p]!=")")
+	    while(expr[p]!=")") {
 	      p = relocate(expr, symbols, new_scope, p, ",");
+	      p++;
+	    }
 	    break;
 
 	  // FIXME: Detect named lambdas.
@@ -1216,27 +1230,31 @@ class Evaluator {
 	  continue;
 	}
 
-	p = relocate(expr, new_scope, 0, p);
-	p++;
-	continue;
+  	p = relocate(expr, new_scope, 0, p);
+  	p++;
+  	continue;
       }
+
+      if(expr[p]=="}")
+	return p;
 
       // expr is an expression
       p = relocate(expr, symbols, symbols, p, 0, top);
       p++;
     }
+    return p;
   }
 
   private int relocate( Expression expr, multiset(string) symbols,
-			multiset(string) next_symbols, int p, void|string safe_word,
-			void|int(0..1) top) {
+			 multiset(string) next_symbols, int p, void|string safe_word,
+			 void|int(0..1) top) {
     int plevel;
     for( ; p<sizeof(expr); p++) {
       string t = expr[p];
 
       if( (< "(", "{" >)[t] ) {
-	plevel++;
-	continue;
+  	plevel++;
+  	continue;
       }
 
       if( (< "}", ")" >)[t] ) {
@@ -1275,25 +1293,33 @@ class Evaluator {
 	  while(pos<sizeof(expr)) {
 	    int from = pos;
 	    int plevel;
-	    while((expr[pos]!="," && expr[pos]!=";") || plevel) {
+	    while((expr[pos]!="," && expr[pos]!=";") || plevel>0) {
 	      if(expr[pos]=="(" || expr[pos]=="{") plevel++;
 	      else if(expr[pos]==")" || expr[pos]=="}") plevel--;
 	      pos++;
 	      if(pos==sizeof(expr)) {
 		// Something went wrong. End relocation completely.
+		werror("Variable declaration detection in relocation broke.\n");
 		return pos;
 	      }
 	    }
 
+	    // Relocate symbols in the variable assignment.
 	    for(int i=from+1; i<pos; i++)
 	      if(symbols[expr[i]])
 		expr[i] = "(___hilfe->"+expr[i]+")";
+
 	    if(next_symbols)
 	      next_symbols[expr[from]] = 0;
 	    else
-	      symbols[expr[from]] = top;
+	      symbols[expr[from]] = 0;
+
 	    if(top)
 	      symbols[expr[from]] = 1;
+
+	    if( expr[pos]==safe_word || expr[pos]==";" || plevel<0 )
+	      return pos;
+
 	    pos++;
 	  }
 	  p = pos;
@@ -1302,6 +1328,7 @@ class Evaluator {
       }
 
     }
+
     return p;
   }
 
