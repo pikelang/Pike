@@ -1,5 +1,5 @@
-test_true([["$Id: testsuite.in,v 1.95 1998/04/20 02:37:41 hubbe Exp $"]])
-cond([[_verify_internals]],
+test_true([["$Id: testsuite.in,v 1.96 1998/04/24 00:41:10 hubbe Exp $"]])
+cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
@@ -17,6 +17,8 @@ bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
 test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
 
+test_do(_static_modules())
+test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
 test_compile([[Stdio.File foo=Stdio.File();]])
 test_compile([[class { Stdio.File foo=Stdio.File(); }]])
 test_compile_any([[void foo(Stdio.FILE f) {}]])
@@ -253,7 +255,7 @@ cond([[all_constants()->localtime]],
 test_true(mappingp(localtime(0)))
 ]])
 
-cond([[_verify_internals]],
+cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
@@ -489,7 +491,7 @@ ifefun(gc,
   test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
 ]])
 
-cond([[_verify_internals]],
+cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
@@ -1145,7 +1147,7 @@ test_switch4(this_object(),"",0,4.0,1)
 test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4..8: } return t,"01239")
 test_any([[float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q]],0.1+1.1+2.1+3.1+8.1+9.1)
 
-cond([[_verify_internals]],
+cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
@@ -1652,7 +1654,7 @@ test_true(multisetp(aggregate_multiset()))
 // - aggregate_mapping
 test_true(multisetp(aggregate_multiset()))
 
-// - all_efuns
+// - all_constants
 test_true(mappingp(all_constants()))
 test_true(all_constants()["all_constants"])
 test_eq(all_constants()["all_constants"],all_constants)
@@ -1772,12 +1774,12 @@ test_equal(Array.diff("123.org"/"","http://123.org/"/""),
 // - explode
 test_equal(({"a","b","c",}), "anna bnna c"/"nna ")
 test_equal(({"","",}),"hej"/"hej")
-test_equal(({"",}),""/"hej")
+test_equal(({}),""/"hej")
 
 // - fork()
 // FIXME: add tests for fork
 
-cond([[_verify_internals]],
+cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
@@ -2059,7 +2061,7 @@ test_equal(Array.everynth("0123456789"/"",3),
 test_equal(Array.everynth("0123456789"/"",3,4),
   ({ "4", "7"}))
 
-cond([[_verify_internals]],
+cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
