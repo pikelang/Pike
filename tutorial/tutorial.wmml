@@ -3747,7 +3747,7 @@ recommended at all</b> if you don't know what you're into. Default
 <i>mode</i> for this is <tt>"rw"</tt>.
 </man_description>
 <man_note>Open mode will be filtered through the system UMASK. You
-might need to use <link to=chmod>chmod</ref> later.</man_note>
+might need to use <link to=chmod>chmod</link> later.</man_note>
 <man_see>clone, Stdio.File-&gt;open</man_see>
 </method>
 
@@ -6587,7 +6587,7 @@ the pike programmer to use some of the protocols used on the internet.
 
 
 
-<include file=protocols.wmml>
+<include file=Protocols.wmml>
 
 </chapter>
 </anchor>
@@ -10386,6 +10386,10 @@ prints.
 <section title=Parser>
 <include file=Parser.wmml>
 </section title=Parser>
+
+<section title=Math>
+<include file=Math.wmml>
+</section title=Math>
 
 </chapter>
 
