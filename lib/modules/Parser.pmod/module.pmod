@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.15 2002/11/26 12:44:24 grubba Exp $
+ * $Id: module.pmod,v 1.16 2003/02/25 14:31:29 grubba Exp $
  *
  */
 
@@ -203,9 +203,9 @@ class SGML
 }
 
 static int(0..0) return_zero() {return 0;}
-static Parser.HTML xml_parser =
+static HTML xml_parser =
   lambda() {
-    Parser.HTML p = Parser.HTML();
+    HTML p = HTML();
     p->lazy_entity_end (1);
     p->match_tag (0);
     p->xml_tag_syntax (3);
@@ -219,7 +219,7 @@ static Parser.HTML xml_parser =
 //! the flags set properly for XML syntax and callbacks to ignore
 //! comments, CDATA blocks and unknown PI tags, but it has no
 //! registered tags and doesn't decode any entities.
-Parser.HTML get_xml_parser()
+HTML get_xml_parser()
 {
   return xml_parser->clone();
 }
