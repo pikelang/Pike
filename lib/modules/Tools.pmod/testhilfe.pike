@@ -1,6 +1,6 @@
 
 // Test suite for Hilfe.
-// $Id: testhilfe.pike,v 1.10 2002/06/07 17:44:53 nilsson Exp $
+// $Id: testhilfe.pike,v 1.11 2002/07/01 00:08:28 nilsson Exp $
 
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -54,7 +54,11 @@ int verbose;
 void test(string|array(string) in, string result) {
   tests++;
   if(verbose)
-    write("%03d %s\n", tests, replace(sprintf("%O", in), "\n", "\n    "));
+    if(arrayp(in))
+      write("%03d%{ %O%}\n", tests, in);
+    else
+      write("%03d %O\n", tests, in);
+
   if(!testhilfe->test(in, result))
     fails++;
 }
@@ -111,6 +115,8 @@ int main(int num, array(string) args) {
   test("y;", "2");
   test("int z;", "Hilfe Error: \"z\" already defined as constant.\n");
   test("int y;", "Hilfe Error: \"y\" already defined as constant.\n");
+  test("array|Stdio.File ä;", "");
+  test("Stdio.File|array ä;", "");
 
   // Test variable bindings.
   test("new", "");
@@ -144,6 +150,7 @@ int main(int num, array(string) args) {
 
   test("array a = ({1});", "");
   test("({2})+a;", "({ /* 2 elements */\n    2,\n    1\n})");
+  test( ({ "int i,j;", "mapping a=([1:2]);", "foreach(a;i;j) write(\"%O,%O\\n\",i,j);" }), "1,2\nOk.\n" );
 
   // Clear history...
   testhilfe=TestHilfe();
