@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.57 1999/07/15 17:36:21 mirar Exp $
+// $Id: module.pmod,v 1.58 1999/07/21 19:52:09 neotron Exp $
 
 import String;
 
@@ -1140,7 +1140,7 @@ class UDP
    private static void _read_callback()
    {
       mapping i;
-      while (i=read())
-	 callback(i,@extra);
+      if (i=read())
+	callback(i,@extra);
    }
 }
