@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.15 2002/12/12 21:18:46 nilsson Exp $
+dnl $Id: testsuite.in,v 1.16 2003/03/21 13:33:09 jhs Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -16,6 +16,11 @@ test_true( objectp(Image.Image(100,100)) )
 test_eq( Image.Image(100,100)->xsize(), 100)
 test_eq( Image.Image(100,100)->ysize(), 100)
 test_false( Image.Image(100,100)!=0 )
+
+test_do([[
+// http://bugs.roxen.com/3384
+Image.Image(1,1)->scale(0.5)->scale(2.0);
+]])
 
 define(test_too_big,[[
 test_true( $1>0 )
