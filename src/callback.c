@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: callback.c,v 1.30 2002/10/11 01:39:29 nilsson Exp $
+|| $Id: callback.c,v 1.31 2002/11/23 13:27:27 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.30 2002/10/11 01:39:29 nilsson Exp $");
+RCSID("$Id: callback.c,v 1.31 2002/11/23 13:27:27 mast Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -171,11 +171,10 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
       }
 
       *ptr=l->next;
-      really_free_callback(l);
-
 #ifdef PIKE_DEBUG
       l->free_func=(callback_func)remove_callback;
 #endif
+      really_free_callback(l);
     }else{
       ptr=& l->next;
     }
