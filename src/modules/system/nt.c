@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.31 2001/03/08 00:19:19 hubbe Exp $
+ * $Id: nt.c,v 1.32 2001/03/09 15:12:53 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -2311,6 +2311,49 @@ static void f_nt_uname(INT32 args)
     case PROCESSOR_ARCHITECTURE_PPC:
       push_text("PPC");
       break;
+
+#ifdef PROCESSOR_ARCHITECTURE_SHX
+    case PROCESSOR_ARCHITECTURE_SHX:
+      switch (sysinfo.dwProcessorType) {
+      case PROCESSOR_HITACHI_SH3:
+        push_text("SH3");
+	break;
+      case PROCESSOR_HITACHI_SH3E:
+        push_text("SH3e");
+	break;
+      case PROCESSOR_HITACHI_SH4:
+        push_text("SH4");
+	break;
+      default:
+	push_text("SHX");
+	break;
+      }
+      break;
+#endif /* PROCESSOR_ARCHITECTURE_SHX */
+
+#ifdef PROCESSOR_ARCHITECTURE_ARM
+    case PROCESSOR_ARCHITECTURE_ARM:
+      push_text("arm");
+      break;
+#endif /* PROCESSOR_ARCHITECTURE_ARM */
+
+#ifdef PROCESSOR_ARCHITECTURE_IA64
+    case PROCESSOR_ARCHITECTURE_IA64:
+      push_text("ia64");
+      break;
+#endif /* PROCESSOR_ARCHITECTURE_IA64 */
+
+#ifdef PROCESSOR_ARCHITECTURE_ALPHA64
+    case PROCESSOR_ARCHITECTURE_ALPHA64:
+      push_text("alpha64");
+      break;
+#endif /* PROCESSOR_ARCHITECTURE_ALPHA64 */
+
+#ifdef PROCESSOR_ARCHITECTURE_MSIL
+    case PROCESSOR_ARCHITECTURE_MSIL:
+      push_text("msil");
+      break;
+#endif /* PROCESSOR_ARCHITECTURE_MSIL */
 
     default:
     case PROCESSOR_ARCHITECTURE_UNKNOWN:
