@@ -1,7 +1,11 @@
 Wed Feb 11 04:31:44 1998  Niels Möller  <nisse@idonex.se>
 
 	* modules/Gmp/mpz_glue.c (low_get_digits): Fixed handling of base
-	256. This function should not return any leading zeros.
+ 	256. This function should not return any leading zeros.
+	(low_get_digits): Yet another bug... The number zero is special,
+ 	it is represented with no mpz limbs at all, but should still
+ 	produce one digit. In fact, this is the only number for which
+ 	low_get_digits will produce a leading zero.
 
 Wed Jan 21 11:37:44 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
