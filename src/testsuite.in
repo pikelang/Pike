@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.332 2000/09/23 21:11:47 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.333 2000/09/26 00:17:48 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3403,7 +3403,9 @@ test_true(object_program(this_object()))
 // testing !
 test_equal(!"",0)
 test_equal(!this_object(),0)
-test_equal(!Simulate.this_function(),0)
+test_equal(
+#pike 7.0
+!Simulate.this_function(),0)
 
 // testing ==
 test_true(1==1)
@@ -3411,7 +3413,9 @@ test_true(!(1==2))
 test_true(""=="")
 test_true(!(""=="foo"))
 test_true(this_object()==this_object())
-test_true(Simulate.this_function()==a)
+test_true(
+#pike 7.0
+Simulate.this_function()==a)
 test_true(2.0==2.0)
 test_true(({})==({}))
 
@@ -4556,7 +4560,9 @@ return 1;
 
 // #include
 // FIXME add test for #include
-test_compile_any([[#include <simulate.h>
+test_compile_any([[
+#pike 7.0
+#include <simulate.h>
 ]])
 
 // #error
@@ -4958,7 +4964,9 @@ test_eq(function_object(a),this_object())
 test_eq(function_name(function_object),0)
 
 // - get_function (actually in simulate.pike)
-test_eq(a,Simulate.get_function(this_object(),"a"))
+test_eq(a,
+#pike 7.0
+Simulate.get_function(this_object(),"a"))
 test_eq(a,this_object()->a)
 
 // - hash

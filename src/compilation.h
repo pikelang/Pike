@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.20 2000/08/24 04:04:40 hubbe Exp $
+ * $Id: compilation.h,v 1.21 2000/09/26 00:17:45 hubbe Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -141,6 +141,8 @@
   STACKMEMBER(unsigned char *,type_stackp,type_stack)
   STACKMEMBER(unsigned char **,pike_type_mark_stackp,pike_type_mark_stack)
   ZMEMBER(INT32,parent_identifier,0)
+  IMEMBER(int, compat_major, PIKE_MAJOR_VERSION)
+  IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
   SEND
 
 #undef PCODE

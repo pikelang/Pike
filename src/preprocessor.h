@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.33 2000/08/15 19:37:10 lange Exp $
+ * $Id: preprocessor.h,v 1.34 2000/09/26 00:17:46 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1303,8 +1303,13 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  if(OUTP())
 	  {
 	    struct pike_string *new_file;
-
-	    SAFE_APPLY_MASTER("handle_include",3);
+	    
+	    if(this->compat_handler)
+	    {
+	      safe_apply(this->compat_handler,"handle_include",3);
+	    }else{
+	      SAFE_APPLY_MASTER("handle_include",3);
+	    }
 	  
 	    if(Pike_sp[-1].type != PIKE_T_STRING)
 	    {
@@ -1319,7 +1324,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    assign_svalue_no_free(Pike_sp,Pike_sp-1);
 	    Pike_sp++;
 	    
-	    SAFE_APPLY_MASTER("read_include",1);
+	    if(this->compat_handler)
+	    {
+	      safe_apply(this->compat_handler,"read_include",1);
+	    }else{
+	      SAFE_APPLY_MASTER("read_include",1);
+	    }
 	    
 	    if(Pike_sp[-1].type != PIKE_T_STRING)
 	    {
@@ -1991,8 +2001,35 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	}
 	if(WGOBBLE2(pike_))
 	{
-	  /* FIXME */
-	  FIND_EOL();
+	  
+	  if(OUTP())
+	  {
+	    int major, minor;
+	    ptrdiff_t tmp;
+	    PCHARP ptr;
+
+	    STRCAT("#pike", 5);
+	    tmp= this->buf.s->len;
+	    pos +=  lower_cpp(this, data+pos, len-pos,
+			      CPP_END_AT_NEWLINE | CPP_DO_IF,
+			      auto_convert, charset);
+
+	    ptr=MKPCHARP(this->buf.s->str, this->buf.s->size_shift);
+	    INC_PCHARP(ptr, tmp);
+
+	    major=STRTOL_PCHARP(ptr, &ptr, 10);
+	    if(INDEX_PCHARP(ptr,0) == '.')
+	    {
+	      INC_PCHARP(ptr, 1);
+	      minor=STRTOL_PCHARP(ptr, &ptr, 10);
+	      cpp_change_compat(this, major, minor);
+	    }else{
+	      cpp_error(this, "Missing '.' in #pike.");
+	      this->compat_minor=0;
+	    }
+	  }
+	  else
+	    FIND_EOL();
 	  break;
 	}
       }

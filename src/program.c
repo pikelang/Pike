@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.272 2000/09/14 19:58:44 mast Exp $");
+RCSID("$Id: program.c,v 1.273 2000/09/26 00:17:47 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -32,6 +32,7 @@ RCSID("$Id: program.c,v 1.272 2000/09/14 19:58:44 mast Exp $");
 #include "security.h"
 #include "pike_types.h"
 #include "opcodes.h"
+#include "version.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -158,6 +159,7 @@ struct program *first_program = 0;
 static int current_program_id=0x10000;
 
 struct object *error_handler=0;
+struct object *compat_handler=0;
 
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
@@ -408,7 +410,13 @@ struct node_s *find_module_identifier(struct pike_string *ident,
       if(error_handler && (i=find_identifier("resolv",error_handler->prog))!=-1)
       {
 	safe_apply_low(error_handler, i, 2);
-      }else{
+      }
+      if(compat_handler && (i=find_identifier("resolv",compat_handler->prog))!=-1)
+      {
+	safe_apply_low(compat_handler, i, 2);
+      }
+      else
+      {
 	SAFE_APPLY_MASTER("resolv", 2);
       }
 
@@ -3281,7 +3289,8 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 }
 
 struct program *compile(struct pike_string *prog,
-			struct object *handler)
+			struct object *handler,/* error handler */
+			int major, int minor)
 {
 #ifdef PIKE_DEBUG
   ONERROR tmp;
@@ -3291,6 +3300,7 @@ struct program *compile(struct pike_string *prog,
   int save_depth=compilation_depth;
   int saved_threads_disabled;
   struct object *saved_handler = error_handler;
+  struct object *saved_compat_handler = compat_handler;
   dynamic_buffer used_modules_save = used_modules;
   INT32 num_used_modules_save = Pike_compiler->num_used_modules;
   extern void yyparse(void);
@@ -3301,10 +3311,10 @@ struct program *compile(struct pike_string *prog,
 	     (long)th_self(),compilation_depth));
 
   error_handler = handler;
+  compat_handler=0;
   
   if(error_handler)
   {
-    /* FIXME: support '#Pike 0.6' here */
     apply(error_handler,"get_default_module",0);
     if(IS_ZERO(Pike_sp-1))
     {
@@ -3369,8 +3379,13 @@ struct program *compile(struct pike_string *prog,
 
 /*  start_line_numbering(); */
 
+  Pike_compiler->compat_major=PIKE_MAJOR_VERSION;
+  Pike_compiler->compat_minor=PIKE_MINOR_VERSION;
   Pike_compiler->compiler_pass=1;
   lex.pos=prog->str;
+
+  if(major>=0)
+    change_compiler_compatibility(major, minor);
 
   CDFPRINTF((stderr, "compile(): First pass\n"));
 
@@ -3396,6 +3411,9 @@ struct program *compile(struct pike_string *prog,
     use_module(Pike_sp-1);
 
     CDFPRINTF((stderr, "compile(): Second pass\n"));
+
+    if(major>=0)
+      change_compiler_compatibility(major, minor);
 
     yyparse();  /* Parse da program again */
     p=end_program();
@@ -3436,6 +3454,7 @@ struct program *compile(struct pike_string *prog,
   used_modules = used_modules_save;
   Pike_compiler->num_used_modules = num_used_modules_save ;
   error_handler = saved_handler;
+  compat_handler = saved_compat_handler;
 #ifdef PIKE_DEBUG
   if (resolve_cache) fatal("resolve_cache not freed at end of compilation.\n");
 #endif
@@ -4399,4 +4418,65 @@ PMOD_EXPORT void *parent_storage(int depth)
   find_external_context(&loc, depth);
 
   return loc.o->storage + loc.inherit->storage_offset;
+}
+
+
+
+PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
+{
+  if(major == Pike_compiler->compat_major &&
+     minor == Pike_compiler->compat_minor)
+    return;
+
+  if(major == PIKE_MAJOR_VERSION && minor == PIKE_MINOR_VERSION)
+  {
+    push_int(0); /* optimization */
+  }else{
+    push_int(major);
+    push_int(minor);
+    SAFE_APPLY_MASTER("get_compilation_handler",2);
+  }
+
+  if(compat_handler)
+  {
+    free_object(compat_handler);
+    compat_handler=0;
+  }
+  
+  if(sp[-1].type == T_OBJECT)
+  {
+    compat_handler=sp[-1].u.object;
+    sp--;
+  
+    apply(compat_handler,"get_default_module",0);
+    
+    if(sp[-1].type == T_INT)
+    {
+      pop_stack();
+      ref_push_mapping(get_builtin_constants());
+    }
+  }else{
+    pop_stack();
+    ref_push_mapping(get_builtin_constants());
+  }
+
+
+  if(Pike_compiler->num_used_modules)
+  {
+    free_svalue( (struct svalue *)used_modules.s.str );
+    ((struct svalue *)used_modules.s.str)[0]=sp[-1];
+    sp--;
+    if(Pike_compiler->module_index_cache)
+    {
+      free_mapping(Pike_compiler->module_index_cache);
+      Pike_compiler->module_index_cache=0;
+    }
+  }else{
+    use_module(sp-1);
+    pop_stack();
+  }
+
+  Pike_compiler->compat_major=major;
+  Pike_compiler->compat_minor=minor;
+  
 }

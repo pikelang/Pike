@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.311 2000/09/07 11:35:17 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.312 2000/09/26 00:17:44 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2425,23 +2425,35 @@ PMOD_EXPORT void f_replace(INT32 args)
 PMOD_EXPORT void f_compile(INT32 args)
 {
   struct program *p;
+  struct object *o;
+  int major=-1;
+  int minor=-1;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("compile", 1);
 
-  if(Pike_sp[-args].type != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("compile", 1, "string");
+  check_all_args("compile",args,
+		 BIT_STRING,
+		 BIT_VOID | BIT_INT | BIT_OBJECT,
+		 BIT_VOID | BIT_INT,
+		 BIT_VOID | BIT_INT,
+		 0);
 
-  if ((args > 1) && (Pike_sp[1-args].type != T_OBJECT) &&
-      (Pike_sp[1-args].type != T_INT)) {
-    SIMPLE_BAD_ARG_ERROR("compile", 2, "object");
+  o=0;
+  if (args > 1)
+    if(Pike_sp[1-args].type == T_OBJECT)
+      o=Pike_sp[1-args].u.object;
+
+  if(args == 3)
+    SIMPLE_BAD_ARG_ERROR("compile", 4, "int");
+
+  if(args > 3)
+  {
+    major=sp[2-args].u.integer;
+    minor=sp[3-args].u.integer;
   }
 
-  if ((args > 1) && (Pike_sp[1-args].type == T_OBJECT)) {
-    p = compile(Pike_sp[-args].u.string, Pike_sp[1-args].u.object);
-  } else {
-    p = compile(Pike_sp[-args].u.string, NULL);
-  }
+
+  p = compile(Pike_sp[-args].u.string, o, major, minor);
+
 #ifdef PIKE_DEBUG
   if(!(p->flags & PROGRAM_FINISHED))
     fatal("Got unfinished program from internal compile().\n");
@@ -5777,7 +5789,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path",f_combine_path,tFuncV(tNone,tStr,tStr),0);
   
 /* function(string,object|void,mixed...:program) */
-  ADD_EFUN("compile", f_compile, tFuncV(tStr tOr(tObj, tVoid),tMix,tPrg),
+  ADD_EFUN("compile", f_compile, tFuncV(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) ,tMix,tPrg),
 	   OPT_EXTERNAL_DEPEND);
   
 /* function(1=mixed:1) */

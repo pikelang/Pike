@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.110 2000/08/31 12:28:06 grubba Exp $
+ * $Id: program.h,v 1.111 2000/09/26 00:17:47 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -461,7 +461,9 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog,
-			struct object *handler);
+			struct object *handler,
+			int major,
+			int minor);
 int pike_add_function2(char *name, void (*cfun)(INT32),
 		       char *type, unsigned INT8 flags,
 		       unsigned INT16 opt_flags);
@@ -501,6 +503,7 @@ int implements(struct program *a, struct program *b);
 int is_compatible(struct program *a, struct program *b);
 int yyexplain_not_implements(struct program *a, struct program *b, int flags);
 void *parent_storage(int depth);
+PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 /* Prototypes end here */
 
 #define ADD_FUNCTION(NAME, FUNC, TYPE, FLAGS) \
@@ -575,6 +578,12 @@ void *parent_storage(int depth);
  */
 #define Pike_new_program Pike_compiler->new_program
 
+
+/* Return true if compat version is equal or greater to MAJOR.MINOR */
+#define TEST_COMPAT(MAJOR,MINOR) \
+  (Pike_compiler->compat_major < (MAJOR) ||  \
+    (Pike_compiler->compat_major == (MAJOR) && \
+     Pike_compiler->compat_minor <= (MINOR)))
 
 #endif /* PROGRAM_H */
 

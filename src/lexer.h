@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.20 2000/08/07 12:13:37 grubba Exp $
+ * $Id: lexer.h,v 1.21 2000/09/26 00:17:46 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -370,17 +370,38 @@ static int low_yylex(YYSTYPE *yylval)
 	  }
 	  break;
 	}
+	if(ISWORD("pike"))
+	{
+	  int minor;
+	  int major;
+	  SKIPSPACE();
+	  READBUF(C!='\n' && C!='.');
+	  major=lex_atoi(buf);
+	  if(!GOBBLE('.'))
+	  {
+	    yyerror("Missing '.' in #pike directive.");
+	    minor=0;
+	  }else{
+	    READBUF(C!='\n' && C!='.');
+	    minor=lex_atoi(buf);
+	    if(GOBBLE('.'))
+	      yyerror("Build numbers not supported in #pike directive.");
+
+	    READBUF(C!='\n');
+	    change_compiler_compatibility(major, minor);
+	  }
+	  break;
+	}
 	
       badhash:
 	/* FIXME: This doesn't look all that safe...
 	 * buf isn't NUL-terminated, and it won't work on wide strings.
 	 * /grubba 1999-02-20
 	 */
-	if (strlen(buf) < 1024) {
-	  my_yyerror("Unknown preprocessor directive #%s.",buf);
-	} else {
-	  my_yyerror("Unknown preprocessor directive.");
+	if (strlen(buf) >= 256) {
+	  buf[256]=0;
 	}
+	my_yyerror("Unknown preprocessor directive #%s.",buf);
 	SKIPUPTO('\n');
 	continue;
       }

@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.212 2000/09/20 13:22:51 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.213 2000/09/26 00:17:45 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2467,7 +2467,7 @@ m_expr_list2: assoc_pair
   | m_expr_list2 ',' error
   ;
 
-assoc_pair:  expr0 expected_colon expr1 { $$=mknode(F_ARG_LIST,$1,$3); }
+assoc_pair:  expr0 expected_colon expr0 { $$=mknode(F_ARG_LIST,$1,$3); }
   | expr0 expected_colon error { free_node($1); $$=0; }
   ;
 
@@ -2866,16 +2866,13 @@ low_idents: TOK_IDENTIFIER
   }
   | TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
   {
-    struct svalue tmp;
     node *tmp2;
-    tmp.type=T_MAPPING;
-#ifdef __CHECKER__
-    tmp.subtype=0;
-#endif /* __CHECKER__ */
+    extern dynamic_buffer used_modules;
+
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-    tmp.u.mapping=get_builtin_constants();
-    tmp2=mkconstantsvaluenode(&tmp);
+
+    tmp2=mkconstantsvaluenode((struct svalue *) used_modules.s.str );
     $$=index_node(tmp2, "predef", $3->u.sval.u.string);
     if(!$$->name)
       add_ref( $$->name=$3->u.sval.u.string );
@@ -3016,11 +3013,20 @@ typeof: TOK_TYPEOF '(' expr0 ')'
     node *tmp;
 
     /* FIXME: Why build the node at all? */
-
+    /* Because the optimizer cannot optimize the root node of the
+     * tree properly -Hubbe
+     */
     tmp=mknode(F_COMMA_EXPR, $3, 0);
 
     s=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
-    $$ = mktypenode(s);
+    if(TEST_COMPAT(7,0))
+    {
+      s=describe_type(s);
+      $$ = mkstrnode(s);
+      free_string(s);
+    }else{
+      $$ = mktypenode(s);
+    }
     free_node(tmp);
   } 
   | TOK_TYPEOF '(' error ')' { $$=0; yyerrok; }
@@ -3311,7 +3317,8 @@ int low_add_local_name(struct compiler_frame *frame,
 			struct pike_string *type,
 			node *def)
 {
-  if (str->len) {
+
+  if (str->len && !TEST_COMPAT(7,0)) {
     int tmp=islocal(str);
     if(tmp >= frame->last_block_level)
     {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.75 2000/09/04 22:33:19 grubba Exp $
+ * $Id: cpp.c,v 1.76 2000/09/26 00:17:45 hubbe Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -101,6 +101,9 @@ struct cpp
   struct pike_string *current_file;
   struct string_builder buf;
   struct object *handler;
+  struct object *compat_handler;
+  int compat_major;
+  int compat_minor;
 };
 
 struct define *defined_macro =0;
@@ -128,6 +131,36 @@ void cpp_error(struct cpp *this,char *err)
 		  err);
     fflush(stderr);
   }
+}
+
+void cpp_change_compat(struct cpp *this, int major, int minor)
+{
+  if(this->compat_major == major &&
+     this->compat_minor == minor) return;
+
+  if(this->compat_handler)
+  {
+    free_object(this->compat_handler);
+    this->compat_handler=0;
+  }
+  if((major == PIKE_MAJOR_VERSION &&
+      minor == PIKE_MINOR_VERSION) || major < 0)
+  {
+    this->compat_major=PIKE_MAJOR_VERSION;
+    this->compat_minor=PIKE_MINOR_VERSION;
+    return; /* Our work here is done */
+  }
+
+  push_int(major);
+  push_int(minor);
+  SAFE_APPLY_MASTER("get_compilation_handler",2);
+  if(sp[-1].type == T_OBJECT)
+  {
+    this->compat_handler=sp[-1].u.object;
+    sp--;
+  }
+  this->compat_major=major;
+  this->compat_minor=minor;
 }
 
 /* devours one reference to 'name'! */
@@ -1018,8 +1051,21 @@ static void check_constant(struct cpp *this,
       push_svalue(sv);
       res=1;
     }else if(get_master()) {
+      int i;
       ref_push_string(this->current_file);
-      SAFE_APPLY_MASTER("resolv",2);
+
+      if(this->handler && (i=find_identifier("resolv",this->handler->prog))!=-1)
+      {
+	safe_apply_low(this->handler, i, 2);
+      }
+      if(this->compat_handler && (i=find_identifier("resolv",this->compat_handler->prog))!=-1)
+      {
+	safe_apply_low(this->compat_handler, i, 2);
+      }
+      else
+      {
+	SAFE_APPLY_MASTER("resolv", 2);
+      }
       
       res=(throw_value.type!=T_STRING) &&
 	(!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED));
@@ -1030,6 +1076,8 @@ static void check_constant(struct cpp *this,
     /* Handle contant(.foo) */
     push_text(".");
     ref_push_string(this->current_file);
+
+    /* FIXME: use this->compat_handler */
     if (this->handler && this->handler->prog) {
       ref_push_object(this->handler);
       SAFE_APPLY_MASTER("handle_import", 3);
@@ -1104,8 +1152,10 @@ static int do_safe_index_call(struct pike_string *s)
   return res;
 }
 
+
 /* string cpp(string data, string|void current_file,
- *            int|string|void charset, object|void handler)
+ *            int|string|void charset, object|void handler,
+ *            void|int compat_major, void|int compat_minor);
  */
 void f_cpp(INT32 args)
 {
@@ -1115,6 +1165,7 @@ void f_cpp(INT32 args)
   struct cpp this;
   int auto_convert = 0;
   struct pike_string *charset = NULL;
+
 #ifdef PIKE_DEBUG
   ONERROR tmp;
 #endif /* PIKE_DEBUG */
@@ -1130,9 +1181,17 @@ void f_cpp(INT32 args)
   add_ref(data);
 
   this.handler = NULL;
+  this.compat_handler = NULL;
 
   if(args>1)
   {
+    if(args > 5)
+    {
+      if(sp[4-args].type != T_INT)
+	error("Bad argument 5 to cpp()\n");
+      if(sp[5-args].type != T_INT)
+	error("Bad argument 6 to cpp()\n");
+    }
     if(sp[1-args].type != T_STRING) {
       free_string(data);
       error("Bad argument 2 to cpp()\n");
@@ -1189,6 +1248,9 @@ void f_cpp(INT32 args)
   this.current_line=1;
   this.compile_errors=0;
   this.defines=0;
+  this.compat_major=PIKE_MAJOR_VERSION;
+  this.compat_minor=PIKE_MINOR_VERSION;
+
   do_magic_define(&this,"__LINE__",insert_current_line);
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
@@ -1238,6 +1300,12 @@ void f_cpp(INT32 args)
   SET_ONERROR(tmp, fatal_on_error, "Preprocessor exited with longjump!\n");
 #endif /* PIKE_DEBUG */
 
+  if(args > 5)
+  {
+    cpp_change_compat(&this, sp[4-args].u.integer, sp[5-args].u.integer);
+  }
+
+
   low_cpp(&this, data->str, data->len, data->size_shift,
 	  0, auto_convert, charset);
 
@@ -1247,6 +1315,12 @@ void f_cpp(INT32 args)
 
   if(this.defines)
     free_hashtable(this.defines, free_one_define);
+
+  if(this.compat_handler)
+  {
+    free_object(this.compat_handler);
+    this.compat_handler=0;
+  }
 
   free_string(this.current_file);
 
@@ -1274,8 +1348,12 @@ void init_cpp()
 
   
 /* function(string, string|void, int|string|void, object|void:string) */
-  ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tStr,tVoid) tOr(tInt,tOr(tStr,tVoid))
-			       tOr(tObj,tVoid), tStr), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tStr,tVoid)
+			       tOr(tInt,tOr(tStr,tVoid))
+			       tOr(tObj,tVoid)
+			       tOr(tInt,tVoid)
+			       tOr(tInt,tVoid)
+			       , tStr), OPT_EXTERNAL_DEPEND);
 }
 
 
