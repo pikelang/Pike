@@ -4442,7 +4442,6 @@ void set_id(mixed <I>id</I>);<br>
 </man_syntax>
 <man_description>
 This function sets the id used for accept_callback by this port.
-The default id is this_object().
 </man_description>
 <man_see>Stdio.Port-&gt;query_id</man_see>
 </method>
