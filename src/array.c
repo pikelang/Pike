@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.165 2004/09/16 17:36:42 grubba Exp $
+|| $Id: array.c,v 1.166 2004/09/17 14:52:20 nilsson Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.165 2004/09/16 17:36:42 grubba Exp $");
+RCSID("$Id: array.c,v 1.166 2004/09/17 14:52:20 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -91,6 +91,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
     return &empty_array;
   }
 
+  /* Limits size to (1<<29)-4 */
   if( (size+extra_space-1) >
       (ULONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
     Pike_error("Too large array (memory size exceeds size of size_t)\n");
@@ -757,6 +758,7 @@ INT32 *get_order(struct array *v, cmpfun fun)
 
   if(!v->size) return 0;
 
+  /* Overlow safe: ((1<<29)-4)*4 < ULONG_MAX */
   current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
   SET_ONERROR(tmp, free, current_order);
   for(e=0; e<v->size; e++) current_order[e]=e;
@@ -1061,6 +1063,7 @@ PMOD_EXPORT INT32 *stable_sort_array_destructively(struct array *v)
 
   if(!v->size) return NULL;
 
+  /* Overlow safe: ((1<<29)-4)*4 < ULONG_MAX */
   current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
   SET_ONERROR(tmp, free, current_order);
   for(e=0; e<v->size; e++) current_order[e]=e;
@@ -1328,11 +1331,13 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
     switch(opcode)
     {
     case PIKE_ARRAY_OP_AND:
+      /* Trivially overflow safe */
       ret=(INT32 *)xalloc(sizeof(INT32));
       *ret=0;
       return ret;
 
     case PIKE_ARRAY_OP_SUB:
+      /* Overlow safe: ((1<<29)-4+1)*4 < ULONG_MAX */
       ptr=ret=(INT32 *)xalloc(sizeof(INT32)*(a->size+1));
       *(ptr++)=a->size;
       for(i=0;i<a->size;i++) *(ptr++)=i;
@@ -1629,6 +1634,7 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
   {
     arra=ITEM(a);
   }else{
+    /* Overlow safe: ((1<<29)-4)*8 < ULONG_MAX */
     arra=(struct svalue *)xalloc(a->size*sizeof(struct svalue));
     MEMCPY(arra,ITEM(a),a->size*sizeof(struct svalue));
     SET_ONERROR(r3,free,arra);
@@ -1638,6 +1644,7 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
   {
     arrb=ITEM(b);
   }else{
+    /* Overlow safe: ((1<<29)-4)*8 < ULONG_MAX */
     arrb=(struct svalue *)xalloc(b->size*sizeof(struct svalue));
     MEMCPY(arrb,ITEM(b),b->size*sizeof(struct svalue));
     SET_ONERROR(r4,free,arrb);
