@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.102 2002/09/03 09:46:45 grubba Exp $
+ * $Id: acconfig.h,v 1.103 2002/09/13 15:34:08 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -81,6 +81,9 @@
 
 /* Enable profiling */
 #undef PROFILING
+
+/* Enable internal profiling */
+#undef INTERNAL_PROFILING
 
 /* Define for solaris */
 #undef SOLARIS
@@ -311,7 +314,7 @@
 /* Define if we can declare 'extern char **environ' */
 #undef DECLARE_ENVIRON
 
-/* What byteorder does your machie use most machines use 4321, PC use 1234 */
+/* The byteorder your machine use, most use 4321, PC use 1234 */
 #define PIKE_BYTEORDER 0
 
 /* What alignment do 32-bit integers need */

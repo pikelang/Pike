@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.625 2002/09/10 16:03:07 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.626 2002/09/13 15:34:08 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1144,6 +1144,9 @@ AC_ARG_WITH(checker, MY_DESCR([--with-checker],
 MY_AC_ARG_WITH(profiling, MY_DESCR([--with-profiling],
 				   [add code used to profile pike code]),
 	       [AC_DEFINE(PROFILING)])
+MY_AC_ARG_WITH(internal-profiling, MY_DESCR([--with-internal-profiling],
+				   [add profiling code for various internal things]),
+	       [AC_DEFINE(INTERNAL_PROFILING)])
 MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 	       [PROFIL=-pg])
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
