@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.678 2004/06/21 11:24:55 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.679 2004/09/12 22:51:03 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -880,7 +880,7 @@ if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" && test "`uname -p`" = "
     cat > conftest.c <<EOF    
 char *foo[[]] = { "bar" };
 EOF
-    pike_compile='${CC-cc} -S $CFLAGS $CPPFLAGS conftest.c 1>&5'
+    pike_compile='${CC-cc} -S $CPPFLAGS conftest.c 1>&5'
     pike_cv_gcc_uaword=no
     if { (eval echo configure: \"$pike_compile\") >&5; (eval $pike_compile) 2>&5; }; then
       if grep ".uaword" conftest.s 2>&5 >/dev/null; then
