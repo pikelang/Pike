@@ -171,7 +171,7 @@ static void perlmod_create(INT32 args)
       env_block_size+=k->ind.u.string->len+k->val.u.string->len+2;
 
     THIS->env_block=xalloc(env_block_size);
-    THIS->env=(char **)xalloc(m_sizeof(env_mapping)+1);
+    THIS->env=(char **)xalloc(sizeof(char *)*(m_sizeof(env_mapping)+1));
 
     env_blockp=THIS->env_block;
     d=0;
@@ -205,7 +205,7 @@ static void perlmod_create(INT32 args)
       env_block_size+=strlen(environ[d])+1;
 
     THIS->env_block=xalloc(env_block_size);
-    THIS->env=(char **)xalloc(d+1);
+    THIS->env=(char **)xalloc(sizeof(char *)*(d+1));
 
     env_blockp=THIS->env_block;
 
@@ -216,6 +216,12 @@ static void perlmod_create(INT32 args)
       MEMCPY(env_blockp,environ[d],l+1);
       env_blockp+=l+1;
     }
+
+#ifdef PIKE_DEBUG
+    if(env_blockp - THIS->env_block > env_block_size)
+      fatal("Arglebargle glop-glyf.\n");
+#endif
+
     THIS->env[d]=0;
   }
   
