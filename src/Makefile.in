@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.256 2001/04/30 17:33:55 mast Exp $
+# $Id: Makefile.in,v 1.257 2001/06/10 14:36:44 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -573,9 +573,9 @@ peep_t.o: peep.c
 $(SRCDIR)/case_info.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
 	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h || ( rm $(SRCDIR)/case_info.h ; exit 1 )
 
-builtin_functions.o: $(SRCDIR)/case_info.h
+builtin_functions.o: $(SRCDIR)/case_info.h $(SRCDIR)/combine_path.h
 
-builtin_functions_t.o: builtin_functions.c
+builtin_functions_t.o: builtin_functions.c $(SRCDIR)/combine_path.h
 
 $(SRCDIR)/treeopt.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
