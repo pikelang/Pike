@@ -980,7 +980,6 @@ static void html_add_quote_tag(INT32 args)
     push_mapping(THIS->mapqtag);
     THIS->mapqtag=copy_mapping(THIS->mapqtag);
     pop_stack();
-    DEBUG((stderr,"COPY\n"));
   }
 
   if (!remove) {
@@ -4585,6 +4584,7 @@ static void html_clone(INT32 args)
       p->extra_args=NULL;
 
    p->flags=THIS->flags;
+   p->stack->parse_tags = THIS->flags & FLAG_PARSE_TAGS;
 
    p->tag_start=THIS->tag_start;
    p->tag_end=THIS->tag_end;
