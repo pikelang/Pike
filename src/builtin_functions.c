@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.592 2005/02/21 12:33:52 grubba Exp $
+|| $Id: builtin_functions.c,v 1.593 2005/03/16 12:18:19 grubba Exp $
 */
 
 #include "global.h"
@@ -110,6 +110,92 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
   push_array(a); /* beware, macro */
 }
 
+static node *optimize_f_aggregate(node *n)
+{
+  /* Split long argument lists into multiple function calls.
+   *
+   * aggregate(...) ==> `+(aggregate(...arg32), aggregate(arg33...), ...)
+   *
+   * Also removes splices.
+   *
+   * Note: We assume that the argument list is in left-recursive form.
+   */
+  node *args = CDR(n);
+  node *new_args = NULL;
+  node *add_args = NULL;
+  int count;
+  if (!args) return NULL;
+  args->parent = NULL;
+  for (count = 0; args->token == F_ARG_LIST; args = CAR(args)) {
+    if (CDR(args) && CDR(args)->token == F_PUSH_ARRAY) {
+      /* Splices have a weight of 16. */
+      count += 16;
+    } else {
+      count++;
+    }
+    if (!CAR(args)) break;
+    CAR(args)->parent = args;
+  }
+  if (args->token == F_PUSH_ARRAY) {
+    /* Last argument is a splice */
+    count += 16;
+  } else if (args->token != F_ARG_LIST) {
+    count++;
+  }
+
+  /* Ignore cases with 32 or less arguments. */
+  if (count <= 32) {
+    CDR(n)->parent = n;
+    return NULL;
+  }
+
+  /*
+   * Perform the actual rewrite.
+   *
+   * Start with the last arg, and work towards the first.
+   */
+
+  count = 0;
+  if (args->token != F_ARG_LIST) {
+    if (args->token == F_PUSH_ARRAY) {
+      /* Splice operator. */
+      add_args = copy_node(CAR(args));
+    } else {
+      new_args = copy_node(args);
+      count = 1;
+    }
+    args = args->parent;
+  }
+
+  for(; args; args = args->parent) {
+    if (CDR(args)->token == F_PUSH_ARRAY) {
+      if (count) {
+	add_args = mknode(F_ARG_LIST, add_args,
+			  mkapplynode(copy_node(CAR(n)), new_args));
+	new_args = NULL;
+	count = 0;
+      }
+      add_args = mknode(F_ARG_LIST, add_args, copy_node(CADR(args)));
+    } else {
+      new_args = mknode(F_ARG_LIST, new_args, copy_node(CDR(args)));
+      count++;
+      if (count > 31) {
+	add_args = mknode(F_ARG_LIST, add_args,
+			  mkapplynode(copy_node(CAR(n)), new_args));
+	new_args = NULL;
+	count = 0;
+      }
+    }
+  }
+  if (count) {
+    add_args = mknode(F_ARG_LIST, add_args,
+		      mkapplynode(copy_node(CAR(n)), new_args));
+    new_args = NULL;
+    count = 0;
+  }
+  CDR(n)->parent = n;
+  return mkefuncallnode("`+", add_args);
+}
 
 /*! @decl int hash_7_4(string s)
  *! @decl int hash_7_4(string s, int max)
@@ -8155,8 +8241,9 @@ void init_builtin_efuns(void)
 	   tFunc(tStr tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
 
 /* function(0=mixed ...:array(0)) */
-  ADD_EFUN("aggregate",debug_f_aggregate,
-	   tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),OPT_TRY_OPTIMIZE);
+  ADD_EFUN2("aggregate",debug_f_aggregate,
+	    tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),
+	    OPT_TRY_OPTIMIZE, optimize_f_aggregate, 0);
   
 /* function(0=mixed ...:multiset(0)) */
   ADD_EFUN("aggregate_multiset",f_aggregate_multiset,
