@@ -7,3 +7,5 @@
 /linker_options
 /stamp-h
 /zlib_machine.h
+/stamp-h.in
+/zlib_machine.h.in

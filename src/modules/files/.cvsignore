@@ -7,3 +7,5 @@ dependencies
 file_machine.h
 linker_options
 stamp-h
+stamp-h.in
+file_machine.h.in

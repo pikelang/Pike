@@ -6,3 +6,5 @@
 /configure
 /dependencies
 /stamp-h
+/stamp-h.in
+/config.h.in

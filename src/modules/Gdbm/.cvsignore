@@ -8,3 +8,5 @@ dependencies
 gdbm_machine.h
 linker_options
 stamp-h
+stamp-h.in
+gdbm_machine.h.in

@@ -35,9 +35,12 @@ testfont binary
 /src/lex.c foreign_ident
 /src/main.c foreign_ident
 /src/mapping.c foreign_ident
+/src/modules/Gdbm/acconfig.h foreign_ident
 /src/modules/Gdbm/gdbmmod.c foreign_ident
 /src/modules/Gmp/mpz_glue.c foreign_ident
+/src/modules/Gz/acconfig.h foreign_ident
 /src/modules/Gz/zlibmod.c foreign_ident
+/src/modules/Image/acconfig.h foreign_ident
 /src/modules/Image/blit.c foreign_ident
 /src/modules/Image/blit_layer_include.h foreign_ident
 /src/modules/Image/colortable.c foreign_ident
@@ -72,6 +75,7 @@ testfont binary
 /src/modules/Oracle/acconfig.h foreign_ident
 /src/modules/Oracle/configure.in foreign_ident
 /src/modules/Oracle/oracle.c foreign_ident
+/src/modules/Pipe/acconfig.h foreign_ident
 /src/modules/Pipe/pipe.c foreign_ident
 /src/modules/Regexp/acconfig.h foreign_ident
 /src/modules/Ssleay/ssleay.c foreign_ident
@@ -99,7 +103,9 @@ testfont binary
 /src/modules/_Crypto/pipe.c foreign_ident
 /src/modules/_Crypto/rc4.c foreign_ident
 /src/modules/call_out/call_out.c foreign_ident
+/src/modules/files/acconfig.h foreign_ident
 /src/modules/files/file.c foreign_ident
+/src/modules/readline/acconfig.h foreign_ident
 /src/modules/spider/accesseddb.h foreign_ident
 /src/modules/spider/dumudp.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident

@@ -8,3 +8,5 @@ lib_dirs
 linker_options
 readline_machine.h
 stamp-h
+stamp-h.in
+readline_machine.h.in 
