@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.38 1999/08/15 23:25:55 mirar Exp $
+**!	$Id: layers.c,v 1.39 1999/11/24 12:09:54 jonasw Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.38 1999/08/15 23:25:55 mirar Exp $");
+RCSID("$Id: layers.c,v 1.39 1999/11/24 12:09:54 jonasw Exp $");
 
 #include "image_machine.h"
 
@@ -2853,7 +2853,7 @@ void init_image_layers(void)
 
 
    ADD_FUNCTION("clone",image_layer_clone,
-		tFunc(,tObj),0);
+		tFunc(tNone,tObj),0);
 
    /* set */
 
