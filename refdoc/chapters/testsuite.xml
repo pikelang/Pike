@@ -102,21 +102,21 @@ make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
                  printed. Note that the code will be quoted.</c></r>
   </matrix>
 
-<example>
+<pre>
 $ pike bin/test_pike.pike -v1 testsuite 
 Doing tests in testsuite (1 tests)
 Total tests: 1  (0 tests skipped)       
-</example>
+</pre>
 
-<example>
+<pre>
 $ pike bin/test_pike.pike -v2 testsuite
 Doing tests in testsuite (1 tests)
 Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
 Failed tests: 0.                        
 Total tests: 1  (0 tests skipped)
-</example>
+</pre>
 
-<example>
+<pre>
 $ pike bin/test_pike.pike -v4 testsuite 
 Doing tests in testsuite (1 tests)
 Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
@@ -130,9 +130,9 @@ Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.
 Time in a(): 0.000, Time in b(): 0.000000
 Failed tests: 0.                        
 Total tests: 1  (0 tests skipped)
-</example>
+</pre>
 
-<example>
+<pre>
 $ pike bin/test_pike.pike -v10 testsuite 
 Doing tests in testsuite (1 tests)
 Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
@@ -157,7 +157,7 @@ Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.
 Time in a(): 0.000, Time in b(): 0.000000
 Failed tests: 0.                        
 Total tests: 1  (0 tests skipped)
-</example>
+</pre>
   </dd>
 
 <!--
