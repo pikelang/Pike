@@ -6,8 +6,8 @@ o Generation of LDSHARED bugfixed so that building of 3:rd party
 o Bugfixes to String.Buffer.`+ and String.Buffer.`+=.
 o Bugfix in String.Buffer wide string handling.
 o is_absolute_path can now handle empty strings.
-o FakeFile works as Stdio.File when reading more than what is stored
-  in the file.
+o Stdio.FakeFile works as Stdio.File when reading more than what is
+  stored in the file.
 o Bugfix in Standards.EXIF for Nikon 990/D1 cameras.
 o The MIME module supports transport padding after delimiter.
 o Buffer overflow fixed in _Roxen.
@@ -52,9 +52,9 @@ o Bugfix when iterators are used in foreach. They are now incremented
 o Bugfixes in Calendar.Fraction, which prevously lost track of the
   fraction component in Fraction()->set_timezone() and always returned
   0.0 in Fraction()->fraction_no().
-o Stdio.File()->grantpt() fixed to work with SysV systems
+o Stdio.File()->grantpt() fixed to work with SysV systems.
 o New function Stdio.File()->openpt() to portably get a pty master for
-  use with grantpt()
+  use with grantpt().
 
 Changes since Pike 7.4.10:
 ----------------------------------------------------------------------
