@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.16 2000/03/29 22:27:10 hubbe Exp $
+# $Id: configure.in,v 1.17 2000/03/30 08:40:31 hubbe Exp $
 #
 # Configure script for the oracle module
 #
@@ -79,7 +79,7 @@ if test x$with_oracle = xyes; then
     if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
 
       sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-        if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o "$dir/lib/libcommon8.a"; then
+        if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o -f "$dir/lib/libcommon8.a"; then
 	  if test x"$pike_cv_oracle_oracle_home" = xno; then
             AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
 	  else
