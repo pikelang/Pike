@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.64 1999/10/24 14:10:22 grubba Exp $");
+RCSID("$Id: operators.c,v 1.65 1999/10/29 08:21:50 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -105,7 +105,7 @@ void f_add(INT32 args)
 	     FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD_EQ) != -1)
 	  {
 	    apply_lfun(sp[-args].u.object, LFUN_ADD_EQ, args-1);
-	    pop_stack();
+	    stack_unlink(1);
 	    return;
 	  }
 	  if(FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD) != -1)

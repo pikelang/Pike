@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.60 1999/10/29 03:38:39 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.61 1999/10/29 08:22:07 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -57,6 +57,32 @@ static struct program *mpzmod_program;
 #ifdef AUTO_BIGNUM
 static struct program *bignum_program;
 #endif
+
+#ifdef AUTO_BIGNUM
+static void reduce(struct object *o)
+{
+  INT_TYPE i;
+  
+  i = mpz_get_si(OBTOMPZ(o));
+  if(mpz_cmp_si(OBTOMPZ(o), i) == 0)
+  {
+    free_object(o);
+    push_int(i);
+  }else{
+    push_object(o);
+  }
+}
+#define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
+   if(THIS_PROGRAM == bignum_program)				\
+     reduce(reducetmp__);					\
+   else								\
+     push_object(reducetmp__);					\
+}while(0)
+
+#else
+#define PUSH_REDUCED(o) push_object(o)
+#endif /* AUTO_BIGNUM */
+
 
 static void get_mpz_from_digits(MP_INT *tmp,
 				struct pike_string *digits,
@@ -186,7 +212,12 @@ static void mpzmod_create(INT32 args)
 static void mpzmod_get_int(INT32 args)
 {
   pop_n_elems(args);
+#ifdef AUTO_BIGNUM
+  add_ref(fp->current_object);
+  reduce(fp->current_object);
+#else
   push_int(mpz_get_si(THIS));
+#endif /* AUTO_BIGNUM */
 }
 
 static void mpzmod_get_float(INT32 args)
@@ -492,14 +523,7 @@ static void mpzmod_cast(INT32 args)
     if(!strncmp(s->str, "int", 3))
     {
       free_string(s);
-#ifdef AUTO_BIGNUM_XXXX
-      /* FIXME: The run-time cast checking does not work
-	 properly with bignums. Take a look at row 209 and
-	 226 in opcodes.c for more examples on this. */
-      push_object(this_object());
-#else
       mpzmod_get_int(0);
-#endif /* AUTO_BIGNUM */
       return;
     }
     break;
@@ -613,30 +637,6 @@ static void return_temporary(INT32 args)
 }
 #endif
 
-#ifdef AUTO_BIGNUM
-static void reduce(struct object *o)
-{
-  INT_TYPE i;
-  
-  i = mpz_get_si(OBTOMPZ(o));
-  if(mpz_cmp_si(OBTOMPZ(o), i) == 0)
-  {
-    free_object(o);
-    push_int(i);
-  }else{
-    push_object(o);
-  }
-}
-#define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
-   if(THIS_PROGRAM == bignum_program)				\
-     reduce(reducetmp__);					\
-   else								\
-     push_object(reducetmp__);					\
-}while(0)
-
-#else
-#define PUSH_REDUCED(o) push_object(o)
-#endif /* AUTO_BIGNUM */
 
 #define BINFUN(name, fun)				\
 static void name(INT32 args)				\
@@ -668,8 +668,9 @@ static void mpzmod_add_eq(INT32 args)
   for(e=0;e<args;e++)
     mpz_add(THIS, THIS, OBTOMPZ(sp[e-args].u.object));
   pop_n_elems(args);
-  /* FIXME: How to reduce this?? */
-  ref_push_object(fp->current_object);
+
+  add_ref(fp->current_object);
+  PUSH_REDUCED(fp->current_object);
 }
 
 static void mpzmod_sub(INT32 args)

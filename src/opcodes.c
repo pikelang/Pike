@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.53 1999/10/28 22:27:31 noring Exp $");
+RCSID("$Id: opcodes.c,v 1.54 1999/10/29 08:21:48 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -208,6 +208,9 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	      convert_stack_top_to_bignum();
 	      return;   /* FIXME: OK to return? Cast tests below indicates
 			   we have to do this, at least for now... /Noring */
+	      /* Yes, it is ok to return, it is actually an optimization :)
+	       * /Hubbe
+	       */
 	    }
 	    else
 #endif /* AUTO_BIGNUM */
@@ -225,6 +228,9 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    convert_stack_top_string_to_inumber(10);
 	    return;   /* FIXME: OK to return? Cast tests below indicates
 			 we have to do this, at least for now... /Noring */
+	      /* Yes, it is ok to return, it is actually an optimization :)
+	       * /Hubbe
+	       */
 #else
 	    i=STRTOL(sp[-1].u.string->str,0,10);
 	    free_string(sp[-1].u.string);
@@ -410,10 +416,26 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
     }
   }
 
-#ifdef PIKE_DEBUG
   if(run_time_type != sp[-1].type)
-    fatal("Internal error: Cast failed (run_time_type = %d, sp[-1].type = %d.)\n",run_time_type,sp[-1].type);
-#endif
+  {
+    if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
+    {
+      int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+      if( f != -1)
+      {
+	push_text(get_name_of_type(run_time_type));
+	apply_low(sp[-2].u.object, f, 1);
+	f=!IS_ZERO(sp-1);
+	pop_stack();
+	if(f) goto emulated_type_ok;
+      }
+    }
+    error("Cast failed, wanted %s, got %s\n",
+	  get_name_of_type(run_time_type),
+	  get_name_of_type(sp[-1].type));
+  }
+
+  emulated_type_ok:
 
   if (!type) return;
 
