@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.73 1998/04/01 00:47:46 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.74 1998/04/06 04:17:25 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -87,7 +87,17 @@ struct frame *fp; /* frame pointer */
 #ifdef DEBUG
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
+  struct frame *f;
   debug_gc_xmark_svalues(evaluator_stack,sp-evaluator_stack-1,"interpreter stack");
+
+  for(f=fp;f;f=f->parent_frame)
+  {
+    if(f->context.parent)
+      gc_external_mark(f->context.parent);
+    gc_external_mark(f->current_object);
+    gc_external_mark(f->context.prog);
+  }
+
 }
 #endif
 
@@ -96,13 +106,6 @@ void init_interpreter(void)
 #ifdef USE_MMAP_FOR_STACK
   static int fd = -1;
 
-#ifdef DEBUG
-  static struct callback *spcb;
-  if(!spcb)
-  {
-    spcb=add_gc_callback(gc_check_stack_callback,0,0);
-  }
-#endif
 
 #ifndef MAP_VARIABLE
 #define MAP_VARIABLE 0
@@ -165,6 +168,16 @@ use_malloc:
   sp=evaluator_stack;
   mark_sp=mark_stack;
   fp=0;
+
+#ifdef DEBUG
+  {
+    static struct callback *spcb;
+    if(!spcb)
+    {
+      spcb=add_gc_callback(gc_check_stack_callback,0,0);
+    }
+  }
+#endif
 }
 
 void check_stack(INT32 size)
@@ -1412,32 +1425,6 @@ static int eval_instruction(unsigned char *pc)
       if(sp[-1].type!=T_ARRAY) error("Bad argument to @\n");
       sp--;
       push_array_items(sp->u.array);
-      break;
-
-      CASE(F_STRICT_ARROW);
-      if(sp[-1].type != T_OBJECT)
-	error("Expected object for first argument to `->\n");
-      if(!sp[-1].u.object->prog)
-	error("`-> on destructed object.\n");
-      sp[-1].subtype=GET_ARG();
-      if(sp[-1].u.object->prog->id != EXTRACT_INT(pc))
-	error("`->: Object not of specified type.\n");
-      sp[-1].type=T_FUNCTION;
-      pc+=sizeof(INT32);
-      break;
-
-      CASE(F_STRICT_ARROW_VARIABLE);
-      if(sp[-1].type != T_OBJECT)
-	error("Expected object for first argument to `->\n");
-      if(!sp[-1].u.object->prog)
-	error("`-> on destructed object.\n");
-      instr=GET_ARG();
-      if(sp[-1].u.object->prog->id != EXTRACT_INT(pc))
-	error("`->: Object not of specified type.\n");
-      pc+=sizeof(INT32);
-      low_object_index_no_free(sp,sp[-1].u.object,instr);
-      free_object(sp[-1].u.object);
-      sp[-1]=*sp;
       break;
 
       CASE(F_LOCAL_LOCAL_INDEX);
