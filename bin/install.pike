@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.117 2004/11/29 10:55:38 grubba Exp $
+// $Id: install.pike,v 1.118 2004/11/29 17:48:42 grubba Exp $
 
 #define USE_GTK
 
@@ -564,7 +564,7 @@ void do_export()
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
 		add_child(WixNode("Custom", ([
 				    "Action":"FinalizePike",
-				    "After":"InstallFiles",
+				    "After":"WriteRegistryValues",
 				  ]), "REMOVE=\"\""))->
 		add_child(Standards.XML.Wix.line_feed)->
 		add_child(WixNode("Custom", ([
