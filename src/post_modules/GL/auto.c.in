@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.8 1999/07/18 17:50:50 marcus Exp $
+ * $Id: auto.c.in,v 1.9 1999/07/23 23:28:10 marcus Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.8 1999/07/18 17:50:50 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.9 1999/07/23 23:28:10 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -109,6 +109,25 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
   return args;
 }
 
+static int img_inited=0;
+
+static void img_init()
+{
+  glPixelStorei(GL_PACK_SWAP_BYTES, 0);
+  glPixelStorei(GL_PACK_LSB_FIRST, 0);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+  glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 0);
+  glPixelStorei(GL_UNPACK_SWAP_BYTES, 0);
+  glPixelStorei(GL_UNPACK_LSB_FIRST, 0);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
+  img_inited=1;
+}
+
 static void check_img_arg(struct object *obj, struct zimage *img,
 			  int arg, const char *func)
 {
@@ -123,6 +142,8 @@ static void check_img_arg(struct object *obj, struct zimage *img,
   img->pixels = stor->img;
   img->format = GL_RGB;
   img->type = GL_UNSIGNED_BYTE;
+  if(!img_inited)
+    img_init();
 }
 
 static void release_img(struct zimage *img)
