@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.114 1998/07/20 14:15:53 grubba Exp $");
+RCSID("$Id: file.c,v 1.115 1998/07/20 21:12:15 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1409,13 +1409,13 @@ retry_connect:
   retry_accept:
     sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len3);
 
-    set_nonblocking(sv[0],0);
-
     if(sv[0] < 0) {
       if(errno==EINTR) goto retry_accept;
       fd_close(sv[1]);
       return -1;
     }
+
+    set_nonblocking(sv[0],0);
 
     /* We do not trust accept */
     len=sizeof(addr);
