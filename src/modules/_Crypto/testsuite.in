@@ -21,15 +21,12 @@ test_true([[functionp(Crypto.des_parity)]])
 test_true([[functionp(Crypto.hex_to_string)]])
 test_true([[functionp(Crypto.string_to_hex)]])
 
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
-
 // Pike programs
 test_true([[programp(Crypto.des3)]])
 test_true([[programp(Crypto.des3_cbc)]])
 test_true([[programp(Crypto.des_cbc)]])
 test_true([[programp(Crypto.idea_cbc)]])
-dnl test_true([[programp(Crypto.rsa)]])
+test_true([[programp(Crypto.rsa)]])
 
 // DES
 test_true([[objectp(Crypto.des())]])
@@ -53,26 +50,14 @@ test_eq([[Crypto.des()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef")
 		->crypt_block(Crypto.hex_to_string("3fa40e8a984d4815"))]],
 	[["Now is t"]])
 
-]])
-
-
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
-
 // RIJNDAEL
-
 test_true([[objectp(Crypto.rijndael()) && objectp(Crypto.aes())]])
 test_tests(
   array(int) a() {
     string r = Process.popen(RUNPIKE+" \"SRCDIR/rijndaeltest.pike\" --quick");
     return (array(int))(r/" ");
   }
-  )
-]])
-
-
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
+)
 
 // IDEA
 test_true([[objectp(Crypto.idea())]])
@@ -130,28 +115,25 @@ test_eq([[Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("ef012345"))
 		->crypt(Crypto.hex_to_string("00000000000000000000"))]],
 	[[Crypto.hex_to_string("d6a141a7ec3c38dfbd61")]])
 
-]])
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
-
-test_eq([[Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
-		->crypt(Crypto.hex_to_string(
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"
-		  "0101010101010101010101010101010101010101010101010101010101010101"))]],
+test_eq([[Crypto.arcfour()
+  ->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
+  ->crypt(Crypto.hex_to_string(
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"
+	"0101010101010101010101010101010101010101010101010101010101010101"))]],
 	[[Crypto.hex_to_string(
 	  "7595c3e6114a09780c4ad452338e1ffd9a1be9498f813d76533449b6778dcad8"
 	  "c78a8d2ba9ac66085d0e53d59c26c2d1c490c1ebbe0ce66d1b6b1b13b6b919b8"
@@ -169,10 +151,6 @@ test_eq([[Crypto.arcfour()->set_encrypt_key(Crypto.hex_to_string("0123456789abcd
 	  "7486d49b9c4bad9ba24b96abf924372c8a8fffb10d55354900a77a3db5f205e1"
 	  "b99fcd8660863a159ad4abe40fa48934163ddde542a6585540fd683cbfd8c00f"
 	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")]])
-]])
-
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
   
 // MD5
 test_true([[objectp(Crypto.md5())]])
@@ -230,12 +208,22 @@ test_eq([[Crypto.md2()->update("1234567890123456789012345678901234567890"
 
 // SHA
 test_true([[objectp(Crypto.sha())]])
+test_eq([[Crypto.sha()->update("")->digest()]],
+	[[Crypto.hex_to_string("da39a3ee5e6b4b0d3255bfef95601890afd80709")]])
 test_eq([[Crypto.sha()->update("abc")->digest()]],
 	[[Crypto.hex_to_string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
-
-]])
+test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*63)->digest()),
+        "0ddc4e0cccd9a12850deb5abb0853a4425559fec")
+test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*64)->digest()),
+        "bb2fa3ee7afb9f54c6dfb5d021f14b1ffe40c163")
+test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*65)->digest()),
+        "78c741ddc482e4cdf8c474a0876347a0905b6233")
+test_eq(Crypto.string_to_hex(Crypto.sha()->update("x"*257)->digest()),
+        "0796067748b6b0c2af864656a399f7722ef9283a")
 
 // HMAC
+test_eq([[Crypto.hmac(Crypto.md5)("")("")]],
+        [[Crypto.hex_to_string("74e6f7298a9c2d168935f58c001bad88")]])
 // Test vectors for md5 from RFC-2104
 test_eq([[Crypto.hmac(Crypto.md5)("\013" * 16)("Hi There")]],
 	[[Crypto.hex_to_string("9294727a3638bb1c13f48ef8158bfc9d")]])
@@ -245,6 +233,8 @@ test_eq([[Crypto.hmac(Crypto.md5)("\252" * 16)("\335" * 50)]],
 	[[Crypto.hex_to_string("56be34521d144c88dbb8c733f0e8b3f6")]])
 
 // Similar test vectors for sha; not verified with other implementations
+test_eq([[Crypto.hmac(Crypto.sha)("")("")]],
+        [[Crypto.hex_to_string("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")]])
 test_eq([[Crypto.hmac(Crypto.sha)("\013" * 16)("Hi There")]],
 	[[Crypto.hex_to_string("675b0b3a1b4ddf4e124872da6c2f632bfed957e9")]])
 test_eq([[Crypto.hmac(Crypto.sha)("Jefe")("what do ya want for nothing?")]],
@@ -253,6 +243,8 @@ test_eq([[Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
 	[[Crypto.hex_to_string("d730594d167e35d5956fd8003d0db3d3f46dc7bb")]])
 
 // CRYPT_MD5
+test_eq([[Crypto.crypt_md5("","")]],
+        [["$1$$qRPK7m23GJusamGpoGLby/"]])
 test_eq([[Crypto.crypt_md5("Hello","sl5hO7j4")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
 test_eq([[Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
