@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.303 2000/06/12 23:00:32 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.304 2000/06/13 19:51:02 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3342,13 +3342,21 @@ test_equal(({1,2,3})[0..-100],({}))
 
 // casting
 test_eq([[(int)1]],[[1]])
+test_eq([[(int)-1]],[[-1]])
 test_eq([[(int)1.0]],[[1]])
+test_eq([[(int)-1.0]],[[-1]])
 test_eq([[(int)"1"]],[[1]])
+test_eq([[(int)"-1"]],[[-1]])
 test_eq([[(float)"1"]],[[1.0]])
+test_eq([[(float)"-1"]],[[-1.0]])
 test_eq([[(float)"1.0"]],[[1.0]])
+test_eq([[(float)"-1.0"]],[[-1.0]])
 test_eq([[(float)1.0]],[[1.0]])
+test_eq([[(float)-1.0]],[[-1.0]])
 test_eq([[(float)1]],[[1.0]])
+test_eq([[(float)-1]],[[-1.0]])
 test_eq([[(string)1]],[["1"]])
+test_eq([[(string)-1]],[["-1"]])
 test_equal([[(array)(["1":1])]],[[ ({ ({"1", 1}) }) ]])
 test_equal([[(array(int)) ({"1","4711",2.0,4})]],[[({1,4711,2,4})]])
 test_equal([[(array(array))({({})})]],[[({({})})]])
