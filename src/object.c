@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.172 2001/06/28 10:24:22 hubbe Exp $");
+RCSID("$Id: object.c,v 1.173 2001/06/30 02:02:43 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -109,22 +109,11 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #ifdef DEBUG_MALLOC
   if(!debug_malloc_copy_names(o, p)) 
   {
-    /* Didn't find a given name, revert to ad-hoc method */
     char *tmp;
-    INT32 line,pos;
+    INT32 line;
 
-    for(pos=0;pos<100;pos++)
-    {
-      tmp=get_line(p->program+pos, p, &line);
-      if(tmp && line)
-      {
-	debug_malloc_name(o, tmp, line);
-	break;
-      }
-      if(pos+1>=(long)p->num_program)
-	break;
-    }
-    
+    tmp=get_program_line(p, &line);
+    debug_malloc_name(o, tmp, line);
   }
   dmalloc_set_mmap_from_template(o,p);
 #endif

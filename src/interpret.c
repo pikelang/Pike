@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.208 2001/06/23 10:33:11 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.209 2001/06/30 02:02:42 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1815,7 +1815,7 @@ void gdb_backtrace (
 	if (f->pc)
 	  file = get_line (f->pc, f->context.prog, &line);
 	else
-	  file = get_line (f->context.prog->program, f->context.prog, &line);
+	  file = get_program_line (f->context.prog, &line);
       }
       if (file)
 	fprintf (stderr, "%s:%d: ", file, line);
@@ -1936,7 +1936,7 @@ void gdb_backtrace (
 	  case T_OBJECT: {
 	    struct program *p = arg->u.object->prog;
 	    if (p && p->num_linenumbers) {
-	      file = get_line (p->program, p, &line);
+	      file = get_program_line (p, &line);
 	      fprintf (stderr, "object(%s:%d)", file, line);
 	    }
 	    else
@@ -1947,7 +1947,7 @@ void gdb_backtrace (
 	  case T_PROGRAM: {
 	    struct program *p = arg->u.program;
 	    if (p->num_linenumbers) {
-	      file = get_line (p->program, p, &line);
+	      file = get_program_line (p, &line);
 	      fprintf (stderr, "program(%s:%d)", file, line);
 	    }
 	    else

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.335 2001/06/29 02:15:13 hubbe Exp $");
+RCSID("$Id: program.c,v 1.336 2001/06/30 02:02:42 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -993,16 +993,7 @@ char *find_program_name(struct program *p, INT32 *line)
   if(tmp) return tmp;
 #endif
 
-  /* Didn't find a given name, revert to ad-hoc method */
-	
-  for(pos=0;pos<100;pos++)
-  {
-    char *tmp=get_line(p->program+pos, p, line);
-    if(tmp && *line) return tmp;
-    if(pos+1 >= (ptrdiff_t)p->num_program) break;
-  }
-  *line=0;
-  return 0;
+  return get_program_line(p, line);
 }
 #endif
 
@@ -3839,6 +3830,33 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   }
 }
 
+/* Returns the file where the program is defined. The line of the
+ * class start is written to linep, or 0 if the program is the top
+ * level of the file. */
+PMOD_EXPORT char *get_program_line(struct program *prog, INT32 *linep)
+{
+  char *file, *cnt;
+
+  if(prog == Pike_compiler->new_program)
+  {
+    linep[0]=0;
+    return "Optimizer";
+  }
+
+  cnt = prog->linenumbers;
+  file = "-";
+  if (cnt < prog->linenumbers + prog->num_linenumbers) {
+    if (*cnt == 127) {
+      file = cnt + 1;
+      cnt = file + strlen(file) + 1;
+    }
+    get_small_number(&cnt);
+    *linep = get_small_number(&cnt);
+  }
+  else *linep = 0;
+  return file;
+}
+
 /*
  * return the file in which we were executing.
  * pc should be the program counter, prog the current
@@ -3851,7 +3869,10 @@ PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
   static INT32 off,line,pid;
   ptrdiff_t offset;
 
-  if (prog == 0) return "Unkown program";
+  if (prog == 0) {
+    *linep = 0;
+    return "Unknown program";
+  }
   offset = pc - prog->program;
 
   if(prog == Pike_compiler->new_program)
@@ -4014,16 +4035,6 @@ struct program *compile(struct pike_string *prog,
     }
   }
 
-  if(lex.current_file)
-  {
-    store_linenumber(lex.current_line, lex.current_file);
-
-#ifdef DEBUG_MALLOC
-    if(strcmp(lex.current_file->str,"-") || lex.current_line!=1)
-      debug_malloc_name(Pike_compiler->new_program, lex.current_file->str, lex.current_line);
-#endif
-  }
-
 /*  start_line_numbering(); */
 
   Pike_compiler->compat_major=PIKE_MAJOR_VERSION;
@@ -4047,6 +4058,15 @@ struct program *compile(struct pike_string *prog,
 #else  
   yyparse();  /* Parse da program */
 #endif
+
+  if (!Pike_compiler->new_program->num_linenumbers) {
+    /* The lexer didn't write an initial entry. */
+    store_linenumber(0, lex.current_file);
+#ifdef DEBUG_MALLOC
+    if(strcmp(lex.current_file->str,"-"))
+      debug_malloc_name(Pike_compiler->new_program, lex.current_file->str, 0);
+#endif
+  }
 
   CDFPRINTF((stderr, "th(%ld)   compile(): First pass done\n",
 	     (long)th_self()));

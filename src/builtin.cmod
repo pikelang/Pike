@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.49 2001/06/28 13:16:33 grubba Exp $
+ * $Id: builtin.cmod,v 1.50 2001/06/30 02:02:43 mast Exp $
  */
 
 #include "global.h"
@@ -264,7 +264,7 @@ PIKEFUN string string_trim_all_whites (string s)
   RETURN string_slice (s, start, end + 1 - start);
 }
 
-/*! @decl int program_implements(program prog, program api)
+/*! @decl int Program.implements(program prog, program api)
  *!
  *! Returns 1 if @[prog] implements @[api].
  */
@@ -275,7 +275,7 @@ PIKEFUN int program_implements(program prog, program api)
   RETURN implements(prog, api);
 }
 
-/*! @decl int program_inherits(program child, program parent)
+/*! @decl int Program.inherits(program child, program parent)
  *!
  *! Returns 1 if @[child] has inherited @[parent].
  */
@@ -286,7 +286,7 @@ PIKEFUN int program_inherits(program parent, program child)
   RETURN low_get_storage(parent, child) != -1;
 }
 
-/*! @decl string program_defined(program p)
+/*! @decl string Program.defined(program p)
  *!
  *! Returns a string with filename and linenumber describing where
  *! the program @[p] was defined.
@@ -304,14 +304,14 @@ PIKEFUN string program_defined(program p)
   {
     char *tmp;
     INT32 line;
-    if((tmp=get_line(p->program, p, &line)))
+    if((tmp=get_program_line(p, &line)))
     {
       struct pike_string *tmp2;
       tmp2=make_shared_string(tmp);
       pop_n_elems(args);
 
       push_string(tmp2);
-      if(line > 1)
+      if(line >= 1)
       {
 	push_constant_text(":");
 	push_int(line);

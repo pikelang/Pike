@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.130 2001/06/23 21:52:10 hubbe Exp $
+ * $Id: program.h,v 1.131 2001/06/30 02:02:42 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -496,6 +496,7 @@ void program_index_no_free(struct svalue *to, struct program *p,
 int get_small_number(char **q);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
+PMOD_EXPORT char *get_program_line(struct program *prog,INT32 *linep);
 PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog,
