@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.12 2005/01/24 16:21:21 mast Exp $
+// $Id: ldap_privates.pmod,v 1.13 2005/03/10 19:10:55 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -35,6 +35,9 @@
 //import Standards.ASN1.Encode;
 
 #if constant(Standards.ASN1.Types)
+
+#include "ldap_globals.h"
+
 class asn1_enumerated
 {
   inherit Standards.ASN1.Types.asn1_integer;

@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.73 2005/03/10 17:46:20 mast Exp $
+// $Id: client.pike,v 1.74 2005/03/10 19:10:55 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -82,16 +82,19 @@ import SSL.Constants;
 // ------------------------
 
 // ASN.1 decode macros
-#define ASN1_DECODE_RESULTAPP(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->get_tag())
-#define ASN1_DECODE_RESULTCODE(X)	(int)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value->cast_to_int())
-#define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[2]->value)
-#define ASN1_DECODE_RESULTREFS(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[3]->elements)
-#define ASN1_DECODE_ENTRIES(X)		_New_decode(X)
-#define ASN1_DECODE_DN(X)		((string)((X)->elements[0]->value))
-#define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
+
+#define ASN1_GET_RESULTAPP(X)           ((X)->elements[1]->get_tag())
 #define ASN1_GET_ATTR_ARRAY(X)		(sizeof ((X)->elements) > 1 &&	\
 					 (array) ((X)->elements[1]->elements))
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
+#define ASN1_GET_ATTR_VALUES(X)         ((X)->elements[1]->elements->value)
+
+#define ASN1_DECODE_RESULTAPP(X)	ASN1_GET_RESULTAPP (.ldap_privates.ldap_der_decode(X))
+#define ASN1_DECODE_RESULTCODE(X)	(int)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value->cast_to_int())
+#define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[2]->value)
+#define ASN1_DECODE_RESULTREFS(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[3]->elements)
+#define ASN1_DECODE_DN(X)		utf8_to_string ((X)->elements[0]->value)
+#define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
 
  //! Contains the client implementation of the LDAP protocol.
  //! All of the version 2 protocol features are implemented
@@ -110,6 +113,50 @@ import SSL.Constants;
     object last_rv = 0; // last returned value
   }
 
+static function(string:string) get_attr_decoder (string attr,
+#ifdef DEBUG
+						 void|int nowarn
+#endif
+						)
+{
+  if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
+    if (function(string:string) decoder =
+	Protocols.LDAP.syntax_decode_fns[attr_descr->syntax_oid])
+      return decoder;
+#ifdef DEBUG
+    else if (!Protocols.LDAP.get_constant_name (attr_descr->syntax_oid))
+      werror ("Warning: Unknown syntax %O for attribute %O - "
+	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
+#endif
+  }
+#ifdef DEBUG
+  else if (!nowarn && !has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
+    werror ("Warning: Couldn't fetch attribute description for %O - "
+	    "binary content assumed.\n", attr);
+#endif
+  return 0;
+}
+
+static function(string:string) get_attr_encoder (string attr)
+{
+  if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
+    if (function(string:string) encoder =
+	Protocols.LDAP.syntax_encode_fns[attr_descr->syntax_oid])
+      return encoder;
+#ifdef DEBUG
+    else if (!Protocols.LDAP.get_constant_name (attr_descr->syntax_oid))
+      werror ("Warning: Unknown syntax %O for attribute %O - "
+	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
+#endif
+  }
+#ifdef DEBUG
+  else if (!has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
+    werror ("Warning: Couldn't fetch attribute description for %O - "
+	    "binary content assumed.\n", attr);
+#endif
+  return 0;
+}
+
   //! Contains the result of a LDAP search.
   //!
   //! @seealso
@@ -124,47 +171,42 @@ import SSL.Constants;
     private array(mapping(string:array(string))) entry = ({});
     array(string) referrals;
 
-    private string utf2s(string in) {
-    // catched variant of utf8_to_string needed for tagged octet string data
+    static array decode_entries (array(string) rawres)
+    {
+      array(mapping(string:array(string))) res = ({});
 
-      string out = "";
-      catch( out = utf8_to_string(in) );
-      return out;
+      foreach (rawres, string rawent) {
+	object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1];
 
-    }
+	if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) {
+	  mapping(string:array) attrs = (["dn": ({ASN1_DECODE_DN (derent)})]);
 
-    private array _get_attr_values(int ver, object x) {
-
-      array res = ({});
-
-      if(!sizeof(x->elements))
-	return res;
-      foreach(x->elements[1]->elements, object val1) 
-	res += ({ val1->value });
-      if(ver == 3) {
-        // deUTF8
-        res = Array.map(res, utf2s);
-      }
-      return res;
-    }
-
-    private array _New_decode(array ar) {
-
-      array res = ({});
-
-      foreach(ar, string raw1)  {
-	object oder = (.ldap_privates.ldap_der_decode(raw1)->elements[1]);
-	mapping(string:array) attrs = (["dn":({ASN1_DECODE_DN(oder)})]);
-	if(array entry1 = ASN1_GET_ATTR_ARRAY(oder)) {
-	  foreach(entry1, object attr1) {
-	    attrs[ASN1_GET_ATTR_NAME(attr1)] = _get_attr_values(ldap_version, attr1);
+	  if (ldap_version < 3) {
+	    // Use the values raw.
+	    foreach (derattribs, object derattr)
+	      attrs[ASN1_GET_ATTR_NAME (derattr)] = ASN1_GET_ATTR_VALUES (derattr);
 	  }
+
+	  else {
+	    // Decode values as appropriate according to the schema.
+	    // Note that attributes with the ";binary" option won't be
+	    // matched by get_attr_type_descr and are therefore left
+	    // untouched.
+	    foreach (derattribs, object derattr) {
+	      string attr = ASN1_GET_ATTR_NAME (derattr);
+	      if (function(string:string) decoder = get_attr_decoder (attr))
+		attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
+	      else
+		attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
+	    }
+	  }
+
 	  res += ({attrs});
 	}
       }
 
       return res;
-    } // _New_decode
+    }
 
     //!
     //! You can't create instances of this object yourself.
@@ -172,6 +214,11 @@ import SSL.Constants;
     object|int create(array rawres, int|void stuff) {
     // rawres: array of result in raw format, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
+
+      // Note: Might do additional schema queries to the server while
+      // decoding the result. That means possible interleaving problem
+      // if search() is extended to not retrieve the complete reply at
+      // once.
 
       int lastel = sizeof(rawres) - 1;
 
@@ -200,9 +247,8 @@ import SSL.Constants;
 #if 0
       DWRITE(sprintf("result.create: entries=%O\n",rawres[..lastel-1]));
 #endif
-      if (lastel) { // Have we any entry?
-        entry = ASN1_DECODE_ENTRIES(rawres[..lastel-1]);
-      }
+
+      entry = decode_entries (rawres[..lastel-1]);
 
 #if 0
       // Context specific proccessing of 'rawres'
@@ -387,6 +433,7 @@ import SSL.Constants;
   //! Several information about code itself and about active connection too
   mapping info;
 
+#ifndef PARSE_RFCS
   //! @decl void create()
   //! @decl void create(string url)
   //! @decl void create(string url, object context)
@@ -410,7 +457,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.73 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.74 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -483,6 +530,7 @@ import SSL.Constants;
       set_basedn(lauth->basedn);
 
   } // create
+#endif
 
   private mixed send_bind_op(string name, string password) {
   // Simple BIND operation
@@ -739,7 +787,8 @@ import SSL.Constants;
   //!  The type (aka name) of the attribute to compare.
   //!
   //! @param value
-  //!  The value to compare with.
+  //!  The value to compare with. It's UTF-8 encoded automatically if
+  //!  the attribute syntax specifies that.
   //!
   //! @returns
   //!  Returns @expr{1@} if at least one of the values for the
@@ -769,7 +818,8 @@ import SSL.Constants;
       return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
-      value = string_to_utf8 (value);
+      if (function(string:string) encoder = get_attr_encoder (attr))
+	value = encoder (value);
     }
     if(intp(raw = send_compare_op(dn, attr, value))) {
       THROW(({error_string()+"\n",backtrace()}));
@@ -819,8 +869,10 @@ import SSL.Constants;
   //!  The Distinguished Name of the entry to be added.
   //!
   //! @param attrs
-  //!  The mapping of attributes and their values that make up the content
-  //!  of the entry being added.
+  //!  The mapping of attributes and their values that make up the
+  //!  content of the entry being added. Values that are sent UTF-8
+  //!  encoded according the the attribute syntaxes are encoded
+  //!  automatically.
   //!
   //! @returns
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
@@ -841,10 +893,12 @@ import SSL.Constants;
       return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
-      array(string) keys = indices(attrs);
-      array(array(string)) vals = values(attrs);
-      attrs = mkmapping(Array.map(keys, string_to_utf8),
-			Array.map(vals, Array.map, string_to_utf8));
+      attrs += ([]);
+      // No need to UTF-8 encode the attribute names themselves since
+      // only ascii chars are allowed in them.
+      foreach (indices(attrs), string attr)
+	if (function(string:string) encoder = get_attr_encoder (attr))
+	  attrs[attr] = map (attrs[attr], encoder);
     }
     if(intp(raw = send_add_op(dn, attrs))) {
       THROW(({error_string()+"\n",backtrace()}));
@@ -857,6 +911,103 @@ import SSL.Constants;
     return !last_rv->error_number();
 
   } // add
+
+static mapping(string:array(string)) simple_base_query (string object_name,
+							string filter,
+							array attrs)
+// Makes a base object search for object_name. The result is returned
+// as a mapping where the attribute types have been lowercased and the
+// string values are unprocessed.
+{
+  object|int search_request =
+    make_search_op(object_name, 0, 0, 0, 0, 0, filter, attrs);
+  //werror("search_request: %O\n", search_request);
+
+  string|int raw;
+  if(intp(raw = do_op(search_request))) {
+    THROW(({error_string()+"\n",backtrace()}));
+    return 0;
+  }
+
+  mapping(string:array(string)) res = ([]);
+
+  do {
+    object response = .ldap_privates.ldap_der_decode(raw);
+    if (ASN1_GET_RESULTAPP (response) == 5) break;
+    //werror("res: %O\n", res);
+    response = response->elements[1];
+    foreach(ASN1_GET_ATTR_ARRAY (response), object attr)
+      res[lower_case (ASN1_GET_ATTR_NAME (attr))] = ASN1_GET_ATTR_VALUES (attr);
+    // NB: The msgid stuff is defunct in readmsg, so we can
+    // just as well pass a zero there. :P
+    if (intp(raw = readmsg(0))) {
+      THROW(({error_string()+"\n",backtrace()}));
+      return 0;
+    }
+  } while (1);
+
+  return res;
+}
+
+static mapping(string:array(string)) root_dse;
+
+mapping(string:array(string)) get_root_dse()
+//! Returns the root DSE (DSA-Specific Entry) of the bound server. The
+//! result is cached. A working connection is assumed.
+//!
+//! @returns
+//!   The return value is a mapping where the indices are the
+//!   attribute names in lowercase. The values are arrays of the
+//!   attribute values, which have been UTF-8 decoded where
+//!   appropriate.
+//!
+//!   Don't be destructive on the returned mapping.
+{
+  if (!root_dse) {
+    PROFILE("get_root_dse", {
+	root_dse = simple_base_query (
+	  "", "(objectClass=*)",
+	  ({
+	    // Request all standard operational attributes (RFC 2252,
+	    // section 5.1). Some of them are probably not applicable
+	    // in the root DSE, but better safe than sorry.
+	    "createTimestamp",
+	    "modifyTimestamp",
+	    "creatorsName",
+	    "modifiersName",
+	    "subschemaSubentry",
+	    "attributeTypes",
+	    "objectClasses",
+	    "matchingRules",
+	    "matchingRuleUse",
+	    // Request the standard root DSE operational attributes
+	    // (RFC 2252, section 5.2).
+	    "namingContexts",
+	    "altServer",
+	    "supportedExtension",
+	    "supportedControl",
+	    "supportedSASLMechanisms",
+	    "supportedLDAPVersion",
+	    // Also get any user attributes the server wishes to pass.
+	    "*"
+	  }));
+
+	foreach (indices (root_dse), string attr)
+	  // Microsoft AD has several attributes in its root DSE that
+	  // they haven't bothered to include in their schema. Send
+	  // the nowarn flag to get_attr_encoder to avoid complaints
+	  // about that.
+	  if (function(string:string) decoder = get_attr_decoder (attr,
+#ifdef DEBUG
+								  1
+#endif
+								 ))
+	    root_dse[attr] = map (root_dse[attr], decoder);
+      });
+  }
+
+  return root_dse;
+}
 
 static object make_control (string control_type, void|string value,
 			    void|int critical)
@@ -877,42 +1028,9 @@ multiset(string) get_supported_controls()
 //! @seealso
 //!   @[search]
 {
-  if (!supported_controls) {
-    // We need to find out if controls are supported.
-    PROFILE("supported_controls", {
-	supported_controls = (<>);
-	object|int search_request =
-	  make_search_op("", 0, 0, 0, 0, 0,
-			 "(objectClass=*)", ({"supportedControl"}));
-	//werror("search_request: %O\n", search_request);
-	string|int raw;
-	if(intp(raw = do_op(search_request))) {
-	  THROW(({error_string()+"\n",backtrace()}));
-	  return 0;
-	}
-
-	do {
-	  object res = .ldap_privates.ldap_der_decode(raw);
-	  if (res->elements[1]->get_tag() == 5) break;
-	  //werror("res: %O\n", res);
-	  foreach(res->elements[1]->elements[1]->elements, object attr) {
-	    if (attr->elements[0]->value == "supportedControl") {
-	      supported_controls |= (<
-		@(attr->elements[1]->elements->value)
-	      >);
-	      //werror("supported_controls: %O\n", supported_controls);
-	    }
-	  }
-	  // NB: The msgid stuff is defunct in readmsg, so we can
-	  // just as well pass a zero there. :P
-	  if (intp(raw = readmsg(0))) {
-	    THROW(({error_string()+"\n",backtrace()}));
-	    return 0;
-	  }
-	} while (1);
-      });
-  }
-
+  if (!supported_controls)
+    if (mapping(string:array(string)) root_dse = get_root_dse())
+      supported_controls = mkmultiset (root_dse->supportedcontrol || ({}));
   return supported_controls;
 }
 
@@ -1382,6 +1500,9 @@ multiset(string) get_supported_controls()
     return old_dn;
   }
 
+//! Return the current base DN for searching.
+string get_basedn() {return ldap_basedn;}
+
   //!
   //! Sets value of scope for search operation.
   //!
@@ -1409,6 +1530,10 @@ multiset(string) get_supported_controls()
     DWRITE_HI("client.SET_SCOPE = " + (string)scope + "\n");
     return old_scope;
   }
+
+//! Return the currently set scope as a string @expr{"base"@},
+//! @expr{"one"@}, or @expr{"sub"@}.
+string get_scope() {return ([0: "base", 1: "one", 2: "sub"])[ldap_scope];}
 
   //! @param option_type
   //!   LDAP_OPT_xxx
@@ -1580,29 +1705,38 @@ multiset(string) get_supported_controls()
   //!  The mapping of attributes with requested operation and attribute's
   //!  values.
   //!
-  //!   attropval=([ attribute: ({operation, value1, value2, ...}) ])
+  //!  @code
+  //!    attropval=([ attribute: ({operation, value1, value2, ...}) ])
+  //!  @endcode
   //!
-  //!   where operation is one of the following:
-  //!    0 (LDAP_OPERATION_ADD) -
-  //!      add values listed to the given attribute, creating the attribute
-  //!      if necessary
-  //!    1 (LDAP_OPERATION_DELETE) -
-  //!      delete values listed from the given attribute, removing the entire
-  //!      attribute if no values are listed, or if all current values
-  //!      of the attribute are listed for deletion
-  //!    2 (LDAP_OPERATION_REPLACE) -
-  //!      replace all existing values of the given attribute with the new
-  //!      values listed, creating the attribute if it did not already exist.
-  //!      A replace with no value will delete the entire attribute if it
-  //!      exists, and is ignored if the attribute does not exist
+  //!  Where operation is one of the following:
+  //!
+  //!  @dl
+  //!  @item Protocols.LDAP.MODIFY_ADD (0)
+  //!    Add values listed to the given attribute, creating the
+  //!    attribute if necessary.
+  //!  @item Protocols.LDAP.MODIFY_DELETE (1)
+  //!    Delete values listed from the given attribute, removing the
+  //!    entire attribute if no values are listed, or if all current
+  //!    values of the attribute are listed for deletion.
+  //!  @item Protocols.LDAP.MODIFY_REPLACE (2)
+  //!    Replace all existing values of the given attribute with the
+  //!    new values listed, creating the attribute if it did not
+  //!    already exist. A replace with no value will delete the entire
+  //!    attribute if it exists, and is ignored if the attribute does
+  //!    not exist.
+  //!  @enddl
+  //!
+  //!  Values that are sent UTF-8 encoded according the the attribute
+  //!  syntaxes are encoded automatically.
   //!
   //! @returns
-  //!  Returns @expr{1@} on uccess, @expr{0@} otherwise.
+  //!  Returns @expr{1@} on success, @expr{0@} otherwise.
   //!
   //! @note
   //!   The API change: the returning code was changed in Pike 7.3+
   //!	to follow his logic better.
-  int modify (string dn, mapping(string:array(mixed)) attropval) {
+  int modify (string dn, mapping(string:array(int(0..2)|string)) attropval) {
 
     int id;
     mixed raw;
@@ -1615,15 +1749,16 @@ multiset(string) get_supported_controls()
       return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
-      array(string) keys = indices(attropval);
-      array(array(mixed)) vals = values(attropval);
-      attropval = mkmapping(Array.map(keys, string_to_utf8),
-			    Array.map(vals, Array.map, lambda(mixed x) {
-							 return
-							   (stringp(x)?
-							    string_to_utf8(x) :
-							    x);
-						       }));
+      attropval += ([]);
+      // No need to UTF-8 encode the attribute names themselves since
+      // only ascii chars are allowed in them.
+      foreach (indices (attropval), string attr)
+	if (function(string:string) encoder = get_attr_encoder (attr)) {
+	  array(int(0..2)|string) op = attropval[attr] + ({});
+	  for (int i = sizeof (op); --i;) // Skips first element.
+	    op[i] = encoder (op[i]);
+	  attropval[attr] = op;
+	}
     }
     if(intp(raw = send_modify_op(dn, attropval))) {
       THROW(({error_string()+"\n",backtrace()}));
@@ -1702,6 +1837,499 @@ multiset(string) get_supported_controls()
     return res;
 
   } //parse_uri
+
+
+// Schema handling.
+
+static mapping(string:array(string)) query_subschema (string dn,
+						      array(string) attrs)
+// Queries the server for the specified attributes in the subschema
+// applicable for the specified object. The return value is on the
+// same form as from simple_base_query (specifically there's no UTF-8
+// decoding of the values).
+//
+// If dn == "" then the attribute values might be joined from several
+// schemas. (Might change since I'm not sure whether that's really
+// useful or not - haven't got a good grasp on how multiple schemas
+// interact in the same server. /mast)
+{
+  mapping(string:array(string)) subschema_response;
+  int utf8_decode_dns;
+
+  if (dn == "" && root_dse)
+    subschema_response = root_dse;
+  else {
+    subschema_response =
+      simple_base_query (dn, "(objectClass=*)", ({"subschemaSubentry"}));
+    utf8_decode_dns = 1;
+  }
+
+  if (subschema_response)
+    if (array(string) subschema_dns = subschema_response->subschemasubentry) {
+      if (sizeof (subschema_dns) == 1)
+	return simple_base_query (
+	  utf8_decode_dns ? utf8_to_string (subschema_dns[0]) : subschema_dns[0],
+	  "(objectClass=subschema)", attrs);
+
+      else {
+	// This should afaics only occur for the root DSE, but it's a
+	// bit confusing: RFC 2252 section 5.1.5 specifies that
+	// subschemaSubentry is single valued, while RFC 2251 section
+	// 3.4 says that it can contain zero or more values in the
+	// root DSE. /mast
+	mapping(string:array(string)) res = ([]);
+	foreach (subschema_dns, string subschema_dn) {
+	  if (mapping(string:array(string)) subres = simple_base_query (
+		utf8_decode_dns ? utf8_to_string (subschema_dn) : subschema_dn,
+		"(objectClass=subschema)", attrs))
+	    foreach (indices (subres), string attr)
+	      res[attr] += subres[attr];
+	}
+	return res;
+      }
+    }
+
+  return 0;
+}
+
+static string rfc_2252_decode (string str, string errmsg_prefix)
+// Decodes an arbitrary string that has been encoded with backslash
+// notation for inclusion in a larger production (RFC 2252, section
+// 4.3).
+{
+  string orig_str = str, res = "";
+  while (1) {
+    sscanf (str, "%[^\\]%s", string val, str);
+    res += val;
+    if (str == "") break;
+    // str[0] == '\\' now.
+    if (sscanf (str, "\\%1x%1x%s", int high, int low, str) == 3)
+      // Use two %1x to force reading of exactly two hex digits;
+      // something like %2.2x is currently not supported.
+      res += sprintf ("%c", (high << 4) + low);
+    else
+      ERROR ("%sInvalid backslash escape %O in string %O.\n",
+	     errmsg_prefix, str[..2], orig_str);
+  }
+  return res;
+}
+
+static mapping(string:mixed) parse_schema_terms (
+  string str,
+  mapping(string:string|multiset(string)) known_terms,
+  string errmsg_prefix)
+// Parses a string containing a parenthesized list of terms as used in
+// several schema related attributes. The known_terms mapping
+// specifies the syntax of the known terms. If there's an entry "" in
+// it it's used for all other encountered terms.
+{
+  string orig_str = str, oid;
+
+  // Doin a slightly lax check of the oid syntax here.
+  if (!sscanf (str, "(%*[ ]%[0-9.]%*[ ]%s", oid, str))
+    ERROR ("%sExpected '(' at beginning: %O\n",
+	   errmsg_prefix, orig_str);
+  if (!sizeof (oid))
+    ERROR ("%sNumeric object identifier missing at start: %O\n",
+	   errmsg_prefix, orig_str);
+
+  mapping(string:mixed) res = (["oid": oid]);
+
+  do {
+    int pos = sizeof (str);
+
+    // Note: RFC 2252 is not clear on what chars are allowed in term
+    // identifier. We assume the same set as for attribute names.
+    sscanf (str, "%[-;a-zA-Z0-9]%*[ ]%s", string term_id, str);
+    if (!sizeof (term_id))
+      ERROR ("%sTerm identifier expected at pos %d: %O\n",
+	     errmsg_prefix, sizeof (orig_str) - pos, orig_str);
+
+    string|multiset(string) term_syntax = known_terms[term_id] || known_terms[""];
+    switch (term_syntax) {
+      case 0:
+	ERROR ("%sUnknown term %O at pos %d: %O\n",
+	       errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+
+      case "flag":		// Existence only - no value.
+	res[term_id] = 1;
+	break;
+
+      case "oid": {		// Numeric oid or name.
+	// No strict syntax check here.
+	sscanf (str, "%[-;a-zA-Z0-9.]%*[ ]%s", string oid, str);
+	if (!sizeof (oid))
+	  ERROR ("%sExpected oid after term %O at pos %d: %O\n",
+		 errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+	res[term_id] = oid;
+	break;
+      }
+
+      case "oidlen": {		// OID with optional length.
+	// Cope with Microsoft AD which incorrectly quotes this field
+	// and allows a name (RFC 2252 section 4.3.2 specifies a
+	// numeric oid only).
+
+	int ms_kludge;
+	string oid;
+	if (has_prefix (str, "'")) {
+	  ms_kludge = 1;
+	  // No strict syntax check here.
+	  sscanf (str, "'%[-;a-zA-Z0-9.]%s", oid, str);
+	}
+	else {
+	  // No strict syntax check here.
+	  sscanf (str, "%[0-9.]%s", oid, str);
+	}
+
+	if (!sizeof (oid))
+	  ERROR ("%sExpected numeric oid after term %O at pos %d: %O\n",
+		 errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+	term_id = lower_case (term_id);
+	res[term_id + "_oid"] = oid;
+	if (sscanf (str, "{%d}%s", int len, str))
+	  res[term_id + "_len"] = len;
+	if (ms_kludge) {
+	  if (!sscanf (str, "'%*[ ]%s", str))
+	    ERROR ("%sUnterminated quoted oid after term %O at pos %d: %O\n",
+		   errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+	}
+	else
+	  sscanf (str, "%*[ ]%s", str);
+	break;
+      }
+
+      case "qdstring":		// Quoted UTF-8 string.
+	string parse_qdstring (string what)
+	{
+	  string qstr;
+	  switch (sscanf (str, "'%[^']'%*[ ]%s", qstr, str)) {
+	    case 0:
+	      ERROR ("%sExpected %s after term %O at pos %d: %O\n",
+		     errmsg_prefix, what, term_id, sizeof (orig_str) - pos, orig_str);
+	    case 1:
+	      ERROR ("%sUnterminated %s after term %O at pos %d: %O\n",
+		     errmsg_prefix, what, term_id, sizeof (orig_str) - pos, orig_str);
+	  }
+	  if (catch (qstr = utf8_to_string (qstr)))
+	    ERROR ("%sMalformed UTF-8 in %s after term %O at pos %d: %O\n",
+		   term_id, what, sizeof (orig_str) - pos, orig_str);
+	  return rfc_2252_decode (qstr, errmsg_prefix);
+	};
+	res[term_id] = parse_qdstring ("quoted string");
+	break;
+
+      case "qdstrings":		// One or more quoted UTF-8 strings.
+	if (sscanf (str, "(%*[ ]%s", str)) {
+	  array(string) list = ({});
+	  do {
+	    if (str == "")
+	      ERROR ("%sUnterminated parenthesis after term %O at pos %d: %O\n",
+		     errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+	    list += ({parse_qdstring ("quoted string in list")});
+	  } while (!sscanf (str, ")%*[ ]%s", str));
+	  res[term_id] = list;
+	}
+	else
+	  res[term_id] = ({parse_qdstring ("quoted string")});
+	break;
+
+      case "qdescr":		// Quoted name.
+	string parse_qdescr (string what)
+	{
+	  string name;
+	  // No strict syntax check here.
+	  switch (sscanf (str, "'%[-;a-zA-Z0-9]'%*[ ]%s", name, str)) {
+	    case 0:
+	      ERROR ("%sExpected %s after term %O at pos %d: %O\n",
+		     errmsg_prefix, what, term_id, sizeof (orig_str) - pos, orig_str);
+	    case 1:
+	      ERROR ("%sInvalid chars in %s after term %O at pos %d: %O\n",
+		     errmsg_prefix, what, term_id, sizeof (orig_str) - pos, orig_str);
+	  }
+	  return name;
+	};
+	res[term_id] = parse_qdescr ("quoted descr");
+	break;
+
+      case "qdescrs":		// One or more quoted names.
+	if (sscanf (str, "(%*[ ]%s", str)) {
+	  array(string) list = ({});
+	  do {
+	    if (str == "")
+	      ERROR ("%sUnterminated parenthesis after term %O at pos %d: %O\n",
+		     errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+	    list += ({parse_qdescr ("quoted descr in list")});
+	  } while (!sscanf (str, ")%*[ ]%s", str));
+	  res[term_id] = list;
+	}
+	else
+	  res[term_id] = ({parse_qdescr ("quoted descr")});
+	break;
+
+      default:
+	if (multisetp (term_syntax)) { // One of a set.
+	  sscanf (str, "%[-;a-zA-Z0-9.]%*[ ]%s", string choice, str);
+	  if (!sizeof (choice))
+	    ERROR ("%sExpected keyword after term %O at pos %d: %O\n",
+		   errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+	  if (!term_syntax[choice])
+	    ERROR ("%sUnknown keyword after term %O at pos %d: %O\n",
+		   errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
+	  res[term_id] = choice;
+	  break;
+	}
+
+	ERROR ("Unknown syntax %O in known_perms.\n", term_syntax);
+    }
+  } while (!sscanf (str, ")%s", str));
+
+  if (str != "")
+    ERROR ("%sUnexpected data after ending ')' at pos %d: %O\n",
+	   errmsg_prefix, sizeof (orig_str) - sizeof (str) - 1, orig_str);
+
+  return res;
+}
+
+static mapping(string:mapping(string:mixed)) attr_type_descrs;
+
+mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
+//! Returns the attribute type description for the given attribute,
+//! which includes the name, object identifier, syntax, etc (see
+//! section 4.2 in RFC 2252 for details).
+//!
+//! This might do a query to the server, but results are cached.
+//!
+//! @param attr
+//!   The name of the attribute. Might also be the object identifier
+//!   on string form.
+//!
+//! @param standard_attrs
+//!   Flag that controls how the known standard attributes stored in
+//!   @[Protocols.LDAP] are to be used:
+//!
+//!   @int
+//!   @value 0
+//!     Check the known standard attributes first. If the attribute
+//!     isn't found there, query the server. This is the default.
+//!   @value 1
+//!     Don't check the known standard attributes, i.e. always use the
+//!     schema from the server.
+//!   @value 2
+//!     Only check the known standard attributes. The server is never
+//!     contacted.
+//!   @endint
+//!
+//! @returns
+//!   Returns a mapping where the indices are the terms that the
+//!   server has returned and the values are their values on string
+//!   form (dequoted and converted from UTF-8 as appropriate). Terms
+//!   without values get @expr{1@} as value in the mapping.
+//!
+//!   The mapping might contain the following members (all except
+//!   @expr{"oid"@} are optional):
+//!
+//!   @mapping
+//!   @member string "oid"
+//!     The object identifier on string form (i.e. a dotted decimal
+//!     string).
+//!   @member string "NAME"
+//!     Array with one or more names used for the attribute.
+//!   @member string "DESC"
+//!     Description.
+//!   @member string "OBSOLETE"
+//!     Flag.
+//!   @member string "SUP"
+//!     Derived from this other attribute. The value is the name or
+//!     oid of it. Note that the attribute description from the
+//!     referenced type always is merged with the current one to make
+//!     the returned description complete.
+//!   @member string "EQUALITY"
+//!     The value is the name or oid of a matching rule.
+//!   @member string "ORDERING"
+//!     The value is the name or oid of a matching rule.
+//!   @member string "SUBSTR"
+//!     The value is the name or oid of a matching rule.
+//!   @member string "syntax_oid"
+//!     The value is the oid of the syntax (RFC 2252, section 4.3.2).
+//!     (This is extracted from the @expr{"SYNTAX"@} term.)
+//!   @member string "syntax_len"
+//!     Optional suggested minimum upper bound of the number of
+//!     characters in the attribute (or bytes if the attribute is
+//!     binary). (This is extracted from the @expr{"SYNTAX"@} term.)
+//!   @member string "SINGLE-VALUE"
+//!     Flag. Default multi-valued.
+//!   @member string "COLLECTIVE"
+//!     Flag. Default not collective.
+//!   @member string "NO-USER-MODIFICATION"
+//!     Flag. Default user modifiable.
+//!   @member string "USAGE"
+//!     The value is any of the following:
+//!     @string
+//!     @value "userApplications"
+//!     @value "directoryOperation"
+//!       Self-explanatory.
+//!     @value "distributedOperation"
+//!       DSA-shared.
+//!     @value "dSAOperation"
+//!       DSA-specific, value depends on server.
+//!     @endstring
+//!   @endmapping
+//!
+//!   There might be more fields for server extensions.
+//!
+//!   Zero is returned if the server didn't provide any attribute type
+//!   description for @[attr].
+//!
+//! @note
+//!   It's the schema applicable at the base DN that is queried.
+//!
+//! @note
+//!   LDAPv3 is assumed.
+{
+  // Don't bother lowercasing numeric oids. Names never start with a digit.
+  if (!(<'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'>)[attr[0]])
+    attr = lower_case (attr);
+
+  if (mapping(string:mixed) descr = standard_attrs != 1 &&
+      Protocols.LDAP._standard_attr_type_descrs[attr])
+    return descr;
+  if (standard_attrs == 2)
+    return 0;
+
+  if (!attr_type_descrs)
+    if (mapping(string:array(string)) subschema =
+	query_subschema (ldap_basedn, ({"attributeTypes"})))
+      if (array(string) attr_types = subschema->attributetypes) {
+
+	// Note partial code dup with
+	// Protocols.LDAP._standard_attr_type_descrs init.
+	array(mapping(string:mixed)) incomplete = ({});
+
+	attr_type_descrs = ([]);
+	foreach (attr_types, string attr_type) {
+	  mapping(string:mixed) descr = parse_schema_terms (
+	    utf8_to_string (attr_type),
+	    (["NAME":			"qdescrs",
+	      "DESC":			"qdstring",
+	      "OBSOLETE":		"flag",
+	      "SUP":			"oid",
+	      "EQUALITY":		"oid",
+	      "ORDERING":		"oid",
+	      "SUBSTR":			"oid",
+	      "SYNTAX":			"oidlen",
+	      "SINGLE-VALUE":		"flag",
+	      "COLLECTIVE":		"flag",
+	      "NO-USER-MODIFICATION":	"flag",
+	      "USAGE": (<"userApplications", "directoryOperation",
+			 "distributedOperation", "dSAOperation">),
+	      "":			"qdstrings"]),
+	    "Error in attributeTypes when querying schema: ");
+	  if (descr->SUP) incomplete += ({descr});
+	  attr_type_descrs[descr->oid] = descr;
+	  foreach (descr->NAME, string name)
+	    attr_type_descrs[lower_case (name)] = descr;
+	}
+
+	void complete (mapping(string:mixed) descr) {
+	  string sup = lower_case (descr->SUP);
+	  mapping(string:mixed) sup_descr =
+	    attr_type_descrs[sup] ||
+	    (standard_attrs != 1 && Protocols.LDAP._standard_attr_type_descrs[sup]);
+	  if (!sup_descr)
+	    ERROR ("Inconsistency in schema: "
+		   "Got SUP reference to unknown attribute: %O\n", descr);
+	  if (sup_descr->SUP)
+	    complete (sup_descr);
+	  foreach (indices (sup_descr), string term)
+	    if (zero_type (descr[term]))
+	      descr[term] = sup_descr[term];
+	};
+	foreach (incomplete, mapping(string:mixed) descr)
+	  complete (descr);
+      }
+
+  return attr_type_descrs[attr];
+}
+
+#ifdef PARSE_RFCS
+
+int main (int argc, array(string) argv)
+{
+  // Try to parse a bit of RFC text to generate _ATD_ constants for
+  // Protocols.LDAP.
+
+  array(array(string)) sections = ({});
+
+  {
+    // Split on section headers.
+    array(string) cont;
+    while (string line = Stdio.stdin->gets()) {
+      if (sscanf (line, "%[0-9.]%*[ \t]%s", string sno, string shdr) == 3 &&
+	  sno != "" && shdr != "") {
+	if (cont) sections += ({cont});
+	if (has_suffix (sno, ".")) sno = sno[..<1];
+	cont = ({sno, shdr});
+      }
+      else if (cont)
+	cont += ({line});
+    }
+    if (cont) sections += ({cont});
+  }
+
+  foreach (sections, array(string) cont)
+    for (int n = 0; n < sizeof (cont); n++) {
+      if (sscanf (cont[n], "%*[ \t](%*s") == 2 &&
+	  (n == 0 || String.trim_whites (cont[n-1]) == "")) {
+	string expr = String.trim_whites (cont[n]), s;
+	for (n++; n < sizeof (cont) && (s = String.trim_whites (cont[n])) != ""; n++)
+	  expr += " " + s;
+
+	mapping descr;
+	if (mixed err =
+	    catch (descr = parse_schema_terms (
+		     expr,
+		     (["NAME":			"qdescrs",
+		       "DESC":			"qdstring",
+		       "OBSOLETE":		"flag",
+		       "SUP":			"oid",
+		       "EQUALITY":		"oid",
+		       "ORDERING":		"oid",
+		       "SUBSTR":		"oid",
+		       "SYNTAX":		"oidlen",
+		       "SINGLE-VALUE":		"flag",
+		       "COLLECTIVE":		"flag",
+		       "NO-USER-MODIFICATION":	"flag",
+		       "USAGE": (<"userApplications", "directoryOperation",
+				  "distributedOperation", "dSAOperation">),
+		       "":			"qdstrings"]),
+		     "")))
+	  werror (describe_error (err));
+
+	write ("constant ATD_%s = ([ // %s, %s\n",
+	       replace (cont[1], " ", "_"), argv[1], cont[0]);
+	foreach (({"oid", "NAME", "DESC", "OBSOLETE", "SUP", "EQUALITY", "ORDERING",
+		   "SUBSTR", "syntax_oid", "syntax_len", "SINGLE-VALUE", "COLLECTIVE",
+		   "NO-USER-MODIFICATION", "USAGE"}), string term) {
+	  if (mixed val = descr[term]) {
+	    if (arrayp (val))
+	      write ("  %O: ({%s}),\n", term,
+		     map (val, lambda (string s) {return sprintf ("%O", s);}) * ", ");
+	    else {
+	      if (string sym = (<"oid", "syntax_oid">)[term] &&
+		  Protocols.LDAP.get_constant_name (val))
+		write ("  %O: %s,\n", term, sym);
+	      else
+		write ("  %O: %O,\n", term, val);
+	    }
+	  }
+	}
+	write ("]);\n");
+      }
+    }
+}
+
+#endif
 
 #else
 constant this_program_does_not_exist=1;
