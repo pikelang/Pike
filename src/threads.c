@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.225 2003/11/09 01:09:22 mast Exp $
+|| $Id: threads.c,v 1.226 2003/11/13 03:28:26 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.225 2003/11/09 01:09:22 mast Exp $");
+RCSID("$Id: threads.c,v 1.226 2003/11/13 03:28:26 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1840,7 +1840,9 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
 
 PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 {
+#ifdef PIKE_DEBUG
   if(!fun) Pike_fatal("The farmers don't known how to handle empty fields\n");
+#endif
   mt_lock( &rosie );
   if(farmers)
   {
@@ -1908,10 +1910,6 @@ void th_init(void)
   add_ref(mutex_key);
   end_class("mutex_key", 0);
   mutex_key->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
-#ifdef PIKE_DEBUG
-  if(!mutex_key)
-    Pike_fatal("Failed to initialize mutex_key program!\n");
-#endif
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX);
   ADD_STORAGE(struct mutex_storage);
@@ -1962,8 +1960,6 @@ void th_init(void)
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
-  if(!thread_local_prog)
-    Pike_fatal("Failed to initialize thread_local program!\n");
   ADD_EFUN("thread_local", f_thread_local,
 	   tFunc(tNone,tObjIs_THREAD_LOCAL),
 	   OPT_EXTERNAL_DEPEND);
@@ -2004,9 +2000,6 @@ void th_init(void)
   add_integer_constant("THREAD_NOT_STARTED", THREAD_NOT_STARTED, 0);
   add_integer_constant("THREAD_RUNNING", THREAD_RUNNING, 0);
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
-
-  if(!mutex_key)
-    Pike_fatal("Failed to initialize thread program!\n");
 
   backend_thread_obj = fast_clone_object(thread_id_prog);
   INIT_THREAD_STATE((struct thread_state *)(backend_thread_obj->storage +
