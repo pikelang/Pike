@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.121 2001/09/25 17:40:45 grubba Exp $");
+RCSID("$Id: operators.c,v 1.122 2002/06/17 16:44:40 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1541,7 +1541,8 @@ static int generate_xor(node *n)
 PMOD_EXPORT void o_lsh(void)
 {
 #ifdef AUTO_BIGNUM
-  if(INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+  if((sp[-1].type == T_INT) && (sp[-2].type == T_INT) &&
+     INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     convert_stack_top_to_bignum();
 #endif /* AUTO_BIGNUM */
   
