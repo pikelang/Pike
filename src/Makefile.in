@@ -198,8 +198,9 @@ gdb_verify: testsuite
 run_hilfe:
 	$(RUNPIKE) $(TMP_BINDIR)/hilfe
 
-lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike
+lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)/include
 	cp -r $(LIBDIR_SRC) .
+	touch ./lib
 
 # make export archive (requires compiled Pike)
 # Do not compile in source tree if you want to use this!
