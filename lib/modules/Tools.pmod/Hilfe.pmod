@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.116 2004/05/13 09:56:23 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.117 2005/01/11 08:30:08 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -137,6 +137,23 @@ private class CommandSet {
     }
   }
 
+  private class Intwriter (string type, function fallback) {
+    void `()(function(string, mixed ... : int) w, string sres, int num,
+	     mixed res, int last_compile_time, int last_eval_time) {
+      if(res && intp(res)) {
+	if(type=="b") {
+	  string s = sprintf("%b", res);
+	  s = "0"*(8-sizeof(s)%8) + s;
+	  w( s/8*" " + "\n" );
+	}
+	else
+	  w("%"+type+"\n", res);
+      }
+      else
+	fallback(w, sres, num, res, last_compile_time, last_eval_time);
+    }
+  }
+
   private array my_indices(string|mapping|multiset|object|program in) {
     if(objectp(in) || programp(in))
       return sort(indices(in));
@@ -245,6 +262,15 @@ private class CommandSet {
 	return;
       case "bench":
 	e->reswrite = bench_reswrite;
+	return;
+      case "bin":
+	e->reswrite = Intwriter("b", e->std_reswrite);
+	return;
+      case "oct":
+	e->reswrite = Intwriter("o", e->std_reswrite);
+	return;
+      case "hex":
+	e->reswrite = Intwriter("x", e->std_reswrite);
 	return;
       case "sprintf":
 	string f;
@@ -803,7 +829,7 @@ private constant notype = (< "(", ")", "->", "[", "]", ":", ";",
 			     "+", "++", "-", "--",
 			     "%", "*", "/", "&", "&&", "||", ",",
 			     "<", ">", "==", "=", "!=", "?",
-			     "+=", "-=", "%=", "/=", "&=", "|=",
+			     "+=", "-=", "*=", "%=", "/=", "&=", "|=",
 			     "~=", "<<", ">>", "<<=", ">>=", "<=",
 			     ">=", "^", "^=" >);
 
@@ -1367,6 +1393,10 @@ class Evaluator {
   {
     safe_write(version()+
 	      " running Hilfe v3.5 (Incremental Pike Frontend)\n");
+    int major = master()->compat_major;
+    int minor = master()->compat_minor;
+    if( major!=-1 || minor!=-1 )
+      safe_write("(running in Pike %d.%d compat mode)\n", major, minor);
   }
 
   //! Clears the current state, history and removes all locally
