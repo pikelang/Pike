@@ -1,8 +1,8 @@
 Mon Nov  3 01:38:32 1997  Henrik Grubbström  <grubba@infovav.se>
 
-	* smartlink: Now sets ulimit for the virtual memory usage to 64MB
-	unless the environment variable NO_ULIMIT is set. This seems like
-	a reasonable default limit to avoid exhausting all memory in the
+	* smartlink: Now sets ulimit for the data segment to 48MB unless
+ 	the environment variable NO_ULIMIT is set. This seems like a
+ 	reasonable default limit to avoid exhausting all memory in the
 	machine during optimizing.
 	* configure.in: Added options proper for SparcWorks cc.
 	* *.c: Added several casts to avoid implicit casts between signed
