@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.195 2005/01/18 17:54:49 grubba Exp $
+|| $Id: stralloc.c,v 1.196 2005/02/25 23:33:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -410,7 +410,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
       return curr;		/* pointer to string */
     }
 #ifndef HASH_PREFIX
-    if (curr->len > HASH_PREFIX)
+    if (curr->len > (ptrdiff_t)HASH_PREFIX)
       depth++;
 #endif
   }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.30 2004/10/15 15:19:45 grubba Exp $
+|| $Id: memory.c,v 1.31 2005/02/25 23:36:04 nilsson Exp $
 */
 
 /*! @module System
@@ -244,7 +244,7 @@ static void memory_shm( INT32 args )
   {
     HANDLE handle;
     char id[4711];
-    sprintf( id, "pike.%d", Pike_sp[-args].u.integer );
+    sprintf( id, "pike.%ld", Pike_sp[-args].u.integer );
     THIS->size = Pike_sp[1-args].u.integer;
     THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
     pop_n_elems(args);
