@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.9 1997/05/19 22:50:28 hubbe Exp $ */
+/* $Id: x.c,v 1.10 1997/09/11 22:51:20 grubba Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.9 1997/05/19 22:50:28 hubbe Exp $");
+RCSID("$Id: x.c,v 1.10 1997/09/11 22:51:20 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -26,7 +26,6 @@ RCSID("$Id: x.c,v 1.9 1997/05/19 22:50:28 hubbe Exp $");
 #include "image.h"
 #include "builtin_functions.h"
 
-struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
