@@ -8,8 +8,8 @@ all: module.a dummy
 dummy:	linker_options modlist_headers modlist_segment module.pmod
 	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
 
-linker_options: Makefile
-	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS)
+linker_options: Makefile $(MODULE_ARCHIVES)
+	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS) $(MODULE_ARCHIVES)
 
 modlist_headers: Makefile
 	echo >modlist_headers "void pike_module_$(MODNAME)_init(void), pike_module_$(MODNAME)_exit(void);"

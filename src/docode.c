@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.15 1997/03/17 03:04:37 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.16 1997/04/17 22:47:06 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -165,6 +165,20 @@ static int is_efun(node *n, c_fun fun)
     n->u.sval.u.efun->function == fun;
 }
 
+static void code_expression(node *n, int flags, char *err)
+{
+  switch(do_docode(n, flags & ~ DO_POP))
+  {
+  case 0: my_yyerror("Void expression for %s",err);
+  case 1: return;
+  case 2:
+    fatal("Internal compiler error (%s), line %ld, file %s\n",
+	  err,
+	  (long)current_line,
+	  current_file?current_file->str:"Unknown");
+  }
+}
+
 void do_cond_jump(node *n, int label, int iftrue, int flags)
 {
   iftrue=!!iftrue;
@@ -205,8 +219,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
     return;
   }
 
-  if(do_docode(n, flags&DO_NOT_COPY)!=1)
-    fatal("Infernal compiler skiterror.\n");
+  code_expression(n, flags | DO_NOT_COPY, "condition");
   
   if(flags & DO_POP)
   {
@@ -282,11 +295,7 @@ static int do_docode2(node *n,int flags)
   switch(n->token)
   {
   case F_PUSH_ARRAY:
-    tmp1=do_docode(CAR(n),0);
-    if(tmp1!=1)
-    {
-      fatal("Internal compiler error, Yikes!\n");
-    }
+    code_expression(CAR(n), 0, "`@");
     emit2(F_PUSH_ARRAY);
     return -0x7ffffff;
 
@@ -364,13 +373,11 @@ static int do_docode2(node *n,int flags)
     if(match_types(CAR(n)->type,array_type_string) ||
        match_types(CAR(n)->type,string_type_string))
     {
-      if(do_docode(CDR(n), 0)!=1)
-	fatal("Internal compiler error, shit happens\n");
+      code_expression(CDR(n), 0, "assignment");
       emit2(F_LTOSVAL2);
     }else{
       emit2(F_LTOSVAL);
-      if(do_docode(CDR(n), 0)!=1)
-	fatal("Internal compiler error, shit happens (again)\n");
+      code_expression(CDR(n), 0, "assignment");
     }
 
 
@@ -416,13 +423,11 @@ static int do_docode2(node *n,int flags)
 	if(match_types(CDR(n)->type,array_type_string) ||
 	   match_types(CDR(n)->type,string_type_string))
 	{
-	  if(do_docode(CDAR(n),DO_NOT_COPY)!=1)
-	    fatal("Infernal compiler error (dumpar core |ver hela mattan).\n");
+	  code_expression(CDAR(n), 0, "binary operand");
 	  emit2(F_LTOSVAL2);
 	}else{
 	  emit2(F_LTOSVAL);
-	  if(do_docode(CDAR(n),DO_NOT_COPY)!=1)
-	    fatal("Infernal compiler error (dumpar core).\n");
+	  code_expression(CDAR(n), 0, "binary operand");
 	}
 
 	emit2(CAR(n)->token);
@@ -438,7 +443,7 @@ static int do_docode2(node *n,int flags)
 	if(CDR(n)->u.number >= local_variables->max_number_of_locals)
 	  yyerror("Illegal to use local variable here.");
 
-	if(do_docode(CAR(n),0)!=1) yyerror("RHS is void!");
+	code_expression(CAR(n), 0, "RHS");
 	emit(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
 	     CDR(n)->u.number );
 	break;
@@ -448,7 +453,7 @@ static int do_docode2(node *n,int flags)
 	{
 	  yyerror("Cannot assign functions or constants.\n");
 	}else{
-	  if(do_docode(CAR(n),0)!=1) yyerror("RHS is void!");
+	  code_expression(CAR(n), 0, "RHS");
 	  emit(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
 	       CDR(n)->u.number);
 	}
@@ -467,7 +472,7 @@ static int do_docode2(node *n,int flags)
   case F_LOR:
     tmp1=alloc_label();
     do_cond_jump(CAR(n), tmp1, n->token == F_LOR, 0);
-    if(do_docode(CDR(n),0)!=1) fatal("Compiler internal error.\n");
+    if(do_docode(CDR(n),0)!=1) fatal("Compiler logical error.\n");
     emit(F_LABEL,tmp1);
     return 1;
 
@@ -495,7 +500,7 @@ static int do_docode2(node *n,int flags)
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
-      fatal("Compiler internal error.\n");
+      fatal("Compiler internal error (at %ld).\n",(long)current_line);
     emit2(n->token);
     return tmp1;
 
@@ -977,8 +982,7 @@ static int do_docode2(node *n,int flags)
       return 2;
     }else{
       tmp1=do_docode(CAR(n), DO_NOT_COPY);
-      if(do_docode(CDR(n),DO_NOT_COPY) != 1)
-	fatal("Internal compiler error, please report this (1).");
+      code_expression(CDR(n), DO_NOT_COPY, "index");
       emit2(F_INDEX);
       if(!(flags & DO_NOT_COPY))
       {
