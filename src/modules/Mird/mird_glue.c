@@ -39,10 +39,8 @@ struct program *mird_scanner_program;
    do									\
    {									\
       struct pmird_storage *me=(PMIRD);					\
-      THREADS_ALLOW();
 
 #define UNLOCK(PMIRD)							\
-      UNSET_ONERROR(err);						\
    }									\
    while (0);
 
