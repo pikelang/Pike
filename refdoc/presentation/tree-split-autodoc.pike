@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.11 2001/07/28 12:50:59 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.12 2001/07/28 13:08:15 nilsson Exp $
  *
  */
 
@@ -185,7 +185,7 @@ class Node
     array a = reverse(parent->get_ancestors());
 
     _make_class_path = "";
-    foreach(a[1..], Node n)
+    foreach(a, Node n)
     {
       _make_class_path += n->name;
       if(n->type=="class")
