@@ -21,7 +21,7 @@ class Fifo {
   mixed read()
   {
     mixed tmp;
-    object key=lock::lock();
+    object key=lock::lock(2);
     while(!num) r_cond::wait(key);
     tmp=buffer[ptr];
     buffer[ptr++] = 0;	// Throw away any references.
@@ -40,7 +40,7 @@ class Fifo {
   array read_array()
   {
     array ret;
-    object key=lock::lock();
+    object key=lock::lock(2);
     while(!num) r_cond::wait(key);
     if(num==1)
     {
@@ -59,7 +59,7 @@ class Fifo {
   
   void write(mixed v)
   {
-    object key=lock::lock();
+    object key=lock::lock(2);
     while(num == sizeof(buffer)) w_cond::wait(key);
     buffer[(ptr + num) % sizeof(buffer)]=v;
     if(write_tres)
@@ -91,7 +91,7 @@ class Queue {
   mixed read()
   {
     mixed tmp;
-    object key=lock::lock();
+    object key=lock::lock(2);
     while(!size()) r_cond::wait(key);
     tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
@@ -101,7 +101,7 @@ class Queue {
   
   void write(mixed v)
   {
-    object key=lock::lock();
+    object key=lock::lock(2);
     if(w_ptr >= sizeof(buffer))
     {
       buffer=buffer[r_ptr..];
@@ -171,7 +171,7 @@ class Farm
   static class Handler
   {
     Condition cond = Condition();
-    array job;
+    array(object|array(function|array)) job;
     object thread;
 
     float total_time;
@@ -181,7 +181,7 @@ class Farm
 
     void handler()
     {
-      array q;
+      array(object|array(function|array)) q;
       while( 1 )
       {
         ready = 1;
@@ -191,9 +191,9 @@ class Farm
           mixed res, err;
           int st = gethrtime();
           if( err = catch(res = q[1][0]( @q[1][1] )) && q[0])
-            q[0]->provide_error( err );
+            ([object]q[0])->provide_error( err );
           else if( q[0] )
-            q[0]->provide( res );
+            ([object]q[0])->provide( res );
           object lock = mutex->lock();
           free_threads += ({ this_object() });
           lock = 0;
@@ -215,7 +215,7 @@ class Farm
       }
     }
 
-    void run( array what, object|void resobj )
+    void run( array(function|array) what, object|void resobj )
     {
       while(!ready) sleep(0.1);
       job = ({ resobj, what });
@@ -267,7 +267,7 @@ class Farm
         mutex->lock();
       }
     }
-    object t = free_threads[0];
+    object(Handler) t = free_threads[0];
     free_threads = free_threads[1..];
     return t;
   }
@@ -275,7 +275,7 @@ class Farm
 
   static void dispatcher()
   {
-    while( array q = job_queue->read() )
+    while( array q = [array]job_queue->read() )
       aquire_thread()->run( q[1], q[0] );
   }
 
@@ -287,7 +287,7 @@ class Farm
 
     void go(mixed vn, int err)
     {
-      r->value[ i ] = vn;
+      ([array]r->value)[ i ] = vn;
       if( err )
         r->provide_error( err );
       if( !--v->num_left )
