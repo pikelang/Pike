@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.18 2003/10/24 17:54:58 mast Exp $
+|| $Id: backend.h,v 1.19 2003/10/24 19:04:52 mast Exp $
 */
 
 #ifndef BACKEND_H
@@ -14,7 +14,7 @@
 
 PMOD_EXPORT extern struct timeval current_time;
 PMOD_EXPORT extern struct timeval next_timeout;
-typedef void (*file_callback)(int,void *);
+typedef int (*file_callback)(int,void *);
 extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern int fds_size;
 PMOD_EXPORT extern struct program *Backend_program;
