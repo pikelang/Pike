@@ -250,9 +250,9 @@ void handle_incoming_connection(object(Stdio.File) io)
 #endif
 
 #if __VERSION__ >= 0.699999
-       write("Trapping OOB\n");
    if(io->read_oob)
    {
+     write("Trapping OOB\n");
      thread_create(lambda() {
        while(1)
        {
