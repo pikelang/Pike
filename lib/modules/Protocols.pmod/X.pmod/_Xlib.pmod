@@ -22,6 +22,17 @@ array(string) window_attributes =
    "Colormap",
    "Cursor" });
 
+array(string) window_configure_attributes =
+({
+  "X",
+  "Y",
+  "Width",
+  "Height",
+  "BorderWidth",
+  "Sibling",
+  "StackMode"
+});
+
 array(string) gc_attributes =
 ({
   "Function",

@@ -159,6 +159,21 @@ class Drawable
     object req = FillRectangles_req(gc->id, r);
     display->send_request(req);
   }
+
+  object DrawLine_req(int gc, int coordMode, array(object) points)
+  {
+    object req = Requests.PolyLine();
+    req->drawable = id;
+    req->gc = gc;
+    req->coordMode = coordMode;
+    req->points = points;
+    return req;
+  }
+
+  void DrawLine(object gc, int coordMode, object ... points)
+  {
+    display->send_request(DrawLine_req(gc->id, coordMode, points));
+  }
 }
   
 class Window
@@ -227,6 +242,33 @@ class Window
     w->currentInputMask = 0;
     return w;
   }
+
+  object ChangeAttributes_req(mapping m)
+  {
+    object req = Requests.ChangeWindowAttributes();
+    req->window = id;
+    req->attributes = m;
+    return req;
+  }
+
+  void ChangeAttributes(mapping m)
+  {
+    display->send_request(ChangeAttributes_req(m));
+  }
+
+  object Configure_req(mapping m)
+  {
+    object req = Requests.ConfigureWindow();
+    req->window = id;
+    req->attributes = m;
+    return req;
+  }
+
+  void Configure(mapping m)
+  {
+    display->send_request(Configure_req(m));
+  }
+
 
   void set_event_callback(string type, function f)
   {
