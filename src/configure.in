@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.680 2004/10/25 09:07:28 distmaker Exp $")
+AC_REVISION("$Id: configure.in,v 1.681 2004/10/25 11:40:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3610,10 +3610,10 @@ AC_MSG_RESULT($pike_cv_struct_tm_has___tm_gmtoff)
 AC_MSG_CHECKING(for USHRT_MAX definition)
 
 AC_CACHE_VAL(pike_cv_ushrt_max_is_defined,[
-AC_EGREP_CPP(yes,[
+AC_EGREP_CPP(oui,[
 #include <limits.h>
 #ifdef USHRT_MAX
-yes
+oui
 #endif
 ],pike_cv_ushrt_max_is_defined=yes,pike_cv_ushrt_max_is_defined=no)
 ])
