@@ -1,8 +1,20 @@
 #pike __REAL_VERSION__
 
+//! A Drawing area with backing store. Basically, the only difference
+//! from a drawing area widget is that this one never loose it's
+//! contents unless you do paint over them.
+//!
+//! It also use quite a significant amount of memory if the backing
+//! pixmap has many bitplanes, and the drawing area is large.
+//!
+//! @seealso
+//!   @[GTK.DrawingArea]
+
 inherit GTK.DrawingArea;
 static object backing_store, bgc;
 static int _xsize, _ysize, is_realized;
+
+//! @ignore
 
 #define WRAP(X) object X(mixed ... args) \
    {                           \
@@ -152,3 +164,5 @@ WRAP(draw_pixmap);
 WRAP(draw_point);
 WRAP(draw_rectangle);
 WRAP(draw_text);
+
+//! @endignore

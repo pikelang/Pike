@@ -1,5 +1,9 @@
 #pike __REAL_VERSION__
 
+// Create a simple alert window. The default title is @expr{Alert@}. A
+// single button @expr{Ok@} will be created. Pressing it removes the
+// dialog.
+
 inherit GTK.Dialog;
 
 void begone(object w2)
@@ -9,11 +13,13 @@ void begone(object w2)
 
 object ok_button;
 
+//! Returns the ok @[Button] object.
 GTK.Button ok()
 {
   return ok_button;
 }
 
+//!
 void create(string text, string|void title)
 {
   ::create();

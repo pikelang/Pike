@@ -1,5 +1,10 @@
 #pike __REAL_VERSION__
 
+//! A @[Clist] with scrollbars. Defines the same interface as
+//! @[Clist].
+
+//! @ignore
+
 inherit GTK.ScrolledWindow;
 
 GTK.Clist cl;
@@ -51,3 +56,5 @@ W(set_sort_type); W(set_sort_column); W(set_auto_sort); W(get_shadow_type);
 W(get_selection_mode); W(get_drag_button); W(get_focus_row); W(get_sort_type); 
 W(get_sort_column); W(get_flags); W(get_rows); W(get_row_height); 
 W(get_row_center_offset); W(get_columns);
+
+//! @endignore

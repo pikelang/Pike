@@ -57,6 +57,7 @@ string shortcut_to_string( int key, int mod )
   return sprintf("%s%c",m, key);
 }
 
+//! Definition of a menu item.
 class MenuDef
 {
   string menu_path;
@@ -65,6 +66,35 @@ class MenuDef
   mixed arg;
   function callback;
 
+  //! Sets a new shortcut as the current one.
+  //!
+  //! The shortcut syntax is: m[m[..]]-key, where m is one or more
+  //! modifier character, and key is the desired key (@b{NOTE@}: Key
+  //! must be in the range 0-255 currently, this will hopefully be
+  //! fixed by the GTK people in the future)
+  //!
+  //! The modifiers are:
+  //! @string
+  //!   @value "s"
+  //!      Shift
+  //!   @value "c"
+  //!      Control
+  //!   @value "a"
+  //!   @value "1"
+  //!      Modifier 1 (called alt by the GTK people, that's not true, though)
+  //!   @value "g"
+  //!   @value "2"
+  //!      Modifier 2 (called altgr by the GTK people, that's not true, though)
+  //!   @value "m"
+  //!   @value "3"
+  //!      Modifier 3 (not mapped by the GTK people, meta on _my_ keyboard)
+  //!   @value "h"
+  //!   @value "4"
+  //!      Modifier 4 (not mapped by the GTK people, hyper on _my_ keyboard)
+  //!   @value "u"
+  //!   @value "5"
+  //!      Modifier 5 (not mapped by the GTK people, super on _my_ keyboard)
+  //! @endstring
   void assign_shortcut(string sc)
   {
     [modifiers,shortcut] = parse_shortcut(sc);
@@ -81,7 +111,61 @@ class MenuDef
     }
   }
 
-  void create(string path, function|void cb, 
+  //! @param path
+  //! Path is the menupath. A submenu will be created for each
+  //! "Directory" in the path, and menuitems will be created for the
+  //! "files". There are two special cases: The "file"
+  //! @expr{"<separator>"@} will create a thin line. The "file"-prefix
+  //! @expr{"<check>"@} will make the menuitem a checkmenuitem instead
+  //! of a normal menuitem.
+  //!
+  //! @param cb
+  //! @param cbarg
+  //! The second and third arguments are the callback function and the
+  //! first callback function argument. If the callback function
+  //! argument is an array, the indices of the array will be pushed as
+  //! arguments. To call the function with an array as the only
+  //! argument, make an array with the array in. The callback function
+  //! will be called like @expr{callback( arg, widget )@}, or if arg
+  //! is an array, @expr{callback( arg[0], arg[1], ..., widget )@}.
+  //!
+  //! @param shortcut
+  //! The fourth argument, shortcut, is the shortcut to bind to this
+  //! menu item. The shortcut can be changed later on by calling
+  //! @[assign_shortcut], or by the user by pressing the desired
+  //! keycombination over the menu item.
+  //!
+  //! The shortcut syntax is: m[m[..]]-key, where m is one or more
+  //! modifier character, and key is the desired key (@b{NOTE@}: Key
+  //! must be in the range 0-255 currently, this will hopefully be
+  //! fixed by the GTK people in the future)
+  //!
+  //! The modifiers are:
+  //! @string
+  //!   @value "s"
+  //!      Shift
+  //!   @value "c"
+  //!      Control
+  //!   @value "a"
+  //!   @value "1"
+  //!      Modifier 1 (called alt by the GTK people, that's not true, though)
+  //!   @value "g"
+  //!   @value "2"
+  //!      Modifier 2 (called altgr by the GTK people, that's not true, though)
+  //!   @value "m"
+  //!   @value "3"
+  //!      Modifier 3 (not mapped by the GTK people, meta on _my_ keyboard)
+  //!   @value "h"
+  //!   @value "4"
+  //!      Modifier 4 (not mapped by the GTK people, hyper on _my_ keyboard)
+  //!   @value "u"
+  //!   @value "5"
+  //!      Modifier 5 (not mapped by the GTK people, super on _my_ keyboard)
+  //! @endstring
+  //!
+  //! @param right
+  //!   Currently ignored.
+  void create(string path, function|void cb,
 	      mixed|void cbarg,
 	      string|void binding,
 	      int|void right)
@@ -133,12 +217,27 @@ class MenuDef
 
 
 function mbar_mc;
+
+//! The function passed as the argument to this function will be
+//! called each time the accelerator key mapping is changed by the
+//! user with the new mapping as the argument.
+//!
+//! @note
+//! This function is only used when the menubar is created, once you
+//! are done with the menubar creation, the callbacks for that menubar
+//! will be fixed.
 void set_menubar_modify_callback( function to )
 {
   mbar_mc = to;
 }
 
 mapping menubar_objects = ([]);
+
+//! Returns a (flat) mapping @expr{([ path:GTK.MenuItem ])@}.
+//!
+//! @note
+//! This function can only be called @i{after@} the menubar is
+//! created.
 mapping get_menubar_mapping(  )
 {
   return copy_value(menubar_objects);
@@ -150,6 +249,15 @@ mapping get_submenu_mapping(  )
   return copy_value(submenues);
 }
 
+//! Identical to @[MenuFactory], but creates popup menus instead.
+//!
+//! @returns
+//! @array
+//!   @elem GTK.Menu 0
+//!     GTK.Menu
+//!   @elem GTK.AccelGroup 1
+//!     GTK.AccelGroup
+//! @endarray
 array(object) PopupMenuFactory( MenuDef ... definition )
 {
   GTK.Menu bar = GTK.Menu();
@@ -221,6 +329,26 @@ array(object) PopupMenuFactory( MenuDef ... definition )
   return ({bar,table});
 }
 
+//! This is the function that actually builds the menubar.
+//!
+//! @example
+//! import GTK.MenuFactory;
+//! [GTK.MenuBar bar, GTK.AcceleratorTable map] = 
+//!  MenuFactory( 
+//!    MenuDef( "File/New", new_file, 0, "A-N" ), 
+//!    MenuDef( "File/Open", new_file, 1, "A-O" ), 
+//!    MenuDef( "File/Save", save_file, 0, "A-S" ), 
+//!    MenuDef( "File/<separator>", 0, 0 ),
+//!    MenuDef( "File/Quit", _exit, 0, "A-Q" ), 
+//!  );
+//!
+//! @returns
+//! @array
+//!   @elem GTK.MenuBar 0
+//!     GTK.MenuBar
+//!   @elem GTK.AcceleratorTable 1
+//!     GTK.AcceleratorTable
+//! @endarray
 array(object) MenuFactory( MenuDef ... definition )
 {
   GTK.MenuBar bar = GTK.MenuBar();
