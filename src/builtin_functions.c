@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.541 2004/04/19 22:30:19 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.542 2004/04/29 01:05:29 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.541 2004/04/19 22:30:19 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.542 2004/04/29 01:05:29 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3063,17 +3063,17 @@ static struct pike_string *replace_many(struct pike_string *str,
 
   fsort((char *)v,num,sizeof(struct tupel),(fsortfun)replace_sortfun);
 
-  for(e=0;e<(INT32)NELEM(set_end);e++)
-    set_end[e]=set_start[e]=0;
+  MEMSET(set_start, 0, sizeof(set_start));
+  MEMSET(set_end, 0, sizeof(set_end));
 
   for(e=0;e<num;e++)
   {
     INT32 x;
     x=index_shared_string(v[num-1-e].ind,0);
-    if((x >= 0) && (x<(INT32)NELEM(set_start)))
+    if((x<(INT32)NELEM(set_start)) && (x >= 0))
       set_start[x]=num-e-1;
     x=index_shared_string(v[e].ind,0);
-    if((x >= 0) && (x<(INT32)NELEM(set_end)))
+    if((x<(INT32)NELEM(set_end)) && (x >= 0))
       set_end[x]=e+1;
   }
 
@@ -3087,14 +3087,14 @@ static struct pike_string *replace_many(struct pike_string *str,
     ptrdiff_t ch;
 
     ch=index_shared_string(str,s);
-    if((ch >= 0) && (ch<(ptrdiff_t)NELEM(set_end)))
+    if((ch<(ptrdiff_t)NELEM(set_end)) && (ch >= 0))
       b=set_end[ch];
     else
       b=num;
 
     if(b)
     {
-      if((ch >= 0) && (ch<(ptrdiff_t)NELEM(set_start)))
+      if((ch<(ptrdiff_t)NELEM(set_start)) && (ch >= 0))
 	a=set_start[ch];
       else
 	a=0;
