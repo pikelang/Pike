@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.608 2003/02/26 07:35:19 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.609 2003/02/26 22:43:24 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -39,6 +39,7 @@ test_eq(-8, -0b1000);
 test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
 
+test_true(1e-100000000000000000000000000000000000000000000000000000000000<=1e-10000)
 test_true(1e-10000<=1e-1000)
 test_true(1e-1000<=1e-100)
 test_true(1e-100<=1e-10)
@@ -48,6 +49,7 @@ test_true(1e1<=1e10)
 test_true(1e10<=1e100)
 test_true(1e100<=1e1000)
 test_true(1e1000<=1e10000)
+test_true(1e10000<=1e100000000000000000000000000000000000000000000000000000000000)
 
 test_do([[
   // bug 2677
@@ -4856,6 +4858,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-718046312823", [[ (string)-012345671234567 ]])
   test_eq("1125899906842624", [[ (string)0b100000000000000000000000000000000000000000000000000 ]])
   test_eq("-1125899906842624", [[ (string)-0b100000000000000000000000000000000000000000000000000 ]])
+  test_eq(500000000 * 10, 5000000000)
     
   // These numbers should be ordinary integers.
   test_false([[ objectp(-0x80000000) ]])
