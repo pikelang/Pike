@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.5 1997/05/29 19:38:01 mirar Exp $ */
+/* $Id: pattern.c,v 1.6 1997/10/09 12:18:49 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.5 1997/05/29 19:38:01 mirar Exp $<br>
+**!	$Id: pattern.c,v 1.6 1997/10/09 12:18:49 grubba Exp $<br>
 **! class image
 */
 
@@ -45,7 +45,7 @@ static unsigned short noise_p1[NOISE_PTS],noise_p2[NOISE_PTS];
 
 #define FRAC(X) ((X)-floor(X))
 
-static INLINE double noise(double Vx,double Vy,unsigned short *noise_p)
+static double noise(double Vx,double Vy,unsigned short *noise_p)
 {
    int Ax[3],Ay[3];
    int n,i,j;
