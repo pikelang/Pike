@@ -60,7 +60,9 @@ GtkObject *get_pgtkobject(struct object *from, struct program *type);
 
 
 void push_gtkobjectclass(void *obj, struct program *def);
-#define push_gtkobject( o ) push_gtkobjectclass(o,pgtk_type_to_program(o))
+#define push_gtkobject( o ) push_gtkobjectclass(o,pgtk_type_to_program((void*)o))
+
+void pgtk_default__sprintf( int a );
 
 void push_pgdkobject(void *obj, struct program *def);
 #define push_gdkobject( X, Y ) push_pgdkobject( X, pgtk_Gdk##Y##_program )
