@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.9 1999/10/10 01:29:06 js Exp $
+//  $Id: Session.pike,v 1.10 1999/10/11 08:17:43 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -224,7 +224,7 @@ class MiscInfo
 }
 
 #define FETCHERC(WHAT,TYPE,VAR,CALL,ARGS,CONV)				\
-   TYPE VAR;						\
+   TYPE VAR;						                \
    private object fetch_##WHAT;						\
    private array(function) fetch_##WHAT##_callbacks=({});		\
 									\
@@ -256,7 +256,16 @@ class MiscInfo
       if (VAR) return;							\
       if (!fetch_##WHAT) prefetch_##WHAT();				\
       if (fetch_##WHAT) fetch_##WHAT();					\
+   }                                                                    \
+									\
+   inline void waitfor_##WHAT()                                         \
+   {                                                                    \
+      mixed res;                                                        \
+      if (VAR) return;                                                  \
+      res=con->##CALL(ARGS);                                            \
+      if(objectp(res) && res->iserror) err=res; else VAR=CONV;          \
    }
+
 #define FETCHER(WHAT,TYPE,VAR,CALL,ARGS)				\
 	FETCHERC(WHAT,TYPE,VAR,CALL,ARGS,res)
 
@@ -298,7 +307,7 @@ class MiscInfo
 	    fetch_##WHAT=con->async_cb_##CALL2(_got_##WHAT##2,ARGS);	\
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL1(_got_##WHAT##1,ARGS);	\
-      return this_object(); \
+      return this_object();                                             \
    }									\
 									\
    inline void need_##WHAT()						\
@@ -307,9 +316,25 @@ class MiscInfo
       if (!fetch_##WHAT) prefetch_##WHAT();				\
       if (fetch_##WHAT) fetch_##WHAT();					\
       if (fetch_##WHAT) fetch_##WHAT();					\
+   }                                                                    \
+									\
+   inline void waitfor_##WHAT()                                         \
+   {                                                                    \
+     mixed res;                                                         \
+     if(VAR1||VAR2) return;                                             \
+     if(protlevel<10)                                                   \
+     {                                                                  \
+       res=con->##CALL2(ARGS);                                          \
+       if(objectp(res) && res->iserror) err=res; else VAR2=res;         \
+     }                                                                  \
+     else                                                               \
+     {                                                                  \
+       res=con->##CALL1(ARGS);                                          \
+       if(objectp(res) && res->iserror) err=res; else VAR1=res;         \
+     }                                                                  \
    }
 
-#define FETCHERC2b(WHAT,TYPE,VAR,CALL,ARGS,CONV)		\
+#define FETCHERC2b(WHAT,TYPE,VAR,CALL,ARGS,CONV)		        \
    TYPE VAR;						                \
    private object fetch_##WHAT;						\
    private array(function) fetch_##WHAT##_callbacks=({});		\
@@ -329,8 +354,8 @@ class MiscInfo
 									\
    private void _got_##WHAT##2(mixed res)				\
    {									\
-      if (objectp(res) && res->iserror) err=res; \
-   	else VAR=CONV;		\
+      if (objectp(res) && res->iserror) err=res;                        \
+   	else VAR=CONV;		                                        \
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
       m(this_object());							\
@@ -338,7 +363,7 @@ class MiscInfo
 									\
    object prefetch_##WHAT##(void|function callback)			\
    {									\
-      if (VAR)                                                 \
+      if (VAR)                                                          \
       {									\
 	 if (callback) callback(this_object());				\
 	 return this_object();						\
@@ -349,15 +374,26 @@ class MiscInfo
 	    fetch_##WHAT=con->async_cb_##CALL##_old(_got_##WHAT##2,ARGS); \
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL(_got_##WHAT##1,ARGS);	\
-      return this_object(); \
+      return this_object();                                             \
    }									\
 									\
    inline void need_##WHAT()						\
    {									\
-      if (VAR) return;						\
+      if (VAR) return;						        \
       if (!fetch_##WHAT) prefetch_##WHAT();				\
       if (fetch_##WHAT) fetch_##WHAT();					\
       if (fetch_##WHAT) fetch_##WHAT();					\
+   }                                                                    \
+                                                                        \
+   inline void waitfor_##WHAT()                                         \
+   {                                                                    \
+     mixed res;                                                         \
+     if(VAR) return;                                                    \
+     if(protlevel<10)                                                   \
+       res=con->##CALL_old(ARGS);                                       \
+     else                                                               \
+       res=con->##CALL(ARGS);                                           \
+     if(objectp(res) && res->iserror) err=res; else VAR=CONV;           \
    }
 
 class Text
@@ -387,11 +423,12 @@ class Text
 
   void mark_as_read()
   {
+    waitfor_stat();
     foreach( ({ @_misc->recpt,
 		@_misc->ccrecpt,
 		@_misc->bccrecpt }),
 	     object rcpt)
-      catch(con->mark_as_read(rcpt->conf->no, ({ rcpt->local_no })));
+      catch(con->async_cb_mark_as_read(0, rcpt->conf->no, ({ rcpt->local_no })));
     /* FIXME: Can't set read text in conferences the user isn't a member of ->
        error */
   }
@@ -414,29 +451,38 @@ class Text
 	    return err;
 
 	 case "text": 
-	    need_text();
+	    waitfor_text();
 	    return _text[1];
 
 	 case "subject": 
-	    need_text();
+	    waitfor_text();
 	    return _text[0];
 
 	 case "author":
-	    need_stat();
+	    waitfor_stat();
 	    return _author 
 	       || (_author=person(_stat->author));
 
 	 case "misc":
-	    need_stat();
+	    waitfor_stat();
 	    return _misc;
 
 	 case "lines":
-	    need_text();
-	    return String.count(_text[1],"\n")+1;
+	    waitfor_stat();
+	    return _stat->no_of_lines;
 
 	 case "characters":
-	    need_text();
-	    return strlen(_text[1]);
+	    waitfor_stat();
+	    return _stat->no_of_chars;
+
+         case "marks":
+            waitfor_stat();
+	    return _stat->no_of_marks;
+
+         case "creation_time":
+	   waitfor_stat();
+	   return _stat->creation_time;
+	
 
          case "mark_as_read":
             return mark_as_read;
@@ -607,7 +653,7 @@ class Person
 	 case "error":
 	    return err;
 	 case "user_area":
-	    need_stat();
+	    waitfor_stat();
 	    return text(_person->user_area);
          case "username":
 	 case "privileges":
@@ -625,13 +671,13 @@ class Person
 	 case "no_of_created_texts":
 	 case "no_of_marks":
 	 case "no_of_confs":
-	    need_stat();
+	    waitfor_stat();
 	    return _person[what];
 	 case "unread":
-	    need_unread();
+	    waitfor_unread();
 	    return _unread;
 	 case "membership":
-	    need_membership();
+	    waitfor_membership();
 	    return _membership;
       }
 
@@ -677,15 +723,15 @@ class Conference
 
 	 case "presentation":
 	 case "msg_of_day":
-	    need_stat();
+	    waitfor_stat();
 	    return text( (_conf||_confold)[what] );
 	 case "supervisor":
 	 case "permitted_submitters":
 	 case "super_conf":
-	    need_stat();
+	    waitfor_stat();
 	    return conference( (_conf||_confold)[what] );
 	 case "creator":
-	    need_stat();
+	    waitfor_stat();
 	    return person( (_conf||_confold)[what] );
 	 case "name":
 	 case "type":
@@ -695,7 +741,7 @@ class Conference
 	 case "no_of_members":
 	 case "first_local_no":
 	 case "no_of_texts":
-	    need_stat();
+	    waitfor_stat();
 	    return (_conf||_confold)[what];
       }
    }
