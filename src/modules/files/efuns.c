@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.136 2003/12/17 21:19:04 marcus Exp $
+|| $Id: efuns.c,v 1.137 2004/02/14 05:07:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.136 2003/12/17 21:19:04 marcus Exp $");
+RCSID("$Id: efuns.c,v 1.137 2004/02/14 05:07:04 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -331,10 +331,12 @@ void f_file_truncate(INT32 args)
  *!       Number of available files in the filesystem.
  *!       This is usually the same as the @expr{"ffree"@} value, and can
  *!       usually be adjusted with eg tunefs(1M).
- *!     @member int "fsname"
- *!       Name assigned to the filesystem.
- *!     @member int "fstype"
- *!       Type of filesystem (eg @expr{"nfs"@}).
+ *!     @member string "fsname"
+ *!       Name assigned to the filesystem. This item is not available
+ *!       on all systems.
+ *!     @member string "fstype"
+ *!       Type of filesystem (eg @expr{"nfs"@}). This item is not
+ *!       available on all systems.
  *!   @endmapping
  *!
  *! @note
