@@ -95,7 +95,7 @@ struct feed_stack
    struct location pos;
 };
 
-enum types {type_tag, type_cont, type_entity, type_data};
+enum types {TYPE_TAG, TYPE_CONT, TYPE_ENTITY, TYPE_DATA};
 
 struct parser_html_storage
 {
@@ -134,6 +134,9 @@ struct parser_html_storage
    struct svalue callback__tag;
    struct svalue callback__data;
    struct svalue callback__entity;
+
+   /* flag: case sensitive tag matching */
+   int case_insensitive_tag;
 
    /* flag: arg quote may have tag_end to end quote and tag */
    int lazy_end_arg_quote; 
@@ -399,6 +402,7 @@ static void init_html_struct(struct object *o)
    THIS->mapcont=NULL;
    THIS->mapentity=NULL;
 
+   THIS->case_insensitive_tag=0;
    THIS->lazy_end_arg_quote=0;
    THIS->lazy_entity_end=0;
    THIS->match_tag=1;
@@ -599,7 +603,11 @@ static void html__set_entity_callback(INT32 args)
 **!	Otherwise only strings are allowed.
 **!	<li><b>zero</b>; this means "don't do anything", ie the
 **!	item that generated the callback is left as it is, and
-**!	the parser continues.*
+**!	the parser continues.
+**!	<li><b>one</b>; reparse the last item again. This is useful to
+**!	parse a tag as a container, or vice versa: just add or remove
+**!	callbacks for the tag and return this to jump to the right
+**!	callback.
 **!	</ul>
 **!
 **! see also: tags, containers, entities
@@ -608,6 +616,7 @@ static void html__set_entity_callback(INT32 args)
 
 static void html_add_tag(INT32 args)
 {
+   struct svalue s;
    check_all_args("add_tag",args,BIT_STRING,BIT_MIXED,0);
    if (THIS->maptag->refs>1)
    {
@@ -616,16 +625,21 @@ static void html_add_tag(INT32 args)
       pop_stack();
       DEBUG((stderr,"COPY\n"));
    }
-   if (IS_ZERO(sp-1))
-     map_delete(THIS->maptag,sp-2);
+   s=*--sp;
+   if (THIS->case_insensitive_tag)
+     f_lower_case(1);
+   if (IS_ZERO(&s))
+     map_delete(THIS->maptag,sp-1);
    else
-     mapping_insert(THIS->maptag,sp-2,sp-1);
-   pop_n_elems(args);
+     mapping_insert(THIS->maptag,sp-1,&s);
+   free_svalue(&s);
+   pop_n_elems(args-1);
    ref_push_object(THISOBJ);
 }
 
 static void html_add_container(INT32 args)
 {
+   struct svalue s;
    check_all_args("add_container",args,BIT_STRING,BIT_MIXED,0);
    if (THIS->mapcont->refs>1)
    {
@@ -633,11 +647,15 @@ static void html_add_container(INT32 args)
       THIS->mapcont=copy_mapping(THIS->mapcont);
       pop_stack();
    }
-   if (IS_ZERO(sp-1))
-     map_delete(THIS->mapcont,sp-2);
+   s=*--sp;
+   if (THIS->case_insensitive_tag)
+     f_lower_case(1);
+   if (IS_ZERO(&s))
+     map_delete(THIS->mapcont,sp-1);
    else
-     mapping_insert(THIS->mapcont,sp-2,sp-1);
-   pop_n_elems(args);
+     mapping_insert(THIS->mapcont,sp-1,&s);
+   free_svalue(&s);
+   pop_n_elems(args-1);
    ref_push_object(THISOBJ);
 }
 
@@ -726,6 +744,9 @@ static void html_add_entities(INT32 args)
 **! method mapping containers()
 **! method mapping entities()
 **!	Returns the current callback settings.
+**!
+**!	Note that when matching is done case insensitively, all names
+**!	will be returned in lowercase.
 **! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
 */
 
@@ -1463,10 +1484,9 @@ static newstate handle_result(struct parser_html_storage *this,
 		  return STATE_REREAD;
 	       return STATE_DONE; /* continue */
 	    case 1:
-	       /* wait: "incomplete" */
-	       skip_feed_range(st,head,c_head,tail,c_tail);
+	       /* reparse the last thing */
 	       pop_stack();
-	       return STATE_WAIT; /* continue */
+	       return STATE_REREAD;
 	 }
 	 error("Parser.HTML: illegal result from callback: %d, "
 	       "not 0 (skip) or 1 (wait)\n",
@@ -1583,7 +1603,7 @@ static newstate entity_callback(struct parser_html_storage *this,
    this->cstart=cstart;
    this->end=end;
    this->cend=cend;
-   this->type=type_entity;
+   this->type=TYPE_ENTITY;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -1652,7 +1672,7 @@ static newstate tag_callback(struct parser_html_storage *this,
    this->cstart=cstart;
    this->end=end;
    this->cend=cend;
-   this->type=type_tag;
+   this->type=TYPE_TAG;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -1724,7 +1744,7 @@ static newstate container_callback(struct parser_html_storage *this,
    this->cstart=cstart;
    this->end=end;
    this->cend=cend;
-   this->type=type_cont;
+   this->type=TYPE_CONT;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -1822,6 +1842,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       }
 
       tag_name(this,s1,c1+1);
+      if (this->case_insensitive_tag)
+	f_lower_case(1);
 
       if (is_eq(sp-1,tagname)) /* push a new level */
       {
@@ -1946,7 +1968,7 @@ static int do_try_feed(struct parser_html_storage *this,
 		  *feed=NULL;
 	       }
 	    }
-	    else
+	    else if (*feed!=dst || st->c!=cdst)
 	    {
 	       DEBUG((stderr,"%*d calling _data callback %p:%d..%p:%d\n",
 		      this->stack_count,this->stack_count,
@@ -1955,7 +1977,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	       do_callback(this,thisobj,
 			   &(this->callback__data),
 			   *feed,st->c,dst,cdst,
-			   type_data);
+			   TYPE_DATA);
 
 	       if ((res=handle_result(this,st,
 				      feed,&(st->c),dst,cdst)))
@@ -2016,6 +2038,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	 if (this->maptag->size ||
 	     this->mapcont->size)
 	 {
+	    if (this->case_insensitive_tag)
+	      f_lower_case(1);
 	    v=low_mapping_lookup(this->maptag,sp-1);
 	    if (v) /* tag */
 	    {
@@ -2118,7 +2142,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	    do_callback(this,thisobj,
 			&(this->callback__tag),
 			*feed,st->c,dst,cdst+1,
-			type_tag);
+			TYPE_TAG);
 
 	    if ((res=handle_result(this,st,
 				   feed,&(st->c),dst,cdst+1)))
@@ -2218,7 +2242,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	    do_callback(this,thisobj,
 			&(this->callback__entity),
 			*feed,st->c+1,dst,cdst,
-			type_entity);
+			TYPE_ENTITY);
 
 	    if ((res=handle_result(this,st,
 				   feed,&(st->c),dst,cdst)))
@@ -2745,11 +2769,11 @@ static void html_tag_name(INT32 args)
 
    if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
    switch (THIS->type) {
-     case type_tag:
-     case type_cont:
+     case TYPE_TAG:
+     case TYPE_CONT:
        tag_name(THIS,THIS->start,THIS->cstart);
        break;
-     case type_entity:
+     case TYPE_ENTITY:
        if (THIS->cend == 0) {
 	 push_feed_range(THIS->start,THIS->cstart+1,THIS->end,THIS->cend);
 	 if (sp[-1].u.string->len &&
@@ -2781,8 +2805,8 @@ static void html_tag_args(INT32 args)
    if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
 
    switch (THIS->type) {
-     case type_tag:
-     case type_cont:
+     case TYPE_TAG:
+     case TYPE_CONT:
        if (args)
        {
 	 tag_args(THIS,THIS->start,THIS->cstart,&def);
@@ -2987,6 +3011,7 @@ static void html_clone(INT32 args)
    else
       p->extra_args=NULL;
 
+   p->case_insensitive_tag=THIS->case_insensitive_tag;
    p->lazy_end_arg_quote=THIS->lazy_end_arg_quote;
    p->lazy_entity_end=THIS->lazy_entity_end;
    p->match_tag=THIS->match_tag;
@@ -3046,15 +3071,40 @@ static void html_set_extra(INT32 args)
 }
 
 /*
+**! method int case_insensitive_tag(void|int value)
 **! method int lazy_entity_end(void|int value)
-**!	Queries or sets the lazy entity end flag. Sets the flag to the
-**!	value if any is given and returns the old value.
+**! method int match_tag(void|int value)
+**! method int mixed_mode(void|int value)
+**!	Functions to query or set flags. These set the associated flag
+**!	to the value if any is given and returns the old value.
 **!
-**!	Normally, the entity end character (i.e. ';') is required to
-**!	end an entity. When the lazy entity end flag is set, the
-**!	characters '&', '<', '>', '"', ''', newline and linefeed also
-**!	breaks an entity.
+**!	The flags are:
+**!	<ul>
+**!	<li><b>case_insensitive_tag</b>: If this flag is nonzero, all
+**!	tags (and containers) are matched case insensitively.
+**!	<li><b>lazy_entity_end</b>: Normally, the entity end character
+**!	(i.e. ';') is required to end an entity. When this flag is
+**!	set, the characters '&', '<', '>', '"', ''', newline and
+**!	linefeed also breaks an entity.
+**!	<li><b>match_tag</b>: If this flag is nonzero, unquoted nested
+**!	tag starters and enders will be balanced when parsing tags.
+**!	This is the default.
+**!	<li><b>mixed_mode</b>: If the mixed mode flag is nonzero,
+**!	callbacks may return arbitrary data in arrays, which will be
+**!	concatenated in the output.
+**!	</ul>
 */
+
+static void html_case_insensitive_tag(INT32 args)
+{
+   int o=THIS->case_insensitive_tag;
+   check_all_args("case_insensitive_tag",args,BIT_VOID|BIT_INT,0);
+   if (args) THIS->case_insensitive_tag=sp[-args].u.integer;
+   /* FIXME: Should probably lowercase all tags and containers when
+    * switching to case insensitive mode. */
+   pop_n_elems(args);
+   push_int(o);
+}
 
 static void html_lazy_entity_end(INT32 args)
 {
@@ -3065,15 +3115,6 @@ static void html_lazy_entity_end(INT32 args)
    push_int(o);
 }
 
-/*
-**! method int match_tag(void|int value)
-**!	Queries or sets the match tag flag. Sets the flag to the value
-**!	if any is given and returns the old value.
-**!
-**!	If the match tag flag is nonzero, unquoted nested tag starters
-**!	and enders will be balanced when parsing tags.
-*/
-
 static void html_match_tag(INT32 args)
 {
    int o=THIS->match_tag;
@@ -3082,16 +3123,6 @@ static void html_match_tag(INT32 args)
    pop_n_elems(args);
    push_int(o);
 }
-
-/*
-**! method int mixed_mode(void|int value)
-**!	Queries or sets the mixed mode flag. Sets the flag to the
-**!	value if any is given and returns the old value.
-**!
-**!	If the mixed mode flag is nonzero, callbacks may return
-**!	arbitrary data in arrays, which will be concatenated in the
-**!	output.
-*/
 
 static void html_mixed_mode(INT32 args)
 {
@@ -3190,6 +3221,8 @@ void init_parser_html(void)
    ADD_FUNCTION("set_extra",html_set_extra,
 		tFuncV(tNone,tMix,tObj),0);
 
+   ADD_FUNCTION("case_insensitive_tag",html_case_insensitive_tag,
+		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("lazy_entity_end",html_lazy_entity_end,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("match_tag",html_match_tag,

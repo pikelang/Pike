@@ -95,9 +95,21 @@ test_any_equal([[
 ]], ({(["a": "a"]), 17, (<>), 4711,
       ([]), "x", ({}), 0, 0, 4711,
       "f", 4711}));
+test_any([[
+  object p = Parser.HTML();
+  p->_set_tag_callback (
+    lambda (object p, string str) {
+      p->add_container (p->tag_name(),
+			lambda (object p, mapping a, string c) {
+			  return ({"C(", p->tag_name(), "|", c, ")"});
+			});
+      return 1;
+    });
+  return p->finish ("<t>x</t>")->read();
+]], "C(t|x)");
 
 // Current context functions
-test_any_equal([[
+test_any([[
   object p = Parser.HTML();
   p->lazy_entity_end (1);
   p->add_tag (
@@ -338,7 +350,7 @@ test_any([[
   p->_set_data_callback (lambda (object p, string s)
 			   {return ({"[",s,"]"});});
   return p->finish("<f <t2>=<t2>><t><t2><a<t2>></t><o>")->read();
-]], "[][<f ]2[=]2[>]|[]2[][<a]2[>][<o>]");
+]], "[<f ]2[=]2[>]|2[<a]2[>][<o>]");
 test_any([[
   object p = Parser.HTML();
   p->add_container ("t", lambda (object p, mapping a, string s)
@@ -349,7 +361,7 @@ test_any([[
   p->_set_data_callback (lambda (object p, string s)
 			   {return ({"[",s,"]"});});
   return p->finish("<f <t2>=<t2>><t><t2><a<t2>></t><o>")->read();
-]], "[]<[f ]2[=]2[>]|[]2[]<[a]2[>]<[o>]");
+]], "<[f ]2[=]2[>]|2<[a]2[>]<[o>]");
 test_any([[
   object p = Parser.HTML();
   p->add_container ("t", lambda (object p, mapping a, string s)
@@ -371,3 +383,18 @@ test_any([[
 			   {return ({"[",s,"]"});});
   return p->finish("x<f x<t2>=<t2>x>x<t>x<t2>x<a<t2>x>x</t>x<o>x")->read();
 ]], "[x]<[f x]2[=]2[x>x]|[x]2[x]<[a]2[x>xx]<[o>x]");
+test_any([[
+  object p = Parser.HTML();
+  p->case_insensitive_tag (1);
+  p->add_tag ("aA","[a]");
+  p->add_container ("Bb","[b]");
+  p->add_entity ("cC","[c]");
+  return p->finish("<aa><AA><bb></Bb><BB></bB>&cc;&CC;")->read();
+]], "[a][a][b][b]&cc;&CC;");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("aA","[a]");
+  p->add_container ("Bb","[b]");
+  p->add_entity ("cC","[c]");
+  return p->finish("<aa><AA><bb></Bb><BB></bB>&cc;&CC;")->read();
+]], "<aa><AA><bb></Bb><BB></bB>&cc;&CC;");
