@@ -69,7 +69,7 @@ class protocol
     int pos=n[0];
     int next=-1;
     string *ret=({});
-    while(1)
+    while(pos < sizeof(msg))
     {
       switch(int len=msg[pos])
       {
@@ -324,7 +324,7 @@ class client {
 	    }
 	  }
 	  if (sizeof(rest)) {
-	    nameservers += ({ rest });
+	    nameservers = `+(nameservers, ({ rest }));
 	  }
 	  break;
 	}
