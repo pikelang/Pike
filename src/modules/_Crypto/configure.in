@@ -1,5 +1,7 @@
 AC_INIT(crypto.c)
 
+AC_SET_MAKE
+
 sinclude(../module_configure.in)
 
 AC_CONFIG_SUBDIRS(lib)

@@ -4,13 +4,15 @@ OBJS = image.o font.o quant.o lzw.o togif.o matrix.o pnm.o blit.o \
 	pattern.o dct.o operator.o
 MODNAME=image
 
+@SET_MAKE@
+
 @dynamic_module_makefile@
 
 pike: all
-	cd ../..; make
+	cd ../..; $(MAKE)
 
 pure: all
-	cd ../..; make pure
+	cd ../..; $(MAKE) pure
 
 
 @dependencies@
