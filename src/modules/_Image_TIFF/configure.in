@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.9 2003/07/25 10:12:53 grubba Exp $
+# $Id: configure.in,v 1.10 2004/03/04 20:13:12 grubba Exp $
 #
 AC_INIT(image_tiff.c)
 AC_CONFIG_HEADER(config.h)
@@ -14,25 +14,95 @@ if test x$with_tifflib = xyes ; then
 
   AC_CHECK_HEADERS(tiff.h tiffvers.h tiffio.h tiffiop.h)
   if test $ac_cv_header_tiff_h = yes ; then
+    AC_CHECK_LIB(m, floor)
+    AC_CHECK_LIB(tiff, main)
+
     AC_MSG_CHECKING([if this tifflib is working])
     AC_CACHE_VAL(pike_cv_working_tiff, [
-      # NOTE Disabled check!
-      AC_EGREP_CPP(42, [
+      # Some tiff libraries are broken, and will thrash memory.
+      # eg the one on RedHat 7.1/ia64.
+      cp -f "$srcdir/test_image.tiff" .
+      AC_TRY_RUN([
+#ifdef INLINE
+#undef INLINE
+#endif
 #include <tiff.h>
-TIFF_VERSION
-      ], [ pike_cv_working_tiff=yes ], [ pike_cv_working_tiff=yes ])
+#ifdef HAVE_TIFFIOP_H
+#include <tiffiop.h>
+#endif
+#include <tiffio.h>
+#include <stdio.h>
+#include <errno.h>
+int main(int argc, char **argv)
+{
+  TIFF *tif = TIFFOpen("test_image.tiff", "r");
+  uint32 w, h, *raster;
+
+  if (!tif) {
+    fprintf(stderr, "Failed to open image. errno:%d\n", errno);
+    return 1;
+  }
+
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
+
+  if (!(raster = (void *)malloc(w*h*sizeof(uint32)))) {
+    fprintf(stderr, "Failed to allocate memory for image (%d * %d).\n", w, h);
+    return 1;
+  }
+
+  if (!TIFFReadRGBAImage(tif, w, h, raster, 0)) {
+    fprintf(stderr, "Failed to decode image.\n");
+    return 1;
+  }
+  return 0;
+}
+      ], [ pike_cv_working_tiff=yes ], [ pike_cv_working_tiff=no ], [
+         AC_TRY_COMPILE([
+#ifdef INLINE
+#undef INLINE
+#endif
+#include <tiff.h>
+#ifdef HAVE_TIFFIOP_H
+#include <tiffiop.h>
+#endif
+#include <tiffio.h>
+#include <stdio.h>
+#include <errno.h>
+         ], [
+{
+  TIFF *tif = TIFFOpen("test_image.tiff", "r");
+  uint32 w, h, *raster;
+
+  if (!tif) {
+    fprintf(stderr, "Failed to open image. errno:%d\n", errno);
+    return 1;
+  }
+
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
+
+  if (!(raster = (void *)malloc(w*h*sizeof(uint32)))) {
+    fprintf(stderr, "Failed to allocate memory for image (%d * %d).\n", w, h);
+    return 1;
+  }
+
+  if (!TIFFReadRGBAImage(tif, w, h, raster, 0)) {
+    fprintf(stderr, "Failed to decode image.\n");
+    return 1;
+  }
+  return 0;
+}
+         ], [ pike_cv_working_tiff=yes ], [ pike_cv_working_tiff=no ])
+      ])
     ])
     if test "x$pike_cv_working_tiff" = "xno"; then
       AC_MSG_RESULT([no])
       PIKE_FEATURE([Image.TIFF],[no (tifflib version 42)])
     else
       AC_MSG_RESULT([yes])
-      AC_CHECK_LIB(m, floor)
-      AC_CHECK_LIB(tiff, main, [
-  	AC_DEFINE(HAVE_LIBTIFF) 
-  	LIBS="${LIBS-} -ltiff"
-  	PIKE_FEATURE_OK(Image.TIFF)
-       ],[])
+      AC_DEFINE(HAVE_LIBTIFF) 
+      PIKE_FEATURE_OK(Image.TIFF)
       AC_CHECK_LIB(jpeg, main, [
   	LIBS="${LIBS-} -ljpeg"
        ],[])
