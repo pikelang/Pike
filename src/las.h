@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.66 2004/10/23 02:25:11 nilsson Exp $
+|| $Id: las.h,v 1.67 2004/10/30 11:32:58 mast Exp $
 */
 
 #ifndef LAS_H
@@ -165,7 +165,8 @@ extern struct node_hash_table node_hash;
 #define OPT_TYPE_NOT_FIXED  0x400  /* type-field might be wrong */
 #define OPT_WEAK_TYPE	    0x800  /* don't warn even if strict types */
 #define OPT_APPLY           0x1000 /* contains apply */
-
+#define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
+				    * parent also is optimized away */
 #define OPT_DEFROSTED	    0x4000 /* Node may be a duplicate */
 #define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
 
