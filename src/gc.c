@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.222 2003/08/01 22:46:06 mast Exp $
+|| $Id: gc.c,v 1.223 2003/08/02 01:10:53 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.222 2003/08/01 22:46:06 mast Exp $");
+RCSID("$Id: gc.c,v 1.223 2003/08/02 01:10:53 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -881,9 +881,9 @@ again:
       INT32 line;
       int foo=0;
 
-      fprintf(stderr,"%*s**Program id: %ld, flags: %x\n",indent,"",
-	      (long)(p->id),
-	      p->flags);
+      fprintf(stderr,"%*s**Program id: %ld, flags: %x, parent id: %d\n",
+	      indent,"", (long)(p->id), p->flags,
+	      p->parent ? p->parent->id : -1);
 
       if(p->flags & PROGRAM_HAS_C_METHODS)
       {
