@@ -67,36 +67,46 @@ static void f_buf_add( INT32 args )
 {
   struct buffer_str *str = THB;
   struct pike_string *a;
+  unsigned int l;
   if( args != 1 || Pike_sp[-args].type != PIKE_T_STRING )
     Pike_error("Illegal argument\n");
+
   a = Pike_sp[-args].u.string;
-  if(!a->len)
+
+  if(!(l = (unsigned)a->len) )
     return;
 
   if( str->len && str->shift != a->size_shift )
   {
-    /* do something */
+    /* do something here.... */
+    str->shift = a->size_shift;
   }
-  str->shift = a->size_shift;
 
+  l<<=str->shift;
+  
   if( !str->size )
   {
-    str->size = (MAXIMUM( str->initial, (unsigned)a->len )
-		 + sizeof(struct pike_string) );
+    str->size = str->initial + sizeof( struct pike_string );
     str->data = xalloc( str->size );
-    str->len = sizeof( sizeof(struct pike_string) );
+    str->len  = sizeof( struct pike_string );
   }
 
-  while( str->size-str->len < (unsigned)a->len )
+  while( str->size < ((unsigned)l+str->len) )
   {
     str->size *= 2;
     str->data = realloc( str->data, str->size );
+    if(!str->data )
+    {
+      int sz = str->size;
+      str->len = 0;
+      str->size = 0;
+      Pike_error( "Malloc %d failed!\n", sz );
+    }
   }
   
-  MEMCPY( str->data + str->len,
-	  a->str, a->len<<a->size_shift );
+  MEMCPY( str->data+str->len, a->str, l );
 
-  str->len += a->len<<a->size_shift;
+  str->len += l;
   pop_stack();
   push_int( str->len );
 }
@@ -131,7 +141,7 @@ static void f_buf_get( INT32 args )
   }
   else
   {
-    str->data = realloc( str->data, str->len+1 );
+    str->data = realloc( str->data, str->len+(1<<str->shift) );
     {
       struct pike_string *s = (struct pike_string *)str->data;
       s->len = len>>str->shift;
