@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.82 2000/01/17 02:34:04 hubbe Exp $
+ * $Id: system.c,v 1.83 2000/03/16 02:30:10 mast Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.82 2000/01/17 02:34:04 hubbe Exp $");
+RCSID("$Id: system.c,v 1.83 2000/03/16 02:30:10 mast Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -136,7 +136,7 @@ static void report_error(const char *function_name)
     break;
 #ifdef ELOOP
   case ELOOP:
-    error_msg = "Do deep nesting of symlinks";
+    error_msg = "Too deep nesting of symlinks";
     break;
 #endif /* ELOOP */
 #ifdef EMLINK
