@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.28 2003/12/10 13:01:18 jonasw Exp $
+|| $Id: pike_threadlib.h,v 1.29 2004/03/13 16:43:16 jonasw Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -200,7 +200,7 @@ extern pthread_attr_t small_pattr;
 #ifdef HAVE_PTHREAD_KILL
 #define th_kill(ID,sig) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_kill((ID),(sig)))
 #else /* !HAVE_PTHREAD_KILL */
-/* MacOS X (aka Darwin) doesn't have pthread_kill. */
+/* MacOS X (aka Darwin) prior to 10.2 doesn't have pthread_kill. */
 #define th_kill(ID,sig)
 #endif /* HAVE_PTHREAD_KILL */
 #define th_join(ID,res) pthread_join((ID),(res))
