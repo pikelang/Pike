@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.24 1999/09/18 16:57:20 mirar Exp $
+ * $Id: image_ttf.c,v 1.25 1999/11/23 10:24:57 mast Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.24 1999/09/18 16:57:20 mirar Exp $");
+RCSID("$Id: image_ttf.c,v 1.25 1999/11/23 10:24:57 mast Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -262,8 +262,9 @@ static void image_ttf_face_exit()
 
 static void image_ttf_faceinstance_exit()
 {
+   if (THISi->faceobj->prog)
+      TT_Done_Instance(THISi->instance);
    free_object(THISi->faceobj);
-   TT_Done_Instance(THISi->instance);
 }
 
 #ifdef TTF_DEBUG_INFO
