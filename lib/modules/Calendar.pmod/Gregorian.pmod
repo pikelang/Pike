@@ -621,21 +621,24 @@ class Day
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->d<d) || (x->y<y));
+	  (x->y==y && x->d<d) || (x->y<y)) ||
+	 (x->julian_day()<julian_day());
    }
 
    int `==(object x)
    {
       return 
-	 object_program(x)==object_program(this) &&
-	 x->y==y && x->d==d;
+	 (object_program(x)==object_program(this) &&
+	  x->y==y && x->d==d) ||
+	 (x->julian_day() == julian_day());
    }
 
    int `>(object x)
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->d>d) || (x->y>y));
+	  (x->y==y && x->d>d) || (x->y>y)) ||
+	 (x->julian_day()>julian_day());
    }
 
    object `+(int n)
