@@ -5584,7 +5584,8 @@ and unlocking, if a thread attempts to lock an already locked mutex
 the thread will sleep until the mutex is unlocked.
 </man_description>
 <man_note>
-Mutex locks are only available on systems with POSIX or UNIX threads support.
+This class is simulated when Pike is compiled without thread support,
+so it's always available.
 <p>
 In POSIX threads, mutex locks can only be unlocked by the same thread
 that locked them. In Pike any thread can unlock a locked mutex.
@@ -5678,8 +5679,9 @@ condition variables. Condition variables are used by threaded programs
 to wait for events happening in other threads.
 </man_description>
 <man_note>
-Condition variables are only available on systems with POSIX or UNIX threads
-support.
+Condition variables are only available on systems with threads
+support. The Condition class is not simulated otherwise, since that
+can't be done accurately without continuations.
 </man_note>
 <man_example>
 <example language=pike>
@@ -5779,7 +5781,7 @@ Thread.Fifo implements a fixed length fifo. A fifo is a queue
 of values and is often used as a stream of data between two threads.
 </man_description>
 <man_note>
-Fifos are only available on systems with POSIX threads support.
+Fifos are only available on systems with threads support.
 </man_note>
 <man_see>
 Thread.Queue
@@ -5848,7 +5850,7 @@ between Thread.Queue and Thread.Fifo is that queues
 will never block in write(), only allocate more memory.
 </man_description>
 <man_note>
-Queues are only available on systems with POSIX or UNIX threads support.
+Queues are only available on systems with POSIX or UNIX thread support.
 </man_note>
 <man_see>
 Thread.Fifo
@@ -5899,9 +5901,13 @@ This function returns how many values are currently in the queue.
 <man_description>
 This class allows you to have variables which are separate for each
 thread that uses it. It has two methods: get and set. A value stored
-in an instance of Thread.Local can only be retreived by that same
+in an instance of Thread.Local can only be retrieved by that same
 thread.
 </man_description>
+<man_note>
+This class is simulated when Pike is compiled without thread support,
+so it's always available.
+</man_note>
 
 
 <method name=set title="Set the thread local value">
@@ -13396,7 +13402,7 @@ int rm(string <I>f</I>);
 Remove a file or directory, return 0 if it fails. Nonzero otherwise.
 </man_description>
 <man_see>
-mkdir, recursive_rm
+mkdir, Stdio.recursive_rm
 </man_see>
 </function>
 
