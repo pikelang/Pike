@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.30 2001/01/16 09:22:57 hubbe Exp $
+ * $Id: nt.c,v 1.31 2001/08/13 15:41:12 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -13,6 +13,20 @@
 
 #ifdef __NT__
 
+#include <winsock.h>
+#include <windows.h>
+#include <accctrl.h>
+#include <lm.h>
+
+/*
+ * Get some wrappers for functions not implemented in old versions
+ * of WIN32.
+ */
+#define COMPILE_NEWAPIS_STUBS
+/* We want GetLongPathName()... */
+#define WANT_GETLONGPATHNAME_WRAPPER
+#include <NewAPIs.h>
+
 #include "program.h"
 #include "stralloc.h"
 #include "threads.h"
@@ -25,11 +39,6 @@
 #include "operators.h"
 #include "stuff.h"
 
-#include <winsock.h>
-#include <windows.h>
-#include <accctrl.h>
-#include <lm.h>
-
 static void throw_nt_error(char *funcname, int err)
 /*
  *  Give string equivalents to some of the more common NT error codes.
@@ -39,6 +48,18 @@ static void throw_nt_error(char *funcname, int err)
 
   switch (err)
   {
+    case ERROR_FILE_NOT_FOUND:
+      msg = "File not found.";
+      break;
+
+    case ERROR_PATH_NOT_FOUND:
+      msg = "Path not found.";
+      break;
+
+    case ERROR_INVALID_DATA:
+      msg = "Invalid data.";
+      break;
+
     case ERROR_ACCESS_DENIED:
       msg = "Access denied.";
       break;
@@ -52,6 +73,7 @@ static void throw_nt_error(char *funcname, int err)
       break;
 
     case ERROR_NOT_ENOUGH_MEMORY:
+    case ERROR_OUTOFMEMORY:
       msg = "Out of memory.";
       break;
 
@@ -1915,6 +1937,58 @@ static void f_NetWkstaUserEnum(INT32 args)
   }
 }
 
+/*! @decl string normalize_path(string path)
+ *!
+ *!   Normalize an NT filesystem path.
+ *!
+ *!   The following transformations are currently done:
+ *!   @dl
+ *!     @item
+ *!       Extraneous empty extensions are removed.
+ *!     @item
+ *!       Short filenames are expanded to their corresponding long
+ *!       variants.
+ *!     @item
+ *!       Case-information is restored.
+ *!   @enddl
+ *!
+ *! @returns
+ *!   A normalized absolute path.
+ *!
+ *!   Throws errors on failure.
+ *!
+ *! @note
+ *!   File fork information is currently not supported (invalid data).
+ *!
+ *! @seealso
+ *!   @[combine_path()], @[combine_path_nt()]
+ */
+static void f_normalize_path(INT32 args)
+{
+  struct pike_string *str;
+  struct string_builder res;
+  DWORD ret;
+
+  get_all_args("nt_normalize_path", args, "%S", &str);
+
+  init_string_builder(&res, 0);
+
+  ret = str->len;    /* Guess that the result will have the same length... */
+  do{
+    string_builder_allocate(&res, ret, 0);
+    ret = GetLongPathName(str->str, res.s->str, res.malloced);
+    fprintf(stderr, "ret: %d; malloced: %d\n", ret, res.malloced);
+    if (!ret) {
+      free_string_builder(&res);
+      throw_nt_error("normalize_path", errno = GetLastError());
+    }
+  } while (ret > res.malloced);
+  res.s->len = ret;
+
+  pop_n_elems(args);
+  push_string(finish_string_builder(&res));
+}
+
 static void f_GetFileAttributes(INT32 args)
 {
   char *file;
@@ -2325,6 +2399,8 @@ void init_nt_system_calls(void)
 
   ADD_EFUN("RegGetKeyNames", f_RegGetKeyNames, tFunc(tInt tStr, tArr(tStr)),
 	   OPT_EXTERNAL_DEPEND);
+
+  ADD_FUNCTION("normalize_path", f_normalize_path, tFunc(tStr, tStr), 0);
 
   /* LogonUser only exists on NT, link it dynamically */
   if(advapilib=LoadLibrary("advapi32"))
