@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.12 2001/08/11 22:02:23 nilsson Exp $
+ * $Id: Tree.pmod,v 1.13 2001/09/09 00:41:23 nilsson Exp $
  *
  */
 
@@ -154,6 +154,11 @@ class AbstractNode {
     c->mParent = 0;
   }
 
+  //! Removes this node from its parent. The parent reference is set to null.
+  void remove_node() {
+    mParent->remove_child(this_object());
+  }
+
   //! Replaces the nodes children with the provided ones. All parent
   //! references are updated.
   void replace_children(array(AbstractNode) children) {
@@ -175,7 +180,16 @@ class AbstractNode {
     if (index < 0)
       return 0;
     mChildren[index] = new;
+    new->mParent = this_object();
     old->mParent = 0;
+    return new;
+  }
+
+  //! Replaces this node with the provided one.
+  //! @returns
+  //!   Returns the new node.
+  AbstractNode replace_node(AbstractNode new) {
+    mParent->replace_child(this_object(), new);
     return new;
   }
 
@@ -707,7 +721,7 @@ Node parse_input(string data, void|int(0..1) no_fallback, void|int(0..1) force_l
   
   xp->allow_rxml_entities(1);
   
-  //  Construct tree from string
+  // Construct tree from string
   mixed err = catch
   {
     mRoot = Node(XML_ROOT, "", ([ ]), "");
@@ -716,7 +730,7 @@ Node parse_input(string data, void|int(0..1) no_fallback, void|int(0..1) force_l
 	    Node child)
       mRoot->add_child(child);
   };
-  
+
   if(err)
   {
     //  If string msg is found we propagate the error. If error message
