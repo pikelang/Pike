@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.52 1998/04/21 16:27:37 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.53 1998/04/21 16:38:56 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -977,10 +977,10 @@ void f_create_process(INT32 args)
 	if(tmp->type != T_ARRAY)
 	{
 	  storage.wanted_gids_array=tmp->u.array;
+	  add_ref(storage.wanted_gids_array);
 	  for(e=0;e<storage.wanted_gids_array->size;e++)
 	    if(storage.wanted_gids_array->item[e].type != T_INT)
 	      error("Invalid type for setgroups.\n");
-	  add_ref(storage.wanted_gids_array);
 	  do_initgroups=0;
 	}else{
 	  error("Invalid type for setgroups.\n");
