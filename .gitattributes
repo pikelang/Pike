@@ -156,6 +156,7 @@ testfont binary
 /src/builtin_functions_t.c foreign_ident
 /src/callback.c foreign_ident
 /src/callback.h foreign_ident
+/src/combine_path.h foreign_ident
 /src/compilation.h foreign_ident
 /src/configure.in foreign_ident
 /src/constants.c foreign_ident
