@@ -151,6 +151,25 @@ extern struct object *thread_id;
 
 #endif /* SGI_SPROC_THREADS */
 
+
+#ifdef NT_THREADS
+#include <process.h>
+
+#define MUTEX_T HANDLE
+#define mt_init(X)
+#define mt_lock(X)
+#define mt_trylock(X)
+#define mt_unlock(X)
+#define mt_destroy(X)
+
+#define THREAD_T HANDLE
+#define th_setconcurrency(X)
+#define th_create(ID,fun,arg)  _beginthreadex(NULL, 2*1024*1024, fun, arg, 0, ID)
+#define th_exit(foo) _endthreadex(foo)
+#define th_self() 
+
+#endif
+
 extern MUTEX_T interpreter_lock;
 
 
