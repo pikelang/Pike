@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 2002/08/05 21:09:10 kiwi Exp $
+# $Id: configure.in,v 1.6 2002/08/06 17:07:57 kiwi Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -28,6 +28,37 @@ dnl don't ask me why.
  
     PIKE_FEATURE(FFmpeg,[yes (using libavcodec)])
     ])
+  AC_MSG_CHECKING([if library is really working])
+  AC_CACHE_VAL(pike_cv_ffmpeg_working, [
+    AC_TRY_COMPILE([
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
+#ifdef HAVE_LIBFFMPEG_AVCODEC_H
+#include <libffmpeg/avcodec.h>
+#else
+#ifdef HAVE_AVCODEC_H
+#include <avcodec.h>
+#endif
+#endif
+#endif
+      ], [
+  extern AVCodec *thecodec;
+
+  thecodec->type = 0;
+      ], [
+        pike_cv_ffmpeg_working=yes
+      ], [
+        pike_cv_ffmpeg_working=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_ffmpeg_working)
+    if test "x$pike_cv_ffmpeg_working" = "xyes"; then
+      AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
+dnl      PIKE_FEATURE(FFmpeg)
+    else 
+      PIKE_FEATURE(FFmpeg,[no, detected library, but not working])
+    fi
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

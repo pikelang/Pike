@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.4 2002/08/05 21:09:10 kiwi Exp $
+ * $Id: ffmpeg.c,v 1.5 2002/08/06 17:07:57 kiwi Exp $
  *
  */
 
@@ -20,7 +20,7 @@
 #include "builtin_functions.h"
 
 
-#ifdef HAVE_LIBFFMPEG
+#ifdef HAVE_WORKING_LIBFFMPEG
 
 #include <stdlib.h>
 #include <stdio.h>

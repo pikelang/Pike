@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.2 2002/08/05 21:09:10 kiwi Exp $
+ * $Id: acconfig.h,v 1.3 2002/08/06 17:07:57 kiwi Exp $
  *
  * config file for Pike Ffmpeg glue module
  *
@@ -17,5 +17,8 @@
 
 /* Define if you have the ffmpeg library (-lffmpeg).  */
 #undef HAVE_LIBFFMPEG
+
+/* Define if you have a working ffmpeg library */
+#undef HAVE_WORKING_LIBFFMPEG
 
 #endif
