@@ -1,4 +1,3 @@
-import "../../";
 
 class ParseNode {
   string op = "<node>";

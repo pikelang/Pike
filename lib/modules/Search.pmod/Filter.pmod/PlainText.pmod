@@ -1,6 +1,5 @@
 // Filter for text/plain
 // Copyright © 2000, Roxen IS.
-import "../../";
 
 inherit Search.Filter.Base;
 

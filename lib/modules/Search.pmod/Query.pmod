@@ -1,5 +1,3 @@
-import "..";
-
 static function(int:string) blobfeeder(Search.Database.Base db, array word_ids)
 {
   mapping state = mkmapping(word_ids,allocate(sizeof(word_ids)));

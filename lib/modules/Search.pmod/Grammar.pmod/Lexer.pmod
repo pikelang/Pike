@@ -1,5 +1,4 @@
 // Lexer for search queries
-import "../../";
 
 public enum Token {
   TOKEN_END = 0,

@@ -1,8 +1,6 @@
 // Roxen Whitefish main pike module
 //
 // Copyright © 2000,2001 Roxen IS.
-import "..";
-
 
 
 private mapping filters;

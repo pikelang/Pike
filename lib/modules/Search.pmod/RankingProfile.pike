@@ -1,5 +1,3 @@
-import "..";
-
 array(int) field_ranking;
 array(int) proximity_ranking;
 int cutoff;
