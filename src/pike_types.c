@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.23 1997/05/30 02:40:10 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.24 1997/08/21 00:47:42 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -521,6 +521,7 @@ char *low_describe_type(char *t)
   case T_PROGRAM: my_strcat("program"); break;
   case T_OBJECT:
     my_strcat("object");
+    t+=4;
     /* Prog id */
     break;
   case T_STRING: my_strcat("string"); break;
