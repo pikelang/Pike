@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.422 2000/09/27 17:21:14 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.423 2000/09/28 19:45:18 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -853,6 +853,13 @@ if test "$cflags_is_set" = "no"; then
     # Tell the linker to generate a large toc if needed
     AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
     AC_SYS_COMPILER_FLAG([-Wl,-bbigtoc],Wlbbigtoc,LDFLAGS)
+  ])
+
+  DO_IF_OS(Darwin,
+  [
+    # aka MacOS X.
+    # Check for useful frameworks.
+    AC_SYS_COMPILER_FLAG(-framework Zip, framework_Zip, CFLAGS)
   ])
 
  else if test "x${TCC-}" = xyes ; then
