@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.201 2002/04/26 11:18:35 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.202 2002/04/26 11:38:38 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2986,7 +2986,7 @@ void f_create_process(INT32 args)
 
       /* Perform fd remapping */
       {
-        int fd, max_fds;
+        int fd;
 	/* Note: This is O(n²), but that ought to be ok. */
 	for (fd=0; fd<num_fds; fd++) {
 	  int fd2;
