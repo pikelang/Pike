@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.49 2000/12/19 00:54:35 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.50 2000/12/23 07:33:49 hubbe Exp $");
 
 #endif /* !TESTING */
 
@@ -40,6 +40,12 @@ RCSID("$Id: dynamic_load.c,v 1.49 2000/12/19 00:54:35 hubbe Exp $");
 #define EMULATE_DLOPEN
 #endif
 #endif /* 0 */
+
+#ifdef USE_MY_WIN32_DLOPEN
+#include "pike_dlfcn.h"
+#define HAVE_SOME_DLOPEN
+#define HAVE_DLOPEN
+#endif
 
 #endif
 #endif

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.69 2000/12/19 20:54:04 marcus Exp $
+ * $Id: acconfig.h,v 1.70 2000/12/23 07:33:48 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -381,6 +381,7 @@
 #undef HAVE_FREELIBRARY
 #undef HAVE_GETPROCADDRESS
 #undef DL_EXPORT
+#undef USE_MY_WIN32_DLOPEN
 
 /* How to set a socket non-blocking */
 #undef USE_IOCTL_FIONBIO

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.55 2000/12/13 21:25:58 hubbe Exp $
+ * $Id: global.h,v 1.56 2000/12/23 07:33:49 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -321,7 +321,8 @@ typedef struct p_wchar_p
  */
 #ifndef PMOD_EXPORT
 #if defined(__NT__) && !defined(DYNAMIC_MODULE)
-#define PMOD_EXPORT __declspec(dllexport)
+/* #define PMOD_EXPORT __declspec(dllexport) */
+#define PMOD_EXPORT
 #else
 #define PMOD_EXPORT
 #endif

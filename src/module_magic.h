@@ -3,6 +3,7 @@
 
 #ifdef DYNAMIC_MODULE
 
+#if 0
 #ifdef __NT__
 
 /* UGLY - hubbe */
@@ -24,6 +25,7 @@
 #include "import_functions.h"
 
 #endif /* __NT__ */
+#endif /* 0 */
 #endif /* DYNAMIC_MODULE */
 
 #ifndef PMOD_EXPORT

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.33 2000/12/22 23:46:05 grubba Exp $
+ * $Id: port.h,v 1.34 2000/12/23 07:34:05 hubbe Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -73,6 +73,18 @@ int STRCSPN(const char *s,const char * set);
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #else
 #  define STRCASECMP strcasecmp
+#endif
+
+#ifndef HAVE_STRNLEN
+PMOD_EXPORT size_t STRNLEN(const char *a,size_t len);
+#else
+#  define STRNLEN strnlen
+#endif
+
+#ifndef HAVE_STRNCMP
+PMOD_EXPORT int STRNCMP(const char *a, const char *b, size_t len);
+#else
+#  define STRNCMP strncmp
 #endif
 
 #ifndef HAVE_MEMSET

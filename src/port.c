@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.35 2000/12/05 21:08:21 per Exp $");
+RCSID("$Id: port.c,v 1.36 2000/12/23 07:36:25 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -184,6 +184,26 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
     if(ac - bc) return ac-bc;
     if(!ac) return 0;
   }
+}
+#endif
+
+#ifndef HAVE_STRNLEN
+size_t STRNLEN(const char *s, size_t maxlen)
+{
+  char *tmp=MEMCHR(s,0,maxlen);
+  if(tmp) return tmp-s;
+  return maxlen;
+}
+#endif
+
+#ifndef HAVE_STRNCMP
+int STRNCMP(const char *a, const char *b, size_t maxlen)
+{
+  size_t alen=STRNLEN(a,maxlen);
+  size_t blen=STRNLEN(b,maxlen);
+  int ret=MEMCMP(a,b, a < b ? a : b);
+  if(ret) return ret;
+  return alen - blen;
 }
 #endif
 

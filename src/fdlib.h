@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.37 2000/12/16 04:58:18 marcus Exp $
+ * $Id: fdlib.h,v 1.38 2000/12/23 07:33:49 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -175,6 +175,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 #define fd_CREAT 8
 #define fd_TRUNC 16
 #define fd_EXCL 32
+#define fd_BINARY 0
 
 #define fd_shutdown_read SD_RECEIVE
 #define fd_shutdown_write SD_SEND
@@ -300,6 +301,7 @@ typedef int FD;
 #define fd_CREAT O_CREAT
 #define fd_TRUNC O_TRUNC
 #define fd_EXCL O_EXCL
+#define fd_BINARY 0
 
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 
