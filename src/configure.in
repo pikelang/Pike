@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.440 2000/12/18 15:06:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.441 2000/12/18 23:02:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1688,7 +1688,11 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
     ;;
 
     xAIX*)
-      LIBS="${OLDLIBS} -lpthreads -lc_r"
+      if test "`uname -v`" -gt 4 ; then
+        LIBS="${OLDLIBS} -lpthread"
+      else
+        LIBS="${OLDLIBS} -lpthreads -lc_r"
+      fi
     ;;
 
     xSolaris*)
