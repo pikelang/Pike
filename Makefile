@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.36 2001/01/26 02:18:24 mast Exp $
+# $Id: Makefile,v 1.37 2001/01/26 18:25:35 mast Exp $
 #
 # Meta Makefile
 #
@@ -41,15 +41,14 @@ force_configure:
 
 builddir:
 	@builddir="$(BUILDDIR)"; \
-	{ \
-	  IFS='/'; \
-	  dir=`echo "$$builddir" | sed -e 's|[^/].*||'`; \
-	  for d in $$builddir; do \
-	    dir="$$dir$$d"; \
-	    test x"$$dir" = x -o -d "$$dir" || mkdir "$$dir" || exit 1; \
-	    dir="$$dir/"; \
-	  done; \
-	}
+	IFS='/'; \
+	dir=`echo "$$builddir" | sed -e 's|[^/].*||'`; \
+	for d in $$builddir; do \
+	  dir="$$dir$$d"; \
+	  test x"$$dir" = x -o -d "$$dir" || mkdir "$$dir" || exit 1; \
+	  dir="$$dir/"; \
+	done; \
+	cd "$$builddir"
 
 configure: src/configure builddir
 	@builddir="$(BUILDDIR)"; \
@@ -67,37 +66,35 @@ configure: src/configure builddir
 	  if test -f Makefile -a -f config.cache -a -f .configureargs && \
 	     test "`cat .configureargs`" = "$$configureargs"; then :; \
 	  else \
-	    echo Running "$$srcdir"/configure $$configureargs in "$$builddir"; \
-	    CONFIG_SITE=x "$$srcdir"/configure $$configureargs && { \
+	    echo Running $$srcdir/configure $$configureargs in $$builddir; \
+	    CONFIG_SITE=x "$$srcdir"/configure $$configureargs && \
 	      echo "$$configureargs" > .configureargs; \
-	      test "x$(LIMITED_TARGETS)" = "x" && \
-		$(MAKE) "MAKE=$(MAKE)" clean > /dev/null; \
-	      :; \
-	    } \
 	  fi; \
 	}
 
 compile: configure
 	@builddir="$(BUILDDIR)"; \
-	metatarget="$(METATARGET)"; \
-	test "x$(LIMITED_TARGETS)" = "x" && { \
-	  test -f "$$builddir"/master.pike -a -x "$$builddir"/pike || \
-	    metatarget="all $$metatarget"; \
-	  test "x$$metatarget" = x && metatarget=all; \
-	}; \
-	cd "$$builddir" && for target in $$metatarget; do \
-	  echo Making $$target in "$$builddir"; \
-	  rm -f remake; \
-	  $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || { \
-	    res=$$?; \
-	    if test -f remake; then \
-	      $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || \
-		exit $$?; \
-	    else \
-	      exit $$res; \
-	    fi; \
-	  } \
-	done
+	cd "$$builddir" && { \
+	  metatarget="$(METATARGET)"; \
+	  if test "x$(LIMITED_TARGETS)" = "x"; then \
+	    if test -f "$$builddir"/master.pike -a -x "$$builddir"/pike; then :; \
+	    else metatarget="all $$metatarget"; fi; \
+	    if test "x$$metatarget" = x; then metatarget=all; else :; fi; \
+	  else :; fi; \
+	  for target in $$metatarget; do \
+	    echo Making $$target in "$$builddir"; \
+	    rm -f remake; \
+	    $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || { \
+	      res=$$?; \
+	      if test -f remake; then \
+		$(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" $$target || \
+		  exit $$?; \
+	      else \
+		exit $$res; \
+	      fi; \
+	    }; \
+	  done; \
+	}
 
 bin/pike: force
 	@builddir='$(BUILDDIR)'; \
