@@ -2051,7 +2051,7 @@ static void html_feed_insert(INT32 args)
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("feed_insert",1);
 
-   if (!sp[-args].type!=T_STRING)
+   if (sp[-args].type!=T_STRING)
       SIMPLE_BAD_ARG_ERROR("feed_insert",1,"string");
 
    DEBUG((stderr,"html_feed_insert: "
