@@ -5902,7 +5902,7 @@ exec("/bin/echo","hello","world");<br>
 </section>
 </module>
 
-<anchor name=Regexp>
+<module name=Regexp>
 <section title="Regexp">
 Regexp is short for <b>Regular Expression</b>. A regular expression is
 a standardized way to make pattern that match certain strings. In Pike
@@ -5953,86 +5953,68 @@ You might wonder what regexps are good for, hopefully it should be more clear
 when you read about the following functions:
 
 <hr noshade size=1>
-<anchor name=Regexp.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Regexp.create</tt> - compile regexp
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void create();<br>
-or<br>
+
+<method name=Regexp.create title="compile regexp">
+<man_syntax>
+void create();<br>
 void create(string <i>regexp</i>);<br>
-or<br>
 object(Regexp) Regexp();<br>
-or<br>
 object(Regexp) Regexp(string <I>regexp</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 When create is called, the current regexp bound to this object is
 cleared. If a string is sent to create(), this string will be compiled
 to an internal representation of the regexp and bound to this object
 for later calls to match or split. Calling create() without an
 argument can be used to free up a little memory after the regexp has
 been used.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link> and <link to=Regexp.match>Regexp-&gt;match</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+clone, Regexp-&gt;match
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Regexp.match>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Regexp.match</tt> - match a regexp
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int match(string <i>s</i>)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Regexp.match title="match a regexp">
+<man_syntax>
+int match(string <i>s</i>)<br>
+</man_syntax>
+<man_description>
 Return 1 if <i>s</i> matches the regexp bound to the object regexp,
 zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Regexp.create>Regexp-&gt;create</link> and <link to=Regexp.split>Regexp-&gt;split</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Regexp-&gt;create, Regexp-&gt;split
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Regexp.split>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Regexp.split</tt> - split a string according to a pattern
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string) split(string <i>s</i>)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Regexp.split title="split a string according to a pattern">
+<man_syntax>
+array(string) split(string <i>s</i>)<br>
+</man_syntax>
+<man_description>
 Works as regexp-&gt;match, but returns an array of the strings that
 matched the sub-regexps. Sub-regexps are those contained in ( ) in
 the regexp. Sub-regexps that were not matched will contain zero.
 If the total regexp didn't match, zero is returned.
-<p>
-<dt><encaps>BUGS</encaps><dd>
+</man_description>
+<man_bugs>
 You can only have 40 sub-regexps.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Regexp.create>Regexp-&gt;create</link> and <link to=Regexp.match>Regexp-&gt;match</link>
-<p>
-</dl>
+</man_bugs>
+<man_see>
+Regexp-&gt;create, Regexp-&gt;match
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
 
 <!-- FIX ME: write and document Regexp-&gt;explode -->
 
 </section>
-</anchor>
+</module>
 
 <anchor name=Gmp>
 <section title="Gmp">
