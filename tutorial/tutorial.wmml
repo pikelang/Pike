@@ -10994,7 +10994,7 @@ function so far.
 </man_description>
 <man_note>
 This function is only available if Pike was compiled with the option
-<tt>--with-profiling</tt>.
+'--with-profiling'.
 </man_note>
 <man_see>
 </man_see>
@@ -12189,6 +12189,53 @@ intp, multisetp, arrayp, programp, objectp, mappingp, floatp, functionp
 
 <HR NEWPAGE>
 
+<function name=string_to_unicode title="convert a string to an UTF16 stream">
+<man_syntax>
+string string_to_unicode(string <I>s</I>);
+</man_syntax>
+<man_description>
+Converts a string into an UTF16 compiant byte-stream.
+<p>
+Throws an error if characters not legal in an UTF16 stream are encountered.
+Valid characters are in the range 0x00000 - 0x10ffff, except for characters
+0xfffe and 0xffff.
+<p>
+Characters outside in range 0x010000 - 0x10ffff are encoded using surrogates.
+</man_description>
+<man_note>
+This function is only available in Pike 0.6.105 and later.
+</man_note>
+<man_see>
+Locale.Charset.decode,string_to_utf8,unicode_to_string,utf8_to_string
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=string_to_utf8 title="convert a string to an UTF8 stream">
+<man_syntax>
+string string_to_utf8(string <I>s</I>);
+string string_to_utf8(string <I>s</I>, int <I>extended</I>);
+</man_syntax>
+<man_description>
+Converts a string into an UTF8 compilant byte-stream.
+<p>
+Throws an error if characters not valid in an UTF8 stream are encountered.
+Valid characters are in the range 0x00000000 - 0x7fffffff.
+<p>
+If <tt>extended</tt> is 1, characters in the range 0x80000000-0xfffffffff
+will also be accepted, and encoded using a non-standard UTF8 extension.
+</man_description>
+<man_note>
+This function is only available in Pike 0.6.105 and later.
+</man_note>
+<man_see>
+Locale.Charset.decode,string_to_unicode,unicode_to_string,utf8_to_string
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
 <function name=strlen title="return the length of a string">
 <man_syntax>
 int strlen(string <I>s</I>);
@@ -12330,6 +12377,25 @@ signal
 
 <HR NEWPAGE>
 
+<function name=unicode_to_string title="convert an UTF16 stream to a string">
+<man_syntax>
+string unicode_to_string(string <I>s</I>);
+</man_syntax>
+<man_description>
+Converts an UTF16 byte-stream into a string.
+</man_description>
+<man_note>
+This function does not decode surrogates.
+<p>
+This function is only available in Pike 0.6.105 and later.
+</man_note>
+<man_see>
+Locale.Charset.decode,string_to_unicode,string_to_utf8,utf8_to_string
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
 <function name=upper_case title="convert a string to upper case">
 <man_syntax>
 string upper_case(string <I>s</I>);
@@ -12340,6 +12406,29 @@ to upper case character.
 </man_description>
 <man_see>
 lower_case
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=utf8_to_string title="convert an UTF8 stream to a string">
+<man_syntax>
+string utf8_to_string(string <I>s</I>);
+string utf8_to_string(string <I>s</I>, int <I>extended</I>);
+</man_syntax>
+<man_description>
+Converts an UTF8 byte-stream into a string.
+<p>
+Throws an error if the stream is not a legal UFT8 byte-stream.
+<p>
+Accepts and decodes the extension used by
+<link to=string_to_utf8>string_to_utf8()</link>, if <tt>extended</tt> is 1.
+</man_description>
+<man_note>
+This function is only available in Pike 0.6.105 and later.
+</man_note>
+<man_see>
+Locale.Charset.decode,string_to_unicode,string_to_utf8,unicode_to_string
 </man_see>
 </function>
 
