@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.141 2002/03/12 14:09:13 grubba Exp $
+// $Id: module.pmod,v 1.142 2002/03/25 15:32:50 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1464,13 +1464,22 @@ FILE stdin=FILE("stdin");
 
 #ifdef TRACK_OPEN_FILES
 static mapping(string|int:array) open_files = ([]);
+static mapping(string:int) registering_files = ([]);
 static int next_open_file_id = 1;
 
 static void register_open_file (string file, int id, array backtrace)
 {
   file = combine_path (getcwd(), file);
-  open_files[id] =
-    ({file, describe_backtrace (backtrace[..sizeof (backtrace) - 2])});
+  if (!registering_files[file]) {
+    // Avoid the recursion which might occur when the backtrace is formatted.
+    registering_files[file] = 1;
+    open_files[id] =
+      ({file, describe_backtrace (backtrace[..sizeof (backtrace) - 2])});
+    m_delete (registering_files, file);
+  }
+  else
+    open_files[id] =
+      ({file, "Cannot describe backtrace due to recursion.\n"});
   if (!open_files[file]) open_files[file] = ({id});
   else open_files[file] += ({id});
 }
@@ -1507,7 +1516,7 @@ void report_file_open_places (string file)
 		     replace (place[..sizeof (place) - 2], "\n", "\n   ");
 		 }) * "\n\n" + "\n");
   else
-    werror ("File " + file + " is currently not opened anywhere.\n");
+    werror ("File " + file + " is currently not opened from any known place.\n");
 }
 #endif
 
