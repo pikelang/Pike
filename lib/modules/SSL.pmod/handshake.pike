@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.24 2001/06/25 12:21:31 noy Exp $
+/* $Id: handshake.pike,v 1.25 2001/08/26 14:24:13 grubba Exp $
  *
  */
 
@@ -228,7 +228,7 @@ object client_key_exchange_packet()
   case KE_dhe_rsa:
   case KE_dh_anon:
     werror("FIXME: Not handled yet\n");
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
     return 0;
@@ -258,7 +258,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
       if (common_suites[suite]) break;
     session->set_cipher_suite(suite,version[1]);
   } else {
-    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure));
+    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
   
@@ -267,7 +267,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
     session->set_compression_method(compression_methods[0]);
   else
   {
-    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure));
+    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
   
@@ -369,7 +369,7 @@ string server_derive_master_secret(string data)
       werror("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
 	     "               Hanging up.\n");
 #endif
-      send_packet(Alert(ALERT_fatal, ALERT_certificate_unknown));
+      send_packet(Alert(ALERT_fatal, ALERT_certificate_unknown, version[1]));
       return 0;
     }
     /* Fall through */
@@ -383,7 +383,7 @@ string server_derive_master_secret(string data)
 	  dh_state->set_other(struct->get_bignum);
 	} || !struct->is_empty())
       {
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
 	return 0;
@@ -561,7 +561,7 @@ int handle_handshake(int type, string data, string raw)
      switch(type)
      {
      default:
-       send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+       send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			 "SSL.session->handle_handshake: unexpected message\n",
 			 backtrace()));
        return -1;
@@ -591,7 +591,7 @@ int handle_handshake(int type, string data, string raw)
 	}
 	  || (version[0] != 3) || (version[1] > 1) || (cipher_len & 1))
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
 	  return -1;
@@ -620,12 +620,14 @@ int handle_handshake(int type, string data, string raw)
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
 		  && (compression_methods & ({ session->compression_algorithm }))))
 	  {
-	    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure));
+	    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+			      version[1]));
 	    return -1;
 	  }
 	  send_packet(server_hello_packet());
 
-	  array res = session->new_server_states(client_random, server_random,version);
+	  array res = session->new_server_states(client_random, server_random,
+						 version);
 	  pending_read_state = res[0];
 	  pending_write_state = res[1];
 	  send_packet(change_cipher_packet());
@@ -666,7 +668,7 @@ int handle_handshake(int type, string data, string raw)
 	  werror(sprintf("SSL.handshake: Error decoding SSL2 handshake:\n"
 			 "%s\n", describe_backtrace(err)));
 #endif /* SSL3_DEBUG */
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
 	  return -1;
@@ -684,7 +686,7 @@ int handle_handshake(int type, string data, string raw)
 	  challenge = input->get_fix_string(ch_len);
 	} || !input->is_empty()) 
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
 	  return -1;
@@ -706,7 +708,7 @@ int handle_handshake(int type, string data, string raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
@@ -722,6 +724,7 @@ int handle_handshake(int type, string data, string raw)
 	 } || !input->is_empty())
 	   {
 	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+			       version[1],
 			       "SSL.session->handle_handshake: unexpected message\n",
 			       backtrace()));
 	     return -1;
@@ -733,6 +736,7 @@ int handle_handshake(int type, string data, string raw)
 	 } || !input->is_empty())
 	   {
 	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+			       version[1],
 			       "SSL.session->handle_handshake: unexpected message\n",
 			       backtrace()));
 	     return -1;
@@ -748,7 +752,7 @@ int handle_handshake(int type, string data, string raw)
 	   SSL3_DEBUG_MSG("rsa_message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
 	 return -1;
@@ -776,7 +780,7 @@ int handle_handshake(int type, string data, string raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
@@ -786,7 +790,7 @@ int handle_handshake(int type, string data, string raw)
 #endif
       if (certificate_state == CERT_requested)
       { /* Certificate should be sent before key exchange message */
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			  "SSL.session->handle_handshake: unexpected message\n",
 			  backtrace()));
 	return -1;
@@ -819,7 +823,7 @@ int handle_handshake(int type, string data, string raw)
      {
        if (certificate_state != CERT_requested)
        {
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			   "SSL.session->handle_handshake: unexpected message\n",
 			   backtrace()));
 	 return -1;
@@ -832,7 +836,7 @@ int handle_handshake(int type, string data, string raw)
 	 session->client_certificate_chain = certs;
        } || !input->is_empty())
        {
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			   "SSL.session->handle_handshake: unexpected message\n",
 			   backtrace()));
 	 return -1;
@@ -848,7 +852,7 @@ int handle_handshake(int type, string data, string raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
@@ -865,7 +869,7 @@ int handle_handshake(int type, string data, string raw)
 	    context, "", handshake_messages_struct, signature);
 	} || verification_ok)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"
 			    " CertificateVerify message failed\n",
 			    backtrace()));
@@ -886,7 +890,7 @@ int handle_handshake(int type, string data, string raw)
   case STATE_client_wait_for_hello:
     if(type != HANDSHAKE_server_hello)
     {
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
@@ -908,7 +912,7 @@ int handle_handshake(int type, string data, string raw)
       {
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted
-	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
 			  "SSL.session->handle_handshake: handshake failure\n",
 			  backtrace()));
 	return -1;
@@ -934,7 +938,7 @@ int handle_handshake(int type, string data, string raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
@@ -963,7 +967,7 @@ int handle_handshake(int type, string data, string raw)
 	else
 	  {
 	    werror("Other certificates than rsa not supported!\n");
-	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			      "SSL.session->handle_handshake: unexpected message\n",
 			      backtrace()));
 	    return -1;
@@ -974,7 +978,7 @@ int handle_handshake(int type, string data, string raw)
 
 	{
 	  werror("Failed to decode certificate!\n");
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
 	  return -1;
@@ -998,7 +1002,7 @@ int handle_handshake(int type, string data, string raw)
 	  context, client_random + server_random, temp_struct, signature); }
 	    || !verification_ok)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"
 			    " ServerKeyExchange message failed\n",
 			    backtrace()));
@@ -1016,7 +1020,7 @@ int handle_handshake(int type, string data, string raw)
       array(int) cert_types = input->get_var_uint_array(1, 1);
 //       int num_distinguished_names = input->get_uint(2);
 //       array(string) distinguished_names =
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
@@ -1069,7 +1073,7 @@ int handle_handshake(int type, string data, string raw)
     {
       SSL3_DEBUG_MSG("Expected type HANDSHAKE_finished(%d), got %d\n",
 		     HANDSHAKE_finished, type);
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
