@@ -2940,9 +2940,8 @@ Region "saints"
 # source: some union of info from web
 # ----------------------------------------------------------------
 
-#charset iso-8859-2
-
 Region "cs"
+  Charset iso-8859-2
   Leapdayshift 2000
    Jan  1 Nový rok
    Jan  2 Karina
