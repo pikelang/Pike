@@ -17,7 +17,8 @@ class Hash
 {
   inherit Nettle.HashInfo;
 
-  Nettle.HashState `()();
+  //! Calling `() will return a @[HashState] object.
+  .HashState `()();
   
   //! @decl string hash(string data)
   //!
@@ -63,7 +64,8 @@ class Cipher
 {
   inherit Nettle.CipherInfo;
 
-  Nettle.CipherState `()();
+  //! Calling `() will return a @[CipherState] object.
+  .CipherState `()();
 
   //! Works as a shortcut for @expr{obj->set_encrypt_key(key)->crypt(data)@}
   string encrypt(string key, string data) {
@@ -75,8 +77,6 @@ class Cipher
     return `()()->set_decrypt_key(key)->crypt(data);
   }
 }
-
-
 
 constant CBC = Nettle.CBC;
 
