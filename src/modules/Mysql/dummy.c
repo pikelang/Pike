@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.14 2004/04/12 15:47:16 grubba Exp $
+|| $Id: dummy.c,v 1.15 2004/04/12 16:24:24 grubba Exp $
 */
 
 /*
@@ -53,9 +53,6 @@ _ll_t mysql_dummy_dum_dum(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
 #endif
 #ifdef HAVE_FGETS
   fgets(0, 0, 0);
-#endif
-#ifdef HAVE_MESSAGEBOXA
-  MessageBoxA(0, 0, 0, 0);
 #endif
 
   return(a%b+(c%d)+(c/d)+(a/b));
