@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.1 1998/03/28 16:36:56 grubba Exp $
+/* $Id: master.pike.in,v 1.2 1998/04/06 04:34:59 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -59,7 +59,7 @@ program compile_string(string data, void|string name)
 
 program compile_file(string file)
 {
-  return compile(cpp(_static_modules.files()->file(file,"r")->read(),file));
+  return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),file));
 }
 
 
@@ -480,7 +480,7 @@ mixed resolv(string identifier, string|void current_file)
  */
 void _main(string *argv, string *env)
 {
-  int i;
+  int i,debug,trace;
   object script;
   object tmp;
   string a,b;
@@ -490,7 +490,7 @@ void _main(string *argv, string *env)
   add_constant("getenv",getenv);
   add_constant("putenv",putenv);
 
-  add_constant("write",_static_modules.files()->file("stdout")->write);
+  add_constant("write",_static_modules.files()->_stdout->write);
 
   _master_file_name=backtrace()[-1][0];
   q=explode_path(_master_file_name);
@@ -536,7 +536,9 @@ void _main(string *argv, string *env)
 		({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
 		  ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
 		    ({"ignore",tmp->HAS_ARG,"-ms"}),
-		      ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})
+		      ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
+		      ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
+			  ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1})
 			}), 1);
     
     /* Parse -M and -I backwards */
@@ -544,6 +546,14 @@ void _main(string *argv, string *env)
     {
       switch(q[i][0])
       {
+	case "debug":
+	  debug+=(int)q[i][1];
+	  break;
+
+	case "trace":
+	  trace+=(int)q[i][1];
+	  break;
+
       case "modpath":
 	add_module_path(q[i][1]);
 	break;
@@ -629,6 +639,10 @@ void _main(string *argv, string *env)
 
   object script=tmp();
 
+#if constant(_debug)
+  if(debug) _debug(debug);
+#endif
+  if(trace) predef::trace(trace);
   if(!script->main)
   {
     werror("Error: "+argv[0]+" has no main().\n");
@@ -739,7 +753,7 @@ string handle_include(string f,
 
 string read_include(string f)
 {
-  return _static_modules->files()->file(f,"r")->read();
+  return _static_modules.files()->Fd(f,"r")->read();
 }
 
 // FIXME
