@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.34 2001/04/14 11:22:33 jhs Exp $");
+RCSID("$Id: multiset.c,v 1.35 2001/06/20 15:15:28 grubba Exp $");
 
 struct multiset *first_multiset;
 
@@ -75,7 +75,8 @@ PMOD_EXPORT void do_free_multiset(struct multiset *l)
 
 #define BEGIN() do{				\
   struct array *ind=l->ind;			\
-  struct array *ind_bak=ind;                    \
+  INT32 is_weak = ind->flags &			\
+    (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK);	\
   if(ind->refs > 1)				\
   {						\
     ind=copy_array(l->ind);			\
@@ -85,10 +86,10 @@ PMOD_EXPORT void do_free_multiset(struct multiset *l)
   add_ref(ind)
 
 #define END()					\
-  if(l->ind == ind_bak)				\
+  if(l->ind != ind)				\
   {						\
     free_array(l->ind);				\
-    l->ind=ind;					\
+    l->ind = array_set_flags(ind, is_weak);	\
   }else{					\
     free_array(ind);				\
   }						\
@@ -129,7 +130,7 @@ PMOD_EXPORT struct multiset *mkmultiset(struct array *ind)
 }
 
 PMOD_EXPORT void multiset_insert(struct multiset *l,
-		 struct svalue *v)
+				 struct svalue *v)
 {
   INT32 i;
   BEGIN();
