@@ -29,7 +29,9 @@ class Section
   int virtual_size;
   int characteristics;
 
+  /* internal stuff */
   array(Symbol) symbols_in_this_section=({});
+  string file;
 };
 
 class Symbol
@@ -40,6 +42,14 @@ class Symbol
   int type;
   int cls;
   array(Symbol) aux;
+
+  string demangle()
+    {
+      string ret=name;
+      sscanf(ret,"%s@",ret);
+      if( (type >> 4) == 2) ret+="()";
+      return ret;
+    }
 };
 
 
@@ -49,6 +59,15 @@ array(string) global_directives=({});
 array(string) libpath=({});
 array(string) libraries=({});
 
+int err;
+
+
+#define CHR_LINK_INFO 0x200
+#define CHR_LINK_REMOVE 0x800
+#define CHR_LINK_ALIGN_1 0x100000
+#define CHR_LINK_MEM_DISCARDABLE 0x2000000
+
+
 class Linker
 {
   string stringtable="";
@@ -56,6 +75,16 @@ class Linker
   mapping(string:int) num_secnames=([]);
   mapping(Symbol:int) symbol_to_number=([]);
   mapping(Section:int) section_to_number=([]);
+  mapping(string:int) directive_to_number=([]);
+
+  array get_ordered(mapping m)
+    {
+      array i=indices(m);
+      array v=values(m);
+      sort(v,i);
+      return i;
+    }
+
 
   mapping(string:int) stringtablecache=([]);
   int add_string(string s)
@@ -74,6 +103,19 @@ class Linker
       return pos;
     }
 
+  int add_directive(string d)
+    {
+      if(directive_to_number[d])
+	return directive_to_number[d]-1;
+#ifdef DEBUG
+      werror("Adding directive: %O\n",d);
+#endif
+
+      int num=sizeof(directive_to_number);
+      directive_to_number[d]=num+1;
+      return num;
+    }
+
   string add_sym_name(string s)
     {
       if(strlen(s) <= 8)
@@ -86,14 +128,20 @@ class Linker
       if(symbol_to_number[s])
       {
 #ifdef DEBUG
-	werror("Adding symbol [%d]: %s again\n",symbol_to_number[s]-1,s->name);
+	werror("Adding symbol [%d]: %s @ %O:%O again\n",
+	       symbol_to_number[s]-1,s->name, 
+	       s->section ? s->section->name : "",
+	       s->section ? s->section->file : "",
+	       );
 #endif
 	return symbol_to_number[s]-1;
       }
 
       int num=sizeof(symbol_to_number);
 #ifdef DEBUG
-      werror("Adding symbol [%d]: %s\n",num,s->name);
+      werror("Adding symbol [%d]: %s @ %O:%O\n",num,s->name,
+	     s->section ? s->section->name : "external",
+	     s->section ? s->section->file : "" );
 #endif
 
       symbol_to_number[s]=num+1;
@@ -106,6 +154,28 @@ class Linker
       if(section_to_number[s])
 	return section_to_number[s]-1;
 
+      string name=s->name;
+      sscanf(name,"%s$",name);
+
+      if(name == ".drectve")
+      {
+#ifdef DEBUG
+	werror("Adding directives: %O\n",s->data);
+#endif
+	map(s->data/" ",add_directive);
+	return -1;
+      }
+
+#if 0
+      if(name == ".idata")
+      { 
+        string name= ( s->file /"/" )[-1];
+        add_directive("-LIB:"+name);
+        /* import DLL instead of section */
+        return -1; /* undefined */
+      }
+#endif
+
       int num=sizeof(section_to_number);
 #ifdef DEBUG
       werror("Adding section [%d]: %s\n",num,s->name);
@@ -113,9 +183,7 @@ class Linker
 
       section_to_number[s]=num+1;
 
-      sscanf(s->name,"%s$",s->name);
-      s->name+="$"+ ++num_secnames[s->name];
-      
+
       if(s->relocs)
 	foreach(s->relocs, Reloc r)
 	  add_symbol(r->sym);
@@ -138,6 +206,18 @@ class Linker
 
   string out()
     {
+
+      if(sizeof(directive_to_number))
+      {
+	Section s=Section();
+	s->name=".drectve";
+	s->data=get_ordered(directive_to_number) * " ";
+	s->characteristics = CHR_LINK_INFO | CHR_LINK_REMOVE | CHR_LINK_ALIGN_1;
+	int num=sizeof(section_to_number);
+	section_to_number[s]=num+1;
+	add_section(s);
+      }
+
       string symboltable="";
       string sectiondata="";
       string sectiontable="";
@@ -147,11 +227,7 @@ class Linker
       /* Actually output data */
       int base=20 /*coff*/ + sizeof(section_to_number) * 40;
 
-      array(Section) sections=indices(section_to_number);
-      array(int) secnums=values(section_to_number);
-      sort(secnums,sections);
-
-      foreach(sections, Section s)
+      foreach(get_ordered(section_to_number), Section s)
 	{
 #ifdef DEBUG
 	  werror("Encoding section [%d]: %s\n",add_section(s),s->name);
@@ -180,11 +256,7 @@ class Linker
 				   r->type);
 	}
 
-      array(Symbol) symbols=indices(symbol_to_number);
-      array(int) symnums=values(symbol_to_number);
-      sort(symnums, symbols);
-
-      foreach(symbols, Symbol s)
+      foreach(get_ordered(symbol_to_number), Symbol s)
 	{
 	  symboltable+=sprintf("%s%-4c%-2c%-2c%c%c",
 			       add_sym_name(s->name),
@@ -205,10 +277,9 @@ class Linker
 
       if( strlen(sectiontable) != sizeof(section_to_number) * 40)
       {
-	werror("Complete failure %d != %d (%d)!\n",
+	werror("Complete failure %d != %d!\n",
 	       strlen(sectiontable),
-	       sizeof(section_to_number) * 40,
-	       sizeof(sections) * 40);
+	       sizeof(section_to_number) * 40);
 	exit(1);
       }
 
@@ -326,12 +397,6 @@ Bitfield section_character_descriptor=Bitfield(
   "MEM_WRITE",
 );
 
-#define CHR_LINK_INFO 0x200
-#define CHR_LINK_REMOVE 0x800
-#define CHR_LINK_ALIGN_1 0x100000
-#define CHR_LINK_MEM_DISCARDABLE 0x2000000
-
-
 class dumpfile
 {
   string filename;
@@ -353,6 +418,12 @@ class dumpfile
 	  write("%06x: %{%02x %} %O\n",pos,values(line),line);
 	  pos+=strlen(x);
 	}
+      string line=x%8;
+      write("%06x: %{%02x %} %s %O\n",
+	    pos,
+	    values(line),
+	    "   "*(8-strlen(line)),
+	    line);
     }
 
   int i4(int pos)
@@ -486,6 +557,7 @@ class dumpfile
 #endif
 	
 	file_sections[e]->name=getCOFFstring(pos);
+	file_sections[e]->file=filename;
 
 	if(i4(pos+20))
 	{
@@ -652,22 +724,37 @@ class dumpfile
 	switch(cls)
 	{
 	  case COFFSYM_external:
-	  if(global_symbols[name])
-	  {
-	    s=global_symbols[name];
-	    if(s->section && sect > 0)
-	      werror("%s: Warning: Symbol %s redefined.\n",
-		     filename,
-		     name);
-	  }
+	    string tmpname=s->demangle();
 
-	  if(sect > 0)
-	  {
-	    s->section=file_sections[sect-1];
-	    s->value = value;
-	    s->type = type;
-	  }
-	  global_symbols[name]=s;
+	    if(global_symbols[tmpname])
+	    {
+	      Symbol newsym=global_symbols[tmpname];
+	      if(newsym->section && sect > 0)
+	      {
+		werror("%s: Warning: Symbol %s redefined.\n",
+		       filename,
+		       name);
+		newsym=s;
+	      }
+
+	      if(sect > 0)
+	      {
+		if( (newsym->type >> 4) != (type>>4) )
+		{
+		  werror("Warning: same symbol, different levels of indirection!!!!!!\n");
+		  err++;
+		}
+	      }
+	      s=newsym;
+	    }
+
+	    if(sect > 0)
+	    {
+	      s->section=file_sections[sect-1];
+	      s->value = value;
+	      s->type = type;
+	    }
+	    global_symbols[tmpname]=s;
 	}
 	file_symbols[e]=s;
 
@@ -782,7 +869,6 @@ class dumpfile
   void dumpImportLib()
     {
       string name= ( filename/"/" )[-1];
-#if 0
       sscanf(range(0,20),
 	     "%-2c%-2c%-2c%-2c%-4c%-4c%-2c%-2c",
 	     int sig1,
@@ -793,6 +879,7 @@ class dumpfile
 	     int size_of_data,
 	     int ordinal,
 	     int type);
+#if 0
       write("Sig1      : %x\n",sig1);
       write("Sig2      : %x\n",sig2);
       write("version   : %x\n",version);
@@ -802,10 +889,55 @@ class dumpfile
       write("Type:     : %x\n",type);
       write("Name      : %s\n",nulltermstring(20));
 
-     write("Importing library: %O\n",name);
+      write("Importing library: %O\n",name);
 #endif
-  
+
+#if 0
       global_directives|=({ "-LIB:"+name });
+#else
+      Section s=Section();
+#if 0
+      s->name=".idata";
+      s->file=filename;
+#else
+      s->name=".drectve";
+//      werror("Creating Directive -LIB:%s\n",name);
+      s->data = "-LIB:"+name;
+      s->file="autogenerated";
+#endif
+      string symname=nulltermstring(20);
+#ifdef DEBUG
+      werror("Importing symbol: %O\n",symname);
+#endif
+      string tmpname=symname;
+      sscanf(tmpname,"%s@",tmpname);
+
+      Symbol sym=global_symbols[tmpname];
+      if(!sym)
+	global_symbols[tmpname]=sym=Symbol();
+
+      sym->name=symname;
+      sym->section=s;
+      sym->type=type; /* correct ???? */
+      sym->cls = COFFSYM_external;
+
+
+      symname="__imp_"+symname;
+#ifdef DEBUG
+      werror("Importing symbol: %O\n",symname);
+#endif
+      tmpname="__imp_"+tmpname+"()";
+
+      sym=global_symbols[tmpname];
+      if(!sym)
+	global_symbols[tmpname]=sym=Symbol();
+
+      sym->name=symname;
+      sym->section=s;
+      sym->type=type | (2<<4); /* correct ???? */
+      sym->cls = COFFSYM_external;
+
+#endif
     }
 
   void create(string d, void|int p, void|int len, void|string f)
@@ -824,7 +956,7 @@ class dumpfile
       }else{
 	if(i2(0) == 0 && i2(2) == 0xffff)
 	{
-	  dumpImportLib();
+          dumpImportLib();
 	}else{
 	  dumpCOFF(0);
 	}
@@ -834,12 +966,12 @@ class dumpfile
 
 int main(int argc, array(string) argv)
 {
-  int err, export_all;
+  int export_all;
   int strip=0;
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.5 2000/12/29 00:10:57 hubbe Exp $\n"
+	 "$Id: pntld,v 1.6 2001/01/04 02:15:44 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -940,43 +1072,67 @@ int main(int argc, array(string) argv)
       });
   }
 
+  if(err) exit(err);
+
+  /* perform fixups */
+
   foreach(values(global_symbols), Symbol s)
     if(s->section)
-      s->section->symbols_in_this_section+=({s});
+     s->section->symbols_in_this_section+=({s});
+
+  if(!export_all)
+  {
+    foreach(global_sections, Section s)
+      {
+	if(sscanf(s->name,".idata%*s"))
+	{
+	  string name= ( s->file /"/" )[-1];
+	  Section s2=Section();
+	  s2->name=".drectve";
+	  s2->data = "-LIB:"+name;
+	  foreach(s->symbols_in_this_section,  Symbol sym)
+	    {
+//	      werror("Fixing (%s) %s : %s\n",name,s->name,sym->name);
+	      sym->section=s2;
+	      sym->value=0;
+	      if((sym->type >> 4) ==  2)
+	      {
+		werror("Warning: Symbol %s is double indirected!\n",sym->name);
+	      }
+	      sym->type=2<<4;
+	    }
+	}
+      }
+  }
+
+
+  if(err) exit(err);
 
   Linker l=Linker();
 
-  if(sizeof(global_directives))
-  {
-    Section s=Section();
-    s->name=".drectve";
-    s->data=global_directives * " ";
-    s->characteristics = CHR_LINK_INFO | CHR_LINK_REMOVE | CHR_LINK_ALIGN_1;
-    s->relocs=({});
-    
-    l->add_section(s);
-  }
-
-  if(err) exit(err);
-  rm(output);
-
+  map(global_directives, l->add_directive);
 
   werror("Creating %s\n",output);
   if(export_all)
   {
-    foreach(global_sections, Section s) l->add_section(s);
-    foreach(values(global_symbols), Symbol s) l->add_symbol(s);
+    map(global_sections, l->add_section);
+    map(values(global_symbols), l->add_symbol);
   }else{
     foreach(global_directives, string dir)
       {
 	if(sscanf(dir,"-export:%s",string sym))
 	{
 //	  werror("Exporting symbol: %O\n",sym);
-	  l->add_symbol(global_symbols[sym]);
+	  if(global_symbols[sym])
+	    l->add_symbol(global_symbols[sym]);
+	  if(global_symbols[sym+"()"])
+	    l->add_symbol(global_symbols[sym+"()"]);
 	}
       }
   }
 
+  if(err) exit(err);
+  rm(output);
   Stdio.write_file(output, l->out());
   exit(err);
 }

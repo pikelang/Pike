@@ -27,9 +27,9 @@
  */
 
 /* #define DLDEBUG 1 */
-/* #define DL_VERBOSE 1 */
+#define DL_VERBOSE 1
 
-#define REALLY_FLUSH() do{ fflush(stderr); Sleep(500); }while(0)
+#define REALLY_FLUSH() /* do{ fflush(stderr); Sleep(500); }while(0) */
 
 #ifdef DLDEBUG
 #define FLUSH() REALLY_FLUSH()
@@ -76,7 +76,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.6 2000/12/29 00:12:20 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.7 2001/01/04 02:15:44 hubbe Exp $");
 
 #endif
 
@@ -312,14 +312,6 @@ static char *read_file(char *name, size_t *len)
 
 /****************************************************************/
 
-static struct DLHandle *first;
-
-struct DLLList
-{
-  struct DLLList *next;
-  HINSTANCE dll;
-};
-
 struct DLHandle
 {
   int refs;
@@ -333,15 +325,46 @@ struct DLHandle
   struct DLLList *dlls;
 };
 
+struct DLLList
+{
+  struct DLLList *next;
+  HINSTANCE dll;
+};
+
+static struct DLHandle *first;
+static struct DLHandle global_dlhandle;
+
+
 static void *lookup_dlls(struct DLLList *l, char *name)
 {
   void *ret;
+  char *tmp,*tmp2;
   if(name[0]=='_') name++;
 #ifdef DLDEBUG
   fprintf(stderr,"DL: lookup_dlls(%s)\n",name);
 #endif
+#if 1
+  if((tmp=STRCHR(name,'@')))
+  {
+    tmp2=(char *)alloca(tmp - name + 1);
+    MEMCPY(tmp2,name,tmp-name);
+    tmp2[tmp-name]=0;
+#ifdef DLDEBUG
+    fprintf(stderr,"DL: Ordinal cutoff: %s -> %s\n",name,tmp2);
+#endif
+    name=tmp2;
+  }
+#endif
+    
   while(l)
   {
+#ifdef DLDEBUG
+    char modname[4711];
+    GetModuleFileName(l->dll, modname, 4710);
+    fprintf(stderr,"Looking for %s in %s ...\n",
+	    name,
+	    modname);
+#endif
     if((ret=GetProcAddress(l->dll,name))) return ret;
     l=l->next;
   }
@@ -482,13 +505,12 @@ struct DLObjectTempData
 };
 
 
-static struct DLLList *global_dlls=0;
-static struct Htable *global_symbols=0;
 static char *dlerr=0;
 
 static void *low_dlsym(struct DLHandle *handle,
 		       char *name,
-		       size_t len)
+		       size_t len,
+		       int self)
 {
   void *ptr;
   char *tmp;
@@ -496,6 +518,8 @@ static void *low_dlsym(struct DLHandle *handle,
   {
     name+=6;
     len-=6;
+  }else{
+    self=0;
   }
   tmp=name;
 #ifdef DLDEBUG
@@ -512,8 +536,11 @@ static void *low_dlsym(struct DLHandle *handle,
   else
     fprintf(stderr,"low_dlsym(%s)\n",name);
 #endif
-  ptr=htable_get(handle->htable,name,len);
-  if(!ptr) ptr=htable_get(global_symbols,name,len);
+  if(!self)
+    ptr=htable_get(handle->htable,name,len);
+  else
+    ptr=0;
+
   if(!ptr)
   {
     if(name[len])
@@ -523,9 +550,8 @@ static void *low_dlsym(struct DLHandle *handle,
       tmp[len]=0;
     }
     ptr=lookup_dlls(handle->dlls, tmp);
-    if(!ptr) ptr=lookup_dlls(global_dlls, tmp);
   }
-#ifdef DL_VERBOSE
+#ifdef DLDEBUG
   if(!ptr)
   {
     fprintf(stderr,"Failed to find identifier %s\n",tmp);
@@ -536,7 +562,7 @@ static void *low_dlsym(struct DLHandle *handle,
 		       
 void *dlsym(struct DLHandle *handle, char *name)
 {
-  return low_dlsym(handle, name, strlen(name));
+  return low_dlsym(handle, name, strlen(name), 0);
 }
 
 const char *dlerror(void)
@@ -762,7 +788,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
   ret->htable=alloc_htable(num_exports);
 
   if(data->flags & RTLD_GLOBAL)
-    global_symbols = htable_add_space(global_symbols, num_exports);
+    global_dlhandle.htable = htable_add_space(global_dlhandle.htable, num_exports);
 
 #ifdef DLDEBUG
   fprintf(stderr,"DL: moving code\n");
@@ -918,7 +944,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	
 	htable_put(ret->htable, name, len, value);
 	if(data->flags & RTLD_GLOBAL)
-	  htable_put(global_symbols, name, len, value);
+	  htable_put(global_dlhandle.htable, name, len, value);
       }
     }
   }
@@ -1021,7 +1047,10 @@ static int dl_load_coff_files(struct DLHandle *ret,
 		    SYMBOLS(sym).value);
 #endif
 
-	    if(!(ptr=low_dlsym(ret, name, len)))
+	    ptr=low_dlsym(ret, name, len, 1);
+	    if(!ptr) 
+	      ptr=low_dlsym(&global_dlhandle, name, len, 0);
+	    if(!ptr)
 	    {
 	      char err[256];
 	      MEMCPY(err,"Symbol '",8);
@@ -1030,6 +1059,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      dlerr=err;
 #ifndef DL_VERBOSE
 	      return -1;
+#else
+	      fprintf(stderr,"DL: %s\n",err);
 #endif
 	    }
 	  }else{
@@ -1078,9 +1109,10 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      REALLY_FLUSH();
 #endif
 	      ptr=(char *)(data->symbol_addresses + sym);
+	      ((INT32 *)loc)[0]=(INT32)ptr;
+	    }else{
+	      ((INT32 *)loc)[0]+=(INT32)ptr;
 	    }
-
-	    ((INT32 *)loc)[0]+=(INT32)ptr;
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
 #endif
@@ -1211,11 +1243,17 @@ struct DLHandle *dlopen(char *name, int flags)
   int retcode;
   tmpdata.flags=flags;
 
+  if(!global_dlhandle.htable) init_dlopen();
+
+  if(!name)
+  {
+    global_dlhandle.refs++;
+    return &global_dlhandle;
+  }
+
 #ifdef DLDEBUG
   fprintf(stderr,"dlopen(%s,%d)\n",name,flags);
 #endif
-
-  if(!global_symbols) init_dlopen();
 
   for(ret=first;ret;ret=ret->next)
   {
@@ -1252,7 +1290,9 @@ struct DLHandle *dlopen(char *name, int flags)
     return 0;
   }
 
- /* register module for future dlopens */
+  /* register module for future dlopens */
+  ret->next=first;
+  first=ret;
     
   return ret;
 }
@@ -1264,6 +1304,16 @@ int dlclose(struct DLHandle *h)
 #endif
   if(! --h->refs)
   {
+    struct DLHandle **ptr;
+    for(ptr=&first;*ptr;ptr=&(ptr[0]->next))
+    {
+      if(*ptr == h)
+      {
+	*ptr=h->next;
+	break;
+      }
+    }
+    
     if(h->filename) free(h->filename);
     if(h->htable) htable_free(h->htable,0);
     if(h->dlls) dlllist_free(h->dlls);
@@ -1285,6 +1335,11 @@ static void init_dlopen(void)
   fprintf(stderr,"dlopen_init(%s)\n",ARGV[0]);
 #endif
 
+  global_dlhandle.refs=1;
+  global_dlhandle.filename=ARGV[0];
+  global_dlhandle.next=0;
+  first=&global_dlhandle;
+  
   h=LoadLibrary(ARGV[0]);
 
 #undef data
@@ -1323,7 +1378,7 @@ static void init_dlopen(void)
 					 18 * data->coff->num_symbols);
     
     
-    global_symbols=alloc_htable(data->coff->num_symbols);
+    global_dlhandle.htable=alloc_htable(data->coff->num_symbols);
     
 #ifdef DLDEBUG
     fprintf(stderr,"buffer=%p\n",data->buffer);
@@ -1395,7 +1450,7 @@ static void init_dlopen(void)
       fprintf(stderr,"\n");
 #endif
       
-      htable_put(global_symbols, name, len,
+      htable_put(global_dlhandle.htable, name, len,
 		 data->buffer +
 		 data->sections[SYMBOLS(s).secnum-1].virtual_addr -
 		 data->sections[SYMBOLS(s).secnum-1].ptr2_raw_data +
@@ -1407,11 +1462,11 @@ static void init_dlopen(void)
 #ifdef DLDEBUG
     fprintf(stderr,"Couldn't find PE header.\n");
 #endif
-    append_dlllist(&global_dlls, ARGV[0]);
-    global_symbols=alloc_htable(997);
+    append_dlllist(&global_dlhandle.dlls, ARGV[0]);
+    global_dlhandle.htable=alloc_htable(997);
 #define EXPORT(X) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s\n",#X); ) \
-  htable_put(global_symbols,"_" #X,sizeof(#X)-sizeof("")+1, &X)
+  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X)
     
     
     fprintf(stderr,"Fnord, rand()=%d\n",rand());
@@ -1426,6 +1481,7 @@ static void init_dlopen(void)
     EXPORT(perror);
     EXPORT(sscanf);
     EXPORT(abs);
+    EXPORT(putchar);
   }
 
 #ifdef DLDEBUG
@@ -1512,7 +1568,7 @@ int main(int argc, char ** argv)
 					   18 * data->coff->num_symbols);
       
 
-      global_symbols=alloc_htable(data->coff->num_symbols);
+      global_dlhandle.htable=alloc_htable(data->coff->num_symbols);
 
 #ifdef DLDEBUG
       fprintf(stderr,"buffer=%p\n",data->buffer);
@@ -1584,7 +1640,7 @@ int main(int argc, char ** argv)
 	fprintf(stderr,"\n");
 #endif
 
-	  htable_put(global_symbols, name, len,
+	  htable_put(global_dlhandle.htable, name, len,
 		     data->buffer +
 		     data->sections[SYMBOLS(s).secnum-1].virtual_addr -
 		     data->sections[SYMBOLS(s).secnum-1].ptr2_raw_data +
@@ -1596,11 +1652,11 @@ int main(int argc, char ** argv)
 #ifdef DLDEBUG
       fprintf(stderr,"Couldn't find PE header.\n");
 #endif
-      append_dlllist(&global_dlls, argv[0]);
-      global_symbols=alloc_htable(997);
+      append_dlllist(&global_dlhandle.dlls, argv[0]);
+      global_dlhandle.htable=alloc_htable(997);
 #define EXPORT(X) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s\n",#X); ) \
-  htable_put(global_symbols,"_" #X,sizeof(#X)-sizeof("")+1, &X)
+  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X)
       
       
       fprintf(stderr,"Fnord, rand()=%d\n",rand());
