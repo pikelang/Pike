@@ -7,17 +7,18 @@ class Fifo {
   inherit Mutex: lock;
   
   mixed *buffer;
-  int r_ptr, w_ptr;
+  int ptr, num;
   
-  int size() {  return (w_ptr+sizeof(buffer) - r_ptr) % sizeof(buffer);  }
+  int size() {  return num; }
   
   mixed read()
     {
       mixed tmp;
       object key=lock::lock();
-      while(!size()) r_cond::wait(key);
-      tmp=buffer[r_ptr];
-      if(++r_ptr >= sizeof(buffer)) r_ptr=0;
+      while(!num) r_cond::wait(key);
+      tmp=buffer[ptr++];
+      r_ptr%=sizeof(buffer);
+      num--;
       w_cond::signal();
       return tmp;
     }
@@ -25,9 +26,8 @@ class Fifo {
   void write(mixed v)
     {
       object key=lock::lock();
-      while(size() == sizeof(buffer)) w_cond::wait(key);
-      buffer[w_ptr]=v;
-      if(++w_ptr >= sizeof(buffer)) w_ptr=0;
+      while(num == sizeof(buffer)) w_cond::wait(key);
+      buffer[(ptr + num++) % sizeof(buffer)]=v;
       r_cond::signal();
     }
   
