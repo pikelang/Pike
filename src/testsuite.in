@@ -1,5 +1,4 @@
-dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.286 2000/03/10 00:45:19 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.287 2000/03/26 01:56:54 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -885,7 +884,8 @@ test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 
 
 test_true(encode_value(0))
 test_true(encode_value(0)[0]=='\266')
-define(test_encode, [[ test_equal($1, decode_value(encode_value($1))) ]])
+define(test_encode, [[ test_equal($1, decode_value(encode_value($1)))
+		       test_equal($1, decode_value(encode_value_canonic($1))) ]])
 test_eq(replace("foobar","","X"),"fXoXoXbXaXr")
 test_encode(0)
 test_encode("")
@@ -908,6 +908,12 @@ test_encode("\77777")
 test_encode("\777777")
 test_encode("\7777777")
 test_encode("\77777777")
+test_encode(({"en","sv","de"}))
+test_encode((<"en","sv","de">))
+test_encode((["en":1,"sv":2,"de":3]))
+test_encode(({"s",1,0,-3.4}))
+test_encode((<"s",1,0,-3.4>))
+test_encode((["s":1,1:2,0:3,-3.4:4]))
 test_eq(decode_value("\210\201"),1)
 test_eq(decode_value("\210\011\001"),-1)
 test_eq(decode_value("\206\200"),""))
@@ -928,6 +934,18 @@ test_eval_error([[return decode_value("\266ke0\241\346abc\b&\346de\276\266\364\3
 test_eval_error([[return decode_value("\266ke0\241\346abcv\22C\246\264\264L"          )]])
 test_eval_error([[return decode_value("\266ke0\241\260\303\rl")]])
 
+test_equal(encode_value_canonic ((["en":1,"sv":2,"de":3])),
+           encode_value_canonic ((["en":1,"de":3,"sv":2])))
+test_equal(encode_value_canonic ((["en":1,"sv":2,"de":3])),
+           encode_value_canonic ((["de":3,"sv":2,"en":1])))
+test_equal(encode_value_canonic ((["en":1,"sv":2,"de":3])),
+           encode_value_canonic ((["sv":2,"en":1,"de":3])))
+test_equal(encode_value_canonic ((<"en","sv","de">)),
+           encode_value_canonic ((<"en","de","sv">)))
+test_equal(encode_value_canonic ((<"en","sv","de">)),
+           encode_value_canonic ((<"de","sv","en">)))
+test_equal(encode_value_canonic ((<"en","sv","de">)),
+           encode_value_canonic ((<"sv","en","de">)))
 
 
 test_any([[mixed s="foo"; return s++;]],"foo")
