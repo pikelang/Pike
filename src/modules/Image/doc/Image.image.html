@@ -20,7 +20,7 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#setpixel>setpixel</a></tt>, 
      <tt><a href=Image.image.html#treshold>treshold</a></tt>,
      <tt><a href=Image.image.html#tuned_box>tuned_box</a></tt>,
-     <tt><a href=Image.image.html#polyfill>polyfill</a></tt>
+     <tt><a href=Image.image.html#polygone>polygone</a></tt>
 
 <p>     operators: <tt><a href=Image.image.html#%60%26>`&amp;</a></tt>,
      <tt><a href=Image.image.html#%60*>`*</a></tt>,
@@ -903,6 +903,14 @@ Initializes a new image object.
 </dl></blockquote>
 
 
+<h4>KNOWN BUGS</h4>
+<blockquote>
+SIGSEGS can be caused if the size is too big, due
+     to unchecked overflow - 
+     (xsize*ysize)&amp;MAXINT is small enough to allocate.
+</blockquote>
+
+
 <h4>SEE ALSO</h4>
 <blockquote>     <tt><a href=Image.image.html#copy>copy</a></tt>,
      <tt><a href=Image.image.html#clone>clone</a></tt>,
@@ -1552,6 +1560,13 @@ the new image object
 </blockquote>
 
 
+<h4>NOTE</h4>
+<blockquote>
+this function may change slightly when <tt><a href=Image.Image.html#colortable>Image::colortable</a></tt> 
+     is implemented (pike 0.6, probably)
+</blockquote>
+
+
 <h4>SEE ALSO</h4>
 <blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
      <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
@@ -1587,6 +1602,13 @@ Maps all pixel colors to the colors given.
 
 <blockquote>
 the new image object
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+this function may change slightly when <tt><a href=Image.Image.html#colortable>Image::colortable</a></tt> 
+     is implemented (pike 0.6, probably)
 </blockquote>
 
 
@@ -1633,6 +1655,13 @@ Maps all pixel colors to the colors given.
 
 <blockquote>
 the new image object
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+this function may change slightly when <tt><a href=Image.Image.html#colortable>Image::colortable</a></tt> 
+     is implemented (pike 0.6, probably)
 </blockquote>
 
 
@@ -1754,8 +1783,14 @@ void <b>noise</b>(array(float|int|array(int))&nbsp;colorrange, float&nbsp;scale,
 
 
 <blockquote>
-gives a new image with the old image's size,
-     filled width a 'noise' pattern
+Gives a new image with the old image's size,
+     filled width a 'noise' pattern.
+
+<p>     The random seed may be different with each instance of pike.
+
+<p>     Example: 
+     <tt>->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.005,0,0,0.5 );</tt>
+     <br><img src=illustration_33.gif width=200 height=100>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -2008,8 +2043,8 @@ Rotates an image a certain amount of degrees (360° is
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_34.gif width=87 height=88></td>
      <td><img src=illustration_35.gif width=87 height=88></td>
+     <td><img src=illustration_36.gif width=87 height=88></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate(15,255,0,0);</td>
@@ -2053,7 +2088,7 @@ rotates an image counter-clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_37.gif width=67 height=67></td>
+     <td><img src=illustration_38.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_ccw();</td>
@@ -2081,7 +2116,7 @@ rotates an image clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_39.gif width=67 height=67></td>
+     <td><img src=illustration_40.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_cw();</td>
@@ -2171,9 +2206,9 @@ Selects the best colors to represent the image.
 <p>
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_41.gif width=67 height=67></td>
      <td><img src=illustration_42.gif width=67 height=67></td>
      <td><img src=illustration_43.gif width=67 height=67></td>
+     <td><img src=illustration_44.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>2</td>
@@ -2191,6 +2226,13 @@ Selects the best colors to represent the image.
 
 <blockquote>
 an array of colors
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+this function may change somewhat when <tt><a href=Image.Image.html#colortable>Image::colortable</a></tt>
+     is implemented (pike 0.6, probably)
 </blockquote>
 
 
@@ -2325,8 +2367,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_45.gif width=82 height=67></td>
      <td><img src=illustration_46.gif width=82 height=67></td>
+     <td><img src=illustration_47.gif width=82 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewx(15,255,0,0);</td>
@@ -2378,8 +2420,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_48.gif width=67 height=82></td>
      <td><img src=illustration_49.gif width=67 height=82></td>
+     <td><img src=illustration_50.gif width=67 height=82></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewy(15,255,0,0);</td>
@@ -2433,7 +2475,7 @@ Makes a black-white image.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_51.gif width=67 height=67></td>
+     <td><img src=illustration_52.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->threshold(90,100,110);</td>
@@ -2462,9 +2504,11 @@ the new image object
 <a name=to8bit_rgbcube> </a>
 <a name=to8bit_rgbcube_rdither> </a>
 <a name=tozbgr> </a>
+<a name=tozrgb> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>string <b>tozbgr</b>(array(array(int))&nbsp;colors)<br>
+string <b>tozrgb</b>(array(array(int))&nbsp;colors)<br>
 string <b>to8bit_rgbcube</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
 string <b>to8bit_rgbcube</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue, string&nbsp;map)<br>
 string <b>to8bit_rgbcube_rdither</b>(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
@@ -2640,8 +2684,8 @@ Draws a filled rectangle with colors (and alpha values) tuned
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_53.gif width=67 height=67></td>
      <td><img src=illustration_54.gif width=67 height=67></td>
+     <td><img src=illustration_55.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>solid tuning<br>(blue,red,green,yellow)</td>
@@ -2687,6 +2731,12 @@ void <b>turbulence</b>(array(float|int|array(int))&nbsp;colorrange, int&nbsp;oct
 <blockquote>
 gives a new image with the old image's size,
      filled width a 'turbulence' pattern
+
+<p>     The random seed may be different with each instance of pike.
+
+<p>     Example: <br>
+     <tt>->turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,0}) );</tt>
+     <br><img src=illustration_56.gif width=200 height=100>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
