@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.30 1999/02/27 00:31:39 grubba Exp $
+ * $Id: stralloc.h,v 1.31 1999/02/27 17:20:07 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -63,12 +63,6 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 
 #define EXTRACT_CHARP(PTR,SHIFT) INDEX_CHARP((PTR),0,(SHIFT))
 #define CHARP_ADD(PTR,X,SHIFT) (PTR)+=(X)<<(SHIFT)
-
-typedef struct p_wchar_p
-{
-  char *ptr;
-  int shift;
-} PCHARP;
 
 #define INDEX_PCHARP(X,Y) INDEX_CHARP((X).ptr,(Y),(X).shift)
 #define SET_INDEX_PCHARP(X,Y,Z) INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
