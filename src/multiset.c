@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.62 2002/12/22 17:18:55 mast Exp $
+|| $Id: multiset.c,v 1.63 2002/12/22 18:07:48 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.62 2002/12/22 17:18:55 mast Exp $");
+RCSID("$Id: multiset.c,v 1.63 2002/12/22 18:07:48 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -4972,14 +4972,14 @@ void test_multiset (void)
   for (pass = 0; pass < 2; pass++) {
     int max = 1000000;
     l = allocate_multiset (0, 0, pass ? less_efun : NULL);
-    srand (0);
+    my_srand (0);
 #ifdef RB_STATS
     reset_rb_stats();
 #endif
     for (i = max, v = 0; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "grow %s %d, %d duplicates         \r",
 				 pass ? "cmp_less" : "internal", i, v);
-      push_int (rand());
+      push_int (my_rand());
       if (multiset_find_eq (l, sp - 1) >= 0) {
 	v++;
 	sub_msnode_ref (l);
@@ -4987,15 +4987,18 @@ void test_multiset (void)
       multiset_add (l, sp - 1, NULL);
       pop_stack();
     }
+    if (v != 114)
+      fprintf (stderr, "Got %d duplicates but expected 114 - "
+	       "the pseudorandom sequence isn't as expected\n", v);
 #ifdef RB_STATS
     fputc ('\n', stderr), print_rb_stats (1);
 #endif
     check_multiset (l, 0);
-    srand (0);
+    my_srand (0);
     for (i = max; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "shrink %s %d                   \r",
 				 pass ? "cmp_less" : "internal", i);
-      push_int (rand());
+      push_int (my_rand());
       if (!multiset_delete (l, sp - 1))
 	Pike_fatal ("Pseudo-random sequence didn't repeat.\n");
       pop_stack();
@@ -5012,7 +5015,7 @@ void test_multiset (void)
     int max = 400;
     struct array *arr = allocate_array_no_init (0, max);
     struct svalue *sval;
-    srand (0);
+    my_srand (0);
     for (i = j = 0; i < max; i++) {
       if (!(i % 10)) fprintf (stderr, "maketree %d         \r",
 			      max * 10 - arr->size);
@@ -5027,7 +5030,7 @@ void test_multiset (void)
       check_multiset (l, 0);
 
       if ((node = multiset_first (l)) >= 0) {
-	int pos = 0, try_get = rand() % arr->size;
+	int pos = 0, try_get = (my_rand() & INT_MAX) % arr->size;
 	for (; node >= 0; node = multiset_next (l, node), pos++)
 	  if (pos == try_get) {
 	    if ((v = use_multiset_index (
@@ -5070,9 +5073,9 @@ void test_multiset (void)
       allocate_multiset (0, MULTISET_INDVAL, pass ? less_efun : NULL);
     int action = 0;
 
-    srand (0);
+    my_srand (0);
     for (i = 5000; i >= 0; i--, action = action % 6 + 1) {
-      int nr = rand();		/* Assumes we keep within one period. */
+      int nr = my_rand() & INT_MAX; /* Assumes we keep within one period. */
 
       if (!(i % 100)) fprintf (stderr, "merge %d         \r", i);
 
@@ -5255,7 +5258,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.62 2002/12/22 17:18:55 mast Exp $");
+RCSID("$Id: multiset.c,v 1.63 2002/12/22 18:07:48 mast Exp $");
 
 struct multiset *first_multiset;
 
