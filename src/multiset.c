@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.71 2003/04/02 19:22:43 mast Exp $
+|| $Id: multiset.c,v 1.72 2003/04/26 16:04:02 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.71 2003/04/02 19:22:43 mast Exp $");
+RCSID("$Id: multiset.c,v 1.72 2003/04/26 16:04:02 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -1275,7 +1275,7 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
 	  {
 	    push_svalue (key);
 	    low_push_multiset_index (RBNODE (node));
-	    if (IS_DESTRUCTED (sp - 1)) {pop_n_elems (2); goto index_destructed;}
+	    if (IS_DESTRUCTED (sp - 1)) {pop_2_elems(); goto index_destructed;}
 	    EXTERNAL_CMP (&msd->cmp_less);
 	    cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 1 : -1;
 	    pop_stack();
@@ -1363,7 +1363,7 @@ static enum find_types low_multiset_find_le_gt (
 	  push_svalue (key);
 	  low_push_multiset_index (RBNODE (node));
 	  if (IS_DESTRUCTED (sp - 1)) {
-	    pop_n_elems (2);
+	    pop_2_elems();
 	    *found = RBNODE (node);
 	    return FIND_DESTRUCTED;
 	  }
@@ -1792,6 +1792,7 @@ static enum find_types low_multiset_track_eq (
 	push_svalue (key);
 	low_push_multiset_index (RBNODE (node));
 	if (IS_DESTRUCTED (sp - 1)) {
+	  pop_2_elems();
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -1873,7 +1874,7 @@ static enum find_types low_multiset_track_le_gt (
 	push_svalue (key);
 	low_push_multiset_index (RBNODE (node));
 	if (IS_DESTRUCTED (sp - 1)) {
-	  pop_n_elems (2);
+	  pop_2_elems();
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -4207,9 +4208,11 @@ union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
     case PIKE_T_UNKNOWN:
       Pike_fatal ("%s:%d: Invalid node offset %"PRINTPTRDIFFT"d.\n",
 	     file, line, nodepos);
+#ifdef PIKE_DEBUG
     default:
       if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
 	Pike_fatal ("%s:%d: %s", file, line, msg_no_multiset_flag_marker);
+#endif
   }
 
   return node;
@@ -4327,8 +4330,10 @@ void check_multiset (struct multiset *l, int safe)
 
 	  default:
 	    alloc++;
+#ifdef PIKE_DEBUG
 	    if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
 	      Pike_fatal (msg_no_multiset_flag_marker);
+#endif
 	    ind_types |= 1 << (node->i.ind.type & ~MULTISET_FLAG_MASK);
 	    if (indval) val_types |= 1 << node->iv.val.type;
 	    if (node->i.prev)
@@ -4441,7 +4446,9 @@ void check_multiset (struct multiset *l, int safe)
       else
 	for (; (next = low_multiset_next (node)); node = next) {
 	  low_push_multiset_index (next);
-	  if (!IS_DESTRUCTED (sp - 1)) {
+	  if (IS_DESTRUCTED (sp - 1))
+	    pop_stack();
+	  else {
 #ifdef PIKE_DEBUG
 	    check_svalue (sp - 1);
 	    if (indval) check_svalue (&node->iv.val);
@@ -4521,10 +4528,12 @@ void debug_dump_multiset (struct multiset *l)
     if (msd == &empty_ind_msd) fputs ("msd is empty_ind_msd\n", stderr);
     else if (msd == &empty_indval_msd) fputs ("msd is empty_indval_msd\n", stderr);
 
+#ifdef PIKE_DEBUG
     fputs ("Indices type field =", stderr);
     debug_dump_type_field (msd->ind_types);
     fputs ("\nValues type field =", stderr);
     debug_dump_type_field (msd->val_types);
+#endif
 
     if (msd->cmp_less.type == T_INT)
       fputs ("\nInternal compare function\n", stderr);
@@ -4830,7 +4839,8 @@ void test_multiset (void)
 	      multiset_fatal (l, "Failed to add %d:%d after %d:%d: %d\n",
 			      sp[-1].u.integer, arr->item[j].u.integer,
 			      use_multiset_index (l, node, tmp)->u.integer,
-			      get_multiset_value (l, node)->u.integer);
+			      get_multiset_value (l, node)->u.integer,
+			      nodes[j]);
 	  }
 	  add_msnode_ref (l);
 	  check_multiset (l, 0);
@@ -5255,7 +5265,7 @@ void test_multiset (void)
     free_multiset (xor);
   }
 
-  pop_n_elems (2);
+  pop_2_elems();
   if (orig_sp != sp)
     Pike_fatal ("Stack wrong: %"PRINTPTRDIFFT"d extra elements.\n", sp - orig_sp);
   fprintf (stderr, "                            \r");
@@ -5281,7 +5291,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.71 2003/04/02 19:22:43 mast Exp $");
+RCSID("$Id: multiset.c,v 1.72 2003/04/26 16:04:02 mast Exp $");
 
 struct multiset *first_multiset;
 
