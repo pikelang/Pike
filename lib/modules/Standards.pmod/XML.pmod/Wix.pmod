@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.9 2004/11/04 18:26:51 grubba Exp $
+// $Id: Wix.pmod,v 1.10 2004/11/08 12:42:11 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -9,7 +9,7 @@
 
 constant wix_ns = "http://schemas.microsoft.com/wix/2003/01/wi";
 
-static Parser.XML.Tree.SimpleTextNode line_feed =
+Parser.XML.Tree.SimpleTextNode line_feed =
   Parser.XML.Tree.SimpleTextNode("\n");
 
 // FIXME: Generate deterministic output!
