@@ -1,15 +1,11 @@
 #pike __REAL_VERSION__
 
-/* sslport.pike
- *
- */
-
 #if constant(SSL.Cipher.CipherAlgorithm)
 
 //! Interface similar to Stdio.Port.
 
 inherit Stdio.Port : socket;
-inherit "context";
+inherit .context;
 inherit ADT.Queue : accept_queue;
 
 constant sslfile = SSL.sslfile;
@@ -58,7 +54,7 @@ int listen_fd(int fd, function callback)
   return socket::listen_fd(fd, callback);
 }
 
-object socket_accept()
+Stdio.File socket_accept()
 {
   return socket::accept();
 }
