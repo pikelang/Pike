@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.708 2004/03/12 18:29:29 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.709 2004/03/18 14:53:18 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -638,6 +638,11 @@ test_compile_error( [[
   non_existant(17) {
     return 0;
   }
+]])
+
+test_compile_error( [[
+  // This triggs a compiler bug on old Pike 7.5.
+  return lambda(object (([mixed]a)->syntax_error) { return 0; }(0);
 ]])
 
 test_any( [[
