@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.6 1997/04/23 00:30:26 grubba Exp $
+ * $Id: sql.pike,v 1.7 1997/06/08 18:44:56 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.6 1997/04/23 00:30:26 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.7 1997/06/08 18:44:56 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -32,7 +32,7 @@ object master_sql;
 //. > host
 //.   object - Use this object to access the SQL-database.
 //.   string - Use any available database server on this host.
-//.            If "" or 0, access through UNIX-domain socket.
+//.            If "" or 0, access through UNIX-domain socket or similar.
 //. > database
 //.   Select this database.
 //. > user
@@ -63,19 +63,38 @@ void create(void|string|object host, void|string db,
 	err = catch {
 	  program p = Sql[program_name];
 
-	  if (password && password != "") {
-	    master_sql = p(host||"", db||"", user||"", password);
-	  } else if (user && user != "") {
-	    master_sql = p(host||"", db||"", user);
-	  } else if (db && db != "") {
-	    master_sql = p(host||"", db);
-	  } else if (host && host != "") {
-	    master_sql = p(host);
+	  if (p) {
+	    array err2 = catch {
+	      if (password && password != "") {
+		master_sql = p(host||"", db||"", user||"", password);
+	      } else if (user && user != "") {
+		master_sql = p(host||"", db||"", user);
+	      } else if (db && db != "") {
+		master_sql = p(host||"", db);
+	      } else if (host && host != "") {
+		master_sql = p(host);
+	      } else {
+		master_sql = p();
+	      }
+	      return;
+	    };
+#ifdef PIKE_SQL_DEBUG
+	    if (err2) {
+	      Stdio.stderr->write(sprintf("Sql.sql(): Failed to connect using module Sql.%s\n",
+					  program_name));
+	    }
 	  } else {
-	    master_sql = p();
+	    Stdio.stderr->write(sprintf("Sql.sql(): Failed to index module Sql.%s\n",
+					program_name));
+#endif /* PIKE_SQL_DEBUG */
 	  }
-	  return;
 	};
+#ifdef PIKE_SQL_DEBUG
+	if (err) {
+	  Stdio.stderr->write(sprintf("Sql.sql(): Failed to compile module Sql.%s\n",
+				      program_name));
+	}
+#endif /* PIKE_SQL_DEBUG */
       }
     }
   }
