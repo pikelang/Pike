@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.331 2000/09/20 13:19:52 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.332 2000/09/23 21:11:47 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1856,6 +1856,18 @@ test_any([[{
   destruct (o);
   return !equal (m, n) && !equal (m, n);
 }]], 1)
+test_any([[{
+  object o = class{}();
+  mapping m = ([o: 1]);
+  destruct (o);
+  return sizeof (indices (m)) || sizeof (m);
+}]], 0)
+test_any([[{
+  object o = class{}();
+  mapping m = ([o: 1]);
+  destruct (o);
+  return sizeof (values (m)) || sizeof (m);
+}]], 0)
 
 // rows
 test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])
