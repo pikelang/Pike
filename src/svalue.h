@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.27 1999/06/03 01:39:39 hubbe Exp $
+ * $Id: svalue.h,v 1.28 1999/06/07 22:49:42 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -170,6 +170,7 @@ extern char *type_name[];
 #define BIT_MIXED 0x7fff
 #define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING)
 #define BIT_COMPLEX (BIT_ARRAY|BIT_MULTISET|BIT_OBJECT|BIT_PROGRAM|BIT_MAPPING|BIT_FUNCTION)
+#define BIT_COMPLEX (BIT_FUNCTION|BIT_PROGRAM|BIT_ARRAY|BIT_OBJECT)
 
 /* Max type which contains svalues */
 #define MAX_COMPLEX T_PROGRAM
