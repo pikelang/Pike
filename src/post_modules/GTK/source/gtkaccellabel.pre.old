@@ -1,8 +1,0 @@
-class accel_label;
-inherit label;
-// A label for accelerators.
-void create(string text);
-int get_accel_width();
-void set_accel_widget( widget accel_widget);
-int refetch();
-

@@ -1,6 +1,0 @@
-class vseparator;
-inherit separator;
-// Simply creates a vertical separator. No bells or whistles.
-// IMG: GTK.Vseparator()->set_usize(3,50)
-void create();
-// Used to create a new vseparator widget.
