@@ -7,7 +7,7 @@ endrequire;
 int pigtk_is_setup = 0, gnome_is_setup = 0;
 static void socket_ready_callback(int fd, void *f)
 {
-  g_main_iteration(1);
+  g_main_iteration(0);
 }
 
 /* Not used in this file, really, but we need the require
