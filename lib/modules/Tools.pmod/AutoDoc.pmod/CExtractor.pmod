@@ -13,14 +13,9 @@ static inherit .DocParser;
 
 #include "./debug.h"
 
-constant CdocMarker = "*!";
 constant EOF = .PikeParser.EOF;
 
-static int isDocComment(string s) {
-  return has_prefix(s, "/"+CdocMarker);
-}
-
-static constant scanString = "%*[ \t]" + CdocMarker + "%s";
+static constant scanString = "%*[ \t]*!%s";
 static string stripDocMarker(string s) {
   string res;
   if (sscanf(s, scanString, res) == 2)
@@ -47,7 +42,7 @@ static private class Extractor {
     array(array(SourcePosition|string)) a = ({});
     int line = 1;
     foreach(ctokens, string ctoken) {
-      if (isDocComment(ctoken)) {
+      if (has_prefix(ctoken, "/*!")) {
         int firstLine = line;
         array(string) lines = ctoken[1 .. strlen(ctoken) - 3]/"\n";
         //    werror("%O\n", lines);
