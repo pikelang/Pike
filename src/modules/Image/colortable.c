@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.66 1999/04/20 18:16:09 mirar Exp $ */
+/* $Id: colortable.c,v 1.67 1999/05/23 17:46:39 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.66 1999/04/20 18:16:09 mirar Exp $
+**!	$Id: colortable.c,v 1.67 1999/05/23 17:46:39 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.66 1999/04/20 18:16:09 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.67 1999/05/23 17:46:39 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -39,16 +39,12 @@ RCSID("$Id: colortable.c,v 1.66 1999/04/20 18:16:09 mirar Exp $");
 #include "builtin_functions.h"
 #include "../../error.h"
 #include "module_support.h"
+#include "operators.h"
+#include "dmalloc.h"
 
 #include "image.h"
 #include "colortable.h"
-#include "dmalloc.h"
-
-void f_index(INT32);
-
-struct program *image_colortable_program;
-extern struct program *image_program;
-extern struct program *image_color_program;
+#include "initstuff.h"
 
 #define WEIGHT_NEEDED (nct_weight_t)(0x10000000)
 #define WEIGHT_REMOVE (nct_weight_t)(0x10000001)
@@ -1908,7 +1904,6 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 return 1;
 
       case NCTD_ORDERED:
-	 fprintf(stderr,"init ordered\n");
 	 /* copy it all */
 	 dith->u.ordered=nct->du.ordered;
 
@@ -4367,16 +4362,16 @@ void image_colortable_corners(INT32 args)
 
 /***************** global init etc *****************************/
 
-void init_colortable_programs(void)
+void init_image_colortable(void)
 {
    s_array=make_shared_string("array");
    s_string=make_shared_string("string");
    s_mapping=make_shared_string("mapping");
 
-   start_new_program();
    ADD_STORAGE(struct neo_colortable);
 
    set_init_callback(init_colortable_struct);
+   set_exit_callback(exit_colortable_struct);
 
    /* function(void:void)|"
 		"function(array(array(int)):void)|"
@@ -4441,23 +4436,12 @@ void init_colortable_programs(void)
 
    ADD_FUNCTION("corners",image_colortable_corners,tFunc(,tArray),0);
 
-   set_exit_callback(exit_colortable_struct);
-  
-   image_colortable_program=end_program();
-   add_program_constant("colortable",image_colortable_program, 0); /* compat */
-   add_program_constant("Colortable",image_colortable_program, 0); 
 }
 
-void exit_colortable(void) 
+void exit_image_colortable(void) 
 {
    free_string(s_array);
    free_string(s_mapping);
    free_string(s_string);
-
-   if(image_colortable_program)
-   {
-      free_program(image_colortable_program);
-      image_colortable_program=0;
-   }
 }
 

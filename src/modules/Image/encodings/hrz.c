@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: hrz.c,v 1.1 1999/04/12 10:30:03 per Exp $");
+RCSID("$Id: hrz.c,v 1.2 1999/05/23 17:46:53 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -13,6 +13,7 @@ RCSID("$Id: hrz.c,v 1.1 1999/04/12 10:30:03 per Exp $");
 #include "threads.h"
 #include "array.h"
 #include "error.h"
+#include "builtin_functions.h"
 
 
 #include "image.h"
@@ -39,8 +40,6 @@ extern struct program *image_program;
 **! No compression, no header, just the raw RGB data.
 **! HRZ is (was?) used for amatuer radio slow-scan TV.
 */
-
-struct program *image_encoding_hrz_program;
 
 void image_hrz_f_decode(INT32 args)
 {
@@ -106,25 +105,11 @@ void image_hrz_f_encode(INT32 args )
 
 void init_image_hrz()
 {
-  start_new_program();
   add_function( "decode", image_hrz_f_decode, "function(string:object)", 0);
   add_function( "_decode", image_hrz_f__decode, "function(string:mapping)", 0);
   add_function( "encode", image_hrz_f_encode, "function(object:string)", 0);
-  image_encoding_hrz_program=end_program();
-  push_object(clone_object(image_encoding_hrz_program,0));
-  {
-    struct pike_string *s=make_shared_string("HRZ");
-    add_constant(s,sp-1,0);
-    free_string(s);
-  }
-  pop_stack();
 }
 
 void exit_image_hrz()
 {
-  if(image_encoding_hrz_program)
-  {
-    free_program(image_encoding_hrz_program);
-    image_encoding_hrz_program=NULL;
-  }
 }

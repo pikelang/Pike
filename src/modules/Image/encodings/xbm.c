@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.4 1999/05/10 23:03:47 mirar Exp $");
+RCSID("$Id: xbm.c,v 1.5 1999/05/23 17:47:02 mirar Exp $");
 
 #include "config.h"
 
@@ -422,22 +422,12 @@ void image_xbm_encode( INT32 args )
 static struct program *image_encoding_xbm_program=NULL;
 void init_image_xbm( )
 {
-  start_new_program();
   add_function( "_decode", image_xbm__decode, 
                 "function(string,mapping|void:mapping(string:object))", 0);
   add_function( "decode", image_xbm_decode, 
                 "function(string:object)", 0);
   add_function( "encode", image_xbm_encode,  
                 "function(object,mapping|void:string)", 0); 
-  image_encoding_xbm_program=end_program();
-
-  push_object(clone_object(image_encoding_xbm_program,0));
-  {
-    struct pike_string *s=make_shared_string("XBM");
-    add_constant(s,sp-1,0);
-    free_string(s);
-  }
-  pop_stack();
   param_name=make_shared_string("name");
   param_fg=make_shared_string("fg");
   param_bg=make_shared_string("bg");
@@ -446,13 +436,8 @@ void init_image_xbm( )
 
 void exit_image_xbm(void)
 {
-  if(image_encoding_xbm_program)
-  {
-    free_program(image_encoding_xbm_program);
-    image_encoding_xbm_program=0;
-    free_string(param_name);
-    free_string(param_fg);
-    free_string(param_bg);
-    free_string(param_invert);
-  }
+   free_string(param_name);
+   free_string(param_fg);
+   free_string(param_bg);
+   free_string(param_invert);
 }

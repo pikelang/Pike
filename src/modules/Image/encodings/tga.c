@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.6 1999/05/10 23:03:46 mirar Exp $
+ * $Id: tga.c,v 1.7 1999/05/23 17:47:00 mirar Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -73,7 +73,7 @@
 #include "image.h"
 #include "colortable.h"
 
-RCSID("$Id: tga.c,v 1.6 1999/05/10 23:03:46 mirar Exp $");
+RCSID("$Id: tga.c,v 1.7 1999/05/23 17:47:00 mirar Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -428,7 +428,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   int i, j, k;
   int pelbytes=0, npels, pels, read_so_far=0, rle=0;
   unsigned char *cmap=NULL, *data;
-  int itype;
+  int itype=0;
 
   int (*myfread)(unsigned char *, int, int, struct buffer *);
 
@@ -829,7 +829,16 @@ void image_tga__decode( INT32 args )
   push_object( i.ao );
   push_constant_text( "image" );
   push_object( i.io );
-  f_aggregate_mapping( 4 );
+
+  push_constant_text( "type" );
+  push_constant_text( "image/x-targa" );
+
+  push_constant_text( "xsize" );
+  push_int( i.img->xsize );
+  push_constant_text( "ysize" );
+  push_int( i.img->ysize );
+
+  f_aggregate_mapping( 10 );
 }
 
 /*
@@ -932,33 +941,19 @@ void image_tga_encode( INT32 args )
 static struct program *image_encoding_tga_program=NULL;
 void init_image_tga( )
 {
-   start_new_program();
    add_function( "_decode", image_tga__decode, 
                  "function(string:mapping(string:object))", 0);
    add_function( "decode", image_tga_decode, 
                  "function(string:object)", 0);
    add_function( "encode", image_tga_encode, 
                  "function(object,mapping|void:string)", 0);
-   image_encoding_tga_program=end_program();
 
-   push_object(clone_object(image_encoding_tga_program,0));
-   {
-     struct pike_string *s=make_shared_string("TGA");
-     add_constant(s,sp-1,0);
-     free_string(s);
-   }
-   pop_stack();
    param_alpha=make_shared_string("alpha");
    param_raw=make_shared_string("raw");
 }
 
 void exit_image_tga(void)
 {
-  if(image_encoding_tga_program)
-  {
-    free_program(image_encoding_tga_program);
-    image_encoding_tga_program=0;
-    free_string(param_alpha);
-    free_string(param_raw);
-  }
+   free_string(param_alpha);
+   free_string(param_raw);
 }

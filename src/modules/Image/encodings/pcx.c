@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.5 1999/04/15 04:08:35 hubbe Exp $");
+RCSID("$Id: pcx.c,v 1.6 1999/05/23 17:46:55 mirar Exp $");
 
 #include "config.h"
 
@@ -582,7 +582,6 @@ void image_pcx_encode( INT32 args )
 static struct program *image_encoding_pcx_program=NULL;
 void init_image_pcx( )
 {
-  start_new_program();
   add_function( "_decode", image_pcx__decode, 
                 "function(string:mapping(string:object))", 0);
   add_function( "decode", image_pcx_decode, 
@@ -591,15 +590,7 @@ void init_image_pcx( )
                 "function(object,mapping|void:string)", 0);
   add_function( "_encode", image_pcx_encode, 
                 "function(object,mapping|void:string)", 0);
-  image_encoding_pcx_program=end_program();
 
-  push_object(clone_object(image_encoding_pcx_program,0));
-  {
-    struct pike_string *s=make_shared_string("PCX");
-    add_constant(s,sp-1,0);
-    free_string(s);
-  }
-  pop_stack();
   opt_raw=make_shared_string("raw");
   opt_dpy=make_shared_string("dpy");
   opt_xdpy=make_shared_string("xdpy");
@@ -611,16 +602,11 @@ void init_image_pcx( )
 
 void exit_image_pcx(void)
 {
-  if(image_encoding_pcx_program)
-  {
-    free_program(image_encoding_pcx_program);
-    image_encoding_pcx_program=0;
-    free_string(opt_raw);
-    free_string(opt_dpy);
-    free_string(opt_xdpy);
-    free_string(opt_ydpy);
-    free_string(opt_xoffset);
-    free_string(opt_colortable);
-    free_string(opt_yoffset);
-  }
+   free_string(opt_raw);
+   free_string(opt_dpy);
+   free_string(opt_xdpy);
+   free_string(opt_ydpy);
+   free_string(opt_xoffset);
+   free_string(opt_colortable);
+   free_string(opt_yoffset);
 }

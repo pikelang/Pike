@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.6 1999/04/15 20:31:18 per Exp $");
+RCSID("$Id: _xpm.c,v 1.7 1999/05/23 17:46:48 mirar Exp $");
 
 #include "config.h"
 
@@ -386,28 +386,12 @@ void f__xpm_trim_rows( INT32 args )
   pop_n_elems(args-1);
 }
 
-static struct program *image_encoding__xpm_program=NULL;
 void init_image__xpm( )
 {
-  start_new_program();
    add_function( "_xpm_write_rows", f__xpm_write_rows, "mixed", 0); 
   add_function( "_xpm_trim_rows", f__xpm_trim_rows, "mixed", 0);
-  image_encoding__xpm_program=end_program();
-
-  push_object(clone_object(image_encoding__xpm_program,0));
-  {
-    struct pike_string *s=make_shared_string("_XPM");
-    add_constant(s,sp-1,0);
-    free_string(s);
-  }
-  pop_stack();
 }
 
 void exit_image__xpm(void)
 {
-  if(image_encoding__xpm_program)
-  {
-    free_program(image_encoding__xpm_program);
-    image_encoding__xpm_program=0;
-  }
 }

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.7 1999/04/15 04:08:39 hubbe Exp $");
+RCSID("$Id: xcf.c,v 1.8 1999/05/23 17:47:03 mirar Exp $");
 
 #include "config.h"
 
@@ -1233,7 +1233,6 @@ void image_xcf_f__decode_tiles( INT32 args )
 static struct program *image_encoding_xcf_program=NULL;
 void init_image_xcf()
 {
-  start_new_program();
   add_function( "___decode", image_xcf____decode, 
                 "function(string:mapping)", 0);
 
@@ -1310,17 +1309,6 @@ void init_image_xcf()
   add_integer_constant( "INDEXED_GIMAGE", INDEXED_GIMAGE, 0 );
   add_integer_constant( "INDEXEDA_GIMAGE", INDEXEDA_GIMAGE, 0 );
 
-  image_encoding_xcf_program=end_program();
-
-
-  push_object(clone_object(image_encoding_xcf_program,0));
-
-  {
-    struct pike_string *s=make_shared_string("_XCF");
-    add_constant(s,sp-1,0);
-    free_string(s);
-  }
-  pop_stack();
 #define STRING(X) s_##X = make_shared_binary_string(#X,sizeof( #X )-sizeof(""));
 #include "xcf_constant_strings.h"
 #undef STRING
@@ -1329,13 +1317,8 @@ void init_image_xcf()
 
 void exit_image_xcf()
 {
-  if(image_encoding_xcf_program)
-  {
-    free_program(image_encoding_xcf_program);
-    image_encoding_xcf_program=0;
 #define STRING(X) free_string(s_##X)
 #include "xcf_constant_strings.h"
 #undef STRING
-  }
 }
 

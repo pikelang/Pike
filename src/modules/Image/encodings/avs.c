@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.5 1999/05/13 03:25:48 neotron Exp $");
+RCSID("$Id: avs.c,v 1.6 1999/05/23 17:46:50 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -43,8 +43,6 @@ extern struct program *image_program;
 **! The alpha channel is 8 bit, and there is no separate alpha for r,
 **! g and b.
 */
-
-struct program *image_encoding_avs_program;
 
 void image_avs_f__decode(INT32 args)
 {
@@ -138,25 +136,11 @@ void image_avs_f_encode(INT32 args )
 
 void init_image_avs()
 {
-  start_new_program();
   add_function( "decode",  image_avs_f_decode,  "function(string:object)", 0);
   add_function( "_decode", image_avs_f__decode, "function(string:mapping)", 0);
   add_function( "encode",  image_avs_f_encode,  "function(object:string)", 0);
-  image_encoding_avs_program=end_program();
-  push_object(clone_object(image_encoding_avs_program,0));
-  {
-    struct pike_string *s=make_shared_string("AVS");
-    add_constant(s,sp-1,0);
-    free_string(s);
-  }
-  pop_stack();
 }
 
 void exit_image_avs()
 {
-  if(image_encoding_avs_program)
-  {
-    free_program(image_encoding_avs_program);
-    image_encoding_avs_program=NULL;
-  }
 }

@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.21 1999/05/20 14:08:56 mirar Exp $ */
+/* $Id: x.c,v 1.22 1999/05/23 17:47:01 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.21 1999/05/20 14:08:56 mirar Exp $
+**!	$Id: x.c,v 1.22 1999/05/23 17:47:01 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.21 1999/05/20 14:08:56 mirar Exp $");
+RCSID("$Id: x.c,v 1.22 1999/05/23 17:47:01 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1092,9 +1092,6 @@ struct program *image_x_module_program=NULL;
 
 void init_image_x(void)
 {
-   struct pike_string *s;
-   start_new_program();
-   
    add_function("encode_truecolor",image_x_encode_truecolor,
 		"function(object,int,int,int,int,int,int,int,int,int,void|object:string)",0);
    add_function("encode_truecolor_masks",image_x_encode_truecolor_masks,
@@ -1105,18 +1102,8 @@ void init_image_x(void)
    add_function("examine_mask",image_x_call_examine_mask,
 		"function(int:array(int))",0);
 
-   image_x_module_program=end_program();
-   push_object(clone_object(image_x_module_program,0));
-   add_constant(s=make_shared_string("X"),sp-1,0);
-   free_string(s);
-   pop_stack();
 }
 
 void exit_image_x(void)
 {
-   if(image_x_module_program)
-   {
-      free_program(image_x_module_program);
-      image_x_module_program=0;
-   }
 }

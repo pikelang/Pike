@@ -202,6 +202,7 @@ testfont binary
 /src/modules/Image/illustration.pike foreign_ident
 /src/modules/Image/image.c foreign_ident
 /src/modules/Image/image.h foreign_ident
+/src/modules/Image/image_module.c foreign_ident
 /src/modules/Image/layers.c foreign_ident
 /src/modules/Image/matrix.c foreign_ident
 /src/modules/Image/mkwmml.pike foreign_ident

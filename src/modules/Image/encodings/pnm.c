@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.18 1999/04/13 12:32:44 mirar Exp $ */
+/* $Id: pnm.c,v 1.19 1999/05/23 17:46:58 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.18 1999/04/13 12:32:44 mirar Exp $
+**!	$Id: pnm.c,v 1.19 1999/05/23 17:46:58 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.18 1999/04/13 12:32:44 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.19 1999/05/23 17:46:58 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -583,8 +583,6 @@ struct program *image_pnm_module_program=NULL;
 
 void init_image_pnm(void)
 {
-   start_new_program();
-   
    add_function("encode",img_pnm_encode_binary,
 		"function(object:string)",0);
    add_function("encode_binary",img_pnm_encode_binary,
@@ -608,22 +606,8 @@ void init_image_pnm(void)
 
    add_function("decode",img_pnm_decode,
 		"function(string:object)",0);
-
-   image_pnm_module_program=end_program();
-   push_object(clone_object(image_pnm_module_program,0));
-   {
-     struct pike_string *s=make_shared_string("PNM");
-     add_constant(s,sp-1,0);
-     free_string(s);
-   }
-   pop_stack();
 }
 
 void exit_image_pnm(void)
 {
-  if(image_pnm_module_program)
-  {
-    free_program(image_pnm_module_program);
-    image_pnm_module_program=0;
-  }
 }

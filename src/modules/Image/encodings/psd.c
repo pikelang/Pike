@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.9 1999/05/08 00:44:42 hubbe Exp $");
+RCSID("$Id: psd.c,v 1.10 1999/05/23 17:46:59 mirar Exp $");
 
 #include "config.h"
 
@@ -625,7 +625,6 @@ static void f_apply_cmap( INT32 args )
 static struct program *image_encoding_psd_program=NULL;
 void init_image_psd()
 {
-  start_new_program();
   add_function( "___decode", image_f_psd___decode, 
                 "function(string:mapping)", 0);
   add_function( "___decode_image_channel", f_decode_image_channel, 
@@ -650,15 +649,6 @@ void init_image_psd()
   add_integer_constant("LAYER_FLAG_BIT4", 0x04, 0 );
   add_integer_constant("LAYER_FLAG_NOPIX", 0x08, 0 );
 
-  image_encoding_psd_program=end_program();
-  
-  push_object(clone_object(image_encoding_psd_program,0));
-  {
-    struct pike_string *s=make_shared_string("_PSD");
-    add_constant(s,sp-1,0);
-    free_string(s);
-  }
-  pop_stack();
 #define STRING(X) s_##X = make_shared_binary_string(#X,sizeof( #X )-sizeof(""));
 #include "psd_constant_strings.h"
 #undef STRING
@@ -667,13 +657,8 @@ void init_image_psd()
 
 void exit_image_psd()
 {
-  if(image_encoding_psd_program)
-  {
-    free_program(image_encoding_psd_program);
-    image_encoding_psd_program=0;
 #define STRING(X) free_string(s_##X)
 #include "psd_constant_strings.h"
 #undef STRING
-  }
 }
 

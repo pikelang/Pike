@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.16 1999/05/20 17:07:00 mirar Exp $
+**!	$Id: colors.c,v 1.17 1999/05/23 17:46:38 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.16 1999/05/20 17:07:00 mirar Exp $");
+RCSID("$Id: colors.c,v 1.17 1999/05/23 17:46:38 mirar Exp $");
 
 #include "config.h"
 
@@ -1431,6 +1431,8 @@ void init_image_colors(void)
 
    no_name=make_shared_string("");
 
+   /* make color object program */
+
    start_new_program();
 
    ADD_STORAGE(struct color_struct);
@@ -1471,8 +1473,9 @@ void init_image_colors(void)
    ADD_FUNCTION("`+",image_color_add,tFunc(tObj,tObj),0);
 
    image_color_program=end_program();
+
+   /* this is the Image.Color stuff */
    
-   start_new_program();
    ADD_FUNCTION("`[]",image_get_color,tFunc(tStr,tObj),0);
    ADD_FUNCTION("`()",image_make_color,tFuncV(,tOr(tStr,tInt),tObj),0);
    ADD_FUNCTION("rgb",image_make_rgb_color,tFunc(tInt tInt tInt,tObj),0);
@@ -1490,23 +1493,11 @@ void init_image_colors(void)
    ADD_FUNCTION("_values",image_colors_values,tFunc(,tArr(tObj)),0);
 
    add_program_constant("Color",image_color_program,0);
-
-   prg=end_program();
-   push_object(clone_object(prg,0));
-   free_program(prg);
-   str=make_shared_string("Color");
-   add_constant(str,sp-1,0);
-   free_string(str);
-   pop_stack();
 }
 
 void exit_image_colors(void)
 {
-   if (image_color_program)
-   {
-      free_program(image_color_program);
-      image_color_program=NULL;
-   }
+   free_program(image_color_program);
    if (colors)
    {
       int i;

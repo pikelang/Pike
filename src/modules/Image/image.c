@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.135 1999/05/20 17:34:35 mirar Exp $ */
+/* $Id: image.c,v 1.136 1999/05/23 17:46:41 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.135 1999/05/20 17:34:35 mirar Exp $
+**!	$Id: image.c,v 1.136 1999/05/23 17:46:41 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.135 1999/05/20 17:34:35 mirar Exp $");
+RCSID("$Id: image.c,v 1.136 1999/05/23 17:46:41 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3554,73 +3554,10 @@ extern void exit_image_hrz(void);
 extern void init_image_avs(void);
 extern void exit_image_avs(void);
 
-/* dynamic encoders (dependent on other modules, loaded dynamically) */
-
-extern struct object* init_image_png(void);
-extern void exit_image_png(void);
-
-static struct pike_string 
-   *magic_PNG;
-
-static struct object *png_object=NULL;
-
-static void image_index_magic(INT32 args)
-{
-   struct svalue tmp;
-   if (args!=1) 
-      error("Image.`[]: Too few or too many arguments\n");
-   if (sp[-1].type!=T_STRING)
-      error("Image.`[]: Illegal type of argument\n");
-
-   if (sp[-1].u.string==magic_PNG)
-   {
-      pop_stack();
-      if (!png_object)
-	 png_object=init_image_png();
-      ref_push_object(png_object);
-      return;
-   }   
-
-   stack_dup();
-   ref_push_object(THISOBJ);
-   stack_swap();
-   f_arrow(2);
-
-   if (sp[-1].type==T_INT)
-   {
-      pop_stack();
-      push_text("_Image_");
-      stack_swap();
-      f_add(2);
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
-   }
-   else
-   {
-      stack_swap();
-      pop_stack();
-   }
-}
-
 #define tRGB tOr3(tColor,tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid)
 
-void pike_module_init(void)
+void init_image_image(void)
 {
-   int i;
-#ifdef PIKE_DEBUG
-   struct svalue *save_sp = sp;
-#define IMAGE_CHECK_STACK()	do { if (save_sp != sp) { fatal("%s:%d: %d droppings on stack!\n", __FILE__, __LINE__, sp - save_sp); } } while(0)
-#else
-#define IMAGE_CHECK_STACK()
-#endif /* PIKE_DEBUG */
-
-   magic_PNG=make_shared_string("PNG");
-
-   image_noise_init();
-
-   IMAGE_CHECK_STACK();
-
-   start_new_program();
    ADD_STORAGE(struct image);
 
    ADD_FUNCTION("create",image_create,
@@ -3912,90 +3849,10 @@ void pike_module_init(void)
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
-  
-   image_program=end_program();
-   add_program_constant("image",image_program, 0); /* compat */
-   add_program_constant("Image",image_program, 0);
-  
-   for (i=0; i<CIRCLE_STEPS; i++) 
-      circle_sin_table[i]=(INT32)4096*sin(((double)i)*2.0*3.141592653589793/(double)CIRCLE_STEPS);
-
-   init_font_programs();
-   init_colortable_programs();
-   init_image_colors();
-
-   ADD_FUNCTION("`[]",image_index_magic,
-		tFunc(tStr,tObj),0);
-
-   init_image_gif();
-   IMAGE_CHECK_STACK();
-   init_image_pnm();
-   IMAGE_CHECK_STACK();
-   init_image_bmp();
-   IMAGE_CHECK_STACK();
-   init_image_xwd();
-   IMAGE_CHECK_STACK();
-   init_image_any();
-   IMAGE_CHECK_STACK();
-   init_image_tga();
-   IMAGE_CHECK_STACK();
-   init_image_pcx();
-   IMAGE_CHECK_STACK();
-   init_image_xbm();
-   IMAGE_CHECK_STACK();
-   init_image__xpm();
-   IMAGE_CHECK_STACK();
-   init_image_ilbm();
-   IMAGE_CHECK_STACK();
-   init_image_xcf();
-   IMAGE_CHECK_STACK();
-   init_image_psd();
-   IMAGE_CHECK_STACK();
-   init_image_x();
-   IMAGE_CHECK_STACK();
-   init_image_hrz();
-   IMAGE_CHECK_STACK();
-   init_image_avs();
-   IMAGE_CHECK_STACK();
-   init_image_layers();
-   IMAGE_CHECK_STACK();
 }
 
-void pike_module_exit(void) 
+void exit_image_image(void) 
 {
-   if(image_program)
-   {
-      free_program(image_program);
-      image_program=0;
-   }
-   exit_font();
-   exit_colortable();
-   exit_image_colors();
-
-   exit_image_gif();
-   exit_image_pnm();
-   exit_image_bmp();
-   exit_image_xwd();
-   exit_image_any();
-   exit_image_tga();
-   exit_image_pcx();
-   exit_image__xpm();
-   exit_image_xbm();
-   exit_image_ilbm();
-   exit_image_xcf();
-   exit_image_psd();
-   exit_image_hrz();
-   exit_image_avs();
-   exit_image_layers();
-   if (png_object) 
-   {
-      free_object(png_object);
-      png_object=NULL;
-      exit_image_png();
-   }
-   exit_image_x();
-
-   free_string(magic_PNG);
 }
 
 

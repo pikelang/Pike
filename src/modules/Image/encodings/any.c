@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.8 1999/05/02 15:29:25 mirar Exp $ */
+/* $Id: any.c,v 1.9 1999/05/23 17:46:49 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.8 1999/05/02 15:29:25 mirar Exp $
+**!	$Id: any.c,v 1.9 1999/05/23 17:46:49 mirar Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.8 1999/05/02 15:29:25 mirar Exp $");
+RCSID("$Id: any.c,v 1.9 1999/05/23 17:46:49 mirar Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -174,27 +174,12 @@ void image_any_decode_alpha(INT32 args)
 
 void init_image_any(void)
 {
-   struct program *p;
-
-   start_new_program();
-   
    add_function("_decode",image_any__decode,
 		"function(string:mapping)",0);
    add_function("decode",image_any_decode,
 		"function(string:mapping)",0);
    add_function("decode_alpha",image_any_decode_alpha,
 		"function(string:mapping)",0);
-   /** done **/
-
-   p=end_program();
-   push_object(clone_object(p,0));
-   {
-     struct pike_string *s=make_shared_string("ANY");
-     add_constant(s,sp-1,0);
-     free_string(s);
-   }
-   free_program(p);
-   pop_stack();
 }
 
 void exit_image_any(void)

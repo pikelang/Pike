@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.47 1999/04/25 20:03:36 grubba Exp $ */
+/* $Id: font.c,v 1.48 1999/05/23 17:46:40 mirar Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.47 1999/04/25 20:03:36 grubba Exp $
+**!	$Id: font.c,v 1.48 1999/05/23 17:46:40 mirar Exp $
 **! class Font
 **!
 **! note
@@ -877,9 +877,8 @@ int baseline();             // font baseline
 
 */
 
-void init_font_programs(void)
+void init_image_font(void)
 {
-   start_new_program();
    ADD_STORAGE(struct font*);
 
    /* function(string:object|int) */
@@ -919,19 +918,10 @@ void init_font_programs(void)
    
    set_init_callback(init_font_struct);
    set_exit_callback(exit_font_struct);
-  
-   font_program=end_program();
-   add_program_constant("font",font_program, 0); /* compat */
-   add_program_constant("Font",font_program, 0);
 }
 
-void exit_font(void) 
+void exit_image_font(void) 
 {
-  if(font_program)
-  {
-    free_program(font_program);
-    font_program=0;
-  }
 }
 
 

@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.10 1999/04/19 21:10:35 marcus Exp $ */
+/* $Id: ilbm.c,v 1.11 1999/05/23 17:46:54 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.10 1999/04/19 21:10:35 marcus Exp $
+**!	$Id: ilbm.c,v 1.11 1999/05/23 17:46:54 mirar Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.10 1999/04/19 21:10:35 marcus Exp $");
+RCSID("$Id: ilbm.c,v 1.11 1999/05/23 17:46:54 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -248,9 +248,9 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
   unsigned int x, y;
   int rbyt = ((bmhd->w+15)&~15)>>3;
   int eplanes = (bmhd->masking == mskHasMask? bmhd->nPlanes+1:bmhd->nPlanes);
-  unsigned char *line;
+  unsigned char *line=0;
   INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(INT32));
-  INT32 suse;
+  INT32 suse=0;
   rgb_group *dest = img->img;
   rgb_group *adest = (alpha==NULL? NULL : alpha->img);
 
@@ -826,7 +826,6 @@ void init_image_ilbm(void)
      pop_stack();
    }
 
-   start_new_program();
    
    add_function("__decode",image_ilbm___decode,
 		"function(string:array)",0);
@@ -836,25 +835,11 @@ void init_image_ilbm(void)
 		"function(string|array:object)",0);
    add_function("encode",image_ilbm_encode,
 		"function(object,void|mapping(string:mixed):string)",0);
-
-   image_encoding_ilbm_program=end_program();
-   push_object(clone_object(image_encoding_ilbm_program,0));
-   {
-     struct pike_string *s=make_shared_string("ILBM");
-     add_constant(s,sp-1,0);
-     free_string(s);
-   }
-   pop_stack();
 }
 
 void exit_image_ilbm(void)
 {
   int n;
-  if(image_encoding_ilbm_program)
-  {
-    free_program(image_encoding_ilbm_program);
-    image_encoding_ilbm_program=NULL;
-  }
   for(n=0; n<4; n++)
     free_svalue(&string_[n]);
 }

@@ -1,7 +1,8 @@
-# $Id: Makefile.in,v 1.22 1999/04/23 21:34:24 grubba Exp $
+# $Id: Makefile.in,v 1.23 1999/05/23 17:46:37 mirar Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS = image.o font.o togif.o matrix.o pnm_compat.o blit.o \
+OBJS = image_module.o \
+	image.o font.o togif.o matrix.o pnm_compat.o blit.o \
 	pattern.o dct.o operator.o x.o colortable.o polyfill.o \
 	orient.o colors.o search.o layers.o
 MODNAME=image

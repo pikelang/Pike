@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.11 1999/05/08 00:42:12 hubbe Exp $
+**!	$Id: layers.c,v 1.12 1999/05/23 17:46:44 mirar Exp $
 **! class Layer
 */
 
@@ -10,7 +10,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.11 1999/05/08 00:42:12 hubbe Exp $");
+RCSID("$Id: layers.c,v 1.12 1999/05/23 17:46:44 mirar Exp $");
 
 #include "config.h"
 
@@ -2060,13 +2060,11 @@ void init_image_layers(void)
    for (i=0; i<LAYER_MODES; i++)
       layer_mode[i].ps=make_shared_string(layer_mode[i].name);
 
-   start_new_program();
+   /* layer object */
 
    ADD_STORAGE(struct layer);
    set_init_callback(init_layer);
    set_exit_callback(exit_layer);
-
-#define tLayerMap tMap(tString,tOr4(tString,tColor,tFloat,tInt))
 
    ADD_FUNCTION("create",image_layer_create,
 		tOr4(tFunc(,tVoid),
@@ -2109,15 +2107,6 @@ void init_image_layers(void)
    ADD_FUNCTION("fill_alpha",image_layer_fill_alpha,tFunc(,tObj),0);
 
    ADD_FUNCTION("tiled",image_layer_tiled,tFunc(,tInt01),0);
-
-   image_layer_program=end_program();
-
-   add_program_constant("Layer",image_layer_program,0);
-
-   ADD_FUNCTION("lay",image_lay,
-		tOr(tFunc(tArr(tOr(tObj,tLayerMap)),tObj),
-		    tFunc(tArr(tOr(tObj,tLayerMap))
-			  tInt tInt tInt tInt,tObj)),0);
 }
 
 void exit_image_layers(void)
@@ -2126,10 +2115,4 @@ void exit_image_layers(void)
    
    for (i=0; i<LAYER_MODES; i++)
       free_string(layer_mode[i].ps);
-
-   if (image_layer_program)
-   {
-      free_program(image_layer_program);
-      image_layer_program=NULL;
-   }
 }

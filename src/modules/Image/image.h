@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.31 1999/05/20 17:08:03 mirar Exp $
+**!	$Id: image.h,v 1.32 1999/05/23 17:46:43 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -78,6 +78,7 @@ struct color_struct
 };
 
 #define tColor tOr3(tArr(tInt),tString,tObj)
+#define tLayerMap tMap(tString,tOr4(tString,tColor,tFloat,tInt))
 
 /* COMPAT: encoding of a gif - from togif */
 

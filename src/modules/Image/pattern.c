@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.15 1999/04/13 12:32:30 mirar Exp $ */
+/* $Id: pattern.c,v 1.16 1999/05/23 17:46:45 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.15 1999/04/13 12:32:30 mirar Exp $
+**!	$Id: pattern.c,v 1.16 1999/05/23 17:46:45 mirar Exp $
 **! class Image
 */
 
@@ -544,10 +544,4 @@ void image_random(INT32 args)
    THREADS_DISALLOW();
 
    push_object(o);
-}
-
-
-void image_noise_init(void)
-{
-
 }

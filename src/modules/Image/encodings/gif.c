@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.47 1999/04/13 12:32:41 mirar Exp $ */
+/* $Id: gif.c,v 1.48 1999/05/23 17:46:52 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.47 1999/04/13 12:32:41 mirar Exp $
+**!	$Id: gif.c,v 1.48 1999/05/23 17:46:52 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.47 1999/04/13 12:32:41 mirar Exp $");
+RCSID("$Id: gif.c,v 1.48 1999/05/23 17:46:52 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2530,7 +2530,6 @@ struct program *image_encoding_gif_program=NULL;
 
 void init_image_gif(void)
 {
-   start_new_program();
    
    add_function("render_block",image_gif_render_block,
 		"function(object,object,void|int,void|int,void|int,void|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)"
@@ -2584,22 +2583,8 @@ void init_image_gif(void)
    add_integer_constant("ERROR_TOO_MUCH_DATA",GIF_ERROR_TOO_MUCH_DATA,0);
 
    /** done **/
-
-   image_encoding_gif_program=end_program();
-   push_object(clone_object(image_encoding_gif_program,0));
-   {
-     struct pike_string *s=make_shared_string("GIF");
-     add_constant(s,sp-1,0);
-     free_string(s);
-   }
-   pop_stack();
 }
 
 void exit_image_gif(void)
 {
-  if(image_encoding_gif_program)
-  {
-    free_program(image_encoding_gif_program);
-    image_encoding_gif_program=0;
-  }
 }
