@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.125 1998/10/12 22:57:13 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.126 1998/10/14 05:48:47 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1059,6 +1059,7 @@ test_eq(10-3.0,7.0)
 test_eq(3-10.0,-7.0)
 test_eq(10.0-3,7.0)
 test_eq(3.0-10,-7.0)
+test_eq(034567 - 10000,4711)
 test_eq("foobargazonk"-"o","fbargaznk")
 test_equal(({"foo","bar","gazonk"})-({"foo","gazonk"}),({"bar"}))
 test_equal(({"c","foo","bar","gazonk","a","b",})-({"foo","gazonk"}),({"c","bar","a","b"}))
@@ -1084,9 +1085,20 @@ test_eq(2*2.0*2.0*2.0*2.0,32.0)
 test_eq(3.0*4,12.0)
 test_eq(4.0*3,12.0)
 test_eq(2.0*2*2.0*2*2.0,32.0)
+
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
 test_eq(({"f\777\777","bar","gaz\777nk"})*"-","f\777\777-bar-gaz\777nk")
 test_eq(({"f\7777777\7777777","bar","gaz\7777777nk"})*"-","f\7777777\7777777-bar-gaz\7777777nk")
+
+test_eq(({"foo","bar","gazonk"})*"\777","foo\777bar\777gazonk")
+test_eq(({"f\777\777","bar","gaz\777nk"})*"\777","f\777\777\777bar\777gaz\777nk")
+test_eq(({"f\7777777\7777777","bar","gaz\7777777nk"})*"\777","f\7777777\7777777\777bar\777gaz\7777777nk")
+
+test_eq(({"foo","bar","gazonk"})*"\7777777","foo\7777777bar\7777777gazonk")
+test_eq(({"f\777\777","bar","gaz\777nk"})*"\7777777","f\777\777\7777777bar\7777777gaz\777nk")
+test_eq(({"f\7777777\7777777","bar","gaz\7777777nk"})*"\7777777","f\7777777\7777777\7777777bar\7777777gaz\7777777nk")
+
+
 test_equal( ({ ({1}), ({2}), ({3}) })*({8}), ({1,8,2,8,3}))
 test_equal( ({ 1 })*3, ({1,1,1}) )
 test_equal( "foo"*3, "foofoofoo" )
@@ -1132,6 +1144,30 @@ test_equal("foobargazonk"/5.0,({"fooba","rgazo","nk"}))
 test_equal("foobargazonk"/-5.0,({"fo","obarg","azonk"}))
 test_equal("foobargazonk"/2.5,({"fo","oba","rg","azo","nk"}))
 
+test_equal("f\777\777bargaz\777nk"/1,"f\777\777bargaz\777nk"/"")
+test_equal("f\777\777bargaz\777nk"/2,({"f\777","\777b","ar","ga","z\777","nk"}))
+test_equal("f\777\777bargaz\777nk"/3,({"f\777\777","bar","gaz","\777nk"}))
+test_equal("f\777\777bargaz\777nk"/4,({"f\777\777b","arga","z\777nk"}))
+test_equal("f\777\777bargaz\777nk"/5,({"f\777\777ba","rgaz\777"}))
+test_equal("f\777\777bargaz\777nk"/-6,({"f\777\777bar","gaz\777nk"}))
+test_equal("f\777\777bargaz\777nk"/-7,({"rgaz\777nk"}))
+
+test_equal("f\777\777bargaz\777nk"/5.0,({"f\777\777ba","rgaz\777","nk"}))
+test_equal("f\777\777bargaz\777nk"/-5.0,({"f\777","\777barg","az\777nk"}))
+test_equal("f\777\777bargaz\777nk"/2.5,({"f\777","\777ba","rg","az\777","nk"}))
+
+test_equal("f\7777777\7777777bargaz\7777777nk"/1,"f\7777777\7777777bargaz\7777777nk"/"")
+test_equal("f\7777777\7777777bargaz\7777777nk"/2,({"f\7777777","\7777777b","ar","ga","z\7777777","nk"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/3,({"f\7777777\7777777","bar","gaz","\7777777nk"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/4,({"f\7777777\7777777b","arga","z\7777777nk"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/5,({"f\7777777\7777777ba","rgaz\7777777"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/-6,({"f\7777777\7777777bar","gaz\7777777nk"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/-7,({"rgaz\7777777nk"}))
+
+test_equal("f\7777777\7777777bargaz\7777777nk"/5.0,({"f\7777777\7777777ba","rgaz\7777777","nk"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/-5.0,({"f\7777777","\7777777barg","az\7777777nk"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/2.5,({"f\7777777","\7777777ba","rg","az\7777777","nk"}))
+
 test_equal(({1,2,3})/1,({ ({1}), ({2}), ({3}) }))
 test_equal(({1,2,3})/2,({ ({1,2}) }))
 test_equal(({1,2,3})/-2,({ ({2,3}) }))
@@ -1168,6 +1204,10 @@ test_eval_error(return 15.0 % 0.0)
 
 test_eq("foobargazonk"%5,"nk")
 test_eq("foobargazonk"%-5,"fo")
+test_eq("f\777\777bargaz\777nk"%5,"nk")
+test_eq("f\777\777bargaz\777nk"%-5,"f\777")
+test_eq("f\7777777\7777777bargaz\7777777nk"%5,"nk")
+test_eq("f\7777777\7777777bargaz\7777777nk"%-5,"f\7777777")
 test_equal(({1,2,3})%2,({3}))
 test_equal(({1,2,3})%-2,({1}))
 
@@ -2266,6 +2306,8 @@ test_equal(replace(([1:2,3:4,5:1,2:3]),3,-1),([1:2,3:4,5:1,2:-1]))
 
 // - reverse
 test_eq(reverse("reverse"),"esrever")
+test_eq(reverse("r\777v\777rs\777"),"\777sr\777v\777r")
+test_eq(reverse("r\7777777v\7777777rs\7777777"),"\7777777sr\7777777v\7777777r")
 test_eq(reverse(""),"")
 test_eq(reverse("a"),"a")
 test_equal(reverse(({1,5,9})),({9,5,1}))
@@ -2301,6 +2343,7 @@ test_eq(search(([1:2,3:4,5:6,7:8]),8),7)
 
 // test large searches (find string, size, pattern)
 define(test_search,[[
+test_eq(sprintf($1+"%'"+$3+"'*n",$2)[..strlen($1)-1],$1)
 test_eq(search(sprintf($1+"%'"+$3+"'*n",$2),$1),0)
 test_eq(search(sprintf("%'"+$3+"'*n" ,$2),$1),-1)
 test_eq(search(sprintf("%'"+$3+"'*n"+$1,$2),$1),$2)
@@ -2337,10 +2380,10 @@ test_search4("\345-------------------")
 test_search4(sprintf("%'argel-bargel glop-glyf?'2000n"))
 
 dnl these can be uncommented when sprintf handles wide strings
-dnl test_search4("\34567-------------------")
-dnl test_search4("\345677777-------------------")
-dnl test_search4("kapit\3333l>")
-dnl test_search4("kapit\3333333l>")
+test_search4("\34567-------------------")
+test_search4("\345677777-------------------")
+test_search4("kapit\3333l>")
+test_search4("kapit\3333333l>")
 
 
 // - sizeof

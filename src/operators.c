@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.42 1998/10/12 22:55:10 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.43 1998/10/14 05:48:45 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -25,6 +25,7 @@ RCSID("$Id: operators.c,v 1.42 1998/10/12 22:55:10 hubbe Exp $");
 #include "object.h"
 #include "pike_types.h"
 #include "module_support.h"
+#include "pike_macros.h"
 
 #define COMPARISON(ID,NAME,FUN)			\
 void ID(INT32 args)				\
@@ -139,7 +140,7 @@ void f_add(INT32 args)
   case BIT_STRING:
   {
     struct pike_string *r;
-    char *buf;
+    PCHARP buf;
     INT32 tmp;
     int max_shift=0;
 
@@ -156,11 +157,11 @@ void f_add(INT32 args)
     tmp=sp[-args].u.string->len;
     r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
     sp[-args].type=T_INT;
-    buf=r->str+(tmp<<max_shift);
+    buf=MKPCHARP_STR_OFF(r,tmp);
     for(e=-args+1;e<0;e++)
     {
-      pike_string_cpy(buf,max_shift,sp[e].u.string);
-      buf+=sp[e].u.string->len << max_shift;
+      pike_string_cpy(buf,sp[e].u.string);
+      INC_PCHARP(buf,sp[e].u.string->len);
     }
     sp[-args].u.string=end_shared_string(r);
     sp[-args].type=T_STRING;
@@ -175,7 +176,7 @@ void f_add(INT32 args)
   case BIT_STRING | BIT_FLOAT | BIT_INT:
   {
     struct pike_string *r;
-    char *buf;
+    PCHARP buf;
     char buffer[50];
     int max_shift=0;
     size=0;
@@ -200,7 +201,7 @@ void f_add(INT32 args)
     }
 
     r=begin_wide_shared_string(size,max_shift);
-    buf=r->str;
+    buf=MKPCHARP_STR(r);
     size=0;
     
     for(e=-args;e<0;e++)
@@ -208,8 +209,8 @@ void f_add(INT32 args)
       switch(sp[e].type)
       {
       case T_STRING:
-	pike_string_cpy(buf,max_shift,sp[e].u.string);
-	buf+=sp[e].u.string->len<<max_shift;
+	pike_string_cpy(buf,sp[e].u.string);
+	INC_PCHARP(buf,sp[e].u.string->len);
 	break;
 
       case T_INT:
@@ -221,14 +222,23 @@ void f_add(INT32 args)
       append_buffer:
 	switch(max_shift)
 	{
-	  case 0: convert_0_to_0((p_wchar0 *)buf,buffer,strlen(buffer)); break;
-	  case 1: convert_0_to_1((p_wchar1 *)buf,buffer,strlen(buffer)); break;
-	  case 2: convert_0_to_2((p_wchar2 *)buf,buffer,strlen(buffer)); break;
+	  case 0:
+	    convert_0_to_0((p_wchar0 *)buf.ptr,buffer,strlen(buffer));
+	    break;
+
+	  case 1:
+	    convert_0_to_1((p_wchar1 *)buf.ptr,buffer,strlen(buffer));
+	    break;
+
+	  case 2:
+	    convert_0_to_2((p_wchar2 *)buf.ptr,buffer,strlen(buffer));
+	    break;
+
 	}
-	buf+=strlen(buffer)<<max_shift;
+	INC_PCHARP(buf,strlen(buffer));
       }
     }
-    r->len=(buf-r->str)>>max_shift;
+    r->len=SUBTRACT_PCHARP(buf,MKPCHARP_STR(r));
     low_set_index(r,r->len,0);
     r=end_shared_string(r);
     pop_n_elems(args);
@@ -671,21 +681,37 @@ void o_and(void)
     push_array(a);
     return;
   }
-  case T_STRING:
-  {
-    struct pike_string *s;
-    INT32 len, i;
 
-    len = sp[-2].u.string->len;
-    if (len != sp[-1].u.string->len)
-      PIKE_ERROR("`&", "Bitwise AND on strings of different lengths.\n", sp, 2);
-    s = begin_shared_string(len);
-    for (i=0; i<len; i++)
-      s->str[i] = sp[-2].u.string->str[i] & sp[-1].u.string->str[i];
-    pop_n_elems(2);
-    push_string(end_shared_string(s));
-    return;
+#define STRING_BITOP(OP,STROP)						  \
+  case T_STRING:							  \
+  {									  \
+    struct pike_string *s;						  \
+    INT32 len, i;							  \
+									  \
+    len = sp[-2].u.string->len;						  \
+    if (len != sp[-1].u.string->len)					  \
+      PIKE_ERROR("`" #OP, "Bitwise "STROP				  \
+		 " on strings of different lengths.\n", sp, 2);		  \
+    if(!sp[-2].u.string->size_shift && !sp[-1].u.string->size_shift)	  \
+    {									  \
+      s = begin_shared_string(len);					  \
+      for (i=0; i<len; i++)						  \
+	s->str[i] = sp[-2].u.string->str[i] OP sp[-1].u.string->str[i];	  \
+    }else{								  \
+      s = begin_wide_shared_string(len,					  \
+				   MAXIMUM(sp[-2].u.string->size_shift,	  \
+					   sp[-1].u.string->size_shift)); \
+      for (i=0; i<len; i++)						  \
+	low_set_index(s,i,index_shared_string(sp[-2].u.string,i) OP 	  \
+		      index_shared_string(sp[-1].u.string,i));		  \
+    }									  \
+    pop_n_elems(2);							  \
+    push_string(end_shared_string(s));					  \
+    return;								  \
   }
+
+  STRING_BITOP(&,"AND")
+
   default:
     PIKE_ERROR("`&", "Bitwise and on illegal type.\n", sp, 2);
   }
@@ -837,21 +863,7 @@ void o_or(void)
     return;
   }
 
-  case T_STRING:
-  {
-    struct pike_string *s;
-    INT32 len, i;
-
-    len = sp[-2].u.string->len;
-    if (len != sp[-1].u.string->len)
-      PIKE_ERROR("`|", "Bitwise OR on strings of different lengths.\n", sp, 2);
-    s = begin_shared_string(len);
-    for (i=0; i<len; i++)
-      s->str[i] = sp[-2].u.string->str[i] | sp[-1].u.string->str[i];
-    pop_n_elems(2);
-    push_string(end_shared_string(s));
-    return;
-  }
+  STRING_BITOP(|,"OR")
 
   default:
     PIKE_ERROR("`|", "Bitwise or on illegal type.\n", sp, 2);
@@ -941,21 +953,7 @@ void o_xor(void)
     return;
   }
 
-  case T_STRING:
-  {
-    struct pike_string *s;
-    INT32 len, i;
-
-    len = sp[-2].u.string->len;
-    if (len != sp[-1].u.string->len)
-      PIKE_ERROR("`^", "Bitwise XOR on strings of different lengths.\n", sp, 2);
-    s = begin_shared_string(len);
-    for (i=0; i<len; i++)
-      s->str[i] = sp[-2].u.string->str[i] ^ sp[-1].u.string->str[i];
-    pop_n_elems(2);
-    push_string(end_shared_string(s));
-    return;
-  }
+  STRING_BITOP(^,"XOR")
 
   default:
     PIKE_ERROR("`^", "Bitwise XOR on illegal type.\n", sp, 2);
@@ -1091,15 +1089,17 @@ void o_multiply(void)
       {
 	struct pike_string *ret;
 	char *pos;
-	INT32 e;
+	INT32 e,len;
 	if(sp[-1].u.integer < 0)
 	  PIKE_ERROR("`*", "Cannot multiply string by negative number.\n", sp, 2);
-	ret=begin_shared_string(sp[-2].u.string->len * sp[-1].u.integer);
+	ret=begin_wide_shared_string(sp[-2].u.string->len * sp[-1].u.integer,
+				     sp[-2].u.string->size_shift);
 	pos=ret->str;
-	for(e=0;e<sp[-1].u.integer;e++,pos+=sp[-2].u.string->len)
-	  MEMCPY(pos,sp[-2].u.string->str,sp[-2].u.string->len);
+	len=sp[-2].u.string->len << sp[-2].u.string->size_shift;
+	for(e=0;e<sp[-1].u.integer;e++,pos+=len)
+	  MEMCPY(pos,sp[-2].u.string->str,len);
 	pop_n_elems(2);
-	push_string(end_shared_string(ret));
+	push_string(low_end_shared_string(ret));
 	return;
       }
 
@@ -1201,8 +1201,7 @@ void o_divide(void)
       case TWO_TYPES(T_STRING,T_INT):
       {
 	struct array *a;
-	char *pos=sp[-2].u.string->str;
-	INT32 size,e,len;
+	INT32 size,e,len,pos=0;
 
 	len=sp[-1].u.integer;
 	if(!len)
@@ -1219,7 +1218,7 @@ void o_divide(void)
 	a=allocate_array(size);
 	for(e=0;e<size;e++)
 	{
-	  a->item[e].u.string=make_shared_binary_string(pos,len);
+	  a->item[e].u.string=string_slice(sp[-2].u.string, pos,len);
 	  a->item[e].type=T_STRING;
 	  pos+=len;
 	}
@@ -1248,16 +1247,16 @@ void o_divide(void)
 	  for(last=sp[-2].u.string->len,e=0;e<size-1;e++)
 	  {
 	    pos=sp[-2].u.string->len - (INT32)((e+1)*len);
-	    a->item[size-1-e].u.string=make_shared_binary_string(
-	      sp[-2].u.string->str + pos,
-	      last-pos);
+	    a->item[size-1-e].u.string=string_slice(sp[-2].u.string,
+						    pos,
+						    last-pos);
 	    a->item[size-1-e].type=T_STRING;
 	    last=pos;
 	  }
 	  pos=0;
-	  a->item[0].u.string=make_shared_binary_string(
-	    sp[-2].u.string->str + pos,
-	    last-pos);
+	  a->item[0].u.string=string_slice(sp[-2].u.string,
+					   pos,
+					   last-pos);
 	  a->item[0].type=T_STRING;
 	}else{
 	  size=(INT32)ceil( ((double)sp[-2].u.string->len) / len);
@@ -1266,16 +1265,16 @@ void o_divide(void)
 	  for(last=0,e=0;e<size-1;e++)
 	  {
 	    pos=(INT32)((e+1)*len);
-	    a->item[e].u.string=make_shared_binary_string(
-	      sp[-2].u.string->str + last,
-	      pos-last);
+	    a->item[e].u.string=string_slice(sp[-2].u.string,
+					     last,
+					     pos-last);
 	    a->item[e].type=T_STRING;
 	    last=pos;
 	  }
 	  pos=sp[-2].u.string->len;
-	  a->item[e].u.string=make_shared_binary_string(
-	    sp[-2].u.string->str + last,
-	    pos-last);
+	  a->item[e].u.string=string_slice(sp[-2].u.string,
+					   last,
+					   pos-last);
 	  a->item[e].type=T_STRING;
 	}
 	a->type_field=BIT_STRING;
@@ -1489,7 +1488,7 @@ void o_mod(void)
 	  tmp=s->len % tmp;
 	  base=s->len - tmp;
 	}
-	s=make_shared_binary_string(s->str + base, tmp);
+	s=string_slice(s, base, tmp);
 	pop_n_elems(2);
 	push_string(s);
 	return;
@@ -1648,6 +1647,9 @@ void o_compl(void)
   {
     struct pike_string *s;
     INT32 len, i;
+
+    if(sp[-1].u.string->size_shift)
+      error("`~ cannot handle wide strings.\n");
 
     len = sp[-1].u.string->len;
     s = begin_shared_string(len);

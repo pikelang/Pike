@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.128 1998/10/11 11:18:50 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.129 1998/10/14 05:48:45 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -132,6 +132,7 @@ void f_ctime(INT32 args)
   push_string(make_shared_string(ctime(&i)));
 }
 
+/* FIXME: wide char support ! */
 void f_lower_case(INT32 args)
 {
   INT32 i;
@@ -152,6 +153,7 @@ void f_lower_case(INT32 args)
   push_string(end_shared_string(ret));
 }
 
+/* FIXME: wide char support ! */
 void f_upper_case(INT32 args)
 {
   INT32 i;
@@ -217,7 +219,6 @@ void f_search(INT32 args)
   case T_STRING:
   {
     char *ptr;
-    INT32 len;
     if(sp[1-args].type != T_STRING)
       PIKE_ERROR("search", "Bad argument 2.\n", sp, args);
     
@@ -231,20 +232,13 @@ void f_search(INT32 args)
       if(start<0)
 	PIKE_ERROR("search", "Start must be greater or equal to zero.\n", sp, args);
     }
-    len=sp[-args].u.string->len - start;
 
     if(len<0)
       PIKE_ERROR("search", "Start must not be greater than the length of the string.\n", sp, args);
 
-    if(len>0 && (ptr=my_memmem(sp[1-args].u.string->str,
-			       sp[1-args].u.string->len,
-			       sp[-args].u.string->str+start,
-			       len)))
-    {
-      start=ptr-sp[-args].u.string->str;
-    }else{
-      start=-1;
-    }
+    start=string_search(sp[-args].u.string,
+			sp[1-args].u.string,
+			start);
     pop_n_elems(args);
     push_int(start);
     break;
@@ -1135,10 +1129,26 @@ void f_reverse(INT32 args)
   {
     INT32 e;
     struct pike_string *s;
-    s=begin_shared_string(sp[-args].u.string->len);
-    for(e=0;e<sp[-args].u.string->len;e++)
-      s->str[e]=sp[-args].u.string->str[sp[-args].u.string->len-1-e];
-    s=end_shared_string(s);
+    s=begin_wide_shared_string(sp[-args].u.string->len,
+			  sp[-args].u.string->size_shift);
+    switch(sp[-args].u.string->size_shift)
+    {
+      case 0:
+	for(e=0;e<sp[-args].u.string->len;e++)
+	  STR0(s)[e]=STR0(sp[-args].u.string)[sp[-args].u.string->len-1-e];
+	break;
+
+      case 1:
+	for(e=0;e<sp[-args].u.string->len;e++)
+	  STR1(s)[e]=STR1(sp[-args].u.string)[sp[-args].u.string->len-1-e];
+	break;
+
+      case 2:
+	for(e=0;e<sp[-args].u.string->len;e++)
+	  STR2(s)[e]=STR2(sp[-args].u.string)[sp[-args].u.string->len-1-e];
+	break;
+    }
+    s=low_end_shared_string(s);
     pop_n_elems(args);
     push_string(s);
     break;
@@ -1360,11 +1370,16 @@ void f_replace(INT32 args)
 void f_compile(INT32 args)
 {
   struct program *p;
+
   if(args < 1)
     PIKE_ERROR("compile", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type != T_STRING)
     PIKE_ERROR("compile", "Bad argument 1.\n", sp, args);
+
+  if(sp[-args].u.string->size_shift)
+    PIKE_ERROR("compile", "Wide strings not supported yet.\n", sp, args);
+
 
   p=compile(sp[-args].u.string);
   pop_n_elems(args);
@@ -1808,33 +1823,34 @@ static void f_mktime (INT32 args)
 
 
 /* Check if the string s[0..len[ matches the glob m[0..mlen[ */
-static int does_match(char *s, int len, char *m, int mlen)
+static int does_match(struct pike_string *s,int j,
+		      struct pike_string *m,int i)
 {
-  int i,j;
-  for (i=j=0; i<mlen; i++)
+  for (; i<m->len; i++)
   {
-    switch (m[i])
+    switch (index_shared_string(m,i))
     {
      case '?':
-       if(j++>=len) return 0;
+       if(j++>=s->len) return 0;
        break;
 
      case '*': 
       i++;
-      if (i==mlen) return 1;	/* slut */
+      if (i==m->len) return 1;	/* slut */
 
-      for (;j<len;j++)
-	if (does_match(s+j,len-j,m+i,mlen-i))
+      for (;j<s->len;j++)
+	if (does_match(s,j,m,i))
 	  return 1;
 
       return 0;
 
      default: 
-       if(j>=len || m[i]!=s[j]) return 0;
+       if(j>=s->len ||
+	  index_shared_string(m,i)!=index_shared_string(s,j)) return 0;
        j++;
     }
   }
-  return j==len;
+  return j==s->len;
 }
 
 void f_glob(INT32 args)
@@ -1858,10 +1874,7 @@ void f_glob(INT32 args)
   switch(sp[1-args].type)
   {
   case T_STRING:
-    i=does_match(sp[1-args].u.string->str,
-		 sp[1-args].u.string->len,
-		 glob->str,
-		 glob->len);
+    i=does_match(sp[1-args].u.string,0,glob,0);
     pop_n_elems(2);
     push_int(i);
     break;
@@ -1874,10 +1887,7 @@ void f_glob(INT32 args)
       if(ITEM(a)[i].type != T_STRING)
 	PIKE_ERROR("glob", "Bad argument 2.\n", sp, args);
 
-      if(does_match(ITEM(a)[i].u.string->str,
-		    ITEM(a)[i].u.string->len,
-		    glob->str,
-		    glob->len))
+      if(does_match(ITEM(a)[i].u.string,0,glob,0))
       {
 	add_ref(ITEM(a)[i].u.string);
 	push_string(ITEM(a)[i].u.string);

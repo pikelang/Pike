@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.20 1998/10/11 22:34:02 hubbe Exp $
+ * $Id: stralloc.h,v 1.21 1998/10/14 05:48:46 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -52,6 +52,52 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #define STR1(X) ((p_wchar1 *)(X)->str)
 #define STR2(X) ((p_wchar2 *)(X)->str)
 #endif
+
+#define INDEX_CHARP(PTR,IND,SHIFT) \
+  ((SHIFT)==0?((p_wchar0 *)(PTR))[(IND)]:(SHIFT)==1?((p_wchar1 *)(PTR))[(IND)]:((p_wchar2 *)(PTR))[(IND)])
+
+#define SET_INDEX_CHARP(PTR,IND,SHIFT,VAL) \
+  ((SHIFT)==0?((p_wchar0 *)(PTR))[(IND)]=(VAL):(SHIFT)==1?((p_wchar1 *)(PTR))[(IND)]=(VAL):((p_wchar2 *)(PTR))[(IND)]=(VAL))
+
+
+#define EXTRACT_CHARP(PTR,SHIFT) INDEX_CHARP((PTR),0,(SHIFT))
+#define CHARP_ADD(PTR,X,SHIFT) (PTR)+=(X)<<(SHIFT)
+
+typedef struct p_wchar_p
+{
+  void *ptr;
+  int shift;
+} PCHARP;
+
+#define INDEX_PCHARP(X,Y) INDEX_CHARP((X).ptr,(Y),(X).shift)
+#define SET_INDEX_PCHARP(X,Y,Z) INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
+#define EXTRACT_PCHARP(X) INDEX_CHARP((X).ptr,(0),(X).shift)
+#define INC_PCHARP(X,Y) (((char *)(X).ptr)+=(Y) << (X).shift)
+
+#define LOW_COMPARE_PCHARP(X,CMP,Y) (((char *)((X).ptr)) CMP ((char *)((Y).ptr)))
+#define LOW_SUBTRACT_PCHARP(X,Y) LOW_COMPARE_PCHARP((X),-,(Y))
+
+#ifdef DEBUG
+#define SUBTRACT_PCHARP(X,Y)    ((X).shift!=(Y).shift?(fatal("Subtracting different size charp!\n")),0:LOW_SUBTRACT_PCHARP((X),(Y)))
+#define COMPARE_PCHARP(X,CMP,Y) ((X).shift!=(Y).shift?(fatal("Subtracting different size charp!\n")),0:LOW_COMPARE_PCHARP((X),CMP,(Y)))
+#else
+#define SUBTRACT_PCHARP(X,Y) LOW_SUBTRACT_PCHARP((X),(Y))
+#define COMPARE_PCHARP(X,CMP,Y) LOW_COMPARE_PCHARP((X),CMP,(Y))
+#endif
+
+static INLINE PCHARP MKPCHARP(void *ptr, int shift)
+{
+  PCHARP tmp;
+  tmp.ptr=ptr;
+  tmp.shift=shift;
+  return tmp;
+}
+
+#define MKPCHARP_OFF(PTR,SHIFT,OFF) MKPCHARP( ((char *)(PTR)) + ((OFF)<<(SHIFT)), (SHIFT))
+#define MKPCHARP_STR(STR) MKPCHARP((STR)->str, (STR)->size_shift)
+#define MKPCHARP_STR_OFF(STR,OFF) \
+ MKPCHARP((STR)->str + ((OFF)<<(STR)->size_shift), (STR)->size_shift)
+#define ADD_PCHARP(PTR,I) MKPCHARP_OFF((PTR).ptr,(PTR).shift,(I))
 
 #ifdef DEBUG_MALLOC
 #define reference_shared_string(s) do { struct pike_string *S_=(s); debug_malloc_touch(S_); S_->refs++; }while(0)
@@ -120,12 +166,11 @@ CONVERT(2,1)
 
 int generic_compare_strings(const void *a,int alen, int asize,
 			    const void *b,int blen, int bsize);
-void generic_memcpy(void *to, int to_shift,
-		    void *from, int from_shift,
+void generic_memcpy(PCHARP to,
+		    PCHARP from,
 		    int len);
-INLINE void pike_string_cpy(void *to,
-		     int to_shift,
-		     struct pike_string *from);
+INLINE void pike_string_cpy(PCHARP to,
+			    struct pike_string *from);
 struct pike_string *binary_findstring(const char *foo, INT32 l);
 struct pike_string *findstring(const char *foo);
 struct pike_string *debug_begin_shared_string(int len);
@@ -180,10 +225,21 @@ void gc_mark_all_strings(void);
 void init_string_builder(struct string_builder *s, int mag);
 void string_builder_putchar(struct string_builder *s, int ch);
 void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len);
+void string_builder_append(struct string_builder *s,
+			   PCHARP from,
+			   INT32 len);
+void string_builder_fill(struct string_builder *s,
+			 int howmany,
+			 PCHARP from,
+			 INT32 len,
+			 INT32 offset);
 void string_builder_strcat(struct string_builder *s, char *str);
 void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
 void reset_string_builder(struct string_builder *s);
+void free_string_builder(struct string_builder *s);
 struct pike_string *finish_string_builder(struct string_builder *s);
+PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len);
+long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC

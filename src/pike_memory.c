@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.26 1998/10/11 11:18:52 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.27 1998/10/14 05:48:46 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -561,7 +561,7 @@ void memfill(char *to,
       while(tolen>0)
       {
 	tmp=MINIMUM(tolen, fromlen);
-	MEMCPY(to, from, MINIMUM(tolen, fromlen));
+	MEMCPY(to, from, tmp);
 	fromlen+=tmp;
 	tolen-=tmp;
 	to+=tmp;

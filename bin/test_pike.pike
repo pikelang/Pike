@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.13 1998/04/17 05:04:49 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.14 1998/10/14 05:47:06 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -121,7 +121,7 @@ int main(int argc, string *argv)
 	
 	if(verbose)
 	{
-	  werror("Doing test "+(e+1)+"\n");
+	  werror("Doing test %d (%d total)\n",e+1,successes+errors+1);
 	  if(verbose>1)
 	    werror(test+"\n");
 	}

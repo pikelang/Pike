@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.42 1998/10/11 22:34:02 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.43 1998/10/14 05:48:46 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -164,49 +164,48 @@ int generic_compare_strings(const void *a,int alen, int asize,
 }
 
 
-void generic_memcpy(void *to, int to_shift,
-		    void *from, int from_shift,
+void generic_memcpy(PCHARP to,
+		    PCHARP from,
 		    int len)
 {
-  switch(TWO_SIZES(from_shift,to_shift))
+  switch(TWO_SIZES(from.shift,to.shift))
   {
     case TWO_SIZES(0,0):
-      convert_0_to_0((p_wchar0 *)to,(p_wchar0 *)from,len);
+      convert_0_to_0((p_wchar0 *)to.ptr,(p_wchar0 *)from.ptr,len);
       break;
     case TWO_SIZES(0,1):
-      convert_0_to_1((p_wchar1 *)to,(p_wchar0 *)from,len);
+      convert_0_to_1((p_wchar1 *)to.ptr,(p_wchar0 *)from.ptr,len);
       break;
     case TWO_SIZES(0,2):
-      convert_0_to_2((p_wchar2 *)to,(p_wchar0 *)from,len);
+      convert_0_to_2((p_wchar2 *)to.ptr,(p_wchar0 *)from.ptr,len);
       break;
 
     case TWO_SIZES(1,0):
-      convert_1_to_0((p_wchar0 *)to,(p_wchar1 *)from,len);
+      convert_1_to_0((p_wchar0 *)to.ptr,(p_wchar1 *)from.ptr,len);
       break;
     case TWO_SIZES(1,1):
-      convert_1_to_1((p_wchar1 *)to,(p_wchar1 *)from,len);
+      convert_1_to_1((p_wchar1 *)to.ptr,(p_wchar1 *)from.ptr,len);
       break;
     case TWO_SIZES(1,2):
-      convert_1_to_2((p_wchar2 *)to,(p_wchar1 *)from,len);
+      convert_1_to_2((p_wchar2 *)to.ptr,(p_wchar1 *)from.ptr,len);
       break;
 
     case TWO_SIZES(2,0):
-      convert_2_to_0((p_wchar0 *)to,(p_wchar2 *)from,len);
+      convert_2_to_0((p_wchar0 *)to.ptr,(p_wchar2 *)from.ptr,len);
       break;
     case TWO_SIZES(2,1):
-      convert_2_to_1((p_wchar1 *)to,(p_wchar2 *)from,len);
+      convert_2_to_1((p_wchar1 *)to.ptr,(p_wchar2 *)from.ptr,len);
       break;
     case TWO_SIZES(2,2):
-      convert_2_to_2((p_wchar2 *)to,(p_wchar2 *)from,len);
+      convert_2_to_2((p_wchar2 *)to.ptr,(p_wchar2 *)from.ptr,len);
       break;
   }
 }
 
-INLINE void pike_string_cpy(void *to,
-		     int to_shift,
-		     struct pike_string *from)
+INLINE void pike_string_cpy(PCHARP to,
+			    struct pike_string *from)
 {
-  generic_memcpy(to,to_shift,from->str,from->size_shift,from->len);
+  generic_memcpy(to,MKPCHARP_STR(from),from->len);
 }
 
 static void locate_problem(int (*isproblem)(struct pike_string *))
@@ -1028,7 +1027,7 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
   if(shift == a->size_shift) return realloc_shared_string(a,size);
 
   r=begin_wide_shared_string(size,shift);
-  pike_string_cpy(r->str,shift,a);
+  pike_string_cpy(MKPCHARP_STR(r),a);
   free_string(a);
   return r;
 }
@@ -1181,11 +1180,14 @@ struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b)
 {
   struct pike_string *ret;
+  PCHARP tmp;
   int target_size=MAXIMUM(a->size_shift,b->size_shift);
 
   ret=begin_wide_shared_string(a->len+b->len,target_size);
-  pike_string_cpy(ret->str,ret->size_shift,a);
-  pike_string_cpy(ret->str+(a->len<<target_size),ret->size_shift,b);
+  tmp=MKPCHARP_STR(ret);
+  pike_string_cpy(tmp,a);
+  INC_PCHARP(tmp,a->len);
+  pike_string_cpy(tmp,b);
   return end_shared_string(ret);
 }
 
@@ -1222,13 +1224,13 @@ int string_search(struct pike_string *haystack,
 			   needle->str,
 			   needle->len,
 			   needle->size_shift,
-			   haystack->len,
+			   haystack->len-start,
 			   haystack->size_shift);
 
   
   r=(char *)generic_memory_search(&s,
-				  haystack->str,
-				  haystack->len,
+				  haystack->str+(start<<haystack->size_shift),
+				  haystack->len-start,
 				  haystack->size_shift);
 
   if(!r) return -1;
@@ -1274,7 +1276,8 @@ struct pike_string *string_replace(struct pike_string *str,
 				   struct pike_string *to)
 {
   struct pike_string *ret;
-  char *s,*tmp,*r,*end;
+  char *s,*tmp,*end;
+  PCHARP r;
   int shift;
   struct generic_mem_searcher searcher;
 
@@ -1288,14 +1291,12 @@ struct pike_string *string_replace(struct pike_string *str,
 
   if(!del->len)
   {
-    int e;
-    int pos;
+    int e,pos;
     ret=begin_wide_shared_string(str->len + to->len * (str->len -1),shift);
     low_set_index(ret,0,index_shared_string(str,0));
-    pos=1;
-    for(e=1;e<str->len;e++)
+    for(pos=e=1;e<str->len;e++)
     {
-      pike_string_cpy(ret->str+(pos<<shift),shift,to);
+      pike_string_cpy(MKPCHARP_STR_OFF(ret,pos),to);
       pos+=to->len;
       low_set_index(ret,pos++,index_shared_string(str,e));
     }
@@ -1341,20 +1342,20 @@ struct pike_string *string_replace(struct pike_string *str,
     ret=begin_wide_shared_string(str->len + (to->len-del->len)*delimeters, shift);
   }
   s=str->str;
-  r=ret->str;
+  r=MKPCHARP_STR(ret);
 
   while((tmp=(char *)generic_memory_search(&searcher,
 					   s,
 					   (end-s)>>str->size_shift,
 					   str->size_shift)))
   {
-    generic_memcpy(r,shift,s,str->size_shift,(tmp-s)>>str->size_shift);
-    r+=tmp-s;
-    pike_string_cpy(r,shift,to);
-    r+=to->len << shift;
+    generic_memcpy(r,MKPCHARP(s,str->size_shift),(tmp-s)>>str->size_shift);
+    INC_PCHARP(r,(tmp-s)>>str->size_shift);
+    pike_string_cpy(r,to);
+    INC_PCHARP(r,to->len);
     s=tmp+(del->len << str->size_shift);
   }
-  generic_memcpy(r,shift,s,str->size_shift,(end-s)>>str->size_shift);
+  generic_memcpy(r,MKPCHARP(s,str->size_shift),(end-s)>>str->size_shift);
 
   return end_shared_string(ret);
 }
@@ -1468,7 +1469,7 @@ static void string_build_mkspace(struct string_builder *s, int chars, int mag)
     struct pike_string *n;
     int l=s->s->len+chars+s->malloced;
     n=begin_wide_shared_string(l,mag);
-    pike_string_cpy(n->str,mag,s->s);
+    pike_string_cpy(MKPCHARP_STR(n),s->s);
     n->len=s->s->len;
     s->malloced=l;
     free((char *)s->s);
@@ -1509,7 +1510,7 @@ void string_builder_putchar(struct string_builder *s, int ch)
 
 void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len)
 {
-  string_build_mkspace(s,len,1);
+  string_build_mkspace(s,len,0);
   switch(s->s->size_shift)
   {
     case 0: convert_0_to_0(STR0(s->s)+s->s->len,str,len); break;
@@ -1522,6 +1523,69 @@ void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len
 }
 
 
+void string_builder_append(struct string_builder *s,
+			   PCHARP from,
+			   INT32 len)
+{
+  string_build_mkspace(s,len,from.shift);
+  generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len), from, len);
+  s->s->len+=len;
+}
+
+void string_builder_fill(struct string_builder *s,
+			 int howmany,
+			 PCHARP from,
+			 INT32 len,
+			 INT32 offset)
+{
+  INT32 tmp;
+#ifdef DEBUG
+  if(len<=0)
+    fatal("Cannot fill with zero length strings!\n");
+#endif
+  if(howmany<=0) return;
+
+  if(!s->s->size_shift &&
+     len == 1 &&
+     (!from.shift || !min_magnitude(EXTRACT_PCHARP(from))))
+  {
+    MEMSET(string_builder_allocate(s,howmany,0),
+	   EXTRACT_PCHARP(from),
+	   howmany);
+    return;
+  }
+
+  string_build_mkspace(s,howmany,from.shift);
+  tmp=MINIMUM(howmany, len - offset);
+
+  generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len),
+		 ADD_PCHARP(from,offset),
+		 tmp);
+  s->s->len+=tmp;
+  howmany-=tmp;
+  if(howmany > 0)
+  {
+    void *new_from;
+    PCHARP to;
+    tmp=MINIMUM(howmany, len);
+    to=MKPCHARP_STR_OFF(s->s,s->s->len);
+    generic_memcpy(to,from, tmp);
+    s->s->len+=tmp;
+    howmany-=tmp;
+
+    while(howmany > 0)
+    {
+      tmp=MINIMUM(len, howmany);
+      MEMCPY(s->s->str + (s->s->len << s->s->size_shift),
+	     to.ptr,
+	     tmp << s->s->size_shift);
+      len+=tmp;
+      howmany-=tmp;
+      s->s->len+=tmp;
+    }
+  }
+}
+
 void string_builder_strcat(struct string_builder *s, char *str)
 {
   string_builder_binary_strcat(s,str,strlen(str));
@@ -1531,9 +1595,7 @@ void string_builder_shared_strcat(struct string_builder *s, struct pike_string *
 {
   string_build_mkspace(s,str->len,s->s->size_shift);
 
-  pike_string_cpy(s->s->str + (s->s->len << s->s->size_shift),
-		  s->s->size_shift,
-		  str);
+  pike_string_cpy(MKPCHARP_STR_OFF(s->s,s->s->len), str);
   s->known_shift=MAXIMUM(s->known_shift,str->size_shift);
   s->s->len+=str->len;
 }
@@ -1545,6 +1607,11 @@ void reset_string_builder(struct string_builder *s)
   s->s->len=0;
 }
 
+void free_string_builder(struct string_builder *s)
+{
+  free((char *)s->s);
+}
+
 struct pike_string *finish_string_builder(struct string_builder *s)
 {
   low_set_index(s->s,s->s->len,0);
@@ -1553,3 +1620,73 @@ struct pike_string *finish_string_builder(struct string_builder *s)
   return end_shared_string(s->s);
 }
 
+PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
+{
+  switch(ptr.shift)
+  {
+    case 0: return MKPCHARP(MEMCHR0(ptr.ptr,chr,len),0);
+    case 1: return MKPCHARP(MEMCHR1(ptr.ptr,chr,len),1);
+    case 2: return MKPCHARP(MEMCHR2(ptr.ptr,chr,len),2);
+    default:
+      fatal("Illegal shift in MEMCHR_PCHARP.\n");
+  }
+}
+
+#define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
+			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
+#define MBASE	('z' - 'a' + 1 + 10)
+
+long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
+{
+  register long val;
+  register int c;
+  int xx, neg = 0;
+
+  if (ptr)  *ptr = str;
+  if (base < 0 || base > MBASE)  return 0;
+  if (!isalnum(c = EXTRACT_PCHARP(str)))
+  {
+    while (ISSPACE(c))
+    {
+      INC_PCHARP(str,1);
+      c=EXTRACT_PCHARP(str);
+    }
+    switch (c)
+    {
+    case '-':
+      neg++;
+    case '+':			/* fall-through */
+      INC_PCHARP(str,1);
+      c=EXTRACT_PCHARP(str);
+    }
+  }
+
+  if (!base)
+  {
+    if (c != '0')
+      base = 10;
+    else if (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X')
+      base = 16;
+    else
+      base = 8;
+  }
+
+  if (!isalnum(c) || (xx = DIGIT(c)) >= base)
+    return 0;			/* no number formed */
+  if (base == 16 && c == '0' && isxdigit(INDEX_PCHARP(str,2)) &&
+      (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
+  {
+    INC_PCHARP(str,2);
+    c = EXTRACT_PCHARP(str);		/* skip over leading "0x" or "0X" */
+  }
+  val=-DIGIT(c);
+  while(1)
+  {
+    INC_PCHARP(str,1);
+    c=EXTRACT_PCHARP(str);
+    if(!(isalnum(c)  && (xx=DIGIT(c)) < base)) break;
+    val = base * val - xx;
+  }
+  if (ptr) *ptr = str;
+  return (neg ? val : -val);
+}

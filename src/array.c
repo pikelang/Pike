@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.40 1998/10/11 11:18:50 hubbe Exp $");
+RCSID("$Id: array.c,v 1.41 1998/10/14 05:48:44 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1424,7 +1424,7 @@ struct array *explode(struct pike_string *str,
 struct pike_string *implode(struct array *a,struct pike_string *del)
 {
   INT32 len,e, inited;
-  char *r;
+  PCHARP r;
   struct pike_string *ret,*tmp;
   int max_shift=0;
 
@@ -1439,10 +1439,11 @@ struct pike_string *implode(struct array *a,struct pike_string *del)
 	max_shift=ITEM(a)[e].u.string->size_shift;
     }
   }
+  if(del->size_shift > max_shift) max_shift=del->size_shift;
   if(len) len-=del->len;
   
   ret=begin_wide_shared_string(len,max_shift);
-  r=ret->str;
+  r=MKPCHARP_STR(ret);
   inited=0;
   for(e=0;e<a->size;e++)
   {
@@ -1450,17 +1451,17 @@ struct pike_string *implode(struct array *a,struct pike_string *del)
     {
       if(inited)
       {
-	pike_string_cpy(r,max_shift,del);
-	r+=del->len << max_shift;
+	pike_string_cpy(r,del);
+	INC_PCHARP(r,del->len);
       }
       inited=1;
       tmp=ITEM(a)[e].u.string;
-      pike_string_cpy(r,max_shift,tmp);
-      r+=tmp->len << max_shift;
+      pike_string_cpy(r,tmp);
+      INC_PCHARP(r,tmp->len);
       len++;
     }
   }
-  return end_shared_string(ret);
+  return low_end_shared_string(ret);
 }
 
 struct array *copy_array_recursively(struct array *a,struct processing *p)
