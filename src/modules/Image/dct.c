@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dct.c,v 1.25 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: dct.c,v 1.26 2004/05/02 23:07:59 nilsson Exp $
 */
 
 /*
@@ -61,9 +61,7 @@ static const double pi=3.14159265358979323846;
 **!	Do NOT use this function if you don't know what 
 **!     you're dealing with! Read some signal theory first...
 **!
-**!	It write's dots on stderr, to indicate some sort
-**!	of progress. It doesn't use any fct (compare: fft) 
-**!	algorithms.
+**!	It doesn't use any fct (compare: fft) algorithms.
 **! returns the new image object
 **! arg int newx
 **! arg int newy
