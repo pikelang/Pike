@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.17 2000/09/04 16:04:33 grubba Exp $
+# $Id: configure.in,v 1.18 2000/09/05 13:01:01 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -91,7 +91,8 @@ __MPN(PiKe)
 
 /* Kludge for some compilers only defining __STDC__ in strict mode. */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_MPN_CONCAT(x,y)	x##y
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
 #define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
 
@@ -117,7 +118,8 @@ int main(int argc, char **argv)
 
 /* Kludge for some compilers only defining __STDC__ in strict mode. */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_MPN_CONCAT(x,y)	x##y
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
 #define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
 
@@ -149,7 +151,7 @@ int main(int argc, char **argv)
     fi
   ])
 
-  if test $done = no; then
+  if test "x$done" = "xno"; then
     $3
     :
   fi
