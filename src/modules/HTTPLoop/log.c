@@ -166,6 +166,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   while(le)
   {
     int i;
+    struct tm *tm_p;
     struct log_entry *l = le->next;
     /* remotehost rfc931 authuser [date] "request" status bytes */
     if(le->t != ot)
@@ -175,14 +176,16 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
       gmtime_r( &t, &tm );
 #else
 #ifdef HAVE_GMTIME
-      tm = *gmtime( &t ); /* This will break if two threads run
+      tm_p = gmtime( &t ); /* This will break if two threads run
 			    gmtime() at once. */
+
 #else
 #ifdef HAVE_LOCALTIME
-      tm = *localtime( &t ); /* This will break if two threads run
+      tm_p = localtime( &t ); /* This will break if two threads run
 			       localtime() at once. */
 #endif
 #endif
+      if (tm_p) tm = *tm_p;
 #endif
       ot = le->t;
     }
@@ -197,7 +200,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	break;
       }
 
-    fprintf(foo, 
+    fprintf(foo,
     "%d.%d.%d.%d - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
 	    ((unsigned char *)&le->from.sin_addr)[ 0 ],
 	    ((unsigned char *)&le->from.sin_addr)[ 1 ],

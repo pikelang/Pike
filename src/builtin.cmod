@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.90 2002/08/15 14:49:19 marcus Exp $
+ * $Id: builtin.cmod,v 1.91 2002/10/03 16:04:56 mast Exp $
  */
 
 #include "global.h"
@@ -340,6 +340,11 @@ PIKEFUN int trace(int t)
  *! Convert the output from a previous call to @[time()] into a readable
  *! string containing the current year, month, day and time.
  *!
+ *! Like @[localtime], this function might return zero if the ctime(2)
+ *! call failed on the system. It's platform dependent what time
+ *! ranges that function can handle, e.g. Windows doesn't handle a
+ *! negative @[timestamp].
+ *!
  *! @seealso
  *! @[time()], @[localtime()], @[mktime()], @[gmtime()]
  */
@@ -348,7 +353,13 @@ PIKEFUN string ctime(int timestamp)
   optflags OPT_TRY_OPTIMIZE;
 {
   time_t i=(time_t)timestamp;
-  RETURN make_shared_string(ctime(&i));
+  char *s = ctime (&i);
+  if (!s) {
+    pop_stack();
+    push_int (0);
+    return;
+  }
+  RETURN make_shared_string(s);
 }
 
 /*! @decl mapping mkmapping(array ind, array val)
