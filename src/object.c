@@ -246,57 +246,10 @@ void really_free_object(struct object *o)
   GC_FREE();
 }
 
-void object_index_no_free(struct svalue *to,
-			  struct object *o,
-			  struct svalue *index)
-{
-  struct program *p;
-  int f;
 
-  if(!o || !(p=o->prog))
-  {
-    error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
-  }
-
-  if(index->type != T_STRING)
-    error("Lookup on non-string value.\n");
-
-  f=find_shared_string_identifier(index->u.string, p);
-  if(f < 0)
-  {
-    to->type=T_INT;
-    to->subtype=NUMBER_UNDEFINED;
-    to->u.integer=0;
-  }else{
-    struct identifier *i;
-    i=ID_FROM_INT(p, f);
-
-    if(i->flags & IDENTIFIER_FUNCTION)
-    {
-      to->type=T_FUNCTION;
-      to->subtype=f;
-      to->u.object=o;
-      o->refs++;
-    }
-    else if(i->run_time_type == T_MIXED)
-    {
-      struct svalue *s;
-      s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
-      check_destructed(s);
-      assign_svalue_no_free(to,s);
-    }
-    else
-    {
-      union anything *u;
-      u=(union anything *)LOW_GET_GLOBAL(o,f,i);
-      check_short_destructed(u,i->run_time_type);
-      assign_from_short_svalue_no_free(to,u,i->run_time_type);
-    }
-  }
-}
-
-static void low_object_index(struct svalue *to,struct object *o, INT32 f)
+static void low_object_index_no_free(struct svalue *to,
+				     struct object *o,
+				     INT32 f)
 {
   struct identifier *i;
   struct program *p=o->prog;
@@ -326,9 +279,9 @@ static void low_object_index(struct svalue *to,struct object *o, INT32 f)
   }
 }
 
-void object_index(struct svalue *to,
-		  struct object *o,
-		  struct svalue *index)
+void object_index_no_free(struct svalue *to,
+			  struct object *o,
+			  struct svalue *index)
 {
   struct program *p;
   int f;
@@ -345,19 +298,42 @@ void object_index(struct svalue *to,
   f=find_shared_string_identifier(index->u.string, p);
   if(f < 0)
   {
-    free_svalue(to);
     to->type=T_INT;
     to->subtype=NUMBER_UNDEFINED;
     to->u.integer=0;
   }else{
-    free_svalue(to);
-    low_object_index(to, o, f);
+    low_object_index_no_free(to, o, f);
   }
 }
 
-void object_low_set_index(struct object *o,
-			  int f,
-			  struct svalue *from)
+
+void object_index_no_free2(struct svalue *to,
+			   struct object *o,
+			   struct svalue *index)
+{
+  struct program *p;
+
+  if(!o || !(p=o->prog))
+  {
+    error("Lookup in destructed object.\n");
+    return; /* make gcc happy */
+  }
+
+  if(p->lfuns[LFUN_INDEX] != -1)
+  {
+    push_svalue(index);
+    apply_lfun(o,LFUN_INDEX,1);
+    to=sp;
+    sp--;
+  } else {
+    object_index_no_free(to,o,index);
+  }
+}
+
+
+static void object_low_set_index(struct object *o,
+				 int f,
+				 struct svalue *from)
 {
   struct identifier *i;
   struct program *p;
@@ -414,10 +390,32 @@ void object_set_index(struct object *o,
   }
 }
 
+void object_set_index2(struct object *o,
+		       struct svalue *index,
+		       struct svalue *from)
+{
+  struct program *p;
 
-union anything *object_low_get_item_ptr(struct object *o,
-					int f,
-					TYPE_T type)
+  if(!o || !(p=o->prog))
+  {
+    error("Lookup in destructed object.\n");
+    return; /* make gcc happy */
+  }
+
+  if(p->lfuns[LFUN_ASSIGN_INDEX] != -1)
+  {
+    push_svalue(index);
+    push_svalue(from);
+    apply_lfun(o,LFUN_ASSIGN_INDEX,2);
+    pop_stack();
+  } else {
+    object_set_index(o,index,from);
+  }
+}
+
+static union anything *object_low_get_item_ptr(struct object *o,
+					       int f,
+					       TYPE_T type)
 {
   struct identifier *i;
   struct program *p;
@@ -464,6 +462,9 @@ union anything *object_get_item_ptr(struct object *o,
 
   if(index->type != T_STRING)
     error("Lookup on non-string value.\n");
+
+  if(p->lfuns[LFUN_ASSIGN_INDEX] != -1)
+    error("Cannot do incremental operations on overloaded index (yet).\n");
 
   f=find_shared_string_identifier(index->u.string, p);
   if(f < 0)
@@ -643,7 +644,7 @@ struct array *object_values(struct object *o)
   a=allocate_array_no_init(p->num_identifier_indexes,0);
   for(e=0;e<(int)p->num_identifier_indexes;e++)
   {
-    low_object_index(ITEM(a)+e, o, p->identifier_index[e]);
+    low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
   }
   return a;
 }

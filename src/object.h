@@ -41,18 +41,15 @@ void really_free_object(struct object *o);
 void object_index_no_free(struct svalue *to,
 			  struct object *o,
 			  struct svalue *index);
-void object_index(struct svalue *to,
-		  struct object *o,
-		  struct svalue *index);
-void object_low_set_index(struct object *o,
-			  int f,
-			  struct svalue *from);
+void object_index_no_free2(struct svalue *to,
+			   struct object *o,
+			   struct svalue *index);
 void object_set_index(struct object *o,
 		      struct svalue *index,
 		      struct svalue *from);
-union anything *object_low_get_item_ptr(struct object *o,
-					int f,
-					TYPE_T type);
+void object_set_index2(struct object *o,
+		       struct svalue *index,
+		       struct svalue *from);
 union anything *object_get_item_ptr(struct object *o,
 				    struct svalue *index,
 				    TYPE_T type);
@@ -61,7 +58,6 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p);
 void cleanup_objects();
 struct array *object_indices(struct object *o);
 struct array *object_values(struct object *o);
-void gc_check_object(struct object *o);
 void gc_mark_object_as_referenced(struct object *o);
 void gc_check_all_objects();
 void gc_mark_all_objects();
