@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.55 2000/03/25 23:43:25 hubbe Exp $
+ * $Id: acconfig.h,v 1.56 2000/03/28 08:10:53 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -103,6 +103,12 @@
  * Also used by Pike's runtime C-stack checker.
  */
 #undef STACK_DIRECTION
+
+/* Define this to the number of KB in the initial stack,
+ * currently this is 1 Mb on FreeBSD, 2Mb on Linux and
+ * unlimited (undefined) everywhere else
+ */
+#undef Pike_INITIAL_STACK_SIZE
 
 /* If so, is it restricted to user and system time? */
 #undef GETRUSAGE_RESTRICTED

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.357 2000/03/27 17:05:32 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.358 2000/03/28 08:10:53 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1373,6 +1373,51 @@ int main(int argc, char **argv)
         if test "x$PTHREAD_CONFIG" = xno ; then
           CFLAGS="${CFLAGS} -pthread"
           LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
+
+          AC_MSG_CHECKING(Initial stack limit)
+          AC_CACHE_VAL(pike_cv_initial_stack_size,[
+          AC_TRY_RUN([
+#include <stdio.h>
+
+static int depth=0;
+FILE *f;
+
+void save_depth(void);
+
+void use_stack(void *page)
+{
+  void *X[8190];
+  X[0]=page;
+  save_depth();
+  use_stack(&X);
+}
+
+void save_depth(void)
+{
+  depth+=sizeof(void *)*8192;
+  fprintf(f,"%d\n",depth);
+  fflush(f);
+  if(depth>0x80000000) exit(0);
+}
+
+int main(int argc)
+{
+  f=fopen("confdefs.out.2","w"); /* weird filename to circumvent configure weirdness */
+  save_depth();
+  use_stack(0);
+}
+],
+pike_cv_initial_stack_size='',
+while read x; do pike_cv_initial_stack_size=$x ; done <confdefs.out.2)
+rm confdefs.out.2 >/dev/null 2>/dev/null || :
+])
+          if test x$pike_cv_initial_stack_size = x ; then
+             AC_MSG_RESULT(unlimited)
+          else
+             AC_MSG_RESULT($pike_cv_initial_stack_size)
+             AC_DEFINE_UNQUOTED(Pike_INITIAL_STACK_SIZE,$pike_cv_initial_stack_size)
+          fi
+
         else
           CFLAGS="$CFLAGS `pthread-config --cflags`"
           LIBS="$LIBS `pthread-config --libs`"
@@ -3260,6 +3305,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
       esac
     else
       case $pike_cv_sys_os in
+        IRIX*)
+          AC_SYS_COMPILER_FLAG(-share,cc_shared,CCSHARED)
+        ;;
 	hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;

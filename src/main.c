@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.83 2000/03/08 00:09:49 hubbe Exp $");
+RCSID("$Id: main.c,v 1.84 2000/03/28 08:10:53 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -415,6 +415,12 @@ int dbm_main(int argc, char **argv)
       if(lim.rlim_cur == RLIM_INFINITY)
 	lim.rlim_cur=1024*1024*32;
 #endif
+
+#ifdef Pike_INITIAL_STACK_SIZE
+      if(lim.rlim_cur > Pike_INITIAL_STACK_SIZE)
+	lim.rlim_cur=Pike_INITIAL_STACK_SIZE;
+#endif
+
       stack_top += STACK_DIRECTION * lim.rlim_cur;
 
 #ifdef HAVE_PTHREAD_INITIAL_THREAD_BOS
