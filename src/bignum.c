@@ -40,6 +40,15 @@ void convert_stack_top_to_bignum(void)
     error("Gmp.mpz conversion failed.\n");
 }
 
+void convert_stack_top_with_base_to_bignum(void)
+{
+  resolve_auto_bignum_program();
+  apply_svalue(&auto_bignum_program, 2);
+
+  if(sp[-1].type != T_OBJECT)
+    error("Gmp.mpz conversion failed.\n");
+}
+
 int is_bignum_object(struct object *o)
 {
   resolve_auto_bignum_program();

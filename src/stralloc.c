@@ -13,6 +13,8 @@
 #include "error.h"
 #include "gc.h"
 #include "stuff.h"
+#include "bignum.h"
+#include "interpret.h"
 
 #include <errno.h>
 #include <float.h>
@@ -23,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.67 1999/10/22 00:02:27 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.68 1999/10/22 16:50:55 noring Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1723,7 +1725,7 @@ PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
 }
 
 #define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
-			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
+			 islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
 
 long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
@@ -1779,6 +1781,114 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   }
   if (ptr) *ptr = str;
   return (neg ? val : -val);
+}
+
+int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
+			     int maxlength)
+{
+  char *str_start;
+  
+  INT_TYPE xx, neg = 0, is_bignum = 0;
+  INT_TYPE val;
+  INT_TYPE c;
+
+  maxlength--;   /* max_length <= 0 means no max length. */
+  str_start = str;
+
+  /* In case no number is formed. */
+  r->type = T_INT;
+  r->subtype = NUMBER_NUMBER;
+  r->u.integer = 0;
+  if(ptr != 0)
+    *ptr = str;
+  
+  if(base < 0 || MBASE < base)
+    return 0;
+  
+  if(!isalnum(c = *str))
+  {
+    while(ISSPACE(c))
+      c = *++str;
+    
+    switch (c)
+    {
+    case '-':
+      neg++;
+      /* Fall-through. */
+    case '+':
+      c = *++str;
+    }
+  }
+  
+  if(base == 0)
+  {
+    if(c != '0')
+      base = 10;
+    else if(str[1] == 'x' || str[1] == 'X')
+      base = 16;
+    else
+      base = 8;
+  }
+  
+  /*
+   * For any base > 10, the digits incrementally following
+   * 9 are assumed to be "abc...z" or "ABC...Z".
+   */
+  if(!isalnum(c) || (xx = DIGIT(c)) >= base)
+    return 0;   /* No number formed. */
+  
+  if(base == 16 && c == '0' && isxdigit(((unsigned char *)str)[2]) &&
+      (str[1] == 'x' || str[1] == 'X'))
+    c = *(str += 2);   /* Skip over leading "0x" or "0X". */
+  
+  for(val = -DIGIT(c); isalnum(c = *++str) &&
+                       (xx = DIGIT(c)) < base &&
+	               0 != maxlength--; )
+  {
+#ifdef AUTO_BIGNUM
+    if(INT_TYPE_MUL_OVERFLOW(val, base))
+      is_bignum = 1;
+#endif /* AUTO_BIGNUM */
+    /* Accumulating a negative value avoids surprises near MIN_TYPE_INT. */
+    val = base * val - xx;
+  }
+  
+  if(ptr != 0)
+    *ptr = str;
+
+  r->u.integer = (neg ? val : -val);
+
+#ifdef AUTO_BIGNUM
+  if(is_bignum || (!neg && r->u.integer < 0))
+  {
+    struct pike_string *s;
+
+    s = begin_shared_string(str - str_start);
+    MEMCPY(s->str, str_start, str - str_start);
+    s = end_shared_string(s);
+
+    push_string(s);
+    push_int(base);
+    convert_stack_top_with_base_to_bignum();
+    
+    *r = *--sp;
+  }
+#endif /* AUTO_BIGNUM */
+  
+  return 1;
+}
+
+int convert_stack_top_string_to_inumber(int base)
+{
+  struct svalue r;
+
+  if(sp[-1].type != T_STRING)
+    error("Cannot convert stack top to integer number.\n");
+  
+  string_to_svalue_inumber(&r, sp[-1].u.string->str, 0, base, 0);
+  
+  free_string(sp[-1].u.string);
+  sp[-1] = r;
 }
 
 /* Convert PCHARP to a double.  If ENDPTR is not NULL, a pointer to the

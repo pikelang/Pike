@@ -31,6 +31,7 @@
 
 /* Prototypes begin here */
 void convert_stack_top_to_bignum(void);
+void convert_stack_top_with_base_to_bignum(void);
 struct object *make_bignum_object(void);
 struct object *bignum_from_svalue(struct svalue *s);
 struct pike_string *string_from_bignum(struct object *o, int base);
