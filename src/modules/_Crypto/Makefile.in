@@ -3,6 +3,7 @@ VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=crypto.o idea.o des.o rc4.o invert.o sha.o md5.o pipe.o cbc.o
 MODULE_ARCHIVES=lib/algorithms.a
 MODULE_SUBDIRS=lib
+MODULE_LDFLAGS=@LDFLAGS@
 
 @SET_MAKE@
 

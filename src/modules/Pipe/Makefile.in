@@ -1,6 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=pipe.o
+MODULE_LDFLAGS=@LDFLAGS@
 
 @dynamic_module_makefile@
 @dependencies@

@@ -1,6 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=sprintf.o
+MODULE_LDFLAGS=@LDFLAGS@
 
 @static_module_makefile@
 @dependencies@
