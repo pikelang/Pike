@@ -15,7 +15,22 @@
       check_mark_stack(256);
 
 #ifdef PIKE_DEBUG
-      if(d_flag>2) do_debug();
+      {
+	static int counter;
+	switch(d_flag)
+	{
+	  case 0:
+	  case 1:
+	  case 2:
+	    break;
+	  case 3:
+	    if(!((counter++ & 7)))
+	      do_debug();
+	    break;
+	  case 4:
+	    do_debug();
+	}
+      }
 #endif
 
       p=o->prog;
