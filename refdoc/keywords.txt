@@ -284,6 +284,18 @@ Examples:     //! @seealso
 
 XML:          <seealso/>
 ________________________________________________________________________________
+
+Keyword:      @throws
+Description:  Describes the conditions for an exception to be thrown from the
+              function.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @throws
+              //!   Throws an exception if the file could not be created.
+
+XML:          <throws/>
+________________________________________________________________________________
 ================================================================================
 
   TEXT MARKUP KEYWORDS
