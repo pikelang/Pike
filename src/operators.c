@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.17 1997/09/12 00:07:28 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.18 1997/09/29 00:57:54 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1345,7 +1345,7 @@ void init_operators(void)
 	    "function(string,int:int)|function(object,string:mixed)|function(array,int:mixed)|function(mapping,mixed:mixed)|function(multiset,mixed:int)|function(string,int,int:string)|function(array,int,int:array)",OPT_TRY_OPTIMIZE,0,0);
 
   add_efun2("`->",f_arrow,
-	    "function(object|mapping|multiset,string:mixed)",OPT_TRY_OPTIMIZE,0,0);
+	    "function(array(object|mapping|multiset|array)|object|mapping|multiset,string:mixed)",OPT_TRY_OPTIMIZE,0,0);
 
   add_efun2("`==",f_eq,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`!=",f_ne,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);

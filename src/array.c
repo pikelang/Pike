@@ -143,26 +143,31 @@ void array_index(struct svalue *s,struct array *v,INT32 index)
   free_array(v);
 }
 
-void simple_array_index(struct svalue *s,struct array *a,struct svalue *ind)
-{
-  INT32 i;
-  if(ind->type != T_INT)
-    error("Index is not an integer.\n");
-  i=ind->u.integer;
-  if(i<0) i+=a->size;
-  if(i<0 || i>=a->size) error("Index out of range.\n");
-  array_index(s,a,i);
-}
 
 void simple_array_index_no_free(struct svalue *s,struct array *a,struct svalue *ind)
 {
   INT32 i;
-  if(ind->type != T_INT)
-    error("Index is not an integer.\n");
-  i=ind->u.integer;
-  if(i<0) i+=a->size;
-  if(i<0 || i>=a->size) error("Index out of range.\n");
-  array_index_no_free(s,a,i);
+  switch(ind->type)
+  {
+    case T_INT:
+      i=ind->u.integer;
+      if(i<0) i+=a->size;
+      if(i<0 || i>=a->size) error("Index out of range.\n");
+      array_index_no_free(s,a,i);
+      break;
+
+    case T_STRING:
+      check_stack(4);
+      ref_push_array(a);
+      assign_svalue_no_free(sp++,ind);
+      f_column(2);
+      s[0]=sp[-1];
+      sp--;
+      break;
+
+    default:
+      error("Index is not an integer.\n");
+  }
 }
 
 /*
