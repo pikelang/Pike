@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.16 2003/11/28 01:18:14 nilsson Exp $
+dnl $Id: testsuite.in,v 1.17 2003/11/29 00:12:27 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -198,8 +198,9 @@ cond([[ Crypto["DES3"] ]], [[
 
 define(test_cipher,[[
 cond([[ Crypto["$1"] ]],[[
-  test_eq( Crypto.$1()->block_size(), Crypto.$1->block_size() );
-  test_eq( sizeof(Crypto.$1()->make_key()), Crypto.$1->key_size() );
+  test_eq( Crypto.$1->name(), "$2" )
+  test_eq( Crypto.$1()->block_size(), Crypto.$1->block_size() )
+  test_eq( sizeof(Crypto.$1()->make_key()), Crypto.$1->key_size() )
   test_any([[
     object c=Crypto.$1();
     return sizeof(c->make_key())==c->key_size();
@@ -208,16 +209,17 @@ cond([[ Crypto["$1"] ]],[[
     object c=Crypto.$1();
     c->make_key();
     return sizeof(c->crypt("A"*c->block_size()));
-  ]], Crypto.$1->block_size() );
+  ]], Crypto.$1->block_size() )
 ]])]])
 
-test_cipher(AES)
-test_cipher(ARCFOUR)
-test_cipher(BLOWFISH)
-test_cipher(CAST)
-test_cipher(DES)
-dnl test_cipher(DES3)
-test_cipher(IDEA)
+test_cipher(AES,aes)
+test_cipher(ARCFOUR,arcfour)
+test_cipher(BLOWFISH,blowfish)
+test_cipher(CAST,cast128)
+test_cipher(DES,des)
+test_cipher(DES3,des3)
+test_cipher(IDEA,idea)
+
 
 dnl Crypto.rsa
 
