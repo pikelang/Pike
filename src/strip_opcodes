@@ -1,5 +1,5 @@
 #!/bin/sh
 
 sed 's/OPCODE/\
-OPCODE/g' | egrep '^OPCODE' | sed 's/"[ 	]*).*/")/g'
+OPCODE/g' | egrep '^OPCODE[0-9]' | sed 's/"[ 	]*).*/")/g'
 
