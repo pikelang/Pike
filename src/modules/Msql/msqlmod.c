@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.16 2000/12/05 21:08:29 per Exp $
+ * $Id: msqlmod.c,v 1.17 2001/01/01 23:31:18 kinkie Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.16 2000/12/05 21:08:29 per Exp $");
+RCSID("$Id: msqlmod.c,v 1.17 2001/01/01 23:31:18 kinkie Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -574,7 +574,7 @@ static void do_drop_db (INT32 args)
 	return;
 }
 
-/* mapping(string:array(string)) list_fields (string table) */
+/* array(mapping(string:mixed)) list_fields (string table) */
 static void do_list_fields (INT32 args)
 {
 	m_result * result;
@@ -612,8 +612,9 @@ static void do_list_fields (INT32 args)
 	{
 		int flagsnum=0;
 		field=msqlFetchField(result);
+    
+    push_text("name");
 		push_text(field->name);
-	
 		push_text("type");
 		push_text(decode_msql_type(field->type));
 		push_text("length");
@@ -640,9 +641,9 @@ static void do_list_fields (INT32 args)
 		}
 #endif
 		f_aggregate_multiset(flagsnum);
-		f_aggregate_mapping(8); /*must aggregate on the fields above, except name*/
+		f_aggregate_mapping(10);
 	}
-	f_aggregate_mapping(fields*2);
+  f_aggregate(fields);
 
 	msqlFreeResult(result);
 	return;
@@ -745,7 +746,7 @@ void pike_module_init(void)
 	/* Lists the tables contained in the selected database. */
 
 	/* function(string:mapping(string:array(mixed))) */
-  ADD_FUNCTION("list_fields", do_list_fields,tFunc(tStr,tMap(tStr,tArr(tMix))),
+  ADD_FUNCTION("list_fields", do_list_fields,tFunc(tStr,tArr(tMap(tStr,tMix))),
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
 	/* Returns information on the the fields of the given table of the current
 	  database */

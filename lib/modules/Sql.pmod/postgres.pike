@@ -2,7 +2,7 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.11 2000/09/28 03:39:09 hubbe Exp $
+ * $Id: postgres.pike,v 1.12 2001/01/01 23:31:09 kinkie Exp $
  *
  */
 
@@ -100,9 +100,8 @@ array(string) list_tables (void|string wild) {
 	return ret;
 }
 
-mapping(string:array(mixed)) list_fields (string table, void|string wild) {
-	array row;
-	mapping ret=([]);
+array(mapping(string:mixed)) list_fields (string table, void|string wild) {
+	array row, ret=({});
 	object res=big_query(
 			"SELECT a.attnum, a.attname, t.typname, a.attlen, c.relowner, "
 			"c.relexpires, c.relisshared, c.relhasrules, t.typdefault "
@@ -111,18 +110,14 @@ mapping(string:array(mixed)) list_fields (string table, void|string wild) {
 			"AND a.attrelid = c.oid AND a.atttypid = t.oid ORDER BY attnum");
 	while (row=res->fetch_row()) {
 		mapping m;
-		string name=row[1];
-		row=row[2..];
+    if (wild && strlen(wild) && !glob(wild,row[1]))
+      continue;
+		row=row[1..];
 		row[4]=mkbool(row[4]);
 		row[5]=mkbool(row[5]);
-		m=mkmapping(({"type","length","owner","expires","is_shared"
+		m=mkmapping(({"name","type","length","owner","expires","is_shared"
 				,"has_rules","default"}),row);
-		ret[name]=m;
-	}
-	if (wild && strlen (wild)) {
-		array a=glob(wild,indices(ret));
-		return mkmapping(a,Array.map(a,lambda(string s, mapping m) 
-			      {return m[s];},ret));
+		ret += ({m});
 	}
 	return ret;
 }
