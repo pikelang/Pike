@@ -464,17 +464,17 @@ mapping _decode( string|mapping what, mapping|void opts )
         PASTE_ALPHA(oi,h->alpha);
         break;
 
-      case SUBTRACT_MODE:
+      case DIFFERENCE_MODE:
         object oi = IMG_SLICE(l,h);
         oi -= h->img;
         PASTE_ALPHA(oi,h->alpha);
         break;
 
+      case SUBTRACT_MODE:
       case DIVIDE_MODE:
       case DISSOLVE_MODE:
       case SCREEN_MODE:
       case OVERLAY_MODE:
-      case DIFFERENCE_MODE:
       case DARKEN_ONLY_MODE:
       case LIGHTEN_ONLY_MODE:
       case HUE_MODE:
