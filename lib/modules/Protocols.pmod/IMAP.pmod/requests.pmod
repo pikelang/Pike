@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.74 1999/03/24 19:42:00 grubba Exp $
+ * $Id: requests.pmod,v 1.75 1999/03/28 23:09:52 grubba Exp $
  */
 
 import .types;
@@ -286,6 +286,35 @@ class lsub
       send(tag, "OK");
       return ([ "action" : "finished" ]);
     }
+}
+
+class status
+{
+  inherit request;
+  constant arg_info ({ ({ "string" }), ({ "list" }) });
+
+  mapping easy_process(string mailbox, array(string) list)
+  {
+    werror(sprintf("status->easy_process(%O, %O)\n", mailbox, list));
+
+    if (mailbox == "") {
+      return bad("No mailbox specified!");
+    }
+
+    if (lower_case(mailbox) == "inbox") {
+      mailbox = "INBOX";
+    }
+
+    array(string) res = server->status(session, mailbox, list);
+
+    if (res) {
+      send("*", "STATUS", imap_string(mailbox), imap_list(res));
+      send(tag, "OK");
+    } else {
+      send(tag, "NO");
+    }
+    return([ "action" : "finished" ]);
+  }
 }
 
 class select
