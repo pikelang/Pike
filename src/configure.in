@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.822 2004/03/17 14:59:31 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.823 2004/03/21 06:19:03 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1542,7 +1542,7 @@ if test "x$with_valgrind" = "xno"; then
 else
   VALGRIND="$with_valgrind"
   # Make valgrind a bit silent by default.
-  VALGRINDARGS=-q
+  VALGRINDARGS="-q --tool=memcheck"
   AC_DEFINE(USE_VALGRIND)
 
   if test "x$with_copt" != "xno"; then
