@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.45 2000/12/05 21:08:20 per Exp $");
+RCSID("$Id: peep.c,v 1.46 2001/01/31 22:03:53 mast Exp $");
 
 static void asm_opt(void);
 
@@ -216,6 +216,9 @@ void assemble(void)
   ptrdiff_t e, length;
   p_instr *c;
   int reoptimize=1;
+#ifdef PIKE_DEBUG
+  int synch_depth;
+#endif
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -321,15 +324,20 @@ void assemble(void)
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
   
   c=(p_instr *)instrbuf.s.str;
+#ifdef PIKE_DEBUG
+  synch_depth = 0;
+#endif
   for(e=0;e<length;e++)
   {
 #ifdef PIKE_DEBUG
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
-      fprintf(stderr, "===%3d %4lx ", c->line,
-	      DO_NOT_WARN((unsigned long)PC));
+      if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
+      fprintf(stderr, "===%4d %4lx %*s", c->line,
+	      DO_NOT_WARN((unsigned long)PC), synch_depth, "");
       dump_instr(c);
       fprintf(stderr,"\n");
+      if (c->opcode == F_SYNCH_MARK) synch_depth++;
     }
 #endif
 
@@ -690,6 +698,7 @@ static void asm_opt(void)
   {
     p_instr *c;
     ptrdiff_t e, length;
+    int synch_depth = 0;
 
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
@@ -697,9 +706,11 @@ static void asm_opt(void)
     fprintf(stderr,"Optimization begins: \n");
     for(e=0;e<length;e++,c++)
     {
-      fprintf(stderr,"---%3d: ",c->line);
+      if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
+      fprintf(stderr,"---%4d: %*s",c->line,synch_depth,"");
       dump_instr(c);
       fprintf(stderr,"\n");
+      if (c->opcode == F_SYNCH_MARK) synch_depth++;
     }
   }
 #endif
