@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.46 1997/11/08 01:34:45 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.47 1997/11/11 04:02:45 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -13,6 +13,7 @@ int threads_disabled = 0;
 #include "builtin_functions.h"
 #include "constants.h"
 #include "program.h"
+#include "gc.h"
 
 struct object *thread_id;
 static struct callback *threads_evaluator_callback=0;
