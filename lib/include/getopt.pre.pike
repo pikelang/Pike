@@ -107,14 +107,26 @@ string|int find_option(array argv,
 }
 
 /*
- * ({ "name", ({aliases}), env_var, default })
+ * ({ "name", type, ({aliases}), env_var, default })
  */
+
+constant HAS_ARG=1;
+constant NO_ARG=2;
+constant MAY_HAVE_ARG=3;
+
+#define NAME 0
+#define TYPE 1
+#define ALIASES 2
+#define ENV 3
+#define DEF 4
+
 mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
 {
   mapping quick=([]);
   foreach(options, mixed opt)
     {
-      foreach(stringp(opt[1])?({opt[1]}):opt[1], mixed optname)
+      foreach(stringp(opt[ALIASES])?({opt[ALIASES]}):opt[ALIASES],
+      mixed optname)
 	{
 	  if(optname[0..1]=="--")
 	  {
@@ -145,7 +157,7 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
 	if(mixed *option=quick[opt])
 	{
 	  argv[e]=0;
-	  if(!arg && sizeof(option)>3)
+	  if(!arg && option[TYPE]==HAS_ARG)
 	  {
 	    if(e==sizeof(argv)-1)
 	    {
@@ -165,10 +177,12 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
 	  if(mixed *option=quick[opt])
 	  {
 	    foo[j]=0;
-	    string arg=argv[e][j+1..];
-	    if(sizeof(option)>3)
+	    string arg;
+	    if(option[TYPE]!=NO_ARG)
 	    {
-	      if(arg=="")
+	      arg=argv[e][j+1..];
+	      
+	      if(option[TYPE]==HAS_ARG && arg=="")
 	      {
 		if(e==sizeof(argv)-1)
 		{
@@ -181,6 +195,7 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
 		foo=foo[..j];
 	      }
 	    }
+
 	    ret+=({ ({ option[0], arg || 1 }) });
 	  }
 	}
@@ -200,6 +215,7 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
       if(sizeof(option) > 2)
       {
 	mixed foo=option[2];
+	string name=option[0];
 	if(!foo) continue;
 	if(stringp(foo)) foo=({foo});
 	foreach(foo, foo)
