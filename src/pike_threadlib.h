@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.26 2003/01/08 19:35:42 mast Exp $
+|| $Id: pike_threadlib.h,v 1.27 2003/02/03 16:31:49 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -516,14 +516,14 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
      struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
-			 __FILE__, __LINE__, (unsigned int)_tmp->id)) \
+			 __FILE__, __LINE__, (unsigned int)_tmp->id))
 
 extern void debug_list_all_threads(void);
 extern void dumpmem(char *desc, void *x, int size);
 
 #define SWAP_IN_CURRENT_THREAD()					      \
    THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		       __FILE__, __LINE__, (unsigned int)_tmp->thread_id));   \
+		       __FILE__, __LINE__, (unsigned int)_tmp->id));	      \
    DO_IF_DEBUG(								      \
    {									      \
      THREAD_T self=th_self();						      \
@@ -531,7 +531,7 @@ extern void dumpmem(char *desc, void *x, int size);
      {									      \
        dumpmem("Saved thread id: ",&self,sizeof(self));                       \
        debug_list_all_threads();					      \
-       Pike_fatal("SWAP_IN_CURRENT_THREAD FAILED!!!\n");			      \
+       Pike_fatal("SWAP_IN_CURRENT_THREAD FAILED!!!\n");		      \
      }									      \
    })									      \
    SWAP_IN_THREAD(_tmp);						      \
