@@ -1,8 +1,10 @@
 /* #define AAP_DEBUG 1 */
 #define CACHE_HTABLE_SIZE 40951
 
+#ifndef __NT__
 #ifdef HAVE_SIGNAL
 # define HAVE_TIMEOUTS
+#endif
 #endif
 
 struct res
@@ -66,13 +68,19 @@ struct filesystem
 #endif
 };
 
+#ifdef INT64
+#define LONG_LONG INT64
+#else
+#define LONG_LONG long
+#endif
+
 struct cache
 {
   MUTEX_T mutex;
   struct cache *next;
   struct cache_entry *htable[CACHE_HTABLE_SIZE];
-  unsigned long long size, entries, max_size;
-  unsigned long long hits, misses, stale;
+  unsigned LONG_LONG size, entries, max_size;
+  unsigned LONG_LONG hits, misses, stale;
   unsigned int num_requests, sent_data, received_data;
   int gone;
 };
