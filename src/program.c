@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.435 2002/06/11 17:48:11 mast Exp $");
+RCSID("$Id: program.c,v 1.436 2002/06/11 22:16:17 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1698,19 +1698,21 @@ void low_start_new_program(struct program *p,
 	     compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
 
-  if(TEST_COMPAT(7,2) || (lex.pragmas & ID_SAVE_PARENT))
-  {
-    p->flags |= PROGRAM_USES_PARENT;
-  }else if (!(lex.pragmas & ID_DONT_SAVE_PARENT)) {
-    struct pike_string *tmp=findstring("__pragma_save_parent__");
-    if(tmp)
+  if (compilation_depth >= 1) {
+    if(TEST_COMPAT(7,2) || (lex.pragmas & ID_SAVE_PARENT))
     {
-      struct node_s *n=find_module_identifier(tmp, 0);
-      if(n)
+      p->flags |= PROGRAM_USES_PARENT;
+    }else if (!(lex.pragmas & ID_DONT_SAVE_PARENT)) {
+      struct pike_string *tmp=findstring("__pragma_save_parent__");
+      if(tmp)
       {
-	int do_save_parent = !node_is_false(n); /* Default to true. */
-	free_node(n);
-	if (do_save_parent) p->flags |= PROGRAM_USES_PARENT;
+	struct node_s *n=find_module_identifier(tmp, 0);
+	if(n)
+	{
+	  int do_save_parent = !node_is_false(n); /* Default to true. */
+	  free_node(n);
+	  if (do_save_parent) p->flags |= PROGRAM_USES_PARENT;
+	}
       }
     }
   }
