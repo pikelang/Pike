@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.394 2001/12/16 22:48:09 mast Exp $");
+RCSID("$Id: program.c,v 1.395 2001/12/17 11:08:11 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6344,13 +6344,13 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
     sp--;
 
     if (error_handler) {
-      apply(error_handler, "get_default_module", 0);
+      safe_apply(error_handler, "get_default_module", 0);
     } else {
       push_int(0);
     }
     if (Pike_sp[-1].type == T_INT) {
       pop_stack();
-      apply(compat_handler, "get_default_module", 0);
+      safe_apply(compat_handler, "get_default_module", 0);
     
       if(Pike_sp[-1].type == T_INT)
       {
@@ -6361,7 +6361,7 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
   }else{
     pop_stack();
     if (error_handler) {
-      apply(error_handler, "get_default_module", 0);
+      safe_apply(error_handler, "get_default_module", 0);
     } else {
       push_int(0);
     }
