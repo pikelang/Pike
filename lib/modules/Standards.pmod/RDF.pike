@@ -240,3 +240,9 @@ string encode_n_triple_string(string in) {
 
   return build;
 }
+
+string _sprintf(int t) {
+  if(t=='t') return "RDF";
+  if(t=='O') return "RDF(" + sizeof(relations) + ")";
+  error("Can not represent RDF as %c.\n", t);
+}
