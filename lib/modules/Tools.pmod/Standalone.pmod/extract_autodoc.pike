@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.26 2002/12/12 18:26:48 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.27 2002/12/12 19:05:35 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -118,7 +118,7 @@ string extract(string filename, string imgdest, int(0..1) rootless,
   string result;
   mixed err = catch {
     if( suffix == "c" )
-      result = Tools.AutoDoc.ProcessXML.extractXML(filename);
+      result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root);
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];
