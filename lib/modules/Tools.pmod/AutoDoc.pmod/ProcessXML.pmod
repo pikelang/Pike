@@ -583,6 +583,8 @@ void handleAppears(Node root) {
 // Rather DWIM splitting of a string into a chain of identifiers:
 // "Module.Class->funct(int i)" ==> ({"Module","Class","func"})
 // "\"foo.pike\"" ==> ({ "\"foo.pike\"" })
+// ".protocol" ==> ({ "", "protocol" })
+// ".module.ANY" ==> ({ "", "ANY" })
 static array(string) splitRef(string ref) {
   if ((sizeof(ref)>1) && (ref[0] == '"')) {
     // Explictly named program.
@@ -610,6 +612,10 @@ static array(string) splitRef(string ref) {
   } else if (a[0] == ".") {
     result = ({ "" });
     a = a[1..];
+    if (sizeof(a) > 1 && (a[0] == "module") && (a[1] == ".")) {
+      // .module.XXXX
+      a = a[2..];
+    }
   }
   for (;;) {
     if (!sizeof(a))
@@ -981,7 +987,7 @@ class NScope
       switch (child->get_any_name()) {
       case "docgroup":
 	string h_name = child->get_attributes()["homogen-name"];
-	NScope h_scope;
+	NScope h_scope = symbols[h_name];
 	foreach(child->get_children(), Node thing) {
 	  n = (thing->get_attributes() || ([]))->name;
 	  string subtype = thing->get_any_name();
@@ -991,6 +997,7 @@ class NScope
 	      if (!h_name) {
 		h_name = n;
 		child->get_attributes()["homogen-name"] = n;
+		h_scope = symbols[n];
 	      }
 	      if (!h_scope) {
 		h_scope = NScope(thing, path);
@@ -1158,14 +1165,40 @@ class NScopeStack
     int pos = sizeof(stack);
     NScope current = top;
     if (has_suffix(ref[0], "::")) {
-      while(pos) {
-	if (current->inherits && current->inherits[ref[0]]) {
-	  string res = current->inherits[ref[0]]->lookup(ref[1..]);
-	  if (res) return res;
+      // Inherit or namespace.
+      switch(ref[0]) {
+      case "this_program::":
+	while (pos) {
+	  if ((<"class", "module", "namespace">)[current->type]) {
+	    return current->lookup(ref[1..]);
+	  }
+	  pos--;
+	  current = stack[pos];
 	}
-	pos--;
-	current = stack[pos];
-      } while(pos);
+	return 0;
+      case "::":
+	while(pos) {
+	  if (current->inherits) {
+	    foreach(current->inherits; ; NScope scope) {
+	      string res = scope->lookup(ref[1..]);
+	      if (res) return res;
+	    }
+	  }
+	  pos--;
+	  current = stack[pos];
+	}
+	break;
+      default:
+	while(pos) {
+	  if (current->inherits && current->inherits[ref[0]]) {
+	    string res = current->inherits[ref[0]]->lookup(ref[1..]);
+	    if (res) return res;
+	  }
+	  pos--;
+	  current = stack[pos];
+	}
+	break;
+      }
       return (scopes->lookup(ref));
     }
     if (!sizeof(ref[0])) {
