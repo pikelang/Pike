@@ -16,7 +16,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.13 1999/01/21 09:15:07 hubbe Exp $");
+RCSID("$Id: multiset.c,v 1.14 1999/04/13 20:10:05 hubbe Exp $");
 
 struct multiset *first_multiset;
 
@@ -28,7 +28,7 @@ int multiset_member(struct multiset *l, struct svalue *ind)
 /*
  * allocate and init a new multiset
  */
-static struct multiset *allocate_multiset(struct array *ind)
+struct multiset *allocate_multiset(struct array *ind)
 {
   struct multiset *l;
   GC_ALLOC();
@@ -69,7 +69,8 @@ void really_free_multiset(struct multiset *l)
   GC_FREE();
 }
 
-static void order_multiset(struct multiset *l)
+
+void order_multiset(struct multiset *l)
 {
   INT32 *order;
   if(l->ind->size < 2) return;

@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.35 1999/01/21 09:15:11 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.36 1999/04/13 20:10:08 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -124,8 +124,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
       free_svalue(sp-2);
       sp[-2]=sp[-1];
       sp--;
-      return;
-    }
+    }else
 
     switch(run_time_type)
     {
@@ -134,6 +133,23 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	
       case T_MIXED:
 	return;
+
+      case T_MAPPING:
+	switch(sp[-1].type)
+	{
+	  case T_ARRAY:
+	  {
+	    f_transpose(1);
+	    sp--;
+	    push_array_items(sp->u.array);
+	    f_mkmapping(2);
+	    break;
+	  }
+
+	  default:
+	    error("Cannot cast %s to mapping.\n",get_name_of_type(sp[-1].type));
+	}
+	break;
 	
       case T_ARRAY:
 	switch(sp[-1].type)
@@ -377,7 +393,6 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  ref_push_array(a);
 	}else{
 	  INT32 e,i;
-	  struct pike_string *s;
 #ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
 #endif
@@ -401,6 +416,108 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	pop_stack();
       }
       pop_stack();
+    }
+    break;
+
+    case T_MULTISET:
+    {
+      struct pike_string *itype;
+      INT32 run_time_itype;
+
+      push_string(itype=key_type(type,0));
+      run_time_itype=compile_type_to_runtime_type(itype);
+
+      if(run_time_itype != T_MIXED)
+      {
+	struct multiset *m;
+	struct array *tmp=sp[-2].u.multiset->ind;
+	DECLARE_CYCLIC();
+	
+	if((m=(struct multiset *)BEGIN_CYCLIC(tmp,0)))
+	{
+	  ref_push_multiset(m);
+	}else{
+	  INT32 e,i;
+	  struct array *a;
+#ifdef PIKE_DEBUG
+	  struct svalue *save_sp=sp+1;
+#endif
+	  push_multiset(m=allocate_multiset(a=allocate_array(tmp->size)));
+	  
+	  SET_CYCLIC_RET(m);
+	  
+	  for(e=0;e<a->size;e++)
+	  {
+	    push_svalue(tmp->item+e);
+	    o_cast(itype, run_time_itype);
+	    array_set_index(a,e,sp-1);
+	    pop_stack();
+	  }
+#ifdef PIKE_DEBUG
+	  if(save_sp!=sp)
+	    fatal("o_cast left stack droppings.\n");
+#endif
+	  order_multiset(m);
+	  END_CYCLIC();
+	}
+	assign_svalue(sp-3,sp-1);
+	pop_stack();
+      }
+      pop_stack();
+    }
+    break;
+
+    case T_MAPPING:
+    {
+      struct pike_string *itype,*vtype;
+      INT32 run_time_itype;
+      INT32 run_time_vtype;
+
+      push_string(itype=key_type(type,0));
+      run_time_itype=compile_type_to_runtime_type(itype);
+
+      push_string(vtype=index_type(type,0));
+      run_time_vtype=compile_type_to_runtime_type(vtype);
+
+      if(run_time_itype != T_MIXED ||
+	 run_time_vtype != T_MIXED)
+      {
+	struct mapping *m;
+	struct mapping *tmp=sp[-3].u.mapping;
+	DECLARE_CYCLIC();
+	
+	if((m=(struct mapping *)BEGIN_CYCLIC(tmp,0)))
+	{
+	  ref_push_mapping(m);
+	}else{
+	  INT32 e,i;
+	  struct keypair *k;
+#ifdef PIKE_DEBUG
+	  struct svalue *save_sp=sp+1;
+#endif
+	  push_mapping(m=allocate_mapping(tmp->size));
+	  
+	  SET_CYCLIC_RET(m);
+	  
+	  MAPPING_LOOP(tmp)
+	  {
+	    push_svalue(& k->ind);
+	    o_cast(itype, run_time_itype);
+	    push_svalue(& k->val);
+	    o_cast(vtype, run_time_vtype);
+	    mapping_insert(m,sp-2,sp-1);
+	    pop_n_elems(2);
+	  }
+#ifdef PIKE_DEBUG
+	  if(save_sp!=sp)
+	    fatal("o_cast left stack droppings.\n");
+#endif
+	  END_CYCLIC();
+	}
+	assign_svalue(sp-4,sp-1);
+	pop_stack();
+      }
+      pop_n_elems(2);
     }
   }
 }

@@ -20,7 +20,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.47 1999/04/12 05:27:46 hubbe Exp $");
+RCSID("$Id: array.c,v 1.48 1999/04/13 20:10:04 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1610,7 +1610,7 @@ void apply_array(struct array *a, INT32 args)
   argp=sp-args - evaluator_stack;
 
   check_stack(a->size + args + 1);
-
+  check_array_for_destruct(a);
   for(e=0;e<a->size;e++)
   {
     assign_svalues_no_free(sp,evaluator_stack+argp,args,BIT_MIXED);

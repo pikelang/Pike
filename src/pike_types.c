@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.54 1999/03/02 03:13:25 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.55 1999/04/13 20:10:09 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1490,6 +1490,90 @@ struct pike_string *index_type(struct pike_string *type, node *n)
   if(!t) copy_shared_string(t,mixed_type_string);
   return t;
 }
+
+
+#ifdef DEBUG_MALLOC
+#define low_key_type(X,Y) ((struct pike_string *)debug_malloc_touch(debug_low_key_type((X),(Y))))
+#else
+#define low_key_type debug_low_key_type
+#endif
+
+/* FIXME, add the index */
+static struct pike_string *debug_low_key_type(char *t, node *n)
+{
+  switch(EXTRACT_UCHAR(t++))
+  {
+  case T_OBJECT:
+  {
+    struct program *p=id_to_program(extract_type_int(t+1));
+    if(p && n)
+    {
+      if(n->token == F_ARROW)
+      {
+	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
+	{
+	  reference_shared_string(mixed_type_string);
+	  return mixed_type_string;
+	}
+      }else{
+	if(FIND_LFUN(p,LFUN_INDEX) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
+	{
+	  reference_shared_string(mixed_type_string);
+	  return mixed_type_string;
+	}
+      }
+    }
+    reference_shared_string(string_type_string);
+    return string_type_string;
+  }
+  default:
+    reference_shared_string(mixed_type_string);
+    return mixed_type_string;
+
+    case T_VOID:
+    case T_FLOAT:
+    case T_INT:
+      return 0;
+
+  case T_OR:
+  {
+    struct pike_string *a,*b;
+    a=low_key_type(t,n);
+    t+=type_length(t);
+    b=low_key_type(t,n);
+    if(!b) return a;
+    if(!a) return b;
+    type_stack_mark();
+    medium_or_pike_types(a,b);
+    free_string(a);
+    free_string(b);
+    return pop_unfinished_type();
+  }
+
+  case T_AND:
+    return low_key_type(t+type_length(t),n);
+
+  case T_ARRAY:
+  case T_STRING: /* always int */
+    reference_shared_string(int_type_string);
+    return int_type_string;
+
+  case T_MAPPING:
+  case T_MULTISET:
+    return make_shared_binary_string(t, type_length(t));
+  }
+}
+
+struct pike_string *key_type(struct pike_string *type, node *n)
+{
+  struct pike_string *t;
+  clear_markers();
+  t=low_key_type(type->str,n);
+  if(!t) copy_shared_string(t,mixed_type_string);
+  return t;
+}
+
+
 
 static int low_check_indexing(char *type, char *index_type, node *n)
 {
