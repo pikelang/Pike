@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.4 1997/09/16 06:03:22 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.5 1997/09/16 07:32:16 hubbe Exp $ */
 
 import Stdio;
 import String;
@@ -176,6 +176,11 @@ object *spair(int type)
     }
   }else{
     sock2=sock1->pipe();
+    if(!sock2)
+    {
+      werror("File->pipe() failed 0\n");
+      exit(1);
+    }
   }
   return ({sock1,sock2});
 }
