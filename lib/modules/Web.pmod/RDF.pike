@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.32 2004/01/16 04:52:35 nilsson Exp $
+// $Id: RDF.pike,v 1.33 2004/01/16 05:32:23 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -844,12 +844,35 @@ static class XML {
 	ind++;
 	foreach(group, Resource right)
 	  add_Description(right, m_delete(subjects, right)||([]));
+	group = ({});
 	ind--;
 	if(ind) buf->add("  "*ind);
 	buf->add("</", left->get_qname(), ">\n");
       }
     }
   ind--;
+  }
+
+  string make_prop_attr(mapping(Resource:array(Resource)) rel,
+			int nl) {
+
+    foreach(rel; Resource left; array(Resource) rights) {
+      if(!left->is_uri_resource) continue;
+      foreach(rights; int p; Resource right) {
+	if(!right->is_literal_resource) continue;
+	if(has_value(right->get_xml(), "\n")) continue;
+	add_ns(left);
+	if(nl++)
+	  buf->add("\n ", "  "*(ind+8));
+	buf->add(left->get_qname(), "='", right->get_xml(), "'");
+	rights[p]=0;
+      }
+      rights -= ({ 0 });
+      if(!sizeof(rights))
+	m_delete(rel, left);
+      else
+	rel[left] = rights;
+    }
   }
 
   void add_Description(Resource n,
@@ -874,10 +897,23 @@ static class XML {
     }
     else {
       if(ind) buf->add("  "*ind);
-      if(n->is_uri_resource)
-	buf->add("<rdf:Description rdf:about='", n->get_uri(), "'>\n");
-      else
-	buf->add("<rdf:Description>\n");
+      if(n->is_uri_resource) {
+	buf->add("<rdf:Description rdf:about='", n->get_uri(), "'");
+	make_prop_attr(rel, 1);
+      }
+      else {
+	buf->add("<rdf:Description ");
+	make_prop_attr(rel, 0);
+      }
+
+      if(!sizeof(rel)) {
+	buf->add(">\n");
+	if(!ind) buf->add("\n");
+	return;
+      }
+
+      buf->add("/>\n");
+
       low_add_Description(rel);
       if(ind) buf->add("  "*ind);
       buf->add("</rdf:Description>\n");
