@@ -2,7 +2,7 @@
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return "<t2>";});
-  p->add_tag ("t2", lambda (object p, mapping a) {return "a";});
+  p->add_tag ("t2", "a");
   return p->finish("<t>")->read();
 ]], "a")
 test_any([[
@@ -17,6 +17,18 @@ test_any([[
     return p->finish("<t>")->read();
   }) return 1;
 ]], 1)
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", "<t>");
+  if (catch {
+    return p->finish("<t>")->read();
+  }) return 1;
+]], 1)
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", "t");
+  return p->finish("<t a=b c>")->read();
+]], "t")
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
@@ -42,7 +54,7 @@ test_any([[
 test_any([[
   object p = Parser.HTML();
   p->add_entity ("e", lambda (object p) {return "<t>";});
-  p->add_tag ("t", lambda (object p, mapping a) {return "a";});
+  p->add_tag ("t", "a");
   return p->finish("&e;")->read();
 ]], "a")
 test_any([[
@@ -53,6 +65,18 @@ test_any([[
 test_any([[
   object p = Parser.HTML();
   p->add_entity ("e", lambda (object p) {return "&e;";});
+  if (catch {
+    return p->finish("&e;")->read();
+  }) return 1;
+]], 1)
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "e");
+  return p->finish("&e;")->read();
+]], "e")
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "&e;");
   if (catch {
     return p->finish("&e;")->read();
   }) return 1;
