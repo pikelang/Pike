@@ -1,10 +1,9 @@
 #
-# $Id: configure.in,v 1.3 2001/02/13 15:44:17 mirar Exp $
+# $Id: configure.in,v 1.4 2003/08/12 20:44:52 nilsson Exp $
 #
 AC_INIT(image_gif.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gif,     [  --with(out)-gif       Support GIF (Image.GIF)],[],[with_gif=yes])
-AC_ARG_WITH(gif-rle, [  --with-gif-rle        use kind-of-rle packing instead of lzw],[],[with_gif_rle=no])
 AC_MODULE_INIT()
 
 PIKE_FEATURE_WITHOUT(Image.GIF)
@@ -13,11 +12,6 @@ if test x$with_gif = xyes ; then
   AC_DEFINE(WITH_GIF)
 
   PIKE_FEATURE_OK(Image.GIF)
-
-  if test x$with_gif_rle = xyes ; then
-    AC_DEFINE(GIF_LZW_RLE)
-    PIKE_FEATURE(Image.GIF,[yes (rle only)])
-  fi
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

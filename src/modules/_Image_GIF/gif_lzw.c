@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gif_lzw.c,v 1.6 2002/10/21 17:06:24 marcus Exp $
+|| $Id: gif_lzw.c,v 1.7 2003/08/12 20:44:52 nilsson Exp $
 */
 
 /*
@@ -101,29 +101,22 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       return;
    }
 
-#ifdef GIF_LZW_RLE
-   if (c==lzw->code[lzw->current].c)
+#ifdef GIF_LZW_LZ
+   if (!lzw->skipone)
    {
 #endif
+     /* check if we have this sequence */
+     lno=lzw->code[lzw->current].firstchild;
+     while (lno!=LZWCNULL)
+     {
+       if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
+       {
+	 lzw->current=lno;
+	 return;
+       }
+       lno=lzw->code[lno].next;
+     }
 #ifdef GIF_LZW_LZ
-      if (!lzw->skipone)
-      {
-#endif
-	 /* check if we have this sequence */
-	 lno=lzw->code[lzw->current].firstchild; 
-	 while (lno!=LZWCNULL)
-	 {
-	    if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
-	    {
-	       lzw->current=lno;
-	       return;
-	    }
-	    lno=lzw->code[lno].next;
-	 }
-#ifdef GIF_LZW_LZ
-      }
-#endif
-#ifdef GIF_LZW_RLE
    }
 #endif
 
