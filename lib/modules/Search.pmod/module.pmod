@@ -8,7 +8,7 @@ private mapping filters=([]);
 
 void create()
 {
-  foreach(values(Search.Filter.Base), program filter)
+  foreach(values(Search.Filter), program filter)
   {
     Search.Filter.Base tmp=filter();
     foreach(tmp->contenttypes || ({ }), string mime)
