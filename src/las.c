@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.142 1999/12/14 08:39:11 hubbe Exp $");
+RCSID("$Id: las.c,v 1.143 1999/12/15 17:02:35 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1291,6 +1291,16 @@ int node_is_eq(node *a,node *b)
     if(cdr_is_node(a) && !node_is_eq(CDR(a), CDR(b))) return 0;
     return 1;
   }
+}
+
+node *debug_mktypenode(struct pike_string *t)
+{
+  node *res = mkemptynode();
+  res->token = F_CONSTANT;
+  copy_shared_string(res->u.sval.u.string, t);
+  res->u.sval.type = T_TYPE;
+  copy_shared_string(res->type, type_type_string);
+  return freeze_node(res);
 }
 
 node *debug_mkconstantsvaluenode(struct svalue *s)
