@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.126 2003/09/11 19:23:54 mast Exp $
+|| $Id: interpret_functions.h,v 1.127 2004/03/12 21:58:28 mast Exp $
 */
 
 /*
@@ -158,8 +158,8 @@
 							\
     DO_IF_DEBUG(if (t_flag > 5)				\
       fprintf(stderr, "Returning to 0x%p\n",		\
-	      Pike_fp->pc));				\
-    DO_JUMP_TO(Pike_fp->pc);				\
+	      Pike_fp->return_addr));			\
+    DO_JUMP_TO(Pike_fp->return_addr);			\
   }							\
   DO_IF_DEBUG(if (t_flag > 5)				\
     fprintf(stderr, "Inter return\n"));			\
@@ -1194,7 +1194,7 @@ OPCODE0_JUMP(F_CATCH, "catch", 0, {
     DO_DUMB_RETURN;
   case 2:
     /* Escape catch, continue after the escape instruction. */
-    DO_JUMP_TO(Pike_fp->pc);
+    DO_JUMP_TO(Pike_fp->return_addr);
     break;
   default:
     DOJUMP();
@@ -1203,13 +1203,13 @@ OPCODE0_JUMP(F_CATCH, "catch", 0, {
 });
 
 OPCODE0_RETURN(F_ESCAPE_CATCH, "escape catch", 0, {
-  Pike_fp->pc = PROG_COUNTER;
+  Pike_fp->return_addr = PROG_COUNTER;
   INTER_ESCAPE_CATCH;
 });
 
 OPCODE0_RETURN(F_EXIT_CATCH, "exit catch", 0, {
   push_undefined();
-  Pike_fp->pc = PROG_COUNTER;
+  Pike_fp->return_addr = PROG_COUNTER;
   INTER_ESCAPE_CATCH;
 });
 
@@ -1773,8 +1773,8 @@ OPCODE1(F_SIZEOF_LOCAL, "sizeof local", 0, {
 OPCODE1_ALIAS(F_SSCANF, "sscanf", 0, o_sscanf);
 
 #define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
-OP(PIKE_CONCAT(F_,OPCODE),NAME, I_PC_AT_NEXT, {				   \
-Pike_fp->pc=PROG_COUNTER;						   \
+OP(PIKE_CONCAT(F_,OPCODE),NAME, 0, {					   \
+Pike_fp->return_addr=PROG_COUNTER;					   \
 if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),	   \
 		  ARG2, ARG3))						   \
 {									   \
@@ -1783,8 +1783,8 @@ if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),	   \
 }									   \
 });									   \
 									   \
-OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", I_PC_AT_NEXT, {	   \
-  Pike_fp->pc=PROG_COUNTER;						   \
+OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", 0, {			   \
+  Pike_fp->return_addr=PROG_COUNTER;					   \
   if(low_mega_apply(TYPE, DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
 		    ARG2, ARG3))					   \
   {									   \
@@ -1814,8 +1814,8 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
 									   \
 MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			           \
 									   \
-OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, I_PC_AT_NEXT, {		   \
-  Pike_fp->pc=PROG_COUNTER;						   \
+OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, 0, {			   \
+  Pike_fp->return_addr=PROG_COUNTER;					   \
   if(low_mega_apply(TYPE,0,						   \
 		    ARG2, ARG3))					   \
   {									   \
@@ -1824,8 +1824,8 @@ OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, I_PC_AT_NEXT, {		   \
   }									   \
 });									   \
 									   \
-OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop", I_PC_AT_NEXT, { \
-  Pike_fp->pc=PROG_COUNTER;						   \
+OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop", 0, {	\
+  Pike_fp->return_addr=PROG_COUNTER;					   \
   if(low_mega_apply(TYPE, 0,						   \
 		    ARG2, ARG3))					   \
   {									   \
@@ -1860,10 +1860,10 @@ MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 
 MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
-OPCODE1(F_CALL_OTHER,"call other", I_PC_AT_NEXT, {
+OPCODE1(F_CALL_OTHER,"call other", 0, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   struct svalue *s=Pike_sp-args;
-  Pike_fp->pc=PROG_COUNTER;
+  Pike_fp->return_addr=PROG_COUNTER;
   if(s->type == T_OBJECT)
   {
     struct object *o=s->u.object;
@@ -1912,10 +1912,10 @@ OPCODE1(F_CALL_OTHER,"call other", I_PC_AT_NEXT, {
   }
 });
 
-OPCODE1(F_CALL_OTHER_AND_POP,"call other & pop", I_PC_AT_NEXT, {
+OPCODE1(F_CALL_OTHER_AND_POP,"call other & pop", 0, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   struct svalue *s=Pike_sp-args;
-  Pike_fp->pc=PROG_COUNTER;
+  Pike_fp->return_addr=PROG_COUNTER;
   if(s->type == T_OBJECT)
   {
     struct object *o=s->u.object;
@@ -2115,7 +2115,7 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
   new_frame->refs=1;							   \
   new_frame->next=Pike_fp;						   \
 									   \
-  Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);		   \
+  Pike_fp->return_addr = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);   \
   addr = PROG_COUNTER+GET_JUMP();					   \
 									   \
   new_frame->num_locals = READ_INCR_BYTE(addr);				   \
@@ -2153,10 +2153,10 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
 }while(0)
 
 /* Assume that the number of arguments is correct */
-OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT, {
+OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", 0, {
   struct program *p = Pike_fp->current_object->prog;
   PIKE_OPCODE_T *addr = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);
-  Pike_fp->pc=addr;
+  Pike_fp->return_addr=addr;
 
   /* Test if the function is overloaded.
    *

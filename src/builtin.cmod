@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.107 2003/07/28 14:47:38 mast Exp $
+|| $Id: builtin.cmod,v 1.108 2004/03/12 21:58:28 mast Exp $
 */
 
 #include "global.h"
@@ -1280,15 +1280,7 @@ void low_backtrace(struct Pike_interpreter *i)
 
     if ((bf->prog = f->context.prog)) {
       add_ref(bf->prog);
-      if (f->pc) {
-	/* f->pc is the return address (i.e the next opcode) when
-	 * inside a call, otherwise it points to the current
-	 * opcode. */
-	if (of)
-	  bf->pc = f->pc - 1;
-	else
-	  bf->pc = f->pc;
-      }
+      bf->pc = f->pc;
     }
 
     if ((bf->fun.u.object = f->current_object) &&
