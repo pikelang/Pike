@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.9 2001/05/22 12:50:35 per Exp $");
+RCSID("$Id: resultset.c,v 1.10 2001/05/22 14:21:56 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -32,7 +32,6 @@ RCSID("$Id: resultset.c,v 1.9 2001/05/22 12:50:35 per Exp $");
 /* The resultset class abstractions. */
 
 struct program *resultset_program;
-struct result_set_p {  int allocated_size; ResultSet *d; };
 
 #define THIS ((struct result_set_p*)Pike_fp->current_object->storage)
 #define T(o) ((struct result_set_p*)o->storage)
