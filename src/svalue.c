@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.112 2001/07/05 01:44:55 mast Exp $");
+RCSID("$Id: svalue.c,v 1.113 2001/07/05 10:38:26 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1512,7 +1512,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       }
 
 #define GC_DO_MARK(U, TN)						\
-      gc_mark_enqueue(							\
+      enqueue(&gc_mark_queue,						\
 	(queue_call) PIKE_CONCAT3(gc_mark_, TN, _as_referenced),	\
 	U.TN)
 
