@@ -120,9 +120,9 @@ test_true(stringp(sprintf("%E",exp(200))))
 dnl test for "inf" problems
 test_eq(sprintf("%f",exp(65536)),"inf") 
 test_eq(sprintf("%g",exp(65536)),"inf")
-test_eq(sprintf("%G",exp(65536)),"inf")
+test_eq(sprintf("%G",exp(65536)),"INF")
 test_eq(sprintf("%e",exp(65536)),"inf")
-test_eq(sprintf("%E",exp(65536)),"inf")
+test_eq(sprintf("%E",exp(65536)),"INF")
 
 test_eq(sprintf("%s","foobaR"),"foobaR")
 test_eq(sprintf("%s","foo\nbar"),"foo\nbar")
