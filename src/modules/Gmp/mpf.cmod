@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.18 2002/12/01 19:15:57 nilsson Exp $
+|| $Id: mpf.cmod,v 1.19 2002/12/01 22:34:59 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.18 2002/12/01 19:15:57 nilsson Exp $");
+RCSID("$Id: mpf.cmod,v 1.19 2002/12/01 22:34:59 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -125,9 +125,9 @@ PIKECLASS mpf
     }
   
   /* FIXME: */
-  /*! @decl void create(void|string|int|float|object x,@
-   *!                   void|int(1..) precision)
-   *! @decl void create(string x, int(0..) precision, int(2..36) base)
+  /*! @decl static void create(void|int|string|float|object x@
+   *!                          void|int(0..) precision)
+   *! @decl static void create(string x, int(0..) precision, int(2..36) base)
    */
   PIKEFUN void create(void|string|int|float|object x, void|int precision,
 		      void|int base)
@@ -149,9 +149,9 @@ PIKECLASS mpf
 	if(sp[1-args].type == T_INT)
 	{
 	  if(sp[1-args].u.integer<1) {
-	    Pike_error("Bad argument 2 to Gmp.mpf, must be > 0 (%d).\n");
+	    Pike_error("Bad argument 2 to Gmp.mpf, must be positive.\n");
 	  } else if (sp[1-args].u.integer > 0x10000) {
-	    Pike_error("Bad argument 2 to Gmp.mpf, must be <= 0x10000 (%d).\n");
+	    Pike_error("Bad argument 2 to Gmp.mpf, must be <= 0x10000.\n");
 	  }
 	  mpf_set_prec(THISMPF, sp[1-args].u.integer);
 	}
@@ -170,7 +170,7 @@ PIKECLASS mpf
     }
   }
 
-  /*! @decl int __hash()
+  /*! @decl static int __hash()
    */
   PIKEFUN int __hash()
     flags ID_STATIC;
@@ -279,7 +279,7 @@ PIKECLASS mpf
       return def;
     }
 		    
-  /*! @decl string _sprintf(int c, mapping flags)
+  /*! @decl static string _sprintf(int c, mapping flags)
    */
   PIKEFUN string _sprintf(int c, mapping flags)
     flags ID_STATIC;
@@ -312,20 +312,21 @@ PIKECLASS mpf
       }
     }
   
-  /*! @decl void _is_type(string arg)
+  /*! @decl static int(0..1) _is_type(string arg)
+   *!   The Gmp.mpf object will claim to be a @tt{"float"@}.
    *! @fixme
-   *!   Is this prototype really correct?
+   *!   Perhaps it should also return true for @tt{"object"@}?
    */
-  PIKEFUN void _is_type(string arg)
+  PIKEFUN int(0..1) _is_type(string arg)
     flags ID_STATIC;
     {
       push_constant_text("float");
       f_eq(2);
     }
 
-  /*! @decl mixed cast(string to)
+  /*! @decl static mixed cast(string to)
    */
-  PIKEFUN void cast(string s)
+  PIKEFUN mixed cast(string s)
     flags ID_STATIC;
   {
     add_ref(s);
@@ -492,7 +493,7 @@ PIKECLASS mpf
       }
     }
 
-  /*! @decl Gmp.mpf `+(int|float|object ... a)
+  /*! @decl static Gmp.mpf `+(int|float|object ... a)
    */
   PIKEFUN object `+(int|float|object ... a)
     flags ID_STATIC;
@@ -506,7 +507,7 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /* @decl Gmp.mpf ``+(int|float|object .. a)
+  /* @decl static Gmp.mpf ``+(int|float|object .. a)
    */
   PIKEFUN object ``+(int|float|object ... a)
     flags ID_STATIC;
@@ -537,15 +538,15 @@ PIKECLASS mpf
     REF_RETURN fp->current_object;
   }
 
-  /*! @decl Gmp.mpf set_precision(int(1..) prec)
-   *! Sets the precision of the current object. The
-   *! precision is limited to 128Kb. The current object
-   *! will be returned.
+  /*! @decl Gmp.mpf set_precision(int(0..) prec)
+   *! Sets the precision of the current object to be at
+   *! least @[prec] bits. The precision is limited to 128Kb.
+   *! The current object will be returned.
    */
-  PIKEFUN object set_precision(int(1..) prec)
+  PIKEFUN object set_precision(int(0..) prec)
     {
-      if(prec<1) {
-	Pike_error("Precision must be greater than zero.\n");
+      if(prec<0) {
+	Pike_error("Precision must be positive.\n");
       } else if (prec > 0x10000) {
 	Pike_error("Precision must be less than or equal to 0x10000.\n");
       }
