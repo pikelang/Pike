@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.295 2001/02/19 23:50:02 grubba Exp $");
+RCSID("$Id: program.c,v 1.296 2001/02/21 21:38:47 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1593,7 +1593,7 @@ void check_program(struct program *p)
   for(e=0;e<p->num_identifiers;e++)
   {
     check_string(p->identifiers[e].name);
-    check_string(p->identifiers[e].type);
+    check_type_string(p->identifiers[e].type);
 
     if(p->identifiers[e].identifier_flags & ~IDENTIFIER_MASK)
       fatal("Unknown flags in identifier flag field.\n");
@@ -3008,11 +3008,11 @@ INT32 define_function(struct pike_string *name,
       fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
     }
 #endif /* PIKE_DEBUG */
-    if (!pike_types_le(type, lfun_type->u.string)) {
-      if (!match_types(type, lfun_type->u.string)) {
-	yytype_error("Function type mismatch", lfun_type->u.string, type, 0);
+    if (!pike_types_le(type, lfun_type->u.type)) {
+      if (!match_types(type, lfun_type->u.type)) {
+	yytype_error("Function type mismatch", lfun_type->u.type, type, 0);
       } else if (lex.pragmas & ID_STRICT_TYPES) {
-	yytype_error("Function type mismatch", lfun_type->u.string, type,
+	yytype_error("Function type mismatch", lfun_type->u.type, type,
 		     YYTE_IS_WARNING);
       }
     }
@@ -4048,9 +4048,9 @@ void init_program(void)
     key.u.string = lfun_strings[i];
     mapping_insert(lfun_ids, &key, &id);
 
-    val.u.string = make_pike_type(raw_lfun_types[i]);
+    val.u.type = make_pike_type(raw_lfun_types[i]);
     mapping_insert(lfun_types, &key, &val);
-    free_type(val.u.string);
+    free_type(val.u.type);
   }
   start_new_program();
   debug_malloc_touch(Pike_compiler->fake_object);

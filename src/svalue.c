@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.94 2001/02/20 15:59:51 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.95 2001/02/21 21:38:49 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -629,8 +629,8 @@ PMOD_EXPORT int is_eq(struct svalue *a, struct svalue *b)
     return is_same_string(a->u.string,b->u.string);
 
   case T_TYPE:
-    return pike_types_le(a->u.string, b->u.string) &&
-      pike_types_le(b->u.string, a->u.string);
+    return pike_types_le(a->u.type, b->u.type) &&
+      pike_types_le(b->u.type, a->u.type);
 
   case T_FUNCTION:
     return (a->subtype == b->subtype && a->u.object == b->u.object);
@@ -697,9 +697,9 @@ PMOD_EXPORT int low_is_equal(struct svalue *a,
       return 0;
 
     case T_TYPE:
-      if (a->u.string == b->u.string) return 1;
-      return pike_types_le(a->u.string, b->u.string) &&
-	pike_types_le(b->u.string, a->u.string);
+      if (a->u.type == b->u.type) return 1;
+      return pike_types_le(a->u.type, b->u.type) &&
+	pike_types_le(b->u.type, a->u.type);
 
     case T_OBJECT:
       return object_equal_p(a->u.object, b->u.object, p);
@@ -786,10 +786,10 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
       }
       type_stack_mark();
       push_object_type(0, aa.u.program->id);
-      aa.u.string = pop_unfinished_type();
+      aa.u.type = pop_unfinished_type();
       aa.type = T_TYPE;
       res = is_lt(&aa, b);
-      free_string(aa.u.string);
+      free_type(aa.u.type);
       return res;
     }
     if (b->type != T_TYPE) {
@@ -802,10 +802,10 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
       }
       type_stack_mark();
       push_object_type(0, bb.u.program->id);
-      bb.u.string = pop_unfinished_type();
+      bb.u.type = pop_unfinished_type();
       bb.type = T_TYPE;
       res = is_lt(a, &bb);
-      free_string(bb.u.string);
+      free_type(bb.u.type);
       return res;
     }
 
@@ -815,7 +815,7 @@ PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
       fatal("Unexpected types in comparison.\n");
     }
 #endif /* PIKE_DEBUG */
-    return !pike_types_le(b->u.string, a->u.string);
+    return !pike_types_le(b->u.type, a->u.type);
   }
 
   if (a->type != b->type)
