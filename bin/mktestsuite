@@ -1,5 +1,21 @@
 #!/bin/sh
 
+##
+## We attempt to locate a working m4
+##
+M4=m4
+IFS="${IFS= 	}"; save_ifs="$IFS"; IFS="${IFS}:"
+for d in $PATH; do
+  test -z "$d" && ac_dir=.
+  if test -f $d/m4; then
+    M4=$d/m4
+    if echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/m4 >/dev/null; then
+     break
+    fi
+  fi
+done
+IFS="$save_ifs"
+
 (
 cat <<\EOF
 divert(-1)
@@ -93,5 +109,5 @@ test_true($1>=$1) ]])
 EOF
 
 cat $1
-) | (shift ; m4 $@ )
+) | (shift ; $M4 $@ )
 
