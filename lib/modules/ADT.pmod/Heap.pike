@@ -24,7 +24,7 @@ static void adjust_down(int elem)
   {
     int child=elem*2+1;
     if(child >= num_values) break;
-    
+
     if(child+1==num_values || values[child] < values[child+1])
     {
       if(values[child] < values[elem])
@@ -35,7 +35,7 @@ static void adjust_down(int elem)
       }
     } else {
       if(child+1 >= num_values) break;
-      
+
       if(values[child+1] < values[elem])
       {
 	SWAP(elem, child+1);
@@ -72,7 +72,7 @@ void push(mixed value)
 {
   if(num_values >= sizeof(values))
     values+=allocate(10+sizeof(values)/4);
-  
+
   values[num_values++]=value;
   adjust_up(num_values-1);
   verify_heap();
@@ -96,7 +96,7 @@ mixed pop()
   mixed ret;
   if(!num_values)
     error("Heap underflow!\n");
-  
+
   ret=values[0];
   if(sizeof(values) > 1)
   {
@@ -104,7 +104,7 @@ mixed pop()
     values[0]=values[num_values];
     values[num_values]=0;
     adjust_down(0);
-    
+
     if(num_values * 3 + 10 < sizeof(values))
       values=values[..num_values+10];
   }
