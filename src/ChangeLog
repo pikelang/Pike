@@ -1,5 +1,6 @@
 Thu Jan 30 16:30:13 1997  Henrik Grubbström  <grubba@infovav.se>
 
+	* configure.in: Now exports LDFLAGS CPPFLAGS and LIBS to levels above.
 	* mktestsuite: Now passes extra args along to m4.
 	* modules/module_makefile (module_testsuite): Now defines SRCDIR
 	(needed for the image-module tests). This seems to have been lost
