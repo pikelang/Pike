@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.62 1998/01/30 16:49:30 grubba Exp $");
+RCSID("$Id: program.c,v 1.63 1998/02/24 23:01:32 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -118,22 +118,43 @@ dynamic_buffer used_modules;
 #endif
 
 #define FOO(NUMTYPE,TYPE,NAME)						\
-void PIKE_CONCAT(add_to_,NAME) (TYPE ARG) {						\
+void PIKE_CONCAT(add_to_,NAME) (TYPE ARG) {				\
   CHECK_FOO(NUMTYPE,TYPE,NAME);						\
-  if(malloc_size_program->PIKE_CONCAT(num_,NAME) == new_program->PIKE_CONCAT(num_,NAME)) {	\
+  if(malloc_size_program->PIKE_CONCAT(num_,NAME) ==			\
+     new_program->PIKE_CONCAT(num_,NAME)) {				\
     void *tmp;								\
-    malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;				\
-    malloc_size_program->PIKE_CONCAT(num_,NAME)++;					\
+    malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;			\
+    malloc_size_program->PIKE_CONCAT(num_,NAME)++;			\
     tmp=realloc((char *)new_program->NAME,				\
                 sizeof(TYPE) *						\
-		malloc_size_program->PIKE_CONCAT(num_,NAME));			\
+		malloc_size_program->PIKE_CONCAT(num_,NAME));		\
     if(!tmp) fatal("Out of memory.\n");					\
     new_program->NAME=tmp;						\
   }									\
-  new_program->NAME[new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);                   \
+  new_program->NAME[new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);	\
 }
 
 #include "program_areas.h"
+
+#define FOO(NUMTYPE,TYPE,NAME)							\
+void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,		\
+                                    TYPE ARG) {					\
+  if(state->malloc_size_program->PIKE_CONCAT(num_,NAME) ==			\
+     state->new_program->PIKE_CONCAT(num_,NAME)) {				\
+    void *tmp;									\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;			\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)++;			\
+    tmp=realloc((char *)state->new_program->NAME,				\
+                sizeof(TYPE) *							\
+		state->malloc_size_program->PIKE_CONCAT(num_,NAME));		\
+    if(!tmp) fatal("Out of memory.\n");						\
+    state->new_program->NAME=tmp;						\
+  }										\
+  state->new_program->NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);	\
+}
+
+#include "program_areas.h"
+
 
 void ins_int(INT32 i, void (*func)(char tmp))
 {
@@ -752,7 +773,7 @@ struct program *end_first_pass(int finish)
   {
     int id;
     if(new_program->inherits[e].inherit_level!=1) continue;
-    id=low_reference_inherited_identifier(e, s);
+    id=low_reference_inherited_identifier(0, e, s);
     if(id!=-1)
     {
       init_node=mknode(F_ARG_LIST,
@@ -868,14 +889,16 @@ void set_gc_mark_callback(void (*m)(struct object *))
   new_program->gc_marked=m;
 }
 
-int low_reference_inherited_identifier(int e,
+int low_reference_inherited_identifier(struct program_state *q,
+				       int e,
 				       struct pike_string *name)
 {
+  struct program *np=q?q->new_program:new_program;
   struct reference funp;
   struct program *p;
   int i,d;
 
-  p=new_program->inherits[e].prog;
+  p=np->inherits[e].prog;
   i=find_shared_string_identifier(name,p);
   if(i==-1) return i;
 
@@ -886,42 +909,70 @@ int low_reference_inherited_identifier(int e,
   funp.inherit_offset+=e;
   funp.id_flags|=ID_HIDDEN;
 
-  for(d=0;d<(int)new_program->num_identifier_references;d++)
+  for(d=0;d<(int)np->num_identifier_references;d++)
   {
     struct reference *fp;
-    fp=new_program->identifier_references+d;
+    fp=np->identifier_references+d;
 
     if(!MEMCMP((char *)fp,(char *)&funp,sizeof funp)) return d;
   }
 
-  add_to_identifier_references(funp);
-  return new_program->num_identifier_references -1;
+  if(q)
+    low_add_to_identifier_references(q,funp);
+  else
+    add_to_identifier_references(funp);
+  return np->num_identifier_references -1;
 }
 
-int reference_inherited_identifier(struct pike_string *super_name,
-				   struct pike_string *function_name)
+static int middle_reference_inherited_identifier(
+  struct program_state *state,
+  struct pike_string *super_name,
+  struct pike_string *function_name)
 {
   int e,i;
+  struct program *p=state?state->new_program:new_program;
 
 #ifdef DEBUG
   if(function_name!=debug_findstring(function_name))
     fatal("reference_inherited_function on nonshared string.\n");
 #endif
-
-  for(e=new_program->num_inherits-1;e>0;e--)
+  
+  for(e=p->num_inherits-1;e>0;e--)
   {
-    if(new_program->inherits[e].inherit_level!=1) continue;
-    if(!new_program->inherits[e].name) continue;
+    if(p->inherits[e].inherit_level!=1) continue;
+    if(!p->inherits[e].name) continue;
 
     if(super_name)
-      if(super_name != new_program->inherits[e].name)
+      if(super_name != p->inherits[e].name)
 	continue;
 
-    i=low_reference_inherited_identifier(e,function_name);
+    i=low_reference_inherited_identifier(state,e,function_name);
     if(i==-1) continue;
     return i;
   }
   return -1;
+}
+
+node *reference_inherited_identifier(struct pike_string *super_name,
+				   struct pike_string *function_name)
+{
+  int i,n;
+  struct program_state *p=previous_program_state;
+
+  i=middle_reference_inherited_identifier(0,
+					  super_name,
+					  function_name);
+  if(i!=-1) return mkidentifiernode(i);
+
+  for(n=0;n<compilation_depth;n++,p=p->previous)
+  {
+    i=middle_reference_inherited_identifier(p,super_name,
+					    function_name);
+    if(i!=-1)
+      return mkexternalnode(n,i,ID_FROM_INT(p->new_program, i));
+  }
+
+  return 0;
 }
 
 void rename_last_inherit(struct pike_string *n)

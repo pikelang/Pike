@@ -162,7 +162,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.59 1998/02/01 04:01:33 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.60 1998/02/24 23:01:28 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1337,20 +1337,14 @@ low_idents: F_IDENTIFIER
   }
   | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER
   {
-    int f;
-    struct reference *idp;
-
-    f=reference_inherited_identifier($1->u.sval.u.string,
+    $$=reference_inherited_identifier($1->u.sval.u.string,
 				     $3->u.sval.u.string);
-    idp=new_program->identifier_references+f;
-    if (f<0)
+    if (!$$)
     {
       my_yyerror("Undefined identifier %s::%s", 
 		 $1->u.sval.u.string->str,
 		 $3->u.sval.u.string->str);
       $$=mkintnode(0);
-    } else {
-      $$=mkidentifiernode(f);
     }
 
     free_node($1);
@@ -1364,7 +1358,7 @@ low_idents: F_IDENTIFIER
     for(e=1;e<(int)new_program->num_inherits;e++)
     {
       if(new_program->inherits[e].inherit_level!=1) continue;
-      i=low_reference_inherited_identifier(e,$2->u.sval.u.string);
+      i=low_reference_inherited_identifier(0,e,$2->u.sval.u.string);
       if(i==-1) continue;
       if($$)
       {

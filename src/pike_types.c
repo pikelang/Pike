@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.32 1998/02/23 23:24:04 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.33 1998/02/24 23:01:31 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1094,7 +1094,7 @@ int check_indexing(struct pike_string *type,
 static int low_count_arguments(char *q)
 {
   int num,num2;
-  
+
   switch(EXTRACT_UCHAR(q++))
   {
     case T_OR:
@@ -1113,7 +1113,7 @@ static int low_count_arguments(char *q)
       if(num2<0 && num<0) return ~num<~num2?num:num2;
       return num<num2?num:num2;
 
-    default: return MAX_LOCAL;
+    default: return 0x7fffffff;
 
     case T_FUNCTION:
       num=0;

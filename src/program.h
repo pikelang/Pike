@@ -69,6 +69,8 @@ struct node_s;
 struct object;
 #endif
 
+struct program_state;
+
 /* I need:
  * a) one type that can point to a callable function.
  *    (C function, or object->fun)
@@ -245,9 +247,10 @@ SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
 void set_gc_mark_callback(void (*m)(struct object *));
-int low_reference_inherited_identifier(int e,
+int low_reference_inherited_identifier(struct program_state *q,
+				       int e,
 				       struct pike_string *name);
-int reference_inherited_identifier(struct pike_string *super_name,
+node *reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
 void low_inherit(struct program *p,

@@ -923,7 +923,6 @@ void f_create_process(INT32 args)
 
 #ifdef HAVE_GETPWNAM
 	    case T_STRING:
-	      printf("poof\n");
 	      pw=getpwnam(tmp->u.string->str);
 	      if(!pw) exit(77);
 	      wanted_uid=pw->pw_uid;
@@ -1060,7 +1059,6 @@ void f_create_process(INT32 args)
 	/* Left to do: cleanup? */
       }
 
-      printf("foo\n");
 #ifdef HAVE_SETGID
 #ifdef HAVE_GETGID
       if(wanted_gid != getgid())
@@ -1075,7 +1073,6 @@ void f_create_process(INT32 args)
       }
 #endif
 
-      printf("bar\n");
 
 #ifdef HAVE_SETUID
 #ifdef HAVE_GETUID
@@ -1089,7 +1086,7 @@ void f_create_process(INT32 args)
 	  if(!pw) pw=getpwuid(wanted_uid);
 	  if(!pw) exit(77);
 	  initgroupgid=pw->pw_gid;
-	  printf("uid=%d euid=%d initgroups(%s,%d)\n",getuid(),geteuid(),pw->pw_name, initgroupgid);
+/*	  printf("uid=%d euid=%d initgroups(%s,%d)\n",getuid(),geteuid(),pw->pw_name, initgroupgid); */
 	  if(initgroups(pw->pw_name, initgroupgid))
 #ifdef _HPUX_SOURCE
 	    /* Kluge for HP-(S)UX */
@@ -1107,7 +1104,7 @@ void f_create_process(INT32 args)
 	    }
 	}
 #endif /* INITGROUPS */
-	printf("uid=%d gid=%d euid=%d egid=%d setuid(%d)\n",getuid(),getgid(),geteuid(),getegid(),wanted_uid);
+/*	printf("uid=%d gid=%d euid=%d egid=%d setuid(%d)\n",getuid(),getgid(),geteuid(),getegid(),wanted_uid); */
 	if(setuid(wanted_uid))
 	{
 	  perror("setuid");
@@ -1115,8 +1112,6 @@ void f_create_process(INT32 args)
 	}
       }
 #endif /* SETUID */
-
-      printf("gazonk\n");
 
 #ifdef HAVE_SETEUID
       seteuid(wanted_uid);

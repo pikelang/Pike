@@ -1,3 +1,9 @@
+Tue Feb 24 09:03:37 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* `<, `>, `<=, `>=, `==, `!=, `/, `-, min and max now take
+	  more than two parameters
+	* better error messages implemented
+
 Thu Feb 19 14:40:54 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* opcodes.c (o_cast): recursive casting implemented

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.25 1998/02/23 23:24:03 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.26 1998/02/24 23:01:30 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1102,11 +1102,13 @@ void o_divide(void)
 	if(!len)
 	  error("Division by zero.\n");
 
-	size=sp[-2].u.string->len / len;
 	if(len<0)
 	{
 	  len=-len;
-	  pos+=size % len;
+	  size=sp[-2].u.string->len / len;
+	  pos+=sp[-2].u.string->len % len;
+	}else{
+	  size=sp[-2].u.string->len / len;
 	}
 	a=allocate_array(size);
 	for(e=0;e<size;e++)
@@ -1137,39 +1139,43 @@ void o_divide(void)
 	  size=(INT32)ceil( ((double)sp[-2].u.string->len) / len);
 	  a=allocate_array(size);
 	  
-	  for(last=sp[-2].u.string->len,e=0;e<size;e++)
+	  for(last=sp[-2].u.string->len,e=0;e<size-1;e++)
 	  {
 	    pos=sp[-2].u.string->len - (INT32)((e+1)*len);
-	    a->item[e].u.string=make_shared_binary_string(
+	    a->item[size-1-e].u.string=make_shared_binary_string(
 	      sp[-2].u.string->str + pos,
 	      last-pos);
+	    a->item[size-1-e].type=T_STRING;
 	    last=pos;
 	  }
 	  pos=0;
-	  a->item[e].u.string=make_shared_binary_string(
+	  a->item[0].u.string=make_shared_binary_string(
 	    sp[-2].u.string->str + pos,
 	    last-pos);
+	  a->item[0].type=T_STRING;
 	}else{
 	  size=(INT32)ceil( ((double)sp[-2].u.string->len) / len);
 	  a=allocate_array(size);
 	  
-	  for(last=0,e=0;e<size;e++)
+	  for(last=0,e=0;e<size-1;e++)
 	  {
 	    pos=(INT32)((e+1)*len);
 	    a->item[e].u.string=make_shared_binary_string(
 	      sp[-2].u.string->str + last,
 	      pos-last);
+	    a->item[e].type=T_STRING;
 	    last=pos;
 	  }
-	  pos=sp[2].u.string->len;
+	  pos=sp[-2].u.string->len;
 	  a->item[e].u.string=make_shared_binary_string(
 	    sp[-2].u.string->str + last,
 	    pos-last);
+	  a->item[e].type=T_STRING;
 	}
 	a->type_field=BIT_STRING;
 	pop_n_elems(2);
 	push_array(a);
-	break;
+	return;
       }
 	  
 
@@ -1182,11 +1188,13 @@ void o_divide(void)
 	if(!len)
 	  error("Division by zero.\n");
 
-	size=sp[-2].u.array->size / len;
 	if(len<0)
 	{
 	  len=-len;
-	  pos+=size % len;
+	  size=sp[-2].u.array->size / len;
+	  pos+=sp[-2].u.array->size % len;
+	}else{
+	  size=sp[-2].u.array->size / len;
 	}
 	a=allocate_array(size);
 	for(e=0;e<size;e++)
@@ -1219,37 +1227,41 @@ void o_divide(void)
 	  size=(INT32)ceil( ((double)sp[-2].u.array->size) / len);
 	  a=allocate_array(size);
 	  
-	  for(last=sp[-2].u.array->size,e=0;e<size;e++)
+	  for(last=sp[-2].u.array->size,e=0;e<size-1;e++)
 	  {
 	    pos=sp[-2].u.array->size - (INT32)((e+1)*len);
-	    a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
+	    a->item[size-1-e].u.array=friendly_slice_array(sp[-2].u.array,
 						    pos,
 						    last);
+	    a->item[size-1-e].type=T_ARRAY;
 	    last=pos;
 	  }
-	  a->item[e].u.array=slice_array(sp[-2].u.array,
+	  a->item[0].u.array=slice_array(sp[-2].u.array,
 					 0,
 					 last);
+	  a->item[0].type=T_ARRAY;
 	}else{
 	  size=(INT32)ceil( ((double)sp[-2].u.array->size) / len);
 	  a=allocate_array(size);
 	  
-	  for(last=0,e=0;e<size;e++)
+	  for(last=0,e=0;e<size-1;e++)
 	  {
 	    pos=(INT32)((e+1)*len);
 	    a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
 						    last,
 						    pos);
+	    a->item[e].type=T_ARRAY;
 	    last=pos;
 	  }
 	  a->item[e].u.array=slice_array(sp[-2].u.array,
 					 last,
-					 sp[2].u.array->size);
+					 sp[-2].u.array->size);
+	  a->item[e].type=T_ARRAY;
 	}
 	a->type_field=BIT_ARRAY;
 	pop_n_elems(2);
 	push_array(a);
-	break;
+	return;
       }
     }
       
@@ -1361,8 +1373,15 @@ void o_mod(void)
 	if(!sp[-1].u.integer)
 	  error("Modulo by zero.\n");
 
-	tmp=s->len % sp[-1].u.integer;
-	base=s->len<0 ? 0 : s->len - tmp;
+	tmp=sp[-1].u.integer;
+	if(tmp<0)
+	{
+	  tmp=s->len % -tmp;
+	  base=0;
+	}else{
+	  tmp=s->len % tmp;
+	  base=s->len - tmp;
+	}
 	s=make_shared_binary_string(s->str + base, tmp);
 	pop_n_elems(2);
 	push_string(s);
@@ -1377,8 +1396,16 @@ void o_mod(void)
 	if(!sp[-1].u.integer)
 	  error("Modulo by zero.\n");
 
-	tmp=a->size % sp[-1].u.integer;
-	base=a->size<0 ? 0 : a->size - tmp;
+	tmp=sp[-1].u.integer;
+	if(tmp<0)
+	{
+	  tmp=a->size % -tmp;
+	  base=0;
+	}else{
+	  tmp=a->size % tmp;
+	  base=a->size - tmp;
+	}
+
 	a=slice_array(a,base,base+tmp);
 	pop_n_elems(2);
 	push_array(a);
@@ -1757,7 +1784,14 @@ void init_operators(void)
 	    "function(string,string|int|float...:array(string))",
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
-  add_efun2("`%",f_mod,"function(mixed,object:mixed)|function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
+  add_efun2("`%",f_mod,
+	    "function(mixed,object:mixed)|"
+	    "function(object,mixed:mixed)|"
+	    "function(int,int:int)|"
+	    "function(string,int:string)|"
+	    "function(array,int:array)|"
+	    "!function(int,int:mixed)&function(int|float,int|float:float)"
+	    ,OPT_TRY_OPTIMIZE,0,generate_mod);
 
   add_efun2("`~",f_compl,"function(object:mixed)|function(int:int)|function(float:float)|function(string:string)",OPT_TRY_OPTIMIZE,0,generate_compl);
   add_efun2("sizeof", f_sizeof, "function(string|multiset|array|mapping|object:int)",0,0,generate_sizeof);
