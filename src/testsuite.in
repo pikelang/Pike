@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.631 2003/04/02 19:42:57 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.632 2003/04/03 13:59:05 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9171,7 +9171,7 @@ test_do([[
 
 cond([[ file_stat("/bin/sleep")  && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
-test_do([[
+test_any([[
   // Check that tracing works...
   Process.TraceProcess proc =
     Process.TraceProcess(({ "/bin/sleep", "99999" }));
