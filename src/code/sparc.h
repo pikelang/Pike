@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.10 2002/04/07 19:30:12 mast Exp $
+ * $Id: sparc.h,v 1.11 2002/04/08 00:58:47 mast Exp $
  */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -61,6 +61,7 @@
 
 #define ENTRY_PROLOGUE_SIZE	1
 
+/* FIXME: This should set Pike_fp->pc to the absolute pc. */
 #define UPDATE_PC() do {						\
     INT32 tmp = PIKE_PC;						\
     SET_REG(SPARC_REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	\
