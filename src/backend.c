@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.8 1997/01/26 22:47:03 per Exp $");
+RCSID("$Id: backend.c,v 1.9 1997/02/19 05:05:19 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -44,6 +44,8 @@ void *write_callback_data[MAX_OPEN_FILEDESCRIPTORS];
 static int max_fd;
 struct timeval current_time;
 struct timeval next_timeout;
+static int wakeup_pipe[2];
+static int may_need_wakeup=0;
 
 static struct callback_list backend_callbacks;
 
@@ -54,10 +56,31 @@ struct callback *add_backend_callback(callback_func call,
   return add_to_callback(&backend_callbacks, call, arg, free_func);
 }
 
+static void wakeup_callback(int fd, void *foo)
+{
+  char buffer[1024];
+  read(fd, buffer, sizeof(buffer)); /* Clear 'flag' */
+}
+
+/* This is used by threaded programs and signals to wake up the
+ * master 'thread'.
+ */
+void wake_up_backend(void)
+{
+  char foo=0;
+  if(may_need_wakeup)
+    write(wakeup_pipe[1], &foo ,1);
+}
+
 void init_backend()
 {
   FD_ZERO(&selectors.read);
   FD_ZERO(&selectors.write);
+  if(pipe(wakeup_pipe) < 0)
+    fatal("Couldn't create backend wakup pipe, errno=%d.\n",errno);
+  set_nonblocking(wakeup_pipe[0],1);
+  set_nonblocking(wakeup_pipe[1],1);
+  set_read_callback(wakeup_pipe[0], wakeup_callback, 0); 
 }
 
 void set_read_callback(int fd,file_callback cb,void *data)
@@ -199,6 +222,7 @@ void backend()
     next_timeout.tv_sec = 7 * 24 * 60 * 60;  /* See you in a week */
     my_add_timeval(&next_timeout, &current_time);
 
+    may_need_wakeup=1;
     call_callback(& backend_callbacks, (void *)0);
 
     check_threads_etc();
@@ -224,6 +248,7 @@ void backend()
     i=select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
     GETTIMEOFDAY(&current_time);
     THREADS_DISALLOW();
+    may_need_wakeup=0;
 
     if(i>=0)
     {

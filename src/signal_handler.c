@@ -227,6 +227,8 @@ static RETSIGTYPE receive_signal(int signum)
 
   if(signum==SIGCHLD) sig_child(signum);
 
+  wake_up_backend();
+
 #ifndef SIGNAL_ONESHOT
   my_signal(signum, receive_signal);
 #endif

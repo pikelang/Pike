@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.7 1997/02/11 08:39:34 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.8 1997/02/19 05:05:32 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -190,6 +190,11 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
   num_pending_calls++;
   adjust_up(num_pending_calls-1);
   verify_call_outs();
+
+#ifdef _REENTRANT
+  wake_up_backend();
+#endif
+
   return new->args;
 }
 
