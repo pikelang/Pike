@@ -135,7 +135,7 @@ class Codec
     if(x->_encode) return x->_encode();
 //    if(logfile)
 //      logfile->write("Cannot encode objects yet: %s\n",master()->stupid_describe(x,100000));
-#if 1
+#if 0
     werror("\n>>>>>>encode object was called for:<<<<<<\n");
     _describe(x);
     werror("\n");
