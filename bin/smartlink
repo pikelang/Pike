@@ -152,6 +152,11 @@ fi
 #  ;;
 #esac
 
+# exec $LINKER $LDOPTS
 # Used to be exec, but Digital-Unix's stupid sh has buggy variable-expansion.
 # /grubba
-eval $LINKER $LDOPTS
+# eval $LINKER $LDOPTS
+# Used to be eval, but then quoting won't work.
+# /grubba 1998-12-16
+$LINKER $LDOPTS
+exit $?
