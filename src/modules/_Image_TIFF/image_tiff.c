@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.17 2000/08/24 17:08:19 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.18 2000/08/25 16:16:38 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -54,9 +54,9 @@ extern struct program *image_colortable_program;
 struct buffer 
 {
   char *str;
-  int len;
-  int offset;
-  int real_len;
+  ptrdiff_t len;
+  ptrdiff_t offset;
+  ptrdiff_t real_len;
   int extendable;
 } *buffer_handle; 
 
@@ -97,10 +97,13 @@ static void increase_buffer_size( struct buffer * buffer )
   buffer->len *= 2;
 }
 
-static int read_buffer( struct buffer *buffer_handle, 
-                        char *data, int len )
+/* Complies with the TIFFReadWriteProc API */
+static tsize_t read_buffer( thandle_t bh, tdata_t d, tsize_t len )
 {
-  int avail;
+  struct buffer *buffer_handle = (struct buffer *)bh;
+  char *data = (char *)d;
+  tsize_t avail;
+
   TRACE("read_buffer(%p,%p,%d)\n", buffer_handle,data,len);
   avail = buffer_handle->len-buffer_handle->offset;
   if(!avail) return -1;
@@ -111,9 +114,12 @@ static int read_buffer( struct buffer *buffer_handle,
   return MIN(avail,len);
 }
 
-static int write_buffer( struct buffer *buffer_handle, 
-                         char *data, int len )
+/* Complies with the TIFFReadWriteProc API */
+static tsize_t write_buffer(thandle_t bh, tdata_t d, tsize_t len)
 {
+  struct buffer *buffer_handle = (struct buffer *)bh;
+  char *data = (char *)d;
+
   TRACE("write_buffer(%p,%p,%d)\n", buffer_handle, data,len);
   while((buffer_handle->len-buffer_handle->offset) < len)
   {
@@ -129,9 +135,11 @@ static int write_buffer( struct buffer *buffer_handle,
   return len;
 }
 
-static int seek_buffer( struct buffer *buffer_handle, 
-                        int seek, int seek_type )
+/* Complies with the TIFFSeekProc API. */
+static toff_t seek_buffer(thandle_t bh, toff_t seek, int seek_type )
 {
+  struct buffer *buffer_handle = (struct buffer *)bh;
+
   TRACE("seek_buffer(%p,%d,%s)\n", buffer_handle,seek,
         (seek_type == SEEK_CUR?"SEEK_CUR":
          (seek_type==SEEK_SET?"SEEK_SET":"SEEK_END")));
@@ -158,31 +166,43 @@ static int seek_buffer( struct buffer *buffer_handle,
   return buffer_handle->offset;
 }
 
-static int close_buffer( struct buffer *buffer_handle )
+/* Complies with the TIFFCloseProc API. */
+static int close_buffer(thandle_t buffer_handle)
 {
+  struct buffer *buffer_handle = (struct buffer *)bh;
+
   TRACE("close_buffer(%p)\n",buffer_handle,0,0);
   return 0;
 }
 
-static int size_buffer( struct buffer *buffer_handle )
+/* Complies with the TIFFSizeProc API. */
+static toff_t size_buffer(thandle_t bh)
 {
+  struct buffer *buffer_handle = (struct buffer *)bh;
+
   TRACE("size_buffer(%p)\n",buffer_handle,0,0);
   return buffer_handle->len;
 }
 
-
-static int map_buffer( struct buffer *buffer_handle, void **res, int *len )
+/* Complies with the TIFFMapFileProc API. */
+static int map_buffer(thandle_t bh, tdata_t *r, toff_t *len )
 {
-  TRACE("map_buffer(%p,%p,%p)\n",buffer_handle,res,len);
+  struct buffer *buffer_handle = (struct buffer *)bh;
+  void **res = (void **)r;
+
+  TRACE("map_buffer(%p,%p,%p)\n", buffer_handle, res, len);
   *res = buffer_handle->str;
   *len = buffer_handle->len;
   return 0;
 }
 
-static int unmap_buffer( struct buffer *buffer_handle, void *p, int len)
+/* Complies with the TIFFUnmapFileProc API. */
+static void unmap_buffer(thandle_t bh, tdata_t p, toff_t len)
 {
-  TRACE("unmap_buffer(%p,%p,%d)\n",buffer_handle,p,len);
-  return 0;
+  struct buffer *buffer_handle = (struct buffer *)bh;
+  void *ptr = (void *)p;
+
+  TRACE("unmap_buffer(%p, %p, %d)\n", buffer_handle, ptr, len);
 }
 
 struct options
@@ -206,13 +226,10 @@ void low_image_tiff_encode( struct buffer *buf,
   char *buffer;
   rgb_group *is, *as = NULL;
   tif = TIFFClientOpen( "memoryfile", "w", buf,
-                        (TIFFReadWriteProc)read_buffer,
-			(TIFFReadWriteProc)write_buffer,
-                        (TIFFSeekProc)seek_buffer,
-			(TIFFCloseProc)close_buffer,
-                        (TIFFSizeProc)size_buffer,
-			(TIFFMapFileProc)map_buffer,
-                        (TIFFUnmapFileProc)unmap_buffer );
+                        read_buffer, write_buffer,
+                        seek_buffer, close_buffer,
+                        size_buffer, map_buffer,
+                        unmap_buffer );
   if(!tif)
     error("\"open\" of TIF file failed!\n");
   
@@ -309,14 +326,11 @@ void low_image_tiff_decode( struct buffer *buf,
   unsigned int w, h, i;
   uint32 *raster,  *s;
   rgb_group *di, *da=NULL;
-  tif = TIFFClientOpen( "memoryfile", "r", buf,
-                        (TIFFReadWriteProc)read_buffer,
-			(TIFFReadWriteProc)write_buffer,
-                        (TIFFSeekProc)seek_buffer,
-			(TIFFCloseProc)close_buffer,
-                        (TIFFSizeProc)size_buffer,
-			(TIFFMapFileProc)map_buffer,
-                        (TIFFUnmapFileProc)unmap_buffer );
+  tif = TIFFClientOpen("memoryfile", "r", buf,
+		       read_buffer, write_buffer,
+		       seek_buffer, close_buffer,
+		       size_buffer, map_buffer,
+		       unmap_buffer);
   if(!tif)
     error("Failed to 'open' tiff image.\n");
 
@@ -769,8 +783,10 @@ static void image_tiff_encode( INT32 args )
 }
 
 
-void my_tiff_warning_handler(const char* module, const char* fmt, ...){}
-void my_tiff_error_handler(const char* module, const char* fmt, ...){}
+/* Complies with the TIFFErrorHandler API */
+void my_tiff_warning_handler(const char* module, const char* fmt, va_list x){}
+/* Complies with the TIFFErrorHandler API */
+void my_tiff_error_handler(const char* module, const char* fmt, va_list x){}
 
 #else
 
@@ -801,9 +817,9 @@ void pike_module_init(void)
    }
 #endif /* DYNAMIC_MODULE */
 
-   TIFFSetWarningHandler( (TIFFErrorHandler)my_tiff_warning_handler );
+   TIFFSetWarningHandler(my_tiff_warning_handler);
 #if 1
-   TIFFSetErrorHandler( (TIFFErrorHandler)my_tiff_error_handler );
+   TIFFSetErrorHandler(my_tiff_error_handler);
 #endif
 
    if (image_program)
