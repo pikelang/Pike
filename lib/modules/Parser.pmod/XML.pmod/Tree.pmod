@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.43 2004/04/20 20:48:49 mast Exp $
+ * $Id: Tree.pmod,v 1.44 2004/05/06 16:20:09 mast Exp $
  *
  */
 
@@ -285,6 +285,32 @@ class AbstractNode {
     return (c);
   }
 
+  //! Variant of @[add_child] that doesn't set the parent pointer in
+  //! the child.
+  //!
+  //! This is useful while building a node tree, to get efficient
+  //! refcount garbage collection if the build stops abruptly.
+  //! @[fix_tree] has to be called on the root node when the building
+  //! is done.
+  AbstractNode tmp_add_child(AbstractNode c)
+  // Doesn't fix the parent pointers to allow efficient refcount
+  // garbing when b. Use fix_tree afterwards.
+  {
+    mChildren += ({c});
+    return c;
+  }
+
+  //! Fix all parent pointers recursively in a tree that has been
+  //! built with @[tmp_add_child].
+  void fix_tree()
+  {
+    foreach (mChildren, AbstractNode c)
+      if (c->mParent != this_object()) {
+	c->mParent = this_object();
+	c->fix_tree();
+      }
+  }
+
   //! Removes all occurrences of the provided node from the called nodes
   //! list of children. The removed nodes parent reference is set to null.
   void remove_child(AbstractNode c)
@@ -330,6 +356,16 @@ class AbstractNode {
   AbstractNode replace_node(AbstractNode new) {
     mParent->replace_child(this, new);
     return new;
+  }
+
+  //! Destruct the tree recursively. To avoid frequent garbage
+  //! collector runs, this should be used on every tree when it's no
+  //! longer used.
+  void zap_tree()
+  {
+    if (mChildren)
+      mChildren->zap_tree();
+    destruct (this);
   }
 
   //! Traverse the node subtree in preorder, root node first, then
@@ -1030,6 +1066,12 @@ class Node {
     return (mAttrNodes);
   }
 
+  /*static*/ void _add_to_text (string str)
+  // Only to be used internally from the parse callback.
+  {
+    mText += str;
+  }
+
   string _sprintf(int t) {
     return t=='O' && sprintf("%O(#%d:%d,%s)", this_program, mDocOrder,
 			     get_node_type(), get_full_name()||"NULL");
@@ -1193,23 +1235,28 @@ private Node|int(0..0)
 	
     //  Add children to our tree node. We need to merge consecutive text
     //  children since two text elements can't be neighbors according to
-    //  the W3 spec.
-    string buffer_text = "";
+    //  the W3 spec. This is necessary since CDATA sections are
+    //  converted to text nodes which might need to be concatenated
+    //  with neighboring text nodes.
+    Node text_node;
     foreach(contents, Node child) {
       if (child->get_node_type() == XML_TEXT) {
-	//  Add this text string to buffer
-	buffer_text += child->get_text();
+	if (text_node)
+	  //  Add this text string to the previous text node.
+	  text_node->_add_to_text (child->get_text());
+	else
+	  text_node = child;
       } else {
 	//  Process buffered text before this child is added
-	if (sizeof(buffer_text)) {
-	  node->add_child(TextNode(buffer_text));
-	  buffer_text = "";
+	if (text_node) {
+	  node->tmp_add_child(text_node);
+	  text_node = 0;
 	}
-	node->add_child(child);
+	node->tmp_add_child(child);
       }
     }
-    if (sizeof(buffer_text))
-      node->add_child(TextNode(buffer_text));
+    if (text_node)
+      node->tmp_add_child(text_node);
     return (node);
 
   case "error":
@@ -1278,7 +1325,8 @@ Node parse_input(string data, void|int(0..1) no_fallback,
     foreach(xp->parse(data, parse_xml_callback,
 		      sizeof(extras) && extras),
 	    Node child)
-      mRoot->add_child(child);
+      mRoot->tmp_add_child(child);
+    mRoot->fix_tree();
   };
 
   if(err)
