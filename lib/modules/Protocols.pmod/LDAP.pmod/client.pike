@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.13 2000/02/12 10:57:02 hop Exp $
+// $Id: client.pike,v 1.14 2000/02/17 17:59:53 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -45,6 +45,8 @@
 //	v1.11 1999-04-10 - search filter now processed multiple wild '*' chars
 //			   [ Escaping untested, yet ]
 //	v1.13 2000-02-12 - fixed search NOT op bug (end revision normalized)
+//
+//	v1.14 2000-02-17 - added decoding of UTF8 strings for v3 protocol
 //
 // Specifications:
 //
@@ -131,6 +133,12 @@
 	}
 	res += ({attrs});
       }
+
+      if(ldap_version == 3) {
+        // deUTF8
+        res = Array.map(res, utf8_to_string);
+      }
+
       return (res);
     } // _New_decode
 
