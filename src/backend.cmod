@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.36 2003/10/15 16:44:19 grubba Exp $
+|| $Id: backend.cmod,v 1.37 2003/10/15 18:25:59 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.36 2003/10/15 16:44:19 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.37 2003/10/15 18:25:59 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -193,6 +193,13 @@ void set_backend_for_fd(int fd, struct Backend_struct *b)
 #ifdef PIKE_DEBUG
   if(fd<0) Pike_fatal("set_backend_for(%d)\n",fd);
 #endif
+  if (!b) {
+    /* Unregister the fd. */
+    if (fd < fd_map_size) {
+      fd_map[fd] = NULL;
+    }
+    return;
+  }
   if(fd >= fd_map_size)
   {
     int old=fd_map_size;
@@ -2036,6 +2043,11 @@ PIKECLASS Backend
       struct Backend_struct *me=THIS;
       int e;
 
+      /* Make sure we aren't referenced any more. */
+      for (e = 0; e < fd_map_size; e++) {
+	if (fd_map[e] == me) fd_map[e] = NULL;
+      }
+
       free_callback_list(& THIS->backend_callbacks);
 
       fd_close(THIS->wakeup_pipe[0]);
@@ -2073,7 +2085,6 @@ PIKECLASS Backend
       if(me->call_hash) free((char*)me->call_hash);
       me->num_pending_calls=0;
       me->call_buffer=NULL;
-
     }
 }
 
