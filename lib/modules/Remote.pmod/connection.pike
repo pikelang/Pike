@@ -8,7 +8,7 @@ private static int _debug_conn_nr;
 #define DEBUGMSG(X) werror("<" + _debug_conn_nr + "> " + (X))
 #endif
 
-int closed, want_close, outstanding_calls;
+int closed, want_close, outstanding_calls, do_calls_async;
 object con;
 object ctx;
 array(function) close_callbacks = ({ });
@@ -20,6 +20,7 @@ int nice; // don't throw from call_sync
 void create(void|int _nice)
 {
    nice=_nice;
+   call_out( lambda(){ do_calls_async=1; }, 0.1 ); // :-)
 }
 
 // - connect
@@ -363,9 +364,15 @@ void read_some(int ignore, string s)
      case CTX_CALL_SYNC:
      case CTX_CALL_ASYNC:
 #if constant(thread_create)
-       if (outstanding_calls >= call_threads && call_threads < MAX_CALL_THREADS)
-	 thread_create(call_thread);
-       calls->write(data);
+       if( do_calls_async )
+         call_out( do_call, 0, data);
+       else 
+       {
+         if (outstanding_calls >= call_threads && 
+             call_threads < MAX_CALL_THREADS)
+           thread_create(call_thread);
+         calls->write(data);
+       }
 #else
        outstanding_calls++;
        do_call(data);
@@ -455,7 +462,10 @@ void call_thread()
     if (!data) try_close();
     else {
       outstanding_calls++;
-      do_call(data);
+      if( do_calls_async )
+        call_out( do_call, 0,data);
+      else
+        do_call( data );
       outstanding_calls--;
     }
   }
