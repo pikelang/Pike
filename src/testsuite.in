@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.625 2003/03/28 14:32:30 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.626 2003/03/29 10:52:35 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9239,7 +9239,8 @@ void test_dir(string dir, int|void base_size, object|void handler)
     }
     else if(stat[1]>=0){
       // werror("Testing file %O\n", file);
-      if(has_suffix(file, ".pike") || has_suffix(file, ".pmod"))
+      if(has_suffix(file, ".pike") || has_suffix(file, ".pmod") ||
+	 has_suffix(file, ".so"))
       {
 #if 0
         mixed err=catch { (program)file; };
@@ -9250,7 +9251,8 @@ void test_dir(string dir, int|void base_size, object|void handler)
           continue;
         }
 #endif
-	test_resolv(file, base_size, handler);
+	test_resolv(file+(has_suffix(file, ".so")? "XX":""),
+		    base_size, handler);
       }
     }
   }
