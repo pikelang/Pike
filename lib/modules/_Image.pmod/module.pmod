@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! $Id: module.pmod,v 1.19 2001/06/03 08:03:40 mirar Exp $
+//! $Id: module.pmod,v 1.20 2001/06/03 08:23:00 mirar Exp $
 
 //! @decl Image.Layer load()
 //! @decl Image.Image load(object file)
@@ -209,13 +209,22 @@ object(Image.Image) load(object|string file)
 }
 
 //!
-//! @decl Image.Image filled_circle(int xd,void|int yd)
+//! @decl Image.Image filled_circle(int d)
+//! @decl Image.Image filled_circle(int xd,int yd)
+//! @decl Image.Image filled_circle_layer(int d)
+//! @decl Image.Image filled_circle_layer(int xd,int yd)
+//! @decl Image.Image filled_circle_layer(int d,Image.Color color)
+//! @decl Image.Image filled_circle_layer(int xd,int yd,Image.Color color)
+//! @decl Image.Image filled_circle_layer(int d,int r,int g,int b)
+//! @decl Image.Image filled_circle_layer(int xd,int yd,int r,int g,int b)
 //!	Generates a white filled circle on black background of the 
-//!	dimensions xd x yd (or xd x xd if yd isn't specified).
+//!	dimensions xd x yd (or d x d).
 
-Image.Image filled_circle(int xd,int yd)
+Image.Image filled_circle(int xd,void|int yd)
 {
    int n;
+   if (!yd) yd=xd;
+
    if (xd<10) n=25;
    else if (xd<100) n=35;
    else n=101;
@@ -229,5 +238,31 @@ Image.Image filled_circle(int xd,int yd)
      ->polyfill( Array.splice( x,y ) );
 }
 
+
+Image.Layer filled_circle_layer(int xd,int|Image.Color ...args)
+{
+   Image.Color c;
+   int yd=0;
+   switch (sizeof(args))
+   {
+      case 4:
+	 c=Image.Color(@args[1..]);
+	 yd=args[0];
+	 break;
+      case 3:
+	 c=Image.Color(@args);
+	 break;
+      case 2:
+	 [yd,c]=args;
+      case 1:
+	 if (objectp(args[0])) c=args[0]; 
+	 else yd=args[0],c=Image.Color.white;
+      default:
+	 c=Image.Color.white;
+   }
+
+   return Image.Layer(Image.Image(xd,yd||xd,c),
+		      filled_circle(xd,yd));
+}
 
 
