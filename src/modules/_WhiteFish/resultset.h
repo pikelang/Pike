@@ -24,6 +24,11 @@ void exit_resultset_program(void);
 struct object *wf_resultset_new( );
 /* Create a new (empty) set */
 
+void wf_resultset_push( struct object *o );
+/* Push a resultset, after normalizing it (if it's empty, free the 'd'
+ * pointer and set allocated_size to 0 )
+ */
+
 void wf_resultset_free ( struct object *o );
 /* Free a set */
 

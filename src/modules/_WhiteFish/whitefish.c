@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.29 2001/05/31 17:15:26 norlin Exp $");
+RCSID("$Id: whitefish.c,v 1.30 2001/06/15 02:12:28 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -424,7 +424,7 @@ static void f_do_query_phrase( INT32 args )
   {
     struct object *o = wf_resultset_new( );
     pop_n_elems( args );
-    push_object( o );
+    wf_resultset_push( o );
     return;
   }
 
@@ -438,7 +438,7 @@ static void f_do_query_phrase( INT32 args )
 
   res = low_do_query_phrase(blobs,numblobs, field_coefficients );
   pop_n_elems( args );
-  push_object( res );
+  wf_resultset_push( res );
 }
 
 static void f_do_query_and( INT32 args )
@@ -511,7 +511,7 @@ static void f_do_query_and( INT32 args )
   {
     struct object *o = wf_resultset_new( );
     pop_n_elems( args );
-    push_object( o );
+    wf_resultset_push( o );
     return;
   }
 
@@ -531,7 +531,7 @@ static void f_do_query_and( INT32 args )
 			 proximity_coefficients,
 			 cutoff );
   pop_n_elems( args );
-  push_object( res );
+  wf_resultset_push( res );
 }
 
 static void f_do_query_or( INT32 args )
@@ -604,7 +604,7 @@ static void f_do_query_or( INT32 args )
   {
     struct object *o = wf_resultset_new( );
     pop_n_elems( args );
-    push_object( o );
+    wf_resultset_push( o );
     return;
   }
 
@@ -624,7 +624,7 @@ static void f_do_query_or( INT32 args )
 			   proximity_coefficients,
 			   cutoff );
   pop_n_elems( args );
-  push_object( res );
+  wf_resultset_push( res );
 }
 
 
