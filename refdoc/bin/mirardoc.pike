@@ -1,4 +1,4 @@
-/* $Id: mirardoc.pike,v 1.8 2002/02/24 23:22:06 nilsson Exp $ */
+/* $Id: mirardoc.pike,v 1.9 2002/03/16 13:17:06 nilsson Exp $ */
 
 string IMAGE_DIR = "../src_images/";
 string makepic1;
@@ -7,8 +7,6 @@ string execute;
 
 mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
-
-#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
 /*
 
