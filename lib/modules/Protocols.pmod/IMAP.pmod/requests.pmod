@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.36 1999/02/13 16:42:27 grubba Exp $
+ * $Id: requests.pmod,v 1.37 1999/02/13 16:43:45 grubba Exp $
  */
 
 import .types;
@@ -775,7 +775,6 @@ class uid {
 
 constant authenticate = unimplemented;
 constant examine = unimplemented;
-constant create_mailbox = unimplemented;
 constant delete = unimplemented;
 constant rename = unimplemented;
 constant subscribe = unimplemented;
