@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.193 2002/03/08 04:24:49 mast Exp $
+ * $Id: master.pike.in,v 1.194 2002/03/10 02:53:12 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -20,8 +20,8 @@
 constant bt_max_string_len = BT_MAX_STRING_LEN;
 
 //! @decl constant bt_max_string_len = 200
-//! This constant contains the maximum number of lines a backtrace may
-//! contain. Defaults to 200 if no BT_MAX_STRING_LEN define has been
+//! This constant contains the maximum length of a function entry in a
+//! backtrace. Defaults to 200 if no BT_MAX_STRING_LEN define has been
 //! given.
 
 // Enables the out of date warning in low_find_prog().
@@ -416,6 +416,17 @@ mapping (string:program) programs=(["/master":object_program(this_object())]);
 array(string) query_precompiled_names(string fname)
 {
   // Filenames of potential precompiled files in priority order.
+#ifdef PRECOMPILED_SEARCH_MORE
+  // Search for precompiled files in all module directories, not just
+  // in the one where the source file is. This is useful when running
+  // pike directly from the build directory.
+  fname = fakeroot (fname);
+  // FIXME: Not sure if this works correctly with the fakeroot and
+  // module relocation stuff.
+  foreach (pike_module_path, string path)
+    if (has_prefix (fname, path))
+      return map (pike_module_path, `+, "/", fname[sizeof (path)..], ".o");
+#endif
   return ({ fname + ".o" });
 }
 
