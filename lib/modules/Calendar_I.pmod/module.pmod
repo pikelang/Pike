@@ -20,8 +20,6 @@
 //!   for time units. 
 //!
 
-#define error(X) throw(({(X),backtrace()}))
-
 //! class time_unit
 //!
 class _TimeUnit
