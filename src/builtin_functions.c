@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.71 1998/02/12 14:19:50 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.72 1998/02/15 01:22:27 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1725,74 +1725,238 @@ static struct array* diff_compare_table(struct array *a,struct array *b)
    return res;
 }
 
-struct diff_link { int x,l; };
+struct diff_magic_link
+{ 
+   int x;
+   int refs;
+   struct diff_magic_link *prev;
+};
 
-static INLINE int diff_ponder_stack(int x,struct diff_link *dl,int top)
+struct diff_magic_link_pool
+{
+   struct diff_magic_link *firstfree;
+   struct diff_magic_link_pool *next;
+   int firstfreenum;
+   struct diff_magic_link dml[1];
+};
+
+#define DMLPOOLSIZE 16384
+
+static int dmls=0;
+
+static INLINE struct diff_magic_link_pool*
+         dml_new_pool(struct diff_magic_link_pool **pools)
+{
+   struct diff_magic_link_pool *new;
+
+   new=malloc(sizeof(struct diff_magic_link_pool)+
+	      sizeof(struct diff_magic_link)*DMLPOOLSIZE);
+   if (!new) return NULL; /* fail */
+
+   new->firstfreenum=0;
+   new->firstfree=NULL;
+   new->next=*pools;
+   *pools=new;
+   return *pools;
+}
+
+static INLINE struct diff_magic_link* 
+       dml_new(struct diff_magic_link_pool **pools)
+{
+   struct diff_magic_link *new;
+   struct diff_magic_link_pool *pool;
+
+   dmls++;
+
+   if ( *pools && (new=(*pools)->firstfree) )
+   {
+      (*pools)->firstfree=new->prev;
+      new->prev=NULL;
+      return new;
+   }
+
+   pool=*pools;
+   while (pool)
+   {
+      if (pool->firstfreenum<DMLPOOLSIZE)
+	 return pool->dml+(pool->firstfreenum++);
+      pool=pool->next;
+   }
+
+   if ( (pool=dml_new_pool(pools)) )
+   {
+      pool->firstfreenum=1;
+      return pool->dml;
+   }
+   
+   return NULL;
+}	
+
+static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
+{
+   struct diff_magic_link_pool *pool;
+
+   while (pools)
+   {
+      pool=pools->next;
+      free(pools);
+      pools=pool;
+   }
+}
+
+static INLINE void dml_delete(struct diff_magic_link_pool *pools,
+			      struct diff_magic_link *dml)
+{
+   if (dml->prev && !--dml->prev->refs) dml_delete(pools,dml->prev);
+   dmls--;
+   dml->prev=pools->firstfree;
+   pools->firstfree=dml;
+}
+
+static INLINE int diff_ponder_stack(int x,
+				    struct diff_magic_link **dml,
+				    int top)
 {
    int middle,a,b;
-   if (!top || x>dl[top-1].x) return top;
    
    a=0; 
    b=top;
    while (b>a)
    {
       middle=(a+b)/2;
-      if (dl[middle].x<x) a=middle+1;
-      else if (dl[middle].x>x) b=middle;
+      if (dml[middle]->x<x) a=middle+1;
+      else if (dml[middle]->x>x) b=middle;
       else return middle;
    }
-   if (a<top && dl[a].x<x) a++;
+   if (a<top && dml[a]->x<x) a++;
+   return a;
+}
+
+static INLINE int diff_ponder_array(int x,
+				    struct svalue *arr,
+				    int top)
+{
+   int middle,a,b;
+   
+   a=0; 
+   b=top;
+   while (b>a)
+   {
+      middle=(a+b)/2;
+      if (arr[middle].u.integer<x) a=middle+1;
+      else if (arr[middle].u.integer>x) b=middle;
+      else return middle;
+   }
+   if (a<top && arr[a].u.integer<x) a++;
    return a;
 }
 
 static struct array* diff_longest_sequence(struct array *cmptbl)
 {
-   struct diff_link *stack;
-   struct diff_link *links;
-   int i,j,top=0,l=0,ltop=-1,lsize=0;
+   int i,j,top=0,lsize=0;
    struct array *a;
+   struct diff_magic_link_pool *pools=NULL;
+   struct diff_magic_link *dml;
+   struct diff_magic_link **stack;
+
+   stack=malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
+
+   if (!stack) error("out of memory\n");
 
    for (i=0; i<cmptbl->size; i++)
-      lsize+=cmptbl->item[i].u.array->size;
-   
-   stack=malloc(sizeof(struct diff_link)*cmptbl->size);
-   links=malloc(sizeof(struct diff_link)*lsize);
-
-   if (!stack || !links)
    {
-      if (stack) free(stack);
-      if (links) free(links);
-      error("out of memory\n");
-   }
+      struct svalue *inner=cmptbl->item[i].u.array->item;
 
-   for (i=0; i<cmptbl->size; i++)
       for (j=cmptbl->item[i].u.array->size; j--;)
       {
-	 int x=cmptbl->item[i].u.array->item[j].u.integer;
+	 int x=inner[j].u.integer;
 	 int pos;
-	 links[l].x=x;
-	 pos=diff_ponder_stack(x,stack,top);
-	 if (pos==top || stack[pos].x!=x)
+
+	 if (top && x<=stack[top-1]->x)
+	    pos=diff_ponder_stack(x,stack,top);
+	 else
+	    pos=top;
+
+	 if (pos && j)
 	 {
-	    if (pos==top) { top++; ltop=l; }
-	    if (pos!=0) links[l].l=stack[pos-1].l;
-	    else links[l].l=-1;
-	    stack[pos].x=x;
-	    stack[pos].l=l;
+	    if (stack[pos-1]->x+1 < inner[j].u.integer)
+	    {
+	       j=diff_ponder_array(stack[pos-1]->x+1,inner,j);
+	       x=inner[j].u.integer;
+	    }
 	 }
-	 l++;
+	 else
+	 {
+	    j=0;
+	    x=inner->u.integer;
+	 }
+	 if (pos==top)
+	 {
+	    if (! (dml=dml_new(&pools)) )
+	    {
+	       dml_free_pools(pools);
+	       free(stack);
+	       error("out of memory\n");
+	    }
+
+	    dml->x=x;
+	    dml->refs=1;
+
+	    if (pos)
+	       (dml->prev=stack[pos-1])->refs++;
+	    else
+	       dml->prev=NULL;
+
+	    top++;
+	    
+	    stack[pos]=dml;
+	 }
+	 else if (stack[pos]->x!=x)
+	    if (pos && 
+		stack[pos]->refs==1 &&
+		stack[pos-1]==stack[pos]->prev)
+	    {
+	       stack[pos]->x=x;
+	    }
+	    else
+	    {
+	       if (! (dml=dml_new(&pools)) )
+	       {
+		  dml_free_pools(pools);
+		  free(stack);
+		  error("out of memory\n");
+	       }
+
+	       dml->x=x;
+	       dml->refs=1;
+
+	       if (pos)
+		  (dml->prev=stack[pos-1])->refs++;
+	       else
+		  dml->prev=NULL;
+
+	       if (!--stack[pos]->refs)
+		  dml_delete(pools,stack[pos]);
+	    
+	       stack[pos]=dml;
+	    }
       }
+   }
 
    /* FIXME(?) memory unfreed upon error here */
    a=low_allocate_array(top,0); 
-   while (ltop!=-1)
+   if (top)
    {
-      a->item[--top].u.integer=links[ltop].x;
-      ltop=links[ltop].l;
+       dml=stack[top-1];
+       while (dml)
+       {
+	  a->item[--top].u.integer=dml->x;
+	  dml=dml->prev;
+       }
    }
 
    free(stack);
-   free(links);
+   dml_free_pools(pools);
    return a;
 }
 
