@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.177 2001/09/06 22:52:17 hubbe Exp $");
+RCSID("$Id: file.c,v 1.178 2001/12/05 16:22:36 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2240,6 +2240,12 @@ static void file_connect(INT32 args)
   if(tmp < 0
 #ifdef EINPROGRESS
      && !(errno==EINPROGRESS && (THIS->open_mode & FILE_NONBLOCKING))
+#endif
+#ifdef WSAEWOULDBLOCK
+     && !(errno==WSAEWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
+#endif
+#ifdef EWOULDBLOCK
+     && !(errno==EWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
 #endif
     )
   {
