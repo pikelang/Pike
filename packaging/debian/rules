@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.27 2002/08/26 09:35:42 grendel Exp $
+# $Id: rules,v 1.28 2002/09/18 19:55:03 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -141,7 +141,7 @@ clean:
 	- rm -f `find . -name "*.feature" -print`
 	- rm -f `cat debian/toclean.txt`
 
-	- rm src/modules/Gmp/prime_table src/modules/Gmp/prime_table.out src/modules/Gmp/prime_table_no 
+	- rm src/modules/Gmp/prime_table src/modules/Gmp/prime_table_no 
 	- rm src/share src/pike-module src/dumpmodule.log
 	- rm src/modules/Perl/perlxsi.c src/modules/Java/module.pmod.in
 	- rm src/smartlink src/post_modules/GTK/prototypes.h src/post_modules/GTK/time_stamp
