@@ -1,11 +1,378 @@
 # ----------------------------------------------------------------
 # Sweden
-# source: 1900-1985 local almanack
+# source:     -1900 Michael Cronsten <micro@m.nu>, http://m.nu/namn/
+#         1900-1985 local almanack
 #         1986-     Kent Engström <kent@lysator.liu.se>
 # ----------------------------------------------------------------
 
 Region "se"
  Leapdayshift 2000 # 29 feb 2000 is the leap day, 24 feb before that
+ Period -1900
+   Jan  1 
+   Jan  2 Abel, Set
+   Jan  3 Enoch
+   Jan  4 Titus
+   Jan  5 Simeon
+   Jan  6 
+   Jan  7 
+   Jan  8 Erhard
+   Jan  9 Julianus
+   Jan 10 Nikanor
+   Jan 11 Hyginus
+   Jan 12 Arcadius
+   Jan 13 Knut
+   Jan 14 Felix
+   Jan 15 Maurus
+   Jan 16 Hjalmar
+   Jan 17 Anton
+   Jan 18 Prisca
+   Jan 19 Henrik
+   Jan 20 Fabianus
+   Jan 21 Agneta
+   Jan 22 Vincentius
+   Jan 23 Emerentia
+   Jan 24 Ericus Translatus
+   Jan 25 Paulus
+   Jan 26 Polykarpus
+   Jan 27 Göte
+   Jan 28 Karl
+   Jan 29 Valerius
+   Jan 30 Adelgunda
+   Jan 31 Vigilius
+   Feb  1 Maximiliana
+   Feb  2 
+   Feb  3 Blasius
+   Feb  4 Ansgar
+   Feb  5 Agatha
+   Feb  6 Dorothea
+   Feb  7 Rikard
+   Feb  8 Malakias
+   Feb  9 Apollonia
+   Feb 10 Eugenia
+   Feb 11 Eufrosyne
+   Feb 12 Eulalia
+   Feb 13 Agabus
+   Feb 14 Valentin 
+   Feb 15 Sigfrid
+   Feb 16 Juliana
+   Feb 17 Alexandra
+   Feb 18 Concordia
+   Feb 19 Gabinus
+   Feb 20 Eukarius, Hulda
+   Feb 21 Hilarius
+   Feb 22 Petter Katt
+   Feb 23 Tertullianus
+   Feb 24 Mattias
+   Feb 25 Victorinus
+   Feb 26 Nestor
+   Feb 27 Leander
+   Feb 28 Makarius
+   Mar  1 Albin
+   Mar  2 Ernst
+   Mar  3 Kunigunda
+   Mar  4 Adrian
+   Mar  5 Conon
+   Mar  6 Fulgentius
+   Mar  7 Felicitas
+   Mar  8 Philemon
+   Mar  9 
+   Mar 10 Apollonius
+   Mar 11 Vindicianus
+   Mar 12 Victoria
+   Mar 13 Gregorius
+   Mar 14 Matilda
+   Mar 15 Kristofer
+   Mar 16 Herbert
+   Mar 17 Gertrud
+   Mar 18 Edvard
+   Mar 19 Josef
+   Mar 20 Joakim
+   Mar 21 Bengt
+   Mar 22 Viktor
+   Mar 23 Axel
+   Mar 24 Gabriel
+   Mar 25 
+   Mar 26 Emanuel
+   Mar 27 Rupert
+   Mar 28 Malchus
+   Mar 29 Jonas
+   Mar 30 Qvirinus
+   Mar 31 Amos
+   Apr  1 Hugo
+   Apr  2 Teodosius
+   Apr  3 Ferdinand
+   Apr  4 Ambrosius
+   Apr  5 Irene
+   Apr  6 Vilhelm
+   Apr  7 Hegesippus
+   Apr  8 Perpetuus
+   Apr  9 Otto
+   Apr 10 Hezekiel
+   Apr 11 Antipas
+   Apr 12 Julius
+   Apr 13 Artur
+   Apr 14 Tiburtius
+   Apr 15 Olympias
+   Apr 16 Patrik
+   Apr 17 Elias
+   Apr 18 Valerianus
+   Apr 19 Bernhard
+   Apr 20 Amalia
+   Apr 21 Anselm
+   Apr 22 Bernhardina
+   Apr 23 Georg
+   Apr 24 Vega
+   Apr 25 Markus
+   Apr 26 Kletus
+   Apr 27 Teresia
+   Apr 28 Theodora
+   Apr 29 Tycho
+   Apr 30 Mariana
+   May  1 Valborg
+   May  2 Athanasius
+   May  3 
+   May  4 Monika
+   May  5 Gotthard
+   May  6 Sigismund
+   May  7 Stanislaus
+   May  8 Achatius
+   May  9 Timotheus
+   May 10 Epimachus
+   May 11 Mamertus
+   May 12 Charlotta
+   May 13 Linnea
+   May 14 Corona
+   May 15 Sophia
+   May 16 Peregrinus
+   May 17 Rebecka
+   May 18 Erik
+   May 19 Potentiana, Potentia
+   May 20 Karolina
+   May 21 Konstantin
+   May 22 Hemming
+   May 23 Desideria, Deriree
+   May 24 Rogatius
+   May 25 Urban
+   May 26 Vilhelmina
+   May 27 Beda
+   May 28 Germanus
+   May 29 Maximinus
+   May 30 Basilius
+   May 31 Petronella
+   Jun  1 Nikodemus
+   Jun  2 Marcellinus
+   Jun  3 Erasmus
+   Jun  4 Optatus
+   Jun  5 Bonifacius
+   Jun  6 Gustaf
+   Jun  7 Robert
+   Jun  8 Salomon
+   Jun  9 Primus
+   Jun 10 Svante
+   Jun 11 Barnabas
+   Jun 12 Eskil
+   Jun 13 Akvilina
+   Jun 14 Elisa
+   Jun 15 Vitus
+   Jun 16 Justina
+   Jun 17 Botolf
+   Jun 18 Leontius
+   Jun 19 Gervasius
+   Jun 20 Florentin
+   Jun 21 Albanus
+   Jun 22 Paulinus
+   Jun 23 Adold
+   Jun 24 
+   Jun 25 David
+   Jun 26 Jeremias
+   Jun 27 Crescens
+   Jun 28 Leo
+   Jun 29 Petrus, Paulus
+   Jun 30 Martialis
+   Jul  1 Aron
+   Jul  2 
+   Jul  3 Anatolius
+   Jul  4 Ulrika
+   Jul  5 Melker
+   Jul  6 Esaias
+   Jul  7 Klas
+   Jul  8 Kilian
+   Jul  9 Cyrillus
+   Jul 10 Knut
+   Jul 11 Eleonora
+   Jul 12 Herman
+   Jul 13 Joel
+   Jul 14 Fokas
+   Jul 15 
+   Jul 16 Reinhold
+   Jul 17 Alexius
+   Jul 18 Fredrik
+   Jul 19 Sara
+   Jul 20 Margareta
+   Jul 21 Johanna
+   Jul 22 Maria Magdalena
+   Jul 23 Emma
+   Jul 24 Kristina
+   Jul 25 Jakob
+   Jul 26 Martha
+   Jul 27 
+   Jul 28 Botvid
+   Jul 29 Olof
+   Jul 30 Abdon
+   Jul 31 Helena
+   Aug  1 
+   Aug  2 Karin
+   Aug  3 Stefanus
+   Aug  4 Aristarchus
+   Aug  5 Dominikus
+   Aug  6 Sixtus
+   Aug  7 Donatus
+   Aug  8 Cyriacus
+   Aug  9 Romanus
+   Aug 10 Lars
+   Aug 11 Susanna
+   Aug 12 Klara
+   Aug 13 Hippolytus
+   Aug 14 Eusebius
+   Aug 15 
+   Aug 16 Brynolf
+   Aug 17 Verner
+   Aug 18 Agapetus
+   Aug 19 Magnus
+   Aug 20 Samuel
+   Aug 21 Josefina
+   Aug 22 Henrietta
+   Aug 23 Zacheus
+   Aug 24 Bartolomeus
+   Aug 25 Lovisa
+   Aug 26 Zefyrinus
+   Aug 27 Rufus
+   Aug 28 Augustinus
+   Aug 29 
+   Aug 30 Albert
+   Aug 31 Arvid
+   Sep  1 Egidius
+   Sep  2 Justus
+   Sep  3 Seraphia
+   Sep  4 Moses
+   Sep  5 Eudoxus
+   Sep  6 Zacharias, Sakarias
+   Sep  7 Regina
+   Sep  8 
+   Sep  9 Augusta
+   Sep 10 Teodard
+   Sep 11 Protus
+   Sep 12 Cyrus
+   Sep 13 Amatus
+   Sep 14 
+   Sep 15 Nicetas
+   Sep 16 Eufemia
+   Sep 17 Lambertus
+   Sep 18 Methodius
+   Sep 19 Fredrika
+   Sep 20 Fausta
+   Sep 21 Matteus
+   Sep 22 Mauritz
+   Sep 23 Tekla
+   Sep 24 Gerhard
+   Sep 25 Kleofas
+   Sep 26 Cyprianus
+   Sep 27 Damianus
+   Sep 28 Leonard
+   Sep 29 Mikael
+   Sep 30 Hieronymus
+   Oct  1 Remigius
+   Oct  2 Ludvig
+   Oct  3 Evald
+   Oct  4 Frans
+   Oct  5 Placidus
+   Oct  6 Bruno
+   Oct  7 Birgitta
+   Oct  8 Demetrius
+   Oct  9 Dionysius
+   Oct 10 Gereon
+   Oct 11 Probus
+   Oct 12 Valfrid
+   Oct 13 Theophilus
+   Oct 14 Calixtus
+   Oct 15 Hedvig
+   Oct 16 Gallus
+   Oct 17 Antoinetta
+   Oct 18 Lukas
+   Oct 19 Ptolemeus
+   Oct 20 Kasper
+   Oct 21 Ursula, Ursila
+   Oct 22 Severus
+   Oct 23 Severin
+   Oct 24 Evergistus
+   Oct 25 Crispinus
+   Oct 26 Amandus
+   Oct 27 Sabina
+   Oct 28 Simon, Judas
+   Oct 29 Narcissus
+   Oct 30 Zenobia
+   Oct 31 Quintinus
+   Nov  1 
+   Nov  2 Tobias
+   Nov  3 Eustachius
+   Nov  4 Amatius
+   Nov  5 Eugen
+   Nov  6 Gustaf Adolf
+   Nov  7 Engelbert
+   Nov  8 Willehad
+   Nov  9 Teodor
+   Nov 10 Martin Luther
+   Nov 11 Mårten
+   Nov 12 Konrad
+   Nov 13 Kristian
+   Nov 14 Hypatius
+   Nov 15 Leopold
+   Nov 16 Edmund
+   Nov 17 Napoleon
+   Nov 18 Maximus
+   Nov 19 Elisabet
+   Nov 20 Pontus
+   Nov 21 Heliodorus
+   Nov 22 Cecilia
+   Nov 23 Klemens
+   Nov 24 Kristogonus
+   Nov 25 Katarina
+   Nov 26 Linus
+   Nov 27 Vitalis
+   Nov 28 Sten
+   Nov 29 Saturninus
+   Nov 30 Anders
+   Dec  1 Oscar
+   Dec  2 Beata
+   Dec  3 Zephanias
+   Dec  4 Barbro
+   Dec  5 Crispina
+   Dec  6 Nikolaus
+   Dec  7 Agaton
+   Dec  8 
+   Dec  9 Anna
+   Dec 10 Judit
+   Dec 11 Daniel
+   Dec 12 Alexander
+   Dec 13 Lucia
+   Dec 14 Isidor
+   Dec 15 Ireneus
+   Dec 16 Lazarus
+   Dec 17 Ignatius
+   Dec 18 Abraham
+   Dec 19 Isak
+   Dec 20 Jakob
+   Dec 21 Tomas
+   Dec 22 Josef
+   Dec 23 Israel
+   Dec 24 Adam, Eva
+   Dec 25 
+   Dec 26 Stefan
+   Dec 27 Johannes
+   Dec 28 
+   Dec 29 
+   Dec 30 David
+   Dec 31 Sylvester
  Period 1900-1985
    Jan  2 Svea
    Jan  3 Alfred
