@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.314 2003/12/17 22:46:07 marcus Exp $
+// $Id: master.pike.in,v 1.315 2003/12/18 21:28:02 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -54,6 +54,12 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 #define PATH_SEPARATOR ";"
 #else
 #define PATH_SEPARATOR ":"
+#endif
+
+#ifdef __amigaos__
+#define UPDIR "/"
+#else
+#define UPDIR "../"
 #endif
 
 //! @decl constant out_of_date_warning = 1
@@ -170,9 +176,9 @@ string unrelocate_module(string s)
 
   /* This is necessary to find compat modules... */
   foreach(pike_module_path, string path) {
-    path = combine_path(path, "..", "");
+    path = combine_path(path, UPDIR, "");
     if(has_prefix (s, path))
-      return "/${PIKE_MODULE_PATH}/../"+s[sizeof(path)..];
+      return "/${PIKE_MODULE_PATH}/"+UPDIR+s[sizeof(path)..];
   }
 
   return s;
@@ -192,6 +198,10 @@ string unrelocate_module(string s)
 //! Returns 1 if the path is absolute, 0 otherwise.
 int is_absolute_path(string p)
 {
+#ifdef __amigaos__
+#define IS_ABSOLUTE_PATH(X) has_value((X),":")
+  return IS_ABSOLUTE_PATH(p);
+#else
 #ifdef __NT__
   p=replace(p,"\\","/");
   if(sscanf(p,"%[a-zA-Z]:%*c",string s)==2 && sizeof(s)==1)
@@ -201,6 +211,7 @@ int is_absolute_path(string p)
 #define IS_ABSOLUTE_PATH(X) has_prefix((X),"/")
 #endif
   return has_prefix(p,"/");
+#endif
 }
 
 #ifdef __NT__
@@ -337,7 +348,7 @@ string getcwd()
 
 string combine_path_with_cwd(string path)
 {
-  return combine_path(IS_ABSOLUTE_PATH(path)?"/":getcwd(),path);
+  return combine_path(IS_ABSOLUTE_PATH(path)?"":getcwd(),path);
 }
 
 #ifdef FILE_STAT_CACHE
@@ -880,7 +891,7 @@ program low_cast_to_program(string pname,
   {
     program|NoValue prog = programs[pname];
     if (programp (prog)) return prog;
-    pname=combine_path("/",pname);
+    pname=combine_path("",pname);
     return findprog(pname,ext,handler,mkobj);
   }
   else {
