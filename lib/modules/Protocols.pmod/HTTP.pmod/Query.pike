@@ -84,6 +84,13 @@
 **! method string data()
 **!	Gives back the data as a string.
 **!
+**! metohd int downloaded_bytes()
+**!	Gives back the number of downloaded bytes.
+**!
+**! method int total_bytes()
+**!     Gives back the size of a file if a content-length header is present
+**!     and parsed at the time of evaluation. Otherwise returns -1.
+**!
 **! object(pseudofile) file()
 **! object(pseudofile) file(mapping newheaders,void|mapping removeheaders)
 **! object(pseudofile) datafile();
@@ -533,6 +540,23 @@ string data()
    }
    // note! this can't handle keep-alive × HEAD requests.
    return buf[datapos..];
+}
+
+int downloaded_bytes()
+{
+  if(datapos)
+    return sizeof(buf)-datapos;
+  else
+    return 0;
+}
+
+int total_bytes()
+{
+   int len=(int)headers["content-length"];
+   if(zero_type(len))
+     return -1;
+   else
+     return len;
 }
 
 array|mapping|string cast(string to)
