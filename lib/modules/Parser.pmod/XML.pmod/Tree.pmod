@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.16 2002/03/25 22:34:54 nilsson Exp $
+ * $Id: Tree.pmod,v 1.17 2002/04/08 01:21:34 nilsson Exp $
  *
  */
 
@@ -562,27 +562,27 @@ class Node {
   //! Creates an XML representation of the nodes sub tree.
   string render_xml()
   {
-    string data = "";
-	
+    String.Buffer data = String.Buffer();
+
     walk_preorder_2(
 		    lambda(Node n) {
 		      switch(n->get_node_type()) {
 		      case XML_TEXT:
-                        data += text_quote(n->get_text());
+                        data->add(text_quote(n->get_text()));
 			break;
 		      case XML_ELEMENT:
 			if (!strlen(n->get_tag_name()))
 			  break;
-			data += "<" + n->get_tag_name();
+			data->add("<", n->get_tag_name());
 			if (mapping attr = n->get_attributes()) {
                           foreach(indices(attr), string a)
-                            data += " " + a + "='" +
-			      attribute_quote(attr[a]) + "'";
+                            data->add(" ", a, "='",
+				      attribute_quote(attr[a]), "'");
 			}
 			if (n->count_children())
-			  data += ">";
+			  data->add(">");
 			else
-			  data += "/>";
+			  data->add("/>");
 			break;
 		      }
 		    },
@@ -590,10 +590,10 @@ class Node {
 		      if (n->get_node_type() == XML_ELEMENT)
 			if (n->count_children())
 			  if (strlen(n->get_tag_name()))
-			    data += "</" + n->get_tag_name() + ">";
+			    data->add("</", n->get_tag_name(), ">");
 		    });
 	
-    return data;
+    return (string)data;
   }
   
   //  Override AbstractNode::`[]
