@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.133 2001/09/01 09:38:56 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.134 2001/09/05 01:40:45 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1590,8 +1590,35 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 	break;
       }
     }else{
+      INT32 d;
+      struct mapping_data *bmd = b->data;
+      struct keypair *kp;
+
+      /* This is neither pretty nor fast, but it should
+       * perform a bit more like expected... -Hubbe
+       */
+
+      bmd->valrefs++;
+      add_ref(bmd);
+
       eq=0;
-      break;
+      for(d=0;d<(bmd)->hashsize;d++)
+      {
+	for(kp=bmd->hash[d];kp;kp=kp->next)
+	{
+	  if(low_is_equal(&k->ind, &kp->ind, &curr) &&
+	     low_is_equal(&k->val, &kp->val, &curr))
+	  {
+	    eq=1;
+	    break;
+	  }
+	}
+      }
+
+      bmd->valrefs--;
+      free_mapping_data(bmd);
+
+      if(!eq) break;
     }
   }
   md->valrefs--;
