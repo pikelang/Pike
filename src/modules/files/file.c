@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.63 1998/05/29 02:13:03 hubbe Exp $");
+RCSID("$Id: file.c,v 1.64 1998/06/09 17:14:02 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -1001,7 +1001,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
   if(fd==-1)
   {
-    if((fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
+    if((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
     
     /* I wonder what is most common a loopback on ip# 127.0.0.1 or
      * a loopback with the name "localhost"?
@@ -1015,26 +1015,26 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
 
     /* Bind our sockets on any port */
-    if(fd_bind(fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
+    if(bind(fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
     {
-      fd_close(fd);
+      close(fd);
       fd=-1;
       return -1;
     }
 
     /* Check what ports we got.. */
     len=sizeof(my_addr);
-    if(fd_getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
+    if(getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
     {
-      fd_close(fd);
+      close(fd);
       fd=-1;
       return -1;
     }
 
     /* Listen to connections on our new socket */
-    if(fd_listen(fd, 5) < 0)
+    if(listen(fd, 5) < 0)
     {
-      fd_close(fd);
+      close(fd);
       fd=-1;
       return -1;
     }
@@ -1045,13 +1045,13 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   }
   
 
-  if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
+  if((sv[1]=socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
 
 /*  set_nonblocking(sv[1],1); */
 
 retry_connect:
   retries++;
-  if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
+  if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
   {
     fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK);
     if(errno != EWOULDBLOCK)
@@ -1061,10 +1061,10 @@ retry_connect:
       {
 	int tmp;
 	len=sizeof(addr);
-	tmp=fd_accept(fd,(struct sockaddr *)&addr,&len);
+	tmp=accept(fd,(struct sockaddr *)&addr,&len);
 	
 	if(tmp!=-1)
-	  fd_close(tmp);
+	  close(tmp);
 	else
 	  break;
       }
@@ -1085,21 +1085,21 @@ retry_connect:
   {
     len=sizeof(addr);
   retry_accept:
-    sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len);
+    sv[0]=accept(fd,(struct sockaddr *)&addr,&len);
 
     set_nonblocking(sv[0],0);
 
     if(sv[0] < 0) {
       if(errno==EINTR) goto retry_accept;
-      fd_close(sv[1]);
+      close(sv[1]);
       return -1;
     }
 
     /* We do not trust accept */
     len=sizeof(addr);
-    if(fd_getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
+    if(getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
     len=sizeof(addr);
-    if(fd_getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
+    if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
   }while(len < (int)sizeof(addr) ||
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
