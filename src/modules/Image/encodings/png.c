@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.14 1998/04/20 18:53:35 grubba Exp $");
+RCSID("$Id: png.c,v 1.15 1998/05/02 01:24:26 mirar Exp $");
 
 #include "config.h"
 
@@ -281,6 +281,7 @@ static void image_png___decode(INT32 args)
 
 /*
 **! method array _decode(string|array data)
+**! method array _decode(string|array data,mapping options)
 **! 	Decode a PNG image file.
 **!
 **!     Result is a mapping,
@@ -294,8 +295,8 @@ static void image_png___decode(INT32 args)
 **!
 **!	<tt>image</tt> is the stored image.
 **!
-**!	Valid entries in <tt>options</tt> is the same
-**!	as given to <ref>encode</ref>:
+**!	Valid entries in <tt>options</tt> is a superset
+**!	of the one given to <ref>encode</ref>:
 **!
 **!	<pre>
 **!     basic options:
@@ -354,6 +355,15 @@ static void image_png___decode(INT32 args)
 **!	    "compression": int method         - compression method (0)
 **!
 **!      </pre>
+**!	
+**!	This method can also take options, 
+**! 	as a mapping:
+**!	<pre>
+**!     advanced options:
+**!	    "palette": colortable object
+**!		- replace the decoded palette with this when
+**!		  unpacking the image data, if applicable
+**!	</pre>
 **!
 **! note
 **!	Please read about the PNG file format.
@@ -674,6 +684,12 @@ static int _png_write_rgb(rgb_group *w1,
 	    error("Image.PNG->decode: Internal error (created palette isn't flat)\n");
 	 }
 	 mz=ct->u.flat.numentries;
+	 if (mz==0)
+	 {
+	    free(w1);
+	    free(wa1);
+	    error("Image.PNG->decode: palette is zero entries long; need at least one color.\n");
+	 }
 
 #define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
 	 switch (bpp)
@@ -958,9 +974,51 @@ static void image_png__decode(INT32 args)
    } ihdr={-1,-1,-1,0,-1,-1,-1};
 
    if (args<1) 
-      error("Image.PNG.__decode: too few arguments\n");
+      error("Image.PNG._decode: too few arguments\n");
 
+   m=allocate_mapping(10);
+   push_mapping(m);
+
+   if (args>=2)
+   {
+      if (sp[1-args-1].type!=T_MAPPING)
+	 error("Image.PNG._decode: illegal argument 2\n");
+
+      push_svalue(sp+1-args-1);
+      ref_push_string(param_palette);
+      f_index(2);
+      switch (sp[-1].type)
+      {
+	 case T_OBJECT:
+	    push_string(make_shared_string("cast"));
+	    if (sp[-1].type==T_INT)
+	       error("Image.PNG._decode: illegal value of option \"palette\"\n");
+	    f_index(2);
+	    push_string(make_shared_string("array"));
+	    f_call_function(2);
+	 case T_ARRAY:
+	 case T_STRING:
+	    push_object(clone_object(image_colortable_program,1));
+
+	    ct=(struct neo_colortable*)get_storage(sp[-1].u.object,
+						   image_colortable_program);
+	    if (!ct)
+	       error("Image.PNG._decode: internal error: cloned colortable isn't colortable\n");
+	    ref_push_string(param_palette);
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
+	    break;
+	 case T_INT:
+	    pop_n_elems(1);
+	 default:
+	    error("Image.PNG._decode: illegal value of option \"palette\"\n");
+      }
+   }
+
+   sp--;
    pop_n_elems(args-1);
+   push_mapping(m);
+   stack_swap();
 
    if (sp[-1].type==T_STRING)
    {
@@ -970,14 +1028,9 @@ static void image_png__decode(INT32 args)
 	 error("Image.PNG._decode: Not PNG data\n");
    }
    else if (sp[-1].type!=T_ARRAY)
-      error("Image.PNG._decode: Illegal argument\n");
+      error("Image.PNG._decode: Illegal argument 1\n");
 
-   add_ref(a=sp[-1].u.array);
-
-   pop_n_elems(1);
-
-   m=allocate_mapping(10);
-   push_mapping(m);
+   a=sp[-1].u.array;
 
    for (i=0; i<a->size; i++)
    {
@@ -1019,6 +1072,8 @@ static void image_png__decode(INT32 args)
 
          case 0x504c5445: /* PLTE */
 	    /* palette info, 3×n bytes */
+
+	    if (ct) break; /* we have a palette already */
 
 	    ref_push_string(b->item[1].u.string);
 	    push_object(clone_object(image_colortable_program,1));
@@ -1137,7 +1192,10 @@ static void image_png__decode(INT32 args)
    /* on stack: mapping   n×string */
 
    /* IDAT stuff on stack, now */
-   f_add(n);
+   if (!n) 
+      push_string(make_shared_binary_string("",0));
+   else
+      f_add(n);
 
    if (ihdr.type==-1)
    {
@@ -1321,6 +1379,8 @@ static void image_png__decode(INT32 args)
    push_int(-2);
    map_delete(m,sp-1);
    pop_stack();
+
+   pop_stack(); /* remove 'a' from stack */
 }
 
 
@@ -1659,11 +1719,11 @@ struct object *init_image_png(void)
       if (gz_deflate)
       {
 	 add_function("_decode",image_png__decode,
-		      "function(array|string,void|mapping(string:int):object)",0);
+		      "function(array|string,void|mapping(string:mixed):object)",0);
 	 add_function("decode",image_png_decode,
-		      "function(string,void|mapping(string:int):object)",0);
+		      "function(string,void|mapping(string:mixed):object)",0);
 	 add_function("decode_alpha",image_png_decode_alpha,
-		      "function(string,void|mapping(string:int):object)",0);
+		      "function(string,void|mapping(string:mixed):object)",0);
       }
       add_function("encode",image_png_encode,
 		   "function(object,void|mapping(string:mixed):string)",
