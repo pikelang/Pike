@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.439 2002/09/21 16:29:43 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.440 2002/09/29 00:13:21 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2710,7 +2710,8 @@ node *fix_object_program_type(node *n)
  *!   Reverses a string, array or int.
  *!
  *!   This function reverses a string, char by char, an array, value
- *!   by value or an int, bit by bit and returns the result.
+ *!   by value or an int, bit by bit and returns the result. It's not
+ *!   destructive on the input value.
  *!
  *!   Reversing strings can be particularly useful for parsing difficult
  *!   syntaxes which require scanning backwards.
