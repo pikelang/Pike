@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.362 2003/10/13 08:56:16 mast Exp $
+# $Id: Makefile.in,v 1.363 2003/10/28 04:24:33 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -317,6 +317,7 @@ delete_dumped_modules:
 undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
+.SUFFIXES:
 .SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src
 
 .c.pp:
