@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.2 2003/02/15 08:59:39 mirar Exp $
+// $Id: Session.pike,v 1.3 2003/02/21 21:45:04 mirar Exp $
 
 import Protocols.HTTP;
 
@@ -96,8 +96,10 @@ class Request
 	 "user-agent":"Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
 	    " Pike/"+__REAL_MAJOR__+"."+__REAL_MINOR__+"."+__REAL_BUILD__,
 	 "host":url->host,
-	 "connection":"keep-alive",
+	 "connection":
+	    (time_to_keep_unused_connections<=0)?"Close":"Keep-Alive",
       ]);
+	 
 
       if(url->user || url->passwd)
 	 default_headers->authorization = "Basic "
@@ -269,11 +271,11 @@ class Request
 	 }
       }
 
-      if (data_callback)
-	 con->async_fetch(async_data); // start data downloading
-
       if (headers_callback)
 	 headers_callback(@extra_callback_arguments);
+
+      if (data_callback)
+	 con->async_fetch(async_data); // start data downloading
    }
 
    static void async_fail(object q)
@@ -293,26 +295,31 @@ class Request
 
    string data()
    {
+      if (!con) error("Request: no connection\n");
       return con->data();
    }
 
    mapping headers()
    {
+      if (!con) error("Request: no connection\n");
       return con->headers;
    }
 
    int(0..1) ok()
    {
+      if (!con) error("Request: no connection\n");
       return con->ok;
    }
 
    int(0..999) status()
    {
+      if (!con) error("Request: no connection\n");
       return con->status;
    }
 
    string status_desc()
    {
+      if (!con) error("Request: no connection\n");
       return con->status_desc;
    }
 
@@ -358,6 +365,9 @@ class Request
 
 multiset(Cookie) all_cookies=(<>);
 mapping(string:mapping(string:Cookie)) cookie_lookup=([]);
+
+// this class is internal for now, until there is a
+// decent use for it externally
 
 class Cookie
 {
@@ -531,8 +541,81 @@ array(string) get_cookies(Standards.URI for_url,
 
 //!	Cache of hostname to IP lookups. Given to and used by the
 //!	@[Query] objects.
-
 mapping hostname_cache=([]);
+
+//!	The time to keep unused connections in seconds. Set to zero
+//!	to never save any kept-alive connections.
+//!	(Might be good in a for instance totaly synchroneous script
+//!	that keeps the backend thread busy and never will get call_outs.)
+//!	Defaults to 10 seconds.
+int|float time_to_keep_unused_connections=10;
+
+//!	Maximum number of connections to the same server.
+//!	Used only by async requests.
+//!	Defaults to 10 connections.
+//! @bugs
+//!	Not yet implemented. 
+int maximum_connections_per_server=10;
+
+//!	Maximum total number of connections. Limits only
+//!	async requests, and the number of kept-alive connections
+//!	(live connections + kept-alive connections <= this number)
+//!	Defaults to 50 connections.
+//! @bugs
+//!	Limit not yet implemented for async. 
+int maximum_total_connections=50;
+
+
+
+// internal (but readable for debug purposes)
+mapping(string:array(KeptConnection)) connection_cache=([]);
+int connections_kept_n=0;
+int connections_inuse_n=0;
+
+static class KeptConnection
+{
+   string lookup;
+   Query q;
+
+   void create(string _lookup,Query _q)
+   {
+      lookup=_lookup;
+      q=_q;
+
+      call_out(disconnect,time_to_keep_unused_connections);
+      connection_cache[lookup]=
+	 (connection_cache[lookup]||({}))+({this_object()});
+      connections_kept_n++;
+   }
+
+   void disconnect()
+   {
+      connection_cache[lookup]-=({this_object()});
+      if (!sizeof(connection_cache[lookup]))
+	 m_delete(connection_cache,lookup);
+
+      if (q->con) destruct(q->con);
+      connections_kept_n--;
+      destruct(q);
+      destruct(this_object());
+   }
+
+   Query use()
+   {
+      connection_cache[lookup]-=({this_object()});
+      if (!sizeof(connection_cache[lookup]))
+	 m_delete(connection_cache,lookup);
+
+      remove_call_out(disconnect);
+      connections_kept_n--;
+      return q; // subsequently, this object is removed (no refs)
+   }
+}
+
+static inline string connection_lookup(Standards.URI url)
+{
+   return url->scheme+"://"+url->host+":"+url->port;
+}
 
 //!	Request a @[Query] object suitable to use for the
 //!	given URL. This may be a reused object from a keep-alive
@@ -540,8 +623,22 @@ mapping hostname_cache=([]);
 
 Query give_me_connection(Standards.URI url)
 {
-   Query q=Query();
-   q->hostname_cache=hostname_cache;
+   Query q;
+
+   if (array(KeptConnection) v =
+       connection_cache[connection_lookup(url)])
+   {
+      q=v[0]->use(); // removes itself
+      // clean up
+      q->buf="";
+      q->headerbuf="";
+   }
+   else
+   {
+      q=Query();
+      q->hostname_cache=hostname_cache;
+   }
+   connections_inuse_n++;
    return q;
 }
 
@@ -551,7 +648,22 @@ Query give_me_connection(Standards.URI url)
 
 void return_connection(Standards.URI url,Query query)
 {
-   if (query->con) destruct(query->con);
+   connections_inuse_n--;
+   if (query->con) 
+   {
+      if (query->headers->connection &&
+	  lower_case(query->headers->connection)=="keep-alive" &&
+	  connections_kept_n+connections_inuse_n
+	  < maximum_total_connections &&
+	  time_to_keep_unused_connections>0)
+      {
+         // clean up
+	 query->set_callbacks(0,0);
+	 KeptConnection(connection_lookup(url),query);
+	 return;
+      }
+      destruct(query->con);
+   }
    destruct(query);
 }
 
