@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Charset.pmod,v 1.5 2001/08/01 15:52:07 js Exp $
+// $Id: Charset.pmod,v 1.6 2001/08/08 11:01:06 per Exp $
 
 constant contenttypes = ({});
 
@@ -18,9 +18,10 @@ string decode_charset( string data, string charset )
     case "utf8":
       return utf8_to_string( data );
 
-    case "eucjp":
     case "euc":
-    case "x-euc":
+    case "xeuc":
+      /* should default depending on domain */
+    case "eucjp":
     case "eucjapan":
     case "japanese":
       return Locale.Charset.decoder( "euc-jp" )->feed( data )->drain();
