@@ -135,7 +135,6 @@ DESCRIPTION
 
 	 "name":	string	The name of the field.
 	 "table":	string	The name of the table.
-	 "default":	string	The default value for the field (DISABLED).
 	 "type":	string	The type of the field.
 	 "length":	int	The length of the field.
 	 "max_length":	int	The length of the longest element in this field.
@@ -153,8 +152,6 @@ NOTA BENE
 
 BUGS
 	The "flags" entry should be parsed.
-
-	The "default" value handling does not work correctly yet (DISABLED).
 
 SEE ALSO
 	mysql_result->fetch_fields, mysql_result->field_seek
