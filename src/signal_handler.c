@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.58 1998/05/01 15:32:10 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.59 1998/05/05 13:26:48 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -345,6 +345,11 @@ void my_signal(int sig, sigfunctype fun)
 static RETSIGTYPE receive_signal(int signum)
 {
   int tmp;
+
+#ifdef DEBUG
+  if(signum<0 || signum>=MAX_SIGNALS)
+    fatal("Received signal %u >= %u!!!\n", signum, MAX_SIGNALS);
+#endif
 
   tmp=firstsig+1;
   if(tmp == SIGNAL_BUFFER) tmp=0;
