@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.56 2002/07/24 19:11:11 nilsson Exp $ */
+/* $Id: export.pike,v 1.57 2002/08/29 19:25:21 peter Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -265,8 +265,8 @@ int main(int argc, array(string) argv)
   if(!files) // Unable to build file list.
     return 1;
 
-  Stdio.write_file("export.stamp", replace(stamp, symbols));
-  files += ({ vpath+"/export.stamp" });
+  Stdio.write_file("buildid.txt", replace(stamp, symbols));
+  files += ({ vpath+"/buildid.txt" });
 
   werror("Creating "+vpath+".tar.gz:\n");
 
@@ -300,7 +300,7 @@ int main(int argc, array(string) argv)
     }
 
   rm(vpath);
-  rm("export.stamp");
+  rm("buildid.txt");
   werror("Done.\n");
 
   if(cvs && tag)

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.90 2002/08/29 16:59:29 peter Exp $
+# $Id: Makefile,v 1.91 2002/08/29 19:25:21 peter Exp $
 #
 # Meta Makefile
 #
@@ -279,9 +279,7 @@ xenofarm:
 	  gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$(BUILDDIR)/pike" {} >> \
 	  build/xenofarm/_core.txt ";"
 	-cp "$(BUILDDIR)/dumpmodule.log" build/xenofarm/dumplog.txt
-	-cp export.stamp build/xenofarm/exportstamp.txt
-	-uname -s -r -m > build/xenofarm/machineid.txt
-	-uname -n >> build/xenofarm/machineid.txt
+	-cp buildid.txt build/xenofarm/
 	cd build/xenofarm && tar cf - *.txt > ../../xenofarm_result.tar
 	gzip -f9 xenofarm_result.tar
 
