@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.30 2002/10/07 14:58:53 wellhard Exp $
+// $Id: HTML.pmod,v 1.31 2003/01/17 16:04:59 jonasw Exp $
 
 // Filter for text/html
 
@@ -219,8 +219,10 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   Parser.HTML parser = Parser.HTML();
 
   parser->case_insensitive_tag(1);
-
+  parser->lazy_entity_end(1);
+  parser->ignore_unknown(1);
   parser->match_tag(0);
+  
   //  parser->add_container("rank",parse_rank);
   parser->add_containers( ([ "title":parse_title,
 			     "h1": parse_headline,
