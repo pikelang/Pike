@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.16 1999/05/30 20:30:00 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.17 1999/07/02 19:23:48 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -130,11 +130,14 @@ mapping keywords=
 	  },
   "see":lambda(string arg,string line)
 	  {
-	     if (arg[0..4]!="also:")
+	     if (arg[0..3]!="also")
 	        return complain("see w/o 'also:'\n");
 	     if (!lower_nowM()) 
 	        return complain("see also w/o method, class or module");
-	     nowM["see also"]=map(arg[5..]/",",stripws);
+	     sscanf(arg,"also%*[:]%s",arg);
+	     nowM["see also"]=map(arg/",",stripws)-({""});
+	     if (!nowM["see also"])
+	        return complain("empty see also\n");
 	  },
   "returns":lambda(string arg)
 	  {
@@ -205,7 +208,7 @@ string htmlify(string s)
 }
 
 #define linkify(S) \
-   ("\""+replace((S),({"->","()","&lt;"}),({".","","<"}))+"\"")
+   ("\""+replace((S),({"->","()","&lt;","&gt;"}),({".","","<",">"}))+"\"")
 
 string make_nice_reference(string what,string prefix)
 {
@@ -284,6 +287,29 @@ string addprefix(string suffix,string prefix)
    return prefix+suffix;
 }
 
+array fix_dotstuff(array(string) in)
+{
+   if (!sizeof(in)) return ({});
+   array(string) last;
+   in=Array.map(in,replace,({"->",">","<"}),({".","&lt;","&gt;"}));
+   last=in[0]/"."; 
+   last=last[..sizeof(last)-2];
+   int i;
+   array res=in[..0];
+   for (i=1; i<sizeof(in); i++)
+   {
+      array(string) z=in[i]/".";
+      if (equal(z[..sizeof(z)-2],last))
+	 res+=({"."+z[-1]});
+      else
+      {
+	 last=z[..sizeof(z)-2];
+	 res+=in[i..i];
+      }
+   }
+   return res;
+}
+
 void document(string enttype,
 	      mapping huh,string name,string prefix,
 	      object f)
@@ -299,7 +325,7 @@ void document(string enttype,
 
    f->write("\n<!-- " + huh->_line + " -->\n");
    f->write("<"+enttype+" name="+
-	    linkify(names*","));
+	    fix_dotstuff(names)*",");
 
    if (manpage_suffix[replace(name,"->",".")])
       f->write(" mansuffix="+manpage_suffix[replace(name,"->",".")]);
@@ -460,7 +486,7 @@ void document(string enttype,
 // end ANCHOR
 
    f->write("</"+enttype+" name="+
-	    linkify(names*",")+">\n");
+	    fix_dotstuff(names)*","+">");
 }
 
 void make_doc_files()
@@ -523,7 +549,7 @@ int main(int ac,string *files)
       {
 	 string kw,arg;
 
-	 sscanf(s[i+3..],"%*[ \t]%s%*[ \t]%s",kw,arg);
+	 sscanf(s[i+3..],"%*[ \t]%[^: \t\n\r]%*[: \t]%s",kw,arg);
 	 if (keywords[kw])
 	 {
 	    string err;
@@ -542,8 +568,8 @@ int main(int ac,string *files)
 	    if (!descM) descM=methodM;
 	    if (!descM)
 	    {
-	       stderr->write("mkwmml: "
-			     "Error on line "+line+
+	       stderr->write("mkwmml: "+
+			     currentfile+" line "+line+
 			     ": illegal description position\n");
 	       return 1;
 	    }
