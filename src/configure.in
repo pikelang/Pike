@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.773 2004/02/26 17:52:29 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.774 2004/02/26 19:08:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6898,9 +6898,16 @@ $bundle_info])
       fi
     done
     # Clear the caches.
-    for varname in `cat $bundle_info`; do
+    for varname in `cat $bundle_info|sort|uniq`; do
       unset $varname
     done
+    if test -r "$cache_file"; then
+      ed "$cache_file" >/dev/null 2>&1 <<EOF
+`cat $bundle_info|sort|uniq|sed -e '/^$/d' -e 's/\(.*\)/\/^\1=\/d/'`
+w
+q
+EOF
+    fi
     # Rerun configure
     if "x$CONFIG_SHELL" = "x"; then
       CONFIG_SHELL=/bin/sh
