@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.61 1999/04/11 12:55:40 mirar Exp $ */
+/* $Id: colortable.c,v 1.62 1999/04/12 13:43:40 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.61 1999/04/11 12:55:40 mirar Exp $
+**!	$Id: colortable.c,v 1.62 1999/04/12 13:43:40 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.61 1999/04/11 12:55:40 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.62 1999/04/12 13:43:40 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -44,8 +44,11 @@ RCSID("$Id: colortable.c,v 1.61 1999/04/11 12:55:40 mirar Exp $");
 #include "colortable.h"
 #include "dmalloc.h"
 
+void f_index(INT32);
+
 struct program *image_colortable_program;
 extern struct program *image_program;
+extern struct program *image_color_program;
 
 #define WEIGHT_NEEDED (nct_weight_t)(0x10000000)
 #define WEIGHT_REMOVE (nct_weight_t)(0x10000001)
@@ -2245,9 +2248,16 @@ void image_colortable_create(INT32 args)
 
 /*
 **! method object reduce(int colors)
+**! method object reduce_fs(int colors)
 **!	reduces the number of colors
 **!
 **!	All needed (see <ref>create</ref>) colors are kept.
+**!
+**!	<ref>reduce_fs</ref> creates and keeps 
+**!	the outmost corners of the color space, to 
+**!	improve floyd-steinberg dithering result.
+**!	(It doesn't work very well, though.)
+**!
 **! returns the new <ref>colortable</ref> object
 **!
 **! arg int colors
@@ -2256,21 +2266,22 @@ void image_colortable_create(INT32 args)
 **! note
 **!	this algorithm assumes all colors are different to 
 **!     begin with (!)
+**!	
+**!	<ref>reduce_fs</ref> keeps the "corners" as
+**!	"needed colors".
+**!
+**! see also: corners
 **/
 
 void image_colortable_reduce(INT32 args)
 {
    struct object *o;
    struct neo_colortable *nct;
-   int numcolors;
+   int numcolors=0;
 
    if (args) 
      if (sp[-args].type!=T_INT) 
-     {
-	 error("Illegal argument to Image.colortable->reduce\n");
-	 /* Not reached, but keeps the compiler happy. */
-	 numcolors = 0;
-     } 
+	SIMPLE_BAD_ARG_ERROR("Image.colortable->reduce",1,"int");
      else
 	 numcolors=sp[-args].u.integer;
    else
@@ -2298,6 +2309,47 @@ void image_colortable_reduce(INT32 args)
 
    pop_n_elems(args);
    push_object(o);
+}
+
+void image_colortable_corners(INT32 args);
+
+void image_colortable_reduce_fs(INT32 args)
+{
+   int numcolors;
+   int i;
+   struct object *o;
+   struct neo_colortable *nct;
+
+   if (args) 
+     if (sp[-args].type!=T_INT) 
+	SIMPLE_BAD_ARG_ERROR("Image.colortable->reduce",1,"int");
+     else
+	numcolors=sp[-args].u.integer;
+   else
+      numcolors=1293791; /* a lot */
+
+   if (numcolors<2)
+      SIMPLE_BAD_ARG_ERROR("Image.colortable->reduce",1,"int(2..)");
+
+   pop_n_elems(args);
+   image_colortable_corners(0);
+
+   if (numcolors<8)
+   {
+      push_int(0);
+      push_int(1);
+      f_index(3);
+   }
+   push_object(o=clone_object(image_colortable_program,1));
+   nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
+   
+   for (i=0; i<nct->u.flat.numentries; i++)
+      nct->u.flat.entries[i].weight=WEIGHT_NEEDED;
+
+   image_colortable_add(1);
+   pop_stack();
+   push_int(numcolors);
+   image_colortable_reduce(1);
 }
 
 
@@ -3631,7 +3683,7 @@ void image_colortable_spacefactors(INT32 args)
 
 /*
 **! method object floyd_steinberg()
-**! method object floyd_steinberg(int dir,int|float forward,int|float downforward,int|float down,int|float downback,int|float factor)
+**! method object floyd_steinberg(int bidir,int|float forward,int|float downforward,int|float down,int|float downback,int|float factor)
 **!	Set dithering method to floyd_steinberg.
 **!	
 **!	The arguments to this method is for fine-tuning of the 
@@ -4258,6 +4310,62 @@ void image_colortable_image(INT32 args)
       free(flat.entries);
 }
 
+/*
+**! method array(object) corners()
+**!	Gives the eight corners in rgb colorspace as an array.
+**!	The "black" and "white" corners are the first two.
+**/
+
+void image_colortable_corners(INT32 args)
+{
+   struct nct_flat flat;
+   int i;
+   rgb_group min={COLORMAX,COLORMAX,COLORMAX};
+   rgb_group max={0,0,0};
+
+   pop_n_elems(args);
+   
+   if (THIS->type==NCT_NONE)
+   {
+      f_aggregate(0);
+      return;
+   }
+
+   if (THIS->type==NCT_CUBE)
+      flat=_img_nct_cube_to_flat(THIS->u.cube);
+   else
+      flat=THIS->u.flat;
+
+   /* sort in number order? */
+
+   for (i=0; i<flat.numentries; i++)
+      if (flat.entries[i].no!=-1)
+      {
+	 rgb_group rgb=flat.entries[i].color;
+	 if (rgb.r<min.r) min.r=rgb.r;
+	 if (rgb.g<min.g) min.g=rgb.g;
+	 if (rgb.b<min.b) min.b=rgb.b;
+	 if (rgb.r>max.r) max.r=rgb.r;
+	 if (rgb.g>max.g) max.g=rgb.g;
+	 if (rgb.b>max.b) max.b=rgb.b;
+      }
+
+   _image_make_rgb_color(min.r,min.g,min.b);
+   _image_make_rgb_color(max.r,max.g,max.b);
+
+   _image_make_rgb_color(max.r,min.g,min.b);
+   _image_make_rgb_color(min.r,max.g,min.b);
+   _image_make_rgb_color(max.r,max.g,min.b);
+   _image_make_rgb_color(min.r,min.g,max.b);
+   _image_make_rgb_color(max.r,min.g,max.b);
+   _image_make_rgb_color(min.r,max.g,max.b);
+
+   f_aggregate(8);
+
+   if (THIS->type==NCT_CUBE)
+      free(flat.entries);
+}
+
 /***************** global init etc *****************************/
 
 void init_colortable_programs(void)
@@ -4285,6 +4393,7 @@ void init_colortable_programs(void)
 
    /* function(int:object) */
    ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);
+   ADD_FUNCTION("reduce_fs",image_colortable_reduce_fs,tFunc(tInt,tObj),0);
 
    /* operators */
    ADD_FUNCTION("`+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
@@ -4330,6 +4439,8 @@ void init_colortable_programs(void)
    /* tuning image */
    /* function(int,int,int:object) */
    ADD_FUNCTION("spacefactors",image_colortable_spacefactors,tFunc(tInt tInt tInt,tObj),0);
+
+   ADD_FUNCTION("corners",image_colortable_corners,tFunc(,tArray),0);
 
    set_exit_callback(exit_colortable_struct);
   
