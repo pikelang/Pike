@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.3 1997/04/22 03:35:59 hubbe Exp $
+ * $Id: parser.pike,v 1.4 1998/11/12 01:30:43 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.3 1997/04/22 03:35:59 hubbe Exp $
+//. RCSID:	$Id: parser.pike,v 1.4 1998/11/12 01:30:43 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -141,7 +141,7 @@ static private mapping(mixed : multiset(object(rule))) begins = ([]);
 
 
 /* Maps from symbol to which rules use that symbol
- * (used for findling nullable symbols)
+ * (used for finding nullable symbols)
  */
 static private mapping(int : multiset(object(rule))) used_by = ([]);
 
