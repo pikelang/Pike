@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.3 1997/01/01 15:02:06 grubba Exp $
+ * $Id: result.c,v 1.4 1997/01/01 15:48:46 grubba Exp $
  *
  * mysql query result
  *
@@ -269,12 +269,10 @@ static void f_seek(INT32 args)
   pop_n_elems(args);
 }
 
-/* void|array(string|int) fetch_row() */
+/* int|array(string|int) fetch_row() */
 static void f_fetch_row(INT32 args)
 {
-  /* I have no idea how this works.
-   *
-   * Stolen from Mysql.xs
+  /* Based on Mysql.xs
    */
   MYSQL_ROW row = mysql_fetch_row(PIKE_MYSQL_RES->result);
 
@@ -300,6 +298,8 @@ static void f_fetch_row(INT32 args)
       }
     }
     f_aggregate(num_fields);
+  } else {
+    push_int(0);
   }
 }
 
@@ -341,7 +341,7 @@ void init_mysql_res_programs(void)
   add_function("fetch_field", f_fetch_field, "function(void:int|mapping(string:mixed))", OPT_EXTERNAL_DEPEND);
   add_function("fetch_fields", f_fetch_fields, "function(void:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
   add_function("seek", f_seek, "function(int:void)", OPT_SIDE_EFFECT);
-  add_function("fetch_row", f_fetch_row, "function(void:void|array(string|int))", OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  add_function("fetch_row", f_fetch_row, "function(void:int|array(string|int))", OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
