@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.41 2003/12/06 13:31:02 nilsson Exp $
+ * $Id: extract_autodoc.pike,v 1.42 2004/02/19 13:54:12 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -100,6 +100,11 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       root = ({ "predef::" }) + root;
     }
     root_ts = st->mtime;
+  }
+
+  if(!file_stat(srcdir)) {
+    werror("Could not find directory %O.\n", srcdir);
+    return;
   }
 
   foreach(get_dir(srcdir), string fn) {
