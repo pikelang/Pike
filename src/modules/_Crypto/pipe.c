@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.1 1996/11/11 19:24:04 grubba Exp $
+ * $Id: pipe.c,v 1.2 1996/11/13 15:26:51 grubba Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -185,6 +185,7 @@ static void f_set_encrypt_key(INT32 args)
   if (args != PIKE_PIPE->num_objs) {
     error("Wrong number of arguments to pipe->set_encrypt_key()\n");
   }
+  PIKE_PIPE->mode = 0;
   for (i=-args; i; i++) {
     int n_args;
 
@@ -211,6 +212,7 @@ static void f_set_decrypt_key(INT32 args)
   if (args != PIKE_PIPE->num_objs) {
     error("Wrong number of arguments to pipe->set_decrypt_key()\n");
   }
+  PIKE_PIPE->mode = 1;
   for (i=-args; i; i++) {
     int n_args;
 
@@ -243,8 +245,15 @@ static void f_crypt_block(INT32 args)
   if (sp[-1].u.string->len % PIKE_PIPE->block_size) {
     error("Bad length of argument 1 to pipe->crypt_block()\n");
   }
-  for (i=0; i<PIKE_PIPE->num_objs; i++) {
-    safe_apply(PIKE_PIPE->objects[i], "crypt_block", 1);
+  if (PIKE_PIPE->mode) {
+    /* Decryption -- Reverse the order */
+    for (i=PIKE_PIPE->num_objs; i--;) {
+      safe_apply(PIKE_PIPE->objects[i], "crypt_block", 1);
+    }
+  } else {
+    for (i=0; i<PIKE_PIPE->num_objs; i++) {
+      safe_apply(PIKE_PIPE->objects[i], "crypt_block", 1);
+    }
   }
 }
 
