@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.56 2000/02/01 06:25:06 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.57 2000/02/01 23:51:47 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -202,23 +202,71 @@ void really_free_mapping_data(struct mapping_data *md)
 /* This function is used to rehash a mapping without loosing the internal
  * order in each hash chain. This is to prevent mappings from becoming
  * inefficient just after being rehashed.
- * (wonder if this can't be done faster somehow?)
  */
-static void mapping_rehash_backwards(struct mapping *m,
-				     struct keypair *p)
+static void mapping_rehash_backwards_evil(struct mapping_data *md,
+					  struct keypair *from)
 {
   unsigned INT32 h;
   struct keypair *tmp;
+  struct keypair *k;
 
-  if(!p) return;
-  mapping_rehash_backwards(m,p->next);
+  if(!from) return;
+  mapping_rehash_backwards_evil(md,from->next);
 
-  /* We insert without overwriting
-   * however, this could still cause
-   * problems. (for instance if someone does an
-   * m_delete on an element that is not there yet..
-   */
-  low_mapping_insert(m, &p->ind, &p->val,0);
+  /* unlink */
+  k=md->free_list;
+#ifdef PIKE_DEBUG
+  if(!k) fatal("Error in rehash: not enough kehypairs.\n");
+#endif
+  md->free_list=k->next;
+
+  /* initialize */
+  *k=*from;
+
+  /* link */
+  h=k->hval;
+  h%=md->hashsize;
+  k->next=md->hash[h];
+  md->hash[h]=k;
+
+  /* update */
+  md->ind_types |= 1<< (k->ind.type);
+  md->val_types |= 1<< (k->val.type);
+  md->size++;
+}
+
+static void mapping_rehash_backwards_good(struct mapping_data *md,
+					  struct keypair *from)
+{
+  unsigned INT32 h;
+  struct keypair *tmp;
+  struct keypair *k;
+
+  if(!from) return;
+  mapping_rehash_backwards_good(md,from->next);
+
+  /* unlink */
+  k=md->free_list;
+#ifdef PIKE_DEBUG
+  if(!k) fatal("Error in rehash: not enough kehypairs.\n");
+#endif
+  md->free_list=k->next;
+
+  /* initialize */
+  k->hval=from->hval;
+  assign_svalue_no_free(&k->ind, &from->ind);
+  assign_svalue_no_free(&k->val, &from->val);
+
+  /* link */
+  h=k->hval;
+  h%=md->hashsize;
+  k->next=md->hash[h];
+  md->hash[h]=k;
+
+  /* update */
+  md->ind_types |= 1<< (k->ind.type);
+  md->val_types |= 1<< (k->val.type);
+  md->size++;
 }
 
 /* This function re-allocates a mapping. It adjusts the max no. of
@@ -227,7 +275,7 @@ static void mapping_rehash_backwards(struct mapping *m,
  */
 static struct mapping *rehash(struct mapping *m, int new_size)
 {
-  struct mapping_data *md;
+  struct mapping_data *md, *new_md;
 #ifdef PIKE_DEBUG
   INT32 tmp=m->data->size;
 #endif
@@ -243,23 +291,29 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 
   init_mapping(m, new_size);
   debug_malloc_touch(m);
+  new_md=m->data;
 
-  /* No need to do add_ref(md) because the ref
-   * from 'm' is not freed yet
-   */
-  md->valrefs++;
+  /* This operation is now 100% atomic - no locking required */
+  if(md->refs>1)
+  {
+    /* good */
+    for(e=0;e<md->hashsize;e++)
+      mapping_rehash_backwards_good(new_md, md->hash[e]);
 
-  for(e=0;e<md->hashsize;e++)
-    mapping_rehash_backwards(m, md->hash[e]);
+    if(md->hardlinks) md->hardlinks--;
+    free_mapping_data(md);
+  }else{
+    /* evil */
+    for(e=0;e<md->hashsize;e++)
+      mapping_rehash_backwards_evil(new_md, md->hash[e]);
 
-  md->valrefs--;
+    free((char *)md);
+  }
 
 #ifdef PIKE_DEBUG
   if(m->data->size != tmp)
     fatal("Rehash failed, size not same any more.\n");
 #endif
-    
-  free_mapping_data(md);
 
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
@@ -328,7 +382,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
     {								\
       for(prev= md->hash + h;(k=*prev);prev=&k->next)		\
       {								\
-	if(FUN(& k->ind, KEY))				        \
+	if(h2 == k->hval && FUN(& k->ind, KEY))		        \
 	{							\
 	  FOUND;						\
 	}							\
@@ -351,7 +405,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
       k2=omd->hash[h2 % md->hashsize];			        \
       prev= md->hash + h;					\
       for(;(k=*prev) && k2;(prev=&k->next),(k2=k2->next))	\
-        if(!is_identical(&k2->ind, &k->ind))			\
+        if(!(h2 == k->hval && is_identical(&k2->ind, &k->ind)))	\
            break;						\
       for(;(k=*prev);prev=&k->next)				\
       {								\
@@ -553,6 +607,7 @@ void low_mapping_insert(struct mapping *m,
   md->val_types |= 1 << val->type;
   assign_svalue_no_free(& k->ind, key);
   assign_svalue_no_free(& k->val, val);
+  k->hval = h2;
   md->size++;
 
 #ifdef PIKE_DEBUG
@@ -657,6 +712,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   k->val.type=T_INT;
   k->val.subtype=NUMBER_NUMBER;
   k->val.u.integer=0;
+  k->hval = h2;
   md->ind_types |= 1 << key->type;
   md->val_types |= BIT_INT;
   md->size++;
@@ -1607,7 +1663,6 @@ void check_mapping(struct mapping *m)
   if(m->refs <=0)
     fatal("Mapping has zero refs.\n");
 
-
   if(!m->data)
     fatal("Mapping has no data block.\n");
 
@@ -1672,6 +1727,11 @@ void check_mapping(struct mapping *m)
 
       check_svalue(& k->ind);
       check_svalue(& k->val);
+
+      /* FIXME add check for k->hval
+       * beware that hash_svalue may be threaded and locking
+       * is required!!
+       */
     }
   
   if(md->size != num)
