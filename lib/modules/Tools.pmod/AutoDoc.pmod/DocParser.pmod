@@ -66,6 +66,8 @@ mapping(string : int) keywordtype =
   "mapping" : CONTAINERKEYWORD, "member" : DELIMITERKEYWORD,
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
   "array" : CONTAINERKEYWORD, "elem" : DELIMITERKEYWORD,
+  "int" : CONTAINERKEYWORD, "value" : DELIMITERKEYWORD,
+  "mixed" : CONTAINERKEYWORD, "type" : DELIMITERKEYWORD,
 
   "dl" : CONTAINERKEYWORD, "item" : DELIMITERKEYWORD,
 ]);
@@ -77,6 +79,8 @@ mapping(string : array(string)) attributenames =
   "mapping" : ({ "name" }),
   "array" : ({ "name" }),
   "multiset" : ({ "name" }),
+  "int" : ({ "name" }),
+  "mixed" : ({ "name" }),
 ]);
 
 static constant standard = (< "note", "example", "seealso", "deprecated" >);
@@ -92,6 +96,8 @@ mapping(string : multiset(string)) allowedChildren =
   "mapping" : (< "member" >),
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
+  "int"     : (< "value" >),
+  "mixed"   : (< "type" >),
   "dl"      : (< "item" >),
 ]);
 
@@ -116,6 +122,7 @@ mapping(string : function(string, string : string)
   "index" : indexArgHandler,
   "deprecated" : deprArgHandler,
   "section" : sectionArgHandler,
+  "type" : typeArgHandler,
 ]);
 
 static string memberArgHandler(string keyword, string arg) {
@@ -194,6 +201,18 @@ static string deprArgHandler(string keyword, string arg) {
 
 static mapping(string : string) sectionArgHandler(string keyword, string arg) {
   return ([ "name" : arg ]);
+}
+
+static string typeArgHandler(string keyword, string arg) {
+  //  werror("This is the @type arg handler ");
+  .PikeParser parser = .PikeParser(arg);
+  //  werror("&&& %O\n", arg);
+  Type t = parser->parseOrType();
+  if (!t)
+    parseError("@member: expected type, got %O", arg);
+  //  werror("%%%%%% got type == %O\n", t->xml());
+  parser->eat(EOF);
+  return xmltag("type", t->xml());
 }
 
 static mapping(string : string) standardArgHandler(string keyword, string arg)
