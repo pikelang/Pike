@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.216 2002/08/15 15:51:45 per Exp $
+// $Id: master.pike.in,v 1.217 2002/09/05 15:26:15 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -1576,7 +1576,7 @@ void _main(array(string) orig_argv, array(string) env)
   object tmp;
   string a,b;
   array q;
-  string postparseaction=0;
+  string postparseaction=0, run_tool=0;
   mixed v;
 
   predefines = _static_modules.Builtin()->_take_over_initial_predefines();
@@ -1661,6 +1661,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
       ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatplr",0,1}),
       ({"ignore",tmp->HAS_ARG,"-s"}),
+      ({"run_tool",tmp->HAS_ARG,"-x"}),
     }), 1);
     
     /* Parse -M and -I backwards */
@@ -1749,6 +1750,10 @@ void _main(array(string) orig_argv, array(string) env)
 
       case "master":
 	_master_file_name = q[i][1];
+	break;
+
+      case "run_tool":
+	run_tool = q[i][1];
 	break;
       }
     }
@@ -1847,7 +1852,9 @@ void _main(array(string) orig_argv, array(string) env)
 
   random_seed(time() ^ (getpid()<<8));
 
-  if(sizeof(argv)==1)
+  if(run_tool)
+    ;
+  else if(sizeof(argv)==1)
   {
     main_resolv( ({ "Tools", "Hilfe" }) )->StdinHilfe();
     exit(0);
@@ -1855,16 +1862,30 @@ void _main(array(string) orig_argv, array(string) env)
   else
     argv=argv[1..];
 
-  argv[0]=combine_path_with_cwd(argv[0]);
-
   program prog;
-  mixed err = catch {
-    prog=(program)argv[0];
-  };
 
-  if (err)
-    _error( "Pike: Failed to compile script:\n"
-	    "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
+  if(run_tool) {
+    mixed err = catch {
+      prog=main_resolv( ({ "Tools", "Standalone", run_tool }) );
+    };
+
+    if (err)
+      _error( "Pike: Failed to load tool %s:\n"
+	      "%s\n", run_tool,
+	      stringp(err[0])?err[0]:describe_backtrace(err) );
+
+    argv[0] = search(master()->programs, prog) || run_tool;
+  } else {
+    argv[0]=combine_path_with_cwd(argv[0]);
+
+    mixed err = catch {
+      prog=(program)argv[0];
+    };
+
+    if (err)
+      _error( "Pike: Failed to compile script:\n"
+	      "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
+  }
 
   if(!prog)
     _error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
