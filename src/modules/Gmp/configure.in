@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.31 2003/02/25 08:15:03 mirar Exp $
+# $Id: configure.in,v 1.32 2003/02/26 00:16:18 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 
       AC_MSG_CHECKING([gmp version...])
 dnl figure out version; not necessary, but pretty
-      rm config.gmpversion
+      rm config.gmpversion 2>/dev/null
       AC_TRY_RUN([
 #include <gmp.h>
 #include <stdio.h>
