@@ -7,10 +7,6 @@
 #include "gmp_machine.h"
 #include "types.h"
 
-#ifndef HAVE_NEW_GMP
-#undef HAVE_GMP_H
-#endif
-
 #ifdef HAVE_GMP_H
 
 #include "interpret.h"
@@ -25,12 +21,13 @@
 
 #include <gmp.h>
 
-#define THIS (*(mpz_t *)(fp->current_storage))
-#define OBTOMPZ(o) (*(mpz_t *)(o->storage))
+
+#define THIS (*(MP_INT **)(fp->current_storage))
+#define OBTOMPZ(o) (*(MP_INT **)(o->storage))
 
 static struct program *mpzmod_program;
 
-static void get_new_mpz(mpz_t tmp, struct svalue *s)
+static void get_new_mpz(MP_INT *tmp, struct svalue *s)
 {
   switch(s->type)
   {
@@ -392,7 +389,7 @@ void init_gmpmod_programs(void)
 {
 #ifdef HAVE_GMP_H
   start_new_program();
-  add_storage(sizeof(mpz_t));
+  add_storage(sizeof(MP_INT *));
   
   add_function("create",mpzmod_create,"function(void|string|int|float|object:void)",0);
 

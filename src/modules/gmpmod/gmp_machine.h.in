@@ -4,7 +4,4 @@
 /* Define this if you have <gmp.h> */
 #undef HAVE_GMP_H
 
-/* Define this if your gmp is version 2.0 or newer */
-#undef HAVE_NEW_GMP
-
 #endif
