@@ -1,11 +1,11 @@
-# $Id: Makefile.in,v 1.35 2003/04/08 17:05:49 nilsson Exp $
+# $Id: Makefile.in,v 1.36 2003/04/09 09:01:11 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image_module.o \
 	image.o font.o matrix.o blit.o pattern.o dct.o \
         operator.o colortable.o polyfill.o \
-	orient.o colors.o search.o layers.o default_font.o \
-	@ASSEMBLY_OBJECTS@
+	orient.o colors.o search.o layers.o
+	default_font.o @ASSEMBLY_OBJECTS@
 MODNAME=image
 MODULE_SUBDIRS=encodings
 MODULE_ARCHIVES=encodings/encodings.a
