@@ -645,14 +645,14 @@ class Connection {
    {
      string pattern;
      int bufferposition;
-     inputbuffer += replace(data, "\r\n", "\n");
+     inputbuffer += data;
      int sizeofdata = sizeof(data);
      // optimization : don't search all the data, only the last one
      int searchpos = sizeof(inputbuffer) - sizeofpreviousdata-sizeofdata;
      sizeofpreviousdata = sizeofdata;
      if(searchpos < 0)
        searchpos = 0;
-     datamode ? (pattern = "\n.\n"):(pattern = "\n");
+     datamode ? (pattern = "\r\n.\r\n"):(pattern = "\r\n");
      bufferposition = search(inputbuffer, pattern, searchpos);
      while(bufferposition != -1)
      {
@@ -669,13 +669,13 @@ class Connection {
            destruct(this);
            return;
          }
-         pattern = "\n";
+         pattern = "\r\n";
        }
        if(datamode)
        {
-         if(pattern=="\n.\n")
+         if(pattern=="\r\n.\r\n")
            message(inputbuffer[..end+1]);
-         pattern = "\n.\n";
+         pattern = "\r\n.\r\n";
        }
        // end of buffer detection
        if(bufferposition + sizeof(pattern) >= sizeof(inputbuffer))
