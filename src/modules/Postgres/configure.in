@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.20 2003/04/28 12:24:26 grubba Exp $
+dnl $Id: configure.in,v 1.21 2003/04/29 08:08:31 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -101,7 +101,7 @@ dnl check whether we have Postgres 7.2 or newer
   fi
   
   echo "Have Postgres 7.2? $HAVE_PG72"
-  if test "x$ac_cv_header_libpq_fe_h" = xno -o
+  if test "x$ac_cv_header_libpq_fe_h" = xno -o \
 	  "x$HAVE_PG72$ac_cv_header_postgres_h$ac_cv_header_postgres_fe_h$ac_cv_header_server_postgres_h$ac_cv_header_server_postgres_fe_h" = xnonononono ; then
     ac_pike_postgres_skip=yes
   fi
