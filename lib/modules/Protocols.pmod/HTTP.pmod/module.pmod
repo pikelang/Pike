@@ -60,6 +60,12 @@ constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Support
 constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
 constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 
+//! @decl Protcols.HTTP.Query do_method(string method,@
+//!   string|Standards.URI url, void|mapping query_variables,@
+//!   void|mapping request_headers, void|Protocols.HTTP.Query con,@
+//!   void|string data)
+//!
+//! Low level HTTP call method.
 object do_method(string method,
 		 string|Standards.URI url,
 		 void|mapping query_variables,
