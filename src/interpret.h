@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.114 2002/10/12 11:53:47 grubba Exp $
+|| $Id: interpret.h,v 1.115 2002/11/14 21:28:52 marcus Exp $
 */
 
 #ifndef INTERPRET_H
@@ -396,7 +396,7 @@ PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
 PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_errors);
-PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args);
+PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args);
 PMOD_EXPORT int low_unsafe_apply_handler(const char *fun,
 					 struct object *handler,
 					 struct object *compat,
@@ -414,7 +414,7 @@ PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args);
 PMOD_EXPORT void apply_shared(struct object *o,
 		  struct pike_string *fun,
 		  int args);
-PMOD_EXPORT void apply(struct object *o, char *fun, int args);
+PMOD_EXPORT void apply(struct object *o, const char *fun, int args);
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
 PMOD_EXPORT void slow_check_stack(void);
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)

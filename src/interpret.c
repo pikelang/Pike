@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.279 2002/11/11 13:13:09 grubba Exp $
+|| $Id: interpret.c,v 1.280 2002/11/14 21:28:52 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.279 2002/11/11 13:13:09 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.280 2002/11/14 21:28:52 marcus Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1696,7 +1696,7 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
   safe_apply_low2(o, fun, args, 1);
 }
 
-PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args)
+PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args)
 {
 #ifdef PIKE_DEBUG
   if(!o->prog) Pike_fatal("Apply safe on destructed object.\n");
@@ -1831,7 +1831,7 @@ PMOD_EXPORT void apply_shared(struct object *o,
   apply_low(o, find_shared_string_identifier(fun, o->prog), args);
 }
 
-PMOD_EXPORT void apply(struct object *o, char *fun, int args)
+PMOD_EXPORT void apply(struct object *o, const char *fun, int args)
 {
   apply_low(o, find_identifier(fun, o->prog), args);
 }
