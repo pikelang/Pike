@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.479 2001/06/19 22:49:18 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.480 2001/06/29 13:41:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1121,7 +1121,7 @@ if test "$cflags_is_set" = "no"; then
   DO_IF_OS(AIX,
   [
     # This one is needed to get the compiler to fail on errors,
-    # which is needed for several configure-scripts.
+    # which is needed for several configure-tests.
     AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
     AC_SYS_COMPILER_FLAG(-qro,qro,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(-qfold,qfold,OPTIMIZE)
@@ -1304,6 +1304,15 @@ esac
   esac
  fi
  fi
+else
+  # CFLAGS has already been set by the user.
+  # Avoid adding anything that isn't essential.
+  DO_IF_OS(AIX,
+  [
+    # This one is needed to get the compiler to fail on errors,
+    # which is needed for several configure-tests.
+    AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
+  ])
 fi
 
 
