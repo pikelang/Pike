@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.75 2000/04/25 15:07:14 marcus Exp $");
+RCSID("$Id: mpz_glue.c,v 1.76 2000/04/25 23:30:39 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1315,7 +1315,7 @@ static void mpzmod_popcount(INT32 args)
     push_int(0);
     break;
   case -1:
-    push_int(-mpn_popcount(THIS->_mp_d, THIS->_mp_size));
+    push_int(-1);
     break;
   case 1:
     push_int(mpn_popcount(THIS->_mp_d, THIS->_mp_size));
