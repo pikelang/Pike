@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: idea.c,v 1.4 2003/12/06 16:17:34 nilsson Exp $
+|| $Id: idea.c,v 1.5 2004/01/23 01:05:06 nilsson Exp $
 */
 
 /* The basic IDEA transformation
@@ -273,5 +273,6 @@ void idea_crypt_blocks(struct idea_ctx *ctx, int len,
 {
   ptrdiff_t i;
   for( i=0 ; i<len ; i+=IDEA_BLOCK_SIZE )
-    idea_crypt(ctx->ctx, (unsigned INT8 *)to+i, (unsigned INT8 *)from+i);
+    idea_crypt((const unsigned INT16 *)ctx->ctx,
+	       (unsigned INT8 *)to+i, (unsigned INT8 *)from+i);
 }

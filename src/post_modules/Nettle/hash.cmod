@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.14 2003/11/29 00:11:39 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.15 2004/01/23 01:05:06 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -163,7 +163,7 @@ PIKECLASS HashState
 	    Pike_error("Bad argument type.\n");
 	  if (arg->u.integer < 0)
 	    Pike_error("Invalid length, must be positive.\n");
-	  if (arg->u.integer > meta->digest_size)
+	  if ((unsigned)arg->u.integer > meta->digest_size)
 	    Pike_error("Unsupported digest length.\n");
 
 	  length = arg->u.integer;

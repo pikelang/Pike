@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.27 2004/01/22 23:10:00 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.28 2004/01/23 01:05:06 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -149,7 +149,7 @@ PIKECLASS Yarrow
     NO_WIDE_STRING(data);
     if( !THIS->sources )
       Pike_error("This random generator has no sources.\n");
-    if( source<0 || source>=THIS->ctx.nsources )
+    if( source<0 || (unsigned)source>=THIS->ctx.nsources )
       Pike_error("Invalid random source.\n");
     if( entropy<0 )
       Pike_error("Entropy must be positive.\n");
@@ -221,7 +221,7 @@ static const char *crypto_functions[] = {
   0
 };
 
-static char * assert_is_crypto_object(struct program *p,
+static const char * assert_is_crypto_object(struct program *p,
 				    const char **required) {
   while (*required) {
     if (find_identifier( (char *) *required, p) < 0)
@@ -233,7 +233,7 @@ static char * assert_is_crypto_object(struct program *p,
 
 static struct object *make_cipher_object(INT32 args) {
   ptrdiff_t fun;
-  char *missing;
+  const char *missing;
   struct svalue *top = Pike_sp-args;
   struct object *obj;
 
