@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.2 1997/02/27 11:54:00 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.3 1997/03/10 10:42:28 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -64,38 +64,38 @@ static void get_mpz_from_digits(MP_INT *tmp,
 static void get_new_mpz(MP_INT *tmp, struct svalue *s)
 {
   switch(s->type)
-    {
-    case T_INT:
-      mpz_set_si(tmp, (signed long int) s->u.integer);
-      break;
+  {
+  case T_INT:
+    mpz_set_si(tmp, (signed long int) s->u.integer);
+    break;
     
-    case T_FLOAT:
-      mpz_set_d(tmp, (double) s->u.float_number);
-      break;
+  case T_FLOAT:
+    mpz_set_d(tmp, (double) s->u.float_number);
+    break;
 
-    case T_OBJECT:
-      if(s->u.object->prog != mpzmod_program)
-	error("Wrong type of object, cannot convert to mpz.\n");
+  case T_OBJECT:
+    if(s->u.object->prog != mpzmod_program)
+      error("Wrong type of object, cannot convert to mpz.\n");
 
-      mpz_set(tmp, OBTOMPZ(s->u.object));
-      break;
+    mpz_set(tmp, OBTOMPZ(s->u.object));
+    break;
 #if 0    
-    case T_STRING:
-      mpz_set_str(tmp, s->u.string->str, 0);
-      break;
+  case T_STRING:
+    mpz_set_str(tmp, s->u.string->str, 0);
+    break;
 
-    case T_ARRAY:   /* Experimental */
-      if ( (s->u.array->size != 2)
-	   || (ITEM(s->u.array)[0].type != T_STRING)
-	   || (ITEM(s->u.array)[1].type != T_INT))
-	error("cannot convert array to mpz.\n");
-      get_mpz_from_digits(tmp, ITEM(s->u.array)[0].u.string,
-			  ITEM(s->u.array)[1]);
-      break;
+  case T_ARRAY:   /* Experimental */
+    if ( (s->u.array->size != 2)
+	 || (ITEM(s->u.array)[0].type != T_STRING)
+	 || (ITEM(s->u.array)[1].type != T_INT))
+      error("cannot convert array to mpz.\n");
+    get_mpz_from_digits(tmp, ITEM(s->u.array)[0].u.string,
+			ITEM(s->u.array)[1]);
+    break;
 #endif
-    default:
-      error("cannot convert argument to mpz.\n");
-    }
+  default:
+    error("cannot convert argument to mpz.\n");
+  }
 }
 
 static void mpzmod_create(INT32 args)
@@ -270,6 +270,7 @@ static void mpzmod_cast(INT32 args)
     if(!strcmp(sp[-args].u.string->str, "object"))
     {
       pop_n_elems(args);
+      this_object()->refs++;
       push_object(this_object());
     }
     break;
@@ -278,6 +279,7 @@ static void mpzmod_cast(INT32 args)
     if(!strcmp(sp[-args].u.string->str, "mixed"))
     {
       pop_n_elems(args);
+      this_object()->refs++;
       push_object(this_object());
     }
     break;
@@ -287,6 +289,7 @@ static void mpzmod_cast(INT32 args)
   error("mpz->cast() to other type than string, int or float.\n");
 }
 
+/* Converts an svalue, located on the stack, to an mpz object */
 static MP_INT *get_mpz(struct svalue *s)
 {
   struct object *o;
@@ -317,6 +320,8 @@ static MP_INT *get_mpz(struct svalue *s)
   }
 }
 
+/* Non-reentrant */
+#if 0
 /* These two functions are here so we can allocate temporary
  * objects without having to worry about them leaking in
  * case of errors..
@@ -336,16 +341,18 @@ static void return_temporary(INT32 args)
   push_object(temporary);
   temporary=0;
 }
+#endif
 
 #define BINFUN(name, fun)				\
 static void name(INT32 args)				\
 {							\
   INT32 e;						\
-  MP_INT *tmp=get_tmp();				\
-  mpz_set(tmp, THIS);					\
+  struct object *res = clone(mpzmod_program, 0);	\
+  mpz_set(OBTOMPZ(res), THIS);				\
   for(e=0;e<args;e++)					\
-    fun(tmp, tmp, get_mpz(sp+e-args));			\
-  return_temporary(args);				\
+    fun(OBTOMPZ(res), OBTOMPZ(res), get_mpz(sp+e-args));\
+  pop_n_elems(args);					\
+  push_object(res);					\
 }
 
 BINFUN(mpzmod_add,mpz_add)
@@ -355,52 +362,58 @@ BINFUN(mpzmod_gcd,mpz_gcd)
 static void mpzmod_sub(INT32 args)
 {
   INT32 e;
-  MP_INT *tmp=get_tmp();
-  mpz_set(tmp, THIS);
+  struct object *res = clone(mpzmod_program, 0);
+  mpz_set(OBTOMPZ(res), THIS);
 
   if(args)
   {
     for(e=0;e<args;e++)
-      mpz_sub(tmp, tmp, get_mpz(sp+e-args));
+      mpz_sub(OBTOMPZ(res), OBTOMPZ(res), get_mpz(sp+e-args));
   }else{
-    mpz_neg(tmp, tmp);
+    mpz_neg(OBTOMPZ(res), OBTOMPZ(res));
   }
-
-  return_temporary(args);
+  pop_n_elems(args);
+  push_object(res);
 }
 
 static void mpzmod_div(INT32 args)
 {
   INT32 e;
-  MP_INT *tmp=get_tmp();
-  mpz_set(tmp, THIS);
 
+  struct object *res = clone(mpzmod_program, 0);
+  mpz_set(OBTOMPZ(res), THIS);
+  
   for(e=0;e<args;e++)
   {
-    MP_INT *tmp2;
-    tmp2=get_mpz(sp+e-args);
-    if(!mpz_sgn(tmp2))
+    MP_INT *tmp;
+    tmp=get_mpz(sp+e-args);
+    if(!mpz_sgn(tmp))
+    {
+      really_free_object(res);
       error("Division by zero.\n");
-    mpz_tdiv_q(tmp, tmp, tmp2);
+    }
+    mpz_tdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
   }
-  return_temporary(args);
+  pop_n_elems(args);
+  push_object(res);
 }
 
 static void mpzmod_mod(INT32 args)
 {
   INT32 e;
-  MP_INT *tmp=get_tmp();
-  mpz_set(tmp, THIS);
+  struct object *res = clone(mpzmod_program, 0);
+  mpz_set(OBTOMPZ(res), THIS);
 
   for(e=0;e<args;e++)
   {
-    MP_INT *tmp2;
-    tmp2=get_mpz(sp+e-args);
-    if(!mpz_sgn(tmp2))
+    MP_INT *tmp;
+    tmp=get_mpz(sp+e-args);
+    if(!mpz_sgn(tmp))
       error("Modulo by zero.\n");
-    mpz_tdiv_r(tmp, tmp, tmp2);
+    mpz_tdiv_r(OBTOMPZ(res), OBTOMPZ(res), tmp);
   }
-  return_temporary(args);
+  pop_n_elems(args);
+  push_object(res);
 }
 
 static void mpzmod_gcdext(INT32 args)
@@ -408,7 +421,10 @@ static void mpzmod_gcdext(INT32 args)
   struct object *g, *s, *t;
   MP_INT *a;
 
-  a = get_mpz(sp-args);
+  if (args != 1)
+    error("Gmp.mpz->gcdext: Wrong number of arguments.\n");
+
+  a = get_mpz(sp-1);
   
   g = clone(mpzmod_program, 0);
   s = clone(mpzmod_program, 0);
@@ -425,6 +441,9 @@ static void mpzmod_gcdext2(INT32 args)
   struct object *g, *s;
   MP_INT *a;
 
+  if (args != 1)
+    error("Gmp.mpz->gcdext: Wrong number of arguments.\n");
+
   a = get_mpz(sp-args);
   
   g = clone(mpzmod_program, 0);
@@ -439,15 +458,19 @@ static void mpzmod_gcdext2(INT32 args)
 static void mpzmod_invert(INT32 args)
 {
   MP_INT *modulo;
-  MP_INT *tmp;
+  struct object *res;
   
   modulo = get_mpz(sp-args);
   if (!mpz_sgn(modulo))
     error("divide by zero");
-  tmp = get_tmp();
-  if (mpz_invert(tmp, THIS, modulo) == 0)
+  res = clone(mpzmod_program, 0);
+  if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
+  {
+    really_free_object(res);
     error("not invertible");
-  return_temporary(args);
+  }
+  pop_n_elems(args);
+  push_object(res);
 }
 
 BINFUN(mpzmod_and,mpz_and)
@@ -522,41 +545,51 @@ static void mpzmod_sqrtrem(INT32 args)
 
 static void mpzmod_lsh(INT32 args)
 {
-  MP_INT *tmp;
-  pop_n_elems(args-1);
+  struct object *res;
+  if (args != 1)
+    error("Wrong number of arguments to Gmp.mpz->rsh.\n");
   push_string(int_type_string);
   int_type_string->refs++;
   f_cast(2);
-  tmp=get_tmp();
   if(sp[-1].u.integer < 0)
     error("mpz->lsh on negative number.\n");
-  mpz_mul_2exp(tmp, THIS, sp[-1].u.integer);
-  return_temporary(1);
+  res = clone(mpzmod_program, 0);
+  mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  pop_n_elems(args);
+  push_object(res);
 }
 
 static void mpzmod_rsh(INT32 args)
 {
-  MP_INT *tmp;
-  pop_n_elems(args-1);
+  struct object *res;
+  if (args != 1)
+    error("Wrong number of arguments to Gmp.mpz->rsh.\n");
   push_string(int_type_string);
   int_type_string->refs++;
   f_cast(2);
-  tmp=get_tmp();
-  mpz_set_ui(tmp,1);
-  mpz_mul_2exp(tmp, tmp, sp[-1].u.integer);
-  mpz_tdiv_q(tmp, THIS, tmp);
-  return_temporary(1);
+  if (sp[-1].u.integer < 0)
+    error("Gmp.mpz->rsh: Shift count must be positive.\n");
+  res = clone(mpzmod_program, 0);
+  mpz_tdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  pop_n_elems(args);
+  push_object(res);
 }
 
 static void mpzmod_powm(INT32 args)
 {
-  MP_INT *tmp;
-  if(args < 2)
-    error("Too few arguments to mpzmod->powm()\n");
+  struct object *res;
+  MP_INT *n;
+  
+  if(args != 2)
+    error("Wrong number of arguments to Gmp.mpz->powm()\n");
 
-  tmp=get_tmp();
-  mpz_powm(tmp, THIS, get_mpz(sp-args), get_mpz(sp+1-args));
-  return_temporary(args);
+  n = get_mpz(sp - 1);
+  if (!mpz_sgn(n))
+    error("Gmp.mpz->powm: Divide by zero\n");
+  res = clone(mpzmod_program, 0);
+  mpz_powm(OBTOMPZ(res), THIS, get_mpz(sp - 2), n);
+  pop_n_elems(args);
+  push_object(res);
 }
 
 static void mpzmod_not(INT32 args)
@@ -579,7 +612,6 @@ static void exit_mpz_glue(struct object *o)
 void pike_module_exit(void)
 {
 #ifdef HAVE_GMP_H
-  if(temporary) free_object(temporary);
   free_program(mpzmod_program);
 #endif
 }
@@ -651,14 +683,14 @@ void pike_module_init(void)
   add_function("divmod", mpzmod_divmod, "function(" MPZ_ARG_TYPE ":array(object))", 0);
   add_function("pow", mpzmod_pow, "function(int:object)", 0);
   add_function("divm", mpzmod_divm, "function(string|int|float|object, string|int|float|object:object)", 0);
-  add_efun("mpz_pow", mpz_pow, "function(int, int)", 0);
-  add_efun("mpz_fac", mpz_fac, "function(int|object:object)", 0);
+  add_function("mpz_pow", mpz_pow, "function(int, int)", 0);
+  add_function("mpz_fac", mpz_fac, "function(int|object:object)", 0);
 #endif
   set_init_callback(init_mpz_glue);
   set_exit_callback(exit_mpz_glue);
 
-  mpzmod_program=end_program();
-  add_program_constant("mpz",mpzmod_program,0);
+  add_program_constant("mpz", mpzmod_program=end_program(), 0);
+
 #endif
 }
 
