@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.240 2002/03/04 16:02:35 mast Exp $");
+RCSID("$Id: las.c,v 1.241 2002/11/18 19:21:39 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1757,6 +1757,12 @@ node *debug_mkconstantsvaluenode(struct svalue *s)
   node *res = mkemptynode();
   res->token = F_CONSTANT;
   assign_svalue_no_free(& res->u.sval, s);
+#ifdef SHARED_NODES
+  if (s->type != T_INT && s->type != T_STRING && s->type != T_FUNCTION)
+    /* The subtype is part of the hash, so make sure it got a defined
+     * value here. */
+    res->u.sval.subtype = 0;
+#endif
   if(s->type == T_OBJECT ||
      (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
   {
