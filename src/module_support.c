@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.25 1999/04/25 21:16:36 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.26 1999/09/06 11:13:18 hubbe Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -257,9 +257,21 @@ int va_get_args(struct svalue *s,
         return ret;
       break;
     case 'p':
-      if(s->type != T_PROGRAM) return ret;
-      *va_arg(ap, struct program **)=s->u.program;
+      switch(s->type)
+      {
+	case T_PROGRAM:
+	  *va_arg(ap, struct program **)=s->u.program;
+	  break;
+
+	case T_FUNCTION:
+	  if((*va_arg(ap, struct program **)=program_from_svalue(s)))
+	    break;
+
+	default:
+	  return;
+      }
       break;
+
     case '*':
       *va_arg(ap, struct svalue **)=s;
       break;

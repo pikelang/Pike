@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.191 1999/08/20 06:04:01 mast Exp $"]])
+test_true([["$Id: testsuite.in,v 1.192 1999/09/06 11:13:22 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -151,6 +151,14 @@ test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 
+test_compile_error_low([[
+ mixed foo;
+ mapping query_variables() { return ([]); };
+ mixed foo(mixed bar) { return 1/foo; }
+]])
+
+
+
 test_compile([[int x=(gauge { return; },1);]])
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -235,6 +243,97 @@ test_any([[
   object d = D();
   return d->a + d->b + d->c;
 ]], 7)
+
+test_compile_error_low([[
+  class AScope
+  {
+     int gurka;
+     class A
+     {
+  	int func() { return gurka; }
+     }
+  }
+  
+  class CScope
+  {
+     string hohum;
+     class C
+     {
+  	inherit AScope.A;
+     }
+  }
+
+]])
+
+
+test_any([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit C; };
+ return Program.inherits(D,A);
+]],1)
+
+test_any([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit C; };
+ return Program.inherits(A,D);
+]],0)
+
+test_any([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit C; };
+ return Program.inherits(A,C);
+]],0)
+
+test_any([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit C; };
+ return Program.inherits(C,A);
+]],1)
+
+test_any_equal([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit C; };
+ return Program.inherit_list(D);
+]],[[ ({ C }) ]] )
+
+test_any_equal([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit A; inherit B; inherit C; };
+ return Program.inherit_list(D);
+]],[[ ({ A,B,C }) ]])
+
+test_any_equal([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit C; };
+ return Program.inherit_tree(D);
+]],[[  ({D, ({C, ({B, ({A})})})}) ]])
+
+test_any([[
+ class A {};
+ class B { inherit A; };
+ class C { inherit B; };
+ class D { inherit C; };
+ return sizeof( Program.all_inherits(D) - ({A,B,C}) );
+]],0)
+
+test_true([[Program.implements( class { int x; string y; void foo(int x) {} },
+	class { void foo(mixed z) {} int x; })]])
+test_false([[Program.implements( class { int x; string y; void foo(int x) {} },
+	class { void foo(mixed z) {} string x; })]])
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
@@ -1941,6 +2040,9 @@ test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X
 test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
 
 test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
+
+test_compile_any([[import Stdio.Readline; mapping x=([]);]]);
+
 test_any([[
 #include "conftest.h"
 ]],17)

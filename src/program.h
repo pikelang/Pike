@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.55 1999/08/20 05:08:26 hubbe Exp $
+ * $Id: program.h,v 1.56 1999/09/06 11:13:21 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -120,6 +120,7 @@ union idptr
 #define IDENTIFIER_PROTOTYPED 16
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
+#define IDENTIFIER_IS_PIKE_FUNCTION(X) ((X) & IDENTIFIER_PIKE_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
 #define IDENTIFIER_IS_VARIABLE(X) (!((X) & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
 
@@ -195,9 +196,11 @@ struct inherit
 /* Self explanatory, automatically detected */
 #define PROGRAM_HAS_C_METHODS 32
 
-
 /* All non-static functions are inlinable */
 #define PROGRAM_CONSTANT 64
+
+/* */
+#define PROGRAM_USES_PARENT 128
 
 struct program
 {

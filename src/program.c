@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.133 1999/08/20 05:08:25 hubbe Exp $");
+RCSID("$Id: program.c,v 1.134 1999/09/06 11:13:19 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1227,12 +1227,24 @@ void low_inherit(struct program *p,
   struct inherit inherit;
   struct pike_string *s;
 
-  
   if(!p)
   {
     yyerror("Illegal program pointer.");
     return;
   }
+
+  if(p->flags & PROGRAM_USES_PARENT)
+  {
+    if(!parent && !parent_offset)
+    {
+      yyerror("Parent pointer lost, cannot inherit!");
+      /* We inherit it anyways, to avoid causing more errors */
+    }
+  }
+
+ /* parent offset was increased by one for above test.. */
+  parent_offset--;
+
 
   if(!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
   {
@@ -1424,7 +1436,7 @@ void compiler_do_inherit(node *n,
       low_inherit(p,
 		  0,
 		  numid,
-		  n->u.integer.a,
+		  n->u.integer.a+1,
 		  flags,
 		  name);
       break;
@@ -1574,11 +1586,15 @@ int define_variable(struct pike_string *name,
 
   if(n != -1)
   {
+    /* not inherited */
+    if(new_program->identifier_references[n].inherit_offset == 0) 
+    {
+      my_yyerror("Identifier '%s' defined twice.",name->str);
+      return n;
+    }
+
     if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask/final' variable/functions \"%s\"", name->str);
-
-    if(PROG_FROM_INT(new_program, n) == new_program)
-      my_yyerror("Variable '%s' defined twice.",name->str);
 
     if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || compiler_pass!=1)
     {
@@ -1701,8 +1717,12 @@ int add_constant(struct pike_string *name,
     if(IDENTIFIERP(n)->id_flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
-    if(PROG_FROM_INT(new_program, n) == new_program)
+    /* not inherited */
+    if(new_program->identifier_references[n].inherit_offset == 0) 
+    {
       my_yyerror("Identifier '%s' defined twice.",name->str);
+      return n;
+    }
 
     if(!(IDENTIFIERP(n)->id_flags & ID_INLINE))
     {
@@ -1875,9 +1895,10 @@ INT32 define_function(struct pike_string *name,
 
     if(ref.inherit_offset == 0) /* not inherited */
     {
-      if(!(!func || func->offset == -1) && !(funp->func.offset == -1))
+      if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
+	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
       {
-	my_yyerror("Redeclaration of function %s.",name->str);
+	my_yyerror("Identifier '%s' defined twice.",name->str);
 	return i;
       }
 
@@ -1900,6 +1921,7 @@ INT32 define_function(struct pike_string *name,
       
       funp->identifier_flags=function_flags;
     }else{
+
       if((ref.id_flags & ID_NOMASK)
 #if 0
 	 && !(funp->func.offset == -1)
@@ -1908,6 +1930,7 @@ INT32 define_function(struct pike_string *name,
       {
 	my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
       }
+      
 
       if(ref.id_flags & ID_INLINE)
       {
@@ -2224,6 +2247,7 @@ void program_index_no_free(struct svalue *to, struct program *p,
 	  get_name_of_type(ind->type));
   }
   s = ind->u.string;
+#if 0
   for (e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags & ID_HIDDEN) {
@@ -2233,6 +2257,14 @@ void program_index_no_free(struct svalue *to, struct program *p,
     if (id->name != s) {
       continue;
     }
+
+#else
+  e=find_shared_string_identifier(s, p);
+  if(e!=-1)
+  {
+    struct identifier *id;
+    id=ID_FROM_INT(p, e);
+#endif
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
       assign_svalue_no_free(to, (p2->constants + id->func.offset));
@@ -2245,11 +2277,18 @@ void program_index_no_free(struct svalue *to, struct program *p,
       }
     }
   }
+
+#if 1
+  to->type=T_INT;
+  to->subtype=NUMBER_UNDEFINED;
+  to->u.integer=0;
+#else
   if (s->len < 1024) {
     error("No such index \"%s\".\n", s->str);
   } else {
     error("No such index.\n");
   }
+#endif
 }
 
 /*

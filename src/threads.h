@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.69 1999/08/30 06:23:51 hubbe Exp $
+ * $Id: threads.h,v 1.70 1999/09/06 11:13:23 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -586,6 +586,12 @@ void th_farm(void (*fun)(void *), void *here);
 /* Prototypes end here */
 
 #else
+
+#define th_atfork(X,Y,Z)
+#define th_atfork_prepare()
+#define th_atfork_parent()
+#define th_atfork_child()
+
 #define th_setconcurrency(X)
 #define DEFINE_MUTEX(X)
 #define DEFINE_IMUTEX(X)
