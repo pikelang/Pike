@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.463 2003/09/19 12:27:50 jonasw Exp $
+|| $Id: builtin_functions.c,v 1.464 2003/10/19 16:56:00 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.463 2003/09/19 12:27:50 jonasw Exp $");
+RCSID("$Id: builtin_functions.c,v 1.464 2003/10/19 16:56:00 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7532,6 +7532,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
      Pike_sp[-args].u.object->prog)
   {
     struct program *p = Pike_sp[-args].u.object->prog;
+    struct program *id_prog, *p2;
     int func = Pike_sp[-args].subtype;
     struct identifier *id;
     INT32 line;
@@ -7547,9 +7548,15 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     }
 
     id=ID_FROM_INT(p, func);
+    id_prog = PROG_FROM_INT (p, func);
+
     if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
       id->func.offset != -1)
-      file = low_get_line(p->program + id->func.offset, p, &line);
+      file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
+    else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
+	     id->func.offset >= 0 &&
+	     (p2 = program_from_svalue (&id_prog->constants[id->func.offset].sval)))
+      file = low_get_program_line (p2, &line);
     else
       /* The program line is better than nothing for C functions. */
       file = low_get_program_line (p, &line);
