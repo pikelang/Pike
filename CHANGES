@@ -21,6 +21,8 @@ New modules / classes / methods added:
 Optimizations:
 --------------
 
+o Instantiation and destruction of pike-classes is now significantly faster.
+
 
 Compatibility changes:
 ----------------------
