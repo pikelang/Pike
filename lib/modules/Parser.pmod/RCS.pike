@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.6 2002/02/23 21:03:07 jhs Exp $
+// $Id: RCS.pike,v 1.7 2002/02/23 21:42:02 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -40,21 +40,21 @@
 		"branches" WS "((" NUM WS ")*)" WS ";" WS \
 		"next" WS OPT(NUM) ";" WS
 
+//!
 string head;		// num
 string branch;		// num
 array(string) access;	// ids
+mapping(string:string) locks;	 // id:num
+int strict_locks;
+string comment;
+string expand;
+string description;
 
 //! Maps tag names (indices) to tagged revision numbers (values).
 mapping(string:string) tags;
 
 //! Maps branch numbers (indices) to branch names (values).
 mapping(string:string) branches;
-
-mapping(string:string) locks;	 // id:num
-int strict_locks;
-string comment;
-string expand;
-string description;
 
 string _sprintf(int type)
 {
@@ -334,9 +334,10 @@ class Revision
     return sprintf("Revision(/* %s */)", revision||"uninitizlized");
   }
 
-  //! Returns the file contents from this revision.
-  //! @bugs
-  //!   add optional argument "expand_override" and implement keyword expansion
+  //! Returns the file contents from this revision, without performing
+  //! any keyword expansion.
+  //! @seealso
+  //!   @[expand_keywords]
   string get_contents()
   {
     if(text)
@@ -417,16 +418,25 @@ class Revision
 					  "Locker" /*"Log"*/ "RCSfile"
 					  "Revision" "Source" "State"/1)) * "";
 
-  //! Expand keywords and return the resulting text.
+  //! Expand keywords and return the resulting text according to the
+  //! expansion rules set for the file.
   //! @param text
   //!   If supplied, substitutes keywords for that text instead, using values
   //!   that would apply for this revision. Otherwise, this revision is used.
+  //! @param override_binary
+  //!   Perform expansion even if the file was checked in as binary.
   //! @note
-  //!   Does not expand the Log keyword (which lacks sane quoting rules)
-  string expand_keywords(string|void text)
+  //!   The Log keyword (which lacks sane quoting rules) is not
+  //!   expanded. Keyword expansion rules set in CVSROOT/cvswrappers
+  //!   are ignored. Only implements the -kkv and -kb expansion modes.
+  //! @seealso
+  //!   @[get_contents]
+  string expand_keywords(string|void text, int|void override_binary)
   {
     if(!text)
       text = get_contents();
+    if(expand == "b" && !override_binary)
+      return text;
     string before, delimiter, keyword, expansion, rest, result = "";
     string date = replace(time->format_time(), "-", "/"),
 	   file = basename(rcs_file_name);
