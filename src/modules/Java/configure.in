@@ -37,6 +37,9 @@ if test "x$with_java" = xyes; then
           5.*|6.*|7.*) pike_cv_java_sysos="solaris";
         esac
       ;;
+      *windows*)
+        pike_cv_java_sysos=windows_nt
+      ;;
     esac
   ])
   AC_MSG_RESULT($pike_cv_java_sysos)
