@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.4 2002/12/05 15:46:04 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2003/03/30 16:22:12 marcus Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -15,10 +15,10 @@ test_eq([[(int)(Calendar.Stardate.Tick("julian",2500000)->tic())]],-190335)
 test_eq(Calendar.ISO.Week(2002,1)->day()->format_ymd(),"2001-12-31")
 
 test_eval_error(Calendar.ISO.set_timezone("Europe/Stockholm")
-		->dwim_time("2000-03-26 23:01:17"))
+		->dwim_time("2000-03-26 02:01:17"))
 
-test_eq(Calendar.ISO_UTC.dwim_time("2000-03-26 23:01:17")->unix_time(),
-	954111677)
+test_eq(Calendar.ISO_UTC.dwim_time("2000-03-26 02:01:17")->unix_time(),
+	954036077)
 
 test_do(Calendar.TimeRange t = Calendar.now())
 
