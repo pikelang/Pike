@@ -98,6 +98,9 @@ class rfc934 {
 
     for(; i < sizeof(parts); i++)
       {
+#ifdef PEM_DEBUG
+	werror(sprintf("parts[%d] = '%s'\n", i, parts[i]));
+#endif
 	if (sizeof(parts[i]) && (parts[i][0] == ' '))
 	  {
 	    /* Escape, just remove the "- " prefix */
@@ -123,10 +126,20 @@ class rfc934 {
 
 	int end = search(parts[i], "\n");
 	if (end >= 0)
-	  {
-	    boundary = "-" + parts[i][..end-1];
-	    current = parts[i][end..];
-	  }
+	{
+	  boundary = "-" + parts[i][..end-1];
+	  current = parts[i][end..];
+	} else {
+	  /* This is a special case that happens if the input data had
+	   * no terminating newline after the final boundary. */
+#ifdef PEM_DEBUG
+	  werror(sprintf("Final boundary, with no terminating newline.\n"
+			 "  boundary='%s'\n", boundary));
+#endif
+
+	  boundary = "-" + parts[i];
+	  break;
+	}
       }
     final_text = current;
     final_boundary = boundary;

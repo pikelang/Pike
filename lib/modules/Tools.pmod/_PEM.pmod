@@ -10,9 +10,13 @@ object rfc822_start_re = Regexp("^([-a-zA-Z][a-zA-Z0-9]*[ \t]*:|[ \t]*\n\n)");
 
 /* Regexp used to extract the interesting part of an encapsulation
  * boundary. Also strips spaces, and requires that the string in the
- * middle between ---foo  --- is at least two characters long. */
+ * middle between ---foo  --- is at least two characters long. Also
+ * allow a trailing \r or other white space characters. */
 
-object rfc934_eb_re = Regexp("^-*[ \t]*([^- \t].*[^- \t])[ \t]*-*$");
+object rfc934_eb_re = Regexp(
+  "^-*[ \r\t]*([^- \r\t]"	/* First non dash-or-space character */
+  ".*[^- \r\t])"		/* Last non dash-or-space character */
+  "[ \r\t]*-*[ \r\t]*$");	/* Trailing space, dashes and space */
 
 /* Start and end markers for PEM */
 
@@ -43,6 +47,15 @@ string dash_stuff(string msg)
     parts[0] = "- " + parts[0];
   return parts * "- -";
 }
+
+#if 0
+string chop_cr(string s)
+{
+  return (strlen(s) && (s[-1] == '\r'))
+    ? s[..strlen(s) - 2]
+    : s;
+}
+#endif
 
 /* Strip dashes */
 string extract_boundary(string s)
