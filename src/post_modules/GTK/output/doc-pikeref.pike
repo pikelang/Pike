@@ -50,6 +50,7 @@ static string fix_const( string s )
   string const_refs( string b )
   {
     array res = ({});
+    sort(all_consts->name, all_consts);
     foreach( all_consts, Constant c )
     {
       if( has_prefix( c->name, b ) )
