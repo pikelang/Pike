@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.98 1998/07/17 22:37:10 hubbe Exp $");
+RCSID("$Id: program.c,v 1.99 1998/07/19 22:51:26 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1406,7 +1406,8 @@ int low_define_variable(struct pike_string *name,
     fatal("Attempting to add variable to fixed program\n");
 
   if(compiler_pass==2)
-    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
+	  "Added identifier: \"%s\"\n", name->str);
 #endif
 
   copy_shared_string(dummy.name, name);
