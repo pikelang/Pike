@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.3 2003/01/03 18:35:38 nilsson Exp $
+// $Id: Struct.pike,v 1.4 2003/01/03 23:19:44 nilsson Exp $
 //
 
 //! Implements a struct which can be used for serialization and
@@ -101,13 +101,13 @@ static array(string) _indices() {
 
 //! The values of a struct is the values of the struct items.
 static array _values() {
-  return items + ({});
+  return items->get();
 }
 
 //! The size of the struct object is the number of bytes
 //! allocated for the struct.
 static int _sizeof() {
-  return `+( @items->size );
+  return `+( 0, @items->size );
 }
 
 //! The struct can be casted into a string, which is eqivivalent
