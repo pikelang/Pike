@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.71 2002/04/24 15:31:10 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.72 2002/04/26 18:54:08 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -40,7 +40,7 @@ class Command {
   string doc(string what, string with) { return help(what); }
 
   //! The actual command callback. Messages to the user should be
-  //! written out by using the write method in the @[Evaluator] object.
+  //! written out by using the safe_write method in the @[Evaluator] object.
   void exec(Evaluator e, string line, array(string) words, array(string) tokens);
 }
 
@@ -57,12 +57,12 @@ class CommandReset {
   void exec(Evaluator e, string line, array(string) words) {
     string n = sizeof(words)>1 && words[1];
     if(!n) {
-      e->write("No symbol given as argument to reset.\n");
+      e->safe_write("No symbol given as argument to reset.\n");
       return;
     }
     if(zero_type(e->variables[n]) && zero_type(e->constants[n]) &&
        zero_type(e->functions[n]) && zero_type(e->programs[n])) {
-      e->write("Symbol %O not defined.\n", n);
+      e->safe_write("Symbol %O not defined.\n", n);
       return;
     }
 
@@ -123,7 +123,7 @@ private class CommandSet {
   void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
 
     line = sizeof(words)>1 && words[1];
-    function write = e->write;
+    function write = e->safe_write;
 
     if(!line) {
       write("No setting to change given.\n");
@@ -232,7 +232,7 @@ private class CommandExit {
   string help(string what) { return "Exit Hilfe."; }
 
   void exec(Evaluator e) {
-    e->write("Exiting.\n");
+    e->safe_write("Exiting.\n");
     destruct(e);
     exit(0);
   }
@@ -244,7 +244,7 @@ private class CommandHelp {
 
   void exec(Evaluator e, string line, array(string) words) {
     line = words[1..]*" ";
-    function write = e->write;
+    function write = e->safe_write;
 
     switch(line) {
 
@@ -343,7 +343,7 @@ private class CommandDot {
       ret += (string)usr_vector_d;
 
     ret += (string)usr_vector_b;
-    e->write("%-=67s\n", ret);
+    e->safe_write("%-=67s\n", ret);
   }
 }
 
@@ -409,7 +409,7 @@ class CommandDump {
   }
 
   void exec(Evaluator e, string line, array(string) words) {
-    write = e->write;
+    write = e->safe_write;
 
     line = words[1..]*"";
     switch( line ) {
@@ -435,7 +435,7 @@ private class CommandHej {
   inherit Command;
   string help(string what) { return 0; }
   void exec(Evaluator e, string line) {
-    if(line[0]=='.') e->write( (string)({ 84,106,97,98,97,33,10 }) );
+    if(line[0]=='.') e->safe_write( (string)({ 84,106,97,98,97,33,10 }) );
   }
 }
 
@@ -472,7 +472,7 @@ private class CommandNew {
      return;
    }
    if(line) {
-     e->write("Unknown specifier %O.\n", line);
+     e->safe_write("Unknown specifier %O.\n", line);
      return;
    }
    e->reset_evaluator();
@@ -504,12 +504,19 @@ private class CommandStartStop {
   }
 
   void exec(Evaluator e, string line, array(string) words) {
-    if(sizeof(words)>=2){
-      switch(words[0]){
-      case "start": subsystems->start(e, words[1], words[1..]); break;
-      case "stop":  subsystems->stop(e, words[1], words[1..]); break;
+    if(sizeof(words)>=2) {
+      switch(words[0]) {
+      case "start":
+	subsystems->start(e, words[1], words[1..]);
+	break;
+      case "stop":
+	subsystems->stop(e, words[1], words[1..]);
+	break;
       }
+      return;
     }
+    e->safe_write("No subsystem selected. Available subsystems:\n");
+    e->safe_write("%{   %s\n%}", subsystems->list());
   }
 }
 
@@ -528,9 +535,9 @@ private class SubSysBackend {
 
   void start(Evaluator e, array(string) words){
     if(sizeof(words)>=2 && words[1]=="once")
-      add_constant("backend_thread",thread_create(backend_loop,e->write,1));
+      add_constant("backend_thread", thread_create(backend_loop, e->safe_write, 1));
     else
-      add_constant("backend_thread",thread_create(backend_loop,e->write,0));
+      add_constant("backend_thread", thread_create(backend_loop, e->safe_write, 0));
   }
 
   void stop(Evaluator e, array(string) words){
@@ -573,17 +580,21 @@ private class SubSystems {
     ]);
   }
 
+  array(string) list() {
+    return indices(subsystems);
+  }
+
   void start(Evaluator e, string what, array(string) words){
     if(subsystems[what]) {
 
       if(!subsystems[what]->runningp())
 	subsystems[what]->start(e, words);
       else
-	e->write(sprintf("%s is already running.\n", what));
+	e->safe_write(sprintf("%s is already running.\n", what));
 
     }
     else
-      e->write("No such subsystem.\n");
+      e->safe_write("No such subsystem.\n");
   }
 
   void stop(Evaluator e, string what, array(string) words){
@@ -592,10 +603,10 @@ private class SubSystems {
       if(subsystems[what]->runningp())
 	subsystems[what]->stop(e,words);
       else
-	e->write(sprintf("%s is not running.\n",what));
+	e->safe_write(sprintf("%s is not running.\n",what));
     }
     else
-      e->write("No such subsystem.\n");
+      e->safe_write("No such subsystem.\n");
   }
 }
 
@@ -990,13 +1001,27 @@ class Evaluator {
   //! The current result history.
   HilfeHistory history = HilfeHistory(10);
 
-  //! The function to use when writing this to the user.
-  function write;
+  //! The function to use when writing to the user.
+  function(string, mixed ... : int(0..)) write;
+
+  int(0..) safe_write(string in, mixed ... args) {
+    if(!write) return 0;
+    mixed err = catch {
+      return write(in, @args);
+    };
+    catch {
+      write("HilfeError: Error while outputting data.\n");
+      write(describe_backtrace(err));
+      return 0;
+    };
+    werror("HilfeError: Error while outputting data.\n");
+    return 0;
+  }
 
   //!
   void create()
   {
-    if(write) print_version();
+    print_version();
     commands->set = CommandSet();
     commands->exit = CommandExit();
     commands->quit = CommandExit();
@@ -1013,8 +1038,8 @@ class Evaluator {
   //! Displays the current version of Hilfe.
   void print_version()
   {
-    write(version()+
-	  " running Hilfe v3.3 (Incremental Pike Frontend)\n");
+    safe_write(version()+
+	      " running Hilfe v3.3 (Incremental Pike Frontend)\n");
   }
 
   //! Clears the current state, history and removes all locally
@@ -1072,7 +1097,7 @@ class Evaluator {
     }
 
     if(!tokens) {
-      state->show_error(write);
+      state->show_error(safe_write);
       return;
     }
 
@@ -1080,9 +1105,9 @@ class Evaluator {
     string err = catch( state->feed(tokens) );
     if(err) {
       if(stringp(err))
-	write("Hilfe Error: %s\n", err);
+	safe_write("Hilfe Error: %s\n", err);
       else
-	write(describe_backtrace(err));
+	safe_write(describe_backtrace(err));
       state->flush();
     }
 
@@ -1090,7 +1115,7 @@ class Evaluator {
     if(state->datap())
       foreach(state->read(), Expression expression) {
 	string|int ret = parse_expression(expression);
-	if(ret) write(ret);
+	if(ret) safe_write(ret);
       }
   }
 
@@ -1111,12 +1136,12 @@ class Evaluator {
 					  return 0;
 					});
 	int pos = search(files, "HilfeInput");
-	write(describe_backtrace( ({ err[0], err[1][sizeof(err[1])-pos..] }) ));
+	safe_write(describe_backtrace( ({ err[0], err[1][sizeof(err[1])-pos..] }) ));
      } else
-	write("Hilfe Error: Unknown format of thrown error (not backtrace).\n(%O)\n", err);
+	safe_write("Hilfe Error: Unknown format of thrown error (not backtrace).\n(%O)\n", err);
     };
     if(err2)
-      write("Hilfe Error: Error while printing backtrace.\n");
+      safe_write("Hilfe Error: Error while printing backtrace.\n");
     return 0;
   }
 
@@ -1350,7 +1375,7 @@ class Evaluator {
 	continue;
       }
 
-      // FIXME: Handle variable declarations in sprintf.
+      // FIXME: Handle variable declarations in sscanf.
 
     }
 
@@ -1547,11 +1572,11 @@ class Evaluator {
     }
 
     void show_errors() {
-      write(errors);
+      safe_write(errors);
     }
 
     void show_warnings() {
-      write(warnings);
+      safe_write(warnings);
     }
 
     string _sprintf(int type) {
@@ -1566,30 +1591,30 @@ class Evaluator {
   object hilfe_compile(string f, void|string new_var)
   {
     if(new_var && commands[new_var])
-      write("Hilfe Warning: Command %O no longer reachable. Use %O instead.\n",
-	    new_var, "."+new_var);
+      safe_write("Hilfe Warning: Command %O no longer reachable. Use %O instead.\n",
+		new_var, "."+new_var);
 
     if(new_var=="___hilfe" || new_var=="___Hilfe" || new_var=="___HilfeWrapper" ) {
-      write("Hilfe Error: Symbol %O must not be defined.\n"
-	    "             It is used internally by Hilfe.\n", new_var);
+      safe_write("Hilfe Error: Symbol %O must not be defined.\n"
+		"             It is used internally by Hilfe.\n", new_var);
       return 0;
     }
 
     if(new_var=="=") {
-      write("Hilfe Error: No variable name specified.\n");
+      safe_write("Hilfe Error: No variable name specified.\n");
       return 0;
     }
 
     mapping symbols = constants + functions + programs;
 
     if(new_var=="__")
-      write("Hilfe Warning: History variable __ is no longer reachable.\n");
+      safe_write("Hilfe Warning: History variable __ is no longer reachable.\n");
     else if(zero_type(symbols["__"]) && zero_type(variables["__"])) {
       symbols["__"] = history;
     }
 
     if(new_var=="_")
-      write("Hilfe Warning: History variable _ is no longer reachable.\n");
+      safe_write("Hilfe Warning: History variable _ is no longer reachable.\n");
     else if(zero_type(symbols["_"]) && zero_type(variables["__"])
 	    && sizeof(history)) {
       symbols["_"] = history[-1];
@@ -1608,7 +1633,7 @@ class Evaluator {
 
     handler->hilfe_symbols = symbols;
     handler->hilfe_symbols->___Hilfe = this_object();
-    handler->hilfe_symbols->write = write;
+    handler->hilfe_symbols->write = safe_write;
 
     last_compiled_expr = prog;
     program p;
@@ -1681,19 +1706,19 @@ class Evaluator {
 	if(arrayp(err) && sizeof(err)==2 && arrayp(err[1]))
 	{
 	  err[1]=err[1][sizeof(backtrace())..];
-	  write(describe_backtrace(err));
+	  safe_write(describe_backtrace(err));
 	}
 	else
-	  write("Hilfe Error: Error in evaluation: %O\n",err);
+	  safe_write("Hilfe Error: Error in evaluation: %O\n",err);
       }
       else {
 	if(show_result) {
 	  history->push(res);
-	  reswrite( write, a, history->get_latest_entry_num(), res,
+	  reswrite( safe_write, a, history->get_latest_entry_num(), res,
 		    last_compile_time, last_eval_time );
 	}
 	else
-	  write("Ok.\n");
+	  safe_write("Ok.\n");
 
       }
     }
