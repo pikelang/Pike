@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.77 2002/12/02 02:09:26 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.78 2003/03/29 14:08:17 marcus Exp $ */
 
 import Stdio;
 
@@ -385,6 +385,7 @@ int main(int argc, array(string) argv)
 #if 1
   // Store the name of all constants so that we can see
   // if any constant has been leaked from the testsuite.
+  Pipe; /* Pipe module defines an efun, so load it before listing constants */
   array const_names = indices(all_constants());
 #endif
 
