@@ -372,6 +372,7 @@ testfont binary
 /src/make_variables.in foreign_ident
 /src/mapping.c foreign_ident
 /src/mapping.h foreign_ident
+/src/mklibpike.pike foreign_ident
 /src/module.c foreign_ident
 /src/module.h foreign_ident
 /src/module_magic.h foreign_ident
