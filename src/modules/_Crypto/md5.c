@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.15 2000/12/01 08:10:29 hubbe Exp $
+ * $Id: md5.c,v 1.16 2001/02/13 14:14:35 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -35,7 +35,18 @@
 
 static struct program *md5mod_program;
 
-/* string name(void) */
+/*! @module Crypto
+ */
+
+/*! @class md5
+ *!
+ *! Implementation of the MD5 message digest algorithm.
+ */
+
+/*! @decl string name()
+ *!
+ *! Return the string @tt{"MD5"@}.
+ */
 static void f_name(INT32 args)
 {
   if (args) 
@@ -44,6 +55,13 @@ static void f_name(INT32 args)
   push_string(make_shared_string("MD5"));
 }
 
+/*! @decl void create(Crypto.md5|void init)
+ *!
+ *! Initialize an MD5 digest.
+ *!
+ *! If the argument @[init] is specified, the state from it
+ *! will be copied.
+ */
 static void f_create(INT32 args)
 {
   if (args)
@@ -58,6 +76,10 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 }
 	  
+/*! @decl Crypto.md5 update(string data)
+ *!
+ *! Feed some data to the digest algorithm.
+ */
 static void f_update(INT32 args)
 {
   struct pike_string *s;
@@ -79,12 +101,23 @@ static char md5_id[] = {
   0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05,
 };
 
+/*! @decl string identifier()
+ *!
+ *! Returns the ASN1 identifier for an MD5 digest.
+ */
 static void f_identifier(INT32 args)
 {
   pop_n_elems(args);
   push_string(make_shared_binary_string(md5_id, 8));
 }
 
+/*! @decl string digest()
+ *!
+ *! Return the digest.
+ *!
+ *! @note
+ *!   As a side effect the object will be reinitialized.
+ */
 static void f_digest(INT32 args)
 {
   struct pike_string *s;
@@ -99,6 +132,12 @@ static void f_digest(INT32 args)
   push_string(end_shared_string(s));
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 void pike_md5_exit(void)
 {
 }
@@ -108,14 +147,14 @@ void pike_md5_init(void)
   start_new_program();
   ADD_STORAGE(struct md5_ctx);
   /* function(void:string) */
-  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);
   /* function(void|object:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tVoid,tObj),tVoid), 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tVoid, tObj), tVoid), 0);
   /* function(string:object) */
-  ADD_FUNCTION("update", f_update,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("update", f_update, tFunc(tStr, tObj), 0);
   /* function(void:string) */
-  ADD_FUNCTION("digest", f_digest,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("digest", f_digest, tFunc(tNone, tStr), 0);
   /* function(void:string) */
-  ADD_FUNCTION("identifier", f_identifier,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("identifier", f_identifier, tFunc(tNone, tStr), 0);
   end_class("md5", 0);
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: md2.c,v 1.10 2000/12/01 08:10:28 hubbe Exp $
+ * $Id: md2.c,v 1.11 2001/02/13 14:10:45 grubba Exp $
  *
  * A pike module for MD2 hashing.
  *
@@ -33,7 +33,18 @@
 
 static struct program *md2mod_program;
 
-/* string name(void) */
+/*! @module Crypto
+ */
+
+/*! @class md2
+ *!
+ *! Implementation of the MD2 message digest algorithm.
+ */
+
+/*! @decl string name()
+ *!
+ *! Returns the string @tt{"MD2"@}.
+ */
 static void f_name(INT32 args)
 {
   if (args)
@@ -42,6 +53,13 @@ static void f_name(INT32 args)
   push_string(make_shared_string("MD2"));
 }
 
+/*! @decl void create(Crypto.md2|void init)
+ *!
+ *! Initialize an MD2 digest.
+ *!
+ *! If the argument @[init] is specified, the state from it
+ *! will be copied.
+ */
 static void f_create(INT32 args)
 {
   if (args)
@@ -56,6 +74,10 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl Crypto.md2 update(string data)
+ *!
+ *! Feed some data to the digest algorithm.
+ */
 static void f_update(INT32 args)
 {
   struct pike_string *s;
@@ -77,12 +99,23 @@ static char md2_id[] = {
   0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x02, 0x02,
 };
 
+/*! @decl string identifier()
+ *!
+ *! Returns the ASN1 identifier for an MD2 digest.
+ */
 static void f_identifier(INT32 args)
 {
   pop_n_elems(args);
   push_string(make_shared_binary_string(md2_id, 8));
 }
 
+/*! @decl string digest()
+ *!
+ *! Return the digest.
+ *!
+ *! @note
+ *!   As a side effect the object will be reinitialized.
+ */
 static void f_digest(INT32 args)
 {
   struct pike_string *s;
@@ -96,6 +129,12 @@ static void f_digest(INT32 args)
   push_string(end_shared_string(s));
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 void pike_md2_exit(void)
 {
 }
@@ -105,14 +144,14 @@ void pike_md2_init(void)
   start_new_program();
   ADD_STORAGE(struct md2_ctx);
   /* function(void:string) */
-  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);
   /* function(void|object:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tVoid,tObj),tVoid), 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tVoid,tObj), tVoid), 0);
   /* function(string:object) */
-  ADD_FUNCTION("update", f_update,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("update", f_update, tFunc(tStr, tObj), 0);
   /* function(void:string) */
-  ADD_FUNCTION("digest", f_digest,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("digest", f_digest, tFunc(tNone, tStr), 0);
   /* function(void:string) */
-  ADD_FUNCTION("identifier", f_identifier,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("identifier", f_identifier, tFunc(tNone, tStr), 0);
   end_class("md2", 0);
 }
