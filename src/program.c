@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.232 2001/07/11 18:44:51 grubba Exp $");
+RCSID("$Id: program.c,v 1.233 2001/08/02 23:10:40 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3630,11 +3630,12 @@ void push_compiler_frame(int lexical_scope)
   f->current_return_type=0;
   f->current_number_of_locals=0;
   f->max_number_of_locals=0;
+  f->min_number_of_locals=0;
   f->previous=compiler_frame;
   compiler_frame=f;
 }
 
-void pop_local_variables(int level)
+void low_pop_local_variables(int level)
 {
   while(compiler_frame->current_number_of_locals > level)
   {
@@ -3648,6 +3649,24 @@ void pop_local_variables(int level)
 }
 
 
+void pop_local_variables(int level)
+{
+#if 1
+  /* We need to save the variables Kuppo (but not their names) */
+  if(level < compiler_frame->min_number_of_locals)
+  {
+    for(;level<compiler_frame->min_number_of_locals;level++)
+    {
+      free_string(compiler_frame->variable[level].name);
+      MAKE_CONSTANT_SHARED_STRING(compiler_frame->variable[level].name,"");
+    }
+  }
+#endif
+  low_pop_local_variables(level);
+}
+
+
+
 void pop_compiler_frame(void)
 {
   struct compiler_frame *f;
@@ -3658,7 +3677,7 @@ void pop_compiler_frame(void)
     fatal("Popping out of compiler frames\n");
 #endif
 
-  pop_local_variables(0);
+  low_pop_local_variables(0);
   if(f->current_type)
     free_string(f->current_type);
 
