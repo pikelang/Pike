@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.34 1999/07/16 11:44:18 mirar Exp $
+**!	$Id: image.h,v 1.35 1999/09/25 19:58:48 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -229,3 +229,7 @@ void img_find_autocrop(struct image *this,
 		       int top,int bottom,
 		       int rgb_set,
 		       rgb_group rgb);
+
+/* layers.c */
+
+void image_lay(INT32 args);
