@@ -14,7 +14,7 @@ OLD_LDFLAGS="$LDFLAGS"
 
 AC_ARG_WITH(sybase,
     [  --with(out)-sybase               Include the Sybase database driver],
-    [with_sybase=no],[with_sybase=yes])
+    [],[with_sybase=yes])
 AC_ARG_WITH(sybase-include-dir,
     [  --with-sybase-include-dir        Sybase headers directory location],
     [pike_sybase_include_dir=$withval])
