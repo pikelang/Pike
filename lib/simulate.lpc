@@ -328,12 +328,14 @@ list mklist(mixed *a)
 void create()
 {
   add_efun("PI",3.1415926535897932384626433832795080);
-  add_efun("sum",`+);
   add_efun("capitalize",capitalize);
   add_efun("code_value",code_value);
   add_efun("exec","exec");
+  add_efun("explode",`/);
   add_efun("file_size",file_size);
   add_efun("filter_array",filter_array);
+  add_efun("get_function",get_function);
+  add_efun("implode",`*);
   add_efun("l_sizeof",sizeof);
   add_efun("m_indices",indices);
   add_efun("m_sizeof",sizeof);
@@ -342,19 +344,19 @@ void create()
   add_efun("member_array",member_array);
   add_efun("mklist",mklist);
   add_efun("popen",popen);
-  add_efun("spawn",spawn);
-  add_efun("system",system);
   add_efun("previous_object",previous_object);
   add_efun("read_bytes",read_bytes);
+  add_efun("regexp",regexp);
   add_efun("search_array",search_array);
   add_efun("sort_array",sort_array);
+  add_efun("spawn",spawn);
   add_efun("strlen",sizeof);
   add_efun("strstr",search);
+  add_efun("sum",`+);
   add_efun("sum_arrays",sum_arrays);
+  add_efun("system",system);
   add_efun("this_function",this_function);
   add_efun("version",lambda() { return "uLPC v1.0E-10"; });
   add_efun("write_file",write_file);
-  add_efun("get_function",get_function);
-  add_efun("regexp",regexp);
 }
 
