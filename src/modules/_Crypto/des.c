@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.21 2001/02/12 22:25:43 grubba Exp $
+ * $Id: des.c,v 1.22 2001/02/12 22:29:31 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -84,6 +84,16 @@ static void exit_pike_crypto_des(struct object *o)
  *!
  *! Implementation of the Data Encryption Standard (DES).
  */
+
+/*! @decl string name()
+ *!
+ *! Return the string @tt{"DES"@}.
+ */
+static void f_name(INT32 args)
+{
+  pop_n_elems(args);
+  push_constant_text("DES");
+}
 
 /*! @decl int query_block_size()
  *!
@@ -217,6 +227,8 @@ void pike_des_init(void)
   start_new_program();
   ADD_STORAGE(struct pike_crypto_des);
 
+  /* function(:string) */
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tString), 0);
   /* function(void:int) */
   ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
