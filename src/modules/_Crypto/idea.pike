@@ -1,6 +1,6 @@
 #!/home/grubba/src/pike/build/sol2.5/pike
 /*
- * $Id: idea.pike,v 1.1 1996/11/08 23:00:30 grubba Exp $
+ * $Id: idea.pike,v 1.2 1996/11/09 14:42:21 grubba Exp $
  *
  * An crypto using IDEA written in Pike
  * rename it to get it to use another crypto.
@@ -26,11 +26,11 @@ int main(int argc, string *argv)
   int sunos = 0;
   int hexkey = 0;
   int i;
-  object crypto_object = clone((program)"/precompiled/crypto",
-			       (program)("/precompiled/crypto/" +
-					 ((argv[0]/"/")[-1] / ".")[0]));
-  object input = clone((program)"/precompiled/file", "stdin");
-  object output = clone((program)"/precompiled/file", "stdout");
+  object crypto_object = ((program)"/precompiled/crypto")
+                         ((program)("/precompiled/crypto/" +
+				    ((argv[0]/"/")[-1] / ".")[0]));
+  object input = ((program)"/precompiled/file")("stdin");
+  object output = ((program)"/precompiled/file")("stdout");
   string data = "";
   string outstr = "";
 
