@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.51 1999/09/18 09:21:17 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.52 1999/09/19 18:31:33 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -241,7 +242,7 @@ static int do_docode2(node *n,int flags)
     x_*=STACK_DIRECTION;						
     if(x_>0)
     {
-      yyerror("Too dep recursion in compiler. (please report this)");
+      yyerror("Too deep recursion in compiler. (please report this)");
 
       emit(F_NUMBER,0);
       if(flags & DO_LVALUE)
