@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.227 2001/11/22 19:58:49 nilsson Exp $");
+RCSID("$Id: file.c,v 1.228 2001/11/25 03:18:09 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3124,6 +3124,59 @@ static void exit_file_lock_key(struct object *o)
 }
 
 /*! @endclass
+ */
+
+/*! @decl constant PROP_BIDIRECTIONAL
+ *! @fixme
+ *! Document this constant.
+ */
+
+/*! @decl constant PROP_BUFFERED
+ *! @fixme
+ *! Document this constant.
+ */
+
+/*! @decl constant PROP_SHUTDOWN
+ *! @fixme
+ *! Document this constant.
+ */
+
+/*! @decl constant PROP_NONBLOCK
+ *! @fixme
+ *! Document this constant.
+ */
+
+/*! @decl constant PROP_IPC
+ *! @fixme
+ *! Document this constant.
+ */
+
+/*! @decl constant IPPROTO
+ *! @fixme
+ *! Document this constant.
+ */
+
+/*! @decl constant __OOB__
+ *! Implementation level of nonblocking I/O OOB support.
+ *! @int
+ *!   @value 0
+ *!     Nonblocking OOB support is not supported.
+ *!   @value 1
+ *!     Nonblocking OOB works a little.
+ *!   @value 2
+ *!     Nonblocking OOB almost works.
+ *!   @value 3
+ *!     Nonblocking OOB works as intended.
+ *!   @value -1
+ *!     Unknown level of nonblocking OOB support.
+ *! @endint
+ *! This constant only exists when OOB operations are
+ *! available, i.e. when @[__HAVE_OOB__] is 1.
+ */
+
+/*! @decl constant __HAVE_OOB__
+ *! Exists and has the value 1 if OOB operations are
+ *! available.
  */
 
 /*! @endmodule
