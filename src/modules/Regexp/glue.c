@@ -20,7 +20,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.20 2000/12/13 16:27:06 noring Exp $");
+RCSID("$Id: glue.c,v 1.21 2001/02/06 16:18:23 grubba Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -108,8 +108,7 @@ int regexp_match_low(regex_t *regexp, char *str)
 #define regexp_match_low pike_regexec
 #endif /* USE_SYSTEM_REGEXP */
 
-/*!
- *! @decl int match(string str)
+/*! @decl int match(string str)
  *!
  *! Returns 1 if @[str] matches the regexp bound to the regexp object.
  *! Zero otherwise.

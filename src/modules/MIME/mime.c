@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.28 2001/01/06 19:58:33 grubba Exp $
+ * $Id: mime.c,v 1.29 2001/02/06 16:17:33 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.28 2001/01/06 19:58:33 grubba Exp $");
+RCSID("$Id: mime.c,v 1.29 2001/02/06 16:17:33 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -681,13 +681,18 @@ static void f_encode_uue( INT32 args )
  *! a sequence of lexical elements.
  *!
  *! These are:
- *! @list
- *!   @element individual special characters
- *!   @element quoted-strings
- *!   @element domain-literals
- *!   @element comments
- *!   @element atoms
- *! @endlist
+ *! @dl
+ *!   @item
+ *!     individual special characters
+ *!   @item
+ *!     quoted-strings
+ *!   @item
+ *!     domain-literals
+ *!   @item
+ *!     comments
+ *!   @item
+ *!     atoms
+ *! @enddl
  *!
  *! This function will analyze a string containing the header value,
  *! and produce an array containing the lexical elements.
@@ -707,7 +712,7 @@ static void f_encode_uue( INT32 args )
  *! Domain-literals are used seldom, if at all, anyway...
  *! 
  *! The set of special-characters is the one specified in RFC1521
- *! (i.e. @tt{"<", ">", "@", ",", ";", ":", "\", "/", "?", "="@}),
+ *! (i.e. @tt{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
  *! and not the set specified in RFC822.
  *!
  *! @seealso

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.151 2001/02/01 19:58:56 grubba Exp $");
+RCSID("$Id: threads.c,v 1.152 2001/02/06 16:10:47 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -851,7 +851,7 @@ struct key_storage
  *! The @[type] argument specifies what @[lock()] should do if the
  *! mutex is already locked by this thread:
  *! @int
- *!   @value 0 (default)
+ *!   @value 0
  *!     Throw an error.
  *!   @value 1
  *!     Sleep until the mutex is unlocked. Useful if some
@@ -1160,7 +1160,7 @@ void f_cond_wait(INT32 args)
  *! @[signal()] wakes up one of the threads currently waiting for the
  *! condition.
  *!
- *! @bugs
+ *! @note
  *!   Sometimes more than one thread is woken up.
  *!
  *! @seealso
@@ -1282,7 +1282,7 @@ void exit_thread_obj(struct object *o)
   th_destroy(& THIS_THREAD->id);
 }
 
-/*! @end class
+/*! @endclass
  */
 
 static void thread_was_recursed(struct object *o)
@@ -1413,6 +1413,9 @@ void f_thread_local_set(INT32 args)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 /* Thread farm code by Per
