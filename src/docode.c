@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.93 2001/01/14 04:13:48 mast Exp $");
+RCSID("$Id: docode.c,v 1.94 2001/01/14 20:52:46 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -328,6 +328,7 @@ static INT32 count_cases(node *n)
   case F_DO:
   case F_FOR:
   case F_FOREACH:
+  case F_LOOP:
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_INC_NEQ_LOOP:
@@ -886,6 +887,25 @@ static int do_docode2(node *n, INT16 flags)
     current_switch_jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
     POP_AND_DO_CLEANUP;
+    return 0;
+  }
+
+  case F_LOOP:
+  {
+    /* FIXME: No support for break or continue. */
+    PUSH_STATEMENT_LABEL;
+    tmp1 = do_code(CAR(n));
+    if (tmp1 > 0) {
+      do_pop(tmp1-1);
+      tmp2 = do_branch(-1);
+      tmp3 = ins_label(-1);
+      PUSH_STATEMENT_LABEL;
+      do_code(CDR(n));
+      POP_STATEMENT_LABEL;
+      ins_label(tmp2);
+      emit1(F_LOOP, tmp3);
+    }
+    POP_STATEMENT_LABEL;
     return 0;
   }
 
