@@ -1,6 +1,7 @@
 // Generates autodoc.c, with AutoDoc documentation of
 // Pikes OpenGL support, from OpenGL man pages.
 
+#include "constants.pike"
 #include "features.pike"
 // funcEV, funcV, func_misc, func_cat
 
@@ -200,6 +201,7 @@ string preprocess_man(array(string) rows, string fn) {
   else if(name = names[fn+"2f"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
   else if(name = names[fn+"f"])  prots = ([ name[..sizeof(name)-2] : prots[name] ]);
   else if(name = names[fn+"2"])  prots = ([ name[..sizeof(name)-2] : prots[name] ]);
+  else if(name = names[fn+"fv"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
 
   // Assemble result
   string res = "";
@@ -370,7 +372,6 @@ string document(string name, string features) {
 
 void prefetch() {
   foreach(glob("*.3gl", get_dir("release/xc/doc/man/GL/gl/")), string fn) {
-    werror("Prefetching %O\n", fn);
     array(string) rows = Stdio.read_file("release/xc/doc/man/GL/gl/"+fn)/"\n";
     preprocess_man(rows, fn[..sizeof(fn)-5]);
   }
@@ -378,7 +379,7 @@ void prefetch() {
 
 string first_page() {
 
-  string ret = "@module GL\n\nNot implemented methods:\n\n";
+  string ret = "@module GL\n\nNot implemented OpenGL methods:\n\n";
 
   ret += "@xml{<matrix>\n";
   foreach(sort(indices(docs)), string name)
@@ -387,32 +388,56 @@ string first_page() {
   return comment(ret);
 }
 
+mapping(string:array(string)) refs = ([]);
+
+void fix_refs() {
+  foreach(indices(constants), string name) {
+    array r = ({});
+    foreach(docs; string func; array jox)
+      if(has_value(jox[1], name)) r += ({ func });
+    if(sizeof(r))
+      refs[name] = r;
+  }
+}
+
 void main() {
 
+  werror("Reading manpages.\n");
   prefetch();
+  werror("Finding constant references.\n");
+  fix_refs();
 
+  werror("Building documentation.\n");
   string doc = "";
 
   foreach( func_misc, array func) {
     if(catch {
-      werror("Processing %O\n", func[0]);
       doc += document(func[0], func[1]) + "\n";
     }) werror("Failed with %O\n", func[0]);
   }
 
-  foreach( funcV, string func) {
-      werror("Processing %O\n", func);
+  foreach( funcV, string func)
       doc += document(func, "V") + "\n";
-  }
 
-  foreach( funcEV, string func) {
-      werror("Processing %O\n", func);
+  foreach( funcEV, string func)
       doc += document(func, "VE") + "\n";
+
+  foreach( constants; string name; int value ) {
+    doc += "/*!@decl constant "+name+" " + value + "\n";
+    if(refs[name])
+      doc += " *! Used in " +
+	String.implode_nicely(map(refs[name],
+				  lambda(string in) {
+				    return "@[" + in + "]";
+				  })) + "\n";
+    doc += " */\n\n";
   }
 
   doc = "\n/* AutoDoc generated from OpenGL man pages\n$Id"
     "$ */\n\n" + first_page() + "\n\n" + doc +
     "\n/*! @endmodule\n */\n\n";
 
+  werror("Writing result file.\n");
   Stdio.write_file("autodoc.c", doc);
+  werror("Done.\n");
 }
