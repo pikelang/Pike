@@ -4,34 +4,32 @@ Changes since Pike 7.4:
 New/improved functionality:
 ---------------------------
 
-o The automatic garbage collection strategy is configurable
-    The garbage collector can be configured to take both the amount of
-    garbage and the cpu time spent in the gc into account. Automatic
-    gc runs can also be disabled in critical regions. See the function
-    Pike.gc_parameters.
-
-o sort() is stable
-    Unlike previous releases, sort() will keep the original order
-    between elements that are equal. This was not implemented as a
-    separate function since it could be done with virtually no extra
-    overhead.
-
-o sort() is portable
-    Sort is now locale and platform independent. In other words,
-    strings are now compared only according to the unicode value of
-    every character.
-
-o Reworked codec
-    The codec for serialization of Pike data types has been updated
-    and has a significally improved successrate at encoding modules.
-
-o Less magic hacks
+o fewer magical hacks
     Several Pike modules have been cleaned up from old hacks and
     workarounds for problems which now have proper solutions. This
-    should improve size, performance, dumpability and readability
-    of the affected code. In addition lots of internal types in Pike
-    have been tightened up and several more files now use the pragma
-    strict_types, which has resulted in some additional bugfixes.
+    should reduce size, and improve performance, dumpability and
+    readability of the affected code. In addition lots of internal
+    types in Pike have been tightened up and several more files now
+    use the pragma strict_types, which has helped locating and fixing
+    some previously undiscovered bugs.
+
+o garbage collection strategy is now configurable
+    The garbage collector can now be configured to take both the amount
+    of garbage and the cpu time spent in the gc into account. Automatic
+    garbage collections can also be disabled in critical regions. (Use
+    the function Pike.gc_parameters for this.)
+
+o hash() modified
+    The string hash functions are now byte-order independent. The old
+    hash function is available as hash_7_4 or as hash when running in
+    7.4 compatibility mode or lower.
+
+o --help
+    The Pike --help message has been improved, and it is possible to
+    retrieve further information about options and environment
+    variables. In addition, most of the tools and build scripts now
+    accept --help and describes what they do and what options they
+    take.
 
 o INT64
     On 64 bit architechtures Pike will now use full 64 bits integer
@@ -39,48 +37,54 @@ o INT64
 
 o IPv6
     Networking code in Pike has been updated to work with IPv6. This
-    includes both low level fixes in the socket handling as well as
-    high level changes such as IP parsing and protocol additions such
+    includes both low-level fixes in the socket handling as well as
+    high-level changes such as IP parsing and protocol additions such
     as AAAA records in Protocol.DNS.
 
+o module system improved
+    Both dynamic and static modules now appears as objects, and they both
+    support having an identifier _module_value, which will then be
+    what is presented by the resolver as the module. _module_value can
+    be a constant, which will prevent the program from being automatically
+    cloned.
+
 o mysqls
-    The Mysql glue can operate over SSL. Use the "mysqls://" protocol
-    in the Sql.Sql module to use this security feature.
+    The Mysql glue can operate over SSL, providing additional data
+    security. Use the "mysqls://" protocol in the Sql.Sql module to
+    access this feature.
+
+o reworked codec
+    The codec for serialization of Pike data types has been updated
+    and has a significally improved success rate at encoding modules.
+    (See the encode_value and decode_value functions.)
+
+o sort() is portable
+    Sort is now locale and platform independent. In other words,
+    strings are now compared only according to the unicode value of
+    every character.
+
+o sort() is stable
+    Unlike previous releases, sort() will keep the original order
+    of elements that are equal. At first, we considered keeping the old
+    sort function in parallel with the new one, as a "faster but
+    unstable" alternative, but it turned out that there was no noticable
+    different in speed between the new and the old function.
 
 o trace() can trace all threads
     The configure option --without-thread-trace has been removed, but
     instead the trace() function has been extended to make it possible
     to set the trace level in all threads simultaneously.
 
-o --help
-    The Pike --help message has been improved and it is possible to
-    retrieve further information about options and environment
-    variables. In addition most of the tools and build scripts now
-    accepts --help and describes what they do and what options they
-    take.
-
 o unbug
     The Pike debugger unbug has been significtly optimized.
-
-o Module system.
-    Both dynamic and static modules appears as objects and they both
-    support having an identifier _module_value, which will then be
-    what is presented by the resolver as the module. _module_value can
-    be a constant, thus preventing the program from being
-    automatically cloned.
 
 o Unicode
     Pike 7.6 uses the Unicode 4.0.1 tables for case info and
     normalization.
 
-o upper_case/lower_case
-    The built in functions upper_case and lower_case now also works on
-    single characters, represented as integers.
-
-o hash
-    The string hash functions is now byte-order independent. The old
-    hash function is available as hash_7_4 or as hash when running in
-    7.4 compatibility mode or lower.
+o upper_case() and lower_case() extended
+    The built-in functions upper_case and lower_case now also works on
+    single characters represented as integers.
 
 o #warning
     A new The Pike preprocessor directive #warning has been added. It
@@ -91,20 +95,20 @@ The Pike master:
 ----------------
 
 o The new option --dumpversion prints out the Pike version in a more
-  easily parsed way than --version.
+  easily pared way than --version.
 
-o The master now supplies argv to the started application's create()
-  callback, so it can be used for execution. Some people find it a
-  more elegant solution than having a main function.
+o The master now supplies argv to the started application, so it can
+  use the create() method for execution. Some people find it a more
+  elegant solution than having a main function.
 
-o The -e Pike environment has been improved with a lot of convenience
-  wrappings. When compiling code with pike -e the macro NOT(X) will
+o The "-e" flag to Pike has been improved with a number of convenience
+  wrappers. When compiling code with "pike -e", the macro NOT(X) will
   expand to !(X) and CHAR(X) to 'X', making it easier to solve quote
   problems from a shell. If the return from a pike -e statement is a
   positive integer it will be used as pikes exit code. If the return
-  value is a string it will be output, and with a trailing "\n", if it
-  lacked one. Finally there is a predefined variable env that contains
-  the environment variables as a string:string mapping.
+  value is a string it will be output (with a "\n" added, if the string
+  didn't already end in "\n"). Finally there is a predefined variable
+  env that contains the environment variables as a string:string mapping.
 
 
 Building and installing pike:
@@ -112,18 +116,16 @@ Building and installing pike:
 
 o To simplify the process of building Pike source distributions it is
   now possible to bundle less common libraries such as Nettle with
-  Pike. The bundles, found in the bundle/ directory, will be compiled
-  and statically linked if the no matching library is found on the
-  system.
+  Pike. The bundles, found in the "bundles" directory, will be compiled
+  and statically linked if no matching library is found on the system.
 
 o The Pike build process no longer builds a bootstrap pike, used to
   run various small programs to generate source files. This means that
   in order to build Pike from CVS you need the latest major version of
-  Pike installed on your system. Pike source distributions will still
-  contain the generated files and are not affected (except they compile
-  in less time).
+  Pike installed on your system. Pike source distributions contain
+  these generated files, and are not affected.
 
-o By default pike want you to build a documentation source file, i.e.
+o By default, pike want to build a documentation source file, i.e.
   "make && make doc && make install". This makes it possible for third
   party modules to integrate its documentation into the system Pike
   documentation. If you do not want to build a documentation source
@@ -133,23 +135,16 @@ o By default pike want you to build a documentation source file, i.e.
 Changes and additions to -x utilities:
 --------------------------------------
 
-o rsif
-    rsif can now work recursively in a file structure if given the
-    flag -r or --recursive. Example:
-      pike -x rsif -r 7.4 7.6
-
 o benchmark
     A set of benchmarks is available in the benchmark tool. They are
     based on the Great Computer Language Shootout, but have been
-    modified to make more sense in the context of Pike and to test
+    modified to make more sense in the context of Pike, and to test
     various aspects of Pike we suspect (or at least at one time
-    suspected) perform badly.
+    suspected) to have bad performance.
 
 o cgrep
-    Context sensitive grep (grepping through tokenized code, at
-    present handling Pike and C source files) is very helpful when
-    you are looking for substrings that are common. The implemented
-    search modes are:
+    Context sensitive grep is very helpful when you are looking for
+    substrings that are common. The implemented search modes are:
       o Complete token
       o Part of a token
       o Complete string literal
@@ -176,73 +171,55 @@ o extract_locale
 
 o monger
     A new utility to download, install and otherwise manage external
-    modules from the Fresh Pike project (modules.gotpike.org).
+    modules from the Fresh Pike project (modules.gotpike.com).
+
+o rsif
+    rsif can now work recursively in a file structure if given the
+    flag -r or --recursive. Example:
+      pike -x rsif -r 7.4 7.6
+
 
 
 New modules / classes / methods added:
 --------------------------------------
 
-o Regexp.PCRE added to give libpcre support.
-    Are you a closet-perlet? For those who missed the richer flora of
-    regexp syntax that Perl supports, the Perl Compatible Regular
-    Expression module is the answer. If you compile libpcre with UTF-8
-    support you will also get transparent wide string support. Several
-    convenience functions are also added to the Regexp module to
-    enable easier access to regular expressions.
+o ADT.BitBuffer
+    When operating on data formats that are defined on bit level, the
+    ADT.BitBuffer presents a convenient interface. It operates as a
+    FIFO buffer on bit level, which allows you to read and write bits
+    and bytes.
 
-o Crypto/Nettle
-    The crypto module has been almost completely rewritten and now
-    uses libnettle as backend instead of the built in crypto
-    algorithms that Pike had before. This way Pike will benefit from
-    the more active development and optimization work in the Nettle
-    project. The most common hash and cipher methods are already
-    written in assembler for several platforms. As an example SHA1 is
-    about 40% faster than before on Intel platforms.
+      > ADT.BitBuffer b=ADT.BitBuffer();
+      > b->put1(2);
+      (1) Result: ADT.BitBuffer(11)
+      > b->put0(15);
+      (2) Result: ADT.BitBuffer("À\0"0)
+      > b->drain();
+      (3) Result: "À\0"
+      > sizeof(b);
+      (4) Result: 1
 
-    With the new nettle support comes support for two new cipher
-    algorithms, Blowfish and Serpent, and the new NIST hash algorithm
-    SHA256. Note that the new Crypto module has renamed its
-    identifiers to be consistent with the rest of Pike, and in some
-    cases to clarify or correct bad names. The old names still work,
-    but produce a warning unless Pike is run in compatibility mode.
-    Compatibility outside compatibility mode will be removed in the
-    future.
+o ADT.CircularList
+    This is an circular list implemented as a C wrapper around an
+    array. It has a constant time complexity for pop and push. It has
+    a limited max size but it can be increased manually by calling the
+    allocate() method. It supports pushing, popping and peeking at both
+    ends of the list, as well as removing and insering elements at any
+    position in the list.
 
-    The interfaces for the hash and cipher algorithms have been
-    improved and they no longer only conform to predefined interfaces,
-    but actually inherits Hash/HashState and Cipher/CipherState. Every
-    algorithm is in itself a module in the Crypto module, and inherits
-    the Hash/Cipher class. This module contains instance non-specific
-    methods such as digest_size or key_size. By calling the `() method
-    in the module a HashState/CipherState object is returned, which is
-    a hash/cipher instance which can be used for streaming operations.
-
-    Examples:
-
-      Crypto.MD5.hash("Hash this string");
-
-      Crypto.MD5()->update("Hash this ")->update("string")->digest();
-
-    The confusing and hard to use Crypto.randomness has been obsoleted
-    by the Nettle implementation of the Yarrow random generator. The
-    Nettle implementation of Yarrow uses AES and SHA256. The
-    Crypto.Random module acts as a frontend before system crypto
-    sources and ensure that no matter how bad your OS is, you will
-    still get cryptographically strong random data.
-
-
-o Crypto.PGP
-    The start of a PGP/GPG toolkit. It still cannot handle all types
-    of signatures nor generate any, but it is useful to verify
-    selfsigned code and data.
-
+o ADT.Sequence
+    The sequence work similar to an array but has the ability to
+    insert and remove elements at any position. It also has functions
+    to retrieve iterators for forward and backward iteration over the
+    elements in the sequence.
 
 o ADT.Struct
     This module makes it possible to work with binary formats of the
-    packed-struct-type. Simply create a class inheriting ADT.Struct,
-    specify the members with type and size, in order, instantiate an
-    object with a file object as argument and then read the decoded
-    values from the object as ordinary variables.
+    "packed struct" type. Simply create a class inheriting ADT.Struct,
+    specify its members in order, create an object with a file object
+    as argument, and then read the decoded values from the object as
+    ordinary variables. An example, reading ID3 metadata headers from
+    an MP3 file:
 
       class ID3 {
         inherit ADT.Struct;
@@ -265,23 +242,69 @@ o ADT.Struct
         f->write( (string)tag );
       }
 
+o Array
+    The Array module has been extended with Array.all and Array.any
+    which determine if all or any of the elements in an array meet a
+    given condition. The function Array.partition has also been added,
+    which divides the elements of an array into two arrays, selected
+    according to a given condition.
 
-o ADT.BitBuffer
-    When operating on data formats that are defined on bit level, the
-    ADT.BitBuffer presents a convenient interface. It operates as a
-    FIFO buffer on bit level, which allows you to read and write bits
-    and bytes.
+o Bz2
+    Support for the compression format used by the bzip2 program. The
+    module interface is almost identical to that of the Gz module.
 
-      > ADT.BitBuffer b=ADT.BitBuffer();
-      > b->put1(2);
-      (1) Result: ADT.BitBuffer(11)
-      > b->put0(15);
-      (2) Result: ADT.BitBuffer("À\0"0)
-      > b->drain();
-      (3) Result: "À\0"
-      > sizeof(b);
-      (4) Result: 1
+o Calendar module
+    The %S format was added to Calendar.parse() to parse seconds since
+    the Epoch. The TimeRange class is extended with a format method
+    format_commonlog(), a tzname_utc_offset (+HHMM) and
+    tzname_location(), which, when available, returns zone names like
+    "Europe/Stockholm". The database has been updated with Swedish
+    pre-1901 namedays and Finnish namedays.
 
+o Crypto/Nettle
+    The crypto module has been almost completely rewritten, and now
+    uses libnettle as backend instead of the built-in crypto
+    algorithms that Pike had before. This way Pike will benefit from
+    the more active development and optimization work in the Nettle
+    project. The most common hash and cipher methods are already
+    written in assembler for several platforms. As an example SHA1 is
+    about 40% faster than before on Intel platforms.
+
+    With the new nettle support comes support for two new cipher
+    algorithms, Blowfish and Serpent, and the new NIST hash algorithm
+    SHA256. Note that the new Crypto module has renamed its
+    identifiers to be consistent with the rest of Pike, and in some
+    cases to clarify or correct bad names. The old names still work,
+    but produce a warning unless Pike is run in compatibility mode.
+    Compatibility outside compatibility mode will be removed in the
+    future.
+
+    The interfaces for the hash and cipher algorithms have been
+    improved, and no longer only conform to predefined interfaces,
+    but actually inherits Hash/HashState and Cipher/CipherState. Every
+    algorithm is in itself a module in the Crypto module, and inherits
+    the Hash/Cipher class. This module contains instance non-specific
+    methods such as digest_size or key_size. By calling the `() method
+    in the module a HashState/CipherState object is returned, which is
+    a hash/cipher instance which can be used for streaming operations.
+
+    Examples:
+
+      Crypto.MD5.hash("Hash this string");
+
+      Crypto.MD5()->update("Hash this ")->update("string")->digest();
+
+    The confusing and hard-to-use Crypto.randomness has been obsoleted
+    by the Nettle implementation of the Yarrow random generator. The
+    Nettle implementation of Yarrow uses AES and SHA256. The
+    Crypto.Random module acts as a frontend before system crypto
+    sources, and ensure that almost no matter how bad your OS is, you
+    will still get cryptographically strong random data.
+
+o Crypto.PGP
+    The start of a PGP/GPG toolkit. It still cannot handle all types
+    of signatures nor generate any, but it is useful to verify
+    selfsigned code and data.
 
 o Debug.Wrapper
     A simple litte wrapper that can be placed around another object to
@@ -298,18 +321,54 @@ o Debug.Wrapper
       (2) Result: 0
 
 
-o Image.NEO
-    Support for one of the major image formats on Atari ST/STE,
-    including decoding of color cycling. The C bitmap and palette
-    handler can be used to implement other atari image formats.
+o Error
+    The root of the Pike exception hiearchy. Even though it is work
+    in progress, it is already usable.
+
+      > mixed err = catch( 1/0 );
+      > err;
+      (1) Result: Error.Math("Division by zero.\n")
+      > object_program(err)==Error.Math;
+      (2) Result: 1
+
+o EXIF
+    The EXIF module is now much more robust than before, and can handle
+    some of the erroneous EXIF tags some cameras procduce. Extended
+    support for Nikon cameras.
+
+o Filesystem.Traversion
+    The Filesystem.Traversion iterator is a handy way to descend into
+    a directory structure (depth first) and perform actions on all or
+    some of the files.
+
+    Example:
+
+      foreach(Filesystem.Traversion("."); string dir; string file)
+        if(file[-1]=='~' || file=="core") rm(dir+file);
+
+o Float
+    Here constants and functions that deal specifically with the
+    float data type is stored. Currently, it only contains various
+    constants that describe the precision and limitations of the float
+    type with which Pike was compiled.
+
+o Function
+    The Function module has been extended with the fixpoint combinator
+    "Y", useful when writing recursive lambdas, a curry function, to
+    partially evaluate a function call, and a callback caller function
+    that protects the caller from exceptions in the callback function.
+
+o Geography
+    The Geography.Position object can now also convert to and from the
+    Swedish RT38 (Rikets Triangulering 1938) position format.
 
 o GLUE
     The GL Universal Environment is a GL toolkit that makes
     implementing GL applications in Pike really simple. GLUE has
-    several orthogonal components like object orientation
-    encapsulation of GL, drawing primitives, texture handling and text
-    generation. The most fundamental part is however an abstract
-    interface to a GL area driver, like GTK or SDL.
+    several orthogonal components like object oriented encapsulation
+    of GL, drawing primitives, texture handling and text generation.
+    The most fundamental part is however an abstract interface to a
+    GL area driver, like GTK or SDL.
 
       int main() {
         GLUE.init();
@@ -323,32 +382,15 @@ o GLUE
         GLUE.swap_buffers();
       }
 
-o ADT.CircularList
-    This is a circular list implemented as a C wrapper around an
-    array. It has a constant time complexity for pop and push. It has
-    a limited max size but it can be increased manually by calling
-    allocate. It supports pushing, popping and peeking at both ends of
-    the list, as well as removing and insering elements at any
-    position in the list.
-
-o ADT.Sequence
-    The sequence works similar to an array but has the possibilities
-    to insert and remove elements at any position. It also has methods
-    to retrieve iterators that work from either side of the sequence.
-    Both of the above ADT:s share a common set of interface primitives
-    described in a thesis work available for download and review at
-
-      http://pike.ida.liu.se/projects/docs/cmods/ADTs%20in%20Pike.pdf
-
-
-o Geography
-    The Geography.Position object can now convert to and from the
-    Swedish RT38 (Rikets Triangulering 1938) position format.
+o Image.NEO
+    Support for one of the major image formats on Atari ST/STE,
+    including decoding of color cycling. The C bitmap and palette
+    handler can be used to implement other atari image formats.
 
 o Int
     The Int module contains a few functions and constants that deal
     specifically with the integer data type. Currently it contains
-    parity and byte swapping functions and constants for the system
+    parity and byte swapping functions, and constants for the system
     maxint and minint.
 
 o Pike.Security
@@ -357,45 +399,21 @@ o Pike.Security
     are stored in this module. Beware that the Pike security system is
     still very experimental.
 
-o Protocols.HTTP.Session
-    Handles an HTTP connection as a session, with cookies, redirects,
-    HTTP keep-alive et cetera.
-
-o Bz2
-    Support for the compression format used by the bzip2 program. The
-    module interface is almost identical with the Gz module, so
-    changing between Bz2 and Gz is just a matter of a few characters'
-    difference.
-
 o Process.Process
-    The Process.Process class is extended to handle a time out
-    callback and a read callback, to better manage processes in an
-    asynchronous way.
-
-o Error
-    The beginning of the Pike exception hiearchy. Even though it is
-    work in progress, it is already usable.
-
-      > mixed err = catch( 1/0 );
-      > err;
-      (1) Result: Error.Math("Division by zero.\n")
-      > object_program(err)==Error.Math;
-      (2) Result: 1
-
-
-o Float
-    Here, constants and functions that deals specifically with the
-    float data type are stored. Currently contains only various
-    constants that describe the precision and limitations of the float
-    type Pike is compiled with.
+    The Process.Process class is extended to handle a time-out
+    callback and a read callback, to make it easier to manage
+    processes in an asynchronous way.
 
 o Protocols.Bittorrent
     This is a Pike implementation of the client side of the popular
-    Bittorrent protocol. Both creating torrent files and seeding, as
-    well as downloading and verifying files is supported. There are
+    Bittorrent protocol. Both creating torrent files and seeding as
+    well as downloading and verifying files are supported. There are
     also several functions to retreive auxillary information such as
-    identifying the other peer clients. Contains all the primitives
-    you would expect, except for the tracker.
+    identifying the other peer clients.
+
+o Protocols.HTTP.Session
+    Handles an HTTP connection as a session, with cookies, redirects,
+    HTTP keep-alive, etc.
 
 o Protocols.LMTP/Protocols.SMTP
     Protocols.LMTP implements a server for the Local Mail Transfer
@@ -407,6 +425,30 @@ o Protocols.OBEX
     An implementation of the IrDA(R) Object Exchange Protocol. OBEX is
     a protocol for sending and receiving binary objects to mobile
     devices using transports such as IR and Bluetooth.
+
+o Regexp.PCRE added to give libpcre support.
+    Are you a closet perler? For those who missed the richer flora of
+    regexp syntax that Perl supports, the Perl Compatible Regular
+    Expression module is the answer. If you compile libpcre with UTF-8
+    support you will also get transparent wide string support. Several
+    convenience functions are also added to the Regexp module to
+    enable easier access to regular expressions.
+
+o SSL
+    Large parts of the SSL module have been rewritten, either as part
+    of the rewrite of the Crypto module or in an attempt to fix various
+    issues regarding blocking/nonblocking files, threads, etc.
+
+o Standards.IDNA
+    This module implements various algorithms specified by the
+    Internationalizing Domain Names in Applications (IDNA) memo by the
+    Internet Engineering Task Force (IETF), RFC 3490.
+
+o Thread
+    Thread.Fifo and Thread.Queue have been extended with try_*
+    varieties of all functions that can block, and with functions that
+    make them both implement the same interface. Both also have
+    fallbacks for running in nonthreaded mode.
 
 o Web.RDF/RDFS/OWL/RSS
     Pike now has support for the W3C semantic web formats OWL, RDF
@@ -428,70 +470,18 @@ o Web.RDF/RDFS/OWL/RSS
 
         foreach(owlset->find_statements(0,
                                         owlset->rdf_type,
-                                        owlset->owl_Class),
-                array statement)
+                                        owlset->owl_Class);
+                               array statement)
           write("- %O\n", statement[0]);
-     }
 
-
-o Array
-    The Array module has been extended with Array.all and Array.any
-    which determines if all or any of the elements in an array meet a
-    given condition. Also the function Array.partition has been added,
-    which divides the elements of an array into two arrays, selected
-    by a given condition.
-
-o Function
-    The Function module has been extended with the fixpoint combinator
-    "Y", useful when writing recursive lambdas, a curry function, to
-    partially evaluate a function call and a callback caller function
-    that protects the caller from exceptions in the callback function.
-
-o Thread
-    Thread.Fifo and Thread.Queue have been extended with try_*
-    varieties of all functions that can block and with functions that
-    make them both implement the same interface. Both also have
-    fallbacks for running in nonthreaded mode.
-
-o Filesystem.Traversion
-    The Filesystem.Traversion iterator is a handy way to descend into
-    a directory structure (depth first) and perform actions on all or
-    some of the files.
-
-    Example:
-
-      foreach(Filesystem.Traversion("."); string dir; string file)
-        if(file[-1]=='~' || file=="core") rm(dir+file);
-
-
-o Calendar module
-    The %S format is added to Calendar.parse() to parse seconds since
-    the Epoch. The TimeRange class is extended with a format method
-    format_commonlog(), a tzname_utc_offset (+HHMM) and
-    tzname_location(), which, when available, returns zone names like
-    "Europe/Stockholm". The database has been updated with Swedish
-    pre-1901 namedays and Finnish namedays.
-
-o SSL
-    Large parts of the SSL module have been rewritten, either as part
-    of the rewrite of the Crypto module or in an attempt to fix many
-    issues regarding blocking/nonblocking files, threads et cetera.
-
-o EXIF
-    The EXIF module is now much more robust than before and can handle
-    some of the erroneous EXIF tags some cameras procduce. Extended
-    support for Nikon cameras.
-
-o Standards.IDNA
-    This module implements various algorithms specified by the
-    Internationalizing Domain Names in Applications (IDNA) memo by the
-    Internet Engineering Task Force (IETF), RFC 3490.
+       return 0;
+     }  
 
 
 Optimizations:
 --------------
 
-o Instantiation and destruction of pike-classes is now significantly
+o Instantiation and destruction of pike classes is now significantly
   faster.
 
 o Handling of bignums has been optimized, especially conversion
@@ -504,7 +494,7 @@ o String case conversion is now five times faster than before on
 Compatibility changes:
 ----------------------
 
-o Incompatible changes has been done to ADT.Heap, Array.diff3_old,
+o Incompatible changes has been made in ADT.Heap, Array.diff3_old,
   Crypto, Locale.Charset, Protocols.SMTP, SSL, Sql.sql,
   Standards.ASN1, Standards.PKCS, Stdio.File, Thread.Mutex and
   rusage(). Please refer to the 7.4 namespace in the compatibility
@@ -519,7 +509,7 @@ Compatibility changes without backward compatibility:
 
 o Module ABI changed
   The pike_frame struct has a new member, which makes modules compiled
-  with earlier versions of Pike incompatible.
+  with Pike 7.4, and earlier versions of Pike, incompatible with Pike 7.6.
 
 
 C level/development changes:
@@ -527,8 +517,8 @@ C level/development changes:
 
 o The security.h include file is renamed to pike_security.h
 
-o The testsuite has three new, handy macros, cond_resolv,
-  test_program_eq, test_program_equal, all defined in mktestsuite. A
+o The testsuite has three new, handy macros: cond_resolv,
+  test_program_eq and test_program_equal, all defined in mktestsuite. A
   testsuite test that produces a warning, unless it is a test_warning
   test, will now be considered an error. The test program can now run
   testsuites in forked processes. By default every testsuite file will
