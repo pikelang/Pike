@@ -115,35 +115,41 @@ mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data,
 
 Image.Image pie(mapping(string:mixed) diagram_data)
 {
+  diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "pie");
   return create_pie(diagram_data)->image;
 } 
 
 Image.Image bars(mapping(string:mixed) diagram_data)
 {
+  diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "bars");
   return create_bars(diagram_data)->image;
 } 
 
 Image.Image sumbars(mapping(string:mixed) diagram_data)
-{
+{ 
+  diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "sumbars");
   return create_bars(diagram_data)->image;
 } 
 Image.Image line(mapping(string:mixed) diagram_data)
 {
+  diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "line");
   return create_bars(diagram_data)->image;
 } 
 
 Image.Image norm(mapping(string:mixed) diagram_data)
 {
+  diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "norm");
   return create_bars(diagram_data)->image;
 } 
 
 Image.Image graph(mapping(string:mixed) diagram_data)
 {
+  diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "graph");
   return create_graph(diagram_data)->image;
 } 
