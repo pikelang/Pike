@@ -20,7 +20,7 @@ constant SingleReplace = __builtin.single_string_replace;
  */
 
 //! This function implodes a list of words to a readable string.
-//! If the separator is omitted, the default is <tt>"and"</tt>.
+//! If the separator is omitted, the default is @tt{"and"@}.
 //! If the words are numbers they are converted to strings first.
 //!
 //! @seealso
@@ -204,7 +204,7 @@ static int low_fuzzymatch(string str1, string str2)
 //! @[Array.diff()], @[Array.diff_compare_table()]
 //! @[Array.diff_longest_sequence()]
 //!
-int fuzzymatch(string a, string b)
+int(0..100) fuzzymatch(string a, string b)
 {
   int fuzz;
 
