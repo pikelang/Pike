@@ -86,7 +86,9 @@ Crypto.invert()->crypt_block("\0\xffpqrstx")]],
          [["\xff\0\x8f\x8e\x8d\x8c\x8b\x87"]])
 
 // RSA
-test_do( add_constant("RSA", Crypto.rsa()) )
+test_do(
+#pike 7.4
+add_constant("RSA", Crypto.rsa()) )
 test_do( RSA->generate_key(1024) )
 test_equal( RSA->raw_sign("hej"), RSA->raw_sign("hej") )
 test_true( RSA->raw_verify("tjo", RSA->raw_sign("tjo")) )
@@ -105,7 +107,9 @@ test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
 test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
 test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
 test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
-test_do( add_constant("RSB", Crypto.rsa()) )
+test_do(
+#pike 7.4
+add_constant("RSB", Crypto.rsa()) )
 test_do( RSB->set_private_key(RSA->get_d(),
          ({ RSA->get_p(), RSA->get_q() }) ) )
 test_equal( RSA->get_d(), RSB->get_d() )
@@ -124,7 +128,9 @@ test_false( RSA->md5_verify("hoj", RSB->md5_sign("hej")) )
 test_do( add_constant("RSA") )
 test_do( add_constant("RSB") )
 
-test_do( add_constant("RSA", Crypto.rsa()) )
+test_do(
+#pike 7.4
+add_constant("RSA", Crypto.rsa()) )
 test_true( RSA->set_public_key(
   0x838b848334d4f2151d25971e655eed8a0905cb5b81ba9047db2bf3b56765b058fa9af2ad89a2726233fc8917e52e8966db4bae5d426207f98ab50e1467accb2d,
   65537) )
@@ -138,7 +144,9 @@ test_false( RSA->raw_verify("flärpzputt",RSA->raw_sign("flärpzprutt")) )
 test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
 test_eq( RSA->rsa_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
-test_false( RSA->public_key_equal(Crypto.rsa()->generate_key(512)) )
+test_false(
+#pike 7.4
+RSA->public_key_equal(Crypto.rsa()->generate_key(512)) )
 test_do( add_constant("RSA") )
 
 // DSA
