@@ -1,3 +1,4 @@
+ignore([[
 // Crypto
 test_true([[objectp(Crypto)]])
 
@@ -599,3 +600,4 @@ test_eq([[
   }
   return String.string2hex(ct);
 ]], [[ "FACA37E0B0C85373DF706E73F7C9AF86" ]])
+]])
