@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.6 1999/06/13 22:37:14 marcus Exp $
+ * $Id: jvm.c,v 1.7 1999/06/14 13:59:15 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.6 1999/06/13 22:37:14 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.7 1999/06/14 13:59:15 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -142,7 +142,6 @@ TODO(?):
 
 DefineClass
 *Reflected*
-GetObjectClass
 
 Array stuff
 
@@ -455,6 +454,21 @@ static void f_monitor_enter(INT32 args)
       push_object(this_object());
       push_object(clone_object(monitor_program, 1));
     }
+  }
+  else push_int(0);
+}
+
+static void f_jobj_get_class(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+
+  pop_n_elems(args);
+  if((env=jvm_procure_env(jo->jvm))) {
+    push_java_class((*env)->GetObjectClass(env, jo->jobj), jo->jvm, env);
+    jvm_vacate_env(jo->jvm, env);
   }
   else push_int(0);
 }
@@ -2848,6 +2862,7 @@ void pike_module_init(void)
   add_function("__hash", f_jobj_hash, "function(:int)", 0);
   add_function("is_instance_of", f_jobj_instance, "function(object:int)", 0);
   add_function("monitor_enter", f_monitor_enter, "function(:object)", 0);
+  add_function("get_object_class", f_jobj_get_class, "function(:object)", 0);
   set_init_callback(init_jobj_struct);
   set_exit_callback(exit_jobj_struct);
   set_gc_check_callback(jobj_gc_check);
