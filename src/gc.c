@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.99 2000/07/03 16:50:09 mast Exp $");
+RCSID("$Id: gc.c,v 1.100 2000/07/03 18:38:26 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1553,9 +1553,9 @@ int gc_do_free(void *a)
 	(m->flags & (GC_TOUCHED|GC_MARKED|GC_IS_REFERENCED)) == GC_TOUCHED)
       gc_fatal(a, 0, "gc_do_free() called without prior call to "
 	       "gc_mark() or gc_is_referenced().\n");
-    if((m->flags & (GC_MARKED|GC_XREFERENCED)) == GC_XREFERENCED)
-      gc_fatal(a, 1, "Thing with external reference missed in gc mark pass.\n");
   }
+  if((m->flags & (GC_MARKED|GC_XREFERENCED)) == GC_XREFERENCED)
+    gc_fatal(a, 1, "Thing with external reference missed in gc mark pass.\n");
   if ((m->flags & (GC_DO_FREE|GC_LIVE)) == GC_LIVE) live_ref++;
   m->flags |= GC_DO_FREE;
 #endif
