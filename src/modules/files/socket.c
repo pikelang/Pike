@@ -256,6 +256,10 @@ static void port_create(INT32 args)
 
 extern struct program *file_program;
 
+#ifdef SOLARIS
+#undef SOLARIS
+#endif
+
 static void port_accept(INT32 args)
 {
   int fd,tmp;

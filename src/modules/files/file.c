@@ -166,7 +166,7 @@ static void file_read(INT32 args)
 
     SET_ONERROR(ebuf, call_free, str);
 
-    do{
+/*  do{*/
       i=read(THIS->fd, str->str+bytes_read, r);
 
       check_signals();
@@ -191,7 +191,7 @@ static void file_read(INT32 args)
 	}
 	break;
       }
-    }while(r);
+/*    }while(r);*/
 
     UNSET_ONERROR(ebuf);
     

@@ -83,112 +83,68 @@ void f_parse_accessed_database(INT32 args)
   f_aggregate(2);
 }
 
-
-#if 0
-// This function leaks a lot of memory, but it ends with either an
-// exec() or an exit().  This could be a problem on systems with louse memory
-// management, though. I know of none.
-// Thanks to David Byers for the bugfix.
+#if defined(__svr4__) && defined(sun)
+#define SOLARIS
 #endif
 
-#if 0
-void f_exece(INT32 args)
+#ifdef SOLARIS
+#include <errno.h>
+#include <sys/socket.h>
+
+void f_send_fd(INT32 args)
 {
-  int i=0, environ_size=0;
-  struct array *arg;
-  struct array *env;
-  char **envv, **argv;
-  extern char **environ;
-    
-  /*
-   *  Check that the arguments given are
-   *  1. A string (the program to execute)
-   *  2. An array (argv)
-   *  3. An array (extra environment variables)
-   */
-    
-  if (args < 3 ||
-      sp[-args].type  != T_STRING ||
-      sp[1-args].type != T_ARRAY  ||
-      sp[2-args].type != T_ARRAY)
-    error("Illegal argument(s) to exece().\n");
+  struct iovec iov; 
+  struct msghdr msg;
+  int sock_fd, fd;
 
-  environ_size = 0;
-  while (environ[environ_size])
-    environ_size += 1;
+  if(args != 2) error("RTSL\n");
+  sock_fd = sp[-args].u.integer;
+  fd =  sp[-args+1].u.integer;
+  pop_stack();
+  pop_stack();
 
-  arg = sp[1-args].u.array;
-  env = sp[2-args].u.array;
+  iov.iov_base         = NULL;
+  iov.iov_len          = 0;
+  msg.msg_iov          = &iov;
+  msg.msg_iovlen       = 1;
+  msg.msg_name         = NULL;
+  msg.msg_accrights    = (caddr_t)&fd;
+  msg.msg_accrightslen = sizeof(fd);
 
-  /*
-   * Allocate argv and envv arrays
-   * In argv, make room for program name and NULL
-   * In envv, make room for NULL
-   */
-
-  argv = (char **)xalloc((2 + arg->size)*sizeof(char **));
-  envv = (char **)xalloc((1 + env->size + environ_size)*sizeof(char **));
-
-  /*
-   * Build argv
-   */
-
-  argv[0] = strdup((char *)(sp[-args].u.string->str));
-  if (arg->array_type == T_STRING)
+  while(sendmsg(sock_fd, &msg, 0) == -1)
   {
-    for (i = 0; i < arg->size; i++)
-      argv[1+i] = strdup((char *)(SHORT_ITEM(arg)[i].string->str));
+    switch(errno)
+    {
+     case EINVAL:
+      perror("Strange error while sending fd");
+      push_int(0);
+      return;
+
+     case EIO:
+     case EBADF:
+     case ENOTSOCK:
+     case ESTALE:
+      perror("Cannot send fd");
+      push_int(0);
+      return;
+
+     case EWOULDBLOCK:
+     case EINTR:
+     case ENOMEM:
+     case ENOSR:
+      continue;
+
+     default:
+      perror("Unknown error while semdmsg()ing");
+      push_int(0);
+      return;
+    }
   }
-  else if (arg->array_type == T_MIXED)
-  {
-    for (i = 0; i < arg->size; i++)
-      if (ITEM(arg)[i].type == T_STRING)
-	argv[1+i] = strdup((char *)(ITEM(arg)[i].u.string->str));
-      else
-	argv[1+i] = strdup("bad_argument");
-  }
-  else
-    error("Wrong type argv send to exece");
-
-  argv[1+i] = NULL;
-
-  /*
-   * Build envv
-   * 1. Copy environ
-   * 2. Copy arguments
-   */
-
-  for (i = 0; i < environ_size; i++)
-    envv[i] = environ[i];
-
-  if (arg->array_type == T_STRING)
-  {
-    for (i = 0; i < env->size; i++)
-      envv[environ_size+i] =
-	strdup((char *)(SHORT_ITEM(env)[i].string->str));
-  }
-  else if (env->array_type == T_MIXED)
-  {
-    for (i = 0; i < env->size; i++)
-      if (ITEM(env)[i].type == T_STRING)
-	envv[environ_size+i] =
-	  strdup((char *)(ITEM(env)[i].u.string->str));
-      else
-	envv[environ_size+i] = strdup("bad=argument");
-  }
-  else
-    error("Wrong type envv send to exece");
-
-  envv[environ_size + i] = NULL;
-
-  set_close_on_exec(0,0);
-  set_close_on_exec(1,0);
-  set_close_on_exec(2,0);
-
-  execve(argv[0], argv, envv);
-  exit(0);
+  push_int(1);
+  return;
 }
 #endif
+
 void f_parse_html(INT32 args)
 {
   struct lpc_string *ss;
@@ -980,6 +936,10 @@ void f_chroot(INT32 args)
 
 void init_spider_efuns(void) 
 {
+#ifdef SOLARIS
+  add_efun("send_fd", f_send_fd, "function(int,int:int)", OPT_EXTERNAL_DEPEND);
+#endif
+
 #ifdef HAVE_GETUID
   add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
