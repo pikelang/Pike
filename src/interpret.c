@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.277 2002/11/09 17:03:53 grubba Exp $
+|| $Id: interpret.c,v 1.278 2002/11/10 20:19:18 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.277 2002/11/09 17:03:53 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.278 2002/11/10 20:19:18 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -913,6 +913,10 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 #define OPCODE0_TAILBRANCH(O,N,F,C) TEST_OPCODE0(O,N,F,C)
 #define OPCODE1_TAILBRANCH(O,N,F,C) TEST_OPCODE1(O,N,F,C)
 #define OPCODE2_TAILBRANCH(O,N,F,C) TEST_OPCODE2(O,N,F,C)
+
+#define OPCODE0_ALIAS(O,N,F,C)
+#define OPCODE1_ALIAS(O,N,F,C)
+#define OPCODE2_ALIAS(O,N,F,C)
 
 #undef HAVE_COMPUTED_GOTO
 

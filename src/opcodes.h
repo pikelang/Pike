@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.31 2002/11/02 15:29:34 grubba Exp $
+|| $Id: opcodes.h,v 1.32 2002/11/10 20:19:18 grubba Exp $
 */
 
 #ifndef OPCODES_H
@@ -34,6 +34,9 @@
 #define OPCODE0_TAILBRANCH(X,Y,F) X,
 #define OPCODE1_TAILBRANCH(X,Y,F) X,
 #define OPCODE2_TAILBRANCH(X,Y,F) X,
+#define OPCODE0_ALIAS(X,Y,F,A) X,
+#define OPCODE1_ALIAS(X,Y,F,A) X,
+#define OPCODE2_ALIAS(X,Y,F,A) X,
 
 enum Pike_opcodes
 {
@@ -139,6 +142,9 @@ enum Pike_opcodes
 #undef OPCODE0_TAILBRANCH
 #undef OPCODE1_TAILBRANCH
 #undef OPCODE2_TAILBRANCH
+#undef OPCODE0_ALIAS
+#undef OPCODE1_ALIAS
+#undef OPCODE2_ALIAS
 
 
 /* Prototypes begin here */

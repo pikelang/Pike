@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.113 2002/11/02 16:24:10 grubba Exp $
+|| $Id: interpret_functions.h,v 1.114 2002/11/10 20:19:18 grubba Exp $
 */
 
 /*
@@ -58,7 +58,20 @@
 #define OPCODE0_TAILBRANCH(A, B, F, C)	OPCODE0_TAILBRANCH(A, B, F) --- C
 #define OPCODE1_TAILBRANCH(A, B, F, C)	OPCODE1_TAILBRANCH(A, B, F) --- C
 #define OPCODE2_TAILBRANCH(A, B, F, C)	OPCODE2_TAILBRANCH(A, B, F) --- C
+#define OPCODE0_ALIAS(A, B, F, C)	OPCODE0_ALIAS(A, B, F, C) --- FOO
+#define OPCODE1_ALIAS(A, B, F, C)	OPCODE1_ALIAS(A, B, F, C) --- FOO
+#define OPCODE2_ALIAS(A, B, F, C)	OPCODE2_ALIAS(A, B, F, C) --- FOO
 #endif /* GEN_PROTOS */
+
+#ifndef OPCODE0_ALIAS
+#define OPCODE0_ALIAS(A,B,C,D)	OPCODE0(A,B,C,{D();})
+#endif /* !OPCODE0_ALIAS */
+#ifndef OPCODE1_ALIAS
+#define OPCODE1_ALIAS(A,B,C,D)	OPCODE1(A,B,C,{D();})
+#endif /* !OPCODE1_ALIAS */
+#ifndef OPCODE2_ALIAS
+#define OPCODE2_ALIAS(A,B,C,D)	OPCODE2(A,B,C,{D();})
+#endif /* !OPCODE2_ALIAS */
 
 
 /*
@@ -1481,33 +1494,13 @@ OPCODE0(F_ADD_FLOATS, "float+float", 0, {
   }
 });
 
-OPCODE0(F_SUBTRACT, "-", 0, {
-  o_subtract();
-});
-
-OPCODE0(F_AND, "&", 0, {
-  o_and();
-});
-
-OPCODE0(F_OR, "|", 0, {
-  o_or();
-});
-
-OPCODE0(F_XOR, "^", 0, {
-  o_xor();
-});
-
-OPCODE0(F_MULTIPLY, "*", 0, {
-  o_multiply();
-});
-
-OPCODE0(F_DIVIDE, "/", 0, {
-  o_divide();
-});
-
-OPCODE0(F_MOD, "%", 0, {
-  o_mod();
-});
+OPCODE0_ALIAS(F_SUBTRACT, "-", 0, o_subtract);
+OPCODE0_ALIAS(F_AND, "&", 0, o_and);
+OPCODE0_ALIAS(F_OR, "|", 0, o_or);
+OPCODE0_ALIAS(F_XOR, "^", 0, o_xor);
+OPCODE0_ALIAS(F_MULTIPLY, "*", 0, o_multiply);
+OPCODE0_ALIAS(F_DIVIDE, "/", 0, o_divide);
+OPCODE0_ALIAS(F_MOD, "%", 0, o_mod);
 
 OPCODE1(F_ADD_INT, "add integer", 0, {
   if(Pike_sp[-1].type == T_INT
@@ -1659,17 +1652,9 @@ OPCODE2(F_MAGIC_VALUES, "::_values", 0, {
   push_magic_index(magic_values_program, arg2, arg1);
 });
 
-OPCODE0(F_CAST, "cast", 0, {
-  f_cast();
-});
-
-OPCODE0(F_CAST_TO_INT, "cast_to_int", 0, {
-  o_cast_to_int();
-});
-
-OPCODE0(F_CAST_TO_STRING, "cast_to_string", 0, {
-  o_cast_to_string();
-});
+OPCODE0_ALIAS(F_CAST, "cast", 0, f_cast);
+OPCODE0_ALIAS(F_CAST_TO_INT, "cast_to_int", 0, o_cast_to_int);
+OPCODE0_ALIAS(F_CAST_TO_STRING, "cast_to_string", 0, o_cast_to_string);
 
 OPCODE0(F_SOFT_CAST, "soft cast", 0, {
   /* Stack: type_string, value */
@@ -1734,9 +1719,7 @@ OPCODE0(F_SOFT_CAST, "soft cast", 0, {
   pop_stack();
 });
 
-OPCODE0(F_RANGE, "range", 0, {
-  o_range();
-});
+OPCODE0_ALIAS(F_RANGE, "range", 0, o_range);
 
 OPCODE0(F_COPY_VALUE, "copy_value", 0, {
   struct svalue tmp;
@@ -1775,9 +1758,7 @@ OPCODE1(F_SIZEOF_LOCAL, "sizeof local", 0, {
   push_int(pike_sizeof(Pike_fp->locals+arg1));
 });
 
-OPCODE1(F_SSCANF, "sscanf", 0, {
-  o_sscanf(arg1);
-});
+OPCODE1_ALIAS(F_SSCANF, "sscanf", 0, o_sscanf);
 
 #define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
 OP(PIKE_CONCAT(F_,OPCODE),NAME, I_PC_AT_NEXT, {				   \

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.111 2002/11/04 17:04:01 marcus Exp $
+|| $Id: lex.c,v 1.112 2002/11/10 20:19:18 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.111 2002/11/04 17:04:01 marcus Exp $");
+RCSID("$Id: lex.c,v 1.112 2002/11/10 20:19:18 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -150,6 +150,7 @@ void exit_lex(void)
 #ifdef PIKE_USE_MACHINE_CODE
 #define ADDR(X) , (void *)PIKE_CONCAT(opcode_,X)
 #define NULLADDR , 0
+#define ALIASADDR(X)	, (void *)(X)
 
 #define OPCODE0(OP,DESC,FLAGS) void PIKE_CONCAT(opcode_,OP)(void);
 #define OPCODE1(OP,DESC,FLAGS) void PIKE_CONCAT(opcode_,OP)(INT32);
@@ -173,6 +174,10 @@ void exit_lex(void)
 #define OPCODE0_TAILRETURN(OP, DESC, FLAGS) OPCODE0_TAIL(OP, DESC, FLAGS)
 #define OPCODE1_TAILRETURN(OP, DESC, FLAGS) OPCODE1_TAIL(OP, DESC, FLAGS)
 #define OPCODE2_TAILRETURN(OP, DESC, FLAGS) OPCODE2_TAIL(OP, DESC, FLAGS)
+
+#define OPCODE0_ALIAS(OP, DESC, FLAGS, ADDR)
+#define OPCODE1_ALIAS(OP, DESC, FLAGS, ADDR)
+#define OPCODE2_ALIAS(OP, DESC, FLAGS, ADDR)
 
 #ifdef OPCODE_INLINE_BRANCH
 #define OPCODE0_BRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(void);
@@ -217,6 +222,10 @@ void exit_lex(void)
 #undef OPCODE1_TAILRETURN
 #undef OPCODE2_TAILRETURN
 
+#undef OPCODE0_ALIAS
+#undef OPCODE1_ALIAS
+#undef OPCODE2_ALIAS
+
 #undef OPCODE0_BRANCH
 #undef OPCODE1_BRANCH
 #undef OPCODE2_BRANCH
@@ -228,6 +237,7 @@ void exit_lex(void)
 #define ADDR(X)
 #define BRANCHADDR(X)
 #define NULLADDR
+#define ALIASADDR(X)
 #endif
 
 #define OPCODE0(OP,DESC,FLAGS) { DESC, OP, FLAGS ADDR(OP) },
@@ -251,6 +261,10 @@ void exit_lex(void)
 #define OPCODE0_TAILRETURN(OP, DESC, FLAGS) OPCODE0_TAIL(OP, DESC, FLAGS)
 #define OPCODE1_TAILRETURN(OP, DESC, FLAGS) OPCODE1_TAIL(OP, DESC, FLAGS)
 #define OPCODE2_TAILRETURN(OP, DESC, FLAGS) OPCODE2_TAIL(OP, DESC, FLAGS)
+
+#define OPCODE0_ALIAS(OP, DESC, FLAGS, A) { DESC, OP, FLAGS ALIASADDR(A) },
+#define OPCODE1_ALIAS(OP, DESC, FLAGS, A) { DESC, OP, FLAGS | I_HASARG ALIASADDR(A) },
+#define OPCODE2_ALIAS(OP, DESC, FLAGS, A) { DESC, OP, FLAGS | I_TWO_ARGS ALIASADDR(A) },
 
 #define OPCODE0_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCH BRANCHADDR(OP) },
 #define OPCODE1_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARG BRANCHADDR(OP) },

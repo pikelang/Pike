@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.79 2002/11/02 15:34:35 grubba Exp $
+|| $Id: interpreter.h,v 1.80 2002/11/10 20:19:18 grubba Exp $
 */
 
 #undef LOW_GET_ARG
@@ -281,6 +281,10 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     CODE; \
   } DONE
 
+#define OPCODE0_ALIAS(OP, DESC, FLAGS, FUN) OPCODE0(OP, DESC, FLAGS, {FUN();})
+#define OPCODE1_ALIAS(OP, DESC, FLAGS, FUN) OPCODE1(OP, DESC, FLAGS, {FUN(arg1);})
+#define OPCODE2_ALIAS(OP, DESC, FLAGS, FUN) OPCODE2(OP, DESC, FLAGS, {FUN(arg1, arg2);})
+
 #define OPCODE0_TAIL(OP, DESC, FLAGS, CODE) CASE(OP); CODE
 #define OPCODE1_TAIL(OP, DESC, FLAGS, CODE) CASE(OP); CODE
 #define OPCODE2_TAIL(OP, DESC, FLAGS, CODE) CASE(OP); CODE
@@ -359,6 +363,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #undef OPCODE0_TAILBRANCH
 #undef OPCODE1_TAILBRANCH
 #undef OPCODE2_TAILBRANCH
+  /* NOTE: No need to redefine these.
+   * #undef OPCODE0_ALIAS
+   * #undef OPCODE1_ALIAS
+   * #undef OPCODE2_ALIAS
+   */
 #undef LABEL
 #define LABEL(OP)			&&PIKE_CONCAT(LABEL_,OP)
 #define NULL_LABEL(OP)			NULL
