@@ -49,37 +49,6 @@ void parse_rc(string rc)
 /*   gtk_widget_propagate_default_style(); */
 }
 
-%{
-  static int timeout_save;
-%}
-
-void saver_off( )
-//! Disable the screensaver
-{
-#ifndef __NT__
-  int interval, prefer_blank, allow_exp;
-  XGetScreenSaver(GDK_DISPLAY(),
-		  &timeout_save, &interval, &prefer_blank, &allow_exp);
-  if (timeout_save)
-    XSetScreenSaver(GDK_DISPLAY(), 0, interval, prefer_blank, allow_exp);
-#endif
-}
-
-void saver_on( )
-//! Enable the screensaver again after @[saver_off] has been called.
-{
-#ifndef __NT__
-  if( timeout_save )
-  {
-    int dummy, interval, prefer_blank, allow_exp;
-    XGetScreenSaver(GDK_DISPLAY(),
-		    &dummy, &interval, &prefer_blank, &allow_exp);
-    XSetScreenSaver(GDK_DISPLAY(),
-		    timeout_save, interval, prefer_blank, allow_exp);
-  }
-#endif
-}
-
 GDK.Window root_window()
 //! Returns the root window of the current display
 {
@@ -340,3 +309,94 @@ void grab_remove(GTK.Widget widget)
   my_pop_n_elems( args );
 }
 
+
+require x11;
+
+/* Low-level X11 related functions */
+%{
+#ifdef HAVE_XDPMS
+#include <X11/Xext.h>
+#include <X11/extensions/dpms.h>
+#endif
+
+  /* screen-saver on/off status variables.
+   *
+   * TODO: Add an atexit() that restores the screensaver.
+   */
+  static int timeout_save, dpms_off;
+%}
+
+void saver_disable( )
+//! Disable the screensaver.
+//! This is a low-level X11 function, and thus only works when GDK uses X11
+{
+  int interval, prefer_blank, allow_exp;
+  XGetScreenSaver(GDK_DISPLAY(),
+		  &timeout_save, &interval, &prefer_blank, &allow_exp);
+  if (timeout_save)
+    XSetScreenSaver(GDK_DISPLAY(), 0, interval, prefer_blank, allow_exp);
+
+#ifdef HAVE_XDPMS
+    if (DPMSQueryExtension(GDK_DISPLAY(), &interval, &interval))
+    {
+      CARD16 state;
+      DPMSInfo(GDK_DISPLAY(), &state, &dpms_off);
+      if (dpms_off)
+	DPMSDisable(mDisplay);  // monitor powersave off
+    }
+#endif
+}
+
+void saver_enable( )
+//! Enable the screensaver again after @[saver_disable] has been called.
+//! This is a low-level X11 function, and thus only works when GDK uses X11.
+{
+  if( timeout_save )
+  {
+    int dummy, interval, prefer_blank, allow_exp;
+    XGetScreenSaver(GDK_DISPLAY(),
+		    &dummy, &interval, &prefer_blank, &allow_exp);
+    XSetScreenSaver(GDK_DISPLAY(),
+		    timeout_save, interval, prefer_blank, allow_exp);
+  }
+
+#ifdef HAVE_XDPMS
+    if (dpms_off)
+    {
+      DPMSEnable(mDisplay);  // monitor powersave on
+      dpms_off=0;
+    }
+#endif
+}
+
+
+void move_cursor( int dx, int dy )
+//! Move the mouse-cursor dx,dy pixels, relative to it's current position.
+//! This will generate a normal motion event.
+//!
+//! Note that this is a low-level X11 function, and thus only works
+//! when GDK uses X11.
+{
+  int x, y;
+  get_all_args( "move_cursor", args, "%d%d", &x, &y );
+  
+  XWarpPointer( GDK_DISPLAY(), None, None, 0, 0, 0, 0, x, y );
+}
+
+void move_cursor_abs( GDK.Window w, int dx, int dy )
+//! Move the mouse-cursor to x,y, relative to the upper left corner of
+//! the specified window. This will generate a normal motion event.
+//!
+//! Note that this is a low-level X11 function, and thus only works
+//! when GDK uses X11.
+{
+  int x, y;
+  struct object *o;
+  get_all_args( "move_cursor_abs", args, "%o%d%d", &o, &x, &y );
+  GdkWindowPrivate *priv = (GdkWindowPrivate *)get_gdkobject( o, window );
+  if( !priv )
+    Pike_error("No window specified!\n");
+  XWarpPointer( GDK_DISPLAY(), None, priv->xwindow, 0, 0, 0, 0, x, y );
+}
+
+endrequire; /* x11 */
