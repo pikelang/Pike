@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.10 2001/06/05 10:14:58 hubbe Exp $");
+RCSID("$Id: iterators.cmod,v 1.11 2001/06/16 12:09:02 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -447,17 +447,23 @@ PIKECLASS string_split_iterator
   CVAR struct svalue feed;
 
 #define SIMPLE_SKIP_CASE(THIS, SHIFT, OFF) case SHIFT: 	\
+  do {							\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 			\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);		\
     while((OFF < THIS->buffer->len) &&			\
-          PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF] ==	\
-          THIS->split_set[0]) {				\
+          s[OFF] == THIS->split_set[0]) {		\
       OFF++;						\
     }							\
-    break
+  } while(0);						\
+  break
 
 #define COMPLEX_SKIP_CASE(THIS, SHIFT, OFF) case SHIFT:		\
+  do {								\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
     while(OFF < THIS->buffer->len) {				\
       int i;							\
-      p_wchar2 ch = PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF];	\
+      p_wchar2 ch = s[OFF];					\
       for (i=0; i < THIS->split_set_size; i++) {		\
 	if (ch == THIS->split_set[i]) {				\
 	  goto PIKE_CONCAT(continue_skip,SHIFT);		\
@@ -467,20 +473,27 @@ PIKECLASS string_split_iterator
     PIKE_CONCAT(continue_skip,SHIFT):				\
       OFF++;							\
     }								\
-    break
+  } while(0);							\
+  break
   
-#define SIMPLE_SCAN_CASE(THIS, SHIFT, OFF) case SHIFT:	\
-    while((OFF < THIS->buffer->len) &&			\
-          PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF] !=	\
-          THIS->split_set[0]) {				\
-      OFF++;						\
-    }							\
-    break
+#define SIMPLE_SCAN_CASE(THIS, SHIFT, OFF) case SHIFT:		\
+  do {								\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
+    while((OFF < THIS->buffer->len) &&				\
+          s[OFF] != THIS->split_set[0]) {			\
+      OFF++;							\
+    }								\
+  } while(0);							\
+  break
 
 #define COMPLEX_SCAN_CASE(THIS, SHIFT, OFF) case SHIFT:		\
+  do {								\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
     while(OFF < THIS->buffer->len) {				\
       int i;							\
-      p_wchar2 ch = PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF];	\
+      p_wchar2 ch = s[OFF];					\
       for (i=0; i < THIS->split_set_size; i++) {		\
 	if (ch == THIS->split_set[i]) {				\
 	  goto PIKE_CONCAT(break_scan,SHIFT);			\
@@ -489,7 +502,41 @@ PIKECLASS string_split_iterator
       OFF++;							\
     }								\
   PIKE_CONCAT(break_scan, SHIFT):				\
-    break
+  } while(0);							\
+  break
+
+#define SIMPLE_SCAN_CASE_PUSH(THIS, SHIFT, OFF) case SHIFT:	\
+  do {								\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
+    while((OFF < THIS->buffer->len) &&				\
+          s[OFF] != THIS->split_set[0]) {			\
+      OFF++;							\
+    }								\
+    push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
+      (s+offset, OFF-offset));					\
+  } while(0);							\
+  break
+
+#define COMPLEX_SCAN_CASE_PUSH(THIS, SHIFT, OFF) case SHIFT:	\
+  do {								\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
+    while(OFF < THIS->buffer->len) {				\
+      int i;							\
+      p_wchar2 ch = s[OFF];					\
+      for (i=0; i < THIS->split_set_size; i++) {		\
+	if (ch == THIS->split_set[i]) {				\
+	  goto PIKE_CONCAT(break_scan,SHIFT);			\
+	}							\
+      }								\
+      OFF++;							\
+    }								\
+  PIKE_CONCAT(break_scan, SHIFT):				\
+    push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
+      (s+offset, OFF-offset));					\
+  } while(0);							\
+  break
 
   static void find_next(struct string_split_iterator_struct *ssi)
     {
@@ -554,25 +601,21 @@ PIKECLASS string_split_iterator
     scan_more:
       if (ssi->split_set_size == 1) {
 	switch(ssi->buffer->size_shift) {
-	  SIMPLE_SCAN_CASE(ssi, 0, end);
-	  SIMPLE_SCAN_CASE(ssi, 1, end);
-	  SIMPLE_SCAN_CASE(ssi, 2, end);
+	  SIMPLE_SCAN_CASE_PUSH(ssi, 0, end);
+	  SIMPLE_SCAN_CASE_PUSH(ssi, 1, end);
+	  SIMPLE_SCAN_CASE_PUSH(ssi, 2, end);
 	default:
 	  fatal("Unsupported size shift!\n");
 	}
       } else {
 	switch(ssi->buffer->size_shift) {
-	  COMPLEX_SCAN_CASE(ssi, 0, end);
-	  COMPLEX_SCAN_CASE(ssi, 1, end);
-	  COMPLEX_SCAN_CASE(ssi, 2, end);
+	  COMPLEX_SCAN_CASE_PUSH(ssi, 0, end);
+	  COMPLEX_SCAN_CASE_PUSH(ssi, 1, end);
+	  COMPLEX_SCAN_CASE_PUSH(ssi, 2, end);
 	default:
 	  fatal("Unsupported size shift!\n");
 	}
       }
-      ref_push_string(ssi->buffer);
-      push_int(offset);
-      push_int(end-1);
-      o_range();
       if ((end == ssi->buffer->len) && (ssi->feed.type != T_INT)) {
 	apply_svalue(&ssi->feed, 0);
 	if ((Pike_sp[-1].type == T_STRING) &&
@@ -919,7 +962,7 @@ PIKECLASS string_split_iterator
 		    (CAR(*from)->u.sval.type == T_FUNCTION) &&
 		    (CAR(*from)->u.sval.subtype == FUNCTION_BUILTIN)) {
 		  if (CAR(*from)->u.sval.u.efun->function == f_allocate) {
-		    /* Not likely */
+		    /* FIXME: Not likely */
 		  } else if (CAR(*from)->u.sval.u.efun->function ==
 			     debug_f_aggregate) {
 		    node *tmp = CDR(*from);
@@ -1067,8 +1110,33 @@ int foreach_iterate(struct object *o)
       }else{
 	return 0;
       }
-    }
-    if(o->prog == array_iterator_program)
+    } else if(o->prog == string_split_iterator_program)
+    {
+      struct string_split_iterator_struct *i=OBJ2_STRING_SPLIT_ITERATOR(o);
+      if(i->current)
+      {
+	if(Pike_sp[-4].type != T_INT)
+	{
+	  /* Black Magic... */
+	  push_int(i->index);
+	  Pike_sp--;
+	  assign_lvalue(Pike_sp-4, Pike_sp);
+	}
+
+	if(Pike_sp[-2].type != T_INT)
+	{
+	  /* Black Magic... */
+	  push_string(i->current);
+	  Pike_sp--;
+	  assign_lvalue(Pike_sp-2, Pike_sp);
+	}
+
+	find_next(i);
+	return 1;
+      }else{
+	return 0;
+      }
+    } else if(o->prog == array_iterator_program)
     {
       struct array_iterator_struct *i=OBJ2_ARRAY_ITERATOR(o);
       if(i->pos < i->a->size)
@@ -1088,8 +1156,7 @@ int foreach_iterate(struct object *o)
       }else{
 	return 0;
       }
-    }
-    if(o->prog == multiset_iterator_program)
+    } else if(o->prog == multiset_iterator_program)
     {
       struct multiset_iterator_struct *i=OBJ2_MULTISET_ITERATOR(o);
       if(i->pos < i->a->size)
@@ -1109,8 +1176,7 @@ int foreach_iterate(struct object *o)
       }else{
 	return 0;
       }
-    }
-    if(o->prog == string_iterator_program)
+    } else if(o->prog == string_iterator_program)
     {
       struct string_iterator_struct *i=OBJ2_STRING_ITERATOR(o);
       if(i->pos < i->s->len)
@@ -1130,31 +1196,6 @@ int foreach_iterate(struct object *o)
 	}
 
 	i->pos++;
-	return 1;
-      }else{
-	return 0;
-      }
-    }
-    if(o->prog == string_split_iterator_program)
-    {
-      struct string_split_iterator_struct *i=OBJ2_STRING_SPLIT_ITERATOR(o);
-      if(i->current)
-      {
-	if(Pike_sp[-4].type != T_INT)
-	{
-	  push_int(i->index);
-	  assign_lvalue(Pike_sp-5, Pike_sp-1);
-	  pop_stack();
-	}
-
-	if(Pike_sp[-2].type != T_INT)
-	{
-	  ref_push_string(i->current);
-	  assign_lvalue(Pike_sp-3, Pike_sp-1);
-	  pop_stack();
-	}
-
-	find_next(i);
 	return 1;
       }else{
 	return 0;
