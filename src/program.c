@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.266 2000/08/24 13:58:24 grubba Exp $");
+RCSID("$Id: program.c,v 1.267 2000/08/28 19:35:04 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1728,13 +1728,12 @@ static int find_depth(struct program_state *state,
 /*
  * make this program inherit another program
  */
-static void really_low_inherit(struct program *p,
-			       struct object *parent,
-			       int parent_identifier,
-			       int parent_offset,
-			       INT32 flags,
-			       struct pike_string *name,
-			       int parent_identifier_offset)
+void low_inherit(struct program *p,
+		 struct object *parent,
+		 int parent_identifier,
+		 int parent_offset,
+		 INT32 flags,
+		 struct pike_string *name)
 {
   int e;
   ptrdiff_t inherit_offset, storage_offset;
@@ -1931,29 +1930,17 @@ static void really_low_inherit(struct program *p,
   }
 }
 
-void low_inherit(struct program *p,
-		 struct object *parent,
-		 int parent_identifier,
-		 int parent_offset,
-		 INT32 flags,
-		 struct pike_string *name)
-{
-  really_low_inherit(p,parent,parent_identifier,parent_offset,flags,name,0);
-}
-
-
 PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name)
 {
   struct program *p=program_from_svalue(s);
-  really_low_inherit(p,
-		     s->type == T_FUNCTION ? s->u.object : 0,
-		     s->type == T_FUNCTION ? s->subtype : -1,
-		     0,
-		     flags,
-		     name,
-		     Pike_compiler->new_program->num_identifiers );
+  low_inherit(p,
+	      s->type == T_FUNCTION ? s->u.object : 0,
+	      s->type == T_FUNCTION ? s->subtype : -1,
+	      0,
+	      flags,
+	      name);
 }
 
 void compiler_do_inherit(node *n,
@@ -1962,7 +1949,7 @@ void compiler_do_inherit(node *n,
 {
   struct program *p;
   struct identifier *i;
-  INT32 numid=-1, offset=0,parentoff=0;;
+  INT32 numid=-1, offset=0;
 
   if(!n)
   {
@@ -1975,14 +1962,13 @@ void compiler_do_inherit(node *n,
       p=Pike_compiler->new_program;
       offset=0;
       numid=n->u.id.number;
-      parentoff=Pike_compiler->new_program->num_identifiers;
       goto continue_inherit;
 
     case F_EXTERNAL:
       {
 	struct program_state *state = Pike_compiler;
 
-	offset = 0;	/* FIXME: Should this be zero or 1? */
+	offset = 0;
 	while (state && (state->new_program->id != n->u.integer.a)) {
 	  state = state->previous;
 	  offset++;
@@ -1993,12 +1979,6 @@ void compiler_do_inherit(node *n,
 	}
 	p = state->new_program;
 	numid = n->u.integer.b;
-	if(offset==-1)
-	{
-	  parentoff=Pike_compiler->new_program->num_identifiers;
-	}else{
-	  parentoff=~INHERIT_FROM_INT(p,numid)->identifier_level;
-	}
       }
 
   continue_inherit:
@@ -2021,13 +2001,12 @@ void compiler_do_inherit(node *n,
 	return;
       }
 
-      really_low_inherit(p,
-			 0,
-			 numid,
-			 offset+42,
-			 flags,
-			 name,
-			 parentoff);
+      low_inherit(p,
+		  0,
+		  numid,
+		  offset+42,
+		  flags,
+		  name);
       break;
 
     default:
