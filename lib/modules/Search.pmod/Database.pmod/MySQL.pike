@@ -37,7 +37,8 @@ void create_tables()
                           document_id int unsigned not null,
                           word_position mediumint unsigned not null,
                           ranking tinyint not null,
-                          key(word_id,document_id))"
+                          INDEX index_word_id (word_id),
+                          INDEX index_document_id (document_id))"
 			  );
 }
 
