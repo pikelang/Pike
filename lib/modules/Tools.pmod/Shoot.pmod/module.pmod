@@ -124,10 +124,10 @@ class ExecTest(string id,Test test)
 
       if (silent) return 0;
 
-      write("%6.3fs %6.3fs %5dkb %5s%s\n",
+      write("%6.3fs %6.3fs %s %5s%s\n",
 	    tseconds,
 	    useconds,
-	    memusage/1024,
+	    memusage>0 ? sprintf("%5dkb", memusage/1024) : "   ?   ",
 	    "("+nruns+")",
 	    test->present_n
 	    ?" ("+(tg
