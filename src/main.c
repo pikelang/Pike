@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.169 2003/03/30 02:08:08 mast Exp $
+|| $Id: main.c,v 1.170 2003/03/30 17:15:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.169 2003/03/30 02:08:08 mast Exp $");
+RCSID("$Id: main.c,v 1.170 2003/03/30 17:15:09 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -818,6 +818,13 @@ void low_init_main(void)
 
 void exit_main(void)
 {
+#ifdef DO_PIKE_CLEANUP
+  /* Destruct all remaining objects before modules are shut down, so
+   * that they don't get calls to object exit callbacks after their
+   * module exit callback. The downside is that the leak report below
+   * will always report destructed objects. */
+  cleanup_objects();
+#endif
 }
 
 void init_main(void)
@@ -859,9 +866,10 @@ void low_exit_main(void)
   exit_pike_security();
   free_svalue(& throw_value);
   throw_value.type=T_INT;
+
   {
 #ifdef DEBUG_MALLOC
-    gc_keep_markers = 1;
+    gc_keep_markers = verbose_debug_exit;
 #endif
     while(1) {
       int tmp=num_objects;
@@ -870,7 +878,7 @@ void low_exit_main(void)
     }
   }
 
-#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
+#ifdef DEBUG_MALLOC
   if(verbose_debug_exit)
   {
     fprintf(stderr,"Exited normally, counting bytes.\n");
@@ -897,7 +905,7 @@ void low_exit_main(void)
 	  describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
 	}								\
 	else if (m->refs != x->refs) {					\
-	  fprintf (stderr, NAME " got %d extra external references:\n",	\
+	  fprintf (stderr, NAME " got %d unaccounted references:\n",	\
 		   x->refs - m->refs);					\
 	  describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
 	}								\
@@ -951,12 +959,9 @@ void low_exit_main(void)
       describe_all_types();
     }
   }
-#else
-  gc_keep_markers = 0;
-  do_gc (NULL, 1);
 #endif
 
-  cleanup_objects();
+  destruct_objects_to_destruct_cb();
 
   really_clean_up_interpret();
 
