@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.119 2001/03/29 01:12:38 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.120 2001/03/29 20:23:32 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -844,6 +844,10 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
       if(((ptrdiff_t)s->next) & 1)
 	fatal("Freeing shared string again, memory corrupt or other bug!\n");
     }
+  }
+  if ((s->size_shift < 0) || (s->size_shift > 2)) {
+    fatal("Freeing string with bad shift (0x%08x); could it be a type?\n",
+	  s->size_shift);
   }
 #endif
   unlink_pike_string(s);
