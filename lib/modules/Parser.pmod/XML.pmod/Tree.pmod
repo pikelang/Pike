@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.19 2002/10/25 15:29:11 jonasw Exp $
+ * $Id: Tree.pmod,v 1.20 2002/10/25 16:47:41 nilsson Exp $
  *
  */
 
@@ -54,24 +54,24 @@ string text_quote(string data, void|int(0..1) preserve_roxen_entities)
 {
   if (preserve_roxen_entities) {
     string out = "";
-    int pos = 0;
-    while ((pos = search(data, "&")) >= 0) {
+    int pos, opos;
+    while ((pos = search(data, "&", pos)) >= 0) {
       if ((sscanf(data[pos..], "&%[^ <>;&];", string entity) == 1) &&
 	  search(entity, ".") >= 0) {
-	out += text_quote(data[..pos - 1], 0) + "&" + entity + ";";
-	data = data[pos + strlen(entity) + 2..];
+	out += text_quote(data[opos..pos - 1], 0) + "&" + entity + ";";
+	pos += strlen(entity) + 2;
       } else {
-	out += text_quote(data[..pos], 0);
-	data = data[pos + 1..];
+	out += text_quote(data[opos..pos], 0);
+	pos++;
       }
+      opos = pos;
     }
-    return out + text_quote(data, 0);
-  } else {
-    data = replace(data, "&", "&amp;");
-    data = replace(data, "<", "&lt;");
-    data = replace(data, ">", "&gt;");
-    return data;
+    return out + text_quote(data[opos..], 0);
   }
+  else
+    return replace(data, ([ "&":"&amp;",
+			    "<":"&lt;",
+			    ">":"&gt;" ]) );
 }
 
 //!  Quotes the string given in @[data] by escaping &, <, >, ' and ".
@@ -79,10 +79,9 @@ string text_quote(string data, void|int(0..1) preserve_roxen_entities)
 //!  @tt{&foo.bar;@} will not be escaped.
 string attribute_quote(string data, void|int(0..1) preserve_roxen_entities)
 {
-  data = text_quote(data, preserve_roxen_entities);
-  data = replace(data, "\"", "&quot;");
-  data = replace(data, "'",  "&apos;");
-  return data;
+  return replace(text_quote(data, preserve_roxen_entities),
+		 ([ "\"":"&quot;",
+		    "'":"&apos;" ]));
 }
 
 void throw_error(mixed ...args)
