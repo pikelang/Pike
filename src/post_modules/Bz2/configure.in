@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2003/01/25 11:43:26 mirar Exp $
+# $Id: configure.in,v 1.5 2003/01/25 15:20:34 grubba Exp $
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(bz2,     [  --without-bz2       Disable Bz2],[],[with_bz2=yes])
@@ -23,7 +23,7 @@ if test x$with_bz2 = xyes ; then
     AC_CHECK_FUNCS(BZ2_bzCompressInit)
 
     AC_CHECK_HEADERS(bzlib.h string.h strings.h)
-    if test $ac_cv_header_jpeglib_h = yes ; then
+    if test $ac_cv_header_bzlib_h = yes ; then
        PIKE_FEATURE(Bz2,[yes (using libbz2)])
        AC_DEFINE(HAVE_BZ2LIB)
     else
