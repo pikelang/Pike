@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.142 1998/12/21 09:38:31 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.143 1999/01/16 00:24:54 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3576,7 +3576,7 @@ void f_transpose(INT32 args)
   out=allocate_array(sizeininner);
 
   for(i=0; i<sizein; i++)
-    type|=in->item->u.array->type_field;
+    type|=in->item[i].u.array->type_field;
   
   for(j=0; j<sizeininner; j++)
   {
