@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+#pragma strict_types
+
 constant diff = __builtin.diff;
 constant diff_longest_sequence = __builtin.diff_longest_sequence;
 constant diff_compare_table = __builtin.diff_compare_table;
@@ -110,13 +112,14 @@ int search_array(array arr, string|function|int fun, mixed ... args)
   error("Bad argument 2 to search_array().\n");
 }
 
-array sum_arrays(function sum, mixed ... args)
+//! Applies the function @[sum] columnwise on the elements in the
+//! provided arrays. E.g. @tt{sum_array(`+,a,b,c)@} does the same
+//! as @tt{`+(a[*],b[*],c[*])@}.
+array sum_arrays(function(mixed ...:mixed) sum, array ... args)
 {
-  array ret;
-  int e,d;
-  ret=allocate(sizeof(args[0]));
-  for(e=0;e<sizeof(args[0]);e++)
-    ret[e]=([function(mixed...:mixed)]sum)(@ column(args, e));
+  array ret = allocate(sizeof(args[0]));
+  for(int e=0; e<sizeof(args[0]); e++)
+    ret[e] = sum( @column(args, e) );
   return ret;
 }
 
@@ -590,7 +593,7 @@ array uniq2(array a)
 array arrayify(void|array|mixed x)
 {
    if(zero_type(x)) return ({});
-   if(arrayp(x)) return x;
+   if(arrayp(x)) return [array]x;
    return ({ x });
 }
 
@@ -608,7 +611,7 @@ int oid_sort_func(string a0,string b0)
     return oid_sort_func(a2,b2);
 }
 
-static array(array) low_greedy_diff(array d1, array d2)
+static array(array(array)) low_greedy_diff(array(array) d1, array(array) d2)
 {
   array r1, r2, x, y, yb, b, c;
   r1 = r2 = ({});
@@ -644,7 +647,8 @@ out:if(sizeof(yb) > sizeof(b))
   }
   if(!seen)
     return ({ d1, d2 });	// No change.
-  return ({ r1 + d1[seen..], r2 + d2[seen..] });
+  return ({ [array(array)]r1 + d1[seen..],
+	    [array(array)]r2 + d2[seen..] });
 }
 
 //! Like @[Array.diff], but tries to generate bigger continuous chunks of the
@@ -655,9 +659,9 @@ out:if(sizeof(yb) > sizeof(b))
 //! into the somewhat shorter diff arrays
 //! @code{({ ..., A, Z,     B+C, ... })@}
 //! @code{({ ..., A, X+B+Y, B+C, ... })@}
-array(array) greedy_diff(array from, array to)
+array(array(array)) greedy_diff(array from, array to)
 {
-  array d1, d2;
+  array(array) d1, d2;
   [d1, d2] = Array.diff(from, to);
   [d2, d1] = low_greedy_diff(d2, d1);
   return low_greedy_diff(d1, d2);
