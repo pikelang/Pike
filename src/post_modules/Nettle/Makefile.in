@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2003/03/12 17:07:10 nisse Exp $
+# $Id: Makefile.in,v 1.2 2003/03/12 19:30:39 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 
@@ -9,6 +9,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-# What does this mean?
-depend: 
-	@:
+nettle.o: $(SRCDIR)/nettle.c
+
+@dependencies@
