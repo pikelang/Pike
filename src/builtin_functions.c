@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.559 2004/07/04 16:28:23 srb Exp $
+|| $Id: builtin_functions.c,v 1.560 2004/07/04 17:23:02 srb Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.559 2004/07/04 16:28:23 srb Exp $");
+RCSID("$Id: builtin_functions.c,v 1.560 2004/07/04 17:23:02 srb Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7909,6 +7909,7 @@ void init_builtin_efuns(void)
 		tFunc(tStr tOr(tStr, tVoid) tOr(tObj, tVoid), tMix), 0);
   ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt, tStr), 0);
   ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
+  ADD_PROTOTYPE("write", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
   ADD_PROTOTYPE("werror", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
   
   /* FIXME: Are these three actually supposed to be used?

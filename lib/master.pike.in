@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.355 2004/07/04 16:28:23 srb Exp $
+// $Id: master.pike.in,v 1.356 2004/07/04 17:23:02 srb Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -92,16 +92,10 @@ private constant Files = _static_modules.files;
 
 #define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
-#define write(X ...) (Files()->_stdout->write(X))
 #define trim_all_whites(X) (Builtin()->string_trim_all_whites (X))
 
-//! @appears void werror(string msg, mixed ... args)
-//!
-//! Write to standard error.
-//!
-void werror(mixed ... args) {
-  _werror(@args);
-}
+private function write = Files()->_stdout->write;
+private function werror = Files()->_stderr->write;
 
 #ifdef RESOLV_DEBUG
 
@@ -1066,7 +1060,6 @@ constant master_efuns = ({
   "normalize_path",
   "getenv",
   "putenv",
-  "werror",
 
 #ifdef GETCWD_CACHE
   "cd",
@@ -1087,6 +1080,11 @@ string include_prefix;
 //! Writes a string on stdout. Works just like @[Stdio.File.write]
 //! on @[Stdio.stdout].
 
+//! @decl int werror(string fmt, mixed ... args)
+//! @appears werror
+//! Writes a string on stderr. Works just like @[Stdio.File.write]
+//! on @[Stdio.stderr].
+
 /* Note that create is called before add_precompiled_program
  */
 static void create()
@@ -1098,7 +1096,8 @@ static void create()
       error("Function %O is missing from master.pike.\n", e);
 
   add_constant("strlen", sizeof);
-  add_constant("write", Files()->_stdout->write);
+  add_constant("write", write);
+  add_constant("werror", werror);
 
 #define CO(X)  add_constant(#X,Builtin.__backend->X)
   CO(call_out);
