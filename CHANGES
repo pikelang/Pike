@@ -238,6 +238,11 @@ o sprintf("%O", foo) is more descriptive
     However, if an object contains an _sprintf function it will still
     be called in this case.
 
+o Constant objects
+    An object can now be constant, allowing for better
+    performace. For example used for Gmp.Bignum, Math.Matrix and
+    Image.Color.
+
 
 New modules / classes / methods / functionality added:
 ------------------------------------------------------
@@ -658,8 +663,6 @@ itself.)
 
 Uncategorized misc changes:
 ---------------------------
-
-o constant objects (Gmp.Bignum, Math.Matrix, Image.Color)
 o basetype()
 o it is possible to change predefines without forking a new pike
 o #pragma save_parent
@@ -677,8 +680,8 @@ o Calendar.verify  *FIXME: remove?*
 Nilsson does lib:
 
 master.pike
-- Better %O print outs for objects and programs.
-- pike -x
+- Better %O print outs for objects and programs. /* DONE */
+- pike -x  /* DONE */
 - add_predefine/remove_predefine
 - argc, argv and env are available when using pike -e
 - getenv/putenv is now case insensitive on NT.
