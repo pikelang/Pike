@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.58 2000/02/03 02:37:22 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.59 2000/02/04 00:50:58 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1552,7 +1552,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
     }
   }
 
-  if((m->data->val_types | m->data->ind_types) & BIT_COMPLEX)
+  if(!((m->data->val_types | m->data->ind_types) & BIT_COMPLEX))
     return copy_mapping(m);
 
   ret=allocate_mapping(MAP_SLOTS(m->data->size));

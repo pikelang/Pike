@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.265 2000/01/27 23:07:41 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.266 2000/02/04 00:50:59 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3842,6 +3842,15 @@ test_eq(search("fo-obar|gazonk"/"|","gazonk"),1)
 test_eq(search(([1:2,3:4,5:6,7:8]),4),3)
 test_true(zero_type(search(([1:2,3:4,5:6,7:8]),3)))
 test_eq(search(([1:2,3:4,5:6,7:8]),8),7)
+test_any([[
+  mapping m=([]);
+  m+=(["x":([])]);
+  m->x->y++;
+  m=([]);
+  m+=(["x":([])]);
+  return m->x->y;
+]], 0)
+
 test_do([[
   class C
   {
