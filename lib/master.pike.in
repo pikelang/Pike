@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.231 2002/11/28 20:11:14 nilsson Exp $
+// $Id: master.pike.in,v 1.232 2002/11/28 22:03:49 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -725,35 +725,6 @@ void handle_error(array(mixed)|object trace)
   }
 }
 
-//! @decl object new(string|program prog, mixed ... args)
-//! @appears new
-//!
-//!   Instantiate a program.
-//!
-//!   A new instance of the class @[prog] will be created.
-//!   All global variables in the new object be initialized, and
-//!   then @[lfun::create()] will be called with @[args] as arguments.
-//!
-//! @note
-//!   These two functions are considered obsolete, use
-//!   @code{((program)@[prog])(@@@[args])@}
-//!   instead.
-//!
-//! @seealso
-//! @[destruct()], @[compile_string()], @[compile_file()]
-//!
-object new(string|program prog, mixed ... args)
-{
-  if(stringp(prog))
-  {
-    if(program p=cast_to_program(prog, backtrace()[-2][0]))
-      return p(@args);
-    else
-      error("Failed to find program %s.\n", prog);
-  }
-  return prog(@args);
-}
-
 /* This array contains the names of the functions
  * that a replacing master-object may want to override.
  */
@@ -774,7 +745,6 @@ constant master_efuns = ({
   "remove_program_path",
   "describe_backtrace",
   "describe_error",
-  "new",
   "normalize_path",
   "getenv",
   "putenv",
