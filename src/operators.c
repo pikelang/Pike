@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.178 2003/05/15 15:10:56 mast Exp $
+|| $Id: operators.c,v 1.179 2003/05/15 15:33:30 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.178 2003/05/15 15:10:56 mast Exp $");
+RCSID("$Id: operators.c,v 1.179 2003/05/15 15:33:30 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3538,7 +3538,7 @@ static void f_string_assignment_index(INT32 args)
   get_all_args("string[]",args,"%i",&p);
   i = p < 0 ? p + len : p;
   if(i<0 || i>=len)
-    Pike_error("String index %"PRINTPIKEINT"d is out of range "
+    Pike_error("Index %"PRINTPIKEINT"d is out of string range "
 	       "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
 	       p, -len, len - 1);
   else
@@ -3564,7 +3564,7 @@ static void f_string_assignment_assign_index(INT32 args)
     len = u->string->len;
     i = p < 0 ? p + len : p;
     if(i<0 || i>=len)
-      Pike_error("String index %"PRINTPIKEINT"d is out of range "
+      Pike_error("Index %"PRINTPIKEINT"d is out of string range "
 		 "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
 		 p, -len, len - 1);
     free_string(THIS->s);
@@ -3580,7 +3580,7 @@ static void f_string_assignment_assign_index(INT32 args)
     len = sp[-1].u.string->len;
     i = p < 0 ? p + len : p;
     if(i<0 || i>=len)
-      Pike_error("String index %"PRINTPIKEINT"d is out of range "
+      Pike_error("Index %"PRINTPIKEINT"d is out of string range "
 		 "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
 		 p, -len, len - 1);
     sp[-1].u.string=modify_shared_string(sp[-1].u.string,i,j);

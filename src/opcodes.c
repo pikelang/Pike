@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.146 2003/04/28 18:08:35 mast Exp $
+|| $Id: opcodes.c,v 1.147 2003/05/15 15:33:30 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.146 2003/04/28 18:08:35 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.147 2003/05/15 15:33:30 mast Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -92,16 +92,17 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
   case T_STRING:
     if(ind->type==T_INT)
     {
-      INT_TYPE i=ind->u.integer;
-      if(i<0)
-	i+=what->u.string->len;
-      if(i<0 || i>=what->u.string->len)
+      ptrdiff_t len = what->u.string->len;
+      INT_TYPE p = ind->u.integer;
+      INT_TYPE i = p < 0 ? p + len : p;
+      if(i<0 || i>=len)
       {
-	if(what->u.string->len == 0)
+	if(len == 0)
 	  Pike_error("Attempt to index the empty string with %"PRINTPIKEINT"d.\n", i);
 	else
 	  Pike_error("Index %"PRINTPIKEINT"d is out of string range "
-		     "0 - %"PRINTPTRDIFFT"d.\n", i, what->u.string->len - 1);
+		     "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+		     i, -len, len - 1);
       } else
 	i=index_shared_string(what->u.string,i);
       to->type=T_INT;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.146 2003/04/28 18:32:38 mast Exp $
+|| $Id: array.c,v 1.147 2003/05/15 15:33:30 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.146 2003/04/28 18:32:38 mast Exp $");
+RCSID("$Id: array.c,v 1.147 2003/05/15 15:33:30 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -253,24 +253,28 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind)
 {
-  INT32 i;
   switch(ind->type)
   {
-    case T_INT:
-      i=ind->u.integer;
-      if(i<0) i+=a->size;
+    case T_INT: {
+      INT_TYPE p = ind->u.integer;
+      INT_TYPE i = p < 0 ? p + a->size : p;
       if(i<0 || i>=a->size) {
 	struct svalue tmp;
 	tmp.type=T_ARRAY;
 	tmp.u.array=a;
 	if (a->size) {
-	  index_error(0,0,0,&tmp,ind,"Index %d is out of array range 0 - %d.\n", i, a->size-1);
+	  index_error(0,0,0,&tmp,ind,
+		      "Index %"PRINTPIKEINT"d is out of array range "
+		      "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+		      p, -a->size, a->size-1);
 	} else {
-	  index_error(0,0,0,&tmp,ind,"Attempt to index the empty array with %d.\n", i);
+	  index_error(0,0,0,&tmp,ind,
+		      "Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
 	}
       }
       array_index_no_free(s,a,i);
       break;
+    }
 
     case T_STRING:
     {
@@ -307,20 +311,22 @@ PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
 
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 {
-  INT32 i;
   switch (ind->type) {
-    case T_INT:
-      i=ind->u.integer;
-      if(i<0) i+=a->size;
+    case T_INT: {
+      INT_TYPE p = ind->u.integer;
+      INT_TYPE i = p < 0 ? p + a->size : p;
       if(i<0 || i>=a->size) {
 	if (a->size) {
-	  Pike_error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
+	  Pike_error("Index %"PRINTPIKEINT"d is out of array range "
+		     "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+		     p, -a->size, a->size-1);
 	} else {
-	  Pike_error("Attempt to index the empty array with %d.\n", i);
+	  Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
 	}
       }
       array_set_index(a,i,s);
       break;
+    }
 
     case T_STRING:
     {
@@ -1263,18 +1269,19 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
 				   struct svalue *ind,
 				   TYPE_T t)
 {
-  INT_TYPE i;
+  INT_TYPE i, p;
   if(ind->type != T_INT)
     Pike_error("Expected integer as array index, got %s.\n",
 	       get_name_of_type (ind->type));
-  i=ind->u.integer;
-  if(i<0) i+=a->size;
+  p = ind->u.integer;
+  i = p < 0 ? p + a->size : p;
   if(i<0 || i>=a->size) {
     if (a->size) {
-      Pike_error("Index %"PRINTPIKEINT"d is out of "
-		 "array range 0 - %"PRINTPTRDIFFT"d.\n", i, a->size-1);
+      Pike_error("Index %"PRINTPIKEINT"d is out of array range "
+		 "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+		 p, -a->size, a->size-1);
     } else {
-      Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", i);
+      Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
     }
   }
   return low_array_get_item_ptr(a,i,t);
@@ -2302,7 +2309,7 @@ void gc_mark_array_as_referenced(struct array *a)
 	if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
 	  a->type_field = t;
 	else
-	  a->type_field |= t;
+	  a->type_field |= t;	/* There might be an additional BIT_INT. */
 
 	gc_assert_checked_as_weak(a);
       }

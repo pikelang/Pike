@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.155 2003/04/07 15:28:47 mast Exp $
+|| $Id: stralloc.c,v 1.156 2003/05/15 15:33:31 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.155 2003/04/07 15:28:47 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.156 2003/05/15 15:33:31 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -167,12 +167,12 @@ PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s,
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
     if (s->len) {
-      Pike_fatal("String index %ld is out of range [0 - %ld]!\n",
-	    DO_NOT_WARN((long)pos),
-	    DO_NOT_WARN((long)s->len-1));
+      Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
+		 "range 0..%"PRINTPTRDIFFT"d.\n",
+		 pos, s->len-1);
     } else {
-      Pike_fatal("Attempt to index the empty string with %ld!\n",
-	    DO_NOT_WARN((long)pos));
+      Pike_fatal("Attempt to index the empty string with %"PRINTPTRDIFFT"d.\n",
+		 pos);
     }
   }
 #endif
@@ -183,9 +183,17 @@ PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, ptrdiff_t pos,
 				      int value)
 {
 #ifdef PIKE_DEBUG
-  if(pos > s->len || pos<0)
-    Pike_fatal("string index out of range!\n");
-  
+  if(pos > s->len || pos<0) {
+    if (s->len) {
+      Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
+		 "range 0..%"PRINTPTRDIFFT"d.\n",
+		 pos, s->len-1);
+    } else {
+      Pike_fatal("Attempt to index the empty string with %"PRINTPTRDIFFT"d.\n",
+		 pos);
+    }
+  }
+
   if(pos == s->len && value)
     Pike_fatal("string zero termination foul!\n");
 #endif

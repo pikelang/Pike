@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.107 2003/04/28 00:34:12 mast Exp $
+|| $Id: error.c,v 1.108 2003/05/15 15:33:30 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.107 2003/04/28 00:34:12 mast Exp $");
+RCSID("$Id: error.c,v 1.108 2003/05/15 15:33:30 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -525,7 +525,7 @@ static void f_error_index(INT32 args)
       break;
     default:
       index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		  "Index %"PRINTPIKEINT"d is out of range 0 - 1.\n", ind);
+		  "Index %"PRINTPIKEINT"d is out of range 0..1.\n", ind);
       break;
   }
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fd_control.c,v 1.47 2003/04/30 10:38:31 grubba Exp $
+|| $Id: fd_control.c,v 1.48 2003/05/15 15:33:30 mast Exp $
 */
 
 #ifndef TESTING
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.47 2003/04/30 10:38:31 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.48 2003/05/15 15:33:30 mast Exp $");
 
 #else /* TESTING */
 
@@ -79,7 +79,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
   int ret;
 #ifdef PIKE_DEBUG
   if(fd<0)
-    Pike_fatal("Filedescriptor %d out of range [0,inf).\n", fd);
+    Pike_fatal("File descriptor %d out of range.\n", fd);
 #endif
 
   do 

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.492 2003/05/07 12:31:52 mast Exp $
+|| $Id: builtin_functions.c,v 1.493 2003/05/15 15:33:30 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.492 2003/05/07 12:31:52 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.493 2003/05/15 15:33:30 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1261,7 +1261,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	  }
 	  if (str2[i] > 0x10ffff) {
 	    Pike_error("string_to_unicode(): Character 0x%08x (index %ld) "
-		  "is out of range (0x00000000 - 0x0010ffff).",
+		  "is out of range (0x00000000..0x0010ffff).",
 		  str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  /* Extra wide characters take two unicode characters in space.
@@ -6312,7 +6312,8 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
  *!
  *! @note
  *!   Elements are compared with @[`==]. They are also hashed (see
- *!   @[lfun::__hash] for further details if @[a] contains objects).
+ *!   @[lfun::__hash] for further details if the array contains
+ *!   objects).
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
