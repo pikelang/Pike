@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: dvb.c,v 1.6 2002/09/30 12:08:00 hop Exp $
+ * $Id: dvb.c,v 1.7 2002/10/01 21:25:42 nilsson Exp $
  *
  * Credits:
  *  + Tuner zapping code based on 'szap' app from linux DVB driver
@@ -1359,8 +1359,6 @@ static void f_stream_info(INT32 args) {
 
 }
 
-/*!
- */
 static void f__sprintf(INT32 args) {
 
   unsigned int n = 0, x, ix, cnt;
