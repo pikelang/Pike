@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.162 2003/01/26 11:09:01 mirar Exp $
+|| $Id: encode.c,v 1.163 2003/01/26 16:22:50 mirar Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.162 2003/01/26 11:09:01 mirar Exp $");
+RCSID("$Id: encode.c,v 1.163 2003/01/26 16:22:50 mirar Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -473,15 +473,25 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   switch(val->type)
   {
     case T_INT:
-      /* FIXME:
-       * if INT_TYPE is larger than 32 bits (not currently happening)
-       * then this must be fixed to encode numbers over 32 bits as
-       * Gmp.mpz objects
-       *
-       * (Is too, --with-long-long-int. /Mirar)
-       */
       /* FIXME: Doesn't encode NUMBER_UNDEFINED et al. */
+
+#if SIZEOF_INT_TYPE > 4
+    {
+      INT_TYPE i=val->u.integer;
+      if (i != (INT32)i)
+      {
+	 push_int(i);
+	 convert_stack_top_to_bignum();
+	 encode_value2(Pike_sp-1,data);
+	 pop_stack();
+	 return;
+      }
+      else
+	 code_entry(TAG_INT, i,data);
+    }
+#else       
       code_entry(TAG_INT, val->u.integer,data);
+#endif
       break;
 
     case T_STRING:
