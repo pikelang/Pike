@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.96 2002/11/25 00:40:14 nilsson Exp $
+|| $Id: builtin.cmod,v 1.97 2002/11/26 14:50:44 grubba Exp $
 */
 
 #include "global.h"
@@ -1231,10 +1231,11 @@ void low_backtrace(struct Pike_interpreter *i)
 						  i->stack_pointer - f->locals));
       INT32 varargs = 0;
 
-      if(of)
+      if(of) {
 	/* f->num_args can be too large, so this is necessary for some
 	 * reason. I don't know why. /mast */
 	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
+      }
 
       numargs = MAXIMUM(numargs, 0);
 
@@ -1850,90 +1851,6 @@ PIKECLASS multi_string_replace
 /*! @endclass
  */
 
-/* NOTE: Documentation for these recides in System.pmod.  */
-PIKECLASS Time
-{
-  CVAR int hard_update;
-  
-  PIKEFUN int `->( string x )
-  {
-    extern struct timeval current_time;
-    struct pike_string *usec;
-    struct pike_string *sec;
-    MAKE_CONSTANT_SHARED_STRING( sec, "sec" ); 
-    MAKE_CONSTANT_SHARED_STRING( usec, "usec" ); 
-
-    if( !x )
-      RETURN 0;
-
-    if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
-
-    if( x == usec )
-      RETURN current_time.tv_usec;
-    if( x == sec )
-      RETURN current_time.tv_sec;
-
-#ifdef AUTO_BIGNUM
-    pop_stack();
-    push_int( current_time.tv_sec );
-    push_int( 1000000 );
-    f_multiply( 2 );
-    push_int( current_time.tv_usec );
-    f_add( 2 );
-    return;
-#else
-    RETURN (current_time.tv_sec * 1000000 + current_time.tv_usec);
-#endif
-  }
-  
-  PIKEFUN int `[]( string x )
-  {
-    f_Time_cq__backtick_2D_3E( args );
-  }
-
-  PIKEFUN void create( int|void fast )
-  {
-    THIS->hard_update = !fast;
-  }
-}
-
-PIKECLASS Timer
-{
-  CVAR struct timeval last_time;
-  CVAR int hard_update;
-  
-
-  PIKEFUN float peek( )
-  {
-    extern struct timeval current_time;
-    FLOAT_TYPE res;
-    if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
-    res = current_time.tv_sec-THIS->last_time.tv_sec +
-      (current_time.tv_usec-THIS->last_time.tv_usec)/1000000.0;
-    RETURN res;
-  }
-
-  PIKEFUN float get( )
-  {
-    extern struct timeval current_time;
-    f_Timer_peek( 0 );
-    THIS->last_time = current_time;
-    return;
-  }
-
-  PIKEFUN void create( int|void fast )
-  {
-    extern struct timeval current_time;
-    THIS->hard_update = !fast;
-    if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
-    THIS->last_time = current_time; 
-  }
-}
-
-
 /*! @class SingleReplace
  */
 PIKECLASS single_string_replace
@@ -2107,6 +2024,150 @@ PIKECLASS single_string_replace
     pop_stack();
       
     f_single_string_replace_create(i);
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @module System
+ */
+
+/*! @class Time
+ *!
+ *! The current time as a structure containing a sec and a usec
+ *! member.
+ */
+PIKECLASS Time
+{
+  CVAR int hard_update;
+  
+  /*! @decl int sec;
+   *! @decl int usec;
+   *!
+   *!   The number of seconds and microseconds since the epoch and the
+   *!   last whole second, respectively. (See also @[predef::time()])
+   *!
+   *!   Please note that these variables will continually update when
+   *!   they are requested, there is no need to create new Time()
+   *!   objects.
+   */
+
+  /*! @decl int usec_full;
+   *!
+   *!   The number of microseconds since the epoch. Please note that
+   *!   pike has to have been compiled with bignum support for this
+   *!   variable to contain sensible values.
+   */
+
+  PIKEFUN int `->( string x )
+  {
+    extern struct timeval current_time;
+    struct pike_string *usec;
+    struct pike_string *sec;
+    MAKE_CONSTANT_SHARED_STRING( sec, "sec" ); 
+    MAKE_CONSTANT_SHARED_STRING( usec, "usec" ); 
+
+    if( !x )
+      RETURN 0;
+
+    if( THIS->hard_update )
+      GETTIMEOFDAY( &current_time );
+
+    if( x == usec )
+      RETURN current_time.tv_usec;
+    if( x == sec )
+      RETURN current_time.tv_sec;
+
+#ifdef AUTO_BIGNUM
+    pop_stack();
+    push_int( current_time.tv_sec );
+    push_int( 1000000 );
+    f_multiply( 2 );
+    push_int( current_time.tv_usec );
+    f_add( 2 );
+    return;
+#else
+    RETURN (current_time.tv_sec * 1000000 + current_time.tv_usec);
+#endif
+  }
+  
+  PIKEFUN int `[]( string x )
+  {
+    f_Time_cq__backtick_2D_3E( args );
+  }
+
+  /*! @decl static void create( int fast );
+   *!
+   *! If fast is true, do not request a new time from the system,
+   *! instead use the global current time variable.
+   *!
+   *! This will only work in callbacks, but can save significant amounts
+   *! of CPU.
+   */
+  PIKEFUN void create( int|void fast )
+  {
+    THIS->hard_update = !fast;
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @class Timer
+ */
+PIKECLASS Timer
+{
+  CVAR struct timeval last_time;
+  CVAR int hard_update;
+  
+  /*! @decl float peek()
+   *!   Return the time in seconds since the last time @[get] was called.
+   */
+  PIKEFUN float peek( )
+  {
+    extern struct timeval current_time;
+    FLOAT_TYPE res;
+    if( THIS->hard_update )
+      GETTIMEOFDAY( &current_time );
+    res = current_time.tv_sec-THIS->last_time.tv_sec +
+      (current_time.tv_usec-THIS->last_time.tv_usec)/1000000.0;
+    RETURN res;
+  }
+
+  /*! @decl float get()
+   *!   Return the time in seconds since the last time get was called.
+   *!   The first time this method is called the time since the object
+   *!   was created is returned instead.
+   */
+  PIKEFUN float get( )
+  {
+    extern struct timeval current_time;
+    f_Timer_peek( 0 );
+    THIS->last_time = current_time;
+    return;
+  }
+
+  /*! @decl static void create( int|void fast )
+   *!   Create a new timer object. The timer keeps track of relative time
+   *!   with sub-second precision.
+   *!   
+   *!   If fast is specified, the timer will not do system calls to get
+   *!   the current time but instead use the one maintained by pike. This
+   *!   will result in faster but somewhat more inexact timekeeping. 
+   *!   Also, if your program never utilizes the pike event loop the pike
+   *!   maintained current time never change.
+   */
+  PIKEFUN void create( int|void fast )
+  {
+    extern struct timeval current_time;
+    THIS->hard_update = !fast;
+    if( THIS->hard_update )
+      GETTIMEOFDAY( &current_time );
+    THIS->last_time = current_time; 
   }
 }
 
