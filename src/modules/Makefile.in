@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.29 1999/08/11 20:06:40 mirar Exp $
+# $Id: Makefile.in,v 1.30 1999/08/12 18:28:49 mast Exp $
 
 @SET_MAKE@
 
@@ -18,9 +18,10 @@ all: linker_options modlist.h modlist_headers.h
 $(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
 
 force:
+	@:
 
 $(MODULES): force
-	  echo Making $@; \
+	  @echo Making $@; \
 	  ( cd $@; \
 	    rm remake >/dev/null 2>&1 || : ; \
 	    $(MAKE) $(MAKE_FLAGS) MODNAME=$@ || \
@@ -28,14 +29,6 @@ $(MODULES): force
 	  ) || exit $$?;
 
 modules: $(MODULES)
-	@for a in $(MODULES) ; do \
-	  echo Making $$a; \
-	  ( cd $$a || exit $$?; \
-	    rm remake >/dev/null 2>&1 || : ; \
-	    $(MAKE) $(MAKE_FLAGS) MODNAME=$$a || \
-	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$$a ) \
-	  ) || exit $$?; \
-	done
 
 modlist.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
