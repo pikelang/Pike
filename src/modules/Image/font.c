@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.66 2000/12/01 08:10:00 hubbe Exp $ */
+/* $Id: font.c,v 1.67 2001/07/12 13:26:03 grubba Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.66 2000/12/01 08:10:00 hubbe Exp $
+**!	$Id: font.c,v 1.67 2001/07/12 13:26:03 grubba Exp $
 **! class Font
 **!
 **! note
@@ -252,13 +252,13 @@ static void exit_font_struct(struct object *obj)
 
 /***************** internals ***********************************/
 
-static INLINE ptrdiff_t char_space(struct font *this, INT32 c)
+static INLINE int char_space(struct font *this, INT32 c)
 {
   if(c==0x20)
     return DOUBLE_TO_INT((double)(this->height*this->xspacing_scale)/4.5);
   else if(c==0x20+128)
-    return (this->height*this->xspacing_scale)/18;
-  return this->charinfo[c].spacing*this->xspacing_scale;
+    return DOUBLE_TO_INT((this->height*this->xspacing_scale)/18);
+  return DOUBLE_TO_INT(this->charinfo[c].spacing*this->xspacing_scale);
 }
 
 static INLINE int char_width(struct font *this, INT32 c)
@@ -830,7 +830,7 @@ void font_text_extents(INT32 args)
 
   pop_n_elems(args);
   push_int(maxwidth2);
-  push_int64(args * THIS->height * THIS->yspacing_scale);
+  push_int64(DO_NOT_WARN((INT64)(args * THIS->height * THIS->yspacing_scale)));
   f_aggregate(2);
 }
 

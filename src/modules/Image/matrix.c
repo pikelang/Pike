@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.33 2001/03/30 11:47:25 grubba Exp $ */
+/* $Id: matrix.c,v 1.34 2001/07/12 13:27:50 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.33 2001/03/30 11:47:25 grubba Exp $
+**!	$Id: matrix.c,v 1.34 2001/07/12 13:27:50 grubba Exp $
 **! class Image
 */
 
@@ -132,9 +132,9 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
 #define decimals(x) ((x)-DOUBLE_TO_INT(x))
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 #define _scale_add_rgb(dest,src,factor) \
-   ((dest)->r+=(src)->r*(factor), \
-    (dest)->g+=(src)->g*(factor), \
-    (dest)->b+=(src)->b*(factor))
+   ((dest)->r += (float)((src)->r*(factor)), \
+    (dest)->g += (float)((src)->g*(factor)), \
+    (dest)->b += (float)((src)->b*(factor)))
 #define scale_add_pixel(dest,dx,src,sx,factor) \
    _scale_add_rgb(dest,src,factor)
 

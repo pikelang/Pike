@@ -657,7 +657,6 @@ void f_aap_add_filesystem( INT32 args )
   INT_TYPE nosyms = 0;
   struct pike_string *basedir, *mountpoint;
   struct array *noparse;
-  struct pstring **skip_extensions;
 
   if(args == 4)
     get_all_args( "add_filesystem", args, 
@@ -665,8 +664,6 @@ void f_aap_add_filesystem( INT32 args )
   else
     get_all_args( "add_filesystem", args, 
                   "%s%s%a", &basedir, &mountpoint, &noparse );
-  
-
 }
 
 

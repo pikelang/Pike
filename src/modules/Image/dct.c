@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.17 2000/12/01 08:10:00 hubbe Exp $ */
+/* $Id: dct.c,v 1.18 2001/07/12 13:29:50 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.17 2000/12/01 08:10:00 hubbe Exp $
+**!	$Id: dct.c,v 1.18 2001/07/12 13:29:50 grubba Exp $
 **! class Image
 */
 
@@ -145,15 +145,15 @@ void image_dct(INT32 args)
 	    {
 	       double z;
 	       z =  costbl[x] * z0;
-	       sum.r+=pix->r*z;
-	       sum.g+=pix->g*z;
-	       sum.b+=pix->b*z;
+	       sum.r += (float)(pix->r*z);
+	       sum.g += (float)(pix->g*z);
+	       sum.b += (float)(pix->b*z);
 	       pix++;
 	    }
 	 }
-	 sum.r*=d;
-	 sum.g*=d;
-	 sum.b*=d;
+	 sum.r *= (float)d;
+	 sum.g *= (float)d;
+	 sum.b *= (float)d;
 	 area[u+v*THIS->xsize]=sum;
       }
       fprintf(stderr,"."); fflush(stderr);
@@ -184,15 +184,15 @@ void image_dct(INT32 args)
 	    {
 	       double z;
 	       z = (u?1:c0) * costbl[u] * z0; 
-	       sum.r+=val->r*z;
-	       sum.g+=val->g*z;
-	       sum.b+=val->b*z;
+	       sum.r += (float)val->r*z;
+	       sum.g += (float)val->g*z;
+	       sum.b += (float)val->b*z;
 	       val++;
 	    }
 	 }
-	 sum.r*=enh;
-	 sum.g*=enh;
-	 sum.b*=enh;
+	 sum.r *= (float)enh;
+	 sum.g *= (float)enh;
+	 sum.b *= (float)enh;
 	 pix->r=testrange((DOUBLE_TO_INT(sum.r+0.5)));
 	 pix->g=testrange((DOUBLE_TO_INT(sum.g+0.5)));
 	 pix->b=testrange((DOUBLE_TO_INT(sum.b+0.5)));

@@ -83,7 +83,7 @@ struct cache
   struct cache_entry *htable[CACHE_HTABLE_SIZE];
   unsigned LONG_LONG size, entries, max_size;
   unsigned LONG_LONG hits, misses, stale;
-  unsigned int num_requests, sent_data, received_data;
+  size_t num_requests, sent_data, received_data;
   int gone;
 };
 
