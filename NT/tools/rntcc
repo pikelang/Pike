@@ -105,7 +105,7 @@ int main(int argc, string *argv)
     ({"link",Getopt.HAS_ARG, ({"-l"}) }),
     ({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
     ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
-    ({"ignore",Getopt.HAS_ARG, ({"-R","-L"}) }),
+    ({"ignore",Getopt.HAS_ARG, ({"-R","-L","-r"}) }),
     ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
     ({"define",Getopt.HAS_ARG, ({"-D"}) }),
     ({"undefine",Getopt.HAS_ARG, ({"-U"})}),

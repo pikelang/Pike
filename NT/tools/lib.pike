@@ -37,10 +37,14 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 #endif
       {
 	object o=f->pipe(Stdio.PROP_BIDIRECTIONAL | Stdio.PROP_IPC);
-	object proc=Process.create_process(({"wine",
-					       "-debugmsg","fixme-all",
-					       cmd*" "}),
-					   (["stdout":o]));
+	cmd=({"wine",
+	      "-winver","win95",
+	      "-debugmsg","fixme-all",
+	      "-debugmsg","trace+all",
+	      "-debugmsg","+relay",
+	      cmd*" "});
+//	werror("WINE %O\n",cmd);
+	object proc=Process.create_process(cmd,(["stdout":o]));
 	destruct(o);
 	while(1)
 	{
