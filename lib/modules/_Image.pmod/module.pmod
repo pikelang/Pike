@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.16 2001/08/15 17:50:47 per Exp $
+//! $Id: module.pmod,v 1.17 2001/08/15 18:03:34 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -93,10 +93,7 @@ mapping _decode( string data, mixed|void tocolor )
     {
       catch {
 	mixed q;
-	if( mappingp( opts ) )
-	  q = Image[fmt]->_decode( data, opts );
-	else
-	  q = Image[fmt]->_decode( data );
+	q = Image[fmt]->_decode( data );
         format = fmt;
         i = q->image;
         a = q->alpha;
