@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.30 2000/08/10 09:51:55 per Exp $
+ * $Id: passwords.c,v 1.31 2001/11/12 23:55:21 nilsson Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.30 2000/08/10 09:51:55 per Exp $");
+RCSID("$Id: passwords.c,v 1.31 2001/11/12 23:55:21 nilsson Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -218,7 +218,11 @@ void push_grent(struct group *ent)
 #endif
 
 #ifdef HAVE_GETGRGID
-/* array getgrgid(int gid) */
+/*! @decl array(int|string|array(string)) getgrgid(int gid)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_getgrgid(INT32 args)
 {
   INT_TYPE gid;
@@ -238,7 +242,11 @@ void f_getgrgid(INT32 args)
 #endif /* HAVE_GETGRGID */
 
 #ifdef HAVE_GETGRNAM
-/* array getgrnam(string str) */
+/*! @decl array(int|string|array(string)) getgrnam(string str)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_getgrnam(INT32 args)
 {
   char *str;
@@ -258,7 +266,11 @@ void f_getgrnam(INT32 args)
 #endif /* HAVE_GETGRNAM */
 
 #ifdef HAVE_GETPWNAM
-/* array getpwnam(string str) */
+/*! @decl array(int|string) getpwnam(string str)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_getpwnam(INT32 args)
 {
   char *str;
@@ -280,7 +292,11 @@ void f_getpwnam(INT32 args)
 #endif /* HAVE_GETPWNAM */
 
 #ifdef HAVE_GETPWUID
-/* array getpwuid(int uid) */
+/*! @decl array(int|string) getpwuid(int uid)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_getpwuid(INT32 args)
 {
   INT_TYPE uid;
@@ -302,7 +318,11 @@ void f_getpwuid(INT32 args)
 #endif /* HAVE_GETPWUID */
 
 #ifdef HAVE_SETPWENT
-/* int setpwent() */
+/*! @decl int setpwent()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_setpwent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -318,7 +338,11 @@ void f_setpwent(INT32 args)
 #endif /* HAVE_SETPWENT */
  
 #ifdef HAVE_ENDPWENT
-/* int endpwent() */
+/*! @decl int endpwent()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_endpwent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -334,7 +358,11 @@ void f_endpwent(INT32 args)
 #endif /* HAVE_ENDPWENT */
 
 #ifdef HAVE_GETPWENT
-/* int|array getpwent() */ 
+/*! @decl array(int|string) getpwent()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_getpwent(INT32 args)
 {
   struct passwd *foo;
@@ -357,6 +385,11 @@ void f_getpwent(INT32 args)
   UNLOCK_IMUTEX(&password_protection_mutex);
 }
 
+/*! @decl array(array(int|string)) get_all_users()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_get_all_users(INT32 args)
 {
   struct array *a;
@@ -392,7 +425,11 @@ void f_get_all_users(INT32 args)
 #endif /* HAVE_GETPWENT */
 
 #ifdef HAVE_SETGRENT
-/* int setgrent() */
+/*! @decl int setgrent()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_setgrent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -409,7 +446,11 @@ void f_setgrent(INT32 args)
 #endif /* HAVE_SETGRENT */
 
 #ifdef HAVE_ENDGRENT
-/* int endgrent() */
+/*! @decl int endgrent()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_endgrent(INT32 args)
 {
   LOCK_IMUTEX(&password_protection_mutex);
@@ -426,7 +467,11 @@ void f_endgrent(INT32 args)
 #endif /* HAVE_ENDGRENT */
 
 #ifdef HAVE_GETGRENT
-/* int|array getgrent() */
+/*! @decl array(int|string|array(string)) getgrent()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_getgrent(INT32 args)
 {
   struct group *foo;
@@ -449,6 +494,11 @@ void f_getgrent(INT32 args)
   UNLOCK_IMUTEX(&password_protection_mutex);
 }
 
+/*! @decl array(array(int|string|array(string))) get_all_groups()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_get_all_groups(INT32 args)
 {
   struct array *a;
@@ -482,6 +532,11 @@ void f_get_all_groups(INT32 args)
 }
 
 #ifdef HAVE_GETPWNAM
+/*! @decl array(int) get_groups_for_user(int|string user)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_get_groups_for_user(INT32 arg)
 {
   struct group *gr = NULL;
