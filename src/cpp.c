@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.141 2004/06/29 21:25:14 nilsson Exp $
+|| $Id: cpp.c,v 1.142 2004/06/30 08:43:35 grubba Exp $
 */
 
 #include "global.h"
@@ -1968,8 +1968,5 @@ void exit_cpp(void)
   }
   free_string(defined_macro->link.s);
   free((char *)defined_macro);
-
-  free_string(constant_macro->link.s);
-  free((char *)constant_macro);
 #endif
 }
