@@ -2969,8 +2969,8 @@ without operator overloading.
 <tr><td>a&amp;b</td><td>a-&gt;`&amp;(b)</td></tr>
 <tr><td>a|b</td><td>a-&gt;`|(b)</td></tr>
 <tr><td>a^b</td><td>a-&gt;`^(b)</td></tr>
-<tr><td>a&gt;&gt;b</td><td>a-`&gt;&gt;(b)</td></tr>
-<tr><td>a&lt;&lt;b</td><td>a-`&lt;&lt;(b)</td></tr>
+<tr><td>a&gt;&gt;b</td><td>a-&gt;`&gt;&gt;(b)</td></tr>
+<tr><td>a&lt;&lt;b</td><td>a-&gt;`&lt;&lt;(b)</td></tr>
 <tr><td>a*b</td><td>a-&gt;`*(b)</td></tr>
 <tr><td>a*b*c*d</td><td>a-&gt;`*(b,c,d)</td></tr>
 <tr><td>a/b</td><td>a-&gt;`/(b)</td></tr>
@@ -5373,7 +5373,7 @@ Pike also include a number of smaller modules. These modules implement support
 for various algorithms, data structures and system routines.
 
 <anchor name=Image>
-<section name=Image>
+<section title=Image>
 The Image module is used to manipulate bit-mapped color images. 
 It can read PPM images and do various manipulations, or it can be
 used to create completely new images. The created images can be
