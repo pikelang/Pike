@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.128 2001/08/13 23:15:58 mast Exp $");
+RCSID("$Id: docode.c,v 1.129 2001/08/15 03:31:55 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -426,15 +426,13 @@ static inline struct compiler_frame *find_local_frame(INT32 depth)
 
 int do_lfun_call(int id,node *args)
 {
-  emit0(F_MARK);
-  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-  do_docode(args,0);
 #if 1
   if(id == Pike_compiler->compiler_frame->current_function_number)
   {
     int n=count_args(args);
     if(n == Pike_compiler->compiler_frame->num_args)
     {
+      do_docode(args,0);
       if(Pike_compiler->compiler_frame->is_inline)
       {
 	Pike_compiler->compiler_frame->recur_label=do_jump(F_RECUR,
@@ -444,13 +442,15 @@ int do_lfun_call(int id,node *args)
 	Pike_compiler->compiler_frame->recur_label=do_jump(F_POINTER,
 					    Pike_compiler->compiler_frame->recur_label);
       }
+      return 1;
     }
-    else
-      emit1(F_CALL_LFUN, id);
   }
-  else
 #endif
-    emit1(F_CALL_LFUN, id);
+
+  emit0(F_MARK);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+  do_docode(args,0);
+  emit1(F_CALL_LFUN, id);
   POP_AND_DONT_CLEANUP;
   return 1;
 }

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.179 2001/07/13 11:26:39 grubba Exp $");
+RCSID("$Id: object.c,v 1.180 2001/08/15 03:31:55 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -749,7 +749,7 @@ static struct callback *destruct_object_evaluator_callback =0;
  * destructed by schedule_really_free_object. It links the object back into the
  * list of objects first. Adds a reference, destructs it and then frees it.
  */
-PMOD_EXPORT void destruct_objects_to_destruct(void)
+void low_destruct_objects_to_destruct(void)
 {
   struct object *o, *next;
 
@@ -784,7 +784,11 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
       free_object(o);
     } while ((o = next));
   }
+}
 
+void destruct_objects_to_destruct_cb(void)
+{
+  low_destruct_objects_to_destruct();
   if(destruct_object_evaluator_callback)
   {
     remove_callback(destruct_object_evaluator_callback);
@@ -841,7 +845,7 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
     {
       destruct_object_evaluator_callback=
 	add_to_callback(&evaluator_callbacks,
-			(callback_func)destruct_objects_to_destruct,
+			(callback_func)destruct_objects_to_destruct_cb,
 			0,0);
     }
   } else {

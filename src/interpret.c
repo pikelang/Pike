@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.239 2001/08/03 17:45:10 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.240 2001/08/15 03:31:55 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -618,7 +618,6 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	 ));
 }
 
-
 #ifdef PIKE_DEBUG
 void print_return_value(void)
 {
@@ -1035,7 +1034,7 @@ static void do_trace_call(INT32 args)
   })							\
   if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)		\
   {							\
-    free_svalues(X->locals,X->num_locals,BIT_MIXED);	\
+    free_mixed_svalues(X->locals,X->num_locals);	\
     free((char *)(X->locals));				\
   }							\
   DO_IF_DMALLOC(					\
@@ -1052,7 +1051,6 @@ static void do_trace_call(INT32 args)
 }while(0)
 
 BLOCK_ALLOC(pike_frame,128)
-
 
 int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
@@ -1528,7 +1526,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     assign_svalue(save_sp,Pike_sp-1);
     pop_n_elems(Pike_sp-save_sp-1);
 
-    destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
+    low_destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
   }
 
   if(save_sp+1 > Pike_sp)
@@ -1542,50 +1540,72 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 }
 
 
-void low_return(void)
-{
-  struct svalue *save_sp=Pike_fp->save_sp;
-#ifdef PIKE_DEBUG
-  if(Pike_mark_sp < Pike_fp->save_mark_sp)
-    fatal("Popped below save_mark_sp!\n");
-  if(Pike_sp<Pike_interpreter.evaluator_stack)
-    fatal("Stack error (also simple).\n");
-#endif
-  Pike_mark_sp=Pike_fp->save_mark_sp;
+
+#define low_return_profiling()
 
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
-  {
-    struct identifier *function;
-    long long time_passed, time_in_children, self_time;
-    time_in_children=  Pike_interpreter.accounted_time - Pike_fp->children_base;
-    time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
-    self_time=time_passed - time_in_children;
-    Pike_interpreter.accounted_time+=self_time;
-    function = Pike_fp->context.prog->identifiers + Pike_fp->ident;
-    function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
-    function->self_time+=(INT32)( self_time /1000);
-  }
+#undef low_return_profiling
+#define low_return_profiling() do {					      \
+  struct identifier *function;						      \
+  long long time_passed, time_in_children, self_time;			      \
+  time_in_children=Pike_interpreter.accounted_time-Pike_fp->children_base;    \
+  time_passed = gethrtime()-Pike_interpreter.time_base - Pike_fp->start_time; \
+  self_time=time_passed - time_in_children;				      \
+  Pike_interpreter.accounted_time+=self_time;				      \
+  function = Pike_fp->context.prog->identifiers + Pike_fp->ident;	      \
+  function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);  \
+  function->self_time+=(INT32)( self_time /1000);			      \
+}while(0)
 #endif
 #endif
 
-  POP_PIKE_FRAME();
 
+#define basic_low_return() 				\
+  struct svalue *save_sp=Pike_fp->save_sp;		\
+  DO_IF_DEBUG(						\
+    if(Pike_mark_sp < Pike_fp->save_mark_sp)		\
+      fatal("Popped below save_mark_sp!\n");		\
+    if(Pike_sp<Pike_interpreter.evaluator_stack)	\
+      fatal("Stack error (also simple).\n");		\
+    )							\
+							\
+    Pike_mark_sp=Pike_fp->save_mark_sp;			\
+							\
+  POP_PIKE_FRAME()
+
+
+void low_return(void)
+{
+  basic_low_return();
   if(save_sp+1 < Pike_sp)
   {
     assign_svalue(save_sp,Pike_sp-1);
     pop_n_elems(Pike_sp-save_sp-1);
 
-    destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
+    /* consider using a flag for immediate destruct instead... */
+    destruct_objects_to_destruct();
   }
-
-  if(save_sp+1 > Pike_sp)
+  else if(save_sp+1 > Pike_sp)
   {
     push_int(0);
   }else{
     if(t_flag>1) trace_return_value();
   }
 }
+
+void low_return_pop(void)
+{
+  basic_low_return();
+
+  if(save_sp < Pike_sp)
+  {
+    pop_n_elems(Pike_sp-save_sp);
+    /* consider using a flag for immediate destruct instead... */
+    destruct_objects_to_destruct();
+  }
+}
+
 
 void unlink_previous_frame(void)
 {
@@ -1681,7 +1701,7 @@ static int o_catch(PIKE_OPCODE_T *pc)
     UNSETJMP(tmp);
     Pike_fp->expendible=expendible;
     Pike_fp->flags=flags;
-    destruct_objects_to_destruct();
+    low_destruct_objects_to_destruct();
     return 0;
   }else{
     struct svalue **save_mark_sp=Pike_mark_sp;

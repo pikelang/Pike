@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.115 2001/08/13 23:32:36 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.116 2001/08/15 03:31:55 hubbe Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -300,6 +300,19 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
   }
 }
 
+PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS)
+{
+  while(num--)
+  {
+#ifdef DEBUG_MALLOC
+    if(s->type <= MAX_REF_TYPE)
+      debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
+#endif
+    free_svalue(s++);
+  }
+}
+
+
 PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
 			    const struct svalue *from,
 			    size_t num,
@@ -345,7 +358,7 @@ PMOD_EXPORT void assign_svalues(struct svalue *to,
 		    size_t num,
 		    TYPE_FIELD types)
 {
-  free_svalues(to,num,BIT_MIXED);
+  free_mixed_svalues(to,num);
   assign_svalues_no_free(to,from,num,types);
 }
 
@@ -833,52 +846,6 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
   safe_check_destructed(a);
   safe_check_destructed(b);
 
-  if (((a->type == T_TYPE) ||
-       (a->type == T_FUNCTION) || (a->type == T_PROGRAM)) &&
-      ((b->type == T_FUNCTION) ||
-       (b->type == T_PROGRAM) || (b->type == T_TYPE))) {
-    if (a->type != T_TYPE) {
-      /* Try converting a to a program, and then to a type. */
-      struct svalue aa;
-      int res;
-      aa.u.program = program_from_svalue(a);
-      if (!aa.u.program) {
-	Pike_error("Bad argument to comparison.");
-      }
-      type_stack_mark();
-      push_object_type(0, aa.u.program->id);
-      aa.u.type = pop_unfinished_type();
-      aa.type = T_TYPE;
-      res = is_lt(&aa, b);
-      free_type(aa.u.type);
-      return res;
-    }
-    if (b->type != T_TYPE) {
-      /* Try converting b to a program, and then to a type. */
-      struct svalue bb;
-      int res;
-      bb.u.program = program_from_svalue(b);
-      if (!bb.u.program) {
-	Pike_error("Bad argument to comparison.");
-      }
-      type_stack_mark();
-      push_object_type(0, bb.u.program->id);
-      bb.u.type = pop_unfinished_type();
-      bb.type = T_TYPE;
-      res = is_lt(a, &bb);
-      free_type(bb.u.type);
-      return res;
-    }
-
-    /* At this point both a and b have type T_TYPE */
-#ifdef PIKE_DEBUG
-    if ((a->type != T_TYPE) || (b->type != T_TYPE)) {
-      fatal("Unexpected types in comparison.\n");
-    }
-#endif /* PIKE_DEBUG */
-    return !pike_types_le(b->u.type, a->u.type);
-  }
-
   if (a->type != b->type)
   {
     if(a->type == T_FLOAT && b->type==T_INT)
@@ -894,6 +861,12 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 #else
       return (FLOAT_TYPE)a->u.integer < b->u.float_number;
 #endif
+
+  if (((a->type == T_TYPE) ||
+       (a->type == T_FUNCTION) || (a->type == T_PROGRAM)) &&
+      ((b->type == T_FUNCTION) ||
+       (b->type == T_PROGRAM) || (b->type == T_TYPE)))
+    goto compare_types;
 
     if(a->type == T_OBJECT)
     {
@@ -949,28 +922,74 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
   }
   switch(a->type)
   {
-  case T_OBJECT:
-    goto a_is_object;
-
-  default:
-    Pike_error("Bad type to comparison.\n");
-
-  case T_INT:
-    return a->u.integer < b->u.integer;
-
-  case T_STRING:
-    return my_strcmp(a->u.string, b->u.string) < 0;
-
-  case T_FLOAT:
+    case T_OBJECT:
+      goto a_is_object;
+      
+    default:
+      Pike_error("Bad type to comparison.\n");
+      
+    case T_INT:
+      return a->u.integer < b->u.integer;
+      
+    case T_STRING:
+      return my_strcmp(a->u.string, b->u.string) < 0;
+      
+    case T_FLOAT:
 #ifdef HAVE_ISLESS
-    return isless(a->u.float_number, b->u.float_number);
+      return isless(a->u.float_number, b->u.float_number);
 #else
-    if (PIKE_ISNAN(a->u.float_number) || PIKE_ISNAN(b->u.float_number)) {
-      return 0;
-    }
-    return a->u.float_number < b->u.float_number;
+      if (PIKE_ISNAN(a->u.float_number) || PIKE_ISNAN(b->u.float_number)) {
+	return 0;
+      }
+      return a->u.float_number < b->u.float_number;
 #endif
+      
+    case T_PROGRAM:
+    case T_FUNCTION:
+  compare_types:
+    if (a->type != T_TYPE) {
+      /* Try converting a to a program, and then to a type. */
+      struct svalue aa;
+      int res;
+      aa.u.program = program_from_svalue(a);
+      if (!aa.u.program) {
+	Pike_error("Bad argument to comparison.");
+      }
+      type_stack_mark();
+      push_object_type(0, aa.u.program->id);
+      aa.u.type = pop_unfinished_type();
+      aa.type = T_TYPE;
+      res = is_lt(&aa, b);
+      free_type(aa.u.type);
+      return res;
+    }
+    if (b->type != T_TYPE) {
+      /* Try converting b to a program, and then to a type. */
+      struct svalue bb;
+      int res;
+      bb.u.program = program_from_svalue(b);
+      if (!bb.u.program) {
+	Pike_error("Bad argument to comparison.");
+      }
+      type_stack_mark();
+      push_object_type(0, bb.u.program->id);
+      bb.u.type = pop_unfinished_type();
+      bb.type = T_TYPE;
+      res = is_lt(a, &bb);
+      free_type(bb.u.type);
+      return res;
+    }
+    
+    /* At this point both a and b have type T_TYPE */
+#ifdef PIKE_DEBUG
+    if ((a->type != T_TYPE) || (b->type != T_TYPE)) {
+      fatal("Unexpected types in comparison.\n");
+    }
+#endif /* PIKE_DEBUG */
+    /* fall through */
 
+    case T_TYPE:
+      return !pike_types_le(b->u.type, a->u.type);
   }
 }
 
@@ -1257,28 +1276,6 @@ PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
   if (orig_str.str) init_buf_with_string (orig_str);
   fwrite (str.str, str.len, 1, out);
   free (str.str);
-}
-
-/* NOTE: Must handle num being negative. */
-PMOD_EXPORT void clear_svalues(struct svalue *s, ptrdiff_t num)
-{
-  struct svalue dum;
-  dum.type=T_INT;
-  dum.subtype=NUMBER_NUMBER;
-  dum.u.refs=0;
-  dum.u.integer=0;
-  while(num-- > 0) *(s++)=dum;
-}
-
-/* NOTE: Must handle num being negative. */
-PMOD_EXPORT void clear_svalues_undefined(struct svalue *s, ptrdiff_t num)
-{
-  struct svalue dum;
-  dum.type=T_INT;
-  dum.subtype=NUMBER_UNDEFINED;
-  dum.u.refs=0;
-  dum.u.integer=0;
-  while(num-- > 0) *(s++)=dum;
 }
 
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.95 2001/08/13 23:31:03 hubbe Exp $
+ * $Id: interpret.h,v 1.96 2001/08/15 03:31:55 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -159,6 +159,7 @@ extern const char *Pike_check_c_stack_errmsg;
 
 
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
+#define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
 #ifdef __ECL
 #define MAYBE_CAST_TO_LONG(X)	(X)
@@ -171,7 +172,7 @@ extern const char *Pike_check_c_stack_errmsg;
    check__positive(x_, ("Popping negative number of args.... (%ld) \n",	\
 		   MAYBE_CAST_TO_LONG(x_)));				\
    Pike_sp -= x_; debug_check_stack();					\
-   free_svalues(Pike_sp, x_, BIT_MIXED);				\
+   free_mixed_svalues(Pike_sp, x_);					\
  } } while (0)
 
 #define stack_pop_n_elems_keep_top(X) \
@@ -329,6 +330,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
+void low_return_pop(void);
 void unlink_previous_frame(void);
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 PMOD_EXPORT void f_call_function(INT32 args);

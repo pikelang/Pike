@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.63 2001/07/12 23:15:41 hubbe Exp $
+ * $Id: object.h,v 1.64 2001/08/15 03:31:55 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -55,11 +55,10 @@ extern struct program *magic_set_index_program;
 #include "block_alloc_h.h"
 /* Prototypes begin here */
 BLOCK_ALLOC(object, 511)
-PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
 PMOD_EXPORT struct object *low_clone(struct program *p);
 PMOD_EXPORT void call_c_initializers(struct object *o);
-void call_prog_event(struct object *o,int event);
-void call_pike_initializers(struct object *o, int);
+void call_prog_event(struct object *o, int event);
+void call_pike_initializers(struct object *o, int args);
 PMOD_EXPORT void do_free_object(struct object *o);
 PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args);
 PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args);
@@ -72,9 +71,9 @@ PMOD_EXPORT struct object *get_master(void);
 PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;
 PTR_HASH_ALLOC(destroy_called_mark,128)
-static void call_destroy(struct object *o, int foo);
-PMOD_EXPORT void destruct(struct object *o);
-PMOD_EXPORT void destruct_objects_to_destruct(void);
+PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
+void destruct(struct object *o);
+void low_destruct_objects_to_destruct(void);
 PMOD_EXPORT void schedule_really_free_object(struct object *o);
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  struct object *o,
@@ -137,6 +136,7 @@ void check_all_objects(void);
 
 #define PIKE_OBJ_DESTRUCTED(o) (o->prog)
 #define PIKE_OBJ_INITED(o) (o->prog && (o->prog->flags & PROGRAM_PASS_1_DONE))
+#define destruct_objects_to_destruct() do{ if(objects_to_destruct) low_destruct_objects_to_destruct(); }while(0)
 
 #endif /* OBJECT_H */
 

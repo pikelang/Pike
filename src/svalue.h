@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.94 2001/08/13 22:41:17 mast Exp $
+ * $Id: svalue.h,v 1.95 2001/08/15 03:31:56 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -430,11 +430,35 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 
 extern struct svalue dest_ob_zero;
 
+#define free_mixed_svalues(X,Y) do {		\
+  struct svalue *s_=(X);			\
+  ptrdiff_t num_=(Y);				\
+  while(num_--)					\
+  {						\
+    dmalloc_touch_svalue(s_);			\
+    free_svalue(s_++);				\
+  }						\
+}while(0);
+
 #ifdef DEBUG_MALLOC
-#define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z), DMALLOC_LOCATION())
+#define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z), DMALLOC_LOCATION());
 #else
-#define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z))
+#define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z));
 #endif
+
+#define low_clear_svalues(X,Y,N) do {		\
+  struct svalue *s_=(X);			\
+  ptrdiff_t num_=(Y);				\
+  for(;num_-- > 0;s_++)				\
+  {						\
+      s_->type=PIKE_T_INT;			\
+      s_->subtype=(N);				\
+      s_->u.integer=0;				\
+  }						\
+}while(0)
+
+#define clear_svalues(X,Y) low_clear_svalues((X),(Y),NUMBER_NUMBER)
+#define clear_svalues_undefined(X,Y) low_clear_svalues((X),(Y),NUMBER_UNDEFINED)
 
 /* Prototypes begin here */
 PMOD_EXPORT void really_free_short_svalue(union anything *s, TYPE_T type);
@@ -479,8 +503,6 @@ PMOD_EXPORT int is_equal(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p);
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s);
-PMOD_EXPORT void clear_svalues(struct svalue *s, ptrdiff_t num);
-PMOD_EXPORT void clear_svalues_undefined(struct svalue *s, ptrdiff_t num);
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 				      const struct svalue *from,
 				      size_t num,
