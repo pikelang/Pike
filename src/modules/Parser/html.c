@@ -1234,14 +1234,13 @@ static void html_quote_tags(INT32 args)
      struct array *arr = k->val.u.array;
      for (i = 0; i < arr->size; i += 3) {
        struct pike_string *end;
+       push_svalue (arr->item+i+1);
 #ifdef PIKE_DEBUG
-      if (arr->item[i+2].type != T_STRING)
-	fatal ("Expected string as end in mapqtag.\n");
+       if (arr->item[i+2].type != T_STRING)
+	 fatal ("Expected string as end in mapqtag.\n");
 #endif
        end = arr->item[i+2].u.string;
-       end = string_slice (end, 0, end->len-2);
-       push_svalue (arr->item+i+1);
-       push_string (end);
+       push_string (string_slice (end, 0, end->len-1));
        f_aggregate (2);
        mapping_insert (res, arr->item+i, sp-1);
        pop_stack();
