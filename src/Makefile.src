@@ -3,7 +3,7 @@
 
 # Don't change this line.  Define EXTRALIBS before this line if you
 # wish to add any libraries.
-LIBS=@LIBS@ $(EXTRALIBS)
+LIBS=@LIBS@ $(EXTRALIBS) `for a in $(MODULES) ; do if [ -f $$a/linker_options ]; then cat $$a/linker_options ; fi ; done`
 
 # not used yet
 INSTALL=@INSTALL@
@@ -82,12 +82,12 @@ MODULE_OBJS=@MODULE_OBJS@
 # User callable targets
 #
 
-all: ulpc
+all: $(OBJ) module_objects
+	$(MAKE) $(MAKE_FLAGS) ulpc
 
-ulpc: $(OBJ) module_objects
+ulpc: $(OBJ) $(MODULE_OBJS)
 	-mv ulpc ulpc.old
 	$(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
-
 
 # purify
 pure: $(OBJ) module_objects
@@ -102,7 +102,7 @@ cover: $(OBJ) module_objects
 # quantify
 quant: $(OBJ) module_objects
 	-mv ulpc ulpc.old
-	quantify $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+	quantify $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS) 
 
 # install
 install:
@@ -186,7 +186,7 @@ docs:
 	mkdir docs
 
 html_docs: docs
-	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs $(TMP_DOCDIR) docs
+	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `for a in $MODULES); do echo $(SRCDIR)/$$a ; done`
 
 #
 # uLPC internal targets
@@ -207,22 +207,26 @@ $(SRCDIR)/language.c: language.h
 
 module.c: modlist.h
 
-configure: configure.in
+$(SRCDIR)/configure: configure.in
 	cd $(SRCDIR) && autoconf
 
-config.status: configure
+config.status: $(SRCDIR)/configure
 	./config.status --recheck
 
-Makefile: Makefile.in config.status
-	./config.status
+$(SRCDIR)/Makefile.in: $(SRCDIR)/Makefile.src
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
+
+Makefile: $(SRCDIR)/Makefile.in config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
+	@echo "Run make again"
+	@exit 1
 
 machine.h: stamp-h
-
 stamp-h: machine.h.in config.status
-	./config.status
+	CONFIG_FILES= CONFIG_HEADERS=machine.h ./config.status
 
 modlist.h:
-	./config.status
+	CONFIG_FILES=modlist.h CONFIG_HEADERS= ./config.status
 
 $(SRCDIR)/test/testsuite: $(SRCDIR)/test/create_testsuite
 	m4 <$(SRCDIR)/test/create_testsuite >$(SRCDIR)/test/testsuite

@@ -11,6 +11,7 @@ mapping subpages = ([]);
 
 string new_path;
 int writepages;
+string docdir;
 
 
 /*
@@ -51,7 +52,7 @@ string fippel_path(string path)
   if(path[strlen(path)-5..]==".bmml") path=path[..strlen(path)-6];
   if(path[strlen(path)-5..]!=".html") path+=".html";
 
-  return path;
+  return docdir+path;
 }
 
 /*
@@ -693,7 +694,7 @@ void scanfiles(string path, string fname)
 }
 
 /** Traverse directory **/
-void traversedir(string path,function fun)
+void traversedir(string path)
 {
   string file;
   foreach(get_dir(path) - ({"CVS","RCS",".cvsignore"}),file)
@@ -709,14 +710,39 @@ void traversedir(string path,function fun)
     {
       traversedir(tmp,fun);
     }else{
-      fun(tmp,file);
+      scanfiles(tmp,file);
     }
   }
+}
+
+void dodocs(string path, int module)
+{
+  cd(path);
+  if(!module)
+  {
+    docdir="";
+  }else{
+    docdir="module"+module;
+    if(sscanf(reverse(path),"cod/%s",docdir))
+    {
+      sscanf(docdir,"%s/",docdir);
+      docdir=reverse(docdir);
+    }
+    docdir+="_";
+  }
+  traversedir(".");
 }
 
 int main(int argc, string *argv)
 {
   string np;
+  int e;
+
+  if(argc < 3)
+  {
+    perror("Usage: html_docs.lpc to_path from_path [module_doc_path ...]\n");
+    exit(0);
+  }
 
   megamagic::create("^(.*)&lt;([a-z_0-9]+)&gt;(.*)$");
   lastident::create("^(.*[^<>a-z_0-9])([a-z_0-9]+)([^<>a-z_0-9]*)$");
@@ -729,17 +755,17 @@ int main(int argc, string *argv)
 
   is_example::create("^(" LINE ")+$");
 
-  new_path=combine_path(getcwd(),argv[2]);
-  cd(argv[1]);
+  for(e=1;e<sizeof(argv);e++)
+    argv[e]=combine_path(getcwd(),argv[e]);
 
   write("Scanning pages for links and keywords.\n");
   writepages=0;
-  traversedir(".",scanfiles);
+  for(e=2;e<sizeof(argv);e++) dodocs(argv[e],e-2);
 
   write("Writing html files.\n");
   writepages=1;
-  traversedir(".",scanfiles);
-
+  for(e=2;e<sizeof(argv);e++) dodocs(argv[e],e-2);
+    
   foreach(indices(keywords) - indices(indexes_done),np)
   {
     perror("Keywords never indexed: "+np+"\n");

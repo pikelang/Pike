@@ -235,12 +235,8 @@ if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
   AC_MSG_WARN(I will compensate for this by adding -lc -lm)
   LIBS="${LIBS} -lc -lm"
 fi
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(crypt, crypt)
-if test "$ac_cv_lib_socket" = yes -o "${ac_cv_lib_ucb}" = yes; then
- AC_CHECK_LIB(nsl, main)
-fi
 
+AC_CHECK_LIB(crypt, crypt)
 
 OLD_LIBOBJS="${LIBOBJS}"
 
@@ -836,7 +832,7 @@ if test ! -d ./modules ; then
   mkdir modules
 fi
 
-AC_MSG_RESULT(creating modlist.h)
+echo creating modlist.h
 echo "void init_main_efuns(void);" >modlist.h
 echo "void init_main_programs(void);" >>modlist.h
 echo "void exit_main(void);" >>modlist.h
