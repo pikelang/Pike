@@ -33,8 +33,9 @@ WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 WANT_MESA=	yes
 WANT_GTK=	yes
 WANT_GNOME=	yes
-#USE_AUTOCONF_VER=213
 #USE_AUTOMAKE=	yes
+#USE_AUTOCONF=	yes
+#WANT_AUTOCONF_VER=253
 
 GNU_CONFIGURE=  yes
 
@@ -64,6 +65,7 @@ CONFIGURE_ARGS+= --without-debug \
 
 .include <bsd.port.pre.mk>
 
+# FreeBSD 5.0 Needs to have libgmp port to support gmp.
 .if ${OSVERSION} >= 500000
 LIB_DEPENDS+=	gmp.6:${PORTSDIR}/math/libgmp4
 .endif
@@ -80,7 +82,7 @@ WITH_FREETYPE=	yes
 WITH_MYSQL=	yes
 .endif
 
-.if exists(${LOCALBASE}/lib/libpq.so.2)
+.if exists(${LOCALBASE}/lib/libpq.so.3)
 WITH_POSTGRES=	yes
 .endif
 
@@ -164,7 +166,7 @@ CONFIGURE_ARGS+= --without-mysql
 .endif
 
 .if defined(WITH_POSTGRES)
-LIB_DEPENDS+=	pq.2:${PORTSDIR}/databases/postgresql7
+LIB_DEPENDS+=	pq.3:${PORTSDIR}/databases/postgresql7
 CONFIGURE_ARGS+= --with-pgsql=${PREFIX}
 .else
 CONFIGURE_ARGS+= --without-pgsql
@@ -300,8 +302,8 @@ pre-everything::
 
 
 pre-configure:
-#	@cd ${WRKSRC}; \
-#	./run_autoconfig
+	@cd ${WRKSRC}; \
+	./run_autoconfig
 	@${ECHO} ${CONFIGURE_ARGS}
 
 post-install:
