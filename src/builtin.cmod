@@ -271,15 +271,30 @@ PIKEFUN int string_width(string s)
 //! @seealso
 //! @[mappingp()]
 //!
-PIKEFUN 1 m_delete(mapping(mixed:1=mixed) map, mixed index)
+PIKEFUN mixed m_delete(object|mapping map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
 {
-  struct svalue s;
-  map_delete_no_free(map, index, &s);
-  pop_n_elems(args);
-  *sp=s;
-  sp++;
+  /*FIXME: Should be
+   *     type function(mapping(1=mixed:2=mixed),1:2)|
+   *     function(object,mixed:mixed);
+   *
+   *     or similar
+   */
+  if( map->type == T_MAPPING )
+  {
+    struct svalue s;
+    map_delete_no_free(map->u.mapping, index, &s);
+    pop_n_elems(args);
+    *sp=s;
+    sp++;
+  }
+  else
+  {
+    apply_lfun( map->u.object, LFUN__M_DELETE, 1 );
+    stack_swap();
+    pop_stack();
+  }
 }
 
 //! Returns 1 if the weak flag has been set for @[m].
