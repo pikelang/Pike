@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.7 2001/08/16 00:28:30 marcus Exp $
+ * $Id: ppc32.c,v 1.8 2001/08/16 00:51:55 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -7,6 +7,7 @@
  */
 
 #include "operators.h"
+#include "constants.h"
 
 #ifdef _AIX
 #define ADD_CALL(X) do {						\
@@ -80,7 +81,7 @@ void ppc32_push_svalue(int reg, INT32 offs)
 
   if(sizeof(struct svalue) > 8)
   {
-    for(e=4;e<(int)sizeof(struct svalue);e++)
+    for(e=4;e<(int)sizeof(struct svalue);e+=4)
     {
       if( e ==  OFFSETOF(svalue,u.refs)) continue;
 
@@ -106,8 +107,8 @@ void ppc32_push_svalue(int reg, INT32 offs)
 #endif
   /* stw r11,refs(pike_sp) */
   STW(11, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.refs));
-  /* cmplwi r0,7 */
-  CMPLI(0, 0, 7);
+  /* cmplwi r0,MAX_REF_TYPE */
+  CMPLI(0, 0, MAX_REF_TYPE);
   INCR_SP_REG(sizeof(struct svalue));
   /* bgt bork */
   BC(12, 1, 4);
@@ -127,6 +128,40 @@ void ppc32_push_local(INT32 arg)
   ppc32_push_svalue(PPC_REG_ARG1, offs);
 }
 
+void ppc32_local_lvalue(INT32 arg)
+{
+  INT32 offs;
+  int e;
+
+  offs = ppc32_get_local_addr(PPC_REG_ARG1, arg);
+  LOAD_SP_REG();
+  SET_REG(0, 0);
+  for(e=4;e<(int)(2*sizeof(struct svalue));e+=4)
+  {
+    if( e == OFFSETOF(svalue,u.lval) || e == sizeof(struct svalue) ) continue;
+    /* stw r0,e(pike_sp) */
+    STW(0, PPC_REG_PIKE_SP, e);
+  }
+  if(offs) {
+    /* addi r3,r3,offs */
+    ADDI(PPC_REG_ARG1, PPC_REG_ARG1, offs);
+  }
+#if PIKE_BYTEORDER == 1234
+  SET_REG(0, T_LVALUE);
+  STW(0, PPC_REG_PIKE_SP, 0);
+  SET_REG(0, T_VOID);
+  STW(0, PPC_REG_PIKE_SP, sizeof(struct svalue));
+#else
+  SET_REG(0, T_LVALUE<<16);
+  STW(0, PPC_REG_PIKE_SP, 0);
+  SET_REG(0, T_VOID<<16);
+  STW(0, PPC_REG_PIKE_SP, sizeof(struct svalue));
+#endif
+  /* stw r3,u.lval(pike_sp) */
+  STW(PPC_REG_ARG1, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.lval));
+  INCR_SP_REG(sizeof(struct svalue)*2);  
+}
+
 void ppc32_push_int(INT32 x)
 {
   LOAD_SP_REG();
@@ -135,7 +170,7 @@ void ppc32_push_int(INT32 x)
   {
     int e;
     SET_REG(0, 0);
-    for(e=4;e<(int)sizeof(struct svalue);e++)
+    for(e=4;e<(int)sizeof(struct svalue);e+=4)
     {
       if( e == OFFSETOF(svalue,u.integer)) continue;
       /* stw r0,e(pike_sp) */
@@ -246,12 +281,33 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
      ppc32_push_local(b);
      return;
 
+   case F_LOCAL_LVALUE:
+     ppc32_local_lvalue(b);
+     return;
+
    case F_NUMBER:
      ppc32_push_int(b);
      return;
 
    case F_NEG_NUMBER:
      ppc32_push_int(-b);
+     return;
+
+     /*
+      * And this would work nicely for all non-dynamically loaded
+      * functions. Unfortunately there is no way to know if it is
+      * dynamically loaded or not at this point...
+      */
+   case F_MARK_CALL_BUILTIN:
+   case F_CALL_BUILTIN1:
+     if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
+       break;
+     if(a == F_CALL_BUILTIN1)
+       SET_REG(PPC_REG_ARG1, 1);
+     else
+       SET_REG(PPC_REG_ARG1, 0);
+     FLUSH_CODE_GENERATOR_STATE();
+     ADD_CALL(Pike_compiler->new_program->constants[b].sval.u.efun->function);
      return;
   }
 #endif
