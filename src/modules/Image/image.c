@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.143 1999/06/07 19:58:08 mirar Exp $ */
+/* $Id: image.c,v 1.144 1999/06/09 19:38:45 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.143 1999/06/07 19:58:08 mirar Exp $
+**!	$Id: image.c,v 1.144 1999/06/09 19:38:45 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.143 1999/06/07 19:58:08 mirar Exp $");
+RCSID("$Id: image.c,v 1.144 1999/06/09 19:38:45 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3511,6 +3511,47 @@ void image_cast(INT32 args)
    SIMPLE_BAD_ARG_ERROR("Image.Image->cast",1,"string(\"array\"|\"string\")");
 }
 
+void image_tobitmap(INT32 args)
+{
+   int xs;
+   int i,j,left,bit,dbits;
+   struct pike_string *res;
+   unsigned char *d;
+   rgb_group *s;
+
+   pop_n_elems(args);
+   if (!THIS->img) error("No image.\n");
+
+   xs=(THIS->xsize+7)>>3;
+
+   res=begin_shared_string(xs*THIS->ysize);
+   d=(unsigned char *)res->str;
+
+   s=THIS->img;
+
+   j=THIS->ysize;
+   while (j--)
+   {
+      i=THIS->xsize;
+      while (i)
+      {
+	 left=8;
+	 bit=1;
+	 dbits=0;
+	 while (left-- && i)
+	 {
+	    if (s->r||s->g||s->b) dbits|=bit;
+	    bit<<=1;
+	    s++;
+	    i--;
+	 }
+	 *(d++)=(unsigned char)dbits;
+      }
+   }
+
+   push_string(end_shared_string(res));
+}
+
 /***************** global init etc *****************************/
 
 #define tRGB tOr3(tColor,tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid)
@@ -3532,38 +3573,11 @@ void init_image_image(void)
    ADD_FUNCTION("clear",image_clear,
 		tFunc(tRGB,tObj),0);
 
-#if 0
    ADD_FUNCTION("toppm",image_toppm,tFunc(,tStr),0);
-   ADD_FUNCTION("frompnm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
-   ADD_FUNCTION("fromppm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
-   ADD_FUNCTION("togif",image_togif,tFunc(,tStr),0);
-   ADD_FUNCTION("togif_fs",image_togif_fs,tFunc(,tStr),0);
-   ADD_FUNCTION("gif_begin",image_gif_begin,tFunc(tInt,tStr),0);
-   ADD_FUNCTION("gif_add",image_gif_add,
-		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) 
-			  tOr(tInt,tFlt),tStr),
-		    tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) 
-			  tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
-   ADD_FUNCTION("gif_add_fs",image_gif_add_fs,
-		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),
-		    tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) 
-			  tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
-   ADD_FUNCTION("gif_add_nomap",image_gif_add_nomap,
-		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),
-		    tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) 
-			  tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
-   ADD_FUNCTION("gif_add_fs_nomap",image_gif_add_fs_nomap,
-		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tFlt),tStr),
-		    tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) 
-			  tArr(tArr(tInt)) tOr(tInt,tFlt),tStr)),0);
-   ADD_FUNCTION("gif_end",image_gif_end,
-		tFunc(,tStr),0);
-   ADD_FUNCTION("gif_netscape_loop",image_gif_netscape_loop,
-		tFunc(,tStr),0);
-#endif
 
    ADD_FUNCTION("cast",image_cast,
 		tFunc(tStr,tStr),0);
+   ADD_FUNCTION("tobitmap",image_tobitmap,tFunc(,tStr),0);
 
 
    ADD_FUNCTION("copy",image_copy,
