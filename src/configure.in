@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.439 2000/12/17 19:30:58 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.440 2000/12/18 15:06:20 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3903,12 +3903,11 @@ if test -z "$LDSHARED" ; then
   case "$pike_cv_sys_os" in
     AIX*)
       if test "$GCC" = yes ; then
-        if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
+        if test "`uname -r`" -ge 2 -a "`uname -v`" -eq 4 ; then
           LDSHARED="ld -G -bexpall"
 	else if test "`uname -v`" -gt 4 ; then
-	    # Extra forward compatibility...
-	    # AIX 5+
-	    LDSHARED="ld -G -bexpall"
+	    # AIX 5L+
+	    LDSHARED="ld -G"
 	  else
 	    # AIX 4.1 and earlier don't have/have unreliable
 	    # handling of dlopen et al.
@@ -3920,12 +3919,11 @@ if test -z "$LDSHARED" ; then
 	  fi
         fi
       else
-        if test "`uname -r`" -ge 3 -a "`uname -v`" -ge 4 ; then
+        if test "`uname -r`" -ge 3 -a "`uname -v`" -eq 4 ; then
           LDSHARED="ld -G -bexpall"
 	else if test "`uname -v`" -gt 4 ; then
-	    # Extra forward compatibility...
-	    # AIX 5+
-	    LDSHARED="ld -G -bexpall"
+	    # AIX 5L+
+	    LDSHARED="ld -G"
 	  else
 	    # AIX 4.1 and earlier don't have/have unreliable
 	    # handling of dlopen et al.
@@ -4022,7 +4020,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
   fi
   OLD_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $CCSHARED"
-  AC_TRY_COMPILE([], [int main() { exit(0); }],
+  AC_TRY_COMPILE([], [exit(0);],
     pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
   CFLAGS="$OLD_CFLAGS"
 ])
@@ -4039,7 +4037,14 @@ then
   LINKFORSHARED=""
   if test "$GCC" = yes ; then
     case "$pike_cv_sys_os" in
-      AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
+      AIX*)
+        if test "`uname -v`" -gt 4 ; then
+	  # This is probably wrong, but I don't have a man page for ld yet.
+	  LINKFORSHARED=""
+	else
+	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
+	fi
+      ;;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
       BSD/OS*)
@@ -4071,7 +4076,13 @@ then
     esac
   else
     case "$pike_cv_sys_os" in
-      AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
+      AIX*)
+        if test "`uname -v`" -gt 4 ; then
+	  LINKFORSHARED="-Bexport"
+	else
+	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
+	fi
+      ;;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
       GNU*) LINKFORSHARED="-rdynamic";;
