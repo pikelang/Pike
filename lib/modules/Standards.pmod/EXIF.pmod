@@ -3,7 +3,7 @@
 //!
 //! Copyright (c) Roxen Internet Software 2001
 
-// $Id: EXIF.pmod,v 1.2 2001/09/14 18:29:11 mirar Exp $
+// $Id: EXIF.pmod,v 1.3 2001/09/17 08:47:27 mirar Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -357,9 +357,10 @@ int long_value(string str)
   return (str[3]<<24)|(str[2]<<16)|(str[1]<<8)|str[0];
 }
 
+int exif_offset=12;
 void exif_seek(Stdio.File file, int offset)
 {
-  file->seek(offset+12);
+  file->seek(offset+exif_offset);
 }
 
 string format_bytes(string str)
@@ -390,7 +391,8 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info)
       [tag_format,tag_map]=tag_map[""];
   }
   
-  [string tag_type_name, int tag_type_len] = TAG_TYPE_INFO[tag_type];
+  [string tag_type_name, int tag_type_len] = 
+     TAG_TYPE_INFO[tag_type];
 
   int tag_len=tag_type_len * tag_count;
   
@@ -515,6 +517,16 @@ mapping get_properties(Stdio.File|string file)
     file=Stdio.File(file, "rb");
 
   string skip=file->read(12);  // skip the jpeg header
+
+  if (skip[strlen(skip)-6..]!="Exif\0\0")
+  {
+     skip=file->read(100);
+     int z=search(skip,"Exif\0\0");
+     if (z==-1) return ([]); // no exif header?
+     exif_offset=z+18;
+     file->seek(z+18);
+  }
+
   string order=file->read(2);  // tiff order magic
   string code=file->read(2);   // tiff magic 42
   mapping tags=([]);
