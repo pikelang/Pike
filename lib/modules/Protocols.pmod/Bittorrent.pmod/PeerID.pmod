@@ -107,8 +107,8 @@ string identify_peer(string peerid)
 
       return "Generic";
    }
-
+#ifdef TORRENT_DEBUG
    werror("unknown client: %O\n",peerid);   
-
+#endif
    return "unknown";
 }
