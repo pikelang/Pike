@@ -17,7 +17,6 @@ constant arcfour = Crypto.arcfour;
 constant cbc = Crypto.cbc;
 constant des = Crypto.des;
 constant des_cbc = Crypto.des_cbc;
-constant des_parity = Crypto.des_parity;
 constant des3 = Crypto.des3;
 constant des3_cbc = Crypto.des3_cbc;
 constant dsa = Crypto.dsa;
