@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.42 2000/08/19 11:31:36 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.43 2000/08/20 15:59:10 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -452,45 +452,51 @@ PMOD_EXPORT int debug_fd_close(FD fd)
   return 0;
 }
 
-PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, long len)
+PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 {
-  long ret;
+  int kind;
   HANDLE handle;
+
   mt_lock(&fd_mutex);
-  FDDEBUG(fprintf(stderr,"Writing %d bytes to %d (%d)\n",len,fd,da_handle[fd]));
-  ret=fd_type[fd];
-  handle=da_handle[fd];
+  FDDEBUG(fprintf(stderr, "Writing %d bytes to %d (%d)\n",
+		  len, fd, da_handle[fd]));
+  kind = fd_type[fd];
+  handle = da_handle[fd];
   mt_unlock(&fd_mutex);
   
-  switch(ret)
+  switch(kind)
   {
     case FD_SOCKET:
-      ret=send((SOCKET)handle, buf, len, 0);
-      if(ret<0)
       {
-	errno=WSAGetLastError();
-	FDDEBUG(fprintf(stderr,"Write on %d failed (%d)\n",fd,errno));
-	if (errno == 1) {
-	  /* UGLY kludge */
-	  errno = WSAEWOULDBLOCK;
+	ptrdiff_t ret = send((SOCKET)handle, buf, len, 0);
+	if(ret<0)
+	{
+	  errno = WSAGetLastError();
+	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
+	  if (errno == 1) {
+	    /* UGLY kludge */
+	    errno = WSAEWOULDBLOCK;
+	  }
+	  return -1;
 	}
-	return -1;
+	FDDEBUG(fprintf(stderr, "Wrote %d bytes to %d)\n", len, fd));
+	return ret;
       }
-      FDDEBUG(fprintf(stderr,"Wrote %d bytes to %d)\n",len,fd));
-      return ret;
 
     case FD_CONSOLE:
     case FD_FILE:
     case FD_PIPE:
-      ret=0;
-      if(!WriteFile(handle, buf, len, &ret,0) && ret<=0)
       {
-	errno=GetLastError();
-	FDDEBUG(fprintf(stderr,"Write on %d failed (%d)\n",fd,errno));
-	return -1;
+	DWORD ret = 0;
+	if(!WriteFile(handle, buf, len, &ret,0) && ret<=0)
+	{
+	  errno = GetLastError();
+	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
+	  return -1;
+	}
+	FDDEBUG(fprintf(stderr, "Wrote %ld bytes to %d)\n", (long)ret, fd));
+	return ret;
       }
-      FDDEBUG(fprintf(stderr,"Wrote %d bytes to %d)\n",len,fd));
-      return ret;
 
     default:
       errno=ENOTSUPP;
