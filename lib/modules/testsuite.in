@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.24 2004/03/15 22:14:52 nilsson Exp $
+dnl $Id: testsuite.in,v 1.25 2004/03/20 16:30:11 grubba Exp $
 
 dnl - Array
 
@@ -804,7 +804,8 @@ test_do([[
 ]], ({}))
 ]])
 
-cond([[ __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+dnl - This test is disabled for now.
+cond([[ 0 && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
 test_any([[
   // Check that tracing works...
