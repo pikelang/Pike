@@ -1,8 +1,6 @@
-# $Id: Makefile.in,v 1.35 2000/06/11 16:22:35 mast Exp $
+# $Id: Makefile.in,v 1.36 2000/10/10 21:01:42 mast Exp $
 
 @make_variables@
-
-CPP=@CPP@
 
 MODULES=@subdirs@
 MODULE_SEGMENTS=@MODULE_SEGMENTS@
@@ -45,6 +43,12 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
 	touch remake
 	@echo "Run make again" >&2
 	@exit 1
+
+$(SRCDIR)/configure: $(SRCDIR)/configure.in $(SRCDIR)/../aclocal.m4
+	cd $(SRCDIR) && autoconf --localdir=$(SRCDIR)/..
+
+config.status: $(SRCDIR)/configure
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" ./config.status --recheck
 
 depend:
 	for a in $(MODULES) ; do \
