@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.213 2002/12/17 19:56:13 per Exp $
+|| $Id: object.c,v 1.214 2002/12/17 20:17:11 per Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.213 2002/12/17 19:56:13 per Exp $");
+RCSID("$Id: object.c,v 1.214 2002/12/17 20:17:11 per Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -711,7 +711,7 @@ void destruct(struct object *o)
     else fputs(", is destructed\n", stderr);
   }
 #endif
-
+  add_ref( o );
   call_destroy(o,0);
 
   /* destructed in destroy() */
@@ -795,6 +795,7 @@ void destruct(struct object *o)
   if( frame_pushed )
     POP_FRAME2();
 
+  free_object( o );
   free_program(p);
 
   remove_destroy_called_mark(o);
