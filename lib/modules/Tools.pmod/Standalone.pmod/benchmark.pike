@@ -1,4 +1,4 @@
-// $Id: benchmark.pike,v 1.4 2003/01/19 18:47:44 nilsson Exp $
+// $Id: benchmark.pike,v 1.5 2003/07/30 20:55:40 mast Exp $
 
 constant description = "Runs some built in Pike benchmarks.";
 constant help = #"
@@ -15,7 +15,7 @@ Arguments:
   Runs a test at most <number> of seconds, rounded up to the closest
   complete test. Defaults to 5.
 
--t<glob>, --tests=<glob>
+-t<glob>[,<glob>...], --tests=<glob>[,<glob>...]
   Only run the specified tests.
 ";
 
@@ -35,7 +35,7 @@ int(0..) main(int num, array(string) args)
 
    int seconds_per_test = 5;
    int maximum_runs = 25;
-   string test_glob = "*";
+   array(string) test_globs = ({"*"});
 
    foreach(Getopt.find_all_options(args, ({
      ({ "help",    Getopt.NO_ARG,  "-h,--help"/"," }),
@@ -55,7 +55,7 @@ int(0..) main(int num, array(string) args)
 	seconds_per_test = (int)opt[1];
 	break;
       case "tests":
-	test_glob = opt[1];
+	test_globs = opt[1] / ",";
     }
 
    int ecode;
@@ -64,11 +64,17 @@ int(0..) main(int num, array(string) args)
 
    write("test                        total    user    mem   (runs)\n");
 
-/* always run overhead check first */
-   foreach (glob(test_glob,({"Overhead"})+(sort(indices(tests))-({"Overhead"})));;string id)
-   {
-      ecode += Tools.Shoot.ExecTest(id,tests[id])
-	->run(seconds_per_test,maximum_runs);
-   }
+   /* Run overhead check first by default. */
+   array(string) to_run = ({"Overhead"}) + (sort (indices (tests)) - ({"Overhead"}));
+   array(string) to_run_names = rows (tests, to_run)->name;
+
+   foreach (test_globs, string test_glob)
+     foreach (to_run; int idx; string id)
+       if (id && glob (test_glob, to_run_names[idx])) {
+	 ecode += Tools.Shoot.ExecTest(id,tests[id])
+	   ->run(seconds_per_test,maximum_runs);
+	 // Don't run test more than once if it matches several globs.
+	 to_run[idx] = 0;
+       }
    return ecode;
 }
