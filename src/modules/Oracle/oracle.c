@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.22 2000/03/30 19:48:40 hubbe Exp $
+ * $Id: oracle.c,v 1.23 2000/03/31 18:22:23 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -41,7 +41,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.22 2000/03/30 19:48:40 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.23 2000/03/31 18:22:23 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -687,6 +687,7 @@ static void f_fetch_fields(INT32 args)
 	  break;
 
 	case SQLT_RID:
+	case SQLT_RDD:
 	  type_name="rowid";
 	  data_size=-1;
 	  type=SQLT_LNG;
@@ -759,7 +760,7 @@ static void f_fetch_fields(INT32 args)
 static void push_inout_value(struct inout *inout)
 {
 #ifdef ORACLE_DEBUG
-/*  fprintf(stderr,"%s ..",__FUNCTION__); */
+  fprintf(stderr,"%s .. (type = %d, indicator = %d)\n",__FUNCTION__,inout->ftype,inout->indicator);
 #endif
 
   if(inout->indicator)
@@ -1425,7 +1426,7 @@ static void f_big_query_create(INT32 args)
   UNSET_ONERROR(err);
 }
 
-void dbdate_create(INT32 args)
+static void dbdate_create(INT32 args)
 {
   struct tm *tm;
   time_t t;
@@ -1456,7 +1457,7 @@ void dbdate_create(INT32 args)
   }
 }
 
-void dbdate_sprintf(INT32 args)
+static void dbdate_sprintf(INT32 args)
 {
   char buffer[100];
   sword rc;
@@ -1476,7 +1477,8 @@ void dbdate_sprintf(INT32 args)
   pop_n_elems(args);
   push_text(buffer);
 }
-void dbdate_cast(INT32 args)
+
+static void dbdate_cast(INT32 args)
 {
   char *s;
   get_all_args("Oracle.Date->cast",args,"%s",&s);
@@ -1509,13 +1511,13 @@ void dbdate_cast(INT32 args)
   error("Cannot cast Oracle.Date to %s\n",s);
 }
 
-void dbnull_create(INT32 args)
+static void dbnull_create(INT32 args)
 {
   if(args<1) error("Too few arguments to Oracle.NULL->create\n");
   assign_svalue(& THIS_DBNULL->type, sp-args);
 }
 
-void dbnull_sprintf(INT32 args)
+static void dbnull_sprintf(INT32 args)
 {
   switch(THIS_DBNULL->type.type)
   {
@@ -1528,6 +1530,11 @@ void dbnull_sprintf(INT32 args)
 
 }
 
+static void dbnull_not(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(1);
+}
 
 void pike_module_init(void)
 {
@@ -1632,7 +1639,8 @@ void pike_module_init(void)
 
   MY_START_CLASS(dbnull); {
     ADD_FUNCTION("create",dbnull_create,tFunc(tOr(tStr,tInt),tVoid),0);
-    ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
+    ADD_FUNCTION("_sprintf",dbnull_sprintf,tFunc(tInt, tStr),0);
+    ADD_FUNCTION("`!",dbnull_not,tFunc(tVoid, tInt),0);
     map_variable("type","mixed",0,offset+OFFSETOF(dbnull, type), T_MIXED);
   }
   NULL_program=end_program();
