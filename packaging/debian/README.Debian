@@ -1,3 +1,14 @@
+Places to visit
+---------------
+ - http://pike.ida.liu.se/ - the main Pike site
+ - http://community.roxen.com - community site for users of the 
+   Roxen webserver and the Pike bugs database, information etc.
+ - http://caudium.net/ - website of the Caudium WebServer which is
+   written in Pike
+ - http://www.roxen.com/ - website of the Roxen IS, the company which
+   for a long time developed and maintained Pike as well as the Roxen
+   WebServer mentioned above.
+
 Notes for developers
 --------------------
 
@@ -31,4 +42,4 @@ and using the ~/.xemacs/ directory):
 That should do the trick for the Emacsen provided with Debian.
 
 ----
-$Id: README.Debian,v 1.4 2002/12/20 02:32:59 grendel Exp $
+$Id: README.Debian,v 1.5 2002/12/29 23:56:11 grendel Exp $

@@ -1,3 +1,12 @@
+pike7.4 (7.4.11-2) unstable; urgency=low
+
+  * Added short pike description to the meta packages' descriptions as
+    well as to the doc/devel package descriptions, following the advice
+    from Ben Burton. Thanks Ben. (closes: Bug#174526).
+  * Added several Pike-related URLs to the README.Debian file.
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 30 Dec 2002 00:53:18 +0100
+
 pike7.4 (7.4.11-1) unstable; urgency=low
 
   * Latest upstream version. Now officially released. The most important

@@ -14,10 +14,12 @@ Recommends: pike7.4-image (=${Source-Version})
 Description: Powerful interpreted programming language
  Pike is an interpreted, object-oriented, dynamic programming language
  with a syntax similar to C. It includes many powerful data types and
- a module system that, for instance, provides image manipulation, 
- database connectivity and advanced cryptography. Note that some of the
- Pike features are found in other pike7.4-* packages (image processing,
- mysql, postgresql, sane and more).
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4
 Architecture: all
@@ -34,6 +36,13 @@ Description: Recommended meta package for Pike 7.4
  upon, you can purge this package without worrying about the
  functionality loss in Pike and then remove the packages you
  don't need on your system.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
 Package: pike7.4-mysql
 Architecture: any
@@ -111,31 +120,57 @@ Package: pike7.4-dev
 Architecture: all
 Depends: ${shlibs:Depends}
 Description: Development files for Pike 7.4
- This package contains files you will need to develop
- C extension modules for Pike. The package depends on
- the recommended set of packages for the Pike
- environment.
+ This package contains files you will need to develop  C extension modules 
+ for Pike. The package depends on  the recommended set of packages for the 
+ Pike  environment.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
 Package: pike7.4-manual
 Architecture: all
 Section: doc
 Description: Pike 7.4 manual
  The Pike manual auto-generated from the sources.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
 Package: pike7.4-reference
 Architecture: all
 Section: doc
 Description: Pike 7.4 reference
  The Pike reference auto-generated from the sources.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
 Package: pike7.4-doc
 Architecture: all
 Section: doc
 Depends: pike7.4-manual (=${Source-Version}), pike7.4-reference (=${Source-Version})
 Description: Pike 7.4 documentation meta package
- This package depends upon all the Pike 7.4 documentation
- packages. Note that the download and installation sizes
- might be very large.
+ This package depends upon all the Pike 7.4 documentation  packages. Note 
+ that the download and installation sizes  might be very large.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
 Package: pike7.4-meta
 Architecture: all
@@ -143,4 +178,11 @@ Depends: pike7.4 (=${Source-Version}), pike7.4-mysql (=${Source-Version}), pike7
 Description: Meta package for Pike 7.4
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
- Pike components depend upon!
+ Pike components depend upon (including XFree libraries, GTK, GNOME)!
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
