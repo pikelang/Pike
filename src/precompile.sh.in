@@ -30,33 +30,6 @@ else
   :
 fi
 
-#
-# By linking these two files to the current predir directory I can
-# make $SCRIPT work with older versions of Pike - Hubbe
-#
-
-if test -f "$PREDIR/C.pmod" ; then
-  :
-else
-  rm "$PREDIR/C.pmod" 2>/dev/null
-  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" "$PREDIR/C.pmod"; then :; else
-    # We might be on a filesystem that doesn't support symlinks (eg FAT).
-    echo "Trying copying instead..."
-    cp "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" "$PREDIR/C.pmod"
-  fi
-fi
-
-if test -f "$PREDIR/Pike.pmod" ; then
-  :
-else
-  rm "$PREDIR/Pike.pmod" 2>/dev/null
-  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" "$PREDIR/Pike.pmod"; then :; else
-    # We might be on a filesystem that doesn't support symlinks (eg FAT).
-    echo "Trying copying instead..."
-    cp "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" "$PREDIR/Pike.pmod"
-  fi
-fi
-
 old_method="${method-}"
 
 OLD_RUNPIKE="$RUNPIKE"
@@ -146,7 +119,7 @@ case $method in
     IFS=" :"
     for dir in $PATH
     do
-      for p in pike pike7 pike70 pike71 pike07 pike06 pike-mirar
+      for p in pike pike71 pike72 pike73
       do
         if [ -x $dir/$p ]; then
           if [ "x$LAST_PIKE" = xpike ] ; then
