@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.66 2003/02/07 13:23:41 agehall Exp $
+|| $Id: mysql.c,v 1.67 2003/02/07 13:33:41 grubba Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.66 2003/02/07 13:23:41 agehall Exp $");
+RCSID("$Id: mysql.c,v 1.67 2003/02/07 13:33:41 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -268,7 +268,6 @@ static void pike_mysql_set_options(struct mapping *options)
   }
 #ifdef HAVE_MYSQL_OPTIONS
 #ifdef MYSQL_READ_DEFAULT_FILE
-  printf("\n\n\nREADING MYSQL DEFAULTS FILE\n\n\n");
   if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_FILE,
@@ -402,7 +401,8 @@ static void pike_mysql_reconnect(void)
 #endif /* HAVE_MYSQL_UNIX_PORT */
 
 #ifdef HAVE_MYSQL_REAL_CONNECT
-  if ((val = simple_mapping_string_lookup((struct mapping *)PIKE_MYSQL->options, "connect_options")) &&
+  if ((val = simple_mapping_string_lookup(PIKE_MYSQL->options,
+					  "connect_options")) &&
       (val->type == T_INT) && (val->u.integer)) {
     options = (unsigned int)val->u.integer;
   }
