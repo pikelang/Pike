@@ -83,7 +83,7 @@ if test "x$with_java" = xyes; then
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
       java_home_guess="`java -verbose 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e d | sed -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
-      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
         if test -d $tmp_java_home/.; then
           if ls "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
 	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
@@ -99,7 +99,11 @@ if test "x$with_java" = xyes; then
         fi
       done
     else
-      pike_cv_java_java_home="$JAVA_HOME"
+      if test -d "$JAVA_HOME"/jre/lib; then
+        pike_cv_java_java_home="$JAVA_HOME"/jre
+      else
+        pike_cv_java_java_home="$JAVA_HOME"
+      fi
     fi
   }})
   AC_MSG_RESULT($pike_cv_java_java_home)
