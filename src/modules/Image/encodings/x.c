@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.16 1998/04/20 18:53:37 grubba Exp $ */
+/* $Id: x.c,v 1.17 1998/08/09 11:36:18 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.16 1998/04/20 18:53:37 grubba Exp $
+**!	$Id: x.c,v 1.17 1998/08/09 11:36:18 grubba Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.16 1998/04/20 18:53:37 grubba Exp $");
+RCSID("$Id: x.c,v 1.17 1998/08/09 11:36:18 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -54,7 +54,7 @@ extern struct program *image_program;
 **! method string encode_truecolor_masks(object image,int bpp,int alignbits,int swapbytes,int rmask,int gmask,int bmask)
 **! method string encode_truecolor(object image,int bpp,int alignbits,int swapbytes,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift,object ct)
 **! method string encode_truecolor_masks(object image,int bpp,int alignbits,int swapbytes,int rmask,int gmask,int bmask,object ct)
-**!	Pack a image into a truecolor string. You will get a string
+**!	Pack an image into a truecolor string. You will get a string
 **!	of packed red, green and blue bits; 
 **!	ie: 
 **!
