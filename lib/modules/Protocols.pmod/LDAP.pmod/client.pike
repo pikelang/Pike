@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.22 2001/01/04 12:43:20 hop Exp $
+// $Id: client.pike,v 1.23 2001/04/03 05:55:25 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -754,7 +754,7 @@
     }
     if(intp(raw = send_search_op(ldap_basedn, ldap_scope, ldap_deref,
 			ldap_sizelimit, ldap_timelimit, attrsonly, filter,
-			attrs))) {
+			attrs||lauth->attributes))) {
       THROW(({error_string()+"\n",backtrace()}));
       return(-ldap_errno);
     }
