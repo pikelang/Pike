@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.195 2004/04/05 21:44:29 mast Exp $
+// $Id: module.pmod,v 1.196 2004/04/06 02:06:38 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -158,7 +158,7 @@ class File
 		   this_program,
 		   debug_file, debug_mode,
 		   debug_bits||0777,
-		   is_open() ? query_fd() : -1 );
+		   _fd && is_open() ? query_fd() : -1 );
   }
 
   //  @decl int open(int fd, string mode)
