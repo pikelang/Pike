@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.69 1999/04/16 20:40:57 grubba Exp $
+ * $Id: system.c,v 1.70 1999/05/02 08:13:05 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.69 1999/04/16 20:40:57 grubba Exp $");
+RCSID("$Id: system.c,v 1.70 1999/05/02 08:13:05 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1186,7 +1186,8 @@ void pike_module_init(void)
   init_passwd();
 
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  add_to_callback(& fork_child_callback, cleanup_after_fork, 0, 0);
+  dmalloc_accept_leak(add_to_callback(& fork_child_callback,
+				      cleanup_after_fork, 0, 0));
 #endif
 
 #ifdef __NT__

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: callback.h,v 1.7 1998/03/28 15:38:18 grubba Exp $
+ * $Id: callback.h,v 1.8 1999/05/02 08:11:34 hubbe Exp $
  */
 #ifndef CALLBACK_H
 #define CALLBACK_H
@@ -26,16 +26,17 @@ typedef void (*callback_func)(struct callback *, void *,void *);
 
 /* Prototypes begin here */
 struct callback;
-struct callback_block;
 void call_callback(struct callback_list *lst, void *arg);
-struct callback *add_to_callback(struct callback_list *lst,
-				 callback_func call,
-				 void *arg,
-				 callback_func free_func);
+struct callback *debug_add_to_callback(struct callback_list *lst,
+				       callback_func call,
+				       void *arg,
+				       callback_func free_func);
 void *remove_callback(struct callback *l);
 void free_callback_list(struct callback_list *lst);
 void cleanup_callbacks(void);
-void count_memory_in_callbacks(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
+
+#define add_to_callback(LST,CALL,ARG,FF) \
+  dmalloc_touch(struct callback *,debug_add_to_callback((LST),(CALL),(ARG),(FF)))
 
 #endif

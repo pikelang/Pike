@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.35 1999/04/10 00:42:00 hubbe Exp $
+ * $Id: error.h,v 1.36 1999/05/02 08:11:40 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -103,6 +103,7 @@ extern int throw_severity;
      OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n", \
                   &(X), (Y), (void *)(Z), __FILE__, __LINE__)); \
      X.func=(error_call)(Y); \
+     DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free;) \
      X.arg=(void *)(Z); \
      if(!recoveries) break; \
      X.previous=recoveries->onerror; \
@@ -172,6 +173,7 @@ void check_recovery_context(void);
 JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
 void pike_throw(void) ATTRIBUTE((noreturn));
 void push_error(char *description);
+void low_error(char *buf);
 void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
@@ -217,6 +219,11 @@ void resource_error(
   char *resource_type,
   long howmuch,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
+void permission_error(
+  char *func,
+  struct svalue *base_sp, int args,
+  char *permission_type,
+  char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)));
 void init_error(void);
 void cleanup_error(void);
 /* Prototypes end here */

@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.26 1999/04/24 13:43:28 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.27 1999/05/02 08:12:32 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -453,13 +453,15 @@ void f_call_out(INT32 args)
 
   if(!mem_callback)
     mem_callback=add_memory_usage_callback(count_memory_in_call_outs,0,0);
+    
 
 #ifdef PIKE_DEBUG
   if(!verify_call_out_callback)
   {
     verify_call_out_callback=add_to_callback(& do_debug_callbacks,
 					     do_verify_call_outs, 0, 0);
-    add_gc_callback(mark_call_outs, 0, 0);
+    dmalloc_accept_leak(verify_call_out_callback);
+    dmalloc_accept_leak(add_gc_callback(mark_call_outs, 0, 0));
   }
 #endif
 
@@ -730,4 +732,21 @@ void pike_module_init(void)
 void pike_module_exit(void)
 {
   free_all_call_outs();
+#ifdef DO_PIKE_CLEANUP
+  if(mem_callback)
+  {
+    remove_callback(mem_callback);
+    mem_callback=0;
+  }
+  if(verify_call_out_callback)
+  {
+    remove_callback(verify_call_out_callback);
+    verify_call_out_callback=0;
+  }
+  if(call_out_backend_callback)
+  {
+    remove_callback(call_out_backend_callback);
+    call_out_backend_callback=0;
+  }
+#endif
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.21 1998/12/16 07:49:36 hubbe Exp $
+ * $Id: gc.h,v 1.22 1999/05/02 08:11:42 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -28,7 +28,7 @@ extern void *gc_svalue_location;
 #endif
 
 /* Prototypes begin here */
-struct callback *add_gc_callback(callback_func call,
+struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
 struct marker;
@@ -62,5 +62,8 @@ void do_gc(void);
 #define GC_FREE() do { num_objects-- ; }while(0)
 #endif
 
+
+#define add_gc_callback(X,Y,Z) \
+  dmalloc_touch(struct callback *,debug_add_gc_callback((X),(Y),(Z)))
 
 #endif

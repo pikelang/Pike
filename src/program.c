@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.122 1999/05/01 16:33:11 grubba Exp $");
+RCSID("$Id: program.c,v 1.123 1999/05/02 08:11:47 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -418,7 +418,7 @@ void optimize_program(struct program *p)
 #define FOO(NUMTYPE,TYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
-  free((char *)p->NAME); \
+  dmfree((char *)p->NAME); \
   p->NAME=(TYPE *)(data+size); \
   size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
@@ -682,17 +682,17 @@ void really_free_program(struct program *p)
   if(p->flags & PROGRAM_OPTIMIZED)
   {
     if(p->program)
-      free(p->program);
+      dmfree(p->program);
 #define FOO(NUMTYPE,TYPE,NAME) p->NAME=0;
 #include "program_areas.h"
   }else{
 #define FOO(NUMTYPE,TYPE,NAME) \
-    if(p->NAME) { free((char *)p->NAME); p->NAME=0; }
+    if(p->NAME) { dmfree((char *)p->NAME); p->NAME=0; }
 #include "program_areas.h"
   }
   
   FREE_PROT(p);
-  free((char *)p);
+  dmfree((char *)p);
   
   GC_FREE();
 }
@@ -746,7 +746,7 @@ static void toss_compilation_resources(void)
 
   if(malloc_size_program)
     {
-      free((char *)malloc_size_program);
+      dmfree((char *)malloc_size_program);
       malloc_size_program=0;
     }
 
@@ -2801,7 +2801,7 @@ void pop_compiler_frame(void)
     free_string(f->current_return_type);
 
   compiler_frame=f->previous;
-  free((char *)f);
+  dmfree((char *)f);
 }
 
 

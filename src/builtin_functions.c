@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.167 1999/04/17 13:45:52 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.168 1999/05/02 08:11:32 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3504,6 +3504,12 @@ void f__memory_usage(INT32 args)
   push_text("num_callables");
   push_int(num);
   push_text("callable_bytes");
+  push_int(size);
+
+  count_memory_in_pike_frames(&num, &size);
+  push_text("num_frames");
+  push_int(num);
+  push_text("frame_bytes");
   push_int(size);
 
   call_callback(&memory_usage_callback, (void *)0);

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.92 1999/04/02 23:23:47 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.93 1999/05/02 08:11:50 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -560,6 +560,7 @@ void f_thread_create(INT32 args)
     {
       threads_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						 check_threads, 0,0);
+      dmalloc_accept_leak(threads_evaluator_callback);
     }
     ref_push_object(arg->id);
     THREADS_FPRINTF(0, (stderr, "THREAD_CREATE -> t:%08x\n",

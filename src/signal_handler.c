@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.128 1999/05/01 13:37:08 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.129 1999/05/02 08:11:48 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -530,6 +530,7 @@ static void f_signal(int args)
     signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 					      check_signals,
 					      0,0);
+    dmalloc_accept_leak(signal_evaluator_callback);
   }
 
   if(args == 1)
@@ -2208,6 +2209,7 @@ void f_create_process(INT32 args)
 	signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						  check_signals,
 						  0,0);
+	dmalloc_accept_leak(signal_evaluator_callback);
       }
 #endif
 
@@ -2542,6 +2544,7 @@ void f_fork(INT32 args)
       signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						check_signals,
 						0,0);
+      dmalloc_accept_leak(signal_evaluator_callback);
     }
 #endif
 
@@ -2860,6 +2863,7 @@ void init_signals(void)
     signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 					      check_signals,
 					      0,0);
+    dmalloc_accept_leak(signal_evaluator_callback);
   }
 
 #ifdef USE_PID_MAPPING

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.121 1999/04/17 13:48:47 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.122 1999/05/02 08:11:43 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -186,6 +186,7 @@ use_malloc:
     if(!spcb)
     {
       spcb=add_gc_callback(gc_check_stack_callback,0,0);
+      dmalloc_accept_leak(spcb);
     }
   }
 #endif
@@ -790,7 +791,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
       struct program *p;
       struct reference *ref;
-      struct pike_frame *new_frame=alloc_pike_frame();
+      struct pike_frame *new_frame;
       struct identifier *function;
       
       if(fun<0)
@@ -803,6 +804,9 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       check_stack(256);
       check_mark_stack(256);
       check_c_stack(8192);
+
+      new_frame=alloc_pike_frame();
+      debug_malloc_touch(new_frame);
 
 #ifdef PIKE_DEBUG
       if(d_flag>2) do_debug();
@@ -914,6 +918,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
       {
       case IDENTIFIER_C_FUNCTION:
+	debug_malloc_touch(fp);
 	fp->num_args=args;
 	new_frame->num_locals=args;
 	check_threads_etc();
@@ -923,6 +928,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       case IDENTIFIER_CONSTANT:
       {
 	struct svalue *s=fp->context.prog->constants+function->func.offset;
+	debug_malloc_touch(fp);
 	if(s->type == T_PROGRAM)
 	{
 	  struct object *tmp;
@@ -939,6 +945,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       
       case 0:
       {
+	debug_malloc_touch(fp);
 	if(sp-save_sp-args<=0)
 	{
 	  /* Create an extra svalue for tail recursion style call */
@@ -1109,6 +1116,7 @@ static int o_catch(unsigned char *pc)
 {
   JMP_BUF tmp;
   struct svalue *expendible=fp->expendible;
+  debug_malloc_touch(fp);
   if(SETJMP(tmp))
   {
     *sp=throw_value;
@@ -1328,12 +1336,7 @@ void cleanup_interpret(void)
 #endif
 
   while(fp)
-  {
-    struct pike_frame *tmp=fp;
-    fp=tmp->next;
-    tmp->next=0;
-    free_pike_frame(tmp);
-  }
+    POP_PIKE_FRAME();
 
 #ifdef PIKE_DEBUG
   for(e=0;e<BACKLOG;e++)
@@ -1372,6 +1375,13 @@ void cleanup_interpret(void)
 void really_clean_up_interpret(void)
 {
 #ifdef DO_PIKE_CLEANUP
+#if 0
+  struct pike_frame_block *p;
+  int e;
+  for(p=pike_frame_blocks;p;p=p->next)
+    for(e=0;e<128;e++)
+      debug_malloc_dump_references( p->x + e);
+#endif
   free_all_pike_frame_blocks();
 #endif
 }

@@ -15,9 +15,8 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.17 1999/04/15 04:08:09 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.18 1999/05/02 08:11:37 hubbe Exp $");
 
-static INT32 num_callable=0;
 static struct mapping *builtin_constants = 0;
 
 struct mapping *get_builtin_constants(void)
@@ -64,13 +63,10 @@ void add_global_program(char *name, struct program *p)
   low_add_constant(name, &s);
 }
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) num_callable++
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {		\
   free_string(X->type);			\
   free_string(X->name);			\
-  num_callable--;			\
 }while(0)
 BLOCK_ALLOC(callable,128)
 
@@ -168,9 +164,4 @@ void cleanup_added_efuns(void)
     builtin_constants=0;
   }
 #endif
-}
-void count_memory_in_callables(INT32 *num_, INT32 *size_)
-{
-  *num_=num_callable;
-  *size_=num_callable*sizeof(struct callable);
 }

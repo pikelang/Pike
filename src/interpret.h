@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.30 1999/04/15 19:12:50 hubbe Exp $
+ * $Id: interpret.h,v 1.31 1999/05/02 08:11:44 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -102,6 +102,7 @@ struct pike_frame
     really_free_pike_frame(fp);						\
   }else{								\
     DO_IF_DEBUG(if( fp->locals+fp->num_locals>sp) fatal("Stack failure in POP_PIKE_FRAME!\n"));                                                      \
+    debug_malloc_touch(fp); \
     if(fp->num_locals)							\
     {									\
       struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\

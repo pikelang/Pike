@@ -9,7 +9,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.16 1999/01/31 09:01:41 hubbe Exp $");
+RCSID("$Id: callback.c,v 1.17 1999/05/02 08:11:33 hubbe Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -172,16 +172,18 @@ void call_callback(struct callback_list *lst, void *arg)
 }
 
 /* Add a callback to the linked list pointed to by ptr. */
-struct callback *add_to_callback(struct callback_list *lst,
-				 callback_func call,
-				 void *arg,
-				 callback_func free_func)
+struct callback *debug_add_to_callback(struct callback_list *lst,
+				       callback_func call,
+				       void *arg,
+				       callback_func free_func)
 {
   struct callback *l;
   l=alloc_callback();
   l->call=call;
   l->arg=arg;
   l->free_func=free_func;
+
+  DO_IF_DMALLOC( if(l->free_func == free) l->free_func=dmalloc_free; )
 
   l->next=lst->callbacks;
   lst->callbacks=l;
@@ -196,6 +198,7 @@ struct callback *add_to_callback(struct callback_list *lst,
  */
 void *remove_callback(struct callback *l)
 {
+  dmalloc_unregister(l,1);
   l->call=0;
   l->free_func=0;
   return l->arg;
@@ -221,18 +224,3 @@ void cleanup_callbacks(void)
   free_all_callback_blocks();
 }
 
-
-void count_memory_in_callbacks(INT32 *num_, INT32 *size_)
-{
-  INT32 num=0, size=0;
-  struct callback_block *tmp;
-  struct callback *tmp2;
-  for(tmp=callback_blocks;tmp;tmp=tmp->next)
-  {
-    num+=CALLBACK_CHUNK;
-    size+=sizeof(struct callback_block);
-  }
-  for(tmp2=free_callbacks;tmp2;tmp2=tmp2->next) num--;
-  *num_=num;
-  *size_=size;
-}

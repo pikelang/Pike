@@ -21,12 +21,13 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_types.h"
 #include "time_stuff.h"
 #include "constants.h"
+#include "block_alloc.h"
 
 #include "gc.h"
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.41 1999/03/17 21:49:24 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.42 1999/05/02 08:11:41 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -50,7 +51,7 @@ static double objects_freed = 0.0;
 
 struct callback_list gc_callbacks;
 
-struct callback *add_gc_callback(callback_func call,
+struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func)
 {
@@ -68,65 +69,17 @@ struct marker
 #endif
   INT32 flags;
   struct marker *next;
-  void *marked;
+  void *data;
 };
 
-struct marker_chunk
-{
-  struct marker_chunk *next;
-  struct marker markers[MARKER_CHUNK_SIZE];
-};
-
-static struct marker_chunk *chunk=0;
-static int markers_left_in_chunk=0;
-
-static struct marker *new_marker(void)
-{
-  if(!markers_left_in_chunk)
-  {
-    struct marker_chunk *m;
-    m=(struct marker_chunk *)xalloc(sizeof(struct marker_chunk));
-    m->next=chunk;
-    chunk=m;
-    markers_left_in_chunk=MARKER_CHUNK_SIZE;
-  }
-  markers_left_in_chunk--;
-
-  return chunk->markers + markers_left_in_chunk;
-}
-
-static struct marker **hash=0;
-static unsigned long hashsize=0;
-
-static struct marker *getmark(void *a)
-{
-  unsigned long hashval;
-  struct marker *m;
-
-  hashval=(unsigned long)a;
-  hashval%=hashsize;
-
+#undef INIT_BLOCK
 #ifdef PIKE_DEBUG
-  if(hashval >= hashsize)
-    fatal("Compiler has buggy modulo operator.\n");
+#define INIT_BLOCK(X) (X)->flags=(X)->refs=(X)->xrefs=0
+#else
+#define INIT_BLOCK(X) (X)->flags=(X)->refs=0
 #endif
 
-  for(m=hash[hashval];m;m=m->next)
-    if(m->marked == a)
-      return m;
-
-  m=new_marker();
-  m->marked=a;
-  m->refs=0;
-#ifdef PIKE_DEBUG
-  m->xrefs=0;
-#endif
-  m->flags=0;
-  m->next=hash[hashval];
-  hash[hashval]=m;
-
-  return m;
-}
+PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
 
 #ifdef PIKE_DEBUG
 
@@ -465,11 +418,12 @@ INT32 gc_check(void *a)
     return 0;
   }
 #endif
-  return add_ref(getmark(a));
+  return add_ref(get_marker(a));
 }
 
 static void init_gc(void)
 {
+#if 0
   INT32 tmp3;
   /* init hash , hashsize will be a prime between num_objects/8 and
    * num_objects/4, this will assure that no re-hashing is needed.
@@ -484,10 +438,14 @@ static void init_gc(void)
   hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
   MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
   markers_left_in_chunk=0;
+#else
+  init_marker_hash();
+#endif
 }
 
 static void exit_gc(void)
 {
+#if 0
   struct marker_chunk *m;
   /* Free hash table */
   free((char *)hash);
@@ -496,6 +454,16 @@ static void exit_gc(void)
     chunk=m->next;
     free((char *)m);
   }
+#else
+#ifdef DO_PIKE_CLEANUP
+  int e=0;
+  struct marker *h;
+  for(e=0;e<marker_hash_table_size;e++)
+    while(marker_hash_table[e])
+      remove_marker(marker_hash_table[e]->data);
+#endif
+  exit_marker_hash();
+#endif
 }
 
 #ifdef PIKE_DEBUG
@@ -537,7 +505,7 @@ void locate_references(void *a)
 int gc_is_referenced(void *a)
 {
   struct marker *m;
-  m=getmark(a);
+  m=get_marker(a);
 #ifdef PIKE_DEBUG
   if(m->refs + m->xrefs > *(INT32 *)a ||
      (!(m->refs < *(INT32 *)a) && m->xrefs) )
@@ -577,7 +545,7 @@ int gc_external_mark(void *a)
     }
     return 0;
   }
-  m=getmark(a);
+  m=get_marker(a);
   m->xrefs++;
   m->flags|=GC_XREFERENCED;
   gc_is_referenced(a);
@@ -588,7 +556,7 @@ int gc_external_mark(void *a)
 int gc_mark(void *a)
 {
   struct marker *m;
-  m=getmark(a);
+  m=get_marker(a);
 
   if(m->flags & GC_REFERENCED)
   {
@@ -602,7 +570,7 @@ int gc_mark(void *a)
 int gc_do_free(void *a)
 {
   struct marker *m;
-  m=getmark(a);
+  m=get_marker(a);
 #ifdef PIKE_DEBUG
   if( !(m->flags & GC_REFERENCED)  && m->flags & GC_XREFERENCED )
   {

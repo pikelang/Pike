@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.34 1999/04/17 13:47:16 grubba Exp $");
+RCSID("$Id: error.c,v 1.35 1999/05/02 08:11:39 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -80,14 +80,11 @@ void pike_throw(void) ATTRIBUTE((noreturn))
 
   while(fp != recoveries->fp)
   {
-    struct pike_frame *tmp=fp;
 #ifdef PIKE_DEBUG
     if(!fp)
       fatal("Popped out of stack frames.\n");
 #endif
-    fp = tmp->next;
-    tmp->next=0;
-    free_pike_frame(tmp);
+    POP_PIKE_FRAME();
   }
 
   pop_n_elems(sp - evaluator_stack - recoveries->sp);
@@ -483,7 +480,7 @@ void permission_error(
   char *func,
   struct svalue *base_sp, int args,
   char *permission_type,
-  char *desc, ...) ATTRIBUTE((noreturn, format(printf, 2, 3)))
+  char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)))
 {
   INIT_ERROR(permission);
   ERROR_STRUCT(permission,o)->permission_type=

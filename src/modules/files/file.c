@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.151 1999/04/20 20:35:01 grubba Exp $");
+RCSID("$Id: file.c,v 1.152 1999/05/02 08:12:48 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2627,10 +2627,10 @@ void pike_module_init(void)
 #endif
 
 #ifdef PIKE_DEBUG
-  add_to_callback(&do_debug_callbacks,
-		  check_static_file_data,
-		  0,
-		  0);
+  dmalloc_accept_leak(add_to_callback(&do_debug_callbacks,
+				      check_static_file_data,
+				      0,
+				      0));
 #endif
 }
 

@@ -22,6 +22,7 @@
 static int eval_instruction(unsigned char *pc)
 {
   unsigned INT32 accumulator=0,instr, prefix=0;
+  debug_malloc_touch(fp);
   while(1)
   {
     fp->pc = pc;

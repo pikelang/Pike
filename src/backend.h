@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: backend.h,v 1.6 1998/03/28 15:39:44 grubba Exp $
+ * $Id: backend.h,v 1.7 1999/05/02 08:11:29 hubbe Exp $
  */
 #ifndef BACKEND_H
 #define BACKEND_H
@@ -21,7 +21,7 @@ extern struct callback_list do_debug_callbacks;
 
 /* Prototypes begin here */
 struct selectors;
-struct callback *add_backend_callback(callback_func call,
+struct callback *debug_add_backend_callback(callback_func call,
 				      void *arg,
 				      callback_func free_func);
 void wake_up_backend(void);
@@ -48,5 +48,8 @@ void do_debug(void);
 void backend(void);
 int write_to_stderr(char *a, INT32 len);
 /* Prototypes end here */
+
+#define add_backend_callback(X,Y,Z) \
+  dmalloc_touch(struct callback *,debug_add_backend_callback((X),(Y),(Z)))
 
 #endif

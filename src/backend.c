@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.40 1998/11/22 11:02:33 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.41 1999/05/02 08:11:28 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -184,7 +184,7 @@ static int may_need_wakeup=0;
 
 static struct callback_list backend_callbacks;
 
-struct callback *add_backend_callback(callback_func call,
+struct callback *debug_add_backend_callback(callback_func call,
 				      void *arg,
 				      callback_func free_func)
 {
