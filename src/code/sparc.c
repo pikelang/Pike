@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.27 2002/11/08 17:37:00 grubba Exp $
+|| $Id: sparc.c,v 1.28 2002/11/09 13:41:14 grubba Exp $
 */
 
 /*
@@ -81,6 +81,7 @@
 #define SPARC_OP3_SRL		0x26
 #define SPARC_OP3_SRA		0x27
 #define SPARC_OP3_RD		0x28
+#define SPARC_OP3_RETURN	0x39
 #define SPARC_OP3_SAVE		0x3c
 
 #define SPARC_RD_REG_CCR	0x02
@@ -109,6 +110,8 @@
 #define SPARC_SUBcc(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SUBcc, D, S1, S2, I)
 
 #define SPARC_RD(D, RDREG)	SPARC_ALU_OP(SPARC_OP3_RD, D, RDREG, 0, 0)
+
+#define SPARC_RETURN(S1, S2, I)	SPARC_ALU_OP(SPARC_OP3_RETURN, 0, S1, S2, I)
 
 #define SPARC_LDUW(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_LDUW, D, S1, S2, I)
 #define SPARC_LDUH(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_LDUH, D, S1, S2, I)
@@ -283,9 +286,9 @@ void sparc_ins_entry(void)
 /* Update Pike_fp->pc */
 void sparc_update_pc(void)
 {
+  LOAD_PIKE_FP();
   /* rd %pc, %i0 */
   SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
-  LOAD_PIKE_FP();
   /* stw %pc, [ %pike_fp + pc ] */
   SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
 }
@@ -409,11 +412,22 @@ void sparc_local_lvalue(unsigned int no)
   SET_REG(SPARC_REG_I0, T_LVALUE);
   /* sth %i0, [ %pike_sp, %g0 ] */
   SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
-  SET_REG(SPARC_REG_I1, no * sizeof(struct svalue));
-  /* lduw [ %pike_fp, %offset(pike_frame, locals) ], %i2 */
-  SPARC_LDUW(SPARC_REG_I2, SPARC_REG_PIKE_FP,
-	     OFFSETOF(pike_frame, locals), 1);
   SET_REG(SPARC_REG_I0, T_VOID);
+  no *= sizeof(struct svalue);
+  if (no < 4096) {
+    /* lduw [ %pike_fp, %offset(pike_frame, locals) ], %i2 */
+    SPARC_LDUW(SPARC_REG_I2, SPARC_REG_PIKE_FP,
+	       OFFSETOF(pike_frame, locals), 1);
+    /* add %i2, no * sizeof(struct svalue), %i2 */
+    SPARC_ADD(SPARC_REG_I2, SPARC_REG_I2, no, 1);
+  } else {
+    SET_REG(SPARC_REG_I1, no);
+    /* lduw [ %pike_fp, %offset(pike_frame, locals) ], %i2 */
+    SPARC_LDUW(SPARC_REG_I2, SPARC_REG_PIKE_FP,
+	       OFFSETOF(pike_frame, locals), 1);
+    /* add %i2, %i1, %i2 */
+    SPARC_ADD(SPARC_REG_I2, SPARC_REG_I2, SPARC_REG_I1, 0);
+  }
   /* stw %i2, [ %pike_sp, %offset(svalue, u.lval) ] */
   SPARC_STW(SPARC_REG_I2, SPARC_REG_PIKE_SP,
 	    OFFSETOF(svalue, u.lval), 1);
@@ -422,6 +436,24 @@ void sparc_local_lvalue(unsigned int no)
   /* sth %i0, [ %pike_sp , -sizeof(struct svalue) ] */
   SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, -sizeof(struct svalue), 1);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
+}
+
+void sparc_escape_catch(void)
+{
+  LOAD_PIKE_FP();
+  SPARC_FLUSH_UNSTORED();
+  /* rd %pc, %i0 */
+  SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
+  /* add %i0, 20, %i0 */
+  SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 20, 1);
+  /* stw %i0, [ %pike_fp, %offset(pike_frame, pc) ] */
+  SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP,
+	    OFFSETOF(pike_frame, pc), 1);
+  /* return %i7 + 8 */
+  SPARC_RETURN(SPARC_REG_I7, 8, 1);
+  /* or %g0, -2, %o0 */
+  SPARC_OR(SPARC_REG_O0, SPARC_REG_G0, -2, 1);
+  SPARC_UNLOAD_CACHED();
 }
 
 /*
@@ -519,6 +551,13 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     sparc_push_int(0x7fffffff, 0);
     return;
 
+  case F_EXIT_CATCH - F_OFFSET:
+    sparc_push_int(0, 1);
+    /* FALL_THROUGH */
+  case F_ESCAPE_CATCH - F_OFFSET:
+    sparc_escape_catch();
+    return;
+
 #define F_ALIAS(F_FUN, O_FUN)	\
   case F_FUN - F_OFFSET:	\
     addr = (void *)O_FUN;	\
@@ -580,6 +619,9 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     return;
   case F_MARK_X:
     sparc_mark(-b);
+    return;
+  case F_LOCAL_LVALUE:
+    sparc_local_lvalue(b);
     return;
   }
   SET_REG(SPARC_REG_O0, b);
