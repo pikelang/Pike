@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.24 2004/04/14 19:02:03 grubba Exp $
+|| $Id: module.c,v 1.25 2004/04/14 19:07:31 grubba Exp $
 */
 
 #include "global.h"
@@ -22,7 +22,7 @@
 #include "modules/modlist_headers.h"
 #include "post_modules/modlist_headers.h"
 
-RCSID("$Id: module.c,v 1.24 2004/04/14 19:02:03 grubba Exp $");
+RCSID("$Id: module.c,v 1.25 2004/04/14 19:07:31 grubba Exp $");
 
 /* Define this to trace the initialization and cleanup of static modules. */
 /* #define TRACE_MODULE */
@@ -66,7 +66,7 @@ void init_modules(void)
     JMP_BUF recovery;
     if (!p) {
       start_new_program();
-      p = Pike_compiler->new_program;
+      p = Pike_compiler.new_program;
     }
     if(SETJMP(recovery)) {
       /* FIXME: We could loop here until we find p. */
