@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.103 2000/04/12 20:38:26 mast Exp $");
+RCSID("$Id: object.c,v 1.104 2000/04/13 12:09:30 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1146,6 +1146,8 @@ struct array *object_values(struct object *o)
 
 void gc_mark_object_as_referenced(struct object *o)
 {
+  debug_malloc_touch(o);
+
   if(gc_mark(o))
   {
     int e;
@@ -1153,6 +1155,8 @@ void gc_mark_object_as_referenced(struct object *o)
 
     if(!o || !(p=o->prog)) return; /* Object already destructed */
     add_ref(o);
+
+    debug_malloc_touch(p);
 
     if(o->parent)
       gc_mark_object_as_referenced(o->parent);
@@ -1177,12 +1181,13 @@ void gc_mark_object_as_referenced(struct object *o)
 	  struct svalue *s;
 	  s=(struct svalue *)(pike_frame->current_storage +
 			      pike_frame->context.prog->identifiers[d].func.offset);
-	  gc_mark_svalues(s,1);
+	  gc_mark_svalues(debug_malloc_pass(s), 1);
 	}else{
 	  union anything *u;
 	  u=(union anything *)(pike_frame->current_storage +
 			       pike_frame->context.prog->identifiers[d].func.offset);
-	  gc_mark_short_svalue(u,pike_frame->context.prog->identifiers[d].run_time_type);
+	  gc_mark_short_svalue(debug_malloc_pass(u),
+			       pike_frame->context.prog->identifiers[d].run_time_type);
 	}
       }
     }
@@ -1208,6 +1213,8 @@ static inline void gc_check_object(struct object *o)
 
   if((p=o->prog))
   {
+    debug_malloc_touch(p);
+
     PUSH_FRAME(o);
     
     for(e=p->num_inherits-1; e>=0; e--)
@@ -1267,7 +1274,6 @@ void gc_mark_all_objects(void)
       SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
-
     }
   }
 }
