@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.1 1999/10/21 22:39:02 marcus Exp $ */
+/* $Id: ras.c,v 1.2 1999/10/22 14:27:16 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.1 1999/10/21 22:39:02 marcus Exp $
+**!	$Id: ras.c,v 1.2 1999/10/22 14:27:16 marcus Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.1 1999/10/21 22:39:02 marcus Exp $");
+RCSID("$Id: ras.c,v 1.2 1999/10/22 14:27:16 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -26,6 +26,7 @@ RCSID("$Id: ras.c,v 1.1 1999/10/21 22:39:02 marcus Exp $");
 #include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "operators.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -100,7 +101,7 @@ void img_ras_decode(INT32 args)
    if(str->len < 32)
      error("Image.RAS.decode: header too small\n");
 
-   decode_ras_header(&rs, str->str);
+   decode_ras_header(&rs, STR0(str));
 
    if(rs.ras_magic != 0x59a66a95)
      error("Image.RAS.decode: bad magic\n");
@@ -126,7 +127,7 @@ void img_ras_decode(INT32 args)
    if(rs.ras_maplength < 0)
      error("Image.RAS.decode: negative ras_maplength\n");
 
-   src = (unsigned char *)(str->str+32);
+   src = (unsigned char *)(STR0(str)+32);
    len = str->len - 32;
 
    if(rs.ras_maplength != 0) {
@@ -168,6 +169,7 @@ void img_ras_decode(INT32 args)
    }
 
    if(rs.ras_type == RT_BYTE_ENCODED) {
+     /* FIXME */
      if(ctab != NULL)
        free_object(ctab);
      error("Image.RAS.decode: RT_BYTE_ENCODED unimplemented\n");
@@ -175,6 +177,7 @@ void img_ras_decode(INT32 args)
 
    if(rs.ras_length)
      if(rs.ras_length > len) {
+       /* Better to proceed and make a partly black image? */
        if(ctab != NULL)
 	 free_object(ctab);
        error("Image.RAS.decode: image data truncated\n");
@@ -200,6 +203,7 @@ void img_ras_decode(INT32 args)
       case 24:
 	for(x=0; x<rs.ras_width; x++) {
 	  if(len<3) {
+	    /* Better to proceed and make a partly black image? */
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -219,6 +223,7 @@ void img_ras_decode(INT32 args)
       case 8:
 	for(x=0; x<rs.ras_width; x++) {
 	  if(len<1) {
+	    /* Better to proceed and make a partly black image? */
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -243,6 +248,7 @@ void img_ras_decode(INT32 args)
 	  for(x=0; x<rs.ras_width; x++) {
 	    if(!bits) {
 	      if(len<2) {
+		/* Better to proceed and make a partly black image? */
 		if(ctab != NULL)
 		  free_object(ctab);
 		free_object(o);
@@ -273,11 +279,6 @@ void img_ras_decode(INT32 args)
 	  }
 	}
 	break;
-      default:
-	if(ctab != NULL)
-	  free_object(ctab);
-	free_object(o);
-	error("Not implemented depth %d\n", rs.ras_depth);
      }
 
    if(ctab != NULL)
@@ -306,10 +307,163 @@ void img_ras_decode(INT32 args)
 **!	</pre>
 */
 
+static void encode_ras_header(struct rasterfile *rs, unsigned char *p)
+{
+  INT32 *rp = (INT32*)rs;
+  int i;
+  for(i=0; i<8; i++) {
+    *p++ = (*rp>>24)&0xff;
+    *p++ = (*rp>>16)&0xff;
+    *p++ = (*rp>>8)&0xff;
+    *p++ = (*rp)&0xff;
+    rp ++;
+  }
+}
+
 static void image_ras_encode(INT32 args)
 {
+  struct object *imgo;
+  struct mapping *optm = NULL;
+  struct image *alpha = NULL, *img;
+  struct neo_colortable *ct = NULL;
+  struct pike_string *res, *res2;
+  struct rasterfile rs;
+  struct nct_dither dith;
+  rgb_group *rgb;
+  INT32 x, y;
+  unsigned char *dst;
+  void (*ctfunc)(rgb_group *, unsigned char *, int,
+		 struct neo_colortable *, struct nct_dither *, int) = NULL;
+
+  get_all_args("Image.RAS.decode", args,
+	       (args>1 && !IS_ZERO(&sp[1-args])? "%o%m":"%o"),
+	       &imgo, &optm);
+
+  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+     error("Image.RAS.encode: illegal argument 1\n");
+
+  if(optm != NULL) {
+    struct svalue *s;
+
+    if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !IS_ZERO(s))
+      if(s->type != T_OBJECT ||
+	 (ct=(struct neo_colortable*)
+	  get_storage(s->u.object, image_colortable_program))==NULL)
+	error("Image.RAS.encode: option (arg 2) \"palette\" has illegal type\n");
+  }
+
+  if (!img->img)
+    error("Image.RAS.encode: no image\n");
+
+  rgb = img->img;
+
+  if(ct && ct->type == NCT_NONE)
+    ct = NULL;
+
+  rs.ras_magic = 0x59a66a95;
+  rs.ras_width = img->xsize;
+  rs.ras_height = img->ysize;
+  rs.ras_depth = 0;
+  rs.ras_length = 0;
+  rs.ras_type = RT_STANDARD;
+  rs.ras_maptype = RMT_NONE;
+  rs.ras_maplength = 0;
+
+  if(ct) {
+    struct pike_string *cts;
+    int i, n = image_colortable_size(ct);
+    unsigned char *tmp;
+    rs.ras_depth = 8;
+    rs.ras_maptype = RMT_EQUAL_RGB;
+    rs.ras_maplength = n*3;
+    cts = begin_shared_string(rs.ras_maplength+(rs.ras_maplength&1));
+    if(rs.ras_maplength & 1) {
+      STR0(cts)[rs.ras_maplength] = '\0';
+      rs.ras_maplength++;
+    }
+    tmp = (unsigned char *)xalloc(rs.ras_maplength);
+    image_colortable_write_rgb(ct, tmp);
+    for(i=0; i<n; i++) {
+      STR0(cts)[i] = tmp[i*3];
+      STR0(cts)[i+n] = tmp[i*3+1];
+      STR0(cts)[i+2*n] = tmp[i*3+2];
+    }
+    free((char *)tmp);
+    push_string(end_shared_string(cts));
+    image_colortable_initiate_dither(ct, &dith, img->xsize);
+    ctfunc = image_colortable_index_8bit_function(ct);
+  } else
+    push_text("");
+
+  if(!rs.ras_depth) {
+    INT32 px = img->xsize * img->ysize;
+    while(px--)
+      if((rgb[px].r != 0 || rgb[px].g != 0 || rgb[px].b != 0) &&
+	 (rgb[px].r != 255 || rgb[px].g != 255 || rgb[px].b != 255)) {
+	rs.ras_depth = 24;
+	break;
+      }
+    if(!rs.ras_depth)
+      rs.ras_depth = 1;
+  }
+
+  switch(rs.ras_depth) {
+   case 1:
+     rs.ras_length = ((img->xsize+15)>>4)*2*img->ysize;
+     break;
+   case 8:
+     rs.ras_length = ((img->xsize+1)&~1)*img->ysize;
+     break;
+   case 24:
+     rs.ras_length = ((img->xsize+1)&~1)*3*img->ysize;
+     break;
+  }
+  
+  res2 = begin_shared_string(rs.ras_length);
+  dst = (unsigned char *)STR0(res2);
+  for(y=0; y<img->ysize; y++)
+    switch(rs.ras_depth) {
+     case 1:
+       for(x=0; x<img->xsize; x+=16) {
+	 int bit, data = 0;
+	 INT32 xx=x;
+	 for(bit=0x8000; bit!=0 && xx<img->xsize; xx++, (bit>>=1))
+	   if((rgb++)->r == 0)
+	     data |= bit;
+	 *dst++ = (data>>8)&0xff;
+	 *dst++ = data&0xff;
+       }
+       break;
+     case 8:
+       ctfunc(rgb, dst, img->xsize, ct, &dith, img->xsize);
+       rgb += img->xsize;
+       dst += img->xsize;
+       if(img->xsize&1)
+	 *dst++ = 0;
+       break;
+     case 24:
+       for(x=0; x<img->xsize; x++) {
+	 *dst++ = rgb->b;
+	 *dst++ = rgb->g;
+	 *dst++ = rgb->r;
+	 rgb++;
+       }
+       if(img->xsize&1)
+	 *dst++ = 0;
+       break;
+    }
+  if(ct != NULL)
+    image_colortable_free_dither(&dith);
+
+  res = begin_shared_string(32);
+  encode_ras_header(&rs, STR0(res));
+  push_string(end_shared_string(res));
+  stack_swap();
+  push_string(end_shared_string(res2));
+  f_add(3);
+  res = (--sp)->u.string;
   pop_n_elems(args);
-  push_text("");
+  push_string(res);
 }
 
 
