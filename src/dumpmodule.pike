@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.33 2002/11/27 15:49:12 mast Exp $
+|| $Id: dumpmodule.pike,v 1.34 2002/11/27 19:35:25 marcus Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -203,6 +203,10 @@ int dumpit(string file, string outfile)
   next_file = file;
 
 do_dump: {
+
+    // Populate the resolver's cache
+    mkmodulename(0, file);
+
     if(Stdio.Stat s=file_stat(fakeroot(file)))
     {
       if (update) {
