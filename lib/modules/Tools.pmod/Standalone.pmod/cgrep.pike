@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.8 2003/01/20 02:37:21 nilsson Exp $
+// $Id: cgrep.pike,v 1.9 2003/01/20 14:59:27 jhs Exp $
 
 constant description = "Context aware grep.";
 
@@ -29,6 +29,7 @@ string target;
 int(0..1) show_lineno;
 int(0..1) show_fn;
 int(0..1) verbose;
+int(0..1) quiet;
 int(0..1) supress_match;
 int(0..3) fn_only; // 1=with, 2=without, 3=count
 
@@ -47,6 +48,7 @@ class File {
   int matches;
 
   void found() {
+    if(quiet) exit(0);
     matches++;
     if(supress_match) return;
     if(show_fn) write(fn+":");
@@ -208,7 +210,7 @@ int handle_file(string path, string fn) {
 void usage() {
   werror("Usage: cgrep [OPTION]... TEXT FILE...\n"
 	 "Try `grep --help' for more information.\n");
-  exit(1);
+  exit(2);
 }
 
 int main(int num, array(string) args) {
@@ -226,6 +228,7 @@ int main(int num, array(string) args) {
     ({ "help",       Getopt.NO_ARG, "--help"              }),
     ({ "version",    Getopt.NO_ARG, "--version"           }),
     ({ "verbose",    Getopt.NO_ARG, "--verbose"           }),
+    ({ "quiet",      Getopt.NO_ARG, "-q,--quiet"/","      }),
 
     ({ "-n", Getopt.NO_ARG, "-n,--line-number"/","    }),
     ({ "-i", Getopt.NO_ARG, "-i,--ignore-case"/","    }),
@@ -243,6 +246,7 @@ int main(int num, array(string) args) {
     case "in_comment": in_comment=1; break;
     case "summarize": summarize=1; break;
     case "verbose": verbose=1; break;
+    case "quiet": quiet=1; break;
     case "-n": show_lineno=1; break;
     case "-i": case_insensitive=1; break;
     case "-H": show_fn=1; break;
@@ -252,10 +256,10 @@ int main(int num, array(string) args) {
     case "-c": supress_match=1; fn_only=3; break;
     case "help":
       write(doc);
-      return 0;
+      exit(0);
     case "version":
       write( replace(version, ([ "$":"", "Revision: ":"" ])) );
-      return 0;
+      exit(0);
     }
   }
   args = Getopt.get_args(args)[1..];
@@ -281,7 +285,7 @@ int main(int num, array(string) args) {
   if(summarize)
     write("Total matches: %d\n", matches);
 
-  return 0;
+  exit(!matches);
 }
 
 constant doc = #"Usage: cgrep [OPTION]... TEXT FILE...
@@ -304,6 +308,7 @@ Output control:
   -n, --line-number         print line number with output lines
   -H, --with-filename       print the filename for each match
       --verbose             output error messages
+  -q, --quiet               suppress all normal output
   -r, --recursive           recurse into directories
   -L, --files-without-match only print FILE names containing no match
   -l, --files-with-matches  only print FILE names containing matches
@@ -311,7 +316,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.8 $
+constant version = #"cgrep $Revision: 1.9 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";
