@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.23 2003/11/25 15:33:45 nilsson Exp $
+// $Id: RDF.pike,v 1.24 2003/12/08 14:26:33 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -614,10 +614,12 @@ static Node add_xml_children(Node p, string rdfns) {
   else
     subj = make_resource(subj_uri);
 
-  if(p->get_ns()!=rdfns) {
+  if(rdfns && p->get_ns()!=rdfns) {
     add_statement( subj, rdf_type,
 		   make_resource(p->get_ns()+p->get_any_name()) );
   }
+  else
+    rdfns = p->get_ns();
 
   // Handle attribute abbreviation (2.2.2. Basic Abbreviated Syntax)
   mapping m = p->get_ns_attributes();
@@ -631,7 +633,7 @@ static Node add_xml_children(Node p, string rdfns) {
   foreach(p->get_elements(), Node c) {
     if(c->get_ns()==rdfns) {
       if(c->get_any_name()=="type") {
-	string obj_uri = c->get_attributes()->resource;
+	string obj_uri = c->get_ns_attributes(rdfns)->resource;
 	if(!obj_uri) error("rdf:type missing resource attribute.\n");
 	add_statement( subj, rdf_type, make_resource(obj_uri) );
 	continue;
