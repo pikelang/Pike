@@ -2,6 +2,8 @@
  *
  */
 
+#include "error.h"
+
 class XResource
 {
   object display;
@@ -27,10 +29,84 @@ class Visual
   int greenMask;
   int blueMask;
 }
-	      
-class Window
+
+class GC
 {
   inherit XResource;
+}
+
+class Rectangle
+{
+  int x, y;
+  int width, height;
+
+  void create(int ... args)
+  {
+    switch(sizeof(args))
+      {
+      case 0:
+	x = y = width = height = 0;
+	break;
+      case 4:
+	x = args[0];
+	y = args[1];
+	width = args[2];
+	height = args[3];
+	break;
+      default:
+	error("Types.Rectangle(): To many arguments.\n");
+      }
+  }
+  
+  string to_string()
+  {
+    return sprintf("%2c%2c%2c%2c", x, y, width, height);
+  }
+}
+
+class Drawable
+{
+  inherit XResource;
+
+  object CreateGC_req()
+  {
+    object req = Requests.CreateGC();
+
+    req->drawable = id;
+    req->gid = display->alloc_id();
+
+    return req;
+  }
+
+  object CreateGC(mapping|void attributes)
+  {
+    object req = CreateGC_req();
+    if (attributes)
+      req->attributes = attributes;
+    display->send_request(req);
+
+    return GC(display, req->gid);
+  }
+
+  object FillRectangles_req(int gc, array(object) r)
+  {
+    object req = Requests.PolyFillRectangle();
+    req->drawable = id;
+    req->gid = gc;
+    req->rectangles = r;
+    return req;
+  }
+
+  void FillRectangles(object gc, object ... r)
+  {
+    object req = FillRectangles_req(gc->id, r);
+    display->send_request(req);
+  }
+}
+  
+class Window
+{
+  inherit Drawable;
   object visual;
   int currentInputMask;
 
@@ -50,8 +126,8 @@ class Window
     req->borderWidth = border_width;
     req->c_class = 0 ;  /* CopyFromParent */
     req->visual = 0;    /* CopyFromParent */
-    req->attributes->background_pixel = background;
-    req->attributes->border_pixel = border;
+    req->attributes->BackPixel = background;
+    req->attributes->BorderPixel = border;
     return req;
   }
 
@@ -88,7 +164,7 @@ class Window
   {
     object req = Requests.ChangeWindowAttributes();
     req->window = id;
-    req->attributes->event_mask = currentInputMask;
+    req->attributes->EventMask = currentInputMask;
     return req;
   }
 
