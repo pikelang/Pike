@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.69 2000/04/27 02:13:28 hubbe Exp $");
+RCSID("$Id: array.c,v 1.70 2000/05/03 09:00:44 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -242,8 +242,6 @@ void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
   INT32 i;
   switch (ind->type) {
     case T_INT:
-      if(ind->type != T_INT)
-	error("Index is not an integer.\n");
       i=ind->u.integer;
       if(i<0) i+=a->size;
       if(i<0 || i>=a->size) {
