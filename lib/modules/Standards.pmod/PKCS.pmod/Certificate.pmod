@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.11 2002/11/27 16:49:08 grubba Exp $
+// $Id: Certificate.pmod,v 1.12 2003/01/27 02:54:02 nilsson Exp $
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -16,11 +16,11 @@ Version ::= INTEGER
 
 Attributes ::= SET OF Attribute
 
--- From the last section of PKCS-9. 
+-- From the last section of PKCS-9.
 Attribute ::= SEQUENCE {
   attribyteType ::= OBJECT IDENTIFIER,
   attributeValue ::= SET OF ANY }
-  
+
 CertificationRequest ::= SEQUENCE {
   certificationRequestInfo CertificationRequestInfo,
   signatureAlgorithm SignatureAlgorithmIdentifier,
@@ -124,26 +124,20 @@ Version ::= INTEGER
 
 */
 
-#if __VERSION__ >= 0.6
-import ".";
-#endif /* __VERSION__ >= 0.6 */
-
-#if constant(Standards.ASN1.Types.asn1_sequence)
+#if constant(Standards.ASN1.Types.Sequence)
 
 import Standards.ASN1.Types;
-import Identifiers;
+import .Identifiers;
 
 class AttributeValueAssertion
 {
-  import Standards.ASN1.Types;
-  inherit asn1_sequence;
+  inherit Sequence;
   void create(mapping(string:object) types,
 	      string type,
 	      object value)
     {
       if (!types[type])
-	error( "AttributeValueAssertion: "
-	       "Unknown attribute type '%s'\n", type );
+	error( "Unknown attribute type '%s'\n", type );
       ::create( ({ types[type], value }) );
     }
 }
@@ -151,56 +145,51 @@ class AttributeValueAssertion
 /* RelativeDistinguishedName */
 class attribute_set
 {
-  import Standards.ASN1.Types;
-  inherit asn1_set;
+  inherit Set;
 
   void create(mapping(string:object) types, mapping(string:object) pairs)
-    {
-      ::create(Array.map(indices(pairs),
-			 lambda(string s, mapping m, mapping t)
-			 {
-			   return AttributeValueAssertion(t, s, m[s]);
-			 },
-			   pairs, types));
-    }
+  {
+    ::create(map(indices(pairs),
+		 lambda(string s, mapping m, mapping t) {
+		   return AttributeValueAssertion(t, s, m[s]);
+		 },
+		 pairs, types));
+  }
 }
 
-object build_distinguished_name(mapping(string:object) ... args)
+//!
+Sequence build_distinguished_name(mapping(string:object) ... args)
 {
-  return asn1_sequence(Array.map(args, lambda(mapping rdn)
-				 {
-				   return attribute_set(
-				     Identifiers.at_ids, rdn);
-				 } ));
+  return Sequence(map(args, lambda(mapping rdn) {
+			      return attribute_set(
+				.Identifiers.at_ids, rdn);
+			    } ));
 }
 
 class Attribute
 {
-  import Standards.ASN1.Types;
-  inherit asn1_sequence;
+  inherit Sequence;
 
   void create(mapping(string:object) types, string type,
 	      array(object) v)
-    {
-      if (!types[type])
-	error( "Attribute: Unknown attribute type '%s'\n", type);
-      ::create( ({ types[type], asn1_set(v) }) );
-    }
+  {
+    if (!types[type])
+      error( "Unknown attribute type '%s'\n", type);
+    ::create( ({ types[type], Set(v) }) );
+  }
 }
 
 class Attributes
 {
-  import Standards.ASN1.Types;
-  inherit asn1_set;
+  inherit Set;
 
   void create(mapping(string:object) types, mapping(string:array(object)) m)
-    {
-      ::create(Array.map(indices(m),
-			 lambda(string field, mapping m, mapping t)
-			 {
-			   return Attribute(t, field, m[field]);
-			 }, m, types));
-    }
+  {
+    ::create(map(indices(m),
+		 lambda(string field, mapping m, mapping t) {
+		   return Attribute(t, field, m[field]);
+		 }, m, types));
+  }
 }
-      
+
 #endif

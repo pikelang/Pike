@@ -1,44 +1,42 @@
-/* CSR.pmod
- *
- * Handling of Certifikate Signing Requests (PKCS-10)
- */
+//
+// $Id: CSR.pmod,v 1.9 2003/01/27 02:54:02 nilsson Exp $
+
+//! Handling of Certifikate Signing Requests (PKCS-10)
 
 #pike __REAL_VERSION__
+// #pragma strict_types
 
-#if __VERSION__ >= 0.6
-import ".";
-#endif /* __VERSION__ >= 0.6 */
-
-#if constant(Standards.ASN1.Types.asn1_identifier)
+#if constant(Standards.ASN1.Types.Identifier)
 
 import Standards.ASN1.Types;
 
 class CSR_Attributes
 {
-  inherit Certificate.Attributes;
+  inherit .Certificate.Attributes;
   constant cls = 2;
   constant tag = 0;
 }
 
-object build_csr(object rsa, object name,
+//!
+Sequence build_csr(Crypto.rsa rsa, object name,
 		 mapping(string:array(object)) attributes)
 {
-  object info = asn1_sequence( ({ asn1_integer(0), name,
-				  RSA.build_rsa_public_key(rsa),
-				  CSR_Attributes(Identifiers.attribute_ids,
-						 attributes) }) );
-  return asn1_sequence( ({ info,
-			   asn1_sequence(
-			     ({ Identifiers.rsa_md5_id, asn1_null() }) ),
-			   asn1_bit_string(rsa->sign(info->get_der(),
-						     Crypto.md5)
-					   ->digits(256)) }) );
+  Sequence info = Sequence( ({ Integer(0), name,
+			       .RSA.build_rsa_public_key(rsa),
+			       CSR_Attributes(.Identifiers.attribute_ids,
+					      attributes) }) );
+  return Sequence( ({ info,
+		      Sequence(
+			       ({ .Identifiers.rsa_md5_id, Null() }) ),
+		      BitString(rsa->sign(info->get_der(),
+					  Crypto.md5)
+				->digits(256)) }) );
 }
 
 #if 0
 object build_csr_dsa(object dsa, object name)
 {
-  object info = asn1_sequence( ({ asn1_integer }) );
+  Sequence info = Sequence( ({ Integer }) );
 }
 #endif
 

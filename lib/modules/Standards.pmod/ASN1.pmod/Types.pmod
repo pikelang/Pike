@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.25 2003/01/27 02:12:02 nilsson Exp $
+// $Id: Types.pmod,v 1.26 2003/01/27 02:46:27 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -84,10 +84,10 @@ class Object
   string der;
 
   // Should be overridden by subclasses
-  object decode_primitive(string contents);
-  object begin_decode_constructed(string raw);
-  object decode_constructed_element(int i, object e);
-  object end_decode_constructed(int length);
+  this_program decode_primitive(string contents);
+  this_program begin_decode_constructed(string raw);
+  this_program decode_constructed_element(int i, object e);
+  this_program end_decode_constructed(int length);
 
   mapping(int:program(Object)) element_types(int i,
       mapping(int:program(Object)) types) {

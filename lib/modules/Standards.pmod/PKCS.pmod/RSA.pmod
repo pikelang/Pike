@@ -1,8 +1,9 @@
-// $Id: RSA.pmod,v 1.17 2002/11/27 16:31:21 nilsson Exp $
+// $Id: RSA.pmod,v 1.18 2003/01/27 02:54:02 nilsson Exp $
 
 //! RSA operations and types as described in PKCS-1.
 
 #pike __REAL_VERSION__
+// #pragma strict_types
 
 #if 0
 #define WERROR werror
@@ -19,11 +20,10 @@ import Standards.ASN1.Types;
 //!   @[Crypto.rsa] object
 //! @returns
 //!   ASN1 coded RSAPublicKey structure
-string public_key(object rsa)
+string public_key(Crypto.rsa rsa)
 {
-  return asn1_sequence(Array.map(
-    ({ rsa->get_n(), rsa->get_e() }),
-    asn1_integer))->get_der();
+  return Sequence(map( ({ rsa->get_n(), rsa->get_e() }),
+		       Integer))->get_der();
 }
 
 //! Create a DER-coded RSAPrivateKey structure
@@ -31,50 +31,39 @@ string public_key(object rsa)
 //!   @[Crypto.rsa] object
 //! @returns
 //!   ASN1 coded RSAPrivateKey structure
-string private_key(object rsa)
+string private_key(Crypto.rsa rsa)
 {
-  object n = rsa->get_n();
-  object e = rsa->get_e();
-  object d = rsa->get_d();
-  object p = rsa->get_p();
-  object q = rsa->get_q();
+  Gmp.mpz n = rsa->get_n();
+  Gmp.mpz e = rsa->get_e();
+  Gmp.mpz d = rsa->get_d();
+  Gmp.mpz p = rsa->get_p();
+  Gmp.mpz q = rsa->get_q();
 
-  return asn1_sequence(Array.map(
+  return Sequence(map(
     ({ 0, n, e, d,
        p, q,
        d % (p - 1), d % (q - 1),
        q->invert(p) % p
     }),
-    asn1_integer))->get_der();
+    Integer))->get_der();
 }
-
-/* Backwards compatibility */
-//! @deprecated public_key
-string rsa_public_key(object rsa) { return public_key(rsa); }
-
-//! @deprecated private_key
-string rsa_private_key(object rsa) { return private_key(rsa); }
 
 //! Decode a DER-coded RSAPublicKey structure
 //! @param key
 //!   RSAPublicKey provided in ASN1 encoded format
 //! @returns
 //!   @[Crypto.rsa] object
-object parse_public_key(string key)
+Crypto.rsa parse_public_key(string key)
 {
-  // WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
-  object a = Standards.ASN1.Decode.simple_der_decode(key);
+  Object a = Standards.ASN1.Decode.simple_der_decode(key);
 
-  // WERROR(sprintf("rsa->parse_public_key: asn1 = %O\n", a));
   if (!a
       || (a->type_name != "SEQUENCE")
       || (sizeof(a->elements) != 2)
       || (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
-  {
-    //  WERROR("Not a Valid Key!\n");
     return 0;
-  }
-  object rsa = Crypto.rsa();
+
+  Crypto.rsa rsa = Crypto.rsa();
   rsa->set_public_key(a->elements[0]->value, a->elements[1]->value);
   return rsa;
 }
@@ -84,10 +73,10 @@ object parse_public_key(string key)
 //!   RSAPrivateKey provided in ASN1 encoded format
 //! @returns
 //!   @[Crypto.rsa] object
-object parse_private_key(string key)
+Crypto.rsa parse_private_key(string key)
 {
   WERROR(sprintf("rsa->parse_private_key: '%s'\n", key));
-  object a = Standards.ASN1.Decode.simple_der_decode(key);
+  Object a = Standards.ASN1.Decode.simple_der_decode(key);
   
   WERROR(sprintf("rsa->parse_private_key: asn1 = %O\n", a));
   if (!a
@@ -97,19 +86,19 @@ object parse_private_key(string key)
       || a->elements[0]->value)
     return 0;
   
-  object rsa = Crypto.rsa();
+  Crypto.rsa rsa = Crypto.rsa();
   rsa->set_public_key(a->elements[1]->value, a->elements[2]->value);
   rsa->set_private_key(a->elements[3]->value, a->elements[4..]->value);
   return rsa;
 }
 
-object build_rsa_public_key(object rsa)
+Sequence build_rsa_public_key(object rsa)
 {
-  return asn1_sequence( ({
-    asn1_sequence(
-      ({ .Identifiers.rsa_id, asn1_null() }) ),
-    asn1_bit_string(asn1_sequence(
-      ({ asn1_integer(rsa->n), asn1_integer(rsa->e) }) )->get_der()) }) );
+  return Sequence( ({
+    Sequence(
+      ({ .Identifiers.rsa_id, Null() }) ),
+    BitString(Sequence(
+      ({ Integer(rsa->n), Integer(rsa->e) }) )->get_der()) }) );
 }
 
 #endif

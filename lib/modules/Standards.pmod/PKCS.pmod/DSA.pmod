@@ -1,58 +1,60 @@
-/* DSA.pmod
- *
- * DSA operations as defined in RFC-2459.
- *
- */
+//
+// $Id: DSA.pmod,v 1.6 2003/01/27 02:54:02 nilsson Exp $
+//
+
+//! DSA operations as defined in RFC-2459.
 
 /* NOTE: Unlike the functions in RSA.pmod, this function returns
  * an object rather than a string. */
 
 #pike __REAL_VERSION__
-
+// #pragma strict_types
 
 #if constant(Gmp.mpz)
 
-constant asn1_sequence = Standards.ASN1.Types.asn1_sequence;
-constant asn1_integer = Standards.ASN1.Types.asn1_integer;
+import Standards.ASN1.Types;
 
-object algorithm_identifier(object|void dsa)
+//!
+Sequence algorithm_identifier(Crypto.dsa|void dsa)
 {
   return
-    dsa ? asn1_sequence( ({ .Identifiers.dsa_id,
-			    asn1_sequence( ({ asn1_integer(dsa->p),
-					      asn1_integer(dsa->q),
-					      asn1_integer(dsa->g) }) ) }) )
-    : asn1_sequence( ({ .Identifiers.dsa_id }) );
+    dsa ? Sequence( ({ .Identifiers.dsa_id,
+		       Sequence( ({ Integer(dsa->p),
+				    Integer(dsa->q),
+				    Integer(dsa->g) }) ) }) )
+    : Sequence( ({ .Identifiers.dsa_id }) );
 }
 
-string public_key(object dsa)
+//!
+string public_key(Crypto.dsa dsa)
 {
-  return asn1_integer(dsa->y)->get_der();
+  return Integer(dsa->y)->get_der();
 }
 
 /* I don't know if this format interoperates with anything else */
-string private_key(object dsa)
+//!
+string private_key(Crypto.dsa dsa)
 {
-  return asn1_sequence(Array.map(
-    ({ dsa->p, dsa->q, dsa->g, dsa->y, dsa->x }),
-    asn1_integer))->get_der();
+  return Sequence(map( ({ dsa->p, dsa->q, dsa->g, dsa->y, dsa->x }),
+		       Integer))->get_der();
 }
 
-object parse_private_key(string key)
+//!
+Crypto.dsa parse_private_key(string key)
 {
-    object a = Standards.ASN1.Decode.simple_der_decode(key);
+  Object a = Standards.ASN1.Decode.simple_der_decode(key);
 
-    if (!a
-	|| (a->type_name != "SEQUENCE")
-	|| (sizeof(a->elements) != 5)
-	|| (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
-      return 0;
+  if (!a
+      || (a->type_name != "SEQUENCE")
+      || (sizeof(a->elements) != 5)
+      || (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
+    return 0;
 
-    object dsa = Crypto.dsa();
-    dsa->set_public_key(@ a->elements[..3]->value);
-    dsa->set_private_key(a->elements[4]->value);
+  Crypto.dsa dsa = Crypto.dsa();
+  dsa->set_public_key(@ a->elements[..3]->value);
+  dsa->set_private_key(a->elements[4]->value);
 
-    return dsa;
+  return dsa;
 }
 
 #endif
