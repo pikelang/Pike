@@ -573,6 +573,8 @@ class async_client
   static private void generic_get(string d,
 				  mapping answer,
 				  int multi, 
+				  int all,
+				  int type, 
 				  string field,
 				  string domain,
 				  function callback,
@@ -586,18 +588,23 @@ class async_client
 	callback(domain,0,@args);
       } else {
 	// Multiple domain request. Try the next one...
-	do_query(domain+"."+domains[multi], C_IN, T_A,
-		 generic_get, ++multi, "a", domain, callback, @args);
+	do_query(domain+"."+domains[multi], C_IN, type,
+		 generic_get, ++multi, all, type, field, domain,
+		 callback, @args);
       }
     } else {
-      foreach(answer->an, array an)
-	if(an[field])
-	{
-	  callback(domain,an[field],@args);
-	  return;
-	}
-      callback(domain,0,@args);
-      return;
+      if (all) {
+	callback(domain, answer->an, @args);
+      } else {
+	foreach(answer->an, array an)
+	  if(an[field])
+	  {
+	    callback(domain, an[field], @args);
+	    return;
+	  }
+	callback(domain,0,@args);
+	return;
+      }
     }
   }
 
@@ -605,10 +612,10 @@ class async_client
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       do_query(host, C_IN, T_A,
-	       generic_get, 0, "a", host, callback, @args );
+	       generic_get, 0, 0, T_A, "a", host, callback, @args );
     } else {
       do_query(host, C_IN, T_A,
-	       generic_get, -1, "a",
+	       generic_get, -1, 0, "a",
 	       host, callback, @args);
     }
   }
@@ -616,9 +623,35 @@ class async_client
   void ip_to_host(string ip, function callback, mixed ... args)
   {
     do_query(arpa_from_ip(ip), C_IN, T_PTR,
-	     generic_get, -1, "ptr",
+	     generic_get, -1, 0, T_PTR, "ptr",
 	     ip, callback,
 	     @args);
+  }
+
+  void get_mx_all(string host, function callback, mixed ... args)
+  {
+    mapping m;
+    if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
+      do_query(host, C_IN, T_MX,
+	       generic_get, 0, 1, T_MX, "mx", host, callback, @args);
+    } else {
+      do_query(host, C_IN, T_MX,
+	       generic_get, -1, 1, T_MX, "mx", host, callback, @args);
+    }
+  }
+
+  void get_mx(string host, function callback, mixed ... args)
+  {
+    get_mx_all(host,
+	       lambda(string domain, array(mapping) mx,
+		      function callback, mixed ... args) {
+		 array a;
+		 if (mx) {
+		   a = column(mx, "mx");
+		   sort(column(mx, "preference"), a);
+		 }
+		 callback(a, @args);
+	       }, callback, args);
   }
 
   void create(void|string|array(string) server, void|string|array(string) domain)
