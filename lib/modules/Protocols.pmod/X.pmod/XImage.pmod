@@ -77,12 +77,12 @@ class XImage
 {
   inherit Image_wrapper;
 
-  object (Types.Window) window;
-  object (Types.RootWindow) root; // extends window
-  object (Types.Visual) visual;
-  object (Types.Colormap) colormap;
+  object /*(Types.Window)*/ window;
+  object /*(Types.RootWindow)*/ root; // extends window
+  object /*(Types.Visual)*/ visual;
+  object /*(Types.Colormap)*/ colormap;
   object (Image.colortable) ccol;
-  object (Types.GC) dgc;
+  object /*(Types.GC)*/ dgc;
 
   int best;
 
@@ -309,7 +309,7 @@ class WindowImage
 #endif
   }
 
-  void create(object(Types.Window) w)
+  void create(object/*(Types.Window)*/ w)
   {
     set_drawable(w);
     w->set_event_callback("Expose", exposed); // internal callback...
@@ -321,7 +321,7 @@ class PixmapImage
 {
   inherit XImage;
 
-  void create(object (Types.Pixmap) p)
+  void create(object /*(Types.Pixmap)*/ p)
   {
     set_drawable( p );
   }
