@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.326 2001/05/26 17:10:26 grubba Exp $");
+RCSID("$Id: program.c,v 1.327 2001/06/05 10:15:58 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4031,6 +4031,9 @@ struct program *compile(struct pike_string *prog,
 	destruct(placeholder);
       } else {
 	/* FIXME: Is this correct? */
+	/* It would probably be nicer if it was possible to just call
+	 * destruct on the object, but this works too. -Hubbe
+	 */
 	free_program(placeholder->prog);
 	placeholder->prog = NULL;
       }
@@ -4129,6 +4132,9 @@ struct program *compile(struct pike_string *prog,
 	destruct(placeholder);
       } else {
 	/* FIXME: Is this correct? */
+	/* It would probably be nicer if it was possible to just call
+	 * destruct on the object, but this works too. -Hubbe
+	 */
 	free_program(placeholder->prog);
 	placeholder->prog = NULL;
       }
