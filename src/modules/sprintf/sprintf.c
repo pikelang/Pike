@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.122 2004/11/07 06:57:16 nilsson Exp $
+|| $Id: sprintf.c,v 1.123 2004/11/16 16:20:44 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1032,7 +1032,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  sprintf_error(fs, "Error in format string, %c is not a format.\n",
 			EXTRACT_PCHARP(a));
 	}else{
-	  sprintf_error(fs,"Error in format string, u+%04x is not a format.\n",
+	  sprintf_error(fs,"Error in format string, U%08x is not a format.\n",
 			EXTRACT_PCHARP(a));
 	}
 
