@@ -5,6 +5,7 @@ html	text/html
 htm	text/html
 jpeg	image/jpeg
 jpg	image/jpg
+png	image/png
 
 pike	text/plain
 c	text/plain
