@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.4 1999/03/01 05:32:32 hubbe Exp $
+ * $Id: lexer.h,v 1.5 1999/03/14 00:46:53 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -18,6 +18,7 @@
 
 #define LOOK() EXTRACT_UCHAR(lex.pos)
 #define GETC() EXTRACT_UCHAR(lex.pos++)
+#define SKIP() lex.pos++
 #define GOBBLE(c) (LOOK()==c?(lex.pos++,1):0)
 #define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') lex.pos++; }while(0)
 #define SKIPWHITE() do { while(ISSPACE(LOOK())) lex.pos++; }while(0)
@@ -48,6 +49,7 @@
 
 #define LOOK() INDEX_CHARP(lex.pos,0,SHIFT)
 #define GETC() ((lex.pos+=(1<<SHIFT)),INDEX_CHARP(lex.pos-(1<<SHIFT),0,SHIFT))
+#define SKIP() (lex.pos += (1<<SHIFT))
 #define GOBBLE(c) (LOOK()==c?((lex.pos+=(1<<SHIFT)),1):0)
 #define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') lex.pos += (1<<SHIFT); }while(0)
 #define SKIPWHITE() do { while(ISSPACE(LOOK())) lex.pos += (1<<SHIFT); }while(0)
@@ -274,7 +276,7 @@ static int low_yylex(YYSTYPE *yylval)
 
   while(1)
   {
-    switch(c=GETC())
+    switch(c = GETC())
     {
     case 0:
       lex.pos -= (1<<SHIFT);
@@ -286,6 +288,23 @@ static int low_yylex(YYSTYPE *yylval)
 
     case '\n':
       lex.current_line++;
+      continue;
+
+    case 0x1b: case 0x9b:	/* ESC or CSI */
+      /* Assume ANSI/DEC escape sequence.
+       * Format supported:
+       * 	<ESC>[\040-\077]+[\100-\177]
+       * or
+       * 	<CSI>[\040-\077]*[\100-\177]
+       */
+      while ((c = LOOK()) && (c == ((c & 0x1f)|0x20))) {
+	SKIP();
+      }
+      if (c == ((c & 0x3f)|0x40)) {
+	SKIP();
+      } else {
+	/* FIXME: Warning here? */
+      }
       continue;
 
     case '#':
@@ -733,6 +752,12 @@ static int low_yylex(YYSTYPE *yylval)
 	  free_string(tmp);
 	  return F_IDENTIFIER;
 	}
+#if 0
+      }else if (c == (c & 0x9f)) {
+	/* Control character in one of the ranges \000-\037 or \200-\237 */
+	/* FIXME: Warning here? */
+	/* Ignore */
+#endif /* 0 */
       }else{
 	char buff[100];
 #if (SHIFT == 0)
