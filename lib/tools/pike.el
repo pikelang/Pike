@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.11 2000/07/31 13:42:44 mast Exp $
+;;; $Id: pike.el,v 1.12 2000/11/17 04:31:19 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -18,11 +18,17 @@
 ;;;   (append '(("\\.pike$" . pike-mode)) auto-mode-alist)
 
 (require 'font-lock)
+(require 'custom)
+(require 'advice)
 
 ;; Added in later font-lock versions. Copied here for backward
 ;; compatibility.
 (defvar font-lock-preprocessor-face 'font-lock-keyword-face
   "Don't even think of using this.")
+(defvar pike-font-lock-refdoc-face 'pike-font-lock-refdoc-face)
+(defvar pike-font-lock-refdoc-init-face 'pike-font-lock-refdoc-init-face)
+(defvar pike-font-lock-refdoc-init2-face 'pike-font-lock-refdoc-init2-face)
+(defvar pike-font-lock-refdoc-keyword-face 'pike-font-lock-refdoc-keyword-face)
 
 (defconst pike-font-lock-keywords-1 nil
  "For consideration as a value of `pike-font-lock-keywords'.
@@ -34,7 +40,48 @@ This adds highlighting of types and identifier names.")
 
 (defconst pike-font-lock-keywords-3 nil
  "For consideration as a value of `pike-font-lock-keywords'.
-This adds highlighting of Java documentation tags, such as @see.")
+Highlight some constructs differently")
+
+(defgroup pike-faces nil
+  "Faces used by the pike color highlighting mode."
+  :group 'font-lock
+  :group 'faces)
+
+(defface pike-font-lock-refdoc-face
+  '((t (:foreground "black" :background "black")))
+  "Face to use for normal text in Pike documentation comments."
+  :group 'pike-faces)
+(defface pike-font-lock-refdoc-init-face
+  '((t (:foreground "black" :background "black")))
+  "Face to use for the magic init char of Pike documentation comments."
+  :group 'pike-faces)
+(defface pike-font-lock-refdoc-init2-face
+  '((t (:foreground "black" :background "black")))
+  "Face to use for the comment starters Pike documentation comments."
+  :group 'pike-faces)
+(defface pike-font-lock-refdoc-keyword-face
+  '((t (:foreground "black" :background "black")))
+  "Face to use for markup keywords Pike documentation comments."
+  :group 'pike-faces)
+
+(defadvice font-lock-set-defaults (after pike-font-lock-set-defaults nil
+					 activate preactivate)
+  (mapcar (lambda (facedef)
+	    (if (and (equal (face-foreground (car facedef)) "black")
+		     (equal (face-background (car facedef)) "black"))
+		(eval (car (cdr facedef)))))
+	  '((pike-font-lock-refdoc-face
+	     (copy-face 'font-lock-comment-face 'pike-font-lock-refdoc-face))
+	    (pike-font-lock-refdoc-init-face
+	     (progn
+	       (copy-face 'font-lock-comment-face 'pike-font-lock-refdoc-init-face)
+	       (make-face-unitalic 'pike-font-lock-refdoc-init-face)
+	       (make-face-bold 'pike-font-lock-refdoc-init-face)))
+	    (pike-font-lock-refdoc-init2-face
+	     (copy-face 'font-lock-comment-face 'pike-font-lock-refdoc-init2-face))
+	    (pike-font-lock-refdoc-keyword-face
+	     (copy-face 'font-lock-reference-face 'pike-font-lock-refdoc-keyword-face))
+	    )))
 
 (defconst pike-font-lock-type-regexp
   (concat "\\<\\("
@@ -60,7 +107,7 @@ This adds highlighting of Java documentation tags, such as @see.")
   "Regexp which should match a primitive type.")
 
 
-; Problems: We really should allow 
+; Problems: We really should allow all unicode characters...
 (let ((capital-letter "A-Z\300-\326\330-\337")
       (letter "a-zA-Z\241-\377_")
       (digit  "0-9")
@@ -90,7 +137,7 @@ The name is assumed to begin with a capital letter.")
 
   (defconst pike-modifier-regexp
     (concat "\\<\\(public\\|inline\\|final\\|static\\|protected\\|"
-	    "local\\|private\\|nomask\\|optional\\|variant\\|\\)\\>"))
+	    "local\\|optional\\|private\\|nomask\\|variant\\)\\>"))
   (defconst pike-operator-identifiers 
     (concat "``?\\(!=\\|->=?\\|<[<=]\\|==\\|>[=>]\\|\\[\\]=?\\|\(\)"
 	    "\\|[!%&+*/<>^|~-]\\)"))
@@ -160,7 +207,7 @@ The name is assumed to begin with a capital letter.")
 	    '("^#!.*$" 0 font-lock-comment-face)
 
 	    '("^#[ \t]*error\\(.*\\)$"
-	      (1 font-lock-comment-face))
+	      (1 font-lock-string-face))
 
 	    ;; #charset char-set-name
 
@@ -248,21 +295,40 @@ The name is assumed to begin with a capital letter.")
   (setq pike-font-lock-keywords-3
 	(append
 
-	 '(
+	 (list
 	   ;; Feature scoping:
 	   ;; These must come first or the Modifiers from keywords-1 will
 	   ;; catch them.  We don't want to use override fontification here
 	   ;; because then these terms will be fontified within comments.
-	   ("\\<public\\>"    0 font-lock-preprocessor-face)
-	   ("\\<inline\\>"   0 font-lock-preprocessor-face)
-	   ("\\<final\\>" 0 font-lock-preprocessor-face)
-	   ("\\<static\\>" 0 font-lock-preprocessor-face)
-	   ("\\<protected\\>" 0 font-lock-preprocessor-face)
-	   ("\\<local\\>" 0 font-lock-preprocessor-face)
-	   ("\\<private\\>"   0 font-lock-preprocessor-face)
-	   ("\\<nomask\\>" 0 font-lock-preprocessor-face)
-	   ("\\<optional\\>" 0 font-lock-preprocessor-face)
-	   ("\\<variant\\>" 0 font-lock-preprocessor-face))
+	  '("\\<public\\>"    0 font-lock-preprocessor-face)
+	  '("\\<inline\\>"    0 font-lock-preprocessor-face)
+	  '("\\<final\\>"     0 font-lock-preprocessor-face)
+	  '("\\<static\\>"    0 font-lock-preprocessor-face)
+	  '("\\<protected\\>" 0 font-lock-preprocessor-face)
+	  '("\\<local\\>"     0 font-lock-preprocessor-face)
+	  '("\\<private\\>"   0 font-lock-preprocessor-face)
+	  '("\\<nomask\\>"    0 font-lock-preprocessor-face)
+
+	  '("^.*\\(//\\)\\([.!|]\\)\\([^@\n\r]*\\)"
+	    (1 pike-font-lock-refdoc-init2-face t)
+	    (2 pike-font-lock-refdoc-init-face t)
+	    (3 pike-font-lock-refdoc-face t)
+	    ((lambda (limit)
+	       (if (looking-at "\\(@decl\\)\\([^\n\r]*\\)")
+		   (progn
+		     (put-text-property (match-beginning 2)
+					(match-end 2)
+					'face nil)
+		     (goto-char (match-end 0))
+		     t)))
+	     nil nil
+	     (1 pike-font-lock-refdoc-keyword-face t))
+	    ("\\(@\\(\\w+{?\\|[^[]\\|\\[[^]]*\\]\\)\\)\\([^@\n\r]*\\)"
+	     nil nil
+	     (1 pike-font-lock-refdoc-keyword-face t)
+	     (3 pike-font-lock-refdoc-face t))
+	    )
+	  )
 	 pike-font-lock-keywords-2
 	 )))
 
