@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.58 1999/10/31 22:04:11 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.59 1999/10/31 22:12:54 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -782,25 +782,25 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 
 #ifdef FLOAT_IS_IEEE_BIG
 #define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
-	    {						\
+	    do {					\
 	      float f;					\
 	      ((char *)&f)[0] = *((INPUT));		\
 	      ((char *)&f)[1] = *((INPUT)+1);		\
 	      ((char *)&f)[2] = *((INPUT)+2);		\
 	      ((char *)&f)[3] = *((INPUT)+3);		\
 	      (SVAL).u.float_number = f;		\
-	    }
+	    } while(0)
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
 #define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
-	    {						\
+	    do {					\
 	      float f;					\
 	      ((char *)&f)[3] = *((INPUT));		\
 	      ((char *)&f)[2] = *((INPUT)+1);		\
 	      ((char *)&f)[1] = *((INPUT)+2);		\
 	      ((char *)&f)[0] = *((INPUT)+3);		\
 	      (SVAL).u.float_number = f;		\
-	    }
+	    } while(0)
 #else
 #define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)				\
 	    /* FIXME! */						\
@@ -810,7 +810,7 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 
 #ifdef DOUBLE_IS_IEEE_BIG
 #define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
-	    {						\
+	    do {					\
 	      double d;					\
 	      ((char *)&d)[0] = *((INPUT));		\
 	      ((char *)&d)[1] = *((INPUT)+1);		\
@@ -821,11 +821,11 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 	      ((char *)&d)[6] = *((INPUT)+6);		\
 	      ((char *)&d)[7] = *((INPUT)+7);		\
 	      (SVAL).u.float_number = (float)d;		\
-	    }
+	    } while(0)
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
 #define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
-	    {						\
+	    do {					\
 	      double d;					\
 	      ((char *)&d)[7] = *((INPUT));		\
 	      ((char *)&d)[6] = *((INPUT)+1);		\
@@ -836,7 +836,7 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 	      ((char *)&d)[1] = *((INPUT)+6);		\
 	      ((char *)&d)[0] = *((INPUT)+7);		\
 	      (SVAL).u.float_number = (float)d;		\
-	    }
+	    } while(0)
 #else
 #define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)				\
 	    /* FIXME! */						\
