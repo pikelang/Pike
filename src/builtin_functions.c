@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.392 2001/07/08 18:19:54 lange Exp $");
+RCSID("$Id: builtin_functions.c,v 1.393 2001/07/10 00:04:11 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6239,6 +6239,14 @@ PMOD_EXPORT void f__locate_references(INT32 args)
 }
 
 /*! @decl mixed _describe(mixed x)
+ *!
+ *!   Prints out a description of the thing @[x] to standard error.
+ *!   The description contains various internal info associated with
+ *!   @[x].
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__describe(INT32 args)
 {
@@ -6252,6 +6260,14 @@ PMOD_EXPORT void f__describe(INT32 args)
 }
 
 /*! @decl void _gc_set_watch(array|multiset|mapping|object|function|program|string x)
+ *!
+ *!   Sets a watch on the given thing, so that the gc will print a
+ *!   message whenever it's encountered. Intended to be used together
+ *!   with breakpoints to debug the garbage collector.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
  */
 PMOD_EXPORT void f__gc_set_watch(INT32 args)
 {
@@ -6263,6 +6279,25 @@ PMOD_EXPORT void f__gc_set_watch(INT32 args)
     SIMPLE_BAD_ARG_ERROR("_gc_set_watch", 1, "reference type");
   gc_watch(Pike_sp[-args].u.refs);
   pop_n_elems(args);
+}
+
+/*! @decl void _dump_backlog()
+ *!
+ *!   Dumps the 1024 latest executed opcodes, along with the source
+ *!   code lines, to standard error. The backlog is only collected on
+ *!   debug level 1 or higher, set with @[_debug] or with the @tt{-d@}
+ *!   argument on the command line.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PMOD_EXPORT void f__dump_backlog(INT32 args)
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("_dump_backlog: permission denied.\n"));
+  pop_n_elems(args);
+  dump_backlog();
 }
 
 #endif
@@ -7815,6 +7850,8 @@ void init_builtin_efuns(void)
 	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
   ADD_EFUN("_gc_set_watch", f__gc_set_watch,
 	   tFunc(tComplex,tVoid), OPT_SIDE_EFFECT);
+  ADD_EFUN("_dump_backlog", f__dump_backlog,
+	   tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
 #endif
 
   ADD_EFUN("_gc_status",f__gc_status,
