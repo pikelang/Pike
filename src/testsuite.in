@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.528 2002/08/02 23:32:05 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.529 2002/08/19 16:01:26 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9167,10 +9167,28 @@ test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])
 test_equal([[Process.split_quoted_string("'test'")]],[[({"test"})]])
 test_equal([[Process.split_quoted_string("foo 'test' bar")]],[[({"foo","test","bar"})]])
 test_equal([[Process.split_quoted_string("pike -m master.pike 'write(\"test\");'")]],[[({"pike","-m","master.pike","write(\"test\");"})]])
-test_false([[Process.system(RUNPIKE +" -e 'exit(0)'")]])
-test_true([[Process.system(RUNPIKE+" -e 'exit(1)'")]])
+test_false([[
+#ifdef __NT__
+  Process.system(RUNPIKE +" -e exit(0)")
+#else /* !__NT__ */
+  Process.system(RUNPIKE +" -e 'exit(0)'")
+#endif /* __NT__ */
+]])
+test_true([[
+#ifdef __NT__
+  Process.system(RUNPIKE+" -e exit(1)")
+#else /* !__NT__ */
+  Process.system(RUNPIKE+" -e 'exit(1)'")
+#endif /* __NT__ */
+]])
 test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(10); return p->wait()]],2)
-test_eq([[Process.popen(RUNPIKE+" -e 'write(\"test\");'")]],"test")
+test_eq([[
+#ifdef __NT__
+  Process.popen(RUNPIKE+" -e write(\"test\");")
+#else /* !__NT__ */
+  Process.popen(RUNPIKE+" -e 'write(\"test\");'")
+#endif /* __NT__ */
+]],"test")
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(5)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
