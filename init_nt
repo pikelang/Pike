@@ -13,6 +13,7 @@ REMOTE_METHOD=${REMOTE_METHOD-sprsh}
 # Choose 'rntcc' for Watcom or 'rntcl' for Microsoft VC++
 # (Make sure VC++ is before Watcom in your path!)
 CC=${CC-rntcl}
+CXX=${CXX-rntcl}
 
 # Important!
 # Please be sure that you have the line 'veto oplock files = /*/' in your
@@ -58,38 +59,7 @@ export ac_cv_exeext
 
 case "/$CC" in
   */rntcl)
-
-    # I'll leave the following if-statement as a monument of
-    # non-tested code. - Hubbe
-    # 
-    # if [ "x$NOPATHS" = "yes" ]; then
-    # 
-
-    if [ "${USER-}@${HOST-}" = "hubbe@adenin" ]; then
-      echo "I am Hubbe"
-      MSVC='j:\winshare\vc98'
-      MSVC_UPDATE='C:\Program Files\Microsoft SDK'
-      local='j:\winshare\local'
-      REMOTE_VARIABLES="
-path=$MSVC_UPDATE\\bin;$MSVC\\bin;
-include=$MSVC_UPDATE\\Include;$MSVC\\Include;$local\\include
-lib=$MSVC_UPDATE\\Lib;$MSVC\\Lib;$local\\lib
-PIKE_DEBUG=1
-"
-
-      # This variable is used by pntld to find
-      # the libraries (*.lib) on the UNIX system.
-      #
-      # If your library directory is not available on the unix system you
-      # will need to make a copy. -Hubbe
-      #
-      NTLD_LIBRARY_PATH='/net/cytocin/winshare/vc98/Lib:/net/cytocin/winshare/local/lib'
-
-      export NTLD_LIBRARY_PATH
       export REMOTE_VARIABLES
-    else
-      echo "We are not Hubbe."
-    fi
   ;;
 
   */rntcl64)
@@ -186,7 +156,7 @@ fi
 IFS=' 	
 '
 
-export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE 
+export NTHOST NTDRIVE NTCC CC CXX PATH NTTOOLS MNTREPLACE MNTREPLACE 
 export NTPORT USE_SPRSH NTMOUNT IFS REMOTE_METHOD watcom INCLUDE
 export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE NTLD_LIBRARY_PATH
 
@@ -213,4 +183,3 @@ if [ "$#" = "0" ]; then
 else
   exec $@
 fi
-
