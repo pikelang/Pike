@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.132 2001/09/01 01:45:51 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.133 2001/09/01 09:38:56 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1974,7 +1974,7 @@ void check_mapping(struct mapping *m)
     fatal("Pretty mean hashtable there buster!\n");
 
   if(md->hashsize > md->num_keypairs)
-    fatal("Pretty mean hashtable there buster (2)!\n");
+    fatal("Pretty mean hashtable there buster %d > %d (2)!\n",md->hashsize,md->num_keypairs);
 
   if(md->num_keypairs > (md->hashsize + 3) * AVG_LINK_LENGTH)
     fatal("Mapping from hell detected, attempting to send it back...\n");
