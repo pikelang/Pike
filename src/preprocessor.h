@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.23 2000/04/01 07:26:29 hubbe Exp $
+ * $Id: preprocessor.h,v 1.24 2000/06/13 21:39:34 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -891,6 +891,12 @@ static INT32 lower_cpp(struct cpp *this,
 		if(data[pos]==')')
 		{
 		  char buffer[1024];
+		  if(d->varargs && arg + 1 == d->args)
+		  {
+		    arguments[arg].arg = MKPCHARP(data + pos, SHIFT);
+		    arguments[arg].len=0;
+		    continue;
+		  }
 		  sprintf(buffer,
 			  "Too few arguments to macro %.950s, expected %d.",
 			  d->link.s->str, d->args);
@@ -928,8 +934,11 @@ static INT32 lower_cpp(struct cpp *this,
 		  pos=find_end_parenthesis(this, data, len, pos);
 		  continue;
 		  
+		case ',':
+		  if(d->varargs && arg+1 == d->args) continue;
+
 		case ')': 
-		case ',': pos--;
+		  pos--;
 		  break;
 		}
 		break;
@@ -1584,6 +1593,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  INT32 namestart, tmp3, nameend, argno=-1;
 	  struct define *def;
 	  struct svalue *partbase,*argbase=Pike_sp;
+	  int varargs=0;
 
 	  SKIPSPACE();
 
@@ -1615,6 +1625,8 @@ static INT32 lower_cpp(struct cpp *this,
 				  "Expecting comma in macro definition.");
 		      SKIPWHITE();
 		    }
+		  if(varargs)
+		    cpp_error(this,"Expected ) after ...");
 		  tmp2=pos;
 
 		  if(!WC_ISIDCHAR(data[pos]))
@@ -1644,6 +1656,13 @@ static INT32 lower_cpp(struct cpp *this,
 		    cpp_error(this, "Too many arguments in macro definition.");
 		    pop_stack();
 		    argno--;
+		  }
+
+		  if(data[pos]=='.' && data[pos+1]=='.' && data[pos+2]=='.')
+		  {
+		    varargs=1;
+		    pos+=3;
+		    SKIPWHITE();
 		  }
 		}
 
@@ -1798,6 +1817,7 @@ static INT32 lower_cpp(struct cpp *this,
 #endif /* SHIFT == 0 */
 	    copy_shared_string(def->first, partbase->u.string);
 	    def->args=argno;
+	    def->varargs=varargs;
 	    
 	    for(e=0;e<def->num_parts;e++)
 	    {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.64 2000/06/06 22:51:55 hubbe Exp $
+ * $Id: cpp.c,v 1.65 2000/06/13 21:39:34 hubbe Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -84,7 +84,8 @@ struct define
   magic_define_fun magic;
   int args;
   int num_parts;
-  int inside;
+  short inside;
+  short varargs;
   struct pike_string *first;
   struct define_part parts[1];
 };
@@ -138,6 +139,7 @@ static struct define *alloc_empty_define(struct pike_string *name, INT32 parts)
   def->magic=0;
   def->args=-1;
   def->inside=0;
+  def->varargs=0;
   def->num_parts=parts;
   def->first=0;
   def->link.s=name;
