@@ -25,12 +25,10 @@ override:  sources@WITH_GTK@
 
 @dynamic_module_makefile@
 
-QMAKE=$(RUNPIKE) $(SRCDIR)/make.pike $(MAKE)
-
 sources1:
 	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR)/source
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR)
-	$(QMAKE) $(MAKEFLAGS) "OBJS=`cat files_to_compile`" all
+	$(MAKE) CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g'`" "OBJS=`cat files_to_compile`" all
 
 sources0:
 	echo Pike-GTK disabled.
