@@ -56,7 +56,6 @@ o Fixed a bug in the code handling boundaries in multipart messages in
   the MIME module.
 o Multiline tokens are now hanled better in Parser.Pike when running
   in streaming mode.
-o It is now not possible to call a read callback on a blocking socket.
 o Fixed a bug in low_backtrace where the backtrace itself could be
   reported as an argument to the top function if it was of varargs
   type.
