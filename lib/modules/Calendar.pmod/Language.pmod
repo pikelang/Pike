@@ -945,7 +945,7 @@ class cAFRIKAANS
 
 // source: anonymous unix locale file
 
-constant cGA=cIRISH; // Irish (Gaelic?) 
+constant cGA=cIRISH; // Irish Gaelic 
 constant cGLE=cIRISH;
 class cIRISH
 {
