@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.5 1997/03/17 03:07:21 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.6 1997/03/22 21:18:38 grubba Exp $");
 
 #include "zlib_machine.h"
 #include "types.h"
@@ -32,7 +32,9 @@ RCSID("$Id: zlibmod.c,v 1.5 1997/03/17 03:07:21 hubbe Exp $");
 struct zipper
 {
   struct z_stream_s gz;
+#ifdef _REENTRANT
   DEFINE_MUTEX(lock);
+#endif /* _REENTRANT */
 };
 
 #define BUF 16384
