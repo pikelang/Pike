@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.10 1997/09/11 22:51:20 grubba Exp $ */
+/* $Id: x.c,v 1.11 1997/10/12 21:10:53 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.10 1997/09/11 22:51:20 grubba Exp $");
+RCSID("$Id: x.c,v 1.11 1997/10/12 21:10:53 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -83,7 +83,7 @@ void image_to8bit_closest(INT32 args)
   while (i--)
   {
     *d=ct->index[colortable_rgb_nearest(ct,*s)];
-    d++; *s++;
+    d++; s++;
   }
   THREADS_DISALLOW();
 
@@ -118,7 +118,7 @@ void image_to8bit(INT32 args)
   while (i--)
   {
     *d=ct->index[colortable_rgb(ct,*s)];
-    d++; *s++;
+    d++; s++;
   }
   THREADS_DISALLOW();
 
@@ -133,7 +133,6 @@ void image_to8bit_fs(INT32 args)
    struct colortable *ct;
    INT32 i,j,xs;
    rgb_group *s;
-   struct object *o;
    int *res,w;
    unsigned char *d;
    rgbl_group *errb;
@@ -213,6 +212,21 @@ void image_tozbgr(INT32 args)
 }
 
 /*
+**! method string tozrgb(array(array(int)) colors)
+**! returns the image data as a string ("rgbrgb...")
+**! see also: cast, to8bit, to8bit_rgbcube, tobitmap, tozbgr
+*/
+
+void image_torgb(INT32 args)
+{
+   if (!THIS->img) error("no image\n");
+   pop_n_elems(args);
+
+   push_string(make_shared_binary_string((char*)THIS->img,
+        THIS->xsize*THIS->ysize*sizeof(rgb_group)));
+}
+
+/*
 **! method string to8bit_rgbcube(int red,int green,int blue)
 **! method string to8bit_rgbcube(int red,int green,int blue,string map)
 **! method string to8bit_rgbcube_rdither(int red,int green,int blue)
@@ -244,7 +258,6 @@ void image_to8bit_rgbcube(INT32 args)
   gives r+red*g+red*green*b       
  */
 {
-  struct colortable *ct;
   struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
   unsigned long i;
   rgb_group *s;
@@ -318,7 +331,6 @@ void image_to8bit_rgbcube_rdither(INT32 args)
   gives r+red*g+red*green*b       
  */
 {
-  struct colortable *ct;
   struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
   unsigned long i;
   rgb_group *s;
