@@ -72,6 +72,15 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 int image_decode_gif(struct image *dest,struct image *dest_alpha,
 		     unsigned char *src,unsigned long len);
 
+void image_togif(INT32 args);
+void image_togif_fs(INT32 args);
+void image_fromgif(INT32 args);
+void image_gif_begin(INT32 args);
+void image_gif_add(INT32 args);
+void image_gif_add_fs(INT32 args);
+void image_gif_end(INT32 args);
+void image_gif_netscape_loop(INT32 args);
+
 /* blit.c */
 
 void img_clear(rgb_group *dest,rgb_group rgb,INT32 size);
@@ -108,3 +117,9 @@ void image_mirrory(INT32 args);
 
 void image_toppm(INT32 args);
 void image_frompnm(INT32 args);
+ 
+/* pattern.c */
+
+void image_noise(INT32 args);
+void image_turbulence(INT32 args);
+void image_noise_init(void);

@@ -49,6 +49,8 @@ void chrono(char *x)
 
 /***************** internals ***********************************/
 
+#define testrange(x) max(min((x),255),0)
+
 #define apply_alpha(x,y,alpha) \
    ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
 
@@ -426,4 +428,6 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    if (x2<0||y2<0||x1>=THIS->xsize||y1>=THIS->ysize) return;
    img_box_nocheck(max(x1,0),max(y1,0),min(x2,THIS->xsize-1),min(y2,THIS->ysize-1));
 }
+
+
 

@@ -390,59 +390,6 @@ void image_clear(INT32 args)
    push_object(o);
 }
 
-
-void image_fromgif(INT32 args)
-{
-   if (sp[-args].type!=T_STRING)
-      error("Illegal argument to image->fromgif()\n");
-
-   if (THIS->img) free(THIS->img);
-   THIS->img=NULL;
-
-   image_decode_gif(THIS,NULL,sp[-args].u.string->str,sp[-args].u.string->len);
-
-   pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
-}
-
-void image_togif(INT32 args)
-{
-   rgb_group *transparent=NULL;
-   struct colortable *ct;
-
-   if (args>=3)
-   {
-      getrgb(THIS,0,args,"image->togif() (transparency)");
-      transparent=&(THIS->rgb);
-   }
-
-   pop_n_elems(args);
-   if (!THIS->img) { error("no image\n");  return; }
-   ct=colortable_quant(THIS,256);
-   push_string( image_encode_gif( THIS,ct, transparent, 0) );
-   colortable_free(ct);
-}
-
-void image_togif_fs(INT32 args)
-{
-   rgb_group *transparent=NULL;
-   struct colortable *ct;
-
-   if (args>=3)
-   {
-      getrgb(THIS,0,args,"image->togif_fs() (transparency)");
-      transparent=&(THIS->rgb);
-   }
-
-   pop_n_elems(args);
-   if (!THIS->img) { error("no image\n");  return; }
-   ct=colortable_quant(THIS,256);
-   push_string( image_encode_gif( THIS,ct, transparent, 1) );
-   colortable_free(ct);
-}
-
-
 void image_copy(INT32 args)
 {
    struct object *o;
@@ -881,9 +828,12 @@ void image_color(INT32 args)
    if (!THIS->img) error("no image\n");
    if (args<3)
    {
-      rgb.r=255;
-      rgb.g=255;
-      rgb.b=255;
+      if (args>0 && sp[-args].type==T_INT)
+	 rgb.r=rgb.b=rgb.g=sp[-args].u.integer;
+      else 
+	 rgb.r=THIS->rgb.r,
+	 rgb.g=THIS->rgb.g,
+	 rgb.b=THIS->rgb.b;
    }
    else
       getrgbl(&rgb,0,args,"image->color()");
@@ -1483,6 +1433,8 @@ void init_image_programs()
 {
    int i;
 
+   image_noise_init();
+
    start_new_program();
    add_storage(sizeof(struct image));
 
@@ -1506,6 +1458,17 @@ void init_image_programs()
 		"function(:string)",0);
    add_function("togif_fs",image_togif_fs,
 		"function(:string)",0);
+   add_function("gif_begin",image_gif_begin,
+		"function(int:string)",0);
+   add_function("gif_add",image_gif_add,
+		"function(int|void,int|void:string)",0);
+   add_function("gif_add_fs",image_gif_add_fs,
+		"function(int|void,int|void:string)",0);
+   add_function("gif_end",image_gif_end,
+		"function(:string)",0);
+   add_function("gif_netscape_loop",image_gif_netscape_loop,
+		"function(:string)",0);
+
    add_function("copy",image_copy,
 		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
    add_function("autocrop",image_autocrop,
@@ -1588,6 +1551,11 @@ void init_image_programs()
                 "function(:object)",0);
    add_function("select_colors",image_select_colors,
                 "function(int:array(array(int)))",0);
+
+   add_function("noise",image_noise,
+                "function(array(float|int|array(int)),float|void,float|void,float|void,float|void:object)",0);
+   add_function("turbulence",image_turbulence,
+                "function(array(float|int|array(int)),int|void,float|void,float|void,float|void,float|void:object)",0);
 		
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);

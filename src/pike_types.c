@@ -70,6 +70,7 @@ void init_types()
 static int type_length(char *t)
 {
   char *q=t;
+
   switch(EXTRACT_UCHAR(t++))
   {
   default:
@@ -1025,6 +1026,11 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     push_type(T_MIXED);
     push_type(T_MIXED);
     push_type(T_MAPPING);
+    return pop_type();
+
+  case T_OBJECT:
+    push_type_int(0);
+    push_type(T_OBJECT);
     return pop_type();
 
   default:

@@ -3,7 +3,8 @@ VPATH=@srcdir@:@srcdir@/../..:../..
 PREFLAGS=$(DEFINES) -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
 
-FILES=image.o font.o quant.o lzw.o togif.o matrix.o pnm.o blit.o
+FILES =	image.o font.o quant.o lzw.o togif.o matrix.o pnm.o blit.o \
+	pattern.o
 
 image.a: $(FILES)
 	-rm -f image.a
