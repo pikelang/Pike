@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.9 2000/12/16 05:34:05 marcus Exp $
+ * $Id: opcodes.h,v 1.10 2001/01/10 19:52:06 mast Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -129,6 +129,8 @@ enum Pike_opcodes
   F_ALIGN,
   F_POINTER,
   F_LABEL,
+  F_NORMAL_STMT_LABEL,
+  F_CUSTOM_STMT_LABEL,
   F_DATA,
   F_START_FUNCTION,
   F_BYTE,
