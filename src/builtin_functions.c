@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.461 2003/01/13 03:55:15 mast Exp $
+|| $Id: builtin_functions.c,v 1.462 2003/01/13 04:00:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.461 2003/01/13 03:55:15 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.462 2003/01/13 04:00:43 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1748,119 +1748,6 @@ PMOD_EXPORT void f_allocate(INT32 args)
   }
   pop_n_elems(args);
   push_array(a);
-}
-
-/*! @decl array(int) rusage()
- *!
- *!   Return resource usage. An error is thrown if it isn't supported
- *!   or if the system fails to return any information.
- *!
- *! @returns
- *!   Returns an array of ints describing how much resources the interpreter
- *!   process has used so far. This array will have at least 29 elements, of
- *!   which those values not available on this system will be zero.
- *!
- *!   The elements are as follows:
- *!   @array
- *!   	@elem int user_time
- *!   	  Time in milliseconds spent in user code.
- *!   	@elem int system_time
- *!   	  Time in milliseconds spent in system calls.
- *!   	@elem int maxrss
- *!   	  Maximum used resident size in kilobytes.
- *!   	@elem int ixrss
- *!       Quote from GNU libc: An integral value expressed in
- *!       kilobytes times ticks of execution, which indicates the
- *!       amount of memory used by text that was shared with other
- *!       processes.
- *!   	@elem int idrss
- *!       Quote from GNU libc: An integral value expressed the same
- *!       way, which is the amount of unshared memory used for data.
- *!   	@elem int isrss
- *!       Quote from GNU libc: An integral value expressed the same
- *!       way, which is the amount of unshared memory used for stack
- *!       space.
- *!   	@elem int minor_page_faults
- *!   	  Minor page faults, i.e. TLB misses which required no disk I/O.
- *!   	@elem int major_page_faults
- *!   	  Major page faults, i.e. paging with disk I/O required.
- *!   	@elem int swaps
- *!   	  Number of times the process has been swapped out entirely.
- *!   	@elem int block_input_op
- *!   	  Number of block input operations.
- *!   	@elem int block_output_op
- *!   	  Number of block output operations.
- *!   	@elem int messages_sent
- *!   	  Number of IPC messsages sent.
- *!   	@elem int messages_received
- *!   	  Number of IPC messsages received.
- *!   	@elem int signals_received
- *!   	  Number of signals received.
- *!   	@elem int voluntary_context_switches
- *!   	  Number of voluntary context switches (usually to wait for
- *!   	  some service).
- *!   	@elem int involuntary_context_switches
- *!   	  Number of preemptions, i.e. context switches due to expired
- *!   	  time slices, or when processes with higher priority were
- *!   	  scheduled.
- *!   	@elem int sysc
- *!   	  Number of system calls.
- *!   	@elem int ioch
- *!   	  Number of characters read and written.
- *!   	@elem int rtime
- *!   	  Elapsed real time (ms).
- *!   	@elem int ttime
- *!   	  Elapsed system trap (system call) time (ms).
- *!   	@elem int tftime
- *!   	  Text page fault sleep time (ms).
- *!   	@elem int dftime
- *!   	  Data page fault sleep time (ms).
- *!   	@elem int kftime
- *!   	  Kernel page fault sleep time (ms).
- *!   	@elem int ltime
- *!   	  User lock wait sleep time (ms).
- *!   	@elem int slptime
- *!   	  Other sleep time (ms).
- *!   	@elem int wtime
- *!   	  Wait CPU (latency) time (ms).
- *!   	@elem int stoptime
- *!   	  Time spent in stopped (suspended) state.
- *!   	@elem int brksize
- *!   	  Heap size.
- *!   	@elem int stksize
- *!   	  Stack size.
- *!   @endarray
- *!
- *!   The values will not be further explained here; read your system manual
- *!   for more information.
- *!
- *! @note
- *!   All values may not be present on all systems.
- *!
- *! @seealso
- *!   @[time()], @[System.getrusage()]
- */
-void f_rusage(INT32 args)
-{
-  pike_rusage_t rus;
-  size_t e;
-  struct array *v;
-
-  pop_n_elems(args);
-  if(!pike_get_rusage (rus))
-    PIKE_ERROR("rusage", "System usage information not available.\n", Pike_sp, args);
-  v=allocate_array_no_init(NELEM(rus),0);
-
-  for(e=0;e<NELEM(rus);e++)
-  {
-    ITEM(v)[e].type=T_INT;
-    ITEM(v)[e].subtype=NUMBER_NUMBER;
-    ITEM(v)[e].u.integer=rus[e];
-  }
-
-  Pike_sp->u.array=v;
-  Pike_sp->type=T_ARRAY;
-  Pike_sp++;
 }
 
 /*! @decl object this_object(void|int level);
@@ -7850,9 +7737,6 @@ void init_builtin_efuns(void)
 		tFunc(tArr(tSetvar(0,tMix)) tArr(tInt), tArr(tVar(1))),
 		tFunc(tArray tArr(tNot(tInt)), tArray),
 		tFunc(tOr4(tObj,tFunction,tPrg(tObj),tInt) tArray, tArray)), 0);
-
-/* function(:int *) */
-  ADD_EFUN("rusage", f_rusage,tFunc(tNone,tArr(tInt)),OPT_EXTERNAL_DEPEND);
 
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
   ADD_EFUN("search",f_search,
