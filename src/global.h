@@ -120,7 +120,7 @@ char *alloca ();
 #define TYPE_T unsigned INT8
 #define TYPE_FIELD unsigned INT16
 
-#define FLOAT_TYPE float
+#define FLOAT_TYPE double
 
 
 
