@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.47 1998/10/22 00:33:33 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.48 1998/10/23 02:40:25 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -727,7 +727,7 @@ void verify_shared_strings_tables(void)
 	fatal("Shared string had too few references.\n");
       }
 
-      if(s->str[s->len])
+      if(index_shared_string(s,s->len))
       {
 	locate_problem(improper_zero_termination);
 	fatal("Shared string didn't end with a zero.\n");
