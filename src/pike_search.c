@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.24 2004/10/16 07:27:29 agehall Exp $
+|| $Id: pike_search.c,v 1.25 2004/10/17 13:58:47 grubba Exp $
 */
 
 /* New memory searcher functions */
@@ -175,9 +175,9 @@ PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
     case 2:
       return compile_memsearcher2((p_wchar2*)needle.ptr, needlelen, max_haystacklen,hashkey);
   }
-  // #ifdef PIKE_DEBUG
+#ifdef PIKE_DEBUG
   Pike_fatal("Illegal shift\n");
-  // #endif
+#endif
   /* NOTREACHED */
 }
 
