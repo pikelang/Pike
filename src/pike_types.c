@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.89 1999/12/11 23:37:29 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.90 1999/12/12 00:26:08 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2197,12 +2197,9 @@ static int low_pike_types_le2(char *a,char *b)
 
   case T_MAPPING:
     /*
-     *  mapping(A:B) <= mapping(C:D)   iff ((C <= A) || (A <= C)) && B <= D.
-     *
-     *  The reason for the weak index type test, is that it's not an error
-     *  to index a mapping with a nonexistant key.
+     *  mapping(A:B) <= mapping(C:D)   iff A <= C && B <= D.
      */
-    if(!low_pike_types_le(++b,++a) && !low_pike_types_le(a, b)) return 0;
+    if(!low_pike_types_le(++a, ++b)) return 0;
     return low_pike_types_le(a+type_length(a),b+type_length(b));
 
   case T_OBJECT:
@@ -2271,11 +2268,6 @@ static int low_pike_types_le2(char *a,char *b)
     
 
   case T_MULTISET:
-    /* It's not an error to index a multiset with a nonexistant key. */
-    if(!low_pike_types_le(++a,++b) &&
-       !low_pike_types_le(b, a)) return 0;
-    break;
-
   case T_ARRAY:
     if(!low_pike_types_le(++a,++b)) return 0;
 
