@@ -1,8 +1,8 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.39 2001/06/23 00:25:50 js Exp $
-b
+// $Id: MySQL.pike,v 1.40 2001/06/23 00:29:18 js Exp $
+
 inherit .Base;
 
 // Creates the SQL tables we need.
@@ -68,7 +68,7 @@ static void init_fields()
   if(init_done)
     return;
 
-  foreach(Search.filter_get_fields(), string field)
+  foreach(Search.get_filter_fields(), string field)
     catch(allocate_field_id(field));
   init_done=1;
 }
