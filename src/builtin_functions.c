@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.195 1999/10/26 14:14:43 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.196 1999/10/27 17:16:56 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5118,8 +5118,8 @@ void init_builtin_efuns(void)
 /* function(:int *) */
   ADD_EFUN("rusage", f_rusage,tFunc(tNone,tArr(tInt)),OPT_EXTERNAL_DEPEND);
   
-/* function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed) */
-  ADD_EFUN("search",f_search,tOr3(tFunc(tStr tStr tOr(tVoid,tInt),tInt),tFunc(tArray tMix tOr(tVoid,tInt),tInt),tFunc(tMapping tMix,tMix)),0);
+/* function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed,void|mixed:mixed) */
+  ADD_EFUN("search",f_search,tOr3(tFunc(tStr tStr tOr(tVoid,tInt),tInt),tFunc(tArray tMix tOr(tVoid,tInt),tInt),tFunc(tMapping tMix tOr(tVoid,tMix),tMix)),0);
   
 /* function(float|int,int|void:void) */
   ADD_EFUN("sleep", f_sleep,tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
