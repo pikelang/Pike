@@ -527,14 +527,14 @@ mapping _decode( string|mapping what, mapping|void opts )
         int x2 = l->xoffset+l->width;
         int y1 = l->yoffset;
         int y2 = l->yoffset+l->height;
-        img->setcolor(0,0,255,100);
+        img->setcolor(0,0,255);
         img->line( x1,y1,x2,y1 );
         img->line( x2,y1,x2,y2 );
         img->line( x2,y2,x1,y2 );
         img->line( x1,y2,x1,y1 );
         if(alpha) 
         {
-          alpha->setcolor(0,0,255,100);
+          alpha->setcolor(0,0,255);
           alpha->line( x1,y1,x2,y1 );
           alpha->line( x2,y1,x2,y2 );
           alpha->line( x2,y2,x1,y2 );
@@ -581,7 +581,7 @@ mapping _decode( string|mapping what, mapping|void opts )
       img->line( x1,y2,x1,y1 );
       if(alpha) 
       {
-        alpha->setcolor(0,0,255,100);
+        alpha->setcolor(0,0,255);
         alpha->line( x1,y1,x2,y1 );
         alpha->line( x2,y1,x2,y2 );
         alpha->line( x2,y2,x1,y2 );
