@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.15 2002/05/26 00:46:29 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.16 2002/06/28 17:29:41 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -55,6 +55,8 @@
       <insert-move entity="Array"/>
 <!--      <insert-move entity="Mapping"/> -->
 <!--      <insert-move entity="Multiset"/> -->
+<!--      <insert-move entity="Int"/> -->
+<!--      <insert-move entity="Float"/> -->
       <insert-move entity="Function"/>
       <insert-move entity="Program"/>
       <insert-move entity="ADT"/>
@@ -140,7 +142,7 @@
   </dir>
 
   <void>
-    <!-- The 7.0 module should perhaps be added to a
+    <!-- The 7.0 and 7.2 module should perhaps be added to a
          compatible chapter, but it needs a modifying
          wrapper first. -->
     <insert-move entity="7-0"/>
