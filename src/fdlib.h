@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.53 2004/11/09 17:06:42 nilsson Exp $
+|| $Id: fdlib.h,v 1.54 2005/01/05 17:27:06 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -47,7 +47,7 @@
 #define fd_REVERSE	     32
 
 
-#ifdef HAVE_WINSOCK_H
+#if defined(HAVE_WINSOCK_H) && !defined(__GNUC__)
 
 #define HAVE_FD_FLOCK
 
@@ -285,7 +285,7 @@ PMOD_EXPORT void closedir(DIR *dir);
 
 
 
-#else /* HAVE_WINSOCK */
+#else /* HAVE_WINSOCK && !__GNUC__ */
 
 
 typedef int FD;

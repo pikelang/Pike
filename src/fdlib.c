@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.68 2004/11/20 15:34:21 nilsson Exp $
+|| $Id: fdlib.c,v 1.69 2005/01/05 17:27:06 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include <math.h>
 #include <ctype.h>
 
-#ifdef HAVE_WINSOCK_H
+#if defined(HAVE_WINSOCK_H) && !defined(__GNUC__)
 
 /* Old versions of the headerfiles don't have this constant... */
 #ifndef INVALID_SET_FILE_POINTER
@@ -1288,7 +1288,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   return to;
 }
 
-#endif /* HAVE_WINSOCK_H */
+#endif /* HAVE_WINSOCK_H && !__GNUC__ */
 
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)
