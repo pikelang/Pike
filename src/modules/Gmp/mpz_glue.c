@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.61 1999/10/29 08:22:07 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.62 1999/10/30 09:31:33 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -638,40 +638,46 @@ static void return_temporary(INT32 args)
 #endif
 
 
-#define BINFUN(name, fun)				\
-static void name(INT32 args)				\
-{							\
-  INT32 e;						\
-  struct object *res;					\
-  for(e=0; e<args; e++)					\
-    get_mpz(sp+e-args, 1);				\
-  res = fast_clone_object(THIS_PROGRAM, 0);		\
-  mpz_set(OBTOMPZ(res), THIS);				\
-  for(e=0;e<args;e++)					\
-    fun(OBTOMPZ(res), OBTOMPZ(res),			\
-	OBTOMPZ(sp[e-args].u.object));			\
-  pop_n_elems(args);					\
-  PUSH_REDUCED(res);					\
+#define BINFUN2(name, fun)						\
+static void name(INT32 args)						\
+{									\
+  INT32 e;								\
+  struct object *res;							\
+  for(e=0; e<args; e++)							\
+   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
+    get_mpz(sp+e-args, 1);						\
+  res = fast_clone_object(THIS_PROGRAM, 0);				\
+  mpz_set(OBTOMPZ(res), THIS);						\
+  for(e=0;e<args;e++)							\
+    if(sp[e-args].type != T_INT)					\
+      fun(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));	\
+    else								\
+      PIKE_CONCAT(fun,_ui)(OBTOMPZ(res), OBTOMPZ(res),			\
+                           sp[e-args].u.integer);        		\
+									\
+  pop_n_elems(args);							\
+  PUSH_REDUCED(res);							\
+}									\
+									\
+static void PIKE_CONCAT(name,_eq)(INT32 args)				\
+{									\
+  INT32 e;								\
+  for(e=0; e<args; e++)							\
+   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
+    get_mpz(sp+e-args, 1);						\
+  for(e=0;e<args;e++)							\
+    if(sp[e-args].type != T_INT)					\
+      fun(THIS, THIS, OBTOMPZ(sp[e-args].u.object));			\
+    else								\
+      PIKE_CONCAT(fun,_ui)(THIS,THIS, sp[e-args].u.integer);      	\
+  add_ref(fp->current_object);						\
+  PUSH_REDUCED(fp->current_object);					\
 }
 
-BINFUN(mpzmod_add,mpz_add)
-BINFUN(mpzmod_mul,mpz_mul)
-BINFUN(mpzmod_gcd,mpz_gcd)
+BINFUN2(mpzmod_add,mpz_add)
+BINFUN2(mpzmod_mul,mpz_mul)
+BINFUN2(mpzmod_gcd,mpz_gcd)
 
-
-static void mpzmod_add_eq(INT32 args)
-{
-  INT32 e;
-  struct object *res;
-  for(e=0; e<args; e++)
-    get_mpz(sp+e-args, 1);
-  for(e=0;e<args;e++)
-    mpz_add(THIS, THIS, OBTOMPZ(sp[e-args].u.object));
-  pop_n_elems(args);
-
-  add_ref(fp->current_object);
-  PUSH_REDUCED(fp->current_object);
-}
 
 static void mpzmod_sub(INT32 args)
 {
@@ -853,6 +859,22 @@ static void mpzmod_invert(INT32 args)
   }
   pop_n_elems(args);
   PUSH_REDUCED(res);
+}
+
+#define BINFUN(name, fun)				\
+static void name(INT32 args)				\
+{							\
+  INT32 e;						\
+  struct object *res;					\
+  for(e=0; e<args; e++)					\
+    get_mpz(sp+e-args, 1);				\
+  res = fast_clone_object(THIS_PROGRAM, 0);		\
+  mpz_set(OBTOMPZ(res), THIS);				\
+  for(e=0;e<args;e++)					\
+    fun(OBTOMPZ(res), OBTOMPZ(res),			\
+	OBTOMPZ(sp[e-args].u.object));			\
+  pop_n_elems(args);					\
+  PUSH_REDUCED(res);					\
 }
 
 BINFUN(mpzmod_and,mpz_and)
@@ -1181,9 +1203,17 @@ void pike_module_exit(void)
 
 
 #define MPZ_ARG_TYPE "int|float|object"
-#define MPZ_SHIFT_TYPE "function(int|float|object:object)"
-#define MPZ_BINOP_TYPE ("function(" MPZ_ARG_TYPE "...:object)")
+#define MPZ_RET_TYPE "object"
+#define MPZ_SHIFT_TYPE "function(int|float|object:" MPZ_RET_TYPE")"
+#define MPZ_BINOP_TYPE ("function(" MPZ_ARG_TYPE "...:"MPZ_RET_TYPE")")
 #define MPZ_CMPOP_TYPE ("function(" MPZ_ARG_TYPE ":int)")
+
+#define tMpz_arg tOr3(tInt,tFloat,tObj)
+#define tMpz_ret tObj
+#define tMpz_int tInt
+#define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
+#define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
+#define tMpz_cmpop_type tFunc(tMpz_arg, tMpz_ret)
 
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
@@ -1195,22 +1225,22 @@ void pike_module_exit(void)
 			      tObj),tVoid),				\
 		   tFunc(tStr tInt,tVoid)), 0);				\
 									\
-  add_function("`+",mpzmod_add,MPZ_BINOP_TYPE,0);			\
-  add_function("`+=",mpzmod_add_eq,MPZ_BINOP_TYPE,0);			\
-  add_function("``+",mpzmod_add,MPZ_BINOP_TYPE,0);			\
-  add_function("`-",mpzmod_sub,MPZ_BINOP_TYPE,0);			\
-  add_function("``-",mpzmod_rsub,MPZ_BINOP_TYPE,0);			\
-  add_function("`*",mpzmod_mul,MPZ_BINOP_TYPE,0);			\
-  add_function("``*",mpzmod_mul,MPZ_BINOP_TYPE,0);			\
-  add_function("`/",mpzmod_div,MPZ_BINOP_TYPE,0);			\
-  add_function("``/",mpzmod_rdiv,MPZ_BINOP_TYPE,0);			\
-  add_function("`%",mpzmod_mod,MPZ_BINOP_TYPE,0);			\
-  add_function("``%",mpzmod_rmod,MPZ_BINOP_TYPE,0);			\
-  add_function("`&",mpzmod_and,MPZ_BINOP_TYPE,0);			\
-  add_function("``&",mpzmod_and,MPZ_BINOP_TYPE,0);			\
-  add_function("`|",mpzmod_or,MPZ_BINOP_TYPE,0);			\
-  add_function("``|",mpzmod_or,MPZ_BINOP_TYPE,0);			\
-  /* function(:object) */						\
+  ADD_FUNCTION("`+",mpzmod_add,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`+=",mpzmod_add_eq,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``+",mpzmod_add,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`-",mpzmod_sub,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``-",mpzmod_rsub,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`*",mpzmod_mul,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``*",mpzmod_mul,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`*=",mpzmod_mul_eq,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`/",mpzmod_div,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``/",mpzmod_rdiv,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`%",mpzmod_mod,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``%",mpzmod_rmod,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`&",mpzmod_and,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``&",mpzmod_and,tMpz_binop_type,0);			\
+  ADD_FUNCTION("`|",mpzmod_or,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``|",mpzmod_or,tMpz_binop_type,0);			\
   ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj),0);			\
 									\
   add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE,0);			\
@@ -1226,62 +1256,42 @@ void pike_module_exit(void)
   add_function("`==",mpzmod_eq,MPZ_CMPOP_TYPE,0);			\
   add_function("`!=",mpzmod_nq,MPZ_CMPOP_TYPE,0);			\
 									\
-  /* function(:int) */							\
   ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt),0);			\
 									\
-  /* function(:int) */							\
   ADD_FUNCTION("__hash",mpzmod_get_int,tFunc(tNone,tInt),0);		\
-  /* function(string:mixed) */						\
   ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix),0);			\
 									\
-  /* function(int:string) */						\
   ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), 0);	\
   									\
-  /* function(void|int:string) */					\
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
-  /* function(int:string) */						\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), 0);	\
-  /* function(void|int:int) */						\
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
 									\
-  /* function(:int) */							\
-  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\
-  /* function(:string) */						\
+  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tMpz_int),0);	\
   ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr),0);	\
-  /* function(:float) */						\
   ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);	\
 									\
-  /* function(:int) */							\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
 	       tFunc(tNone,tInt),0);					\
-  /* function(int|void:int) */						\
   ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
 	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
-  /* function(int|void,int|void:object) */				\
   ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
-	       tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tObj), 0);		\
+	       tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tMpz_ret), 0);	\
   									\
-  add_function("gcd",mpzmod_gcd, MPZ_BINOP_TYPE, 0);			\
-  add_function("gcdext", mpzmod_gcdext,					\
-  "function(" MPZ_ARG_TYPE ":array(object))", 0);			\
-  add_function("gcdext2", mpzmod_gcdext2,				\
-  "function(" MPZ_ARG_TYPE ":array(object))", 0);			\
-  add_function("invert", mpzmod_invert,					\
-  "function(" MPZ_ARG_TYPE ":object)", 0);				\
+  ADD_FUNCTION("gcd",mpzmod_gcd, tMpz_binop_type, 0);			\
+  ADD_FUNCTION("gcd_eq",mpzmod_gcd_eq, tMpz_binop_type, 0);		\
+  ADD_FUNCTION("gcdext",mpzmod_gcdext,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
+  ADD_FUNCTION("gcdext2",mpzmod_gcdext2,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
+  ADD_FUNCTION("invert", mpzmod_invert,tFunc(tMpz_arg,tMpz_ret),0);	\
 									\
-  /* function(:object) */						\
-  ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tObj),0);		\
-  /* function(:array(object)) */					\
-  ADD_FUNCTION("sqrtrem", mpzmod_sqrtrem,tFunc(tNone,tArr(tObj)), 0);	\
-  add_function("powm",mpzmod_powm,					\
-  "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":object)", 0);		\
-  /* function(int:object) */						\
-  ADD_FUNCTION("pow", mpzmod_pow,tFunc(tInt,tObj), 0);			\
+  ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
+  ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0);\
+  ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
+  ADD_FUNCTION("pow", mpzmod_pow,tFunc(tInt,tMpz_ret), 0);		\
 									\
-  /* function(void:int) */						\
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
 									\
-  ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tObj),0);		\
+  ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tMpz_ret),0);	\
   									\
   set_init_callback(init_mpz_glue);					\
   set_exit_callback(exit_mpz_glue);
@@ -1319,6 +1329,11 @@ void pike_module_init(void)
      * magic? no, just an if statement :)              /Hubbe
      */
     start_new_program();
+
+#undef tMpz_ret
+#undef tMpz_int
+#define tMpz_ret tInt
+#define tMpz_int tInt
 
     /* I first tried to just do an inherit here, but it becomes too hard
      * to tell the programs apart when I do that..          /Hubbe
