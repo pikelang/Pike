@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.182 1999/12/14 08:41:58 hubbe Exp $");
+RCSID("$Id: program.c,v 1.183 1999/12/14 12:59:32 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2480,20 +2480,45 @@ int store_constant(struct svalue *foo,
 {
   struct program_constant tmp;
   unsigned int e;
-
-  for(e=0;e<new_program->num_constants;e++)
+  JMP_BUF tmp2;
+  
+  if(SETJMP(tmp2))
   {
-    struct program_constant *c= new_program->constants+e;
-    if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
-       c->name == constant_name)
-      return e;
+    ONERROR tmp;
+    struct svalue zero;
+
+    SET_ONERROR(tmp,exit_on_error,"Error in store_constant in compiler!");
+    assign_svalue_no_free(sp++, & throw_value);
+    APPLY_MASTER("handle_error", 1);
+    pop_stack();
+    UNSET_ONERROR(tmp);
+
+    yyerror("Couldn't store constant.");
+
+    zero.type = T_INT;
+    zero.subtype = NUMBER_NUMBER;
+    zero.u.integer=0;
+
+    return store_constant(&zero, equal, constant_name);
+  }else{
+    for(e=0;e<new_program->num_constants;e++)
+    {
+      struct program_constant *c= new_program->constants+e;
+      if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
+	 c->name == constant_name)
+      {
+	UNSETJMP(tmp2);
+	return e;
+      }
+    }
+    assign_svalue_no_free(&tmp.sval,foo);
+    if((tmp.name=constant_name)) add_ref(constant_name);
+    
+    add_to_constants(tmp);
+
+    UNSETJMP(tmp2);
+    return e;
   }
-
-  assign_svalue_no_free(&tmp.sval,foo);
-  if((tmp.name=constant_name)) add_ref(constant_name);
-
-  add_to_constants(tmp);
-  return e;
 }
 
 /*
