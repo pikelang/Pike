@@ -1298,7 +1298,7 @@ void gc_check_all_arrays()
   do
   {
     if(a->type_field & BIT_COMPLEX)
-      gc_check_svalues(ITEM(a), a->size);
+      a->type_field = gc_check_svalues(ITEM(a), a->size);
 
     a=a->next;
   } while (a != & empty_array);

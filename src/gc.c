@@ -24,7 +24,7 @@
 
 #define GC_CONST 20
 #define MIN_ALLOC_THRESHOLD 1000
-#defien MAX_ALLOC_THRESHOLD 10000000
+#define MAX_ALLOC_THRESHOLD 10000000
 #define MULTIPLIER 0.9
 #define MARKER_CHUNK_SIZE 1023
 
@@ -239,6 +239,8 @@ void do_gc()
 
   if(alloc_threshold < MIN_ALLOC_THRESHOLD)
     alloc_threshold = MIN_ALLOC_THRESHOLD;
+  if(alloc_threshold > MAX_ALLOC_THRESHOLD)
+    alloc_threshold = MAX_ALLOC_THRESHOLD;
   num_allocs=0;
 
 #ifdef DEBUG

@@ -108,6 +108,9 @@ INT32 count_args(node *n)
     return tmp2;
   }
 
+  case F_PUSH_ARRAY:
+    return -1;
+
   default:
     if(n->type == void_type_string) return 0;
     return 1;

@@ -1012,9 +1012,9 @@ void init_operators()
 
   add_efun2("`&",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_and);
 
-  add_efun2("`|",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_or);
+  add_efun2("`|",f_or,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_or);
 
-  add_efun2("`^",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_xor);
+  add_efun2("`^",f_xor,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_xor);
 
   add_efun2("`<<",f_lsh,"function(int,int:int)",0,0,generate_lsh);
   add_efun2("`>>",f_rsh,"function(int,int:int)",0,0,generate_rsh);
