@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.82 2000/10/30 19:01:21 grubba Exp $");
+RCSID("$Id: lex.c,v 1.83 2000/11/25 16:32:31 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -294,13 +294,13 @@ struct lex lex;
 /* Make lexers for shifts 0, 1 and 2. */
 
 #define SHIFT	0
-#include "lexer.h"
+#include "lexer0.h"
 #undef SHIFT
 #define SHIFT	1
-#include "lexer.h"
+#include "lexer1.h"
 #undef SHIFT
 #define SHIFT	2
-#include "lexer.h"
+#include "lexer2.h"
 #undef SHIFT
 
 int yylex(YYSTYPE *yylval)

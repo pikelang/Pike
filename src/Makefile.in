@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.215 2000/10/30 19:01:22 grubba Exp $
+# $Id: Makefile.in,v 1.216 2000/11/25 16:32:31 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -532,6 +532,20 @@ $(SRCDIR)/treeopt.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mk
 las.o: $(SRCDIR)/treeopt.h
 
 las_t.o: las.c
+
+# This dependency is here to make sure that lexer[012].h are generated.
+# The reason for the split is that some compilers (read lc) generate
+# better code then. Strange, but true.
+lex.o: lexer0.h lexer1.h lexer2.h
+
+lexer0.h: lexer.h
+	cp "$<" "$@"
+
+lexer1.h: lexer.h
+	cp "$<" "$@"
+
+lexer2.h: lexer.h
+	cp "$<" "$@"
 
 # All the $(POBJ) dependencies, except tpike. See blurb at pike target.
 stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike builtin_functions.c $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike las.c
