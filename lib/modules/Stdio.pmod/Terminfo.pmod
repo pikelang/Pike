@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.17 2003/06/26 23:28:51 nilsson Exp $
+// $Id: Terminfo.pmod,v 1.18 2003/08/07 14:25:50 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -211,7 +211,7 @@ class Termcap {
 	
 	data=replace(data,"\\^","\\*");
 	
-	if (search(data,"^")!=-1)
+	if (has_value(data, "^"))
 	  data=replace(data,ctrlcharsfrom,ctrlcharsto);
 	
 	data = replace(data,

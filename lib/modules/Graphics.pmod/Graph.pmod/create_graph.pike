@@ -588,7 +588,7 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
 //The Swedish is some insults between the programmers
 string no_end_zeros(string f)
 {
-  if (search(f, ".")!=-1)
+  if (has_value(f, "."))
   {
     int j;
     /* FIXME  Vad i Hvte gör du här?! */

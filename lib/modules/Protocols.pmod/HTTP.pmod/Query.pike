@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.60 2003/07/07 15:10:37 grubba Exp $
+// $Id: Query.pike,v 1.61 2003/08/07 14:23:22 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -215,7 +215,7 @@ static void async_read(mixed dummy,string s)
 #endif
 
    buf+=s;
-   if (-1!=search(buf,"\r\n\r\n") || -1!=search(buf,"\n\n"))
+   if (has_value(buf, "\r\n\r\n") || has_value(buf,"\n\n"))
    {
       con->set_blocking();
       ponder_answer();

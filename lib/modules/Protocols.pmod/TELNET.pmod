@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.20 2003/03/12 09:09:39 agehall Exp $
+// $Id: TELNET.pmod,v 1.21 2003/08/07 14:22:58 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -579,7 +579,7 @@ class protocol
       synch = 0;
     }
 
-      if (search(line, C(IAC)) != -1) {
+      if (has_value(line, C(IAC))) {
 	array a = line / C(IAC);
 
 	string parsed_line = a[0];

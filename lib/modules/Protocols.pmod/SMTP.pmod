@@ -163,7 +163,7 @@ class client
   //!   200-399 an exception will be thrown.
   void simple_mail(string to, string subject, string from, string msg)
   {
-    if (search(msg,"\r\n")==-1)
+    if (!has_value(msg, "\r\n"))
       msg=replace(msg,"\n","\r\n"); // *simple* mail /Mirar
     send_message(parse_addr(from), ({ parse_addr(to) }),
 		 (string)MIME.Message(msg, (["mime-version":"1.0",

@@ -61,7 +61,7 @@ static void create(void|string directory,  // default: cwd
       {
 	if( sizeof( root ) )
 	{
-	  if( search( root, ":/" ) == -1 )
+	  if( !has_value( root, ":/" ) )
 	    root = p+":"+ (root[0] == '/' ?"":"/") + root;
 	  else
 	    error( "Cannot change directory to above"+root+"\n" );

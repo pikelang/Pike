@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.33 2003/03/12 09:58:18 agehall Exp $
+/* $Id: handshake.pike,v 1.34 2003/08/07 14:27:02 nilsson Exp $
  *
  */
 
@@ -926,8 +926,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       cipher_suite = input->get_uint(2);
       compression_method = input->get_uint(1);
 
-      if(search(context->preferred_suites, cipher_suite) == -1
-	 || search(context->preferred_compressors, compression_method) == -1)
+      if( !has_value(context->preferred_suites, cipher_suite)
+	 || !has_value(context->preferred_compressors, compression_method))
       {
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted

@@ -29,8 +29,8 @@ private void request_received(mapping rdata) {
   
   if(rv[n[0]])
   {
-      if(managers_security_mode && search(managers_list, 
-        get_host_from_ip(rdata->ip))==-1) 
+      if(managers_security_mode && !has_value(managers_list,
+        get_host_from_ip(rdata->ip)))
         // we want to check managers list, and this request is coming 
         // from a non manager, so let us ignore it.
       {
@@ -38,7 +38,7 @@ private void request_received(mapping rdata) {
       }
     if(rv[n[0]]->op==Protocols.SNMP.REQUEST_GET || rv[n[0]]->op==Protocols.SNMP.REQUEST_GETNEXT)  // are we a Get?
     {
-      if(search(get_community_list, rv[n[0]]->community)==-1) 
+      if(!has_value(get_community_list, rv[n[0]]->community))
         // let us ignore bad communities
       {
         return;
@@ -74,7 +74,7 @@ private void request_received(mapping rdata) {
     }
     else if(rv[n[0]]->op==Protocols.SNMP.REQUEST_SET)  // are we a Set?
     {
-      if(search(set_community_list, rv[n[0]]->community)==-1) 
+      if(!has_value(set_community_list, rv[n[0]]->community))
         // let us ignore bad communities
       {
         return;

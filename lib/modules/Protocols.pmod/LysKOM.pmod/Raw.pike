@@ -188,7 +188,7 @@ void|array|object recv(mixed x,string what,void|int syn)
    array|object ires=0;
    buf+=what;
    // wait for newline before we do anything at all
-   while (search(buf,"\n")!=-1)
+   while (has_value(buf,"\n"))
    {
       mixed res;
       int len;
