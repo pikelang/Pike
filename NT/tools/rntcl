@@ -40,6 +40,7 @@ string remove_ext(string file)
 
 int main(int argc, string *argv)
 {
+  string *ldopts=({});
   string *cflags=({
     "-Zm300",
     "-F8388608",
@@ -78,6 +79,7 @@ int main(int argc, string *argv)
       {
 	case "verbose":
 	  verbose++;
+	  ldopts+=({"-VERBOSE:lib"});
 	  break;
 
 	case "export": // fixme
@@ -229,14 +231,25 @@ int main(int argc, string *argv)
     case "dll":
       if(debug)
       {
-	cmd+=({
-	  "-link",
+	array libs=({"libc.lib","libcd.lib",
+		     "libcmt.lib","libcmtd.lib",
+		     "msvcrt.lib","msvcrtd.lib"});
+
+	string lib=(debug?"libcmtd.lib":"libcmt.lib");
+	libs-=({ lib });
+	for(int e=0;e<sizeof(libs);e++)
+	  ldopts+=({"-nodefaultlib:"+libs[e]});
+
+	
+	cmd+=({"-link",
 //	  "-PDB:NONE",
 	  "-DEBUGTYPE:BOTH",
 	  "-DEBUG",
-	  });
+	  })
+	  +ldopts;
       }
   }
+
 
   int ret;
   if(verbose && target!="-")
