@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.53 1997/09/11 19:28:48 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.54 1997/09/16 00:33:09 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -6,6 +6,9 @@ test_eq(1.1e1,11.0)
 test_eq(1e-1,0.1)
 test_eq('\x20',32)
 test_eq("\x20","\040")
+
+test_eq(class { static int foo=17; }()->foo,0)
+test_eval_error(class { static int foo=17; }()->foo=18;)
 
 test_any([[
 class p1 { int foo() { return 1; }};
@@ -649,6 +652,10 @@ test_eq(2%17,2)
 test_eq(2%-17,-15)
 test_eq(-2%17,15)
 test_eq(-2%-17,-2)
+test_eq(-10%10,0)
+test_eq(10%-10,0)
+test_eq(-10%-10,0)
+test_eq(10%10,0)
 test_eval_error(return 15 % 0)
 test_eq(12.0 % 3.0,0.0)
 test_eq(13.0 % 3.0,1.0)
