@@ -563,40 +563,15 @@ void f_getcwd(INT32 args)
   free(e);
 }
 
-#ifdef HAVE_FORK
-void f_fork(INT32 args)
-{
-  int res;
-  do_set_close_on_exec();
-  pop_n_elems(args);
-#if defined(HAVE_FORK1) && defined(_REENTRANT)
-  push_int(res=fork1());
-#else
-  push_int(res=fork());
-#endif
-  if(!res && res!=-1)
-  {
-    call_callback(&fork_child_callback, 0);
-  }
-#if defined(_REENTRANT)
-  if(!res)
-  {
-    /* forked copy. there is now only one thread running, this one. */
-    num_threads=1;
-  }
-#endif
-}
-#endif
-
 void f_exece(INT32 args)
 {
   INT32 e;
   char **argv, **env;
+  struct svalue *save_sp;
+  struct mapping *en;
 #ifdef DECLARE_ENVIRON
   extern char **environ;
 #endif
-  struct svalue *save_sp;
-  struct mapping *en;
 
   save_sp=sp-args;
 
@@ -750,9 +725,6 @@ void init_files_efuns(void)
   add_efun("get_dir",f_get_dir,"function(string:string *)",OPT_EXTERNAL_DEPEND);
   add_efun("cd",f_cd,"function(string:int)",OPT_SIDE_EFFECT);
   add_efun("getcwd",f_getcwd,"function(:string)",OPT_EXTERNAL_DEPEND);
-#ifdef HAVE_FORK
-  add_efun("fork",f_fork,"function(:int)",OPT_SIDE_EFFECT);
-#endif
   add_efun("exece",f_exece,"function(string,mixed*,void|mapping(string:string):int)",OPT_SIDE_EFFECT); 
 
 #ifdef HAVE_STRERROR

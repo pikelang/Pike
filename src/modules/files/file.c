@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.64 1998/01/03 07:13:05 hubbe Exp $");
+RCSID("$Id: file.c,v 1.65 1998/01/08 17:21:16 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1261,7 +1261,7 @@ static void file_dup2(INT32 args)
    * /precompiled/file
    */
   if(!o->prog || o->prog->inherits[0].prog != file_program)
-    error("Argument 1 to file->assign() must be a clone of Stdio.File\n");
+    error("Argument 1 to file->dup2() must be a clone of Stdio.File\n");
 
   fd=((struct file_struct *)(o->storage))->fd;
 

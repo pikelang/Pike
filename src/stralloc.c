@@ -576,7 +576,7 @@ struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-  for(hashprimes_entry;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
+  for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
   htable_size=hashprimes[hashprimes_entry];
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);

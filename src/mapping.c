@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.24 1997/11/08 01:34:41 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.25 1998/01/08 17:20:07 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -492,6 +492,15 @@ struct svalue *low_mapping_string_lookup(struct mapping *m,
   tmp.type=T_STRING;
   tmp.u.string=p;
   return low_mapping_lookup(m, &tmp);
+}
+
+struct svalue *simple_mapping_string_lookup(struct mapping *m,
+					    char *p)
+{
+  struct pike_string *tmp;
+  if((tmp=findstring(p)))
+    return low_mapping_string_lookup(m,tmp);
+  return 0;
 }
 
 void mapping_index_no_free(struct svalue *dest,

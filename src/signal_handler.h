@@ -7,7 +7,11 @@
 #define SIGNAL_H
 
 /* Prototypes begin here */
+struct wait_data;
 struct sigdesc;
+struct pid_status;
+void f_create_process(INT32 args);
+void f_fork(INT32 args);
 void check_signals(struct callback *foo, void *bar, void *gazonk);
 void init_signals(void);
 void exit_signals(void);

@@ -69,7 +69,7 @@ test_any([[object o=clone(Stdio.File); o->open("conftest","r"); o=o->dup(); retu
 est_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o->open("conftest","r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
 // - file->dup2
-test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o2->pipe(); o->open("conftest","r"); o2->dup2(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o2->pipe(); o->open("conftest","r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
 test_eq(Process.popen("echo foo"),"foo\n")
 

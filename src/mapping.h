@@ -41,6 +41,8 @@ struct svalue *low_mapping_lookup(struct mapping *m,
 				  struct svalue *key);
 struct svalue *low_mapping_string_lookup(struct mapping *m,
 					 struct pike_string *p);
+struct svalue *simple_mapping_string_lookup(struct mapping *m,
+					    char *p);
 void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
 			   struct svalue *key);

@@ -11,22 +11,7 @@ AC_HEADER_DIRENT
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 
-AC_HAVE_FUNCS(getwd perror fork1 readdir_r statvfs statfs ustat fork lstat)
-
-AC_MSG_CHECKING(if we can declare environ)
-AC_CACHE_VAL(pike_cv_declare_environ,[
-AC_TRY_COMPILE([
-#include <stdlib.h>
-],[
-  extern char **environ;
-  exit(0);
-],pike_cv_declare_environ=yes,pike_cv_declare_environ=no)
-])
-
-AC_MSG_RESULT($pike_cv_declare_environ)
-if test "x$pike_cv_declare_environ" = xyes ; then
-  AC_DEFINE(DECLARE_ENVIRON)
-fi
+AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lstat)
 
 AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
 AC_CACHE_VAL(pike_cv_func_mkdir_args,[

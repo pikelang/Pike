@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.29 1998/01/02 01:05:48 hubbe Exp $");
+RCSID("$Id: main.c,v 1.30 1998/01/08 17:20:07 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -68,6 +68,9 @@ void main(int argc, char **argv)
   int e, num;
   char *p;
   struct array *a;
+#ifdef DECLARE_ENVIRON
+  extern char **environ;
+#endif
 
   ARGV=argv;
 

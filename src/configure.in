@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.146 1998/01/02 08:18:42 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.147 1998/01/08 17:20:05 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -927,6 +927,8 @@ AC_CHECK_FUNCS( \
  strdup \
  kill \
  alarm \
+ fork \
+ fork1 \
 )
 
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
@@ -1313,6 +1315,22 @@ int main()
 
 #############################################################################
 
+AC_MSG_CHECKING(if we can declare environ)
+AC_CACHE_VAL(pike_cv_declare_environ,[
+AC_TRY_COMPILE([
+#include <stdlib.h>
+],[
+  extern char **environ;
+  exit(0);
+],pike_cv_declare_environ=yes,pike_cv_declare_environ=no,pike_cv_declare_environ=yes)
+])
+
+AC_MSG_RESULT($pike_cv_declare_environ)
+if test "x$pike_cv_declare_environ" = xyes ; then
+  AC_DEFINE(DECLARE_ENVIRON)
+fi
+
+#############################################################################
 
 AC_MSG_CHECKING(how to extract an unsigned char)
 AC_CACHE_VAL(pike_cv_method_extract_uchar,
