@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.21 1997/01/30 03:51:33 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.22 1997/02/07 01:04:01 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -366,6 +366,19 @@ program_ref: string_constant
   {
     push_string(make_shared_string(""));
     resolv_constant($1);
+    if(sp[-1].type == T_OBJECT)
+    {
+      struct program *p=sp[-1].u.object->prog;
+      if(!p)
+      {
+	pop_stack();
+	push_int(0);
+      }else{
+	p->refs++;
+	pop_stack();
+	push_program(p);
+      }
+    }
     if(sp[-1].type != T_PROGRAM)
     {
       yyerror("Illegal program identifier");
@@ -1159,7 +1172,7 @@ low_idents: F_IDENTIFIER
       pop_stack();
     }else{
       $$=0;
-      if( get_master() )
+      if( get_master() && !num_parse_error)
       {
 	reference_shared_string($1);
 	push_string($1);
