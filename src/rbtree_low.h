@@ -3,7 +3,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree_low.h,v 1.2 2002/08/15 14:49:25 marcus Exp $
+ * $Id: rbtree_low.h,v 1.3 2002/08/28 13:42:52 grubba Exp $
  */
 
 #ifndef RBTREE_LOW_H
@@ -53,7 +53,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
   struct rbstack_slice PIKE_CONCAT3 (_, rbstack, _top_) = {		\
     DO_IF_RB_STATS (0 COMMA 0 COMMA)					\
     NULL,								\
-    {}									\
+    {NULL,}								\
   };									\
   struct rbstack_ptr rbstack = {					\
     (PIKE_CONCAT3 (_, rbstack, _top_).up = NULL,			\
