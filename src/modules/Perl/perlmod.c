@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.15 2000/03/27 00:17:06 grubba Exp $ */
+/* $Id: perlmod.c,v 1.16 2000/05/16 12:38:54 leif Exp $ */
 
 #include "builtin_functions.h"
 #include "global.h"
@@ -11,19 +11,44 @@
 #include "mapping.h"
 #include "perl_machine.h"
 
-  /* this is just for debugging */
-#define _sv_2mortal(x) (x)
-
 #ifdef HAVE_PERL
+
+/* #define PERL_560 1 */
 
 #include <EXTERN.h>
 #include <perl.h>
 
+#ifdef USE_THREADS
+/* #error Threaded Perl not supported. */
+#endif
+
+#define MY_XS 1
+#undef MY_XS
+
+/* #define PIKE_PERLDEBUG */
+
+#ifdef MY_XS
+EXTERN_C void boot_DynaLoader();
+
+static void xs_init()
+{ char *file = __FILE__;
+  dXSUB_SYS;
+#ifdef PIKE_PERLDEBUG
+  fprintf(stderr, "[my xs_init]\n");
+#endif
+  newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+}
+#endif
+
+
 /* Do not redefine my malloc macro you stupid Perl! */
 #include "dmalloc.h"
 
+  /* this is just for debugging */
+#define _sv_2mortal(x) (sv_2mortal(x))
+
 static int num_perl_interpreters=0;
-DEFINE_MUTEX(perl_running);
+DEFINE_MUTEX(perlrunning);
 
 #ifdef MULTIPLICITY
 #endif
@@ -36,11 +61,14 @@ struct perlmod_storage
   struct array *argv_strings;
   int constructed, parsed;
   int array_size_limit;
-  PerlInterpreter *my_perl;
+  PerlInterpreter *perl;
 };
 
-#define THIS ((struct perlmod_storage *)(fp->current_storage))
-#define PERL THIS->my_perl
+#define _THIS ((struct perlmod_storage *)(Pike_fp->current_storage))
+
+#ifdef PERL_560
+#define my_perl PERL
+#endif
 
 /* since both Perl and Pike likes to use "sp" as a stack pointer,
  * let's define some Pike macros as functions...
@@ -50,14 +78,20 @@ static void _push_float(float f) { push_float(f);}
 static void _push_string(struct pike_string *s) { push_string(s);}
 static void _push_array(struct array *a) { push_array(a);}
 static void _pop_n_elems(int n) { pop_n_elems(n);}
-static struct svalue *_pikesp() { return Pike_sp;}
-static void _pike_pop() { --sp;}
+static void _pike_pop() { --Pike_sp;}
 #undef sp
+
+#define BLOCKING 1
 
 #ifndef BLOCKING
 
 #define MT_PERMIT THREADS_ALLOW(); mt_lock(&perl_running);
 #define MT_FORBID mt_unlock(&perl_running); THREADS_DISALLOW();
+
+#else
+
+#define MT_PERMIT ;
+#define MT_FORBID ;
 
 #endif
 
@@ -116,86 +150,157 @@ static void _pikepush_sv(SV *sv)
      _push_int(0);
 }
 
+static int _perl_parse(struct perlmod_storage *ps,
+                          int argc, char *argv[], char *envp[])
+{ int result;
+#ifndef MY_XS
+  extern void xs_init(void);
+#endif
+#ifdef PIKE_PERLDEBUG
+  fprintf(stderr, "[_perl_parse, argc=%d]\n", argc);
+#endif
+
+  if (!ps)
+         error("Internal error: no Perl storage allocated.\n");
+  if (!ps->perl)
+         error("Internal error: no Perl interpreter allocated.\n");
+  if (!ps->constructed)
+         error("Internal error: Perl interpreter not constructed.\n");
+  if (!envp && !ps->env)
+  { /* Copy environment data, since Perl may wish to modify it. */
+
+    INT32 d;
+    int env_block_size=0;
+    char *env_blockp;
+
+#ifdef DECLARE_ENVIRON
+    extern char **environ;
+#endif
+
+    for(d=0;environ[d];d++)
+      env_block_size+=strlen(environ[d])+1;
+
+    ps->env_block=xalloc(env_block_size);
+    ps->env=(char **)xalloc(sizeof(char *)*(d+1));
+
+    env_blockp = ps->env_block;
+
+    for(d=0;environ[d];d++)
+    {
+      int l=strlen(environ[d]);
+      ps->env[d]=env_blockp;
+      MEMCPY(env_blockp,environ[d],l+1);
+      env_blockp+=l+1;
+    }
+
+#ifdef PIKE_DEBUG
+    if(env_blockp - ps->env_block > env_block_size)
+      fatal("Arglebargle glop-glyf.\n");
+#endif
+
+    ps->env[d]=0;
+  }
+  MT_PERMIT;
+  result = perl_parse(ps->perl, xs_init, argc, argv, envp ? envp : ps->env);
+  MT_FORBID;
+  ps->parsed += 1;
+  return result;
+}
+
+static char *dummyargv[] = { "perl", "-e", "1", 0 };
 
 static void init_perl_glue(struct object *o)
-{ PerlInterpreter *p;
+{ struct perlmod_storage *ps = _THIS;
 
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[init_perl_glue]\n");
 #endif
 
-  THIS->argv             = 0;
-  THIS->env              = 0;
-  THIS->env_block        = 0;
-  THIS->argv_strings     = 0;
-  THIS->constructed      = 0;
-  THIS->parsed           = 0;
-  THIS->array_size_limit = 500;
+  ps->argv             = 0;
+  ps->env              = 0;
+  ps->env_block        = 0;
+  ps->argv_strings     = 0;
+  ps->constructed      = 0;
+  ps->parsed           = 0;
+  ps->array_size_limit = 500;
 
 #ifndef MULTIPLICITY
   if(num_perl_interpreters>0)
   {
-    PERL=0;
+    ps->perl=0;
+#ifdef PIKE_PERLDEBUG
     fprintf(stderr,"num_perl_interpreters=%d\n",num_perl_interpreters);
+#endif
     /*    error("Perl: There can be only one!\n"); */
     return;
   }
 #endif
   MT_PERMIT;
-  p=perl_alloc();
+  ps->perl = perl_alloc();
+  PL_perl_destruct_level=2;
   MT_FORBID;
-  PERL=p;
-  if(p) num_perl_interpreters++;
+  if(ps->perl) num_perl_interpreters++;
+
+/* #define SPECIAL_PERL_DEBUG */
+#ifdef SPECIAL_PERL_DEBUG
+  if (!ps->constructed)
+  { fprintf(stderr, "[SpecialDebug: early perl_construct]\n");
+    perl_construct(ps->perl);
+    ps->constructed = 1;
+  }
+  if (!ps->parsed)
+  { fprintf(stderr, "[SpecialDebug: early perl_parse]\n");
+    perl_parse(ps->perl, xs_init, 3, dummyargv, NULL);
+    ps->parsed = 1;
+  }
+#endif
 }
 
 static void _free_arg_and_env()
-{ if(THIS->argv)
-  {
-    free((char *)THIS->argv);
-    THIS->argv=0;
+{ struct perlmod_storage *ps = _THIS;
+
+  if (ps->argv)
+  { free((char *)ps->argv);
+    ps->argv=0;
   }
-  if(THIS->argv_strings)
-  {
-    free_array(THIS->argv_strings);
-    THIS->argv_strings=0;
+
+  if (ps->argv_strings)
+  { free_array(ps->argv_strings);
+    ps->argv_strings=0;
   }
-  if(THIS->env)
-  {
-    free((char *)THIS->env);
-    THIS->env=0;
+
+  if (ps->env)
+  { free((char *)ps->env);
+    ps->env=0;
   }
-  if(THIS->env_block)
-  {
-    free((char *)THIS->env_block);
-    THIS->env_block=0;
+
+  if (ps->env_block)
+  { free((char *)ps->env_block);
+    ps->env_block=0;
   }
 }
 
 static void exit_perl_glue(struct object *o)
-{
+{ struct perlmod_storage *ps = _THIS;
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[exit_perl_glue]\n");
 #endif
 
-  if(PERL)
+  if (ps->perl)
   {
-    struct perlmod_storage *storage=THIS;
-
-    MT_PERMIT;
-    if(storage->constructed)
+    if (ps->constructed)
     {
-      if (!storage->parsed)
-      { static char *dummyargv[] = { "perl", "-e", "1", 0 };
-        extern void xs_init(void);
-        /* this should be unnecessary, but for some reason, some
+      if (!ps->parsed)
+      { /* This should be unnecessary, but for some reason, some
          * perl5.004 installations dump core if we don't do this.
          */
-        perl_parse(storage->my_perl, xs_init, 3, dummyargv, NULL);
+        _perl_parse(ps, 3, dummyargv, NULL);
       }
-      perl_destruct(storage->my_perl);
-      storage->constructed=0;
+      perl_destruct(ps->perl);
+      ps->constructed = 0;
     }
-    perl_free(storage->my_perl);
+    MT_PERMIT;
+    perl_free(ps->perl);
     MT_FORBID;
     num_perl_interpreters--;
   }
@@ -203,20 +308,26 @@ static void exit_perl_glue(struct object *o)
 }
 
 static void perlmod_create(INT32 args)
-{ PerlInterpreter *p=PERL;
-  struct perlmod_storage *storage=THIS;
+{ struct perlmod_storage *ps = _THIS;
 
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[perlmod_create, %d args]\n", args);
+#ifdef MY_XS
+  fprintf(stderr, "[has MY_XS]\n");
+#endif
 #endif
     
   if (args != 0) error("Perl->create takes no arguments.");
-  if(!p) error("No perl interpreter available.\n");
+  if (!ps || !ps->perl) error("No perl interpreter available.\n");
 
   MT_PERMIT;
-  if(!storage->constructed)
-  { perl_construct(p);
-    storage->constructed++;
+  if(!ps->constructed)
+  { perl_construct(ps->perl);
+    ps->constructed++;
+  }
+  if (!ps->parsed)
+  {
+    _perl_parse(ps, 3, dummyargv, NULL);
   }
   MT_FORBID;
   pop_n_elems(args);
@@ -225,18 +336,19 @@ static void perlmod_create(INT32 args)
 
 static void perlmod_parse(INT32 args)
 {
-  extern void xs_init(void);
   int e;
   struct mapping *env_mapping=0;
-  PerlInterpreter *p=PERL;
-  struct perlmod_storage *storage=THIS;
+  struct perlmod_storage *ps = _THIS;
+#ifndef MY_XS
+  extern void xs_init(void);
+#endif
 
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[perlmod_parse, %d args]\n", args);
 #endif
     
   check_all_args("Perl->parse",args,BIT_ARRAY, BIT_MAPPING|BIT_VOID, 0);
-  if(!p) error("No perl interpreter available.\n");
+  if(!ps->perl) error("No perl interpreter available.\n");
 
   switch(args)
   {
@@ -250,25 +362,25 @@ static void perlmod_parse(INT32 args)
 	error("Bad argument 2 to Perl->create().\n");
       
     case 1:
-      if (THIS->argv_strings || THIS->env_block)
+      if (_THIS->argv_strings || _THIS->env_block)
       { /* if we have already setup args/env, free the old values now */
         _free_arg_and_env();
       }
 
-      THIS->argv_strings = Pike_sp[-args].u.array;
-      add_ref(THIS->argv_strings);
-      array_fix_type_field(THIS->argv_strings);
+      ps->argv_strings = Pike_sp[-args].u.array;
+      add_ref(ps->argv_strings);
+      array_fix_type_field(ps->argv_strings);
 
-      if(THIS->argv_strings->size<2)
+      if(ps->argv_strings->size<2)
 	   error("Perl: Too few elements in argv array.\n");
 
-      if(THIS->argv_strings->type_field & ~BIT_STRING)
+      if(ps->argv_strings->type_field & ~BIT_STRING)
 	   error("Bad argument 1 to Perl->parse().\n");
   }
 
-  THIS->argv=(char **)xalloc(sizeof(char *)*THIS->argv_strings->size);
-  for(e=0;e<THIS->argv_strings->size;e++)
-    THIS->argv[e]=ITEM(THIS->argv_strings)[e].u.string->str;
+  ps->argv=(char **)xalloc(sizeof(char *)*ps->argv_strings->size);
+  for(e=0;e<ps->argv_strings->size;e++)
+    ps->argv[e]=ITEM(ps->argv_strings)[e].u.string->str;
 
   if(env_mapping)
   {
@@ -279,14 +391,14 @@ static void perlmod_parse(INT32 args)
     MAPPING_LOOP(env_mapping)
       env_block_size+=k->ind.u.string->len+k->val.u.string->len+2;
 
-    THIS->env_block=xalloc(env_block_size);
-    THIS->env=(char **)xalloc(sizeof(char *)*(m_sizeof(env_mapping)+1));
+    ps->env_block=xalloc(env_block_size);
+    ps->env=(char **)xalloc(sizeof(char *)*(m_sizeof(env_mapping)+1));
 
-    env_blockp=THIS->env_block;
+    env_blockp = ps->env_block;
     d=0;
     MAPPING_LOOP(env_mapping)
       {
-	THIS->env[d++]=env_blockp;
+	ps->env[d++]=env_blockp;
 	MEMCPY(env_blockp,k->ind.u.string->str,k->ind.u.string->len);
 	env_blockp+=k->ind.u.string->len;
 
@@ -297,55 +409,12 @@ static void perlmod_parse(INT32 args)
 
 	*(env_blockp++)=0;
       }
-    THIS->env[d]=0;
+    ps->env[d]=0;
   }
-  else
-  {
-    /* Perl likes to be able to write in the environment block,
-     * give it it's own copy to protect ourselves..  /Hubbe
-     */
-    INT32 d;
-    int env_block_size=0;
-    char *env_blockp;
+  else ps->env = 0;
 
-#ifdef DECLARE_ENVIRON
-    extern char **environ;
-#endif
+  e = _perl_parse(ps, ps->argv_strings->size, ps->argv, ps->env);
 
-    for(d=0;environ[d];d++)
-      env_block_size+=strlen(environ[d])+1;
-
-    THIS->env_block=xalloc(env_block_size);
-    THIS->env=(char **)xalloc(sizeof(char *)*(d+1));
-
-    env_blockp=THIS->env_block;
-
-    for(d=0;environ[d];d++)
-    {
-      int l=strlen(environ[d]);
-      THIS->env[d]=env_blockp;
-      MEMCPY(env_blockp,environ[d],l+1);
-      env_blockp+=l+1;
-    }
-
-#ifdef PIKE_DEBUG
-    if(env_blockp - THIS->env_block > env_block_size)
-      fatal("Arglebargle glop-glyf.\n");
-#endif
-
-    THIS->env[d]=0;
-  }
-  
-
-  THIS->parsed++;
-
-  MT_PERMIT;
-  e=perl_parse(p,
-	       xs_init,
-	       storage->argv_strings->size,
-	       storage->argv,
-	       storage->env);
-  MT_FORBID;
   pop_n_elems(args);
   push_int(e);
 }
@@ -353,62 +422,74 @@ static void perlmod_parse(INT32 args)
 static void perlmod_run(INT32 args)
 {
   INT32 i;
-  PerlInterpreter *p=PERL;
-  if(!p) error("No perl interpreter available.\n");
+  struct perlmod_storage *ps = _THIS;
+
+  if(!ps->perl) error("No perl interpreter available.\n");
   pop_n_elems(args);
 
-  if(!THIS->constructed || !THIS->parsed)
+  if(!_THIS->constructed || !_THIS->parsed)
     error("No Perl program loaded (run() called before parse()).\n");
 
   MT_PERMIT;
-  i=perl_run(p);
+  i=perl_run(ps->perl);
   MT_FORBID;
 
   push_int(i);
 }
 
 static void _perlmod_eval(INT32 args, int perlflags)
-{ PerlInterpreter *p = PERL;
-  struct pike_string *arg1;
-  struct perlmod_storage *storage = THIS;
+{ struct pike_string *firstarg;
+  struct perlmod_storage *ps = _THIS;
   int i, n;
-#define sp _perlsp
+// #define sp _perlsp
   dSP;
 
-  if (!p) error("Perl interpreter not available.\n");
+  if (!ps->perl) error("Perl interpreter not available.\n");
 
   check_all_args("Perl->eval", args, BIT_STRING, 0);
-  arg1 = _pikesp()[-args].u.string;
+  firstarg = Pike_sp[-args].u.string;
 
   ENTER;
   SAVETMPS;
   PUSHMARK(sp);
 
   PUTBACK;
-#undef sp
-  MT_PERMIT;
+// #undef sp
 
-  if (!storage->parsed)
-  { static char *dummyargv[] = { "perl", "-e", "1", 0 };
+  if (!ps->parsed)
+  {
+#if 0
+    _perl_parse(ps, 3, dummyargv, NULL);
+#else
+#ifndef MY_XS
     extern void xs_init(void);
-    perl_parse(p, xs_init, 3, dummyargv, NULL);
-    storage->parsed++;
+#endif
+    perl_parse(ps->perl, xs_init, 3, dummyargv, NULL);
+#endif
   }
 
-  n = perl_eval_sv(newSVpv(arg1->str, arg1->len), perlflags | G_EVAL);
+  MT_PERMIT;
+
+/* perl5.6.0 testing: newSVpv((const char *) "ABC", 3); */
+
+  n = perl_eval_sv(newSVpv((firstarg->str),
+                           (firstarg->len)),
+                    perlflags | G_EVAL);
 
   MT_FORBID;
 
   _pop_n_elems(args);
 
-#define sp _perlsp
+// #define sp _perlsp
   SPAGAIN;
 
-  if (SvTRUE(GvSV(errgv)))
+  if (SvTRUE(GvSV(PL_errgv)))
   { char errtmp[256];
     memset(errtmp, 0, sizeof(errtmp));
     strcpy(errtmp, "Error from Perl: ");
-    strncpy(errtmp+strlen(errtmp), SvPV(GvSV(errgv), na), 254-strlen(errtmp));
+    strncpy(errtmp+strlen(errtmp),
+            SvPV(GvSV(PL_errgv), PL_na),
+            254-strlen(errtmp));
     POPs;
     PUTBACK; FREETMPS; LEAVE;
     error(errtmp);
@@ -427,7 +508,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
   else _push_zerotype();
 
   PUTBACK; FREETMPS; LEAVE;
-#undef sp
+// #undef sp
 }
 
 static void perlmod_eval(INT32 args)
@@ -437,22 +518,22 @@ static void perlmod_eval_list(INT32 args)
   { _perlmod_eval(args, G_ARRAY); }
 
 static void _perlmod_call(INT32 args, int perlflags)
-{ PerlInterpreter *p = PERL;
+{ struct perlmod_storage *ps = _THIS;
   int i, n; char *pv;
-#define sp _perlsp
+// #define sp _perlsp
   dSP;
 
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[perlmod_call: args=%d]\n", args);
 #endif
 
-  if (!p) error("No perl interpreter available.\n");
+  if (!ps->perl) error("No perl interpreter available.\n");
 
   if (args <   1) error("Too few arguments.\n");
   if (args > 201) error("Too many arguments.\n");
 
-  if (_pikesp()[-args].type != T_STRING ||
-      _pikesp()[-args].u.string->size_shift)
+  if (Pike_sp[-args].type != T_STRING ||
+      Pike_sp[-args].u.string->size_shift)
        error("bad Perl function name (must be an 8-bit string)");
 
   ENTER;
@@ -460,7 +541,7 @@ static void _perlmod_call(INT32 args, int perlflags)
   PUSHMARK(sp);
 
   for(n = 1; n < args; ++n)
-  { struct svalue *s = &(_pikesp()[n-args]);
+  { struct svalue *s = &(Pike_sp[n-args]);
     char *msg;
     switch (s->type)
     { case T_INT:
@@ -495,23 +576,25 @@ static void _perlmod_call(INT32 args, int perlflags)
   PUTBACK;
 
   pv = Pike_sp[-args].u.string->str;  
-#undef sp
+// #undef sp
   MT_PERMIT;
 
   n = perl_call_pv(pv, perlflags);
 
   MT_FORBID;
-#define sp _perlsp
+// #define sp _perlsp
 
   _pop_n_elems(args);
 
   SPAGAIN;
 
-  if (SvTRUE(GvSV(errgv)))
+  if (SvTRUE(GvSV(PL_errgv)))
   { char errtmp[256];
     memset(errtmp, 0, sizeof(errtmp));
     strcpy(errtmp, "Error from Perl: ");
-    strncpy(errtmp+strlen(errtmp), SvPV(GvSV(errgv), na), 254-strlen(errtmp));
+    strncpy(errtmp+strlen(errtmp),
+            SvPV(GvSV(PL_errgv), PL_na),
+            254-strlen(errtmp));
     POPs;
     PUTBACK; FREETMPS; LEAVE;
     error(errtmp);
@@ -525,7 +608,7 @@ static void _perlmod_call(INT32 args, int perlflags)
   if (!(perlflags & G_ARRAY) && n > 1)
        while (n > 1) --n, POPs;
 
-  if (n > THIS->array_size_limit)
+  if (n > ps->array_size_limit)
   { PUTBACK; FREETMPS; LEAVE;
     error("Perl function returned too many values.\n");
   }
@@ -542,7 +625,7 @@ static void _perlmod_call(INT32 args, int perlflags)
      _push_zerotype();
 
   PUTBACK; FREETMPS; LEAVE;
-#undef sp
+// #undef sp
 }
 
 static void perlmod_call_list(INT32 args)
@@ -559,7 +642,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
   wanted_args = type == 'S' ? 1 : 2;
   if (op == 'W') ++wanted_args;
 
-  if (!(PERL)) error("No Perl interpreter available.\n");
+  if (!(_THIS->perl)) error("No Perl interpreter available.\n");
 
   if (args != wanted_args) error("Wrong number of arguments.\n");
   if (Pike_sp[-args].type != T_STRING ||
@@ -649,7 +732,7 @@ static void perlmod_get_whole_array(INT32 args)
   if (!av) error("Interal error: perl_get_av() returned NULL.\n");
   n = av_len(av) + 1;
 
-  if (n > THIS->array_size_limit)
+  if (n > _THIS->array_size_limit)
      error("The array is larger than array_size_limit.\n");
 
   arr = allocate_array(n);
@@ -674,7 +757,7 @@ static void perlmod_get_hash_keys(INT32 args)
   /* count number of elements in hash */
   for(n = 0, hv_iterinit(hv); (he = hv_iternext(hv)); ++n);
 
-  if (n > THIS->array_size_limit)
+  if (n > _THIS->array_size_limit)
      error("The array is larger than array_size_limit.\n");
 
   arr = allocate_array(n);
@@ -693,13 +776,13 @@ static void perlmod_array_size_limit(INT32 args)
     case 1:
       if (Pike_sp[-args].type != T_INT || Pike_sp[-args].u.integer < 1)
            error("Argument must be a integer in range 1 to 2147483647.");
-      THIS->array_size_limit = Pike_sp[-args].u.integer;
+      _THIS->array_size_limit = Pike_sp[-args].u.integer;
       break;
     default:
       error("Wrong number of arguments.\n");
   }
   pop_n_elems(args);
-  _push_int(THIS->array_size_limit);
+  _push_int(_THIS->array_size_limit);
 }
 
 void pike_module_init(void)
@@ -707,8 +790,6 @@ void pike_module_init(void)
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[perl: module init]\n");
 #endif
-
-  perl_destruct_level=1;
 
   start_new_program();
   ADD_STORAGE(struct perlmod_storage);
@@ -793,6 +874,11 @@ void pike_module_exit(void)
 }
 
 #else /* HAVE_PERL */
+
+#ifdef ERROR_IF_NO_PERL
+#error "No Perl!"
+#endif
+
 void pike_module_init(void) {}
 void pike_module_exit(void) {}
 #endif
