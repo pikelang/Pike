@@ -14,6 +14,10 @@ static dynamic_buffer buff;
 char *low_make_buf_space(INT32 space,dynamic_buffer *buf)
 {
   char *ret;
+#ifdef DEBUG
+  if(!buf->s.str) fatal("ARRRRGH! Deadly Trap!\n");
+#endif
+
   if(buf->s.len+space>=buf->bufsize)
   {
     if(!buf->bufsize) buf->bufsize=1;
