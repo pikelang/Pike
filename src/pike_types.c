@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.170 2001/03/28 00:48:48 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.171 2001/03/28 14:56:02 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -195,7 +195,7 @@ static void internal_parse_type(char **s);
  * FLOAT	-		-
  * STRING	-		-
  * TYPE		-		-
- * PROGRAM	-		-
+ * PROGRAM	type		-
  * MIXED	-		-
  * VOID		-		-
  * ZERO		-		-
@@ -310,6 +310,8 @@ static inline struct pike_type *mk_type(unsigned INT32 type,
       case T_ARRAY:
       case T_MULTISET:
       case T_NOT:
+      case T_TYPE:
+      case T_PROGRAM:
 	/* Free car */
 	free_type(car);
 	break;
@@ -480,6 +482,7 @@ void push_type(unsigned INT16 type)
   case T_MULTISET:
   case T_NOT:
   case T_TYPE:
+  case T_PROGRAM:
     /* Make a new type of the top type, and put it in car. */
     *Pike_compiler->type_stackp = mk_type(type,
 					  *Pike_compiler->type_stackp, NULL,
@@ -498,7 +501,6 @@ void push_type(unsigned INT16 type)
 
   case T_FLOAT:
   case T_STRING:
-  case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
   case T_ZERO:
@@ -549,6 +551,7 @@ void pop_type_stack(void)
   case T_MULTISET:
   case T_NOT:
   case T_TYPE:
+  case T_PROGRAM:
     /* car */
     push_finished_type(top->car);
     break;
@@ -561,7 +564,6 @@ void pop_type_stack(void)
   case T_OBJECT:
   case T_FLOAT:
   case T_STRING:
-  case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
   case T_ZERO:
@@ -841,7 +843,11 @@ static void internal_parse_typeA(char **_s)
 
 
     case 'p':
-      if(!strcmp(buf,"program")) { push_type(T_PROGRAM); break; }
+      if(!strcmp(buf,"program")) {
+	push_object_type(0, 0);
+	push_type(T_PROGRAM);
+	break;
+      }
       goto bad_type;
 
 
@@ -1171,7 +1177,11 @@ void simple_describe_type(struct pike_type *s)
 	simple_describe_type(s->car);
 	fprintf(stderr, ")");
 	break;
-      case T_PROGRAM: fprintf(stderr, "program"); break;
+      case T_PROGRAM:
+	fprintf(stderr, "program(");
+	simple_describe_type(s->car);
+	fprintf(stderr, ")");
+	break;
       case T_OBJECT:
 	fprintf(stderr, "object(%s %ld)",
 	       s->car?"is":"implements",
@@ -1308,7 +1318,11 @@ static void low_describe_type(struct pike_type *t)
       break;
     }
     case T_FLOAT: my_strcat("float"); break;
-    case T_PROGRAM: my_strcat("program"); break;
+    case T_PROGRAM:
+      my_strcat("program(");
+      my_describe_type(t->car);
+      my_strcat(")");
+      break;
     case T_OBJECT:
       if (t->cdr)
       {
@@ -1711,7 +1725,6 @@ static int lower_and_pike_types(struct pike_type *t1, struct pike_type *t2)
   case T_ZERO:
   case T_VOID:
     break;
-  case T_PROGRAM:
   case T_STRING:
   case T_FLOAT:
   case T_INT:
@@ -1742,7 +1755,6 @@ static int low_and_push_complex_pike_type(struct pike_type *type)
   switch(type->type) {
   case T_VOID:
   case T_ZERO:
-  case T_PROGRAM:
   case T_STRING:
   case T_FLOAT:
   case T_INT:
@@ -1819,8 +1831,7 @@ static void low_and_pike_types(struct pike_type *t1,
   }
   else if((t1->type == t2->type) &&
 	  ((t1->type == T_STRING) ||
-	   (t1->type == T_FLOAT) ||
-	   (t1->type == T_PROGRAM)))
+	   (t1->type == T_FLOAT)))
   {
     push_finished_type(t1);
   }
@@ -2203,6 +2214,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case TWOT(T_FUNCTION, T_PROGRAM):
   case TWOT(T_PROGRAM, T_MANY):
   case TWOT(T_MANY, T_PROGRAM):
+    /* FIXME: Should look at the sub-type of the program
+     * to determine the prototype to use.
+     */
     return a;
 
   case TWOT(T_OBJECT, T_FUNCTION):
@@ -2381,6 +2395,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   }
     
 
+  case T_PROGRAM:
   case T_TYPE:
   case T_MULTISET:
   case T_ARRAY:
@@ -2389,7 +2404,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case T_FLOAT:
   case T_STRING:
-  case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
   case T_MIXED:
@@ -2737,6 +2751,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case TWOT(T_PROGRAM, T_MANY):
   case TWOT(T_MANY, T_PROGRAM):
     /* FIXME: Not really... Should check the return value. */
+    /* FIXME: Should also look at the subtype of the program. */
     return 1;
 
   case TWOT(T_OBJECT, T_FUNCTION):
@@ -2917,6 +2932,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     
 
   case T_TYPE:
+  case T_PROGRAM:
   case T_MULTISET:
   case T_ARRAY:
     a = a->car;
@@ -2926,7 +2942,6 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case T_FLOAT:
   case T_STRING:
-  case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
   case T_MIXED:
@@ -3047,7 +3062,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
       return 1;
 
     case T_PROGRAM:
-      push_object_type(0, 0);
+      push_finished_type(a->car);
       return 1;
 
     default:
@@ -3637,6 +3652,52 @@ INT32 get_max_args(struct pike_type *type)
   return tmp;
 }
 
+/* NOTE: type loses a reference. */
+struct pike_type *new_check_call(node *fun, int *argno,
+				 struct pike_type *type, node *args)
+{
+  struct pike_type *tmp_type = NULL;
+
+  while (args && (args->token == F_ARG_LIST)) {
+    type = new_check_call(fun, argno, type, CAR(args));
+    args = CDR(args);
+  }
+  if (!args) {
+    return type;
+  }
+
+  switch(type->type) {
+  case T_NOT:
+    break;
+
+  case T_FUNCTION:
+    if (!pike_types_le(args->type, type->car)) {
+      if (!match_types(args->type, type->car)) {
+	/* Bad arg */
+      } else {
+	/* Not strict arg */
+      }
+    }
+    copy_type(tmp_type, type->cdr);
+    free_type(type);
+    type = tmp_type;
+    (*argno)++;
+    break;
+
+  case T_MANY:
+    if (!pike_types_le(args->type, type->car)) {
+      if (!match_types(args->type, type->car)) {
+	/* Bad arg */
+      } else {
+	/* Not strict arg */
+      }
+    }
+    (*argno)++;
+    break;
+  }
+
+  return type;
+}
 
 struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
 {
@@ -3805,6 +3866,7 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
 
   case T_PROGRAM:
   {
+    /* FIXME: An alternative would be to push program(object(1,p->id)). */
     struct pike_type *a;
     struct pike_string *tmp;
     int id;
@@ -4029,6 +4091,7 @@ static struct pike_type *low_make_pike_type(unsigned char *type_string,
   case T_MULTISET:
   case T_TYPE:
   case T_NOT:
+  case T_PROGRAM:
     /* Single type */
     return mk_type(type, low_make_pike_type(type_string+1, cont), NULL,
 		   PT_COPY_CAR);
@@ -4048,7 +4111,6 @@ static struct pike_type *low_make_pike_type(unsigned char *type_string,
 
   case T_FLOAT:
   case T_STRING:
-  case T_PROGRAM:
   case T_MIXED:
   case T_VOID:
   case T_ZERO:
@@ -4127,6 +4189,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
       goto again;
 
     case T_PROGRAM:
+    case T_TYPE:
     case T_INT:
     case T_FLOAT:
     case T_STRING:
@@ -4148,6 +4211,7 @@ static void low_type_to_string(struct pike_type *t)
   case T_MULTISET:
   case T_TYPE:
   case T_NOT:
+  case T_PROGRAM:
     my_putchar(t->type);
     /* FALL_THROUGH */
   case PIKE_T_NAME:
@@ -4174,7 +4238,6 @@ static void low_type_to_string(struct pike_type *t)
   case '7':
   case '8':
   case '9':
-  case T_PROGRAM:
   case T_STRING:
   case T_FLOAT:
   case T_ZERO:
@@ -4326,6 +4389,7 @@ one_more_type:
     case T_MULTISET:
     case T_TYPE:
     case T_NOT:
+    case T_PROGRAM:
       goto one_more_type;
       
     case '0':
@@ -4340,7 +4404,6 @@ one_more_type:
     case '9':
     case T_FLOAT:
     case T_STRING:
-    case T_PROGRAM:
     case T_MIXED:
     case T_VOID:
     case T_ZERO:
@@ -4680,7 +4743,11 @@ static void internal_parse_typeA(char **_s)
       goto bad_type;
 
     case 'p':
-      if(!strcmp(buf,"program")) { push_type(T_PROGRAM); break; }
+      if(!strcmp(buf,"program")) {
+	push_object_type(0, 0);
+	push_type(T_PROGRAM);
+	break;
+      }
       goto bad_type;
 
 
@@ -5044,7 +5111,11 @@ static char *low_describe_type(char *t)
       break;
     }
     case T_FLOAT: my_strcat("float"); break;
-    case T_PROGRAM: my_strcat("program"); break;
+    case T_PROGRAM:
+      my_strcat("program(");
+      t = low_describe_type(t);
+      my_strcat(")");
+      break;
     case T_OBJECT:
       if(extract_type_int(t+1))
       {
@@ -5468,7 +5539,6 @@ static int lower_and_pike_types(char *t1, char *t2)
   case T_ZERO:
   case T_VOID:
     break;
-  case T_PROGRAM:
   case T_STRING:
   case T_FLOAT:
   case T_INT:
@@ -5500,7 +5570,6 @@ static int low_and_push_complex_pike_type(char *type)
   switch(EXTRACT_UCHAR(type)) {
   case T_VOID:
   case T_ZERO:
-  case T_PROGRAM:
   case T_STRING:
   case T_FLOAT:
   case T_INT:
@@ -5579,8 +5648,7 @@ static void low_and_pike_types(char *t1, char *t2)
     push_type(T_SCOPE);
   }
   else if((EXTRACT_UCHAR(t1)==T_STRING && EXTRACT_UCHAR(t2)==T_STRING) ||
-	  (EXTRACT_UCHAR(t1)==T_FLOAT && EXTRACT_UCHAR(t2)==T_FLOAT) ||
-	  (EXTRACT_UCHAR(t1)==T_PROGRAM && EXTRACT_UCHAR(t2)==T_PROGRAM))
+	  (EXTRACT_UCHAR(t1)==T_FLOAT && EXTRACT_UCHAR(t2)==T_FLOAT))
   {
     push_unfinished_type(t1);
   }
@@ -5962,6 +6030,7 @@ static char *low_match_types2(char *a,char *b, int flags)
   {
   case TWOT(T_PROGRAM, T_FUNCTION):
   case TWOT(T_FUNCTION, T_PROGRAM):
+    /* FIXME: Should look at the program subtype. */
     return a;
 
   case TWOT(T_OBJECT, T_FUNCTION):
@@ -6126,11 +6195,11 @@ static char *low_match_types2(char *a,char *b, int flags)
   case T_TYPE:
   case T_MULTISET:
   case T_ARRAY:
+  case T_PROGRAM:
     if(!low_match_types(++a,++b,flags & ~(A_EXACT|B_EXACT))) return 0;
 
   case T_FLOAT:
   case T_STRING:
-  case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
   case T_MIXED:
@@ -6464,6 +6533,7 @@ static int low_pike_types_le2(char *a, char *b,
   case TWOT(T_PROGRAM, T_FUNCTION):
   case TWOT(T_FUNCTION, T_PROGRAM):
     /* FIXME: Not really... Should check the return value. */
+    /* FIXME: Should look at the program subtype. */
     return 1;
 
   case TWOT(T_OBJECT, T_FUNCTION):
@@ -6644,11 +6714,11 @@ static int low_pike_types_le2(char *a, char *b,
   case T_TYPE:
   case T_MULTISET:
   case T_ARRAY:
+  case T_PROGRAM:
     if(!low_pike_types_le(++a, ++b, 0, flags)) return 0;
 
   case T_FLOAT:
   case T_STRING:
-  case T_PROGRAM:
   case T_ZERO:
   case T_VOID:
   case T_MIXED:
@@ -6765,9 +6835,7 @@ static int low_get_return_type(char *a,char *b)
       return 1;
 
     case T_PROGRAM:
-      push_type_int(0);
-      push_type(0);
-      push_type(T_OBJECT);
+      push_unfinished_type(a+1);
       return 1;
 
     default:
@@ -7489,6 +7557,7 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
 
   case T_PROGRAM:
   {
+    /* FIXME: An alternative is to push PROGRAM(OBJECT(1, p->id)) */
     struct pike_type *t;
     int id;
 
@@ -7697,6 +7766,7 @@ static int low_pike_type_allow_premature_toss(char *type)
       goto again;
 
     case T_PROGRAM:
+    case T_TYPE:
     case T_INT:
     case T_FLOAT:
     case T_STRING:
@@ -7734,10 +7804,11 @@ void init_types(void)
   MEMSET(pike_type_hash, 0, sizeof(struct pike_type *) * PIKE_TYPE_HASH_SIZE);
   pike_type_hash_size = PIKE_TYPE_HASH_SIZE;
 #endif /* USE_PIKE_TYPE */
+  init_pike_type_blocks();
   string_type_string = CONSTTYPE(tString);
   int_type_string = CONSTTYPE(tInt);
   object_type_string = CONSTTYPE(tObj);
-  program_type_string = CONSTTYPE(tPrg);
+  program_type_string = CONSTTYPE(tPrg(tObj));
   float_type_string = CONSTTYPE(tFloat);
   mixed_type_string = CONSTTYPE(tMix);
   array_type_string = CONSTTYPE(tArray);
