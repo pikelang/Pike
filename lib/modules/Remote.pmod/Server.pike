@@ -19,9 +19,11 @@ class Minicontext
   object object_for(string id, object con)
   {
     object o = id2val[id];
-    if(!o || objectp(o))
-      return o;
-    return o(con);
+    if(functionp(o) || programp(o))
+      o = o(con);
+    if(objectp(o) && functionp(o->close))
+      con->add_close_callback(o->close);
+    return o;
   }
 
   void add(string name, object|program what)
