@@ -182,7 +182,7 @@ array(string) split_headers(string h, int chunklen)
 //! @seealso
 //!   @[ATclient]
 //!
-class client
+class Client
 {
   static Stdio.Stream con;
   static int connected = 0;
@@ -500,9 +500,9 @@ class client
 //! An extension of the @[client] which uses the AT*EOBEX modem command
 //! to enter OBEX mode.  Use together with Sony Ericsson data cables.
 //!
-class ATclient
+class ATClient
 {
-  inherit client;
+  inherit Client;
 
   int(0..1) connect()
   {
