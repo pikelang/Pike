@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.162 2003/06/01 18:35:12 mast Exp $
+|| $Id: encode.c,v 1.163 2003/08/05 14:32:45 grubba Exp $
 */
 
 #include "global.h"
@@ -15,6 +15,8 @@
 #include "mapping.h"
 #include "array.h"
 #include "multiset.h"
+#include "language.h"
+#include "lex.h"
 #include "dynamic_buffer.h"
 #include "pike_error.h"
 #include "operators.h"
@@ -27,7 +29,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.162 2003/06/01 18:35:12 mast Exp $");
+RCSID("$Id: encode.c,v 1.163 2003/08/05 14:32:45 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1684,7 +1686,7 @@ static int my_extract_char(struct decode_data *data)
     DECODE("decode_entry");					\
     if((what & TAG_MASK) != (X))				\
       Pike_error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK); \
-    (Y)=num;							\
+   (Y)=num;							\
   } while(0);
 
 #define getdata2(S,L) do {						\
@@ -1996,6 +1998,11 @@ static void cleanup_new_program_decode (int *orig_compilation_depth)
 {
   end_first_pass(0);
   compilation_depth = *orig_compilation_depth;
+}
+
+static void set_lex_pragmas(INT32 old_pragmas)
+{
+  lex.pragmas = old_pragmas;
 }
 
 static void decode_value2(struct decode_data *data)
@@ -3004,12 +3011,14 @@ static void decode_value2(struct decode_data *data)
 	{
 	  struct program *p;
 	  ONERROR err;
+	  ONERROR err2;
 	  int orig_compilation_depth;
 	  int byteorder;
 	  int bytecode_method;
 	  int entry_type;
 	  INT16 id_flags;
 	  INT16 p_flags;
+	  INT32 old_pragmas = lex.pragmas;
 #define FOO(NUMTYPE,Y,NAME)   \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
@@ -3044,11 +3053,22 @@ static void decode_value2(struct decode_data *data)
 		       PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
 	  p_flags |= PROGRAM_AVOID_CHECK;
 
+	  /* We don't want to be affected by #pragma save_parent or
+	   * __pragma_save_parent__.
+	   */
+	  lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
+	  SET_ONERROR(err2, set_lex_pragmas, old_pragmas);
+
 	  /* Start the new program. */
 	  orig_compilation_depth = compilation_depth;
 	  compilation_depth = -1;
 	  low_start_new_program(NULL, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
+
+	  /* We don't want to be affected by #pragma save_parent or
+	   * __pragma_save_parent__.
+	   */
+	  lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
 
 	  p->flags = p_flags;
 
@@ -3507,6 +3527,9 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  compilation_depth = orig_compilation_depth;
 	  push_program(p);
+
+	  /* Restore lex.pragmas. */
+	  CALL_AND_UNSET_ONERROR(err2);
 
 	  /* Verify... */
 #define FOO(NUMTYPE,Y,NAME)                                                  \
