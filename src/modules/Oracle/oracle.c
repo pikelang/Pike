@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.46 2000/10/01 08:52:11 hubbe Exp $
+ * $Id: oracle.c,v 1.47 2000/10/31 16:04:11 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -44,10 +44,16 @@
 /* VERY VERY UGLY */
 #define MOTIF
 
+#ifdef HAVE_OCI_H
 #include <oci.h>
+#else /* !HAVE_OCI_H */
+#include <ocidfn.h>
+#include <ociapr.h>
+#endif /* HAVE_OCI_H */
+
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.46 2000/10/01 08:52:11 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.47 2000/10/31 16:04:11 grubba Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
