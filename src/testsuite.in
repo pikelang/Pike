@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.745 2004/11/02 00:59:33 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.746 2004/11/14 13:04:04 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8136,6 +8136,13 @@ return 1;
 #endif
 ]],1)
 
+test_any([[
+#if 0
+#blahong
+#endif
+return 1;
+]],1)
+
 // #if efun
 // see test for add_constant()
 
@@ -9019,6 +9026,7 @@ test_equal(get_dir("get_dir_test"),({}))
 test_do(Stdio.write_file("get_dir_test/x", "x"));
 test_equal(get_dir("get_dir_test"),({"x"}))
 test_do(Stdio.recursive_rm("get_dir_test"))
+test_true(arrayp(get_dir()))
 
 // - get_groups_for_user
 // - get_weak_flag
