@@ -50,7 +50,7 @@ void set_use_alpha( int use_alpha );
 void set_title( string title );
 //! Sets the title for the color selection dialog
 
-mapping(string:mapping(string:float|int)) get()
+mapping get()
 //! Returns a mapping ([ "d":([ "r":rvalue, "g":gvalue, "b":bvalue,
 //! "a":avalue ]), "i8":([ ... ]), "i16":([ .. ]) ]);
 {

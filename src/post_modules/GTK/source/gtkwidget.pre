@@ -533,7 +533,7 @@ void set_cursor(?int cursor_type, ?GDK.Color fg, ?GDK.Color bg)
   RETURN_THIS();
 }
 
-void set_bitmap_cursor( GDK.Bitmap source, GDK.Bitmap mask.
+void set_bitmap_cursor( GDK.Bitmap source, GDK.Bitmap mask,
                         GDK.Color fg, GDK.Color bg,
                         int xhot, int yhot )
 //! xhot and yhot are the locations of the x and y hotspot relative to the
@@ -762,7 +762,7 @@ void drag_unhighlight()
   RETURN_THIS();
 }
 
-void drag_dest_set(int flags, array(array(int|string)) targets, int actions )
+void drag_dest_set(int flags, array(array) targets, int actions )
 //!     Register a drop site, and possibly add default behaviors.<br />
 //!   arguments:<br />
 //!     flags:     Which types of default drag behavior to use (one of CONST(GTK_DEST_DEFAULT))<br />
@@ -801,7 +801,7 @@ void drag_dest_set(int flags, array(array(int|string)) targets, int actions )
   RETURN_THIS();
 }
 
-void drag_source_set(int flags, array(array(int|string)) targets, int actions)
+void drag_source_set(int flags, array(array) targets, int actions)
 //!     Register a drop site, and possibly add default behaviors.<br />
 //!   arguments:<br />
 //!     buttons:     Which mouse buttons can be used to start the drag<br />

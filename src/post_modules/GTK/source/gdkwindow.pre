@@ -10,7 +10,7 @@ inherit GDK.Drawable;
 //! a GDK.Window object.
 //!
 //! NOIMG
-void create(int|object parent, mapping|void attributes)
+void create(GDK.Window|int parent, mapping|void attributes)
 //! Not for non-experts. I promise.
 {
   pgtk_verify_setup();

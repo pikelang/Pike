@@ -9,7 +9,7 @@ inherit GTK.CheckButton;
 //! as the second argument to GTK.RadioButton().
 //! </p>
 //! IMG: GTK.Radio_button("Button");
-void create(string|void, GTK.RadioButton|void groupmember)
+void create(string|void title, GTK.RadioButton|void groupmember)
 //!  Normal creation:<p>
 //! object GTK.RadioButton(string title) - First button (with label)<br />
 //! object GTK.RadioButton()->add(widget) - First button (with widget)<br />

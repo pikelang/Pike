@@ -250,7 +250,7 @@ string node_get_text(GTK.CTreeNode node, int column)
     push_int(0);
 }
 
-mapping(string:GDK.Drawable) node_get_pixmap( GTK.CtreeNode node, int column )
+mapping node_get_pixmap( GTK.CtreeNode node, int column )
 //! Returns the pixmap and mask of this node in a mapping:<br />
 //! ([ "pixmap":the_pixmap, "mask":the_bitmap ])
 {
@@ -285,8 +285,7 @@ mapping(string:GDK.Drawable) node_get_pixmap( GTK.CtreeNode node, int column )
 }
 
 
-mapping(string:GDK.Pixmap|string) node_get_pixtext(GDK.CTreeNode n,
-                                                   int columne )
+mapping node_get_pixtext(GTK.CTreeNode n, int columne )
 //! Returns the pixmap, mask and text of this node in a mapping:<br />
 //! ([ "pixmap":the_pixmap, "mask":the_bitmap, "text":the_text ])
 {

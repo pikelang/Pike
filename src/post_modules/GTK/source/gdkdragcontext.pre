@@ -81,7 +81,7 @@ void drag_set_icon_default()
   RETURN_THIS();
 }
 
-void drag_set_icon_pixmap(GTK.Pixmap p, GTK.Bitmap b, int hot_x, int hot_y )
+void drag_set_icon_pixmap(GDK.Pixmap p, GDK.Bitmap b, int hot_x, int hot_y )
 //! Set the drag pixmap, and optionally mask.<br />
 //! The hot_x and hot_y coordinates will be the location of the mouse pointer,
 //! relative to the upper left corner of the pixmap.
