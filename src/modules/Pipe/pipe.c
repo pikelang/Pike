@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.16 1998/04/03 19:58:15 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.17 1998/04/03 20:06:48 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -453,8 +453,9 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 	  if (sp[-1].type == T_STRING) {
 	    append_buffer(sp[-1].u.string);
 	  } else {
-	    this->sleeping = 0;
-	    /* We're not sleeping -- we're dead... */
+	    /* FIXME: Should probably check the return value. */
+	    /* EOF */
+	    input_finish();
 	  }
 	  pop_stack();
 	} else {
