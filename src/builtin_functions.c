@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.575 2004/11/14 11:43:53 mast Exp $
+|| $Id: builtin_functions.c,v 1.576 2004/11/27 22:48:57 mast Exp $
 */
 
 #include "global.h"
@@ -5021,6 +5021,7 @@ static int find_gt(struct array *a, int i, int *stack, int top)
   struct svalue *x = a->item + i;
   int l,h;
 
+  /* FIXME: Should it perhaps be is_ge below instead? */
   if (!top || !is_lt(x, a->item + stack[top - 1])) return top;
 
   l = 0;
