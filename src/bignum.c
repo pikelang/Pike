@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.37 2003/03/29 17:12:17 grubba Exp $
+|| $Id: bignum.c,v 1.38 2003/04/02 00:38:31 mast Exp $
 */
 
 #include "global.h"
@@ -130,11 +130,21 @@ PMOD_EXPORT void bootstrap_push_int64 (INT64 i)
     push_int(DO_NOT_WARN((INT_TYPE)i));
   }
   else
-    Pike_error ("Failed to convert large integer (Gmp.bignum not loaded).\n");
+    Pike_fatal ("Failed to convert large integer (Gmp.bignum not loaded).\n");
 }
 
 PMOD_EXPORT void (*push_int64) (INT64) = bootstrap_push_int64;
 PMOD_EXPORT int (*int64_from_bignum) (INT64 *, struct object *) = NULL;
+
+PMOD_EXPORT void hook_in_int64_funcs (
+  void (*push_int64_val)(INT64),
+  int (*int64_from_bignum_val) (INT64 *, struct object *))
+{
+  /* Assigning the pointers above directly from the Gmp module doesn't
+   * work in some cases, e.g. NT. */
+  push_int64 = push_int64_val ? push_int64_val : bootstrap_push_int64;
+  int64_from_bignum = int64_from_bignum_val;
+}
 #endif
 
 #endif /* AUTO_BIGNUM */
