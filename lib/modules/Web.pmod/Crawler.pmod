@@ -16,16 +16,16 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.1 2001/05/15 23:21:42 js Exp $
+// $Id: Crawler.pmod,v 1.2 2001/05/25 17:40:26 js Exp $
 
+#define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
-# define CRAWLER_MSG(X) werror("Crawler: "+X+"\n")
-# define CRAWLER_MSGS(X, Y) werror("Crawler: "+X+"\n", Y)
+# define CRAWLER_MSG(X) werror("Web.Crawler: "+X+"\n")
+# define CRAWLER_MSGS(X, Y) werror("Web.Crawler: "+X+"\n", Y)
 #else
 # define CRAWLER_MSG(X)
 # define CRAWLER_MSGS(X, Y)
 #endif
-
 
 class Stats(int window_width,
 	    int granularity)
@@ -130,7 +130,7 @@ class Queue(Stats stats, Policy policy)
   //! Returns -1 if there are no URIs to index at the time of the function call,
   //! with respect to bandwidth throttling and other limits.
   //! Returns 0 if there are no more URIs to index.
-  int|Standards.URI get(Stats stats, Policy policy);
+  int|Standards.URI get();
 
   //! Put one or several URIs in the queue.
   //! Any URIs that were already present in the queue are silently
@@ -150,6 +150,23 @@ class GlobRule(string pattern)
   int check(Standards.URI uri)
   {
     return glob(pattern, (string)uri);
+  }
+}
+
+class RegexpRule
+{
+  inherit Rule;
+
+  static private Regexp regexp;
+  
+  void create(string re)
+  {
+    regexp=Regexp(re);
+  }
+
+  int check(Standards.URI uri)
+  {
+    return regexp->match((string)uri);
   }
 }
 
@@ -180,6 +197,11 @@ class RuleSet
 class SimpleQueue(Stats stats, Policy policy)
 {
   inherit Queue;
+
+  void test()
+  {
+    werror("Queue: %O\n",stats);
+  }
   
   static private ADT.Heap host_heap=ADT.Heap();
   static private mapping(string:URIStack) hosts=([]);
@@ -220,8 +242,8 @@ class SimpleQueue(Stats stats, Policy policy)
          num_active >= policy->max_concurrent_fetchers_per_host)
         return 0;
 
-//        if(!size())
-//  	return 0;
+      if(!size())
+  	return 0;
 
       return last_mod < other->last_mod;
     }
@@ -372,10 +394,10 @@ class RobotExcluder
 class Crawler
 {
   RuleSet allow,deny;
-  Policy policy;
-  Stats stats;
   Queue queue;
-  function page_cb, done_cb;;
+  function page_cb, done_cb;
+
+  array(mixed) args;
 
   mapping _hostname_cache=([]);
   
@@ -386,9 +408,9 @@ class Crawler
     
     void got_data()
     {
-      stats->bytes_read_callback(uri, total_bytes());
-      stats->close_callback(uri);
-      page_cb(uri, data()[..256]);
+//        queue->stats->bytes_read_callback(uri, total_bytes());
+//        queue->stats->close_callback(uri);
+      check_links(page_cb(uri, data(), headers, @args));
       queue->done(uri);
     }
     
@@ -399,7 +421,7 @@ class Crawler
     
     void request_fail(object httpquery)
     {
-      stats->close_callback(uri);
+      queue->stats->close_callback(uri);
       queue->done(uri);
     }
     
@@ -415,19 +437,30 @@ class Crawler
 		    ]));
     }
   }
-  
+
+  void check_links(array(Standards.URI) links)
+  {
+    foreach(links, Standards.URI link)
+    {
+      werror("allow: %d  deny: %d (%s)\n",
+	     allow->check(link), deny->check(link),
+	     (string)link);
+      if(!deny->check(link) || allow->check(link))
+	queue->put(link);
+    }
+  }
   
   void get_next_uri()
   {
     CRAWLER_MSG("get_next_uri");
-    object|int uri=queue->get(stats,policy);
+    object|int uri=queue->get();
     CRAWLER_MSGS("uri: %O",uri);
     
-    if(!uri)
-    {
-      done_cb();
-      return;
-    }
+//      if(!uri)
+//      {
+//        done_cb();
+//        return;
+//      }
     
     if(objectp(uri))
     {
@@ -443,11 +476,13 @@ class Crawler
   
   void create(RuleSet _allow, RuleSet _deny, Queue _queue,
 	      function _page_cb, function _done_cb,
-	      string|array(string)|Standards.URI|array(Standards.URI) start_uri)
+	      string|array(string)|Standards.URI|array(Standards.URI) start_uri,
+	      mixed ... _args)
   {
     allow=_allow;
     deny=_deny;
     queue=_queue;
+    args=_args;
     page_cb=_page_cb;
     done_cb=_done_cb;
     
