@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.18 2001/01/18 13:10:53 grubba Exp $
+# $Id: configure.in,v 1.19 2001/01/22 16:02:45 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -28,14 +28,30 @@ OLD_CPPFLAGS=$CPPFLAGS
 MYSQL_LIBS=""
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
+  case "$with_root" in
+    /)
+      with_root=""
+    ;;
+    /*)
+    ;;
+    no)
+      with_root=""
+    ;;
+    *)
+      AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
+      with_root=""
+    ;;
+  esac
+],[with_root=""])
 
 if test x$with_mysql = xno; then
   :
 else
   AC_MSG_CHECKING(for Mysql lib-directory)
 
-  libdirs="/usr/local/lib/mysql /usr/local/mysql/lib/mysql /opt/lib/mysql /opt/mysql/lib/mysql /usr/gnu/lib/mysql /usr/lib/mysql /lib/mysql /usr/local/mysql/lib /usr/local/mysql/mach-lib-thread no"
-  incdirs="/usr/local/include/mysql /usr/local/mysql/include/mysql /opt/include/mysql /opt/mysql/include/mysql /usr/gnu/include/mysql /usr/include/mysql /include/mysql /usr/local/mysql/include no"
+  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
+  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/local/mysql/include no"
 
   if test x$with_mysql = xyes; then :; else
     # Mysql installation directory specified.
