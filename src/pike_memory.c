@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.134 2002/12/01 03:20:02 mast Exp $
+|| $Id: pike_memory.c,v 1.135 2002/12/01 03:28:51 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.134 2002/12/01 03:20:02 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.135 2002/12/01 03:28:51 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1511,7 +1511,9 @@ static inline void add_location(struct memhdr *mh,
   if(find_location(&no_leak_memlocs, location)) return;
 #endif
 
+#ifdef DMALLOC_VERIFY_INTERNALS
   mh->times++;
+#endif
 
   if (mh->flags & MEM_TRACE) {
     fprintf(stderr, "add_location(0x%p, %s)\n", mh, location);
@@ -1627,7 +1629,9 @@ static void remove_location(struct memhdr *mh, LOCATION location)
     if(ml->location==location)
     {
       *prev=ml->next;
+#ifdef DMALLOC_VERIFY_INTERNALS
       mh->times -= ml->times;
+#endif
 #ifdef DMALLOC_TRACE_MEMLOC
       if (ml == DMALLOC_TRACE_MEMLOC) {
         fprintf(stderr, "rem_loc: Freeing memloc %p location %s memhdr: %p data: %p\n",
@@ -1663,7 +1667,9 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   l = lhash(mh,location);
   mh->size=s;
   mh->flags=0;
+#ifdef DMALLOC_VERIFY_INTERNALS
   mh->times=1;
+#endif
 #ifdef DMALLOC_AD_HOC
   mh->misses=0;
 #endif
@@ -2008,9 +2014,9 @@ void *__wrap_strdup(const char *s)
 #endif
 
 
-void low_dump_memhdr_locations(struct memhdr *from,
-			       struct memhdr *notfrom,
-			       int indent)
+void dump_memhdr_locations(struct memhdr *from,
+			   struct memhdr *notfrom,
+			   int indent)
 {
   struct memloc *l;
   if(!from) return;
@@ -2044,13 +2050,6 @@ void low_dump_memhdr_locations(struct memhdr *from,
     /* Allow linked memhdrs */
 /*    dump_memhdr_locations(my_find_memhdr(l,0),notfrom,indent+2); */
   }
-}
-
-void dump_memhdr_locations(struct memhdr *from,
-			   struct memhdr *notfrom,
-			   int indent)
-{
-  low_dump_memhdr_locations(from,notfrom, indent);
 }
 
 static void low_dmalloc_describe_location(struct memhdr *mh, int offset, int indent);
