@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.120 2001/08/09 06:42:38 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.121 2001/08/09 18:54:15 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -611,7 +611,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #define Pike_FP_PINF -1 /* Positive infinity */
 #define Pike_FP_ZERO  0 /* Backwards compatible zero */
 #define Pike_FP_NZERO 1 /* Negative Zero */
-#define Pike_FP_PZERO 2 /* Positive zero */
+#define Pike_FP_PZERO 0 /* Positive zero */
+#define Pike_FP_UNKNOWN -4711 /* Positive zero */
 
 
 #ifdef HAVE_FPCLASS
@@ -643,7 +644,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	case FP_PZERO:
 	  code_entry(TAG_FLOAT,0,data);
-	  code_entry(TAG_FLOAT,0,data); /* normal zero */
+	  code_entry(TAG_FLOAT,Pike_FP_ZERO,data); /* normal zero */
 	  break;
 
 	  /* Ugly, but switch gobbles breaks -Hubbe */
@@ -655,7 +656,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 #else
       {
-	int pike_ftype=0;
+	int pike_ftype=Pike_FP_UNKNOWN;
 #ifdef HAVE_ISINF
 	if(isinf(val->u.float_number))
 	  pike_ftype=Pike_FP_PINF;
@@ -673,7 +674,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #endif
 #ifdef HAVE_FINITE
 	      if(!finite(val->u.float_number))
-		pike_ftype=Pike_FP_SNAN;
+		pike_ftype=Pike_FP_PINF;
 #endif
 	; /* Terminate any remaining else */
 	
@@ -696,11 +697,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  }
 	}
 	
-	if(pike_ftype)
+	if(pike_ftype != Pike_FP_UNKNOWN)
 	{
-	  if(pike_ftype == Pike_FP_PZERO)
-	    pike_ftype=0;
-
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,pike_ftype,data);
 	  break;
@@ -1776,11 +1774,8 @@ static void decode_value2(struct decode_data *data)
 	switch(num)
 	{
 	  case Pike_FP_SNAN: /* Signal Not A Number */
-	    push_float(MAKE_NAN());
-	    break;
-	    
 	  case Pike_FP_QNAN: /* Quiet Not A Number */
-	    push_float(0.0); /* how do you push a qnan? */
+	    push_float(MAKE_NAN());
 	    break;
 		       
 	  case Pike_FP_NINF: /* Negative infinity */
