@@ -10,9 +10,12 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.32 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: fd_control.c,v 1.33 2000/07/28 19:54:23 hubbe Exp $");
 
 #else /* TESTING */
+
+#define PMOD_EXPORT
+#define PMOD_PROTO
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
