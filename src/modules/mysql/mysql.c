@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.12 1997/01/30 23:45:22 grubba Exp $
+ * $Id: mysql.c,v 1.13 1997/01/31 01:13:16 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -59,7 +59,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.12 1997/01/30 23:45:22 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.13 1997/01/31 01:13:16 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -606,6 +606,19 @@ static void f_list_processes(INT32 args)
   push_object(clone(mysql_result_program, 1));
 }
 
+/*
+ * Support for binary data in tables
+ */
+static void f_binary_data(INT32 args)
+{
+  pop_n_elems(args);
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+  push_int(1);
+#else
+  push_int(0);
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+}
+
 #endif /* HAVE_MYSQL */
 
 /*
@@ -660,6 +673,8 @@ void init_mysql_programs(void)
   add_function("list_tables", f_list_tables, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
   add_function("list_fields", f_list_fields, "function(string, void|string:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
   add_function("list_processes", f_list_processes, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
+
+  add_function("binary_data", f_binary_data, "function(void:int)", OPT_TRY_OPTIMIZE);
 
   set_init_callback(init_mysql_struct);
   set_exit_callback(exit_mysql_struct);

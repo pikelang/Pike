@@ -360,3 +360,19 @@ SEE ALSO
 	/precompiled/sql/mysql_result
 
 
+============================================================================
+NAME
+	binary_data - inform if this version of mysql supports binary data
+
+SYNTAX
+	int mysql->binary_data();
+
+DESCRIPTION
+	This function returns non-zero if binary data can be reliably stored
+	and retreived with this version of the mysql-module.
+
+	Usually, there is no problem storing binary data in mysql-tables,
+	but data containing '\0' (NUL) couldn't be fetched with old
+	versions (prior to 3.20.5) of the mysql-library.
+
+
