@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.10 2003/09/03 08:41:46 grubba Exp $
+// $Id: __default.pmod,v 1.11 2003/09/06 10:29:39 nilsson Exp $
 
 #pike 7.5
 
@@ -115,6 +115,11 @@ mapping(string:mixed) all_constants()
   mapping(string:mixed) ret = predef::all_constants()+([]);
   ret->rusage = rusage;
   ret->hash = hash_7_4;
+#if constant(__builtin.security)
+  ret->call_with_creds = __builtin.security.call_with_creds;
+  ret->get_current_creds = __builtin.security.get_current_creds;
+  ret->get_object_creds = __builtin.security.get_object_creds;
+#endif
 #if constant(Pipe._pipe_debug)
   ret->_pipe_debug = Pipe._pipe_debug;
 #endif /* constant(Pipe._pipe_debug) */
