@@ -45,5 +45,5 @@ static void new_connection()
 {
    Stdio.File fd=port->accept();
    .Request r=request_program();
-   r->attach_fd(fd,this_object(),callback);
+   r->attach_fd(fd,this,callback);
 }

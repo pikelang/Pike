@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.10 2003/09/01 16:36:47 nilsson Exp $
+// $Id: protocol.pike,v 1.11 2004/01/11 00:49:03 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -138,7 +138,7 @@
     ok = 1;
 
     if(con_ok)
-      con_ok(this_object(), @extra_args);
+      con_ok(this, @extra_args);
   }
 
   static int is_whole_pdu() {

@@ -146,7 +146,7 @@ class signal_handling
     if(signals[signal]) 
     {
       signals[signal]-=({ 0 });
-      signals[signal]( this_object(), @args );
+      signals[signal]( this, @args );
       signals[signal]-=({ 0 });
     }
   }

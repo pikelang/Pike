@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.13 2003/10/22 19:18:24 jhs Exp $
+// $Id: Session.pike,v 1.14 2004/01/11 00:49:02 nilsson Exp $
 
 import Protocols.HTTP;
 
@@ -49,7 +49,7 @@ class Request
 //!	Loops will currently not be detected, only the limit
 //!	works to stop loops.
    int follow_redirects= // from parent, will count down
-      function_object(object_program(this_object()))->follow_redirects;
+      function_object(this_program)->follow_redirects;
 
 //!	Cookie callback. When a request is performed,
 //!	the result is checked for cookie changes and
@@ -173,7 +173,7 @@ class Request
 		  continue;
 	       }
 	    }
-	    return this_object();
+	    return this;
 	 }
 	 return 0;
       }
@@ -194,7 +194,7 @@ class Request
    {
       if(!con) con=give_me_connection(url_requested);
       con->thread_request(@args);
-      return this_object();
+      return this;
    }
 
 //!	Wait for the request thread to finish.
@@ -207,7 +207,7 @@ class Request
       if (con->`()()) 
       {
 	 check_for_cookies();
-	 return this_object();
+	 return this;
       }
       return 0;
    }
@@ -257,13 +257,13 @@ class Request
 	      connections_inuse_n>=maximum_total_connections))
 	 {
 	    wait_for_connection(do_async,args);
-	    return this_object();
+	    return this;
 	 }
 	 con=give_me_connection(url_requested);
       }
       con->set_callbacks(async_ok,async_fail);
       con->async_request(@args);
-      return this_object();
+      return this;
    }
    
    static void async_ok(object q)
@@ -468,7 +468,7 @@ class Cookie
 	  !stringp(path) ||
 	  !intp(expires))
 	 error("Cookie.decode: parse error\n");
-      return this_object();
+      return this;
    }
 }
 
@@ -617,13 +617,13 @@ static class KeptConnection
 
       call_out(disconnect,time_to_keep_unused_connections);
       connection_cache[lookup]=
-	 (connection_cache[lookup]||({}))+({this_object()});
+	 (connection_cache[lookup]||({}))+({this});
       connections_kept_n++;
    }
 
    void disconnect()
    {
-      connection_cache[lookup]-=({this_object()});
+      connection_cache[lookup]-=({this});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
       remove_call_out(disconnect); // if called externally
@@ -633,12 +633,12 @@ static class KeptConnection
       if (!--connections_host_n[lookup])
 	 m_delete(connections_host_n,lookup);
       destruct(q);
-      destruct(this_object());
+      destruct(this);
    }
 
    Query use()
    {
-      connection_cache[lookup]-=({this_object()});
+      connection_cache[lookup]-=({this});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
       remove_call_out(disconnect);

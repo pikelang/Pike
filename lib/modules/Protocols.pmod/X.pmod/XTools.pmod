@@ -1,6 +1,6 @@
 /* XTools.pmod
  *
- * $Id: XTools.pmod,v 1.8 2002/01/15 22:32:43 nilsson Exp $
+ * $Id: XTools.pmod,v 1.9 2004/01/11 00:46:12 nilsson Exp $
  *
  * Various tools that are higher level than raw X, but are lower level
  * than widgets.
@@ -42,7 +42,7 @@ class Button
 
   void button_exposed(mapping event)
   {
-    redraw_callback(this_object(), pressed && (!style || inside), event);
+    redraw_callback(this, pressed && (!style || inside), event);
   }
   
   mapping button_pressed(mapping event)
@@ -52,7 +52,7 @@ class Button
       {
 	pressed = 1;
 	inside = 1;
-	redraw_callback(this_object(), 1, 0);
+	redraw_callback(this, 1, 0);
 	
 	return 0;
       }
@@ -65,9 +65,9 @@ class Button
     if (event->detail == button)
       {
 	pressed = 0;
-	redraw_callback(this_object(), 0, 0);
+	redraw_callback(this, 0, 0);
 	if (inside)
-	  clicked_callback(this_object());
+	  clicked_callback(this);
 	return 0;
       }
     else 
@@ -78,7 +78,7 @@ class Button
   {
     inside = 1;
     if (pressed && style)
-      redraw_callback(this_object(), 1, 0);
+      redraw_callback(this, 1, 0);
     return 0;
   }
 
@@ -86,7 +86,7 @@ class Button
   {
     inside = 0;
     if (pressed && style)
-      redraw_callback(this_object(), 0, 0);
+      redraw_callback(this, 0, 0);
     return 0;
   }
   

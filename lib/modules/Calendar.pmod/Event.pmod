@@ -66,14 +66,14 @@ class Event
   mapping(.TimeRanges.TimeRange:Event) scan_events(.TimeRanges.TimeRange in)
   {
     array r=scan(in);
-    return mkmapping(r,allocate(sizeof(r),this_object()));
+    return mkmapping(r,allocate(sizeof(r),this));
   }
 
   //! Joins several events into one @[SuperEvent].
    SuperEvent `|(Event ... with)
    {
       with-=({0});
-      with|=({this_object()});
+      with|=({this});
       if (sizeof(with)==1) return with[0];
       return SuperEvent(with);
    }
@@ -87,7 +87,7 @@ class Event
    array(Event) cast(string to)
    {
       if (to[..4]=="array")
-	 return ({this_object()});
+	 return ({this});
       else
 	 error("Can't cast to %O\n",to);
    }
@@ -390,11 +390,11 @@ class Namedays
    {
       object(SuperEvent)|object(SuperNamedays)|object(Namedays) res;
       if (e->is_nameday_wrapper && e->id==id && id!="?") 
-	 res=SuperNamedays(e->namedays|({this_object()}),e->id);
+	 res=SuperNamedays(e->namedays|({this}),e->id);
       else
       {
-	 array a=({e})|({this_object()});
-	 if (!sizeof(a)) res=this_object();
+	 array a=({e})|({this});
+	 if (!sizeof(a)) res=this;
 	 else if (e->is_namedays && e->id==id) res=SuperNamedays(a,id);
 	 else res=SuperEvent(a);
       }
@@ -481,10 +481,10 @@ class SuperNamedays
 	 mixed ...extra)
    {
       if (e->is_namedays_wrapper)
-	 return `|(this_object(),@e->namedayss,@extra);
+	 return `|(this,@e->namedayss,@extra);
       if (e->is_namedays && e->id==id)
 	 return SuperNamedays(namedayss|({e}),id);
-      return predef::`|(e,this_object(),@extra);
+      return predef::`|(e,this,@extra);
    }
 }
 
@@ -1190,7 +1190,7 @@ class SuperEvent
    Event `-(Event|SuperEvent ...subtract)
    {
       array(Event) res=events-subtract;
-      if (res==events) return this_object();
+      if (res==events) return this;
       return SuperEvent(res,flags&res,"?");
    }
 

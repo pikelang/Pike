@@ -1,6 +1,6 @@
 /* Atom.pmod
  *
- * X Atoms $Id: Atom.pmod,v 1.12 2002/06/15 05:35:14 bill Exp $
+ * X Atoms $Id: Atom.pmod,v 1.13 2004/01/11 00:46:12 nilsson Exp $
  *
  */
 
@@ -119,14 +119,14 @@ class atom_manager
     if (atom_table[name])
       return atom_table[name];
 
-    object atom = Atom(this_object());
+    object atom = Atom(this);
     atom->name = name;
 
     object req = .Requests.InternAtom();
     req->name = name;
     if (callback)
       {
-	send_async_request(req, pending_intern(this_object(), atom,
+	send_async_request(req, pending_intern(this, atom,
 					       callback)->handle_reply);
 	return 0;
       } else {
@@ -150,12 +150,12 @@ class atom_manager
   {
     if (atoms[id])
       return atoms[id];
-    object atom = Atom(this_object());
+    object atom = Atom(this);
     atom->id = id;
     object req = GetAtomName_req(atom);
     if (callback)
       {
-	send_async_request(req, pending_name_lookup(this_object(), atom,
+	send_async_request(req, pending_name_lookup(this, atom,
 						  callback)->handle_reply);
 	return 0;
       } else {
@@ -172,7 +172,7 @@ class atom_manager
   {
     for(int i = 1; i<sizeof(._Xlib.predefined_atoms); i++)
       {
-	object atom = Atom(this_object());
+	object atom = Atom(this);
 	atom->id = i;
 	atom->name = ._Xlib.predefined_atoms[i];
 	remember_atom(atom);

@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.7 2003/05/14 15:58:22 nilsson Exp $
+// $Id: FakeFile.pike,v 1.8 2004/01/11 00:41:16 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -180,7 +180,7 @@ string _sprintf(int t) {
 mixed cast(string to) {
   switch(to) {
   case "string": return data;
-  case "object": return this_object();
+  case "object": return this;
   }
   error("Can not cast object to %O.\n", to);
 }

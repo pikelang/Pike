@@ -4,7 +4,7 @@ inherit GTK.Dialog;
 
 void begone(object w2)
 {
-  destruct( this_object() );
+  destruct( this );
 }
 
 object ok_button;

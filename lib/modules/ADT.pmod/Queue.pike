@@ -1,4 +1,4 @@
-// $Id: Queue.pike,v 1.8 2002/11/29 00:29:08 nilsson Exp $
+// $Id: Queue.pike,v 1.9 2004/01/11 00:38:16 nilsson Exp $
 
 //! A simple FIFO queue.
 
@@ -82,7 +82,7 @@ void flush()
 //! It is possible to cast ADT.Queue to an array.
 mixed cast(string to) {
   switch(to) {
-  case "object": return this_object();
+  case "object": return this;
   case "array": return l[tail..head-1];
   }
   error("Can not cast ADT.Queue to %s.\n", to);

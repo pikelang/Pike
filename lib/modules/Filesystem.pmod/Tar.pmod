@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.25 2003/12/17 00:05:04 nilsson Exp $
+ * $Id: Tar.pmod,v 1.26 2004/01/11 00:50:18 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -371,7 +371,7 @@ class `()
     if(!fd)
       error("Not a Tar file\n");
 
-    _Tar tar = _Tar(fd, filename, this_object());
+    _Tar tar = _Tar(fd, filename, this);
 
     _TarFS::create(tar, "/", "", parent);
   }

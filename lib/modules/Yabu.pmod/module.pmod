@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.27 2003/06/06 14:54:35 jhs Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.28 2004/01/11 00:39:08 nilsson Exp $";
 
 #define ERR(msg) error( "(Yabu) "+msg+"\n" )
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
@@ -685,7 +685,7 @@ class Table {
 
     /* Check if the level of usage is above the given ratio. */
     if(ratio < 1.0) {
-      mapping st = this_object()->statistics();
+      mapping st = this->statistics();
       float usage = (float)st->used/(float)(st->size||1);
       if(usage > ratio)
 	return 0;
@@ -695,7 +695,7 @@ class Table {
     rm(filename+".opt");
     
     /* Create new database. */
-    object opt = Chunk(filename+".opt", mode, this_object(), ([]));
+    object opt = Chunk(filename+".opt", mode, this, ([]));
 
     /* Remap all ordinary handles. */
     mapping new_handles = ([]);
@@ -718,7 +718,7 @@ class Table {
     handles = new_handles;
     t_handles = new_t_handles;
     db = opt;
-    index = Chunk(filename+".inx", mode, this_object());
+    index = Chunk(filename+".inx", mode, this);
 
     /* Reconstruct db and index. */
     modified();
@@ -890,7 +890,7 @@ class Table {
     t_handles[id] = ([]);
     t_deleted[id] = ([]);
     UNLOCK();
-    return Transaction(this_object(), id, keep_ref);
+    return Transaction(this, id, keep_ref);
   }
   //
   //
@@ -935,7 +935,7 @@ class Table {
   void _destroy()
   {
     write = 0;
-    destruct(this_object());
+    destruct(this);
   }
 
   void close()
@@ -952,7 +952,7 @@ class Table {
     write = 0;
     rm(filename+".inx");
     rm(filename+".chk");
-    destruct(this_object());
+    destruct(this);
     UNLOCK();
   }
 
@@ -1002,12 +1002,12 @@ class Table {
     t_handles = ([]);
     t_deleted = ([]);
 
-    index = Chunk(filename+".inx", mode, this_object());
+    index = Chunk(filename+".inx", mode, this);
     mapping m = ([]);
     if(sizeof(index->list_keys()))
       m = index->get(sort(index->list_keys())[-1]);
     handles = m->handles||([]);
-    db = Chunk(filename+".chk", mode, this_object(), m->db||([]));
+    db = Chunk(filename+".chk", mode, this, m->db||([]));
 
     if(write) {
       sync_timeout = 128;
@@ -1057,12 +1057,12 @@ class _Table {
   
   object transaction()
   {
-    return table->transaction(this_object());
+    return table->transaction(this);
   }
   
   void close()
   {
-    destruct(this_object());
+    destruct(this);
   }
   
   void purge()
@@ -1248,7 +1248,7 @@ class db {
       if(o)
 	destruct(o);
     level2_rm(dir);
-    destruct(this_object());
+    destruct(this);
     UNLOCK();
   }
 
@@ -1278,7 +1278,7 @@ class db {
 
   void close()
   {
-    destruct(this_object());
+    destruct(this);
   }
   
   int reorganize(float|void ratio)

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.32 2002/11/29 01:12:44 nilsson Exp $
+//  $Id: Session.pike,v 1.33 2004/01/11 00:47:34 nilsson Exp $
 
 import ".";
 
@@ -255,7 +255,7 @@ class MiscInfo
    {									\
       if (VAR) 								\
       {									\
-	 if (callback) callback(this_object());				\
+	 if (callback) callback(this);					\
 	 return;							\
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
@@ -270,7 +270,7 @@ class MiscInfo
 				    fetch_##WHAT=0;			\
 				    array m=fetch_##WHAT##_callbacks;	\
 				    fetch_##WHAT##_callbacks=0;		\
-				    m(this_object());			\
+				    m(this);				\
 				 },ARGS);				\
    }									\
 									\
@@ -306,7 +306,7 @@ class MiscInfo
 	 VAR1=res;							\
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
    private void _got_##WHAT##2(mixed res)				\
@@ -314,15 +314,15 @@ class MiscInfo
       if (objectp(res) && res->iserror) err=res; else VAR2=res;		\
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
-   object prefetch_##WHAT##(void|function callback)			\
+   this_program prefetch_##WHAT##(void|function callback)		\
    {									\
       if (VAR1 || VAR2)                                                 \
       {									\
-	 if (callback) callback(this_object());				\
-	 return this_object();						\
+	 if (callback) callback(this);					\
+	 return this;							\
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
       if (!fetch_##WHAT)						\
@@ -330,7 +330,7 @@ class MiscInfo
 	    fetch_##WHAT=con->async_cb_##CALL2(_got_##WHAT##2,ARGS);	\
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL1(_got_##WHAT##1,ARGS);	\
-      return this_object();                                             \
+      return this;	                                             \
    }									\
 									\
    inline void need_##WHAT()						\
@@ -372,7 +372,7 @@ class MiscInfo
 	 VAR=CONV;							\
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
    private void _got_##WHAT##2(mixed res)				\
@@ -381,15 +381,15 @@ class MiscInfo
    	else VAR=CONV;		                                        \
       array m=fetch_##WHAT##_callbacks;					\
       fetch_##WHAT##_callbacks=({});					\
-      m(this_object());							\
+      m(this);								\
    }									\
 									\
-   object prefetch_##WHAT##(void|function callback)			\
+   this_program prefetch_##WHAT##(void|function callback)		\
    {									\
       if (VAR)                                                          \
       {									\
-	 if (callback) callback(this_object());				\
-	 return this_object();						\
+	 if (callback) callback(this);					\
+	 return this;							\
       }									\
       if (callback) fetch_##WHAT##_callbacks+=({callback});		\
       if (!fetch_##WHAT)						\
@@ -397,7 +397,7 @@ class MiscInfo
 	    fetch_##WHAT=con->async_cb_##CALL##_old(_got_##WHAT##2,ARGS); \
 	 else								\
 	    fetch_##WHAT=con->async_cb_##CALL(_got_##WHAT##1,ARGS);	\
-      return this_object();                                             \
+      return this;							\
    }									\
 									\
    inline void need_##WHAT()						\
@@ -1112,12 +1112,12 @@ array(ProtocolTypes.ConfZInfo) try_complete_person(string orig)
 //!   Performs a login. Throws a lyskom error if unsuccessful.
 //! @returns
 //!   The session object logged in.
-object login(int user_no,string password,
-	     void|int invisible)
+this_program login(int user_no,string password,
+		   void|int invisible)
 {
    con->login(user_no,password,invisible);
    user=person(user_no);
-   return this_object();
+   return this;
 }
 
 //! Create a person, which will be logged in.
@@ -1131,11 +1131,11 @@ object create_person(string name,string password)
 
 //! Logouts from the server.
 //! returns the called object
-object logout()
+this_program logout()
 {
    if (con)
       con->logout();
-   return this_object();
+   return this;
 }
 
 //! @decl object create_text(string subject, string body, mapping options)

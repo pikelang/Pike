@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.26 2003/04/07 17:19:41 nilsson Exp $
+// $Id: Table.pmod,v 1.27 2004/01/11 00:38:16 nilsson Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) error("(Table) "+msg+"\n")
@@ -35,9 +35,9 @@ class table {
     return ap?v:v[0];
   }
 
-  object copy(array|void tab, array|void fie, array|void typ)
+  this_program copy(array|void tab, array|void fie, array|void typ)
   {
-    return object_program(this_object())(tab||table,fie||fields,typ||types);
+    return this_program(tab||table,fie||fields,typ||types);
   }
 
   //! This method returns a binary string representation of the table. It is
@@ -61,7 +61,7 @@ class table {
     case "array":
       return copy_value(table);
     case "string":
-      return ASCII->encode(this_object());
+      return ASCII->encode(this);
     }
   }
 
@@ -209,10 +209,10 @@ class table {
   //! This method calls the function @[f] for each column each time a
   //! non uniqe row will be joined. The table will be grouped by the
   //! columns not listed. The result will be returned as a new table object.
-  object group(mapping(int|string:function)|function f, mixed ... args)
+  this_program group(mapping(int|string:function)|function f, mixed ... args)
   {
     if(!sizeof(table))
-      return this_object();
+      return this;
 
     if(functionp(f)) {
       if(!arrayp(args[0]))
@@ -238,7 +238,7 @@ class table {
 
   //! This method sums all equal rows. The table will be grouped by the
   //! columns not listed. The result will be returned as a new table object.
-  object sum(int|string ... columns)
+  this_program sum(int|string ... columns)
   {
     return group(`+, columns);
   }
@@ -246,7 +246,7 @@ class table {
   //! This method groups by the given columns and returns a table with only
   //! unique rows. When no columns are given, all rows will be unique. A new
   //! table object will be returned.
-  object distinct(int|string ... columns)
+  this_program distinct(int|string ... columns)
   {
     if(!sizeof(columns))
       return sum();
@@ -280,10 +280,10 @@ class table {
     return copy(t, fields, types);
   }
 
-  static private object _sort(int is_reversed, int|string ... cs)
+  static private this_program _sort(int is_reversed, int|string ... cs)
   {
     if(!sizeof(cs))
-      return this_object();
+      return this;
     int c;
     array t = copy_value(table);
     if(!catch(c = remap(cs[-1])))

@@ -1,6 +1,6 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.12 2002/12/10 15:12:29 marcus Exp $
+ * $Id: Auth.pmod,v 1.13 2004/01/11 00:46:12 nilsson Exp $
  */
 
 /*
@@ -105,7 +105,7 @@ class lock_key
       return 0;
     f->close();
     
-    return my_hardlink(c_name, l_name) && this_object();
+    return my_hardlink(c_name, l_name) && this;
   }
   
   void destroy()

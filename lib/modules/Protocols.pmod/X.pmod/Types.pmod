@@ -1,6 +1,6 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.38 2002/06/13 20:21:17 bill Exp $
+ * $Id: Types.pmod,v 1.39 2004/01/11 00:46:12 nilsson Exp $
  */
 
 /*
@@ -36,7 +36,7 @@ class XResource
     display = d;
     id = i;
 
-    display->remember_id(id, this_object());
+    display->remember_id(id, this);
   }
 
   object FreeRequest() {}
@@ -98,7 +98,7 @@ class Font
   object CreateGlyphCursor(int sourcechar, array(int)|void foreground,
 			   array(int)|void background)
   {
-    return display->CreateGlyphCursor(this_object(), sourcechar, 0, 0,
+    return display->CreateGlyphCursor(this, sourcechar, 0, 0,
 				      foreground, background);
   }
 
@@ -288,7 +288,7 @@ class Drawable
     r->gc = gc;
     r->src = src;
     r->area = area;
-    r->dst = this_object();
+    r->dst = this;
     r->x = x;
     r->y = y;
     return r;
@@ -335,7 +335,7 @@ class Drawable
   {
     object req = CreatePixmap_req(width, height, depth);
     display->send_request( req );
-    object p = Pixmap(display, req->pid, this_object(), colormap );
+    object p = Pixmap(display, req->pid, this, colormap );
     p->depth = depth;
     return p;
   }
@@ -512,9 +512,9 @@ class Window
     return req;
   }
 
-  object new(mixed ... args) /* Kludge */
+  this_program new(mixed ... args) /* Kludge */
   {
-    return object_program(this_object())(@args);
+    return this_program(@args);
   }
 
   object CreateColormap(object visual, int|void alloc)
@@ -548,8 +548,8 @@ class Window
     // 		   Crypto.string_to_hex(req->to_string())));
     
     display->send_request(req);
-    object w = new(display, req->wid, visual, this_object());
-    w->depth = d||depth||this_object()->rootDepth;
+    object w = new(display, req->wid, visual, this);
+    w->depth = d||depth||this->rootDepth;
     w->colormap = c;
     w->currentInputMask = req->attributes->EventMask;
     w->attributes = attributes || ([]);
@@ -567,7 +567,7 @@ class Window
     display->send_request(req);
     
     // object w = Window(display, req->wid);
-    object w = new(display, req->wid, 0, this_object());
+    object w = new(display, req->wid, 0, this);
     
     w->visual = visual;
     w->currentInputMask = 0;
@@ -805,7 +805,7 @@ class Window
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
     display->extensions["SHAPE"]->
-      ShapeRectangles( this_object(), xo, yo, kind, operation, rectangles );
+      ShapeRectangles( this, xo, yo, kind, operation, rectangles );
   }
 
   void ShapeMask( string kind, int xo, int yo, string operation,
@@ -820,7 +820,7 @@ class Window
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
     display->extensions["SHAPE"]->
-      ShapeMask( this_object(), xo, yo, kind, operation, mask );
+      ShapeMask( this, xo, yo, kind, operation, mask );
   }
 
   void ShapeOffset( string kind, int xo, int yo )
@@ -833,7 +833,7 @@ class Window
     }
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
-    display->extensions["SHAPE"]->ShapeOffset( this_object(), kind, xo, yo );
+    display->extensions["SHAPE"]->ShapeOffset( this, kind, xo, yo );
   }
 
 

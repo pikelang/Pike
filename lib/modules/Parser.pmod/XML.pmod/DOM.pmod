@@ -74,14 +74,14 @@ class DOMImplementation
   Document create_document(string namespace_uri, string qualified_name,
 			   DocumentType|void doctype)
   {
-    return Document(this_object(), namespace_uri, qualified_name, doctype);
+    return Document(this, namespace_uri, qualified_name, doctype);
   }
 
   DocumentType create_document_type(string qualified_name,
 				    string|void public_id,
 				    string|void system_id)
   {
-    return DocumentType(this_object(), qualified_name, public_id, system_id);
+    return DocumentType(this, qualified_name, public_id, system_id);
   }
 }
 
@@ -90,12 +90,12 @@ class NodeList
   static array(Node) nodes;
 
   static NodeList `+(NodeList nl) {
-    return NodeList(values(this_object())+values(nl));
+    return NodeList(values(this)+values(nl));
   }
   static Node `[](int index) { return item(index); }
   static int _sizeof() { return get_length(); }
   static array(Node) cast(string to) {
-    return to[..4] == "array" && values(this_object());
+    return to[..4] == "array" && values(this);
   }
 
   Node item(int index)
@@ -166,7 +166,7 @@ class NamedNodeMap
 
   Node item(int index)
   {
-    return values(this_object())[index];
+    return values(this)[index];
   }
 
   int get_length()
@@ -244,7 +244,7 @@ class Node
 
   Node get_previous_sibling(Node|void node) {
     if(!node)
-      return parent_node && parent_node->get_previous_sibling(this_object());
+      return parent_node && parent_node->get_previous_sibling(this);
     if(!child_nodes)
       return 0;
     int pos = child_nodes->search(node);
@@ -253,7 +253,7 @@ class Node
 
   Node get_next_sibling(Node|void node) {
     if(!node)
-      return parent_node && parent_node->get_next_sibling(this_object());
+      return parent_node && parent_node->get_next_sibling(this);
     if(!child_nodes)
       return 0;
     int pos = child_nodes->search(node);
@@ -267,7 +267,7 @@ class Node
 
   static int is_ancestor(Node node)
   {
-    Node loc = this_object();
+    Node loc = this;
     while(loc) {
       if(node == loc)
 	return 1;
@@ -279,7 +279,7 @@ class Node
   protected void _set_parent(Node new_parent)
   {
     if(new_parent && parent_node)
-	parent_node->remove_child(this_object());
+	parent_node->remove_child(this);
     parent_node = new_parent;
   }
 
@@ -299,7 +299,7 @@ class Node
 	 new_child->get_node_type() == DOCUMENT_TYPE_NODE &&
 	 !new_child->get_owner_document() &&
 	 functionp(new_child->_set_owner_document))
-	new_child->_set_owner_document(this_object());
+	new_child->_set_owner_document(this);
       else
 	throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
     
@@ -309,12 +309,12 @@ class Node
 	if(!child_is_allowed(nc))
 	  throw(DOMException(DOMException.HIERARCHY_REQUEST_ERR));
       foreach(new_children, Node nc)
-	nc->_set_parent(this_object());
+	nc->_set_parent(this);
       get_child_nodes()->insert_at(pos, new_children);
     } else {
       if(!child_is_allowed(new_child))
 	throw(DOMException(DOMException.HIERARCHY_REQUEST_ERR));
-      new_child->_set_parent(this_object());
+      new_child->_set_parent(this);
       get_child_nodes()->insert_at(pos, ({new_child}));
     }
     return new_child;
@@ -349,7 +349,7 @@ class Node
   static string _sprintf(int mode, mapping options)
   {
     return mode == 'O' &&
-      sprintf("%O(%s)", object_program(this_object()), get_node_name());
+      sprintf("%O(%s)", this_program, get_node_name());
   }
 }
 
@@ -421,42 +421,42 @@ class Document
 
   Element create_element(string tag_name)
   {
-    return ElementImpl(this_object(), tag_name);
+    return ElementImpl(this, tag_name);
   }
 
   DocumentFragment create_document_fragment()
   {
-    return DocumentFragmentImpl(this_object());
+    return DocumentFragmentImpl(this);
   }
 
   Text create_text_node(string data)
   {
-    return TextImpl(this_object(), data);
+    return TextImpl(this, data);
   }
 
   Comment create_comment(string data)
   {
-    return CommentImpl(this_object(), data);
+    return CommentImpl(this, data);
   }
 
   CDATASection create_cdata_section(string data)
   {
-    return CDATASectionImpl(this_object(), data);
+    return CDATASectionImpl(this, data);
   }
 
   ProcessingInstruction create_processing_instruction(string target, string data)
   {
-    return ProcessingInstructionImpl(this_object(), target, data);
+    return ProcessingInstructionImpl(this, target, data);
   }
 
   Attr create_attribute(string name, string|void default_value)
   {
-    return AttrImpl(this_object(), name, default_value);
+    return AttrImpl(this, name, default_value);
   }
 
   EntityReference create_entity_reference(string name)
   {
-    return EntityReferenceImpl(this_object(), name);
+    return EntityReferenceImpl(this, name);
   }
 
   NodeList get_elements_by_tag_name(string tagname)
@@ -479,7 +479,7 @@ class Document
     implementation = i;
     namespace_uri = ns;
     qualified_name = qn;
-    owner_document = this_object();
+    owner_document = this;
     if(doctype)
       append_child(doctype);
   }
@@ -626,7 +626,7 @@ class Element
       static int is_readonly() { return node::is_readonly(); }
       static void bind(Node n)
       {
-	n->_bind(function_object(object_program(this_object())));
+	n->_bind(function_object(this_program));
       }
       static void unbind(Node n) {
 	n->_bind(0);
@@ -687,7 +687,7 @@ class Element
   NodeList get_elements_by_tag_name(string name)
   {
     NodeList res = NodeList((name == "*" || name == get_tag_name()) &&
-			    ({ this_object() }));
+			    ({ this }));
     foreach((array(Node))get_child_nodes(), Node n)
       if(n->get_node_type() == ELEMENT_NODE)
 	res += values(n->get_elements_by_tag_name(name));
@@ -1066,7 +1066,7 @@ class AbstractDOMParser
     void warning(ParseException exception);
   };
 
-  static ErrorHandler error_handler = this_object();
+  static ErrorHandler error_handler = this;
 
   void error(ParseException exception) { throw(exception); }
   void fatal_error(ParseException exception) { throw(exception); }

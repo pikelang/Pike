@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.37 2003/12/23 17:39:00 grubba Exp $
+ * $Id: Tree.pmod,v 1.38 2004/01/11 00:49:35 nilsson Exp $
  *
  */
 
@@ -239,7 +239,7 @@ class AbstractNode {
   {
     AbstractNode  parent, node;
     
-    parent = this_object();
+    parent = this;
     while (node = parent->mParent)
       parent = node;
     return (parent);
@@ -279,7 +279,7 @@ class AbstractNode {
   AbstractNode add_child(AbstractNode c)
   {
     mChildren += ({ c });
-    c->mParent = this_object();
+    c->mParent = this;
 	
     //  Let caller get the new node back for easy chaining of calls
     return (c);
@@ -295,7 +295,7 @@ class AbstractNode {
 
   //! Removes this node from its parent. The parent reference is set to null.
   void remove_node() {
-    mParent->remove_child(this_object());
+    mParent->remove_child(this);
   }
 
   //! Replaces the nodes children with the provided ones. All parent
@@ -305,7 +305,7 @@ class AbstractNode {
       c->mParent = 0;
     mChildren = children;
     foreach(mChildren, AbstractNode c)
-      c->mParent = this_object();
+      c->mParent = this;
   }
 
 
@@ -319,7 +319,7 @@ class AbstractNode {
     if (index < 0)
       return 0;
     mChildren[index] = new;
-    new->mParent = this_object();
+    new->mParent = this;
     old->mParent = 0;
     return new;
   }
@@ -328,7 +328,7 @@ class AbstractNode {
   //! @returns
   //!   Returns the new node.
   AbstractNode replace_node(AbstractNode new) {
-    mParent->replace_child(this_object(), new);
+    mParent->replace_child(this, new);
     return new;
   }
 
@@ -339,7 +339,7 @@ class AbstractNode {
   int walk_preorder(function(AbstractNode, mixed ...:int|void) callback,
 		    mixed ... args)
   {
-    if (callback(this_object(), @args) == STOP_WALK)
+    if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
     foreach(mChildren, AbstractNode c)
       if (c->walk_preorder(callback, @args) == STOP_WALK)
@@ -359,11 +359,11 @@ class AbstractNode {
   {
     int  res;
 	
-    res = callback_1(this_object(), @args);
+    res = callback_1(this, @args);
     if (!res)
       foreach(mChildren, AbstractNode c)
 	res = res || c->walk_preorder_2(callback_1, callback_2, @args);
-    return (callback_2(this_object(), @args) || res);
+    return (callback_2(this, @args) || res);
   }
 
   //! Traverse the node subtree in inorder, left subtree first, then
@@ -377,7 +377,7 @@ class AbstractNode {
     if (sizeof(mChildren) > 0)
       if (mChildren[0]->walk_inorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
-    if (callback(this_object(), @args) == STOP_WALK)
+    if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
     foreach(mChildren[1..], AbstractNode c)
       if (c->walk_inorder(callback, @args) == STOP_WALK)
@@ -394,7 +394,7 @@ class AbstractNode {
     foreach(mChildren, AbstractNode c)
       if (c->walk_postorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
-    if (callback(this_object(), @args) == STOP_WALK)
+    if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
   }
 
@@ -420,7 +420,7 @@ class AbstractNode {
     if (!mParent)
       return ({ });
     siblings = mParent->get_children();
-    pos = search(siblings, this_object());
+    pos = search(siblings, this);
 
     //  Return array in reverse order not including self
     return (reverse(siblings[..(pos - 1)]));
@@ -437,7 +437,7 @@ class AbstractNode {
     if (!mParent)
       return ({ });
     siblings = mParent->get_children();
-    pos = search(siblings, this_object());
+    pos = search(siblings, this);
 
     //  Select array range
     return (siblings[(pos + 1)..]);
@@ -448,7 +448,7 @@ class AbstractNode {
   {
     //  If not found we return ourself only
     if (!mParent)
-      return ({ this_object() });
+      return ({ this });
     return (mParent->get_children());
   }
 
@@ -460,8 +460,8 @@ class AbstractNode {
     AbstractNode  node;
 	
     //  Repeat until we reach the top
-    res = include_self ? ({ this_object() }) : ({ });
-    node = this_object();
+    res = include_self ? ({ this }) : ({ });
+    node = this;
     while (node = node->get_parent())
       res += ({ node });
     return (res);
@@ -474,7 +474,7 @@ class AbstractNode {
     array   res;
 	
     //  Walk subtrees in document order and add to resulting list
-    res = include_self ? ({ this_object() }) : ({ });
+    res = include_self ? ({ this }) : ({ });
     foreach(mChildren, AbstractNode child) {
       res += child->get_descendants(1);
     }
@@ -489,7 +489,7 @@ class AbstractNode {
 	
     //  Walk tree from root until we find ourselves and add all preceding
     //  nodes. We should return the nodes in reverse document order.
-    self = this_object();
+    self = this;
     root = get_root();
     root->walk_preorder(
 			lambda(AbstractNode n) {
@@ -501,7 +501,7 @@ class AbstractNode {
 			});
 	
     //  Finally remove all of our ancestors
-    root = this_object();
+    root = this;
     while (node = root->get_parent()) {
       root = node;
       res -= ({ node });
@@ -518,7 +518,7 @@ class AbstractNode {
 	
     //  Add subtrees from right-hand siblings and keep walking towards
     //  the root of the tree.
-    node = this_object();
+    node = this;
     do {
       siblings = node->get_following_siblings();
       foreach(siblings, AbstractNode n) {
@@ -745,7 +745,7 @@ class Node {
   //! It is possible to cast a node to a string, which will return
   //! @[render_xml()] for that node.
   mixed cast(string to) {
-    if(to=="object") return this_object();
+    if(to=="object") return this;
     if(to=="string") return render_xml();
     error( "Can not case Node to "+to+".\n" );
   }
@@ -922,10 +922,10 @@ class Node {
     string encoding = get_encoding();
     set_short_namespaces();
     if(preserve_roxen_entities)
-      low_render_xml(data, this_object(), roxen_text_quote,
+      low_render_xml(data, this, roxen_text_quote,
 		     roxen_attribute_quote);
     else
-      low_render_xml(data, this_object(), text_quote, attribute_quote);
+      low_render_xml(data, this, text_quote, attribute_quote);
     return Locale.Charset.encoder(encoding)->feed((string)data)->drain();
   }
 
@@ -942,10 +942,10 @@ class Node {
     } (f, Locale.Charset.encoder(get_encoding()));
     set_short_namespaces();
     if(preserve_roxen_entities)
-      low_render_xml(data, this_object(), roxen_text_quote,
+      low_render_xml(data, this, roxen_text_quote,
 		     roxen_attribute_quote);
     else
-      low_render_xml(data, this_object(), text_quote, attribute_quote);
+      low_render_xml(data, this, text_quote, attribute_quote);
   }
 
   //  Override AbstractNode::`[]
@@ -991,7 +991,7 @@ class Node {
     node_num = get_doc_order() + 1;
     foreach(indices(mAttributes), string attr) {
       node = AttributeNode(attr, mAttributes[attr]);
-      node->set_parent(this_object());
+      node->set_parent(this);
       node->set_doc_order(node_num++);
       mAttrNodes += ({ node });
     }

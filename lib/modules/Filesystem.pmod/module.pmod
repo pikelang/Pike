@@ -112,7 +112,7 @@ class Stat
     // fallback to tar, etc
 
     // something like this? /jhs
-    //  return Filesystem.Tar(fullpath, this_object());
+    //  return Filesystem.Tar(fullpath, this);
     return 0;
   }
 

@@ -11,7 +11,7 @@ class elem {
   void set_pri(int p)
     {
       pri=p;
-      adjust(this_object());
+      adjust(this);
     }
 
   int get_pri() { return pri; }

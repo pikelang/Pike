@@ -553,7 +553,7 @@ class DeferredLocale( static string project,
   static mixed cast(string to)
   {
     if(to=="string") return lookup();
-    if(to=="mixed" || to=="object") return this_object();
+    if(to=="mixed" || to=="object") return this;
     error( "Cannot cast DeferredLocale to "+to+".\n" );
   }
 

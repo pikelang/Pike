@@ -4,7 +4,6 @@ inherit GTK.Ctree:ctree;
 
 class Node
 {
-   private static object this=this_object();
    private static program Prog=object_program(this_object());
 
    private static GTK.CTreeNode node;
@@ -53,13 +52,13 @@ class Node
    Node insert_sibling(array(string)|void columns,
 		       void|int is_leaf,void|int expanded)
    {
-      return Prog (ctree::insert_node(0,node,columns,is_leaf,expanded));
+      return this_program(ctree::insert_node(0,node,columns,is_leaf,expanded));
    }
 
    Node insert_child(array(string)|void columns,
 		     void|int is_leaf,void|int expanded)
    {
-      return Prog(ctree::insert_node(node,0,columns,is_leaf,expanded));
+      return this_program(ctree::insert_node(node,0,columns,is_leaf,expanded));
    }
 
    int is_ancestor(Node what)
@@ -79,7 +78,7 @@ class Node
 
    Node last()
    {
-      return Prog(ctree::last(node));
+      return this_program(ctree::last(node));
    }
 
    Node move_new_parent(Node parent)
@@ -286,7 +285,7 @@ class Node
 
    Node find_by_data(object data)
    {
-      return Prog(ctree::find_by_row_data(data,node));
+      return this_program(ctree::find_by_row_data(data,node));
    }
 
    mixed `[](string z)
@@ -311,11 +310,11 @@ class Node
 
    Node find_node_ptr()
    {
-      return Prog(ctree::find_node_ptr(node));
+      return this_program(ctree::find_node_ptr(node));
    }
 }
 
-object root=Node(0);
+Node root=Node(0);
 
 Node node_nth(int i)
 {

@@ -135,7 +135,7 @@ class Connection {
        (sv == PROTO_VERSION))
     {
       DEBUGMSG("connected\n");
-      ctx = Context(replace(con->query_address(1), " ", "-"), this_object());
+      ctx = Context(replace(con->query_address(1), " ", "-"), this);
 #if constant(thread_create)
       thread_create( read_thread );
 #else
@@ -694,7 +694,7 @@ class Context {
       return 0;
     }
     DEBUGMSG("object_for(" + id + ") not found; making remote object\n");
-    o = Obj(id, con, this_object());
+    o = Obj(id, con, this);
     val2other[o] = id;
     return other[id] = o;
   }
@@ -712,7 +712,7 @@ class Context {
       return o;
     }
     DEBUGMSG("function_for(" + id + ") not found; making remote object\n");
-    o = Call(0, id, con, this_object(), 0);
+    o = Call(0, id, con, this, 0);
     val2other[o] = id;
     return other[id] = o;
   }

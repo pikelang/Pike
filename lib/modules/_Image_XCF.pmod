@@ -104,10 +104,10 @@ class Channel
       switch(p->type)
       {
        case PROP_ACTIVE_CHANNEL:
-         parent->active_channel = this_object();
+         parent->active_channel = this;
          break;
        case PROP_SELECTION:
-         parent->selection = this_object();
+         parent->selection = this;
          break;
          INT(OPACITY,opacity);
          FLAG(VISIBLE,visible);
@@ -169,10 +169,10 @@ class Layer
       switch(p->type)
       {
        case PROP_ACTIVE_LAYER:
-         parent->active_layer = this_object();
+         parent->active_layer = this;
          break;
        case PROP_SELECTION:
-         parent->selection = this_object();
+         parent->selection = this;
          break;
        case PROP_OFFSETS:
          xoffset = p->data->get_int( 0 );
@@ -349,9 +349,9 @@ class GimpImage
     width = data->width;
     height = data->height;
     foreach(data->layers, mapping l )
-      layers += ({ Layer( l, this_object() ) });
+      layers += ({ Layer( l, this ) });
     foreach(data->channels, mapping c )
-      channels += ({ Channel( c, this_object() ) });
+      channels += ({ Channel( c, this ) });
   }
 }
 

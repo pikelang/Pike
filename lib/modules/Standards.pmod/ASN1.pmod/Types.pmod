@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.27 2003/01/28 22:58:56 nilsson Exp $
+// $Id: Types.pmod,v 1.28 2004/01/11 00:42:00 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -93,7 +93,7 @@ class Object
       mapping(int:program(Object)) types) {
     return types;
   }
-  this_program init(mixed ... args) { return this_object(); }
+  this_program init(mixed ... args) { return this; }
 
   string to_base_128(int n) {
     if (!n)
@@ -177,14 +177,14 @@ class Compound
 	error( "Non-object argument!\n" );
     elements = [array(object)]args;
     WERROR(sprintf("asn1_compound: %O\n", elements));
-    return this_object();
+    return this;
   }
 
   this_program begin_decode_constructed(string raw) {
     WERROR(sprintf("asn1_compound[%s]->begin_decode_constructed\n",
 		   type_name));
     record_der_contents(raw);
-    return this_object();
+    return this;
   }
 
   this_program decode_constructed_element(int i, object e) {
@@ -193,13 +193,13 @@ class Compound
     if (i != sizeof(elements))
       error("Unexpected index!\n");
     elements += ({ e });
-    return this_object();
+    return this;
   }
 
   this_program end_decode_constructed(int length) {
     if (length != sizeof(elements))
       error("Invalid length!\n");
-    return this_object();
+    return this;
   }
 
   static string _sprintf(int t) {
@@ -225,7 +225,7 @@ class String
 
   this_program init(string s) {
     value = s;
-    return this_object();
+    return this;
   }
 
   string der_encode() {
@@ -235,7 +235,7 @@ class String
   this_program decode_primitive(string contents) {
     record_der_contents(contents);
     value = contents;
-    return this_object();
+    return this;
   }
 
   static string _sprintf(int t) {
@@ -266,7 +266,7 @@ class Boolean
   //! value of object
   int value;
 
-  this_program init(int x) { value = x; return this_object(); }
+  this_program init(int x) { value = x; return this; }
 
   string der_encode() { return build_der(value ? "\377" : "\0"); }
 
@@ -278,7 +278,7 @@ class Boolean
     }
     record_der_contents(contents);
     value = contents[0];
-    return this_object();
+    return this;
   }
 
   static string _sprintf(int t) {
@@ -306,7 +306,7 @@ class Integer
   this_object init(int|object n) {
     value = Gmp.mpz(n);
     WERROR(sprintf("i = %s\n", value->digits()));
-    return this_object();
+    return this;
   }
 
   string der_encode() {
@@ -331,7 +331,7 @@ class Integer
     value = Gmp.mpz(contents, 256);
     if (contents[0] & 0x80)  /* Negative */
       value -= pow(256, sizeof(contents));
-    return this_object();
+    return this;
   }
 
   static string _sprintf(int t) {
@@ -366,7 +366,7 @@ class BitString
 
   int unused = 0;
 
-  this_program init(string s) { value = s; return this_object(); }
+  this_program init(string s) { value = s; return this; }
 
   string der_encode() {
     return build_der(sprintf("%c%s", unused, value));
@@ -396,7 +396,7 @@ class BitString
     if (unused >= 8)
       return 0;
     value = contents[1..];
-    return this_object();
+    return this;
   }
 
   static string _sprintf(int t) {
@@ -433,7 +433,7 @@ class Null
 
   this_program decode_primitive(string contents) {
     record_der_contents(contents);
-    return !sizeof(contents) && this_object();
+    return !sizeof(contents) && this;
   }
 
 #ifdef COMPATIBILITY
@@ -457,7 +457,7 @@ class Identifier
 	 || (args[1] >= ( (args[0] < 2) ? 40 : 176) ))
       error( "Invalid object identifier.\n" );
     id = args;
-    return this_object();
+    return this;
   }
 
   mixed _encode() { return id; }
@@ -466,7 +466,7 @@ class Identifier
   //! @fixme
   //!   document me!
   this_program append(int ... args) {
-    return object_program(this_object())(@id, @args);
+    return this_program(@id, @args);
   }
 
   string der_encode() {
@@ -490,7 +490,7 @@ class Identifier
       } while(contents[index++] & 0x80);
       id += ({ element });
     }
-    return this_object();
+    return this;
   }
 
   static string _sprintf(int t) {
@@ -505,7 +505,7 @@ class Identifier
 
   int `==(mixed other) {
     return (objectp(other) &&
-	    (object_program(this_object()) == object_program(other)) &&
+	    (this_program == object_program(other)) &&
 	    equal(id, [object]other->id));
   }
 }
@@ -539,7 +539,7 @@ class UTF8String
     })
       return 0;
 
-    return this_object();
+    return this;
   }
 }
 
@@ -996,7 +996,7 @@ class TeletexString
     foreach (parts[1..], string part)
       value += (decode_comb[part[..1]] || DEC_ERR(part[..1])) + part[2..];
 
-    return this_object();
+    return this;
   }
 
 #undef ENC_ERR
@@ -1109,7 +1109,7 @@ class BMPString
   this_program decode_primitive (string contents) {
     record_der (contents);
     value = unicode_to_string (contents);
-    return this_object();
+    return this;
   }
 }
 
@@ -1136,7 +1136,7 @@ class MetaExplicit
 
     this_program init(Object o) {
       contents = o;
-      return this_object();
+      return this;
     }
 
     string der_encode() {
@@ -1149,13 +1149,13 @@ class MetaExplicit
       if (i)
 	error("Unexpected index!\n");
       contents = e;
-      return this_object();
+      return this;
     }
 
     this_program end_decode_constructed(int length) {
       if (length != 1)
 	error("length != 1!\n");
-      return this_object();
+      return this;
     }
 
     mapping(int:program(Object)) element_types(int i,

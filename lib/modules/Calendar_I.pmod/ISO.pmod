@@ -157,14 +157,12 @@ static private class _Day
    // Minute and Second. This function will be shadowed in Hour.
    object day()
    {
-      return this_object()->hour()->day();
+      return this->hour()->day();
    }
 }
 
 static private class Name
 {
-   object this = this_object();
-
    string iso_name()
    {
       return this->day()->iso_name()+this->_iso_name();

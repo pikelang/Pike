@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.26 2003/11/16 16:19:39 grubba Exp $
+// $Id: TimeRanges.pmod,v 1.27 2004/01/11 00:51:22 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -10,7 +10,7 @@ program SuperTimeRange=cSuperTimeRange;
 
 string calendar_name() { return "TimeRanges"; }
 
-object calendar_object=this_object();
+object calendar_object=this;
 
 string _sprintf(int t) { return (t=='O')?calendar_name():0; }
 
@@ -119,9 +119,8 @@ class TimeRange
       }
 
       error("%O.%O: Illegal parameters %O,%O,%O...\n",
-	    function_object(object_program(this_object())),
-	    object_program(this_object()),
-	    @args,0,0,0);
+	    function_object(this_program),
+	    this_program,@args,0,0,0);
    }
 
    static void convert_from(TimeRange other)
@@ -139,8 +138,7 @@ class TimeRange
 	 create("unix_r",other->unix_time(),other->ruleset());
       else 
 	 error("Can't convert %O->%s.%O\n",other,
-	       calendar_name(),
-	       object_program(this_object()));
+	       calendar_name(), this_program);
    }
 
 //! method TimeRange set_size(TimeRange size)
@@ -162,8 +160,7 @@ class TimeRange
       int(0..0x7fffffff) n;
       if (!b) 
 	 if (intp(a)) 
-	    x=[function|object(TimeRange)]this_object(),
-	       n=[int(0..0x7fffffff)]a;
+	    x=this,n=[int(0..0x7fffffff)]a;
 	 else
 	    x=a,n=1;
       else
@@ -207,8 +204,7 @@ class TimeRange
       int n;
       if (!b) 
 	 if (intp(a)) 
-	    x=[function|object(this_program)]this_object(),
-	       n=[int]a;
+	   x=this,n=[int]a;
 	 else
 	    x=a,n=1;
       else
@@ -292,12 +288,12 @@ class TimeRange
 
    TimeRange next()
    {
-      return this_object()+1;
+      return this+1;
    }
 
    TimeRange prev()
    {
-      return this_object()-1;
+      return this-1;
    }
 
 //! method TimeRange `*(int n)
@@ -308,7 +304,7 @@ class TimeRange
    function ``* = `*;
    TimeRange `*(int n)
    {
-      return set_size(n,this_object());
+      return set_size(n,this);
    }
 
 //! method array(TimeRange) `/(int n)
@@ -416,10 +412,10 @@ class TimeRange
 
    int offset_to(TimeRange x)
    {
-      if (x==this_object()) return 0;
-      if (x<this_object())
-	 return -(x->distance(this_object())/this_object());
-      return this_object()->distance(x)/this_object();
+      if (x==this) return 0;
+      if (x<this)
+	 return -(x->distance(this)/this);
+      return this->distance(x)/this;
    }
 
 //! method TimeRange beginning()
@@ -530,7 +526,7 @@ class TimeRange
    {
       if (objectp(what) && what->is_supertimerange)
       {
-	 array(int(-1..1)) cmp=what->_compare(this_object());
+	 array(int(-1..1)) cmp=what->_compare(this);
 
 	 return ({-cmp[0],
 		  -cmp[2],
@@ -539,7 +535,7 @@ class TimeRange
       }
       return ({-1,-1,-1,-1});
 //        error("_compare: incompatible classes %O <-> %O\n",
-//  	    object_program(this_object()),object_program(what));
+//  	    this_program,object_program(what));
    }
 
    string _describe_compare(array(int(-1..1)) c,TimeRange a,TimeRange b)
@@ -682,7 +678,7 @@ class TimeRange
 
    int(0..1) `==(TimeRange what) 
    { 
-      return object_program(what)==object_program(this_object()) &&
+      return object_program(what)==this_program &&
 	 what->ruleset()==ruleset() &&
 	 equals(what); 
    }
@@ -715,7 +711,7 @@ class TimeRange
 	 return nulltimerange; // no overlap, no extra
 
       if (with->is_supertimerange)
-	 return predef::`&(with,this_object(),@extra); // let it handle that...
+	 return predef::`&(with,this,@extra); // let it handle that...
 
       TimeRange from,to;
 
@@ -745,22 +741,22 @@ class TimeRange
    TimeRange `|(TimeRange with,mixed ...extra)
    {
       if (with->is_nulltimerange) 
-	 return sizeof(extra)?`|(@extra):this_object();
+	 return sizeof(extra)?`|(@extra):this;
       array(int(-1..1)) a=_compare(with);
       TimeRange from,to;
 
       if (a[END_BEGIN]<0 || a[BEGIN_END]>0)
-	 from=SuperTimeRange( sort(({this_object(),with})) ); // no overlap
+	 from=SuperTimeRange( sort(({this,with})) ); // no overlap
       else
       {
 	 if (with->is_supertimerange)   // let it handle that...
-	    return predef::`|(with,this_object(),@extra);
+	    return predef::`|(with,this,@extra);
 
    // from the first beginning
-	 if (a[BEGIN_BEGIN]<0) from=this_object(); else from=with;
+	 if (a[BEGIN_BEGIN]<0) from=this; else from=with;
 
    // to the last end
-	 if (a[END_END]>0) to=this_object(); else to=with;
+	 if (a[END_END]>0) to=this; else to=with;
    // compute
 	 from=from->range(to);
       }
@@ -784,24 +780,24 @@ class TimeRange
    TimeRange `^(TimeRange with,mixed ... extra)
    {
       if (with->is_supertimerange)
-	 return `^(with,this_object(),@extra); // let it handle that...
+	 return `^(with,this,@extra); // let it handle that...
       if (with->is_nulltimerange) 
-	 return sizeof(extra)?`^(@extra):this_object();
+	 return sizeof(extra)?`^(@extra):this;
 
       TimeRange res;
 
       array(int(-1..1)) a=_compare(with);
       
-//        write(_describe_compare(a,this_object(),with));
+//        write(_describe_compare(a,this,with));
 
       TimeRange first,second;
       if (a[END_BEGIN]<0 || a[BEGIN_END]>0)
-	 res=SuperTimeRange( sort(({this_object(),with})) ); // no overlap
+	 res=SuperTimeRange( sort(({this,with})) ); // no overlap
       else if (a[BEGIN_END]==0 || a[END_BEGIN]==0) // bordering
 	 if (a[BEGIN_BEGIN]<0)
 	    res=range(with); // A precedes B
 	 else
-	    res=with->range(this_object()); // B precedes A
+	    res=with->range(this); // B precedes A
       else if (a[BEGIN_BEGIN]==0 && a[END_END]==0)
 	 return sizeof(extra)?predef::`^(nulltimerange,@extra):nulltimerange;
       else
@@ -810,13 +806,13 @@ class TimeRange
 	 if (a[BEGIN_BEGIN]<0) 
 	    first=distance(with); 
 	 else 
-	    first=with->distance(this_object());
+	    first=with->distance(this);
 
 // and from the first end to the last end
 	 if (a[END_END]<0) 
 	    second=end()->range(with); 
 	 else 
-	    second=with->end()->range(this_object());
+	    second=with->end()->range(this);
 	 res=first|second;
       }
    // done
@@ -842,7 +838,7 @@ class TimeRange
       array(int(-1..1)) a=_compare(what);
 
       if (a[END_BEGIN]<=0 || a[BEGIN_END]>=0)
-	 return sizeof(extra)?subtract(@extra):this_object(); // no overlap
+	 return sizeof(extra)?subtract(@extra):this; // no overlap
 
       if (what->is_supertimerange)
       {
@@ -857,13 +853,13 @@ class TimeRange
 
       TimeRange res;
 
-//        write(_describe_compare(a,this_object(),what));
+//        write(_describe_compare(a,this,what));
 
       if (a[BEGIN_BEGIN]>=0)      // it preceeds us
 	 if (a[END_END]<=0) 
 	    return nulltimerange; // full overlap
 	 else                     // half overlap at start
-	    res=what->end()->range(this_object());
+	    res=what->end()->range(this);
       else if (a[END_END]<=0)     // it succeeds us
 	 res=distance(what);
       else 
@@ -873,7 +869,7 @@ class TimeRange
 //  		what->end(),end());
 // it's inside us
 	 res=predef::`|(distance(what),
-			what->end()->range(this_object()));
+			what->end()->range(this));
       }
       if (sizeof(extra)) return res->subtract(@extra);
       return res;
@@ -1050,7 +1046,7 @@ class cSuperTimeRange
       if (with->is_supertimerange)
 	 res=mend_overlap(sort(with->parts+parts));
       else if (with->is_nulltimerange)
-	 return this_object();
+	 return this;
       else
 	 res=mend_overlap(sort( ({with})+parts ));
       if (sizeof(extra)) 
@@ -1184,37 +1180,37 @@ static class cNullTimeRange
 
    TimeRange set_size(TimeRange|int(0..0x7fffffff) a,void|TimeRange b)
    {
-      return this_object();
+      return this;
    }
 
    TimeRange place(TimeRange what,void|int force)
    {
-      return this_object();
+      return this;
    }
 
    array(TimeRange) split(int n)
    {
-      return allocate(n,this_object());
+      return allocate(n,this);
    }
 
-   TimeRange beginning() { return this_object(); }
-   TimeRange end() { return this_object(); }
+   TimeRange beginning() { return this; }
+   TimeRange end() { return this; }
 
    TimeRange distance(TimeRange to)
    {
-      if (to==this_object()) return this_object();
+      if (to==this) return this;
       error("Can't distance/space/range with the null timerange\n");
    }
 
    array(int(-1..1)) _compare(TimeRange with)
    {
-      if (with==this_object()) return ({0,0,0,0});
+      if (with==this) return ({0,0,0,0});
       return ({-1,-1,-1,-1});
    }
 
    int(0..1) `<(TimeRange with)
    {
-      return !(with==this_object());
+      return !(with==this);
    }
 
    int(0..1) `>(TimeRange with)
@@ -1234,22 +1230,22 @@ static class cNullTimeRange
 
    TimeRange `&(TimeRange with, mixed ...extra)
    {
-      return predef::`&(with,this_object(),@extra);
+      return predef::`&(with,this,@extra);
    }
 
    TimeRange `|(TimeRange with, mixed ...extra)
    {
-      return predef::`|(with,this_object(),@extra);
+      return predef::`|(with,this,@extra);
    }
 
    TimeRange `^(TimeRange with, mixed ...extra)
    {
-      return predef::`^(with,this_object(),@extra);
+      return predef::`^(with,this,@extra);
    }
 
    this_program subtract(TimeRange with, mixed ...extra)
    {
-      return this_object();
+      return this;
    }
 
    int(1..1) `!()

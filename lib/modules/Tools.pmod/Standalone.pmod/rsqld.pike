@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: rsqld.pike,v 1.9 2003/08/24 21:00:35 nilsson Exp $
+// $Id: rsqld.pike,v 1.10 2004/01/11 00:40:07 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -25,7 +25,7 @@ class Connection
   static void timeout()
   {
     destruct(clntsock);
-    destruct(this_object());    
+    destruct(this);
   }
 
   static void expect(int n, function cb, mixed ... extra)
@@ -41,7 +41,7 @@ class Connection
   {
     remove_call_out(timeout);
     destruct(clntsock);
-    destruct(this_object());
+    destruct(this);
   }
 
   static void read_callback(mixed id, string s)
@@ -110,7 +110,7 @@ class Connection
       clntsock->set_blocking();
       clntsock->close();
       destruct(clntsock);
-      destruct(this_object());
+      destruct(this);
     }
     int seq, alen;
     sscanf(h[4..], "%4c%4c", seq, alen);
@@ -299,7 +299,7 @@ class Connection
       clntsock->write("####");
       clntsock->close();
       destruct(clntsock);
-      destruct(this_object());
+      destruct(this);
     }
   }
 

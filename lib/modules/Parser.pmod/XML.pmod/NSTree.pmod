@@ -100,7 +100,7 @@ class NSNode {
 
     // Get the parent namespace context.
     if(parent) {
-      parent->add_child(this_object());
+      parent->add_child(this);
       nss = parent->get_defined_nss();
       default_ns = parent->get_default_ns();
     }
@@ -176,7 +176,7 @@ class NSNode {
   }
 
   NSNode add_child(NSNode c) {
-    c->set_parent(this_object());
+    c->set_parent(this);
     return ::add_child(c);
   }
 

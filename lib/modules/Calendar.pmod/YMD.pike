@@ -14,8 +14,6 @@ inherit .Time:Time;
 
 #include "constants.h"
 
-#define this this_object()
-
 // ----------------
 // virtual methods to tell how this calendar works
 // ----------------
@@ -644,7 +642,7 @@ class YMD
 	 if (with->is_timeofday)
 	 {
       // wrap
-	    array(int(-1..1)) cmp=with->_compare(this_object());
+	    array(int(-1..1)) cmp=with->_compare(this);
 
 	    return ({-cmp[0],
 		     -cmp[2],
@@ -825,7 +823,7 @@ class YMD
       array(TimeRange) res=months(num,num);
       if (sizeof(res)==1) return res[0];
       error("not in range; Month 1..%d exist in %O\n",
-	    number_of_months(),this_object());
+	    number_of_months(),this);
    }
 
 //---- week
@@ -1189,10 +1187,10 @@ class cYear
 	    ->autopromote();
 
       if (step->is_month)
-	 return month()->add(m,step)->set_size(this_object());
+	 return month()->add(m,step)->set_size(this);
 
 //        if (step->is_week)
-//  	 return week()->add(m,step)->set_size(this_object());
+//  	 return week()->add(m,step)->set_size(this);
 
       if (step->is_ymd)
 	 return Day("ymd_jd",rules,
@@ -1292,7 +1290,7 @@ class cYear
 	 int num=((int)mp[0]) || 
 	    rules->language[f_month_number_from_name](mp[0]);
 	 if (!num)
-	    error("no such month %O in %O\n",mp[0],this_object());
+	    error("no such month %O in %O\n",mp[0],this);
 
 	 return ::month(num);
       }
@@ -1829,7 +1827,7 @@ class cWeek
 	    ->autopromote();
 
       if (step->is_year)
-	 return year()->add(x,step)->place(this_object(),1);
+	 return year()->add(x,step)->place(this,1);
 
       if (step->number_of_days)
 	 return Day("ymd_jd",rules,
@@ -1921,7 +1919,7 @@ class cWeek
 	 int num=((int)mp[0]) || 
 	    rules->language[f_week_day_number_from_name](mp[0]);
 	 if (!num)
-	    error("no such day %O in %O\n",mp[0],this_object());
+	    error("no such day %O in %O\n",mp[0],this);
 
 	 return ::day(num);
       }
@@ -2153,13 +2151,13 @@ class cDay
    static TimeRange _move(int x,YMD step)
    {
       if (step->is_year)
-	 return year()->add(x,step)->place(this_object(),1);
+	 return year()->add(x,step)->place(this,1);
 
       if (step->is_month)
-	 return month()->add(x,step)->place(this_object(),1);
+	 return month()->add(x,step)->place(this,1);
 
       if (step->is_week)
-	 return week()->add(x,step)->place(this_object(),1);
+	 return week()->add(x,step)->place(this,1);
 
       if (step->is_day)
 	 return Day("ymd_jd",rules,jd+x*step->n,n)
@@ -2200,7 +2198,7 @@ class cDay
 	    {
 	       if (res->hour_no()!=what->hour_no())
 		  error("place: no such time of "
-			"day (DST shift)\n",what,this_object());
+			"day (DST shift)\n",what,this);
 	    }
 	 }
 	 else
@@ -2636,7 +2634,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 
    TimeRange low;
 
-   .Calendar cal=this_object();
+   .Calendar cal=this;
 
 
 //  #define NOCATCH

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.30 2003/04/01 17:44:23 nilsson Exp $
+// $Id: RCS.pike,v 1.31 2004/01/11 00:49:26 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -420,7 +420,7 @@ class DeltatextIterator
   {
     while(nsteps--)
       next();
-    return this_object();
+    return this;
   }
 
   //! like @expr{@[`+=](1)@}, but returns 0 if the iterator is finished
@@ -532,7 +532,7 @@ class DeltatextIterator
 this_program parse(string raw, void|function(string:void) progress_callback)
 {
   parse_deltatext_sections(parse_delta_sections(parse_admin_section( raw )));
-  return this_object();
+  return this;
 }
 
 //! All data tied to a particular revision of the file.

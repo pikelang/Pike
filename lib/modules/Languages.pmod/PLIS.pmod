@@ -29,7 +29,7 @@ class SelfEvaluating (string name)
 
   SelfEvaluating eval(Environment env, Environment globals)
     {
-      return this_object();
+      return this;
     }
 
   string print(int display) { return name; }
@@ -68,7 +68,7 @@ class Cons
       object new_cdr = (cdr != Lempty) ? cdr->mapcar(fun, @extra)
 	: cdr;
       if (new_cdr) 
-	return object_program(this_object())(new_car, new_cdr);
+	return this_program(new_car, new_cdr);
       else
       {
 	werror("No cdr\n");
@@ -99,7 +99,7 @@ class Cons
   string print(int display)
     {
       string s = "(";
-      object p = this_object();
+      object p = this;
       while (p != Lempty)
       {
 	if (!p->car)
@@ -163,8 +163,8 @@ class Symbol
 	}
       }
 #endif
-      object binding =  env->query_binding(this_object())
-	|| globals->query_binding(this_object());
+      object binding =  env->query_binding(this)
+	|| globals->query_binding(this);
       if (!binding)
       {
 	werror("No binding for this symbol ["+name+"].\n");
@@ -185,7 +185,7 @@ class Symbol
       //     werror(sprintf("Creating symbol '%s'\n", n));
       name = n;
       if (table)
-	table[name] = this_object();
+	table[name] = this;
     }
 
   string to_string() { return name; }
@@ -207,12 +207,12 @@ class Nil
 
   void create()
     {
-      Cons :: create(this_object(), this_object());
+      Cons :: create(this, this);
       SelfEvaluating :: create("()");
     }
 
-  object mapcar(mixed ...ignored) { return this_object(); }
-  object map(mixed ...ignored) { return this_object(); }
+  object mapcar(mixed ...ignored) { return this; }
+  object map(mixed ...ignored) { return this; }
 }
 
 class String (string value)
@@ -266,7 +266,7 @@ class Environment
       env = bindings || ([ ]);
     }
 
-  object copy() { return object_program(this_object())(copy_value(env)); };
+  object copy() { return this_program(copy_value(env)); };
 
   void extend(Symbol symbol, object value)
     {
@@ -285,7 +285,7 @@ class Environment
 			       } ),
 	      object s)
       {
-	if(env[s]->value != this_object())
+	if(env[s]->value != this)
 	  res += s->print(display)+": "+env[s]->value->print(display)+"\n";
 	else
 	  res += "global-environment: ...\n";

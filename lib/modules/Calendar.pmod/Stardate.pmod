@@ -144,7 +144,7 @@ class cTick
 
       if (n&&x)
 	 return Tick("stardate",rules,t+x,len);
-      return this_object();
+      return this;
    }
 
    static void convert_from(Calendar.TimeRange other)
@@ -176,12 +176,12 @@ class cTick
    Calendar.TimeRange place(Calendar.TimeRange what,void|int force)
    {
 // can't do this
-      return this_object();
+      return this;
    }
 
    array(Calendar.TimeRange) split(int n)
    {
-      if (!n) return ({this_object()}); // foo
+      if (!n) return ({this}); // foo
 
       float z=t;
       float l=len/n;
@@ -195,13 +195,13 @@ class cTick
 
    Calendar.TimeRange beginning()
    {
-      if (!len) return this_object();
+      if (!len) return this;
       return Tick("stardate",rules,t,0.0);
    }
 
    Calendar.TimeRange end()
    {
-      if (!len) return this_object();
+      if (!len) return this;
       return Tick("stardate",rules,t+len,0.0);
    }
 

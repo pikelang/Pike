@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.63 2003/10/24 19:58:21 mast Exp $
+// $Id: Query.pike,v 1.64 2004/01/11 00:49:02 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -129,7 +129,7 @@ void ponder_answer( int|void start_position )
    ok=1;
    remove_call_out(async_timeout);
 
-   if (request_ok) request_ok(this_object(),@extra_args);
+   if (request_ok) request_ok(this,@extra_args);
 }
 
 static void connect(string server,int port,int blocking)
@@ -245,7 +245,7 @@ static void async_failed()
 {
    if (con) errno=con->errno(); else errno=113; // EHOSTUNREACH
    ok=0;
-   if (request_fail) request_fail(this_object(),@extra_args);
+   if (request_fail) request_fail(this,@extra_args);
    remove_call_out(async_timeout);
 }
 
@@ -478,7 +478,7 @@ object set_callbacks(function(object,mixed...:mixed) _ok,
    extra_args=extra;
    request_ok=_ok;
    request_fail=_fail;
-   return this_object();
+   return this;
 }
 
 #if constant(thread_create)
@@ -538,7 +538,7 @@ this_program thread_request(string server, int port, string query,
 
    conthread=thread_create(connect,server,port,1);
 
-   return this_object();
+   return this;
 }
 
 #endif
@@ -605,7 +605,7 @@ object sync_request(string server, int port, string query,
   } else
     connect(server, port,1);
 
-  return this_object();
+  return this;
 }
 
 object async_request(string server,int port,string query,
@@ -635,7 +635,7 @@ object async_request(string server,int port,string query,
    if (!con)
    {
       dns_lookup_async(server,async_got_host,port);
-      return this_object();
+      return this;
    }
    else
    {

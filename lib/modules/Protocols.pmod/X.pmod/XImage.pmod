@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.20 2002/01/15 22:47:12 nilsson Exp $
+ * $Id: XImage.pmod,v 1.21 2004/01/11 00:46:12 nilsson Exp $
  */
 
 /*
@@ -90,7 +90,7 @@ class Image_wrapper
   mixed `->( string ind )
   {
     mixed x;
-    if((x = `[](this_object(),ind)))
+    if((x = `[](this,ind)))
       return x;
     return funcall(image[ind]);
   }

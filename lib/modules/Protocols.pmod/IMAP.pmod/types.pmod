@@ -179,7 +179,7 @@ class imap_set
       return ({ start, end });
     }
 
-  object init(string s)
+  this_program init(string s)
     {
       items = s/",";
 
@@ -190,7 +190,7 @@ class imap_set
 	if (intp(items[i]) && (items[i]<0))
 	  return 0;
       }
-      return this_object();
+      return this;
     }
 
   int replace_number(int|string i, int largest)

@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.18 2003/12/03 13:43:52 anders Exp $
+// $Id: Crawler.pmod,v 1.19 2004/01/11 00:39:34 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -664,14 +664,14 @@ class RobotExcluder
  	reject_globs=parse_robot_txt(httpquery->data(), base_uri);
       got_reply=1;
       
-      done_cb(this_object(), @args);
+      done_cb(this, @args);
     }
   }
   
   void request_fail(object httpquery)
   {
     failed=0;
-    done_cb(this_object());
+    done_cb(this);
   }
       
   // Given the contents of a /robots.txt file and it's corresponding

@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.28 2003/12/17 21:07:02 stensson Exp $
+// $Id: RDF.pike,v 1.29 2004/01/11 00:39:34 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -152,7 +152,7 @@ class URIResource {
   static void create(string uri) {
     if(uris[uri])
       error("A resource with URI %s already exists in the RDF domain.\n", uri);
-    uris[uri] = this_object();
+    uris[uri] = this;
     id = uri;
     ::create();
   }
@@ -747,7 +747,7 @@ this_program parse_xml(string|Node in, void|string base) {
   foreach(n->get_elements(), Node c)
     add_xml_children(c, rdfns);
 
-  return this_object();
+  return this;
 }
 
 static void fix_namespaces() {

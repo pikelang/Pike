@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.35 2003/10/24 18:22:52 mast Exp $
+/* $Id: handshake.pike,v 1.36 2004/01/11 00:44:16 nilsson Exp $
  *
  */
 
@@ -504,8 +504,8 @@ string client_derive_master_secret(string premaster_secret)
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
 mapping state_descriptions = lambda()
 {
-  array inds = glob("STATE_*", indices(this_object()));
-  array vals = map(inds, lambda(string ind) { return this_object()[ind]; });
+  array inds = glob("STATE_*", indices(this));
+  array vals = map(inds, lambda(string ind) { return this[ind]; });
   return mkmapping(vals, inds);
 }();
 

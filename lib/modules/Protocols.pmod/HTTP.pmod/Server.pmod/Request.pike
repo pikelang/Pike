@@ -79,7 +79,7 @@ static void read_cb(mixed dummy,string s)
       {
 	 my_fd->set_blocking();
 	 populate_raw();
-	 request_callback(this_object());
+	 request_callback(this);
       }
    }
 }
@@ -169,7 +169,7 @@ static void read_cb_post(mixed dummy,string s)
       my_fd->set_blocking();
       populate_raw();
       parse_post();
-      request_callback(this_object());
+      request_callback(this);
    }
 }
 
@@ -318,7 +318,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 void finish()
 {
    if( log_cb )
-     log_cb(this_object());
+     log_cb(this);
    if (my_fd) my_fd->close();
 }
 

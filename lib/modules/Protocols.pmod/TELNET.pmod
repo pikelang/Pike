@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.22 2003/11/07 17:19:50 grubba Exp $
+// $Id: TELNET.pmod,v 1.23 2004/01/11 00:45:48 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -492,14 +492,14 @@ class protocol
       {
 	throw(err);
       }else{
-	if(!this_object()) return 0;
+	if(!this) return 0;
 	throw(err);
       }
     }
     switch(what)
     {
     case BREAK:
-      destruct(this_object());
+      destruct(this);
       throw(0);
       break;
 
@@ -954,7 +954,7 @@ class Readline
 		read_cb2=read_cb;
 		term=data[2..];
 // 		werror("Enabeling READLINE, term=%s\n",term);
-		readline=Stdio.Readline(this_object(),lower_case(term));
+		readline=Stdio.Readline(this,lower_case(term));
 		readline->set_nonblocking(readline_callback);
 		readline->set_prompt(prompt);
 		readline->enable_history(200);

@@ -544,9 +544,9 @@ class Runtime_timezone_compiler
 
       Shift|array ``+(array|Shift s)
       {
-	 if (!s) return this_object();
+	 if (!s) return this;
 	 if (!arrayp(s)) s=({s});
-	 return s+({this_object()});
+	 return s+({this});
       }
 
       int ldayl_is_fix_l(int d1,int wd,int d2,int yn1,int yn2)
@@ -571,7 +571,7 @@ class Runtime_timezone_compiler
       {
    // this is year y0
    // t is year y1
-	 if (t==this_object()) return t; // same!
+	 if (t==this) return t; // same!
 	 if (t->time!=time ||
 	     t->timetype!=timetype ||
 	     t->offset!=offset ||
@@ -581,7 +581,7 @@ class Runtime_timezone_compiler
 	 if (sscanf(dayrule,"LDAYL(%d,%d)",a,b)==2 &&
 	     sscanf(t->dayrule,"FIX_L(%d)",c)==1)
 	    if (ldayl_is_fix_l(a,b,c,y0,y1)) 
-	       return this_object(); // ldayl
+	       return this; // ldayl
 	    else
 	       return 0; // no
 	 if (sscanf(t->dayrule,"LDAYL(%d,%d)",a,b)==2 &&
@@ -1353,7 +1353,7 @@ class Runtime_timezone_compiler
 // figure out what timezone to use
       .Rule.Timezone whatrule(int ux);
 
-      string name=sprintf("%O",object_program(this_object()));
+      string name=sprintf("%O",this_program);
 
       array(int) tz_ux(int ux)
       {

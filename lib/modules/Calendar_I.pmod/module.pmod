@@ -25,8 +25,6 @@
 //! Base class for units of time.
 class _TimeUnit
 {
-   object this=this_object();
-
    //!	Gives a list of methods to get lesser (shorter) time units.
    //!	ie, for a month, this gives back @expr{({"day"})@}
    //!	and the method @expr{day(mixed n)@} gives back that 

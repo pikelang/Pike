@@ -4,7 +4,7 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.9 2003/08/24 21:17:49 nilsson Exp $
+  $Id: Codec.pmod,v 1.10 2004/01/11 00:38:44 nilsson Exp $
 
  */
 
@@ -53,7 +53,7 @@ class decoder {
       init(codecname);
   }
 
-  private object init(string codecname) {
+  private this_program init(string codecname) {
 
     mixed err;
     string cn = upper_case(codecname);
@@ -74,8 +74,7 @@ class decoder {
     if(err)
       error(err[0]);
 
-    return this_object();
-
+    return this;
   }
 
   //! Set codec type from file
@@ -85,7 +84,7 @@ class decoder {
   //!
   //! @param file
   //!   The object @[Audio.Format.ANY].
-  object from_file(Audio.Format.ANY file) {
+  this_program from_file(Audio.Format.ANY file) {
     string ctype;
 
     if(objectp(file) && file->get_map)
@@ -96,7 +95,6 @@ class decoder {
       return init(ctype);
     }
     return 0;
-
   }
 
 

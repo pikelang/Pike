@@ -11,14 +11,14 @@ static int _xsize, _ysize, is_realized;
        size(xsize(),ysize());                \
      backing_store->X(@args);            \
      refresh();                              \
-     return this_object();                   \
+     return this;                   \
    }
 
-object size(int x, int y)
+this_program size(int x, int y)
 {
-  if(!is_realized) return this_object();
+  if(!is_realized) return this;
   ::size(x,y);
-  if(!bgc) bgc = GDK.GC( background_pix||backing_store||this_object() );
+  if(!bgc) bgc = GDK.GC( background_pix||backing_store||this );
   object nb;
   if((x>_xsize || y>_ysize) && x && y)
     nb = GDK.Pixmap( Image.image(max(x,_xsize),max(y,_ysize)) );
@@ -51,7 +51,7 @@ object size(int x, int y)
   }
 
   refresh();
-  return this_object();
+  return this;
 }
 
 //object set_usize(int x, int y)
@@ -101,7 +101,7 @@ void set_background( GDK.Pixmap to )
   refresh();
 }
 
-object clear(int|void x, int|void y, int|void w, int|void h)
+this_program clear(int|void x, int|void y, int|void w, int|void h)
 {
 //   werror("%d,%d->%d,%d <%d,%d>\n", x, y, x+w, y+h, w, h);
   if(xsize() != _xsize ||
@@ -141,7 +141,7 @@ object clear(int|void x, int|void y, int|void w, int|void h)
 //       backing_store->clear(x,y,h,w);
   }
   refresh();
-  return this_object();
+  return this;
 }
 
 WRAP(draw_arc);

@@ -143,7 +143,7 @@ Filesystem.Stat stat(string file, int|void lstat)
      Filesystem.Stat s = Filesystem.Stat();
      s->fullpath = full;
      s->name = file;
-     s->filesystem = this_object();
+     s->filesystem = this;
      s->attach_statobject(a);
      return s;
    }
@@ -184,7 +184,7 @@ array(string) get_dir(void|string directory, void|string|array(string) globs)
 array(Filesystem.Stat) get_stats(void|string directory,
 				 void|string|array(string) globs)
 {
-  Filesystem.Base z = this_object();
+  Filesystem.Base z = this;
 #ifdef __NT__
   if(directory)
   {

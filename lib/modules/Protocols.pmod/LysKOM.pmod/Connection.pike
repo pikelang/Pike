@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.10 2002/11/29 01:10:58 nilsson Exp $
+//  $Id: Connection.pike,v 1.11 2004/01/11 00:47:34 nilsson Exp $
 //!	This class contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or
@@ -26,7 +26,6 @@
 
 import ".";
 
-object this=this_object();
 object con; // LysKOM.Raw
 
 //!	Description of the connected server.
@@ -163,7 +162,7 @@ mixed `->(string request)
 {
    program p;
    if ( (p=Request[String.capitalize(request)]) )
-      return SyncRequest(p,this_object());
+      return SyncRequest(p,this);
    else if ( request[..5]=="async_" &&
 	     (p=Request[String.capitalize(request[6..])]) )
       return AsyncRequest(p);

@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.107 2003/12/14 00:22:40 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.108 2004/01/11 00:40:21 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -618,19 +618,19 @@ private class SubSysLogger {
     void create(Evaluator _e, Stdio.File _logfile) {
       e = _e;
       logfile = _logfile;
-      e->add_input_hook(this_object());
+      e->add_input_hook(this);
       running = 1;
     }
 
     void destroy() {
-      e && e->remove_input_hook(this_object());
+      e && e->remove_input_hook(this);
       running = 0;
     }
 
     int(0..) `() (string in) {
       if(!running) return 0;
       if(catch( logfile->write(in) )) {
-	e->remove_writer(this_object());
+	e->remove_writer(this);
 	e->safe_write("Error writing to log file. Terminating logger.\n");
       }
     }
@@ -1308,7 +1308,7 @@ class Evaluator {
     if(commands[command] && zero_type(constants[command]) &&
        zero_type(variables[command]) && zero_type(functions[command]) &&
        (sizeof(words)==1 || words[1]!=";")) {
-      commands[command]->exec(this_object(), s, words, tokens);
+      commands[command]->exec(this, s, words, tokens);
       return;
     }
 
@@ -1316,7 +1316,7 @@ class Evaluator {
     if(sizeof(command) && command[0]=='.') {
       command = command[1..];
       if(commands[command]) {
-	commands[command]->exec(this_object(), s, words, tokens);
+	commands[command]->exec(this, s, words, tokens);
 	return;
       }
     }
@@ -1894,7 +1894,7 @@ class Evaluator {
     HilfeCompileHandler handler = HilfeCompileHandler (sizeof (backtrace()));
 
     handler->hilfe_symbols = symbols;
-    handler->hilfe_symbols->___Hilfe = this_object();
+    handler->hilfe_symbols->___Hilfe = this;
     handler->hilfe_symbols->write = safe_write;
 
     last_compiled_expr = prog;
@@ -2132,7 +2132,7 @@ class GenericAsyncHilfe
   void close_callback()
   {
     write("Terminal closed.\n");
-    destruct(this_object());
+    destruct(this);
     destruct(infile);
     if(outfile) destruct(outfile);
   }

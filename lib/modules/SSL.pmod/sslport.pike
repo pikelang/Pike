@@ -26,7 +26,7 @@ void ssl_callback(mixed id)
   object f = id->socket_accept();
   if (f)
   {
-    sslfile(f, this_object())->set_accept_callback(finished_callback);
+    sslfile(f, this)->set_accept_callback(finished_callback);
   }
 }
 
@@ -71,5 +71,5 @@ void create()
 #endif
   context::create();
   accept_queue::create();
-  set_id(this_object());
+  set_id(this);
 }

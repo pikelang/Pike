@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.9 2003/08/24 21:17:28 nilsson Exp $
+// $Id: Binary.pike,v 1.10 2004/01/11 00:38:16 nilsson Exp $
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__
@@ -25,22 +25,22 @@ mixed `()(mixed left, mixed right)
 
 //! Adds "@[left] R @[right]" as a member of the relation. Returns
 //! the same relation.
-mixed add(mixed left, mixed right)
+this_program add(mixed left, mixed right)
 {
   if (!val[left])
     val[left] = (<>);
   if (!val[left][right])
     ++items, val[left][right] = 1;
-  return this_object();
+  return this;
 }
 
 //! Removes "@[left] R @[right]" as a member of the relation. Returns
 //! the same relation.
-mixed remove(mixed left, mixed right)
+this_program remove(mixed left, mixed right)
 {
   if (val[left] && val[left][right])
     --items, val[left][right] = 0;
-  return this_object();
+  return this;
 }
 
 //! Maps every entry in the relation. The function f gets two
@@ -80,7 +80,7 @@ object filter(function f)
 //! entries for which the filtering function @[f] returns false.
 //! The function @[f] gets two arguments: the left and the right value
 //! for each entry in the relation.
-object filter_destructively(function f)
+this_program filter_destructively(function f)
 {
   foreach(indices(val), mixed left)
   {
@@ -90,7 +90,7 @@ object filter_destructively(function f)
     if (sizeof(val[left]) == 0)
       val[left] = 0;
   }
-  return this_object();
+  return this;
 }
 
 //! Returns the number of relation entries in the relation. (Or with
@@ -119,25 +119,25 @@ mixed `<=(object rel)
   return 1;
 }
 
-mixed `==(mixed rel)
+int(0..1) `==(mixed rel)
 {
-  if (predef::`==(rel, this_object()))
+  if (predef::`==(rel, this))
     return 1; // equal because of being identical
 
   if (!objectp(rel) || !rel->is_binary_relation)
     return 0; // different because of having different types
 
-  return this_object() <= rel && rel <= this_object();
+  return this <= rel && rel <= this;
 }
 
-mixed `>=(object rel)
+int(0..1) `>=(object rel)
 {
-  return rel <= this_object();
+  return rel <= this;
 }
 
-mixed `!=(mixed rel)
+int(0..1) `!=(mixed rel)
 {
-  return !(this_object() == rel);
+  return !(this == rel);
 }
 
 //! The expression `rel1 & rel2' returns a new relation which has
@@ -178,12 +178,12 @@ mixed `-(mixed rel)
 //! Makes the relation symmetric, i.e. makes sure that if xRy is part
 //! of the relation set, then yRx should also be a part of the relation
 //! set.
-object make_symmetric()
+this_program make_symmetric()
 {
   foreach(indices(val), mixed left)
     foreach(indices(val[left]), mixed right)
       add(right, left);
-  return this_object();
+  return this;
 }
 
 //! Assuming the relation's domain and range sets are equal, and that
@@ -306,7 +306,7 @@ static class _get_iterator {
   this_program `+=(int steps) {
     while(steps--)
       next();
-    return this_object();
+    return this;
   }
 
   int(0..1) first() {

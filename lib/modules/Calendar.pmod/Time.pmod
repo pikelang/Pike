@@ -187,7 +187,7 @@ class TimeofDay
 // default autopromote
    TimeRange autopromote()
    {
-      return this_object();
+      return this;
    }
 
    array(int(-1..1)) _compare(TimeRange with)
@@ -199,7 +199,7 @@ class TimeofDay
 
       if (with->is_timeofday_f)
       {
-	 array(int(-1..1)) cmp=with->_compare(this_object());
+	 array(int(-1..1)) cmp=with->_compare(this);
 
 	 return ({-cmp[0],
 		  -cmp[2],
@@ -248,7 +248,7 @@ class TimeofDay
 
       int m;
       if ( (m=to->unix_time()-unix_time())<0) 
-	 error("Negative distance %O .. %O\n", this_object(),to);
+	 error("Negative distance %O .. %O\n", this,to);
 
       return 
 	 Second("timeofday_sd",rules,ux,m,ls,utco)
@@ -304,7 +304,7 @@ class TimeofDay
 	 return _move(n,step->number_of_seconds());
 
       if (!base) make_base();
-      return base->add(n,step)->place(this_object(),1);
+      return base->add(n,step)->place(this,1);
    }
 
 //! method Hour hour()
@@ -771,42 +771,42 @@ class TimeofDay
 
    string format_iso_time()
    {
-      return this_object()->format_iso_ymd()+" "+format_todz_iso();
+      return this->format_iso_ymd()+" "+format_todz_iso();
    }
 
    string format_ext_time()
    {
-      return this_object()->format_ext_ymd()+" "+format_tod();
+      return this->format_ext_ymd()+" "+format_tod();
    }
 
    string format_time()
    {
-      return this_object()->format_ymd()+" "+format_tod();
+      return this->format_ymd()+" "+format_tod();
    }
 
    string format_time_short()
    {
-      return this_object()->format_ymd_short()+" "+format_tod();
+      return this->format_ymd_short()+" "+format_tod();
    }
 
    string format_iso_short()
    {
-      return this_object()->format_ymd_short()+"T"+format_tod();
+      return this->format_ymd_short()+"T"+format_tod();
    }
 
    string format_time_xshort()
    {
-      return this_object()->format_ymd_xshort()+" "+format_tod();
+      return this->format_ymd_xshort()+" "+format_tod();
    }
 
    string format_mtime()
    {
-      return this_object()->format_ymd()+" "+format_mod();
+      return this->format_ymd()+" "+format_mod();
    }
 
    string format_xtime()
    {
-      return this_object()->format_ymd()+" "+format_xtod();
+      return this->format_ymd()+" "+format_xtod();
    }
 
    string format_ctime()
@@ -903,12 +903,12 @@ class TimeofDay
    string format_elapsed()
    {
       string res="";
-      object left=this_object();
+      object left=this;
       int x;
-      if ( (x=(this_object()/Day)) )
+      if ( (x=(this/Day)) )
       {
 	 res+=sprintf("%dd",x);
-	 left=this_object()->add(x,Day)->range(this_object()->end());
+	 left=this->add(x,Day)->range(this->end());
       }
       return sprintf("%s%d:%02d:%02d",
 		     res,left->len/3600,
@@ -991,7 +991,7 @@ class TimeofDay
       _ind+=IND;							\
       TimeRange x=::OP(@args);						\
       _ind=_ind[..sizeof(_ind)-sizeof(IND)-1];				\
-      werror(_ind+"  %O\n",this_object());				\
+      werror(_ind+"  %O\n",this);					\
       foreach (args,TimeRange t) werror(_ind+NAME+" %O\n",t);		\
       werror(_ind+"= %O\n",x);						\
       return x;								\
@@ -1251,7 +1251,7 @@ class cHour
 
    TimeofDay _move(int n,int m)
    {
-      if (m==0 || n==0) return this_object();
+      if (m==0 || n==0) return this;
       if (m%3600) 
 	 return Second("timeofday",rules,ux,len)->_move(n,m);
       return Hour("timeofday",rules,ux+n*m,len)->autopromote(); 
@@ -1365,7 +1365,7 @@ class cMinute
 
    TimeofDay _move(int n,int m)
    {
-      if (m==0 || n==0) return this_object();
+      if (m==0 || n==0) return this;
       if (m%60) return Second("timeofday",rules,ux,len)->_move(n,m);
       return Minute("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
@@ -1465,7 +1465,7 @@ class cSecond
 
    TimeofDay _move(int n,int m)
    {
-      if (m==0 || n==0) return this_object();
+      if (m==0 || n==0) return this;
       return Second("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
@@ -1504,9 +1504,9 @@ class cSecond
 
 // backwards compatible with calendar I
    string iso_name()
-   { return this_object()->format_ymd()+" T"+format_tod(); }
+   { return this->format_ymd()+" T"+format_tod(); }
    string iso_short_name() 
-   { return this_object()->format_ymd_short()+" T"+(format_tod()-":"); }
+   { return this->format_ymd_short()+" T"+(format_tod()-":"); }
 
 
    TimeRange place(TimeRange what,void|int force)
@@ -1596,7 +1596,7 @@ class cFraction
 	 ls=CALUNKNOWN;
 
 	 if (ns<0)
-	    error("Can't create negative ns: %O\n",this_object());
+	    error("Can't create negative ns: %O\n",this);
 
 	 if (!rules) error("no rules\n");
 
@@ -1605,7 +1605,7 @@ class cFraction
 	 len=len_s+(ns+len_ns+inano-1)/inano;
 
 	 if (ns<0)
-	    error("Can't create negative ns: %O\n",this_object());
+	    error("Can't create negative ns: %O\n",this);
 
 	 return;
       }
@@ -1767,7 +1767,7 @@ class cFraction
       if (!ns && !len_ns)
 	 return Second("timeofday",rules,ux,len_s)->autopromote();
 
-      return this_object();
+      return this;
    }
 
    TimeofDay set_ruleset(.Ruleset r)
@@ -1835,7 +1835,7 @@ class cFraction
 
       if (s2<s1 ||
 	  (s2==s1 && to->ns<ns))
-	 error("Negative distance %O .. %O\n", this_object(),to);
+	 error("Negative distance %O .. %O\n", this,to);
 
       return 
 	 Fraction("timeofday_f",rules,ux,ns,s2-s1-1,to->ns-ns+inano)
@@ -1871,14 +1871,14 @@ class cFraction
 
    TimeofDay beginning()
    {
-      if (len_s==0.0 && len_ns==0.0) return this_object();
+      if (len_s==0.0 && len_ns==0.0) return this;
       return Fraction("timeofday_f",rules,ux,ns,0,0)
 	 ->autopromote();
    }
 
    TimeofDay end()
    {
-      if (len_s==0 && len_ns==0) return this_object();
+      if (len_s==0 && len_ns==0) return this;
       object q=Fraction("timeofday_f",rules,ux+len_s,ns+len_ns,0,0)
 	 ->autopromote();
       return q;
@@ -1934,7 +1934,7 @@ class cFraction
       if (to<from)
 	 return ({});
 
-      if (from==0.0 && to==n) return ({this_object()});
+      if (from==0.0 && to==n) return ({this});
 
       to-=from;
       return ({Fraction("timeofday_f",rules,
@@ -1960,9 +1960,9 @@ class cFraction
    string format_elapsed()
    {
       int x;
-      if ( (x=(this_object()/Day)) )
+      if ( (x=(this/Day)) )
       {
-	 object left=this_object()->add(x,Day)->range(this_object()->end());
+	 object left=this->add(x,Day)->range(this->end());
 	 return sprintf("%dd%d:%02d:%02d.%03d",
 			x,left->len_s/3600,
 			(left->len_s/60)%60,

@@ -1,6 +1,6 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.14 2002/06/17 19:39:42 bill Exp $
+ * $Id: Extensions.pmod,v 1.15 2004/01/11 00:46:12 nilsson Exp $
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
@@ -41,7 +41,7 @@ static class extension
     dpy = d;
 
     array a =
-      d->blocking_request( .Requests.QueryExtension( this_object()->name ) );
+      d->blocking_request( .Requests.QueryExtension( this->name ) );
 
     if(!a[0]) return 0;
 
@@ -49,7 +49,7 @@ static class extension
     major = reply->major;
     error = reply->error;
     event = reply->event;
-    this_object()->post_init();
+    this->post_init();
     return 1;
   }
 

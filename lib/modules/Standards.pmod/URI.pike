@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.16 2003/03/08 22:22:53 nilsson Exp $
+// $Id: URI.pike,v 1.17 2004/01/11 00:41:39 nilsson Exp $
 
 #pragma strict_types
 
@@ -32,7 +32,7 @@ string host, user, password;
 int port;
 
 //! The base URI object, if present
-object(this_program) base_uri;
+this_program base_uri;
 
 // URI hacker docs:
 // This string is the raw uri the object was instantiated from in the
@@ -62,7 +62,7 @@ static void parse_authority()
 }
 
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
-static void inherit_properties(object(this_program) uri)
+static void inherit_properties(this_program uri)
 {
   authority = uri->authority;
   scheme = uri->scheme;
@@ -163,14 +163,14 @@ string combine_uri_path(string base, string rel)
 //! outlined by RFC 2396, Uniform Resource Identifiers (URI): Generic Syntax.
 //! @param base_uri
 //!   Set the new base URI to this.
-void reparse_uri(object(this_program)|string|void base_uri)
+void reparse_uri(this_program|string|void base_uri)
 {
   string uri = raw_uri;
 
   if(stringp(base_uri))
   {
     DEBUG("cloning base URI %O", base_uri);
-    this_program::base_uri = object_program(this_object())(base_uri); // create a new URI object
+    this_program::base_uri = this_program(base_uri); // create a new URI object
   }
   else
     this_program::base_uri = [object(this_program)]base_uri;
@@ -297,8 +297,8 @@ void reparse_uri(object(this_program)|string|void base_uri)
 //!   When uri is another URI object, the created
 //!   URI will inherit all properties of the supplied uri
 //!   except, of course, for its base_uri.
-void create(object(this_program)|string uri,
-	    object(this_program)|string|void base_uri)
+void create(this_program|string uri,
+	    this_program|string|void base_uri)
 {
   DEBUG("create(%O, %O) called!", uri, base_uri);
   if(stringp(uri))
@@ -363,7 +363,7 @@ string|mapping cast(string to)
       array(string) i = ({ "scheme", "authority", "user", "password", "host", "port",
 			   "path", "query", "fragment",
 			   "raw_uri", "base_uri",  });
-      return mkmapping(i, rows(this_object(), i));
+      return mkmapping(i, rows(this, i));
   }
 }
 

@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.9 2003/08/07 14:20:19 nilsson Exp $
+// $Id: mkrules.pike,v 1.10 2004/01/11 00:51:23 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -189,9 +189,9 @@ class Shift
 
    Shift|array ``+(array|Shift s)
    {
-      if (!s) return this_object();
+      if (!s) return this;
       if (!arrayp(s)) s=({s});
-      return s+({this_object()});
+      return s+({this});
    }
 
    int ldayl_is_fix_l(int d1,int wd,int d2,int yn1,int yn2)
@@ -215,7 +215,7 @@ class Shift
    {
 // this is year y0
 // t is year y1
-      if (t==this_object()) return t; // same!
+      if (t==this) return t; // same!
       if (t->time!=time ||
 	  t->timetype!=timetype ||
 	  t->offset!=offset ||
@@ -225,7 +225,7 @@ class Shift
       if (sscanf(dayrule,"LDAYL(%d,%d)",a,b)==2 &&
 	  sscanf(t->dayrule,"FIX_L(%d)",c)==1)
 	 if (ldayl_is_fix_l(a,b,c,y0,y1)) 
-	    return this_object(); // ldayl
+	    return this; // ldayl
 	 else
 	    return 0; // no
       if (sscanf(t->dayrule,"LDAYL(%d,%d)",a,b)==2 &&

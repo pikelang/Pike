@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.20 2003/12/22 00:20:09 mbaehr Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.21 2004/01/11 00:46:34 nilsson Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -1016,9 +1016,9 @@ class PieceDownload
 
    void abort()
    {
-      if (!this_object()) werror("abort in destructed\n");
+      if (!this) werror("abort in destructed\n");
 #ifdef TORRENT_PIECEDOWNLOAD_DEBUG
-      werror("%O abort\n",this_object());
+      werror("%O abort\n",this);
 #endif
 
       remove_call_out(abort);

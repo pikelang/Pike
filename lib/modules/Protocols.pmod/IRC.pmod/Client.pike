@@ -136,7 +136,7 @@ void connection_lost()
       werror("destructing self\n");
       catch { destruct(raw->con); };
       destruct(raw);
-      destruct(this_object());
+      destruct(this);
    }
 }
 
@@ -419,7 +419,7 @@ object cmd=class
       mixed `()(mixed ...args)
       {
    	 object req=prog();
-   	 req->async(this_object(),@args);
+   	 req->async(this,@args);
    	 return req;
       }
    }
@@ -437,7 +437,7 @@ object cmd=class
       {
    	 object req=prog();
    	 req->callback=callback;
-   	 req->async(this_object(),@args);
+   	 req->async(this,@args);
    	 return req;
       }
    }
@@ -448,7 +448,7 @@ object cmd=class
 
 
       if ( (p=Requests[request]) )
-   	 return SyncRequest(p,this_object());
+   	 return SyncRequest(p,this);
       else if ( request[..5]=="async_" &&
    		(p=Requests[request[6..]]) )
    	 return AsyncRequest(p);
