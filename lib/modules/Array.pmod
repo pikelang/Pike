@@ -1,5 +1,9 @@
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
+constant diff = __builtin.diff;
+constant diff_longest_sequence = __builtin.diff_longest_sequence;
+constant diff_compare_table = __builtin.diff_compare_table;
+
 mixed map(mixed arr, mixed fun, mixed ... args)
 {
   int e;
@@ -166,3 +170,79 @@ array uniq(array a)
   return indices(mkmapping(a,a));
 }
 
+array transpose(array x)
+{
+  array ret=allocate(sizeof(x[0]));
+  for(int e=0;e<sizeof(x[0]);e++) ret[e]=column(x,e);
+  return ret;
+}
+
+// diff3, complement to diff (alpha stage)
+
+array(array(array(mixed))) diff3(array mid,array left,array right)
+{
+   array lmid,ldst,al;
+   array rmid,rdst,ar;
+
+   al=diff(mid,left);      lmid=al[0]; ldst=al[1];
+   ar=diff(mid,right);     rmid=ar[0]; rdst=ar[1];
+
+   array res=({});
+   int lpos=0,rpos=0;
+   int l=0,r=0,n;
+   array eq=({});
+   int x;
+
+   for (n=0; ;)
+   {
+      while (l<sizeof(lmid) && lpos>=sizeof(lmid[l]))
+      {
+	 if (sizeof(ldst[l])>lpos)
+	    res+=({({({}),ldst[l][lpos..],({})})});
+	 l++;
+	 lpos=0;
+      }
+      while (r<sizeof(rmid) && rpos>=sizeof(rmid[r])) 
+      {
+	 if (sizeof(rdst[r])>rpos)
+	    res+=({({({}),({}),rdst[r][rpos..]})});
+	 r++;
+	 rpos=0;
+      }
+
+      if (n==sizeof(mid)) break;
+
+      x=min(sizeof(lmid[l])-lpos,sizeof(rmid[r])-rpos);
+
+      if (lmid[l]==ldst[l] && rmid[r]==rdst[r])
+      {
+	 eq=lmid[l][lpos..lpos+x-1];
+	 res+=({({eq,eq,eq})});
+      }
+      else if (lmid[l]==ldst[l])
+      {
+	 eq=lmid[l][lpos..lpos+x-1];
+	 res+=({({eq,eq,rdst[r][rpos..rpos+x-1]})});
+      }
+      else if (rmid[r]==rdst[r])
+      {
+	 eq=rmid[r][rpos..rpos+x-1];
+	 res+=({({eq,ldst[l][lpos..lpos+x-1],eq})});
+      }
+      else 
+      {
+	 res+=({({lmid[l][lpos..lpos+x-1],
+		  ldst[l][lpos..lpos+x-1],
+		  rdst[r][rpos..rpos+x-1]})});
+      }
+
+//        werror(sprintf("-> %-5{%O%} %-5{%O%} %-5{%O%}"
+//  		     " x=%d l=%d:%d r=%d:%d \n",@res[-1],x,l,lpos,r,rpos));
+	 
+      rpos+=x;
+      lpos+=x;
+      n+=x;
+   }
+   
+   return transpose(res);
+}

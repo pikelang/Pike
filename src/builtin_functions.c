@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.59 1998/01/29 21:13:47 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.60 1998/02/24 00:47:36 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1561,6 +1561,446 @@ void f_glob(INT32 args)
   }
 }
 
+/**** diff ************************************************************/
+
+static struct array* diff_compare_table(struct array *a,struct array *b)
+{
+   struct array *res;
+   struct mapping *map;
+   struct svalue *pval;
+   int i;
+
+   map=allocate_mapping(256);
+   push_mapping(map); /* in case of out of memory */
+
+   for (i=0; i<b->size; i++)
+   {
+      pval=low_mapping_lookup(map,b->item+i);
+      if (!pval)
+      {
+	 struct svalue val;
+	 val.type=T_ARRAY;
+	 val.u.array=low_allocate_array(1,1);
+	 val.u.array->item[0].type=T_INT;
+	 val.u.array->item[0].subtype=NUMBER_NUMBER;
+	 val.u.array->item[0].u.integer=i;
+	 mapping_insert(map,b->item+i,&val);
+	 free_svalue(&val);
+      }
+      else
+      {
+	 pval->u.array=resize_array(pval->u.array,pval->u.array->size+1);
+	 pval->u.array->item[pval->u.array->size-1].type=T_INT;
+	 pval->u.array->item[pval->u.array->size-1].subtype=NUMBER_NUMBER;
+	 pval->u.array->item[pval->u.array->size-1].u.integer=i;
+      }
+   }
+
+   res=low_allocate_array(a->size,0);
+
+   for (i=0; i<a->size; i++)
+   {
+      pval=low_mapping_lookup(map,a->item+i);
+      if (!pval)
+      {
+	 res->item[i].type=T_ARRAY;
+	 (res->item[i].u.array=&empty_array)->refs++;
+      }
+      else
+      {
+	 assign_svalue(res->item+i,pval);
+      }
+   }
+
+   pop_stack();
+   return res;
+}
+
+struct diff_magic_link
+{ 
+   int x;
+   int refs;
+   struct diff_magic_link *prev;
+};
+
+struct diff_magic_link_pool
+{
+   struct diff_magic_link *firstfree;
+   struct diff_magic_link_pool *next;
+   int firstfreenum;
+   struct diff_magic_link dml[1];
+};
+
+#define DMLPOOLSIZE 16384
+
+static int dmls=0;
+
+static INLINE struct diff_magic_link_pool*
+         dml_new_pool(struct diff_magic_link_pool **pools)
+{
+   struct diff_magic_link_pool *new;
+
+   new=malloc(sizeof(struct diff_magic_link_pool)+
+	      sizeof(struct diff_magic_link)*DMLPOOLSIZE);
+   if (!new) return NULL; /* fail */
+
+   new->firstfreenum=0;
+   new->firstfree=NULL;
+   new->next=*pools;
+   *pools=new;
+   return *pools;
+}
+
+static INLINE struct diff_magic_link* 
+       dml_new(struct diff_magic_link_pool **pools)
+{
+   struct diff_magic_link *new;
+   struct diff_magic_link_pool *pool;
+
+   dmls++;
+
+   if ( *pools && (new=(*pools)->firstfree) )
+   {
+      (*pools)->firstfree=new->prev;
+      new->prev=NULL;
+      return new;
+   }
+
+   pool=*pools;
+   while (pool)
+   {
+      if (pool->firstfreenum<DMLPOOLSIZE)
+	 return pool->dml+(pool->firstfreenum++);
+      pool=pool->next;
+   }
+
+   if ( (pool=dml_new_pool(pools)) )
+   {
+      pool->firstfreenum=1;
+      return pool->dml;
+   }
+   
+   return NULL;
+}	
+
+static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
+{
+   struct diff_magic_link_pool *pool;
+
+   while (pools)
+   {
+      pool=pools->next;
+      free(pools);
+      pools=pool;
+   }
+}
+
+static INLINE void dml_delete(struct diff_magic_link_pool *pools,
+			      struct diff_magic_link *dml)
+{
+   if (dml->prev && !--dml->prev->refs) dml_delete(pools,dml->prev);
+   dmls--;
+   dml->prev=pools->firstfree;
+   pools->firstfree=dml;
+}
+
+static INLINE int diff_ponder_stack(int x,
+				    struct diff_magic_link **dml,
+				    int top)
+{
+   int middle,a,b;
+   
+   a=0; 
+   b=top;
+   while (b>a)
+   {
+      middle=(a+b)/2;
+      if (dml[middle]->x<x) a=middle+1;
+      else if (dml[middle]->x>x) b=middle;
+      else return middle;
+   }
+   if (a<top && dml[a]->x<x) a++;
+   return a;
+}
+
+static INLINE int diff_ponder_array(int x,
+				    struct svalue *arr,
+				    int top)
+{
+   int middle,a,b;
+   
+   a=0; 
+   b=top;
+   while (b>a)
+   {
+      middle=(a+b)/2;
+      if (arr[middle].u.integer<x) a=middle+1;
+      else if (arr[middle].u.integer>x) b=middle;
+      else return middle;
+   }
+   if (a<top && arr[a].u.integer<x) a++;
+   return a;
+}
+
+static struct array* diff_longest_sequence(struct array *cmptbl)
+{
+   int i,j,top=0,lsize=0;
+   struct array *a;
+   struct diff_magic_link_pool *pools=NULL;
+   struct diff_magic_link *dml;
+   struct diff_magic_link **stack;
+
+   stack=malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
+
+   if (!stack) error("out of memory\n");
+
+   for (i=0; i<cmptbl->size; i++)
+   {
+      struct svalue *inner=cmptbl->item[i].u.array->item;
+
+      for (j=cmptbl->item[i].u.array->size; j--;)
+      {
+	 int x=inner[j].u.integer;
+	 int pos;
+
+	 if (top && x<=stack[top-1]->x)
+	    pos=diff_ponder_stack(x,stack,top);
+	 else
+	    pos=top;
+
+	 if (pos && j)
+	 {
+	    if (stack[pos-1]->x+1 < inner[j].u.integer)
+	    {
+	       j=diff_ponder_array(stack[pos-1]->x+1,inner,j);
+	       x=inner[j].u.integer;
+	    }
+	 }
+	 else
+	 {
+	    j=0;
+	    x=inner->u.integer;
+	 }
+	 if (pos==top)
+	 {
+	    if (! (dml=dml_new(&pools)) )
+	    {
+	       dml_free_pools(pools);
+	       free(stack);
+	       error("out of memory\n");
+	    }
+
+	    dml->x=x;
+	    dml->refs=1;
+
+	    if (pos)
+	       (dml->prev=stack[pos-1])->refs++;
+	    else
+	       dml->prev=NULL;
+
+	    top++;
+	    
+	    stack[pos]=dml;
+	 }
+	 else if (stack[pos]->x!=x)
+	    if (pos && 
+		stack[pos]->refs==1 &&
+		stack[pos-1]==stack[pos]->prev)
+	    {
+	       stack[pos]->x=x;
+	    }
+	    else
+	    {
+	       if (! (dml=dml_new(&pools)) )
+	       {
+		  dml_free_pools(pools);
+		  free(stack);
+		  error("out of memory\n");
+	       }
+
+	       dml->x=x;
+	       dml->refs=1;
+
+	       if (pos)
+		  (dml->prev=stack[pos-1])->refs++;
+	       else
+		  dml->prev=NULL;
+
+	       if (!--stack[pos]->refs)
+		  dml_delete(pools,stack[pos]);
+	    
+	       stack[pos]=dml;
+	    }
+      }
+   }
+
+   /* FIXME(?) memory unfreed upon error here */
+   a=low_allocate_array(top,0); 
+   if (top)
+   {
+       dml=stack[top-1];
+       while (dml)
+       {
+	  a->item[--top].u.integer=dml->x;
+	  dml=dml->prev;
+       }
+   }
+
+   free(stack);
+   dml_free_pools(pools);
+   return a;
+}
+
+static struct array* diff_build(struct array *a,
+				struct array *b,
+				struct array *seq)
+{
+   struct array *ad,*bd;
+   int bi,ai,lbi,lai,i,eqstart;
+
+   b->refs++;
+   a->refs++;  /* protect from getting optimized... */
+
+   /* FIXME(?) memory unfreed upon error here (and later) */
+   ad=low_allocate_array(0,32);
+   bd=low_allocate_array(0,32);
+   
+   eqstart=0;
+   lbi=bi=ai=-1;
+   for (i=0; i<seq->size; i++)
+   {
+      bi=seq->item[i].u.integer;
+
+      if (bi!=lbi+1 || !is_equal(a->item+ai+1,b->item+bi))
+      {
+	 /* insert the equality */
+	 if (lbi>=eqstart)
+	 {
+	    struct array *eq;
+	    eq=slice_array(b,eqstart,lbi+1);
+	    push_array(eq); sp--;
+	    ad=resize_array(ad,ad->size+1);
+	    bd=resize_array(bd,bd->size+1);
+
+	    sp->u.refs[0]++;
+	    ad->item[ad->size-1] = bd->item[bd->size-1] = *sp;
+	 }
+	 /* insert the difference */
+	 lai=ai;
+	 ai=array_search(a,b->item+bi,ai+1)-1;
+
+	 bd=resize_array(bd,bd->size+1);
+	 ad=resize_array(ad,ad->size+1);
+
+	 push_array(slice_array(b,lbi+1,bi));
+	 bd->item[bd->size-1]=*--sp;
+
+	 push_array(slice_array(a,lai+1,ai+1));
+	 ad->item[ad->size-1]=*--sp;
+
+	 eqstart=bi;
+      }
+      ai++;
+      lbi=bi;
+   }
+
+   if (lbi>=eqstart)
+   {
+      struct array *eq;
+      eq=slice_array(b,eqstart,lbi+1);
+      push_array(eq); sp--;
+      ad=resize_array(ad,ad->size+1);
+      bd=resize_array(bd,bd->size+1);
+      
+      sp->u.refs[0]++;
+      ad->item[ad->size-1] = bd->item[bd->size-1] = *sp;
+   }
+
+   if (b->size>bi+1 || a->size>ai+1)
+   {
+      ad=resize_array(ad,ad->size+1);
+      bd=resize_array(bd,bd->size+1);
+
+      push_array(slice_array(b,lbi+1,b->size));
+      bd->item[bd->size-1]=*--sp;
+      
+      push_array(slice_array(a,ai+1,a->size));
+      ad->item[ad->size-1]=*--sp;
+   }
+
+   b->refs--;
+   a->refs--; /* i know what i'm doing... */
+
+   push_array(ad);
+   push_array(bd);
+   f_aggregate(2);
+   sp--;
+   return sp->u.array;
+}
+
+void f_diff(INT32 args)
+{
+   struct array *seq;
+   struct array *cmptbl;
+   struct array *diff;
+
+   if (args<2)
+      error("Too few arguments to diff().\n");
+
+   if (sp[-args].type!=T_ARRAY ||
+       sp[1-args].type!=T_ARRAY)
+      error("Illegal arguments to diff().\n");
+
+   cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
+   push_array(cmptbl);
+   seq=diff_longest_sequence(cmptbl);
+   push_array(seq); 
+   
+   diff=diff_build(sp[-2-args].u.array,sp[1-2-args].u.array,seq);
+
+   pop_n_elems(2+args);
+   push_array(diff);
+}
+
+void f_diff_compare_table(INT32 args)
+{
+   struct array *cmptbl;
+
+   if (args<2)
+      error("Too few arguments to diff().\n");
+
+   if (sp[-args].type!=T_ARRAY ||
+       sp[1-args].type!=T_ARRAY)
+      error("Illegal arguments to diff().\n");
+
+   cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
+
+   pop_n_elems(args);
+   push_array(cmptbl);
+}
+
+void f_diff_longest_sequence(INT32 args)
+{
+   struct array *seq;
+   struct array *cmptbl;
+   struct array *diff;
+
+   if (args<2)
+      error("Too few arguments to diff().\n");
+
+   if (sp[-args].type!=T_ARRAY ||
+       sp[1-args].type!=T_ARRAY)
+      error("Illegal arguments to diff().\n");
+
+   cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
+   push_array(cmptbl);
+   seq=diff_longest_sequence(cmptbl);
+   pop_n_elems(args+1);
+   push_array(seq); 
+}
+
+/**********************************************************************/
+
 static struct callback_list memory_usage_callback;
 
 struct callback *add_memory_usage_callback(callback_func call,
@@ -1896,5 +2336,9 @@ void init_builtin_efuns(void)
   add_efun("encode_value", f_encode_value, "function(mixed:string)", OPT_TRY_OPTIMIZE);
   add_efun("decode_value", f_decode_value, "function(string:mixed)", OPT_TRY_OPTIMIZE);
   add_efun("object_variablep", f_object_variablep, "function(object,string:int)", OPT_EXTERNAL_DEPEND);
+
+  add_function("diff",f_diff,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
+  add_function("diff_longest_sequence",f_diff_longest_sequence,"function(array,array:array(int))",OPT_TRY_OPTIMIZE);
+  add_function("diff_compare_table",f_diff_compare_table,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
 }
 

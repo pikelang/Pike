@@ -70,6 +70,7 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s);
 void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
 struct array *array_insert(struct array *v,struct svalue *s,INT32 index);
 struct array *array_shrink(struct array *v,INT32 size);
+struct array *resize_array(struct array *a, INT32 size);
 struct array *array_remove(struct array *v,INT32 index);
 INT32 array_search(struct array *v, struct svalue *s,INT32 start);
 struct array *slice_array(struct array *v,INT32 start,INT32 end);
