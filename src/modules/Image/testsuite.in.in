@@ -388,25 +388,58 @@
    if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
    ok();
 
+
 #test Image.BMP.encode/decode (8bpp)
    object img=Image.image(100,100)->test(43);
    object c=Image.Colortable(img,256);
    img=c*img;
-   if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
+   if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8])))!=img) fail("differ");
    ok();
 
 #test Image.BMP.encode/decode (4bpp)
    object img=Image.image(100,100)->test(43);
    object c=Image.Colortable(img,16);
    img=c*img;
-   if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
+   if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4])))!=img) fail("differ");
    ok();
 
 #test Image.BMP.encode/decode (1bpp)
    object img=Image.image(100,100)->test(43);
-   object c=Image.Colortable(img,2);
+   object c=Image.Colortable(img,2)->floyd_steinberg();
    img=c*img;
-   if (Image.BMP.decode(Image.BMP.encode(img))!=img) fail("differ");
+   if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":1])))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (8bpp rle first)
+   object img=Image.image(400,100,Image.Color.red);
+   img->line(0,0,0,99,Image.Color.green);
+   img->line(399,0,399,99,Image.Color.blue);
+   object c=Image.Colortable(img,256);
+   img=c*img;
+   if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8,"rle":1])))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (4bpp rle first)
+   object img=Image.image(400,100,Image.Color.red);
+   img->line(0,0,0,99,Image.Color.green);
+   img->line(399,0,399,99,Image.Color.blue);
+   object c=Image.Colortable(img,16);
+   img=c*img;
+   if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4,"rle":1])))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (8bpp rle second)
+   object img=Image.image(100,100)->test(99)->scale(400,100);
+   object c=Image.Colortable(img,256);
+   img=c*img;
+   if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8,"rle":1])))!=img) fail("differ");
+   ok();
+
+#test Image.BMP.encode/decode (4bpp rle second)
+   object img=Image.image(100,100)->test(99)->scale(400,100);
+   object c=Image.Colortable(img,16);
+   img=c*img;
+   if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4,"rle":1])))!=img) fail("differ");
    ok();
 
 #test Image.HRZ.encode/decode 
