@@ -88,6 +88,8 @@ o Clearing a read-callback on operating systems that use select(2) no
   out-of-band data callback.
 o Fixed bug in Image.Image()->scale(0.5) where it could generate zero-
   size image objects.
+o Fixed rounding bug in Image.Colortable that caused it to disregard
+  exact matches near cubicle boundaries.
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
