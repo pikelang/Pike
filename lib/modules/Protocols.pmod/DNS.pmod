@@ -278,13 +278,21 @@ class client {
 	names,
 	});
   }
+
+  string arpa_from_ip(string ip)
+  {
+    return reverse(ip/".")*"."+".IN-ADDR.ARPA";
+  }
+
+  string ip_from_arpa(string arpa)
+  {
+    return reverse(arpa/".")[2..]*".";
+  }
   
   // Warning: NO TIMEOUT
   mixed *gethostbyaddr(string s)
   {
-    mapping m=do_sync_query(mkquery(reverse(s/".")*"."+".IN-ADDR.ARPA",
-				    C_IN,
-				    T_PTR));
+    mapping m=do_sync_query(mkquery(arpa_from_ip(s), C_IN, T_PTR));
     string *names=({});
     string *ips=({});
     foreach(m->an, mapping x)
@@ -294,7 +302,7 @@ class client {
 	if(x->name)
 	  
 	{
-	  ips+=({reverse(x->name/".")[2..]*"."});
+	  ips+=({ip_from_arpa(x->name)});
 	}
       }
     return ({
@@ -325,46 +333,44 @@ class client {
 class async_client
 {
   inherit client;
-  inherit spider.dumUDP;
+  inherit spider.dumUDP : udp;
   int id;
 
   class Request
   {
     string req;
-    function success;
-    function fail;
+    string domain;
+    function callback;
     int retries;
     mixed *args;
   };
 
-  static private mapping requests=([]);
+  mapping requests=([]);
 
 
   static private void remove(object(Request) r)
   {
     if(!r) return;
     sscanf(r->req,"%2c",int id);
-    function f=r->fail;
-    mixed *args=r->args;
     m_delete(requests,id);
+    r->callback(r->domain,0,@r->args);
     destruct(r);
-    f(@args);
   }
 
   void retry(object(Request) r)
   {
     if(!r) return;
-    if(r->retries > 6)
+    if(r->retries++ > 12)
     {
       call_out(remove,120,r);
     }else{
+      call_out(retry,5,r);
       send(nameserver,53,r->req);
     }
   }
 
   void do_query(string domain, int cl, int type,
-		function callback,
-		function fail_callback,
+		function(string,mapping,mixed...:void) callback,
 		mixed ... args)
   {
     id++;
@@ -376,31 +382,63 @@ class async_client
 
     object r=Request();
     r->req=req;
-    r->success=callback;
-    r->fail=fail_callback;
+    r->domain=domain;
+    r->callback=callback;
+    r->args=args;
     requests[id]=r;
     call_out(retry,5,r);
-    send(nameserver,53,r->req);
+    udp::send(nameserver,53,r->req);
   }
 
   static private void rec_data()
   {
-    mapping m=read();
+    mapping m=udp::read();
     if(m->port != 53 || m->ip != nameserver) return;
     sscanf(m->data,"%2c",int id);
     object r=requests[id];
     if(!r) return;
-    function f=r->success;
-    mixed *args=r->args;
     m_delete(requests,id);
+    r->callback(r->domain,decode_res(m->data),@r->args);
     destruct(r);
-    f(decode_res(m->data),@args);
   }
-  
-  void creat(string server)
+
+  static private void generic_get(string d,
+				  mapping answer,
+				  string field,
+				  string domain,
+				  function callback,
+				  mixed ... args)
   {
-    bind(0);
-    set_read_callback(rec_data);
+    if(!answer || !answer->an || !sizeof(answer->an))
+    {
+      callback(domain,0,@args);
+    }else{
+      callback(domain,answer->an[0][field],@args);
+    }
+  }
+
+  void host_to_ip(string host, function callback, mixed ... args)
+  {
+    do_query(host, C_IN, T_A,
+	     generic_get,"a",
+	     host, callback,
+	     @args );
+  }
+
+  void ip_to_host(string ip, function callback, mixed ... args)
+  {
+    do_query(arpa_from_ip(ip), C_IN, T_PTR,
+	     generic_get, "ptr",
+	     ip, callback,
+	     @args);
+  }
+
+  void create(void|string server)
+  {
+    if(!udp::bind(0))
+      throw(({"DNS: failed to bind a port.\n",backtrace()}));
+
+    udp::set_read_callback(rec_data);
     ::create(server);
   }
 };
