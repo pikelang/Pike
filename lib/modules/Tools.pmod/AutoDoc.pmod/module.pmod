@@ -1,12 +1,12 @@
 // This module contains utility functions for XML creation and
 // some other useful stuff common to all the modules.
 
-static constant DOC_COMMENT= "//!";
+static constant DOC_COMMENT = "//!";
 
 static int isDigit(int c) { return '0' <= c && c <= '9'; }
 
 static int isDocComment(string s) {
-  return (strlen(s) >= 3 && s[0..2] == DOC_COMMENT);
+  return has_prefix(s, DOC_COMMENT);
 }
 
 //FIXME: should it return 0 for keywords ??

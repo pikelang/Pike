@@ -32,7 +32,7 @@ constant EOF = .PikeParser.EOF;
 }
 
 static int isDocComment(string s) {
-  return strlen(s) >= 3 && s[0..2] == "/"+CdocMarker;
+  return has_prefix(s, "/"+CdocMarker);
 }
 
 static constant scanString = "%*[ \t]" + CdocMarker + "%s";
