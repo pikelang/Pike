@@ -100,6 +100,15 @@ test_true(stringp(sprintf("%G",255.0)))
 test_true(stringp(sprintf("%e",255.0)))
 test_true(stringp(sprintf("%E",255.0)))
 
+test_eq(sprintf("%.1f",31415.9267),"31415.9")
+test_eq(sprintf("%.0f",31415.9267),"31416")
+test_eq(sprintf("%.-1f",31415.9267),"31420")
+test_eq(sprintf("%.-2f",31415.9267),"31400")
+test_eq(sprintf("%.-2f",-31415.9267),"-31400")
+test_eq(sprintf("%.-10f",31415.9267),"0")
+test_eq(sprintf("%20.-3f", 31415.92670),"               31000")
+
+
 dnl test for high exponent problems
 dnl (this might only effect --with-double-precision et al)
 test_true(stringp(sprintf("%f",exp(200))))
@@ -123,6 +132,10 @@ test_true(stringp(sprintf("%O",({}))))
 test_eq(sprintf("%n"),"")
 test_eq(sprintf("%t",1),"int")
 test_eq(sprintf("%t",this_object()),"object")
+test_eq(sprintf("%t", ({"a"})), "array")
+test_any([[array(string) a = ({"a"}); return sprintf("%t", a);]], "array")
+test_eq(sprintf("%t", 0), "int")
+test_any([[array(string) a = 0; return sprintf("%t", a);]], "int")
 test_eq(sprintf("%{%d\n%}",({1,2,3,4})),"1\n2\n3\n4\n")
 
 test_eq(strlen(sprintf("%1000s","")),1000)
