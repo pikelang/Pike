@@ -104,6 +104,29 @@ AC_PROG_YACC
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
+AC_CHECK_PROG(has_strings, strings, yes, no)
+
+if test "$has_strings" = "yes"; then
+  yacc_prog=`echo $YACC | sed 's/^\([^ ]*\) .*$/\1/'`
+  AC_PATH_PROG(yacc_prog,$yacc_prog,/bin/true)
+
+  AC_MSG_CHECKING(if $YACC handles pure_parser)
+  AC_CACHE_VAL(lpc_cv_yacc_pure_parser,
+  [
+    lpc_cv_yacc_pure_parser=no
+    strings $yacc_prog >conftest.bar
+    if egrep pure_parser conftest.bar >/dev/null; then
+      lpc_cv_yacc_pure_parser=yes
+    fi
+  ])
+
+  if test "$lpc_cv_yacc_pure_parser" = "yes"; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT([[no, get bison and retry... (giving up)]])
+    exit 1
+  fi
+fi
 
 AC_MSG_CHECKING(first yacc define)
 AC_CACHE_VAL(lpc_cv_yacc_first,
