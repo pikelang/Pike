@@ -1,5 +1,5 @@
 /*
- * $Id: rijndael.c,v 1.5 2001/02/13 16:10:16 grubba Exp $
+ * $Id: rijndael.c,v 1.6 2001/03/24 20:06:45 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -123,15 +123,21 @@ static void f_query_key_length(INT32 args)
 static void f_set_encrypt_key(INT32 args)
 {
   struct pike_string *key = NULL;
+  ptrdiff_t i;
   word8 k[MAXKC][4];
 
   get_all_args("rijndael->set_encrypt_key()", args, "%S", &key);
-  if (((key->len - 8) & ~0x18) || (!key->len)) {
+  if (((key->len - 8) & ~0x18) || (key->len == 8)) {
     Pike_error("rijndael->set_encrypt_key(): Bad key length "
 	  "(must be 16, 24 or 32).\n");
   }
-  MEMCPY(k, key->str, key->len);
-  DO_NOT_WARN(THIS->rounds = 6 + key->len/32);
+  for (i = 0; i < key->len; i++) {
+    k[i >> 2][i & 3] = key->str[i]; 
+  }
+  for(; i < 32; i++) {
+    k[i >> 2][i & 3] = 0; 
+  }
+  DO_NOT_WARN(THIS->rounds = key->len/4 + 6);
   rijndaelKeySched(k, THIS->keySchedule, THIS->rounds);
   THIS->crypt_fun = rijndaelEncrypt;
 }
@@ -143,15 +149,21 @@ static void f_set_encrypt_key(INT32 args)
 static void f_set_decrypt_key(INT32 args)
 {
   struct pike_string *key = NULL;
+  ptrdiff_t i;
   word8 k[MAXKC][4];
 
-  get_all_args("rijndael->set_encrypt_key()", args, "%S", &key);
-  if (((key->len - 8) & ~0x18) || (key->len != 8)) {
-    Pike_error("rijndael->set_encrypt_key(): Bad key length "
+  get_all_args("rijndael->set_decrypt_key()", args, "%S", &key);
+  if (((key->len - 8) & ~0x18) || (key->len == 8)) {
+    Pike_error("rijndael->set_decrypt_key(): Bad key length "
 	  "(must be 16, 24 or 32).\n");
   }
-  MEMCPY(k, key->str, key->len);
-  DO_NOT_WARN(THIS->rounds = 6 + key->len/32);
+  for (i = 0; i < key->len; i++) {
+    k[i >> 2][i & 3] = key->str[i]; 
+  }
+  for(; i < 32; i++) {
+    k[i >> 2][i & 3] = 0; 
+  }
+  DO_NOT_WARN(THIS->rounds = key->len/4 + 6);
   rijndaelKeySched(k, THIS->keySchedule, THIS->rounds);
   rijndaelKeyEncToDec(THIS->keySchedule, THIS->rounds);
   THIS->crypt_fun = rijndaelDecrypt;
