@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.121 2003/05/13 19:35:38 mast Exp $
+|| $Id: svalue.h,v 1.122 2003/08/20 16:42:50 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -133,6 +133,7 @@ struct svalue
 #define T_MAPPING_DATA 10001
 #define T_PIKE_FRAME 10002
 #define T_MULTISET_DATA 10003
+#define T_STRUCT_CALLABLE 10004
 
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
@@ -332,6 +333,23 @@ PMOD_EXPORT extern const char msg_type_error[];
 #define check_type(T) if(T > MAX_TYPE && T!=T_SVALUE_PTR && T!=T_OBJ_INDEX && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) Pike_fatal(msg_type_error,T)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
+
+void low_thorough_check_short_svalue (const union anything *u, TYPE_T type);
+#define thorough_check_short_svalue(U, T) do {				\
+    union anything *anyth_ = (U);					\
+    TYPE_T typ_ = (T);							\
+    check_short_svalue (anyth_, typ_);					\
+    if (d_flag <= 50) /* Done directly by check_svalue otherwise. */	\
+      if (typ_ <= MAX_REF_TYPE)						\
+	low_thorough_check_short_svalue (anyth_, typ_);			\
+  } while (0)
+#define thorough_check_svalue(S) do {					\
+    struct svalue *sval_ = (S);						\
+    check_svalue (sval_);						\
+    if (d_flag <= 50) /* Done directly by check_svalue otherwise. */	\
+      if (sval_->type <= MAX_REF_TYPE)					\
+	low_thorough_check_short_svalue (&sval_->u, sval_->type);	\
+  } while (0)
 
 PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 #define check_refs(S) do {\

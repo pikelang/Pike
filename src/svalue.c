@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.169 2003/08/03 01:02:20 mast Exp $
+|| $Id: svalue.c,v 1.170 2003/08/20 16:42:49 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.169 2003/08/03 01:02:20 mast Exp $");
+RCSID("$Id: svalue.c,v 1.170 2003/08/20 16:42:49 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1656,10 +1656,63 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 }
 
 #ifdef PIKE_DEBUG
+
+struct thorough_check_thing
+{
+  void *thing;
+  struct thorough_check_thing *next;
+};
+static struct thorough_check_thing *thoroughly_checking = NULL;
+
+void low_thorough_check_short_svalue (const union anything *u, TYPE_T type)
+{
+  struct thorough_check_thing checking;
+  struct thorough_check_thing *chk;
+  TYPE_T found_type;
+
+  if (type == T_STRING) {
+    if(!debug_findstring(u->string))
+      Pike_fatal("Shared string not shared!\n");
+    return;
+  }
+
+  /* Note: This fails if there are thread switches. */
+  checking.thing = u->ptr;
+  for (chk = thoroughly_checking; chk; chk = chk->next)
+    if (chk->thing == checking.thing)
+      return;
+  checking.next = thoroughly_checking;
+  thoroughly_checking = &checking;
+
+  found_type = attempt_to_identify (u->ptr, NULL);
+
+  if ((type == T_FUNCTION ? T_OBJECT : type) != found_type) {
+    if (found_type == PIKE_T_UNKNOWN && u->object->next == u->object)
+      {}			/* Ignore fake objects. */
+    else if (found_type == T_STRUCT_CALLABLE && type == T_FUNCTION)
+      {}			/* Built-in function. */
+    else {
+      describe (u->ptr);
+      Pike_fatal ("Thing at %p should be %s but is found to be %s.\n",
+		  u->ptr, get_name_of_type (type), get_name_of_type (found_type));
+    }
+  }
+
+  switch (type) {
+    case T_MAPPING: check_mapping(u->mapping); break;
+    case T_ARRAY: check_array(u->array); break;
+    case T_PROGRAM: check_program(u->program); break;
+    case T_OBJECT: check_object(u->object); break;
+#ifdef PIKE_NEW_MULTISETS
+    case T_MULTISET: check_multiset(u->multiset, 0); break;
+#endif
+  }
+
+  thoroughly_checking = checking.next;
+}
+
 static void low_check_short_svalue(const union anything *u, TYPE_T type)
 {
-  static int inside=0;
-
   check_type(type);
   if ((type > MAX_REF_TYPE)||(!u->refs)) return;
 
@@ -1672,22 +1725,8 @@ static void low_check_short_svalue(const union anything *u, TYPE_T type)
 
   default:
     if(d_flag > 50)
-    {
-      if(inside) return;
-      inside=1;
-
-      switch(type)
-      {
-      case T_MAPPING: check_mapping(u->mapping); break;
-      case T_ARRAY: check_array(u->array); break;
-      case T_PROGRAM: check_program(u->program); break;
-      case T_OBJECT: check_object(u->object); break;
-#ifdef PIKE_NEW_MULTISETS
-      case T_MULTISET: check_multiset(u->multiset, 0); break;
-#endif
-      }
-      inside=0;
-    }
+      low_thorough_check_short_svalue (u, type);
+    break;
   }
 }
 
@@ -1744,7 +1783,8 @@ PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num)
   }
   gc_svalue_location=0;
 }
-#endif
+
+#endif	/* PIKE_DEBUG */
 
 
 /* Macro mania follows. We construct the gc 1) check, 2) mark, and 3)
