@@ -10145,6 +10145,25 @@ the script with
 
 <hr noshade size=1>
 <anchor name=define>
+
+<dl>
+<dt><encaps>DIRECTIVE</encaps><dd>
+<tt>#""<br>
+</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes it possible to write strings with newline in them.
+<pre>
+#"Foo
+bar"
+</pre>
+is the same as
+<pre>
+"Foo\nbar"
+</pre>
+</dl>
+<p>
+
 <dl>
 <dt><encaps>DIRECTIVE</encaps><dd>
 <tt>#define<br>
@@ -10350,6 +10369,27 @@ modifier 'inline' to all functions that follows.
 </dl>
 
 </anchor>
+
+<anchor name=#string>
+<dl>
+<dt><encaps>DIRECTIVE</encaps><dd>
+<tt>#string<br>
+</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+This directive works as #include but makes the included
+file a string.
+<example language=pike>
+string html_doc=#string "index.html";
+</example>
+This puts the file <tt>index.html</tt> into the string
+<tt>html_doc</tt>.
+
+<p>
+</dl>
+
+</anchor>
+
 
 </anchor>
 
