@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.14 2002/05/30 15:21:39 grubba Exp $
+ * $Id: extract.pike,v 1.15 2002/06/04 13:10:07 mast Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -91,11 +91,13 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
 
   string suffix;
   if (has_suffix(filename, ".in")) {
-    filename = filename[..sizeof(filename)-4];
+    suffix = filename[..sizeof(filename)-4];
   }
-  if(!has_value(filename, "."))
-    error("No suffix in file %O.\n", filename);
-  suffix = ((filename/"/")[-1]/".")[-1];
+  else
+    suffix = filename;
+  if(!has_value(suffix, "."))
+    error("No suffix in file %O.\n", suffix);
+  suffix = ((suffix/"/")[-1]/".")[-1];
   if( !(< "c", "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
 
