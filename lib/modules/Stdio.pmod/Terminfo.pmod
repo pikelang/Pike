@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.13 2002/10/25 15:27:04 jonasw Exp $
+// $Id: Terminfo.pmod,v 1.14 2003/12/10 14:34:18 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -657,7 +657,8 @@ class TerminfoDB {
   {
     if (!dirname)
     {
-      foreach (({"/usr/share/lib/terminfo", "/usr/share/termcap",
+      foreach (({"/usr/share/lib/terminfo", "/usr/share/terminfo",
+		 "/usr/share/termcap",
 		 "/usr/lib/terminfo", "/usr/share/misc/terminfo"}), string dn)
       {
 	.Stat s = file_stat(dn);
@@ -715,8 +716,13 @@ class TerminfoDB {
     LOCK;
     if (!(ti = cache[term]))
     {
-      if (file_stat(dir+term[..0]+"/"+term))
+      if (file_stat(dir+term[..0]+"/"+term)) {
+	// Traditional Terminfo layout.
 	ti = Terminfo(dir+term[..0]+"/"+term);
+      } else if (file_stat(sprintf("%s%02x/%s", dir, term[0], term))) {
+	// MacOS X Terminfo layout.
+	ti = Terminfo(sprintf("%s%02x/%s", dir, term[0], term));
+      }
       if (ti)
 	cache[term] = ti;
     }
