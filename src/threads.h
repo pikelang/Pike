@@ -377,6 +377,7 @@ void f_thread_backtrace(INT32 args);
 void f_thread_id_status(INT32 args);
 void init_thread_obj(struct object *o);
 void exit_thread_obj(struct object *o);
+void th_farm(void (*fun)(void *), void *);
 void th_init(void);
 void th_cleanup(void);
 void thread_table_insert(struct object *o);
