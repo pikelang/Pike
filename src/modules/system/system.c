@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.52 1998/05/17 19:28:09 grubba Exp $
+ * $Id: system.c,v 1.53 1998/05/29 19:24:20 marcus Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.52 1998/05/17 19:28:09 grubba Exp $");
+RCSID("$Id: system.c,v 1.53 1998/05/29 19:24:20 marcus Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -750,7 +750,7 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
   }
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
-    if ((long)inet_addr(name) == (long)-1)
+    if (inet_addr(name) == (in_addr_t)-1)
       error("Malformed ip number.\n");
 
     addr->sin_addr.s_addr = inet_addr(name);
