@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.132 1999/03/19 11:37:58 hubbe Exp $
+# $Id: Makefile.in,v 1.133 1999/03/20 02:31:54 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -498,6 +498,10 @@ $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 	-$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
 peep.o: $(SRCDIR)/peep_engine.c
+
+$(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
+	@if $(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt; \
+	then :; else echo '#include "dummy_ci.h"'; fi >$(SRCDIR)/case_info.h
 
 # make dependencies
 depend: $(SRCDIR)/language.c

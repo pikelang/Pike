@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.158 1999/03/19 17:48:21 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.159 1999/03/20 02:31:55 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -152,42 +152,174 @@ void f_ctime(INT32 args)
   push_string(make_shared_string(ctime(&i)));
 }
 
-/* FIXME: wide char support ! */
+struct case_info {
+  int low;	/* low end of range. */
+  int mode;
+  int data;
+};
+
+#define CIM_NONE	0	/* Case-less */
+#define CIM_UPPER	1	/* Upper-case, lower-case in data */
+#define CIM_LOWER	2	/* Lower-case, upper-case in data */
+#define CIM_CASEBIT	3	/* Some case, case mask in data */
+#define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
+
+static struct case_info case_info[] = {
+#include "case_info.h"
+  { 0x10000, CIM_NONE, 0x0000, },	/* End sentinel. */
+};
+
+static struct case_info *find_ci(int c)
+{
+  static struct case_info *cache = NULL;
+  struct case_info ci = cache;
+  int lo = 0;
+  int hi = NELEM(case_info);
+
+  if ((c < 0) || (c > 0xffff))
+    return NULL;
+
+  if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
+    return ci;
+  }
+
+  while (lo != hi-1) {
+    int mid = (lo + hi)/2;
+    if (case_info[mid].low < c) {
+      lo = mid;
+    } else if (case_info[mid].low == c) {
+      lo = mid;
+      break;
+    } else {
+      hi = mid;
+    }
+  }
+
+  return(cache = case_info + lo);
+}
+
+#define DO_LOWER_CASE(C) do {\
+    int c = C; \
+    struct case_info *ci = find_ci(c); \
+    if (ci) { \
+      switch(ci->mode) { \
+      case CIM_NONE: case CIM_LOWER: break; \
+      case CIM_UPPER: C = ci->data; break; \
+      case CIM_CASEBIT: C |= ci->data; break; \
+      case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
+      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+    } \
+  } while(0)
+
+#define DO_UPPER_CASE(C) do {\
+    int c = C; \
+    struct case_info *ci = find_ci(c); \
+    if (ci) { \
+      switch(ci->mode) { \
+      case CIM_NONE: case CIM_UPPER: break; \
+      case CIM_LOWER: C = ci->data; break; \
+      case CIM_CASEBIT: C &= ~ci->data; break; \
+      case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
+      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+    } \
+  } while(0)
+
 void f_lower_case(INT32 args)
 {
   INT32 i;
   struct pike_string *orig;
   struct pike_string *ret;
-  get_all_args("lower_case", args, "%S", &orig);
+  get_all_args("lower_case", args, "%W", &orig);
 
-  ret = begin_shared_string(orig->len);
-  MEMCPY(ret->str, orig->str, orig->len);
+  ret = begin_wide_shared_string(orig->len, orig->size_shift);
 
-  for (i = orig->len-1; i>=0; i--)
-    if (isupper(EXTRACT_UCHAR( ret->str + i)))
-      ret->str[i] = tolower(EXTRACT_UCHAR(ret->str+i));
+  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
+
+  i = orig->len;
+
+  if (!orig->size_shift) {
+    p_wchar0 *str = STR0(ret);
+
+    while(i--) {
+      DO_LOWER_CASE(str[i]);
+    }
+  } else if (orig->size_shift == 1) {
+    p_wchar1 *str = STR1(ret);
+
+    while(i--) {
+      DO_LOWER_CASE(str[i]);
+    }
+  } else if (orig->size_shift == 2) {
+    p_wchar2 *str = STR2(ret);
+
+    while(i--) {
+      DO_LOWER_CASE(str[i]);
+    }
+  } else {
+    fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
+  }
 
   pop_n_elems(args);
   push_string(end_shared_string(ret));
 }
 
-/* FIXME: wide char support ! */
 void f_upper_case(INT32 args)
 {
   INT32 i;
   struct pike_string *orig;
   struct pike_string *ret;
-  get_all_args("upper_case",args,"%S",&orig);
+  int widen = 0;
+  get_all_args("upper_case",args,"%W",&orig);
 
-  ret=begin_shared_string(orig->len);
+  ret=begin_wide_shared_string(orig->len);
   MEMCPY(ret->str, orig->str, orig->len);
 
-  for (i = orig->len-1; i>=0; i--)
-    if (islower(EXTRACT_UCHAR(ret->str+i)))
-      ret->str[i] = toupper(EXTRACT_UCHAR(ret->str+i));
+  i = orig->len;
+
+  if (!orig->size_shift) {
+    p_wchar0 *str = STR0(ret);
+
+    while(i--) {
+      if (str[i] != 0xff) {
+	DO_UPPER_CASE(str[i]);
+      } else {
+	widen = 1;
+      }
+    }
+  } else if (orig->size_shift == 1) {
+    p_wchar1 *str = STR1(ret);
+
+    while(i--) {
+      DO_UPPER_CASE(str[i]);
+    }
+  } else if (orig->size_shift == 2) {
+    p_wchar2 *str = STR2(ret);
+
+    while(i--) {
+      DO_UPPER_CASE(str[i]);
+    }
+  } else {
+    fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
+  }
 
   pop_n_elems(args);
   push_string(end_shared_string(ret));
+
+  if (widen) {
+    /* Widen the string, and replace any 0xff's with 0x178's. */
+    orig = sp[-1].u.string;
+    ret = begin_wide_shared_string(orig->len, 1);
+
+    i = orig->len;
+
+    while(i--) {
+      if ((ret[i] = orig[i]) == 0xff) {
+	ret[i] = 0x178;
+      }
+    }
+    free_string(sp[-1].u.string);
+    sp[-1].u.string = end_shared_string(ret);
+  }
 }
 
 void f_random(INT32 args)
