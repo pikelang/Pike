@@ -1589,3 +1589,5 @@ test_program(inherit "/test"; inherit "/test2"; mixed a() { setw(20); setb(22); 
 test_program(inherit "/test2"; inherit "/test"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
 test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); return w==20 && b==22; })
 
+test_eval_error(clone(class{int i;void foo(){ destruct(this_object());i=0;}})->foo())
+
