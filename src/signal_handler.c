@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.282 2003/11/25 17:48:39 jonasw Exp $
+|| $Id: signal_handler.c,v 1.283 2003/12/01 15:47:34 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.282 2003/11/25 17:48:39 jonasw Exp $");
+RCSID("$Id: signal_handler.c,v 1.283 2003/12/01 15:47:34 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3320,11 +3320,15 @@ void f_create_process(INT32 args)
 #ifdef PROC_DEBUG
 	fprintf(stderr,"[%d] Forking... (pid=%d errno=%d)\n",getpid(),pid,errno);
 #endif
+#ifdef HAVE_VFORK
+	pid=vfork();
+#else /* !HAVE_VFORK */
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
 	pid=fork1();
 #else
 	pid=fork();
 #endif
+#endif /* HAVE_VFORK */
 	if (pid == -1) {
 	  errnum = errno;
 	  if (errnum == EAGAIN) {
@@ -3503,6 +3507,8 @@ void f_create_process(INT32 args)
 #else
       THREADS_ALLOW();
 
+#ifndef HAVE_VFORK
+      /* The following code won't work with a real vfork(). */
 #ifdef PROC_DEBUG
       fprintf(stderr, "[%d] Parent: Wake up child.\n", getpid());
 #endif /* PROC_DEBUG */
@@ -3516,6 +3522,7 @@ void f_create_process(INT32 args)
 	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
 		   e ,olderrno);
       }
+#endif /* !HAVE_VFORK */
 
 #ifdef PROC_DEBUG
       fprintf(stderr, "[%d] Parent: Wait for child...\n", getpid());
@@ -3662,6 +3669,7 @@ void f_create_process(INT32 args)
       if(set_close_on_exec(control_pipe[1], 1) < 0)
           PROCERROR(PROCE_CLOEXEC, 0);
 
+#ifndef HAVE_VFORK
       /* Wait for parent to get ready... */
       while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
 	;
@@ -3671,6 +3679,8 @@ void f_create_process(INT32 args)
 #ifdef PROC_DEBUG
       write(2, "Child: Woken up.\n", 17);
 #endif /* PROC_DEBUG */
+
+#endif /* HAVE_VFORK */
 
 /* We don't call _any_ pike functions at all after this point, so
  * there is no need at all to call this callback, really.
