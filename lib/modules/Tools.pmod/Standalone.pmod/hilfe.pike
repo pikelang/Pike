@@ -5,6 +5,6 @@ constant description = "Hubbes Interactive LPC FrontEnd.";
 
 int main(int argc, array(string) argv)
 {
-  Tools.Hilfe.StdinHilfe();
+  Tools.Hilfe.StdinHilfe( (argv[1..]*" ")/"#" );
   return 0;
 }
