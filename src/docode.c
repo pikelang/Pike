@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.174 2004/01/22 23:17:27 nilsson Exp $
+|| $Id: docode.c,v 1.175 2004/10/28 20:15:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.174 2004/01/22 23:17:27 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.175 2004/10/28 20:15:08 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1277,6 +1277,8 @@ static int do_docode2(node *n, int flags)
 
     BLOCK_BEGIN;
 
+#if 0
+    /* This is buggy and never gets activated. It's fixed in 7.7. /mast */
     if(CAR(arr) && CAR(arr)->token==F_RANGE)
     {
       node **a1=my_get_arg(&_CAR(arr),0);
@@ -1292,6 +1294,7 @@ static int do_docode2(node *n, int flags)
 	goto foreach_arg_pushed;
       }
     }
+#endif
     do_docode(CAR(n),DO_NOT_COPY);
     emit0(F_CONST0);
     current_stack_depth++;
