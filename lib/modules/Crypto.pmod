@@ -7,8 +7,11 @@
 mixed `[](string name)
 {
 //  return (::`[](name) || ((program) ("Crypto/" + name)));
-    return (_Crypto[name]
-	    || ((program) ("Crypto/" + name))
-	    || ((object) ("Crypto/" + name + ".pmod")));
+    catch {
+      return (_Crypto[name]
+	      || ((program) ("Crypto/" + name))
+	      || ((object) ("Crypto/" + name + ".pmod")));
+    };
+    return 0;
 }
 
