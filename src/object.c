@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.186 2001/10/05 01:30:13 hubbe Exp $");
+RCSID("$Id: object.c,v 1.187 2001/10/28 13:40:54 nilsson Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1720,6 +1720,9 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   push_object(magic);
 }
 
+/*! @module lfun::
+ */
+
 /*! @decl mixed ::`->(string index)
  *!
  *! Builtin arrow operator.
@@ -1805,6 +1808,9 @@ static void f_magic_set_index(INT32 args)
     push_int(0);
   }
 }
+
+/*! @endmodule
+ */
 
 void init_object(void)
 {
