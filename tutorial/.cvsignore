@@ -1,8 +1,12 @@
 *.files
 *.md
 .nfs*
+Calendar.wmml
 Image.wmml
 Mysql.wmml
+Parser.wmml
+ProtocolsHTTP.wmml
+ProtocolsLysKOM.wmml
 ___tmp.*
 extra_textflows.mif
 illustration*.gif
