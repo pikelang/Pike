@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.392 2001/12/16 02:49:43 mast Exp $");
+RCSID("$Id: program.c,v 1.393 2001/12/16 20:31:42 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1354,10 +1354,11 @@ void low_start_new_program(struct program *p,
   Pike_compiler->parent_identifier=id;
   if(idp) *idp=id;
 
-  CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() "
+  CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() %s "
 	     "pass=%d: threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), p, compilation_depth,
-	     threads_disabled, Pike_compiler->compiler_pass));
+	     (long)th_self(), p, name ? name->str : "-",
+	     Pike_compiler->compiler_pass,
+	     threads_disabled, compilation_depth));
 
   init_type_stack();
 
@@ -2546,6 +2547,8 @@ void low_inherit(struct program *p,
 	  flags,
 	  name?  name->str : "");
 #endif
+  CDFPRINTF((stderr, "th(%ld) %p inherit %p\n",
+	     (long) th_self(), Pike_compiler->new_program, p));
 	
   if(!p)
   {
@@ -3257,7 +3260,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }
     
     if(c && !svalues_are_constant(c,1,BIT_MIXED,0))
-      yyerror("Constant values may not references this_object()");
+      yyerror("Constant values may not have references this_object()");
     
   }while(0);
 
@@ -4853,6 +4856,7 @@ static int run_pass1(struct compilation *c)
 
   if(c->placeholder && c->placeholder->prog != null_program)
     Pike_error("Placeholder object is not a null_program clone!\n");
+  debug_malloc_touch(c->placeholder);
 
   if(c->target && !(c->target->flags & PROGRAM_VIRGIN))
     Pike_error("Placeholder program is not virgin!\n");
@@ -4912,8 +4916,14 @@ static int run_pass1(struct compilation *c)
   {
     if(!c->p || (c->placeholder->storage))
     {
+      debug_malloc_touch(c->placeholder);
       zap_placeholder(c);
     } else {
+#ifdef PIKE_DEBUG
+      if (c->placeholder->prog != c->p)
+	fatal("Placeholder object got wrong program after first pass.\n");
+#endif
+      debug_malloc_touch(c->placeholder);
       c->placeholder->storage=c->p->storage_needed ?
 	(char *)xalloc(c->p->storage_needed) :
 	(char *)0;
@@ -4928,6 +4938,7 @@ static int run_pass1(struct compilation *c)
 void run_pass2(struct compilation *c)
 {
   debug_malloc_touch(c);
+  debug_malloc_touch(c->placeholder);
 
   run_init(c);
   low_start_new_program(c->p,0,0,0);
@@ -4961,6 +4972,7 @@ void run_pass2(struct compilation *c)
 static void run_cleanup(struct compilation *c, int delayed)
 {
   debug_malloc_touch(c);
+  debug_malloc_touch(c->placeholder);
 #if 0 /* FIXME */
   if (threads_disabled != c->saved_threads_disabled) {
     fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
@@ -4976,8 +4988,10 @@ static void run_cleanup(struct compilation *c, int delayed)
   if (!c->p)
   {
     /* fprintf(stderr, "Destructing placeholder.\n"); */
-    if(c->placeholder)
+    if(c->placeholder) {
+      debug_malloc_touch(c->placeholder);
       zap_placeholder(c);
+    }
 
     if(delayed && c->target)
     {
@@ -5019,9 +5033,14 @@ static void run_cleanup(struct compilation *c, int delayed)
       if (c->target->flags & PROGRAM_FINISHED) {
 	JMP_BUF rec;
 	/* Initialize the placeholder. */
+#ifdef PIKE_DEBUG
+	if (c->placeholder->prog != c->p)
+	  fatal("Placeholder object got wrong program after second pass.\n");
+#endif
 	if(SETJMP(rec))
 	{
 	  struct svalue thrown = throw_value;
+	  debug_malloc_touch(c->placeholder);
 	  throw_value.type = T_INT;
 	  push_svalue(&thrown);
 	  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
@@ -5030,11 +5049,15 @@ static void run_cleanup(struct compilation *c, int delayed)
 	  free_svalue(&thrown);
 	  zap_placeholder(c);
 	}else{
+	  debug_malloc_touch(c->placeholder);
 	  call_pike_initializers(c->placeholder,0);
 	}
 	UNSETJMP(rec);
       }
-      else zap_placeholder(c);
+      else {
+	debug_malloc_touch(c->placeholder);
+	zap_placeholder(c);
+      }
     }
   }
   verify_supporters();
@@ -5086,6 +5109,9 @@ struct program *compile(struct pike_string *aprog,
 
   verify_supporters();
 
+  CDFPRINTF((stderr, "th(%ld) %p compile() enter, placeholder=%p\n",
+	     (long) th_self(), atarget, aplaceholder));
+
   debug_malloc_touch(c);
   add_ref(c->prog=aprog);
   if((c->handler=ahandler)) add_ref(ahandler);
@@ -5130,8 +5156,8 @@ struct program *compile(struct pike_string *aprog,
 
   if(delay)
   {
-    CDFPRINTF((stderr, "th(%ld) %p compile() finish later.\n",
-	       (long) th_self(), c->target));
+    CDFPRINTF((stderr, "th(%ld) %p compile() finish later, placeholder=%p.\n",
+	       (long) th_self(), c->target, c->placeholder));
     /* finish later */
     add_ref(c->p);
     verify_supporters();
