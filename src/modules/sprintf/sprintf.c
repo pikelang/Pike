@@ -15,7 +15,7 @@
   simply use pointers into other strings.
   It also has a lot more features:
 
-  Modifyers:
+  Modifiers:
     0  Zero pad numbers (implies right justification)
     !  Toggle truncation
        pad positive integers with a space
@@ -53,7 +53,7 @@
    %O any type (prettyprint)
    %n nop
    %t type of argument
-   %<modifyers>{format%}  do a format for every index in an array.
+   %<modifiers>{format%}  do a format for every index in an array.
 
    Most flags and operators are combinable in any fashion, but _really_
    strange results can arise from things like:
@@ -189,7 +189,7 @@ INLINE static void fix_field(char *b,
       }
     }
     for(;width>len;width--) my_putchar('0');
-    while(len--) my_putchar(*(b++));
+    my_binary_strcat(b,len);
     return;
   }
 
@@ -210,8 +210,13 @@ INLINE static void fix_field(char *b,
   {
     if(pos_pad && b[0]!='-') { my_putchar(pos_pad); width--; d++; }
     d+=MINIMUM(width,len);
-    while(len-- && width--) my_putchar(*(b++));
-    for(d%=pad_length;width--;d++)
+    while(len && width)
+    {
+      my_putchar(*(b++));
+      len--;
+      width--;
+    }
+    for(d%=pad_length;width;d++,width--)
     {
       if(d>=pad_length) d=0;
       my_putchar(pad_string[d]);
@@ -235,7 +240,7 @@ INLINE static void fix_field(char *b,
     width--;
   }
   b+=len-width;
-  while(width--) my_putchar(*(b++));
+  my_binary_strcat(b,width);
 }
 
 static struct svalue temp_svalue = { T_INT };
@@ -477,7 +482,7 @@ static string low_lpc_sprintf(char *format,
 	sprintf_error("Error in format string.\n");
 	fatal("Foo, you shouldn't be here!\n");
 
-        /* First the modifyers */
+        /* First the modifiers */
 
       case '0': fsp->flags|=ZERO_PAD; continue;
       case '1': case '2': case '3':
@@ -492,7 +497,7 @@ static string low_lpc_sprintf(char *format,
 
       got_arg:
 	if(tmp<1)
-	  sprintf_error("Illigal width.\n");
+	  sprintf_error("Illegal width.\n");
 	switch(setwhat)
 	{
 	case 0: fsp->width=tmp; break;
