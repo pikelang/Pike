@@ -1,2 +1,10 @@
 [attr]binary -text -crlf -diff -ident
 * text ident
+
+# Handling of foreign (ie CVS) identifiers.
+#
+[attr]foreign_ident -ident block_commit=Remove-foreign_ident-attribute-before-commit.
+# Files containing CVS ids follow.
+# Remove the corresponding line before committing
+# changes to these files.
+/lib/modules/Protocols.pmod/IMAP.pmod/imap_server.pike foreign_ident
