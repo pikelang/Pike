@@ -4,10 +4,10 @@ Permission to copy, modify, and distribute this source for any legal
 purpose granted as long as my name is still attached to it.  More
 specifically the GPL license applies to this software.
 
-Read src/README for details on installation.  New releases can be
-found on ftp://ftp.roxen.com/pub/pike/  Report bugs at
-http://community.roxen.com/crunch/  There is also a mailing list, to
-subscribe to it mail: pike-request@roxen.com
+New releases can be found on ftp://ftp.roxen.com/pub/pike/
+Report bugs at http://community.roxen.com/crunch/
+There is also a mailing list, to subscribe to it mail:
+pike-request@roxen.com
 
 
 HOW TO BUILD PIKE
