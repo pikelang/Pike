@@ -15,6 +15,7 @@
 #include "opcodes.h"
 #include "pike_error.h"
 #include "pike_types.h"
+#include "cyclic.h"
 #include "fsort.h"
 #include "builtin_functions.h"
 #include "pike_memory.h"
@@ -24,7 +25,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.106 2002/03/06 11:01:58 grubba Exp $");
+RCSID("$Id: array.c,v 1.107 2003/01/07 16:01:37 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1895,22 +1896,37 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
   INT32 e;
   struct array *ret;
-  ptrdiff_t argp;
+  struct svalue *argp = Pike_sp - args;
+  TYPE_FIELD new_types = 0;
+  struct array *cycl;
+  DECLARE_CYCLIC();
 
-  argp=Pike_sp-args - Pike_interpreter.evaluator_stack;
-
-  check_stack(a->size + args + 1);
   check_array_for_destruct(a);
-  for(e=0;e<a->size;e++)
-  {
-    assign_svalues_no_free(Pike_sp, Pike_interpreter.evaluator_stack + argp,
-			   args, BIT_MIXED);
-    Pike_sp+=args;
-    apply_svalue(ITEM(a)+e,args);
+  check_stack(120 + args + 1);
+
+  /* FIXME: Ought to use a better key on the arguments below. */
+  if (!(cycl = (struct array *)BEGIN_CYCLIC(a, args))) {
+    BEGIN_AGGREGATE_ARRAY(a->size) {
+      SET_CYCLIC_RET(Pike_sp[-1].u.array);
+      for (e=0;e<a->size;e++) {
+	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
+	Pike_sp+=args;
+	apply_svalue(ITEM(a)+e,args);
+	new_types |= 1 << Pike_sp[-1].type;
+	DO_AGGREGATE_ARRAY(120);
+      }
+    }
+    END_AGGREGATE_ARRAY;
+
+    Pike_sp[-1].u.array->type_field = new_types;
+#ifdef PIKE_DEBUG
+    array_check_type_field(Pike_sp[-1].u.array);
+#endif
+  } else {
+    ref_push_array(cycl);
   }
-  ret=aggregate_array(a->size);
-  pop_n_elems(args);
-  push_array(ret);
+  END_CYCLIC();
+  stack_pop_n_elems_keep_top(args);
 }
 
 PMOD_EXPORT struct array *reverse_array(struct array *a)

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.32 2001/09/28 23:18:52 hubbe Exp $
+ * $Id: array.h,v 1.33 2003/01/07 16:01:37 grubba Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -188,5 +188,45 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 
 #define gc_cycle_check_array(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_array, (X), (WEAK))
+
+
+/* Macros for aggregating results built on the stack into an array,
+ * while maintaining a bound on stack consumption. Use like this:
+ *
+ * check_stack(120);
+ * BEGIN_AGGREGATE_ARRAY(estimated_size_of_final_array) {
+ *   for (...) {
+ *     ... stuff that produces a value on the stack ...
+ *     DO_AGGREGATE_ARRAY(120);
+ *     ...
+ *   }
+ * } END_AGGREGATE_ARRAY;
+ *
+ * The array is left on top of the stack.
+ */
+
+#define BEGIN_AGGREGATE_ARRAY(estimated_size) do {			\
+  struct svalue *base__;						\
+  push_array(allocate_array_no_init(0, (estimated_size)));		\
+  base__ = Pike_sp;
+
+#define DO_AGGREGATE_ARRAY(max_keep_on_stack)				\
+  do {									\
+    ptrdiff_t diff__ = Pike_sp - base__;				\
+    if (diff__ > (max_keep_on_stack)) {					\
+      INT32 oldsize__ = base__[-1].u.array->size;			\
+      base__[-1].u.array =						\
+	resize_array(base__[-1].u.array, oldsize__ + diff__);		\
+      /* Unless the user does something, the type field will contain */	\
+      /* BIT_MIXED|BIT_UNFINISHED from the allocation above. */		\
+      MEMCPY((char *) (ITEM(base__[-1].u.array) + oldsize__),		\
+	     (char *) base__, diff__ * sizeof(struct svalue));		\
+      Pike_sp = base__;							\
+    }									\
+  } while (0)
+
+#define END_AGGREGATE_ARRAY						\
+  DO_AGGREGATE_ARRAY(0);						\
+} while (0)
 
 #endif /* ARRAY_H */
