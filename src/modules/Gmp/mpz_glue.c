@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.117 2003/01/25 23:43:27 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.118 2003/01/26 15:53:55 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.117 2003/01/25 23:43:27 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.118 2003/01/26 15:53:55 mirar Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -40,6 +40,9 @@ RCSID("$Id: mpz_glue.c,v 1.117 2003/01/25 23:43:27 nilsson Exp $");
 
 #include <limits.h>
 
+#if SIZEOF_INT_TYPE > 4
+#define BIG_PIKE_INT
+#endif
 
 #define sp Pike_sp
 #define fp Pike_fp
@@ -87,7 +90,7 @@ void mpzmod_reduce(struct object *o)
 
      mpz_init_set(t,OBTOMPZ(o));
      mpz_init(u);
-     while (pos<sizeof(INT_TYPE)*CHAR_BIT)
+     while (pos<(int)sizeof(INT_TYPE)*CHAR_BIT)
      {
         a=mpz_get_ui(t)&FILTER;
         if (!a && mpz_cmp_si(t,0)==0) 
@@ -196,7 +199,7 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
   switch(s->type)
   {
   case T_INT:
-#if BIG_PIKE_INT
+#ifdef BIG_PIKE_INT
 /*  INT_TYPE is bigger then long int  */
   {
      INT_TYPE x=s->u.integer;
