@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.60 1999/12/13 01:21:13 grubba Exp $");
+RCSID("$Id: docode.c,v 1.61 2000/01/04 00:17:00 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -35,6 +35,7 @@ static INT32 current_switch_case;
 static INT32 current_switch_default;
 static INT32 current_switch_values_on_stack;
 static INT32 *current_switch_jumptable =0;
+static struct pike_string *current_switch_type = NULL;
 
 void upd_int(int offset, INT32 tmp)
 {
@@ -829,12 +830,17 @@ static int do_docode2(node *n,int flags)
     INT32 prev_switch_default = current_switch_default;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     INT32 break_save = current_break;
+    struct pike_string *prev_switch_type = current_switch_type;
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=sp;
 #endif
 
     if(do_docode(CAR(n),0)!=1)
       fatal("Internal compiler error, time to panic\n");
+
+    if (!(CAR(n) && (current_switch_type = CAR(n)->type))) {
+      current_switch_type = mixed_type_string;
+    }
 
     current_break=alloc_label();
 
@@ -907,7 +913,8 @@ static int do_docode2(node *n,int flags)
     current_switch_jumptable = prev_switch_jumptable;
     current_switch_default = prev_switch_default;
     current_switch_case = prev_switch_case;
-    current_switch_values_on_stack = prev_switch_values_on_stack ;
+    current_switch_values_on_stack = prev_switch_values_on_stack;
+    current_switch_type = prev_switch_type;
 
     emit(F_LABEL, current_break);
 
@@ -930,6 +937,18 @@ static int do_docode2(node *n,int flags)
 
       if(!is_const(lower))
 	yyerror("Case label isn't constant.");
+
+      if (lower && lower->type) {
+	if (!pike_types_le(lower->type, current_switch_type)) {
+	  if (!match_types(lower->type, current_switch_type)) {
+	    yytype_error("Type mismatch in case.",
+			 current_switch_type, lower->type, 0);
+	  } else if (lex.pragmas & ID_STRICT_TYPES) {
+	    yytype_error("Type mismatch in case.",
+			 current_switch_type, lower->type, YYTE_IS_WARNING);
+	  }
+	}
+      }
 
       tmp1=eval_low(lower);
       if(tmp1<1)
