@@ -405,7 +405,7 @@ class client
   static private mapping etc_hosts;
 
 #ifdef __NT__
-  string get_tcpip_param(string val)
+  string get_tcpip_param(string val, void|string fallbackvalue)
   {
     foreach(({
       "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
@@ -430,7 +430,7 @@ class client
 	};
       }
 #endif
-			   
+    return fallbackvalue;
   }
 #endif
   
@@ -484,15 +484,15 @@ class client
       string domain;
 
 #if __NT__
-      domain=get_tcpip_param("Domain");
+      domain = get_tcpip_param("Domain");
       if(!domain || !sizeof(domain))
-        domain=get_tcpip_param("DhcpDomain");
+        domain = get_tcpip_param("DhcpDomain");
 
-      nameservers = get_tcpip_param("NameServer") / " ";
-      nameservers+= get_tcpip_param("DhcpNameServer") / " ";
-      nameservers -= ({""});
+      nameservers += get_tcpip_param("NameServer", "") / " ";
+      nameservers += get_tcpip_param("DhcpNameServer", "") / " ";
+      nameservers -= ({ "" });
 
-      domains=get_tcpip_param("SearchList") / " "- ({""});
+      domains += (get_tcpip_param("SearchList", "") / " ") - ({ "" });
 #else
       string resolv_conf;
       foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}), string resolv_loc)
@@ -583,18 +583,23 @@ class client
     for (i=0; i < RETRIES; i++) {
       udp->send(nameservers[i % sizeof(nameservers)], 53, s);
 
-      while (udp->wait(RETRY_DELAY)) {
-	// udp->read() can throw an error on connection refused.
-	catch {
-	  m = udp->read();
-	  if ((m->port == 53) &&
-	      (m->data[0..1] == s[0..1]) &&
-	      (search(nameservers, m->ip) != -1)) {
-	    // Success.
-	    return decode_res(m->data);
-	  }
-	};
-      }
+      // upd->wait() can throw an error sometimes.
+      catch
+      {
+  	while (udp->wait(RETRY_DELAY))
+        {
+  	  // udp->read() can throw an error on connection refused.
+  	  catch {
+  	    m = udp->read();
+  	    if ((m->port == 53) &&
+  		(m->data[0..1] == s[0..1]) &&
+  		(search(nameservers, m->ip) != -1)) {
+  	      // Success.
+  	      return decode_res(m->data);
+  	    }
+  	  };
+        }
+      };
     }
     // Failure.
     return 0;
