@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.166 2001/07/05 00:09:41 mast Exp $");
+RCSID("$Id: gc.c,v 1.167 2001/07/05 01:44:55 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -117,6 +117,7 @@ struct gc_frame
       gc_cycle_check_cb *checkfn;
       int weak;
     } link;
+    TYPE_T free_extra_type;	/* Used on free_extra_list. The type of the thing. */
   } u;
   unsigned INT16 frameflags;
 };
@@ -156,6 +157,7 @@ BLOCK_ALLOC(gc_frame,GC_LINK_CHUNK_SIZE)
 static struct gc_frame rec_list = {0, 0, {{0, 0, 0}}, GC_POP_FRAME};
 static struct gc_frame *gc_rec_last = &rec_list, *gc_rec_top = 0;
 static struct gc_frame *kill_list = 0;
+static struct gc_frame *free_extra_list = 0; /* See note in gc_delayed_free. */
 
 static unsigned last_cycle;
 size_t gc_ext_weak_refs;
@@ -1463,7 +1465,7 @@ should_free:
   return 1;
 }
 
-void gc_delayed_free(void *a)
+void gc_delayed_free(void *a, TYPE_T type)
 {
   struct marker *m;
 
@@ -1483,13 +1485,29 @@ void gc_delayed_free(void *a)
   else m = get_marker(a);
   if (*(INT32 *) a != 1)
     fatal("gc_delayed_free() called for thing that haven't got a single ref.\n");
-  if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED))
-    gc_fatal(a, 1, "gc_delayed_free() got a thing marked as referenced.\n");
   debug_malloc_touch(a);
   delayed_freed++;
 #else
   m = get_marker(a);
 #endif
+
+  if (m->flags & GC_MARKED) {
+    /* Note that we can get marked things here, e.g. if the index in a
+     * mapping with weak indices is removed in the zap weak pass, the
+     * value will be zapped too, but it will still have a mark from
+     * the mark pass. This means that the stuff referenced by the
+     * value will only be refcount garbed, which can leave cyclic
+     * garbage for the next gc round.
+     *
+     * Since the value has been marked we won't find it in the free
+     * pass, so we have to keep special track of it. :P */
+    struct gc_frame *l = alloc_gc_frame();
+    l->data = a;
+    l->u.free_extra_type = type;
+    l->back = free_extra_list;
+    l->frameflags = 0;
+    free_extra_list = l;
+  }
 
   gc_add_extra_ref(a);
   m->flags |= GC_GOT_DEAD_REF;
@@ -2525,6 +2543,18 @@ int do_gc(void)
   if (gc_internal_object) {
     FREE_AND_GET_REFERENCED(gc_internal_object, struct object, free_object);
     gc_free_all_unreferenced_objects();
+  }
+
+  /* We might occasionally get things to gc_delayed_free that the free
+   * calls above won't find. They're tracked in this list. */
+  while (free_extra_list) {
+    struct gc_frame *next = free_extra_list->back;
+    union anything u;
+    u.refs = (INT32 *) free_extra_list->data;
+    gc_free_extra_ref(u.refs);
+    free_short_svalue(&u, free_extra_list->u.free_extra_type);
+    debug_really_free_gc_frame(free_extra_list);
+    free_extra_list = next;
   }
 
   GC_VERBOSE_DO(fprintf(stderr, "| free: %d really freed, %u left with live references\n",

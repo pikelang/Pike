@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.440 2001/07/04 13:19:11 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.441 2001/07/05 01:44:55 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3917,6 +3917,24 @@ ifefun(gc,
     gc();
     return sizeof (m);
   ]], 1)
+
+  test_do([[
+    mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
+    object o = class {object o;}();
+    m[o] = ({1});
+    o->o = o;
+    o = 0;
+    gc();
+  ]])
+
+  test_do([[
+    mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
+    object o = class {object o;}();
+    m[o] = ({1});
+    array a = set_weak_flag (({class (object o) {} (o)}), 1);
+    o = 0;
+    gc();
+  ]])
 
   test_any([[
     return class {

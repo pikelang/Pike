@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.111 2001/07/04 11:58:16 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.112 2001/07/05 01:44:55 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1512,9 +1512,9 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       }
 
 #define GC_DO_MARK(U, TN)						\
-      enqueue(&gc_mark_queue,						\
-	      (queue_call) PIKE_CONCAT3(gc_mark_, TN, _as_referenced),	\
-	      U.TN)
+      gc_mark_enqueue(							\
+	(queue_call) PIKE_CONCAT3(gc_mark_, TN, _as_referenced),	\
+	U.TN)
 
 #define GC_DONT_MARK(U, TN) do {} while (0)
 
@@ -1706,7 +1706,7 @@ void real_gc_free_svalue(struct svalue *s)
     fatal("gc_free_svalue() called in invalid gc pass.\n");
 #endif
   if (((1 << s->type) & BIT_COMPLEX) && *(s->u.refs) == 1)
-    gc_delayed_free(s->u.refs);
+    gc_delayed_free(s->u.refs, s->type);
   free_svalue(s);
 }
 
@@ -1718,7 +1718,7 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
     fatal("gc_free_short_svalue() called in invalid gc pass.\n");
 #endif
   if (((1 << type) & BIT_COMPLEX) && *u->refs == 1)
-    gc_delayed_free(u->refs);
+    gc_delayed_free(u->refs, type);
   free_short_svalue(u, type);
 }
 
