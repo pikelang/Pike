@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.65 2003/10/28 20:49:16 mast Exp $
+|| $Id: backend.cmod,v 1.66 2003/10/29 10:28:53 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.65 2003/10/28 20:49:16 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.66 2003/10/29 10:28:53 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1438,7 +1438,7 @@ PIKECLASS Backend
     if (sleep_time && sleep_time->type == PIKE_T_FLOAT) {
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
       timeout.tv_usec =
-	(long) ((sleep_time->u.float_number - next_timeout.tv_sec) * 1e6);
+	(long) ((sleep_time->u.float_number - timeout.tv_sec) * 1e6);
     }
     else
       timeout.tv_sec = -1;
