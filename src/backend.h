@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.28 2004/07/02 02:32:53 srb Exp $
+|| $Id: backend.h,v 1.29 2004/09/27 21:25:33 mast Exp $
 */
 
 #ifndef BACKEND_H
@@ -92,6 +92,9 @@ struct fd_callback_box
 #define PIKE_BIT_FD_READ_OOB	(1 << PIKE_FD_READ_OOB)
 #define PIKE_BIT_FD_WRITE_OOB	(1 << PIKE_FD_WRITE_OOB)
 #define PIKE_BIT_FD_ERROR	(1 << PIKE_FD_ERROR)
+
+/* If an error condition occurs then all events except
+ * PIKE_BIT_FD_ERROR are cleared from fd_callback_box.events. */
 
 /* Note: If ref_obj is used, both unhook_fd_callback_box and
  * set_fd_callback_events might free the object containing the box.
