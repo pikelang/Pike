@@ -2,7 +2,7 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: test.c,v 1.2 2002/10/08 20:22:34 nilsson Exp $
+||| $Id: test.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $
 \*/
 
 /*
@@ -10,8 +10,6 @@
 ** please submit bug reports and patches to the author
 **
 ** also see http://www.mirar.org/mird/
-**
-** for licence, read the LICENCE file
 */
 
 #include <stdio.h>

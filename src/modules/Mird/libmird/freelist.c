@@ -2,7 +2,7 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: freelist.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $
+||| $Id: freelist.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $
 \*/
 
 /*
@@ -10,8 +10,6 @@
 ** please submit bug reports and patches to the author
 **
 ** also see http://www.mirar.org/mird/
-**
-** for licence, read the LICENCE file
 */
 
 /* handles frags
@@ -28,7 +26,7 @@
 #include <stdio.h>
 
 static const char RCSID[]=
-   "$Id: freelist.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $";
+   "$Id: freelist.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $";
 
 
 #define BLOCKS_IN_FREE_LIST(DB) (LONGS_IN_BLOCK(DB)-6)

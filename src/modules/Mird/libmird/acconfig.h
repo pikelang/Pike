@@ -2,8 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: acconfig.h,v 1.3 2002/10/08 20:22:33 nilsson Exp $
+||| $Id: acconfig.h,v 1.4 2002/10/09 13:28:39 nilsson Exp $
 \*/
+
 /* define if there is an inline keyword */
 #undef HAS_INLINE
 
