@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.78 1998/04/18 06:28:50 hubbe Exp $
+# $Id: Makefile.in,v 1.79 1998/04/18 12:04:16 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -25,7 +25,7 @@ TMP_LIBDIR = $(TMP_BUILDDIR)/lib
 prefix = @prefix@
 exec_prefix = $(prefix)/bin
 lib_prefix = $(prefix)/lib/pike
-share_prefix = @datadir@
+share_prefix = @datadir@/pike
 
 #
 # use bison please, yacc isn't good enough.
@@ -355,8 +355,11 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 	  ln -s "$(LIBDIR_SRC)" ./share || exit 1; \
 	fi
 	@echo "Creating lib/master.pike"; \
-	( sed -e 's!¤lib_prefix¤!$(lib_prefix)!' <$(LIBDIR_SRC)/master.pike.in \
-	  | sed -e 's!¤share_prefix¤!$(share_prefix)!' >./lib/master.pike && chmod 644 ./lib/master.pike) || exit 1
+	( sed -e 's!¤exec_prefix¤!$(exec_prefix)!'  \
+	      -e 's!¤lib_prefix¤!$(lib_prefix)!'  \
+	      -e 's!¤data_prefix¤!$(share_prefix)!'  \
+	      <$(LIBDIR_SRC)/master.pike.in \
+	  >./lib/master.pike && chmod 644 ./lib/master.pike) || exit 1
 	@echo "Done."
 	-@touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
 

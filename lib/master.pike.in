@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.12 1998/04/18 06:28:09 hubbe Exp $
+/* $Id: master.pike.in,v 1.13 1998/04/18 12:04:17 mirar Exp $
  *
  * Master-file for Pike.
  *
@@ -505,7 +505,6 @@ void _main(string *orig_argv, string *env)
   add_constant("putenv",putenv);
 
   add_constant("write",_static_modules.files()->_stdout->write);
-
 
   // add path for architecture-shared files
   add_include_path("¤share_prefix¤/include");
