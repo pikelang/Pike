@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.158 2003/02/01 15:37:23 mast Exp $
+|| $Id: mapping.c,v 1.159 2003/06/02 16:35:33 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.158 2003/02/01 15:37:23 mast Exp $");
+RCSID("$Id: mapping.c,v 1.159 2003/06/02 16:35:33 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1479,6 +1479,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
   {
     zipper=get_set_order(b);
     b_temp=reorder_and_copy_array(b,zipper);
+    free (zipper);
     SET_ONERROR(r1,do_free_array,b_temp);
     m=merge_mapping_array_ordered(a,b_temp,op);
     UNSET_ONERROR(r1); free_array(b_temp);
