@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.56 1999/02/26 18:59:56 grubba Exp $
+ * $Id: requests.pmod,v 1.57 1999/02/26 19:28:40 grubba Exp $
  */
 
 import .types;
@@ -250,11 +250,14 @@ class list
       
     array mailboxes = server->list(session, reference, glob);
       
-    if (mailboxes)
+    if (mailboxes) {
       foreach(mailboxes, array a)
 	send("*", "LIST", @a);
       
-    send(tag, "OK");
+      send(tag, "OK LIST done");
+    } else {
+      send(tag, "NO LIST failed");
+    }
     return ([ "action" : "finished" ]);
   }
 }
