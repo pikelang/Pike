@@ -7,7 +7,7 @@
 #  include "stralloc.h"
 #  include "pike_macros.h"
 
-RCSID("$Id: dynamic_load.c,v 1.31 1998/09/18 21:35:00 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.32 1999/01/31 23:50:15 per Exp $");
 
 #endif /* !TESTING */
 
@@ -203,6 +203,14 @@ static void dlclose(void *module)
 #define RTLD_NOW 0
 #endif
 
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0 
+#endif
+
 #ifndef TESTING
 
 #if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
@@ -228,7 +236,8 @@ void f_load_module(INT32 args)
 
   module_name = sp[-args].u.string->str;
 
-  module=dlopen(module_name, RTLD_NOW);
+  module=dlopen(module_name, 
+                (d_flag?RTLD_NOW|RTLD_GLOBAL:RTLD_LAZY|RTLD_GLOBAL));
 
   if(!module)
   {
