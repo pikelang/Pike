@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.4 2002/10/19 13:43:05 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2002/10/19 14:21:35 nilsson Exp $
 
 dnl - ADT.History
 
@@ -42,7 +42,23 @@ test_eq(adth->get_first_entry_num(),0)
 test_do( adth->set_maxsize(0) )
 test_do( adth->push(23) )
 test_eq(sizeof(adth),0)
+test_do( adth->set_maxsize(2) )
+test_eq(adth->query_no_adjacent_duplicates(), 0)
+test_do( adth->set_no_adjacent_duplicates(1), 0)
+test_do( adth->push(24) )
+test_do( adth->push(25) )
+test_do( adth->push(25) )
+test_do( adth->push(25) )
+test_eq(adth[-2],24)
+test_do( adth->set_no_adjacent_duplicates(0), 0)
+test_do( adth->push(26) )
+test_do( adth->push(26) )
+test_eq(adth[-2],26)
+test_do( adth[-1]=27 )
+test_equal(indices(adth),[[ ({9,10}) ]])
+test_equal(values(adth),[[ ({26,27}) ]])
 test_do(add_constant("adth"))
+
 
 
 dnl - ADT.Stack
