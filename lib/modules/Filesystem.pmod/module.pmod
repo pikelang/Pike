@@ -261,6 +261,17 @@ class Traversion {
   int(0..1) symlink;
   constant is_traversion = 1;
 
+  //! Returns the current progress of the traversion as a value
+  //! between 0.0 and 1.0. Note that this value isn't based on the
+  //! number of files, but the directory structure.
+  float progress(void|float share) {
+    if(!share) share=1.0;
+    float sub = 0.0;
+    if(current && current->is_traversion)
+      sub = current->progress(share/sizeof(files));
+    return share/sizeof(files)*(pos+1) + sub;
+  }
+
   //! @decl void create(string path, void|int(0..1) symlink)
   //! @param path
   //! The root path from which to traverse.
