@@ -346,7 +346,7 @@ void saver_disable( )
       CARD16 state;
       DPMSInfo(GDK_DISPLAY(), &state, &dpms_off);
       if (dpms_off)
-	DPMSDisable(mDisplay);  // monitor powersave off
+	DPMSDisable(mDisplay);  /* monitor powersave off */
     }
 #endif
 }
@@ -367,7 +367,7 @@ void saver_enable( )
 #ifdef HAVE_XDPMS
     if (dpms_off)
     {
-      DPMSEnable(mDisplay);  // monitor powersave on
+      DPMSEnable(mDisplay);  /* monitor powersave on */
       dpms_off=0;
     }
 #endif
