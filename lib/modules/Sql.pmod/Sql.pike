@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.47 2001/04/07 00:35:21 nilsson Exp $
+ * $Id: Sql.pike,v 1.48 2001/08/23 21:51:53 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: Sql.pike,v 1.47 2001/04/07 00:35:21 nilsson Exp $
+//. RCSID:	$Id: Sql.pike,v 1.48 2001/08/23 21:51:53 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@roxen.com)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -84,8 +84,8 @@ function(string:int) decode_datetime;
 //!   object - Use this object to access the SQL-database.
 //!   string - Connect to the server specified.
 //!            The string should be on the format:
-//!              [dbtype://][user[:password]@]hostname[:port][/database]
-//!            If dbtype isn't specified, use any available database server
+//!              dbtype://[user[:password]@]hostname[:port][/database]
+//!            Use the dbtype protocol to connect to the database server
 //!            on the specified host.
 //!            If the hostname is "", access through a UNIX-domain socket or
 //!            similar.
@@ -96,6 +96,10 @@ function(string:int) decode_datetime;
 //!   User name to access the database as.
 //! > password
 //!   Password to access the database.
+//!
+//! NOTE:
+//!   In versions of Pike prior to 7.2 it was possible to leave out the
+//!   dbtype, but that has been deprecated, since it never worked well.
 void create(void|string|object host, void|string db,
 	    void|string user, void|string password)
 {
@@ -120,8 +124,7 @@ void create(void|string|object host, void|string db,
       password = 0;
     }
 
-    array(string) program_names;
-    int throw_errors = 1;
+    string program_name;
 
     if (host && (host != replace(host, ({ ":", "/", "@" }), ({ "", "", "" })))) {
 
@@ -132,9 +135,9 @@ void create(void|string|object host, void|string db,
       array(string) arr = host/"://";
       if ((sizeof(arr) > 1) && (arr[0] != "")) {
 	if (sizeof(arr[0]/".pike") > 1) {
-	  program_names = ({ (arr[0]/".pike")[0] });
+	  program_name = (arr[0]/".pike")[0];
 	} else {
-	  program_names = ({ arr[0] });
+	  program_name = arr[0];
 	}
 	host = arr[1..] * "://";
       }
@@ -166,97 +169,38 @@ void create(void|string|object host, void|string db,
       host = 0;
     }
 
-    if (!program_names) {
-#ifdef PIKE_SQL_DEBUG
-      program_names = indices(Sql);
-#else /* !PIKE_SQL_DEBUG */
-      // Ignore compiler errors for the various sql-modules,
-      // since we might not have some.
-      // This is NOT a nice way to do it, but...
-      // It's nicer now, since it's a thread-local variable,
-      // but not by much.
-      mixed old_inhib = master()->get_inhibit_compile_errors();
-      master()->set_inhibit_compile_errors(lambda(){});
-      program_names = indices(Sql);
-      // Restore compiler errors mode to whatever it was before.
-      master()->set_inhibit_compile_errors(old_inhib);
-#endif /* PIKE_SQL_DEBUG */
-
-      throw_errors = 0;
+    if (!program_name) {
+      error("Sql.Sql(): No protocol specified.\n");
     }
+    /* Don't call ourselves... */
+    if ((sizeof(program_name / "_result") != 1) ||
+	(lower_case(program_name[..2]) == "sql")) {
+      error(sprintf("Sql.Sql(): Unsupported protocol: %O\n", program_name));
+    }
+    
 
-    foreach(program_names, string program_name) {
-      if ((sizeof(program_name / "_result") == 1) &&
-	  (program_name[..2] != "sql")) {
-	/* Don't call ourselves... */
-	array(mixed) err;
+    array(mixed) err;
       
-	err = catch {
-	  program p;
+    program p;
 
-	  err = catch {p = Sql[program_name];};
+    p = Sql[program_name];
 
-	  if (err) {
-#ifdef PIKE_SQL_DEBUG
-	    Stdio.stderr->write(sprintf("Sql.sql(): Failed to compile module Sql.%s (%s)\n",
-					program_name, err[0]));
-#endif /* PIKE_SQL_DEBUG */
-	    if (throw_errors) {
-	      throw(err);
-	    } else {
-	      throw(0);
-	    }
-	  }
-
-	  if (p) {
-	    err = catch {
-	      if (password) {
-		master_sql = p(host||"", db||"", user||"", password);
-	      } else if (user) {
-		master_sql = p(host||"", db||"", user);
-	      } else if (db) {
-		master_sql = p(host||"", db);
-	      } else if (host) {
-		master_sql = p(host);
-	      } else {
-		master_sql = p();
-	      }
-	    };
-	    if (err) {
-	      if (throw_errors) {
-		throw(err);
-	      }
-#ifdef PIKE_SQL_DEBUG
-	      Stdio.stderr->write(sprintf("Sql.sql(): Failed to connect using module Sql.%s (%s)\n",
-					  program_name, err[0]));
-#endif /* PIKE_SQL_DEBUG */
-	    }
-	  } else {
-	    if (throw_errors) {
-	      throw(({ sprintf("Sql.sql(): Failed to index module Sql.%s\n",
-			       program_name), backtrace() }));
-	    }
-#ifdef PIKE_SQL_DEBUG
-	    Stdio.stderr->write(sprintf("Sql.sql(): Failed to index module Sql.%s\n",
-					program_name));
-#endif /* PIKE_SQL_DEBUG */
-	  }
-	};
-	if(master_sql)
-	  break;
-	if (err && throw_errors) {
-	  throw(err);
-	}
-      }
-    }
-
-    if (!master_sql)
-      if (!throw_errors) {
-	throw_error("Sql.sql(): Couldn't connect using any of the databases\n");
+    if (p) {
+      if (password) {
+	master_sql = p(host||"", db||"", user||"", password);
+      } else if (user) {
+	master_sql = p(host||"", db||"", user);
+      } else if (db) {
+	master_sql = p(host||"", db);
+      } else if (host) {
+	master_sql = p(host);
       } else {
-	throw_error("Sql.sql(): Couldn't connect using the " +
-		    (program_names[0]/".pike")[0] + " database\n");
+	master_sql = p();
       }
+    } else {
+      throw(({ sprintf("Sql.sql(): Failed to index module Sql.%s\n",
+		       program_name), backtrace() }));
+    }
   }
 
   if (master_sql->quote) quote = master_sql->quote;
