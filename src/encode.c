@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.44 1999/11/03 19:26:30 grubba Exp $");
+RCSID("$Id: encode.c,v 1.45 1999/11/03 23:53:15 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1128,9 +1128,17 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
+	{
+	  struct svalue *prog_code;
+
 	  tmp=data->counter;
 	  data->counter.u.integer++;
 	  decode_value2(data);
+
+	  /* Keep the value so that we can make a good error-message. */
+	  prog_code = sp-1;
+	  stack_dup();
+
 	  if(data->codec)
 	  {
 	    apply(data->codec,"programof", 1);
@@ -1139,10 +1147,20 @@ static void decode_value2(struct decode_data *data)
 	    stack_swap();
 	    f_index(2);
 	  }
-	  if(data->pickyness && sp[-1].type != T_PROGRAM)
+	  if(data->pickyness && sp[-1].type != T_PROGRAM) {
+	    if ((prog_code->type == T_STRING) &&
+		(prog_code->u.string->len < 128) &&
+		(!prog_code->u.string->size_shift)) {
+	      error("Failed to decode program \"%s\".\n",
+		    prog_code->u.string->str);
+	    }
 	    error("Failed to decode program.\n");
+	  }
+	  /* Remove the extra entry from the stack. */
+	  stack_swap();
+	  pop_stack();
 	  break;
-
+	}
 	case 1:
 	{
 	  int d;
