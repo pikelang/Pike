@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.25 2001/01/06 01:58:26 hubbe Exp $
+ * $Id: interpret.h,v 1.26 2001/01/24 01:43:23 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -170,6 +170,12 @@ extern long long accounted_time;
 extern long long time_base;
 #endif
 #endif
+
+/* Forward compatibility */
+#define Pike_sp sp
+#define Pike_fp fp
+#define Pike_mark_sp mark_sp
+#define Pike_stack_size stack_size
 
 #endif
 
