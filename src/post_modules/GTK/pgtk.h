@@ -22,6 +22,7 @@
 #include <glib.h>
 #include <glib-object.h>
 */
+#define GTK_ENABLE_BROKEN
 #include <gtk/gtk.h>
 #else
 #if defined(HAVE_GNOME)
@@ -213,7 +214,7 @@ int pgtk_last_event_time();
 
 #define PSTR (char*)__pgtk_string_data
 #ifdef HAVE_GTK_20
-#define PGTK_CHECK_TYPE(ob, t) g_type_instance_is_a((GTypeInstance *)(ob), t)
+#define PGTK_CHECK_TYPE(ob, t) (g_type_is_a(G_TYPE_FROM_INSTANCE(ob),(t)))
 #else
 # define PGTK_CHECK_TYPE(type_object, otype) (((GtkTypeObject*)(type_object))!=NULL &&PGTK_CHECK_CLASS_TYPE(((GtkTypeObject*) (type_object))->klass, (otype)))
 # define PGTK_CHECK_CLASS_TYPE(type_class, otype) (((GtkTypeClass*) (type_class)) != NULL && (((GtkTypeClass*) (type_class))->type == (otype)))
