@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.345 2001/07/02 20:01:11 grubba Exp $");
+RCSID("$Id: program.c,v 1.346 2001/07/03 04:30:21 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1747,7 +1747,10 @@ void check_program(struct program *p)
 
     if(p->identifier_references[e].identifier_offset >
        p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers)
-      fatal("Identifier offset is wrong!\n");
+      fatal("Identifier offset %d is wrong! %d > %d\n",
+	    e,
+	    p->identifier_references[e].identifier_offset,
+	    p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers);
 
     i=ID_FROM_INT(p, e);
 
