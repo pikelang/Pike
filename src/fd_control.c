@@ -10,7 +10,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.25 1999/05/28 19:48:40 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.26 1999/09/13 23:16:33 grubba Exp $");
 
 #else /* TESTING */
 
@@ -63,6 +63,9 @@ RCSID("$Id: fd_control.c,v 1.25 1999/05/28 19:48:40 grubba Exp $");
 #endif
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
+#include <sys/file.h>
 #endif
 
 
