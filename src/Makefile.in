@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.307 2002/05/01 18:45:30 mast Exp $
+# $Id: Makefile.in,v 1.308 2002/05/04 14:16:50 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -745,7 +745,7 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h $(SRCDIR)/language.yacc
 $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
 	( cd $(SRCDIR) &&\
-	 $(YACC) $(YFLAGS) language.yacc &&\
+	 $(YACC) $(YFLAGS) $(SRCDIR)/language.yacc &&\
 	 sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' <y.tab.c >language.c &&\
 	 mv y.tab.h language.h_src && rm y.tab.c)
 
