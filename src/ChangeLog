@@ -1,3 +1,12 @@
+Thu Apr 23 17:36:57 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* local 'import' in function blocks implementd
+	* encode_value/decode_value can now take a 'codec' as second
+	  argument. They can also encode/decode some programs.
+	  (Mostly depending on how good the codec is.)
+	* A few minor optimizations implemented
+	* sprintf("%O",x) now quotes strings (and quotes them correctly)
+
 Wed Apr 15 18:15:34 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* object(foo) now means 'object that implements foo'
