@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.c,v 1.42 2003/04/07 17:28:56 nilsson Exp $
+|| $Id: security.c,v 1.43 2003/09/05 18:04:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -75,7 +75,7 @@ static void restore_creds(struct object *creds)
   }
 }
 
-/*! @decl mixed call_with_creds(object(Creds) creds, mixed func, @
+/*! @decl mixed call_with_creds(Creds creds, mixed func, @
  *!                             mixed ... args)
  *!
  *! Call with credentials.
@@ -212,19 +212,25 @@ static void set_default_creds(INT32 args)
 			  ("set_default_creds: permission denied.\n"));
 
   get_all_args("init_creds",args,"%o",&o);
-  
+
   if(THIS->default_creds) free_object(THIS->default_creds);
   add_ref(THIS->default_creds=o);
   pop_n_elems(args);
 }
 
-/*! @decl void create(object user, int allow_bits, int data_bits)
+/*! @decl void create(User user, int allow_bits, int data_bits)
  *!
- *! Initialize a new credentials object
+ *! Initialize a new credentials object.
  *!
- *! @note
- *!   The current creds must have the allow bit
- *!   @[BIT_SECURITY] set.
+ *! @param allow_bits
+ *!   Any of the flags @[BIT_SECURITY] and @[BIT_CONDITIONAL_IO]
+ *!   or:ed together.
+ *! @param data_bits
+ *!   Any of the flags @[BIT_INDEX], @[BIT_SET_INDEX], @[BIT_CALL],
+ *!   @[BIT_NOT_SETUID] and @[BIT_DESTRUCT] or:ed together.
+ *! @throws
+ *!   Throws an exception if the current creds doesn't have the allow
+ *!   bit @[BIT_SECURITY] set.
  */
 static void creds_create(INT32 args)
 {
@@ -390,8 +396,9 @@ static void exit_creds_object(struct object *o)
  */
 
 /*! @decl constant BIT_CONDITIONAL_IO
- *! @fixme
- *!   Document this constant.
+ *!   Allow conditional useage of I/O. The callbacks @expr{valid_open@}
+ *!   and @expr{valid_io@} will be called in the @[User] object in the
+ *!   current @[Creds] object to determine if the I/O is allowed or not.
  */
 
 /*! @decl constant BIT_DESTRUCT
@@ -435,14 +442,17 @@ void init_pike_security(void)
   add_program_constant("Creds",creds_program, 0);
 
   
-/* function(object,mixed...:mixed) */
-  ADD_EFUN("call_with_creds",f_call_with_creds,tFuncV(tObj,tMix,tMix),OPT_SIDE_EFFECT);
+  /* function(object,mixed...:mixed) */
+  ADD_EFUN("call_with_creds", f_call_with_creds,
+	   tFuncV(tObj,tMix,tMix), OPT_SIDE_EFFECT);
   
-/* function(:object) */
-  ADD_EFUN("get_current_creds",f_get_current_creds,tFunc(tNone,tObj),OPT_EXTERNAL_DEPEND);
+  /* function(:object) */
+  ADD_EFUN("get_current_creds", f_get_current_creds,
+	   tFunc(tNone,tObj), OPT_EXTERNAL_DEPEND);
   
-/* function(mixed:object) */
-  ADD_EFUN("get_object_creds",f_get_object_creds,tFunc(tMix,tObj),OPT_EXTERNAL_DEPEND);
+  /* function(mixed:object) */
+  ADD_EFUN("get_object_creds", f_get_object_creds,
+	   tFunc(tMix,tObj), OPT_EXTERNAL_DEPEND);
 
 #define CONST(X) add_integer_constant("BIT_" #X,PIKE_CONCAT(SECURITY_BIT_,X),0)
   CONST(INDEX);
