@@ -3704,7 +3704,7 @@ to move files around.
 
 <method name=open_socket title="open a socket">
 <man_syntax>
-int open_socket(int|void port, int|void address);<br>
+int open_socket(int|void port, string|void address);<br>
 </man_syntax>
 <man_description>
 This makes this file into a socket ready for connection. The reason
