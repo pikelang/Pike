@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.29 2002/01/27 00:54:00 mast Exp $
+# $Id: configure.in,v 1.30 2003/02/25 07:54:02 mirar Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -178,49 +178,4 @@ with the option --without-bignums instead.
   ])
   AC_CHECK_FUNC(__gmpz_popcount, AC_DEFINE_UNQUOTED(HAVE_MPZ_POPCOUNT))
 fi
-
-AC_MSG_CHECKING(if INT_TYPE is bigger then signed long int)
-
-AC_CACHE_VAL(pike_cv_big_pike_int, [
-
-  AC_TRY_RUN([
-  #include "global.h"
-  
-  int main()
-  {
-     return !(sizeof(INT_TYPE)<=sizeof(signed long int));
-  }],[
-    pike_cv_big_pike_int=no
-  ],[
-    AC_TRY_RUN([
-    #include "global.h"
-    
-    int main()
-    {
-       return !(sizeof(INT_TYPE)>sizeof(signed long int));
-    }],[
-      pike_cv_big_pike_int=yes
-    ],[
-      :
-    ],[
-      :
-    ])
-  ], [
-    # FIXME: Add proper test.
-    :
-  ])
-])
-  
-if test "x$pike_cv_big_pike_int" = "xyes"; then
-  AC_DEFINE(BIG_PIKE_INT)
-  AC_MSG_RESULT(yes)
-else
-  if test "x$pike_cv_big_pike_int" = "xno"; then
-    AC_MSG_RESULT(no)
-  else
-    AC_MSG_RESULT(unknown)
-  fi
-fi  
-AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
 
