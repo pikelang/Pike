@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.19 2000/08/25 16:31:00 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.20 2000/08/25 16:35:54 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -167,7 +167,7 @@ static toff_t seek_buffer(thandle_t bh, toff_t seek, int seek_type )
 }
 
 /* Complies with the TIFFCloseProc API. */
-static int close_buffer(thandle_t buffer_handle)
+static int close_buffer(thandle_t bh)
 {
   struct buffer *buffer_handle = (struct buffer *)bh;
 
