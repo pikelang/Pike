@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.628 2002/09/24 19:50:11 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.629 2002/10/03 11:27:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -241,7 +241,11 @@ fi
 
 if test "x$GCC" = "x"; then
   GCC=no
-else :; fi
+else
+  # MacOS X has precompiled headerfiles, which don't
+  # work with AC_EGREP_HEADER.
+  AC_SYS_COMPILER_FLAG(-traditional-cpp, macosx_traditional_cpp, EXTRACPPFLAGS)
+fi
 
 if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
   #
@@ -3431,11 +3435,15 @@ define(MY_CHECK_HEADERS,
  AC_MSG_CHECKING(for $1 declaration)
  AC_CACHE_VAL(pike_cv_decl_$1,
  [
+   # EXTRACPPFLAGS is a kludge for MacOS X.
+   OLD_CPPFLAGS="$CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS $EXTRACPPFLAGS"
    pike_cv_decl_$1=nonexistant
    for a in $2
    do
      AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existant; break ])
    done
+   CPPFLAGS="$OLD_CPPFLAGS"
  ])
  AC_MSG_RESULT($pike_cv_decl_$1)
  if test "$pike_cv_decl_$1" = nonexistant; then
@@ -4860,34 +4868,6 @@ fi
 
 #############################################################################
 
-AC_MSG_CHECKING(for gcc function attributes)
-AC_CACHE_VAL(pike_cv_gcc_attributes,
-[
-AC_TRY_RUN([
-#include <stdarg.h>
-void fatal(char *foo,...) __attribute__ ((noreturn,format (printf,1,2)));
-int sqr(int x) __attribute__ ((const));
-
-int sqr(int x) { return x*x; }
-
-void fatal(char *foo,...)
-{
-  va_list args;
-  va_start(foo,args);
-  printf(foo,args);
-  va_end(args);
-  exit(2);
-}
-
-int main() {  exit(0); }
-
-], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, pike_cv_gcc_attributes=no)])
-
-AC_MSG_RESULT($pike_cv_gcc_attributes)
-if test "$pike_cv_gcc_attributes" = yes; then
- AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
-fi
-
 AC_MSG_CHECKING(for lc __declspec)
 AC_CACHE_VAL(pike_cv_lc___declspec,
 [
@@ -4929,6 +4909,60 @@ __declspec(noreturn) void fatal(char *foo,...)
 AC_MSG_RESULT($pike_cv_lc___declspec)
 if test "$pike_cv_lc___declspec" = yes; then
  AC_DEFINE(HAVE_DECLSPEC)
+else
+
+  # NOTE: Avoid using __attribute__ if __declspec is available.
+  #       This is a kludge to descrease the number of warnings
+  #       on ecc.
+
+  AC_MSG_CHECKING(for gcc function attributes)
+  AC_CACHE_VAL(pike_cv_gcc_attributes,
+  [
+    AC_TRY_RUN([
+#include <stdarg.h>
+void fatal(char *foo,...) __attribute__ ((noreturn,format (printf,1,2)));
+int sqr(int x) __attribute__ ((const));
+
+int sqr(int x) { return x*x; }
+
+void fatal(char *foo,...)
+{
+  va_list args;
+  va_start(foo,args);
+  printf(foo,args);
+  va_end(args);
+  exit(2);
+}
+
+int main() {  exit(0); }
+
+    ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, [
+      echo $ac_n "crosscompiling... $ac_c" 1>&6
+      AC_TRY_LINK([
+#include <stdarg.h>
+void fatal(char *foo,...) __attribute__ ((noreturn,format (printf,1,2)));
+int sqr(int x) __attribute__ ((const));
+
+int sqr(int x) { return x*x; }
+
+void fatal(char *foo,...)
+{
+  va_list args;
+  va_start(foo,args);
+  printf(foo,args);
+  va_end(args);
+  exit(2);
+}
+      ], [
+  exit(0);
+      ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no)
+    ])
+  ])
+
+  AC_MSG_RESULT($pike_cv_gcc_attributes)
+  if test "$pike_cv_gcc_attributes" = yes; then
+    AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
+  fi
 fi
 
 #############################################################################
