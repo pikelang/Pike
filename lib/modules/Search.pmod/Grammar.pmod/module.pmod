@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: module.pmod,v 1.10 2001/08/07 14:33:50 norlin Exp $
+// $Id: module.pmod,v 1.11 2001/08/08 15:14:48 norlin Exp $
 
 class ParseNode {
   string op = "<node>";
@@ -146,6 +146,8 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
         }
         newChildren += mergeTextNodes(toMerge, "and");
       }
+      if (sizeof(newChildren) == 1)
+        return newChildren[0];
       break;
     case "or":
       if (!sizeof(node->children))
@@ -163,6 +165,8 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
         }
         newChildren += mergeTextNodes(toMerge, "or");
       }
+      if (sizeof(newChildren) == 1)
+        return newChildren[0];
       break;
     case "date":
       if (!node->date || node->date == "")
