@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.190 2003/11/14 00:36:22 mast Exp $
+|| $Id: program.h,v 1.191 2003/11/18 11:19:42 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -805,6 +805,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 struct implements_cache_s;
 PMOD_EXPORT int implements(struct program *a, struct program *b);
 PMOD_EXPORT int is_compatible(struct program *a, struct program *b);
+int yyexplain_not_compatible(struct program *a, struct program *b, int flags);
 int yyexplain_not_implements(struct program *a, struct program *b, int flags);
 PMOD_EXPORT void *parent_storage(int depth);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);

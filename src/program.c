@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.534 2003/11/14 04:45:05 mast Exp $
+|| $Id: program.c,v 1.535 2003/11/18 11:19:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.534 2003/11/14 04:45:05 mast Exp $");
+RCSID("$Id: program.c,v 1.535 2003/11/18 11:19:41 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1837,6 +1837,15 @@ void fixate_program(void)
   if(p->flags & PROGRAM_OPTIMIZED)
     Pike_fatal("Cannot fixate optimized program\n");
 #endif
+
+  /* Fixup identifier_flags. */
+  for (i=0; i < p->num_identifiers; i++) {
+    if (IDENTIFIER_IS_FUNCTION(p->identifiers[i].identifier_flags) ==
+	IDENTIFIER_FUNCTION) {
+      /* Get rid of any remaining tentative type markers. */
+      p->identifiers[i].identifier_flags &= ~IDENTIFIER_C_FUNCTION;
+    }
+  }
 
   /* Fixup identifier overrides. */
   for (i = 0; i < p->num_identifier_references; i++) {
@@ -4645,8 +4654,16 @@ INT32 define_function(struct pike_string *name,
     }
   }
 
-  if(function_flags & IDENTIFIER_C_FUNCTION)
+  if(IDENTIFIER_IS_C_FUNCTION(function_flags))
     Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
+
+  if (Pike_compiler->compiler_pass == 1) {
+    /* Mark the type as tentative by reusing IDENTIFIER_C_FUNCTION.
+     *
+     * NOTE: This flag MUST be cleared in the second pass.
+     */
+    function_flags |= IDENTIFIER_C_FUNCTION;
+  }
 
   i=isidentifier(name);
 
@@ -4664,6 +4681,10 @@ INT32 define_function(struct pike_string *name,
     funp=ID_FROM_INT(Pike_compiler->new_program, i);
     ref=Pike_compiler->new_program->identifier_references[i];
 
+    if (funp->identifier_flags & IDENTIFIER_HAS_BODY)
+      /* Keep this flag. */
+      function_flags |= IDENTIFIER_HAS_BODY;
+
     if(!(ref.id_flags & ID_INHERITED)) /* not inherited */
     {
 
@@ -4674,23 +4695,18 @@ INT32 define_function(struct pike_string *name,
 	return i;
       }
 
-      /* match types against earlier prototype or vice versa */
-      if(!match_types(type, funp->type))
-      {
-	if (!(flags & ID_VARIANT)) {
-	  my_yyerror("Prototype doesn't match for function %s.",name->str);
+      if (IDENTIFIER_IS_FUNCTION(funp->identifier_flags) !=
+	  IDENTIFIER_FUNCTION) {
+	/* match types against earlier prototype or vice versa */
+	if(!match_types(type, funp->type))
+	{
+	  if (!(flags & ID_VARIANT)) {
+	    my_yyerror("Prototype doesn't match for function %s.", name->str);
+	    yytype_error(NULL, funp->type, type, 0);
+	  }
 	}
       }
-    }
 
-    /* We modify the old definition if it is in this program */
-
-    if (funp->identifier_flags & IDENTIFIER_HAS_BODY)
-      /* Keep this flag. */
-      function_flags |= IDENTIFIER_HAS_BODY;
-
-    if(!(ref.id_flags & ID_INHERITED))
-    {
       if(func)
 	funp->func = *func;
 #if 0 /* prototypes does not override non-prototypes, ok? */
@@ -4742,8 +4758,6 @@ INT32 define_function(struct pike_string *name,
       fun.run_time_type=T_FUNCTION;
 
       fun.identifier_flags=function_flags;
-      if(function_flags & IDENTIFIER_C_FUNCTION)
-	Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
 
       if(func)
 	fun.func = *func;
@@ -7587,7 +7601,10 @@ static int low_is_compatible(struct program *a, struct program *b)
       continue;		/* It's ok... */
     }
 
-    if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+    /* Note: Use weaker check for constant integers. */
+    if((ID_FROM_INT(a, i)->run_time_type != bid->run_time_type) ||
+       ((bid->run_time_type != PIKE_T_INT) &&
+	!match_types(ID_FROM_INT(a,i)->type, bid->type))) {
 #if 0
       fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
 	      bid->name->str);
@@ -7659,6 +7676,52 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
    *       some false positives. Those should be cleared.
    */
   return is_compatible_cache[hval].ret;
+}
+
+/* Returns 1 if a is compatible with b */
+int yyexplain_not_compatible(struct program *a, struct program *b, int flags)
+{
+  int e;
+  struct pike_string *s=findstring("__INIT");
+  int res = 1;
+
+  /* Optimize the loop somewhat */
+  if (a->num_identifier_references < b->num_identifier_references) {
+    struct program *tmp = a;
+    a = b;
+    b = tmp;
+  }
+
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid;
+    int i;
+    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+      continue;		/* Skip static & hidden */
+
+    /* FIXME: What if they aren't static & hidden in a? */
+
+    bid = ID_FROM_INT(b,e);
+    if(s == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) {
+      continue;		/* It's ok... */
+    }
+
+    /* Note: Use weaker check for constant integers. */
+    if((ID_FROM_INT(a, i)->run_time_type != bid->run_time_type) ||
+       ((bid->run_time_type != PIKE_T_INT) &&
+	!match_types(ID_FROM_INT(a,i)->type, bid->type))) {
+      if (flags & YYTE_IS_WARNING)
+	yywarning("Identifier \"%s\" is incompatible.",
+		  bid->name->str);
+      else
+	my_yyerror("Identifier \"%s\" is incompatible.",
+		   bid->name->str);
+      res = 0;
+    }
+  }
+  return res;
 }
 
 /* returns 1 if a implements b */
