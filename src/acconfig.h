@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.78 2001/02/17 15:49:20 grubba Exp $
+ * $Id: acconfig.h,v 1.79 2001/02/21 00:54:26 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -388,6 +388,9 @@
 
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
+
+/* Define if you want to enable use of the struct pike_type (EXPERIMENTAL) */
+#undef USE_PIKE_TYPE
 
 @BOTTOM@
 

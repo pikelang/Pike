@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.491 2001/02/20 16:07:28 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.492 2001/02/21 00:54:26 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -869,6 +869,20 @@ AC_ARG_WITH(perl,        [  --with-perl            enable the embedded Perl modu
  with_perl="no"
 ]
 )
+
+AC_ARG_WITH(pike-type,   [  --with-pike-type       enable struct pike_type (EXPERIMENTAL)], [
+  if test "x$with_pike_type" = "xyes"; then
+    AC_MSG_WARN([
+
+WARNING: Enabling struct pike_type.
+
+WARNING: Are you sure you know what you are doing?
+
+WARNING: This is highly experimental, and most likely will not compile.
+])
+    AC_DEFINE(USE_PIKE_TYPE)
+  else :; fi
+],[])
 
 if test "x$with_oob" = xyes; then
   AC_DEFINE(WITH_OOB)
