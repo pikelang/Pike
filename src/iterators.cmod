@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.12 2001/06/16 13:51:15 per Exp $");
+RCSID("$Id: iterators.cmod,v 1.13 2001/06/17 15:59:05 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -632,48 +632,60 @@ PIKECLASS string_split_iterator
   CVAR int flags;
   CVAR struct svalue feed;
 
-#define SIMPLE_SKIP_CASE(THIS, SHIFT, OFF) case SHIFT: 	\
+#define SIMPLE_SKIP(THIS, SHIFT, OFF) 	 	\
+  do {						\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 		\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);	\
+    while((OFF < THIS->buffer->len) &&		\
+          s[OFF] == THIS->split_set[0]) {	\
+      OFF++;					\
+    }						\
+  } while(0)
+
+#define SIMPLE_SKIP_CASE(THIS, SHIFT, OFF)	\
+  case SHIFT:					\
+    SIMPLE_SKIP(THIS, SHIFT, OFF);		\
+    break
+
+#define COMPLEX_SKIP(THIS, SHIFT, OFF)	 		\
   do {							\
     PIKE_CONCAT(p_wchar, SHIFT) *s = 			\
       PIKE_CONCAT(STR,SHIFT)(THIS->buffer);		\
-    while((OFF < THIS->buffer->len) &&			\
-          s[OFF] == THIS->split_set[0]) {		\
+    while(OFF < THIS->buffer->len) {			\
+      int i;						\
+      p_wchar2 ch = s[OFF];				\
+      for (i=0; i < THIS->split_set_size; i++) {	\
+	if (ch == THIS->split_set[i]) {			\
+	  goto PIKE_CONCAT(continue_skip,SHIFT);	\
+	}						\
+      }							\
+      break;						\
+    PIKE_CONCAT(continue_skip,SHIFT):			\
       OFF++;						\
     }							\
-  } while(0);						\
-  break
-
-#define COMPLEX_SKIP_CASE(THIS, SHIFT, OFF) case SHIFT:		\
-  do {								\
-    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
-      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
-    while(OFF < THIS->buffer->len) {				\
-      int i;							\
-      p_wchar2 ch = s[OFF];					\
-      for (i=0; i < THIS->split_set_size; i++) {		\
-	if (ch == THIS->split_set[i]) {				\
-	  goto PIKE_CONCAT(continue_skip,SHIFT);		\
-	}							\
-      }								\
-      break;							\
-    PIKE_CONCAT(continue_skip,SHIFT):				\
-      OFF++;							\
-    }								\
-  } while(0);							\
-  break
+  } while(0)
   
-#define SIMPLE_SCAN_CASE(THIS, SHIFT, OFF) case SHIFT:		\
-  do {								\
-    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
-      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
-    while((OFF < THIS->buffer->len) &&				\
-          s[OFF] != THIS->split_set[0]) {			\
-      OFF++;							\
-    }								\
-  } while(0);							\
-  break
+#define COMPLEX_SKIP_CASE(THIS, SHIFT, OFF)	\
+  case SHIFT:					\
+    COMPLEX_SKIP(THIS, SHIFT, OFF);		\
+    break
 
-#define COMPLEX_SCAN_CASE(THIS, SHIFT, OFF) case SHIFT:		\
+#define SIMPLE_SCAN(THIS, SHIFT, OFF)		\
+  do {						\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 		\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);	\
+    while((OFF < THIS->buffer->len) &&		\
+          s[OFF] != THIS->split_set[0]) {	\
+      OFF++;					\
+    }						\
+  } while(0)
+
+#define SIMPLE_SCAN_CASE(THIS, SHIFT, OFF)	\
+  case SHIFT:					\
+    SIMPLE_SCAN(THIS, SHIFT, OFF);		\
+    break
+
+#define COMPLEX_SCAN(THIS, SHIFT, OFF)				\
   do {								\
     PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
       PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
@@ -688,10 +700,14 @@ PIKECLASS string_split_iterator
       OFF++;							\
     }								\
   PIKE_CONCAT(break_scan, SHIFT): ;/* gcc complains without ;*/ \
-  } while(0);							\
-  break
+  } while(0)
 
-#define SIMPLE_SCAN_CASE_PUSH(THIS, SHIFT, OFF) case SHIFT:	\
+#define COMPLEX_SCAN_CASE(THIS, SHIFT, OFF)	\
+  case SHIFT:					\
+    COMPLEX_SCAN(THIS, SHIFT, OFF);		\
+    break
+
+#define SIMPLE_SCAN_PUSH(THIS, SHIFT, OFF)			\
   do {								\
     PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
       PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
@@ -701,10 +717,14 @@ PIKECLASS string_split_iterator
     }								\
     push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
       (s+offset, OFF-offset));					\
-  } while(0);							\
-  break
+  } while(0)
 
-#define COMPLEX_SCAN_CASE_PUSH(THIS, SHIFT, OFF) case SHIFT:	\
+#define SIMPLE_SCAN_CASE_PUSH(THIS, SHIFT, OFF)	\
+  case SHIFT:					\
+    SIMPLE_SCAN_PUSH(THIS, SHIFT, OFF);		\
+    break
+
+#define COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF)			\
   do {								\
     PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
       PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
@@ -721,9 +741,98 @@ PIKECLASS string_split_iterator
   PIKE_CONCAT(break_scan, SHIFT):				\
     push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
       (s+offset, OFF-offset));					\
-  } while(0);							\
-  break
+  } while(0)
 
+#define COMPLEX_SCAN_CASE_PUSH(THIS, SHIFT, OFF)	\
+  case SHIFT:						\
+    COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF);		\
+    break
+
+#define NEW_SKIP_CASE(SHIFT, FLAGS)				\
+  case SHIFT:							\
+    if (FLAGS) {						\
+      /* Skip empty */						\
+      if (ssi->split_set_size == 1) {				\
+	SIMPLE_SKIP(ssi, SHIFT, offset);			\
+      } else {							\
+        COMPLEX_SKIP(ssi, SHIFT, offset);			\
+      }								\
+    }								\
+    if (offset >= ssi->buffer->len) {				\
+      free_string(ssi->buffer);					\
+      ssi->buffer = NULL;					\
+      ssi->offset = 0;						\
+      offset = 0;						\
+      if (ssi->feed.type == T_INT) {				\
+	if (!(FLAGS)) {						\
+	  MAKE_CONSTANT_SHARED_STRING(ssi->current, "");	\
+	  ssi->index++;						\
+	}							\
+	return;							\
+      } else {							\
+	/* Attempt to fill the buffer with some more. */	\
+	apply_svalue(&ssi->feed, 0);				\
+	if ((Pike_sp[-1].type == T_STRING) &&			\
+	    (Pike_sp[-1].u.string->len)) {			\
+	  ssi->buffer = Pike_sp[-1].u.string;			\
+	  Pike_sp--;						\
+	  goto reskip_empty;					\
+	}							\
+	free_svalue(&ssi->feed);				\
+	ssi->feed.type = T_INT;					\
+	ssi->feed.u.integer = 0;				\
+	pop_stack();						\
+	if (!(FLAGS)) {						\
+	  MAKE_CONSTANT_SHARED_STRING(ssi->current, "");	\
+	  ssi->index++;						\
+	}							\
+	return;							\
+      }								\
+    }								\
+    ssi->index++;						\
+    end = offset;						\
+    goto PIKE_CONCAT(scan_more_,SHIFT)
+
+#define NEW_SCAN_MORE_CASE(SHIFT)				\
+  case SHIFT:							\
+  PIKE_CONCAT(scan_more_,SHIFT):				\
+    if (ssi->split_set_size == 1) {				\
+      SIMPLE_SCAN_PUSH(ssi, SHIFT, end);			\
+    } else {							\
+      COMPLEX_SCAN_PUSH(ssi, SHIFT, end);			\
+    }								\
+    if ((end == ssi->buffer->len) &&				\
+	(ssi->feed.type != T_INT)) {				\
+      apply_svalue(&ssi->feed, 0);				\
+      if ((Pike_sp[-1].type == T_STRING) &&			\
+	  (Pike_sp[-1].u.string->len)) {			\
+	f_add(2);						\
+	if (Pike_sp[-1].type != T_STRING) {			\
+	  Pike_error("Bad result from concatenation!\n");	\
+	}							\
+	free_string(ssi->buffer);				\
+	ssi->buffer = Pike_sp[-1].u.string;			\
+	Pike_sp--;						\
+	end -= offset;						\
+	offset = 0;						\
+	goto scan_more;						\
+      }								\
+      pop_stack();	/* Pop the end of stream marker. */	\
+      								\
+      /* Make sure we don't call feed() any more. */		\
+      free_svalue(&ssi->feed);					\
+      ssi->feed.type = T_INT;					\
+      ssi->feed.u.integer = 0;					\
+    }								\
+    ssi->offset = end+1;					\
+    ssi->current = Pike_sp[-1].u.string;			\
+    Pike_sp--;							\
+    if (ssi->offset > ssi->buffer->len) {			\
+      free_string(ssi->buffer);					\
+      ssi->buffer = 0;						\
+    }								\
+    break
+  
   static void find_next(struct string_split_iterator_struct *ssi)
     {
       int offset = ssi->offset;
@@ -736,103 +845,24 @@ PIKECLASS string_split_iterator
 	return;
       }
     reskip_empty:
-      if (ssi->flags) {
-	/* Skip empty */
-	if (ssi->split_set_size == 1) {
-	  switch(ssi->buffer->size_shift) {
-	    SIMPLE_SKIP_CASE(ssi, 0, offset);
-	    SIMPLE_SKIP_CASE(ssi, 1, offset);
-	    SIMPLE_SKIP_CASE(ssi, 2, offset);
-	  default:
-	    fatal("Unsupported size shift!\n");
-	  }
-	} else {
-	  switch(ssi->buffer->size_shift) {
-	    COMPLEX_SKIP_CASE(ssi, 0, offset);
-	    COMPLEX_SKIP_CASE(ssi, 1, offset);
-	    COMPLEX_SKIP_CASE(ssi, 2, offset);
-	  default:
-	    fatal("Unsupported size shift!\n");
-	  }
-	}
+      switch(ssi->buffer->size_shift) {
+	NEW_SKIP_CASE(0, ssi->flags);
+	NEW_SKIP_CASE(1, ssi->flags);
+	NEW_SKIP_CASE(2, ssi->flags);
+      default:
+	fatal("Unsupported size shift!\n");
       }
-      if (offset >= ssi->buffer->len) {
-	if (ssi->feed.type == T_INT) {
-	  if (!ssi->flags) {
-	    MAKE_CONSTANT_SHARED_STRING(ssi->current, "");
-	    ssi->index++;
-	  }
-	  free_string(ssi->buffer);
-	  ssi->buffer = NULL;
-	  ssi->offset = 0;
-	  return;
-	} else {
-	  /* Attempt to fill the buffer with some more. */
-	  apply_svalue(&ssi->feed, 0);
-	  if ((Pike_sp[-1].type == T_STRING) && (Pike_sp[-1].u.string->len)) {
-	    ssi->buffer = Pike_sp[-1].u.string;
-	    ssi->offset = 0;
-	    offset = 0;
-	    Pike_sp--;
-	    goto reskip_empty;
-	  }
-	  free_svalue(&ssi->feed);
-	  ssi->feed.type = T_INT;
-	  ssi->feed.u.integer = 0;
-	  pop_stack();
-	}
-      }
-      ssi->index++;
-      end = offset;
     scan_more:
-      if (ssi->split_set_size == 1) {
-	switch(ssi->buffer->size_shift) {
-	  SIMPLE_SCAN_CASE_PUSH(ssi, 0, end);
-	  SIMPLE_SCAN_CASE_PUSH(ssi, 1, end);
-	  SIMPLE_SCAN_CASE_PUSH(ssi, 2, end);
-	default:
-	  fatal("Unsupported size shift!\n");
-	}
-      } else {
-	switch(ssi->buffer->size_shift) {
-	  COMPLEX_SCAN_CASE_PUSH(ssi, 0, end);
-	  COMPLEX_SCAN_CASE_PUSH(ssi, 1, end);
-	  COMPLEX_SCAN_CASE_PUSH(ssi, 2, end);
-	default:
-	  fatal("Unsupported size shift!\n");
-	}
-      }
-      if ((end == ssi->buffer->len) && (ssi->feed.type != T_INT)) {
-	apply_svalue(&ssi->feed, 0);
-	if ((Pike_sp[-1].type == T_STRING) &&
-	    (Pike_sp[-1].u.string->len)) {
-	  f_add(2);
-	  if (Pike_sp[-1].type != T_STRING) {
-	    Pike_error("Bad result from string concatenation!\n");
-	  }
-	  free_string(ssi->buffer);
-	  ssi->buffer = Pike_sp[-1].u.string;
-	  Pike_sp--;
-	  end -= offset;
-	  offset = 0;
-	  goto scan_more;
-	}
-	pop_stack();	/* Pop the end of stream marker. */
-
-	/* Make sure we don't call feed() any more. */
-	free_svalue(&ssi->feed);
-	ssi->feed.type = T_INT;
-	ssi->feed.u.integer = 0;
-      }
-      ssi->offset = end+1;
-      ssi->current = Pike_sp[-1].u.string;
-      Pike_sp--;
-      if (ssi->offset > ssi->buffer->len) {
-	free_string(ssi->buffer);
-	ssi->buffer = 0;
+      switch(ssi->buffer->size_shift)
+      {
+	NEW_SCAN_MORE_CASE(0);
+	NEW_SCAN_MORE_CASE(1);
+	NEW_SCAN_MORE_CASE(2);
+      default:
+	fatal("Unsupported size shift!\n");
       }
     }
-  
+
   PIKEFUN string value()
     {
       if (THIS->current) {
