@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.149 1998/06/04 13:11:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.150 1998/06/22 19:04:21 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1553,6 +1553,7 @@ prstatus_t prs;
       proc_fd = open(proc_name, O_RDONLY);
       ioctl(proc_fd, PIOCUSAGE, &pru);
       ioctl(proc_fd, PIOCSTATUS, &prs);
+      tmp=pru.pr_utime.tv_sec;
     ],
       pike_cv_getrusage_procfs=yes
     ,
