@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.9 1997/01/11 20:59:48 grubba Exp $
+ * $Id: result.c,v 1.10 1997/01/15 21:00:30 grubba Exp $
  *
  * mysql query result
  *
@@ -62,7 +62,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.9 1997/01/11 20:59:48 grubba Exp $");
+RCSID("$Id: result.c,v 1.10 1997/01/15 21:00:30 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -294,7 +294,7 @@ static void f_seek(INT32 args)
   pop_n_elems(args);
 }
 
-/* int|array(string|int) fetch_row() */
+/* int|array(string|float|int) fetch_row() */
 static void f_fetch_row(INT32 args)
 {
   int num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
@@ -302,20 +302,53 @@ static void f_fetch_row(INT32 args)
 
   pop_n_elems(args);
 
+  mysql_field_seek(PIKE_MYSQL_RES->result, 0);
+
   if ((num_fields > 0) && row) {
     int i;
 
     for (i=0; i < num_fields; i++) {
       if (row[i]) {
-	push_text(row[i]);
+	MYSQL_FIELD *field;
+
+	if (field = mysql_fetch_field(PIKE_MYSQL_RES->result)) {
+	  switch (field->type) {
+	    /* Integer types */
+	  case FIELD_TYPE_SHORT:
+	  case FIELD_TYPE_LONG:
+	  case FIELD_TYPE_INT24:
+#if 0
+	    /* This one will not always fit in an INT32 */
+	  case FIELD_TYPE_LONGLONG:
+#endif /* 0 */
+	    push_int(atoi(row[i]));
+	    break;
+	    /* Floating point types */
+	  case FIELD_TYPE_DECIMAL:	/* Is this a float or an int? */
+	  case FIELD_TYPE_FLOAT:
+	  case FIELD_TYPE_DOUBLE:
+	    push_float(atof(row[i]));
+	    break;
+	  default:
+	    push_text(row[i]);
+	    break;
+	  }
+	} else {
+	  /* Probably doesn't happen, but... */
+	  push_text(row[i]);
+	}
       } else {
+	/* NULL? */
 	push_int(0);
       }
     }
     f_aggregate(num_fields);
   } else {
+    /* No rows left in result */
     push_int(0);
   }
+
+  mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
 
 /*
@@ -360,7 +393,7 @@ void init_mysql_res_programs(void)
 #endif /* SUPPORT_FIELD_SEEK */
   add_function("fetch_fields", f_fetch_fields, "function(void:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
   add_function("seek", f_seek, "function(int:void)", OPT_SIDE_EFFECT);
-  add_function("fetch_row", f_fetch_row, "function(void:int|array(string|int))", OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  add_function("fetch_row", f_fetch_row, "function(void:int|array(string|int|float))", OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
