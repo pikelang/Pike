@@ -1,11 +1,12 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.14 2001/08/11 22:11:40 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.15 2001/08/14 03:55:31 nilsson Exp $
  *
  */
 
 inherit "make_html.pike";
 
-mapping (string:Node) refs = ([ ]);
+mapping (string:Node) refs   = ([ ]);
+mapping (string:int)  consts = ([ ]);
 
 string extra_prefix = "";
 string image_prefix()
@@ -30,6 +31,10 @@ class Node
 
   Node parent;
 
+  string _sprintf() {
+    return sprintf("Node(%O,%O,%d)", type, name, data?sizeof(data):0);
+  }
+
   void create(string _type, string _name, string _data, void|Node _parent)
   {
     if(!_type || !_name) throw( ({ "No type or name\n", backtrace() }) );
@@ -38,6 +43,7 @@ class Node
     parent = _parent;
     PROFILE();
     data = get_parser()->finish( _data )->read();
+    data = make_faked_wrapper(data);
     ENDPROFILE("Parsing");
 
     string path = replace(make_class_path(), "()->", ".");
@@ -48,6 +54,41 @@ class Node
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
     sort(method_children->name, method_children);
+
+    method_children = check_uniq(method_children);
+  }
+
+  array(Node) check_uniq(array children) {
+    array names = children->name;
+    foreach(Array.uniq(names), string n)
+      if(sizeof(filter(names, lambda(string in) { return in==n; }))!=1) {
+	string d="";
+	Parser.HTML parser = Parser.HTML();
+	parser->case_insensitive_tag(1);
+	parser->xml_tag_syntax(3);
+	parser->add_container("docgroup",
+          lambda(Parser.HTML p, mapping m, string c) {
+	    d += sprintf("<docgroup%{ %s='%s'%}>%s</docgroup>",
+			 (array)m, c);
+	    return "";
+	  });
+
+	foreach(children, Node c)
+	  if(c->name==n) parser->feed(c->data);
+	parser->finish();
+	d = make_faked_wrapper(d);
+
+	foreach(children, Node c)
+	  if(c->name==n) {
+	    if(d) {
+	      c->data = d;
+	      d = 0;
+	    }
+	    else destruct(c);
+	  }
+	children -= ({ 0 });
+      }
+    return children;
   }
 
   static string parse_node(Parser.HTML p, mapping m, string c) {
@@ -81,6 +122,11 @@ class Node
 	}
 	return ({ "" });
       }
+      else if( m["homogen-type"]=="constant" ) {
+	string path = make_class_path();
+	if(sizeof(path)) path += ".";
+	consts[path + m["homogen-name"]] = 1;
+      }
     }
     else
       return 0;
@@ -101,10 +147,13 @@ class Node
 
   string make_faked_wrapper(string s)
   {
+    if(type=="appendix")
+      return "<appendix name='"+name+"'>"+data+"</appendix>";
+
     if(type=="method")
       s = sprintf("<docgroup homogen-type='method' homogen-name='%s'>\n"
 		  "%s\n</docgroup>\n",
-		   name, s);
+		  name, s);
     else
       s = sprintf("<%s name='%s'>\n%s\n</%s>\n",
 		  type, name, s, type);
@@ -174,7 +223,11 @@ class Node
 	map(vars->resolved/".", cquote)*"/" + ".html'>" + vars->resolved +
 	"</a></font>";
 
-    werror("Missed reference %O in %s\n", _reference, make_class_path());
+    if(vars->resolved && consts[vars->resolved])
+      return "<font face='courier'>" + _reference + "</font>";
+
+    werror("Missed reference %O (%O) in %s\n", _reference, vars->resolved,
+	   make_class_path());
     unresolved++;
     return "<font face='courier'>" + _reference + "</font>";
   }
@@ -335,23 +388,17 @@ class Node
 
   static string make_content() {
     string contents;
-    if(type=="appendix") {
-      Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input("<appendix name='"+name+"'>"+
-                                                           data+"</appendix>")[0];
+    Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input(data)[0];
+    resolve_reference = my_resolve_reference;
 
-      resolve_reference = my_resolve_reference;
+    if(type=="appendix")
       contents = parse_appendix(n, 1);
-    }
-    else
-    {
-      string xmldata = make_faked_wrapper(data);
-      Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input(xmldata);
-
-      resolve_reference = my_resolve_reference;
+    else {
       contents = parse_children(n, "docgroup", parse_docgroup, 1);
       contents += parse_children(n, "module", parse_module, 1);
       contents += parse_children(n, "class", parse_class, 1);
     }
+
     return contents;
   }
 
