@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.107 2001/07/18 20:46:58 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.108 2001/08/22 14:11:00 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2027,7 +2027,7 @@ void cleanup_memhdrs(void)
 	  }
 	}else{
 #ifdef PIKE_DEBUG
-	  describe_something(p, attempt_to_identify(p),0,2,8);
+	  describe_something(p, attempt_to_identify(p), 0,2,8, NULL);
 #endif
 	}
 	mt_lock(&debug_malloc_mutex);
