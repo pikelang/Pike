@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.5 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: acconfig.h,v 1.6 2003/05/03 17:48:22 mast Exp $
 */
 
 /*
@@ -24,11 +24,6 @@
 #undef PIKE_HAVE_LIBCT
 #undef PIKE_HAVE_LIBINTL
 #undef PIKE_HAVE_LIBSYBTCL
-
-#if defined(PIKE_HAVE_LIBCOMN) && defined(PIKE_HAVE_LIBCS) \
-  && defined(PIKE_HAVE_LIBCT) && defined(PIKE_HAVE_LIBINTL) \
-  && defined(PIKE_HAVE_LIBSYBTCL) && defined(HAVE_CTPUBLIC_H)
-#define HAVE_SYBASE 
-#endif
+#undef HAVE_SYBASE
 
 #endif /* __PIKE_SYBASE_CONFIG_H */

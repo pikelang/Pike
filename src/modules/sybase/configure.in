@@ -7,7 +7,9 @@ AC_CONFIG_HEADER(sybase_config.h)
 
 AC_MODULE_INIT()
 
-echo "Configureing for sybase support"
+PIKE_FEATURE_WITHOUT(sybase)
+
+echo "Configuring for sybase support"
 OLD_CPPFLAGS="$CPPFLAGS"
 OLD_CFLAGS="$CFLAGS"
 OLD_LIBS="$LIBS"
@@ -36,10 +38,8 @@ if test x$pike_sybase_include_dir != x; then
     AC_MSG_RESULT(user-provided: $pike_sybase_include_dir)
     pike_cv_sybase_include_dir=$pike_sybase_include_dir
 else
-    AC_MSG_RESULT(going hunting...)
-fi
 
-AC_CACHE_VAL(pike_cv_sybase_include_dir,
+  AC_CACHE_VAL(pike_cv_sybase_include_dir,
     [
     for sybroot in $pike_sybase_reasonable_roots
     do
@@ -50,10 +50,10 @@ AC_CACHE_VAL(pike_cv_sybase_include_dir,
 dnl                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
                 if test -f $sybroot/$sybprefix/$sybpath/ctpublic.h; then
                     pike_cv_sybase_include_dir="$sybroot/$sybprefix/$sybpath"
-dnl                    AC_MSG_RESULT("Found")
+dnl                    AC_MSG_RESULT(found)
                     break 3;
                 else
-dnl                    AC_MSG_RESULT("Not Found")
+dnl                    AC_MSG_RESULT(not found)
                   :
                 fi
             done
@@ -61,10 +61,11 @@ dnl                    AC_MSG_RESULT("Not Found")
     done
     ])
 
-if test x$pike_cv_sybase_include_dir != x; then
-    AC_MSG_RESULT(Found: $pike_cv_sybase_include_dir)
-else
-    AC_MSG_RESULT(Not found.)
+  if test x$pike_cv_sybase_include_dir != x; then
+    AC_MSG_RESULT(found: $pike_cv_sybase_include_dir)
+  else
+    AC_MSG_RESULT(not found)
+  fi
 fi
 
 AC_MSG_CHECKING(for library files location)
@@ -72,10 +73,8 @@ if test x$pike_sybase_lib_dir != x; then
     AC_MSG_RESULT(user-provided: $pike_sybase_lib_dir)
     pike_cv_sybase_lib_dir=$pike_sybase_lib_dir
 else
-    AC_MSG_RESULT(going hunting...)
-fi
 
-AC_CACHE_VAL(pike_cv_sybase_lib_dir,
+  AC_CACHE_VAL(pike_cv_sybase_lib_dir,
     [
     for sybroot in $pike_sybase_reasonable_roots
     do
@@ -88,20 +87,21 @@ dnl                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
                 do
                     if test -f $sybroot/$sybprefix/$sybpath/$syblib; then
                         pike_cv_sybase_lib_dir="$sybroot/$sybprefix/$sybpath"
-dnl                        AC_MSG_RESULT("Found")
+dnl                        AC_MSG_RESULT(found)
                         break 4;
                     fi
                 done
-dnl            AC_MSG_RESULT("Not Found")
+dnl            AC_MSG_RESULT(not found)
             done
         done
     done
     ])
 
-if test x$pike_cv_sybase_lib_dir != x; then
-    AC_MSG_RESULT(Found: $pike_cv_sybase_lib_dir)
-else
-    AC_MSG_RESULT(Not found.)
+  if test x$pike_cv_sybase_lib_dir != x; then
+    AC_MSG_RESULT(found: $pike_cv_sybase_lib_dir)
+  else
+    AC_MSG_RESULT(not found)
+  fi
 fi
 
 
@@ -113,24 +113,43 @@ if test x$pike_cv_sybase_lib_dir != x; then
 fi
 
 if test x$with_sybase != xno; then
+    PIKE_FEATURE_NODEP(sybase)
+
     AC_CHECK_LIB(m,floor)
     AC_CHECK_LIB(dl,dlopen)
     AC_CHECK_LIB(nsl,gethostbyname)
 
-    AC_SEARCH_LIBS(intl_datetime,intl_r64 intl_r intl64 intl,AC_DEFINE(PIKE_HAVE_LIBINTL))
-    AC_SEARCH_LIBS(comn_bintobin,comn_r64 comn_r comn_dce64 comn_dce comn64 comn,AC_DEFINE(PIKE_HAVE_LIBCOMN))
-    AC_SEARCH_LIBS(cs_ctx_alloc,cs_r64 cs_r cs64 cs,AC_DEFINE(PIKE_HAVE_LIBCS))
-    AC_SEARCH_LIBS(iface_open,tcl_r64 tcl_r tcl_dce64 tcl_dce sybtcl tcl64 tcl,AC_DEFINE(PIKE_HAVE_LIBSYBTCL))
-    AC_SEARCH_LIBS(ct_callback, ct_r64 ct_r ct64 ct,AC_DEFINE(PIKE_HAVE_LIBCT))
-
-    AC_CHECK_HEADERS(ctpublic.h)
-
+    AC_SEARCH_LIBS(intl_datetime,
+		   intl_r64 intl_r intl64 intl,
+    [
+      AC_DEFINE(PIKE_HAVE_LIBINTL)
+      AC_SEARCH_LIBS(comn_bintobin,
+		     comn_r64 comn_r comn_dce64 comn_dce comn64 comn,
+      [
+	AC_DEFINE(PIKE_HAVE_LIBCOMN)
+	AC_SEARCH_LIBS(cs_ctx_alloc,
+		       cs_r64 cs_r cs64 cs,
+	[
+	  AC_DEFINE(PIKE_HAVE_LIBCS)
+	  AC_SEARCH_LIBS(iface_open,
+			 tcl_r64 tcl_r tcl_dce64 tcl_dce sybtcl tcl64 tcl,
+	  [
+	    AC_DEFINE(PIKE_HAVE_LIBSYBTCL)
+	    AC_SEARCH_LIBS(ct_callback,
+			   ct_r64 ct_r ct64 ct,
+	    [
+	      AC_DEFINE(PIKE_HAVE_LIBCT)
+	      AC_CHECK_HEADERS(ctpublic.h, [
+		AC_DEFINE(HAVE_SYBASE)
+		PIKE_FEATURE(sybase, yes)
+	      ])
+	    ])
+	  ])
+	])
+      ])
+    ])
 fi
 
-dnl this is to allow compilation with both pike/0.6 and pike/0.7
-make_variables="/dev/null"
 AC_SUBST_FILE(make_variables)
 
-
 AC_OUTPUT(Makefile,echo FOO >stamp-h)
-
