@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.32 2004/12/29 10:16:15 grubba Exp $
+|| $Id: module.c,v 1.33 2004/12/29 14:52:25 grubba Exp $
 */
 
 #include "global.h"
@@ -25,6 +25,10 @@
 #include "operators.h"
 #include "signal_handler.h"
 #include "dynamic_load.h"
+#include "gc.h"
+#include "multiset.h"
+#include "pike_types.h"
+#include "constants.h"
 
 #include "modules/modlist_headers.h"
 #include "post_modules/modlist_headers.h"
