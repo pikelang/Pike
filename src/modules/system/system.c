@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.106 2001/02/04 21:41:24 mirar Exp $
+ * $Id: system.c,v 1.107 2001/02/06 17:38:55 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.106 2001/02/04 21:41:24 mirar Exp $");
+RCSID("$Id: system.c,v 1.107 2001/02/06 17:38:55 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -706,7 +706,7 @@ void f_getgroups(INT32 args)
 #endif /* HAVE_GETGROUPS */
 
 #ifdef HAVE_INNETGR
-/*! @decl int innetgr(string netgroup, string|void machine,
+/*! @decl int innetgr(string netgroup, string|void machine, @
  *!                   string|void user, string|void domain)
  *!
  *! 
@@ -945,7 +945,7 @@ void f_setpgrp(INT32 args)
 #endif
 
 #if defined(HAVE_GETSID)
-/*! @decl int getsid(int|void)
+/*! @decl int getsid(int|void pid)
  */
 void f_getsid(INT32 args)
 {
@@ -979,7 +979,7 @@ void f_setsid(INT32 args)
 #endif
 
 #ifdef HAVE_SETRESUID
-/*! @decl setresuid(int ruid, int euid, int suid)
+/*! @decl int setresuid(int ruid, int euid, int suid)
  */
 void f_setresuid(INT32 args)
 {
@@ -1000,7 +1000,7 @@ void f_setresuid(INT32 args)
 #endif /* HAVE_SETRESUID */
 
 #ifdef HAVE_SETRESGID
-/*! @decl setresgid(int rgid, int egid, int sgid)
+/*! @decl int setresgid(int rgid, int egid, int sgid)
  */
 void f_setresgid(INT32 args)
 {
@@ -1180,28 +1180,28 @@ static struct {
  *! @returns
  *!   The resulting mapping contains the following fields:
  *!   @mapping
- *!     @elem string "sysname"
+ *!     @member string "sysname"
  *!       Operating system name.
- *!     @elem string "nodename"
+ *!     @member string "nodename"
  *!       Hostname.
- *!     @elem string "release"
+ *!     @member string "release"
  *!       Operating system release.
- *!     @elem string "version"
+ *!     @member string "version"
  *!       Operating system version.
- *!     @elem string "machine"
+ *!     @member string "machine"
  *!       Hardware architecture.
- *!     @elem string "architecture"
+ *!     @member string "architecture"
  *!       Basic instruction set architecture.
- *!     @elem string "isalist"
+ *!     @member string "isalist"
  *!       List of upported instruction set architectures.
  *!       Usually space-separated.
- *!     @elem string "platform"
+ *!     @member string "platform"
  *!       Specific model of hardware.
- *!     @elem string "hw provider"
+ *!     @member string "hw provider"
  *!       Manufacturer of the hardware.
- *!     @elem string "hw serial"
+ *!     @member string "hw serial"
  *!       Serial number of the hardware.
- *!     @elem string "srpc domain"
+ *!     @member string "srpc domain"
  *!       Secure RPC domain.
  *!   @endmapping
  *!
