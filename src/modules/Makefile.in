@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.41 2002/03/06 20:16:46 mast Exp $
+# $Id: Makefile.in,v 1.42 2002/04/11 22:13:32 mast Exp $
 
 @make_variables@
 
@@ -13,7 +13,7 @@ $(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
 force:
 	@:
 
-$(MODULES): force
+$(MODULES): Makefile force
 	  @echo Making $@; \
 	  ( cd $@ && \
 	    (  rm remake >/dev/null 2>&1 || : ) && \
