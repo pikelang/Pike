@@ -11,6 +11,18 @@
 
 #define error(msg) throw( ({ msg, backtrace() }) )
 
+
+/* Combines tag and class as a single integer, in a somewhat arbitrary
+ * way. This works also for tags beyond 31 (although not for tags
+ * beyond 2^30. */
+
+#define MAKE_COMBINED_TAG(cls, tag) (((tag) << 2) | (cls))
+int make_combined_tag(int cls, int tag)
+{ return MAKE_COMBINED_TAG(cls, tag); }
+
+int extract_tag(int i) { return i >> 2; }
+int extract_cls(int i) { return i & 3; }
+
 class asn1_object
 {
   constant cls = 0;
@@ -21,7 +33,9 @@ class asn1_object
   
   int get_cls() { return cls; }
   int get_tag() { return tag; }
-
+  int get_combinded_tag()
+    { return make_combined_tag(get_tag(), get_cls()); }
+  
   string der;
   
   // Should be overridden by subclasses 
@@ -520,6 +534,8 @@ class meta_explicit
 {
   /* meta-instances handle a particular explicit tag and set of types */
   int real_tag;
+  int real_cls;
+  
   mapping valid_types;
 
   class `()
@@ -529,7 +545,8 @@ class meta_explicit
       constant constructed = 1;
       
       int get_tag() { return real_tag; }
-  
+      int get_cls() { return real_cls; }
+      
       object contents;
 
       object init(object o)
@@ -574,8 +591,9 @@ class meta_explicit
 	}
     }
   
-  void create(int tag, mapping|void types)
+  void create(int cls, int tag, mapping|void types)
     {
+      real_cls = cls;
       real_tag = tag;
       valid_types = types;
     }

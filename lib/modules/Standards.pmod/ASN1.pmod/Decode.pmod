@@ -13,38 +13,53 @@
  * FIXME: Handling of implicit and explicit ASN.1 tagging, as well as
  * other context dependence, is next to non_existant. */
 
+import .Types;
+
 class primitive
 {
-  int tag;
+  import .Types;
+
+  constant constructed = 0;  
+  int combined_tag;
   string raw;
-
+  
   string get_der() { return raw; }
-
+  int get_combined_tag() { return combined_tag; }
+  int get_tag() { return extract_tag(combined_tag); }
+  int get_cls() { return extract_cls(combined_tag); }
+  
   void create(int t, string r)
     {
-      tag = t;
+      combined_tag = t;
       raw = r;
     }
 
   string debug_string() 
     {
-      return sprintf("primitive(%d)", tag);
+      return sprintf("primitive(%d)", combined_tag);
     }
 }
 
 class constructed
 {
-  int tag;
+  import .Types;
+  
+  constant constructed = 1;
+  int combined_tag;
+  
   string raw;
-  array contents;
+  array elements;
   
   string get_der() { return raw; }
+  int get_combined_tag() { return combined_tag; }
+  int get_tag() { return extract_tag(combined_tag); }
+  int get_cls() { return extract_cls(combined_tag); }
 
-  void create(int t, string r, array c)
+  void create(int t, string r, array e)
     {
-      tag = t;
+      combined_tag = t;
       raw = r;
-      contents = c;
+      elements = e;
     }
 }
 
@@ -74,8 +89,8 @@ object|mapping der_decode(object data, mapping types)
   werror(sprintf("contents: %O\n", contents));
 #endif
 
-  int tag = raw_tag & 0xdf; // Class and tag bits
-  
+  int tag = make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
+
   program p = types[tag];
   
   if (raw_tag & 0x20)
@@ -129,26 +144,28 @@ object|mapping der_decode(object data, mapping types)
   }
 }
 
-import .Types;
+#define U(x) make_combined_tag(0, (x))
+
+mapping universal_types =
+([ U(1) : asn1_boolean,
+   U(2) : asn1_integer,
+   U(3) : asn1_bit_string,
+   U(4) : asn1_octet_string,
+   U(5) : asn1_null,
+   U(6) : asn1_identifier,
+   // U(9) : asn1_real,
+   // U(10) : asn1_enumerated,
+#if constant(asn1_utf8_string)
+   U(12) : asn1_utf8_string,
+#endif
+   U(16) : asn1_sequence,
+   U(17) : asn1_set,
+   U(19) : asn1_printable_string,
+   U(20) : asn1_teletex_string,
+   U(23) : asn1_utc
+  ]);
 
 object|mapping simple_der_decode(string data)
 {
-  return der_decode(ADT.struct(data),
-		    ([ // 1 : asn1_boolean,
-		       2 : asn1_integer,
-		       3 : asn1_bit_string,
-		       4 : asn1_octet_string,
-		       5 : asn1_null,
-		       6 : asn1_identifier,
-		       // 9 : asn1_real,
-		       // 10 : asn1_enumerated,
-#if constant(asn1_utf8_string)
-   		       12 : asn1_utf8_string,
-#endif
-		       16 : asn1_sequence,
-		       17 : asn1_set,
-		       19 : asn1_printable_string,
-		       20 : asn1_teletex_string,
-		       23 : asn1_utc
-		    ]) );
+  return der_decode(ADT.struct(data), universal_types);
 }
