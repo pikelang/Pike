@@ -1,3 +1,9 @@
+Sun Mar 31 00:29:22 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* make html_docs: new command to create a directory with
+	  html documentation for uLPC. This documentation can then
+	  be copied to a WWW directory.
+
 Sat Mar 23 19:02:40 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* array.c: arrays are always initalized to zero to avoid
