@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.6 1997/08/30 18:36:10 grubba Exp $
+ * $Id: mysql.c,v 1.7 1997/11/02 16:04:42 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.6 1997/08/30 18:36:10 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.7 1997/11/02 16:04:42 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -151,6 +151,7 @@ static void pike_mysql_reconnect(void)
   }
 
   socket = PIKE_MYSQL->socket;
+  PIKE_MYSQL->socket = NULL;
 
   THREADS_ALLOW();
 
@@ -280,13 +281,14 @@ static void f_select_db(INT32 args)
 
   database = sp[-args].u.string->str;
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  tmp = mysql_select_db(socket, database);
+    tmp = mysql_select_db(socket, database);
 
-  THREADS_DISALLOW();
-
-  if (tmp < 0) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || (tmp < 0)) {
     /* The connection might have been closed. */
     pike_mysql_reconnect();
 
@@ -331,17 +333,18 @@ static void f_big_query(INT32 args)
   query = sp[-args].u.string->str;
   qlen = sp[-args].u.string->len;
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
 #ifdef HAVE_MYSQL_REAL_QUERY
-  tmp = mysql_real_query(socket, query, qlen);
+    tmp = mysql_real_query(socket, query, qlen);
 #else
-  tmp = mysql_query(socket, query);
+    tmp = mysql_query(socket, query);
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
-  THREADS_DISALLOW();
-
-  if (tmp < 0) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || (tmp < 0)) {
     /* The connection might have been closed. */
     pike_mysql_reconnect();
 
@@ -409,13 +412,14 @@ static void f_create_db(INT32 args)
   }
   database = sp[-args].u.string->str;
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  tmp = mysql_create_db(socket, database);
+    tmp = mysql_create_db(socket, database);
 
-  THREADS_DISALLOW();
-
-  if (tmp < 0) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -455,13 +459,14 @@ static void f_drop_db(INT32 args)
   }
   database = sp[-args].u.string->str;
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  tmp = mysql_drop_db(socket, database);
+    tmp = mysql_drop_db(socket, database);
 
-  THREADS_DISALLOW();
-
-  if (tmp < 0) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -488,13 +493,14 @@ static void f_shutdown(INT32 args)
   MYSQL *socket = PIKE_MYSQL->socket;
   int tmp;
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
   
-  tmp = mysql_shutdown(socket);
+    tmp = mysql_shutdown(socket);
 
-  THREADS_DISALLOW();
-
-  if (tmp < 0) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -520,13 +526,14 @@ static void f_reload(INT32 args)
   MYSQL *socket = PIKE_MYSQL->socket;
   int tmp;
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  tmp = mysql_reload(socket);
+    tmp = mysql_reload(socket);
 
-  THREADS_DISALLOW();
-
-  if (tmp < 0) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -617,13 +624,14 @@ static void f_list_dbs(INT32 args)
     wild = sp[-args].u.string->str;
   }
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  result = mysql_list_dbs(socket, wild);
+    result = mysql_list_dbs(socket, wild);
 
-  THREADS_DISALLOW();
-
-  if (!result) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || !result) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -667,13 +675,14 @@ static void f_list_tables(INT32 args)
     wild = sp[-args].u.string->str;
   }
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  result = mysql_list_tables(socket, wild);
+    result = mysql_list_tables(socket, wild);
 
-  THREADS_DISALLOW();
-
-  if (!result) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || !result) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -733,13 +742,14 @@ static void f_list_fields(INT32 args)
     wild = sp[-args+1].u.string->str;
   }
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  result = mysql_list_fields(socket, table, wild);
+    result = mysql_list_fields(socket, table, wild);
 
-  THREADS_DISALLOW();
-
-  if (!result) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || !result) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -774,13 +784,14 @@ static void f_list_processes(INT32 args)
 
   pop_n_elems(args);
 
-  THREADS_ALLOW();
+  if (socket) {
+    THREADS_ALLOW();
 
-  result = mysql_list_processes(socket);
+    result = mysql_list_processes(socket);
 
-  THREADS_DISALLOW();
-
-  if (!result) {
+    THREADS_DISALLOW();
+  }
+  if (!socket || !result) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
