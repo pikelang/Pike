@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.100 1998/04/28 07:48:53 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.101 1998/04/28 22:59:11 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -35,7 +35,10 @@ test_compile_eror(([])())
 test_any([[ class X { int y; class Z { void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
 
-test_do(_debug(_debug(0)))
+cond([[all_constants()->_debug]],
+[[
+  test_do(_debug(_debug(0)))
+]])
 test_do(_static_modules())
 test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
 test_compile([[Stdio.File foo=Stdio.File();]])
