@@ -1,4 +1,11 @@
-all: tutorial.html tutorial_onepage.html
+all:
+	@if `pwd`/../bin/pike -e 'return 0;' 2>/dev/null; then \
+	  $(MAKE) pike=`pwd`/../bin/pike low_all; \
+	else \
+	  $(MAKE) low_all; \
+	fi
+
+low_all: tutorial.html tutorial_onepage.html
 
 # lenna.gif lenna-mirrorx.gif lenna-mirrory.gif lenna-rotate.gif lenna-skewx.gif lenna-skewy.gif
 
@@ -30,7 +37,7 @@ ProtocolsLysKOM.wmml :
 
 
 Calendar.wmml :
-	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$'` >Calendar.wmml
+	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$$'` >Calendar.wmml
 
 
 # ----------------------------------------------------------------------
@@ -59,10 +66,10 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml html_section_pages the_image_module
 
 clean:
-	-rm *.html *.md illustration_cache illustration*.gif $(MADEFILES)
+	-rm -f *.html *.md illustration_cache illustration*.gif $(MADEFILES)
 
 rebuild:
-	-rm $(MADEFILES)
+	-rm -f $(MADEFILES)
 	make pike="$(pike)" Image.wmml Mysql.wmml tutorial.html
 
 install:
