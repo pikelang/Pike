@@ -196,6 +196,6 @@ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
 #endif
 
 unsigned long my_rand(void);
-void my_srand(int seed);
+void my_srand(long seed);
 
 #endif

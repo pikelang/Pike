@@ -46,22 +46,52 @@ time_t TIME(time_t *t)
 static unsigned long RandSeed1 = 0x5c2582a4;
 static unsigned long RandSeed2 = 0x64dff8ca;
 
-unsigned long my_rand(void)
+static unsigned long slow_rand(void)
 {
   RandSeed1 = ((RandSeed1 * 13 + 1) ^ (RandSeed1 >> 9)) + RandSeed2;
   RandSeed2 = (RandSeed2 * RandSeed1 + 13) ^ (RandSeed2 >> 13);
   return RandSeed1;
 }
 
-void my_srand(int seed)
+static void slow_srand(long seed)
 {
   RandSeed1 = (seed - 1) ^ 0xA5B96384;
   RandSeed2 = (seed + 1) ^ 0x56F04021;
-  my_rand();
-  my_rand();
-  my_rand();
 }
 
+#define RNDBUF 250
+#define RNDSTEP 7
+#define RNDJUMP 103
+
+static unsigned long rndbuf[ RNDBUF ];
+static int rnd_index;
+
+void my_srand(long seed)
+{
+  int e;
+  unsigned long mask;
+
+  slow_srand(seed);
+  
+  rnd_index = 0;
+  for (e=0;e < RNDBUF; e++) rndbuf[e]=slow_rand();
+
+  mask = (unsigned long) -1;
+
+  for (e=0;e< (int)sizeof(long)*8 ;e++)
+  {
+    int d = RNDSTEP * e + 3;
+    rndbuf[d] &= mask;
+    mask>>=1;
+    rndbuf[d] |= (mask+1);
+  }
+}
+
+unsigned long my_rand(void)
+{
+  if( ++rnd_index == RNDBUF) rnd_index=0;
+  return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
+}
 
 #ifndef HAVE_STRTOL
 #define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
