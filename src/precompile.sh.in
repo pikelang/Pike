@@ -4,31 +4,6 @@
 
 exec 5>&1 1>&2
 
-if [ x"$1" = x--cache ]; then
-  CACHE_OUTPUT=yes
-  shift 1
-else
-  CACHE_OUTPUT=no
-fi
-
-SCRIPT="$1"
-shift 1
-
-if [ $CACHE_OUTPUT = yes ]; then
-  for arg
-  do
-    INPUT="$arg"
-  done
-  TMPOUTPUT="${INPUT}.compiled"
-
-  if [ -f "$TMPOUTPUT" ]; then
-    if [ "`ls -1t $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -1`" = "`ls -1t $TMPOUTPUT`" ]; then
-      cat "$TMPOUTPUT" >&5
-      exit 0
-    fi
-  fi
-fi
-
 TMP_BUILDDIR="@BUILDDIR@"
 TMP_BINDIR="@BINDIR@"
 LIBDIR_SRC="@LIBDIR@"
@@ -56,6 +31,16 @@ old_method="${method-}"
 
 OLD_RUNPIKE="$RUNPIKE"
 
+if [ x"$1" = x--cache ]; then
+  CACHE_OUTPUT=yes
+  shift 1
+else
+  CACHE_OUTPUT=no
+fi
+
+SCRIPT="$1"
+shift 1
+
 case "$SCRIPT" in
   /*|./*)
     if test -f "$SCRIPT"; then :; else
@@ -75,6 +60,24 @@ case "$SCRIPT" in
     fi
   ;;
 esac
+
+INPUT="`eval echo \"\\$$#\"`"
+TMPOUTPUT="${INPUT}.compiled"
+
+if [ $CACHE_OUTPUT = yes ]; then
+  for arg
+  do
+    INPUT="$arg"
+  done
+  TMPOUTPUT="${INPUT}.compiled"
+
+  if [ -f "$TMPOUTPUT" ]; then
+    if [ "`ls -1Lt $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -1`" = "`ls -1Lt $TMPOUTPUT`" ]; then
+      cat "$TMPOUTPUT" >&5
+      exit 0
+    fi
+  fi
+fi
 
 test $CACHE_OUTPUT = yes && trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
 
