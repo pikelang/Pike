@@ -1,12 +1,11 @@
 #
-# $Id: Makefile,v 1.10 1999/05/24 06:07:36 mast Exp $
+# $Id: Makefile,v 1.11 1999/05/31 06:20:01 peter Exp $
 #
 # Meta Makefile
 #
 
 VPATH=.
 MAKE=make
-prefix=/usr/local
 OS=`uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`
 BUILDDIR=build/$(OS)
 METATARGET=
@@ -49,7 +48,7 @@ configure: src/configure builddir
 	  if test -f .configureargs -a -z "$(CONFIGUREARGS)"; then \
 	    configureargs="`cat .configureargs`"; \
 	  else \
-	    configureargs="--prefix=$(prefix) $(CONFIGUREARGS)"; \
+	    configureargs="$(CONFIGUREARGS)"; \
 	  fi; \
 	  if test -f Makefile -a -f config.cache -a -f .configureargs && \
 	     test "`cat .configureargs`" = "$$configureargs"; then :; \
@@ -80,13 +79,13 @@ bin/pike: force
 	chmod a+x bin/pike
 
 install:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=install"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=install"
 
 verify:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify"
 
 verify_installed:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify_installed"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify_installed"
 
 check: verify
 	-@$(BIN_TRUE)
@@ -95,16 +94,16 @@ sure: verify
 	-@$(BIN_TRUE)
 
 verbose_verify:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verbose_verify"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verbose_verify"
 
 gdb_verify:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=gdb_verify"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=gdb_verify"
 
 run_hilfe:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=run_hilfe"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=run_hilfe"
 
 feature_list:
-	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=feature_list"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)" "METATARGET=feature_list"
 
 clean:
 	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" clean
