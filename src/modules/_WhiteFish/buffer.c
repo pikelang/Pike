@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.4 2001/05/25 18:39:32 per Exp $");
+RCSID("$Id: buffer.c,v 1.5 2001/05/25 19:36:42 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -149,8 +149,8 @@ void wf_buffer_free( struct buffer *b )
 void wf_buffer_set_empty( struct buffer *b )
 {
   wf_buffer_clear( b );
-  b->data = malloc( 32 );
-  b->allocated_size = 32;
+  b->data = malloc( 16 );
+  b->allocated_size = 16;
 }
 
 void wf_buffer_set_pike_string( struct buffer *b,

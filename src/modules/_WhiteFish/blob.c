@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.14 2001/05/25 16:17:59 per Exp $");
+RCSID("$Id: blob.c,v 1.15 2001/05/25 19:36:42 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -183,7 +183,7 @@ struct hash
   struct buffer *data;
 };
 
-#define HSIZE 4711
+#define HSIZE 13
 
 struct blob_data
 {
