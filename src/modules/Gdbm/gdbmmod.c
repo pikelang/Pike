@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.14 2001/01/23 22:12:39 grubba Exp $");
+RCSID("$Id: gdbmmod.c,v 1.15 2001/10/26 21:36:04 nilsson Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -91,6 +91,47 @@ void gdbmmod_fatal(char *err)
   Pike_error("GDBM: %s\n",err);
 }
 
+/*! @module Gdbm
+ */
+
+/*! @class gdbm
+ */
+
+/*! @decl void create(void|string file, void|string mode)
+ *!
+ *! Without arguments, this function does nothing. With one argument it
+ *! opens the given file as a gdbm database, if this fails for some
+ *! reason, an error will be generated. If a second argument is present,
+ *! it specifies how to open the database using one or more of the follow
+ *! flags in a string:
+ *!
+ *! @string
+ *!   @value r
+ *!     Open database for reading
+ *!   @value w
+ *!     Open database for writing
+ *!   @value c
+ *!     Create database if it does not exist
+ *!   @value t
+ *!     Overwrite existing database
+ *!   @value f
+ *!     Fast mode
+ *! @endstring
+ *!
+ *! The fast mode prevents the database from syncronizing each change
+ *! in the database immediately. This is dangerous because the database
+ *! can be left in an unusable state if Pike is terminated abnormally.
+ *!
+ *! The default mode is @tt{"rwc"@}.
+ *!
+ *! @note
+ *!  The gdbm manual states that it is important that the database is
+ *!  closed properly. Unfortunately this will not be the case if Pike
+ *!  calls exit() or returns from main(). You should therefore make sure
+ *!  you call close or destruct your gdbm objects when exiting your
+ *!  program. This will probably be done automatically in the future.
+ */
+
 static void gdbmmod_create(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -136,6 +177,13 @@ static void gdbmmod_create(INT32 args)
 #define STRING_TO_DATUM(dat, st) dat.dptr=st->str,dat.dsize=st->len;
 #define DATUM_TO_STRING(dat) make_shared_binary_string(dat.dptr, dat.dsize)
 
+/*! @decl string fetch(string key)
+ *! @decl string `[](string key)
+ *!
+ *! Return the data associated with the key 'key' in the database.
+ *! If there was no such key in the database, zero is returned.
+ */
+
 static void gdbmmod_fetch(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -168,6 +216,12 @@ static void gdbmmod_fetch(INT32 args)
   }
 }
 
+/*! @decl int delete(string key)
+ *!
+ *! Remove a key from the database. Note that no error will be generated
+ *! if the key does not exist.
+ */
+
 static void gdbmmod_delete(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -194,6 +248,12 @@ static void gdbmmod_delete(INT32 args)
   push_int(0);
 }
 
+/*! @decl string firstkey()
+ *!
+ *! Return the first key in the database, this can be any key in the
+ *! database.
+ */
+
 static void gdbmmod_firstkey(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -216,6 +276,17 @@ static void gdbmmod_firstkey(INT32 args)
     push_int(0);
   }
 }
+
+/*! @decl string nextkey(string key)
+ *!
+ *! This returns the key in database that follows the key 'key' key.
+ *! This is of course used to iterate over all keys in the database.
+ *!
+ *! @example
+ *!  // Write the contents of the database
+ *!  for(key=gdbm->firstkey(); k; k=gdbm->nextkey(k))
+ *!    write(k+":"+gdbm->fetch(k)+"\n");
+ */
 
 static void gdbmmod_nextkey(INT32 args)
 {
@@ -247,6 +318,18 @@ static void gdbmmod_nextkey(INT32 args)
     push_int(0);
   }
 }
+
+/*! @decl int store(string key, string data)
+ *! @decl int `[]= (string key, stirng data)
+ *!
+ *! Associate the contents of 'data' with the key 'key'. If the key 'key'
+ *! already exists in the database the data for that key will be replaced.
+ *! If it does not exist it will be added. An error will be generated if
+ *! the database was not open for writing.
+ *!
+ *! @example
+ *!   gdbm[key] = data;
+ */
 
 static void gdbmmod_store(INT32 args)
 {
@@ -293,6 +376,14 @@ static void gdbmmod_store(INT32 args)
   push_int(ret == 0);
 }
 
+/*! @decl int reorganize()
+ *!
+ *! Deletions and insertions into the database can cause fragmentation
+ *! which will make the database bigger. This routine reorganizes the
+ *! contents to get rid of fragmentation. Note however that this function
+ *! can take a LOT of time to run.
+ */
+
 static void gdbmmod_reorganize(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -309,6 +400,14 @@ static void gdbmmod_reorganize(INT32 args)
   push_int(ret);
 }
 
+/*! @decl void sync()
+ *!
+ *! When opening the database with the 'f' flag writings to the database
+ *! can be cached in memory for a long time. Calling sync will write
+ *! all such caches to disk and not return until everything is stored
+ *! on the disk.
+ */
+
 static void gdbmmod_sync(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -322,6 +421,11 @@ static void gdbmmod_sync(INT32 args)
   THREADS_DISALLOW();
   push_int(0);
 }
+
+/*! @decl void close()
+ *!
+ *! Closes the database.
+ */
 
 static void gdbmmod_close(INT32 args)
 {
@@ -341,7 +445,13 @@ static void exit_gdbm_glue(struct object *o)
   do_free();
 }
 
-#endif
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+#endif /* defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM) */
 
 void pike_module_exit(void) {}
 
@@ -383,4 +493,3 @@ void pike_module_init(void)
   end_class("gdbm",0);
 #endif
 }
-
