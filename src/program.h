@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.62 1999/10/24 05:56:36 hubbe Exp $
+ * $Id: program.h,v 1.63 1999/10/29 00:09:48 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -315,7 +315,7 @@ int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 struct program *debug_end_program(void);
-SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo);
+SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
 void set_gc_mark_callback(void (*m)(struct object *));
@@ -393,7 +393,7 @@ INT32 define_function(struct pike_string *name,
 		      union idptr *func);
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
-					     int see_static);
+					     int flags);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);
 struct ff_hash;
@@ -401,11 +401,14 @@ int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog);
 int find_identifier(char *name,struct program *prog);
 int store_prog_string(struct pike_string *str);
-int store_constant(struct svalue *foo, int equal, struct pike_string *name);
+int store_constant(struct svalue *foo,
+		   int equal,
+		   struct pike_string *constant_name);
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
 void program_index_no_free(struct svalue *to, struct program *p,
 			   struct svalue *ind);
+int get_small_number(char **q);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.168 1999/10/26 06:30:36 hubbe Exp $");
+RCSID("$Id: program.c,v 1.169 1999/10/29 00:09:47 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -124,6 +124,8 @@ dynamic_buffer used_modules;
 INT32 num_used_modules;
 static struct mapping *resolve_cache=0;
 static struct mapping *module_index_cache=0;
+
+int get_small_number(char **q);
 
 /* So what if we don't have templates? / Hubbe */
 
@@ -621,6 +623,32 @@ void low_start_new_program(struct program *p,
 #define FOO(NUMTYPE,TYPE,NAME) \
     malloc_size_program->PIKE_CONCAT(num_,NAME)=new_program->PIKE_CONCAT(num_,NAME);
 #include "program_areas.h"
+
+
+    {
+      INT32 line=0, off=0;
+      char *file=0;
+      char *cnt=new_program->linenumbers;
+      
+      while(cnt < new_program->linenumbers + new_program->num_linenumbers)
+      {
+	if(*cnt == 127)
+	{
+	  file=cnt+1;
+	  cnt=file+strlen(file)+1;
+	}
+	off+=get_small_number(&cnt);
+	line+=get_small_number(&cnt);
+      }
+      last_line=line;
+      last_pc=off;
+      if(file)
+      {
+	if(last_file) free_string(last_file);
+	last_file=make_shared_string(file);
+      }
+    }
+
   }else{
     static struct pike_string *s;
     struct inherit i;
@@ -2391,24 +2419,11 @@ void program_index_no_free(struct svalue *to, struct program *p,
 	  get_name_of_type(ind->type));
   }
   s = ind->u.string;
-#if 0
-  for (e = p->num_identifier_references; e--; ) {
-    struct identifier *id;
-    if (p->identifier_references[e].id_flags & ID_HIDDEN) {
-      continue;
-    }
-    id = ID_FROM_INT(p, e);
-    if (id->name != s) {
-      continue;
-    }
-
-#else
   e=find_shared_string_identifier(s, p);
   if(e!=-1)
   {
     struct identifier *id;
     id=ID_FROM_INT(p, e);
-#endif
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
       assign_svalue_no_free(to, ( & p2->constants[id->func.offset].sval));
@@ -2438,6 +2453,7 @@ void program_index_no_free(struct svalue *to, struct program *p,
 /*
  * Line number support routines, now also tells what file we are in
  */
+
 int get_small_number(char **q)
 {
   int ret;
@@ -2484,6 +2500,40 @@ static void insert_small_number(INT32 a)
 
 void store_linenumber(INT32 current_line, struct pike_string *current_file)
 {
+/*  if(!store_linenumbers)  fatal("Fnord.\n"); */
+#ifdef PIKE_DEBUG
+  if(d_flag)
+  {
+    INT32 line=0, off=0;
+    char *file=0;
+    char *cnt=new_program->linenumbers;
+
+    while(cnt < new_program->linenumbers + new_program->num_linenumbers)
+    {
+      if(*cnt == 127)
+      {
+	file=cnt+1;
+	cnt=file+strlen(file)+1;
+      }
+      off+=get_small_number(&cnt);
+      line+=get_small_number(&cnt);
+    }
+    
+    if(last_line != line ||
+       last_pc != off ||
+       (last_file && file && strcmp(last_file->str, file)))
+    {
+      fatal("Line numbering out of whack\n"
+	    "    (line: %d ?= %d)!\n"
+	    "    (  pc: %d ?= %d)!\n"
+	    "    (file: %s ?= %s)!\n",
+	    last_line, line,
+	    last_pc, off,
+	    last_file?last_file->str:"N/A",
+	    file?file:"N/A");
+    }
+  }
+#endif
   if(last_line!=current_line || last_file != current_file)
   {
     if(last_file != current_file)
