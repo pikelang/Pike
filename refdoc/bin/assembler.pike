@@ -1,10 +1,33 @@
 #define Node Parser.XML.Tree.Node
+#define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
+#define XML_TEXT Parser.XML.Tree.XML_TEXT
 
 int chapter;
 int appendix;
 
 mapping queue = ([]);
 mapping appendix_queue = ([]);
+
+// array( array(name,file) )
+array toc = ({});
+class TocNode {
+  inherit Node;
+
+  int|void walk_preorder_2(mixed ... args) {
+    mChildren = ({});
+    foreach(toc, array ent) {
+      // FIXME Some sort of path fixup is needed.
+      Node link = Node( XML_ELEMENT, "url", ([ "href" : ent[1] ]), 0 );
+      link->add_child( Node( XML_TEXT, 0, 0, ent[0] ) );
+      add_child(link);
+      add_child( Node( XML_ELEMENT, "br", ([]), 0 ));
+      add_child( Node( XML_TEXT, 0, 0, "\n" ) );
+    }
+    ::walk_preorder_2( @args );
+  }
+
+  int count_children() { return sizeof(toc)*3; }
+}
 
 class Entry (Node target) {
   constant type = "";
@@ -14,12 +37,43 @@ class Entry (Node target) {
   }
 }
 
+string visualize(Node n, int depth) {
+  if(n->get_node_type() == XML_TEXT)
+    return Parser.XML.Tree.text_quote(n->get_text());
+  if(n->get_node_type() != XML_ELEMENT ||
+     !strlen(n->get_tag_name()))
+    return "";
+
+  string name = n->get_tag_name();
+  if(name!="module" && name!="class")
+    return "";
+
+  string data = "<" + name;
+  if (mapping attr = n->get_attributes()) {
+    foreach(indices(attr), string a)
+      data += " " + a + "='"
+	+ Parser.XML.Tree.attribute_quote(attr[a]) + "'";
+  }
+  if (!n->count_children())
+    return data + "/>";
+
+  data += ">";
+  if(depth==0)
+    data += "...";
+  else
+    data += map(n->get_children(), visualize, depth-1)*"";
+  return data + "</" + name + ">";
+}
+
 class mvEntry {
   inherit Entry;
   constant type = "mv";
 
   void `()(Node data) {
-    data->get_parent()->remove_child(data);
+    Node p = data->get_parent();
+    if(p)
+      p->remove_child(data);
+
     if(args) {
       mapping m = data->get_attributes();
       foreach(indices(args), string index)
@@ -29,7 +83,7 @@ class mvEntry {
   }
 }
 
-class cpEntry (Node target) {
+class cpEntry {
   inherit Entry;
   constant type = "cp";
 
@@ -50,7 +104,7 @@ void enqueue_move(string source, Node target) {
     }
 
   if(bucket[0])
-    error("Move source already allocated (%s) %O.\n", source, bucket);
+    error("Move source already allocated (%s).\n", source);
 
   bucket[0] = mvEntry(target);
 }
@@ -96,6 +150,10 @@ void chapter_ref_expansion(Node n) {
     switch(c->get_tag_name()) {
 
     case "p":
+      break;
+
+    case "contents":
+      c->replace_node( TocNode(XML_ELEMENT, "p", ([]), "") );
       break;
 
     case "section":
@@ -157,6 +215,7 @@ void ref_expansion(Node n, string dir, void|string file) {
     case "chapter":
       c->get_attributes()->number = (string)++chapter;
       chapter_ref_expansion(c);
+      toc += ({ ({ c->get_attributes()->title, file }) });
       break;
 
     case "appendix-ref":
@@ -175,6 +234,7 @@ void ref_expansion(Node n, string dir, void|string file) {
       // fallthrough
     case "appendix":
       c->get_attributes()->number = (string)++appendix;
+      toc += ({ ({ c->get_attributes()->name, file }) });
       break;
     }
   }
@@ -201,26 +261,41 @@ void move_appendices(Node n) {
 				     })) );
 }
 
-void move_items(Node n, mapping jobs) {
-  array ent = n->get_elements("module") +
-    n->get_elements("class") +
-    n->get_elements("docgroup");
+Node wrap(Node n, Node wrapper) {
+  if(wrapper->count_children())
+    wrap(n, wrapper[0]);
+  else
+    wrapper->add_child(n);
+  return wrapper;
+}
 
+void move_items(Node n, mapping jobs, void|Node wrapper) {
   if(jobs[0]) {
-    jobs[0](n);
+    Node m = n;
+    if(wrapper) m = wrap(n, wrapper->clone());
+    jobs[0](m);
     m_delete(jobs, 0);
   }
 
-  foreach(ent, Node c) {
-    mapping m = c->get_attributes();
-    mapping|Entry e = jobs[ m->name || m["homogen-name"] ];
-    if(!e) continue;
-    if(mappingp(e)) {
-      move_items(c, e);
-      if(!sizeof(e))
-	m_delete(jobs, m->name||m["homogen-name"]);
+  foreach( ({ "module", "class", "docgroup" }), string type)
+    foreach(n->get_elements(type), Node c) {
+      mapping m = c->get_attributes();
+      string name = m->name || m["homogen-name"];
+      if(type!="docgroup") werror("Testing %O %O\n", type, name);
+      mapping|Entry e = jobs[ name ];
+      if(!e) continue;
+      if(mappingp(e)) {
+	Node wr = Node(XML_ELEMENT, n->get_tag_name(),
+		       n->get_attributes()+([]), 0);
+	if(wrapper)
+	  wr = wrap( wr, wrapper->clone() );
+
+	move_items(c, e, wr);
+
+	if(!sizeof(e))
+	  m_delete(jobs, name);
+      }
     }
-  }
 }
 
 void report_failed_entries(mapping scope, string path) {
