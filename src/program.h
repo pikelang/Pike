@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.174 2003/01/31 01:50:53 mast Exp $
+|| $Id: program.h,v 1.175 2003/02/04 17:29:19 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -723,11 +723,7 @@ void count_memory_in_programs(INT32*,INT32*);
 #endif
 
 
-#ifdef PIKE_DEBUG
 #define start_new_program() debug_start_new_program(__LINE__,__FILE__)
-#else
-#define start_new_program() debug_start_new_program(0, "native module")
-#endif
 
 #define gc_cycle_check_program(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_program, (X), (WEAK))

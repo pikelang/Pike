@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.467 2003/02/02 00:31:16 mast Exp $
+|| $Id: builtin_functions.c,v 1.468 2003/02/04 17:29:19 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.467 2003/02/02 00:31:16 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.468 2003/02/04 17:29:19 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7451,6 +7451,8 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     struct program *p = Pike_sp[-args].u.object->prog;
     int func = Pike_sp[-args].subtype;
     struct identifier *id;
+    INT32 line;
+    struct pike_string *file = NULL;
 
     if (p == pike_trampoline_program) {
       struct pike_trampoline *t =
@@ -7464,19 +7466,23 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     id=ID_FROM_INT(p, func);
     if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
       id->func.offset != -1)
+      file = low_get_line(p->program + id->func.offset, p, &line);
+    else
+      /* The program line is better than nothing for C functions. */
+      file = low_get_program_line (p, &line);
+
+    if (file)
     {
-      INT32 line = 0;
-      struct pike_string *tmp = low_get_line(p->program + id->func.offset, p, &line);
-      if (tmp)
-      {
-	pop_n_elems(args);
-	
-	push_string(tmp);
+      pop_n_elems(args);
+      if (line) {
+	push_string(file);
 	push_constant_text(":");
 	push_int(line);
 	f_add(3);
-	return;
       }
+      else
+	push_string (file);
+      return;
     }
   }
 
