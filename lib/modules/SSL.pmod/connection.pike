@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.35 2004/04/19 23:01:03 agehall Exp $
+// $Id: connection.pike,v 1.36 2005/02/08 20:01:42 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -96,7 +96,7 @@ static object recv_packet(string data)
 //! close_notifies.
 void send_packet(object packet, int|void priority)
 {
-  if (closing) {
+  if (closing & 1) {
 #ifdef SSL3_DEBUG
     werror("SSL.connection->send_packet: ignoring packet after close\n");
 #endif
@@ -214,8 +214,6 @@ int handle_alert(string s)
 #ifdef SSL3_DEBUG
     werror("SSL.connection: Close notify  alert %d\n", description);
 #endif
-    if (!(closing & 1))
-      send_close();
     closing |= 2;
     return 1;
   }
@@ -391,7 +389,7 @@ string|int got_data(string|int s)
       }
     }
   }
-  return closing ? 1 : res;
+  return closing & 2 ? 1 : res;
 }
 
 #endif
