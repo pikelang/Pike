@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.290 2003/12/20 19:35:04 marcus Exp $
+|| $Id: signal_handler.c,v 1.291 2004/01/13 00:51:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.290 2003/12/20 19:35:04 marcus Exp $");
+RCSID("$Id: signal_handler.c,v 1.291 2004/01/13 00:51:16 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -4740,7 +4740,7 @@ void init_signals(void)
   ADD_EFUN("signum",f_signum,tFunc(tStr,tInt),0);
   
 /* function(:int) */
-  ADD_EFUN("getpid",f_getpid,tFunc(tNone,tInt),0);
+  ADD_EFUN("getpid",f_getpid,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_ALARM
 /* function(int:int) */
