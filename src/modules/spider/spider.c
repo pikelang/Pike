@@ -1682,13 +1682,8 @@ void init_spider_programs()
 {
    start_new_program();
    add_storage( sizeof (struct streamed_parser) );
-<<<<<<< spider.c
 /*   add_function( "init", streamed_parser_set_data,
 		"function(mapping(string:function(string,mapping(string:string),mixed:mixed)),function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void)", 0 );*/
-=======
-   add_function( "init", streamed_parser_set_data,
-		"function(mapping(string:function(string,mapping(string:string),mixed:mixed)),mapping(string:function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void)", 0 );
->>>>>>> 1.21
    add_function( "parse", streamed_parser_parse, "function(string,mixed:string)", 0 );
    add_function( "finish", streamed_parser_finish, "function(void:string)", 0 );
    set_init_callback( streamed_parser_init );
