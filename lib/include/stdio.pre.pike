@@ -104,7 +104,7 @@ program FILE = class {
     {
       while(strlen(b) - bpos < bytes)
 	if(!get_data())
-	  return 0;
+	  break;
 
       return extract(bytes);
     }
