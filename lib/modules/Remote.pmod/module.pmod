@@ -83,6 +83,14 @@ class Connection {
 
   int nice; // don't throw from call_sync
 
+  static void enable_async()
+  {
+    // This function is installed as a call out. This way async mode
+    // is enabled only if and when a backend is started (provided
+    // max_call_threads is zero).
+    do_calls_async = 1;
+  }
+
   //! @decl void create(void|int nice, void|int max_call_threads)
   //! @param nice
   //!   If set, no errors will be thrown.
@@ -90,8 +98,6 @@ class Connection {
   {
     nice=_nice;
     max_call_threads = _max_call_threads;
-    if (!max_call_threads)
-      call_out( lambda(){ do_calls_async=1; }, 0.1 ); // :-)
   }
 
 
@@ -141,6 +147,8 @@ class Connection {
 #else
       con->set_nonblocking(read_some, write_some, closed_connection);
 #endif
+      if (!max_call_threads)
+	call_out( enable_async, 0 );
       return 1;
     }
     return 0;
@@ -169,6 +177,9 @@ class Connection {
 #else
     con->set_nonblocking(handshake, write_some, closed_connection);
 #endif
+
+    if (!max_call_threads)
+      call_out( enable_async, 0 );
   }
 
   //! Add a function that is called when the connection is closed.
@@ -190,6 +201,7 @@ class Connection {
   //! both directions.
   void close()
   {
+    remove_call_out (enable_async);
     want_close = 1;
 #if constant(thread_create)
     calls->write(0);
