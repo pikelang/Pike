@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+// $Id: Query.pike,v 1.37 2002/01/17 10:25:53 grubba Exp $
+
 /*
 **! module Protocols
 **! submodule HTTP
@@ -303,7 +305,7 @@ static void async_connected()
 
 static void async_failed()
 {
-   if (con) errno=con->errno; else errno=113; // EHOSTUNREACH
+   if (con) errno=con->errno(); else errno=113; // EHOSTUNREACH
    ok=0;
    if (request_fail) request_fail(this_object(),@extra_args);
    remove_call_out(async_timeout);
