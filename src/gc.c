@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.69 2000/04/17 21:06:24 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.70 2000/04/19 14:02:16 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -598,8 +598,14 @@ INT32 real_gc_check(void *a)
   }
 
   if(m->saved_refs != -1)
-    if(m->saved_refs != *(INT32 *)a)
-      fatal("Refs changed in gc()\n");
+    if(m->saved_refs != *(INT32 *)a) {
+      fprintf(stderr,"**Refs changed in gc() pass %d. Expected %ld, got %ld.\n",
+	      Pike_in_gc, (long)m->saved_refs, (long)*(INT32 *)a);
+      describe(a);
+      locate_references(a);
+      fprintf(stderr,"##### Continuing search for more bugs....\n");
+      fatal_after_gc="Refs changed in gc()\n";
+    }
   m->saved_refs = *(INT32 *)a;
 #endif
 
@@ -656,6 +662,7 @@ static void exit_gc(void)
 #ifdef PIKE_DEBUG
 void locate_references(void *a)
 {
+  void *orig_check_for=check_for;
   if(!Pike_in_gc)
     init_gc();
   
@@ -691,7 +698,7 @@ void locate_references(void *a)
   call_callback(& gc_callbacks, (void *)0);
   
   found_where="";
-  check_for=0;
+  check_for=orig_check_for;
 
 #ifdef DEBUG_MALLOC
   {
@@ -731,7 +738,7 @@ int debug_gc_is_referenced(void *a)
 	    (long)xrefs);
 
     if(m->saved_refs != *(INT32 *)a)
-      fprintf(stderr,"**In pass one it had %ld refs!!!\n",m->saved_refs);
+      fprintf(stderr,"**In pass one it had %ld refs!!!\n",(long)m->saved_refs);
 
     describe_something(a, t, 0,2,0);
 
@@ -751,6 +758,10 @@ int debug_gc_is_referenced(void *a)
 int gc_external_mark3(void *a, void *in, char *where)
 {
   struct marker *m;
+
+  if (Pike_in_gc <= 0 || Pike_in_gc >= 4)
+    fatal("gc_external_mark3 called outside valid gc pass.\n");
+
   if(check_for)
   {
     if(a==check_for)
