@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.76 2004/04/16 12:12:02 grubba Exp $
+ * $Id: Sql.pike,v 1.77 2004/06/14 07:27:36 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -103,6 +103,17 @@ function(int:string) encode_datetime;
 //!   Date and time spec to decode.
 
 function(string:int) decode_datetime;
+
+static program find_dbm(string program_name) {
+  program p;
+  // we look in Sql.type and Sql.Provider.type.type for a valid sql class.
+  p = Sql[program_name];
+  if(!p) {
+    if(Sql->Provider && Sql->Provider[program_name])
+      p = Sql->Provider[program_name][program_name];
+  }
+  return p;
+}
 
 //! @decl void create(string host)
 //! @decl void create(string host, string db)
@@ -247,16 +258,8 @@ void create(string|object host, void|string|mapping(string:int|string) db,
 
 
     program p;
-    mixed e;
 
-    // we look in Sql.type and Sql.Provider.type.type for a valid sql class.
-    if(Sql[program_name])
-      p = Sql[program_name];
-    else if(Sql->Provider && Sql->Provider[program_name] &&
-	    Sql->Provider[program_name][program_name])
-      p = Sql->Provider[program_name][program_name];
-
-    if (p) {
+    if (p = find_dbm(program_name)) {
       if (options) {
 	master_sql = p(host||"", db||"", user||"", password||"", options);
       } else if (password) {
