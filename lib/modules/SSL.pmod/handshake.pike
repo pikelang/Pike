@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.29 2002/03/20 16:40:01 nilsson Exp $
+/* $Id: handshake.pike,v 1.30 2004/07/05 17:21:49 grubba Exp $
  *
  */
 
@@ -609,12 +609,19 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			 id, cipher_suites, compression_methods);
 
 	}
-	  || (version[0] != 3) || (version[1] > 1) || (cipher_len & 1))
+	  || (version[0] != 3) || (cipher_len & 1))
 	{
+	  if (version[1] > 1) version[1] = 1;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
 	  return -1;
+	}
+	if (version[1] > 1) {
+	  SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
+			 "SSL 3.1 (aka TLS 1.0).\n",
+			 version[1]);
+	  version[1] = 1;
 	}
 
 #ifdef SSL3_DEBUG
@@ -622,10 +629,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  werror("SSL.connection->handle_handshake: "
 		 "extra data in hello message ignored\n");
       
-	if (version[1] > 1)
-	  werror(sprintf("SSL.handshake->handle_handshake: "
-			 "Version %d.%d hello detected\n", @version));
-	
 	if (strlen(id))
 	  werror(sprintf("SSL.handshake: Looking up session %O\n", id));
 #endif
@@ -688,17 +691,18 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  werror(sprintf("SSL.handshake: Error decoding SSL2 handshake:\n"
 			 "%s\n", describe_backtrace(err)));
 #endif /* SSL3_DEBUG */
+	  if (version[1] > 1) version[1] = 1;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
 	  return -1;
 	}
-
-#ifdef SSL3_DEBUG
-	if (version[1] > 1)
-	  werror(sprintf("SSL.connection->handle_handshake: "
-			 "Version %d.%d hello detected\n", @context->version));
-#endif
+	if (version[1] > 1) {
+	  SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
+			 "SSL 3.1 (aka TLS 1.0).\n",
+			 version[1]);
+	  version[1] = 1;
+	}
 
 	string challenge;
 	if (catch{
@@ -928,14 +932,22 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       compression_method = input->get_uint(1);
 
       if(search(context->preferred_suites, cipher_suite) == -1
-	 || search(context->preferred_compressors, compression_method) == -1)
+	 || search(context->preferred_compressors, compression_method) == -1
+	 || version[0] != 3)
       {
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted
+	if (version[1] > 1) version[1] = 1;
 	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
 			  "SSL.session->handle_handshake: handshake failure\n",
 			  backtrace()));
 	return -1;
+      }
+      if (version[1] > 1) {
+	SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
+		       "SSL 3.1 (aka TLS 1.0).\n",
+		       version[1]);
+	version[1] = 1;
       }
 
       session->set_cipher_suite(cipher_suite,version[1]);
