@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.8 1997/05/05 20:59:05 hubbe Exp $ 
+$Id: togif.c,v 1.9 1997/05/05 21:35:06 mirar Exp $ 
 
 */
 
@@ -462,7 +462,8 @@ int image_decode_gif(struct image *dest,struct image *dest_alpha,
 **! arg string pnm
 **!	pnm data, as a string
 **! see also: togif, frompnm
-**! known bugs: yes, it does -- it may even do segment overrides...
+**! bugs
+**!	yes, it does -- it may even do segment overrides...
 */
 
 void image_fromgif(INT32 args)

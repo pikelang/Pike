@@ -543,31 +543,47 @@ the object called
 
 <hr>
 <a name=cast> </a>
+<a name=to8bit> </a>
+<a name=to8bit_closest> </a>
+<a name=to8bit_fs> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>string <b>cast</b>(string&nbsp;type)</tt>
+<tt>string <b>cast</b>(string&nbsp;type)<br>
+string <b>to8bit</b>(array(array(int))&nbsp;colors)<br>
+string <b>to8bit_fs</b>(array(array(int))&nbsp;colors)<br>
+string <b>to8bit_closest</b>(array(array(int))&nbsp;colors)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
 
 
 <blockquote>
-known bugs: always casts to string...
+Maps the image to the given colors and returns 
+     the 8 bit data.
+
+<p>     to8bit_fs uses floyd-steinberg dithering
 </blockquote>
 <h4>RETURNS</h4>
 
 
 <blockquote>
-the image data as a string ("rgbrgbrgb...")
+the calculated string
+</blockquote>
+
+
+<h4>KNOWN BUGS</h4>
+<blockquote>
+always casts to string...
 </blockquote>
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#toppm>toppm</a></tt>,
-     <tt><a href=Image.image.html#togif>togif</a></tt>,
+<blockquote>     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>,
      <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
-     <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
-     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>
+     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
+     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>
 </blockquote>
 
 <hr>
@@ -1004,13 +1020,18 @@ Reads GIF data to the called image object.
 <blockquote><dl>
 <dt><tt>string pnm</tt>
   <dd>pnm data, as a string
- known bugs: yes, it does -- it may even do segment overrides...
 </dl></blockquote>
 <h4>RETURNS</h4>
 
 
 <blockquote>
 the called object
+</blockquote>
+
+
+<h4>KNOWN BUGS</h4>
+<blockquote>
+yes, it does -- it may even do segment overrides...
 </blockquote>
 
 
@@ -1139,6 +1160,7 @@ Makes a GIF (sub)image data chunk, to be placed
            img2->gif_add(0,0,100)+
            img1->gif_end());
      // voila, a gif animation...
+     </pre>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -2110,43 +2132,6 @@ Skews an image an amount of pixels or a factor;
 
 <blockquote>
 the new image object
-</blockquote>
-
-<hr>
-<a name=to8bit> </a>
-<a name=to8bit_closest> </a>
-<a name=to8bit_fs> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>to8bit</b>(array(array(int))&nbsp;colors)<br>
-string <b>to8bit_fs</b>(array(array(int))&nbsp;colors)<br>
-string <b>to8bit_closest</b>(array(array(int))&nbsp;colors)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Maps the image to the given colors and returns 
-     the 8 bit data.
-
-<p>     to8bit_fs uses floyd-steinberg dithering
-</blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the calculated string
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#to8bit_rgbcube>to8bit_rgbcube</a></tt>,
-     <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>,
-     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#map_closest>map_closest</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
-     <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>
 </blockquote>
 
 <hr>

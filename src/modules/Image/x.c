@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.6 1997/04/03 07:00:46 mirar Exp $ */
+/* $Id: x.c,v 1.7 1997/05/05 21:35:10 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.6 1997/04/03 07:00:46 mirar Exp $");
+RCSID("$Id: x.c,v 1.7 1997/05/05 21:35:10 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -35,7 +35,8 @@ struct program *image_program;
 **! method string cast(string type)
 **! returns the image data as a string ("rgbrgbrgb...")
 **! see also: toppm, togif, tozbgr, to8bit, to8bit_rgbcube
-**! known bugs: always casts to string...
+**! bugs
+**!	always casts to string...
 */
 
 void image_cast(INT32 args)

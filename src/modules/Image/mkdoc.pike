@@ -20,6 +20,7 @@ module : mapping <- moduleM
 				"returns" : textline
 				"see also" : array of references 
 				"note" : mapping of "desc": text
+				"known bugs" : mapping of "desc": text
 				"args" : array of mappings <- argM
 					"args" : array of args names and types
 					"desc" : description
@@ -80,6 +81,12 @@ mapping keywords=
 	     if (!lower_nowM()) 
 	        return complain("note w/o method, class or module");
 	     descM=nowM->note||(nowM->note=(["_line":line]));
+	  },
+  "bugs":lambda(string arg,int line)
+	  {
+	     if (!lower_nowM()) 
+	        return complain("bugs w/o method, class or module");
+	     descM=nowM->bugs||(nowM->bugs=(["_line":line]));
 	  },
   "see":lambda(string arg,int line)
 	  {
@@ -187,6 +194,10 @@ string standard_doc(mapping info,string myprefix)
    if (info->note && info->note->desc)
       res+="\n\n<h4>NOTE</h4>\n<blockquote>\n"+
 	 fixdesc(info->note->desc,myprefix)+"\n</blockquote>\n";
+   
+   if (info->bugs && info->bugs->desc)
+      res+="\n\n<h4>KNOWN BUGS</h4>\n<blockquote>\n"+
+	 fixdesc(info->bugs->desc,myprefix)+"\n</blockquote>\n";
    
    if (info["see also"])
    {
@@ -297,6 +308,12 @@ void document_method(object(File) f,
    {
       f->write("\n\n<h4>NOTE</h4>\n<blockquote>\n"+
 	       fixdesc(method->note->desc,prefix)+"\n</blockquote>\n");
+   }
+
+   if (method->bugs && method->bugs->desc)
+   {
+      f->write("\n\n<h4>KNOWN BUGS</h4>\n<blockquote>\n"+
+	       fixdesc(method->bugs->desc,prefix)+"\n</blockquote>\n");
    }
 
    if (method["see also"])
