@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.464 2001/10/19 20:16:01 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.465 2001/11/01 18:35:22 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2550,6 +2550,112 @@ for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(mixed *data) {
 
 dnl this will crash pike on out-of-address-space-related errors
 dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
+]])
+
+cond([[all_constants()->thread_create]],
+[[
+  // _disable_threads
+  test_any([[
+object t = class {
+void log (function f, string msg)
+{
+#if 0
+  if (f == test) msg = "[T] " + msg;
+  else if (f == thread_disabler) msg = " " * 20 + "[D] " + msg;
+  else if (f == mutex_locker) msg = " " * 40 + "[L] " + msg;
+  werror (msg);
+#endif
+}
+
+mixed err;
+
+string fifo = "/tmp/testpipe." + getpid();
+
+int started;
+Thread.Mutex start_lock = Thread.Mutex();
+Thread.Mutex locker_lock = Thread.Mutex();
+Thread.Mutex locked_mutex = Thread.Mutex();
+Thread.MutexKey locked_mutex_key;
+
+void mutex_locker()
+{
+  log (mutex_locker, "locker started\n");
+  started++;
+  Thread.MutexKey k = start_lock->lock();
+  k = 0;
+
+  k = locker_lock->lock();
+  k = 0;
+
+  log (mutex_locker, "locker running\n");
+  err = catch (k = locked_mutex->lock());
+  log (mutex_locker, "locker done, error: " + (err && describe_error (err)) + "\n");
+  k = 0;
+}
+
+void thread_disabler()
+{
+  log (thread_disabler, "disabler started\n");
+  Thread.MutexKey locker_key = locker_lock->lock();
+
+  started++;
+  Thread.MutexKey k = start_lock->lock();
+  k = 0;
+
+  sleep (0.1);
+  log (thread_disabler, "disabling\n");
+  locker_key = 0;
+  // Race: Don't want mutex_locker to get the lock on locker_lock
+  // until we're in _disable_threads.
+  object disable = _disable_threads();
+  log (thread_disabler, "disabled\n");
+  sleep (0.1);
+  disable = 0;
+  log (thread_disabler, "disabler done\n");
+}
+
+void test()
+{
+  locked_mutex_key = locked_mutex->lock();
+  started = 0;
+
+  Thread.MutexKey start_key = start_lock->lock();
+  object disabler = thread_create (thread_disabler);
+  object locker = thread_create (mutex_locker);
+  while (started < 2) sleep (0.1);
+
+  Process.Process writer = Process.create_process (
+    ({master()->_pike_file_name,
+      "-m" + master()->_master_file_name,
+      "-e",
+      sprintf ("sleep (0.5); "
+	       "Stdio.File f = Stdio.File (%O, \"w\"); "
+	       "f->close();", fifo)}));
+
+  log (test, "opening pipe\n");
+  start_key = 0;
+  Stdio.File f = Stdio.File (fifo, "r");
+  log (test, "pipe opened\n");
+  locked_mutex_key = 0;
+
+  f->close();
+  disabler->wait();
+  locker->wait();
+  writer->wait();
+  log (test, "test done\n");
+}
+}();
+
+  rm (t->fifo);
+  Process.system ("mkfifo " + t->fifo);
+  for (int i = 0; i < 5; i++) {
+    t->test();
+    if (t->err) return 0;
+    t->log (0, "------------\n");
+  }
+  rm (t->fifo);
+  return 1;
+]], 1);
 ]])
 
 cond([[0]],
