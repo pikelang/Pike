@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-#include <simulate.h>
+import Simulate;
 
 #define JUMPBACK 3
 
