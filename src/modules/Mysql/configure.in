@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.41 2003/03/29 10:52:27 marcus Exp $
+# $Id: configure.in,v 1.42 2003/04/30 10:35:03 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -86,7 +86,7 @@ else
 
   # Header file
 
-  AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+  AC_CHECK_HEADERS(winsock.h winsock2.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
 
   # Defines within headerfile
 define([AC_CHECK_MYSQL_OPTIONS],
@@ -217,7 +217,9 @@ AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_real_connect,
 LIBS="-l$1 $LIBS"
   AC_TRY_LINK(
 [
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -249,7 +251,9 @@ else
     LIBS="-l$1 $LIBS"
     AC_TRY_LINK(
 [
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -314,7 +318,9 @@ fi
       AC_MSG_CHECKING(for $1)
       AC_CACHE_VAL(AC_CV_NAME, [
         AC_TRY_LINK([
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -359,7 +365,9 @@ fi
       AC_CACHE_VAL(pike_cv_mysql_fetch_lengths_ret_type, [
         for ret_type in "unsigned long long" "unsigned long" "unsigned int" "long long" "long" "int"; do
 	  AC_TRY_COMPILE([
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 

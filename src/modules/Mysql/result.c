@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.29 2003/04/07 17:23:15 nilsson Exp $
+|| $Id: result.c,v 1.30 2003/04/30 10:35:03 grubba Exp $
 */
 
 /*
@@ -22,7 +22,9 @@
 /*
  * Includes
  */
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -87,7 +89,7 @@
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.29 2003/04/07 17:23:15 nilsson Exp $");
+RCSID("$Id: result.c,v 1.30 2003/04/30 10:35:03 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
