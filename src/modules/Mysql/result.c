@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.6 1997/04/20 04:07:06 grubba Exp $
+ * $Id: result.c,v 1.7 1997/06/28 19:00:05 marcus Exp $
  *
  * mysql query result
  *
@@ -75,7 +75,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.6 1997/04/20 04:07:06 grubba Exp $");
+RCSID("$Id: result.c,v 1.7 1997/06/28 19:00:05 marcus Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -389,6 +389,8 @@ static void f_fetch_row(INT32 args)
       } else {
 	/* NULL? */
 	push_int(0);
+	if(i+1<num_fields)
+	  mysql_field_seek(PIKE_MYSQL_RES->result, i+1);
       }
     }
     f_aggregate(num_fields);
