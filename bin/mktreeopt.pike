@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.6 1999/11/08 16:30:43 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.7 1999/11/08 17:07:41 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -690,7 +690,7 @@ string generate_car_match(array(object(node)) rule_set, string indent)
       res += generate_car_match(cdr_null, indent + "  ");
     }
     
-    if (sizeof(car_any_cdr_null)) {
+    if (label) {
       res += indent + label + ":\n";
     }
 
