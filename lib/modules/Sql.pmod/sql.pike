@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.16 1998/01/14 21:45:44 grubba Exp $
+ * $Id: sql.pike,v 1.17 1998/03/19 19:55:25 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.16 1998/01/14 21:45:44 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.17 1998/03/19 19:55:25 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -34,6 +34,17 @@ object master_sql;
 //.   0 - No (default)
 //.   1 - Yes
 int case_convert;
+
+//. - quote
+//.   Quote a string so that it can safely be pu in a query.
+//. > s - String to qoute.
+string quote(string s)
+{
+  if (master_sql && master_sql->quote) {
+    return(master_sql->quote(s));
+  }
+  return(replace(s, "\'", "\'\'"));
+}
 
 //. - create
 //.   Create a new generic SQL object.
