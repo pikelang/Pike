@@ -1,3 +1,11 @@
+Mon Feb 17 21:09:56 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* master.pike: PIKE_MODULE_PATH & PIKE_INCLUDE_PATH now read
+	  only once.
+        * master.pike: cast_to_object rewritten
+	* las.c: added optimization for functions that only call a builtin
+	  function anyway.
+
 Sun Feb 16 21:08:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* mapping.c: empty mappings are now allocated without an hashtable,
