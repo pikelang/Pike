@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.14 2003/12/12 17:52:01 nilsson Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.15 2005/03/22 16:56:53 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -104,18 +104,6 @@ RCSID("$Id: libbzip2mod.cmod,v 1.14 2003/12/12 17:52:01 nilsson Exp $");
  *! @[Bz2.Inflate()]
  */
 
-/*! @decl void create(int(1..9)|void block_size)
- *!
- *! If given, @[block_size] should be a number from 1 to 9 indicating the
- *! block size used when doing compression. The actual block size will
- *! be a 100000 times this number. Low numbers are considered 'fast', higher numbers
- *! are considered 'slow' but give better packing. The parameter is set to 
- *! 9 if it is omitted.
- *!
- *! This function can also be used to re-initialize a Bz2.Deflate object
- *! so it can be re-used.
- */
-
 #ifdef HAVE_BZ2LIB
 #ifdef HAVE_BZLIB_H
 PIKECLASS Deflate
@@ -127,6 +115,18 @@ PIKECLASS Deflate
   CVAR int total_out_previous_buf;
   CVAR int compression_rate;
   CVAR int work_factor;
+
+  /*! @decl void create(int(1..9)|void compression, int|void work)
+   *!	
+   *! If given, @[compression] should be a number from 1 to 9 indicating the
+   *! block size used when doing compression. The actual block size will
+   *! be a 100000 times this number. Low numbers are considered 'fast',
+   *! higher numbers are considered 'slow' but give better packing.
+   *! The parameter is set to @tt{9@} if it is omitted.
+   *!
+   *! This function can also be used to re-initialize a Bz2.Deflate object
+   *! so it can be re-used.
+   */
 
   PIKEFUN void create(int|void compression, int|void work){
     int compression_rate = DEFAULT_COMPRESSION_RATE;
@@ -968,42 +968,31 @@ PIKECLASS File
   }
 
   /*! @decl int(0..1) open(string file, void|string mode)
-   *! Opens a file for I/O.
+   *!   Opens a file for I/O.
+   *!
    *! @param file
-   *! The name of the file to be opened
+   *!   The name of the file to be opened
    *! @param mode
-   *! Mode for the file operations. Can be either "r" (read)
-   *! or "w". Read is default.
+   *!   Mode for the file operations. Can be either @expr{"r"@} (read)
+   *!   or @expr{"w"@}. Read is default.
    */
   
-  PIKEFUN int open(string filename, string|void mode){
-    struct pike_string *tmp;
-    
-    if (args == 1) {
+  PIKEFUN int open(string filename, string|void mode)
+  {
+    if (!mode) {
       f_File_read_open(1);
       return;
-    }
-    else if(args == 2){
-      if(mode->type == T_STRING){
-	tmp = mode->u.string;
-	pop_n_elems(1);
-	if (strcmp(tmp->str, "w") == 0){
-	  f_File_write_open(1);
-	}
-	else if (strcmp(tmp->str, "r") == 0){
-	  f_File_read_open(1);
-	}
-	else{
-	  Pike_error("Unknown open mode for file, should be either 'w' or 'r'");
-	}
-	/* The integer is returned by the called functions f_File_... */
+    } else {
+      if (!strcmp(mode->str, "w")) {
+	pop_stack();
+	f_File_write_open(1);
+      } else if (!strcmp(mode->str, "r")) {
+	pop_stack();
+	f_File_read_open(1);
+      } else {
+	Pike_error("Unknown open mode for file, "
+		   "expected either \"w\" or \"r\".");
       }
-      else{
-	Pike_error("Bad 2 argument in call to Bz2.File()->open()");
-      }
-    }
-    else{
-      Pike_error("Bad number of arguments in call to Bz2.File()->open()");
     }
   }
   
