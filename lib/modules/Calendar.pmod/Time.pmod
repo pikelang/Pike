@@ -1575,8 +1575,8 @@ class cFraction
    int len_s;  // seconds length
 
 //! method void create()
-//! method void create("unixtime",int|float unixtime)
-//! method void create("unixtime",int|float unixtime,int|float len)
+//! method void create("unix",int|float unixtime)
+//! method void create("unix",int|float unixtime,int|float len)
 //! method void create(int y,int m,int d,int h,int m,int s,int ns)
 //!	It is possible to create a Fraction in three ways,
 //!	either "now" with no arguments or
