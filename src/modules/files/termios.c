@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.5 1999/09/25 20:08:29 grubba Exp $");
+RCSID("$Id: termios.c,v 1.6 1999/11/15 17:32:38 hubbe Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -245,13 +245,13 @@ void file_tcsetattr(INT32 args)
 	 case 8: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
 #endif
 #ifdef CS7
-	 case 7: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+	 case 7: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS7; break;
 #endif
 #ifdef CS6
-	 case 6: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+	 case 6: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS6; break;
 #endif
 #ifdef CS5
-	 case 5: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+	 case 5: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS5; break;
 #endif
 	 default:
 	    error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size","csize"); 
