@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.2 1999/05/24 13:03:27 mirar Exp $");
+RCSID("$Id: image_module.c,v 1.3 1999/05/24 14:31:36 mirar Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -202,8 +202,9 @@ void pike_module_init(void)
 		      type_of_index,CONSTANT_STRLEN(type_of_index),0,0);
 
    /* compat stuff */
+   add_program_constant("font",image_font_program,0); 
    add_program_constant("image",image_program,0); 
-   add_program_constant("colortable",image_program,0);
+   add_program_constant("colortable",image_colortable_program,0);
 }
 
 void pike_module_exit(void) 
