@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.173 2004/11/12 12:57:38 grubba Exp $
+|| $Id: builtin.cmod,v 1.174 2004/12/19 16:38:40 grubba Exp $
 */
 
 #include "global.h"
@@ -980,6 +980,7 @@ PIKEFUN object function_object(function|program func)
 	return;
       }
       func->type=T_OBJECT;
+      func->subtype = 0;
       return;
 
 
