@@ -1,8 +1,8 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.33 2003/04/07 02:16:25 nilsson Exp $
+// $Id: mkpeep.pike,v 1.34 2003/06/01 21:30:06 nilsson Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 

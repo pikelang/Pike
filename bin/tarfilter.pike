@@ -1,4 +1,4 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
 //
 // Filters a tar file applying root/root ownership.

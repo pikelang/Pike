@@ -1,6 +1,6 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.83 2003/05/17 13:33:15 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.84 2003/06/01 21:30:06 nilsson Exp $ */
 
 import Stdio;
 

@@ -1,4 +1,4 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
 #ifdef OLD
 import OLD;
