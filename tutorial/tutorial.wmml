@@ -4229,6 +4229,50 @@ line editing at his/her disposal when entering the line.
 </function>
 
 
+<function name=sendfile title="send contents from one file to another">
+<man_syntax>
+object sendfile(array(string) <I>headers</I>,<br>
+<dl><dt><dd>object <I>from</I>, int <I>offset</I>, int <I>len</I>,<br>
+array(string) <I>trailers</I>,<br>
+object <I>to</I>);<br>
+</dl><br>
+or<br>
+object sendfile(array(string) <I>headers</I>,<br>
+<dl><dt><dd>object <I>from</I>, int <I>offset</I>, int <I>len</I>,<br>
+array(string) <I>trailers</I>,<br>
+object <I>to</I>,<br>
+function(int, mixed ...:void) <I>callback</I>,<br>
+mixed ... <I>args</I>);<br>
+</dl>
+</man_syntax>
+<man_description>
+Sends <I>headers</I> followed by <I>len</I> bytes starting at <I>offset</I>
+from the file <I>from</I> followed by <I>trailers</I> to the file <I>to</I>.
+When completed <I>callback</I> is called with the total number of bytes sent
+as the first argument, followed by <I>args</I>.
+<p>
+Any of <I>headers</I>, <I>from<I> and <I>trailers</I> may be left out
+by setting them to 0.
+<p>
+Setting <I>offset</I> to -1 means send from the current position in
+<I>from</I>.
+<p>
+Setting <I>len</I> to -1 means send until <I>from</I>'s end of file is
+reached.
+</man_description>
+<man_note>The sending is performed asynchronously, and may complete
+before the function returns.
+<p>
+For <I>callback</I> to be called, the backend must be active (ie
+<tt>main()</tt> must have returned -1).
+<p>
+In some cases, the backend must also be active for any sending to
+be performed at all.
+</man_note>
+<man_see>Stdio.File-&gt;set_nonblocking</man_see>
+</function>
+
+
 <function name=werror title="write to stderr">
 <man_syntax>
 void werror(string <I>s</I>);<br>
