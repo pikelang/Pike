@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.187 2003/10/29 18:55:57 mast Exp $
+// $Id: module.pmod,v 1.188 2003/12/01 20:08:55 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1635,7 +1635,10 @@ class FILE
   //!
   void ungets(string s)
   {
-    cached_lines = ({ s }) + cached_lines[lp..];
+    if(sizeof(cached_lines)>lp)
+      cached_lines = s/"\n" + cached_lines[lp..];
+    else
+      cached_lines = ({});
     lp = 0;
     b=s+"\n"+b[bpos..];
     bpos=0;
@@ -1651,10 +1654,14 @@ class FILE
   //!
   int getchar()
   {
-    cached_lines = ({});lp=0;
-    if(sizeof(b) - bpos < 1)
-      if(!get_data())
-	return -1;
+    if(sizeof(b) - bpos <= 0 && !get_data())
+      return -1;
+
+    if(sizeof(cached_lines)>lp+1 && sizeof(cached_lines[lp]))
+      cached_lines = ({cached_lines[lp][1..]})+({cached_lines[lp+1]});
+    else
+      cached_lines = ({});
+    lp=0;
 
     return b[bpos++];
   }
