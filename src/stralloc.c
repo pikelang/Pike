@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.181 2004/11/06 15:39:33 grubba Exp $
+|| $Id: stralloc.c,v 1.182 2004/11/06 17:25:12 grubba Exp $
 */
 
 #include "global.h"
@@ -643,7 +643,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)
 {
-  struct pike_string *t;
+  struct pike_string *t = NULL;
 #ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag>10)
@@ -2300,7 +2300,49 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
 			4, 0);
   }
+}
 
+PMOD_EXPORT void string_builder_append_integerv(struct string_builder *s,
+						va_list args,
+						unsigned int base,
+						int flags,
+						size_t min_width,
+						size_t precision)
+{
+  LONGEST val = 0;
+  switch (flags & (APPEND_WIDTH_MASK|APPEND_SIGNED)) {
+  case APPEND_WIDTH_HALF:
+    val = va_arg(args, unsigned int) & 0xffff;
+    break;
+  case APPEND_WIDTH_HALF|APPEND_SIGNED:
+    val = (short)va_arg(args, int);
+    break;
+  case 0:
+    val = va_arg(args, unsigned int);
+    break;
+  case APPEND_SIGNED:
+    val = va_arg(args, int);
+    break;
+  case APPEND_WIDTH_LONG:
+    val = va_arg(args, unsigned long);
+    break;
+  case APPEND_WIDTH_LONG|APPEND_SIGNED:
+    val = va_arg(args, long);
+    break;
+#ifdef INT64
+  case APPEND_WIDTH_LONG_LONG:
+    val = va_arg(args, unsigned INT64);
+    break;
+  case APPEND_WIDTH_LONG_LONG|APPEND_SIGNED:
+    val = va_arg(args, INT64);
+    break;
+#endif /* INT64 */
+  default:
+    Pike_fatal("string_builder_append_integerv(): Unsupported flags: 0x%04x\n",
+	       flags);
+    break;
+  }
+  string_builder_append_integer(s, val, base, flags, min_width, precision);
 }
 
 /* Values used internally in string_builder_vsprintf() */
@@ -2350,6 +2392,17 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 
 	case '.':
 	  state = STATE_PRECISION;
+	  continue;
+
+	case 'h':
+	  flags |= APPEND_WIDTH_HALF;
+	  continue;
+	case 'l':
+	  if (flags & APPEND_WIDTH_LONG) {
+	    flags |= APPEND_WIDTH_LONG_LONG;
+	  } else {
+	    flags |= APPEND_WIDTH_LONG;
+	  }
 	  continue;
 	  
 	case 'O':
@@ -2406,7 +2459,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  break;
 	case 'c':
 	  /* FIXME: Doesn't case about field widths yet. */
-	  string_builder_putchar(s, va_arg(args, INT32));
+	  string_builder_putchar(s, va_arg(args, int));
 	  break;
 	case 'b':
 	  string_builder_append_integer(s, va_arg(args, unsigned int), 2,
