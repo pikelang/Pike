@@ -1,3 +1,4 @@
+*.cmod.compiled
 .pure
 Makefile
 config.h
@@ -18,4 +19,4 @@ stamp-h.in
 adt.c
 adt.cmod.compiled
 array_adapter.c
-array_adapter.cmod.compiled
+sequence.c
