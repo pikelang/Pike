@@ -5407,7 +5407,7 @@ Let's look at an example of how this can be used:
 	  object font=Image.font();
 	  font-&gt;load("testfont");
 	  object image=font-&gt;write(ctime(time));
-	  write(image-&gt;togif());
+	  write(Image.GIF.encode(image));
 	}
 </example>
 This very simple example can be used as a CGI script to produce a gif image

@@ -299,22 +299,22 @@ SGML convert(SGML data)
       cpos=data->pos;
       switch(data->tag)
       {
-	case "hr":
-	data->params->noshade=1;
-	data->params->size="1";
-	break;
+	 case "hr":
+	    data->params->noshade=1;
+	    data->params->size="1";
+	    break;
 
 
-	case "man_title":
-	  ret+=convert(({
-	    Sgml.Tag("p"),
-	    "\n",
-	    Sgml.Tag("dt"),
-	      Sgml.Tag("encaps",([]),data->pos, ({data->params->title})),
-	      "\n",
-	      Sgml.Tag("dd"),
-	      })+data->data+ ({ "\n" }));
-	  continue;
+	 case "man_title":
+	    ret+=convert(({
+	       Sgml.Tag("p"),
+	       "\n",
+	       Sgml.Tag("dt"),
+	       Sgml.Tag("encaps",([]),data->pos, ({data->params->title})),
+	       "\n",
+	       Sgml.Tag("dd"),
+	    })+data->data+ ({ "\n" }));
+	    continue;
 
 	case "link":
 	{
@@ -331,197 +331,255 @@ SGML convert(SGML data)
 	    break;
 	  }
 	}
-	
-	case "ref":
-	{
-	  string to=data->params->to;
-	  TAG t2=link_to_data[to];
-	  if(!t2)
-	  {
-	    werror("Warning: Cannot find ref "+to+" (near "+data->location()+")\n");
-	  }
-	  if(t2)
-	    data->data=({t2->tag+" "+t2->params->number+" \""+t2->params->title+"\""});
-	  else
-	    data->data=({"unknown"});
-	  data->tag="a";
-	  data->params->href=mklinkname(link_to_page[to])+"#"+to;
-	  break;
-	}
-	
-	case "anchor":
-	data->tag="a";
-	break;
-	
-	case "ex_identifier":
-	case "ex_string":
-	case "ex_commend":
-	ret+=convert(data->data);
-	continue;
-	
-	case "example": data->tag="blockquote";break;
-      case "ex_keyword": data->tag="b";break;
-      case "ex_meta": data->tag="i";break;
-      case "ex_br": data->tag="br"; break;
 
-      case "ex_indent":
-	ret+=({"    "});
-	continue;
+	 case "arguments":
+	    ret+=convert(({
+	       Sgml.Tag(
+		  "table",(["border":"1","cellspacing":"0"]),data->pos,
+		  ({Sgml.Tag(
+		     "tr",([]),data->pos,
+		     ({Sgml.Tag("td",(["align":"left"]),data->pos,
+				({Sgml.Tag("font",(["size":"-2"]),
+					   data->pos,({"argument(s)"}))})),
+		       Sgml.Tag("td",(["align":"left"]),data->pos,
+				({Sgml.Tag("font",(["size":"-2"]),
+					   data->pos,({"description"}))}))}))})+
+		  data->data)
+	    }));
+	    continue;
 
-      case "table-of-contents":
-      {
-	SGML tmp=html_toc;
-	if(data->params->target)
-	{
-	  werror("(targeting)");
-	  tmp=Sgml.copy(tmp);
-	  add_target_to_links(tmp,data->params->target);
-	}
-	ret+=({
-	  Sgml.Tag("h1",([]),data->pos,
-		   ({
-		     data->title || "Table of contents",
-		       }))
+	 case "aargdesc":
+	    ret+=convert(({Sgml.Tag("tr",([]),data->pos,
+				    ({Sgml.Tag("td")})+data->data)}));
+	    continue;
+	 case "adesc":
+	    ret+=convert(({Sgml.Tag("td",([]),data->pos,data->data)}));
+	    continue;
+	 case "aarg":
+	    ret+=convert(({Sgml.Tag("tt",([]),data->pos,data->data),
+			   Sgml.Tag("br")}));
+	    continue;
+
+	 case "link":
+	 {
+	    data->tag="a";
+	    string to=data->params->to;
+	    m_delete(data->params,"to");
+	    if(!link_to_page[to])
+	    {
+	       string s=(to/".")[-1];
+	       if (link_to_page[s]) 
+		  to=s;
+	       else
+	       {
+		  werror("Warning: Cannot find link "+to
+			 +" (near "+data->location()+")\n");
+		  data->tag="anchor";
+		  break;
+	       }
+	    }
+	    data->params->href=mklinkname(link_to_page[to])+"#"+to;
+	    break;
+	 }
+	
+	 case "ref":
+	 {
+	    string to=data->params->to;
+	    TAG t2=link_to_data[to];
+	    if(!t2)
+	    {
+	       werror("Warning: Cannot find ref "+to+" (near "+data->location()+")\n");
+	    }
+	    if(t2)
+	       data->data=({t2->tag+" "+t2->params->number+" \""+t2->params->title+"\""});
+	    else
+	       data->data=({"unknown"});
+	    data->tag="a";
+	    data->params->href=mklinkname(link_to_page[to])+"#"+to;
+	    break;
+	 }
+	
+	 case "anchor":
+	    data->tag="a";
+	    break;
+	
+	 case "ex_identifier":
+	 case "ex_string":
+	 case "ex_commend":
+	    ret+=convert(data->data);
+	    continue;
+	
+	 case "example": data->tag="blockquote";break;
+	 case "ex_keyword": data->tag="b";break;
+	 case "ex_meta": data->tag="i";break;
+	 case "ex_br": data->tag="br"; break;
+
+	 case "ex_indent":
+	    ret+=({"    "});
+	    continue;
+
+	 case "table-of-contents":
+	 {
+	    SGML tmp=html_toc;
+	    if(data->params->target)
+	    {
+	       werror("(targeting)");
+	       tmp=Sgml.copy(tmp);
+	       add_target_to_links(tmp,data->params->target);
+	    }
+	    ret+=({
+	       Sgml.Tag("h1",([]),data->pos,
+			({
+			   data->title || "Table of contents",
+			}))
 	    
 	    })+convert(tmp);
-	continue;
-      }
+	    continue;
+	 }
 
-      case "index":
-	ret+=({
-	  Sgml.Tag("h1",([]),data->pos,
-		   ({
-		     data->title || "Index",
-		       }))
+	 case "index":
+	    ret+=({
+	       Sgml.Tag("h1",([]),data->pos,
+			({
+			   data->title || "Index",
+			}))
 	    
 	    })+convert(html_index);
-	continue;
+	    continue;
 
-      case "preface":
-      case "introduction":
-	ret+=
-	    ({
-	    Sgml.Tag("h1",([]),data->pos,
-		     ({
-		       data->params->title,
-			 })),
-	      "\n",
-		})+
-	  convert(data->data);
-	continue;
+	 case "preface":
+	 case "introduction":
+	    ret+=
+	       ({
+		  Sgml.Tag("h1",([]),data->pos,
+			   ({
+			      data->params->title,
+			   })),
+		  "\n",
+	       })+
+	       convert(data->data);
+	       continue;
 
-      case "chapter":
-	ret+=
-	    ({
-	    Sgml.Tag("h1",([]),data->pos,
-		     ({
-		       "Chapter ",
-			 data->params->number,
-			 ", ",
-			 data->params->title,
-			 })),
-	      "\n",
-		})+
-	  convert(data->data);
-	continue;
+	 case "chapter":
+	    ret+=
+	       ({
+		  Sgml.Tag("h1",([]),data->pos,
+			   ({
+			      "Chapter ",
+			      data->params->number,
+			      ", ",
+			      data->params->title,
+			   })),
+		  "\n",
+	       })+
+	       convert(data->data);
+	       continue;
 
-      case "appendix":
-	ret+=({
-	  Sgml.Tag("h1",([]),data->pos,
-		   ({
-		     "Appendix ",
-		       data->params->number,
-		       ", ",
-		       data->params->title,
-		       })),
-	    "\n"
+	 case "appendix":
+	    ret+=({
+	       Sgml.Tag("h1",([]),data->pos,
+			({
+			   "Appendix ",
+			   data->params->number,
+			   ", ",
+			   data->params->title,
+			})),
+	       "\n"
 	    })+
-	  convert(data->data)
-	    ;
-	continue;
+	       convert(data->data)
+		  ;
+	       continue;
 
-      case "section":
-      {
-	string *tmp=data->params->number/".";
-	int level=sizeof(tmp);
-	switch(tmp[0])
-	{
-	case "introduction":
-	case "preface":
-	  ret+=({
-	    Sgml.Tag("h"+level,([]),data->pos,
-		     ({
-		       data->params->title,
-			 })),
-	      "\n"
-		})+
-	    convert(data->data)
-	      ;
-	  continue;
-
-	default:
-	  ret+=({
-	    Sgml.Tag("h"+level,([]),data->pos,
-		     ({
-		       data->params->number,
-			 " ",
-			 data->params->title,
-			 })),
-	      "\n"
-		})+
-	    convert(data->data)
-	      ;
-	  continue;
-	}
-      }
-
-      case "encaps":
-      {
-	SGML t=({});
-
-	foreach(data->data[0]/" "-({""}),string tmp)
-	  {
-	    t+=({
-	      Sgml.Tag("font",(["size":"+1"]),data->pos,({tmp[0..0]})),
-	      Sgml.Tag("font",(["size":"-1"]),data->pos,({tmp[1..]})),
-		" "
-		  });
-	  }
-	
-	ret+=({ Sgml.Tag("b",([]),data->pos,t) });
-	continue;
-      }
-
-      case "img":
-	add_file_to_export_list(data->params->src);
-	break;
-
-      case "illustration":
-	ret+=({ mkimgtag(Wmml.illustration_to_gif(data,75.0),data->params) });
-	continue;
-
-      case "image":
-	ret+=({ mkimgtag(Wmml.image_to_gif(data,75.0),data->params) });
-	continue;
-
-      case "box":
-	ret+=({
-	  Sgml.Tag("table",
-		   (["cellpadding":"10",
-		    "width":"100%",
-		    "border":"1",
-		    "cellspacing":"0"]),data->pos,
-		   ({
-		     "\n",
-		     Sgml.Tag("tr",([]),data->pos,
+	 case "section":
+	 {
+	    string *tmp=data->params->number/".";
+	    int level=sizeof(tmp);
+	    switch(tmp[0])
+	    {
+	       case "introduction":
+	       case "preface":
+		  ret+=({
+		     Sgml.Tag("h"+level,([]),data->pos,
 			      ({
-				Sgml.Tag("td",([]),data->pos,
-					 convert(data->data))
-				  }))
-		       })),
-	    "\n",
+				 data->params->title,
+			      })),
+		     "\n"
+		  })+
+		     convert(data->data)
+			;
+		     continue;
+
+	       default:
+		  ret+=({
+		     Sgml.Tag("h"+level,([]),data->pos,
+			      ({
+				 data->params->number,
+				 " ",
+				 data->params->title,
+			      })),
+		     "\n"
+		  })+
+		     convert(data->data)
+			;
+		     continue;
+	    }
+	 }
+
+	 case "encaps":
+	 {
+	    SGML t=({});
+
+	    foreach(data->data[0]/" "-({""}),string tmp)
+	    {
+	       t+=({
+		  Sgml.Tag("font",(["size":"+1"]),data->pos,({tmp[0..0]})),
+		  Sgml.Tag("font",(["size":"-1"]),data->pos,({tmp[1..]})),
+		  " "
+	       });
+	    }
+	
+	    ret+=({ Sgml.Tag("b",([]),data->pos,t) });
+	    continue;
+	 }
+
+	 case "img":
+	    add_file_to_export_list(data->params->src);
+	    break;
+
+	 case "illustration":
+	    ret+=({ mkimgtag(Wmml.illustration_to_gif(data,75.0),data->params) });
+	    continue;
+
+	 case "image":
+	    ret+=({ mkimgtag(Wmml.image_to_gif(data,75.0),data->params) });
+	    continue;
+
+	 case "box":
+	    ret+=({
+	       Sgml.Tag("table",
+			(["cellpadding":"10",
+			  "width":"100%",
+			  "border":"1",
+			  "cellspacing":"0"]),data->pos,
+			({
+			   "\n",
+			   Sgml.Tag("tr",([]),data->pos,
+				    ({
+				       Sgml.Tag("td",([]),data->pos,
+						convert(data->data))
+				    }))
+			})),
+	       "\n",
 	    });
-	continue;
+	    continue;
+
+	 case "method":
+	 case "function":
+	 case "class":
+	 case "module":
+	    // strip this metainformation
+	    ret+=convert(data->data);
+	    continue;
       }
       data->data=convert(data->data);
       ret+=({data});

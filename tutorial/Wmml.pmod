@@ -68,6 +68,9 @@ static private int verify_any(SGML data, string in)
 	case "man_bugs":
 	case "man_example":
 	case "man_title":
+	case "man_arguments":
+	case "man_returns":
+	case "man_note":
 
       case "ex_identifier":
       case "ex_keyword":
@@ -75,6 +78,10 @@ static private int verify_any(SGML data, string in)
       case "ex_comment":
       case "ex_meta":
       case "example":
+	 
+      case "aargdesc":
+      case "aarg":
+      case "adesc":
 	if(!x->data)
 	{
 	  werror("Tag "+x->tag+" not closed near "+x->location()+".\n");
@@ -353,11 +360,6 @@ object(Tag) parse_pike_code(string x,
   return Tag("example",([]),pos,ret);
 }
 
-string name_to_link(string x)
-{
-  return replace(x,({"->","-&gt;"}),({".","."}));
-}
-
 class Wmml
 {
   SGML metadata;
@@ -444,6 +446,19 @@ object(Enumerator) chapterE;
 object(Stacker) classbase;
 object(TocBuilder) toker;
 
+string name_to_link(string x)
+{
+   return replace(x,({"->","-&gt;"}),({".","."}));
+}
+
+string name_to_link_exp(string x)
+{
+   x=name_to_link(x);
+   if (search(x,".")==-1) 
+      x=classbase->query()+"."+x;
+   return x;
+}
+
 SGML fix_anchors(TAG t)
 {
   TAG ret=t;
@@ -517,10 +532,10 @@ SGML low_make_concrete_wmml(SGML data)
 
   foreach(data, TAG tag)
   {
-    if(stringp(tag))
+    if (stringp(tag))
     {
       ret+=({tag});
-    }else{
+    }else if (objectp(tag)) {
       switch(tag->tag)
       {
 	case "index":
@@ -602,8 +617,12 @@ SGML low_make_concrete_wmml(SGML data)
 	  
 	case "class":
 	case "module":
-	  ret+=fix_class(tag, tag->params->name);
-	  continue;
+	{
+	   string name=tag->params->name;
+	   sscanf(name,classbase->query()+"%*[.->]%s",name);
+	   ret+=fix_class(tag, name);
+	   continue;
+	}
 	
 	case "man_syntax":
 	case "man_example":
@@ -611,6 +630,10 @@ SGML low_make_concrete_wmml(SGML data)
 	case "man_bugs":
 	case "man_description":
 	case "man_see":
+
+	case "man_arguments":
+	case "man_returns":
+	case "man_note":
 	{
 	  string title=tag->tag;
 	  SGML args=tag->data;
@@ -630,7 +653,11 @@ SGML low_make_concrete_wmml(SGML data)
 	      foreach(replace(get_text(args),({" ","\n"}),({"",""}))/",",string name)
 		{
 		  tmp+=({
-		    Tag("link",(["to":name_to_link(name)]),tag->pos,
+		    Tag("link",(["to":
+				 (tag->params->exp
+				  ?name_to_link_exp
+				  :name_to_link)(name)]),
+			tag->pos,
 			({
 			  Tag("tt",([]),tag->pos,({name})),
 			    })),
@@ -644,6 +671,17 @@ SGML low_make_concrete_wmml(SGML data)
 	      args=tmp;
 	      break;
 	    }
+	    case "arguments":
+	       // insert argument parsing here 
+	       // format:
+	       // <aargdesc><aarg>int foo</aarg><aarg>int bar</aarg>...
+               //         ...<adesc>description</adesc></aargdesc>
+	       // 'desc' is formatted description text.
+	       // 'arg' may contain <alink to...> tags
+
+	       args=({Tag("arguments",([]),tag->pos,tag->data)});
+
+	       break;
 	  }
 	  title=upper_case(title);
 	  ret+=low_make_concrete_wmml(
@@ -656,38 +694,50 @@ SGML low_make_concrete_wmml(SGML data)
 	case "method":
 	case "function":
 	{
-	  string fullname;
-	  switch(tag->tag)
-	  {
-	    case "method":
-	      fullname=classbase->query()+"->"+tag->params->name;
-	      break;
-	    case "function":
-	      fullname=classbase->query()+"."+tag->params->name;
-	      break;
-	  }
-	  ret+=low_make_concrete_wmml(({
-	    Tag("anchor",(["name":name_to_link(fullname),
-	    "type":"method",]),tag->pos,
-		({
-		  Tag("dl",([]),tag->pos,
-		      ({
-			Tag("man_title",(["title":upper_case(tag->tag)]),tag->pos,
-			    ({
-			      Tag("tt",([]),tag->pos,({fullname})),
-				" - ",
-				  tag->params->title,
-				  })
-			  )
-			  })
-		      +
-		      tag->data
-		    )
-		    })),
-	      "\n",
-		Tag("hr"),
-		}));
-	  continue;
+	   array anchors=({}),fullnames=({});
+
+	   foreach (replace(tag->params->name,"&gt;",">")/",",
+		    string name)
+	   {
+	      string fullname;
+	      if (name[0..strlen(classbase->query())-1]==
+		  classbase->query())
+		 fullname=name;
+	      else switch(tag->tag)
+	      {
+		 case "method":
+		    fullname=classbase->query()+"->"+name;
+		    break;
+		 case "function":
+		    fullname=classbase->query()+"."+name;
+		    break;
+	      }
+	      anchors+=({name_to_link(fullname)});
+	      fullnames+=({fullname});
+	   }
+	   array res=
+		    ({Tag("dl",([]),tag->pos,
+			  ({Tag("man_title",(["title":upper_case(tag->tag)]),
+				tag->pos,
+				Array.map(
+				   fullnames,
+				  lambda(string name,int pos)
+				  { return ({Tag("tt",([]),pos,({name}))}); },
+				   tag->pos)
+				*({ ",", Tag("br") })
+				+({ (tag->params->title
+				     ?" - "+tag->params->title
+				     :"")}))
+			  }) + tag->data ) });
+		   
+	   foreach (anchors,string anchor)
+	      res=({Tag("anchor",(["name":anchor]),
+			tag->pos,res)});
+
+	   ret+=
+	      ({Tag(tag->tag,(["name":fullnames*","]),tag->pos,
+		    low_make_concrete_wmml(res))});
+	   continue;
 	}
 
 	case "example":
@@ -725,6 +775,9 @@ SGML low_make_concrete_wmml(SGML data)
 		 low_make_concrete_wmml(tag->data),
 		 tag->file)});
     }
+    else 
+       throw(({"Tag or contents has illegal type: "+sprintf("%O\n",tag),
+	       backtrace()}));
   }
   return ret;
 }
