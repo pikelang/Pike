@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.10 1999/07/25 00:55:36 marcus Exp $
+ * $Id: auto.c.in,v 1.11 1999/07/29 21:59:54 marcus Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.10 1999/07/25 00:55:36 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.11 1999/07/29 21:59:54 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -17,6 +17,7 @@ RCSID("$Id: auto.c.in,v 1.10 1999/07/25 00:55:36 marcus Exp $");
 #include "error.h"
 #include "module_support.h"
 #include "operators.h"
+#include "mapping.h"
 
 #include <GL/gl.h>
 
@@ -44,6 +45,7 @@ struct zimage {
   GLsizei width, height;
   GLenum format, type;
   GLvoid *pixels;
+  int alloc;
 };
 
 static struct program *image_program=NULL;
@@ -128,27 +130,128 @@ static void img_init()
   img_inited=1;
 }
 
-static void check_img_arg(struct object *obj, struct zimage *img,
+static void check_img_arg(struct svalue *a, struct zimage *img,
 			  int arg, const char *func)
 {
   struct {
     void *img;
     INT_TYPE w, h;
-  } *stor = (void *)get_storage(obj, image_program);
-  if(stor == NULL || stor->img == NULL)
+  } *rgbstor = NULL, *lumstor = NULL, *astor = NULL;
+  unsigned char *pp;
+  struct { unsigned char r, g, b; } *p1, *p2;
+  INT32 cnt;
+
+  img->alloc = 0;
+  if(a->type == T_MAPPING) {
+    struct svalue *v;
+    if((v=simple_mapping_string_lookup(a->u.mapping, "rgb")))
+      if(v->type == T_OBJECT &&
+	 (rgbstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
+	 rgbstor->img != NULL)
+	;
+      else
+	error("Bad argument %d to %s.\n", arg, func);
+    if((v=simple_mapping_string_lookup(a->u.mapping, "luminance")))
+      if(v->type == T_OBJECT &&
+	 (lumstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
+	 lumstor->img != NULL)
+	;
+      else
+	error("Bad argument %d to %s.\n", arg, func);
+    if((v=simple_mapping_string_lookup(a->u.mapping, "alpha")))
+      if(v->type == T_OBJECT &&
+	 (astor = (void *)get_storage(v->u.object, image_program)) != NULL &&
+	 astor->img != NULL)
+	;
+      else
+	error("Bad argument %d to %s.\n", arg, func);    
+  } else if(a->type == T_OBJECT &&
+	    (rgbstor = (void *)get_storage(a->u.object, image_program)) !=
+	    NULL && rgbstor->img != NULL)
+    ;
+  else
     error("Bad argument %d to %s.\n", arg, func);
-  img->width = stor->w;
-  img->height = stor->h;
-  img->pixels = stor->img;
-  img->format = GL_RGB;
-  img->type = GL_UNSIGNED_BYTE;
+
+  if(rgbstor==NULL && lumstor==NULL && astor==NULL)
+    error("Too few images specified.\n");
+
+  if(rgbstor!=NULL && lumstor!=NULL)
+    error("Can't have both rgb and luminance data.\n");
+
+  if((rgbstor != NULL && astor != NULL &&
+      (rgbstor->w != astor->w || rgbstor->h != astor->h)) ||
+     (lumstor != NULL && astor != NULL &&
+      (lumstor->w != astor->w || lumstor->h != astor->h)))
+    error("Alpha channel must have same size as image!\n");
+
+  if(lumstor==NULL && astor==NULL) {
+    /* RGB */
+    img->width = rgbstor->w;
+    img->height = rgbstor->h;
+    img->pixels = rgbstor->img;
+    img->format = GL_RGB;
+    img->type = GL_UNSIGNED_BYTE;
+  } else if(rgbstor != NULL) {
+    /* RGBA */
+    img->width = rgbstor->w;
+    img->height = rgbstor->h;
+    img->pixels = pp = xalloc(img->width*img->height*4);
+    img->format = GL_RGBA;
+    img->type = GL_UNSIGNED_BYTE;
+    cnt = img->width * img->height;
+    p1 = rgbstor->img;
+    p2 = astor->img;
+    while(cnt--) {
+      *pp++ = p1->r;
+      *pp++ = p1->g;
+      *pp++ = p1++->b;
+      *pp++ = p2++->r;
+    }
+  } else if(astor == NULL) {
+    /* Y */
+    img->width = lumstor->w;
+    img->height = lumstor->h;
+    img->pixels = pp = xalloc(img->width*img->height);
+    img->format = GL_LUMINANCE;
+    img->type = GL_UNSIGNED_BYTE;
+    cnt = img->width * img->height;
+    p1 = lumstor->img;
+    while(cnt--)
+      *pp++ = p1++->r;
+  } else if(lumstor == NULL) {
+    /* A */
+    img->width = astor->w;
+    img->height = astor->h;
+    img->pixels = pp = xalloc(img->width*img->height);
+    img->format = GL_ALPHA;
+    img->type = GL_UNSIGNED_BYTE;
+    cnt = img->width * img->height;
+    p1 = astor->img;
+    while(cnt--)
+      *pp++ = p1++->r;
+  } else {
+    /* YA */
+    img->width = lumstor->w;
+    img->height = lumstor->h;
+    img->pixels = pp = xalloc(img->width*img->height*2);
+    img->format = GL_LUMINANCE_ALPHA;
+    img->type = GL_UNSIGNED_BYTE;
+    cnt = img->width * img->height;
+    p1 = lumstor->img;
+    p2 = astor->img;
+    while(cnt--) {
+      *pp++ = p1++->r;
+      *pp++ = p2++->r;
+    }
+  }
   if(!img_inited)
     img_init();
 }
 
 static void release_img(struct zimage *img)
 {
-  /**/
+  if(img->alloc)
+    free(img->pixels);
 }
 
 static int check_1n_args(char *func, INT32 args, int ty, int rty,
