@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.70 2000/08/31 00:55:46 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.71 2000/09/11 18:39:01 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -91,7 +91,16 @@ double LDEXP(double x, int exp)
  *   TAG_TYPE == PIKE_T_FLOAT == 9
  * These are NOT to be renumbered unless the file-format version is changed!
  */
-/* Current encoding: ¶ik0 */
+/* Current encoding: ¶ik0
+ *
+ * +---+-+-+-------+
+ * |s z|s|n|t y p e|
+ * +---+-+-+-------+
+ *  	sz	size/small int
+ *  	s	small int indicator
+ *  	n	negative (or rather inverted)
+ *  	type	TAG_type
+ */
 #define TAG_ARRAY 0
 #define TAG_MAPPING 1
 #define TAG_MULTISET 2
@@ -125,7 +134,7 @@ struct encode_data
 static void encode_value2(struct svalue *val, struct encode_data *data);
 
 #define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
-#define addchar(t)   low_my_putchar((t),&(data->buf))
+#define addchar(t)   low_my_putchar((char)(t), &(data->buf))
 
 /* Code a pike string */
 
@@ -186,7 +195,7 @@ static int type_to_tag(int type)
 static int (*tag_to_type)(int) = type_to_tag;
 
 /* Let's cram those bits... */
-static void code_entry(int tag, ptrdiff_t num, struct encode_data *data)
+static void code_entry(int tag, INT64 num, struct encode_data *data)
 {
   int t;
   EDB(
@@ -203,29 +212,41 @@ static void code_entry(int tag, ptrdiff_t num, struct encode_data *data)
   if(num < MAX_SMALL)
   {
     tag |= TAG_SMALL | (num << SIZE_SHIFT);
-    addchar(tag);
+    addchar((char)tag);
     return;
   }else{
     num -= MAX_SMALL;
   }
 
-  for(t=0;t<3;t++)
+  for(t = 0; (size_t)t <
+#if 0
+	(sizeof(INT64)-1);
+#else /* !0 */
+      (size_t)3;
+#endif /* 0 */
+      t++)
   {
-    if(num >= (256 << (t<<3)))
-      num-=(256 << (t<<3));
+    if(num >= (((INT64)256) << (t<<3)))
+      num -= (((INT64)256) << (t<<3));
     else
       break;
   }
 
   tag |= t << SIZE_SHIFT;
-  addchar(tag);
+  addchar((char)tag);
 
   switch(t)
   {
-  case 3: addchar(DO_NOT_WARN((num >> 24)&0xff));
-  case 2: addchar(DO_NOT_WARN((num >> 16)&0xff));
-  case 1: addchar(DO_NOT_WARN((num >> 8)&0xff));
-  case 0: addchar(DO_NOT_WARN(num&0xff));
+#if 0
+  case 7: addchar(DO_NOT_WARN((char)((num >> 56)&0xff)));
+  case 6: addchar(DO_NOT_WARN((char)((num >> 48)&0xff)));
+  case 5: addchar(DO_NOT_WARN((char)((num >> 40)&0xff)));
+  case 4: addchar(DO_NOT_WARN((char)((num >> 32)&0xff)));
+#endif /* 0 */
+  case 3: addchar(DO_NOT_WARN((char)((num >> 24)&0xff)));
+  case 2: addchar(DO_NOT_WARN((char)((num >> 16)&0xff)));
+  case 1: addchar(DO_NOT_WARN((char)((num >> 8)&0xff)));
+  case 0: addchar(DO_NOT_WARN((char)(num&0xff)));
   }
 }
 
@@ -345,9 +366,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   INT32 i;
   struct svalue *tmp;
 
-  if((val->type == T_OBJECT || (val->type==T_FUNCTION && \
-				val->subtype!=FUNCTION_BUILTIN)) && !val->u.object->prog)
-    val=&dested;
+  if((val->type == T_OBJECT ||
+      (val->type==T_FUNCTION && val->subtype!=FUNCTION_BUILTIN)) &&
+     !val->u.object->prog)
+    val = &dested;
 
   if((tmp=low_mapping_lookup(data->encoded, val)))
   {
@@ -387,13 +409,30 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	code_entry(TAG_FLOAT,0,data);
 	code_entry(TAG_FLOAT,0,data);
       }else{
-	INT32 x;
+	INT64 x;
 	int y;
 	double tmp;
 
 	tmp = FREXP((double)val->u.float_number, &y);
-	x = DO_NOT_WARN((INT32)((1<<30)*tmp));
-	y-=30;
+	x = DO_NOT_WARN((INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp));
+	y -= sizeof(INT64)*8 - 2;
+
+	EDB(fprintf(stderr,
+		    "Encoding float... tmp: %10g, x: 0x%016llx, y: %d\n",
+		    tmp, x, y));
+
+#if 0
+	if (x && !(x & 0xffffffffUL)) {
+#endif /* 0 */
+	  x >>= 32;
+	  y += 32;
+
+	  EDB(fprintf(stderr,
+		      "Reducing float... x: 0x%08llx, y: %d\n",
+		      x, y));
+#if 0
+	}
+#endif /* 0 */
 #if 0
 	while(x && y && !(x&1))
 	{
@@ -767,28 +806,40 @@ static int my_extract_char(struct decode_data *data)
     fprintf(stderr,"decode(%s) at %d: ",(Z),__LINE__));	\
   what=GETC();						\
   e=what>>SIZE_SHIFT;					\
+  numh=0;						\
   if(what & TAG_SMALL) {				\
      num=e;						\
   } else {						\
+     INT32 numl;					\
      num=0;						\
+     while(e > 4) {					\
+       numh = (numh<<8) + (GETC()+1);			\
+       e--;						\
+     }							\
      while(e-->=0) num=(num<<8) + (GETC()+1);		\
-     num+=MAX_SMALL - 1;				\
+     numl = num + MAX_SMALL - 1;			\
+     if (numl < num) numh++;				\
+     num = numl;					\
   }							\
-  if(what & TAG_NEG) num=~num;				\
+  if(what & TAG_NEG) {					\
+    num = ~num;						\
+    numh = ~numh;					\
+  }							\
   EDB(							\
-    fprintf(stderr,"type=%d (%s), num=%d\n",	\
+    fprintf(stderr,"type=%d (%s), num=%ld\n",	\
 	    (what & TAG_MASK),				\
 	    get_name_of_type(tag_to_type(what & TAG_MASK)),		\
-	    num) ); 					\
+	    (long)num) ); 					\
 } while (0)
 
 
 
 #define decode_entry(X,Y,Z)					\
   do {								\
-    INT32 what, e, num;                                         \
-    DECODE("decode_entry");						\
-    if((what & TAG_MASK) != (X)) error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK);\
+    INT32 what, e, num, numh;					\
+    DECODE("decode_entry");					\
+    if((what & TAG_MASK) != (X))				\
+      error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK); \
     (Y)=num;							\
   } while(0);
 
@@ -813,12 +864,13 @@ static int my_extract_char(struct decode_data *data)
 #define get_string_data(STR,LEN, data) do {				    \
   if((LEN) == -1)							    \
   {									    \
-    INT32 what, e, num;							    \
+    INT32 what, e, num, numh;						    \
     DECODE("get_string_data");						    \
-    what&=TAG_MASK;							    \
+    what &= TAG_MASK;							    \
     if(data->ptr + num > data->len || num <0)				    \
-       error("Failed to decode string. (string range error)\n");	    \
-    if(what<0 || what>2) error("Failed to decode string. (Illegal size shift)\n"); \
+      error("Failed to decode string. (string range error)\n");		    \
+    if(what<0 || what>2)						    \
+      error("Failed to decode string. (Illegal size shift)\n");		    \
     STR=begin_wide_shared_string(num, what);				    \
     MEMCPY(STR->str, data->data + data->ptr, num << what);		    \
     data->ptr+=(num << what);						    \
@@ -839,7 +891,7 @@ static int my_extract_char(struct decode_data *data)
   }while(0)
 
 #define getdata3(X) do {						     \
-  INT32 what, e, num;							     \
+  INT32 what, e, num, numh;						     \
   DECODE("getdata3");							     \
   switch(what & TAG_MASK)						     \
   {									     \
@@ -858,7 +910,7 @@ static int my_extract_char(struct decode_data *data)
 }while(0)
 
 #define decode_number(X,data) do {	\
-   int what, e, num;				\
+   INT32 what, e, num, numh;		\
    DECODE("decode_number");			\
    X=(what & TAG_MASK) | (num<<4);		\
   }while(0)					\
@@ -1030,7 +1082,7 @@ static void decode_value2(struct decode_data *data)
 
 
 {
-  INT32 what, e, num;
+  INT32 what, e, num, numh;
   struct svalue tmp, *tmp2;
 
   DECODE("decode_value2");
@@ -1069,13 +1121,23 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_FLOAT:
     {
-      INT32 num2=num;
+      double res; // = (double)num;
 
-      tmp=data->counter;
+      EDB(fprintf(stderr, "Decoding float... numh:0x%08x, num:0x%08x\n",
+		  numh, num));
+
+      res = LDEXP((double)numh, 32) + (double)(unsigned INT32)num;
+
+      EDB(fprintf(stderr, "Mantissa: %10g\n", res));
+
+      tmp = data->counter;
       data->counter.u.integer++;
 
       DECODE("float");
-      push_float(LDEXP((double)num2, num));
+
+      EDB(fprintf(stderr, "Exponent: %d\n", num));
+
+      push_float(LDEXP(res, num));
       break;
     }
 
