@@ -42,8 +42,27 @@ fi
 
 old_method="${method-}"
 
-OLD="-DOLD=\"`echo $TMP_BINDIR|sed 's@/[^/]*@../@g'`$SRCDIR\""
 OLD_RUNPIKE="$RUNPIKE"
+
+case "$SCRIPT" in
+  /*|./*)
+    if test -f "$SCRIPT"; then :; else
+      echo "Script $SCRIPT not found."
+      exit 1
+    fi
+  ;;
+  *)
+    if test -f ./$SCRIPT ; then
+      OLD="-DOLD=\"`/bin/pwd|sed 's@/[^/]*@../@g'`$SRCDIR\""
+    elif test -f "$TMP_BINDIR/$SCRIPT"; then
+      SCRIPT="$TMP_BINDIR/$SCRIPT"
+      OLD="-DOLD=\"`( cd $TMP_BINDIR; /bin/pwd; )|sed 's@/[^/]*@../@g'`$SRCDIR\""
+    else
+      echo "Script $SCRIPT neither found in the current directory nor in $TMP_BINDIR."
+      exit 1
+    fi
+  ;;
+esac
 
 trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
 
@@ -113,22 +132,6 @@ esac
 # $SCRIPT work with older versions of Pike - Hubbe
 #
 
-case "$SCRIPT" in
-  /*|./*)
-    if test -f "$SCRIPT"; then :; else
-      echo Script "$SCRIPT" not found.
-      exit 1
-    fi
-  ;;
-  *)
-    if test -f ./$SCRIPT ; then
-      :
-    else
-      SCRIPT="$TMP_BINDIR/$SCRIPT"
-    fi
-  ;;
-esac
-
 if test -f $SRCDIR/C.pmod ; then
   :
 else
@@ -174,5 +177,7 @@ retries=".$retries"
 
 done # retry
 # Total failure
+
+echo "Failed to find a Pike executable that could run $SCRIPT."
 
 exit 1
