@@ -183,6 +183,8 @@ Type|void parseOrType() {
   }
   if (sizeof(a) == 1)
     return a[0];
+  if (sizeof(a) == 0)
+    return 0;
   OrType or = OrType();
   or->types = a;
   return or;
@@ -227,15 +229,26 @@ FunctionType parseFunction() {
   eat("function");
   FunctionType f = FunctionType();
   if (peekToken() == "(") {
-    readToken();
-    f->argtypes = ({ parseOrType() });
-    while (peekToken() == ",") {
+    f->argtypes = ({ });
+    do {
       readToken();
-      f->argtypes += ({ parseOrType() });
+      Type t = parseOrType();
+      if (!t)
+        if (peekToken() == ")" || peekToken() == ":")
+          break;
+        else
+          parseError("expected type, got %O", peekToken());
+      f->argtypes += ({ t });
+    } while(peekToken() == ",");
+    if (peekToken() == "...") {
+      if (!sizeof(f->argtypes))
+        parseError("expected type, got ...");
+      readToken();
+      f->argtypes[-1] = VarargsType(f->argtypes[-1]);
     }
     if (peekToken() == ":") {
       readToken();
-      f->returntype = parseOrType();
+      f->returntype = parseOrType() || parseError("expected return type");
     }
     eat(")");
   }
