@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.70 1999/11/11 16:07:05 grubba Exp $");
+RCSID("$Id: operators.c,v 1.71 1999/11/22 14:17:49 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -456,18 +456,14 @@ static node *optimize_eq(node *n)
     if(node_is_false(*first_arg) && !node_may_overload(*second_arg,LFUN_EQ))
     {
       ret=*second_arg;
-#ifndef SHARED_NODES
-      *second_arg=0;
-#endif /* !SHARED_NODES */
+      ADD_NODE_REF(*second_arg);
       return mkopernode("`!",ret,0);
     }
 
     if(node_is_false(*second_arg)  && !node_may_overload(*first_arg,LFUN_EQ))
     {
       ret=*first_arg;
-#ifndef SHARED_NODES
-      *first_arg=0;
-#endif /* !SHARED_NODES */
+      ADD_NODE_REF(*first_arg);
       return mkopernode("`!",ret,0);
     }
   }
@@ -489,22 +485,13 @@ static node *optimize_not(node *n)
     if(node_is_true(*first_arg))  return mkintnode(0);
     if(node_is_false(*first_arg)) return mkintnode(1);
 
-#ifdef SHARED_NODES
 #define TMP_OPT(X,Y) do {			\
     if((more_args=is_call_to(*first_arg, X)))	\
     {						\
       node *tmp=*more_args;			\
+      ADD_NODE_REF(*more_args);			\
       return mkopernode(Y,tmp,0);		\
     } } while(0)
-#else /* !SHARED_NODES */
-#define TMP_OPT(X,Y) do {			\
-    if((more_args=is_call_to(*first_arg, X)))	\
-    {						\
-      node *tmp=*more_args;			\
-      *more_args=0;				\
-      return mkopernode(Y,tmp,0);		\
-    } } while(0)
-#endif /* SHARED_NODES */
 
     TMP_OPT(f_eq, "`!=");
     TMP_OPT(f_ne, "`==");
@@ -544,11 +531,9 @@ static node *optimize_binary(node *n)
 		   mknode(F_ARG_LIST,
 			  CDR(*first_arg),
 			  *second_arg));
-#ifndef SHARED_NODES
-	CAR(n)=0;
-	CDR(*first_arg)=0;
-	*second_arg=0;
-#endif /* !SHARED_NODES */
+	ADD_NODE_REF(CAR(n));
+	ADD_NODE_REF(CDR(*first_arg));
+	ADD_NODE_REF(*second_arg);
 	return ret;
       }
       
@@ -561,11 +546,9 @@ static node *optimize_binary(node *n)
 		   mknode(F_ARG_LIST,
 			  *first_arg,
 			  CDR(*second_arg)));
-#ifndef SHARED_NODES
-	CAR(n)=0;
-	*first_arg=0;
-	CDR(*second_arg)=0;
-#endif /* SHARED_NODES */
+	ADD_NODE_REF(CAR(n));
+	ADD_NODE_REF(*first_arg);
+	ADD_NODE_REF(CDR(*second_arg));
 	return ret;
       }
     }
