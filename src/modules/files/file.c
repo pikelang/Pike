@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.293 2003/10/06 09:03:00 grubba Exp $
+|| $Id: file.c,v 1.294 2003/10/06 13:42:16 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.293 2003/10/06 09:03:00 grubba Exp $");
+RCSID("$Id: file.c,v 1.294 2003/10/06 13:42:16 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2105,6 +2105,12 @@ static void file_mode(INT32 args)
 /*! @decl void set_nonblocking()
  *!
  *! Sets this file to nonblocking operation.
+ *!
+ *! @note
+ *!   Nonblocking operation is not supported on all Stdio.File objects.
+ *!   Notably it is not guaranteed to be supported on objects returned
+ *!   by @[pipe()] unless @[PROP_NONBLOCK] was specified in the call
+ *!   to @[pipe()].
  *!
  *! @seealso
  *!   @[set_blocking()]
