@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.164 1999/03/26 23:40:53 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.165 1999/04/03 06:10:04 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1353,6 +1353,10 @@ void f_destruct(INT32 args)
 	   
     o=fp->current_object;
   }
+#ifdef PIKE_SECURITY
+  if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
+    error("Destruct permission denied.\n");
+#endif
   destruct(o);
   pop_n_elems(args);
 }

@@ -4,10 +4,8 @@
  * controls for file->pipe()
  * controls for kill/create_process/signal
  * controls for all/most functions in the system module
- * controls for all/most functions in files/efun.c
  * controls for all/most functions in spider
  * controls for threads
- * controls for destruct
  */
 
 #ifdef PIKE_SECURITY

@@ -12,6 +12,7 @@
 #define SECURITY_BIT_SECURITY 8   /* Do anything :) */
 #define SECURITY_BIT_NOT_SETUID 16
 #define SECURITY_BIT_CONDITIONAL_IO 32
+#define SECURITY_BIT_DESTRUCT 64
 
 typedef unsigned char pike_security_bits;
 
