@@ -20,7 +20,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.47 2000/04/16 23:01:35 mast Exp $");
+RCSID("$Id: error.c,v 1.48 2000/04/17 04:55:45 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -225,6 +225,9 @@ void new_error(const char *name, const char *text, struct svalue *oldsp,
 
 void exit_on_error(void *msg)
 {
+  ONERROR tmp;
+  SET_ONERROR(tmp,fatal_on_error,"Fatal in exit_on_error!");
+
   fprintf(stderr,"%s\n",(char *)msg);
 #ifdef PIKE_DEBUG
   dump_backlog();
