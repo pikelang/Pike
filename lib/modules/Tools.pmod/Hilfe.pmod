@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.77 2002/05/14 16:02:42 grubba Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.78 2002/05/27 00:46:46 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -836,7 +836,7 @@ private class Expression {
 	   "do", "gauge", "catch" >)[ `[](pos) ] )
       return 1;
 
-    if( `[](pos+1)=="{" )
+    if( `[](pos+1)=="{" && `[](pos)!="(")
       return 1;
     if( `[](pos+1)!="(" )
       return 0;
