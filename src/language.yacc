@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.100 1998/08/01 13:19:17 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.101 1998/08/29 21:33:05 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -392,6 +392,9 @@ optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
   | { $$=0; }
   ;
 
+/* NOTE: This rule pushes a string "name" on the stack in addition
+ * to resolving the program reference.
+ */
 low_program_ref: string_constant
   {
     ref_push_string($1->u.sval.u.string);
@@ -400,7 +403,8 @@ low_program_ref: string_constant
     SAFE_APPLY_MASTER("handle_inherit", 2);
 
     if(sp[-1].type != T_PROGRAM)
-      my_yyerror("Couldn't cast string \"%s\" to program",$1->u.sval.u.string->str);
+      my_yyerror("Couldn't cast string \"%s\" to program",
+		 $1->u.sval.u.string->str);
     free_node($1);
     $$=mksvaluenode(sp-1);
     pop_stack();
@@ -417,6 +421,7 @@ low_program_ref: string_constant
   }
   ;
 
+/* NOTE: Pushes the resolved program on the stack. */
 program_ref: low_program_ref
   {
     resolv_program($1);
@@ -831,12 +836,22 @@ opt_string_type:  /* Empty */ { $$=1; }
 opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
   | '(' program_ref ')'
   {
+    /* NOTE: On entry, there are two items on the stack:
+     *   sp-2:	Name of the program reference (string).
+     *   sp-1:	The resolved program (program|function|zero).
+     */
     struct program *p=program_from_svalue(sp-1);
     if(p)
     {
       push_type_int(p->id);
     }else{
-      yyerror("Not a valid program specifier.");
+      if ((sp[-2].type == T_STRING) && (sp[-2].u.string->len > 0) &&
+	  (sp[-2].u.string->len < 256)) {
+	my_yyerror("Not a valid program specifier: '%s'",
+		   sp[-2].u.string->str);
+      } else {
+	yyerror("Not a valid program specifier.");
+      }
       push_type_int(0);
     }
     pop_n_elems(2);
