@@ -1,24 +1,11 @@
-# $Id: configure.in,v 1.6 1998/09/20 08:32:28 hubbe Exp $
+# $Id: configure.in,v 1.7 2003/08/08 12:27:30 nilsson Exp $
 AC_INIT(pike_regexp.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
 AC_HAVE_HEADERS(string.h)
-dnl
-dnl AC_CHECK_FUNCS(regcomp regexec regerror regfree)
-dnl
-dnl AC_MSG_CHECKING(C lib has regexps)
-dnl
-dnl if test $ac_cv_header_regexp_h$ac_cv_func_regcomp$ac_cv_func_regexec$ac_cv_func_regerror$ac_cv_func_regfree = yesyesyesyesyes ; then
-dnl    AC_DEFINE(USE_SYSTEM_REGEXP)
-dnl    REGEXP_OBJS=""
-dnl    AC_MSG_RESULT(yes)
-dnl else
-    REGEXP_OBJS="pike_regexp.o"
-dnl    AC_MSG_RESULT(no)
-dnl fi
-dnl
+
 AC_SUBST(REGEXP_OBJS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
