@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.162 2003/11/10 01:06:56 mast Exp $
+|| $Id: interpret_functions.h,v 1.163 2003/12/03 14:39:19 grubba Exp $
 */
 
 /*
@@ -330,16 +330,6 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
   free_svalue(Pike_sp-1);
   Pike_sp[-1] = tmp;
   print_return_value();
-});
-
-OPCODE0_JUMP(F_FLOAT, "push float", I_UPDATE_SP, {
-  /* FIXME, this opcode uses 'PROG_COUNTER' which is not allowed.. */
-  PIKE_OPCODE_T *next_addr;
-  JUMP_SET_TO_PC_AT_NEXT (next_addr);
-  MEMCPY((void *)&Pike_sp->u.float_number, next_addr, sizeof(FLOAT_TYPE));
-  Pike_sp->type=PIKE_T_FLOAT;
-  Pike_sp++;
-  DO_JUMP_TO((PIKE_OPCODE_T *)(((FLOAT_TYPE *) next_addr) + 1));
 });
 
 OPCODE1(F_LFUN, "local function", I_UPDATE_SP, {
