@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.236 2002/06/10 15:27:12 grubba Exp $");
+RCSID("$Id: file.c,v 1.237 2002/06/27 13:52:41 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -21,6 +21,7 @@ RCSID("$Id: file.c,v 1.236 2002/06/10 15:27:12 grubba Exp $");
 #include "operators.h"
 #include "security.h"
 #include "bignum.h"
+#include "builtin_functions.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -1055,7 +1056,7 @@ DO_DISABLE(write_oob_callback)
  *! Writes @[data] and returns the number of bytes that were
  *! actually written.
  *!
- *! If more than one argument is given, @[efun::sprintf()] will be
+ *! If more than one argument is given, @[sprintf()] will be
  *! used to format them.
  *!
  *! If @[data] is an array, it will be concatenated, and then written.
@@ -1298,7 +1299,7 @@ static void file_write(INT32 args)
  *! Writes out-of-band data to a stream and returns how many bytes that were
  *! actually written.
  *!
- *! If more than one argument is given, @[efun::sprintf()] will be
+ *! If more than one argument is given, @[sprintf()] will be
  *! used to format them.
  *!
  *! -1 is returned if something went wrong and no bytes were written.
@@ -3204,6 +3205,32 @@ static void exit_file_lock_key(struct object *o)
 /*! @endclass
  */
 
+/*! @decl array(int) get_all_active_fds()
+ *! Returns the id of all the active file descriptors.
+ */
+void f_get_all_active_fd(INT32 args)
+{
+  int i,fds,ne;
+  struct stat foo;
+
+  ne = MAX_OPEN_FILEDESCRIPTORS;
+
+  pop_n_elems(args);
+  for (i=fds=0; i<ne; i++)
+  {
+    int q;
+    THREADS_ALLOW();
+    q = fd_fstat(i,&foo);
+    THREADS_DISALLOW();
+    if(!q)
+    {
+      push_int(i);
+      fds++;
+    }
+  }
+  f_aggregate(fds);
+}
+
 /*! @decl constant PROP_BIDIRECTIONAL
  *! @fixme
  *! Document this constant.
@@ -3458,6 +3485,10 @@ void pike_module_init(void)
   add_integer_constant("__OOB__",-1,0); /* unknown */
 #endif
 #endif
+
+  /* function(:array(int)) */
+  ADD_FUNCTION("get_all_active_fd", f_get_all_active_fd,
+	       tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
 
 #ifdef PIKE_DEBUG
   dmalloc_accept_leak(add_to_callback(&do_debug_callbacks,
