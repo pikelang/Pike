@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.3 1998/03/25 16:59:16 noring Exp $
+// $Id: Table.pmod,v 1.4 1998/05/09 21:30:22 noring Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -163,11 +163,16 @@ class table {
     return copy(t, fields, types);
   }
 
-  object map(mapping(int|string:function) f, mixed ... args)
+  object group(mapping(int|string:function)|function f, mixed ... args)
   {
     if(!sizeof(table))
       return this_object();
 
+    if(functionp(f)) {
+      f = mkmapping(args[0], allocate(sizeof(args[0]), f));
+      args = args[1..];
+    }
+    
     mapping m = ([]);
     array cs = remap(indices(f));
     f = mkmapping(cs, values(f));
@@ -185,10 +190,7 @@ class table {
 
   object sum(int|string ... cs)
   {
-    array v = ({});
-    for(int i = 0; i < sizeof(cs); i++)
-      v += ({ `+ });
-    return map(mkmapping(cs, v));
+    return group(`+, cs);
   }
 
   object distinct(int|string ... cs)
@@ -200,10 +202,10 @@ class table {
 					  { return lambda(mixed x1,
 							  mixed x2)
 						   { return x1; }; }));
-    return map(m);
+    return group(m);
   }
 
-  object map_col(function f,array(int|string)|int|string cs,mixed ... args)
+  object map(function f, array(int|string)|int|string cs, mixed ... args)
   {
     int ap = arrayp(cs);
     array t = copy_value(table);
@@ -247,14 +249,16 @@ class table {
     return sort(@cs)->reverse();
   }
   
-  object truncate(int n)
+  object limit(int n)
   {
     return copy(table[0..(n-1)], fields, types);
   }
 
-  object rename(string from, string to)
+  object rename(string|int from, string to)
   {
-    return copy(table, replace(fields, fields[remap(from)], to), types);    
+    array a = copy_value(fields);
+    a[remap(from)] = to;
+    return copy(table, a, types);
   }
   
   mapping type(int|string c, void|mapping m)
@@ -329,14 +333,14 @@ object ASCII = class {
     
     t = t->copy(({ fields }) + values(t));
     foreach(indices(fields), string field)
-      t = (t->map_col(lambda(mixed m, string field, mapping sizes)
-		      { m = (string)m;
-		        sizes[field] = max(sizeof(m), sizes[field]);
-			return m; }, field, field, sizes)->
-	   map_col(lambda(string s, string size, int num)
-		   { return sprintf("%"+(num?"":"-")+size+"s", s); },
-		   field, (string)sizes[field],
-		   (t->type(field)||([]))->type == "num"));
+      t = (t->map(lambda(mixed m, string field, mapping sizes)
+		  { m = (string)m;
+		  sizes[field] = max(sizeof(m), sizes[field]);
+		  return m; }, field, field, sizes)->
+	   map(lambda(string s, string size, int num)
+	       { return sprintf("%"+(num?"":"-")+size+"s", s); },
+	       field, (string)sizes[field],
+	       (t->type(field)||([]))->type == "num"));
 
     string l = (indent+"-"+
 		Array.map(values(sizes),
@@ -346,7 +350,7 @@ object ASCII = class {
     return (indent+" "+table[0]*"   "+"\n"+l+"\n"+
 	    Array.map(table[1..], lambda(array row, string indent)
 				  { return indent+" "+row*"   "; },
-		      indent)*"\n"+"\n"+l+"\n");
+		      indent)*"\n"+(sizeof(table)>1?"\n":"")+l+"\n");
   }
 }();
 
