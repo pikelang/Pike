@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.86 1999/01/21 20:45:48 grubba Exp $");
+RCSID("$Id: threads.c,v 1.87 1999/05/08 04:46:07 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -443,7 +443,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   THREADS_DISALLOW();
 }
 
-void *new_thread_func(void * data)
+TH_RETURN_TYPE new_thread_func(void * data)
 {
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
@@ -1109,7 +1109,7 @@ static struct farmer {
 
 static MUTEX_T rosie;
 
-static void *farm(void *_a)
+static TH_RETURN_TYPE farm(void *_a)
 {
   struct farmer *me = (struct farmer *)_a;
   do

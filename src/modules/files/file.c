@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.133 1999/04/14 00:12:42 hubbe Exp $");
+RCSID("$Id: file.c,v 1.134 1999/05/08 04:46:27 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2003,7 +2003,7 @@ struct new_thread_data
   INT32 from, to;
 };
 
-static void *proxy_thread(void * data)
+static TH_RETURN_TYPE proxy_thread(void * data)
 {
   char buffer[READ_BUFFER];
   struct new_thread_data *p=(struct new_thread_data *)data;
