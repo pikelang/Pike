@@ -104,10 +104,12 @@ string get_var_string(int len)
   return get_fix_string(get_uint(len));
 }
 
+#if constant(Gmp.mpz)
 object get_bignum(int|void len)
 {
   return Gmp.mpz(get_var_string(len || 2), 256);
 }
+#endif
 
 string get_rest()
 {
