@@ -41,10 +41,11 @@ void f_load_module(INT32 args)
   if(module)
   {
     struct module *tmp;
-    void *init, *init2, *exit;
-    init=dlsym(module, "init_module_efuns");
-    init2=dlsym(module, "init_module_programs");
-    exit=dlsym(module, "exit_module");
+    fun init, init2, exit;
+
+    init=(fun)dlsym(module, "init_module_efuns");
+    init2=(fun)dlsym(module, "init_module_programs");
+    exit=(fun)dlsym(module, "exit_module");
 
     if(!init || !init2 || !exit)
     {
@@ -65,16 +66,16 @@ void f_load_module(INT32 args)
 	strcpy(buf2,"init_");
 	strcat(buf2,buf1);
 	strcat(buf2,"_efuns");
-	init=dlsym(module, buf2);
+	init=(fun)dlsym(module, buf2);
 
 	strcpy(buf2,"init_");
 	strcat(buf2,buf1);
 	strcat(buf2,"_programs");
-	init2=dlsym(module, buf2);
+	init2=(fun)dlsym(module, buf2);
 
 	strcpy(buf2,"exit_");
 	strcat(buf2,buf1);
-	exit=dlsym(module, buf2);
+	exit=(fun)dlsym(module, buf2);
       }
     }
 
