@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.348 2003/02/19 23:58:20 mast Exp $
+# $Id: Makefile.in,v 1.349 2003/02/20 16:11:52 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -168,8 +168,7 @@ OBJ= \
  las.o \
  builtin_functions.o \
  peep.o \
- module.o \
- @EXTRA_OBJS@
+ module.o @EXTRA_OBJS@
 
 MODULE_REQUIREMENTS= \
   machine.h \
@@ -188,8 +187,7 @@ SRC_TARGETS= \
  $(SRCDIR)/interpret_functions_fixed.h \
  $(SRCDIR)/peep_engine.c \
  $(SRCDIR)/case_info.h \
- $(SRCDIR)/treeopt.h \
- @PMOD_TARGETS@
+ $(SRCDIR)/treeopt.h @PMOD_TARGETS@
 
 
 #
