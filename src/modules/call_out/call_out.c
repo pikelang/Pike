@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.32 2000/04/08 19:58:17 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.33 2000/04/13 20:15:14 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -421,9 +421,9 @@ static void mark_call_outs(struct callback *foo, void *bar, void *gazonk)
   int e;
   for(e=0;e<num_pending_calls;e++)
   {
-    gc_external_mark(CALL(e)->args);
+    gc_external_mark2(CALL(e)->args,0,"call out args");
     if(CALL(e)->caller)
-      gc_external_mark(CALL(e)->caller);
+      gc_external_mark2(CALL(e)->caller,0,"call out caller");
   }
 }
 #endif
