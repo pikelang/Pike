@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.91 2001/01/31 21:25:24 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.92 2001/03/20 15:02:28 jhs Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -261,7 +261,7 @@ void f_file_truncate(INT32 args)
  *!       Number of free blocks in the filesystem.
  *!     @member int "bavail"
  *!       Number of available blocks in the filesystem.
- *!       This is usually somewhat less than the @{"bfree"} value, and
+ *!       This is usually somewhat less than the @["bfree"] value, and
  *!       can usually be adjusted with eg tunefs(1M).
  *!     @member int "files"
  *!       Total number of files (aka inodes) allowed by this filesystem.
