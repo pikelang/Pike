@@ -174,14 +174,16 @@ static constant response_dtd = #"
 "+common_dtd_fragment+#"]>
 ";
 
+// One more fix because some people found the specs too easy and 
+// decided that you can have <value>test</value>
+// (that is omitting string inside a value).
+static class StringWrap(string s){};
+
 static mixed decode(string xml_input, string dtd_input)
 {
   // We cannot insert 0 integers directly into the parse tree, so
   // we'll use magic_zero as a placeholder and destruct it afterwards.
   object magic_zero = class {}();
-  // one more fix because some people found the specs too easy and 
-  // decided you can have <value>test</value> (that is omitting string inside a value)
-  object mystring = class { string s; }();
 
   Parser.XML.Validating xml = Parser.XML.Validating();
   array tree = xml->
@@ -229,14 +231,12 @@ static mixed decode(string xml_input, string dtd_input)
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
-			       mystring->s = data*"";
-			       return mystring;
+			       return StringWrap(data*"");
 			     case "name":
 			     case "methodName":
 			       return data*"";
 			     case "base64":
-			       mystring->s = MIME.decode_base64(data*"");
-			       return mystring;
+			       return StringWrap(MIME.decode_base64(data*""));
 			     case "methodCall":
 			     case "params":
 			     case "member":
