@@ -19,8 +19,10 @@
 
 
 #define LDAP_DEFAULT_PORT       389
-#define LDAP_DEFAULT_HOST       "127.0.0.1"
-#define LDAP_DEFAULT_VERSION    2
+#define LDAP_DEFAULT_HOST       "ldap://127.0.0.1/"
+#define LDAP_DEFAULT_VERSION    3
+
+#define QUOTED_COMMA		"%2c"
 
 // --- Debug low level operations ---
 #define DWRITE(X)
