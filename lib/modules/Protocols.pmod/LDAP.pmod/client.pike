@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.23 2001/04/03 05:55:25 hop Exp $
+// $Id: client.pike,v 1.24 2001/06/21 11:33:06 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -74,6 +74,10 @@
 
 #include "ldap_errors.h"
 
+#ifdef LDAP_PROTOCOL_PROFILE
+int _prof_gtim;
+#endif
+
 // ------------------------
 
 // ASN.1 decode macros
@@ -81,9 +85,9 @@
 #define ASN1_DECODE_RESULTCODE(X)	(int)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value->cast_to_int())
 #define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[1]->value)
 #define ASN1_DECODE_ENTRIES(X)		_New_decode(X)
-#define ASN1_DECODE_DN(X)		(string)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value)
+#define ASN1_DECODE_DN(X)		(string)((X)->elements[0]->value)
 #define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
-#define ASN1_GET_ATTR_ARRAY(X)		(array)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[1]->elements)
+#define ASN1_GET_ATTR_ARRAY(X)		(array)((X)->elements[1]->elements)
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 
   inherit .protocol;
@@ -136,10 +140,12 @@
       array res = ({});
       array entry1;
       mapping attrs;
+      object oder;
 
       foreach(ar, string raw1)  {
-	attrs = (["dn":({ASN1_DECODE_DN(raw1)})]);
-	entry1 = ASN1_GET_ATTR_ARRAY(raw1);
+	oder = (.ldap_privates.ldap_der_decode(raw1)->elements[1]);
+	attrs = (["dn":({ASN1_DECODE_DN(oder)})]);
+	entry1 = ASN1_GET_ATTR_ARRAY(oder);
 	foreach(entry1, object attr1) {
 	  attrs += ([ASN1_GET_ATTR_NAME(attr1):_get_attr_values(ldap_version, attr1)]);
 	}
@@ -737,7 +743,7 @@
   //	attrsy:		attribute(s) name
   object|int search (string|void filter, int|void attrsonly, array(string)|void attrs) {
 
-    int id;
+    int id,nv;
     mixed raw;
     array(string) rawarr = ({});
     mixed rv;
@@ -752,29 +758,57 @@
     if(ldap_version == 3) {
       filter = string_to_utf8(filter);
     }
+#ifdef LDAP_PROTOCOL_PROFILE
+    _prof_gtim = gauge{ 
+#endif
     if(intp(raw = send_search_op(ldap_basedn, ldap_scope, ldap_deref,
 			ldap_sizelimit, ldap_timelimit, attrsonly, filter,
 			attrs||lauth->attributes))) {
       THROW(({error_string()+"\n",backtrace()}));
       return(-ldap_errno);
     }
+#ifdef LDAP_PROTOCOL_PROFILE
+    };
+    DWRITE_PROF("send_search_op: %O\n", _prof_gtim);
+#endif
 
     rawarr = ({raw});
+#ifdef LDAP_PROTOCOL_PROFILE
+    _prof_gtim = gauge{ 
+#endif
     while (ASN1_DECODE_RESULTAPP(raw) != 5) {
+#ifdef LDAP_PROTOCOL_PROFILEx
+    DWRITE_PROF("readmsg: %O\n", gauge { raw = readmsg(id); });
+#else
       raw = readmsg(id);
+#endif
       if (intp(raw)) {
         THROW(({error_string()+"\n",backtrace()}));
         return(-ldap_errno);
       }
-      if((ASN1_DECODE_RESULTAPP(raw) == 4) || (ASN1_DECODE_RESULTAPP(raw) == 5))
+#ifdef V3_REFERRALS
+      nv = ASN1_DECODE_RESULTAPP(raw);
+      if(nv == 4 || nv == 5)
 	rawarr += ({raw});
       else {
         DWRITE(sprintf("client.search: APP[%d]\n",ASN1_DECODE_RESULTAPP(raw)));
 	// in version 3 - referrals
       }
+#else
+	rawarr += ({raw}); // search op is about 20-25% faster without referral checks!
+#endif
     } // while
+#ifdef LDAP_PROTOCOL_PROFILE
+    };
+    DWRITE_PROF("rawarr++: %O\n", _prof_gtim);
+#endif
 
+#ifdef LDAP_PROTOCOL_PROFILE
+    _prof_gtim = gauge{ rv = result(rawarr); };
+    DWRITE_PROF("result: %O\n", _prof_gtim);
+#else
     rv = result(rawarr);
+#endif
     if(objectp(rv))
       seterr (rv->error_number());
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
