@@ -374,9 +374,7 @@ regexp *pike_regcomp(char *exp,int excompat)
  * is a trifle forced, but the need to tie the tails of the branches to what
  * follows makes it hard to avoid.
  */
-static char *reg(paren, flagp)
-int             paren;		/* Parenthesized? */
-int            *flagp;
+static char *reg(int paren,int *flagp)
 {
     register char  *ret;
     register char  *br;
@@ -444,8 +442,7 @@ int            *flagp;
  *
  * Implements the concatenation operator.
  */
-static char  *regbranch(flagp)
-int            *flagp;
+static char  *regbranch(int *flagp)
 {
     register char  *ret;
     register char  *chain;
@@ -481,8 +478,7 @@ int            *flagp;
  * list and the body of the last branch.  It might seem that this node could 
  * be dispensed with entirely, but the endmarker role is not redundant.
  */
-static char *regpiece(flagp)
-int            *flagp;
+static char *regpiece(int *flagp)
 {
   register char  *ret;
   register short  op;
@@ -545,8 +541,7 @@ int            *flagp;
  * it can turn them into a single node, which is smaller to store and
  * faster to run.
  */
-static char *regatom(flagp)
-int            *flagp;
+static char *regatom(int *flagp)
 {
     register char  *ret;
     int             flags;
@@ -712,9 +707,7 @@ static void reginsert(char op, char *opnd)
 /*
  - regtail - set the next-pointer at the end of a node chain
  */
-static void regtail(p, val)
-char           *p;
-char           *val;
+static void regtail(char *p, char *val)
 {
     register char  *scan;
     register char  *temp;
@@ -743,9 +736,7 @@ char           *val;
 /*
  - regoptail - regtail on operand of first argument; nop if operandless
  */
-static void regoptail(p, val)
-char           *p;
-char           *val;
+static void regoptail(char *p, char *val)
 {
     /* "Operandless" and "op != BRANCH" are synonymous in practice. */
     if (p == (char *)NULL || p == &regdummy || OP(p) != BRANCH)
