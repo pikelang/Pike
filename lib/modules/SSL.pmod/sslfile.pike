@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.33 2001/08/17 15:02:15 noy Exp $
+/* $Id: sslfile.pike,v 1.34 2001/08/21 14:58:46 js Exp $
  *
  */
 
@@ -245,7 +245,7 @@ int write(string|array(string) s)
 }
 
  
-void get_blocking_to_handshake_finsihed_state() {
+void get_blocking_to_handshake_finished_state() {
   
   while(!handshake_finished) {
     write_blocking();
@@ -477,10 +477,12 @@ void set_blocking()
 #endif
   if (sizeof (write_buffer) && !blocking)
     ssl_write_callback(socket->query_id());
-  
-  socket->set_blocking();
   blocking = 1;
-  get_blocking_to_handshake_finsihed_state();
+  if(socket)
+  {
+    socket->set_blocking();
+    get_blocking_to_handshake_finished_state();
+  }
 }
 
 string query_address(int|void arg)
@@ -502,7 +504,7 @@ void create(object f, object c, int|void is_client, int|void is_blocking)
   if(blocking) {
     socket->set_blocking();
     connection::create(!is_client);
-    get_blocking_to_handshake_finsihed_state();
+    get_blocking_to_handshake_finished_state();
   } else {
     socket->set_nonblocking(ssl_read_callback,
 			  ssl_write_callback,
