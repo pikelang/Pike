@@ -466,7 +466,7 @@ array(array(array)) diff3_old(array mid,array left,array right)
 
 //! Sort without respect to number formatting (most notably leading
 //! zeroes).
-int dwim_sort_func(string a, string b)
+int(-1..1) dwim_sort_func(string a, string b)
 {
    if (a==b) return 0;
    array aa=({}), bb=({});
@@ -515,14 +515,14 @@ int dwim_sort_func(string a, string b)
 
    // Either equal, or bb is longer.
 
-   return -(sizeof(aa)<sizeof(bb));
+   return [int(-1..1)]-(sizeof(aa)<sizeof(bb));
 }
 
 //! Sort comparison function that does not care about case, nor about
 //! the contents of any parts of the string enclosed with '()'
 //!
 //! Example: "Foo (bar)" is given the same weight as "foo (really!)"
-int lyskom_sort_func(string a,string b)
+int(-1..1) lyskom_sort_func(string a,string b)
 {
    string a0=a,b0=b;
    a=replace(lower_case(a),"][\\}{|"/1,"едцедц"/1);
@@ -534,7 +534,7 @@ int lyskom_sort_func(string a,string b)
    sscanf(a,"%[^ \t]%*[ \t](%*[^)])%*[ \t]%s",a,a0);
    sscanf(b,"%[^ \t]%*[ \t](%*[^)])%*[ \t]%s",b,b0);
    if (a>b) return 1;
-   if (a<b) return 0;
+   if (a<b) return -1;
    if (a0==b0) return 0;
    return lyskom_sort_func(a0,b0);
 }
@@ -555,7 +555,8 @@ array flatten(array a, mapping(array:array)|void state)
   return state[a] = (res*({}));
 }
 
-//! Sum the elements of an array using `+
+//! Sum the elements of an array using `+. The empty array
+//! results in 0.
 mixed sum(array a)
 {
   if(a==({})) return 0;
