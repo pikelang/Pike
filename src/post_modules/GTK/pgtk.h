@@ -32,6 +32,11 @@
 #include <arpa/inet.h>
 #endif
 
+#undef GTK_STYLE
+#define GTK_STYLE(X) ((GtkStyle *)X)
+
+#undef GTK_ACCEL_GROUP
+#define GTK_ACCEL_GROUP(X) ((void *)X)
 #include "../../modules/Image/image.h"
 
 struct object_wrapper
@@ -110,8 +115,6 @@ struct object *pikeimage_from_gdkimage( GdkImage *img );
 #define THIS ((struct object_wrapper *)fp->current_storage)
 #define THISO ((struct object_wrapper *)fp->current_storage)->obj
 
-#define GTK_ACCEL_GROUP(X) ((void *)X)
-#define GTK_STYLE(X) ((void *)X)
 
 #define RETURN_THIS()  pgtk_return_this( args )
 
@@ -134,7 +137,6 @@ void pgtk_encode_truecolor_masks(struct image *i,
                                  unsigned int blue_mask,
                                  unsigned char *buffer,
                                  int debuglen);
-
 
 
 #if defined(PGTK_DEBUG) && defined(HAVE_GETHRTIME)
