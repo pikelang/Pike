@@ -66,7 +66,7 @@ array shuffle(array arr)
   int i = sizeof(arr);
 
   while(i) {
-    int j = predef::random(i--);
+    int j = random(i--);
     if (j != i) {
       mixed tmp = arr[i];
       arr[i] = arr[j];
@@ -691,9 +691,4 @@ int|mapping(mixed:int) count(array|mapping|multiset haystack,
     return res;
   }
   return sizeof(filter(haystack, `==, needle));
-}
-
-//! Returns a random element from the @[in] array.
-mixed random(array in) {
-  return in[predef::random(sizeof(in))];
 }
