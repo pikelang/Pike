@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.129 2003/10/30 13:39:22 grubba Exp $
+|| $Id: acconfig.h,v 1.130 2003/11/15 17:39:15 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -180,10 +180,7 @@
 /* force this type upon ints */
 #undef WITH_LONG_INT
 #undef WITH_LONG_LONG_INT
-#undef WITH_SHORT_INT
 #undef WITH_INT_INT
-#undef WITH_UNSIGNED_LONG_INT
-#undef WITH_UNSIGNED_LONG_LONG_INT
 
 /* define to the type of pike primitive ints */
 #undef INT_TYPE

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.745 2003/11/07 22:08:18 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.746 2003/11/15 17:39:14 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1181,12 +1181,12 @@ AC_ARG_WITH(long-int, MY_DESCR([--with-long-int],
 			       [use long native type int]))
 AC_ARG_WITH(int-int, MY_DESCR([--with-int-int],
 			      [use int native type int]))
-AC_ARG_WITH(short-int, MY_DESCR([--with-short-int],
-				[use short native type int (EXPERIMENTAL)]))
-AC_ARG_WITH(unsigned-long-int, MY_DESCR([--with-unsigned-long-int],
-				[use short native type int (EXPERIMENTAL)]))
-AC_ARG_WITH(unsigned-long-long-int, MY_DESCR([--with-unsigned-long-longint],
-				[use short native type int (EXPERIMENTAL)]))
+dnl AC_ARG_WITH(short-int, MY_DESCR([--with-short-int],
+dnl 				    [use short native type int (EXPERIMENTAL)]))
+dnl AC_ARG_WITH(unsigned-long-int, MY_DESCR([--with-unsigned-long-int],
+dnl 				    [use short native type int (EXPERIMENTAL)]))
+dnl AC_ARG_WITH(unsigned-long-long-int, MY_DESCR([--with-unsigned-long-longint],
+dnl 				    [use short native type int (EXPERIMENTAL)]))
 
 MY_AC_ARG_WITH(dmalloc, MY_DESCR([--with-dmalloc],[enable memory-leak tests]),
 	       [AC_DEFINE(DEBUG_MALLOC,10)])
@@ -2565,28 +2565,28 @@ elif test "x$with_long_int" = xyes ; then
   AC_DEFINE(WITH_LONG_INT)
   AC_DEFINE(INT_TYPE, long)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG)
-elif test "x$with_short_int" = xyes ; then
-  AC_MSG_RESULT(short)
-  AC_DEFINE(WITH_SHORT_INT)
-  AC_DEFINE(INT_TYPE, short)
-  AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_SHORT)
-elif test "x$with_unsigned_long_int" = xyes ; then
-  AC_MSG_RESULT(unsigned long)
-  AC_DEFINE(WITH_UNSIGNED_LONG_INT)
-  AC_DEFINE(INT_TYPE, unsigned long)
-  AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG)
-elif test "$ac_cv_sizeof_long_long" != 0 -a \
-	  "x$with_unsigned_long_long_int" = xyes ; then
-  AC_MSG_RESULT(unsigned long long)
-  AC_DEFINE(WITH_UNSIGNED_LONG_LONG_INT)
-  AC_DEFINE(INT_TYPE, unsigned long long)
-  AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG_LONG)
-elif test "$ac_cv_sizeof___int64" != 0 -a \
-	  "x$with_unsigned_long_long_int" = xyes ; then
-  AC_MSG_RESULT(unsigned __int64)
-  AC_DEFINE(WITH_UNSIGNED_LONG_LONG_INT)
-  AC_DEFINE(INT_TYPE, unsigned __int64)
-  AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF___INT64)
+dnl elif test "x$with_short_int" = xyes ; then
+dnl   AC_MSG_RESULT(short)
+dnl   AC_DEFINE(WITH_SHORT_INT)
+dnl   AC_DEFINE(INT_TYPE, short)
+dnl   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_SHORT)
+dnl elif test "x$with_unsigned_long_int" = xyes ; then
+dnl   AC_MSG_RESULT(unsigned long)
+dnl   AC_DEFINE(WITH_UNSIGNED_LONG_INT)
+dnl   AC_DEFINE(INT_TYPE, unsigned long)
+dnl   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG)
+dnl elif test "$ac_cv_sizeof_long_long" != 0 -a \
+dnl 	      "x$with_unsigned_long_long_int" = xyes ; then
+dnl   AC_MSG_RESULT(unsigned long long)
+dnl   AC_DEFINE(WITH_UNSIGNED_LONG_LONG_INT)
+dnl   AC_DEFINE(INT_TYPE, unsigned long long)
+dnl   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG_LONG)
+dnl elif test "$ac_cv_sizeof___int64" != 0 -a \
+dnl 	      "x$with_unsigned_long_long_int" = xyes ; then
+dnl   AC_MSG_RESULT(unsigned __int64)
+dnl   AC_DEFINE(WITH_UNSIGNED_LONG_LONG_INT)
+dnl   AC_DEFINE(INT_TYPE, unsigned __int64)
+dnl   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF___INT64)
 else
   AC_MSG_RESULT(int)
   AC_DEFINE(WITH_INT_INT)
