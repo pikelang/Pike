@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.470 2003/02/08 18:07:07 grubba Exp $
+|| $Id: builtin_functions.c,v 1.471 2003/02/08 18:37:54 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.470 2003/02/08 18:07:07 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.471 2003/02/08 18:37:54 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5996,7 +5996,7 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
   time -= auto_gc_time;
 #endif
 
-  nsec = args && !UNSAFE_IS_ZERO(sp-args);
+  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
   pop_n_elems(args);
   if (nsec)
@@ -6022,7 +6022,7 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
   int nsec = 0;
-  nsec = args && !UNSAFE_IS_ZERO(sp-args);
+  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
   pop_n_elems(args);
   if(nsec)
@@ -6034,7 +6034,7 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
   int nsec = 0;
-  nsec = args && !UNSAFE_IS_ZERO(sp-args);
+  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
   pop_n_elems(args);
   GETTIMEOFDAY(&current_time);
