@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.51 2002/10/03 14:56:08 nilsson Exp $
+ * $Id: image_jpeg.c,v 1.52 2002/10/04 11:36:10 norrby Exp $
  */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
 
 #include <jpeglib.h>
+#include "transupp.h" /* Support routines for jpeg transformations */
 
 #undef size_t
 #undef FILE
@@ -38,15 +39,13 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.51 2002/10/03 14:56:08 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.52 2002/10/04 11:36:10 norrby Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
- * In that case redefined below, since transupp.h needs it.
  */
 #ifdef EXTERN
 #undef EXTERN
-#define _JPEGLIB_NEEDS_EXTERN
 #endif
 
 #include "pike_macros.h"
@@ -71,13 +70,7 @@ RCSID("$Id: image_jpeg.c,v 1.51 2002/10/03 14:56:08 nilsson Exp $");
 
 #ifdef HAVE_JPEGLIB_H
 
-#ifdef _JPEGLIB_NEEDS_EXTERN
-#define EXTERN(type)               extern type
-#undef _JPEGLIB_NEEDS_EXTERN
-#endif
-
 #include "../Image/image.h"
-#include "transupp.h"		/* Support routines for jpegtran */
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
@@ -106,6 +99,7 @@ static struct pike_string *param_quant_tables;
 static struct pike_string *param_grayscale;
 static struct pike_string *param_marker;
 static struct pike_string *param_comment;
+static struct pike_string *param_transform;
 
 static int reverse_quality[101]=
 {
@@ -553,11 +547,35 @@ static void init_src(struct pike_string *raw_img,
    jpeg_read_header(&mds->cinfo,TRUE);
 }
 
+void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
+{
+    int transform = 0;
+    if (parameter_int(sp+1-args,param_transform,&transform) &&
+	((transform == JXFORM_FLIP_H) || 
+	(transform == JXFORM_FLIP_V) || 
+	(transform == JXFORM_NONE) || 
+	(transform == JXFORM_ROT_90) || 
+	(transform == JXFORM_ROT_180) || 
+	(transform == JXFORM_ROT_270) || 
+	(transform == JXFORM_TRANSPOSE) || 
+	(transform == JXFORM_TRANSVERSE))) {
+	options->transform = transform;
+    } else {
+	options->transform = JXFORM_NONE;
+    }
+    options->trim = FALSE;
+    options->force_grayscale = FALSE;
+    options->crop = FALSE;
+}
+
 /*! @decl string encode(object image)
  *! @decl string encode(string|object image, mapping options)
- *! Encodes an @[image] object with JPEG compression. The
- *! @[options] argument may be a mapping containing zero or more
+ *! Encodes an @[image] object with JPEG compression. The image
+ *! may also be a string containing a raw JPEG image. In the
+ *! The @[options] argument may be a mapping containing zero or more
  *! encoding options:
+ *!
+ *!
  *!
  *! @mapping
  *!   @member int(0..100) "quality"
@@ -575,7 +593,7 @@ static void init_src(struct pike_string *raw_img,
  *!     DCT method to use. Any of
  *!     @[IFAST], @[ISLOW], @[FLOAT], @[DEFAULT] or @[FASTEST].
  *!     @[DEFAULT] and @[FASTEST] is from the jpeg library,
- *!     probably @[ISLOW] and @[IFAST] respective.
+ *!     probably @[ISLOW] and @[IFAST] respectively.
  *!   @member int(0..2) "density_unit"
  *!     The unit used for x_density and y_density.
  *!     @int
@@ -601,6 +619,27 @@ static void init_src(struct pike_string *raw_img,
  *!     the integer should be one of @[Marker.COM], @[Marker.APP0],
  *!     @[Marker.APP1], ..., @[Marker.APP15]. The string is up to the application;
  *!     most notable are Adobe and Photoshop markers.
+ *!   @member int "transform"
+ *!     Lossless image transformation. Has only effect when supplying a
+ *!     JPEG file as indata.
+ *!     @int
+ *!       @value NONE
+ *!         No operation
+ *!       @value FLIP_H
+ *!         Flip image horizontally
+ *!       @value FLIP_V
+ *!         Flip image vertically
+ *!       @value ROT_90
+ *!         Rotate image 90 degrees clockwise
+ *!       @value ROT_180
+ *!         Rotate image 180 degrees clockwise
+ *!       @value ROT_270
+ *!         Rotate image 270 degrees clockwise
+ *!       @value TRANSPOSE
+ *!         Transpose image
+ *!       @value TRANSVERSE
+ *!         Transverse image
+ *!       @endint
  *! @endmapping
  *!
  *! @note
@@ -666,7 +705,9 @@ static void image_jpeg_encode(INT32 args)
        cinfo.optimize_coding=(img->xsize*img->ysize)<50000;
    } else {
        /* "Compression" from JPEG block */
-       jvirt_barray_ptr *src_coef_array;
+       jvirt_barray_ptr *src_coef_arrays, *dst_coef_arrays;
+       jpeg_transform_info transformoption;
+
        jpeg_std_error(&errmgr);
 
        errmgr.error_exit=my_error_exit;
@@ -685,11 +726,21 @@ static void image_jpeg_encode(INT32 args)
 
        init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
-       jpeg_copy_critical_parameters(&mds.cinfo, &cinfo);
-       jcopy_markers_execute(&mds.cinfo, &cinfo, JCOPYOPT_ALL);
-       src_coef_array = jpeg_read_coefficients(&mds.cinfo);
+       set_jpeg_transform_options(args, &transformoption);
+       jtransform_request_workspace(&mds.cinfo, &transformoption);
+       src_coef_arrays = jpeg_read_coefficients(&mds.cinfo);
 
-       jpeg_write_coefficients(&cinfo, src_coef_array);   
+       jpeg_copy_critical_parameters(&mds.cinfo, &cinfo);
+
+       dst_coef_arrays = jtransform_adjust_parameters(&mds.cinfo, &cinfo,
+						      src_coef_arrays,
+						      &transformoption);
+       jpeg_write_coefficients(&cinfo, dst_coef_arrays);
+       jcopy_markers_execute(&mds.cinfo, &cinfo, JCOPYOPT_ALL);
+       jtransform_execute_transformation(&mds.cinfo, &cinfo,
+					 src_coef_arrays,
+					 &transformoption);
+
    }
 
    /* check configuration */
@@ -845,6 +896,8 @@ static void image_jpeg_encode(INT32 args)
  *! a mapping as result, with this content:
  *!
  *! @mapping
+ *!   @member string "comment"
+ *!     Comment marker of JPEG file, if present.
  *!   @member int "xsize"
  *!   @member int "ysize"
  *!     Size of image
@@ -1324,6 +1377,30 @@ void image_jpeg_quant_tables(INT32 args)
 /*! @decl constant APP15
  */
 
+/*! @decl constant FLIP_H
+ */
+
+/*! @decl constant FLIP_V
+ */
+
+/*! @decl constant NONE
+ */
+
+/*! @decl constant ROT_90
+ */
+
+/*! @decl constant ROT_180
+ */
+
+/*! @decl constant ROT_270
+ */
+
+/*! @decl constant TRANSPOSE
+ */
+
+/*! @decl constant TRANSVERSE
+ */
+
 /*! @endclass
  */
 
@@ -1356,6 +1433,7 @@ void pike_module_exit(void)
    free_string(param_grayscale);
    free_string(param_marker);
    free_string(param_comment);
+   free_string(param_transform);
 }
 
 void pike_module_init(void)
@@ -1393,6 +1471,14 @@ void pike_module_init(void)
    add_integer_constant("DEFAULT", JDCT_DEFAULT, 0);
    add_integer_constant("ISLOW", JDCT_ISLOW, 0);
    add_integer_constant("FASTEST", JDCT_FASTEST, 0);
+   add_integer_constant("FLIP_H", JXFORM_FLIP_H, 0);
+   add_integer_constant("FLIP_V", JXFORM_FLIP_V, 0);
+   add_integer_constant("NONE", JXFORM_NONE, 0);
+   add_integer_constant("ROT_90", JXFORM_ROT_90, 0);
+   add_integer_constant("ROT_180", JXFORM_ROT_180, 0);
+   add_integer_constant("ROT_270", JXFORM_ROT_270, 0);
+   add_integer_constant("TRANSPOSE", JXFORM_TRANSPOSE, 0);
+   add_integer_constant("TRANSVERSE", JXFORM_TRANSVERSE, 0);
 
    ADD_FUNCTION("quant_tables",image_jpeg_quant_tables,
 		tFunc(tOr(tVoid,tInt),tMap(tInt,tArr(tArr(tInt)))),0);
@@ -1445,8 +1531,5 @@ void pike_module_init(void)
    param_grayscale=make_shared_string("grayscale");
    param_marker=make_shared_string("marker");
    param_comment=make_shared_string("comment");
+   param_transform=make_shared_string("transform");
 }
-
-#ifdef EXTERN
-#undef EXTERN
-#endif
