@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.50 1999/02/18 17:36:01 grubba Exp $
+ * $Id: requests.pmod,v 1.51 1999/02/18 20:47:06 grubba Exp $
  */
 
 import .types;
@@ -396,6 +396,7 @@ class store
     } else {
       send(tag, "NO");
     }
+    return ([ "action" : "finished" ]);
   }
 }
 
