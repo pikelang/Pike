@@ -149,7 +149,13 @@ class Function(Class parent,
     string rt = return_type->pike_type( 1 );
     if( parent->name != "_global" && has_prefix(rt, "void" ) )
       rt = parent->pike_type( 1 );
-    return "function("+(arg_types->pike_type(0)*",")+":"+rt+")";
+    array res =  ({ });
+    foreach( arg_types, Type t )
+    {
+      if( t->name != "null" )
+	res += ({ t->pike_type( 0 ) });
+    }
+    return "function("+ res*"," +":"+rt+")";
   }
 
   string pike_name()
@@ -462,37 +468,52 @@ class Type
       optp = "|void";
     switch( name )
     {
-     case "uint":  case "int":
-       return "int"+optp;
-     case "float": case "double":
-       return "int|float"+optp;
-     case "string":
-       return "string"+optp;
-     case "array":
-       if( !nc && !c_inited ) catch(c_init());
-         if( array_type )
-           return "array("+array_type->pike_type(is,1)+")"+optp;
-         return "array"+optp;
-     case "mapping":
-       return "mapping";
-     case "callback":
-       return "function,mixed";
-     case "function":
-       if( has_value( get_modifiers(), "callback" ) )
-         return "function"+optp+",mixed"+optp;
-       return "function"+optp;
-      case "void":
+      case "uint":
+	return "int"+optp;
+      case "array":
+	if( !nc && !c_inited )
+	  catch(c_init());
+	if( array_type )
+	  return "array("+array_type->pike_type(is,1)+")"+optp;
+	/* fall-through */
+      case "int":
+      case "string":
+      case "mixed":
+      case "mapping":
+      case "float": 
+      case "object":
+	return name+optp;
+
+      case "double": /* int can be used for better precision */
+	return "int|float"+optp;
+
+      case "Image.Image":
+      case "Stdio.File":
+      case "Image.Color.Color":
+      case "GDK.Atom": // implemented in pike
+	return "object"+optp;
+
+      case "callback":
+	return "function"+optp+",mixed"+optp;
+      case "function":
+	if( has_value( get_modifiers(), "callback" ) )
+	  return "function"+optp+",mixed"+optp;
+	return "function"+optp;
+      case "void": /* needed for return types */
 	return "void";
-     default:
-       if( classes[ name ] )
-	 if( nc || opt )
-           return classes[ name ]->pike_type(is) + optp;
-         else
-           return (is ? classes[ name ]->pike_type(1) :
-		   (classes[ name ]->pike_type(0)+ "|zero"));
-       if( name == "Image.Image" )  return "object"+optp;
-       if( name == "Stdio.File" )   return "object"+optp;
-       return "mixed"+optp;
+
+      case "GTK.CtreeNode":
+	name = "GTK.CTreeNode";
+
+      default:
+	if( classes[ name ] )
+	  if( nc || opt )
+	    return classes[ name ]->pike_type(is) + optp;
+	  else
+	    return (is ? classes[ name ]->pike_type(1) :
+		    (classes[ name ]->pike_type(0)+ "|zero"));
+	throw(sprintf("Unknown type %O", this_object()));
+	return "mixed"+optp;
     }
   }
 
