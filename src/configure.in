@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.597 2002/08/14 12:53:31 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.598 2002/08/15 10:41:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5259,19 +5259,19 @@ esac
 #######################################################################
 
 MY_AC_CHECK_PRINTF_INT_TYPE(size_t,
-			    "ll" "" "L" "l", "",
+			    "" "l" "ll" "L", "",
 			    PRINTSIZET,
 			    [%${res}u, %${res}x])
 MY_AC_CHECK_PRINTF_INT_TYPE(ptrdiff_t,
-			    "ll" "" "L" "l", "",
+			    "" "l" "ll" "L", "",
 			    PRINTPTRDIFFT,
 			    [%${res}d, %${res}x])
 MY_AC_CHECK_PRINTF_INT_TYPE(INT_TYPE,
-			    "ll" "" "L" "l", "",
+			    "" "l" "ll" "L", "",
 			    PRINTPIKEINT,
 			    [%${res}d, %${res}x])
 MY_AC_CHECK_PRINTF_FLOAT_TYPE(FLOAT_TYPE,
-			      "" "L" "ll" "l", "",
+			      "" "l" "L" "ll", "",
 			      PRINTPIKEFLOAT,
 			      [%${res}g, %${res}f])
 
