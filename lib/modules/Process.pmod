@@ -12,9 +12,9 @@ varargs int exec(string file,string ... foo)
     if(search(file,"/") >= 0)
       return exece(combine_path(getcwd(),file),foo,getenv());
 
-    path=getenv("PATH")||({});
+    path=getenv("PATH");
 
-    foreach(path, path)
+    foreach(path ? path/":" : ({}) , path)
       if(file_stat(path=combine_path(path,file)))
 	return exece(path, foo,getenv());
   }
