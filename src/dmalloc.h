@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.26 2000/08/04 01:32:39 hubbe Exp $
+ * $Id: dmalloc.h,v 1.27 2000/09/02 23:11:27 mast Exp $
  */
 
 extern char *debug_xalloc(size_t);
@@ -80,6 +80,7 @@ void dmalloc_add_mmap_entry(struct memory_map *m,
 			    int count,
 			    struct memory_map *recur,
 			    int recur_offset);
+int dmalloc_is_invalid_memory_block(void *block);
 
 
 #else

@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.80 2000/08/16 15:51:20 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.81 2000/09/02 23:11:27 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2243,6 +2243,14 @@ void dmalloc_add_mmap_entry(struct memory_map *m,
   e->recur_offset=recur_offset;
   m->entries=e;
   mt_unlock(&debug_malloc_mutex);
+}
+
+int dmalloc_is_invalid_memory_block(void *block)
+{
+  struct memhdr *mh=my_find_memhdr(block,0); 
+  if(!mh) return -1; /* no such known block */
+  if(mh->size < 0) return -2; /* block has been freed */
+  return 0; /* block is valid */
 }
 
 #endif
