@@ -1,13 +1,3 @@
-#define COLORTYPE unsigned char
-
-typedef struct { unsigned char r,g,b; } rgb_group;
-
-struct image
-{
-   rgb_group *img;
-   int xsize,ysize;
-};
-
 static unsigned char swap_bits[256] = 
 { 0,128,64,192,32,160,96,224,16,144,80,208,48,176,112,
   240,8,136,72,200,40,168,104,232,24,152,88,216,56,184,
@@ -26,7 +16,6 @@ static unsigned char swap_bits[256] =
   75,203,43,171,107,235,27,155,91,219,59,187,123,251,7,
   135,71,199,39,167,103,231,23,151,87,215,55,183,119,247,
   15,143,79,207,47,175,111,239,31,159,95,223,63,191,127,255};
-
 
 
 static void encode_truecolor_24_rgb_swapped( rgb_group *s,
@@ -88,11 +77,6 @@ static void encode_truecolor_24_rgb_al32( rgb_group *s,
 #define encode_truecolor_24_bgr_al32 encode_truecolor_24_rgb_al32_swapped
 #define encode_truecolor_24_bgr_al32_swapped encode_truecolor_24_rgb_al32
 
-#include <machine.h>
-#ifdef TRY_USE_MMX
-#include <mmx.h>
-extern int try_use_mmx;
-#endif
 static void encode_truecolor_32_argb_swapped( rgb_group *s,
                                               unsigned char *d,
                                               int q,int w )
