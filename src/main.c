@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.97 2000/08/18 22:27:04 grubba Exp $");
+RCSID("$Id: main.c,v 1.98 2000/08/21 21:37:42 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -567,7 +567,7 @@ int dbm_main(int argc, char **argv)
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
-void do_exit(int num) ATTRIBUTE((noreturn))
+DECLSPEC(noreturn) void do_exit(int num) ATTRIBUTE((noreturn))
 {
   call_callback(&exit_callbacks, (void *)0);
   free_callback_list(&exit_callbacks);

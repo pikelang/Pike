@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.61 2000/08/15 16:55:20 grubba Exp $");
+RCSID("$Id: error.c,v 1.62 2000/08/21 21:32:37 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -263,7 +263,7 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
   return r;
 }
 
-PMOD_EXPORT void pike_throw(void) ATTRIBUTE((noreturn))
+PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 {
   while(Pike_interpreter.recoveries && throw_severity > Pike_interpreter.recoveries->severity)
   {
@@ -316,7 +316,7 @@ struct svalue throw_value = { PIKE_T_INT };
 int throw_severity;
 static const char *in_error;
 
-PMOD_EXPORT void low_error(char *buf) ATTRIBUTE((noreturn))
+PMOD_EXPORT DECLSPEC(noreturn) void low_error(char *buf) ATTRIBUTE((noreturn))
 {
   push_error(buf);
   free_svalue(& throw_value);
@@ -329,7 +329,7 @@ PMOD_EXPORT void low_error(char *buf) ATTRIBUTE((noreturn))
 /* FIXME: NOTE: This function uses a static buffer.
  * Check sizes of arguments passed!
  */
-void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
+void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   char buf[4096];
   SWAP_IN_THREAD_IF_REQUIRED();
@@ -364,7 +364,7 @@ void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
   low_error(buf);
 }
 
-PMOD_EXPORT void new_error(const char *name, const char *text, struct svalue *oldsp,
+PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn))
 {
   int i;
@@ -458,7 +458,7 @@ PMOD_EXPORT void fatal_on_error(void *msg)
   abort();
 }
 
-PMOD_EXPORT void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+PMOD_EXPORT DECLSPEC(noreturn) void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   va_start(args,fmt);
@@ -466,7 +466,7 @@ PMOD_EXPORT void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 
   va_end(args);
 }
 
-PMOD_EXPORT void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   static int in_fatal = 0;
@@ -608,12 +608,12 @@ void f_error_backtrace(INT32 args)
   add_ref( ERROR_STRUCT(STRUCT,o)->X=X )
 
 
-void generic_error_va(struct object *o,
-		      char *func,
-		      struct svalue *base_sp,  int args,
-		      char *fmt,
-		      va_list foo)
-  ATTRIBUTE((noreturn))
+DECLSPEC(noreturn) void generic_error_va(struct object *o,
+					 char *func,
+					 struct svalue *base_sp,  int args,
+					 char *fmt,
+					 va_list foo)
+     ATTRIBUTE((noreturn))
 {
   char buf[8192];
   struct pike_string *desc;
@@ -668,7 +668,7 @@ void generic_error_va(struct object *o,
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
-PMOD_EXPORT void generic_error(
+PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
@@ -677,7 +677,7 @@ PMOD_EXPORT void generic_error(
   ERROR_DONE(generic);
 }
 
-PMOD_EXPORT void index_error(
+PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *val,
@@ -690,7 +690,7 @@ PMOD_EXPORT void index_error(
   ERROR_DONE(generic);
 }
 
-PMOD_EXPORT void bad_arg_error(
+PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   char *func,
   struct svalue *base_sp,  int args,
   int which_arg,
@@ -714,7 +714,7 @@ PMOD_EXPORT void bad_arg_error(
   ERROR_DONE(generic);
 }
 
-PMOD_EXPORT void math_error(
+PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
@@ -732,7 +732,7 @@ PMOD_EXPORT void math_error(
   ERROR_DONE(generic);
 }
 
-PMOD_EXPORT void resource_error(
+PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *resource_type,
@@ -746,7 +746,7 @@ PMOD_EXPORT void resource_error(
   ERROR_DONE(generic);
 }
 
-PMOD_EXPORT void permission_error(
+PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   char *func,
   struct svalue *base_sp, int args,
   char *permission_type,
