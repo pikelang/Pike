@@ -533,17 +533,16 @@ void do_gc(void)
   tmp=(double)num_objects;
   tmp=tmp * GC_CONST/100.0 * (objects_alloced+1.0) / (objects_freed+1.0);
   
-  if((int)tmp < alloc_threshold + num_allocs)
-  {
-    alloc_threshold=(int)tmp;
-  }else{
-    alloc_threshold+=num_allocs;
-  }
+  if(alloc_threshold + num_allocs <= tmp)
+    tmp = (double)(alloc_threshold + num_allocs);
 
-  if(alloc_threshold < MIN_ALLOC_THRESHOLD)
-    alloc_threshold = MIN_ALLOC_THRESHOLD;
-  if(alloc_threshold > MAX_ALLOC_THRESHOLD)
-    alloc_threshold = MAX_ALLOC_THRESHOLD;
+  if(tmp < MIN_ALLOC_THRESHOLD)
+    tmp = (double)MIN_ALLOC_THRESHOLD;
+  if(tmp > MAX_ALLOC_THRESHOLD)
+    tmp = (double)MAX_ALLOC_THRESHOLD;
+
+  alloc_threshold = (int)tmp;
+
   num_allocs=0;
 
 #ifdef DEBUG
