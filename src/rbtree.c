@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.22 2002/12/22 17:18:55 mast Exp $
+|| $Id: rbtree.c,v 1.23 2002/12/23 13:14:07 grubba Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -12,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.22 2002/12/22 17:18:55 mast Exp $");
+RCSID("$Id: rbtree.c,v 1.23 2002/12/23 13:14:07 grubba Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"
@@ -803,7 +803,8 @@ void low_rb_link_at_next (struct rb_node_hdr **root, struct rbstack_ptr rbstack,
   *root = rebalance_after_add (new, rbstack);
 }
 
-#define DO_SIMPLE_UNLINK(UNLINK, PARENT, NODE) do {			\
+#define DO_SIMPLE_UNLINK(UNLINK, PARENT, NODE)				\
+  do {									\
     PARENT = RBSTACK_PEEK (rbstack);					\
 									\
     if (UNLINK->flags & RB_THREAD_PREV) {				\
@@ -815,7 +816,7 @@ void low_rb_link_at_next (struct rb_node_hdr **root, struct rbstack_ptr rbstack,
 	    (PARENT->flags |= RB_THREAD_NEXT, NODE = UNLINK->next));	\
 	else								\
 	  NODE = NULL;							\
-	goto simple_unlink_done;					\
+	break; /* We're done. */					\
       }									\
 									\
       else {			/* prev is null. */			\
@@ -843,7 +844,6 @@ void low_rb_link_at_next (struct rb_node_hdr **root, struct rbstack_ptr rbstack,
     }									\
 									\
     if (PARENT) SET_PTR_TO_CHILD (PARENT, UNLINK, NODE, NODE);		\
-  simple_unlink_done:;							\
   } while (0)
 
 #define ADJUST_STACK_TO_NEXT(RBSTACK, NEXT) do {			\
