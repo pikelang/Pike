@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.14 2004/01/11 00:49:02 nilsson Exp $
+// $Id: Session.pike,v 1.15 2004/03/28 17:36:24 nilsson Exp $
 
 import Protocols.HTTP;
 
@@ -18,7 +18,6 @@ typedef string|Standards.URI|SessionURL URL;
 //!	works to stop loops.
 //! @seealso
 //!	@[Request.follow_redirects]
-
 int follow_redirects=20;
 
 //! Default HTTP headers. 
