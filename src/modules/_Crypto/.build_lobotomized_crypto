@@ -21,7 +21,7 @@ for d in . include lib; do
 done
 
 echo "Censoring sensitive files"
-for f in crypto.c Makefile.in lib/Makefile.in ; do
+for f in crypto.c Makefile.in lib/Makefile.in testsuite.in ; do
     echo $f
     sed '/BEGIN NATIONAL SECURITY/,/END NATIONAL SECURITY/d' \
     < $f > ../_Lobotomized_Crypto/$f

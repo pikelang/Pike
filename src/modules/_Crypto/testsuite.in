@@ -4,20 +4,24 @@ test_true([[objectp(Crypto)]])
 // C-programs
 test_true([[programp(Crypto.cbc)]])
 test_true([[programp(Crypto.crypto)]])
-test_true([[programp(Crypto.des)]])
-test_true([[programp(Crypto.idea)]])
-test_true([[programp(Crypto.cast)]])
 test_true([[programp(Crypto.invert)]])
 test_true([[programp(Crypto.md5)]])
 test_true([[programp(Crypto.pipe)]])
-test_true([[programp(Crypto.rc4)]])
 test_true([[programp(Crypto.sha)]])
+
+// BEGIN NATIONAL SECURITY
+test_true([[programp(Crypto.des)]])
+test_true([[programp(Crypto.idea)]])
+test_true([[programp(Crypto.cast)]])
+test_true([[programp(Crypto.rc4)]])
+// END NATIONAL SECURITY
 
 // Functions
 test_true([[functionp(Crypto.des_parity)]])
 test_true([[functionp(Crypto.hex_to_string)]])
 test_true([[functionp(Crypto.string_to_hex)]])
 
+// BEGIN NATIONAL SECURITY
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
 
@@ -158,6 +162,8 @@ test_eq([[Crypto.rc4()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef")
 	  "b99fcd8660863a159ad4abe40fa48934163ddde542a6585540fd683cbfd8c00f"
 	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")]])
 ]])
+
+// END NATIONAL SECURITY
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
   
