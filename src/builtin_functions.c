@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.233 2000/01/29 13:42:14 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.234 2000/02/02 00:38:27 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6017,5 +6017,9 @@ void init_builtin_efuns(void)
   ADD_EFUN("_describe",f__describe,
 	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
 #endif
+
+  ADD_EFUN("_gc_status",f__gc_status,
+	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
+	   OPT_EXTERNAL_DEPEND);
 }
 

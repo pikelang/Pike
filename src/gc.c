@@ -21,6 +21,7 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_types.h"
 #include "time_stuff.h"
 #include "constants.h"
+#include "interpret.h"
 
 #include "gc.h"
 #include "main.h"
@@ -28,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.45 2000/02/01 06:24:40 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.46 2000/02/02 00:38:27 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -59,19 +60,6 @@ struct callback *debug_add_gc_callback(callback_func call,
   return add_to_callback(&gc_callbacks, call, arg, free_func);
 }
 
-#define GC_REFERENCED 1
-#define GC_XREFERENCED 2
-
-struct marker
-{
-  INT32 refs;
-#ifdef PIKE_DEBUG
-  INT32 xrefs;
-#endif
-  INT32 flags;
-  struct marker *next;
-  void *data;
-};
 
 #undef INIT_BLOCK
 #ifdef PIKE_DEBUG
@@ -442,6 +430,7 @@ static void init_gc(void)
   MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
   markers_left_in_chunk=0;
 #else
+/*  init_marker_hash(num_objects*8); */
   init_marker_hash();
 #endif
 }
@@ -505,11 +494,13 @@ void locate_references(void *a)
 }
 #endif
 
-int gc_is_referenced(void *a)
+#ifdef PIKE_DEBUG
+
+int debug_gc_is_referenced(void *a)
 {
   struct marker *m;
   m=get_marker(a);
-#ifdef PIKE_DEBUG
+
   if(m->refs + m->xrefs > *(INT32 *)a ||
      (!(m->refs < *(INT32 *)a) && m->xrefs) )
   {
@@ -527,9 +518,10 @@ int gc_is_referenced(void *a)
 	  refs,
 	  xrefs);
   }
-#endif
+
   return m->refs < *(INT32 *)a;
 }
+#endif
 
 #ifdef PIKE_DEBUG
 int gc_external_mark(void *a)
@@ -570,11 +562,12 @@ int gc_mark(void *a)
   }
 }
 
-int gc_do_free(void *a)
+#ifdef PIKE_DEBUG
+int debug_gc_do_free(void *a)
 {
   struct marker *m;
   m=get_marker(a);
-#ifdef PIKE_DEBUG
+
   if( !(m->flags & GC_REFERENCED)  && m->flags & GC_XREFERENCED )
   {
     INT32 refs=m->refs;
@@ -591,9 +584,10 @@ int gc_do_free(void *a)
 	  refs,
 	  xrefs);
   }
-#endif
+
   return !(m->flags & GC_REFERENCED);
 }
+#endif
 
 void do_gc(void)
 {
@@ -698,4 +692,32 @@ void do_gc(void)
   in_gc=0;
 }
 
+
+void f__gc_status(INT32 args)
+{
+  pop_n_elems(args);
+
+  push_constant_text("num_objects");
+  push_int(num_objects);
+
+  push_constant_text("num_allocs");
+  push_int(num_allocs);
+
+  push_constant_text("alloc_threshold");
+  push_int(alloc_threshold);
+
+  push_constant_text("objects_alloced");
+  push_int(objects_alloced);
+
+  push_constant_text("objects_freed");
+  push_int(objects_freed);
+
+  push_constant_text("last_gc");
+  push_int(last_gc);
+
+  push_constant_text("projected_garbage");
+  push_float(objects_freed * (double) num_allocs / (double) alloc_threshold);
+
+  f_aggregate_mapping(14);
+}
 

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.22 1999/05/02 08:11:42 hubbe Exp $
+ * $Id: gc.h,v 1.23 2000/02/02 00:38:27 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -27,12 +27,24 @@ extern void *gc_svalue_location;
 #define GC_ALLOC() do{ num_objects++; num_allocs++;  if(num_allocs == alloc_threshold && !gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
 #endif
 
+struct marker
+{
+  struct marker *next;
+  INT32 refs;
+#ifdef PIKE_DEBUG
+  INT32 xrefs;
+#endif
+  INT32 flags;
+  void *data;
+};
+
+#include "block_alloc_h.h"
+PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
+
 /* Prototypes begin here */
 struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
-struct marker;
-struct marker_chunk;
 void dump_gc_info(void);
 TYPE_T attempt_to_identify(void *something);
 void describe_location(void *memblock, TYPE_T type, void *location);
@@ -45,11 +57,12 @@ void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 INT32 gc_check(void *a);
 void locate_references(void *a);
-int gc_is_referenced(void *a);
+int debug_gc_is_referenced(void *a);
 int gc_external_mark(void *a);
 int gc_mark(void *a);
-int gc_do_free(void *a);
+int debug_gc_do_free(void *a);
 void do_gc(void);
+void f__gc_status(INT32 args);
 /* Prototypes end here */
 
 #ifdef PIKE_DEBUG
@@ -65,5 +78,17 @@ void do_gc(void);
 
 #define add_gc_callback(X,Y,Z) \
   dmalloc_touch(struct callback *,debug_add_gc_callback((X),(Y),(Z)))
+
+#define GC_REFERENCED 1
+#define GC_XREFERENCED 2
+
+
+#ifdef PIKE_DEBUG
+#define gc_is_referenced debug_gc_is_referenced
+#define gc_do_free debug_gc_do_free
+#else
+#define gc_is_referenced(X) (get_marker(X)->refs < *(INT32 *)(X))
+#define gc_do_free(X) ( ! (get_marker(X)->flags & GC_REFERENCED ) )
+#endif
 
 #endif
