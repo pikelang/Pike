@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.1 2003/03/19 17:46:30 nilsson Exp $
+dnl $Id: testsuite.in,v 1.2 2003/03/20 16:50:11 nisse Exp $
 
 dnl Crypto.randomness
 
@@ -12,6 +12,13 @@ test_true( stringp(Crypto.randomness.arcfour_random("hej")->read(1)) )
 test_true( stringp(Crypto.randomness.reasonably_random()->read(1)) )
 test_true( functionp(Crypto.randomness.really_random) )
 
+dnl Crypto.MD5
+cond ([[ Crypto->MD5 ]], [[
+  test_eq(Crypto.MD5.hash("foo"),
+	  String.hex2string("acbd18db4cc2f85cedef654fccc4a4d8"))
+  test_eq(Crypto.MD5()->update("f")->update("oo")->digest(),
+	  String.hex2string("acbd18db4cc2f85cedef654fccc4a4d8"))
+]])
 
 dnl Crypto.substitution
 
