@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.254 1998/11/22 11:02:38 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.255 1998/12/03 03:16:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -602,6 +602,15 @@ fi
 
 
 #############################################################################
+
+# The AC_PROG_INSTALL test is broken if $INSTALL is specified by hand.
+# The FreeBSD ports system does this...
+# Workaround:
+
+if test "x$INSTALL" = "x"; then :; else
+  # $INSTALL overrides ac_cv_path_install anyway...
+  ac_cv_path_install="$INSTALL"
+fi
 
 AC_PROG_INSTALL
 AC_PROG_CPP
