@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.151 2004/11/10 20:12:21 grubba Exp $
+// $Id: install.pike,v 1.152 2004/11/30 15:46:30 grubba Exp $
 
 #define USE_GTK
 
@@ -1085,7 +1085,7 @@ void do_export()
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
 			  "Directory":"KLUDGE_TARGETDIR",
-			  "Execute":"commit",
+			  "Execute":"deferred",
 			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
 			  "--finalize BASEDIR=. TMP_BUILDDIR=bin",
@@ -1098,7 +1098,7 @@ void do_export()
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
 			  "Directory":"KLUDGE_TARGETDIR",
-			  "Execute":"commit",
+			  "Execute":"deferred",
 			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
 			  "--install-master BASEDIR=.",
@@ -1107,7 +1107,7 @@ void do_export()
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
 		add_child(WixNode("Custom", ([
 				    "Action":"FinalizePike",
-				    "After":"InstallFiles",
+				    "After":"WriteRegistryValues",
 				  ]), "REMOVE=\"\""))->
 		add_child(Standards.XML.Wix.line_feed)->
 		add_child(WixNode("Custom", ([
