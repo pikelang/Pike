@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.15 2004/02/27 12:05:25 grubba Exp $
+# $Id: configure.in,v 1.16 2004/04/21 00:01:21 jhs Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -46,7 +46,7 @@ else
     PIKE_ENABLE_BUNDLE(nettle, [
       ac_cv_lib_nettle_nettle_md5_init
       ac_cv_lib_nettle_md5_init
-    ], [Cannot compile --with--nettle without the Nettle library.
+    ], [Cannot compile --with-nettle without the Nettle library.
 It is highly recommended that you install a working Nettle
 library on your system as that will add features to Pike
 required by many applications. These features include ciphers,
