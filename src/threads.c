@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.40 1997/09/17 10:33:14 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.41 1997/09/17 13:04:14 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -205,7 +205,7 @@ void f_mutex_lock(INT32 args)
 
   if(m->key)
   {
-    check_objects_to_destruct();
+    destruct_objects_to_destruct();
     if(m->key)
     {
       SWAP_OUT_CURRENT_THREAD();
@@ -250,6 +250,9 @@ void f_mutex_trylock(INT32 args)
       error("Recursive mutex locks!\n");
     }
   }
+  if(m->key)
+    destruct_objects_to_destruct();
+
   if(!m->key)
   {
     OB2KEY(o)->mut=m;
