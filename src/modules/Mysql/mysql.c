@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.52 2002/01/02 06:20:37 per-bash Exp $
+ * $Id: mysql.c,v 1.53 2002/01/27 01:00:53 mast Exp $
  *
  * SQL database functionality for Pike
  *
@@ -34,7 +34,9 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
+#ifndef DISABLE_BINARY
 #error Need mysql.h header-file
+#endif
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
@@ -91,7 +93,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.52 2002/01/02 06:20:37 per-bash Exp $");
+RCSID("$Id: mysql.c,v 1.53 2002/01/27 01:00:53 mast Exp $");
 
 /*! @module Mysql
  *!

@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.38 2002/01/16 02:54:12 nilsson Exp $");
+RCSID("$Id: fd_control.c,v 1.39 2002/01/27 01:00:53 mast Exp $");
 
 #else /* TESTING */
 
@@ -98,7 +98,9 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
     ret=fcntl(fd, F_SETFL, which?FNDELAY:0);
 #else
 
+#ifndef DISABLE_BINARY
 #error Do not know how to set your filedescriptors nonblocking.
+#endif
 
 #endif
 #endif

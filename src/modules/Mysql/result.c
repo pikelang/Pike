@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.23 2001/10/28 18:33:43 nilsson Exp $
+ * $Id: result.c,v 1.24 2002/01/27 01:00:53 mast Exp $
  *
  * mysql query result
  *
@@ -32,7 +32,9 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
+#ifndef DISABLE_BINARY
 #error Need mysql.h header-file
+#endif
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
@@ -83,7 +85,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.23 2001/10/28 18:33:43 nilsson Exp $");
+RCSID("$Id: result.c,v 1.24 2002/01/27 01:00:53 mast Exp $");
 
 struct program *mysql_result_program = NULL;
 
