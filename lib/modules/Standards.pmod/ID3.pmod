@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.9 2003/04/23 16:36:07 nilsson Exp $
+//  $Id: ID3.pmod,v 1.10 2003/04/24 01:29:57 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -584,8 +584,8 @@ class Frame_TextAofB {
     data = decode_string(data[1..], data[0]);
     int a,b;
     sscanf(data, "%s\0", data);
-    if( sscanf(data, "%d/%d", a, b)!=2 )
-      error( "A/B frame data not in A/B form.\n" );
+    if( !sscanf(data, "%d/%d", a, b) )
+      error( "Frame data doesn't contain integer.\n" );
 
     // Not against the spec, really...
     if(a > b) error( "(A/B) A bigger than B.\n" );
