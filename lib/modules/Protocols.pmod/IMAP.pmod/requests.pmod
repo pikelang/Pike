@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.51 1999/02/18 20:47:06 grubba Exp $
+ * $Id: requests.pmod,v 1.52 1999/02/18 20:55:15 grubba Exp $
  */
 
 import .types;
@@ -390,7 +390,9 @@ class store
 
     if (res = server->store(session, message_set, list, mode, silent_mode, state)) {
       if (sizeof(res)) {
-	send("*", @res);
+	foreach(res, array row) {
+	  send("*", @row);
+	}
       }
       send(tag, "OK");
     } else {
