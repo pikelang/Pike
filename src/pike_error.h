@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.1 2000/12/01 06:17:40 hubbe Exp $
+ * $Id: pike_error.h,v 1.2 2000/12/01 09:07:29 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -290,10 +290,6 @@ void cleanup_error(void);
                 rethrow; \
         } \
         while(0)
-
-#ifndef NO_PIKE_SHORTHAND
-#define error Pike_error
-#endif
 
 /* Generic Pike_error stuff */
 #define ERR_EXT_DECLARE
