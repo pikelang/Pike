@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.49 2002/09/05 14:09:53 marcus Exp $
+ * $Id: image_jpeg.c,v 1.50 2002/10/03 14:02:09 norrby Exp $
  */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
 
 #include <jpeglib.h>
+
 #undef size_t
 #undef FILE
 #undef _SIZE_T_DEFINED
@@ -37,13 +38,15 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.49 2002/09/05 14:09:53 marcus Exp $");
+RCSID("$Id: image_jpeg.c,v 1.50 2002/10/03 14:02:09 norrby Exp $");
 
-/* For some reason EXTERN can be defined here.
+/* jpeglib defines EXTERN For some reason.
  * This is not good, since it confuses compilation.h.
+ * In that case redefined below, since transupp.h needs it.
  */
 #ifdef EXTERN
 #undef EXTERN
+#define _JPEGLIB_NEEDS_EXTERN
 #endif
 
 #include "pike_macros.h"
@@ -68,7 +71,13 @@ RCSID("$Id: image_jpeg.c,v 1.49 2002/09/05 14:09:53 marcus Exp $");
 
 #ifdef HAVE_JPEGLIB_H
 
+#ifdef _JPEGLIB_NEEDS_EXTERN
+#define EXTERN(type)               extern type
+#undef _JPEGLIB_NEEDS_EXTERN
+#endif
+
 #include "../Image/image.h"
+#include "transupp.h"		/* Support routines for jpegtran */
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
@@ -496,9 +505,56 @@ static void my_term_source(struct jpeg_decompress_struct *cinfo)
    /* nop */
 }
 
+static void init_src(struct pike_string *raw_img,
+		     struct jpeg_error_mgr *errmgr,
+		     struct my_source_mgr *srcmgr,
+		     struct my_decompress_struct *mds)
+{
+   int n=0,m;
+
+   mds->first_marker=NULL;
+
+   jpeg_std_error(errmgr);
+
+   errmgr->error_exit=my_error_exit;
+   errmgr->emit_message=my_emit_message;
+   errmgr->output_message=my_output_message;
+
+   srcmgr->pub.init_source=my_init_source;
+   srcmgr->pub.fill_input_buffer=my_fill_input_buffer;
+   srcmgr->pub.skip_input_data=my_skip_input_data;
+   srcmgr->pub.resync_to_restart=jpeg_resync_to_restart;
+   srcmgr->pub.term_source=my_term_source;
+   srcmgr->str=raw_img;
+
+   mds->cinfo.err=errmgr;
+
+   jpeg_create_decompress(&mds->cinfo);
+
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_COM, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+1, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+2, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+3, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+4, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+5, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+6, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+7, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+8, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+9, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+10, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+11, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+12, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+13, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+14, my_jpeg_marker_parser);
+   jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+15, my_jpeg_marker_parser);
+
+   mds->cinfo.src=(struct jpeg_source_mgr*)srcmgr;
+   jpeg_read_header(&mds->cinfo,TRUE);
+}
+
 /*
 **! method string encode(object image)
-**! method string encode(object image, mapping options)
+**! method string encode(string|object image, mapping options)
 **! 	Encodes a JPEG image. 
 **!
 **!     The <tt>options</tt> argument may be a mapping
@@ -555,55 +611,84 @@ static void image_jpeg_encode(INT32 args)
    struct jpeg_error_mgr errmgr;
    struct my_destination_mgr destmgr;
    struct jpeg_compress_struct cinfo;
-
    struct image *img = NULL;
 
-   unsigned char *tmp;
+   struct my_source_mgr srcmgr;
+   struct my_decompress_struct mds;
+
+   unsigned char *tmp = NULL;
    INT32 y;
    rgb_group *s;
    JSAMPROW row_pointer[8];
 
    if (args<1 
-       || sp[-args].type!=T_OBJECT
-       || !(img=(struct image*)
-	    get_storage(sp[-args].u.object,image_program))
+       || (sp[-args].type!=T_OBJECT && sp[-args].type!=T_STRING)
+       || (sp[-args].type==T_OBJECT &&
+	   !(img=(struct image*) get_storage(sp[-args].u.object,image_program)))
        || (args>1 && sp[1-args].type!=T_MAPPING))
       Pike_error("Image.JPEG.encode: Illegal arguments\n");
 
+   if (img) {
+       /* Compression from Image.Image object */
+       if (!img->img)
+	   Pike_error("Image.JPEG.encode: Given image is empty.\n");
+       
+       tmp=malloc(img->xsize*3*8);
+       if (!tmp) 
+	   Pike_error("Image.JPEG.encode: out of memory\n");
+       /* init jpeg library objects */
+       
+       jpeg_std_error(&errmgr);
+       
+       errmgr.error_exit=my_error_exit;
+       errmgr.emit_message=my_emit_message;
+       errmgr.output_message=my_output_message;
+       
+       destmgr.pub.init_destination=my_init_destination;
+       destmgr.pub.empty_output_buffer=my_empty_output_buffer;
+       destmgr.pub.term_destination=my_term_destination;
+       
+       cinfo.err=&errmgr;
+       
+       jpeg_create_compress(&cinfo);
 
-   if (!img->img)
-      Pike_error("Image.JPEG.encode: Given image is empty.\n");
+       cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
+       
+       cinfo.image_width=img->xsize;
+       cinfo.image_height=img->ysize;
+       cinfo.input_components=3;     /* 1 */
+       cinfo.in_color_space=JCS_RGB; /* JCS_GRAYSCALE */
+       
+       jpeg_set_defaults(&cinfo);
+       
+       cinfo.optimize_coding=(img->xsize*img->ysize)<50000;
+   } else {
+       /* "Compression" from JPEG block */
+       jvirt_barray_ptr *src_coef_array;
+       jpeg_std_error(&errmgr);
 
-   tmp=malloc(img->xsize*3*8);
-   if (!tmp) 
-      Pike_error("Image.JPEG.encode: out of memory\n");
+       errmgr.error_exit=my_error_exit;
+       errmgr.emit_message=my_emit_message;
+       errmgr.output_message=my_output_message;
+       
+       destmgr.pub.init_destination=my_init_destination;
+       destmgr.pub.empty_output_buffer=my_empty_output_buffer;
+       destmgr.pub.term_destination=my_term_destination;
 
-   /* init jpeg library objects */
+       cinfo.err=&errmgr;
 
-   jpeg_std_error(&errmgr);
+       jpeg_create_compress(&cinfo);
 
-   errmgr.error_exit=my_error_exit;
-   errmgr.emit_message=my_emit_message;
-   errmgr.output_message=my_output_message;
+       cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
 
-   destmgr.pub.init_destination=my_init_destination;
-   destmgr.pub.empty_output_buffer=my_empty_output_buffer;
-   destmgr.pub.term_destination=my_term_destination;
+       init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
-   cinfo.err=&errmgr;
+       jpeg_copy_critical_parameters(&mds.cinfo, &cinfo);
+       jcopy_markers_execute(&mds.cinfo, &cinfo, JCOPYOPT_ALL);
+       src_coef_array = jpeg_read_coefficients(&mds.cinfo);
 
-   jpeg_create_compress(&cinfo);
-
-   cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
-
-   cinfo.image_width=img->xsize;
-   cinfo.image_height=img->ysize;
-   cinfo.input_components=3;     /* 1 */
-   cinfo.in_color_space=JCS_RGB; /* JCS_GRAYSCALE */
-
-   jpeg_set_defaults(&cinfo);
-
-   cinfo.optimize_coding=(img->xsize*img->ysize)<50000;
+       jpeg_write_coefficients(&cinfo, src_coef_array);   
+   }
 
    /* check configuration */
 
@@ -672,7 +757,9 @@ static void image_jpeg_encode(INT32 args)
       parameter_qt(sp+1-args,param_quant_tables,&cinfo);
    }
 
-   jpeg_start_compress(&cinfo, TRUE);
+   if (img) {
+       jpeg_start_compress(&cinfo, TRUE);
+   }
 
    if (args>1)
    {
@@ -680,37 +767,42 @@ static void image_jpeg_encode(INT32 args)
       parameter_marker(sp+1-args,param_marker,&cinfo);
    }
 
-   y=img->ysize;
-   s=img->img;
+   if (img) {
+       /* Compression from Image.Image object */
+       y=img->ysize;
+       s=img->img;
+       
+       THREADS_ALLOW();
+       while (y)
+	   {
+	       int n,i,y2=y;
+	       if (y2>8) y2=8;
+	       n=img->xsize*y2; 
+	       i=0;
+	       while (n--)
+		   tmp[i++]=s->r, tmp[i++]=s->g, tmp[i++]=s->b, s++;
+	       
+	       row_pointer[0]=tmp;
+	       row_pointer[1]=tmp+img->xsize*3;
+	       row_pointer[2]=tmp+img->xsize*3*2;
+	       row_pointer[3]=tmp+img->xsize*3*3;
+	       row_pointer[4]=tmp+img->xsize*3*4;
+	       row_pointer[5]=tmp+img->xsize*3*5;
+	       row_pointer[6]=tmp+img->xsize*3*6;
+	       row_pointer[7]=tmp+img->xsize*3*7;
+	       jpeg_write_scanlines(&cinfo, row_pointer, y2);
+	       
+	       y-=y2;
+	   }
+       THREADS_DISALLOW();
+       
+       free(tmp);
+   } else {
+       /* "Compression" from JPEG block */
 
-   THREADS_ALLOW();
-   while (y)
-   {
-      int n,i,y2=y;
-      if (y2>8) y2=8;
-      n=img->xsize*y2; 
-      i=0;
-      while (n--)
-	 tmp[i++]=s->r, tmp[i++]=s->g, tmp[i++]=s->b, s++;
-
-      row_pointer[0]=tmp;
-      row_pointer[1]=tmp+img->xsize*3;
-      row_pointer[2]=tmp+img->xsize*3*2;
-      row_pointer[3]=tmp+img->xsize*3*3;
-      row_pointer[4]=tmp+img->xsize*3*4;
-      row_pointer[5]=tmp+img->xsize*3*5;
-      row_pointer[6]=tmp+img->xsize*3*6;
-      row_pointer[7]=tmp+img->xsize*3*7;
-      jpeg_write_scanlines(&cinfo, row_pointer, y2);
-      
-      y-=y2;
    }
-   THREADS_DISALLOW();
-
-   free(tmp);
-
    jpeg_finish_compress(&cinfo);
-
+   
    pop_n_elems(args);
    push_string(my_result_and_clean(&cinfo));
 
@@ -810,52 +902,14 @@ static void img_jpeg_decode(INT32 args,int mode)
 
    int n=0,m;
 
-   mds.first_marker=NULL;
-
    if (args<1 
        || sp[-args].type!=T_STRING
        || (args>1 && sp[1-args].type!=T_MAPPING))
       Pike_error("Image.JPEG.decode: Illegal arguments\n");
 
    /* init jpeg library objects */
-
-   jpeg_std_error(&errmgr);
-
-   errmgr.error_exit=my_error_exit;
-   errmgr.emit_message=my_emit_message;
-   errmgr.output_message=my_output_message;
-
-   srcmgr.pub.init_source=my_init_source;
-   srcmgr.pub.fill_input_buffer=my_fill_input_buffer;
-   srcmgr.pub.skip_input_data=my_skip_input_data;
-   srcmgr.pub.resync_to_restart=jpeg_resync_to_restart;
-   srcmgr.pub.term_source=my_term_source;
-   srcmgr.str=sp[-args].u.string;
-
-   mds.cinfo.err=&errmgr;
-
-   jpeg_create_decompress(&mds.cinfo);
-
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_COM, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+1, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+2, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+3, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+4, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+5, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+6, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+7, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+8, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+9, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+10, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+11, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+12, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+13, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+14, my_jpeg_marker_parser);
-   jpeg_set_marker_processor(&mds.cinfo, JPEG_APP0+15, my_jpeg_marker_parser);
-
-   mds.cinfo.src=(struct jpeg_source_mgr*)&srcmgr;
-
-   jpeg_read_header(&mds.cinfo,TRUE);
+   
+   init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
    /* we can only handle RGB or GRAYSCALE */
 
@@ -1247,7 +1301,7 @@ void pike_module_init(void)
       ADD_FUNCTION("_decode",image_jpeg__decode,tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tMixed)),0);
       ADD_FUNCTION("decode_header",image_jpeg_decode_header,
 		   tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tOr4(tStr,tInt,tFlt,tMap(tInt,tStr)))),0);
-      ADD_FUNCTION("encode",image_jpeg_encode,tFunc(tObj tOr(tVoid,tOptions),tStr),0);
+      ADD_FUNCTION("encode",image_jpeg_encode,tFunc(tOr(tObj,tStr) tOr(tVoid,tOptions),tStr),0);
    }
 
    add_integer_constant("IFAST", JDCT_IFAST, 0);
@@ -1308,3 +1362,7 @@ void pike_module_init(void)
    param_marker=make_shared_string("marker");
    param_comment=make_shared_string("comment");
 }
+
+#ifdef EXTERN
+#undef EXTERN
+#endif
