@@ -10,7 +10,7 @@
  *  attributes;
  * {
  *
- *   PIKEFUNC int function_name (int x, CTYPE char * foo)
+ *   PIKEFUN int function_name (int x, CTYPE char * foo)
  *    attribute;
  *    attribute value;
  *   {
@@ -43,6 +43,8 @@
  *  o RETURN; (void) doesn't work yet
  *  o need a RETURN_NULL; or something.. RETURN 0; might work but may
  *    be confusing as RETURN x; will not work if x is zero.
+ *  o Comments does not work inside prototypes (?)
+ *  o add support for set_init/exit/mark/gc_func()
  *    
  */
 
@@ -97,6 +99,23 @@ string trim(string s)
   return s;
 }
 
+string cquote(string n)
+{
+  string ret="";
+  while(sscanf(n,"%[a-zA-Z]%c%s",string safe, int c, n)==3)
+  {
+    switch(c)
+    {
+      default: ret+=sprintf("%s_%02X",safe,c); break;
+      case '+':	ret+=sprintf("%s_add",safe); break;
+      case '`': ret+=sprintf("%s_backtick",safe);  break;
+      case '_': ret+=sprintf("%s__",safe); break;
+      case '=': ret+=sprintf("%s_eq",safe); break;
+    }
+  }
+  return ret+n;
+}
+
 string cname(mixed type)
 {
   mixed btype;
@@ -111,6 +130,7 @@ string cname(mixed type)
 
   switch(objectp(btype) ? btype->text : btype)
   {
+    case "void": return "void";
     case "int": return "INT_TYPE";
     case "float": return "FLOAT_NUMBER";
     case "string": return "struct pike_string *";
@@ -184,6 +204,12 @@ array convert_ctype(array tokens)
       werror("Unknown C type.\n");
       exit(0);
   }
+}
+
+string basetype(array x)
+{
+  /* FIXME: should deal with ored types */
+  return (string) x[0];
 }
 
 mapping(string:string) parse_arg(array x)
@@ -269,6 +295,11 @@ array(string|int) convert_basic_type(array s, int pos)
 
     case "float":
       res = "tFlt";
+      pos++;
+      break;
+
+    case "void":
+      res = "tVoid";
       pos++;
       break;
 
@@ -382,6 +413,11 @@ string convert_type(array s)
   return ret;
 }
 
+string mkname(string ... parts)
+{
+  return map(parts - ({"",0}), cquote) * "_";
+}
+
 
 string make_pop(mixed howmany)
 {
@@ -477,6 +513,37 @@ mapping parse_attributes(array attr)
 
 string file;
 
+array IFDEF(string define,
+	    array yes,
+	    void|array no)
+{
+  array ret=({});
+  if(!yes || !sizeof(yes))
+  {
+    if(!no || !sizeof(no)) return ({"\n"});
+    ret+=({ sprintf("\n#ifndef %s\n",define) });
+  }else{
+    ret+=({ sprintf("\n#ifdef %s\n",define) });
+    ret+=yes;
+    if(no && sizeof(no))
+    {
+      ret+=sprintf("\n#else\n",define);
+      ret+=no;
+    }
+  }
+  ret+=no || ({});
+  ret+=({"\n#endif\n"});
+  return ret;
+}
+
+array DEFINE(string define, void|string as)
+{
+  return ({
+    sprintf("\n#undef %s\n",define),
+    sprintf("#define %s%s\n",define, as?" "+as:"")
+      });
+}
+
 array convert(array x, string base)
 {
   array addfuncs=({});
@@ -496,40 +563,34 @@ array convert(array x, string base)
 	break;
     array proto=func[..p-1];
     array body=func[p];
-    string name=proto[p]->text;
+    string name=proto[-1]->text;
     mapping attributes=parse_attributes(proto[p+2..]);
 
     [ array classcode, array classaddfuncs, array classexitfuncs,
       array classdeclarations ]=
-      convert(body[1..sizeof(body)-2],name+"_");
-    ret+=({ sprintf("\n#define class_%s_defined\n",name), });
+      convert(body[1..sizeof(body)-2],name);
+
+    string define=mkname("class",name,"defined");
+
+    ret+=DEFINE(define);
     ret+=classcode;
 
-    addfuncs+=({
-      sprintf("\n#ifdef class_%s_defined\n",name),
-      "  start_new_program();\n",
-      sprintf("\n#ifdef THIS_%s\n",upper_case(base)),
-      sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",base,base),
-      sprintf("\n#endif\n"),
-    })+
-      classaddfuncs+
-	({
-	  sprintf("  end_class(%O,%d);\n",name, attributes->flags || "0"),
-	  sprintf("\n#endif\n"),
-	});
+    addfuncs+=
+      IFDEF(define,
+	    ({"  start_new_program();\n"})+
+	    IFDEF("THIS_"+upper_case(name),
+		  ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
+	    classaddfuncs+
+	    ({sprintf("  end_class(%O,%s);\n",name, attributes->flags||"0")}));
 
-    exitfuncs+=({
-      sprintf("\n#ifdef class_%s_defined\n",name),
-    })+
-      classdeclarations+
-      classexitfuncs+
-	({
-	  sprintf("\n#endif\n"),
-	});
+    exitfuncs+=
+      IFDEF(define,
+	    classdeclarations+
+	    classexitfuncs);
   }
 
 
-#if 0
+#if 1
   array thestruct=({});
   x=ret/({"PIKEVAR"});
   ret=x[0];
@@ -541,9 +602,11 @@ array convert(array x, string base)
     array type=var[..pos-2];
     array rest=var[pos+1..];
     
+//    werror("type: %O\n",type);
+
     thestruct+=({
       sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
-      sprint("  %s %s;\n",ctype(type),name),
+      sprintf("  %s %s;\n",cname(type[0]),name),
       "\n#endif\n",
     });
     addfuncs+=({
@@ -577,11 +640,11 @@ array convert(array x, string base)
     thestruct+=({
       sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
     })+var[..pos-1]+({
-      "\n#endif\n",
+      ";\n#endif\n",
     });
     ret+=
       ({
-	sprintf("\n#define var_%s_%s_defined\n",name,base),
+	sprintf("#define var_%s_%s_defined\n",name,base),
       })+
       var[pos+1..];
   }
@@ -589,21 +652,26 @@ array convert(array x, string base)
 
   x=ret/({"PIKEFUN"});
   ret=x[0];
+//  werror("%O\n",x);
 
   if(sizeof(thestruct))
   {
-    x[0]+=
+//    werror("%O\n",thestruct);
+    ret+=
       ({
 	/* FIXME:
-	 * Add runtime debug to this define...
+	 * Add runtime debug to these defines...
 	 */
-	sprintf("#define THIS_%s ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage)\n",upper_case(base),base);
+	sprintf("#undef THIS\n"), // FIXME: must remember previous def
+	sprintf("#define THIS ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",base),
+	sprintf("#define THIS_%s ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",upper_case(base),base),
 	sprintf("static int %s_storage_offset;\n",base),
 	sprintf("struct %s_struct {\n",base),
       })+thestruct+({
 	"};\n",
       });
   }
+
 #else
   x=ret/({"PIKEFUN"});
   ret=x[0];
@@ -630,6 +698,10 @@ array convert(array x, string base)
     mapping attributes=parse_attributes(proto[p+2..]);
 
     args=args[1..sizeof(args)-2]/({","});
+    if(equal(args , ({ ({}) }))) args=({});
+
+    string funcname=mkname("f",base,name);
+    string define=mkname("f",base,name,"defined");
 
 //    werror("FIX RETURN: %O\n",body);
     
@@ -638,11 +710,12 @@ array convert(array x, string base)
 //    werror("  args=%O\n",args);
 
     ret+=({
-      sprintf("#define f_%s_defined\n",name),
-      sprintf("PMOD_EXPORT void f_%s(INT32 args) ",name),
+      sprintf("#define %s\n",define),
+      sprintf("PMOD_EXPORT void %s(INT32 args) ",funcname),
       "{","\n",
     });
 
+//    werror("%O %O\n",proto,args);
     args=map(args,parse_arg);
     int min_args=sizeof(args);
     int max_args=sizeof(args); /* FIXME: check for ... */
@@ -658,10 +731,10 @@ array convert(array x, string base)
 
     if (attributes->efun) {
       addfuncs+=({
-	sprintf("\n#ifdef f_%s_defined\n",name),
-	PC.Token(sprintf("  ADD_EFUN(%O, f_%s, tFunc(%s, %s), %s);\n",
+	sprintf("\n#ifdef %s\n",define),
+	PC.Token(sprintf("  ADD_EFUN(%O, %s, tFunc(%s, %s), %s);\n",
 			 attributes->name || name,
-			 name,
+			 funcname,
 			 attributes->type ? attributes->type :
 			 Array.map(args->type,convert_type)*" ",
 			 convert_type(rettype),
@@ -672,10 +745,10 @@ array convert(array x, string base)
       });
     } else {
       addfuncs+=({
-	sprintf("\n#ifdef f_%s_defined\n",name),
-	PC.Token(sprintf("  ADD_FUNCTION2(%O, f_%s, tFunc(%s, %s), %s, %s);\n",
+	sprintf("\n#ifdef %s\n",define),
+	PC.Token(sprintf("  ADD_FUNCTION2(%O, %s, tFunc(%s, %s), %s, %s);\n",
 			 attributes->name || name,
-			 name,
+			 funcname,
 			 attributes->type ? attributes->type :
 			 Array.map(args->type,convert_type)*" ",
 			 convert_type(rettype),
@@ -906,5 +979,6 @@ int main(int argc, array(string) argv)
       "}\n",
     });
   }
-  write(PC.reconstitute_with_line_numbers(x));
+//  write(PC.reconstitute_with_line_numbers(x));
+  write(PC.simple_reconstitute(x));
 }
