@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.144 1999/06/29 05:02:51 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.145 1999/07/16 22:54:48 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -523,8 +523,10 @@ void process_done(pid_t pid, char *from)
       break;
 
     default:
+#ifdef PROC_DEBUG
       dump_process_history(pid);
-      fatal("Process debug: Unknown child %ld in %s! (status=%d)\n",(long)pid,from,process_info[pid]);
+      fprintf(stderr,"Process debug: Unknown child %ld in %s! (status=%d)\n",(long)pid,from,process_info[pid]);
+#endif
   }
 }
 
