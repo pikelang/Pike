@@ -1057,10 +1057,10 @@ struct array *subtract_arrays(struct array *a, struct array *b)
 #ifdef DEBUG
   if(d_flag > 1)
   {
-    array_check_type_field(a);
     array_check_type_field(b);
   }
 #endif
+  check_array_for_destruct(a);
 
   if(a->type_field & b->type_field)
   {
@@ -1081,10 +1081,10 @@ struct array *and_arrays(struct array *a, struct array *b)
 #ifdef DEBUG
   if(d_flag > 1)
   {
-    array_check_type_field(a);
     array_check_type_field(b);
   }
 #endif
+  check_array_for_destruct(a);
 
   if(a->type_field & b->type_field)
   {
