@@ -2,8 +2,6 @@
 
 //!	Open and execute an HTTP query.
 
-#define error(S) throw( ({(S),backtrace()}) )
-
 /****** variables **************************************************/
 
 // open
