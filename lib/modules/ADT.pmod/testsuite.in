@@ -1,4 +1,6 @@
-test_true([["$Id: testsuite.in,v 1.1 2002/08/02 20:23:45 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.2 2002/08/02 23:24:24 nilsson Exp $"]]);
+
+// ADT.Stack
 
 test_any([[
   object s = ADT.Stack();
@@ -20,3 +22,15 @@ test_any([[
   s->push(5);
   return s->top();
 ]], 5)
+
+
+// ADT.Table
+
+test_true(ADT.Table.table(
+ ({ ({ "a", "b", 42 }),
+    ({ "c", "b", 41 }),
+    ({ "a", "a", 76 }) }),
+ ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")
+ ->rename(0, "fOo")->sort("foO")->cast("array"),
+ ({ ({ "a", 118 }),
+    ({ "c", 41 }) }))
