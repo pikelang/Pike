@@ -1,0 +1,22 @@
+#
+# $Id: Makefile.in,v 1.1 2003/09/01 14:05:58 tomas Exp $
+#
+
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+OBJS=com.o
+MODULE_LDFLAGS=@LDFLAGS@ @COM_LIBS@
+LINKER_OPTIONS=@LINKER_OPTIONS@
+INSTALL_NAME=Roxen.pmod/COM
+
+DUMMY=module.pmod.in
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+module.pmod.in: $(SRCDIR)/module.pmod.in.in config.status
+	CONFIG_FILES=module.pmod.in CONFIG_HEADERS="" ./config.status
+
+@dependencies@
