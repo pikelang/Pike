@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.70 2003/10/26 00:08:42 peterl Exp $
+ * $Id: Sql.pike,v 1.71 2003/10/26 03:41:52 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -343,22 +343,22 @@ private array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs) {
 
   array(mixed) args=allocate(sizeof(extraargs));
-  mapping(string|int:mixed) b = 0;
+  mapping(string|int:mixed) b = ([]);
 
   int a;
   foreach(extraargs; int j; mixed s) {
+    if (stringp(s) || multisetp(s)) {
+      args[j]=":arg"+(a++);
+      b[args[j]] = s;
+      continue;
+    }
     if (intp(s) || floatp(s)) {
       args[j]=s;
       continue;
     }
-    if (stringp(s) || multisetp(s)) {
-      args[j]=":arg"+(a++);
-      if(!b) b = ([]);
-      b[args[j]] = s;
-      continue;
-    }
     ERROR("Wrong type to query argument #"+(j+1)+"\n");
   }
+  if(!sizeof(b)) b=0;
 
   return ({sprintf(query,@args), b});
 }
@@ -411,7 +411,6 @@ private array(string|mapping(string|int:mixed))
 //!
 //! @throws
 //!   Throws an exception if the query fails.
-
 array(mapping(string:mixed)) query(object|string q,
                                    mixed ... extraargs)
 {
