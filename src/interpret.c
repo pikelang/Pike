@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.43 1997/07/19 20:25:24 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.44 1997/08/03 09:55:06 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -521,6 +521,9 @@ static void eval_instruction(unsigned char *pc)
       if(fp->fun>=0 && fp->current_object->prog &&
 	 fp->locals+fp->num_locals > sp)
 	fatal("Stack error (stupid!).\n");
+
+      if(recoveries && sp-evaluator_stack < recoveries->sp)
+	fatal("Stack error (underflow)\n");
       
       if(d_flag > 9) do_debug();
 

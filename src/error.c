@@ -35,7 +35,7 @@ void throw() ATTRIBUTE((noreturn))
 
 #ifdef DEBUG
   if(sp - evaluator_stack < recoveries->sp)
-    fatal("Error in error.\n");
+    fatal("Stack error in error.\n");
 #endif
 
   while(fp != recoveries->fp)

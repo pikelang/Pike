@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.43 1997/06/07 01:16:26 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.44 1997/08/03 09:55:07 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -542,6 +542,10 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
       }
 
       dooptcode($4, $9, $<string>8, $1);
+#ifdef DEBUG
+      if(recoveries && sp-evaluator_stack < recoveries->sp)
+	fatal("Stack error (underflow)\n");
+#endif
     }
     if(local_variables->current_return_type)
     {
@@ -560,7 +564,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
   | error ';' { yyerrok; }
   {
     reset_type_stack();
-    if(num_parse_error>5) YYACCEPT;
+/*    if(num_parse_error>5) YYACCEPT; */
   }
   ;
 
@@ -891,6 +895,10 @@ lambda: F_LAMBDA
 	      mknode(F_ARG_LIST,$4,mknode(F_RETURN,mkintnode(0),0)),
 	      type,
 	      0);
+#ifdef DEBUG
+    if(recoveries && sp-evaluator_stack < recoveries->sp)
+      fatal("Stack error (underflow)\n");
+#endif
     free_string(name);
     free_string(type);
     comp_stackp=$<number>2;
@@ -1348,6 +1356,11 @@ void yyerror(char *str)
   extern int num_parse_error;
   extern int cumulative_parse_error;
 
+#ifdef DEBUG
+  if(recoveries && sp-evaluator_stack < recoveries->sp)
+    fatal("Stack error (underflow)\n");
+#endif
+
   if (num_parse_error > 5) return;
   num_parse_error++;
   cumulative_parse_error++;
@@ -1365,6 +1378,10 @@ void yyerror(char *str)
     sp++;
     SAFE_APPLY_MASTER("compile_error",3);
     pop_stack();
+#ifdef DEBUG
+    if(recoveries && sp-evaluator_stack < recoveries->sp)
+      fatal("Stack error (underflow)\n");
+#endif
   }else{
     (void)fprintf(stderr, "%s:%ld: %s\n",
 		  current_file->str,

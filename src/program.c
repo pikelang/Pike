@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.35 1997/07/18 01:44:22 hubbe Exp $");
+RCSID("$Id: program.c,v 1.36 1997/08/03 09:55:11 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -113,7 +113,12 @@ int find_module_identifier(struct pike_string *ident)
 {
   JMP_BUF tmp;
 
-  if(SETJMP(tmp))
+#ifdef DEBUG
+  if(recoveries && sp-evaluator_stack < recoveries->sp)
+    fatal("Stack error in compiation (underflow)\n");
+#endif
+
+ if(SETJMP(tmp))
   {
     ONERROR tmp;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
@@ -1518,6 +1523,10 @@ void compile()
   init_node=0;
 
   yyparse();  /* Parse da program */
+#ifdef DEBUG
+  if(recoveries && sp-evaluator_stack < recoveries->sp)
+    fatal("Stack error in compilation (underflow after yyparse)\n");
+#endif
   free_all_local_names();
 }
 

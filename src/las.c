@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.34 1997/05/22 23:27:32 hubbe Exp $");
+RCSID("$Id: las.c,v 1.35 1997/08/03 09:55:09 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2038,6 +2038,11 @@ int dooptcode(struct pike_string *name,
   struct svalue *foo;
 
 #ifdef DEBUG
+  if(recoveries && sp-evaluator_stack < recoveries->sp)
+    fatal("Stack error before dooptcode (underflow)\n");
+#endif
+
+#ifdef DEBUG
   if(a_flag > 1)
     fprintf(stderr,"Doing function '%s' at %x\n",name->str,PC);
 #endif
@@ -2084,6 +2089,11 @@ int dooptcode(struct pike_string *name,
     do_code_block(n);
   }
   
+#ifdef DEBUG
+  if(recoveries && sp-evaluator_stack < recoveries->sp)
+    fatal("Stack error after do_code_block (underflow)\n");
+#endif
+
   ret=define_function(name,
 		      type,
 		      modifiers,
