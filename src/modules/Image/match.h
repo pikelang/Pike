@@ -137,6 +137,7 @@ THREADS_ALLOW();
       ys=this->ysize-nys;
 
       /* This sets needle_average to something nice :-) */ 
+      /* match and match_phase don't use this */
       NEEDLEAVRCODE
 
 #define DOUBLE_LOOP(IF_SOMETHING, CERTI1, CERTI2,R1,G1,B1)  \
