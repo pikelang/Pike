@@ -318,23 +318,23 @@ GTK.Ctree set_line_style( int style );
 //!
 
 GTK.Ctree set_node_info( GTK.CTreeNode node, string text, int spacing, GDK.Pixmap pixmap_closed, GDK.Bitmap mask_closed, GDK.Pixmap pixmap_opened, GDK.Bitmap mask_opened, int is_leaf, int expanded );
-//! <table>
-//! <tr><td> text :</td><td>The texts to be shown in each column.</td></tr>
-//! <tr><td>spacing :</td>
-//! <td>The extra space between the pixmap and the text.</td></tr>
-//! <tr><td>pixmap_closed :</td>
-//! <td>The pixmap to be used when the node is collapsed. Can be NULL.</td></tr>
-//! <tr><td> mask_closed :</td>
-//! <td>The mask for the above pixmap. Can be NULL.</td></tr>
-//! <tr><td> pixmap_opened :</td>
-//! <td>The pixmap to be used when the children are visible. Can be NULL.</td></tr>
-//! <tr><td>  mask_opened :</td>
-//! <td>The mask for the above pixmap. Can be NULL.</td></tr>
-//! <tr><td>is_leaf :</td>
-//! <td>Whether this node is going to be a leaf.</td></tr>
-//! <tr><td> expanded :</td>
-//! <td>Whether this node should start out expanded or not.</td></tr>
-//! </table>
+//! @xml{<matrix>@}
+//! @xml{<r>@}@xml{<c>@} text :@xml{</c>@}@xml{<c>@}The texts to be shown in each column.@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}spacing :@xml{</c>@}
+//! @xml{<c>@}The extra space between the pixmap and the text.@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}pixmap_closed :@xml{</c>@}
+//! @xml{<c>@}The pixmap to be used when the node is collapsed. Can be NULL.@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@} mask_closed :@xml{</c>@}
+//! @xml{<c>@}The mask for the above pixmap. Can be NULL.@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@} pixmap_opened :@xml{</c>@}
+//! @xml{<c>@}The pixmap to be used when the children are visible. Can be NULL.@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}  mask_opened :@xml{</c>@}
+//! @xml{<c>@}The mask for the above pixmap. Can be NULL.@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}is_leaf :@xml{</c>@}
+//! @xml{<c>@}Whether this node is going to be a leaf.@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@} expanded :@xml{</c>@}
+//! @xml{<c>@}Whether this node should start out expanded or not.@xml{</c>@}@xml{</r>@}
+//! @xml{</matrix>@}
 //!
 //!
 
