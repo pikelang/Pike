@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.77 1999/10/28 20:59:25 grubba Exp $
+ * $Id: system.c,v 1.78 1999/10/28 21:07:25 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.77 1999/10/28 20:59:25 grubba Exp $");
+RCSID("$Id: system.c,v 1.78 1999/10/28 21:07:25 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1019,7 +1019,7 @@ int my_isipv6nr(char *s)
     }
   }
   if (((has_value) || (compressed && (s[i-2] == ':'))) &&
-      (compressed || (fields == 7))) {
+      ((compressed && (field < 7)) || (field == 7))) {
     return 1;
   }
   return 0;
