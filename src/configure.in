@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.70 1997/04/11 01:23:51 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.71 1997/04/11 02:05:23 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -510,22 +510,62 @@ int main()
       # We have to include this file!
       echo >>confdefs.h "#include <pthread.h>"
 
+      AC_MSG_CHECKING(for pthread_attr_setstacksize)
+      AC_CACHE_VAL(pike_cv_have_pthread_attr_setstacksize,[
+        AC_TRY_COMPILE([
+          void foo(pthread_attr*x) { pthread_attr_setstacksize(x, 1024*1024); }
+        ],[],[
+	  pike_cv_have_pthread_attr_setstacksize=yes
+	],[
+	  pike_cv_have_pthread_attr_setstacksize=no
+	])
+      ])
+      AC_MSG_RESULT($pike_cv_have_pthread_attr_setstacksize)
+      if test x$pike_cv_have_pthread_attr_setstacksize = xyes ; then
+        AC_DEFINE(HAVE_PTHREAD_ATTR_SETSTACKSIZE)
+      else
+         :
+      fi
 
-      AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_yield \
-		     pthread_cond_init)
+      AC_MSG_CHECKING(for pthread_yield)
+      AC_CACHE_VAL(pike_cv_have_pthread_yield,[
+        AC_TRY_COMPILE([
+          void foo(void) { pthread_yield(); }
+        ],[],[
+	  pike_cv_have_pthread_yield=yes
+	],[
+	  pike_cv_have_pthread_yield=no
+	])
+      ])
+      AC_MSG_RESULT($pike_cv_have_pthread_yield)
+      if test x$pike_cv_have_pthread_yield = xyes ; then
+        AC_DEFINE(HAVE_PTHREAD_YIELD)
+      else
+         :
+      fi
+
+      AC_MSG_CHECKING(for pthread_cond_init)
+      AC_CACHE_VAL(pike_cv_have_pthread_cond_init,[
+        AC_TRY_COMPILE([
+          void foo(pthread_cond_t*x, pthread_condattr_t*y) { pthread_cond_init(x,y); }
+        ],[],[
+	  pike_cv_have_pthread_cond_init=yes
+	],[
+	  pike_cv_have_pthread_cond_init=no
+	])
+      ])
+      AC_MSG_RESULT($pike_cv_have_pthread_cond_init)
+      if test x$pike_cv_have_pthread_cond_init = xyes ; then
+        AC_DEFINE(HAVE_PTHREAD_COND_INTI)
+      else
+         :
+      fi
+
       AC_MSG_CHECKING(if pthread_condattr_default is defined)
       AC_CACHE_VAL(pike_cv_have_pthread_condattr_default,[
         AC_TRY_COMPILE([
-#ifdef HAVE_PTHREAD_H
-#include <pthread.h>
-#endif /* HAVE_PTHREAD_H */
-void foo(pthread_cond_t *bar)
-{
-  pthread_cond_init(bar, pthread_condattr_default);
-}
-        ],[
-          exit(0);
-        ],[
+          void foo(pthread_cond_t *bar) { pthread_cond_init(bar, pthread_condattr_default); }
+        ],[],[
 	  pike_cv_have_pthread_condattr_default=yes
 	],[
 	  pike_cv_have_pthread_condattr_default=no
