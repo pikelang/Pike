@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.16 2000/03/08 21:05:16 js Exp $
+//  $Id: Session.pike,v 1.17 2000/04/10 11:48:13 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -472,6 +472,7 @@ class Text
    int no;
 
    MiscInfo _misc;
+  AuxItems _aux_items;
 
    object err;
 
@@ -557,10 +558,9 @@ class Text
          case "clear_stat":
            _stat=0;
 	   return 0;
-
          case "aux_items":
 	   waitfor_stat();
-	   return AuxItems(_stat->aux_items);
+	   return _aux_items||(_aux_items=AuxItems(_stat->aux_items));
 
          case "mark_as_read":
             return mark_as_read;
@@ -789,59 +789,60 @@ object person(int no)
 
 class Conference
 {
-   int no;
-
-   private object err;
-
-   FETCHER2(stat,ProtocolTypes.Conference,_conf,
-	    ProtocolTypes.ConferenceOld,_confold,
-	    get_conf_stat,get_conf_stat_old,no)
-
-   void create(int _no)
-   {
-      no=_no;
-   }
-
-   mixed `[](string what)
-   {
-      switch (what)
-      {
-	 case "create":
-	    return create;
-	 case "prefetch_stat":
-	    return prefetch_stat;
-
-	 case "no":
-	    return no;
-	 case "error":
-	    return err;
-
-	    //	 case "presentation":
-	 case "msg_of_day":
-	    waitfor_stat();
-	    return text( (_conf||_confold)[what] );
-	 case "supervisor":
-	 case "permitted_submitters":
-	 case "super_conf":
-	    waitfor_stat();
-	    return conference( (_conf||_confold)[what] );
-	 case "creator":
-	    waitfor_stat();
-	    return person( (_conf||_confold)[what] );
-         case "aux_items":
-	   waitfor_stat();
-	   return _conf->aux_items;
-	 case "name":
-	 case "type":
-	 case "creation_time":
-	 case "last_written":
-	 case "nice":
-	 case "no_of_members":
-	 case "first_local_no":
-	 case "no_of_texts":
-         case "presentation":
-		    waitfor_stat();
-	    return (_conf||_confold)[what];
+  int no;
+  AuxItems _aux_items;
+  
+  private object err;
+  
+  FETCHER2(stat,ProtocolTypes.Conference,_conf,
+	   ProtocolTypes.ConferenceOld,_confold,
+	   get_conf_stat,get_conf_stat_old,no)
+    
+  void create(int _no)
+  {
+    no=_no;
+  }
+  
+  mixed `[](string what)
+  {
+    switch (what)
+    {
+    case "create":
+      return create;
+    case "prefetch_stat":
+      return prefetch_stat;
+      
+    case "no":
+      return no;
+    case "error":
+      return err;
+      
+      //	 case "presentation":
+    case "msg_of_day":
+      waitfor_stat();
+      return text( (_conf||_confold)[what] );
+    case "supervisor":
+    case "permitted_submitters":
+    case "super_conf":
+      waitfor_stat();
+      return conference( (_conf||_confold)[what] );
+    case "creator":
+      waitfor_stat();
+      return person( (_conf||_confold)[what] );
+    case "aux_items":
+      waitfor_stat();
+      return _aux_items||(_aux_items=AuxItems(_conf->aux_items));
+    case "name":
+    case "type":
+    case "creation_time":
+    case "last_written":
+    case "nice":
+    case "no_of_members":
+    case "first_local_no":
+    case "no_of_texts":
+    case "presentation":
+      waitfor_stat();
+      return (_conf||_confold)[what];
       }
    }
 
