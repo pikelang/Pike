@@ -615,7 +615,6 @@ testfont binary
 /src/modules/_Crypto/include/rc4.h foreign_ident
 /src/modules/_Crypto/include/rijndael.h foreign_ident
 /src/modules/_Crypto/include/sha.h foreign_ident
-/src/modules/_Crypto/invert.c foreign_ident
 /src/modules/_Crypto/lib/.exportable_files foreign_ident
 /src/modules/_Crypto/lib/Makefile.in foreign_ident
 /src/modules/_Crypto/lib/arcfour.c foreign_ident

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.h,v 1.11 2003/03/23 23:19:26 nilsson Exp $
+|| $Id: crypto.h,v 1.12 2003/08/06 23:57:29 nilsson Exp $
 */
 
 /*
@@ -29,8 +29,6 @@ extern void pike_cast_init(void);
 extern void pike_cast_exit(void);
 extern void pike_arcfour_init(void);
 extern void pike_arcfour_exit(void);
-extern void pike_invert_init(void);
-extern void pike_invert_exit(void);
 extern void pike_sha_init(void);
 extern void pike_sha_exit(void);
 extern void pike_cbc_init(void);

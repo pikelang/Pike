@@ -1,9 +1,9 @@
-# $Id: Makefile.in,v 1.30 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.31 2003/08/06 23:57:40 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@
 
 OBJS= idea.o des.o cast.o arcfour.o rijndael.o \
-  crypto.o invert.o sha.o md2.o md4.o md5.o pipe.o cbc.o nt.o
+  crypto.o sha.o md2.o md4.o md5.o pipe.o cbc.o nt.o
 
 MODULE_ARCHIVES=lib/algorithms.a
 MODULE_SUBDIRS=lib
