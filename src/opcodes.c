@@ -432,7 +432,7 @@ static INT32 low_sscanf(INT32 num_arg)
 	  s=MEMMEM(end_str_start,
 		   end_str_end-end_str_start,
 		   input+eye,
-		   input_len-eye);
+		   (SIZE_T)(input_len-eye));
 	  if(!s) return matches;
 	  eye=s-input;
 	  new_eye=eye+end_str_end-end_str_start;

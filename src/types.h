@@ -9,7 +9,7 @@
 #if SIZEOF_SHORT >= 4
 #define INT32 short
 #else
-#if SIZEOF_INT < 4
+#if SIZEOF_INT >= 4
 #define INT32 int
 #else
 #define INT32 long
@@ -26,4 +26,5 @@
 
 #define FLOAT_TYPE float
 
+#include "memory.h"
 #endif
