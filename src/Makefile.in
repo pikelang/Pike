@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.292 2002/03/12 09:27:32 mast Exp $
+# $Id: Makefile.in,v 1.293 2002/03/14 00:43:08 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -721,6 +721,8 @@ interpret.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
 lex_t.o: $(SRCDIR)/lex_t.c $(SRCDIR)/interpret_protos.h
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
+
+$(SRCDIR)/language.c: $(SRCDIR)/language.h $(SRCDIR)/language.yacc
 
 $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
