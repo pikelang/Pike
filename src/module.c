@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.20 2002/10/11 01:39:33 nilsson Exp $
+|| $Id: module.c,v 1.21 2003/02/05 13:05:37 grubba Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,16 @@
 #include "post_modules/modlist_headers.h"
 #endif
 
-RCSID("$Id: module.c,v 1.20 2002/10/11 01:39:33 nilsson Exp $");
+RCSID("$Id: module.c,v 1.21 2003/02/05 13:05:37 grubba Exp $");
+
+/* Define this to trace the initialization and cleanup of static modules. */
+/* #define TRACE_MODULE */
+
+#if defined(TRACE_MAIN) || defined(TRACE_MODULE)
+#define TRACE(X)	fprintf X
+#else /* !TRACE_MAIN */
+#define TRACE(X)
+#endif /* TRACE_MAIN */
 
 typedef void (*modfun)(void);
 
@@ -66,6 +75,8 @@ void init_modules(void)
       free_program(end_program());
       call_handle_error();
     } else {
+      TRACE((stderr, "Initializing static module #%d: \"%s\"...\n",
+	     e, module_list[e].name));
       module_list[e].init();
       debug_end_class(module_list[e].name,strlen(module_list[e].name),0);
     }
@@ -87,8 +98,11 @@ void exit_modules(void)
   {
     if(SETJMP(recovery))
       call_handle_error();
-    else
+    else {
+      TRACE((stderr, "Exiting static module #%d: \"%s\"...\n",
+	     e, module_list[e].name));
       module_list[e].exit();
+    }
     UNSETJMP(recovery);
   }
 }
