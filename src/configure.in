@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.664 2002/12/14 15:39:52 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.665 2002/12/14 16:01:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -54,6 +54,8 @@ else :; fi
 
 AC_PROG_MAKE_SET
 
+
+rm "conftest_VPATH.in" 2>/dev/null
 touch "$srcdir/conftest_VPATH.in"
 if test -f conftest_VPATH; then :; else
   # Not building in source tree.
