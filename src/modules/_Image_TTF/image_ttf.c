@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.2 1998/11/01 05:20:59 per Exp $
+ * $Id: image_ttf.c,v 1.3 1998/11/01 05:42:23 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.2 1998/11/01 05:20:59 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.3 1998/11/01 05:42:23 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -1168,21 +1168,19 @@ static void image_ttf_faceinstance_write(INT32 args)
 	       { errs="TT_Get_Glyph_Pixmap: "; break; }
 
 
-	    for(y=0; y<=face_i->height; y++)
-	      for(x=0; x<rastermap.cols; x++)
+	    for(y=0; y<face_i->height; y++)
+	    {
+	      int xp = (-metrics.bbox.xMin+pos)/64;
+	      int i = (int)((y+ypos)*width)+xp, s;
+	      int i2 = y*rastermap.width;
+	      for(x=0; x<(metrics.bbox.xMin*2+metrics.bbox.xMax) 
+		    && i2 < rastermap.size
+		    && i < width*height
+		    && xp<width
+		    ; x++,xp++,i++,i2++)
 	      {
-		int xp = x + (-metrics.bbox.xMin+pos)/64;
-		int i = (int)((y+ypos)*width+xp);
-		int s = pixmap[y*rastermap.width+x];
-		if(xp<0 || xp>=width || i>width*height)
-		  continue;
-		if(i<0)
-		{
-		  fatal( "i<0!\n");
-		}
-/* 		fprintf(stderr, "x=%d; y=%d; xa=%d; ya=%d\n", */
-/* 			x,y,(x+pos/64),(y+ypos)); */
-		if(s)
+		if(xp<0) continue;
+		if((s = pixmap[i2]))
 		{
 /* 		  fprintf(stderr, "found pixel %d\n", s); */
 		  if(d[i].r+s < 256)
@@ -1192,8 +1190,12 @@ static void image_ttf_faceinstance_write(INT32 args)
 		    d[i].b+=s;
 		  } else
 		    d[i].r=d[i].g=d[i].b=255;
-		} 
+		} else {
+/* 		  d[i].b = y; */
+/* 		  d[i].g += x; */
+		}
 	      }
+	    }
 	    
 	    pos+=metrics.advance/*+metrics.bbox.xMin*/;
 	    if(has_kerning && i<slen[a]-1)
