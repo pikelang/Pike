@@ -34,24 +34,24 @@ This module adds image-drawing and -manipulating
 
 <dt><encaps>NOTA BENE</encaps><dd>
 <font size=-1><pre>Image module documentation is based on these file versions:
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
-     $Id: Image.wmml,v 1.5 1997/11/10 14:23:46 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
+     $Id: Image.wmml,v 1.6 1997/11/12 03:36:52 mirar Exp $
      </pre></font>
 <p>
 
@@ -85,8 +85,8 @@ This object keeps colortable information,
 </dl>
 
 <hr newpage>
-<anchor name=Image.colortable.create>
 <anchor name=Image.colortable.add>
+<anchor name=Image.colortable.create>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.colortable->add</tt><br>
@@ -433,8 +433,8 @@ Not applicable to colorcube types of colortable.
 
 <hr newpage>
 <anchor name=Image.colortable.`*>
-<anchor name=Image.colortable.map>
 <anchor name=Image.colortable.``*>
+<anchor name=Image.colortable.map>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.colortable->map</tt><br>
@@ -1001,8 +1001,8 @@ font baseline (pixels from top)
 
 
 <hr newpage>
-<anchor name=Image.font.text_extents>
 <anchor name=Image.font.height>
+<anchor name=Image.font.text_extents>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.font->height</tt><br>
@@ -1191,7 +1191,7 @@ The main object of the <link to=Image>Image</link> module, this object
      <link to=Image.image.setpixel>setpixel</link>, 
      <link to=Image.image.treshold>treshold</link>,
      <link to=Image.image.tuned_box>tuned_box</link>,
-     <link to=Image.image.polygone>polygone</link>
+     <link to=Image.image.polyfill>polyfill</link>
 
 <p>     operators: <link to=Image.image.`&>`&amp;</link>,
      <link to=Image.image.`*>`*</link>,
@@ -2164,12 +2164,12 @@ color of the requested pixel -- ({int red,int green,int blue})
 
 
 <hr newpage>
+<anchor name=Image.image.gif_end>
 <anchor name=Image.image.gif_begin>
 <anchor name=Image.image.gif_add>
-<anchor name=Image.image.gif_end>
-<anchor name=Image.image.gif_add_fs_nomap>
 <anchor name=Image.image.gif_netscape_loop>
 <anchor name=Image.image.gif_add_nomap>
+<anchor name=Image.image.gif_add_fs_nomap>
 <anchor name=Image.image.togif>
 <anchor name=Image.image.togif_fs>
 <anchor name=Image.image.gif_add_fs>
@@ -2311,8 +2311,8 @@ the new image object
 
 
 <hr newpage>
-<anchor name=Image.image.hsv_to_rgb>
 <anchor name=Image.image.rgb_to_hsv>
+<anchor name=Image.image.hsv_to_rgb>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.image->hsv_to_rgb</tt><br>
@@ -2491,9 +2491,9 @@ the object called
 
 <hr newpage>
 <anchor name=Image.image.map_closest>
-<anchor name=Image.image.select_colors>
 <anchor name=Image.image.map_fast>
 <anchor name=Image.image.map_fs>
+<anchor name=Image.image.select_colors>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.image->map_closest</tt><br>
@@ -2917,13 +2917,13 @@ the object called
 
 
 <hr newpage>
-<anchor name=Image.image.polygone>
+<anchor name=Image.image.polyfill>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-	<tt>Image.image->polygone</tt><br>
+	<tt>Image.image->polyfill</tt><br>
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-object <b>polygone</b>(array(int|float)&nbsp;...&nbsp;curve)
+object <b>polyfill</b>(array(int|float)&nbsp;...&nbsp;curve)
 <p>
 
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -2948,24 +2948,24 @@ the current object
 <p>
 
 <dt><encaps>NOTA BENE</encaps><dd>
-This function is new (april-97) and rather untested.
+Lines in the polygon may not be crossed without
+     midpoints.
 <p>
 
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Image.image.box>box</link>,
-     <link to=Image.image.setcolor>setcolor</link>
+<link to=Image.image.setcolor>setcolor</link>
 <p>
 
 </dl>
 
-</anchor name=Image.image.polygone>
+</anchor name=Image.image.polyfill>
 
 
 
 <hr newpage>
-<anchor name=Image.image.write_lsb_rgb>
 <anchor name=Image.image.read_lsb_grey>
 <anchor name=Image.image.write_lsb_grey>
+<anchor name=Image.image.write_lsb_rgb>
 <anchor name=Image.image.read_lsb_rgb>
 <dl>
 <dt><encaps>NAME</encaps><dd>
@@ -4315,6 +4315,50 @@ This function gives a image block for placement in a GIF file,
      [...]
      write(<link to=Image.GIF.end_block>Image.GIF.end_block</link>()); // write end block
      // voila! A GIF animation on stdout.
+     </pre>
+
+<p>     <illustration __from__='encodings/gif.c line 552' src=lena.gif type=image/gif>
+
+     object nct=colortable(src,32,({({0,0,0})}));
+     string s=GIF.header_block(src->xsize(),src->ysize(),nct);
+     foreach ( ({src->xsize(),
+                 (int)(src->xsize()*0.75),
+                 (int)(src->xsize()*0.5),
+                 (int)(src->xsize()*0.25),
+                 (int)(1),
+                 (int)(src->xsize()*0.25),
+                 (int)(src->xsize()*0.5),
+                 (int)(src->xsize()*0.75)}),int xsize)
+     {
+        object o=src->scale(xsize,src->ysize());
+        object p=src->clear(0,0,0);
+        p->paste(o,(src->xsize()-o->xsize())/2,0);
+        s+=GIF.render_block(p,nct,0,0,0,25);
+     }
+     s+=GIF.netscape_loop_block(200);
+     s+=GIF.end_block();
+     return s;
+     </illustration>The above animation is thus created:
+     <pre>
+     object nct=colortable(lena,32,({({0,0,0})}));
+     string s=GIF.header_block(lena-&gt;xsize(),lena-&gt;ysize(),nct);
+     foreach ( ({lena-&gt;xsize(),
+                 (int)(lena-&gt;xsize()*0.75),
+                 (int)(lena-&gt;xsize()*0.5),
+                 (int)(lena-&gt;xsize()*0.25),
+                 (int)(1),
+                 (int)(lena-&gt;xsize()*0.25),
+                 (int)(lena-&gt;xsize()*0.5),
+                 (int)(lena-&gt;xsize()*0.75)}),int xsize)
+     {
+        object o=lena-&gt;scale(xsize,lena-&gt;ysize());
+        object p=lena-&gt;clear(0,0,0);
+        p-&gt;paste(o,(lena-&gt;xsize()-o-&gt;xsize())/2,0);
+        s+=GIF.render_block(p,nct,0,0,0,25);
+     }
+     s+=GIF.netscape_loop_block(200);
+     s+=GIF.end_block();
+     write(s);
      </pre>
 <p>
 
