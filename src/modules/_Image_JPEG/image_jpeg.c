@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.59 2002/10/21 17:06:25 marcus Exp $
+|| $Id: image_jpeg.c,v 1.60 2002/10/29 14:07:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -47,7 +47,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.59 2002/10/21 17:06:25 marcus Exp $");
+RCSID("$Id: image_jpeg.c,v 1.60 2002/10/29 14:07:58 nilsson Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -552,8 +552,6 @@ static void init_src(struct pike_string *raw_img,
 		     struct my_source_mgr *srcmgr,
                      struct my_decompress_struct *mds)
 {
-   int n=0,m;
-
    mds->first_marker=NULL;
 
    jpeg_std_error(errmgr);
