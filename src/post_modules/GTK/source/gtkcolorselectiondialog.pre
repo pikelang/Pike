@@ -16,8 +16,6 @@ member GTK.Button ok_button;
 //! Return the ok button
 member GTK.Button cancel_button;
 //! Return the cancel button widget.
-member GTK.Button reset_button;
-//! Return the reset button
 member GTK.Button help_button;
 //! Return the help button
 
