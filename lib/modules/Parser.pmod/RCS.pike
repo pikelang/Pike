@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.1 2002/02/23 00:11:51 jhs Exp $
+// $Id: RCS.pike,v 1.2 2002/02/23 00:54:23 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v files and presents nice pike
 //! data structures of its contents.
@@ -139,6 +139,7 @@ function symbol_is_branch = Regexp("\\.0\\.[0-9]*[02468]$")->match;
 
 string rcs_file_name;
 
+//!
 void create(string|void file_name, string|void raw)
 {
   if(!file_name)
@@ -157,6 +158,7 @@ void create(string|void file_name, string|void raw)
   parse(raw);
 }
 
+//!
 void parse(string raw)
 {
   int pos;
@@ -306,6 +308,7 @@ void parse(string raw)
   revisions = revs;
 }
 
+//!
 class Revision
 {
   int added, removed, lines, bytes;
@@ -333,56 +336,82 @@ class Revision
     return sprintf("Revision(/* %s */)", revision||"uninitizlized");
   }
 
-  array read_lines(string data, int offs, int count)
-  {
-    if(!count)
-      return ({ "", offs });
-    if(offs >= sizeof(data))
-      return ({ "", sizeof(data) });
-    int from = offs;
-    while(count--)
-    {
-      offs = search(data, "\n", offs);
-      if(offs == -1)
-	return ({ data[from..], sizeof(data) });
-      offs++;
-    }
-    return ({ data[from..offs-1], offs });
-  }
-
+  //! Returns the file contents from this revision.
+  //! @todo
+  //!   add optional argument "expand_override" and implement keyword expansion
   string get_contents()
   {
     if(text)
       return text;
     Revision parent = revisions[sizeof(revision/".")==2 ? next : ancestor];
-    string old = parent->get_contents(), new = "", diff = rcs_text, op, tmp;
-    int scan_from, scan_to, scanned, scan_diff, at_line, from, lines, skip;
-    int o;
-    //werror("\n\nold:\n%s\ndiff:\n%s\n", old, diff);
+    string old = parent->get_contents(), new = "", diff = rcs_text, op;
+    int of, ot, dt, at, cnt, from, lines;
     while(sizeof(diff))
     {
       sscanf(diff, "%[ad]%d %d\n%s", op, from, lines, diff);
-      //werror("op:%s from:%d lines:%d\n", op, from, lines);
       if(op == "d")
       {
-	[tmp, o] = read_lines(old, o, from - at_line - 1);
-	new += tmp;
-	at_line = from + lines - 1;
-	[tmp, o] = read_lines(old, o, lines);
-	//werror("before: %O [o:%d, @%d]\n", tmp, o, at_line);
+	cnt = from - at - 1; // possibly scan forward past a few lines...
+	if(cnt && of < sizeof(old))
+	{
+	  ot = of - 1;
+	  while(cnt--)
+	  {
+	    ot = search(old, "\n", ++ot);
+	    if(ot == -1)
+	    {
+	      ot = sizeof(old);
+	      break;
+	    }
+	  }
+	  new += old[of..ot++]; // ...that remained intact since last rev...
+	  of = ot;
+	}
+	at = from + lines - 1; // ...to the [lines] lines from line [at]...
+	while(lines--)
+	{
+	  of = search(old, "\n", of);
+	  if(of == -1)
+	  {
+	    of = sizeof(old);
+	    break;
+	  }
+	  of++;
+	} // ...that should simply be deleted (not passed on to [new])
       }
-      else
+      else // op == "a"
       {
-	[tmp, o] = read_lines(old, o, from - at_line);
-	new += tmp;
-	at_line = from;
-	//werror("before: %O [o:%d, @%d]\n", tmp, o, at_line);
-	[tmp, scan_diff] = read_lines(diff, 0, lines);
-	new += tmp;
-	diff = diff[scan_diff..];
-	//werror("to add: %O [o:%d, @%d]\n", tmp, o, at_line);
+	cnt = from - at; // possibly scan forward past a few lines...
+	if(cnt && of < sizeof(old))
+	{
+	  ot = of - 1;
+	  while(cnt--)
+	  {
+	    ot = search(old, "\n", ++ot);
+	    if(ot == -1)
+	    {
+	      ot = sizeof(old);
+	      break;
+	    }
+	  }
+	  new += old[of..ot++]; // ...that remained intact since last rev...
+	  of = ot;
+	}
+	at = from; // ...to the line...
+	dt = -1;
+	while(lines--)
+	{
+	  dt = search(diff, "\n", ++dt);
+	  if(dt == -1)
+	  {
+	    dt = sizeof(diff);
+	    break;
+	  }
+	}
+	new += diff[..dt++]; // ...where we should add [lines] new rows.
+	diff = diff[dt..];
       }
     }
-    return text = new += old[o..];
+    return text = new += old[of..];
   }
 }
