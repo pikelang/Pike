@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.92 2000/05/24 01:22:20 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.93 2000/06/29 09:55:04 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -983,7 +983,7 @@ void f_get_all_active_fd(INT32 args)
   {
     int q;
     THREADS_ALLOW();
-    q = fstat(i,&foo);
+    q = fd_fstat(i,&foo);
     THREADS_DISALLOW();
     if(!q)
     {
@@ -1005,7 +1005,7 @@ void f_fd_info(INT32 args)
     error("Illegal argument to fd_info\n");
   i=sp[-args].u.integer;
   pop_n_elems(args);
-  if (fstat(i,&foo))
+  if (fd_fstat(i,&foo))
   {
     push_string(make_shared_string("non-open filedescriptor"));
     return;
