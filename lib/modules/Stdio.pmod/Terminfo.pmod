@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.5 1999/09/07 20:30:29 marcus Exp $
+// $Id: Terminfo.pmod,v 1.6 1999/09/07 20:31:12 marcus Exp $
 
 
 #if constant(thread_create)
@@ -193,7 +193,7 @@ class Termcap {
       else if (data[0]=='=') // string
       {
 	data=data[1..];
-	while (sizeof(data) && data[-1]=="\\")
+	while (sizeof(data) && data[-1]=='\\')
 	{
 	  string add;
 	  if (sscanf(en,"%s"+br+"%s",add,en)<2) break;
