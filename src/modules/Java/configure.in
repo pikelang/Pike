@@ -68,8 +68,9 @@ if test "x$with_java" = xyes; then
 
     if test x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xunknown:linux -o \
 	    x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xno:linux; then
-      pike_cv_java_arch="`uname -m | sed -e 's/^i[[4-9]]86/i386/'`"
+      pike_cv_java_arch="`uname -m`"
     fi
+    pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/^i[[4-9]]86/i386/'`"
   ])
   AC_MSG_RESULT($pike_cv_java_arch)
 
@@ -117,15 +118,9 @@ if test "x$with_java" = xyes; then
 
   AC_MSG_CHECKING(for JAVA_HOME)
 
-  AC_CACHE_VAL(pike_cv_java_java_home, [[
+  changequote({,})AC_CACHE_VAL(pike_cv_java_java_home, {
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
-
-      # balance brackets: [ [
-      #
-      # I know this is bloody ugly, bug in modern (>2.13) 
-      # autoconf's changequote doesn't work (and this is 
-      # the only thing that breaks so far) /Mirar
 
       java_home_guess="`java -verbose fnord.fnord.fnord 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e 's:^\[[^]/]*\(/.*\)/[^/]*\.zip[] ].*$:\1:' -e t -e d | sed -e 's:^.* from /:/:' -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
@@ -134,6 +129,10 @@ if test "x$with_java" = xyes; then
 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/client/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/bin"/client/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/server/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/bin"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
 	  else
@@ -150,7 +149,7 @@ if test "x$with_java" = xyes; then
         pike_cv_java_java_home="$JAVA_HOME"
       fi
     fi
-  ]])
+  })changequote([,])
   AC_MSG_RESULT($pike_cv_java_java_home)
 
   AC_MSG_CHECKING(for Java libraries)
