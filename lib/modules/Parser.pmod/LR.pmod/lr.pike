@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.2 2002/05/10 23:31:24 nilsson Exp $
+ * $Id: lr.pike,v 1.3 2002/05/11 02:58:32 nilsson Exp $
  *
  * An LR(1) Parser in Pike
  *
@@ -141,7 +141,7 @@ string symbol_to_string(int|string symbol)
 
 void create()
 {
-  g = parser();
+  g = Parser();
 
   g->set_symbol_to_string(symbol_to_string);
   
