@@ -139,13 +139,16 @@ static void ponder_answer()
    // read until we have all headers
 
    int i=0;
+   int j=0;
 
    for (;;)
    {
       string s;
 
       if (i<0) i=0;
-      if ((i=search(buf,"\r\n\r\n",i))!=-1) break;
+      j=search(buf,"\r\n\r\n",i); if (j==-1) j=10000000;
+      i=search(buf,"\n\n",i);     if (i==-1) i=10000000;
+      if ((j=min(i,j))!=10000000)  break;
 
       s=con->read(8192,1);
       if (s=="") { i=strlen(buf); break; }
@@ -155,7 +158,9 @@ static void ponder_answer()
    }
 
    headerbuf=buf[..i-1];
-   datapos=i+4;
+
+   if (buf[i..i+1]=="\n\n") datapos=i+2;
+   else datapos=i+4;
 
    // split headers
 
