@@ -1,11 +1,13 @@
 /*
- * $Id: join.pike,v 1.5 2002/03/11 20:10:07 nilsson Exp $
+ * $Id: join.pike,v 1.6 2002/03/12 19:01:26 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
  * Usage: pike join.pike --post-process destination.xml files_to_join.xml [...]
  * Usage: pike join.pike destination.xml builddir
  */
+
+mapping sub_cache = ([]);
 
 int main(int n, array(string) args) {
 
@@ -62,6 +64,11 @@ void recurse(string builddir, string save_to) {
   if(res) exit(res);
 }
 
+object load_tree(string fn) {
+  if(sub_cache[fn]) return m_delete(sub_cache, fn);
+  return Parser.XML.Tree.parse_file(fn)[0];
+}
+
 int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process) {
 
   if(!sizeof(files)) {
@@ -78,7 +85,7 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
 	 (sizeof(files)==1?"":"s"));
 
   werror("Reading %s...\n", files[0]);
-  object dest = Parser.XML.Tree.parse_file(files[0])[0];
+  object dest = load_tree(files[0]);
 
   int fail;
 
@@ -86,7 +93,7 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
   {    
     object src;
     if (mixed err = catch {
-      src = Parser.XML.Tree.parse_file( filename )[0];
+      src = load_tree( filename );
     }) {
       if (arrayp(err)) {
 	throw(err);
@@ -129,6 +136,7 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
   if (!fail) {
     werror("\rWriting %s...\n", save_to);
     Stdio.write_file(save_to, dest->html_of_node());
+    sub_cache[save_to] = dest;
   }
   return fail;
 }
