@@ -205,7 +205,7 @@ static private class Extractor {
       foreach (decls, PikeObject obj)
         if (obj->objtype == "class" || obj->objtype == "module") {
           wasClassOrModule = 1;
-          if (sizeof(decls) > 1)
+          if (sizeof(decls) > 1 && doc)
             extractorError("cannot group classes or modules");
         }
 
