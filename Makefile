@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.92 2002/09/14 13:38:46 grubba Exp $
+# $Id: Makefile,v 1.93 2002/09/14 15:53:39 grubba Exp $
 #
 # Meta Makefile
 #
@@ -267,8 +267,9 @@ xenofarm:
 	-if test ! -f "build/xenofarm/verifylog.txt"; then \
 	  cp "$(BUILDDIR)/config.cache" build/xenofarm/configcache.txt; \
 	  mkdir build/xenofarm/configlogs; \
-	  for f in `cd "$(BUILDDIR)" && find . -name config.log -print`; do \
-	    cp $(BUILDDIR)/$f build/xenofarm/configlogs/`echo $f|tr '[/]' '[_]'`; \
+	  builddir="$(BUILDDIR)"; \
+	  for f in `cd "$$builddir" && find . -name config.log -print`; do \
+	    cp $$builddir/$$f build/xenofarm/configlogs/`echo $$f|tr '[/]' '[_]'`; \
 	  done; \
 	else :; fi
 	-if test ! -f "build/xenofarm/exportlog.txt"; then \
