@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.237 2004/06/29 03:14:15 aldem Exp $
+|| $Id: threads.c,v 1.238 2004/07/16 12:44:56 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.237 2004/06/29 03:14:15 aldem Exp $");
+RCSID("$Id: threads.c,v 1.238 2004/07/16 12:44:56 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -293,7 +293,7 @@ PMOD_EXPORT const char msg_thr_allow_in_gc[] =
   "Threads allowed during garbage collection (pass %d).\n";
 PMOD_EXPORT const char msg_thr_allow_in_disabled[] =
   "Threads allowed from a different thread "
-  "while threads are disabled.\n";
+  "while threads are disabled. (self: %08x, disabler: %08x)\n";
 PMOD_EXPORT const char msg_global_dynbuf_in_use[] =
   "Threads allowed while the global dynamic buffer is in use.\n";
 #endif
