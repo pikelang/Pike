@@ -1934,7 +1934,7 @@ syntax is the same as for a normal function, except you write
 <pre>
 	lambda ( <i>types</i> ) { <i>statements</i> }
 </pre>
-The major differeance is that this is an expression that can be used inside
+The major difference is that this is an expression that can be used inside
 other function. Example:
 <example language=pike>
 	function bar() { return lambda() { return 1; }; )
@@ -2924,7 +2924,7 @@ These modifiers are available:
     Note that inheriting program can still re-define the identifier.
     Also note that <tt>private</tt> does not imply <tt>static</tt>.
 <dt><tt>public</tt>
-<dd>This is the oppsite of <tt>private</tt>. This is the default for
+<dd>This is the opposite of <tt>private</tt>. This is the default for
     all identifiers. <tt>public</tt> can be used to override the effects
     of a private inherit.
 <dt><tt>protected</tt>
@@ -5734,7 +5734,7 @@ return res;<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function sorts an array after a compare-function 'fun'
 which takes two arguments and should return 1 if the first argument
-is larger then the second. The rest of the arguments 'args' will be
+is larger than the second. The rest of the arguments 'args' will be
 sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is used
 instead.
 <p>
