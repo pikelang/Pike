@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.771 2004/02/26 17:16:45 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.772 2004/02/26 17:17:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6862,8 +6862,6 @@ AC_OUTPUT(Makefile \
             chmod +x precompile.sh
           ])
 
-set -x
-
 # Check if we have to enable some bundles
 if test "$pike_bundle_dir" = ""; then :; else
   bundle_info="`find . -type f -name '*.bundle'`"
@@ -6905,8 +6903,6 @@ $bundle_info])
     exit 17
   fi
 fi
-
-set +x
 
 # NOTE: M4 uses [] as quotes.
 
