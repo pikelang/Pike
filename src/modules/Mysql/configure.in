@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.35 2003/02/07 13:23:41 agehall Exp $
+# $Id: configure.in,v 1.36 2003/02/26 18:17:42 agehall Exp $
 #
 # Configure script for the mysql-module
 #
@@ -87,6 +87,40 @@ else
   # Header file
 
   AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+
+  # Defines within headerfile
+define([AC_CHECK_MYSQL_OPTIONS],
+[
+AC_MSG_CHECKING(for $1)
+AC_TRY_COMPILE([
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+], [
+int tmp;
+tmp = $1;
+], [
+AC_MSG_RESULT(yes)
+AC_DEFINE(HAVE_$1)
+], [
+AC_MSG_RESULT(no)
+])])
+
+
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_READ_DEFAULT_FILE)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_CONNECT_TIMEOUT)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_COMPRESS)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_NAMED_PIPE)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_INIT_COMMAND)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_READ_DEFAULT_GROUP)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_DIR)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_NAME)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_LOCAL_INFILE)
+
 
   # Mysql libs
 

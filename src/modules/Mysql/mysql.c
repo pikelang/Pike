@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.69 2003/02/07 14:34:07 grubba Exp $
+|| $Id: mysql.c,v 1.70 2003/02/26 18:17:42 agehall Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.69 2003/02/07 14:34:07 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.70 2003/02/26 18:17:42 agehall Exp $");
 
 /*! @module Mysql
  *!
@@ -261,35 +261,35 @@ static void pike_mysql_set_options(struct mapping *options)
 {
   struct svalue *val;
 
-  if ((val = simple_mapping_string_lookup(options, "mysql_group")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift)) {
-    mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_GROUP,
-		  val->u.string->str);
-  }
 #ifdef HAVE_MYSQL_OPTIONS
-#ifdef MYSQL_READ_DEFAULT_FILE
+#ifdef HAVE_MYSQL_READ_DEFAULT_FILE
   if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_FILE,
 		  val->u.string->str);
   }
 #endif /* MYSQL_READ_DEFAULT_FILE */
-#ifdef MYSQL_READ_DEFAULT_GROUP
+#ifdef HAVE_MYSQL_READ_DEFAULT_GROUP
+  if ((val = simple_mapping_string_lookup(options, "mysql_group")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_GROUP,
+		  val->u.string->str);
+  }
 #endif /* MYSQL_READ_DEFAULT_GROUP */
-#ifdef MYSQL_INIT_COMMAND
+#ifdef HAVE_MYSQL_INIT_COMMAND
   if ((val = simple_mapping_string_lookup(options, "init_command")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_INIT_COMMAND,
 		  val->u.string->str);
   }
 #endif /* MYSQL_INIT_COMMAND */
-#ifdef MYSQL_OPT_NAMED_PIPE
+#ifdef HAVE_MYSQL_OPT_NAMED_PIPE
   if ((val = simple_mapping_string_lookup(options, "mysql_named_pipe")) &&
       (val->type == T_INT) && (val->u.integer)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_NAMED_PIPE, NULL);
   }
 #endif /* MYSQL_OPT_NAMED_PIPE */
-#ifdef MYSQL_OPT_CONNECT_TIMEOUT
+#ifdef HAVE_MYSQL_OPT_CONNECT_TIMEOUT
   if ((val = simple_mapping_string_lookup(options, "timeout")) &&
       (val->type == T_INT)) {
     unsigned int timeout = (unsigned int)val->u.integer;
@@ -297,13 +297,13 @@ static void pike_mysql_set_options(struct mapping *options)
 		  (char *)&timeout);
   }
 #endif /* MYSQL_OPT_CONNECT_TIMEOUT */
-#ifdef MYSQL_OPT_COMPRESS
+#ifdef HAVE_MYSQL_OPT_COMPRESS
   if ((val = simple_mapping_string_lookup(options, "compress")) &&
       (val->type == T_INT) && (val->u.integer)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_COMPRESS, NULL);
   }
 #endif /* MYSQL_OPT_COMPRESS */
-#ifdef MYSQL_OPT_LOCAL_INFILE
+#ifdef HAVE_MYSQL_OPT_LOCAL_INFILE
   if ((val = simple_mapping_string_lookup(options, "mysql_local_infile")) &&
       (val->type == T_INT)) {
     unsigned int allowed = (unsigned int)val->u.integer;
@@ -316,14 +316,14 @@ static void pike_mysql_set_options(struct mapping *options)
 		  (char *)&allowed);    
   }
 #endif /* MYSQL_OPT_LOCAL_INFILE */
-#ifdef MYSQL_SET_CHARSET_DIR
+#ifdef HAVE_MYSQL_SET_CHARSET_DIR
   if ((val = simple_mapping_string_lookup(options, "mysql_charset_dir")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_DIR,
 		  val->u.string->str);
   }
 #endif /* MYSQL_SET_CHARSET_DIR */
-#ifdef MYSQL_SET_CHARSET_NAME
+#ifdef HAVE_MYSQL_SET_CHARSET_NAME
   if ((val = simple_mapping_string_lookup(options, "mysql_charset_name")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_NAME,

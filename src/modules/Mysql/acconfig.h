@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.10 2003/02/07 11:28:30 agehall Exp $
+|| $Id: acconfig.h,v 1.11 2003/02/26 18:17:42 agehall Exp $
 */
 
 /*
@@ -40,5 +40,32 @@
 
 /* Define if you have the mysql_unix_port variable. */
 #undef HAVE_MYSQL_UNIX_PORT
+
+/* Define if your mysql.h defines MYSQL_OPT_CONNECT_TIMEOUT */
+#undef HAVE_MYSQL_OPT_CONNECT_TIMEOUT
+
+/* Define if your mysql.h defines MYSQL_OPT_COMPRESS */
+#undef HAVE_MYSQL_OPT_COMPRESS
+
+/* Define if your mysql.h defines MYSQL_OPT_NAMED_PIPE */
+#undef HAVE_MYSQL_OPT_NAMED_PIPE
+
+/* Define if your mysql.h defines MYSQL_INIT_COMMAND */
+#undef HAVE_MYSQL_INIT_COMMAND
+
+/* Define if your mysql.h defines MYSQL_READ_DEFAULT_FILE */
+#undef HAVE_MYSQL_READ_DEFAULT_FILE
+
+/* Define if your mysql.h defines MYSQL_READ_DEFAULT_GROUP */
+#undef HAVE_MYSQL_READ_DEFAULT_GROUP
+
+/* Define if your mysql.h defines MYSQL_SET_CHARSET_DIR */
+#undef HAVE_MYSQL_SET_CHARSET_DIR
+
+/* Define if your mysql.h defines MYSQL_SET_CHARSET_NAME */
+#undef HAVE_MYSQL_SET_CHARSET_NAME
+
+/* Define if your mysql.h defines MYSQL_OPT_LOCAL_INFILE */
+#undef HAVE_MYSQL_OPT_LOCAL_INFILE
 
 #endif /* PIKE_MYSQL_CONFIG_H */
