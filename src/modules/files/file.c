@@ -2,7 +2,7 @@ n/*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.335 2004/11/30 15:30:09 mast Exp $
+|| $Id: file.c,v 1.336 2004/11/30 17:53:43 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2263,12 +2263,18 @@ static void file_set_close_on_exec(INT32 args)
  *! Returns true if the file is open.
  *!
  *! @note
+ *! If the file is a socket that has been closed from the remote side,
+ *! this function might still return true.
+ *!
+ *! @note
  *! Most methods can't be called for a file descriptor that isn't
  *! open. Notable exceptions @[errno], @[mode], and the set and query
  *! functions for callbacks and backend.
  */
 static void file_is_open (INT32 args)
 {
+  /* Note: Even though we'd like to, we can't accurately tell whether
+   * a socket has been closed from the remote end or not. */
   pop_n_elems (args);
   push_int (FD >= 0);
 }
