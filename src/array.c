@@ -442,6 +442,27 @@ struct array *slice_array(struct array *v,INT32 start,INT32 end)
 }
 
 /*
+ * Slice a pice of an array (nondestructively)
+ * return an array consisting of v[start..end-1]
+ */
+struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end)
+{
+  struct array *a;
+
+#ifdef DEBUG
+  if(start > end || end>v->size || start<0)
+    fatal("Illegal arguments to slice_array()\n");
+#endif
+
+  a=allocate_array_no_init(end-start,0);
+  a->type_field = v->type_field;
+
+  assign_svalues_no_free(ITEM(a), ITEM(v)+start, end-start, v->type_field);
+
+  return a;
+}
+
+/*
  * Copy an array
  */
 struct array *copy_array(struct array *v)

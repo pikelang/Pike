@@ -76,6 +76,7 @@ struct array *array_shrink(struct array *v,INT32 size);
 struct array *array_remove(struct array *v,INT32 index);
 INT32 array_search(struct array *v, struct svalue *s,INT32 start);
 struct array *slice_array(struct array *v,INT32 start,INT32 end);
+struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end);
 struct array *copy_array(struct array *v);
 void check_array_for_destruct(struct array *v);
 INT32 array_find_destructed_object(struct array *v);
