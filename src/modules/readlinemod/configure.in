@@ -7,6 +7,23 @@ AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 
 if test x$with_readline = xyes ; then
+  AC_MSG_CHECKING(Checking for GNU-include directory)
+
+  AC_CACHE_VAL(pike_cv_gnu_include_dir, [
+    for pike_cv_gnu_include_dir in /usr/gnu/include /opt/gnu/include /usr/local/gnu/include /sw/gnu/include no; do
+      if test -d $pike_cv_gnu_include_dir/. ; then
+	break
+      else
+	:
+      fi
+    done
+  ])
+  AC_MSG_RESULT($pike_cv_gnu_include_dir)
+
+  if test x$pike_cv_gnu_include_dir != xno; then
+    echo Adding $pike_cv_gnu_include_dir to the include path
+    CPPFLAGS="$CPPFLAGS -I$pike_cv_gnu_include_dir"
+  fi
   AC_CHECK_HEADERS(readline.h history.h readline/readline.h history/history.h readline/history.h)
 
   if test $ac_cv_header_readline_h = yes -o $ac_cv_header_readline_readline_h = yes ; then
