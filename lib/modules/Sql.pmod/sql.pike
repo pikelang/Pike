@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.13 1997/06/27 18:40:37 grubba Exp $
+ * $Id: sql.pike,v 1.14 1997/07/02 00:27:27 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.13 1997/06/27 18:40:37 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.14 1997/07/02 00:27:27 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -79,7 +79,7 @@ void create(void|string|object host, void|string db,
 
   array(string) program_names;
 
-  if (host != replace(host, ({ ":", "/", "@" }), ({ "", "", "" }))) {
+  if (host && (host != replace(host, ({ ":", "/", "@" }), ({ "", "", "" })))) {
 
     // The hostname is on the format:
     //
