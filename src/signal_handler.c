@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.130 1999/05/03 18:18:16 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.131 1999/05/08 00:39:51 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -874,7 +874,7 @@ static void do_bi_do_da_lock(void)
   mt_unlock(&wait_thread_mutex);
 }
 
-static void *wait_thread(void *data)
+static TH_RETURN_TYPE wait_thread(void *data)
 {
   if(pthread_atfork(do_da_lock,do_bi_do_da_lock,0))
   {
@@ -1744,7 +1744,7 @@ void f_create_process(INT32 args)
     THREADS_DISALLOW_UID();
     
     if(env) pop_stack();
-
+    if(command_line) free(command_line);
 #if 1
     if(t1!=INVALID_HANDLE_VALUE) CloseHandle(t1);
     if(t2!=INVALID_HANDLE_VALUE) CloseHandle(t2);
@@ -2943,9 +2943,9 @@ void init_signals(void)
   
 /* function(int:int) */
   ADD_EFUN("ualarm",f_ualarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
+#endif
 
   ADD_EFUN("atexit",f_atexit,tFuncV( ,tMix,tVoid),OPT_SIDE_EFFECT);
-#endif
 }
 
 void exit_signals(void)
