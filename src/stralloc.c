@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.98 2000/08/15 11:41:28 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.99 2000/09/03 23:20:12 mast Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1588,6 +1588,21 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
   num[0]=num_;
   size[0]=size_;
 }
+
+#ifdef PIKE_DEBUG
+unsigned gc_touch_all_strings(void)
+{
+  unsigned INT32 e;
+  unsigned n = 0;
+  if (!base_table) return 0;
+  for(e=0;e<htable_size;e++)
+  {
+    struct pike_string *p;
+    for(p=base_table[e];p;p=p->next) debug_gc_touch(p), n++;
+  }
+  return n;
+}
+#endif
 
 void gc_mark_all_strings(void)
 {

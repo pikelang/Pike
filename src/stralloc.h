@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.55 2000/08/15 11:41:45 grubba Exp $
+ * $Id: stralloc.h,v 1.56 2000/09/03 23:20:12 mast Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -228,6 +228,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 void init_shared_string_table(void);
 void cleanup_shared_string_table(void);
 void count_memory_in_strings(INT32 *num, INT32 *size);
+unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s,
