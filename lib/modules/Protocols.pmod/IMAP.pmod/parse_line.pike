@@ -228,6 +228,43 @@ mapping get_range(mapping atom)
   return atom;
 }
 
+/* Get a list of atoms.
+ * Primarily intended for use by STORE for the flags argument.
+ */
+array(string) get_flag_list()
+{
+  skip_whitespace();
+
+  if (!strlen(buffer) || (buffer[0] != '(') )
+    return 0;
+
+  buffer = buffer[1..];
+  array res = ({});
+
+  skip_whitespace();
+
+  string atom;
+  while (atom = get_atom())
+  {
+    res += ({ atom });
+
+    skip_whitespace();
+  }
+  skip_whitespace();	// This one shouldn't be needed, but...
+
+  if (!strlen(buffer))
+    return NULL;
+
+  if (buffer[0] = ')')
+  {
+    buffer = buffer[1..];
+    return res;
+  }
+
+  return 0;
+}
+
+
 /* Parses an object that (recursivly) can contain atoms (possible
  * with options in brackets) or lists. Note that strings are not
  * accepted, as it is a little difficult to wait for the
