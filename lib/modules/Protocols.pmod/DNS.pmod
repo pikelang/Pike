@@ -367,7 +367,7 @@ class client {
   // Warning: NO TIMEOUT
   mapping do_sync_query(string s)
   {
-    object udp=spider.dumUDP();
+    object udp=Stdio.UDP();
     udp->bind(0);
     udp->send(nameservers[0],53,s);
     mapping m;
@@ -483,7 +483,7 @@ class client {
 class async_client
 {
   inherit client;
-  inherit spider.dumUDP : udp;
+  inherit Stdio.UDP : udp;
   async_client next_client;
 
   class Request
