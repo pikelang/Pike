@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.27 2002/10/07 08:03:39 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.28 2002/10/07 15:32:31 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -919,26 +919,26 @@ PIKECLASS string_split_iterator
     SIMPLE_SCAN_PUSH(THIS, SHIFT, OFF);		\
     break
 
-#define COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF)			\
-  do {								\
-    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
-      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
-    {								\
-      while(OFF < THIS->buffer->len) {				\
-        int i;							\
-        p_wchar2 ch = s[OFF];					\
-        for (i=0; i < THIS->split_set_size; i++) {		\
-	  if (ch == THIS->split_set[i]) {			\
-	    goto PIKE_CONCAT(break_scan,SHIFT);			\
-	  }							\
-        }							\
-        OFF++;							\
-      }								\
-    PIKE_CONCAT(break_scan, SHIFT):				\
-      ;								\
-    }								\
-    push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
-      (s+offset, OFF-offset));					\
+#define COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF)				\
+  do {									\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 					\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);				\
+    while(OFF < THIS->buffer->len) {					\
+      int i;								\
+      p_wchar2 ch = s[OFF];						\
+      for (i=0; i < THIS->split_set_size; i++) {			\
+	if (ch == THIS->split_set[i]) {					\
+	  push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
+	    (s+offset, OFF-offset));					\
+	  goto PIKE_CONCAT(break_scan,SHIFT);				\
+	}								\
+      }									\
+      OFF++;								\
+    }									\
+    push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)		\
+      (s+offset, OFF-offset));						\
+  PIKE_CONCAT(break_scan, SHIFT):					\
+    ;									\
   } while(0)
 
 #define COMPLEX_SCAN_CASE_PUSH(THIS, SHIFT, OFF)	\
