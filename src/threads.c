@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.93 1999/05/02 08:11:50 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.94 1999/05/08 00:41:01 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -336,6 +336,19 @@ unsigned INT32 thread_table_hash(THREAD_T *tid)
   return th_hash(*tid) % THREAD_TABLE_SIZE;
 }
 
+#ifdef PIKE_DEBUG
+static void dumpmem(char *desc, void *x, int size)
+{
+  int e;
+  unsigned char *tmp=(unsigned char *)x;
+  fprintf(stderr,"%s: ",desc);
+  for(e=0;e<size;e++)
+    fprintf(stderr,"%02x",tmp[e]);
+  fprintf(stderr,"\n");
+}
+#endif
+
+
 void thread_table_insert(struct object *o)
 {
   struct thread_state *s = OBJ2THREAD(o);
@@ -343,6 +356,9 @@ void thread_table_insert(struct object *o)
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
     fatal("thread_table_hash failed miserably!\n");
+  if(thread_state_for_id(s->id))
+    fatal("Registring thread twice!\n");
+/*  dumpmem("thread_table_insert",&s->id, sizeof(THREAD_T)); */
 #endif
   mt_lock( & thread_table_lock );
   if((s->hashlink = thread_table_chains[h]) != NULL)
@@ -355,6 +371,7 @@ void thread_table_insert(struct object *o)
 void thread_table_delete(struct object *o)
 {
   struct thread_state *s = OBJ2THREAD(o);
+/*  dumpmem("thread_table_delete",&s->id, sizeof(THREAD_T)); */
   mt_lock( & thread_table_lock );
   if(s->hashlink != NULL)
     s->hashlink->backlink = s->backlink;
@@ -366,6 +383,10 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
 {
   unsigned INT32 h = thread_table_hash(&tid);
   struct thread_state *s = NULL;
+#if 0
+  if(num_threads>1)
+    dumpmem("thread_state_for_id: ",&tid,sizeof(tid));
+#endif
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
     fatal("thread_table_hash failed miserably!\n");
@@ -400,6 +421,10 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
     }
   }
   mt_unlock( & thread_table_lock );
+#if 0
+  if(num_threads>1 && s)
+    dumpmem("thread_state_for_id return value: ",&s->id,sizeof(tid));
+#endif
   return s;
   /* NOTEZ BIEN:  Return value only guaranteed to remain valid as long
      as you have the interpreter lock, unless tid == th_self() */
@@ -408,9 +433,7 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
 struct object *thread_for_id(THREAD_T tid)
 {
   struct thread_state *s = thread_state_for_id(tid);
-  return (s == NULL? NULL :
-	  (struct object *)(((char *)s)-((((struct object *)NULL)->storage)-
-					 ((char*)NULL))));
+  return (s == NULL? NULL : THREADSTATE2OBJ(s));
   /* See NB in thread_state_for_id.  Lifespan of result can be prolonged
      by incrementing refcount though. */
 }
@@ -429,9 +452,7 @@ void f_all_threads(INT32 args)
   mt_lock( & thread_table_lock );
   for(x=0; x<THREAD_TABLE_SIZE; x++)
     for(s=thread_table_chains[x]; s; s=s->hashlink) {
-      struct object *o =
-	(struct object *)(((char *)s)-((((struct object *)NULL)->storage)-
-				       ((char*)NULL)));
+      struct object *o = THREADSTATE2OBJ(s);
       ref_push_object(o);
     }
   mt_unlock( & thread_table_lock );
@@ -444,12 +465,24 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   static int div_;
   if(div_++ & 255) return;
 
+#ifdef DEBUG
+  if(thread_for_id(th_self()) != thread_id)
+    fatal("thread_for_id() (or thread_id) failed!\n")
+#endif
+
   THREADS_ALLOW();
   /* Allow other threads to run */
   THREADS_DISALLOW();
+
+#ifdef DEBUG
+  if(thread_for_id(th_self()) != thread_id)
+    fatal("thread_for_id() (or thread_id) failed!\n")
+#endif
+
+
 }
 
-void *new_thread_func(void * data)
+TH_RETURN_TYPE new_thread_func(void * data)
 {
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
@@ -466,6 +499,17 @@ void *new_thread_func(void * data)
   OBJ2THREAD(thread_id)->swapped=0;
   stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   recoveries = NULL;
+
+#if defined(PIKE_DEBUG)
+  if(d_flag)
+    {
+      if( thread_id && !th_equal( OBJ2THREAD(thread_id)->id, th_self()) )
+	fatal("Current thread is wrong. %x %x\n",OBJ2THREAD(thread_id)->id,th_self());
+	
+      if(thread_for_id(th_self()) != thread_id)
+	fatal("thread_for_id() (or thread_id) failed in new_thread_func! %p != %p\n",thread_for_id(th_self()),thread_id);
+      }
+#endif
 
 #ifdef THREAD_TRACE
   {
@@ -659,6 +703,9 @@ void f_mutex_lock(INT32 args)
    */
   o=clone_object(mutex_key,0);
 
+  DO_IF_DEBUG( if(thread_for_id(th_self()) != thread_id)
+	       fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id) ; )
+
   if(m->key)
   {
     SWAP_OUT_CURRENT_THREAD();
@@ -671,6 +718,9 @@ void f_mutex_lock(INT32 args)
   }
   m->key=o;
   OB2KEY(o)->mut=m;
+
+  DO_IF_DEBUG( if(thread_for_id(th_self()) != thread_id)
+	       fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id) ; )
 
   THREADS_FPRINTF(1, (stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 		      (unsigned int)OB2KEY(o),
@@ -1007,7 +1057,7 @@ void low_th_init(void)
 
   pthread_attr_init(&small_pattr);
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&small_pattr, 32768);
+  pthread_attr_setstacksize(&small_pattr, 4096*sizeof(char *));
 #endif
   pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
 
@@ -1170,7 +1220,7 @@ static struct farmer {
 
 static MUTEX_T rosie;
 
-static void *farm(void *_a)
+static TH_RETURN_TYPE farm(void *_a)
 {
   struct farmer *me = (struct farmer *)_a;
   do
@@ -1215,14 +1265,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
   me->field = args;
   me->harvest = fun;
   co_init( &me->harvest_moon );
-#ifdef UNIX_THREADS
-  /* FIXME: Why not increase the stacksize of th_create_small(),
-   * and use it instead?
-   */
-  thr_create(NULL, 65536, farm, me, THR_DAEMON|THR_DETACHED, &me->me);
-#else
   th_create_small(&me->me, farm, me);
-#endif
   return me;
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.65 1999/04/15 19:12:51 hubbe Exp $
+ * $Id: threads.h,v 1.66 1999/05/08 00:41:03 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -126,7 +126,7 @@ extern pthread_attr_t small_pattr;
 #define th_setconcurrency(X) thr_setconcurrency(X)
 
 #define th_create(ID,fun,arg) thr_create(NULL,thread_stack_size,fun,arg,THR_DAEMON|THR_DETACHED,ID)
-#define th_create_small(ID,fun,arg) thr_create(NULL,32768,fun,arg,THR_DAEMON|THR_DETACHED,ID)
+#define th_create_small(ID,fun,arg) thr_create(NULL,8192*sizeof(char *),fun,arg,THR_DAEMON|THR_DETACHED,ID)
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
 #define th_kill(ID,sig) thr_kill((ID),(sig))
@@ -179,17 +179,18 @@ extern pthread_attr_t small_pattr;
 #include <process.h>
 #include <windows.h>
 
-#define THREAD_T HANDLE
+#define THREAD_T unsigned
 #define th_setconcurrency(X)
-#define th_create(ID,fun,arg)  (!(*(ID)=_beginthread(fun, 2*1024*1024, arg)))
-#define th_create_small(ID,fun,arg)  (!(*(ID)=_beginthread(fun, 32768, arg)))
+#define th_create(ID,fun,arg) (!_beginthreadex(NULL, 2*1024*1024,fun, arg,0,ID))
+#define th_create_small(ID,fun,arg) (!_beginthreadex(NULL, 8192*sizeof(char *), fun,arg,0,ID))
+#define TH_RETURN_TYPE unsigned __stdcall
 #define th_exit(foo) _endthread(foo)
 #define th_join(ID,res)	/******************* FIXME! ****************/
-#define th_self() GetCurrentThread()
+#define th_self() GetCurrentThreadId()
 #define th_destroy(X)
 #define th_yield() Sleep(0)
 #define th_equal(X,Y) ((X)==(Y))
-#define th_hash(X) ((unsigned INT32)(X))
+#define th_hash(X) (X)
 
 #define MUTEX_T HANDLE
 #define mt_init(X) CheckValidHandle((*(X)=CreateMutex(NULL, 0, NULL)))
@@ -316,6 +317,10 @@ struct thread_state {
 #endif /* THREAD_TRACE */
 };
 
+#ifndef TH_RETURN_TYPE
+#define TH_RETURN_TYPE void *
+#endif
+
 #ifndef th_destroy
 #define th_destroy(X)
 #endif
@@ -433,8 +438,12 @@ struct thread_state {
 #define	OBJ2THREAD(X) \
   ((struct thread_state *)((X)->storage+thread_storage_offset))
 
+#define THREADSTATE2OBJ(X) BASEOF((X),object,storage[thread_storage_offset])
+
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp=OBJ2THREAD(thread_id); \
+     DO_IF_DEBUG( if(thread_for_id(th_self()) != thread_id) \
+        fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id) ; ) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
@@ -458,6 +467,8 @@ struct thread_state {
        } \
        SWAP_IN_THREAD(_tmp);\
      } \
+     DO_IF_DEBUG( if(thread_for_id(th_self()) != thread_id) \
+        fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id) ; ) \
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
@@ -507,7 +518,7 @@ struct thread_state {
 
 /* Prototypes begin here */
 struct thread_starter;
-void *new_thread_func(void * data);
+TH_RETURN_TYPE new_thread_func(void * data);
 void f_thread_create(INT32 args);
 void f_thread_set_concurrency(INT32 args);
 void f_this_thread(INT32 args);
