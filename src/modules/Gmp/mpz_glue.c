@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.143 2003/04/07 19:42:31 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.144 2003/05/17 15:47:47 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.143 2003/04/07 19:42:31 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.144 2003/05/17 15:47:47 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -66,6 +66,27 @@ struct program *mpzmod_program;
 struct program *bignum_program;
 #endif
 
+#if !defined(HAVE_MPZ_IMPORT) && !defined(NO_MPZ_SET_SI_KLUDGE)
+/* Old gmp libraries have a broken implementation of mpz_set_si(),
+ * which handles -0x80000000 incorrectly
+ * (it results in -0xffffffff80000000)...
+ *
+ * FIXME: Should have a configure test for this.
+ * 	/grubba 2003-05-17
+ */
+#define PIKE_MPZ_SET_SI(MPZ_VAL, VALUE)	do {		\
+    long val_ = (VALUE);				\
+    if (val_ < 0) {					\
+      mpz_set_ui((MPZ_VAL), (unsigned long) val_);	\
+      mpz_neg((MPZ_VAL), (MPZ_VAL));			\
+    } else {						\
+      mpz_set_ui((MPZ_VAL), (unsigned long) val_);	\
+    }							\
+  } while(0)
+#else /* HAVE_MPZ_IMPORT || NO_MPZ_SET_SI_KLUDGE */
+#define PIKE_MPZ_SET_SI(MPZ_VAL, VALUE)	mpz_set_si((MPZ_VAL), (VALUE))
+#endif /* !HAVE_MPZ_IMPORT || !NO_MPZ_SET_SI_KLUDGE */
+
 #ifdef AUTO_BIGNUM
 static mpz_t mpz_int_type_min;
 
@@ -80,17 +101,21 @@ void mpzmod_reduce(struct object *o)
   size_t pos = (INT_TYPE_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
 
   if (mpz_size (mpz) <= pos + 1) {
-#if INT_TYPE_BITS == GMP_NUMB_BITS
+    /* NOTE: INT_TYPE is signed, while GMP_NUMB is unsigned.
+     *       We subtract 1 from INT_TYPE_BITS to make sure there's
+     *       place left over for the sign.
+     */
+#if (INT_TYPE_BITS-1) == GMP_NUMB_BITS
     res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
-#elif INT_TYPE_BITS < GMP_NUMB_BITS
+#elif (INT_TYPE_BITS-1) < GMP_NUMB_BITS
     mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
-    if (val >= (mp_limb_t) 1 << INT_TYPE_BITS) goto overflow;
+    if (val >= (mp_limb_t) 1 << (INT_TYPE_BITS-1)) goto overflow;
     res = val;
 #else
     for (;; pos--) {
       res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
-      if (res >= (INT_TYPE) 1 << (INT_TYPE_BITS - GMP_NUMB_BITS)) goto overflow;
+      if (res >= (INT_TYPE) 1 << (INT_TYPE_BITS - (GMP_NUMB_BITS+1))) goto overflow;
       res <<= GMP_NUMB_BITS;
     }
 #endif
@@ -134,25 +159,26 @@ static void gmp_push_int64 (INT64 i)
     mpz = OBTOMPZ (sp[-1].u.object);
 
 #if SIZEOF_LONG >= SIZEOF_INT64
-    mpz_set_si (mpz, i);
+    PIKE_MPZ_SET_SI (mpz, i);
 #else
     {
       int neg = i < 0;
-      if (neg) i = -i;
+      unsigned INT64 bits = (unsigned INT64)i;
+      if (neg) bits = -bits;
 
 #ifdef HAVE_MPZ_IMPORT
-      mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &i);
+      mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &bits);
 #else
       {
 	size_t n =
 	  ((SIZEOF_INT64 + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
 	  /* The above is the position of the top unsigned long in the INT64. */
 	  * ULONG_BITS;
-	mpz_set_ui (mpz, (unsigned long) (i >> n));
+	mpz_set_ui (mpz, (unsigned long) (bits >> n));
 	while (n) {
 	  n -= ULONG_BITS;
 	  mpz_mul_2exp (mpz, mpz, ULONG_BITS);
-	  mpz_add_ui (mpz, mpz, (unsigned long) (i >> n));
+	  mpz_add_ui (mpz, mpz, (unsigned long) (bits >> n));
 	}
       }
 #endif	/* !HAVE_MPZ_IMPORT */
@@ -246,7 +272,11 @@ void get_mpz_from_digits(MP_INT *tmp,
       }
 
       /* We need to fix the case with binary
-	 0b101... and -0b101... numbers. */
+       * 0b101... and -0b101... numbers.
+       *
+       * FIXME: What about hexadecimal and octal?
+       *	/grubba 2003-05-16
+       */
       if(!base && digits->len > 2)
       {
 	if((INDEX_CHARP(digits->str, offset, digits->size_shift) == '0') &&
@@ -303,7 +333,7 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
   {
   case T_INT:
 #ifndef BIG_PIKE_INT
-    mpz_set_si(tmp, (signed long int) s->u.integer);
+    PIKE_MPZ_SET_SI(tmp, (signed long int) s->u.integer);
 #else
     {
       INT_TYPE i = s->u.integer;
