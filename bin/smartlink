@@ -5,6 +5,10 @@ shift
 RPATH=""
 LDOPTS=""
 
+#Special for HP-UX
+LD_PXDB=/dev/null
+export LD_PXDB
+
 #set -x
 
 while test "$#" != 0; do
