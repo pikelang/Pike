@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.32 2002/10/11 02:06:25 nilsson Exp $
+|| $Id: dumpmodule.pike,v 1.33 2002/11/27 15:49:12 mast Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -197,12 +197,12 @@ program compile_file(string file, object|void handler)
     return master()->compile_file(file, handler);
 }
 
-void dumpit(string file, string outfile)
+int dumpit(string file, string outfile)
 {
   int ok = 0;
   next_file = file;
 
-  mixed err=catch {
+do_dump: {
     if(Stdio.Stat s=file_stat(fakeroot(file)))
     {
       if (update) {
@@ -210,7 +210,7 @@ void dumpit(string file, string outfile)
 	  if (o->mtime >= s->mtime) {
 	    if (!quiet) logmsg ("Up-to-date.\n");
 	    ok = 1;
-	    break;
+	    break do_dump;
 	  }
       }
       rm(outfile+".o"); // Make sure no old files are left
@@ -222,41 +222,47 @@ void dumpit(string file, string outfile)
 	    if (subfile != "CVS" &&
 		(has_suffix (subfile, ".pike") || has_suffix (subfile, ".pmod") ||
 		 Stdio.is_dir (file + "/" + subfile)))
-	      dumpit (combine_path (file, subfile), combine_path (outfile, subfile));
+	      if (!dumpit (combine_path (file, subfile),
+			   combine_path (outfile, subfile)))
+		return 0;
 	  ok = 1;
-	  break;
+	  break do_dump;
 	}
 	else {
 	  logmsg ("Is an unreadable directory (not dumped recursively): %s.\n",
 		  strerror (errno()));
-	  break;
+	  break do_dump;
 	}
       }
       else if (!s->isreg)
       {
 	logmsg("Is a directory or special file (not dumped).\n");
-	break;
+	break do_dump;
       }
     }else{
       if(!quiet) logmsg("Does not exist (not dumped).\n");
-      break;
+      break do_dump;
     }
 
-    if(programp(p=compile_file(file, Handler())))
+    mixed err;
+    if(!(err = catch (p=compile_file(file, Handler()))) && programp (p))
     {
       if(!p->dont_dump_module && !p->dont_dump_program)
       {
-	string s=encode_value(p, Codec());
-	p=decode_value(s,master()->Codec());
-
-	if(programp(p))
+	string s;
+	if ((err = catch {
+	    s=encode_value(p, Codec());
+	    p=decode_value(s,master()->Codec());
+	  }))
+	  logmsg_long(describe_backtrace(err));
+	else if(programp(p))
 	{
 	  string dir = combine_path (outfile, "..");
 	  if (!Stdio.is_dir (dir))
 	    if (!Stdio.mkdirhier (dir)) {
 	      logmsg ("Failed to create target directory %O: %s.\n",
 		      dir, strerror (errno()));
-	      break;
+	      break do_dump;
 	    }
 
 	  Stdio.File(fakeroot(outfile)+".o","wct")->write(s);
@@ -265,19 +271,30 @@ void dumpit(string file, string outfile)
 	}
 	else if(!quiet)
 	  logmsg("Decode of %O failed (not dumped).\n", file);
-
       }
       else if(!quiet)
 	logmsg("Not dumping %O (not dumped).\n", file);
     }
-    else if(!quiet)
-      logmsg("Compilation of %O failed (not dumped).\n", file); // This should never happen.
-  };
-
-  if(err) logmsg_long(describe_backtrace(err));
+    else {
+      // This should never happen. If it does then it's not safe to
+      // continue dumping since later modules might do #if constant(...)
+      // on something for modifiers in this one and would then be dumped
+      // incorrectly without errors.
+      if (err && (!objectp (err) || !err->is_compilation_error || !err->is_cpp_error))
+	// compile() should never throw any other error, but we play safe.
+	logmsg_long("Compilation of %O failed (not dumped):\n%s",
+		    file, describe_backtrace(err));
+      else
+	logmsg("Compilation of %O failed (not dumped).\n", file);
+      if (report_failed)
+	write ("Aborting dumping since %s didn't compile\n", file);
+      return 0;
+    }
+  }
 
   if (report_failed && !ok)
     write ("Dumping failed for %s\n", file);
+  return 1;
 }
 
 int main(int argc, array(string) argv)
@@ -383,7 +400,7 @@ int main(int argc, array(string) argv)
       outfile = combine_path (target_dir, ((outfile / "/") - ({""}))[-1]);
     }
 
-    dumpit(file, outfile);
+    if (!dumpit(file, outfile)) break;
   }
 
   if (update_stamp)
