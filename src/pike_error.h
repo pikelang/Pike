@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.14 2001/08/15 22:58:36 mast Exp $
+ * $Id: pike_error.h,v 1.15 2001/11/09 02:09:13 nilsson Exp $
  */
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
@@ -91,15 +91,22 @@ extern int throw_severity;
                 &(X),  __FILE__, __LINE__)); \
   if(Pike_interpreter.recoveries != &X) { \
     if(Pike_interpreter.recoveries) \
-      fatal("UNSETJMP out of sync! (last SETJMP at %s:%d)!\n",Pike_interpreter.recoveries->file,Pike_interpreter.recoveries->line); \
+      fatal("UNSETJMP out of sync! (last SETJMP at %s)!\n",Pike_interpreter.recoveries->file); \
     else \
       fatal("UNSETJMP out of sync! (Pike_interpreter.recoveries = 0)\n"); \
     } \
     Pike_interpreter.recoveries=X.previous; \
    check_recovery_context(); \
   }while (0)
-#define DEBUG_LINE_ARGS ,int line, char *file
-#define SETJMP(X) setjmp((init_recovery(&X,__LINE__,__FILE__)->recovery))
+
+#ifdef DMALLOC_LOCATION
+#define PERR_LOCATION() DMALLOC_LOCATION()
+#else
+#define PERR_LOCATION() ( __FILE__ ":" DEFINETOSTR(__LINE__) )
+#endif
+
+#define DEBUG_LINE_ARGS ,char *location
+#define SETJMP(X) setjmp((init_recovery(&X, PERR_LOCATION())->recovery))
 #else
 #define DEBUG_LINE_ARGS 
 #define SETJMP(X) setjmp((init_recovery(&X)->recovery))
@@ -129,12 +136,12 @@ extern int throw_severity;
                  &(X), __FILE__, __LINE__)); \
     if(!Pike_interpreter.recoveries) break; \
     if(Pike_interpreter.recoveries->onerror != &(X)) { \
-      fprintf(stderr,"LAST SETJMP: %s:%d\n",Pike_interpreter.recoveries->file,Pike_interpreter.recoveries->line); \
+      fprintf(stderr,"LAST SETJMP: %s\n",Pike_interpreter.recoveries->file); \
       if (Pike_interpreter.recoveries->onerror) { \
         fatal("UNSET_ONERROR out of sync (%p != %p).\n" \
-              "Last SET_ONERROR is from %s:%d\n",\
+              "Last SET_ONERROR is from %s\n",\
               Pike_interpreter.recoveries->onerror, &(X), \
-              Pike_interpreter.recoveries->onerror->file, Pike_interpreter.recoveries->onerror->line ); \
+              Pike_interpreter.recoveries->onerror->file); \
       } else { \
         fatal("UNSET_ONERROR out of sync. No Pike_interpreter.recoveries left.\n"); \
       } \

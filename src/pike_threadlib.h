@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.11 2001/11/02 14:04:21 mast Exp $
+ * $Id: pike_threadlib.h,v 1.12 2001/11/09 02:09:13 nilsson Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -485,10 +485,23 @@ PMOD_EXPORT extern int t_flag;
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
 			 __FILE__, __LINE__, (unsigned int)_tmp->id)) \
 
-#define SWAP_IN_CURRENT_THREAD() \
+extern void debug_list_all_threads(void);
+extern void dumpmem(char *desc, void *x, int size);
+
+#define SWAP_IN_CURRENT_THREAD()					      \
    THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		       __FILE__, __LINE__, (unsigned int)_tmp->id)); \
-   SWAP_IN_THREAD(_tmp);\
+		       __FILE__, __LINE__, (unsigned int)_tmp->thread_id));   \
+   DO_IF_DEBUG(								      \
+   {									      \
+     THREAD_T self=th_self();						      \
+     if(MEMCMP( & _tmp->id, &self, sizeof(self)))		    	      \
+     {									      \
+       dumpmem("Saved thread id: ",&self,sizeof(self));                       \
+       debug_list_all_threads();					      \
+       fatal("SWAP_IN_CURRENT_THREAD FAILED!!!\n");			      \
+     }									      \
+   })									      \
+   SWAP_IN_THREAD(_tmp);						      \
  } while(0)
 
 #if defined(PIKE_DEBUG) && ! defined(DONT_HIDE_GLOBALS)
