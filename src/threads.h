@@ -7,24 +7,45 @@
 
 #ifdef _REENTRANT
 
+#ifdef HAVE_THREAD_H
+#define UNIX_THREADS
+#include <thread.h>
+#undef HAVE_PTHREAD_H
+#undef HAVE_THREAD_H
+#endif
+
 #ifdef HAVE_PTHREAD_H
+#define POSIX_THREADS
 #include <pthread.h>
 #undef HAVE_PTHREAD_H
 #endif
+
+
 
 extern int num_threads;
 struct object;
 extern struct object *thread_id;
 
+#define DEFINE_MUTEX(X) MUTEX_T X
+
+
+#ifdef POSIX_THREADS
+#define THREAD_T pthread_t
 #define MUTEX_T pthread_mutex_t
 #define mt_init(X) pthread_mutex_init((X),0)
 #define mt_lock(X) pthread_mutex_lock(X)
 #define mt_trylock(X) pthread_mutex_trylock(X)
 #define mt_unlock(X) pthread_mutex_unlock(X)
 #define mt_destroy(X) pthread_mutex_destroy(X)
-#define DEFINE_MUTEX(X) MUTEX_T X
 
-extern MUTEX_T interpreter_lock;
+/* SIGH! No setconcurrency in posix threads. This is more or less
+ * needed to make usable multi-threaded programs on solaris machines
+ * with only one CPU. Otherwise, only systemcalls are actually
+ * threaded.
+ */
+#define th_setconcurrency(X) 
+#define th_yield()
+
 
 #define th_create(ID,fun,arg) pthread_create(ID,&pattr,fun,arg)
 #define th_exit(foo) pthread_exit(foo)
@@ -36,6 +57,38 @@ extern MUTEX_T interpreter_lock;
 #define co_signal(X) pthread_cond_signal(X)
 #define co_broadcast(X) pthread_cond_broadcast(X)
 #define co_destroy(X) pthread_cond_destroy(X)
+#endif
+
+
+
+
+#ifdef UNIX_THREADS
+#define THREAD_T thread_t
+#define PTHREAD_MUTEX_INITIALIZER DEFAULTMUTEX
+#define MUTEX_T mutex_t
+#define mt_init(X) mutex_init((X),USYNC_THREAD,0)
+#define mt_lock(X) mutex_lock(X)
+#define mt_trylock(X) mutex_trylock(X)
+#define mt_unlock(X) mutex_unlock(X)
+#define mt_destroy(X) mutex_destroy(X)
+
+#define th_setconcurrency(X) thr_setconcurrency(X)
+
+#define th_create(ID,fun,arg) thr_create(NULL,0,fun,arg,THR_DAEMON,ID)
+#define th_exit(foo) thr_exit(foo)
+#define th_self() thr_self()
+#define th_yield() thr_yield()
+
+#define COND_T cond_t
+#define co_init(X) cond_init((X),USYNC_THREAD,0)
+#define co_wait(COND, MUTEX) cond_wait((COND), (MUTEX))
+#define co_signal(X) cond_signal(X)
+#define co_broadcast(X) cond_broadcast(X)
+#define co_destroy(X) cond_destroy(X)
+#endif
+
+extern MUTEX_T interpreter_lock;
+
 
 struct svalue;
 struct frame;
@@ -67,6 +120,7 @@ struct thread_state {
        _tmp.mark_stack_malloced=mark_stack_malloced; \
        _tmp.thread_id = thread_id; \
        mt_unlock(& interpreter_lock); \
+       /*th_yield();*/\
      }
 
 #define THREADS_DISALLOW() \
@@ -108,6 +162,7 @@ void th_cleanup();
 /* Prototypes end here */
 
 #else
+#define th_setconcurrency(X)
 #define DEFINE_MUTEX(X)
 #define mt_init(X)
 #define mt_lock(X)

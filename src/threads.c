@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.13 1996/12/06 08:30:17 per Exp $");
+RCSID("$Id: threads.c,v 1.14 1997/01/26 22:49:14 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -17,7 +17,9 @@ static struct callback *threads_evaluator_callback=0;
 MUTEX_T interpreter_lock = PTHREAD_MUTEX_INITIALIZER;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
+#ifdef POSIX_THREADS
 pthread_attr_t pattr;
+#endif
 
 struct thread_starter
 {
@@ -36,15 +38,16 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
 void *new_thread_func(void * data)
 {
+/*  static int dbt;*/
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
   INT32 tmp;
 
-  free((char *)data);
-
+/*  fprintf(stderr, "Thread create[%d]...",dbt++);*/
   if(tmp=mt_lock( & interpreter_lock))
     fatal("Failed to lock interpreter, errno %d\n",tmp);
-
+/*  fprintf(stderr,"Created[%d]...",dbt);*/
+  free((char *)data); /* Moved by per, to avoid some bugs.... */
   init_interpreter();
 
   thread_id=arg.id;
@@ -59,10 +62,10 @@ void *new_thread_func(void * data)
     UNSET_ONERROR(tmp);
   } else {
     INT32 args=arg.args->size;
-    
     push_array_items(arg.args);
-    f_call_function(args);
     arg.args=0;
+    f_call_function(args);
+    pop_stack(); /* Discard the return value. /Per */
   }
 
   UNSETJMP(back);
@@ -79,14 +82,18 @@ void *new_thread_func(void * data)
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
+/*  fprintf(stderr,"Done[%d]\n",dbt--);*/
   mt_unlock(& interpreter_lock);
   th_exit(0);
 }
 
+#ifdef UNIX_THREADS
+int num_lwps = 1;
+#endif
 
 void f_thread_create(INT32 args)
 {
-  pthread_t dummy;
+  THREAD_T dummy;
   struct thread_starter *arg;
   int tmp;
   arg=ALLOC_STRUCT(thread_starter);
@@ -102,7 +109,10 @@ void f_thread_create(INT32 args)
       threads_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						 check_threads, 0,0);
     }
-
+#ifdef UNIX_THREADS
+    if((num_lwps==1) || num_threads/3 > num_lwps)
+      th_setconcurrency(++num_lwps);
+#endif
     push_object(arg->id);
     arg->id->refs++;
   } else {
@@ -111,6 +121,16 @@ void f_thread_create(INT32 args)
     free((char *)arg);
     push_int(0);
   }
+}
+
+void f_thread_set_concurrency(INT32 args)
+{
+  int c=1;
+  if(args) c=sp[-args].u.integer;
+  else error("No argument to thread_set_concurrency(int concurrency);\n");
+  pop_n_elems(args);
+  num_threads=c;
+  th_setconcurrency(c);
 }
 
 void f_this_thread(INT32 args)
@@ -123,14 +143,20 @@ void f_this_thread(INT32 args)
 void th_init()
 {
   mt_lock( & interpreter_lock);
+#ifdef POSIX_THREADS
   pthread_attr_init(&pattr);
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
   pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
 #endif
   pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
+#endif
 
   add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
            OPT_SIDE_EFFECT);
+#ifdef UNIX_THREADS
+  add_efun("thread_set_concurrency",f_thread_set_concurrency,
+	   "function(int:void)", OPT_SIDE_EFFECT);
+#endif
   add_efun("this_thread",f_this_thread,"function(:object)",
            OPT_EXTERNAL_DEPEND);
 }
