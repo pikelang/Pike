@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.541 2003/11/28 15:44:26 grubba Exp $
+|| $Id: program.c,v 1.542 2003/12/30 09:24:26 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.541 2003/11/28 15:44:26 grubba Exp $");
+RCSID("$Id: program.c,v 1.542 2003/12/30 09:24:26 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5009,11 +5009,21 @@ int low_find_lfun(struct program *p, ptrdiff_t lfun)
 {
   struct pike_string *lfun_name = lfun_strings[lfun];
   unsigned int flags = 0;
-  return
+  struct identifier *id;
+  int i =
     really_low_find_shared_string_identifier(lfun_name,
 					     dmalloc_touch(struct program *,
 							   p),
 					     SEE_STATIC);
+  if (i < 0) return i;
+  id = IDENTIFIER_FROM_INT(p, i);
+  if (!IDENTIFIER_IS_FUNCTION(id->identifier_flags) ||
+      (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+       id->func.offset == -1)) {
+    /* Non function or prototype. */
+    return -1;
+  }
+  return i;
 }
 
 int lfun_lookup_id(struct pike_string *lfun_name)
@@ -5738,8 +5748,8 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
       char *cnt = prog->linenumbers;
       INT32 off = 0, line = 0;
       char *file = NULL;
-      size_t len;
-      INT32 shift;
+      size_t len = 0;
+      INT32 shift = 0;
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
