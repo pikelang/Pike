@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.70 1998/07/13 14:36:39 grubba Exp $");
+RCSID("$Id: spider.c,v 1.71 1998/07/13 15:30:19 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -522,7 +522,7 @@ int push_parsed_tag(char *s,int len)
   int is_SSI_tag;
 
   /* NOTE: At entry sp[-1] is the tagname */
-  is_SSI_tag == (sp[-1].type == T_STRING) &&
+  is_SSI_tag = (sp[-1].type == T_STRING) &&
     (!strncmp(sp[-1].u.string->str, "!--", 3));
 
   /* Find X=Y pairs. */
