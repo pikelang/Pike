@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.298 2002/04/11 15:53:40 mast Exp $
+# $Id: Makefile.in,v 1.299 2002/04/11 20:27:49 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -65,7 +65,6 @@ OSFLAGS=
 WARN=@WARN@
 
 #add extra defines here
-# Be sure to use -g  when looking for bugs
 DEFINES=@CPPFLAGS@
 
 # -O should work with all compilers
@@ -341,10 +340,14 @@ force_dump_modules:
 	@echo "Compiling $<" ;\
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
-	  echo "Compilation command was:" >&2;\
-	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
 	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	  false; \
+	  NO_ULIMIT=yes; \
+	  export NO_ULIMIT; \
+	  if $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	    exit $$?; \
+	  fi; \
 	fi
 
 #
@@ -449,7 +452,7 @@ module_testsuites:
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 
 just_verify: module_testsuites testsuite master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	if test "x$(TESTARGS)" = x ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
 # Testsuite for dynamic loading debugging
