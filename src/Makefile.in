@@ -270,13 +270,13 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: module_testsuites testsuite extra_module_tests
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose modules */*/module_testsuite testsuite 
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose modules/*/module_testsuite testsuite 
 
 # verify & debug VERBOSE
 gdb_verify: module_testsuites testsuite
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f */*/module_testsuite
+	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f modules/*/module_testsuite
 	gdb ./pike
 	@rm .gdbinit
 
