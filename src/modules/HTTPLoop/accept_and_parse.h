@@ -11,24 +11,24 @@ struct res
 {
   struct pike_string *protocol;
 
-  int header_start;
-  int method_len;
-  int body_start;
+  ptrdiff_t header_start;
+  ptrdiff_t method_len;
+  ptrdiff_t body_start;
 
   char *url;
-  int url_len;
+  ptrdiff_t url_len;
 
   char *host;
-  int host_len;
+  ptrdiff_t host_len;
 
   char   *content;
-  int content_len;
+  ptrdiff_t content_len;
   
   char *leftovers;
-  int leftovers_len;
+  ptrdiff_t leftovers_len;
 
   char *data;
-  int data_len;
+  ptrdiff_t data_len;
 };
 
 struct cache_entry
@@ -36,8 +36,10 @@ struct cache_entry
   struct cache_entry *next;
   struct pike_string *data;
   time_t stale_at;
-  char *url;  int url_len;
-  char *host; int host_len;
+  char *url;
+  ptrdiff_t url_len;
+  char *host;
+  ptrdiff_t host_len;
   int refs;
 };
 
@@ -50,7 +52,7 @@ struct file_ret
 
 struct pstring 
 {
-  int len;
+  ptrdiff_t len;
   char *str;
 };
 
@@ -104,9 +106,9 @@ struct log_entry
 {
   struct log_entry *next;
   int t;
-  unsigned int sent_bytes;
+  size_t sent_bytes;
   unsigned int reply;
-  unsigned int received_bytes;
+  size_t received_bytes;
   struct pstring raw;
   struct pstring url;
   struct sockaddr_in from;
@@ -127,8 +129,8 @@ struct log_object
 {
   int time;
   int reply;
-  int sent_bytes;
-  int received_bytes;
+  ptrdiff_t sent_bytes;
+  ptrdiff_t received_bytes;
   struct pike_string *raw;
   struct pike_string *url;
   struct pike_string *method;
