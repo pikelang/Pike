@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.10 2003/08/01 19:26:28 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.11 2003/08/01 20:23:05 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -16,7 +16,7 @@ RCSID("$Id: hash.cmod,v 1.10 2003/08/01 19:26:28 nilsson Exp $");
 #include "nettle.h"
 
 #include <nettle/md5.h>
-#ifdef HAVE_MD4_UPDATE
+#ifdef HAVE_MD4_INIT
 #include <nettle/md4.h>
 #endif
 #include <nettle/sha.h>
@@ -245,7 +245,7 @@ PIKECLASS MD5_State
 }
 /*! @endclass MD5_State */
 
-#ifdef HAVE_MD4_UPDATE
+#ifdef HAVE_MD4_INIT
 
 /*! @class MD4_Info
  *!
@@ -299,7 +299,7 @@ PIKECLASS MD4_State
 }
 /*! @endclass MD4_State */
 
-#endif /* HAVE_MD4_UPDATE */
+#endif /* HAVE_MD4_INIT */
 
 /*! @class SHA1_Info
  *!
