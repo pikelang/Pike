@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mird_glue.c,v 1.20 2002/10/21 17:06:16 marcus Exp $
+|| $Id: mird_glue.c,v 1.21 2003/01/20 18:17:44 nilsson Exp $
 */
 
 #include "global.h"
@@ -371,7 +371,7 @@ UNLOCK(this);
 **!	}
 **!	</pre>
 **!
-**! returns the called object
+**! returns the object being called
 */
 
 static void pmird_sync(INT32 args)
@@ -750,7 +750,7 @@ UNLOCK(this->parent);
 **!	Tries to resolve a transaction; 
 **!	casts an exception if there is a conflict.
 **!	May be called more then once.
-**! returns the called object
+**! returns the object being called
 */
 
 static void pmtr_resolve(INT32 args)

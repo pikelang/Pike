@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.47 2002/10/21 17:06:25 marcus Exp $
+|| $Id: image_ttf.c,v 1.48 2003/01/20 18:18:30 nilsson Exp $
 */
 
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.47 2002/10/21 17:06:25 marcus Exp $");
+RCSID("$Id: image_ttf.c,v 1.48 2003/01/20 18:18:30 nilsson Exp $");
 #include "module.h"
 
 #ifdef HAVE_LIBTTF
@@ -460,7 +460,7 @@ static void image_ttf_face_properties(INT32 args)
 **!	Might be used to save memory - the face
 **!	information is read back from disk upon need.
 **!
-**! returns the called object
+**! returns the object being called
 */
 
 static void image_ttf_face_flush(INT32 args)

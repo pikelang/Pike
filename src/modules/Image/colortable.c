@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.115 2002/12/01 13:30:32 mast Exp $
+|| $Id: colortable.c,v 1.116 2003/01/20 18:17:28 nilsson Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.115 2002/12/01 13:30:32 mast Exp $");
+RCSID("$Id: colortable.c,v 1.116 2003/01/20 18:17:28 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2742,7 +2742,7 @@ void image_colortable_cast(INT32 args)
 **!     algorithm time: O[n*m], where n is numbers of colors 
 **!	and m is number of pixels
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: cubicles, map
 **! note
@@ -2779,7 +2779,7 @@ void image_colortable_full(INT32 args)
 **!	It has a high init-cost and low use-cost.
 **!	The structure is initiated at first usage.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: cubicles, map, full
 **! note
@@ -2873,7 +2873,7 @@ void image_colortable_rigid(INT32 args)
 **!	<td>accuracy=200</td>
 **!	</tr></table>
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! arg int r
 **! arg int g
@@ -3753,7 +3753,7 @@ void image_colortable_index_32bit(INT32 args)
 **!	Default factors are 3, 4 and 1; blue is much 
 **!	darker than green. Compare with <ref>Image.Image->grey</ref>().
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! note
 **!	This has no sanity check. Some functions may bug
@@ -3815,7 +3815,7 @@ void image_colortable_spacefactors(INT32 args)
 **!	Error will increase if more than 1.0 and decrease if less than 1.0.
 **!	A value of 0.0 will cancel any dither effects.
 **!     Default is 0.95.
-**! returns the called object
+**! returns the object being called
 **/
 
 void image_colortable_floyd_steinberg(INT32 args)
@@ -3903,7 +3903,7 @@ void image_colortable_internal_floyd_steinberg(struct neo_colortable *nct)
 **! method object nodither()
 **!	Set no dithering (default).
 **!
-**! returns the called object
+**! returns the object being called
 **/
 
 void image_colortable_nodither(INT32 args)
@@ -3965,7 +3965,7 @@ void image_colortable_nodither(INT32 args)
 **! arg int err
 **!	The maximum error. Default is 32, or colorcube step.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: ordered, nodither, floyd_steinberg, create
 **!
@@ -4230,7 +4230,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **!	Offset for the error matrix. <tt>x</tt> and <tt>y</tt> is for
 **!	both red, green and blue values, the other is individual.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: randomcube, nodither, floyd_steinberg, create
 **/

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.160 2003/01/20 18:11:41 nilsson Exp $
+|| $Id: html.c,v 1.161 2003/01/20 18:18:40 nilsson Exp $
 */
 
 #include "global.h"
@@ -820,7 +820,7 @@ static void exit_html_struct(struct object *o)
 **!	out of order with any other callback. It will never be called
 **!	with a zero length string.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 */
 
@@ -919,7 +919,7 @@ static void html__set_entity_callback(INT32 args)
 **!	callback.</li>
 **!	</ul>
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: tags, containers, entities
 **!	
@@ -1233,7 +1233,7 @@ static void html_add_entities(INT32 args)
 **!	Removes all registered definitions in the different
 **!	categories.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
 */
@@ -3814,7 +3814,7 @@ static void low_feed(struct pike_string *ps)
 **!	<tt>-&gt;feed(s,0);</tt>, the string is fed,
 **!	but the parser isn't run.
 **!
-**! returns the called object
+**! returns the object being called
 **! see also: finish, read, feed_insert
 */
 
@@ -3848,7 +3848,7 @@ static void html_feed(INT32 args)
 **!	This pushes a string on the parser stack.
 **!	(I'll write more about this mechanism later.)
 **!
-**! returns the called object
+**! returns the object being called
 **! note: don't use
 */
 
@@ -3882,7 +3882,7 @@ static void html_feed_insert(INT32 args)
 **!	Finish a parser pass. A string may be sent here, similar to
 **!	feed().
 **!
-**! returns the called object
+**! returns the object being called
 */
 
 static void html_finish(INT32 args)
@@ -4013,7 +4013,7 @@ static void html_read(INT32 args)
 **!	<p>Any data is allowed when the parser is running in
 **!	<ref>mixed_mode</ref>. Only strings are allowed otherwise.
 **!
-**! returns the called object
+**! returns the object being called
 */
 
 static void html_write_out(INT32 args)
@@ -4768,7 +4768,7 @@ static void html_clone(INT32 args)
 **!	Sets the extra arguments passed to all tag, container and
 **!	entity callbacks.
 **!
-**! returns the called object
+**! returns the object being called
 */
 
 static void html_set_extra(INT32 args)
@@ -4790,7 +4790,7 @@ static void html_set_extra(INT32 args)
 **! method array get_extra()
 **!	Gets the extra arguments set by <ref>set_extra</ref>().
 **!
-**! returns the called object
+**! returns the object being called
 */
 
 static void html_get_extra(INT32 args)
