@@ -35,14 +35,14 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#paste_mask>paste_mask</a></tt>
 
 <p>     getting subimages, scaling, rotating: <tt><a href=Image.image.html#autocrop>autocrop</a></tt>, 
-     <tt><a href=Image.image.html#ccw>ccw</a></tt>,
-     <tt><a href=Image.image.html#cw>cw</a></tt>,
      <tt><a href=Image.image.html#clone>clone</a></tt>,
      <tt><a href=Image.image.html#copy>copy</a></tt>, 
      <tt><a href=Image.image.html#dct>dct</a></tt>,
      <tt><a href=Image.image.html#mirrorx>mirrorx</a></tt>, 
      <tt><a href=Image.image.html#rotate>rotate</a></tt>,
      <tt><a href=Image.image.html#rotate_expand>rotate_expand</a></tt>, 
+     <tt><a href=Image.image.html#rotate_ccw>rotate_ccw</a></tt>,
+     <tt><a href=Image.image.html#rotate_cw>rotate_cw</a></tt>,
      <tt><a href=Image.image.html#scale>scale</a></tt>, 
      <tt><a href=Image.image.html#skewx>skewx</a></tt>,
      <tt><a href=Image.image.html#skewx_expand>skewx_expand</a></tt>,
@@ -57,10 +57,11 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#invert>invert</a></tt>, 
      <tt><a href=Image.image.html#map_closest>map_closest</a></tt>,
      <tt><a href=Image.image.html#map_fast>map_fast</a></tt>, 
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
      <tt><a href=Image.image.html#modify_by_intensity>modify_by_intensity</a></tt>,
-     <tt><a href=Image.image.html#select_from>select_from</a></tt> 
-     <tt><a href=Image.image.html#rgb_to_hsv>rgb_to_hsv</a></tt> 
-     <tt><a href=Image.image.html#hsv_to_rgb>hsv_to_rgb</a></tt> 
+     <tt><a href=Image.image.html#select_from>select_from</a></tt>, 
+     <tt><a href=Image.image.html#rgb_to_hsv>rgb_to_hsv</a></tt>,
+     <tt><a href=Image.image.html#hsv_to_rgb>hsv_to_rgb</a></tt>
 
 <p>     converting to other datatypes: <tt><a href=Image.image.html#cast>cast</a></tt>,
      <tt><a href=Image.image.html#fromgif>fromgif</a></tt>, 
@@ -405,42 +406,68 @@ Applies a pixel-transform matrix, or filter, to the image.
      1/k is sum of matrix, or sum of matrix multiplied with div.
      base is given by r,g,b and is normally black.
 
-<p>     blur (ie a 2d gauss function):
+<p>     <table><tr><td rowspan=2>
+     blur (ie a 2d gauss function):
      <pre>
      ({({1,2,1}),
        ({2,5,2}),
        ({1,2,1})})
      </pre>
+     </td><td>
+     <img src=illustration_0.gif width=67 height=67>
+     </td><td>
+     <img src=lena.gif width=67 height=67>
+     </td>
+     <tr><td></td><td>original</td>
      
+     <tr><td>
      sharpen (k>8, preferably 12 or 16):
      <pre>
      ({({-1,-1,-1}),
        ({-1, k,-1}),
        ({-1,-1,-1})})
      </pre>
+     </td><td>
+     <img src=illustration_2.gif width=67 height=67>
+     </td>
 
-<p>     edge detect:
+<p>     <tr><td>
+     edge detect:
      <pre>
      ({({1, 1,1}),
        ({1,-8,1}),
        ({1, 1,1})})
      </pre>
+     </td><td>
+     <img src=illustration_3.gif width=67 height=67>
+     </td>
 
-<p>     horisontal edge detect (get the idea):
+<p>     <tr><td>
+     horisontal edge detect (get the idea):
      <pre>
-     ({({0, 0,0})
-       ({1,-8,1}),
+     ({({0, 0,0}),
+       ({1,-2,1}),
        ({0, 0,0})})
      </pre>
+     </td><td>
+     <img src=illustration_4.gif width=67 height=67>
+     </td>
 
-<p>     emboss (might prefer to begin with a <tt><a href=Image.image.html#grey>grey</a></tt> image):
+<p>     <tr><td rowspan=2>
+     emboss (might prefer to begin with a <tt><a href=Image.image.html#grey>grey</a></tt> image):
      <pre>
-     ({({2, 1, 0})
+     ({({2, 1, 0}),
        ({1, 0,-1}),
-       ({0,-1, 2})}), 128,128,128, 5
+       ({0,-1,-2})}), 128,128,128, 3
      </pre>
+     </td><td>
+     <img src=illustration_5.gif width=67 height=67>
+     </td><td>
+     <img src=illustration_6.gif width=67 height=67>
+     </td>
+     <tr><td></td><td>greyed</td></table>
 
-<p>     This function is not very fast, and it's hard to 
+<p>     This function is not very fast -- and it's hard to 
      optimize it more, not using assembler.
 </blockquote>
 <h4>ARGUMENTS</h4>
@@ -591,26 +618,6 @@ always casts to string...
      <tt><a href=Image.image.html#map_closest>map_closest</a></tt>,
      <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
      <tt><a href=Image.image.html#tobitmap>tobitmap</a></tt>
-</blockquote>
-
-<hr>
-<a name=ccw> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>ccw</b>()</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-rotates an image counter-clockwise, 90 degrees.
-</blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the new image object
 </blockquote>
 
 <hr>
@@ -895,26 +902,6 @@ Initializes a new image object.
 </blockquote>
 
 <hr>
-<a name=cw> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>cw</b>()</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-rotates an image clockwise, 90 degrees.
-</blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the new image object
-</blockquote>
-
-<hr>
 <a name=dct> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
@@ -987,6 +974,14 @@ Makes an grey-scale image, for alpha-channel use.
     d.red=d.blue=d.green=
         ((o.red-p.red)²+(o.green-p.green)²+(o.blue-p.blue)²)>>8
     </pre>
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_8.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->distancesq(255,0,128);</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -1366,11 +1361,9 @@ the new image object
 
 <hr>
 <a name=hsv_to_rgb> </a>
-<a name=rgb_to_hsv> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>rgb_to_hsv</b>()<br>
-object <b>hsv_to_rgb</b>()</tt>
+<tt>object <b>hsv_to_rgb</b>()</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1384,7 +1377,18 @@ Converts RGB data to HSV data, or the other way around.
 <p>    When converting to RGB, the input data is asumed to be placed in
     the pixels as above.
 
-<p>    HSV to RGB calculation:
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_10.gif width=67 height=67></td>
+     <td><img src=illustration_11.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->hsv_to_rgb();</td>
+     <td>the rainbow (below)</td>
+     </tr></table>
+
+<p>
+    HSV to RGB calculation:
     <pre>
     in = input pixel
     out = destination pixel
@@ -1399,7 +1403,7 @@ Converts RGB data to HSV data, or the other way around.
     </pre>
 
 <p>     Example: Nice rainbow.
-    <pre>
+     <pre>
      object i = Image.image(200,200);
      i = i->tuned_box(0,0, 200,200,
                       ({ ({ 255,255,128 }), ({ 0,255,128 }),
@@ -1487,6 +1491,14 @@ Maps all pixel colors to the colors given.
 <p>    Method to find the correct color is linear search
     over the colors given, selecting the nearest in the
     color cube. Slow...
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_13.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -1505,37 +1517,6 @@ the new image object
 <blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
      <tt><a href=Image.image.html#select_colors>select_colors</a></tt>,
      <tt><a href=Image.image.html#map_fs>map_fs</a></tt>
-</blockquote>
-
-<hr>
-<a name=map_closest> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>array(array(int)) <b>map_closest</b>(int&nbsp;num_colors)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Selects the best colors to represent the image.
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int num_colors</tt>
-  <dd>number of colors to return
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-an array of colors
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
-     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>
 </blockquote>
 
 <hr>
@@ -1594,6 +1575,14 @@ Maps all pixel colors to the colors given.
 
 <p>    Floyd-steinberg error correction is added to create
     a better-looking image, in many cases, anyway.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_15.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -1626,12 +1615,13 @@ the new image object
 
 <blockquote>
 mirrors an image:
-     <pre>
-     +--+     +--+
-     |x | <-> | x|
-     | .|     |. |
-     +--+     +--+
-     </pre>
+     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_17.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->mirrorx();</td>
+     </tr></table>
 </blockquote>
 <h4>RETURNS</h4>
 
@@ -1641,10 +1631,10 @@ the new image object
 </blockquote>
 
 <hr>
-<a name=mirrorx> </a>
+<a name=mirrory> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>mirrorx</b>()</tt>
+<tt>object <b>mirrory</b>()</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1652,12 +1642,13 @@ the new image object
 
 <blockquote>
 mirrors an image:
-     <pre>
-     +--+     +--+
-     |x | <-> | .|
-     | .|     |x |
-     +--+     +--+
-     </pre>
+     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_19.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->mirrory();</td>
+     </tr></table>
 </blockquote>
 
 <hr>
@@ -1679,6 +1670,14 @@ Recolor an image from intensity values.
 <p>    The color is then calculated from the values given, v1 representing
     the intensity value of 0, vn representing max, and colors between
     representing intensity values between, linear.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_21.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->grey()->modify_by_intensity(1,0,0, 0,({255,0,0}),({0,255,0}));</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -1967,18 +1966,22 @@ object <b>rotate_expand</b>(int|float&nbsp;angle, int&nbsp;r, int&nbsp;g, int&nb
 <blockquote>
 Rotates an image a certain amount of degrees (360° is 
      a complete rotation) counter-clockwise:
-     <pre>
-                 x
-     +--+       / \
-     |  |  <-> x   x
-     |  |       \ /
-     +--+        x
-     </pre>
-     The "expand" variant of functions stretches the 
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_23.gif width=87 height=88></td>
+     <td><img src=illustration_24.gif width=87 height=88></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->rotate(15,255,0,0);</td>
+     <td>->rotate_expand(15);</td>
+     </tr></table>
+
+<p>     The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
      the given or current color.
 
-<p>     This rotate uses the skewx() and skewy() functions.
+<p>     This rotate uses the <tt><a href=Image.image.html#skewx>skewx</a></tt>() and <tt><a href=Image.image.html#skewy>skewy</a></tt>() functions.
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -1989,6 +1992,62 @@ Rotates an image a certain amount of degrees (360° is
 <dt><tt>int b</tt>
   <dd>color to fill with; default is current
 </dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the new image object
+</blockquote>
+
+<hr>
+<a name=rotate_ccw> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>rotate_ccw</b>()</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+rotates an image counter-clockwise, 90 degrees.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_26.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->rotate_ccw();</td>
+     </tr></table>
+</blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the new image object
+</blockquote>
+
+<hr>
+<a name=rotate_cw> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>rotate_cw</b>()</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+rotates an image clockwise, 90 degrees.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_28.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->rotate_cw();</td>
+     </tr></table>
+</blockquote>
 <h4>RETURNS</h4>
 
 
@@ -2055,6 +2114,50 @@ scales the image to a specified new size,
 
 <blockquote>
 the new image object
+</blockquote>
+
+<hr>
+<a name=select_colors> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>array(array(int)) <b>select_colors</b>(int&nbsp;num_colors)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Selects the best colors to represent the image.
+
+<p>
+     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_30.gif width=67 height=67></td>
+     <td><img src=illustration_31.gif width=67 height=67></td>
+     <td><img src=illustration_32.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>2</td>
+     <td>8</td>
+     <td>32</td>
+     </tr></table>
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>int num_colors</tt>
+  <dd>number of colors to return
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+an array of colors
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.image.html#map_fast>map_fast</a></tt>,
+     <tt><a href=Image.image.html#select_colors>select_colors</a></tt>
 </blockquote>
 
 <hr>
@@ -2180,12 +2283,16 @@ object <b>skewx_expand</b>(int&nbsp;yfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)
 <blockquote>
 Skews an image an amount of pixels or a factor;
      a skew-x is a transformation:
-     <pre>
-     +--+         +--+
-     |  |  <->   /  /
-     |  |       /  /
-     +--+      +--+
-     </pre>
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_34.gif width=82 height=67></td>
+     <td><img src=illustration_35.gif width=82 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->skewx(15,255,0,0);</td>
+     <td>->skewx_expand(15);</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -2229,16 +2336,18 @@ object <b>skewy_expand</b>(int&nbsp;xfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)
 <blockquote>
 Skews an image an amount of pixels or a factor;
      a skew-y is a transformation:
-     <pre>
-                  +
-                 /|
-     +--+       / |
-     |  |  <-> +  +
-     |  |      | /
-     +--+      |/
-               +
-     </pre>
-     The "expand" variant of functions stretches the 
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_37.gif width=67 height=82></td>
+     <td><img src=illustration_38.gif width=67 height=82></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->skewy(15,255,0,0);</td>
+     <td>->skewy_expand(15);</td>
+     </tr></table>
+
+<p>     The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
      the given or current color.
 </blockquote>

@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.31 1997/05/29 19:37:34 mirar Exp $ */
+/* $Id: image.c,v 1.32 1997/05/29 22:45:03 mirar Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.31 1997/05/29 19:37:34 mirar Exp $<br>
+**!	$Id: image.c,v 1.32 1997/05/29 22:45:03 mirar Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -43,14 +43,14 @@
 **!	<ref>paste_mask</ref>
 **!
 **!	getting subimages, scaling, rotating: <ref>autocrop</ref>, 
-**!	<ref>ccw</ref>,
-**!	<ref>cw</ref>,
 **!	<ref>clone</ref>,
 **!	<ref>copy</ref>, 
 **!	<ref>dct</ref>,
 **!	<ref>mirrorx</ref>, 
 **!	<ref>rotate</ref>,
 **!	<ref>rotate_expand</ref>, 
+**!	<ref>rotate_ccw</ref>,
+**!	<ref>rotate_cw</ref>,
 **!	<ref>scale</ref>, 
 **!	<ref>skewx</ref>,
 **!	<ref>skewx_expand</ref>,
@@ -65,10 +65,11 @@
 **!	<ref>invert</ref>, 
 **!	<ref>map_closest</ref>,
 **!	<ref>map_fast</ref>, 
+**!	<ref>select_colors</ref>,
 **!	<ref>modify_by_intensity</ref>,
-**!	<ref>select_from</ref> 
-**!	<ref>rgb_to_hsv</ref> 
-**!	<ref>hsv_to_rgb</ref> 
+**!	<ref>select_from</ref>, 
+**!	<ref>rgb_to_hsv</ref>,
+**!	<ref>hsv_to_rgb</ref>
 **!
 **!	converting to other datatypes: <ref>cast</ref>,
 **!	<ref>fromgif</ref>, 
@@ -106,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.31 1997/05/29 19:37:34 mirar Exp $");
+RCSID("$Id: image.c,v 1.32 1997/05/29 22:45:03 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1528,7 +1529,7 @@ void image_threshold(INT32 args)
 
 
 /*
-**! method object rgb_to_hsv()
+**x method object rgb_to_hsv()
 **! method object hsv_to_rgb()
 **!    Converts RGB data to HSV data, or the other way around.
 **!    When converting to HSV, the resulting data is stored like this:
@@ -1536,6 +1537,22 @@ void image_threshold(INT32 args)
 **!
 **!    When converting to RGB, the input data is asumed to be placed in
 **!    the pixels as above.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->hsv_to_rgb(); </illustration></td>
+**!	<td><illustration>
+**!     return image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->hsv_to_rgb();
+**!	</illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->hsv_to_rgb();</td>
+**!	<td>the rainbow (below)</td>
+**!	</tr></table>
+**!
 **!
 **!    HSV to RGB calculation:
 **!    <pre>
@@ -1552,13 +1569,13 @@ void image_threshold(INT32 args)
 **!    </pre>
 **!
 **!     Example: Nice rainbow.
-**!    <pre>
+**!     <pre>
 **!     object i = Image.image(200,200);
 **!     i = i->tuned_box(0,0, 200,200,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->hsv_to_rgb();
-**!     </pre>
+**!	</pre>
 **! returns the new image object
 */
 
@@ -1651,6 +1668,15 @@ void image_hsv_to_rgb(INT32 args)
 **!    d.red=d.blue=d.green=
 **!	   ((o.red-p.red)²+(o.green-p.green)²+(o.blue-p.blue)²)>>8
 **!    </pre>
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->distancesq(255,0,128); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->distancesq(255,0,128);</td>
+**!	</tr></table>
+**!
 **!
 **! returns the new image object
 **!
@@ -1901,42 +1927,106 @@ void image_select_from(INT32 args)
 **!	1/k is sum of matrix, or sum of matrix multiplied with div.
 **!	base is given by r,g,b and is normally black.
 **!
+**!	<table><tr><td rowspan=2>
 **!     blur (ie a 2d gauss function):
 **!	<pre>
 **!	({({1,2,1}),
 **!	  ({2,5,2}),
 **!	  ({1,2,1})})
 **!	</pre>
+**!	</td><td>
+**!	<illustration>
+**!	return lena()->apply_matrix(
+**!	({({1,2,1}),
+**!	  ({2,5,2}),
+**!	  ({1,2,1})})
+**!	);
+**!	</illustration>
+**!	</td><td>
+**!	<illustration>
+**!	return lena();
+**!	</illustration>
+**!	</td>
+**!	<tr><td></td><td>original</td>
 **!	
+**!	<tr><td>
 **!     sharpen (k>8, preferably 12 or 16):
 **!	<pre>
 **!	({({-1,-1,-1}),
 **!	  ({-1, k,-1}),
 **!	  ({-1,-1,-1})})
 **!	</pre>
+**!	</td><td>
+**!	<illustration>
+**!	return lena()->apply_matrix(
+**!	({({-1,-1,-1}),
+**!	  ({-1,14,-1}),
+**!	  ({-1,-1,-1})})
+**!	);
+**!	</illustration>
+**!	</td>
 **!
+**!	<tr><td>
 **!     edge detect:
 **!	<pre>
 **!	({({1, 1,1}),
 **!	  ({1,-8,1}),
 **!	  ({1, 1,1})})
 **!	</pre>
+**!	</td><td>
+**!	<illustration>
+**!	return lena()->apply_matrix(
+**!	({({1, 1,1}),
+**!	  ({1,-8,1}),
+**!	  ({1, 1,1})})
+**!	);
+**!	</illustration>
+**!	</td>
 **!
+**!	<tr><td>
 **!     horisontal edge detect (get the idea):
 **!	<pre>
-**!	({({0, 0,0})
-**!	  ({1,-8,1}),
+**!	({({0, 0,0}),
+**!	  ({1,-2,1}),
 **!	  ({0, 0,0})})
 **!	</pre>
+**!	</td><td>
+**!	<illustration>
+**!	return lena()->apply_matrix(
+**!	({({0, 0,0}),
+**!	  ({1,-2,1}),
+**!	  ({0, 0,0})})
+**!	);
+**!	</illustration>
+**!	</td>
 **!
+**!	<tr><td rowspan=2>
 **!     emboss (might prefer to begin with a <ref>grey</ref> image):
 **!	<pre>
-**!	({({2, 1, 0})
+**!	({({2, 1, 0}),
 **!	  ({1, 0,-1}),
-**!	  ({0,-1, 2})}), 128,128,128, 5
+**!	  ({0,-1,-2})}), 128,128,128, 3
 **!	</pre>
+**!	</td><td>
+**!	<illustration>
+**!	return lena()->apply_matrix(
+**!	({({2, 1, 0}),
+**!	  ({1, 0,-1}),
+**!	  ({0,-1,-2})}), 128,128,128, 3
+**!	);
+**!	</illustration>
+**!	</td><td>
+**!	<illustration>
+**!	return lena()->grey()->apply_matrix(
+**!	({({2, 1, 0}),
+**!	  ({1, 0,-1}),
+**!	  ({0,-1,-2})}), 128,128,128, 3
+**!	);
+**!	</illustration>
+**!	</td>
+**!	<tr><td></td><td>greyed</td></table>
 **!
-**!	This function is not very fast, and it's hard to 
+**!	This function is not very fast -- and it's hard to 
 **!	optimize it more, not using assembler.
 **!
 **! returns the new image object
@@ -2080,6 +2170,14 @@ CHRONO("apply_matrix, end");
 **!    the intensity value of 0, vn representing max, and colors between
 **!    representing intensity values between, linear.
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->grey()->modify_by_intensity(1,0,0,0,({255,0,0}),({0,255,0})); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->grey()->modify_by_intensity(1,0,0, 0,({255,0,0}),({0,255,0}));</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **!
 **! arg int r
@@ -2200,6 +2298,14 @@ void image_modify_by_intensity(INT32 args)
 **!    over the colors given, selecting the nearest in the
 **!    color cube. Slow...
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})})); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **!
 **! arg array(array(int)) color
@@ -2306,6 +2412,14 @@ static void image_map_fast(INT32 args)
 **!    Floyd-steinberg error correction is added to create
 **!    a better-looking image, in many cases, anyway.
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})})); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **!
 **! arg array(array(int)) color
@@ -2365,10 +2479,22 @@ static void image_map_fs(INT32 args)
 }
 
 /*
-**! method array(array(int)) map_closest(int num_colors)
+**! method array(array(int)) select_colors(int num_colors)
 **!    	Selects the best colors to represent the image.
 **!
 **! returns an array of colors
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->map_closest(lena()->select_colors(2)); </illustration></td>
+**!	<td><illustration> return lena()->map_closest(lena()->select_colors(8)); </illustration></td>
+**!	<td><illustration> return lena()->map_closest(lena()->select_colors(32)); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>2</td>
+**!	<td>8</td>
+**!	<td>32</td>
+**!	</tr></table>
 **!
 **! arg int num_colors
 **!	number of colors to return

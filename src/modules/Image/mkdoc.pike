@@ -2,6 +2,10 @@ import Stdio;
 import Array;
 
 mapping parse=([]);
+int illustration_counter;
+
+string illustration_code=read_bytes("illustration.pike");
+object lena_image=Image.image()->fromppm(read_file("doc/lena.ppm"));
 
 /*
 
@@ -178,6 +182,7 @@ string fixdesc(string s,string prefix)
    s=stripws(s);
 
    string t,u,v;
+
    t=s; s="";
    while (sscanf(t,"%s<ref>%s</ref>%s",t,u,v)==3)
    {
@@ -185,6 +190,25 @@ string fixdesc(string s,string prefix)
       t=v;
    }
    s+=t;
+
+   t=s; s="";
+   while (sscanf(t,"%s<illustration>%s</illustration>%s",t,u,v)==3)
+   {
+      s+=t;
+      mixed err=catch {
+	 object x=compile_string(replace(illustration_code,"***the string***",u))();
+	 x->lena_image=lena_image;
+	 u=x->doit("illustration_"+illustration_counter+++".gif");
+      };
+      if (err)
+      {
+	 stderr->write("error while compiling and running\n"+u+"\n");
+      }
+      else s+=u;
+      t=v;
+   }
+   s+=t;
+
    return htmlify(replace(s,"\n\n","\n\n<p>"));
 }
 

@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.6 1997/05/29 19:37:52 mirar Exp $ */
+/* $Id: matrix.c,v 1.7 1997/05/29 22:45:07 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.6 1997/05/29 19:37:52 mirar Exp $<br>
+**!	$Id: matrix.c,v 1.7 1997/05/29 22:45:07 mirar Exp $<br>
 **! class image
 */
 
@@ -347,8 +347,17 @@ void image_scale(INT32 args)
 }
 
 /*
-**! method object ccw()
+**! method object rotate_ccw()
 **!	rotates an image counter-clockwise, 90 degrees.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->rotate_ccw(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->rotate_ccw();</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **!
 **!
@@ -446,8 +455,16 @@ void img_ccw(struct image *is,struct image *id)
 }
 
 /*
-**! method object cw()
+**! method object rotate_cw()
 **!	rotates an image clockwise, 90 degrees.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->rotate_cw(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->rotate_cw();</td>
+**!	</tr></table>
 **! returns the new image object
 **!
 **!
@@ -493,12 +510,13 @@ void image_cw(INT32 args)
 /*
 **! method object mirrorx()
 **!	mirrors an image:
-**!	<pre>
-**!	+--+     +--+
-**!	|x | <-> | x|
-**!	| .|     |. |
-**!	+--+     +--+
-**!	</pre>
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->mirrorx(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->mirrorx();</td>
+**!	</tr></table>
 **! returns the new image object
 **!
 **!
@@ -541,15 +559,15 @@ void image_mirrorx(INT32 args)
 }
 
 /*
-**! method object mirrorx()
+**! method object mirrory()
 **!	mirrors an image:
-**!	<pre>
-**!	+--+     +--+
-**!	|x | <-> | .|
-**!	| .|     |x |
-**!	+--+     +--+
-**!	</pre>
-**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->mirrory(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->mirrory();</td>
+**!	</tr></table>
 **!
 */
 
@@ -759,12 +777,17 @@ CHRONO("skewy end\n");
 **! method object skewx_expand(int yfactor,int r,int g,int b)
 **!	Skews an image an amount of pixels or a factor;
 **!	a skew-x is a transformation:
-**!	<pre>
-**!	+--+         +--+
-**!	|  |  <->   /  /
-**!	|  |       /  /
-**!	+--+      +--+
-**!	</pre>
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->skewx(15,255,0,0); </illustration></td>
+**!	<td><illustration> return lena()->skewx_expand(15); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->skewx(15,255,0,0);</td>
+**!	<td>->skewx_expand(15);</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **! arg int x
 **!    the number of pixels
@@ -817,15 +840,17 @@ void image_skewx(INT32 args)
 **! method object skewy_expand(int xfactor,int r,int g,int b)
 **!	Skews an image an amount of pixels or a factor;
 **!	a skew-y is a transformation:
-**!	<pre>
-**!	             +
-**!	       	    /|
-**!	+--+       / |
-**!	|  |  <-> +  +
-**!     |  |      | /
-**!	+--+      |/
-**!		  +
-**!	</pre>
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->skewy(15,255,0,0); </illustration></td>
+**!	<td><illustration> return lena()->skewy_expand(15); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->skewy(15,255,0,0);</td>
+**!	<td>->skewy_expand(15);</td>
+**!	</tr></table>
+**!
 **!	The "expand" variant of functions stretches the 
 **!	image border pixels rather then filling with 
 **!	the given or current color.
@@ -989,18 +1014,22 @@ void img_rotate(INT32 args,int xpn)
 **! method object rotate_expand(int|float angle,int r,int g,int b)
 **!	Rotates an image a certain amount of degrees (360° is 
 **!	a complete rotation) counter-clockwise:
-**!	<pre>
-**!	       	    x
-**!	+--+       / \
-**!	|  |  <-> x   x
-**!     |  |       \ /
-**!	+--+        x
-**!	</pre>
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->rotate(15,255,0,0); </illustration></td>
+**!	<td><illustration> return lena()->rotate_expand(15); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->rotate(15,255,0,0);</td>
+**!	<td>->rotate_expand(15);</td>
+**!	</tr></table>
+**!
 **!	The "expand" variant of functions stretches the 
 **!	image border pixels rather then filling with 
 **!	the given or current color.
 **!
-**!	This rotate uses the skewx() and skewy() functions.
+**!	This rotate uses the <ref>skewx</ref>() and <ref>skewy</ref>() functions.
 **! returns the new image object
 **! arg int|float angle
 **!    the number of degrees to rotate
