@@ -1,0 +1,15 @@
+NAME
+	signum - get a signal number given a desctiptive string
+
+SYNTAX
+	int signum(string sig);
+
+DESCRIPTION
+	This function is the opposite of signame.
+
+EXAMPLE
+	> signum("SIGKILL");
+	Result: 9
+
+SEE ALSO
+	signame, kill, signal

@@ -353,8 +353,9 @@ SYNTAX
 
 DESCRIPTION
 	This funcion connects a socket previously created with
-	file->open_socket to a remote socket. The argument is the ip number
-	for the remote machine on the form x.x.x.x where x is a number.
+	file->open_socket to a remote socket. The argument is the ip name
+	or number fot he remote machine.
+
 	This function returns 1 for success, 0 otherwise. Note that if the
 	socket is in nonblocking mode, you have to wait for a write or close
 	callback before you know if the connection failed or not.
@@ -381,4 +382,19 @@ SEE ALSO
 	file->connect
 
 ============================================================================
+NAME
+	pipe - create a two-way pipe
 
+SYNTAX
+	object file->pipe();
+
+DESCRIPTION
+	This function creates a pipe between the object it was called in
+	and an object that is returned. The two ends of the pipe are
+	indistinguishable. If the object is this function is called in
+	was open to begin with, it is closed before the pipe is created.
+
+SEE ALSO
+	builtin/fork
+
+============================================================================

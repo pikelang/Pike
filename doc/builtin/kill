@@ -1,0 +1,47 @@
+NAME
+	kill - send signal to other process
+
+SYNTAX
+	int kill(int pid, int signal)
+
+DESCRIPTION
+	Kill sends a signal to another process. If something goes wrong
+	-1 is returned, 0 otherwise.
+
+	Some signals and their supposed purpose:
+
+	SIGHUP	Hangup, sent to process when user logs out
+	SIGINT	Interrupt, normally sent by ctrl-c
+	SIGQUIT	Quit, sent by ctrl-\
+	SIGILL	Illegal instruction
+	SIGTRAP	Trap, mostly used by debuggers
+	SIGABRT	Aborts process, can be caught, used by uLPC whenever something
+		goes seriously wrong.
+	SIGBUS	Bus error
+	SIGFPE	Floating point error (such as division by zero)
+	SIGKILL	Really kill a process, cannot be caught
+	SIGUSR1	Signal reserved for whatever you want to use it for.
+	SIGSEGV	Segmentation fault, caused by accessing memory where you
+		shouldn't. Should never happen to uLPC.
+	SIGUSR2	Signal reserved for whatever you want to use it for.
+	SIGALRM	Signal used for timer interrupts.
+	SIGTERM	Termination signal
+	SIGSTKFLT Stack fault
+	SIGCHLD	Child process died
+	SIGCONT	Continue suspended
+	SIGSTOP	Stop process
+	SIGSTP	Suspend process
+	SIGTTIN	tty input for background process
+	SIGTTOU	tty output for background process
+	SIGXCPU	Out of cpu
+	SIGXFSZ	File size limit exceeded
+	SIGPROF	Profile trap
+	SIGWINCH Window change signal
+	
+	Note that you have to use signame to translate the name of a signal
+	to it's number.
+
+SEE ALSO
+	signal, signum, signame, files/fork
+
+

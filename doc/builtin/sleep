@@ -1,0 +1,13 @@
+NAME
+	sleep - let interpreter doze of for a while
+
+SYNTAX
+	void sleep(int s);
+
+DESCRIPTION
+	This function makes the program stop for s seconds. Only signal
+	handlers can interrupt the sleep. Other callbacks are not called
+	during sleep.
+
+SEE ALSO
+	signal

@@ -1,0 +1,12 @@
+NAME
+	getpid - get the process id of this process
+
+SYNTAX
+	int getpid();
+
+DESCRIPTION
+	This returns the pid of this process. Useful for sending
+	signals to yourself.
+
+SEE ALSO
+	kill, fork, signal

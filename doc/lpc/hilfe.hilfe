@@ -4,7 +4,7 @@ NAME
 SYNTAX
 	$ hilfe
 	or
-	$ driver -Cstay hilfe
+	$ ulpc -Cstay hilfe
 
 DESCRIPTION
 	Hilfe is a LPC-script that supplies an incremental environment for

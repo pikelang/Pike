@@ -51,6 +51,22 @@ SEE ALSO
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 STATEMENT
+	foreach - loop over an array
+
+SYNOPSIS
+	foreach ( array, variable ) statement
+
+DESCRIPTION
+	For each element in array, set variable to that value and execute
+	'statement'.
+
+EXAMPLE
+	string word;
+	foreach( explode(sentence," "), word) foo(word);
+	
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+STATEMENT
 	while - execute a statement while an expression is true
 
 SYNOPSIS

@@ -1,0 +1,5 @@
+RESERVED WORDS
+   array break case catch continue default do efun else float for foreach
+   function gauge if inherit inline int lambda list mapping mixed nomask
+   object private program protected public return sscanf static string
+   switch varargs void while
