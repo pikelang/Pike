@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.138 2004/03/12 14:06:57 grubba Exp $
+|| $Id: acconfig.h,v 1.139 2004/03/16 14:43:02 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -28,6 +28,9 @@
 
 /* Define this if you want run time self tests */
 #undef PIKE_DEBUG
+
+/* Define to make Pike do a full cleanup at exit to detect leaks. */
+#undef DO_PIKE_CLEANUP
 
 /* Define this if you want pike to interact with valgrind. */
 #undef USE_VALGRIND

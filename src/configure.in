@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.819 2004/03/15 16:09:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.820 2004/03/16 14:43:02 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1298,10 +1298,14 @@ dnl 				    [use short native type int (EXPERIMENTAL)]))
 dnl AC_ARG_WITH(unsigned-long-long-int, MY_DESCR([--with-unsigned-long-longint],
 dnl 				    [use short native type int (EXPERIMENTAL)]))
 
-MY_AC_ARG_WITH(dmalloc, MY_DESCR([--with-dmalloc],[enable memory-leak tests]),
+MY_AC_ARG_WITH(cleanup-on-exit,
+	       MY_DESCR([--with-cleanup-on-exit],
+			[Do full cleanup at exit to detect leaks better.]),
+	       [AC_DEFINE(DO_PIKE_CLEANUP)])
+MY_AC_ARG_WITH(dmalloc, MY_DESCR([--with-dmalloc],[Enable memory leak checks.]),
 	       [AC_DEFINE(DEBUG_MALLOC,10)])
 MY_AC_ARG_WITH(dmalloc-malloc, MY_DESCR([--with-dmalloc-malloc],
-					[Enable overloading malloc(3)]),
+					[Enable overloading of malloc(3)]),
 	       [ AC_DEFINE(ENCAPSULATE_MALLOC,1) ])
 MY_AC_ARG_WITH(dmalloc-malloc-leaks,
 	       MY_DESCR([--with-dmalloc-malloc-leaks],
