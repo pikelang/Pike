@@ -12,7 +12,7 @@
 //   Rename sections
 //   Support section symbols (used by pthread.lib)
 
-// #define DEBUG
+#define DEBUG
 
 class Reloc
 {
@@ -534,12 +534,13 @@ class dumpfile
 	r->loc=i4(pos);
 	r->sym=file_symbols[i4(pos+4)];
 	r->type=i2(pos+8);
-	pos+=10;
 
 	if (!r->sym) {
 	  write("  Failed to find symbol %O for relocation.\n",
 		getsymbolname(i4(pos+4)));
 	}
+
+	pos+=10;
 
 	ret+=({r});
       }
@@ -1051,7 +1052,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.18 2002/10/23 18:48:13 grubba Exp $\n"
+	 "$Id: pntld,v 1.19 2002/10/24 12:38:07 grubba Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
