@@ -1,6 +1,13 @@
-dnl $Id: testsuite.in,v 1.23 2003/12/03 10:01:26 nilsson Exp $
+dnl $Id: testsuite.in,v 1.24 2003/12/06 19:05:03 nilsson Exp $
 
 dnl Nettle.Yarrow
+
+cond_resolv( Nettle.CBC, [[
+  test_true( programp(Crypto.CBC) )
+  test_true( programp(Crypto.Proxy) )
+  test_true( programp(Crypto.CipherState) )
+  test_true( programp(Crypto.HashState) )
+]])
 
 cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
