@@ -174,7 +174,7 @@ int main(int argc, array(string) argv)
 	case "debug":
 	  cflags+=({
 	    "-Z7",
-//	    "-Zi",   // This flag prevents parallell compilation
+	    "-Zi",   // This flag prevents parallell compilation
 //	    "-FR",   // This flag confuses libtool
 //	    "-Yd",
 	  });
@@ -360,8 +360,8 @@ int main(int argc, array(string) argv)
 	cmd+=({"-link",
 	       "-fixed:no",
 	       "-debug",
-	  "-PDB:NONE",
-//	  "-DEBUGTYPE:BOTH",
+//	  "-PDB:NONE",
+	  "-DEBUGTYPE:BOTH",
 	  "-DEBUG",
 	  })
 	  +ldopts;
