@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.45 2002/10/25 19:41:22 marcus Exp $
+|| $Id: dlopen.c,v 1.46 2002/10/26 11:45:53 grubba Exp $
 */
 
 #include <global.h>
@@ -189,7 +189,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.45 2002/10/25 19:41:22 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.46 2002/10/26 11:45:53 grubba Exp $");
 
 #endif
 
@@ -848,7 +848,7 @@ static parse_link_info(struct DLHandle *ret,
 
     end=MEMCHR(info+ptr,' ',len-ptr);
     if(end) 
-      l=end - (info+x);
+      l = DO_NOT_WARN((int)(end - (info+x)));
     else
       l=len-ptr;
 
@@ -1816,6 +1816,24 @@ FILE *__cdecl dlopen_fopen_wrapper(const char *fname, const char *mode)
 
 #ifdef _WIN64
 
+/* IA64 PDB (Program Data Base) support. */
+
+/*
+ * PDB file format:
+ *
+ * All values are stored in little-endian.
+ *
+ * PDB Format Identifier
+ *   The file begins with a 0x1a (aka EOF) terminated string
+ *   describing the program that generated the file.
+ *   This is followed by two byte tag specifying the fileformat.
+ *   Only format 0x44 0x55 is currently supported.
+ *   The file is then padded to an even multiple of 4 bytes.
+ *
+ * PDB Header
+ *   Then follows the PDB header.
+ */
+
 struct pdb_header {
   INT32 blocksize, freelist, total_alloc, toc_size, unknown, toc_loc;
 };
@@ -1842,6 +1860,7 @@ static void *read_pdb_file(unsigned char *buf, size_t *plen,
   INT32 *fsz = toc+1;
   INT32 *blocklist = fsz+*toc;
   size_t len = *plen;
+  int i;
   if(n<0 || n>=*toc) return NULL;
   for(i=0; i<n; i++) {
     int f_blocks = (*fsz+++header->blocksize-1)/header->blocksize;
@@ -1873,7 +1892,7 @@ static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
   if(idlen>=256 || idlen>=len) return NULL;
 #ifdef DLDEBUG
   buf[idlen]='\0';
-  fprintf(stderr, "Found PDB header, ident=\"%s\", sig=<%x,%x,%x,%x>\n"
+  fprintf(stderr, "Found PDB header, ident=\"%s\", sig=<%x,%x,%x,%x>\n",
 	  buf,  buf[idlen],  buf[idlen+1], buf[idlen+2],  buf[idlen+3]);
 #endif
   if(len<idlen+2 || buf[idlen]!=0x44 || buf[idlen+1]!=0x53) return NULL;
@@ -2061,10 +2080,10 @@ static void init_dlopen(void)
     }
     free(buf);
 #ifdef _WIN64
-    if(strlen(argv[0]>4)) {
-      char *pdbname = alloca(strlen(argv[0])+1);
-      strcpy(pdbname, argv[0]);
-      strcpy(pdbname+strlen(pdbname)-4, ".PDB");
+    if(strlen(ARGV[0])>4) {
+      char *pdb_name = alloca(strlen(ARGV[0])+1);
+      strcpy(pdb_name, ARGV[0]);
+      strcpy(pdb_name+strlen(pdb_name)-4, ".PDB");
       buf= (unsigned char *)read_file(pdb_name, &len);
     } else buf = NULL;
     if(buf) {
@@ -2082,7 +2101,7 @@ static void init_dlopen(void)
 	      unsigned INT16 secnum;
 	      char name[1];
 	    } *sym = (void *)&symtab[i];
-	    int namelen=STRNLEN(sym->name,sym->len-12);
+	    size_t namelen=STRNLEN(sym->name,sym->len-12);
 	  
 #ifdef DLDEBUG
 	    if(!sym->name[namelen])
@@ -2152,8 +2171,11 @@ static void init_dlopen(void)
     EXPORT(fread);
     EXPORT(strtol);
   }
-#ifdef _WIN64
-  EXPORT(_gp);
+#ifdef _M_IA64
+  {
+    extern void *gp;
+    EXPORT(gp);
+  }
 #endif
 
 #define EXPORT_AS(X,Y) \
