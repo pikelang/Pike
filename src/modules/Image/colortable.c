@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.72 1999/06/19 20:24:44 hubbe Exp $ */
+/* $Id: colortable.c,v 1.73 1999/07/15 23:36:14 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.72 1999/06/19 20:24:44 hubbe Exp $
+**!	$Id: colortable.c,v 1.73 1999/07/15 23:36:14 hubbe Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.72 1999/06/19 20:24:44 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.73 1999/07/15 23:36:14 hubbe Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -1740,9 +1740,9 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
    er=dith->u.floyd_steinberg.errors;
    for (i=0; i<dith->rowlen; i++)
    {
-      er[i].r=0.001*(rand()%998-499);
-      er[i].g=0.001*(rand()%998-499);
-      er[i].b=0.001*(rand()%998-499);
+      er[i].r=0.001*(my_rand()%998-499);
+      er[i].g=0.001*(my_rand()%998-499);
+      er[i].b=0.001*(my_rand()%998-499);
    }
 
    er=dith->u.floyd_steinberg.nexterrors;
@@ -1771,11 +1771,11 @@ static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
 {
    rgbl_group rgb;
    int i;
-   i=(int)(s.r-(rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1); 
+   i=(int)(s.r-(my_rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1); 
    rgb.r=i<0?0:(i>255?255:i); 			       
-   i=(int)(s.g-(rand()%(dith->u.randomcube.g*2-1))+dith->u.randomcube.g+1); 
+   i=(int)(s.g-(my_rand()%(dith->u.randomcube.g*2-1))+dith->u.randomcube.g+1); 
    rgb.g=i<0?0:(i>255?255:i); 			       
-   i=(int)(s.b-(rand()%(dith->u.randomcube.b*2-1))+dith->u.randomcube.b+1); 
+   i=(int)(s.b-(my_rand()%(dith->u.randomcube.b*2-1))+dith->u.randomcube.b+1); 
    rgb.b=i<0?0:(i>255?255:i);
    return rgb;
 }
@@ -1786,7 +1786,7 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 {
    rgbl_group rgb;
    int i;
-   int err=-(rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1;
+   int err=-(my_rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1;
    i=(int)(s.r+err); 
    rgb.r=i<0?0:(i>255?255:i); 			       
    i=(int)(s.g+err); 
