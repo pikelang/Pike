@@ -16,15 +16,19 @@
 #include "backend.h"
 #include "operators.h"
 
-RCSID("$Id: error.c,v 1.20 1998/05/16 08:23:06 hubbe Exp $");
+RCSID("$Id: error.c,v 1.21 1998/07/16 23:09:39 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
 JMP_BUF *recoveries=0;
 
-JMP_BUF *init_recovery(JMP_BUF *r)
+JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
 {
+#ifdef DEBUG
+  r->line=line;
+  r->file=file;
+#endif
   r->fp=fp;
   r->sp=sp-evaluator_stack;
   r->mark_sp=mark_sp - mark_stack;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.22 1998/07/16 22:00:45 grubba Exp $
+ * $Id: error.h,v 1.23 1998/07/16 23:09:39 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -54,6 +54,10 @@ typedef struct ONERROR
 
 typedef struct JMP_BUF
 {
+#ifdef DEBUG
+  int line;
+  char *file;
+#endif
   struct JMP_BUF *previous;
   jmp_buf recovery;
   struct frame *fp;
@@ -67,8 +71,24 @@ extern JMP_BUF *recoveries;
 extern struct svalue throw_value;
 extern int throw_severity;
 
+#ifdef DEBUG
+#define UNSETJMP(X) do{ \
+  if(recoveries != &X) { \
+    if(recoveries) \
+      fatal("UNSETJMP out of sync! (last SETJMP at %s:%d)!\n",recoveries->file,recoveries->line); \
+    else \
+      fatal("UNSETJMP out of sync! (recoveries = 0)\n"); \
+    } \
+    recoveries=X.previous; \
+  }while (0)
+#define DEBUG_LINE_ARGS ,int line, char *file
+#define SETJMP(X) setjmp((init_recovery(&X,__LINE__,__FILE__)->recovery))
+#else
+#define DEBUG_LINE_ARGS 
 #define SETJMP(X) setjmp((init_recovery(&X)->recovery))
 #define UNSETJMP(X) recoveries=X.previous;
+#endif
+
 
 #ifdef DEBUG
 #define SET_ONERROR(X,Y,Z) \
@@ -89,6 +109,7 @@ extern int throw_severity;
                  &(X), __FILE__, __LINE__)); \
     if(!recoveries) break; \
     if(recoveries->onerror != &(X)) { \
+      fprintf(stderr,"LAST SETJMP: %s:%d\n",recoveries->file,recoveries->line); \
       if (recoveries->onerror) { \
         fatal("UNSET_ONERROR out of sync.\n" \
               "Last SET_ONERROR is from %s:%d\n", \
@@ -122,7 +143,7 @@ extern int throw_severity;
 #endif /* DEBUG */
 
 /* Prototypes begin here */
-JMP_BUF *init_recovery(JMP_BUF *r);
+JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
 void pike_throw(void) ATTRIBUTE((noreturn));
 void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 void exit_on_error(void *msg);
