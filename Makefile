@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.32 2001/01/23 02:20:27 mast Exp $
+# $Id: Makefile,v 1.33 2001/01/23 23:00:58 mast Exp $
 #
 # Meta Makefile
 #
@@ -134,6 +134,9 @@ gdb_verify:
 
 run_hilfe:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
+
+export:
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=export"
 
 bin_export:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
