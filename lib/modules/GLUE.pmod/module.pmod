@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.3 2004/01/26 10:12:32 nilsson Exp $
+// $Id: module.pmod,v 1.4 2004/02/03 12:18:08 jhs Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL.GL_FLOAT)
@@ -1521,8 +1521,8 @@ class Region( float x, float y, float w, float h ) {
 // texture, aproximately, or aproximately 256Mb of texture memory.
 
 //!  A font.
-class Font {
-
+class Font
+{
   // The width of a space character. Used for all nonprintables except
   // '\n'.
   static float spacew;
@@ -1629,7 +1629,8 @@ class Font {
   }
 
   //! A character to draw.
-  class Character {
+  class Character
+  {
     inherit Region;
 
     Region pos; //! Character position in texture @[txt].
@@ -1692,13 +1693,17 @@ class Font {
   //! Write the @[text] in size [h], possibly restricted by region @[roi].
   //! Return the width and height of the resulting text area. If @[roi] is
   //! a float, @expr{Region(0.0, 0.0, roi, 10000.0)@} will be used.
-  array(float) write_now( string text, float h, void|float|Region roi ) {
-    array ret = get_characters(text, h, roi);
+  array(float) write_now( string text, float h, void|float|Region roi,
+			  string|void align )
+  {
+    array ret = get_characters( text, h, roi, align );
     ret[2]->draw();
     return ret[..1];
   }
 
-  static array get_characters( string text, float h, float|Region roi ) {
+  static array get_characters( string text, float h, float|Region roi,
+			       string|void align )
+  {
     map( (array)text, get_character );
     float xp = 0.0, yp = 0.0, mxs=0.0;
     array(Character) chars = ({});
@@ -1708,7 +1713,8 @@ class Font {
 
     xp = 0.0; yp = 0.0; mxs=0.0;
 
-    foreach( (array(int))text, int t ) {
+    foreach( (array(int))text, int t )
+    {
       if( !letters[t] ) {
 	if( t == '\n' )	{
 	  yp += h;
@@ -1751,28 +1757,72 @@ class Font {
 	  mxs = xp;
       }
     }
+    if( !align || align == "left" || !has_value( text, "\n" ) )
+      return ({ mxs, yp+h, chars });
+
+    float last_y = 0.0;
+    array(Character) current_row = ({});
+    array(array(Character)) rows = ({});
+    foreach( chars, Character c )
+    {
+      if( last_y != c->y )
+      {
+	rows += ({ current_row });
+	current_row = ({});
+	last_y = c->y;
+      }
+      current_row += ({ c });
+    }
+    rows += ({ current_row });
+    foreach( rows, current_row )
+    {
+      if( !sizeof( current_row ) )
+	continue;
+      Character last = current_row[-1];
+      float x0, mx = last->x + last->w;
+      switch( align )
+      {
+	case "right":	 x0 = mxs - mx; break;
+	case "center":
+	case "centered": x0 = (mxs - mx) / 2.0; break;
+      }
+      foreach( current_row, Character c )
+	c->x += x0;
+    }
     return ({ mxs, yp+h, chars });
   }
 
-  class GAH(object q, string text, float h, float|object roi) {
+  class GAH( object q, string text, float h, float|object roi,
+	     string|void align )
+  {
     void menda() {
 #ifdef __NT__
       if( _refs(object_program(this)) > 1000 )
 	gc();
 #endif
-      q->write_now( text, h, roi );
+      q->write_now( text, h, roi, align );
     }
   }
 
   //! Create a display list that writes text.
-  array(List|float) write( string text, float h, void|float|Region roi ) {
+  //! @param text
+  //!   The text to write.
+  //! @param h
+  //!   The font height
+  //! @param roi
+  //!   The region, if supplied, to restrict writing to.
+  //! @param align
+  //!   The text justification; "left" (default), "center" or "right".
+  array(List|float) write( string text, float h, void|float|Region roi,
+			   string|void align )
+  {
     // Note: This must be done before starting the
     // display-list. Specifically, the textures have to be loaded
     // before.  Therefore, it's not possible to optimize by checking
     // the width and height when generating the list below.
     [float x, float y] = text_extents(text, h);
 
-    DynList l = DynList(GAH(this,text,h,roi)->menda);
+    DynList l = DynList(GAH(this,text,h,roi,align)->menda);
 
     // OBS: Needed! The list might well try to instantiate itself
     // inside another list instantiation otherwise, which is not
