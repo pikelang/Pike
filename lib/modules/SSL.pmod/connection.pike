@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.16 2001/06/14 13:48:48 noy Exp $
+/* $Id: connection.pike,v 1.17 2001/06/25 12:21:30 noy Exp $
  *
  * SSL packet layer
  */
@@ -67,6 +67,9 @@ static object recv_packet(string data)
   { /* Finished a packet */
     left_over = res;
     if (current_read_state) {
+#ifdef SSL3_DEBUG
+      werror("Decrypting packet.. version[1]="+version[1]+"\n");
+#endif /* SSL3_DEBUG */
       return current_read_state->decrypt_packet(packet,version[1]);
     } else {
 #ifdef SSL3_DEBUG
