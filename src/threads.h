@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.101 2000/08/06 08:44:59 neotron Exp $
+ * $Id: threads.h,v 1.102 2000/08/07 18:44:19 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -505,10 +505,15 @@ extern int Pike_in_gc;
 #define THREADS_ALLOW_UID() do { \
      struct thread_state *_tmp_uid=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \
-       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
-	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id); \
-       if (Pike_in_gc > 50 && Pike_in_gc < 300) \
-	 fatal("Threads allowed during garbage collection.\n"); \
+       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) { \
+	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n", \
+               thread_for_id(th_self()),Pike_interpreter.thread_id); \
+       } \
+       if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
+         fprintf(stderr, __FILE__ ":" DEFINETOSTR(__LINE__) ": Fatal error:\n"); \
+	 debug_fatal("Threads allowed during garbage collection (%d).\n", \
+                     Pike_in_gc); \
+       } \
      }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
