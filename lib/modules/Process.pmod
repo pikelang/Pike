@@ -17,9 +17,10 @@ class Process
 
   //! @param args
   //!   Either a command line array, as the command_args
-  //!   argument to @[create_process], or a string that
+  //!   argument to @[create_process()], or a string that
   //!   will be splitted into a command line array by
-  //!   calling @[split_quoted_string].
+  //!   calling @[split_quoted_string()] in an operating
+  //!   system dependant mode.
   //! @param m
   //!   In addition to the modifiers that @[create_process] accepts,
   //!   this object also accepts
@@ -37,9 +38,13 @@ class Process
   //!   @[create_process], @[split_quoted_string]
   static void create( string|array(string) args, void|mapping(string:mixed) m )
   {
-    if( stringp( args ) )
-      args = split_quoted_string( [string]args );
-
+    if( stringp( args ) ) {
+      args = split_quoted_string( [string]args
+#ifdef __NT__
+				  ,1
+#endif /* __NT__ */
+				  );
+    }
     if( m )
       ::create( [array(string)]args, [mapping(string:mixed)]m );
     else
