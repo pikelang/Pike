@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: version.c,v 1.140 2003/06/24 20:32:41 nilsson Exp $
+|| $Id: version.c,v 1.141 2003/09/02 12:55:47 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "stralloc.h"
 #include "version.h"
 
-RCSID("$Id: version.c,v 1.140 2003/06/24 20:32:41 nilsson Exp $");
+RCSID("$Id: version.c,v 1.141 2003/09/02 12:55:47 mast Exp $");
 
 /*! @decl string version()
  *!
@@ -27,11 +27,11 @@ RCSID("$Id: version.c,v 1.140 2003/06/24 20:32:41 nilsson Exp $");
  */
 void f_version(INT32 args)
 {
-  char buffer[128];
-  sprintf(buffer,"Pike v%d.%d release %d",
-	  PIKE_MAJOR_VERSION,
-	  PIKE_MINOR_VERSION,
-	  PIKE_BUILD_VERSION);
   pop_n_elems(args);
-  push_text(buffer);
+  push_constant_text ("Pike v"
+		      DEFINETOSTR (PIKE_MAJOR_VERSION)
+		      "."
+		      DEFINETOSTR (PIKE_MINOR_VERSION)
+		      " release "
+		      DEFINETOSTR (PIKE_BUILD_VERSION));
 }
