@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.9 1998/06/26 16:43:34 noring Exp $
+// $Id: Table.pmod,v 1.10 1999/11/25 00:55:54 hubbe Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -200,7 +200,7 @@ class table {
     if(!sizeof(cs))
       return sum();
     array f = remap(fields) - remap(cs);
-    mapping m = mkmapping(f, Array.map(f, lambda()
+    mapping m = mkmapping(f, Array.map(f, lambda(mixed unused)
 					  { return lambda(mixed x1,
 							  mixed x2)
 						   { return x1; }; }));
