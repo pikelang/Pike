@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.53 2002/04/28 22:54:00 mikael%brandstrom.org Exp $ */
+/* $Id: export.pike,v 1.54 2002/04/29 18:44:35 mast Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -109,7 +109,7 @@ void bump_version()
 array(string) build_file_list(string vpath, string list_file)
 {
   array(string) ret=({ }), missing=({ });
-  foreach(Stdio.FILE(list_file)->line_iterator(1);; string line)
+  foreach(Stdio.read_file(list_file) / "\n", string line)
     {
       if( !sizeof(line) || line[0]=='#' )
 	continue;
