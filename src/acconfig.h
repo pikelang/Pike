@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.59 2000/06/16 17:52:46 grubba Exp $
+ * $Id: acconfig.h,v 1.60 2000/06/29 20:25:57 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -78,8 +78,11 @@
 /* Define to 'int' if <sys/types.h> doesn't */
 #undef pid_t
 
-/* Define to 'long' if <sys/types.h> doesn't */
+/* Define to 'unsigned long' if <sys/types.h> or <stddef.h> doesn't */
 #undef size_t
+
+/* Define to 'long' if <sys/types.h> of <stddef.h> doesn't */
+#undef ptrdiff_t
 
 /* Define to 'long' if <sys/types.h> doesn't */
 #undef off_t
