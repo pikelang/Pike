@@ -257,3 +257,24 @@ string trim_all_whites(string s)
 
   return s;
 }
+
+//! Returns the soundex value of @[word] according to
+//! the original Soundex algorithm, patented by Margaret O´Dell
+//! and Robert C. Russel in 1918. The method is based on the phonetic
+//! classification of sounds by how they are made.
+string soundex(string word) {
+  word = upper_case(word);
+  string first = word[0..0];
+  word = word[1..] - "A" - "E" - "H" - "I" - "O" - "U" - "W" - "Y";
+  word = replace(word, ([ "B":"1", "F":"1", "P":"1", "V":"1",
+			  "C":"2", "G":"2", "J":"2", "K":"2",
+			  "Q":"2", "S":"2", "X":"2", "Z":"2",
+			  "D":"3", "T":"3",
+			  "L":"4",
+			  "M":"5", "N":"5",
+			  "R":"6" ]) );
+  word = replace(word, ({"11", "22", "33", "44", "55", "66" }),
+		 ({"", "", "", "", "", "", }));
+  word+="000";
+  return first + word[..2];
+}
