@@ -10,14 +10,31 @@ class stack {
     arr[ptr++]=val;
   }
 
-  mixed pop(mixed val)
+  mixed pop(void|int val)
   {
     mixed foo;
-    if(--ptr < 0)
-      error("Stack underflow\n");
+
+    if (val) {
+      if (ptr <= 0) {
+	error("Stack underflow\n");
+      }
+
+      if (ptr < val) {
+        val = ptr;
+      }
+      ptr -= val;
+      foo = arr[ptr..ptr + val - 1];
+ 
+      for (int i=0; i < val; i++) {
+        arr[ptr + i] = 0;       /* Don't waste references */
+      }
+    } else {
+      if(--ptr < 0)
+	error("Stack underflow\n");
     
-    foo=arr[ptr];
-    arr[ptr]=0; /* Don't waste references */
+      foo=arr[ptr];
+      arr[ptr]=0; /* Don't waste references */
+    }
     return foo;
   }
 
