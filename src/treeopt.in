@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.23 1999/11/16 16:59:23 grubba Exp $
+// $Id: treeopt.in,v 1.24 1999/11/17 22:33:47 grubba Exp $
 //
 // The tree optimizer
 //
@@ -38,6 +38,18 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 // This one is probably not needed, since it's handled by mkcastnode()
 0 = F_CAST(1 = +[$$->type == $0->type](*, *), *):
   $1;
+
+// Casting variables to void
+F_CAST[$$->type == void_type_string](F_LOCAL, *):
+  -;
+
+// Casting variables to void
+F_CAST[$$->type == void_type_string](F_GLOBAL, *):
+  -;
+
+// Casting variables to void
+F_CAST[$$->type == void_type_string](F_EXTERNAL, *):
+  -;
 
 // Propagate casts towards the leaves
 0 = F_CAST(F_COMMA_EXPR(1, 2), *):
@@ -207,13 +219,13 @@ F_LOR(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LAND($0, $1), -);
 
 F_LOR(0, F_LOR(1, 2)):
-  F_LOR(F_LOR(0, 1), 2);
+  F_LOR(F_LOR($0, $1), $2);
 
 F_LOR(0 = F_ASSIGN(*, +[node_is_false($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
 F_LOR(F_COMMA_EXPR(0, 1), 2):
-  F_COMMA_EXPR(0, F_LOR(1, 2));
+  F_COMMA_EXPR($0, F_LOR($1, $2));
 
 F_LOR(0 = F_ASSIGN(*, +[node_is_true($$)]), *):
   $0;
@@ -238,7 +250,7 @@ F_LAND(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LOR($0, $1), -);
 
 F_LAND(0, F_LAND(1, 2)):
-  F_LAND(F_LAND(0, 1), 2);
+  F_LAND(F_LAND($0, $1), $2);
 
 F_LAND(0 = F_ASSIGN(*, +[node_is_true($$)]), 2):
   F_COMMA_EXPR($0, $2);
@@ -247,7 +259,7 @@ F_LAND(0 = F_ASSIGN(*, +[node_is_false($$)]), *):
   $0;
 
 F_LAND(F_COMMA_EXPR(0, 1), 2):
-  F_COMMA_EXPR(0, F_LAND(1, 2));
+  F_COMMA_EXPR($0, F_LAND($1, $2));
 
 F_LAND(+[node_is_true($$)], 0):
   $0;
@@ -363,6 +375,29 @@ F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
   */
 }
 ;
+
+
+F_DO(0, -):
+  $0;
+
+F_DO(0, +[node_is_false($$)]):
+  $0;
+
+F_DO(-, 0 = +[node_is_true($$)]):
+{
+  /* Infinite loop */
+  $$ = mknode(F_DO, mkefuncallnode("sleep", mkintnode(255)), $0);
+}
+;
+
+
+// No body -- No reason to loop...
+F_FOREACH(F_VAL_LVAL(0, *), -):
+{
+  $$ = mkcastnode(void_type_string, $0);
+}
+;
+
 
 F_FOR(-, *):
   -;
