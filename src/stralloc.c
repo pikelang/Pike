@@ -25,6 +25,10 @@ static unsigned int StrHash(const char *s,int len)
 #ifdef DEBUG
 void check_string(struct lpc_string *s)
 {
+  StrHash(s->str, s->len);
+  if(full_hash_value != s->hval)
+    fatal("Hash value changed?\n");
+
   if(debug_findstring(s) !=s)
     fatal("Shared string not shared.\n");
 
@@ -133,7 +137,7 @@ static struct lpc_string *propagate_shared_string(const struct lpc_string *s,int
 #ifdef DEBUG
 struct lpc_string *debug_findstring(const struct lpc_string *foo)
 {
-  return propagate_shared_string(foo, StrHash(foo->str, foo->len));
+  return propagate_shared_string(foo, foo->hval % HTABLE_SIZE);
 }
 #endif
 
