@@ -25,7 +25,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.107 2003/01/07 16:01:37 grubba Exp $");
+RCSID("$Id: array.c,v 1.108 2003/01/29 15:55:24 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2120,7 +2120,6 @@ void real_gc_cycle_check_array(struct array *a, int weak)
   } GC_CYCLE_LEAVE;
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_arrays(void)
 {
   unsigned n = 0;
@@ -2134,7 +2133,6 @@ unsigned gc_touch_all_arrays(void)
   } while (a != &empty_array);
   return n;
 }
-#endif
 
 void gc_check_all_arrays(void)
 {

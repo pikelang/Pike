@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.366 2002/10/15 14:57:38 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.367 2003/01/29 15:55:25 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3818,8 +3818,6 @@ PMOD_EXPORT void f_rows(INT32 args)
   push_array(a);
 }
 
-
-#ifdef PIKE_DEBUG
 /*! @decl void _verify_internals()
  *!
  *! Perform sanity checks.
@@ -3829,8 +3827,8 @@ PMOD_EXPORT void f_rows(INT32 args)
  *! It is only used for debugging.
  *!
  *! @note
- *! This function is only available if the Pike runtime has been compiled
- *! with RTL debug.
+ *! This function does a much more thorough check if the Pike runtime
+ *! has been compiled with RTL debug.
  */
 PMOD_EXPORT void f__verify_internals(INT32 args)
 {
@@ -3838,11 +3836,16 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_verify_internals: permission denied.\n"));
   d_flag=0x7fffffff;
-  do_debug();
-  d_flag=tmp;
+#ifdef PIKE_DEBUG
+  do_debug();			/* Calls do_gc() since d_flag > 3. */
+#else
   do_gc();
+#endif
+  d_flag=tmp;
   pop_n_elems(args);
 }
+
+#ifdef PIKE_DEBUG
 
 /*! @decl int _debug(int(0..) level)
  *!
@@ -3944,7 +3947,7 @@ PMOD_EXPORT void f__compiler_trace(INT32 args)
 }
 
 #endif /* YYDEBUG */
-#endif
+#endif	/* PIKE_DEBUG */
 
 #if defined(HAVE_LOCALTIME) || defined(HAVE_GMTIME)
 static void encode_struct_tm(struct tm *tm)
@@ -7733,11 +7736,11 @@ void init_builtin_efuns(void)
 	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
 #endif
 
-#ifdef PIKE_DEBUG
-  
 /* function(:void) */
   ADD_EFUN("_verify_internals",f__verify_internals,
 	   tFunc(tNone,tVoid),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+
+#ifdef PIKE_DEBUG
   
 /* function(int:int) */
   ADD_EFUN("_debug",f__debug,

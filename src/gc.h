@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.75 2001/07/05 01:54:57 mast Exp $
+ * $Id: gc.h,v 1.76 2003/01/29 15:55:25 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -15,7 +15,7 @@ extern INT32 num_objects;
 extern INT32 num_allocs;
 extern ptrdiff_t alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
-extern int gc_debug;
+extern int gc_trace, gc_debug;
 
 extern struct callback *gc_evaluator_callback;
 #ifdef PIKE_DEBUG
@@ -110,9 +110,9 @@ struct marker
 #define GC_GOT_DEAD_REF		0x0040
 #define GC_FREE_VISITED		0x0080
 
-#ifdef PIKE_DEBUG
 #define GC_PRETOUCHED		0x0100
 #define GC_MIDDLETOUCHED	0x0200
+#ifdef PIKE_DEBUG
 #define GC_IS_REFERENCED	0x0400
 #define GC_XREFERENCED		0x0800
 #define GC_DO_FREE		0x1000

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.124 2001/11/12 15:37:31 mast Exp $");
+RCSID("$Id: mapping.c,v 1.125 2003/01/29 15:55:25 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2162,7 +2162,6 @@ static void gc_check_mapping(struct mapping *m)
   }
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_mappings(void)
 {
   unsigned n = 0;
@@ -2177,7 +2176,6 @@ unsigned gc_touch_all_mappings(void)
   }
   return n;
 }
-#endif
 
 void gc_check_all_mappings(void)
 {

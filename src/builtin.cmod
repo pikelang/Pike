@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.30 2002/11/27 09:41:24 grubba Exp $
+ * $Id: builtin.cmod,v 1.31 2003/01/29 15:55:24 mast Exp $
  */
 
 #include "global.h"
@@ -26,6 +26,7 @@
 #include "main.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "gc.h"
 
 
 //! Extract a column from a two-dimensional array.
@@ -104,13 +105,33 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
 //!
 //! See the @tt{-t@} command-line option for more information.
 //!
-PIKEFUN int trace(int t)
+PIKEFUN int trace(int level, void|string facility)
   efun;
   optflags OPT_SIDE_EFFECT;
 {
-  pop_n_elems(args);
-  push_int(t_flag);
-  t_flag=t;
+  INT32 old_level;
+  if (facility) {
+    struct pike_string *gc_str;
+    if (facility->type != T_STRING)
+      SIMPLE_BAD_ARG_ERROR("trace", 2, "void|string");
+    MAKE_CONSTANT_SHARED_STRING(gc_str, "gc");
+    if (facility->u.string == gc_str) {
+      free_string(gc_str);
+      old_level = gc_trace;
+      gc_trace = level;
+    }
+    else {
+      free_string(gc_str);
+      bad_arg_error("trace", sp-args, args, 2,
+		    "trace facility identifier", sp-args+1,
+		    "Bad argument 2 to trace(). Unknown trace facility.");
+    }
+  }
+  else {
+    old_level = t_flag;
+    t_flag = gc_trace = level;
+  }
+  RETURN old_level;
 }
 
 //! Convert the output from a previous call to @[time()] into a readable

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.315 2003/01/28 12:05:55 mast Exp $");
+RCSID("$Id: program.c,v 1.316 2003/01/29 15:55:26 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4065,7 +4065,6 @@ static void gc_check_program(struct program *p)
 #endif
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_programs(void)
 {
   unsigned n = 0;
@@ -4081,7 +4080,6 @@ unsigned gc_touch_all_programs(void)
   }
   return n;
 }
-#endif
 
 void gc_check_all_programs(void)
 {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.164 2002/04/03 12:11:54 mast Exp $");
+RCSID("$Id: object.c,v 1.165 2003/01/29 15:55:26 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1465,7 +1465,6 @@ static inline void gc_check_object(struct object *o)
   }
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_objects(void)
 {
   unsigned n = 0;
@@ -1481,7 +1480,6 @@ unsigned gc_touch_all_objects(void)
   for (o = objects_to_destruct; o; o = o->next) n++;
   return n;
 }
-#endif
 
 void gc_check_all_objects(void)
 {
