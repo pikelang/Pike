@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.9 2003/04/20 16:21:55 grubba Exp $
+// $Id: module.pmod.in,v 1.10 2003/04/26 16:23:27 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -45,7 +45,10 @@ class TokenizingCompiler
   class StringToken { inherit Token; }
   class IntegerToken { inherit Token; }
   class FloatToken { inherit Token; }
-  class IdentifierToken { inherit Token; }
+  class IdentifierToken {
+    inherit Token;
+    constant is_identifier = 1;
+  }
 
   //! Pike tokenizer.
   class pike_tokenizer
@@ -535,7 +538,7 @@ class PikeCompiler
 
   class Modifier
   {
-    inherit Token;
+    inherit IdentifierToken;
 
     // Called at
     //   modifier ·
@@ -544,7 +547,7 @@ class PikeCompiler
 
   class NameSpace
   {
-    inherit Token;
+    inherit IdentifierToken;
 
     // Called at
     //   namespace · { string | symbol } [ ':' name ] ';'
@@ -624,14 +627,14 @@ class PikeCompiler
     return
       BinaryExpression(Token("(", "(", "(", 0),
 		       BinaryExpression(Token("::","::","::",0),
-					LiteralExpression(Token("predef",
-								"predef",
-								"predef",
-								0)),
-					LiteralExpression(Token("identifier",
-								fun,
-								fun,
-								0))),
+					LiteralExpression(IdentifierToken("predef",
+									  "predef",
+									  "predef",
+									  0)),
+					LiteralExpression(IdentifierToken("identifier",
+									  fun,
+									  fun,
+									  0))),
 		       arguments);
   }
 
@@ -757,7 +760,7 @@ class PikeCompiler
       Token oper = token;
       tokens_left->`+=(1);
       if (!tokens_left ||
-	  (token = tokens_left->value())->symbol != "identifier") {
+	  !(token = tokens_left->value())->is_identifier) {
 	SYNTAX_ERROR("Strange inherit specifier.");
 	return expr;
       }
@@ -768,7 +771,7 @@ class PikeCompiler
       tokens_left->`+=(1);
       Token oper = token;
       if (!tokens_left ||
-	  (token = tokens_left->value())->symbol != "identifier") {
+	  !(token = tokens_left->value())->is_identifier) {
 	SYNTAX_ERROR("Strange .-operation");
 	return expr;
       }
@@ -940,9 +943,146 @@ class PikeCompiler
     return parse_comma_expression(tokens_left);
   }
 
+  // Called at
+  //   modifiers type · identifier_list ';'
+  //   modifiers type · identifier '(' arguments ')' block_or_semi
+  void parse_decl(Scope current_scope, Iterator tokens_left,
+		  Expression type, Modifiers|void current_modifiers)
+  {
+    while(1) {
+      Token token;
+      if (!tokens_left ||
+	  !(token = tokens_left->value())->is_identifier) {
+	SYNTAX_ERROR("Expected an identifier.");
+	return;
+      }
+      Token name = token;
+      tokens_left->`+=(1);
+      if (!tokens_left) {
+	// Variable decl inside parenthesis?
+	current_scope->add_variable(current_modifiers, type, name);
+	return;
+      }
+      if ((token = tokens_left->value())->group_start) {
+	// Function prototype/definition.
+	if (token->group_start->symbol == "[") {
+	  SYNTAX_ERROR("Unexpected index operation.");
+	  tokens_left->`+=(1);
+	} else {
+	  Lambda func = Lambda("lambda", "lambda", "lambda", name->pos);
+	  func->return_type = type;
+	  func->parse_meta_program(current_scope, tokens_left,
+				   current_modifiers);
+	  current_scope->add_function(current_modifiers, name, func);
+	  return;
+	}
+      }
+      if (token->symbol == "=") {
+	tokens_left->`+=(1);
+	current_scope->add_variable(current_modifiers, type, name,
+				    parse_pair_expression(tokens_left));
+	if (!tokens_left) return;
+	token = tokens_left->value();
+      } else {
+	current_scope->add_variable(current_modifiers, type, name);
+      }
+      if (token->symbol != ",") return;
+      tokens_left->`+=(1);
+    }
+  }
+
+  void parse_statement(Scope scope, Iterator tokens_left,
+		       Modifiers current_modifiers)
+  {
+    Token token;
+    if (!tokens_left) return 0;
+    if ((token = tokens_left->value())->parse_meta_program) {
+      tokens_left->`+=(1);
+      token->parse_meta_program(scope, tokens_left, current_modifiers);
+      return;
+    }
+    if (token->group_start &&
+	token->group_start->symbol == "{") {
+      tokens_left->`+=(1);
+      BlockStatement block = BlockStatement();
+      block->parse_meta_program(scope, Iterator(token->contents),
+				current_modifiers);
+      scope->add_statement(block);
+      return;
+    }
+    if (token->symbol == ";") {
+      tokens_left->`+=(1);
+      return;
+    }
+    Expression expr = parse_expression(tokens_left);
+    if (!tokens_left ||
+	(token = tokens_left->value())->symbol == ";") {
+      if (tokens_left) tokens_left->`+=(1);
+      scope->add_statement(ExpressionStatement(expr));
+    }
+    parse_decl(scope, tokens_left, type, current_modifiers);
+  }
+
+  // Start of metaprograms.
+
+  class BlockStatement
+  {
+    inherit Scope;
+
+    // Called at
+    //   '{' · statements '}'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      while(tokens_left, Token token) {
+	parse_statement(this, tokens_left, current_modifiers);
+      }
+    }
+  }
+
+  class Lambda
+  {
+    inherit IdentifierToken;
+    inherit Scope;
+
+    Expression return_type;
+    array(string) parameter_names = ({});
+    StatementBlock function_body;
+
+    // Called at
+    //   lambda · '(' arguments ')' '{' class_body '}'
+    //   type name · '(' arguments ')' '{' class_body '}'
+    //   lambda · '(' arguments ')' ';'
+    //   type name · '(' arguments ')' ';'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->group_start) ||
+	  (token->group_start->symbol != "(")) {
+	SYNTAX_ERROR("Expected argument list.");
+	return;
+      }
+      parse_arg_list(token->contents);
+      tokens_left->`+=(1);
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->group_start) ||
+	  (token->group_start->symbol != "{")) {
+	return;
+      }
+      function_body = StatementBlock();
+      function_body->parse_meta_program(this, get_iterator(token->contents),
+					0);
+      tokens_left->`+=(1);
+    }
+  }
+
   class Class
   {
-    inherit Token;
+    inherit IdentifierToken;
+
+    mapping(string:Definition) identifiers = ([]);
 
     // Called at
     //   class name '{' · class_body '}'
@@ -963,6 +1103,7 @@ class PikeCompiler
 	  current_modifiers += token;
 	  if (!tokens_left) {
 	    report(ERROR, token->pos, "parser", "Syntax error");
+	    return;
 	  }
 	}
 	if (token->group_start) {
@@ -982,6 +1123,8 @@ class PikeCompiler
 	    token->parse_meta_program(this, tokens_left, current_modifiers);
 	  } else {
 	    // FIXME: variable, function, etc.
+	    Expression type = parse_expression(tokens_left);
+	    parse_decl(this, tokens_left, type, current_modifiers);
 	  }
 	}
       }
@@ -1022,13 +1165,27 @@ class PikeCompiler
       }
       parse_class_body(token->contents);
       tokens_left->`+=(1);
-      current_class->add_constant(current_modifiers, name, this);
+      current_class->add_constant(current_modifiers, name,
+				  LiteralExpression(this));
     }
 
-    void add_constant(Modifiers modifiers, string name, Token value)
+    void add_constant(Modifiers modifiers, string name, Expression value)
     {
       werror("Defining constant %O with modifiers %O and value %O\n",
 	     name, modifiers, value);
+      identifiers[name] = ConstantDefinition(modifiers, name, value);
+    }
+
+    void add_variable(Modifiers modifiers, string name, Expression type)
+    {
+      identifiers[name] = VariableDefinition(modifiers, name, type);
+    }
+
+    void add_function(Modifiers modifiers, string name, Expression type,
+		      Expression definition)
+    {
+      identifiers[name] = FunctionDefinition(modifiers, name,
+					     type, definition);
     }
   }
 
