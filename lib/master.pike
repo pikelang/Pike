@@ -106,10 +106,11 @@ static program findprog(string pname, string ext)
 program cast_to_program(string pname, string current_file)
 {
   string ext;
-  if(sscanf(reverse(pname),"%s.%s",ext,pname))
+  string nname;
+  if(sscanf(reverse(pname),"%s.%s",ext, nname) && search(ext, "/") == -1)
   {
     ext="."+reverse(ext);
-    pname=reverse(pname);
+    pname=reverse(nname);
   }else{
     ext="";
   }
@@ -129,7 +130,6 @@ program cast_to_program(string pname, string current_file)
 
     if(program ret=findprog(combine_path(cwd,pname),ext))
       return ret;
-
 
     foreach(pike_include_path, string path)
       if(program ret=findprog(combine_path(path,pname),ext))
@@ -331,6 +331,8 @@ void _main(string *argv, string *env)
 
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
+  add_include_path(getcwd());
+  add_module_path(getcwd());
 
   q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
@@ -420,7 +422,8 @@ void _main(string *argv, string *env)
     argv=argv[1..];
   }
 
-  program tmp=compile_file(argv[0]);
+  program tmp=(program)argv[0];
+
   if(!tmp)
   {
     werror("Pike: Couldn't find script to execute.\n");
