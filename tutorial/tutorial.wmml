@@ -27,6 +27,8 @@ Write an appendix about old functions, behaviors and keywords.
   ("How to convert from old versions of Pike")
 
 
+predef::m_delete-behavior is missing. 
+
 Missing funktions in the manual: (tab before function means fixed)
 UNDEFINED
 ( Stdio.append_path FIXED! /Hedda)
