@@ -66,6 +66,12 @@ mixed a() { return [[$1]]; })]])
 define(test_false, [[DOTEST(FALSE,dnl
 mixed a() { return [[$1]]; })]])
 
+define(test_compile,[[DOTEST(COMPILE,dnl
+void x() { [[$1]] ; } )]])
+
+define(test_compile_any,[[DOTEST(COMPILE,dnl
+[[$1]] )]])
+
 define(test_compile_error,[[DOTEST(COMPILE_ERROR,dnl
 mixed a() { [[$1]]; })]])
 

@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.9 1998/04/08 22:05:36 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.10 1998/04/09 21:10:19 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -21,6 +21,10 @@ int main(int argc, string *argv)
   int start, fail, mem;
   int loop=1;
   int end=0x7fffffff;
+
+  string *args=backtrace()[0][3];
+  args=args[..sizeof(args)-1-argc];
+  add_constant("RUNPIKE",args*" ");
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
@@ -115,6 +119,17 @@ int main(int argc, string *argv)
 	
 	switch(type)
 	{
+	  case "COMPILE":
+	    if(catch(compile_string(test,"Test "+(e+1))))
+	    {
+	      werror("Test "+(e+1)+" failed.\n");
+	      werror(test+"\n");
+	      errors++;
+	    }else{
+	      successes++;
+	    }
+	    break;
+	    
 	  case "COMPILE_ERROR":
 	    master()->set_inhibit_compile_errors(1);
 	    if(catch(compile_string(test,"Test "+(e+1))))

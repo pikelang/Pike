@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.3 1998/04/08 22:08:55 hubbe Exp $
+/* $Id: master.pike.in,v 1.4 1998/04/09 21:10:33 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -478,8 +478,9 @@ mixed resolv(string identifier, string|void current_file)
  * and an array containing the environment variables on the same form as
  * a C program receives them.
  */
-void _main(string *argv, string *env)
+void _main(string *orig_argv, string *env)
 {
+  string *argv=copy_value(orig_argv);
   int i,debug,trace;
   object script;
   object tmp;

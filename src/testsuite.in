@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.85 1998/04/08 08:13:21 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.86 1998/04/09 21:11:03 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -12,7 +12,8 @@ test_eq([[#"foo
 bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
-test_compile([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
+test_compile([[int t=gauge { string foo; };]])
+test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 test_any([[class G { mapping t=([]);
  class tO { void init(string name) { t[name]=this_object(); }}
@@ -27,7 +28,26 @@ test_program([[class foo { program x() { return class {}; }}; class bar { inheri
 // Testing the 'inline' keyword
 test_program([[class foo { inline int c() { return time(); } int d() { return c(); } }; class bar { inherit foo; int c() { return 0; } } int a() { return bar()->d(); }]],0)
 
-test_compile([[class inherit_top { inherit top:top; constant top_the_class=top::the_class; class the_other_class { inherit top_the_class; } } ]])
+test_compile_any([[
+  class top
+  {
+     class the_class
+     {
+     }
+  }
+  
+  class inherit_top
+  {
+     inherit top:top;
+  
+     constant top_the_class=top::the_class;
+  
+     class the_other_class
+     {
+        inherit top_the_class;
+     }
+  }
+]])
 test_any([[
 class X {
  static string f() { return "p"; }
@@ -130,7 +150,7 @@ test_true(clone(class c { constant i=0; mixed `[](string s) { if(s=="i") return 
 test_true(clone(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }})[1]=1)
 test_true(clone(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})->i="i")
 
-test_compile(class A {}; class B { inherit A; })
+test_compile_any(class A {}; class B { inherit A; })
 
 test_true(mappingp(_memory_usage()))
 test_true(objectp( _next(this_object()) || _prev(this_object())))
@@ -1604,6 +1624,7 @@ test_eq([[combine_path("./","..")]],"..")
 test_eq([[combine_path("./.","..")]],"..")
 test_eq([[combine_path("/","../../foo")]],"/foo")
 test_eq([[combine_path("./foobar/.","..")]],".")
+test_eq([[combine_path("/","foo","bar","gazonk")]],"/foo/bar/gazonk")
 
 // - compile_file
 // FIXME: add tests for compile_file
@@ -1929,6 +1950,6 @@ test_true(Process.popen)
 test_true(Process.spawn)
 test_true(Process.system)
 test_true(Process.create_process)
-test_false([[Process.system("]]RUNPIKE[[ -e 'exit(0)'")]])
-test_true([[Process.system("]]RUNPIKE[[ -e 'exit(1)'")]])
-test_eq([[Process.popen("]]RUNPIKE[[ -e 'write(\"test\");'")]],"test")
+test_false([[Process.system(RUNPIKE +" -e 'exit(0)'")]])
+test_true([[Process.system(RUNPIKE+" -e 'exit(1)'")]])
+test_eq([[Process.popen(RUNPIKE+" -e 'write(\"test\");'")]],"test")
