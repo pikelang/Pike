@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.18 1999/05/13 07:02:35 neotron Exp $
+ * $Id: sendfile.c,v 1.19 1999/05/13 07:20:54 hubbe Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -305,7 +305,7 @@ int send_iov(int fd, struct iovec *iov, int iovcnt)
   return sent;
 }
 
-void *worker(void *this_)
+TH_RETURN_TYPE worker(void *this_)
 {
   struct pike_sendfile *this = this_;
 
