@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.22 1997/09/01 14:19:48 per Exp $
+ * $Id: system.c,v 1.23 1997/09/06 14:02:47 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.22 1997/09/01 14:19:48 per Exp $");
+RCSID("$Id: system.c,v 1.23 1997/09/06 14:02:47 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -55,6 +55,9 @@ RCSID("$Id: system.c,v 1.22 1997/09/01 14:19:48 per Exp $");
 #ifdef HAVE_GRP_H
 #include <grp.h>
 #endif /* HAVE_GRP_H */
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif /* HAVE_SYS_STAT_H */
 
 /*
  * Functions
@@ -220,6 +223,23 @@ void f_readlink(INT32 args)
   push_string(make_shared_binary_string(buf, err));
 }
 #endif /* HAVE_READLINK */
+
+/* void chmod(string path, int mode) */
+void f_chmod(INT32 args)
+{
+  char *path;
+  int mode;
+  int err;
+
+  get_all_args("chmod", args, "%s%i", &path, &mode);
+  THREADS_ALLOW();
+  err = chmod(path, mode);
+  THREADS_DISALLOW();
+  if (err < 0) {
+    report_error("chmod");
+  }
+  pop_n_elems(args);
+}
 
 #ifdef HAVE_INITGROUPS
 /* int initgroups(string name, int gid) */
@@ -731,6 +751,7 @@ void pike_module_init(void)
 #ifdef HAVE_READLINK
   add_efun("readlink", f_readlink, "function(string:string)", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
+  add_efun("chmod", f_chmod, "function(string, int:void)", OPT_SIDE_EFFECT);
 #ifdef HAVE_INITGROUPS
   add_efun("initgroups", f_initgroups, "function(string, int:int)", OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */
