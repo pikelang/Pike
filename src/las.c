@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.286 2002/05/10 23:52:34 nilsson Exp $");
+RCSID("$Id: las.c,v 1.287 2002/05/12 00:27:46 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2427,7 +2427,7 @@ static void low_print_tree(node *foo,int needlval)
   case F_IDENTIFIER:
     if(needlval) fputc('&', stderr);
     if (Pike_compiler->new_program) {
-      fprintf(stderr, "%s",ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
+      fprintf(stderr, "id(%s)",ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
     } else {
       fprintf(stderr, "unknown identifier");
     }
@@ -2437,10 +2437,12 @@ static void low_print_tree(node *foo,int needlval)
     if(needlval) fputc('&', stderr);
     {
       struct program_state *state = Pike_compiler;
-      char *name = "external";
+      char *name = "?";
       int program_id = foo->u.integer.a;
+      int level = 0;
       while(state && (state->new_program->id != program_id)) {
 	state = state->previous;
+	level++;
       }
       if (state) {
 	int id_no = foo->u.integer.b;
@@ -2449,7 +2451,7 @@ static void low_print_tree(node *foo,int needlval)
 	  name = id->name->str;
 	}
       }
-      fprintf(stderr, "%s", name);
+      fprintf(stderr, "ext(%d:%s)", level, name);
     }
     break;
 
@@ -2544,7 +2546,7 @@ static void low_print_tree(node *foo,int needlval)
     init_buf();
     describe_svalue(& foo->u.sval, 0, 0);
     s=simple_free_buf();
-    fprintf(stderr, "%s",s);
+    fprintf(stderr, "const(%s)",s);
     free(s);
     break;
   }
