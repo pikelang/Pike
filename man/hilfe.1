@@ -1,0 +1,52 @@
+.\" $Id: hilfe.1,v 1.1 1998/05/12 22:41:21 grubba Exp $
+.ds ]L Hilfe
+.TH hilfe 1 "$Date: 1998/05/12 22:41:21 $" Hilfe "Pike Manual" Pike
+.if !\*]LHilfe .ds ]L $Date: 1998/05/12 22:41:21 $ \" Solaris nroff
+.SH NAME
+hilfe \- interactive pike interpreter
+.SH SYNOPSIS
+.B hilfe
+.br
+.B pike
+[
+.B \-driver\-options ...
+] [
+.B hilfe
+]
+.SH DESCRIPTON
+Interactive interpreter and evaluator for the Pike programming language.
+.SH OPTIONS
+For the options supported by the
+.B pike
+binary please see
+.BR pike (1).
+.SH COMMANDS
+Hilfe understands the following commands in addition to most ordinary
+Pike statements:
+.TP
+.B .
+Flush the input buffer.
+.TP
+.B dump
+Dump the contents of all variables.
+.TP
+.B help
+Print some help.
+.TP
+.B new
+Clear all functions and variables.
+.TP
+.B quit
+Exit hilfe.
+.SH FILES
+In addition to the files used by
+.BR pike (1)
+the following files are used:
+.TP
+.B /usr/local/share/pike/modules/Tools.pmod/Hilfe.pmod
+The Hilfe module.
+.SH SEE ALSO
+.BR pike (1),
+.BR Tools.Hilfe (3P)
+.LP
+.I Pike Programming Tutorial
