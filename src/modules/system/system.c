@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.136 2003/01/01 20:41:51 grubba Exp $
+|| $Id: system.c,v 1.137 2003/01/05 13:02:35 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.136 2003/01/01 20:41:51 grubba Exp $");
+RCSID("$Id: system.c,v 1.137 2003/01/05 13:02:35 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -918,7 +918,7 @@ void f_getpgrp(INT32 args)
 
   if (args) {
     if (sp[-args].type != T_INT) {
-      Pike_error("Bad argument 1 to getpgrp()\n");
+      SIMPLE_BAD_ARG_ERROR("getpgrp", 1, "int");
     }
     pid = sp[-args].u.integer;
   }
@@ -978,7 +978,7 @@ void f_getsid(INT32 args)
 {
   int pid = 0;
   if (args >= 1 && sp[-args].type != T_INT)
-       Pike_error("Bad argument for getsid().\n");
+    SIMPLE_BAD_ARG_ERROR("getsid", 1, "int");
   if (args >= 1)
        pid = sp[-args].u.integer;
   pop_n_elems(args);
@@ -998,8 +998,6 @@ void f_getsid(INT32 args)
 void f_setsid(INT32 args)
 {
   int pid;
-  if (args > 0)
-       Pike_error("setsid() takes no arguments.\n");
   pop_n_elems(args);
   pid = setsid();
   if (pid < 0)
