@@ -266,8 +266,11 @@ static void connect(string server,int port,int blocking)
 
 static void async_close()
 {
-   con->set_blocking();
-   ponder_answer();
+  if(!https)
+  {
+    con->set_blocking();
+    ponder_answer();
+  }
 }
 
 static void async_read(mixed dummy,string s)
