@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.110 2000/10/25 21:50:36 hubbe Exp $");
+RCSID("$Id: object.c,v 1.111 2001/01/17 22:23:03 stewa Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -547,6 +547,7 @@ void destruct(struct object *o)
 
 static struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
+static int in_destruct_objects_to_destruct = 0;
 
 /* This function destructs the objects that are scheduled to be
  * destructed by really_free_object. It links the object back into the
@@ -555,6 +556,10 @@ static struct callback *destruct_object_evaluator_callback =0;
 void destruct_objects_to_destruct(void)
 {
   struct object *o, *next;
+  
+  if(in_destruct_objects_to_destruct)
+    return;
+  in_destruct_objects_to_destruct = 1;
 
   while((o=objects_to_destruct))
   {
@@ -578,6 +583,7 @@ void destruct_objects_to_destruct(void)
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback=0;
   }
+  in_destruct_objects_to_destruct = 0;
 }
 
 
