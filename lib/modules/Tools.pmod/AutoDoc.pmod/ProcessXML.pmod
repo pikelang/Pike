@@ -1253,29 +1253,8 @@ class NScopeStack
 	} else {
 	  string path = resolve(splitRef(scope));
 	  if (path) {
-	    int(1..1)|NScope nscope = lookup(path);
-	    if (objectp(nscope)) {
-	      // Avoid loops...
-	      if (nscope != top) {
-		top->inherits[inh] = nscope;
-		continue;
-	      }
-	      werror("Failed to lookup inherit %O (loop).\n"
-		     "  Top: %O\n"
-		     "  Scope: %O\n"
-		     "  Path: %O\n"
-		     "  NewScope: %O\n"
-		     "  Stack: %O\n",
-		     inh, top, scope, path, nscope, stack);
-	    } else {
-	      werror("Failed to lookup inherit %O.\n"
-		     "  Top: %O\n"
-		     "  Scope: %O\n"
-		     "  Path: %O\n"
-		     "  NewScope: %O\n"
-		     "  Stack: %O\n",
-		     inh, top, scope, path, nscope, stack);
-	    }
+	    top->inherits[inh] = path;
+	    continue;
 	  } else {
 	    werror("Failed to resolve inherit %O.\n"
 		   "  Top: %O\n"
@@ -1287,8 +1266,41 @@ class NScopeStack
 	m_delete(top->inherits, inh);
       }
     }
+    // Make ourselves available again.
+    // This is needed for looking up of symbols in ourself.
     if (removed_self) {
       stack[-1]->symbols[name] = top;
+    }
+    foreach(top->inherits||([]); string inh; string|NScope scope) {
+      if (stringp(scope)) {
+	string path = [string]scope;
+	int(1..1)|NScope nscope = lookup(path);
+	if (objectp(nscope)) {
+	  // Avoid loops...
+	  if (nscope != top) {
+	    top->inherits[inh] = nscope;
+	    continue;
+	  }
+	  werror("Failed to lookup inherit %O (loop).\n"
+		 "  Top: %O\n"
+		 "  Scope: %O\n"
+		 "  Path: %O\n"
+		 "  NewScope: %O\n"
+		 "  Stack: %O\n",
+		 inh, top, scope, path, nscope, stack);
+	} else {
+	  werror("Failed to lookup inherit %O.\n"
+		 "  Top: %O\n"
+		 "  Scope: %O\n"
+		 "  Path: %O\n"
+		 "  NewScope: %O\n"
+		 "  Stack: %O\n"
+		 "  Top->Symbols: %O\n",
+		 inh, top, scope, path, nscope, stack,
+		 indices(top->symbols));
+	}
+	m_delete(top->inherits, inh);
+      }
     }
     array(NScope) old_stack = stack;
     NScope old_top = top;
