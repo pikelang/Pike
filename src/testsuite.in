@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.495 2002/04/12 22:53:50 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.496 2002/04/15 12:27:32 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2303,6 +2303,7 @@ test_equal(encode_value_canonic ((<"en","sv","de">)),
 
 
 test_any([[
+// bug 3013
 class Test
 {
     class Resolver (array c)
@@ -2350,6 +2351,7 @@ class Test
 ]],"foo")
 
 test_any([[
+// bug 3014
 class Test
 {
     class Codec
