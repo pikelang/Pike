@@ -15,7 +15,6 @@
 #include "module_support.h"
 #include "operators.h"
 #include "error.h"
-#include "gc.h"
 #include "opcodes.h"
 #include "block_alloc.h"
 

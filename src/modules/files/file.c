@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.175 2000/05/20 02:22:53 per Exp $");
+RCSID("$Id: file.c,v 1.176 2000/06/09 21:55:17 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -16,7 +16,6 @@ RCSID("$Id: file.c,v 1.175 2000/05/20 02:22:53 per Exp $");
 #include "backend.h"
 #include "fd_control.h"
 #include "module_support.h"
-#include "gc.h"
 #include "opcodes.h"
 #include "operators.h"
 #include "security.h"

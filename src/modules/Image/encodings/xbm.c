@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.7 1999/08/16 18:08:58 grubba Exp $");
+RCSID("$Id: xbm.c,v 1.8 2000/06/09 22:06:05 mast Exp $");
 
 #include "image_machine.h"
 
@@ -19,7 +19,6 @@ RCSID("$Id: xbm.c,v 1.7 1999/08/16 18:08:58 grubba Exp $");
 #include "operators.h"
 #include "fsort.h"
 #include "callback.h"
-#include "gc.h"
 #include "backend.h"
 #include "main.h"
 #include "pike_memory.h"
