@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.31 1999/10/15 12:47:55 grubba Exp $
+ * $Id: sendfile.c,v 1.32 2000/01/24 21:42:59 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -296,7 +296,7 @@ int send_iov(int fd, struct iovec *iov, int iovcnt)
 
     if ((bytes < 0) && (errno == EINTR)) {
       continue;
-    } else if (bytes <= 0) {
+    } else if (bytes < 0) {
       /* Error or file closed at other end. */
       return sent;
     } else {
@@ -486,7 +486,7 @@ void worker(void *this_)
 
 	    if ((wrlen < 0) && (errno == EINTR)) {
 	      continue;
-	    } else if (wrlen <= 0) {
+	    } else if (wrlen < 0) {
 	      munmap(mem, len);
 	      goto send_trailers;
 	    }
@@ -526,7 +526,7 @@ void worker(void *this_)
 	  int wrlen = fd_write(this->to_fd, buf, buflen);
 	  if ((wrlen < 0) && (errno == EINTR)) {
 	    continue;
-	  } else if (wrlen <= 0) {
+	  } else if (wrlen < 0) {
 	    goto send_trailers;
 	  }
 	  buf += wrlen;
@@ -816,6 +816,7 @@ static void sf_create(INT32 args)
 	free_string(sf.headers->item->u.string);
 	sf.headers->item->u.string = sp[-1].u.string;
 	sp--;
+	dmalloc_touch_svalue(sp);
 	sf.hd_iov->iov_base = sf.headers->item->u.string->str;
 	sf.hd_iov->iov_len = sf.headers->item->u.string->len;
       } else {
@@ -846,6 +847,7 @@ static void sf_create(INT32 args)
 	free_string(sf.trailers->item->u.string);
 	sf.trailers->item->u.string = sp[-1].u.string;
 	sp--;
+	dmalloc_touch_svalue(sp);
 	sf.tr_iov->iov_base = sf.trailers->item->u.string->str;
 	sf.tr_iov->iov_len = sf.trailers->item->u.string->len;
       } else {
@@ -885,7 +887,16 @@ static void sf_create(INT32 args)
 
   if (sf.from_file) {
     /* We may need a buffer to hold the data */
-    sf.buffer = (char *)xalloc(BUF_SIZE);
+    if (sf.iovs) {
+      ONERROR tmp;
+      SET_ONERROR(tmp, free, sf.iovs);
+
+      sf.buffer = (char *)xalloc(BUF_SIZE);
+
+      UNSET_ONERROR(tmp);
+    } else {
+      sf.buffer = (char *)xalloc(BUF_SIZE);
+    }
   }
 
   {
@@ -917,6 +928,7 @@ static void sf_create(INT32 args)
      */
     sp -= args;
     *THIS = sf;
+    DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(sp + args));
     args = 0;
 
     /* FIXME: Ought to fix fp so that the backtraces look right. */
