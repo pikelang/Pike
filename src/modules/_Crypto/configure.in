@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2000/01/26 19:40:41 grubba Exp $
+# $Id: configure.in,v 1.9 2000/02/03 12:22:19 grubba Exp $
 AC_INIT(crypto.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -44,5 +44,5 @@ fi
 AC_CONFIG_SUBDIRS(lib)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-syscmd([cd lib && autoconf])
+
 
