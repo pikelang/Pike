@@ -1,3 +1,7 @@
+// $Id: Elite.pmod,v 1.2 2002/03/19 23:58:06 nilsson Exp $
+
+#pike __REAL_VERSION__
+
 // neccesary translation (in order)
 array(array(string|array(string))) elite_short =
 ({
