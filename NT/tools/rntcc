@@ -64,7 +64,7 @@ string check_errorfile(string errorfile)
   if(f->open(errorfile,"r"))
   {
     string data;
-    write(data=f->read());
+    werror(data=f->read());
     f->close();
     data=replace(data,"\r","");
     rm(errorfile);
@@ -237,7 +237,7 @@ int main(int argc, string *argv)
 
   if(output) rm(output);
 
-  string errorfile="TMP"+getpid()+".err";
+  string errorfile="tmp"+getpid()+".err";
   rm(errorfile);
 
   // Flags required to make the compiler behave well
