@@ -285,8 +285,8 @@ array group(array(string|Token) tokens, void|mapping groupings)
 			 "**** tokens: ({ %{%O, %}})\n"
 			 "**** ret: ({ %{%O, %}})\n"
 			 "**** stackdepth: %d\n",
-			 (string)token, (array(string)) tokens,
-			 (array(string))ret, stack->ptr));
+			 (string) token->text, (array(string)) tokens->text,
+			 (array(string)) ret->text, stack->ptr));
 	  return ret;
 	}
 	ret=stack->pop()+({ ret + ({token}) });
