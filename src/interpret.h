@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.98 2001/08/16 04:38:50 mast Exp $
+ * $Id: interpret.h,v 1.99 2001/08/19 03:30:10 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -323,8 +323,11 @@ do{ \
     SAFE_APPLY_MASTER(FUN, ARGS);				\
   } while(0)
 
-#define check_threads_etc() \
-  call_callback(& evaluator_callbacks, (void *)0)
+
+#define check_threads_etc() do { \
+  if(evaluator_callbacks.callbacks) \
+    call_callback(& evaluator_callbacks, (void *)0); \
+}while(0) 
 
 #ifdef PIKE_DEBUG
 #define fast_check_threads_etc(X) do { \

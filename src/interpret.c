@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.243 2001/08/16 04:38:50 mast Exp $");
+RCSID("$Id: interpret.c,v 1.244 2001/08/19 03:30:10 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1058,8 +1058,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   struct pike_frame *scope=0;
   ptrdiff_t fun;
   struct svalue *save_sp=Pike_sp-args;
-  int tailrecurse=-1;
-
 
 #if defined(PIKE_DEBUG) && defined(_REENTRANT)
   if(d_flag)
@@ -1080,18 +1078,9 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   switch(type)
   {
   case APPLY_STACK:
-  apply_stack:
     if(!args)
       PIKE_ERROR("`()", "Too few arguments (apply stack).\n", Pike_sp, 0);
     args--;
-    if(Pike_sp-save_sp-args > (args<<2) + 32)
-    {
-      /* The test above assures these two areas
-       * are not overlapping
-       */
-      assign_svalues(save_sp, Pike_sp-args-1, args+1, BIT_MIXED);
-      pop_n_elems(Pike_sp-save_sp-args-1);
-    }
     arg1=(void *)(Pike_sp-args-1);
 
   case APPLY_SVALUE:
@@ -1243,8 +1232,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
       check_stack(256);
       check_mark_stack(256);
-      check_c_stack(8192);
-
 
 #ifdef PIKE_DEBUG
       if(d_flag>2) do_debug();
@@ -1331,8 +1318,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 
 
-      new_frame->locals = Pike_sp - args;
-      new_frame->expendible = new_frame->locals;
+      new_frame->expendible =new_frame->locals = Pike_sp - args;
       new_frame->args = args;
       new_frame->current_storage = o->storage+new_frame->context.storage_offset;
       new_frame->pc = 0;
@@ -1373,7 +1359,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 #endif
 
-      tailrecurse=-1;
       switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
       {
       case IDENTIFIER_C_FUNCTION:
@@ -1421,8 +1406,20 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	  Pike_sp[-args-1].type=T_INT;
 	}
 	low_object_index_no_free(Pike_sp-args-1,o,fun);
-	tailrecurse=args+1;
-	break;
+
+	/* No profiling code for calling variables - Hubbe */
+	POP_PIKE_FRAME();
+
+	if(Pike_sp-save_sp-args > (args<<2) + 32)
+	{
+	  /* The test above assures these two areas
+	   * are not overlapping
+	   */
+	  assign_svalues(save_sp, Pike_sp-args, args, BIT_MIXED);
+	  pop_n_elems(Pike_sp-save_sp-args);
+	}
+	arg1=(void *)(Pike_sp-args-1);
+	goto apply_svalue;
       }
 
       case IDENTIFIER_PIKE_FUNCTION:
@@ -1510,12 +1507,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
       
       POP_PIKE_FRAME();
-
-      if(tailrecurse>=0)
-      {
-	args=tailrecurse;
-	goto apply_stack;
-      }
     }
   }
 
@@ -1668,6 +1659,7 @@ void unlink_previous_frame(void)
 
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
+  check_c_stack(8192);
   if(low_mega_apply(type, args, arg1, arg2))
   {
     eval_instruction(Pike_fp->pc
