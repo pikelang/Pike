@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.263 1999/02/05 02:43:20 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.264 1999/02/06 19:04:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -186,6 +186,7 @@ AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[]
 AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
+AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
@@ -204,6 +205,10 @@ AC_ARG_WITH(security,    [  --with-security       enable internal pike security 
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)
+else :; fi
+
+if test "x$with_checker" = "xyes"; then
+  AC_DEFINE(__CHECKER__)
 else :; fi
 
 #
