@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.71 2004/10/16 07:27:29 agehall Exp $
+|| $Id: jvm.c,v 1.72 2004/10/16 12:17:47 grubba Exp $
 */
 
 /*
@@ -163,10 +163,10 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
   if(j) {
 
 #ifdef _REENTRANT
-    JNIEnv *env;
-    void *tmp;
-    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void **)&tmp, JNI_VERSION_1_2)) {
-      return (JNIEnv *)tmp;
+    void *env;
+
+    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, &env, JNI_VERSION_1_2)) {
+      return (JNIEnv *)env;
     }
 
     if(j->tl_env != NULL && j->tl_env->prog != NULL) {
@@ -176,7 +176,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
       else {
 	env = ((struct att_storage *)((Pike_sp[-1].u.object)->storage))->env;
 	pop_n_elems(1);
-	return env;
+	return (JNIEnv *)env;
       }
     }
 
@@ -193,7 +193,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
       safe_apply(j->tl_env, "set", 1);
 
     pop_n_elems(1);
-    return env;
+    return (JNIEnv *)env;
 #else
     return j->env;
 #endif /* _REENTRANT */
@@ -2983,8 +2983,7 @@ static void f_att_create(INT32 args)
   att->args.group = NULL;
 
   att->tid = th_self();
-  if((*jvm->jvm)->AttachCurrentThread(jvm->jvm,
-				      (void **)&att->env, &att->args)<0)
+  if((*jvm->jvm)->AttachCurrentThread(jvm->jvm, &att->env, &att->args)<0)
     destruct(Pike_fp->current_object);
 }
 
@@ -3245,7 +3244,7 @@ static void exit_jvm_struct(struct object *o)
     JavaVM *jvm = j->jvm;
     j->jvm = NULL;
     THREADS_ALLOW();
-    (*jvm)->AttachCurrentThread(jvm, (void **)&tmpenv, NULL);
+    (*jvm)->AttachCurrentThread(jvm, &tmpenv, NULL);
     (*jvm)->DestroyJavaVM(jvm);
     THREADS_DISALLOW();
   }
