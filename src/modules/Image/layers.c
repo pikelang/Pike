@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.26 1999/07/02 21:19:34 mirar Exp $
+**!	$Id: layers.c,v 1.27 1999/07/03 09:10:49 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -164,6 +164,10 @@
 **! 
 **!    foreach (Layer()->available_modes(),string mode)
 **!    {
+**!	  if ((&lt;"add","equal","replace","replace_hsv","darken",
+**!	        "dissolve","screen","logic_equal">)[mode])
+**!          write(mktag("tr",0,mktag("td",0,mktag("hr"))));
+**!
 **! 	  ({lc2,lc2b,li2,li2b,lr2,lzo1})->set_mode(mode);
 **! 
 **! 	  object r=
@@ -191,7 +195,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.26 1999/07/02 21:19:34 mirar Exp $");
+RCSID("$Id: layers.c,v 1.27 1999/07/03 09:10:49 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -272,6 +276,7 @@ struct layer
 	         int len,double alpha)
 
 LMFUNC(lm_normal);
+
 LMFUNC(lm_add);
 LMFUNC(lm_subtract);
 LMFUNC(lm_multiply);
@@ -286,18 +291,6 @@ LMFUNC(lm_max);
 LMFUNC(lm_bitwise_and);
 LMFUNC(lm_bitwise_or);
 LMFUNC(lm_bitwise_xor);
-LMFUNC(lm_equal);
-LMFUNC(lm_not_equal);
-LMFUNC(lm_less);
-LMFUNC(lm_more);
-LMFUNC(lm_less_or_equal);
-LMFUNC(lm_more_or_equal);
-LMFUNC(lm_logic_equal);
-LMFUNC(lm_logic_not_equal);
-LMFUNC(lm_logic_strict_less);
-LMFUNC(lm_logic_strict_more);
-LMFUNC(lm_logic_strict_less_or_equal);
-LMFUNC(lm_logic_strict_more_or_equal);
 
 LMFUNC(lm_replace);
 LMFUNC(lm_red);
@@ -309,8 +302,11 @@ LMFUNC(lm_hue);
 LMFUNC(lm_saturation);
 LMFUNC(lm_value);
 LMFUNC(lm_color); 
+
 LMFUNC(lm_darken);
 LMFUNC(lm_lighten);
+LMFUNC(lm_saturate);
+LMFUNC(lm_desaturate);
 
 LMFUNC(lm_dissolve);
 LMFUNC(lm_behind);
@@ -318,6 +314,20 @@ LMFUNC(lm_erase);
 
 LMFUNC(lm_screen);
 LMFUNC(lm_overlay);
+
+LMFUNC(lm_equal);
+LMFUNC(lm_not_equal);
+LMFUNC(lm_less);
+LMFUNC(lm_more);
+LMFUNC(lm_less_or_equal);
+LMFUNC(lm_more_or_equal);
+
+LMFUNC(lm_logic_equal);
+LMFUNC(lm_logic_not_equal);
+LMFUNC(lm_logic_strict_less);
+LMFUNC(lm_logic_strict_more);
+LMFUNC(lm_logic_strict_less_or_equal);
+LMFUNC(lm_logic_strict_more_or_equal);
 
 struct layer_mode_desc
 {
@@ -342,18 +352,6 @@ struct layer_mode_desc
    {"bitwise_and",   lm_bitwise_and,   1, NULL            }, 
    {"bitwise_or",    lm_bitwise_or,    1, NULL            }, 
    {"bitwise_xor",   lm_bitwise_xor,   1, NULL            }, 
-   {"equal",         lm_equal,         0, NULL            },
-   {"not_equal",     lm_not_equal,     0, NULL            },
-   {"less",          lm_less,          0, NULL            },
-   {"more",          lm_more,          0, NULL            },
-   {"less_or_equal", lm_less_or_equal, 0, NULL            },
-   {"more_or_equal", lm_more_or_equal, 0, NULL            },
-   {"logic_equal",   lm_logic_equal,   0, NULL            },
-   {"logic_not_equal",lm_logic_not_equal,0, NULL          },
-   {"logic_strict_less",lm_logic_strict_less,0, NULL      },
-   {"logic_strict_more",lm_logic_strict_more,0, NULL      },
-   {"logic_strict_less_equal",lm_logic_strict_less_or_equal,0, NULL      },
-   {"logic_strict_more_equal",lm_logic_strict_more_or_equal,0, NULL      },
 
    {"replace",       lm_replace,       1, NULL            },
    {"red",           lm_red,           1, NULL            },
@@ -368,6 +366,8 @@ struct layer_mode_desc
 
    {"darken",        lm_darken,        1, NULL            }, 
    {"lighten",       lm_lighten,       1, NULL            }, 
+   {"saturate",      lm_saturate,      1, NULL            }, 
+   {"desaturate",    lm_desaturate,    1, NULL            }, 
 
    {"dissolve",      lm_dissolve,      1, NULL            }, 
    {"behind",        lm_behind,        1, NULL            }, 
@@ -375,6 +375,20 @@ struct layer_mode_desc
 
    {"screen",        lm_screen,        1, NULL            }, 
    {"overlay",       lm_overlay,       1, NULL            }, 
+
+   {"equal",         lm_equal,         0, NULL            },
+   {"not_equal",     lm_not_equal,     0, NULL            },
+   {"less",          lm_less,          0, NULL            },
+   {"more",          lm_more,          0, NULL            },
+   {"less_or_equal", lm_less_or_equal, 0, NULL            },
+   {"more_or_equal", lm_more_or_equal, 0, NULL            },
+
+   {"logic_equal",   lm_logic_equal,   0, NULL            },
+   {"logic_not_equal",lm_logic_not_equal,0, NULL          },
+   {"logic_strict_less",lm_logic_strict_less,0, NULL      },
+   {"logic_strict_more",lm_logic_strict_more,0, NULL      },
+   {"logic_strict_less_equal",lm_logic_strict_less_or_equal,0, NULL      },
+   {"logic_strict_more_equal",lm_logic_strict_more_or_equal,0, NULL      },
 } ;
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
@@ -423,8 +437,10 @@ saturation      Pd=Ps,Sd=(Sl*Al+Ss*(1-Al)*As)/(Al+(1-Al)*As)
 value           Pd=Ps,Vd=(Vl*Al+Vs*(1-Al)*As)/(Al+(1-Al)*As)
 color           Vd=Vs,HSd=(HSl*Al+HSs*(1-Al)*As)/(Al+(1-Al)*As)
 
-darken          Pd=Ps,Vd=min(Vs,Vl)
 lighten         Pd=Ps,Vd=max(Vs,Vl)
+darken          Pd=Ps,Vd=min(Vs,Vl)
+saturate        Pd=Ps,Vd=max(Ss,Sl)
+desaturate      Pd=Ps,Vd=min(Ss,Sl)
 
 
 special layers:
@@ -1642,6 +1658,38 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
       rgb_to_hsv((S),&sh,&ss,&sv);					\
       rgb_to_hsv((L),&lh,&ls,&lv);					\
       hsv_to_rgb(sh,ss,MAXIMUM(sv,lv),&(D));				\
+   } while (0)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+/* saturate: max s */
+
+#define LM_FUNC lm_saturate
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      hsv_to_rgb(sh,MAXIMUM(ss,ls),sv,&(D));				\
+   } while (0)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+/* desaturate: min s */
+
+#define LM_FUNC lm_desaturate
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      hsv_to_rgb(sh,MINIMUM(ss,ls),sv,&(D));				\
    } while (0)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
