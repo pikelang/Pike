@@ -1318,7 +1318,7 @@ class TZShift_Event
 
       TimeRange btr=0;
       if (nextshift!=-1)
-	 btr=from->calendar()->Second("unix",nextshift);
+	 btr=from->calendar()->Second("unix_r",nextshift,from->ruleset());
       
       TimeRange atr=from;
       for (;;)
@@ -1371,7 +1371,8 @@ class TZShift_Event
 	       if (shift[0]>=jd)
 	       {
 		  TimeRange atr=from->calendar()
-		     ->Second("unix",(shift[0]-2440588)*86400+shift[1]);
+		     ->Second("unix_r",(shift[0]-2440588)*86400+shift[1],
+			      from->ruleset());
 		  if (atr>=from) return atr;
 	       }
 	 }
@@ -1381,7 +1382,8 @@ class TZShift_Event
 	       if (shift[0]<=jd)
 	       {
 		  TimeRange atr=from->calendar()
-		     ->Second("unix",(shift[0]-2440588)*86400+shift[1]);
+		     ->Second("unix_r",(shift[0]-2440588)*86400+shift[1],
+			      from->ruleset());
 		  if (atr<=from) return atr;
 	       }
 	 }
