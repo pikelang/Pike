@@ -11,7 +11,7 @@ DIRS_TO_MAKE=
 DIR="$TO"
 while :
 do
-  DIR=`echo $DIR | sed -e 's@/[^/]*$@@'`
+  DIR=`echo $DIR | sed -e 's@/[^/]*$@@' -e 's@/$@@'`
 
   case "$DIR" in
     *.pmod)
