@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.31 2002/12/01 00:16:54 mast Exp $
+|| $Id: iterators.cmod,v 1.32 2002/12/29 16:30:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.31 2002/12/01 00:16:54 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.32 2002/12/29 16:30:56 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -66,12 +66,14 @@ PIKECLASS mapping_iterator
 
   static int step_bucket(struct mapping_iterator_struct *i)
     {
-      while(! i->current)
-      {
-	i->bucket++;
-	if(i->bucket >= i->md->hashsize)
-	  return 0;
-	i->current=i->md->hash[i->bucket];
+      if (i->md) {
+	while(! i->current)
+	{
+	  i->bucket++;
+	  if(i->bucket >= i->md->hashsize)
+	    return 0;
+	  i->current=i->md->hash[i->bucket];
+	}
       }
       return 1;
     }
@@ -87,9 +89,12 @@ PIKECLASS mapping_iterator
     {
       struct object *o=low_clone(mapping_iterator_program);
       OBJ2_MAPPING_ITERATOR(o)[0] = *THIS;
-      add_ref(THIS->m);
-      add_ref(THIS->md);
-      THIS->md->valrefs++;
+      if (THIS->m)
+	add_ref(THIS->m);
+      if (THIS->md) {
+	add_ref(THIS->md);
+	THIS->md->valrefs++;
+      }
       while(--steps>=0 && mi_step(OBJ2_MAPPING_ITERATOR(o)));
       RETURN o;
     }
@@ -110,7 +115,7 @@ PIKECLASS mapping_iterator
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random()
     {
-      if(THIS->md->hashsize)
+      if(THIS->md && THIS->md->hashsize)
       {
 	size_t k;
 	struct keypair *tmp;
@@ -158,9 +163,13 @@ PIKECLASS mapping_iterator
 
   EXIT
     {
-      free_mapping(THIS->m);
-      THIS->md->valrefs--;
-      free_mapping_data(THIS->md);
+      if (THIS->md) {
+	THIS->md->valrefs--;
+	free_mapping_data(THIS->md);
+      }
+      if (THIS->m) {
+	free_mapping(THIS->m);
+      }
     }
 };
 
