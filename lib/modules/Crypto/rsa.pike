@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.27 2000/09/28 03:38:39 hubbe Exp $
+/* $Id: rsa.pike,v 1.28 2001/01/20 19:28:56 marcus Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -326,6 +326,29 @@ int sha_verify(string message, string signature)
   hash->update(message);
   s = hash->digest();
   s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
+
+  return raw_verify(s, BIGNUM(signature, 256));
+}
+
+string md5_sign(string message, mixed|void r)
+{
+  object hash = Crypto.md5();
+  string s;
+  
+  hash->update(message);
+  s = hash->digest();
+  s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
+  return cooked_sign(s);
+}
+
+int md5_verify(string message, string signature)
+{
+  object hash = Crypto.md5();
+  string s;
+  
+  hash->update(message);
+  s = hash->digest();
+  s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
 
   return raw_verify(s, BIGNUM(signature, 256));
 }
