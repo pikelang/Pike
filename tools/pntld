@@ -43,19 +43,6 @@ class Symbol
   int cls;
   array(Symbol) aux;
 
-  string demangle()
-    {
-      string ret=name;
-      if(name[..6]=="__real@")
-	return name;
-      if(sscanf(ret,"%s@%s",ret,string tmp))
-	if(search(tmp,"@")!=-1)
-	  return name;
-      if( (type >> 4) == 2) ret+="()";
-      return ret;
-    }
-
-
   /* We might want to patch the name of the antisymbol somehow to
    * make sure symbols are never defined more than once
    * As long as the modification is zapped in the demangle process
@@ -81,8 +68,8 @@ class Symbol
   int shareable()
     {
       if(!defined()) return 1;
-      if(sizeof(name/"@")>2) return 1;  /* real constant */
-      if(sscanf(name,"__real@%*s")) return 1; /* real constant */
+      if(sscanf(name,"__real@%*s") || name == "__NULL_IMPORT_DESCRIPTOR")
+	return 1;
       if(!section && value) return 1; /* common symbols */
       return 0;
     }
@@ -161,6 +148,8 @@ class Linker
 
   int add_symbol(Symbol s)
     {
+      if(search(s->name,"@__pntld_internal__")>=0)
+	return -1;
       if(symbol_to_number[s])
       {
 #ifdef DEBUG
@@ -716,7 +705,7 @@ class dumpfile
   Symbol export_symbol(Symbol s)
     {
       Symbol ret;
-      string tmpname=s->demangle();
+      string tmpname=s->name;
 //      if(s->name == "___gmpz_clear")
 //	werror("Exporting... ___gmpz_clear: %O\n",s->section);
       
@@ -736,6 +725,7 @@ class dumpfile
 	  }
 	}
 	
+#if 0
 	if(s->defined())
 	{
 	  if( (ret->type >> 4) != ( s->type>>4) )
@@ -744,6 +734,7 @@ class dumpfile
 	    err++;
 	  }
 	}
+#endif
 
 	if(s->defined())
 	{
@@ -976,18 +967,14 @@ class dumpfile
 #ifdef DEBUG
       werror("Importing symbol: %O\n",symname);
 #endif
-      string tmpname=symname;
-      sscanf(tmpname,"%s@",tmpname);
 
-      if( !(type & 3) ) tmpname+="()";
-
-      Symbol sym=global_symbols[tmpname];
+      Symbol sym=global_symbols[symname];
       if(!sym)
-	global_symbols[tmpname]=sym=Symbol();
+	global_symbols[symname]=sym=Symbol();
 
       sym->name=symname;
       sym->section=s;
-      sym->type=type; /* correct ???? */
+      sym->type=((type&3)? 0:0x20); /* correct ???? */
       sym->cls = COFFSYM_external;
 
 
@@ -995,15 +982,14 @@ class dumpfile
 #ifdef DEBUG
       werror("Importing symbol: %O\n",symname);
 #endif
-      tmpname="__imp_"+tmpname+(tmpname[-1]==')'? "":"()");
 
-      sym=global_symbols[tmpname];
+      sym=global_symbols[symname];
       if(!sym)
-	global_symbols[tmpname]=sym=Symbol();
+	global_symbols[symname]=sym=Symbol();
 
       sym->name=symname;
       sym->section=s;
-      sym->type=type | (2<<4); /* correct ???? */
+      sym->type=0;
       sym->cls = COFFSYM_external;
 
 #endif
@@ -1040,7 +1026,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.12 2001/09/20 16:25:36 marcus Exp $\n"
+	 "$Id: pntld,v 1.13 2001/09/20 19:20:26 marcus Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -1199,11 +1185,6 @@ int main(int argc, array(string) argv)
 	  if(global_symbols[sym])
 	  {
 	    l->add_symbol(global_symbols[sym]);
-	    exported++;
-	  }
-	  if(global_symbols[sym+"()"])
-	  {
-	    l->add_symbol(global_symbols[sym+"()"]);
 	    exported++;
 	  }
 
