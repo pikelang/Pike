@@ -1,6 +1,6 @@
 /*
  *
- * $Id: dvb.h,v 1.1 2002/09/30 12:08:00 hop Exp $
+ * $Id: dvb.h,v 1.2 2002/10/08 18:45:41 hop Exp $
  */
 
 #ifndef DVB_H
@@ -9,9 +9,6 @@
 /*#define DVB_DEBUG 1*/
 
 #define AUDIO_BLOCK_SIZE 4096
-
-/* PES extracting utility */
-/* (from excelent mpegtools package by Marcus Metzler) */
 
 #define MAX_PLENGTH 0xFFFF
 #define MMAX_PLENGTH (8*MAX_PLENGTH)

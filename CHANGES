@@ -152,9 +152,6 @@ o Calendar.verify
 
 o Debug.Tracer
 
-o Dvb.dvb
-    Digital sattelite handler (Linux only).
-
 o Locale.Language
 
 o Parser.Python
