@@ -230,6 +230,6 @@ void exit_main()
   cleanup_lpc_types();
   cleanup_shared_string_table();
   cleanup_program();
-  exit_interpreter();
+  cleanup_callbacks();
 }
 
