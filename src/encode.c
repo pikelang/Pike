@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.122 2001/08/10 21:43:22 mast Exp $");
+RCSID("$Id: encode.c,v 1.123 2001/08/10 22:06:14 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -50,6 +50,10 @@ RCSID("$Id: encode.c,v 1.122 2001/08/10 21:43:22 mast Exp $");
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+
+#ifdef HAVE_IEEFP_H
+#include <ieeefp.h>
+#endif /* HAVE_IEEEFP_H */
 
 #include <math.h>
 
@@ -604,6 +608,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
     case T_FLOAT:
     {
+      double d = val->u.float_number;
 
 #define Pike_FP_SNAN -4 /* Signal Not A Number */
 #define Pike_FP_QNAN -3 /* Quiet Not A Number */
@@ -658,31 +663,31 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       {
 	int pike_ftype=Pike_FP_UNKNOWN;
 #ifdef HAVE_ISINF
-	if(isinf(val->u.float_number))
+	if(isinf(d))
 	  pike_ftype=Pike_FP_PINF;
 	else
 #endif
 #ifdef HAVE_ISNAN
-	  if(isnan(val->u.float_number)) {
+	  if(isnan(d)) {
 	    pike_ftype=Pike_FP_SNAN;
 	  } else
 #endif
 #ifdef HAVE_ISZERO
-	    if(iszero(val->u.float_number))
+	    if(iszero(d))
 	      pike_ftype=Pike_FP_PZERO;
 	    else
 #endif
 #ifdef HAVE_FINITE
-	      if(!finite(val->u.float_number))
+	      if(!finite(d))
 		pike_ftype=Pike_FP_PINF;
 #endif
 	; /* Terminate any remaining else */
 	
 	if(
 #ifdef HAVE_SIGNBIT
-	  signbit(val->u.float_number)
+	  signbit(d)
 #else
-	  val->u.float_number<0.0
+	  d<0.0
 #endif
 	  ) {
 	  switch(pike_ftype)
@@ -706,7 +711,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       }
 #endif
 
-      if(val->u.float_number==0.0)
+      if(d == 0.0)
       {
 	code_entry(TAG_FLOAT,0,data);
 	code_entry(TAG_FLOAT,0,data);
@@ -715,7 +720,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	int y;
 	double tmp;
 
-	tmp = FREXP((double)val->u.float_number, &y);
+	tmp = FREXP(d, &y);
 	x = DO_NOT_WARN((INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp));
 	y -= sizeof(INT64)*8 - 2;
 
@@ -914,7 +919,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    tmp.u.integer--;
 	    map_delete(data->encoded, val);
 
-	    code_entry(type_to_tag(val->type), 1, data);
+	    code_entry(TAG_FUNCTION, 1, data);
 	    push_svalue(val);
 	    Pike_sp[-1].type=T_OBJECT;
 	    encode_value2(Pike_sp-1, data);
@@ -933,7 +938,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	Pike_error("Encoding of efuns is not supported yet.\n");
       }
 
-      code_entry(type_to_tag(val->type), 0,data);
+      code_entry(TAG_FUNCTION, 0, data);
       encode_value2(Pike_sp-1, data);
       pop_stack();
       break;
@@ -943,7 +948,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     {
       int d;
       if (val->u.program->id < PROG_DYNAMIC_ID_START) {
-	code_entry(type_to_tag(val->type), 3, data);
+	code_entry(TAG_PROGRAM, 3, data);
 	push_int(val->u.program->id);
 	encode_value2(Pike_sp-1, data);
 	pop_stack();
@@ -969,7 +974,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    tmp.u.integer--;
 	    map_delete(data->encoded, val);
 
-	    code_entry(type_to_tag(val->type), 2,data);
+	    code_entry(TAG_PROGRAM, 2, data);
 	    ref_push_program(p->parent);
 	    encode_value2(Pike_sp-1,data);
 
@@ -993,7 +998,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  Pike_error("Cannot encode C programs.\n");
 	}
 	/*FIXME: save p->parent!! */
-	code_entry(type_to_tag(val->type), 1,data);
+	code_entry(TAG_PROGRAM, 1, data);
 	f_version(0);
 	encode_value2(Pike_sp-1,data);
 	pop_stack();
@@ -1122,7 +1127,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  adddata3(p->constants[d].name);
 	}
       }else{
-	code_entry(type_to_tag(val->type), 0,data);
+	code_entry(TAG_PROGRAM, 0, data);
 	encode_value2(Pike_sp-1, data);
       }
       pop_stack();
