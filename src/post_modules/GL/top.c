@@ -1,11 +1,16 @@
 /*
- * $Id: top.c,v 1.1 1998/11/02 23:54:39 marcus Exp $
+ * $Id: top.c,v 1.2 1998/11/03 18:08:17 marcus Exp $
  *
  */
 
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <GL/gl.h>
+#include <GL/glx.h>
+
 #include "global.h"
 
-RCSID("$Id: top.c,v 1.1 1998/11/02 23:54:39 marcus Exp $");
+RCSID("$Id: top.c,v 1.2 1998/11/03 18:08:17 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -14,16 +19,11 @@ RCSID("$Id: top.c,v 1.1 1998/11/02 23:54:39 marcus Exp $");
 #include "builtin_functions.h"
 #include "error.h"
 
-#include <GL/gl.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <GL/glx.h>
-
 static GLXContext glxc;
 static Display *dpy;
 static Window win;
 
-static void f_InitializeAWindowPlease()
+static void f_InitializeAWindowPlease(INT32 args)
 {
   XVisualInfo *vis;
   static int attrib[] = { GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 1, None };
@@ -76,7 +76,7 @@ static void f_InitializeAWindowPlease()
   while(event.type != MapNotify || event.xmap.window != win);
 }
 
-static void f_UpdateTheWindowAndCheckForEvents()
+static void f_UpdateTheWindowAndCheckForEvents(INT32 args)
 {
   glXSwapBuffers(dpy, win);
   glXWaitGL();
