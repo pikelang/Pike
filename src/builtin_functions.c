@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.366 2001/05/05 23:25:13 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.367 2001/05/07 22:04:52 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1651,10 +1651,10 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 	    (str0[-2]&surrmask) == surr1) {
 	    
 #if (PIKE_BYTEORDER == 4321)
-	  str2[i] = ((((unsigned char *)str0)[-1]&3)<<18) +
-	    (((unsigned char *)str0)[-2]<<10) +
-	    ((((unsigned char *)str0)[-3]&3)<<8) +
-	    ((unsigned char *)str0)[-4] +
+	  str2[i] = ((((unsigned char *)str0)[-3]&3)<<18) +
+	    (((unsigned char *)str0)[-4]<<10) +
+	    ((((unsigned char *)str0)[-1]&3)<<8) +
+	    ((unsigned char *)str0)[-2] +
 	    0x10000;
 #else /* PIKE_BYTEORDER != 4321 */
 	  str2[i] = ((((unsigned char *)str0)[-4]&3)<<18) +
