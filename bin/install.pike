@@ -56,9 +56,21 @@ void status1(string fmt, mixed ... args)
   write("%s\n",sprintf(fmt,@args));
 }
 
+string some_strerror(int err)
+{
+  string ret;
+#if constant(strerror)  
+  ret=strerror(err);
+#endif
+  if(!ret || search("unknown error",lower_case(ret))!=-1)
+    ret=sprintf("errno=%d",err);
+
+  return ret;
+}
 
 void fail(string fmt, mixed ... args)
 {
+  int err=errno();
 #if defined(USE_GTK) && constant(GTK.parse_rc)
   if(label1)
   {
@@ -75,8 +87,9 @@ void fail(string fmt, mixed ... args)
 
 
   if(last_len) write("\n");
-  Stdio.perror(sprintf(fmt,@args));
-  werror("**Installation failed.\n");
+  werror("%s: %s\n",sprintf(fmt,@args),some_strerror(err));
+  werror("Current directory = %s\n",getcwd());
+  werror("**Installation failed..\n");
   exit(1);
 }
 
@@ -417,7 +430,8 @@ void do_export()
     RELAY(SRCDIR)
     RELAY(TMP_BINDIR)
     RELAY(MANDIR_SRC)
-    " TMP_BUILDDIR="+translate("", translator)
+    " TMP_BUILDDIR="+translate("", translator)+
+    " $" // $ = @argv
     ;
   
   p->write("s%4c%s",strlen(cmd),cmd);
@@ -906,10 +920,18 @@ int pre_install(array(string) argv)
 	    "   Welcome to the interactive "+version()+
 	    " installation script.\n"
 	    "\n"
+#ifndef __NT__
 	    "   The script will guide you through the installation process by asking\n"
 	    "   a few questions. Whenever you input a path or a filename, you may use\n"
 	    "   the <tab> key to perform filename completion. You will be able to\n"
 	    "   confirm your settings before the installation begin.\n"
+
+#else
+
+	    "   The script will guide you through the installation process by asking\n"
+	    "   a few questions.  You will be able to confirm your settings before\n"
+	    "   the installation begin.\n"
+#endif
 	    );
       
       interactive=ReadInteractive();
@@ -922,13 +944,19 @@ int pre_install(array(string) argv)
 //	if(!vars->prefix)
 	prefix=interactive->edit_directory(prefix,"Install prefix: ");
 	prefix = make_absolute_path(prefix);
-	
+
 	if(!vars->pike_name)
 	{
+#if constant(symlink)	
 	  bin_path=interactive->edit_filename
 		   (combine_path(vars->exec_prefix ||
 				 combine_path(prefix, "bin"),
 				 "pike"), "Pike binary name: ");
+#else
+	  bin_path=combine_path("/",getcwd(),prefix,"pike",
+				replace(version()-"Pike v"," release ","."),
+				"bin","pike");
+#endif
 	}
 
 	bin_path = make_absolute_path(bin_path);

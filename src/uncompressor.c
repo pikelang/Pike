@@ -24,6 +24,8 @@
 
 #define FEND(X,Y) (strchr(X,Y)?strchr(X,Y):(X)+strlen(X))
 
+/* #define DEBUG */
+
 
 gzFile gz;
 
@@ -55,7 +57,7 @@ static unsigned int read_int(void)
 #endif
 
 
-void my_uncompress(char *file)
+void my_uncompress(char *file,int argc, char **argv)
 {
   unsigned int len;
   char buffer[8192];
@@ -92,7 +94,9 @@ void my_uncompress(char *file)
     perror("chdir");
     exit(1);
   }
-/*  fprintf(stderr,"Changing dir to %s\n",d); */
+#ifdef DEBUG
+  fprintf(stderr,"Changing dir to %s\n",d);
+#endif
 
   while(1)
   {
@@ -102,13 +106,17 @@ void my_uncompress(char *file)
     GR(type);
 
     len=read_int();
-/*    fprintf(stderr,"namelen=%d\n",len); */
+#ifdef DEBUG
+    fprintf(stderr,"namelen=%d\n",len);
+#endif
     
     gr(buffer, len);
     buffer[len]=0;
     
 
-/*    fprintf(stderr,"Type %c: %s\n",type,buffer); */
+#ifdef DEBUG
+    fprintf(stderr,"Type %c: %s\n",type,buffer);
+#endif
 
    switch(type)
     {
@@ -120,7 +128,9 @@ void my_uncompress(char *file)
 	break;
 
       case 'e': /* setenv */
-/*	fprintf(stderr,"putenv(%s)\n",buffer); */
+#ifdef DEBUG
+	fprintf(stderr,"putenv(%s)\n",buffer);
+#endif
 	putenv(buffer);
 	break;
 	
@@ -132,7 +142,42 @@ void my_uncompress(char *file)
 	 * Add support for concatenating all the parameters
 	 * to this command
 	 */
-/*	fprintf(stderr,"system(%s)\n",buffer); */
+	if(buffer[strlen(buffer)-1]=='$')
+	{
+	  char *ptr=buffer+strlen(buffer)-1;
+	  int e;
+	  for(e=0;e<argc;e++)
+	  {
+	    char *c;
+	    fprintf(stderr,"argv[%d]=%s\n",e,argv[e]);
+
+	    *(ptr++)=' ';
+	    *(ptr++)='"';
+	    for(c=argv[e];*c;c++)
+	    {
+	      switch(*c)
+	      {
+		case '\\':
+#ifdef __NT__
+		  *(ptr++)='"';
+		  *(ptr++)='\\';
+		  *(ptr++)='\\';
+		  *(ptr++)='"';
+		  break;
+#endif		  
+		case '"':
+		  *(ptr++)='\\';
+		default:
+		  *(ptr++)=*c;
+	      }
+	    }
+	    *(ptr++)='"';
+	  }
+	  *(ptr++)=0;
+	}
+#ifdef DEBUG
+	fprintf(stderr,"system(%s)\n",buffer);
+#endif
 	system(buffer);
 	break;
 	
@@ -147,7 +192,9 @@ void my_uncompress(char *file)
       case 'f': /* file */
       {
 	FILE *f;
-	/* fprintf(stderr,"file(%s)\n",buffer); */
+#ifdef DEBUG
+	fprintf(stderr,"file(%s)\n",buffer);
+#endif
 	f=fopen(buffer,"wb");
 	if(!f)
 	{
@@ -176,10 +223,15 @@ void my_uncompress(char *file)
       break;
       
       case 'D':
-/*	fprintf(stderr,"unlink(%s)\n",buffer); */
+#ifdef DEBUG
+	fprintf(stderr,"unlink(%s)\n",buffer);
+#endif
 	if(unlink(buffer)<0 && rmdir(buffer)<0)
 	{
+#ifdef DEBUG
+	  fprintf(stderr,"Failed to delete %s\n",buffer);
 	  perror("unlink");
+#endif
 /*	  exit(1); */
 	}
 	break;
@@ -204,14 +256,14 @@ int main(int argc, char **argv)
 	     sizeof(tmp),
 	     tmp,
 	     &file))
-    my_uncompress(tmp);
+    my_uncompress(tmp,argc-1,argv+1);
 #else
   char *path=getenv("PATH");
   char *pos;
   file=argv[0];
   if(!path || strchr(file, SLASH))
   {
-    my_uncompress(file);
+    my_uncompress(file,argc-1,argv-1);
     perror("open");
     exit(1);
   }
@@ -241,7 +293,7 @@ int main(int argc, char **argv)
       ptr+=strlen(file);
       *ptr=0;
 
-      my_uncompress(tmp);
+      my_uncompress(tmp,argc-1,argv+1);
     }
     if(!*next) break;
     pos=next+1;
