@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.53 2004/11/05 03:36:09 mast Exp $
+|| $Id: lexer.h,v 1.54 2004/11/06 15:49:05 grubba Exp $
 */
 
 /*
@@ -1061,9 +1061,9 @@ static int low_yylex(YYSTYPE *yylval)
     default:
       {
 	if (c > 31) {
-	  my_yyerror("Illegal character '%c' (0x%x)", c, c);
+	  my_yyerror("Illegal character '%c' (0x%02x)", c, c);
 	} else {
-	  my_yyerror("Illegal character 0x%x", c);
+	  my_yyerror("Illegal character 0x%02x", c);
 	}
 	return ' ';
       }
