@@ -221,7 +221,8 @@ array(string) gen_func(string name, string ty)
   if(img_obj) {
     argt += ({"object"});
     res += "  struct zimage img;\n";
-    got += "  check_img_arg(sp["+(a-1)+"-args].u.object, &img);\n";
+    got += "  check_img_arg(sp["+(a-1)+"-args].u.object, &img, "+a+
+      ", \""+name+"\");\n";
   }
 
   prot = (argt*",")+prot;

@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.6 1999/07/17 00:21:35 marcus Exp $
+ * $Id: auto.c.in,v 1.7 1999/07/18 15:08:42 marcus Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.6 1999/07/17 00:21:35 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.7 1999/07/18 15:08:42 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -16,6 +16,7 @@ RCSID("$Id: auto.c.in,v 1.6 1999/07/17 00:21:35 marcus Exp $");
 #include "builtin_functions.h"
 #include "error.h"
 #include "module_support.h"
+#include "operators.h"
 
 #include <GL/gl.h>
 
@@ -108,14 +109,15 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
   return args;
 }
 
-static void check_img_arg(struct object *obj, struct zimage *img)
+static void check_img_arg(struct object *obj, struct zimage *img,
+			  int arg, const char *func)
 {
   struct {
     void *img;
     INT_TYPE w, h;
-  } *stor = get_storage(obj, image_program);
+  } *stor = (void *)get_storage(obj, image_program);
   if(stor == NULL || stor->img == NULL)
-    error("Bad image object\n");
+    error("Bad argument %d to %s.\n", arg, func);
   img->width = stor->w;
   img->height = stor->h;
   img->pixels = stor->img;
@@ -193,6 +195,8 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 
 #define glClearColor3v(f) glClearColor((f)[0], (f)[1], (f)[2], 0.0)
 #define glClearColor4v(f) glClearColor((f)[0], (f)[1], (f)[2], (f)[3])
+#define glClearAccum3v(f) glClearAccum((f)[0], (f)[1], (f)[2], 0.0)
+#define glClearAccum4v(f) glClearAccum((f)[0], (f)[1], (f)[2], (f)[3])
 
 static void pre_init()
 {
