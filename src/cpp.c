@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.56 1999/11/04 15:40:24 grubba Exp $
+ * $Id: cpp.c,v 1.57 1999/12/08 16:23:35 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -1158,14 +1158,15 @@ void f_cpp(INT32 args)
 
     simple_add_define(&this, "__PIKE__", " 1 ");
 
-    sprintf(buffer, " %d.%d ", PIKE_MAJOR_VERSION, PIKE_MINOR_VERSION);
-    simple_add_define(&this, "__VERSION__", buffer);
-    sprintf(buffer, " %d ", PIKE_MAJOR_VERSION);
-    simple_add_define(&this, "__MAJOR__", buffer);
-    sprintf(buffer, " %d ", PIKE_MINOR_VERSION);
-    simple_add_define(&this, "__MINOR__", buffer);
-    sprintf(buffer, " %d ", PIKE_BUILD_VERSION);
-    simple_add_define(&this, "__BUILD__", buffer);
+    simple_add_define(&this, "__VERSION__",
+		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) "."
+		      DEFINETOSTR(PIKE_MINOR_VERSION) " ");
+    simple_add_define(&this, "__MAJOR__",
+		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) " ");
+    simple_add_define(&this, "__MINOR__",
+		      " " DEFINETOSTR(PIKE_MINOR_VERSION) " ");
+    simple_add_define(&this, "__BUILD__",
+		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
 #ifdef AUTO_BIGNUM
     simple_add_define(&this, "__AUTO_BIGNUM__", " 1 ");
 #endif
