@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.483 2003/02/24 21:00:45 mast Exp $
+|| $Id: program.c,v 1.484 2003/03/08 17:25:19 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.483 2003/02/24 21:00:45 mast Exp $");
+RCSID("$Id: program.c,v 1.484 2003/03/08 17:25:19 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5737,6 +5737,7 @@ static void zap_placeholder(struct compilation *c)
   verify_supporters();
 }
 
+/* NOTE: Must not throw errors! */
 static int run_pass1(struct compilation *c)
 {
   int ret=0;
@@ -5749,12 +5750,16 @@ static int run_pass1(struct compilation *c)
 	     (long)th_self(),compilation_depth));
 #endif
 
-  if(c->placeholder && c->placeholder->prog != null_program)
-    Pike_error("Placeholder object is not a null_program clone!\n");
+  if(c->placeholder && c->placeholder->prog != null_program) {
+    yyerror("Placeholder object is not a null_program clone!");
+    return 0;
+  }
   debug_malloc_touch(c->placeholder);
 
-  if(c->target && !(c->target->flags & PROGRAM_VIRGIN))
-    Pike_error("Placeholder program is not virgin!\n");
+  if(c->target && !(c->target->flags & PROGRAM_VIRGIN)) {
+    yyerror("Placeholder program is not virgin!");
+    return 0;
+  }
 
   low_start_new_program(c->target,0,0,0);
   c->supporter.prog = Pike_compiler->new_program;
@@ -6015,6 +6020,7 @@ struct program *compile(struct pike_string *aprog,
 	     (long) th_self(), atarget, aplaceholder));
 
   debug_malloc_touch(c);
+  c->p = NULL;
   add_ref(c->prog=aprog);
   if((c->handler=ahandler)) add_ref(ahandler);
   c->major=amajor;
