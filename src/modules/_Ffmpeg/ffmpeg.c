@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.14 2002/12/06 11:03:18 mirar Exp $
+|| $Id: ffmpeg.c,v 1.15 2004/04/23 19:18:54 mast Exp $
 */
 
 /*
@@ -32,6 +32,34 @@
 #include <string.h>
 #include <math.h>
 
+/* ffmpeg includes typedef's these */
+#ifdef FFMPEG_REDEFINES_UINT8
+#ifdef INT64
+#undef INT64
+#endif
+#ifdef INT32
+#undef INT32
+#endif
+#ifdef INT16
+#undef INT16
+#endif
+#ifdef INT8
+#undef INT8
+#endif
+#ifdef UINT64
+#undef UINT64
+#endif
+#ifdef UINT32
+#undef UINT32
+#endif
+#ifdef UINT16
+#undef UINT16
+#endif
+#ifdef UINT8
+#undef UINT8
+#endif
+#endif
+
 #ifdef HAVE_FFMPEG_AVCODEC_H
 #include <ffmpeg/avcodec.h>
 #else
@@ -56,6 +84,9 @@
 #define FF_FREE(x)	free(x)
 #endif
 
+#ifndef HAVE_UINT8_T
+#define uint8_t unsigned char
+#endif
 
 static struct program *ffmpeg_program;
 
@@ -64,7 +95,7 @@ typedef struct {
   AVCodecContext	 codec_context;
   AVCodecContext	*c;
   int			 encoder;
-  UINT8			*outbuf;
+  uint8_t		*outbuf;
 } ffmpeg_data;
 
 #define THIS	((ffmpeg_data *)Pike_fp->current_storage)
@@ -322,7 +353,10 @@ static void f_decode(INT32 args) {
     Pike_error("Low memory? Decoder buffer doesn't exist.\n");
 
   if(!idata->len)
-    Pike_error("Decoded data are empty.\n");
+    Pike_error("Encoded data is empty.\n");
+
+  if (idata->size_shift)
+    Pike_error("Encoded data is wide.\n");
 
   if(args > 1) {
     /* FIXME: shuffler part not implemented, yet */
@@ -338,7 +372,7 @@ static void f_decode(INT32 args) {
 
   /* one pass decoding */
   len = avcodec_decode_audio(THIS->c, (short *)THIS->outbuf, &samples_size,
-		  	     idata->str, idata->len);
+		  	     STR0(idata), idata->len);
   if(len < 0)
     Pike_error("Error while decoding.\n");
   if(samples_size > 0) {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.6 2002/12/06 11:03:18 mirar Exp $
+|| $Id: acconfig.h,v 1.7 2004/04/23 19:18:54 mast Exp $
 */
 
 /*
@@ -31,5 +31,11 @@
 
 /* Define if you have a working ffmpeg library */
 #undef HAVE_WORKING_LIBFFMPEG
+
+/* Define if libavcodec.h or so (re)defines UINT8 */
+#undef FFMPEG_REDEFINES_UINT8
+
+/* Define if libavcodec.h or so defines uint8_t */
+#undef HAVE_UINT8_T
 
 #endif

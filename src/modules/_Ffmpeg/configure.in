@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.10 2003/01/07 18:39:31 marcus Exp $
+# $Id: configure.in,v 1.11 2004/04/23 19:18:54 mast Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -96,6 +96,56 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
       else 
         PIKE_FEATURE(FFmpeg,[no (not working)])
       fi
+
+
+    AC_MSG_CHECKING([if UINT8 et al are redefined])
+    AC_CACHE_VAL(pike_cv_ffmpeg_UINT8, [
+      AC_TRY_COMPILE([
+#define UINT8 "hepp"
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
+#else
+#ifdef HAVE_AVCODEC_H
+#include <avcodec.h>
+#endif
+#endif
+        ], [
+	char *v=UINT8;
+	return v[0]=='h'; /* not run anyway, but... */
+        ], [
+          pike_cv_ffmpeg_UINT8=no
+        ], [
+          pike_cv_ffmpeg_UINT8=yes
+        ])
+      ])
+      AC_MSG_RESULT($pike_cv_ffmpeg_UINT8)
+      if test "x$pike_cv_ffmpeg_UINT8" = "xyes"; then
+        AC_DEFINE(FFMPEG_REDEFINES_UINT8)
+      fi
+
+    AC_MSG_CHECKING([if uint8_t is defined])
+    AC_CACHE_VAL(pike_cv_ffmpeg_uint8_t, [
+      AC_TRY_COMPILE([
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
+#else
+#ifdef HAVE_AVCODEC_H
+#include <avcodec.h>
+#endif
+#endif
+        ], [
+	uint8_t s[20];
+        ], [
+          pike_cv_ffmpeg_uint8_t=yes
+        ], [
+          pike_cv_ffmpeg_uint8_t=no
+        ])
+      ])
+      AC_MSG_RESULT($pike_cv_ffmpeg_uint8_t)
+      if test "x$pike_cv_ffmpeg_uint8_t" = "xyes"; then
+        AC_DEFINE(HAVE_UINT8_T)
+      fi
+
   fi
 fi
 
