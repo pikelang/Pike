@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.12 1997/09/05 22:18:42 per Exp $ */
+/* $Id: blit.c,v 1.13 1997/09/10 20:16:36 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.12 1997/09/05 22:18:42 per Exp $<br>
+**!	$Id: blit.c,v 1.13 1997/09/10 20:16:36 grubba Exp $<br>
 **! class image
 */
 
@@ -546,7 +546,7 @@ void image_paste_alpha_color(INT32 args)
    else x1=y1=0;
 
    mask=(struct image*)sp[-args].u.object->storage;
-   if (!mask||!mask->img) error("argument 2 (alpha) has no image\n");
+   if (!mask||!mask->img) error("argument 1 (alpha) has no image\n");
    
    x2=min(THIS->xsize-x1,mask->xsize);
    y2=min(THIS->ysize-y1,mask->ysize);
