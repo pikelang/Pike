@@ -1341,11 +1341,13 @@ void pike_module_exit(void)
 {
   int i;
 
+#ifdef ENABLE_STREAMED_PARSER
   if(streamed_parser)
   {
     free_program(streamed_parser);
     streamed_parser=0;
   }
+#endif /* ENABLE_STREAMED_PARSER */
 
   for(i=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
   {
