@@ -1,3 +1,29 @@
+test_true(encode_value(0))
+test_true(encode_value(0)[0]=='\266')
+define(test_encode, [[ test_equal($1, decode_value(encode_value($1))) ]])
+test_encode(0)
+test_encode("")
+test_encode(0.0)
+test_encode(1.0)
+test_encode(12.0)
+test_encode(100000.0)
+test_encode(3.14159265)
+test_encode(0.000001)
+test_encode(({}))
+test_encode(([]))
+test_encode("foobar")
+test_encode((<>))
+test_eq(decode_value("\210\201"),1)
+test_eq(decode_value("\210\011\001"),-1)
+test_eq(decode_value("\206\200"),""))
+test_equal(decode_value("\200\200"),({}))
+test_equal(decode_value("\206\206\146\157\157\142\141\162"),"foobar")
+test_any([[mixed a=({0}); a[0]=a; return equal(a, decode_value(encode_value(a)));]], 1)
+test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(e))!=e) return e; return -1;]], -1)
+test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(-e))!=-e) return e; return -1;]], -1)
+
+
+
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(clone(class { constant i=1; })->i)
 test_true(clone(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
@@ -14,7 +40,7 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.16 1997/01/22 05:19:47 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.17 1997/01/28 03:20:43 hubbe Exp $"]])
 test_any([[object(File) o=File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
