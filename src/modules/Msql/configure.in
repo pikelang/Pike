@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.1.1.1 1997/10/14 21:55:42 grubba Exp $
+dnl $Id: configure.in,v 1.2 1997/11/24 21:32:14 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@comedia.it>
 
 AC_INIT(msqlmod.c)

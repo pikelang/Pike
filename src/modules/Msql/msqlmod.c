@@ -2,9 +2,9 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.3 1997/11/02 18:34:57 grubba Exp $
+ * $Id: msqlmod.c,v 1.4 1997/11/24 21:32:15 grubba Exp $
  *
- * This versione is intended for Pike/0.5 and later.
+ * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
  */
 
@@ -21,21 +21,22 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <machine.h>
-#include <svalue.h>
-#include <threads.h>
 #include <global.h>
+#include <threads.h>
+#include <machine.h>
 #include <interpret.h>
+#include <builtin_functions.h>
+#include <module_support.h>
+#include <svalue.h>
 #include <program.h>
 #include <array.h>
 #include <mapping.h>
 #include <stralloc.h>
-#include <builtin_functions.h>
 #include "operators.h"
 #include "multiset.h"
-#include <module_support.h>
 
-RCSID("$Id: msqlmod.c,v 1.3 1997/11/02 18:34:57 grubba Exp $");
+RCSID("$Id: msqlmod.c,v 1.4 1997/11/24 21:32:15 grubba Exp $");
+#include "version.h"
 
 #ifdef _REENTRANT
 MUTEX_T pike_msql_mutex;
@@ -186,6 +187,7 @@ static void msql_mod_create (INT32 args)
 {
 	struct pike_string * arg1=NULL, *arg2=NULL;
 	int sock, status;
+	char *colon;
 
 	check_all_args("Msql->create",args,
 			BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
@@ -210,6 +212,17 @@ static void msql_mod_create (INT32 args)
 	}
 
 	THREADS_ALLOW();
+	/* msql won' support specifying a port number to connect to. 
+	 * As far as I know, ':' is not a legal character in an hostname,
+	 * so we'll silently ignore it.
+	 */
+
+	if (arg1) {
+		colon=strchr(arg1->str,':');
+		if (colon)
+			*colon='\0';
+	}
+
 	MSQL_LOCK();
 	/* Warning! If there were no args, we're deferencing a NULL pointer!*/
 	if (!arg1 || !strcmp (arg1->str,"localhost"))
@@ -701,11 +714,14 @@ void pike_module_init(void)
 	 * Third and fourth argument are currently ignored, since mSQL doesn't
 	 * support user/passwd authorization. The user will be the owner of
 	 * the current process.
+	 * The first argument can have the format "hostname:port". Since mSQL
+	 * doesn't support nonstandard ports, that portion is silently ignored,
+	 * and is provided only for generic-interface compliancy
 	 */
 
 	add_function("select_db",select_db,"function(string:void)",
 		OPT_EXTERNAL_DEPEND);
-	/* if no db selected by connect, does it now.
+	/* if no db was selected by connect, does it now.
 	 * CAN raise an exception if there's no such database or we haven't selected
 	 * an host.
 	 */
@@ -767,15 +783,18 @@ void pike_module_init(void)
 	add_function ("affected_rows", do_affected_rows, "function(void:int)",
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
 	/* Returns the number of rows 'touched' by last query */
-	/* UNTESTED */
 
 	add_function ("list_index", do_list_index, "function(string,string:array)",
 			OPT_EXTERNAL_DEPEND);
 	/* Returns the index structure on the specified table */
-	/* UNTESTED */
 #endif
 
 	end_class("msql",0);
+
+	/* Versioning information, to be obtained as "Msql.version". Mainly a
+	 * convenience for RCS
+	 */
+	add_string_constant("version",MSQLMOD_VERSION,0);
 }
 
 #else /*HAVE_MSQL*/
