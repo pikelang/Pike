@@ -11,27 +11,36 @@ esac
 set -e
 set -x
 
-docompile() {
+docompile4() {
   mkdir test1
   cd test1
   $SRCPATH/src/configure --cache-file ../testcache
-  make "$1"
-  make verify "$1"
-  make verify LPCOPTS=-d2 "$1"
+  d="DEBUGDEF=$1"
+  make "$d"
+  make verify "$d"
+  make verify LPCOPTS=-d2 "$d"
+#  make verify LPCOPTS=-d99 "$d"
   cd ..
   rm -rf test1
 }
 
-docompile2() {
-  docompile DEBUGDEF="$1 -DDEBUG"
-  docompile DEBUGDEF="$1"
+docompile3() {
+  docompile4 "$1"
+  docompile4 "$1 -DFLAT_MAPPINGS"
+  docompile4 "$1 -DOLD_MAPPINGS"
 }
 
-docompile3() {
+docompile2() {
+  docompile3 "$1 -DDEBUG"
+  docompile3 "$1"
+}
+
+docompile1() {
   docompile2 "$1 -DALWAYS_GC"
   docompile2 "$1 -DNO_GC"
   docompile2 "$1"
 }
 
-docompile3
+
+docompile1
 rm testcache
