@@ -348,8 +348,7 @@ static void f_html_encode_string( INT32 args )
   
   switch( Pike_sp[-1].type )
   {
-    struct pike_string *s;
-    void o_cast(struct pike_string *type, INT32 run_time_type);
+    void o_cast_to_string();
 
     case PIKE_T_INT:
       /* Optimization, this is basically a inlined cast_int_to_string */
@@ -383,13 +382,11 @@ static void f_html_encode_string( INT32 args )
       /* Optimization, no need to check the resultstring for
        * unsafe characters. 
        */
-      MAKE_CONSTANT_SHARED_STRING( s, tString );
-      o_cast(s, PIKE_T_STRING);
+      o_cast_to_string();
       return;
 
     default:
-      MAKE_CONSTANT_SHARED_STRING( s, tString );
-      o_cast(s, PIKE_T_STRING);
+      o_cast_to_string();
     case PIKE_T_STRING:
       break;
   }
