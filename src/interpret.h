@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.76 2001/01/24 08:17:27 hubbe Exp $
+ * $Id: interpret.h,v 1.77 2001/02/19 23:49:59 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -151,6 +151,7 @@ PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
 #define push_array(A) do{ struct array *_=(A); debug_malloc_touch(_); Pike_sp->u.array=_ ;Pike_sp++->type=PIKE_T_ARRAY; }while(0)
 #define push_multiset(L) do{ struct multiset *_=(L); debug_malloc_touch(_); Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
 #define push_string(S) do{ struct pike_string *_=(S); debug_malloc_touch(_); Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
+#define push_type_value(S) do{ struct pike_type *_=(S); debug_malloc_touch(_); Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
 #define push_object(O) do{ struct object  *_=(O); debug_malloc_touch(_); Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
 #define push_float(F) do{ FLOAT_TYPE _=(F); Pike_sp->u.float_number=_; Pike_sp++->type=PIKE_T_FLOAT; }while(0)
 #define push_text(T) push_string(make_shared_string((T)))
@@ -161,6 +162,7 @@ PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
 #define ref_push_array(A) do{ struct array *_=(A); debug_malloc_touch(_); _->refs++; Pike_sp->u.array=_ ;Pike_sp++->type=PIKE_T_ARRAY; }while(0)
 #define ref_push_multiset(L) do{ struct multiset *_=(L); debug_malloc_touch(_); _->refs++; Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
 #define ref_push_string(S) do{ struct pike_string *_=(S); debug_malloc_touch(_); _->refs++; Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
+#define ref_push_type_value(S) do{ struct pike_type *_=(S); debug_malloc_touch(_); _->refs++; Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
 #define ref_push_object(O) do{ struct object  *_=(O); debug_malloc_touch(_); _->refs++; Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
 
 #define push_svalue(S) do { struct svalue *_=(S); assign_svalue_no_free(Pike_sp,_); Pike_sp++; }while(0)

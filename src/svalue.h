@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.75 2000/12/16 05:52:17 marcus Exp $
+ * $Id: svalue.h,v 1.76 2001/02/19 23:50:03 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -62,6 +62,7 @@ union anything
   struct object *object;
   struct program *program;
   struct pike_string *string;
+  struct pike_type *type;
   INT32 *refs;
   INT_TYPE integer;
   FLOAT_TYPE float_number;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.115 2001/02/05 21:13:11 grubba Exp $
+ * $Id: program.h,v 1.116 2001/02/19 23:50:03 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -148,7 +148,7 @@ union idptr
 struct identifier
 {
   struct pike_string *name;
-  struct pike_string *type;
+  struct pike_type *type;
   unsigned INT8 identifier_flags;	/* IDENTIFIER_??? */
   unsigned INT8 run_time_type;		/* PIKE_T_??? */
   unsigned INT16 opt_flags;		/* OPT_??? */
@@ -366,7 +366,7 @@ int low_reference_inherited_identifier(struct program_state *q,
 				       int flags);
 int find_inherit(struct program *p, struct pike_string *name);
 node *reference_inherited_identifier(struct pike_string *super_name,
-				   struct pike_string *function_name);
+				     struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
 void low_inherit(struct program *p,
 		 struct object *parent,
@@ -385,7 +385,7 @@ void simple_do_inherit(struct pike_string *s,
 		       struct pike_string *name);
 int isidentifier(struct pike_string *s);
 int low_define_variable(struct pike_string *name,
-			struct pike_string *type,
+			struct pike_type *type,
 			INT32 flags,
 			size_t offset,
 			INT32 run_time_type);
@@ -402,40 +402,41 @@ PMOD_EXPORT int quick_map_variable(char *name,
 		       INT32 run_time_type,
 		       INT32 flags);
 int define_variable(struct pike_string *name,
-		    struct pike_string *type,
+		    struct pike_type *type,
 		    INT32 flags);
 PMOD_EXPORT int simple_add_variable(char *name,
-			char *type,
-			INT32 flags);
+				    char *type,
+				    INT32 flags);
 PMOD_EXPORT int add_constant(struct pike_string *name,
-		 struct svalue *c,
-		 INT32 flags);
+			     struct svalue *c,
+			     INT32 flags);
 PMOD_EXPORT int simple_add_constant(char *name,
-			struct svalue *c,
-			INT32 flags);
+				    struct svalue *c,
+				    INT32 flags);
 PMOD_EXPORT int add_integer_constant(char *name,
-			 INT32 i,
-			 INT32 flags);
+				     INT32 i,
+				     INT32 flags);
 PMOD_EXPORT int quick_add_integer_constant(char *name,
-			       int name_length,
-			       INT32 i,
-			       INT32 flags);
+					   int name_length,
+					   INT32 i,
+					   INT32 flags);
 PMOD_EXPORT int add_float_constant(char *name,
-			 double f,
-			 INT32 flags);
+				   double f,
+				   INT32 flags);
 PMOD_EXPORT int add_string_constant(char *name,
-			char *str,
-			INT32 flags);
+				    char *str,
+				    INT32 flags);
 PMOD_EXPORT int add_program_constant(char *name,
-			 struct program *p,
-			 INT32 flags);
+				     struct program *p,
+				     INT32 flags);
 PMOD_EXPORT int add_object_constant(char *name,
-			struct object *o,
-			INT32 flags);
-PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
+				    struct object *o,
+				    INT32 flags);
+PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32),
+				      char * type, INT16 flags);
 PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
-		      struct pike_string *type,
+		      struct pike_type *type,
 		      unsigned INT8 flags,
 		      unsigned INT8 function_flags,
 		      union idptr *func,
@@ -469,8 +470,8 @@ struct program *compile(struct pike_string *prog,
 			int major,
 			int minor);
 PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
-		       char *type, unsigned INT8 flags,
-		       unsigned INT16 opt_flags);
+				   char *type, unsigned INT8 flags,
+				   unsigned INT16 opt_flags);
 PMOD_EXPORT int quick_add_function(char *name,
 				   int name_length,
 				   void (*cfun)(INT32),

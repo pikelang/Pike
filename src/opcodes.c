@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.98 2001/01/31 15:11:28 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.99 2001/02/19 23:50:01 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -132,7 +132,7 @@ void o_index(void)
   sp++;
 }
 
-void o_cast(struct pike_string *type, INT32 run_time_type)
+void o_cast(struct pike_type *type, INT32 run_time_type)
 {
   INT32 i;
 
@@ -492,10 +492,10 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
   {
     case T_ARRAY:
     {
-      struct pike_string *itype;
+      struct pike_type *itype;
       INT32 run_time_itype;
 
-      push_string(itype=index_type(type,int_type_string,0));
+      push_type_value(itype = index_type(type, int_type_string, 0));
       run_time_itype=compile_type_to_runtime_type(itype);
 
       if(run_time_itype != T_MIXED)
@@ -537,10 +537,10 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 
     case T_MULTISET:
     {
-      struct pike_string *itype;
+      struct pike_type *itype;
       INT32 run_time_itype;
 
-      push_string(itype=key_type(type,0));
+      push_type_value(itype = key_type(type, 0));
       run_time_itype=compile_type_to_runtime_type(itype);
 
       if(run_time_itype != T_MIXED)
@@ -585,14 +585,14 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 
     case T_MAPPING:
     {
-      struct pike_string *itype,*vtype;
+      struct pike_type *itype, *vtype;
       INT32 run_time_itype;
       INT32 run_time_vtype;
 
-      push_string(itype=key_type(type,0));
+      push_type_value(itype = key_type(type, 0));
       run_time_itype=compile_type_to_runtime_type(itype);
 
-      push_string(vtype=index_type(type,mixed_type_string,0));
+      push_type_value(vtype = index_type(type, mixed_type_string, 0));
       run_time_vtype=compile_type_to_runtime_type(vtype);
 
       if(run_time_itype != T_MIXED ||
@@ -643,10 +643,10 @@ PMOD_EXPORT void f_cast(void)
 {
 #ifdef PIKE_DEBUG
   struct svalue *save_sp=sp;
-  if(sp[-2].type != T_STRING)
+  if(sp[-2].type != T_TYPE)
     fatal("Cast expression destroyed stack or left droppings!\n");
 #endif
-  o_cast(sp[-2].u.string,
+  o_cast(sp[-2].u.type,
 	 compile_type_to_runtime_type(sp[-2].u.string));
 #ifdef PIKE_DEBUG
   if(save_sp != sp)

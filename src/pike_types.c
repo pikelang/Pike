@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.146 2001/02/09 10:29:54 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.147 2001/02/19 23:50:02 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -68,23 +68,23 @@ static int low_check_indexing(char *type, char *index_type, node *n);
  * Everything except T_VOID matches T_ZERO.
  */
 
-PMOD_EXPORT struct pike_string *string_type_string;
-PMOD_EXPORT struct pike_string *int_type_string;
-PMOD_EXPORT struct pike_string *float_type_string;
-PMOD_EXPORT struct pike_string *function_type_string;
-PMOD_EXPORT struct pike_string *object_type_string;
-PMOD_EXPORT struct pike_string *program_type_string;
-PMOD_EXPORT struct pike_string *array_type_string;
-PMOD_EXPORT struct pike_string *multiset_type_string;
-PMOD_EXPORT struct pike_string *mapping_type_string;
-PMOD_EXPORT struct pike_string *type_type_string;
-PMOD_EXPORT struct pike_string *mixed_type_string;
-PMOD_EXPORT struct pike_string *void_type_string;
-PMOD_EXPORT struct pike_string *zero_type_string;
-PMOD_EXPORT struct pike_string *any_type_string;
-PMOD_EXPORT struct pike_string *weak_type_string;	/* array|mapping|multiset|function */
+PMOD_EXPORT struct pike_type *string_type_string;
+PMOD_EXPORT struct pike_type *int_type_string;
+PMOD_EXPORT struct pike_type *float_type_string;
+PMOD_EXPORT struct pike_type *function_type_string;
+PMOD_EXPORT struct pike_type *object_type_string;
+PMOD_EXPORT struct pike_type *program_type_string;
+PMOD_EXPORT struct pike_type *array_type_string;
+PMOD_EXPORT struct pike_type *multiset_type_string;
+PMOD_EXPORT struct pike_type *mapping_type_string;
+PMOD_EXPORT struct pike_type *type_type_string;
+PMOD_EXPORT struct pike_type *mixed_type_string;
+PMOD_EXPORT struct pike_type *void_type_string;
+PMOD_EXPORT struct pike_type *zero_type_string;
+PMOD_EXPORT struct pike_type *any_type_string;
+PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|function */
 
-static struct pike_string *a_markers[10],*b_markers[10];
+static struct pike_type *a_markers[10],*b_markers[10];
 
 static struct program *implements_a;
 static struct program *implements_b;
@@ -96,19 +96,19 @@ static void clear_markers(void)
   {
     if(a_markers[e])
     {
-      free_string(a_markers[e]);
+      free_type(a_markers[e]);
       a_markers[e]=0;
     }
     if(b_markers[e])
     {
-      free_string(b_markers[e]);
+      free_type(b_markers[e]);
       b_markers[e]=0;
     }
   }
 }
 
 #ifdef PIKE_DEBUG
-void check_type_string(struct pike_string *s)
+void check_type_string(struct pike_type *s)
 {
   if(debug_findstring(s) != s)
     fatal("Type string not shared.\n");
@@ -275,7 +275,7 @@ void push_unfinished_type(char *s)
 }
 
 static void push_unfinished_type_with_markers(char *s,
-					      struct pike_string **am)
+					      struct pike_type **am)
 {
   int d,e,c;
   ptrdiff_t len=type_length(s);
@@ -323,14 +323,14 @@ static void push_unfinished_type_with_markers(char *s,
   type_stack_reverse();
 }
 
-void push_finished_type(struct pike_string *type)
+void push_finished_type(struct pike_type *type)
 {
   ptrdiff_t e;
   check_type_string(type);
   for(e=type->len-1;e>=0;e--) push_type(type->str[e]);
 }
 
-void push_finished_type_backwards(struct pike_string *type)
+void push_finished_type_backwards(struct pike_type *type)
 {
   int e;
   check_type_string(type);
@@ -338,10 +338,10 @@ void push_finished_type_backwards(struct pike_string *type)
   Pike_compiler->type_stackp+=type->len;
 }
 
-struct pike_string *debug_pop_unfinished_type(void)
+struct pike_type *debug_pop_unfinished_type(void)
 {
   ptrdiff_t len, e;
-  struct pike_string *s;
+  struct pike_type *s;
   len=pop_stack_mark();
   s=begin_shared_string(len);
   Pike_compiler->type_stackp-=len;
@@ -352,15 +352,15 @@ struct pike_string *debug_pop_unfinished_type(void)
   return s;
 }
 
-struct pike_string *debug_pop_type(void)
+struct pike_type *debug_pop_type(void)
 {
-  struct pike_string *s;
+  struct pike_type *s;
   s=pop_unfinished_type();
   type_stack_mark();
   return s;
 }
 
-struct pike_string *debug_compiler_pop_type(void)
+struct pike_type *debug_compiler_pop_type(void)
 {
   if(Pike_compiler->num_parse_error)
   {
@@ -373,7 +373,7 @@ struct pike_string *debug_compiler_pop_type(void)
     reference_shared_string(mixed_type_string);
     return mixed_type_string;
   }else{
-    struct pike_string *s;
+    struct pike_type *s;
     s=pop_unfinished_type();
     type_stack_mark();
     return s;
@@ -733,9 +733,9 @@ static void internal_parse_type(char **s)
  * It takes a string on the exact same format as Pike and returns a type
  * struct.
  */
-struct pike_string *parse_type(char *s)
+struct pike_type *parse_type(char *s)
 {
-  struct pike_string *ret;
+  struct pike_type *ret;
 #ifdef PIKE_DEBUG
   unsigned char *ts=Pike_compiler->type_stackp;
   unsigned char **ptms=Pike_compiler->pike_type_mark_stackp;
@@ -813,7 +813,7 @@ void stupid_describe_type(char *a, ptrdiff_t len)
   printf("\n");
 }
 
-void simple_describe_type(struct pike_string *s)
+void simple_describe_type(struct pike_type *s)
 {
   stupid_describe_type(s->str,s->len);
 }
@@ -1040,7 +1040,7 @@ char *low_describe_type(char *t)
   return t;
 }
 
-struct pike_string *describe_type(struct pike_string *type)
+struct pike_string *describe_type(struct pike_type *type)
 {
   check_type_string(type);
   if(!type) return make_shared_string("mixed");
@@ -1094,7 +1094,7 @@ static TYPE_T low_compile_type_to_runtime_type(char *t)
   }
 }
 
-TYPE_T compile_type_to_runtime_type(struct pike_string *s)
+TYPE_T compile_type_to_runtime_type(struct pike_type *s)
 {
   return low_compile_type_to_runtime_type(s->str);
 }
@@ -1200,16 +1200,16 @@ static void low_or_pike_types(char *t1, char *t2, int zero_implied)
   }
 }
 
-static void medium_or_pike_types(struct pike_string *a,
-				 struct pike_string *b,
+static void medium_or_pike_types(struct pike_type *a,
+				 struct pike_type *b,
 				 int zero_implied)
 {
   low_or_pike_types( a ? a->str : 0 , b ? b->str : 0 , zero_implied);
 }
 
-struct pike_string *or_pike_types(struct pike_string *a,
-				  struct pike_string *b,
-				  int zero_implied)
+struct pike_type *or_pike_types(struct pike_type *a,
+				struct pike_type *b,
+				int zero_implied)
 {
   type_stack_mark();
   medium_or_pike_types(a,b,1 /*zero_implied*/);
@@ -1422,21 +1422,21 @@ static void low_and_pike_types(char *t1, char *t2)
   }
 }
 
-static void medium_and_pike_types(struct pike_string *a,
-				  struct pike_string *b)
+static void medium_and_pike_types(struct pike_type *a,
+				  struct pike_type *b)
 {
   low_and_pike_types( a ? a->str : 0 , b ? b->str : 0 );
 }
 
-struct pike_string *and_pike_types(struct pike_string *a,
-				   struct pike_string *b)
+struct pike_type *and_pike_types(struct pike_type *a,
+				 struct pike_type *b)
 {
   type_stack_mark();
   medium_and_pike_types(a,b);
   return pop_unfinished_type();
 }
 
-static struct pike_string *low_object_lfun_type(char *t, short lfun)
+static struct pike_type *low_object_lfun_type(char *t, short lfun)
 {
   struct program *p;
   int i;
@@ -1581,15 +1581,15 @@ static char *low_match_types2(char *a,char *b, int flags)
       if(ret && EXTRACT_UCHAR(b)!=T_VOID)
       {
 	int m=EXTRACT_UCHAR(a+1)-'0';
-	struct pike_string *tmp;
+	struct pike_type *tmp;
 	type_stack_mark();
 	push_unfinished_type_with_markers(b, b_markers);
 	tmp=pop_unfinished_type();
 
 	type_stack_mark();
 	medium_or_pike_types(a_markers[m], tmp, 0);
-	if(a_markers[m]) free_string(a_markers[m]);
-	free_string(tmp);
+	if(a_markers[m]) free_type(a_markers[m]);
+	free_type(tmp);
 	a_markers[m]=pop_unfinished_type();
 
 #ifdef PIKE_TYPE_DEBUG
@@ -1666,15 +1666,15 @@ static char *low_match_types2(char *a,char *b, int flags)
       if(ret && EXTRACT_UCHAR(a)!=T_VOID)
       {
 	int m=EXTRACT_UCHAR(b+1)-'0';
-	struct pike_string *tmp;
+	struct pike_type *tmp;
 	type_stack_mark();
 	push_unfinished_type_with_markers(a, a_markers);
 	tmp=pop_unfinished_type();
 
 	type_stack_mark();
 	medium_or_pike_types(b_markers[m], tmp, 0);
-	if(b_markers[m]) free_string(b_markers[m]);
-	free_string(tmp);
+	if(b_markers[m]) free_type(b_markers[m]);
+	free_type(tmp);
 	b_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
 	if (l_flag>2) {
@@ -1782,7 +1782,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 
   case TWOT(T_OBJECT, T_FUNCTION):
   {
-    struct pike_string *s;
+    struct pike_type *s;
     if((s=low_object_lfun_type(a, LFUN_CALL)))
        return low_match_types(s->str,b,flags);
     if (flags & B_EXACT) {
@@ -1794,7 +1794,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 
   case TWOT(T_FUNCTION, T_OBJECT):
   {
-    struct pike_string *s;
+    struct pike_type *s;
     if((s=low_object_lfun_type(b, LFUN_CALL)))
        return low_match_types(a,s->str,flags);
     if (flags & A_EXACT) {
@@ -2093,7 +2093,7 @@ static int low_pike_types_le2(char *a, char *b,
     if(ret && EXTRACT_UCHAR(b)!=T_VOID)
     {
       int m=EXTRACT_UCHAR(a+1)-'0';
-      struct pike_string *tmp;
+      struct pike_type *tmp;
       int i;
       type_stack_mark();
       push_unfinished_type_with_markers(b, b_markers);
@@ -2103,8 +2103,8 @@ static int low_pike_types_le2(char *a, char *b,
       
       type_stack_mark();
       medium_or_pike_types(a_markers[m], tmp, 0);
-      if(a_markers[m]) free_string(a_markers[m]);
-      free_string(tmp);
+      if(a_markers[m]) free_type(a_markers[m]);
+      free_type(tmp);
       a_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
@@ -2168,7 +2168,7 @@ static int low_pike_types_le2(char *a, char *b,
     if(ret && EXTRACT_UCHAR(a)!=T_VOID)
     {
       int m=EXTRACT_UCHAR(b+1)-'0';
-      struct pike_string *tmp;
+      struct pike_type *tmp;
       int i;
       type_stack_mark();
       push_unfinished_type_with_markers(a, a_markers);
@@ -2178,8 +2178,8 @@ static int low_pike_types_le2(char *a, char *b,
       
       type_stack_mark();
       medium_or_pike_types(b_markers[m], tmp, 0);
-      if(b_markers[m]) free_string(b_markers[m]);
-      free_string(tmp);
+      if(b_markers[m]) free_type(b_markers[m]);
+      free_type(tmp);
       b_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
@@ -2283,7 +2283,7 @@ static int low_pike_types_le2(char *a, char *b,
 
   case TWOT(T_OBJECT, T_FUNCTION):
     {
-      struct pike_string *s;
+      struct pike_type *s;
       if((s=low_object_lfun_type(a, LFUN_CALL)))
 	return low_pike_types_le(s->str, b, array_cnt, flags);
       return 1;
@@ -2291,7 +2291,7 @@ static int low_pike_types_le2(char *a, char *b,
 
   case TWOT(T_FUNCTION, T_OBJECT):
     {
-      struct pike_string *s;
+      struct pike_type *s;
       if((s=low_object_lfun_type(b, LFUN_CALL)))
 	return low_pike_types_le(a, s->str, array_cnt, flags);
       return 1;
@@ -2497,7 +2497,7 @@ int strict_check_call(char *fun_type, char *arg_type)
  * Note: This uses a weaker check of function arguments, since
  *       people get confused otherwise.
  */
-int check_soft_cast(struct pike_string *to, struct pike_string *from)
+int check_soft_cast(struct pike_type *to, struct pike_type *from)
 {
   return low_pike_types_le(to->str, from->str, 0, LE_WEAK_OBJECTS);
 }
@@ -2512,7 +2512,7 @@ static int low_get_return_type(char *a,char *b)
   {
   case T_OR:
     {
-      struct pike_string *o1,*o2;
+      struct pike_type *o1, *o2;
       a++;
       o1=o2=0;
 
@@ -2532,8 +2532,8 @@ static int low_get_return_type(char *a,char *b)
 
       medium_or_pike_types(o1,o2, 0);
 
-      if(o1) free_string(o1);
-      if(o2) free_string(o2);
+      if(o1) free_type(o1);
+      if(o2) free_type(o2);
 
       return 1;
     }
@@ -2588,7 +2588,7 @@ static int low_get_return_type(char *a,char *b)
 }
 
 
-int match_types(struct pike_string *a,struct pike_string *b)
+int match_types(struct pike_type *a, struct pike_type *b)
 {
   check_type_string(a);
   check_type_string(b);
@@ -2596,7 +2596,7 @@ int match_types(struct pike_string *a,struct pike_string *b)
   return 0!=low_match_types(a->str, b->str,0);
 }
 
-int pike_types_le(struct pike_string *a,struct pike_string *b)
+int pike_types_le(struct pike_type *a, struct pike_type *b)
 {
   check_type_string(a);
   check_type_string(b);
@@ -2606,17 +2606,17 @@ int pike_types_le(struct pike_string *a,struct pike_string *b)
 
 
 #ifdef DEBUG_MALLOC
-#define low_index_type(X,Y,Z) ((struct pike_string *)debug_malloc_pass(debug_low_index_type((X),(Y),(Z))))
+#define low_index_type(X,Y,Z) ((struct pike_type *)debug_malloc_pass(debug_low_index_type((X),(Y),(Z))))
 #else
 #define low_index_type debug_low_index_type
 #endif
 
 /* FIXME, add the index */
-static struct pike_string *debug_low_index_type(char *t,
-						char *index_type,
-						node *n)
+static struct pike_type *debug_low_index_type(char *t,
+					      char *index_type,
+					      node *n)
 {
-  struct pike_string *tmp;
+  struct pike_type *tmp;
   struct program *p;
 
   switch(low_check_indexing(t, index_type, n))
@@ -2722,7 +2722,7 @@ static struct pike_string *debug_low_index_type(char *t,
 
   case T_OR:
   {
-    struct pike_string *a,*b;
+    struct pike_type *a, *b;
     a=low_index_type(t,index_type,n);
     t+=type_length(t);
     b=low_index_type(t,index_type,n);
@@ -2730,8 +2730,8 @@ static struct pike_string *debug_low_index_type(char *t,
     if(!a) return b;
     type_stack_mark();
     medium_or_pike_types(a,b,1);
-    free_string(a);
-    free_string(b);
+    free_type(a);
+    free_type(b);
     return pop_unfinished_type();
   }
 
@@ -2749,14 +2749,14 @@ static struct pike_string *debug_low_index_type(char *t,
 
   case T_ARRAY:
     {
-      struct pike_string *a;
+      struct pike_type *a;
 
       if(low_pike_types_le(tString, index_type, 0, 0) &&
 	 (a = low_index_type(t, tString, n))) {
 	/* Possible to index the array with a string. */
 	type_stack_mark();
 	push_finished_type(a);
-	free_string(a);
+	free_type(a);
 	push_type(T_ARRAY);
 
 	if (low_match_types(tInt, index_type, 0)) {
@@ -2776,11 +2776,11 @@ static struct pike_string *debug_low_index_type(char *t,
   }
 }
 
-struct pike_string *index_type(struct pike_string *type,
-			       struct pike_string *index_type,
-			       node *n)
+struct pike_type *index_type(struct pike_type *type,
+			     struct pike_type *index_type,
+			     node *n)
 {
-  struct pike_string *t;
+  struct pike_type *t;
   clear_markers();
   t=low_index_type(type->str,index_type->str,n);
   if(!t) copy_shared_string(t,mixed_type_string);
@@ -2788,10 +2788,10 @@ struct pike_string *index_type(struct pike_string *type,
 }
 
 
-static struct pike_string *low_array_value_type(char *arr_t)
+static struct pike_type *low_array_value_type(char *arr_t)
 {
-  struct pike_string *res = NULL;
-  struct pike_string *sub_t;
+  struct pike_type *res = NULL;
+  struct pike_type *sub_t;
 
   while (EXTRACT_UCHAR(arr_t) == T_OR) {
     arr_t++;
@@ -2799,9 +2799,9 @@ static struct pike_string *low_array_value_type(char *arr_t)
     arr_t += type_length(arr_t);
     if (sub_t) {
       if (res) {
-	struct pike_string *new = or_pike_types(res, sub_t, 1);
-	free_string(res);
-	free_string(sub_t);
+	struct pike_type *new = or_pike_types(res, sub_t, 1);
+	free_type(res);
+	free_type(sub_t);
 	res = new;
       } else {
 	res = sub_t;
@@ -2813,30 +2813,30 @@ static struct pike_string *low_array_value_type(char *arr_t)
   arr_t++;
   sub_t = make_shared_binary_string(arr_t, type_length(arr_t));
   if (res) {
-    struct pike_string *new = or_pike_types(res, sub_t, 1);
-    free_string(res);
-    free_string(sub_t);
+    struct pike_type *new = or_pike_types(res, sub_t, 1);
+    free_type(res);
+    free_type(sub_t);
     return new;
   }
   return sub_t;
 }
 
-struct pike_string *array_value_type(struct pike_string *array_type)
+struct pike_type *array_value_type(struct pike_type *array_type)
 {
-  struct pike_string *t = low_array_value_type(array_type->str);
+  struct pike_type *t = low_array_value_type(array_type->str);
   if (!t) copy_shared_string(t, mixed_type_string);
   return t;
 }
 
 
 #ifdef DEBUG_MALLOC
-#define low_key_type(X,Y) ((struct pike_string *)debug_malloc_pass(debug_low_key_type((X),(Y))))
+#define low_key_type(X,Y) ((struct pike_type *)debug_malloc_pass(debug_low_key_type((X),(Y))))
 #else
 #define low_key_type debug_low_key_type
 #endif
 
 /* FIXME, add the index */
-static struct pike_string *debug_low_key_type(char *t, node *n)
+static struct pike_type *debug_low_key_type(char *t, node *n)
 {
   switch(EXTRACT_UCHAR(t++))
   {
@@ -2876,7 +2876,7 @@ static struct pike_string *debug_low_key_type(char *t, node *n)
 
   case T_OR:
   {
-    struct pike_string *a,*b;
+    struct pike_type *a, *b;
     a=low_key_type(t,n);
     t+=type_length(t);
     b=low_key_type(t,n);
@@ -2884,8 +2884,8 @@ static struct pike_string *debug_low_key_type(char *t, node *n)
     if(!a) return b;
     type_stack_mark();
     medium_or_pike_types(a,b,1);
-    free_string(a);
-    free_string(b);
+    free_type(a);
+    free_type(b);
     return pop_unfinished_type();
   }
 
@@ -2903,9 +2903,9 @@ static struct pike_string *debug_low_key_type(char *t, node *n)
   }
 }
 
-struct pike_string *key_type(struct pike_string *type, node *n)
+struct pike_type *key_type(struct pike_type *type, node *n)
 {
-  struct pike_string *t;
+  struct pike_type *t;
   clear_markers();
   t=low_key_type(type->str,n);
   if(!t) copy_shared_string(t,mixed_type_string);
@@ -2974,8 +2974,8 @@ static int low_check_indexing(char *type, char *index_type, node *n)
   }
 }
 				 
-int check_indexing(struct pike_string *type,
-		   struct pike_string *index_type,
+int check_indexing(struct pike_type *type,
+		   struct pike_type *index_type,
 		   node *n)
 {
   check_type_string(type);
@@ -3025,7 +3025,7 @@ static int low_count_arguments(char *q)
  * return -1-n if the function can take number of arguments
  * >= n  (varargs)
  */
-int count_arguments(struct pike_string *s)
+int count_arguments(struct pike_type *s)
 {
   check_type_string(s);
 
@@ -3062,7 +3062,7 @@ static int low_minimum_arguments(char *q)
 
 /* Count the minimum number of arguments for a funciton type.
  */
-int minimum_arguments(struct pike_string *s)
+int minimum_arguments(struct pike_type *s)
 {
   int ret;
   check_type_string(s);
@@ -3078,9 +3078,9 @@ int minimum_arguments(struct pike_string *s)
   return ret;
 }
 
-struct pike_string *check_call(struct pike_string *args,
-			       struct pike_string *type,
-			       int strict)
+struct pike_type *check_call(struct pike_type *args,
+			     struct pike_type *type,
+			     int strict)
 {
   check_type_string(args);
   check_type_string(type);
@@ -3115,32 +3115,32 @@ struct pike_string *check_call(struct pike_string *args,
   }
 }
 
-INT32 get_max_args(struct pike_string *type)
+INT32 get_max_args(struct pike_type *type)
 {
   INT32 ret,tmp=max_correct_args;
   check_type_string(type);
   clear_markers();
   type = check_call(function_type_string, type, 0);
-  if(type) free_string(type);
+  if(type) free_type(type);
   ret=max_correct_args;
   max_correct_args=tmp;
   return tmp;
 }
 
 
-struct pike_string *zzap_function_return(char *a, INT32 id)
+struct pike_type *zzap_function_return(char *a, INT32 id)
 {
   switch(EXTRACT_UCHAR(a))
   {
     case T_OR:
     {
-      struct pike_string *ar, *br, *ret=0;
+      struct pike_type *ar, *br, *ret=0;
       a++;
       ar=zzap_function_return(a,id);
       br=zzap_function_return(a+type_length(a),id);
       if(ar && br) ret=or_pike_types(ar,br,0);
-      if(ar) free_string(ar);
-      if(br) free_string(br);
+      if(ar) free_type(ar);
+      if(br) free_type(br);
       return ret;
     }
       
@@ -3182,9 +3182,9 @@ struct pike_string *zzap_function_return(char *a, INT32 id)
   return NULL;
 }
 
-struct pike_string *get_type_of_svalue(struct svalue *s)
+struct pike_type *get_type_of_svalue(struct svalue *s)
 {
-  struct pike_string *ret;
+  struct pike_type *ret;
   switch(s->type)
   {
   case T_FUNCTION:
@@ -3208,7 +3208,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   case T_MULTISET:
   case T_ARRAY:
     {
-      struct pike_string *arg_type;
+      struct pike_type *arg_type;
       struct array *a;
 
       if (s->type == T_MULTISET) {
@@ -3222,10 +3222,10 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
       /* FIXME: Circular structures? */
       copy_shared_string(arg_type, zero_type_string);
       for (i = 0; i < a->size; i++) {
-	struct pike_string *tmp1 = get_type_of_svalue(a->item+i);
-	struct pike_string *tmp2 = or_pike_types(arg_type, tmp1, 1);
-	free_string(arg_type);
-	free_string(tmp1);
+	struct pike_type *tmp1 = get_type_of_svalue(a->item+i);
+	struct pike_type *tmp2 = or_pike_types(arg_type, tmp1, 1);
+	free_type(arg_type);
+	free_type(tmp1);
 	arg_type = tmp2;
       }
 #else /* !0 */
@@ -3236,7 +3236,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
 #endif /* 0 */
       type_stack_mark();
       push_unfinished_type(arg_type->str);
-      free_string(arg_type);
+      free_type(arg_type);
       push_type(s->type);
       return pop_unfinished_type();
     }
@@ -3298,7 +3298,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   case T_PROGRAM:
   {
     char *a;
-    struct pike_string *tmp;
+    struct pike_type *tmp;
     int id;
 
     if(s->u.program->identifiers)
@@ -3333,10 +3333,10 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   }
 }
 
-static struct pike_string *low_object_type_to_program_type(char *obj_t)
+static struct pike_type *low_object_type_to_program_type(char *obj_t)
 {
-  struct pike_string *res = NULL;
-  struct pike_string *sub;
+  struct pike_type *res = NULL;
+  struct pike_type *sub;
   struct svalue sval;
   int id;
 
@@ -3345,14 +3345,14 @@ static struct pike_string *low_object_type_to_program_type(char *obj_t)
     sub = low_object_type_to_program_type(obj_t);
     if (!sub) {
       if (res) {
-	free_string(res);
+	free_type(res);
       }
       return NULL;
     }
     if (res) {
-      struct pike_string *tmp = or_pike_types(res, sub, 1);
-      free_string(res);
-      free_string(sub);
+      struct pike_type *tmp = or_pike_types(res, sub, 1);
+      free_type(res);
+      free_type(sub);
       res = tmp;
     } else {
       res = sub;
@@ -3365,22 +3365,22 @@ static struct pike_string *low_object_type_to_program_type(char *obj_t)
       (!(sval.u.program = id_to_program(id))) ||
       (!(sub = get_type_of_svalue(&sval)))) {
     if (res) {
-      free_string(res);
+      free_type(res);
     }
     return NULL;
   }
   /* FIXME: obj_t + 1 should propagate to the return-type in sub. */
   if (res) {
-    struct pike_string *tmp = or_pike_types(res, sub, 1);
-    free_string(res);
-    free_string(sub);
+    struct pike_type *tmp = or_pike_types(res, sub, 1);
+    free_type(res);
+    free_type(sub);
     return tmp;
   }
   return sub;
 }
 
 /* Used by fix_object_program_type() */
-struct pike_string *object_type_to_program_type(struct pike_string *obj_t)
+struct pike_type *object_type_to_program_type(struct pike_type *obj_t)
 {
   return low_object_type_to_program_type(obj_t->str);
 }
@@ -3409,21 +3409,21 @@ char *get_name_of_type(int t)
 
 void cleanup_pike_types(void)
 {
-  free_string(string_type_string);
-  free_string(int_type_string);
-  free_string(float_type_string);
-  free_string(function_type_string);
-  free_string(object_type_string);
-  free_string(program_type_string);
-  free_string(array_type_string);
-  free_string(multiset_type_string);
-  free_string(mapping_type_string);
-  free_string(type_type_string);
-  free_string(mixed_type_string);
-  free_string(void_type_string);
-  free_string(zero_type_string);
-  free_string(any_type_string);
-  free_string(weak_type_string);
+  free_type(string_type_string);
+  free_type(int_type_string);
+  free_type(float_type_string);
+  free_type(function_type_string);
+  free_type(object_type_string);
+  free_type(program_type_string);
+  free_type(array_type_string);
+  free_type(multiset_type_string);
+  free_type(mapping_type_string);
+  free_type(type_type_string);
+  free_type(mixed_type_string);
+  free_type(void_type_string);
+  free_type(zero_type_string);
+  free_type(any_type_string);
+  free_type(weak_type_string);
 }
 
 
@@ -3465,8 +3465,8 @@ int type_may_overload(char *type, int lfun)
 }
 
 
-void yyexplain_nonmatching_types(struct pike_string *type_a,
-				 struct pike_string *type_b,
+void yyexplain_nonmatching_types(struct pike_type *type_a,
+				 struct pike_type *type_b,
 				 int flags)
 {
   implements_a=0;
@@ -3500,7 +3500,7 @@ void yyexplain_nonmatching_types(struct pike_string *type_a,
 }
 
 
-struct pike_string *make_pike_type(char *t)
+struct pike_type *make_pike_type(char *t)
 {
   return make_shared_binary_string(t, type_length(t));
 }
@@ -3539,4 +3539,6 @@ int pike_type_allow_premature_toss(char *type)
     case T_STRING:
       return 1;
   }
+  /* NOT_REACHED */
+  return 0;
 }

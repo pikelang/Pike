@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.294 2001/02/09 13:43:23 grubba Exp $");
+RCSID("$Id: program.c,v 1.295 2001/02/19 23:50:02 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1145,7 +1145,7 @@ void low_start_new_program(struct program *p,
       if (id < 0)
 	fatal("Program constant disappeared in second pass.\n");
       i=ID_FROM_INT(Pike_compiler->new_program, id);
-      free_string(i->type);
+      free_type(i->type);
       i->type=get_type_of_svalue(&tmp);
     }
     e=2;
@@ -1283,7 +1283,8 @@ void low_start_new_program(struct program *p,
   Pike_compiler->num_parse_error=0;
 
   push_compiler_frame(0);
-  add_ref(Pike_compiler->compiler_frame->current_return_type=void_type_string);
+  copy_type(Pike_compiler->compiler_frame->current_return_type,
+	    void_type_string);
 
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
@@ -1326,7 +1327,7 @@ PMOD_EXPORT void really_free_program(struct program *p)
       if(p->identifiers[e].name)
 	free_string(p->identifiers[e].name);
       if(p->identifiers[e].type)
-	free_string(p->identifiers[e].type);
+	free_type(p->identifiers[e].type);
     }
   }
 
@@ -1970,7 +1971,7 @@ int find_inherit(struct program *p, struct pike_string *name)
 }
 
 node *reference_inherited_identifier(struct pike_string *super_name,
-				   struct pike_string *function_name)
+				     struct pike_string *function_name)
 {
   int n,e,id;
   struct program_state *state=Pike_compiler->previous;
@@ -2475,7 +2476,7 @@ int isidentifier(struct pike_string *s)
 
 /* argument must be a shared string */
 int low_define_variable(struct pike_string *name,
-			struct pike_string *type,
+			struct pike_type *type,
 			INT32 flags,
 			size_t offset,
 			INT32 run_time_type)
@@ -2526,7 +2527,8 @@ PMOD_EXPORT int map_variable(char *name,
 		 INT32 run_time_type)
 {
   int ret;
-  struct pike_string *n,*t;
+  struct pike_string *n;
+  struct pike_type *t;
 
 #ifdef PROGRAM_BUILD_DEBUG
   fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
@@ -2537,7 +2539,7 @@ PMOD_EXPORT int map_variable(char *name,
   t=parse_type(type);
   ret=low_define_variable(n,t,flags,offset,run_time_type);
   free_string(n);
-  free_string(t);
+  free_type(t);
   return ret;
 }
 
@@ -2550,7 +2552,8 @@ PMOD_EXPORT int quick_map_variable(char *name,
 		       INT32 flags)
 {
   int ret;
-  struct pike_string *n,*t;
+  struct pike_string *n;
+  struct pike_type *t;
 
 #ifdef PROGRAM_BUILD_DEBUG
   fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
@@ -2561,13 +2564,13 @@ PMOD_EXPORT int quick_map_variable(char *name,
   t=make_shared_binary_string(type,type_length);
   ret=low_define_variable(n,t,flags,offset,run_time_type);
   free_string(n);
-  free_string(t);
+  free_type(t);
   return ret;
 }
 
 /* argument must be a shared string */
 int define_variable(struct pike_string *name,
-		    struct pike_string *type,
+		    struct pike_type *type,
 		    INT32 flags)
 {
   int n, run_time_type;
@@ -2601,7 +2604,7 @@ int define_variable(struct pike_string *name,
     else {
       struct identifier *id;
       id=ID_FROM_INT(Pike_compiler->new_program,n);
-      free_string(id->type);
+      free_type(id->type);
       copy_shared_string(id->type, type);
       return n;
     }
@@ -2687,13 +2690,14 @@ PMOD_EXPORT int simple_add_variable(char *name,
 			INT32 flags)
 {
   INT32 ret;
-  struct pike_string *name_s, *type_s;
+  struct pike_string *name_s;
+  struct pike_type *type_s;
   name_s=make_shared_string(name);
   type_s=parse_type(type);
 
   ret=define_variable(name_s, type_s, flags);
   free_string(name_s);
-  free_string(type_s);
+  free_type(type_s);
   return ret;
 }
 
@@ -2708,16 +2712,18 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #ifdef PROGRAM_BUILD_DEBUG
   {
     if (c) {
-      struct pike_string *t = get_type_of_svalue (c);
+      struct pike_type *t = get_type_of_svalue(c);
       struct pike_string *d = describe_type (t);
       fprintf (stderr, "%.*sdefining constant (pass=%d): %s ",
-	       compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
-      free_string (t);
+	       compilation_depth, "                ",
+	       Pike_compiler->compiler_pass, d->str);
+      free_type(t);
       free_string (d);
     }
     else
       fprintf (stderr, "%.*sdeclaring constant (pass=%d): ",
-	       compilation_depth, "                ", Pike_compiler->compiler_pass);
+	       compilation_depth, "                ",
+	       Pike_compiler->compiler_pass);
     push_string (name);
     print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
@@ -2754,18 +2760,18 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       id=ID_FROM_INT(Pike_compiler->new_program,n);
       if(id->func.offset>=0)
       {
-	struct pike_string *s;
+	struct pike_type *s;
 	struct svalue *c=&PROG_FROM_INT(Pike_compiler->new_program,n)->
 	  constants[id->func.offset].sval;
 	s=get_type_of_svalue(c);
-	free_string(id->type);
+	free_type(id->type);
 	id->type=s;
       }
       else {
 #ifdef PIKE_DEBUG
 	if (!c) fatal("Can't declare constant during second compiler pass\n");
 #endif
-	free_string(id->type);
+	free_type(id->type);
 	id->type = get_type_of_svalue(c);
 	id->run_time_type = c->type;
 	id->func.offset = store_constant(c, 0, 0);
@@ -2966,7 +2972,7 @@ PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags)
  * if func isn't given, it is supposed to be a prototype.
  */
 INT32 define_function(struct pike_string *name,
-		      struct pike_string *type,
+		      struct pike_type *type,
 		      unsigned INT8 flags,
 		      unsigned INT8 function_flags,
 		      union idptr *func,
@@ -3058,7 +3064,7 @@ INT32 define_function(struct pike_string *name,
 
       funp->opt_flags &= opt_flags;
 
-      free_string(funp->type);
+      free_type(funp->type);
       copy_shared_string(funp->type, type);
     }else{
 
@@ -3869,7 +3875,8 @@ PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
 				   unsigned INT16 opt_flags)
 {
   int ret;
-  struct pike_string *name_tmp,*type_tmp;
+  struct pike_string *name_tmp;
+  struct pike_type *type_tmp;
   union idptr tmp;
 
   name_tmp=make_shared_string(name);
@@ -3893,7 +3900,7 @@ PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
 			opt_flags);
   }
   free_string(name_tmp);
-  free_string(type_tmp);
+  free_type(type_tmp);
   return ret;
 }
 
@@ -3906,7 +3913,8 @@ PMOD_EXPORT int quick_add_function(char *name,
 				   unsigned INT16 opt_flags)
 {
   int ret;
-  struct pike_string *name_tmp,*type_tmp;
+  struct pike_string *name_tmp;
+  struct pike_type *type_tmp;
   union idptr tmp;
 /*  fprintf(stderr,"ADD_FUNC: %s\n",name); */
   name_tmp = make_shared_binary_string(name,name_length);
@@ -3930,7 +3938,7 @@ PMOD_EXPORT int quick_add_function(char *name,
 			opt_flags);
   }
   free_string(name_tmp);
-  free_string(type_tmp);
+  free_type(type_tmp);
   return ret;
 }
 
@@ -4042,7 +4050,7 @@ void init_program(void)
 
     val.u.string = make_pike_type(raw_lfun_types[i]);
     mapping_insert(lfun_types, &key, &val);
-    free_string(val.u.string);
+    free_type(val.u.string);
   }
   start_new_program();
   debug_malloc_touch(Pike_compiler->fake_object);
@@ -4396,7 +4404,7 @@ void pop_local_variables(int level)
     int e;
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
     free_string(Pike_compiler->compiler_frame->variable[e].name);
-    free_string(Pike_compiler->compiler_frame->variable[e].type);
+    free_type(Pike_compiler->compiler_frame->variable[e].type);
     if(Pike_compiler->compiler_frame->variable[e].def)
       free_node(Pike_compiler->compiler_frame->variable[e].def);
 
@@ -4417,10 +4425,10 @@ void pop_compiler_frame(void)
 
   pop_local_variables(0);
   if(f->current_type)
-    free_string(f->current_type);
+    free_type(f->current_type);
 
   if(f->current_return_type)
-    free_string(f->current_return_type);
+    free_type(f->current_return_type);
 
   Pike_compiler->compiler_frame=f->previous;
   dmfree((char *)f);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.103 2001/02/05 21:13:10 grubba Exp $");
+RCSID("$Id: docode.c,v 1.104 2001/02/19 23:49:59 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -163,7 +163,7 @@ static INT32 current_switch_case;
 static INT32 current_switch_default;
 static INT32 current_switch_values_on_stack;
 static INT32 *current_switch_jumptable =0;
-static struct pike_string *current_switch_type = NULL;
+static struct pike_type *current_switch_type = NULL;
 
 void upd_int(int offset, INT32 tmp)
 {
@@ -1011,8 +1011,14 @@ static int do_docode2(node *n, INT16 flags)
       DO_CODE_BLOCK(CAR(n));
       return 0;
     }
-    tmp1=store_prog_string(n->type);
-    emit1(F_STRING, DO_NOT_WARN((INT32)tmp1));
+    {
+      struct svalue sv;
+      sv.type = T_TYPE;
+      sv.subtype = 0;
+      sv.u.type = n->type;
+      tmp1 = store_constant(&sv, 1, n->name);
+      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+    }
 
     tmp1=do_docode(CAR(n),0);
     if(!tmp1) { emit0(F_CONST0); tmp1=1; }
@@ -1023,8 +1029,14 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_SOFT_CAST:
     if (runtime_options & RUNTIME_CHECK_TYPES) {
-      tmp1 = store_prog_string(n->type);
-      emit1(F_STRING, DO_NOT_WARN((INT32)tmp1));
+      {
+	struct svalue sv;
+	sv.type = T_TYPE;
+	sv.subtype = 0;
+	sv.u.type = n->type;
+	tmp1 = store_constant(&sv, 1, n->name);
+	emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      }
       tmp1 = do_docode(CAR(n), 0);
       if (!tmp1) { emit0(F_CONST0); tmp1 = 1; }
       if (tmp1 > 1) do_pop(DO_NOT_WARN((INT32)(tmp1 - 1)));

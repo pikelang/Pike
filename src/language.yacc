@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.223 2001/01/20 01:15:44 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.224 2001/02/19 23:50:00 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -546,8 +546,8 @@ type_or_error: simple_type
     check_type_string(check_node_hash($1)->u.sval.u.string);
 #endif /* PIKE_DEBUG */
     if(Pike_compiler->compiler_frame->current_type)
-      free_string(Pike_compiler->compiler_frame->current_type); 
-    copy_shared_string(Pike_compiler->compiler_frame->current_type,$1->u.sval.u.string);
+      free_type(Pike_compiler->compiler_frame->current_type); 
+    copy_type(Pike_compiler->compiler_frame->current_type, $1->u.sval.u.type);
     free_node($1);
   }
   ;
@@ -587,11 +587,11 @@ push_compiler_frame0: /* empty */
        !Pike_compiler->compiler_frame->previous->current_type)
     {
       yyerror("Internal compiler fault.");
-      copy_shared_string(Pike_compiler->compiler_frame->current_type,
-			 mixed_type_string);
+      copy_type(Pike_compiler->compiler_frame->current_type,
+		mixed_type_string);
     }else{
-      copy_shared_string(Pike_compiler->compiler_frame->current_type,
-			 Pike_compiler->compiler_frame->previous->current_type);
+      copy_type(Pike_compiler->compiler_frame->current_type,
+		Pike_compiler->compiler_frame->previous->current_type);
     }
   }
   ;
@@ -608,7 +608,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     while(--$3>=0) push_type(T_ARRAY);
     
     if(Pike_compiler->compiler_frame->current_return_type)
-      free_string(Pike_compiler->compiler_frame->current_return_type);
+      free_type(Pike_compiler->compiler_frame->current_return_type);
     Pike_compiler->compiler_frame->current_return_type=compiler_pop_type();
     
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
@@ -651,7 +651,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 #endif
 
 	      new_type = or_pike_types(s, id->type, 1);
-	      free_string(s);
+	      free_type(s);
 	      s = new_type;
 
 	      fprintf(stderr, "Resulting type:\n");
@@ -681,8 +681,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	    fprintf(stderr, "Pass %d: Identifier %s:\n",
 		    Pike_compiler->compiler_pass, $4->u.sval.u.string->str);
 
-	    free_string(s);
-	    copy_shared_string(s, id->type);
+	    free_type(s);
+	    copy_type(s, id->type);
 
 	    fprintf(stderr, "Resulting type:\n");
 #ifdef PIKE_DEBUG
@@ -696,7 +696,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       }
 
       $<n>$=mkstrnode(s);
-      free_string(s);
+      free_type(s);
     }
 
 
@@ -772,8 +772,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 		/* The following is needed to go around the optimization in
 		 * mksoftcastnode().
 		 */
-		free_string(local_node->type);
-		copy_shared_string(local_node->type, mixed_type_string);
+		free_type(local_node->type);
+		copy_type(local_node->type, mixed_type_string);
 
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
@@ -852,7 +852,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   }
   | modifiers type_or_error optional_stars bad_identifier
   {
-    free_string(compiler_pop_type());
+    free_type(compiler_pop_type());
   }
     '(' arguments ')' block_or_semi
   {
@@ -1052,7 +1052,7 @@ cast: '(' type ')'
     {
       struct pike_string *s=compiler_pop_type();
       $$=mkstrnode(s);
-      free_string(s);
+      free_type(s);
     }
     ;
 
@@ -1060,7 +1060,7 @@ soft_cast: '[' type ']'
     {
       struct pike_string *s=compiler_pop_type();
       $$=mkstrnode(s);
-      free_string(s);
+      free_type(s);
     }
     ;
 
@@ -1096,7 +1096,7 @@ simple_type: type4
 	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
     }
 #endif /* PIKE_DEBUG */
-    free_string(s);
+    free_type(s);
   }
   ;
 
@@ -1110,7 +1110,7 @@ simple_type2: type2
 	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
     }
 #endif /* PIKE_DEBUG */
-    free_string(s);
+    free_type(s);
   }
   ;
 
@@ -1124,7 +1124,7 @@ simple_identifier_type: identifier_type
 	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
     }
 #endif /* PIKE_DEBUG */
-    free_string(s);
+    free_type(s);
   }
   ;
 
@@ -1406,7 +1406,7 @@ new_name: optional_stars TOK_IDENTIFIER
     type=compiler_pop_type();
     define_variable($2->u.sval.u.string, type,
 		    Pike_compiler->current_modifiers);
-    free_string(type);
+    free_type(type);
     free_node($2);
   }
   | optional_stars bad_identifier {}
@@ -1425,7 +1425,7 @@ new_name: optional_stars TOK_IDENTIFIER
     }
     $<number>$=define_variable($2->u.sval.u.string, type,
 			       Pike_compiler->current_modifiers & (~ID_EXTERN));
-    free_string(type);
+    free_type(type);
   }
   expr0
   {
@@ -1703,8 +1703,9 @@ lambda: TOK_LAMBDA push_compiler_frame1
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
-      free_string(Pike_compiler->compiler_frame->current_return_type);
-    copy_shared_string(Pike_compiler->compiler_frame->current_return_type,any_type_string);
+      free_type(Pike_compiler->compiler_frame->current_return_type);
+    copy_type(Pike_compiler->compiler_frame->current_return_type,
+	      any_type_string);
   }
   func_args
   {
@@ -1724,7 +1725,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
 
     if(type) {
       push_finished_type(type);
-      free_string(type);
+      free_type(type);
     } else
       push_type(T_MIXED);
     
@@ -1767,7 +1768,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
       $$ = mkidentifiernode(f);
     }
     free_string(name);
-    free_string(type);
+    free_type(type);
     pop_compiler_frame();
   }
   | TOK_LAMBDA push_compiler_frame1 error
@@ -1787,9 +1788,9 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
-      free_string(Pike_compiler->compiler_frame->current_return_type);
-    copy_shared_string(Pike_compiler->compiler_frame->current_return_type,
-		       $<n>0->u.sval.u.string);
+      free_type(Pike_compiler->compiler_frame->current_return_type);
+    copy_type(Pike_compiler->compiler_frame->current_return_type,
+	      $<n>0->u.sval.u.type);
 
 
     /***/
@@ -1909,7 +1910,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     while($1--) push_type(T_ARRAY);
 
     if(Pike_compiler->compiler_frame->current_return_type)
-      free_string(Pike_compiler->compiler_frame->current_return_type);
+      free_type(Pike_compiler->compiler_frame->current_return_type);
     Pike_compiler->compiler_frame->current_return_type=compiler_pop_type();
 
     /***/
@@ -2035,7 +2036,7 @@ create_arg: modifiers type_or_error optional_stars TOK_IDENTIFIER
 		    Pike_compiler->current_modifiers);
     add_local_name($4->u.sval.u.string, type, 0);
 
-    /* free_string(type); */
+    /* free_type(type); */
     free_node($4);
     $$=0;
   }
@@ -2117,8 +2118,8 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	  /* The following is needed to go around the optimization in
 	   * mksoftcastnode().
 	   */
-	  free_string(local_node->type);
-	  copy_shared_string(local_node->type, mixed_type_string);
+	  free_type(local_node->type);
+	  copy_type(local_node->type, mixed_type_string);
 	  
 	  local_node = mksoftcastnode(Pike_compiler->compiler_frame->
 				      variable[e].type, local_node);
@@ -2158,7 +2159,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 
     pop_compiler_frame();
     free_node($4);
-    free_string(type);
+    free_type(type);
     free_string(create_string);
   }
   ;
@@ -2656,8 +2657,9 @@ optional_block: /* EMPTY */ { $$=0; }
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
-      free_string(Pike_compiler->compiler_frame->current_return_type);
-    copy_shared_string(Pike_compiler->compiler_frame->current_return_type,any_type_string);
+      free_type(Pike_compiler->compiler_frame->current_return_type);
+    copy_type(Pike_compiler->compiler_frame->current_return_type,
+	      any_type_string);
 
     /* block code */
     $<number>1=Pike_compiler->num_used_modules;
@@ -2680,7 +2682,7 @@ optional_block: /* EMPTY */ { $$=0; }
 
     if(type) {
       push_finished_type(type);
-      free_string(type);
+      free_type(type);
     } else
       push_type(T_MIXED);
     
@@ -2716,7 +2718,7 @@ optional_block: /* EMPTY */ { $$=0; }
       $$ = mkidentifiernode(f);
     }
     free_string(name);
-    free_string(type);
+    free_type(type);
     pop_compiler_frame();
   }
   ;
@@ -3466,8 +3468,8 @@ int low_add_local_name(struct compiler_frame *frame,
 	yywarning("Declaring local variable with type void "
 		  "(converted to type zero).");
       }
-      free_string(type);
-      copy_shared_string(type, zero_type_string);
+      free_type(type);
+      copy_type(type, zero_type_string);
     }
     frame->variable[frame->current_number_of_locals].type = type;
     frame->variable[frame->current_number_of_locals].name = str;

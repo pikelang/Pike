@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.46 2001/02/09 10:29:54 hubbe Exp $
+ * $Id: las.h,v 1.47 2001/02/19 23:50:01 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -24,8 +24,8 @@ typedef void (*c_fun)(INT32);
 /* Flags used by yytype_error() */
 #define YYTE_IS_WARNING	1
 
-void yytype_error(char *msg, struct pike_string *expected_t,
-		  struct pike_string *got_t, unsigned int flags);
+void yytype_error(char *msg, struct pike_type *expected_t,
+		  struct pike_type *got_t, unsigned int flags);
 void yyerror(char *s);
 int islocal(struct pike_string *str);
 int verify_declared(struct pike_string *str);
@@ -36,7 +36,7 @@ extern int cumulative_parse_error;
 struct local_variable
 {
   struct pike_string *name;
-  struct pike_string *type;
+  struct pike_type *type;
   node *def;
   struct pike_string *file;
   int line;
@@ -46,8 +46,8 @@ struct compiler_frame
 {
   struct compiler_frame *previous;
 
-  struct pike_string *current_type;
-  struct pike_string *current_return_type;
+  struct pike_type *current_type;
+  struct pike_type *current_return_type;
   int current_number_of_locals;
   int max_number_of_locals;
   int last_block_level; /* used to detect variables declared in same block */
@@ -118,7 +118,7 @@ int car_is_node(node *n);
 int cdr_is_node(node *n);
 void check_tree(node *n, int depth);
 INT32 count_args(node *n);
-struct pike_string *find_return_type(node *n);
+struct pike_type *find_return_type(node *n);
 int check_tailrecursion(void);
 struct node_chunk;
 void free_all_nodes(void);
@@ -137,14 +137,14 @@ node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
 node *debug_mktrampolinenode(int i);
 node *debug_mkexternalnode(struct program *prog, int i);
-node *debug_mkcastnode(struct pike_string *type,node *n);
-node *debug_mksoftcastnode(struct pike_string *type,node *n);
+node *debug_mkcastnode(struct pike_type *type, node *n);
+node *debug_mksoftcastnode(struct pike_type *type, node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
 node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
-node *debug_mktypenode(struct pike_string *t);
+node *debug_mktypenode(struct pike_type *t);
 node *debug_mkconstantsvaluenode(struct svalue *s);
 node *debug_mkliteralsvaluenode(struct svalue *s);
 node *debug_mksvaluenode(struct svalue *s);
@@ -164,7 +164,7 @@ struct timer_oflo;
 ptrdiff_t eval_low(node *n);
 int dooptcode(struct pike_string *name,
 	      node *n,
-	      struct pike_string *type,
+	      struct pike_type *type,
 	      int modifiers);
 void resolv_program(node *n);
 /* Prototypes end here */

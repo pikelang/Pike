@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.44 2001/02/05 21:13:10 grubba Exp $
+ * $Id: interpret_functions.h,v 1.45 2001/02/19 23:49:59 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1401,8 +1401,8 @@ OPCODE0(F_SOFT_CAST, "soft cast")
   }
 #endif /* PIKE_DEBUG */
   if (runtime_options & RUNTIME_CHECK_TYPES) {
-    struct pike_string *sval_type = get_type_of_svalue(Pike_sp-1);
-    if (!pike_types_le(sval_type, Pike_sp[-2].u.string)) {
+    struct pike_type *sval_type = get_type_of_svalue(Pike_sp-1);
+    if (!pike_types_le(sval_type, Pike_sp[-2].u.type)) {
       /* get_type_from_svalue() doesn't return a fully specified type
        * for array, mapping and multiset, so we perform a more lenient
        * check for them.
@@ -1430,7 +1430,7 @@ OPCODE0(F_SOFT_CAST, "soft cast")
 	t2 = describe_type(sval_type);
 	SET_ONERROR(tmp2, do_free_string, t2);
 	  
-	free_string(sval_type);
+	free_type(sval_type);
 
 	bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
 		      "%s(): Soft cast failed. Expected %s, got %s\n",
@@ -1442,10 +1442,10 @@ OPCODE0(F_SOFT_CAST, "soft cast")
 	free_string(t1);
       }
     }
-    free_string(sval_type);
+    free_type(sval_type);
 #ifdef PIKE_DEBUG
     if (d_flag > 2) {
-      struct pike_string *t = describe_type(Pike_sp[-2].u.string);
+      struct pike_string *t = describe_type(Pike_sp[-2].u.type);
       fprintf(stderr, "Soft cast to %s\n", t->str);
       free_string(t);
     }

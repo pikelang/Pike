@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.341 2001/02/06 23:48:23 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.342 2001/02/19 23:49:57 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2067,7 +2067,7 @@ void f_this_object(INT32 args)
 
 node *fix_this_object_type(node *n)
 {
-  free_string(n->type);
+  free_type(n->type);
   type_stack_mark();
   push_type_int(Pike_compiler->new_program->id);
   /*  push_type(1);   We are rather sure that we contain ourselves... */
@@ -2401,7 +2401,7 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
 	   (t2=check_call(function_type_string , ID_FROM_INT(p, fun)->type,
 			  0)))
 	{
-	  free_string(n->type);
+	  free_type(n->type);
 	  n->type=t2;
 	  return 0;
 	}
@@ -2417,8 +2417,8 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
       t2=make_shared_binary_string(deftype, deftypelen);
       t=n->type;
       n->type=or_pike_types(t,t2,0);
-      free_string(t);
-      free_string(t2);
+      free_type(t);
+      free_type(t2);
     }
 #endif
   }
@@ -2438,9 +2438,9 @@ static node *fix_values_type(node *n)
 
 static node *fix_aggregate_mapping_type(node *n)
 {
-  struct pike_string *types[2] = { NULL, NULL };
+  struct pike_type *types[2] = { NULL, NULL };
   node *args = CDR(n);
-  struct pike_string *new_type = NULL;
+  struct pike_type *new_type = NULL;
 
 #ifdef PIKE_DEBUG
   if (l_flag > 2) {
@@ -2512,7 +2512,7 @@ static node *fix_aggregate_mapping_type(node *n)
       do {
 	if (types[argno]) {
 	  struct pike_string *t = or_pike_types(types[argno], arg->type, 0);
-	  free_string(types[argno]);
+	  free_type(types[argno]);
 	  types[argno] = t;
 #ifdef PIKE_DEBUG
 	  if (l_flag > 4) {
@@ -2542,8 +2542,8 @@ static node *fix_aggregate_mapping_type(node *n)
     }
 
     type_stack_mark();
-    push_unfinished_type(types[1]->str);
-    push_unfinished_type(types[0]->str);
+    push_finished_type(types[1]);
+    push_finished_type(types[0]);
     push_type(T_MAPPING);
     new_type = pop_unfinished_type();
   } else {
@@ -2552,7 +2552,7 @@ static node *fix_aggregate_mapping_type(node *n)
   }
   if (new_type) {
   set_type:
-    free_string(n->type);
+    free_type(n->type);
     n->type = new_type;
 
 #ifdef PIKE_DEBUG
@@ -2572,10 +2572,10 @@ static node *fix_aggregate_mapping_type(node *n)
     args->parent = n;
   }
   if (types[1]) {
-    free_string(types[1]);
+    free_type(types[1]);
   }
   if (types[0]) {
-    free_string(types[0]);
+    free_type(types[0]);
   }
   return NULL;
 }
@@ -2768,7 +2768,7 @@ node *fix_object_program_type(node *n)
   /* Perform the actual conversion. */
   new_type = object_type_to_program_type(nn->type);
   if (new_type) {
-    free_string(n->type);
+    free_type(n->type);
     n->type = new_type;
   }
   return NULL;

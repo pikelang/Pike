@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.55 2001/01/12 02:28:07 mast Exp $
+// $Id: treeopt.in,v 1.56 2001/02/19 23:50:03 grubba Exp $
 //
 // The tree optimizer
 //
@@ -292,7 +292,7 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 // // Propagate casts towards the leaves
 // 0 = F_CAST(F_COMMA_EXPR(1, 2), *):
 // {
-//   struct pike_string *type = $0->type;
+//   struct pike_type *type = $0->type;
 //   $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1),
 // 		 mkcastnode(type, $2));
 // }
@@ -301,7 +301,7 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 // // Propagate casts toward the leaves
 // 0 = F_CAST('?'(1, ':'(2, 3)), *):
 // {
-//   struct pike_string *type = $0->type;
+//   struct pike_type *type = $0->type;
 //   $$ = mknode('?', $1, mknode(':', mkcastnode(type, $2),
 // 				 mkcastnode(type, $3)));
 // }
@@ -385,7 +385,7 @@ F_COMMA_EXPR(F_CAST(0, *), 1 = +):
 // Propagate casts towards the root.
 F_COMMA_EXPR(0, 1 = F_CAST(2, *)):
 {
-  struct pike_string *type = $1->type;
+  struct pike_type *type = $1->type;
   $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $0, $2));
 }
 ;
@@ -953,10 +953,10 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 // Prepare for the return if true optimization.
 '?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, *), 1)) :
 {
-  struct pike_string *type = $0->type;
+  struct pike_type *type = $0->type;
   struct pike_string *tmpname;
   int tmpvar;
-  void add_local_name(struct pike_string *,struct pike_string *, node *);
+  void add_local_name(struct pike_string *, struct pike_type *, node *);
 
   MAKE_CONSTANT_SHARED_STRING(tmpname, " ");
   tmpvar = islocal(tmpname);

@@ -5,12 +5,38 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.47 2001/02/09 10:29:54 hubbe Exp $
+ * $Id: pike_types.h,v 1.48 2001/02/19 23:50:02 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
 
 #include "svalue.h"
+
+#ifdef USE_PIKE_TYPE
+/*
+ * The new type type.
+ */
+struct pike_type
+{
+  INT32 refs;
+  unsigned INT32 hash;
+  struct pike_type *next;
+  unsigned INT32 type;
+  struct pike_type *car;
+  struct pike_type *cdr;
+};
+void free_type(struct pike_type *t);
+#define copy_type(D, S)	add_ref(D = (S))
+#else /* !USE_PIKE_TYPE */
+/*
+ * The old type type.
+ */
+/* Note that pike_type in this case is defined in global.h
+ * to avoid circularities with svalue.h and this file.
+ */
+#define free_type(T)	free_string(T)
+#define copy_type(D, S)	copy_shared_string(D, S)
+#endif /* USE_PIKE_TYPE */
 
 /* Also used in struct node_identifier */
 union node_data
@@ -45,7 +71,7 @@ struct node_s
 #ifdef PIKE_DEBUG
   struct pike_string *current_file;
 #endif
-  struct pike_string *type;
+  struct pike_type *type;
   struct pike_string *name;
   struct node_s *parent;
   unsigned INT16 line_number;
@@ -82,21 +108,21 @@ extern unsigned char type_stack[PIKE_TYPE_STACK_SIZE];
 extern unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 
 extern int max_correct_args;
-PMOD_EXPORT extern struct pike_string *string_type_string;
-PMOD_EXPORT extern struct pike_string *int_type_string;
-PMOD_EXPORT extern struct pike_string *float_type_string;
-PMOD_EXPORT extern struct pike_string *object_type_string;
-PMOD_EXPORT extern struct pike_string *function_type_string;
-PMOD_EXPORT extern struct pike_string *program_type_string;
-PMOD_EXPORT extern struct pike_string *array_type_string;
-PMOD_EXPORT extern struct pike_string *list_type_string;
-PMOD_EXPORT extern struct pike_string *mapping_type_string;
-PMOD_EXPORT extern struct pike_string *type_type_string;
-PMOD_EXPORT extern struct pike_string *mixed_type_string;
-PMOD_EXPORT extern struct pike_string *void_type_string;
-PMOD_EXPORT extern struct pike_string *zero_type_string;
-PMOD_EXPORT extern struct pike_string *any_type_string;
-PMOD_EXPORT extern struct pike_string *weak_type_string;
+PMOD_EXPORT extern struct pike_type *string_type_string;
+PMOD_EXPORT extern struct pike_type *int_type_string;
+PMOD_EXPORT extern struct pike_type *float_type_string;
+PMOD_EXPORT extern struct pike_type *object_type_string;
+PMOD_EXPORT extern struct pike_type *function_type_string;
+PMOD_EXPORT extern struct pike_type *program_type_string;
+PMOD_EXPORT extern struct pike_type *array_type_string;
+PMOD_EXPORT extern struct pike_type *list_type_string;
+PMOD_EXPORT extern struct pike_type *mapping_type_string;
+PMOD_EXPORT extern struct pike_type *type_type_string;
+PMOD_EXPORT extern struct pike_type *mixed_type_string;
+PMOD_EXPORT extern struct pike_type *void_type_string;
+PMOD_EXPORT extern struct pike_type *zero_type_string;
+PMOD_EXPORT extern struct pike_type *any_type_string;
+PMOD_EXPORT extern struct pike_type *weak_type_string;
 
 #define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
 
@@ -147,7 +173,7 @@ PMOD_EXPORT extern struct pike_string *weak_type_string;
 } while(0)
 
 /* Prototypes begin here */
-void check_type_string(struct pike_string *s);
+void check_type_string(struct pike_type *s);
 void init_types(void);
 ptrdiff_t pop_stack_mark(void);
 void pop_type_stack(void);
@@ -157,50 +183,50 @@ void push_type_int(INT32 i);
 void push_type_int_backwards(INT32 i);
 INT32 extract_type_int(char *p);
 void push_unfinished_type(char *s);
-void push_finished_type(struct pike_string *type);
-void push_finished_type_backwards(struct pike_string *type);
-struct pike_string *debug_pop_unfinished_type(void);
-struct pike_string *debug_pop_type(void);
-struct pike_string *debug_compiler_pop_type(void);
-struct pike_string *parse_type(char *s);
+void push_finished_type(struct pike_type *type);
+void push_finished_type_backwards(struct pike_type *type);
+struct pike_type *debug_pop_unfinished_type(void);
+struct pike_type *debug_pop_type(void);
+struct pike_type *debug_compiler_pop_type(void);
+struct pike_type *parse_type(char *s);
 void stupid_describe_type(char *a, ptrdiff_t len);
-void simple_describe_type(struct pike_string *s);
+void simple_describe_type(struct pike_type *s);
 char *low_describe_type(char *t);
-struct pike_string *describe_type(struct pike_string *type);
-TYPE_T compile_type_to_runtime_type(struct pike_string *s);
-struct pike_string *or_pike_types(struct pike_string *a,
-				  struct pike_string *b,
-				  int zero_implied);
-struct pike_string *and_pike_types(struct pike_string *a,
-				   struct pike_string *b);
+struct pike_string *describe_type(struct pike_type *type);
+TYPE_T compile_type_to_runtime_type(struct pike_type *s);
+struct pike_type *or_pike_types(struct pike_type *a,
+				struct pike_type *b,
+				int zero_implied);
+struct pike_type *and_pike_types(struct pike_type *a,
+				 struct pike_type *b);
 int strict_check_call(char *fun_type, char *arg_type);
-int check_soft_cast(struct pike_string *to, struct pike_string *from);
-int match_types(struct pike_string *a,struct pike_string *b);
-int pike_types_le(struct pike_string *a,struct pike_string *b);
-struct pike_string *index_type(struct pike_string *type,
-			       struct pike_string *index_type,
-			       node *n);
-struct pike_string *array_value_type(struct pike_string *array_type);
-struct pike_string *key_type(struct pike_string *type, node *n);
-int check_indexing(struct pike_string *type,
-		   struct pike_string *index_type,
+int check_soft_cast(struct pike_type *to, struct pike_type *from);
+int match_types(struct pike_type *a,struct pike_type *b);
+int pike_types_le(struct pike_type *a, struct pike_type *b);
+struct pike_type *index_type(struct pike_type *type,
+			     struct pike_type *index_type,
+			     node *n);
+struct pike_type *array_value_type(struct pike_type *array_type);
+struct pike_type *key_type(struct pike_type *type, node *n);
+int check_indexing(struct pike_type *type,
+		   struct pike_type *index_type,
 		   node *n);
-int count_arguments(struct pike_string *s);
-int minimum_arguments(struct pike_string *s);
+int count_arguments(struct pike_type *s);
+int minimum_arguments(struct pike_type *s);
 struct pike_string *check_call(struct pike_string *args,
 			       struct pike_string *type,
 			       int strict);
-INT32 get_max_args(struct pike_string *type);
-struct pike_string *zzap_function_return(char *a, INT32 id);
-struct pike_string *get_type_of_svalue(struct svalue *s);
-struct pike_string *object_type_to_program_type(struct pike_string *obj_t);
+INT32 get_max_args(struct pike_type *type);
+struct pike_type *zzap_function_return(char *a, INT32 id);
+struct pike_type *get_type_of_svalue(struct svalue *s);
+struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);
 int type_may_overload(char *type, int lfun);
-void yyexplain_nonmatching_types(struct pike_string *type_a,
-				 struct pike_string *type_b,
+void yyexplain_nonmatching_types(struct pike_type *type_a,
+				 struct pike_type *type_b,
 				 int flags);
-struct pike_string *make_pike_type(char *t);
+struct pike_type *make_pike_type(char *t);
 int pike_type_allow_premature_toss(char *type);
 /* Prototypes end here */
 
@@ -260,10 +286,10 @@ int pike_type_allow_premature_toss(char *type);
 } while (0)
 
 #ifdef DEBUG_MALLOC
-#define pop_type() ((struct pike_string *)debug_malloc_pass(debug_pop_type()))
-#define compiler_pop_type() ((struct pike_string *)debug_malloc_pass(debug_compiler_pop_type()))
+#define pop_type() ((struct pike_type *)debug_malloc_pass(debug_pop_type()))
+#define compiler_pop_type() ((struct pike_type *)debug_malloc_pass(debug_compiler_pop_type()))
 #define pop_unfinished_type() \
- ((struct pike_string *)debug_malloc_pass(debug_pop_unfinished_type()))
+ ((struct pike_type *)debug_malloc_pass(debug_pop_unfinished_type()))
 #else
 #define pop_type debug_pop_type
 #define compiler_pop_type debug_compiler_pop_type

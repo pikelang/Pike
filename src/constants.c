@@ -16,7 +16,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.24 2000/12/01 08:09:44 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.25 2001/02/19 23:49:59 grubba Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -66,7 +66,7 @@ PMOD_EXPORT void add_global_program(char *name, struct program *p)
 
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {		\
-  free_string(X->type);			\
+  free_type(X->type);			\
   free_string(X->name);			\
 }while(0)
 BLOCK_ALLOC(callable,128)
