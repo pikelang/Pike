@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.275 2001/10/27 19:40:27 nilsson Exp $
+# $Id: Makefile.in,v 1.276 2001/11/08 19:01:37 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -296,10 +296,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Done."
 
 
-.SUFFIXES: .c .h .o .cmod .pp .pph .protos .xml .h_src
-
-.c.xml: pike $(TMP_BINDIR)/autodoc.pike
-	@$(RUNPIKE) $(TMP_BINDIR)/autodoc.pike "$<" >"$@"
+.SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
