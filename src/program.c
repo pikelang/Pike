@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.343 2001/07/02 17:40:28 grubba Exp $");
+RCSID("$Id: program.c,v 1.344 2001/07/02 19:58:00 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1770,6 +1770,17 @@ void check_program(struct program *p)
 	  if(ID_FROM_INT(p,variable_positions[offset+q])->run_time_type !=
 	     i->run_time_type)
 	  {
+	    fprintf(stderr, "Storage offset: 0x%08x vs 0x%08x\n"
+		    "Func offset: 0x%08x vs 0x%08x\n"
+		    "Type: %s vs %s\n",
+		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
+		    storage_offset,
+		    INHERIT_FROM_INT(p, e)->storage_offset,
+		    ID_FROM_INT(p, variable_positions[offset+q])->func.offset,
+		    i->func.offset,
+		    get_name_of_type(ID_FROM_INT(p,variable_positions[offset+q]
+						 )->run_time_type),
+		    get_name_of_type(i->run_time_type));
 	    if (i->name) {
 	      fatal("Variable '%s' and '%s' overlap\n"
 		    "Offset 0x%08x - 0x%08x overlaps with 0x%08x - 0x%08x\n",
