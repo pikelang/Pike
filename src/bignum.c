@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.30 2003/01/27 08:16:53 mirar Exp $
+|| $Id: bignum.c,v 1.31 2003/01/27 10:16:58 mirar Exp $
 */
 
 #include "global.h"
@@ -47,24 +47,10 @@ PMOD_EXPORT void convert_stack_top_to_bignum(void)
   apply_svalue(&auto_bignum_program, 1);
 
   if(sp[-1].type != T_OBJECT)
-  {
-     if (auto_bignum_program.type!=T_PROGRAM)
-     {
-  /* for some reason, Gmp isn't loaded */
-	push_text("Gmp");
-	push_int(0);
-	SAFE_APPLY_MASTER("resolv",2);
-	pop_stack();
-
-	if (auto_bignum_program.type!=T_PROGRAM)
-	   Pike_error("Gmp.mpz conversion failed (failed to load Gmp?).\n");
-
-	apply_svalue(&auto_bignum_program, 1);
-     }
-
-     if(sp[-1].type != T_OBJECT)
+     if (auto_bignum_program.type!=T_INT)
+	Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
+     else
 	Pike_error("Gmp.mpz conversion failed (unknown error).\n");
-  }
 }
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
@@ -72,7 +58,10 @@ PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
   apply_svalue(&auto_bignum_program, 2);
 
   if(sp[-1].type != T_OBJECT)
-    Pike_error("Gmp.mpz conversion failed.\n");
+     if (auto_bignum_program.type!=T_INT)
+	Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
+     else
+	Pike_error("Gmp.mpz conversion failed (unknown error).\n");
 }
 
 int is_bignum_object(struct object *o)
