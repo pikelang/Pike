@@ -1,0 +1,144 @@
+#module Image.Image
+#chapter Layers
+
+#test Layers
+   object i_red=Image.Image(100,100,"red");
+   object i_green=Image.Image(100,100,"green");
+   object i_blue=Image.Image(100,100,"blue");
+   object i_white=Image.Image(100,100,"white");
+   object i_black=Image.Image(100,100,"black");
+
+   object i_spot=Image.Image(100,100);
+   i_spot->box(20,20,80,80,"white");
+
+   array normal_layers=
+   ({
+      ({"red",		Image.Layer(i_red) }),
+      ({"green",	Image.Layer(i_green) }),
+      ({"blue",		Image.Layer(i_blue) }),
+      ({"white",	Image.Layer(i_white) }),
+      ({"black",	Image.Layer(i_black) }),
+      ({"spot",		Image.Layer(i_spot) }),
+
+      ({"red-spot",     Image.Layer(i_red,i_spot) }),
+      ({"green-spot",   Image.Layer(i_green,i_spot) }),
+      ({"blue-spot",    Image.Layer(i_blue,i_spot) }),
+      ({"white-spot",   Image.Layer(i_white,i_spot) }),
+      ({"black-spot",   Image.Layer(i_black,i_spot) }),
+      ({"spot-spot",    Image.Layer(i_spot,i_spot) }),
+   });
+
+   // test lay one layer
+   foreach (normal_layers,array la) 
+   {
+      object l=la[1];
+      object e_i=l->image()->copy(),e_a;
+      if (l->alpha()) e_a=l->alpha()->copy(); else e_a=i_white;
+
+      object res=Image.lay(({l}));
+      if (e_i!=res->image()) fail("image differ (a):"+la[0]+"\n");
+      if (e_a!=res->alpha()) fail("alpha differ (a):"+la[0]+"\n");
+
+      l->set_offset(200,200);
+      object res=Image.lay(({l}));
+      if (e_i!=res->image()) fail("image differ (b):"+la[0]+"\n");
+      if (e_a!=res->alpha()) fail("alpha differ (b):"+la[0]+"\n");
+
+      l->set_offset(-200,-200);
+      object res=Image.lay(({l}));
+      if (e_i!=res->image()) fail("image differ (c):"+la[0]+"\n");
+      if (e_a!=res->alpha()) fail("alpha differ (c):"+la[0]+"\n");
+
+      l->set_offset(0,0);
+      object res=Image.lay(({l}),0,0,100,100);
+      if (e_i!=res->image()) fail("image differ (d):"+la[0]+"\n");
+      if (e_a!=res->alpha()) fail("alpha differ (d):"+la[0]+"\n");
+
+      l->set_offset(-200,-200);
+      object res=Image.lay(({l}),-200,-200,100,100);
+      if (e_i!=res->image()) fail("image differ (e):"+la[0]+"\n");
+      if (e_a!=res->alpha()) fail("alpha differ (e):"+la[0]+"\n");
+
+      l->set_offset(200,200);
+      object res=Image.lay(({l}),200,200,100,100);
+      if (e_i!=res->image()) fail("image differ (f):"+la[0]+"\n");
+      if (e_a!=res->alpha()) fail("alpha differ (f):"+la[0]+"\n");
+
+      object res=Image.lay(({l}),0,0,100,100);
+      if (res->alpha()!=i_black) fail("alpha differ (g):"+la[0]+"\n");
+   }
+
+   foreach (normal_layers,array l) l[1]->set_offset(0,0);
+
+   werror(" (2)");
+   foreach (normal_layers,array la) 
+   {
+      werror(".");
+
+      foreach (normal_layers,array lb)
+      {
+	 object a=la[1],aa;
+	 object b=lb[1],ba;
+	 object e_i,e_a;
+         if (a->alpha()) aa=a->alpha(); else aa=i_white;
+         if (b->alpha()) ba=b->alpha(); else ba=i_white;
+	 e_i=i_white->copy();
+	 e_i=e_i->paste_mask(a->image(),aa);
+	 e_i=e_i->paste_mask(b->image(),ba);
+	 e_i*=(e_a=aa+ba);
+
+	 a->set_offset(0,0);
+	 b->set_offset(0,0);
+         object res=Image.lay(({a,b}));
+         if (e_i!=res->image()*e_a) fail("image differ :"+la[0]+"+"+lb[0]+"\n");
+         if (e_a!=res->alpha()) fail("alpha differ :"+la[0]+"+"+lb[0]+"\n");
+
+	 a->set_offset(200,200);
+	 b->set_offset(200,200);
+         object res=Image.lay(({a,b}),200,200,100,100);
+         if (e_i!=res->image()*e_a) fail("image differ (b):"+la[0]+"+"+lb[0]+"\n");
+         if (e_a!=res->alpha()) fail("alpha differ (b):"+la[0]+"+"+lb[0]+"\n");
+
+	 if (a!=b)
+	 {
+	    a->set_offset(200,200);
+	    b->set_offset(-200,-200);
+	    object res=Image.lay(({a,b}),200,200,100,100);
+	    if (a->image()*aa!=res->image()*aa) fail("image differ (c):"+la[0]+"+"+lb[0]+"\n");
+	    if (aa!=res->alpha()) fail("alpha differ (c):"+la[0]+"+"+lb[0]+"\n"); 
+	 }
+      }
+   }
+
+   foreach (normal_layers,array l) l[1]->set_offset(0,0);
+
+   werror(" (3)");
+   foreach (normal_layers,array la) 
+   {
+      Stdio.stderr->write(" ");
+      foreach (normal_layers,array lb)
+      {
+         Stdio.stderr->write(".");
+	 foreach (normal_layers,array lc)
+	 {
+	    object a=la[1],aa;
+	    object b=lb[1],ba;
+	    object c=lc[1],ca;
+	    object e_i,e_a;
+	    if (a->alpha()) aa=a->alpha(); else aa=i_white;
+	    if (b->alpha()) ba=b->alpha(); else ba=i_white;
+	    if (c->alpha()) ca=c->alpha(); else ca=i_white;
+	    e_i=i_white->copy();
+	    e_i=e_i->paste_mask(a->image(),aa);
+	    e_i=e_i->paste_mask(b->image(),ba);
+	    e_i=e_i->paste_mask(c->image(),ca);
+	    e_i*=(e_a=aa+ba+ca);
+
+	    object res=Image.lay(({a,b,c}));
+	    if (e_i!=res->image()*e_a) { xv(a); xv(b); xv(c); xv(res); xv(e_i); xv(res->image()); xv(res->image()*e_a);  xv(e_a); fail("image differ / "+la[0]+"+"+lb[0]+"+"+lc[0]+"\n"); }
+	    if (e_a!=res->alpha()) fail("alpha differ / "+la[0]+"+"+lb[0]+"+"+lc[0]+"\n");
+	 }
+      }
+   }
+
+   ok();
