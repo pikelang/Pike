@@ -172,8 +172,26 @@ void connect()
    remove_call_out(connect); // just in case
    call_out(connection_timeout,CONNECTION_TIMEOUT);
 
+   string ip2;
+   sscanf(ip,"%[0-9.]",ip2);
+   if (ip2==ip)
+      connect2(ip);
+   else
+   {
+      parent->async_dns->
+	 host_to_ip(ip, 
+		    lambda(string name,string ip)
+		    {
+		       werror("%O = %O\n",name,ip);
+		       connect2(ip);
+		    });
+   }
+}
+
+void connect2(string ip2)
+{
    fd->async_connect(
-      ip,port,
+      ip2,port,
       lambda(int success)
       {
 	 if (success)
@@ -211,7 +229,8 @@ void disconnect()
 {
    if (online)
    {
-      fd->close();
+      destruct(fd);
+      fd=Stdio.File();
       online=0;
 #ifdef BT_PEER_DEBUG
       werror("%O call disconnected %O\n",this_object(),piece_callback);
@@ -332,11 +351,30 @@ static private void peer_write()
       fd->set_write_callback(0);
       if (!sizeof(queued_pieces)) uploading=0,uploading_pieces=(<>);
    }
+#if 0
+   else
+   {
+      remove_call_out(buf_check);
+      call_out(buf_check,30);
+   }
+#endif
 }
+
+#if 0
+void buf_check()
+{
+   if (sendbuf=="") return;
+   call_out(buf_check,30);
+   werror("%O: buf is full\n",ip);
+}
+#endif
 
 static private string readbuf="";
 static private void peer_read(mixed dummy,string s)
 {
+   remove_call_out(peer_read_timeout);
+   call_out(peer_read_timeout,300);
+
    bandwidth_in_count+=strlen(s);
 #ifdef BT_PEER_DEBUG
    werror("%O: read %d bytes: %O\n",
@@ -345,16 +383,16 @@ static private void peer_read(mixed dummy,string s)
    readbuf+=s;
    if (mode=="connected" || mode=="incoming")
    {
-      werror("%O\n",readbuf[..min(strlen(readbuf)-1,19)]);
-
       if (readbuf[..min(strlen(readbuf)-1,19)] !=
 	  "\23BitTorrent protocol"[..min(strlen(readbuf)-1,19)])
       {
-	 fd->close();
+	 destruct(fd);
+	 fd=Stdio.File();
 	 online=0;
 	 _status("failed","not bittorrent");
 
-	 warning("got non-bittorrent connection from %O\n",ip);
+	 warning("got non-bittorrent connection from %O: %O\n",
+		 ip,readbuf[..40]);
 	 return;
       }
 
@@ -363,7 +401,8 @@ static private void peer_read(mixed dummy,string s)
       {
 	 if (readbuf[28..47]!=parent->info_sha1)
 	 {
-	    fd->close();
+	    destruct(fd);
+	    fd=Stdio.File();
 	    online=0;
 	    _status("failed","torrent metainfo mismatch");
 	    return;
@@ -371,11 +410,19 @@ static private void peer_read(mixed dummy,string s)
 	 if (id=="?")
 	 {
 	    id=readbuf[48..67];
+
+	    if (parent->peers[id]) // no cheating by reconnecting :)
+	    {
+	       bytes_in=parent->peers[id]->bytes_in;
+	       bytes_out=parent->peers[id]->bytes_out;
+	    }
+
 	    parent->peers[id]=this_object();
 	 }
 	 else if (readbuf[48..67]!=id)
 	 {
-	    fd->close();
+	    destruct(fd);
+	    fd=Stdio.File();
 	    online=0;
 	    _status("failed","peer id mismatch");
 	    return;
@@ -398,6 +445,13 @@ static private void peer_read(mixed dummy,string s)
 	 if (!were_choking)
 	    send_message(MSG_UNCHOKE,"");
 
+
+	 if (-1==search(parent->peers_ordered,this_object()))
+	    parent->peers_ordered+=({this_object()});
+	 parent->peers_unused-=({this_object()});
+
+
+	 online=2;
 	 _status("online");
 	 remove_call_out(connection_timeout);
       }
@@ -418,6 +472,13 @@ static private void peer_read(mixed dummy,string s)
 	 else break; // wait for more
       }
    }
+}
+
+// no action for 5 minutes, drop and reconnect
+void peer_read_timeout()
+{
+   disconnect();
+   connect();
 }
 
 void got_message_from_peer(string msg)
@@ -471,7 +532,8 @@ void got_message_from_peer(string msg)
 	 peer_interested=1;
 	 _status("online","interested");
 
-	 if (were_choking) unchoke();
+	 if (were_choking && 
+	     sizeof(parent->file_got)>sizeof(parent->file_want)) unchoke();
 	 break;
       case MSG_NOT_INTERESTED:
 	 peer_interested=0;
@@ -496,7 +558,6 @@ void got_message_from_peer(string msg)
 	 break;
       case MSG_BITFIELD:
 	 bitfield=msg[1..];
-	 online=2;
 	 parent->peer_gained(this_object());
 	 is_complete=(bitfield==parent->all_pieces_bits);
 
@@ -541,6 +602,7 @@ void peer_close()
    remove_call_out(keepalive); 
    remove_call_out(bandwidth_o_meter); 
 
+   fd->set_blocking();
    destruct(fd);
    fd=Stdio.File();
    if (online)
@@ -689,6 +751,13 @@ static void queue_piece(int piece,int offset,int length)
 	  parent->file_want[piece]?"we don't have it??!":"we have it");
 #endif
 
+   if (parent->file_want[piece])
+   {
+      warning("%s requested piece %d, but we don't have it?\n",
+	      ip,piece);
+      return;
+   }
+
    queued_pieces+=({({piece,offset,length,0})});
    if (queued_pieces[0][3]==0)
    {
@@ -736,6 +805,13 @@ void choke()
    send_message(MSG_CHOKE,"");
    were_choking=1;
    _status("online","choking");
+
+// if choke means "I'll drop all pieces in the queue"
+#if 1
+   queued_pieces=({});
+   uploading_pieces=(<>);
+   uploading=0;
+#endif
 }
 
 void strangle()
@@ -803,6 +879,7 @@ string _sprintf(int t)
 
 void destroy()
 {
+   catch { fd->set_blocking(); };
    destruct(fd);
    remove_call_out(keepalive);
    remove_call_out(bandwidth_o_meter);

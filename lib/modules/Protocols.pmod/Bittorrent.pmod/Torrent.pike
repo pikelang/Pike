@@ -26,7 +26,7 @@ int downloaded=0; // bytes
 int downloading=0; // flag
 int we_are_completed=0; // set when no more to download
 
-int allow_free=262144; // free bytes before demanding back from peers
+int allow_free=100000; // free bytes before demanding back from peers
 
 string datamode="rw";
 
@@ -47,7 +47,11 @@ function downloads_update_status=0;
 function download_completed_callback=0;
 
 //! called if there is a protocol error; defaults to werror
-function(string,mixed...:void|mixed) warning=werror;
+function(string,mixed...:void|mixed) warning=lambda() {};
+
+
+Protocols.DNS.async_client dns_async=Protocols.DNS.async_client();
+
 
 //! loads the metainfo from a file
 void load_metainfo(string filename)
@@ -407,6 +411,8 @@ void update_tracker(void|string event,void|int contact)
 	 if (!peers[m["peer id"]])
 	 {
 	    .Peer p;
+	    if (peers[m["peer id"]]) continue;
+
 	    peers[m["peer id"]]=(p=peer_program(this_object(),m));
 	    if (sizeof(peers_ordered)<max_peers && contact) 
 	    {
@@ -461,9 +467,17 @@ void increase_number_of_peers(void|int n)
 
    n=max_peers-sizeof(peers_ordered);
    array v=peers_unused[..n-1];
-   v->connect();
    peers_ordered+=v;
    peers_unused=peers_unused[n..];
+
+   foreach (v;;.Peer p)
+      if (p->online) 
+      {
+	 werror("%O online but unused?\n",p->ip);
+	 v-=({p});
+      }
+
+   v->connect();
 }
 
 //! starts to contact the tracker at regular intervals,
@@ -537,7 +551,7 @@ void start_download()
    download_more();
 }
 
-int max_downloads=10;
+int max_downloads=15;
 int min_completed_peers=2;
 
 // downloads lost by disconnect or choking that needs to be taken up again
@@ -692,7 +706,7 @@ int download_one_more()
 
    foreach (w;;int piece)
    {
-      multiset m=file_peers[piece]&from_peers;
+      multiset m=(file_peers[piece]||(<>))&from_peers;
 
       if (sizeof(m))
       {
@@ -808,6 +822,8 @@ class PieceDownload
 	 switch (data)
 	 {
 	    case "choked":
+	       abort();
+#if 0
 	       if (find_call_out(abort)==-1)
 	       {
 		  call_out(abort,choke_abort_delay);
@@ -815,12 +831,15 @@ class PieceDownload
 		  werror("call_out abort\n");
 #endif
 	       }
+#endif
 	       return;
 	    case "unchoked":
+#if 0
 #ifdef TORRENT_PIECEDOWNLOAD_DEBUG
 	       werror("remove_call_out abort\n");
 #endif
 	       remove_call_out(abort);
+#endif
 	       return;
 	    case "disconnected":
 	       abort(); 
@@ -901,7 +920,7 @@ class PieceDownload
 #ifdef TORRENT_PIECEDOWNLOAD_DEBUG
 	 werror("%O %O->cancel\n",this_object(),peer);
 #endif
-	 peer->cancel_requests(0);
+	 if (peer->online) peer->cancel_requests(0);
 
    // reset some stuff
 	 disjoin();
@@ -914,7 +933,7 @@ class PieceDownload
       }
       else // we didn't get any, just drop it
       {
-	 peer->cancel_requests(0);
+	 if (peer->online) peer->cancel_requests(0);
 	 finish(); 
       }
    }
@@ -997,19 +1016,24 @@ void peer_gained(.Peer peer)
 {
    multiset m;
 
-   foreach ( file_want & ((multiset)string2arr(peer->bitfield)); 
+   multiset mz=(multiset)string2arr(peer->bitfield);
+
+   foreach ( file_want & mz; 
 	     int i; )
       if ((m=file_peers[i])) m[peer]=1;
       else file_peers[i]=(<peer>);
    file_available|=(multiset)indices(file_peers);
 
-   multiset mz=(multiset)string2arr(peer->bitfield);
 #ifdef TORRENT_PEERS_DEBUG
    werror("%O gained: %d blocks, we want %d of those\n",
 	  peer->ip,sizeof(mz),sizeof(mz&file_want));
 #endif
 
-   download_more();
+   if (sizeof(file_want & mz))
+   {
+      if (!peer->were_interested) peer->show_interest();
+      download_more();
+   }
 }
 
 void peer_unchoked(.Peer peer)
@@ -1033,7 +1057,10 @@ void peer_have(.Peer peer,int n)
    else
       file_peers[n]=(<peer>);
    if (file_want[n])
+   {
+      if (!peer->were_interested) peer->show_interest();
       download_more();
+   }
 }
 
 string get_piece_chunk(int piece,int offset,int length)
@@ -1058,6 +1085,12 @@ void got_piece(int piece,string data)
    if (!sizeof(file_want) &&
        find_call_out(update_tracker_loop)!=-1)
       update_tracker("completed");
+
+// open up interested peers for requests
+   if (sizeof(file_want)==sizeof(file_got)-1)
+      foreach (peers_ordered;;.Peer p)
+	 if (p->peer_interested)
+	    p->unchoke();
 }
 
 // ----------------------------------------------------------------
