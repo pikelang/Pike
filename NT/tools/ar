@@ -1,5 +1,9 @@
 #!/bin/sh
 
+#
+# FIXME: It is time to re-write this in Pike
+#
+
 . $NTTOOLS
 
 set -e
@@ -30,6 +34,10 @@ case "$CC" in
       *x*) exit 1 ;;
       *q*|*r*)
         do_cmd lib "-OUT:`fixpath $OUTPUT`" `fixpath $@`
+        winname="`echo $OUTPUT | sed -e 's/^lib\(.*\)\.a/\1.lib/'`"
+        if [ "$winname" != "$OUTPUT" ]; then
+          cp "$OUTPUT" "$winname"
+        fi
         exit $?
       ;;
     esac
@@ -37,61 +45,67 @@ case "$CC" in
 
   *rntcc)
 
-XOPTS="-b -c"
+  XOPTS="-b -c"
 
-case "E$OPTIONS" in
-  *x*)
-    OPCHAR='*'
-   if [ $# = 0 ]; then
-      TMPDIR=TMP$$.d
-      rm -rf $TMPDIR >/dev/null 2>/dev/null || :
-      mkdir $TMPDIR
-      do_cmd wlib -x -d=$TMPDIR `fixpath $OUTPUT`
-      (
-        cd $TMPDIR
-        for a in *
-        do
-          BASE=`echo $a | sed -e 's/\.[^.]$//'`
-          mv $a ../$BASE.o
-        done
-      )
-      rm -rf $TMPDIR >/dev/null 2>/dev/null || :
-      exit 0
-   fi
-  ;;
+  case "E$OPTIONS" in
+    *x*)
+      OPCHAR='*'
+     if [ $# = 0 ]; then
+        TMPDIR=TMP$$.d
+        rm -rf $TMPDIR >/dev/null 2>/dev/null || :
+        mkdir $TMPDIR
+        do_cmd wlib -x -d=$TMPDIR `fixpath $OUTPUT`
+        (
+          cd $TMPDIR
+          for a in *
+          do
+            BASE=`echo $a | sed -e 's/\.[^.]$//'`
+            mv $a ../$BASE.o
+          done
+        )
+        rm -rf $TMPDIR >/dev/null 2>/dev/null || :
+        exit 0
+     fi
+    ;;
 
-  *d*)
-    OPTCHAR='-'
-  ;;
+    *d*)
+      OPTCHAR='-'
+    ;;
 
-  *r*)
-    OPCHAR='-+'
-  ;;
+    *r*)
+      OPCHAR='-+'
+    ;;
 
-  *q*)
-    OPCHAR='+'
-  ;;
-esac
+    *q*)
+      OPCHAR='+'
+    ;;
+  esac
 
-XFILE=TMP$$.l
+  XFILE=TMP$$.l
 
-rm $XFILE 2>/dev/null 1>/dev/null || :
+  rm $XFILE 2>/dev/null 1>/dev/null || :
 
-OPTS=
-for a in "$@"
-do
-  OPTS="$OPTS $OPCHAR$a"
-done
+  OPTS=
+  for a in "$@"
+  do
+    OPTS="$OPTS $OPCHAR$a"
+  done
 
-echo >$XFILE "$OPTS"
+  echo >$XFILE "$OPTS"
 
-do_cmd wlib $XOPTS `fixpath $OUTPUT` @$XFILE
+  do_cmd wlib $XOPTS `fixpath $OUTPUT` @$XFILE
 
-if [ $CLEANUP = yes ]; then
-  if [ -f $XFILE ]; then
-    rm $XFILE
+  if [ $CLEANUP = yes ]; then
+    if [ -f $XFILE ]; then
+     rm $XFILE
+    fi
   fi
-fi
+
+  winname="`echo $OUTPUT | sed -e 's/^lib\(.*\)\.a/\1.lib/'`"
+  if [ "$winname" != "$OUTPUT" ]; then
+    cp "$OUTPUT" "$winname"
+  fi
+
   ;;
   *)
     echo Unknown C compiler: $CC
