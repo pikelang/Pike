@@ -44,6 +44,7 @@ class protocol
 		    int cl,
 		    int type)
   {
+    if ( dname[-1] == '.') dname = dname[..sizeof(dname)-2];
     return sprintf("%2c%c%c%2c%2c%2c%2c%s\000%2c%2c",
 		   id,
 		   1,0,
@@ -524,6 +525,32 @@ class client
       }
     }
     return ret;
+  }
+
+  string *get_mx(string host)
+  {
+    mapping m;
+    if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
+      m = do_sync_query(mkquery(host, C_IN, T_MX));
+      if(!m || !m->an || !sizeof(m->an)) {
+	foreach(domains, string domain)
+	{
+	  m = do_sync_query(mkquery(host+"."+domain, C_IN, T_MX));
+	  if(m && m->an && sizeof(m->an))
+	    break;
+	}
+      }
+    } else {
+      m = do_sync_query(mkquery(host, C_IN, T_MX));
+    }
+    if (!m) {
+      return 0;
+    }
+    array a = m->an;
+    array(string) b = column( a, "mx");
+    sort( column( a, "preference"), b);
+
+    return b;
   }
 }
 
