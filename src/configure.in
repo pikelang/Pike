@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.798 2004/03/07 16:33:00 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.799 2004/03/08 09:46:32 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -111,6 +111,25 @@ Build in the source directory, or try another make (eg gnumake).
   else :; fi
 fi
 rm "$srcdir/conftest_VPATH.in" 2>/dev/null
+
+if test -d "$srcdir/../bundles"; then
+  # Some of the bundled libraries (eg nettle) set SHELL.
+  AC_MSG_CHECKING([whether ${MAKE-make} supports spaces in SHELL])
+  AC_CACHE_VAL(pike_cv_make_supports_spaces_in_SHELL, [
+    cat > conftestmake <<EOF
+SHELL=/bin/sh -n
+all:
+	/bin/false
+EOF
+    if ${MAKE-make} -f conftestmake >/dev/null 2>&5; then
+      pike_cv_make_supports_spaces_in_SHELL=yes
+    else
+      pike_cv_make_supports_spaces_in_SHELL=no
+    fi
+    rm -f conftestmake
+  ])
+  AC_MSG_RESULT($pike_cv_make_supports_spaces_in_SHELL)
+else :; fi
 
 AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
