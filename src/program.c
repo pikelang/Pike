@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.404 2002/02/27 09:59:30 grubba Exp $");
+RCSID("$Id: program.c,v 1.405 2002/02/27 10:01:14 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4101,6 +4101,7 @@ int store_constant(struct svalue *foo,
     for(e=0;e<Pike_compiler->new_program->num_constants;e++)
     {
       JMP_BUF tmp1;
+      /* Assume that if `==() throws an error, the svalues aren't equal. */
       if (!SETJMP(tmp1)) {
 	struct program_constant *c= Pike_compiler->new_program->constants+e;
 	if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
