@@ -92,13 +92,25 @@ class Codec
 
 int quiet=0;
 
+Stdio.File logfile;
+function log(string file, int line, string err)
+{
+  logfile->write("================================================\n");
+  logfile->write(sprintf("%s:%d:%s\n",file,line,err));
+}
+
 int main(int argc, string *argv)
 {
   if(argv[1]=="--quiet")
   {
     quiet=1;
     argv=argv[1..];
-    master()->set_inhibit_compile_errors(1);
+    master()->set_inhibit_compile_errors(log);
+
+    // FIXME: Make this a command line option..
+    // It should not be done when running a binary dist
+    // installation...
+    logfile=Stdio.File("dumpmodule.log","cwt");
     werror("Dumping modules ");
   }
 
@@ -152,9 +164,14 @@ int main(int argc, string *argv)
 	werror(master()->describe_backtrace(err));
 #else
 	if(quiet)
+	{
 	  werror("X");
-	else
+	  err[0]="While dumping "+file+": "+err[0];
+	  logfile->write("================================================\n");
+	  logfile->write(master()->describe_backtrace(err));
+	}else{
 	  werror(err[0]);
+	}
 #endif
       }
     }
