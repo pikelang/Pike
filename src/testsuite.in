@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.577 2002/12/11 21:54:40 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.578 2002/12/12 17:14:54 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7932,6 +7932,11 @@ test_any([[
   multiset x = (<>);
   x[x] = 1;
   return equal (copy_value (x), x);
+]], 1)
+test_any([[
+   array a=({0,0,0});
+   array b=copy_value(a); b[0]=17; b[1]=42; b[2]=128;
+   return equal( ({0,0,0}), a) && equal( ({17,42,128}), b);
 ]], 1)
 
 // - crypt
