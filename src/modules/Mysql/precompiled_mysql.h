@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.3 1997/04/20 04:06:59 grubba Exp $
+ * $Id: precompiled_mysql.h,v 1.4 1997/06/30 20:00:07 grubba Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -45,6 +45,7 @@
 struct precompiled_mysql {
   MYSQL		mysql, *socket;
   MYSQL_RES	*last_result;	/* UGLY way to pass arguments to create() */
+  struct pike_string	*host, *database, *user, *password;	/* Reconnect */
 };
 
 struct precompiled_mysql_result {
