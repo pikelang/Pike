@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.16 2001/04/27 13:38:40 grubba Exp $
+ * $Id: Line.pmod,v 1.17 2002/02/14 01:45:32 nilsson Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -12,6 +12,8 @@
 class simple
 {
   static object con;
+
+  //! The sequence separating lines from eachother. "\r\n" by default.
   static constant line_separator = "\r\n";
 
   //! If this variable has been set, multiple lines will be accumulated,
