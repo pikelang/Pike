@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.23 2001/06/04 13:43:24 js Exp $
+// $Id: MySQL.pike,v 1.24 2001/06/05 22:54:24 per Exp $
 
 inherit Search.Database.Base;
 
@@ -183,7 +183,7 @@ void set_metadata(Standards.URI|string uri, void|string language,
   if(!intp(uri))
     doc_id = get_document_id((string)uri, language);
   if(md->body)
-    md->body = Gz.deflate(6)->deflate(md->body[..64000],
+    md->body = Gz.deflate(6)->deflate(string_to_utf8(md->body[..64000]),
 				      Gz.FINISH);
 
   if(!sizeof(md))
@@ -193,7 +193,8 @@ void set_metadata(Standards.URI|string uri, void|string language,
 				   map(values(md), db->quote) }) ),
 	       lambda(array a)
 	       {
-		 return sprintf("(%d,'%s','%s')", doc_id, @a);
+		 return sprintf("(%d,'%s','%s')", doc_id,
+				a[0], string_to_utf8(a[1]));
 	       }) * ", ";
   
   db->query("replace into metadata (doc_id, name, value) values "+s);
@@ -216,7 +217,7 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 		    doc_id);
   mapping md=mkmapping(a->name,a->value);
   if(md->body)
-    md->body=Gz.inflate()->inflate(md->body);
+    md->body=utf8_to_string(Gz.inflate()->inflate(md->body));
   return md;
 }
 
