@@ -1244,6 +1244,7 @@ UNLOCK(this->pmird);
 #define SCAN_TUPELS 1
 #define SCAN_INDICES 2
 #define SCAN_VALUES 3
+#define SCAN_COUNT 4
 
 static void _pmts_read(INT32 args,int do_what)
 {
@@ -1273,7 +1274,7 @@ LOCK(this->pmird);
 	    res=mird_s_table_scan(this->pmird->db,this->table_id,
 				  (mird_size_t)n,this->mssr,&(this->mssr));
 	    break;
-	 case PMTS_UNKNOWN: Pike_error("illegal scanner type\n"); break;
+	 default: Pike_error("illegal scanner type\n"); break;
       }
    }
    else /* pmtr */
@@ -1290,7 +1291,7 @@ LOCK(this->pmird);
 					      this->table_id,(mird_size_t)n,
 					      this->mssr,&(this->mssr));
 	    break;
-	 case PMTS_UNKNOWN: Pike_error("illegal scanner type\n"); break;
+	 default: Pike_error("illegal scanner type\n"); break;
       }
    }
 UNLOCK(this->pmird);
@@ -1300,34 +1301,36 @@ UNLOCK(this->pmird);
 
    if (this->msr)
    {
-      for (i=0; i<this->msr->n; i++)
-      {
-	 if (do_what!=SCAN_VALUES)
-	    push_int((INT_TYPE)(this->msr->tupel[i].key));
-	 if (do_what!=SCAN_INDICES)
-	    push_string(make_shared_binary_string(
-	       this->msr->tupel[i].value,
-	       this->msr->tupel[i].value_len));
-	 if (do_what==SCAN_TUPELS)
-	    f_aggregate(2);
-      }
+      if (do_what!=SCAN_COUNT) 
+	 for (i=0; i<this->msr->n; i++)
+	 {
+	    if (do_what!=SCAN_VALUES)
+	       push_int((INT_TYPE)(this->msr->tupel[i].key));
+	    if (do_what!=SCAN_INDICES)
+	       push_string(make_shared_binary_string(
+		  this->msr->tupel[i].value,
+		  this->msr->tupel[i].value_len));
+	    if (do_what==SCAN_TUPELS)
+	       f_aggregate(2);
+	 }
       nn=this->msr->n;
    }
    else if (this->mssr)
    {
-      for (i=0; i<this->mssr->n; i++)
-      {
-	 if (do_what!=SCAN_VALUES)
-	    push_string(make_shared_binary_string(
-	       this->mssr->tupel[i].key,
-	       this->mssr->tupel[i].key_len));
-	 if (do_what!=SCAN_INDICES)
-	    push_string(make_shared_binary_string(
-	       this->mssr->tupel[i].value,
-	       this->mssr->tupel[i].value_len));
-	 if (do_what==SCAN_TUPELS)
-	    f_aggregate(2);
-      }
+      if (do_what!=SCAN_COUNT)
+	 for (i=0; i<this->mssr->n; i++)
+	 {
+	    if (do_what!=SCAN_VALUES)
+	       push_string(make_shared_binary_string(
+		  this->mssr->tupel[i].key,
+		  this->mssr->tupel[i].key_len));
+	    if (do_what!=SCAN_INDICES)
+	       push_string(make_shared_binary_string(
+		  this->mssr->tupel[i].value,
+		  this->mssr->tupel[i].value_len));
+	    if (do_what==SCAN_TUPELS)
+	       f_aggregate(2);
+	 }
       nn=this->mssr->n;
    }
    else /* eod */
@@ -1335,7 +1338,9 @@ UNLOCK(this->pmird);
       push_int(0);
       return;
    }
-   if (do_what==SCAN_MAP)
+   if (do_what==SCAN_COUNT)
+      push_int(nn);
+   else if (do_what==SCAN_MAP)
       f_aggregate_mapping(nn*2);
    else
       f_aggregate(nn);
@@ -1359,6 +1364,11 @@ static void pmts_read_indices(INT32 args)
 static void pmts_read_values(INT32 args)
 {
    return _pmts_read(args,SCAN_VALUES);
+}
+
+static void pmts_read_count(INT32 args)
+{
+   return _pmts_read(args,SCAN_COUNT);
 }
 
 
@@ -1482,6 +1492,8 @@ void pike_module_init(void)
 		tFunc(tIntPos,tArr(tOr(tInt,tStr))),0);
    ADD_FUNCTION("read_values",pmts_read_values,
 		tFunc(tIntPos,tArr(tStr)),0);
+   ADD_FUNCTION("read_count",pmts_read_count,
+		tFunc(tIntPos,tIntPos),0);
    ADD_FUNCTION("next_key",pmts_next_key,tFunc(tNone,tInt),0);
 
    mird_scanner_program=end_program();
