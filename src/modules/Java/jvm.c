@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.55 2003/02/20 11:55:33 grubba Exp $
+|| $Id: jvm.c,v 1.56 2003/02/21 15:44:00 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.55 2003/02/20 11:55:33 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.56 2003/02/21 15:44:00 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1623,7 +1623,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 /* NB: Assumes that pointers are 64bit! */
 
 struct cpu_context {
-  void *code[6];
+  void *code[10];
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
@@ -1631,49 +1631,50 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 {
   unsigned INT32 *p = (unsigned INT32 *)&ctx->code[2];
 
-  /* The stub gets 3 parameters in $16, $17 and $18,
-   * and must shift them one register to $17, $18 and $19,
-   * so that $16 can be set to data, and then jump to dispatch.
-   *
-   * NB: The Alpha calling conventions seem to say that $27
-   *     should contain a pointer to the function on entry.
-   */
-
-  /*   .text
-   *   .quad data
-   *   .quad dispatch
-   * entry:
-   *   mov $18, $19
-   *   ldq $1, -16($27)	;; Read data temporarily into $1
-   *   mov $17, $18
-   *   ldq $27, -8($27)	;; Read dispatch into $27
-   *   mov $16, $17
-   *   mov $1, $16	;; Move data into $16
-   *   jmp ($27)	;; Call dispatch
-   *   nop
-   */
-
-  ctx->code[0] = data;
-  ctx->code[1] = dispatch;
-
-  /* mov $18, $19 */
-  *p++ = 0x46520413;
-  /* ldq $1, -16($27) */
-  *p++ = 0xa43bfff0;
-  /* mov $17, $18 */
-  *p++ = 0x46310412;
-  /* ldq $27, -8($27) */
-  *p++ = 0xa77bfff8;
-  /* mov $16, $17 */
+  /* lda sp,-48(sp) */
+  *p++ = 0x23deffd0;
+  /* stq ra,0(sp) */
+  *p++ = 0xb75e0000;
+  /* stq a1,8(sp) */
+  *p++ = 0xb63e0008;
+  /* stq a2,16(sp) */
+  *p++ = 0xb65e0010;
+  /* stq a3,24(sp) */
+  *p++ = 0xb67e0018;
+  /* stq a4,32(sp) */
+  *p++ = 0xb69e0020;
+  /* stq a5,40(sp) */
+  *p++ = 0xb6be0028;
+  if(statc) { 
+    /* mov a1,a2 */
+    *p++ = 0x46310412;
+    /* lda a3,16(sp) */
+    *p++ = 0x227e0010;
+  } else { 
+    /* clr a2 */
+    *p++ = 0x47ff0412;
+    /* lda a3,8(sp) */
+    *p++ = 0x227e0008;
+  } 
+  /* mov a0,a1 */
   *p++ = 0x46100411;
-  /* mov $1, $16 */
-  *p++ = 0x44210410;
-  /* jmp ($27) */
-  *p++ = 0x6bfb0000;
-  /* nop */
-  *p++ = 0x47ff041f;
+  /* ldq a0,64(t12) */
+  *p++ = 0xa61b0040;
+  /* ldq t12,72(t12) */
+  *p++ = 0xa77b0048;
+  /* jsr ra,(t12) */
+  *p++ = 0x6b5b4000;
+  /* ldq ra,0(sp) */
+  *p++ = 0xa75e0000;
+  /* lda sp,48(sp) */
+  *p++ = 0x23de0030;
+  /* ret zero,(ra) */
+  *p++ = 0x6bfa8001;
 
-  return &ctx->code[2];
+  ctx->code[8] = ctx;
+  ctx->code[9] = dispatch;
+
+  return ctx->code;
 }
 
 #else
