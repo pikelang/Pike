@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.15 2003/10/13 17:48:58 grubba Exp $
+|| $Id: pcre_glue.cmod,v 1.16 2004/02/15 19:34:00 nilsson Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.15 2003/10/13 17:48:58 grubba Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.16 2004/02/15 19:34:00 nilsson Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -48,19 +48,29 @@ PIKECLASS _pcre
 
 /*! @decl void create(string pattern, void|int options, void|object table)
  *!
- *! the option bits are:
- *!    OPTION.ANCHORED         Force pattern anchoring
- *!    OPTION.CASELESS         Do caseless matching
- *!    OPTION.DOLLAR_ENDONLY   $ not to match newline at end
- *!    OPTION.DOTALL           . matches anything including NL
- *!    OPTION.EXTENDED         Ignore whitespace and # comments
- *!    OPTION.EXTRA            PCRE extra features
- *!                              (not much use currently)
- *!    OPTION.MULTILINE        ^ and $ match newlines within data
- *!    OPTION.NO_AUTO_CAPTURE  Disable numbered capturing paren-
- *!                              theses (named ones available)
- *!    OPTION.UNGREEDY         Invert greediness of quantifiers
- *!    OPTION.UTF8             Run in UTF-8 mode
+ *! The option bits are:
+ *! @int
+ *!   @value  OPTION.ANCHORED
+ *!     Force pattern anchoring
+ *!   @value  OPTION.CASELESS
+ *!     Do caseless matching
+ *!   @value  OPTION.DOLLAR_ENDONLY
+ *!     $ not to match newline at end
+ *!   @value  OPTION.DOTALL
+ *!     . matches anything including NL
+ *!   @value  OPTION.EXTENDED
+ *!     Ignore whitespace and # comments
+ *!   @value  OPTION.EXTRA
+ *!     PCRE extra features (not much use currently)
+ *!   @value  OPTION.MULTILINE
+ *!     ^ and $ match newlines within data
+ *!   @value  OPTION.NO_AUTO_CAPTURE
+ *!     Disable numbered capturing parentheses (named ones available)
+ *!   @value  OPTION.UNGREEDY
+ *!     Invert greediness of quantifiers
+ *!   @value  OPTION.UTF8
+ *!     Run in UTF-8 mode
+ *! @endint
  */
 
    PIKEFUN void create(string pattern,
@@ -169,6 +179,89 @@ PIKECLASS _pcre
 
 #ifdef HAVE_PCRE_FULLINFO
 
+   /*! @decl mapping info()
+    *!
+    *! Returns additional information about a compiled pattern. Only
+    *! available if PCRE was compiled with Fullinfo.
+    *!
+    *! @returns
+    *! @mapping
+    *!   @member int "backrefmax"
+    *!     Return the number of the highest back reference in the
+    *!     pattern. The fourth argument should point to an int
+    *!     variable. Zero is returned if there are no back references.
+    *!   @member int "capturecount"
+    *!     Return the number of capturing subpatterns in the pattern.
+    *!     The fourth argument should point to an int variable.
+    *!   @member int "firstbyte"
+    *!     Return information about the first byte of any matched
+    *!     string, for a non-anchored pattern. (This option used to be
+    *!     called PCRE_INFO_FIRSTCHAR; the old name is still
+    *!     recognized for backwards compatibility.)
+    *!
+    *!     If there is a fixed first byte, e.g. from a pattern such as
+    *!     (cat|cow|coyote), it is returned in the integer pointed to
+    *!     by where. Otherwise, if either
+    *!
+    *!     (a) the pattern was compiled with the PCRE_MULTILINE
+    *!     option, and every branch starts with @expr{"^"@}, or
+    *!
+    *!     (b) every branch of the pattern starts with @expr{".*"@}
+    *!     and PCRE_DOTALL is not set (if it were set, the pattern
+    *!     would be anchored),
+    *!
+    *!     @expr{-1@} is returned, indicating that the pattern matches
+    *!     only at the start of a subject string or after any newline
+    *!     within the string. Otherwise @expr{-2@} is returned. For
+    *!     anchored patterns, @expr{-2@} is returned.
+    *!   @member int "lastliteral"
+    *!     Return the value of the rightmost literal byte that must
+    *!     exist in any matched string, other than at its start, if
+    *!     such a byte has been recorded. The fourth argument should
+    *!     point to an int variable. If there is no such byte,
+    *!     @expr{-1@} is returned. For anchored patterns, a last
+    *!     literal byte is recorded only if it follows something of
+    *!     variable length. For example, for the pattern /^a\d+z\d+/
+    *!     the returned value is @expr{"z"@}, but for /^a\dz\d/ the
+    *!     returned value is @expr{-1@}.
+    *!   @member int "namecount"
+    *!   @member int "nameentrysize"
+    *!
+    *!   @member int "options"
+    *!     Return a copy of the options with which the pattern was
+    *!     compiled. The fourth argument should point to an unsigned
+    *!     long int variable. These option bits are those specified in
+    *!     the call to pcre_compile(), modified by any top-level
+    *!     option settings within the pattern itself.
+    *!
+    *!     A pattern is automatically anchored by PCRE if all of its
+    *!     top-level alternatives begin with one of the following:
+    *!
+    *! @xml{<matrix>
+    *! <r><c>^</c><c>unless PCRE_MULTILINE is set</c></r>
+    *! <r><c>\A</c><c>always</c></r>
+    *! <r><c>\G</c><c>always</c></r>
+    *! <r><c>.*</c><c>if PCRE_DOTALL is set and there are no back
+    *! references to the subpattern in which .* appears</c></r>
+    *! </matrix>@}
+    *!
+    *!     For such patterns, the PCRE_ANCHORED bit is set in the
+    *!     options returned.
+    *!   @member int "size"
+    *!      Return the size of the compiled pattern, that is, the
+    *!      value that was passed as the argument to pcre_malloc()
+    *!      when PCRE was getting memory in which to place the
+    *!      compiled data. The fourth argument should point to a
+    *!      size_t variable.
+    *!   @member int "studysize"
+    *!      Returns the size of the data block pointed to by the
+    *!      study_data field in a pcre_extra block. That is, it is the
+    *!      value that was passed to pcre_malloc() when PCRE was
+    *!      getting memory into which to place the data created by
+    *!      pcre_study(). The fourth argument should point to a size_t
+    *!      variable.
+    *! @endmapping
+    */
    PIKEFUN mapping info()
       {
 	 int backrefmax,firstbyte,lastliteral,capturecount;
@@ -250,57 +343,60 @@ PIKECLASS _pcre
  *!	returns an int upon failure
  *!
  *!	Error codes:
- *!
- *!     ERROR.NOMATCH
+ *!  @int
+ *!     @value ERROR.NOMATCH
  *!
  *!   The subject string did not match the pattern.
  *!
- *!     ERROR.NULL   
+ *!     @value ERROR.NULL
  *!
- *!   Either code or subject was passed as NULL,  or  ovector  was  NULL  and
- *!   ovecsize was not zero.
+ *!   Either code or subject was passed as NULL, or ovector was NULL
+ *!   and oversize was not zero.
  *!
- *!     ERROR.BADOPTION
+ *!     @value ERROR.BADOPTION
  *!
  *!   An unrecognized bit was set in the options argument.
  *!
- *!     ERROR.BADMAGIC 
+ *!     @value ERROR.BADMAGIC
  *!
- *!   PCRE  stores a 4-byte "magic number" at the start of the compiled code,
- *!   to catch the case when it is passed a junk pointer. This is  the  error
- *!   it gives when the magic number isn't present.
+ *!   PCRE stores a 4-byte "magic number" at the start of the compiled
+ *!   code, to catch the case when it is passed a junk pointer. This
+ *!   is the error it gives when the magic number isn't present.
  *!
- *!     ERROR.UNKNOWN_NODE
+ *!     @value ERROR.UNKNOWN_NODE
  *!
- *!   While running the pattern match, an unknown item was encountered in the
- *!   compiled pattern. This error could be caused by a bug  in  PCRE  or  by
- *!   overwriting of the compiled pattern.
+ *!   While running the pattern match, an unknown item was encountered
+ *!   in the compiled pattern. This error could be caused by a bug in
+ *!   PCRE or by overwriting of the compiled pattern.
  *!
- *!     ERROR.NOMEMORY    
+ *!     @value ERROR.NOMEMORY
  *!
- *!   If  a  pattern contains back references, but the ovector that is passed
- *!   to pcre_exec() is not big enough to remember the referenced substrings,
- *!   PCRE  gets  a  block of memory at the start of matching to use for this
- *!   purpose. If the call via pcre_malloc() fails, this error is given.  The
- *!   memory is freed at the end of matching.
+ *!   If a pattern contains back references, but the ovector that is
+ *!   passed to pcre_exec() is not big enough to remember the
+ *!   referenced substrings, PCRE gets a block of memory at the start
+ *!   of matching to use for this purpose. If the call via
+ *!   pcre_malloc() fails, this error is given. The memory is freed at
+ *!   the end of matching.
  *!
- *!     ERROR.NOSUBSTRING 
+ *!     @value ERROR.NOSUBSTRING
  *!
- *!   This  error is used by the pcre_copy_substring(), pcre_get_substring(),
- *!   and  pcre_get_substring_list()  functions  (see  below).  It  is  never
- *!   returned by pcre_exec().
+ *!   This error is used by the pcre_copy_substring(),
+ *!   pcre_get_substring(), and pcre_get_substring_list() functions
+ *!   (see below). It is never returned by pcre_exec().
  *!
- *!     ERROR.MATCHLIMIT  
+ *!     @value ERROR.MATCHLIMIT
  *!
- *!   The  recursion  and backtracking limit, as specified by the match_limit
- *!   field in a pcre_extra structure (or defaulted)  was  reached.  See  the
- *!   description above.
+ *!   The recursion and backtracking limit, as specified by the
+ *!   match_limit field in a pcre_extra structure (or defaulted) was
+ *!   reached. See the description above.
  *!
- *!     ERROR.CALLOUT     
+ *!     @value ERROR.CALLOUT
  *!
- *!   This error is never generated by pcre_exec() itself. It is provided for
- *!   use by callout functions that want to yield a distinctive  error  code.
- *!   See the pcrecallout documentation for details.
+ *!   This error is never generated by pcre_exec() itself. It is
+ *!   provided for use by callout functions that want to yield a
+ *!   distinctive error code. See the pcrecallout documentation for
+ *!   details.
+ *! @endint
  */
 
 #define OVECTOR_SIZE 3000 /* multiple of three; possible hits*3 */
@@ -518,7 +614,7 @@ PIKE_MODULE_INIT
    FIGURE_BUILD_TIME_OPTION(MATCH_LIMIT);
 #endif
 
-/*! @module CONFIG
+/*! @module OPTION
  *!  contains all option constants
  */
 
@@ -662,6 +758,24 @@ PIKE_MODULE_INIT
 
    END_PROGRAM_MAKE_SUBMODULE("OPTION");
 
+/*! @endmodule OPTION
+ */
+
+/*! @module ERROR
+ */
+
+/*! @decl constant NOMATCH
+ *! @decl constant NULL
+ *! @decl constant BADOPTION
+ *! @decl constant BADMAGIC
+ *! @decl constant UNKNOWN_NODE
+ *! @decl constant NOMEMORY
+ *! @decl constant NOSUBSTRING
+ *! @decl constant MATCHLIMIT
+ *! @decl constant CALLOUT
+ *!   Documented in @[exec].
+ */
+
    start_new_program();
 /* documented in exec() */
    add_integer_constant("NOMATCH",PCRE_ERROR_NOMATCH,0);
@@ -680,7 +794,7 @@ PIKE_MODULE_INIT
 
    END_PROGRAM_MAKE_SUBMODULE("ERROR");
 
-/*! @endmodule CONFIG
+/*! @endmodule ERROR
  */
 
 /*! @endmodule PCRE
