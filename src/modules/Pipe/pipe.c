@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.52 2002/10/21 17:06:22 marcus Exp $
+|| $Id: pipe.c,v 1.53 2003/01/04 13:42:46 grubba Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.52 2002/10/21 17:06:22 marcus Exp $");
+RCSID("$Id: pipe.c,v 1.53 2003/01/04 13:42:46 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -728,8 +728,8 @@ static void pipe_input(INT32 args)
      {
        int filep=fd_lseek(fd, 0L, SEEK_CUR); /* keep the file pointer */
        if(S_ISREG(s.st_mode)	/* regular file */
-	  && ((long)(m=(char *)mmap(0,s.st_size - filep,PROT_READ,
-				    MAP_FILE|MAP_SHARED,fd,filep))!=-1))
+	  && ((m=(char *)mmap(0,s.st_size - filep,PROT_READ,
+			      MAP_FILE|MAP_SHARED,fd,filep))+1))
        {
 #ifdef HAVE_GETEUID
 	 int ou = 0;
