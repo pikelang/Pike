@@ -79,18 +79,18 @@ class Parser
   class line_handler
   {
     function process;
-    function c;
+    array args;
     
-    void create(function p, function _c)
+    void create(function p, mixed ... a)
       {
-	c = _c;
 	process = p;
+	args = a;
       }
 
     mapping `()(object l)
       {
 	line = l;
-	return process(c);
+	return process(@a);
       }
   }
 
@@ -261,9 +261,12 @@ class Parser
       }
   }
 
-  mapping get_any(int max_depth, int eol, object io,
-		  function c)
+  mapping get_any(int max_depth, int eol, function c)
     {
+      if (!line)
+	return ([ "action" : "expect_line",
+		  "handler" : line_handler(get_any, max_depth, eol, c) ]);
+
       mapping t = line->get_token(eol);
 
       if (!t)
