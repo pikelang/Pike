@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.10 1997/01/27 01:21:34 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.11 1997/01/29 21:43:07 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -77,6 +77,7 @@ static void init_mapping(struct mapping *m, INT32 size)
 #ifdef DEBUG
   if(size < 0) fatal("init_mapping with negative value.\n");
 #endif
+  if(size<3) size=3;
 
   hashsize=size / AVG_LINK_LENGTH + 1;
   if(!(hashsize & 1)) hashsize++;
@@ -88,10 +89,10 @@ static void init_mapping(struct mapping *m, INT32 size)
   m->hashsize=hashsize;
 
   tmp+=sizeof(struct keypair *)*hashspace;
-  m->free_list=(struct keypair *) tmp;
   
   MEMSET((char *)m->hash, 0, sizeof(struct keypair *) * m->hashsize);
 
+  m->free_list=(struct keypair *) tmp;
   for(e=1;e<size;e++)
     m->free_list[e-1].next = m->free_list + e;
   m->free_list[e-1].next=0;
