@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.4 2004/09/16 23:26:44 nilsson Exp $
+|| $Id: dump.pike,v 1.5 2004/09/17 12:05:42 grubba Exp $
 */
 
 constant description = "Dumps pike files into object files.";
@@ -29,9 +29,9 @@ string fakeroot(string s)
 object progress_bar;
 
 class GTKProgress {
-  object /* GTK.Window */ win;
-  object /* GTK.ProgressBar */ bar;
-  object /* GTK.Frame */ frame;
+#if constant(GTK.Window)
+  GTK.ProgressBar bar;
+#endif
   float progress;
   float scale;
 
@@ -41,18 +41,20 @@ class GTKProgress {
     if(bar) bar->update(progress);
   }
 
+#if constant(GTK.Window)
+  GTK.Window win;
+  GTK.Frame frame;
+
   void create() {
-#if constant(GTK)
-    if(!GTK->setup_gtk) return;
-    GTK->setup_gtk();
-    win = GTK->Window(GTK.WINDOW_TOPLEVEL)
+    GTK.setup_gtk();
+    win = GTK.Window(GTK.WINDOW_TOPLEVEL)
       ->set_title(version() + " Module Dumping")
-      ->add( frame=GTK->Frame("Dumping Pike modules...")->
-	     set_border_width(16)->
-	     add( bar=GTK->ProgressBar()->set_usize(150,20) ));
+      ->add(frame = GTK.Frame("Dumping Pike modules...")->
+	    set_border_width(16)->
+	    add(bar = GTK.ProgressBar()->set_usize(150,20)));
     win->show_all();
-#endif
   }
+#endif
 }
 
 Stdio.File logfile = Stdio.stderr;
