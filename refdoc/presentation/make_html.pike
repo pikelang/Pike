@@ -498,7 +498,10 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "or":
-    ret += map(n->get_children(), parse_type)*"|";
+    ret += map(filter(n->get_children(),
+		      lambda(Node n){
+			return n->get_node_type()==XML_ELEMENT;
+		      }), parse_type)*"|";
     break;
 
   case "string": case "void": case "program": case "mixed": case "float":
