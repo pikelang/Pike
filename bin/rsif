@@ -1,7 +1,7 @@
-#! /usr/local/bin/pike
-// -*- pike -*- $Id: rsif,v 1.5 2002/04/06 21:54:42 jhs Exp $
+#! /usr/bin/env pike
+// -*- pike -*- $Id: rsif,v 1.6 2002/04/06 22:12:52 jhs Exp $
 
-string version = ("$Revision: 1.5 $"/" ")[1];
+string version = ("$Revision: 1.6 $"/" ")[1];
 int verbosity = 1; // interactive
 int overwrite = 1; // no backups
 
