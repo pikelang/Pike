@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.43 2004/04/05 23:18:43 nilsson Exp $
+// $Id: RDF.pike,v 1.44 2004/05/05 16:02:13 stensson Exp $
 
 #pike __REAL_VERSION__
 
@@ -686,9 +686,14 @@ static Node add_xml_children(Node p, string base) {
   string subj_uri = rdf_m->about;
   Resource subj;
   if(rdf_m->about)
+  {
+    if (base)
+      if (search(rdf_m->about, ":/") == -1)
+        rdf_m->about = base + rdf_m->about;
     subj = make_resource(rdf_m->about);
+  }
   else if(rdf_m->ID) {
-    subj = make_resource(rdf_m->ID);
+    subj = make_resource((base || "") + rdf_m->ID);
     add_statement(subj, rdf_type,
 		  make_resource(p->get_ns()+p->get_any_name()) );
   } else
