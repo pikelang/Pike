@@ -5,7 +5,6 @@
 
 inherit Protocols.Line.imap_style;
 
-
 void send_line(string s)
 {
   send(s + "\r\n");
@@ -21,6 +20,11 @@ void send_imap(string|object ...args)
   send_line(.types.imap_format_array(args));
 }
 
+void close_imap()
+{
+  disconnect();
+}
+
 void do_timeout()
 {
   if (con)
@@ -34,6 +38,10 @@ string handle_request(object req);
 
 void recv_command(string s)
 {
+  if (!strlen(s))
+    // Ignore empty lines.
+    return;
+  
   object line = .parse_line(s);
 
   string tag = line->get_atom();
@@ -65,9 +73,9 @@ void recv_command(string s)
 
 class recv_line
 {
-  function(object:void) handler;
+  function handler;
 
-  void create(function(object:void) h)
+  void create(function h)
     {
       handler = h;
     }
@@ -77,9 +85,9 @@ class recv_line
 
 class recv_literal
 {
-  function(object:void) handler;
-
-  void create(function(object:void) h)
+  function handler;
+  
+  void create(function h)
     {
       handler = h;
     }
@@ -87,7 +95,6 @@ class recv_literal
   void `()(string s)
     {
       handler(s);
-      handle_literal = 0;
     }
 }
 
@@ -113,6 +120,11 @@ void send_ok_response(string tag, string msg)
   send_imap(tag, "OK", msg);
 }
 
+void send_continuation_response(string msg)
+{
+  send_imap("+", msg);
+}
+
 void use_commands(mapping(string:function) c)
 {
   commands = c;
@@ -123,12 +135,12 @@ void get_request()
   handle_command = recv_command;
 }
 
-void get_line(function(object:void) handler)
+void get_line(function handler)
 {
   handle_command = recv_line(handler);
 }
 
-void get_literal(int length, function(string:void) handler)
+void get_literal(int length, function handler)
 {
   literal_length = length;
   handle_literal = recv_literal(handler);
