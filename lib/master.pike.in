@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.130 2000/09/15 13:11:10 mirar Exp $
+ * $Id: master.pike.in,v 1.131 2000/09/24 01:37:01 per Exp $
  * 
  * Master-file for Pike.
  *
@@ -937,10 +937,12 @@ mixed resolv_base(string identifier, string|void current_file)
   }
   return UNDEFINED;
 }
-
+multiset no_resolv = (<>);
 mapping resolv_cache = set_weak_flag( ([]), 1 );
 mixed resolv(string identifier, string|void current_file)
 {
+  if( no_resolv[ identifier ] )
+    return UNDEFINED;
   mixed ret;
   string id=identifier+":"+(current_file ? dirname(current_file) : "-");
   if( !zero_type (ret = resolv_cache[id]) )
@@ -1022,6 +1024,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"version",tmp->NO_ARG,({"-v","--version"})}),
       ({"help",tmp->NO_ARG,({"-h","--help"})}),
       ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
+      ({"debug_without",tmp->HAS_ARG,({"--debug-without"})}),
       ({"preprocess",tmp->HAS_ARG,({"-E","--preprocess"})}),
       ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
       ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
@@ -1050,7 +1053,32 @@ void _main(array(string) orig_argv, array(string) env)
       case "autoreload":
 	autoreload_on++;
 #endif
-
+      case "debug_without":
+        foreach( q[i][1]/",", string feature )
+        {
+          switch( feature )
+          {
+           case "ttf":
+             no_resolv[ "_Image_TTF" ] = 1;
+             break;
+           case "zlib":
+             no_resolv[ "Gz" ] = 1;
+             break;
+           case "unisys":
+             no_resolv[ "_Image_GIF" ] = 1;
+             no_resolv[ "_Image_TIFF" ] = 1;
+             break;
+           case "threads":
+             // not really 100% correct, but good enough for most things.
+             no_resolv[ "Thread" ] = 1;
+             add_constant( "thread_create", ([])[0] );
+             break;
+           default:
+             no_resolv[ feature ] = 1;
+             break;
+          }
+        }
+        break;
       case "debug":
 	debug+=(int)q[i][1];
 	break;
