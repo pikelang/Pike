@@ -3,12 +3,12 @@ CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" $(MODULE_MAKE_FLAGS)
 
-all: subdirs dummy module.a
+all: subdirs dummy
 
 subdirs:
 	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; fi ; done
 
-dummy:	linker_options modlist_headers modlist_segment module.pmod
+dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
 
 linker_options: Makefile $(MODULE_ARCHIVES)
@@ -28,7 +28,7 @@ module.a: $(OBJS)
 	-rm -f module.a
 	ar cq module.a $(OBJS)
 	-@RANLIB@ module.a
-	touch linker_options
+	if test -f linker_options ; then touch linker_options ; fi
 
 clean:
 	-rm -f *.o *.a *.so module.so module.pmod
