@@ -14,6 +14,8 @@ constant SingleReplace = __builtin.single_string_replace;
 constant Bootstring = __builtin.bootstring;
 constant int2char = int2char;
 constant int2hex = int2hex;
+constant string2hex = __builtin.string2hex;
+constant hex2string = __builtin.hex2string;
 
 //! This function implodes a list of words to a readable string, e.g.
 //! @expr{({"straw","berry","pie"})@} becomes @expr{"straw, berry and
@@ -268,40 +270,4 @@ static string line_expand_tab(string line, int tab_width,
     col += sizeof(chunk);
   }
   return result;
-}
-
-/*! @decl string hex2string(string hex)
- *!
- *! Convert a string of hexadecimal digits to binary data.
- *!
- *! @seealso
- *!   @[string2hex()]
- */
-string hex2string(string hex)
-{
-  if (sizeof(hex) % 2)
-    error("Can't have an odd number of digits.\n");
-
-  array(array(int)) chars;
-  string rest;
-  if (sscanf(hex, "%{%2x%}%s", chars, rest) != 2
-      || sizeof(rest))
-    error("Invalid hex input.\n");
-  
-  return (string)(chars * ({}));
-}
-
-/*! @decl string string2hex(string s)
- *!
- *! Convert a string of binary data to hexadecimal digits.
- *!
- *! @seealso
- *!   @[hex2string()]
- */
-string string2hex(string s)
-{
-  if(width(s)>8)
-    error("Can't convert wide string to hex");
-  
-  return sprintf("%@02x", (array(int)) s);
 }
