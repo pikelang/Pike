@@ -6,10 +6,10 @@
  * controls for threads
  */
 
-/*! @module __builtin
+/*! @module Pike
  */
 
-/*! @module security
+/*! @module Security
  *!
  *! Pike has an optional internal security system, which can be
  *! enabled with the configure-option @tt{--with-security@}.
