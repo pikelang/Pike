@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.129 2003/02/20 11:55:32 grubba Exp $
+|| $Id: interpret.h,v 1.130 2003/02/24 20:27:11 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -269,7 +269,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 
 #define POP_PIKE_FRAME() do {						\
   struct pike_frame *tmp_=Pike_fp->next;					\
-  if(!--Pike_fp->refs)							\
+  if(!sub_ref(Pike_fp))							\
   {									\
     really_free_pike_frame(Pike_fp);						\
   }else{								\
