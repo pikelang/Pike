@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.5 2001/07/20 22:45:20 grubba Exp $
+ * $Id: sparc.h,v 1.6 2001/07/21 16:30:50 grubba Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -73,19 +73,10 @@
     }								\
   } while(0)
 
-#define FLUSH_INSTRUCTION_CACHE(ADDR, LEN) do {		\
-    register INT32 cnt_ = 0;				\
-    register INT32 max_ = (LEN)+sizeof(INT32);		\
-    register void *addr_ = ADDR;			\
-							\
-    do {						\
-      __asm__ __volatile__ ("	flush %0+%1"		\
-			    :				\
-			    : "r" (addr_), "r" (cnt_)	\
-			    : "memory");		\
-      cnt_ += 8;					\
-    } while (cnt_ < max_);				\
-  } while(0)
+extern const unsigned INT32 sparc_flush_instruction_cache[];
+#define FLUSH_INSTRUCTION_CACHE(ADDR, LEN)			\
+  (((void (*)(void *,size_t))sparc_flush_instruction_cache)	\
+    (ADDR, (LEN)*sizeof(PIKE_OPCODE_T)))
 
 struct dynamic_buffer_s;
 

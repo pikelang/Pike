@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.c,v 1.5 2001/07/20 22:45:19 grubba Exp $
+ * $Id: sparc.c,v 1.6 2001/07/21 16:30:50 grubba Exp $
  *
  * Machine code generator for sparc.
  *
@@ -127,3 +127,34 @@ void sparc_decode_program(struct program *p)
        0x3fffffff);
   }
 }
+
+/*
+ * Inline machine-code...
+ */
+const unsigned INT32 sparc_flush_instruction_cache[] = {
+  /*
+   * On entry:
+   *	%o0 : void *ptr
+   *	%o1 : size_t nbytes
+   *
+   *	cmp	%o1, #1
+   * .l0:
+   *	flush	%o0+%o1
+   *	bge,a	.l0
+   *	subcc	%o1, 8, %o1
+   *	retl
+   *	or	%g0,%g0,%o0
+   */
+  /* 1000 0000 1010 0000 0010 0000 0000 0000 */
+  0x80a02000|(SPARC_REG_O1<<14)|1,
+  /* 1000 0001 1101 1000 0000 0000 0000 0000 */
+  0x81d80000|(SPARC_REG_O0<<14)|(SPARC_REG_O1),
+  /* 0011 0110 1000 0000 0000 0000 0000 0000 */
+  0x36800000|((-1)&0x3fffff),
+  /* 1000 0000 1010 0000 0010 0000 0000 0000 */
+  0x80a02000|(SPARC_REG_O1<<25)|(SPARC_REG_O1<<14)|8,
+  /* 1000 0001 1100 0000 0010 0000 0000 0000 */
+  0x81c02000|(SPARC_REG_O7<<14)|8,
+  /* 1000 0000 0001 0000 0000 0000 0000 0000 */
+  0x80100000|(SPARC_REG_O0<<25),
+};
