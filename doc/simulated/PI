@@ -2,7 +2,7 @@ NAME
 	PI - pi
 
 SYNTAX
-	pi
+	PI
 
 DESCRIPTION
 	This is not a function, it is a constant added by simulate.lpc.
