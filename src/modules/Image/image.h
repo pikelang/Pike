@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.13 1997/11/11 22:17:50 mirar Exp $
+**!	$Id: image.h,v 1.14 1997/11/12 03:40:19 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -137,6 +137,6 @@ void image_tobitmap(INT32 args);
 
 /* polyfill.c */
 
-void image_polygone(INT32 args);
+void image_polyfill(INT32 args);
 
 

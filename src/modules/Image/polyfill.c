@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.14 1997/11/05 03:41:36 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.15 1997/11/12 03:40:20 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -29,12 +29,12 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.14 1997/11/05 03:41:36 mirar Exp $
+**!	$Id: polyfill.c,v 1.15 1997/11/12 03:40:20 mirar Exp $
 **! class image
 */
 
 /*
-**! method object polygone(array(int|float) ... curve)
+**! method object polyfill(array(int|float) ... curve)
 **! 	fills an area with the current color
 **!
 **! returns the current object
@@ -46,8 +46,10 @@ extern double floor(double);
 **!	will make a hole.
 **!
 **! note
-**!	This function is new (april-97) and rather untested.
-**! see also: box, setcolor
+**!	Lines in the polygon may not be crossed without
+**!	midpoints.
+**!
+**! see also: setcolor
 */
 
 struct vertex_list
@@ -271,7 +273,7 @@ static void sub_vertices(struct vertex_list **first,
    }
 }
 
-static void polygone_row_fill(float *buf,
+static void polyfill_row_fill(float *buf,
 			      float xmin,float xmax)
 {
    int i;
@@ -287,7 +289,7 @@ static void polygone_row_fill(float *buf,
    }
 }
 
-static int polygone_row_vertices(float *buf,
+static int polyfill_row_vertices(float *buf,
 				 struct vertex_list *v1,
 				 struct vertex_list *v2,
 				 float xmin,
@@ -326,7 +328,7 @@ static int polygone_row_vertices(float *buf,
    }
 #endif
 
-   if (fill<0) polygone_row_fill(buf,xmin,xmax);
+   if (fill<0) polyfill_row_fill(buf,xmin,xmax);
 
    v=v1;
    while (v!=v2)
@@ -432,7 +434,7 @@ static int toggle_fill(struct vertex_list *v1,
    return fill;
 }
 
-static void polygone_row(struct image *img,
+static void polyfill_row(struct image *img,
 			 float *buf,
 			 struct vertex_list **vertices,
 			 float yp,
@@ -590,7 +592,7 @@ resort:
       }
 
       if (xmin!=nxmax)
-	polygone_row_vertices(buf,v1,v,xmin,xmax,yp,fill);
+	polyfill_row_vertices(buf,v1,v,xmin,xmax,yp,fill);
       
       fill=toggle_fill(v1,xmin,xmax,yp,fill);
 
@@ -618,7 +620,7 @@ resort:
 		 nxmax,xminf,fill);
 #endif
 	 if (fill) 
-	    polygone_row_fill(buf,xmax,xminf);
+	    polyfill_row_fill(buf,xmax,xminf);
 	 if (xminf==ixmax) break;
 
 	 xmin=xminf;
@@ -641,7 +643,7 @@ resort:
 #endif
 }
 
-static void polygone_some(struct image *img,
+static void polyfill_some(struct image *img,
 			  struct vertex *top)
 {
    struct vertex_list *vertices;
@@ -720,7 +722,7 @@ fprintf(stderr,"\n\nrow y=%g..%g\n",yp,yp+1);
       {
 	 int xmin,xmax;
 
-	 polygone_row(img, buf, &vertices,yp, &xmin,&xmax);
+	 polyfill_row(img, buf, &vertices,yp, &xmin,&xmax);
 
 #ifdef POLYDEBUG
 	 fprintf(stderr,"yp=%g dest=&%lx (&%lx..&%lx) xmin=%d xmax=%d;   ",
@@ -749,7 +751,7 @@ fprintf(stderr,"\n\nrow y=%g..%g\n",yp,yp+1);
    }
 }
 
-static INLINE void polygone_free(struct vertex *top)
+static INLINE void polyfill_free(struct vertex *top)
 {
    struct vertex_list *v,*vn;
    struct vertex *tn;
@@ -766,12 +768,12 @@ static INLINE void polygone_free(struct vertex *top)
    }
 }
 
-static INLINE struct vertex *polygone_begin(void)
+static INLINE struct vertex *polyfill_begin(void)
 {
    return NULL;
 }
 
-static INLINE struct vertex *polygone_add(struct vertex *top,
+static INLINE struct vertex *polyfill_add(struct vertex *top,
 					  struct array *a,
 					  int arg,
 					  char* what)
@@ -783,13 +785,13 @@ static INLINE struct vertex *polygone_add(struct vertex *top,
       if (a->item[n].type!=T_FLOAT &&
 	  a->item[n].type!=T_INT)
       {
-	 polygone_free(top);
+	 polyfill_free(top);
 	 error("Illegal argument %d to %s, array index %d is not int nor float\n",arg,what,n);
 	 return NULL;
       }
 
    if (a->size<6) {
-      polygone_free(top);
+      polyfill_free(top);
       error("Illegal argument %d to %s, too few vertices (min 3)\n", arg, what);
       return NULL; /* no polygon with less then tree corners */
    }
@@ -825,14 +827,14 @@ static INLINE struct vertex *polygone_add(struct vertex *top,
    return top;
 }
 
-void image_polygone(INT32 args)
+void image_polyfill(INT32 args)
 {
    struct vertex *v;
 
    if (!THIS->img)
-      error("No image when calling Image.image->polygone()\n");
+      error("No image when calling Image.image->polyfill()\n");
 
-   v=polygone_begin();
+   v=polyfill_begin();
 
    while (args)
    {
@@ -840,15 +842,15 @@ void image_polygone(INT32 args)
 
       if (sp[-1].type!=T_ARRAY)
       {
-	 polygone_free(v);
-	 error("Illegal argument %d to Image.image->polygone(), expected array\n",
+	 polyfill_free(v);
+	 error("Illegal argument %d to Image.image->polyfill(), expected array\n",
 	       args);
       }
-      if ((v_tmp=polygone_add(v, sp[-1].u.array, args, "Image.image->polygone()"))) {
+      if ((v_tmp=polyfill_add(v, sp[-1].u.array, args, "Image.image->polyfill()"))) {
 	 v = v_tmp;
       } else {
-	 polygone_free(v);
-	 error("Bad argument %d to Image.image->polygone(), bad vertice\n", args);
+	 polyfill_free(v);
+	 error("Bad argument %d to Image.image->polyfill(), bad vertice\n", args);
       }
       args--;
       pop_stack();
@@ -856,9 +858,9 @@ void image_polygone(INT32 args)
 
    if (!v) return; /* no vertices */
 
-   polygone_some(THIS,v);
+   polyfill_some(THIS,v);
    
-   polygone_free(v);
+   polyfill_free(v);
    
    THISOBJ->refs++;
    push_object(THISOBJ);

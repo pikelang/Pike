@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.60 1997/11/11 04:03:09 grubba Exp $ */
+/* $Id: image.c,v 1.61 1997/11/12 03:40:18 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.60 1997/11/11 04:03:09 grubba Exp $
+**!	$Id: image.c,v 1.61 1997/11/12 03:40:18 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -23,7 +23,7 @@
 **!	<ref>setpixel</ref>, 
 **!	<ref>treshold</ref>,
 **!	<ref>tuned_box</ref>,
-**!	<ref>polygone</ref>
+**!	<ref>polyfill</ref>
 **!
 **!	operators: <ref>`&</ref>,
 **!	<ref>`*</ref>,
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.60 1997/11/11 04:03:09 grubba Exp $");
+RCSID("$Id: image.c,v 1.61 1997/11/12 03:40:18 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2770,7 +2770,9 @@ void pike_module_init(void)
 		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("tuned_box",image_tuned_box,
 		"function(int,int,int,int,array:object)",0);
-   add_function("polygone",image_polygone,
+   add_function("polygone",image_polyfill,
+		"function(array(float|int) ...:object)",0);
+   add_function("polyfill",image_polyfill,
 		"function(array(float|int) ...:object)",0);
 
    add_function("gray",image_grey,
@@ -2877,6 +2879,7 @@ void pike_module_init(void)
 
    init_image_gif();
    init_image_pnm();
+   init_image_png();
 }
 
 void pike_module_exit(void) 
@@ -2891,6 +2894,7 @@ void pike_module_exit(void)
 
   exit_image_gif();
   exit_image_pnm();
+  exit_image_png();
 }
 
 
