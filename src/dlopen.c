@@ -80,7 +80,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.17 2001/09/13 21:57:03 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.18 2001/09/14 00:45:40 marcus Exp $");
 
 #endif
 
@@ -355,6 +355,7 @@ struct DLLList
 
 static struct DLHandle *first;
 static struct DLHandle global_dlhandle;
+static INT32 global_imagebase = 0x00400000;
 
 
 static void *lookup_dlls(struct DLLList *l, char *name)
@@ -507,6 +508,40 @@ struct COFFReloc
   INT16 type;
 };
 
+struct PEAOUT {
+  struct {
+    INT16 magic;
+    INT16 version;
+    INT32 text_size;
+    INT32 data_size;
+    INT32 bss_size;
+    INT32 entry;
+    INT32 text_start;
+    INT32 data_start;
+  } aout;
+  INT32 image_base;
+  INT32 section_alignment;
+  INT32 file_alignment;
+  INT16 major_os_version;
+  INT16 minor_os_version;
+  INT16 major_image_version;
+  INT16 minor_image_version;
+  INT16 major_subsys_version;
+  INT16 minor_subsys_version;
+  INT32 reserved1;
+  INT32 size_of_image;
+  INT32 size_of_headers;
+  INT32 checksum;
+  INT16 subsys;
+  INT16 dll_flags;
+  INT32 size_of_stack_reserve;
+  INT32 size_of_stack_commit;
+  INT32 size_of_heap_reserve;
+  INT32 size_of_heap_commit;
+  INT32 loader_flags;
+  INT32 number_of_rva_and_sizes;
+  INT32 data_directory[16][2];
+};
 
 struct DLTempData
 {
@@ -526,6 +561,8 @@ struct DLObjectTempData
   struct COFFSymbol *symbols;
   char *stringtable;
   struct COFFsection *sections;
+
+  struct PEAOUT *peaout;
 
   /* temporary storage */
   char **symbol_addresses;
@@ -714,6 +751,12 @@ static int dl_load_coff_files(struct DLHandle *ret,
     data->sections=(struct COFFsection *)( ((char *)data->coff) +
 					   sizeof(struct COFF)+ 
 					   data->coff->sizeof_optheader);
+
+    if(data->coff->sizeof_optheader)
+      data->peaout=(struct PEAOUT *)(data->coff + 1);
+    else
+      data->peaout = NULL;
+
 #ifdef DLDEBUG
   fprintf(stderr,"DL: %x %d %d %d\n",
 	  data->coff,
@@ -1158,6 +1201,15 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif
 	    break;
 
+#if 0
+	  case COFFReloc_type_dir32nb:
+#ifdef DLDEBUG
+	    fprintf(stderr,"DL: reloc absolute nb: loc %p = %p\n", loc,ptr);
+#endif
+	      ((INT32 *)loc)[0]+=((INT32)ptr) - global_imagebase;
+	    break;	   
+#endif
+
           case COFFReloc_type_rel32:
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc relative: loc %p = %p = %d\n",
@@ -1422,6 +1474,16 @@ static void init_dlopen(void)
     data->stringtable=(unsigned char *)( ((char *)data->symbols) + 
 					 18 * data->coff->num_symbols);
     
+
+    if(data->coff->sizeof_optheader) {
+
+      data->peaout=(struct PEAOUT *)(data->coff + 1);
+
+      global_imagebase = data->peaout->image_base;
+
+    } else
+
+      data->peaout = NULL;
 
 #ifdef PIKE_DEBUG
     if(!data->coff->num_symbols)
