@@ -2524,7 +2524,7 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
    if (origin->rules->abbr2zone[zonename])
       zonename=origin->rules->abbr2zone[zonename];
 
-   Ruleset.Timezone zone=Timezone[zonename];
+   Rule.Timezone zone=Timezone[zonename];
    if (!zone)
    {
       if (sscanf(zonename,"%[^-+]%s",string a,string b)==2 && a!="" && b!="")

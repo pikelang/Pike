@@ -34,7 +34,7 @@ static private int __sanity_check=lambda()
    return 1;
 }();
 
-Ruleset.Timezone Timezone_UTC=Ruleset()->Timezone(0,"UTC"); // needed for dumping
+Rule.Timezone Timezone_UTC=Rule.Timezone(0,"UTC"); // needed for dumping
 
 string calendar_name() { return "Time"; }
 
@@ -1972,22 +1972,22 @@ TimeofDay now()
 //!	Result: Fraction(Fri 2 Jun 2000 16:03:02.323912 UTC)
 //!	</pre>
 
-this_program set_timezone(string|Ruleset.Timezone tz)
+this_program set_timezone(string|Rule.Timezone tz)
 {
    return set_ruleset(default_rules->set_timezone(tz));
 }
 
-Ruleset.Timezone timezone()
+Rule.Timezone timezone()
 {
    return default_rules->timezone;
 }
 
-this_program set_language(string|Ruleset.Language lang)
+this_program set_language(string|Rule.Language lang)
 {
    return set_ruleset(default_rules->set_language(lang));
 }
 
-Ruleset.Language language()
+Rule.Language language()
 {
    return default_rules->language;
 }

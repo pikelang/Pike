@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.19 2003/01/26 09:11:16 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.20 2003/03/10 01:24:08 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -910,12 +910,12 @@ class TimeRange
 //!	<tt>Year(2003)-&gt;...-&gt;set_timezone(TimeZone.CET)-&gt;...-&gt;hour(14)-&gt;...</tt>
 //!
 
-   TimeRange set_timezone(string|Ruleset.Timezone tz)
+   TimeRange set_timezone(string|Rule.Timezone tz)
    {
       return set_ruleset(rules->set_timezone(tz));
    }
 
-   Ruleset.Timezone timezone()
+   Rule.Timezone timezone()
    {
       return rules->timezone;
    }
@@ -925,12 +925,12 @@ class TimeRange
 //! method Language language()
 //!	Set or get the current language rule.
 
-   TimeRange set_language(string|Ruleset.Language lang)
+   TimeRange set_language(string|Rule.Language lang)
    {
       return set_ruleset(rules->set_language(lang));
    }
 
-   Ruleset.Language language()
+   Rule.Language language()
    {
       return rules->language;
    }
@@ -1153,7 +1153,7 @@ class cSuperTimeRange
       return ::_sprintf(t,m);
    }
 
-   TimeRange set_timezone(string|Ruleset.Timezone tz)
+   TimeRange set_timezone(string|Rule.Timezone tz)
    {
 // fixme?
       return `|(@map(parts,"set_timezone",tz));
