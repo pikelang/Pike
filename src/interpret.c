@@ -18,6 +18,7 @@
 #include "lex.h"
 #include "builtin_efuns.h"
 
+#define TRACE_LEN 256
 struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
 struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
 struct frame *fp; /* frame pointer */
@@ -166,8 +167,7 @@ static char trace_buffer[100];
   instr=prefix,\
   prefix=0,\
   instr+=EXTRACT_UCHAR(pc++),\
-  (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),\
-   write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
+  (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
 #else
@@ -597,7 +597,7 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_BRANCH_WHEN_NON_ZERO);
       check_destructed(sp-1);
       if(IS_ZERO(sp-1))
-      {	
+      {
 	pc+=sizeof(INT32);
       }else{
 	check_signals();
@@ -830,7 +830,6 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   }
   UNSETJMP(tmp);
 
-
   free_object(new_frame.current_object);
   free_program(new_frame.context.prog);
 
@@ -916,6 +915,13 @@ void apply_low(struct object *o, int fun, int args)
     }
     my_strcat(")"); 
     s=simple_free_buf();
+    if(strlen(s) > TRACE_LEN)
+    {
+      s[TRACE_LEN]=0;
+      s[TRACE_LEN-1]='.';
+      s[TRACE_LEN-2]='.';
+      s[TRACE_LEN-2]='.';
+    }
     fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
     free(s);
 
@@ -1006,6 +1012,13 @@ void apply_low(struct object *o, int fun, int args)
     my_strcat("Return: ");
     describe_svalue(sp-1,0,0);
     s=simple_free_buf();
+    if(strlen(s) > TRACE_LEN)
+    {
+      s[TRACE_LEN]=0;
+      s[TRACE_LEN-1]='.';
+      s[TRACE_LEN-2]='.';
+      s[TRACE_LEN-2]='.';
+    }
     fprintf(stderr,"%-*s%s\n",4,"-",s);
     free(s);
 
@@ -1112,6 +1125,13 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     }
     my_strcat(")"); 
     st=simple_free_buf();
+    if(strlen(st) > TRACE_LEN)
+    {
+      st[TRACE_LEN]=0;
+      st[TRACE_LEN-1]='.';
+      st[TRACE_LEN-2]='.';
+      st[TRACE_LEN-2]='.';
+    }
     fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,st);
     free(st);
 
@@ -1149,6 +1169,13 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     my_strcat("Return: ");
     describe_svalue(sp-1,0,0);
     s=simple_free_buf();
+    if(strlen(s) > TRACE_LEN)
+    {
+      s[TRACE_LEN]=0;
+      s[TRACE_LEN-1]='.';
+      s[TRACE_LEN-2]='.';
+      s[TRACE_LEN-2]='.';
+    }
     fprintf(stderr,"%-*s%s\n",4,"-",s);
     free(s);
 

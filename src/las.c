@@ -15,6 +15,7 @@
 #include "error.h"
 #include "docode.h"
 #include "main.h"
+#include "memory.h"
 
 #define LASDEBUG
 

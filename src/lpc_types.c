@@ -551,9 +551,11 @@ int match_types(struct lpc_string *a,struct lpc_string *b)
   return 0!=low_match_types(a->str, b->str);
 }
 
-static unsigned char type_stack[1000];
+
+#define STACK_SIZE 10000
+static unsigned char type_stack[STACK_SIZE];
 static unsigned char *type_stackp=type_stack;
-static unsigned char *mark_stack[200];
+static unsigned char *mark_stack[STACK_SIZE/4];
 static unsigned char **mark_stackp=mark_stack;
 
 void reset_type_stack()

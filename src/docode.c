@@ -951,7 +951,8 @@ static int do_docode2(node *n,int flags)
     ins_f_byte(F_SWITCH);
     tmp1=PC;
     ins_short(0, A_PROGRAM);
-    while(PC != (unsigned int)MY_ALIGN(PC)) ins_byte(0, A_PROGRAM);
+    while(PC != (unsigned INT32)MY_ALIGN(PC))
+      ins_byte(0, A_PROGRAM);
     tmp2=PC;
     current_switch_values_on_stack=0;
     current_switch_case=0;

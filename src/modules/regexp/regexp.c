@@ -1171,7 +1171,7 @@ regexp         *r;
     s = r->program + 1;
     while (op != END) {		/* While that wasn't END last time... */
 	op = OP(s);
-	printf("%2d%s", (long)(s - r->program), regprop(s));	/* Where, what. */
+	printf("%2ld%s", (long)(s - r->program), regprop(s));	/* Where, what. */
 	nxt = regnext(s);
 	if (nxt == (char *)NULL)	/* nxt ptr. */
 	    printf("(0)");

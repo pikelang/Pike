@@ -23,12 +23,7 @@
 #endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
-#if defined (RLIMIT_OFILE) && !defined (RLIMIT_NOFILE)
-#  define RLIMIT_NOFILE RLIMIT_OFILE
-#endif /* HAVE_RESOURCE && RLIMIT_OFILE && !RLIMIT_NOFILE */
 #endif
-
-/* Some systems use RLIMIT_NOFILE, others use RLIMIT_OFILE */
 
 char *master_file;
 
@@ -131,10 +126,11 @@ void main(int argc, char **argv, char **env)
     }
   }
 
-#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
-#ifndef RLIM_INFINITY
-#define RLIM_INFINITY 0x7fffffff
+#if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
+#define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
+
+#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
   {
     struct rlimit lim;
     long tmp;
@@ -146,10 +142,6 @@ void main(int argc, char **argv, char **env)
       setrlimit(RLIMIT_NOFILE, &lim);
     }
   }
-#else
-#if defined (HAVE_SETDTABLESIZE)
-  setdtablesize (MAX_OPEN_FILEDESCRIPTORS);
-#endif
 #endif
 
   current_time = get_current_time();

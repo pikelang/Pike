@@ -29,9 +29,9 @@ DESCRIPTION
         a ^ b  : xor, return a mapping with all indices that are present in
                  a or b but not in both.
         a == b : returns 1 if a is the same mapping as b, same size, indices
-                 and values is not enough.
-        a != b : returns 1 if a is the same mapping as b, same size, indices
-                 and values is not enough.
+                 and values is not enough, 0 otherwise.
+        a != b : returns 0 if a is the same mapping as b, same size, indices
+                 and values is not enough, 1 otherwise.
         ! a    : boolean not, returns 1
 	a[c]   : indexing, returns the value associated with the value c
                  in the mapping a. If there is no index c in the mapping

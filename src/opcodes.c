@@ -253,11 +253,11 @@ static int read_set(char *match,int cnt,char *set,int match_len)
 static INT32 low_sscanf(INT32 num_arg)
 {
   char *input;
-  INT32 input_len;
+  int input_len;
   char *match;
-  INT32 match_len;
+  int match_len;
   struct svalue sval;
-  INT32 e,cnt,matches,eye,arg;
+  int e,cnt,matches,eye,arg;
   int no_assign;
   char set[256];
   struct svalue *argp;
@@ -432,7 +432,7 @@ static INT32 low_sscanf(INT32 num_arg)
 	  s=MEMMEM(end_str_start,
 		   end_str_end-end_str_start,
 		   input+eye,
-		   (SIZE_T)(input_len-eye));
+		   input_len-eye);
 	  if(!s) return matches;
 	  eye=s-input;
 	  new_eye=eye+end_str_end-end_str_start;

@@ -1,5 +1,6 @@
 #include "global.h"
 #include "types.h"
+#include "memory.h"
 
 #define MARKER_CHUNK_SIZE 4096
 #define REHASH_LIMIT 16
@@ -47,7 +48,7 @@ INT32 checked(void *a,INT32 delta)
 
   if(!hash) return 0;
 
-  hashval=((int)a)%hashsize;
+  hashval=((long)a)%hashsize;
 
   for(m=hash[hashval];m;m=m->next)
   {
@@ -81,7 +82,7 @@ INT32 checked(void *a,INT32 delta)
       for(m=hash[e];m;m=next)
       {
 	next=m->next;
-	m->next=new_hash[((int)m->marked)%new_hashsize];
+	m->next=new_hash[((long)m->marked)%new_hashsize];
 	new_hash[((int)m->marked)%new_hashsize]=m;
       }
     }
