@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.79 2000/04/23 03:01:25 mast Exp $");
+RCSID("$Id: gc.c,v 1.80 2000/04/23 03:17:11 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -660,6 +660,8 @@ INT32 real_gc_check(void *a)
       fatal_after_gc="Refs changed in gc()\n";
     }
   m->saved_refs = *(INT32 *)a;
+#else
+  m = get_marker(a);
 #endif
 
   m->flags |= GC_CHECKED;
