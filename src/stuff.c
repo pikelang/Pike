@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.c,v 1.14 2001/09/01 01:45:52 hubbe Exp $
+ * $Id: stuff.c,v 1.15 2001/09/01 09:39:18 hubbe Exp $
  */
 #include "global.h"
 #include "stuff.h"
@@ -380,7 +380,7 @@ unsigned long find_good_hash_size(unsigned long num)
   if(x<32)
   {
     static unsigned long lowprimes[32]={
-      3,3,3,3,
+      1,1,2,3,
       5,5,7,7,
       11,11,11,11,
       13,13,17,17,
