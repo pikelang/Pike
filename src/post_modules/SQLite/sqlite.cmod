@@ -16,32 +16,38 @@
 #include <sqlite3.h>
 #include <time.h>
 
+#ifdef HAVE_USLEEP
+#define SLEEP() usleep(100);
+#else
+#define SLEEP() sleep(1);
+#endif
+
+
 DECLARATIONS
 
 static int step(sqlite3_stmt *stmt) {
   int ret;
-  while( (ret=sqlite3_step(stmt))==SQLITE_BUSY ) {
-#ifdef HAVE_USLEEP
-    usleep(100);
-#else
-    sleep(1);
-#endif
-  }
+  while( (ret=sqlite3_step(stmt))==SQLITE_BUSY )
+    SLEEP();
   return ret;
 }
 
 PIKECLASS ResObj
 {
+  CVAR struct object *dbobj;
   CVAR sqlite3 *db;
   CVAR sqlite3_stmt *stmt;
   CVAR int eof;
   CVAR int columns;
 
   static void ResObj_handle_error(void) {
+    /* FIXME: We could use dbobj and remove the db variable. */
     Pike_error("Sql.SQLite: %s\n", sqlite3_errmsg(THIS->db));
   }
 
-  PIKEFUN void create() {
+  PIKEFUN void create()
+    flags ID_STATIC;
+  {
     THIS->columns = sqlite3_column_count(THIS->stmt);
   }
 
@@ -112,10 +118,14 @@ PIKECLASS ResObj
   INIT {
     THIS->eof = 0;
     THIS->columns = -1;
+    THIS->dbobj = NULL;
+    THIS->stmt = NULL;
   }
   EXIT {
     if(THIS->stmt)
       sqlite3_finalize(THIS->stmt);
+    if(THIS->dbobj)
+      free_object(THIS->dbobj);
   }
 }
 
@@ -130,7 +140,9 @@ PIKECLASS SQLite
 
   /* @decl void create(string path)
    */
-  PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c) {
+  PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c)
+    flags ID_STATIC;
+  {
     pop_n_elems(args-1);
     f_string_to_utf8(1);
     ERR( sqlite3_open(path->str, &THIS->db) );
@@ -156,6 +168,11 @@ PIKECLASS SQLite
     store = OBJ2_RESOBJ(res);
     store->db = THIS->db;
     store->stmt = stmt;
+
+    /* Add a reference to the database to prevent it from being
+       destroyed before the query object. */
+    store->dbobj = this_object();
+
     apply_low(res, f_ResObj_create_fun_num, 0);
     push_object(res);
   }
@@ -226,7 +243,7 @@ PIKECLASS SQLite
 
     f_string_to_utf8(1);
     tbl = Pike_sp[-1].u.string;
-    if(tbl->len > 2047) Pike_error("Table name to long.\n");
+    if(tbl->len > 2047) Pike_error("Table name too long.\n");
     snprintf(q, 2048, "SELECT * FROM %s LIMIT 1", tbl->str);
 
     ERR( sqlite3_prepare(THIS->db, q, -1, &stmt, NULL) );
@@ -249,10 +266,16 @@ PIKECLASS SQLite
   /* compile_query */
 
   INIT {
+    THIS->db = NULL;
   }
   EXIT {
-    /* FIXME: This call can fail. What do we do then? */
-    sqlite3_close(THIS->db);
+    if(THIS->db) {
+      int i;
+      /* FIXME: sqlite3_close can fail. What do we do then? */
+      for(i=0; i<5; i++)
+	if( sqlite3_close(THIS->db)!=SQLITE_OK )
+	  SLEEP();
+    }
   }
 
 }
