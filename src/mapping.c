@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.119 2001/03/28 10:02:41 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.120 2001/04/14 11:22:33 jhs Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1660,9 +1660,8 @@ node *make_node_from_mapping(struct mapping *m)
  *! Construct a mapping.
  *!
  *! Groups the arguments together two and two in key-index pairs and
- *! creates a mapping of those pairs. An alternative and more preferrable
- *! syntax is:
- *! @code{([ key1:val1, key2:val2, ... ])@}
+ *! creates a mapping of those pairs. Generally, the mapping literal
+ *! syntax is handier: @code{([ key1:val1, key2:val2, ... ])@}
  *!
  *! @seealso
  *!   @[sizeof()], @[mappingp()], @[mkmapping()]

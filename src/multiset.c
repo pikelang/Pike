@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.33 2001/04/07 07:38:24 hubbe Exp $");
+RCSID("$Id: multiset.c,v 1.34 2001/04/14 11:22:33 jhs Exp $");
 
 struct multiset *first_multiset;
 
@@ -298,8 +298,9 @@ node * make_node_from_multiset(struct multiset *l)
  *! Construct a multiset.
  *!
  *! Construct a multiset with the arguments as indices.
- *! An alternative and more preferrable syntax is:
- *! @code{(< elem1, elem2, ... >)@}
+ *! This method is most useful when constructing multisets
+ *! with @[map] or similar; generally, the multiset literal
+ *! syntax is handier: @code{(< elem1, elem2, ... >)@}
  *!
  *! @seealso
  *!   @[sizeof()], @[multisetp()], @[mkmultiset()]
