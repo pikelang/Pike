@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.113 2001/09/20 19:06:51 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.114 2001/10/03 18:18:51 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -560,13 +560,13 @@ static long softlim_should_be=0;
 #endif
 
 
-PMOD_EXPORT char *debug_xalloc(size_t size)
+PMOD_EXPORT void *debug_xalloc(size_t size)
 {
-  char *ret;
+  void *ret;
   if(!size) 
      Pike_error("Allocating zero bytes.\n");
 
-  ret=(char *)malloc(size);
+  ret=(void *)malloc(size);
   if(ret) return ret;
 
   Pike_error("Out of memory.\n");

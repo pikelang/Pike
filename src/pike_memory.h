@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.29 2000/12/13 21:31:53 hubbe Exp $
+ * $Id: pike_memory.h,v 1.30 2001/10/03 18:18:51 mast Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -108,7 +108,7 @@ PMOD_EXPORT void memfill(char *to,
 	     char *from,
 	     INT32 fromlen,
 	     INT32 offset);
-PMOD_EXPORT char *debug_xalloc(size_t size);
+PMOD_EXPORT void *debug_xalloc(size_t size);
 PMOD_EXPORT void *debug_xmalloc(size_t s);
 PMOD_EXPORT void debug_xfree(void *mem);
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s);
