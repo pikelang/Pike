@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.228 2002/09/10 07:57:25 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.229 2002/10/03 21:35:58 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3225,13 +3225,20 @@ void f_create_process(INT32 args)
 	  }
 	}
 
-#ifdef _SC_OPEN_MAX
 	/* Close unknown fds which have been created elsewhere (e.g. in
 	   the Java environment) */
 	{
 	  int num_fail = 0;
+#ifdef _SC_OPEN_MAX
 	  int max_fds = sysconf(_SC_OPEN_MAX);
-	  for (fd = num_fds; fd < max_fds; fd++) {
+#endif
+	  for (fd = num_fds;
+#ifdef _SC_OPEN_MAX
+	       fd < max_fds;
+#else
+	       1;
+#endif
+	       fd++) {
 	    int code = 0;
 	    if (fd != control_pipe[1]) {
 #ifdef HAVE_BROKEN_F_SETFD
@@ -3242,7 +3249,6 @@ void f_create_process(INT32 args)
 	      code = set_close_on_exec(fd, 1);
 #endif /* HAVE_BROKEN_F_SETFD */
 	    }
-#endif
 	    if (code == -1) {
 	      if (++num_fail >= PIKE_BADF_LIMIT) {
 		break;
