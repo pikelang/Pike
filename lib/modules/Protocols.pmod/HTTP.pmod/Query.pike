@@ -135,7 +135,7 @@ object con;
 string request;
 
 string buf="",headerbuf="";
-int datapos;
+int datapos, discarded_bytes;
 
 #if constant(thread_create)
 object conthread;
@@ -556,7 +556,7 @@ int `()()
 
 #endif
 
-string data()
+string data(int|void max_length)
 {
 #if constant(thread_create)
    `()();
@@ -565,14 +565,18 @@ string data()
    int l;
    if(zero_type( len ))
       l=0x7fffffff;
-   else
+   else {
+      len -= discarded_bytes;
       l=len-strlen(buf)+datapos;
+   }
+   if(!zero_type(max_length) && l>max_length-strlen(buf)+datapos)
+     l = max_length-strlen(buf)+datapos;
    if(l>0 && con)
    {
      if(headers->server == "WebSTAR")
      { // Some servers reporting this name exhibit some really hideous behaviour:
        buf += con->read(); // First, they may well lie about the content-length
-       if(buf[datapos..datapos+1] == "\r\n")
+       if(!discarded_bytes && buf[datapos..datapos+1] == "\r\n")
 	 datapos += 2; // And, as if that wasn't enough! *mumble*
      }
      else
@@ -580,6 +584,8 @@ string data()
    }
    if(zero_type( len ))
      len = sizeof( buf ) - datapos - 1;
+   if(!zero_type(max_length) && len>max_length)
+     len = max_length;
 #ifdef HTTP_QUERY_NOISE
    werror("buf[datapos..]     : %O\n", buf[datapos
 				       ..min(sizeof(buf), datapos+19)]);
@@ -589,10 +595,27 @@ string data()
    return buf[datapos..datapos+len];
 }
 
+void discard_bytes(int n)
+{
+  if(n > sizeof(buf) - datapos)
+    error("HTTP.Query: discarding more bytes than read\n");
+  if(n > 0) {
+    discarded_bytes += n;
+    buf = buf[..datapos-1]+buf[datapos+n..];
+  }
+}
+
+string incr_data(int max_length)
+{
+  string ret = data(max_length);
+  discard_bytes(sizeof(ret));
+  return ret;
+}
+
 int downloaded_bytes()
 {
   if(datapos)
-    return sizeof(buf)-datapos;
+    return sizeof(buf)-datapos+discarded_bytes;
   else
     return 0;
 }
