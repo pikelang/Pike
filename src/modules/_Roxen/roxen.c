@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.36 2004/01/27 10:43:42 grubba Exp $
+|| $Id: roxen.c,v 1.37 2004/01/27 10:54:06 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -327,15 +327,15 @@ static void f_http_decode_string(INT32 args)
    int proc;
    int size_shift = 0;
    int adjust_len = 0;
-   p_wchar0 *foo, *end;
+   p_wchar0 *foo, *bar, *end;
    struct pike_string *newstr;
 
    if (!args || Pike_sp[-args].type != PIKE_T_STRING ||
        Pike_sp[-args].u.string->size_shift)
      Pike_error("Invalid argument to http_decode_string(string(8bit));\n");
 
-   foo = STR0(Pike_sp[-args].u.string);
-   end = foo+Pike_sp[-args].u.string->len;
+   foo = bar = STR0(Pike_sp[-args].u.string);
+   end = foo + Pike_sp[-args].u.string->len;
 
    /* count '%' and wide characters */
    for (proc=0; foo<end; foo++) {
