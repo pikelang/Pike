@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+#pragma strict_types
+
 //! @[Getopt] is a group of functions which can be used to find command
 //! line options.
 //!
