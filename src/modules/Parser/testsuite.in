@@ -1272,7 +1272,7 @@ test_any(
     return p1->finish("<??>")->read();
   ]], "p1")
 
-test_equal(
+test_any_equal(
 [[
   // Bug 3624.
   object p = Parser.HTML();
