@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.21 1998/12/16 07:49:36 hubbe Exp $
+ * $Id: gc.h,v 1.22 2000/05/16 08:39:48 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -19,12 +19,12 @@ extern struct callback_list evaluator_callbacks;
 extern void *gc_svalue_location;
 #endif
 
-#define ADD_GC_CALLBACK() gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0)
+#define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback) gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)
 
 #ifdef ALWAYS_GC
-#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(!gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
+#define GC_ALLOC() do{ num_objects++; num_allocs++;  ADD_GC_CALLBACK(); } while(0)
 #else
-#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(num_allocs == alloc_threshold && !gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
+#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(num_allocs == alloc_threshold) ADD_GC_CALLBACK(); } while(0)
 #endif
 
 /* Prototypes begin here */
