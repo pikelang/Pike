@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.69 2003/11/14 10:26:43 mast Exp $
+|| $Id: colors.c,v 1.70 2003/12/09 08:11:01 nilsson Exp $
 */
 
 /*
@@ -191,7 +191,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.69 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: colors.c,v 1.70 2003/12/09 08:11:01 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -667,7 +667,7 @@ static void image_color_hex(INT32 args)
    pop_n_elems(args);
    if (i<1)
    {
-      push_text("#");  /* stupid */
+      push_constant_text("#");  /* stupid */
       return;
    }
    else if (i!=sizeof(COLORTYPE)*2)
@@ -1421,7 +1421,7 @@ static void image_guess_color(INT32 args)
 		"Bad arguments to Image.Color->guess()\n");
    
    f_lower_case(1);
-   push_text(" ");
+   push_constant_text(" ");
    o_subtract();
 
    stack_dup();
@@ -1433,7 +1433,7 @@ static void image_guess_color(INT32 args)
       return;
    }
    pop_stack();
-   push_text("#");
+   push_constant_text("#");
    stack_swap();
    f_add(2);
 
@@ -1660,7 +1660,7 @@ static void image_make_html_color(INT32 args)
       image_get_color(1);
    else
    {
-      push_text("#");
+      push_constant_text("#");
       stack_swap();
       f_add(2);
       image_get_color(1);

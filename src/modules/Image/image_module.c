@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_module.c,v 1.18 2003/12/01 18:13:31 nilsson Exp $
+|| $Id: image_module.c,v 1.19 2003/12/09 08:10:43 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.18 2003/12/01 18:13:31 nilsson Exp $");
+RCSID("$Id: image_module.c,v 1.19 2003/12/09 08:10:43 nilsson Exp $");
 #include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
@@ -156,7 +156,7 @@ static void image_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_Image_");
+      push_constant_text("_Image_");
       stack_swap();
       f_add(2);
       SAFE_APPLY_MASTER("resolv",1);
@@ -165,7 +165,7 @@ static void image_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_Image");
+      push_constant_text("_Image");
       SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
       f_index(2);

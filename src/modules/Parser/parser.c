@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: parser.c,v 1.18 2003/12/01 20:17:04 nilsson Exp $
+|| $Id: parser.c,v 1.19 2003/12/09 08:10:25 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.18 2003/12/01 20:17:04 nilsson Exp $");
+RCSID("$Id: parser.c,v 1.19 2003/12/09 08:10:25 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -147,7 +147,7 @@ static void parser_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_Parser_");
+      push_constant_text("_Parser_");
       stack_swap();
       f_add(2);
       SAFE_APPLY_MASTER("resolv",1);
@@ -156,7 +156,7 @@ static void parser_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_Parser");
+      push_constant_text("_Parser");
       SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
       if(sp[-2].type == T_INT)
