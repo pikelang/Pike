@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.8 2002/11/29 01:29:44 nilsson Exp $
+// $Id: RDF.pike,v 1.9 2003/04/10 23:39:22 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -372,5 +372,5 @@ int _sizeof() {
 }
 
 string _sprintf(int t) {
-  return t=='O' && sprintf("%O(%d)", _sizeof());
+  return t=='O' && sprintf("%O(%d)", this_program, _sizeof());
 }
