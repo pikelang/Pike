@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.474 2003/01/15 21:38:38 mast Exp $
+|| $Id: program.c,v 1.475 2003/01/15 22:07:19 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.474 2003/01/15 21:38:38 mast Exp $");
+RCSID("$Id: program.c,v 1.475 2003/01/15 22:07:19 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6193,6 +6193,7 @@ static void sprintf_trampoline (INT32 args)
   str = complex_free_buf();
   pop_stack();
   push_string (make_shared_binary_string (str.str, str.len));
+  free (str.str);
 }
 
 static void init_trampoline(struct object *o)
