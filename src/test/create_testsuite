@@ -420,6 +420,7 @@ test_do(signal(signum("SIGUSR1"),lambda() { add_efun("AFJLLAF",17); }))
 test_do(kill(getpid(),signum("SIGUSR1")))
 test_eq(AFJLLAF,17)
 test_do(add_efun("AFJLLAF"))
+test_do(signal(signum("SIGUSR1",0)))
 test_do(signal(signum("SIGUSR1")))
 
 // typeof
@@ -501,6 +502,14 @@ test_any([[mixed a,b; sscanf("abcdeFGji","%[a-z]%s",a,b); return b]],"FGji")
 test_any([[mixed a,b; return sscanf("foo-%-bar","%s-%%-%s",a,b);]],2)
 test_any([[mixed a,b; sscanf("foo-%-bar","%s-%%-%s",a,b); return a]],"foo")
 test_any([[mixed a,b; sscanf("foo-%-bar","%s-%%-%s",a,b); return b]],"bar")
+test_any([[mixed a; sscanf("ab","%2c",a); return a]],'a'*256+'b')
+test_any([[mixed a; sscanf("abc","%3c",a); return a]],'a'*256*256+'b'*256+'c')
+test_any([[mixed a; sscanf("abc","%2c",a); return a]],'a'*256+'b')
+test_any([[mixed a; sscanf("ac","%3c",a); return a]],0)
+test_any([[mixed a; sscanf("ab","%2s",a); return a]],"ab")
+test_any([[mixed a; sscanf("abc","%3s",a); return a]],"abc")
+test_any([[mixed a; sscanf("abc","%2s",a); return a]],"ab")
+test_any([[mixed a; sscanf("ac","%3s",a); return a]],0)
 
 // Basics
 test_true(1)
