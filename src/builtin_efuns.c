@@ -23,6 +23,8 @@
 #include "call_out.h"
 #include "callback.h"
 #include "gc.h"
+#include "backend.h"
+#include "main.h"
 
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
@@ -584,7 +586,7 @@ void f_sizeof(INT32 args)
     break;
 
   case T_MAPPING:
-    tmp=sp[-1].u.mapping->ind->size;
+    tmp=m_sizeof(sp[-1].u.mapping);
     free_mapping(sp[-1].u.mapping);
     break;
 
@@ -794,7 +796,7 @@ void f_indices(INT32 args)
     break;
 
   case T_MAPPING:
-    a=copy_array(sp[-args].u.mapping->ind);
+    a=mapping_indices(sp[-args].u.mapping);
     break;
 
   case T_LIST:
@@ -818,7 +820,7 @@ void f_values(INT32 args)
   INT32 size;
   struct array *a;
   if(args < 1)
-    error("Too few arguments to indices()\n");
+    error("Too few arguments to values()\n");
 
   switch(sp[-args].type)
   {
@@ -838,7 +840,7 @@ void f_values(INT32 args)
     break;
 
   case T_MAPPING:
-    a=copy_array(sp[-args].u.mapping->val);
+    a=mapping_values(sp[-args].u.mapping);
     break;
 
   case T_LIST:
@@ -1074,7 +1076,7 @@ void f_replace(INT32 args)
 
   case T_MAPPING:
   {
-    array_replace(sp[-args].u.mapping->val,sp+1-args,sp+2-args);
+    mapping_replace(sp[-args].u.mapping,sp+1-args,sp+2-args);
     pop_n_elems(args-1);
     break;
   }
@@ -1237,9 +1239,92 @@ TYPEP(f_listp, "listp", T_LIST)
 TYPEP(f_stringp, "stringp", T_STRING)
 TYPEP(f_floatp, "floatp", T_FLOAT)
 
+void f_sort(INT32 args)
+{
+  INT32 e,*order;
+
+  if(args < 0)
+    fatal("Too few arguments to sort().\n");
+
+  for(e=0;e<args;e++)
+  {
+    if(sp[e-args].type != T_ARRAY)
+      error("Bad argument %ld to sort().\n",(long)(e+1));
+
+    if(sp[e-args].u.array->size != sp[-args].u.array->size)
+      error("Argument %ld to sort() has wrong size.\n",(long)(e+1));
+  }
+
+  order=get_alpha_order(sp[-args].u.array);
+  for(e=0;e<args;e++) order_array(sp[e-args].u.array,order);
+  free((char *)order);
+  pop_n_elems(args-1);
+}
+
+void f_rows(INT32 args)
+{
+  INT32 e;
+  struct array *a,*tmp;
+
+  if(args < 2)
+    error("Too few arguments to rows().\n");
+
+  if(sp[1-args].type!=T_ARRAY)
+    error("Bad argument 1 to rows().\n");
+
+  tmp=sp[1-args].u.array;
+  push_array(a=allocate_array(tmp->size));
+
+  for(e=0;e<a->size;e++)
+    index_no_free(ITEM(a)+e, sp-args-1, ITEM(tmp)+e);
+
+  a->refs++;
+  pop_n_elems(args+1);
+  push_array(a);
+}
+
+void f_column(INT32 args)
+{
+  INT32 e;
+  struct array *a,*tmp;
+
+  if(args < 2)
+    error("Too few arguments to column().\n");
+
+  if(sp[-args].type!=T_ARRAY)
+    error("Bad argument 1 to column().\n");
+
+  tmp=sp[-args].u.array;
+  push_array(a=allocate_array(tmp->size));
+
+  for(e=0;e<a->size;e++)
+    index_no_free(ITEM(a)+e, ITEM(tmp)+e, sp-args);
+
+  a->refs++;
+  pop_n_elems(args+1);
+  push_array(a);
+}
+
+#ifdef DEBUG
+void f__verify_internals(INT32 args)
+{
+  INT32 tmp;
+  tmp=d_flag;
+  d_flag=0x7fffffff;
+  do_debug();
+  d_flag=tmp;
+  pop_n_elems(args);
+}
+
+#endif
+
 void init_builtin_efuns()
 {
   init_operators();
+
+#ifdef DEBUG
+  add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+#endif
 
   add_efun("add_efun",f_add_efun,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
   add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);
@@ -1299,9 +1384,168 @@ void init_builtin_efuns()
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
   add_efun("values",f_values,"function(string|list:int*)|function(array|mapping|object:mixed*)",0);
   add_efun("zero_type",f_zero_type,"function(int:int)",0);
+  add_efun("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
+  add_efun("column",f_column,"function(array,mixed:array)",0);
+  add_efun("rows",f_rows,"function(mixed,array:array)",0);
 #ifdef GC2
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
 #endif
 }
 
 
+#if 0
+/* Check if the glob s[0..len[ matches the string m[0..mlen[ */
+static int does_match(char *s, int len, char *m, int mlen)
+{
+  int i,j;
+  for (i=j=0; i<mlen && j<len; i++,j++)
+  {
+    switch (m[i])
+    {
+     case '?': break;
+
+     case '*': 
+      i++;
+      if (i==mlen) return 1;	/* slut */
+
+      for (;j<len;j++)
+	if (does_match(s+j,len-j,m+i,mlen-i))
+	  return 1;
+
+      return 0;
+
+     default: 
+      if (m[i]!=s[j]) return 0;
+    }
+  }
+  if (i==mlen && j==len) return 1;
+  return 0;
+}
+
+void f_glob(INT32 args)
+{
+  INT32 i,matches;
+  struct array *a;
+  struct svalue *sval, *tmp;
+  struct lpc_string *glob;
+
+  if(args < 2)
+    error("Too few arguments to glob().\n");
+
+  if(args > 2) pop_n_elems(args-2);
+
+  if (sp[1-args].type!=T_STRING)
+    error("Bad argument 2 to glob().\n");
+
+  glob=sp[-args].u.string;
+
+  switch(sp[-args].type)
+  {
+  case T_STRING:
+    i=do_match(sp[1-args].u.string,
+	       sp[1-args].u.string->length,
+	       glob,
+	       glob->length);
+    pop_n_elems(2);
+    push_int(i);
+    break;
+    
+  case T_ARRAY:
+    a=sp[-args].u.array;
+    for(i=0;i<a->size;i++)
+    {
+      if(do_match(ITEM(a)[i].u.string,
+		  ITEM(a)[i].u.string->length,
+		  glob,
+		  glob->length))
+      {
+	ITEM(a)[i].u.string->refs++;
+	push_string(ITEM(a)[i].u.string);
+	matches++;
+      }
+    }
+    f_aggregate(matches);
+    tmp=sp[-1];
+    sp--;
+    pop_n_elems(2);
+    sp[0]=tmp;
+    sp++;
+    break;
+
+  default:
+    error("Bad argument 2 to glob().\n");
+  }
+}
+
+
+/*
+ * add_efun("glob",f_glob,"function(string,string:string)|function(string,array(string):array(string))",0);
+ * add_efun("localtime",f_localtime,
+ * "function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
+ */
+
+#if !HAVE_INT_TIMEZONE
+int _tz;
+#else
+extern long int timezone;
+#endif
+
+
+
+void f_localtime(INT32 args)
+{
+  struct tm *tm;
+  time_t t;
+  if (args<1||
+      sp[-1].type!=T_INT)
+    error("Illegal argument to localtime");
+  t=sp[-1].u.integer;
+  tm=localtime(&t);
+  pop_stack();
+  push_string(make_shared_string("sec"));
+  push_int(tm->tm_sec);
+  push_string(make_shared_string("min"));
+  push_int(tm->tm_min);
+  push_string(make_shared_string("hour"));
+  push_int(tm->tm_hour);
+
+  push_string(make_shared_string("mday"));
+  push_int(tm->tm_mday);
+  push_string(make_shared_string("mon"));
+  push_int(tm->tm_mon);
+  push_string(make_shared_string("year"));
+  push_int(tm->tm_year);
+
+  push_string(make_shared_string("wday"));
+  push_int(tm->tm_wday);
+  push_string(make_shared_string("yday"));
+  push_int(tm->tm_yday);
+  push_string(make_shared_string("isdst"));
+  push_int(tm->tm_isdst);
+
+  push_string(make_shared_string("timezone"));
+#if !HAVE_INT_TIMEZONE
+  push_int(_tz);
+#else
+  push_int(timezone);
+#endif
+  f_aggregate_mapping(20);
+}
+
+#ifdef HAVE_STRERROR
+void f_strerror(INT32 args)
+{
+  char *s;
+  if(!args) 
+    s=strerror(errno);
+  else
+    s=strerror(sp[-args].u.integer);
+  pop_n_elems(args);
+  if(s)
+    push_text(s);
+  else
+    push_int(0);
+}
+#endif
+
+#endif
