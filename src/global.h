@@ -6,8 +6,6 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#define POSIX_SOURCE
-
 /*
  * Some structure forward declarations are needed.
  */

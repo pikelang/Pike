@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.99 1997/06/03 22:46:56 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.100 1997/06/04 00:48:31 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -280,6 +280,8 @@ To do this, please type the following at an sh prompt:
 fi
 
 #############################################################################
+
+AC_DEFINE(POSIX_SOURCE)
 
 AC_MSG_CHECKING(ansi prototype capability)
 AC_CACHE_VAL(pike_cv_sys_ansi_prototypes,
@@ -856,7 +858,7 @@ MY_CHECK_HEADERS(malloc,memory.h unistd.h stdlib.h)
 MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h)
 MY_CHECK_HEADERS(popen,stdio.h unistd.h)
 MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
-MY_CHECK_HEADERS(gethostname,unistd.h)
+MY_CHECK_HEADERS(gethostname,unistd.h netdb.h)
 
 AC_ALLOCA
 
