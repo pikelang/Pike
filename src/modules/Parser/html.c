@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.128 2001/02/03 00:37:22 mast Exp $ */
+/* $Id: html.c,v 1.129 2001/03/08 23:11:04 mirar Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -27,8 +27,8 @@
 
 extern struct program *parser_html_program;
 
-/* #define SCAN_DEBUG */
-/* #define DEBUG */
+/*  #define SCAN_DEBUG */
+/*  #define DEBUG */
 
 #ifdef DEBUG
 #undef DEBUG
@@ -182,6 +182,9 @@ struct subparse_save
 /* flag: understand nestled entities (send it all to entity callback) */
 /*       disabled by FLAG_LAZY_ENTITY_END */
 #define FLAG_NESTLING_ENTITY_END	0x00000800
+
+/* flag: ignore --...-- in tag parsing (as in <!--...-->) */
+#define FLAG_IGNORE_COMMENTS            0x00001000
 
 struct parser_html_storage
 {
@@ -499,7 +502,8 @@ found_start:
    }
 
    THIS->n_arg_break_chars=
-      THIS->n_ws_or_endarg+THIS->nargq+1;
+      THIS->n_ws_or_endarg+THIS->nargq+1+
+      ((THIS->flags & FLAG_IGNORE_COMMENTS)?1:0);
    THIS->arg_break_chars=
       (p_wchar2*)xalloc(sizeof(p_wchar2)*(THIS->n_arg_break_chars));
 
@@ -510,6 +514,8 @@ found_start:
 	  THIS->argq_start, THIS->nargq*sizeof(p_wchar2));
 
    THIS->arg_break_chars[THIS->n_arg_break_chars-1] = THIS->entity_start;
+   if ((THIS->flags & FLAG_IGNORE_COMMENTS))
+      THIS->arg_break_chars[THIS->n_arg_break_chars-2] = '-'; /* --..-- */
 }
 
 static void init_html_struct(struct object *o)
@@ -1537,6 +1543,14 @@ static void skip_feed_range(struct feed_stack *st,
    *c_headp = 0;
 }
 
+static p_wchar2 next_character(struct piece *feed,
+			       ptrdiff_t pos)
+{
+   FORWARD_CHAR(feed,pos,feed,pos);
+   if (pos==feed->s->len) return 0; /* in lack of anything better */
+   return index_shared_string(feed->s,pos);
+}
+
 /* ------------------------------ */
 /* scan forward for certain chars */
 
@@ -1768,7 +1782,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
  * the current quote we're in, or -1 if outside quotes. *quote is also
  * read on entry to continue inside quotes. */
 {
-   p_wchar2 ch;
+   p_wchar2 ch=0;
    int res,i;
    int n=0;
    int q=0;
@@ -1795,6 +1809,67 @@ static int scan_forward_arg(struct parser_html_storage *this,
 		       this->arg_break_chars,
 		       this->n_arg_break_chars);
 
+retryloop:
+      if (res)
+      {
+	 ch=index_shared_string(destp[0]->s,*d_p);
+	 if ((this->flags & FLAG_IGNORE_COMMENTS) &&
+	     ch=='-') /* possible --...-- to be ignored */
+	 {
+	    if (next_character(*destp,*d_p)=='-')
+	    {
+	       if (what == SCAN_ARG_PUSH) 
+		  push_feed_range(feed,c,*destp,*d_p),n++;
+
+	 /* skip to next -- */
+
+	       DEBUG_MARK_SPOT("scan_forward_arg: "
+			       "found --",*destp,*d_p);
+	       static p_wchar2 minus='-';
+	       FORWARD_CHAR (*destp, *d_p, *destp, *d_p); 
+	       for (;;)
+	       {
+		  res=scan_forward(*destp,d_p[0]+1,destp,d_p,&minus,1);
+		  if (!res) {
+		     if (!finished) 
+		     {
+			DEBUG_MARK_SPOT("scan_forward_arg: "
+					"wait for --",*destp,*d_p);
+			if (what == SCAN_ARG_PUSH) pop_n_elems(n);
+			return 0;
+		     }
+		     else
+		     {
+			DEBUG_MARK_SPOT("scan_forward_arg: "
+					"forced end in --...--",destp[0],*d_p);
+			break;
+		     }
+		  }
+		  if (next_character(*destp,*d_p)=='-')
+		  {
+		     DEBUG_MARK_SPOT("scan_forward_arg: "
+				     "found -- end",*destp,*d_p);
+		     d_p[0]++;
+		     goto next;
+		  }
+		  DEBUG_MARK_SPOT("scan_forward_arg: "
+				  "not -- end, cont",*destp,*d_p);
+	       }
+	       break;
+	    }
+	    else
+	    {
+	       DEBUG_MARK_SPOT("scan_forward_arg: "
+			       "found -, not -",*destp,*d_p);
+
+	       res=scan_forward(*destp,d_p[0]+1,destp,d_p,
+				this->arg_break_chars,
+				this->n_arg_break_chars);
+	       goto retryloop;
+	    }
+	 }
+      }
+	 
       if (what == SCAN_ARG_PUSH) push_feed_range(feed,c,*destp,*d_p),n++;
 
       if (!res) {
@@ -1810,8 +1885,6 @@ static int scan_forward_arg(struct parser_html_storage *this,
 	    break;
 	 }
       }
-
-      ch=index_shared_string(destp[0]->s,*d_p);
 
       if (ch==this->arg_eq)
       {
@@ -1862,27 +1935,28 @@ static int scan_forward_arg(struct parser_html_storage *this,
 
       for (i=0; i<this->nargq; i++)
 	 if (ch==this->argq_start[i]) break;
-      if (i==this->nargq) { /* it was whitespace */
-	if (ch == this->tag_fin) {
-	  FORWARD_CHAR (*destp, *d_p, feed, c);
-	  if (((this->flags & FLAG_MATCH_TAG) && q) ||
-	      index_shared_string (feed->s, c) != this->tag_end) {
-	    DEBUG_MARK_SPOT("scan_forward_arg: tag fin char",
-			    destp[0],*d_p);
-	    if (what == SCAN_ARG_PUSH) push_feed_range (*destp, *d_p, feed, c), n++;
-	    goto next;
-	  }
-	  else {
-	    DEBUG_MARK_SPOT("scan_forward_arg: end by tag fin",
+      if (i==this->nargq) 
+      {  
+	 if (ch == this->tag_fin) {
+	    FORWARD_CHAR (*destp, *d_p, feed, c);
+	    if (((this->flags & FLAG_MATCH_TAG) && q) ||
+		index_shared_string (feed->s, c) != this->tag_end) {
+	       DEBUG_MARK_SPOT("scan_forward_arg: tag fin char",
+			       destp[0],*d_p);
+	       if (what == SCAN_ARG_PUSH) push_feed_range (*destp, *d_p, feed, c), n++;
+	       goto next;
+	    }
+	    else {
+	       DEBUG_MARK_SPOT("scan_forward_arg: end by tag fin",
+			       destp[0],*d_p);
+	       break;
+	    }
+	 }
+	 else {
+	    DEBUG_MARK_SPOT("scan_forward_arg: end by ws",
 			    destp[0],*d_p);
 	    break;
-	  }
-	}
-	else {
-	  DEBUG_MARK_SPOT("scan_forward_arg: end by ws",
-			  destp[0],*d_p);
-	  break;
-	}
+	 }
       }
 
 in_quote_cont:
@@ -5067,6 +5141,19 @@ static void html_debug_mode(INT32 args)
 }
 #endif
 
+static void html_ignore_comments(INT32 args)
+{
+   int o=!!(THIS->flags & FLAG_IGNORE_COMMENTS);
+   check_all_args("debug_mode",args,BIT_VOID|BIT_INT,0);
+   if (args) {
+     if (sp[-args].u.integer) THIS->flags |= FLAG_IGNORE_COMMENTS;
+     else THIS->flags &= ~FLAG_IGNORE_COMMENTS;
+     recalculate_argq(THIS);
+   }
+   pop_n_elems(args);
+   push_int(o);
+}
+
 /****** module init *********************************/
 
 #define tCbret tOr4(tZero,tInt1,tStr,tArr(tMixed))
@@ -5224,6 +5311,8 @@ void init_parser_html(void)
    ADD_FUNCTION("debug_mode",html_debug_mode,
 		tFunc(tOr(tVoid,tInt),tInt),0);
 #endif
+   ADD_FUNCTION("ignore_comments",html_ignore_comments,
+		tFunc(tOr(tVoid,tInt),tInt),0);
 
    /* special callbacks */
 
