@@ -1,5 +1,4 @@
 .pure
-Makefile
 auto.c
 config.cache
 config.h
