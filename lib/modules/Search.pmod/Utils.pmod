@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.23 2001/08/09 09:21:14 per Exp $
+// $Id: Utils.pmod,v 1.24 2001/08/13 11:56:44 anders Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -547,6 +547,9 @@ class Logger {
     503: "503 Server Error: Service Unavailable (%s)",
     504: "504 Server Error: Gateway Timeout (%s)",
     505: "505 Server Error: HTTP Version Not Supported (%s)",
+
+    1000: "Disallowed by robots.txt. (%s)",
+    1001: "Can't handle scheme. (%s)",
   ]);
     
 
