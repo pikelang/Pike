@@ -580,6 +580,12 @@ test_any([[{
 		    "12-"
 		    "13-"
 		    "14-"));
+test_any([[{
+  object p = Parser.HTML();
+  p->match_tag (0);
+  p->add_container ("foo", "");
+  return p->finish ("<foo></foobar</foo>")->read();
+}]], "");
 
 // Redefinition during parsing
 test_any([[
