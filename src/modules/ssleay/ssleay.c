@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.7 1996/12/13 16:54:30 nisse Exp $");
+RCSID("$Id: ssleay.c,v 1.8 1996/12/15 17:40:00 nisse Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -15,6 +15,7 @@ RCSID("$Id: ssleay.c,v 1.7 1996/12/13 16:54:30 nisse Exp $");
 #include "macros.h"
 #include "backend.h"
 #include "program.h"
+#include "threads.h"
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -23,6 +24,7 @@ RCSID("$Id: ssleay.c,v 1.7 1996/12/13 16:54:30 nisse Exp $");
 #ifdef HAVE_SSLEAY
 
 #include <ssl.h>
+#include <crypto.h>
 #include <pem.h>
 #include <err.h>
 #include <x509.h>
@@ -84,8 +86,13 @@ void ssleay_connection_set_fd(INT32 args)
 
 void ssleay_connection_accept(INT32 args)
 {
+  int res;
+  
   pop_n_elems(args);
-  push_int(SSL_accept(CON));
+  THREADS_ALLOW();
+  res = SSL_accept(CON);
+  THREADS_DISALLOW();
+  push_int(res);
 }
 
 void ssleay_connection_read(INT32 args)
@@ -105,7 +112,9 @@ void ssleay_connection_read(INT32 args)
   s = begin_shared_string(len);
   if (len)
     {
+      THREADS_ALLOW();
       count = SSL_read(CON, s->str, len);
+      THREADS_DISALLOW();
       if (count < 0)
 	{
 	  free_string(end_shared_string(s));
@@ -125,7 +134,9 @@ void ssleay_connection_write(INT32 args)
 
   if ((args < 1) || (sp[-args].type != T_STRING))
     error("ssleay_connection->write: wrong argument\n");
+  THREADS_ALLOW();
   res = SSL_write(CON, sp[-args].u.string->str, sp[-args].u.string->len);
+  THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(res);
 }
@@ -195,6 +206,35 @@ static void ssleay_new(INT32 args)
   push_object(clone(ssleay_connection_program, 1));
 }
 
+
+/* Thread stuff */
+#ifdef _REENTRANT
+
+static MUTEX_T ssleay_locks[CRYPTO_NUM_LOCKS];
+
+static void ssleay_locking_callback(int mode, int type, char *file, int line)
+{
+  if (mode & CRYPTO_LOCK)
+    mt_lock(ssleay_locks + type);
+  else
+    mt_unlock(ssleay_locks + type);
+}
+
+static unsigned long ssleay_thread_id(void)
+{
+  return th_self();
+}
+      
+static void ssleay_init_threads()
+{
+  int i;
+  for (i = 0; i<CRYPTO_NUM_LOCKS; i++)
+    mt_init(ssleay_locks + i);
+  CRYPTO_set_id_callback(ssleay_thread_id);
+  CRYPTO_set_locking_callback(ssleay_locking_callback);
+}
+#endif /* _REENTRANT */
+
 /* Initializing etc */
 void init_context(struct object *o)
 {
@@ -218,17 +258,10 @@ void exit_connection(struct object *o)
     SSL_free(CON);
 }
 
-#endif
+#endif /* HAVE_SSLEAY */
 
 void init_ssleay_efuns(void)
 {
-#if 0
-  /* This is not only not needed, it will never work since
-   * ssleay_create is a method which tries to access fp->current_storage.
-   * /Fredrik Hubinette
-   */
-  add_efun("ssleay", ssleay_create, "function(void:object)", 0);
-#endif
 }
 
 void exit_ssleay()
@@ -245,6 +278,9 @@ void init_ssleay_programs(void)
   ERR_load_ERR_strings();
   ERR_load_SSL_strings();
   ERR_load_crypto_strings();
+#ifdef _REENTRANT
+  ssleay_init_threads();
+#endif /* _REENTRANT */
   start_new_program();
   add_storage(sizeof(struct ssleay_context));
 
