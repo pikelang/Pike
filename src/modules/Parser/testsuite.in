@@ -271,7 +271,7 @@ test_any([[
   return p->finish("<b><a><b>")->read();
 ]], "BA<b>");
 
-// Misc
+// Recursive parsing in tags
 test_any([[
   object p = Parser.HTML();
   p->add_entity ("e", "e");
@@ -281,17 +281,37 @@ test_any([[
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", "b");
-  p->_set_tag_callback (lambda (object p, string s)
-			  {p->feed_insert(s[1..]); return ({s[..0]});});
+  return p->finish("<!-- <t> -->")->read();
+]], "<!-- <t> -->");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", "b");
+  p->_set_tag_callback (1);
   return p->finish("<!-- <t> -->")->read();
 ]], "<!-- b -->");
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", "b");
-  p->_set_tag_callback (lambda (object p, string s)
-			  {p->feed_insert(s[1..]); return ({s[..0]});});
+  return p->finish("<a href=\"<t>\">")->read();
+]], "<a href=\"<t>\">");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", "b");
+  p->_set_tag_callback (1);
   return p->finish("<a href=\"<t>\">")->read();
 ]], "<a href=\"b\">");
+
+// Misc
+test_any([[
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s)
+			   {p->write_out("|"); return s;});
+  p->add_tag ("t2", "2");
+  p->_set_tag_callback (1);
+  p->_set_data_callback (lambda (object p, string s)
+			   {return ({"[",s,"]"});});
+  return p->finish("<f <t2>=<t2>><t><t2><a<t2>></t><o>")->read();
+]], "[][<f ]2[=]2[>]|[]2[][<a]2[>][<o>]");
 test_any([[
   object p = Parser.HTML();
   p->add_container ("t", lambda (object p, mapping a, string s)
@@ -303,6 +323,16 @@ test_any([[
 			   {return ({"[",s,"]"});});
   return p->finish("<f <t2>=<t2>><t><t2><a<t2>></t><o>")->read();
 ]], "[]<[f ]2[=]2[>]|[]2[]<[a]2[>]<[o>]");
+test_any([[
+  object p = Parser.HTML();
+  p->add_container ("t", lambda (object p, mapping a, string s)
+			   {p->write_out("|"); return s;});
+  p->add_tag ("t2", "2");
+  p->_set_tag_callback (1);
+  p->_set_data_callback (lambda (object p, string s)
+			   {return ({"[",s,"]"});});
+  return p->finish("x<f x<t2>=<t2>x>x<t>x<t2>x<a<t2>x>x</t>x<o>x")->read();
+]], "[x][<f x]2[=]2[x>x]|[x]2[x][<a]2[x>xx][<o>x]");
 test_any([[
   object p = Parser.HTML();
   p->add_container ("t", lambda (object p, mapping a, string s)
