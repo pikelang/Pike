@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.196 1999/10/27 17:16:56 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.197 1999/10/29 03:35:31 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1371,7 +1371,7 @@ void f_destruct(INT32 args)
   {
     if(sp[-args].type != T_OBJECT)
       SIMPLE_BAD_ARG_ERROR("destruct", 1, "object");
-    
+
     o=sp[-args].u.object;
   }else{
     if(!fp)
@@ -1379,6 +1379,8 @@ void f_destruct(INT32 args)
 	   
     o=fp->current_object;
   }
+  if (o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
+    PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n", sp, args);
 #ifdef PIKE_SECURITY
   if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
     error("Destruct permission denied.\n");
@@ -1916,8 +1918,11 @@ void f_set_weak_flag(INT32 args)
     case T_MAPPING:
       SETFLAG(s->u.mapping->flags,MAPPING_FLAG_WEAK,ret);
       break;
+    case T_MULTISET:
+      SETFLAG(s->u.multiset->ind->flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK),ret);
+      break;
     default:
-      SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping");
+      SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping|multiset");
   }
   pop_n_elems(args-1);
 }
@@ -5076,7 +5081,7 @@ void init_builtin_efuns(void)
 /* function(array(1=mixed),array(2=mixed):mapping(1:2)) */
   ADD_EFUN("mkmapping",f_mkmapping,tFunc(tArr(tSetvar(1,tMix)) tArr(tSetvar(2,tMix)),tMap(tVar(1),tVar(2))),OPT_TRY_OPTIMIZE);
   
-/* function(mapping,int:int) */
+/* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,tFunc(tSetvar(1,tMix) tInt,tVar(1)),OPT_SIDE_EFFECT);
   
 /* function(void|object:object) */
