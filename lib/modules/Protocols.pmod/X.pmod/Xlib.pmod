@@ -175,6 +175,7 @@ class Display
 
 #ifdef DEBUG
   mapping debug_requests = ([ ]);
+  #define DEBUGREQ(X) ((X)&0xfff)
 #endif
   
   void create()
@@ -226,6 +227,8 @@ class Display
   /* This function leaves the socket in blocking mode */
   int flush()
   { /* FIXME: Not thread-safe */
+    werror("flush\n");
+    
     set_blocking();
     int written = write(buffer);
     if (written < strlen(buffer))
@@ -423,7 +426,7 @@ class Display
 		       m->minorCode, m->majorCode);
 		m->errorCode = _Xlib.error_codes[errorCode];
 #ifdef DEBUG
-		m->failed_request = debug_requests[m->sequenceNumber];
+		m->failed_request = debug_requests[DEBUGEQ(m->sequenceNumber)];
 #endif
 #if 0
 		if (m->errorCode == "Success")
@@ -690,6 +693,7 @@ class Display
     array a;
     while(a = pending_actions->get())
       handle_action(a);
+    werror("process_pending_actions: nonblock\n");
     set_nonblocking(read_callback, write_callback, close_callback);
   }
 	  
@@ -745,6 +749,7 @@ class Display
       {
 	if (!is_local)
 	  open_socket();
+        werror("open: block\n");
 	set_nonblocking(0, 0, close_callback);
       }
     if(!is_local)
@@ -752,7 +757,11 @@ class Display
 	int port =  XPORT + (int)fields[1];
 	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
 	if (!connect(host, port))
+	{
+  	  werror(sprintf("Xlib: Connecting to %s:%d failed\n", host, port));
 	  return 0;
+	}
+	werror(sprintf("Xlib: Connected to %s:%d\n", host, port));
       }
 
     set_buffer( 65536 );
@@ -779,6 +788,7 @@ class Display
     send(msg);
     if (async)
       {
+	 werror("open: nonblock\n");
 	set_nonblocking(read_callback, write_callback, close_callback);
 	return 1;
       }
@@ -800,6 +810,7 @@ class Display
 	    {
 	    case ACTION_CONNECT:
 	      get_keyboard_mapping();
+	      werror("connect: nonblock\n");
 	      set_nonblocking(read_callback, write_callback, close_callback);
 	      return 1;
 	    case ACTION_CONNECT_FAILED:
@@ -817,9 +828,9 @@ class Display
     string data = req->to_string();
     send(data);
 #ifdef DEBUG
-    debug_requests[sequence_number & 0x7fff] = data;
+    debug_requests[DEBUGREQ(sequence_number)] = data;
 #endif
-    return sequence_number++ & 0x7fff;
+    return sequence_number++;
   }
 
   array blocking_request(object req)
@@ -828,45 +839,52 @@ class Display
     mixed result = 0;
     int done = 0;
 
+    werror("br: %O\n",mkmapping(indices(req),values(req)));
+
     int n = send_request(req);
     flush();
-    
+
     while(!done)
-      {
-	string data = read(0x7fffffff, 1);
-	if (!data)
+    {
+werror("waiting for reply on "+n+"...\n");
+       string data = read(0x7fffffff, 1);
+       if (!data)
+       {
+	  call_out(close_callback, 0);
+	  return ({ 0, 0 });
+       }
+       received->add_data(data);
+       array a;
+       while (a = process())
+       {
+werror("got reply "+a[0]+": "+a[1]->sequenceNumber+"...\n");
+	  if ((a[0] == ACTION_REPLY)
+	      && (a[1]->sequenceNumber == n))
 	  {
-	    call_out(close_callback, 0);
-	    return ({ 0, 0 });
+	     result = req->handle_reply(a[1]);
+	     done = 1;
+	     success = 1;
+	     break;
 	  }
-	received->add_data(data);
-	array a;
-	while (a = process())
+	  else if ((a[0] == ACTION_ERROR)
+		   && (a[1]->sequenceNumber == n))
 	  {
-	    if ((a[0] == ACTION_REPLY)
-		&& (a[1]->sequenceNumber == n))
-	      {
-		result = req->handle_reply(a[1]);
-		done = 1;
-		success = 1;
-		break;
-	      }
-	    else if ((a[0] == ACTION_ERROR)
-		     && (a[1]->sequenceNumber == n))
-	      {
-		result = req->handle_error(a[1]);
-		done = 1;
-		break;
-	      }
-	    /* Enqueue all other actions */
-	    pending_actions->put(a);
+	     result = req->handle_error(a[1]);
+	     done = 1;
+	     break;
 	  }
-      }
+	  /* Enqueue all other actions */
+	  pending_actions->put(a);
+       }
+    }
 
     if (!pending_actions->is_empty())
       call_out(process_pending_actions, 0);
     else
-      set_nonblocking(read_callback,write_callback,close_callback);
+    {
+       werror("blocking_request: nonblock\n");
+       set_nonblocking(read_callback,write_callback,close_callback);
+    }
 
     return ({ success, result });
   }
