@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.17 1998/10/11 11:18:51 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.18 1999/01/24 17:30:38 mirar Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -128,6 +128,7 @@ void check_all_args(const char *fnname, int args, ... )
  *   %W: struct pike_string *		Allow wide strings
  *   %a: struct array *
  *   %f: float
+ *   %F: float or int -> float
  *   %m: struct mapping *
  *   %M: struct multiset *
  *   %o: struct object *
@@ -179,6 +180,14 @@ int va_get_args(struct svalue *s,
     case 'f':
       if(s->type != T_FLOAT) return ret;
       *va_arg(ap, float *)=s->u.float_number;
+      break;
+    case 'F':
+      if(s->type == T_FLOAT)
+	 *va_arg(ap, float *)=s->u.float_number;
+      else if(s->type == T_INT)
+	 *va_arg(ap, float *)=(float)s->u.integer;
+      else 
+	 return ret;
       break;
     case 'm':
       if(s->type != T_MAPPING) return ret;
