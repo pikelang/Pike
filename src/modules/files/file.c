@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.326 2004/09/01 14:56:02 grubba Exp $
+|| $Id: file.c,v 1.327 2004/09/01 15:04:24 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.326 2004/09/01 14:56:02 grubba Exp $");
+RCSID("$Id: file.c,v 1.327 2004/09/01 15:04:24 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1744,6 +1744,9 @@ static void file_open(INT32 args)
 	Pike_error("Not a valid FD.\n");
 
      init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
+     /* FIXME: What are the intended semantics for this flag?
+      *        (grubba 2004-09-01
+      */
      THIS->flags|=FILE_NOT_OPENED;
   }
 
