@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.14 1997/03/11 23:32:28 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.15 1997/03/14 04:37:16 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -764,12 +764,19 @@ node * make_node_from_mapping(struct mapping *m)
     node *n;
     ind=mapping_indices(m);
     val=mapping_indices(m);
-    n=mkefuncallnode("mkmapping",mknode(F_ARG_LIST,make_node_from_array(ind),make_node_from_array(val)));
+    n=mkefuncallnode("mkmapping",
+		     mknode(F_ARG_LIST,
+			    make_node_from_array(ind),
+			    make_node_from_array(val)));
     free_array(ind);
     free_array(val);
     return n;
   }else{
     struct svalue s;
+
+    if(!m->size)
+      return mkefuncallnode("aggregate_mapping",0);
+
     s.type=T_MAPPING;
     s.subtype=0;
     s.u.mapping=m;

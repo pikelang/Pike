@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.29 1997/03/12 12:21:50 hubbe Exp $");
+RCSID("$Id: file.c,v 1.30 1997/03/14 04:38:54 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1220,7 +1220,7 @@ static void file_open_socket(INT32 args)
 static void file_set_keepalive(INT32 args)
 {
   int tmp, i;
-  check_all_args("file->set_keepalive()",args, 1, T_INT);
+  check_all_args("file->set_keepalive",args, T_INT,0);
   tmp=sp[-args].u.integer;
   i=setsockopt(FD,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
   if(i)

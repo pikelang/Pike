@@ -85,15 +85,16 @@ struct svalue
 #define T_FLOAT 7
 #define T_INT 8
 
+#define T_VOID 16
+#define T_MANY 17
+
 #define T_DELETED 246
 #define T_NOT 247
 #define T_AND 248
 #define T_UNKNOWN 249
-#define T_MANY 250
 #define T_OR 251
 #define T_SHORT_LVALUE 252
 #define T_LVALUE 253
-#define T_VOID 254
 #define T_MIXED 255
 
 #define BIT_ARRAY (1<<T_ARRAY)
@@ -106,9 +107,19 @@ struct svalue
 #define BIT_INT (1<<T_INT)
 #define BIT_FLOAT (1<<T_FLOAT)
 
-/* Used to signifiy that this array might not be finished yet */
+/* Used to signify that this array might not be finished yet */
 /* garbage collect uses this */
 #define BIT_UNFINISHED (1<<15)
+
+/* This is only used in typechecking to signify that this 
+ * argument may be omitted.
+ */
+#define BIT_VOID (1<< T_VOID)
+
+/* This is used in typechecking to signify that the rest of the
+ * arguments has to be of this type.
+ */
+#define BIT_MANY (1 << T_MANY)
 
 #define BIT_NOTHING 0
 #define BIT_MIXED 0x7fff

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.11 1997/03/11 23:32:32 grubba Exp $");
+RCSID("$Id: operators.c,v 1.12 1997/03/14 04:37:17 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -511,6 +511,44 @@ void o_and()
   }
 }
 
+/* This function is used to speed up or/xor/and on
+ * arrays multisets and mappings. This is done by
+ * calling the operator for each pair of arguments
+ * first, then recursively doing the same on the
+ * results until only one value remains.
+ */
+static void speedup(INT32 args, void (*func)(void))
+{
+  switch(sp[-args].type)
+  {
+  case T_MAPPING:
+  case T_ARRAY:
+  case T_MULTISET:
+  {
+    int e=-1;
+    while(args > 1)
+    {
+      struct svalue tmp;
+      func();
+      args--;
+      e++;
+      if(e - args >= -1)
+      {
+	e=0;
+      }else{
+	tmp=sp[e-args];
+	sp[e-args]=sp[-1];
+	sp[-1]=tmp;
+      }
+    }
+    return;
+  }
+
+  default:
+    while(--args > 0) func();
+  }
+}
+
 void f_and(INT32 args)
 {
   switch(args)
@@ -523,7 +561,7 @@ void f_and(INT32 args)
     {
       CALL_OPERATOR(LFUN_AND, args);
     }else{
-      while(--args > 0) o_and();
+      speedup(args, o_and);
     }
   }
 }
@@ -623,7 +661,7 @@ void f_or(INT32 args)
     {
       CALL_OPERATOR(LFUN_OR, args);
     } else {
-      while(--args > 0) o_or();
+      speedup(args, o_or);
     }
   }
 }
@@ -724,7 +762,7 @@ void f_xor(INT32 args)
     {
       CALL_OPERATOR(LFUN_XOR, args);
     } else {
-      while(--args > 0) o_xor();
+      speedup(args, o_xor);
     }
   }
 }

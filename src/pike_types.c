@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.18 1997/03/08 12:54:08 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.19 1997/03/14 04:37:18 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1218,6 +1218,7 @@ char *get_name_of_type(int t)
     case T_OBJECT: return "object";
     case T_PROGRAM: return "program";
     case T_STRING: return "string";
+    case T_VOID: return "void";
     default: return "unknown";
   }
 }

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.18 1997/03/11 03:36:41 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.19 1997/03/14 04:37:16 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -243,6 +243,7 @@ struct keyword instr_names[]=
 { "range",              F_RANGE },
 { "return",		F_RETURN },
 { "return 0",		F_RETURN_0 },
+{ "return 1",		F_RETURN_1 },
 { "sscanf",		F_SSCANF, I_HASARG },	
 { "string",             F_STRING, I_HASARG },
 { "switch",		F_SWITCH, I_HASARG },
@@ -277,6 +278,10 @@ struct keyword instr_names[]=
 { "2 locals",           F_2_LOCALS, I_HASARG },
 { "byte",               F_BYTE, I_HASARG },
 { "nop",                F_NOP },
+{ "add integer",        F_ADD_INT, I_HASARG },
+{ "add -integer",       F_ADD_NEG_INT, I_HASARG },
+{ "mark & call",        F_MARK_APPLY, I_HASARG },
+{ "mark, call & pop",   F_MARK_APPLY_POP, I_HASARG },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];

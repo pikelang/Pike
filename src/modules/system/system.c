@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.13 1997/03/05 14:52:02 grubba Exp $
+ * $Id: system.c,v 1.14 1997/03/14 04:39:20 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.13 1997/03/05 14:52:02 grubba Exp $");
+RCSID("$Id: system.c,v 1.14 1997/03/14 04:39:20 hubbe Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -376,9 +376,9 @@ void f_chroot(INT32 args)
   int res;
 
 #ifdef HAVE_FCHROOT
-  check_all_args("chroot", args, 1, BIT_STRING|BIT_OBJECT);
+  check_all_args("chroot", args, BIT_STRING|BIT_OBJECT, 0);
 #else
-  check_all_args("chroot", args, 1, BIT_STRING);
+  check_all_args("chroot", args, BIT_STRING, 0);
 #endif /* HAVE_FCHROOT */
 
 

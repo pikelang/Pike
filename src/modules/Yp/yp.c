@@ -65,7 +65,7 @@ static void f_create(INT32 args)
     f_default_yp_domain(0);
     args = 1;
   }
-  check_all_args("yp->create", args, 1, BIT_STRING);
+  check_all_args("yp->create", args, BIT_STRING,0);
 
   if(this->domain)
   {
@@ -84,7 +84,7 @@ static void f_all(INT32 args)
   int retlen, retkeylen;
   char *map;
   struct mapping *res_map;
-  check_all_args("yp->all", args, 1, BIT_STRING);
+  check_all_args("yp->all", args, BIT_STRING, 0);
 
   map = sp[-1].u.string->str;
   res_map = allocate_mapping( (this->last_size?this->last_size+2:40) );
@@ -120,7 +120,7 @@ void f_map(INT32 args)
 
   struct svalue *f = &sp[-1];
 
-  check_all_args("map", args, 2, BIT_STRING, BIT_FUNCTION|BIT_ARRAY );
+  check_all_args("map", args, BIT_STRING, BIT_FUNCTION|BIT_ARRAY, 0 );
   
   map = sp[-2].u.string->str;
 
@@ -143,7 +143,7 @@ static void f_order(INT32 args)
 {
   int err;
   unsigned long ret;
-  check_all_args("yp->order()", args, 1, BIT_STRING);
+  check_all_args("yp->order", args, BIT_STRING, 0);
   
   err = yp_order( this->domain, sp[-args].u.string->str, &ret);
   YPERROR("order", err );
@@ -157,7 +157,7 @@ static void f_match(INT32 args)
   char *retval;
   int retlen;
   
-  check_all_args("yp->match", args, 2, BIT_STRING, BIT_STRING);
+  check_all_args("yp->match", args, BIT_STRING, BIT_STRING, 0);
 
   err = yp_match( this->domain, sp[-args].u.string->str,
 		  sp[-args+1].u.string->str, sp[-args+1].u.string->len,

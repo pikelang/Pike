@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.35 1997/03/12 12:15:27 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.36 1997/03/14 04:37:14 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -954,6 +954,11 @@ static void eval_instruction(unsigned char *pc)
 	break;
       }
 
+      CASE(F_RETURN_1);
+      pop_n_elems(sp-fp->locals);
+      push_int(1);
+      goto do_return;
+
       CASE(F_RETURN_0);
       pop_n_elems(sp-fp->locals);
       push_int(0);
@@ -1055,6 +1060,9 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_DIVIDE);   o_divide();   break;
       CASE(F_MOD);      o_mod();      break;
 
+      CASE(F_ADD_INT); push_int(GET_ARG()); f_add(2); break;
+      CASE(F_ADD_NEG_INT); push_int(-GET_ARG()); f_add(2); break;
+
       CASE(F_PUSH_ARRAY);
       if(sp[-1].type!=T_ARRAY) error("Bad argument to @\n");
       sp--;
@@ -1134,6 +1142,15 @@ static void eval_instruction(unsigned char *pc)
       apply_low(fp->current_object,
 		GET_ARG()+fp->context.identifier_level,
 		sp - *--mark_sp);
+      pop_stack();
+      break;
+
+    CASE(F_MARK_APPLY);
+      strict_apply_svalue(fp->context.prog->constants + GET_ARG(), 0);
+      break;
+
+    CASE(F_MARK_APPLY_POP);
+      strict_apply_svalue(fp->context.prog->constants + GET_ARG(), 0);
       pop_stack();
       break;
 

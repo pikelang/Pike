@@ -4,65 +4,127 @@
 #include "svalue.h"
 #include "stralloc.h"
 
-/* Checks that minargs arguments are OK.
- *
- * Returns the number of the first bad argument,
- * or 0 if all arguments were OK.
+enum error_type {
+  ERR_NONE,
+  ERR_TOO_FEW,
+  ERR_TOO_MANY,
+  ERR_BAD_ARG,
+};
+
+struct expect_result {
+  enum error_type error_type;
+  int argno;                 /* Which argument was it */
+  unsigned INT32 expected;   /* What type was expected */
+  TYPE_T got;               /* What type did we actually receive */
+};
+
+/* Checks that args_to_check arguments are OK.
+ * Returns 1 if everything worked ok, zero otherwise.
+ * If something went wrong, 'exepect_result' tells you what went wrong.
+ * Make sure to finish the argument list with a zero.
  */
-int va_check_args(struct svalue *s, int minargs, va_list arglist)
+static int va_check_args(struct svalue *s,
+			 int args_to_check,
+			 struct expect_result *res,
+			 va_list arglist)
 {
-  int argno;
-
-  for (argno=0; argno < minargs; argno++)
+  res->error_type = ERR_NONE;
+  res->expected = 0;
+  
+  for (res->argno=0; res->argno < args_to_check; res->argno++)
   {
-    int type_mask = va_arg(arglist, unsigned INT32);
-
-    if (!((1UL << s[argno].type) & type_mask))
+    if(!(res->expected & BIT_MANY))
     {
-      return(argno+1);
+      res->expected = va_arg(arglist, unsigned int);
+      if(!res->expected)
+      {
+	res->error_type = ERR_TOO_MANY;
+	return 0;
+      }
+    }
+
+    if (!((1UL << s[res->argno].type) & res->expected))
+    {
+      res->got=s[res->argno].type;
+      res->error_type = ERR_BAD_ARG;
+      return 0;
     }
   }
 
-  return(0);
+  if(!(res->expected & BIT_MANY))
+  {
+    res->expected = va_arg(arglist, unsigned int);
+  }
+
+  if(!res->expected || (res->expected & BIT_VOID)) return 1;
+  res->error_type = ERR_TOO_FEW;
+  return 0;
 }
 
 /* Returns the number of the first bad argument,
+ * -X if there were too few arguments
  * or 0 if all arguments were OK.
  */
-int check_args(int args, int minargs, ...)
+int check_args(int args, ...)
 {
   va_list arglist;
-  int argno;
+  struct expect_result tmp;
   
-  if (args < minargs) {
-    return(args+1);
-  }
-
-  va_start(arglist, minargs);
-  argno = va_check_args(sp - args, minargs, arglist);
+  va_start(arglist, args);
+  va_check_args(sp - args, args, &tmp, arglist);
   va_end(arglist);
 
-  return(argno);
+  if(tmp.error_type == ERR_NONE) return 0;
+  return tmp.argno+1;
 }
 
 /* This function generates errors if any of the minargs first arguments
  * is not OK.
  */
-void check_all_args(const char *fnname, int args, int minargs, ... )
+void check_all_args(const char *fnname, int args, ... )
 {
   va_list arglist;
+  struct expect_result tmp;
   int argno;
 
-  if (args < minargs) {
-    error("Too few arguments to %s()\n", fnname);
-  }
-
-  va_start(arglist, minargs);
-  argno = va_check_args(sp - args, minargs, arglist);
+  va_start(arglist, args);
+  va_check_args(sp - args, args, &tmp, arglist);
   va_end(arglist);
 
-  if (argno) {
-    error("Bad argument %d to %s()\n", argno, fnname);
+  switch(tmp.error_type)
+  {
+  case ERR_NONE: return;
+  case ERR_TOO_FEW:
+    error("Too few arguments to %s()\n",fnname);
+  case ERR_TOO_MANY:
+    error("Too many argumens to %s()\n",fnname);
+
+  case ERR_BAD_ARG:
+  {
+    char buf[1000];
+    int e,d;
+    buf[0]=0;
+    for(e=0;e<16;e++)
+    {
+      if(tmp.expected & (1<<e))
+      {
+	if(buf[0])
+	{
+	  if(tmp.expected & 0xffff & (0xffff << e))
+	    strcat(buf,", ");
+	  else
+	    strcat(buf," or ");
+	}
+	strcat(buf, get_name_of_type(e));
+      }
+    }
+	
+    error("Bad argument %d to %s(), (expecting %s, got %s)\n", 
+	  tmp.argno+1,
+	  fnname,
+	  buf,
+	  get_name_of_type(tmp.got));
+  }
   }
 }
 

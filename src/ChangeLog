@@ -1,3 +1,8 @@
+Thu Mar 13 17:06:09 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* changed check_args() and check_all_args(), they are much more
+	  flexible and a bit easier to use now.
+
 Wed Mar 12 03:58:53 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* renamed clone() to clone_object(), threads works with linux now.
