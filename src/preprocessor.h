@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.8 1999/03/08 23:34:28 grubba Exp $
+ * $Id: preprocessor.h,v 1.9 1999/03/09 00:17:56 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -979,7 +979,8 @@ static INT32 lower_cpp(struct cpp *this,
 		  save=this->buf;
 		  this->buf=tmp;
 		  lower_cpp(this, a, l,
-			    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+			    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+			    auto_convert, charset);
 		  tmp=this->buf;
 		  this->buf=save;
 		  this->current_line=line;
@@ -1010,7 +1011,8 @@ static INT32 lower_cpp(struct cpp *this,
 	  }
 #endif /* PIKE_DEBUG */
 	  lower_cpp(this, (WCHAR *)tmp.s->str, tmp.s->len, 
-		    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+		    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+		    auto_convert, charset);
 	  
 	  if(s)
 	  {
@@ -1342,7 +1344,8 @@ static INT32 lower_cpp(struct cpp *this,
 	init_string_builder(&this->buf, SHIFT);
 #ifdef PIKE_DEBUG
 	/* DUMPPOS("#if before lower_cpp()"); */
-	skip = lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF);
+	skip = lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF,
+			 auto_convert, charset);
 	/* fprintf(stderr, "shift:%d, pos:%d, len:%d, skip:%d\n",
 	   SHIFT, pos, len, skip); */
 
@@ -1356,7 +1359,8 @@ static INT32 lower_cpp(struct cpp *this,
 	/* fprintf(stderr, "\"\n"); */
 	/* fflush(stderr); */
 #else /* !PIKE_DEBUG */
-	pos+=lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF);
+	pos+=lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF,
+		       auto_convert, charset);
 #endif /* PIKE_DEBUG */
 	tmp=this->buf;
 	this->buf=save;
@@ -1381,7 +1385,8 @@ static INT32 lower_cpp(struct cpp *this,
 	free_string_builder(&tmp);
 	if(IS_ZERO(sp-1)) nflags|=CPP_NO_OUTPUT;
 	pop_stack();
-	pos += lower_cpp(this, data+pos, len-pos, nflags);
+	pos += lower_cpp(this, data+pos, len-pos, nflags,
+			 auto_convert, charset);
 	break;
       }
 
@@ -1405,7 +1410,8 @@ static INT32 lower_cpp(struct cpp *this,
 	    if(find_define(s))
 	      nflags&=~CPP_NO_OUTPUT;
 
-	  pos += lower_cpp(this, data+pos, len-pos, nflags);
+	  pos += lower_cpp(this, data+pos, len-pos, nflags,
+			   auto_convert, charset);
 	  break;
 	}
 
@@ -1429,7 +1435,8 @@ static INT32 lower_cpp(struct cpp *this,
 	    if(find_define(s))
 	      nflags|=CPP_NO_OUTPUT;
 
-	  pos += lower_cpp(this, data+pos, len-pos, nflags);
+	  pos += lower_cpp(this, data+pos, len-pos, nflags,
+			   auto_convert, charset);
 	  break;
 	}
 
@@ -1480,7 +1487,8 @@ static INT32 lower_cpp(struct cpp *this,
 	  save=this->buf;
 	  init_string_builder(&this->buf, 0);
 	  pos += lower_cpp(this, data+pos, len-pos,
-			   CPP_END_AT_NEWLINE|CPP_DO_IF);
+			   CPP_END_AT_NEWLINE|CPP_DO_IF,
+			   auto_convert, charset);
 	  tmp=this->buf;
 	  this->buf=save;
 	  
