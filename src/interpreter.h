@@ -1299,8 +1299,7 @@ static int eval_instruction(unsigned char *pc)
 	fatal("Argument 1 to soft_cast isn't a string!\n");
       }
 #endif /* PIKE_DEBUG */
-      /* FIXME: Should probably be some other flag */
-      if (d_flag) {
+      if (runtime_options & RUNTIME_CHECK_TYPES) {
 	struct pike_string *sval_type = get_type_of_svalue(sp-1);
 	if (!pike_types_le(sval_type, sp[-2].u.string)) {
 	  struct pike_string *t;

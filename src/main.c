@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.78 1999/12/05 15:32:15 grubba Exp $");
+RCSID("$Id: main.c,v 1.79 1999/12/13 01:21:10 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -57,6 +57,7 @@ char *master_file;
 char **ARGV;
 
 int debug_options=0;
+int runtime_options=0;
 int d_flag=0;
 int c_flag=0;
 int t_flag=0;
@@ -312,23 +313,34 @@ int dbm_main(int argc, char **argv)
 	    case 's':
 	      debug_options|=DEBUG_SIGNALS;
 	      p++;
-	      d_flag--;
 	      goto more_d_flags;
 
 	    case 't':
 	      debug_options|=NO_TAILRECURSION;
 	      p++;
-	      d_flag--;
-	      goto more_d_flags;
-
-	    case 'T':
-	      debug_options|=DEBUG_TYPES;
-	      p++;
-	      d_flag--;
 	      goto more_d_flags;
 
 	    default:
-	      d_flag++,p++;
+	      d_flag += (p[0] == 'd');
+	      p++;
+	  }
+	  break;
+
+	case 'r':
+	more_w_flags:
+	  switch(p[1]) {
+	  case 't':
+	    runtime_options |= RUNTIME_CHECK_TYPES;
+	    p++;
+	    goto more_w_flags;
+
+	  case 'T':
+	    runtime_options |= RUNTIME_STRICT_TYPES;
+	    p++;
+	    goto more_w_flags;
+
+	  default:
+	    break;
 	  }
 	  break;
 

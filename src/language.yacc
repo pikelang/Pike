@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.142 1999/12/13 00:22:49 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.143 1999/12/13 01:21:12 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -691,7 +691,8 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 	  my_yyerror("Missing name for argument %d.",e);
 	} else {
 	  /* FIXME: Should probably use some other flag. */
-	  if (d_flag && (compiler_pass == 2) &&
+	  if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+	      (compiler_pass == 2) &&
 	      (compiler_frame->variable[e].type != mixed_type_string)) {
 	    node *local_node;
 

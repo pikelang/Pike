@@ -5,23 +5,28 @@
 \*/
 
 /*
- * $Id: main.h,v 1.11 1999/12/05 15:31:28 grubba Exp $
+ * $Id: main.h,v 1.12 1999/12/13 01:21:11 grubba Exp $
  */
 #ifndef MAIN_H
 #define MAIN_H
 
 #include "callback.h"
 
-extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag, debug_options;
+extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag;
+extern int debug_options, runtime_options;
 extern int default_t_flag;
 
 #ifdef TRY_USE_MMX
 extern int try_use_mmx;
 #endif
 
+/* Debug options */
 #define DEBUG_SIGNALS 1
 #define NO_TAILRECURSION 2
-#define DEBUG_TYPES 4
+
+/* Runtime options */
+#define RUNTIME_CHECK_TYPES  1
+#define RUNTIME_STRICT_TYPES 2
 
 /* Prototypes begin here */
 struct callback *add_post_master_callback(callback_func call,
