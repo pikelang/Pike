@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Stack.pike,v 1.9 2002/11/29 00:30:03 nilsson Exp $
+// $Id: Stack.pike,v 1.10 2003/08/22 14:23:13 nilsson Exp $
 
 //! This class implements a simple stack. Instead of adding and removing
 //! elements to an array, and thus making it vary in size for every push
@@ -28,7 +28,7 @@ void push(mixed val)
 mixed top()
 {
   if (ptr) {
-    return(arr[ptr-1]);
+    return arr[ptr-1];
   }
   error("Stack underflow\n");
 }
@@ -57,7 +57,7 @@ void quick_pop(void|int val)
 //! the stack.
 mixed pop(void|int val)
 {
-  mixed foo;
+  mixed ret;
 
   if (val) {
     if (ptr <= 0) {
@@ -68,7 +68,7 @@ mixed pop(void|int val)
       val = ptr;
     }
     ptr -= val;
-    foo = arr[ptr..ptr + val - 1];
+    ret = arr[ptr..ptr + val - 1];
 
     for (int i=0; i < val; i++) {
       arr[ptr + i] = 0;       /* Don't waste references */
@@ -77,10 +77,10 @@ mixed pop(void|int val)
     if(--ptr < 0)
 	error("Stack underflow\n");
   
-    foo=arr[ptr];
+    ret = arr[ptr];
     arr[ptr]=0; /* Don't waste references */
   }
-  return foo;
+  return ret;
 }
 
 //! Empties the stack, resets the stack pointer
