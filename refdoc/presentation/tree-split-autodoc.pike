@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.49 2003/03/25 23:39:39 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.50 2003/03/26 15:51:56 nilsson Exp $
  *
  */
 
@@ -414,14 +414,12 @@ class Node
     return _raw_class_path;
   }
 
-  string make_navbar_really_low(array(Node) children, void|int notables)
+  string make_navbar_really_low(array(Node) children, string what)
   {
-    string a="<tr><td nowrap='nowrap'>", b="</td></tr>\n";
-    if(notables)
-    {
-      a=""; b="<br />\n";
-    }
-    string res = "";
+    if(!sizeof(children)) return "";
+
+    string res = "<tr><td nowrap='nowrap'><br /><b>"+what+"</b></td></tr>\n";
+
     foreach(children, Node node)
     {
       string my_name = Parser.encode_html_entities(node->name);
@@ -433,12 +431,12 @@ class Node
       else 
 	my_name="<b>"+my_name+"</b>";
 
+      res += "<tr><td nowrap='nowrap'>&nbsp;";
       if(node==this_object())
-	res += sprintf("%s&nbsp;%s%s",
-		       a, my_name, b);
+	res += my_name;
       else
-	res += sprintf("%s&nbsp;<a href='%s'>%s</a>%s",
-		       a, make_link(node), my_name, b);
+	res += sprintf("<a href='%s'>%s</a>", make_link(node), my_name);
+      res += "</td></tr>\n";
     }
     return res;
   }
@@ -475,20 +473,16 @@ class Node
 
     res+="<table border='0' cellpadding='1' cellspacing='0' class='sidebar'>";
 
-    res += make_navbar_really_low(root->module_children);
+    res += make_navbar_really_low(root->module_children, "Modules");
 
-    if(sizeof(root->class_children))
-      res += "<tr><td nowrap='nowrap'><br /><b>Classes</b></td></tr>\n" +
-	make_navbar_really_low(root->class_children) + "<br />";
+    res += make_navbar_really_low(root->class_children, "Classes");
 
-    if(root->appendix_children) {
-      if(sizeof(root->appendix_children))
-	res += "<tr><td nowrap='nowrap'><br /><b>Appendices</b></td></tr>\n"+
-	  make_navbar_really_low(root->appendix_children) + "<br />";
+    if(root->is_TopNode)
+      res += make_navbar_really_low(root->appendix_children, "Appendices");
+    else {
+      res += make_navbar_really_low(root->enum_children, "Enums");
+      res += make_navbar_really_low(root->method_children, "Methods");
     }
-    else
-      res += make_navbar_really_low(root->enum_children) +
-	make_navbar_really_low(root->method_children);
 
     return res+"</table>";
   }
@@ -627,6 +621,7 @@ class Node
 class TopNode {
   inherit Node;
 
+  constant is_TopNode = 1;
   array(Node) appendix_children = ({ });
 
   void create(string _data) {
@@ -675,6 +670,16 @@ class TopNode {
     return "";
   }
 
+  string make_method_page(array(Node) children)
+  {
+    String.Buffer res = String.Buffer();
+    foreach(children, Node node)
+      res->add("&nbsp;<a href='", make_link(node), "'>",
+	       Parser.encode_html_entities(node->name),
+	       "()</a><br />\n");
+    return (string)res;
+  }
+
   string make_content() {
     resolve_reference = my_resolve_reference;
     if(!sizeof(method_children)) return "";
@@ -683,7 +688,7 @@ class TopNode {
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children)
       contents += "<td nowrap='nowrap'>" +
-	make_navbar_really_low(children, 1) + "</td>";
+	make_method_page(children) + "</td>";
 
     contents += "</tr><tr><td colspan='4' nowrap='nowrap'>" +
       parse_children(Parser.XML.Tree.parse_input(data),
