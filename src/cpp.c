@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.59 2000/02/03 19:09:12 grubba Exp $
+ * $Id: cpp.c,v 1.60 2000/02/28 04:20:36 hubbe Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -418,11 +418,17 @@ while(1)					\
       pos++;					\
       continue;					\
     }						\
+    if(data[pos+1]=='\r' && data[pos+2]=='\n')	\
+    {						\
+      pos+=2;					\
+      continue;					\
+    }						\
     READCHAR(tmp);				\
     string_builder_putchar(&nf, tmp);		\
     continue;					\
   }						\
 						\
+  case '\r':  continue; /* ignored */	        \
   case '\n':					\
     PUTNL();					\
     this->current_line++;			\
