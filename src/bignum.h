@@ -22,10 +22,9 @@ void exit_auto_bignum(void);
         (INT_TYPE_SIGN(a) == INT_TYPE_SIGN(b) &&                           \
 	 INT_TYPE_SIGN(a) != INT_TYPE_SIGN((a)+(b)))
 
-#define INT_TYPE_SUB_OVERFFLOW(a, b) INT_TYPE_ADD_OVERFLOW((a), -(b))
+#define INT_TYPE_SUB_OVERFLOW(a, b)  INT_TYPE_ADD_OVERFLOW((a), -(b))
 
-#define INT_TYPE_ASL_OVERFLOW(a, b)                                        \
-        (!(1<<(b)) || ((a)*(1<<(b)))/(1<<(b)) != (a))
+#define INT_TYPE_ASL_OVERFLOW(a, b)  ((((a)<<(b))>>(b)) != (a))
 
 #endif /* BIGNUM_H */
 
