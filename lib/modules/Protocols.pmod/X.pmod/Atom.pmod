@@ -1,11 +1,11 @@
 /* Atom.pmod
  *
- * X Atoms $Id: Atom.pmod,v 1.3 1998/04/06 15:47:48 nisse Exp $
+ * X Atoms $Id: Atom.pmod,v 1.4 1998/04/19 00:48:25 grubba Exp $
  *
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Proocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.
