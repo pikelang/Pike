@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.181 2000/07/09 18:32:53 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.182 2000/08/16 12:56:47 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1538,16 +1538,21 @@ lambda: F_LAMBDA push_compiler_frame1
       free_string(compiler_frame->current_return_type);
     copy_shared_string(compiler_frame->current_return_type,any_type_string);
   }
-  func_args failsafe_block
+  func_args
+  {
+    $<number>$ = varargs;
+    varargs = 0;
+  }
+  failsafe_block
   {
     struct pike_string *type;
     char buf[40];
     int f,e;
     struct pike_string *name;
     
-    debug_malloc_touch($5);
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
-    type=find_return_type($5);
+    debug_malloc_touch($6);
+    $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
+    type=find_return_type($6);
 
     if(type) {
       push_finished_type(type);
@@ -1556,15 +1561,15 @@ lambda: F_LAMBDA push_compiler_frame1
       push_type(T_MIXED);
     
     e=$4-1;
-    if(varargs)
+    if($<number>5)
     {
       push_finished_type(compiler_frame->variable[e].type);
       e--;
-      varargs=0;
       pop_type_stack();
     }else{
       push_type(T_VOID);
     }
+    varargs=0;
     push_type(T_MANY);
     for(; e>=0; e--)
       push_finished_type(compiler_frame->variable[e].type);
@@ -1584,7 +1589,7 @@ lambda: F_LAMBDA push_compiler_frame1
 #endif /* LAMBDA_DEBUG */
     
     f=dooptcode(name,
-		$5,
+		$6,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
