@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.136 2003/02/15 14:14:28 grubba Exp $
+|| $Id: interpret_functions.h,v 1.137 2003/02/15 14:59:35 grubba Exp $
 */
 
 /*
@@ -722,26 +722,9 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
 });
 
 OPCODE1(F_GLOBAL_LVALUE, "& global", 0, {
-  struct identifier *i;
-  INT32 tmp=arg1 + Pike_fp->context.identifier_level;
-  if(!Pike_fp->current_object->prog)
-    Pike_error("Cannot access global variables in destructed object.\n");
-  i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
-
-  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-    Pike_error("Cannot re-assign functions or constants.\n");
-
-  if(i->run_time_type == PIKE_T_MIXED)
-  {
-    Pike_sp[0].type=T_LVALUE;
-    Pike_sp[0].u.lval=(struct svalue *)GLOBAL_FROM_INT(tmp);
-  }else{
-    Pike_sp[0].type=T_SHORT_LVALUE;
-    Pike_sp[0].u.short_lval= (union anything *)GLOBAL_FROM_INT(tmp);
-    Pike_sp[0].subtype=i->run_time_type;
-  }
-  Pike_sp[1].type=T_VOID;
-  Pike_sp+=2;
+  ref_push_object(Pike_fp->current_object);
+  push_int(arg1 + Pike_fp->context.identifier_level);
+  Pike_sp[-1].type = T_LVALUE;
 });
 
 OPCODE0(F_INC, "++x", 0, {
