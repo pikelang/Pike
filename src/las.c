@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.299 2002/09/30 12:45:56 marcus Exp $");
+RCSID("$Id: las.c,v 1.300 2002/10/07 15:54:07 marcus Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -575,9 +575,12 @@ void free_all_nodes(void)
       if(e)
       {
 	int e2=e;
-	for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next)
+	struct node_s_block *nextblk;
+	for(tmp2=node_s_blocks;tmp2;tmp2=nextblk)
 	{
-	  for(e=0;e<NODES;e++)
+	  int n = tmp2->used;
+	  nextblk = tmp2->next;
+	  for(e=0;n && e<NODES;e++)
 	  {
 	    if (tmp2->x[e].token != USHRT_MAX)
 	    {
@@ -621,11 +624,12 @@ void free_all_nodes(void)
 #endif /* SHARED_NODES */
 		debug_malloc_touch(tmp->type);
 		free_node(tmp);
+		--n;
 	      }
 	    }
 	  }
 	}
-#if defined(PIKE_DEBUG)
+#ifdef PIKE_DEBUG
 	if(!cumulative_parse_error)
 	  Pike_fatal("Failed to free %d nodes when compiling!\n",e2);
 #endif
