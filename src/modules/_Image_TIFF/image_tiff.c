@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.25 2000/12/20 14:03:41 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.26 2001/01/19 22:09:41 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -164,7 +164,8 @@ static toff_t seek_buffer(thandle_t bh, toff_t seek, int seek_type )
      break;
    case SEEK_END:
      if (seek > 0) {
-       while (buffer_handle->real_len + seek >= buffer_handle->len) {
+       while (buffer_handle->real_len + ((ptrdiff_t)seek) >=
+	      buffer_handle->len) {
 	 increase_buffer_size(buffer_handle);
        }
      }

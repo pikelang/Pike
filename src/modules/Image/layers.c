@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.60 2000/12/27 12:03:02 mirar Exp $
+**!	$Id: layers.c,v 1.61 2001/01/19 22:18:42 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.60 2000/12/27 12:03:02 mirar Exp $");
+RCSID("$Id: layers.c,v 1.61 2001/01/19 22:18:42 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -956,7 +956,7 @@ static void image_layer_mode(INT32 args)
 	 return;
       }
 
-   fatal("illegal mode: %p\n",layer_mode[i].func);
+   fatal("illegal mode: %p\n", (void *)layer_mode[i].func);
 }
 
 static void image_layer_available_modes(INT32 args)

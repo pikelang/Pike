@@ -77,6 +77,7 @@ make_memchr_memcmpX(4)
 make_memchr_memcmpX(5)
 make_memchr_memcmpX(6)
 
+#undef make_memchr_memcmpX
 
 HCHAR *NameNH(boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 				 HCHAR *haystack,

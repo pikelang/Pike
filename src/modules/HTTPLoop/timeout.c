@@ -97,19 +97,20 @@ int *aap_add_timeout_thr(THREAD_T thr, int secs)
   return &to->raised;
 }
 
+#ifdef PIKE_DEBUG
 void debug_print_timeout_queue( struct timeout *target )
 {
   struct timeout *p = first_timeout;
   int found=0, actual_size=0;
   fprintf( stderr, "\n\nTimeout list, searching for <%p>, num=%d:\n",
-           target, num_timeouts);
+           (void *)target, num_timeouts);
   while( p )
   {
     actual_size++;
     if( p == target )
-      fprintf( stderr, "> %p < [%d]\n", target, ++found );
+      fprintf( stderr, "> %p < [%d]\n", (void *)target, ++found );
     else
-      fprintf( stderr, "  %p  \n", target );
+      fprintf( stderr, "  %p  \n", (void *)target );
     p = p->next;
   }
   if( actual_size != num_timeouts )
@@ -122,6 +123,7 @@ void debug_print_timeout_queue( struct timeout *target )
   if( found > 1 )
     FATAL( "Timeout found more than once in chain\n");
 }
+#endif /* PIKE_DEBUG */
 
 #ifndef OFFSETOF
 #define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))

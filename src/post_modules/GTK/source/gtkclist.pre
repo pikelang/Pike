@@ -601,7 +601,7 @@ array(int) get_selection()
   int nelems = 0;
   while( work )
   {
-    push_int( (int)( work->data ) );
+    push_int64( (ptrdiff_t)( work->data ) );
     work = work->next;
     nelems++;
   }

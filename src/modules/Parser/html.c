@@ -328,7 +328,7 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
 
    sprintf(buf,"(%ld) %p:%d/%ld    ^",
 	   DO_NOT_WARN((long)i0),
-	   feed,c,
+	   (void *)feed, c,
 	   DO_NOT_WARN((long)feed->s->len));
    fprintf(stderr,"»\n%*s\n",
 	   DO_NOT_WARN((int)(l+c-i0+3)),
@@ -2913,7 +2913,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       TO_LONG(feed[0]->s->len), TO_LONG(st->c));
       if (*feed && cmp_feed_pos (*feed, st->c, dst, cdst) > 0)
 	fatal ("Going backwards from %p:%ld to %p:%ld.\n",
-	       *feed, TO_LONG(st->c), dst, TO_LONG(cdst));
+	       (void *)(*feed), TO_LONG(st->c), (void *)dst, TO_LONG(cdst));
 #endif
 
       /* do we need to check data? */
@@ -3017,7 +3017,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 #ifdef DEBUG
       if (*feed != dst || st->c != cdst)
 	fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld.\n",
-	       *feed, TO_LONG(st->c), dst, TO_LONG(cdst));
+	       (void *)(*feed), TO_LONG(st->c), (void *)dst, TO_LONG(cdst));
 #endif
 
       ch=index_shared_string(dst->s,cdst);
@@ -3503,7 +3503,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	if (!scan_entity) fatal ("Shouldn't parse entities now.\n");
 	if (*feed != dst || st->c != cdst)
 	  fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld\n",
-		 *feed, TO_LONG(st->c), dst, TO_LONG(cdst));
+		 (void *)(*feed), TO_LONG(st->c), (void *)dst, TO_LONG(cdst));
 #endif
 	/* just search for end of entity */
 
@@ -4135,8 +4135,9 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
 new_arg:
 #ifdef DEBUG
       if (prev_s && cmp_feed_pos (prev_s, prev_c, s1, c1) >= 0)
-	fatal ("Not going forward in tag args loop (from %p:%d to %p:%d).\n",
-	       prev_s, prev_c, s1, c1);
+	fatal ("Not going forward in tag args loop (from %p:%ld to %p:%ld).\n",
+	       (void *)prev_s, PTRDIFF_T_TO_LONG(prev_c),
+	       (void *)s1, PTRDIFF_T_TO_LONG(c1));
       prev_s = s1, prev_c = c1;
 #endif
 
