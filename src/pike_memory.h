@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.42 2003/02/16 04:23:19 mast Exp $
+|| $Id: pike_memory.h,v 1.43 2003/03/02 14:28:42 grubba Exp $
 */
 
 #ifndef MEMORY_H
@@ -134,6 +134,8 @@ PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 PMOD_EXPORT size_t hashmem(const unsigned char *a, size_t len, size_t mlen);
 PMOD_EXPORT size_t hashstr(const unsigned char *str, ptrdiff_t maxn);
 PMOD_EXPORT size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn);
+PMOD_EXPORT size_t simple_hashmem1(const p_wchar1 *str, ptrdiff_t len, ptrdiff_t maxn);
+PMOD_EXPORT size_t simple_hashmem2(const p_wchar2 *str, ptrdiff_t len, ptrdiff_t maxn);
 PMOD_EXPORT void init_memsearch(struct mem_searcher *s,
 		    char *needle,
 		    size_t needlelen,

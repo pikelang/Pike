@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.138 2002/12/09 22:21:46 mast Exp $
+|| $Id: pike_memory.c,v 1.139 2003/03/02 14:28:42 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.138 2002/12/09 22:21:46 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.139 2003/03/02 14:28:42 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -194,23 +194,27 @@ size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
   return ret;
 }
 
-size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn)
-{
-  size_t ret,c;
-  
-  ret = len*92873743;
-
-  len = MINIMUM(maxn,len);
-  for(; len>=0; len--)
-  {
-    c=str++[0];
-    ret ^= ( ret << 4 ) + c ;
-    ret &= 0x7fffffff;
+#define MK_HASHMEM(NAME, TYPE)					\
+  size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn)	\
+  {								\
+    size_t ret,c;						\
+    								\
+    ret = len*92873743;						\
+  								\
+    len = MINIMUM(maxn,len);					\
+    for(; len>=0; len--)					\
+    {								\
+      c=str++[0];						\
+      ret ^= ( ret << 4 ) + c ;					\
+      ret &= 0x7fffffff;					\
+    }								\
+  								\
+    return ret;							\
   }
 
-  return ret;
-}
-
+MK_HASHMEM(simple_hashmem, unsigned char)
+MK_HASHMEM(simple_hashmem1, p_wchar1)
+MK_HASHMEM(simple_hashmem2, p_wchar2)
 
 #ifndef PIKE_SEARCH_H
 /*

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.477 2003/02/16 04:23:18 mast Exp $
+|| $Id: builtin_functions.c,v 1.478 2003/03/02 14:28:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.477 2003/02/16 04:23:18 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.478 2003/03/02 14:28:41 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -114,6 +114,50 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 }
 
 
+/*! @decl int hash_7_4(string s)
+ *! @decl int hash_7_4(string s, int max)
+ *!
+ *!   This function will return an @tt{int@} derived from the string @[s].
+ *!   The same string will always hash to the same value.
+ *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
+ *!   the result will be >= 0 and <= 0x7fffffff.
+ *!
+ *! @note
+ *!   This function is provided for backward compatibility reasons.
+ *!
+ *!   This function is byte-order dependant.
+ *!
+ *! @seealso
+ *!   @[hash()], @[hash_7_0()]
+ */
+static void f_hash_7_4(INT32 args)
+{
+  size_t i = 0;
+  struct pike_string *s = Pike_sp[-args].u.string;
+
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("hash_7_4",1);
+
+  if(Pike_sp[-args].type != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("hash_7_4", 1, "string");
+
+  i = simple_hashmem((unsigned char *)s->str, s->len<<s->size_shift,
+		     100<<s->size_shift);
+
+  if(args > 1)
+  {
+    if(Pike_sp[1-args].type != T_INT)
+      SIMPLE_BAD_ARG_ERROR("hash_7_4",2,"int");
+    
+    if(!Pike_sp[1-args].u.integer)
+      PIKE_ERROR("hash_7_4", "Modulo by zero.\n", Pike_sp, args);
+
+    i%=(unsigned INT32)Pike_sp[1-args].u.integer;
+  }
+  pop_n_elems(args);
+  push_int64(i);
+}
+
 /*! @decl int hash_7_0(string s)
  *! @decl int hash_7_0(string s, int max)
  *!
@@ -125,10 +169,12 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
  *! @note
  *!   This function is provided for backward compatibility reasons.
  *!
+ *!   This function is not NUL-safe, and is byte-order dependant.
+ *!
  *! @seealso
- *!   @[hash()]
+ *!   @[hash()], @[hash_7_4()]
  */
-void f_compat_hash( INT32 args )
+static void f_hash_7_0( INT32 args )
 {
   struct pike_string *s = Pike_sp[-args].u.string;
   unsigned int i;
@@ -139,7 +185,7 @@ void f_compat_hash( INT32 args )
 
   if( s->size_shift )
   {
-    f_hash( args );
+    f_hash_7_4( args );
     return;
   }
 
@@ -168,16 +214,19 @@ void f_compat_hash( INT32 args )
  *!   the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
- *!   The hash algorithm was changed in Pike 7.1. If you want a hash
+ *!   The hash algorithm was changed in Pike 7.5. If you want a hash
+ *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
+ *!
+ *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
  *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
  *!
  *! @seealso
- *!   @[hash_7_0()]
+ *!   @[hash_7_0()], @[hash_7_4()]
  */
-void f_hash(INT32 args)
+PMOD_EXPORT void f_hash(INT32 args)
 {
   size_t i = 0;
-  struct pike_string *s = Pike_sp[-args].u.string;
+  struct pike_string *s;
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
@@ -185,8 +234,21 @@ void f_hash(INT32 args)
   if(Pike_sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("hash", 1, "string");
 
-  i = simple_hashmem((unsigned char *)s->str, s->len<<s->size_shift,
-		     100<<s->size_shift);
+  s = Pike_sp[-args].u.string;
+  switch(s->size_shift) {
+  case 0:
+    i = simple_hashmem(STR0(s), s->len, 100);
+    break;
+  case 1:
+    i = simple_hashmem1(STR1(s), s->len, 100);
+    break;
+  case 2:
+    i = simple_hashmem2(STR2(s), s->len, 100);
+    break;
+  default:
+    Pike_fatal("hash(): Unsupported string shift: %d\n", s->size_shift);
+    break;
+  }
 
   if(args > 1)
   {
@@ -195,6 +257,9 @@ void f_hash(INT32 args)
     
     if(!Pike_sp[1-args].u.integer)
       PIKE_ERROR("hash", "Modulo by zero.\n", Pike_sp, args);
+
+    if(Pike_sp[1-args].u.integer < 0)
+      PIKE_ERROR("hash", "Negative modulo.\n", Pike_sp, args);
 
     i%=(unsigned INT32)Pike_sp[1-args].u.integer;
   }
@@ -7701,7 +7766,10 @@ void init_builtin_efuns(void)
 /* function(string,int|void:int) */
   ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN("hash_7_0",f_compat_hash,
+  ADD_EFUN("hash_7_0",f_hash_7_0,
+           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash_7_4",f_hash_7_4,
            tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
 /* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */

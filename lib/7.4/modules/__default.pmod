@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.2 2003/01/13 04:36:32 nilsson Exp $
+// $Id: __default.pmod,v 1.3 2003/03/02 14:28:41 grubba Exp $
 
 #pike 7.5
 
@@ -115,6 +115,7 @@ mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret=predef::all_constants()+([]);
   ret->rusage = rusage;
+  ret->hash = hash_7_4;
   return ret;
 }
 
