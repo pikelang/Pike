@@ -29,6 +29,18 @@
 
 #include "../Image/image.h"
 
+RCSID("$Id: sane.c,v 1.4 2000/03/02 19:22:23 per Exp $");
+
+/*
+**! module SANE
+**!
+**!	This module enables access to the SANE (Scanner Access Now Easy)
+**!     library from pike
+**!
+**! note
+**!	$Id: sane.c,v 1.4 2000/03/02 19:22:23 per Exp $
+*/
+
 static int sane_is_inited;
 
 struct scanner
@@ -53,6 +65,32 @@ static void push_device( SANE_Device *d )
 }
 
 
+/*
+**! method array(mapping) list-scanners()
+**!
+**!  Returns an array with all available scanners.
+**!
+**!    Example:
+**!     <pre>
+**!    Pike v0.7 release 120 running Hilfe v2.0 (Incremental Pike Frontend)
+**!   > SANE.list_scanners();
+**!     Result: ({
+**!            ([
+**!              "model":"Astra 1220S     ",
+**!              "name":"umax:/dev/scg1f",
+**!              "type":"flatbed scanner",
+**!              "vendor":"UMAX    "
+**!            ]),
+**!            ([
+**!              "model":"Astra 1220S     ",
+**!              "name":"net:lain.idonex.se:umax:/dev/scg1f",
+**!              "type":"flatbed scanner",
+**!              "vendor":"UMAX    "
+**!            ])
+**!        })
+**!
+**!     </pre>
+*/
 static void f_list_scanners( INT32 args )
 {
   SANE_Device **devices;
@@ -165,6 +203,10 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
   f_aggregate_mapping( sp - osp );
 }
 
+/*
+**! class Scanner
+**!    Scanner s = Scanner( scanner name )
+*/
 static void f_scanner_create( INT32 args )
 {
   char *name;
@@ -175,6 +217,9 @@ static void f_scanner_create( INT32 args )
     error("Failed to open scanner \"%s\"\n", name );
 }
 
+/*
+**! function array(mapping) list_options( )
+*/
 static void f_scanner_list_options( INT32 args )
 {
   int i, n;
@@ -199,6 +244,12 @@ static int find_option( char *name, const SANE_Option_Descriptor **p )
   error("No such option: %s\n", name );
 }
 
+
+/*
+**! function void set_option( string name, mixed new_value )
+**! function void set_option( string name )
+**!    If no value is specified, the option is set to it's default value
+*/
 static void f_scanner_set_option( INT32 args )
 {
   char *name;
@@ -242,6 +293,10 @@ static void f_scanner_set_option( INT32 args )
   push_int( 0 );
 }
 
+
+/*
+**! function mixed get_option( string name )
+*/
 static void f_scanner_get_option( INT32 args )
 {
   char *name;
@@ -280,6 +335,9 @@ static void f_scanner_get_option( INT32 args )
   }
 }
 
+/*
+**! function mapping(string:int) get_parameters(  )
+*/
 static void f_scanner_get_parameters( INT32 args )
 {
   SANE_Parameters p;
@@ -359,6 +417,9 @@ static void assert_image_program()
     error("No Image.Image?!\n");
 }
 
+/*
+**! function Image.Image simple_scan(  )
+*/
 static void f_scanner_simple_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -411,6 +472,9 @@ static void f_scanner_simple_scan( INT32 args )
   push_object( o );
 }
 
+/*
+**! function void row_scan(function(Image.Image,int,Scanner:void) callback)
+*/
 static void f_scanner_row_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -553,6 +617,9 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
   }
 }
 
+/*
+**! function void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
+*/
 static void f_scanner_nonblocking_row_scan( INT32 args )
 {
   SANE_Parameters p;
