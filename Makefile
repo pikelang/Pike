@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.105 2002/11/19 22:09:55 nilsson Exp $
+# $Id: Makefile,v 1.106 2002/12/01 23:43:08 mast Exp $
 #
 # Meta Makefile
 #
@@ -208,6 +208,9 @@ dump_modules:
 
 force_dump_modules:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=force_dump_modules"
+
+delete_dumped_modules:
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=delete_dumped_modules"
 
 undump_modules:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=undump_modules"
