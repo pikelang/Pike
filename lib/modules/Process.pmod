@@ -255,32 +255,42 @@ Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 
 }
 
-//!
-string popen(string s)
+//! Open a "process" for reading or writing.  The @[command] is executed
+//! as a shell statement ("/bin/sh -c command" for Unix,
+//! "cmd /c command" for Windows).  The parameter @[mode] should
+//! be one of the following letters:
+//! @string
+//!   @value 'r'
+//!   Open for reading.  Data written by the process to stdout
+//!   is available for read.
+//!   @value 'w'
+//!   Open for writing.  Data written to the file is available
+//!   to the process on stdin.
+//! @endstring
+//! If no @[mode] is passed, read mode is assumed.
+Stdio.FILE fpopen(string s, string|void mode)
 {
-  Stdio.File f = Stdio.File();
+  if (!mode) mode = "r";
+  Stdio.FILE f = Stdio.FILE();
+  if (!f) error("Popen failed. (couldn't create file)\n");
 
-  if (!f) error("Popen failed. (couldn't create pipe)\n");
-
-  Stdio.File p=f->pipe(Stdio.PROP_IPC);
+  Stdio.File p = f->pipe();
   if(!p) error("Popen failed. (couldn't create pipe)\n");
-  spawn(s,0,p,0, destruct, f);
+
+  if (mode == "w")
+    spawn(s, p, 0, 0, destruct, f);
+  else
+    spawn(s, 0, p, 0, destruct, f);
   p->close();
   destruct(p);
 
-  string t=f->read(0x7fffffff);
-  if(!t)
-  {
-    int e;
-    e=f->errno();
-    f->close();
-    destruct(f);
-    error("Popen failed with error "+e+".\n");
-  } else {
-    f->close();
-    destruct(f);
-  }
-  return t;
+  return f;
+}
+
+//! Works as @[fpopen], but blocks until the command completes and
+//! returns the resulting string.
+string popen(string s) {
+  return fpopen(s)->read();
 }
 
 //!
