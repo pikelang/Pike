@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.10 1998/02/11 15:29:56 mirar Exp $
+ * $Id: module.pmod.in,v 1.11 1998/02/15 01:22:57 mirar Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -113,7 +113,7 @@ class support {
   }
 
   array(mapping(string:string|array)|string) 
-       parse_headers(string message, void|int allow_multiple)
+       parse_headers(string message, void|int use_multiple)
   {
     mapping(string:string|array) headers = ([ ]);
     string head, body, header, hname, hcontents;
@@ -135,14 +135,9 @@ class support {
     {
       if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
       {
-	if (allow_multiple)
-	  if (headers[hname=lower_case(hname)])
-	    if (arrayp(headers[hname])) 
-	      headers[hname] += ({hcontents});
-	    else
-	      headers[hname] = ({ headers[hname], hcontents });
-	  else
-	    headers[hname]=hcontents;
+	if (use_multiple)
+	  headers[hname=lower_case(hname)]
+	    = (headers[hname]||({}))+({hcontents});
 	else
 	  headers[lower_case(hname)] = hcontents;
       }
@@ -314,7 +309,7 @@ class Message {
   void create(void | string message,
 	      void | mapping(string:string) hdrs,
 	      void | array(object) parts,
-	      void | int allow_multiple_headers)
+	      void | int use_multiple_headers)
   {
     encoded_data = 0;
     decoded_data = 0;
@@ -336,7 +331,7 @@ class Message {
       body_parts = parts;
     } else if (message) {
       array(mapping(string:string)|string) h = 
-	parse_headers(message,allow_multiple_headers);
+	parse_headers(message,use_multiple_headers);
       headers = h[0];
       encoded_data = h[1];
     }
