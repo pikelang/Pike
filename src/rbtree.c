@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.c,v 1.6 2001/05/02 11:07:15 mast Exp $
+ * $Id: rbtree.c,v 1.7 2001/05/02 14:50:37 grubba Exp $
  */
 
 #include "global.h"
@@ -361,14 +361,14 @@ PMOD_EXPORT int rb_indval_delete (struct rb_node_indval **tree,
     struct svalue_cmp_data data;
     data.cmp_less = cmp_less;
     data.key = ind;
-    HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
+    old = INDVAL(low_rb_delete((struct rb_node_hdr **) tree,
 			       (low_rb_cmp_fn *) svalue_cmp_eq, &data,
-			       sizeof (struct rb_node_indval));
+			       sizeof (struct rb_node_indval)));
   }
   else
-    HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
+    old = INDVAL(low_rb_delete((struct rb_node_hdr **) tree,
 			       (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
-			       sizeof (struct rb_node_indval));
+			       sizeof (struct rb_node_indval)));
   if (old) {
     struct svalue tmp;
     free_svalue (use_rb_node_ind (old, tmp));
@@ -391,14 +391,14 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_delete_node (struct rb_node_indval 
     struct svalue_cmp_data data;
     data.cmp_less = cmp_less;
     data.key = &tmp;
-    HDR (old) = low_rb_delete_node ((struct rb_node_hdr **) tree,
+    old = INDVAL(low_rb_delete_node((struct rb_node_hdr **) tree,
 				    (low_rb_cmp_fn *) svalue_cmp_eq, &data,
-				    HDR (node), sizeof (struct rb_node_indval));
+				    HDR(node), sizeof(struct rb_node_indval)));
   }
   else
-    HDR (old) = low_rb_delete_node ((struct rb_node_hdr **) tree,
+    old = INDVAL(low_rb_delete_node((struct rb_node_hdr **) tree,
 				    (low_rb_cmp_fn *) rb_ind_default_cmp, &tmp,
-				    HDR (node), sizeof (struct rb_node_indval));
+				    HDR(node), sizeof(struct rb_node_indval)));
   free_svalue (use_rb_node_ind (old, tmp));
   free_svalue (&old->val);
   really_free_rb_node_indval (old);
