@@ -146,16 +146,19 @@ void _shoot(string id)
    object test;
    float tg=gauge { (test=Tools.Shoot[id]())->perform(); };
 
-   string s;
-   if ( (s=Stdio.read_bytes("/proc/"+getpid()+"/statm")) )
-     write("%d\n",((int)s)*4096);
-   else if ( (s=Stdio.read_bytes("/proc/"+getpid()+"/status", 0, 64)) &&
-	     (sizeof(s) == 64) &&
-	     (sscanf(s, "%48*s%4c%4c%4*s%4c",
-		     int pr_brkbase, int pr_brksize,
-		     /* int pr_stkbase, */ int pr_stksize) == 5))
-     write("%d\n",pr_brkbase + pr_brksize + pr_stksize);
-   else 
+   if (Stdio.is_dir("/proc/"+getpid()+"/.")) {
+     string s;
+     if ((s=Stdio.read_bytes("/proc/"+getpid()+"/statm")))
+       write("%d\n",((int)s)*4096);
+     else if ( (s=Stdio.read_bytes("/proc/"+getpid()+"/status", 0, 64)) &&
+	       (sizeof(s) == 64) &&
+	       (sscanf(s, "%48*s%4c%4c%4*s%4c",
+		       int pr_brkbase, int pr_brksize,
+		       /* int pr_stkbase, */ int pr_stksize) == 5))
+       write("%d\n",pr_brkbase + pr_brksize + pr_stksize);
+     else 
+       write("-1\n");
+   } else
      write("-1\n");
 
    write("%.6f\n",tg);
