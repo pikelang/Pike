@@ -3388,7 +3388,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	goto parse_entity;
 
       default: {
-	int quote = ctx - CTX_TAG_QUOTED_ARG;
+	int quote;
 	p_wchar2 end_found;
 
 	DEBUG((stderr,"%*d do_try_feed scan in tag arg\n",
@@ -3399,6 +3399,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	  return STATE_WAIT;
 
       continue_in_arg:
+	quote = ctx - CTX_TAG_QUOTED_ARG;
+
 	DEBUG_MARK_SPOT ("do_try_feed at arg val", dst, cdst);
 	if (!(res = scan_forward_arg (this, dst, cdst, &dst, &cdst,
 				      scan_entity ? SCAN_ARG_ENT_BREAK : SCAN_ARG_ONLY,
