@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.110 1998/08/02 16:47:03 grubba Exp $
+# $Id: Makefile.in,v 1.111 1998/08/02 19:25:00 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -314,10 +314,10 @@ distclean: spotless
 	  -name 'config.cache' ')' -exec rm -f \{\} \;
 
 cvsclean: distclean
-	( cd $(SRCDIR); \
-	  for d in `find . -type d -print`; do \
-	    if test -f "$$d/.cvsignore" ; then \
-	      (cd $$d && rm -f `cat .cvsignore`); \
+	( for d in `cd $(SRCDIR); find . -type d -print`; do \
+	    if test -f "$(SRCDIR)/$$d/.cvsignore" ; then \
+	      (cd "$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
+	      (cd "$(SRCDIR)/$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
 	    else :; fi; \
 	  done)
 
