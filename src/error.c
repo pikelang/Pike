@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.138 2004/11/11 16:02:16 grubba Exp $
+|| $Id: error.c,v 1.139 2004/11/11 16:03:54 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -298,9 +298,6 @@ PMOD_EXPORT void Pike_vsnprintf(char *str, size_t size,
 }
 
 
-/* FIXME: NOTE: This function uses a static buffer.
- * Check sizes of arguments passed!
- */
 void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
      ATTRIBUTE((noreturn))
 {
