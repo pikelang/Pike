@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.234 2001/01/19 22:38:29 grubba Exp $
+# $Id: Makefile.in,v 1.235 2001/01/21 19:59:44 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -434,8 +434,7 @@ tinstall: aclocal master.pike aclocal
 
 
 verify: module_testsuites testsuite tinstall
-	unset PIKE_MODULE_PATH; \
-	unset PIKE_INCLUDE_PATH; \
+	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
