@@ -69,7 +69,7 @@ o Standalone.cgrep
 o Standalone.dump
 o Image.NEO
 o Bz2
-
+o Process.Process
 
 Optimizations:
 --------------
