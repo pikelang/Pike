@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.312 2003/12/01 18:03:10 nilsson Exp $
+// $Id: master.pike.in,v 1.313 2003/12/06 10:08:13 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -927,7 +927,7 @@ program cast_to_program(string pname,
 
 //! This function is called when an error occurs that is not caught
 //! with catch().
-void handle_error(array(mixed)|object trace)
+void handle_error(array|object trace)
 {
   if(mixed x=catch {
     werror(describe_backtrace(trace));
@@ -1073,11 +1073,12 @@ object low_cast_to_object(string oname, string current_file,
 //! This function is called when the drivers wants to cast a string
 //! to an object because of an implict or explicit cast. This function
 //! may also receive more arguments in the future.
-object cast_to_object(string oname, string current_file)
+object cast_to_object(string oname, string current_file,
+		      object|void current_handler)
 {
   resolv_debug ("cast_to_object(%O, %O)\n", oname, current_file);
   INC_RESOLV_MSG_DEPTH();
-  object o = low_cast_to_object(oname, current_file);
+  object o = low_cast_to_object(oname, current_file, current_handler);
   DEC_RESOLV_MSG_DEPTH();
   resolv_debug ("cast_to_object(%O, %O) => %O\n", oname, current_file, o);
   if (objectp (o)) return o;
@@ -2731,7 +2732,7 @@ static object _charset_mod;
 //! character code conversion.
 string decode_charset(string data, string charset)
 {
-  // werror(sprintf("decode_charset(%O, %O)\n", data, charset));
+  // werror("decode_charset(%O, %O)\n", data, charset);
 
   if (!_charset_mod) {
     object mod = [object]resolv("Locale");
@@ -3222,7 +3223,7 @@ string describe_function (function f)
 //! @seealso
 //! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
 //!
-string describe_backtrace(mixed trace, void|int linewidth)
+string describe_backtrace(array|object trace, void|int linewidth)
 {
   int e;
   string ret;
