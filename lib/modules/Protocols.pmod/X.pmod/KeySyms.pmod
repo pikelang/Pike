@@ -1,6 +1,6 @@
 /* KeySyms.pmod
  *
- * $Id: KeySyms.pmod,v 1.1 2002/06/13 20:21:17 bill Exp $
+ * $Id: KeySyms.pmod,v 1.2 2002/06/16 17:55:46 nilsson Exp $
  */
 
 /*
@@ -1458,9 +1458,9 @@
        "@" : "XK_at",
        "[" : "XK_bracketleft",
        "\\": "XK_backslash",
-       "]" : "XK_bracketright"
+       "]" : "XK_bracketright",
 //"XK_asciicircum":         0x05e,
-       "_" : "XK_underscore"
+       "_" : "XK_underscore",
        ]);
 
      if(sizeof(str)>3 && str[0..2]=="XK_")
