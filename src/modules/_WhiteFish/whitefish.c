@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.23 2001/05/29 11:20:57 js Exp $");
+RCSID("$Id: whitefish.c,v 1.24 2001/05/29 23:59:52 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -201,47 +201,61 @@ static void handle_phrase_hit( Blob **blobs,
 			       double mc )
 {
   int i, j, k;
-  unsigned char *nhits = malloc( nblobs );
+  unsigned char *nhits = malloc( nblobs*2 );
+  unsigned char *first = nhits+nblobs;
   int matrix[66];
   double accum = 0.0;
   
   MEMSET(matrix, 0, sizeof(matrix) );
 
-  for( i = 0; i<nblobs; i++ )
-    nhits[i] = wf_blob_nhits( blobs[i] );
 
-  for( i = 0; i<nhits[0]; )
+  for( i = 0; i<nblobs; i++ )
+  {
+    nhits[i] = wf_blob_nhits( blobs[i] );
+    first[i] = 0;
+  }
+
+
+  for( i = 0; i<nhits[0]; i++)
   {
     double add;
-    int fail = 1;
-    Hit h = wf_blob_hit( blobs[0], i );
-    if( (add = (*field_c)[ MOFF(h) ]) != 0.0 )
-    {
-      for( j = 1; j<nblobs; j++)
+    int hit = 1;
+    Hit m = wf_blob_hit( blobs[0], i );
+    int h = m.raw;
+    if( (add = (*field_c)[ MOFF(m) ]) == 0.0 )
+      continue;
+
+    for( j = 1; j<nblobs; j++)
+      for( k = first[j]; k<nhits[j]; k++ )
       {
-	for( k = 0; k<nhits[j]; k++ )
+	int h2 = wf_blob_hit_raw( blobs[j], k );
+	if( h2 > h )
 	{
-	  Hit h2 = wf_blob_hit( blobs[j], k );
-	  if( h2.raw >= h.raw )
-	  {
-	    if( (h2.raw - h.raw) != j )
-	    {
-	      fail=1;
-	      goto next;
-	    }
-	    else
-	    {
-	      fail=0;
-	      break;
-	    }
-	  }
+	  first[j]=k;
+	  if( h2-j == h )
+	    hit++;
+	  break;
 	}
       }
-      if( !fail )
-	accum += add/mc;
-    }
-  next:
-    i++;
+
+/*     if( hit > 2 ) */
+/*     { */
+/*       int h = wf_blob_hit_raw( blobs[0], i ); */
+/*       printf("%d/%d\n", hit, nblobs ); */
+/*       for( j = 1; j<nblobs; j++ ) */
+/*       { */
+/* 	for( k = 0; k<nhits[j]; k++ ) */
+/* 	{ */
+/* 	  int h2 = wf_blob_hit_raw( blobs[j], k ); */
+/* 	  printf( "[%d %x] ", ((int)h2-(int)h),h2 ); */
+/* 	} */
+/* 	printf("\n"); */
+/*       } */
+/*       printf("\n"); */
+/*     } */
+
+    if( hit == nblobs )
+      accum += add/mc;
   }
 
   free( nhits );  
