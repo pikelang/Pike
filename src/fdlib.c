@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.59 2003/03/28 04:22:14 mast Exp $
+|| $Id: fdlib.c,v 1.60 2003/03/28 14:17:23 mast Exp $
 */
 
 #include "global.h"
@@ -10,9 +10,14 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.59 2003/03/28 04:22:14 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.60 2003/03/28 14:17:23 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
+
+/* Old versions of the headerfiles don't have this constant... */
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
 
 #include "threads.h"
 
