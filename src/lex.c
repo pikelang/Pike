@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.26 1997/08/30 18:35:39 grubba Exp $");
+RCSID("$Id: lex.c,v 1.27 1997/09/08 01:03:24 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1072,15 +1072,52 @@ static int char_const(void)
   int c;
   switch(c=GETC())
   {
-  case '0': case '1': case '2': case '3':
-  case '4': case '5': case '6': case '7':
+    case 'x':
+      switch(LOOK())
+      {
+	default: return c;
+	case '0': case '1': case '2': case '3':
+	case '4': case '5': case '6': case '7':
+	case '8': case '9':
+	  c=GETC()-'0';
+	  break;
+	  
+	case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+	  c=GETC()-'a'+10;
+	  break;
+
+	case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+	  c=GETC()-'a'+10;
+	  break;
+      }
+      switch(LOOK())
+      {
+	default: return c;
+	case '0': case '1': case '2': case '3':
+	case '4': case '5': case '6': case '7':
+	case '8': case '9':
+	  c=c*16+GETC()-'0';
+	  break;
+	  
+	case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+	  c=c*16+GETC()-'a'+10;
+	  break;
+
+	case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+	  c=c*16+GETC()-'a'+10;
+	  break;
+      }
+      return c;
+      
+    case '0': case '1': case '2': case '3':
+    case '4': case '5': case '6': case '7':
       c-='0';
       if(LOOK()<'0' || LOOK()>'8') return c;
       c=c*8+(GETC()-'0');
       if(LOOK()<'0' || LOOK()>'8') return c;
       c=c*8+(GETC()-'0');
       return c;
-
+      
     case 'r': return '\r';
     case 'n': return '\n';
     case 't': return '\t';
