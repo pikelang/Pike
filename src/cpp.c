@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.80 2001/01/17 13:36:29 grubba Exp $
+ * $Id: cpp.c,v 1.81 2001/01/17 14:22:42 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1174,14 +1174,14 @@ static void check_constant(struct cpp *this,
 	      }
 	      break;
 	    case '(':
-	      if ((++dlen < len) && INDEX_PHARP(data, dlen) == ')') {
+	      if ((++dlen < len) && INDEX_PCHARP(data, dlen) == ')') {
 		dlen++;
 	      } else {
 		cpp_error(this, "Expected `().\n");
 	      }
 	      break;
 	    case '[':
-	      if ((++dlen < len) && INDEX_PHARP(data, ++dlen) == ']') {
+	      if ((++dlen < len) && INDEX_PCHARP(data, ++dlen) == ']') {
 		dlen++;
 	      } else {
 		cpp_error(this, "Expected `[].\n");
