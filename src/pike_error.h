@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.32 2003/07/30 17:16:31 mast Exp $
+|| $Id: pike_error.h,v 1.33 2004/06/29 11:09:15 nilsson Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -221,6 +221,7 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_LIN
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
 PMOD_EXPORT void push_error(const char *description);
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn));
+PMOD_EXPORT void Pike_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
 void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));

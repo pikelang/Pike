@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.125 2004/06/01 23:36:19 nilsson Exp $
+|| $Id: error.c,v 1.126 2004/06/29 11:09:15 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.125 2004/06/01 23:36:19 nilsson Exp $");
+RCSID("$Id: error.c,v 1.126 2004/06/29 11:09:15 nilsson Exp $");
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -188,6 +188,111 @@ PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noretu
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
+
+PMOD_EXPORT void Pike_vsnprintf(char *str, size_t size,
+				const char *fmt, va_list ap)
+{
+  va_list args;
+  va_copy(args, ap);
+
+  size--;
+
+  do {
+    if(fmt[0]=='%') {
+
+      fmt++;
+
+      fprintf(stderr, "X %c\n", fmt[0]);
+      switch( fmt++[0] ) {
+
+      case 'O':
+	{
+	  dynamic_buffer buf;
+	  dynbuf_string s;
+	  char *ostr;
+	  struct svalue *t = va_arg(args, struct svalue *);
+	  init_buf(&buf);
+	  describe_svalue(t,0,0);
+	  s=complex_free_buf(&buf);
+	  ostr=s.str;
+
+	  while( --size>0 && (s.len--)>0 )
+	    str++[0]=s.str++[0];
+
+	  free(ostr);
+	}
+	break;
+
+      case 'S':
+	{
+	  dynamic_buffer buf;
+	  dynbuf_string s;
+	  char *ostr;
+	  struct svalue t;
+
+	  t.type = PIKE_T_STRING;
+	  t.u.string = va_arg(args, struct pike_string *);
+
+	  init_buf(&buf);
+	  describe_svalue(&t,0,0);
+	  s=complex_free_buf(&buf);
+	  ostr=s.str;
+
+	  while( --size>0 && (s.len--)>0 )
+	    str++[0]=s.str++[0];
+
+	  free(ostr);
+	}
+	break;
+
+      case 's':
+	{
+	  char *from = va_arg(args, char *);
+	  while( --size>0 && from[0]!=0 )
+	    str++[0]=from++[0];
+	}
+	break;
+
+      case 'c':
+	{
+	  int c = (char)va_arg(args, int);
+	  sprintf(str, "%c", c);
+	  str++;
+	  size--;
+	}
+	break;
+
+      case 'd':
+	{
+	  char buf[12];
+	  int pos=0;
+	  sprintf(buf, "%d", va_arg(args, int));
+	  while( --size>0 && buf[pos]!=0 )
+	    str++[0]=buf[pos++];
+	}
+	break;
+
+      case '%':
+	str++[0]='%';
+	size--;
+	break;
+
+      default:
+	Pike_fatal("Unknown Pike_vsnprintf formatting char '%c'.\n",
+		   (fmt-1)[0]);
+      }
+    }
+    else {
+      str++[0]=fmt++[0];
+      size--;
+    }
+
+  } while(fmt[0] && size>0);
+
+  str[0]=0;
+  va_end(args);
+}
+
 
 /* FIXME: NOTE: This function uses a static buffer.
  * Check sizes of arguments passed!
