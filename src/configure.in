@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.268 1999/05/26 07:06:14 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.269 1999/05/26 21:40:12 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2809,7 +2809,7 @@ case "x$pike_cv_sys_os" in
     AC_DEFINE(USE_WAIT_THREAD)
   ;;
 
-  Windows_NT)
+  xWindows_NT)
     :
   ;;
 
