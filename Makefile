@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.59 2002/03/11 17:55:25 mast Exp $
+# $Id: Makefile,v 1.60 2002/03/14 02:11:44 mast Exp $
 #
 # Meta Makefile
 #
@@ -38,6 +38,9 @@ force_configure:
 	-rm -f "$(BUILDDIR)/Makefile"
 	@$(MAKE) $(MAKE_FLAGS) configure
 
+configure_help: src/configure
+	cd src && ./configure --help
+
 builddir:
 	@builddir="$(BUILDDIR)"; \
 	IFS='/'; \
@@ -53,6 +56,10 @@ configure: src/configure builddir
 	@builddir="$(BUILDDIR)"; \
 	srcdir=`pwd`/src; \
 	cd "$$builddir" && { \
+	  if test "x$(CONFIGUREARGS)" = x--help; then \
+	    "$$srcdir"/configure --help; \
+	    exit 1; \
+	  fi; \
 	  if test "x$(CONFIGUREARGS)" = x; then :; else \
 	    configureargs="$(CONFIGUREARGS)"; \
 	    oldconfigureargs="$(CONFIGUREARGS)"; \
