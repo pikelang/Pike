@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.37 2003/08/24 19:27:10 nilsson Exp $
+// $Id: module.pmod,v 1.38 2003/09/17 14:17:39 nilsson Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -92,7 +92,7 @@ mapping _decode( string data )
 
   if(!i)
     foreach( ({ "PSD", "TGA", "XBM", "XPM",
-		"TIFF", "SVG",
+		"TIFF", "SVG", "NEO",
        /* Image formats low on headers below this mark */
                 "DSI", "HRZ", "AVS", "WBF",
        /* "XFace" Always succeds*/
