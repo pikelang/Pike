@@ -330,6 +330,18 @@ test_any([[
 			  {p->feed_insert(s[1..]); return ({s[..0]});});
   return p->finish("<a href=\"<t\">")->read();
 ]], "<a href=\"c");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {return ({"[",a->test,"]"});});
+  return p->finish("<t test=\">")->read();
+]], "[>]");
+test_any([[
+  object p = Parser.HTML();
+  p->add_container ("c", lambda (object p, mapping a, string s)
+			   {return ({"[",a->test,"|",s,"]"});});
+  return p->finish("<c test=\">")->read();
+]], "[>|]");
 test_any_equal([[
   object p = Parser.HTML();
   p->match_tag (0);
