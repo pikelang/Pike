@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.9 2002/11/26 16:49:36 neotron Exp $
+|| $Id: SDL.cmod,v 1.10 2002/11/26 18:20:53 neotron Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.9 2002/11/26 16:49:36 neotron Exp $");
+RCSID("$Id: SDL.cmod,v 1.10 2002/11/26 18:20:53 neotron Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -164,7 +164,7 @@ PIKEFUN void init(int flags) {
  *!
  *! Get the last internal SDL error.
  *! @returns
- *!   The error string, or Zero if there was no error.
+ *!   The error string, or zero if there was no error.
  */
 PIKEFUN void|string get_error() {
   const char *err = SDL_GetError();
@@ -285,7 +285,7 @@ PIKEFUN int get_mod_state() {
   RETURN SDL_GetModState();
 }
 
-/*! @decl int get_key_state()
+/*! @decl string get_key_state()
  *! 
  *! Gets a snapshot of the current keyboard state. The current state
  *! is return as a string. The string is indexed by the SDL.K_* symbols. A
@@ -940,9 +940,9 @@ PIKECLASS Surface {
   /*! @decl int get_pixel(int x, int y)
    *! Get the value of the specified pixel. The surface needs to be
    *! locked before this method can be used.
-   *! @note
-   *!   This method DOES NOT check to see if the pixels are within the
-   *!   boundary of the surface for performance reasons!
+   *! @param x
+   *! @param y
+   *!  Pixel coordinate to get.
    *! @returns
    *!   The value of the specified pixel.
    *! @seealso
@@ -953,6 +953,9 @@ PIKECLASS Surface {
     CHECK_INIT();
     if(THIS->fast_set_pixel) {
       SDL_Surface *surface = THIS->_s;
+      if(x < 0 || y < 0 || x > surface->w || y > surface->h) {
+	Pike_error("Pixel out of bounds!\n");
+      }
       int bpp = surface->format->BytesPerPixel;
       Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
       
@@ -976,9 +979,11 @@ PIKECLASS Surface {
   /*! @decl int set_pixel(int x, int y, int pixel)
    *! Set the value of the specified pixel. The surface needs to be
    *! locked before this method can be used.
-   *! @note
-   *!   This method DOES NOT check to see if the pixels are within the
-   *!   boundary of the surface for performance reasons!
+   *! @param x
+   *! @param y
+   *!  Pixel coordinate to modify.
+   *! @param pixel
+   *!  Pixel value to set to the specified pixel.
    *! @returns
    *!   A reference to the surface itself.
    *! @seealso
@@ -987,6 +992,9 @@ PIKECLASS Surface {
   PIKEFUN object set_pixel(int x, int y, int pixel) {
     CHECK_INIT();
     if(THIS->fast_set_pixel) {
+      if(x < 0 || y < 0 || x > THIS->_s->w || y > THIS->_s->h) {
+	Pike_error("Pixel out of bounds!\n");
+      }
       THIS->fast_set_pixel(x, y, pixel);
       RET_THIS();
     }
@@ -1457,6 +1465,26 @@ PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
 }
 
 
+/*! @decl int flip(SDL.Surface|void screen)
+ *! On  hardware that supports double-buffering, this function
+ *! sets up a flip and returns. The  hardware  will  wait  for
+ *! vertical  retrace,  and then swap video buffers before the
+ *! next video surface blit or lock will return.  On  hardware
+ *! that  doesn't support double-buffering, this is equivalent
+ *! to calling @[SDL.update_rect(screen, 0, 0, 0, 0)]
+ *! 
+ *! The  SDL.DOUBLEBUF  flag  must   have   been   passed   to
+ *! SDL_SetVideoMode,  when  setting  the  video mode for this
+ *! function to perform hardware flipping.
+ *! 
+ *! @param screen
+ *!  The screen object to flip. If missing, the default screen is used.
+ *! @returns This function returns 1 if successful, or 0 if there was an error.
+ *! 
+ *! @seealso
+ *!  @[SDL.update_rect()] 
+ */
+
 PIKEFUN int flip(object|void screen) {
   SDL_Surface *vs = NULL;    
   if(!screen) {
@@ -1469,11 +1497,33 @@ PIKEFUN int flip(object|void screen) {
       SIMPLE_BAD_ARG_ERROR("SDL.flip",5,"SDL.Surface");      
     }      
   }
-  RETURN SDL_Flip(vs);
+  RETURN SDL_Flip(vs) == 0;
 }
 
 /*PIKEFUN void SDL_UpdateRects(object|void screen, int numrects, array rects);*/
 
+/*! @decl vodi update_rect(int x, int y, int w, int h, SDL.Surface|void screen)
+ *! 
+ *! Makes sure the given area is updated on the given screen.  The
+ *! rectangle must be confined within the screen boundaries (no clipping
+ *! is done).
+ *! 
+ *! If 'x', 'y', 'w' and 'h' are all 0, SDL_UpdateRect will update
+ *! the entire screen.
+ *! 
+ *! This function should not be called while 'screen' is locked.
+ *! 
+ *! @param x
+ *! @param y
+ *!  Top left corner of the rectangle to update.
+ *! @param w
+ *! @param h
+ *!  Width and height of the rectangle to update.
+ *! @param screen
+ *!  The screen object to flip. If missing, the default screen is used.
+ *! @seealso
+ *!  @[SDL.flip()] 
+ */
 PIKEFUN void update_rect(int x, int y, int w, int h, object|void screen) {
   SDL_Surface *vs;
   if(!screen) {
