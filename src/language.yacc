@@ -157,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.37 1997/04/20 19:29:24 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.38 1997/04/23 01:59:41 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -269,6 +269,7 @@ void fix_comp_stack(int sp)
 %type <number> F_WHILE
 %type <number> arguments
 %type <number> arguments2
+%type <number> func_args
 %type <number> assign
 %type <number> modifier
 %type <number> modifier_list
@@ -483,7 +484,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
     int e;
     /* construct the function type */
     push_finished_type(local_variables->current_type);
-    while($3--) push_type(T_ARRAY);
+    while(--$3>=0) push_type(T_ARRAY);
     
     if(local_variables->current_return_type)
       free_string(local_variables->current_return_type);
@@ -550,7 +551,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
   | import {}
   | constant {}
   | class { free_node($1); }
-  | error 
+  | error ';'
   {
     reset_type_stack();
     if(num_parse_error>5) YYACCEPT;
@@ -584,6 +585,10 @@ new_arg_name: type optional_dot_dot_dot optional_identifier
     add_local_name($3, pop_type());
   }
   ;
+
+func_args: '(' arguments ')' { $$=$2; }
+         | error ')' { $$=0; }
+         ;
 
 arguments: /* empty */ optional_comma { $$=0; }
   | arguments2 optional_comma { $$=$1; }
@@ -836,7 +841,7 @@ lambda: F_LAMBDA
       free_string(local_variables->current_return_type);
     copy_shared_string(local_variables->current_return_type,any_type_string);
   }
-  '(' arguments ')' block
+  func_args block
   {
     struct pike_string *type;
     char buf[40];
@@ -848,7 +853,7 @@ lambda: F_LAMBDA
     
     push_type(T_MIXED);
     
-    e=$4-1;
+    e=$3-1;
     if(varargs)
     {
       push_finished_type(local_variables->variable[e].type);
@@ -871,21 +876,26 @@ lambda: F_LAMBDA
     name=make_shared_string(buf);
 
     f=dooptcode(name,
-	      mknode(F_ARG_LIST,$6,mknode(F_RETURN,mkintnode(0),0)),
+	      mknode(F_ARG_LIST,$4,mknode(F_RETURN,mkintnode(0),0)),
 	      type,
 	      0);
     free_string(name);
     free_string(type);
+    comp_stackp=$<number>2;
     pop_locals();
     $$=mkidentifiernode(f);
   }
   ;
 
-class: modifiers F_CLASS optional_identifier '{'
+failsafe_program: '{' program '}'
+                | error
+                ;
+
+class: modifiers F_CLASS optional_identifier
   {
     start_new_program();
   }
-  program '}'
+  failsafe_program
   {
     struct svalue s;
     s.u.program=end_program();

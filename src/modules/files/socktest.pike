@@ -1,12 +1,16 @@
 #!/usr/local/bin/pike
 
-#include <stdio.h>
+import Stdio;
+import String;
 
 #if !efun(strerror)
 #define strerror(X) ("ERRNO = "+(string)(X))
 #endif
 
 class Socket {
+  import Stdio;
+  import String;
+
   inherit File;
 
   object daemon=function_object(backtrace()[-2][2]);

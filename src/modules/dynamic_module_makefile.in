@@ -37,10 +37,10 @@ depend:
 module_testsuite: $(SRCDIR)/testsuite.in
 	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR) 
 
-verify: module_testsuite
+verify: module_testsuite  $(MODULE_TESTS)
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
 
-verbose_verify: module_testsuite
+verbose_verify: module_testsuite  $(MODULE_TESTS)
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
 
 gdb_verify: module_testsuite

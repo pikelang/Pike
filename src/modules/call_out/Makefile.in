@@ -2,6 +2,11 @@ SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=call_out.o
 MODULE_LDFLAGS=@LIBS@
+MODULE_TESTS=local_tests
 
 @static_module_makefile@
+
+local_tests:
+	$(RUNPIKE) $(SRCDIR)/test_co.pike
+
 @dependencies@

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.9 1997/04/12 09:52:45 per Exp $");
+RCSID("$Id: call_out.c,v 1.10 1997/04/23 02:00:34 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -63,7 +63,7 @@ static void verify_call_outs()
     if(e)
     {
       if(CMP(e, PARENT(e)))
-	fatal("Error in call out heap.\n");
+	fatal("Error in call out heap. (@ %d)\n",e);
     }
     
     if(!(v=CALL(e).args))
@@ -98,6 +98,10 @@ static int adjust_up(int pos)
 {
   int parent=PARENT(pos);
   int from;
+#ifdef DEBUG
+  if(pos <0 || pos>=num_pending_calls)
+    fatal("Bad argument to adjust_up(%d)\n",pos);
+#endif
   if(!pos) return 0;
 
   if(CMP(pos, parent))
@@ -105,13 +109,14 @@ static int adjust_up(int pos)
     SWAP(pos, parent);
     from=pos;
     pos=parent;
-    while(pos && CMP(pos, parent=PARENT(pos)))
+    while(pos && CMP(pos, PARENT(pos)))
     {
+      parent=PARENT(pos);
       SWAP(pos, parent);
       from=pos;
       pos=parent;
     }
-    from^=1;
+    from+=from&1 ? 1 : -1;
     if(from < num_pending_calls && CMP(from, pos))
     {
       SWAP(from, pos);
@@ -354,8 +359,12 @@ void f_remove_call_out(INT32 args)
     free_array(CALL(e).args);
     if(CALL(e).caller)
       free_object(CALL(e).caller);
-    CALL(e)=CALL(--num_pending_calls);
-    adjust(e);
+    --num_pending_calls;
+    if(e!=num_pending_calls)
+    {
+      CALL(e)=CALL(num_pending_calls);
+      adjust(e);
+    }
   }else{
     pop_n_elems(args);
     sp->type=T_INT;

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.91 1997/04/22 09:18:47 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.92 1997/04/23 01:59:40 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -959,7 +959,7 @@ dnl#####################################################################
 
 define(MY_CHECK_FUNCTION,[
 AC_MSG_CHECKING(for working $1)
-AC_CACHE_VAL(pike_cv_have_func_$1,[
+AC_CACHE_VAL(pike_cv_func_$1,[
 AC_TRY_RUN([$2],pike_cv_func_$1=yes,pike_cv_func_$1=no)
 AC_MSG_RESULT([$]pike_cv_func_$1)
 if test [$]pike_cv_func_$1 = yes; then

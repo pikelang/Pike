@@ -2,6 +2,11 @@ SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=file.o efuns.o socket.o
 MODULE_LDFLAGS=@LIBS@
+MODULE_TESTS=local_tests
 
 @static_module_makefile@
+
+local_tests:
+	$(RUNPIKE) $(SRCDIR)/socktest.pike
+
 @dependencies@
