@@ -18,12 +18,17 @@ isort_template.h
 language.c
 language.h
 language.h_src
+lexer0.h
+lexer1.h
+lexer2.h
 lib
 machine.h
 machine.h.in
 make_variables
+mapping_stuff.c
 master.pike
 module_magic.c
+num_files_to_install
 patch_cc1
 patch_cc1.o
 peep_engine.c

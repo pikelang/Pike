@@ -9,3 +9,4 @@ modlist_headers
 modlist_segment
 module_testsuite
 pgres_config.h
+remake
