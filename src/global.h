@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.54 2000/08/30 16:10:31 grubba Exp $
+ * $Id: global.h,v 1.55 2000/12/13 21:25:58 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -320,7 +320,11 @@ typedef struct p_wchar_p
  * Putting PMOD_PROTO in front of a prototype does nothing.
  */
 #ifndef PMOD_EXPORT
+#if defined(__NT__) && !defined(DYNAMIC_MODULE)
+#define PMOD_EXPORT __declspec(dllexport)
+#else
 #define PMOD_EXPORT
+#endif
 #endif
 
 
@@ -396,5 +400,11 @@ char *getenv PROT((char *));
 #ifdef USE_CRYPT_C
 char *crypt(char *, char *);
 #endif /* USE_CRYPT_C */
+
+/* If this define is present, error() has been renamed to Pike_error() and
+ * error.h has been renamed to pike_error.h
+ * Expect to see other similar defines in the future. -Hubbe
+ */
+#define Pike_error_present
 
 #endif
