@@ -9,7 +9,7 @@ SGML wmml_to_html(SGML data)
 string mkfilename(string section)
 {
   string s=::mkfilename(section);
-  return replace(s,".md.html",".md");
+  return replace(s,".md.html",".html.md");
 }
 
 
