@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for Digital Still Cameras) 2.1
 //! parsing.
 
-// $Id: EXIF.pmod,v 1.7 2002/03/20 16:40:03 nilsson Exp $
+// $Id: EXIF.pmod,v 1.8 2002/03/25 21:49:38 js Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -347,14 +347,20 @@ mapping TAG_TYPE_INFO =
 	       12:	({"DOUBLE",	8}),
 	     ]);
 
-int short_value(string str)
+int short_value(string str, string order)
 {
-  return (str[1]<<8)|str[0];
+  if(order=="MM")
+    return (str[0]<<8)|str[1];
+  else
+    return (str[1]<<8)|str[0];
 }
 
-int long_value(string str)
+int long_value(string str, string order)
 {
-  return (str[3]<<24)|(str[2]<<16)|(str[1]<<8)|str[0];
+  if(order=="MM")
+    return (str[0]<<24)|(str[1]<<16)|(str[2]<<8)|str[3];
+  else
+    return (str[3]<<24)|(str[2]<<16)|(str[1]<<8)|str[0];
 }
 
 void exif_seek(Stdio.File file, int offset, int exif_offset)
@@ -368,11 +374,11 @@ string format_bytes(string str)
 }
 
 mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
-		  int exif_offset)
+		  int exif_offset, string order)
 {
-  int tag_id=short_value(file->read(2));
-  int tag_type=short_value(file->read(2));
-  int tag_count=long_value(file->read(4));
+  int tag_id=short_value(file->read(2), order);
+  int tag_type=short_value(file->read(2), order);
+  int tag_count=long_value(file->read(4), order);
   string make,model;
 
   [string tag_name, string tag_format, mapping|function tag_map]=
@@ -398,7 +404,7 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   
   int pos=file->tell();
   if(tag_len>4)
-    exif_seek(file, long_value(file->read(4)), exif_offset);
+    exif_seek(file, long_value(file->read(4), order), exif_offset);
 
   if(tag_type==1 || tag_type==6 || tag_type==7)
   {
@@ -406,9 +412,9 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
       tags[tag_name]=(string)file->read(1)[0];
     else if(tag_format == "TAGS")
     {
-      int num_entries=short_value(file->read(2));
+      int num_entries=short_value(file->read(2), order);
       for(int i=0; i<num_entries; i++)
-	tags|=parse_tag(file, tags, tag_map, exif_offset);
+	tags|=parse_tag(file, tags, tag_map, exif_offset, order);
     }
     else
     {
@@ -434,7 +440,7 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   {
     array a=allocate(tag_count);
     for(int i=0; i<tag_count; i++)
-      a[i]=short_value(file->read(2));
+      a[i]=short_value(file->read(2), order);
     
     if(tag_format=="MAP")
       for(int i=0; i<tag_count; i++)
@@ -454,14 +460,14 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   
   if(tag_type==4 || tag_type==9) // (S)LONG
     for(int i=0;i<tag_count; i++)
-      tags[tag_name]=(string)long_value(file->read(4));
+      tags[tag_name]=(string)long_value(file->read(4), order);
 
   if(tag_type==5 || tag_type==10) // (S)RATIONAL
   {
     for(int i=0;i<tag_count; i++)
     {
-      int long1=long_value(file->read(4));
-      int long2=long_value(file->read(4));
+      int long1=long_value(file->read(4), order);
+      int long2=long_value(file->read(4), order);
       string val;
       switch(tag_format)
       {
@@ -532,17 +538,17 @@ mapping get_properties(Stdio.File|string file)
   string code=file->read(2);   // tiff magic 42
   mapping tags=([]);
 
-  if(sizeof(code)==2 && short_value(code)==42)
+  if(sizeof(code)==2 && short_value(code, order)==42)
   {
-    int offset=long_value(file->read(4));
+    int offset=long_value(file->read(4), order);
     while(offset>0)
     {
       exif_seek(file,offset,exif_offset);
-      int num_entries=short_value(file->read(2));
+      int num_entries=short_value(file->read(2), order);
       for(int i=0; i<num_entries; i++)
-	tags|=parse_tag(file, tags, TAG_INFO, exif_offset);
+	tags|=parse_tag(file, tags, TAG_INFO, exif_offset, order);
 
-      offset=long_value(file->read(4));
+      offset=long_value(file->read(4), order);
 
       if(offset == 0)
 	if(tags["ExifOffset"])
