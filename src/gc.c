@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.82 2000/04/27 02:13:28 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.83 2000/04/28 05:40:59 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -314,7 +314,9 @@ void describe_location(void *real_memblock,
     }
   }
 
+#ifdef DEBUG_MALLOC
   dmalloc_describe_location(memblock, location, indent);
+#endif
 }
 
 static void gdb_gc_stop_here(void *a)
