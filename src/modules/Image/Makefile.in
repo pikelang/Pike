@@ -1,7 +1,8 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image.o font.o togif.o matrix.o pnm.o blit.o \
-	pattern.o dct.o operator.o x.o colortable.o polyfill.o 
+	pattern.o dct.o operator.o x.o colortable.o polyfill.o \
+	orient.o
 MODNAME=image
 MODULE_SUBDIRS=encodings
 MODULE_ARCHIVES=encodings/gif.a encodings/pnm.a encodings/png.a encodings/x.a

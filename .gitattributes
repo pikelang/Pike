@@ -92,6 +92,7 @@ testfont binary
 /src/modules/Image/matrix.c foreign_ident
 /src/modules/Image/mkwmml.pike foreign_ident
 /src/modules/Image/operator.c foreign_ident
+/src/modules/Image/orient.c foreign_ident
 /src/modules/Image/pattern.c foreign_ident
 /src/modules/Image/pnm.c foreign_ident
 /src/modules/Image/polyfill.c foreign_ident

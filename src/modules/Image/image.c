@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.82 1998/02/13 18:57:58 marcus Exp $ */
+/* $Id: image.c,v 1.83 1998/02/15 14:53:50 hedda Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.82 1998/02/13 18:57:58 marcus Exp $
+**!	$Id: image.c,v 1.83 1998/02/15 14:53:50 hedda Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.82 1998/02/13 18:57:58 marcus Exp $");
+RCSID("$Id: image.c,v 1.83 1998/02/15 14:53:50 hedda Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -296,7 +296,7 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 
    bx=width/2;
    by=height/2;
-   
+
    for (xp=x-bx,i=0; i<width; i++,xp++)
       for (yp=y-by,j=0; j<height; j++,yp++)
 	 if (xp>=0 && xp<img->xsize && yp>=0 && yp<img->ysize)
@@ -339,20 +339,21 @@ void img_apply_matrix(struct image *dest,
    rgb_group *d,*ip,*dp;
    rgbd_group *mp;
    int i,j,x,y,bx,by,ex,ey,yp;
+   int widthheight;
    double sumr,sumg,sumb;
    double qr,qg,qb;
    register double r=0,g=0,b=0;
 
 THREADS_ALLOW();
 
+   widthheight=width*height;
    sumr=sumg=sumb=0;
-   for (i=0; i<width; i++)
-      for (j=0; j<height; j++)
-      {
-	 sumr+=matrix[i+j*width].r;
-	 sumg+=matrix[i+j*width].g;
-	 sumb+=matrix[i+j*width].b;
-      }
+   for (i=0; i<widthheight;)
+     {
+       sumr+=matrix[i].r;
+       sumg+=matrix[i].g;
+       sumb+=matrix[i++].b;
+     }
 
    if (!sumr) sumr=1; sumr*=div; qr=1.0/sumr;
    if (!sumg) sumg=1; sumg*=div; qg=1.0/sumg;
@@ -378,9 +379,16 @@ CHRONO("apply_matrix, one");
       {
 	 r=g=b=0;
 	 mp=matrix;
-	 for (yp=y-by,j=0; j<height; j++,yp++)
+	 ip=img->img+(x-bx)+(y-by)*img->xsize;
+	 //for (yp=y-by,j=0; j<height; j++,yp++)
+#ifdef MATRIX_DEBUG
+j=-1;
+#endif
+	 for (yp=y-by; yp<height+y-by; yp++)
 	 {
-	    ip=img->img+(x-bx)+yp*img->xsize;
+#ifdef MATRIX_DEBUG
+j++;
+#endif
 	    for (i=0; i<width; i++)
 	    {
 	       r+=ip->r*mp->r;
@@ -396,6 +404,7 @@ CHRONO("apply_matrix, one");
 	       mp++;
 	       ip++;
 	    }
+	    ip+=img->xsize-width;
 	 }
 #ifdef MATRIX_DEBUG
 	 fprintf(stderr,"->%d,%d,%d\n",r/sumr,g/sumg,b/sumb);
@@ -3225,6 +3234,10 @@ void pike_module_init(void)
 		"function(:object)",0);
    add_function("write_lsb_grey",image_write_lsb_rgb,
 		"function(:object)",0);
+
+   add_function("orient",image_orient,
+                "function(:array(object))",0);
+
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
