@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.9 2003/02/18 10:36:32 mast Exp $");
+RCSID("$Id: blobs.c,v 1.10 2003/06/30 17:10:24 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -136,7 +136,7 @@ static void f_blobs_memsize( INT32 args )
 	int tt = ((int *)h->bl->storage)[1];
 	size += ((sizeof( struct hash )+7)/8)*8+4+
 	         (h->id->len<<h->id->size_shift)    /* and the string */
-		 + ((int)((struct pike_string *)0)->str);
+		 + OFFSETOF(pike_string, str);
 	size += tt ? tt : wf_blob_low_memsize( h->bl );
       }
       else
