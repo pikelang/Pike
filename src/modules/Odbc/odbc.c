@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.21 2000/08/31 21:32:58 grubba Exp $
+ * $Id: odbc.c,v 1.22 2000/09/02 09:52:06 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.21 2000/08/31 21:32:58 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.22 2000/09/02 09:52:06 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -28,6 +28,7 @@ RCSID("$Id: odbc.c,v 1.21 2000/08/31 21:32:58 grubba Exp $");
 #include "multiset.h"
 #include "program.h"
 #include "module_support.h"
+#include "bignum.h"
 
 #include "precompiled_odbc.h"
 
@@ -247,7 +248,7 @@ static void f_create(INT32 args)
 static void f_affected_rows(INT32 args)
 {
   pop_n_elems(args);
-  push_int(PIKE_ODBC->affected_rows);
+  push_int64(PIKE_ODBC->affected_rows);
 }
 
 static void f_select_db(INT32 args)
