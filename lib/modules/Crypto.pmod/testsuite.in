@@ -1,4 +1,25 @@
-dnl $Id: testsuite.in,v 1.4 2003/03/23 23:07:55 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2003/08/07 16:12:38 nilsson Exp $
+
+dnl Nettle.Yarrow
+
+cond([[ master()->resolv("Nettle") ]], [[
+  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(32),
+    String.hex2string("16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93") )
+  test_eq( Nettle.Yarrow(7)->seed("\0"*32)->random_string(32),
+    String.hex2string("16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93") )
+  test_eq( Nettle.Yarrow()->seed((string)enumerate(33))->random_string(32),
+    String.hex2string("2c6465cdc71b348074f7f76c484b67802b24b62d3c2191a6f89f1a9f80e8c520") )
+  test_any([[
+    object r=Nettle.Yarrow(1)->seed("\0"*32);
+    r->update("\0"*32,0,0);
+    return r->random_string(32)
+  ]], String.hex2string("16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93") )
+  test_any([[
+    object r=Nettle.Yarrow(1)->seed("\0"*32);
+    r->update("\0"*32,0,256);
+    return r->random_string(32)
+  ]], String.hex2string("62bf8e8dcc9ec262ebc57a00005d3b98bf4336004c015c3eb97361e95e5b814d") )
+]])  
 
 dnl Crypto.randomness
 
@@ -12,12 +33,100 @@ test_true( stringp(Crypto.randomness.arcfour_random("hej")->read(1)) )
 test_true( stringp(Crypto.randomness.reasonably_random()->read(1)) )
 test_true( functionp(Crypto.randomness.really_random) )
 
+
 dnl Crypto.MD5
-cond ([[ Crypto->MD5 ]], [[
+cond([[ Crypto["MD5"] ]], [[
+  test_eq(Crypto.MD5()->update("")->digest(),
+          String.hex2string("d41d8cd98f00b204e9800998ecf8427e"))
+  test_eq(Crypto.MD5()->update("a")->digest(),
+          String.hex2string("0cc175b9c0f1b6a831c399e269772661"))
+  test_eq(Crypto.MD5()->update("abc")->digest(),
+          String.hex2string("900150983cd24fb0d6963f7d28e17f72"))
+  test_eq(Crypto.MD5()->update("message digest")->digest(),
+          String.hex2string("f96b697d7cb7938d525a2f31aaf161d0"))
+  test_eq(Crypto.MD5()->update("abcdefghijklmnopqrstuvwxyz")->digest(),
+          String.hex2string("c3fcd3d76192e4007dfb496cca67e13b"))
+  test_eq(Crypto.MD5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz0123456789")->digest(),
+          String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f"))
+  test_eq(Crypto.MD5()->update("1234567890123456789012345678901234567890"
+            "1234567890123456789012345678901234567890")->digest(),
+          String.hex2string("57edf4a22be3c955ac49da2e2107b67a"))
   test_eq(Crypto.MD5.hash("foo"),
 	  String.hex2string("acbd18db4cc2f85cedef654fccc4a4d8"))
   test_eq(Crypto.MD5()->update("f")->update("oo")->digest(),
 	  String.hex2string("acbd18db4cc2f85cedef654fccc4a4d8"))
+]])
+
+
+dnl Crypto.MD4
+cond([[ Crypto["MD4"] ]], [[
+  test_eq(Crypto.MD4()->update("")->digest(),
+          String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0"))
+  test_eq(Crypto.MD4()->update("a")->digest(),
+          String.hex2string("bde52cb31de33e46245e05fbdbd6fb24"))
+  test_eq(Crypto.MD4()->update("abc")->digest(),
+          String.hex2string("a448017aaf21d8525fc10ae87aa6729d"))
+  test_eq(Crypto.MD4()->update("message digest")->digest(),
+          String.hex2string("d9130a8164549fe818874806e1c7014b"))
+  test_eq(Crypto.MD4()->update("abcdefghijklmnopqrstuvwxyz")->digest(),
+          String.hex2string("d79e1c308aa5bbcdeea8ed63df412da9"))
+  test_eq(Crypto.MD4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz0123456789")->digest(),
+          String.hex2string("043f8582f241db351ce627e153e7f0e4"))
+  test_eq(Crypto.MD4()->update("12345678901234567890123456789"
+            "012345678901234567890123456789012345678901234567890")->digest(),
+          String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536"))
+  test_eq(Crypto.MD4.hash("foo"),
+	  String.hex2string("0ac6700c491d70fb8650940b1ca1e4b2"))
+  test_eq(Crypto.MD4()->update("f")->update("oo")->digest(),
+	  String.hex2string("0ac6700c491d70fb8650940b1ca1e4b2"))
+]])
+
+
+dnl Crypto.SHA1
+cond([[ Crypto["SHA1"] ]], [[
+  test_eq(Crypto.SHA1()->update("")->digest(),
+          String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709"))
+  test_eq(Crypto.SHA1()->update("abc")->digest(),
+          String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d"))
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*63)->digest()),
+          "0ddc4e0cccd9a12850deb5abb0853a4425559fec")
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*64)->digest()),
+          "bb2fa3ee7afb9f54c6dfb5d021f14b1ffe40c163")
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*65)->digest()),
+          "78c741ddc482e4cdf8c474a0876347a0905b6233")
+  test_eq(String.string2hex(Crypto.SHA1()->update("x"*257)->digest()),
+          "0796067748b6b0c2af864656a399f7722ef9283a")
+  test_eq(Crypto.SHA1.hash("foo"),
+	  String.hex2string("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"))
+  test_eq(Crypto.SHA1()->update("f")->update("oo")->digest(),
+	  String.hex2string("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"))
+]])
+
+
+dnl Crypto.SHA256
+cond([[ Crypto["SHA256"] ]], [[
+  test_eq(Crypto.SHA256()->update("")->digest(),
+          String.hex2string("e3b0c44298fc1c149afbf4c8996fb92427"
+            "ae41e4649b934ca495991b7852b855"))
+  test_eq(Crypto.SHA256()->update("abc")->digest(),
+          String.hex2string("ba7816bf8f01cfea414140de5dae2223b0"
+            "0361a396177a9cb410ff61f20015ad"))
+  test_eq(String.string2hex(Crypto.SHA256()->update("x"*63)->digest()),
+          "75220b47218278e656f2013bb8f0c455a25eaf01e86c64924e9d48d89776d6f2")
+  test_eq(String.string2hex(Crypto.SHA256()->update("x"*64)->digest()),
+          "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c")
+  test_eq(String.string2hex(Crypto.SHA256()->update("x"*65)->digest()),
+          "9537c5fdf120482f7d58d25e9ed583f52c02b4e304ea814db1633ad565aed7e9")
+  test_eq(String.string2hex(Crypto.SHA256()->update("x"*257)->digest()),
+          "15eb95a462ee20bd91a415ae2d4aed341288186ddaa2b37908f7d592f0c3f85f")
+  test_eq(Crypto.SHA256.hash("foo"),
+	  String.hex2string("2c26b46b68ffc68ff99b453c1d3041341342"
+            "2d706483bfa0f98a5e886266e7ae"))
+  test_eq(Crypto.SHA256()->update("f")->update("oo")->digest(),
+	  String.hex2string("2c26b46b68ffc68ff99b453c1d3041341342"
+            "2d706483bfa0f98a5e886266e7ae"))
 ]])
 
 
