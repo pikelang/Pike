@@ -26,7 +26,11 @@ varargs int spawn(string s,object stdin,object stdout,object stderr,
 {
   int pid;
 
+#if constant(fork)
   pid=fork();
+#else
+  pid=-1;
+#endif
   
   if(pid==-1)
     error("No more processes.\n");
@@ -81,6 +85,7 @@ string popen(string s)
   return t;
 }
 
+#if constant(fork)
 void system(string s)
 {
   object p;
@@ -109,12 +114,15 @@ void system(string s)
     exit(69);
   }
 }
- 
+
 constant fork = predef::fork;
+#endif
+
+#if constant(exece)
 constant exece = predef::exece;
+#endif
 
-
-
+#if constant(fork)
 class Spawn
 {
    object stdin;
@@ -225,3 +233,4 @@ class Spawn
    // int result();
    // array rusage();
 }
+#endif
