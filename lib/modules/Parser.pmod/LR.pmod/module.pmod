@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.3 2002/05/22 16:16:35 grubba Exp $
+ * $Id: module.pmod,v 1.4 2002/05/22 16:45:36 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -986,15 +986,11 @@ class Parser
     }
   
     foreach (indices(conflicts), int|string symbol) {
-      /* Initialize some vars here */
       int reduce_count = 0;
       int shift_count = 0;
-      int reduce_rest = 0;
-      int shift_rest = 0;
       int only_operators = 1;
       Priority shift_pri, reduce_pri, pri;
       Rule min_rule = 0;
-      int conflict_free;
 
       /* Analyse the items */
       /* This loses if there are reduce-reduce conflicts,
@@ -1030,6 +1026,9 @@ class Parser
 	  }
 	}
       }
+
+      int reduce_rest = 0;
+      int shift_rest = 0;
 
       if (only_operators) {
 	if (reduce_pri->value > shift_pri->value) {
@@ -1169,7 +1168,7 @@ class Parser
 	}
       }
 
-      conflict_free = 0;
+      int conflict_free = 0;
 
       if (reduce_rest > 1) {
 	if (shift_rest) {
@@ -1573,148 +1572,121 @@ class Parser
       return(0);
     }
 
-    value = scanner();
-
-    if (arrayp(value)) {
-      input = ([array(string)]value)[0];
-      value = ([array(mixed)]value)[1];
-    } else {
-      input = [string]value;
-    }
-
     while (1) {
-      mixed a = state->action[input];
+      mixed a;
 
-      if (object_program(a) == Rule) {
-	Rule r = [object(Rule)]a;
+      /* Read some input */
+      value = scanner();
 
-	if (verbose) {
-	  werror("Reducing according to rule\n%s\n",
-		 rule_to_string(r));
-	}
+      if (arrayp(value)) {
+	input = ([array(string)]value)[0];
+	value = ([array(mixed)]value)[1];
+      } else {
+	input = [string]value;
+      }
 
-	if (r->action) {
-	  /* REDUCE */
-	  string|function func = 0;
+      while(1) {
+	while (object_program(a = state->action[input]) == Rule) {
+	  Rule r = [object(Rule)]a;
 
-	  if (stringp(func = r->action)) {
-	    if (action_object) {
-	      func = action_object[r->action];
-	      if (!functionp(func)) {
-		if (!func) {
-		  werror("Missing action \"%s\" in object\n",
-			 r->action);
-		  lr_error |= ERROR_MISSING_ACTION;
+	  if (verbose) {
+	    werror("Reducing according to rule\n%s\n",
+		   rule_to_string(r));
+	  }
+
+	  do {
+	    if (r->action) {
+	      /* REDUCE */
+	      string|function func = 0;
+
+	      if (stringp(func = r->action)) {
+		if (action_object) {
+		  func = action_object[r->action];
+		  if (!functionp(func)) {
+		    if (!func) {
+		      werror("Missing action \"%s\" in object\n",
+			     r->action);
+		      lr_error |= ERROR_MISSING_ACTION;
+		    } else {
+		      werror("Bad type (%s) for action \"%s\" in object\n",
+			     typeof(func), r->action);
+		      lr_error |= ERROR_BAD_ACTION_TYPE;
+		      func = 0;
+		    }
+		  }
 		} else {
-		  werror("Bad type (%s) for action \"%s\" in object\n",
-			 typeof(func), r->action);
-		  lr_error |= ERROR_BAD_ACTION_TYPE;
+		  werror("Missing object for action \"%s\"\n",
+			 r->action);
+		  lr_error |= ERROR_NO_OBJECT;
 		  func = 0;
 		}
 	      }
-	    } else {
-	      werror("Missing object for action \"%s\"\n",
-		     r->action);
-	      lr_error |= ERROR_NO_OBJECT;
-	      func = 0;
+	      if (func) {
+		if (sizeof(r->symbols)) {
+		  value_stack->push(([function]func)(@value_stack->pop(sizeof(r->symbols))));
+		  state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
+		} else {
+		  value_stack->push(r->action());
+		}
+		break;	// Break out of the do-while.
+	      }
 	    }
-	  }
-	  if (func) {
-	    if (sizeof(r->symbols)) {
-	      value_stack->push(([function]func)(@value_stack->pop(sizeof(r->symbols))));
-	      state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
-	    } else {
-	      value_stack->push(r->action());
-	    }
-	  } else {
 	    // Default action.
 	    if (sizeof(r->symbols)) {
-#if 0
-	      value_stack->push(value_stack->pop(sizeof(r->symbols))[0]);
-#else /* !0 */
 	      if (sizeof(r->symbols) > 1) {
 		value_stack->quick_pop(sizeof(r->symbols) - 1);
 	      }
-#endif /* 0 */
 	      state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
 	    } else {
 	      value_stack->push(0);
 	    }
-	  }
-	} else {
-	  // Default action.
-	  if (sizeof(r->symbols)) {
-#if 0
-	    value_stack->push(value_stack->pop(sizeof(r->symbols))[0]);
-#else /* !0 */
-	    if (sizeof(r->symbols) > 1) {
-	      value_stack->quick_pop(sizeof(r->symbols) - 1);
-	    }
-#endif /* 0 */
-	    state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
-	  } else {
-	    value_stack->push(0);
-	  }
+	  } while(0);
+
+	  state_stack->push(state);
+	  state = [object(Kernel)]state->action[r->nonterminal]; /* Goto */
 	}
 
-	state_stack->push(state);
-	state = [object(Kernel)]state->action[r->nonterminal];	/* Goto */
-      } else if (a) {
-	/* SHIFT or ACCEPT */
-	if (input == "") {
-	  /* Only the final state is allowed to shift on ""(EOF) */
-	  /* ACCEPT */
-	  return(value_stack->pop());
-	}
-	/* SHIFT */
-	if (verbose) {
-	  werror("Shifting \"%s\", value \"%O\"\n", input, value);
-	}
-	value_stack->push(value);
-	state_stack->push(state);
-	state = [object(Kernel)]a;
-
-	value = scanner();
-
-	if (arrayp(value)) {
-	  input = ([array(string)]value)[0];
-	  value = ([array(mixed)]value)[1];
-	} else {
-	  input = [string]value;
-	}
-      } else {
-	/* ERROR */
-	if (input = "") {
-	  /* At end of file */
-	  lr_error |= ERROR_EOF;
-
-	  if (value_stack->ptr != 1) {
-	    if (value_stack->ptr) {
-	      werror("Error: Bad state at EOF -- Throwing \"%O\"\n",
-		     value_stack->pop());
-	      state = [object(Kernel)]state_stack->pop();
-	    } else {
-	      werror("Error: Empty stack at EOF!\n");
-	      return (0);
-	    }
-	  } else {
-	    werror("Error: Bad state at EOF\n");
+	if (a) {
+	  /* SHIFT or ACCEPT */
+	  if (input == "") {
+	    /* Only the final state is allowed to shift on ""(EOF) */
+	    /* ACCEPT */
 	    return(value_stack->pop());
 	  }
+	  /* SHIFT */
+	  if (verbose) {
+	    werror("Shifting \"%s\", value \"%O\"\n", input, value);
+	  }
+	  value_stack->push(value);
+	  state_stack->push(state);
+	  state = [object(Kernel)]a;
 	} else {
-	  lr_error |= ERROR_SYNTAX;
+	  /* ERROR */
+	  if (input = "") {
+	    /* At end of file */
+	    lr_error |= ERROR_EOF;
 
-	  werror("Error: Bad input: \""+input+"\"(\""+value+"\")\n");
-
-	  value = scanner();
-	
-	  if (arrayp(value)) {
-	    input = ([array(string)]value)[0];
-	    value = ([array(mixed)]value)[1];
+	    if (value_stack->ptr != 1) {
+	      if (value_stack->ptr) {
+		werror("Error: Bad state at EOF -- Throwing \"%O\"\n",
+		       value_stack->pop());
+		state = [object(Kernel)]state_stack->pop();
+		continue;
+	      } else {
+		werror("Error: Empty stack at EOF!\n");
+		return (0);
+	      }
+	    } else {
+	      werror("Error: Bad state at EOF\n");
+	      return(value_stack->pop());
+	    }
 	  } else {
-	    input = [string]value;
+	    lr_error |= ERROR_SYNTAX;
+
+	    werror("Error: Bad input: \""+input+"\"(\""+value+"\")\n");
 	  }
 	}
+	break;	/* Break out of the inner while(1) to read more input. */
       }
     }
   }
