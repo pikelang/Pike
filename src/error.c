@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.37 1999/08/25 05:06:33 hubbe Exp $");
+RCSID("$Id: error.c,v 1.38 1999/10/06 15:25:46 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -300,7 +300,7 @@ void f_error_cast(INT32 args)
     ref_push_array(GENERIC_ERROR_THIS->backtrace);
     f_aggregate(2);
   }else{
-    /* do an error here! */
+    SIMPLE_BAD_ARG_ERROR("error->cast", 1, "the value \"array\"");
   }
 }
 
@@ -309,15 +309,20 @@ void f_error_index(INT32 args)
   int ind;
   get_all_args("error->`[]",args,"%i",&ind);
 
-  pop_n_elems(args);
-
   switch(ind)
   {
-    case 0: ref_push_string(GENERIC_ERROR_THIS->desc); break;
-    case 1: ref_push_array(GENERIC_ERROR_THIS->backtrace); break;
+    case 0:
+      pop_n_elems(args);
+      ref_push_string(GENERIC_ERROR_THIS->desc);
+      break;
+    case 1:
+      pop_n_elems(args);
+      ref_push_array(GENERIC_ERROR_THIS->backtrace);
+      break;
     default:
-    /* do an index out of range error here! */
-      ;
+      index_error("error->`[]", sp-args, args, NULL, sp-args,
+		  "Index %d is out of range 0 - 1.\n", ind);
+      break;
   }
 }
 
@@ -377,9 +382,12 @@ void generic_error_va(struct object *o,
 #ifdef HAVE_VSNPRINTF
   vsnprintf(buf, sizeof(buf)-1, fmt, foo);
 #else /* !HAVE_VSNPRINTF */
+  /* Sentinel that will be overwritten on buffer overflow. */
+  buf[sizeof(buf)-1] = '\0';
+
   VSPRINTF(buf, fmt, foo);
 
-  if((long)strlen(buf) >= (long)sizeof(buf))
+  if(buf[sizeof(buf)-1])
     fatal("Buffer overflow in error()\n");
 #endif /* HAVE_VSNPRINTF */
   in_error=buf;
