@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.83 2001/03/23 03:14:39 hubbe Exp $
+ * $Id: acconfig.h,v 1.84 2001/03/23 16:08:23 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -37,7 +37,7 @@
 #undef AUTO_BIGNUM
 
 /* Define this to enable experimental code for multicpu machines */
-#define PIKE_RUN_UNLOCKED
+#undef PIKE_RUN_UNLOCKED
 
 /* Define this if you want to enable the shared nodes mode of the optimizer. */
 #undef SHARED_NODES
