@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.49 2000/08/06 14:04:57 grubba Exp $
+**!	$Id: layers.c,v 1.50 2000/08/06 17:13:33 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.49 2000/08/06 14:04:57 grubba Exp $");
+RCSID("$Id: layers.c,v 1.50 2000/08/06 17:13:33 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1379,7 +1379,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 
 #if defined(__ECL) && 1
-#define WARN_TRACE(X)	static char PIKE_CONCAT(foo__, X) = (char)0.0
+#define WARN_TRACE(X)	static char PIKE_CONCAT(foo__, X) (double d) { return (char)d; }
 #else /* !__ECL */
 #define WARN_TRACE(X)
 #endif /* __ECL */
