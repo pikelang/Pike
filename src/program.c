@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.211 2000/03/09 15:19:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.212 2000/03/10 20:08:54 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -416,11 +416,18 @@ struct node_s *find_module_identifier(struct pike_string *ident)
       my_yyerror("Recursive module dependency in %s.",
 		 ident->str);
     }else{
+      int i;
       SET_CYCLIC_RET(1);
 
       ref_push_string(ident);
       ref_push_string(lex.current_file);
-      SAFE_APPLY_MASTER("resolv", 2);
+
+      if(error_handler && (i=find_identifier("resolv",error_handler->prog))!=-1)
+      {
+	safe_apply_low(error_handler, i, 2);
+      }else{
+	SAFE_APPLY_MASTER("resolv", 2);
+      }
 
       if(throw_value.type == T_STRING)
       {
@@ -2972,7 +2979,8 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
   va_end(args);
 }
 
-struct program *compile(struct pike_string *prog, struct object *handler)
+struct program *compile(struct pike_string *prog,
+			struct object *handler)
 {
 #ifdef PIKE_DEBUG
   ONERROR tmp;
@@ -2992,6 +3000,19 @@ struct program *compile(struct pike_string *prog, struct object *handler)
 	     (long)th_self(),compilation_depth));
 
   error_handler = handler;
+  
+  if(error_handler)
+  {
+    /* FIXME: support '#Pike 0.6' here */
+    apply(error_handler,"get_default_module",0);
+    if(IS_ZERO(sp-1))
+    {
+      pop_stack();
+      ref_push_mapping(get_builtin_constants());
+    }
+  }else{
+    ref_push_mapping(get_builtin_constants());
+  }
 
   low_init_threads_disable();
   saved_threads_disabled = threads_disabled;
@@ -3032,15 +3053,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   low_start_new_program(0,0,0,0);
 
   initialize_buf(&used_modules);
-  {
-    struct svalue tmp;
-    tmp.type=T_MAPPING;
-#ifdef __CHECKER__
-    tmp.subtype=0;
-#endif /* __CHECKER__ */
-    tmp.u.mapping=get_builtin_constants();
-    use_module(& tmp);
-  }
+  use_module(sp-1);
 
   if(lex.current_file)
   {
@@ -3075,15 +3088,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
     compiler_pass=2;
     lex.pos=prog->str;
 
-    {
-      struct svalue tmp;
-      tmp.type=T_MAPPING;
-#ifdef __CHECKER__
-      tmp.subtype=0;
-#endif /* __CHECKER__ */
-      tmp.u.mapping=get_builtin_constants();
-      use_module(& tmp);
-    }
+    use_module(sp-1);
 
     CDFPRINTF((stderr, "compile(): Second pass\n"));
 
@@ -3134,6 +3139,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
 #endif
+  pop_stack(); /* pop the 'default' module */
 
   if(!p) error("Compilation failed.\n");
   return p;
