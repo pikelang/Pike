@@ -1,9 +1,15 @@
-/* $Id: sslfile.pike,v 1.21 1999/11/25 22:03:46 grubba Exp $
+/* $Id: sslfile.pike,v 1.22 2000/08/04 19:08:08 sigge Exp $
  *
  */
 
 // inherit Stdio.File : socket;
 inherit "connection" : connection;
+
+#ifdef SSL3_DEBUG
+#define SSL3_DEBUG_MSG werror
+#else /*! SSL3_DEBUG */
+#define SSL3_DEBUG_MSG
+#endif /* SSL3_DEBUG */
 
 object(Stdio.File) socket;
 
@@ -41,6 +47,8 @@ void die(int status)
   is_closed = 1;
   if (socket) {
     socket->close();
+    if(close_callback)
+      close_callback(socket->query_id());
   }
 }
 
@@ -50,12 +58,12 @@ void die(int status)
 private int queue_write()
 {
   int|string data = to_write();
-#ifdef SSL3_DEBUG
+#ifdef SSL3_DEBUG_TRANSPORT
   werror(sprintf("SSL.sslfile->queue_write: '%O'\n", data));
 #endif
   if (stringp(data))
     write_buffer += data;
-#ifdef SSL3_DEBUG
+#ifdef SSL3_DEBUG_TRANSPORT
   werror(sprintf("SSL.sslfile->queue_write: buffer = '%O'\n", write_buffer));
 #endif
 
@@ -65,7 +73,7 @@ private int queue_write()
     return(0);
   }
   
-#ifdef SSL3_DEBUG
+#ifdef SSL3_DEBUG_TRANSPORT
   werror("SSL.sslfile->queue_write: end\n");
 #endif
   return stringp(data) ? 0 : data;
@@ -124,7 +132,7 @@ string read(mixed ...args)
 {
   throw( ({ "SSL->sslfile: read() is not supported.\n", backtrace() }) );
 }
-  
+
 private void ssl_read_callback(mixed id, string s)
 {
 #ifdef SSL3_DEBUG
@@ -154,7 +162,6 @@ private void ssl_read_callback(mixed id, string s)
     if (data > 0)
     {
       if (close_callback)
-
 	close_callback(socket->query_id());
     }
     else
@@ -173,7 +180,7 @@ private void ssl_read_callback(mixed id, string s)
       die(res);
   }
 }
-  
+
 private void ssl_write_callback(mixed id)
 {
 #ifdef SSL3_DEBUG
@@ -215,7 +222,8 @@ private void ssl_write_callback(mixed id)
     }
     res = queue_write();
   }
-  if (!strlen(write_buffer) && !query_write_callback())
+//   if (!strlen(write_buffer) && !query_write_callback())
+  if (!strlen(write_buffer))
     socket->set_write_callback(0);
   if (res)
     die(res);
@@ -330,7 +338,7 @@ object accept()
 }
 #endif
 
-void create(object f, object c)
+void create(object f, object c, int|void is_client)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->create\n");
@@ -338,6 +346,6 @@ void create(object f, object c)
   context = c;
   read_buffer = write_buffer = "";
   socket = f;
-  socket->set_nonblocking(ssl_read_callback, 0, ssl_close_callback);
-  connection::create(1);
+  socket->set_nonblocking(ssl_read_callback, ssl_write_callback, ssl_close_callback);
+  connection::create(!is_client);
 }
