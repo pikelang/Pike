@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.28 2001/06/11 09:59:36 per Exp $
+// $Id: MySQL.pike,v 1.29 2001/06/11 10:44:37 js Exp $
 
 inherit .Base;
 
@@ -78,7 +78,7 @@ static string to_md5(string url)
   return Crypto.string_to_hex(md5->digest());
 }
 
-static int hash_word(string word)
+int hash_word(string word)
 {
   return hash(word);
   string hashed=Crypto.md5()->update(word[..254]*16)->digest();
@@ -211,7 +211,7 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 		    doc_id);
   mapping md=mkmapping(a->name,a->value);
   if(md->body)
-    md->body=utf8_to_string(Gz.inflate()->inflate(md->body));
+    catch(md->body=utf8_to_string(Gz.inflate()->inflate(md->body)));
   return md;
 }
 
@@ -448,7 +448,7 @@ class Queue
 	  retry_count++;
 	  continue; // not this host..
 	}
-	possible[p_c] = 0;
+	possible[p_c-1] = 0;
 	retry_count=0;
 	set_stage( ur, 1 );
 	return ur;
