@@ -27,7 +27,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.28 2000/03/28 19:37:23 grubba Exp $");
+RCSID("$Id: math.c,v 1.29 2000/03/29 05:17:38 hubbe Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -221,7 +221,7 @@ void f_round(INT32 args)
 {
   if(args<1) error("Too few arguments to round()\n");
   if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to round()\n");
-  sp[-args].u.float_number=rint(sp[-args].u.float_number);
+  sp[-args].u.float_number=RINT(sp[-args].u.float_number);
 }
 
 void f_min(INT32 args)

@@ -38,7 +38,7 @@ static void gr(char *ptr, int len)
 }
 
 #define GR(X) gr( (char *) & (X), sizeof(X))
-static unsigned int rint(void)
+static unsigned int read_int(void)
 {
   unsigned char x[4];
   gr(x,4);
@@ -101,7 +101,7 @@ void my_uncompress(char *file)
     char *data;
     GR(type);
 
-    len=rint();
+    len=read_int();
 /*    fprintf(stderr,"namelen=%d\n",len); */
     
     gr(buffer, len);
@@ -155,7 +155,7 @@ void my_uncompress(char *file)
 	  fprintf(stderr,"Failed to open %s\n",buffer);
 	  exit(1);
 	}
-	len=rint();
+	len=read_int();
 	while(len)
 	{
 	  int r=len > sizeof(buffer) ? sizeof(buffer) : len;
