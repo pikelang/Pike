@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.133 2004/04/08 11:53:22 grubba Exp $
+|| $Id: backend.cmod,v 1.134 2004/04/08 13:35:37 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.133 2004/04/08 11:53:22 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.134 2004/04/08 13:35:37 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -256,7 +256,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #define MY_POLLEXCEPT	POLLRDBAND|POLLRDNORM|POLLIN
 #define MY_POLLRDBAND	POLLRDBAND|POLLPRI
 #define MY_POLLWREXCEPT	POLLWRBAND|POLLWRNORM|POLLOUT
-#define MY_POLLWRBAND	POLLWRBAND
+#define MY_POLLWRBAND	POLLWRBAND|MY_POLLOUT
 #define MY_POLLNVAL	POLLNVAL
 
 #if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
@@ -1880,10 +1880,10 @@ PIKECLASS Backend
       events |= MY_POLLOUT;
     }
     if (wanted_events & PIKE_BIT_FD_READ_OOB) {
-      events |= MY_POLLEXCEPT;
+      events |= MY_POLLRDBAND;
     }
     if (wanted_events & PIKE_BIT_FD_WRITE_OOB) {
-      events |= MY_POLLWREXCEPT;
+      events |= MY_POLLWRBAND;
     }
 
     IF_PD(fprintf(stderr, "UPDATE_BLACK_BOX(%d, %d) ==> events: 0x%08x\n",
@@ -2020,7 +2020,7 @@ PIKECLASS Backend
 #ifdef HAVE_POLL
 	  if (new_events & PIKE_BIT_FD_READ_OOB)
 	  {
-	    MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+	    MY_FD_SET(&me->set, fd, MY_POLLRDBAND);
 	  }
 #else
 	  if (!(new_events & PIKE_BIT_FD_READ_OOB) &&
@@ -2033,11 +2033,11 @@ PIKECLASS Backend
 
       if (changed_events & PIKE_BIT_FD_READ_OOB) {
 	if (new_events & PIKE_BIT_FD_READ_OOB)
-	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+	  MY_FD_SET(&me->set, fd, MY_POLLRDBAND);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_READ)) {
 #ifdef HAVE_POLL
-	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+	    MY_FD_CLR(&me->set, fd, MY_POLLRDBAND);
 #else
 	    if (!(new_events & PIKE_BIT_FD_WRITE))
 	      /* Exceptions might cause calls to read, read_oob and write. */
@@ -2073,7 +2073,7 @@ PIKECLASS Backend
 
       if (changed_events & PIKE_BIT_FD_WRITE_OOB) {
 	if (new_events & PIKE_BIT_FD_WRITE_OOB)
-	  MY_FD_SET(&me->set, fd, MY_POLLWREXCEPT);
+	  MY_FD_SET(&me->set, fd, MY_POLLWRBAND);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_WRITE)) {
 	    MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
@@ -2305,13 +2305,14 @@ PIKECLASS Backend
 	  int i;
 	  for (i = 0; i < me->active_set.num_in_poll; i++) {
 	    fprintf (stderr,
-		     "BACKEND[%d]:   fd %4d: %-4s %-5s %-8s %-9s\n",
+		     "BACKEND[%d]:   fd %4d: %-4s %-5s %-8s %-9s: 0x%04x\n",
 		     me->id,
 		     me->active_set.poll_fds[i].fd,
 		     me->active_set.poll_fds[i].events & (POLLRDNORM|POLLIN) ? "read" : "",
 		     me->active_set.poll_fds[i].events & POLLOUT ? "write" : "",
 		     me->active_set.poll_fds[i].events & POLLRDBAND ? "read_oob" : "",
-		     me->active_set.poll_fds[i].events & POLLWRBAND ? "write_oob" : "");
+		     me->active_set.poll_fds[i].events & POLLWRBAND ? "write_oob" : "",
+		     me->active_set.poll_fds[i].events);
 	  }
 	}
 	fprintf(stderr, "BACKEND[%d]: poll(%p, %d, %d)...", me->id,
@@ -2461,7 +2462,7 @@ PIKECLASS Backend
 	  int handled = 0;
 #endif /* PIKE_DEBUG */
 
-	  IF_PD(fprintf(stderr, "fd:%d events:0x%04d\n",
+	  IF_PD(fprintf(stderr, "fd:%d events:0x%04x\n",
 			GET_FD(ACTIVE_POLLSET[i]),
 			(unsigned)GET_EVENTS(ACTIVE_POLLSET[i])));
 
@@ -2472,6 +2473,7 @@ PIKECLASS Backend
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL))
 	  {
 	    /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLNVAL on %d\n", me->id, fd));
 #ifdef PIKE_DEBUG
 #ifdef HAVE_POLL
 	    /* FIXME */
@@ -3446,6 +3448,20 @@ void init_backend(void)
     default_backend=OBJ2_BACKEND(o);
     add_object_constant("__backend",o,0);
   }
+#ifndef USE_SELECT
+  IF_PD(fprintf(stderr,
+		"MY_POLLIN:       0x%04x\n"
+		"MY_POLLOUT:      0x%04x\n"
+		"MY_POLLEXCEPT:   0x%04x\n"
+		"MY_POLLRDBAND:   0x%04x\n"
+		"MY_POLLWREXCEPT: 0x%04x\n"
+		"MY_POLLWRBAND:   0x%04x\n"
+		"MY_POLLNVAL:     0x%04x\n",
+		MY_POLLIN, MY_POLLOUT,
+		MY_POLLEXCEPT, MY_POLLRDBAND,
+		MY_POLLWREXCEPT, MY_POLLWRBAND,
+		MY_POLLNVAL));
+#endif /* !USE_SELECT */
 #ifdef CHILD_NEEDS_TO_REOPEN
   /* /dev/poll and kqueue fds get invalidated at fork. */
   dmalloc_accept_leak(add_to_callback(&fork_child_callback,
