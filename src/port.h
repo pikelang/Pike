@@ -188,9 +188,9 @@ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
-#define EXTRACT_UWORD(p) EXTRACT_UWORD_((unsigned char *)p)
-#define EXTRACT_WORD(p) EXTRACT_WORD_((unsigned char *)p)
-#define EXTRACT_INT(p) EXTRACT_INT_((unsigned char *)p)
+#define EXTRACT_UWORD(p) EXTRACT_UWORD_((unsigned char *)(p))
+#define EXTRACT_WORD(p) EXTRACT_WORD_((unsigned char *)(p))
+#define EXTRACT_INT(p) EXTRACT_INT_((unsigned char *)(p))
 
 #endif
 #endif

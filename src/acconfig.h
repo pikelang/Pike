@@ -133,6 +133,15 @@
 /* Define this if your pthreads have pthread_condattr_default */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT
 
+/* Define if you have the pthread_attr_setstacksize function.  */
+#undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+
+/* Define if you have the pthread_cond_init function.  */
+#undef HAVE_PTHREAD_COND_INIT
+
+/* Define if you have the pthread_yield function.  */
+#undef HAVE_PTHREAD_YIELD
+
 @BOTTOM@
 
 /* How to set a socket non-blocking */
