@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.17 1999/11/09 22:50:59 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.18 1999/11/09 23:08:12 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.17 1999/11/09 22:50:59 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.18 1999/11/09 23:08:12 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -813,7 +813,7 @@ string generate_match(array(object(node)) rule_set, string indent)
     }
     res += indent + "}";
     last_was_if = 1;
-  } else
+  }
 
   if (sizeof(node_classes[NULL_CDR]) ||
       sizeof(node_classes[MATCH_CDR]) ||
