@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.67 2003/10/29 13:31:27 grubba Exp $
+|| $Id: backend.cmod,v 1.68 2003/10/29 18:20:37 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.67 2003/10/29 13:31:27 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.68 2003/10/29 18:20:37 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1170,6 +1170,15 @@ PIKECLASS Backend
 	      if ((*(me->fds[fd].read_oob.callback))(fd, me->fds[fd].read_oob.data) == -1)
 		goto callbacks_done;
 	    }
+	    else {
+	      if (!me->fds[fd].read.callback) {
+		MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+	      } else {
+#ifdef RDBAND_IS_SPECIAL
+		MY_FD_CLR(&me->set, fd, MY_POLLRDBAND);
+#endif
+	      }
+	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
@@ -1240,6 +1249,15 @@ PIKECLASS Backend
 	      errno = 0;
 	      if ((*(me->fds[fd].write_oob.callback))(fd, me->fds[fd].write_oob.data) == -1)
 		goto callbacks_done;
+	    }
+	    else {
+	      if (!me->fds[fd].write.callback) {
+		MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
+	      } else {
+#ifdef WRBAND_ISPECIAL
+		MY_FD_CLR(&me->set, fd, MY_POLLWRBAND);
+#endif
+	      }
 	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
