@@ -2,7 +2,7 @@
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.8 2004/10/11 17:33:07 nilsson Exp $
+// $Id: UUID.pmod,v 1.9 2005/01/06 02:22:58 nilsson Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -348,13 +348,7 @@ UUID make_version4() {
 }
 
 
-// Grubbas implementation:
-
-//! Return a new binary UUID.
-string new()
-{
-  return make_version1(-1)->encode();
-}
+// Convenience functions
 
 //! Returns the string representation of the binary UUID @[uuid].
 string format_uuid(string uuid)
@@ -366,12 +360,6 @@ string format_uuid(string uuid)
 string parse_uuid(string uuid)
 {
   return UUID(uuid)->encode();
-}
-
-//! Return a new UUID string.
-string new_string()
-{
-  return make_version1(-1)->str();
 }
 
 // Some UUIDs:

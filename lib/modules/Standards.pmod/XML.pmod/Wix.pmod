@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.17 2004/12/14 18:38:29 grubba Exp $
+// $Id: Wix.pmod,v 1.18 2005/01/06 02:22:58 nilsson Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -461,7 +461,7 @@ WixNode get_module_xml(Directory dir, string id, string version,
 		       string|void manufacturer, string|void description,
 		       string|void guid, string|void comments)
 {
-  guid = guid || Standards.UUID.new_string();
+  guid = guid || Standards.UUID.make_version1(-1)->str();
   mapping(string:string) package_attrs = ([
     "Id":guid,
     "InstallerVersion":"200",
