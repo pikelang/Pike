@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.48 1998/04/06 04:09:05 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.49 1998/04/06 20:36:20 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -51,7 +51,7 @@ void exit_lex(void)
     fprintf(stderr,"Opcode usage: (opcode, runned, compiled)\n");
     for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
     {
-      fprintf(stderr,":: %-20s %8ld %8ld\n",
+      fprintf(stderr,":: %-30s %8ld %8ld\n",
 	      low_get_f_name(e+F_OFFSET,0),
 	      (long)instrs[e].runs,
 	      (long)instrs[e].compiles);
