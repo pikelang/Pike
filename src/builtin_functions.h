@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.25 2003/06/12 09:25:07 mast Exp $
+|| $Id: builtin_functions.h,v 1.26 2003/07/21 23:34:01 mast Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -122,6 +122,9 @@ PMOD_EXPORT void f_random(INT32 args);
 PMOD_EXPORT void f_backtrace(INT32 args);
 void init_builtin(void);
 void exit_builtin(void);
+
+/* From modules/files */
+void f_werror (INT32 args);
 
 /* Prototypes end here */
 
