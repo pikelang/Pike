@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.16 2000/10/11 11:55:36 hop Exp $
+// $Id: client.pike,v 1.17 2001/01/04 12:43:20 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -158,7 +158,6 @@
         THROW(({"LDAP: Internal error.\n",backtrace()}));
         return(-::ldap_errno);
       }
-      //DWRITE(sprintf("DEB: lastel=%d\n",lastel));
       DWRITE(sprintf("result.create: rawres=%O\n",rawres[lastel]));
 
       // The last element of 'rawres' is result itself
@@ -658,7 +657,6 @@
       string f2 = reverse(filter[1..]);
       if((ix = predef::search(f2, ")")) > -1) {
 	filter = reverse(f2[ix+1..]);
-//DWRITE("DEB: make_filter: filter=["+filter+"]\n");
 	return(make_filter(filter));
       }
       return(-1); // error in filter expr.
@@ -708,7 +706,6 @@
     ohlp = ({ofilt});
     if (arrayp(attrs)) { //explicitly defined attributes
       array(object) o2 = ({});
-      //DWRITE(sprintf("DEB: attrs=%O\n",attrs));
       foreach(attrs, string s2)
 	o2 += ({Standards.ASN1.Types.asn1_octet_string(s2)});
       ohlp += ({Standards.ASN1.Types.asn1_sequence(o2)});

@@ -29,8 +29,8 @@
 #define DWRITE(X)
 //#define DWRITE(X)       werror("Protocols.LDAP: "+X)
 // --- Debug high level operations ---
-//#define DWRITE_HI(X)
-#define DWRITE_HI(X)       werror("Protocols.LDAP: "+X)
+#define DWRITE_HI(X)
+//#define DWRITE_HI(X)       werror("Protocols.LDAP: "+X)
 // --- Enable run-time error ---
 //#define THROW(X)
 #define THROW(X)        throw(X)
