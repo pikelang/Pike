@@ -1,52 +1,16 @@
-#!/bin/sh
+#! /bin/sh
 
 # Guess values for system-dependent variables and create Makefiles.
-# Generated automatically using autoconf version 1.119 
-# Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation, Inc.
+# Generated automatically using autoconf version 2.7 
+# Copyright (C) 1992, 1993, 1994 Free Software Foundation, Inc.
 #
-# This configure script is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published
-# by the Free Software Foundation; either version 2, or (at your option)
-# any later version.
-#
-# This script is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
-# Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# This configure script is free software; the Free Software Foundation
+# gives unlimited permission to copy, distribute and modify it.
 
+# Defaults:
 ac_help=
-
-# Omit some internal or obsolete options to make the list less imposing.
-ac_usage="Usage: configure [options] [host]
-Options: [defaults in brackets after descriptions]
-Configuration:
-  --cache-file=FILE       cache test results in FILE
-  --help                  print this message
-  --no-create             do not create output files
-  --quiet, --silent       do not print \`checking...' messages
-  --version               print the version of autoconf that created configure
-Directory and file names:
-  --exec-prefix=PREFIX    install host dependent files in PREFIX [/usr/local]
-  --prefix=PREFIX         install host independent files in PREFIX [/usr/local]
-  --srcdir=DIR            find the sources in DIR [configure dir or ..]
-  --program-prefix=PREFIX prepend PREFIX to installed program names
-  --program-suffix=SUFFIX append SUFFIX to installed program names
-Host type:
-  --build=BUILD           configure for building on BUILD [BUILD=HOST]
-  --host=HOST             configure for HOST [guessed]
-  --target=TARGET         configure for TARGET [TARGET=HOST]
-Features and packages:
-  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
-  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
-  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --x-includes=DIR        X include files are in DIR
-  --x-libraries=DIR       X library files are in DIR
---enable and --with options recognized:$ac_help"
+ac_default_prefix=/usr/local
+# Any additions from configure.in:
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -61,16 +25,30 @@ no_recursion=
 prefix=NONE
 program_prefix=NONE
 program_suffix=NONE
-program_transform_name=NONE
+program_transform_name=s,x,x,
 silent=
+site=
 srcdir=
 target=NONE
 verbose=
 x_includes=NONE
 x_libraries=NONE
+bindir='${exec_prefix}/bin'
+sbindir='${exec_prefix}/sbin'
+libexecdir='${exec_prefix}/libexec'
+datadir='${prefix}/share'
+sysconfdir='${prefix}/etc'
+sharedstatedir='${prefix}/com'
+localstatedir='${prefix}/var'
+libdir='${exec_prefix}/lib'
+includedir='${prefix}/include'
+oldincludedir='/usr/include'
+infodir='${prefix}/info'
+mandir='${prefix}/man'
 
 # Initialize some other variables.
 subdirs=
+MFLAGS= MAKEFLAGS=
 
 ac_prev=
 for ac_option
@@ -92,9 +70,14 @@ do
 
   case "$ac_option" in
 
-  -build | --build | --buil | --bui | --bu | --b)
+  -bindir | --bindir | --bindi | --bind | --bin | --bi)
+    ac_prev=bindir ;;
+  -bindir=* | --bindir=* | --bindi=* | --bind=* | --bin=* | --bi=*)
+    bindir="$ac_optarg" ;;
+
+  -build | --build | --buil | --bui | --bu)
     ac_prev=build ;;
-  -build=* | --build=* | --buil=* | --bui=* | --bu=* | --b=*)
+  -build=* | --build=* | --buil=* | --bui=* | --bu=*)
     build="$ac_optarg" ;;
 
   -cache-file | --cache-file | --cache-fil | --cache-fi \
@@ -103,6 +86,12 @@ do
   -cache-file=* | --cache-file=* | --cache-fil=* | --cache-fi=* \
   | --cache-f=* | --cache-=* | --cache=* | --cach=* | --cac=* | --ca=* | --c=*)
     cache_file="$ac_optarg" ;;
+
+  -datadir | --datadir | --datadi | --datad | --data | --dat | --da)
+    ac_prev=datadir ;;
+  -datadir=* | --datadir=* | --datadi=* | --datad=* | --data=* | --dat=* \
+  | --da=*)
+    datadir="$ac_optarg" ;;
 
   -disable-* | --disable-*)
     ac_feature=`echo $ac_option|sed -e 's/-*disable-//'`
@@ -140,15 +129,102 @@ do
     with_gas=yes ;;
 
   -help | --help | --hel | --he)
+    # Omit some internal or obsolete options to make the list less imposing.
+    # This message is too long to be a string in the A/UX 3.1 sh.
     cat << EOF
-$ac_usage
+Usage: configure [options] [host]
+Options: [defaults in brackets after descriptions]
+Configuration:
+  --cache-file=FILE       cache test results in FILE
+  --help                  print this message
+  --no-create             do not create output files
+  --quiet, --silent       do not print \`checking...' messages
+  --version               print the version of autoconf that created configure
+Directory and file names:
+  --prefix=PREFIX         install architecture-independent files in PREFIX
+                          [$ac_default_prefix]
+  --exec-prefix=EPREFIX   install architecture-dependent files in EPREFIX
+                          [same as prefix]
+  --bindir=DIR            user executables in DIR [EPREFIX/bin]
+  --sbindir=DIR           system admin executables in DIR [EPREFIX/sbin]
+  --libexecdir=DIR        program executables in DIR [EPREFIX/libexec]
+  --datadir=DIR           read-only architecture-independent data in DIR
+                          [PREFIX/share]
+  --sysconfdir=DIR        read-only single-machine data in DIR [PREFIX/etc]
+  --sharedstatedir=DIR    modifiable architecture-independent data in DIR
+                          [PREFIX/com]
+  --localstatedir=DIR     modifiable single-machine data in DIR [PREFIX/var]
+  --libdir=DIR            object code libraries in DIR [EPREFIX/lib]
+  --includedir=DIR        C header files in DIR [PREFIX/include]
+  --oldincludedir=DIR     C header files for non-gcc in DIR [/usr/include]
+  --infodir=DIR           info documentation in DIR [PREFIX/info]
+  --mandir=DIR            man documentation in DIR [PREFIX/man]
+  --srcdir=DIR            find the sources in DIR [configure dir or ..]
+  --program-prefix=PREFIX prepend PREFIX to installed program names
+  --program-suffix=SUFFIX append SUFFIX to installed program names
+  --program-transform-name=PROGRAM
+                          run sed PROGRAM on installed program names
 EOF
+    cat << EOF
+Host type:
+  --build=BUILD           configure for building on BUILD [BUILD=HOST]
+  --host=HOST             configure for HOST [guessed]
+  --target=TARGET         configure for TARGET [TARGET=HOST]
+Features and packages:
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --x-includes=DIR        X include files are in DIR
+  --x-libraries=DIR       X library files are in DIR
+EOF
+    if test -n "$ac_help"; then
+      echo "--enable and --with options recognized:$ac_help"
+    fi
     exit 0 ;;
 
   -host | --host | --hos | --ho)
     ac_prev=host ;;
   -host=* | --host=* | --hos=* | --ho=*)
     host="$ac_optarg" ;;
+
+  -includedir | --includedir | --includedi | --included | --include \
+  | --includ | --inclu | --incl | --inc)
+    ac_prev=includedir ;;
+  -includedir=* | --includedir=* | --includedi=* | --included=* | --include=* \
+  | --includ=* | --inclu=* | --incl=* | --inc=*)
+    includedir="$ac_optarg" ;;
+
+  -infodir | --infodir | --infodi | --infod | --info | --inf)
+    ac_prev=infodir ;;
+  -infodir=* | --infodir=* | --infodi=* | --infod=* | --info=* | --inf=*)
+    infodir="$ac_optarg" ;;
+
+  -libdir | --libdir | --libdi | --libd)
+    ac_prev=libdir ;;
+  -libdir=* | --libdir=* | --libdi=* | --libd=*)
+    libdir="$ac_optarg" ;;
+
+  -libexecdir | --libexecdir | --libexecdi | --libexecd | --libexec \
+  | --libexe | --libex | --libe)
+    ac_prev=libexecdir ;;
+  -libexecdir=* | --libexecdir=* | --libexecdi=* | --libexecd=* | --libexec=* \
+  | --libexe=* | --libex=* | --libe=*)
+    libexecdir="$ac_optarg" ;;
+
+  -localstatedir | --localstatedir | --localstatedi | --localstated \
+  | --localstate | --localstat | --localsta | --localst \
+  | --locals | --local | --loca | --loc | --lo)
+    ac_prev=localstatedir ;;
+  -localstatedir=* | --localstatedir=* | --localstatedi=* | --localstated=* \
+  | --localstate=* | --localstat=* | --localsta=* | --localst=* \
+  | --locals=* | --local=* | --loca=* | --loc=* | --lo=*)
+    localstatedir="$ac_optarg" ;;
+
+  -mandir | --mandir | --mandi | --mand | --man | --ma | --m)
+    ac_prev=mandir ;;
+  -mandir=* | --mandir=* | --mandi=* | --mand=* | --man=* | --ma=* | --m=*)
+    mandir="$ac_optarg" ;;
 
   -nfp | --nfp | --nf)
     # Obsolete; use --without-fp.
@@ -161,6 +237,15 @@ EOF
   -no-recursion | --no-recursion | --no-recursio | --no-recursi \
   | --no-recurs | --no-recur | --no-recu | --no-rec | --no-re | --no-r)
     no_recursion=yes ;;
+
+  -oldincludedir | --oldincludedir | --oldincludedi | --oldincluded \
+  | --oldinclude | --oldinclud | --oldinclu | --oldincl | --oldinc \
+  | --oldin | --oldi | --old | --ol | --o)
+    ac_prev=oldincludedir ;;
+  -oldincludedir=* | --oldincludedir=* | --oldincludedi=* | --oldincluded=* \
+  | --oldinclude=* | --oldinclud=* | --oldinclu=* | --oldincl=* | --oldinc=* \
+  | --oldin=* | --oldi=* | --old=* | --ol=* | --o=*)
+    oldincludedir="$ac_optarg" ;;
 
   -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
     ac_prev=prefix ;;
@@ -202,10 +287,39 @@ EOF
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
+    ac_prev=sbindir ;;
+  -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
+  | --sbi=* | --sb=*)
+    sbindir="$ac_optarg" ;;
+
+  -sharedstatedir | --sharedstatedir | --sharedstatedi \
+  | --sharedstated | --sharedstate | --sharedstat | --sharedsta \
+  | --sharedst | --shareds | --shared | --share | --shar \
+  | --sha | --sh)
+    ac_prev=sharedstatedir ;;
+  -sharedstatedir=* | --sharedstatedir=* | --sharedstatedi=* \
+  | --sharedstated=* | --sharedstate=* | --sharedstat=* | --sharedsta=* \
+  | --sharedst=* | --shareds=* | --shared=* | --share=* | --shar=* \
+  | --sha=* | --sh=*)
+    sharedstatedir="$ac_optarg" ;;
+
+  -site | --site | --sit)
+    ac_prev=site ;;
+  -site=* | --site=* | --sit=*)
+    site="$ac_optarg" ;;
+
   -srcdir | --srcdir | --srcdi | --srcd | --src | --sr)
     ac_prev=srcdir ;;
   -srcdir=* | --srcdir=* | --srcdi=* | --srcd=* | --src=* | --sr=*)
     srcdir="$ac_optarg" ;;
+
+  -sysconfdir | --sysconfdir | --sysconfdi | --sysconfd | --sysconf \
+  | --syscon | --sysco | --sysc | --sys | --sy)
+    ac_prev=sysconfdir ;;
+  -sysconfdir=* | --sysconfdir=* | --sysconfdi=* | --sysconfd=* | --sysconf=* \
+  | --syscon=* | --sysco=* | --sysc=* | --sys=* | --sy=*)
+    sysconfdir="$ac_optarg" ;;
 
   -target | --target | --targe | --targ | --tar | --ta | --t)
     ac_prev=target ;;
@@ -216,7 +330,7 @@ EOF
     verbose=yes ;;
 
   -version | --version | --versio | --versi | --vers)
-    echo "configure generated by autoconf version 1.119"
+    echo "configure generated by autoconf version 2.7"
     exit 0 ;;
 
   -with-* | --with-*)
@@ -262,7 +376,7 @@ EOF
   -*) { echo "configure: error: $ac_option: invalid option; use --help to show usage" 1>&2; exit 1; }
     ;;
 
-  *) 
+  *)
     if test -n "`echo $ac_option| sed 's/[-a-z0-9.]//g'`"; then
       echo "configure: warning: $ac_option: invalid host type" 1>&2
     fi
@@ -279,19 +393,20 @@ if test -n "$ac_prev"; then
   { echo "configure: error: missing argument to --`echo $ac_prev | sed 's/_/-/g'`" 1>&2; exit 1; }
 fi
 
-trap 'rm -fr conftest* confdefs* core $ac_clean_files; exit 1' 1 2 15
+trap 'rm -fr conftest* confdefs* core core.* *.core $ac_clean_files; exit 1' 1 2 15
 
 # File descriptor usage:
-# 0 unused; standard input
+# 0 standard input
 # 1 file creation
 # 2 errors and warnings
-# 3 unused; some systems may open it to /dev/tty
-# 4 checking for... messages and results
+# 3 some systems may open it to /dev/tty
+# 4 used on the Kubota Titan
+# 6 checking for... messages and results
 # 5 compiler messages saved in config.log
 if test "$silent" = yes; then
-  exec 4>/dev/null
+  exec 6>/dev/null
 else
-  exec 4>&1
+  exec 6>&1
 fi
 exec 5>./config.log
 
@@ -353,17 +468,14 @@ if test ! -r $srcdir/$ac_unique_file; then
     { echo "configure: error: can not find sources in $srcdir" 1>&2; exit 1; }
   fi
 fi
+srcdir=`echo "${srcdir}" | sed 's%\([^/]\)/*$%\1%'`
 
 # Prefer explicitly selected file to automatically selected ones.
 if test -z "$CONFIG_SITE"; then
   if test "x$prefix" != xNONE; then
-    CONFIG_SITE=$prefix/lib/config.site
+    CONFIG_SITE="$prefix/share/config.site $prefix/etc/config.site"
   else
-    CONFIG_SITE=/usr/local/lib/config.site
-  fi
-  # System dependent files override system independent ones.
-  if test "x$exec_prefix" != xNONE && test "x$exec_prefix" != "x$prefix"; then
-    CONFIG_SITE="$CONFIG_SITE $exec_prefix/lib/config.site"
+    CONFIG_SITE="$ac_default_prefix/share/config.site $ac_default_prefix/etc/config.site"
   fi
 fi
 for ac_site_file in $CONFIG_SITE; do
@@ -383,8 +495,12 @@ fi
 
 ac_ext=c
 # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-ac_cpp='$CPP $CPPFLAGS'
-ac_link='${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext -o conftest $LIBS 1>&5 2>&5'
+ac_cpp='echo $CPP $CPPFLAGS 1>&5;
+$CPP $CPPFLAGS'
+ac_compile='echo ${CC-cc} -c $CFLAGS $CPPFLAGS conftest.$ac_ext 1>&5;
+${CC-cc} -c $CFLAGS $CPPFLAGS conftest.$ac_ext 1>&5 2>&5'
+ac_link='echo ${CC-cc} -o conftest $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS 1>&5;
+${CC-cc} -o conftest $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS 1>&5 2>&5'
 
 if (echo "testing\c"; echo 1,2,3) | grep c >/dev/null; then
   # Stardent Vistra SVR4 grep lacks -e, says ghazi@caip.rutgers.edu.
@@ -402,9 +518,9 @@ fi
 
 # Extract the first word of "gcc", so it can be a program name with args.
 set dummy gcc; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&4
-if eval "test \"`echo '${'ac_cv_prog_CC'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&4
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
 else
   if test -n "$CC"; then
   ac_cv_prog_CC="$CC" # Let the user override the test.
@@ -423,19 +539,19 @@ fi
 fi
 CC="$ac_cv_prog_CC"
 if test -n "$CC"; then
-  echo "$ac_t""$CC" 1>&4
+  echo "$ac_t""$CC" 1>&6
 else
-  echo "$ac_t""no" 1>&4
+  echo "$ac_t""no" 1>&6
 fi
 
 
-echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&4
-if eval "test \"`echo '${'ac_cv_prog_gcc'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&4
+echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'ac_cv_prog_gcc'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.c <<EOF
 #ifdef __GNUC__
-  yes
+  yes;
 #endif
 EOF
 if ${CC-cc} -E conftest.c 2>&5 | egrep yes >/dev/null 2>&1; then
@@ -444,13 +560,14 @@ else
   ac_cv_prog_gcc=no
 fi
 fi
-echo "$ac_t""$ac_cv_prog_gcc" 1>&4
+
+echo "$ac_t""$ac_cv_prog_gcc" 1>&6
 if test $ac_cv_prog_gcc = yes; then
   GCC=yes
   if test "${CFLAGS+set}" != set; then
-    echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&4
-if eval "test \"`echo '${'ac_cv_prog_gcc_g'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&4
+    echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'ac_cv_prog_gcc_g'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
 else
   echo 'void f(){}' > conftest.c
 if test -z "`${CC-cc} -g -c conftest.c 2>&1`"; then
@@ -461,7 +578,8 @@ fi
 rm -f conftest*
 
 fi
-    echo "$ac_t""$ac_cv_prog_gcc_g" 1>&4
+
+echo "$ac_t""$ac_cv_prog_gcc_g" 1>&6
     if test $ac_cv_prog_gcc_g = yes; then
       CFLAGS="-g -O"
     else
@@ -475,9 +593,9 @@ fi
 
 # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&4
-if eval "test \"`echo '${'ac_cv_prog_RANLIB'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&4
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
 else
   if test -n "$RANLIB"; then
   ac_cv_prog_RANLIB="$RANLIB" # Let the user override the test.
@@ -496,17 +614,15 @@ fi
 fi
 RANLIB="$ac_cv_prog_RANLIB"
 if test -n "$RANLIB"; then
-  echo "$ac_t""$RANLIB" 1>&4
+  echo "$ac_t""$RANLIB" 1>&6
 else
-  echo "$ac_t""no" 1>&4
+  echo "$ac_t""no" 1>&6
 fi
 
 
 
 trap '' 1 2 15
-if test -w $cache_file; then
-echo "updating cache $cache_file"
-cat > $cache_file <<\EOF
+cat > confcache <<\EOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
 # scripts and configure runs.  It is not useful on other systems.
@@ -522,17 +638,26 @@ cat > $cache_file <<\EOF
 # --recheck option to rerun configure.
 #
 EOF
-# Ultrix sh set writes to stderr and can't be redirected directly.
+# Ultrix sh set writes to stderr and can't be redirected directly,
+# and sets the high bit in the cache file unless we assign to the vars.
 (set) 2>&1 |
-  sed -n "s/^\([a-zA-Z0-9_]*_cv_[a-zA-Z0-9_]*\)=\(.*\)/: \${\1='\2'}/p" \
-  >> $cache_file
+  sed -n "s/^\([a-zA-Z0-9_]*_cv_[a-zA-Z0-9_]*\)=\(.*\)/\1=\${\1='\2'}/p" \
+  >> confcache
+if cmp -s $cache_file confcache; then
+  :
 else
-echo "not updating unwritable cache $cache_file"
+  if test -w $cache_file; then
+    echo "updating cache $cache_file"
+    cat confcache > $cache_file
+  else
+    echo "not updating unwritable cache $cache_file"
+  fi
 fi
+rm -f confcache
 
-trap 'rm -fr conftest* confdefs* core $ac_clean_files; exit 1' 1 2 15
+trap 'rm -fr conftest* confdefs* core core.* *.core $ac_clean_files; exit 1' 1 2 15
 
-test "x$prefix" = xNONE && prefix=/usr/local
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
 # Let make expand exec_prefix.
 test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
 
@@ -565,7 +690,7 @@ rm -f conftest.defs
 echo creating $CONFIG_STATUS
 rm -f $CONFIG_STATUS
 cat > $CONFIG_STATUS <<EOF
-#!/bin/sh
+#! /bin/sh
 # Generated automatically by configure.
 # Run this file to recreate the current configuration.
 # This directory was configured as follows,
@@ -584,7 +709,7 @@ do
     echo "running \${CONFIG_SHELL-/bin/sh} $0 $ac_configure_args --no-create --no-recursion"
     exec \${CONFIG_SHELL-/bin/sh} $0 $ac_configure_args --no-create --no-recursion ;;
   -version | --version | --versio | --versi | --vers | --ver | --ve | --v)
-    echo "$CONFIG_STATUS generated by autoconf version 1.119"
+    echo "$CONFIG_STATUS generated by autoconf version 2.7"
     exit 0 ;;
   -help | --help | --hel | --he | --h)
     echo "\$ac_cs_usage"; exit 0 ;;
@@ -594,11 +719,13 @@ done
 
 ac_given_srcdir=$srcdir
 
-trap 'rm -f Makefile; exit 1' 1 2 15
+trap 'rm -fr `echo "Makefile" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+EOF
+cat >> $CONFIG_STATUS <<EOF
 
-# Protect against being on the right side of a sed subst in config.status. 
-sed 's/%@/@@/; s/@%/@@/; s/%g$/@g/; /@g$/s/[\\\\&%]/\\\\&/g; 
- s/@@/%@/; s/@@/@%/; s/@g$/%g/' > conftest.subs <<\CEOF
+# Protect against being on the right side of a sed subst in config.status.
+sed 's/%@/@@/; s/@%/@@/; s/%g\$/@g/; /@g\$/s/[\\\\&%]/\\\\&/g;
+ s/@@/%@/; s/@@/@%/; s/@g\$/%g/' > conftest.subs <<\\CEOF
 $ac_vpsub
 $extrasub
 s%@CFLAGS@%$CFLAGS%g
@@ -609,6 +736,19 @@ s%@LDFLAGS@%$LDFLAGS%g
 s%@LIBS@%$LIBS%g
 s%@exec_prefix@%$exec_prefix%g
 s%@prefix@%$prefix%g
+s%@program_transform_name@%$program_transform_name%g
+s%@bindir@%$bindir%g
+s%@sbindir@%$sbindir%g
+s%@libexecdir@%$libexecdir%g
+s%@datadir@%$datadir%g
+s%@sysconfdir@%$sysconfdir%g
+s%@sharedstatedir@%$sharedstatedir%g
+s%@localstatedir@%$localstatedir%g
+s%@libdir@%$libdir%g
+s%@includedir@%$includedir%g
+s%@oldincludedir@%$oldincludedir%g
+s%@infodir@%$infodir%g
+s%@mandir@%$mandir%g
 s%@CC@%$CC%g
 s%@RANLIB@%$RANLIB%g
 
@@ -634,7 +774,7 @@ for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
   if test "$ac_dir" != "$ac_file" && test "$ac_dir" != .; then
     # The file is in a subdirectory.
     test ! -d "$ac_dir" && mkdir "$ac_dir"
-    ac_dir_suffix="/$ac_dir"
+    ac_dir_suffix="/`echo $ac_dir|sed 's%^\./%%'`"
     # A "../" for each directory in $ac_dir_suffix.
     ac_dots=`echo $ac_dir_suffix|sed 's%/[^/]*%../%g'`
   else
@@ -673,7 +813,7 @@ exit 0
 EOF
 chmod +x $CONFIG_STATUS
 rm -fr confdefs* $ac_clean_files
-test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS
+test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS || exit 1
 
 
 
