@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.28 1999/03/02 03:13:14 hubbe Exp $
+ * $Id: global.h,v 1.29 1999/04/07 23:10:05 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -211,10 +211,20 @@ typedef struct p_wchar_p
  static char *rcsid = X
 #endif
 
+#ifdef PIKE_DEBUG
+#define DO_IF_DEBUG(X) X
+#else
+#define DO_IF_DEBUG(X)
+#endif
+
 #if defined(__GNUC__) && !defined(PIKE_DEBUG) && !defined(lint)
 #define INLINE inline
 #else
 #define INLINE
+#endif
+
+#if defined(PURIFY) || defined(__CHECKER__) || defined(DEBUG_MALLOC)
+#define DO_PIKE_CLEANUP
 #endif
 
 #include "port.h"

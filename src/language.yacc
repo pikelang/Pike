@@ -181,7 +181,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.115 1999/03/29 20:17:21 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.116 1999/04/07 23:10:07 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -624,7 +624,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 
     if(compiler_pass==1)
     {
-      define_function($4->u.sval.u.string,
+      $<number>5=define_function($4->u.sval.u.string,
 		      $<n>$->u.sval.u.string,
 		      $1,
 		      IDENTIFIER_PIKE_FUNCTION,
@@ -650,6 +650,9 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 #ifdef PIKE_DEBUG
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
+
+	if(compiler_pass == 1 && f!=$<number>5)
+	  fatal("define_function screwed up! %d != %d\n",f,$<number>5);
 #endif
     }
     pop_compiler_frame();

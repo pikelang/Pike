@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.119 1999/04/03 01:34:00 hubbe Exp $");
+RCSID("$Id: program.c,v 1.120 1999/04/07 23:10:10 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1848,43 +1848,44 @@ INT32 define_function(struct pike_string *name,
       my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
     }
 
-    if(!(ref.id_flags & ID_INLINE) || compiler_pass!=1)
+    /* We modify the old definition if it is in this program */
+    if(ref.inherit_offset==0)
     {
-      /* We modify the old definition if it is in this program */
-      if(ref.inherit_offset==0)
-      {
-	if(func)
-	  funp->func = *func;
-	else
-	  funp->func.offset = -1;
-	
-	funp->identifier_flags=function_flags;
-      }else{
-	/* Otherwise we make a new definition */
-	copy_shared_string(fun.name, name);
-	copy_shared_string(fun.type, type);
-	
-	fun.run_time_type=T_FUNCTION;
-	
-	fun.identifier_flags=function_flags;
-	if(function_flags & IDENTIFIER_C_FUNCTION)
-	  new_program->flags |= PROGRAM_HAS_C_METHODS;
-	
-	if(func)
-	  fun.func = *func;
-	else
-	  fun.func.offset = -1;
-	
-	ref.identifier_offset=new_program->num_identifiers;
-	add_to_identifiers(fun);
-      }
+      if(func)
+	funp->func = *func;
+      else
+	funp->func.offset = -1;
       
-      ref.inherit_offset = 0;
-      ref.id_flags = flags;
-      new_program->identifier_references[i]=ref;
-      return i;
+      funp->identifier_flags=function_flags;
+    }else{
+      if(compiler_pass==1  || (ref.id_flags & ID_INLINE))
+	goto make_a_new_def;
+      
+      /* Otherwise we make a new definition */
+      copy_shared_string(fun.name, name);
+      copy_shared_string(fun.type, type);
+      
+      fun.run_time_type=T_FUNCTION;
+      
+      fun.identifier_flags=function_flags;
+      if(function_flags & IDENTIFIER_C_FUNCTION)
+	new_program->flags |= PROGRAM_HAS_C_METHODS;
+      
+      if(func)
+	fun.func = *func;
+      else
+	fun.func.offset = -1;
+      
+      ref.identifier_offset=new_program->num_identifiers;
+      add_to_identifiers(fun);
     }
+    
+    ref.inherit_offset = 0;
+    ref.id_flags = flags;
+    new_program->identifier_references[i]=ref;
+    return i;
   }
+make_a_new_def:
 
 #ifdef PIKE_DEBUG
   if(compiler_pass==2)
@@ -1914,7 +1915,7 @@ INT32 define_function(struct pike_string *name,
   ref.id_flags = flags;
   ref.identifier_offset = i;
   ref.inherit_offset = 0;
-  
+
   i=new_program->num_identifier_references;
   add_to_identifier_references(ref);
 
@@ -2619,6 +2620,8 @@ void cleanup_program(void)
     }
   }
 #endif
+
+#ifdef DO_PIKE_CLEANUP
   if(resolve_cache)
   {
     free_mapping(resolve_cache);
@@ -2630,6 +2633,7 @@ void cleanup_program(void)
     free_program(pike_trampoline_program);
     pike_trampoline_program=0;
   }
+#endif
 }
 
 #ifdef GC2

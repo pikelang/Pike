@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.27 1999/03/02 03:13:17 hubbe Exp $
+ * $Id: interpret.h,v 1.28 1999/04/07 23:10:06 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -96,24 +96,25 @@ struct pike_frame
 #define free_pike_frame(F) do{ struct pike_frame *f_=(F); debug_malloc_touch(f_); if(!--f_->refs) really_free_pike_frame(f_); }while(0)
 
 #define POP_PIKE_FRAME() do {						\
-  struct pike_frame *tmp_=fp;						\
-  fp=tmp_->next;							\
-  if(!--tmp_->refs)							\
+  struct pike_frame *tmp_=fp->next;					\
+  if(!--fp->refs)							\
   {									\
-    really_free_pike_frame(tmp_);					\
+    really_free_pike_frame(fp);						\
   }else{								\
-    if(tmp_->num_locals)						\
+    DO_IF_DEBUG(if( fp->locals+fp->num_locals>sp) fatal("Stack failiure in POP_PIKE_FRAME!\n"));                                                      \
+    if(fp->num_locals)							\
     {									\
       struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-					       tmp_->num_locals);	\
-      assign_svalues_no_free(s,tmp_->locals,tmp_->num_locals,BIT_MIXED);\
-      tmp_->locals=s;							\
-      tmp_->malloced_locals=1;						\
+					       fp->num_locals);		\
+      assign_svalues_no_free(s,fp->locals,fp->num_locals,BIT_MIXED);	\
+      fp->locals=s;							\
+      fp->malloced_locals=1;						\
     }else{								\
-      tmp_->locals=0;							\
+      fp->locals=0;							\
     }									\
-    tmp_->next=0;							\
+    fp->next=0;								\
   }									\
+  fp=tmp_;								\
  }while(0)
 
 

@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.63 1999/02/01 06:13:16 hubbe Exp $
+ * $Id: threads.h,v 1.64 1999/04/07 23:10:12 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -356,12 +356,6 @@ struct thread_state {
 #define DO_IF_PROFILING(X) X
 #else
 #define DO_IF_PROFILING(X)
-#endif
-
-#ifdef PIKE_DEBUG
-#define DO_IF_DEBUG(X) X
-#else
-#define DO_IF_DEBUG(X)
 #endif
 
 #define SWAP_OUT_THREAD(_tmp) do { \

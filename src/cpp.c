@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.50 1999/03/27 17:17:00 grubba Exp $
+ * $Id: cpp.c,v 1.51 1999/04/07 23:10:03 hubbe Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -1199,8 +1199,9 @@ void add_predefine(char *s)
   pike_predefs=tmp;
 }
 
-void exit_cpp()
+void exit_cpp(void)
 {
+#ifdef DO_PIKE_CLEANUP
   struct pike_predef_s *tmp;
   while((tmp=pike_predefs))
   {
@@ -1214,4 +1215,5 @@ void exit_cpp()
 
   free_string(constant_macro->link.s);
   free((char *)constant_macro);
+#endif
 }
