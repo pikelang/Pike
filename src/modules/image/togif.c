@@ -1,4 +1,4 @@
-/* $Id: togif.c,v 1.13 1996/11/22 20:28:19 law Exp $ */
+/* $Id: togif.c,v 1.14 1996/11/23 04:26:16 law Exp $ */
 /*
 
 togif 
@@ -460,6 +460,8 @@ void image_togif(INT32 args)
 
    if (args>0 && sp[-args].type==T_ARRAY)
       ct=colortable_from_array(sp[-args].u.array,"image->togif()\n");
+   else if (args>0 && args!=3 && sp[-args].type==T_INT)
+      ct=colortable_quant(THIS,min(256,max(2,sp[-args].u.integer)));
 
    if (args>=3+!!ct)
    {
@@ -483,6 +485,8 @@ void image_togif_fs(INT32 args)
 
    if (args>0 && sp[-args].type==T_ARRAY)
       ct=colortable_from_array(sp[-args].u.array,"image->togif()\n");
+   else if (args>0 && args!=3 && sp[-args].type==T_INT)
+      ct=colortable_quant(THIS,min(256,max(2,sp[-args].u.integer)));
 
    if (args>=3+!!ct)
    {
@@ -569,8 +573,11 @@ CHRONO("gif add init");
       y=sp[1-args].u.integer;
    }
 
-   if (args>2 && sp[2-args].type==T_ARRAY)
-      ct=colortable_from_array(sp[2-args].u.array,"image->gif_add()\n");
+
+   if (args>0 && sp[-args].type==T_ARRAY)
+      ct=colortable_from_array(sp[-args].u.array,"image->gif_add()\n");
+   else if (args!=3 && sp[-args].type==T_INT)
+      ct=colortable_quant(THIS,max(256,min(2,sp[-args].u.integer)));
 
    if (args>2+!!ct)
    {

@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.8 1996/11/22 20:28:15 law Exp $ */
+/* $Id: font.c,v 1.9 1996/11/23 04:26:13 law Exp $ */
 
 #include "global.h"
 
@@ -231,11 +231,25 @@ void font_load(INT32 args)
 
 		  for (i=0; i<THIS->chars; i++)
 		  {
-		     ch=(struct char_head*)
-			((char *)(THIS->mem)+ntohl(fh->o[i]));
-		     THIS->charinfo[i].width = ntohl(ch->width);
-		     THIS->charinfo[i].spacing = ntohl(ch->spacing);
-		     THIS->charinfo[i].pixels = ch->data;
+		     if (i*sizeof(INT32)<(unsigned long)size
+			 && ntohl(fh->o[i])<(unsigned long)size
+			 && ! ( ntohl(fh->o[i]) % 4) ) /* must be aligned */
+		     {
+			ch=(struct char_head*)
+			   ((char *)(THIS->mem)+ntohl(fh->o[i]));
+			THIS->charinfo[i].width = ntohl(ch->width);
+			THIS->charinfo[i].spacing = ntohl(ch->spacing);
+			THIS->charinfo[i].pixels = ch->data;
+		     }
+		     else /* illegal <tm> offset or illegal align */
+		     {
+			free_font_struct(new);
+			THIS=NULL;
+			pop_n_elems(args);
+			push_int(0);
+			return;
+		     }
+
 		  }
 
 		  close(fd);
