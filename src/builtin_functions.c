@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.60 1998/01/15 05:59:40 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.61 1998/01/15 17:54:14 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -354,7 +354,6 @@ void f_add_constant(INT32 args)
 #ifndef __NT__
 #define IS_SEP(X) ( (X)=='/' )
 #define IS_ABS(X) (IS_SEP((X)[0])?1:0)
-#define 
 #else   
 #define IS_SEP(X) ( (X) == '/' || (X) == '\\' )
 #define IS_ABS(X) (IS_SEP((X)[0])?1:(isalpha((X)[0]) && (X)[1]==':' && IS_SEP((X)[2]))?3:0)

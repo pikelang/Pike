@@ -241,6 +241,8 @@ lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)
 	cp -r $(LIBDIR_SRC) .
 	-rm -r `find lib -type d -name CVS`
 	-rm `find lib -type f -name '*~'`
+	-rm `find lib -type f -name '.#*'`
+	-rm `find lib -type f -name '#*#'`
 	-touch ./lib
 
 # make export archive (requires compiled Pike)

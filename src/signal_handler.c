@@ -257,6 +257,8 @@ static RETSIGTYPE receive_signal(int signum)
 #endif
 #endif
 #endif
+    fprintf(stderr,"pid %d died with code %d\n",pid,status);
+
     if(pid>0)
     {
       int tmp2=firstwait+1;
@@ -332,7 +334,7 @@ static void exit_pid_status(struct object *o)
 static void report_child(int pid,
 			 int status)
 {
-/*  fprintf(stderr,"pid %d exited with status %d\n",pid,status); */
+  fprintf(stderr,"pid %d exited with status %d\n",pid,status);
 
   if(pid_mapping)
   {
@@ -751,22 +753,26 @@ void f_fork(INT32 args)
 #ifdef HAVE_KILL
 static void f_kill(INT32 args)
 {
-  pid_t pid;
   if(args < 2)
     error("Too few arguments to kill().\n");
+
   switch(sp[-args].type)
   {
   case T_INT:
-    pid=sp[-args].u.integer;
     break;
 
   case T_OBJECT:
   {
+    INT32 pid;
     struct pid_status *p;
     if((p=(struct pid_status *)get_storage(sp[-args].u.object,
 					  pid_status_program)))
     {
       pid=p->pid;
+      free_svalue(sp-args);
+      sp[-args].type=T_INT;
+      sp[-args].subtype=NUMBER_NUMBER;
+      sp[-args].u.integer=pid;
       break;
     }
   }
@@ -774,11 +780,11 @@ static void f_kill(INT32 args)
     error("Bad argument 1 to kill().\n");
   }
     
-  if(sp[-args].type != T_INT)
   if(sp[1-args].type != T_INT)
     error("Bad argument 1 to kill().\n");
 
-  sp[-args].u.integer=!kill(sp[-args].u.integer,sp[1-args].u.integer);
+  sp[-args].u.integer=!kill(sp[-args].u.integer,
+			    sp[1-args].u.integer);
   check_signals(0,0,0);
   pop_n_elems(args-1);
 }
@@ -808,6 +814,19 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
     while(lastsig != tmp)
     {
       if(++lastsig == SIGNAL_BUFFER) lastsig=0;
+
+#ifdef SIGCHLD
+      if(sigbuf[lastsig]==SIGCHLD)
+      {
+	int tmp2 = firstwait;
+	while(lastwait != tmp2)
+	{
+	  if(++lastwait == WAIT_BUFFER) lastwait=0;
+	  report_child(wait_buf[lastwait].pid,
+		       wait_buf[lastwait].status);
+	}
+      }
+#endif
 
       push_int(sigbuf[lastsig]);
       apply_svalue(signal_callbacks + sigbuf[lastsig], 1);

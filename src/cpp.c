@@ -1879,7 +1879,11 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
+
   simple_add_define(&this,"__PIKE__"," 1 ");
+#ifdef __NT__
+  simple_add_define(&this,"__NT__"," 1 ");
+#endif
 
   for (tmpf=pike_predefs; tmpf; tmpf=tmpf->next)
     simple_add_define(&this, tmpf->name, tmpf->value);
