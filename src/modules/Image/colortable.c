@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.48 1999/02/10 21:48:25 hubbe Exp $ */
+/* $Id: colortable.c,v 1.49 1999/02/22 01:24:13 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.48 1999/02/10 21:48:25 hubbe Exp $
+**!	$Id: colortable.c,v 1.49 1999/02/22 01:24:13 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.48 1999/02/10 21:48:25 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.49 1999/02/22 01:24:13 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2891,6 +2891,9 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 **! method object map(object image)
 **! method object `*(object image)
 **! method object ``*(object image)
+**! method object map(string data,int xsize,int ysize)
+**! method object `*(string data,int xsize,int ysize)
+**! method object ``*(string data,int xsize,int ysize)
 **!	Map colors in an image object to the colors in 
 **!     the colortable, and creates a new image with the
 **!     closest colors. 
@@ -3220,6 +3223,77 @@ void image_colortable_map(INT32 args)
 
    if (args<1)
       error("too few arguments to colortable->map()\n");
+
+   if (sp[-args].type==T_STRING)
+   {
+      struct object *o;
+      struct pike_string *ps=sp[-args].u.string;
+      struct image *img;
+      int n;
+      struct neo_colortable *nct=THIS;
+      rgb_group *d;
+
+      if (args!=3) 
+	 error("illegal number of arguments to colortable->map()\n");
+      o=clone_object(image_program,2);
+      img=(struct image*)get_storage(o,image_program);
+      d=img->img;
+      
+      n=img->xsize*img->ysize;
+      if (n>ps->len) n=ps->len;
+
+      switch (ps->size_shift)
+      {
+	 case 0:
+	 {
+	    p_wchar0 *s=(p_wchar0*)ps->str;
+	    
+	    while (n--)
+	    {
+	       if (*s<nct->u.flat.numentries)
+		  *(d++)=nct->u.flat.entries[*s].color;
+	       else 
+		  d++; /* it's black already, and this is illegal */
+	       s++;
+	    }
+ 	    break;
+	 }
+	 case 1:
+	 {
+	    p_wchar1 *s=(p_wchar1*)ps->str;
+	    
+	    while (n--)
+	    {
+	       if (*s<nct->u.flat.numentries)
+		  *(d++)=nct->u.flat.entries[*s].color;
+	       else 
+		  d++; /* it's black already, and this is illegal */
+	       s++;
+	    }
+ 	    break;
+	 }
+	 case 2:
+	 {
+	    p_wchar2 *s=(p_wchar2*)ps->str;
+	    
+	    while (n--)
+	    {
+	       if (*s<nct->u.flat.numentries)
+		  *(d++)=nct->u.flat.entries[*s].color;
+	       else 
+		  d++; /* it's black already, and this is illegal */
+	       s++;
+	    }
+ 	    break;
+	 }
+      }
+      
+      pop_stack(); /* pops the given string */
+      push_object(o); /* pushes the image object */
+
+      return;
+   }
+
    if (sp[-args].type!=T_OBJECT ||
        ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
       error("illegal argument 1 to colortable->map(), expecting image object\n");
@@ -3951,12 +4025,11 @@ void init_colortable_programs(void)
   ADD_FUNCTION("full",image_colortable_full,tFunc(,tObj),0);
 
    /* map image */
-   /* function(object:object) */
-  ADD_FUNCTION("map",image_colortable_map,tFunc(tObj,tObj),0);
-   /* function(object:object) */
-  ADD_FUNCTION("`*",image_colortable_map,tFunc(tObj,tObj),0);
-   /* function(object:object) */
-  ADD_FUNCTION("``*",image_colortable_map,tFunc(tObj,tObj),0);
+   /* function(object:object)|function(string,int,int) */
+#define map_func_type tOr(tFunc(tObj,tObj),tFunc(tString tInt,tInt))
+  ADD_FUNCTION("map",image_colortable_map,map_func_type,0);
+  ADD_FUNCTION("`*",image_colortable_map,map_func_type,0);
+  ADD_FUNCTION("``*",image_colortable_map,map_func_type,0);
 
    /* function(object:object) */
   ADD_FUNCTION("index_8bit",image_colortable_index_8bit,tFunc(tObj,tObj),0);
