@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.7 2002/08/20 16:45:28 grubba Exp $
+# $Id: configure.in,v 1.8 2003/12/12 19:10:20 jonasw Exp $
 #
 AC_INIT(image_tiff.c)
 AC_CONFIG_HEADER(config.h)
@@ -12,20 +12,22 @@ PIKE_FEATURE_WITHOUT(Image.TIFF)
 if test x$with_tifflib = xyes ; then
   PIKE_FEATURE_NODEP(Image.TIFF)
 
-  AC_CHECK_HEADERS(tiff.h tiffio.h tiffiop.h)
+  AC_CHECK_HEADERS(tiff.h tiffvers.h tiffio.h tiffiop.h)
   if test $ac_cv_header_tiff_h = yes ; then
     AC_MSG_CHECKING([if this tifflib is working])
     AC_CACHE_VAL(pike_cv_working_tiff, [
+      # NOTE Disabled check!
       AC_EGREP_CPP(42, [
 #include <tiff.h>
 TIFF_VERSION
-      ], [ pike_cv_working_tiff=no ], [ pike_cv_working_tiff=yes ])
+      ], [ pike_cv_working_tiff=yes ], [ pike_cv_working_tiff=yes ])
     ])
     if test "x$pike_cv_working_tiff" = "xno"; then
       AC_MSG_RESULT([no])
       PIKE_FEATURE([Image.TIFF],[no (tifflib version 42)])
     else
       AC_MSG_RESULT([yes])
+      AC_CHECK_LIB(m, floor)
       AC_CHECK_LIB(tiff, main, [
   	AC_DEFINE(HAVE_LIBTIFF) 
   	LIBS="${LIBS-} -ltiff"
@@ -37,6 +39,22 @@ TIFF_VERSION
       AC_CHECK_LIB(z, main, [
   	LIBS="${LIBS-} -lz"
        ],[])
+      AC_MSG_CHECKING(for version of tifflib)
+      if test "x$ac_cv_header_tiffvers_h" = "xyes"; then
+        cat >conftest.$ac_ext <<EOF
+#include <tiffvers.h>
+VERSION:TIFFLIB_VERSION
+EOF
+        vers=`eval "$ac_cpp conftest.$ac_ext" 2>&5 | sed -e '/VERSION:/s/VERSION://p' -ed`
+	if test "x$vers" = "x"; then
+          AC_MSG_RESULT([Unknown (failed to parse tiffvers.h)])
+	else
+	  AC_MSG_RESULT([$vers])
+        fi
+	rm -f conftest*
+      else
+        AC_MSG_RESULT([Unknown (no tiffvers.h)])
+      fi
     fi
   fi
 fi
