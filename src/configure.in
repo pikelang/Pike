@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.248 1998/10/28 04:12:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.249 1998/11/06 11:12:07 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2607,6 +2607,18 @@ then
 	SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
 	# What about UNIX_SV?
 	UnixWare) LINKFORSHARED="-fpic -Wl,-Bexport";;
+
+        FreeBSD)
+           AC_TRY_RUN([int main(){exit(
+#ifdef __ELF__
+    0
+#else
+    1
+#endif
+);}
+],LINKFORSHARED=-rdynamic)
+        ;;
+
     esac
   else
     case $pike_cv_sys_os in
