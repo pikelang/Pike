@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.171 1999/05/13 07:25:38 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.172 1999/05/25 12:32:51 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3965,6 +3965,40 @@ void f_map_array(INT32 args)
   push_array(ret);
 }
 
+void f_string_count(INT32 args)
+{
+   struct pike_string * haystack=NULL;
+   struct pike_string * needle=NULL;
+   int c=0;
+   int i,j;
+
+   get_all_args("String.count",args,"%W%W",&haystack,&needle);
+
+   switch (needle->len)
+   {
+      case 0:
+	 switch (haystack->len)
+	 {
+	    case 0: c=1; break; /* "" appears one time in "" */
+	    case 1: c=0; break; /* "" doesn't appear in "x" */
+	    default: c=haystack->len-1; /* one time between each character */
+	 }
+	 break;
+      case 1:
+	 /* maybe optimize? */
+      default:
+	 for (i=0; i<haystack->len; i++)
+	 {
+	    j=string_search(haystack,needle,i);
+	    if (j==-1) break;
+	    i=j+needle->len-1;
+	    c++;
+	 }
+	 break;
+   }
+   pop_n_elems(args);
+   push_int(c);
+}
 
 void init_builtin_efuns(void)
 {
@@ -4247,6 +4281,7 @@ void init_builtin_efuns(void)
   ADD_FUNCTION("longest_ordered_sequence",f_longest_ordered_sequence,tFunc(tArray,tArr(tInt)),0);
   /* function(array(mixed),array(mixed)...:array(mixed)) */
   ADD_FUNCTION("sort",f_sort,tFuncV(tArr(tMix),tArr(tMix),tArr(tMix)),OPT_SIDE_EFFECT);
+  ADD_FUNCTION("string_count",f_string_count,tFunc(tString tString,tInt),OPT_TRY_OPTIMIZE);
 #ifdef DEBUG_MALLOC
   
 /* function(void:void) */

@@ -1,5 +1,7 @@
 #define BEGIN 32
 
+constant count=__builtin.string_count;
+
 /*
  * Implode an array of strings to an english 'list'
  * ie. ({"foo","bar","gazonk"}) beomces "foo, bar and gazonk"

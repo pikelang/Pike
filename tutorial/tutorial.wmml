@@ -5600,6 +5600,19 @@ as appending 's' to an empty string 'num' times.
 </man_description>
 </function>
 
+<function name=String.count title="count needles in a haystack string">
+<man_syntax>
+string count(string <i>haystack</i>, string <i>needle</i>);
+</man_syntax>
+<man_description>
+This function counts the number of times the needle
+can be found in haystack. 
+
+Intersections between needles are not counted, ie
+count("....","..") is 2.
+</man_description>
+</function>
+
 <hr noshade size=1>
 
 </module>
