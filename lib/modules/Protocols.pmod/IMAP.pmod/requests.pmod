@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.57 1999/02/26 19:28:40 grubba Exp $
+ * $Id: requests.pmod,v 1.58 1999/03/03 17:27:58 grubba Exp $
  */
 
 import .types;
@@ -483,7 +483,10 @@ class fetch
 	case "full":
 	  fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
 			   ATTR_SECTION("rfc822", ({ "size" })),
-			   ATTR("envelope"), ATTR("body") });
+			   ATTR("envelope"),
+			   ([ "raw_wanted":"body", "mark_as_read":1,
+			      "no_extension_data":1,
+			      "wanted":"bodystructure" ]) });
 	  break;
 #undef ATTR
 #undef ATTR_SECTION
@@ -569,6 +572,16 @@ class fetch
 
     string wanted = lower_case(atom->atom);
     mapping res = ([ "wanted" : wanted ]);
+    string section;
+    string origin;
+
+    /* Hmm... Isn't this supposed to be decoded by get_atom()? */
+    if (sscanf(wanted, "%[^[][%[^]]]%s", wanted, section, origin) > 1) {
+      if (origin == "") {
+	origin = 0;
+      }
+      atom->options = ({ ([ "type":"atom", "atom":section ]) });
+    }
 
     /* Should requesting any part of the body really count as reading it? */
     if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
@@ -591,7 +604,7 @@ class fetch
 
       if (sizeof(atom->options)
 	  && ( (atom->options[0]->type != atom)
-	       || (atom->options[0]->options)))
+	       || (atom->options[0]->options)))	// FIXME: ?????
 	return 0;
 	
       array path = atom->options[0]->atom / ".";
