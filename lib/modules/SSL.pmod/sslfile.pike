@@ -1,7 +1,8 @@
-/* $Id: sslfile.pike,v 1.35 2001/09/14 05:27:27 hop Exp $
+/* $Id: sslfile.pike,v 1.36 2001/09/17 14:51:20 nilsson Exp $
  *
  */
 
+//! Interface similar to Stdio.File.
 
 inherit "connection" : connection;
 

@@ -1,7 +1,10 @@
-/* $Id: packet.pike,v 1.8 2001/08/26 14:24:14 grubba Exp $
+/* $Id: packet.pike,v 1.9 2001/09/17 14:51:19 nilsson Exp $
  *
  * SSL Record Layer
  */
+
+//! SSL Record Layer. Handle formatting and parsing of packets.
+
 
 inherit "constants";
 

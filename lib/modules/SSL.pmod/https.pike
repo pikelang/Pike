@@ -1,7 +1,9 @@
-/* $Id: https.pike,v 1.10 2001/04/18 14:30:41 noy Exp $
+/* $Id: https.pike,v 1.11 2001/09/17 14:51:19 nilsson Exp $
  *
  * dummy https server
  */
+
+//! Dummy HTTPS server
 
 #define PORT 25678
 

@@ -1,6 +1,8 @@
-/* $Id: alert.pike,v 1.4 2001/08/26 14:24:13 grubba Exp $
+/* $Id: alert.pike,v 1.5 2001/09/17 14:51:18 nilsson Exp $
  *
  */
+
+//! Alert package.
 
 inherit "packet" : packet;
 
@@ -12,7 +14,8 @@ mixed trace;
 
 constant is_alert = 1;
 
-object create(int l, int d, int version, string|void m, mixed|void t)
+//! @decl void create(int level, int description, string|void message, mixed|void trace)
+void create(int l, int d, int version, string|void m, mixed|void t)
 {
   if (! ALERT_levels[l])
     throw( ({ "SSL.alert->create: Invalid level\n", backtrace() }));

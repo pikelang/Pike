@@ -2,6 +2,8 @@
  *
  */
 
+//! Interface similar to Stdio.Port.
+
 inherit Stdio.Port : socket;
 inherit "context";
 inherit ADT.Queue : accept_queue;

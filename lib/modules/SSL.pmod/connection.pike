@@ -1,8 +1,14 @@
-/* $Id: connection.pike,v 1.18 2001/08/26 14:24:13 grubba Exp $
+/* $Id: connection.pike,v 1.19 2001/09/17 14:51:18 nilsson Exp $
  *
  * SSL packet layer
  */
 
+//! SSL packet layer.
+//! SSL.connection inherits SSL.handshake, and in addition to the state in
+//! the handshake super class, it contains the current read and write
+//! states, packet queues. This object is responsible for receiving and
+//! sending packets, processing handshake packets, and providing a clear
+//! text packages for some application.
 
 object current_read_state;
 object current_write_state;
@@ -38,16 +44,17 @@ void create(int is_server)
   handshake::create(is_server);
 }
 
-/* Called with alert object, sequence number of bad packet,
- * and raw data as arguments, if a bad packet is received.
- *
- * Can be used to support a fallback redirect https->http
- */
+//! Called with alert object, sequence number of bad packet,
+//! and raw data as arguments, if a bad packet is received.
+//!
+//! Can be used to support a fallback redirect https->http.
 void set_alert_callback(function(object,int|object,string:void) callback)
 {
   alert_callback = callback;
 }
 
+//! Low-level recieve handler. Returns a packet, an alert, or zero if
+//! more data is needed to get a complete packet.
 static object recv_packet(string data)
 {
   mixed res;
@@ -83,11 +90,11 @@ static object recv_packet(string data)
   return res;
 }
 
-/* Handshake and and change cipher must use the same priority,
- * so must application data and close_notifies. */
+//! Queues a packet for write. Handshake and and change cipher
+//! must use the same priority, so must application data and
+//! close_notifies.
 void send_packet(object packet, int|void priority)
 {
-
 
   #ifdef SSL3_FRAGDEBUG
   werror(" SSL.connection->send_packet: strlen(packet)="+strlen(packet)+"\n");
@@ -122,9 +129,12 @@ void send_packet(object packet, int|void priority)
   }
 }
 
-/* Returns a string of data to be written, "" if there's no pending packets,
- * 1 if the connection is being closed politely, and -1 if the connection
- * died unexpectedly. */
+//! Extracts data from the packet queues. Returns a string of data
+//! to be written, "" if there are no pending packets, 1 of the
+//! connection is being closed politely, and -1 if the connection
+//! died unexpectedly.
+//!
+//! This function is intended to be called from an i/o write callback.
 string|int to_write()
 {
   if (dying)
@@ -154,6 +164,7 @@ string|int to_write()
   return res;
 }
 
+//! Initiate close.
 void send_close()
 {
   send_packet(Alert(ALERT_warning, ALERT_close_notify, version[1]),
@@ -230,8 +241,10 @@ string alert_buffer = "";
 string handshake_buffer = "";
 int handshake_finished = 0;
 
-/* Returns a string of application data, 1 if connection was closed, or
- * -1 if a fatal error occured */
+//! Main receive handler. Returns a string of received application
+//! data, or 1 if a close was received, or -1 if an error occured.
+//!
+//! This function is intended to be called from an i/o read callback.
 string|int got_data(string|int s)
 {
   if(!stringp(s)) {

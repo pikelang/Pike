@@ -1,6 +1,8 @@
-/* $Id: constants.pike,v 1.8 2001/04/18 14:30:41 noy Exp $
+/* $Id: constants.pike,v 1.9 2001/09/17 14:51:18 nilsson Exp $
  *
  */
+
+//! Protocol constants
 
 /* Packet types */
 constant PACKET_change_cipher_spec = 20;

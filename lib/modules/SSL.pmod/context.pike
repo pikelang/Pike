@@ -1,30 +1,52 @@
-/* $Id: context.pike,v 1.12 2000/10/22 11:35:13 sigge Exp $
+/* $Id: context.pike,v 1.13 2001/09/17 14:51:19 nilsson Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
  */
 
+//! Keeps the state that is shared by all SSL-connections for
+//! one server (or one port). It includes policy configuration, a server
+//! certificate, the server's private key(s), etc. It also includes the
+//! session cache.
+
 inherit "constants";
 
-object rsa;  /* Servers private key */
+//! The server's private key
+object rsa;
 
-/* These temporary keys, of non-zero, are used for the
- * ServerKeyExchange message */
+//! Temporary, non-certified, private keys, used with a
+//! server_key_exchange message. The rules are as follows:
+//!
+//! If the negotiated cipher_suite has the "exportable" property, and
+//! short_rsa is not zero, send a server_key_exchange message with the
+//! (public part of) the short_rsa key.
+//!
+//! If the negotiated cipher_suite does not have the exportable
+//! property, and long_rsa is not zero, send a server_key_exchange
+//! message with the (public part of) the long_rsa key.
+//!
+//! Otherwise, dont send any server_key_exchange message.
 object long_rsa;
 object short_rsa;
 
 object dsa;  /* Servers dsa key */
 object dh_params; /* Parameters for dh keyexchange */
 
-function(int:string) random; /* Random number generator */
+//! Used to generate random cookies for the hello-message. If we use
+//! the RSA keyexchange method, and this is a server, this random
+//! number generator is not used for generating the master_secret.
+function(int:string) random;
 
-/* Chain of X509.v3 certificates
- * Senders certificate first, root certificate last .*/
-array(string) certificates; 
+//! The server's certificate, or a chain of X509.v3 certificates, with the
+//! server's certificate first and root certificate last.
+array(string) certificates;
 
+//! For client authentication. Used only if auth_level is AUTH_ask or
+//! AUTH_require.
 array(int) preferred_auth_methods =
 ({ AUTH_rsa_sign });
 
+//! Cipher suites we want the server to support, best first.
 array(int) preferred_suites;
 
 void rsa_mode()
@@ -60,14 +82,20 @@ void dhe_dss_mode()
   });
 }
 
+//! Always ({ COMPRESSION_null })
 array(int) preferred_compressors =
 ({ COMPRESSION_null });
 
 constant Session = SSL.session;
 constant Queue = ADT.Queue;
 
+//! Non-zero to enable cahing of sessions
 int use_cache = 1;
-int session_lifetime = 600; /* Time to remember a session, in seconds */
+
+//! Sessions are removed from the cache when they are older than this
+//! limit (in seconds). Sessions are also removed from the cache if a
+//! connection using the session dies unexpectedly.
+int session_lifetime = 600;
 
 /* Session cache */
 object active_sessions;  /* Queue of pairs (time, id), in cronological order */
@@ -85,6 +113,9 @@ void forget_old_sessions()
     session_cache[active_sessions->get()[1]] = 0;
 }
 
+//! Lookup a session identifier in the cache. Returns the
+//! corresponding session, or zero if it is not found or caching is
+//! disabled.
 object lookup_session(string id)
 {
   if (use_cache)
@@ -96,6 +127,7 @@ object lookup_session(string id)
     return 0;
 }
 
+//! Create a new session.
 object new_session()
 {
   object s = Session();
@@ -104,6 +136,7 @@ object new_session()
   return s;
 }
 
+//! Add a session to the cache (if caching is enabled).
 void record_session(object s)
 {
   if (use_cache && s->identity)
@@ -113,6 +146,7 @@ void record_session(object s)
   }
 }
 
+//! Remove a session from the cache.
 void purge_session(object s)
 {
 #ifdef SSL3_DEBUG

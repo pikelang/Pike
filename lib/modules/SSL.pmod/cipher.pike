@@ -1,6 +1,8 @@
-/* $Id: cipher.pike,v 1.16 2001/04/18 14:30:41 noy Exp $
+/* $Id: cipher.pike,v 1.17 2001/09/17 14:51:18 nilsson Exp $
  *
  */
+
+//! Encryption and MAC algorithms used in SSL.
 
 inherit "constants";
 

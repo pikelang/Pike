@@ -1,8 +1,16 @@
-/* $Id: handshake.pike,v 1.25 2001/08/26 14:24:13 grubba Exp $
+/* $Id: handshake.pike,v 1.26 2001/09/17 14:51:19 nilsson Exp $
  *
  */
 
-
+//! SSL.handshake keeps the state relevant for SSL handshaking. This
+//! includes a pointer to a context object (which doesn't change), various
+//! buffers, a pointer to a session object (reuse or created as
+//! appropriate), and pending read and write states being negotiated.
+//!
+//! Each connection will have two sets or read and write state: The
+//! current read and write states used for encryption, and pending read
+//! and write states to be taken into use when the current keyexchange
+//! handshake is finished.
 
 //#define SSL3_PROFILING
 
@@ -15,9 +23,15 @@ inherit "cipher";
 #endif /* SSL3_DEBUG */
 
 /* For client authentication */
-int auth_level;			// Wether to ask or require a client certificate
-array(string) authorities;	// List of authorities accepted for client
-				// certificates (DER-encoded)
+
+//! Policy for client authentication. One of AUTHLEVEL_none,
+//! AUTHLEVEL_ask and AUTHLEVEL_require.
+int auth_level;
+
+//! Array of authorities that are accepted for client certificates.
+//! The client will only send certificates that are signed by any of
+//! these authorities. The string is the DER-encoded issuer.
+array(string) authorities;
 
 object session;
 object context;
@@ -56,6 +70,7 @@ array(int) version;
 
 int reuse;
 
+//! Random cookies, sent and received with the hello-messages.
 string client_random;
 string server_random;
 
@@ -66,8 +81,6 @@ constant Alert = SSL.alert;
 
 
 #ifdef SSL3_PROFILING
-
-
 int timestamp;
 void addRecord(int t,int s) {
   Stdio.stdout.write(sprintf("time: %.24f  type: %d sender: %d\n",time(timestamp),t,s));
@@ -528,9 +541,14 @@ string describe_type(int i)
 #endif
 
 
-/* return 0 if handshake is in progress, 1 if finished, -1 if there's a
- * fatal error. */
-int handle_handshake(int type, string data, string raw)
+//! Do handshake processing. Type is one of HANDSHAKE_*, data is the
+//! contents of the packet, and raw is the raw packet received (needed
+//! for supporting SSLv2 hello messages).
+//!
+//! This function returns 0 if hadshake is in progress, 1 if handshake
+//! is finished, and -1 if a fatal error occured. It uses the
+//! send_packet() function to trasnmit packets.
+int(-1..1) handle_handshake(int type, string data, string raw)
 {
   object input = Struct(data);
 #ifdef SSL3_PROFILING

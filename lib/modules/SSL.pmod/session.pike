@@ -1,16 +1,41 @@
-/* $Id: session.pike,v 1.16 2001/06/25 18:56:13 noy Exp $
+/* $Id: session.pike,v 1.17 2001/09/17 14:51:19 nilsson Exp $
  *
  */
 
+//! The most important information in a session object is a
+//! choice of encryption algorithms and a "master secret" created by
+//! keyexchange with a client. Each connection can either do a full key
+//! exchange to established a new session, or reuse a previously
+//! established session. That is why we have the session abstraction and
+//! the session cache. Each session is used by one or more connections, in
+//! sequence or simultaneously.
+//!
+//! It is also possible to change to a new session in the middle of a
+//! connection.
+
+
 inherit "cipher" : cipher;
 
+//! Identifies the session to the server
+string identity;
 
-string identity; /* Identifies the session to the server */
+//! Always COMPRESSION_null.
 int compression_algorithm;
+
+//! Constant defining a choice of keyexchenge, encryption and mac
+//! algorithm.
 int cipher_suite;
+
+//! Information about the encryption method derived from the
+//! cipher_suite.
 object cipher_spec;
+
+//! Key exchange method, also derived from the cipher_suite.
 int ke_method;
-string master_secret; /* 48 byte secret shared between client and server */
+
+//! 48 byte secret shared between the client and the server. Used for
+//! deriving the actual keys.
+string master_secret;
 
 constant Struct = ADT.struct;
 constant State = SSL.state;
@@ -18,6 +43,7 @@ array(int) version;
 array(string) client_certificate_chain;
 array(string) server_certificate_chain;
 
+//!
 void set_cipher_suite(int suite,int version)
 {
   array res = cipher::lookup(suite,version);
@@ -30,6 +56,7 @@ void set_cipher_suite(int suite,int version)
 #endif
 }
 
+//!
 void set_compression_method(int compr)
 {
   if (compr != COMPRESSION_null)
@@ -175,6 +202,16 @@ array generate_keys(string client_random, string server_random,array(int) versio
   return keys;
 }
 
+//! Computes a new set of encryption stetes, derived from the
+//! client_random, server_random and master_secret strings.
+//!
+//! @returns
+//!   @array
+//!     @elem object(State)
+//!       Read state
+//!     @elem object(State)
+//!       Write state
+//!   @endarray
 array new_server_states(string client_random, string server_random,array(int) version)
 {
   object write_state = State(this_object());
@@ -206,6 +243,16 @@ array new_server_states(string client_random, string server_random,array(int) ve
   return ({ read_state, write_state });
 }
 
+//! Computes a new set of encryption stetes, derived from the
+//! client_random, server_random and master_secret strings.
+//!
+//! @returns
+//!   @array
+//!     @elem object(State)
+//!       Read state
+//!     @elem object(State)
+//!       Write state
+//!   @endarray
 array new_client_states(string client_random, string server_random,array(int) version)
 {
   object write_state = State(this_object());

@@ -1,17 +1,29 @@
-/* $Id: state.pike,v 1.11 2001/08/26 14:24:14 grubba Exp $
+/* $Id: state.pike,v 1.12 2001/09/17 14:51:20 nilsson Exp $
  *
  */
 
+//! A connection switches from one set of state objects to another, one or
+//! more times during its lifetime. Each state object handles a one-way
+//! stream of packets, and operates in either decryption or encryption
+//! mode.
+
 inherit "constants";
 
+//! Information about the used algorithms.
 object session;
 
 // string my_random;
 // string other_random;  
+
+//! Message Authentication Code
 object mac;
+
+//! Encryption or decryption object.
 object crypt;
+
 object compress;
 
+//! 64-bit sequence number.
 object(Gmp.mpz)|int seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
 
 constant Alert = SSL.alert;
@@ -50,8 +62,10 @@ string tls_unpad(string data ) {
   return res;
 }
 
-/* Destructively decrypt a packet. Returns an Alert object if
- * there was an error, otherwise 0. */
+//! Destructively decrypts a packet (including inflating and MAC-verification, if
+//! needed). On success, returns the decrypted packet. On failure,
+//! returns an alert packet. These cases are distinguished by looking
+//! at the is_alert attribute of the returned packet.
 object decrypt_packet(object packet,int version)
 {
 #ifdef SSL3_DEBUG_CRYPT
@@ -119,6 +133,7 @@ object decrypt_packet(object packet,int version)
   return packet->check_size(version) || packet;
 }
 
+//! Encrypts a packet (including deflating and MAC-generation).
 object encrypt_packet(object packet,int version)
 {
   string digest;
