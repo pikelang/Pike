@@ -187,8 +187,8 @@ void streamed_parser_parse( INT32 args )
   state = NOTAG;
   begin = 0; 
   last = -1;
-  length = sp[-1].u.string->len;
   SWAP;
+  length = sp[-1].u.string->len;
   if (DATA->last_buffer_size > 0)
   {
     str = alloca( DATA->last_buffer_size + length );
@@ -205,7 +205,7 @@ void streamed_parser_parse( INT32 args )
     str = sp[-1].u.string->str;
     sp--;
   }
-  *data_arg = sp[-1];
+  data_arg = sp-1;
   sp_save = sp;
   sp_tag_save = 0;
   for (c=0; c < length; c++)
@@ -572,6 +572,8 @@ void streamed_parser_parse( INT32 args )
     ;
   else
     f_sum( sp - sp_save ); /* fix? this is what we return */
+  SWAP;
+  pop_stack(); /* get rid of data_arg */
   if (last < length-1)
   {
     DATA->last_buffer = malloc( length - (last + 1) );
