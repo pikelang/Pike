@@ -1,5 +1,7 @@
 Tue Jan 28 19:35:31 1997  Henrik Grubbström  <grubba@infovav.se>
 
+	* modules/system/passwords.c (f_getpwnam): Moved password-related
+	functions from spider-module. Fixed a couple of bugs during the move.
 	* modules/system/syslog.c (f_syslog): Moved from spider-module.
 	Fixed a couple of bugs during the move.
 
