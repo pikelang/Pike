@@ -846,6 +846,7 @@ string mkgif(mixed o)
 object render_illustration(string pike_code, mapping params, float dpi)
 {
   werror("Rendering ");
+  if (params->__from__) werror("["+params->__from__+"] ");
   string src=params->src;
   object img=Image.image();
 
@@ -856,7 +857,7 @@ object render_illustration(string pike_code, mapping params, float dpi)
   if(params->src) 
      img=srccache[params->src]||
 	(srccache[params->src]=
-	 img->fromppm(Process.popen("anytopnm 2>/dev/null "+src)));
+	 Image.PNM.decode(Process.popen("anytopnm "+params->src)));
   if(scale!=1.0) img=img->scale(scale);
   return compile_string("import Image;\n"
 			"mixed `()(object src){ "+pike_code+" ; }")()(img);

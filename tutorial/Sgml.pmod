@@ -19,7 +19,7 @@ class Tag
   }
 
   void create(string t, void|mapping p, void|int po, 
-	      void|array(object) d, void|string f)
+	      void|array(object|string) d, void|string f)
   {
     tag=t;
     pos=po;
