@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.14 2002/05/11 00:18:06 nilsson Exp $");
+RCSID("$Id: termios.c,v 1.15 2002/10/01 21:26:10 nilsson Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -30,49 +30,83 @@ RCSID("$Id: termios.c,v 1.14 2002/05/11 00:18:06 nilsson Exp $");
 #undef CS6
 #endif
 
-/*
-**! module Stdio
-**! class File
-**! method mapping tcgetattr()
-**! method int tcsetattr(mapping attr)
-**! method int tcsetattr(mapping attr,string when)
-**!	gets/sets term attributes
-**!
-**!	the returned value/the parameter is a mapping on the form
-**!	<pre>
-**!		"ispeed":    baud rate
-**!		"ospeed":    baud rate
-**!		"csize":     character size (5,6,7 or 8)
-**!		"rows":      terminal rows 
-**!		"columns":   terminal columns  
-**!		flag:        0 or 1
-**!		control char:value
-**!		...
-**!	</pre>
-**!     where 'flag' is the string describing the termios 
-**!     (input, output, control and local mode) flags 
-**!     (see the manpage for termios or the tutorial).
-**!
-**!	Note that tcsetattr always _changes_ the attributes;
-**!	correct use to set a flag would be something like:
-**!	<tt>fd->tcsetattr((["myflag":1]));</tt>
-**!
-**!	the argument 'when' to tcsetattr describes when the 
-**!	changes are to take effect:
-**!	"TCSANOW": the change occurs immediately (default);
-**!	"TCSADRAIN": the change occurs after all output has been written;
-**!	"TCSAFLUSH": the change occurs after all output has been written,
-**!	and empties input buffers.
-**!
-**!	Example for setting the terminal in raw mode:
-**!	   Stdio.stdin->tcsetattr((["ECHO":0,"ICANON":0,"VMIN":0,"VTIME":0]));
-**!
-**!	Note: Unknown flags are ignored by tcsetattr().
-**!	Terminal rows and columns settring by tcsetattr() is not
-**!	currently supported.
-**!
-**!	returns 0 if failed.
-*/
+/*! @module Stdio
+ */
+
+/*! @class Fd
+ */
+
+/* @decl mapping tcgetattr()
+ *! @decl int tcsetattr(mapping attr)
+ *! @decl int tcsetattr(mapping attr, string when)
+ *!
+ *! Gets/sets term attributes. The returned value/the @[attr] parameter
+ *! is a mapping on the form
+ *!
+ *! @mapping
+ *!   @member int(-1..) "ispeed"
+ *!     In baud rate.
+ *!   @member int(-1..) "ospeed"
+ *!     Out baud rate.
+ *!   @member int(-1..-1)|int(5..8) "csize"
+ *!     Character size.
+ *!   @member int "rows"
+ *!     Terminal rows.
+ *!   @member int "columns"
+ *!     Terminal columns.
+ *!   @member int(0..1) flag_name
+ *!     The value of a named flag. The flag name is
+ *!     the string describing the termios flags (IGNBRK, BRKINT,
+ *!     IGNPAR, PARMRK, INPCK, ISTRIP, INLCR, IGNCR, ICRNL, IUCLC,
+ *!     IXON, IXANY, IXOFF, IMAXBEL, OPOST, OLCUC, ONLCR, OCRNL,
+ *!     ONOCR, ONLRET, OFILL, OFDEL, OXTABS, ONOEOT, CSTOPB, CREAD,
+ *!     PARENB, PARODD, HUPCL, CLOCAL, CRTSCTS, ISIG, ICANON, XCASE,
+ *!     ECHO, ECHOE, ECHOK, ECHONL, ECHOCTL, ECHOPRT, ECHOKE, FLUSHO,
+ *!     NOFLSH, TOSTOP, PENDIN). See the manpage for termios or
+ *!     other documentation for more information. All flags are not
+ *!     available on all platforms.
+ *!   @member int(0..255) character_name
+ *!     Sets the value of a control character (VINTR, VQUIT, VERASE,
+ *!     VKILL, VEOF, VTIME, VMIN, VSWTC, VSTART, VSTOP, VSUSP, VEOL,
+ *!     VREPRINT, VDISCARD, VWERASE, VLNEXT, VEOL2). All control
+ *!     characters are not available on all platforms.
+ *! @endmapping
+ *!
+ *! Negative values are not allowed as indata, but might appear in the
+ *! result from @[tcgetattr] when the actual value is unknown. @[tcsetattr]
+ *! returns 0 if failed.
+ *!
+ *! The argument @[when] to @[tcsetattr] describes when the
+ *! changes are to take effect:
+ *! @string
+ *!   @value "TCSANOW"
+ *!     The change occurs immediately (default).
+ *!   @value "TCSADRAIN"
+ *!     The change occurs after all output has been written.
+ *!   @value "TCSAFLUSH"
+ *!     The change occurs after all output has been written,
+ *!     and empties input buffers.
+ *! @endstring
+ *!
+ *! @example
+ *!   // setting the terminal in raw mode:
+ *!   Stdio.stdin->tcsetattr((["ECHO":0,"ICANON":0,"VMIN":0,"VTIME":0]));
+ *!
+ *! @note
+ *!   Unknown flags are ignored by @[tcsetattr()]. @[tcsetattr] always
+ *!   changes the attribute, so only include attributes that actually
+ *!   should be altered in the attribute mapping.
+ *!
+ *! @bugs
+ *!   Terminal rows and columns setting by @[tcsetattr()] is not
+ *!   currently supported.
+ */
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
