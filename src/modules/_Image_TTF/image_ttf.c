@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.27 2000/02/05 04:37:53 per Exp $
+ * $Id: image_ttf.c,v 1.28 2000/02/06 13:46:56 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.27 2000/02/05 04:37:53 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.28 2000/02/06 13:46:56 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -264,12 +264,12 @@ static void image_ttf_make(INT32 args)
 #define THISf ((struct image_ttf_face_struct*)get_storage(THISOBJ,image_ttf_face_program))
 #define THISi ((struct image_ttf_faceinstance_struct*)get_storage(THISOBJ,image_ttf_faceinstance_program))
 
-static void image_ttf_face_exit()
+static void image_ttf_face_exit(struct object *o)
 {
    TT_Close_Face(THISf->face);
 }
 
-static void image_ttf_faceinstance_exit()
+static void image_ttf_faceinstance_exit(struct object *o)
 {
    if (THISi->faceobj->prog)
       TT_Done_Instance(THISi->instance);
@@ -513,7 +513,7 @@ static void image_ttf_face__names(INT32 args)
 
    for (i=0; i<ns; i++)
    {
-      short platformID,encodingID,languageID,nameID;
+      unsigned short platformID,encodingID,languageID,nameID;
       TT_UShort length;
       char *stringPtr;
 
@@ -753,7 +753,7 @@ static void ttf_get_nice_charmap(TT_Face face,
    for (i=0; i<n; i++)
    {
       int ihas=0;
-      short platformID,encodingID;
+      unsigned short platformID,encodingID;
 
       if ((res=TT_Get_CharMap_ID(face,i,&platformID,&encodingID)))
 	 my_tt_error(where,"TT_Get_CharMap_ID: ",res);
