@@ -1,4 +1,5 @@
 *.cmod.compiled
+cipher.c
 configure
 dependencies
 hash.c
