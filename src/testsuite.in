@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.171 1999/05/31 18:45:45 mast Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.172 1999/06/01 11:34:40 mirar Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -3294,6 +3294,8 @@ cond([[all_constants()->_verify_internals]],
 ]])
 
 test_program([[
+int ok=1;
+
 void test_dir(string dir)
 {
   foreach(get_dir(dir), string s)
@@ -3309,7 +3311,12 @@ void test_dir(string dir)
       {
         if(glob("*.pike",file) || glob("*.pmod",file))
         {
-          (program)file;
+	   mixed err=catch { (program)file; };
+	   if (err) 
+           {
+	      werror("test: failed to compile %O\n",file);
+              ok=0;
+           }
         }
       }
     }
@@ -3318,7 +3325,7 @@ void test_dir(string dir)
 int a()
 {
   Array.map(master()->pike_module_path,test_dir);
-  return 1;
+  return ok;
 }
 ]])
 
