@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.169 2000/04/03 19:41:52 hubbe Exp $");
+RCSID("$Id: file.c,v 1.170 2000/04/03 23:32:20 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1356,6 +1356,7 @@ static void file_open(INT32 args)
      if(!fp->current_object->prog)
      {
 #ifdef DEBUG_MALLOC
+       extern int d_flag;
        /* This is a temporary kluge */
        if(d_flag)
        {
@@ -2650,6 +2651,7 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
   if(!o || !o->prog) { 						\
    /* This is a temporary kluge */                              \
    DO_IF_DMALLOC(						\
+     extern int d_flag;                                         \
      if(d_flag)							\
      {								\
        if(o)							\
