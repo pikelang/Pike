@@ -8,11 +8,12 @@ class protocol
 
   int readreturncode()
   {
+    int space, code;
     do {
-      int space=' ';
+      space=' ';
       string tmp=news::gets();
       if(!tmp) return 0;
-      sscanf(tmp,"%d%c%s",int code,int space,rest);
+      sscanf(tmp,"%d%c%s",code,int space,rest);
     } while(space == '-');
     return code;
   }
