@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.25 1997/11/08 02:52:53 grubba Exp $ 
+$Id: togif.c,v 1.26 1997/11/11 03:46:08 grubba Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.25 1997/11/08 02:52:53 grubba Exp $
+**!	$Id: togif.c,v 1.26 1997/11/11 03:46:08 grubba Exp $
 **! class image
 */
 
@@ -35,6 +35,7 @@ old GIF API compat stuff
 
 #include "image.h"
 #include "colortable.h"
+#include "encodings/gif.h"
 
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
@@ -187,7 +188,7 @@ static void img_gif_add(INT32 args,int fs,int lm,
    }
 
    if (fs) image_colortable_internal_floyd_steinberg(
-                     get_storage(ncto,image_colortable_program));
+         (struct neo_colortable *)get_storage(ncto,image_colortable_program));
 
    pop_n_elems(args);
 
@@ -203,7 +204,8 @@ static void img_gif_add(INT32 args,int fs,int lm,
    {
       unsigned char trd;
       
-      image_colortable_index_8bit_image(get_storage(ncto,
+      image_colortable_index_8bit_image((struct neo_colortable *)
+					get_storage(ncto,
 						    image_colortable_program),
 					transparent,&trd,1,1);
       
