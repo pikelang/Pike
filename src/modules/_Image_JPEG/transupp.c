@@ -1,5 +1,5 @@
 /*
- * $Id: transupp.c,v 1.3 2002/10/04 15:07:59 grubba Exp $
+ * $Id: transupp.c,v 1.4 2002/10/04 17:51:46 grubba Exp $
  */
 
 #include "global.h"
@@ -32,6 +32,20 @@
  * norrby: inlined those functions below instead, removed defining
  *         of internals, and added inclusion of jerror.h
  */
+
+#define FILE void
+#define size_t unsigned int
+/* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */
+#if 0
+#ifdef INT16
+#undef INT16
+#endif /* INT16 */
+#ifdef INT32
+#undef INT32
+#endif
+#endif /* 0 */
+
+#define XMD_H /* Avoid INT16 / INT32 being redefined */
 
 #include <jerror.h>
 #include "jinclude.h"
