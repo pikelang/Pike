@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.6 2001/09/03 21:42:10 marcus Exp $
+// $Id: Word.pmod,v 1.7 2001/09/03 22:12:28 marcus Exp $
 
 inherit Search.Filter.HTML;
 
@@ -9,9 +9,9 @@ constant contenttypes = ({ "application/msword", "application/vnd.ms-word" });
 constant fields = ({ "body", "title", "keywords"});
 
 #if constant(PIKE_MODULE_RELOC)
-#define RELFILE(n) combine_path(getcwd(), master()->relocate_module(__FILE__), "../"n)
+#define RELPATH(n) combine_path(getcwd(), master()->relocate_module(__FILE__), "../"n)
 #else
-#define RELFILE(n) combine_path(getcwd(), __FILE__, "../"n)
+#define RELPATH(n) combine_path(getcwd(), __FILE__, "../"n)
 #endif
 
 Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
