@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.98 2002/01/16 02:54:09 nilsson Exp $
+ * $Id: cpp.c,v 1.99 2002/03/10 02:47:16 mast Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1188,8 +1188,13 @@ static void check_constant(struct cpp *this,
 	  struct svalue thrown = throw_value;
 	  throw_value.type = T_INT;
 
-	  if (!s->size_shift)
-	    cpp_error_sprintf(this, "Error resolving '%s'.", s->str);
+	  if (!data.shift) {
+	    char *str = malloc(dlen + 1);
+	    MEMCPY(str, data.ptr, dlen);
+	    str[dlen] = 0;
+	    cpp_error_sprintf(this, "Error resolving '%s'.", str);
+	    free(str);
+	  }
 	  else
 	    cpp_error(this, "Error resolving identifier.");
 
