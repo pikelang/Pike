@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.148 2004/11/01 03:06:02 mast Exp $
+|| $Id: cpp.c,v 1.149 2004/11/02 00:38:46 mast Exp $
 */
 
 #include "global.h"
@@ -25,6 +25,7 @@
 #include "version.h"
 #include "pike_types.h"
 #include "cpp.h"
+#include "lex.h"
 
 #include <ctype.h>
 
@@ -786,6 +787,7 @@ static void simple_add_define(struct cpp *this,
     while(pos < len && data[pos]!='\n') pos++;	\
   } while(0)
 
+/* Skips horizontal whitespace and newlines. */
 #define SKIPWHITE() do {					\
     if(!WC_ISSPACE(data[pos])) {				\
       if (data[pos] == '\\') {					\
@@ -808,6 +810,7 @@ static void simple_add_define(struct cpp *this,
     pos++;							\
   } while(1)
 
+/* Skips horizontal whitespace and escaped newlines. */
 #define SKIPSPACE()						\
   do {								\
     while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {		\
@@ -829,6 +832,7 @@ static void simple_add_define(struct cpp *this,
     this->current_line++;					\
   } while (1)
 
+/* The current char is assumed to be '*', the previous '/'. */
 #define SKIPCOMMENT()	do{				\
   	pos++;						\
 	while(data[pos]!='*' || data[pos+1]!='/')	\
@@ -850,39 +854,42 @@ static void simple_add_define(struct cpp *this,
 	pos+=2;						\
   }while(0)
 
-#define READCHAR(C) do {			\
-  switch(data[++pos])				\
-  {						\
-  case 'n': C='\n'; break;			\
-  case 'r': C='\r'; break;			\
-  case 'b': C='\b'; break;			\
-  case 't': C='\t'; break;			\
-    						\
-  case '0': case '1': case '2': case '3':	\
-  case '4': case '5': case '6': case '7':	\
-    C=data[pos]-'0';				\
-    if(data[pos+1]>='0' && data[pos+1]<='8')	\
-    {						\
-      C*=8;					\
-      C+=data[++pos]-'0';			\
-      						\
-      if(data[pos+1]>='0' && data[pos+1]<='8')	\
-      {						\
-	C*=8;					\
-	C+=data[++pos]-'0';			\
-      }						\
-    }						\
-    break;					\
-    						\
-  case '\n':					\
-    this->current_line++;			\
-    C='\n';					\
-    break;					\
-    						\
-  default:					\
-    C = data[pos];				\
-  }						\
-}while (0)
+/* pos is assumed to be at the backslash. pos it at the last char in
+ * the escape afterwards. */
+#define READCHAR(C) do {						\
+    ptrdiff_t l;							\
+    switch (parse_esc_seq (data + pos + 1, &C, &l)) {			\
+      case 0:								\
+	pos += l;							\
+	break;								\
+      case 1:								\
+	C = '\r';							\
+	pos++;								\
+	break;								\
+      case 3:								\
+	/* The eof will get caught in the next round. */		\
+	C = 0;								\
+	pos++;								\
+	break;								\
+      case 4: case 5: case 6:						\
+	cpp_warning (this, "Too large character value in escape.");	\
+	C = (int) MAX_UINT32;						\
+	pos += l;							\
+	break;								\
+      case 7:								\
+	cpp_warning (this, "Too few hex digits in \\u escape.");	\
+	C = '\\';							\
+	break;								\
+      case 8:								\
+	cpp_warning (this, "Too few hex digits in \\U escape.");	\
+	C = '\\';							\
+	break;								\
+      DO_IF_DEBUG (							\
+	case 2: Pike_fatal ("Not supposed to happen.\n");		\
+	default: Pike_fatal ("Unknown error from parse_esc_seq.\n");	\
+      );								\
+    }									\
+  } while (0)
 
 /* At entry pos points to the start-quote.
  * At end pos points past the end-quote.
@@ -970,6 +977,7 @@ while(1)						\
     }							\
     if(outp) string_builder_putchar(&nf, '\\');	        \
     pos++;                                              \
+    /* Fall through. */					\
 							\
   default:						\
     if(outp) string_builder_putchar(&nf, data[pos-1]);	\
@@ -1020,6 +1028,7 @@ while(1)					\
   case '\n':					\
     PUTNL();					\
     this->current_line++;			\
+    /* Fall through. */				\
   default:					\
     string_builder_putchar(&nf, data[pos]);	\
     continue;					\

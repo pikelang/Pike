@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.77 2004/11/01 03:06:02 mast Exp $
+|| $Id: preprocessor.h,v 1.78 2004/11/02 00:38:46 mast Exp $
 */
 
 /*
@@ -32,6 +32,7 @@
  */
 
 #define lower_cpp		lower_cpp0
+#define parse_esc_seq		parse_esc_seq0
 #define find_end_parenthesis	find_end_parenthesis0
 #define find_end_brace		find_end_brace0
 #define PUSH_STRING		PUSH_STRING0
@@ -68,6 +69,7 @@
  */
 
 #define lower_cpp		lower_cpp1
+#define parse_esc_seq		parse_esc_seq1
 #define find_end_parenthesis	find_end_parenthesis1
 #define find_end_brace		find_end_brace1
 #define PUSH_STRING		PUSH_STRING1
@@ -98,6 +100,7 @@
  */
 
 #define lower_cpp		lower_cpp2
+#define parse_esc_seq		parse_esc_seq2
 #define find_end_parenthesis	find_end_parenthesis2
 #define find_end_brace		find_end_brace2
 #define PUSH_STRING		PUSH_STRING2
@@ -2295,6 +2298,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 #undef MAKE_BINARY_STRING
 
 #undef lower_cpp
+#undef parse_esc_seq
 #undef find_end_parenthesis
 #undef find_end_brace
 
