@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.100 2002/11/05 16:52:05 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.101 2004/05/12 08:08:07 grubba Exp $
 #
 
 
@@ -118,7 +118,7 @@ config.status: $(SRCDIR)/configure
 	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 
-module.so: $(OBJS)  $(MODULE_ARCHIVES)
+module.so: $(MODULE_ARCHIVES) $(OBJS)
 	@echo "Linking $(MODNAME)" ;\
 	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
 	  if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi ;\
