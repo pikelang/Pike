@@ -7,7 +7,7 @@
 class request
 {
   constant type = 0;
-  constant expect_reply = 0;
+//   constant expect_reply = 0;
 
   array build_value_list(mapping m, array(string) fields)
   {
@@ -21,8 +21,8 @@ class request
 	  {
 	    v += ({ objectp(m[f]) ? m[f]->id : m[f] });
 	    mask |= bit;
-	    werror(sprintf("Request->build_value_list: field %s, mask = %x\n",
-			   f, mask));
+// 	    werror(sprintf("Request->build_value_list: field %s, mask = %x\n",
+// 			   f, mask));
 	  }
 	bit <<= 1;
       }
@@ -37,6 +37,12 @@ class request
   }
 
   mixed handle_reply(string reply)
+  {
+    error("Xlib.request: unexpected reply!\n");
+    return 0;
+  }
+
+  mixed handle_error(string reply)
   {
     error("Xlib.request: unexpected reply!\n");
     return 0;
@@ -107,6 +113,53 @@ class MapWindow
 {
   inherit ResourceReq;
   constant type = 8;
+}
+
+class GetKeyboardMapping
+{
+  inherit request;
+  constant type = 101;
+  int first=0;
+  int num=0;
+
+  string to_string()
+  {
+    return build_request( sprintf("%c%c\0\0", first, num) );
+  }
+
+  mixed handle_reply(mapping reply)
+  {
+    int nkc = (reply->data1-4)*4;
+    string format;
+    if(nkc>0)
+      format = "%4c%4c%4c%4c%*"+nkc+"c%s";
+    else if(!nkc)
+      format = "%4c%4c%4c%4c%s";
+    else if(nkc==-4)
+      format = "%4c%4c%4c%s";
+    else if(nkc==-8)
+      format = "%4c%4c%s";
+    else if(nkc==-16)
+      format = "%4c%s";
+
+    array res = allocate(256);
+    reply->rest = reply->rest[24..]; // ?
+    for(int i=first; i<num+first; i++)
+    {
+      array foo = allocate(4);
+      sscanf(reply->rest, format, foo[0],foo[1],foo[2],foo[3],reply->rest);
+      if(foo[3]==foo[2] && !foo[2])
+	foo = foo[..1]+foo[..1];
+      res[i]=replace(foo, 0,((foo-({0}))+({0}))[0]);
+    }
+    return res;
+  }
+
+  mixed handle_error(string reply)
+  {
+    error("Xlib.request: unexpected reply!\n");
+    return 0;
+  }
 }
 
 class ConfigureWindow

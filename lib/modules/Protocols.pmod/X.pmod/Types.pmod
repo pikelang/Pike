@@ -183,6 +183,165 @@ class Window
   int currentInputMask;
 
   mapping(string:function) event_callbacks = ([ ]);
+
+  int alt_gr, num_lock, shift, control, caps_lock;
+  int meta, alt, super, hyper;
+
+#include "keysyms.h"
+
+  void ReleaseKey( int sym )
+  {
+    switch(sym)
+    {
+     case XK_Scroll_Lock: return 0; break;
+     case XK_Mode_switch:  alt_gr = 0; return 0;
+     case XK_Num_Lock:    num_lock = 0; return 0;
+     case XK_Shift_L:
+     case XK_Shift_Lock:
+     case XK_Shift_R:     shift=0; return 0;
+     case XK_Control_L:
+     case XK_Control_R:   control=0; return 0;
+     case XK_Caps_Lock:  caps_lock=0; return 0;
+
+     case XK_Meta_L:
+     case XK_Meta_R:   meta=0; return 0;
+     case XK_Alt_L:
+     case XK_Alt_R:   alt=0; return 0;
+     case XK_Super_L:
+     case XK_Super_R:   super=0; return 0;
+     case XK_Hyper_L:
+     case XK_Hyper_R:   hyper=0; return 0;
+    }
+  }
+
+  string _LookupKeysym( int keysym )
+  {
+    switch(keysym)
+    {
+     case XK_BackSpace:   return "";
+     case XK_Tab:         return "\t";
+     case XK_Linefeed:    return "\n";
+     case XK_Return:      return "\n";
+     case XK_Escape:      return "";
+     case XK_Delete:      return "";
+       /* Kanji here ... */
+       /* Korean here ... */
+       /* Cursors ... */
+     case XK_KP_Space:       return " ";
+     case XK_KP_Tab:         return "\t";
+     case XK_KP_Equal:       return "=";
+     case XK_KP_Multiply:    return "*";
+     case XK_KP_Add:         return "+";
+     case XK_KP_Subtract:    return "-";
+     case XK_KP_Decimal:     return ".";
+     case XK_KP_Divide:      return "/";
+
+     case XK_KP_0:      return "0";
+     case XK_KP_1:      return "1";
+     case XK_KP_2:      return "2";
+     case XK_KP_3:      return "3";
+     case XK_KP_4:      return "4";
+     case XK_KP_5:      return "5";
+     case XK_KP_6:      return "6";
+     case XK_KP_7:      return "7";
+     case XK_KP_8:      return "8";
+     case XK_KP_9:      return "9";
+
+     case XK_space..XK_at:     return sprintf("%c", keysym);
+     case XK_A..XK_Z: 
+     case XK_a..XK_z:  
+       keysym = keysym&0xdf;
+       if(control) return sprintf("%c", (keysym-'A')+1);
+       if(shift || caps_lock) return sprintf("%c",keysym);
+       return sprintf("%c",keysym+0x20);
+
+     default:
+       if(keysym < 256)
+	 return sprintf("%c", keysym);
+       return 0;
+       /*Latin2 .. latin3 .. latin4 .. katakana .. arabic .. cyrillic ..
+	 greek .. technical .. special .. publishing .. APL .. hebrew ..
+	 thai .. korean .. hangul .. */
+    }
+  } 
+
+  // FIXME! Should use some sort of (global..) db.
+  mapping compose_patterns = decode_value(Stdio.read_bytes("db/compose.db"));
+  string compose_state = "";
+  string LookupKeysym( int keysym )
+  {
+    switch(keysym)
+    {
+     case XK_A..XK_Z: 
+     case XK_a..XK_z:  /* Uäääärk */
+       keysym = keysym&0xdf;
+       if(!shift && !caps_lock)
+	 keysym=keysym+0x20;
+       break;
+
+     case XK_Mode_switch:  alt_gr = 1; return 0;
+     case XK_Num_Lock:    num_lock = 1; return 0;
+     case XK_Shift_L:
+     case XK_Shift_Lock:
+     case XK_Shift_R:     shift=1; return 0;
+     case XK_Control_L:
+     case XK_Control_R:   control=1; return 0;
+     case XK_Caps_Lock:  caps_lock=1; return 0;
+     case XK_Meta_L:
+     case XK_Meta_R:   meta=1; return 0;
+     case XK_Alt_L:
+     case XK_Alt_R:   alt=1; return 0;
+     case XK_Super_L:
+     case XK_Super_R:   super=1; return 0;
+     case XK_Hyper_L:
+     case XK_Hyper_R:   hyper=1; return 0;
+    }
+
+
+    compose_state += sprintf("%4c", keysym);
+    if(arrayp(compose_patterns[compose_state]))
+      return 0;
+    if(keysym)
+    {
+      keysym = compose_patterns[compose_state];
+      compose_state="";
+      return _LookupKeysym( keysym );
+    }
+    if(strlen(compose_state)>4)
+    {
+      string res="";
+      while(strlen(compose_state)
+	    && (sscanf(compose_state, "%4c%s", keysym, compose_state)==2))
+	res += _LookupKeysym( keysym ) || "";
+      return strlen(res)?res:0;
+    }
+    compose_state="";
+    return _LookupKeysym( keysym );
+  }
+
+
+  string handle_keys(mapping evnt)
+  {
+    int code=evnt->detail, keysym;
+    evnt->keycode = code;
+
+    array keysymopts = display->key_mapping[ code ];
+//     werror(sprintf("%d%d", shift,alt_gr));
+    keysym = keysymopts[ alt_gr*2+shift ];
+//     werror(sprintf("<%d{%{%d,%}}> ", keysym,keysymopts));
+
+    if( keysym )
+      if(evnt->type == "KeyPress")
+      {
+	evnt->data = LookupKeysym( keysym );
+	if(evnt->data)
+	  werror("("+evnt->data+") ");
+      }
+      else
+	foreach(keysymopts, int k)
+	  ReleaseKey( k );
+    evnt->keysym = keysym;
+  }
   
   object CreateWindow_req(int x, int y, int width, int height,
 			  int border_width)
@@ -326,6 +485,14 @@ class Window
   void Map()
   {
     display->send_request(Map_req());
+  }
+
+
+  void create(mixed ... args)
+  {
+    ::create( @args );
+    set_event_callback("_KeyPress", handle_keys);
+    set_event_callback("_KeyRelease", handle_keys);
   }
 }
 

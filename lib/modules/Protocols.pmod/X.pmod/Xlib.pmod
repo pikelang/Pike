@@ -150,6 +150,8 @@ class Display
   int bitmapScanlineUnit, bitmapScanlinePad;
   int minKeyCode, maxKeyCode;
 
+  array key_mapping ;
+
   mapping pending_requests; /* Pending requests */
   object pending_actions;   /* Actions awaiting handling */
 
@@ -174,7 +176,7 @@ class Display
 
   void send(string data)
   {
-    werror(sprintf("Xlib.Display->send: '%s'\n", data));
+//     werror(sprintf("Xlib.Display->send: '%s'\n", data));
     buffer += data;
     if (strlen(buffer))
       set_write_callback(write_callback);
@@ -215,16 +217,24 @@ class Display
     object w;
 
     if (event->wid && (w = lookup_id(event->wid))
-	&& (w->event_callbacks[event->type]))
-      w->event_callbacks[event->type](event);
+	&& ((w->event_callbacks["_"+event->type])
+	    ||(w->event_callbacks[event->type])))
+    {
+      if(w->event_callbacks["_"+event->type])
+	w->event_callbacks["_"+event->type](event,this_object());
+      if(w->event_callbacks[event->type])
+	w->event_callbacks[event->type](event,this_object());
+    }
     else
       if (misc_event_handler)
-	misc_event_handler(event);
+	misc_event_handler(event,this_object());
       else
 	werror(sprintf("Ignored event %s\n", event->type));
   }
   
   mapping reply;  /* Partially read reply or event */
+
+  void get_keyboard_mapping();
 
   array process()
   {
@@ -348,6 +358,7 @@ class Display
 	      werror("Xlib.Display->process: screen_number too large.\n");
 	    state = STATE_WAIT_HEADER;
 	    received->expect(32);
+	    get_keyboard_mapping();
 	    return ({ ACTION_CONNECT });
 	  }
 	case STATE_WAIT_HEADER:
@@ -387,18 +398,18 @@ class Display
 		  case "ButtonRelease":
 		  case "MotionNotify": {
 		    int root, child;
-		    sscanf(msg, "%*c%c%2c%4c" "%4c%4c%4c" "%2c%2c%2c%2c" "%2c%c",
+		    sscanf(msg, "%*c%c%2c%4c" "%4c%4c%4c"
+			        "%2c%2c%2c%2c" "%2c%c",
 			   event->detail, event->sequenceNumber, event->time,
 			   root, event->wid, child,
-			   event->rootX, event->rootY, event->eventx, event->eventY,
-			   event->state, event->sameScreen);
+			   event->rootX, event->rootY, event->eventx, 
+			   event->eventY, event->state, event->sameScreen);
 		    event->root = lookup_id(root);
 		    event->event = lookup_id(event->wid);
 		    event->child = child && lookup_id(child);
 		    break;
 		  }
-#if 0 
-		
+#if 0
 		  case "EnterNotify":
 		  case "LeaveNotify":
 		    ...;
@@ -493,11 +504,17 @@ class Display
 		    ...;
 		  case "ClientMessage":
 		    ...;
-		  case "MappingNotify":
 #endif		
+		  case "MappingNotify":
+		    get_keyboard_mapping();
+		    event = ([ "type" : "MappingNotify",
+			       "raw" : msg ]);
+		    break;
+
 		  default:  /* Any other event */
-		    event = ([ "type" : "Unimplemented",
-			     "name" : type,
+		    werror("Unimplemented event: "+
+			   _Xlib.event_types[msg[0] & 0x3f]+"\n");
+		    event = ([ "type" :type,
 			     "raw" : msg ]);
 		    break;
 		  }
@@ -536,8 +553,10 @@ class Display
 	      m_delete(pending_requests, a[1]->sequenceNumber);
 	      handler->handle_reply(1, a[1]);
 	    }
-	  else
+	  else if(reply_handler)
 	    reply_handler(this_object(), a[1]);
+	  else
+	    werror("Unhandled reply: "+a[1]->sequenceNumber+"\n");
 	  break;
 	}
       case ACTION_ERROR:
@@ -600,13 +619,12 @@ class Display
 
     string host = strlen(fields[0]) ? fields[0] : "localhost";
 
-    if (async)
-      { /* Asynchronous connection */
-	open_socket();
-	set_nonblocking(0, 0, close_callback);
-      }
-    if (!connect(host, XPORT + (int) fields[1]))
+    if (!connect(host, XPORT + (int)fields[1]))
       return 0;
+
+    /* Asynchronous connection */
+    if (async)
+      set_nonblocking(0, 0, close_callback);
 
     screen_number = (int) fields[2];
     
@@ -639,9 +657,11 @@ class Display
 	switch(a[0])
 	  {
 	  case ACTION_CONNECT:
+	    get_keyboard_mapping();
 	    set_nonblocking(read_callback, 0, close_callback);
 	    return 1;
 	  case ACTION_CONNECT_FAILED:
+	    werror("Connection failed: "+a[1]+"\n");
 	    return 0;
 	  default:
 	    error("Xlib.Display->open: Internal error!\n");
@@ -677,14 +697,14 @@ class Display
 	      if ((a[0] == ACTION_REPLY)
 		  && (a[1]->sequenceNumber == n))
 		{
-		  result = req->handle_reply(a[1]);
+		  result = req->handle_reply(1,a[1]);
 		  done = 1;
 		  break;
 		}
 	      else if ((a[0] == ACTION_ERROR)
 		       && (a[1]->sequenceNumber == n))
 		{
-		  result = req->handle_error(a[1]);
+		  result = req->handle_error(1,a[1]);
 		  done = 1;
 		  break;
 		}
@@ -707,7 +727,20 @@ class Display
   void send_async_request(object req, function callback)
   {
     int n = send_request(req);
-    pending_requests[n] == async_request(req, callback);
+    pending_requests[n] = async_request(req, callback);
+  }
+
+  void got_mapping(int ok, array foo)
+  {
+    key_mapping = foo;
+  }
+
+  void get_keyboard_mapping()
+  {
+    object r = Requests.GetKeyboardMapping();
+    r->first = minKeyCode;
+    r->num = maxKeyCode - minKeyCode + 1;
+    send_async_request(r, got_mapping);
   }
 
   object DefaultRootWindow()

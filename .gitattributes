@@ -1,5 +1,6 @@
 [attr]binary -text -crlf -diff -ident
 * text ident
+*.db binary
 *.gif binary
 *.gz binary
 *.ppm binary

@@ -54,7 +54,7 @@ class struct {
   void put_bignum(object i, int|void len)
   {
     if (i<0)
-      error("ADT.struct->put_ubignum: negative argument.\n");
+      error("ADT.struct->put_bignum: negative argument.\n");
     put_var_string(i->digits(256), len || 2);
   }
 
@@ -105,7 +105,7 @@ class struct {
 
   object get_bignum(int|void len)
   {
-    return Gmp.mpz(get_var_string(len || 2), 256);
+//     return Gmp.mpz(get_var_string(len || 2), 256);
   }
 
   string get_rest()

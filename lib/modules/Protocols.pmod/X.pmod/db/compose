@@ -1,0 +1,480 @@
+Multi_key plus plus		: numbersign
+Multi_key apostrophe space	: apostrophe
+Multi_key space apostrophe	: apostrophe
+Multi_key A A			: at
+Multi_key parenleft parenleft	: bracketleft
+Multi_key slash slash		: backslash
+Multi_key slash less		: backslash
+Multi_key less slash		: backslash
+Multi_key parenright parenright	: bracketright
+Multi_key asciicircum space	: asciicircum
+Multi_key space asciicircum	: asciicircum
+Multi_key greater space		: asciicirum
+Multi_key space greater		: asciicirum
+Multi_key grave space		: grave
+Multi_key space grave		: grave
+Multi_key parenleft minus	: braceleft
+Multi_key minus parenleft	: braceleft
+Multi_key slash asciicircum	: bar
+Multi_key asciicircum slash	: bar
+Multi_key V L			: bar
+Multi_key L V			: bar
+Multi_key v l			: bar
+Multi_key l v			: bar
+Multi_key parenright minus	: braceright
+Multi_key minus parenright	: braceright
+Multi_key asciitilde space	: asciitilde
+Multi_key space asciitilde	: asciitilde
+Multi_key minus space		: asciitilde
+Multi_key space minus		: asciitilde
+Multi_key exclam exclam		: exclamdown
+Multi_key c slash		: cent
+Multi_key slash c		: cent
+Multi_key C slash		: cent
+Multi_key slash C		: cent
+Multi_key C bar			: cent
+Multi_key bar C			: cent
+Multi_key c bar			: cent
+Multi_key bar c			: cent
+Multi_key l minus		: sterling
+Multi_key minus l		: sterling
+Multi_key L minus		: sterling
+Multi_key minus L		: sterling
+Multi_key l equal		: sterling
+Multi_key equal l		: sterling
+Multi_key L equal		: sterling
+Multi_key equal L		: sterling
+Multi_key y minus		: yen
+Multi_key minus y		: yen
+Multi_key Y minus		: yen
+Multi_key minus Y		: yen
+Multi_key y equal		: yen
+Multi_key equal y		: yen
+Multi_key Y equal		: yen
+Multi_key equal Y		: yen
+Multi_key s o			: section
+Multi_key o s			: section
+Multi_key S O			: section
+Multi_key O S			: section
+Multi_key S exclam		: section
+Multi_key exclam S		: section
+Multi_key s exclam		: section
+Multi_key exclam s		: section
+Multi_key S 0			: section
+Multi_key 0 S			: section
+Multi_key s 0			: section
+Multi_key 0 s			: section
+Multi_key x o			: currency
+Multi_key o x			: currency
+Multi_key X O			: currency
+Multi_key O X			: currency
+Multi_key x O			: currency
+Multi_key O x			: currency
+Multi_key X o			: currency
+Multi_key o X			: currency
+Multi_key x 0			: currency
+Multi_key 0 x			: currency
+Multi_key X 0			: currency
+Multi_key 0 X			: currency
+Multi_key c o			: copyright
+Multi_key o c			: copyright
+Multi_key C O			: copyright
+Multi_key O C			: copyright
+Multi_key c O			: copyright
+Multi_key O c			: copyright
+Multi_key C o			: copyright
+Multi_key o C			: copyright
+Multi_key c 0			: copyright
+Multi_key 0 c			: copyright
+Multi_key C 0			: copyright
+Multi_key 0 C			: copyright
+Multi_key a underscore		: ordfeminine
+Multi_key underscore a		: ordfeminine
+Multi_key A underscore		: ordfeminine
+Multi_key underscore A		: ordfeminine
+Multi_key o underscore		: masculine
+Multi_key underscore o		: masculine
+Multi_key O underscore		: masculine
+Multi_key underscore O		: masculine
+Multi_key less less		: guillemotleft
+Multi_key greater greater	: guillemotright
+Multi_key 0 asciicircum		: degree
+Multi_key asciicircum 0		: degree
+Multi_key 0 asterisk		: degree
+Multi_key asterisk 0		: degree
+Multi_key plus minus		: plusminus
+Multi_key minus plus		: plusminus
+Multi_key slash u		: mu
+Multi_key u slash		: mu
+Multi_key slash U		: mu
+Multi_key U slash		: mu
+Multi_key 1 asciicircum		: onesuperior
+Multi_key asciicircum 1		: onesuperior
+Multi_key S 1			: onesuperior
+Multi_key 1 S			: onesuperior
+Multi_key s 1			: onesuperior
+Multi_key 1 s			: onesuperior
+Multi_key 2 asciicircum		: twosuperior
+Multi_key asciicircum 2		: twosuperior
+Multi_key S 2			: twosuperior
+Multi_key 2 S			: twosuperior
+Multi_key s 2			: twosuperior
+Multi_key 2 s			: twosuperior
+Multi_key 3 asciicircum		: threesuperior
+Multi_key asciicircum 3		: threesuperior
+Multi_key S 3			: threesuperior
+Multi_key 3 S			: threesuperior
+Multi_key s 3			: threesuperior
+Multi_key 3 s			: threesuperior
+Multi_key p exclam		: paragraph
+Multi_key exclam p		: paragraph
+Multi_key P exclam		: paragraph
+Multi_key exclam P		: paragraph
+Multi_key period asciicircum	: periodcentered
+Multi_key asciicircum period	: periodcentered
+Multi_key period period		: periodcentered
+Multi_key 1 4			: onequarter
+Multi_key 1 2			: onehalf
+Multi_key 3 4			: threequarters
+Multi_key question question	: questiondown
+Multi_key space space		: nobreakspace
+Multi_key bar bar		: brokenbar
+Multi_key exclam asciicircum	: brokenbar
+Multi_key asciicircum exclam	: brokenbar
+Multi_key V B			: brokenbar
+Multi_key B V			: brokenbar
+Multi_key v b			: brokenbar
+Multi_key b v			: brokenbar
+Multi_key minus comma		: notsign
+Multi_key comma minus		: notsign
+Multi_key minus minus		: hyphen
+Multi_key R O			: registered
+Multi_key O R			: registered
+Multi_key minus asciicircum	: macron
+Multi_key asciicircum minus	: macron
+Multi_key underscore asciicircum: macron
+Multi_key asciicircum underscore: macron
+Multi_key underscore underscore	: macron
+Multi_key minus colon		: division
+Multi_key colon minus		: division
+Multi_key x x			: multiply
+Multi_key apostrophe apostrophe	: acute
+Multi_key comma comma		: cedilla
+Multi_key quotedbl quotedbl	: diaeresis
+Multi_key A grave		: Agrave
+Multi_key grave A		: Agrave
+Multi_key A acute		: Aacute
+Multi_key acute A		: Aacute
+Multi_key A apostrophe		: Aacute
+Multi_key apostrophe A		: Aacute
+Multi_key A asciicircum		: Acircumflex
+Multi_key asciicircum A		: Acircumflex
+Multi_key A greater		: Acircumflex
+Multi_key greater A		: Acircumflex
+Multi_key A asciitilde		: Atilde
+Multi_key asciitilde A		: Atilde
+Multi_key A minus		: Atilde
+Multi_key minus A		: Atilde
+Multi_key A quotedbl		: Adiaeresis
+Multi_key quotedbl A		: Adiaeresis
+Multi_key A asterisk		: Aring
+Multi_key asterisk A		: Aring
+Multi_key A E			: AE
+Multi_key a grave		: agrave
+Multi_key grave a		: agrave
+Multi_key a acute		: aacute
+Multi_key acute a		: aacute
+Multi_key a apostrophe		: aacute
+Multi_key apostrophe a		: aacute
+Multi_key a asciicircum		: acircumflex
+Multi_key asciicircum a		: acircumflex
+Multi_key a greater		: acircumflex
+Multi_key greater a		: acircumflex
+Multi_key a asciitilde		: atilde
+Multi_key asciitilde a		: atilde
+Multi_key a minus		: atilde
+Multi_key minus a		: atilde
+Multi_key a quotedbl		: adiaeresis
+Multi_key quotedbl a		: adiaeresis
+Multi_key a asterisk		: aring
+Multi_key asterisk a		: aring
+Multi_key a e			: ae
+Multi_key C comma		: Ccedilla
+Multi_key comma C		: Ccedilla
+Multi_key c comma		: ccedilla
+Multi_key comma c		: ccedilla
+Multi_key minus D		: ETH
+Multi_key D minus		: ETH
+Multi_key minus d		: eth
+Multi_key d minus		: eth
+Multi_key E grave		: Egrave
+Multi_key grave E		: Egrave
+Multi_key E acute		: Eacute
+Multi_key acute E		: Eacute
+Multi_key E apostrophe		: Eacute
+Multi_key apostrophe E		: Eacute
+Multi_key E asciicircum		: Ecircumflex
+Multi_key asciicircum E		: Ecircumflex
+Multi_key E greater		: Ecircumflex
+Multi_key greater E		: Ecircumflex
+Multi_key E quotedbl		: Ediaeresis
+Multi_key quotedbl E		: Ediaeresis
+Multi_key e grave		: egrave
+Multi_key grave e		: egrave
+Multi_key e acute		: eacute
+Multi_key acute e		: eacute
+Multi_key e apostrophe		: eacute
+Multi_key apostrophe e		: eacute
+Multi_key e asciicircum		: ecircumflex
+Multi_key asciicircum e		: ecircumflex
+Multi_key e greater		: ecircumflex
+Multi_key greater e		: ecircumflex
+Multi_key e quotedbl		: ediaeresis
+Multi_key quotedbl e		: ediaeresis
+Multi_key I grave		: Igrave
+Multi_key grave I		: Igrave
+Multi_key I acute		: Iacute
+Multi_key acute I		: Iacute
+Multi_key I apostrophe		: Iacute
+Multi_key apostrophe I		: Iacute
+Multi_key I asciicircum		: Icircumflex
+Multi_key asciicircum I		: Icircumflex
+Multi_key I greater		: Icircumflex
+Multi_key greater I		: Icircumflex
+Multi_key I quotedbl		: Idiaeresis
+Multi_key quotedbl I		: Idiaeresis
+Multi_key i grave		: igrave
+Multi_key grave i		: igrave
+Multi_key i acute		: iacute
+Multi_key acute i		: iacute
+Multi_key i apostrophe		: iacute
+Multi_key apostrophe i		: iacute
+Multi_key i asciicircum		: icircumflex
+Multi_key asciicircum i		: icircumflex
+Multi_key i greater		: icircumflex
+Multi_key greater i		: icircumflex
+Multi_key i quotedbl		: idiaeresis
+Multi_key quotedbl i		: idiaeresis
+Multi_key N asciitilde		: Ntilde
+Multi_key asciitilde N		: Ntilde
+Multi_key N minus		: Ntilde
+Multi_key minus N		: Ntilde
+Multi_key n asciitilde		: ntilde
+Multi_key asciitilde n		: ntilde
+Multi_key n minus		: ntilde
+Multi_key minus n		: ntilde
+Multi_key O grave		: Ograve
+Multi_key grave O		: Ograve
+Multi_key O acute		: Oacute
+Multi_key acute O		: Oacute
+Multi_key O apostrophe		: Oacute
+Multi_key apostrophe O		: Oacute
+Multi_key O asciicircum		: Ocircumflex
+Multi_key asciicircum O		: Ocircumflex
+Multi_key O greater		: Ocircumflex
+Multi_key greater O		: Ocircumflex
+Multi_key O asciitilde		: Otilde
+Multi_key asciitilde O		: Otilde
+Multi_key O minus		: Otilde
+Multi_key minus O		: Otilde
+Multi_key O quotedbl		: Odiaeresis
+Multi_key quotedbl O		: Odiaeresis
+Multi_key O slash		: Ooblique
+Multi_key slash O		: Ooblique
+Multi_key o grave		: ograve
+Multi_key grave o		: ograve
+Multi_key o acute		: oacute
+Multi_key acute o		: oacute
+Multi_key o apostrophe		: oacute
+Multi_key apostrophe o		: oacute
+Multi_key o asciicircum		: ocircumflex
+Multi_key asciicircum o		: ocircumflex
+Multi_key o greater		: ocircumflex
+Multi_key greater o		: ocircumflex
+Multi_key o asciitilde		: otilde
+Multi_key asciitilde o		: otilde
+Multi_key o minus		: otilde
+Multi_key minus o		: otilde
+Multi_key o quotedbl		: odiaeresis
+Multi_key quotedbl o		: odiaeresis
+Multi_key o slash		: oslash
+Multi_key slash o		: oslash
+Multi_key U grave		: Ugrave
+Multi_key grave U		: Ugrave
+Multi_key U acute		: Uacute
+Multi_key acute U		: Uacute
+Multi_key U apostrophe		: Uacute
+Multi_key apostrophe U		: Uacute
+Multi_key U asciicircum		: Ucircumflex
+Multi_key asciicircum U		: Ucircumflex
+Multi_key U greater		: Ucircumflex
+Multi_key greater U		: Ucircumflex
+Multi_key U quotedbl		: Udiaeresis
+Multi_key quotedbl U		: Udiaeresis
+Multi_key u grave		: ugrave
+Multi_key grave u		: ugrave
+Multi_key u acute		: uacute
+Multi_key acute u		: uacute
+Multi_key u apostrophe		: uacute
+Multi_key apostrophe u		: uacute
+Multi_key u asciicircum		: ucircumflex
+Multi_key asciicircum u		: ucircumflex
+Multi_key u greater		: ucircumflex
+Multi_key greater u		: ucircumflex
+Multi_key u quotedbl		: udiaeresis
+Multi_key quotedbl u		: udiaeresis
+Multi_key s s			: ssharp
+Multi_key T H			: THORN
+Multi_key t h			: thorn
+Multi_key Y acute		: Yacute
+Multi_key acute Y		: Yacute
+Multi_key Y apostrophe		: Yacute
+Multi_key apostrophe Y		: Yacute
+Multi_key y acute		: yacute
+Multi_key acute y		: yacute
+Multi_key y apostrophe		: yacute
+Multi_key apostrophe y		: yacute
+Multi_key y quotedbl		: ydiaeresis
+Multi_key quotedbl y		: ydiaeresis
+dead_circumflex  slash		: bar
+dead_grave space		: grave
+dead_acute space		: apostrophe
+dead_diaeresis space		: diaeresis
+dead_circumflex space		: asciicircum
+dead_tilde space		: asciitilde
+dead_grave space		: grave
+dead_acute space		: apostrophe
+dead_circumflex 0		: degree
+dead_circumflex 1		: onesuperior
+dead_circumflex 2		: twosuperior
+dead_circumflex 3		: threesuperior
+dead_circumflex period		: periodcentered
+dead_circumflex exclam		: brokenbar
+dead_cedilla minus		: notsign
+dead_circumflex minus		: macron
+dead_circumflex underscore	: macron
+dead_acute apostrophe		: acute
+dead_cedilla comma		: cedilla
+dead_diaeresis quotedbl		: diaeresis
+dead_grave A			: Agrave
+dead_acute A			: Aacute
+dead_circumflex A		: Acircumflex
+dead_tilde A			: Atilde
+dead_diaeresis A		: Adiaeresis
+dead_grave a			: agrave
+dead_acute a			: aacute
+dead_circumflex a		: acircumflex
+dead_tilde a			: atilde
+dead_diaeresis a		: adiaeresis
+dead_cedilla C			: Ccedilla
+dead_cedilla c			: ccedilla
+dead_grave E			: Egrave
+dead_acute E			: Eacute
+dead_circumflex E		: Ecircumflex
+dead_diaeresis E		: Ediaeresis
+dead_grave e			: egrave
+dead_acute e			: eacute
+dead_circumflex e		: ecircumflex
+dead_diaeresis e		: ediaeresis
+dead_grave I			: Igrave
+dead_acute I			: Iacute
+dead_circumflex I		: Icircumflex
+dead_diaeresis I		: Idiaeresis
+dead_grave i			: igrave
+dead_acute i			: iacute
+dead_circumflex i		: icircumflex
+dead_diaeresis i		: idiaeresis
+dead_tilde N			: Ntilde
+dead_tilde n			: ntilde
+dead_grave O			: Ograve
+dead_acute O			: Oacute
+dead_circumflex O		: Ocircumflex
+dead_tilde O			: Otilde
+dead_diaeresis O		: Odiaeresis
+dead_grave o			: ograve
+dead_acute o			: oacute
+dead_circumflex o		: ocircumflex
+dead_tilde o			: otilde
+dead_diaeresis o		: odiaeresis
+dead_grave U			: Ugrave
+dead_acute U			: Uacute
+dead_circumflex U		: Ucircumflex
+dead_diaeresis U		: Udiaeresis
+dead_grave u			: ugrave
+dead_acute u			: uacute
+dead_circumflex u		: ucircumflex
+dead_diaeresis u		: udiaeresis
+dead_acute Y			: Yacute
+dead_acute y			: yacute
+dead_diaeresis y		: ydiaeresis
+SunFA_Circum  slash		: bar
+SunFA_Grave space		: grave
+SunFA_Acute space		: apostrophe
+SunFA_Diaeresis space		: diaeresis
+SunFA_Circum space		: asciicircum
+SunFA_tilde space		: tilde
+SunFA_Grave space		: grave
+SunFA_Acute space		: apostrophe
+SunFA_Circum 0			: degree
+SunFA_Circum 1			: onesuperior
+SunFA_Circum 2			: twosuperior
+SunFA_Circum 3			: threesuperior
+SunFA_Circum period		: periodcentered
+SunFA_Circum exclam		: brokenbar
+SunFA_cedilla minus		: notsign
+SunFA_Circum minus		: macron
+SunFA_Circum underscore		: macron
+SunFA_Acute apostrophe		: acute
+SunFA_cedilla comma		: cedilla
+SunFA_Diaeresis quotedbl	: diaeresis
+SunFA_Grave A			: Agrave
+SunFA_Acute A			: Aacute
+SunFA_Circum A			: Acircumflex
+SunFA_tilde A			: Atilde
+SunFA_Diaeresis A		: Adiaeresis
+SunFA_Grave a			: agrave
+SunFA_Acute a			: aacute
+SunFA_Circum a			: acircumflex
+SunFA_tilde a			: atilde
+SunFA_Diaeresis a		: adiaeresis
+SunFA_cedilla C			: Ccedilla
+SunFA_cedilla c			: ccedilla
+SunFA_Grave E			: Egrave
+SunFA_Acute E			: Eacute
+SunFA_Circum E			: Ecircumflex
+SunFA_Diaeresis E		: Ediaeresis
+SunFA_Grave e			: egrave
+SunFA_Acute e			: eacute
+SunFA_Circum e			: ecircumflex
+SunFA_Diaeresis e		: ediaeresis
+SunFA_Grave I			: Igrave
+SunFA_Acute I			: Iacute
+SunFA_Circum I			: Icircumflex
+SunFA_Diaeresis I		: Idiaeresis
+SunFA_Grave i			: igrave
+SunFA_Acute i			: iacute
+SunFA_Circum i			: icircumflex
+SunFA_Diaeresis i		: idiaeresis
+SunFA_tilde N			: Ntilde
+SunFA_tilde n			: ntilde
+SunFA_Grave O			: Ograve
+SunFA_Acute O			: Oacute
+SunFA_Circum O			: Ocircumflex
+SunFA_tilde O			: Otilde
+SunFA_Diaeresis O		: Odiaeresis
+SunFA_Grave o			: ograve
+SunFA_Acute o			: oacute
+SunFA_Circum o			: ocircumflex
+SunFA_tilde o			: otilde
+SunFA_Diaeresis o		: odiaeresis
+SunFA_Grave U			: Ugrave
+SunFA_Acute U			: Uacute
+SunFA_Circum U			: Ucircumflex
+SunFA_Diaeresis U		: Udiaeresis
+SunFA_Grave u			: ugrave
+SunFA_Acute u			: uacute
+SunFA_Circum u			: ucircumflex
+SunFA_Diaeresis u		: udiaeresis
+SunFA_Acute Y			: Yacute
+SunFA_Acute y			: yacute
+SunFA_Diaeresis y		: ydiaeresis
