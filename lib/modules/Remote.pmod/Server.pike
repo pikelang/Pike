@@ -49,6 +49,7 @@ void create(string host, int p)
 {
   portno = p;
   port = Stdio.Port();
+  port->set_id(port);
   if(host)
   {
     if(!port->bind(p, got_connection, host))

@@ -13,10 +13,10 @@ object get(string name)
 }
 
 
-void create(string host, int port)
+void create(string host, int port, void|int nice, int ...timeout)
 {
-  con = Connection();
-  if(!con->connect(host, port))
+  con = Connection(nice);
+  if(!con->connect(host, port, @timeout))
     error("Could not connect to server");
   connected = 1;
   con->closed = 0;

@@ -6,18 +6,28 @@ object con;
 object ctx;
 array(function) close_callbacks = ({ });
 
+int nice; // don't throw from call_sync
+
 void handshake(int ignore, string s);
 void read_some(int ignore, string s);
 void write_some(int|void ignore);
 void closed_connection(int|void ignore);
 
+// - create
+
+void create(void|int _nice)
+{
+   nice=_nice;
+}
+
 // - connect
 //
 // This function is called by clients to connect to a server.
 //
-int connect(string host, int port)
+int connect(string host, int port, int ... timeout)
 {
   string s, sv;
+  int end_time=time()+(sizeof(timeout)?(timeout[0]||1):60);
 
   DEBUGMSG("connecting to "+host+":"+port+"...\n");
 
@@ -29,7 +39,19 @@ int connect(string host, int port)
     return 0;
   DEBUGMSG("connected\n");
   con->write("Pike remote client "+PROTO_VERSION+"\n");
-  s = con->read(24);
+  s="";
+  con->set_nonblocking();
+  for (;;)
+  {
+     s += (con->read(24-strlen(s),1)||"");
+     if (strlen(s)==24) break;
+     sleep(0.02);
+     if (time()>end_time) 
+     {
+	con->close();
+	return 0;
+     }
+  }
   if((sscanf(s,"Pike remote server %4s\n", sv) == 1) && (sv == PROTO_VERSION))
   {
     ctx = Context(replace(con->query_address(1), " ", "-"), this_object());
@@ -261,7 +283,10 @@ mixed call_sync(array data)
     if(!s || !strlen(s))
     {
       closed_connection();
-      error("Could not read");
+      if (!nice)
+	 error("Could not read");
+      else
+	 return ([])[0]; // failed, like
     }
     read_some(0,s);
   }
