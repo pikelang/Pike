@@ -178,7 +178,7 @@ define(PIKE_FEATURE,[
 EOF])
 
 define(PIKE_FEATURE_WITHOUT,[
-  PIKE_FEATURE([$1],[$2]no (--without))
+  PIKE_FEATURE([$1],[$2]no (forced without))
 ])
 
 define(PIKE_FEATURE_NODEP,[
@@ -192,7 +192,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.25 2001/02/13 13:02:05 mirar Exp $
+# $Id: aclocal.m4,v 1.26 2001/02/13 13:05:32 mirar Exp $
 
 MY_AC_PROG_CC
 
