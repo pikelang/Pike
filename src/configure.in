@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.820 2004/03/16 14:43:02 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.821 2004/03/17 10:30:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7123,16 +7123,20 @@ $bundle_info])
 	    echo "Patching Makefiles..."
 	    echo "Patching Makefiles..." >&AC_FD_CC
 	    for f in `find . -type f \( -name Makefile -o -name makefile \) -print`; do
-	      echo "  Checking $f..."
-	      echo "  Checking $f..." >&AC_FD_CC
-	      if egrep '^SHELL[	 ]*=[ 	]*[^ 	]*[	 ]' $f >&AC_FD_CC; then
-	        # SHELL is set to something containing space.
-	        echo "  Patching $f..."
-	        echo "  Patching $f..." >&AC_FD_CC
-	        sed -e '/^SHELL[ 	]*=/s/^SHELL/PIKE_SHELL/' \
-		    -e 's/\$(SHELL)/\$(PIKE_SHELL)/g' <$f >$f.pike.patch \
-		  || exit 1
-		mv -f $f.pike.patch $f || exit 1
+	      echo "  Patching $f..."
+	      echo "  Patching $f..." >&AC_FD_CC
+	      sed -e '/^SHELL[ 	]*=/s/^SHELL/PIKE_SHELL/' \
+		  -e 's/\$(SHELL)/\$(PIKE_SHELL)/g' <"$f" >"$f.pike.patch" \
+		2>&AC_FD_CC || exit 1
+	      if cmp "$f" "$f.pike.patch" >&AC_FD_CC 2>&AC_FD_CC; then
+	        echo "  No change."
+	        echo "  No change." >&AC_FD_CC
+	        rm -f "$f.pike.patch"
+	      else
+	        echo "  Changed."
+	        echo "  Diff:" >&AC_FD_CC
+	        diff "$f" "$f.pike.patch" >&AC_FD_CC 2>&AC_FD_CC
+	        mv -f "$f.pike.patch" "$f" || exit 1
 	      fi
 	    done
 	  fi
