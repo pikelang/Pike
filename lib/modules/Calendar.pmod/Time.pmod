@@ -403,7 +403,6 @@ class TimeofDay
 // minutes are on the day, adjust for timezone (non-full-minute timezones!)
       if (ls==CALUNKNOWN) make_local();
       int zx=ux-ls%60;
-      werror("ux %O %O zx %O\n",ux,ls%60,zx);
 
       if (!n || (n==-1 && !len)) 
 	 return Minute("timeofday",rules,zx,60);
@@ -1257,7 +1256,6 @@ class cMinute
 
    static void create_unixtime(int _ux,int _len)
    {
-      werror("%O\n",_ux);
       ::create_unixtime(_ux,_len);
       if (ls==CALUNKNOWN) make_local();
       ux-=ls%60;
