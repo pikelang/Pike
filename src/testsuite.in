@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.664 2003/08/05 12:59:21 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.665 2003/08/10 16:47:32 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3858,7 +3858,8 @@ test_any([[
 
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
-test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
+test_any([[object o=Regexp("foo"); return object_program(o);]],
+	   Regexp.SimpleRegexp)
 test_any([[class Test {}; object(Test) o=Test(); return object_program(o);]],Test)
 test_define_program(test,[[constant foo = 1; int a() { return foo; }]])
 test_true(test()->a())
