@@ -1,3 +1,9 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: wbf.c,v 1.12 2002/10/08 20:22:32 nilsson Exp $
+\*/
 #include "global.h"
 
 #include <math.h>
@@ -5,7 +11,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.11 2002/07/30 11:25:30 nilsson Exp $");
+RCSID("$Id: wbf.c,v 1.12 2002/10/08 20:22:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"

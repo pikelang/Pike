@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: mysql.c,v 1.58 2002/10/08 20:22:34 nilsson Exp $
+\*/
+
 /*
- * $Id: mysql.c,v 1.57 2002/05/11 00:27:03 nilsson Exp $
- *
  * SQL database functionality for Pike
  *
  * Henrik Grubbström 1996-12-21
@@ -95,7 +100,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.57 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.58 2002/10/08 20:22:34 nilsson Exp $");
 
 /*! @module Mysql
  *!

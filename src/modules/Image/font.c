@@ -1,4 +1,10 @@
-/* $Id: font.c,v 1.72 2002/08/15 14:50:25 marcus Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: font.c,v 1.73 2002/10/08 20:22:30 nilsson Exp $
+\*/
+
 #include "global.h"
 
 #define SPACE_CHAR 'i'

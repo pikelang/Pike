@@ -1,12 +1,17 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: psparser.c,v 1.4 2002/10/08 20:22:29 nilsson Exp $
+\*/
+
 /*
  *  DVB module, PES extractor
  * 
  *  Creator: Honza Petrous <hop@unibase.cz>
- * 
- *  $Id: psparser.c,v 1.3 2002/10/08 18:45:41 hop Exp $
  *
  *  WARNING! This file content was removed.
- *           It contained 'unhealthy' code.
+ *           It contained non-MPL/LGPL code.
  *           Wait when rewrite will be done.
  *  /Honza
  * 

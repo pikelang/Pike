@@ -1,11 +1,14 @@
-#include "global.h"
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: colortable.c,v 1.111 2002/10/08 20:22:30 nilsson Exp $
+\*/
 
-/* $Id: colortable.c,v 1.110 2002/10/04 12:33:47 grubba Exp $ */
+#include "global.h"
 
 /*
 **! module Image
-**! note
-**!	$Id: colortable.c,v 1.110 2002/10/04 12:33:47 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.110 2002/10/04 12:33:47 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.111 2002/10/08 20:22:30 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 

@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: pike_cpulib.h,v 1.10 2002/10/08 20:22:24 nilsson Exp $
+\*/
+
 #ifndef PIKE_CPULIB_H
 #define PIKE_CPULIB_H
 

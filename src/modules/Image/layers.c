@@ -1,7 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: layers.c,v 1.80 2002/10/08 20:22:31 nilsson Exp $
+\*/
+
 /*
 **! module Image
-**! note
-**!	$Id: layers.c,v 1.79 2002/08/15 14:50:26 marcus Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -196,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.79 2002/08/15 14:50:26 marcus Exp $");
+RCSID("$Id: layers.c,v 1.80 2002/10/08 20:22:31 nilsson Exp $");
 
 #include "image_machine.h"
 

@@ -1,6 +1,9 @@
-/*
- * $Id: transupp.c,v 1.7 2002/10/08 17:11:16 norrby Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: transupp.c,v 1.8 2002/10/08 20:22:40 nilsson Exp $
+\*/
 
 #include "global.h"
 

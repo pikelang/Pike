@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: gdkeventstrings.h,v 1.2 2002/10/08 20:22:44 nilsson Exp $
+\*/
+
 STRING(2button_press);
 STRING(3button_press);
 STRING(atom);

@@ -1,5 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: _xpm.c,v 1.20 2002/10/08 20:22:31 nilsson Exp $
+\*/
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.19 2002/05/11 00:12:38 nilsson Exp $");
+RCSID("$Id: _xpm.c,v 1.20 2002/10/08 20:22:31 nilsson Exp $");
 
 #include "image_machine.h"
 

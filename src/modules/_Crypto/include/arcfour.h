@@ -1,6 +1,9 @@
-/*
- * $Id: arcfour.h,v 1.4 2000/03/28 12:21:24 grubba Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: arcfour.h,v 1.5 2002/10/08 20:22:38 nilsson Exp $
+\*/
 
 #ifndef ARCFOUR_H_INCLUDED
 #define ARCFOUR_H_INCLUDED

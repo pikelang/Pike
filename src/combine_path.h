@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: combine_path.h,v 1.10 2002/10/08 20:22:19 nilsson Exp $
+\*/
+
 /*
- * $Id: combine_path.h,v 1.9 2001/09/25 03:13:23 hubbe Exp $
- *
  * Combine path template.
  *
  */

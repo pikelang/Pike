@@ -1,12 +1,16 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: cells.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
 **
 ** for licence, read the LICENCE file
-**
-** $Id: cells.c,v 1.1 2001/03/26 12:32:41 mirar Exp $
-**
-*/ 
+*/
 
 /* handles cells
  * a cell is some amount of data of unregulated size
@@ -17,7 +21,7 @@
 #include <stdlib.h>
 
 static const char RCSID[]=
-   "$Id: cells.c,v 1.1 2001/03/26 12:32:41 mirar Exp $";
+   "$Id: cells.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $";
 
 #define BIG_THRESHOLD(DB) ((DB)->block_size-(4<<(DB)->frag_bits)-64)
 #define DATA_IN_BIG(DB) ((DB)->block_size-(5+2)*4)

@@ -2,8 +2,8 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: encode.c,v 1.153 2002/10/08 20:22:20 nilsson Exp $
 \*/
-/**/
 #include "global.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.152 2002/09/11 16:03:32 mast Exp $");
+RCSID("$Id: encode.c,v 1.153 2002/10/08 20:22:20 nilsson Exp $");
 
 /* #define ENCODE_DEBUG */
 

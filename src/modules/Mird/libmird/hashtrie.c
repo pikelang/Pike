@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: hashtrie.c,v 1.4 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
@@ -5,10 +12,8 @@
 ** also see http://www.mirar.org/mird/
 **
 ** for licence, read the LICENCE file
-**
-** $Id: hashtrie.c,v 1.3 2001/07/01 15:28:31 grubba Exp $
-**
-*/ 
+*/
+
 /* handles hashtrie nodes
  */
 
@@ -43,7 +48,7 @@ void *alloca();
 #endif
 
 static const char RCSID[]=
-   "$Id: hashtrie.c,v 1.3 2001/07/01 15:28:31 grubba Exp $";
+   "$Id: hashtrie.c,v 1.4 2002/10/08 20:22:33 nilsson Exp $";
 
 #define TOO_DEEP_RECURSION 31 /* we can only shift down that */
 

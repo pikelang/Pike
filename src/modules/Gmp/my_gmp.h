@@ -1,5 +1,11 @@
-/* $Id: my_gmp.h,v 1.11 2001/09/05 05:40:38 hubbe Exp $
- *
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: my_gmp.h,v 1.12 2002/10/08 20:22:29 nilsson Exp $
+\*/
+
+/*
  * These functions or something similar will hopefully be included
  * with Gmp-2.1 .
  */

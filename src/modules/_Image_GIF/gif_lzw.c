@@ -1,7 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: gif_lzw.c,v 1.4 2002/10/08 20:22:39 nilsson Exp $
+\*/
+
 /*
 **! module Image
-**! note
-**!	$Id: gif_lzw.c,v 1.3 2001/09/24 12:10:47 grubba Exp $
 */
 
 #include "global.h"

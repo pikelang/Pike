@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: initstuff.h,v 1.15 2002/10/08 20:22:31 nilsson Exp $
+\*/
+
 #ifndef IMAGE_INITER
 #define IMAGE_CLASS(a,b,c,what) extern struct program *what;
 #define IMAGE_SUBMODULE(a,b,c) 

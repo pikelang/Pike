@@ -1,7 +1,14 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: normalize.c,v 1.10 2002/10/08 20:22:45 nilsson Exp $
+\*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.9 2002/08/15 14:50:24 marcus Exp $");
+RCSID("$Id: normalize.c,v 1.10 2002/10/08 20:22:45 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

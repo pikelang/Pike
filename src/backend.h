@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: backend.h,v 1.15 2002/10/08 20:22:18 nilsson Exp $
 \*/
 
-/*
- * $Id: backend.h,v 1.14 2002/05/31 22:41:23 nilsson Exp $
- */
 #ifndef BACKEND_H
 #define BACKEND_H
 

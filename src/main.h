@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: main.h,v 1.19 2002/10/08 20:22:21 nilsson Exp $
 \*/
 
-/*
- * $Id: main.h,v 1.18 2002/05/31 22:41:24 nilsson Exp $
- */
 #ifndef MAIN_H
 #define MAIN_H
 

@@ -1,3 +1,9 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: layer_oper.h,v 1.9 2002/10/08 20:22:31 nilsson Exp $
+\*/
 /* template for operator layer row function */
 
 static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,

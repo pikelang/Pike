@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: assembly.h,v 1.4 2002/10/08 20:22:30 nilsson Exp $
+\*/
+
 /* d == s is valid for all of these functions. */
 
 void image_mult_buffer_mmx_x86asm(void *dest,void *source,int npixels_div_4,

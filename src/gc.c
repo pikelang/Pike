@@ -2,8 +2,8 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: gc.c,v 1.186 2002/10/08 20:22:20 nilsson Exp $
 \*/
-/**/
 #include "global.h"
 
 struct callback *gc_evaluator_callback=0;
@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.185 2002/08/15 14:49:21 marcus Exp $");
+RCSID("$Id: gc.c,v 1.186 2002/10/08 20:22:20 nilsson Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is

@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: precompiled_mysql.h,v 1.14 2002/10/08 20:22:34 nilsson Exp $
+\*/
+
 /*
- * $Id: precompiled_mysql.h,v 1.13 2002/10/06 12:14:17 grubba Exp $
- *
  * SQL database connectivity for Pike
  *
  * Henrik Grubbström 1996-12-21

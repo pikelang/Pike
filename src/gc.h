@@ -1,6 +1,10 @@
-/*
- * $Id: gc.h,v 1.90 2002/08/15 14:49:21 marcus Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: gc.h,v 1.91 2002/10/08 20:22:20 nilsson Exp $
+\*/
+
 #ifndef GC_H
 #define GC_H
 

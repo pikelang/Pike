@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: usage.c,v 1.2 2002/10/08 20:22:34 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
@@ -5,10 +12,8 @@
 ** also see http://www.mirar.org/mird/
 **
 ** for licence, read the LICENCE file
-**
-** $Id: usage.c,v 1.1 2001/03/26 12:33:00 mirar Exp $
-**
-*/ 
+*/
+
 /* #define MSL_COUNTER */
 #ifdef MSL_COUNTER
 #include <sys/time.h>
@@ -22,7 +27,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: usage.c,v 1.1 2001/03/26 12:33:00 mirar Exp $";
+   "$Id: usage.c,v 1.2 2002/10/08 20:22:34 nilsson Exp $";
 
 #ifdef MASSIVE_DEBUG
 #define USAGE_DEBUG

@@ -2,8 +2,8 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: dlopen.c,v 1.34 2002/10/08 20:22:19 nilsson Exp $
 \*/
-/**/
 
 #include <global.h>
 #include "fdlib.h"
@@ -185,7 +185,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.33 2002/09/24 11:09:05 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.34 2002/10/08 20:22:19 nilsson Exp $");
 
 #endif
 

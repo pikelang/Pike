@@ -2,10 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: time_stuff.h,v 1.11 2002/10/08 20:22:27 nilsson Exp $
 \*/
-/*
- * $Id: time_stuff.h,v 1.10 2002/05/31 22:41:26 nilsson Exp $
- */
+
 #ifndef TIME_STUFF_H
 #define TIME_STUFF_H
 

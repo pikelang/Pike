@@ -1,11 +1,14 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: tga.c,v 1.28 2002/10/08 20:22:32 nilsson Exp $
+\*/
 
 /*
- * $Id: tga.c,v 1.27 2001/06/13 12:56:07 grubba Exp $
- *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
  *  The information below is from the original TGA module.
- *
  *
  *
  * Id: tga.c,v 1.6 1999/01/15 17:34:47 unammx Exp
@@ -23,8 +26,6 @@
  * Not even the RLE handling. ;)
  *
  */
-
-
 
 
 /*
@@ -81,7 +82,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.27 2001/06/13 12:56:07 grubba Exp $");
+RCSID("$Id: tga.c,v 1.28 2002/10/08 20:22:32 nilsson Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))

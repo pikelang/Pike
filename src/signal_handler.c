@@ -2,8 +2,8 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: signal_handler.c,v 1.230 2002/10/08 20:22:27 nilsson Exp $
 \*/
-/**/
 #include "global.h"
 #include "fdlib.h"
 #include "fd_control.h"
@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.229 2002/10/03 21:35:58 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.230 2002/10/08 20:22:27 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>

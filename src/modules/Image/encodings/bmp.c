@@ -1,9 +1,12 @@
-/* $Id: bmp.c,v 1.35 2002/08/15 14:50:26 marcus Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: bmp.c,v 1.36 2002/10/08 20:22:32 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: bmp.c,v 1.35 2002/08/15 14:50:26 marcus Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.35 2002/08/15 14:50:26 marcus Exp $");
+RCSID("$Id: bmp.c,v 1.36 2002/10/08 20:22:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

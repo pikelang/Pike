@@ -1,5 +1,11 @@
-/* $Id: sha.c,v 1.21 2002/05/11 00:09:48 nilsson Exp $
- *
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: sha.c,v 1.22 2002/10/08 20:22:38 nilsson Exp $
+\*/
+
+/*
  * Written by Niels Möller
  */
 
@@ -16,7 +22,7 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.21 2002/05/11 00:09:48 nilsson Exp $");
+RCSID("$Id: sha.c,v 1.22 2002/10/08 20:22:38 nilsson Exp $");
 
 #include <sha.h>
 

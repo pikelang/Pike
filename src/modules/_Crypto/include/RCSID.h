@@ -1,4 +1,10 @@
-/* $Id: RCSID.h,v 1.6 1998/03/28 14:27:26 grubba Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: RCSID.h,v 1.7 2002/10/08 20:22:38 nilsson Exp $
+\*/
+/* $Id: RCSID.h,v 1.7 2002/10/08 20:22:38 nilsson Exp $ */
 #ifndef RCSID_H_INCLUDED
 #define RCSID_H_INCLUDED
 

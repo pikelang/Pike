@@ -2,10 +2,10 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: zlibmod.c,v 1.53 2002/10/08 20:22:29 nilsson Exp $
 \*/
-/**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.52 2002/09/25 14:12:45 marcus Exp $");
+RCSID("$Id: zlibmod.c,v 1.53 2002/10/08 20:22:29 nilsson Exp $");
 
 #include "zlib_machine.h"
 

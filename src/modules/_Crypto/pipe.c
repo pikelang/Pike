@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: pipe.c,v 1.23 2002/10/08 20:22:38 nilsson Exp $
+\*/
+
 /*
- * $Id: pipe.c,v 1.22 2002/05/11 00:08:58 nilsson Exp $
- *
  * PIPE crypto module for Pike.
  *
  * /precompiled/crypto/pipe

@@ -2,15 +2,15 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: dynamic_buffer.c,v 1.18 2002/10/08 20:22:20 nilsson Exp $
 \*/
-/**/
 #include "global.h"
 #include "dynamic_buffer.h"
 #include "stralloc.h"
 #include "pike_error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.17 2002/10/06 12:58:26 grubba Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.18 2002/10/08 20:22:20 nilsson Exp $");
 
 static dynamic_buffer buff;
 

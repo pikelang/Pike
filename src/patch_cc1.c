@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: patch_cc1.c,v 1.2 2002/10/08 20:22:24 nilsson Exp $
+\*/
+
 /*
- * $Id: patch_cc1.c,v 1.1 2001/01/25 22:13:45 grubba Exp $
- *
  * Patch gcc so that it doesn't use .ua{half,word} directives.
  *
  * Henrik Grubbström 2000-01-25
@@ -28,7 +33,7 @@ int main(int argc, char **argv)
   }
 
   if (!strcmp(argv[1], "-v")) {
-    fprintf(stdout, "$Id: patch_cc1.c,v 1.1 2001/01/25 22:13:45 grubba Exp $\n");
+    fprintf(stdout, "$Id: patch_cc1.c,v 1.2 2002/10/08 20:22:24 nilsson Exp $\n");
     exit(0);
   }
 

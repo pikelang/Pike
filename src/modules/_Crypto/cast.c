@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: cast.c,v 1.12 2002/10/08 20:22:38 nilsson Exp $
+\*/
+
 /*
- * $Id: cast.c,v 1.11 2002/05/11 00:09:48 nilsson Exp $
- *
  * CAST crypto module for Pike
  *
  * Niels Möller 1997-11-03

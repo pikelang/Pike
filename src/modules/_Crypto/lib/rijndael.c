@@ -1,6 +1,9 @@
-/*
- * $Id: rijndael.c,v 1.1 2000/10/02 19:35:05 grubba Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: rijndael.c,v 1.2 2002/10/08 20:22:39 nilsson Exp $
+\*/
 
 /*
  * rijndael-alg-fst.c   v2.3   April '2000

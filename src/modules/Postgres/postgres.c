@@ -1,8 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: postgres.c,v 1.27 2002/10/08 20:22:36 nilsson Exp $
+\*/
+
 /*
- * Postgres95 and PostgreSQL support for pike/0.5 and up
- *
- * This code is provided AS IS, and may be distributed under the terms
- * of the GNU General Public License, version 2.
+ * Postgres95 and PostgreSQL support for Pike 0.5 and up.
  */
 
 #define NO_PIKE_SHORTHAND
@@ -73,7 +77,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.26 2002/08/02 21:23:38 grendel Exp $");
+RCSID("$Id: postgres.c,v 1.27 2002/10/08 20:22:36 nilsson Exp $");
 
 static void set_error (char * newerror)
 {

@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: array.h,v 1.43 2002/10/08 20:22:18 nilsson Exp $
 \*/
 
-/*
- * $Id: array.h,v 1.42 2002/09/11 14:03:50 marcus Exp $
- */
 #ifndef ARRAY_H
 #define ARRAY_H
 

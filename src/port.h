@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: port.h,v 1.45 2002/10/08 20:22:25 nilsson Exp $
 \*/
 
-/*
- * $Id: port.h,v 1.44 2002/09/12 13:15:49 marcus Exp $
- */
 #ifndef PORT_H
 #define PORT_H
 

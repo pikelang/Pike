@@ -1,3 +1,9 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: arcfour.c,v 1.8 2002/10/08 20:22:39 nilsson Exp $
+\*/
 /* arcfour.c
  *
  */
@@ -6,7 +12,7 @@
 #include <arcfour.h>
 
 #ifdef RCSID
-RCSID("$Id: arcfour.c,v 1.7 2000/03/28 12:19:22 grubba Exp $");
+RCSID("$Id: arcfour.c,v 1.8 2002/10/08 20:22:39 nilsson Exp $");
 #endif
 
 #define SWAP(a,b) do { int _t = a; a = b; b = _t; } while(0)

@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: database.c,v 1.4 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
@@ -5,10 +12,8 @@
 ** also see http://www.mirar.org/mird/
 **
 ** for licence, read the LICENCE file
-**
-** $Id: database.c,v 1.3 2001/08/11 09:10:40 mirar Exp $
-**
-*/ 
+*/
+
 #include "internal.h"
 
 #include <stdlib.h>
@@ -28,7 +33,7 @@
 #endif
 
 static const char RCSID[]=
-   "$Id: database.c,v 1.3 2001/08/11 09:10:40 mirar Exp $";
+   "$Id: database.c,v 1.4 2002/10/08 20:22:33 nilsson Exp $";
 
 /* forward declarations */
 

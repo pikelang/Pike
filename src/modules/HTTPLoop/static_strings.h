@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: static_strings.h,v 1.2 2002/10/08 20:22:29 nilsson Exp $
+\*/
+
 /* methods */
 
 STRING(s_http_09,"HTTP/0.9");

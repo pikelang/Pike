@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: precompiled_odbc.h,v 1.17 2002/10/08 20:22:34 nilsson Exp $
+\*/
+
 /*
- * $Id: precompiled_odbc.h,v 1.16 2002/05/14 09:03:53 nilsson Exp $
- *
  * Pike interface to ODBC compliant databases.
  *
  * Henrik Grubbström

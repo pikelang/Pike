@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: docode.h,v 1.16 2002/10/08 20:22:19 nilsson Exp $
 \*/
 
-/*
- * $Id: docode.h,v 1.15 2002/05/31 22:41:23 nilsson Exp $
- */
 #ifndef DOCODE_H
 #define DOCODE_H
 

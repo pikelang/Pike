@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: compilation.h,v 1.29 2002/10/08 20:22:19 nilsson Exp $
+\*/
+
 /*
- * $Id: compilation.h,v 1.28 2002/08/15 14:49:20 marcus Exp $
- *
  * Compilator state push / pop operator construction file
  *
  * (Can you tell I like macros?)

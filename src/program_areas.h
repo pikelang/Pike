@@ -1,4 +1,10 @@
-/* $Id: program_areas.h,v 1.10 2002/05/10 15:30:31 grubba Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: program_areas.h,v 1.11 2002/10/08 20:22:26 nilsson Exp $
+\*/
+
 /* Who needs templates anyway? / Hubbe */
 
 /* Program *must* be first! */

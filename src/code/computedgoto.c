@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: computedgoto.c,v 1.2 2002/10/08 20:22:28 nilsson Exp $
+\*/
+
 /*
- * $Id: computedgoto.c,v 1.1 2001/07/20 12:44:53 grubba Exp $
- *
  * Machine code generator for sparc.
  *
  * Henrik Grubbström 20010720

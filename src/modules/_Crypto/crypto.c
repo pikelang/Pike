@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: crypto.c,v 1.50 2002/10/08 20:22:38 nilsson Exp $
+\*/
+
 /*
- * $Id: crypto.c,v 1.49 2002/05/11 00:08:58 nilsson Exp $
- *
  * A pike module for getting access to some common cryptos.
  *
  * Henrik Grubbström 1996-10-24

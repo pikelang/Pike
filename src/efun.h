@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: efun.h,v 1.6 2002/10/08 20:22:20 nilsson Exp $
 \*/
 
-/*
- * $Id: efun.h,v 1.5 2002/05/31 22:41:23 nilsson Exp $
- */
 #ifndef EFUN_H
 #define EFUN_H
 

@@ -2,15 +2,15 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: pike_memory.c,v 1.122 2002/10/08 20:22:24 nilsson Exp $
 \*/
-/**/
 #include "global.h"
 #include "pike_memory.h"
 #include "pike_error.h"
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.121 2002/09/12 13:15:49 marcus Exp $");
+RCSID("$Id: pike_memory.c,v 1.122 2002/10/08 20:22:24 nilsson Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP

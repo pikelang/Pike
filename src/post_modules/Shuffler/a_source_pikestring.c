@@ -1,10 +1,17 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: a_source_pikestring.c,v 1.6 2002/10/08 20:22:44 nilsson Exp $
+\*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "bignum.h"
 #include "interpret.h"
 
 #include "shuffler.h"
-/* $Id: a_source_pikestring.c,v 1.5 2002/07/05 09:55:32 per Exp $ */
+
 
 /* Source: String
  * Argument: 8-bit string

@@ -3,8 +3,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: language.yacc,v 1.298 2002/10/08 20:22:21 nilsson Exp $
 \*/
-/**/
+
 %pure_parser
 
 %token TOK_ARROW
@@ -113,7 +114,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.297 2002/09/28 19:54:41 mast Exp $");
+RCSID("$Id: language.yacc,v 1.298 2002/10/08 20:22:21 nilsson Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

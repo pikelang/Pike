@@ -1,6 +1,10 @@
-/*
- * $Id: peep.h,v 1.9 2001/07/20 12:54:37 grubba Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: peep.h,v 1.10 2002/10/08 20:22:24 nilsson Exp $
+\*/
+
 #ifndef PEEP_H
 #define PEEP_H
 

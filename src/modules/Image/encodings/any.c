@@ -1,9 +1,12 @@
-/* $Id: any.c,v 1.23 2002/07/13 23:46:16 nilsson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: any.c,v 1.24 2002/10/08 20:22:31 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: any.c,v 1.23 2002/07/13 23:46:16 nilsson Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +26,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.23 2002/07/13 23:46:16 nilsson Exp $");
+RCSID("$Id: any.c,v 1.24 2002/10/08 20:22:31 nilsson Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"

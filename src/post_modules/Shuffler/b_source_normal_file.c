@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: b_source_normal_file.c,v 1.6 2002/10/08 20:22:45 nilsson Exp $
+\*/
+
 #include "global.h"
 #include "bignum.h"
 #include "object.h"
@@ -13,8 +20,6 @@
 #include "shuffler.h"
 
 #define CHUNK 8192
-
-/* $Id: b_source_normal_file.c,v 1.5 2002/08/19 08:58:40 grubba Exp $ */
 
 
 /* Source: Normal file

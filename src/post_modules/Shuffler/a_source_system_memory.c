@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: a_source_system_memory.c,v 1.6 2002/10/08 20:22:44 nilsson Exp $
+\*/
+
 #include "global.h"
 #include "bignum.h"
 #include "object.h"
@@ -5,7 +12,6 @@
 
 #include <shuffler.h>
 
-/* $Id: a_source_system_memory.c,v 1.5 2002/05/30 13:30:39 grubba Exp $ */
 
 /* Source: System.Memory
  * Argument: An initialized instance of the System.Memory class

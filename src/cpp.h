@@ -1,6 +1,10 @@
-/*
- * $Id: cpp.h,v 1.5 2001/12/19 23:51:19 mast Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: cpp.h,v 1.6 2002/10/08 20:22:19 nilsson Exp $
+\*/
+
 #ifndef CPP_H
 #define CPP_H
 

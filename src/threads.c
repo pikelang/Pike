@@ -1,5 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: threads.c,v 1.187 2002/10/08 20:22:27 nilsson Exp $
+\*/
+
 #include "global.h"
-RCSID("$Id: threads.c,v 1.186 2002/09/30 18:45:22 grubba Exp $");
+RCSID("$Id: threads.c,v 1.187 2002/10/08 20:22:27 nilsson Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;

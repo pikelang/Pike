@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: md4.c,v 1.3 2002/10/08 20:22:38 nilsson Exp $
+\*/
+
 /*
- * $Id: md4.c,v 1.2 2002/05/11 00:09:48 nilsson Exp $
- *
  * Marcus Comstedt 2002-02-26
  */
 

@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: support.c,v 1.34 2002/10/08 20:22:44 nilsson Exp $
+\*/
+
 #include <version.h>
 #include <bignum.h>
 

@@ -1,9 +1,12 @@
-/* $Id: ras.c,v 1.16 2002/05/11 00:12:39 nilsson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: ras.c,v 1.17 2002/10/08 20:22:32 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: ras.c,v 1.16 2002/05/11 00:12:39 nilsson Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +17,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.16 2002/05/11 00:12:39 nilsson Exp $");
+RCSID("$Id: ras.c,v 1.17 2002/10/08 20:22:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,6 +1,9 @@
-/*
- * $Id: encodings.h,v 1.3 2002/07/13 23:46:16 nilsson Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: encodings.h,v 1.4 2002/10/08 20:22:32 nilsson Exp $
+\*/
 
 #ifndef IMAGE_ENCODINGS_ENCODINGS_H
 #define IMAGE_ENCODINGS_ENCODINGS_H

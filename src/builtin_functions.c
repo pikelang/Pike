@@ -2,10 +2,10 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: builtin_functions.c,v 1.443 2002/10/08 20:22:18 nilsson Exp $
 \*/
-/**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.442 2002/10/03 17:23:38 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.443 2002/10/08 20:22:18 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"

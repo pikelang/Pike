@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: pike_memory.h,v 1.33 2002/10/08 20:22:25 nilsson Exp $
 \*/
 
-/*
- * $Id: pike_memory.h,v 1.32 2002/05/31 22:41:25 nilsson Exp $
- */
 #ifndef MEMORY_H
 #define MEMORY_H
 

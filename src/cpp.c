@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: cpp.c,v 1.104 2002/10/08 20:22:19 nilsson Exp $
 \*/
 
-/*
- * $Id: cpp.c,v 1.103 2002/09/11 22:42:12 neotron Exp $
- */
 #include "global.h"
 #include "stralloc.h"
 #include "module_support.h"

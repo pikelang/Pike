@@ -1,10 +1,16 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: tim.c,v 1.13 2002/10/08 20:22:32 nilsson Exp $
+\*/
 #include "global.h"
 #include "image_machine.h"
 #include <math.h>
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.12 2001/06/13 13:05:27 grubba Exp $");
+RCSID("$Id: tim.c,v 1.13 2002/10/08 20:22:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

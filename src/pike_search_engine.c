@@ -1,7 +1,13 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: pike_search_engine.c,v 1.9 2002/10/08 20:22:25 nilsson Exp $
+\*/
+
 /*
  * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
  */
-
 
 #define HSHIFT 0
 #include "pike_search_engine2.c"

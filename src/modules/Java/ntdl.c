@@ -1,11 +1,15 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: ntdl.c,v 1.3 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
- * $Id: ntdl.c,v 1.2 2002/02/05 15:26:26 tomas Exp $
- *
  * Win32 DLL handling for jvm.c
  *
  * This is not a stand alone compilation unit; it is included
  * from jvm.c and from the configure test
- *
  */
 
 #include <tchar.h>

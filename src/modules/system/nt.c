@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: nt.c,v 1.52 2002/10/08 20:22:43 nilsson Exp $
+\*/
+
 /*
- * $Id: nt.c,v 1.51 2002/08/31 15:21:59 peter Exp $
- *
  * NT system calls for Pike
  *
  * Fredrik Hubinette, 1998-08-22

@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: freelist.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
@@ -5,10 +12,8 @@
 ** also see http://www.mirar.org/mird/
 **
 ** for licence, read the LICENCE file
-**
-** $Id: freelist.c,v 1.1 2001/03/26 12:32:48 mirar Exp $
-**
-*/ 
+*/
+
 /* handles frags
  * a frag is a small piece of data, of limited size
  */
@@ -23,7 +28,7 @@
 #include <stdio.h>
 
 static const char RCSID[]=
-   "$Id: freelist.c,v 1.1 2001/03/26 12:32:48 mirar Exp $";
+   "$Id: freelist.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $";
 
 
 #define BLOCKS_IN_FREE_LIST(DB) (LONGS_IN_BLOCK(DB)-6)

@@ -1,6 +1,10 @@
-/*
- * $Id: fdlib.h,v 1.41 2002/08/15 14:49:21 marcus Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: fdlib.h,v 1.42 2002/10/08 20:22:20 nilsson Exp $
+\*/
+
 #ifndef FDLIB_H
 #define FDLIB_H
 

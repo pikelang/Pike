@@ -1,6 +1,9 @@
-/*
- * $Id: ppc32.h,v 1.15 2002/09/23 15:57:50 marcus Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: ppc32.h,v 1.16 2002/10/08 20:22:28 nilsson Exp $
+\*/
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
       add_to_program(((OPCD)<<26)|((BO)<<21)|((BI)<<16)|	\

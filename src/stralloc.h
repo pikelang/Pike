@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: stralloc.h,v 1.69 2002/10/08 20:22:27 nilsson Exp $
 \*/
 
-/*
- * $Id: stralloc.h,v 1.68 2002/09/11 22:42:13 neotron Exp $
- */
 #ifndef STRALLOC_H
 #define STRALLOC_H
 #include "global.h"

@@ -2,15 +2,15 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: callback.c,v 1.28 2002/10/08 20:22:19 nilsson Exp $
 \*/
-/**/
 #include "global.h"
 #include "pike_macros.h"
 #include "callback.h"
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.27 2002/09/30 17:40:17 grubba Exp $");
+RCSID("$Id: callback.c,v 1.28 2002/10/08 20:22:19 nilsson Exp $");
 
 struct callback_list fork_child_callback;
 

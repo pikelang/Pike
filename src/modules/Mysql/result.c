@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: result.c,v 1.26 2002/10/08 20:22:34 nilsson Exp $
+\*/
+
 /*
- * $Id: result.c,v 1.25 2002/05/11 00:27:03 nilsson Exp $
- *
  * mysql query result
  *
  * Henrik Grubbström 1996-12-21
@@ -87,7 +92,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.25 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: result.c,v 1.26 2002/10/08 20:22:34 nilsson Exp $");
 
 struct program *mysql_result_program = NULL;
 

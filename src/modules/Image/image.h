@@ -1,8 +1,9 @@
-/*
-**! module Image
-**! note
-**!	$Id: image.h,v 1.48 2001/09/24 11:22:57 grubba Exp $
-*/
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: image.h,v 1.49 2002/10/08 20:22:31 nilsson Exp $
+\*/
 
 #ifdef PIKE_IMAGE_IMAGE_H
 #error image.h included twice

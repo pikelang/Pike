@@ -1,4 +1,10 @@
-/* $Id: gmp_machine.h.in,v 1.6 2001/03/04 15:27:54 mirar Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+\*/
+/* $Id: gmp_machine.h.in,v 1.7 2002/10/08 20:22:29 nilsson Exp $ */
+
 #ifndef GMP_MACHINE_H
 #define GMP_MACHINE_H
 

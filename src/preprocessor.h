@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: preprocessor.h,v 1.52 2002/10/08 20:22:25 nilsson Exp $
+\*/
+
 /*
- * $Id: preprocessor.h,v 1.51 2002/08/15 14:49:24 marcus Exp $
- *
  * Preprocessor template.
  * Based on cpp.c 1.45
  *

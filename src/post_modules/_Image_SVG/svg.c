@@ -1,14 +1,17 @@
-#include "config.h"
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: svg.c,v 1.6 2002/10/08 20:22:45 nilsson Exp $
+\*/
 
-/*
- * $Id: svg.c,v 1.5 2002/09/25 14:12:46 marcus Exp $
- */
+#include "config.h"
 
 #ifdef HAVE_SVG
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.5 2002/09/25 14:12:46 marcus Exp $");
+RCSID("$Id: svg.c,v 1.6 2002/10/08 20:22:45 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

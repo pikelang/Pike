@@ -1,3 +1,9 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: sane.c,v 1.13 2002/10/08 20:22:36 nilsson Exp $
+\*/
 #include "config.h"
 
 #if defined(HAVE_SANE_SANE_H) || defined(HAVE_SANE_H)
@@ -34,7 +40,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.12 2002/07/28 23:59:49 nilsson Exp $");
+RCSID("$Id: sane.c,v 1.13 2002/10/08 20:22:36 nilsson Exp $");
 
 /*! @module SANE
  *!

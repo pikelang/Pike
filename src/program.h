@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: program.h,v 1.167 2002/10/08 20:22:26 nilsson Exp $
 \*/
 
-/*
- * $Id: program.h,v 1.166 2002/09/12 13:15:50 marcus Exp $
- */
 #ifndef PROGRAM_H
 #define PROGRAM_H
 

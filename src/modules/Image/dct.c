@@ -1,9 +1,12 @@
-/* $Id: dct.c,v 1.20 2002/05/11 00:19:12 nilsson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: dct.c,v 1.21 2002/10/08 20:22:30 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: dct.c,v 1.20 2002/05/11 00:19:12 nilsson Exp $
 **! class Image
 */
 

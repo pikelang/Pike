@@ -1,7 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: colortable.h,v 1.26 2002/10/08 20:22:30 nilsson Exp $
+\*/
+
 /*
 **! module Image
-**! note
-**!	$Id: colortable.h,v 1.25 2002/10/04 12:34:00 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H

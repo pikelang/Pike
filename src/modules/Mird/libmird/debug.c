@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: debug.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
@@ -5,10 +12,8 @@
 ** also see http://www.mirar.org/mird/
 **
 ** for licence, read the LICENCE file
-**
-** $Id: debug.c,v 1.1 2001/03/26 12:32:44 mirar Exp $
-**
-*/ 
+*/
+
 /* handles debug stuff */
 
 #include "internal.h"
@@ -21,7 +26,7 @@
 #include <stdio.h>
 
 static const char RCSID[]=
-   "$Id: debug.c,v 1.1 2001/03/26 12:32:44 mirar Exp $";
+   "$Id: debug.c,v 1.2 2002/10/08 20:22:33 nilsson Exp $";
 
 #define PRINT_BLOCK_FRAG(X) \
 	CHUNK_ID_2_BLOCK(db,(X)), \

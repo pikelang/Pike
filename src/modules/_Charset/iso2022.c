@@ -1,9 +1,15 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: iso2022.c,v 1.24 2002/10/08 20:22:37 nilsson Exp $
+\*/
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.23 2002/08/15 14:50:27 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.24 2002/10/08 20:22:37 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"

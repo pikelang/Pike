@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: module_support.h,v 1.14 2002/10/08 20:22:23 nilsson Exp $
 \*/
 
-/*
- * $Id: module_support.h,v 1.13 2002/09/12 13:15:49 marcus Exp $
- */
 #ifndef MODULE_SUPPORT_H
 #include <stdarg.h>
 

@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: uncompressor.c,v 1.5 2002/10/08 20:22:27 nilsson Exp $
+\*/
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

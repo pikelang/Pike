@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: testsuite.c,v 1.3 2002/10/08 20:22:34 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
@@ -5,10 +12,8 @@
 ** also see http://www.mirar.org/mird/
 **
 ** for licence, read the LICENCE file
-**
-** $Id: testsuite.c,v 1.2 2002/03/15 22:10:25 nilsson Exp $
-**
-*/ 
+*/
+
 #include "mird.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -21,10 +26,6 @@
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-
-/*
- * $Id: testsuite.c,v 1.2 2002/03/15 22:10:25 nilsson Exp $
- */
 
 #ifdef DO_TRACE
 #define TRACE(X) fprintf(stderr,"\n%s   ",X);

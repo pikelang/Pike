@@ -1,7 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: colors.c,v 1.62 2002/10/08 20:22:30 nilsson Exp $
+\*/
+
 /*
 **! module Image
-**! note
-**!	$Id: colors.c,v 1.61 2002/08/15 14:50:25 marcus Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -187,7 +192,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.61 2002/08/15 14:50:25 marcus Exp $");
+RCSID("$Id: colors.c,v 1.62 2002/10/08 20:22:30 nilsson Exp $");
 
 #include "image_machine.h"
 

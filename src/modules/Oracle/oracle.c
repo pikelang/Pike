@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: oracle.c,v 1.72 2002/10/08 20:22:35 nilsson Exp $
+\*/
+
 /*
- * $Id: oracle.c,v 1.71 2002/10/03 15:56:04 mast Exp $
- *
  * Pike interface to Oracle databases.
  *
  * original design by Marcus Comstedt
@@ -53,7 +58,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.71 2002/10/03 15:56:04 mast Exp $");
+RCSID("$Id: oracle.c,v 1.72 2002/10/08 20:22:35 nilsson Exp $");
 
 
 /* User-changable defines: */

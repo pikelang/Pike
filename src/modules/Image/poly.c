@@ -1,7 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: poly.c,v 1.15 2002/10/08 20:22:31 nilsson Exp $
+\*/
+
 /*
 **! module Image
-**! note
-**!	$Id: poly.c,v 1.14 2002/05/11 00:27:03 nilsson Exp $
 **! class Poly
 **!
 */
@@ -18,7 +23,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.14 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: poly.c,v 1.15 2002/10/08 20:22:31 nilsson Exp $");
 
 #include "image_machine.h"
 

@@ -1,7 +1,14 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: split.c,v 1.2 2002/10/08 20:22:45 nilsson Exp $
+\*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: split.c,v 1.1 2001/06/21 03:13:25 per Exp $");
+RCSID("$Id: split.c,v 1.2 2002/10/08 20:22:45 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

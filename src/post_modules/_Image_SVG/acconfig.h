@@ -1,6 +1,10 @@
-/*
- * $Id: acconfig.h,v 1.1 2002/05/10 21:51:51 per Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: acconfig.h,v 1.2 2002/10/08 20:22:45 nilsson Exp $
+\*/
+
 #undef HAVE_SVG
 @TOP@
 @BOTTOM@

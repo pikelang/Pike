@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: crypt_md5.c,v 1.3 2002/10/08 20:22:39 nilsson Exp $
+\*/
+
 /*
- * $Id: crypt_md5.c,v 1.2 2001/04/30 22:07:04 lange Exp $
- *
  *  crypt-md5.c :  Implementation of the MD5 password hash function
  *
  * ----------------------------------------------------------------------------

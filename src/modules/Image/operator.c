@@ -1,9 +1,12 @@
-/* $Id: operator.c,v 1.40 2002/05/16 09:53:58 grubba Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: operator.c,v 1.41 2002/10/08 20:22:31 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: operator.c,v 1.40 2002/05/16 09:53:58 grubba Exp $
 **! class Image
 */
 

@@ -1,9 +1,15 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: charsetmod.c,v 1.37 2002/10/08 20:22:36 nilsson Exp $
+\*/
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.36 2002/09/09 11:42:35 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.37 2002/10/08 20:22:36 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"

@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: md5.c,v 1.19 2002/10/08 20:22:38 nilsson Exp $
+\*/
+
 /*
- * $Id: md5.c,v 1.18 2002/05/11 00:09:48 nilsson Exp $
- *
  * A pike module for getting access to some common cryptos.
  *
  * /precompiled/crypto/md5

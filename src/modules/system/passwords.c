@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: passwords.c,v 1.37 2002/10/08 20:22:43 nilsson Exp $
+\*/
+
 /*
- * $Id: passwords.c,v 1.36 2002/05/11 00:14:16 nilsson Exp $
- *
  * Password handling for Pike.
  *
  * Henrik Grubbström 1997-01-28
@@ -22,7 +27,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.36 2002/05/11 00:14:16 nilsson Exp $");
+RCSID("$Id: passwords.c,v 1.37 2002/10/08 20:22:43 nilsson Exp $");
 
 #include "module_support.h"
 #include "interpret.h"

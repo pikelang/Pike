@@ -1,9 +1,12 @@
-/* $Id: xwd.c,v 1.21 2002/05/11 00:12:39 nilsson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: xwd.c,v 1.22 2002/10/08 20:22:33 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: xwd.c,v 1.21 2002/05/11 00:12:39 nilsson Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +28,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.21 2002/05/11 00:12:39 nilsson Exp $");
+RCSID("$Id: xwd.c,v 1.22 2002/10/08 20:22:33 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

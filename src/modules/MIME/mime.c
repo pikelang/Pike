@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: mime.c,v 1.33 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
- * $Id: mime.c,v 1.32 2002/05/11 00:27:03 nilsson Exp $
- *
  * RFC1521 functionality for Pike
  *
  * Marcus Comstedt 1996-1999
@@ -10,7 +15,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.32 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: mime.c,v 1.33 2002/10/08 20:22:33 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"

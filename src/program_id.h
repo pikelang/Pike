@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: program_id.h,v 1.13 2002/10/08 20:22:26 nilsson Exp $
+\*/
+
 #ifndef PROGRAM_ID_H
 #define PROGRAM_ID_H
 /* This file contains reserved id numbers for pike programs.

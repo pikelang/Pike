@@ -1,9 +1,12 @@
-/* $Id: image.c,v 1.197 2002/05/11 02:36:13 per Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: image.c,v 1.198 2002/10/08 20:22:30 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: image.c,v 1.197 2002/05/11 02:36:13 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.197 2002/05/11 02:36:13 per Exp $");
+RCSID("$Id: image.c,v 1.198 2002/10/08 20:22:30 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

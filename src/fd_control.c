@@ -2,15 +2,15 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: fd_control.c,v 1.44 2002/10/08 20:22:20 nilsson Exp $
 \*/
-/**/
 
 #ifndef TESTING
 #include "global.h"
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.43 2002/09/03 09:50:36 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.44 2002/10/08 20:22:20 nilsson Exp $");
 
 #else /* TESTING */
 

@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: rbtree.c,v 1.11 2002/10/08 20:22:26 nilsson Exp $
+\*/
+
 /* An implementation of a threaded red/black balanced binary tree.
  *
  * Created 2001-04-27 by Martin Stjernholm <mast@lysator.liu.se>
@@ -5,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.10 2002/08/15 14:49:25 marcus Exp $");
+RCSID("$Id: rbtree.c,v 1.11 2002/10/08 20:22:26 nilsson Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"

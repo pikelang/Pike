@@ -1,7 +1,13 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: xbm.c,v 1.16 2002/10/08 20:22:33 nilsson Exp $
+\*/
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.15 2001/12/16 02:49:46 mast Exp $");
+RCSID("$Id: xbm.c,v 1.16 2002/10/08 20:22:33 nilsson Exp $");
 
 #include "image_machine.h"
 

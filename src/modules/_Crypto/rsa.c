@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: rsa.c,v 1.26 2002/10/08 20:22:38 nilsson Exp $
+\*/
+
 /*
- * $Id: rsa.c,v 1.25 2002/05/11 00:08:58 nilsson Exp $
- *
  * Glue to RSA BSAFE's RSA implementation.
  *
  * Henrik Grubbström 2000-01-26
@@ -36,7 +41,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: rsa.c,v 1.25 2002/05/11 00:08:58 nilsson Exp $");
+RCSID("$Id: rsa.c,v 1.26 2002/10/08 20:22:38 nilsson Exp $");
 
 struct pike_rsa_data
 {

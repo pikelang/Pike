@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: d_source_pikestream.c,v 1.3 2002/10/08 20:22:45 nilsson Exp $
+\*/
+
 #include "global.h"
 #include "bignum.h"
 #include "object.h"
@@ -12,8 +19,6 @@
 #include "shuffler.h"
 
 #define CHUNK 8192
-/* $Id: d_source_pikestream.c,v 1.2 2002/07/05 09:55:32 per Exp $ */
-
 
 /* Source: Pike-Stream 
  * Argument: Stdio.File lookalike with read

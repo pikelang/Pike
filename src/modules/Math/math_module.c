@@ -1,6 +1,9 @@
-/*
- * $Id: math_module.c,v 1.9 2002/05/09 16:04:55 agehall Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: math_module.c,v 1.10 2002/10/08 20:22:33 nilsson Exp $
+\*/
 
 #include "global.h"
 #include "config.h"

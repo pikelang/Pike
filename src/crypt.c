@@ -1,9 +1,14 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: crypt.c,v 1.3 2002/10/08 20:22:19 nilsson Exp $
+\*/
+
 /*
- * $Id: crypt.c,v 1.2 1998/03/28 15:01:41 grubba Exp $
- *
  *      From Andy Tanenbaum's book "Computer Networks",
  *      rewritten in C
-*/
+ */
 
 struct block {
         unsigned char b_data[64];

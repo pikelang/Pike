@@ -1,4 +1,9 @@
-/* $Id: perlmod.c,v 1.26 2002/08/29 12:48:40 stensson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: perlmod.c,v 1.27 2002/10/08 20:22:35 nilsson Exp $
+\*/
 
 #define NO_PIKE_SHORTHAND
 

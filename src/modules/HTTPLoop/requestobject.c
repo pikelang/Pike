@@ -1,6 +1,9 @@
-/*
- * $Id: requestobject.c,v 1.21 2002/08/15 14:50:25 marcus Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: requestobject.c,v 1.22 2002/10/08 20:22:29 nilsson Exp $
+\*/
 
 #include "global.h"
 #include "config.h"

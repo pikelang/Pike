@@ -1,9 +1,12 @@
-/* $Id: ilbm.c,v 1.24 2002/05/11 00:12:39 nilsson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: ilbm.c,v 1.25 2002/10/08 20:22:32 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: ilbm.c,v 1.24 2002/05/11 00:12:39 nilsson Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +17,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.24 2002/05/11 00:12:39 nilsson Exp $");
+RCSID("$Id: ilbm.c,v 1.25 2002/10/08 20:22:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

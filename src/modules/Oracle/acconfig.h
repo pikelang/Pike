@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: acconfig.h,v 1.2 2002/10/08 20:22:34 nilsson Exp $
+\*/
+
 /*
- * $Id: acconfig.h,v 1.1 1997/05/17 01:56:31 marcus Exp $
- *
  * Config-file for the Pike Oracle-module.
  *
  * Marcus Comstedt

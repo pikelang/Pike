@@ -1,9 +1,12 @@
-/* $Id: pnm.c,v 1.26 2002/05/11 00:12:39 nilsson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: pnm.c,v 1.27 2002/10/08 20:22:32 nilsson Exp $
+\*/
 
 /*
 **! module Image
-**! note
-**!	$Id: pnm.c,v 1.26 2002/05/11 00:12:39 nilsson Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +52,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.26 2002/05/11 00:12:39 nilsson Exp $");
+RCSID("$Id: pnm.c,v 1.27 2002/10/08 20:22:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: blocks.c,v 1.3 2002/10/08 20:22:33 nilsson Exp $
+\*/
+
 /*
 ** libMird by Mirar <mirar@mirar.org>
 ** please submit bug reports and patches to the author
@@ -5,10 +12,7 @@
 ** also see http://www.mirar.org/mird/
 **
 ** for licence, read the LICENCE file
-**
-** $Id: blocks.c,v 1.2 2001/04/13 17:51:10 grubba Exp $
-**
-*/ 
+*/
 
 /* handles blocks, freelist and fragmented blocks */
 
@@ -21,7 +25,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: blocks.c,v 1.2 2001/04/13 17:51:10 grubba Exp $";
+   "$Id: blocks.c,v 1.3 2002/10/08 20:22:33 nilsson Exp $";
 
 #ifdef SUPERMASSIVE_DEBUG
 #define BLOCK_DEBUG

@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: pikecode.h,v 1.8 2002/10/08 20:22:25 nilsson Exp $
+\*/
+
 /*
- * $Id: pikecode.h,v 1.7 2002/05/10 15:43:33 grubba Exp $
- *
  * Generic headerfile for the code-generator.
  *
  * Henrik Grubbström 20010720

@@ -1,6 +1,9 @@
-/*
- * $Id: acconfig.h,v 1.3 2000/02/02 09:38:39 mast Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: acconfig.h,v 1.4 2002/10/08 20:22:40 nilsson Exp $
+\*/
 
 @TOP@
 @BOTTOM@

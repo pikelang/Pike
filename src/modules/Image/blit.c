@@ -1,10 +1,14 @@
-/* $Id: blit.c,v 1.51 2002/05/11 00:27:02 nilsson Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: blit.c,v 1.52 2002/10/08 20:22:30 nilsson Exp $
+\*/
+
 #include "global.h"
 
 /*
 **! module Image
-**! note
-**!	$Id: blit.c,v 1.51 2002/05/11 00:27:02 nilsson Exp $
 **! class Image
 */
 

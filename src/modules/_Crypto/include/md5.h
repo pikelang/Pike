@@ -1,6 +1,9 @@
-/*
- * $Id: md5.h,v 1.2 1998/03/28 14:26:10 grubba Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: md5.h,v 1.3 2002/10/08 20:22:39 nilsson Exp $
+\*/
 
 #include "crypto_types.h"
 

@@ -1,5 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: polyfill.c,v 1.40 2002/10/08 20:22:31 nilsson Exp $
+\*/
+
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: polyfill.c,v 1.40 2002/10/08 20:22:31 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -41,8 +48,6 @@ extern double floor(double);
 
 /*
 **! module Image
-**! note
-**!	$Id: polyfill.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $
 **! class Image
 */
 

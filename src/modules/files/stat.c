@@ -1,9 +1,12 @@
-/*
- * $Id: stat.c,v 1.22 2002/08/15 14:50:27 marcus Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: stat.c,v 1.23 2002/10/08 20:22:41 nilsson Exp $
+\*/
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.22 2002/08/15 14:50:27 marcus Exp $");
+RCSID("$Id: stat.c,v 1.23 2002/10/08 20:22:41 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"

@@ -1,6 +1,12 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: freetype.c,v 1.8 2002/10/08 20:22:39 nilsson Exp $
+\*/
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.7 2002/09/25 14:12:45 marcus Exp $");
+RCSID("$Id: freetype.c,v 1.8 2002/10/08 20:22:39 nilsson Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>

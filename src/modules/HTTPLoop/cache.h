@@ -1,4 +1,11 @@
-struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len, 
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: cache.h,v 1.9 2002/10/08 20:22:29 nilsson Exp $
+\*/
+
+struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
 				     char *h, ptrdiff_t hlen,
 				     struct cache *c, int nl, 
 				     struct cache_entry **p, 

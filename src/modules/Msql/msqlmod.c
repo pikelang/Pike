@@ -1,9 +1,9 @@
-/*
- * You may use, modify and redistribute it freely under the terms
- * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.20 2002/05/11 00:25:56 nilsson Exp $
- *
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: msqlmod.c,v 1.21 2002/10/08 20:22:34 nilsson Exp $
+\*/
 
 /* All this code is pretty useless if we don't have a msql library...*/
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.20 2002/05/11 00:25:56 nilsson Exp $");
+RCSID("$Id: msqlmod.c,v 1.21 2002/10/08 20:22:34 nilsson Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT

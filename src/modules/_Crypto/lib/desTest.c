@@ -1,3 +1,9 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: desTest.c,v 1.4 2002/10/08 20:22:39 nilsson Exp $
+\*/
 /*
  *	des - fast & portable DES encryption & decryption.
  *	Copyright (C) 1992  Dana L. How
@@ -7,7 +13,7 @@
  */
 
 #ifndef	lint
-static char desTest_cRcs[] = "$Id: desTest.c,v 1.3 2002/04/30 21:59:57 mast Exp $";
+static char desTest_cRcs[] = "$Id: desTest.c,v 1.4 2002/10/08 20:22:39 nilsson Exp $";
 #endif
 
 #include	"des.h"

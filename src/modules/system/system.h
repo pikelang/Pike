@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: system.h,v 1.7 2002/10/08 20:22:43 nilsson Exp $
+\*/
+
 /*
- * $Id: system.h,v 1.6 2001/12/06 10:35:49 per-bash Exp $
- *
  * Prototypes for the Pike system-module
  *
  * Henrik Grubbström 1997-01-28

@@ -1,9 +1,14 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: ffmpeg.c,v 1.10 2002/10/08 20:22:39 nilsson Exp $
+\*/
+
 /*
  * Pike C glue module for FFMpeg library
  *
  * Creator: Honza Petrous <hop@unibase.cz>
- *
- * $Id: ffmpeg.c,v 1.9 2002/09/25 14:12:45 marcus Exp $
  *
  */
 

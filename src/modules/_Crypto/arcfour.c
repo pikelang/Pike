@@ -1,3 +1,9 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: arcfour.c,v 1.18 2002/10/08 20:22:38 nilsson Exp $
+\*/
 /* arcfour.c
  *
  * Written by Niels Möller
@@ -21,7 +27,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: arcfour.c,v 1.17 2002/05/11 00:09:48 nilsson Exp $");
+RCSID("$Id: arcfour.c,v 1.18 2002/10/08 20:22:38 nilsson Exp $");
 
 #undef THIS
 #define THIS ((struct arcfour_ctx *)(Pike_fp->current_storage))

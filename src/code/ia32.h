@@ -1,6 +1,9 @@
-/*
- * $Id: ia32.h,v 1.16 2002/05/10 22:42:17 mast Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: ia32.h,v 1.17 2002/10/08 20:22:28 nilsson Exp $
+\*/
 
 /* #define ALIGN_PIKE_JUMPS 8 */
 

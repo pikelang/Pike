@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: ppc32.c,v 1.22 2002/10/08 20:22:28 nilsson Exp $
+\*/
+
 /*
- * $Id: ppc32.c,v 1.21 2002/09/26 11:32:05 marcus Exp $
- *
  * Machine code generator for 32 bit PowerPC
  *
  * Marcus Comstedt 20010726

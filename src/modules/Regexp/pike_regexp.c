@@ -1,6 +1,11 @@
-/* 
- * $Id: pike_regexp.c,v 1.20 2000/12/01 08:10:23 hubbe Exp $
- *
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: pike_regexp.c,v 1.21 2002/10/08 20:22:36 nilsson Exp $
+\*/
+
+/*
  * regexp.c - regular expression matching
  *
  * DESCRIPTION

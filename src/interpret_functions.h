@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: interpret_functions.h,v 1.109 2002/10/08 20:22:21 nilsson Exp $
+\*/
+
 /*
- * $Id: interpret_functions.h,v 1.108 2002/09/23 20:12:59 mast Exp $
- *
  * Opcode definitions for the interpreter.
  */
 

@@ -1,14 +1,16 @@
-/* $Id: colortable_lookup.h,v 1.18 2002/08/15 14:50:25 marcus Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: colortable_lookup.h,v 1.19 2002/10/08 20:22:30 nilsson Exp $
+\*/
+
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
-**! note
-**!	$Id: colortable_lookup.h,v 1.18 2002/08/15 14:50:25 marcus Exp $
 **! class colortable
 */
-
-
 
 void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
 			      NCTLU_DESTINATION *d,

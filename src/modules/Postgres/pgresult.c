@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: pgresult.c,v 1.18 2002/10/08 20:22:36 nilsson Exp $
+\*/
+
 /*
- * $Id: pgresult.c,v 1.17 2002/01/16 03:08:23 nilsson Exp $
- *
  * Postgres95 support for pike/0.5 and up
  *
  * This code is provided AS IS, and may be copied and distributed freely,
@@ -63,7 +68,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.17 2002/01/16 03:08:23 nilsson Exp $");
+RCSID("$Id: pgresult.c,v 1.18 2002/10/08 20:22:36 nilsson Exp $");
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;

@@ -2,13 +2,14 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: ssleay.c,v 1.18 2002/10/08 20:22:36 nilsson Exp $
 \*/
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.17 2002/05/31 22:31:40 nilsson Exp $");
+RCSID("$Id: ssleay.c,v 1.18 2002/10/08 20:22:36 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

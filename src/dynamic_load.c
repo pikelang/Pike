@@ -1,3 +1,10 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: dynamic_load.c,v 1.65 2002/10/08 20:22:20 nilsson Exp $
+\*/
+
 #ifdef TESTING
 #define NO_PIKE_INCLUDES
 #define CREATE_MAIN
@@ -17,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.64 2002/08/15 14:49:20 marcus Exp $");
+RCSID("$Id: dynamic_load.c,v 1.65 2002/10/08 20:22:20 nilsson Exp $");
 
 #else /* TESTING */
 

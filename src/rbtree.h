@@ -1,8 +1,13 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: rbtree.h,v 1.7 2002/10/08 20:22:26 nilsson Exp $
+\*/
+
 /* An implementation of a threaded red/black balanced binary tree.
  *
  * Created 2001-04-27 by Martin Stjernholm
- *
- * $Id: rbtree.h,v 1.6 2001/12/10 00:57:17 mast Exp $
  */
 
 #ifndef RBTREE_H

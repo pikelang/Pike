@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: acconfig.h,v 1.12 2002/10/08 20:22:42 nilsson Exp $
+\*/
+
 /*
- * $Id: acconfig.h,v 1.11 2001/05/24 20:58:55 mirar Exp $
- *
  * System dependant definitions for the system module for Pike
  *
  * Henrik Grubbström 1997-01-20

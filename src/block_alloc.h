@@ -1,4 +1,10 @@
-/* $Id: block_alloc.h,v 1.43 2002/10/01 15:55:39 marcus Exp $ */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: block_alloc.h,v 1.44 2002/10/08 20:22:18 nilsson Exp $
+\*/
+
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK

@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: object.h,v 1.73 2002/10/08 20:22:24 nilsson Exp $
 \*/
 
-/*
- * $Id: object.h,v 1.72 2002/09/11 14:03:50 marcus Exp $
- */
 #ifndef OBJECT_H
 #define OBJECT_H
 

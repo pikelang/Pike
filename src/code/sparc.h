@@ -1,6 +1,9 @@
-/*
- * $Id: sparc.h,v 1.13 2002/08/15 14:50:25 marcus Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: sparc.h,v 1.14 2002/10/08 20:22:28 nilsson Exp $
+\*/
 
 #define PIKE_OPCODE_ALIGN	4
 

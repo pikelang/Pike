@@ -2,8 +2,8 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: module.c,v 1.18 2002/10/08 20:22:23 nilsson Exp $
 \*/
-/**/
 #include "global.h"
 #include "module.h"
 #include "pike_macros.h"
@@ -24,7 +24,7 @@
 #include "post_modules/modlist_headers.h"
 #endif
 
-RCSID("$Id: module.c,v 1.17 2002/05/31 22:41:25 nilsson Exp $");
+RCSID("$Id: module.c,v 1.18 2002/10/08 20:22:23 nilsson Exp $");
 
 typedef void (*modfun)(void);
 

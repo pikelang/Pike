@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: pike_types.h,v 1.82 2002/10/08 20:22:25 nilsson Exp $
 \*/
 
-/*
- * $Id: pike_types.h,v 1.81 2002/09/12 13:15:49 marcus Exp $
- */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
 

@@ -1,6 +1,11 @@
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: lexer.h,v 1.39 2002/10/08 20:22:21 nilsson Exp $
+\*/
+
 /*
- * $Id: lexer.h,v 1.38 2002/08/15 14:49:22 marcus Exp $
- *
  * Lexical analyzer template.
  * Based on lex.c 1.62
  *

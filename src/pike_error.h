@@ -2,11 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
+||| $Id: pike_error.h,v 1.20 2002/10/08 20:22:24 nilsson Exp $
 \*/
 
-/*
- * $Id: pike_error.h,v 1.19 2002/08/15 14:49:24 marcus Exp $
- */
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
 

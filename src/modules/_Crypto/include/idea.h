@@ -1,6 +1,9 @@
-/*
- * $Id: idea.h,v 1.4 1998/03/28 14:26:27 grubba Exp $
- */
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: idea.h,v 1.5 2002/10/08 20:22:38 nilsson Exp $
+\*/
 
 #ifndef IDEA_H_INCLUDED
 #define IDEA_H_INCLUDED

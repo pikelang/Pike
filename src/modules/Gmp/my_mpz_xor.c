@@ -1,11 +1,17 @@
-/* $Id: my_mpz_xor.c,v 1.3 2000/07/28 07:12:07 hubbe Exp $
- *
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+||| $Id: my_mpz_xor.c,v 1.4 2002/10/08 20:22:29 nilsson Exp $
+\*/
+
+/*
  * since xor isn't implemented by gmp (for some odd reason)
  */
 
 #include "global.h"
 
-RCSID("$Id: my_mpz_xor.c,v 1.3 2000/07/28 07:12:07 hubbe Exp $");
+RCSID("$Id: my_mpz_xor.c,v 1.4 2002/10/08 20:22:29 nilsson Exp $");
 
 #include "gmp_machine.h"
 
