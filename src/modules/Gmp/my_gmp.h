@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.14 2002/10/16 13:19:01 marcus Exp $
+|| $Id: my_gmp.h,v 1.15 2003/03/26 15:23:39 mast Exp $
 */
 
 /*
@@ -50,6 +50,10 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s);
 MP_INT *debug_get_mpz(struct svalue *s, int throw_error);
 void mpzmod_reduce(struct object *o);
 struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
+
+#ifndef HAVE_MPZ_XOR
+#define mpz_xor my_mpz_xor
+#endif
 
 extern struct program *mpzmod_program;
 extern struct program *mpq_program;

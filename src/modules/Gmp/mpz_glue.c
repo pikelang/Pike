@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.126 2003/02/15 16:26:57 grubba Exp $
+|| $Id: mpz_glue.c,v 1.127 2003/03/26 15:23:39 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.126 2003/02/15 16:26:57 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.127 2003/03/26 15:23:39 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1207,7 +1207,7 @@ static void name(INT32 args)				\
 
 BINFUN(mpzmod_and,mpz_and)
 BINFUN(mpzmod_or,mpz_ior)
-BINFUN(mpzmod_xor,my_mpz_xor)
+BINFUN(mpzmod_xor,mpz_xor)
 
 static void mpzmod_compl(INT32 args)
 {
