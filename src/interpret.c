@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.87 1998/06/06 03:25:36 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.88 1998/06/18 23:18:44 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2026,7 +2026,15 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 	new_frame.num_locals=num_locals;
 	new_frame.num_args=num_args;
-	tailrecurse=eval_instruction(pc);
+	{
+	  struct svalue **save_mark_sp=mark_sp;
+	  tailrecurse=eval_instruction(pc);
+#ifdef DEBUG
+	  if(mark_sp < save_mark_sp)
+	    fatal("Popped below save_mark_sp!\n");
+#endif
+	  mark_sp=save_mark_sp;
+	}
 #ifdef DEBUG
 	if(sp<evaluator_stack)
 	  fatal("Stack error (also simple).\n");
@@ -2158,7 +2166,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   free_object(new_frame.current_object);
   free_program(new_frame.context.prog);
 
-  fp = new_frame.parent_frame;
+  mark_sp=save_mark_sp;
   return ret;
 }
 
