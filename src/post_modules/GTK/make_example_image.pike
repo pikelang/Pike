@@ -44,7 +44,7 @@ void grab(object w)
     exit(1);
   }
   i->grab( w, 20,20, w->xsize()-40, w->ysize()-40);
-  object i = Image.PNM.decode( i->get_pnm() );
+  i = Image.PNM.decode( i->get_pnm() );
 
   mkdir(wmml?"wmml/gtkimg":"xmldocs");
   rm((wmml?"wmml/gtkimg/":"xmldocs/")+file_name(source));

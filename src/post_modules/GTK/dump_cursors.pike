@@ -67,8 +67,9 @@ void grab( int x )
       GTK.setup_gtk();
       w = GTK.Window( GTK.WindowToplevel );
       w->add( da = GTK.DrawingArea( ) );
-      da->set_usize( 100,400 );
-      w->show_all();
+      da->set_usize( 200,400 );
+      da->show();
+      w->show_now();
       GTK.flush();
       fn = GDK.Font( "cursor" );
       gc = GDK.GC( da );
