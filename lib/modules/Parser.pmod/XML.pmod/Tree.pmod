@@ -1,9 +1,21 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.5 2000/09/28 03:38:49 hubbe Exp $
+ * $Id: Tree.pmod,v 1.6 2001/01/16 14:34:12 norlin Exp $
  *
  */
+
+constant STOP_WALK = -1;
+constant XML_ROOT     = 0x0001;
+constant XML_ELEMENT  = 0x0002;
+constant XML_TEXT     = 0x0004;
+constant XML_HEADER   = 0x0008;
+constant XML_PI       = 0x0010;
+constant XML_COMMENT  = 0x0020;
+constant XML_DOCTYPE  = 0x0040;
+constant XML_ATTR     = 0x0080;    //  Attribute nodes are created on demand
+constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
+                       XML_PI | XML_COMMENT | XML_ATTR);
 
 #define STOP_WALK  -1
 #define  XML_ROOT     0x0001
@@ -16,6 +28,7 @@
 #define  XML_ATTR     0x0080     //  Attribute nodes are created on demand
 #define  XML_NODE     (XML_ROOT | XML_ELEMENT | XML_TEXT |    \
 					   XML_PI | XML_COMMENT | XML_ATTR)
+
 void throw_error(mixed ...args)
 {
   //  Put message in debug log and throw exception
