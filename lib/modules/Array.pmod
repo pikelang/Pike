@@ -502,3 +502,19 @@ array flatten(array a)
   foreach(a, mixed b) ret+=arrayp(b)?flatten([array]b):({b});
   return ret;
 }
+
+mixed sum(array a)
+{
+// 1000 is a safe stack limit
+   if (sizeof(a)<1000)
+      return `+(@a);
+   else
+   {   
+      mixed mem=`+(@a[..999]);
+      int j=1000;
+      array v;
+      while (sizeof(v=a[j..j+999]))
+	 mem=`+(mem,@v),j+=1000;
+      return mem;
+   }
+}
