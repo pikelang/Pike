@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.129 1997/10/15 04:17:48 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.130 1997/10/25 16:34:38 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -635,8 +635,6 @@ int main()
 
     # Test for POSIX threads instead
 
-    AC_MSG_CHECKING(posix threads)
-
     case "x$pike_cv_sys_os" in
       xOSF1)
         LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
@@ -648,6 +646,8 @@ int main()
     esac
 
     AC_CHECK_FUNCS(pthread_init)
+
+    AC_MSG_CHECKING(posix threads)
 
     AC_CACHE_VAL(pike_cv_posix_threads, [
       AC_TRY_RUN([
