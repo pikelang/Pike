@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.59 1998/08/04 23:56:14 grubba Exp $
+ * $Id: system.c,v 1.60 1998/08/06 05:31:51 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.59 1998/08/04 23:56:14 grubba Exp $");
+RCSID("$Id: system.c,v 1.60 1998/08/06 05:31:51 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -266,7 +266,7 @@ void f_readlink(INT32 args)
 #endif /* HAVE_READLINK */
 
 #ifndef HAVE_RESOLVEPATH
-#ifdef(HAVE_READLINK)
+#ifdef HAVE_READLINK
 /* FIXME: Write code that simulates resolvepath() here
  */
 /* #define HAVE_RESOLVEPATH */
