@@ -177,6 +177,7 @@ static int eval_instruction(unsigned char *pc)
 #define OPCODE2_TAIL(OP,DESC) CASE(OP);
 
 #define OPCODE0_JUMP(OP,DESC) CASE(OP); {
+#define OPCODE0_TAILJUMP(OP,DESC) } CASE(OP) {;
 
 /* These are something of a special case as they
  * requires a POINTER stored explicitly after
@@ -189,7 +190,6 @@ static int eval_instruction(unsigned char *pc)
   INT32 arg1=GET_ARG(); \
   INT32 arg2=GET_ARG2();
 
-#define OPCODE0_TAILJUMP(OP,DESC) } CASE(OP) {;
 #define OPCODE1_TAILJUMP(OP,DESC) } CASE(OP) {; 
 #define OPCODE2_TAILJUMP(OP,DESC) } CASE(OP) {; 
 
