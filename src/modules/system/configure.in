@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.26 1998/06/25 13:03:42 grubba Exp $
+# $Id: configure.in,v 1.27 1998/08/04 23:25:35 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -13,7 +13,7 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 	sys/utsname.h pwd.h passwd.h shadow.h grp.h sys/stat.h winsock.h \
         windows.h sys/param.h)
 
-AC_HAVE_FUNCS(syslog link symlink readlink chown \
+AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid \
 	getpwnam getspnam getgrnam getpwuid getgrgid \
