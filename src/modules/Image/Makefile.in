@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.39 2003/05/07 10:44:40 grubba Exp $
+# $Id: Makefile.in,v 1.40 2003/11/12 23:13:43 mast Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS = image_module.o \
@@ -18,9 +18,16 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
+.SUFFIXES: .s
+
 .s.o:  $<
-	echo "Compiling $<"
-	@nasm -f elf -g -o $@ $<
+	@echo "Compiling $<"
+	@if nasm -f elf -g -o $@ $< ; then :; else \
+	  status=$$?; \
+	  echo "Compilation command was:" >&2; \
+	  echo "nasm -f elf -g -o $@ $<" >&2; \
+	  exit $$status; \
+	fi
 
 pike: all
 	cd ../..; $(MAKE) "AR=$(AR)"
