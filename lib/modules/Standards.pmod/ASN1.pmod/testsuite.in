@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.6 2004/02/23 00:01:57 nilsson Exp $
+dnl $Id: testsuite.in,v 1.7 2004/02/23 11:10:50 nilsson Exp $
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 
@@ -51,6 +51,9 @@ test_eq(Standards.ASN1.Types.PrintableString("Test User 1")->get_der(),
 
 test_eq(Standards.ASN1.Types.UTC("910506234540Z")->get_der(),
   String.hex2string("170d3931303530363233343534305a"))
+
+test_eq(Standards.ASN1.Types.TeletexString("clés publiques")->get_der(),
+  String.hex2string("140f636cc26573207075626c6971756573"))
 
 test_any([[
   import Standards.ASN1.Types;
