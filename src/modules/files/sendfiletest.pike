@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.1 1999/10/14 20:52:01 grubba Exp $ */
+/* $Id: sendfiletest.pike,v 1.2 1999/10/14 21:23:33 grubba Exp $ */
 
 void done(int sent)
 {
@@ -17,7 +17,7 @@ int main(int argc, array(string) argv)
     werror("Failed to open \"Makefile\" for reading!\n");
     exit(1);
   }
-  if (!from->open("conftest.Makefile", "cwt")) {
+  if (!to->open("conftest.Makefile", "cwt")) {
     werror("Failed to open \"conftest.Makefile\" for writing!\n");
     exit(1);
   }
