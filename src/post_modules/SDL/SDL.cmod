@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.21 2003/12/12 17:53:44 nilsson Exp $
+|| $Id: SDL.cmod,v 1.22 2004/04/06 12:52:52 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.21 2003/12/12 17:53:44 nilsson Exp $");
+RCSID("$Id: SDL.cmod,v 1.22 2004/04/06 12:52:52 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -215,7 +215,9 @@ PIKEFUN void quit_sub_system(int flags) {
  *!  @[SDL.init()], @[SDL.init_sub_system()]
  *!
  */
-PIKEFUN int was_init(int flags) {
+PIKEFUN int was_init(int flags)
+     optflags OPT_EXTERNAL_DEPEND;
+{
   RETURN SDL_WasInit(flags);
 }
 
@@ -259,7 +261,9 @@ PIKEFUN void quit() {
  *!   
  *!   @[SDL.Keysym]
  */
-PIKEFUN int enable_unicode(int enable) {
+PIKEFUN int enable_unicode(int enable)
+     optflags OPT_SIDE_EFFECT;
+{
   RETURN SDL_EnableUNICODE(enable);
 }
 
@@ -280,7 +284,9 @@ PIKEFUN int enable_unicode(int enable) {
  *!   
  *!   @[SDL.get_key_state()]
  */
-PIKEFUN int get_mod_state() {
+PIKEFUN int get_mod_state()
+     optflags OPT_EXTERNAL_DEPEND;
+{
   RETURN SDL_GetModState();
 }
 
@@ -295,7 +301,9 @@ PIKEFUN int get_mod_state() {
  *!  @[SDL.pump_events()] to update the state array.
  *! 
  */
-PIKEFUN string get_key_state() {
+PIKEFUN string get_key_state()
+     optflags OPT_EXTERNAL_DEPEND;
+{
   int numkeys;
   char *state = SDL_GetKeyState(&numkeys);
   push_string(make_shared_binary_string(state, numkeys));
@@ -322,7 +330,9 @@ PIKECLASS Rect {
     THIS->rect.w = THIS->rect.h = 0;
   }
   
-  PIKEFUN mixed `->(string key) {
+  PIKEFUN mixed `->(string key)
+    optflags OPT_EXTERNAL_DEPEND;
+  {
     struct pike_string *x, *y, *w, *h;
     REF_MAKE_CONST_STRING( x, "x" );     
     REF_MAKE_CONST_STRING( y, "y" );     
@@ -341,7 +351,9 @@ PIKECLASS Rect {
     }
   }
     
-  PIKEFUN int `->=(string key, int value) {
+  PIKEFUN int `->=(string key, int value)
+    optflags OPT_SIDE_EFFECT;
+  {
     struct pike_string *x, *y, *w, *h;
     REF_MAKE_CONST_STRING( x, "x" );     
     REF_MAKE_CONST_STRING( y, "y" );     
@@ -361,11 +373,15 @@ PIKECLASS Rect {
     RETURN value; /* Return what we got in */
   }
     
-  PIKEFUN mixed `[](string key) {
+  PIKEFUN mixed `[](string key)
+    optflags OPT_EXTERNAL_DEPEND;
+  {
     f_Rect_cq__backtick_2D_3E(args);
   }
 
-  PIKEFUN mixed `[]=(string key, int value) {
+  PIKEFUN mixed `[]=(string key, int value)
+    optflags OPT_SIDE_EFFECT;
+  {
     f_Rect_cq__backtick_2D_3E_eq(args);
   }
 
@@ -376,6 +392,7 @@ PIKECLASS Rect {
    *! associated with those names.
    */
   PIKEFUN mixed cast( string type )
+    optflags OPT_EXTERNAL_DEPEND;
   {
     struct pike_string *array_t;
     struct pike_string *mapping_t;
@@ -443,7 +460,9 @@ PIKECLASS Rect {
 PIKECLASS Keysym {
   CVAR SDL_keysym keysym;
 
-  PIKEFUN mixed `->(string key) {                              
+  PIKEFUN mixed `->(string key)
+    optflags OPT_EXTERNAL_DEPEND;
+  {
     struct pike_string *mod;
     struct pike_string *scancode;
     struct pike_string *sym;
@@ -464,7 +483,9 @@ PIKECLASS Keysym {
       OBJ_INDEX();
     }
   }
-  PIKEFUN mixed `[](string key) {
+  PIKEFUN mixed `[](string key)
+    optflags OPT_EXTERNAL_DEPEND;
+  {
     f_Keysym_cq__backtick_2D_3E(args);
   }
 }
