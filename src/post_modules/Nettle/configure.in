@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2003/08/01 19:25:45 nilsson Exp $
+# $Id: configure.in,v 1.5 2003/08/26 11:14:26 nilsson Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -13,6 +13,6 @@ AC_CHECK_LIB(nettle, cbc_encrypt,,
 No crypto functions will be available.])
 	     PIKE_FEATURE_NODEP(Nettle))
 
-AC_HAVE_FUNCS(md4_init)
+AC_HAVE_FUNCS(nettle_md4_init)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
