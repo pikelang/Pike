@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.6 1999/07/19 16:03:54 mirar Exp $
+//  $Id: Session.pike,v 1.7 1999/09/28 02:08:59 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -439,61 +439,114 @@ object text(int no)
 
 class Membership
 {
-   int              person;
-   int 		    newtype;
-   object           last_time_read;             
-   int(0..255)      priority;                   
-   int              last_text_read;             
-   array(int)       read_texts;                 
-   int(0..65535)    added_by;   // new
-   object           added_at;   // new
-   multiset(string) type;       // new
-   int              position;        // new
+  int              person;
+  int              newtype;
+  object           last_time_read;             
+  int(0..255)      priority;                   
+  int              last_text_read;             
+  array(int)       read_texts;                 
+  int(0..65535)    added_by;   // new
+  object           added_at;   // new
+  multiset(string) type;       // new
+  int              position;        // new
 
-   object conf;
+  object conf;
+  
+  object err;
 
-   void create(object mb,int pers)
-   {
-      person=pers;
+  void create(object mb,int pers)
+  {
+    person=pers;
 
-      last_time_read=mb->last_time_read;
-      read_texts=mb->read_texts;
-      last_text_read=mb->last_text_read;
-      priority=mb->priority;
-      conf=conference(mb->conf_no);
+    last_time_read=mb->last_time_read;
+    read_texts=mb->read_texts;
+    last_text_read=mb->last_text_read;
+    priority=mb->priority;
+    conf=conference(mb->conf_no);
 	 
-      if (mb->type)
-      {
-	 added_at=mb->added_at;
-	 position=mb->position;
-	 added_by=mb->added_by;
-	 type=mb->type;
-	 newtype=1;
-      }
-   }
+    if (mb->type)
+    {
+      added_at=mb->added_at;
+      position=mb->position;
+      added_by=mb->added_by;
+      type=mb->type;
+      newtype=1;
+    }
+  }
 
-   int number_unread()
-   {
-      return (conf->no_of_texts+conf->first_local_no-1)
-	 -last_text_read -sizeof(read_texts);
-   }
-   
-   mixed `[](string what)
-   {
-      switch (what)
+  //  FETCHER(unread,ProtocolTypes.TextMapping,_unread,local_to_global,@({conf->no,1,255}))
+
+  int number_unread()
+  { 
+    return (conf->no_of_texts+conf->first_local_no-1)
+      -last_text_read -sizeof(read_texts);
+  }
+
+
+  array(Text) _unread_texts;
+  
+  array(object) get_unread_texts_blocking()
+  {
+    int i=last_text_read+1;
+    mapping(int:int) local_to_global = ([]);
+
+    if(i > conf->no_of_texts)
+      return (_unread_texts = ({ }) );
+
+    /* Get all the global numbers after last-text-read */
+    while(1)
+    {
+      ProtocolTypes.TextMapping textmapping=con->local_to_global(conf->no,i,255);
+      ProtocolTypes.LocalToGlobalBlock block=textmapping->block;
+      if(block->densep)            /* Use TextList */
       {
-	 case "last_time_read":
-	 case "read_texts":
-	 case "last_text_read":
-	 case "priority":
-	 case "conf":
-	 case "added_at":
-	 case "position":
-	 case "type":
-	 case "number_unread":
-	    return ::`[](what);
+	ProtocolTypes.TextList textlist=block->dense;
+	int j=textmapping->range_begin;
+
+	foreach(textlist->texts, int global)
+	  local_to_global[j++]=global;
       }
-   }
+      else                         /* Use array(TextNumberPair) */
+      {
+	foreach(block->sparse, ProtocolTypes.TextNumberPair pair)
+	  local_to_global[pair->local_number]=pair->global_number;
+      }
+      
+      if(!textmapping->later_texts_exists)
+	break;
+      i=textmapping->range_end;
+    }
+
+    mapping unread_numbers =
+      local_to_global -
+      mkmapping(read_texts,allocate(sizeof(read_texts)));
+
+    return /*_unread_texts =*/ map( sort(values(local_to_global)), text );
+  }
+
+  
+  mixed `[](string what)
+  {
+    switch (what)
+    {
+    case "unread_texts":
+      return _unread_texts || get_unread_texts_blocking();
+    case "last_time_read":
+    case "read_texts":
+    case "last_text_read":
+    case "priority":
+    case "conf":
+    case "added_at":
+    case "position":
+    case "type":
+    case "number_unread":
+      return ::`[](what);
+
+    }
+  }
+
+  mixed `->(string what) { return `[](what); }
+
 }
 
 
