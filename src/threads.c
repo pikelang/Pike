@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.106 1999/12/14 19:49:51 mast Exp $");
+RCSID("$Id: threads.c,v 1.107 2000/01/16 05:57:34 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -560,10 +560,10 @@ TH_RETURN_TYPE new_thread_func(void * data)
 	  );
   init_interpreter();
   thread_id=arg.id;
-  SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */
-  OBJ2THREAD(thread_id)->swapped=0;
   stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   recoveries = NULL;
+  SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */
+  OBJ2THREAD(thread_id)->swapped=0;
 
 #if defined(PIKE_DEBUG)
   if(d_flag)
