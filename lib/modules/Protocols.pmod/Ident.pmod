@@ -1,14 +1,18 @@
-// An implementation of the IDENT protocol, specified in RFC 931.
 //
-// $Id: Ident.pmod,v 1.10 2003/01/20 17:44:00 nilsson Exp $
+// $Id: Ident.pmod,v 1.11 2003/03/08 23:01:58 nilsson Exp $
+
+//! An implementation of the IDENT protocol, specified in RFC 931.
 
 #pike __REAL_VERSION__
 
 // #define IDENT_DEBUG
 
-class lookup_async
+constant lookup_async = AsyncLookup;
+
+//!
+class AsyncLookup
 {
-  object con;
+  Stdio.File con;
 
   function(array(string), mixed ...:void) callback;
   array cb_args;
@@ -16,7 +20,7 @@ class lookup_async
   string query;
   string read_buf = "";
 
-  void do_callback(array(string) reply)
+  static void do_callback(array(string) reply)
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: calling callback\n");
@@ -42,7 +46,7 @@ class lookup_async
     }
   }
 
-  void write_cb()
+  static void write_cb()
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: sending query\n");
@@ -59,8 +63,8 @@ class lookup_async
       do_callback(({ "ERROR", "FAILED TO SEND REQUEST" }));
     }
   }
-  
-  void read_cb(mixed ignored, string data)
+
+  static void read_cb(mixed ignored, string data)
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: reading data\n");
@@ -83,7 +87,7 @@ class lookup_async
     }
   }
 
-  void close_cb()
+  static void close_cb()
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: Connection closed\n");
@@ -92,7 +96,7 @@ class lookup_async
     do_callback(({ "ERROR", "CONNECTION CLOSED" }));
   }
 
-  void timeout()
+  static void timeout()
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: Timeout\n");
@@ -101,34 +105,27 @@ class lookup_async
     do_callback(({ "ERROR", "TIMEOUT" }));
   }
 
-  void connected()
+  static void connected(int dummy)
   {
 #ifdef IDENT_DEBUG
-    werror(sprintf("Protocols.Ident: Connection OK, query:%O\n", query));
+    werror("Protocols.Ident: Connection OK, query:%O\n", query);
 #endif /* IDENT_DEBUG */
     con->set_nonblocking(read_cb, write_cb, close_cb);
   }
 
+  //!
   void create(object fd, function(array(string), mixed ...:void) cb,
 	      mixed ... args)
   {
-    string|array(string) raddr = fd->query_address();
-    string|array(string) laddr = fd->query_address(1);
-
-    if(!raddr || !laddr) {
-      // Does this ever happen?
-      error("Protocols.Ident - cannot lookup address");
-    }
-
-    laddr = laddr / " ";
-    raddr = raddr / " ";
+    array(string) raddr = fd->query_address()/" ";
+    array(string) laddr = fd->query_address(1)/" ";
 
     query = raddr[1]+","+laddr[1]+"\r\n";
 
     con = Stdio.File();
     if (!con->open_socket(0, laddr[0])) {
       destruct(con);
-      error("Protocols.Ident: open_socket() failed.");
+      error("open_socket() failed.\n");
     }
 
     callback = cb;
@@ -146,57 +143,34 @@ class lookup_async
   }
 }
 
-int|array (string) lookup(object fd)
+//! @throws
+//!   Throws exception upon any error.
+array(string) lookup(object fd)
 {
-  mixed raddr; // Remote Address.
-  mixed laddr; // Local Address.
-  array err;
-  object remote_fd;
-  int i;
-  if(!fd)
-    return 0;
-  err = catch(raddr = fd->query_address());
-  if(err)
-    throw(err + ({"Error in Protocols.Ident:"}));
-  err = catch(laddr = fd->query_address(1));
-  if(err)
-    throw(err + ({"Error in Protocols.Ident:" }));
-  if(!raddr || !laddr)
-    throw(backtrace() +({ "Protocols.Ident - cannot lookup address"}));
+  array(string) raddr = fd->query_address()/" ";
+  array(string) laddr = fd->query_address(1)/" ";
 
-  laddr = laddr / " ";
-  raddr = raddr / " ";
+  Stdio.FILE remote_fd = Stdio.FILE();
+  if(!remote_fd->open_socket(0, laddr[0]))
+    error("open_socket() failed.\n");
 
-  remote_fd = Stdio.FILE();
-  if(!remote_fd->open_socket(0, laddr[0])) {
-    destruct(remote_fd);
-    throw(backtrace() +({ "Protocols.Ident: open_socket() failed."}));
-  }
-
-  if(err = catch(remote_fd->connect(raddr[0], 113)))
-  {
-    destruct(remote_fd);
-    throw(err);
-  }
+  remote_fd->connect(raddr[0], 113);
   remote_fd->set_blocking();
   string query = raddr[1]+","+laddr[1]+"\r\n";
   int written;
-  if((written = remote_fd->write(query)) != sizeof(query)) {
-    destruct(remote_fd);
-    throw(backtrace() +({ "Protocols.Ident: short write ("+written+")."}));
-  }
-  mixed response = remote_fd->gets();//0xefffffff, 1);
+  if((written = remote_fd->write(query)) != sizeof(query))
+    error("Short write ("+written+").\n");
+
+  string response = remote_fd->gets(); //0xefffffff, 1);
   if(!response || !sizeof(response))
-  {
-    destruct(remote_fd);
-    throw(backtrace() +({ "Protocols.Ident: read failed."}));
-  }
+    error("Read failed.\n");
+
   remote_fd->close();
   destruct(remote_fd);
   response -= " ";
   response -= "\r";
-  response /= ":";
-  if(sizeof(response) < 2)
-    return ({ "ERROR", "UNKNOWN-ERROR" });
-  return response[1..];
+  array(string) ret = response / ":";
+  if(sizeof(ret) < 2)
+    error("Malformed response.\n");
+  return ret[1..];
 }
