@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.214 2003/04/02 19:22:43 mast Exp $
+|| $Id: pike_types.c,v 1.215 2003/06/06 14:32:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.214 2003/04/02 19:22:43 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.215 2003/06/06 14:32:03 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -941,7 +941,12 @@ static void internal_parse_typeA(const char **_s)
   len=0;
   for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
-    if(len>=sizeof(buf)) Pike_error("Buffer overflow in parse_type\n");
+    if(len>=sizeof(buf)) {
+      my_yyerror("Buffer overflow in parse_type(\"%s\") (limit %d).",
+		 *s, sizeof(buf));
+      push_type(T_MIXED);
+      return;
+    }
     buf[len] = s[0][len];
   }
   buf[len]=0;
@@ -966,15 +971,17 @@ static void internal_parse_typeA(const char **_s)
 	  while(ISSPACE(**s)) ++*s;
 	  if(s[0][0]=='.' && s[0][1]=='.')
 	    s[0]+=2;
-	  else
-	    Pike_error("Missing .. in integer type.\n");
+	  else {
+	    yyerror("Missing .. in integer type.");
+	  }
 	  
 	  while(ISSPACE(**s)) ++*s;
 	  max=STRTOL((const char *)*s,(char **)s,0);
 	  while(ISSPACE(**s)) ++*s;
 
-	  if(**s != ')') Pike_error("Missing ')' in integer range.\n");
-	  ++*s;
+	  if(**s != ')') yyerror("Missing ')' in integer range.");
+	  else
+	    ++*s;
 	  push_int_type(min, max);
 	}else{
 	  push_int_type(MIN_INT32, MAX_INT32);
@@ -1010,13 +1017,16 @@ static void internal_parse_typeA(const char **_s)
 	    {
 	      *s+=3;
 	      while(ISSPACE(**s)) ++*s;
-	      if(**s != ':')
-		Pike_error("Missing ':' after ... in function type.\n");
+	      if(**s != ':') {
+		yyerror("Missing ':' after ... in function type.");
+		*s--;
+	      }
 	      break;
 	    } else {
 	      nargs++;
 	    }
 	  }
+	  /* Skip the colon. */
 	  ++*s;
 	  internal_parse_type(_s);  /* return type */
 	  push_reverse_type(T_MANY);
@@ -1025,8 +1035,9 @@ static void internal_parse_typeA(const char **_s)
 	    push_reverse_type(T_FUNCTION);
 	  }
 
-	  if(**s != ')') Pike_error("Missing ')' in function type.\n");
-	  ++*s;
+	  if(**s != ')') yyerror("Missing ')' in function type.");
+	  else
+	    ++*s;
 	}else{
 	  push_type(T_VOID);
 	  push_type(T_MIXED);
@@ -1116,11 +1127,13 @@ static void internal_parse_typeA(const char **_s)
 	{
 	  ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ',') Pike_error("Expecting ','.\n");
-	  ++*s;
+	  if(**s != ',') yyerror("Expected ','.");
+	  else
+	    ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ')') Pike_error("Expecting ')'.\n");
-	  ++*s;
+	  if(**s != ')') yyerror("Expected ')'.");
+	  else
+	    ++*s;
 	}else{
 	  push_type(T_MIXED);
 	  push_type(T_MIXED);
@@ -1141,11 +1154,13 @@ static void internal_parse_typeA(const char **_s)
 	{
 	  ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ':') Pike_error("Expecting ':'.\n");
-	  ++*s;
+	  if(**s != ':') yyerror("Expected ':'.");
+	  else
+	    ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ')') Pike_error("Expecting ')'.\n");
-	  ++*s;
+	  if(**s != ')') yyerror("Expected ')'.");
+	  else
+	    ++*s;
 	}else{
 	  push_type(T_MIXED);
 	  push_type(T_MIXED);
@@ -1160,8 +1175,9 @@ static void internal_parse_typeA(const char **_s)
 	{
 	  ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ')') Pike_error("Expecting ')'.\n");
-	  ++*s;
+	  if(**s != ')') yyerror("Expected ')'.");
+	  else
+	    ++*s;
 	}else{
 	  push_type(T_MIXED);
 	}
@@ -1182,8 +1198,9 @@ static void internal_parse_typeA(const char **_s)
 	{
 	  ++*s;
 	  internal_parse_type(_s);
-	  if(**s != ')') Pike_error("Expecting ')'.\n");
-	  ++*s;
+	  if(**s != ')') yyerror("Expected ')'.");
+	  else
+	    ++*s;
 	}else{
 	  push_type(T_MIXED);
 	}
@@ -1218,7 +1235,8 @@ static void internal_parse_typeA(const char **_s)
 
     default:
   bad_type:
-      Pike_error("Couldn't parse type. (%s)\n",buf);
+      push_type(T_MIXED);
+      my_yyerror("Couldn't parse type. (%s).", buf);
   }
 
   while(ISSPACE(**s)) ++*s;
@@ -1240,7 +1258,9 @@ static void internal_parse_typeB(const char **s)
     ++*s;
     internal_parse_type(s);
     while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
-    if(**s != ')') Pike_error("Expecting ')'.\n");
+    if(**s != ')') {
+      yyerror("Expected ')' in type.");
+    }
     ++*s;
     break;
     
@@ -1306,10 +1326,11 @@ struct pike_type *parse_type(const char *s)
   TYPE_STACK_DEBUG("parse_type");
 
   type_stack_mark();
+
   internal_parse_type(&s);
 
   if( *s )
-    Pike_fatal("Extra junk at end of type definition.\n");
+    yyerror("Extra junk at end of type definition.");
 
   ret=pop_unfinished_type();
 
