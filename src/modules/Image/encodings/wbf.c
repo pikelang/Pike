@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.1 1999/10/21 22:18:44 per Exp $");
+RCSID("$Id: wbf.c,v 1.2 1999/10/21 23:20:11 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -85,9 +85,9 @@ static int read_int( struct buffer *from )
   while( 1 )
   {
     int i = read_uchar( from );
-    res <<= 8;
+    res <<= 7;
     res |= i&0x7f;
-    if( !(res & 0x80 ) )
+    if( !(i & 0x80 ) )
       break;
   }
   return res;
@@ -183,7 +183,7 @@ static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
       if( !(x % 8) )
         q = data[x/8];
       else
-        q = (q<<1) | (q>>7);
+        q <<= 1;
       if( q & 128 )
         *id = white;
       id++;
@@ -301,17 +301,26 @@ static void image_f_wbf_decode_header( int args )
   low_image_f_wbf_decode( args, 0 );
 }
 
-void push_wap_integer( int i )
+void push_wap_integer( unsigned int i )
 {
-  char data[6];
+  char data[10]; /* More than big enough... */
   int pos = 0;
-  while( i > 0x7f )
+
+  if( !i )
   {
-    data[5-pos] = i&0x7f;
-    i>>=8; pos++;
+    data[0] = 0;
+    pos=1;
   }
-  data[5-pos] = i;
-  push_string( make_shared_binary_string( data+5-pos, pos+1 ) );
+
+  while( i )
+  {
+    data[pos] = (i&0x7f) | 0x80;
+    i>>=7; 
+    pos++;
+  }
+  data[0] &= 0x7f;
+  push_string( make_shared_binary_string( data, pos ) );
+  f_reverse(1);
 }
 
 static void push_wap_type0_image_data( struct image *i )
