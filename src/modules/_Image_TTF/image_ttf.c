@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.13 1999/04/09 10:18:28 mirar Exp $
+ * $Id: image_ttf.c,v 1.14 1999/05/11 18:29:19 mirar Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.13 1999/04/09 10:18:28 mirar Exp $");
+RCSID("$Id: image_ttf.c,v 1.14 1999/05/11 18:29:19 mirar Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -604,7 +604,7 @@ static void image_ttf_face_names(INT32 args)
 **!     This instantiates the face for normal usage -
 **!	to convert font data to images.
 **! 
-**! returns a <ref>FaceInstance</ref> object.
+**! returns a <ref>Image.TTF.FaceInstance</ref> object.
 */
 
 static void image_ttf_face_make(INT32 args)
