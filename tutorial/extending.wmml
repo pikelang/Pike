@@ -260,7 +260,7 @@ This function will *not* call Pike code or error().
 </man_note>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=free_svalues title="free many svalues">
 <man_syntax>
@@ -279,7 +279,7 @@ free_svalue, TYPE_FIELD
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=assign_svalue title="copy an svalue to another svalue">
 <man_syntax>
@@ -299,7 +299,7 @@ free_svalue, assign_svalue_no_free
 </function>
 
 
-<HR NEWPAGE>
+
 
 <function name=assign_svalue_no_free title="copy an svalue to another svalue">
 <man_syntax>
@@ -320,7 +320,7 @@ assign_svalue, free_svalue
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=IS_ZERO title="check if an svalue is true or false">
 <man_syntax>
@@ -338,7 +338,7 @@ is_eq
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=is_eq title="check if two svalues contains the same value">
 <man_syntax>
@@ -356,7 +356,7 @@ IS_ZERO, is_lt, is_gt, is_le, is_ge, is_equal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=is_equal title="check if two svalues are equal">
 <man_syntax>
@@ -374,7 +374,7 @@ equal, is_eq
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <anchor name=is_gt>
 <anchor name=is_le>
@@ -440,7 +440,7 @@ A <tt>struct pike_string</tt> has these members:
 Since pike strings are shared, you can compare them by using <tt>==</tt>.
 FIXME -- add more here.
 
-<HR NEWPAGE>
+
 
 <anchor name=STR2>
 <anchor name=STR1>
@@ -466,7 +466,7 @@ The zero-termination is not included in the length of the string.
 </anchor>
 </anchor>
 
-<HR NEWPAGE>
+
 
 <function name=free_string title="Free a reference to a pike_string">
 <man_syntax>
@@ -481,7 +481,7 @@ shouldn't Pike will most likely crash.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=make_shared_string title="Make a new shared string">
 <man_syntax>
@@ -500,7 +500,7 @@ make_shared_string1, make_shared_string2
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=make_shared_binary_string title="Make a new binary shared string">
 <man_syntax>
@@ -518,7 +518,7 @@ make_shared_binary_string1, make_shared_binary_string2
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=begin_shared_string title="Start building a shared string">
 <man_syntax>
@@ -551,7 +551,7 @@ make_shared_string, end_shared_string
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=end_shared_string title="Insert a pre-allocated string into the shared string table">
 <man_syntax>
@@ -572,7 +572,7 @@ begin_shared_string, begin_wide_shared_string
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=begin_wide_shared_string title="Start building a wide shared string">
 <man_syntax>
@@ -595,7 +595,7 @@ begin_shared_string, end_shared_string, make_shared_string, make_shared_string1,
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <anchor name=make_shared_string2>
 <anchor name=make_shared_binary_string2>
@@ -668,7 +668,7 @@ void prtypes(struct array *a)
 }
 </example>
 
-<HR NEWPAGE>
+
 
 <!-- FIXME: lots more array functions should be documented -->
 
@@ -752,7 +752,7 @@ Also, since mappings can be re-allocated any time you add an element to
 it you can never trust a pointer to a pointer to a <tt>struct keypair</tt>
 if any Pike cod has a chance to execute.
 
-<hr newpage>
+
 <function name=m_sizeof></function>
 <function name=m_ind_types></function>
 <function name=m_val_types></function>

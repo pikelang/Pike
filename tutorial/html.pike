@@ -669,7 +669,6 @@ SGML convert(SGML data)
 	    data->params->size="1";
 	    break;
 
-
 	 case "man_title":
 	    ret+=convert(({
 	       Sgml.Tag("p"),

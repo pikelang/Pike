@@ -112,3 +112,4 @@ mirar_www_tutorial: mirar_tutorial
 	rm /home/mirar/www/pike_tutorial/tutorial* /home/mirar/www/pike_tutorial/gfx/*
 	ln -f `cat tutorial.files | grep -v ^gfx/` /home/mirar/www/pike_tutorial
 	ln -f `cat tutorial.files | grep ^gfx/` /home/mirar/www/pike_tutorial/gfx
+	(cd /home/mirar/www/pike_tutorial; rm tutorial.tar.gz; tar cvzf tutorial.tar.gz `cat /home/mirar/pike7/tutorial/tutorial.files`)

@@ -4247,7 +4247,7 @@ that allows line-by-line input. Note that the output part of Stdio.FILE is
 not buffered at this moment. The added functionality of Stdio.FILE is
 described here:
 
-<hr noshade size=1>
+
 <method name=gets title="get one line">
 <man_syntax>
 string gets();<br>
@@ -4475,7 +4475,7 @@ Stdio.Terminfo.getTerm
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Stdio.Terminfo.getTerm title="get terminal description">
 <man_syntax>
@@ -4497,7 +4497,7 @@ Stdio.Terminfo.getTerminfo, Stdio.Terminfo.getTermcap, Stdio.getFallbackTerm
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Stdio.Terminfo.getTermcap title="get termcap description">
 <man_syntax>
@@ -4512,7 +4512,7 @@ Stdio.Terminfo.getTerm, Stdio.Terminfo.getTerminfo
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Stdio.Terminfo.getTerminfo title="get terminfo description">
 <man_syntax>
@@ -4527,7 +4527,7 @@ Stdio.Terminfo.getTerm, Stdio.Terminfo.getTermcap
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <section title="Stdio.Terminfo.Termcap">
 <class name="Termcap">
@@ -4550,7 +4550,7 @@ object(Stdio.Terminfo.Termcap) Termcap(string <I>cap</I>, object <I>tcdb</I>, in
 </class>
 </section>
 
-<hr noshade size=1>
+
 
 <section title="Stdio.Terminfo.Terminfo">
 <class name="Terminfo">
@@ -4559,7 +4559,7 @@ Terminfo terminal description object.
 </class>
 </section>
 
-<hr noshade size=1>
+
 
 <!-- FIXME: More documentation here. -->
 </module>
@@ -4568,7 +4568,7 @@ Terminfo terminal description object.
 <section title="Stdio.Readline">
 <class name="Readline">
 
-<hr noshade size=1>
+
 <method name=create title="init readline">
 <man_syntax>
 object(Stdio.Readline) Stdio.Readline();<br>
@@ -4617,7 +4617,7 @@ The Stdio module also contains a collection of high level IO functions
 to make it easy to write short and readable Pike programs. Most of these
 functions are implemented using Stdio.File and Stdio.FILE.
 
-<hr>
+
 
 <function name=file_size title="return the size of a file in bytes">
 <man_syntax>
@@ -4767,7 +4767,7 @@ to a local TCP port. For this purpose there is a special class called
 it can accept connections which will be returned as clones of Stdio.File.
 These are the methods available in <tt>Stdio.Port</tt>:
 
-<hr>
+
 
 <method name=bind title="open socket and bind it to a port">
 <man_syntax>
@@ -5352,7 +5352,7 @@ this example again.
 <section title="Threads reference section">
 This section describes all thread-related functions and classes.
 
-<hr noshade size=1>
+
 
 <function name=thread_create title="create a thread">
 <man_syntax>
@@ -5444,7 +5444,7 @@ mixed read()
 </man_example>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Mutex-&gt;lock title="lock the mutex">
 <man_syntax>
@@ -5459,7 +5459,7 @@ be unlocked. The key will also be destructed if the lock is destructed.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Mutex-&gt;trylock title="try to lock the mutex">
 <man_syntax>
@@ -5472,7 +5472,7 @@ lock is unlocked.
 </man_description>
 </method>
 
-<hr newpage noshade size=1>
+
 
 <class name=Thread.Condition title="condition variables">
 <man_description>
@@ -5528,7 +5528,7 @@ Thread.Mutex
 </man_see>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Condition-&gt;wait title="wait for condition">
 <man_syntax>
@@ -5547,7 +5547,7 @@ Thread.Mutex-&gt;lock
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Condition.signal title="signal a condition variable">
 <man_syntax>
@@ -5562,7 +5562,7 @@ It sometimes wakes up more than one thread.
 </man_bugs>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Condition-&gt;broadcast title="signal all waiting threads">
 <man_syntax>
@@ -5574,7 +5574,7 @@ condition.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <class name=Thread.Fifo title="first in, first out object">
 <man_description>
@@ -5589,7 +5589,7 @@ Thread.Queue
 </man_see>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Fifo-&gt;create title="initialize the fifo">
 <man_syntax>
@@ -5604,7 +5604,7 @@ written to the fifo without blocking. The default size is 128.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Fifo-&gt;write title="queue a value">
 <man_syntax>
@@ -5617,7 +5617,7 @@ available.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Fifo-&gt;read title="read a value from the fifo">
 <man_syntax>
@@ -5631,7 +5631,7 @@ thread writes a value to the fifo.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Fifo-&gt;size title="return number of values in fifo">
 <man_syntax>
@@ -5642,7 +5642,7 @@ This function returns how many values are currently in the fifo. <!-- L}ter fel 
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <class name=Thread.Queue title="a queue of values">
 <man_description>
@@ -5657,7 +5657,7 @@ Queues are only available on systems with POSIX or UNIX threads support.
 Thread.Fifo
 </man_see>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Queue-&gt;write title="queue a value">
 <man_syntax>
@@ -5670,7 +5670,7 @@ room for it.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Queue-&gt;read title="read a value from the queue">
 <man_syntax>
@@ -5684,7 +5684,7 @@ thread writes a value to the queue.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Thread.Queue-&gt;size title="return number of values in queue">
 <man_syntax>
@@ -5696,7 +5696,7 @@ This function returns how many values are currently in the queue.
 </method>
 </class>
 
-<hr noshade size=1>
+
 
 <class name=thread_local title="Thread local variable class">
 <man_description>
@@ -5705,7 +5705,7 @@ thread that uses it. It has two methods: get and set. A value stored
 in an instance of thread_local can only be retreived by that same thread.
 </man_description>
 
-<hr noshade size=1>
+
 <method name=thread_local.set title="Set the thread_local value">
 <man_syntax>
 mixed set(mixed <i>value</i>);
@@ -5718,7 +5718,7 @@ thread.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 <method name=thread_local.get title="Get the thread_local value">
 <man_syntax>
 mixed set(mixed <i>value</i>);
@@ -5849,7 +5849,7 @@ The module <tt>String</tt> contains some extra string functionality which
 is not always used. These functions are mostly implemented in Pike as a
 complement to those written in C.
 
-<hr noshade size=1>
+
 
 
 <function name=String.fuzzymatch title="make a fuzzy compare of two strings">
@@ -5873,7 +5873,7 @@ Array.diff, Array.diff_compare_table, Array.diff_longest_sequence
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=String.implode_nicely title="make an English comma separated list">
 <man_syntax>
@@ -5901,7 +5901,7 @@ Result: 1, 2 or even 3<br>
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=String.capitalize title="capitalize a string">
 <man_syntax>
@@ -5916,7 +5916,7 @@ lower_case, upper_case
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=String.sillycaps title="Sillycaps A String">
 <man_syntax>
@@ -5927,7 +5927,7 @@ Convert the first character in each word (separated by spaces) in str to upper c
 </man_description>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=String.strmult title="multiply strings">
 <man_syntax>
@@ -5952,7 +5952,7 @@ count("....","..") is 2.
 </man_description>
 </function>
 
-<hr noshade size=1>
+
 
 </module>
 </section>
@@ -5962,7 +5962,7 @@ count("....","..") is 2.
 As with <tt>String</tt> these functions are Pike functions written to
 supplement those written in C.
 
-<hr noshade size=1>
+
 
 <function name=Array.diff title="gives the difference of two arrays">
 <man_syntax>
@@ -6019,7 +6019,7 @@ Array.diff_compare_table, Array.diff_longest_sequence, String.fuzzymatch
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.diff_compare_table
  title="gives the comparison-table used by Array.diff()">
@@ -6064,7 +6064,7 @@ Array.diff, Array.diff_longest_sequence, String.fuzzymatch
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.diff_longest_sequence
  title="gives the longest common sequence of two arrays">
@@ -6089,7 +6089,7 @@ Array.diff, Array.diff_compare_table, String.fuzzymatch
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 
 
@@ -6119,7 +6119,7 @@ Array.splice, `/
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.filter title="filter an array or mapping through a function">
 <man_syntax>
@@ -6143,7 +6143,7 @@ Array.sum_arrays, Array.map
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.longest_ordered_sequence
  title="find the longest ordered sequence of elements">
@@ -6192,7 +6192,7 @@ Array.diff
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.map title="map an array or mapping over a function">
 <man_syntax>
@@ -6216,7 +6216,7 @@ Array.sum_arrays, Array.filter
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 <function name=Array.permute title="Give a specified permutation of an array">
 <man_syntax>
 array permute(array in,int number);
@@ -6236,7 +6236,7 @@ Array.shuffle
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.search_array title="search for something in an array">
 <man_syntax>
@@ -6254,7 +6254,7 @@ Array.sum_arrays, Array.filter
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.shuffle title="Random-shuffle an array">
 <man_syntax>
@@ -6272,7 +6272,7 @@ Array.permute
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 
 <function name=Array.splice title="splice two or more arrays">
@@ -6315,7 +6315,7 @@ Result: ({ /* 9 elements */
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 
 <function name=Array.sum_arrays title="map any number of arrays over a function">
@@ -6342,7 +6342,7 @@ Array.map, Array.filter, Array.search_array
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.sort_array title="sort an array">
 <man_syntax>
@@ -6360,7 +6360,7 @@ Array.map, sort
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Array.uniq title="remove elements that are duplicates">
 <man_syntax>
@@ -6372,7 +6372,7 @@ values removed. The order of the values in the result is undefined.
 </man_description>
 </function>
 
-<hr noshade size=1>
+
 
 </module>
 </section>
@@ -6418,7 +6418,7 @@ int main()
 This very simple example can be used as a CGI script to produce a gif image
 which says what time it is in white text on a black background.
 
-<hr newpage>
+
 
 <include file=Image.wmml>
 
@@ -6431,7 +6431,7 @@ which says what time it is in white text on a black background.
 The Protocol modules is some helper modules that makes it easier for
 the pike programmer to use some of the protocols used on the internet.
 
-<hr newpage>
+
 
 <include file=protocols.wmml>
 
@@ -6453,7 +6453,7 @@ information about what these functions do on your system.
 Please note that these functions are available globally, you do not
 need to <tt>import System</tt> to use these functions.
 
-<hr noshade size=1>
+
 <function name=chroot title="change the root directory" fullpath>
 <man_syntax>
 int chroot(string <I>newroot</I>);<br>
@@ -6474,7 +6474,7 @@ the fchroot(2) system call.
 </man_note>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=getegid title="get the effective group ID" fullpath>
 <man_syntax>
@@ -6488,7 +6488,7 @@ setuid, getuid, setgid, getgid, seteuid, geteuid, setegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=geteuid title="get the effective user ID" fullpath>
 <man_syntax>
@@ -6502,7 +6502,7 @@ setuid, getuid, setgid, getgid, seteuid, setegid, getegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=getgid title="get the group ID" fullpath>
 <man_syntax>
@@ -6516,7 +6516,7 @@ setuid, getuid, setgid, seteuid, geteuid, setegid, getegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=getgroups title="get the supplemental group access list" fullpath>
 <man_syntax>
@@ -6530,7 +6530,7 @@ initgroups, setgroups, getgid, setgid, getegid, setegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=gethostbyaddr title="gets information about a host given its address" fullpath>
 <man_syntax>
@@ -6550,7 +6550,7 @@ gethostbyname
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=gethostbyname title="gets information about a host given its name" fullpath>
 <man_syntax>
@@ -6572,7 +6572,7 @@ gethostbyaddr
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=gethostname title="get the name of this host" fullpath>
 <man_syntax>
@@ -6587,7 +6587,7 @@ or uname(2) system calls.
 </man_note>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=getpgrp title="get the process group ID" fullpath>
 <man_syntax>
@@ -6604,7 +6604,7 @@ getpid, getppid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=getpid title="get the process ID" fullpath>
 <man_syntax>
@@ -6618,7 +6618,7 @@ getppid, getpgrp
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=getppid title="get the parent process ID" fullpath>
 <man_syntax>
@@ -6632,7 +6632,7 @@ getpid, getpgrp
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=getuid title="get the user ID" fullpath>
 <man_syntax>
@@ -6646,7 +6646,7 @@ setuid, setgid, getgid, seteuid, geteuid, setegid, getegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=hardlink title="create a hardlink" fullpath>
 <man_syntax>
@@ -6660,7 +6660,7 @@ symlink, mv, rm
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=initgroups title="initialize the group access list" fullpath>
 <man_syntax>
@@ -6676,7 +6676,7 @@ setuid, getuid, setgid, getgid, seteuid, geteuid, setegid, getegid, getgroups, s
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=openlog title="initializes the connection to syslogd" fullpath>
 <man_syntax>
@@ -6725,7 +6725,7 @@ syslog, closelog, setlogmask
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=readlink title="read a symbolic link" fullpath>
 <man_syntax>
@@ -6739,7 +6739,7 @@ symlink
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=setegid title="set the effective group ID" fullpath>
 <man_syntax>
@@ -6753,7 +6753,7 @@ setuid, getuid, setgid, getgid, seteuid, geteuid, getegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=seteuid title="set the effective user ID" fullpath>
 <man_syntax>
@@ -6767,7 +6767,7 @@ setuid, getuid, setgid, getgid, geteuid, setegid, getegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=setgid title="set the group ID" fullpath>
 <man_syntax>
@@ -6781,7 +6781,7 @@ setuid, getuid, getgid, seteuid, geteuid, setegid, getegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=setgroups title="set the supplemental group access list" fullpath>
 <man_syntax>
@@ -6795,7 +6795,7 @@ initgroups, getgroups, getgid, setgid, getegid, setegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=setuid title="set the user ID" fullpath>
 <man_syntax>
@@ -6809,7 +6809,7 @@ getuid, setgid, getgid, seteuid, geteuid, setegid, getegid
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=symlink title="create a symbolic link" fullpath>
 <man_syntax>
@@ -6823,7 +6823,7 @@ hardlink, readlink, mv, rm
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=uname title="get operating system information" fullpath>
 <man_syntax>
@@ -6846,12 +6846,12 @@ system call.
 </section>
 </module>
 
-<hr noshade size=1>
+
 
 <module name=Process>
 <section title="Process">
 The Process module contains functions to start and control other programs from Pike.
-<hr noshade size=1>
+
 <function name=Process.popen title="pipe open">
 <man_syntax>
 string popen(string <I>cmd</I>);<br>
@@ -6862,7 +6862,7 @@ output. See your Unix/C manual for details on popen.
 </man_description>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Process.system title="run an external program">
 <man_syntax>
@@ -6878,7 +6878,7 @@ Process.popen, Process.exec, Process.spawn
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Process.spawn title="spawn a process">
 <man_syntax>
@@ -6898,7 +6898,7 @@ Process.popen, fork, Process.exec, Stdio.File-&gt;pipe, Stdio.File-&gt;dup2
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=exece title="execute a program">
 <man_syntax>
@@ -6927,7 +6927,7 @@ fork, Stdio.File-&gt;pipe
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Process.exec title="simple way to use exece()">
 <man_syntax>
@@ -7075,7 +7075,7 @@ object oriented interface is provided.
 You might wonder what regexps are good for, hopefully it should be more clear
 when you read about the following functions:
 
-<hr noshade size=1>
+
 
 <method name=Regexp.create title="compile regexp">
 <man_syntax>
@@ -7097,7 +7097,7 @@ clone, Regexp-&gt;match
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Regexp.match title="match a regexp">
 <man_syntax>
@@ -7112,7 +7112,7 @@ Regexp-&gt;create, Regexp-&gt;split
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Regexp.split title="split a string according to a pattern">
 <man_syntax>
@@ -7132,7 +7132,7 @@ Regexp-&gt;create, Regexp-&gt;match
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <!-- FIX ME: write and document Regexp-&gt;explode -->
 
@@ -7165,7 +7165,7 @@ found when Pike was compiled.
 </man_note>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.create title="initialize a bignum">
 <man_syntax>
@@ -7186,7 +7186,7 @@ clone
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.powm title="raise and modulo">
 <man_syntax>
@@ -7199,7 +7199,7 @@ since 2 to the power of 10 is 1024 and 1024 modulo 42 is 16.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.sqrt title="square root">
 <man_syntax>
@@ -7211,7 +7211,7 @@ root of the value of mpz.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.probably_prime_p title="is this number a prime?">
 <man_syntax>
@@ -7223,7 +7223,7 @@ if it is not.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.gcd title="greatest common divisor">
 <man_syntax>
@@ -7234,7 +7234,7 @@ This function returns the greatest common divisor for <i>arg</i> and mpz.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.cast title="cast to other type">
 <man_syntax>
@@ -7253,7 +7253,7 @@ cast
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.digits title="convert mpz to a string">
 <man_syntax>
@@ -7270,7 +7270,7 @@ Gmp.mpz-&gt;cast
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gmp.mpz.size title="how long is a number">
 <man_syntax>
@@ -7289,7 +7289,7 @@ Gmp.mpz-&gt;digits
 </section>
 </module>
 
-<hr noshade size=1>
+
 
 <module name=Gdbm>
 <section title="Gdbm">
@@ -7305,7 +7305,7 @@ This is the an interface to the gdbm library. This module might or
 might not be available in your Pike depending on whether the gdbm library
 was available on your system when Pike was compiled.
 
-<hr noshade size=1>
+
 <method name=Gdbm.gdbm-&gt;create title="open database">
 <man_syntax>
 int create();<br>
@@ -7336,7 +7336,7 @@ can be left in an unusable state if Pike is terminated abnormally.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;close title="close database">
 <man_syntax>
@@ -7347,7 +7347,7 @@ This closes the database.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;store title="store a value in the database">
 <man_syntax>
@@ -7361,7 +7361,7 @@ the database was not open for writing.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;fetch title="fetch a value from the database">
 <man_syntax>
@@ -7373,7 +7373,7 @@ If there was no such key in the database, zero is returned.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;delete title="delete a value from the database">
 <man_syntax>
@@ -7385,7 +7385,7 @@ if the key does not exist.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;firstkey title="get first key in database">
 <man_syntax>
@@ -7397,7 +7397,7 @@ database.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;nextkey title="get next key in database">
 <man_syntax>
@@ -7415,7 +7415,7 @@ for(key=gdbm-&gt;firstkey(); k; k=gdbm-&gt;nextkey(k))<br>
 </man_example>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;reorganize title="reorganize database">
 <man_syntax>
@@ -7429,7 +7429,7 @@ can take a LOT of time to run.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gdbm.gdbm-&gt;sync title="synchronize database">
 <man_syntax>
@@ -7446,7 +7446,7 @@ on the disk.
 </section>
 </module>
 
-<hr noshade size=1>
+
 
 <module name=Getopt>
 <section title="Getopt">
@@ -7459,7 +7459,7 @@ The short options can also be combined, which means that you can write
 arguments, in which case they cannot be combined. To write an option
 with an argument you write <tt>-t <i>argument</i></tt> or <tt>-t<i>argument</i></tt> or <tt>--test=<i>argument</i></tt>.
 
-<hr noshade size=1>
+
 <function name=Getopt.find_option title="find command line options">
 <man_syntax>
 <p>mixed find_option(array(string) <i>argv</i>,<br>
@@ -7517,7 +7517,7 @@ Getopt.get_args
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Getopt.find_all_options title="find command line options">
 <man_syntax>
@@ -7629,7 +7629,7 @@ Getopt.get_args
 </man_see>
 </function>
 
-<hr noshade size=1>
+
 
 <function name=Getopt.get_args title="get the non-option arguments">
 <man_syntax>
@@ -7663,7 +7663,7 @@ Getopt.find_option
 </section>
 </module>
 
-<hr noshade size=1>
+
 
 <module name=Gz>
 <section title="Gz">
@@ -7692,7 +7692,7 @@ Gz.inflate
 </man_see>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Gz.deflate.create title="initialize packer">
 <man_syntax>
@@ -7709,7 +7709,7 @@ so it can be re-used.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gz.deflate-&gt;deflate title="pack data">
 <man_syntax>
@@ -7737,7 +7737,7 @@ Gz.inflate-&gt;inflate
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 <class name=Gz.inflate title="string unpacker">
 <man_description>
@@ -7753,7 +7753,7 @@ Gz.deflate
 </man_see>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Gz.inflate.create title="initialize unpacker">
 <man_syntax>
@@ -7767,7 +7767,7 @@ it.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Gz.inflate-&gt;inflate title="unpack data">
 <man_syntax>
@@ -7813,7 +7813,7 @@ Gz
 
 </module>
 
-<hr noshade size=1>
+
 
 <module name=Yp title="Yellow Pages, also known as NIS">
 <section title="Yp">
@@ -7821,7 +7821,7 @@ This module is an interface to the Yellow Pages functions. Yp is also
 known as NIS (Network Information System) and is most commonly used to
 distribute passwords and similar information within a network.
 
-<hr noshade size=1>
+
 <function name=Yp.default_yp_domain title="get the default Yp domain">
 <man_syntax>
 string default_yp_domain();
@@ -7831,7 +7831,7 @@ Returns the default yp-domain.
 </man_description>
 </function>
 
-<hr noshade size=1>
+
 
 <class name=Yp.YpDomain title="class representing an Yp domain">
 <man_syntax>
@@ -7850,7 +7850,7 @@ by Yp.default_yp_domain)
 </man_description>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpDomain-&gt;bind title="bind this object to another domain">
 <man_syntax>
@@ -7862,7 +7862,7 @@ the default domain will be used.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpDomain-&gt;match title="match a key in a map">
 <man_syntax>
@@ -7886,7 +7886,7 @@ write(dom->match("passwd.byname", "root"));
 </man_example>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpDomain-&gt;all title="return the whole map">
 <man_syntax>
@@ -7899,7 +7899,7 @@ instead of just <tt>passwd</tt>.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpDomain-&gt;map title="call a function for each entry in an Yp map">
 <man_syntax>
@@ -7914,7 +7914,7 @@ example, passwd.byname instead of just passwd.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpDomain-&gt;server title="find an Yp server">
 <man_syntax>
@@ -7927,7 +7927,7 @@ example, passwd.byname instead of just passwd.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpDomain-&gt;order title="get the 'order' for specified map">
 <man_syntax>
@@ -7942,7 +7942,7 @@ example, passwd.byname instead of just passwd.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <class name=Yp.YpMap title="class representing one Yp map">
 <man_syntax>
@@ -7962,7 +7962,7 @@ default domain will be used. This is usually best.
 </man_description>
 </class>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpMap-&gt;match title="find key in map">
 <man_syntax>
@@ -7978,7 +7978,7 @@ matching of any kind is done.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpMap-&gt;all title="return the whole map as a mapping">
 <man_syntax>
@@ -7990,7 +7990,7 @@ Returns the whole map as a mapping.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpMap-&gt;map title="call a function for each entry in the map">
 <man_syntax>
@@ -8002,7 +8002,7 @@ The function will be called like 'void over(string key, string value)'.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpMap-&gt;server title="find what server servers this map">
 <man_syntax>
@@ -8013,7 +8013,7 @@ Returns the hostname of the server serving this map.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpMap-&gt;order title="find the 'order' of this map">
 <man_syntax>
@@ -8025,7 +8025,7 @@ time_t (see the global function time())
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpMap-&gt;_sizeof title="return the number of entries in the map">
 <man_syntax>
@@ -8037,7 +8037,7 @@ Returns the number of entries in the map. This is equivalent to
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yp.YpMap-&gt;_indices title="return the indices from the map">
 <man_syntax>
@@ -8054,7 +8054,7 @@ Yp.YpMap-&gt;_values
 </method>
 
 
-<hr noshard size=1>
+
 
 <method name=Yp.YpMap-&gt;_values title="return the values from the map">
 <man_syntax>
@@ -8070,7 +8070,7 @@ Yp.YpMap-&gt;_indices
 </man_see>
 </method>
 
-<hr noshade size=1>
+
 
 Here is an example program using the Yp module, it lists users and
 their GECOS field from the Yp map "passwd.byname" if your system uses
@@ -8104,7 +8104,7 @@ void main(int argc, array(string) argv)
 </section>
 </module>
 
-<hr noshade size=1>
+
 
 <module name=ADT.Table>
 <section title="ADT.Table">
@@ -8120,7 +8120,7 @@ its position (starting from zero). All operations are non-destructive. That
 means that a new table object will be returned after, for example, a sort.<p>
 
 An example is available at the end of this section.
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;create title="create a table object">
 <man_syntax>
@@ -8162,7 +8162,7 @@ ADT.Table.ASCII.encode
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;_indices title="gives the column names">
 <man_syntax>
@@ -8174,7 +8174,7 @@ the table was created will be returned.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;_values title="gives the table contents">
 <man_syntax>
@@ -8186,7 +8186,7 @@ format is an array of rows. Each row is an array of columns.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;_sizeof title="gives the number of table rows">
 <man_syntax>
@@ -8197,7 +8197,7 @@ This method returns the number of rows in the table.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;reverse title="reverses the table rows">
 <man_syntax>
@@ -8208,7 +8208,7 @@ This method reverses the rows of the table and returns a new table object.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;rename title="rename a column">
 <man_syntax>
@@ -8221,7 +8221,7 @@ position.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;type title="fetch or set the type for a column">
 <man_syntax>
@@ -8235,7 +8235,7 @@ in <link to=ADT.Table.table.create>create</link>.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;limit title="truncate the table">
 <man_syntax>
@@ -8247,7 +8247,7 @@ a new object.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;sort title="sort the table on one or several columns">
 <man_syntax>
@@ -8260,7 +8260,7 @@ that the sort is stable.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;rsort title="sort the table in reversed order on one or several columns">
 <man_syntax>
@@ -8271,7 +8271,7 @@ Like <link to=ADT.Table.table.sort>sort</link>, but the order is descendent.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;distinct title="keep unique rows only">
 <man_syntax>
@@ -8284,7 +8284,7 @@ table object will be returned.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Table.table-&gt;sum title="computes the sum of equal rows">
 <man_syntax>
@@ -8296,7 +8296,7 @@ columns not listed. The result will be returned as a new table object.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;group title="group the table using functions">
 <man_syntax>
@@ -8310,7 +8310,7 @@ result will be returned as a new table object.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;map title="map columns over a function">
 <man_syntax>
@@ -8325,7 +8325,7 @@ table object.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;where title="filter the table through a function">
 <man_syntax>
@@ -8338,7 +8338,7 @@ the row will be kept. The result will be returned as a new table object.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;select title="keep only the given columns">
 <man_syntax>
@@ -8349,7 +8349,7 @@ This method returns a new table object with the selected columns only.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;remove title="remove columns">
 <man_syntax>
@@ -8361,7 +8361,7 @@ columns will not be in the resulting table.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;encode title="represent the table as a binary string">
 <man_syntax>
@@ -8373,7 +8373,7 @@ useful when one wants to store a table, for example in a file.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;decode title="decode an encoded table">
 <man_syntax>
@@ -8385,7 +8385,7 @@ a table.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;col title="fetch a column">
 <man_syntax>
@@ -8396,7 +8396,7 @@ This method returns the contents of a given column as an array.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;`[] title="fetch a column">
 <man_syntax>
@@ -8407,7 +8407,7 @@ Same as <link to=ADT.Table.table.col>col</link>.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;row title="fetch a row">
 <man_syntax>
@@ -8418,7 +8418,7 @@ This method returns the contents of a given row as an array.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;`== title="compare two tables">
 <man_syntax>
@@ -8431,7 +8431,7 @@ comparison is case insensitive.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;append_bottom title="concatenate two tables">
 <man_syntax>
@@ -8444,7 +8444,7 @@ be equal. The column name comparison is case insensitive.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.table-&gt;append_right title="concatenate two tables">
 <man_syntax>
@@ -8457,7 +8457,7 @@ rows in both tables must be equal.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <method name=ADT.Table.ASCII.encode title="produces an ASCII formated table">
 <man_syntax>
@@ -8471,7 +8471,7 @@ characters.
 </man_description>
 </method>
 
-<hr noshade size=1>
+
 
 <man_example>
 <example language=pike>
@@ -8508,7 +8508,7 @@ write(.Table.ASCII.encode(t->select("frukt")->distinct("frukt")->
 </section>
 </module>
 
-<hr noshade size=1>
+
 
 <module name=Yabu>
 <section title="Yabu transaction database">
@@ -8610,7 +8610,7 @@ transaction->commit();
 </example>
 </man_example>
 
-<hr noshade size=1>
+
 
 <section title="The database">
 
@@ -8689,7 +8689,7 @@ Yabu.db-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.db-&gt;table title="Open a table">
 <man_syntax>
@@ -8709,7 +8709,7 @@ Yabu.db-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.db-&gt;list_tables title="List all tables">
 <man_syntax>
@@ -8728,7 +8728,7 @@ Yabu.db-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.db-&gt;sync title="Synchronize database">
 <man_syntax>
@@ -8749,7 +8749,7 @@ Yabu.db-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.db-&gt;purge title="Delete database">
 <man_syntax>
@@ -8769,7 +8769,7 @@ Yabu.db-&gt;sync
 
 </section>
 
-<hr noshade size=1>
+
 
 <section title="Tables">
 
@@ -8797,7 +8797,7 @@ Yabu.table-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.table-&gt;get title="Fetch a record from a table">
 <man_syntax>
@@ -8818,7 +8818,7 @@ Yabu.table-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.table-&gt;list_keys title="List the records in a table">
 <man_syntax>
@@ -8838,7 +8838,7 @@ Yabu.table-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.table-&gt;delete title="Delete a record in a table">
 <man_syntax>
@@ -8857,7 +8857,7 @@ Yabu.table-&gt;purge
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.table-&gt;purge title="Delete a table">
 <man_syntax>
@@ -8876,7 +8876,7 @@ Yabu.table-&gt;delete
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.table-&gt;transaction title="Begin a transaction">
 <man_syntax>
@@ -8898,7 +8898,7 @@ Yabu.transaction-&gt;rollback
 
 </section>
 
-<hr noshade size=1>
+
 
 <section title="Transactions">
 
@@ -8942,7 +8942,7 @@ Yabu.transaction-&gt;rollback
 
 </method>
 
-<hr noshade size=1>
+
 
 <method name=Yabu.transaction-&gt;rollback title="Rollback a transaction">
 <man_syntax>
@@ -8965,7 +8965,7 @@ Yabu.transaction-&gt;commit
 </section>
 </module>
 
-<hr noshade size=1>
+
 
 <module name=MIME>
 <section title="MIME">
@@ -9021,7 +9021,7 @@ containing raw uninterpreted data:
 
 <img src=multipart.gif>
 
-<hr newpage>
+
 
 <section title="Global functions">
 
@@ -9048,7 +9048,7 @@ MIME.encode
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.decode_base64 title="Decode <tt>base64</tt> transfer encoding">
 <man_syntax>
@@ -9062,7 +9062,7 @@ MIME.encode_base64
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.decode_qp title="Decode <tt>quoted-printable</tt> transfer encoding">
 <man_syntax>
@@ -9077,7 +9077,7 @@ MIME.encode_qp
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.decode_uue title="Decode <tt>x-uue</tt> transfer encoding">
 <man_syntax>
@@ -9092,7 +9092,7 @@ MIME.encode_uue
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.decode_word title="De-scramble RFC1522 encoding">
 <man_syntax>
@@ -9131,7 +9131,7 @@ MIME.encode_word
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.encode title="Apply transfer encoding">
 <man_syntax>
@@ -9162,7 +9162,7 @@ MIME.decode
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.encode_base64 title="Encode string using <tt>base64</tt> transfer encoding">
 <man_syntax>
@@ -9178,7 +9178,7 @@ MIME.decode_base64
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.encode_qp title="Encode string using <tt>quoted-printable</tt> transfer encoding">
 <man_syntax>
@@ -9197,7 +9197,7 @@ MIME.decode_qp
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.encode_uue title="Encode string using <tt>x-uue</tt> transfer encoding">
 <man_syntax>
@@ -9214,7 +9214,7 @@ MIME.decode_uue
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.encode_word title="Encode word according to RFC1522">
 <man_syntax>
@@ -9241,7 +9241,7 @@ MIME.decode_word
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.generate_boundary title="Create a suitable boundary string for multiparts">
 <man_syntax>
@@ -9257,7 +9257,7 @@ specified.
 </man_description>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.guess_subtype title="Provide a reasonable default for the subtype field">
 <man_syntax>
@@ -9278,7 +9278,7 @@ the following guesses:
 </man_description>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.parse_headers title="Separate a bytestream into headers and body">
 <man_syntax>
@@ -9298,7 +9298,7 @@ element is a string containing the body.
 </man_description>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.quote title="Create an RFC822 header field from lexical elements">
 <man_syntax>
@@ -9326,7 +9326,7 @@ MIME.tokenize
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.reconstruct_partial title="Join a fragmented message to its original form">
 <man_syntax>
@@ -9359,7 +9359,7 @@ MIME.Message-&gt;is_partial
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=MIME.tokenize title="Separate an RFC822 header field into lexical elements">
 <man_syntax>
@@ -9410,7 +9410,7 @@ MIME.quote
 </man_see>
 </function>
 
-<hr newpage>
+
 </section>
 
 <section title="The MIME.Message class">
@@ -9419,7 +9419,7 @@ This class is used to hold a decoded MIME message.
 
 <section title="Public fields">
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;body_parts title="Multipart sub-messages">
 <man_syntax>
@@ -9435,7 +9435,7 @@ MIME.Message-&gt;type, MIME.Message-&gt;boundary
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;boundary title="Boundary string for multipart messages">
 <man_syntax>
@@ -9452,7 +9452,7 @@ MIME.Message-&gt;setboundary
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;charset title="Character encoding for text bodies">
 <man_syntax>
@@ -9469,7 +9469,7 @@ MIME.Message-&gt;type
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;disposition title="Multipart subpart disposition">
 <man_syntax>
@@ -9483,7 +9483,7 @@ field is <tt>0</tt>.
 </man_description>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;disp_params title="Content-Disposition parameters">
 <man_syntax>
@@ -9498,7 +9498,7 @@ MIME.Message-&gt;setdisp_param, MIME.Message-&gt;get_filename
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;headers title="All header fields of the message">
 <man_syntax>
@@ -9529,7 +9529,7 @@ MIME.Message-&gt;setcharset, MIME.Message-&gt;setboundary
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;params title="Content-Type parameters">
 <man_syntax>
@@ -9545,7 +9545,7 @@ MIME.Message-&gt;charset, MIME.Message-&gt;boundary, MIME.Message-&gt;setparam
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;subtype title="The subtype attribute of the Content-Type header">
 <man_syntax>
@@ -9562,7 +9562,7 @@ MIME.Message-&gt;type, MIME.Message-&gt;params
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;transfer_encoding title="Body encoding method">
 <man_syntax>
@@ -9580,7 +9580,7 @@ MIME.Message-&gt;setencoding
 </man_see>
 </variable>
 
-<hr newpage>
+
 
 <variable name=MIME.Message-&gt;type title="The type attribute of the Content-Type header">
 <man_syntax>
@@ -9597,12 +9597,12 @@ MIME.Message-&gt;subtype, MIME.Message-&gt;params
 </man_see>
 </variable>
 
-<hr newpage>
+
 </section>
 
 <section title="Public methods">
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;cast title="Encode message into byte stream">
 <man_syntax>
@@ -9637,7 +9637,7 @@ MIME.Message-&gt;create
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;create title="Create a Message object">
 <man_syntax>
@@ -9676,7 +9676,7 @@ MIME.Message-&gt;cast
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;getdata title="Obtain raw body data">
 <man_syntax>
@@ -9692,7 +9692,7 @@ MIME.Message-&gt;getencoded
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;getencoded title="Obtain encoded body data">
 <man_syntax>
@@ -9707,7 +9707,7 @@ MIME.Message-&gt;getdata
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;get_filename title="Get supplied filename for body data">
 <man_syntax>
@@ -9726,7 +9726,7 @@ filename to use.  This method may provide a reasonable default though.
 </man_note>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;is_partial title="Identify <tt>message/partial</tt> message">
 <man_syntax>
@@ -9749,7 +9749,7 @@ MIME.reconstruct_partial
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;setboundary title="Set boundary parameter">
 <man_syntax>
@@ -9765,7 +9765,7 @@ MIME.Message-&gt;setparam
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;setcharset title="Set charset parameter">
 <man_syntax>
@@ -9781,7 +9781,7 @@ MIME.Message-&gt;setparam
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;setdata title="Replace body data">
 <man_syntax>
@@ -9798,7 +9798,7 @@ MIME.Message-&gt;getdata
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;setdisp_param title="Set Content-Disposition parameters">
 <man_syntax>
@@ -9815,7 +9815,7 @@ MIME.Message-&gt;setparam, MIME.Message-&gt;get_filename
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;setencoding title="Set transfer encoding for message body">
 <man_syntax>
@@ -9833,7 +9833,7 @@ MIME.Message-&gt;getencoded
 </man_see>
 </method>
 
-<hr newpage>
+
 
 <method name=MIME.Message-&gt;setparam title="Set Content-Type parameters">
 <man_syntax>
@@ -9851,7 +9851,7 @@ MIME.Message-&gt;setdisp_param
 </man_see>
 </method>
 
-<hr newpage>
+
 
 </section>
 </class>
@@ -9872,7 +9872,7 @@ Simulate inherits the Array, Stdio, String and Process modules, so
 importing he Simulate module also imports all identifiers from these
 modules. In addition, these functions are available:
 
-<hr newpage>
+
 
 <function name=Simulate.member_array title="find first occurrence of a value in an array">
 <man_syntax>
@@ -9885,7 +9885,7 @@ If not found, then -1 is returned. This is the same as
 </man_description>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.previous_object title="return the calling object">
 <man_syntax>
@@ -9900,7 +9900,7 @@ backtrace
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.this_function title="return a function pointer to the current function">
 <man_syntax>
@@ -9915,7 +9915,7 @@ backtrace
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.get_function title="fetch a function from an object">
 <man_syntax>
@@ -9926,7 +9926,7 @@ Defined as: return o[name];
 </man_description>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.map_regexp title="filter an array through a regexp">
 <man_syntax>
@@ -9940,7 +9940,7 @@ Regexp
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <constant name=Simulate.PI title="pi">
 <man_syntax>
@@ -9952,7 +9952,7 @@ constant Pi.
 </man_description>
 </constant>
 
-<hr newpage>
+
 
 <function name=Simulate.all_efuns title="return all 'efuns'">
 <man_syntax>
@@ -9966,7 +9966,7 @@ all_constants
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.explode title="explode a string on a delimeter">
 <man_syntax>
@@ -9982,7 +9982,7 @@ Simulate.implode
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.filter_array title="filter an array through a function">
 <man_syntax>
@@ -9998,7 +9998,7 @@ Array.filter
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.implode title="implode an array of strings">
 <man_syntax>
@@ -10021,7 +10021,7 @@ Simulate.explode
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.m_indices title="return all indices from a mapping">
 <man_syntax>
@@ -10035,7 +10035,7 @@ indices
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.m_sizeof title="return the size of a mapping">
 <man_syntax>
@@ -10049,7 +10049,7 @@ sizeof
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.m_values title="return all values from a mapping">
 <man_syntax>
@@ -10063,7 +10063,7 @@ values
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.map_array title="map an array over a function">
 <man_syntax>
@@ -10079,7 +10079,7 @@ Array.map
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.strstr title="find a string inside a string">
 <man_syntax>
@@ -10094,7 +10094,7 @@ sscanf, Simulate.explode, search
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.sum title="add values together">
 <man_syntax>
@@ -10112,7 +10112,7 @@ the summation operator.
 </man_description>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.add_efun title="add an efun or constant">
 <man_syntax>
@@ -10127,7 +10127,7 @@ Simulate.add_constant
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.l_sizeof title="return the size of a multiset">
 <man_syntax>
@@ -10141,7 +10141,7 @@ sizeof
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.listp title="is the argument a list? (multiset)">
 <man_syntax>
@@ -10155,7 +10155,7 @@ Simulate.multisetp
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.mklist title="make a multiset">
 <man_syntax>
@@ -10179,7 +10179,7 @@ aggregate_multiset
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.aggregate_list title="aggregate a multiset">
 <man_syntax>
@@ -10193,7 +10193,7 @@ aggregate_multiset
 </man_see>
 </function>
 
-<hr newpage>
+
 
 <function name=Simulate.query_host_name title="return the name of the host we are running on">
 <man_syntax>
@@ -10210,7 +10210,7 @@ prints.
 </module>
 </section>
 
-<hr newpage>
+
 
 <!--  FIX ME priority_queue and heap should be placed inside Structs
 <h2>Structs</h2>
@@ -10247,7 +10247,7 @@ It currently works similar to old C preprocessors but has a few extra features.
 This chapter describes the different preprocessor directives. This is
 what it can do:
 
-<hr noshade size=1>
+
 <dl>
 <dt><encaps>DIRECTIVE</encaps><dd>
 <tt>#!<br>
@@ -10263,7 +10263,7 @@ the script with
 <p>
 </dl>
 
-<hr noshade size=1>
+
 <anchor name=define>
 
 <dl>
@@ -10325,7 +10325,7 @@ int main()
 </dl>
 
 </anchor>
-<hr noshade size=1>
+
 <anchor name=undef>
 <dl>
 <dt><encaps>DIRECTIVE</encaps><dd>
@@ -10349,7 +10349,7 @@ arguments.
 </dl>
 
 </anchor>
-<hr noshade size=1>
+
 <anchor name=if>
 <anchor name=elseif>
 <anchor name=else>
@@ -10409,7 +10409,7 @@ inherit "simulate.pike"<br>
 </anchor>
 </anchor>
 </anchor>
-<hr noshade size=1>
+
 <anchor name=error>
 <dl>
 <dt><encaps>DIRECTIVE</encaps><dd>
@@ -10430,7 +10430,7 @@ the user that certain functions are missing and similar things.
 </dl>
 
 </anchor>
-<hr noshade size=1>
+
 <anchor name=include>
 <dl>
 <dt><encaps>DIRECTIVE</encaps><dd>
@@ -10450,7 +10450,7 @@ The compiler then continues to compile this file.
 </dl>
 
 </anchor>
-<hr noshade size=1>
+
 <anchor name=line>
 <dl>
 <dt><encaps>DIRECTIVE</encaps><dd>
@@ -10473,7 +10473,7 @@ tell the compiler where the code originally originated from.
 </dl>
 
 </anchor>
-<hr noshade size=1>
+
 <anchor name=pragma>
 <dl>
 <dt><encaps>DIRECTIVE</encaps><dd>
@@ -10520,7 +10520,7 @@ This puts the file <tt>index.html</tt> into the string
 This chapter is a reference for all the builtin functions in Pike.
 They are listed in alphabetical order.
 
-<HR NEWPAGE>
+
 
 <function name=_disable_threads title="temporarily disable threads" fullpath>
 <man_syntax>
@@ -10535,7 +10535,7 @@ Pike if used incorrectly. Use with extreme caution.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_do_call_outs title="do all pending call_outs">
 <man_syntax>
@@ -10554,7 +10554,7 @@ call_out, find_call_out, remove_call_out
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_exit title="Really exit" fullpath>
 <man_syntax>
@@ -10571,7 +10571,7 @@ exit
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_locate_references title="locate where an object is referenced from">
 <man_syntax>
@@ -10585,7 +10585,7 @@ locations on stderr. <i>o</i> can be anything but <tt>int</tt> or
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_memory_usage title="check memory usage">
 <man_syntax>
@@ -10602,7 +10602,7 @@ _verify_internals
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_next title="find the next object/array/whatever">
 <man_syntax>
@@ -10619,7 +10619,7 @@ next_object, _prev
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_prev title="find the previous object/array/whatever">
 <man_syntax>
@@ -10636,7 +10636,7 @@ _next
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_refs title="find out how many references a pointer type value has">
 <man_syntax>
@@ -10654,7 +10654,7 @@ _next, _prev
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=_verify_internals title="check Pike internals">
 <man_syntax>
@@ -10667,7 +10667,7 @@ It is only used for debugging.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=acos title="trigonometrical inverse cosine">
 <man_syntax>
@@ -10682,7 +10682,7 @@ cos, asin
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=add_constant title="add new predefined functions or constants">
 <man_syntax>
@@ -10712,7 +10712,7 @@ all_constants
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 <function name=add_include_path title="add a directory to search for include files">
 <man_syntax>
 void add_include_path(string <I>path</I>);
@@ -10728,7 +10728,7 @@ remove_include_path, #include
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=add_module_path title="add a directory to search for modules">
 <man_syntax>
@@ -10744,7 +10744,7 @@ remove_module_path
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=add_program_path title="add a directory to search for modules">
 <man_syntax>
@@ -10760,7 +10760,7 @@ remove_program_path
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=aggregate title="construct an array">
 <man_syntax>
@@ -10782,7 +10782,7 @@ sizeof, arrayp, allocate
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=aggregate_mapping title="construct a mapping">
 <man_syntax>
@@ -10799,7 +10799,7 @@ sizeof, mappingp, mkmapping
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=aggregate_multiset title="construct a multiset">
 <man_syntax>
@@ -10818,7 +10818,7 @@ sizeof, multisetp, mkmultiset
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=alarm title="set an alarm clock for delivery of a signal">
 <man_syntax>
@@ -10842,7 +10842,7 @@ signal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=all_constants title="return all predefined constants">
 <man_syntax>
@@ -10857,7 +10857,7 @@ add_constant
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=allocate title="allocate an array">
 <man_syntax>
@@ -10879,7 +10879,7 @@ sizeof, aggregate, arrayp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=arrayp title="is the argument an array?">
 <man_syntax>
@@ -10894,7 +10894,7 @@ functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=array_sscanf title="sscanf to an array">
 <man_syntax>
@@ -10910,7 +10910,7 @@ sscanf, `/
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=asin title="trigonometrical inverse sine">
 <man_syntax>
@@ -10924,7 +10924,7 @@ sin, acos
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=atan title="trigonometrical inverse tangent">
 <man_syntax>
@@ -10938,7 +10938,7 @@ tan, asin, acos
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=backtrace title="get a description of the call stack">
 <man_syntax>
@@ -10965,7 +10965,7 @@ catch, throw
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=basename title="get the base of a filename">
 <man_syntax>
@@ -10980,7 +10980,7 @@ dirname, explode_path
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=call_function title="call a function with arguments">
 <man_syntax>
@@ -10998,7 +10998,7 @@ backtrace, Simulate.get_function
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=call_out title="make a delayed call to a function">
 <man_syntax>
@@ -11015,7 +11015,7 @@ remove_call_out, find_call_out, call_out_info
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=call_out_info title="get info about all call outs">
 <man_syntax>
@@ -11041,7 +11041,7 @@ call_out, find_call_out, remove_call_out
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=catch>
 <man_syntax>
@@ -11058,7 +11058,7 @@ throw
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=cd title="change directory">
 <man_syntax>
@@ -11073,7 +11073,7 @@ getcwd
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=ceil title="truncate a number upward">
 <man_syntax>
@@ -11090,7 +11090,7 @@ floor
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=chmod title="change mode of a file in the filesystem">
 <man_syntax>
@@ -11104,7 +11104,7 @@ Stdio.File->open, errno
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=clone title="clone an object from a program">
 <man_syntax>
@@ -11121,7 +11121,7 @@ new, destruct, compile_string, compile_file
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=column title="extract a column">
 <man_syntax>
@@ -11147,7 +11147,7 @@ rows
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=combine_path title="concatenate paths">
 <man_syntax>
@@ -11171,7 +11171,7 @@ getcwd
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=compile title="compile a string to a program">
 <man_syntax>
@@ -11191,7 +11191,7 @@ clone, compile_string, compile_file, cpp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=compile_file title="compile a file to a program">
 <man_syntax>
@@ -11207,7 +11207,7 @@ clone, compile_string
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=compile_string title="compile a string to a program">
 <man_syntax>
@@ -11221,7 +11221,7 @@ compile_string, clone
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=copy_value title="copy a value recursively">
 <man_syntax>
@@ -11239,7 +11239,7 @@ equal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=cos title="trigonometrical cosine">
 <man_syntax>
@@ -11253,7 +11253,7 @@ acos, sin
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=cpp title="run the preprocessor on a string">
 <man_syntax>
@@ -11269,7 +11269,7 @@ compile, compile_string, compile_file
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=crypt title="crypt a password">
 <man_syntax>
@@ -11293,7 +11293,7 @@ To crypt a password use:<br>
 </man_example>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=ctime title="convert time int to readable date string">
 <man_syntax>
@@ -11312,7 +11312,7 @@ time, localtime, mktime, gmtime
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=decode_value title="code a value into a string">
 <man_syntax>
@@ -11327,7 +11327,7 @@ encode_value
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=describe_backtrace title="make a backtrace readable">
 <man_syntax>
@@ -11343,7 +11343,7 @@ backtrace
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=destruct title="destruct an object">
 <man_syntax>
@@ -11360,7 +11360,7 @@ clone
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=dirname title="find the directory part of a path">
 <man_syntax>
@@ -11375,7 +11375,7 @@ basename, explode_path
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=encode_value title="code a value into a string">
 <man_syntax>
@@ -11396,7 +11396,7 @@ decode_value, sprintf
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=equal title="check if two values are equal or not">
 <man_syntax>
@@ -11421,7 +11421,7 @@ copy_value
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=errno title="return system error number">
 <man_syntax>
@@ -11437,7 +11437,7 @@ Stdio.File-&gt;errno, strerror
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=exece>
 <man_syntax>
@@ -11464,7 +11464,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 <man_see>fork, Stdio.File-&gt;pipe</man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=explode_path fullpath title="exit Pike interpreter">
 <man_syntax>
@@ -11481,7 +11481,7 @@ Result: ({ "home", "hubbe", "bin", "pike" })
 </man_example>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=exit fullpath title="exit Pike interpreter">
 <man_syntax>
@@ -11495,7 +11495,7 @@ more information about return codes.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=exp title="natural exponent">
 <man_syntax>
@@ -11509,7 +11509,7 @@ pow, log
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=file_stat title="stat a file" fullpath>
 <man_syntax>
@@ -11542,7 +11542,7 @@ You can never get -3 as size if you don't give a second argument.<br>
 <man_see>get_dir</man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=file_truncate title="truncate a file" fullpath>
 <man_syntax>
@@ -11555,7 +11555,7 @@ Returns 1 if ok, 0 if failed.
 </function>
 
 
-<HR NEWPAGE>
+
 
 <function name=find_call_out title="find a call out in the queue">
 <man_syntax>
@@ -11576,7 +11576,7 @@ call_out, remove_call_out, call_out_info
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=floatp title="is the argument a float?">
 <man_syntax>
@@ -11590,7 +11590,7 @@ intp, programp, arrayp, stringp, objectp, mappingp, multisetp, functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=floor title="truncate a number downward">
 <man_syntax>
@@ -11607,7 +11607,7 @@ ceil
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=fork title="fork the process in two">
 <man_syntax>
@@ -11628,7 +11628,7 @@ Process.exec, Stdio.File-&gt;pipe
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=function_name title="return the name of a function, if known">
 <man_syntax>
@@ -11643,7 +11643,7 @@ function_object, Simulate.get_function
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=function_object title="return what object a function is in">
 <man_syntax>
@@ -11659,7 +11659,7 @@ function_name, Simulate.get_function
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=functionp title="is the argument a function?">
 <man_syntax>
@@ -11673,7 +11673,7 @@ intp, programp, arrayp, stringp, objectp, mappingp, multisetp, floatp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=gc title="do garbage collection">
 <man_syntax>
@@ -11691,7 +11691,7 @@ and call this routine then.)
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=get_dir title="read a directory">
 <man_syntax>
@@ -11706,7 +11706,7 @@ mkdir, cd
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=get_profiling_info title="get profiling information">
 <man_syntax>
@@ -11729,7 +11729,7 @@ This function is only available if Pike was compiled with the option
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=getcwd title="return current working directory">
 <man_syntax>
@@ -11743,7 +11743,7 @@ cd
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=getenv title="get an environment variable">
 <man_syntax>
@@ -11758,7 +11758,7 @@ This function is provided by master.pike.
 </man_note>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=getpid title="get the process id of this process">
 <man_syntax>
@@ -11773,7 +11773,7 @@ kill, fork, signal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=glob title="match strings against globs" fullpath>
 <man_syntax>
@@ -11791,7 +11791,7 @@ second argument, an array containing all matching strings is returned.
 <man_see>sscanf, Regexp</man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=gmtime title="break down time() into intelligible components">
 <man_syntax>
@@ -11806,7 +11806,7 @@ localtime, time, ctime, mktime
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=hash title="hash a string">
 <man_syntax>
@@ -11820,7 +11820,7 @@ is given, the result will be &gt;= 0 and lesser than that argument.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=indices title="return an array of all index possible for a value">
 <man_syntax>
@@ -11837,7 +11837,7 @@ values
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=is_absolute_path title="Is the given pathname relative or not?">
 <man_syntax>
@@ -11851,7 +11851,7 @@ Returns 1 if <i>path</i> is an absolute path, 0 otherwise.
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=intp title="is the argument an int?">
 <man_syntax>
@@ -11865,7 +11865,7 @@ arrayp, programp, floatp, stringp, objectp, mappingp, multisetp, functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=kill title="send signal to other process">
 <man_syntax>
@@ -11911,7 +11911,7 @@ signal, signum, signame, fork
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=load_module title="load a binary module">
 <man_syntax>
@@ -11935,7 +11935,7 @@ name. If you use just "foo.se" the module will not be found.
 </man_bugs>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=localtime title="break down time() into intelligible components">
 <man_syntax>
@@ -11966,7 +11966,7 @@ Calendar, gmtime, time, ctime, mktime
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=log title="natural logarithm">
 <man_syntax>
@@ -11980,7 +11980,7 @@ pow, exp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=lower_case title="convert a string to lower case">
 <man_syntax>
@@ -11994,7 +11994,7 @@ upper_case
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=m_delete title="remove an index from a mapping">
 <man_syntax>
@@ -12012,7 +12012,7 @@ mappingp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=mappingp title="is the argument a mapping?">
 <man_syntax>
@@ -12026,7 +12026,7 @@ intp, programp, arrayp, stringp, objectp, multisetp, floatp, functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=master title="return the master object">
 <man_syntax>
@@ -12037,7 +12037,7 @@ Master is added by the master object to make it easier to access it.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=mkdir title="make directory">
 <man_syntax>
@@ -12051,7 +12051,7 @@ rm, cd
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=mkmapping title="make a mapping from two arrays">
 <man_syntax>
@@ -12067,7 +12067,7 @@ indices, values
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=mkmultiset title="make a multiset">
 <man_syntax>
@@ -12091,7 +12091,7 @@ aggregate_multiset
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=mktime title="convert date and time to seconds">
 <man_syntax>
@@ -12123,7 +12123,7 @@ time, ctime, localtime, gmtime
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=multisetp title="is the argument a multiset?">
 <man_syntax>
@@ -12137,7 +12137,7 @@ intp, programp, arrayp, stringp, objectp, mappingp, floatp, functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=mv title="move a file (may handle directories as well)">
 <man_syntax>
@@ -12153,7 +12153,7 @@ rm
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=new title="clone an object from a program">
 <man_syntax>
@@ -12170,7 +12170,7 @@ clone, destruct, compile_string, compile_file
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=next_object title="get next object">
 <man_syntax>
@@ -12198,7 +12198,7 @@ This function is not recommended to use.
 </man_note>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=object_program title="get the program associated with the object">
 <man_syntax>
@@ -12213,7 +12213,7 @@ clone, new
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=objectp title="the argument an object?">
 <man_syntax>
@@ -12227,7 +12227,7 @@ intp, programp, floatp, stringp, arrayp, mappingp, multisetp, functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=pow title="raise a number to the power of another">
 <man_syntax>
@@ -12241,7 +12241,7 @@ exp, log
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=programp title="is the argument a program?">
 <man_syntax>
@@ -12255,7 +12255,7 @@ intp, multisetp, arrayp, stringp, objectp, mappingp, floatp, functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=putenv title="put environment variable">
 <man_syntax>
@@ -12269,7 +12269,7 @@ getenv, exece
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=query_host_name title="return the name of the host we are running on">
 <man_syntax>
@@ -12282,7 +12282,7 @@ prints.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=query_num_arg title="find out how many arguments were given">
 <man_syntax>
@@ -12297,7 +12297,7 @@ call_function
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=random title="return a random number">
 <man_syntax>
@@ -12311,7 +12311,7 @@ random_seed
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=random_seed title="seed random generator">
 <man_syntax>
@@ -12345,7 +12345,7 @@ random
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=remove_call_out title="remove a call out from the call out queue">
 <man_syntax>
@@ -12364,7 +12364,7 @@ call_out_info, call_out, find_call_out
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=remove_include_path title="remove a directory to search for include files">
 <man_syntax>
@@ -12379,7 +12379,7 @@ add_include_path, #include
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=remove_module_path title="remove a directory to search for modules">
 <man_syntax>
@@ -12395,7 +12395,7 @@ add_module_path
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=remove_program_path title="remove a directory to search for modules">
 <man_syntax>
@@ -12411,7 +12411,7 @@ add_program_path
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=replace title="generic replace function">
 <man_syntax>
@@ -12441,7 +12441,7 @@ to destructively.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=replace_master title="replace the master object">
 <man_syntax>
@@ -12457,7 +12457,7 @@ re-define certain functions.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=reverse title="reverse a string, array or int">
 <man_syntax>
@@ -12476,7 +12476,7 @@ sscanf
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=rm title="remove file or directory">
 <man_syntax>
@@ -12490,7 +12490,7 @@ mkdir
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=rows title="select a set of rows from an array">
 <man_syntax>
@@ -12508,7 +12508,7 @@ column
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=rusage title="return resource usage">
 <man_syntax>
@@ -12556,7 +12556,7 @@ time
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=search title="search for a value in a string or array">
 <man_syntax>
@@ -12582,7 +12582,7 @@ indices, values, zero_type
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=signal title="trap signals">
 <man_syntax>
@@ -12606,7 +12606,7 @@ kill, signame, signum
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=signame title="get the name of a signal">
 <man_syntax>
@@ -12624,7 +12624,7 @@ kill, signum, signal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=signum title="get a signal number given a descriptive string">
 <man_syntax>
@@ -12642,7 +12642,7 @@ signame, kill, signal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=sin title="trigonometrical sine">
 <man_syntax>
@@ -12656,7 +12656,7 @@ asin, cos
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=sizeof title="return the size of an array, string, multiset or mapping">
 <man_syntax>
@@ -12669,7 +12669,7 @@ size.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=sleep title="let interpreter doze off for a while">
 <man_syntax>
@@ -12685,7 +12685,7 @@ signal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=sort title="sort an array destructively">
 <man_syntax>
@@ -12707,7 +12707,7 @@ reverse
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=sprintf title="print the result from sprintf">
 <man_syntax>
@@ -12876,7 +12876,7 @@ sscanf
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=sqrt title="square root">
 <man_syntax>
@@ -12892,7 +12892,7 @@ pow, log, exp, floor
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=strerror title="return a string describing an error">
 <man_syntax>
@@ -12907,7 +12907,7 @@ This function may not be available on all platforms.
 </man_note>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=stringp title="is the argument a string?">
 <man_syntax>
@@ -12921,7 +12921,7 @@ intp, multisetp, arrayp, programp, objectp, mappingp, floatp, functionp
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=string_to_unicode title="convert a string to an UTF16 stream">
 <man_syntax>
@@ -12941,7 +12941,7 @@ Locale.Charset.decode, string_to_utf8, unicode_to_string, utf8_to_string
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=string_to_utf8 title="convert a string to an UTF8 stream">
 <man_syntax>
@@ -12962,7 +12962,7 @@ Locale.Charset.decode, string_to_unicode, unicode_to_string, utf8_to_string
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=strlen title="return the length of a string">
 <man_syntax>
@@ -12976,7 +12976,7 @@ sizeof
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=tan title="trigonometrical tangent">
 <man_syntax>
@@ -12990,7 +12990,7 @@ atan, sin, cos
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=this_object title="return the object we are evaluating in currently">
 <man_syntax>
@@ -13001,7 +13001,7 @@ This function returns the object we are currently evaluating in.
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=throw title="throw a value to catch or global error handling">
 <man_syntax>
@@ -13020,7 +13020,7 @@ catch
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=time title="return the current time">
 <man_syntax>
@@ -13043,7 +13043,7 @@ ctime, localtime, mktime, gmtime
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=trace title="change debug trace level">
 <man_syntax>
@@ -13060,7 +13060,7 @@ for more information
 </man_description>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=typeof title="check return type of expression">
 <man_syntax>
@@ -13081,7 +13081,7 @@ Result: int<br>
 </man_example>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=ualarm title="set an alarm clock for delivery of a signal">
 <man_syntax>
@@ -13103,7 +13103,7 @@ signal
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=unicode_to_string title="convert an UTF16 stream to a string">
 <man_syntax>
@@ -13120,7 +13120,7 @@ Locale.Charset.decode, string_to_unicode, string_to_utf8, utf8_to_string
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=upper_case title="convert a string to upper case">
 <man_syntax>
@@ -13135,7 +13135,7 @@ lower_case
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=utf8_to_string title="convert an UTF8 stream to a string">
 <man_syntax>
@@ -13155,7 +13155,7 @@ Locale.Charset.decode, string_to_unicode, string_to_utf8, unicode_to_string
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=values title="return an array of all possible values from indexing">
 <man_syntax>
@@ -13173,7 +13173,7 @@ indices
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=version title="return version info">
 <man_syntax>
@@ -13190,7 +13190,7 @@ Result: "Pike v0.7 release 1"
 </man_example>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=write title="write text to stdout">
 <man_syntax>
@@ -13205,7 +13205,7 @@ Stdio.werror
 </man_see>
 </function>
 
-<HR NEWPAGE>
+
 
 <function name=zero_type title="return the type of zero">
 <man_syntax>
@@ -13244,9 +13244,9 @@ find_call_out
   <li> scope for class {}
   <li>optimization
 </ul>
-<HR NEWPAGE>
-<HR NEWPAGE>
-<HR NEWPAGE>
+
+
+
 
 <chapter title="Pike internals - how to extend Pike">
 The rest of this book describes how Pike works and how to extend it with

@@ -159,7 +159,6 @@ static private int verify_any(SGML data,
 	 case "dd":
 	 case "li":
 	 case "ref":
-	 case "hr":
 	 case "br":
 	 case "img":
 	      
