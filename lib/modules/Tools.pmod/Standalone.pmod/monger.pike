@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: monger.pike,v 1.3 2004/04/21 20:33:23 bill Exp $
+// $Id: monger.pike,v 1.4 2004/04/22 21:04:32 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.3 $"/" ")[1];
+constant version = ("$Revision: 1.4 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -164,12 +164,20 @@ void do_query(string name, string|void version)
 
   write("%s: %s\n", vi->name, vi->description);
   write("Author/Owner: %s\n", vi->owner);
-  write("Version: %s\t", vi->version);
+  write("Version: %s (recommended)\t", vi->version);
   write("License: %s\n", vi->license);
   write("Changes: %s\n\n", vi->changes);
   
   if(vi->download)
     write("This module is available for automated installation.\n");
+
+  catch 
+  {
+    string local_ver = master()->resolv(name)["__version"];
+
+    if(local_ver) write("Version %s of this module is currently installed.\n", 
+                        local_ver);
+  };
 }
 
 mapping get_module_action_data(string name, string|void version)
@@ -282,7 +290,7 @@ void do_install(string name, string|void version)
     if(!Process.search_path("gzip"))
       exit(1, "install error: no gzip found in PATH.\n");
     else
-      res = Process.system("gzip -d " + vi->filename);
+      res = Process.system("gzip -f -d " + vi->filename);
 
     if(res)
       exit(1, "install error: uncompress failed.\n");
@@ -304,6 +312,40 @@ void do_install(string name, string|void version)
   else
     created->dirs += ({fn[0..sizeof(fn)-5]});  
 
+
+  // change directory to the module
+  cd(combine_path(builddir, fn[0..sizeof(fn)-5]));
+
+  // now, build the module.
+
+  array jobs = ({"all", "verify", (use_local?"local_":"") + "install"});
+
+  object builder;
+
+  foreach(jobs, string j)
+  {
+    builder = Process.create_process(
+      ({run_pike, "-x", "module"}) + ({ j }));
+    res = builder->wait();
+  
+    if(res)
+    {
+      werror("install error: make %s failed.\n\n", j);
+
+      werror("the following files have been preserved in %s:\n\n%s\n\n", 
+             builddir, created->file * "\n");
+
+      werror("the following directories have been preserved in %s:\n\n%s\n\n", 
+             builddir, created->dirs * "\n");
+
+      exit(1);
+    }
+    else
+    {
+       werror("make %s successful.\n", j);
+    }
+  }
+
   // now we should clean up our mess.
   foreach(created->file, string file)
   {
@@ -311,16 +353,13 @@ void do_install(string name, string|void version)
     rm(file);
   }
 
-  object module_builder = Tools.Standalone.module();
-
-  module_builder->main(2, ({run_pike, "install", "--source=" + 
-    builddir + "/" +  fn[0..sizeof(fn)-5]}));
-
   foreach(created->dirs, string dir)
   {
     write("removing directory %s\n", dir);
     Stdio.recursive_rm(dir);
   }
+
+  cd(original_dir);
 }
 
 void do_list(string|void name)
