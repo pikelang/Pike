@@ -473,6 +473,44 @@ class Type
   
   array _s_modifiers;
 
+  string doc_type( )
+  {
+    if( subtypes )
+      return subtypes->doc_type()*"|";
+    string optp = "";
+    if( opt )
+      optp = "|void";
+    switch( name )
+    {
+      case "uint":
+	return "int"+optp;
+      case "array":
+	if( array_type )
+	  return "array("+array_type->doc_type()+")"+optp;
+	return name+optp;
+
+      case "double": /* int can be used for better precision */
+	return "int|float"+optp;
+
+      case "callback":
+	return "function"+optp+",mixed"+optp;
+
+      case "function":
+	if( has_value( get_modifiers(), "callback" ) )
+	  return "function"+optp+",mixed"+optp;
+	return "function"+optp;
+
+      case "void": /* needed for return types */
+	return "void";
+
+      case "GTK.CtreeNode":
+	name = "GTK.CTreeNode";
+
+      default:
+	return name+optp;
+    }
+  }
+
   string pike_type( int is, int|void nc )
   {
     if( subtypes )
