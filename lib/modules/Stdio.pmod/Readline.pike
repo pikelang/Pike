@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.34 2000/08/29 14:00:18 noring Exp $
+// $Id: Readline.pike,v 1.35 2000/09/04 09:48:56 noring Exp $
 
 class OutputController
 {
@@ -1405,7 +1405,7 @@ string edit(string data, string|void local_prompt, array(string)|void attrs)
 {
   if(data && strlen(data) && input_controller->dumb)
   {
-    string ret=edit("", (local_prompt || get_prompt()) +" ["+data+"] ", attrs);
+    string ret=edit("", (local_prompt || get_prompt()) +"["+data+"] ", attrs);
     return (!ret || !strlen(ret))?data:ret;
   }
   string old_prompt;
