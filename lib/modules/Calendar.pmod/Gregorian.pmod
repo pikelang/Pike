@@ -59,6 +59,26 @@
 //!	Concurrently, <tt>Array.map(o->days(),o->day)</tt> gives
 //!	a list of day objects in the object <tt>o</tt>.
 //!
+//!	
+//!	Ie:<pre>
+//!	array(string) lesser()    - gives back a list of possible xxx's.
+//!	object xxxs()     	  - gives back a list of possible n's.
+//!	object xxx(mixed n)       - gives back xxx n
+//!	object xxx(object(Xxx) o) - gives back the corresponing xxx 
+//!	</pre>
+//!
+//!	The list of n's (as returned from xxxs) are always in order.
+//!
+//!	There are two n's with special meaning, 0 and -1.
+//!	0 always gives the first xxx, equal to 
+//!	my_obj->xxx(my_obj->xxxs()[0]), and -1 gives the last,
+//!	equal to my_obj->xxx(my_obj->xxxs()[-1]).
+//!
+//!	To get all xxxs in the object, do something like
+//!	<tt>Array.map(my_obj->xxxs(),my_obj->xxx)</tt>.
+//!
+//!	xxx(object) may return zero, if there was no correspondning xxx.
+//!
 //! method array(string) greater()
 //!	Gives a list of methods to get greater (longer) time units 
 //!	from this object. For a month, this gives back <tt>({"year"})</tt>,
@@ -203,6 +223,11 @@ class Year
       return !(y%4);
    }
 
+   int leap_day()
+   {
+      return 31+24-1; // 24 Feb
+   }
+
    int number_of_weeks()
    {
       int j=julian_day(0)%7;
@@ -244,15 +269,23 @@ class Year
 
 //-- less -----------------------------------------------------------
 
-   object month(string|int n)
+   object month(object|string|int n)
    {
+      if (objectp(n))
+	 if (object_program(n)==vMonth)
+	    n=n->number();
+
       if (stringp(n))
       {
-	 if (!week_day_mapping)
+	 if (!month_mapping)
+	 {
 	    month_mapping=
 	       mkmapping(Array.map(month_names,lower_case),
 			 indices(allocate(13))[1..]);
-	 n=month_mapping[n];
+	    werror(sprintf("%O\n",month_mapping));
+	 }
+	 n=month_mapping[lower_case(n)];
+	 if (!n) return 0;
       }
 
       if (n<0)
@@ -266,8 +299,15 @@ class Year
        return ({1,2,3,4,5,6,7,8,9,10,11,12});
    }
 
-   object week(int n)
+   object week(object|int n)
    {
+      if (objectp(n))
+	 if (object_program(n)==vWeek)
+	 {
+	    n=n->number();
+	    if (n>number_of_weeks()) return 0; /* no such week */
+	 }
+
       if (n<0)
 	 return vWeek(y,this->number_of_weeks()+n+1);
       else
@@ -279,8 +319,22 @@ class Year
        return indices(allocate(this->number_of_weeks()+1))[1..];
    }
 
-   object day(int n)
+   object day(object|int n)
    {
+      if (objectp(n))
+	 if (object_program(n)==vDay)
+	 {
+	    object o=n->year();
+	    n=n->year_day();
+	    if (n==o->leap_day())
+	       if (!this->leap()) return 0;
+	       else n=this->leap_day();
+	    if (o->leap() && n>o->leap_day()) n--;
+	    if (this->leap() && n>=this->leap_day()) n++;
+	    if (n>=number_of_days()) return 0; /* no such day */
+	 }
+	 else return 0; /* illegal object */
+
       if (n<0)
 	 return vDay(y,this->number_of_days()+n);
       else
@@ -434,8 +488,15 @@ class Month
 
 //-- less -----------------------------------------------------------
 
-   object day(int n)
+   object day(int|object n)
    {
+      if (objectp(n))
+	 if (object_program(n)==vDay)
+	 {
+	    n=n->month_day();
+	    if (n>number_of_days()) return 0; /* no such day */
+	 }
+
       if (n<0)
 	 return vDay(y,yday()+this->number_of_days()+n);
       else
@@ -601,7 +662,7 @@ class Week
 
 //-- less -----------------------------------------------------------
 
-   object day(int|string n)
+   object day(int|string|object n)
    {
       if (stringp(n))
       {
@@ -611,6 +672,10 @@ class Week
 			 indices(allocate(8))[1..]);
 	 n=week_day_mapping[n];
       }
+      else if (objectp(n))
+	 if (object_program(n)==vDay)
+	    n=n->week_day();
+	 else return 0;
 
       if (n<0) n=8+n;
       else if (!n) n=1;
