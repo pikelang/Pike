@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.89 2000/06/11 02:41:01 mast Exp $");
+RCSID("$Id: gc.c,v 1.90 2000/06/11 11:59:47 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -729,7 +729,7 @@ void debug_gc_touch(void *a)
       if (!(m->flags & GC_TOUCHED))
 	gc_fatal(a, 2, "An existing but untouched marker found "
 		 "for object in linked lists.\n");
-      else if (m->flags & (GC_RECURSING|GC_LIVE_RECURSE|GC_WEAK_REF))
+      else if (m->flags & (GC_RECURSING|GC_LIVE_RECURSE|GC_WEAK_REF|GC_STRONG_REF))
 	gc_fatal(a, 2, "Marker still got flag from recurse list.\n");
       else if (m->flags & GC_REFERENCED)
 	return;
@@ -747,7 +747,7 @@ void debug_gc_touch(void *a)
 		 "got missed by gc_do_free().\n");
       else if (m->flags & GC_GOT_EXTRA_REF)
 	gc_fatal(a, 2, "A thing still got an extra ref.\n");
-      else if (m->weak_refs >= m->saved_refs || m->flags & GC_IS_ONLY_WEAK)
+      else if (m->weak_refs >= m->saved_refs)
 	gc_fatal(a, 3, "A thing which had only weak references is "
 		 "still around after gc.\n");
       else if (!(m->flags & GC_LIVE))
@@ -815,12 +815,7 @@ INT32 real_gc_check_weak(void *a)
 #ifdef PIKE_DEBUG
   if (m->weak_refs > m->refs + 1)
     gc_fatal(a, 1, "Thing has gotten more weak refs than internal refs.\n");
-  if (m->weak_refs == m->saved_refs) {
-    if (m->flags & GC_IS_ONLY_WEAK)
-      gc_fatal(a, 0, "Already counted this as weakly freed.\n");
-    weak_freed++;
-    m->flags |= GC_IS_ONLY_WEAK;
-  }
+  if (m->weak_refs == m->saved_refs) weak_freed++;
 #endif
   return add_ref(m);
 }
@@ -914,7 +909,6 @@ void gc_add_extra_ref(void *a)
   if (m->flags & GC_GOT_EXTRA_REF)
     gc_fatal(a, 0, "Thing already got an extra gc ref.\n");
   m->flags |= GC_GOT_EXTRA_REF;
-  if (m->saved_refs != -1) m->saved_refs++;
   gc_extra_refs++;
   ++*(INT32 *) a;
 }
@@ -925,7 +919,6 @@ void gc_free_extra_ref(void *a)
   if (!(m->flags & GC_GOT_EXTRA_REF))
     gc_fatal(a, 0, "Thing haven't got an extra gc ref.\n");
   m->flags &= ~GC_GOT_EXTRA_REF;
-  if (m->saved_refs != -1) m->saved_refs--;
   gc_extra_refs--;
 }
 
@@ -1006,12 +999,7 @@ int gc_do_weak_free(void *a)
   if (m->weak_refs > m->refs)
     gc_fatal(a, 0, "More weak references than internal references.\n");
 
-  if (m->weak_refs >= *(INT32 *) a) {
-    if (!(m->flags & GC_IS_ONLY_WEAK))
-      gc_fatal(a, 0, "Got only weak refs but flag isn't set by real_gc_check_weak().\n");
-    return 1;
-  }
-  else return 0;
+  return m->weak_refs >= *(INT32 *) a;
 }
 
 #endif /* PIKE_DEBUG */
@@ -1051,7 +1039,6 @@ static void break_cycle (struct marker *beg, struct marker *pos)
    * where the "stack top" is.) */
 
   struct marker *p, *q;
-  int cycle = beg->cycle;
 #ifdef GC_CYCLE_DEBUG
   fprintf(stderr, "%*sbreak cycle:                    %8p, [%8p] ",
 	  gc_cycle_indent, "", beg->data, gc_rec_last);
@@ -1062,9 +1049,9 @@ static void break_cycle (struct marker *beg, struct marker *pos)
     gc_fatal(beg->data, 0, "Cycle already broken at requested position.\n");
 #endif
 
-  if (cycle) {
+  if (beg->cycle) {
 #ifdef PIKE_DEBUG
-    if (pos->cycle == cycle || gc_rec_last->cycle == cycle)
+    if (pos->cycle == beg->cycle || gc_rec_last->cycle == beg->cycle)
       gc_fatal(pos->data, 0, "Same cycle on both sides of broken link.\n");
 #endif
     for (p = &rec_list; p->link->cycle != beg->cycle; p = p->link) {}
@@ -1076,7 +1063,8 @@ static void break_cycle (struct marker *beg, struct marker *pos)
   p->link = pos;
 
   while (q != pos) {
-    q->flags &= ~(GC_CYCLE_CHECKED|GC_RECURSING|GC_WEAK_REF|GC_FOLLOWED_NONSTRONG);
+    q->flags &= ~(GC_CYCLE_CHECKED|GC_RECURSING|
+		  GC_WEAK_REF|GC_STRONG_REF|GC_FOLLOWED_NONSTRONG);
     q->cycle = 0;
 #ifdef GC_CYCLE_DEBUG
     fprintf(stderr, "%*sreset marker:                   "
@@ -1128,9 +1116,6 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     gc_fatal(x, 0, "gc_cycle_check() called for thing not on gc_internal lists.\n");
   on_gc_internal_lists:
   }
-  if (weak < 0 && gc_rec_last->flags & GC_FOLLOWED_NONSTRONG)
-    gc_fatal(x, 0, "Followed strong link too late.\n");
-  if (weak >= 0) gc_rec_last->flags |= GC_FOLLOWED_NONSTRONG;
 #endif
 
   if (gc_rec_last->flags & GC_LIVE_RECURSE) {
@@ -1168,7 +1153,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 	gc_rec_last->flags &= ~GC_LIVE_RECURSE;
 #ifdef GC_CYCLE_DEBUG
 	gc_cycle_indent -= 2;
-	fprintf(stderr, "%*sgc_cycle_push, unwinding:       "
+	fprintf(stderr, "%*sgc_cycle_push, unwinding live:  "
 		"%8p,            ", gc_cycle_indent, "", gc_rec_last->data);
 	describe_marker(gc_rec_last);
 #endif
@@ -1193,6 +1178,12 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     /* The upward thing has been removed from rec_list, so we should
      * ignore it and not do any recursion from it. */
     return 0;
+
+#ifdef PIKE_DEBUG
+  if (weak < 0 && gc_rec_last->flags & GC_FOLLOWED_NONSTRONG)
+    gc_fatal(x, 0, "Followed strong link too late.\n");
+  if (weak >= 0) gc_rec_last->flags |= GC_FOLLOWED_NONSTRONG;
+#endif
 
   if (m->flags & GC_RECURSING) { /* A cycle is found. */
     if (m != gc_rec_last) {
@@ -1446,7 +1437,7 @@ INLINE int gc_cycle_pop(void *a)
   gc_cycle_indent -= 2;
 #endif
 
-  if (!(m->flags & GC_RECURSING)) {
+  if (!(m->flags & GC_RECURSING) || m->flags & GC_LIVE_RECURSE) {
     m->flags &= ~GC_LIVE_RECURSE;
 #ifdef GC_CYCLE_DEBUG
     fprintf(stderr, "%*sgc_cycle_pop, pop ignored:      %8p, [%8p] ",
@@ -1463,7 +1454,7 @@ INLINE int gc_cycle_pop(void *a)
 
   if (m->cycle) {
     /* Part of a cycle. Leave for now so we pop the whole cycle at once. */
-    m->flags &= ~GC_WEAK_REF;
+    m->flags &= ~(GC_WEAK_REF|GC_STRONG_REF);
 #ifdef GC_CYCLE_DEBUG
     fprintf(stderr, "%*sgc_cycle_pop, in cycle:         %8p, [%8p] ",
 	    gc_cycle_indent, "", a, gc_rec_last);
@@ -1482,13 +1473,13 @@ INLINE int gc_cycle_pop(void *a)
   else {
     struct marker *p;
     ADD_REF_IF_DEAD(m);
-    m->flags &= ~(GC_RECURSING|GC_WEAK_REF);
+    m->flags &= ~(GC_RECURSING|GC_WEAK_REF|GC_STRONG_REF);
     if (gc_rec_last->flags & GC_RECURSING) p = gc_rec_last;
     else p = &rec_list;
     for (; p->link != m; p = p->link) {
 #ifdef PIKE_DEBUG
       if (!p->link || m->link)
-	gc_fatal(a, 0, "Thing not in cycle not last on rec_list.\n");
+	gc_fatal(a, 0, "Thing not in cycle isn't last on rec_list.\n");
 #endif
     }
     p->link = 0;
