@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.114 1997/09/15 22:47:10 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.115 1997/09/16 01:22:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -481,7 +481,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h sys/times.h sched.h)
+thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -1364,24 +1364,26 @@ fi
 
 ########################################################################
 
-AC_MSG_CHECKING(getrusage() through procfs)
-AC_CACHE_VAL(pike_cv_getrusage_procfs,
-[
-AC_TRY_COMPILE([
+if test "$ac_cv_header_sys_procfs_h" = "yes"; then
+  AC_MSG_CHECKING(getrusage() through procfs)
+  AC_CACHE_VAL(pike_cv_getrusage_procfs, [
+    AC_TRY_COMPILE([
 #include <sys/procfs.h>
 #include <sys/fcntl.h>
 int proc_fd;
 char proc_name[20];
-],[
-  sprintf(proc_name, "/proc/%05d", getpid());
-  proc_fd = open(proc_name, O_RDONLY);
-  ioctl(proc_fd, PIOCUSAGE, &pru);
-  ioctl(proc_fd, PIOCSTATUS, &prs);
-],
-  pike_cv_getrusage_procfs=yes
-,
-  pike_cv_getrusage_procfs=no
-)])
+    ],[
+      sprintf(proc_name, "/proc/%05d", getpid());
+      proc_fd = open(proc_name, O_RDONLY);
+      ioctl(proc_fd, PIOCUSAGE, &pru);
+      ioctl(proc_fd, PIOCSTATUS, &prs);
+    ],
+      pike_cv_getrusage_procfs=yes
+    ,
+      pike_cv_getrusage_procfs=no
+    )
+  ])
+fi
 
 if test "$pike_cv_getrusage_procfs" = yes; then
   AC_MSG_RESULT(yes)
@@ -1392,7 +1394,7 @@ fi
 
 #############################################################################
 
-AC_MSG_CHECKING(checking for volatile)
+AC_MSG_CHECKING(for volatile)
 AC_CACHE_VAL(pike_cv_volatile,
 [
  AC_TRY_COMPILE([],[ volatile int foo=1;], pike_cv_volatile=yes,pike_cv_volatile=no)
