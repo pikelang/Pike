@@ -27,9 +27,9 @@ string source;
 
 string tags(string source)
 {
-  return ("<box>\n<img src=gtkimg/"+file_name(source)+" />"
+  return ("<box>\n<img src='"+file_name(source)+"' />"
           "<br />\n"
-          "<example language=pike>"+
+          "<example language='pike'>"+
           replace(source,({"<",">","&"}),({"&lt;", "&gt;", "&amp;"}))+
           "</example>\n</box>\n\n");
 }
