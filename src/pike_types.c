@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.128 2000/03/23 19:05:08 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.129 2000/03/26 14:16:11 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2602,7 +2602,7 @@ int pike_types_le(struct pike_string *a,struct pike_string *b)
 
 
 #ifdef DEBUG_MALLOC
-#define low_index_type(X,Y,Z) ((struct pike_string *)debug_malloc_touch(debug_low_index_type((X),(Y),(Z))))
+#define low_index_type(X,Y,Z) ((struct pike_string *)debug_malloc_pass(debug_low_index_type((X),(Y),(Z))))
 #else
 #define low_index_type debug_low_index_type
 #endif
@@ -2826,7 +2826,7 @@ struct pike_string *array_value_type(struct pike_string *array_type)
 
 
 #ifdef DEBUG_MALLOC
-#define low_key_type(X,Y) ((struct pike_string *)debug_malloc_touch(debug_low_key_type((X),(Y))))
+#define low_key_type(X,Y) ((struct pike_string *)debug_malloc_pass(debug_low_key_type((X),(Y))))
 #else
 #define low_key_type debug_low_key_type
 #endif
