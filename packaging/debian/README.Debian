@@ -18,13 +18,13 @@ they will never be touched by any pike package again. The directories
 are:
 
 /usr/local/include/pike
-/usr/local/include/pike7.5
+/usr/local/include/pike7.6
 
 /usr/local/lib/pike/site_pike
-/usr/local/lib/pike7.5/site_pike
+/usr/local/lib/pike7.6/site_pike
 
 /usr/local/share/pike/site_pike
-/usr/local/share/pike7.5/site_pike
+/usr/local/share/pike7.6/site_pike
 
 ----
-$Id: README.Debian,v 1.5 2004/04/02 14:46:43 grendel Exp $
+$Id: README.Debian,v 1.6 2004/04/30 17:12:38 grendel Exp $
