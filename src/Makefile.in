@@ -290,7 +290,7 @@ config.status: $(SRCDIR)/configure
 	./config.status --recheck
 
 Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
-	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@echo "Run make again"
 	@exit 1
 
@@ -301,7 +301,7 @@ $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
 
 machine.h: stamp-h
 stamp-h: $(SRCDIR)/machine.h.in config.status
-	CONFIG_FILES= CONFIG_HEADERS=machine.h ./config.status
+	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status
 
 testsuite: $(SRCDIR)/testsuite.in
 	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite
