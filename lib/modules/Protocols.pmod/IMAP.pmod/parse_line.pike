@@ -239,7 +239,7 @@ array(string) get_flag_list()
     return 0;
 
   buffer = buffer[1..];
-  array res = ({});
+  array(string) res = ({});
 
   skip_whitespace();
 
