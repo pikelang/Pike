@@ -63,7 +63,9 @@ void recv_command(string s)
     return;
   }
   
-  int state = 0;
+  int state;
+  int|function req;
+
   do {
     string command = line->get_atom();
 
@@ -76,7 +78,7 @@ void recv_command(string s)
     if (debug_level)
       werror("Read command: %O\n", command);
     
-    int|function req = commands[lower_case(command)];
+    req = commands[lower_case(command)];
     if (intp(req)) {
       if (!req || state)
       {
