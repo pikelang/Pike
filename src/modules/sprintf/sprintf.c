@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.79 2001/07/02 04:09:50 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.80 2001/07/19 07:10:05 mast Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -905,14 +905,15 @@ static void low_pike_sprintf(struct format_stack *fs,
       got_arg:
 	switch(setwhat)
 	{
-	case 0: fs->fsp->width=tmp; break;
-	case 1: fs->fsp->width=tmp;
+	case 0:
+	case 1:
+	  if(tmp < 0) sprintf_error(fs, "Illegal width %d.\n", tmp);
+	  fs->fsp->width=tmp;
+	  if (!setwhat) break;
 	case 2: fs->fsp->precision=tmp; break;
 	case 3: fs->fsp->column_width=tmp; break;
 	case 4: fs->fsp->precision=-tmp; break;
 	}
-	if(fs->fsp->width!=SPRINTF_UNDECIDED && fs->fsp->width<1)
-	  sprintf_error(fs, "Illegal width.\n");
 	continue;
 
       case ';': setwhat=3; continue;
