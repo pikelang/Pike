@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.105 2000/09/14 19:58:43 mast Exp $");
+RCSID("$Id: mapping.c,v 1.106 2000/09/17 19:33:33 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1681,7 +1681,7 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 }
 
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
-					 struct processing *p)
+						     struct processing *p)
 {
   struct processing doing;
   struct mapping *ret;
@@ -1714,6 +1714,8 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 
   ret=allocate_mapping(MAP_SLOTS(m->data->size));
   doing.pointer_b=ret;
+
+  ret->data->flags = m->data->flags;
 
   check_stack(2);
 
