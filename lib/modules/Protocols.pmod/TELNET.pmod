@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.7 1999/06/05 04:20:03 hubbe Exp $
+// $Id: TELNET.pmod,v 1.8 1999/08/25 17:38:01 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -610,7 +610,7 @@ class protocol
 	      break;
 
 #if 0
-	    case "EL":	// Erase Line
+	    case EL:	// Erase Line
 	      for (j=0; j < i; j++) {
 		a[j] = "";
 	      }
@@ -726,7 +726,8 @@ class protocol
 	      break;
 	    }
 	  } else {
-	    a[i] = "\377";
+	    // IAC IAC => IAC
+	    a[i] = C(IAC);
 	    i++;
 	  }
 	}
@@ -835,8 +836,8 @@ class LineMode
     {
       DWRITE(sprintf("Line callback... %O\n",data));
       data=replace(data,
-		   ({"\r\n","\r\n","\r","\r\0"}),
-		   ({"\r",  "\r",  "\r","\r",}));
+		   ({"\r\n", "\n", "\r", "\r\0"}),
+		   ({"\r",   "\r", "\r", "\r",}));
       line_buffer+=data;
       string *tmp=line_buffer/"\r";
       line_buffer=tmp[-1];
