@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.126 2003/02/20 16:36:54 grubba Exp $
+|| $Id: threads.h,v 1.127 2003/03/31 17:44:27 grubba Exp $
 */
 
 #ifndef THREADS_H
@@ -23,18 +23,25 @@ struct pike_frame;
 
 extern PIKE_MUTEX_T interleave_lock;
 
+/* Status values */
 #define THREAD_NOT_STARTED -1
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
 
+/* Debug flags */
+#define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
+
 struct thread_state {
   struct Pike_interpreter state;
   struct object *thread_obj;	/* NOTE: Not ref-counted! */
-  char swapped;
+  char swapped;			/* Set if thread has been swapped out. */
 #ifdef __CHAR_UNSIGNED__
   signed char status;
 #else
   char status;
+#endif
+#ifdef PIKE_DEBUG
+  char debug_flags;
 #endif
   COND_T status_change;
   THREAD_T id;
