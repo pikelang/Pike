@@ -55,9 +55,14 @@ class async_request
     callback = f;
   }
 
-  void handle_reply( int success, string reply)
+  void handle_reply(mapping reply)
   {
-    callback(success, (success ? req->handle_reply : req->handle_error)(reply));
+    callback(1, req->handle_reply(reply));
+  }
+
+  void handle_error(mapping reply)
+  {
+    callback(0, req->handle_error(reply));
   }
 }
 
@@ -99,14 +104,15 @@ class id_manager
     /* Could make id available for reallocation */
   }
 }
-
+  
 class Display
 {
   import _Xlib;
   
   inherit Stdio.File;
   inherit id_manager;
-
+  inherit Atom.atom_manager;
+  
   // FIXME! Should use some sort of (global) db.
   mapping compose_patterns = decode_value(Stdio.read_bytes("db/compose.db"));
   
@@ -160,7 +166,10 @@ class Display
   mapping pending_requests; /* Pending requests */
   object pending_actions;   /* Actions awaiting handling */
 
-  void create() { } /* Delay initialization of id_manager */
+  void create()
+  { /* Delay initialization of id_manager */
+    atom_manager::create();
+  }
   
   void write_callback()
   {
@@ -186,7 +195,10 @@ class Display
     if (!ob && strlen(buffer))
     {
       set_write_callback(write_callback);
-      write_callback( );
+      /* Socket is most likely non-blocking,
+       * and write_callback() expects to be be able to write
+       * at least one character. So don't call it yet. */
+      // write_callback( ); 
     }
   }
 
@@ -226,6 +238,7 @@ class Display
     int wid;
     object w;
 
+    werror(sprintf("Event: %s\n", event->type));
     if (event->wid && (w = lookup_id(event->wid))
 	&& ((w->event_callbacks["_"+event->type])
 	    ||(w->event_callbacks[event->type])))
@@ -387,9 +400,18 @@ class Display
 	    if (type == "Error")
 	      {
 		mapping m = ([]);
+		int errorCode;
 		sscanf(msg, "%*c%c%2c%4c%2c%c",
-		       m->errorCode, m->sequenceNumber, m->resourceID,
+		       errorCode, m->sequenceNumber, m->resourceID,
 		       m->minorCode, m->majorCode);
+		m->errorCode = _Xlib.error_codes[errorCode];
+#if 0
+		if (m->errorCode == "Success")
+		  {
+		    werror("Xlib.Display->process: Error 'Success' ignored.\n");
+		    break;
+		  }
+#endif
 		return ({ ACTION_ERROR, m });
 	      }
 	    else if (type == "Reply")
@@ -455,20 +477,27 @@ class Display
 		  case "VisibilityNotify":
 		    ...;
 #endif
-		  case "CreateNotify": {
-		    int window;
-		    sscanf(msg, "%*4c%4c%4c" "%2c%2c" "%2c%2c%2c" "%c",
-			   event->wid, window,
-			   event->x, event->y,
-			   event->width, event->height, event->borderWidth,
-			   event->override);
-		    event->parent = lookup_id(event->wid);
-		    event->window = lookup_id(window) || window;
-		    break;
-		  }
-#if 0
+		  case "CreateNotify":
+		    {
+		      int window;
+		      sscanf(msg, "%*4c%4c%4c" "%2c%2c" "%2c%2c%2c" "%c",
+			     event->wid, window,
+			     event->x, event->y,
+			     event->width, event->height, event->borderWidth,
+			     event->override);
+		      event->parent = lookup_id(event->wid);
+		      event->window = lookup_id(window) || window;
+		      break;
+		    }
 		  case "DestroyNotify":
-		    ...;
+		    {
+		      int window;
+		      sscanf(msg, "%*4c%4c%4c",
+			     event->wid, window);
+		      event->window = lookup_id(window) || window;
+		      break;
+		    }
+#if 0
 		  case "UnmapNotify":
 		    ...;
 #endif
@@ -570,7 +599,7 @@ class Display
 	  if (handler)
 	    {
 	      m_delete(pending_requests, a[1]->sequenceNumber);
-	      handler->handle_reply(1, a[1] );
+	      handler->handle_reply(a[1]);
 	    }
 	  else if(reply_handler)
 	    reply_handler(this_object(), a[1]);
@@ -584,7 +613,7 @@ class Display
 	  if (handler)
 	    {
 	      m_delete(pending_requests, a[1]->sequenceNumber);
-	      handler->handle_reply(0, a[1]);
+	      handler->handle_error(a[1]);
 	    }
 	  else
 	    (error_handler || default_error_handler)(this_object(), a[1]);
@@ -614,6 +643,7 @@ class Display
 	  
   void close_callback(mixed id)
   {
+    werror("Xlib.close_callback\n");
     if (state == STATE_WAIT_CONNECT)
       connect_handler(this_object(), 0);
     else
@@ -647,15 +677,16 @@ class Display
       } else
 	werror("Failed to use local transport.\n");
     }
+
+    /* Asynchronous connection */
+    if (async)
+      set_nonblocking(0, 0, close_callback);
+
     if(host)
       if (!connect(host, XPORT + (int)fields[1]))
 	return 0;
 
     set_buffer( 65536 );
-
-    /* Asynchronous connection */
-    if (async)
-      set_nonblocking(0, 0, close_callback);
 
     screen_number = (int) fields[2];
     
@@ -678,26 +709,38 @@ class Display
       }
     if (!flush())
       return 0;
-    while(1) {
-      string data = read(received->needs());
-      if (!data)
-	return 0;
-      received->add_data(data);
-      array a = process();
-      if (a)
-	switch(a[0])
-	  {
-	  case ACTION_CONNECT:
-	    get_keyboard_mapping();
-	    set_nonblocking(read_callback, 0, close_callback);
-	    return 1;
-	  case ACTION_CONNECT_FAILED:
-	    werror("Connection failed: "+a[1]+"\n");
-	    return 0;
-	  default:
-	    error("Xlib.Display->open: Internal error!\n");
-	  }
-    }
+    
+    set_blocking();
+    int result = 0;
+    int done = 0;
+    mixed e = catch {
+      while(!done) {
+	string data = read(received->needs());
+	if (!data)
+	  break;
+	received->add_data(data);
+	array a = process();
+	if (a)
+	  switch(a[0])
+	    {
+	    case ACTION_CONNECT:
+	      get_keyboard_mapping();
+	      set_nonblocking(read_callback, 0, close_callback);
+	      result = done = 1;
+	      break;
+	    case ACTION_CONNECT_FAILED:
+	      werror("Connection failed: "+a[1]+"\n");
+	      done = 1;
+	      break;
+	    default:
+	      error("Xlib.Display->open: Internal error!\n");
+	    }
+      }
+    };
+    set_nonblocking();
+    if (e)
+      throw(e);
+    return result;
   }
 
   int send_request(object req, mixed|void handler)
@@ -706,14 +749,16 @@ class Display
     return sequence_number++;
   }
 
-  mixed blocking_request(object req)
+  array blocking_request(object req)
   {
+    int success;
     mixed result = 0;
     int done = 0;
 
     int n = send_request(req);
-     flush();
-     set_blocking();
+    flush();
+    set_blocking();
+    
     mixed e = catch {
       while(!done)
 	{
@@ -729,6 +774,7 @@ class Display
 		{
 		  result = req->handle_reply(a[1]);
 		  done = 1;
+		  success = 1;
 		  break;
 		}
 	      else if ((a[0] == ACTION_ERROR)
@@ -752,7 +798,7 @@ class Display
       call_out(process_pending_actions, 0);
     } else
       set_read_callback( read_callback );
-    return result;
+    return ({ success, result });
   }
   
   void send_async_request(object req, function callback)
