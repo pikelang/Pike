@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.121 1998/09/18 21:37:30 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.122 1998/09/19 13:32:24 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2989,6 +2989,10 @@ void f_map_array(INT32 args)
   INT32 e;
   struct svalue *fun;
   struct array *ret,*foo;
+
+  if (args < 2)
+    error("Bad number of arguments to "
+	  "map_array(array, function, mixed ...).\n");
 
   if(sp[-args].type != T_ARRAY)
     error("Bad argument 1 to map_array().\n");
