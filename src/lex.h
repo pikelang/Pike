@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.33 2004/03/23 15:14:00 mast Exp $
+|| $Id: lex.h,v 1.34 2004/03/24 16:42:09 grubba Exp $
 */
 
 #ifndef LEX_H
@@ -10,8 +10,10 @@
 
 #include "program.h"
 
-#ifndef INCLUDED_FROM_LANGUAGE_YACC
-/* language.c duplicates the definitions in language.h. */
+#if !defined(INCLUDED_FROM_LANGUAGE_YACC) && !defined(TOK_ARROW)
+/* language.c duplicates the definitions in language.h.
+ * language.h is usually not protected against multiple inclusion.
+ */
 #include "language.h"
 #endif
 
