@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.107 2000/01/16 05:57:34 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.108 2000/02/06 19:15:50 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -19,6 +19,7 @@ int threads_disabled = 0;
 #include "main.h"
 #include "module_support.h"
 #include "pike_types.h"
+#include "operators.h"
 
 #include <errno.h>
 
@@ -1001,6 +1002,21 @@ void f_thread_id_status(INT32 args)
   push_int(THIS_THREAD->status);
 }
 
+void f_thread_id_id(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS_THREAD->id);
+}
+
+void f_thread_id__sprintf (INT32 args)
+{
+  pop_n_elems (args);
+  push_constant_text ("Thread.Thread(");
+  push_int (THIS_THREAD->id);
+  push_constant_text (")");
+  f_add (3);
+}
+
 static void f_thread_id_result(INT32 args)
 {
   struct thread_state *th=THIS_THREAD;
@@ -1236,6 +1252,8 @@ void th_init(void)
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
   /* function(:int) */
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
+  ADD_FUNCTION("id",f_thread_id_id,tFunc(tNone,tInt),0);
+  ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tNone,tStr),0);
   set_gc_mark_callback(thread_was_marked);
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
