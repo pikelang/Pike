@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.2 2001/07/05 03:00:17 per Exp $");
+RCSID("$Id: buffer.c,v 1.3 2002/04/19 11:35:30 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -110,7 +110,7 @@ void uc_buffer_insert( struct buffer *b, unsigned int pos, int c )
   else
   {
     uc_buffer_write( b, 0 );
-    for( i = b->size-1; i>=pos; i-- )
+    for( i = b->size-1; i>pos; i-- )
       b->data[i] = b->data[i-1];
     b->data[pos] = c;
   }
