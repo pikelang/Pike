@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.c,v 1.4 2001/05/01 21:37:56 grubba Exp $
+ * $Id: rbtree.c,v 1.5 2001/05/01 23:53:19 mast Exp $
  */
 
 #include "global.h"
@@ -41,8 +41,7 @@ DECLSPEC(noreturn) static void debug_rb_indval_fatal (struct rb_node_indval *tre
 PMOD_EXPORT int rb_ind_default_cmp (struct svalue *key, union rb_node *node)
 {
   struct svalue tmp;
-  use_rb_node_ind (&(node->i), tmp);
-  return set_svalue_cmpfun (key, &tmp);
+  return set_svalue_cmpfun (key, use_rb_node_ind (&(node->i), tmp));
 }
 
 struct svalue_cmp_data
@@ -55,8 +54,7 @@ static int svalue_cmp_eq (struct svalue_cmp_data *data, union rb_node *node)
   int cmp_res;
   struct svalue tmp;
   push_svalue (data->key);
-  use_rb_node_ind (&(node->i), tmp);
-  push_svalue (&tmp);
+  push_svalue (use_rb_node_ind (&(node->i), tmp));
   apply_svalue (data->cmp_less, 2);
   if (IS_ZERO (sp - 1))
     cmp_res = !is_eq (data->key, &tmp);
@@ -72,8 +70,7 @@ static int svalue_cmp_ge (struct svalue_cmp_data *data, union rb_node *node)
   int cmp_res;
   struct svalue tmp;
   push_svalue (data->key);
-  use_rb_node_ind (&(node->i), tmp);
-  push_svalue (&tmp);
+  push_svalue (use_rb_node_ind (&(node->i), tmp));
   apply_svalue (data->cmp_less, 2);
   cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
   pop_stack();
@@ -85,8 +82,7 @@ static int svalue_cmp_le (struct svalue_cmp_data *data, union rb_node *node)
 {
   int cmp_res;
   struct svalue tmp;
-  use_rb_node_ind (&(node->i), tmp);
-  push_svalue (&tmp);
+  push_svalue (use_rb_node_ind (&(node->i), tmp));
   push_svalue (data->key);
   apply_svalue (data->cmp_less, 2);
   cmp_res = IS_ZERO (sp - 1) ? -1 : 1;
@@ -97,13 +93,6 @@ static int svalue_cmp_le (struct svalue_cmp_data *data, union rb_node *node)
 /* Functions for handling nodes with index only. */
 
 BLOCK_ALLOC (rb_node_ind, 1024)
-
-static void move_ind_data (union rb_node *to, union rb_node *from)
-{
-  INT16 flags = to->h.flags & RB_IND_FLAG_MASK;
-  to->i.ind = from->i.ind;
-  to->h.flags = (to->h.flags & ~RB_IND_FLAG_MASK) | flags;
-}
 
 PMOD_EXPORT struct rb_node_ind *rb_ind_insert (struct rb_node_ind **tree,
 					       struct svalue *ind,
@@ -129,8 +118,7 @@ PMOD_EXPORT struct rb_node_ind *rb_ind_insert (struct rb_node_ind **tree,
 
   else {
     LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      use_rb_node_ind (node, tmp);
-      cmp_res = set_svalue_cmpfun (ind, &tmp);
+      cmp_res = set_svalue_cmpfun (ind, use_rb_node_ind (node, tmp));
     }, {			/* Insert. */
       node = alloc_rb_node_ind();
       assign_svalue_no_free (&node->ind, ind);
@@ -178,16 +166,15 @@ PMOD_EXPORT int rb_ind_delete (struct rb_node_ind **tree,
     data.key = ind;
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
 			       (low_rb_cmp_fn *) svalue_cmp_eq, &data,
-			       (low_rb_move_data_fn *) move_ind_data);
+			       sizeof (struct rb_node_ind));
   }
   else
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
 			       (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
-			       (low_rb_move_data_fn *) move_ind_data);
+			       sizeof (struct rb_node_ind));
   if (old) {
     struct svalue tmp;
-    use_rb_node_ind (old, tmp);
-    free_svalue (&tmp);
+    free_svalue (use_rb_node_ind (old, tmp));
     really_free_rb_node_ind (old);
     return 1;
   }
@@ -198,8 +185,7 @@ static struct rb_node_ind *copy_ind_node (struct rb_node_ind *node)
 {
   struct rb_node_ind *new = alloc_rb_node_ind();
   struct svalue tmp;
-  use_rb_node_ind (node, tmp);
-  assign_svalue_no_free (&new->ind, &tmp);
+  assign_svalue_no_free (&new->ind, use_rb_node_ind (node, tmp));
   DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
   return new;
 }
@@ -224,14 +210,6 @@ PMOD_EXPORT void rb_ind_free (struct rb_node_ind *tree)
 /* Functions for handling nodes with index and value. */
 
 BLOCK_ALLOC (rb_node_indval, 1024)
-
-static void move_indval_data (union rb_node *to, union rb_node *from)
-{
-  INT16 flags = to->h.flags & RB_IND_FLAG_MASK;
-  to->iv.ind = from->iv.ind;
-  to->iv.val = from->iv.val;
-  to->h.flags = (to->h.flags & ~RB_IND_FLAG_MASK) | flags;
-}
 
 PMOD_EXPORT struct rb_node_indval *rb_indval_insert (struct rb_node_indval **tree,
 						     struct svalue *ind,
@@ -259,8 +237,7 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_insert (struct rb_node_indval **tre
 
   else {
     LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      use_rb_node_ind (node, tmp);
-      cmp_res = set_svalue_cmpfun (ind, &tmp);
+      cmp_res = set_svalue_cmpfun (ind, use_rb_node_ind (node, tmp));
     }, {			/* Insert. */
       node = alloc_rb_node_indval();
       assign_svalue_no_free (&node->ind, ind);
@@ -380,16 +357,15 @@ PMOD_EXPORT int rb_indval_delete (struct rb_node_indval **tree,
     data.key = ind;
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
 			       (low_rb_cmp_fn *) svalue_cmp_eq, &data,
-			       (low_rb_move_data_fn *) move_indval_data);
+			       sizeof (struct rb_node_indval));
   }
   else
     HDR (old) = low_rb_delete ((struct rb_node_hdr **) tree,
 			       (low_rb_cmp_fn *) rb_ind_default_cmp, ind,
-			       (low_rb_move_data_fn *) move_indval_data);
+			       sizeof (struct rb_node_indval));
   if (old) {
     struct svalue tmp;
-    use_rb_node_ind (old, tmp);
-    free_svalue (&tmp);
+    free_svalue (use_rb_node_ind (old, tmp));
     free_svalue (&old->val);
     really_free_rb_node_indval (old);
     return 1;
@@ -411,16 +387,13 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_delete_node (struct rb_node_indval 
     data.key = &tmp;
     HDR (old) = low_rb_delete_node ((struct rb_node_hdr **) tree,
 				    (low_rb_cmp_fn *) svalue_cmp_eq, &data,
-				    (low_rb_move_data_fn *) move_ind_data,
-				    HDR (node));
+				    HDR (node), sizeof (struct rb_node_indval));
   }
   else
     HDR (old) = low_rb_delete_node ((struct rb_node_hdr **) tree,
 				    (low_rb_cmp_fn *) rb_ind_default_cmp, &tmp,
-				    (low_rb_move_data_fn *) move_ind_data,
-				    HDR (node));
-  use_rb_node_ind (old, tmp);
-  free_svalue (&tmp);
+				    HDR (node), sizeof (struct rb_node_indval));
+  free_svalue (use_rb_node_ind (old, tmp));
   free_svalue (&old->val);
   really_free_rb_node_indval (old);
   return old;
@@ -430,8 +403,7 @@ static struct rb_node_indval *copy_indval_node (struct rb_node_indval *node)
 {
   struct rb_node_indval *new = alloc_rb_node_indval();
   struct svalue tmp;
-  use_rb_node_ind (node, tmp);
-  assign_svalue_no_free (&new->ind, &tmp);
+  assign_svalue_no_free (&new->ind, use_rb_node_ind (node, tmp));
   assign_svalue_no_free (&new->val, &node->val);
   DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
   return new;
@@ -793,7 +765,8 @@ static struct rb_node_hdr *rebalance_after_add (struct rb_node_hdr *node,
 }
 
 /* Returns the root node, which might have changed. The passed stack
- * is freed. */
+ * is freed. node is the value of the pointer in parent that used to
+ * point to the unlinked node. */
 static struct rb_node_hdr *rebalance_after_delete (struct rb_node_hdr *node,
 						   struct rbstack_ptr rbstack)
 {
@@ -1079,13 +1052,51 @@ void low_rb_link_at_next (struct rb_node_hdr **tree, struct rbstack_ptr rbstack,
   *tree = rebalance_after_add (new, rbstack);
 }
 
+#define DO_SIMPLE_UNLINK(parent, unlink, node, replace_with)			\
+do {										\
+  switch (replace_with) {							\
+    DO_IF_DEBUG(default: fatal ("replace_with is %d.\n", replace_with));	\
+    case 0:									\
+      if (parent)								\
+	SET_PTR_TO_CHILD (							\
+	  parent, unlink,							\
+	  (parent->flags |= RB_THREAD_PREV, node = unlink->prev),		\
+	  (parent->flags |= RB_THREAD_NEXT, node = unlink->next));		\
+      else									\
+	node = 0;								\
+      break;									\
+    case 1:									\
+      node = unlink->prev;							\
+      DO_IF_DEBUG (								\
+	/* Since unlink->next is null, unlink->prev must be red and */		\
+	/* can't have children, or else the tree is unbalanced. */		\
+	if (!(node->flags & RB_THREAD_NEXT))					\
+	  rb_fatal (parent, "Expected thread prev pointer in %p; "		\
+		    "tree is unbalanced.\n", node);				\
+      );									\
+      node->next = unlink->next;						\
+      goto fix_parent;								\
+    case 2:									\
+      node = unlink->next;							\
+      DO_IF_DEBUG (								\
+	if (!(node->flags & RB_THREAD_PREV))					\
+	  rb_fatal (parent, "Expected thread prev pointer in %p; "		\
+		    "tree is unbalanced.\n", node);				\
+      );									\
+      node->prev = unlink->prev;						\
+    fix_parent:									\
+      if (parent) SET_PTR_TO_CHILD (parent, unlink, node, node);		\
+  }										\
+} while (0)
+
 /* The node to unlink is the one on top of the stack. Returns the node
- * that actually got unlinked. The passed stack is freed. */
+ * that actually got unlinked. The passed stack is freed. See
+ * low_rb_delete about node_size. */
 struct rb_node_hdr *low_rb_unlink (struct rb_node_hdr **tree,
 				   struct rbstack_ptr rbstack,
-				   low_rb_move_data_fn *move_data_fn)
+				   size_t node_size)
 {
-  struct rb_node_hdr *node, *parent, *unlinked;
+  struct rb_node_hdr *node, *parent, *unlink;
   int replace_with;		/* 0: none, 1: prev, 2: next */
 
   RBSTACK_POP (rbstack, node);
@@ -1094,58 +1105,148 @@ struct rb_node_hdr *low_rb_unlink (struct rb_node_hdr **tree,
 #endif
 
   if (node->flags & RB_THREAD_PREV) {
-    unlinked = node;
-    replace_with = node->flags & RB_THREAD_NEXT ? 0 : 2;
+    unlink = node;
     parent = RBSTACK_PEEK (rbstack);
+    replace_with = node->flags & RB_THREAD_NEXT ? 0 : 2;
   }
   else if (node->flags & RB_THREAD_NEXT) {
-    unlinked = node;
-    replace_with = 1;
+    unlink = node;
     parent = RBSTACK_PEEK (rbstack);
+    replace_with = 1;
   }
   else {
-    /* Node has two subtrees, so we can't delete it. */
+    /* Node has two subtrees, so we can't delete it. Find another one
+     * to replace its data with. */
+    INT16 flags;
     parent = node;
     RBSTACK_PUSH (rbstack, node);
-    unlinked = node->next;
-    while (!(unlinked->flags & RB_THREAD_PREV)) {
-      parent = unlinked;
-      RBSTACK_PUSH (rbstack, unlinked);
-      unlinked = unlinked->prev;
+    for (unlink = node->next; !(unlink->flags & RB_THREAD_PREV); unlink = unlink->prev) {
+      parent = unlink;
+      RBSTACK_PUSH (rbstack, unlink);
     }
-    replace_with = unlinked->flags & RB_THREAD_NEXT ? 0 : 2;
-    move_data_fn (node, unlinked);
+    replace_with = 3;
+
+    flags = node->flags;
+    MEMCPY ((char *) node + OFFSETOF (rb_node_hdr, flags),
+	    (char *) unlink + OFFSETOF (rb_node_hdr, flags),
+	    node_size - OFFSETOF (rb_node_hdr, flags));
+    node->flags = (node->flags & ~RB_FLAG_MASK) | (flags & RB_FLAG_MASK);
+
+    if (parent == node) {
+      node = unlink->next;
+      if (unlink->flags & RB_THREAD_NEXT)
+	parent->flags |= RB_THREAD_NEXT;
+      else {
+#ifdef PIKE_DEBUG
+	if (!(node->flags & RB_THREAD_PREV))
+	  rb_fatal (parent, "Expected thread prev pointer in %p; "
+		    "tree is unbalanced.\n", node);
+#endif
+	node->prev = unlink->prev;
+      }
+      parent->next = node;
+    }
+    else
+      if (unlink->flags & RB_THREAD_NEXT) {
+	parent->flags |= RB_THREAD_PREV;
+	parent->prev = node = unlink->prev;
+      }
+      else {
+	node = unlink->next;
+#ifdef PIKE_DEBUG
+	if (!(node->flags & RB_THREAD_PREV))
+	  rb_fatal (parent, "Expected thread prev pointer in %p; "
+		    "tree is unbalanced.\n", node);
+#endif
+	node->prev = unlink->prev;
+	parent->prev = node;
+      }
+
+    goto unlink_done;
   }
 
-  switch (replace_with) {
-    case 0:
-      if (parent)
-	SET_PTR_TO_CHILD (
-	  parent, unlinked,
-	  (parent->flags |= RB_THREAD_PREV, node = unlinked->prev),
-	  (parent->flags |= RB_THREAD_NEXT, node = unlinked->next));
-      else
-	node = 0;
-      break;
-    case 1:
-      node = unlinked->prev;
-      node->next = unlinked->next;
-      goto fix_parent;
-    case 2:
-      node = unlinked->next;
-      node->prev = unlinked->prev;
-    fix_parent:
-      if (parent) SET_PTR_TO_CHILD (parent, unlinked, node, node);
-  }
-  /* node now contains the value of the pointer in parent that used to
-   * point to the unlinked node. */
+  DO_SIMPLE_UNLINK (parent, unlink, node, replace_with);
 
-  if (unlinked->flags & RB_RED)
+unlink_done:
+  if (unlink->flags & RB_RED)
     RBSTACK_FREE (rbstack);
   else
     *tree = rebalance_after_delete (node, rbstack);
 
-  return unlinked;
+  return unlink;
+}
+
+/* Like low_rb_unlink, but relinks the nodes instead of moving over
+ * the data. Somewhat slower unless the size of the nodes is large. */
+void low_rb_unlink_without_move (struct rb_node_hdr **tree,
+				 struct rbstack_ptr rbstack)
+{
+  struct rb_node_hdr *node, *parent, *unlink;
+  int unlink_flags, replace_with; /* 0: none, 1: prev, 2: next, 3: fixed already */
+
+  RBSTACK_POP (rbstack, node);
+#ifdef PIKE_DEBUG
+  if (!node) fatal ("No node to delete on stack.\n");
+#endif
+
+  if (node->flags & RB_THREAD_PREV) {
+    unlink = node;
+    parent = RBSTACK_PEEK (rbstack);
+    replace_with = node->flags & RB_THREAD_NEXT ? 0 : 2;
+  }
+  else if (node->flags & RB_THREAD_NEXT) {
+    unlink = node;
+    parent = RBSTACK_PEEK (rbstack);
+    replace_with = 1;
+  }
+  else {
+    /* Node has two subtrees, so we can't delete it. Find another one
+     * to switch places with. */
+    struct rb_node_hdr *orig_parent = RBSTACK_PEEK (rbstack), *tmp;
+    struct rbstack_ptr pos = rbstack;
+    parent = unlink = node;
+    RBSTACK_PUSH (rbstack, 0);
+    for (node = node->next; !(node->flags & RB_THREAD_PREV); node = node->prev) {
+      parent = node;
+      RBSTACK_PUSH (rbstack, node);
+    }
+    pos.slice->stack[pos.ssp] = node;
+    unlink_flags = node->flags;
+
+    if (orig_parent) SET_PTR_TO_CHILD (orig_parent, unlink, node, node);
+    else *tree = node;
+    for (tmp = unlink->prev; !(tmp->flags & RB_THREAD_NEXT); tmp = tmp->next) {}
+    tmp->next = node;
+    node->prev = unlink->prev;
+    if (parent == unlink) {	/* node replaces its parent. */
+      node->flags =		/* Keep the thread next flag. */
+	(node->flags & ~(RB_FLAG_MASK & ~RB_THREAD_NEXT)) |
+	(unlink->flags & (RB_FLAG_MASK & ~RB_THREAD_NEXT));
+      parent = node;
+      node = parent->next;
+    }
+    else {
+      if (node->flags & RB_THREAD_NEXT) {
+	parent->flags |= RB_THREAD_PREV;
+	parent->prev = node;
+      }
+      else parent->prev = node->next;
+      node->flags = (node->flags & ~RB_FLAG_MASK) | (unlink->flags & RB_FLAG_MASK);
+      node->next = unlink->next;
+      node = parent->prev;
+    }
+
+    goto unlink_done;
+  }
+
+  DO_SIMPLE_UNLINK (parent, unlink, node, replace_with);
+  unlink_flags = unlink->flags;
+
+unlink_done:
+  if (unlink_flags & RB_RED)
+    RBSTACK_FREE (rbstack);
+  else
+    *tree = rebalance_after_delete (node, rbstack);
 }
 
 /* Returns the node in the tree. It might not be the passed new node
@@ -1219,8 +1320,7 @@ void low_rb_add_after (struct rb_node_hdr **tree,
 #ifdef PIKE_DEBUG
       if (cmp_fn (key, existing)) fatal ("Given key doesn't match the existing node.\n");
 #endif
-      LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node) > 0 ? 1 : -1,
-		    node = node->next, ;, ;);
+      LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node) > 0 ? 1 : -1, ;, ;, ;);
       while (node != existing) {
 	LOW_RB_TRACK_NEXT (rbstack, node);
 #ifdef PIKE_DEBUG
@@ -1252,10 +1352,12 @@ void low_rb_add_after (struct rb_node_hdr **tree,
   }
 }
 
-/* Returns the node to free, if any. */
+/* Returns the node to free, if any. node_size is the size of the
+ * whole node, including rb_node_hdr. It's used to move the data from
+ * one node to another if the original node can't be removed. */
 struct rb_node_hdr *low_rb_delete (struct rb_node_hdr **tree,
 				   low_rb_cmp_fn *cmp_fn, void *key,
-				   low_rb_move_data_fn *move_data_fn)
+				   size_t node_size)
 {
   struct rb_node_hdr *node = *tree;
   if (node) {
@@ -1263,18 +1365,39 @@ struct rb_node_hdr *low_rb_delete (struct rb_node_hdr **tree,
     LOW_RB_TRACK (rbstack, node,
 		  cmp_res = cmp_fn (key, node),
 		  ;,		/* Got less. */
-		  return low_rb_unlink (tree, rbstack, move_data_fn), /* Got equal. */
+		  return low_rb_unlink (tree, rbstack, node_size), /* Got equal. */
 		  ;);		/* Got greater. */
     RBSTACK_FREE (rbstack);
   }
   return 0;
 }
 
-/* Returns the node to actually free. */
+/* Like low_rb_delete, but relinks the nodes instead of moving the
+ * data, when that's necessary. Somewhat slower unless the size of the
+ * nodes is large. */
+struct rb_node_hdr *low_rb_delete_without_move (struct rb_node_hdr **tree,
+						low_rb_cmp_fn *cmp_fn, void *key)
+{
+  struct rb_node_hdr *node = *tree;
+  if (node) {
+    RBSTACK_INIT (rbstack);
+    LOW_RB_TRACK (rbstack, node,
+		  cmp_res = cmp_fn (key, node),
+		  ;,		/* Got less. */
+		  low_rb_unlink_without_move (tree, rbstack); /* Got equal. */
+		  return node;,
+		  ;);		/* Got greater. */
+    RBSTACK_FREE (rbstack);
+  }
+  return 0;
+}
+
+/* Returns the node to actually free. See low_rb_delete about
+ * node_size. */
 struct rb_node_hdr *low_rb_delete_node (struct rb_node_hdr **tree,
 					low_rb_cmp_fn *cmp_fn, void *key,
-					low_rb_move_data_fn *move_data_fn,
-					struct rb_node_hdr *to_delete)
+					struct rb_node_hdr *to_delete,
+					size_t node_size)
 {
   struct rb_node_hdr *node = *tree;
   RBSTACK_INIT (rbstack);
@@ -1282,15 +1405,34 @@ struct rb_node_hdr *low_rb_delete_node (struct rb_node_hdr **tree,
   if (!node) fatal ("Tree is empty.\n");
   if (cmp_fn (key, to_delete)) fatal ("Given key doesn't match the node to delete.\n");
 #endif
-  LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node) > 0 ? 1 : -1,
-		node = node->next, ;, ;);
+  LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node) > 0 ? 1 : -1, ;, ;, ;);
   while (node != to_delete) {
     LOW_RB_TRACK_NEXT (rbstack, node);
 #ifdef PIKE_DEBUG
     if (!node) fatal ("Tree doesn't contain the node to delete.\n");
 #endif
   }
-  return low_rb_unlink (tree, rbstack, move_data_fn);
+  return low_rb_unlink (tree, rbstack, node_size);
+}
+
+void low_rb_delete_node_without_move (struct rb_node_hdr **tree,
+				      low_rb_cmp_fn *cmp_fn, void *key,
+				      struct rb_node_hdr *to_delete)
+{
+  struct rb_node_hdr *node = *tree;
+  RBSTACK_INIT (rbstack);
+#ifdef PIKE_DEBUG
+  if (!node) fatal ("Tree is empty.\n");
+  if (cmp_fn (key, to_delete)) fatal ("Given key doesn't match the node to delete.\n");
+#endif
+  LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node) > 0 ? 1 : -1, ;, ;, ;);
+  while (node != to_delete) {
+    LOW_RB_TRACK_NEXT (rbstack, node);
+#ifdef PIKE_DEBUG
+    if (!node) fatal ("Tree doesn't contain the node to delete.\n");
+#endif
+  }
+  low_rb_unlink_without_move (tree, rbstack);
 }
 
 struct rb_node_hdr *low_rb_copy (struct rb_node_hdr *source,
@@ -1418,16 +1560,14 @@ void exit_rbtree()
 static void debug_dump_ind_data (struct rb_node_ind *node)
 {
   struct svalue tmp;
-  use_rb_node_ind (node, tmp);
-  print_svalue (stderr, &tmp);
+  print_svalue (stderr, use_rb_node_ind (node, tmp));
   fputc (' ', stderr);
 }
 
 static void debug_dump_indval_data (struct rb_node_indval *node)
 {
   struct svalue tmp;
-  use_rb_node_ind (node, tmp);
-  print_svalue (stderr, &tmp);
+  print_svalue (stderr, use_rb_node_ind (node, tmp));
   fputs (": ", stderr);
   print_svalue (stderr, &node->val);
   fputc (' ', stderr);
@@ -1446,7 +1586,7 @@ static void debug_dump_rb_tree (struct rb_node_hdr *tree, dump_data_fn *dump_dat
       while (n) {
 	if (n == tree) {
 	  fprintf (stderr, "[Circular! %p]", tree);
-	  goto leave_1;
+	  goto skip_1;
 	}
 	RBSTACK_UP (p, n);
       }
@@ -1538,8 +1678,8 @@ void debug_check_rb_tree (struct rb_node_hdr *tree)
     {				/* prev is leaf. */
       if (max_blacks) {
 	if (blacks != max_blacks)
-	  rb_fatal (tree, "Unbalanced tree - leftmost branch is %d, this @ %p is %d.\n",
-		    max_blacks, node, blacks);
+	  rb_fatal (tree, "Unbalanced tree - leftmost branch is %d, "
+		    "prev @ %p is %d.\n", max_blacks, node, blacks);
       }
       else max_blacks = blacks;
 
@@ -1563,8 +1703,8 @@ void debug_check_rb_tree (struct rb_node_hdr *tree)
     },
     {				/* next is leaf. */
       if (blacks != max_blacks)
-	rb_fatal (tree, "Unbalanced tree - leftmost branch is %d, this @ %p is %d.\n",
-		  max_blacks, node, blacks);
+	rb_fatal (tree, "Unbalanced tree - leftmost branch is %d, "
+		  "next @ %p is %d.\n", max_blacks, node, blacks);
 
       p = rbstack;
       n2 = node;
@@ -1591,37 +1731,34 @@ void debug_check_rb_tree (struct rb_node_hdr *tree)
 
 #ifdef TEST_RBTREE
 
-#define TEST_I_FIND(fn, exp)						\
-do {									\
-  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, 0);		\
-  if (!i_node)								\
-    rb_ind_fatal (i_tree, #fn " failed to find %d (%d).\n", exp, i);	\
-  if (i_node->ind.u.integer != exp)					\
-    rb_ind_fatal (							\
-      i_tree, #fn " failed to find %d - got %d instead (%d).\n",	\
-      exp, i_node->ind.u.integer, i);					\
-  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, less_efun);	\
-  if (!i_node)								\
-    rb_ind_fatal (i_tree, #fn " failed to find %d "			\
-		  "with cmp_less (%d).\n", exp, i);			\
-  if (i_node->ind.u.integer != exp)					\
-    rb_ind_fatal (i_tree, #fn " failed to find %d "			\
-		  "with cmp_less - got %d instead (%d).\n",		\
-		  exp, i_node->ind.u.integer, i);			\
+#define TEST_I_FIND(fn, exp)							\
+do {										\
+  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, 0);			\
+  if (!i_node)									\
+    rb_ind_fatal (i_tree, #fn " failed to find %d (%d).\n", exp, i);		\
+  if (i_node->ind.u.integer != exp)						\
+    rb_ind_fatal (i_tree, #fn " failed to find %d - got %d instead (%d).\n",	\
+		  exp, i_node->ind.u.integer, i);				\
+  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, less_efun);		\
+  if (!i_node)									\
+    rb_ind_fatal (i_tree, #fn " failed to find %d with cmp_less (%d).\n",	\
+		  exp, i);							\
+  if (i_node->ind.u.integer != exp)						\
+    rb_ind_fatal (i_tree, #fn " failed to find %d with cmp_less - "		\
+		  "got %d instead (%d).\n", exp, i_node->ind.u.integer, i);	\
 } while (0)
 
-#define TEST_I_NOT_FIND(fn)						\
-do {									\
-  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, 0);		\
-  if (i_node)								\
-    rb_ind_fatal (i_tree, #fn " failed to not find %d - "		\
-		  "got %d (%d).\n",					\
-		  sp[-1].u.integer, i_node->ind.u.integer, i);		\
-  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, less_efun);	\
-  if (i_node)								\
-    rb_ind_fatal (i_tree, #fn " failed to not find %d "			\
-		  "with cmp_less - got %d (%d).\n",			\
-		  sp[-1].u.integer, i_node->ind.u.integer, i);		\
+#define TEST_I_NOT_FIND(fn)							\
+do {										\
+  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, 0);			\
+  if (i_node)									\
+    rb_ind_fatal (i_tree, #fn " failed to not find %d - got %d (%d).\n",	\
+		  sp[-1].u.integer, i_node->ind.u.integer, i);			\
+  i_node = PIKE_CONCAT (rb_ind_, fn) (i_tree, sp - 1, less_efun);		\
+  if (i_node)									\
+    rb_ind_fatal (i_tree, #fn " failed to not find %d with cmp_less - "		\
+		  "got %d (%d).\n",						\
+		  sp[-1].u.integer, i_node->ind.u.integer, i);			\
 } while (0)
 
 #define TEST_I_STEP_FIND(fn, dir, exp)					\
@@ -1645,61 +1782,55 @@ do {									\
 		  sp[-1].u.integer, i_node->ind.u.integer, i);		\
 } while (0)
 
-#define TEST_IV_FIND(fn, exp)						\
-do {									\
-  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, 0);		\
-  if (!iv_node)								\
-    rb_indval_fatal (iv_tree, #fn " failed to find %d (%d).\n",		\
-		     exp, i);						\
-  if (iv_node->ind.u.integer != exp)					\
-    rb_indval_fatal (							\
-      iv_tree, #fn " failed to find %d - got %d instead (%d).\n",	\
-      exp, iv_node->ind.u.integer, i);					\
-  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, less_efun);	\
-  if (!iv_node)								\
-    rb_indval_fatal (iv_tree, #fn " failed to find %d "			\
-		     "with cmp_less (%d).\n", exp, i);			\
-  if (iv_node->ind.u.integer != exp)					\
-    rb_indval_fatal (iv_tree, #fn " failed to find %d "			\
-		     "with cmp_less - got %d instead (%d).\n",		\
-		     exp, iv_node->ind.u.integer, i);			\
+#define TEST_IV_FIND(fn, exp)							\
+do {										\
+  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, 0);			\
+  if (!iv_node)									\
+    rb_indval_fatal (iv_tree, #fn " failed to find %d (%d).\n", exp, i);	\
+  if (iv_node->ind.u.integer != exp)						\
+    rb_indval_fatal (iv_tree, #fn " failed to find %d - "			\
+		     "got %d instead (%d).\n", exp, iv_node->ind.u.integer, i);	\
+  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, less_efun);		\
+  if (!iv_node)									\
+    rb_indval_fatal (iv_tree, #fn " failed to find %d with cmp_less (%d).\n",	\
+		     exp, i);							\
+  if (iv_node->ind.u.integer != exp)						\
+    rb_indval_fatal (iv_tree, #fn " failed to find %d with cmp_less - "		\
+		     "got %d instead (%d).\n", exp, iv_node->ind.u.integer, i);	\
 } while (0)
 
-#define TEST_IV_NOT_FIND(fn)						\
-do {									\
-  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, 0);		\
-  if (iv_node)								\
-    rb_indval_fatal (iv_tree, #fn " failed to not find %d - "		\
-		     "got %d (%d).\n",					\
-		     sp[-1].u.integer, iv_node->ind.u.integer, i);	\
-  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, less_efun);	\
-  if (iv_node)								\
-    rb_indval_fatal (iv_tree, #fn " failed to not find %d "		\
-		     "with cmp_less - got %d (%d).\n",			\
-		     sp[-1].u.integer, iv_node->ind.u.integer, i);	\
+#define TEST_IV_NOT_FIND(fn)							\
+do {										\
+  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, 0);			\
+  if (iv_node)									\
+    rb_indval_fatal (iv_tree, #fn " failed to not find %d - got %d (%d).\n",	\
+		     sp[-1].u.integer, iv_node->ind.u.integer, i);		\
+  iv_node = PIKE_CONCAT (rb_indval_, fn) (iv_tree, sp - 1, less_efun);		\
+  if (iv_node)									\
+    rb_indval_fatal (iv_tree, #fn " failed to not find %d with cmp_less - "	\
+		     "got %d (%d).\n",						\
+		     sp[-1].u.integer, iv_node->ind.u.integer, i);		\
 } while (0)
 
-#define TEST_IV_STEP_FIND(fn, dir, exp)					\
-do {									\
-  iv_node = PIKE_CONCAT (rb_indval_, dir) (iv_node);			\
-  if (!iv_node)								\
-    rb_indval_fatal (iv_tree, "Failed to step " #dir			\
-		     " to %d after " #fn " of %d (%d).\n",		\
-		     exp, sp[-1].u.integer, i);				\
-  if (iv_node->ind.u.integer != exp)					\
-    rb_indval_fatal (iv_tree, "Failed to step " #dir			\
-		     " to %d after " #fn " of %d - "			\
-		     "got %d instead (%d).\n",				\
-		     exp, sp[-1].u.integer, iv_node->ind.u.integer, i);	\
+#define TEST_IV_STEP_FIND(fn, dir, exp)						\
+do {										\
+  iv_node = PIKE_CONCAT (rb_indval_, dir) (iv_node);				\
+  if (!iv_node)									\
+    rb_indval_fatal (iv_tree, "Failed to step " #dir " to %d after " #fn	\
+		     " of %d (%d).\n", exp, sp[-1].u.integer, i);		\
+  if (iv_node->ind.u.integer != exp)						\
+    rb_indval_fatal (iv_tree, "Failed to step " #dir " to %d after " #fn	\
+		     " of %d - got %d instead (%d).\n",				\
+		     exp, sp[-1].u.integer, iv_node->ind.u.integer, i);		\
 } while (0)
 
-#define TEST_IV_STEP_NOT_FIND(fn, dir)					\
-do {									\
-  iv_node = PIKE_CONCAT (rb_indval_, dir) (iv_node);			\
-  if (iv_node)								\
-    rb_indval_fatal (iv_tree, "Failed to step " #dir			\
-		     " to end after " #fn " of %d - got %d (%d).\n",	\
-		     sp[-1].u.integer, iv_node->ind.u.integer, i);	\
+#define TEST_IV_STEP_NOT_FIND(fn, dir)						\
+do {										\
+  iv_node = PIKE_CONCAT (rb_indval_, dir) (iv_node);				\
+  if (iv_node)									\
+    rb_indval_fatal (iv_tree, "Failed to step " #dir " to end after " #fn	\
+		     " of %d - got %d (%d).\n",					\
+		     sp[-1].u.integer, iv_node->ind.u.integer, i);		\
 } while (0)
 
 void test_rbtree()
@@ -1802,7 +1933,6 @@ void test_rbtree()
 
     i_node = rb_ind_copy (i_tree);
     debug_check_rb_tree (HDR (i_node));
-
     for (j = 0, v = 0; j < 12; j++) {
       v += !!rb_ind_delete (&i_node, &a->item[j], 0);
       debug_check_rb_tree (HDR (i_node));
@@ -1961,7 +2091,14 @@ void test_rbtree()
       rb_indval_fatal (iv_node, "rb_indval_delete deleted "
 		       "wrong number of entries: %d (%d)\n", v, i);
 
-    rb_indval_free (iv_tree), iv_tree = 0;
+    for (v = 0; iv_tree; v++) {
+      rb_indval_delete_node (&iv_tree, iv_tree, 0);
+      debug_check_rb_tree (HDR (iv_tree));
+    }
+    if (v != 8)
+      rb_indval_fatal (iv_node, "rb_indval_delete_node deleted "
+		       "wrong number of entries: %d (%d)\n", v, i);
+
     pop_stack();
   }
   pop_stack();

@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.h,v 1.3 2001/05/01 07:52:20 mast Exp $
+ * $Id: rbtree.h,v 1.4 2001/05/01 23:53:19 mast Exp $
  */
 
 #ifndef RBTREE_H
@@ -248,7 +248,7 @@ PMOD_EXPORT void rb_indval_free (struct rb_node_indval *tree);
 } while (0)
 
 #define use_rb_node_ind(node, var)					\
-  (var = (node)->ind, var.type &= ~RB_IND_FLAG_MASK, var)
+  (var = (node)->ind, var.type &= ~RB_IND_FLAG_MASK, &var)
 
 /* Low-level tools, for use with arbitrary data. These only requires
  * that the nodes begin with the rb_node_hdr struct. */
@@ -371,6 +371,7 @@ do {									\
     PIKE_CONCAT (leave_, label):					\
     while (1) {								\
       {pop;}								\
+      PIKE_CONCAT (skip_, label):					\
       low_rb_last_ = (node);						\
       RBSTACK_POP (rbstack, node);					\
       if (!(node)) break;						\
@@ -492,11 +493,6 @@ do {									\
   }									\
 } while (0)
 
-/* Used when unlinking nodes. Since an interior node can't be unlinked
- * we need to move over the data from a leaf node and unlink that
- * instead. */
-typedef void low_rb_move_data_fn (struct rb_node_hdr *to,
-				  struct rb_node_hdr *from);
 typedef struct rb_node_hdr *low_rb_copy_fn (struct rb_node_hdr *node);
 typedef void low_rb_free_fn (struct rb_node_hdr *node);
 
@@ -507,7 +503,9 @@ void low_rb_link_at_next (struct rb_node_hdr **tree, struct rbstack_ptr rbstack,
 			  struct rb_node_hdr *new);
 struct rb_node_hdr *low_rb_unlink (struct rb_node_hdr **tree,
 				   struct rbstack_ptr rbstack,
-				   low_rb_move_data_fn *move_data);
+				   size_t node_size);
+void low_rb_unlink_without_move (struct rb_node_hdr **tree,
+				 struct rbstack_ptr rbstack);
 
 struct rb_node_hdr *low_rb_insert (struct rb_node_hdr **tree,
 				   low_rb_cmp_fn *cmp_fn, void *key,
@@ -521,11 +519,16 @@ void low_rb_add_after (struct rb_node_hdr **tree,
 		       struct rb_node_hdr *existing);
 struct rb_node_hdr *low_rb_delete (struct rb_node_hdr **tree,
 				   low_rb_cmp_fn *cmp_fn, void *key,
-				   low_rb_move_data_fn *move_data_fn);
+				   size_t node_size);
 struct rb_node_hdr *low_rb_delete_node (struct rb_node_hdr **tree,
 					low_rb_cmp_fn *cmp_fn, void *key,
-					low_rb_move_data_fn *move_data_fn,
-					struct rb_node_hdr *node);
+					struct rb_node_hdr *node,
+					size_t node_size);
+struct rb_node_hdr *low_rb_delete_without_move (struct rb_node_hdr **tree,
+						low_rb_cmp_fn *cmp_fn, void *key);
+void low_rb_delete_node_without_move (struct rb_node_hdr **tree,
+				      low_rb_cmp_fn *cmp_fn, void *key,
+				      struct rb_node_hdr *node);
 struct rb_node_hdr *low_rb_copy (struct rb_node_hdr *tree,
 				 low_rb_copy_fn *copy_node_fn);
 void low_rb_free (struct rb_node_hdr *tree, low_rb_free_fn *free_node_fn);
