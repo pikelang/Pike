@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.326 2003/08/08 15:47:52 grubba Exp $
+|| $Id: interpret.c,v 1.327 2003/08/10 10:54:42 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.326 2003/08/08 15:47:52 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.327 2003/08/10 10:54:42 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1217,6 +1217,10 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 
 #ifdef PIKE_DEBUG
   fprintf(stderr,"We have reached the end of the world!\n");
+#endif
+
+#ifdef __GNUC__
+  goto *dummy_label;
 #endif
 
   if (dummy_label) {
