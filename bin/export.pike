@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.46 2002/04/08 18:05:17 mikael%unix.pp.se Exp $ */
+/* $Id: export.pike,v 1.47 2002/04/08 21:46:08 mikael%unix.pp.se Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -106,6 +106,22 @@ void bump_version()
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 }
 
+array(string) build_file_list(string vpath, string list_file)
+{
+  array(string) ret=({ });
+  foreach(Stdio.FILE(list_file)->line_iterator(1);;mixed line)
+    {
+      werror("%O\n",line);
+      string name=vpath+line;
+      if(file_stat(name)->isdir)
+	ret += get_files(name);
+      else
+	ret += ({ name });
+    }
+  return ret;
+}  
+
+
 string pike_base_name;
 string srcdir;
 int rebuild;
@@ -113,15 +129,17 @@ int rebuild;
 int main(int argc, array(string) argv)
 {
   array(string) files;
+  string export_list, filename;
   object cvs;
-  int notag, snapshot;
+  int tag, snapshot;
 
   foreach(Getopt.find_all_options(argv, ({
-    ({ "srcdir",   Getopt.HAS_ARG, "--srcdir" }),
-    ({ "rebuild",  Getopt.NO_ARG,  "--rebuild"}),
-    ({ "notag",    Getopt.NO_ARG,  "--notag"  }),
-    ({ "help",     Getopt.NO_ARG,  "--help"   }),
-    ({ "snapshot", Getopt.NO_ARG, "--snapshot"})
+    ({ "srcdir",    Getopt.HAS_ARG, "--srcdir"     }),
+    ({ "rebuild",   Getopt.NO_ARG,  "--rebuild"    }),
+    ({ "tag",       Getopt.NO_ARG,  "--tag"        }),
+    ({ "help",      Getopt.NO_ARG,  "--help"       }),
+    ({ "exportlist",Getopt.HAS_ARG, "--exportlist" }),
+    ({ "filename",  Getopt.HAS_ARG, "--name"       })
   }) ),array opt)
     {
       switch(opt[0])
@@ -134,31 +152,38 @@ int main(int argc, array(string) argv)
 	  
 	  cd(srcdir);
 	  break;
+	  
+        case "exportlist":
+	  export_list=opt[1];
+	  break;
+	  
+        case "filename":
+	  filename=opt[1];
+	  break;
 
 	case "rebuild":
 	  rebuild=1;
 	  break;
 
-        case "notag":
-	  notag=1;
+        case "tag":
+	  tag=1;
 	  break;
 	  
-        case "snapshot":
-	  snapshot=1;
-	  break;
-
         case "help":
 	  write(documentation);
 	  return 0;
       }
     }
       
+
   argv -= ({ 0 });
   except_modules = (multiset)argv[1..];
-  if(!srcdir) {
+  if(!srcdir || !export_list || !filename) {
     werror(documentation);
     return 1;
   }
+
+  export_list=srcdir+"/"+export_list;
 
   if(rebuild)
   {
@@ -170,7 +195,7 @@ int main(int argc, array(string) argv)
     /* And other things... */
   }
 
-  if(!notag && file_stat(pike_base_name+"/CVS"))
+  if(tag && file_stat(pike_base_name+"/CVS"))
   {
     bump_version();
 
@@ -181,21 +206,22 @@ int main(int argc, array(string) argv)
     werror("Creating tag "+tag+" in the background.\n");
     cvs = Process.create_process( ({"cvs", "tag", "-R", "-F", tag}) );
   }
-  else if(notag) {
-    mapping m = gmtime(time());
-    array(int) version = getversion();
-    if(snapshot)
-      vpath = sprintf("Pike-v%d.%d-snapshot-%02d%02d%02d", 
-		      version[0], version[1],
-		      1900+m->year, m->mon+1, m->mday);
-    else
-      vpath = sprintf("%04d%02d%02d_%02d%02d%02d", 1900+m->year, m->mon+1, 
-		      m->mday, m->hour, m->min, m->sec);
-  }
-  else {
-    array(int) version = getversion();
-    vpath = sprintf("Pike-v%d.%d.%d", @version);
-  }
+
+  mapping m = gmtime(time());
+  array(int) version = getversion();
+  mapping symbols=([
+    "%maj":(string) version[0],
+    "%min":(string) version[1],
+    "%bld":(string) version[2],
+    "%Y":sprintf("%04d",1900+m->year),
+    "%M":sprintf("%02d",1+m->mon),
+    "%D":sprintf("%02d",m->mday),
+    "%h":sprintf("%02d",m->hour),
+    "%m":sprintf("%02d",m->min),
+    "%s":sprintf("%02d",m->sec)
+  ]);
+    
+  vpath=replace(filename,symbols);
 
   fix_configure(pike_base_name+"/src");
 
@@ -205,27 +231,7 @@ int main(int argc, array(string) argv)
 
   symlink(".", vpath);
 
-  files=`+( ({ vpath+"/README.txt", vpath+"/ANNOUNCE",
-	       vpath+"/COPYING", vpath+"/COPYRIGHT",
-	       vpath+"/Makefile", vpath+"/README-CVS.txt" }),
-	   get_files(vpath+"/src"),
-	   get_files(vpath+"/lib"),
-	   get_files(vpath+"/bin"),
-	   get_files(vpath+"/man"),
-	   get_files(vpath+"/refdoc/bin"),
-	   get_files(vpath+"/refdoc/not_extracted"),
-	   get_files(vpath+"/refdoc/presentation"),
-	   get_files(vpath+"/refdoc/src_images"),
-	   get_files(vpath+"/refdoc/structure"),
-	   ({ vpath+"/refdoc/Makefile",
-	      vpath+"/refdoc/inlining.txt",
-	      vpath+"/refdoc/keywords.txt",
-	      vpath+"/refdoc/syntax.txt",
-	      vpath+"/refdoc/tags.txt",
-	      vpath+"/refdoc/template.xsl",	      
-	      vpath+"/refdoc/xml.txt",
-	      vpath+"/refdoc/.cvsignore",
-	   }));
+  files=build_file_list(vpath,export_list);
 
   werror("Creating "+vpath+".tar.gz:\n");
 
@@ -261,7 +267,7 @@ int main(int argc, array(string) argv)
   rm(vpath);
   werror("Done.\n");
 
-  if(cvs && !notag)
+  if(cvs && tag)
   {
     cvs->wait();
     bump_version();
@@ -271,13 +277,15 @@ int main(int argc, array(string) argv)
 }
 
 constant documentation = #"
-Usage: export.pike --srcdir=<src> <except modules>
+Usage: export.pike --srcdir=<src> --name=<filename> 
+                   --exportlist=<exportlistfile> <except modules>
 
 Creates a pike distribution. Optional arguments:
 
  rebuild    not implemented
- notag      used for small export (yyyymmdd_hhmmdd.tar.gz)
- snapshot   modifier to notag to create filename of type 
-            Pike-vX.Y-snapshot-yyyymmdd.tar.gz
+ tag        bump the version and tag the tree
+ name       name of exported file (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
+            are replaced with apropiate values).
+ exportlist file with list of files and directories to export.
  help       show this text
 ";
