@@ -4,6 +4,7 @@
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML
 
 #include <simulate.h>
+#include <string.h>
 
 mapping efuns = all_efuns();
 mapping pages = ([]);
@@ -14,21 +15,7 @@ mapping subpages = ([]);
 string new_path;
 int writepages;
 string docdir;
-
-
-/*
- * Implode an array of strings to an english 'list'
- * ie. ({"foo","bar","gazonk"}) beomces "foo bar, gazonk"
- */
-string implode_nicely(string *foo)
-{
-  switch(sizeof(foo))
-  {
-  case 0: return "";
-  case 1: return foo[0];
-  default: return foo[0..sizeof(foo)-2]*", "+" and "+foo[-1];
-  }
-}
+string prefix="";
 
 /*
  * Make a 'header'
@@ -41,7 +28,7 @@ string smallcaps(string foo)
   {
     ret+=({"<font size=+1>"+foo[0..0]+"</font><font size=-1>"+foo[1..0x7fffffff]+"</font>"});
   }
-  return implode(ret," ")+"</b>";
+  return ret*" "+"</b>";
 }
 
 /*
@@ -57,6 +44,11 @@ string fippel_path(string path)
   return docdir+path;
 }
 
+string implode3(string pre, string *stuff, string post)
+{
+  return pre+ stuff * (post+pre) + post;
+}
+
 /*
  * Three step conversion process...
  */
@@ -69,10 +61,10 @@ string even_more_magic(string block, int indent)
     int e,d;
     mixed tmp,tmp2;
 
-    tmp=explode(block,"\n")+({});
+    tmp=block/"\n";
     for(e=0;e<sizeof(tmp);e++)
     {
-      tmp[e]=explode(tmp[e],"\t");
+      tmp[e]=tmp[e]/"\t";
       if(sscanf(tmp[e][0],"%*[ ]%s",tmp2) && tmp2=="")
       {
 	int q;
@@ -83,9 +75,8 @@ string even_more_magic(string block, int indent)
 	  if(sizeof(tmp[q])>=sizeof(tmp[e]))
 	  {
 	    for(d=1;d<sizeof(tmp[e]);d++)
-	    {
 	      tmp[q][d]+=" "+tmp[e][d];
-	    }
+
 	    tmp[e]=0;
 	  }
 	  break;
@@ -95,13 +86,11 @@ string even_more_magic(string block, int indent)
     tmp-=({0});
 
     for(e=0;e<sizeof(tmp);e++)
-    {
-      tmp[e]=implode(tmp[e]," </td><td> ");
-    }
+      tmp[e]=implode3("<td> ",tmp[e]," </td>");
 
-    return "<table border=0 cellpadding=0 cellspacing=0>\n<tr valign=top><td>"+
-      implode(tmp,"<br></td></tr>\n<tr valign=top><td>")+
-	"<br></td></tr>\n</table>\n";
+    return "<table border=0 cellpadding=0 cellspacing=0>\n"+
+      implode3("<tr valign=top>",tmp,"<br></tr>\n")+
+	"</table>\n";
   }
 }
 
@@ -118,10 +107,10 @@ string more_magic(string s, int quote)
     return s;
   }
 
-#define FLUSH() output+=even_more_magic(accumulator,ilevel[-1]); accumulator=""
-#define POP() output+="</dl>"; ilevel=ilevel[0..sizeof(ilevel)-2]
+#define FLUSH() do{ output+=even_more_magic(accumulator,ilevel[-1]); accumulator=""; }while(0)
+#define POP() do{ output+="</dl>"; ilevel=ilevel[0..sizeof(ilevel)-2]; }while(0)
 
-  tmp=explode(s,"\n");
+  tmp=s/"\n";
   for(e=0;e<sizeof(tmp);e++)
   {
     string spaces, rest;
@@ -137,9 +126,7 @@ string more_magic(string s, int quote)
     {
       FLUSH();
       while(strlen(spaces) < ilevel[-1] && strlen(spaces) <= ilevel[-2])
-      {
 	POP();
-      }
     }
     accumulator+=rest+"\n";
   }
@@ -147,9 +134,7 @@ string more_magic(string s, int quote)
   FLUSH();
 
   while(sizeof(ilevel)>1)
-  {
     POP();
-  }
 
   return output;
 }
@@ -159,14 +144,14 @@ string magic(string s, int quote)
   string *ret;
   ret=({});
 
-  foreach(explode(s,"\n\n"),s)
+  foreach(s/"\n\n",s)
   {
     sscanf(s,"\t%s",s);
     s=replace(s,"\n\t","\n");
     ret += ({ more_magic(s, quote) });
   }
 
-  return implode(ret,"\n<p>");
+  return ret*"\n<p>";
 }
 
 
@@ -186,7 +171,7 @@ string syntax_magic(string s)
     s=tmp[0]+"<I>"+tmp[1]+"</I>"+tmp[2];
   }
 
-  tmp=explode(s,"\n");
+  tmp=s/"\n";
   for(e=0;e<sizeof(tmp);e++)
   {
     string a,b;
@@ -194,20 +179,19 @@ string syntax_magic(string s)
     {
       string *tmp2;
       int d;
-      tmp2=explode(b[0..strlen(b)-3],",");
+      tmp2=b[0..strlen(b)-3]/",";
       for(d=0;d<sizeof(tmp2);d++)
       {
 	string *tmp3;
-//	perror("<"+tmp2[d]+">");
 	if(tmp3=lastident::split(tmp2[d]))
 	{
 	  tmp2[d]=tmp3[0]+"<I>"+tmp3[1]+"</I>"+tmp3[2];
 	}
       }
-      tmp[e]=a+"("+implode(tmp2,",")+");";
+      tmp[e]=a+"("+tmp2*","+");";
     }
   }
-  s=implode(tmp,"\n");
+  s=tmp*"\n";
   return "<tt>"+magic(s,1)+"</tt>";
 }
 
@@ -236,8 +220,22 @@ string mkdocument(string s,string title)
 	  "</html>");
 }
 
+string strip_prefix(string s)
+{
+  while(sscanf(s,"%*s__%s",s));
+  return s;
+}
+
+string *my_sort(string *s)
+{
+  s+=({});
+  sort(map(s,strip_prefix),s);
+  return s;
+}
+
 string short(string s)
 {
+  s=strip_prefix(s);
   return short_descs[s] ? " - "+short_descs[s] : "";
 }
 
@@ -258,17 +256,15 @@ string mkindex(string topic, int usehead)
   string a,ret;
   ret="";
 
-  indexes_done[topic]=1;
+  indexes_done[prefix+topic]=1;
 
   switch(topic)
   {
   case "pages":
     head="<b>All pages:</b>\n";
     ret="<ul>\n";
-    foreach(sort_array(m_indices(pages)),a)
-      {	
-	ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
-      }
+    foreach(my_sort(m_indices(pages)),a)
+      ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+short(a)+"\n";
     
     ret+="</ul>\n";
     break;
@@ -276,11 +272,11 @@ string mkindex(string topic, int usehead)
   case "programs":
     head="<b>Builtin programs:</b>\n";
     ret="<ul>\n";
-    foreach(sort_array(m_indices(pages)),a)
+    foreach(my_sort(m_indices(pages)),a)
     {
       if(a[0]!='/') continue;
       done(a);
-      ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+      ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+short(a)+"\n";
     }
     
     ret+="</ul>\n";
@@ -289,11 +285,11 @@ string mkindex(string topic, int usehead)
   case "examples":
     head="<b>examples:</b>\n";
     ret="<ul>\n";
-    foreach(sort_array(m_indices(pages)),a)
+    foreach(my_sort(m_indices(pages)),a)
     {
       if(search(a,"example")==-1) continue;
       done(a);
-      ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+      ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+short(a)+"\n";
     }
     
     ret+="</ul>\n";
@@ -302,12 +298,12 @@ string mkindex(string topic, int usehead)
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
-//    perror(sprintf("all pages: %O\n",sort(m_indices(pages))));
-//    perror(sprintf("pages done: %O\n",sort(m_indices(pages_done))));
-    foreach(sort_array(m_indices(pages) - indices(pages_done) ),a)
+    perror(sprintf("all pages: %O\n",sort(m_indices(pages))));
+    perror(sprintf("pages done: %O\n",sort(m_indices(pages_done))));
+    foreach(my_sort(m_indices(pages) - indices(pages_done) ),a)
     {
       if(a[0..4]=="index") continue;
-      ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+      ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+short(a)+"\n";
     }
     ret+="</ul>\n";
     break;
@@ -315,13 +311,13 @@ string mkindex(string topic, int usehead)
   case "efuns":
     head="<b>All builtin functions:</b>\n";
     ret="<ul>\n";
-    foreach(sort_array(m_indices(all_efuns())),a)
+    foreach(my_sort(m_indices(all_efuns())),a)
     {
       a=html_quote(a);
       done(a);
       if(pages[a])
       {
-	ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+	ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+short(a)+"\n";
       }else{
 	if(writepages)
 	  perror("Warning: no page for function: "+a+".\n");
@@ -331,7 +327,7 @@ string mkindex(string topic, int usehead)
     break;
     
   default:
-    if(!keywords[topic])
+    if(!keywords[prefix+topic])
     {
       if(writepages)
 	perror("Unknown keyword "+topic+".\n");
@@ -343,11 +339,11 @@ string mkindex(string topic, int usehead)
     head+=short(topic);
     head+="</b>\n";
     ret="<ul>\n";
-    foreach(sort_array(keywords[topic]),a)
+    foreach(my_sort(keywords[prefix+topic]),a)
     {
       a=html_quote(a);
       done(a);
-      ret+="<li><a href="+pages[a]+">"+a+"</a>"+ short(a) +"\n";
+      ret+="<li><a href="+pages[a]+">"+strip_prefix(a)+"</a>"+ short(a) +"\n";
     }
     ret+="</ul></a>\n";
     break;
@@ -373,15 +369,18 @@ string convert_page(string path, string fname)
   if(sscanf(cont,"NAME\n\t%s - %s\n",name,short))
   {
     int partno;
+    string tmp;
 
     cont=html_quote(cont);
     path=fippel_path(path);
 
     short_descs[html_quote(name)]=short;
-    pages[html_quote(name)]=path;
+    pages[prefix+html_quote(name)]=path;
+    if(sscanf(name,"/precompiled/%s",tmp))
+      pages[prefix+html_quote(capitalize(tmp))]=path;
 
 
-    string *parts=explode(cont,"============================================================================\n");
+    string *parts=cont/"============================================================================\n";
     for(partno=0;partno<sizeof(parts);partno++)
     {
       string part_name="error";
@@ -392,7 +391,7 @@ string convert_page(string path, string fname)
       part=parts[partno];
       if(!strlen(part)) continue;
 
-      sections=explode(part,"\n\n");
+      sections=part/"\n\n";
       
       /* Merge sections that does not have a header together */
       for(section=0;section<sizeof(sections);section++)
@@ -422,7 +421,7 @@ string convert_page(string path, string fname)
 
 	  if(partno)
 	  {
-	    subpages[fname+"-&gt;"+part_name]=path+"#"+part_name;
+	    subpages[prefix+fname+"-&gt;"+part_name]=path+"#"+part_name;
 	  }
 
 	case "RETURN VALUE":
@@ -434,7 +433,7 @@ string convert_page(string path, string fname)
 	  break;
 
 	default:
-	  perror("Warning: Unknown header: "+type+".\n");
+	  perror("Warning: Unknown header on page "+path+": "+type+".\n");
 	  rest=magic(rest,0);
 	  break;
 
@@ -443,12 +442,13 @@ string convert_page(string path, string fname)
 	  b=({});
 	  foreach(a,a)
 	  {
-	    keywords[a] = ( keywords[a] || ({}) ) | ({ name });
+	    a=prefix+a;
+	    keywords[a] = ( keywords[a] || ({}) ) | ({ prefix+name });
 	    if(pages[a])
 	    {
-	      b+=({ "<a href="+pages[a]+">"+a+"</a>" });
+	      b+=({ "<a href="+pages[a]+">"+strip_prefix(a)+"</a>" });
 	    }else{
-	      b+=({ a });
+	      b+=({ strip_prefix(a) });
 	    }
 	  }
 	  rest=implode_nicely(b);
@@ -463,17 +463,18 @@ string convert_page(string path, string fname)
 	    string tmp;
 	    tmp=a;
 	    if(a[0]!='`' && a[0]!='/')
-	      a=explode(a,"/")[-1];
+	      a=(a/"/")[-1];
+	    a=prefix+a;
 	    if(pages[a])
 	    {
-	      b+=({ "<a href="+pages[a]+">" + a + "</a>" });
+	      b+=({ "<a href="+pages[a]+">" + strip_prefix(a) + "</a>" });
 	    }else if(subpages[a]){
-	      b+=({ "<a href="+subpages[a]+">" + a + "</a>" });
+	      b+=({ "<a href="+subpages[a]+">" + strip_prefix(a) + "</a>" });
 	    }else if(subpages[fname+"-&gt;"+a]){
-	      b+=({ "<a href="+subpages[name+"-&gt;"+a]+">" + a + "</a>" });
+	      b+=({ "<a href="+subpages[name+"-&gt;"+a]+">" + strip_prefix(a) + "</a>" });
 	    }else{
 	      if(writepages)
-		perror(path+": Warning, unlinked SEE ALSO: "+a+"\n");
+		perror(path+": Warning, unlinked SEE ALSO: "+strip_prefix(a)+"\n");
 	      b+=({ tmp });
 	    }
 	  }
@@ -503,13 +504,13 @@ string convert_page(string path, string fname)
 	  smallcaps(type)+
 	    "<dd>\n"+rest+"\n<p>";
       }
-      if(keywords[part_name])
+      if(keywords[prefix+part_name])
       {
 	sections+=({"<dt>"+
 	  smallcaps("RELATED PAGES")+"\n"+
 	    mkindex(part_name,0)+"<p>"});
       }
-      parts[partno]="<dl>\n"+implode(sections,"\n")+"\n</dl>\n";
+      parts[partno]="<dl>\n"+sections*"\n"+"\n</dl>\n";
       if(part_name)
       {
 	parts[partno]="<a name="+part_name+">\n"+
@@ -517,7 +518,7 @@ string convert_page(string path, string fname)
 	  "\n</a>\n";
       }
     }
-    output=mkdocument(implode(parts,"<hr noshade size=1>\n"),"Pike: "+name);
+    output=mkdocument(parts*"<hr noshade size=1>\n","Pike: "+name);
   }
   else if(path[strlen(path)-5..]==".bmml")
   {
@@ -525,11 +526,11 @@ string convert_page(string path, string fname)
     string title;
     int section;
 
-    pages[(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
+    pages[prefix+(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
 
     cont=replace(cont,"$version",version());
     cont=html_quote(cont);
-    sections=explode(cont,"\n\n");
+    sections=cont/"\n\n";
     
     for(section=0;section<sizeof(sections);section++)
     {
@@ -576,7 +577,7 @@ string convert_page(string path, string fname)
 	  break;
 
 	case "TAG":
-	  pages[a]=fippel_path(path)+"#"+a;
+	  pages[prefix+a]=fippel_path(path)+"#"+a;
 	  done(a);
 	  tmp="<a name="+a+">";
 	  break;
@@ -588,13 +589,13 @@ string convert_page(string path, string fname)
       }
       sections[section]=tmp;
     }
-    cont=implode(sections,"\n<p>\n");
+    cont=sections*"\n<p>\n";
 
     return mkdocument(cont, title || "Pike manual");
   }
   else if(path[strlen(path)-5..]==".html")
   {
-    pages[(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
+    pages[prefix+(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
 
     if(sscanf(cont,"<title>%s</title>",part))
       short_descs[(path/"/")[-1]]=part;
@@ -606,7 +607,7 @@ string convert_page(string path, string fname)
     string line,tmp;
     int pre,p;
 
-    pages[(path/"/")[-1]]=fippel_path(path);
+    pages[prefix+(path/"/")[-1]]=fippel_path(path);
 
     if(sscanf(cont,"%*[0-9.] %s\n",part)==2)
       short_descs[(path/"/")[-1]]=part;
@@ -644,7 +645,7 @@ string convert_page(string path, string fname)
       tmp+=line+"\n";
     }
     output=mkdocument(output,"Pike: "+
-		      replace(explode(fname,"/")[-1],"_"," "));
+		      replace((fname/"/")[-1],"_"," "));
   }
   else
   {
@@ -703,8 +704,32 @@ void scanfiles(string path, string fname)
 /** Traverse directory **/
 void traversedir(string path)
 {
-  string file;
-  foreach(get_dir(path) - ({"CVS","RCS",".cvsignore"}),file)
+  object tmp;
+  string file,tmp2;
+  string _prefix=prefix;
+
+
+  tmp=clone(FILE);
+  if(tmp->open(path+"/.bmmlrc","r"))
+  {
+    while(tmp2=tmp->gets())
+    {
+      string bar="";
+      sscanf(tmp2,"%*[ \t]%s",tmp2);
+      if(!strlen(tmp2) || tmp2[0]=='#') continue;
+      sscanf(tmp2,"%s %s",tmp2,bar);
+      switch(tmp2)
+      {
+      case "prefix":
+	prefix+=bar+"__";
+	break;
+      }
+    }
+  }
+
+  destruct(tmp);
+
+  foreach(get_dir(path) - ({"CVS","RCS",".cvsignore",".bmmlrc"}),file)
   {
     string tmp;
     if(file[-1]=='~') continue;
@@ -720,6 +745,8 @@ void traversedir(string path)
       scanfiles(tmp,file);
     }
   }
+
+  prefix=_prefix;
 }
 
 void dodocs(string path, int module)
@@ -773,6 +800,11 @@ int main(int argc, string *argv)
   write("Scanning pages for links and keywords.\n");
   writepages=0;
   for(e=2;e<sizeof(argv);e++) dodocs(argv[e],e-2);
+
+  foreach(indices(indexes_done),np)
+    foreach(keywords[np] || ({}), np)
+      done(np);
+
 
   write("Writing html files.\n");
   writepages=1;
