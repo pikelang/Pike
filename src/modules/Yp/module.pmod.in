@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.11 2000/09/28 03:39:17 hubbe Exp $
+ * $Id: module.pmod.in,v 1.12 2001/01/05 14:07:01 grubba Exp $
  *
  * YP (NIS) Functionality for Pike
  *
@@ -27,24 +27,45 @@ class Map {
   object(Domain) domain;
   string ypmap;
 
-  void create(string map,string|void d)
+  //! Create a new YP-map object.
+  //!
+  //! @[map] is the YP-map to bind to. This may be a nickname, such as
+  //! @tt{passwd} instead of just @tt{passwd.byname}.
+  //!
+  //! If @[domain] is not specified, the default domain will be used.
+  //!
+  //! @note
+  //! If there is no YP server available for the domain, this
+  //! function call will block until there is one. If no server appears
+  //! in about ten minutes or so, an error will be returned. The timeout
+  //! is not configurable.
+  //!
+  void create(string map, string|void domain)
   {
-    if (d) {
-      domain = Domain(d);
+    if (domain) {
+      local::domain = Domain(domain);
     } else {
-      domain = Domain();
+      local::domain = Domain();
     }
     ypmap = map;
     array err;
     do {
       // Force an error if the map does not exist.
       err = catch{
-	domain->match(ypmap, "foo");
+	local::domain->match(ypmap, "foo");
 	return;
       };
     } while (ypmap = nicknames[ypmap]);
     throw(err);
   }
+
+  //! Search for the key @[key]. If there is no @[key] in the map, 0 (zero)
+  //! will be returned, otherwise the string matching the key will
+  //! be returned.
+  //!
+  //! @note
+  //! @[key] must match exactly, no pattern matching of any kind is done.
+  //!
   string match(string key)
   {
     return(domain->match(ypmap, key));
@@ -53,38 +74,59 @@ class Map {
   {
     return(domain->match(ypmap, key));
   }
-  mapping all()
+
+  //! Returns the whole map as a mapping.
+  mapping(string:string) all()
   {
     return(domain->all(ypmap));
   }
-  mapping cast_to_mapping()
+  mapping(string:string) cast_to_mapping()
   {
     return(domain->all(ypmap));
   }
-  void map(function(string,string:void)|array(function(string,string:void)) fn)
+
+  //! Call a function for each entry in the map.
+  //!
+  //! For each entry in the map, call the function @[fun()].
+  //!
+  //! The function will be called like
+  //!   @tt{void fun(string key, string value)@}.
+  //!
+  void map(function(string,string:void) fun)
   {
     domain->map(ypmap, fn);
   }
+
+  //! Return the server that provides this map.
   string server()
   {
     return(domain->server(ypmap));
   }
+
+  //! Return the order number for this map.
   int order()
   {
     return(domain->order(ypmap));
   }
+
+  //! Return the number of entries in this map.
   int _sizeof()
   {
     return(sizeof(indices(domain->all(ypmap))));
   }
+
+  //! Return the keys of the map.
   array(string) _indices()
   {
     return(indices(domain->all(ypmap)));
   }
+
+  //! Return the values of the map.
   array(string) _values()
   {
     return(values(domain->all(ypmap)));
   }
+
   mixed cast(string type)
   {
     switch(type) {
