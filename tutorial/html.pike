@@ -255,6 +255,26 @@ SGML low_index_to_wmml(INDEX data, string prefix)
   return ret;
 }
 
+int count_index_lines(SGML z)
+{
+  int ret;
+  if(!z) return 0;
+  foreach(z, TAG foo)
+    {
+      if(objectp(foo))
+      {
+	switch(foo->tag)
+	{
+	  case "h2": ret++;
+	  case "dd":
+	  case "dt": ret++;
+	  default:   ret+=count_index_lines(foo->data);
+	}
+      }
+    }
+  return ret;
+}
+
 SGML index_to_wmml(INDEX data)
 {
   SGML ret=({});
@@ -262,7 +282,8 @@ SGML index_to_wmml(INDEX data)
     {
       if(sizeof(data[key]) > !!data[key][0])
       {
-	ret+=({
+	ret+=
+	  ({
 	  Sgml.Tag("dt"),
 	    Sgml.Tag("h2",([]),0,({key})),
 	      "\n",
@@ -272,9 +293,37 @@ SGML index_to_wmml(INDEX data)
       }
     }
 
+#if 1
+  int total_lines=count_index_lines(ret);
+  werror("\nTOTAL LINES: %d\n",total_lines);
+  int lines,x;
+  for(x=0;x<sizeof(ret);x+=2)
+  {
+    lines+=count_index_lines(ret[x..x+1]);
+    werror("LINES: %d\n",lines);
+    if(lines*2>total_lines) break;
+  }
+  return ({
+    Sgml.Tag("table",([]),0,
+	     ({
+	       Sgml.Tag("tr",(["valign":"top"]),0,
+			({
+			  Sgml.Tag("td",([]),0,
+				   ({
+				     Sgml.Tag("dl",([]),0, ret[..x-1])
+				       })),
+			  Sgml.Tag("td",([]),0,
+				   ({
+				     Sgml.Tag("dl",([]),0, ret[x..])
+				       })),
+			    })),
+		 })),
+	});
+#else
   return ({
     Sgml.Tag("dl",([]),0, ret)
 	});
+#endif
 }
 
 string name_to_link(string x)

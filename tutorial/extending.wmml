@@ -1,0 +1,601 @@
+<chapter title="Pike internals - how to extend Pike">
+The rest of this book describes how Pike works and how to extend it with
+your own functions written in C or C++. Even if you are not interested in
+extending Pike, the information in this section can make you understand
+Pike better and thus make you a better Pike programmer. From this point on
+I will assume that the reader knows C or C++.
+<p>
+<section title="The master object" name=master.pike>
+Pike is a very dynamic language. Sometimes that is not enough, sometimes you
+want to change the way Pike handles errors, loads modules or start scripts.
+All this and much more can be changed by modifying the <b>master object</b>.
+The <b>master object</b> is a Pike object like any other object, but it is
+loaded before anything else and is expected to perform certain things for
+the Pike executable. The Pike executable cannot function without a master
+object to take care of these things. Here is a list of the methods needed
+in the <b>master object</b>:
+<dl>
+<dt> <tt>program cast_to_program(string <i>program_name</i>, string <i>current_file</i>)</tt>
+<dd> This function is called whenever someone performs a cast from a string
+     to a program.
+<dt> <tt>program handle_inherit(string <i>program_name</i>, string <i>current_file</i>)</tt>
+<dd> This is called whenever a Pike program which uses inherit with a string
+     argument is called. It is expected to return the program to inherit.
+<dt> <tt>void handle_error(array <i>trace</i>)</tt>
+<dd> This function is expected to write the error messages when a
+     run time error occurs. The argument is of the form
+     <tt>({"<i>error_description</i>", backtrace() })</tt>. If any error
+     occurs in this routine Pike will dump core.
+<dt> <tt>program cast_to_program(string <i>program_name</i>, string <i>current_file</i>)</tt>
+<dd> This function is called whenever someone performs a cast from a string
+     to an object.
+<dt> <tt>mixed resolv(string <i>identifier</i>, string <i>current_file</i>)</tt>
+<dd> This function is called whenever the compiler finds an unknown identifier
+     in a program. It is normally used for loading modules.
+     It is supposed to return <tt>([])[0]</tt> if the master doesn't know what
+     the value should be, and the value in question otherwise.
+<dt> <tt>void _main(array(string) <i>argv</i>, array(string) <i>env</i>)</tt>
+<dd> This function is supposed to start a Pike script. It receives all
+     the command line arguments in the first array and all environment
+     variables on the form <tt>"<i>var</i>=<i>value</i>"</tt>.
+     _main is called as soon as all modules and setup is done.
+<dt> <tt>void compile_error(string <i>file</i>, int <i>line</i>, string <i>err</i>)</tt>
+<dd> This function is called whenever a compile error is encountered. Normally
+     it just writes a message to stderr.
+<dt> <tt>string handle_include(string <i>file</i>, string <i>current_file</i>, int <i>local_include</i>)</tt>
+<dd> This function is used to locate include files. <i>file</i> is the file
+     name the user wants to include, and <i>local_include</i> is 1 if
+     the user used double quotes rather than lesser-than, greater-than to
+     quote the file name. Otherwise it is zero.
+</dl>
+<p>
+Aside from the above functions, which are expected from the Pike binary,
+the master object is also expected to provide functions used by Pike
+scripts. The current master add the following global functions:
+<dl><dd>
+	add_include_path,
+	remove_include_path,
+	add_module_path,
+	remove_module_path,
+	add_program_path,
+	remove_program_path,
+	master,
+	describe_backtrace,
+	mkmultiset,
+	strlen,
+	new,
+	clone,
+	UNDEFINED,
+	write,
+	getenv and putenv.
+</dl>
+<p>
+There are at least two ways to change the behavior of the master object.
+(Except for editing it directly, which would cause other Pike scripts not
+ to run in most cases.) You can either copy the master object, modify it
+and use the command line option <tt>-m</tt> to load your file instead of
+the default master object. However, since there might be more functionality
+added to the master object in the future I do not recommend this.
+<p>
+A better way is to write an object that inherits the master and then calls
+replace_master with the new object as argument. This should be far more
+future-safe. Although I can not guarantee that the interface between Pike
+and the master object will not change in the future, so be careful if you
+do this.
+<p>
+Let's look an example:
+<example language=pike>
+	#!/usr/local/bin/pike
+
+	class new_master {
+	  inherit "/master";
+
+ 	  void create()
+ 	  {
+ 	    /* You need to copy the values from the old master to the new */
+ 	    /* NOTE: At this point we are still using the old master */
+ 	    object old_master = master();
+ 	    object new_master = this_object();
+ 
+ 	    foreach(indices(old_master), string varname)
+ 	    {
+ 	      /* The catch is needed since we can't assign constants */
+ 	      catch { new_master[varname] = old_master[varname]; };
+ 	    }
+ 	  }
+
+	  void handle_error(array trace)
+	  {
+	    Stdio.write_file("error log",describe_backtrace(trace));
+	  }
+	};
+
+	int main(int argc, array(string) argv)
+	{
+	  replace_master(new_master());
+	  /* Run rest of program */
+	  exit(0);
+	}
+</example>
+This example installs a master object which logs run time errors to file
+instead of writing them to stderr.
+<p>
+</section>
+
+<section title="Data types from the inside">
+This section describes the different data types used inside the Pike
+interpreter. It is nessesary to have at least a basic understanding of
+these before you write Pike extentions.
+
+<section title="struct svalue">
+An svalue is the most central data structure in the Pike interpreter. It
+is used to hold values on the stack, local variables, items in arrays and
+mappings and a lot more. Any of the data types described in <ref to=types>
+can be stored in an svalue.
+<p>
+A <tt>struct svalue</tt> has three members:
+<dl>
+<dt><tt>short type;</tt>
+<dd>This says what type of value is actually stored in the svalue. Valid
+    values are <tt>T_INT</tt>, <tt>T_FLOAT</tt>, <tt>T_STRING</tt>,
+    <tt>T_ARRAY</tt>, <tt>T_MAPPING</tt>, <tt>T_MULTISET</tt>,
+    <tt>T_FUNCTION</tt>, <tt>T_PROGRAM</tt>, <tt>T_OBJECT</tt>.
+    In certain situations, other values are used in the type field, but
+    those are reserved for internal Pike use only.
+<dt><tt>short subtype;</tt>
+<ul>
+<li>For integers (<tt>T_INT</tt>) this value is one of <tt>NUMBER_NUMBER</tt>,
+    <tt>NUMBER_UNDEFINED</tt> or <tt>NUMBER_DESTRUCTED</tt>. See
+    <link to=zero_type>zero_type</link> for more information.
+<li>For functions (<tt>T_FUNCTION</tt>) this value identifies which method
+    this svalue refers to. For builtin functions, this value is
+    <tt>FUNCTION_BUILTIN</tt> (which is the same as <tt>USHRT_MAX</tt>).
+</ul>
+<dt><tt>union anything u</tt>
+<dd>This union contains the data. Depending on what the <tt>type</tt> member
+    is, you can access one of the following union members:
+<!-- FIXME: these needs to be linked to the approperiate chapters -->
+<table border=1>
+<tr><th><tt>type</tt> is:</th><th>member to use:</th><th>notes:</th></tr>
+<tr><td><tt>T_INT</tt></td><td><tt>INT_TYPE integer</tt></td><td></td></tr>
+<tr><td><tt>T_FLOAT</tt></td><td><tt>FLOAT_TYPE float_number</tt></td><td></td></tr>
+<tr><td><tt>T_STRING</tt></td><td><tt>struct pike_string *string</tt></td><td></td></tr>
+<tr><td><tt>T_ARRAY</tt></td><td><tt>struct array *array</tt></td><td></td></tr>
+<tr><td><tt>T_MAPPING</tt></td><td><tt>struct mapping *mapping</tt></td><td></td></tr>
+<tr><td><tt>T_MULTISET</tt></td><td><tt>struct multiset *multiset</tt></td><td></td></tr>
+<tr><td><tt>T_OBJECT</tt></td><td><tt>struct object *object</tt></td><td></td></tr>
+<tr><td><tt>T_PROGRAM</tt></td><td><tt>struct program *program</tt></td><td></td></tr>
+<tr><td><tt>T_FUNCTION</tt></td><td><tt>struct callble *efun</tt></td><td>If <tt>subtype == FUNCTION_BUILTIN</tt></td></tr>
+<tr><td><tt>T_FUNCTION</tt></td><td><tt>struct object *object</tt></td><td>If <tt>subtype != FUNCTION_BUILTIN</tt></td></tr>
+</table>
+</dl>
+<p>
+Of course there are a whole bunch of functions for operating on svalues:
+<function name=free_svalue title="free the contents of an svalue">
+<man_syntax>
+void free_svalue(struct svalue *<i>s</i>);
+</man_syntax>
+<man_description>
+This function is actually a macro, it will the contents of <i>s</i>. 
+It does not however free <i>s</i> itself. After calling free_svalue,
+the contents of <i>s</i> is undefined, and you should not be surprised
+if your computer blows up if you try to access the it's contents.
+Also note that this doesn't nessecarily free whatever the svalue is
+pointing to, it only frees one reference. If that reference is the last
+one, the object/array/mapping/whatever will indeed be freed.
+</man_description>
+<man_note>
+This function will *not* call Pike code or error().
+</man_note>
+</function>
+
+<HR NEWPAGE>
+
+<function name=free_svalues title="free many svalues">
+<man_syntax>
+void free_svalues(struct svalue *<i>s</i>, INT32 <i>howmany</i>, TYPE_FIELD <i>type_hint</i>);
+</man_syntax>
+<man_description>
+This function does the same as <tt>free_svalue</tt> but operates on several
+svalues. The <i>type_hint</i> is used for optimization and should be set
+to BIT_MIXED if you don't know exactly what types are beeing freed.
+</man_description>
+<man_note>
+This function will *not* call Pike code or error().
+</man_note>
+<man_see>
+free_svalue, TYPE_FIELD
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=assign_svalue title="copy an svalue to another svalue">
+<man_syntax>
+void assign_svalue(struct svalue *<i>to</i>, sstruct svalue *<i>from</i>);
+</man_syntax>
+<man_description>
+This function frees the contents of <i>to</i> and then copies the contents
+of <i>from</i> into <i>to</i>. If the value in <i>from</i> uses refcounts,
+they will be increased to reflect this copy.
+</man_description>
+<man_note>
+This function will *not* call Pike code or error().
+</man_note>
+<man_see>
+free_svalue, assign_svalue_no_free
+</man_see>
+</function>
+
+
+<HR NEWPAGE>
+
+<function name=assign_svalue_no_free title="copy an svalue to another svalue">
+<man_syntax>
+void assign_svalue_no_free(struct svalue *<i>to</i>, sstruct svalue *<i>from</i>);
+</man_syntax>
+<man_description>
+This function does the same as assign_svalue() but does not free the contents
+of <i>to</i> before overwriting it. This should be used when <i>to</i> has not
+been initialized yet. If this funcion is incorrectly, memory leaks will occur.
+On the other hand, if you call assign_svalue on an uninitialized svalue, a
+core dump or bus error will most likely occur.
+</man_description>
+<man_note>
+This function will *not* call Pike code or error().
+</man_note>
+<man_see>
+assign_svalue, free_svalue
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=IS_ZERO title="check if an svalue is true or false">
+<man_syntax>
+int IS_ZERO(struct svalue *<i>s</i>);
+</man_syntax>
+<man_description>
+This macro returns 1 if <i>s</i> is false and 0 if <i>s</i> is true.
+</man_description>
+<man_note>
+This macro will evaluate <i>s</i> several times.<br>
+This macro may call Pike code and/or error().
+</man_note>
+<man_see>
+is_eq
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=is_eq title="check if two svalues contains the same value">
+<man_syntax>
+int is_eq(struct svalue *<i>a</i>, struct svalue *<i>b</i>);
+</man_syntax>
+<man_description>
+This function returns 1 if <i>a</i> and <i>b</i> contain the same value.
+This is the same as the <tt>`==</tt> operator in pike.
+</man_description>
+<man_note>
+This function may call Pike code and/or error().
+</man_note>
+<man_see>
+IS_ZERO, is_lt, is_gt, is_le, is_ge, is_equal
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=is_equal title="check if two svalues are equal">
+<man_syntax>
+int is_equal(struct svalue *<i>a</i>, struct svalue *<i>b</i>);
+</man_syntax>
+<man_description>
+This function returns 1 if <i>a</i> and <i>b</i> contains equal values.
+This is the same as the function <tt>equal</tt> in pike.
+</man_description>
+<man_note>
+This function may call Pike code and/or error().
+</man_note>
+<man_see>
+equal, is_eq
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<anchor name=is_gt>
+<anchor name=is_le>
+<anchor name=is_ge>
+<function name=is_lt title="compare the contents of two svalues">
+<man_syntax>
+int is_lt(struct svalue *<i>a</i>, struct svalue *<i>b</i>);<br>
+int is_le(struct svalue *<i>a</i>, struct svalue *<i>b</i>);<br>
+int is_gt(struct svalue *<i>a</i>, struct svalue *<i>b</i>);<br>
+int is_ge(struct svalue *<i>a</i>, struct svalue *<i>b</i>);
+</man_syntax>
+<man_description>
+These functions are equal to the pike operators <tt>`&lt;</tt>,
+<tt>`&lt;=</tt>, <tt>`&gt;</tt>, <tt>`&gt;=</tt> respectively.
+For instance <tt>is_lt</tt> will return 1 if the contents of
+<i>a</i> is lesser than the contents of <i>b</i>.
+</man_description>
+<man_note>
+This function may call Pike code and/or error(). For instance, it will
+call error() if you try to compare values which cannot be compared such
+as comparing an integer to an array.
+</man_note>
+<man_see>
+IS_ZERO, is_eq
+</man_see>
+</function>
+</anchor>
+</anchor>
+</anchor>
+
+
+</section>
+
+<section title="struct pike_string">
+A <tt>struct pike_string</tt> is the internal representation of a
+<tt>string</tt>. Since Pike relies heavily on string manipulation, there
+are quite a few features and quirks to using this data structure. The most
+important part is that strings are shared. This means that after a string
+has been entered into the shared string table it must <i>never</i> be modified.
+Since some other thread might be using the very same string, it is not even
+permitted to change a shared string temporarily and then change it back.
+<p>
+A <tt>struct pike_string</tt> has these members:
+<dl>
+<dt><tt>INT32 refs;</tt>
+<dd>The references to this string.
+<dt><tt>INT32 length;</tt>
+<dd>This is the length of the string.
+<dt><tt>unsigned INT32 hval;</tt>
+<dd>This is the internal hash value for the string, you should not have to
+    use this member for any reason.
+<dt><tt>struct pike_string *next;</tt>
+<dd>This points to the next string in the hash table. Internal use only.
+<dt><tt>int size_shift;</tt>
+<dd>This represents the size of the characters in the string. Currently
+    size_shift has three valid values: 0, 1 and 2. These values means that
+    the characters in the string are 1, 2 and 4 bytes long respectively.
+<dt><tt>char str[1];</tt>
+<dd>This is the actual data. Note that you should never use this member
+    directly. Use <tt>STR0</tt>, <tt>STR1</tt> and <tt>STR2</tt> instead.
+</dl>
+<h2>General string management</h2>
+Since pike strings are shared, you can compare them by using <tt>==</tt>.
+FIXME -- add more here.
+
+<HR NEWPAGE>
+
+<anchor name=STR2>
+<anchor name=STR1>
+<function name=STR0 title="Get a pointer to a 'char'">
+<man_syntax>
+p_wchar0 *STR0(struct pike_string *<i>s</i>);<br>
+p_wchar1 *STR1(struct pike_string *<i>s</i>);<br>
+p_wchar2 *STR2(struct pike_string *<i>s</i>);
+</man_syntax>
+<man_description>
+These macros return raw C pointers to the data in the string <i>s</i>.
+Note that you may only use <tt>STR0</tt> on strings where
+<tt>size_shift</tt> is 0, <tt>STR1</tt> on strings where <tt>size_shift</tt>
+is 1 and <tt>STR2</tt>on strings where <tt>size_shift</tt> is 2. When compiled
+with <tt>DEBUG</tt> these macros will call <tt>fatal</tt> if used on strings
+with the wrong <tt>size_shift</tt>.
+</man_description>
+<man_note>
+All pike strings have been zero-terminated for your convenience.<br>
+The zero-termination is not included in the length of the string.
+</man_note>
+</function>
+</anchor>
+</anchor>
+
+<HR NEWPAGE>
+
+<function name=free_string title="Free a reference to a pike_string">
+<man_syntax>
+void free_string(struct pike_string *<i>s</i>);
+</man_syntax>
+<man_description>
+This function frees one reference to a pike string and if that is the last
+reference, it will free the string itself. As with all refcounting functions
+you should be careful about how you use it. If you forget to call this when
+you should, a memory leak will occur. If you call this function when you
+shouldn't Pike will most likely crash.
+</man_description>
+</function>
+
+<HR NEWPAGE>
+
+<function name=make_shared_string title="Make a new shared string">
+<man_syntax>
+struct pike_string *make_shared_string(char *<i>str</i>);
+</man_syntax>
+<man_description>
+This function takes a null terminated C string as argument and returns a
+<tt>pike_string</tt> with the same contents. It does not free or change
+<i>str</i>. The returned string will have a reference which will be up
+to you to free with <tt>free_string</tt> unless you send the string to
+a function such as <tt>push_string</tt> which eats the reference for you. 
+</man_description>
+<man_see>
+free_string, push_string, begin_shared_string, make_shared_binary_string
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=make_shared_binary_string title="Make a new binary shared string">
+<man_syntax>
+struct pike_string *make_shared_binary_string(char *<i>str</i>, INT32 <i>len</i>);
+</man_syntax>
+<man_description>
+This function does essentially the same thing as <tt>make_shared_string</tt>,
+but you give it the length of the string <i>str</i> as a second argument.
+This allows for strings with zeros in them. It is also more efficient to
+call this routine if you already know the length of the string <i>str</i>.
+</man_description>
+<man_see>
+free_string, push_string, begin_shared_string, make_shared_binary_string
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=begin_shared_string title="Start building a shared string">
+<man_syntax>
+struct pike_string *begin_shared_string(INT32 <i>len</i>);
+</man_syntax>
+<man_description>
+This function is used to allocate a new shared string with a specified length
+which has not been created yet. The returned string is not yet shared and
+should be initialized with data before calling <tt>end_shared_string</tt>
+on it.
+<p>
+If after calling this function you decide that you do not need this string
+after all, you can simply call <tt>free</tt> on the returned string to
+free it. It is also possible to call
+<tt>free_string(end_shared_string(<i>s</i>))</tt> but that would be much less
+effective.
+</man_description>
+<man_example language=c>
+	// This is in effect equal to s=make_shared_string("test")
+	struct pike_string *s=begin_shared_string(4);
+	STR0(s)[0]='t';
+	STR0(s)[1]='e';
+	STR0(s)[2]='s';
+	STR0(s)[3]='t';
+	s=end_shared_string(s);
+</man_example>
+<man_see>
+free_string, push_string, make_shared_string, end_shared_string
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=end_shared_string title="Insert a pre-allocated string into the shared string table">
+<man_syntax>
+struct pike_string *end_shared_string(struct pike_string *<i>s</i>);
+</man_syntax>
+<man_description>
+This function is used to finish constructing a pike string previously
+allocated with <tt>begin_shared_string</tt> or
+<tt>begin_wide_shared_string</tt>. It will insert the string into the shared
+string table. If there already is such a string in the shared string table
+then <i>s</i> will be freed and that string will be returned instead.
+After calling this function, you may not modify the string any more.
+As with <tt>make_shared_string</tt> this function returns a string with
+a reference which it is your responsibility to free.
+</man_description>
+<man_see>
+begin_shared_string, begin_wide_shared_string
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=begin_wide_shared_string title="Start building a wide shared string">
+<man_syntax>
+struct pike_string *begin_wide_shared_string(INT32 <i>len</i>, int <i>size_shift</i>);
+</man_syntax>
+<man_description>
+This function is a more generic version of <tt>begin_shared_string</tt>.
+It allocates space for a string of length <i>len</i> where each character
+is <tt>1 &lt;&;lt; <i>size_shift</i></tt> bytes. As with <tt>begin_shared_string</tt>
+it is your responsibility to initialize the string and call
+<tt>end_shared_string</tt>.
+on it.
+</man_description>
+<man_example language=c>
+	struct pike_string *s=begin_wide_shared_string(1,2);
+	STR2(s)[0]=4711;
+	s=end_shared_string(s);
+</man_example>
+<man_see>
+begin_shared_string, end_shared_string, make_shared_string, make_shared_string1, make_shared_string2
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<anchor name=make_shared_string2>
+<anchor name=make_shared_binary_string2>
+<anchor name=make_shared_binary_string1>
+<function name=make_shared_string1 title="Make a wide shared string">
+<man_syntax>
+struct pike_string *make_shared_string1(p_whcar1 *<i>str</i>);<br>
+struct pike_string *make_shared_binary_string1(p_whcar1 *<i>str</i>,INT32 <i>len</i>);<br>
+struct pike_string *make_shared_string2(p_whcar2 *<i>str</i>);<br>
+struct pike_string *make_shared_binary_string2(p_whcar2 *<i>str</i>,INT32 <i>len</i>);
+</man_syntax>
+<man_description>
+These functions are the wide string equivialents of
+<tt>make_shared_string</tt> and <tt>make_shared_binary_string</tt>.
+Of course, the functions ending in 1 use 2-byte characters and the ones
+ending in 2 use 4-byte characters.
+</man_description>
+<man_see>
+make_shared_string, make_shared_binary_string, begin_wide_shared_string
+</man_see>
+</function>
+</anchor>
+</anchor>
+</anchor>
+
+
+</section> <!-- pike_string -->
+
+<section title="struct array">
+</section> <!-- array -->
+
+<section title="struct mapping">
+</section> <!-- array -->
+
+<section title="struct object">
+</section> <!-- array -->
+
+<section title="struct program">
+</section> <!-- array -->
+
+</section>
+
+<section title="The interpreter">
+<ul>
+<li> The stack
+<li> {ref_}push_*
+</ul>
+</section>
+
+<h2> Functional overview </h2>
+
+<h2>Overview of the Pike source</h2>
+<dl>
+<dt> library files
+<dd> 
+  <dl>
+  <dt> callback
+  </dl>
+
+<dt> compiler
+<dt> backend
+<dt> callback
+<dt> constants
+<dt> docode
+<dt> 
+</dl>
+
+<ul>
+  <li>Overview of the Pike source
+  <li>The master object
+  <li>The file structure of a module
+  <li>Data types from the inside
+  <li>Writing portable modules: autoconf
+  <li>Other useful functions
+</ul>
+</chapter>

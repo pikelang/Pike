@@ -10,22 +10,22 @@ import ".";
 int main(int argc, string *argv)
 {	
   mixed *ER=catch {
-    program output=(program)argv[1];
+    program output=(program)argv[2];
     werror("Reading ");
-    string input=stdin->read(0x7fffffff);
+    string input=Stdio.read_file(argv[1]);
     werror("Lexing ");
-    mixed data=Sgml.lex(input,"stdin");
+    mixed data=Sgml.lex(input,argv[1]);
     werror("Grouping ");
     data=Sgml.group(data);
     werror("Verifying\n");
-    Wmml.verify(data,input,"stdin");
+    Wmml.verify(data,input,argv[1]);
     werror("Concretizing\n");
     WMML wmml=Wmml.make_concrete_wmml(data);
 #ifdef WALL
     werror("Undocumented functions: \n%-#75s\n",(indices(all_constants()) - indices(wmml->index_data))*"\n");
 #endif
     werror("\nWriting output\n");
-    output()->output(argv[2],wmml);
+    output()->output(argv[3],wmml);
     write("Ok\n");
     exit(0);
   };

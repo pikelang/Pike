@@ -9324,7 +9324,7 @@ Defined as: return o[name];
 
 <function name=Simulate.map_regexp title="filter an array through a regexp">
 <man_syntax>
-array(string) regexp(array(string) <I>arr</I>, string <I>reg</I>);
+array(string) map_regexp(array(string) <I>arr</I>, string <I>reg</I>);
 </man_syntax>
 <man_description>
 Returns those strings in arr that matches the regexp in reg.
@@ -9613,6 +9613,8 @@ prints.
 <h2>LR</h2>
 
  -->
+
+<include file=Mysql.wmml>
 
 </chapter>
 
@@ -12733,6 +12735,7 @@ instead of writing them to stderr.
 
 -->
 
+<include file=extending.wmml>
 
 <appendix title="Terms and jargon">
 <dl>
