@@ -272,13 +272,18 @@ int my_strcmp(struct pike_string *a,struct pike_string *b)
   return low_binary_strcmp(a->str,a->len,b->str,b->len);
 }
 
-void really_free_string(struct pike_string *s)
+void unlink_pike_string(struct pike_string *s)
 {
   int h;
 
   h=StrHash(s->str,s->len);
   propagate_shared_string(s,h);
   base_table[h]=s->next;
+}
+
+void really_free_string(struct pike_string *s)
+{
+  unlink_pike_string(s);
   free((char *)s);
 }
 
