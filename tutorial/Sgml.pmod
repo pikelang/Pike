@@ -18,7 +18,8 @@ class Tag
     return "pos "+pos+" in file "+file;
   }
 
-  varargs void create(string t, mapping p, int po, array(object) d, string f)
+  void create(string t, void|mapping p, void|int po, 
+	      void|array(object) d, void|string f)
   {
     tag=t;
     pos=po;
@@ -134,8 +135,9 @@ SGML group(SGML data)
       {
 	string tag=foo->tag[1..];
 	string t;
+	int d;
 	if (sscanf(tag,"%[^ \t\r\n>]%*s",t)==2) foo->tag=tag=t;
-	for(int d=sizeof(ret)-1;d>=0;d--)
+	for(d=sizeof(ret)-1;d>=0;d--)
 	{
 	  if(objectp(ret[d]) && !ret[d]->data && ret[d]->tag==tag)
 	  {
@@ -166,7 +168,7 @@ string mktag(string tag, mapping params)
   return ret+">";
 }
 
-varargs string generate(SGML data, function mkt)
+string generate(SGML data, void|function mkt)
 {
   string ret="";
   if(!mkt)
