@@ -8,6 +8,7 @@
 #ifndef TESTING
 #include "global.h"
 #include "error.h"
+#include "fdlib.h"
 #else
 #undef DEBUG
 #endif
@@ -47,8 +48,8 @@ void set_nonblocking(int fd,int which)
     fatal("Filedescriptor out of range.\n");
 #endif
 
-#ifdef USE_IOCTL_FIONBIO
-  ioctl(fd, FIONBIO, &which);
+#if defined(USE_IOCTL_FIONBIO) || __NT__
+  fd_ioctl(fd, FIONBIO, &which);
 #else
 
 #ifdef USE_FCNTL_O_NDELAY
@@ -63,13 +64,8 @@ void set_nonblocking(int fd,int which)
   fcntl(fd, F_SETFL, which?FNDELAY:0);
 #else
 
-#ifdef USE_IOCTLSOCKET_FIONBIO
-  ioctlsocket(fd, FIONBIO, (void *)&which);
-#else
-
 #error Do not know how to set your filedescriptors nonblocking.
 
-#endif
 #endif
 #endif
 #endif

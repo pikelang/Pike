@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.144 1997/12/28 09:29:08 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.145 1998/01/02 01:05:41 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -619,7 +619,7 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
 thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
-sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h)
+sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h)
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)
@@ -900,6 +900,8 @@ AC_CHECK_FUNCS( \
  setlocale \
  setrlimit \
  sigaction \
+ sigblock \
+ sigprocmask \
  sigvec \
  strcasecmp \
  strchr \
@@ -909,6 +911,8 @@ AC_CHECK_FUNCS( \
  strtod \
  strtok \
  strtol \
+ time \
+ GetSystemTimeAsFileTime \
  times \
  vfprintf \
  vsprintf \

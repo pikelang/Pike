@@ -58,9 +58,19 @@ static void f_readline(INT32 args)
     error("Bad argument 1 to readline()\n");
 
   str=sp[-args].u.string;
+retry:
   THREADS_ALLOW();
   r=readline(str->str);
   THREADS_DISALLOW();
+
+#ifdef _REENTRANT
+  /* Kluge! /Hubbe */
+  if(!r && errno==EINTR)
+  {
+    check_threads_etc();
+    goto retry;
+  }
+#endif
 
   pop_n_elems(args);
   if(r)

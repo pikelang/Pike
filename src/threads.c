@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.47 1997/11/11 04:02:45 grubba Exp $");
+RCSID("$Id: threads.c,v 1.48 1998/01/02 01:05:54 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -15,8 +15,11 @@ int threads_disabled = 0;
 #include "program.h"
 #include "gc.h"
 
+#define THIS_THREAD ((struct thread_state *)fp->current_storage)
+
 struct object *thread_id;
 static struct callback *threads_evaluator_callback=0;
+int thread_id_result_variable;
 
 MUTEX_T interpreter_lock;
 struct program *mutex_key = 0;
@@ -73,8 +76,16 @@ void *new_thread_func(void * data)
     push_array_items(arg.args);
     arg.args=0;
     f_call_function(args);
-    pop_stack(); /* Discard the return value. /Per */
+
+    /* copy return value to the thread_id here */
+    object_low_set_index(thread_id,
+			 thread_id_result_variable,
+			 sp-1);
+    pop_stack();
   }
+
+   ((struct thread_state *)(thread_id->storage))->status=THREAD_EXITED;
+   co_signal(& ((struct thread_state *)(thread_id->storage))->status_change);
 
   free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);
@@ -110,6 +121,7 @@ void f_thread_create(INT32 args)
   arg=ALLOC_STRUCT(thread_starter);
   arg->args=aggregate_array(args);
   arg->id=clone_object(thread_id_prog,0);
+  ((struct thread_state *)arg->id->storage)->status=THREAD_RUNNING;
 
   tmp=th_create(&dummy,new_thread_func,arg);
 
@@ -395,9 +407,40 @@ void f_thread_backtrace(INT32 args)
   }
 }
 
+void f_thread_id_status(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS_THREAD->status);
+}
+
+static void f_thread_id_result(INT32 args)
+{
+  struct thread_state *th=THIS_THREAD;
+
+  SWAP_OUT_CURRENT_THREAD();
+
+  while(th->status != THREAD_EXITED)
+    co_wait(&th->status_change, &interpreter_lock);
+
+  SWAP_IN_CURRENT_THREAD();
+
+  low_object_index_no_free(sp,
+			   fp->current_object, 
+			   thread_id_result_variable);
+  sp++;
+}
+
 void init_thread_obj(struct object *o)
 {
   MEMSET(o->storage, 0, sizeof(struct thread_state));
+  THIS_THREAD->status=THREAD_NOT_STARTED;
+  co_init(& THIS_THREAD->status_change);
+}
+
+
+void exit_thread_obj(struct object *o)
+{
+  co_destroy(& THIS_THREAD->status_change);
 }
 
 #ifdef DEBUG
@@ -481,11 +524,15 @@ void th_init(void)
 
   start_new_program();
   add_storage(sizeof(struct thread_state));
+  thread_id_result_variable=simple_add_variable("result","mixed",0);
   add_function("backtrace",f_thread_backtrace,"function(:array)",0);
+  add_function("wait",f_thread_id_result,"function(:mixed)",0);
+  add_function("status",f_thread_id_status,"function(:int)",0);
 #ifdef DEBUG
   set_gc_mark_callback(thread_was_marked);
 #endif
   set_init_callback(init_thread_obj);
+  set_init_callback(exit_thread_obj);
   thread_id_prog=end_program();
   if(!mutex_key)
     fatal("Failed to initialize thread program!\n");

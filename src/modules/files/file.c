@@ -6,7 +6,8 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.62 1997/12/23 06:26:10 hubbe Exp $");
+RCSID("$Id: file.c,v 1.63 1998/01/02 01:06:33 hubbe Exp $");
+#include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -147,7 +148,7 @@ static int close_fd(int fd)
     {
       int i;
       THREADS_ALLOW();
-      i=close(fd);
+      i=fd_close(fd);
       THREADS_DISALLOW();
       
       if(i < 0)
@@ -161,7 +162,7 @@ static int close_fd(int fd)
 	  /* Try waiting it out in blocking mode */
 	  set_nonblocking(fd,0);
 	  THREADS_ALLOW();
-	  i=close(fd);
+	  i=fd_close(fd);
 	  THREADS_DISALLOW();
 	  if(i>= 0 || errno==EBADF)  break; /* It was actually closed, good! */
 	  
@@ -513,7 +514,7 @@ static int do_close(int fd, int flags)
     if(files[fd].open_mode & FILE_WRITE)
     {
       set_read_callback(fd,0,0);
-      shutdown(fd, 0);
+      fd_shutdown(fd, 0);
       files[fd].open_mode &=~ FILE_READ;
       return 0;
     }else{
@@ -525,7 +526,7 @@ static int do_close(int fd, int flags)
     if(files[fd].open_mode & FILE_READ)
     {
       set_write_callback(fd,0,0);
-      shutdown(fd, 1);
+      fd_shutdown(fd, 1);
       files[fd].open_mode &=~ FILE_WRITE;
       return 0;
     }else{
@@ -595,7 +596,7 @@ static void file_open(INT32 args)
 
   THREADS_ALLOW();
   do {
-    fd=open(str->str,map(flags), access);
+    fd=fd_open(str->str,map(flags), access);
   } while(fd < 0 && errno == EINTR);
   THREADS_DISALLOW();
 
@@ -639,7 +640,7 @@ static void file_seek(INT32 args)
 
   ERRNO=0;
 
-  to=lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
+  to=fd_lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
 
   if(to<0) ERRNO=errno;
 
@@ -655,7 +656,7 @@ static void file_tell(INT32 args)
     error("File not open.\n");
   
   ERRNO=0;
-  to=lseek(FD, 0L, SEEK_CUR);
+  to=fd_lseek(FD, 0L, SEEK_CUR);
 
   if(to<0) ERRNO=errno;
 
@@ -680,7 +681,7 @@ static void file_stat(INT32 args)
 
  retry:
   THREADS_ALLOW();
-  tmp=fstat(fd, &s);
+  tmp=fd_fstat(fd, &s);
   THREADS_DISALLOW();
 
   if(tmp < 0)
@@ -708,7 +709,7 @@ static void file_errno(INT32 args)
 static struct pike_string *simple_do_read(INT32 *amount,int fd)
 {
   char buffer[READ_BUFFER];
-  *amount = read(fd, buffer, READ_BUFFER);
+  *amount = fd_read(fd, buffer, READ_BUFFER);
   if(*amount>0) return make_shared_binary_string(buffer,*amount);
   return 0;
 }
@@ -961,13 +962,13 @@ static void file_set_buffer(INT32 args)
   if(flags & FILE_READ)
   {
     int tmp=bufsize;
-    setsockopt(FD,SOL_SOCKET, SO_RCVBUF, (char *)&tmp, sizeof(tmp));
+    fd_setsockopt(FD,SOL_SOCKET, SO_RCVBUF, (char *)&tmp, sizeof(tmp));
   }
 
   if(flags & FILE_WRITE)
   {
     int tmp=bufsize;
-    setsockopt(FD,SOL_SOCKET, SO_SNDBUF, (char *)&tmp, sizeof(tmp));
+    fd_setsockopt(FD,SOL_SOCKET, SO_SNDBUF, (char *)&tmp, sizeof(tmp));
   }
 #endif
 }
@@ -1014,67 +1015,72 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
   if(fd==-1)
   {
-    if((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
+    if((fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
     
     /* I wonder what is most common a loopback on ip# 127.0.0.1 or
      * a loopback with the name "localhost"?
      * Let's hope those few people who don't have socketpair have
      * a loopback on 127.0.0.1
      */
+    MEMSET((char *)&my_addr,0,sizeof(struct sockaddr_in));
+    my_addr.sin_family=AF_INET;
     my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     my_addr.sin_port=htons(0);
-    
+
+
     /* Bind our sockets on any port */
-    if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    if(fd_bind(fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
     {
-      close(fd);
+      fd_close(fd);
       fd=-1;
       return -1;
     }
 
     /* Check what ports we got.. */
     len=sizeof(my_addr);
-    if(getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
+    if(fd_getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
     {
-      close(fd);
+      fd_close(fd);
       fd=-1;
       return -1;
     }
 
     /* Listen to connections on our new socket */
-    if(listen(fd, 5) < 0)
+    if(fd_listen(fd, 5) < 0)
     {
-      close(fd);
+      fd_close(fd);
       fd=-1;
       return -1;
     }
+
+    my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
   }
   
-  if((sv[1]=socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
 
-  addr.sin_addr.s_addr=inet_addr("127.0.0.1");
+  if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
 
 /*  set_nonblocking(sv[1],1); */
-  
-  if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0)
+
+  if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
   {
     int tmp2;
     for(tmp2=0;tmp2<20;tmp2++)
     {
       int tmp;
       len=sizeof(addr);
-      tmp=accept(fd,(struct sockaddr *)&addr,&len);
+      tmp=fd_accept(fd,(struct sockaddr *)&addr,&len);
 
-      if(tmp!=-1) close(tmp);
-      if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr))>=0)
+      if(tmp!=-1) fd_close(tmp);
+      if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr))>=0)
 	break;
     }
     if(tmp2>=20)
       return -1;
   }
 
+
   len=sizeof(addr);
-  if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
+  if(fd_getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
 
   /* Accept connection
    * Make sure this connection was our OWN connection,
@@ -1086,21 +1092,22 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   do
   {
     len=sizeof(addr);
-    sv[0]=accept(fd,(struct sockaddr *)&addr,&len);
+    sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len);
 
     if(sv[0] < 0) {
-      close(sv[1]);
+      fd_close(sv[1]);
       return -1;
     }
 
     /* We do not trust accept */
     len=sizeof(addr);
-    if(getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
+    if(fd_getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
   }while(len < (int)sizeof(addr) ||
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
 
 /*   set_nonblocking(sv[1],0); */
+
 
   return 0;
 }
@@ -1149,8 +1156,8 @@ static void file_pipe(INT32 args)
 	  (inout[1] >= MAX_OPEN_FILEDESCRIPTORS))
   {
     ERRNO=EBADF;
-    close(inout[0]);
-    close(inout[1]);
+    fd_close(inout[0]);
+    fd_close(inout[1]);
     push_int(0);
   }
   else
@@ -1302,7 +1309,7 @@ static void file_open_socket(INT32 args)
 
   do_close(FD, FILE_READ | FILE_WRITE);
   FD=-1;
-  fd=socket(AF_INET, SOCK_STREAM, 0);
+  fd=fd_socket(AF_INET, SOCK_STREAM, 0);
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
     ERRNO=EBADF;
@@ -1323,7 +1330,7 @@ static void file_open_socket(INT32 args)
     int o;
 
     if (sp[-args].type != T_INT) {
-      close(fd);
+      fd_close(fd);
       error("Bad argument 1 to open_socket(), expected int\n");
     }
     if (args > 1) {
@@ -1339,14 +1346,14 @@ static void file_open_socket(INT32 args)
     addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
 
     o=1;
-    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
+    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
       ERRNO=errno;
       close(fd);
       pop_n_elems(args);
       push_int(0);
       return;
     }
-    if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    if (fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
       ERRNO=errno;
       close(fd);
       pop_n_elems(args);
@@ -1369,7 +1376,7 @@ static void file_set_keepalive(INT32 args)
   int tmp, i;
   check_all_args("file->set_keepalive",args, T_INT,0);
   tmp=sp[-args].u.integer;
-  i=setsockopt(FD,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
+  i=fd_setsockopt(FD,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
   if(i)
   {
     ERRNO=errno;
@@ -1407,7 +1414,7 @@ static void file_connect(INT32 args)
 
   tmp=FD;
   THREADS_ALLOW();
-  tmp=connect(tmp, (struct sockaddr *)&addr, sizeof(addr));
+  tmp=fd_connect(tmp, (struct sockaddr *)&addr, sizeof(addr));
   THREADS_DISALLOW();
 
   if(tmp < 0)
@@ -1458,9 +1465,9 @@ static void file_query_address(INT32 args)
   len=sizeof(addr);
   if(args > 0 && !IS_ZERO(sp-args))
   {
-    i=getsockname(FD,(struct sockaddr *)&addr,&len);
+    i=fd_getsockname(FD,(struct sockaddr *)&addr,&len);
   }else{
-    i=getpeername(FD,(struct sockaddr *)&addr,&len);
+    i=fd_getpeername(FD,(struct sockaddr *)&addr,&len);
   }
   pop_n_elems(args);
   if(i < 0 || len < (int)sizeof(addr))

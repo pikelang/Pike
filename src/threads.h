@@ -157,8 +157,16 @@ extern MUTEX_T interpreter_lock;
 struct svalue;
 struct frame;
 
+#define THREAD_NOT_STARTED -1
+#define THREAD_RUNNING 0
+#define THREAD_EXITED 1
+
 struct thread_state {
-  int swapped;
+  char swapped;
+  char status;
+  COND_T status_change;
+
+  /* Swapped variables */
   struct svalue *sp,*evaluator_stack;
   struct svalue **mark_sp,**mark_stack;
   struct frame *fp;

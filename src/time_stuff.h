@@ -23,7 +23,6 @@
 
 #ifdef HAVE_WINSOCK_H
 # include <winsock.h>
-# undef HAVE_WINSOCK_H
 #endif
 
 #undef HAVE_SYS_TIME_H

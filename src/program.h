@@ -233,6 +233,9 @@ int map_variable(char *name,
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
 		    INT32 flags);
+int simple_add_variable(char *name,
+			char *type,
+			INT32 flags);
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags);

@@ -4,7 +4,8 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.19 1997/12/23 06:26:04 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.20 1998/01/02 01:05:41 hubbe Exp $");
+#include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -21,6 +22,7 @@ RCSID("$Id: backend.c,v 1.19 1997/12/23 06:26:04 hubbe Exp $");
 #include "main.h"
 #include "callback.h"
 #include "threads.h"
+#include "fdlib.h"
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -62,7 +64,7 @@ struct callback *add_backend_callback(callback_func call,
 static void wakeup_callback(int fd, void *foo)
 {
   char buffer[1024];
-  read(fd, buffer, sizeof(buffer)); /* Clear 'flag' */
+  fd_read(fd, buffer, sizeof(buffer)); /* Clear 'flag' */
 }
 
 /* This is used by threaded programs and signals to wake up the
@@ -72,17 +74,17 @@ void wake_up_backend(void)
 {
   char foo=0;
   if(may_need_wakeup)
-    write(wakeup_pipe[1], &foo ,1);
+    fd_write(wakeup_pipe[1], &foo ,1);
 }
 
 extern int pike_make_pipe(int *);
 
 void init_backend(void)
 {
-  FD_ZERO(&selectors.read);
-  FD_ZERO(&selectors.write);
+  fd_FD_ZERO(&selectors.read);
+  fd_FD_ZERO(&selectors.write);
   if(pike_make_pipe(wakeup_pipe) < 0)
-    fatal("Couldn't create backend wakup pipe, errno=%d.\n",errno);
+    fatal("Couldn't create backend wakup pipe! errno=%d.\n",errno);
   set_nonblocking(wakeup_pipe[0],1);
   set_nonblocking(wakeup_pipe[1],1);
   set_read_callback(wakeup_pipe[0], wakeup_callback, 0); 
@@ -103,18 +105,18 @@ void set_read_callback(int fd,file_callback cb,void *data)
 
   if(cb)
   {
-    FD_SET(fd, &selectors.read);
+    fd_FD_SET(fd, &selectors.read);
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
     if(fd <= max_fd)
     {
-      FD_CLR(fd, &selectors.read);
+      fd_FD_CLR(fd, &selectors.read);
       if(fd == max_fd)
       {
 	while(max_fd >=0 &&
-	      !FD_ISSET(max_fd, &selectors.read) &&
-	      !FD_ISSET(max_fd, &selectors.write))
+	      !fd_FD_ISSET(max_fd, &selectors.read) &&
+	      !fd_FD_ISSET(max_fd, &selectors.write))
 	  max_fd--;
       }
     }
@@ -133,18 +135,18 @@ void set_write_callback(int fd,file_callback cb,void *data)
 
   if(cb)
   {
-    FD_SET(fd, &selectors.write);
+    fd_FD_SET(fd, &selectors.write);
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
     if(fd <= max_fd)
     {
-      FD_CLR(fd, &selectors.write);
+      fd_FD_CLR(fd, &selectors.write);
       if(fd == max_fd)
       {
 	while(max_fd >=0 &&
-	      !FD_ISSET(max_fd, &selectors.read) &&
-	      !FD_ISSET(max_fd, &selectors.write))
+	      !fd_FD_ISSET(max_fd, &selectors.read) &&
+	      !fd_FD_ISSET(max_fd, &selectors.write))
 	  max_fd--;
       }
     }
@@ -217,11 +219,11 @@ void do_debug(void)
 
   for(e=0;e<=max_fd;e++)
   {
-    if(FD_ISSET(e,&selectors.read) || FD_ISSET(e,&selectors.write))
+    if(fd_FD_ISSET(e,&selectors.read) || fd_FD_ISSET(e,&selectors.write))
     {
       int ret;
       do {
-	ret=fstat(e, &tmp);
+	ret=fd_fstat(e, &tmp);
       }while(ret < 0 && errno == EINTR);
 
       if(ret<0)
@@ -286,7 +288,7 @@ void backend(void)
     }
 
     THREADS_ALLOW();
-    i=select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
+    i=fd_select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
     GETTIMEOFDAY(&current_time);
     THREADS_DISALLOW();
     may_need_wakeup=0;
@@ -295,10 +297,10 @@ void backend(void)
     {
       for(i=0; i<max_fd+1; i++)
       {
-	if(FD_ISSET(i, &sets.read) && read_callback[i])
+	if(fd_FD_ISSET(i, &sets.read) && read_callback[i])
 	  (*(read_callback[i]))(i,read_callback_data[i]);
 
-	if(FD_ISSET(i, &sets.write) && write_callback[i])
+	if(fd_FD_ISSET(i, &sets.write) && write_callback[i])
 	  (*(write_callback[i]))(i,write_callback_data[i]);
       }
     }else{
@@ -315,19 +317,19 @@ void backend(void)
 	sets=selectors;
 	next_timeout.tv_usec=0;
 	next_timeout.tv_sec=0;
-	if(select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout) < 0 && errno == EBADF)
+	if(fd_select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout) < 0 && errno == EBADF)
 	{
 	  int i;
 	  for(i=0;i<MAX_OPEN_FILEDESCRIPTORS;i++)
 	  {
-	    if(!FD_ISSET(i, &selectors.read) && !FD_ISSET(i,&selectors.write))
+	    if(!fd_FD_ISSET(i, &selectors.read) && !FD_ISSET(i,&selectors.write))
 	      continue;
 	    
-	    FD_ZERO(& sets.read);
-	    FD_ZERO(& sets.write);
+	    fd_FD_ZERO(& sets.read);
+	    fd_FD_ZERO(& sets.write);
 
-	    if(FD_ISSET(i, &selectors.read))  FD_SET(i, &sets.read);
-	    if(FD_ISSET(i, &selectors.write)) FD_SET(i, &sets.write);
+	    if(fd_FD_ISSET(i, &selectors.read))  fd_FD_SET(i, &sets.read);
+	    if(fd_FD_ISSET(i, &selectors.write)) fd_FD_SET(i, &sets.write);
 
 	    next_timeout.tv_usec=0;
 	    next_timeout.tv_sec=0;
@@ -354,19 +356,36 @@ void backend(void)
 
 int write_to_stderr(char *a, INT32 len)
 {
-  int nonblock;
+  int nonblock=0;
   INT32 pos, tmp;
 
-  if((nonblock=query_nonblocking(2)))
-    set_nonblocking(2,0);
+  if(!len) return 1;
 
   for(pos=0;pos<len;pos+=tmp)
   {
     tmp=write(2,a+pos,len-pos);
-    if(tmp<0) break;
+    if(tmp<0)
+    {
+      tmp=0;
+      switch(errno)
+      {
+#ifdef EWOULDBLOCK
+	case EWOULDBLOCK:
+	  nonblock=1;
+	  set_nonblocking(2,0);
+	  continue;
+#endif
+
+	case EINTR:
+	  continue;
+      }
+      break;
+    }
   }
+
   if(nonblock)
     set_nonblocking(2,1);
+
   return 1;
 }
 

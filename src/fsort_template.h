@@ -1,6 +1,6 @@
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
-#define SIZE ((long)STEP((TYPE *)0,1))
+#define SIZE ((long)(char *)STEP((TYPE *)0,1))
 
 static void ID(register TYPE *bas, register TYPE *last)
 {

@@ -14,7 +14,7 @@ static long size;
 static char *tmp_area;
 
 #define SWAP(X,Y) { tmp=*(X); *(X)=*(Y); *(Y)=tmp; }
-#define STEP(X,Y) ((X)+(Y))
+#define STEP(X,Y) (&((X)[(Y)]))
 
 #define ID fsort_1
 typedef struct a1 { char b[1]; } b1;

@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+#include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -73,7 +74,7 @@ static void do_close(struct port *p, struct object *o)
  retry:
   if(p->fd >= 0)
   {
-    if(close(p->fd) < 0)
+    if(fd_close(p->fd) < 0)
       if(errno == EINTR)
 	goto retry;
 
@@ -141,7 +142,7 @@ static void port_listen_fd(INT32 args)
     return;
   }
 
-  if(listen(fd, 16384) < 0)
+  if(fd_listen(fd, 16384) < 0)
   {
     THIS->my_errno=errno;
     pop_n_elems(args);
@@ -180,7 +181,7 @@ static void port_bind(INT32 args)
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to port->bind()\n");
 
-  fd=socket(AF_INET, SOCK_STREAM, 0);
+  fd=fd_socket(AF_INET, SOCK_STREAM, 0);
 
   if(fd < 0)
   {
@@ -192,14 +193,14 @@ static void port_bind(INT32 args)
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
     THIS->my_errno=EBADF;
-    close(fd);
+    fd_close(fd);
     pop_n_elems(args);
     push_int(0);
     return;
   }
 
   o=1;
-  if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
+  if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
     THIS->my_errno=errno;
     close(fd);
@@ -222,13 +223,13 @@ static void port_bind(INT32 args)
   addr.sin_family = AF_INET;
 
   THREADS_ALLOW();
-  tmp=bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || listen(fd, 16384) < 0;
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || listen(fd, 16384) < 0;
   THREADS_DISALLOW();
 
   if(tmp)
   {
     THIS->my_errno=errno;
-    close(fd);
+    fd_close(fd);
     pop_n_elems(args);
     push_int(0);
     return;
@@ -270,7 +271,7 @@ static void port_create(INT32 args)
       do_close(THIS,fp->current_object);
       THIS->fd=0;
 
-      if(listen(THIS->fd, 16384) < 0)
+      if(fd_listen(THIS->fd, 16384) < 0)
       {
 	THIS->my_errno=errno;
       }else{
@@ -304,7 +305,7 @@ static void port_accept(INT32 args)
 
 
   THREADS_ALLOW();
-  fd=accept(this->fd, 0, &len);
+  fd=fd_accept(this->fd, 0, &len);
   THREADS_DISALLOW();
 
   if(fd < 0)
@@ -319,7 +320,7 @@ static void port_accept(INT32 args)
     THIS->my_errno=EBADF;
     pop_n_elems(args);
     push_int(0);
-    close(fd);
+    fd_close(fd);
     return;
   }
 
@@ -340,7 +341,7 @@ static void socket_query_address(INT32 args)
     error("socket->query_address(): Socket not bound yet.\n");
 
   len=sizeof(addr);
-  i=getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
+  i=fd_getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
   pop_n_elems(args);
   if(i < 0 || len < (int)sizeof(addr))
   {

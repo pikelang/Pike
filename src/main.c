@@ -4,7 +4,8 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.28 1997/12/28 09:29:10 hubbe Exp $");
+RCSID("$Id: main.c,v 1.29 1998/01/02 01:05:48 hubbe Exp $");
+#include "fdlib.h"
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -22,6 +23,11 @@ RCSID("$Id: main.c,v 1.28 1997/12/28 09:29:10 hubbe Exp $");
 #include "dynamic_load.h"
 #include "gc.h"
 #include "mapping.h"
+#include "cpp.h"
+
+#ifdef HAVE_WINSOCK_H
+#include "winsock.h"
+#endif
 
 #include <errno.h>
 
@@ -56,7 +62,7 @@ struct callback *add_post_master_callback(callback_func call,
 }
 
 
-void main(int argc, char **argv, char **env)
+void main(int argc, char **argv)
 {
   JMP_BUF back;
   int e, num;
@@ -65,12 +71,15 @@ void main(int argc, char **argv, char **env)
 
   ARGV=argv;
 
-#ifndef __NT__
-  /* Close extra fds (if any) */
-  for (e=3; e < MAX_OPEN_FILEDESCRIPTORS; e++) {
-    do {
-      num = close(e);
-    } while ((num < 0) && (errno == EINTR));
+  fd_init();
+
+#ifdef HAVE_WINSOCK_H
+  {
+    WSADATA wsadata;
+    if(WSAStartup(MAKEWORD(2,0), &wsadata) != 0)
+    {
+      fatal("No winsock available.\n");
+    }
   }
 #endif
 
@@ -218,6 +227,7 @@ void main(int argc, char **argv, char **env)
 
   init_shared_string_table();
   init_interpreter();
+  init_cpp();
   init_lex();
   init_types();
 
@@ -234,11 +244,11 @@ void main(int argc, char **argv, char **env)
   }
   push_array(a);
 
-  for(num=0;env[num];num++);
+  for(num=0;environ[num];num++);
   a=allocate_array_no_init(num,0);
-  for(num=0;env[num];num++)
+  for(num=0;environ[num];num++)
   {
-    ITEM(a)[num].u.string=make_shared_string(env[num]);
+    ITEM(a)[num].u.string=make_shared_string(environ[num]);
     ITEM(a)[num].type=T_STRING;
   }
   push_array(a);
@@ -294,6 +304,7 @@ void low_exit_main(void)
   exit_dynamic_load();
   exit_signals();
   exit_lex();
+  exit_cpp();
   cleanup_interpret();
   cleanup_added_efuns();
   cleanup_pike_types();

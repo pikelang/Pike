@@ -20,11 +20,29 @@ time_t time PROT((time_t *));
 #endif
 
 #ifndef HAVE_GETTIMEOFDAY
+
+#ifdef HAVE_GETSYSTEMTIMEASFILETIME
+#include <winbase.h>
+
+void GETTIMEOFDAY(struct timeval *t)
+{
+  double t;
+  FILETIME tmp;
+  GetSystemTimeAsFileTime(&tmp);
+  t=tmp.dwHighDateTime * pow(2.0,32) + (double)tmp.dwLowDateTime;
+  t/=10000000.0;
+  t+=11644473600.0;
+  t->tv_sec=floor(t);
+  t->tv_usec=(t - t->tv_sec)*1000000.0;
+}
+
+#else
 void GETTIMEOFDAY(struct timeval *t)
 {
   t->tv_sec=(long)time(0);
   t->tv_usec=0;
 }
+#endif
 #endif
 
 #ifndef HAVE_TIME

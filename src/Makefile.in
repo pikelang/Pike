@@ -76,6 +76,8 @@ MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)"
 OBJ= \
  language.o \
  constants.o \
+ cpp.o \
+ fdlib.o \
  cyclic.o \
  array.o \
  backend.o \

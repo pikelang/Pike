@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.46 1997/11/08 01:34:43 hubbe Exp $");
+RCSID("$Id: program.c,v 1.47 1998/01/02 01:05:51 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1093,6 +1093,22 @@ int define_variable(struct pike_string *name,
 
   return n;
 }
+
+int simple_add_variable(char *name,
+			char *type,
+			INT32 flags)
+{
+  INT32 ret;
+  struct pike_string *name_s, *type_s;
+  name_s=make_shared_string(name);
+  type_s=parse_type(type);
+  
+  ret=define_variable(name_s, type_s, flags);
+  free_string(name_s);
+  free_string(type_s);
+  return ret;
+}
+
 
 int add_constant(struct pike_string *name,
 		 struct svalue *c,

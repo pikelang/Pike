@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.35 1997/12/23 06:26:07 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.36 1998/01/02 01:05:47 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -52,7 +52,7 @@ struct pike_predef_s
   struct pike_predef_s *next;
 };
 
-struct pike_predef_s *pike_predefs=0;
+static struct pike_predef_s *pike_predefs=0;
 
 static int calc(void);
 static void calc1(void);
@@ -797,7 +797,7 @@ static void simple_add_define(char *name,char *as,void (*magic)(void))
   }
 }
 
-void free_one_define(struct hash_entry *h)
+static void free_one_define(struct hash_entry *h)
 {
   struct define *d;
   d=BASEOF(h, define, link);
@@ -2195,21 +2195,21 @@ static int calc(void)
 }
 
 /*** Magic defines ***/
-void insert_current_line(void)
+static void insert_current_line(void)
 {
   char buf[20];
   sprintf(buf," %ld ",(long)current_line);
   UNGETSTR(buf,strlen(buf));
 }
 
-void insert_current_file_as_string(void)
+static void insert_current_file_as_string(void)
 {
   UNGETSTR("\"",1);
   UNGETSTR(current_file->str, current_file->len);
   UNGETSTR("\"",1);
 }
 
-void insert_current_time_as_string(void)
+static void insert_current_time_as_string(void)
 {
   time_t tmp;
   char *buf;
@@ -2221,7 +2221,7 @@ void insert_current_time_as_string(void)
   UNGETSTR("\"",1);
 }
 
-void insert_current_date_as_string(void)
+static void insert_current_date_as_string(void)
 {
   time_t tmp;
   char *buf;
@@ -2294,6 +2294,7 @@ void end_new_file(void)
 }
 
 
+#if 0
 void add_predefine(char *s)
 {
   char buffer1[100],buffer2[10000];
@@ -2314,3 +2315,4 @@ void add_predefine(char *s)
   tmp->next=pike_predefs;
   pike_predefs=tmp;
 }
+#endif
