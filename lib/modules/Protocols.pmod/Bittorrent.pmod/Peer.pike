@@ -300,83 +300,77 @@ void send_message(message_id n,string fmt,mixed ...args)
 
 static private void peer_write()
 {
-   if (sendbuf=="")
+   for (;;)
    {
+      if (sendbuf=="")
+      {
 #ifdef BT_PEER_DEBUG
-      werror("%O: should send piece? %d left - i:%O,o:%O - %O\n",ip,
-	     sizeof(queued_pieces),
-	     bytes_in,bytes_out,bytes_in-bytes_out);
+	 werror("%O: should send piece? %d left - i:%O,o:%O - %O\n",ip,
+		sizeof(queued_pieces),
+		bytes_in,bytes_out,bytes_in-bytes_out);
 #endif
 
-      if (were_choking || !sizeof(queued_pieces))
+	 if (were_choking || !sizeof(queued_pieces))
+	 {
+	    fd->set_write_callback(0);
+	    return; // we shouldn't do anything
+	 }
+
+   // tit-for-tat
+	 if (parent->do_we_strangle(this,bytes_in,bytes_out) && 
+	     !parent->we_are_completed)
+	 {
+      // #ifdef BT_PEER_DEBUG
+	    werror("%O doesn't give us enough, i:%d o:%d i-o:%O: choking\n",
+		   ip,bytes_in,bytes_out,bytes_in-bytes_out);
+      // #endif
+	    strangle();
+	    fd->set_write_callback(0); 
+	    return; 
+	 }
+
+	 remove_call_out(fill_queue);
+	 if (queued_pieces[0][3]==0)
+	    fill_queue();
+	 remove_call_out(fill_queue);
+	 call_out(fill_queue,0.0001); // after this transmission
+
+#ifdef BT_PEER_DEBUG
+	 werror("%O: sending piece %d,%d,%db\n",ip,
+		queued_pieces[0][0],
+		queued_pieces[0][1],
+		strlen(queued_pieces[0][3]));
+#endif
+
+	 send_message(MSG_PIECE,"%4c%4c%s",
+		      queued_pieces[0][0],
+		      queued_pieces[0][1],
+		      queued_pieces[0][3]);
+	 bytes_out+=strlen(queued_pieces[0][3]);
+
+	 queued_pieces=queued_pieces[1..];
+      }
+
+      int i=fd->write(sendbuf);
+      bandwidth_out_count+=i;
+#ifdef BT_PEER_DEBUG
+      werror("%O: wrote %d bytes: %O\n",ip,i,sendbuf[..min(40,i)]);
+#endif
+      sendbuf=sendbuf[i..];
+   
+      if (sendbuf!="")
+      {	  
+// 	 werror("%O: %d bytes left to send\n",ip,sizeof(sendbuf));
+	 return;
+      }
+      else if (!sizeof(queued_pieces))
       {
 	 fd->set_write_callback(0);
-	 return; // we shouldn't do anything
+	 uploading=0,uploading_pieces=(<>);
+	 return;
       }
-
-// tit-for-tat
-      if (parent->do_we_strangle(this,bytes_in,bytes_out) && 
-	  !parent->we_are_completed)
-      {
-// #ifdef BT_PEER_DEBUG
-	 werror("%O doesn't give us enough, i:%d o:%d i-o:%O: choking\n",
-		ip,bytes_in,bytes_out,bytes_in-bytes_out);
-// #endif
-	 strangle();
-	 fd->set_write_callback(0); 
-	 return; 
-      }
-
-      remove_call_out(fill_queue);
-      if (queued_pieces[0][3]==0)
-	 fill_queue();
-      call_out(fill_queue,0.0001); // after this transmission
-
-#ifdef BT_PEER_DEBUG
-      werror("%O: sending piece %d,%d,%db\n",ip,
-	     queued_pieces[0][0],
-	     queued_pieces[0][1],
-	     strlen(queued_pieces[0][3]));
-#endif
-
-      send_message(MSG_PIECE,"%4c%4c%s",
-		   queued_pieces[0][0],
-		   queued_pieces[0][1],
-		   queued_pieces[0][3]);
-      bytes_out+=strlen(queued_pieces[0][3]);
-
-      queued_pieces=queued_pieces[1..];
    }
-
-   int i=fd->write(sendbuf);
-   bandwidth_out_count+=i;
-#ifdef BT_PEER_DEBUG
-   werror("%O: wrote %d bytes: %O\n",ip,i,sendbuf[..min(40,i)]);
-#endif
-   sendbuf=sendbuf[i..];
-   
-   if (sendbuf=="")
-   {
-      fd->set_write_callback(0);
-      if (!sizeof(queued_pieces)) uploading=0,uploading_pieces=(<>);
-   }
-#if 0
-   else
-   {
-      remove_call_out(buf_check);
-      call_out(buf_check,30);
-   }
-#endif
 }
-
-#if 0
-void buf_check()
-{
-   if (sendbuf=="") return;
-   call_out(buf_check,30);
-   werror("%O: buf is full\n",ip);
-}
-#endif
 
 static private string readbuf="";
 static private void peer_read(mixed dummy,string s)
@@ -430,10 +424,12 @@ static private void peer_read(mixed dummy,string s)
 	       bytes_in=parent->peers[id]->bytes_in;
 	       bytes_out=parent->peers[id]->bytes_out;
 
-	       parent->peers[id]->disconnect();
+#if 1
+ 	       parent->peers[id]->disconnect();
 
-	       warning("%O (%s): disconnected old connection, we got a new\n",
-		       ip,client_version);
+ 	       warning("%O (%s): disconnected old connection, we got a new\n",
+ 		       ip,client_version);
+#endif
 	    }
 
 	    parent->peers[id]=this;
