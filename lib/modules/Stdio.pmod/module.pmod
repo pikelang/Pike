@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.122 2001/08/20 16:06:37 nilsson Exp $
+// $Id: module.pmod,v 1.123 2001/08/24 15:06:09 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -163,7 +163,7 @@ class File
     return _fd && ::errno();
   }
 
-  static string debug_file;
+  static string|int debug_file;
   static string debug_mode;
   static int debug_bits;
 
