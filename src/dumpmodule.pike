@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.40 2003/05/07 10:52:29 grubba Exp $
+|| $Id: dumpmodule.pike,v 1.41 2003/05/31 11:00:10 mast Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -20,138 +20,6 @@ string fakeroot(string s)
 #endif
 
 Tools.Install.ProgressBar progress_bar;
-
-mapping function_names=([]);
-
-static string fixup_path(string x)
-{
-  if(master()->relocate_module) {
-    foreach(master()->pike_module_path, string path) {
-      path = combine_path(path, "");
-      if(x[..sizeof(path)-1] == path)
-	return "/${PIKE_MODULE_PATH}/"+x[sizeof(path)..];
-    }
-    /* This is necessary to find compat modules... */
-    foreach(master()->pike_module_path, string path) {
-      path = combine_path(path, "..", "");
-      if(x[..sizeof(path)-1] == path)
-	return "/${PIKE_MODULE_PATH}/../"+x[sizeof(path)..];
-    }
-  }
-  return x;
-}
-
-/* FIXME: this is a bit ad-hoc */
-string mkmodulename(mixed x, string dirname)
-{
-  if(master()->relocate_module &&
-     dirname[..20]=="/${PIKE_MODULE_PATH}/")
-    dirname = dirname[21..];
-  else if(!sscanf(dirname,"%*slib/modules/%s",dirname))
-    return 0;
-  dirname-=".pmod";
-  dirname=replace(dirname,"/",".");
-  if(has_suffix(dirname, ".module"))
-     sscanf(dirname, "%s.module", dirname);
-  if(master()->resolv(dirname, 0, Handler()) == x)
-    return dirname;
-  return 0;
-}
-
-class Codec
-{
-  static mapping(mixed:string) static_lookup;
-
-  string nameof(mixed x)
-  {
-    string tmp;
-    if(p!=x)
-      if(tmp = function_names[x])
-	return tmp;
-
-    if (tmp = static_lookup[x]) {
-      return "resolv:_static_modules."+tmp;
-    }
-
-    switch(sprintf("%t",x))
-    {
-#if 0
-      case "function":
-	if (!function_object(x) &&
-	    (tmp = search(all_constants(), x))) {
-	  function_names[tmp = "efun:"+tmp] = x;
-	  return tmp;
-	}
-	break;
-#endif
-      case "program":
-	if(p!=x)
-	{
-	  if (tmp = static_lookup[x]) {
-	    return "resolv:_static_modules."+tmp;
-	  }
-	  if(tmp = search(master()->programs,x))
-	  {
-	    if(has_suffix(tmp, ".pike"))
-	    {
-	      if(string mod=mkmodulename(x, tmp))
-		return "resolv:"+mod;
-	    }
-	    return fixup_path(tmp);
-	  }
-	}
-	break;
-
-      case "object":
-	if (tmp = static_lookup[x]) {
-	  return "resolv:_static_modules."+tmp;
-	}
-	if(program p=search(master()->objects,x))
-	{
-	  if(tmp = search(master()->programs,p))
-	  {
-	    if(has_suffix(tmp, ".pmod"))
-	    {
-	      if(string mod=mkmodulename(x, tmp))
-		return "resolv:"+mod;
-	    }
-	    return fixup_path(tmp);
-	  }
-	}
-
-	/*
-	if(object_program(x) == master()->dirnode)
-	{
-	  if(string mod=mkmodulename(x, x->dirname))
-	    return mod;
-	}
-	*/
-	break;
-    }
-    return ([])[0];
-  } 
-
-  mixed encode_object(object x)
-  {
-    if(x->_encode) return x->_encode();
-    error("Cannot encode objects yet (%O,%O).\n", x, indices(x)[..10]*",");
-  }
-
-  void create()
-  {
-    static_lookup = 
-      mkmapping(values(_static_modules), indices(_static_modules));
-    foreach(static_lookup; mixed module; string name) {
-      if (objectp(module)) {
-	program p = object_program(module);
-	if (!static_lookup[p]) {
-	  // Some people inherit modules...
-	  static_lookup[p] = name;
-	}
-      }
-    }
-  }
-}
 
 Stdio.File logfile = Stdio.stderr;
 
@@ -222,7 +90,11 @@ program compile_file(string file, object|void handler)
 {
   if(master()->relocate_module) {
     string s = master()->master_read_file(file);
-    return master()->compile_string(s,fixup_path(file), handler);
+    return master()->compile_string(s,
+				    master()->unrelocate_module ?
+				    master()->unrelocate_module (file) :
+				    file,
+				    handler);
   } else
     return master()->compile_file(file, handler);
 }
@@ -279,7 +151,7 @@ do_dump: {
 	// Kludge: Resolve the module through master()->resolv since
 	// it handles cyclic references better than we do in
 	// compile_file above.
-	mkmodulename(0, file);
+	master()->resolv (master()->module_path_to_name (file));
 
 	p=compile_file(file, Handler());
 
@@ -289,8 +161,8 @@ do_dump: {
       {
 	string s;
 	if ((err = catch {
-	    s=encode_value(p, Codec());
-	    p=decode_value(s,master()->Codec());
+	    s=encode_value(p, master()->Encoder(p));
+	    p=decode_value(s,master()->Decoder());
 	  }))
 	  logmsg_long(describe_backtrace(err));
 
@@ -412,20 +284,6 @@ int main(int argc, array(string) argv)
   argv = argv[1..];
 
   argv=Getopt.get_args(argv);
-
-  foreach( (array)all_constants(), [string name, mixed func])
-    function_names[func]="efun:"+name;
-
-  // It is possible to override functions/objects/programs by
-  // inserting another value into the function_names mapping here.
-  function_names[Image.Color]="resolv:Image.Color";
-  function_names[Image.Color.white]="resolv:Image.Color.white";
-  function_names[Image.BMP]="resolv:Image.BMP";
-  function_names[Image.PNM]="resolv:Image.PNM";
-  function_names[Image.X]="resolv:Image.X";
-  function_names[Stdio.stdin]="resolv:Stdio.stdin";
-  // Thread.Thread ?
-  // master() ?
 
   // Hack to get Calendar files to compile in correct order.
   object tmp = Calendar;
