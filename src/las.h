@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.60 2003/01/26 11:09:00 mirar Exp $
+|| $Id: las.h,v 1.61 2003/03/27 02:05:12 mast Exp $
 */
 
 #ifndef LAS_H
@@ -195,6 +195,13 @@ void resolv_program(node *n);
 #define mkconstantsvaluenode(s) dmalloc_touch(node *, debug_mkconstantsvaluenode(dmalloc_touch(struct svalue *, s)))
 #define mkliteralsvaluenode(s) dmalloc_touch(node *, debug_mkliteralsvaluenode(dmalloc_touch(struct svalue *, s)))
 #define mksvaluenode(s)     dmalloc_touch(node *, debug_mksvaluenode(dmalloc_touch(struct svalue *, s)))
+
+#define COPY_LINE_NUMBER_INFO(TO, FROM) do {				\
+    node *to_ = (TO), *from_ = (FROM);					\
+    to_->line_number = from_->line_number;				\
+    free_string (to_->current_file);					\
+    copy_shared_string (to_->current_file, from_->current_file);	\
+  } while (0)
 
 
 #if defined(PIKE_DEBUG) && (defined(SHARED_NODES) || defined(SHARED_NODES_MK2))
