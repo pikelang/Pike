@@ -221,7 +221,7 @@ class rsa_verifier
 #if 0
 /* FIXME: This is a little more difficult, as the dsa-parameters are
  * sometimes taken from the CA, and not present in the keyinfo. */
-class dsa_verifyer
+class dsa_verifier
 {
   object dsa;
 
@@ -287,7 +287,7 @@ class TBSCertificate
 	return 0;
 
       array a = asn1->elements;
-      werror("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
+      //werror("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
       
       if (sizeof(a) < 6)
 	return 0;
@@ -308,12 +308,12 @@ class TBSCertificate
       } else
 	version = 1;
 
-      werror("TBSCertificate: version = %d\n", version);
+      //werror("TBSCertificate: version = %d\n", version);
       if (a[0]->type_name != "INTEGER")
 	return 0;
       serial = a[0]->value;
 
-      werror("TBSCertificate: serial = %s\n", (string) serial);
+      //werror("TBSCertificate: serial = %s\n", (string) serial);
       
       if ((a[1]->type_name != "SEQUENCE")
 	  || !sizeof(a[1]->elements )
@@ -322,13 +322,13 @@ class TBSCertificate
 
       algorithm = a[1];
 
-      werror("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+      //werror("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
 
       if (a[2]->type_name != "SEQUENCE")
 	return 0;
       issuer = a[2];
 
-      werror("TBSCertificate: issuer = %s\n", issuer->debug_string());
+      //werror("TBSCertificate: issuer = %s\n", issuer->debug_string());
 
       if ((a[3]->type_name != "SEQUENCE")
 	  || (sizeof(a[3]->elements) != 2))
@@ -340,27 +340,27 @@ class TBSCertificate
       if (!not_before)
 	return 0;
       
-      werror("TBSCertificate: not_before = %O\n", not_before);
+      //werror("TBSCertificate: not_before = %O\n", not_before);
 
       not_after = parse_time(validity[0]);
       if (!not_after)
 	return 0;
 
-      werror("TBSCertificate: not_after = %O\n", not_after);
+      //werror("TBSCertificate: not_after = %O\n", not_after);
 
       if (a[4]->type_name != "SEQUENCE")
 	return 0;
       subject = a[4];
 
-      werror("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
+      //werror("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
       
       public_key = make_verifier(a[5]);
 
       if (!public_key)
 	return 0;
 
-      werror("TBSCertificate: parsed public key. type = %s\n",
-	     public_key->type);      
+      //werror("TBSCertificate: parsed public key. type = %s\n",
+      //     public_key->type);
 
       int i = 6;
       if (i == sizeof(a))
@@ -397,18 +397,10 @@ class TBSCertificate
       return 0;
     }
 }      
-  
-/* Decodes a certificate, checks the signature. Returns the
- * TBSCertificate structure, or 0 if decoding or verification failes.
- *
- * Authorities is a mapping from (DER-encoded) names to a verifiers. */
 
-/* NOTE: This function allows self-signed certificates, and it doesn't
- * check that names or extensions make sense. */
-
-object verify_certificate(string s, mapping authorities)
+object decode_certificate(string|object cert)
 {
-  object cert = Standards.ASN1.Decode.simple_der_decode(s);
+  if (stringp (cert)) cert = Standards.ASN1.Decode.simple_der_decode(cert);
 
   if (!cert
       || (cert->type_name != "SEQUENCE")
@@ -426,12 +418,30 @@ object verify_certificate(string s, mapping authorities)
   if (!tbs || (cert->elements[1]->get_der() != tbs->algorithm->get_der()))
     return 0;
 
+  return tbs;
+}
+
+/* Decodes a certificate, checks the signature. Returns the
+ * TBSCertificate structure, or 0 if decoding or verification failes.
+ *
+ * Authorities is a mapping from (DER-encoded) names to a verifiers. */
+
+/* NOTE: This function allows self-signed certificates, and it doesn't
+ * check that names or extensions make sense. */
+
+object verify_certificate(string s, mapping authorities)
+{
+  object cert = Standards.ASN1.Decode.simple_der_decode(s);
+
+  object(TBSCertificate) tbs = decode_certificate(cert);
+  if (!tbs) return 0;
+
   object v;
   
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
     /* A self signed certificate */
-    werror("Self signed certificate\n");
+    //werror("Self signed certificate\n");
     v = tbs->public_key;
   }
   else
