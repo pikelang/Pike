@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.22 2002/06/11 15:25:36 jhs Exp $
+// $Id: RCS.pike,v 1.23 2002/06/11 21:53:56 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -379,7 +379,7 @@ class DeltatextIterator
     if(type == 't')
       return name;
     return sprintf("%s(/* processed %d/%d revisions%s */)", name, this_no,
-		   sizeof(revisions), (this_no ? ", now at "+this_rev : ""));
+		   revisions && sizeof(revisions), (this_no ? ", now at "+this_rev : ""));
   }
 
   //! drops the leading whitespace before next revision's deltatext
