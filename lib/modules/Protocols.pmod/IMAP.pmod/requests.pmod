@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.26 1999/02/08 18:15:00 grubba Exp $
+ * $Id: requests.pmod,v 1.27 1999/02/08 18:35:19 grubba Exp $
  */
 
 import .types;
@@ -697,7 +697,7 @@ class search
 class uid {
   inherit fetch;
 
-  constant arg_info = ({ ({ "atom" }), ({ "set" }), ({ "any", 3 }) });
+  constant arg_info = ({ ({ "string" }), ({ "set" }), ({ "any", 3 }) });
 
   mapping easy_process(mapping cmd, object message_set, mapping request)
   {
