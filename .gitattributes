@@ -151,6 +151,7 @@ testfont binary
 /man/pike.1 foreign_ident
 /refdoc/Makefile foreign_ident
 /refdoc/Makefile.in foreign_ident
+/refdoc/structure.xml foreign_ident
 /src/Makefile.in foreign_ident
 /src/acconfig.h foreign_ident
 /src/aclocal.m4 foreign_ident
