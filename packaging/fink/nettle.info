@@ -1,0 +1,29 @@
+Package: nettle
+Version: 1.10
+Revision: 0
+Description: Programming language with a C-like syntax
+DescDetail: <<
+  Nettle is a cryptographic library that is designed to fit easily in
+  more or less any context: In crypto toolkits for object-oriented 
+  languages (C++, Python, Pike, ...), in applications like LSH or GNUPG,
+  or even in kernel space.
+<<
+CustomMirror: <<
+Primary: http://www.lysator.liu.se/~nisse/archive/
+<<
+Source: mirror:custom:nettle-%v.tar.gz
+Source-MD5: 4a29d2b254e661b6469dc510c02e9f02
+BuildDepends: gmp
+Depends: gmp-shlibs
+SourceDirectory: nettle-%v
+CompileScript: <<
+./configure --prefix=%p
+make
+<<
+InstallScript: <<
+make installt
+<<
+DocFiles: AUTHORS COPYING ChangeLog README NEWS TOD
+License: GPL/LGPL
+Homepage: http://www.lysator.liu.se/~nisse/nettle/
+Maintainer: Xavier BEAUDOUIN <kiwi@caudium.net>
