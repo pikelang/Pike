@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.33 2000/12/16 05:24:41 marcus Exp $
+ * $Id: mapping.h,v 1.34 2000/12/16 05:45:44 marcus Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -143,7 +143,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
 void describe_mapping(struct mapping *m,struct processing *p,int indent);
 node *make_node_from_mapping(struct mapping *m);
-void f_m_delete(INT32 args);
+PMOD_EXPORT void f_m_delete(INT32 args);
 PMOD_EXPORT void f_aggregate_mapping(INT32 args);
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 					 struct processing *p);

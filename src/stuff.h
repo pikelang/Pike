@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.h,v 1.10 2000/09/20 02:04:26 hubbe Exp $
+ * $Id: stuff.h,v 1.11 2000/12/16 05:45:45 marcus Exp $
  */
 #ifndef STUFF_H
 #define STUFF_H
@@ -13,13 +13,13 @@
 #include "global.h"
 
 /* Prototypes begin here */
-int my_log2(size_t x);
-int count_bits(unsigned INT32 x);
-int is_more_than_one_bit(unsigned INT32 x);
-double my_strtod(char *nptr, char **endptr);
+PMOD_EXPORT int my_log2(size_t x);
+PMOD_EXPORT int count_bits(unsigned INT32 x);
+PMOD_EXPORT int is_more_than_one_bit(unsigned INT32 x);
+PMOD_EXPORT double my_strtod(char *nptr, char **endptr);
 PMOD_EXPORT unsigned INT32 my_sqrt(unsigned INT32 n);
 /* Prototypes end here */
 
-extern INT32 hashprimes[32];
+PMOD_EXPORT extern INT32 hashprimes[32];
 
 #endif

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.111 2000/09/26 00:17:47 hubbe Exp $
+ * $Id: program.h,v 1.112 2000/12/16 05:45:45 marcus Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -446,7 +446,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog);
-int find_identifier(char *name,struct program *prog);
+PMOD_EXPORT int find_identifier(char *name,struct program *prog);
 int store_prog_string(struct pike_string *str);
 int store_constant(struct svalue *foo,
 		   int equal,
@@ -458,13 +458,13 @@ void program_index_no_free(struct svalue *to, struct program *p,
 int get_small_number(char **q);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
-char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
+PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog,
 			struct object *handler,
 			int major,
 			int minor);
-int pike_add_function2(char *name, void (*cfun)(INT32),
+PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
 		       char *type, unsigned INT8 flags,
 		       unsigned INT16 opt_flags);
 PMOD_EXPORT int quick_add_function(char *name,
@@ -490,19 +490,19 @@ void push_compiler_frame(int lexical_scope);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
 ptrdiff_t low_get_storage(struct program *o, struct program *p);
-char *get_storage(struct object *o, struct program *p);
+PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
 struct program *low_program_from_function(struct program *p,
 					  INT32 i);
-struct program *program_from_function(struct svalue *f);
-struct program *program_from_svalue(struct svalue *s);
+PMOD_EXPORT struct program *program_from_function(struct svalue *f);
+PMOD_EXPORT struct program *program_from_svalue(struct svalue *s);
 struct find_child_cache_s;
 int find_child(struct program *parent, struct program *child);
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 struct implements_cache_s;
-int implements(struct program *a, struct program *b);
-int is_compatible(struct program *a, struct program *b);
+PMOD_EXPORT int implements(struct program *a, struct program *b);
+PMOD_EXPORT int is_compatible(struct program *a, struct program *b);
 int yyexplain_not_implements(struct program *a, struct program *b, int flags);
-void *parent_storage(int depth);
+PMOD_EXPORT void *parent_storage(int depth);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 /* Prototypes end here */
 

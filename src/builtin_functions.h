@@ -5,12 +5,12 @@
 \*/
 
 /*
- * $Id: builtin_functions.h,v 1.14 2000/07/28 17:16:54 hubbe Exp $
+ * $Id: builtin_functions.h,v 1.15 2000/12/16 05:52:16 marcus Exp $
  */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
 
-#define TYPEP(ID,NAME,TYPE) void ID(INT32 args);
+#define TYPEP(ID,NAME,TYPE) PMOD_EXPORT void ID(INT32 args);
 
 #include "callback.h"
 

@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.109 2000/12/16 05:24:41 marcus Exp $
+ * $Id: threads.h,v 1.110 2000/12/16 05:45:45 marcus Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -70,9 +70,9 @@
 
 
 extern int num_threads;
-extern int live_threads;
+PMOD_EXPORT extern int live_threads;
 struct object;
-extern size_t thread_stack_size;
+PMOD_EXPORT extern size_t thread_stack_size;
 
 #define DEFINE_MUTEX(X) PIKE_MUTEX_T X
 
@@ -291,16 +291,16 @@ typedef struct cond_t_s
 
 #define co_init(X) do { mt_init(& (X)->lock), (X)->head=(X)->tail=0; }while(0)
 
-int co_wait(COND_T *c, PIKE_MUTEX_T *m);
-int co_signal(COND_T *c);
-int co_broadcast(COND_T *c);
-int co_destroy(COND_T *c);
+PMOD_EXPORT int co_wait(COND_T *c, PIKE_MUTEX_T *m);
+PMOD_EXPORT int co_signal(COND_T *c);
+PMOD_EXPORT int co_broadcast(COND_T *c);
+PMOD_EXPORT int co_destroy(COND_T *c);
 
 #endif
 
 extern int th_running;
 
-extern PIKE_MUTEX_T interpreter_lock;
+PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
 
 #if defined(PIKE_DEBUG) && !defined(__NT__)
 
@@ -336,8 +336,8 @@ extern THREAD_T debug_locking_thread;
 
 #endif
 
-extern COND_T live_threads_change;		/* Used by _disable_threads */
-extern COND_T threads_disabled_change;		/* Used by _disable_threads */
+PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
+PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
 struct svalue;
 struct pike_frame;
@@ -600,16 +600,16 @@ void init_interleave_mutex(IMUTEX_T *im);
 void exit_interleave_mutex(IMUTEX_T *im);
 void thread_table_init(void);
 unsigned INT32 thread_table_hash(THREAD_T *tid);
-void thread_table_insert(struct object *o);
-void thread_table_delete(struct object *o);
-struct thread_state *thread_state_for_id(THREAD_T tid);
-struct object *thread_for_id(THREAD_T tid);
-void f_all_threads(INT32 args);
-int count_pike_threads(void);
+PMOD_EXPORT void thread_table_insert(struct object *o);
+PMOD_EXPORT void thread_table_delete(struct object *o);
+PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid);
+PMOD_EXPORT struct object *thread_for_id(THREAD_T tid);
+PMOD_EXPORT void f_all_threads(INT32 args);
+PMOD_EXPORT int count_pike_threads(void);
 TH_RETURN_TYPE new_thread_func(void * data);
 void f_thread_create(INT32 args);
 void f_thread_set_concurrency(INT32 args);
-void f_this_thread(INT32 args);
+PMOD_EXPORT void f_this_thread(INT32 args);
 struct mutex_storage;
 struct key_storage;
 void f_mutex_lock(INT32 args);
@@ -627,7 +627,7 @@ void f_thread_backtrace(INT32 args);
 void f_thread_id_status(INT32 args);
 void init_thread_obj(struct object *o);
 void exit_thread_obj(struct object *o);
-void f_thread_local(INT32 args);
+PMOD_EXPORT void f_thread_local(INT32 args);
 void f_thread_local_get(INT32 args);
 void f_thread_local_set(INT32 args);
 void low_th_init(void);
@@ -635,7 +635,7 @@ void th_init(void);
 void th_cleanup(void);
 int th_num_idle_farmers(void);
 int th_num_farmers(void);
-void th_farm(void (*fun)(void *), void *here);
+PMOD_EXPORT void th_farm(void (*fun)(void *), void *here);
 /* Prototypes end here */
 
 #else
@@ -686,13 +686,13 @@ void th_farm(void (*fun)(void *), void *here);
 #ifndef PIKE_DEBUG
 #define CheckValidHandle(X) (X)
 #else
-HANDLE CheckValidHandle(HANDLE h);
+PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #endif
 #endif
 
 extern int threads_disabled;
-extern ptrdiff_t thread_storage_offset;
-extern struct program *thread_id_prog;
+PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
+PMOD_EXPORT extern struct program *thread_id_prog;
 
 #ifndef NO_PIKE_SHORTHAND
 #define MUTEX_T PIKE_MUTEX_T
