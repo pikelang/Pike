@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.33 1998/12/16 07:49:37 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.34 1999/01/01 01:10:28 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -157,7 +157,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    break;
 	    
 	  case T_STRING:
-	    i=STRTOL(sp[-1].u.string->str,0,0);
+	    i=STRTOL(sp[-1].u.string->str,0,10);
 	    free_string(sp[-1].u.string);
 	    break;
 	    
