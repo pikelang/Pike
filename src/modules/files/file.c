@@ -194,7 +194,7 @@ static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
 
 static void file_read(INT32 args)
 {
-  INT32 i, r, bytes_read;
+  INT32 i, r, bytes_read, all;
   ONERROR ebuf;
 
   if(args<1 || sp[-args].type != T_INT)
@@ -202,6 +202,13 @@ static void file_read(INT32 args)
 
   if(FD < 0)
     error("File not open.\n");
+
+  if(args > 1 && !IS_ZERO(sp+1-args))
+  {
+    all=0;
+  }else{
+    all=1;
+  }
 
   r=sp[-args].u.integer;
 
@@ -226,6 +233,7 @@ static void file_read(INT32 args)
       {
 	r-=i;
 	bytes_read+=i;
+	if(!all) break;
       }
       else if(i==0)
       {
@@ -274,12 +282,14 @@ static void file_read(INT32 args)
       {
 	r-=i;
 	bytes_read+=i;
+	if(!all) break;
       }
       else if(i>0)
       {
 	bytes_read+=i;
 	r-=i;
 	low_make_buf_space(i - try_read, &b);
+	if(!all) break;
       }
       else if(i==0)
       {

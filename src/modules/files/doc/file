@@ -76,10 +76,18 @@ NAME
 
 SYNTAX
 	string file->read(int nbytes);
+	or
+	string file->read(int nbytes, int notall);
 
 DESCRIPTION
 	Read tries to read nbytes bytes from the file, and return it as a
 	string. If something goes wrong, zero is returned.
+
+	If a one is given as second argument to read(), read will not try
+	it's best to read as many bytes as you asked it to read, it will
+	merely try to read as many bytes as the system read function will
+	return. This mainly useful with stream devices which can return
+	exactly one row or packet at a time.
 
 SEE ALSO
 	file->write
