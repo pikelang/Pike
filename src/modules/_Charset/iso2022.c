@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.26 2002/10/21 17:06:23 marcus Exp $
+|| $Id: iso2022.c,v 1.27 2003/09/23 17:53:52 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.26 2002/10/21 17:06:23 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.27 2003/09/23 17:53:52 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -366,7 +366,8 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 	  } else if(rep != NULL) \
             eat_enc_string(rep, s, NULL, NULL); \
 	  else \
-	    Pike_error("Character unsupported by encoding.\n");
+	    Pike_error("Character %lu unsupported by encoding.\n", \
+		       (unsigned long) ch);
 
 
 static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
