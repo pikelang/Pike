@@ -655,6 +655,7 @@ static void insert_push_callback( GtkType i, int (*cb)(GtkArg *) )
 static void build_push_callbacks( )
 {
 #define CB(X,Y)  insert_push_callback( X, Y );
+  CB( gtk_widget_get_type(),     pgtk_push_object_param );
   CB( GTK_TYPE_INT,              pgtk_push_int_param );
   CB( GTK_TYPE_ENUM,             pgtk_push_int_param );
   CB( GTK_TYPE_FLAGS,            pgtk_push_int_param );
@@ -691,21 +692,25 @@ static int push_param( GtkArg *param )
   }
   else
   {
-    char *s = gtk_type_name( t );
-    char *a = "";
-    if(!s)
+    GtkType p = gtk_type_parent( t );
+    if( !p || (p == t) )
     {
-      a = "Unknown child of ";
-      s = gtk_type_name( gtk_type_parent( t ) );
-      if(!s) s = "unknown type";
+      char *s = gtk_type_name( t );
+      char *a = "";
+      if(!s)
+      {
+        a = "Unknown child of ";
+        s = gtk_type_name( gtk_type_parent( t ) );
+        if(!s) s = "unknown type";
+      }
+      fprintf( stderr, "** Warning: No push callback for type %d (%s%s)\n",
+               t, a, s);
     }
-    fprintf( stderr, "No push callback for type %d (%s%s), "
-             "cannot handle that event type\n", t, a, s);
-    if( (t = gtk_type_parent( t )) && t != GTK_TYPE_SEQNO( param->type ) )
+    else 
     {
-      GtkArg p  = *param;
-      p.type = t;
-      return push_param( &p );
+      GtkArg np  = *param;
+      np.type = p;
+      return push_param( &np );
     }
   }
   return 0;
