@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.19 2001/10/23 21:26:13 nilsson Exp $
+# $Id: Makefile.in,v 1.20 2001/11/23 20:00:16 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -87,8 +87,8 @@ subdirectories:
 	      mkdir "$$d" || exit 1; \
 	    fi; \
 	    if test -f "$$d/Makefile"; then :; else \
-	      sed -e "s#@""SRCDIR@#../$(SRCDIR)/$$d#" \
-	          -e "s#@""ROOT@#../$(ROOT)#" \
+	      sed -e "s#@""SRCDIR@#$(SRCDIR)/$$d#" \
+	          -e "s#@""ROOT@#$(ROOT)#" \
 	          -e "s#@""BUILDROOT@#../$(BUILDROOT)#" \
 	        <$(ROOT)/Makefile.in >"$$d/Makefile" || exit 1; \
 	    fi; \

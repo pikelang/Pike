@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.35 2001/11/23 18:51:08 nilsson Exp $
+# $Id: Makefile,v 1.36 2001/11/23 20:00:16 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -59,14 +59,14 @@ autodoc.xml: $(XMLFILES) bin/join.pike
 	@$(PIKE) bin/join.pike --post-process build/autodoc.xml $(XMLFILES)
 
 build/src/Makefile: Makefile.in build/src
-	@sed -e "s#@SRCDIR@#../../../src#" \
-	     -e "s#@ROOT@#../..#" \
+	@sed -e "s#@SRCDIR@#`pwd`/../src#" \
+	     -e "s#@ROOT@#`pwd`#" \
 	     -e "s#@BUILDROOT@#..#" \
 	  <Makefile.in >build/src/Makefile
 
 build/lib/Makefile: Makefile.in build/lib
-	@sed -e "s#@SRCDIR@#../../../lib#" \
-	     -e "s#@ROOT@#../..#" \
+	@sed -e "s#@SRCDIR@#`pwd`/../lib#" \
+	     -e "s#@ROOT@#`pwd`#" \
 	     -e "s#@BUILDROOT@#..#" \
 	  <Makefile.in >build/lib/Makefile
 
