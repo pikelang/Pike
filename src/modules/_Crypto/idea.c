@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.8 1997/02/12 06:10:15 nisse Exp $
+ * $Id: idea.c,v 1.9 1997/03/11 03:15:00 nisse Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -96,7 +96,6 @@ static void f_set_encrypt_key(INT32 args)
   idea_expand(THIS, (unsigned char *)sp[-1].u.string->str);
   
   pop_n_elems(args);
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -170,12 +169,12 @@ void MOD_INIT(idea)(void)
   start_new_program();
   add_storage(sizeof(INT16[IDEA_KEYLEN]));
 
-  add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
-  add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("name", f_name, "function(void:string)", 0);
+  add_function("query_block_size", f_query_block_size, "function(void:int)", 0);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
+  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", 0);
+  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", 0);
+  add_function("crypt_block", f_crypt_block, "function(string:string)", 0);
 
   set_init_callback(init_pike_crypto_idea);
   set_exit_callback(exit_pike_crypto_idea);

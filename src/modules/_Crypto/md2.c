@@ -1,5 +1,5 @@
 /*
- * $Id: md2.c,v 1.1.1.1 1996/11/05 15:10:09 grubba Exp $
+ * $Id: md2.c,v 1.2 1997/03/11 03:16:36 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -106,7 +106,6 @@ static void f_cast_to_string(INT32 args)
   }
 
   push_string(PIKE_MD2->string);
-  PIKE_MD2->string->refs++;
 }
 
 /* mixed cast(string) */
@@ -158,9 +157,9 @@ void init_md2_programs(void)
   start_new_program();
   add_storage(sizeof(struct pike_md2));
 
-  add_function("push", f_push, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("cast", f_cast, "function(string:mixed)", OPT_EXTERNAL_DEPEND);
-  add_function("cast_to_string", f_cast_to_string, "function(void:string)", OPT_EXTERNAL_DEPEND);
+  add_function("push", f_push, "function(string:void)", 0);
+  add_function("cast", f_cast, "function(string:mixed)", 0);
+  add_function("cast_to_string", f_cast_to_string, "function(void:string)", 0);
 
   set_init_callback(init_pike_md2);
   set_exit_callback(exit_pike_md2);

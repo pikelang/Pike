@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.4 1997/02/12 06:09:54 nisse Exp $
+ * $Id: cbc.c,v 1.5 1997/03/11 03:12:59 nisse Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -182,7 +182,6 @@ static void f_set_encrypt_key(INT32 args)
   THIS->mode = 0;
   safe_apply(THIS->object, "set_encrypt_key", args);
   pop_stack();
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -197,7 +196,6 @@ static void f_set_decrypt_key(INT32 args)
   THIS->mode = 1;
   safe_apply(THIS->object, "set_decrypt_key", args);
   pop_stack();
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -215,7 +213,6 @@ static void f_set_iv(INT32 args)
     error("cbc->set_iv: argument incompatible with cipher blocksize\n");
   MEMCPY(THIS->iv, sp[-args].u.string->str, THIS->block_size);
   pop_n_elems(args);
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -319,17 +316,17 @@ void MOD_INIT(cbc)(void)
   start_new_program();
   add_storage(sizeof(struct pike_crypto_cbc));
 
-  add_function("create", f_create, "function(program|object:void)", OPT_EXTERNAL_DEPEND);
+  add_function("create", f_create, "function(program|object:void)", 0);
 
-  add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
+  add_function("query_block_size", f_query_block_size, "function(void:int)", 0);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
 
-  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("set_iv", f_set_iv, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
-  add_function("encrypt_block", f_encrypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
-  add_function("decrypt_block", f_decrypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", 0);
+  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", 0);
+  add_function("set_iv", f_set_iv, "function(string:object)", 0);
+  add_function("crypt_block", f_crypt_block, "function(string:string)", 0);
+  add_function("encrypt_block", f_encrypt_block, "function(string:string)", 0);
+  add_function("decrypt_block", f_decrypt_block, "function(string:string)", 0);
 
   set_init_callback(init_pike_crypto_cbc);
   set_exit_callback(exit_pike_crypto_cbc);

@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.4 1997/02/12 06:10:18 nisse Exp $
+ * $Id: invert.c,v 1.5 1997/03/11 03:16:23 nisse Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -86,7 +86,6 @@ static void f_set_key(INT32 args)
     error("Bad argument 1 to invert->set_key()\n");
   }
   pop_n_elems(args);
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -148,12 +147,12 @@ void MOD_INIT(invert)(void)
   /* /precompiled/crypto/invert */
   start_new_program();
 
-  add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
-  add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("set_encrypt_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_SIDE_EFFECT);
+  add_function("name", f_name, "function(void:string)", 0);
+  add_function("query_block_size", f_query_block_size, "function(void:int)", 0);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
+  add_function("set_encrypt_key", f_set_key, "function(string:void)", 0);
+  add_function("set_decrypt_key", f_set_key, "function(string:void)", 0);
+  add_function("crypt_block", f_crypt_block, "function(string:string)", 0);
 
   set_init_callback(init_pike_crypto_invert);
   set_exit_callback(exit_pike_crypto_invert);

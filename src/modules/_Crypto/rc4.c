@@ -64,7 +64,6 @@ static void f_set_key(INT32 args)
   rc4_set_key(THIS, (unsigned INT8 *) sp[-1].u.string->str, sp[-1].u.string->len);
 
   pop_n_elems(args);
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -75,7 +74,7 @@ static void f_crypt(INT32 args)
   struct pike_string *s;
   
   if (args != 1) {
-    error("Wrong number of arguemnts to rc4->crypt()\n");
+    error("Wrong number of arguments to rc4->crypt()\n");
   }
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to rc4->crypt()\n");
@@ -103,11 +102,11 @@ void MOD_INIT(rc4)(void)
   start_new_program();
   add_storage(sizeof(struct rc4_ctx));
 
-  add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("set_encrypt_key", f_set_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("crypt", f_crypt, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("name", f_name, "function(void:string)", 0);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
+  add_function("set_encrypt_key", f_set_key, "function(string:object)", 0);
+  add_function("set_decrypt_key", f_set_key, "function(string:object)", 0);
+  add_function("crypt", f_crypt, "function(string:string)", 0);
 
   set_init_callback(init_pike_rc4);
   set_exit_callback(exit_pike_rc4);
@@ -118,5 +117,3 @@ void MOD_INIT(rc4)(void)
 void MOD_EXIT(rc4)(void)
 {
 }
-
-
