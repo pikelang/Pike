@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.124 1998/09/20 17:53:08 grubba Exp $");
+RCSID("$Id: file.c,v 1.125 1998/10/21 02:49:48 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -874,10 +874,9 @@ static void file_write(INT32 args)
   if(FD < 0)
     error("File not open for write.\n");
   
-  written=0;
   str=sp[-args].u.string;
 
-  while(written < str->len)
+  for(written=0;written < str->len;check_signals(0,0,0))
   {
     int fd=FD;
     THREADS_ALLOW();
