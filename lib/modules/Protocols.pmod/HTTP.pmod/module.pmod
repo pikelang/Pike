@@ -45,44 +45,8 @@
 //!	query variables is sent as a post request instead of a get.
 //!
 
-object get_url(string url,void|mapping query_variables, void|mapping request_headers)
-{
-   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
-   
-   string prot="http",host;
-   int port=80;
-   string query;
-   if(!request_headers)
-     request_headers = ([]);
-
-   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
-      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
-      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
-      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
-      (host=url,query="");
-
-   if (prot!="http")
-      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
-	    prot);
-
-   if (query_variables)
-   {
-      if (search(query,"?")!=-1)
-	 query+="&"+http_encode_query(query_variables);
-      else
-	 query+="?"+http_encode_query(query_variables);
-   }
-
-   con->sync_request(host,port,
-		     "GET /"+query+" HTTP/1.0",
-		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"]) | request_headers);
-
-   if (!con->ok) return 0;
-   return con;
-}
-
-object put_url(string url, void|string file, void|mapping query_variables,
+object get_url(string url,
+	       void|mapping query_variables,
 	       void|mapping request_headers)
 {
    object con=master()->resolv("Protocols")["HTTP"]["Query"]();
@@ -103,7 +67,7 @@ object put_url(string url, void|string file, void|mapping query_variables,
       error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
 	    prot);
 
-   if (query_variables)
+   if (query_variables && sizeof(query_variables))
    {
       if (search(query,"?")!=-1)
 	 query+="&"+http_encode_query(query_variables);
@@ -112,10 +76,52 @@ object put_url(string url, void|string file, void|mapping query_variables,
    }
 
    con->sync_request(host,port,
+		     "GET /"+query+" HTTP/1.0",
+		     ([
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
+		     ]) | request_headers);
+
+   if (!con->ok) return 0;
+   return con;
+}
+
+object put_url(string url,
+	       void|string file,
+	       void|mapping query_variables,
+	       void|mapping request_headers)
+{
+   object con=master()->resolv("Protocols")["HTTP"]["Query"]();
+   
+   string prot="http",host;
+   int port=80;
+   string query;
+   if(!request_headers)
+     request_headers = ([]);
+
+   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
+      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
+      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
+      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
+      (host=url,query="");
+
+   if (prot!="http")
+      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
+	    prot);
+
+   if (query_variables && sizeof(query_variables))
+   {
+      if (search(query,"?")!=-1)
+	 query+="&"+http_encode_query(query_variables);
+      else
+	 query+="?"+http_encode_query(query_variables);
+   }
+
+   con->sync_request(host, port,
 		     "PUT /"+query+" HTTP/1.0",
 		     ([
-		       "user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
 		     ]) | request_headers,
 		     file);
 
@@ -123,7 +129,8 @@ object put_url(string url, void|string file, void|mapping query_variables,
    return con;
 }
 
-object delete_url(string url, void|mapping query_variables,
+object delete_url(string url,
+		  void|mapping query_variables,
 		  void|mapping request_headers)
 {
    object con=master()->resolv("Protocols")["HTTP"]["Query"]();
@@ -144,7 +151,7 @@ object delete_url(string url, void|mapping query_variables,
       error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
 	    prot);
 
-   if (query_variables)
+   if (query_variables && sizeof(query_variables))
    {
       if (search(query,"?")!=-1)
 	 query+="&"+http_encode_query(query_variables);
@@ -154,8 +161,10 @@ object delete_url(string url, void|mapping query_variables,
 
    con->sync_request(host,port,
 		     "DELETE /"+query+" HTTP/1.0",
-		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"]) |
+		     ([
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
+		     ]) |
 		     request_headers);
 
    if (!con->ok) return 0;
@@ -196,8 +205,10 @@ object post_url(string url,mapping query_variables, void|mapping request_headers
 
    con->sync_request(host,port,
 		     "POST /"+query+" HTTP/1.0",
-		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"]) |
+		     ([
+		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		       "host":host
+		     ]) |
 		     request_headers |
 		     (["content-type":
 		       "application/x-www-form-urlencoded"]),
@@ -207,13 +218,17 @@ object post_url(string url,mapping query_variables, void|mapping request_headers
    return con;
 }
 
-array(string) post_url_nice(string url,mapping query_variables, void|mapping request_headers)
+array(string) post_url_nice(string url,
+			    mapping query_variables,
+			    void|mapping request_headers)
 {
    object c=post_url(url,query_variables, request_headers);
    return c && ({c->headers["content-type"],c->data()});
 }
 
-string post_url_data(string url,mapping query_variables, void|mapping request_headers)
+string post_url_data(string url,
+		     mapping query_variables,
+		     void|mapping request_headers)
 {
    object z=post_url(url,query_variables, request_headers);
    return z && z->data();
