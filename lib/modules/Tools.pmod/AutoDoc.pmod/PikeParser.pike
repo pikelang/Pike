@@ -16,7 +16,7 @@ static void parseError(string message, mixed ... args) {
   message = sprintf(message, @args);
   werror("parseError! \n");
   // werror(sprintf("%s\n", describe_backtrace(backtrace())));
-  message = "Pike parser error: " + message;
+  message = "PikeParser error: " + message;
   throw ( ({ message, currentline }) );
 }
 

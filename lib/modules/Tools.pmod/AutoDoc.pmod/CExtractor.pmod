@@ -43,24 +43,43 @@ static string stripDocMarker(string s) {
   return "";
 }
 
-static void extractorError(string message, mixed ... args) {
+static void extractorErrorAt(SourcePosition sp, string message, mixed ... args)
+{
   message = sprintf(message, @args);
-  werror("C extractor error! %O\n", message);
-  message = "C extractor error: " + message;
-  throw ( message );
+  werror("CExtractor error! %O\n", message);
+  message = "CExtractor error: " + message;
+  throw ( ({ message, sp }) );
 }
 
 static private class Extractor {
   static constant EOF = .PikeParser.EOF;
   static string filename;
-  static array(.DocParser.Parse) tokens;
+  static array(.DocParser.Parse) tokens = ({});
 
   static void create(string s, string filename) {
     local::filename = filename;
-    array(string) a = getDocComments(s);
-    tokens = ({ });
-    foreach(a, string doc) {
-      .DocParser.Parse p = .DocParser.Parse(doc);
+
+    array(string) ctokens = Parser.C.split(s);
+    array(array(SourcePosition|string)) a = ({});
+    int line = 1;
+    foreach(ctokens, string ctoken) {
+      if (isDocComment(ctoken)) {
+        int firstLine = line;
+        array(string) lines = ctoken[1 .. strlen(ctoken) - 3]/"\n";
+        //    werror("%O\n", lines);
+        int lastLine = firstLine + sizeof(lines) - 1;
+        lines = map(lines, stripDocMarker);
+        if (lines[-1] == "")
+          lines = lines[0 .. sizeof(lines) - 2];
+        a += ({
+          ({ SourcePosition(filename, firstLine, lastLine), lines * "\n" })
+        });
+      }
+      line += sizeof(ctoken/"\n") - 1;
+    }
+
+    foreach(a, [SourcePosition sp, string doc]) {
+      .DocParser.Parse p = .DocParser.Parse(doc, sp);
       tokens += ({ p });
     }
     tokens += ({ 0 });
@@ -89,10 +108,13 @@ static private class Extractor {
         .DocParser.Parse p = tokens[0];
         MetaData endmeta = p->metadata();
         if (endmeta->type != "end" + meta->type)
-          extractorError("@%s without matching @end%s", meta->type, meta->type);
+          extractorErrorAt(token->sourcePos,
+                           "@%s without matching @end%s",
+                           meta->type, meta->type);
         string endXML = p->doc("_general");
         if (endXML && endXML != "")
-          extractorError("doc for @%s not allowed", endmeta->type);
+          extractorErrorAt(p->sourcePos,
+                           "doc for @%s not allowed", endmeta->type);
 
         Documentation doc = Documentation();
         doc->xml = token->doc("_" + meta->type);

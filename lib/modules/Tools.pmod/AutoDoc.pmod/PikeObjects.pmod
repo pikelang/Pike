@@ -190,24 +190,6 @@ class VarargsType {
 }
 
 //========================================================================
-// SOURCE POSITION OBJECT
-//========================================================================
-
-class SourcePosition {
-  string filename;
-  int firstline;
-  int lastline;
-
-  static void create(string|void filename, int|void firstline,
-                     int|void lastline)
-  {
-    local::filename = filename;
-    local::firstline = firstline;
-    local::lastline = lastline;
-  }
-}
-
-//========================================================================
 // DOCUMENTATION OBJECT
 //========================================================================
 

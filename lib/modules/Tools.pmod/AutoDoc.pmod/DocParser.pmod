@@ -9,7 +9,7 @@ inherit "module.pmod";
 private void parseError(string s, mixed ... args) {
   s = sprintf(s, @args);
   werror(s+"\n");
-  s = "Doc markup error: " + s;
+  s = "DocParser error: " + s;
   throw(({ s, 0 }));
 }
 
@@ -645,24 +645,37 @@ class Parse {
   static MetaData mMetadata = 0;
   static string mDoc = 0;
   static string mContext = 0;
-  void create(string s) { ::create(s); state = 0; }
+  SourcePosition sourcePos = 0;
+  void create(string s, SourcePosition|void sp) {
+    ::create(s);
+    state = 0;
+    sourcePos = sp;
+  }
 
   MetaData metadata() {
-    if (state == 0) {
-      ++state;
-      mMetadata = ::getMetaData();
-    }
-    return mMetadata;
+    mixed err = catch {
+      if (state == 0) {
+        ++state;
+        mMetadata = ::getMetaData();
+      }
+      return mMetadata;
+    };
+    if (sourcePos)
+      throw(({ err[0], sourcePos }));
   }
 
   string doc(string context) {
-    if (state == 1) {
-      ++state;
-      mContext == context;
-      mDoc = ::getDoc(context);
-    }
-    else if (state == 0 || state > 1 && mContext != context)
-      return 0;
-    return mDoc;
+    mixed err = catch {
+      if (state == 1) {
+        ++state;
+        mContext == context;
+        mDoc = ::getDoc(context);
+      }
+      else if (state == 0 || state > 1 && mContext != context)
+        return 0;
+      return mDoc;
+    };
+    if (sourcePos)
+      throw(({ err[0], sourcePos }));
   }
 }

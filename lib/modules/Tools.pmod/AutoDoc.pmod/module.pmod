@@ -59,3 +59,28 @@ static string xmltag(string t, string|mapping(string:string)|void arg1,
     return opentag(t, attributes) + content + closetag(t);
   return "<" + t + "/>";
 }
+
+class SourcePosition {
+  string filename;
+  int firstline;
+  int lastline;
+
+  static void create(string|void filename, int|void firstline,
+                     int|void lastline)
+  {
+    local::filename = filename;
+    local::firstline = firstline;
+    local::lastline = lastline;
+  }
+
+  string _sprintf() {
+    string res = "SourcePosition(File: " + (filename ? filename : "?");
+    if (firstline)
+      if (lastline)
+        res += sprintf(", lines: %d..%d", firstline, lastline);
+      else
+        res += sprintf(", line: %d", firstline);
+    return res + ")";
+  }
+}
+

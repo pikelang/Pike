@@ -45,12 +45,14 @@ static private class Extractor {
     Documentation res = Documentation();
     string s = parser->peekToken();
     string text = "";
-    int firstline = parser->currentline;
+    int firstline = 0;
     int lastline;
     while (isDocComment(s)) {
       text += stripDocMarker(s) + "\n";
       lastline = parser->currentline;
       parser->readToken();              // Grok the doc comment string
+      if (!firstline)
+        firstline = parser->currentline;
       s = parser->peekToken(WITH_NL);
       if (s == "\n")
         parser->readToken(WITH_NL);     // Skip the corresp. NL
@@ -169,7 +171,7 @@ static private class Extractor {
       string belongs = 0;
       int global = 0;
       if (doc) {
-        parse = .DocParser.Parse(doc->text);
+        parse = .DocParser.Parse(doc->text, doc->position);
         MetaData meta = parse->metadata();
         if (meta->type && meta->type != "decl")
           extractorError("@%s is not allowed in Pike files", meta->type);
