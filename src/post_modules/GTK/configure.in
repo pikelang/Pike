@@ -254,7 +254,7 @@ main ()
 
 
 
-dnl end of function defenitions, start of code.
+dnl end of function definitions, start of code.
 AC_INIT(new_build_pgtk.pike)
 AC_CONFIG_HEADER(pgtk_config.h)
 
