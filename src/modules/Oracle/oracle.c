@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.33 2000/04/04 20:32:38 hubbe Exp $
+ * $Id: oracle.c,v 1.34 2000/04/04 20:37:00 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -41,13 +41,13 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.33 2000/04/04 20:32:38 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.34 2000/04/04 20:37:00 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
 
-/* #define ORACLE_DEBUG */
-#define ORACLE_USE_THREADS
+#define ORACLE_DEBUG
+/* #define ORACLE_USE_THREADS*/
 #define SERIALIZE_CONNECT
 
 #ifndef ORACLE_USE_THREADS
@@ -144,11 +144,23 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 
 #define PARENTOF(X) ((X)->parent)
 
+#ifdef PIKE_DEBUG
+static struct object *do_check_prog(struct object *o, struct program *p, char *prog)
+{
+  if(get_storage(o,p) != o->storage)
+    fatal("Wrong program, expected %s!\n",prog);
+  return o;
+}
+#define check_prog(X,Y) do_check_prog((X),Y,#Y)
+#else
+#define check_prog(X,Y) (X)
+#endif
+
 #define THIS_DBCON ((struct dbcon *)(CURRENT_STORAGE))
-#define THIS_QUERY_DBCON ((struct dbcon *)(PARENTOF( THISOBJ )->storage))
-#define THIS_RESULT_DBCON ((struct dbcon *)(PARENTOF(PARENTOF( THISOBJ ))->storage))
+#define THIS_QUERY_DBCON ((struct dbcon *)(check_prog(PARENTOF(THISOBJ),oracle_program)->storage))
+#define THIS_RESULT_DBCON ((struct dbcon *)(check_prog(PARENTOF(PARENTOF( THISOBJ )),oracle_program)->storage))
 #define THIS_QUERY ((struct dbquery *)(CURRENT_STORAGE))
-#define THIS_RESULT_QUERY ((struct dbquery *)(PARENTOF(THISOBJ )->storage))
+#define THIS_RESULT_QUERY ((struct dbquery *)(check_prog(PARENTOF(THISOBJ ),compile_query_program)->storage))
 #define THIS_RESULT ((struct dbresult *)(CURRENT_STORAGE))
 #define THIS_RESULTINFO ((struct dbresultinfo *)(CURRENT_STORAGE))
 #define THIS_DBDATE ((struct dbdate *)(CURRENT_STORAGE))
@@ -878,7 +890,7 @@ static void f_fetch_row(INT32 args)
   struct dbcon *dbcon = THIS_RESULT_DBCON;
 
 #ifdef ORACLE_DEBUG
-/*  fprintf(stderr,"%s ..",__FUNCTION__); */
+  fprintf(stderr,"%s ..",__FUNCTION__);
 #endif
 
   pop_n_elems(args);
@@ -890,11 +902,17 @@ static void f_fetch_row(INT32 args)
   }
 
   THREADS_ALLOW();
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"OCIStmtFetch\n");
+#endif
   rc=OCIStmtFetch(dbquery->statement,
 		  dbcon->error_handle,
 		  1,
 		  OCI_FETCH_NEXT,
 		  OCI_DEFAULT);
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"OCIStmtFetch done\n");
+#endif
   THREADS_DISALLOW();
 
   if(rc==OCI_NO_DATA)
@@ -917,7 +935,6 @@ static void f_fetch_row(INT32 args)
       info=(struct dbresultinfo *)(dbquery->field_info->item[i].u.object->storage);
 
       /* Extract data from 'info' */
-
       push_inout_value(& info->data);
     }
   }
