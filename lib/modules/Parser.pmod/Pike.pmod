@@ -4,9 +4,9 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.31 2003/03/13 22:05:36 nilsson Exp $
+// $Id: Pike.pmod,v 1.32 2003/06/17 23:09:31 mast Exp $
 
-//! This module parses and tokanizes Pike source code.
+//! This module parses and tokenizes Pike source code.
 
 inherit "C.pmod";
 
