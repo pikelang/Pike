@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.435 2001/07/03 17:31:33 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.436 2001/07/04 12:08:50 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -331,6 +331,27 @@ test_compile_any([[
      }
   }
 ]])
+
+// Test that prototypes evaluate to false.
+test_any([[
+  class Foo
+  {
+    int foo();
+    function f()
+    {
+      return !foo;
+    }
+  }
+  return Foo()->f();
+]], 1)
+
+test_any([[
+  class Foo
+  {
+    int foo();
+  }
+  return !Foo()->foo;
+]], 1)
 
 test_do([[
 class Foo
