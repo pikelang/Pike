@@ -38,6 +38,7 @@ struct xmlobj
   struct mapping *is_cdata;
 };
 
+#undef THIS
 #define THIS ((struct xmlobj *)(fp->current_storage))
 
 
@@ -640,7 +641,7 @@ static int low_parse_xml(struct xmldata *data,
 			 struct pike_string *end,
 			 int toplevel);
 
-#define ERROR(desc) do {			\
+#define XMLERROR(desc) do {			\
     struct svalue * save_sp=sp;			\
     push_text("error");				\
     push_int(0); /* no name */			\
@@ -678,7 +679,7 @@ static int gobble(struct xmldata *data, char *s)
 	  POKE(X, PEEK(0));				\
 	  READ(1);					\
 	}else{						\
-	  ERROR("Name expected");			\
+	  XMLERROR("Name expected");			\
 	}						\
 	while(isNameChar(PEEK(0)))			\
 	{						\
@@ -693,7 +694,7 @@ static int gobble(struct xmldata *data, char *s)
 	  POKE(X, PEEK(0));				\
 	  READ(1);					\
 	}else{						\
-	  ERROR("Nametoken expected");			\
+	  XMLERROR("Nametoken expected");			\
 	}						\
 	while(isNameChar(PEEK(0)))			\
 	{						\
@@ -762,7 +763,7 @@ static int gobble(struct xmldata *data, char *s)
 	    }								 \
 	  }								 \
 	  if(PEEK(0)!=';')						 \
-	    ERROR("Missing ';' after character reference.");		 \
+	    XMLERROR("Missing ';' after character reference.");		 \
 	  READ(1);							 \
 	  POKE(X, num);							 \
    }while(0)
@@ -778,7 +779,7 @@ static int gobble(struct xmldata *data, char *s)
 	  /* Entity reference */					 \
 	  if(!THIS->entities)						 \
           {								 \
-            ERROR("XML->__entities is not a mapping");			 \
+            XMLERROR("XML->__entities is not a mapping");			 \
 	    f_aggregate_mapping(0);					 \
 	  }else{							 \
 	    ref_push_mapping(THIS->entities);				 \
@@ -786,19 +787,19 @@ static int gobble(struct xmldata *data, char *s)
 	  SIMPLE_READNAME();						 \
           IF_XMLDEBUG(fprintf(stderr,"Found entity: %s\n",sp[-1].u.string->str)); \
 	  if(PEEK(0)!=';')						 \
-	    ERROR("Missing ';' after entity reference.");		 \
+	    XMLERROR("Missing ';' after entity reference.");		 \
 	  READ(1);							 \
 	  /* lookup entry in mapping and parse it recursively */	 \
 	  /* Generate error if entity is not defined */			 \
 	  f_index(2);							 \
           if(IS_ZERO(sp-1))						 \
 	  {								 \
-	    ERROR("No such entity.");					 \
+	    XMLERROR("No such entity.");					 \
 	    pop_stack();						 \
 	  }else{							 \
 	    if(sp[-1].type!=T_STRING)					 \
 	    {								 \
-	      ERROR("XML->__entities value is not a string!");		 \
+	      XMLERROR("XML->__entities value is not a string!");		 \
 	    }else{							 \
 	      struct pike_string *s=sp[-1].u.string;			 \
 	      struct xmldata my_tmp=*data;			      	 \
@@ -823,7 +824,7 @@ static int gobble(struct xmldata *data, char *s)
 	READ(1); /* Assume '%'  */					 \
 	  if(!THIS->entities)						 \
           {								 \
-            ERROR("XML->__entities is not a mapping");			 \
+            XMLERROR("XML->__entities is not a mapping");			 \
 	    f_aggregate_mapping(0);					 \
 	  }else{							 \
 	    ref_push_mapping(THIS->entities);				 \
@@ -832,19 +833,19 @@ static int gobble(struct xmldata *data, char *s)
 	  SIMPLE_READNAME();						 \
           f_add(2);                                                      \
 	  if(PEEK(0)!=';')						 \
-	    ERROR("Missing ';' after entity reference.");		 \
+	    XMLERROR("Missing ';' after entity reference.");		 \
 	  READ(1);							 \
 	  /* lookup entry in mapping and parse it recursively */	 \
 	  /* Generate error if entity is not defined */			 \
 	  f_index(2);							 \
           if(IS_ZERO(sp-1))						 \
 	  {								 \
-	    ERROR("No such entity.");					 \
+	    XMLERROR("No such entity.");					 \
 	    pop_stack();						 \
 	  }else{							 \
 	    if(sp[-1].type!=T_STRING)					 \
 	    {								 \
-	      ERROR("XML->__entities value is not a string!");		 \
+	      XMLERROR("XML->__entities value is not a string!");		 \
 	    }else{							 \
 	      struct pike_string *s=sp[-1].u.string;			 \
 	      struct xmldata my_tmp=*data;			      	 \
@@ -877,7 +878,7 @@ static int gobble(struct xmldata *data, char *s)
             read_attvalue(data,&X,'\"',0);	\
             break;				\
           default:				\
-            ERROR("Unquoted attribute value.");	\
+            XMLERROR("Unquoted attribute value.");	\
             push_text("");                      \
         }					\
       }while(0)
@@ -895,7 +896,7 @@ static int gobble(struct xmldata *data, char *s)
             read_pubid(data,&X,'\"');	\
             break;				\
           default:				\
-            ERROR("Unquoted public id.");	\
+            XMLERROR("Unquoted public id.");	\
         }					\
       }while(0)
 
@@ -912,7 +913,7 @@ static int gobble(struct xmldata *data, char *s)
             read_attvalue2(data,&X,'\"');	\
             break;				\
           default:				\
-            ERROR("Unquoted attribute value.");	\
+            XMLERROR("Unquoted attribute value.");	\
         }					\
       }while(0)
 
@@ -963,7 +964,7 @@ static void read_attvalue(struct xmldata *data,
     if(data->len<=0)
     {
       if(Y)
-	ERROR("End of file while looking for end of attribute value.");
+	XMLERROR("End of file while looking for end of attribute value.");
       break;
     }
     if(PEEK(0)==Y)
@@ -1008,7 +1009,7 @@ static void read_pubid(struct xmldata *data,
     if(data->len<=0)
     {
       if(Y)
-	ERROR("End of file while looking for end of attribute value.");
+	XMLERROR("End of file while looking for end of attribute value.");
       break;
     }
     if(PEEK(0)==Y)
@@ -1042,7 +1043,7 @@ static void read_attvalue2(struct xmldata *data,
     if(data->len<=0)
     {
       if(Y)
-	ERROR("End of file while looking for end of attribute value.");
+	XMLERROR("End of file while looking for end of attribute value.");
       break;
     }
     if(PEEK(0)==Y)
@@ -1141,7 +1142,7 @@ static void simple_read_attributes(struct xmldata *data,
     SIMPLE_READNAME();
     SKIPSPACE();
     if(PEEK(0)!='=')
-      ERROR("Missing '=' in attribute.");
+      XMLERROR("Missing '=' in attribute.");
     READ(1);
 
     iscd=1;
@@ -1185,7 +1186,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 #ifdef VERBOSE_XMLDEBUG
 	  fprintf(stderr,"Non-space character on DTD top level: %c.",PEEK(0));
 #endif
-	  ERROR("Non-space character on DTD top level.");
+	  XMLERROR("Non-space character on DTD top level.");
 	  while(data->len>0 && PEEK(0)!='<')
 	    READ(1);
 	  break;
@@ -1215,7 +1216,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		  READ_COMMENT();
 		  SYS();
 		}else{
-		  ERROR("Expected <!-- but got something else.");
+		  XMLERROR("Expected <!-- but got something else.");
 		}
 		break;
 
@@ -1268,7 +1269,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 						sp-1);
 			}
 		      }else{
-			ERROR("XML->__entities is not a mapping.");
+			XMLERROR("XML->__entities is not a mapping.");
 		      }
 		      SYS();
 		      break;
@@ -1315,7 +1316,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			{
 			  if(!may_have_ndata)
 			  {
-			    ERROR("This entity is not allowed to have an NDATA keyword.");
+			    XMLERROR("This entity is not allowed to have an NDATA keyword.");
 			  }
 			  
 			  attributes++;
@@ -1333,14 +1334,14 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    default:
 		  not_system:
 		      /* FIXME, DTD's are IGNORED! */
-		      ERROR("Unexpected data in <!ENTITY");
+		      XMLERROR("Unexpected data in <!ENTITY");
 		      while(data->len>0 && PEEK(0)!='>')
 			READ(1);
 		  }
 		  
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
-		    ERROR("Missing '>' in ENTITY.");
+		    XMLERROR("Missing '>' in ENTITY.");
 		  READ(1);
 		  break;
 
@@ -1379,7 +1380,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    struct svalue *save;
 		    if(data->len<=0)
 		    {
-		      ERROR("End of file while parsing ATTLIST.");
+		      XMLERROR("End of file while parsing ATTLIST.");
 		      break;
 		    }
 		    SKIPSPACE();
@@ -1467,7 +1468,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			{
 			  SKIPSPACE();
 			  if(PEEK(0)!='(')
-			    ERROR("Expected '(' after NOTATION.");
+			    XMLERROR("Expected '(' after NOTATION.");
 			  READ(1);
 
 			  SIMPLE_READNAME();
@@ -1480,7 +1481,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			    check_stack(1);
 			  }
 			  if(PEEK(0)!=')')
-			    ERROR("Expected ')' after NOTATION enumeration.");
+			    XMLERROR("Expected ')' after NOTATION enumeration.");
 			  READ(1);
 			}
 			break;
@@ -1500,7 +1501,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			  check_stack(1);
 			}
 			if(PEEK(0)!=')')
-			  ERROR("Expected ')' after enumeration.");
+			  XMLERROR("Expected ')' after enumeration.");
 			READ(1);
 			break;
 		    }
@@ -1559,7 +1560,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 
 			  default:
 			bad_defaultdecl:
-			    ERROR("Bad default declaration.");
+			    XMLERROR("Bad default declaration.");
 			    break;
 			}
 			break;
@@ -1653,7 +1654,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		  READ(1);
 
 		if(PEEK(0) != '>')
-		  ERROR("Missing '>' in DTD");
+		  XMLERROR("Missing '>' in DTD");
 		READ(1);
 
 		push_int(0); /* No attributes */
@@ -1663,7 +1664,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 
 	      default:
 	    unknown_entry_in_dtd:
-		ERROR("Unknown entry in DTD.");
+		XMLERROR("Unknown entry in DTD.");
 
 		/* Try to recover */
 		while(data->len>0 && PEEK(0)!='>')
@@ -1699,7 +1700,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 	    break;
 
 	  default:
-	    ERROR("Unknown entry in DTD.");
+	    XMLERROR("Unknown entry in DTD.");
 	    break;
 
 	}
@@ -1751,7 +1752,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	{
 	  if(!isSpace(PEEK(0)))
 	  {
-	    ERROR("All data must be inside tags");
+	    XMLERROR("All data must be inside tags");
 	    READ(1);
 	  }
 	  SKIPSPACE();
@@ -1804,7 +1805,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	      SIMPLE_READ_ATTRIBUTES(0);
 	      
 	      if(PEEK(0) != '?' && PEEK(1)!='>')
-		ERROR("Missing ?> at end of <?xml.");
+		XMLERROR("Missing ?> at end of <?xml.");
 	      READ(2);
 	      
 	      push_int(0); /* No data */
@@ -1848,14 +1849,14 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  READ_COMMENT();
 		  SYS();
 		}else{
-		  ERROR("Expected <!-- but got something else.");
+		  XMLERROR("Expected <!-- but got something else.");
 		}
 		break;
 
 
 	      case 'A': /* ATTLIST? */
 	      case 'E': /* ENTITY? ELEMENT?  */
-		ERROR("Invalid entry outside DTD.");
+		XMLERROR("Invalid entry outside DTD.");
 		break;
 
 	      case '[':
@@ -1893,7 +1894,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		}
 
 	      default:
-		ERROR("Invalid entry.");
+		XMLERROR("Invalid entry.");
 		break;
 
 	      case 'D': /* DOCTYPE? */
@@ -1906,7 +1907,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		   PEEK(8)!='E' ||
 		   !isSpace(PEEK(9)))
 		{
-		  ERROR("Expected 'DOCTYPE', got something else.");
+		  XMLERROR("Expected 'DOCTYPE', got something else.");
 		}else{
 		  READ(9);
 		  SKIPSPACE();
@@ -1929,7 +1930,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 			SKIPSPACE();
 			f_aggregate_mapping(4);
 		      }else{
-			ERROR("Expected PUBLIC, found something else.");
+			XMLERROR("Expected PUBLIC, found something else.");
 			f_aggregate_mapping(0);
 		      }
 		      break;
@@ -1946,7 +1947,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 			SKIPSPACE();
 			f_aggregate_mapping(2);
 		      }else{
-			ERROR("Expected SYSTEM, found something else.");
+			XMLERROR("Expected SYSTEM, found something else.");
 			f_aggregate_mapping(0);
 		      }
 		      break;
@@ -1963,14 +1964,14 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		    fprintf(stderr,"FOO: %c%c%c%c\n",PEEK(0),PEEK(1),PEEK(2),PEEK(3));
 #endif
 		    if(PEEK(0) != ']')
-		      ERROR("Missing ] in DOCTYPE tag.");
+		      XMLERROR("Missing ] in DOCTYPE tag.");
 		    READ(1);
 		    SKIPSPACE();
 		  }else{
 		    push_int(0);
 		  }
 		  if(PEEK(0)!='>')
-		    ERROR("Missing '>' in DOCTYPE tag.");
+		    XMLERROR("Missing '>' in DOCTYPE tag.");
 		  READ(1);
 		  SYS();
 		}
@@ -1983,12 +1984,12 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	    SIMPLE_READNAME();
 	    SKIPSPACE();
 	    if(PEEK(0)!='>')
-	      ERROR("Missing > in end tag.");
+	      XMLERROR("Missing > in end tag.");
 	    else
 	      READ(1);
 	    if(end!=sp[-1].u.string)
 	    {
-	      ERROR("Unmatched end tag.");
+	      XMLERROR("Unmatched end tag.");
 	    }else{
 	      end=0;
 	    }
@@ -2034,14 +2035,14 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	      case '>':
 		READ(1);
 		if(low_parse_xml(data, sp[-2].u.string,0))
-		  ERROR("Unmatched tag.");
+		  XMLERROR("Unmatched tag.");
 		SYS();
 		break;
 
 	      case '/':
 		READ(1);
 		if(PEEK(0)!='>')
-		  ERROR("Missing '>' in empty tag.");
+		  XMLERROR("Missing '>' in empty tag.");
 		READ(1);
 		/* Self-contained tag */
 		free_string(sp[-3].u.string);

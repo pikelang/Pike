@@ -2,6 +2,10 @@
 
 inherit Stdio.Port;
 
+#if !constant(Stdio.PROP_IPC)
+#define NO_IPC
+#endif
+
 // Bugfix for some older versions of Pike..
 string combine_path(string s, string ... rest)
 {
@@ -69,6 +73,16 @@ void monitor(object(Stdio.File) io, object proc)
   }
 }
 
+#ifdef WINE
+void my_proxy(Stdio.File from, Stdio.File to)
+{
+  while(string s=from->read(128,1))
+    if(to->write(s)!=strlen(s))
+      return;
+
+}
+#endif
+
 void handle_incoming_connection(object(Stdio.File) io)
 {
   object p;
@@ -81,10 +95,10 @@ void handle_incoming_connection(object(Stdio.File) io)
   }
 
   object pi=Stdio.File();
-#if constant(Stdio.PROP_IPC)
-  object p2=pi->pipe(Stdio.PROP_IPC);
-#else
+#ifdef NO_IPC
   object p2=pi->pipe();
+#else
+  object p2=pi->pipe(Stdio.PROP_IPC);
 #endif
   string dir=cmd[0];
   cmd=cmd[1..];
@@ -144,19 +158,35 @@ void handle_incoming_connection(object(Stdio.File) io)
     }
 
     default:
+#ifdef WINE
+    {
+      werror("Proxying.....\n");
+      object p3=Stdio.File();
+#ifdef NO_IPC
+      object p4=p3->pipe();
+#else
+      object p4=p3->pipe(Stdio.PROP_IPC);
+#endif
+      thread_create(my_proxy,io,p4);
+      io=p3;
+    }
+#endif
+
       mixed err=catch {
 	p=Process.create_process(cmd,
 				 ([
+#ifndef WINE
 				   "stdin":io,
 				   "stdout":p2,
 				   "stderr":p2,
+#endif
 				   "cwd":dir,
 				   ]));
       };
       destruct(p2);
       if(!err)
       {
-#if !constant(Stdio.PROP_IPC)
+#ifdef NO_IPC
 	thread_create(monitor,p2,p);
 #endif
 	while(1)
@@ -169,6 +199,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 	io->write(sprintf("%4c",0));
 	io->write(sprintf("%4c",p->wait()));
       }else{
+	werror(master()->describe_backtrace(err));
 	destruct(p2);
 	io->write(sprintf("%4c",0));
 	io->write(sprintf("%4c",69));
@@ -178,8 +209,30 @@ void handle_incoming_connection(object(Stdio.File) io)
   destruct(io);
 }
 
+void handle_connections(string *hosts)
+{
+  while(1)
+  {
+    if(object io=accept())
+    {
+      sscanf(io->query_address(),"%s ",string ip);
+      if(search(hosts, ip)==-1)
+      {
+	destruct(io);
+	continue;
+      }
+      thread_create(handle_incoming_connection,io);
+    }else{
+      werror("Accept failed "+errno()+"\n");
+    }
+  }
+}
+
 int main(int argc, string *argv)
 {
+#ifdef WINE
+  werror("Running in WINE mode.\n");
+#endif
   if(argc<2)
   {
     werror("Usage: sprshd <port> <hosts to accept connections from>\n");
@@ -209,19 +262,13 @@ int main(int argc, string *argv)
   }
 
   write("Ready ("+version()+").\n");
-  while(1)
-  {
-    if(object io=accept())
-    {
-      sscanf(io->query_address(),"%s ",string ip);
-      if(search(hosts, ip)==-1)
-      {
-	destruct(io);
-	continue;
-      }
-      thread_create(handle_incoming_connection,io);
-    }else{
-      werror("Accept failed "+errno()+"\n");
-    }
-  }
+
+#ifdef WINE
+  thread_create(handle_connections,hosts);
+  werror("main returning...\n");
+  return -1;
+#else
+  handle_connection(hosts);
+  return 0;
+#endif
 }

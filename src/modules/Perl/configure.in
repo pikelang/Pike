@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.3 1998/12/21 23:18:04 hubbe Exp $
+# $Id: configure.in,v 1.4 1999/01/01 01:03:31 hubbe Exp $
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 
@@ -61,6 +61,8 @@ if test "x$pike_cv_perlmod_have_perl" = xyes ; then
   AC_DEFINE(HAVE_PERL)
   AC_MSG_RESULT(yes)
 else
+  PERL_LDFLAGS=''
+  PERL_CCFLAGS=''
   AC_MSG_RESULT(no)
 fi
 

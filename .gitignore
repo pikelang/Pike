@@ -30,7 +30,7 @@ _$*
 *.elc
 *.ln
 core
-/Pike-*.tar.gz
+/Pike-v*
 /alpha
 /alpha-gcc
 /alpha-no-debug

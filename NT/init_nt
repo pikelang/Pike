@@ -4,8 +4,11 @@
 REMOTE_METHOD=sprsh
 
 # Edit
-NTHOST=10.0.4.10
-NTDRIVE='j:'
+#NTHOST=10.0.4.10
+#NTDRIVE='j:'
+
+NTHOST=localhost
+NTDRIVE='d:'
 
 # What dir on the UNIX machine is on $NTDRIVE ?
 # This variable MUST NOT end with a slash.
