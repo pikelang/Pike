@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.6 2003/04/08 15:30:24 jhs Exp $
+|| $Id: circular_list.cmod,v 1.7 2003/04/08 15:53:57 jhs Exp $
 */
 
 #include "global.h"
@@ -1214,7 +1214,7 @@ PIKECLASS CircularList
 	  iter->u.object->prog == CircularListIterator_program)
       {
 	struct CircularListIterator_struct *i = 
-	  OBJ2_CIRCULARLISTITERATOR(iter);
+	  OBJ2_CIRCULARLISTITERATOR(iter->u.object);
 	RETURN (THIS->pos < i->pos);
       }
       else
@@ -1239,7 +1239,7 @@ PIKECLASS CircularList
 	  iter->u.object->prog == CircularListIterator_program)
       {
 	struct CircularListIterator_struct *i = 
-	  OBJ2_CIRCULARLISTITERATOR(iter);
+	  OBJ2_CIRCULARLISTITERATOR(iter->u.object);
 	RETURN (THIS->pos > i->pos);
       }
       else
