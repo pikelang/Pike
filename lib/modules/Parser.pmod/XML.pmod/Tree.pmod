@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.50 2004/05/14 18:36:11 grubba Exp $
+ * $Id: Tree.pmod,v 1.51 2004/05/14 18:37:31 grubba Exp $
  *
  */
 
@@ -1098,7 +1098,7 @@ class SimpleNode
   inherit VirtualNode;
 
   // Needed for cross-overloading
-  void low_clone()
+  SimpleNode low_clone()
   {
     return VirtualNode::low_clone();
   }
@@ -1192,7 +1192,7 @@ class Node
   inherit VirtualNode;
 
   // Needed for cross-overloading
-  void low_clone()
+  Node low_clone()
   {
     return VirtualNode::low_clone();
   }
