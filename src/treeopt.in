@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.44 2000/09/30 23:50:12 per Exp $
+// $Id: treeopt.in,v 1.45 2000/10/01 17:58:12 grubba Exp $
 //
 // The tree optimizer
 //
@@ -64,18 +64,20 @@ F_APPLY(0 = F_CONSTANT
 	[$$->u.sval.type == T_FUNCTION]
 	[$$->u.sval.subtype == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_add],
-	2 = F_ARG_LIST(3 = F_APPLY($0, 1), *)):
+	2 = F_ARG_LIST(F_APPLY($0, 1), 3)):
   {
     node *arglist = $2;
-    node *old_apply = $3;
-    ADD_NODE_REF2($1, _CAR(arglist) = $1);
 #ifdef SHARED_NODES
-    sub_node( arglist );
-    arglist->hash = hash_node(arglist);
-    add_node( arglist );
-    arglist->node_info |= OPT_DEFROSTED;
+    sub_node(n);
 #endif /* SHARED_NODES */
-    free_node(old_apply);
+    ADD_NODE_REF2($1,
+    ADD_NODE_REF2($3,
+		  _CDR(n) = mknode(F_ARG_LIST, $1, $3)));
+#ifdef SHARED_NODES
+    n->hash = hash_node(n);
+    n->node_info |= OPT_DEFROSTED;
+#endif /* SHARED_NODES */
+    free_node(arglist);
 #ifdef PIKE_DEBUG
     if (l_flag > 4) {
       fprintf(stderr, "Result:    ");
@@ -98,15 +100,17 @@ F_APPLY(0 = F_CONSTANT
 	2 = F_ARG_LIST(3 = F_APPLY($0, 1), *)):
   {
     node *arglist = $2;
-    node *old_apply = $3;
-    ADD_NODE_REF2($1, _CAR(arglist) = $1);
 #ifdef SHARED_NODES
-    sub_node( arglist );
-    arglist->hash = hash_node(arglist);
-    add_node( arglist );
-    arglist->node_info |= OPT_DEFROSTED;
+    sub_node(n);
 #endif /* SHARED_NODES */
-    free_node(old_apply);
+    ADD_NODE_REF2($1,
+    ADD_NODE_REF2($3,
+		  _CDR(n) = mknode(F_ARG_LIST, $1, $3)));
+#ifdef SHARED_NODES
+    n->hash = hash_node(n);
+    n->node_info |= OPT_DEFROSTED;
+#endif /* SHARED_NODES */
+    free_node(arglist);
 #ifdef PIKE_DEBUG
     if (l_flag > 4) {
       fprintf(stderr, "Result:    ");
