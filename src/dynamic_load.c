@@ -15,7 +15,7 @@
 #  include "main.h"
 #  include "constants.h"
 
-RCSID("$Id: dynamic_load.c,v 1.57 2001/11/26 14:54:07 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.58 2002/01/30 22:06:04 marcus Exp $");
 
 #else /* TESTING */
 
@@ -332,6 +332,12 @@ static modfun CAST_TO_FUN(void *ptr)
 #define CAST_TO_FUN(X)	((modfun)X)
 #endif /* NO_CAST_TO_FUN */
 
+static void cleanup_compilation_depth(int *save_depth_p)
+{
+  free_program(end_program());
+  compilation_depth=*save_depth_p;
+}
+
 /*! @decl int load_module(string module_name)
  *!
  *! Load a binary module.
@@ -358,6 +364,8 @@ void f_load_module(INT32 args)
   modfun init, exit;
   struct module_list *new_module;
   const char *module_name;
+
+  ONERROR err;
 
   int save_depth=compilation_depth;
 
@@ -420,7 +428,9 @@ void f_load_module(INT32 args)
 #ifdef PIKE_DEBUG
   { struct svalue *save_sp=sp;
 #endif
+  SET_ONERROR(err, cleanup_compilation_depth, &save_depth);
   (*(modfun)init)();
+  UNSET_ONERROR(err);
 #ifdef PIKE_DEBUG
   if(sp != save_sp)
     fatal("load_module(%s) left %ld droppings on stack!\n",
@@ -455,8 +465,15 @@ void exit_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
   struct module_list *tmp;
+  JMP_BUF recovery;
   for (tmp = dynamic_module_list; tmp; tmp = tmp->next)
-    (*tmp->exit)();
+  {
+    if(SETJMP(recovery))
+      call_handle_error();
+    else
+      (*tmp->exit)();
+    UNSETJMP(recovery); 
+  }
 #endif
 }
 
