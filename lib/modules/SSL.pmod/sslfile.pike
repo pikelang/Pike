@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.45 2002/06/03 20:42:36 mast Exp $
+/* $Id: sslfile.pike,v 1.46 2002/06/10 13:56:50 grubba Exp $
  *
  */
 
@@ -8,6 +8,9 @@
 
 inherit "connection" : connection;
 
+#ifdef SSL3_DEBUG_TRANSPORT
+#define SSL3_DEBUG
+#endif /* SSL3_DEBUG_TRANSPORT */
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG werror
@@ -75,11 +78,19 @@ private int queue_write()
   int|string data = to_write();
 #ifdef SSL3_DEBUG_TRANSPORT
   werror(sprintf("SSL.sslfile->queue_write: '%O'\n", data));
+#else
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.sslfile->queue_write: '%O'\n", stringp(data)?(string)sizeof(data):data));
+#endif
 #endif
   if (stringp(data))
     write_buffer += data;
 #ifdef SSL3_DEBUG_TRANSPORT
   werror(sprintf("SSL.sslfile->queue_write: buffer = '%O'\n", write_buffer));
+#else
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.sslfile->queue_write: buffer = %O\n", sizeof(write_buffer)));
+#endif
 #endif
 
   if(!blocking) {
@@ -89,7 +100,7 @@ private int queue_write()
       return(0);
     }
   }
-#ifdef SSL3_DEBUG_TRANSPORT
+#ifdef SSL3_DEBUG
   werror("SSL.sslfile->queue_write: end\n");
 #endif
   return stringp(data) ? 0 : data;
@@ -377,6 +388,8 @@ private void ssl_write_callback(mixed id)
 #endif
 	  die(-1);
     }
+    if (strlen(write_buffer))
+      return;
   }
 
   if (!this_object()) {
@@ -388,8 +401,10 @@ private void ssl_write_callback(mixed id)
   werror(sprintf("SSL.sslport->ssl_write_callback: res = '%O'\n", res));
 #endif
   
-  if ( !res && !strlen(write_buffer)
-       && connected && !blocking && write_callback)
+  if (strlen(write_buffer))
+    return;
+
+  if ( !res && connected && !blocking && write_callback)
   {
 #ifdef SSL3_DEBUG
     werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
@@ -400,8 +415,11 @@ private void ssl_write_callback(mixed id)
       return;
     }
     res = queue_write();
+
+    if (strlen(write_buffer))
+      return;
   }
-  if (!strlen(write_buffer) && socket)
+  if (socket)
   {
     socket->set_write_callback(0);
     if (is_closed)
