@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.231 2004/03/10 18:08:12 grubba Exp $
+|| $Id: pike_types.c,v 1.232 2004/03/11 12:55:47 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.231 2004/03/10 18:08:12 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.232 2004/03/11 12:55:47 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -329,6 +329,13 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 				    ~(0x10001*PTR_TO_INT(cdr)));
   unsigned INT32 index = hash % pike_type_hash_size;
   struct pike_type *t;
+
+  /* PIKE_DEBUG code */
+  if (index >= pike_type_hash_size) {
+    Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
+	       hash, index, pike_type_hash_size);
+  }
+  /* End PIKE_DEBUG code */
 
   for(t = pike_type_hash[index]; t; t = t->next) {
     if ((t->hash == hash) && (t->type == type) &&
