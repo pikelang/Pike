@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.80 1998/07/17 12:58:18 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.81 1998/07/17 13:23:38 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1219,7 +1219,7 @@ void f_create_process(INT32 args)
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
 
 #if 1
-    init_threads_disable(this_thread);
+    init_threads_disable(thread_id);
     storage.disabled = 1;
 #endif
 
