@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.38 1998/01/27 18:06:43 hubbe Exp $");
+RCSID("$Id: main.c,v 1.39 1998/02/01 05:46:03 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -260,23 +260,6 @@ int dbm_main(int argc, char **argv)
   call_callback(& post_master_callbacks, 0);
   free_callback(& post_master_callbacks);
   
-  a=allocate_array_no_init(argc,0);
-  for(num=0;num<argc;num++)
-  {
-    ITEM(a)[num].u.string=make_shared_string(argv[num]);
-    ITEM(a)[num].type=T_STRING;
-  }
-  push_array(a);
-
-  for(num=0;environ[num];num++);
-  a=allocate_array_no_init(num,0);
-  for(num=0;environ[num];num++)
-  {
-    ITEM(a)[num].u.string=make_shared_string(environ[num]);
-    ITEM(a)[num].type=T_STRING;
-  }
-  push_array(a);
-
   if(SETJMP(back))
   {
     if(throw_severity == THROW_EXIT)
@@ -293,7 +276,24 @@ int dbm_main(int argc, char **argv)
     }
   }else{
     back.severity=THROW_EXIT;
+
+    a=allocate_array_no_init(argc,0);
+    for(num=0;num<argc;num++)
+    {
+      ITEM(a)[num].u.string=make_shared_string(argv[num]);
+      ITEM(a)[num].type=T_STRING;
+    }
+    push_array(a);
     
+    for(num=0;environ[num];num++);
+    a=allocate_array_no_init(num,0);
+    for(num=0;environ[num];num++)
+    {
+      ITEM(a)[num].u.string=make_shared_string(environ[num]);
+      ITEM(a)[num].type=T_STRING;
+    }
+    push_array(a);
+  
     apply(master(),"_main",2);
     pop_stack();
     
