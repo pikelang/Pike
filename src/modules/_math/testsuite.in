@@ -56,11 +56,11 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq(pow(1, 100000000000001), 1)
   test_eq(pow(-1, 100000000000000), 1)
   test_eq(pow(-1, 100000000000001), -1)
-  test_eval_error(lambda(int i) { return pow(i, 100000000000000); }(2))
+  test_eval_error(return pow(2, 100000000000000))
 
   test_eq(1->pow(100000000000000), 1)
   test_eq(1->pow(100000000000001), 1)
   test_eq((-1)->pow(100000000000000), 1)
   test_eq((-1)->pow(100000000000001), -1)
-  test_eval_error(2->pow(100000000000000)))
+  test_eval_error(return 2->pow(100000000000000)))
 ]])
