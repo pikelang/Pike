@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.445 2000/12/19 20:54:04 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.446 2000/12/22 23:57:31 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2006,13 +2006,20 @@ fi
 
 ########################################################################
 
+# NOTE: The following test is hardcoded to fail when crosscompiling
+# It also clobbers $LIBOBJS.
+
+OLD_LIBOBJS="${LIBOBJS}"
+
 AC_FUNC_MEMCMP
 
-if test "${OLD_LIBOBJS}" = "${LIBOBJS}" ; then
+if test "x$ac_cv_func_memcmp_clean" = "xyes"; then
   AC_DEFINE(HAVE_MEMCMP)
 fi
 
 LIBOBJS="${OLD_LIBOBJS}"
+
+########################################################################
 
 AC_FUNC_MMAP
 
@@ -2532,8 +2539,6 @@ if test "x$ac_cv_func_ualarm" = "xyes"; then
     AC_MSG_RESULT(1)
   fi
 fi
-
-OLD_LIBOBJS="${LIBOBJS}"
 
 ########################################################################
 AC_MSG_CHECKING(stack direction)
