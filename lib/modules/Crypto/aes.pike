@@ -1,5 +1,5 @@
 /*
- * $Id: aes.pike,v 1.1 2000/10/03 11:00:14 grubba Exp $
+ * $Id: aes.pike,v 1.2 2001/08/21 20:55:56 grubba Exp $
  *
  * Advanced Encryption Standard (AES).
  *
@@ -8,5 +8,11 @@
 
 #pike __REAL_VERSION__
 
-/* aka rijndael */
+//! Previously known as @[Crypto.rijndael].
 inherit Crypto.rijndael;
+
+//! Returns the string @tt{"AES"@}.
+string name()
+{
+  return "AES";
+}
