@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.319 2003/12/19 20:37:03 marcus Exp $
+// $Id: master.pike.in,v 1.320 2003/12/19 20:47:01 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -238,8 +238,8 @@ array(string) explode_path(string p)
 //!
 //! @xml{<matrix>
 //! <r><c><b>Expression</b></c><c><b>Value</b></c></r>
-//! <r><c>dirname("/a/b")</c><c>"/a/"</c></r>
-//! <r><c>dirname("/a/")</c><c>"/a/"</c></r>
+//! <r><c>dirname("/a/b")</c><c>"/a"</c></r>
+//! <r><c>dirname("/a/")</c><c>"/a"</c></r>
 //! <r><c>dirname("/a")</c><c>"/"</c></r>
 //! <r><c>dirname("/")</c><c>"/"</c></r>
 //! <r><c>dirname("")</c><c>""</c></r>
