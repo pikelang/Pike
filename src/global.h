@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.39 1999/11/23 07:07:03 hubbe Exp $
+ * $Id: global.h,v 1.40 1999/12/05 16:34:09 mirar Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -193,7 +193,16 @@ char *alloca ();
 #define TYPE_T unsigned INT8
 #define TYPE_FIELD unsigned INT16
 
+#ifndef WITH_DOUBLE_PRECISION_SVALUE
 #define FLOAT_TYPE float
+#else
+#ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
+#define FLOAT_TYPE long double
+#else
+#define FLOAT_TYPE double
+#endif /* long double */
+#endif /* double */
+
 #define INT_TYPE INT32
 
 #define B1_T char

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.335 1999/11/29 22:27:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.336 1999/12/05 16:34:06 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -417,6 +417,10 @@ AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules 
 AC_ARG_WITH(static_linking,    [  --with-static-linking            link statically, if possible],[with_static_linking=yes],[])
 AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
 AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for libraries.])
+
+AC_ARG_WITH(double-precision,  [  --with-double-precision          use double precision floats ], [ AC_DEFINE(WITH_DOUBLE_PRECISION_SVALUE) ] )
+AC_ARG_WITH(long-double-precision,  [  --with-long-double-precision          use long double precision floats ], [ AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE) ] )
+
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,         [  --without-gmp          no Support bignums])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])

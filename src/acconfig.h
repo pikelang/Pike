@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.51 1999/11/23 07:06:59 hubbe Exp $
+ * $Id: acconfig.h,v 1.52 1999/12/05 16:34:07 mirar Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -86,6 +86,12 @@
 
 /* define this if igonoring SIGFPE helps with core dumps */
 #undef IGNORE_SIGFPE
+
+/* define if you want to use double precision floats instead of single */
+#undef WITH_DOUBLE_PRECISION_SVALUE
+
+/* define if you want to use long double precision floats */
+#undef WITH_LONG_DOUBLE_PRECISION_SVALUE
 
 /* If using the C implementation of alloca, define if you know the
  * direction of stack growth for your system; otherwise it will be
