@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.4 2003/12/05 06:58:56 nilsson Exp $
+// $Id: PGP.pmod,v 1.5 2003/12/14 02:31:38 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -123,17 +123,26 @@ mapping decode_signature(string s) {
 static constant pgp_id = ([
   0b100001:"public_key_encrypted",
   0b100010:"signature",
+  0b100011:"symmetric_key",
+  0b100100:"one_pass_signature",
   0b100101:"secret_key",
   0b100110:"public_key",
+  0b100111:"secret_subkey",
   0b101000:"compressed_data",
-  0b101001:"conventional_key_encrypted",
+  0b101001:"symmetric_key_encrypted",
+  0b101010:"marker",
   0b101011:"literal_data",
   0b101100:"keyring_trust",
   0b101101:"user_id",
+  0b101110:"public_subkey",
+  0b101111:"user_attribute",
+  0b110000:"sym_encrypt_and_integrity",
+  0b110001:"modification_detection",
 ]);
 
 static mapping(string:function) pgp_decoder = ([
   "public_key":decode_public_key,
+  "public_subkey":decode_public_key,
   "signature":decode_signature,
 ]);
 
@@ -166,6 +175,8 @@ mapping(string:string|mapping) decode(string s) {
     h>>=2;
     if(pgp_id[h])
       r[pgp_id[h]] = (pgp_decoder[pgp_id[h]] || `+)(s[i..i+data_l-1]);
+    else
+      r[sprintf("unknown_%07b",h)] = s[i..i+data_l-1];
     i += data_l;
   }
   return r;
@@ -211,6 +222,58 @@ static int verify_signature(string text, string sig, string pubkey)
 		  decode(pubkey)->public_key);
   };
   return 0;
+}
+
+#if 0
+static int crc24(string data) {
+  int crc = 0xb704ce;
+  foreach(data; int pos; int char) {
+    crc ^= char<<16;
+    for(int i; i<8; i++) {
+      crc ^= 1;
+      if(crc & 0x1000000)
+	crc ^= 0x1864cf;
+    }
+  }
+  return crc & 0xffffff;
+}
+#endif
+
+mapping(string:mixed) decode_radix64(string data) {
+  mapping ret = ([]);
+  string tmp;
+  if(sscanf(data, "%*s-----BEGIN %s-----", tmp)!=2)
+    error("String does not contain \"-----BEGIN\".\n");
+  ret->armor_header = tmp;
+  if(!has_value(data, "-----END "+tmp+"-----"))
+    error("String is imcomplete; no armor tail found.\n");
+  sscanf(data, "%*s-----BEGIN "+tmp+"-----\n%s-----END "+tmp+"-----", data);
+
+  array lines = String.trim_all_whites(data)/"\n";
+  while(String.trim_all_whites(lines[0])!="") {
+    string key,value;
+    if(sscanf(lines[0], "%s:%s", key, value)!=2)
+      error("Error in key-value pairs.\n");
+    switch(key) {
+    case "Comment":
+      ret->Comment = utf8_to_string(value);
+      break;
+    case "Hash":
+      ret->Hash = value/",";
+      break;
+    default:
+      ret[key]=value;
+    }
+    lines = lines[1..];
+  }
+
+  if(lines[-1][0]=='=') {
+    ret->checksum = (int)Gmp.mpz(MIME.decode_base64(lines[-1][1..]),256);
+    lines = lines[..sizeof(lines)-2];
+  }
+
+  ret->data = MIME.decode_base64(lines*"\n");
+  return ret;
 }
 
 #endif
