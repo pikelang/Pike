@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.87 2003/07/03 18:14:39 mirar Exp $
+|| $Id: layers.c,v 1.88 2003/09/01 16:39:45 nilsson Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.87 2003/07/03 18:14:39 mirar Exp $");
+RCSID("$Id: layers.c,v 1.88 2003/09/01 16:39:45 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1034,7 +1034,7 @@ static void image_layer_alpha(INT32 args)
 
 /*
 **! method object set_alpha_value(float value)
-**! method double alpha_value()
+**! method float alpha_value()
 **!	Set/get the general alpha value of this layer.
 **!	This is a float value between 0 and 1,
 **!	and is multiplied with the alpha channel.
