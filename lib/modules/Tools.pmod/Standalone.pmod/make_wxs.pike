@@ -1,7 +1,8 @@
 /*
- * $Id: make_wxs.pike,v 1.2 2004/11/02 15:10:40 grubba Exp $
+ * $Id: make_wxs.pike,v 1.3 2004/11/02 15:26:49 grubba Exp $
  *
- * Make a Wix modules source XML file from an existing directory.
+ * Make a Wix modules source XML file from an existing set of
+ * directories or files.
  *
  * 2004-11-02 Henrik Grubbström
  */
@@ -33,7 +34,7 @@ int main(int argc, array(string) argv)
       if (stringp(opt[1])) {
 	version_str = opt[1];
       } else {
-	write("$Revision: 1.2 $\n");
+	write("$Revision: 1.3 $\n");
 	exit(0);
       }
       break;
@@ -69,12 +70,21 @@ int main(int argc, array(string) argv)
 				Standards.UUID.UUID(version_guid)->encode(),
 				property);
 
-  foreach(argv[1..], string srcdir) {
+  foreach(argv[1..], string src) {
+    src = replace(src, "\\", "/");
     array(string) seg;
+    string dest;
     if (sizeof(seg = (srcdir/":")) > 1) {
-      root->recurse_install_directory(seg[0], seg[1..]*":");
+      // The destination name may be specified with
+      //   <dest>:<src>
+      dest = seg[0];
+      src = seg[1..]*":";
+    }
+    Stdio.Stat st = file_stat(src);
+    if (st->isdir) {
+      root->recurse_install_directory(dest||".", src);
     } else {
-      root->recurse_install_directory(".", srcdir);
+      root->install_file(dest||((src/"/")[-1]), src);
     }
   }
 
