@@ -13,7 +13,7 @@ BLOCK_ALLOC(DATA,BSIZE)						\
 struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr);		\
 struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr);			\
 int PIKE_CONCAT3(check_,DATA,_semafore)(void *ptr);		\
-struct DATA *PIKE_CONCAT(remove_,DATA)(void *ptr);		\
+int PIKE_CONCAT(remove_,DATA)(void *ptr);			\
 void PIKE_CONCAT3(init_,DATA,_hash)(void);			\
 void PIKE_CONCAT3(exit_,DATA,_hash)(void);			\
 
