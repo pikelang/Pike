@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.8 2003/09/04 20:40:56 nilsson Exp $
+// $Id: testsuite.in,v 1.9 2004/04/23 12:39:27 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -137,6 +137,9 @@ test_hilfe("array a = ({1});", "")
 test_hilfe("({2})+a;", "({ /* 2 elements */\n    2,\n    1\n})")
 test_hilfe([[ ({ "int i,j;", "mapping a=([1:2]);",
            "foreach(a;i;j) write(\"%O,%O\\n\",i,j);" }) ]],[[ "1,2\nOk.\n" ]])
+
+test_hilfe("int i;","")
+test_hilfe("map(\"!\",lambda(mixed i){return i;});","\"!\"")
 
 // Clear history...
 test_do( add_constant("testhilfe") )
