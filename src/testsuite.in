@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.469 2001/11/09 02:09:14 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.470 2001/11/10 19:25:56 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1083,6 +1083,27 @@ test_any([[
   
  return 1;
 ]],0);
+
+test_do([[
+ Stdio.recursive_rm("testsuite_test_dir.pmod");
+ mkdir("testsuite_test_dir.pmod");
+
+ Stdio.write_file("testsuite_test_dir.pmod/module.pmod",
+	#"
+    .A a();
+    class X {}
+	");
+ Stdio.write_file("testsuite_test_dir.pmod/A.pike",
+	#"
+    .X f() {return 0;}
+	");
+
+ compile_string("import \".\"; "
+		"int foo() { testsuite_test_dir.a(); }",
+		"test");
+
+ Stdio.recursive_rm("testsuite_test_dir.pmod");
+]]);
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
 test_compile_any([[int kajsa(int a,int b) { return 17; } class Jenny { int kajsa() { return 17; } class Greta { int hanna() { return kajsa(); } } }]])
