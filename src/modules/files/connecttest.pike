@@ -60,18 +60,16 @@ void timeout()
 }
 
 object f=Stdio.File();
-int z=16384+random(10000);
+int z;
 object p=Stdio.Port();
 
 int main()
 {
-   int cnt = 16384;
-   while (!p->bind(z=(z-1023)%32768+1024)) {
-     if (!cnt--) {
-       werror(PRE "failed to bind a port.\n");
-       exit(1);
-     }
+   if (!p->bind(0)) {
+     werror(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
+     exit(1);
    }
+   z = (int)(p->query_address()/" ")[-1];
 //     werror("port: %d\n",z);
 #ifndef TEST_NORMAL
    destruct(p); // this port can't be connected to now
