@@ -1,0 +1,17 @@
+dnl $Id: testsuite.in,v 1.1 2002/11/21 21:40:47 jhs Exp $
+
+test_eval_error(Calendar.ISO.set_timezone("Europe/Stockholm")
+		->dwim_time("2000-03-26 23:01:17"))
+
+test_eq(Calendar.ISO_UTC.dwim_time("2000-03-26 23:01:17")->unix_time(),
+	954111677)
+
+test_do(Calendar.TimeRange t = Calendar.now())
+
+dnl Some more or less odd timezones encountered by Xenofarm:
+test_do(Calendar.dwim_time("Tue Nov 19 07:04:03 MET 2002"))
+test_do(Calendar.dwim_time("Tue Nov 19 07:04:03 CST 2002"))
+test_do(Calendar.dwim_time("Tue Nov 19 07:04:03 CET 2002"))
+test_do(Calendar.dwim_time("Tue Nov 19 07:04:03  2002"))
+test_do(Calendar.dwim_time("Tue Nov 19 07:04:03 NFT 2002"))
+test_do(Calendar.dwim_time("Tue Nov 19 07:04:03 DFT 2002"))
