@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.17 2000/05/17 17:55:37 mast Exp $
+ * $Id: jvm.c,v 1.18 2000/06/09 22:48:33 mast Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.17 2000/05/17 17:55:37 mast Exp $");
+RCSID("$Id: jvm.c,v 1.18 2000/06/09 22:48:33 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -334,7 +334,7 @@ static void jobj_gc_mark(struct object *o)
   struct jobj_storage *j = THIS_JOBJ;
 
   if(j->jvm)
-    gc_mark_object_as_referenced(j->jvm);
+    gc_recurse_object(j->jvm);
 }
 
 static void f_jobj_cast(INT32 args)
@@ -512,7 +512,7 @@ static void method_gc_mark(struct object *o)
   struct method_storage *m = THIS_METHOD;
 
   if(m->class)
-    gc_mark_object_as_referenced(m->class);
+    gc_recurse_object(m->class);
 }
 
 static void f_method_create(INT32 args)
@@ -1104,7 +1104,7 @@ static void field_gc_mark(struct object *o)
   struct field_storage *f = THIS_FIELD;
 
   if(f->class)
-    gc_mark_object_as_referenced(f->class);
+    gc_recurse_object(f->class);
 }
 
 static void f_field_create(INT32 args)
@@ -1905,13 +1905,13 @@ static void natives_gc_mark(struct object *o)
   struct natives_storage *n = THIS_NATIVES;
 
   if(n->jvm)
-    gc_mark_object_as_referenced(n->jvm);
+    gc_recurse_object(n->jvm);
   if(n->cls)
-    gc_mark_object_as_referenced(n->cls);
+    gc_recurse_object(n->cls);
   if(n->cons) {
     int i;
     for(i=0; i<n->num_methods; i++)
-      gc_mark_svalues(&n->cons[i].callback, 1);
+      gc_recurse_svalues(&n->cons[i].callback, 1);
   }
 }
 
@@ -2606,8 +2606,8 @@ static void att_gc_mark(struct object *o)
   struct att_storage *att = THIS_ATT;
 
   if(att->jvm)
-    gc_mark_object_as_referenced(att->jvm);
-  gc_mark_svalues(&att->thr, 1);
+    gc_recurse_object(att->jvm);
+  gc_recurse_svalues(&att->thr, 1);
 }
 
 static void f_att_create(INT32 args)
@@ -2683,7 +2683,7 @@ static void monitor_gc_mark(struct object *o)
   struct monitor_storage *m = THIS_MONITOR;
 
   if(m->obj)
-    gc_mark_object_as_referenced(m->obj);
+    gc_recurse_object(m->obj);
 }
 
 static void f_monitor_create(INT32 args)
@@ -2904,7 +2904,7 @@ static void jvm_gc_mark(struct object *o)
   struct jvm_storage *j = THIS_JVM;
 
   if(j->tl_env)
-    gc_mark_object_as_referenced(j->tl_env);
+    gc_recurse_object(j->tl_env);
 }
 #endif /* _REENTRANT */
 

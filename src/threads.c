@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.127 2000/05/22 19:50:29 grubba Exp $");
+RCSID("$Id: threads.c,v 1.128 2000/06/09 22:48:31 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1095,14 +1095,14 @@ static void thread_was_marked(struct object *o)
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
-    gc_mark_mapping_as_referenced(tmp->thread_local);
+    gc_recurse_mapping(tmp->thread_local);
 }
 
 static void thread_was_checked(struct object *o)
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
-    gc_check(tmp->thread_local);  
+    debug_gc_check(tmp->thread_local, T_OBJECT, o);
 
 #ifdef PIKE_DEBUG
   if(tmp->swapped)

@@ -348,10 +348,10 @@ static void creds_gc_check(struct object *o)
   if(THIS->default_creds) debug_gc_check(THIS->default_creds,T_OBJECT,o);
 }
 
-static void creds_gc_mark(struct object *o)
+static void creds_gc_recurse(struct object *o)
 {
-  if(THIS->user) gc_mark_object_as_referenced(THIS->user);
-  if(THIS->default_creds) gc_mark_object_as_referenced(THIS->default_creds);
+  if(THIS->user) gc_recurse_object(THIS->user);
+  if(THIS->default_creds) gc_recurse_object(THIS->default_creds);
 }
 
 static void exit_creds_object(struct object *o)
@@ -395,7 +395,7 @@ void init_pike_security(void)
   set_init_callback(init_creds_object);
   set_exit_callback(exit_creds_object);
   set_gc_check_callback(creds_gc_check);
-  set_gc_mark_callback(creds_gc_mark);
+  set_gc_recurse_callback(creds_gc_recurse);
   creds_program=end_program();
   add_program_constant("Creds",creds_program, 0);
 
