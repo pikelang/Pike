@@ -1,4 +1,4 @@
-/* $Id: pgres_config.h.in,v 1.3 1998/08/25 13:11:51 grubba Exp $ */
+/* $Id: pgres_config.h.in,v 1.4 2001/06/25 20:54:26 david%hedbor.org Exp $ */
 #undef STDC_HEADERS
 
 /* Define if you have the <postgres.h> header file.  */
@@ -9,7 +9,16 @@
 #undef HAVE_LIBPQ
 /* Define if you have the PQsetdbLogin function.  */
 #undef HAVE_PQSETDBLOGIN
+/* Define if you have the PGsetnonblocking function.  */
+#undef HAVE_PQSETNONBLOCKING
 
+/* If the PQsetnonblocking function is available, it means we're using
+ * PostgreSQL 7.x or newer. This, in turn, means that the interface is
+ * thread-safe on a per-connection level (as opposed to non-threadsafe).
+ */
+#ifdef HAVE_PQSETNONBLOCKING
+# define PQ_THREADSAFE 1
+#endif
 
 /* End of autoconfigurable section */
 #if defined (HAVE_LIBPQ) && defined (HAVE_POSTGRES_H) && defined (HAVE_LIBPQ_FE_H)
