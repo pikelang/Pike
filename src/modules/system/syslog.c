@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.8 1998/09/17 21:48:09 grubba Exp $
+ * $Id: syslog.c,v 1.9 2004/05/19 11:30:49 grubba Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.8 1998/09/17 21:48:09 grubba Exp $");
+RCSID("$Id: syslog.c,v 1.9 2004/05/19 11:30:49 grubba Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -171,7 +171,7 @@ void f_syslog(INT32 args)
   if(i & (1<<4)) pri |= LOG_WARNING;
   if(i & (1<<5)) pri |= LOG_NOTICE;
   if(i & (1<<6)) pri |= LOG_INFO;
-  if(i & (1<<6)) pri |= LOG_DEBUG;
+  if(i & (1<<7)) pri |= LOG_DEBUG;
   
   THREADS_ALLOW();
  
