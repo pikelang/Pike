@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.276 1999/04/25 18:55:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.277 1999/04/25 18:58:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -134,7 +134,7 @@ REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
 SMARTLINK="$BUILDDIR/smartlink"
 
 AC_MSG_CHECKING(if $SMARTLINK exists is up to date and works)
-if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" | head -1 | grep "smartlink.$ac_ext" >/dev/null 2>&5 && "$SMARTLINK" -v >/dev/null 2>&5; then
+if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | head -1 | grep "smartlink.$ac_ext" >/dev/null 2>&5 && "$SMARTLINK" -v >/dev/null 2>&5; then
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
