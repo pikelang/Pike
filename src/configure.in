@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.23 1996/11/22 06:13:43 hubbe Exp $
+# $Id: configure.in,v 1.24 1996/11/22 22:21:04 hubbe Exp $
 
 AC_INIT(interpret.c)
 
@@ -430,7 +430,7 @@ AC_CHECK_FUNCS(
 )
 
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
-  AC_CHECK_LIB(crypt,crypt,[LIBS="${LIBS} -lcrypt" ; AC_DEFINE(HAVE_CRYPT);])
+  AC_CHECK_LIB(crypt,crypt,[LIBS="${LIBS} -lcrypt" ; AC_DEFINE(HAVE_CRYPT)])
 fi
 
 
