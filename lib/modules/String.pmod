@@ -171,3 +171,27 @@ int fuzzymatch(string a, string b)
 
   return fuzz;
 }
+
+string trim_whites( string what )
+{
+  if (stringp (what)) {
+    sscanf(what, "%*[ \t]%s", what);
+    string rev = reverse(what);
+    sscanf(rev, "%*[ \t]%s", rev);
+    return what[..strlen(rev) - 1];
+  }
+
+  return what;
+}
+
+string trim_all_whites( string what )
+{
+  if (stringp (what)) {
+    sscanf(what, "%*[ \t\r\n]%s", what);
+    string rev = reverse(what);
+    sscanf(rev, "%*[ \t\r\n]%s", rev);
+    return what[..strlen(rev) - 1];
+  }
+
+  return what;
+}
