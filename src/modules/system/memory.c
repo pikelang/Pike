@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.22 2003/03/27 18:25:09 mast Exp $
+|| $Id: memory.c,v 1.23 2003/03/29 11:25:40 marcus Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.22 2003/03/27 18:25:09 mast Exp $");
+RCSID("$Id: memory.c,v 1.23 2003/03/29 11:25:40 marcus Exp $");
 
 #include "system_machine.h"
 
@@ -338,7 +338,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 #ifndef MAP_FAILED
 #define MAP_FAILED ((void*)(ptrdiff_t)-1)
 #endif
-   if ((mem==MAP_FAILED) && (errno==EACCES)) /* try without write */
+   if ((mem==(void *)MAP_FAILED) && (errno==EACCES)) /* try without write */
    {
       resflags&=~MEM_WRITE;
       mem=mmap(NULL,size,PROT_READ,flags,fd,offset);
@@ -346,7 +346,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 
    if (doclose) fd_close(fd); /* don't need this one anymore */
 
-   if (mem==MAP_FAILED)
+   if (mem==(void *)MAP_FAILED)
    {
       if (!complain)
 	 RETURN(0);
