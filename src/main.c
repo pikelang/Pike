@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.94 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: main.c,v 1.95 2000/08/06 06:16:30 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -447,8 +447,8 @@ int dbm_main(int argc, char **argv)
 	  dlclose(handle);
 
 	  if(bos_location && *bos_location &&
-	     (*bos_location - stack_top) *STACK_DIRECTION < 0)
-	    stack_top=*bos_location;
+	     (*bos_location - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
+	    Pike_interpreter.stack_top=*bos_location;
 	}
       }
 #else
