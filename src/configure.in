@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.374 2000/08/31 18:17:38 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.375 2000/11/03 14:11:03 noring Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -490,13 +490,6 @@ Use --with-threads to force threads support.
 ])
            with_threads=no
         fi
-     ;;
-     xIRIX*)
-           AC_MSG_WARN([
-IRIX detected, disabling threads.
-Use --with-threads to force threads support.
-])
-           with_threads=no
      ;;
    esac
 
