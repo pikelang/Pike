@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.73 2002/03/12 15:38:07 js Exp $
+// $Id: MySQL.pike,v 1.74 2002/11/26 10:41:50 mattias Exp $
 
 inherit .Base;
 
@@ -411,6 +411,8 @@ mapping times = ([ ]);
 
 string get_blob(string word, int num, void|mapping(string:mapping(int:string)) blobcache)
 {
+  if(String.width(word) > 8)
+    word = string_to_utf8(word);
   if(blobcache[word] && blobcache[word][num])
     return blobcache[word][num];
 
@@ -420,7 +422,7 @@ string get_blob(string word, int num, void|mapping(string:mapping(int:string)) b
   
   array a=db->query("select hits,first_doc_id from word_hit where word=%s "
 		    "order by first_doc_id limit %d,10",
-		    string_to_utf8(word), num);
+		    word, num);
 
 #ifdef SEARCH_DEBUG
   int t1 = gethrtime()-t0;
