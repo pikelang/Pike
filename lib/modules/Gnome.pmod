@@ -2,6 +2,8 @@
 
 #if constant(GTK.Widget)
 
+//! @decl import GTK
+
 mixed `[](string what)
 {
   if(what == "_module_value") return UNDEFINED;

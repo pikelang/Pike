@@ -4,6 +4,8 @@
 
 #define INDEX(x) GTK[x]
 
+//! @decl import GTK
+
 object Atom = class
 {
   mapping atoms = ([]);
