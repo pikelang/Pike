@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.20 1998/06/17 12:41:37 grubba Exp $
+ * $Id: sql.pike,v 1.21 1998/06/17 12:48:00 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.20 1998/06/17 12:41:37 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.21 1998/06/17 12:48:00 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -94,11 +94,11 @@ void create(void|string|object host, void|string db,
     // [dbtype://][user[:password]@]hostname[:port][/database]
 
     array(string) arr = host/"://";
-    if ((sizeof(arr) > 1) && (arr[0] !="")) {
+    if ((sizeof(arr) > 1) && (arr[0] != "")) {
       if (sizeof(arr[0]/".pike") > 1) {
 	program_names = ({ arr[0] });
       } else {
-	program_names = ({ arr[0]+".pike" });
+	program_names = ({ arr[0] + ".pike" });
       }
       host = arr[1..] * "://";
     }
@@ -273,6 +273,12 @@ string|object compile_query(string q)
 //. > q
 //.   Query to send to the SQL-server. This can either be a string with the
 //.   query, or a previously compiled query (see compile_query()).
+//. > bindings
+//.   An optional mapping containing bindings of variables used in the query.
+//.   A variable is identified by a colon (:) followed by a name or number.
+//.   Each index in the mapping corresponds to one such variable, and the
+//.   value for that index is substituted into the query wherever the variable
+//.   is used.  Binary values (BLOBs) may need to be placed in multisets.
 array(mapping(string:mixed)) query(object|string q,
 				   mapping(string|int:mixed)|void bindings)
 {
@@ -300,6 +306,12 @@ array(mapping(string:mixed)) query(object|string q,
 //. > q
 //.   Query to send to the SQL-server. This can either be a string with the
 //.   query, or a previously compiled query (see compile_query()).
+//. > bindings
+//.   An optional mapping containing bindings of variables used in the query.
+//.   A variable is identified by a colon (:) followed by a name or number.
+//.   Each index in the mapping corresponds to one such variable, and the
+//.   value for that index is substituted into the query wherever the variable
+//.   is used.  Binary values (BLOBs) may need to be placed in multisets.
 object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
   if (functionp(master_sql->big_query)) {
