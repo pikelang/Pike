@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.11 2004/03/19 15:53:58 grubba Exp $
+// $Id: Struct.pike,v 1.12 2004/03/19 15:54:38 grubba Exp $
 //
 
 #pike __REAL_VERSION__
@@ -188,8 +188,9 @@ class Word {
   }
 
   void set(int(0..) in) {
-    if(in<0 || in>=pow(2,size*8)) error("Value %d out of bound (0..%d).\n",
-					in, ~((-1)<<size*8));
+    if(in<0 || in>~((-1)<<size*8))
+      error("Value %d out of bound (0..%d).\n",
+	    in, ~((-1)<<size*8));
     value = in;
   }
   void decode(object f) { sscanf(f->read(size), "%"+size+"c", value); }
