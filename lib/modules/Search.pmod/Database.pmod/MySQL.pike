@@ -1,9 +1,9 @@
 // SQL index database without fragments
 // Copyright © 2000, Roxen IS.
 //
-// $Id: MySQL.pike,v 1.8 2001/03/18 05:19:46 js Exp $
+// $Id: MySQL.pike,v 1.9 2001/03/19 03:51:31 js Exp $
 
-inherit Search.Database.Base;
+// inherit Search.Database.Base;
 
 // Creates the SQL tables we need.
 
@@ -11,8 +11,9 @@ void create_tables()
 {
   catch(db->query("drop table uri"));
   catch(db->query("drop table document"));
-  catch(db->query("drop table field"));
   catch(db->query("drop table occurance"));
+  catch(db->query("drop table field"));
+  
   db->query(
 #"create table uri      (id          int unsigned primary key auto_increment not null,
                          uri_first   varchar(235),
@@ -59,7 +60,7 @@ void create(string _host)
 
 string _sprintf()
 {
-  return sprintf("Search.Database.MySQL( %s )", host);
+  return sprintf("Search.Database.MySQL(%s)", host);
 }
 
 mapping stats()
@@ -88,7 +89,6 @@ mapping(string:int) page_stat(string uri)
 }
 
 
-// Takes about 50 us, i.e. not much. :)
 int hash_word(string word)
 {
   string hashed=Crypto.md5()->update(word[..254])->digest();
@@ -97,8 +97,6 @@ int hash_word(string word)
     hashed[2]*256 +  // 2^8
     hashed[3];
 }
-
-int wc=0;
 
 array(string) split_uri(string in)
 {
@@ -122,11 +120,11 @@ int find_or_create_uri_id(string uri)
 
 int find_or_create_document_id(string uri, void|string language_code)
 {
-  int uri_id=find_or_create_uri_id(string uri);
+  int uri_id=find_or_create_uri_id(uri);
   
   string s=sprintf("select id from document where "
 		   "uri_id='%d'", uri_id);
-  if(language)
+  if(language_code)
     s+=sprintf(" and language_code='%s'",db->quote(language_code));
 
   array a = db->query(s);
@@ -142,9 +140,21 @@ int find_or_create_document_id(string uri, void|string language_code)
   return db->master_sql->insert_id();
 }
 
+int find_or_create_field_id(string field)
+{
+  string s=sprintf("select id from field where name='%s'",db->quote(field));
+  array a=db->query(s);
+  if(sizeof(a))
+    return (int)a[0]->id;
+
+  s=sprintf("insert into field (name) values ('%s')", db->quote(field));
+  db->query(s);
+  return db->master_sql->insert_id();
+}
+
 //! Inserts the words of a resource into the database
 void insert_words(Standards.URI|string uri, void|string language,
-		  string field, array words)
+		  string field, array(string) words)
 {
   int doc_id=find_or_create_document_id((string)uri, language);
   int field_id=find_or_create_field_id(field);
@@ -154,16 +164,10 @@ void insert_words(Standards.URI|string uri, void|string language,
   string s="insert into occurance (word_id, document_id, offset, "
            "field_id) values ";
   
-  foreach(words, mapping word)
-  {
-    int word_id;
-    string the_word=word->word;
-    if(!(word_id=word_ids[the_word]))
-      word_id=hash_word(the_word);
+  foreach(words, string word)
     s+=sprintf("(%d,%d,%d,%d),",
-	       word_id, doc_id, offset++, field_id);
-    wc++;
-  }
+	       hash_word(word), doc_id, offset++, field_id);
+
   if(sizeof(words))
     db->query(s[..sizeof(s)-2]);
 }
@@ -182,7 +186,7 @@ class GroupNode
 {
   inherit Node;
 
-  static privage string build_sql_part(string what, array params, string delimit)
+  static private string build_sql_part(string what, array params, string delimit)
   {
     return sprintf("%-7s %s\n",what,Array.uniq(params)*delimit);
   }
@@ -197,8 +201,8 @@ class GroupNode
     foreach(indices(extra_select_items), string tablename)
       tmp+=map(extra_select_items[tablename],
 	       lambda(string field){return tablename+"."+field;});
-    if(sizeof(sub_res->ranking)
-       tmp+=({sub_res->ranking*" +\n       "+"as ranking"});
+    if(sizeof(sub_res->ranking))
+      tmp+=({sub_res->ranking*" +\n       "+"as ranking"});
     
     string res="";
     res+=build_sql_part("SELECT",
@@ -216,7 +220,7 @@ class GroupNode
       tmp=allocate(ref->ref-1);
       for(int i=1;i<ref->ref; i++)
 	tmp[i-1]=sprintf("t0.doc_id=t%d.doc_id",i);
-      tmp+=({"t0.doc_id=document.id"})
+      tmp+=({"t0.doc_id=document.id"});
     }
     
     res+=build_sql_part("WHERE",
@@ -225,8 +229,8 @@ class GroupNode
 
     res+="group by document.id";
 
-    if(sizeof(sub_res->ranking)
-       res+=" order by ranking desc";
+    if(sizeof(sub_res->ranking))
+      res+=" order by ranking desc";
 
     if(limit)
       res+=sprintf(" limit %d",limit);
