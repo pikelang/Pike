@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.56 2003/01/05 05:51:49 nilsson Exp $
+|| $Id: math.c,v 1.57 2003/02/05 12:45:51 grubba Exp $
 */
 
 #include "global.h"
@@ -34,7 +34,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.56 2003/01/05 05:51:49 nilsson Exp $");
+RCSID("$Id: math.c,v 1.57 2003/02/05 12:45:51 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -525,7 +525,9 @@ void f_sgn(INT32 args)
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_FPSETMASK
+#ifdef HAVE_WORKING_FPSETMASK
   fpsetmask(0);
+#endif
 #endif
 #ifdef HAVE_FPSETROUND
 #ifndef HAVE_FP_RZ
