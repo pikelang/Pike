@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.32 2003/04/07 15:32:49 mast Exp $
+ * $Id: builtin.cmod,v 1.33 2003/07/28 14:47:33 mast Exp $
  */
 
 #include "global.h"
@@ -574,10 +574,10 @@ PIKECLASS Buffer
 	    RETURN make_shared_binary_string(d,len);
 	    break;
 	  case 1:
-	    RETURN make_shared_binary_string1((short*)d,len>>1);
+	    RETURN make_shared_binary_string1((p_wchar1 *)d,len);
 	    break;
 	  case 2:
-	    RETURN make_shared_binary_string2((int*)d,len>>2);
+	    RETURN make_shared_binary_string2((p_wchar2 *)d,len);
 	    break;
 	}
       }
