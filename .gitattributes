@@ -182,6 +182,7 @@ testfont binary
 /src/modules/Image/encodings/avs.c foreign_ident
 /src/modules/Image/encodings/bmp.c foreign_ident
 /src/modules/Image/encodings/configure.in foreign_ident
+/src/modules/Image/encodings/gd.c foreign_ident
 /src/modules/Image/encodings/gif.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.h foreign_ident
