@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.1 1998/05/27 20:56:39 grubba Exp $
+ * $Id: Line.pmod,v 1.2 1998/09/12 12:53:14 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -12,6 +12,45 @@ class simple
 
   function handle_data;
   void handle_command(string data);
+
+  static int timeout;		// Idle time before timeout.
+  static int timeout_time;	// Time at which next timeout will occur.
+
+  static void do_timeout()
+  {
+    if (con) {
+      catch {
+	con->close();
+      };
+      catch {
+	destruct(con);
+      };
+    }
+  }
+
+  static void _timeout_cb()
+  {
+    if (timeout > 0) {
+      // Timeouts are enabled.
+
+      int t = time();
+
+      if (t >= timeout_time) {
+	// Time out
+	do_timeout();
+      } else {
+	// Not yet.
+	call_out(_timeout_cb, timeout_time - t);
+      }
+    }
+  }
+
+  void touch_time()
+  {
+    if (timeout > 0) {
+      timeout_time = time() + timeout;
+    }
+  }
 
   static string multi_line_buffer = "";
   static void _handle_command(string line)
@@ -34,6 +73,8 @@ class simple
   static string read_buffer = "";
   static void read_callback(mixed ignored, string data)
   {
+    touch_time();
+
     read_buffer += data;
 
     while(1) {
@@ -56,6 +97,8 @@ class simple
   static string write_buffer = "";
   static void write_callback(mixed ignored)
   {
+    touch_time();
+
     while (!sizeof(write_buffer)) {
       if (send_q->is_empty()) {
 	con->set_write_callback(0);
@@ -116,9 +159,15 @@ class simple
     con = 0;
   }
 
-  void create(object con_)
+  void create(object con_, int|void timeout_)
   {
     con = con_;
+    timeout = timeout_;
+
+    // Start the timeout handler.
+    touch_time();
+    _timeout_cb();
+
     con->set_nonblocking(read_callback, 0, close_callback);
   }
 };
