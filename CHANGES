@@ -441,11 +441,13 @@ o SDL
 
 o Shuffler
 
-Standards.EXIF
-Standards.FIPS10_4
-Standards.ISO639_2.map_to_639_1, convert_b_to_t, convert_t_to_b
-
 o Standards.CIFF
+    Experimental module to read Canon Camera Image File Format data.
+
+o Standards.EXIF
+    Support for the EXchangeable Image file Format for digital still
+    cameras version 2.2. Support for maker notes for cameras from
+    Nikon, Canon, Fuji Film, Olympus, Sanyo and Casio.
 
 o Standards.FIPS10_4
     The Federal Information Processing Standard for Countries,
@@ -456,6 +458,12 @@ o Standards.FIPS10_4
 o Standards.ID3
     ID3 tags decoder/encoder. Supports versions: 1.0, 1.1,
     2.2-2.4. Frequently used in MP3 files for encapsulating metadata.
+
+o Standards.ISO639_2
+    This module has been updated with the map_to_639_1 method to
+    convert from ISO 639-2/T to ISO 639-1. With the new methods
+    convert_b_to_t and convert_t_to_b it is possible to convert
+    between ISO 639-2/T and ISO 639-2/B.
 
 o Standards.RDF
     Represents an RDF domain and allows you to perform searches in its
