@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.26 1999/05/26 17:39:27 grubba Exp $
+ * $Id: passwords.c,v 1.27 1999/05/26 17:56:56 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.26 1999/05/26 17:39:27 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.27 1999/05/26 17:56:56 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -123,8 +123,23 @@ void push_pwent(struct passwd *ent)
   SAFE_PUSH_TEXT(ent->pw_name);
 
 #if defined(HAVE_GETSPNAM) || defined(HAVE_GETSPNAM_R)
-  if(!strcmp(ent->pw_passwd, "x"))
+  if(!strcmp(ent->pw_passwd, "x") && !getuid())
   {
+    /* 64-bit Solaris 7 SIGSEGV's with an access to address 0xffffffff
+     * if the user is not root:
+     *
+     * Cannot access memory at address 0xffffffff.
+     * (gdb) bt
+     * #0  0xff3b9d18 in ?? ()
+     * #1  0xff3bd004 in ?? ()
+     * #2  0xff3bd118 in ?? ()
+     * #3  0xff14b484 in SO_per_src_lookup () from /usr/lib/libc.so.1
+     * #4  0xff14a1d0 in nss_get_backend_u () from /usr/lib/libc.so.1
+     * #5  0xff14a9ac in nss_search () from /usr/lib/libc.so.1
+     * #6  0xff18fbac in getspnam_r () from /usr/lib/libc.so.1
+     *
+     *  /grubba 1999-05-26
+     */
     struct spwd *foo;
 #ifdef HAVE_GETSPNAM_R
     struct spwd bar;
