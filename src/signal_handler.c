@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.95 1999/01/08 08:49:28 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.96 1999/01/08 09:05:46 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -120,8 +120,9 @@ struct wait_data {
   WAITSTATUSTYPE status;
 };
 
-static struct wait_data wait_buf[WAIT_BUFFER];
-static int firstwait=0, lastwait=0;
+static volatile struct wait_data wait_buf[WAIT_BUFFER];
+static volatile int firstwait=0;
+static volatile int lastwait=0;
 
 #endif /* ! NT */
 
