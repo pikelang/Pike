@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.176 1998/04/16 01:22:03 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.177 1998/04/17 20:36:29 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -211,6 +211,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
     AC_MSG_RESULT(yes)
   else
     AC_MSG_RESULT(no)
+    $4
   fi
 ])
 
@@ -246,10 +247,28 @@ if test $cflags_is_set = no; then
 
 ### Optimize for different SUN machines. If there is no working 'uname'
 ### no extra optimization will be done, but nothing should break either.
-  AC_SYS_CPU_COMPILER_FLAG(sun4c,-msparclite,sparclite,OPTIMIZE)
-  AC_SYS_CPU_COMPILER_FLAG(sun4m,-mv8,microsparc,OPTIMIZE)
-  AC_SYS_CPU_COMPILER_FLAG(sun4d,-msupersparc,supersparc,OPTIMIZE)
-  AC_SYS_CPU_COMPILER_FLAG(sun4u,-msupersparc,ultrasparc,OPTIMIZE)
+  case "`uname -m 2>/dev/null`" in
+   sun4c)
+    AC_SYS_COMPILER_FLAG(-msparclite,sparclite,OPTIMIZE) 
+   ;;
+   sun4m)
+    AC_SYS_COMPILER_FLAG(-mv8,microsparc,OPTIMIZE)
+   ;;
+   sun4d)
+    AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,OPTIMIZE)
+   ;;
+   sun4u)
+    AC_SYS_COMPILER_FLAG(-msupersparc,ultrasparc,OPTIMIZE)
+   ;;
+   i586)
+    AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
+   ;;
+   i686)
+    AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,OPTIMIZE,[
+       AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
+    ])
+   ;;
+  esac
  else
 
 ### Non-gcc thingies. This should probably be enhanced...
