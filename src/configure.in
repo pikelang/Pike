@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.550 2001/09/17 13:57:53 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.551 2001/09/18 22:55:14 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1177,7 +1177,7 @@ if test "$cflags_is_set" = "no"; then
 	    AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
         ])
     ])
-    AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
+#    AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
    ;;
    i86pc)
      case "`isalist 2>/dev/null`" in 
@@ -1187,7 +1187,7 @@ if test "$cflags_is_set" = "no"; then
 	 	     AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
 	 	 ])
 	 ])
-         AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
+#         AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
 	;;
         *pentium*)
          AC_SYS_COMPILER_FLAG(-mcpu=pentium,pentium,CFLAGS,[
