@@ -30,7 +30,6 @@ static mixed `[](string what)
 // bootstrap in the right order
       master()->resolv("Calendar")["Timezone"];
       master()->resolv("Calendar")["TimeRanges"];
-      master()->resolv("Calendar")["Calendar"];
       master()->resolv("Calendar")["Time"];
       master()->resolv("Calendar")["YMD"];
       master()->resolv("Calendar")["Gregorian"];
