@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2003/01/04 17:07:11 grubba Exp $
+# $Id: configure.in,v 1.11 2004/04/14 12:06:29 grubba Exp $
 AC_INIT(yp.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -18,11 +18,13 @@ AC_HAVE_HEADERS(sys/types.h rpc/types.h rpc/rpc.h rpc/clnt.h rpcsvc/ypclnt.h rpc
 # int and unsigned int have the same size, so we only test if the last
 # arg's an unsigned long * or not.
 #
-# The above strategy in unfortunately not enough to satify TCC,
+# The above strategy is unfortunately not enough to satify TCC,
 # so we do it the hard way anyway...
 #
 AC_MSG_CHECKING(the type of the last argument to yp_order)
 AC_CACHE_VAL(pike_cv_yp_order_type, [
+  old_ac_compile="[$]ac_compile"
+  ac_compile="[$]old_ac_compile 2>conftezt.out.2"
   for order_type in "unsigned long" "long" "unsigned int" "int"; do
     for str_type in "char" "const char"; do
       AC_TRY_COMPILE([
@@ -45,14 +47,21 @@ int yp_order($str_type *, $str_type *, $order_type *);
       ],[
     	/* EMPTY */
       ],[
-        pike_cv_yp_order_type="$order_type"
-	break
+        if grep -i "declaration is incompatible" <conftezt.out.2 >/dev/null;
+	then :; else
+          cat conftezt.out.2 >&AC_FD_CC
+          pike_cv_yp_order_type="$order_type"
+	  break
+	fi
       ])
+      cat conftezt.out.2 >&AC_FD_CC
     done
     if test "x$pike_cv_yp_order_type" = "x$order_type"; then
       break;
     fi
   done
+  ac_compile="[$]old_ac_compile"
+  rm conftezt.out.2
 
   if test "x$pike_cv_yp_order_type" = "x"; then
     # Use default
