@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_module.c,v 1.12 2002/10/21 17:06:16 marcus Exp $
+|| $Id: math_module.c,v 1.13 2003/11/07 23:48:15 nilsson Exp $
 */
 
 #include "global.h"
@@ -42,6 +42,26 @@ static struct math_class
    {"SMatrix",init_math_smatrix,&math_smatrix_program},
    {"Transforms",init_math_transforms,&math_transforms_program},
 };
+
+/*! @module Math */
+
+/*! @decl constant pi
+ *! The constant pi (3.14159265358979323846).
+ */
+
+/*! @decl constant e
+ *! The constant e (2.7182818284590452354).
+ */
+
+/*! @decl constant inf
+ *! Floating point infinity.
+ */
+
+/*! @decl constant nan
+ *! Floating point not-a-number (e.g. inf/inf).
+ */
+
+/*! @endmodule */
 
 PIKE_MODULE_EXIT
 {
