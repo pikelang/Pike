@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.394 2000/08/17 18:59:11 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.395 2000/08/17 20:17:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1392,9 +1392,23 @@ AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(socket, socket)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
-  # FIXME: These look suspiciouly much like 32bit versions.
-  #        We probably want to use 64bit versions on IA64.
-  LIBS="-lkernel32 -lws2_32 -ladvapi32 $LIBS"
+  AC_MSG_CHECKING(if we should use the 64 bit API)
+  AC_CACHE_VAL(pike_cv_sys_win64, [
+    AC_EGREP_CPP(yes, [
+#if defined(_WIN64) || defined(__WIN64__)
+  yes
+#else
+  no
+#endif
+    ], [ pike_cv_sys_win64=yes ], [ pike_cv_sys_win64=no ])
+  ])
+  if test "x$pike_cv_sys_win64" = "xyes"; then
+    AC_MSG_RESULT(yes)
+    LIBS="-lkernel64 -lws2_64 -ladvapi64 $LIBS"
+  else
+    AC_MSG_RESULT(no)
+    LIBS="-lkernel32 -lws2_32 -ladvapi32 $LIBS"
+  fi
 fi
 
 AC_CHECK_LIB(nsl, gethostbyname)
