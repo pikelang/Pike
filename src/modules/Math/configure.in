@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 2002/05/09 16:04:55 agehall Exp $
+# $Id: configure.in,v 1.6 2003/02/20 09:17:43 mirar Exp $
 AC_INIT(math_module.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(fftw,     [  --with(out)-fftw       Support for fftw],[],[with_fftw=yes])
@@ -11,6 +11,9 @@ AC_C_CHAR_UNSIGNED
 
 if test x$with_fftw = xyes ; then
     dnl Checks for header files.
+
+    PIKE_FEATURE(Math.Transforms.FFT,[no (fftw.h not found)])
+
     AC_CHECK_HEADERS(fftw.h)
     AC_CHECK_HEADERS(rfftw.h)
 
