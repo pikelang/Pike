@@ -91,32 +91,37 @@ object do_method(string method,
 #endif
   
 
+  if(!request_headers)
+    request_headers = ([]);
+  mapping default_headers = ([
+    "user-agent" : "Mozilla/4.0 compatible (Pike HTTP client)",
+    "host" : url->host ]);
 
+  if(url->user || url->passwd)
+    default_headers->authorization = "Basic "
+				   + MIME.encode_base64(url->user + ":" +
+							(url->password || ""));
+  request_headers = default_headers | request_headers;
 
   string query=url->query;
   if(query_variables && sizeof(query_variables))
-    {
-      if(query)
-	query+="&"+http_encode_query(query_variables);
-      else
-	query=http_encode_query(query_variables);
-    }
-  
+  {
+    if(query)
+      query+="&"+http_encode_query(query_variables);
+    else
+      query=http_encode_query(query_variables);
+  }
+
   string path=url->path;
   if(path=="") path="/";
-  
+
   con->sync_request(url->host,url->port,
 		    method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
-		    ([
-		      "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
-		      /*   "Connection":"Keep-Alive", */
-		      "host":url->host
-		     ]) | request_headers, data);
-  if (!con->ok) {
-    return 0;
-    
-  }
+		    request_headers, data);
+  
+  if (!con->ok) return 0;
   return con;
+
 }
 
 object get_url(string|Standards.URI url,
