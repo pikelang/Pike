@@ -26,7 +26,7 @@ static int julian_day_from_year(int year);
 static int year_remaining_days(int y,int yday);
 
 static array(int) year_month_from_month(int y,int m); // [y,m,ndays,myd]
-static int month_from_yday(int y,int yday);
+static array(int) month_from_yday(int y,int yday); // [m,day-of-month,ndays,myd]
 
 static array(int) week_from_week(int y,int w);   // [y,w,wd,ndays,wjd]
 static array(int) week_from_julian_day(int jd);  // [y,w,wd,ndays,wjd]
