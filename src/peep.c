@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.45 2000/12/05 21:08:20 per Exp $");
+RCSID("$Id: peep.c,v 1.46 2001/08/15 15:29:23 mast Exp $");
 
 static void asm_opt(void);
 
@@ -327,7 +327,7 @@ void assemble(void)
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
       fprintf(stderr, "===%3d %4lx ", c->line,
-	      DO_NOT_WARN((unsigned long)PC));
+	      DO_NOT_WARN((unsigned long)PIKE_PC));
       dump_instr(c);
       fprintf(stderr,"\n");
     }
@@ -343,7 +343,7 @@ void assemble(void)
     case F_START_FUNCTION:
       break;
     case F_ALIGN:
-      while(PC % c->arg) add_to_program(0);
+      while(PIKE_PC % c->arg) add_to_program(0);
       break;
 
     case F_BYTE:
@@ -363,7 +363,7 @@ void assemble(void)
       if(labels[c->arg] != -1)
 	fatal("Duplicate label!\n");
 #endif
-      labels[c->arg] = DO_NOT_WARN((INT32)PC);
+      labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
       break;
 
     default:
@@ -376,7 +376,7 @@ void assemble(void)
 #ifdef PIKE_DEBUG
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
-	tmp = DO_NOT_WARN((INT32)PC);
+	tmp = DO_NOT_WARN((INT32)PIKE_PC);
 	ins_int(jumps[c->arg], (void(*)(char))add_to_program);
 	jumps[c->arg]=tmp;
 	break;

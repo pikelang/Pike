@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.47 2001/08/03 05:22:41 hubbe Exp $
+ * $Id: las.h,v 1.48 2001/08/15 15:29:22 mast Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -257,7 +257,7 @@ void resolv_program(node *n);
 #define add_to_mem_block(N,Data,Size) low_my_binary_strcat(Data,Size,areas+N)
 #define IDENTIFIERP(i) (Pike_compiler->new_program->identifier_references+(i))
 #define INHERIT(i) (Pike_compiler->new_program->inherits+(i))
-#define PC (Pike_compiler->new_program->num_program)
+#define PIKE_PC (Pike_compiler->new_program->num_program)
 
 #ifndef PIKE_DEBUG
 #define check_tree(X,Y)
