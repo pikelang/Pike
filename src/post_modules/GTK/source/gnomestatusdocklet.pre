@@ -1,4 +1,4 @@
-require gnome;
+require docklets;
 class gnome_status_docklet;
 inherit object;
 #include <status-docklet.h>
@@ -13,10 +13,10 @@ inherit object;
 // The way StatusDocklet works is a little different from how the
 // AppletWidget works. Firstly, StatusDocklet object is not a widget,
 // it is just an abstract GTK+ object. You create a new StatusDocklet
-// object with status_docklet_new or status_docklet_new and then bind
+// object and then bind
 // the "build_plug" signal which is emitted when the panel was
 // contacted and a widget must be built. After binding the
-// "build_plug" signal, you call status_docklet_run to actually start
+// "build_plug" signal, you call run() to actually start
 // trying to contacting the panel. StatusDocklet is safe to use
 // without a panel. By default it will try to locate a panel for 15
 // minutes and after that it will give up. It will also handle panel
@@ -25,7 +25,9 @@ inherit object;
 // though the panel will never restart by itself, the user might not
 // run session management and thus might restart panel by hand, or due
 // to a bug, the panel might crash and restart itself.
-
+// <p>
+// Docklets are not available in GNOME 1.0.
+// <p>
 #define GNOME_STATUS_DOCKLET(X) ((StatusDocklet *)X)
 #define GnomeStatusDocklet StatusDocklet
 #define gnome_status_docklet_new status_docklet_new

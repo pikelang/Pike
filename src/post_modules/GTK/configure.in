@@ -328,6 +328,7 @@ AC_SUBST(GNOME_CFLAGS)
 AC_SUBST(GNOME_LIBS)
 
 AC_SUBST(pgtk_has_gnome)
+AC_SUBST(pgtk_has_docklets)
 AC_PATH_PROG(GNOME_CONFIG,gnome-config,no)
 AC_MSG_CHECKING([gnome])
 
@@ -335,17 +336,34 @@ if test "$GNOME_CONFIG" = "no"; then
   pgtk_has_gnome=nognome
   AC_MSG_RESULT(no);
 else
-  GNOME_CFLAGS="`gnome-config --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
-  GNOME_LIBS="`gnome-config --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
+  GNOME_CFLAGS="`gnome-config --cflags gnome gnomeui gnorba gtkxmhtml applets`"
+  GNOME_LIBS="`gnome-config --libs gnome gnomeui gnorba gtkxmhtml applets`"
   pgtk_has_gnome=gnome
   AC_DEFINE(HAVE_GNOME)
   AC_MSG_RESULT(yes);
 fi
 
+AC_MSG_CHECKING([gnome docklets])
+if test "$GNOME_CONFIG" = "no"; then
+  pgtk_has_docklets=nodocklets
+  AC_MSG_RESULT(no);
+else
+  GNOME_DOCKLETS_LIBS="`gnome-config --libs docklets 2>/dev/null`"
+  if test x"$GNOME_DOCKLETS_LIBS" = x ; then
+    pgtk_has_docklets=nodocklets
+    AC_MSG_RESULT(no);
+  else
+    pgtk_has_docklets=docklets
+    GNOME_LIBS="`gnome-config --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
+    GNOME_CFLAGS="`gnome-config --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
+    AC_MSG_RESULT(yes);
+  fi
 fi
 
-AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
+fi
+
 AC_CHECK_HEADERS( X11/xpm.h )
+AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
 
 AC_MSG_CHECKING([OpenGL])
 

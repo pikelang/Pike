@@ -3,3 +3,4 @@
 @have_gtk_120@
 @pgtk_has_libglade@
 @pgtk_has_gnome@
+@pgtk_has_docklets@
