@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.410 2001/10/30 10:50:44 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.411 2001/11/08 23:34:27 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3304,6 +3304,112 @@ PMOD_EXPORT void f_callablep(INT32 args)
  */
 PMOD_EXPORT void f_sleep(INT32 args)
 {
+#ifdef HAVE_GETHRTIME
+   hrtime_t t0,tv;
+#else
+   struct timeval t0,tv;
+#endif
+
+   double delay=0.0;
+   int do_abort_on_signal;
+
+#ifdef HAVE_GETHRTIME
+   t0=tv=gethrtime();
+#define GET_TIME_ELAPSED tv=gethrtime()
+#define TIME_ELAPSED (tv-t0)*1e-9
+#else
+   GETTIMEOFDAY(&t0);
+   tv=t0;
+#define GET_TIME_ELAPSED GETTIMEOFDAY(&tv)
+#define TIME_ELAPSED ((tv.tv_sec-t0.tv_sec) + (tv.tv_usec-t0.tv_usec)*1e-6)
+#endif
+
+#define FIX_LEFT() \
+       GET_TIME_ELAPSED; \
+       left = delay - TIME_ELAPSED;
+
+   switch(Pike_sp[-args].type)
+   {
+      case T_INT:
+	 delay=(double)Pike_sp[-args].u.integer;
+	 break;
+
+      case T_FLOAT:
+	 delay=(double)Pike_sp[-args].u.float_number;
+	 break;
+   }
+
+   /* Special case, sleep(0) means 'yield' */
+   if(delay == 0.0)
+   {
+     check_threads_etc();
+     pop_n_elems(args);
+     return;
+   }
+
+   if(args > 1 && !IS_ZERO(Pike_sp + 1-args))
+   {
+     do_abort_on_signal=1;
+   }else{
+     do_abort_on_signal=0;
+   }
+
+   pop_n_elems(args);
+
+   while(1)
+   {
+     double left;
+     /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
+     THREADS_ALLOW();
+     do {
+       FIX_LEFT();
+       if(left<=0.0) break;
+
+#ifdef __NT__
+       Sleep(DO_NOT_WARN((int)(left*1000)));
+#elif defined(HAVE_POLL)
+       poll(NULL,0,(int)(left*1000));
+#else
+       {
+	 struct timeval t3;
+	 t3.tv_sec=left;
+	 t3.tv_usec=(int)((left - (int)left)*1e6);
+	 select(0,0,0,0,&t3);
+       }
+#endif
+     } while(0);
+     THREADS_DISALLOW();
+     
+     if(do_abort_on_signal) return;
+     
+     FIX_LEFT();
+     
+     if(left<=0.0)
+     {
+       break;
+     }else{
+       check_signals(0,0,0);
+     }
+   }
+}
+
+#undef FIX_LEFT
+#undef GET_TIME_ELAPSED
+#undef TIME_ELAPSED
+
+/*! @decl void delay(int|float s)
+ *!
+ *!   This function makes the program stop for @[s] seconds.
+ *!
+ *!   Only signal handlers can interrupt the sleep. Other callbacks are
+ *!   not called during sleep. Beware that this function uses busy-waiting
+ *!   to achive the highest possible accuracy.
+ *!   
+ *! @seealso
+ *!   @[signal()], @[sleep()]
+ */
+PMOD_EXPORT void f_delay(INT32 args)
+{
 #define POLL_SLEEP_LIMIT 0.02
 
 #ifdef HAVE_GETHRTIME
@@ -5504,6 +5610,39 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   push_text("frame_bytes");
   push_int(size);
 
+#ifdef DEBUG_MALLOC
+  {
+    extern void count_memory_in_memory_maps(INT32*, INT32*);
+    extern void count_memory_in_memory_map_entrys(INT32*, INT32*);
+    extern void count_memory_in_memlocs(INT32*, INT32*);
+    extern void count_memory_in_memhdrs(INT32*, INT32*);
+
+    count_memory_in_memory_maps(&num, &size);
+    push_text("num_memory_maps");
+    push_int(num);
+    push_text("memory_map_bytes");
+    push_int(size);
+
+    count_memory_in_memory_map_entrys(&num, &size);
+    push_text("num_memory_map_entries");
+    push_int(num);
+    push_text("memory_map_entrie_bytes");
+    push_int(size);
+
+    count_memory_in_memlocs(&num, &size);
+    push_text("num_memlocs");
+    push_int(num);
+    push_text("memloc_bytes");
+    push_int(size);
+
+    count_memory_in_memhdrs(&num, &size);
+    push_text("num_memhdrs");
+    push_int(num);
+    push_text("memhdr_bytes");
+    push_int(size);
+  }
+#endif
+
   call_callback(&memory_usage_callback, (void *)0);
 
   f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
@@ -7489,6 +7628,8 @@ void init_builtin_efuns(void)
 
 /* function(float|int,int|void:void) */
   ADD_EFUN("sleep", f_sleep,
+	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("delay", f_delay,
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
   
 /* function(array(0=mixed),array(mixed)...:array(0)) */
