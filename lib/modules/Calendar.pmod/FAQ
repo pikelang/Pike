@@ -312,9 +312,9 @@ A:  Not if it isn't listed above. I'll appreciate any
 -------------------------------------------------------------------------  
 
 Q:  I don't like that weeks starts on Mondays.
-    Every school kids knows that weeks starts on Sundays.
+    Every school kids knows that weeks start on Sundays.
 
-A:  According to the ISO 8601 standard, weeks starts on mondays.
+A:  According to the ISO 8601 standard, weeks start on mondays.
 
     If you don't like it, edit the Calendar.pmod/localization.h
     file to use the Gregorian calendar instead of the ISO.
@@ -366,6 +366,29 @@ A:  For some regions, very. For most region, not very.
 
     Don't send me "the x region is all wrong!" mails without
     telling me how it should look.
+
+-------------------------------------------------------------------------  
+
+Q:  My timezone says it's DST. It's wrong.
+
+A:  No it isn't.  But:
+
+    o The local timezone detector failed to find your timezone by
+      itself, or found the wrong timezone.
+
+    o or you use the wrong timezone.
+
+    To make sure the right timezone is used, use the standard
+    timezone names. Those aren't "CET" or "PST", but 
+    "Europe/Amsterdam" or "America/Dawson".
+
+    You can tune the default timezone by editing
+    Calendar.pmod/localization.h.
+
+    OR this may be in the future and you have a changed DST
+    rule and uses an old Pike. Then you can either download
+    a new version or download new timezone data files from 
+    the ftp address below (if the internet still is there).
 
 -------------------------------------------------------------------------  
 
