@@ -1,5 +1,7 @@
 
 string test="",name=0,module=0,chapter=0;
+int testline;
+string testfile;
 array modules=({});
 array chapters=({});
 array tests=({});
@@ -45,7 +47,7 @@ void finish_test()
 			  "#define fail(S) do { werror(\"failure; "+module+"/"+chapter+"/"+name+": \"+(S)+\"\\n\"); return 0; } while (0)\n"+
 			  replace(test,({"#","ok()"}),({"½·½","ok(\"ok\")"})),
 			  ),"½·½","#");
-	 write("test "+(++n)+", expected result: EQ\n"
+	 write(testfile + ":" + testline + ": test "+(++n)+", expected result: EQ\n"
 	       "mixed a()"
 	       "{\n"+
 	       test+
@@ -63,6 +65,8 @@ void new_test(string _name,string file,int line)
    if (!chapter) werror(file+":"+line+"; missing chapter\n");
    name=_name;
    tests+=({name=_name});
+   testline = line;
+   testfile = file;
    test="#"+(line+1)+" \""+file+"\"\n";
    werror("  generating test: "+name+"\n");
 }

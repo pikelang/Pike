@@ -1,4 +1,4 @@
-test 1, expected result: EQ
+testsuite.in.in:8: test 1, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -13,7 +13,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 2, expected result: EQ
+testsuite.in.in:14: test 2, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -27,7 +27,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 3, expected result: EQ
+testsuite.in.in:19: test 3, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -43,7 +43,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 4, expected result: EQ
+testsuite.in.in:28: test 4, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -59,7 +59,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 5, expected result: EQ
+testsuite.in.in:35: test 5, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -76,7 +76,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 6, expected result: EQ
+testsuite.in.in:43: test 6, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -97,7 +97,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 7, expected result: EQ
+testsuite.in.in:55: test 7, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -115,7 +115,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 8, expected result: EQ
+testsuite.in.in:66: test 8, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -186,7 +186,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 9, expected result: EQ
+testsuite.in.in:128: test 9, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -204,7 +204,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 10, expected result: EQ
+testsuite.in.in:137: test 10, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -222,7 +222,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 11, expected result: EQ
+testsuite.in.in:146: test 11, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -254,7 +254,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 12, expected result: EQ
+testsuite.in.in:171: test 12, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -272,7 +272,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 13, expected result: EQ
+testsuite.in.in:182: test 13, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -290,7 +290,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 14, expected result: EQ
+testsuite.in.in:191: test 14, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -306,7 +306,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 15, expected result: EQ
+testsuite.in.in:198: test 15, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -322,7 +322,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 16, expected result: EQ
+testsuite.in.in:205: test 16, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -356,7 +356,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 17, expected result: EQ
+testsuite.in.in:230: test 17, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -398,7 +398,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 18, expected result: EQ
+testsuite.in.in:263: test 18, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -444,7 +444,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 19, expected result: EQ
+testsuite.in.in:302: test 19, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -460,7 +460,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 20, expected result: EQ
+testsuite.in.in:309: test 20, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -497,7 +497,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 21, expected result: EQ
+testsuite.in.in:339: test 21, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -513,7 +513,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 22, expected result: EQ
+testsuite.in.in:346: test 22, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -528,7 +528,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 23, expected result: EQ
+testsuite.in.in:352: test 23, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -551,7 +551,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 24, expected result: EQ
+testsuite.in.in:366: test 24, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -571,7 +571,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 25, expected result: EQ
+testsuite.in.in:377: test 25, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -594,7 +594,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 26, expected result: EQ
+testsuite.in.in:391: test 26, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -615,7 +615,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 27, expected result: EQ
+testsuite.in.in:405: test 27, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -649,7 +649,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 28, expected result: EQ
+testsuite.in.in:430: test 28, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -684,7 +684,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 29, expected result: EQ
+testsuite.in.in:458: test 29, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -697,7 +697,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 30, expected result: EQ
+testsuite.in.in:462: test 30, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -713,7 +713,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 31, expected result: EQ
+testsuite.in.in:469: test 31, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -731,7 +731,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 32, expected result: EQ
+testsuite.in.in:480: test 32, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -750,7 +750,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 33, expected result: EQ
+testsuite.in.in:490: test 33, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -771,7 +771,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 34, expected result: EQ
+testsuite.in.in:502: test 34, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -793,7 +793,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 35, expected result: EQ
+testsuite.in.in:515: test 35, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -815,7 +815,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 36, expected result: EQ
+testsuite.in.in:528: test 36, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -833,7 +833,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 37, expected result: EQ
+testsuite.in.in:537: test 37, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -850,7 +850,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 38, expected result: EQ
+testsuite.in.in:545: test 38, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -869,7 +869,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 39, expected result: EQ
+testsuite.in.in:557: test 39, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -884,7 +884,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 40, expected result: EQ
+testsuite.in.in:563: test 40, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -901,7 +901,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 41, expected result: EQ
+testsuite.in.in:571: test 41, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -918,7 +918,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 42, expected result: EQ
+testsuite.in.in:579: test 42, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -935,7 +935,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 43, expected result: EQ
+testsuite.in.in:587: test 43, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -949,7 +949,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 44, expected result: EQ
+testsuite.in.in:592: test 44, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -964,7 +964,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 45, expected result: EQ
+testsuite.in.in:598: test 45, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -980,7 +980,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 46, expected result: EQ
+testsuite.in.in:605: test 46, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -996,7 +996,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 47, expected result: EQ
+testsuite.in.in:612: test 47, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1012,7 +1012,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 48, expected result: EQ
+testsuite.in.in:619: test 48, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1030,7 +1030,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 49, expected result: EQ
+testsuite.in.in:628: test 49, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1048,7 +1048,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 50, expected result: EQ
+testsuite.in.in:637: test 50, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1064,7 +1064,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 51, expected result: EQ
+testsuite.in.in:644: test 51, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1080,7 +1080,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 52, expected result: EQ
+testsuite.in.in:651: test 52, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1095,7 +1095,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 53, expected result: EQ
+testsuite.in.in:657: test 53, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1111,7 +1111,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 54, expected result: EQ
+testsuite.in.in:664: test 54, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1125,7 +1125,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 55, expected result: EQ
+testsuite.in.in:669: test 55, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1139,7 +1139,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 56, expected result: EQ
+testsuite.in.in:674: test 56, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1153,7 +1153,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 57, expected result: EQ
+testsuite.in.in:679: test 57, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1178,7 +1178,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 58, expected result: EQ
+testsuite.in.in:695: test 58, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1199,7 +1199,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 59, expected result: EQ
+testsuite.in.in:707: test 59, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1218,7 +1218,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 60, expected result: EQ
+testsuite.in.in:717: test 60, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1236,7 +1236,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 61, expected result: EQ
+testsuite.in.in:726: test 61, expected result: EQ
 mixed a(){
 # 1 "-"
 
@@ -1257,7 +1257,7 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 62, expected result: EQ
+testsuite.in.in:738: test 62, expected result: EQ
 mixed a(){
 # 1 "-"
 
