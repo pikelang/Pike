@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.8 2003/10/03 14:22:53 nilsson Exp $
+// $Id: Struct.pike,v 1.9 2003/10/22 18:08:23 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -249,11 +249,45 @@ class Chars {
     if(String.width(in)!=8) error("Wide strings not allowed.\n");
     value = in;
   }
-  void decode(object f) { value=f->read(size); }
+  void decode(object f) {
+    value=f->read(size);
+    if(!value || sizeof(value)!=size) error("End of data reached.\n");
+  }
   string encode() { return value; }
 
   static string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
+  }
+}
+
+class Varchars {
+  inherit Chars;
+  static int min,max;
+
+  static void create(void|int _min, void|int _max, void|string _value) {
+    min = _min;
+    max = _max;
+    set(_value || " "*min);
+  }
+
+  void set(string in) {
+    if(sizeof(in)<min) error("String is too short.\n");
+    if(max && sizeof(in)>max) error("String is too long.\n");
+    if(String.width(in)!=8) error("Wide strings not allowed.\n");
+    size = sizeof(in)+1;
+    value = in;
+  }
+
+  void decode(object f) {
+    String.Buffer buf = String.Buffer( predef::max(256,min) );
+    string next;
+    do {
+      next = f->read(1);
+    } while (next && next!="\0" && buf->add(next));
+    set(buf->get());
+  }
+  string encode() {
+    return value + "\0";
   }
 }
 
