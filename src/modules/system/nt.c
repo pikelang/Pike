@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.58 2003/06/26 12:41:34 grubba Exp $
+|| $Id: nt.c,v 1.59 2003/08/19 10:43:09 nilsson Exp $
 */
 
 /*
@@ -339,11 +339,20 @@ static void do_regclosekey(HKEY key)
  *!   @endint
  *!
  *! @param key
- *!   Registry key.
+ *!   A registry key.
  *!
  *! @returns
- *!   Returns an array of value keys stored at the specified location iof any.
+ *!   Returns an array of value keys stored at the specified location if any.
  *!   Throws errors on failure.
+ *!
+ *! @example
+ *!   > RegGetKeyNames(HKEY_CURRENT_USER, "Keyboard Layout");
+ *!  (1) Result: ({
+ *!    "IMEtoggle",
+ *!    "Preload",
+ *!    "Substitutes",
+ *!    "Toggle"
+ *!   })
  *!
  *! @note
  *!   This function is only available on Win32 systems.
@@ -420,6 +429,12 @@ void f_RegGetKeyNames(INT32 args)
  *! @returns
  *!   Returns a mapping with all the values stored at the specified location
  *!   in the register if any. Throws errors on failure.
+ *!
+ *! @example
+ *! > RegGetValues(HKEY_CURRENT_USER, "Keyboard Layout\\Preload");
+ *!(5) Result: ([
+ *!  "1":"0000041d"
+ *! ])
  *!
  *! @note
  *!   This function is only available on Win32 systems.
