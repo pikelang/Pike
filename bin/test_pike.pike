@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.38 2000/03/20 20:57:34 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.39 2000/03/25 22:45:59 hubbe Exp $ */
 
 import Stdio;
 
@@ -75,9 +75,6 @@ array find_testsuites(string dir)
 
 #if constant(thread_create)
 #define WATCHDOG
-
-object watchdog;
-
 #define WATCHDOG_PIPE
 object watchdog_pipe;
 #else
@@ -89,6 +86,7 @@ object watchdog_pipe;
 
 
 #ifdef WATCHDOG
+object watchdog;
 int use_watchdog=1;
 #endif
 
