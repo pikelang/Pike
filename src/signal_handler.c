@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.85 1998/08/12 16:22:43 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.86 1998/09/05 15:19:46 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1827,10 +1827,13 @@ static void f_alarm(INT32 args)
 }
 #endif
 
-#ifdef HAVE_UALARM
+#if defined(HAVE_UALARM) || defined(HAVE_SETITIMER)
 static void f_ualarm(INT32 args)
 {
-  long seconds;
+#ifndef HAVE_UALARM
+  struct itimerval new, old;
+#endif /* !HAVE_UALARM */
+  long useconds;
 
   if(args < 1)
     error("Too few arguments to ualarm()\n");
@@ -1838,16 +1841,33 @@ static void f_ualarm(INT32 args)
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to ualarm()\n");
 
-  seconds=sp[-args].u.integer;
+  useconds=sp[-args].u.integer;
 
   pop_n_elems(args);
+
+#ifdef HAVE_UALARM
 #ifdef UALARM_TAKES_TWO_ARGS
-  push_int(ualarm(seconds,0));
+  push_int(ualarm(useconds,0));
 #else
-  push_int(ualarm(seconds));
+  push_int(ualarm(useconds));
 #endif
+#else /* !HAVE_UALARM */
+  /*
+   * Use setitimer instead.
+   */
+  new.it_value.tv_sec = useconds / 1000000;
+  new.it_value.tv_usec = useconds % 1000000;
+  new.it_interval.tv_sec = 0;
+  new.it_interval.tv_usec = 0;
+
+  if (!setitimer(ITIMER_REAL, &new, &old)) {
+    push_int(old.it_value.tv_usec + old.it_value.tv_sec * 1000000);
+  } else {
+    push_int(-1);
+  }
+#endif /* HAVE_UALARM */
 }
-#endif
+#endif /* HAVE_UALARM || HAVE_SETITIMER */
 
 #ifdef DEBUG
 static RETSIGTYPE fatal_signal(int signum)
@@ -1916,7 +1936,7 @@ void init_signals(void)
 #ifdef HAVE_ALARM
   add_efun("alarm",f_alarm,"function(int:int)",OPT_SIDE_EFFECT);
 #endif
-#ifdef HAVE_UALARM
+#if defined(HAVE_UALARM) || defined(HAVE_SETITIMER)
   add_efun("ualarm",f_ualarm,"function(int:int)",OPT_SIDE_EFFECT);
 #endif
 }
