@@ -53,16 +53,21 @@ mapping lower_nowM()
    else return nowM=methodM;
 }
 
+void report(string s)
+{
+   stderr->write(s+"\n");
+}
+
 #define complain(X) (X)
 
 mapping keywords=
 (["module":lambda(string arg,int line) 
 	  { descM=nowM=moduleM=focM(parse,stripws(arg),line); classM=methodM=0; 
-	    if (!nowM->classes) nowM->classes=([]); },
+	    if (!nowM->classes) nowM->classes=([]); report("module "+arg); },
   "class":lambda(string arg,int line) 
 	  { if (!moduleM) return complain("class w/o module");
 	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),line); 
-	    methodM=0; },
+	    methodM=0; report("class "+arg); },
   "method":lambda(string arg,int line)
 	  { if (!classM) return complain("method w/o class");
 	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM) 
@@ -398,23 +403,33 @@ void make_doc_files(string dir)
 
 int main()
 {
-   stdout->write("reading data...\n");
-
-   string doc=stdin->read(10000000);
-   string s;
+   string s,t;
    int line;
+   string *ss=({""});
 
    nowM=parse;
 
-   stdout->write("parsing data...\n");
+   stdout->write("reading and parsing data...\n");
 
-   foreach (doc/"\n",s)
+   for (;;)
    {
       int i;
+
+      if (sizeof(ss)<2)
+      {
+	 if (t=="") break;
+	 t=stdin->read(8192);
+	 s=ss[0];
+	 ss=t/"\n";
+	 ss[0]=s+ss[0];
+      }
+      s=ss[0]; ss=ss[1..];
+
       line++;
       if ((i=search(s,"**!"))!=-1)
       {
 	 string kw,arg;
+
 	 sscanf(s[i+3..],"%*[ \t]%s%*[ \t]%s",kw,arg);
 	 if (keywords[kw])
 	 {
@@ -427,6 +442,7 @@ int main()
 	 }
 	 else 
 	 {
+	    if (search(s,"$Id")!=-1) report("Id: "+s);
 	    if (!descM) descM=methodM;
 	    if (!descM)
 	    {
