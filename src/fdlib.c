@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.67 2004/11/18 01:57:10 mast Exp $
+|| $Id: fdlib.c,v 1.68 2004/11/20 15:34:21 nilsson Exp $
 */
 
 #include "global.h"
 #include "fdlib.h"
 #include "pike_error.h"
 #include <math.h>
+#include <ctype.h>
 
 #ifdef HAVE_WINSOCK_H
 
@@ -134,11 +135,11 @@ void fd_exit()
   mt_destroy(&fd_mutex);
 }
 
-static INLINE time_t convert_filetime_to_time_t(FILETIME tmp)
+static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
 {
 #ifdef INT64
-  return (((INT64) tmp.dwHighDateTime << 32)
-	  + tmp.dwLowDateTime
+  return (((INT64) tmp->dwHighDateTime << 32)
+	  + tmp->dwLowDateTime
 	  - 116444736000000000) / 10000000;
 #else
   double t;
@@ -146,14 +147,14 @@ static INLINE time_t convert_filetime_to_time_t(FILETIME tmp)
    *
    * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
    */
-  if (tmp.dwLowDateTime < 0xd53e8000UL) {
-    tmp.dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
-    tmp.dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
+  if (tmp->dwLowDateTime < 0xd53e8000UL) {
+    tmp->dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
+    tmp->dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
   } else {
-    tmp.dwHighDateTime -= 0x019db1deUL;
-    tmp.dwLowDateTime -= 0xd53e8000UL;
+    tmp->dwHighDateTime -= 0x019db1deUL;
+    tmp->dwLowDateTime -= 0xd53e8000UL;
   }
-  t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
+  t=tmp->dwHighDateTime * pow(2.0,32.0) + (double)tmp->dwLowDateTime;
 
   /* 1s == 10000000 * 100ns. */
   t/=10000000.0;
@@ -240,20 +241,20 @@ static void nonfat_filetimes_to_stattimes (FILETIME *creation,
 					   FILETIME *last_write,
 					   PIKE_STAT_T *stat)
 {
-  buf->st_mtime = convert_filetime_to_time_t (findbuf.ftLastWriteTime);
+  stat->st_mtime = convert_filetime_to_time_t (last_write);
 
-  if (findbuf.ftLastAccessTime.dwLowDateTime ||
-      findbuf.ftLastAccessTime.dwHighDateTime)
-    buf->st_atime = convert_filetime_to_time_t (findbuf.ftLastAccessTime);
+  if (last_access->dwLowDateTime ||
+      last_access->dwHighDateTime)
+    stat->st_atime = convert_filetime_to_time_t(last_access);
   else
-    buf->st_atime = buf->st_mtime;
+    stat->st_atime = stat->st_mtime;
 
   /* Putting the creation time in the last status change field.. :\ */
-  if (findbuf.ftCreationTime.dwLowDateTime ||
-      findbuf.ftCreationTime.dwHighDateTime)
-    buf->st_ctime = convert_filetime_to_time_t (findbuf.ftCreationTime);
+  if (creation->dwLowDateTime ||
+      creation->dwHighDateTime)
+    stat->st_ctime = convert_filetime_to_time_t (creation);
   else
-    buf->st_ctime = buf->st_mtime;
+    stat->st_ctime = stat->st_mtime;
 }
 
 /*
@@ -381,11 +382,11 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       root[0] = drive + 'A';
       root[1] = ':', root[2] = '\\', root[3] = 0;
       res = GetVolumeInformation (root, NULL, 0, NULL, NULL,NULL,
-				  &fstype, sizeof (fstype));
+				  (LPSTR)&fstype, sizeof (fstype));
     }
     else
       res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
-				  &fstype, sizeof (fstype));
+				  (LPSTR)&fstype, sizeof (fstype));
     if (!res) {
       _dosmaperr (GetLastError());
       FindClose (hFind);
@@ -433,7 +434,7 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
   FD fd;
-  DWORD omode,cmode,amode;
+  DWORD omode,cmode = 0,amode;
 
   ptrdiff_t l = strlen(file);
   char fname[MAX_PATH];
@@ -983,7 +984,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
     return -1;
   }
 
-  if (oldfp_hi < len_hi || oldfp_hi == len_hi && oldfp_lo < len)
+  if (oldfp_hi < len_hi || (oldfp_hi == len_hi && oldfp_lo < len))
     if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
       err = GetLastError();
       if(err != NO_ERROR) {
@@ -1017,7 +1018,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 		   0xffffffff,
 		   0xffffffff);
   }else{
-    DWORD flags;
+    DWORD flags = 0;
     OVERLAPPED tmp;
     MEMSET(&tmp, 0, sizeof(tmp));
     tmp.Offset=0;
