@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.340 2000/01/19 15:55:27 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.341 2000/02/03 10:13:03 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -441,7 +441,31 @@ and gcc is not being used.])
   esac
 ])
 AC_ARG_WITH(copt,        [  --without-copt         disable -O2],[],[with_copt=])
-AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_threads=yes])
+AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[
+   case "x$pike_cv_sys_os" in
+     xFreeBSD*)
+        if [ "`uname -r`" -gt 3 ]; then
+           AC_MSG_WARN([
+FreeBSD <= 3.x detected, disabling threads.
+Use --with-threads to force threads support.
+])
+           with_threads=no
+        fi
+     ;;
+     xIRIX*)
+           AC_MSG_WARN([
+IRIX detected, disabling threads.
+Use --with-threads to force threads support.
+])
+           with_threads=no
+        fi
+     ;;
+   esac
+
+   if [ "x${with_threads-}" = x ]; then
+     with_threads=yes
+   fi
+])
 AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
