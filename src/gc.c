@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.196 2003/01/13 02:07:04 mast Exp $
+|| $Id: gc.c,v 1.197 2003/01/14 19:20:24 mast Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.196 2003/01/13 02:07:04 mast Exp $");
+RCSID("$Id: gc.c,v 1.197 2003/01/14 19:20:24 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -104,6 +104,7 @@ ptrdiff_t alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 struct pike_queue gc_mark_queue;
+time_t last_gc;
 
 struct gc_frame
 {
@@ -2435,7 +2436,7 @@ size_t do_gc(void *ignored, int explicit_call)
 
   if(Pike_in_gc) return 0;
 
-  if (!gc_enabled && !explicit_call) {
+  if (gc_enabled <= 0 && (gc_enabled < 0 || !explicit_call)) {
     num_allocs = 0;
     if (gc_evaluator_callback) {
       remove_callback (gc_evaluator_callback);
@@ -2479,6 +2480,7 @@ size_t do_gc(void *ignored, int explicit_call)
     Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
+  last_gc=TIME(0);
   start_num_objs = num_objects;
   start_allocs = num_allocs;
   num_allocs = 0;
@@ -2944,6 +2946,8 @@ size_t do_gc(void *ignored, int explicit_call)
  *!       either "garbage_ratio_low" or "garbage_ratio_high", which
  *!       corresponds to the gc parameters with the same names in
  *!       @[Pike.gc_parameters].
+ *!     @member int "last_gc"
+ *!       Time when the garbage-collector last ran.
  *!   @endmapping
  *!
  *! @seealso
@@ -3000,6 +3004,10 @@ void f__gc_status(INT32 args)
     default: Pike_fatal ("Unknown last_garbage_strategy %d\n", last_garbage_strategy);
 #endif
   }
+  size++;
+
+  push_constant_text("last_gc");
+  push_int64(last_gc);
   size++;
 
   f_aggregate_mapping(size * 2);
