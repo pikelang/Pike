@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.175 2004/03/08 16:49:58 grubba Exp $");
+RCSID("$Id: threads.c,v 1.176 2004/03/09 14:12:58 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -849,7 +849,7 @@ struct mutex_storage
 
 struct key_storage
 {
-  struct mutex_storage *mut;
+  struct mutex_storage *mut; /* Only valid if mutex_obj is not destructed. */
   struct object *mutex_obj;
 };
 
@@ -923,8 +923,8 @@ void f_mutex_lock(INT32 args)
     SWAP_IN_CURRENT_THREAD();
   }
   add_ref(m->owner = Pike_interpreter.thread_id);	/* Locked. */
-  OB2KEY(o)->mut = m;
   add_ref(OB2KEY(o)->mutex_obj = Pike_fp->current_object);
+  OB2KEY(o)->mut = m;
 
   DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
 	       fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; )
@@ -976,8 +976,8 @@ void f_mutex_trylock(INT32 args)
   if(!m->owner)
   {
     add_ref(m->owner = Pike_interpreter.thread_id);
-    OB2KEY(o)->mut=m;
     add_ref(OB2KEY(o)->mutex_obj = Pike_fp->current_object);
+    OB2KEY(o)->mut=m;
     pop_n_elems(args);
     push_object(o);
   } else {
@@ -1009,27 +1009,35 @@ void exit_mutex_obj(struct object *o)
 void init_mutex_key_obj(struct object *o)
 {
   THREADS_FPRINTF(1, (stderr, "KEY k:%08x, o:%08x\n",
-		      (unsigned int)THIS_KEY, (unsigned int)Pike_interpreter.thread_id));
+		      (unsigned int)THIS_KEY,
+		      (unsigned int)Pike_interpreter.thread_id));
   THIS_KEY->mut = NULL;
   THIS_KEY->mutex_obj = NULL;
 }
 
 void exit_mutex_key_obj(struct object *o)
 {
+  struct mutex_storage *mut;
+
   THREADS_FPRINTF(1, (stderr, "UNLOCK k:%08x m:(%08x) t:%08x\n",
 		      (unsigned int)THIS_KEY,
 		      (unsigned int)THIS_KEY->mut,
 		      (unsigned int)Pike_interpreter.thread_id));
-  if(THIS_KEY->mut)
-  {
-    struct mutex_storage *mut = THIS_KEY->mut;
 
-    if (mut->owner) {
-      free_object(mut->owner);
-      mut->owner = NULL;
-    }
-    co_signal(& mut->condition);
+  if((mut = THIS_KEY->mut) &&
+     // Don't look at mut if the mutex object has been destructed.
+     (THIS_KEY->mutex_obj) && (THIS_KEY->mutex_obj->prog))
+  {
+    struct object *owner = mut->owner;
+
     THIS_KEY->mut = NULL;
+    mut->owner = NULL;
+
+    co_signal(& mut->condition);
+
+    if (owner) {
+      free_object(mut->owner);
+    }
   }
   if (THIS_KEY->mutex_obj) {
     free_object(THIS_KEY->mutex_obj);
