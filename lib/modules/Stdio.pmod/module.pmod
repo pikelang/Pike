@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.81 2000/08/02 20:18:29 mast Exp $
+// $Id: module.pmod,v 1.82 2000/08/06 14:54:16 js Exp $
 
 import String;
 
@@ -841,7 +841,7 @@ int mkdirhier (string dir, void|int mode)
   else path = "";
   foreach (dir / "/", string name) {
     path += name;
-    if (!exist (path) && !mkdir (path, mode)) return 0;
+    mkdir(path, mode);
     path += "/";
   }
   return is_dir (path);
