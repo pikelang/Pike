@@ -169,8 +169,6 @@ class cYear
 
       return ::place(what);
    }
-
-   int year_no() { return y; /*+1166;*/ }
 }
 
 class cDay
@@ -191,8 +189,6 @@ class cDay
       };
       return "error";
    }
-
-   int year_no() { return y+1166; }
 }
 
 class cMonth
@@ -235,8 +231,6 @@ class cMonth
 
       return ::place(what);
    }
-
-   int year_no() { return y+1166; }
 }
 
 class cWeek
@@ -253,6 +247,4 @@ class cWeek
       [int y2,int w2,int wd2,int nd2,int jd2]=week_from_week(y,w+n);
       return jd2-jd;
    }
-
-   int year_no() { return y+1166; }
 }
