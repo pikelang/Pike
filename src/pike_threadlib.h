@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.44 2003/05/02 15:42:52 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.45 2003/05/02 17:28:22 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -99,12 +99,14 @@ PMOD_EXPORT extern int live_threads, disallow_live_threads;
 struct object;
 PMOD_EXPORT extern size_t thread_stack_size;
 
-PMOD_EXPORT void thread_low_error (int errcode, const char *fname, int lineno);
+PMOD_EXPORT void thread_low_error (int errcode, const char *cmd,
+				   const char *fname, int lineno);
 
 #define LOW_THREAD_CHECK_NONZERO_ERROR(CALL) do {			\
     int thread_errcode_ = (CALL);					\
     if (thread_errcode_)						\
-      thread_low_error(thread_errcode_, __FILE__, __LINE__);		\
+      thread_low_error(thread_errcode_, TOSTR(CALL),			\
+		       __FILE__, __LINE__);				\
   } while (0)
 
 #ifdef CONFIGURE_TEST
@@ -291,7 +293,8 @@ extern pthread_attr_t small_pattr;
 
 #define LOW_THREAD_CHECK_ZERO_ERROR(CALL) do {			\
     if (!(CALL))						\
-      thread_low_error(GetLastError(), __FILE__, __LINE__);	\
+      thread_low_error(GetLastError(), TOSTR(CALL),		\
+		       __FILE__, __LINE__);			\
   } while (0)
 
 #define THREAD_T unsigned
