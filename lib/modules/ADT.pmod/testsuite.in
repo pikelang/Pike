@@ -1,6 +1,51 @@
-test_true([["$Id: testsuite.in,v 1.3 2002/08/04 20:00:54 nilsson Exp $"]]);
+dnl $Id: testsuite.in,v 1.4 2002/10/19 13:43:05 nilsson Exp $
 
-// ADT.Stack
+dnl - ADT.History
+
+test_eq(sizeof(ADT.History(2)),0)
+
+test_do(add_constant("adth", ADT.History(2)))
+test_eq(adth->get_maxsize(),2)
+test_any([[
+  adth->push(17);
+  return sizeof(adth);
+]], 1)
+test_any([[
+  adth->push(18);
+  return sizeof(adth);
+]], 2)
+test_any([[
+  adth->push(19);
+  return sizeof(adth);
+]], 2)
+test_eq(adth->get_latest_entry_num(),3)
+test_eq(adth->get_first_entry_num(),2)
+test_eval_error(return adth[0])
+test_eval_error(return adth[1])
+test_eq(adth[2],18)
+test_eq(adth[3],19)
+test_eq(adth[-1],19)
+test_eq(adth[-2],18)
+test_eval_error(return adth[-3])
+test_do( adth->set_maxsize(4) )
+test_eq(adth->get_maxsize(),4)
+test_eq(sizeof(adth),2)
+test_eq(adth[-1],19)
+test_eq(adth[-2],18)
+test_eval_error(return adth[-3])
+test_do( adth->push(20); adth->push(21); adth->push(22); )
+test_eq(adth[3],19)
+test_eq(adth[6],22)
+test_do( adth->flush() )
+test_eq(adth->get_latest_entry_num(),6)
+test_eq(adth->get_first_entry_num(),0)
+test_do( adth->set_maxsize(0) )
+test_do( adth->push(23) )
+test_eq(sizeof(adth),0)
+test_do(add_constant("adth"))
+
+
+dnl - ADT.Stack
 
 test_any([[
   object s = ADT.Stack();
@@ -86,7 +131,7 @@ test_any([[
 ]], "12345")
 
 
-// ADT.Table
+dnl - ADT.Table
 
 test_true(ADT.Table.table(
  ({ ({ "a", "b", 42 }),
