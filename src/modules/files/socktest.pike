@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.36 2005/02/22 09:24:59 grubba Exp $ */
+/* $Id: socktest.pike,v 1.37 2005/02/22 09:31:36 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -591,7 +591,23 @@ int main()
   }
 #endif /* constant(fork) */
 
-  if(!port1::bind(0, accept_callback, ANY))
+  int code;
+
+  mixed err = catch {
+      code = port1::bind(0, accept_callback, ANY);
+    };
+
+  if (err) {
+#ifdef IPV6
+    if (has_prefix(describe_error(err), "Invalid address")) {
+      werror("\nIPv6 addresses not supported.\n");
+      exit(0);
+    }
+#endif /* IPV6 */
+    throw(err);
+  }
+
+  if(!code)
   {
     werror("Bind failed. (%d)\n",port1::errno());
     fd_fail();
