@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.99 1998/04/27 09:58:03 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.100 1998/04/28 07:48:53 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -39,6 +39,10 @@ test_do(_debug(_debug(0)))
 test_do(_static_modules())
 test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
 test_compile([[Stdio.File foo=Stdio.File();]])
+test_compile([[  string|multiset(string) foo;
+  array(string) gazonk;
+  array(string) bar = indices(foo)-gazonk;
+]])
 test_compile([[class { Stdio.File foo=Stdio.File(); }]])
 test_compile_any([[void foo(Stdio.FILE f) {}]])
 test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
