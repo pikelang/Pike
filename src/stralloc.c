@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.104 2000/10/10 01:19:03 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.105 2000/10/19 13:35:07 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1377,7 +1377,8 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
 
   if(!r) return -1;
 #ifdef PIKE_DEBUG
-  if(r < haystack || (r-haystack->str)>>haystack->size_shift > haystack->len)
+  if((r < haystack->str) ||
+     (r - haystack->str)>>haystack->size_shift > haystack->len)
     fatal("string_search did a bobo!\n");
 #endif
   return (r-haystack->str)>>haystack->size_shift;
