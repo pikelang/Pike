@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.1 2003/10/14 23:52:24 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.2 2003/12/08 14:28:20 nilsson Exp $"]]);
 
 
 // - Web.RDF
@@ -257,6 +257,16 @@ test_xmlparse([[
   "<http://www.w3.org/staffId/85740> <http://v.com/Email> \"lassila@w3.org\" .",
   "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
   "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
+>) ]])
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+<rdf:Description rdf:about='#Continent'>
+  <rdf:type rdf:resource='http://www.w3.org/2002/07/owl#Class'/>
+</rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "",
+  "<#Continent> _:type <http://www.w3.org/2002/07/owl#Class> ."
 >) ]])
 
 test_any_equal([[
