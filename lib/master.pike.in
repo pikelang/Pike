@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.144 2001/01/30 20:55:14 hubbe Exp $
+ * $Id: master.pike.in,v 1.145 2001/03/26 16:51:15 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -165,7 +165,7 @@ int compat_minor=-1;
 program compile_string(string source, void|string filename,
 		       object|void handler)
 {
-  return compile(cpp(source, filename||"-", 0, handler,
+  return compile(cpp(source, filename||"-", 1, handler,
 		     compat_major, compat_minor),
 		 handler,
 		 compat_major,
