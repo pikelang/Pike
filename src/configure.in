@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.506 2001/03/21 16:28:52 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.507 2001/03/23 01:05:41 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2442,9 +2442,11 @@ AC_CHECK_FUNCS( \
  mktime \
  perror \
  rindex \
+ setbuf \
  setlocale \
  setrlimit \
  setresuid \
+ setvbuf \
  sigaction \
  sigblock \
  sigprocmask \

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.116 2001/03/22 02:21:15 hubbe Exp $");
+RCSID("$Id: main.c,v 1.117 2001/03/23 01:05:42 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -147,6 +147,15 @@ int dbm_main(int argc, char **argv)
 #ifdef DECLARE_ENVIRON
   extern char **environ;
 #endif
+
+  /* Attempt to make sure stderr is unbuffered. */
+#ifdef HAVE_SETVBUF
+  setvbuf(stderr, NULL, _IONBF, 0);
+#else /* !HAVE_SETVBUF */
+#ifdef HAVE_SETBUF
+  setbuf(stderr, NULL);
+#endif /* HAVE_SETBUF */
+#endif /* HAVE_SETVBUF */
 
 #ifdef TRY_USE_MMX
   try_use_mmx=mmx_ok();
