@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.h,v 1.9 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: pike_rusage.h,v 1.10 2002/12/07 13:52:09 grubba Exp $
 */
 
-#ifndef RUSAGE_H
-#define RUSAGE_H
+#ifndef PIKE_RUSAGE_H
+#define PIKE_RUSAGE_H
 
 /* Prototypes begin here */
 typedef INT32 pike_rusage_t[30];
@@ -18,4 +18,4 @@ void debug_print_rusage(FILE *out);
 #endif
 /* Prototypes end here */
 
-#endif
+#endif /* !PIKE_RUSAGE_H */

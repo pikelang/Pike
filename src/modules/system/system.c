@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.133 2002/12/07 08:07:21 mirar Exp $
+|| $Id: system.c,v 1.134 2002/12/07 13:52:09 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.133 2002/12/07 08:07:21 mirar Exp $");
+RCSID("$Id: system.c,v 1.134 2002/12/07 13:52:09 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -41,7 +41,7 @@ RCSID("$Id: system.c,v 1.133 2002/12/07 08:07:21 mirar Exp $");
 #include "pike_memory.h"
 #include "security.h"
 #include "bignum.h"
-#include "rusage.h"
+#include "pike_rusage.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -2476,78 +2476,83 @@ static void f_gettimeofday(INT32 args)
 #endif
 
 /*! @decl mapping(string:int) getrusage()
- *! Calls getrusage or equivalent function and fills in 
- *! one or more of the rusage fields.
+ *!   Calls getrusage or equivalent function and fills in 
+ *!   one or more of the rusage fields.
  *!
- *! @mapping
- *!   @member int "utime"
- *!     user time (ms)
- *!   @member int "stime"
- *!     system time (ms)
- *!   @member int "maxrss"
- *!     maximum resident set size [1]
- *!   @member int "ixrss"
- *!     integral shared memory size [1]
- *!   @member int "idrss"
- *!     integral unshared data size [1]
- *!   @member int "isrss"
- *!     integral unshared stack size [1]
- *!   @member int "minflt"
- *!     page reclaims
- *!   @member int "majflt"
- *!     page faults
- *!   @member int "nswap"
- *!     swaps
- *!   @member int "inblock"
- *!     block input operations
- *!   @member int "oublock"
- *!     block output operations
- *!   @member int "msgsnd"
- *!     messages sent
- *!   @member int "msgrcv"
- *!     messages received
- *!   @member int "nsignals"
- *!     signals received
- *!   @member int "nvcsw"
- *!     voluntary context switches
- *!   @member int "nivcsw"
- *!     involuntary context switches
- *!   @member int "sysc"
- *!     system calls [2]
- *!   @member int "ioch"
- *!     chars read and written [2]
- *!   @member int "rtime"
- *!     total lwp real (elapsed) time (ms) [2]
- *!   @member int "ttime"
- *!     other system trap CPU time (ms) [2]
- *!   @member int "tftime"
- *!     text page fault sleep time (ms) [2]
- *!   @member int "dftime"
- *!     data page fault sleep time (ms) [2]
- *!   @member int "kftime"
- *!     kernel page fault sleep time (ms) [2]
- *!   @member int "ltime"
- *!     user lock wait sleep time (ms) [2]
- *!   @member int "slptime"
- *!     all other sleep time (ms) [2]
- *!   @member int "wtime"
- *!     wait-cpu (latency) time (ms) [2]
- *!   @member int "stoptime"
- *!     stopped time [2]
- *!   @member int "brksize"
- *!     ? [3]
- *!   @member int "stksize"
- *!     ? [3]
- *! @endmapping
+ *! @returns
+ *!   Returns a mapping describing the current resource usage:
+ *!   @mapping
+ *!     @member int "utime"
+ *!       user time (ms)
+ *!     @member int "stime"
+ *!       system time (ms)
+ *!     @member int "maxrss"
+ *!       maximum resident set size [1]
+ *!     @member int "ixrss"
+ *!       integral shared memory size [1]
+ *!     @member int "idrss"
+ *!       integral unshared data size [1]
+ *!     @member int "isrss"
+ *!       integral unshared stack size [1]
+ *!     @member int "minflt"
+ *!       page reclaims
+ *!     @member int "majflt"
+ *!       page faults
+ *!     @member int "nswap"
+ *!       swaps
+ *!     @member int "inblock"
+ *!       block input operations
+ *!     @member int "oublock"
+ *!       block output operations
+ *!     @member int "msgsnd"
+ *!       messages sent
+ *!     @member int "msgrcv"
+ *!       messages received
+ *!     @member int "nsignals"
+ *!       signals received
+ *!     @member int "nvcsw"
+ *!       voluntary context switches
+ *!     @member int "nivcsw"
+ *!       involuntary context switches
+ *!     @member int "sysc"
+ *!       system calls [2]
+ *!     @member int "ioch"
+ *!       chars read and written [2]
+ *!     @member int "rtime"
+ *!       total lwp real (elapsed) time (ms) [2]
+ *!     @member int "ttime"
+ *!       other system trap CPU time (ms) [2]
+ *!     @member int "tftime"
+ *!       text page fault sleep time (ms) [2]
+ *!     @member int "dftime"
+ *!       data page fault sleep time (ms) [2]
+ *!     @member int "kftime"
+ *!       kernel page fault sleep time (ms) [2]
+ *!     @member int "ltime"
+ *!       user lock wait sleep time (ms) [2]
+ *!     @member int "slptime"
+ *!       all other sleep time (ms) [2]
+ *!     @member int "wtime"
+ *!       wait-cpu (latency) time (ms) [2]
+ *!     @member int "stoptime"
+ *!       stopped time [2]
+ *!     @member int "brksize"
+ *!       Heap size [3]
+ *!     @member int "stksize"
+ *!       Stack size [3]
+ *!   @endmapping
  *!
  *! @note
- *! [1] not if /proc rusage is used
+ *!   [1] not if /proc rusage is used
  *!
- *! [2] only from (solaris?) /proc rusage
+ *!   [2] only from (solaris?) /proc rusage
  *!
- *! [3] only from /proc PRS usage
+ *!   [3] only from /proc PRS usage
  *!
- *! on some systems, only utime will be filled in.
+ *!   on some systems, only utime will be filled in.
+ *!
+ *! @seealso
+ *!   @[rusage()]
  */
 
 static void f_getrusage(INT32 args)

@@ -758,6 +758,7 @@ testfont binary
 /src/pike_macros.h foreign_ident
 /src/pike_memory.c foreign_ident
 /src/pike_memory.h foreign_ident
+/src/pike_rusage.h foreign_ident
 /src/pike_search.c foreign_ident
 /src/pike_search.h foreign_ident
 /src/pike_search_engine.c foreign_ident
