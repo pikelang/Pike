@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.34 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.35 2000/08/11 13:35:00 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -171,13 +171,20 @@ int va_get_args(struct svalue *s,
       if(s->type == T_INT)
 	 *va_arg(ap, int *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *va_arg(ap, int *)=(int)s->u.float_number;
+        *va_arg(ap, int *)=
+	  DO_NOT_WARN((int)s->u.float_number);
       else 
       {
         push_text( "int" );
         push_svalue( s );
         f_cast( );
-        *va_arg(ap, int *)=sp[-1].u.integer;
+	if(sp[-1].type == T_INT)
+	  *va_arg(ap, int *)=sp[-1].u.integer;
+	else if(s->type == T_FLOAT)
+	  *va_arg(ap, int *)=
+	    DO_NOT_WARN((int)sp[-1].u.float_number);
+	else
+	  error("Cast to int failed.\n");
         pop_stack();
       }
       break;
@@ -185,13 +192,19 @@ int va_get_args(struct svalue *s,
       if(s->type == T_INT)
 	 *va_arg(ap, INT_TYPE *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *va_arg(ap, INT_TYPE *)=(int)s->u.float_number;
+        *va_arg(ap, INT_TYPE *)=(INT_TYPE)s->u.float_number;
       else 
       {
         push_text( "int" );
         push_svalue( s );
         f_cast( );
-        *va_arg(ap, INT_TYPE *)=sp[-1].u.integer;
+	if(sp[-1].type == T_INT)
+	  *va_arg(ap, INT_TYPE *)=sp[-1].u.integer;
+	else if(s->type == T_FLOAT)
+	  *va_arg(ap, INT_TYPE *)=
+	    DO_NOT_WARN((INT_TYPE)sp[-1].u.float_number);
+	else
+	  error("Cast to int failed.\n");
         pop_stack();
       }
       break;
@@ -311,7 +324,7 @@ PMOD_EXPORT void get_all_args(char *fname, INT32 args, char *format,  ... )
   va_start(ptr, format);
   ret=va_get_args(sp-args, args, format, ptr);
   va_end(ptr);
-  if((long)ret*2 != (long)strlen(format)) {
+  if((ptrdiff_t)ret*2 != (ptrdiff_t)strlen(format)) {
     char *expected_type;
     switch(format[ret*2+1]) {
     case 'd': case 'i': expected_type = "int"; break;
@@ -338,7 +351,7 @@ PMOD_EXPORT void get_all_args(char *fname, INT32 args, char *format,  ... )
 	sp+ret-args,
 	"Bad argument %d to %s(). Expected %s\n",
 	ret+1, fname, expected_type);
-    } else if ((long)(args*2) < (long)strlen(format)) {
+    } else if ((ptrdiff_t)(args*2) < (ptrdiff_t)strlen(format)) {
       bad_arg_error(
 	fname, sp-args, args,
 	ret+1,

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.18 2000/08/11 13:25:03 grubba Exp $
+ * $Id: pike_memory.h,v 1.19 2000/08/11 13:27:01 grubba Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -33,7 +33,7 @@ struct mem_searcher
 {
   enum methods method;
   char *needle;
-  SIZE_T needlelen;
+  size_t needlelen;
   unsigned INT32 hsize, max;
   struct link links[MEMSEARCH_LINKS];
   struct link *set[MEMSEARCH_LINKS];
