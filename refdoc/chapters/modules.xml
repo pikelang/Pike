@@ -16,6 +16,7 @@
     operators of a module to obtain a certain behaviour. Bear in mind
     that variables defined on a module-wide bases are shared among all
     clones of programs in the module.
+    <fixme>Explain difference between .pmod and .pike</fixme>
   </p>
 
   <p>
@@ -52,10 +53,16 @@
       the module are placed in <expr>.pike</expr>-files.
     </p>
 
-  </section>
+    <p>
+      Note that Pike modules must not use try to load files relative to
+      __FILE__, since such code will break in Microsoft Windows.
+      <fixme>Explain why.</fixme>
+    </p>
+ 
+ </section>
   
   <section title="Writing Modules in C">
-   <p> FIXME: to be written.</p>
+   <p><fixme>To be written.</fixme></p>
   </section>
   
   <section title="Special Module Variables and functions">
