@@ -1,7 +1,9 @@
 //
-// LPD.pmod: an implimentation of the BSD lpd protocol
+// LPD.pmod: an implementation of the BSD lpd protocol (RFC 1179).
 // This is a module for pike.
-// 3 April 1998 <hww3@riverweb.com> Bill Welliver
+// 3 July 1998 <hww3@riverweb.com> Bill Welliver
+//
+// $Id: LPD.pmod,v 1.3 1998/07/03 20:30:19 grubba Exp $
 //
 
 class client {
@@ -10,6 +12,7 @@ class client {
   object conn;
   int jobnum;
   string jobtype;
+  string jobname;
 
   int set_job_type(string type)
   {
@@ -33,6 +36,12 @@ class client {
       jobtype="l";
       break;
     }
+    return 1;
+  }
+
+  int set_job_name(string name)
+  {
+    jobname=name;
     return 1;
   }
 
@@ -66,7 +75,8 @@ class client {
     control+="H"+gethostname()+"\n";
     control+="P"+(getpwuid(getuid())[0]||"nobody");
     control+=(jobtype||"l")+"dfA"+ sprintf("%3d%s", jobnum, gethostname())+"\n";
-
+    if(jobname)
+      control+="J" + jobname + "\n";
     jobnum++;
     conn->write(sprintf("%c%s cfA%3d%s\n", 02, (string)sizeof(control),
 			jobnum,gethostname()));
