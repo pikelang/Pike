@@ -120,6 +120,7 @@ void ref_expansion(Node n, string dir, void|string file) {
 
     case "dir":
       ref_expansion(c, dir + "/" + c->get_attributes()->name, file);
+      c->get_attributes()->name = dir + "/" + file;
       break;
 
     case "chapter-ref":
