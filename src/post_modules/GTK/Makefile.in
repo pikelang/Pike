@@ -26,10 +26,6 @@ override:  compile@WITH_GTK@
 
 @dynamic_module_makefile@
 
-compile0:
-	@echo "Pike-GTK disabled."
-	$(MAKE) all
-
 docs:  doc@WITH_GTK@
 
 doc0:
@@ -38,6 +34,12 @@ doc1:
 	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
                    --destination="$(SRCDIR)/refdoc/" \
                    $(SRCDIR)/output/doc-pikeref.pike
+
+doc2: doc1
+
+compile0:
+	@echo "Pike-GTK disabled."
+	$(MAKE) all
 
 compile1:
 	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
