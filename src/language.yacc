@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.77 1998/04/15 00:54:18 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.78 1998/04/15 01:44:24 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -366,7 +366,7 @@ all: program
   ;
 
 program: program def optional_semi_colon
-  | error { yyerrok; }
+/*  | error { yyerrok; } */
   |  /* empty */
   ;
 
@@ -1315,7 +1315,7 @@ expr0: expr01
   | expr4 assign expr0  { $$=mknode($2,$1,$3); }
   | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
   | '[' low_lvalue_list ']' assign expr0  { $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5); }
-  | '[' low_lvalue_list error ']' { $$=$2; reset_type_stack(); yyerrok; }
+  | '[' low_lvalue_list ']' error { $$=$2; reset_type_stack(); yyerrok; }
 /*  | error { $$=0; reset_type_stack(); } */
   ;
 
@@ -1694,8 +1694,7 @@ lvalue: expr4
     free_node($2);
   }
 
-low_lvalue_list: /* empty */ { $$=0; }
-  | lvalue lvalue_list { $$=mknode(F_LVALUE_LIST,$1,$2); }
+low_lvalue_list: lvalue lvalue_list { $$=mknode(F_LVALUE_LIST,$1,$2); }
   ;
 
 lvalue_list: /* empty */ { $$ = 0; }
