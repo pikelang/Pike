@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.77 1999/11/25 19:27:07 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.78 1999/11/25 20:04:53 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -25,7 +25,7 @@ RCSID("$Id: pike_types.c,v 1.77 1999/11/25 19:27:07 grubba Exp $");
 #include "pike_memory.h"
 #include "bignum.h"
 
-/* #define PIKE_TYPE_DEBUG */
+#define PIKE_TYPE_DEBUG
 
 int max_correct_args;
 
@@ -1696,6 +1696,45 @@ static char *low_match_types2(char *a,char *b, int flags)
  * operation.
  */
 static int low_pike_types_le(char *a,char *b)
+#ifdef PIKE_TYPE_DEBUG
+{
+  int e;
+  char *s;
+  int low_pike_types_le2(char *a,char *b);
+  int res;
+
+  init_buf();
+  for(e=0;e<indent;e++) my_strcat("  ");
+  my_strcat("low_pike_types_le(");
+  low_describe_type(a);
+  if(type_length(a) + type_length(b) > 10)
+  {
+    my_strcat(",\n");
+    for(e=0;e<indent;e++) my_strcat("  ");
+    my_strcat("                ");
+    low_describe_type(b);
+  }else{
+    my_strcat(", ");
+    low_describe_type(b);
+  }
+  my_strcat(");\n");
+  fprintf(stderr,"%s",(s=simple_free_buf()));
+  free(s);
+  indent++;
+
+  res=low_pike_types_le2(a,b);
+
+  indent--;
+
+  for(e=0;e<indent;e++) fprintf(stderr, "  ");
+  fprintf(stderr, "= %d\n", res);
+
+  return res;
+}
+
+static int low_pike_types_le2(char *a,char *b)
+#endif /* PIKE_TYPE_DEBUG */
+
 {
   int ret;
   if(a == b) return 1;
