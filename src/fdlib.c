@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.66 2004/09/18 20:50:50 nilsson Exp $
+|| $Id: fdlib.c,v 1.67 2004/11/18 01:57:10 mast Exp $
 */
 
 #include "global.h"
@@ -32,6 +32,8 @@ int first_free_handle;
 #else
 #define FDDEBUG(X)
 #endif
+
+#define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
 
 #ifdef PIKE_DEBUG
 static int IsValidHandle(HANDLE h)
@@ -132,12 +134,127 @@ void fd_exit()
   mt_destroy(&fd_mutex);
 }
 
-/* The following replaces stat(2) in MS libc since it contains a bug
- * which causes the timestamps for a file to be offset with one hour
- * whenever a timestamp which has been set during DST is read during
- * normal time, or vice versa. */
+static INLINE time_t convert_filetime_to_time_t(FILETIME tmp)
+{
+#ifdef INT64
+  return (((INT64) tmp.dwHighDateTime << 32)
+	  + tmp.dwLowDateTime
+	  - 116444736000000000) / 10000000;
+#else
+  double t;
+  /* FILETIME is in 100ns since Jan 01, 1601 00:00 UTC.
+   *
+   * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
+   */
+  if (tmp.dwLowDateTime < 0xd53e8000UL) {
+    tmp.dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
+    tmp.dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
+  } else {
+    tmp.dwHighDateTime -= 0x019db1deUL;
+    tmp.dwLowDateTime -= 0xd53e8000UL;
+  }
+  t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
 
-#define ISSEPARATOR(a)  ((a) == '\\' || (a) == '/')
+  /* 1s == 10000000 * 100ns. */
+  t/=10000000.0;
+  return DO_NOT_WARN((long)floor(t));
+#endif
+}
+
+/* The following replaces _stat in MS CRT since it's buggy on ntfs.
+ * Axel Siebert explains:
+ *
+ *   On NTFS volumes, the time is stored as UTC, so it's easy to
+ *   calculate the difference to January 1, 1601 00:00 UTC directly.
+ *
+ *   On FAT volumes, the time is stored as local time, as a heritage
+ *   from MS-DOS days. This means that this local time must be
+ *   converted to UTC first before calculating the FILETIME. During
+ *   this conversion, all Windows versions exhibit the same bug, using
+ *   the *current* DST status instead of the DST status at that time.
+ *   So the FILETIME value can be off by one hour for FAT volumes.
+ *
+ *   Now the CRT _stat implementation uses FileTimeToLocalFileTime to
+ *   convert this value back to local time - which suffers from the
+ *   same DST bug. Then the undocumented function __loctotime_t is
+ *   used to convert this local time to a time_t, and this function
+ *   correctly accounts for DST at that time.
+ *
+ *   On FAT volumes, the conversion error while retrieving the
+ *   FILETIME, and the conversion error of FileTimeToLocalFileTime
+ *   exactly cancel each other out, so the final result of the _stat
+ *   implementation is always correct.
+ *
+ *   On NTFS volumes however, there is no conversion error while
+ *   retrieving the FILETIME because the file system already stores it
+ *   as UTC, so the conversion error of FileTimeToLocalFileTime can
+ *   cause the final result to be 1 hour off.
+ *
+ * The following implementation tries to do the correct thing based in
+ * the filesystem type.
+ */
+
+static int fat_filetime_to_time_t (FILETIME *in, time_t *out)
+{
+  FILETIME local_ft;
+  SYSTEMTIME local_st;
+  if (!FileTimeToLocalFileTime (in, &local_ft) ||
+      !FileTimeToSystemTime (&local_ft, &local_st)) {
+    _dosmaperr (GetLastError());
+    return 0;
+  }
+  else {
+    *out = __loctotime_t (local_st.wYear, local_st.wMonth, local_st.wDay,
+			  local_st.wHour, local_st.wMinute, local_st.wSecond,
+			  -1);
+    return 1;
+  }
+}
+
+static int fat_filetimes_to_stattimes (FILETIME *creation,
+				       FILETIME *last_access,
+				       FILETIME *last_write,
+				       PIKE_STAT_T *stat)
+{
+  if (!fat_filetime_to_time_t (last_write, &stat->st_mtime))
+    return -1;
+
+  if (last_access->dwLowDateTime || last_access->dwHighDateTime) {
+    if (!fat_filetime_to_time_t (last_access, &stat->st_atime))
+      return -1;
+  }
+  else
+    stat->st_atime = stat->st_mtime;
+
+  /* Putting the creation time in the last status change field.. :\ */
+  if (creation->dwLowDateTime || creation->dwHighDateTime) {
+    if (!fat_filetime_to_time_t (creation, &stat->st_ctime))
+      return -1;
+  }
+  else
+    stat->st_ctime = stat->st_mtime;
+}
+
+static void nonfat_filetimes_to_stattimes (FILETIME *creation,
+					   FILETIME *last_access,
+					   FILETIME *last_write,
+					   PIKE_STAT_T *stat)
+{
+  buf->st_mtime = convert_filetime_to_time_t (findbuf.ftLastWriteTime);
+
+  if (findbuf.ftLastAccessTime.dwLowDateTime ||
+      findbuf.ftLastAccessTime.dwHighDateTime)
+    buf->st_atime = convert_filetime_to_time_t (findbuf.ftLastAccessTime);
+  else
+    buf->st_atime = buf->st_mtime;
+
+  /* Putting the creation time in the last status change field.. :\ */
+  if (findbuf.ftCreationTime.dwLowDateTime ||
+      findbuf.ftCreationTime.dwHighDateTime)
+    buf->st_ctime = convert_filetime_to_time_t (findbuf.ftCreationTime);
+  else
+    buf->st_ctime = buf->st_mtime;
+}
 
 /*
  * IsUncRoot - returns TRUE if the argument is a UNC name specifying a
@@ -180,13 +297,32 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
-static int low_stat (const char *file, PIKE_STAT_T *buf)
+/* Note 1: s->st_mtime is the creation time for directories.
+ * Note 2: s->st_ctime is set to the file creation time. It should
+ * probably be the last access time to be closer to the unix
+ * counterpart, but the creation time is admittedly more useful. */
+int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 {
-  char            *path;
-  int              drive;       /* A: = 1, B: = 2, ... */
-  char             pathbuf[ _MAX_PATH ];
-  HANDLE           hFind;
-  WIN32_FIND_DATA  findbuf;
+  ptrdiff_t l = strlen(file);
+  char fname[MAX_PATH];
+  int drive;       		/* current = -1, A: = 0, B: = 1, ... */
+  HANDLE hFind;
+  WIN32_FIND_DATA findbuf;
+
+  if(ISSEPARATOR (file[l-1]))
+  {
+    do l--;
+    while(l && ISSEPARATOR (file[l]));
+    l++;
+    if(l+1 > sizeof(fname))
+    {
+      errno=EINVAL;
+      return -1;
+    }
+    MEMCPY(fname, file, l);
+    fname[l]=0;
+    file=fname;
+  }
 
   /* don't allow wildcards */
   if (strpbrk(file, "?*"))
@@ -204,21 +340,22 @@ static int low_stat (const char *file, PIKE_STAT_T *buf)
       errno = ENOENT;           
       return( -1 );
     }
-    drive = toupper(*file) - 'A' + 1;
+    drive = toupper(*file) - 'A';
   }
   else
-    drive = _getdrive();
+    drive = -1;
   
   /* get info for file */
   hFind = FindFirstFile(file, &findbuf);
+
   if ( hFind == INVALID_HANDLE_VALUE )
   {
-    
+    char abspath[ _MAX_PATH ];
     if ( !(strpbrk(file, "./\\") &&
-           (path = _fullpath( pathbuf, file, _MAX_PATH )) &&
+	   _fullpath( abspath, file, _MAX_PATH ) &&
            /* root dir. ('C:\') or UNC root dir. ('\\server\share\') */
-           ((strlen( path ) == 3) || IsUncRoot(path)) &&
-           (GetDriveType( path ) > 1) ) )
+	   ((strlen( abspath ) == 3) || IsUncRoot(abspath)) &&
+	   (GetDriveType( abspath ) > 1) ) )
     {
       errno = ENOENT;
       return( -1 );
@@ -234,75 +371,43 @@ static int low_stat (const char *file, PIKE_STAT_T *buf)
     buf->st_atime = buf->st_mtime;
     buf->st_ctime = buf->st_mtime;
   }
-  else
-  {
-    SYSTEMTIME SystemTime;
-    SYSTEMTIME UtcSTime;
-    
-    if ( !FileTimeToSystemTime( &findbuf.ftLastWriteTime,
-                                &UtcSTime )                    ||
-         !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
-                                          &SystemTime) )
-    {
-      _dosmaperr( GetLastError() );
-      FindClose( hFind );
-      return( -1 );
+
+  else {
+    char fstype[5]; /* Room for "FAT" and anything longer that begins with "FAT". */
+    BOOL res;
+
+    if (drive >= 0) {
+      char root[4]; /* Room for "X:\" */
+      root[0] = drive + 'A';
+      root[1] = ':', root[2] = '\\', root[3] = 0;
+      res = GetVolumeInformation (root, NULL, 0, NULL, NULL,NULL,
+				  &fstype, sizeof (fstype));
+    }
+    else
+      res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
+				  &fstype, sizeof (fstype));
+    if (!res) {
+      _dosmaperr (GetLastError());
+      FindClose (hFind);
+      return -1;
     }
 
-    buf->st_mtime = __loctotime_t( SystemTime.wYear,
-                                   SystemTime.wMonth,
-                                   SystemTime.wDay,
-                                   SystemTime.wHour,
-                                   SystemTime.wMinute,
-                                   SystemTime.wSecond,
-                                   -1 );
-    
-    if ( findbuf.ftLastAccessTime.dwLowDateTime ||
-         findbuf.ftLastAccessTime.dwHighDateTime )
-    {
-      if ( !FileTimeToSystemTime( &findbuf.ftLastAccessTime,
-                                  &UtcSTime )                    ||
-           !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
-                                            &SystemTime) )
-      {
-        _dosmaperr( GetLastError() );
-        FindClose( hFind );
-        return( -1 );
+    if (!strcmp (fstype, "FAT")) {
+      if (!fat_filetimes_to_stattimes (&findbuf.ftCreationTime,
+				       &findbuf.ftLastAccessTime,
+				       &findbuf.ftLastWriteTime,
+				       buf)) {
+	FindClose (hFind);
+	return -1;
       }
-      
-      buf->st_atime = __loctotime_t( SystemTime.wYear,
-                                     SystemTime.wMonth,
-                                     SystemTime.wDay,
-                                     SystemTime.wHour,
-                                     SystemTime.wMinute,
-                                     SystemTime.wSecond,
-                                     -1 );
-    } else
-      buf->st_atime = buf->st_mtime ;
-    
-    if ( findbuf.ftCreationTime.dwLowDateTime ||
-         findbuf.ftCreationTime.dwHighDateTime )
-    {
-      if ( !FileTimeToSystemTime( &findbuf.ftCreationTime,
-                                  &UtcSTime )                    ||
-           !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
-                                            &SystemTime) )
-      {
-        _dosmaperr( GetLastError() );
-        FindClose( hFind );
-        return( -1 );
-      }
-      
-      buf->st_ctime = __loctotime_t( SystemTime.wYear,
-                                     SystemTime.wMonth,
-                                     SystemTime.wDay,
-                                     SystemTime.wHour,
-                                     SystemTime.wMinute,
-                                     SystemTime.wSecond,
-                                     -1 );
-    } else
-      buf->st_ctime = buf->st_mtime ;
-    
+    }
+    else
+      /* Any non-fat filesystem is assumed to have sane timestamps. */
+      nonfat_filetimes_to_stattimes (&findbuf.ftCreationTime,
+				     &findbuf.ftLastAccessTime,
+				     &findbuf.ftLastWriteTime,
+				     buf);
+
     FindClose(hFind);
   }
   
@@ -318,31 +423,10 @@ static int low_stat (const char *file, PIKE_STAT_T *buf)
 #endif
   
   buf->st_uid = buf->st_gid = buf->st_ino = 0; /* unused entries */
-  buf->st_rdev = buf->st_dev = (_dev_t)(drive - 1); /* A=0, B=1, ... */
-  
+  buf->st_rdev = buf->st_dev =
+    (_dev_t) (drive >= 0 ? drive : _getdrive() - 1); /* A=0, B=1, ... */
+
   return(0);
-}
-
-int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
-{
-  ptrdiff_t l = strlen(file);
-  char fname[MAX_PATH];
-
-  if(file[l-1]=='/' || file[l-1]=='\\')
-  {
-    do l--;
-    while(l && ( file[l]=='/' || file[l]=='\\' ));
-    l++;
-    if(l+1 > sizeof(fname))
-    {
-      errno=EINVAL;
-      return -1;
-    }
-    MEMCPY(fname, file, l);
-    fname[l]=0;
-    file=fname;
-  }
-  return low_stat(file, buf);
 }
 
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
@@ -354,10 +438,10 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
   ptrdiff_t l = strlen(file);
   char fname[MAX_PATH];
 
-  if(file[l-1]=='/' || file[l-1]=='\\')
+  if(ISSEPARATOR (file[l-1]))
   {
     do l--;
-    while(l && ( file[l]=='/' || file[l]=='\\' ));
+    while(l && ISSEPARATOR (file[l]));
     l++;
     if(l+1 > sizeof(fname))
     {
@@ -962,27 +1046,9 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 }
 
 
-static long convert_filetime_to_time_t(FILETIME tmp)
-{
-  double t;
-  /* FILETIME is in 100ns since Jan 01, 1601 00:00 UTC.
-   *
-   * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
-   */
-  if (tmp.dwLowDateTime < 0xd53e8000UL) {
-    tmp.dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
-    tmp.dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
-  } else {
-    tmp.dwHighDateTime -= 0x019db1deUL;
-    tmp.dwLowDateTime -= 0xd53e8000UL;
-  }
-  t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
-
-  /* 1s == 10000000 * 100ns. */
-  t/=10000000.0;
-  return DO_NOT_WARN((long)floor(t));
-}
-
+/* Note: s->st_ctime is set to the file creation time. It should
+ * probably be the last access time to be closer to the unix
+ * counterpart, but the creation time is admittedly more useful. */
 PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 {
   FILETIME c,a,m;
@@ -1011,6 +1077,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
       {
 	default:
 	case FILE_TYPE_UNKNOWN: s->st_mode=0;        break;
+
 	case FILE_TYPE_DISK:
 	  s->st_mode=S_IFREG;
 	  {
@@ -1030,14 +1097,32 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	  }
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {
-	    errno=GetLastError();
+	    _dosmaperr (GetLastError());
 	    mt_unlock(&fd_mutex);
 	    return -1;
 	  }
-	  s->st_ctime=convert_filetime_to_time_t(c);
-	  s->st_atime=convert_filetime_to_time_t(a);
-	  s->st_mtime=convert_filetime_to_time_t(m);
+
+	  /* FIXME: Determine the filesystem type to use
+	   * fat_filetimes_to_stattimes when necessary. */
+
+	  /* FIXME: Even if we use fat_filetimes_to_stattimes, the
+	   * time conversion will still get incorrect in the time
+	   * frame between a DST change and the next reboot. From msdn
+	   * (http://msdn.microsoft.com/library/en-us/sysinfo/base/file_times.asp):
+	   *
+	   *   FAT records times on disk in local time. GetFileTime
+	   *   retrieves cached UTC times from FAT. When it becomes
+	   *   daylight saving time, the time retrieved by GetFileTime
+	   *   will be off an hour, because the cache has not been
+	   *   updated. When you restart the machine, the cached time
+	   *   retrieved by GetFileTime will be correct.
+	   *
+	   * We'd have to look at the uptime to correct for that.
+	   * *puke* */
+
+	  nonfat_filetimes_to_stattimes (&c, &a, &m, s);
 	  break;
+
 	case FILE_TYPE_CHAR:    s->st_mode=S_IFCHR;  break;
 	case FILE_TYPE_PIPE:    s->st_mode=S_IFIFO; break;
       }
