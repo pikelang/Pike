@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.117 2003/02/11 00:38:34 grendel Exp $
+|| $Id: builtin.cmod,v 1.118 2003/02/11 00:40:29 grendel Exp $
 */
 
 #include "global.h"
@@ -745,7 +745,7 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
  *! If @[map] is an object that does not contain the @[lfun::_m_delete()]
- *! implementation, an errorw will be thrown.
+ *! implementation, an exception will be thrown.
  *!
  *! Otherwise if @[map] is a mapping the entry with index @[index]
  *! will be removed from @[map] destructively.
@@ -753,7 +753,8 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! If the mapping does not have an entry with index @[index], nothing is done.
  *!
  *! @returns
- *!   The value that was removed will be returned.
+ *!   The value that was removed will be returned or an exception will be thrown
+ *!   in case of an error.
  *!
  *! @note
  *!   Note that @[m_delete()] changes @[map] destructively.
