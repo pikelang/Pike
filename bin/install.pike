@@ -224,10 +224,10 @@ int install_file(string from,
   {
     switch(ext)
     {
-      case ".pike":
+      case "pike":
 	if(glob("*/master.pike",to)) break;
 
-      case ".pmod":
+      case "pmod":
 	to_dump+=({to});
     }
   }
