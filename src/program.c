@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.90 1998/05/15 18:43:45 grubba Exp $");
+RCSID("$Id: program.c,v 1.91 1998/05/15 19:01:38 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1950,8 +1950,13 @@ int find_shared_string_identifier(struct pike_string *name,
 int find_identifier(char *name,struct program *prog)
 {
   struct pike_string *n;
-  if(!prog)
-    error("Lookup of identifier %s in destructed object.\n", name);
+  if(!prog) {
+    if (strlen(name) < 1024) {
+      error("Lookup of identifier %s in destructed object.\n", name);
+    } else {
+      error("Lookup of long identifier in destructed object.\n");
+    }
+  }
   n=findstring(name);
   if(!n) return -1;
   return find_shared_string_identifier(n,prog);
