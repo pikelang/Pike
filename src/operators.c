@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.103 2000/09/22 20:41:46 grubba Exp $");
+RCSID("$Id: operators.c,v 1.104 2000/09/26 02:44:30 hedda Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1643,6 +1643,75 @@ PMOD_EXPORT void o_multiply(void)
 	push_array(ret);
 	return;
       }
+
+    case TWO_TYPES(T_ARRAY, T_FLOAT):
+      {
+	struct array *ret;
+	struct svalue *pos;
+	INT_TYPE e, asize, extra;
+	if(sp[-1].u.float_number < 0)
+	  SIMPLE_BAD_ARG_ERROR("`*", 2, "float(0..)");
+	/* Think of that big floats are not always the same as a 
+	   converted big int! That's why we have to make this in
+	   two steps. */
+	extra=(int)(((double)sp[-2].u.array->size * 
+		     (sp[-1].u.float_number 
+		      - (double)(int)sp[-1].u.float_number))+
+		    0.5);
+        asize=((int)(double)(sp[-2].u.array->size * (int)sp[-1].u.float_number))+
+	  extra;
+	ret=allocate_array(asize);
+	pos=ret->item;
+	for(e=0;e<((int)sp[-1].u.float_number);e++,pos+=sp[-2].u.array->size)
+	  assign_svalues_no_free(pos,
+				 sp[-2].u.array->item,
+				 sp[-2].u.array->size,
+				 sp[-2].u.array->type_field);
+	/* copy the last part of the array */
+	if (extra)
+	  assign_svalues_no_free(pos,
+				 sp[-2].u.array->item,
+				 extra,
+				 sp[-2].u.array->type_field);
+
+	ret->type_field=sp[-2].u.array->type_field;
+	pop_n_elems(2);
+	push_array(ret);
+	return;
+      }
+
+    case TWO_TYPES(T_STRING, T_FLOAT):
+      {
+	struct pike_string *ret;
+	char *pos;
+	INT_TYPE e, asize, extra;
+	ptrdiff_t len;
+	if(sp[-1].u.float_number < 0)
+	  SIMPLE_BAD_ARG_ERROR("`*", 2, "float(0..)");
+	/* Think of that big floats are not always the same as a 
+	   converted big int! That's why we have to make this in
+	   two steps. */
+	extra=(int)(((double)sp[-2].u.string->len * 
+		     (sp[-1].u.float_number 
+		      - (double)(int)sp[-1].u.float_number))+
+		    0.5);
+        asize=((int)(double)(sp[-2].u.string->len * (int)sp[-1].u.float_number))+
+	  extra;
+	ret=begin_wide_shared_string(asize,
+				     sp[-2].u.string->size_shift);
+	pos=ret->str;
+	len=sp[-2].u.string->len << sp[-2].u.string->size_shift;
+	for(e=0;e<((int)sp[-1].u.float_number);e++,pos+=len)
+	  MEMCPY(pos,sp[-2].u.string->str,len);
+	/* copy the last part of the array */
+	if (extra)
+	  MEMCPY(pos,sp[-2].u.string->str,extra);
+	pop_n_elems(2);
+	push_string(low_end_shared_string(ret));
+	return;
+      }
+
+
     case TWO_TYPES(T_STRING, T_INT):
       {
 	struct pike_string *ret;
@@ -2743,9 +2812,12 @@ multiset & mapping -> mapping
 	    "!function(int...:mixed)&function(float|int...:float)|"
 	    "function(string*,string:string)|"
 	    "function(array(0=mixed),int:array(0))|"
-	    "function(string,int:string) */
+	    "function(array(0=mixed),float:array(0))|"
+	    "function(string,int:string) 
+	    "function(string,float:string) 
+  */
   ADD_EFUN2("`*",f_multiply,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
+	    tOr9(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
 		 tFunc(tArr(tArr(tSetvar(1,tMix))) 
 		       tArr(tSetvar(1,tMix)),tArr(tVar(1))),
 		 tFuncV(tInt,tInt,tInt),
@@ -2753,7 +2825,9 @@ multiset & mapping -> mapping
 			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
 		 tFunc(tArr(tStr) tStr,tStr),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
-		 tFunc(tStr tInt,tStr)),
+		 tFunc(tArr(tSetvar(0,tMix)) tFlt,tArr(tVar(0))),
+		 tFunc(tStr tInt,tStr),
+		 tFunc(tStr tFlt,tStr)),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
