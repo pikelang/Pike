@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.41 2000/08/18 21:32:32 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.42 2000/08/19 11:31:36 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -452,7 +452,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
   return 0;
 }
 
-PMOD_EXPORT long debug_fd_write(FD fd, void *buf, long len)
+PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, long len)
 {
   long ret;
   HANDLE handle;
