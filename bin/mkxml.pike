@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.18 2001/05/08 06:45:22 mirar Exp $ */
+/* $Id: mkxml.pike,v 1.19 2001/05/09 11:50:38 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -90,8 +90,15 @@ void report(string s)
 
 #define complain(X) (X)
 
+string file_version = "";
+
 mapping keywords=
-(["module":lambda(string arg,string line) 
+(["$Id":lambda(string arg, string line)
+	{
+	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
+	  werror("mkxml: Version: "+file_version+"\n");
+	},
+  "module":lambda(string arg,string line) 
 	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line); 
 	    methodM=0; 
 	    if (!nowM->classes) nowM->classes=(["_order":({})]); 
@@ -324,8 +331,9 @@ string fixdesc(string s,string prefix,string where)
    }
    s+=replace(t,"\n\n","\n\n<p>");
 
-   if (where)
-      return "<source-position " +where+ "/>\n"+s;
+   if (where) {
+      return "<source-position " + where + file_version + "/>\n"+s;
+   }
    return s;
 }
 
@@ -618,7 +626,7 @@ void document(string enttype,
 	    }
 	 break;
    }
-   f->write("<source-position " + huh->_line + "/>\n");
+   f->write("<source-position " + huh->_line + file_version + "/>\n");
 
 // [DESCRIPTION]
 
@@ -930,6 +938,7 @@ int main(int ac,string *files)
       {
 	 if (!sizeof(files)) break;
 	 verbose("mkxml: reading "+files[0]+"...\n");
+	 file_version = "";
 	 f=File();
 	 currentfile=files[0];
 	 files=files[1..];
