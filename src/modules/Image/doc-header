@@ -1,0 +1,25 @@
+**! module Image
+**!
+**!     This module adds image-drawing and -manipulating
+**!	capabilities to pike. 
+**!
+**!	<table border=0>
+**!	<tr>
+**!     <td align=left valign=top><ref>Image.image</ref></td>
+**!     <td align=left valign=top>Basic image manipulation</td>
+**!	</tr>
+**!	<tr>
+**!     <td align=left valign=top><ref>Image.font</ref></td>
+**!     <td align=left valign=top>Creating images from text</td>
+**!	</tr>
+**!	<tr>
+**!     <td align=left valign=top><ref>Image.colortable</ref></td>
+**!     <td align=left valign=top>Color reduction, quantisation and dither</td>
+**!	</tr>
+**!	<tr>
+**!     <td align=left valign=top><ref>Image.GIF</ref></td>
+**!     <td align=left valign=top>GIF encoding/decoding capabilities</td>
+**!	</tr>
+**!	</table>
+**! note
+**!	<font size=-1><pre>file versions:
