@@ -81,9 +81,7 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   {
     if(has_uri(r))
     {
-      werror("FOO\n");
       int stage = get_stage(r);
-      werror("stage: %O\n", stage);
       if(stage!=1 && stage!=2 && stage!=3 && stage!=4)
 	set_stage(r, 0);
     }
