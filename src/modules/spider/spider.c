@@ -22,6 +22,10 @@
 #include <sys/time.h>
 #endif
 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "stralloc.h"
 #include "global.h"
 #include "pike_macros.h"
@@ -90,6 +94,16 @@ void do_html_parse_lines(struct pike_string *ss,
 
 
 extern void f_parse_tree(INT32 argc);
+
+
+void f_nice(INT32 args)
+{
+#ifdef HAVE_NICE
+  int ta = sp[-1].u.integer;
+  if(!args) error("You must supply an argument to nice(int)!\n");
+  push_int(nice(ta));
+#endif
+}
 
 void f_http_decode_string(INT32 args)
 {
@@ -1265,6 +1279,7 @@ void pike_module_init(void)
   add_efun("timezone", f_timezone, "function(:int)", 0);
   add_efun("get_all_active_fd", f_get_all_active_fd, "function(:array(int))",
 	   OPT_EXTERNAL_DEPEND);
+  add_efun("nice", f_nice, "function(int:int)", 0);
 #if 0
   add_efun("name_process", f_name_process, "function(string:void)", 0);
 #endif
