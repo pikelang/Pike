@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.23 2003/01/26 16:33:55 nilsson Exp $
+// $Id: Types.pmod,v 1.24 2003/01/26 18:51:42 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -1035,7 +1035,8 @@ class IA5String
   constant tag = 22;
   constant type_name = "IA5STRING";
 }
-constant asn1_utc = UTC;
+
+//!
 class UTC
 {
   inherit String;
@@ -1191,6 +1192,7 @@ constant asn1_printable_string = PrintableString;
 constant asn1_teletex_string = TeletexString;
 constant asn1_broken_teletex_string = BrokenTeletexString;
 constant asn1_IA5_string = IA5String;
+constant asn1_utc = UTC;
 constant asn1_universal_string = UniversalString;
 constant asn1_bmp_string = BMPString;
 #endif
