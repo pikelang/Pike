@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.31 2002/12/11 21:15:45 anders Exp $");
+RCSID("$Id: blob.c,v 1.32 2003/02/18 10:36:32 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -20,8 +20,6 @@ RCSID("$Id: blob.c,v 1.31 2002/12/11 21:15:45 anders Exp $");
 
 #define sp Pike_sp
 
-/* must be included last */
-#include "module_magic.h"
 static void exit_blob_struct( );
 
 /*

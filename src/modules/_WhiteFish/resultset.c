@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.20 2002/12/11 21:15:45 anders Exp $");
+RCSID("$Id: resultset.c,v 1.21 2003/02/18 10:36:32 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -16,9 +16,6 @@ RCSID("$Id: resultset.c,v 1.20 2002/12/11 21:15:45 anders Exp $");
 
 #include "resultset.h"
 #include "whitefish.h"
-
-/* must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

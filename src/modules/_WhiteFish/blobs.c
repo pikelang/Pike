@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.8 2002/01/02 12:48:46 js Exp $");
+RCSID("$Id: blobs.c,v 1.9 2003/02/18 10:36:32 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -19,8 +19,6 @@ RCSID("$Id: blobs.c,v 1.8 2002/01/02 12:48:46 js Exp $");
 #include "buffer.h"
 #include "blobs.h"
 
-/* must be included last */
-#include "module_magic.h"
 static void exit_blobs_struct( );
 
 #define HSIZE 4711

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.2 2001/07/03 16:09:33 per Exp $");
+RCSID("$Id: linkfarm.c,v 1.3 2003/02/18 10:36:32 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -19,8 +19,6 @@ RCSID("$Id: linkfarm.c,v 1.2 2001/07/03 16:09:33 per Exp $");
 #include "buffer.h"
 #include "blobs.h"
 
-/* must be included last */
-#include "module_magic.h"
 static void exit_linkfarm_struct( );
 
 #define HSIZE 83

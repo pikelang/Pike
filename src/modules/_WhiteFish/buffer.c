@@ -1,4 +1,4 @@
-/* $Id: buffer.c,v 1.10 2002/01/02 12:48:46 js Exp $
+/* $Id: buffer.c,v 1.11 2003/02/18 10:36:32 mast Exp $
  */
 #include "global.h"
 
@@ -15,7 +15,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.10 2002/01/02 12:48:46 js Exp $");
+RCSID("$Id: buffer.c,v 1.11 2003/02/18 10:36:32 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -27,9 +27,6 @@ RCSID("$Id: buffer.c,v 1.10 2002/01/02 12:48:46 js Exp $");
 #include "resultset.h"
 #include "blob.h"
 #include "buffer.h"
-
-/* must be included last */
-#include "module_magic.h"
 
 static INLINE int range( int n, int m )
 {
