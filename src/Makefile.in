@@ -5,7 +5,7 @@
 # wish to add any libraries.
 LIBS=@LIBS@ $(EXTRALIBS)
 
-# not used yet
+# This is normall the install program in the source directory
 INSTALL=@INSTALL@
 
 SRCDIR=@srcdir@
