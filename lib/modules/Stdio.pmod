@@ -173,7 +173,7 @@ class File
   mixed query_close_callback()  { return ___close_callback; }
   mixed set_close_callback(mixed c)  { ___close_callback=c; }
   void set_id(mixed i) { ___id=i; }
-  void query_id() { return ___id; }
+  mixed query_id() { return ___id; }
 
   void set_nonblocking(mixed|void rcb,
 		       mixed|void wcb,
