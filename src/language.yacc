@@ -176,7 +176,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.91 1998/04/27 18:37:39 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.92 1998/04/27 21:04:53 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -357,6 +357,7 @@ int yylex(YYSTYPE *yylval);
 
 all: program { YYACCEPT; }
   | program F_LEX_EOF { YYACCEPT; }
+/*  | error F_LEX_EOF { YYABORT; } */
   ;
 
 program: program def optional_semi_colon
@@ -1002,13 +1003,12 @@ new_local_name2: F_IDENTIFIER
   | bad_identifier '=' safe_expr0 { $$=$3; }
   ;
 
-
 block:'{'
   {
     $<number>1=num_used_modules;
     $<number>$=compiler_frame->current_number_of_locals;
   } 
-  statements '}'
+  statements end_block
   {
     unuse_modules(num_used_modules - $<number>1);
     pop_local_variables($<number>2);
@@ -1016,8 +1016,17 @@ block:'{'
   }
   ;
 
+end_block: '}'
+  | F_LEX_EOF
+  {
+    yyerror("Missing '}'.");
+    yyerror("Unexpected end of file.");
+  }
+  ;
+
 failsafe_block: block
-              | error { $$=0; yyerrok; }
+              | error { $$=0; }
+              | F_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
               ;
   
 
@@ -1213,13 +1222,22 @@ cond: F_IF
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' safe_comma_expr ')' statement optional_else_part
+  '(' safe_comma_expr end_cond statement optional_else_part
   {
     $$=mknode('?',$4,mknode(':',$6,$7));
     $$->line_number=$1;
     $$=mkcastnode(void_type_string,$$);
     $$->line_number=$1;
     pop_local_variables($<number>2);
+  }
+  ;
+
+end_cond: ')'
+  | '}' { yyerror("Missing ')'."); }
+  | F_LEX_EOF
+  {
+    yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
   }
   ;
 
@@ -1239,7 +1257,7 @@ foreach: F_FOREACH
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' safe_expr0 ',' safe_lvalue ')' statement
+  '(' safe_expr0 ',' safe_lvalue end_cond statement
   {
     if ($6) {
       $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$4,$6),$8);
@@ -1253,10 +1271,18 @@ foreach: F_FOREACH
   }
   ;
 
-do: F_DO statement F_WHILE '(' safe_comma_expr ')' ';'
+do: F_DO statement F_WHILE '(' safe_comma_expr end_cond expected_semicolon
   {
     $$=mknode(F_DO,$2,$5);
     $$->line_number=$1;
+  }
+  ;
+
+expected_semicolon: ';'
+  | F_LEX_EOF
+  {
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
   }
   ;
 
@@ -1264,7 +1290,8 @@ for: F_FOR
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' unused  ';' for_expr ';' unused ')' statement
+  '(' unused expected_semicolon for_expr expected_semicolon unused end_cond
+  statement
   {
     int i=lex.current_line;
     lex.current_line=$1;
@@ -1279,7 +1306,7 @@ while:  F_WHILE
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' safe_comma_expr ')' statement
+  '(' safe_comma_expr end_cond statement
   {
     int i=lex.current_line;
     lex.current_line=$1;
@@ -1297,7 +1324,7 @@ switch:	F_SWITCH
   {
     $<number>$=compiler_frame->current_number_of_locals;
   }
-  '(' safe_comma_expr ')' statement
+  '(' safe_comma_expr end_cond statement
   {
     $$=mknode(F_SWITCH,$4,$6);
     $$->line_number=$1;
@@ -1305,13 +1332,21 @@ switch:	F_SWITCH
   }
   ;
 
-case: F_CASE safe_comma_expr ':'
+case: F_CASE safe_comma_expr expected_colon
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | F_CASE safe_comma_expr F_DOT_DOT optional_comma_expr ':'
+  | F_CASE safe_comma_expr F_DOT_DOT optional_comma_expr expected_colon
   {
      $$=mknode(F_CASE,$4?$2:0,$4?$4:$2);
+  }
+  ;
+
+expected_colon: ':'
+  | F_LEX_EOF
+  {
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
   }
   ;
 
@@ -1417,8 +1452,8 @@ m_expr_list2: assoc_pair
   | m_expr_list2 ',' error
   ;
 
-assoc_pair:  expr0 ':' expr1 { $$=mknode(F_ARG_LIST,$1,$3); }
-  | expr0 ':' error { free_node($1); $$=0; }
+assoc_pair:  expr0 expected_colon expr1 { $$=mknode(F_ARG_LIST,$1,$3); }
+  | expr0 expected_colon error { free_node($1); $$=0; }
   ;
 
 expr1: expr2
