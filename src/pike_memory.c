@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.136 2002/12/01 05:35:15 mast Exp $
+|| $Id: pike_memory.c,v 1.137 2002/12/02 09:44:54 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.136 2002/12/01 05:35:15 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.137 2002/12/02 09:44:54 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1244,6 +1244,9 @@ static inline unsigned long lhash(struct memhdr *m, LOCATION location)
 #define INIT_BLOCK(X) do {				\
     X->locations = NULL;				\
     X->flags=0;						\
+    DO_IF_VERIFY_INTERNALS(				\
+      X->times=0;					\
+    );							\
   } while(0)
 #define EXIT_BLOCK(X) do {				\
   struct memloc *ml;					\
@@ -1654,18 +1657,18 @@ LOCATION dmalloc_default_location=0;
 
 static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
 {
-  struct memhdr *mh;
+  struct memhdr *mh = get_memhdr(p);
   struct memloc *ml = alloc_memloc();
   unsigned long l;
 
 #ifdef DMALLOC_VERIFY_INTERNALS
-  if ((mh = find_memhdr(p))) {
+  if (mh->locations) {
     dump_memhdr_locations(mh, NULL, 0);
-    Pike_fatal("New block at %p already has a memhdr.\n", p);
+    Pike_fatal("New block at %p already has locations.\n"
+	       "location: %s\n", p, location);
   }
 #endif
 
-  mh = get_memhdr(p);
   l = lhash(mh,location);
   mh->size=s;
   mh->flags=0;
