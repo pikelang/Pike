@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.10 1997/01/30 22:06:45 grubba Exp $
+# $Id: configure.in,v 1.11 1997/01/30 22:45:23 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -151,17 +151,23 @@ if test x$with_mysql = xyes; then
       MYSQL_LIBS="-lmysys ${MYSQL_LIBS}"
     ], [])
 
-    if test x$pike_cv_mysql = xpost3.20; then
+    # Try a couple of mysqlclient libs
+    # in order of age, newest first.
+
+    AC_CHECK_LIB(mysqlclient, mysql_connect, [
+      LIBS="-lmysqlclient $LIBS"
+      MYSQL_LIBS="-lmysqlclient ${MYSQL_LIBS}"
+    ], [ 
       AC_CHECK_LIB(mysqllib, mysql_connect, [
-        LIBS="-lmysqllib $LIBS"
+	LIBS="-lmysqllib $LIBS"
 	MYSQL_LIBS="-lmysqllib ${MYSQL_LIBS}"
-      ], [ pike_cv_mysql="no" ])
-    else
-      AC_CHECK_LIB(mysql, mysql_connect, [
-        LIBS="-lmysql $LIBS"
-	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
-      ], [ pike_cv_mysql="no" ])
-    fi
+      ], [
+	AC_CHECK_LIB(mysql, mysql_connect, [
+	  LIBS="-lmysql $LIBS"
+	  MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
+	], [ pike_cv_mysql="no" ])
+      ])
+    ])
 
     if test x$pike_cv_mysql = xno; then
       # Restore variables, so we don't link with unnessesary libs
