@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.23 2003/11/27 16:50:03 grubba Exp $
+// $Id: module.pmod.in,v 1.24 2003/11/28 14:33:10 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -31,30 +31,7 @@ class TokenizingCompiler
   inherit compiler;
   //! @endignore
 
-  void report(SeverityLevel severity, Position|string pos,
-	      string subsystem, string msg,
-	      mixed ... extra_args)
-  {
-    if (sizeof(extra_args))
-      msg = sprintf(msg, @extra_args);
-    werror("%s:%O:%O:%O\n",
-	   ([NOTICE:"NOTICE", WARNING:"WARNING",
-	     ERROR:"ERROR", FATAL:"FATAL"])[severity],
-	   pos, subsystem, msg);
-  }
-
   // Token classes.
-  // These are likely to be overloaded.
-  class IdentifierToken {
-    inherit Token;
-    constant token = "identifier";
-    constant is_identifier = 1;
-  }
-  class OperatorToken {
-    inherit Token;
-    constant token = "operator";
-    constant is_operator = 1;
-  }
   class StringToken {
     inherit Token;
     constant token = "string_constant";

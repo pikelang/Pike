@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.7 2003/11/27 16:49:32 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.8 2003/11/28 14:33:10 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -32,6 +32,11 @@
  *!   @[compiler()->report()]
  */
 
+#define SL_NOTICE 0
+#define SL_WARNING 1
+#define SL_ERROR 2
+#define SL_FATAL 3
+
 /*! @class Compiler
  */
 PIKECLASS compiler
@@ -50,7 +55,7 @@ PIKECLASS compiler
    *! @param subsystem
    *!   Subsystem where the message was generated. Currently one of
    *!   @string
-   *!     vvalue "preprocessor"
+   *!     @value "preprocessor"
    *!     @value "scanner"
    *!     @value "grouping"
    *!   @endstring
@@ -65,16 +70,42 @@ PIKECLASS compiler
    *!   The default implementation reports to stderr.
    *!
    *! @note
-   *!   Overload this function to change the report behaviour.
+   *!   Overload this function to change the report formatting,
+   *!   or to redirect the output.
    *!
    *! @seealso
    *!   @[SeverityLevel]
    */
   PIKEFUN void report(int(0..3) severity, mixed pos,
 		      string subsystem, string msg, mixed ... extra_args)
-    prototype;
-  /* NB: Just a prototype. Actual implementation is in module.pmod.in. */
-  {}
+  {
+    if (args > 4) {
+      f_sprintf(args-3);
+      args = 4;
+    }
+    switch(severity) {
+#define SL_CASE(SYMBOL)					\
+    case PIKE_CONCAT(SL_, SYMBOL):			\
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,	\
+			    #SYMBOL ":%O:%O:%O\n");	\
+      break
+
+      SL_CASE(NOTICE);
+      SL_CASE(WARNING);
+      SL_CASE(ERROR);
+      SL_CASE(FATAL);
+
+#undef SL_CASE
+
+    default:
+      Pike_error("Unknown severity level: %"PRINTPIKEINT"d\n", severity);
+      break;
+    }
+    Pike_sp[-args].type = PIKE_T_STRING;
+    Pike_sp[-args].subtype = 0;
+    f_werror(args);
+    args = 1;
+  }
 
   /*! @class basic_tokenizer
    */
@@ -592,7 +623,7 @@ PIKECLASS Token
   EXTRA
   {
     struct svalue tmp = {
-      PIKE_T_STRING, 0, 0,
+      PIKE_T_STRING, 0, { 0 },
     };
     MAKE_CONST_STRING(tmp.u.string, "token");
     add_constant(tmp.u.string, &tmp, 0);
@@ -633,6 +664,44 @@ PIKECLASS Token
   }
 }
 
+/*! @endclass
+ */
+
+/* !class IdentifierToken
+ */
+PIKECLASS IdentifierToken
+{
+  INHERIT Token;
+
+  EXTRA
+  {
+    struct svalue tmp = {
+      PIKE_T_STRING, 0, { 0 },
+    };
+    MAKE_CONST_STRING(tmp.u.string, "identifer");
+    simple_add_constant("token", &tmp, 0);
+    add_integer_constant("is_identifier", 1, 0);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class OperatorToken
+ */
+PIKECLASS OperatorToken
+{
+  INHERIT Token;
+
+  EXTRA
+  {
+    struct svalue tmp = {
+      PIKE_T_STRING, 0, { 0 },
+    };
+    MAKE_CONST_STRING(tmp.u.string, "operator");
+    simple_add_constant("token", &tmp, 0);
+    add_integer_constant("is_operator", 1, 0);
+  }
+}
 /*! @endclass
  */
 
@@ -701,10 +770,10 @@ void pike_module_init(void)
     free_svalue(&type_value);
     free_string(type_name);
 
-    add_integer_constant("NOTICE",  0, 0);
-    add_integer_constant("WARNING", 1, 0);
-    add_integer_constant("ERROR",   2, 0);
-    add_integer_constant("FATAL",   3, 0);
+    add_integer_constant("NOTICE",  SL_NOTICE, 0);
+    add_integer_constant("WARNING", SL_WARNING, 0);
+    add_integer_constant("ERROR",   SL_ERROR, 0);
+    add_integer_constant("FATAL",   SL_FATAL, 0);
   }
 
   INIT
