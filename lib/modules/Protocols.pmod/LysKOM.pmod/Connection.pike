@@ -1,9 +1,10 @@
-//  $Id: Connection.pike,v 1.1 1999/06/12 23:01:49 mirar Exp $
+//  $Id: Connection.pike,v 1.2 1999/06/12 23:13:47 mirar Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
 //  ^^^ this is just to get the classes sorted right. Session first,
 //      then Connection, then it doesn't matter
+//! module Protocols
 //! submodule LysKOM
 //! class Connection
 //!	This class contains nice abstraction for calls into the
@@ -37,16 +38,14 @@ object con; // LysKOM.Raw
 //!
 //! method void create(string server)
 //! method void create(string server,mapping options)
-//!	<pre>
-//!	    "login"      : int|string - login as this person number
-//!                                     (get number from name)
-//!	    "password"   : string     - send this login password
-//!	    "invisible"  : int(0..1)  - login invisible    
-//!				      
-//!	advanced:		      
-//!	    "port" : int              - server port (default is 4894)
-//!	    "whoami" : string         - user name (default is from uid)
-//!	</pre>
+//!	<data_description type=mapping>
+//!	<elem name=login type="int|string">login as this person number<br>(get number from name)</elem>
+//!	<elem name=password type=string>send this login password</elem>
+//!	<elem name=invisible type="int(0..1)">if set, login invisible</elem>
+//!	<elem>advanced</elem>
+//!	<elem name=port type=int(0..65535)>server port (default is 4894)</elem>
+//!	<elem name=whoami type=string>present as this user<br>(default is from uid/getpwent and hostname)</elem>
+//!	</data_description>
 
 void create(string server,void|mapping options)
 {
