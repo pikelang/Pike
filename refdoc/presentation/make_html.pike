@@ -296,9 +296,9 @@ string layout_matrix( array(array(string)) rows ) {
 }
 
 // ({  ({ array(string)+, void|string  })* })
-string nicebox(array rows) {
-  string ret = "<table bgcolor='black' border='0' cellspacing='0' cellpadding='0'><tr><td>\n"
-    "<table cellspacing='1' cellpadding='3' border='0' bgcolor='black'>\n";
+void nicebox(array rows, String.Buffer ret) {
+  ret->add( "<table bgcolor='black' border='0' cellspacing='0' cellpadding='0'><tr><td>\n"
+	    "<table cellspacing='1' cellpadding='3' border='0' bgcolor='black'>\n" );
 
   int dim;
   foreach(rows, array row)
@@ -307,29 +307,29 @@ string nicebox(array rows) {
   foreach(rows, array row) {
     if(sizeof(row)==1) {
       if(stringp(row[0]))
-	ret += "<tr valign='top'><td bgcolor='white' colspan='" + dim + "'>" +
-	  row[0] + "</td></tr>\n";
+	ret->add( "<tr valign='top'><td bgcolor='white' colspan='", (string)dim, "'>",
+		  row[0], "</td></tr>\n" );
       else
 	foreach(row[0], string elem)
-	  ret += "<tr valign='top'><td bgcolor='white'><tt>" + elem + "</tt></td>" +
-	    (dim==2?"<td bgcolor='white'>&nbsp;</td>":"") + "</tr>\n";
+	  ret->add( "<tr valign='top'><td bgcolor='white'><tt>", elem, "</tt></td>",
+		    (dim==2?"<td bgcolor='white'>&nbsp;</td>":""), "</tr>\n" );
     }
     else if(sizeof(row[0])==1)
-      ret += "<tr valign='top'><td bgcolor='white'><tt>" + row[0][0] +
-	"</tt></td><td bgcolor='white'>" + row[1] + "</td></tr>\n";
+      ret->add( "<tr valign='top'><td bgcolor='white'><tt>", row[0][0],
+		"</tt></td><td bgcolor='white'>", row[1], "</td></tr>\n" );
     else {
-      ret += "<tr valign='top'><td bgcolor='white'><tt>" + row[0][0] +
-	"</tt></td><td bgcolor='white' rowspan='" + sizeof(row[0]) + "'>"
-	+ row[1] + "</td></tr>\n";
+      ret->add( "<tr valign='top'><td bgcolor='white'><tt>", row[0][0],
+		"</tt></td><td bgcolor='white' rowspan='", (string)sizeof(row[0]), "'>",
+		row[1], "</td></tr>\n" );
       foreach(row[0][1..], string elem)
-	ret += "<tr valign='top'><td bgcolor='white'><tt>" + elem + "</tt></td></tr>\n";
+	ret->add( "<tr valign='top'><td bgcolor='white'><tt>", elem, "</tt></td></tr>\n" );
     }
   }
 
-  return ret + "</table></td></tr></table><br />\n";
+  ret->add( "</table></td></tr></table><br />\n" );
 }
 
-string build_box(Node n, string first, string second, function layout, void|string header) {
+void build_box(Node n, String.Buffer ret, string first, string second, function layout, void|string header) {
   array rows = ({});
   if(header) rows += ({ ({ header }) });
   foreach(n->get_elements(first), Node d) {
@@ -341,19 +341,28 @@ string build_box(Node n, string first, string second, function layout, void|stri
     else
       rows += ({ ({ elems }) });
   }
-  return nicebox(rows);
+  nicebox(rows, ret);
 }
 
-string parse_text(Node n) {
-  string ret = "";
+string parse_text(Node n, void|String.Buffer ret) {
 
-  if(n->get_node_type()==XML_TEXT && n->get_text())
-    return quote(n->get_text());
+  if(n->get_node_type()==XML_TEXT && n->get_text()) {
+    if(ret)
+      ret->add(quote(n->get_test()));
+    else
+      return quote(n->get_text());
+  }
+
+  int cast;
+  if(!ret) {
+    ret = String.Buffer();
+    cast = 1;
+  }
 
   foreach(n->get_children(), Node c) {
     int node_type = c->get_node_type();
     if(c->get_node_type()==XML_TEXT) {
-      ret += quote(c->get_text());
+      ret->add(quote(c->get_text()));
       continue;
     }
 
@@ -367,46 +376,54 @@ string parse_text(Node n) {
     string name = c->get_any_name();
     switch(name) {
     case "text":
-      ret += "<dd>" + parse_text(c) + "</dd>\n";
+      ret->add("<dd>");
+      parse_text(c, ret);
+      ret->add("</dd>\n");
       break;
 
     case "p":
     case "b":
     case "i":
     case "tt":
-      ret += "<"+name+">" + parse_text(c) + "</"+name+">";
+      ret->add("<", name, ">");
+      parse_text(c, ret);
+      ret->add("</", name, ">");
       break;
 
     case "pre":
-      ret += lay->pre + parse_text(c) + lay->_pre;
+      ret->add(lay->pre);
+      parse_text(c, ret);
+      ret->add(lay->_pre);
       break;
 
     case "code":
-      ret += lay->code + parse_text(c) + lay->_code;
+      ret->add(lay->code);
+      parse_text(c, ret);
+      ret->add(lay->_code);
       break;
 
     case "expr":
-      ret += lay->expr + replace(parse_text(c), " ", "&nbsp;") + lay->_expr;
+      ret->add(lay->expr, replace(parse_text(c), " ", "&nbsp;"), lay->_expr);
       break;
 
     case "ref":
       if(resolve_reference) {
-	ret += resolve_reference(parse_text(c), c->get_attributes());
+	ret->add(resolve_reference(parse_text(c), c->get_attributes()));
 	break;
       }
       string ref;
       ref = c->get_attributes()->resolved;
       if(!ref) ref = parse_text(c);
-      ret += "<font face='courier'>" + ref + "</font>";
+      ret->add("<font face='courier'>", ref, "</font>");
       break;
 
     case "dl":
-      ret += "<dl>" + map(c->get_elements("group"), parse_text)*"" + "</dl>";
+      ret->add("<dl>", map(c->get_elements("group"), parse_text)*"", "</dl>");
       break;
 
     case "item":
       if(c->get_attributes()->name)
-	ret += "<dt>" + c->get_attributes()->name + "</dt>\n";
+	ret->add("<dt>", c->get_attributes()->name, "</dt>\n");
 #ifdef DEBUG
       if(c->count_children())
 	throw( ({ "dl item has a child.\n", backtrace() }) );
@@ -414,76 +431,77 @@ string parse_text(Node n) {
       break;
 
     case "mapping":
-      ret += build_box(c, "group", "member",
-		       lambda(Node n) {
-			 return "<font color='green'>" + parse_text(n->get_first_element
-								    ("index")) +
-			   "</font> : " + parse_type(get_first_element(n->get_first_element
-								       ("type"))); } );
+      build_box(c, ret, "group", "member",
+		lambda(Node n) {
+		  return "<font color='green'>" + parse_text(n->get_first_element
+							     ("index")) +
+		    "</font> : " + parse_type(get_first_element(n->get_first_element
+								("type"))); } );
       break;
 
     case "array":
-      ret += build_box(c, "group", "elem",
-		       lambda(Node n) {
-			 string index ="";
-			 if(n->get_first_element("index"))
-			   index = parse_text(n->get_first_element("index"));
-			 else {
-			   if(n->get_first_element("minindex"))
-			     index = parse_text(n->get_first_element("minindex"));
-			   index += "..";
-			   if(n->get_first_element("maxindex"))
-			     index += parse_text(n->get_first_element("maxindex"));
-			 }
-			 return parse_type(get_first_element(n->get_first_element("type"))) +
-			   " <font color='green'>" + index + "</font>"; }, "Array" );
+      build_box(c, ret, "group", "elem",
+		lambda(Node n) {
+		  string index ="";
+		  if(n->get_first_element("index"))
+		    index = parse_text(n->get_first_element("index"));
+		  else {
+		    if(n->get_first_element("minindex"))
+		      index = parse_text(n->get_first_element("minindex"));
+		    index += "..";
+		    if(n->get_first_element("maxindex"))
+		      index += parse_text(n->get_first_element("maxindex"));
+		  }
+		  return parse_type(get_first_element(n->get_first_element("type"))) +
+		    " <font color='green'>" + index + "</font>"; }, "Array" );
       break;
 
     case "int":
-      ret += build_box(c, "group", "value",
-		       lambda(Node n) {
-			 string tmp = "<font color='green'>";
-			 Node min = n->get_first_element("minvalue");
-			 Node max = n->get_first_element("maxvalue");
-			 if(min || max) {
-			   if(min) tmp += parse_text(min);
-			   tmp += "..";
-			   if(max) tmp += parse_text(max);
-			 }
-			 else
-			   tmp += parse_text(n);
-			 return tmp + "</font>";
-		       } );
+      build_box(c, ret, "group", "value",
+		lambda(Node n) {
+		  string tmp = "<font color='green'>";
+		  Node min = n->get_first_element("minvalue");
+		  Node max = n->get_first_element("maxvalue");
+		  if(min || max) {
+		    if(min) tmp += parse_text(min);
+		    tmp += "..";
+		    if(max) tmp += parse_text(max);
+		  }
+		  else
+		    tmp += parse_text(n);
+		  return tmp + "</font>";
+		} );
       break;
 
     case "mixed":
-      ret += "<tt>" + c->get_attributes()->name + "</tt> can have any of the following types:<br />";
+      if(c->get_attributes()->name)
+	ret->add("<tt>", c->get_attributes()->name, "</tt> can have any of the following types:<br />");
       rows = ({});
       foreach(c->get_elements("group"), Node d)
 	rows += ({ ({ ({ parse_type(get_first_element(d->get_first_element("type"))) }),
 		      parse_text(d->get_first_element("text")) }) });
-      ret += nicebox(rows);
+      nicebox(rows, ret);
       break;
 
     case "string": // Not in XSLT
-      ret += build_box(c, "group", "value",
-		       lambda(Node n) {
-			 return "<font color='green'>" + parse_text(n) + "</font>";
-		       } );
+      build_box(c, ret, "group", "value",
+		lambda(Node n) {
+		  return "<font color='green'>" + parse_text(n) + "</font>";
+		} );
       break;
 
     case "multiset": // Not in XSLT
-      ret += build_box(c, "group", "index",
-		       lambda(Node n) {
-			 return "<font color='green'>" +
-			   parse_text(n->get_first_element("value")) + "</font>";
-		       } );
+      build_box(c, ret, "group", "index",
+		lambda(Node n) {
+		  return "<font color='green'>" +
+		    parse_text(n->get_first_element("value")) + "</font>";
+		} );
       break;
 
     case "image": // Not in XSLT
       mapping m = c->get_attributes();
       m->src = image_prefix() + m_delete(m, "file");
-      ret += sprintf("<img%{ %s='%s'%} />", (array)m);
+      ret->add( sprintf("<img%{ %s='%s'%} />", (array)m) );
       break;
 
     case "url": // Not in XSLT
@@ -495,7 +513,7 @@ string parse_text(Node n) {
       m = c->get_attributes();
       if(!m->href)
 	m->href=c[0]->get_text();
-      ret += sprintf("<a%{ %s='%s'%}>%s</a>", (array)m, c[0]->get_text());
+      ret->add( sprintf("<a%{ %s='%s'%}>%s</a>", (array)m, c[0]->get_text()) );
 
     case "section":
       //      werror(c->html_of_node()+"\n");
@@ -503,17 +521,23 @@ string parse_text(Node n) {
       break;
 
     case "ul":
-      ret += "<ul>\n";
-      foreach(c->get_elements("group"), Node c)
-	ret += "<li>" + parse_text(c->get_first_element("text")) + "</li>";
-      ret += "</ul>";
+      ret->add( "<ul>\n" );
+      foreach(c->get_elements("group"), Node c) {
+	ret->add("<li>");
+	parse_text(c->get_first_element("text"), ret);
+	ret->add("</li>");
+      }
+      ret->add("</ul>");
       break;
 
     case "ol":
-      ret += "<ol>\n";
-      foreach(c->get_elements("group"), Node c)
-	ret += "<li>" + parse_text(c->get_first_element("text")) + "</li>";
-      ret += "</ol>";
+      ret->add("<ol>\n");
+      foreach(c->get_elements("group"), Node c) {
+	ret->add("<li>");
+	parse_text(c->get_first_element("text"), ret);
+	ret->add("</li>");
+      }
+      ret->add("</ol>");
       break;
 
     case "source-position":
@@ -521,16 +545,18 @@ string parse_text(Node n) {
       break;
 
     case "matrix":
-      ret += layout_matrix( map(c->get_elements("r")->get_elements("c"), map, parse_text) );
+      ret->add( layout_matrix( map(c->get_elements("r")->get_elements("c"), map, parse_text) ) );
       break;
 
     case "fixme":
-      ret += "<font color='red'>FIXME: " + parse_text(c) + "</font>";
+      ret->add("<font color='red'>FIXME: ");
+      parse_text(c, ret);
+      ret->add("</font>");
       break;
 
     // Not really allowed
     case "br":
-      ret += sprintf("<%s%{ %s='%s'%} />", c->get_any_name(), (array)c->get_attributes());
+      ret->add( sprintf("<%s%{ %s='%s'%} />", c->get_any_name(), (array)c->get_attributes()) );
       break;
     case "table":
     case "sub":
@@ -538,8 +564,8 @@ string parse_text(Node n) {
     case "td":
     case "tr":
     case "th":
-      ret += sprintf("<%s%{ %s='%s'%}>%s</%s>", c->get_any_name(), (array)c->get_attributes(),
-		     parse_text(c), c->get_any_name());
+      ret->add( sprintf("<%s%{ %s='%s'%}>%s</%s>", c->get_any_name(), (array)c->get_attributes(),
+			parse_text(c), c->get_any_name()) );
       break;
 
     default:
@@ -551,7 +577,8 @@ string parse_text(Node n) {
     }
   }
 
-  return ret;
+  if(cast)
+    return (string)ret;
 }
 
 string parse_doc(Node n, void|int no_text) {
