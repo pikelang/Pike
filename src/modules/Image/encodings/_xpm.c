@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.2 1999/04/09 04:08:06 per Exp $");
+RCSID("$Id: _xpm.c,v 1.3 1999/04/09 04:11:36 per Exp $");
 
 #include "config.h"
 
@@ -207,8 +207,9 @@ void f__xpm_write_rows(  INT32 args )
   adst = ialpha->img;
 
 
-  if(bpc > 2)
+  switch(bpc)
   {
+   default:
     for(y = 0; y<iimg->ysize; y++)
     {
       char *ss = (char *)pixels->item[y+colors->size+1].u.string->str;
@@ -223,31 +224,64 @@ void f__xpm_write_rows(  INT32 args )
         adst++;
       }
     }
-  } else {
-    rgba_group p_colors[65536];
-    int i;
+    break;
+   case 2:
+   {
+     rgba_group p_colors[65536];
+     int i;
 
-    for(i=0; i<colors->size; i++)
-    {
-      short id = *((short *)colors->item[i].u.string->str);
-      p_colors[id] = parse_color_line( colors->item[i].u.string, bpc );
-    }
-    for(y = 0; y<iimg->ysize; y++)
-    {
-      char *ss = (char *)pixels->item[y+colors->size+1].u.string->str;
-      for(x = 0; x<iimg->xsize; x++)
-      {
-        rgba_group color=p_colors[*((short *)ss)];
-        dst->r = color.r;
-        dst->g = color.g;
-        (dst++)->b = color.b;
-        if(!color.alpha)
-          adst->r = adst->g = adst->b = 0;
-        ss+=bpc;
-        adst++;
-      }
-    }
+     for(i=0; i<colors->size; i++)
+     {
+       short id = *((short *)colors->item[i].u.string->str);
+       p_colors[id] = parse_color_line( colors->item[i].u.string, bpc );
+     }
+     for(y = 0; y<iimg->ysize; y++)
+     {
+       char *ss = (char *)pixels->item[y+colors->size+1].u.string->str;
+       for(x = 0; x<iimg->xsize; x++)
+       {
+         rgba_group color=p_colors[*((short *)ss)];
+         dst->r = color.r;
+         dst->g = color.g;
+         (dst++)->b = color.b;
+         if(!color.alpha)
+           adst->r = adst->g = adst->b = 0;
+         ss+=bpc;
+         adst++;
+       }
+     }
+     break;
+   }
+   case 1:
+   {
+     rgba_group p_colors[256];
+     int i;
+
+     for(i=0; i<colors->size; i++)
+     {
+       unsigned char id = *((unsigned char *)colors->item[i].u.string->str);
+       p_colors[id] = parse_color_line( colors->item[i].u.string, bpc );
+     }
+     for(y = 0; y<iimg->ysize; y++)
+     {
+       char *ss=(unsigned char *)pixels->item[y+colors->size+1].u.string->str;
+       for(x = 0; x<iimg->xsize; x++)
+       {
+         rgba_group color=p_colors[*((short *)ss)];
+         dst->r = color.r;
+         dst->g = color.g;
+         (dst++)->b = color.b;
+         if(!color.alpha)
+           adst->r = adst->g = adst->b = 0;
+         ss+=bpc;
+         adst++;
+       }
+     }
+     break;
+   }
   }
+  pop_n_elems(args);
+  push_int(0);
 }
 
 void f__xpm_trim_rows( INT32 args )
