@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.98 2000/12/07 23:05:44 noring Exp $");
+RCSID("$Id: array.c,v 1.99 2000/12/14 07:29:20 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -93,12 +93,6 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
  */
 static void array_free_no_free(struct array *v)
 {
-  if (gc_internal_array != &empty_array) {
-    if (v == gc_internal_array)
-      gc_internal_array = v->next;
-    if (v == gc_mark_array_pos)
-      gc_mark_array_pos = v->next;
-  }
   UNLINK_ARRAY(v);
 
   free((char *)v);
@@ -1951,46 +1945,6 @@ static void gc_check_array(struct array *a)
     else
       debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
   }
-}
-
-static void gc_recurse_weak_array(struct array *a,
-				  TYPE_FIELD (*recurse_fn)(struct svalue *, size_t))
-{
-  int e;
-  TYPE_FIELD t;
-
-#ifdef PIKE_DEBUG
-  if(!(a->flags & ARRAY_WEAK_FLAG))
-    fatal("Array is not weak.\n");
-#endif
-
-  if(a->flags & ARRAY_WEAK_SHRINK) {
-    int d=0;
-#ifdef PIKE_DEBUG
-    if (a->refs != 1)
-      fatal("Got %d refs to weak shrink array "
-	    "which we'd like to change the size on.\n", a->refs);
-#endif
-    t = 0;
-    for(e=0;e<a->size;e++)
-      if (!recurse_fn(a->item+e, 1)) {
-	a->item[d++]=a->item[e];
-	t |= 1 << a->item[e].type;
-      }
-    a->size=d;
-  }
-  else
-    if (!(t = recurse_fn(a->item, a->size)))
-      t = a->type_field;
-
-  /* Ugly, but we are not allowed to change type_field
-   * at the same time as the array is being built...
-   * Actually we just need better primitives for building arrays.
-   */
-  if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
-    a->type_field = t;
-  else
-    a->type_field |= t;
 }
 
 void gc_mark_array_as_referenced(struct array *a)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.286 2000/12/05 21:08:21 per Exp $");
+RCSID("$Id: program.c,v 1.287 2000/12/14 07:29:20 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -967,12 +967,6 @@ PMOD_EXPORT void really_free_program(struct program *p)
 	free_object(p->inherits[e].parent);
     }
 
-  if (gc_internal_program) {
-    if (p == gc_internal_program)
-      gc_internal_program = p->next;
-    if (p == gc_mark_program_pos)
-      gc_mark_program_pos = p->next;
-  }
   DOUBLEUNLINK(first_program, p);
 
   if(p->flags & PROGRAM_OPTIMIZED)
