@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.52 1999/02/18 20:55:15 grubba Exp $
+ * $Id: requests.pmod,v 1.53 1999/02/19 16:42:52 grubba Exp $
  */
 
 import .types;
@@ -349,6 +349,45 @@ class copy
       break;
     }
     return ([ "action" : "finished" ]);
+  }
+}
+
+class expunge
+{
+  inherit request;
+
+  constant arg_info = ({});
+
+  mapping easy_process()
+  {
+    array(array(object|string)) res = server->expunge(session);
+    if (res) {
+      foreach(res, array(object|string)a) {
+	send("*", @a);
+      }
+      send(tag, "OK");
+    } else {
+      send(tag, "NO");
+    }
+    return ([ "action" : "finished" ]);
+  }
+}
+
+class close
+{
+  inherit request;
+
+  constant arg_info = ({});
+
+  mapping easy_process()
+  {
+    int res = server->close(session);
+    if (res) {
+      send(tag, "OK");
+    } else {
+      send(tag, "NO");
+    }
+    return ([ "action" : "logged_in_state" ]);
   }
 }
 
@@ -885,5 +924,3 @@ constant unsubscribe = unimplemented;
 constant status = unimplemented;
 constant append = unimplemented;
 constant check = unimplemented;
-constant close = unimplemented;
-constant expunge = unimplemented;
