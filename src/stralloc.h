@@ -52,6 +52,8 @@ int low_quick_binary_strcmp(char *a,INT32 alen,
 			    char *b,INT32 blen);
 int my_quick_strcmp(struct pike_string *a,struct pike_string *b);
 int my_strcmp(struct pike_string *a,struct pike_string *b);
+struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size);
+struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size);
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);
 struct pike_string *string_replace(struct pike_string *str,

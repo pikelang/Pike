@@ -447,6 +447,39 @@ int my_strcmp(struct pike_string *a,struct pike_string *b)
   return low_binary_strcmp(a->str,a->len,b->str,b->len);
 }
 
+struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size)
+{
+  struct pike_string *r;
+  r=(struct pike_string *)realloc((char *)a,
+					sizeof(struct pike_string)+size);
+	
+  if(!r)
+  {
+    r=begin_shared_string(size);
+    MEMCPY(r->str, a->str, a->len);
+    free((char *)a);
+  }
+
+  r->len=size;
+  r->str[size]=0;
+  return r;
+}
+
+/* Returns an unlinked string ready for end_shared_string */
+struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
+{
+  struct pike_string *r;
+  if(a->refs==1)
+  {
+    unlink_pike_string(a);
+    return realloc_unlinked_string(a, size);
+  }else{
+    r=begin_shared_string(size);
+    MEMCPY(r->str, a->str, a->len);
+    return r;
+  }
+}
+
 /*** Add strings ***/
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b)
