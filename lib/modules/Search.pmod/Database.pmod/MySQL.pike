@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.42 2001/06/23 02:11:58 js Exp $
+// $Id: MySQL.pike,v 1.43 2001/06/26 01:55:32 js Exp $
 
 inherit .Base;
 
@@ -457,7 +457,7 @@ class Queue
 			to_md5(uri))));
   }
 
-  void add_uri( Standards.URI uri, int recurse, string template )
+  void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   {
     // The language is encoded in the fragment.
     Standards.URI r = Standards.URI( (string)uri );
@@ -474,7 +474,7 @@ class Queue
 	rpath=rpath[sizeof(index)..];
     r->path=reverse(rpath);
     
-    if( check_link(uri, allow, deny) && !has_uri( r ) )
+    if( force || (check_link(uri, allow, deny) && !has_uri( r ) ))
       db->query( "insert into "+table+
 		 " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
 		 (string)r, to_md5((string)r), recurse, (template||"") );
@@ -594,11 +594,11 @@ class Queue
       db->query( "update "+table+" set md5='' where stage=%d", s );
   }
 
-  int num_with_stage( int stage )
+  int num_with_stage( int ... stage )
   {
     return (int)
-      db->query( "select COUNT(*) as c from "+table+" where stage=%d",
-		 stage )[ 0 ]->c;
+      db->query( "select COUNT(*) as c from "+table+" where stage IN (%s)",
+		 ((array(string))stage)*"," )[ 0 ]->c;
   }
 
   void set_stage( Standards.URI uri,
