@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.845 2004/10/21 11:35:39 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.846 2004/10/22 15:50:22 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1345,6 +1345,10 @@ MY_AC_ARG_WITH(dmalloc-malloc-leaks,
 MY_AC_ARG_WITH(dmalloc-trace, MY_DESCR([--with-dmalloc-trace],
 				       [enable tracepoints]),
 	       [with_dmalloc_trace="yes" AC_DEFINE(DMALLOC_TRACE,10)])
+MY_AC_ARG_WITH(dmalloc-track-free, MY_DESCR([--with-dmalloc-track-free],
+				       [track freed memory too]),
+	       [ with_dmalloc_track_free="yes"
+		 AC_DEFINE(DMALLOC_TRACK_FREE,10)])
 AC_ARG_WITH(debug, MY_DESCR([--with-debug],[same as --with-cdebug --with-rtldebug]),
 	    [],[with_debug=])
 AC_ARG_WITH(debug, MY_DESCR([--without-debug],[same as --without-cdebug --without-rtldebug]),

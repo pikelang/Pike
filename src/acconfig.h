@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.142 2004/10/21 14:43:10 grubba Exp $
+|| $Id: acconfig.h,v 1.143 2004/10/22 15:50:22 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -43,6 +43,9 @@
 
 /* Define this if you want checkpoints */
 #undef DMALLOC_TRACE
+
+/* Define this if you want dmalloc to keep track of freed memory. */
+#undef DMALLOC_TRACK_FREE
 
 /* With this, dmalloc will trace malloc(3) calls */
 #undef ENCAPSULATE_MALLOC
