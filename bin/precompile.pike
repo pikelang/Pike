@@ -603,19 +603,22 @@ class PikeType
 		if(arrayp(q=tok[1]))
 		{
 		  tmp=q[1..sizeof(q)-2]/({":"});
-		  int end=sizeof(tmp)-2;
+		  array rettmp=tmp[1];
+		  array argstmp=tmp[0]/({","});
+
+		  int end=sizeof(argstmp)-1;
 		  PikeType repeater;
-		  if(sizeof(tmp[0]) &&
-		     sizeof(tmp[0][-1]) &&
-		     tmp[0][-1][-1]=="...")
+		  if(sizeof(argstmp) &&
+		     sizeof(argstmp[-1]) &&
+		     argstmp[-1][-1]=="...")
 		  {
-		    repeater=PikeType(tmp[0][-1][..sizeof(tmp[0][-1])-2]);
+		    repeater=PikeType(argstmp[-1][..sizeof(argstmp[-1])-2]);
 		    end--;
 		  }else{
 		    repeater=PikeType("void");
 		  }
-		  args=map(tmp[0][..end],PikeType)+
-		    ({repeater, PikeType(tmp[1]) });
+		  args=map(argstmp[..end],PikeType)+
+		    ({repeater, PikeType(rettmp) });
 		}else{
 		  args=({PikeType("mixed"),PikeType("any")});
 		}
@@ -1408,6 +1411,8 @@ int main(int argc, array(string) argv)
       "}\n",
     });
   }
-  write(PC.reconstitute_with_line_numbers(x));
-//  write(PC.simple_reconstitute(x));
+  if(getenv("PIKE_DEBUG_PRECOMPILER"))
+    write(PC.simple_reconstitute(x));
+  else
+    write(PC.reconstitute_with_line_numbers(x));
 }
