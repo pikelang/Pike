@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.190 1998/05/22 11:27:34 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.191 1998/05/22 11:56:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1460,8 +1460,20 @@ AC_CACHE_VAL(pike_cv_union_wait, [ AC_TRY_COMPILE([
 
 AC_MSG_RESULT($pike_cv_union_wait)
 if test "x$pike_cv_union_wait" = "xyes" ; then
-  AC_DEFINE(HAVE_UNION_WAIT)
-fi
+  AC_MSG_CHECKING([whether union wait is really needed])
+  AC_CACHE_VAL(pike_cv_union_wait_needed, [ AC_TRY_COMPILE([
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif /* HAVE_SYS_WAIT_H */
+], [
+  int status;
+  return WIFEXITED(status) || 0;
+], pike_cv_union_wait_needed=no, pike_cv_union_wait_needed=yes)
+])
+  if test "x$pike_cv_union_wait_needed" = "xyes" ; then
+    AC_DEFINE(HAVE_UNION_WAIT)
+  else :; fi
+else :; fi
 
 #############################################################################
 
