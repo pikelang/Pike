@@ -1,3 +1,21 @@
+Tue Jun 10 12:21:07 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* lib/modules/Process.pmod (exec): Fixed path-handling bug.
+	Thanks to John W Pierce <jwp@checfs1.ucsd.edu>.
+
+	* lib/modules/Sql.pmod/sql.pike: Added support for case-conversion
+	of field-names. Also added some debug output if compiled with
+ 	PIKE_SQL_DEBUG.
+
+	* modules/Odbc/configure.in: Improved test.
+
+	* modules/Odbc/odbc.c,modules/Odbc/odbc_result.c: Fixed all warnings.
+
+	* modules/system/system.c (report_error): Removed volatile from
+ 	function declaration since AIX-cc doesn't understand it.
+
+	* modules/Yp/module.pmod.in: Added missing file.
+
 Wed Jun  4 18:01:35 1997  Niels Möller  <nisse@infovav.se>
 
 	* modules/Gmp/mpz_glue.c (get_mpz_from_digits): Fixed small memory
