@@ -108,6 +108,7 @@ class ExecTest(string id,Test test)
 	 if (truns >= maximum_seconds || 
 	     nruns>=maximum_runs) break;
       }
+
       useconds=tg/nruns;
       tseconds=truns/nruns;
 
@@ -119,7 +120,9 @@ class ExecTest(string id,Test test)
 	    memusage/1024,
 	    "("+nruns+")",
 	    test->present_n
-	    ?" ("+test->present_n(testntot,nruns,truns,tg,memusage)+")"
+	    ?" ("+(tg
+		   ?test->present_n(testntot,nruns,truns,tg,memusage)
+		   :"no time?")+")"
 	    :"");
       return 0;
    }
