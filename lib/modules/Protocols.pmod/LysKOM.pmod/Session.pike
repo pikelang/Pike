@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.7 1999/09/28 02:08:59 js Exp $
+//  $Id: Session.pike,v 1.8 1999/10/05 15:34:23 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -392,6 +392,7 @@ class Text
 	 case "create":
 	    return create;
 	 case "prefetch_text":
+	   werror("prefetch_text(%d",no);
 	    return prefetch_text;
 	 case "prefetch_stat":
 	    return prefetch_stat;
@@ -402,6 +403,7 @@ class Text
 	    return err;
 
 	 case "text": 
+	   werror("need_text(%d",no);
 	    need_text();
 	    return _text[1];
 
@@ -487,11 +489,13 @@ class Membership
   
   array(object) get_unread_texts_blocking()
   {
+    werror("get_unread_texts_blocking()\n");
     int i=last_text_read+1;
     mapping(int:int) local_to_global = ([]);
 
-    if(i > conf->no_of_texts)
-      return (_unread_texts = ({ }) );
+    werror("i: %d  last_text_read: %d\n",i,last_text_read);
+//     if(i > conf->no_of_texts)
+//       return (_unread_texts = ({ }) );
 
     /* Get all the global numbers after last-text-read */
     while(1)

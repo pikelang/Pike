@@ -17,10 +17,27 @@ class Thread
   
     array(Node) children = ({ });
 
+    string print(int depth)
+    {
+      return sprintf("<table cellspacing=1 cellpadding=0 border=0><tr><td><img src=/internal-roxen-unit alt='' height=1 width=%d></td><td><a target=display href=\"%s\">%d</a> - %s (%s)</td></tr></table>",
+		     depth*18,
+		     "/text.html?id="+text->no,
+		     text->no,
+		     text->subject,
+		     text->author->name)+
+	children->print(depth+1)*"\n";      
+    }
+
     Node possible_parent(int follow)
     {
       foreach(text->misc->comm_to, Session.Text _parent)
       {
+	if(!_parent->misc)
+	{
+	  werror("Parent %d. Error: %O\n",_parent->no,
+		 _parent->error && _parent->error->name);
+	  continue;
+	}
 	foreach( ({ @_parent->misc->recpt->conf,
 		    @_parent->misc->ccrecpt->conf,
 		    @_parent->misc->bccrecpt->conf }),
@@ -37,7 +54,12 @@ class Thread
     {
       foreach(text->misc->comm_in, Session.Text child)
       {
-	
+	if(!child->misc)
+	{
+	  werror("Child %d. Error: %O\n",child->no,
+		 child->error && child->error->name);
+	  continue;
+	}
 	foreach( ({ @child->misc->recpt->conf,
 		    @child->misc->ccrecpt->conf,
 		    @child->misc->bccrecpt->conf }),
@@ -97,6 +119,12 @@ array(Thread) get_unread_threads(array(Session.Text) unread_texts,
 {
   array threads=({ });
   mapping m_unread_texts=mkmapping(unread_texts->no, unread_texts);
+  m_delete(m_unread_texts,0);
+  foreach(unread_texts->no-({0}), int no)
+  {
+    if(!(m_unread_texts[no]->misc))
+      m_delete(m_unread_texts,no);
+  }
   foreach(unread_texts->no, array(int) unread_texts_no)
   {
     if(!m_unread_texts[unread_texts_no])
