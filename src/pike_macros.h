@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.24 2001/05/14 03:29:36 hubbe Exp $
+ * $Id: pike_macros.h,v 1.25 2001/07/20 19:18:09 mast Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -80,6 +80,8 @@
 /* how can SET_NEXT_AND_FREE leave *next* pointing to a deallocated block?
  * -Hubbe
  */
+/* Afaik it doesn't, but it leaves no value that is usable for the
+ * purposes this macro was made for. /mast */
 #define FREE_AND_GET_REFERENCED(p, item_type, free_item) do {		\
   item_type *next;							\
   while (1) {								\
