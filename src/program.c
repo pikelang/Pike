@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.430 2002/05/11 21:08:00 mast Exp $");
+RCSID("$Id: program.c,v 1.431 2002/05/12 01:23:15 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1349,7 +1349,7 @@ int override_identifier (struct reference *ref, struct pike_string *name, int cu
 
 #ifdef PROGRAM_BUILD_DEBUG
     fprintf(stderr, "%.*soverloaded reference %d (id_flags:0x%04x)\n",
-	    compilation_depth, "", cur_id,
+	    compilation_depth, "                ", cur_id,
 	    Pike_compiler->new_program->identifier_references[cur_id].id_flags);
 #endif
 
@@ -3599,13 +3599,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   struct reference ref;
   struct svalue zero;
 
-  if (!c) {
-    zero.type = T_INT;
-    zero.subtype = 0;
-    zero.u.integer = 0;
-    c = &zero;
-  }
-
 #ifdef PROGRAM_BUILD_DEBUG
   {
     if (c) {
@@ -3616,16 +3609,28 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	       Pike_compiler->compiler_pass, d->str);
       free_type(t);
       free_string (d);
+      push_string (name);
+      print_svalue (stderr, --Pike_sp);
+      fputs (" = ", stderr);
+      print_svalue (stderr, c);
     }
-    else
+    else {
       fprintf (stderr, "%.*sdeclaring constant (pass=%d): ",
 	       compilation_depth, "                ",
 	       Pike_compiler->compiler_pass);
-    push_string (name);
-    print_svalue (stderr, --Pike_sp);
+      push_string (name);
+      print_svalue (stderr, --Pike_sp);
+    }
     putc ('\n', stderr);
   }
 #endif
+
+  if (!c) {
+    zero.type = T_INT;
+    zero.subtype = 0;
+    zero.u.integer = 0;
+    c = &zero;
+  }
 
 #ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
@@ -3633,7 +3638,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #endif
 
   do {
-    if(c &&
+    if(/* c && */
        c->type == T_FUNCTION &&
        c->subtype != FUNCTION_BUILTIN &&
        c->u.object->prog)
@@ -3673,7 +3678,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       }
     }
     
-    if(c && !svalues_are_constant(c,1,BIT_MIXED,0))
+    if(/* c && */ !svalues_are_constant(c,1,BIT_MIXED,0))
       yyerror("Constant values may not have references this_object()");
     
   }while(0);
@@ -3691,21 +3696,38 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       if(id->func.offset>=0)
       {
 	struct pike_type *s;
+	/* I don't know why this function preferred to retain the
+	 * previously stored constant rather than using the one we get
+	 * now, but in combination with storing zeroes in pass 1, we
+	 * will be better off if we replace it. /mast */
+#if 0
 	struct svalue *c=&PROG_FROM_INT(Pike_compiler->new_program,n)->
 	  constants[id->func.offset].sval;
+#else
+	assign_svalue (&PROG_FROM_INT(Pike_compiler->new_program,n)->
+		       constants[id->func.offset].sval, c);
+#endif
 	s=get_type_of_svalue(c);
 	free_type(id->type);
 	id->type=s;
       }
       else {
+#if 0
 #ifdef PIKE_DEBUG
 	if (!c) fatal("Can't declare constant during second compiler pass\n");
+#endif
 #endif
 	free_type(id->type);
 	id->type = get_type_of_svalue(c);
 	id->run_time_type = c->type;
 	id->func.offset = store_constant(c, 0, 0);
+	fprintf (stderr, "b\n");
       }
+#ifdef PROGRAM_BUILD_DEBUG
+      fprintf (stderr, "%.*sstored constant #%d at %d\n",
+	       compilation_depth, "                ",
+	       n, id->func.offset);
+#endif
       return n;
     }
   }
@@ -3721,13 +3743,16 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   copy_shared_string(dummy.name, name);
   dummy.identifier_flags = IDENTIFIER_CONSTANT;
 
+#if 0
   if (c) {
+#endif
     dummy.type = get_type_of_svalue(c);
     dummy.run_time_type=c->type;
     dummy.func.offset=store_constant(c, 0, 0);
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
     if(c->type == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
        dummy.opt_flags=0;
+#if 0
   }
   else {
     copy_pike_type(dummy.type, mixed_type_string);
@@ -3735,6 +3760,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     dummy.func.offset=-1;
     dummy.opt_flags=0;
   }
+#endif
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -3966,13 +3992,14 @@ INT32 define_function(struct pike_string *name,
 
   i=isidentifier(name);
 
-#ifdef PROGRAM_BUILD_DEBUG
-  fprintf(stderr, "%.*sexisted as identifier #%d\n", compilation_depth, "", i);
-#endif
-
   if(i >= 0)
   {
     /* already defined */
+
+#ifdef PROGRAM_BUILD_DEBUG
+    fprintf(stderr, "%.*sexisted as identifier #%d\n",
+	  compilation_depth, "                ", i);
+#endif
 
     funp=ID_FROM_INT(Pike_compiler->new_program, i);
     ref=Pike_compiler->new_program->identifier_references[i];
@@ -4015,7 +4042,8 @@ INT32 define_function(struct pike_string *name,
       copy_pike_type(funp->type, type);
     }else{
 #ifdef PROGRAM_BUILD_DEBUG
-      fprintf(stderr, "%.*sidentifier was inherited\n", compilation_depth, "");
+      fprintf(stderr, "%.*sidentifier was inherited\n",
+	      compilation_depth, "                ");
 #endif
 
       if((ref.id_flags & ID_NOMASK)
@@ -4031,7 +4059,8 @@ INT32 define_function(struct pike_string *name,
       if(ref.id_flags & ID_INLINE)
       {
 #ifdef PROGRAM_BUILD_DEBUG
-	fprintf(stderr, "%.*sidentifier is local\n", compilation_depth, "");
+	fprintf(stderr, "%.*sidentifier is local\n",
+		compilation_depth, "                ");
 #endif
 
 	goto make_a_new_def;
@@ -4040,7 +4069,7 @@ INT32 define_function(struct pike_string *name,
       /* Otherwise we alter the existing definition */
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf(stderr, "%.*saltering the existing definition\n",
-	      compilation_depth, "");
+	      compilation_depth, "                ");
 #endif
 
       copy_shared_string(fun.name, name);
@@ -4074,10 +4103,6 @@ INT32 define_function(struct pike_string *name,
   }
 make_a_new_def:
 
-#ifdef PROGRAM_BUILD_DEBUG
-  fprintf(stderr, "%.*smaking a new definition\n", compilation_depth, "");
-#endif
-
 #ifdef PIKE_DEBUG
   if(Pike_compiler->compiler_pass==2)
     fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
@@ -4108,6 +4133,11 @@ make_a_new_def:
 
   i=Pike_compiler->new_program->num_identifier_references;
   add_to_identifier_references(ref);
+
+#ifdef PROGRAM_BUILD_DEBUG
+  fprintf(stderr, "%.*sadded new definition #%d\n",
+	  compilation_depth, "                ", i);
+#endif
 
   return i;
 }
