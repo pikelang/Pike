@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.169 2000/09/07 11:28:37 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.170 2000/09/08 16:17:56 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -238,7 +238,8 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
       
     case T_SHORT_LVALUE:
-      assign_from_short_svalue_no_free(to, lval->u.short_lval, lval->subtype);
+      assign_from_short_svalue_no_free(to, lval->u.short_lval,
+				       (TYPE_T)lval->subtype);
       break;
       
     case T_OBJECT:
@@ -305,7 +306,7 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
 
   case T_SHORT_LVALUE:
-    assign_to_short_svalue(lval->u.short_lval, lval->subtype, from);
+    assign_to_short_svalue(lval->u.short_lval, (TYPE_T)lval->subtype, from);
     break;
 
   case T_OBJECT:

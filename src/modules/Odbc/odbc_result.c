@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.22 2000/08/31 21:31:56 grubba Exp $
+ * $Id: odbc_result.c,v 1.23 2000/09/08 15:57:28 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.22 2000/08/31 21:31:56 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.23 2000/09/08 15:57:28 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -150,7 +150,7 @@ static void odbc_fix_fields(void)
 				      DO_NOT_WARN((SQLSMALLINT)buf_size),
 				      &name_len,
 				      &sql_type, &precision, &scale, &nullable),
-		       0);
+		       (void(*)(void))0);
       if (name_len < (ptrdiff_t)buf_size) {
 	break;
       }

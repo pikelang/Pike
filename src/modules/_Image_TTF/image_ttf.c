@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.34 2000/08/15 13:03:45 grubba Exp $
+ * $Id: image_ttf.c,v 1.35 2000/09/08 16:13:27 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.34 2000/08/15 13:03:45 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.35 2000/09/08 16:13:27 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -249,7 +249,7 @@ static void image_ttf_make(INT32 args)
 
    res=TT_Open_Collection(engine, sp[-args].u.string->str, col, &face);
    if (res) my_tt_error("Image.TTF()","",res);
-   while(! TT_Load_Kerning_Table( face, i++ ) );
+   while(! TT_Load_Kerning_Table( face, (TT_UShort)(i++) ) );
 
    pop_n_elems(args);
 
@@ -643,7 +643,8 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
 		(float)prop.horizontal->Ascender));
 */
 
-   if ((res=TT_Set_Instance_Resolutions(face_i->instance,resol,resol)))
+   if ((res=TT_Set_Instance_Resolutions(face_i->instance,
+					(TT_UShort)resol, (TT_UShort)resol)))
       my_tt_error("Image.TTF.FaceInstance()",
 		  "TT_Set_Instance_Resolutions: ",res);
 
@@ -729,7 +730,7 @@ static void ttf_translate_8bit(TT_CharMap charMap,
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
-      dest[0][i]=TT_Char_Index(charMap,what[i]+base);
+      dest[0][i]=TT_Char_Index(charMap, (TT_UShort)what[i]+base);
    THREADS_DISALLOW();
 }
 
@@ -746,7 +747,7 @@ static void ttf_translate_16bit(TT_CharMap charMap,
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
-      dest[0][i]=TT_Char_Index(charMap,what[i]+base);
+      dest[0][i] = TT_Char_Index(charMap, (TT_UShort)(what[i] + base));
    THREADS_DISALLOW();
 }
 
@@ -761,9 +762,10 @@ static void ttf_get_nice_charmap(TT_Face face,
    for (i=0; i<n; i++)
    {
       int ihas=0;
-      unsigned short platformID,encodingID;
+      TT_UShort platformID, encodingID;
 
-      if ((res=TT_Get_CharMap_ID(face,i,&platformID,&encodingID)))
+      if ((res=TT_Get_CharMap_ID(face, (TT_UShort)i,
+				 &platformID, &encodingID)))
 	 my_tt_error(where,"TT_Get_CharMap_ID: ",res);
 
       switch (platformID*100+encodingID)
@@ -789,7 +791,7 @@ static void ttf_get_nice_charmap(TT_Face face,
    if (got==-1)
       error("%s: no charmaps at all\n",where);
 
-   if ((res=TT_Get_CharMap(face,best,charMap)))
+   if ((res=TT_Get_CharMap(face, (TT_UShort)best, charMap)))
       my_tt_error(where,"TT_Get_CharMap: ",res);
 }
 
@@ -868,7 +870,8 @@ static void image_ttf_faceinstance_ponder(INT32 args)
       if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	 my_tt_error("Image.TTF.FaceInstance->ponder()","TT_New_Glyph: ",res);
 
-      if ((res=TT_Load_Glyph(face_i->instance,glyph,ind,face_i->load_flags)))
+      if ((res=TT_Load_Glyph(face_i->instance, glyph,
+			     (TT_UShort)ind, (TT_UShort)face_i->load_flags)))
 	 my_tt_error("Image.TTF.FaceInstance->ponder()","TT_Load_Glyph: ",res);
 
       if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))
@@ -1055,8 +1058,8 @@ static void image_ttf_faceinstance_write(INT32 args)
 	 if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	    { errs="TT_New_Glyph: "; break; }
 
-	 if ((res=TT_Load_Glyph(face_i->instance,glyph,
-				ind,face_i->load_flags)))
+	 if ((res=TT_Load_Glyph(face_i->instance, glyph, (TT_UShort)ind,
+				(TT_UShort)face_i->load_flags)))
 	    { errs="TT_Load_Glyph: "; break; }
 
 	 if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))
@@ -1148,8 +1151,8 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	       { errs="TT_New_Glyph: "; break; }
 
-	    if ((res=TT_Load_Glyph(face_i->instance,glyph,
-				   ind,face_i->load_flags)))
+	    if ((res=TT_Load_Glyph(face_i->instance, glyph, (TT_UShort)ind,
+				   (TT_UShort)face_i->load_flags)))
 	       { errs="TT_Load_Glyph: "; break; }
 
 	    if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))

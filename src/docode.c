@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.80 2000/08/24 04:04:40 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.81 2000/09/08 16:32:59 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -27,7 +27,7 @@ RCSID("$Id: docode.c,v 1.80 2000/08/24 04:04:40 hubbe Exp $");
 #include "language.h"
 #include "lex.h"
 
-static int do_docode2(node *n,int flags);
+static int do_docode2(node *n, INT16 flags);
 
 INT32 current_break=-1;
 INT32 current_continue=-1;
@@ -74,7 +74,7 @@ void do_pop(int x)
 
 #define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP | DO_DEFER_POP))
 
-int do_docode(node *n,INT16 flags)
+int do_docode(node *n, INT16 flags)
 {
   int i;
   int save_current_line=lex.current_line;
@@ -93,7 +93,7 @@ static int is_efun(node *n, c_fun fun)
     n->u.sval.u.efun->function == fun;
 }
 
-static void code_expression(node *n, int flags, char *err)
+static void code_expression(node *n, INT16 flags, char *err)
 {
   switch(do_docode(check_node_hash(n), flags & ~ DO_POP))
   {
@@ -233,7 +233,7 @@ int do_lfun_call(int id,node *args)
   return 1;
 }
 
-static int do_docode2(node *n,int flags)
+static int do_docode2(node *n, INT16 flags)
 {
   ptrdiff_t tmp1,tmp2,tmp3;
 

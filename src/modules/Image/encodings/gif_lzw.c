@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.8 2000/08/03 21:25:32 grubba Exp $
+**!	$Id: gif_lzw.c,v 1.9 2000/09/08 15:53:32 grubba Exp $
 */
 
 #include "global.h"
@@ -131,7 +131,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       lzw->codes=(1L<<lzw->bits)+2;
       
       /* output clearcode, 1000... (bits) */
-      lzw_output(lzw,1L<<lzw->bits);
+      lzw_output(lzw, (lzwcode_t)(1L<<lzw->bits));
 
       lzw->codebits=lzw->bits+1;
       lzw->current=c;
@@ -191,14 +191,14 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    lzw->lastout=0;
    lzw->earlychange=0;
    lzw->reversebits=0;
-   lzw_output(lzw,1L<<bits);
+   lzw_output(lzw, (lzwcode_t)(1L<<bits));
 }
 
 void image_gif_lzw_finish(struct gif_lzw *lzw)
 {
    if (lzw->current!=LZWCNULL)
       lzw_output(lzw,lzw->current);
-   lzw_output( lzw, (1L<<lzw->bits)+1 ); /* GIF end code */
+   lzw_output( lzw, (lzwcode_t)(1L<<lzw->bits)+1 ); /* GIF end code */
    if (lzw->outbit)
    {
       if (lzw->reversebits)

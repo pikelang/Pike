@@ -1,5 +1,5 @@
 /* 
- * $Id: pike_regexp.c,v 1.16 2000/09/02 23:52:23 marcus Exp $
+ * $Id: pike_regexp.c,v 1.17 2000/09/08 16:02:29 grubba Exp $
  *
  * regexp.c - regular expression matching
  *
@@ -394,7 +394,7 @@ static char *reg(int paren,int *flagp)
 	    FAIL("too many ()");
 	parno = regnpar;
 	regnpar++;
-	ret = regnode(OPEN + parno);
+	ret = regnode((char)(OPEN + parno));
     } else
 	ret = (char *)NULL;
 
@@ -421,7 +421,7 @@ static char *reg(int paren,int *flagp)
     }
 
     /* Make a closing node, and hook it on the end. */
-    ender = regnode((paren) ? CLOSE + parno : END);
+    ender = regnode((paren) ? (char)(CLOSE + parno) : END);
     regtail(ret, ender);
 
     /* Hook the tails of the branches to the closing node. */
@@ -579,7 +579,7 @@ static char *regatom(int *flagp)
 	    } else
 		ret = regnode(ANYOF);
 	    if (*regparse == RSQBRAC || *regparse == '-')
-		regc(*regparse++);
+		regc((char)(*regparse++));
 	    while (*regparse != '\0' && *regparse != RSQBRAC) {
 		if (*regparse == '-') {
 		    regparse++;
@@ -591,11 +591,11 @@ static char *regatom(int *flagp)
 			if (class > classend + 1)
 			    FAIL("invalid [] range");
 			for (; class <= classend; class++)
-			    regc(class);
+			    regc((char)class);
 			regparse++;
 		    }
 		} else
-		    regc(*regparse++);
+		    regc((char)(*regparse++));
 	    }
 	    regc('\0');
 	    if (*regparse != RSQBRAC)
@@ -637,7 +637,7 @@ static char *regatom(int *flagp)
 		*flagp |= SIMPLE;
 	    ret = regnode(EXACTLY);
 	    while (len > 0) {
-		regc(*regparse++);
+		regc((char)(*regparse++));
 		len--;
 	    }
 	    regc('\0');

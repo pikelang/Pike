@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.10 2000/08/15 13:04:18 grubba Exp $");
+RCSID("$Id: image_xface.c,v 1.11 2000/09/08 16:14:32 grubba Exp $");
 
 #include "config.h"
 
@@ -355,7 +355,7 @@ static struct pike_string *encodeface(rgb_group *in)
   i = 0;
   while(mpz_cmp_ui(val, 0)) {
     n = mpz_fdiv_qr_ui(val, dum, val, 94);
-    low_my_putchar( n+'!', &buf );
+    low_my_putchar( (char)(n+'!'), &buf );
     i++;
   }
   if (i==0)

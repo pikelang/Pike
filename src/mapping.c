@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.101 2000/09/08 04:40:31 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.102 2000/09/08 16:38:20 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -555,7 +555,7 @@ PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
 {
   struct mapping_data *md = m->data;
   if (md->refs > 1) {
-    struct keypair *k, *prev;
+    struct keypair *k = NULL, *prev = NULL;
     COPYMAP2();
   }
   md->flags = flags;
