@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.8 1996/11/17 02:17:02 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.9 1996/11/17 18:42:50 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -38,13 +38,20 @@ static void get_mpz_from_digits(MP_INT *tmp,
   INT32 base;
   struct pike_string *digits;
 
-  if ((s->type != T_STRING) || (b->type != T_INT))
-    error("wrong types, cannot convert to mpz");
-
+  if (s->type != T_STRING)
+    error("wrong type, cannot convert to mpz");
   digits = s->u.string;
-  base = b->u.integer;
-  
-  if ((base >= 2) && (base <= 36))
+
+  if (b)
+    {
+      if  (b->type != T_INT)
+	error("wrong type, cannot convert to mpz");
+      base = b->u.integer;
+    }
+  else
+    base = 0;
+
+  if ((base == 0) || ((base >= 2) && (base <= 36)))
     {
       if (mpz_set_str(tmp, digits->str, base))
 	error("invalid digits, cannot convert to mpz");
@@ -110,7 +117,10 @@ static void mpzmod_create(INT32 args)
   switch(args)
     {
     case 1:
-      get_new_mpz(THIS, sp-args);
+      if ((sp-args)->type == T_STRING)
+	get_mpz_from_digits(THIS, sp-args, NULL);
+      else
+	get_new_mpz(THIS, sp-args);
       break;
     case 2: /* Args are string of digits and integer base */
       if ((sp-args)->type != T_STRING)
@@ -600,7 +610,7 @@ void init_gmpmod_programs(void)
   add_function("pow", mpzmod_pow, "function(int:object)", 0);
   add_function("divm", mpzmod_divm, "function(string|int|float|object, string|int|float|object:object)", 0);
   add_function("invert", mpzmod_invert, "function(:object)", 0);
-  add_function("size_in_base", mpz_size, "function(:int)", 0);
+  add_function("size_in_base", mpz_size, "function(int:int)", 0);
   add_efun("mpz_pow", mpz_pow, "function(int, int)", 0);
   add_efun("mpz_fac", mpz_fac, "function(int|object:object)", 0);
 #endif
