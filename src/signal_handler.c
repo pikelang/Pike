@@ -745,7 +745,7 @@ void f_create_process(INT32 args)
 	    struct array *i,*v;
 	    int ptr=0;
 	    i=mapping_indices(m);
-	    v=mapping_indices(m);
+	    v=mapping_values(m);
 
 	    env=(char **)xalloc((1+m_sizeof(m)) * sizeof(char *));
 	    for(e=0;e<i->size;e++)
