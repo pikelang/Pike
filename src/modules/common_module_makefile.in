@@ -1,11 +1,11 @@
 #
-# $Id: common_module_makefile.in,v 1.2 2003/05/08 12:35:14 grubba Exp $
+# $Id: common_module_makefile.in,v 1.3 2003/05/09 13:47:08 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
 #
 # Modules should NOT use this file directly, but instead use either
-# dynamic_module_makefile or static_module_makefile as apropriate.
+# dynamic_module_makefile or static_module_makefile as appropriate.
 #
 
 # These are set by make_variables.
@@ -27,7 +27,7 @@ force:
 	@:;
 
 dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment $(MODULE_TARGET) module.pmod
-	$(TMP_BINDIR)/install_module module.pmod \
+	@$(TMP_BINDIR)/install_module module.pmod \
 	  $(TMP_MODULE_BASE)/$(MODDIR)$(MODNAME).pmod
 
 $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
@@ -110,7 +110,7 @@ module.pmod: Makefile
 	      <./module.pmod.in >module.pmod; \
 	  else \
 	    echo >module.pmod  '// Generated automatically by'; \
-	    echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.2 2003/05/08 12:35:14 grubba Exp $$'; \
+	    echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.3 2003/05/09 13:47:08 mast Exp $$'; \
 	    echo >>module.pmod '#pike __REAL_VERSION__'; \
 	    echo >>module.pmod '#if constant($(MODULE_PROGRAM))'; \
 	    echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
