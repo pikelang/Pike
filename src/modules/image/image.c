@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.25 1996/11/14 12:34:58 law Exp $ */
+/* $Id: image.c,v 1.26 1996/11/22 20:28:16 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.25 1996/11/14 12:34:58 law Exp $");
+RCSID("$Id: image.c,v 1.26 1996/11/22 20:28:16 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -40,17 +40,25 @@ static INT32 circle_sin_table[CIRCLE_STEPS];
 
 /***************** init & exit *********************************/
 
-static void init_image_struct(struct object *o)
+static int obj_counter=0;
+
+static void init_image_struct(struct object *obj)
 {
   THIS->img=NULL;
   THIS->rgb.r=0;
   THIS->rgb.g=0;
   THIS->rgb.b=0;
+/*  fprintf(stderr,"init %lx (%d)\n",obj,++obj_counter);*/
 }
 
 static void exit_image_struct(struct object *obj)
 {
   if (THIS->img) { free(THIS->img); THIS->img=NULL; }
+/*
+  fprintf(stderr,"exit %lx (%d) %dx%d=%.1fKb\n",obj,--obj_counter,
+	  THIS->xsize,THIS->ysize,
+	  (THIS->xsize*THIS->ysize*3+sizeof(struct image))/1024.0);
+	  */
 }
 
 /***************** internals ***********************************/

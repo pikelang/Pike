@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.6 1996/11/14 12:35:46 law Exp $ */
+/* $Id: blit.c,v 1.7 1996/11/22 20:28:14 law Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -28,7 +28,7 @@ struct program *image_program;
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X)
 
-void chrono(char *x)
+static void chrono(char *x)
 {
    struct rusage r;
    static struct rusage rold;
@@ -138,10 +138,12 @@ void img_crop(struct image *dest,
 	      INT32 x2,INT32 y2)
 {
    rgb_group *new;
-   INT32 blitwidth;
-   INT32 blitheight;
+   INT32 xp,yp,xs,ys;
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
+
+   if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
+   if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
 
    if (x1==0 && y1==0 &&
        img->xsize-1==x2 && img->ysize-1==y2)
@@ -155,28 +157,33 @@ void img_crop(struct image *dest,
       return;
    }
 
-   if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
-   if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
-
    new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) +1);
    if (!new)
      error("Out of memory.\n");
 
    img_clear(new,THIS->rgb,(x2-x1+1)*(y2-y1+1));
 
-   blitwidth=min(x2,img->xsize-1)-max(x1,0)+1;
-   blitheight=min(y2,img->ysize-1)-max(y1,0)+1;
+   dest->xsize=x2-x1+1;
+   dest->ysize=y2-y1+1;
 
-   img_blit(new+max(0,-x1)+(x2-x1+1)*max(0,-y1),
-	    img->img+max(0,x1)+(img->xsize)*max(0,y1),
-	    blitwidth,
-	    blitheight,
-	    (x2-x1+1),
+   xp=max(0,-x1);
+   yp=max(0,-y1);
+   xs=max(0,x1);
+   ys=max(0,y1);
+
+   if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
+   if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
+   if (x2<0) x2=0; else if (x2>=img->xsize) x2=img->xsize-1;
+   if (y2<0) y2=0; else if (y2>=img->ysize) y2=img->ysize-1;
+
+   img_blit(new+xp+yp*dest->xsize,
+	    img->img+xs+(img->xsize)*ys,
+	    x2-x1+1,
+	    y2-y1+1,
+	    dest->xsize,
 	    img->xsize);
 
    dest->img=new;
-   dest->xsize=x2-x1+1;
-   dest->ysize=y2-y1+1;
 }
 
 void img_clone(struct image *newimg,struct image *img)

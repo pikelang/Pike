@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.7 1996/11/18 23:13:21 hubbe Exp $ */
+/* $Id: font.c,v 1.8 1996/11/22 20:28:15 law Exp $ */
 
 #include "global.h"
 
@@ -242,8 +242,6 @@ void font_load(INT32 args)
 		  pop_n_elems(args);
 		  THISOBJ->refs++;
 		  push_object(THISOBJ);   /* success */
-		  if (THIS->chars>32)
-		     THIS->charinfo[32].spacing=THIS->height/4;
 		  return;
 	       } /* wrong version */
 	    } /* wrong cookie */

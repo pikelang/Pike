@@ -1,4 +1,4 @@
-/* $Id: lzw.c,v 1.7 1996/11/14 12:35:00 law Exp $ */
+/* $Id: lzw.c,v 1.8 1996/11/22 20:28:17 law Exp $ */
 
 /*
 
@@ -215,6 +215,8 @@ void lzw_add(struct lzw *lzw,int c)
    lzw->current=c;
 }
 
+#undef UNPACK_DEBUG
+
 #ifdef GIF_LZW
 unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
 			 unsigned char *src,unsigned long srclen,
@@ -232,9 +234,10 @@ unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
 
    unsigned long wrote=0;
    int i,cbits,cbit,clear=(1<<bits),end=(1<<bits)+1;
-   lzwcode_t current,last,used;
+   lzwcode_t current,last,used,nextlast;
    unsigned long store;
    unsigned char *srcend=src+srclen,*destend=dest+destlen;
+   unsigned char first=0;
 
    code=malloc(sizeof(struct lzwuc)*4096);
    if (!code) return 0;
@@ -265,13 +268,17 @@ unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
 	 {
 	    store=(store>>8)|((*(src++))<<24);
 	    cbit+=8;
-	    if (src==srcend) return wrote;
+	    if (src==srcend) { free(code); return wrote; }
 	 }
 	 store=(store>>8)|((*(src++))<<24);
 	 cbit+=8;
 	 current=(store>>(32-(cbit)))&mask[cbits];
 	 cbit-=cbits;
       }
+
+#ifdef UNPACK_DEBUG
+      fprintf(stderr,"%03x ",current);
+#endif
       
       if (current==clear) /* clear tree */
       {
@@ -287,14 +294,30 @@ unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
       }
       else if (current==end) /* end of data */
 	 break;
+      else if (last==LZWCNULL)
+      {
+	 last=current;
+	 if (last>end) break;
+	 *(dest++)=(unsigned char)current;
+	 wrote++;
+	 first=current;
+      }
       else
       {
 	 lzwcode_t n;
 	 unsigned char *dest2;
 
-	 if (current>=used /* wrong code, cancel */
-	    || code[current].len+dest>destend) /* no space, cancel */
+	 if (code[current].len+dest>destend) /* no space, cancel */
 	    break; 
+
+	 nextlast=current;
+
+	 if (current>=used)
+	 {
+	    *(dest++)=(unsigned char)first;
+	    wrote++;
+	    current=last;
+	 }
 	 
 	 dest+=code[current].len;
 	 wrote+=code[current].len;
@@ -320,18 +343,26 @@ unsigned long lzw_unpack(unsigned char *dest,unsigned long destlen,
 	 fprintf(stderr,"\n");
 */
 
-	 if (last!=LZWCNULL)
+	 if (used<4096)
 	 {
 	    code[used].c=code[n].c;
 	    code[used].parent=last;
 	    code[used].len=code[last].len+1;
 	    used++;
-	    if (used>=(1<<cbits)) cbits++;
+
+	    if (used>=(1<<cbits)) 
+	    {
+	       cbits++;
+#ifdef UNPACK_DEBUG
+	       fprintf(stderr,"[%d bits]",cbits);
+#endif
+	    }
 	 }
-	 
-	 last=current;
+
+	 last=nextlast;
       }
    }
+   free(code);
    return wrote;
 }
 #endif
