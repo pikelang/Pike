@@ -161,7 +161,7 @@ static void ponder_answer()
       if ((i=min(i,j))!=10000000)  break;
 
       s=con->read(8192,1);
-      if (s=="") { i=strlen(buf); break; }
+      if (!s || s=="") { i=strlen(buf); break; }
       
       i=strlen(buf)-3;
       buf+=s;
