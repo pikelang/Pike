@@ -108,7 +108,8 @@ static void f_call_with_creds(INT32 args)
   SET_CURRENT_CREDS(o);
 
   /* FIXME: Does this work?
-   * Won't mega_apply2() force current_creds to o->prot anyway?
+   * Won't mega_apply2() force current_creds to func->prot anyway?
+   * If the function throws an error, won't o be freed once to many?
    * /grubba 1999-07-09
    */
   f_call_function(args-1);
