@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.3 2003/03/02 14:28:41 grubba Exp $
+// $Id: __default.pmod,v 1.4 2003/03/29 17:59:32 nilsson Exp $
 
 #pike 7.5
 
@@ -110,12 +110,16 @@ array(int) rusage() {
 	    m->stksize });
 }
 
+array _pipe_debug() {
+  return Pipe._pipe_debug();
+}
 
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret=predef::all_constants()+([]);
   ret->rusage = rusage;
   ret->hash = hash_7_4;
+  ret->_pipe_debug = _pipe_debug;
   return ret;
 }
 
