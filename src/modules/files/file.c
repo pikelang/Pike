@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.93 1998/05/01 15:41:03 grubba Exp $");
+RCSID("$Id: file.c,v 1.94 1998/05/06 01:06:28 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1841,6 +1841,7 @@ static void *proxy_thread(void * data)
     if(len<0)
     {
       if(errno==EINTR) continue;
+/*      fprintf(stderr,"Threaded read failed with errno = %d\n",errno); */
       break;
     }
 
@@ -1851,11 +1852,14 @@ static void *proxy_thread(void * data)
       if(wl<0)
       {
 	if(errno==EINTR) continue;
+/*	fprintf(stderr,"Threaded write failed with errno = %d\n",errno); */
 	break;
       }
       w+=wl;
     }
   }
+
+/*  fprintf(stderr,"Closing %d and %d\n",p->to,p->from); */
 
   fd_close(p->to);
   fd_close(p->from);
