@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.47 2003/09/08 20:05:20 mast Exp $
+|| $Id: backend.cmod,v 1.48 2003/10/15 14:08:54 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.47 2003/09/08 20:05:20 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.48 2003/10/15 14:08:54 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -566,7 +566,7 @@ PIKECLASS Backend
     {
       char foo=0;
 
-      if(me->may_need_wakeup)
+      if(me && me->may_need_wakeup)
 	fd_write(me->wakeup_pipe[1], &foo ,1);
     }
 
@@ -580,7 +580,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_read_callback(%d, %p, %p)\n",
 		    fd, cb, data));
 
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       debug_malloc_touch(me->fds);
       ASSURE_FDS_SIZE(me, fd);
@@ -623,7 +623,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_write_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -665,7 +665,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_read_oob_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -705,7 +705,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_write_oob_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -744,7 +744,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].read.callback;
@@ -757,7 +757,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write.callback;
@@ -771,7 +771,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].read_oob.callback;
@@ -784,7 +784,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.callback;
@@ -798,7 +798,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].read.data;
@@ -812,7 +812,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write.data;
@@ -827,7 +827,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd );
       debug_malloc_touch(me->fds);
       return me->fds[fd].read_oob.data;
@@ -841,7 +841,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.data;
