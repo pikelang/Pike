@@ -546,10 +546,11 @@ void f_fork(INT32 args)
   do_set_close_on_exec();
   pop_n_elems(args);
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
-  push_int(res=fork1());
+  res = fork1();
 #else
-  push_int(res=fork());
+  res = fork();
 #endif
+  push_int(res);
   if(!res && res!=-1)
   {
     call_callback(&fork_child_callback, 0);
