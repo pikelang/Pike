@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.134 2001/04/01 15:40:22 grubba Exp $");
+RCSID("$Id: operators.c,v 1.135 2001/05/09 16:37:49 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -59,12 +59,13 @@ PMOD_EXPORT void ID(INT32 args)				\
 
 /*! @decl int(0..1) `!=(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Inequality operator.
+ *!   Inequality operator.
  *!
- *! Returns @tt{0@} (zero) if all the arguments are equal, and
- *! @tt{1@} otherwise.
+ *! @returns
+ *!   Returns @tt{0@} (zero) if all the arguments are equal, and
+ *!   @tt{1@} otherwise.
  *!
- *! This is the inverse of @[`==()].
+ *!   This is the inverse of @[`==()].
  *!
  *! @seealso
  *!   @[`==()]
@@ -78,10 +79,11 @@ PMOD_EXPORT void f_ne(INT32 args)
 
 /*! @decl int(0..1) `==(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Equality operator.
+ *!   Equality operator.
  *!
- *! Returns @tt{1@} if all the arguments are equal, and
- *! @tt{0@} (zero) otherwise.
+ *! @returns
+ *!   Returns @tt{1@} if all the arguments are equal, and
+ *!   @tt{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[`!=()]
@@ -90,10 +92,11 @@ COMPARISON(f_eq,"`==", is_eq)
 
 /*! @decl int(0..1) `<(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Less than operator.
+ *!   Less than operator.
  *!
- *! Returns @tt{1@} if the arguments are strictly increasing, and
- *! @tt{0@} (zero) otherwise.
+ *! @returns
+ *!   Returns @tt{1@} if the arguments are strictly increasing, and
+ *!   @tt{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[`<=()], @[`>()], @[`>=()]
@@ -102,12 +105,13 @@ COMPARISON(f_lt,"`<" , is_lt)
 
 /*! @decl int(0..1) `<=(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Less or equal operator.
+ *!   Less or equal operator.
  *!
- *! Returns @tt{1@} if the arguments are not strictly decreasing, and
- *! @tt{0@} (zero) otherwise.
+ *! @returns
+ *!   Returns @tt{1@} if the arguments are not strictly decreasing, and
+ *!   @tt{0@} (zero) otherwise.
  *!
- *! This is the inverse of @[`>()].
+ *!   This is the inverse of @[`>()].
  *!
  *! @seealso
  *!   @[`<()], @[`>()], @[`>=()]
@@ -116,10 +120,11 @@ COMPARISON(f_le,"`<=",!is_gt)
 
 /*! @decl int(0..1) `>(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Greater than operator.
+ *!   Greater than operator.
  *!
- *! Returns @tt{1@} if the arguments are strictly decreasing, and
- *! @tt{0@} (zero) otherwise.
+ *! @returns
+ *!   Returns @tt{1@} if the arguments are strictly decreasing, and
+ *!   @tt{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[`<()], @[`<=()], @[`>=()]
@@ -130,10 +135,11 @@ COMPARISON(f_gt,"`>" , is_gt)
  *!
  *! Greater or equal operator.
  *!
- *! Returns @tt{1@} if the arguments are not strictly increasing, and
- *! @tt{0@} (zero) otherwise.
+ *! @returns
+ *!   Returns @tt{1@} if the arguments are not strictly increasing, and
+ *!   @tt{0@} (zero) otherwise.
  *!
- *! This is the inverse of @[`<()].
+ *!   This is the inverse of @[`<()].
  *!
  *! @seealso
  *!   @[`<=()], @[`>()], @[`<()]
@@ -166,45 +172,46 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *! @decl multiset `+(multiset arg1, multiset arg2)
  *! @decl mixed `+(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Addition operator.
+ *!   Addition operator.
  *!
- *! If there's only a single argument, that argument will be returned.
+ *! @returns
+ *!   If there's only a single argument, that argument will be returned.
  *!
- *! If @[arg1] is an object and it has an @[lfun::`+()],
- *! that function will be called with the rest of the arguments,
- *! and the result returned.
+ *!   If @[arg1] is an object and it has an @[lfun::`+()],
+ *!   that function will be called with the rest of the arguments,
+ *!   and the result returned.
  *!
- *! Otherwise if any of the other arguments is an object that has
- *! an @[lfun::``+()] the first such function fill be called
- *! with the arguments leading up to it, and @[`+()] be called recursively
- *! with the result and the rest of the srguments.
+ *!   Otherwise if any of the other arguments is an object that has
+ *!   an @[lfun::``+()] the first such function fill be called
+ *!   with the arguments leading up to it, and @[`+()] be called recursively
+ *!   with the result and the rest of the srguments.
  *!
- *! If there are two arguments the result will be:
- *! @mixed @[arg1]
- *!   @type string
- *!     @[arg2] will be converted to a string, and the result the
- *!     strings concatenated.
- *!   @type int
- *!   @type float
- *!     @mixed @[arg2]
- *!       @type string
- *!         @[arg1] will be converted to string, and the result the
- *!         strings concatenated.
- *!       @type int
- *!       @type float
- *!         The result will be @code{@[arg1] + @[arg2]@}, and will
- *!         be a float if either @[arg1] or @[arg2] is a float.
- *!     @endmixed
- *!   @type array
- *!     The arrays will be concatenated.
- *!   @type mapping
- *!     The mappings will be joined.
- *!   @type multiset
- *!     The multisets will be added.
- *! @endmixed
+ *!   If there are two arguments the result will be:
+ *!   @mixed @[arg1]
+ *!   	@type string
+ *!   	  @[arg2] will be converted to a string, and the result the
+ *!   	  strings concatenated.
+ *!   	@type int
+ *!   	@type float
+ *!   	  @mixed @[arg2]
+ *!   	    @type string
+ *!   	      @[arg1] will be converted to string, and the result the
+ *!   	      strings concatenated.
+ *!   	    @type int
+ *!   	    @type float
+ *!   	      The result will be @code{@[arg1] + @[arg2]@}, and will
+ *!   	      be a float if either @[arg1] or @[arg2] is a float.
+ *!   	  @endmixed
+ *!   	@type array
+ *!   	  The arrays will be concatenated.
+ *!   	@type mapping
+ *!   	  The mappings will be joined.
+ *!   	@type multiset
+ *!   	  The multisets will be added.
+ *!   @endmixed
  *!
- *! Otherwise if there are more than 2 arguments the result will be:
- *!   @code{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
+ *!   Otherwise if there are more than 2 arguments the result will be:
+ *!     @code{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
  *!
  *! @note
  *!   In Pike 7.0 and earlier the addition order was unspecified.
@@ -987,44 +994,45 @@ PMOD_EXPORT void o_subtract(void)
  *! @decl string `-(string arg1, string arg2)
  *! @decl mixed `-(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Negation/subtraction operator.
+ *!   Negation/subtraction operator.
  *!
- *! If there's only a single argument, that argument will be returned
- *! negated. If @[arg1] was an object, @code{@[arg1]::`-()@} will be called
- *! without arguments.
+ *! @returns
+ *!   If there's only a single argument, that argument will be returned
+ *!   negated. If @[arg1] was an object, @code{@[arg1]::`-()@} will be called
+ *!   without arguments.
  *!
- *! If there are more than two arguments the result will be:
- *! @code{`-(`-(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   If there are more than two arguments the result will be:
+ *!   @code{`-(`-(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *! If @[arg1] is an object that overloads @tt{`-()@}, that function will
- *! be called with @[arg2] as the single argument.
+ *!   If @[arg1] is an object that overloads @tt{`-()@}, that function will
+ *!   be called with @[arg2] as the single argument.
  *!
- *! If @[arg2] is an object that overloads @tt{``-()@}, that function will
- *! be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that overloads @tt{``-()@}, that function will
+ *!   be called with @[arg1] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg1]
- *!   @type mapping
- *!     @mixed @[arg2]
- *!       @type array
- *!         The result will be @[arg1] with all occurrances of
- *!         @[arg2] removed.
- *!       @type multiset
- *!       @type mapping
- *!         The result will be @[arg1] with all occurrences of
- *!         @code{@[indices](@[arg2])@} removed.
- *!     @endmixed
- *!   @type array
- *!   @type multiset
- *!     The result will be the elements of @[arg1] that are not in @[arg2].
- *!   @type float
- *!   @type int
- *!     The result will be @code{@[arg1] - @[arg2]@}, and will be a float
- *!     if either @[arg1] or @[arg2] is a float.
- *!   @type string
- *!     Result will be the string @[arg1] with all occurrances of the
- *!     substring @[arg2] removed.
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg1]
+ *!   	@type mapping
+ *!   	  @mixed @[arg2]
+ *!   	    @type array
+ *!   	      The result will be @[arg1] with all occurrances of
+ *!   	      @[arg2] removed.
+ *!   	    @type multiset
+ *!   	    @type mapping
+ *!   	      The result will be @[arg1] with all occurrences of
+ *!   	      @code{@[indices](@[arg2])@} removed.
+ *!   	  @endmixed
+ *!   	@type array
+ *!   	@type multiset
+ *!   	  The result will be the elements of @[arg1] that are not in @[arg2].
+ *!   	@type float
+ *!   	@type int
+ *!   	  The result will be @code{@[arg1] - @[arg2]@}, and will be a float
+ *!   	  if either @[arg1] or @[arg2] is a float.
+ *!   	@type string
+ *!   	  Result will be the string @[arg1] with all occurrances of the
+ *!   	  substring @[arg2] removed.
+ *!   @endmixed
  *!
  *! @note
  *!   In Pike 7.0 and earlier the subtraction order was unspecified.
@@ -1343,35 +1351,36 @@ static void speedup(INT32 args, void (*func)(void))
  *! @decl mapping `&(multiset arg1, mapping arg2)
  *! @decl mixed `&(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Bitwise and/intersection operator.
+ *!   Bitwise and/intersection operator.
  *!
- *! If there's a single argument, that argument will be returned.
+ *! @returns
+ *!   If there's a single argument, that argument will be returned.
  *!
- *! If there are more than two arguments, the result will be:
- *! @code{`&(`&(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   If there are more than two arguments, the result will be:
+ *!   @code{`&(`&(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *! If @[arg1] is an object that has an @[lfun::`&()], that function
- *! will be called with @[arg2] as the single argument.
+ *!   If @[arg1] is an object that has an @[lfun::`&()], that function
+ *!   will be called with @[arg2] as the single argument.
  *! 
- *! If @[arg2] is an object that has an @[lfun::``&()], that function
- *! will be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that has an @[lfun::``&()], that function
+ *!   will be called with @[arg1] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg1]
- *!   @type int
- *!     The result will be the bitwise and of @[arg1] and @[arg2].
- *!   @type array
- *!   @type multiset
- *!   @type mapping
- *!     The result will be the elements of @[arg1] and @[arg2] that
- *!     occurr in both.
- *!   @type type
- *!   @type program
- *!     The result will be the type intersection of @[arg1] and @[arg2].
- *!   @type string
- *!     The result will be the string where the elements of @[arg1]
- *!     and @[arg2] have been pairwise bitwise anded.
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg1]
+ *!   	@type int
+ *!   	  The result will be the bitwise and of @[arg1] and @[arg2].
+ *!   	@type array
+ *!   	@type multiset
+ *!   	@type mapping
+ *!   	  The result will be the elements of @[arg1] and @[arg2] that
+ *!   	  occurr in both.
+ *!   	@type type
+ *!   	@type program
+ *!   	  The result will be the type intersection of @[arg1] and @[arg2].
+ *!   	@type string
+ *!   	  The result will be the string where the elements of @[arg1]
+ *!   	  and @[arg2] have been pairwise bitwise anded.
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[`|()], @[lfun::`&()], @[lfun::``&()]
@@ -1551,34 +1560,35 @@ PMOD_EXPORT void o_or(void)
  *! @decl type `|(program|type arg1, program|type arg2)
  *! @decl mixed `|(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Bitwise or/join operator.
+ *!   Bitwise or/join operator.
  *!
- *! If there's a single argument, that argument will be returned.
+ *! @returns
+ *!   If there's a single argument, that argument will be returned.
  *!
- *! If there are more than two arguments, the result will be:
- *! @code{`|(`|(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   If there are more than two arguments, the result will be:
+ *!   @code{`|(`|(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *! If @[arg1] is an object that has an @[lfun::`|()], that function
- *! will be called with @[arg2] as the single argument.
+ *!   If @[arg1] is an object that has an @[lfun::`|()], that function
+ *!   will be called with @[arg2] as the single argument.
  *! 
- *! If @[arg2] is an object that has an @[lfun::``|()], that function
- *! will be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that has an @[lfun::``|()], that function
+ *!   will be called with @[arg1] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg1]
- *!   @type int
- *!     The result will be the binary or of @[arg1] and @[arg2].
- *!   @type mapping
- *!   @type multiset
- *!     The result will be the join of @[arg1] and @[arg2].
- *!   @type array
- *!     The result will be the concatenation of @[arg1] and @[arg2].
- *!   @type string
- *!     The result will be the pairwise bitwose or of @[arg1] and @[arg2].
- *!   @type type
- *!   @type program
- *!     The result will be the type join of @[arg1] and @[arg2].
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg1]
+ *!   	@type int
+ *!   	  The result will be the binary or of @[arg1] and @[arg2].
+ *!   	@type mapping
+ *!   	@type multiset
+ *!   	  The result will be the join of @[arg1] and @[arg2].
+ *!   	@type array
+ *!   	  The result will be the concatenation of @[arg1] and @[arg2].
+ *!   	@type string
+ *!   	  The result will be the pairwise bitwose or of @[arg1] and @[arg2].
+ *!   	@type type
+ *!   	@type program
+ *!   	  The result will be the type join of @[arg1] and @[arg2].
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[`&()], @[lfun::`|()], @[lfun::``|()]
@@ -1761,35 +1771,36 @@ PMOD_EXPORT void o_xor(void)
  *! @decl type `^(program|type arg1, program|type arg2)
  *! @decl mixed `^(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Exclusive or operator.
+ *!   Exclusive or operator.
  *!
- *! If there's a single argument, that argument will be returned.
+ *! @returns
+ *!   If there's a single argument, that argument will be returned.
  *!
- *! If there are more than two arguments, the result will be:
- *! @code{`^(`^(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   If there are more than two arguments, the result will be:
+ *!   @code{`^(`^(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *! If @[arg1] is an object that has an @[lfun::`^()], that function
- *! will be called with @[arg2] as the single argument.
+ *!   If @[arg1] is an object that has an @[lfun::`^()], that function
+ *!   will be called with @[arg2] as the single argument.
  *! 
- *! If @[arg2] is an object that has an @[lfun::``^()], that function
- *! will be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that has an @[lfun::``^()], that function
+ *!   will be called with @[arg1] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg1]
- *!   @type int
- *!     The result will be the bitwise xor of @[arg1] and @[arg2].
- *!   @type mapping
- *!   @type multiset
- *!   @type array
- *!     The result will be the elements of @[arg1] and @[arg2] that
- *!     only occurr in one of them.
- *!   @type string
- *!     The result will be the pairwise bitwise xor of @[arg1] and @[arg2].
- *!   @type type
- *!   @type program
- *!     The result will be the result of
- *!     @code{(@[arg1]&~@[arg2])|(~@[arg1]&@[arg2])@}.
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg1]
+ *!   	@type int
+ *!   	  The result will be the bitwise xor of @[arg1] and @[arg2].
+ *!   	@type mapping
+ *!   	@type multiset
+ *!   	@type array
+ *!   	  The result will be the elements of @[arg1] and @[arg2] that
+ *!   	  only occurr in one of them.
+ *!   	@type string
+ *!   	  The result will be the pairwise bitwise xor of @[arg1] and @[arg2].
+ *!   	@type type
+ *!   	@type program
+ *!   	  The result will be the result of
+ *!   	  @code{(@[arg1]&~@[arg2])|(~@[arg1]&@[arg2])@}.
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[`&()], @[`|()], @[lfun::`^()], @[lfun::``^()]
@@ -1861,15 +1872,15 @@ PMOD_EXPORT void o_lsh(void)
  *! @decl mixed `<<(object arg1, int|object arg2)
  *! @decl mixed `<<(int arg1, object arg2)
  *!
- *! Left shift operator.
+ *!   Left shift operator.
  *!
- *! If @[arg1] is an object that implements @[lfun::`<<()], that
- *! function will be called with @[arg2] as the single argument.
+ *!   If @[arg1] is an object that implements @[lfun::`<<()], that
+ *!   function will be called with @[arg2] as the single argument.
  *!
- *! If @[arg2] is an object that implements @[lfun::``<<()], that
- *! function will be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that implements @[lfun::``<<()], that
+ *!   function will be called with @[arg1] as the single argument.
  *!
- *! Otherwise @[arg1] will be shifted @[arg2] bits left.
+ *!   Otherwise @[arg1] will be shifted @[arg2] bits left.
  *!
  *! @seealso
  *!   @[`>>()]
@@ -1933,15 +1944,15 @@ PMOD_EXPORT void o_rsh(void)
  *! @decl mixed `>>(object arg1, int|object arg2)
  *! @decl mixed `>>(int arg1, object arg2)
  *!
- *! Right shift operator.
+ *!   Right shift operator.
  *!
- *! If @[arg1] is an object that implements @[lfun::`>>()], that
- *! function will be called with @[arg2] as the single argument.
+ *!   If @[arg1] is an object that implements @[lfun::`>>()], that
+ *!   function will be called with @[arg2] as the single argument.
  *!
- *! If @[arg2] is an object that implements @[lfun::``>>()], that
- *! function will be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that implements @[lfun::``>>()], that
+ *!   function will be called with @[arg1] as the single argument.
  *!
- *! Otherwise @[arg1] will be shifted @[arg2] bits left.
+ *!   Otherwise @[arg1] will be shifted @[arg2] bits left.
  *!
  *! @seealso
  *!   @[`<<()]
@@ -2166,38 +2177,39 @@ PMOD_EXPORT void o_multiply(void)
  *! @decl int `*(int arg1, int arg2)
  *! @decl mixed `*(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Multiplication operator.
+ *!   Multiplication operator.
  *!
- *! If there's only a single argument, that argument will be returned.
+ *! @returns
+ *!   If there's only a single argument, that argument will be returned.
  *!
- *! If the first argument is an object that implements @[lfun::`*()],
- *! that function will be called with the rest of the arguments.
+ *!   If the first argument is an object that implements @[lfun::`*()],
+ *!   that function will be called with the rest of the arguments.
  *!
- *! If there are more than two arguments, the result will be
- *! @code{`*(`*(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   If there are more than two arguments, the result will be
+ *!   @code{`*(`*(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *! If @[arg2] is an object that implements @[lfun::``*()], that
- *! function will be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that implements @[lfun::``*()], that
+ *!   function will be called with @[arg1] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg1]
- *!   @type array
- *!     @mixed @[arg2]
- *!       @type int
- *!       @type float
- *!         The result will be @[arg1] concatenated @[arg2] times.
- *!       @type string
- *!       @type array
- *!         The result will be the elements of @[arg1] concatenated with
- *!         @[arg2] interspersed.
- *!     @endmixed
- *!   @type string
- *!     The result will be @[arg1] concatenated @[arg2] times.
- *!   @type int
- *!   @type float
- *!     The result will be @code{@[arg1] * @[arg2]@}, and will be a
- *!     float if either @[arg1] or @[arg2] is a float.
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg1]
+ *!   	@type array
+ *!   	  @mixed @[arg2]
+ *!   	    @type int
+ *!   	    @type float
+ *!   	      The result will be @[arg1] concatenated @[arg2] times.
+ *!   	    @type string
+ *!   	    @type array
+ *!   	      The result will be the elements of @[arg1] concatenated with
+ *!   	      @[arg2] interspersed.
+ *!   	  @endmixed
+ *!   	@type string
+ *!   	  The result will be @[arg1] concatenated @[arg2] times.
+ *!   	@type int
+ *!   	@type float
+ *!   	  The result will be @code{@[arg1] * @[arg2]@}, and will be a
+ *!   	  float if either @[arg1] or @[arg2] is a float.
+ *!   @endmixed
  *!
  *! @note
  *!   In Pike 7.0 and earlier the multiplication order was unspecified.
@@ -2521,49 +2533,50 @@ PMOD_EXPORT void o_divide(void)
  *! @decl int `/(int arg1, int arg2)
  *! @decl mixed `/(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Division operator.
+ *!   Division operator.
  *!
- *! If there are more than two arguments, the result will be
- *! @code{`/(`/(@[arg1], @[arg2]), @@@[extras])@}.
+ *! @returns
+ *!   If there are more than two arguments, the result will be
+ *!   @code{`/(`/(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *! If @[arg1] is an object that implements @[lfun::`/()], that
- *! function will be called with @[arg2] as the single argument.
+ *!   If @[arg1] is an object that implements @[lfun::`/()], that
+ *!   function will be called with @[arg2] as the single argument.
  *!
- *! If @[arg2] is an object that implements @[lfun::``/()], that
- *! function will be called with @[arg1] as the single argument.
+ *!   If @[arg2] is an object that implements @[lfun::``/()], that
+ *!   function will be called with @[arg1] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg1]
- *!   @type string
- *!     @mixed @[arg2]
- *!       @type int
- *!       @type float
- *!         The result will be and array of @[arg1] split in segments
- *!         of length @[arg2]. If @[arg2] is negative the splitting
- *!         will start from the end of @[arg1].
- *!       @type string
- *!         The result will be an array of @[arg1] split at each
- *!         occurrence of @[arg2]. Note that the segments that
- *!         matched against @[arg2] will not be in the result.
- *!     @endmixed
- *!   @type array
- *!     @mixed @[arg2]
- *!       @type int
- *!       @type float
- *!         The result will be and array of @[arg1] split in segments
- *!         of length @[arg2]. If @[arg2] is negative the splitting
- *!         will start from the end of @[arg1].
- *!       @type array
- *!         The result will be an array of @[arg1] split at each
- *!         occurrence of @[arg2]. Note that the elements that
- *!         matched against @[arg2] will not be in the result.
- *!     @endmixed
- *!   @type float
- *!   @type int
- *!     The result will be @code{@[arg1] / @[arg2]@}. If both arguments
- *!     are int, the result will be truncated to an int. Otherwise the
- *!     result will be a float.
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg1]
+ *!   	@type string
+ *!   	  @mixed @[arg2]
+ *!   	    @type int
+ *!   	    @type float
+ *!   	      The result will be and array of @[arg1] split in segments
+ *!   	      of length @[arg2]. If @[arg2] is negative the splitting
+ *!   	      will start from the end of @[arg1].
+ *!   	    @type string
+ *!   	      The result will be an array of @[arg1] split at each
+ *!   	      occurrence of @[arg2]. Note that the segments that
+ *!   	      matched against @[arg2] will not be in the result.
+ *!   	  @endmixed
+ *!   	@type array
+ *!   	  @mixed @[arg2]
+ *!   	    @type int
+ *!   	    @type float
+ *!   	      The result will be and array of @[arg1] split in segments
+ *!   	      of length @[arg2]. If @[arg2] is negative the splitting
+ *!   	      will start from the end of @[arg1].
+ *!   	    @type array
+ *!   	      The result will be an array of @[arg1] split at each
+ *!   	      occurrence of @[arg2]. Note that the elements that
+ *!   	      matched against @[arg2] will not be in the result.
+ *!   	  @endmixed
+ *!   	@type float
+ *!   	@type int
+ *!   	  The result will be @code{@[arg1] / @[arg2]@}. If both arguments
+ *!   	  are int, the result will be truncated to an int. Otherwise the
+ *!   	  result will be a float.
+ *!   @endmixed
  */
 PMOD_EXPORT void f_divide(INT32 args)
 {
@@ -2711,29 +2724,30 @@ PMOD_EXPORT void o_mod(void)
  *! @decl float `%(int arg1, float arg2)
  *! @decl int `%(int arg1, int arg2)
  *!
- *! Modulo operator.
+ *!   Modulo operator.
  *!
- *! If @[arg1] is an object that implements @[lfun::`%()] then
- *! that function will be called with @[arg2] as the single argument.
+ *! @returns
+ *!   If @[arg1] is an object that implements @[lfun::`%()] then
+ *!   that function will be called with @[arg2] as the single argument.
  *!
- *! If @[arg2] is an object that implements @[lfun::``%()] then
- *! that function will be called with @[arg2] as the single argument.
+ *!   If @[arg2] is an object that implements @[lfun::``%()] then
+ *!   that function will be called with @[arg2] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg1]
- *!   @type string
- *!   @type array
- *!     If @[arg2] is positive, the result will be the last
- *!     @code{`%(@[sizeof](@[arg1]), @[arg2])@} elements of @[arg1].
- *!     If @[arg2] is negative, the result will be the first
- *!     @code{`%(@[sizeof](@[arg1]), -@[arg2])@} elements of @[arg1].
- *!   @type int
- *!   @type float
- *!     The result will be
- *!     @code{@[arg1] - @[arg2]*@[floor](@[arg1]/@[arg2])@}.
- *!     The result will be a float if either @[arg1] or @[arg2] is
- *!     a float, and an int otherwise.
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg1]
+ *!   	@type string
+ *!   	@type array
+ *!   	  If @[arg2] is positive, the result will be the last
+ *!   	  @code{`%(@[sizeof](@[arg1]), @[arg2])@} elements of @[arg1].
+ *!   	  If @[arg2] is negative, the result will be the first
+ *!   	  @code{`%(@[sizeof](@[arg1]), -@[arg2])@} elements of @[arg1].
+ *!   	@type int
+ *!   	@type float
+ *!   	  The result will be
+ *!   	  @code{@[arg1] - @[arg2]*@[floor](@[arg1]/@[arg2])@}.
+ *!   	  The result will be a float if either @[arg1] or @[arg2] is
+ *!   	  a float, and an int otherwise.
+ *!   @endmixed
  */
 PMOD_EXPORT void f_mod(INT32 args)
 {
@@ -2786,15 +2800,16 @@ PMOD_EXPORT void o_not(void)
  *! @decl int(1..1) `!(int(0..0) arg)
  *! @decl int(0..0) `!(mixed arg)
  *!
- *! Negation operator.
+ *!   Negation operator.
  *!
- *! If @[arg] is an object that implements @[lfun::`!()], that function
- *! will be called.
+ *! @returns
+ *!   If @[arg] is an object that implements @[lfun::`!()], that function
+ *!   will be called.
  *!
- *! If @[arg] is @tt{0@} (zero), a destructed object, or a function in a
- *! destructed object, @tt{1@} will be returned.
+ *!   If @[arg] is @tt{0@} (zero), a destructed object, or a function in a
+ *!   destructed object, @tt{1@} will be returned.
  *!
- *! Otherwise @tt{0@} (zero) will be returned.
+ *!   Otherwise @tt{0@} (zero) will be returned.
  *!
  *! @seealso
  *!   @[`==()], @[`!=()], @[lfun::`!()]
@@ -2902,24 +2917,25 @@ PMOD_EXPORT void o_compl(void)
  *! @decl type `~(type|program arg)
  *! @decl string `~(string arg)
  *!
- *! Complement operator.
+ *!   Complement operator.
  *!
- *! The result will be as follows:
- *! @mixed @[arg]
- *!   @type object
- *!     If @[arg] implements @[lfun::`~()], that function will be called.
- *!   @type int
- *!     The bitwise inverse of @[arg] will be returned.
- *!   @type float
- *!     The result will be @code{-1.0 - @[arg]@}.
- *!   @type type
- *!   @type program
- *!     The type inverse of @[arg] will be returned.
- *!   @type string
- *!     If @[arg1] only contains characters in the range 0 - 255 (8-bit),
- *!     a string containing the corresponding 8-bit inverses will be
- *!     returned.
- *! @endmixed
+ *! @returns
+ *!   The result will be as follows:
+ *!   @mixed @[arg]
+ *!   	@type object
+ *!   	  If @[arg] implements @[lfun::`~()], that function will be called.
+ *!   	@type int
+ *!   	  The bitwise inverse of @[arg] will be returned.
+ *!   	@type float
+ *!   	  The result will be @code{-1.0 - @[arg]@}.
+ *!   	@type type
+ *!   	@type program
+ *!   	  The type inverse of @[arg] will be returned.
+ *!   	@type string
+ *!   	  If @[arg1] only contains characters in the range 0 - 255 (8-bit),
+ *!   	  a string containing the corresponding 8-bit inverses will be
+ *!   	  returned.
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[`!()], @[lfun::`~()]
@@ -3052,44 +3068,45 @@ PMOD_EXPORT void o_range(void)
  *! @decl string `[](string arg, int start, int end)
  *! @decl array `[](array arg, int start, int end)
  *!
- *! Index and range operator.
+ *!   Index and range operator.
  *!
- *! If @[arg] is an object that implements @[lfun::`[]()], that function
- *! will be called with the rest of the arguments.
+ *! @returns
+ *!   If @[arg] is an object that implements @[lfun::`[]()], that function
+ *!   will be called with the rest of the arguments.
  *!
- *! If there are 2 arguments the result will be as follows:
- *! @mixed @[arg]
- *!   @type object
- *!     The non-static (ie public) symbol named @[index] will be looked up
- *!     in @[arg].
- *!   @type int
- *!     The bignum function named @[index] will be looked up in @[arg].
- *!   @type array
- *!     If @[index] is an int, index number @[index] of @[arg] will be
- *!     returned. Otherwise an array of all elements in @[arg] indexed
- *!     with @[index] will be returned.
- *!   @type mapping
- *!     If @[index] exists in @[arg] the corresponding value will be returned.
- *!     Otherwise @tt{UNDEFINED@} will be returned.
- *!   @type multiset
- *!     If @[index] exists in @[arg], @tt{1@} will be returned.
- *!     Otherwise @tt{UNDEFINED@} will be returned.
- *!   @type string
- *!     The character (int) at index @[index] in @[arg] will be returned.
- *!   @type program
- *!     The non-static (ie public) constant symbol @[index] will be
- *!     looked up in @[arg].
- *! @endmixed
+ *!   If there are 2 arguments the result will be as follows:
+ *!   @mixed @[arg]
+ *!   	@type object
+ *!   	  The non-static (ie public) symbol named @[index] will be looked up
+ *!   	  in @[arg].
+ *!   	@type int
+ *!   	  The bignum function named @[index] will be looked up in @[arg].
+ *!   	@type array
+ *!   	  If @[index] is an int, index number @[index] of @[arg] will be
+ *!   	  returned. Otherwise an array of all elements in @[arg] indexed
+ *!   	  with @[index] will be returned.
+ *!   	@type mapping
+ *!   	  If @[index] exists in @[arg] the corresponding value will be
+ *!       returned. Otherwise @tt{UNDEFINED@} will be returned.
+ *!   	@type multiset
+ *!   	  If @[index] exists in @[arg], @tt{1@} will be returned.
+ *!   	  Otherwise @tt{UNDEFINED@} will be returned.
+ *!   	@type string
+ *!   	  The character (int) at index @[index] in @[arg] will be returned.
+ *!   	@type program
+ *!   	  The non-static (ie public) constant symbol @[index] will be
+ *!   	  looked up in @[arg].
+ *!   @endmixed
  *!
- *! Otherwise if there are 3 arguments the result will be as follows:
- *! @mixed @[arg]
- *!   @type string
- *!     A string with the characters between @[start] and @[end] (inclusive)
- *!     in @[arg] will be returned.
- *!   @type array
- *!     An array with the elements between @[start] and @[end] (inclusive)
- *!     in @[arg] will be returned.
- *! @endmixed
+ *!   Otherwise if there are 3 arguments the result will be as follows:
+ *!   @mixed @[arg]
+ *!   	@type string
+ *!   	  A string with the characters between @[start] and @[end] (inclusive)
+ *!   	  in @[arg] will be returned.
+ *!   	@type array
+ *!   	  An array with the elements between @[start] and @[end] (inclusive)
+ *!   	  in @[arg] will be returned.
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[`->()], @[lfun::`[]()]
@@ -3121,34 +3138,35 @@ PMOD_EXPORT void f_index(INT32 args)
  *! @decl int(0..1) `->(multiset arg, string index)
  *! @decl mixed `->(program arg, string index)
  *!
- *! Arrow index operator.
+ *!   Arrow index operator.
  *!
- *! This function behaves much like @[`[]()], just that the index is always
- *! a string.
+ *!   This function behaves much like @[`[]()], just that the index is always
+ *!   a string.
  *!
- *! If @[arg] is an object that implements @[lfun::`->()], that function
- *! will be called with @[index] as the single argument.
+ *! @returns
+ *!   If @[arg] is an object that implements @[lfun::`->()], that function
+ *!   will be called with @[index] as the single argument.
  *!
- *! Otherwise the result will be as follows:
- *! @mixed @[arg]
- *!   @type object
- *!     The non-static (ie public) symbol named @[index] will be looked up
- *!     in @[arg].
- *!   @type int
- *!     The bignum function named @[index] will be looked up in @[arg].
- *!   @type array
- *!     An array of all elements in @[arg] arrow indexed with @[index]
- *!     will be returned.
- *!   @type mapping
- *!     If @[index] exists in @[arg] the corresponding value will be returned.
- *!     Otherwise @tt{UNDEFINED@} will be returned.
- *!   @type multiset
- *!     If @[index] exists in @[arg], @tt{1@} will be returned.
- *!     Otherwise @tt{UNDEFINED@} will be returned.
- *!   @type program
- *!     The non-static (ie public) constant symbol @[index] will be
- *!     looked up in @[arg].
- *! @endmixed
+ *!   Otherwise the result will be as follows:
+ *!   @mixed @[arg]
+ *!   	@type object
+ *!   	  The non-static (ie public) symbol named @[index] will be looked up
+ *!   	  in @[arg].
+ *!   	@type int
+ *!   	  The bignum function named @[index] will be looked up in @[arg].
+ *!   	@type array
+ *!   	  An array of all elements in @[arg] arrow indexed with @[index]
+ *!   	  will be returned.
+ *!   	@type mapping
+ *!   	  If @[index] exists in @[arg] the corresponding value will be
+ *!       returned. Otherwise @tt{UNDEFINED@} will be returned.
+ *!   	@type multiset
+ *!   	  If @[index] exists in @[arg], @tt{1@} will be returned.
+ *!   	  Otherwise @tt{UNDEFINED@} will be returned.
+ *!   	@type program
+ *!   	  The non-static (ie public) constant symbol @[index] will be
+ *!   	  looked up in @[arg].
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[`[]()], @[lfun::`->()], @[::`->()]
@@ -3177,23 +3195,23 @@ PMOD_EXPORT void f_arrow(INT32 args)
  *! @decl mixed `[]=(mapping arg, mixed index, mixed val)
  *! @decl int(0..1) `[]=(multiset arg, mixed index, int(0..1) val)
  *!
- *! Index assign operator.
+ *!   Index assign operator.
  *!
- *! If @[arg] is an object that implements @[lfun::`[]=()], that function
- *! will be called with @[index] and @[val] as the arguments.
+ *!   If @[arg] is an object that implements @[lfun::`[]=()], that function
+ *!   will be called with @[index] and @[val] as the arguments.
  *!
- *! @mixed @[arg]
- *!   @type object
- *!     The non-static (ie public) variable named @[index] will be looked up
- *!     in @[arg], and assigned @[val].
- *!   @type array
- *!   @type mapping
- *!     Index @[index] in @[arg] will be assigned @[val].
- *!   @type multiset
- *!     If @[val] is @tt{0@} (zero), one occurrance of @[index] in
- *!     @[arg] will be removed. Otherwise @[index] will be added
- *!     to @[arg] if it is not already there.
- *! @endmixed
+ *!   @mixed @[arg]
+ *!   	@type object
+ *!   	  The non-static (ie public) variable named @[index] will be looked up
+ *!   	  in @[arg], and assigned @[val].
+ *!   	@type array
+ *!   	@type mapping
+ *!   	  Index @[index] in @[arg] will be assigned @[val].
+ *!   	@type multiset
+ *!   	  If @[val] is @tt{0@} (zero), one occurrance of @[index] in
+ *!   	  @[arg] will be removed. Otherwise @[index] will be added
+ *!   	  to @[arg] if it is not already there.
+ *!   @endmixed
  *!
  *! @returns
  *!   @[val] will be returned.
@@ -3224,26 +3242,26 @@ PMOD_EXPORT void f_index_assign(INT32 args)
  *! @decl mixed `->=(mapping arg, string index, mixed val)
  *! @decl int(0..1) `->=(multiset arg, string index, int(0..1) val)
  *!
- *! Arrow assign operator.
+ *!   Arrow assign operator.
  *!
- *! This function behaves much like @[`[]=()], just that the index is always
- *! a string.
+ *!   This function behaves much like @[`[]=()], just that the index is always
+ *!   a string.
  *!
- *! If @[arg] is an object that implements @[lfun::`->=()], that function
- *! will be called with @[index] and @[val] as the arguments.
+ *!   If @[arg] is an object that implements @[lfun::`->=()], that function
+ *!   will be called with @[index] and @[val] as the arguments.
  *!
- *! @mixed @[arg]
- *!   @type object
- *!     The non-static (ie public) variable named @[index] will be looked up
- *!     in @[arg], and assigned @[val].
- *!   @type array
- *!   @type mapping
- *!     Index @[index] in @[arg] will be assigned @[val].
- *!   @type multiset
- *!     If @[val] is @tt{0@} (zero), one occurrance of @[index] in
- *!     @[arg] will be removed. Otherwise @[index] will be added
- *!     to @[arg] if it is not already there.
- *! @endmixed
+ *!   @mixed @[arg]
+ *!   	@type object
+ *!   	  The non-static (ie public) variable named @[index] will be looked up
+ *!   	  in @[arg], and assigned @[val].
+ *!   	@type array
+ *!   	@type mapping
+ *!   	  Index @[index] in @[arg] will be assigned @[val].
+ *!   	@type multiset
+ *!   	  If @[val] is @tt{0@} (zero), one occurrance of @[index] in
+ *!   	  @[arg] will be removed. Otherwise @[index] will be added
+ *!   	  to @[arg] if it is not already there.
+ *!   @endmixed
  *!
  *! @returns
  *!   @[val] will be returned.
@@ -3276,22 +3294,23 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
  *! @decl int sizeof(multiset arg)
  *! @decl int sizeof(object arg)
  *! 
- *! Sizeof operator.
+ *!   Sizeof operator.
  *!
- *! The result will be as follows:
- *! @mixed @[arg]
- *!   @type string
- *!     The number of characters in @[arg] will be returned.
- *!   @type array
- *!   @type multiset
- *!     The number of elements in @[arg] will be returned.
- *!   @type mapping
- *!     The number of key-value pairs in @[arg] will be returned.
- *!   @type object
- *!     If @[arg] implements @[lfun::_sizeof()], that function will
- *!     be called. Otherwise the number of non-static (ie public)
- *!     symbols in @[arg] will be returned.
- *! @endmixed
+ *! @returns
+ *!   The result will be as follows:
+ *!   @mixed @[arg]
+ *!   	@type string
+ *!   	  The number of characters in @[arg] will be returned.
+ *!   	@type array
+ *!   	@type multiset
+ *!   	  The number of elements in @[arg] will be returned.
+ *!   	@type mapping
+ *!   	  The number of key-value pairs in @[arg] will be returned.
+ *!   	@type object
+ *!   	  If @[arg] implements @[lfun::_sizeof()], that function will
+ *!   	  be called. Otherwise the number of non-static (ie public)
+ *!   	  symbols in @[arg] will be returned.
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[lfun::_sizeof()]
