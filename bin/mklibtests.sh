@@ -3,7 +3,7 @@
 #
 # Creates testsuit files form the testsuit.in files
 # found in the lib directory.
-# $Id: mklibtests.sh,v 1.1 2002/09/23 15:56:28 marcus Exp $
+# $Id: mklibtests.sh,v 1.2 2003/08/18 14:23:26 mast Exp $
 #
 
 src_dir=
@@ -28,7 +28,7 @@ recurse () {
 
     if [ -f "$dest_dir$path"testsuite ] && \
        [ "" = "`find \"\$src_dir\$path\$fn\" -newer \"\$dest_dir\$path\"testsuite -print`" ]; then
-       echo "$path"testsuite already up to date.
+       echo "$dest_dir$path"testsuite already up to date.
     else
        if exec 5>"$dest_dir$path"testsuite; then :; else
          echo >&2 "Could not create $dest_dir$path"testsuite
@@ -36,7 +36,7 @@ recurse () {
        fi
        "$bin_dir"mktestsuite "$src_dir$path$fn" >&5
        exec 5>&-
-       echo "$path"testsuite updated.
+       echo "$dest_dir$path"testsuite updated.
     fi    
   done
 }
