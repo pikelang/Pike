@@ -54,7 +54,7 @@ abs
 all_threads (link to threads)
 atan2
 atexit
-chmod
+(chmod fixed /Mirar)
 chroot
 cleargroups
 closelog
@@ -3724,6 +3724,7 @@ stream.
 <method name=open title="open a file">
 <man_syntax>
 int open(string <I>filename</I>, string <I>how</I>);<br>
+int open(string <I>filename</I>, string <I>how</I>, int mode);<br>
 </man_syntax>
 <man_description>
 Open a file for read, write or append. The variable <i>how</i> should
@@ -3738,8 +3739,11 @@ contain one or more of the following letters:
 </table>
 
 <p><i>How</i> should _always_ contain at least one of 'r' or 'w'.
-<p>Returns 1 on success, 0 otherwise.
+
+<p>The third argument is protection bits if the file is created.
+Default is 0666 (all read+write, in octal notation). 
 </man_description>
+<man_returns>1 on success, 0 otherwise</man_returns>
 <man_see>Stdio.File-&gt;close</man_see>
 </method>
 
@@ -11083,6 +11087,20 @@ Return the closest integer value higher or equal to <i>f</i>.
 </man_note>
 <man_see>
 floor
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=chmod title="change mode of a file in the filesystem">
+<man_syntax>
+void chmod(string filename,int mode);
+</man_syntax>
+<man_description>
+Sets the protection mode of the given file. It will throw if it fails.
+</man_description>
+<man_see>
+Stdio.File->open, errno
 </man_see>
 </function>
 
