@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.3 1997/05/31 22:04:12 grubba Exp $ */
+/* $Id: socktest.pike,v 1.4 1997/09/16 06:03:22 hubbe Exp $ */
 
 import Stdio;
 import String;
@@ -161,6 +161,26 @@ array(object(Socket)) stdtest()
   return ({sock,sock2});
 }
 
+object *spair(int type)
+{
+  object sock1,sock2;
+  sock1=File();
+  if(!type)
+  {
+    sock1->connect("127.0.0.1",portno2);
+    sock2=port2::accept();
+    if(!sock2)
+    {
+      werror("Accept returned 0\n");
+      exit(1);
+    }
+  }else{
+    sock2=sock1->pipe();
+  }
+  return ({sock1,sock2});
+}
+
+mixed keeper;
 
 void finish()
 {
@@ -169,86 +189,80 @@ void finish()
   {
     werror("\n");
 
-    object sock1, sock2;
+    object sock1, sock2, *socks;
     int tests;
 
     _tests++;
     switch(_tests)
     {
-    case 1..10:
-      tests=_tests+1;
-      werror("Copying "+(tests*(2<<tests)*11)+" bytes of data on "+(tests*2)+" sockets. ");
-      for(int e=0;e<tests;e++)
-      {
-	string data1=strmult("foobar",2<<tests);
-	string data2=strmult("fubar",2<<tests);
-	sock1=Socket();
-	sock1->connect("127.0.0.1",portno2);
-	sock2=port2::accept();
-	if(!sock2)
+      case 1:
+	werror("Testing dup & assign. ");
+	sock1=stdtest()[0];
+	sock1->assign(sock1->dup());
+	break;
+	
+      case 2:
+	werror("Testing accept. ");
+	string data1=strmult("foobar",4711);
+	for(int e=0;e<10;e++)
 	{
-	  werror("Accept returned 0\n");
-	  exit(1);
+	  sock1=Socket();
+	  sock1->connect("127.0.0.1",portno1);
+	  sock1->output_buffer=data1;
 	}
-	sock2=Socket(sock2);
+	break;
+	
+      case 3:
+	werror("Testing uni-directional shutdown on socket ");
+	socks=spair(0);
+	num_running=1;
+	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
+	socks[0]->close("w");
+	keeper=socks;
+	break;
 
-	sock1->output_buffer=data1;
-	sock2->expected_data=data1;
+      case 4:
+	werror("Testing uni-directional shutdown on pipe ");
+	socks=spair(1);
+	num_running=1;
+	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
+	socks[0]->close("w");
+	keeper=socks;
+	break;
 
-	sock2->output_buffer=data2;
-	sock1->expected_data=data2;
-      }
-      break;
+      case 5..26:
+	tests=(_tests-2)*2;
+	werror("Testing "+(tests*2)+" sockets. ");
+	for(e=0;e<tests;e++) stdtest();
+	break;
 
-    case 11..20:
-      tests=_tests-9;
-      werror("Copying "+(tests*(2<<tests)*11)+" bytes of data on "+(tests*2)+" pipes. ");
-      for(int e=0;e<tests;e++)
-      {
-	string data1=strmult("foobar",2<<tests);
-	string data2=strmult("fubar",2<<tests);
-	sock1=File();
-	sock2=sock1->pipe();
-	if(!sock2)
+      case 27..48:
+	tests=_tests-25;
+	werror("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets")+" ");
+	for(int e=0;e<tests/2;e++)
 	{
-	  werror("Failed to open pipe: "+strerror(sock1->errno())+".\n");
-	  exit(1);
+	  string data1=strmult("foobar",2<<(tests/2));
+	  string data2=strmult("fubar",2<<(tests/2));
+	  socks=spair(!(tests & 1));
+	  sock1=socks[0];
+	  sock2=socks[1];
+	  if(!sock2)
+	  {
+	    werror("Failed to open pipe: "+strerror(sock1->errno())+".\n");
+	    exit(1);
+	  }
+	  sock1=Socket(sock1);
+	  sock2=Socket(sock2);
+	  
+	  sock1->output_buffer=data1;
+	  sock2->expected_data=data1;
+	  
+	  sock2->output_buffer=data2;
+	  sock1->expected_data=data2;
 	}
-	sock1=Socket(sock1);
-	sock2=Socket(sock2);
+	break;
 
-	sock1->output_buffer=data1;
-	sock2->expected_data=data1;
-
-	sock2->output_buffer=data2;
-	sock1->expected_data=data2;
-      }
-      break;
-
-    case 21:
-      werror("Testing dup & assign. ");
-      sock1=stdtest()[0];
-      sock1->assign(sock1->dup());
-      break;
-
-    case 22:
-      werror("Testing accept. ");
-      string data1=strmult("foobar",4711);
-      for(e=0;e<10;e++)
-      {
-	sock1=Socket();
-	sock1->connect("127.0.0.1",portno1);
-	sock1->output_buffer=data1;
-      }
-      break;
-
-    case 23..45:
-      tests=(_tests-22)*2;
-      werror("Testing "+(tests*2)+" sockets. ");
-      for(e=0;e<tests;e++) stdtest();
-      break;
-
-    case 46:
+    case 49:
       exit(0);
     }
   }

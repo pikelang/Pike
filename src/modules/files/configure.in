@@ -245,6 +245,42 @@ int main()
   char x;
 
   if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds)<0)
+  {
+    fprintf(stderr,"socketpair() failed\n");
+    exit(1);
+  }
+
+  if(shutdown(fds[1],1))
+  {
+    fprintf(stderr,"shutdown failed\n");
+    exit(9);
+  }
+ 
+  if(shutdown(fds[0],1))
+  {
+    fprintf(stderr,"shutdown failed\n");
+    exit(9);
+  }
+  close(fds[0]);
+
+  foo.tv_sec=5;
+  foo.tv_usec=0;
+
+  FD_ZERO(&tmp);
+  FD_SET(fds[1], &tmp);
+  if(select(fds[1]+1,&tmp, 0,0,&foo)<=0)
+  {
+    fprintf(stderr,"select() does report closed sockets properly\n");
+    exit(2);
+  }
+
+  if(!FD_ISSET(fds[1], &tmp))
+  {
+    fprintf(stderr,"FD_ISSET does not report closed sockets properly\n");
+    exit(3);
+  }
+
+  if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds)<0)
     exit(1);
 
   foo.tv_sec=1;
@@ -258,7 +294,11 @@ int main()
     exit(4);
   }
 
-  write(fds[0],"x",1);
+  if(write(fds[0],"x",1)!=1)
+  {
+    fprintf(stderr,"write() failed\n");
+    exit(1);
+  }
   
   foo.tv_sec=1;
   foo.tv_usec=0;
@@ -277,27 +317,33 @@ int main()
     exit(6);
   }
 
-  read(fds[1], &x, 1);
-
-  shutdown(fds[1],1);
-  shutdown(fds[0],1);
-  close(fds[0]);
-
-  foo.tv_sec=5;
-  foo.tv_usec=0;
-
-  FD_ZERO(&tmp);
-  FD_SET(fds[1], &tmp);
-  if(select(fds[1]+1,&tmp, 0,0,&foo)<=0)
+  if(read(fds[1], &x, 1)!=1)
   {
-    fprintf(stderr,"select() does report closed sockets properly\n");
-    exit(2);
+    fprintf(stderr,"read() failed\n");
+    exit(1);
   }
 
+  if(shutdown(fds[0],1))
+  {
+    fprintf(stderr,"socketpair() failed\n");
+    exit(1);
+  }
+
+  foo.tv_sec=1;
+  foo.tv_usec=0;
+  FD_ZERO(&tmp);
+  FD_SET(fds[1], &tmp);
+
+  if(select(fds[1]+1,&tmp, 0,0,&foo)<=0)
+  {
+    fprintf(stderr,"select() does not report shutdown()\n");
+    exit(7);
+  }
+ 
   if(!FD_ISSET(fds[1], &tmp))
   {
-    fprintf(stderr,"FD_ISSET does not report closed sockets properly\n");
-    exit(3);
+    fprintf(stderr,"select() modify read set properly on shutdown()\n");
+    exit(8);
   }
 
   exit(0);

@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.52 1997/09/06 23:50:29 grubba Exp $");
+RCSID("$Id: file.c,v 1.53 1997/09/16 06:03:21 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -1462,7 +1462,7 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
   for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
   {
     int tmp=1;
-    if(!query_read_callback(e))
+    if(query_read_callback(e)!=file_read_callback)
     {
       gc_check_svalues( & files[e].read_callback, 1);
       gc_check_svalues( & files[e].close_callback, 1);
@@ -1474,7 +1474,7 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
       tmp=0;
     }
 
-    if(!query_write_callback(e))
+    if(query_write_callback(e)!=file_write_callback)
     {
       gc_check_svalues( & files[e].write_callback, 1);
     }else{
