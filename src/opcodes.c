@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.71 2000/01/27 23:14:46 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.72 2000/03/10 01:23:19 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -459,7 +459,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
       struct pike_string *itype;
       INT32 run_time_itype;
 
-      push_string(itype=index_type(type,mixed_type_string,0));
+      push_string(itype=index_type(type,int_type_string,0));
       run_time_itype=compile_type_to_runtime_type(itype);
 
       if(run_time_itype != T_MIXED)
