@@ -18,7 +18,7 @@
 #include "operators.h"
 #include "module_support.h"
 
-RCSID("$Id: error.c,v 1.30 1999/03/23 16:24:12 hubbe Exp $");
+RCSID("$Id: error.c,v 1.31 1999/03/23 16:26:17 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -442,7 +442,7 @@ void math_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)))
 {
   INIT_ERROR(math);
   if(number)
