@@ -387,7 +387,7 @@ mixed parse_function(string fun)
   case "array":
   case "mapping":
   case "string":
-  case "list":
+  case "multiset":
   case "float":
   case "mixed":
   case "program":
@@ -444,7 +444,7 @@ mixed parse_statement(string ex)
   case "array":
   case "mapping":
   case "string":
-  case "list":
+  case "multiset":
   case "float":
   case "mixed":
   case "program":
