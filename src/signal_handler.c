@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.107 1999/05/01 13:25:22 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.108 1999/05/03 18:20:13 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -472,7 +472,7 @@ static RETSIGTYPE receive_signal(int signum)
 
   wake_up_backend();
 
-#ifndef SIGNAL_ONESHOT
+#ifdef SIGNAL_ONESHOT
   my_signal(signum, receive_signal);
 #endif
 }
@@ -2417,7 +2417,7 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
     {
       if(++lastsig == SIGNAL_BUFFER) lastsig=0;
 
-#ifdef USE_SIGCHLD
+#ifdef USE_SIGCHILD
       if(sigbuf[lastsig]==SIGCHLD)
       {
 	int tmp2 = firstwait;
@@ -2507,7 +2507,7 @@ static void f_signal(int args)
 
     switch(signum)
     {
-#ifdef USE_SIGCHLD
+#ifdef USE_SIGCHILD
     case SIGCHLD:
       func=receive_signal;
       break;
@@ -2645,7 +2645,7 @@ void init_signals(void)
 {
   int e;
 
-#ifdef USE_SIGCHLD
+#ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_signal);
 #endif
 
