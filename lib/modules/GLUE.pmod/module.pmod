@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.7 2004/04/21 08:55:22 nilsson Exp $
+// $Id: module.pmod,v 1.8 2004/06/19 13:53:53 mirar Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)
@@ -744,7 +744,7 @@ class BaseTexture {
   //! @param debug_text
   //! A string that can be used to identify this texture.
   void construct( int width, int height, int _alpha,
-		  mapping|void imgs, int(0..1)|void mipmap, int|void _mode,
+		  mapping|void imgs, int(0..3)|void flags, int|void _mode,
 		  string|void debug_text )
   {
     if(id) error("construct called twice\n");
@@ -752,7 +752,7 @@ class BaseTexture {
     if(debug_text) debug = debug_text;
     alpha = _alpha;
     mode = _mode;
-    resize(width, height, imgs, mipmap);
+    resize(width, height, imgs, flags);
     all_textures[this] = 1;
   }
 
@@ -775,7 +775,7 @@ class BaseTexture {
   //! @seealso
   //!   @[construct]
   void resize(int width, int height,
-	      mapping|void imgs, int(0..1)|void mipmap,
+	      mapping|void imgs, int(0..3)|void flags,
 	      int(0..1)|void nocreate)
   {
     texture_mem -= _sizeof();
@@ -787,7 +787,7 @@ class BaseTexture {
     height_u = (float)i_height / t_height;
     texture_mem += _sizeof();
     if(!nocreate) 
-      create_texture( imgs, mipmap, width, height );
+      create_texture( imgs, flags, width, height );
   }
 
   //! Actually creates the texture.
@@ -804,15 +804,16 @@ class BaseTexture {
   //!     Optional image to be used as alpha channel, depending on the
   //!     alpha value given to @[create]/@[construct].
   //! @endmapping
-  //! @param mipmap
+  //! @param flags
   //!   If @expr{1@}, the texture will be mipmapped.
+  //!   If bit 1 (@expr{2@}) is set, texture will not be wrapped but clamped.
   //! @param width
   //! @param height
   //!   The dimensions of the texture. If omitted the dimensions of
   //!   the images in @[imgs] will be used.
   //! @seealso
   //!   @[resize]
-  void create_texture( mapping|void imgs, int(0..1)|void mipmap,
+  void create_texture( mapping|void imgs, int(0..3)|void flags,
 		       int|void width, int|void height )
   {
     if(imgs) {
@@ -909,11 +910,19 @@ class BaseTexture {
     if( global_list_begin )
       error("Creating texture while creating list\n");
     if( texture_type == GL_TEXTURE_2D ) {
-      glTexParameter(texture_type, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameter(texture_type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+       if (flags&2)
+       {
+	  glTexParameter(texture_type, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	  glTexParameter(texture_type, GL_TEXTURE_WRAP_T, GL_CLAMP);
+       }
+       else
+       {
+	  glTexParameter(texture_type, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	  glTexParameter(texture_type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+       }
     }
 
-    if(mipmap) {
+    if(flags&1) {
       glTexParameter(texture_type, GL_TEXTURE_MAG_FILTER,
 		     fast_mipmap ? GL_NEAREST_MIPMAP_NEAREST :
 		     GL_LINEAR_MIPMAP_LINEAR);
@@ -929,7 +938,7 @@ class BaseTexture {
     }
 
     glTexImage2D( texture_type, 0, mode || imode, 0, m );
-    if(mipmap)
+    if(flags&1)
       make_mipmap(imgs, imode);
     else
       is_mipmapped = 0;
@@ -1252,7 +1261,7 @@ class RectangleTexture
   inherit BaseTexture;
 
   void resize(int width, int height,
-	      mapping|void imgs, int(0..1)|void mipmap,
+	      mapping|void imgs, int(0..1)|void flags,
 	      int(0..1)|void nocreate)
   {
     texture_type = GL_TEXTURE_RECTANGLE_NV;
@@ -1268,7 +1277,7 @@ class RectangleTexture
 class BaseDWIM {
 
   void construct( int width, int height, int _alpha,
-		  mapping|void imgs, int(0..1)|void mipmap, int|void _mode,
+		  mapping|void imgs, int(0..1)|void flags, int|void _mode,
 		  string|void debug_text );
 
   //! This create function has the following heuristic:
@@ -1288,6 +1297,8 @@ class BaseDWIM {
   //!     The alpha mode.
   //!   @member int(0..1) "mipmap"
   //!     Should the texture be mipmapped or not.
+  //!   @member int(0..1) "clamp"
+  //!     Should the texture be clamped or not.
   //!   @member int "mode"
   //!     The texture mode.
   //!   @member string "debug"
@@ -1307,7 +1318,7 @@ class BaseDWIM {
   //! argument. In that case it will be interpreted as the alpha mode.
   void create(mixed ... args) {
     mapping imgs;
-    int height, width, alpha=-1, mipmap, mode;
+    int height, width, alpha=-1, mipmap, clamp, mode;
     string debug;
 
     // Get imgs and debug
@@ -1400,7 +1411,7 @@ class BaseDWIM {
 	alpha=0;
     }
 
-    construct(width, height, alpha, imgs, mipmap, mode, debug);
+    construct(width, height, alpha, imgs, mipmap*1 + clamp*2, mode, debug);
   }
 }
 
