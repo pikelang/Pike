@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.47 1997/07/19 21:33:47 hubbe Exp $
+/* $Id: master.pike,v 1.48 1997/08/18 15:47:43 grubba Exp $
  *
  * Master-file for Pike.
  */
@@ -9,6 +9,7 @@
 string describe_backtrace(mixed *trace);
 object low_cast_to_object(string oname, string current_file);
 
+string _master_file_name;
 string pike_library_path;
 string *pike_include_path=({});
 string *pike_module_path=({});
@@ -369,14 +370,16 @@ void _main(string *argv, string *env)
 
   add_constant("write",_static_modules.files()->file("stdout")->write);
 
-  a=backtrace()[-1][0];
-  q=a/"/";
+  _master_file_name=backtrace()[-1][0];
+  q=_master_file_name/"/";
   pike_library_path = q[0..sizeof(q)-2] * "/";
 
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
   add_program_path(getcwd());
   add_module_path(getcwd());
+
+  _master_file_name=combine_path(getcwd(), _master_file_name);
 
   q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
@@ -447,7 +450,7 @@ void _main(string *argv, string *env)
 	       " -t -t#               : Increase trace level\n"
 	  );
 	exit(0);
-
+	
       case "execute":
 	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
 	exit(0);
