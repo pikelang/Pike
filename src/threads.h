@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.99 2000/07/28 17:16:56 hubbe Exp $
+ * $Id: threads.h,v 1.100 2000/07/30 07:27:51 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -47,6 +47,10 @@
 #ifdef _MIT_POSIX_THREADS
 #define POSIX_THREADS
 #include <pthread.h>
+
+/* AIX is *STUPID* - Hubbe */
+#undef func_data
+
 #undef HAVE_PTHREAD_H
 #endif /* _MIT_POSIX_THREADS */
 
