@@ -15,8 +15,8 @@ constant CdocMarker = "*!";
 constant EOF = .PikeParser.EOF;
 
 /*static private*/ array(string) getDocComments(string s) {
-  array a = filter(Parser.C.split(s), isDocComment);
-  array res = ({ });
+  array(string) a = filter(Parser.C.split(s), isDocComment);
+  array(string) res = ({ });
   foreach(a, string doc) {
     string quux = doc[3 .. strlen(doc) - 3];
     //    werror("quux == %O\n", quux);
@@ -70,7 +70,7 @@ static private class Extractor {
   // or ({"module", Module })
   // or ({"docgroup", DocGroup })
   // or 0 if no objects to parse.
-  static array parseObject() {
+  static array(string|Class|Module|DocGroup) parseObject() {
     Parse token = tokens[0];
     if (!token)
       return 0;
@@ -133,20 +133,20 @@ static private class Extractor {
 
   void parseClassBody(Class|Module c) {
     for(;;) {
-      array a = parseObject();
+      array(string|Class|Module|DocGroup) a = parseObject();
       if (!a)
         return;
-      switch (a[0]) {
+      switch ([string]a[0]) {
         case "class":
         case "module":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
-          c->AddChild(a[1]);
+          c->AddChild([object(Class)|object(Module)]a[1]);
           break;
         case "docgroup":
-          foreach (a[1]->objects, PikeObject obj)
+          foreach (([object(DocGroup)]a[1])->objects, PikeObject obj)
             if (obj->objtype == "inherit")
               c->AddInherit(obj);
-          c->AddGroup(a[1]);
+          c->AddGroup([object(DocGroup)]a[1]);
           break;
       }
     }

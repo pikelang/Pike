@@ -88,7 +88,7 @@ static private class Extractor {
       // TODO: parse doc squeezed in between the head and the body
       if (!arrayp(p) && p->objtype == "class" && parser->peekToken() == "{") {
         parser->eat("{");
-        parseClassBody([object(PikeObject)] p);
+        parseClassBody([object(Class)] p);
         parser->eat("}");
       }
       else if (parser->peekToken() == "{") {
@@ -102,7 +102,8 @@ static private class Extractor {
         parser->eat(";");
       SourcePosition pos =
         SourcePosition(filename, firstline, parser->currentline);
-      foreach(arrayp(p) ? p : ({ p }), PikeObject obj)
+      foreach(arrayp(p) ? [array(object(PikeObject))]p :
+	      ({ [object(PikeObject)]p }), PikeObject obj)
         obj->position = pos;
 
       res += arrayp(p) ? p : ({ p });   // int x,y;  =>  array of PikeObject
@@ -163,7 +164,7 @@ static private class Extractor {
         }
       array(PikeObject) docDecls = ({ });
 
-      object parse = 0;
+      object(.DocParser.Parse) parse = 0;
       string appears = 0;
       string belongs = 0;
       int global = 0;
@@ -178,7 +179,8 @@ static private class Extractor {
         global = meta->global;
       } else
         foreach (decls, PikeObject obj)
-          if (obj->objtype == "class" && obj->containsDoc())
+          if (obj->objtype == "class" &&
+	      ([object(Class)]obj)->containsDoc())
             extractorError("undocumented class contains doc comments");
 
       // Objects added by @decl replace the true objects:
@@ -233,7 +235,8 @@ static private class Extractor {
 
       if (doc) {
         if (wasClassOrModule) {
-          object d = decls[0];
+          object(Class)|object(Module) d =
+	    [object(Class)|object(Module)]decls[0];
           d->documentation = doc;
           d->appears = appears;
           d->belongs = belongs;
@@ -272,7 +275,7 @@ Module extractModule(string s, void|string filename, void|string moduleName) {
   return m;
 }
 
-DocGroup extractClass(string s, void|string filename, void|string className) {
+Class extractClass(string s, void|string filename, void|string className) {
   Extractor e = Extractor(s, filename);
   Class c = Class();
   c->name = className || filename;

@@ -55,6 +55,8 @@ mapping(string : int) keywordtype =
   "example" : DELIMITERKEYWORD,
   "note" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
+  "seealso" : DELIMITERKEYWORD,
+  "see_also" : DELIMITERKEYWORD,
 
   "mapping" : CONTAINERKEYWORD, "member" : DELIMITERKEYWORD,
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
@@ -72,7 +74,7 @@ mapping(string : array(string)) attributenames =
   "multiset" : ({ "name" }),
 ]);
 
-static constant standard = (< "note", "example">);
+static constant standard = (< "note", "example", "seealso" >);
 
 mapping(string : multiset(string)) allowedChildren =
 (["_general" : standard,

@@ -229,7 +229,7 @@ class DocGroup {
   int global = 0;
 
   string xml() {
-    mapping m = ([]);
+    mapping(string:string) m = ([]);
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
     if (global)  m->global = "predef";
@@ -269,8 +269,8 @@ class PikeObject {
     return standardStart() + standardEnd();
   }
 
-  static mapping standardAttributes() {
-    mapping m = ([]);
+  static mapping(string:string) standardAttributes() {
+    mapping(string:string) m = ([]);
     if (name)    m->name = name;
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
@@ -335,7 +335,7 @@ class _Class_or_Module {
       contents += in->xml();
     foreach (docGroups, DocGroup dg)
       contents += dg->xml();
-    mapping m = standardAttributes();
+    mapping(string:string) m = standardAttributes();
     if (file) m["file"] = file;
     if (directory) m["directory"] = directory;
     return opentag(objtype, m) + contents + standardEnd();
