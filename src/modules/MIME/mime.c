@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.12 1998/07/04 16:57:33 grubba Exp $
+ * $Id: mime.c,v 1.13 1998/10/11 18:17:39 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.12 1998/07/04 16:57:33 grubba Exp $");
+RCSID("$Id: mime.c,v 1.13 1998/10/11 18:17:39 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -155,9 +155,9 @@ static void f_decode_base64( INT32 args )
 	/* 6 more bits to put into d */
 	if((d=(d<<6)|base64rtab[*src-' '])>=0x1000000) {
 	  /* d now contains 24 valid bits.  Put them in the buffer */
-	  low_my_putchar( d>>16, &buf );
-	  low_my_putchar( d>>8, &buf );
-	  low_my_putchar( d, &buf );
+	  low_my_putchar( (d>>16)&0xff, &buf );
+	  low_my_putchar( (d>>8)&0xff, &buf );
+	  low_my_putchar( d&0xff, &buf );
 	  d=1;
 	}
       } else if (*src=='=') {
@@ -170,9 +170,9 @@ static void f_decode_base64( INT32 args )
     /* If data size not an even multiple of 3 bytes, output remaining data */
     switch(pads) {
     case 1:
-      low_my_putchar( d>>8, &buf );
+      low_my_putchar( (d>>8)&0xff, &buf );
     case 2:
-      low_my_putchar( d, &buf );
+      low_my_putchar( d&0xff, &buf );
     }
 
     /* Return result */
@@ -439,9 +439,9 @@ static void f_decode_uue( INT32 args )
 	d |= ((*src++-' ')&63)<<6;
 	d |= ((*src++-' ')&63);
 	/* Output it into the buffer */
-	low_my_putchar( d>>16, &buf );
-	low_my_putchar( d>>8, &buf );
-	low_my_putchar( d, &buf );
+	low_my_putchar( (d>>16)&0xff, &buf );
+	low_my_putchar( (d>>8)&0xff, &buf );
+	low_my_putchar( d&0xff, &buf );
       }
 
       /* If the line didn't contain an even multiple of 24 bits, remove
