@@ -1,3 +1,9 @@
+Fri Aug 15 13:23:09 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/Mysql/result.c (f_fetch_row): Now returns strings for all
+	datamembers, and 0(zero) for NULL, to allow for easier identification
+	of NULL and integers larger than 32 bits.
+
 Tue Jul  8 17:51:06 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* stralloc.c: fixed a bug in replace() (if 'from' is an empty string)
