@@ -56,11 +56,21 @@ void main(int argc, char **argv, char **env)
   struct array *a;
 
 #ifdef HAVE_SETLOCALE
+#ifdef LC_NUMERIC
   setlocale(LC_NUMERIC, "C");
+#endif
+#ifdef LC_CTYPE
   setlocale(LC_CTYPE, "");
+#endif
+#ifdef LC_TIME
   setlocale(LC_TIME, "C");
+#endif
+#ifdef LC_COLLATE
   setlocale(LC_COLLATE, "");
+#endif
+#ifdef LC_MESSAGES
   setlocale(LC_MESSAGES, "");
+#endif
 #endif  
   init_backend();
   master_file = 0;
