@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.38 2000/08/05 23:47:27 grubba Exp $
+**!	$Id: image.h,v 1.39 2000/08/06 20:06:21 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -42,17 +42,18 @@ extern int image_cpuid;
 
 /* Some marcos to avoid loss of precision warnings. */
 #ifdef __ECL
+#define DO_NOT_WARN(X)	(X)
 static inline int DOUBLE_TO_INT(double d)
 {
-  return (int)d;
+  return DO_NOT_WARN((int)d);
 }
 static inline char DOUBLE_TO_CHAR(double d)
 {
-  return (char)d;
+  return DO_NOT_WARN((char)d);
 }
 static inline COLORTYPE DOUBLE_TO_COLORTYPE(double d)
 {
-  return (COLORTYPE)d;
+  return DO_NOT_WARN((COLORTYPE)d);
 }
 #else /* !__ECL */
 #define DOUBLE_TO_INT(D)	((int)(D))
