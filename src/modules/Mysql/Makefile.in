@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.6 2002/03/14 01:53:01 mast Exp $
+# $Id: Makefile.in,v 1.7 2003/04/12 22:52:26 grendel Exp $
 #
 
 @make_variables@
@@ -7,6 +7,7 @@ VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@
 OBJS=mysql.o result.o
 MODULE_LDFLAGS=@LDFLAGS@ @MYSQL_LIBS@
+MODULE_CFLAGS=@MYSQL_CFLAGS@
 
 DUMMY=dummy.o
 LINKER_OPTIONS=modules/Mysql/dummy.o
