@@ -30,6 +30,7 @@ string classname( string what )
 {
   if(what[0] == 'p' && upper_case(what[1..1])==what[1..1])
     return "GTK."+what;
+
   string base = "GTK.";
 
   if( sscanf(what, "%s.%s", base, what) == 2)
@@ -38,8 +39,12 @@ string classname( string what )
   if(sscanf(what, "Gdk_%s", what) ||
      sscanf(what, "Gdk%s", what))
     base = "GDK.";
-  else if(sscanf(what, "gnome_%s", what) || sscanf(what, "GNOME_%s", what))
+  else if(!search(lower_case(what),"gnome"))
+  {
+    what = what[5..];
+    sscanf( what, "_%s", what );
     base = "Gnome.";
+  }
   else if(what == "Atom" || what == "GDK.Atom")
     return "GDK._Atom";
   return base+sillycaps( what, 1 );
@@ -47,6 +52,8 @@ string classname( string what )
 
 string funname( string f )
 {
+  if( sscanf( f, "gtk_gnome_applet_%s", f ) )
+    return "applet_"+f;
   if( sscanf( f, "gtk_gnome_%s", f ) )
     return "gnome_"+f;
   return f;
@@ -54,6 +61,8 @@ string funname( string f )
 
 string castname( string f )
 {
+  if( sscanf( f, "GTK_GNOME_APPLET_%s", f ) )
+    return "APPLET_"+f;
   if( sscanf( f, "GTK_GNOME_%s", f ) )
     return "GNOME_"+f;
   return f;
@@ -442,8 +451,7 @@ void print_rec_tree(array plane, mapping t, int ind, object to)
 
 int fnamesfun( string a, string b )
 {
-  return (classname(String.capitalize(lower_case(a))) >
-          classname(String.capitalize(lower_case(b))));
+  return (classname(a) > classname(b));
 }
 
 string wmml_section( string w, mapping data )
@@ -610,22 +618,13 @@ array (string) sort_dependencies( array bunch, mapping extra )
     fd->write("</ul>");
     fd->write("<h1>All classes in alphabetical order</h1>\n");
     fd->write("<ul>");
-    mapping ltos=mkmapping(map(indices(struct),String.capitalize),
-                           indices(struct));
-    foreach(Array.sort_array(map(indices(struct), String.capitalize),
-                             fnamesfun), string s)
+    foreach(Array.sort_array(indices(struct), fnamesfun), string s)
       if(s != "global")
-        fd->write("<li> <a href="+ltos[s]+".html>"+classname(s)+"</a>\n");
+        fd->write("<li> <a href="+s+".html>"+classname(s)+"</a>\n");
     fd->write("</ul>\n");
     fd->write("<h1>All constants in alphabetical order</h1>\n");
     fd->write("<ul>");
-    array consts =
-          map(constants/"\n",
-                lambda(string s) {
-                  if((sscanf(s, "%*[^\"]\"%s\"", s)==2) && strlen(s))
-                    return s;
-                }) - ({ 0 });
-
+    array consts =constants_name;
     foreach(Array.sort_array(consts,fnamesfun), string s)
       fd->write("<li> "+classname(String.capitalize(lower_case(s)))+"\n");
     fd->write("</ul>");
