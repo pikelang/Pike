@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.42 2003/04/30 10:35:03 grubba Exp $
+# $Id: configure.in,v 1.43 2004/04/12 15:47:16 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -405,7 +405,7 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     if test x"$pike_cv_sys_os" = xWindows_NT ; then
       MYSQL_LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 ${MYSQL_LIBS}"
     fi
-    AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets)
+    AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets MessageBoxA)
 
   fi
 fi
