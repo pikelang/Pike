@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.72 2003/12/10 12:30:15 grubba Exp $
+|| $Id: dynamic_load.c,v 1.73 2003/12/10 14:15:18 grubba Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.72 2003/12/10 12:30:15 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.73 2003/12/10 14:15:18 grubba Exp $");
 
 #else /* TESTING */
 
@@ -310,7 +310,8 @@ static void *dlclose(void *module)
 
 #ifndef NO_PIKE_GUTS
 
-#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL) || defined(USE_LOADLIBRARY)
+#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL) || \
+    defined(USE_LOADLIBRARY) || defined(USE_DYLD)
 #define USE_DYNAMIC_MODULES
 #endif
 
