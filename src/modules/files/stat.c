@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.24 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: stat.c,v 1.25 2003/02/04 09:43:17 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.24 2002/10/11 01:39:55 nilsson Exp $");
+RCSID("$Id: stat.c,v 1.25 2003/02/04 09:43:17 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -434,7 +434,7 @@ static void stat_index(INT32 args)
 	    case STAT_UID: push_int(THIS_STAT->s.st_uid); break;
 	    case STAT_GID: push_int(THIS_STAT->s.st_gid); break;
 	    case STAT_RDEV: push_int(THIS_STAT->s.st_rdev); break;
-	    case STAT_SIZE: push_int(THIS_STAT->s.st_size); break;
+	    case STAT_SIZE: push_int64(THIS_STAT->s.st_size); break;
 #if 0
 	    case STAT_BLKSIZE: push_int(THIS_STAT->s.st_blksize); break;
 	    case STAT_BLOCKS: push_int(THIS_STAT->s.st_blocks); break;
