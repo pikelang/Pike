@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.34 2002/11/27 19:35:25 marcus Exp $
+|| $Id: dumpmodule.pike,v 1.35 2002/12/02 00:01:01 mast Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -50,7 +50,7 @@ string mkmodulename(mixed x, string dirname)
   dirname=replace(dirname,"/",".");
   if(has_suffix(dirname, ".module"))
      sscanf(dirname, "%s.module", dirname);
-  if(master()->resolv(dirname) == x)
+  if(master()->resolv(dirname, 0, Handler()) == x)
     return dirname;
   return 0;
 }
@@ -203,10 +203,6 @@ int dumpit(string file, string outfile)
   next_file = file;
 
 do_dump: {
-
-    // Populate the resolver's cache
-    mkmodulename(0, file);
-
     if(Stdio.Stat s=file_stat(fakeroot(file)))
     {
       if (update) {
@@ -249,7 +245,15 @@ do_dump: {
     }
 
     mixed err;
-    if(!(err = catch (p=compile_file(file, Handler()))) && programp (p))
+    if(!(err = catch {
+	// Kludge: Resolve the module through master()->resolv since
+	// it handles cyclic references better than we do in
+	// compile_file above.
+	mkmodulename(0, file);
+
+	p=compile_file(file, Handler());
+
+      }) && programp (p))
     {
       if(!p->dont_dump_module && !p->dont_dump_program)
       {
@@ -259,6 +263,7 @@ do_dump: {
 	    p=decode_value(s,master()->Codec());
 	  }))
 	  logmsg_long(describe_backtrace(err));
+
 	else if(programp(p))
 	{
 	  string dir = combine_path (outfile, "..");
@@ -273,12 +278,15 @@ do_dump: {
 	  ok = 1;
 	  if(!quiet) logmsg("Dumped.\n");
 	}
+
 	else if(!quiet)
 	  logmsg("Decode of %O failed (not dumped).\n", file);
       }
+
       else if(!quiet)
 	logmsg("Not dumping %O (not dumped).\n", file);
     }
+
     else {
       // This should never happen. If it does then it's not safe to
       // continue dumping since later modules might do #if constant(...)
