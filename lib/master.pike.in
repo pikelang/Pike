@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.320 2003/12/19 20:47:01 marcus Exp $
+// $Id: master.pike.in,v 1.321 2004/01/08 12:13:06 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -556,10 +556,10 @@ string normalize_path( string path )
 //! @note
 //!   As a special case the current master program is available
 //!   under the name @expr{"/master"@}.
-mapping(string:program|NoValue) programs=(["/master":object_program(this_object())]);
+mapping(string:program|NoValue) programs=(["/master":this_program]);
 
 mapping (program:object|NoValue) objects=([
-  object_program(this_object()):this_object(),
+  this_program : this,
   object_program(_static_modules): _static_modules
 ]);
 
@@ -1024,11 +1024,9 @@ string include_prefix;
  */
 static void create()
 {
-  object o = this_object();
-
   foreach(master_efuns, string e)
-    if (o[e])
-      add_constant(e, o[e]);
+    if (this[e])
+      add_constant(e, this[e]);
     else
       error("Function %O is missing from master.pike.\n", e);
 
@@ -1164,9 +1162,9 @@ class dirnode
     resolv_debug ("dirnode(%O,%O) created\n",d,h);
     dirname=d;
     compilation_handler=h;
-    fc[dirname]=this_object();
+    fc[dirname]=this;
     if(has_suffix(FIX_CASE(dirname),".pmod")) {
-      fc[dirname[..sizeof(dirname)-6]]=this_object();
+      fc[dirname[..sizeof(dirname)-6]]=this;
     }
     array(string) files = sort(get_dir(d)||({}));
     if (!sizeof(d)) return;
@@ -2855,9 +2853,11 @@ class Describer
 
   string describe (mixed m, int maxlen)
   {
-    if (stringp (ident[m])) return [string]ident[m];
-    else if (intp (ident[m]) && ident[m] > 1)
-      ident[m] = "@" + identcount++;
+    catch {
+      if (stringp (ident[m])) return [string]ident[m];
+      else if (intp (ident[m]) && ident[m] > 1)
+	ident[m] = "@" + identcount++;
+    };
 
     string res;
     if (catch (res=sprintf("%t",m)))
@@ -4155,7 +4155,7 @@ class Version
   string _sprintf(int t) {
     switch(t) {
     case 's': return sprintf("%d.%d",major,minor);
-    case 'O': return sprintf("%O(%s)", this_program, this_object());
+    case 'O': return sprintf("%O(%s)", this_program, this);
     }
   }
 
@@ -4248,7 +4248,7 @@ CompatResolver get_compilation_handler(int major, int minor)
 #endif
 
   // The root resolver is this object.
-  ret = this_object();
+  ret = this;
 
   foreach(reverse(available), Version tmp)
     {

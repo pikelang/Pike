@@ -298,7 +298,7 @@ static class jobject {
 
   array(mixed) _values()
   {
-    return rows(this_object(), _indices());
+    return rows(this, _indices());
   }
 
   static object method(string n, string sig)
@@ -434,7 +434,7 @@ static class jclass {
   {
     obj = o;
     info = i;
-    info->classes[o] = this_object();
+    info->classes[o] = this;
     foreach(values(i->getfields_method(o)), object f)
       if((i->fieldgetmodifiers_method(f)) & i->modifier_static) {
 	string name = (string)i->fieldgetname_method(f);
@@ -491,7 +491,7 @@ static class jclass {
 
   array(mixed) _values()
   {
-    return rows(this_object(), _indices());
+    return rows(this, _indices());
   }
 
   static object method(string n, string sig)
@@ -512,7 +512,7 @@ static class jclass {
     if(constructor) {
       object c = constructor->for_proto(sig);
       if(c)
-	return jconstructor(this_object(), c, info);
+	return jconstructor(this, c, info);
     }
     return 0;
   }
@@ -552,7 +552,7 @@ static class jclass {
       return 0;
     if(constructor)
       constructor->for_object(o)(@unwrap_args(args));
-    return jobject(this_object(), o, info);
+    return jobject(this, o, info);
   }
 
 };
@@ -577,7 +577,7 @@ static class package {
 	p = info->classes[p] || jclass(p, info);
       return p;
     }
-    p = object_program(this_object())((name==""?n:name+"."+n), info);
+    p = this_program((name==""?n:name+"."+n), info);
     if(p)
       subpackages[n] = p;
     return p;
@@ -756,7 +756,7 @@ object pkg;
 
 static void create()
 {
-  program jvm = this_object()->jvm;
+  program jvm = this->jvm;
   if(jvm)
     machine = jvm(getenv("CLASSPATH"));
   if(machine)

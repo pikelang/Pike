@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.12 2003/04/07 17:24:15 nilsson Exp $
+// $Id: module.pmod.in,v 1.13 2004/01/08 12:02:46 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -137,7 +137,7 @@ class Mird
       Transaction tr=transaction();
       tr->_store(table_id,key,data);
       tr->close();
-      return this_object();
+      return this;
    }
 
    //!	Gives back the table object for the specified table
@@ -151,7 +151,7 @@ class Mird
 	 if (!d) error("no such table (%O)\n",name);
 	 table2id[name]=(int)d;
       }
-      return Table(this_object(),table2id[name]);
+      return Table(this,table2id[name]);
    }
 
 
@@ -174,7 +174,7 @@ class Mird
 	 if (!d) error("no such table (%O)\n",name);
 	 table2id[name]=(int)d;
       }
-      return vTable(this_object(),table2id[name]);
+      return vTable(this,table2id[name]);
    }
 
 #if constant(Gz.deflate)
@@ -187,7 +187,7 @@ class Mird
 	 if (!d) error("no such table (%O)\n",name);
 	 table2id[name]=(int)d;
       }
-      return vzTable(this_object(),table2id[name]);
+      return vzTable(this,table2id[name]);
    }
 #endif
 
@@ -233,18 +233,18 @@ class Mird
    //! 	Creates a new transaction
    Transaction transaction()
    {
-      return Transaction(this_object());
+      return Transaction(this);
    }
 
    Transaction ctransaction()
    {
-      return cTransaction(this_object());
+      return cTransaction(this);
    }
 
    //!	Gives a list of all tables in the database.
    array(string) tables()
    {
-      return indices(Table(this_object(),TABLE2ID_TABLE))-({NEXT_TABLE});
+      return indices(Table(this,TABLE2ID_TABLE))-({NEXT_TABLE});
    }
 
    //! @decl object sync()
@@ -264,21 +264,21 @@ class Mird
    {
       gc(); // kill any leftover transactions
       mird->sync();
-      return this_object();
+      return this;
    }
 
    Mird sync_please()
    {
       gc(); // kill any leftover transactions
       mird->sync_please();
-      return this_object();
+      return this;
    }
 
    Mird sync_loop(int seconds)
    {
       remove_call_out(sync_loop);
-      if (seconds<=0) return this_object();
-      if (_refs(this_object())>4) // otherwise, we're last -> close()
+      if (seconds<=0) return this;
+      if (_refs(this)>4) // otherwise, we're last -> close()
 	 call_out(sync_loop,seconds,seconds);
       return sync_please();
    }
@@ -532,7 +532,7 @@ class Mird
 	    mtr->delete(table_id,key);
 	 else
 	    mtr->store(table_id,key,value);
-	 return this_object();
+	 return this;
       }
 
       //! @decl Table table(string name)
@@ -559,7 +559,7 @@ class Mird
 	       id=table2id[name]=(int)d;
 	    }
 	 }
-	 return Table(this_object(),id);
+	 return Table(this,id);
       }
 
       vTable vtable(string name)
@@ -571,7 +571,7 @@ class Mird
 	    if (!d) error("no such table (%O)\n",name);
 	    table2id[name]=(int)d;
 	 }
-	 return vTable(this_object(),table2id[name]);
+	 return vTable(this,table2id[name]);
       }
 
       //! @decl Table new_stringkey_table(string name)
@@ -631,7 +631,7 @@ class Mird
       //!
       array(string) tables()
       {
-	 return indices(Table(this_object(),TABLE2ID_TABLE));
+	 return indices(Table(this,TABLE2ID_TABLE));
       }
 
       //!	Finishes a transaction. This throws exceptions
@@ -686,7 +686,7 @@ class Mird
 	    return ::_store(table_id,key,value);
 	 if (!edited[table_id]) edited[table_id]=([]);
 	 edited[table_id][key]=value;
-	 return this_object();
+	 return this;
       }
 
       string cfetch(int table_id,int|string key)

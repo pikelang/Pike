@@ -129,7 +129,7 @@ class Angle {
   //! Set degrees, minues and seconds. Returns the current angle object.
   Angle set_dms(int degrees, void|int minutes, void|float seconds) {
     set_degree( degrees + minutes/60.0 + seconds/3600.0 );
-    return this_object();
+    return this;
   }
 
   //! Returns degrees, minutes and seconds as a string, e.g.
@@ -144,7 +144,7 @@ class Angle {
     angle = degree;
     type = "deg";
     normalize();
-    return this_object();
+    return this;
   }
 
   // --- Gon related functions
@@ -160,8 +160,10 @@ class Angle {
     angle = gon;
     type = "gon";
     normalize();
-    return this_object();
+    return this;
   }
+
+  // gon is formatted as %dc%d`%.2f``
 
   // --- Radian related functions
 
@@ -176,7 +178,7 @@ class Angle {
     angle = rad;
     type = "rad";
     normalize();
-    return this_object();
+    return this;
   }
 
   // --- Streck related functions
@@ -192,7 +194,7 @@ class Angle {
     angle = str;
     type = "str";
     normalize();
-    return this_object();
+    return this;
   }
 
   // --- Advanced general functions
@@ -259,7 +261,7 @@ class Angle {
     else
       angle += convert_angle(_angle, _type, type);
     normalize();
-    return this_object();
+    return this;
   }
 
   //! Returns the difference between this angle and the provided value.
@@ -281,7 +283,7 @@ class Angle {
     else
       angle -= convert_angle(_angle, _type, type);
     normalize();
-    return this_object();
+    return this;
   }
 
   //! Returns the product between this angle and the provided value.

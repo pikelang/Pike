@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.4 2003/10/06 16:58:03 grubba Exp $
+// $Id: module.pmod.in,v 1.5 2004/01/08 12:01:41 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -199,7 +199,7 @@ class Plain
       {
 	 array(int)|int v=exec(subject,i);
 	 if (intp(v) && !handle_exec_error([int]v)) 
-	    return this_object();
+	    return this;
 	 callback(split_subject(subject,v),v);
 	 i=v[1];
       }
@@ -216,7 +216,7 @@ class Plain
    string cast(string to)
    {
       if (to=="string") return pattern; 
-      else error("can't cast %t to %O\n",this_object(),to);
+      else error("can't cast %t to %O\n",this,to);
    }
 }
 

@@ -147,7 +147,7 @@ private class ASCIIDec {
   this_program feed(string ss)
   {
     s += ss;
-    return this_object();
+    return this;
   }
   string drain()
   {
@@ -158,7 +158,7 @@ private class ASCIIDec {
   this_program clear()
   {
     s = "";
-    return this_object();
+    return this;
   }
 }
 
@@ -296,7 +296,7 @@ private class ASCIIEnc
   this_program feed(string ss)
   {
     s += low_convert(ss, replacement, repcb);
-    return this_object();
+    return this;
   }
   string drain()
   {
@@ -307,7 +307,7 @@ private class ASCIIEnc
   this_program clear()
   {
     s = "";
-    return this_object();
+    return this;
   }
   void set_replacement_callback(function(string:string) rc)
   {
@@ -339,7 +339,7 @@ private class UTF16enc {
   }
   this_program feed(string ss) {
     s += ss;
-    return this_object();
+    return this;
   }
   string drain() {
     string ss = s;
