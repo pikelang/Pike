@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.799 2004/03/08 09:46:32 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.800 2004/03/08 16:42:03 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -120,10 +120,17 @@ if test -d "$srcdir/../bundles"; then
 SHELL=/bin/sh -n
 all:
 	/bin/false
+other:
+	/bin/true
 EOF
     if ${MAKE-make} -f conftestmake >/dev/null 2>&5; then
+      # /bin/sh was found, and /bin/false was not executed.
       pike_cv_make_supports_spaces_in_SHELL=yes
+    elif ${MAKE-make} -f conftestmake other >/dev/null 2>&5; then
+      # SHELL was ignored, and both /bin/false and /bin/true were executed.
+      pike_cv_make_supports_spaces_in_SHELL=ignored
     else
+      # SHELL with spaces caused errors.
       pike_cv_make_supports_spaces_in_SHELL=no
     fi
     rm -f conftestmake
@@ -7012,6 +7019,21 @@ $bundle_info])
 	      echo "Makefile not found in `pwd`."
 	      exit 1
 	    fi
+	  fi
+
+	  # Do we need to patch the Makefiles with respect to SHELL?
+	  if test "$pike_cv_make_supports_spaces_in_SHELL" = "no"; then
+	    echo "Patching Makefiles..."
+	    echo "Patching Makefiles..." >&AC_FD_CC
+	    for f in `find . -name Makefile -o -name makefile -print`; do
+	      echo "  $f" >&AC_FD_CC
+	      if egrep '^[ 	]*SHELL=.*[ 	]*' $f >&AC_FD_CC; then
+	        # SHELL is set to something containing space.
+	        echo "  $f"
+	        sed -e 's/SHELL/PIKE_SHELL/' <$f >$f.pike.patch || exit 1
+		mv -f $f.pike.patch $f || exit 1
+	      fi
+	    done
 	  fi
 
 	  # Compile bundle.
