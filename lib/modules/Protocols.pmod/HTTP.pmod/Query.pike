@@ -558,11 +558,13 @@ int downloaded_bytes()
 
 int total_bytes()
 {
-   int len=(int)headers["content-length"];
-   if(zero_type(len))
-     return -1;
-   else
-     return len;
+  if(!headers)
+    return -1;
+  int len=(int)headers["content-length"];
+  if(zero_type(len))
+    return -1;
+  else
+    return len;
 }
 
 array|mapping|string cast(string to)
