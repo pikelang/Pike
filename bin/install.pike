@@ -1363,6 +1363,13 @@ void do_install()
       install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
 		   combine_path(doc_prefix, "src", "Makefile"));
     }
+    else if(!export) {
+      mkdirhier(combine_path(doc_prefix, "src", "extracted"));
+      mkdirhier(combine_path(doc_prefix, "src", "images"));
+      mkdirhier(combine_path(doc_prefix, "src", "presentation"));
+      mkdirhier(combine_path(doc_prefix, "src", "src_images"));
+      mkdirhier(combine_path(doc_prefix, "src", "structure"));
+    }
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
