@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.204 2000/02/15 22:06:21 hubbe Exp $");
+RCSID("$Id: program.c,v 1.205 2000/02/15 23:39:33 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2526,6 +2526,22 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
     return i;
   }
   return -1;
+}
+
+int low_find_lfun(struct program *p, int lfun)
+{
+  struct pike_string *tmp = find_string(lfun_names[lfun]);
+  unsigned int flags = 0;
+  if (!tmp) return -1;
+  if ((1 <= lfun) && (lfun < 3)) {
+    /* create() and destroy() are used even if they are static. */
+    flags = SEE_STATIC;
+  }
+  return
+    really_low_find_shared_string_identifier(lfun_name,
+					     dmalloc_touch(struct program *,
+							   p),
+					     flags);
 }
 
 /*
