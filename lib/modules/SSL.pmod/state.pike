@@ -1,4 +1,4 @@
-/* $Id: state.pike,v 1.11 2001/08/25 18:26:45 noy Exp $
+/* $Id: state.pike,v 1.12 2001/08/26 14:04:09 grubba Exp $
  *
  */
 
@@ -116,7 +116,7 @@ object decrypt_packet(object packet,int version)
       return Alert(ALERT_fatal, ALERT_unexpected_message,version);
     packet->fragment = msg;
   }
-  return packet->check_size(version) || packet;
+  return packet->check_size(0, version) || packet;
 }
 
 object encrypt_packet(object packet,int version)
