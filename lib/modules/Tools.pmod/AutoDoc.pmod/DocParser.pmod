@@ -250,7 +250,7 @@ static mapping(string : string) standardArgHandler(string keyword, string arg)
   array(string) attrnames = attributenames[keyword];
   int attrcount = sizeof(attrnames || ({}) );
   if (attrcount < sizeof(args))
-    parseError("@keyword with too many parameters");
+    parseError(sprintf("@%s with too many parameters", keyword));
   for (int i = 0; i < sizeof(args); ++i)
     res[attrnames[i]] =  attributequote(args[i]);
   return res;
@@ -451,7 +451,8 @@ static class DocParserClass {
           tokens = tokens[1..];
           res += xmlContainerContents(keyword);
           if (!(arrayp(tokens[0]) && tokens[0][0] == "end" + keyword))
-            parseError("@keyword without matching @endkeyword");
+            parseError(sprintf("@%s without matching @end%s",
+			       keyword, keyword));
           res += closetag(keyword);
 
           tokens = tokens[1..];
