@@ -1448,7 +1448,7 @@ string parse_pre_file( string file )
            if(!body || arrayp(body) )
              break;
            if( body->text[..2] == "//!" )
-             doc += body->text[2..];
+             doc += body->text[2..]+"\n";
            else
              break;
          }
