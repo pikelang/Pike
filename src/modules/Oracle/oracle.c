@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.44 2000/11/10 15:48:04 stewa Exp $
+ * $Id: oracle.c,v 1.45 2000/11/23 16:32:49 stewa Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.44 2000/11/10 15:48:04 stewa Exp $");
+RCSID("$Id: oracle.c,v 1.45 2000/11/23 16:32:49 stewa Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -983,9 +983,6 @@ static void push_inout_value(struct inout *inout)
       case SQLT_ODT:
       case SQLT_DAT:
 	ref_push_object(nulldate_object);
-	push_object(low_clone(Date_program));
-	call_c_initializers(Pike_sp[-1].u.object);
-	((struct dbdate *)STORAGE(Pike_sp[-1].u.object))->date = inout->u.date;
 	break;
 	
       case SQLT_NUM:
