@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.198 2004/04/06 17:05:38 grubba Exp $
+// $Id: module.pmod,v 1.199 2004/04/07 09:33:47 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -696,7 +696,6 @@ class File
     to->is_file = is_file;
     to->_fd = _fd;
 
-    // FIXME: This looks broken... Isn't __stdio_*_callback declared static?
     to->set_read_callback(query_read_callback());
     to->set_write_callback(query_write_callback());
     to->set_close_callback(query_close_callback());
