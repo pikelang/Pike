@@ -14,9 +14,10 @@
 /*
  * Decide which type of threads to use
  *
- * UNIX_THREADS : Unix international threads
- * POSIX_THREADS : POSIX standard threads
+ * UNIX_THREADS      : Unix international threads
+ * POSIX_THREADS     : POSIX standard threads
  * SGI_SPROC_THREADS : SGI sproc() based threads
+ * NT_THREADS        : NT threads
  */
 
 #ifdef _UNIX_THREADS
@@ -113,7 +114,7 @@ extern pthread_attr_t small_pattr;
 #define th_setconcurrency(X) thr_setconcurrency(X)
 
 #define th_create(ID,fun,arg) thr_create(NULL,0,fun,arg,THR_DAEMON,ID)
-#define th_create_small(ID,fun,arg) thr_create(NULL,32768,fun,arg,THR_DAEMON,ID)
+#define th_create_small(ID,fun,arg) thr_create(NULL,32768,fun,arg,THR_DAEMON|THR_DETACHED,ID)
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
 #define th_yield() thr_yield()
