@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.297 2000/08/15 11:07:32 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.298 2000/08/16 10:19:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4040,7 +4040,7 @@ static struct array* diff_build(struct array *a,
 				struct array *seq)
 {
    struct array *ad,*bd;
-   int bi,ai,lbi,lai,i,eqstart;
+   ptrdiff_t bi, ai, lbi, lai, i, eqstart;
 
    /* FIXME(?) memory unfreed upon error here (and later) */
    ad=low_allocate_array(0,32);

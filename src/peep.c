@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.34 2000/08/14 17:18:06 grubba Exp $");
+RCSID("$Id: peep.c,v 1.35 2000/08/16 10:17:52 grubba Exp $");
 
 struct p_instr_s
 {
@@ -311,7 +311,8 @@ void assemble(void)
 #ifdef PIKE_DEBUG
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
-      fprintf(stderr,"===%3d %4x ",c->line,PC);
+      fprintf(stderr, "===%3d %4lx ", c->line,
+	      DO_NOT_WARN((unsigned long)PC));
       dump_instr(c);
       fprintf(stderr,"\n");
     }
@@ -346,7 +347,7 @@ void assemble(void)
       if(labels[c->arg] != -1)
 	fatal("Duplicate label!\n");
 #endif
-      labels[c->arg]=PC;
+      labels[c->arg] = DO_NOT_WARN((INT32)PC);
       break;
 
     default:
@@ -359,7 +360,7 @@ void assemble(void)
 #ifdef PIKE_DEBUG
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
-	tmp=PC;
+	tmp = DO_NOT_WARN((INT32)PC);
 	ins_int(jumps[c->arg], (void(*)(char))add_to_program);
 	jumps[c->arg]=tmp;
 	break;

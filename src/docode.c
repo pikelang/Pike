@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.78 2000/08/15 16:13:55 grubba Exp $");
+RCSID("$Id: docode.c,v 1.79 2000/08/16 10:49:19 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -343,9 +343,9 @@ static int do_docode2(node *n,int flags)
     if(!CDDR(n))
     {
       tmp1=alloc_label();
-      do_jump_when_zero(CAR(n), tmp1);
+      do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
       DO_CODE_BLOCK(CADR(n));
-      emit1(F_LABEL, tmp1);
+      emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
       current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
@@ -353,22 +353,22 @@ static int do_docode2(node *n,int flags)
     if(!CADR(n))
     {
       tmp1=alloc_label();
-      do_jump_when_non_zero(CAR(n), tmp1);
+      do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
       DO_CODE_BLOCK(CDDR(n));
-      emit1(F_LABEL,tmp1);
+      emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
       current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
 
     tmp1=alloc_label();
-    do_jump_when_zero(CAR(n),tmp1);
+    do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
 
     adroppings=do_docode(CADR(n), flags);
     tmp3=emit1(F_POP_N_ELEMS,0);
 
     /* Else */
     tmp2=do_jump(F_BRANCH,-1);
-    emit1(F_LABEL, tmp1);
+    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
 
     bdroppings=do_docode(CDDR(n), flags);
     if(adroppings < bdroppings)
@@ -378,11 +378,12 @@ static int do_docode2(node *n,int flags)
 
     if(adroppings > bdroppings)
     {
-      update_arg(tmp3,adroppings-bdroppings);
+      update_arg(DO_NOT_WARN((INT32)tmp3),
+		 adroppings - bdroppings);
       adroppings=bdroppings;
     }
 
-    emit1(F_LABEL, tmp2);
+    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp2));
 
     current_switch_jumptable = prev_switch_jumptable;
     return adroppings;
@@ -531,9 +532,9 @@ static int do_docode2(node *n,int flags)
   case F_LAND:
   case F_LOR:
     tmp1=alloc_label();
-    do_cond_jump(CAR(n), tmp1, n->token == F_LOR, 0);
+    do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, 0);
     code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
-    emit1(F_LABEL,tmp1);
+    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp1));
     return 1;
 
   case F_EQ:
@@ -562,7 +563,7 @@ static int do_docode2(node *n,int flags)
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
       fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
     emit0(n->token);
-    return tmp1;
+    return DO_NOT_WARN((INT32)tmp1);
 
   case F_INC:
   case F_POST_INC:
@@ -617,7 +618,7 @@ static int do_docode2(node *n,int flags)
     }else{
       tmp2=ins_label(-1);
     }
-    do_jump_when_non_zero(CAR(n),tmp2);
+    do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp2));
     ins_label(current_break);
 
     current_switch_jumptable = prev_switch_jumptable;
@@ -672,8 +673,8 @@ static int do_docode2(node *n,int flags)
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_continue);
-    emit1(F_LABEL,tmp3);
-    do_jump(n->token,tmp1);
+    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp3));
+    do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_break);
 
 #ifdef PIKE_DEBUG
@@ -715,8 +716,8 @@ static int do_docode2(node *n,int flags)
 
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_continue);
-    emit1(F_LABEL,tmp3);
-    do_jump(n->token,tmp1);
+    emit1(F_LABEL, DO_NOT_WARN((INT32)tmp3));
+    do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
     ins_label(current_break);
 #ifdef PIKE_DEBUG
     if(d_flag)
@@ -743,7 +744,7 @@ static int do_docode2(node *n,int flags)
     tmp2=ins_label(-1);
     DO_CODE_BLOCK(CAR(n));
     ins_label(current_continue);
-    do_jump_when_non_zero(CDR(n),tmp2);
+    do_jump_when_non_zero(CDR(n), DO_NOT_WARN((INT32)tmp2));
     ins_label(current_break);
 
     current_switch_jumptable = prev_switch_jumptable;
@@ -765,11 +766,11 @@ static int do_docode2(node *n,int flags)
       return 0;
     }
     tmp1=store_prog_string(n->type);
-    emit1(F_STRING,tmp1);
+    emit1(F_STRING, DO_NOT_WARN((INT32)tmp1));
 
     tmp1=do_docode(CAR(n),0);
     if(!tmp1) { emit0(F_CONST0); tmp1=1; }
-    if(tmp1>1) do_pop(tmp1-1);
+    if(tmp1>1) do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
 
     emit0(F_CAST);
     return 1;
@@ -777,15 +778,15 @@ static int do_docode2(node *n,int flags)
   case F_SOFT_CAST:
     if (runtime_options & RUNTIME_CHECK_TYPES) {
       tmp1 = store_prog_string(n->type);
-      emit1(F_STRING, tmp1);
+      emit1(F_STRING, DO_NOT_WARN((INT32)tmp1));
       tmp1 = do_docode(CAR(n), 0);
       if (!tmp1) { emit0(F_CONST0); tmp1 = 1; }
-      if (tmp1 > 1) do_pop(tmp1 - 1);
+      if (tmp1 > 1) do_pop(DO_NOT_WARN((INT32)(tmp1 - 1)));
       emit0(F_SOFT_CAST);
       return 1;
     }
     tmp1 = do_docode(CAR(n), flags);
-    if (tmp1 > 1) do_pop(tmp1 - 1);
+    if (tmp1 > 1) do_pop(DO_NOT_WARN((INT32)(tmp1 - 1)));
     return !!tmp1;
 
   case F_APPLY:
@@ -803,7 +804,7 @@ static int do_docode2(node *n,int flags)
 	    tmp1=store_constant(& CAR(n)->u.sval,
 				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				CAR(n)->name);
-	    emit1(F_APPLY,tmp1);
+	    emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
 	  }
 	  if(n->type == void_type_string)
 	    return 0;
@@ -820,7 +821,7 @@ static int do_docode2(node *n,int flags)
       tmp1=store_constant(& CAR(n)->u.sval,
 			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 			  CAR(n)->name);
-      emit1(F_APPLY,tmp1);
+      emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
       
       return 1;
     }
@@ -855,7 +856,7 @@ static int do_docode2(node *n,int flags)
 	}else{
 	  /* We might want to put "predef::"+foo->name here /Hubbe */
 	  tmp1=store_constant(& foo->u.sval, 1, foo->name);
-	  emit1(F_APPLY, tmp1);
+	  emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
 	}
       }
       free_node(foo);
@@ -866,7 +867,7 @@ static int do_docode2(node *n,int flags)
   case F_COMMA_EXPR:
     tmp1=do_docode(CAR(n),flags & ~WANT_LVALUE);
     tmp1+=do_docode(CDR(n),flags);
-    return tmp1;
+    return DO_NOT_WARN((INT32)tmp1);
 
 
     /* Switch:
@@ -967,7 +968,8 @@ static int do_docode2(node *n,int flags)
     for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch_jumptable[e]);
 
-    update_arg(tmp1, store_constant(Pike_sp-1,1,0));
+    update_arg(DO_NOT_WARN((INT32)tmp1),
+	       store_constant(Pike_sp-1,1,0));
 
     pop_stack();
     free((char *)jumptable);
@@ -1110,7 +1112,7 @@ static int do_docode2(node *n,int flags)
   case F_SSCANF:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit1(F_SSCANF,tmp1+tmp2);
+    emit1(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)));
     return 1;
 
   case F_CATCH:
@@ -1128,7 +1130,7 @@ static int do_docode2(node *n,int flags)
     ins_label(current_continue);
     ins_label(current_break);
     emit0(F_THROW_ZERO);
-    ins_label(tmp1);
+    ins_label(DO_NOT_WARN((INT32)tmp1));
 
     current_break=break_save;
     current_continue=continue_save;
@@ -1145,7 +1147,7 @@ static int do_docode2(node *n,int flags)
       if(tmp1 & 1)
 	fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, tmp1>>1);
+      emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
       return 2;
 
   case F_ARROW:
@@ -1167,7 +1169,7 @@ static int do_docode2(node *n,int flags)
 	  emit0(F_COPY_VALUE);
       }
     }
-    return tmp1;
+    return DO_NOT_WARN((INT32)tmp1);
 
   case F_INDEX:
     if(flags & WANT_LVALUE)
@@ -1207,7 +1209,7 @@ static int do_docode2(node *n,int flags)
 	  emit0(F_COPY_VALUE);
       }
     }
-    return tmp1;
+    return DO_NOT_WARN((INT32)tmp1);
 
   case F_CONSTANT:
     switch(n->u.sval.type)
@@ -1223,7 +1225,7 @@ static int do_docode2(node *n,int flags)
 
     case T_STRING:
       tmp1=store_prog_string(n->u.sval.u.string);
-      emit1(F_STRING,tmp1);
+      emit1(F_STRING, DO_NOT_WARN((INT32)tmp1));
       return 1;
 
     case T_FUNCTION:
@@ -1258,7 +1260,7 @@ static int do_docode2(node *n,int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit1(F_CONSTANT,tmp1);
+      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
       return 1;
 
     case T_ARRAY:
@@ -1267,7 +1269,7 @@ static int do_docode2(node *n,int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit1(F_CONSTANT,tmp1);
+      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
       
       /* copy now or later ? */
       if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))

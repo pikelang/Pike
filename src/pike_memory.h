@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.21 2000/08/15 15:55:35 grubba Exp $
+ * $Id: pike_memory.h,v 1.22 2000/08/16 10:28:17 grubba Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -51,7 +51,7 @@ struct generic_mem_searcher
     {
       enum methods method;
       void *needle;
-      SIZE_T needlelen;
+      size_t needlelen;
       int first_char;
     } other;
   } data;

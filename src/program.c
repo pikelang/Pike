@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.261 2000/08/15 15:52:55 grubba Exp $");
+RCSID("$Id: program.c,v 1.262 2000/08/16 10:25:52 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -529,7 +529,7 @@ char *find_program_name(struct program *p, INT32 *line)
 #ifdef DEBUG_MALLOC
   char *tmp;
 #endif
-  INT32 pos;
+  ptrdiff_t pos;
   INT32 l;
   if(!line) line=&l;
 
@@ -545,7 +545,7 @@ char *find_program_name(struct program *p, INT32 *line)
   {
     char *tmp=get_line(p->program+pos, p, line);
     if(tmp && *line) return tmp;
-    if(pos+1>=(long)p->num_program) break;
+    if(pos+1 >= (ptrdiff_t)p->num_program) break;
   }
   *line=0;
   return 0;
@@ -3075,10 +3075,10 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
       add_to_linenumbers(0);
       copy_shared_string(Pike_compiler->last_file, current_file);
     }
-    insert_small_number(PC-Pike_compiler->last_pc);
+    insert_small_number(DO_NOT_WARN((INT32)(PC-Pike_compiler->last_pc)));
     insert_small_number(current_line-Pike_compiler->last_line);
     Pike_compiler->last_line=current_line;
-    Pike_compiler->last_pc=PC;
+    Pike_compiler->last_pc = DO_NOT_WARN((INT32)PC);
   }
 }
 
@@ -3113,7 +3113,7 @@ PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
     pid=prog->id;
   }
 
-  if (offset > (INT32)prog->num_program || offset<0)
+  if ((offset > (ptrdiff_t)prog->num_program) || (offset < 0))
     return file;
 
   while(cnt < prog->linenumbers + prog->num_linenumbers)
@@ -3861,7 +3861,8 @@ void pop_compiler_frame(void)
 #define GET_STORAGE_CACHE_SIZE 1024
 static struct get_storage_cache
 {
-  INT32 oid, pid, offset;
+  INT32 oid, pid;
+  ptrdiff_t offset;
 } get_storage_cache[GET_STORAGE_CACHE_SIZE];
 
 ptrdiff_t low_get_storage(struct program *o, struct program *p)
@@ -3905,7 +3906,7 @@ ptrdiff_t low_get_storage(struct program *o, struct program *p)
 
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p)
 {
-  int offset;
+  ptrdiff_t offset;
 
 #ifdef _REENTRANT
   if(d_flag) CHECK_INTERPRETER_LOCK();

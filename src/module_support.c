@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.35 2000/08/11 13:35:00 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.36 2000/08/16 10:27:34 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -192,7 +192,7 @@ int va_get_args(struct svalue *s,
       if(s->type == T_INT)
 	 *va_arg(ap, INT_TYPE *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *va_arg(ap, INT_TYPE *)=(INT_TYPE)s->u.float_number;
+        *va_arg(ap, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
       else 
       {
         push_text( "int" );
