@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.67 2004/09/18 21:02:22 marcus Exp $
+|| $Id: preprocessor.h,v 1.68 2004/09/18 21:38:57 marcus Exp $
 */
 
 /*
@@ -1045,8 +1045,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  /* NOTE: defined() must be handled here, since it's argument
 	   *       must not be macro expanded.
 	   */
-	  static WCHAR efun_[] = { 'e','f','u','n' };
-	  static WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
 
 	  if(pos-tmp == 7 && !MEMCMP(defined_, data+tmp, 7<<SHIFT))
 	  {
