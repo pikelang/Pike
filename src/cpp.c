@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.47 1999/03/02 03:39:17 grubba Exp $
+ * $Id: cpp.c,v 1.48 1999/03/08 23:35:03 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -463,7 +463,7 @@ while(1)					\
   }while(1)
 
 static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
-		     int flags);
+		     int flags, int auto_convert, struct pike_string *charset);
 
 #define SHIFT 0
 #include "preprocessor.h"
@@ -478,15 +478,18 @@ static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
 #undef SHIFT
 
 static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
-		     int flags)
+		     int flags, int auto_convert, struct pike_string *charset)
 {
   switch(shift) {
   case 0:
-    return lower_cpp0(this, (p_wchar0 *)data, len, flags);
+    return lower_cpp0(this, (p_wchar0 *)data, len,
+		      flags, auto_convert, charset);
   case 1:
-    return lower_cpp1(this, (p_wchar1 *)data, len, flags);
+    return lower_cpp1(this, (p_wchar1 *)data, len,
+		      flags, auto_convert, charset);
   case 2:
-    return lower_cpp2(this, (p_wchar2 *)data, len, flags);
+    return lower_cpp2(this, (p_wchar2 *)data, len,
+		      flags, auto_convert, charset);
   default:
     fatal("low_cpp(): Bad shift: %d\n", shift);
   }
@@ -1039,6 +1042,7 @@ void f_cpp(INT32 args)
   struct svalue *save_sp = sp - args;
   struct cpp this;
   int auto_convert = 0;
+  struct pike_string *charset = NULL;
 
   if(args<1)
     error("Too few arguments to cpp()\n");
@@ -1056,9 +1060,9 @@ void f_cpp(INT32 args)
 
     if (args > 2) {
       if (sp[2-args].type == T_STRING) {
-	stack_dup();
+	charset = sp[2 - args].u.string;
 	ref_push_string(data);
-	stack_swap();
+	ref_push_string(charset);
 	SAFE_APPLY_MASTER("decode_charset", 2);
 	if (sp[-1].type != T_STRING) {
 	  error("Unknown charset\n");
@@ -1123,7 +1127,8 @@ void f_cpp(INT32 args)
 		    this.current_file->size_shift, &this.buf);
   string_builder_putchar(&this.buf, '\n');
 
-  low_cpp(&this, data->str, data->len, data->size_shift, 0);
+  low_cpp(&this, data->str, data->len, data->size_shift,
+	  0, auto_convert, charset);
   if(this.defines)
     free_hashtable(this.defines, free_one_define);
 
