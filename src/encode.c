@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.35 1999/09/17 23:36:57 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.36 1999/09/18 09:20:44 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -78,18 +78,47 @@ static void encode_value2(struct svalue *val, struct encode_data *data);
 #define addchar(t)   low_my_putchar((t),&(data->buf))
 
 /* Code a pike string */
-/* FIXME: Wide strings! */
-#define adddata(S) do { \
-  code_entry(T_STRING, (S)->len, data); \
-  addstr((char *)((S)->str),(S)->len); \
+
+#if BYTEORDER == 4321
+#define ENCODE_DATA(S) \
+   addstr( (S)->str, (S)->len << (S)->size_shift );
+#else
+#define ENCODE_DATA(S) 				\
+    switch((S)->size_shift)			\
+    {						\
+      case 1:					\
+        for(q=0;q<(S)->len;q++) {		\
+           INT16 s=htons( STR1(S)[q] );		\
+           addstr( (char *)&s, sizeof(s));	\
+        }					\
+        break;					\
+      case 2:					\
+        for(q=0;q<(S)->len;q++) {		\
+           INT32 s=htonl( STR2(S)[q] );		\
+           addstr( (char *)&s, sizeof(s));	\
+        }					\
+        break;					\
+    }
+#endif
+
+#define adddata(S) do {					\
+  if((S)->size_shift)					\
+  {							\
+    int q;                                              \
+    code_entry(T_STRING,-1, data);			\
+    code_entry((S)->size_shift, (S)->len, data);	\
+    ENCODE_DATA(S);                                     \
+  }else{						\
+    code_entry(T_STRING, (S)->len, data);		\
+    addstr((char *)((S)->str),(S)->len);		\
+  }							\
 }while(0)
 
 /* Like adddata, but allows null pointers */
 
 #define adddata3(S) do {			\
   if(S) {					\
-    code_entry(T_STRING, (S)->len, data);	\
-    addstr((char *)((S)->str),(S)->len);	\
+    adddata(S);                                 \
   } else {					\
     code_entry(T_INT, 0, data);			\
   }						\
@@ -280,8 +309,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
       
     case T_STRING:
-      code_entry(T_STRING, val->u.string->len,data);
-      addstr(val->u.string->str, val->u.string->len);
+      adddata(val->u.string);
       break;
       
     case T_FLOAT:
@@ -495,7 +523,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	}
 
 	for(d=0;d<p->num_constants;d++)
-	  encode_value2(p->constants+d, data);
+	{
+	  encode_value2(& p->constants[d].sval, data);
+	  adddata3(p->constants[d].name);
+	}
 
 	for(d=0;d<NUM_LFUNS;d++)
 	  code_number(p->lfuns[d], data);
@@ -595,20 +626,47 @@ static int my_extract_char(struct decode_data *data)
       data->ptr+=sizeof(S[0])*(L);					\
   }while(0)
 
-#define getdata(X) do {							     \
-   long length;								     \
-      decode_entry(T_STRING, length,data);				     \
-      if(data->ptr + length > data->len || length <0)			     \
-	error("Failed to decode string. (string range error)\n");	     \
-      X=make_shared_binary_string((char *)(data->data + data->ptr), length); \
-      data->ptr+=length;						     \
+#if BYTEORDER == 4123
+#define BITFLIP(S)
+#else
+#define BITFLIP(S)						\
+   switch(what)							\
+   {								\
+     case 1: for(e=0;e<num;e++) STR1(S)[e]=ntohs(STR1(S)[e]); break;	\
+     case 2: for(e=0;e<num;e++) STR2(S)[e]=ntohl(STR2(S)[e]); break;    \
+   }
+#endif
+
+#define get_string_data(STR,LEN, data) do {				    \
+  if((LEN) == -1)							    \
+  {									    \
+    INT32 what, e, num;							    \
+    DECODE();								    \
+    what&=T_MASK;							    \
+    if(data->ptr + num > data->len || num <0)				    \
+       error("Failed to decode string. (string range error)\n");	    \
+    STR=begin_wide_shared_string(num, what);				    \
+    MEMCPY(STR->str, data->data + data->ptr, num << what);		    \
+    data->ptr+=(num << what);						    \
+    BITFLIP(STR);							    \
+    STR=end_shared_string(STR);                                             \
+  }else{								    \
+    if(data->ptr + (LEN) > data->len || (LEN) <0)			    \
+      error("Failed to decode string. (string range error)\n");		    \
+    STR=make_shared_binary_string((char *)(data->data + data->ptr), (LEN)); \
+    data->ptr+=(LEN);							    \
+  }									    \
+}while(0)
+
+#define getdata(X) do {				\
+   long length;					\
+   decode_entry(T_STRING, length,data);		\
+   get_string_data(X, length, data);		\
   }while(0)
 
 #define getdata3(X) do {						     \
-  long length;								     \
-  int what, e, num;							     \
+  INT32 what, e, num;							     \
   DECODE();								     \
-  length=num;                                                                \
   switch(what & T_MASK)							     \
   {									     \
     case T_INT:								     \
@@ -616,10 +674,7 @@ static int my_extract_char(struct decode_data *data)
       break;								     \
 									     \
     case T_STRING:							     \
-      if(data->ptr + length > data->len || length <0)			     \
-        error("Failed to decode string. (string range error)\n");	     \
-      X=make_shared_binary_string((char *)(data->data + data->ptr), length); \
-      data->ptr+=length;						     \
+      get_string_data(X,num,data);                                           \
       break;								     \
 									     \
     default:								     \
@@ -769,13 +824,14 @@ static void decode_value2(struct decode_data *data)
       break;
       
     case T_STRING:
+    {
+      struct pike_string *str;
       tmp=data->counter;
       data->counter.u.integer++;
-      if(data->ptr + num > data->len)
-	error("Failed to decode string. (string range error)\n");
-      push_string(make_shared_binary_string((char *)(data->data + data->ptr), num));
-      data->ptr+=num;
+      get_string_data(str, num, data);
+      push_string(str);
       break;
+    }
       
     case T_FLOAT:
     {
@@ -1013,7 +1069,7 @@ static void decode_value2(struct decode_data *data)
 #include "program_areas.h"
 
 	  for(e=0;e<p->num_constants;e++)
-	    p->constants[e].type=T_INT;
+	    p->constants[e].sval.type=T_INT;
 
 	  debug_malloc_touch(dat);
 
@@ -1117,7 +1173,8 @@ static void decode_value2(struct decode_data *data)
 	  for(d=0;d<p->num_constants;d++)
 	  {
 	    decode_value2(data);
-	    p->constants[d]=*--sp;
+	    p->constants[d].sval=*--sp;
+	    getdata3(p->constants[d].name);
 	  }
 	  data->pickyness--;
 
