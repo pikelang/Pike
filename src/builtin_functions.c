@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.166 1999/04/12 02:24:12 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.167 1999/04/17 13:45:52 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -114,7 +114,7 @@ void f_hash(INT32 args)
       break;
 
     default:
-      fatal("Foo!\n");
+      fatal("hash(): Bad string shift:%d\n", sp[-args].u.string->size_shift);
   }
   
   if(args > 1)

@@ -9,7 +9,7 @@
 #include "stuff.h"
 #include "error.h"
 
-RCSID("$Id: hashtable.c,v 1.5 1998/11/22 11:02:51 hubbe Exp $");
+RCSID("$Id: hashtable.c,v 1.6 1999/04/17 13:48:01 grubba Exp $");
 
 static unsigned INT32 gobble(struct pike_string *s)
 {
@@ -84,7 +84,7 @@ struct hash_table *hash_rehash(struct hash_table *h,int size)
 
 #ifdef PIKE_DEBUG
   if( 1 << my_log2(size) != size)
-    fatal("Size is not a exponent of two!\n");
+    fatal("Size is not a power of two!\n");
 #endif
 
   new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+
