@@ -394,6 +394,8 @@ static void init_html_struct(struct object *o)
 
 static void exit_html_struct(struct object *o)
 {
+   struct feed_stack *fsp;
+
    DEBUG((stderr,"exit_html_struct %p\n",THIS));
 
    reset_feed(THIS); /* frees feed & out */
@@ -405,7 +407,11 @@ static void exit_html_struct(struct object *o)
    free_svalue(&(THIS->callback__tag));
    free_svalue(&(THIS->callback__data));
    free_svalue(&(THIS->callback__entity));
-   free(THIS->stack);
+
+   while (fsp = THIS->stack) {
+     THIS->stack = fsp->prev;
+     free(fsp);
+   }
 
    if (THIS->ws) free(THIS->ws);
    if (THIS->ws_or_endarg) free(THIS->ws_or_endarg);
