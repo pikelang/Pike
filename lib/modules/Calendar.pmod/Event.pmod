@@ -47,6 +47,7 @@ constant WD_NAME="---MonTueWedThuFriSatSun"/3;
 class Event
 {
    string name;
+   string id="?";
 
    constant is_event=1;
 
@@ -83,7 +84,7 @@ class Event
 
    string _sprintf(int t)
    {
-      return (t!='O')?0:sprintf("Event(%s)",name);
+      return (t!='O')?0:sprintf("Event(%s:%O)",id,name);
    }
 
    array(Event) cast(string to)
@@ -106,7 +107,11 @@ class NullEvent
 
    constant is_nullevent=1;
 
-   void create(mixed ...args) {}
+   void create(string _id,string s,mixed ...args) 
+   {
+      id=_id;
+      name=s;
+   }
  
    TimeRange next(TimeRange from,void|int(0..1) including)
    {
@@ -206,7 +211,7 @@ class Nameday
 
    string _sprintf(int t)
    {
-      return t=='O'?sprintf("Nameday(%s)",name):0;
+      return t=='O'?sprintf("Nameday(%s:%O)",id,name):0;
    }
 }
 
@@ -363,7 +368,7 @@ class Namedays
 
    string _sprintf(int t)
    {
-      return t=='O'?sprintf("Namedays(%s)",name):0;
+      return t=='O'?sprintf("Namedays(%s:%O)",id,name):0;
    }
 
    string describe()
@@ -444,8 +449,10 @@ class Gregorian_Fixed
    int md,mn;
    int yd;
 
-   void create(string _name,int(1..31) _md,int(1..12) _mn,int ... _n)
+   void create(string _id,string _name,
+	       int(1..31) _md,int(1..12) _mn,int ... _n)
    {
+      id=_id;
       name=_name;
       md=_md;
       mn=_mn;
@@ -737,10 +744,11 @@ class Weekday
 
    int jd_wd;
 
-   void create(int wd)
+   void create(int wd,void|string _id)
    {
       jd_wd=(wd+6)%7; // convert to julian day numbering
       name=WD_NAME[wd];
+      if (!id) id=name; else id=_id;
    }
 
    int scan_jd(Calendar realm,int jd,int(-1..1) direction)
@@ -858,8 +866,9 @@ class Easter_Relative
 
    int offset;
 
-   void create(string _name,void|int _offset)
+   void create(string _id,string _name,void|int _offset)
    {
+      id=_id;
       name=_name;
       offset=_offset;
    }
@@ -888,9 +897,9 @@ class Orthodox_Easter_Relative
 
    int offset;
 
-   void create(string _name,void|int _offset)
+   void create(string _id,string _name,void|int _offset)
    {
-      ::create(_name,_offset);
+      ::create(_id,_name,_offset);
       shift=9999999;
    }
 }
@@ -911,10 +920,10 @@ class Monthday_Weekday_Relative
 
    int n,inclusive;
 
-   void create(string name,int(1..31) md,int(1..12) mn,
+   void create(string id,string name,int(1..31) md,int(1..12) mn,
 	       int(1..7) _wd,int _n,void|int(0..1) _inclusive)
    {
-      ::create(name,md,mn);
+      ::create(id,name,md,mn);
 
       n=_n;
       inclusive=_inclusive;
@@ -984,16 +993,19 @@ class SuperEvent
    mapping(Event:multiset(string)) flags=([]);
 
    array(Event) events=({});
+   mapping(string:Event) id2event=([])[0];
 
    array(Event) day_events=({});
    array(Namedays) namedays=({});
    array(Event) other_events=({});
 
-   mapping year_cache=([]);
 
    static void create(array(Event) _events,
-		      void|mapping(Event:multiset(string)) _flags)
+		      void|mapping(Event:multiset(string)) _flags,
+		      void|string _id)
    {
+      if (_id) id=_id;
+
       if (_flags) flags=_flags;
 
       foreach (_events,Event e)
@@ -1031,7 +1043,7 @@ class SuperEvent
       multiset m;
       foreach (events,Event e)
 	 if ((m=flags[e]) && m[flag]) res+=({e});
-      return SuperEvent(res,flags&res);
+      return SuperEvent(res,flags&res,id+"!"+flag);
    }
 
    SuperEvent holidays() { return filter_flag("h"); }
@@ -1082,7 +1094,7 @@ class SuperEvent
    Event `|(Event ... with)
    {
       with-=({0});
-      return SuperEvent(events|with,flags);
+      return SuperEvent(events|with,flags,"?");
    }
    Event ``|(Event with) { return `|(with); }
 
@@ -1090,7 +1102,7 @@ class SuperEvent
    {
       array(Event) res=events-subtract;
       if (res==events) return this_object();
-      return SuperEvent(res,flags&res);
+      return SuperEvent(res,flags&res,"?");
    }
 
    array(Event) cast(string to)
@@ -1105,12 +1117,34 @@ class SuperEvent
    {
       return (t!='O')?0:
 	 (sizeof(events)>5 
-	  ? sprintf("SuperEvent(%O,%O..%O [%d])",
-		    events[0],events[1],events[-1],
+	  ? sprintf("SuperEvent(%s:%O,%O..%O [%d])",
+		    id,events[0],events[1],events[-1],
 		    sizeof(events))
-	  : sprintf("SuperEvent(%s)",
-		    map(events,lambda(Event e) { return sprintf("%O",e); })*
+	  : sprintf("SuperEvent(%s:%s)",
+		    id,map(events,lambda(Event e) { return sprintf("%O",e); })*
 		    ","));
+   }
+
+   function(string:Event) `-> = `[];
+   Event `[](string s)
+   {
+      if (!id2event) id2event=mkmapping(events->id,events);
+      return 
+	 ::`[](s) ||
+	 id2event[id+"/"+s] || id2event[s] ||
+	 master()->resolv("Calendar")["Events"][id+"/"+s];
+   }
+
+   array(string) _indices()
+   {
+      if (!id2event) id2event=mkmapping(events->id,events);
+      return indices(id2event);
+   }
+
+   array(Event) _values()
+   {
+      if (!id2event) id2event=mkmapping(events->id,events);
+      return values(id2event);
    }
 }
 
