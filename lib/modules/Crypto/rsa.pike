@@ -1,9 +1,9 @@
-/* $Id: rsa.pike,v 1.17 1999/08/25 05:04:14 hubbe Exp $
+/* $Id: rsa.pike,v 1.18 1999/08/27 15:33:37 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
 
-#if constan(Gmp.mpz)
+#if constant(Gmp.mpz)
 
 #define bignum object(Gmp.mpz)
 #define BIGNUM (Gmp.mpz)
