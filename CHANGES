@@ -389,6 +389,10 @@ o Image.Layer modes modified
 
 o Thread.Condition()->wait
 
+o Protocols.HTTP
+    All methods in Protocols.HTTP that take a header mapping can now
+    handle array values (signifying multiple headers of that type).
+
 o Protocols.LDAP.client
     The return code from all methods was changed to follow Pike's
     logic better. 0 is now a failure. The old behaviour is emulated in
