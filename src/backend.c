@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.49 2000/05/20 19:00:35 grubba Exp $");
+RCSID("$Id: backend.c,v 1.50 2000/06/09 22:43:54 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -591,7 +591,7 @@ void do_debug(void)
   extern void check_all_objects(void);
   extern void verify_shared_strings_tables(void);
   extern void slow_check_stack(void);
-  extern void do_gc(void);
+  extern int do_gc(void);
 
   slow_check_stack();
   check_all_arrays();
