@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.226 2004/12/18 22:05:45 grubba Exp $
+|| $Id: encode.c,v 1.227 2004/12/20 13:14:49 mast Exp $
 */
 
 #include "global.h"
@@ -927,8 +927,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       {
 	if(val->subtype != FUNCTION_BUILTIN)
 	{
-	  if(find_shared_string_identifier(ID_FROM_INT(val->u.object->prog, val->subtype)->name,
-					   val->u.object->prog)==val->subtype)
+	  if(really_low_find_shared_string_identifier(
+	       ID_FROM_INT(val->u.object->prog, val->subtype)->name,
+	       val->u.object->prog,
+	       SEE_STATIC|SEE_PRIVATE)==val->subtype)
 	  {
 	    /* We have to remove ourself from the cache for now */
 	    struct svalue tmp = entry_id;
@@ -946,6 +948,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
 	    goto encode_done;
+	  }
+	  else {
+	    /* FIXME: Encode the object, the inherit and the name. */
+	    Pike_error("Cannot encode overloaded functions (yet).\n");
 	  }
 	}
 	Pike_error("Cannot encode builtin functions.\n");
@@ -2713,8 +2719,10 @@ static void decode_value2(struct decode_data *data)
 	  if (Pike_sp[-2].type == T_OBJECT &&
 	      Pike_sp[-1].type == T_STRING &&
 	      (p = Pike_sp[-2].u.object->prog)) {
-	    int f = find_shared_string_identifier(Pike_sp[-1].u.string,
-						  p->inherits[Pike_sp[-2].subtype].prog);
+	    int f = really_low_find_shared_string_identifier(
+	      Pike_sp[-1].u.string,
+	      p->inherits[Pike_sp[-2].subtype].prog,
+	      SEE_STATIC|SEE_PRIVATE);
 	    if (f >= 0) {
 	      struct svalue func;
 	      low_object_index_no_free(&func, Pike_sp[-2].u.object, f);
