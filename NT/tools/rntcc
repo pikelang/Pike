@@ -347,7 +347,7 @@ int main(int argc, string *argv)
 		     "#!/usr/local/bin/pike\n"
 		     "inherit \""+find_lib_location()+"\";\n"
 		     "int main(int argc, string *argv) {\n"
-		     "argv[0]+=\".exe\";\n"
+		     "argv[0]=" + sprintf ("%O", output + ".exe") + ";\n"
 		     "argv[0]=getenv(\"NTDRIVE\")+fixpath(combine_path(getcwd(),argv[0]));\n"
 		     "  int ret=silent_do_cmd(argv);\n"
 		     "  exit(ret);\n"
