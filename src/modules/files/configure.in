@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.53 1998/07/02 17:20:43 grubba Exp $
+# $Id: configure.in,v 1.54 1998/07/06 21:56:11 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -78,7 +78,85 @@ if test x$ac_cv_func_readdir_r = xyes ; then
 
 if test x$pike_cv_func_posix_readdir_r = xyes ; then
   AC_MSG_RESULT(3 - POSIX)
-  AC_DEFINE(HAVE_POSIX_READDIR_R)
+
+  # Linux libc 5 has a broken POSIX readdir_r().
+  # It always returns 9 (EBADF).
+  AC_MSG_CHECKING(if readdir_r works)
+  AC_CACHE_VAL(pike_cv_func_working_posix_readdir_r, [
+    AC_TRY_RUN([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* For _REENTRANT */
+#include "machine.h"
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
+#include <sys/errno.h>
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
+#else
+#ifdef HAVE_SYS_NDIR_H
+#include <sys/ndir.h>
+#endif
+#ifdef HAVE_SYS_DIR_H
+#include <sys/dir.h>
+#endif
+#ifdef HAVE_NDIR_H
+#include <ndri.h>
+#endif
+#endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_SYSPROTO_H
+#include <sys/sysproto.h>
+#endif
+
+extern int errno;
+
+int main()
+{
+  DIR *dir = opendir(".");
+  char tmp[1024];
+  struct dirent *d;
+  int retval;
+
+  if (!dir) {
+    /* Failed to open dir */
+    exit(1);
+  }
+
+  retval = readdir_r(dir, (struct dirent *)tmp, &d);
+
+  if (!retval) {
+    /* OK, got an entry */
+    exit(0);
+  }
+
+  if (retval == -1) {
+    /* Solaris returns -1 instead of errno */
+    retval = errno;
+  }
+
+  if (retval == ENOENT) {
+    /* No entries left */
+    exit(0);
+  }
+  exit(retval);
+}
+], pike_cv_func_working_posix_readdir_r=yes,
+   pike_cv_func_working_posix_readdir_r=no,
+   pike_cv_func_working_posix_readdir_r=no)
+  ])
+  if test x$pike_cv_func_working_posix_readdir_r = xyes ; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_POSIX_READDIR_R)
+  else
+    AC_MSG_RESULT(no)
+  fi
 else
   AC_MSG_RESULT(2)
 
