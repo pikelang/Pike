@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! $Id: DNS.pmod,v 1.64 2002/11/26 21:59:50 bill Exp $
+//! $Id: DNS.pmod,v 1.65 2002/11/27 01:10:35 grendel Exp $
 
 #pike __REAL_VERSION__
 
@@ -668,9 +668,13 @@ class client
   }
   
   //! @decl array gethostbyname(string hostname)
-  //! @decl array gethostbyaddr(string hostip)
-  //!	Querys the host name or ip from the default or given
+  //!	Queries the host name from the default or given
   //!	DNS server. The result is an array with three elements,
+  //!
+  //! @returns
+  //!   An array with the requested information about the specified
+  //!   host.
+  //!
   //!	@array
   //!     @elem string hostname
   //!       Hostname.
@@ -716,13 +720,18 @@ class client
     });
   }
 
-  //!	Querys the service record from the default or given
+  //!	Queries the service record from the default or given
   //!	DNS server. The result is an array of arrays with the
   //!   following six elements for each record. The array is
   //!   sorted according to the priority of each record.
   //!
   //!   Each element of the array returned represents a service 
   //!   record. Each service record contains the following:
+  //!
+  //! @returns
+  //!   An array with the requested information about the specified
+  //!   service.
+  //!
   //!	@array
   //!     @elem int priority
   //!       Priority
@@ -789,7 +798,23 @@ class client
     return reverse(arpa/".")[2..]*".";
   }
 
-  array gethostbyaddr(string s)
+  //! @decl array gethostbyaddr(string hostip)
+  //!	Queries the host name or ip from the default or given
+  //!	DNS server. The result is an array with three elements,
+  //!
+  //! @returns
+  //!   The requested data about the specified host.
+  //!
+  //!	@array
+  //!     @elem string hostip
+  //!       The host IP.
+  //!     @elem array(string) ip
+  //!       IP number(s).
+  //!     @elem array(string) aliases
+  //!       DNS name(s).
+  //!	@endarray
+  //!
+  array gethostbyaddr(string hostip)
   {
     mapping m=do_sync_query(mkquery(arpa_from_ip(s), C_IN, T_PTR));
     if (m) {
@@ -817,7 +842,7 @@ class client
   }
 
   //! @decl string get_primary_mx(string hostname)
-  //!	Querys the primary mx for the host.
+  //!	Queries the primary mx for the host.
   //! @returns
   //!   Returns the hostname of the primary mail exchanger.
   //!
