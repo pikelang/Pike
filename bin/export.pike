@@ -1,10 +1,10 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.36 2001/04/06 12:12:09 grubba Exp $ */
+/* $Id: export.pike,v 1.37 2001/08/09 14:51:47 grubba Exp $ */
 
 import Stdio;
 
-multiset except_modules = (< "SSL.pmod" >);
+multiset except_modules = (< >);
 string vpath;
 
 
