@@ -41,6 +41,7 @@ void doit(Stdio.File in, Stdio.File out)
       werror("CHECKSUM ERROR on input!\n");
       exit(1);
     }
+    a[1] = sprintf("%6o \0", array_sscanf(a[1], "%o")[0] & 0x3f1ff);
     a[2] = "     0 \0";
     a[3] = "     0 \0";
     if((a[9]/"\0")[0]-" " == "ustar") {
