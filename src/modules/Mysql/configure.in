@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.41 2004/10/05 13:09:51 mast Exp $
+# $Id: configure.in,v 1.42 2005/02/16 16:53:43 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -96,6 +96,31 @@ else
   # Header file
 
   AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+
+  # Defines within headerfile
+define([AC_CHECK_MYSQL_OPTIONS],
+[
+AC_MSG_CHECKING(for $1)
+AC_TRY_COMPILE([
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+], [
+int tmp;
+tmp = $1;
+], [
+AC_MSG_RESULT(yes)
+AC_DEFINE(HAVE_$1)
+], [
+AC_MSG_RESULT(no)
+])])
+
+  AC_CHECK_MYSQL_OPTIONS(SHUTDOWN_DEFAULT)
+
 
   # Mysql libs
 
