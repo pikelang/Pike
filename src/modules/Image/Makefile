@@ -3,7 +3,8 @@ DOCFILES = doc-header \
    blit.c blit_layer_include.h colortable.c colortable.h dct.c font.c \
    image.c image.h matrix.c operator.c pattern.c pnm.c \
    polyfill.c togif.c x.c encodings/gif.c encodings/gif_lzw.c \
-   encodings/gif_lzw.h encodings/pnm.c \
+   encodings/gif_lzw.h encodings/pnm.c ../_Image_JPEG/image_jpeg.c \
+   encodings/x.c \
    doc-footer
 
 WMMLDOCPLACE = ../../../tutorial/Image.wmml
