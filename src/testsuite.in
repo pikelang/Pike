@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.473 2001/11/28 17:29:04 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.474 2001/12/10 02:11:11 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4594,7 +4594,7 @@ ifefun(gc,
 	  }();
 	o = 0;
 	gc();
-	return x && !sizeof (x + (<>));
+	return x && !sizeof (indices (x + (<>)));
       }
     }()->test();
   ]], 1)
