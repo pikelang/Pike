@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.79 2002/02/28 10:58:57 grubba Exp $
+ * $Id: builtin.cmod,v 1.80 2002/04/06 21:04:46 grubba Exp $
  */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fsort.h"
+#include "port.h"
 
 
 /*! @decl array(array(int|string)) _describe_program(program p)
@@ -1843,7 +1844,7 @@ PIKECLASS Time
       RETURN 0;
 
     if( THIS->hard_update )
-      gettimeofday( &current_time, 0 );
+      GETTIMEOFDAY( &current_time );
 
     if( x == usec )
       RETURN current_time.tv_usec;
@@ -1885,7 +1886,7 @@ PIKECLASS Timer
     extern struct timeval current_time;
     FLOAT_TYPE res;
     if( THIS->hard_update )
-      gettimeofday( &current_time, 0 );
+      GETTIMEOFDAY( &current_time );
     res = current_time.tv_sec-THIS->last_time.tv_sec +
       (current_time.tv_usec-THIS->last_time.tv_usec)/1000000.0;
     RETURN res;
@@ -1904,7 +1905,7 @@ PIKECLASS Timer
     extern struct timeval current_time;
     THIS->hard_update = !fast;
     if( THIS->hard_update )
-      gettimeofday( &current_time, 0 );
+      GETTIMEOFDAY( &current_time );
     THIS->last_time = current_time; 
   }
 }
