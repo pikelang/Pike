@@ -122,6 +122,12 @@ test_any([[
 		    "\'");
   return p->finish ("<t> <!-- <t a='> -- --> <!-<t a='> -->")->read();
 ]], "x [ <t a='> -- ] {<t a=} -->");
+test_any([[
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->_set_entity_callback (lambda (object p, string s) {return ({"[",s,"]"});});
+  return p->finish ("&abc|&abc<>&abc;")->read();
+]], "[&abc|][&abc]<>[&abc;]");
 
 // Current context functions
 test_any([[
