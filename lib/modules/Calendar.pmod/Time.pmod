@@ -1507,7 +1507,7 @@ class cFraction
 
    static void create_unixtime_default(int|float unixtime)
    {
-      return create_unixtime(unixtime);
+      create_unixtime(unixtime);
    }
 
    float julian_day()
@@ -1822,7 +1822,8 @@ Ruleset.Language language()
 
 this_program set_ruleset(Ruleset r)
 {
-   this_program c=object_program(this_object())();
+// "this_program" here ceased to work
+   object c=object_program(this_object())();
    c->default_rules=r;
    return c;
 }

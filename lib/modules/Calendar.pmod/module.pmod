@@ -1,20 +1,62 @@
 static private int stage=0;
 static private object defcal;
-static private multiset protect=(<"YMD">);
+static private object iso_utc;
+static private object default_rules;
+static private multiset magic= // magic + indices(Calendar.ISO) without YMD
+(< 
+   "ISO_UTC","II", "default_rules",
+   "_sprintf", "set_timezone", "language", "Day", "Year", "Week",
+   "Month", "Hour", "Minute", "datetime", "format_iso",
+   "format_iso_short", "format_iso_tod", "YMD_Time", "parse", "dwim_day",
+   "dwim_time", "datetime_name", "datetime_short_name", "format_day_iso",
+   "format_day_iso_short", "SuperTimeRange",
+   "calendar_name", "calendar_object", "TimeRange", 
+   "nulltimerange", "ruleset", "set_ruleset", "inano", "timezone",
+   "set_language", "default_rules", "TimeofDay",
+   "Second", "Fraction", "now" >);
 
 #include "localization.h"
 
 #if 1
 mixed `[](string what)
 {
-   if ( protect[what] ) return ([])[0];
+//     werror("%O\n",what);
+   if ( !magic[what] || (stage && what!="default_rules")) return ([])[0];
+   switch (what)
+   {
+      case "ISO_UTC":
+	 if (!iso_utc)
+	 {
+	    stage++;
+	    iso_utc=master()->resolv("Calendar")["ISO"]->set_timezone("UTC");
+	    stage--;
+	    object tz=
+	       master()->resolv("Calendar")["Timezone"][default_timezone];
+	    if (!tz) 
+	       error("Failed to make default timezone %O\n",default_timezone);
+	    else
+	       default_rules->timezone=tz; // destructive!
+	 }
+	 return iso_utc;
+      case "II":
+	 return 1;
+      case "default_rules":
+	 if (!default_rules)
+	 {
+	    default_rules=master()->resolv("Calendar")["Ruleset"]();
+	    default_rules=default_rules->set_language(default_language);
+	 }
+   // load ISO_UTC and set timezone
+	 if (!iso_utc) `[]("ISO_UTC");
+	 return default_rules;
+   }
    if (!defcal)
    {
-      if (stage) return ([])[0];
+      if (!iso_utc) `[]("ISO_UTC");
       stage++;
       defcal=master()->resolv("Calendar")[default_calendar];
+      stage--;
    }
-   if (what=="II") return 1; // Calendar.II
    return defcal[what];
 }
 mixed `-> = `[];

@@ -3,7 +3,6 @@
 #define zero int(0..0)
 
 import ".";
-#include "localization.h"
 
 constant CALUNKNOWN=-1000; // not calculated yet
 
@@ -15,9 +14,8 @@ object calendar_object=this_object();
 
 string _sprintf(int t) { return (t=='O')?calendar_name():0; }
 
-Ruleset default_rules=Ruleset()
-   ->set_timezone(default_timezone)
-   ->set_language(default_language);
+Ruleset default_rules=
+   master()->resolv("Calendar")["default_rules"];
 
 //------------------------------------------------------------------------
 //! class TimeRange
