@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.23 2004/01/11 00:45:48 nilsson Exp $
+// $Id: TELNET.pmod,v 1.24 2004/02/26 21:52:12 agehall Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -276,6 +276,8 @@ class protocol
     if (!nonblocking_write && (write_cb || sizeof(to_send) || done)) {
       fd->set_nonblocking(got_data, send_data, close_cb, got_oob);
       nonblocking_write = 1;
+    } else {
+      send_data();
     }
   }
 
