@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.47 2002/08/25 11:03:54 agehall Exp $");
+RCSID("$Id: zlibmod.c,v 1.48 2002/08/25 12:27:12 agehall Exp $");
 
 #include "zlib_machine.h"
 
@@ -564,8 +564,7 @@ void gz_file_open(INT32 args)
   }
 
   if (sp[-args].type == PIKE_T_INT) {
-    // We got an FD.
-    THIS->gzfile = gzdopen(dup(sp[-args].u.integer),
+    THIS->gzfile = gzdopen(sp[-args].u.integer,
 			   mode);
   } else {
     THIS->gzfile = gzopen(sp[-args].u.string->str,
