@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.9 1999/01/28 18:42:42 grubba Exp $
+ * $Id: imap_server.pike,v 1.10 1999/02/06 22:40:55 grubba Exp $
  */
 
 mapping unauth_commands =
@@ -50,7 +50,7 @@ mapping select_commands =
    "fetch" : .requests.fetch,
 //    "store" : .requests.store,
 //    "copy" : .requests.copy,
-//    "uid" : .requests.uid
+   "uid" : .requests.uid
 ]);
 
 class connection
@@ -135,7 +135,7 @@ class connection
       }
     }
   
-  void handle_request(object req)
+  void handle_request(object(.requests.request) req)
     {
       mapping action;
       

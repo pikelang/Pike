@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.22 1999/02/03 22:10:32 grubba Exp $
+ * $Id: requests.pmod,v 1.23 1999/02/06 22:33:22 grubba Exp $
  */
 
 import .types;
@@ -247,11 +247,8 @@ class select
   }
 }
 
-class fetch
+static private class low_fetch
 {
-  inherit request;
-  constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
-
   mapping easy_process(object message_set, mapping request)
   {
     werror(sprintf("fetch->easy_process(X, %O)\n", request));
@@ -302,7 +299,6 @@ class fetch
 	{
 	  return bad("Invalid fetch");
 	}
-	werror("fetch_attrs[%d] = %O\n", i, fetch_attrs[i]);
       }
       break;
     default:
@@ -417,7 +413,13 @@ class fetch
     return (res->wanted == "rfc822") && res;
   }
 }
-  
+
+class fetch {
+  inherit request;
+  constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
+  inherit low_fetch;
+}
+
 class search
 {
   inherit request;
@@ -691,5 +693,33 @@ class search
 	array a = parse_all();
 	return a && make_intersection(a);
       }
+  }
+}
+
+class uid {
+  inherit request;
+  constant arg_info = ({ ({ "atom" }), ({ "set" }), ({ "any", 3 }) });
+
+  static private inherit low_fetch : low_fetch;
+
+  mapping easy_process(mapping cmd, object message_set, mapping request)
+  {
+    werror("uid->easy_process(%O, X, %O)\n", cmd, request);
+
+    if (cmd->type != "atom") {
+      throw(({ "UID: Internal Error\n", backtrace() }));
+    }
+    switch(lower_case(cmd->atom)) {
+    case "fetch":
+      object local_set = server->uid_to_local(message_set);
+      return(low_fetch::easy_process(local_set, request));
+      break;
+    case "search":
+    case "copy":
+    default:
+      throw(({ sprintf("UID: Command %O not implemented.\n",
+		       upper_case(cmd->atom)) }));
+      break;
+    }
   }
 }
