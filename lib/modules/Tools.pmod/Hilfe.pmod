@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.73 2002/05/08 00:56:38 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.74 2002/05/08 01:32:42 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -97,7 +97,8 @@ private class CommandSet {
     return documentation_set;
   }
 
-  private void bench_reswrite(function w, string sres, int num, mixed res,
+  private void bench_reswrite(function(string, mixed ... : int) w,
+			      string sres, int num, mixed res,
 			      int last_compile_time, int last_eval_time) {
     w( "Result %d: %s\nCompilation: %s, Execution: %s\n",
        num, replace(sres, "\n", "\n        "+(" "*sizeof(""+num))),
@@ -106,7 +107,7 @@ private class CommandSet {
   }
 
   private class Reswriter (string format) {
-    void `()(function w, string sres, int num, mixed res,
+    void `()(function(string, mixed ... : int) w, string sres, int num, mixed res,
 	     int last_compile_time, int last_eval_time) {
       mixed err = catch {
 	w(format, sres, num, res,
@@ -123,7 +124,7 @@ private class CommandSet {
   void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
 
     line = sizeof(words)>1 && words[1];
-    function write = e->safe_write;
+    function(string, mixed ... : void) write = e->safe_write;
 
     if(!line) {
       write("No setting to change given.\n");
@@ -141,7 +142,7 @@ private class CommandSet {
     };
 
     if(words[1]=="hedda") {
-      mapping vars = ([
+      mapping(string:string) vars = ([
 	"foo":"mixed",
 	"bar":"mixed",
 	"i":"int",
@@ -244,7 +245,7 @@ private class CommandHelp {
 
   void exec(Evaluator e, string line, array(string) words) {
     line = words[1..]*" ";
-    function write = e->safe_write;
+    function(string, mixed ... : void) write = e->safe_write;
 
     switch(line) {
 
@@ -315,7 +316,7 @@ private class CommandDot {
   private constant usr_vector_d = usr_vector_c[..8] + ({
     101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
 
-  private array(string) thing(mixed thing, string what, void|string a, void|string b) {
+  private array(string) thing(array|mapping|object thing, string what, void|string a, void|string b) {
     if(!sizeof(thing)) return ({});
     return ({ sizeof(thing)+" "+what+(sizeof(thing)==1?(a||""):(b||"s")) });
   }
@@ -323,7 +324,7 @@ private class CommandDot {
   void exec(Evaluator e) {
     string ret = (string)usr_vector_a;
 
-    array tmp = ({});
+    array(string) tmp = ({});
     tmp += thing(e->imports, "import");
     tmp += thing(e->inherits, "inherit");
     tmp += thing(e->history, "history entr", "y", "ies");
@@ -350,7 +351,7 @@ private class CommandDot {
 class CommandDump {
   inherit Command;
 
-  private function write;
+  private function(string, mixed ... : int) write;
 
   string help(string what) { return "Dump variables and other info."; }
   string doc(string what, string with) { return documentation_dump; }
@@ -379,13 +380,15 @@ class CommandDump {
   private void dump(Evaluator e) {
     if(sizeof(e->constants)) {
       write("\nConstants:\n");
-      array a=indices(e->constants), b=values(e->constants);
+      array(string) a=indices(e->constants);
+      array b=values(e->constants);
       sort(a,b);
       print_mapping(a,b);
     }
     if(sizeof(e->variables)) {
       write("\nVariables:\n");
-      array a=indices(e->variables), b=values(e->variables);
+      array(string) a=indices(e->variables);
+      array b=values(e->variables);
       sort(a,b);
       a = map(a, lambda(string in) { return e->types[in] + " " + in; } );
       print_mapping(a,b);
@@ -551,7 +554,7 @@ private class SubSysBackend {
 
   int(0..1) runningp(){ return is_running; }
 
-  private void backend_loop(function write_err, int(0..1) once){
+  private void backend_loop(function(string:int) write_err, int(0..1) once){
     is_running=1;
     mixed err;
     do {
@@ -582,7 +585,7 @@ private class SubSysLogger {
   static class Logger {
 
     Stdio.File logfile;
-    object e;
+    Evaluator e;
     constant is_logger = 1;
 
     void create(Evaluator _e, Stdio.File _logfile) {
@@ -622,12 +625,12 @@ private class SubSysLogger {
   void stop(Evaluator e, void|array(string) words) {
     running = 0;
     if(arrayp(e->write)) {
-      foreach(e->write, mixed w)
-	if(objectp(w) && w->is_logger)
-	  e->remove_writer(w);
+      foreach([array]e->write, mixed w)
+	if(objectp(w) && ([object]w)->is_logger)
+	  e->remove_writer([object(Logger)]w);
     }
-    else if(objectp(e->writer) && e->writer->is_logger)
-      destruct(e->writer);
+    else if(objectp(e->writer) && ([object]e->writer)->is_logger)
+      destruct([object]e->writer);
   }
 
   int(0..1) runningp() { return running; }
@@ -640,11 +643,11 @@ private class SubSysLogger {
 
 // General subsystem handler class.
 private class SubSystems {
-  mapping subsystems;
+  mapping(string:object) subsystems;
 
   void create (){
     // Register the subsystems here.
-    subsystems=([
+    subsystems = ([
       "backend":SubSysBackend(),
       "logging":SubSysLogger(),
     ]);
@@ -823,7 +826,7 @@ private class Expression {
   }
 
   // Is there a block starting at @[pos]?
-  int(0..1) is_block(int(0..) pos) {
+  int(0..1) is_block(int pos) {
 
     if( (< "for", "foreach", "switch", "while", "lambda", "class",
 	   "do", "gauge", "catch" >)[ `[](pos) ] )
@@ -935,7 +938,7 @@ private class ParserState {
   //! Prints out any error that might have occured while
   //! @[push_string] was executed. The error will be
   //! printed with the print function @[w].
-  void show_error(function w) {
+  void show_error(function(string, mixed ... : int) w) {
     if(!error) return;
     w("Hilfe Error: %s", caught_error);
     caught_error = 0;
@@ -946,7 +949,7 @@ private class ParserState {
   //! /**/ comments and multiline #"" strings.
   array(string) push_string(string line) {
     array(string) tokens;
-    mixed err;
+    array err;
     if(err = catch( tokens = Parser.Pike.split(line, low_state) )) {
       caught_error = err[0];
       return 0;
@@ -1051,7 +1054,7 @@ class Evaluator {
   //! built in ones (dump, exit, help, new, quit), so it is possible to
   //! replace or remove them. The name of a command should be 10
   //! characters or less.
-  mapping(string:Command|program) commands = ([]);
+  mapping(string:Command) commands = ([]);
 
   //! Keeps the state, e.g. multiline input in process etc.
   ParserState state = ParserState();
@@ -1102,18 +1105,19 @@ class Evaluator {
   }
 
   //! An output method that shouldn't crash.
-  int(0..) safe_write(string in, mixed ... args) {
+  void safe_write(string in, mixed ... args) {
     if(!write) return 0;
     mixed err = catch {
-      return write(sprintf(in, @args));
+      write(sprintf(in, @args));
+      return;
     };
     catch {
       write("HilfeError: Error while outputting data.\n");
       write(describe_backtrace(err));
-      return 0;
+      return;
     };
     werror("HilfeError: Error while outputting data.\n");
-    return 0;
+    return;
   }
 
   static array input_hooks = ({});
@@ -1197,8 +1201,8 @@ class Evaluator {
   void add_buffer(string s)
   {
     // Tokenize the input
-    array tokens = state->push_string(s);
-    array words = s/" ";
+    array(string) tokens = state->push_string(s);
+    array(string) words = s/" ";
 
     // See if first token is a command and not a defined entity.
     if(commands[words[0]] && zero_type(constants[words[0]]) &&
@@ -1232,7 +1236,7 @@ class Evaluator {
     // See if any complete expressions came out on the other side.
     if(state->datap())
       foreach(state->read(), Expression expression) {
-	string|int ret = parse_expression(expression);
+	string ret = parse_expression(expression);
 	if(ret) safe_write(ret);
       }
   }
@@ -1502,7 +1506,7 @@ class Evaluator {
 
   //! Parses a Pike expression. Returns 0 if everything went well,
   //! or a string with an error message otherwise.
-  int(0..0)|string parse_expression(Expression expr)
+  string parse_expression(Expression expr)
   {
     // Check for modifiers
     expr->check_modifiers();
