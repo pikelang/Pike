@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.399 2001/03/31 21:03:19 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.400 2001/04/07 09:21:23 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6613,6 +6613,113 @@ test_any([[
    return "no error";
 ]],"no error")
 
+
+// Stdio.FILE gets/ngets tests
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp",        // 59 is a prime number:
+	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp",
+	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp", "\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({""})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({""})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets(100);
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets(100);
+}()
+]],({"hej","hopp","gazonk"}))
+   
 // - trace
 test_do(trace(0))
 test_eq(trace(0),0)
