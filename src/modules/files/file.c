@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.300 2003/10/23 12:34:02 grubba Exp $
+|| $Id: file.c,v 1.301 2003/10/24 17:44:33 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.300 2003/10/23 12:34:02 grubba Exp $");
+RCSID("$Id: file.c,v 1.301 2003/10/24 17:44:33 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -668,15 +668,17 @@ static struct pike_string *do_read_oob(int fd,
  *! Read data from a file or a stream.
  *!
  *! Attempts to read @[len] bytes from the file, and return it as a
- *! string. Less than @[len] bytes can be returned if
+ *! string. Less than @[len] bytes can be returned if:
  *!
  *! @ul
  *!   @item
  *!     end-of-file is encountered for a normal file, or
  *!   @item
- *!     it's a socket or pipe that has been closed from the other end, or
+ *!     it's a stream that has been closed from the other end, or
  *!   @item
- *!     nonblocking mode is used, or
+ *!     it's a stream in nonblocking mode, or
+ *!   @item
+ *!     it's a stream and @[not_all] is set, or
  *!   @item
  *!     @[not_all] isn't set and an error occurred (see below).
  *! @endul
@@ -859,13 +861,16 @@ static void file_peek(INT32 args)
  *! @decl string read_oob(int len, int(0..1) not_all)
  *!
  *! Attempts to read @[len] bytes of out-of-band data from the stream,
- *! and returns it as a string. Less than @[len] bytes can be returned if
+ *! and returns it as a string. Less than @[len] bytes can be returned
+ *! if:
  *!
  *! @ul
  *!   @item
  *!     the stream has been closed from the other end, or
  *!   @item
  *!     nonblocking mode is used, or
+ *!   @item
+ *!     @[not_all] is set, or
  *!   @item
  *!     @[not_all] isn't set and an error occurred (see below).
  *! @endul
@@ -876,8 +881,8 @@ static void file_peek(INT32 args)
  *! If something goes wrong and @[not_all] is set, zero will be
  *! returned. If something goes wrong and @[not_all] is zero or left
  *! out, then either zero or a string shorter than @[len] is returned.
- *! If the problem persists then a later call to @[read()] will fail
- *! and return zero, however.
+ *! If the problem persists then a later call to @[read_oob()] will
+ *! fail and return zero, however.
  *!
  *! If everything went fine, a call to @[errno()] directly afterwards
  *! will return zero. That includes an end due to remote close.
@@ -966,12 +971,16 @@ static void PIKE_CONCAT(file_set_,X) (INT32 args)		\
     Pike_error("File is not open.\n");				\
   if(!args)							\
     SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #X, 1);	\
-  assign_svalue(& THIS->X, Pike_sp-args);			\
+  /* Assign afterwards in case UNSAFE_IS_ZERO throws. */	\
   if(UNSAFE_IS_ZERO(Pike_sp-args))				\
   {								\
+    free_svalue (&THIS->X);					\
+    THIS->X.type = PIKE_T_INT;					\
+    THIS->X.u.integer = 0;					\
     PIKE_CONCAT(set_,X)(FD, 0, 0);				\
     check_internal_reference(THIS);                             \
   }else{							\
+    assign_svalue(& THIS->X, Pike_sp-args);			\
     PIKE_CONCAT(set_,X)(FD, PIKE_CONCAT(file_,X), THIS);	\
     SET_INTERNAL_REFERENCE(THIS);                               \
   }								\
@@ -2147,12 +2156,15 @@ static void file_set_nonblocking(INT32 args)
   if(FD < 0) Pike_error("File not open.\n");
 
   if(!(THIS->open_mode & fd_CAN_NONBLOCK))
-    Pike_error("That file does not support nonblocking operation.\n");
+    Pike_error("This file does not support nonblocking operation.\n");
 
   if(set_nonblocking(FD,1))
   {
     ERRNO=errno;
-    Pike_error("Stdio.File->set_nonbloblocking() failed.\n");
+    push_int (ERRNO);
+    f_strerror (1);
+    Pike_error("Stdio.File->set_nonblocking() failed: %s\n",
+	       Pike_sp[-1].u.string->str);
   }
 
   THIS->open_mode |= FILE_NONBLOCKING;
@@ -3778,7 +3790,9 @@ static void fd__sprintf(INT32 args)
   {
     case 'O':
     {
-      push_text("Fd()");
+      char buf[20];
+      sprintf (buf, "Fd(%d)", FD);
+      push_text(buf);
       return;
     }
 
