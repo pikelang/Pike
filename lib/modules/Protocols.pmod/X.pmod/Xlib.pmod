@@ -749,8 +749,11 @@ class Display
 
     set_buffer( 65536 );
 
-    screen_number = (int) fields[2];
-    
+    if(sizeof(fields[2]))
+      screen_number = (int) fields[2][1..];
+    else
+      screen_number = 0;
+
     buffer = "";
     received = rec_buffer();
     pending_requests = ([]);
@@ -882,5 +885,20 @@ class Display
   object DefaultRootWindow()
   {
     return roots[screen_number];
+  }
+
+  object OpenFont_req(string name)
+  {
+    object req = Requests.OpenFont();
+    req->fid = alloc_id();
+    req->name = name;
+    return req;
+  }
+
+  object OpenFont(string name)
+  {
+    object req = OpenFont_req(name);
+    send_request(req);
+    return Types.Font(this_object(), req->fid);
   }
 }
