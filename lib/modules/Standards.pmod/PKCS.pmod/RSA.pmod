@@ -16,18 +16,24 @@ import Standards.ASN1.Types;
 string public_key(object rsa)
 {
   return asn1_sequence(Array.map(
-    ({ rsa->n, rsa->e }),
+    ({ rsa->get_n(), rsa->get_e() }),
     asn1_integer))->get_der();
 }
 
 /* Create a DER-coded RSAPrivateKey structure */
 string private_key(object rsa)
 {
+  object n = rsa->get_n();
+  object e = rsa->get_e();
+  object d = rsa->get_d();
+  object p = rsa->get_p();
+  object q = rsa->get_q();
+
   return asn1_sequence(Array.map(
-    ({ 0, rsa->n, rsa->e, rsa->d,
-       rsa->p, rsa->q,
-       rsa->d % (rsa->p - 1), rsa->d % (rsa->q -1),
-       rsa->q->invert(rsa->p) % rsa->p
+    ({ 0, n, e, d,
+       p, q,
+       d % (p - 1), d % (q - 1),
+       q->invert(p) % p
     }),
     asn1_integer))->get_der();
 }
