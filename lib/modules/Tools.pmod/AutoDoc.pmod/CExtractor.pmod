@@ -100,7 +100,7 @@ static private class Extractor {
           parent->findChild(meta->name);
         object(Class)|object(Module) c;
 
-        // see if we are re-enteri ng a previously created class/module...
+        // see if we are re-entering a previously created class/module...
         if (alreadyChild) {
           c = alreadyChild;
           if (meta->type != c->objtype)
@@ -201,8 +201,15 @@ static private class Extractor {
         case "module":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
           // Check if it was a @class or @module that was reentered:
-          if (search(c->children, a[1]) < 0)
-            c->AddChild([object(Class)|object(Module)]a[1]);
+	  if (c == root) {
+	    // Get the default (predef::) namespace.
+	    NameSpace ns = root->findChild("predef");
+	    if (search(ns->children, a[1]) < 0)
+	      ns->AddChild([object(Class)|object(Module)]a[1]);
+	  } else {
+	    if (search(c->children, a[1]) < 0)
+	      c->AddChild([object(Class)|object(Module)]a[1]);
+	  }
           break;
         case "docgroup":
           c->AddGroup([object(DocGroup)]a[1]);
