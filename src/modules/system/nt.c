@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.16 1999/11/30 23:06:05 hubbe Exp $
+ * $Id: nt.c,v 1.17 2000/01/10 00:43:12 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -24,9 +24,8 @@
 
 #include <winsock.h>
 #include <windows.h>
-#include <winbase.h>
-#include <lm.h>
 #include <accctrl.h>
+#include <lm.h>
 
 static void f_cp(INT32 args)
 {
