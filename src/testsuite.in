@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.659 2003/06/15 21:28:20 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.660 2003/07/02 12:49:04 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9651,9 +9651,10 @@ test_any([[
     Process.TraceProcess(RUNPIKE_ARRAY + ({ "-e", "sleep(99999)" }));
 
   int initial_sleep = 5;
+  int count;
   int state;
   int code;
-  while ((code = proc->wait()) == -2) {
+  while (((code = proc->wait()) == -2) && (count++ < 20)) {
     int sig = proc->last_signal();
     switch(sig) {
     case signum("TRAP"):
@@ -9702,15 +9703,20 @@ test_any([[
     }
   }
 
+  if (code == -2) {
+    proc->kill(signum("KILL"));
+    return sprintf("Looping trace. (Looped %d times).", count-1);
+  }
+
   if (code != -1) {
     proc->kill(signum("KILL"));
-    return sprintf("Bad termination returncode from wait():%d (expected -1)",
+    return sprintf("Bad termination returncode from wait():%d (expected -1).",
 		   code);
   }
   int sig = proc->last_signal();
   if (sig != signum("KILL")) {
     proc->kill(signum("KILL"));
-    return sprintf("Unexpected termination signal:%d (expected %d)",
+    return sprintf("Unexpected termination signal:%d (expected %d).",
 		   sig, signum("KILL"));
   }
   // Test ok.
