@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.127 2002/12/01 18:53:05 mast Exp $
+|| $Id: opcodes.c,v 1.128 2002/12/07 16:27:00 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.127 2002/12/01 18:53:05 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.128 2002/12/07 16:27:00 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -141,6 +141,46 @@ void o_index(void)
   sp++;
 }
 
+/*! @class MasterObject
+ */
+
+/*! @decl object cast_to_object(string str, string|void current_file)
+ *!
+ *!   Called by the Pike runtime to cast strings to objects.
+ *!
+ *! @param str
+ *!   String to cast to object.
+ *!
+ *! @param current_file
+ *!   Filename of the file that attempts to perform the cast.
+ *!
+ *! @returns
+ *!   Returns the resulting object.
+ *!
+ *! @seealso
+ *!   @[cast_to_program()]
+ */
+
+/*! @decl program cast_to_program(string str, string|void current_file)
+ *!
+ *!   Called by the Pike runtime to cast strings to programs.
+ *!
+ *! @param str
+ *!   String to cast to object.
+ *!
+ *! @param current_file
+ *!   Filename of the file that attempts to perform the cast.
+ *!
+ *! @returns
+ *!   Returns the resulting program.
+ *!
+ *! @seealso
+ *!   @[cast_to_object()]
+ */
+
+/*! @endclass
+ */
+
 /* Special case for casting to int. */
 void o_cast_to_int(void)
 {
@@ -248,6 +288,7 @@ void o_cast_to_int(void)
   }
 }
 
+/* Special case for casting to string. */
 void o_cast_to_string(void)
 {
   char buf[200];
@@ -530,6 +571,8 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	    }else{
 	      push_int(0);
 	    }
+	    /* FIXME: Ought to allow compile_handler to override.
+	     */
 	    APPLY_MASTER("cast_to_object",2);
 	    return;
 	  }
@@ -559,6 +602,8 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	  }else{
 	    push_int(0);
 	  }
+	  /* FIXME: Ought to allow compile_handler to override.
+	   */
 	  APPLY_MASTER("cast_to_program",2);
 	  return;
 	}
