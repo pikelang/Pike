@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.28 1997/05/19 22:50:25 hubbe Exp $ */
+/* $Id: image.c,v 1.29 1997/05/20 01:19:43 hubbe Exp $ */
 
 /*
 **! module Image
@@ -100,7 +100,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.28 1997/05/19 22:50:25 hubbe Exp $");
+RCSID("$Id: image.c,v 1.29 1997/05/20 01:19:43 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1598,7 +1598,7 @@ void image_hsv_to_rgb(INT32 args)
 #define t (v * (1 - (sat * (1 -f))))
        switch((int)i)
        {
-	case 6: // 360 degrees. Same as 0..
+	case 6: /* 360 degrees. Same as 0.. */
 	case 0:	 r = v;	 g = t;	 b = p;	 break;
 	case 1:	 r = q;	 g = v;	 b = p;	 break;
 	case 2:	 r = p;  g = v;	 b = t;	 break;
