@@ -1,10 +1,15 @@
-# $Id: Makefile.in,v 1.7 2000/03/27 04:58:51 hubbe Exp $
+# $Id: Makefile.in,v 1.8 2000/09/02 10:49:02 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=top.o @AUTO_OBJS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 MODULE_CFLAGS=@X_CFLAGS@
+
+override:
+	@$(MAKE) \
+	  CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
+	  all
 
 @dynamic_module_makefile@
 
