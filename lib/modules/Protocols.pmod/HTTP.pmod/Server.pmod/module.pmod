@@ -4,11 +4,13 @@
 
 //! module Protocols
 //! submodule HTTP
+//! submodule Server
 //! class HeaderParser
 //!	Fast HTTP header parser. 
 
 //! module Protocols
 //! submodule HTTP
+//! submodule Server
 //! method string http_decode_string(string what)
 
 constant HeaderParser=_Roxen.HeaderParser;
