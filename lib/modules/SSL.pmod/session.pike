@@ -1,8 +1,8 @@
 //
-// $Id: session.pike,v 1.29 2004/01/14 22:34:37 bill Exp $
+// $Id: session.pike,v 1.30 2004/01/24 23:52:38 nilsson Exp $
 
 #pike __REAL_VERSION__
-// #pragma strict_types
+#pragma strict_types
 
 //! The most important information in a session object is a
 //! choice of encryption algorithms and a "master secret" created by
@@ -295,7 +295,7 @@ array(.state) new_client_states(string client_random, string server_random,
 {
   .state write_state = .state(this);
   .state read_state = .state(this);
-  array keys = generate_keys(client_random, server_random,version);
+  array(string) keys = generate_keys(client_random, server_random,version);
   
   if (cipher_spec->mac_algorithm)
   {
