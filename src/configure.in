@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.381 2000/06/29 10:01:52 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.382 2000/06/29 19:53:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1292,7 +1292,35 @@ AC_CHECK_SIZEOF(short,2)
 AC_CHECK_SIZEOF(float,4)
 AC_CHECK_SIZEOF(double,8)
 AC_CHECK_SIZEOF(long,4)
+if test "x$cross_compiling" = "xyes"; then
+  # If __int64 exists it'll be size 8.
+  AC_MSG_CHECKING(if long long exists)
+  AC_CACHE_VAL(pike_cv_have_long_long, [
+    AC_TRY_COMPILE([
+long long foo;
+    ],[],[pike_cv_have_long_long=yes],[pike_cv_have_long_long=no])
+  ])
+  AC_MSG_RESULT($pike_cv_have_long_long)
+  if test "x$pike_cv_have_long_long$ac_cv_sizeof_long_long" = "xyes"; then
+    AC_MSG_WARN([Assuming sizeof(long long) is 8.])
+    ac_cv_sizeof_long_long=8
+  fi
+fi
 AC_CHECK_SIZEOF(long long,0)
+if test "x$cross_compiling" = "xyes"; then
+  # If __int64 exists it'll be size 8.
+  AC_MSG_CHECKING(if __int64 exists)
+  AC_CACHE_VAL(pike_cv_have___int64, [
+    AC_TRY_COMPILE([
+__int64 foo;
+    ],[],[pike_cv_have___int64=yes],[pike_cv_have___int64=no])
+  ])
+  AC_MSG_RESULT($pike_cv_have___int64)
+  if test "x$pike_cv_have___int64$ac_cv_sizeof___int64" = "xyes"; then
+    AC_MSG_WARN([Assuming sizeof(__int64) is 8.])
+    ac_cv_sizeof___int64=8
+  fi
+fi
 AC_CHECK_SIZEOF(__int64,0)
 
 AC_MY_CHECK_TYPE(size_t,long)
