@@ -191,10 +191,14 @@ void backend()
   while(first_object)
   {
     next_timeout.tv_usec = 0;
+#if 0
     next_timeout.tv_sec = 7 * 24 * 60 * 60;  /* See you in a week */
+#else
+    next_timeout.tv_sec = 15; /* See you in a week */
+#endif
     my_add_timeval(&next_timeout, &current_time);
 
-    call_callback(& backend_callbacks);
+    call_callback(& backend_callbacks, (void *)0);
     sets=selectors;
 
     alloca(0);			/* Do garbage collect */
@@ -204,6 +208,13 @@ void backend()
 
     GETTIMEOFDAY(&current_time);
     my_subtract_timeval(&next_timeout, &current_time);
+
+    if(next_timeout.tv_sec < 0)
+    {
+      next_timeout.tv_usec = 0;
+      next_timeout.tv_sec = 0;
+    }
+
     i=select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
 
     GETTIMEOFDAY(&current_time);
@@ -236,6 +247,7 @@ void backend()
 
       }
     }
+    call_callback(& backend_callbacks, (void *)1);
   }
 
   UNSETJMP(back);

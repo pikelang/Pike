@@ -181,43 +181,52 @@ void f_call_out(INT32 args)
   new_call_out(args,sp-args);
 }
 
-void do_call_outs(struct callback *ignored, void *ignored_too)
+void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
 {
   call_out *c;
   int args;
   time_t tmp;
   verify_call_outs();
 
-  tmp=(time_t)TIME(0);
-  while(num_pending_calls &&
-	my_timercmp(&pending_calls[0]->tv,<=,&current_time))
+  if(arg)
   {
-    /* unlink call out */
-    c=pending_calls[0];
-    pending_calls++;
-    num_pending_calls--;
-
-    if(c->caller) free_object(c->caller);
-
-    args=c->args->size;
-    push_array_items(c->args);
-    free((char *)c);
-    check_destructed(sp-args);
-    if(sp[-args].type!=T_INT)
+    tmp=(time_t)TIME(0);
+    while(num_pending_calls &&
+	  my_timercmp(&pending_calls[0]->tv,<=,&current_time))
     {
-      f_call_function(args);
-      pop_stack();
-    }else{
-      pop_n_elems(args);
+      /* unlink call out */
+      c=pending_calls[0];
+      pending_calls++;
+      num_pending_calls--;
+
+      if(c->caller) free_object(c->caller);
+
+      args=c->args->size;
+      push_array_items(c->args);
+      free((char *)c);
+      check_destructed(sp-args);
+      if(sp[-args].type!=T_INT)
+      {
+	f_call_function(args);
+	pop_stack();
+      }else{
+	pop_n_elems(args);
+      }
+      verify_call_outs();
+
+      if(tmp != (time_t) TIME(0)) break;
     }
-    verify_call_outs();
-
-    if(tmp != (time_t) TIME(0)) break;
   }
-
-  if(num_pending_calls)
-    if(my_timercmp(& pending_calls[0]->tv, < , &next_timeout))
-      next_timeout = pending_calls[0]->tv;
+  else /* if(arg) */
+  {
+    if(num_pending_calls)
+    {
+      if(my_timercmp(& pending_calls[0]->tv, < , &next_timeout))
+      {
+	next_timeout = pending_calls[0]->tv;
+      }
+    }
+  }
 }
 
 static int find_call_out(struct svalue *fun)
