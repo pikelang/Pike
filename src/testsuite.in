@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.203 1999/10/23 00:29:08 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.204 1999/10/23 13:04:58 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1390,6 +1390,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   // Division.
   test_eq("1073741824", [[ (string)((int)"2147483648" / 2) ]])
   test_false([[ objectp((int)"2147483648" / 2) ]])
+  test_eq("13934998268672547360069539025",
+          [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
 
   // sscanf.
   test_eq("12345678901234567890",
