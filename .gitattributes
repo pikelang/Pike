@@ -244,6 +244,7 @@ testfont binary
 /lib/modules/Web.pmod/Crawler.pmod foreign_ident
 /lib/modules/Web.pmod/RDF.pike foreign_ident
 /lib/modules/Web.pmod/RDFS.pike foreign_ident
+/lib/modules/Web.pmod/RSS.pmod foreign_ident
 /lib/modules/Web.pmod/testsuite.in foreign_ident
 /lib/modules/Yabu.pmod/module.pmod foreign_ident
 /lib/modules/Yabu.pmod/testsuite.in foreign_ident
