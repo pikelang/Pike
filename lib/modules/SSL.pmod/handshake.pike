@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.7 1998/04/20 01:49:37 nisse Exp $
+/* $Id: handshake.pike,v 1.8 1998/04/21 21:28:57 grubba Exp $
  *
  */
 
@@ -318,7 +318,8 @@ int handle_handshake(int type, string data, string raw)
 	int id_len;
 	int ch_len;
 	array(int) version;
-	if (catch{
+	mixed err;
+	if (err = catch{
 	  version = input->get_fix_uint_array(1, 2);
 	  ci_len = input->get_uint(2);
 	  id_len = input->get_uint(2);
@@ -326,6 +327,10 @@ int handle_handshake(int type, string data, string raw)
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16)
 	|| (version[0] != 3))
 	{
+#ifdef SSL3_DEBUG
+	  werror(sprintf("SSL.handshake: Error decoding SSL2 handshake:\n"
+			 "%s\n", describe_backtrace(err)));
+#endif /* SSL3_DEBUG */
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
 	  return -1;
 	}
