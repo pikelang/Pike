@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.332 2003/09/26 17:38:12 grubba Exp $
+|| $Id: interpret.c,v 1.333 2003/09/29 19:42:58 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.332 2003/09/26 17:38:12 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.333 2003/09/29 19:42:58 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -132,26 +132,23 @@ void gc_mark_stack_external (struct pike_frame *f,
 {
   for (; f; f = f->next)
     GC_ENTER (f, T_PIKE_FRAME) {
-      if(f->context.parent)
-	gc_mark_external (f->context.parent, " in context.parent in frame on stack");
-      gc_mark_external (f->current_object, " in current_object in frame on stack");
-      gc_mark_external (f->context.prog, " in context.prog in frame on stack");
-      if (f->locals) {		/* Check really needed? */
-	if (f->flags & PIKE_FRAME_MALLOCED_LOCALS) {
-	  /* FIXME: In this case the frame is an object;
-	   *        Are we counting double?
-	   */
-	  gc_mark_external_svalues(f->locals, f->num_locals,
-				   " in malloced locals");
-	} else {
-	  /* NOTE: stack_fp may be less than f->locals. */
-	  if ((stack_p - f->locals) >= 0x10000) {
-	    fatal("Unreasonable locals: stack:%p locals:%p\n",
-		  stack_p, f->locals);
+      if (!debug_gc_check (f, " as frame on stack")) {
+	if(f->context.parent)
+	  gc_mark_external (f->context.parent, " in context.parent in frame on stack");
+	gc_mark_external (f->current_object, " in current_object in frame on stack");
+	gc_mark_external (f->context.prog, " in context.prog in frame on stack");
+	if (f->locals) {		/* Check really needed? */
+	  if (f->flags & PIKE_FRAME_MALLOCED_LOCALS) {
+	    gc_mark_external_svalues(f->locals, f->num_locals,
+				     " in malloced locals of trampoline frame on stack");
+	  } else {
+	    if (f->locals > stack_p || (stack_p - f->locals) >= 0x10000) {
+	      fatal("Unreasonable locals: stack:%p locals:%p\n",
+		    stack_p, f->locals);
+	    }
+	    gc_mark_external_svalues (f->locals, stack_p - f->locals, " on svalue stack");
+	    stack_p = f->locals;
 	  }
-	  gc_mark_external_svalues (f->locals, stack_p - f->locals, " on svalue stack");
-	  /* FIXME: Is this safe if stack_p is less than f->locals? */
-	  stack_p = f->locals;
 	}
       }
     } GC_LEAVE;
