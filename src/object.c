@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.214 2002/12/17 20:17:11 per Exp $
+|| $Id: object.c,v 1.215 2002/12/20 19:07:27 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.214 2002/12/17 20:17:11 per Exp $");
+RCSID("$Id: object.c,v 1.215 2002/12/20 19:07:27 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1786,6 +1786,14 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
 }
 
 /*! @namespace ::
+ *!
+ *! Symbols implicitly inherited from the virtual base class.
+ *!
+ *! These symbols exist mainly to simplify implementation of
+ *! the corresponding lfuns.
+ *!
+ *! @seealso
+ *!   @[lfun::]
  */
 
 /* The type argument to the magic index functions is intentionally
