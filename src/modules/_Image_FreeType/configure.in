@@ -17,8 +17,8 @@ if test "x$with_freetype" = "xyes" ; then
   else
     OLDCFLAGS="$CFLAGS"
     OLDLIBS="$LIBS"
-    CFLAGS="$CFLAGS `$FT_CONFIG --cflags`"
-    LIBS="$LIBS `$FT_CONFIG --libs`"
+    CFLAGS="`$FT_CONFIG --cflags` $CFLAGS"
+    LIBS="`$FT_CONFIG --libs` $LIBS"
     AC_MSG_CHECKING(If freetype actually works)
     AC_TRY_LINK([
 #include <freetype/freetype.h> 
