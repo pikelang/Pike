@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.39 2003/12/11 17:15:40 grubba Exp $
+|| $Id: ia32.c,v 1.40 2003/12/11 17:24:34 grubba Exp $
 */
 
 /*
@@ -410,7 +410,7 @@ static void ia32_call_c_function(void *addr)
   CLEAR_REGS();
 }
 
-/* NOTE: This code is not safe for generic since constants, since thay
+/* NOTE: This code is not safe for generic constants, since they
  * can be overridden by inherit. */
 static void ia32_push_constant(struct svalue *tmp)
 {
