@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.107 1997/08/28 02:04:06 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.108 1997/08/30 18:33:45 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -181,6 +181,9 @@ if test $cflags_is_set = no; then
 ### Non-gcc thingies. This should probably be enhanced...
   AC_SYS_COMPILER_FLAG(-fast,fast)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-std,std)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos)
 
 dnl
 dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
