@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.14 1998/03/28 15:31:41 grubba Exp $
+ * $Id: error.h,v 1.15 1998/04/10 15:22:38 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -79,6 +79,12 @@ extern int throw_severity;
 #define UNSET_ONERROR(X) recoveries && (recoveries->onerror=X.previous)
 #endif
 
+#ifdef DEBUG
+#define ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, __FILE__, __LINE__);
+#else
+#define ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, NULL, 0);
+#endif /* DEBUG */
+
 /* Prototypes begin here */
 JMP_BUF *init_recovery(JMP_BUF *r);
 void pike_throw(void) ATTRIBUTE((noreturn));
@@ -86,6 +92,8 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn));
 void exit_on_error(void *msg);
 void fatal_on_error(void *msg);
 void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+void new_error(char *name, char *text, struct svalue *oldsp, INT32 args,
+	       char *file, int line) ATTRIBUTE((noreturn));
 void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 /* Prototypes end here */
 
