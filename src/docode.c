@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.181 2004/10/30 11:38:25 mast Exp $
+|| $Id: docode.c,v 1.182 2004/12/18 18:21:57 grubba Exp $
 */
 
 #include "global.h"
@@ -737,6 +737,9 @@ static int do_docode2(node *n, int flags)
       }else{
 	if(flags & WANT_LVALUE)
 	{
+	  if (n->u.integer.b == IDREF_MAGIC_THIS) {
+	    my_yyerror("this is not an lvalue.");
+	  }
 	  emit1(F_GLOBAL_LVALUE, n->u.integer.b);
 	  return 2;
 	}else{
@@ -758,6 +761,27 @@ static int do_docode2(node *n, int flags)
 	  return 1;
 	}
       }
+    }
+    break;
+
+  case F_THIS:
+    {
+      int level = 0;
+      struct program_state *state = Pike_compiler;
+      int inh = n->u.integer.b;
+      while (state && (state->new_program->id != n->u.integer.a)) {
+	state = state->previous;
+	level++;
+      }
+      if (!state) {
+	my_yyerror("Program parent %d lost during compiling.", n->u.integer.a);
+	emit1(F_NUMBER,0);
+      } else if (!level && !inh) {
+	emit1(F_THIS_OBJECT, 0);
+      } else {
+	emit2(F_THIS, level, inh);
+      }
+      return 1;
     }
     break;
 
