@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.89 2000/10/01 08:53:34 hubbe Exp $");
+RCSID("$Id: main.c,v 1.90 2000/11/06 17:05:00 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -538,14 +538,14 @@ int dbm_main(int argc, char **argv)
   }
   UNSETJMP(back);
 
-  do_exit(num);
+  pike_do_exit(num);
   return num; /* avoid warning */
 }
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
-void do_exit(int num) ATTRIBUTE((noreturn))
+void pike_do_exit(int num) ATTRIBUTE((noreturn))
 {
   call_callback(&exit_callbacks, (void *)0);
   free_callback_list(&exit_callbacks);
