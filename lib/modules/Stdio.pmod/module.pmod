@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.93 2000/12/03 17:01:04 mirar Exp $
+// $Id: module.pmod,v 1.94 2000/12/03 22:50:10 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -574,137 +574,138 @@ object stderr=File("stderr");
 object stdout=File("stdout");
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
-class FILE {
+class FILE
+{
+#define BUFSIZE 8192
+  inherit File : file;
 
-#define BUFSIZE 16384
-    inherit File : file;
+  /* Private functions / buffers etc. */
 
-    /* Private functions / buffers etc. */
+  private string b="";
+  private int bpos=0, lp;
+  private array cached_lines = ({});
 
-    private string b="";
-    private int bpos=0;
+  static string _sprintf( int type, mapping flags )
+  {
+    if( type == 't' )
+      return "Stdio.FILE";
+    return ::_sprintf( type, flags );
+  }
 
-    static string _sprintf( int type, mapping flags )
+  inline private static nomask int get_data()
+  {
+    if( lp == (sizeof( cached_lines )-1) )
+      b = cached_lines[-1];
+    else if( strlen( b ) > bpos )
+      b = b[ bpos .. ];
+    bpos=0;
+    string s = file::read(BUFSIZE,1);
+    if(!s || !strlen(s))
+      return 0;
+    cached_lines = (b+=s)/"\n";
+    lp = 0;
+    return 1;
+  }
+
+  inline private static nomask string extract(int bytes, int|void skip)
+  {
+    string s;
+    s=b[bpos..bpos+bytes-1];
+    bpos += bytes+skip;
+    return s;
+  }
+
+  /* Public functions. */
+  string gets()
+  {
+    if( sizeof( cached_lines ) > lp+1 )
     {
-      if( type == 't' )
-         return "Stdio.FILE";
-      return ::_sprintf( type, flags );
+      string r = cached_lines[ lp++ ];
+      return (bpos += sizeof( r  )+1),r;
     }
-
-    inline private static nomask int get_data()
+    if( !get_data() )
     {
-      string s;
-      b = b[bpos .. ];
-      bpos=0;
-      s = file::read(BUFSIZE,1);
-      if(!s || !strlen(s))
-	return 0;
-      b += s;
-      return 1;
+      if( sizeof( cached_lines ) > lp )
+	return cached_lines[lp++];
+      cached_lines = ({});
+      lp = 0;
+      return 0;
     }
+    return gets();
+  }
 
-    inline private static nomask string extract(int bytes, int|void skip)
+  int seek(int pos)
+  {
+    bpos=0;  b=""; cached_lines = ({});
+    return file::seek(pos);
+  }
+
+  int tell()
+  {
+    return file::tell()-sizeof(b)+bpos;
+  }
+
+  int close(void|string mode)
+  {
+    bpos=0; b="";
+    if(!mode) mode="rw";
+    file::close(mode);
+  }
+
+  int open(string file, void|string mode)
+  {
+    bpos=0; b="";
+    if(!mode) mode="rwc";
+    return file::open(file,mode);
+  }
+
+  int open_socket()
+  {
+    bpos=0;  b="";
+    return file::open_socket();
+  }
+
+  array(string) ngets(void|int(1..) n)
+  {
+    cached_lines = ({});
+    if (!n) return read()/"\n";
+
+    array res=b[bpos..]/"\n";
+    bpos=strlen(b)-strlen(res[-1]);
+    res=res[..sizeof(res)-2];
+
+    while (sizeof(res)<n)
     {
-      string s;
-      s=b[bpos..bpos+bytes-1];
-      bpos += bytes+skip;
-      return s;
+      if (!get_data()) 
+	if (string s=gets()) return res+({s});
+	else if (!sizeof(res)) return 0;
+	else return res;
+
+      array a=b[bpos..]/"\n";
+      bpos=strlen(b)-strlen(a[-1]);
+      res+=a[..sizeof(a)-2];
     }
-
-
-    /* Public functions. */
-    string gets()
+    if (sizeof(res)>n)
     {
-      int p,tmp=0;
-      while((p=search(b, "\n", bpos+tmp)) == -1)
-      {
-	tmp=strlen(b)-bpos;
-	if(!get_data()) 
-	{
-	  if(bpos==sizeof(b))
-	     return 0;
-	  else
-	    return extract(sizeof(b)-bpos,0);
-	}
-      }
-      return extract(p-bpos, 1);
+      bpos-=`+(@map(res[n..],strlen))+(sizeof(res)-n);
+      return res[..n-1];
     }
+    return res;
+  }
 
-    array(string) ngets(void|int(1..) n)
-    {
-       if (!n) return read()/"\n";
+  object pipe(void|int flags)
+  {
+    bpos=0; cached_lines=({});
+    b="";
+    return query_num_arg() ? file::pipe(flags) : file::pipe();
+  }
 
-       array res=b[bpos..]/"\n";
-       bpos=strlen(b)-strlen(res[-1]);
-       res=res[..sizeof(res)-2];
-
-       while (sizeof(res)<n)
-       {
-	  if (!get_data()) 
-	     if (string s=gets()) return res+({s});
-	     else if (!sizeof(res)) return 0;
-	     else return res;
-
-	  array a=b[bpos..]/"\n";
-	  bpos=strlen(b)-strlen(a[-1]);
-	  res+=a[..sizeof(a)-2];
-       }
-       if (sizeof(res)>n)
-       {
-	  bpos-=`+(@map(res[n..],strlen))+(sizeof(res)-n);
-	  return res[..n-1];
-       }
-       return res;
-    }
-
-    int seek(int pos)
-    {
-      bpos=0;
-      b="";
-      return file::seek(pos);
-    }
-
-    int tell()
-    {
-      return file::tell()-sizeof(b)+bpos;
-    }
-
-    int close(void|string mode)
-    {
-      bpos=0;
-      b="";
-      if(!mode) mode="rw";
-      file::close(mode);
-    }
-
-    int open(string file, void|string mode)
-    {
-      bpos=0;
-      b="";
-      if(!mode) mode="rwc";
-      return file::open(file,mode);
-    }
-
-    int open_socket()
-    {
-      bpos=0;
-      b="";
-      return file::open_socket();
-    }
-
-    object pipe(void|int flags)
-    {
-      bpos=0;
-      b="";
-      return query_num_arg() ? file::pipe(flags) : file::pipe();
-    }
-
-    int assign(object foo)
-    {
-      bpos=0;
-      b="";
-      return ::assign(foo);
-    }
+  int assign(object foo)
+  {
+    bpos=0; cached_lines=({});
+    b="";
+    return ::assign(foo);
+  }
 
   FILE dup()
   {
@@ -713,57 +714,60 @@ class FILE {
     return o;
   }
 
-    void set_nonblocking()
-    {
-      error("Cannot use nonblocking IO with buffered files.\n");
-    }
+  void set_nonblocking()
+  {
+    error("Cannot use nonblocking IO with buffered files.\n");
+  }
 
-    int printf(string fmt, mixed ... data)
-    {
-      if(!sizeof(data))
-	return file::write(fmt);
-      else
-	return file::write(sprintf(fmt,@data));
-    }
+  int printf(string fmt, mixed ... data)
+  {
+    if(!sizeof(data))
+      return file::write(fmt);
+    else
+      return file::write(sprintf(fmt,@data));
+  }
     
-    string read(int|void bytes,void|int(0..1) now)
-    {
-      if (!query_num_arg()) {
-	bytes = 0x7fffffff;
+  string read(int|void bytes,void|int(0..1) now)
+  {
+    cached_lines = ({});
+    if (!query_num_arg()) {
+      bytes = 0x7fffffff;
+    }
+
+    /* Optimization - Hubbe */
+    if(!strlen(b) && bytes > BUFSIZE)
+      return ::read(bytes, now);
+
+    while(strlen(b) - bpos < bytes)
+      if(!get_data()) {
+	// EOF.
+	string res = b[bpos..];
+	b = "";
+	bpos = 0;
+	return res;
       }
+      else if (now) break;
 
-      /* Optimization - Hubbe */
-      if(!strlen(b) && bytes > BUFSIZE)
-	return ::read(bytes, now);
+    return extract(bytes);
+  }
 
-      while(strlen(b) - bpos < bytes)
-	if(!get_data()) {
-	  // EOF.
-	  string res = b[bpos..];
-	  b = "";
-	  bpos = 0;
-	  return res;
-	}
-	else if (now) break;
+  string ungets(string s)
+  {
+    cached_lines = ({});
+    b=s+b[bpos..];
+    bpos=0;
+  }
 
-      return extract(bytes);
-    }
+  int getchar()
+  {
+    cached_lines = ({});
+    if(strlen(b) - bpos < 1)
+      if(!get_data())
+	return -1;
 
-    string ungets(string s)
-    {
-      b=s+b[bpos..];
-      bpos=0;
-    }
-
-    int getchar()
-    {
-      if(strlen(b) - bpos < 1)
-	if(!get_data())
-	  return -1;
-
-      return b[bpos++];
-    }
-  };
+    return b[bpos++];
+  }
+};
 
 FILE stdin=FILE("stdin");
 
