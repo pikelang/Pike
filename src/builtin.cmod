@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.67 2001/09/28 00:01:43 hubbe Exp $
+ * $Id: builtin.cmod,v 1.68 2001/09/28 01:54:49 hubbe Exp $
  */
 
 #include "global.h"
@@ -1982,10 +1982,13 @@ static void low_automap(int d,
        real_args[e].u.object->prog == automap_marker_program &&
        OBJ2_AUTOMAP_MARKER(real_args[e].u.object)->depth >= d)
     {
-#ifdef PIKE_DEBUG
       if(tmpargs[e].type != T_ARRAY)
-	fatal("Arg in automap is not array!\n");
-#endif
+	index_error("__automap__",
+		    Pike_sp-args,
+		    args,
+		    tmpargs,
+		    NULL,
+		    "Automap on non-array.\n");
       tmp=tmpargs[e].u.array->size;
       if(tmp < size)
 	size=tmp;
