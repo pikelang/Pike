@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.280 2002/11/14 21:28:52 marcus Exp $
+|| $Id: interpret.c,v 1.281 2002/11/23 15:11:04 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.280 2002/11/14 21:28:52 marcus Exp $");
+RCSID("$Id: interpret.c,v 1.281 2002/11/23 15:11:04 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1618,6 +1618,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   struct pike_frame *new_frame=alloc_pike_frame();
   int ret;
 
+  /* FIXME: Is this up-to-date with mega_apply? */
   new_frame->next = Pike_fp;
   new_frame->current_object = o;
   new_frame->context=o->prog->inherits[0];
@@ -1662,31 +1663,14 @@ PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_e
 {
   JMP_BUF recovery;
 
-  Pike_sp-=args;
   free_svalue(& throw_value);
   throw_value.type=T_INT;
-  if(SETJMP(recovery))
+  if(SETJMP_SP(recovery, args))
   {
     if(handle_errors) call_handle_error();
-    Pike_sp->u.integer = 0;
-    Pike_sp->subtype=NUMBER_NUMBER;
-    Pike_sp->type = T_INT;
-    Pike_sp++;
+    push_int(0);
   }else{
-    /* ptrdiff_t expected_stack = Pike_sp - Pike_interpreter.evaluator_stack + 1; */
-    Pike_sp+=args;
     apply_low(o,fun,args);
-    /* apply_low already does this, afaics. /mast
-    if(Pike_sp - Pike_interpreter.evaluator_stack > expected_stack)
-      pop_n_elems(Pike_sp - Pike_interpreter.evaluator_stack - expected_stack);
-    if(Pike_sp - Pike_interpreter.evaluator_stack < expected_stack)
-    {
-      Pike_sp->u.integer = 0;
-      Pike_sp->subtype=NUMBER_NUMBER;
-      Pike_sp->type = T_INT;
-      Pike_sp++;
-    }
-    */
   }
   UNSETJMP(recovery);
 }
@@ -1781,7 +1765,7 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
   free_svalue(& throw_value);
   throw_value.type=T_INT;
 
-  if (SETJMP(recovery)) { 
+  if (SETJMP_SP(recovery, args)) {
     ret = 0;
   } else {
     if (low_unsafe_apply_handler (fun, handler, compat, args) &&

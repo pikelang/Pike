@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.106 2002/11/01 16:52:45 nilsson Exp $
+|| $Id: cpp.c,v 1.107 2002/11/23 15:11:04 mast Exp $
 */
 
 #include "global.h"
@@ -1283,13 +1283,14 @@ static int do_safe_index_call(struct pike_string *s)
   int res;
   JMP_BUF recovery;
   if(!s) return 0;
-  
-  if (SETJMP(recovery)) {
+
+  if (SETJMP_SP(recovery, 1)) {
     /* FIXME: Maybe call compile_exception here, but then we probably
      * want to provide some extra flag to it. */
     res = 0;
     free_svalue(&throw_value);
     throw_value.type = T_INT;
+    push_undefined();
   } else {
     ref_push_string(s);
     f_index(2);

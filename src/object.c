@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.207 2002/10/28 13:03:42 nilsson Exp $
+|| $Id: object.c,v 1.208 2002/11/23 15:11:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.207 2002/10/28 13:03:42 nilsson Exp $");
+RCSID("$Id: object.c,v 1.208 2002/11/23 15:11:05 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -496,7 +496,7 @@ PMOD_EXPORT struct object *get_master(void)
       push_string(s);
       push_int(0);
 
-      if(SETJMP(tmp))
+      if(SETJMP_SP(tmp, 2))
       {
 #ifdef DEBUG
 	if(d_flag)
@@ -1067,7 +1067,9 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
     {
       if(report_compiler_dependency(p))
       {
-/*	fprintf(stderr,"PLACEHOLDER DEPLOYED\n"); */
+#if 0
+	fprintf(stderr,"Placeholder deployed for %p\n", p);
+#endif
 	add_ref(to->u.object=placeholder_object);
 	to->type=T_OBJECT;
 	return;

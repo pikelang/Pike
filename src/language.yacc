@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.305 2002/11/22 15:45:04 grubba Exp $
+|| $Id: language.yacc,v 1.306 2002/11/23 15:11:05 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.305 2002/11/22 15:45:04 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.306 2002/11/23 15:11:05 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3991,31 +3991,27 @@ static node *lexical_islocal(struct pike_string *str)
 
 static void safe_inc_enum(void)
 {
-  struct svalue *save_sp = Pike_sp;
+  STACK_LEVEL_START(1);
   JMP_BUF recovery;
 
-  if (SETJMP(recovery)) {
+  if (SETJMP_SP(recovery, 1)) {
     struct svalue s;
     assign_svalue_no_free(&s, &throw_value);
 
     yyerror("Bad implicit enum value (failed to add 1).");
-    while(Pike_sp > save_sp) pop_stack();
 
     push_svalue(&s);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
     if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&s);
     pop_stack();
+    push_int(0);
     free_svalue(&s);
   } else {
     push_int(1);
     f_add(2);
   }
   UNSETJMP(recovery);
-#ifdef PIKE_DEBUG
-  if (Pike_sp != save_sp) {
-    Pike_fatal("stack thrashed in enum.\n");
-  }
-#endif /* PIKE_DEBUG */
+  STACK_LEVEL_DONE(1);
 }
 
 

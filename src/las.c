@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.310 2002/11/21 11:47:50 grubba Exp $
+|| $Id: las.c,v 1.311 2002/11/23 15:11:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.310 2002/11/21 11:47:50 grubba Exp $");
+RCSID("$Id: las.c,v 1.311 2002/11/23 15:11:05 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1907,21 +1907,17 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	SET_CYCLIC_RET(c+1);
 	ref_push_string(id);
 	{
-	  struct svalue *save_sp = Pike_sp-2;
 	  JMP_BUF recovery;
-	  if (SETJMP(recovery)) {
+	  STACK_LEVEL_START(2);
+	  if (SETJMP_SP(recovery, 2)) {
 	    /* f_index() threw an error! */
-	    if (Pike_sp > save_sp) {
-	      pop_n_elems(Pike_sp - save_sp);
-	    } else if (Pike_sp != save_sp) {
-	      Pike_fatal("f_index() munged stack!\n");
-	    }
 	    push_undefined();
 	    thrown = throw_value;
 	    throw_value.type = T_INT;
 	  } else {
 	    f_index(2);
 	  }
+	  STACK_LEVEL_DONE(1);
 	  UNSETJMP(recovery);
 	}
       
