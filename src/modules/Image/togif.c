@@ -4,14 +4,14 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.15 1997/05/29 19:38:18 mirar Exp $ 
+$Id: togif.c,v 1.16 1997/09/01 14:18:17 per Exp $ 
 
 */
 
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.15 1997/05/29 19:38:18 mirar Exp $<br>
+**!	$Id: togif.c,v 1.16 1997/09/01 14:18:17 per Exp $<br>
 **! class image
 */
 
@@ -227,10 +227,6 @@ int image_decode_gif(struct image *dest,struct image *dest_alpha,
       len-=3*(1<<bpp);
       rgb=dest->img;
       i=dest->xsize*dest->ysize;
-/*
-      while (i--)
-	 *rgb=global_palette[src[11]]; * paint with background color */
-
    }
    else 
       global_palette=NULL;
@@ -523,6 +519,7 @@ static struct colortable *img_gif_add(INT32 args,int fs,int lm)
 {
    INT32 x=0,y=0,i;
    struct lzw lzw;
+   int xs, ys;
    rgb_group *rgb;
    struct colortable *ct=NULL;
    dynamic_buffer buf;
@@ -614,6 +611,8 @@ CHRONO("gif add init");
    rgb=THIS->img;
 
 CHRONO("begin pack");
+   xs = THIS->xsize;
+   ys = THIS->ysize;
 
    THREADS_ALLOW();
    lzw_init(&lzw,bpp);
@@ -624,21 +623,20 @@ CHRONO("begin pack");
       rgbl_group *errb;
       rgb_group corgb;
       int w,*cres,j;
-      errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
-      cres=(int*)xalloc(sizeof(int)*THIS->xsize);
-      for (i=0; i<THIS->xsize; i++)
+      errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*xs);
+      cres=(int*)xalloc(sizeof(int)*xs);
+      for (i=0; i<xs; i++)
 	errb[i].r=(rand()%(FS_SCALE*2+1))-FS_SCALE,
 	errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
 	errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
 
       w=0;
-      i=THIS->ysize;
-      while (i--)
+      while (ys--)
       {
-	 image_floyd_steinberg(rgb,THIS->xsize,errb,w=!w,cres,ct,closest);
-	 for (j=0; j<THIS->xsize; j++)
+	 image_floyd_steinberg(rgb,xs,errb,w=!w,cres,ct,closest);
+	 for (j=0; j<xs; j++)
 	    lzw_add(&lzw,cres[j]);
-	 rgb+=THIS->xsize;
+	 rgb+=xs;
       }
 
       free(errb);
