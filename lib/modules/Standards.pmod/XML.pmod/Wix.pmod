@@ -1,4 +1,8 @@
-//! Helper class for generating Windows Installer XML structures.
+// $Id: Wix.pmod,v 1.2 2004/11/01 16:32:55 grubba Exp $
+//
+// 2004-11-01 Henrik Grubbström
+
+//! Helper module for generating Windows Installer XML structures.
 //!
 //! @seealso
 //!   @[Parser.XML.Tree.SimpleNode]
@@ -12,9 +16,9 @@ class WixNode
   static void create(string name, mapping(string:string) attrs,
 		     string|void text)
   {
-    ::create("http://schemas.microsoft.com/wix/2003/01/wi" + name, attrs);
+    ::create(wix_ns + name, attrs);
     mTagName = name;
-    mNamespace = "http://schemas.microsoft.com/wix/2003/01/wi";
+    mNamespace = wix_ns;
     if (text) {
       add_child(Parser.XML.Tree.SimpleTextNode(text));
     }
