@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.27 1999/07/16 11:44:15 mirar Exp $
+# $Id: Makefile.in,v 1.28 1999/10/03 23:47:40 hubbe Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image_module.o \
@@ -19,6 +19,11 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 
 @dynamic_module_makefile@
+
+# GCC dumps core on image.c @ OSF1
+# This kluge should work around that.
+image.o: $(SRCDIR)/image.c
+	$(CC) $(CFLAGS) -c $(SRCDIR)/image.c -o image.o || NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $(SRCDIR)/image.c -o image.o 
 
 pike: all
 	cd ../..; $(MAKE) "AR=$(AR)"
