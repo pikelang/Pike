@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.8 2004/04/14 20:21:16 nilsson Exp $
+// $Id: ldap_privates.pmod,v 1.9 2004/05/26 16:14:24 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -85,6 +85,10 @@ class asn1_application_sequence
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_application_octet_string
@@ -101,6 +105,10 @@ class asn1_application_octet_string
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_integer
@@ -116,6 +124,11 @@ class asn1_context_integer
     ::init(arg);
     tagx = tagid;
   }
+
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_octet_string
@@ -130,6 +143,11 @@ class asn1_context_octet_string
   void init(int tagid, string arg) {
     ::init(arg);
     tagx = tagid;
+  }
+
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
 }
 
@@ -148,6 +166,10 @@ class asn1_context_sequence
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_set
@@ -164,9 +186,29 @@ class asn1_context_set
     tagx = tagid;
   }
 
+  static string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
-#if 1
+class asn1_sequence
+{
+  inherit Standards.ASN1.Types.asn1_sequence;
+  constant type_name = "SEQUENCE";
+
+#if 0
+  string encode_length(int|object len)
+  {
+    if (len < 0x80000000) {
+      // Microsofts ldap APIs use this encoding.
+      return sprintf("\204%4c", len);
+    }
+    return ::encode_length(len);
+  }
+#endif /* 0 */
+}
+
 object|mapping der_decode(object data, mapping types)
 {
   int raw_tag = data->get_uint(1);
@@ -204,7 +246,7 @@ object|mapping der_decode(object data, mapping types)
     object res = p();
 
     // hop: For non-universal classes we provide tag number
-    if(tag & 0xC0)
+    if(tag & 0x40)
       res = p(tag & 0x1F, ({}));
 
     res->begin_decode_constructed(contents);
@@ -219,6 +261,7 @@ object|mapping der_decode(object data, mapping types)
         (i, der_decode(struct,
                        res->element_types(i, types)));
     }
+
     return res->end_decode_constructed(i);
   }
   else
@@ -228,7 +271,6 @@ object|mapping der_decode(object data, mapping types)
       : Standards.ASN1.Decode.primitive(tag, contents);
   }
 }
-#endif
 
 static mapping ldap_type_proc =
                     ([ 1 : asn1_boolean,
@@ -239,19 +281,25 @@ static mapping ldap_type_proc =
                        6 : Standards.ASN1.Types.asn1_identifier,
                        // 9 : asn1_real,
                        10 : asn1_enumerated,
-                       16 : Standards.ASN1.Types.asn1_sequence,
+                       16 : asn1_sequence,
                        17 : Standards.ASN1.Types.asn1_set,
                        19 : Standards.ASN1.Types.asn1_printable_string,
                        20 : Standards.ASN1.Types.asn1_teletex_string,
                        23 : Standards.ASN1.Types.asn1_utc,
-                       65 : asn1_application_sequence,
-                       68 : asn1_application_sequence,
-                       69 : asn1_application_sequence,
-                       71 : asn1_application_sequence,
-                       73 : asn1_application_sequence,
-                       75 : asn1_application_sequence,
-                       77 : asn1_application_sequence,
-                       79 : asn1_application_sequence
+                       65 : asn1_application_sequence,	// [1] BindResponse
+		       66 : 0,				// [2] UnbindRequest
+		       67 : asn1_application_sequence,	// [3] SearchRequest
+                       68 : asn1_application_sequence,	// [4] SearchResultEntry
+                       69 : asn1_application_sequence,	// [5] SearchResultDone
+		       70 : asn1_application_sequence,	// [6] ModifyRequest
+                       71 : asn1_application_sequence,	// [7] ModifyResponse
+		       72 : asn1_application_sequence,	// [8] AddRequest
+                       73 : asn1_application_sequence,	// [9] AddResponse
+                       75 : asn1_application_sequence,	// [11] DelResponse
+                       77 : asn1_application_sequence,	// [13] ModifyDNResponse
+                       79 : asn1_application_sequence,	// [15] CompareResponse
+		       83 : asn1_application_sequence,	// [19] SearchResultReference
+		       128 : asn1_sequence,
                     ]);
 
 object|mapping ldap_der_decode(string data)
