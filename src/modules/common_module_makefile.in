@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.15 2003/11/07 22:47:48 bill Exp $
+# $Id: common_module_makefile.in,v 1.16 2003/11/11 21:59:50 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -108,7 +108,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.15 2003/11/07 22:47:48 bill Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.16 2003/11/11 21:59:50 bill Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
@@ -132,8 +132,12 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 
 
 clean:	
-	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA); rm -rf module.pmod plib
+	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_headers modlist_segment testsuite make_variables dependencies $(MODULE_CLEAN_EXTRA); rm -rf module.pmod plib
 	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
+
+spotless: clean
+	-rm -f config.cache config.log config.status Makefile
+
 
 
 depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
