@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.65 1998/03/18 03:08:29 per Exp $");
+RCSID("$Id: spider.c,v 1.66 1998/04/12 07:07:00 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1264,7 +1264,6 @@ struct thread_args
   int len;
   int sent;
   char buffer[BUFFER];
-  THREAD_T tid;
 };
 
 MUTEX_T done_lock;
