@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.158 2001/03/03 22:51:44 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.159 2001/03/04 23:31:27 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -274,7 +274,8 @@ static inline struct pike_type *mk_type(unsigned INT32 type,
 {
   unsigned INT32 hash = DO_NOT_WARN((unsigned INT32)
 				    ((ptrdiff_t)type*0x10204081)^
-				    ((ptrdiff_t)car)^~((ptrdiff_t)cdr));
+				    ((ptrdiff_t)car)^
+				    ~(0x10001*(ptrdiff_t)cdr));
   unsigned INT32 index = hash % pike_type_hash_size;
   struct pike_type *t;
 
