@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.14 1998/02/24 22:48:11 hubbe Exp $ */
+/* $Id: export.pike,v 1.15 1998/03/20 22:56:48 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -97,6 +97,7 @@ int main(int argc, string *argv)
 
     vpath=replace(getversion()," ","-");
     string tag=replace(vpath,({"Pike-","."}),({"","_"}));
+    vpath=replace(getversion(),"-release-",".");
 #if 0
     mapping x=localtime(time());
     tag+=+"-"+sprintf("%02d%02d%02d-%02d%02d",
@@ -129,7 +130,9 @@ int main(int argc, string *argv)
 	    get_files(vpath+"/bin"));
 
   werror("Creating "+vpath+".tar.gz:\n");
-  system("tar cvf - "+files*" "+" | gzip -9 >pike/"+vpath+".tar.gz");
+  object o=Stdio.File();
+  spawn("tar cvf - "+files*" ",0,o->pipe(Stdio.PROP_IPC));
+  spawn("gzip -9",o,Stdio.File("pike/"+vpath+".tar.gz","wct"))->wait();
   rm(vpath);
   werror("Done.\n");
   return 0;
