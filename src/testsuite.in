@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.595 2003/01/29 22:50:59 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.596 2003/02/08 22:36:14 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7841,8 +7841,13 @@ cond([[all_constants()->mktime]],
 // - mv
 
 // - next_object
-test_true(objectp(next_object()))
-test_any(int e;object o=next_object(); for(e=0;e<10000 && (o || objectp(o));e++) o=next_object(o); return o,0)
+test_true(objectp(next_object()) || intp(next_object()) && next_object())
+test_any([[
+  object o=next_object();
+  for(int e=0; e<10000 && (objectp(o) || intp(o) && o); e++)
+    o=next_object(o);
+  return o;
+]], 0)
 
 // - normalize_path
 // Tested in lib
