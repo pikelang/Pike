@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.4 2001/01/24 08:31:24 mirar Exp $
+ * $Id: module.pmod,v 1.5 2001/01/24 08:45:01 mirar Exp $
  *
  */
 
@@ -76,7 +76,7 @@ class SGML
 	 {
 	    string res=name;
 	    if (sizeof(args))
-	       foreach ( [array]args, [string i,string v])
+	       foreach ( (array)args, [string i,string v])
 		  res+=sprintf(" %s=%O",i,v);
 
 	    res="<"+res+">";
