@@ -677,12 +677,13 @@ class Day
 	 (julian_day()<x->julian_day());
    }
 
-   int `==(object x)
+   int `==(mixed x)
    {
       return 
-	 (object_program(x)==object_program(this) &&
+	objectp(x) &&
+	((object_program(x)==object_program(this) &&
 	  x->y==y && x->d==d) ||
-	 (x->julian_day() == julian_day());
+	 (x->julian_day && (x->julian_day() == julian_day())));
    }
 
    int hash() { return y*3203+d; }
