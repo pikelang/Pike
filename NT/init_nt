@@ -4,11 +4,11 @@
 REMOTE_METHOD=sprsh
 
 # Edit
-#NTHOST=10.0.4.10
-#NTDRIVE='j:'
+NTHOST=10.0.4.10
+NTDRIVE='j:'
 
-NTHOST=localhost
-NTDRIVE='d:'
+#NTHOST=localhost
+#NTDRIVE='d:'
 
 # What dir on the UNIX machine is on $NTDRIVE ?
 # This variable MUST NOT end with a slash.
@@ -26,16 +26,37 @@ INCLUDE="$watcom\\H;$watcom\\H\\NT"
 
 # Don't edit
 
-base=`pwd`
+case /$0 in
+  */init_nt)
+    # We were executed we can find the path!
+    base=`echo $0 | sed -e 's@/init_nt@@'`
+    base=`(test "x$base" != "x" && cd $base ; /bin/pwd)`
+  ;;
 
-NP=$base/tools
+  *)
+    # We were sourced, we cannot find the path...
+    base=`pwd`
+  ;;
+esac
+
+NT_TOOL_PATH=$base/tools
+
+export NT_TOOL_PATH
+
+if [ ! -d "$NT_TOOL_PATH" ]; then
+  echo Unable to find NT tools!
+  return
+  exit
+fi
 
 case :$PATH: in
-   *:$NP:*) ;;
-   *) PATH=$NP:$PATH ;;
+   *:$NT_TOOL_PATH:*) ;;
+   *) PATH=$NT_TOOL_PATH:$PATH ;;
 esac
+
 CC=rntcc
-NTTOOLS=$NP/lib
+NTTOOLS=$NT_TOOL_PATH/lib
+
 if [ "x$NTMOUNT" = x ]; then
   MNTREPLACE=""
 else
@@ -47,6 +68,7 @@ IFS='
 
 export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE 
 export NTPORT USE_SPRSH NTMOUNT IFS REMOTE_METHOD watcom INCLUDE
+export NT_TOOL_PATH
 
 case /$SHELL-$TERM in
    */bash-xterm)
@@ -55,20 +77,15 @@ case /$SHELL-$TERM in
    ;;
 esac
 
-case /$SHELL in
-   */bash)
-     if [ $REMOTE_METHOD = sprsh ]; then
-       PS1="NT $NTHOST \\$ "
-     else
-       PS1="WINE \\$ "
-     fi
-     export PS1
-   ;;
-esac
-
-
 case /$0 in
   */init_nt)
-    exec $SHELL
+    case /$SHELL in
+      */bash)
+        exec $SHELL -rcfile $NT_TOOL_PATH/bash-fixup
+      ;;
+      *)
+        exec $SHELL
+      ;;
+    esac
   ;;
 esac

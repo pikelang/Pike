@@ -1,0 +1,23 @@
+if [ -f $HOME/.bashrc ]; then
+  . $HOME/.bashrc
+fi
+
+if [ $REMOTE_METHOD = sprsh ]; then
+  PS1="NT $NTHOST \\$ "
+else
+  PS1="WINE \\$ "
+fi
+export PS1
+
+case $TERM in
+   xterm)
+     PROMPT_COMMAND="echo -n ]2\; $REMOTE_METHOD NT compile ]1\; rntcc"
+     export PROMPT_COMMAND
+   ;;
+esac
+
+case :$PATH: in
+   *:$NT_TOOL_PATH:*) ;;
+   *) PATH=$NT_TOOL_PATH:$PATH ;;
+esac
+
