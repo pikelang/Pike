@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.243 2001/03/03 17:51:50 grubba Exp $");
+RCSID("$Id: las.c,v 1.244 2001/03/11 14:19:49 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3473,7 +3473,7 @@ void fix_type_field(node *n)
 	       */
 	      free_type(iterator_type);
 	      goto foreach_type_check_done;
-	    } else {
+	    } else if (lex.pragmas & ID_STRICT_TYPES) {
 	      yytype_error("Iterator type mismatch in foreach()",
 			   iterator_type, CAAR(n)->type, YYTE_IS_WARNING);
 	    }
@@ -3508,7 +3508,7 @@ void fix_type_field(node *n)
 		if (!match_types(CADAR(n)->type, index_type)) {
 		  yytype_error("Type mismatch for index in foreach().",
 			       index_type, CADAR(n)->type, 0);
-		} else {
+		} else if (lex.pragmas & ID_STRICT_TYPES) {
 		  yytype_error("Type mismatch for index in foreach().",
 			       index_type, CADAR(n)->type, YYTE_IS_WARNING);
 		}
@@ -3538,7 +3538,7 @@ void fix_type_field(node *n)
 		if (!match_types(CDDAR(n)->type, value_type)) {
 		  yytype_error("Type mismatch for value in foreach().",
 			       value_type, CDDAR(n)->type, 0);
-		} else {
+		} else if (lex.pragmas & ID_STRICT_TYPES) {
 		  yytype_error("Type mismatch for value in foreach().",
 			       value_type, CDDAR(n)->type, YYTE_IS_WARNING);
 		}
