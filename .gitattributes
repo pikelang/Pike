@@ -3,3 +3,4 @@
 *.gitattributes !binary !crlf text !eol ident
 *.gitignore !binary !crlf text !eol ident
 *.in !binary !crlf text !eol ident
+*.svg !binary !crlf text !eol ident

@@ -1,0 +1,4 @@
+#define image_width 1
+#define image_height 1
+static char image_bits[] = {
+ 0x01};
