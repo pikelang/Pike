@@ -70,6 +70,10 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       ret += (string)c;
       break;
 
+    case "matrix":
+      ret += layout_matrix( map(c->get_elements("r")->get_elements("c"), map, parse_text) );
+      break;
+
     case "section":
       if(subsection)
 	error("Section inside subsection.\n");
@@ -224,41 +228,58 @@ string parse_class(Node n, void|int noheader) {
   return ret;
 }
 
-// ({  ({ array(string)+, void|string  })* })
-string nicebox(array rows) {
-  string ret = "<table bgcolor='black' border='0' cellpadding='0'><tr><td>\n"
-    "<table cellspacing='1' cellpadding='2' border='0' bgcolor='white'>\n";
+string layout_matrix( array(array(string)) rows ) {
+  string ret = "<table bgcolor='black' border='0' cellspacing='0' cellpadding='0'><tr><td>\n"
+    "<table cellspacing='1' cellpadding='3' border='0' bgcolor='black'>\n";
 
   int dim;
   foreach(rows, array row)
     dim = max(dim, sizeof(row));
 
-#ifdef DEBUG
-  if(dim!=1 && dim!=2)
-    throw( ({ "Table has got wrong dimensions. ("+dim+")\n", backtrace() }) );
-#endif
+  foreach(rows, array row) {
+    ret += "<tr>";
+    if(sizeof(row)<dim)
+      ret += "<td bgcolor='white'>" + row[..sizeof(row)-2]*"</td><td bgcolor='white'>" +
+	"</td><td bgcolor='white' colspan='"+ (dim-sizeof(row)) + "'>" + row[-1] + "</td>";
+    else
+      ret += "<td bgcolor='white'>" + row*"</td><td bgcolor='white'>" + "</td>";
+    ret += "</tr>\n";
+  }
+
+  return ret + "</table></td></tr></table><br />\n";
+}
+
+// ({  ({ array(string)+, void|string  })* })
+string nicebox(array rows) {
+  string ret = "<table bgcolor='black' border='0' cellspacing='0' cellpadding='0'><tr><td>\n"
+    "<table cellspacing='1' cellpadding='3' border='0' bgcolor='black'>\n";
+
+  int dim;
+  foreach(rows, array row)
+    dim = max(dim, sizeof(row));
 
   foreach(rows, array row) {
     if(sizeof(row)==1) {
       if(stringp(row[0]))
-	ret += "<tr><td colspan='" + dim + "'>" + row[0] + "</td></tr>\n";
+	ret += "<tr><td bgcolor='white' colspan='" + dim + "'>" + row[0] + "</td></tr>\n";
       else
 	foreach(row[0], string elem)
-	  ret += "<tr><td><tt>" + elem + "</tt></td>" +
-	    (dim==2?"<td>&nbsp;</td>":"") + "</tr>\n";
+	  ret += "<tr><td bgcolor='white'><tt>" + elem + "</tt></td>" +
+	    (dim==2?"<td bgcolor='white'>&nbsp;</td>":"") + "</tr>\n";
     }
     else if(sizeof(row[0])==1)
-      ret += "<tr valign='top'><td><tt>" + row[0][0] +
-	"</tt></td><td>" + row[1] + "</td></tr>\n";
+      ret += "<tr valign='top'><td bgcolor='white'><tt>" + row[0][0] +
+	"</tt></td><td bgcolor='white'>" + row[1] + "</td></tr>\n";
     else {
-      ret += "<tr valign='top'><td><tt>" + row[0][0] +
-	"</tt></td><td rowspan='" + sizeof(row[0]) + "'>" + row[1] + "</td></tr>\n";
+      ret += "<tr valign='top'><td bgcolor='white'><tt>" + row[0][0] +
+	"</tt></td><td bgcolor='white' rowspan='" + sizeof(row[0]) + "'>"
+	+ row[1] + "</td></tr>\n";
       foreach(row[0][1..], string elem)
-	ret += "<tr valign='top'><td><tt>" + elem + "</tt></td></tr>\n";
+	ret += "<tr valign='top'><td bgcolor='white'><tt>" + elem + "</tt></td></tr>\n";
     }
   }
 
-  return ret + "</table></td></tr></table><br />";
+  return ret + "</table></td></tr></table><br />\n";
 }
 
 string build_box(Node n, string first, string second, function layout, void|string header) {
@@ -432,6 +453,10 @@ string parse_text(Node n) {
 
     case "source-position":
       position->update(c);
+      break;
+
+    case "matrix":
+      ret += layout_matrix( map(c->get_elements("r")->get_elements("c"), map, parse_text) );
       break;
 
     // Not really allowed
