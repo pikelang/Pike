@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.169 2000/03/09 15:02:26 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.170 2000/03/16 10:37:10 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -399,13 +399,13 @@ all: program { YYACCEPT; }
 /*  | error F_LEX_EOF { YYABORT; } */
   ;
 
-program: program def optional_semi_colon
+program: program def optional_semi_colons
 /*  | error { yyerrok; } */
   |  /* empty */
   ;
 
-optional_semi_colon: /* empty */
-  | ';' 
+optional_semi_colons: /* empty */
+  | optional_semi_colons ';'
   ;
 
 string_constant: string
