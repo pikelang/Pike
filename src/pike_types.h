@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.90 2003/09/04 15:30:06 mast Exp $
+|| $Id: pike_types.h,v 1.91 2003/11/14 00:28:38 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
 
 #include "svalue.h"
+#include "las.h"
 
 #define PIKE_TYPE_STACK_SIZE 100000
 
@@ -65,78 +66,6 @@ extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 #endif /* PIKE_DEBUG */
 #endif /* DEBUG_MALLOC */
 
-
-struct compiler_frame;
-
-/* Also used in struct node_identifier */
-union node_data
-{
-  struct
-  {
-    int number;
-    struct program *prog;
-  } id;
-  struct
-  {
-    int ident;
-    struct compiler_frame *frame;
-#ifdef SHARED_NODES
-    struct program *prog;
-#endif
-  } trampoline;
-  struct svalue sval;
-  struct
-  {
-    struct node_s *a, *b;
-  } node;
-  struct
-  {
-    struct node_identifier *a, *b;
-  } node_id;
-  struct
-  {
-    int a, b;
-  } integer;
-};
-
-struct node_s
-{
-#if defined(SHARED_NODES)
-  unsigned INT32 refs;
-  size_t hash;
-  struct node_s *next;
-#endif /* SHARED_NODES */
-  struct pike_string *current_file;
-  struct pike_type *type;
-  struct pike_string *name;
-  struct node_s *parent;
-  unsigned INT16 line_number;
-  unsigned INT16 node_info;
-  unsigned INT16 tree_info;
-  /* The stuff from this point on is hashed. */
-  unsigned INT16 token;
-  union node_data u;
-};
-
-#ifdef SHARED_NODES_MK2
-
-struct node_identifier
-{
-  ptrdiff_t refs;
-  struct node_identifier *next;
-  size_t hash;
-  INT16 token;
-  union node_data u;
-};
-
-#endif /* SHARED_NODES_MK2 */
-
-#ifndef STRUCT_NODE_S_DECLARED
-#define STRUCT_NODE_S_DECLARED
-#endif
-
-
-typedef struct node_s node;
 
 extern int max_correct_args;
 PMOD_EXPORT extern struct pike_type *string_type_string;

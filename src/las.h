@@ -2,18 +2,15 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.62 2003/04/02 19:22:43 mast Exp $
+|| $Id: las.h,v 1.63 2003/11/14 00:28:38 mast Exp $
 */
 
 #ifndef LAS_H
 #define LAS_H
 
 #include "global.h"
-#include "pike_types.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
-#include "program.h"
-#include "block_alloc_h.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
 typedef void (*c_fun)(INT32);
@@ -31,6 +28,9 @@ void cleanup_compiler(void);
 
 
 extern int cumulative_parse_error;
+
+struct node_s;
+typedef struct node_s node;
 
 struct local_variable
 {
@@ -60,7 +60,70 @@ struct compiler_frame
   struct local_variable variable[MAX_LOCAL];
 };
 
+/* Also used in struct node_identifier */
+union node_data
+{
+  struct
+  {
+    int number;
+    struct program *prog;
+  } id;
+  struct
+  {
+    int ident;
+    struct compiler_frame *frame;
+#ifdef SHARED_NODES
+    struct program *prog;
+#endif
+  } trampoline;
+  struct svalue sval;
+  struct
+  {
+    struct node_s *a, *b;
+  } node;
+  struct
+  {
+    struct node_identifier *a, *b;
+  } node_id;
+  struct
+  {
+    int a, b;
+  } integer;
+};
+
+struct node_s
+{
+#if defined(SHARED_NODES)
+  unsigned INT32 refs;
+  size_t hash;
+  struct node_s *next;
+#endif /* SHARED_NODES */
+  struct pike_string *current_file;
+  struct pike_type *type;
+  struct pike_string *name;
+  struct node_s *parent;
+  unsigned INT16 line_number;
+  unsigned INT16 node_info;
+  unsigned INT16 tree_info;
+  /* The stuff from this point on is hashed. */
+  unsigned INT16 token;
+  union node_data u;
+};
+
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
+#endif
+
 #ifdef SHARED_NODES_MK2
+
+struct node_identifier
+{
+  ptrdiff_t refs;
+  struct node_identifier *next;
+  size_t hash;
+  INT16 token;
+  union node_data u;
+};
 
 struct node_hash_table
 {
