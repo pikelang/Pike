@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.19 2002/12/10 14:20:59 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.20 2002/12/12 19:58:46 grubba Exp $
 
 // AutoDoc mk II assembler
 
@@ -345,7 +345,7 @@ Node wrap(Node n, Node wrapper) {
   return wrapper;
 }
 
-void move_items(Node n, mapping jobs, void|Node wrapper) {
+static void move_items_low(Node n, mapping jobs, void|Node wrapper) {
   if(jobs[0]) {
     if(wrapper)
       jobs[0]( wrap(n, wrapper->clone()) );
@@ -355,7 +355,7 @@ void move_items(Node n, mapping jobs, void|Node wrapper) {
   }
   if(!sizeof(jobs)) return;
 
-  foreach( ({ "namespace", "module", "class", "docgroup" }), string type)
+  foreach( ({ "module", "class", "docgroup" }), string type)
     foreach(n->get_elements(type), Node c) {
       mapping m = c->get_attributes();
       string name = m->name || m["homogen-name"];
@@ -372,6 +372,54 @@ void move_items(Node n, mapping jobs, void|Node wrapper) {
       if(!sizeof(e))
 	m_delete(jobs, name);
     }
+}
+
+void move_items(Node n, mapping jobs, void|Node wrapper)
+{
+#if 0
+  werror("move_items(%O, %O, %O)\n",
+	 n, jobs, wrapper);
+#endif /* 0 */
+  if(jobs[0]) {
+    if(wrapper)
+      jobs[0]( wrap(n, wrapper->clone()) );
+    else
+      jobs[0](n);
+    m_delete(jobs, 0);
+  }
+  if(!sizeof(jobs)) return;
+
+  // First do all namespace specific moves.
+  foreach(n->get_elements("namespace"), Node c) {
+    mapping m = c->get_attributes();
+    string name = m->name + "::";
+    mapping e = jobs[name];
+    if(!e) continue;
+
+    Node wr = Node(XML_ELEMENT, n->get_tag_name(),
+		   n->get_attributes()+(["hidden":"1"]), 0);
+    if(wrapper)
+      wr = wrap( wr, wrapper->clone() );
+
+    move_items_low(c, e, wr);
+
+    if(!sizeof(e))
+      m_delete(jobs, name);
+  }
+
+  if(!sizeof(jobs)) return;
+
+  // Then perform the moves that are predef:: implicit.
+  foreach(n->get_elements("namespace"), Node c)
+  {
+    if (c->get_attributes()->name != "predef") continue;
+
+    Node wr = Node(XML_ELEMENT, n->get_tag_name(),
+		   n->get_attributes()+(["hidden":"1"]), 0);
+    if(wrapper)
+      wr = wrap( wr, wrapper->clone() );
+    move_items_low(c, jobs, wr);
+  }
 }
 
 string make_toc_entry(Node n) {
