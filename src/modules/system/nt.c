@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.67 2004/11/14 18:02:39 nilsson Exp $
+|| $Id: nt.c,v 1.68 2004/11/20 16:18:58 nilsson Exp $
 */
 
 /*
@@ -308,7 +308,7 @@ void f_RegGetValue(INT32 args)
   get_all_args("RegQueryValue", args, "%i%s%s",
 	       &hkey_num, &key, &ind);
 
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d\n", hkey_num);
   }
 
@@ -378,7 +378,7 @@ void f_RegGetKeyNames(INT32 args)
   get_all_args("RegGetKeyNames", args, "%i%s",
 	       &hkey_num, &key);
 
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d\n", hkey_num);
   }
 
@@ -461,7 +461,7 @@ void f_RegGetValues(INT32 args)
   get_all_args("RegGetValues", args, "%i%s",
 	       &hkey_num, &key);
 
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d\n", hkey_num);
   }
 
@@ -2379,7 +2379,7 @@ static void f_NetSessionEnum(INT32 args)
 	  a->item[pos]=sp[-1];
 	  sp--;
 	  pos++;
-	  if(pos>=a->size) break;
+	  if((unsigned int)pos>=a->size) break;
 	  ptr+=sizeof_session_info(level);
 	}
 	netapibufferfree(buf);
@@ -2457,7 +2457,7 @@ static void f_NetWkstaUserEnum(INT32 args)
           a->item[pos]=sp[-1];
           sp--;
           pos++;
-          if(pos>=a->size) break;
+          if((unsigned int)pos>=a->size) break;
           ptr+=sizeof_wkstauser_info(level);
         }
         netapibufferfree(buf);
@@ -3574,10 +3574,10 @@ void init_nt_system_calls(void)
   ADD_FUNCTION("normalize_path", f_normalize_path, tFunc(tStr, tStr), 0);
 
   /* LogonUser only exists on NT, link it dynamically */
-  if(advapilib=LoadLibrary("advapi32"))
+  if( (advapilib=LoadLibrary("advapi32")) )
   {
     FARPROC proc;
-    if(proc=GetProcAddress(advapilib, "LogonUserA"))
+    if( (proc=GetProcAddress(advapilib, "LogonUserA")) )
     {
       logonuser=(logonusertype)proc;
 
@@ -3599,34 +3599,34 @@ void init_nt_system_calls(void)
       token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
     }
 
-    if(proc=GetProcAddress(advapilib, "LookupAccountNameA"))
+    if( (proc=GetProcAddress(advapilib, "LookupAccountNameA")) )
       lookupaccountname=(lookupaccountnametype)proc;
 
-    if(proc=GetProcAddress(advapilib, "LookupAccountSidA"))
+    if( (proc=GetProcAddress(advapilib, "LookupAccountSidA")) )
       lookupaccountsid=(lookupaccountsidtype)proc;
 
-    if(proc=GetProcAddress(advapilib, "SetNamedSecurityInfoA"))
+    if( (proc=GetProcAddress(advapilib, "SetNamedSecurityInfoA")) )
       setnamedsecurityinfo=(setnamedsecurityinfotype)proc;
 
-    if(proc=GetProcAddress(advapilib, "GetNamedSecurityInfoA"))
+    if( (proc=GetProcAddress(advapilib, "GetNamedSecurityInfoA")) )
       getnamedsecurityinfo=(getnamedsecurityinfotype)proc;
 
-    if(proc=GetProcAddress(advapilib, "EqualSid"))
+    if( (proc=GetProcAddress(advapilib, "EqualSid")) )
       equalsid=(equalsidtype)proc;
 
-    if(proc=GetProcAddress(advapilib, "InitializeAcl"))
+    if( (proc=GetProcAddress(advapilib, "InitializeAcl")) )
       initializeacl=(initializeacltype)proc;
 
-    if(proc=GetProcAddress(advapilib, "AddAccessAllowedAce"))
+    if( (proc=GetProcAddress(advapilib, "AddAccessAllowedAce")) )
       addaccessallowedace=(addaccessallowedacetype)proc;
 
-    if(proc=GetProcAddress(advapilib, "AddAccessDeniedAce"))
+    if( (proc=GetProcAddress(advapilib, "AddAccessDeniedAce")) )
       addaccessdeniedace=(addaccessdeniedacetype)proc;
 
-    if(proc=GetProcAddress(advapilib, "AddAuditAccessAce"))
+    if( (proc=GetProcAddress(advapilib, "AddAuditAccessAce")) )
       addauditaccessace=(addauditaccessacetype)proc;
 
-    if(proc=GetProcAddress(advapilib, "GetLengthSid"))
+    if( (proc=GetProcAddress(advapilib, "GetLengthSid")) )
       getlengthsid=(getlengthsidtype)proc;
 
     if(lookupaccountname &&
@@ -3655,14 +3655,14 @@ void init_nt_system_calls(void)
   }
 
   /* NetUserGetInfo only exists on NT, link it dynamically */
-  if(netapilib=LoadLibrary("netapi32"))
+  if( (netapilib=LoadLibrary("netapi32")) )
   {
     FARPROC proc;
-    if(proc=GetProcAddress(netapilib, "NetApiBufferFree"))
+    if( (proc=GetProcAddress(netapilib, "NetApiBufferFree")) )
     {
       netapibufferfree=(netapibufferfreetype)proc;
 
-      if(proc=GetProcAddress(netapilib, "NetUserGetInfo"))
+      if( (proc=GetProcAddress(netapilib, "NetUserGetInfo")) )
       {
 	netusergetinfo=(netusergetinfotype)proc;
 	
@@ -3693,7 +3693,7 @@ void init_nt_system_calls(void)
 	SIMPCONST(AF_OP_ACCOUNTS);
       }
       
-      if(proc=GetProcAddress(netapilib, "NetUserEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetUserEnum")) )
       {
 	netuserenum=(netuserenumtype)proc;
 	
@@ -3707,7 +3707,7 @@ void init_nt_system_calls(void)
 	SIMPCONST(FILTER_SERVER_TRUST_ACCOUNT);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGroupEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetGroupEnum")) )
       {
 	netgroupenum=(netgroupenumtype)proc;
 	
@@ -3718,21 +3718,21 @@ void init_nt_system_calls(void)
 	SIMPCONST(SE_GROUP_OWNER);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetLocalGroupEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetLocalGroupEnum")) )
       {
 	netlocalgroupenum=(netgroupenumtype)proc;
 	
   	add_function("NetLocalGroupEnum",f_NetLocalGroupEnum,"function(string|int|void,int|void:array(array(string|int)))",0); 
       }
 
-      if(proc=GetProcAddress(netapilib, "NetUserGetGroups"))
+      if( (proc=GetProcAddress(netapilib, "NetUserGetGroups")) )
       {
 	netusergetgroups=(netusergetgroupstype)proc;
 	
  	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
       }
 
-      if(proc=GetProcAddress(netapilib, "NetUserGetLocalGroups"))
+      if( (proc=GetProcAddress(netapilib, "NetUserGetLocalGroups")) )
       {
 	netusergetlocalgroups=(netusergetlocalgroupstype)proc;
 	
@@ -3741,14 +3741,14 @@ void init_nt_system_calls(void)
 	SIMPCONST(LG_INCLUDE_INDIRECT);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGroupGetUsers"))
+      if( (proc=GetProcAddress(netapilib, "NetGroupGetUsers")) )
       {
 	netgroupgetusers=(netgroupgetuserstype)proc;
 	
  	add_function("NetGroupGetUsers",f_NetGroupGetUsers,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
       }
 
-      if(proc=GetProcAddress(netapilib, "NetLocalGroupGetMembers"))
+      if( (proc=GetProcAddress(netapilib, "NetLocalGroupGetMembers")) )
       {
 	netlocalgroupgetmembers=(netgroupgetuserstype)proc;
 	
@@ -3764,23 +3764,22 @@ void init_nt_system_calls(void)
 	SIMPCONST(SidTypeUnknown);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGetDCName"))
+      if( (proc=GetProcAddress(netapilib, "NetGetDCName")) )
       {
 	netgetdcname=(netgetdcnametype)proc;
 	
  	add_function("NetGetDCName",f_NetGetDCName,"function(string|int,string:string)",0);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGetAnyDCName"))
+      if( (proc=GetProcAddress(netapilib, "NetGetAnyDCName")) )
       {
 	netgetanydcname=(netgetdcnametype)proc;
 	
  	add_function("NetGetAnyDCName",f_NetGetAnyDCName,"function(string|int,string:string)",0);
       }
 
-
       /* FIXME: On windows 9x, netsessionenum is located in svrapi.lib */
-      if(proc=GetProcAddress(netapilib, "NetSessionEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetSessionEnum")) )
       {
 	netsessionenum=(netsessionenumtype)proc;
 	
@@ -3790,7 +3789,7 @@ void init_nt_system_calls(void)
         SIMPCONST(SESS_NOENCRYPTION);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetWkstaUserEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetWkstaUserEnum")) )
       {
 	netwkstauserenum=(netwkstauserenumtype)proc;
 	
@@ -3809,7 +3808,7 @@ void init_nt_system_calls(void)
     FARPROC proc;
 
 #define LOAD_SECUR_FN(VAR, FN) do { VAR=0; \
-                                    if(proc=GetProcAddress(securlib, #FN)) \
+                                    if((proc=GetProcAddress(securlib, #FN))) \
                                       VAR=(PIKE_CONCAT(VAR,type))proc; \
                                } while(0)
 
