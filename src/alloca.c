@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: alloca.c,v 1.3 1999/01/31 09:01:38 hubbe Exp $
+ * $Id: alloca.c,v 1.4 2001/04/13 22:57:57 mast Exp $
  */
 #include <stdio.h>
 /*
@@ -140,7 +140,7 @@ typedef union hdr
 	alloca( size ) returns a pointer to at least `size' bytes of
 	storage which will be automatically reclaimed upon exit from
 	the procedure that called alloca().  Originally, this space
-	was supposed to be taken from the current stack pike_frame of the
+	was supposed to be taken from the current stack frame of the
 	caller, but that method cannot be made to work for some
 	implementations of C, for example under Gould's UTX/32.
 */
