@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.436 2001/07/04 12:08:50 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.437 2001/07/04 12:27:35 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4392,10 +4392,10 @@ test_compile_error([[void f (int i) {string i;}]]);
 
 // Not yet cataloged
 test_any(int i=10; { int i; } return i, 10)
-test_program(void foo(int a ,int b); function(int,int:void) a() { return foo; })
-test_program(void foo(int a, int ... b); function(int,int ...:void) a() { return foo; })
-test_program(void foo(); function(:void) a() { return foo; })
-test_compile_error([[} void foo(); function(:string) a() { return foo;]])
+test_program(void foo(int a, int b){} function(int,int:void) a() { return foo; })
+test_program(void foo(int a, int ... b){} function(int,int ...:void) a() { return foo; })
+test_program(void foo(){} function(:void) a() { return foo; })
+test_compile_error([[} void foo(){} function(:string) a() { return foo;]])
 
 test_do(lambda(){return;}())
 test_equal( ({ lambda() { return 3; } , lambda() { return 7; }, lambda() { return 9; } })(), ({ 3,7,9 }))
