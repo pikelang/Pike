@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.25 2000/07/07 01:24:14 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.26 2000/07/12 12:25:18 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -204,8 +204,11 @@ OPCODE2(F_EXTERNAL_LVALUE,"& external")
   o=Pike_fp->current_object;
   
   if(!o)
-    error("Current object is destructed\n");
-  
+    error("Parent was lost during cloning.\n");
+    
+  if(!(o->prog))
+    error("Attempting to access variable in destructed object\n");
+    
   while(1)
   {
     if(inherit->parent_offset)
