@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.14 2004/12/26 01:07:38 per Exp $
+// $Id: FakeFile.pike,v 1.15 2004/12/28 13:43:07 agehall Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -28,12 +28,10 @@ int close(void|string direction) {
   int cw = has_value(direction, "w");
 
   if(cr) {
-    if(!r) error("not open");
     r = 0;
   }
 
   if(cw) {
-    if(!w) error("not open");
     w = 0;
   }
 
