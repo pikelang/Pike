@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.126 2004/06/29 11:09:15 nilsson Exp $
+|| $Id: error.c,v 1.127 2004/06/29 11:16:42 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.126 2004/06/29 11:09:15 nilsson Exp $");
+RCSID("$Id: error.c,v 1.127 2004/06/29 11:16:42 nilsson Exp $");
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -202,7 +202,6 @@ PMOD_EXPORT void Pike_vsnprintf(char *str, size_t size,
 
       fmt++;
 
-      fprintf(stderr, "X %c\n", fmt[0]);
       switch( fmt++[0] ) {
 
       case 'O':
