@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.180 1999/07/04 08:30:01 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.181 1999/07/04 12:07:43 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2462,9 +2462,9 @@ int main(int argc, array(string) argv)
 }
 
 ";
-  allocate(100, thread_create)(lambda() {
+  allocate(10, thread_create)(lambda() {
     int i;
-    for(i = 0; i < 100; i++) {
+    for(i = 0; i < 1000; i++) {
       compile_string(file);
     }
   } )->wait();
