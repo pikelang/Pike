@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.81 2005/01/26 20:02:07 mast Exp $
+/* $Id: sslfile.pike,v 1.82 2005/01/26 20:04:22 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -100,8 +100,8 @@ static enum CloseState {
 }
 static CloseState close_state = STREAM_UNINITIALIZED;
 
-static int close_status;
-// This is conn->closed after shutdown when conn has been destructed.
+static int conn_closing;
+// This is conn->closing after shutdown when conn has been destructed.
 
 static int local_errno;
 // If nonzero, override the errno on the stream with this.
@@ -434,7 +434,7 @@ int close (void|string how, void|int clean_close)
     );
 
     if (!stream)
-      if (close_status == 3) {
+      if (conn_closing == 3) {
 	SSL3_DEBUG_MSG ("SSL.sslfile->close: Already closed cleanly remotely\n");
 	RETURN (1);
       }
@@ -467,18 +467,18 @@ Stdio.File shutdown()
       RETURN (0);
     }
 
-    close_status = conn->closing;
+    conn_closing = conn->closing;
     if (close_state == NORMAL_CLOSE)
       // If we didn't request a clean close then we pretend to have
       // received a close message. According to the standard it's ok
       // anyway as long as the transport isn't used for anything else.
-      close_status |= 2;
+      conn_closing |= 2;
 
     SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): %s close\n",
-		    close_status == 3 && !sizeof (write_buffer) ?
-		    "clean" : "abrupt");
+		    conn_closing == 3 && !sizeof (write_buffer) ?
+		    "Clean" : "Abrupt");
 
-    if ((close_status & 2) && sizeof (conn->left_over || "")) {
+    if ((conn_closing & 2) && sizeof (conn->left_over || "")) {
 #ifdef DEBUG
       werror ("Warning: Got buffered data after close in %O: %O%s\n", this,
 	      conn->left_over[..99], sizeof (conn->left_over) > 100 ? "..." : "");
