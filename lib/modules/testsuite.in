@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.20 2003/10/05 16:27:58 grubba Exp $
+dnl $Id: testsuite.in,v 1.21 2003/10/05 19:35:18 grubba Exp $
 
 dnl - Array
 
@@ -806,10 +806,9 @@ test_any([[
   // Spawn a /bin/cat that hangs on a read from a pipe connected to
   // this process, so that it will die of SIGPIPE if we die.
   Stdio.File input_fd = Stdio.File();
-  Stdio.File input_fd2 = fd->pipe(Stdio.PROP_IPC);
   Process.TraceProcess proc =
     Process.TraceProcess(({ "/bin/cat" }), ([
-      "stdin":input_fd,
+      "stdin":input_fd->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE),
     ]));
 
   int initial_sleep = 5;
