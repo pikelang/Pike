@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.461 2003/08/18 15:11:37 mast Exp $
+|| $Id: builtin_functions.c,v 1.462 2003/08/19 09:38:16 tomas Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.461 2003/08/18 15:11:37 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.462 2003/08/19 09:38:16 tomas Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1937,8 +1937,10 @@ static node *optimize_this_object(node *n)
 	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
       level = CDR (n)->u.sval.u.integer;
-      for (i = MIN (level, compilation_depth); i; i--, state = state->previous)
-	state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
+      for (i = MINIMUM(level, compilation_depth); i;
+           i--, state = state->previous)
+	state->new_program->flags |=
+          PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
     }
   }
 
