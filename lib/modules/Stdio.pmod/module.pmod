@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.164 2003/02/17 11:27:09 mast Exp $
+// $Id: module.pmod,v 1.165 2003/02/17 11:29:44 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1633,7 +1633,7 @@ string read_bytes(string filename, void|int start,void|int len)
     len=0x7fffffff;
   case 3:
     if(start)
-      f->seek(start);
+      if (f->seek(start) < 0) {f->close(); return 0;}
   }
   ret=f->read(len);
   f->close();
