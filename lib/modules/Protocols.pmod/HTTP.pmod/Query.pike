@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.58 2003/05/06 00:04:27 nilsson Exp $
+// $Id: Query.pike,v 1.59 2003/07/07 15:08:24 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -373,13 +373,27 @@ string headers_encode(mapping h)
 //!
 mapping hostname_cache=([]);
 
-//!	Set this to an array of Protocols.DNS.async_clients,
-//!	if you wish to limit the number of outstanding DNS
-//!	requests. Example:
-//! @code
-//! async_dns = allocate(20, Protocols.DNS.async_client)();
-//! @endcode
-array async_dns=0;
+static Protocols.DNS.async_client async_dns;
+static int last_async_dns;
+static mixed async_id;
+
+#ifndef PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT
+#define PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT	60
+#endif
+
+// Check if it's time to clean up the async dns object.
+static void clean_async_id()
+{
+  int time_left = last_async_dns + PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT - time(1);
+  if (time_left >= 0) {
+    // Not yet.
+    async_id = call_out(clean_async_dns, time_left + 1);
+    return;
+  }
+  async_id = 0;
+  async_dns = 0;
+  last_async_dns = 0;
+}
 
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
@@ -405,12 +419,14 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
       return;
    }
 
-   if (!async_dns)
-      Protocols.DNS.async_client()
-	 ->host_to_ip(hostname,dns_lookup_callback,callback,@extra);
-   else
-      async_dns[random(sizeof(async_dns))]->
-	 host_to_ip(hostname,dns_lookup_callback,callback,@extra);
+   if (!async_dns) {
+     async_dns = Protocols.DNS.async_client();
+   }
+   async_dns->host_to_ip(hostname, dns_lookup_callback, callback, @extra);
+   last_async_dns = time(1);
+   if (!async_id) {
+     async_id = call_out(clean_async_dns, PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT+1);
+   }
 }
 
 string dns_lookup(string hostname)
@@ -948,6 +964,12 @@ object datafile()
 
 static void destroy()
 {
+   if (async_id) {
+     remove_call_out(async_id);
+   }
+   async_id = 0;
+   async_dns = 0;
+
    catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
    catch { con->close(); };
    //catch { destruct(con); };
