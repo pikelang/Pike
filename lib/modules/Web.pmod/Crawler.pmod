@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.7 2001/08/13 11:47:13 anders Exp $
+// $Id: Crawler.pmod,v 1.8 2001/08/18 19:10:57 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -703,6 +703,7 @@ class Crawler
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
 
+      https= (uri->scheme=="https")? 1 : 0;
       async_request(uri->host, uri->port,
 		    sprintf("GET %s HTTP/1.0", uri->get_path_query()),
 		    headers );
