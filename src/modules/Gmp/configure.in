@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.26 2001/03/04 18:35:19 grubba Exp $
+# $Id: configure.in,v 1.27 2001/08/29 16:19:32 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
  mpz_mul(tmp,tmp,tmp2);
  mpz_mul(tmp,tmp,tmp2);
  mpz_mul(tmp,tmp,tmp2);
- fprintf(stderr,"FNORD: %d\n",mpz_sizeinbase(tmp,10));
+ /* fprintf(stderr,"FNORD: %d\n",mpz_sizeinbase(tmp,10)); */
   exit( mpz_sizeinbase(tmp,10) !=  9*4+1 );
 }
 
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
    	  mpz_mul(tmp,tmp,tmp2);
    	  mpz_mul(tmp,tmp,tmp2);
    	  mpz_mul(tmp,tmp,tmp2);
-   	  fprintf(stderr,"FNORD: %d\n",mpz_sizeinbase(tmp,10));
+   	  /* fprintf(stderr,"FNORD: %d\n",mpz_sizeinbase(tmp,10)); */
   	  exit( mpz_sizeinbase(tmp,10) !=  9*4+1 );
         ],pike_cv_working_$1=yes,pike_cv_working_$1=no)
       )
