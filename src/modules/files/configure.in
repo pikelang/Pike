@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.57 1998/08/06 22:47:55 grubba Exp $
+# $Id: configure.in,v 1.58 1998/08/07 00:21:33 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -13,36 +13,6 @@ AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat socketpair)
-
-AC_MSG_CHECKING(if the last argument to accept is a size_t)
-AC_CACHE_VAL(pike_cv_type_accept, [
-  AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-/* HPUX needs these too... */
-#ifndef __STDC_EXT__
-#  define __STDC_EXT__
-#endif /* !__STDC_EXT__ */
-
-#include <sys/types.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-/* Here's the actual test: */
-int accept(int, struct sockaddr *, size_t *);
-  ], [
-    /* EMPTY */
-  ], pike_cv_type_accept=size_t, pike_cv_type_accept=int)
-])
-AC_MSG_RESULT($pike_cv_type_accept)
-AC_DEFINE_UNQUOTED(PIKE_ACCEPT_TYPE, $pike_cv_type_accept)
 
 AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
 AC_CACHE_VAL(pike_cv_func_mkdir_args,[
