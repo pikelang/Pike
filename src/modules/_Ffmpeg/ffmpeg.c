@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.1 2002/07/18 21:31:59 hop Exp $
+ * $Id: ffmpeg.c,v 1.2 2002/07/22 13:21:11 nilsson Exp $
  *
  */
 
@@ -65,23 +65,21 @@ int encoder_flg(AVCodec *codec) {
     flg = 0;
   return(flg);
 }
-/*!
- *! class ffmpeg
+/*! @class ffmpeg
  *!
  *! Implements support of all codecs from a nice project Ffmpeg.
- *! You can find more info about it at http://ffmpeg.sf.net/
+ *! You can find more info about it at @url{http://ffmpeg.sf.net/@}.
  */
 
-/*!
- *! @decl create(nt codec_name, int encoder);
+/*! @decl void create(int codec_name, int encoder)
  *!
  *! Create decoder or encoder object.
  *!
  *! @param codec_name
- *!   Internal number of codec, ie. _Ffmpeg.CODEC_ID_MP2.
+ *!   Internal number of codec, eg. @[CODEC_ID_MP2].
  *!
  *! @param encoder
- *!   If @tt{true@} encoder object will be created, decoder
+ *!   If @tt{true@}, encoder object will be created, decoder
  *!   object otherwise.
  *!
  */
@@ -152,8 +150,7 @@ static void f_create(INT32 args) {
 } /* create */
 
 
-/*!
- *! @decl mapping|int get_codec_info();
+/*! @decl mapping|int get_codec_info()
  *!
  *! Returns mapping with info of used codec.
  *!
@@ -173,8 +170,7 @@ static void f_codec_info(INT32 args) {
     push_int(0);
 }
 
-/*!
- *! @decl int set_codec_param(string name, mixed value)
+/*! @decl int set_codec_param(string name, mixed value)
  *!
  *! Sets one codec parameter
  *!
@@ -234,10 +230,9 @@ static void f_set_codec_param(INT32 args) {
   push_int(0);
 }
 
-/*!
- *! @decl mapping|int get_codec_status()
+/*! @decl mapping|int get_codec_status()
  *!
- *! Returns mapping with actuall codec parameters.
+ *! Returns a mapping with the actual codec parameters.
  *!
  *! @seealso
  *!   @[set_codec_param()]
@@ -273,13 +268,12 @@ static void f_get_codec_status(INT32 args) {
   f_aggregate_mapping(2 * cnt);
 }
 
-/*!
- *! @decl mapping|int decode(string data);
+/*! @decl mapping|int decode(string data)
  *!
- *! Returns mapping with new decoded frame and lenght of
+ *! Returns a mapping with the new decoded frame and lenght of
  *! @[data] which was used for decoding.
  *!
- *! @decl int decode(string data, function shuffler);
+ *! @decl int decode(string data, function shuffler)
  *!
  *! Decode all @[data] buffer and pass result to @[shuffler].
  *! Returns @tt{1@} on success, @tt{0@} otherwise.
@@ -345,8 +339,7 @@ static void f_decode(INT32 args) {
 
 }
 
-/*
- * @decl mapping|int encode(string data);
+/* @decl mapping|int encode(string data)
  *
  * Returns mapping with new encoded frame and lenght of
  * @[data] which was used for encoding.
@@ -373,7 +366,6 @@ static void f_encode(INT32 args) {
  *!
  *! @returns
  *!   Array of mapping with codec features.
- *!
  */
 static void f_list_codecs(INT32 args) {
   int cnt = 0;
@@ -401,9 +393,7 @@ static void f_list_codecs(INT32 args) {
   push_array(aggregate_array( cnt ));
 }
 
-/*! 
- *! @endclass ffmepg
- *!
+/*! @endclass
  */
 
 static void init_ffmpeg_data(struct object *obj) {
