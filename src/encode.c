@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.103 2001/07/01 22:30:36 grubba Exp $");
+RCSID("$Id: encode.c,v 1.104 2001/07/02 01:45:25 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -528,7 +528,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   static struct svalue dested = {
     T_INT, NUMBER_DESTRUCTED,
 #ifdef HAVE_UNION_INIT
-  {0}, /* Only to avoid warnings. */
+    {0}, /* Only to avoid warnings. */
 #endif
   };
   INT32 i;
@@ -750,22 +750,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       {
 	if(val->subtype != FUNCTION_BUILTIN)
 	{
-	  int eq;
-
-	  code_entry(type_to_tag(val->type), 1, data);
-	  push_svalue(val);
-	  Pike_sp[-1].type=T_OBJECT;
-	  ref_push_string(ID_FROM_INT(val->u.object->prog, val->subtype)->name);
-	  f_arrow(2);
-	  eq=is_eq(Pike_sp-1, val);
-	  pop_stack();
-	  if(eq)
-	  {
 	    /* We have to remove ourself from the cache for now */
 	    struct svalue tmp=data->counter;
 	    tmp.u.integer--;
 	    map_delete(data->encoded, val);
 
+	    code_entry(type_to_tag(val->type), 1, data);
 	    push_svalue(val);
 	    Pike_sp[-1].type=T_OBJECT;
 	    encode_value2(Pike_sp-1, data);
@@ -776,8 +766,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
 	    return;
-	  }
 	}
+	Pike_error("Failed to encode function.\n");
       }
 
       code_entry(type_to_tag(val->type), 0,data);
@@ -927,7 +917,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       }
       pop_stack();
       break;
-      }
+    }
   }
 }
 
@@ -949,7 +939,20 @@ static void free_encode_data(struct encode_data *data)
  *! Almost any value can be coded, mappings, floats, arrays, circular
  *! structures etc.
  *!
- *! To encode objects, programs and functions a codec object must be provided.
+ *! To encode objects, programs and functions, a codec object must be
+ *! provided.
+ *!
+ *! @note
+ *!
+ *! When only simple types like int, floats, strings, mappings,
+ *! multisets and arrays are encoded, the produced string is very
+ *! portable between pike versions. It can at least be read by any
+ *! later version.
+ *!
+ *! The portability when objects, programs and functions are involved
+ *! depends mostly on the codec. If the byte code is encoded, i.e.
+ *! when Pike programs are actually dumped in full, then the string
+ *! can probably only be read by the same pike version.
  *!
  *! @seealso
  *!   @[decode_value()], @[sprintf()], @[encode_value_canonic()]
@@ -1511,7 +1514,7 @@ static void decode_value2(struct decode_data *data)
     {
       struct array *a;
       if(num < 0)
-	Pike_error("Failed to decode string. (array size is negative)\n");
+	Pike_error("Failed to decode array. (array size is negative)\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
@@ -1681,15 +1684,27 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  break;
 
-	case 1:
+	case 1: {
+	  struct program *p;
 	  decode_value2(data);
-	  if(Pike_sp[-2].type==T_INT)
-	  {
-	    pop_stack();
-	  }else{
-	    f_arrow(2);
+	  if (Pike_sp[-2].type == T_OBJECT &&
+	      Pike_sp[-1].type == T_STRING &&
+	      (p = Pike_sp[-2].u.object->prog)) {
+	    int f = find_shared_string_identifier(Pike_sp[-1].u.string, p);
+	    if (f >= 0) {
+	      struct svalue func;
+	      low_object_index_no_free(&func, Pike_sp[-2].u.object, f);
+#ifdef PIKE_SECURITY
+	      /* FIXME: Check access to the function. */
+#endif
+	      pop_n_elems(2);
+	      *Pike_sp++ = func;
+	      break;
+	    }
 	  }
+	  pop_stack();
 	  break;
+	}
 
 	default:
 	  Pike_error("Function coding not compatible.\n");
