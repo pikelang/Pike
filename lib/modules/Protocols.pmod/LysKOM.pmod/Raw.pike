@@ -94,7 +94,7 @@ void flush_queue()
    }
 }
 
-#if ! constant(thread_create)
+#if !constant(thread_create) || LYSKOM_UNTHREADED
 mixed send_sync(string request)
 {
    return sync_do(++ref,request);
@@ -180,7 +180,7 @@ void|array|object recv(mixed x,string what,void|int syn)
 	    if (res)
 	    {
 	       buf=buf[len+1..];
-#if ! constant(thread_create)
+#if ! constant(thread_create) || LYSKOM_UNTHREADED
 	       if (ref)
 		  call_out(got_async_message,0,res);
 	       else
@@ -201,7 +201,7 @@ void|array|object recv(mixed x,string what,void|int syn)
 		  out_req--;
 		  break;
 	       }
-#if ! constant(thread_create)
+#if ! constant(thread_create) || LYSKOM_UNTHREADED
 	       if (ref)
 		  call_out(got_reply,0,(int)res[0],res[1..]);
 	       else
@@ -224,7 +224,7 @@ void|array|object recv(mixed x,string what,void|int syn)
 		  out_req--;
 		  break;
 	       }
-#if ! constant(thread_create)
+#if ! constant(thread_create) || LYSKOM_UNTHREADED
 	       if (ref)
 		  call_out(got_reply,0,ref,lyskom_error(no,status));
 	       else
@@ -262,7 +262,7 @@ void read_thread()
    }
 }
 
-#if constant(thread_create)
+#if constant(thread_create) && !LYSKOM_UNTHREADED
 Thread.Fifo call_fifo=Thread.Fifo();
 
 void call_thread()
@@ -280,7 +280,7 @@ void connection_lost()
    con=0;
    // send error to all outstanding requests
    foreach (values(async),function f)
-#if constant(thread_create)
+#if constant(thread_create) && !LYSKOM_UNTHREADED
       if (f) call_fifo->write( ({f,lyskom_error(CONNECTION_CLOSED)}) );
    call_fifo->write(0);
 #else
@@ -338,7 +338,7 @@ void create(string server,void|int port,void|string whoami)
       con=0;
       return;
    }
-#if constant(thread_create)
+#if constant(thread_create) && !LYSKOM_UNTHREADED
    thread_create(read_thread);
    thread_create(call_thread);
 #else
@@ -479,7 +479,7 @@ void got_reply(int ref,object|array what)
       return;
    }
    m_delete(async,ref);
-#if constant(thread_create)
+#if constant(thread_create) && !LYSKOM_UNTHREADED
    call_fifo->write( ({call,what}) );
 #else
    call_out(call,0,what);
