@@ -27,3 +27,5 @@
 #undef HAVE_SYS_SOCKETVAR_H
 
 #undef HAVE_NETINET_IN_H
+
+#undef HAVE_FCHROOT

@@ -592,14 +592,15 @@ else
 fi
 done
 
-for ac_func in syslog perror strerror getppid getpgrp getppid getuid getgid geteuid getegid
+for ac_func in syslog perror strerror getppid getpgrp getppid getuid getgid \
+	geteuid getegid fchroot
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 603 "configure"
+#line 604 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -653,7 +654,7 @@ if eval "test \"`echo '$''{'lpc_cv_timezone'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 657 "configure"
+#line 658 "configure"
 #include "confdefs.h"
 
 #include <time.h>

@@ -925,23 +925,23 @@ void f_mark_fd(INT32 args)
 #define get(X) void f_##X(INT32 args){ pop_n_elems(args); push_int((INT32)X()); }
 
 #ifdef HAVE_GETUID
-get(getuid);
+get(getuid)
 #endif
 #ifdef HAVE_GETEUID
-get(geteuid);
+get(geteuid)
 #endif
 #ifdef HAVE_GETGID
-get(getgid);
+get(getgid)
 #endif
 #ifdef HAVE_GETEGID
-get(getegid);
+get(getegid)
 #endif
-get(getpid);
+get(getpid)
 #ifdef HAVE_GETPPID
-get(getppid);
+get(getppid)
 #endif
 #ifdef HAVE_GETPGRP
-get(getpgrp);
+get(getpgrp)
 #endif
 
 #undef get
@@ -958,7 +958,9 @@ void f_chroot(INT32 args)
     pop_stack();
     push_int(!res);
     return;
-  } else if(sp[-args].type == T_OBJECT) {
+  }
+#ifdef HAVE_FCHROOT
+  else if(sp[-args].type == T_OBJECT) {
     int fd;
     apply(sp[-args].u.object, "query_fd", 0);
     fd=sp[-1].u.integer;
@@ -969,6 +971,9 @@ void f_chroot(INT32 args)
     return;
   }
   error("Wrong type of argument to chroot(string|object newroot)\n");
+#else
+  error("Wrong type of argument to chroot(string newroot)\n");
+#endif
 }
 
 void init_spider_efuns(void) 
