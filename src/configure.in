@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.466 2001/01/26 01:38:40 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.467 2001/01/26 12:15:59 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -659,14 +659,14 @@ string:
         AC_MSG_RESULT(yes)
       
         if test -f "$cc1.patched"; then
-          AC_MSG_ERROR($cc1.patched already exists.)
-          AC_MSG_ERROR(Please move it out of the way.)
+          AC_MSG_ERROR([$cc1.patched already exists.
+Please move it out of the way.])
           exit 1;
         fi
 
         if test -f "$cc1.orig"; then
-          AC_MSG_ERROR($cc1.orig already exists.)
-          AC_MSG_ERROR(Please move it out of the way.)
+          AC_MSG_ERROR([$cc1.orig already exists.
+Please move it out of the way.])
           exit 1;
         fi
 
@@ -716,20 +716,20 @@ string:
 	        exit 1
 	      fi
 
-	      AC_MSG_ERROR(Restoring the old cc1 failed.)
-	      AC_MSG_ERROR(Your installation of gcc is most likely broken now.)
-	      AC_MSG_ERROR(Sorry, you will have to restore it yourself.)
-	      AC_MSG_ERROR(Please move $cc1.orig to $cc1.)
+	      AC_MSG_ERROR([Restoring the old cc1 failed.
+Your installation of gcc is most likely broken now.
+Sorry, you will have to restore it yourself.
+Please move $cc1.orig to $cc1.])
 	      exit 1
 	    else
-	      AC_MSG_WARN(Failed to move the old cc1 to safety.)
-	      AC_MSG_WARN(Please replace $cc1 with $cc1.patched by hand.)
+	      AC_MSG_ERROR([Failed to move the old cc1 to safety.
+Please replace $cc1 with $cc1.patched by hand.])
 	      exit 1
 	    fi
 	  else
 	    rm -f "$cc1.patched"
-	    AC_MSG_ERROR(The size has changed.)
-	    AC_MSG_ERROR(You need to patch cc1 by hand.)
+	    AC_MSG_ERROR([The size has changed.
+You need to patch cc1 by hand.])
 	    exit 1
 	  fi
 	else
