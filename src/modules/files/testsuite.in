@@ -251,9 +251,14 @@ test_false(Process.system(RUNPIKE+" SRCDIR/connecttest.pike"))
 
 dnl Stdio.Stat
 
-dnl These tests actually test the bignum stuff..
 test_any([[
+  // This actually tests the bignum/64 bit stuff.
   Stdio.Stat s = Stdio.Stat();
+  s->size = 0x100000000;
+  if (s->size != 0x100000000) {
+    werror ("Note: 64 bit file stats apparently not supported on this system.\n");
+    return 1;
+  }
   s->size = -0x100000000;
-  return s->size;
-]], -0x100000000)
+  return s->size == -0x100000000;
+]], 1)
