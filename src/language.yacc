@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.40 1997/04/23 04:14:30 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.41 1997/04/23 20:11:49 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -285,6 +285,7 @@ int yylex(YYSTYPE *yylval);
 
 %type <n> assoc_pair
 %type <n> block
+%type <n> failsafe_block
 %type <n> block_or_semi
 %type <n> break
 %type <n> case
@@ -592,6 +593,7 @@ new_arg_name: type optional_dot_dot_dot optional_identifier
 
 func_args: '(' arguments ')' { $$=$2; }
          | '(' error ')' { $$=0; yyerrok; }
+         | error { $$=0; yyerrok; }
          ;
 
 arguments: /* empty */ optional_comma { $$=0; }
@@ -803,6 +805,11 @@ block:'{'
   }
   ;
 
+failsafe_block: block
+              | error { $$=0; }
+              ;
+  
+
 local_name_list: new_local_name
   | local_name_list ',' new_local_name { $$=mknode(F_ARG_LIST,$1,$3); }
   ;
@@ -845,7 +852,7 @@ lambda: F_LAMBDA
       free_string(local_variables->current_return_type);
     copy_shared_string(local_variables->current_return_type,any_type_string);
   }
-  func_args block
+  func_args failsafe_block
   {
     struct pike_string *type;
     char buf[40];
