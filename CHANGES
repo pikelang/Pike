@@ -44,13 +44,13 @@ o Fixed GTK issue where the new and old signal callback signature was
   randomly used for signals connected with signal_autoconnect(). This
   method now always uses the old method while a new method,
   signal_autoconnect_new() uses the new interface.
-o Added missing GTK methof set_style.
+o Added missing GTK method set_style.
 o Fixed a compatibility problem with Getopt, which caused Pike 7.4 to
-  behave slightly different than previous versions when running in
+  behave slightly different from previous versions when running in
   posix-me-harder mode.
 o Fixed a bug in the code handling boundaries in multipart messages in
   the MIME module.
-o Multiline tokens are now hanled better in Parser.Pike when running
+o Multiline tokens are now handled better in Parser.Pike when running
   in streaming mode.
 o Fixed a bug in low_backtrace where the backtrace itself could be
   reported as an argument to the top function if it was of varargs
@@ -74,13 +74,16 @@ o More solutions to new and fresh autoconf compatibility problems,
 o Threads are disabled by default on OpenBSD/alpha <= 3.x.
 o Pike will now look for the master path in SOFTWARE\Pike\ in the
   registry on Microsoft Windows.
-o Fix icon transparency on Microsoft Windows.
+o Fixed icon transparency on Microsoft Windows.
 o Fixed a bug that could cause wrong line numbers in backtraces when
   ia32 machine code is used.
 o Fixed bug that could cause the stack to get out of synch when large
   64 bit negative integers were converted to bignum objects.
 o Fixed bug in trampoline objects so that they can be indexed and
   printed as normal objects.
+o Fixed a bug in the dependency analyser. It didn't check arguments to
+  side-effect free functions for written variables, which could cause
+  overoptimization breakage.
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
