@@ -61,7 +61,8 @@ tutorial.dvi: tutorial.tex
 	latex tutorial.tex
 
 tutorial.pdf: tutorial.pdftex
-	pdflatex tutorial.pdftex
+	if [ -d fonts ]; then ( cd fonts ; make ) ; fi
+	TEXPSHEADERS=fonts: TEXINPUTS=fonts: TTFONTS=fonts: TFMFONTS=fonts: pdflatex tutorial.pdftex
 
 tutorial.ps: tutorial.dvi
 	dvips -Z tutorial.dvi -o tutorial.ps
@@ -99,6 +100,7 @@ clean:
 	-rm -f tutorial.dvi tutorial.tex tutorial.aux
 	-rm -f tutorial.log tutorial.toc
 	-rm -f latex_wcache illustration_cache image_cache gfx/* execute_cache
+	if [ -d fonts ]; then ( cd fonts ; make clean ); fi
 
 rebuild:
 	-rm -f $(MADEFILES)

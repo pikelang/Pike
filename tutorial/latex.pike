@@ -27,6 +27,7 @@ string packages =
 \\usepackage{graphicx}
 \\usepackage{color}  % colors becomes wrong in xdvi, but right in postscript
 \\usepackage{colortbl}
+\\usepackage{parskip}
 ";
 
 string latex = "latex";
@@ -42,15 +43,7 @@ array(float) find_line_width(array(SGML) data)
 
   if(search(ret, 0) != -1)
   {
-    string x="\\documentclass[twoside,a4paper]{book}\n"
-      +packages+"\n"
-      "\\begin{document}\n"
-      "\\author{wmml to latex}\n"
-      "\\setlength{\\unitlength}{1mm}\n"
-      "{\\catcode`\\^^20=\\active\\catcode`\\^^0d=\\active%\n"
-      "\\global\\def\\startcode{\\catcode`\\^^20=\\active\\def^^20{\\hbox{\\ }}%\n"
-      "\\catcode`\\^^0d=\\active\\def^^0d{\\hskip0pt\\par\\noindent}%\n"
-      "\\parskip=1pt\\tt}}\n"
+    string x=
       "\\begin{titlepage}\n"
       "\\newlength{\\gnapp}\n";
     
@@ -61,8 +54,9 @@ array(float) find_line_width(array(SGML) data)
 	  "\\message{length=\\number\\gnapp dots}\n";
       }
     
-    x+="\\end{titlepage}\n"
-      "\\end{document}\n";
+    x+="\\end{titlepage}\n";
+
+    x=package(x);
     
     rm("___tmp.tex");
     Stdio.write_file("___tmp.tex",x);
@@ -839,7 +833,7 @@ string low_index_to_latex(INDEX data, string prefix, int indent)
   string ret="";
   foreach(srt(indices(data)-({0})),string key)
     {
-      ret+="\\item "+"$\\;$$\\;$"*indent;
+      ret+="\\item "+"$\\;$$\\;$$\\;$"*indent;
       
       if(data[key][0])
       {
@@ -854,7 +848,7 @@ string low_index_to_latex(INDEX data, string prefix, int indent)
 	foreach(srt(indices(data[key][0])), string key2)
 	  {
 	    if(key2==prefix+key) continue;
-	    ret+="\\item "+"$\\;$$\\;$"*(indent+1);
+	    ret+="\\item "+"$\\;$$\\;$$\\;$"*(indent+1);
 	    ret+=fix_index_key(key2);
 	    ret+=", \\pageref{"+quote_label(data[key][0][key2][0])+"}\n";
 	}
@@ -1127,10 +1121,10 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 	    
 	  case "dt": ret+="\n\\item "; break;
-	  case "dd": ret+="\n\\item $\\;$$\\;$"; break;
+	  case "dd": ret+="\n\\item $\\;$$\\;$$\\;$$\\;$"; break;
 
 	  case "ex_indent":
-	    ret+="$\\;$$\\;$";
+	    ret+="$\\;$$\\;$$\\;$$\\;$";
 	    break;
 	  case "ex_br":
 
@@ -1178,7 +1172,7 @@ string convert_to_latex(SGML data, void|int flags)
 	      }else{
 		ret+=
 		  convert_to_latex(tag->data)+
-		  "* \\marginpar{"+
+		  "* \\marginpar{\\footnotesize{"+
 		  replace(latex_quote(href),
 			  ({".","/",":"}),
 			  ({
@@ -1186,7 +1180,7 @@ string convert_to_latex(SGML data, void|int flags)
 			    "\\discretionary{}{}{}/",
 			    "\\discretionary{}{}{}:",
 			  }))+
-		  "}";
+		  "}}";
 	      }
 	    }else{
 	      ret+=convert_to_latex(tag->data);

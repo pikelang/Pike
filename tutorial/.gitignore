@@ -11,6 +11,7 @@
 /__tmp.ppm
 /error.pdf
 /execute_cache
+/execute_cache.log
 /extra_textflows.mif
 /gfx
 /illustration*.*
@@ -20,6 +21,7 @@
 /latex_wcache
 /latex_wcache.log
 /man
+/missfont.log
 /pike.pdf
 /test.aux
 /test.dvi
@@ -41,3 +43,4 @@
 /tutorial.tex
 /tutorial.toc
 /tutorial_*.html
+/tutorial_onepage.tex

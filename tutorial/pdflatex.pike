@@ -20,6 +20,7 @@ string packages=
 \\usepackage[pdftex]{graphicx}
 \\usepackage[pdftex]{color}
 \\usepackage{colortbl}
+\\usepackage{parskip}
 ";
 
 string latex="pdflatex";
@@ -75,6 +76,7 @@ string package(string x)
 \\documentclass[twoside,a4paper]{book}
 "+packages+
 #"\\begin{document}
+\\input{idonex-fonts.tex}
 \\author{wmml2pdflatex}
 \\setlength{\\unitlength}{1mm}
 
@@ -82,6 +84,7 @@ string package(string x)
 \\global\\def\\startcode{\\catcode`\\^^20=\\active\\def^^20{\\hbox{\\ }}%
 \\catcode`\\^^0d=\\active\\def^^0d{\\hskip0pt\\par\\noindent}%
 \\parskip=1pt\\tt}}
+
 "+
     x+
     "\\end{document}\n";
