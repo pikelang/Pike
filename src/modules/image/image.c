@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.36 1997/01/07 00:41:41 law Exp $ */
+/* $Id: image.c,v 1.37 1997/01/07 00:53:23 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.36 1997/01/07 00:41:41 law Exp $");
+RCSID("$Id: image.c,v 1.37 1997/01/07 00:53:23 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -41,7 +41,7 @@ static INT32 circle_sin_table[CIRCLE_STEPS];
 
 
 
-#if 1
+#if 0
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X)
 
