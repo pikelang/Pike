@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.188 2003/12/17 22:04:05 marcus Exp $
+|| $Id: main.c,v 1.189 2004/01/31 16:20:51 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.188 2003/12/17 22:04:05 marcus Exp $");
+RCSID("$Id: main.c,v 1.189 2004/01/31 16:20:51 marcus Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -193,6 +193,35 @@ static void get_master_key(HKEY cat)
   }
 }
 #endif /* __NT__ */
+
+#ifdef __amigaos4__
+#define timeval timeval_amigaos
+#include <exec/types.h>
+#include <utility/hooks.h>
+#include <dos/dosextens.h>
+#include <proto/dos.h>
+
+static SAVEDS LONG scan_amigaos_environment_func(struct Hook *REG(a0,hook),
+						 APTR REG(a2,userdata),
+						 struct ScanVarsMsg *REG(a1,msg))
+{
+  if(msg->sv_GDir[0] == '\0' ||
+     !strcmp(msg->sv_GDir, "ENV:")) {
+    push_text(msg->sv_Name);
+    push_constant_text("=");
+    push_string(make_shared_binary_string(msg->sv_Var, msg->sv_VarLen));
+    f_add(3);
+  }
+
+  return 0;
+}
+
+static struct Hook scan_amigaos_environment_hook = {
+  { NULL, NULL },
+  (ULONG (*)())scan_amigaos_environment_func,
+  NULL, NULL
+};
+#endif /* __amigsos4__ */
 
 int dbm_main(int argc, char **argv)
 {
@@ -774,8 +803,16 @@ int dbm_main(int argc, char **argv)
     push_array(a);
     
 #ifdef __amigaos__
-    /* FIXME... */
-    push_array(allocate_array_no_init(0,0));
+#ifdef __amigaos4__
+    if(DOSBase->dl_lib.lib_Version >= 50) {
+      struct svalue *mark = Pike_sp;
+      IDOS->ScanVars(&scan_amigaos_environment_hook,
+		     GVF_BINARY_VAR|GVF_DONT_NULL_TERM,
+		     NULL);
+      f_aggregate(Pike_sp-mark);
+    } else
+#endif
+      push_array(allocate_array_no_init(0,0));
 #else
     for(num=0;environ[num];num++);
     a=allocate_array_no_init(num,0);
