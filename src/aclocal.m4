@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.44 2002/08/15 10:39:20 grubba Exp $
+dnl $Id: aclocal.m4,v 1.45 2002/08/15 11:28:34 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -245,7 +245,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.44 2002/08/15 10:39:20 grubba Exp $
+# $Id: aclocal.m4,v 1.45 2002/08/15 11:28:34 grubba Exp $
 
 MY_AC_PROG_CC
 
@@ -463,16 +463,32 @@ define(MY_AC_CHECK_PRINTF_INT_TYPE, [
 #include "confdefs.h"
 int main() {
   char buf[32];
-  if (sizeof($1)>4)
-  {
-    sprintf(buf, "%${mod}d,%${mod}d,%d",
-	    (($1) 4711) << 32, -(($1) 4711) << 32, 17);
-    return !!strcmp("20233590931456,-20233590931456,17", buf);
-  }
-  else
-  {
-    sprintf(buf, "%${mod}d,%${mod}d,%d", ($1) 4711, ($1)-4711, 17);
-    return !!strcmp("4711,-4711,17", buf);
+  if ((($1)4711) > (($1)-4711)) {
+    /* Signed type. */
+    if (sizeof($1)>4)
+    {
+      sprintf(buf, "%${mod}d,%${mod}d,%d",
+	      (($1) 4711) << 32, -(($1) 4711) << 32, 17);
+      return !!strcmp("20233590931456,-20233590931456,17", buf);
+    }
+    else
+    {
+      sprintf(buf, "%${mod}d,%${mod}d,%d", ($1) 4711, ($1)-4711, 17);
+      return !!strcmp("4711,-4711,17", buf);
+    }
+  } else {
+    /* Unsigned type. */
+    if (sizeof($1)>4)
+    {
+      sprintf(buf, "%${mod}d,%d",
+	      (($1) 4711) << 32, 17);
+      return !!strcmp("20233590931456,17", buf);
+    }
+    else
+    {
+      sprintf(buf, "%${mod}d,%d", ($1) 4711, ($1)-4711, 17);
+      return !!strcmp("4711,17", buf);
+    }
   }
 }], [pike_cv_printf_$1="${mod}"; found=yes])
       test ${found} = yes && break
