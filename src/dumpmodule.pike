@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.43 2003/06/03 18:57:34 mast Exp $
+|| $Id: dumpmodule.pike,v 1.44 2003/06/03 19:01:06 mast Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -71,6 +71,8 @@ class MyMaster
     ::create();
     foreach (indices (old_master), string var)
       catch {this[var] = old_master[var];};
+    programs["/master"] = this_program;
+    objects[this_program] = this;
   }
 }
 
