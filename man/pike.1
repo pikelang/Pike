@@ -1,6 +1,6 @@
-.\" $Id: pike.1,v 1.1 1998/05/12 20:03:16 grubba Exp $
-.TH pike 1 "11 May 1998" Pike "Pike Manual"
-.ds ]L $Id: pike.1,v 1.1 1998/05/12 20:03:16 grubba Exp $
+.\" $Id: pike.1,v 1.2 1998/05/12 20:22:31 grubba Exp $
+.TH pike 1 "$Date: 1998/05/12 20:22:31 $" Pike "Pike Manual"
+.ds ]L $Date: 1998/05/12 20:22:31 $ \" Solaris nroff
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -209,6 +209,23 @@ Successfull completion.
 .TP
 .B >0
 An error occurred. See output on stderr (fd #2) for reason.
+.SH FILES
+.PD 0
+.TP 24
+.B /usr/local/lib/pike/master.pike
+default master program
+.TP
+.B /usr/local/lib/pike/modules/*
+dynamically loaded modules
+.TP
+.B /usr/local/share/pike/modules/*
+modules implemented in pike
+.TP
+.B /usr/local/lib/pike/include/*
+architecture dependant include files
+.TP
+.B /usr/local/share/pike/include/*
+pike include files
 .SH SEE ALSO
 .BR hilfe (1),
 .BR Getopt (3P),
