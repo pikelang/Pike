@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.39 2000/12/05 21:08:29 per Exp $
+ * $Id: mysql.c,v 1.40 2000/12/07 18:36:42 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.39 2000/12/05 21:08:29 per Exp $");
+RCSID("$Id: mysql.c,v 1.40 2000/12/07 18:36:42 grubba Exp $");
 
 /*
 **! module Mysql
@@ -103,7 +103,7 @@ RCSID("$Id: mysql.c,v 1.39 2000/12/05 21:08:29 per Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.39 2000/12/05 21:08:29 per Exp $
+**!	$Id: mysql.c,v 1.40 2000/12/07 18:36:42 grubba Exp $
 **!
 **! class mysql
 **!
@@ -653,7 +653,17 @@ static void f_big_query(INT32 args)
     int err;
 
     MYSQL_ALLOW();
-    err = (mysql_field_count(socket) && mysql_error(socket)[0]);
+    err = (
+#ifdef mysql_field_count
+	   mysql_field_count(socket)
+#else /* !mysql_field_count */
+#ifdef mysql_num_fields
+	   mysql_num_fields(socket)
+#else /* !mysql_num_fields */
+	   socket->field_count
+#endif /* mysql_num_fields */
+#endif /* mysql_field_count */
+	   && mysql_error(socket)[0]);
     MYSQL_DISALLOW();
 
     if (err) {
