@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.h,v 1.9 2002/10/21 14:29:34 marcus Exp $
+|| $Id: module.h,v 1.10 2002/10/22 16:02:39 grubba Exp $
 */
 
 #ifndef MODULE_H
@@ -22,8 +22,8 @@
 struct static_module;
 void init_modules(void);
 void exit_modules(void);
-void pike_module_init(void);
-void pike_module_exit(void);
+PIKE_MODULE_INIT;
+PIKE_MODULE_EXIT;
 /* Prototypes end here */
 
 #endif
