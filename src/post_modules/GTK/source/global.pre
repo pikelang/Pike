@@ -51,7 +51,7 @@ void parse_rc(string rc)
 
 
 GDK.Window root_window()
-//! Returns the root window of the current display (as a GDK.Window)
+//! Returns the root window of the current display
 {
   static struct object *_pgtk_root_window;
   my_pop_n_elems( args );
@@ -83,7 +83,7 @@ CORBA_Environment gnorba_environment;
 %}
 
 void gnome_init(string app_id, string app_version,
-                array(string) argv, int corba_init_flags)
+                array(string) argv, int|void corba_init_flags)
 //! Initializes the application. This sets up all of the GNOME
 //! internals and prepares them (imlib, gdk/gtk, session-management,
 //! triggers, sound, user preferences). If corba init flags are specified,
