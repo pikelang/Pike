@@ -561,8 +561,32 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     c->name = eatIdentifier();
     if (peekToken() == "(") {
       eat("(");
-      [c->createArgNames, c->createArgTypes, c->createArgModifiers] =
+      [array(string) createArgNames,
+       array(Type) createArgTypes,
+       array(array(string)) createArgModifiers] =
         parseCreateArgList();
+      array(PikeObject) objs = allocate(sizeof(createArgNames)+1);
+      foreach(createArgNames; int argno; string name) {
+	Variable var = Variable();
+	var->name = name;
+	var->modifiers = createArgModifiers[argno];
+	if (object_program(var->type = createArgTypes[argno]) ==
+	    VarargsType) {
+	  // Convert vararg types to array types.
+	  ArrayType new_type = ArrayType();
+	  new_type->valuetype = var->type->type;
+	  var->type = new_type;
+	}
+	objs[argno] = var;
+      }
+      Method createMethod = Method();
+      createMethod->name = "create";
+      createMethod->modifiers = ({ "static" });
+      createMethod->returntype = VoidType();
+      createMethod->argnames = createArgNames;
+      createMethod->argtypes = createArgTypes;
+      objs[-1] = createMethod;
+      c->docGroups += ({ DocGroup(objs, EmptyDoc) });
       eat(")");
     }
     return c;
