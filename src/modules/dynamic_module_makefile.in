@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.109 2003/10/30 18:51:12 bill Exp $
+# $Id: dynamic_module_makefile.in,v 1.110 2003/10/30 19:32:46 grubba Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -9,7 +9,7 @@ LINKAGE_CPPFLAGS=
 LINKAGE_CFLAGS=@CCSHARED@
 
 MODULE_PROGRAM=.___$(MODNAME)
-MODULE_TARGET=$(TMP_MODULE_BASE)/$(MODDIR)/___$(MODNAME).so
+MODULE_TARGET=$(TMP_MODULE_BASE)/$(MODDIR)___$(MODNAME).so
 
 
 @common_module_makefile@
@@ -54,7 +54,7 @@ module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	  echo $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
 	  exit 1; \
 	fi
-				
+
 $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
 #
@@ -62,9 +62,9 @@ $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 #
 install: $(MODULE_INSTALL)
 	@if test "x$(OBJS)" != "x" ; then \
-	  $(TMP_BINDIR)/install_module module.so $(SYSTEM_MODULE_PATH)/$(MODDIR)/../___$(MODNAME).so ;\
+	  $(TMP_BINDIR)/install_module module.so $(SYSTEM_MODULE_PATH)/$(MODDIR)___$(MODNAME).so ;\
 	fi; \
-	$(TMP_BINDIR)/install_module module.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)/$(MODNAME).pmod 
+	$(TMP_BINDIR)/install_module module.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod 
 
 #
 # install the module in LOCAL_MODULE_PATH, creating it if it doesn't already exist.
@@ -72,10 +72,10 @@ install: $(MODULE_INSTALL)
 local_install: $(MODULE_INSTALL)
 	@if [ ! -d $(LOCAL_MODULE_PATH) ] ; then \
 	  mkdir -p $(LOCAL_MODULE_PATH) ; \
-	fi; \ 
-	if test "x$(OBJS)" != "x" ; then \
-	  $(TMP_BINDIR)/install_module module.so $(LOCAL_MODULE_PATH)/$(MODDIR)/../___$(MODNAME).so ;\
 	fi; \
-	$(TMP_BINDIR)/install_module module.pmod $(LOCAL_MODULE_PATH)/$(MODDIR)/$(MODNAME).pmod 
+	if test "x$(OBJS)" != "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(LOCAL_MODULE_PATH)/$(MODDIR)___$(MODNAME).so ;\
+	fi; \
+	$(TMP_BINDIR)/install_module module.pmod $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod 
 
 
