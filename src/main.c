@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.158 2002/11/25 00:52:18 mast Exp $
+|| $Id: main.c,v 1.159 2002/12/07 14:13:31 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.158 2002/11/25 00:52:18 mast Exp $");
+RCSID("$Id: main.c,v 1.159 2002/12/07 14:13:31 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -35,7 +35,7 @@ RCSID("$Id: main.c,v 1.158 2002/11/25 00:52:18 mast Exp $");
 #include "constants.h"
 #include "version.h"
 #include "program.h"
-#include "rusage.h"
+#include "pike_rusage.h"
 #include "module_support.h"
 
 #ifdef AUTO_BIGNUM

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.192 2002/11/28 23:45:39 marcus Exp $
+|| $Id: threads.c,v 1.193 2002/12/07 14:15:18 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.192 2002/11/28 23:45:39 marcus Exp $");
+RCSID("$Id: threads.c,v 1.193 2002/12/07 14:15:18 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -29,7 +29,7 @@ PMOD_EXPORT int threads_disabled = 0;
 #include "operators.h"
 #include "bignum.h"
 #include "signal_handler.h"
-#include "rusage.h"
+#include "pike_rusage.h"
 
 #include <errno.h>
 
