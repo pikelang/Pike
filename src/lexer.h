@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.34 2001/09/24 14:37:34 grubba Exp $
+ * $Id: lexer.h,v 1.35 2001/10/02 09:29:48 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -483,6 +483,9 @@ static int low_yylex(YYSTYPE *yylval)
     {
     case 0:
       lex.pos -= (1<<SHIFT);
+      if(lex.end != lex.pos)
+	my_yyerror("Illegal character (NUL)");
+
 #ifdef TOK_LEX_EOF
       return TOK_LEX_EOF;
 #else /* !TOK_LEX_EOF */
