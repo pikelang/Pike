@@ -654,6 +654,8 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
 	gc_check(s->u.object);
       }else{
 	free_svalue(s);
+	s->type=T_INT;
+	s->u.integer=0;
       }
       break;
 
@@ -680,6 +682,7 @@ void gc_check_short_svalue(union anything *u, TYPE_T type)
       gc_check(u->object);
     }else{
       free_short_svalue(u,T_OBJECT);
+      u->object=0;
     }
     break;
 
@@ -713,6 +716,8 @@ void gc_mark_svalues(struct svalue *s, int num)
 	gc_mark_object_as_referenced(s->u.object);
       }else{
 	free_svalue(s);
+	s->type=T_INT;
+	s->u.integer=0;
       }
       break;
     }
@@ -735,6 +740,7 @@ void gc_mark_short_svalue(union anything *u, TYPE_T type)
       gc_mark_object_as_referenced(u->object);
     }else{
       free_short_svalue(u,T_OBJECT);
+      u->object=0;
     }
     break;
   }
