@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.265 2001/07/03 07:51:45 hubbe Exp $
+# $Id: Makefile.in,v 1.266 2001/07/06 17:17:48 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -321,20 +321,15 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 # FIXME: Make this a configure option
 .c.o:
 	@echo "Compiling $<" ;\
+	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	  echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
 	  NO_ULIMIT=yes; \
 	  export NO_ULIMIT; \
 	  if $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
-	    err=$$?; \
-	    if test "x$(FALLBACK_CC)" = "x"; then \
-	      exit $$err; \
-	    else \
-	      echo "WARNING: Compiler failure! Trying fallback compiler!" >&2;\
-	      echo "echo $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
-	      $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
-	    fi; \
+	    exit $$?; \
 	  fi; \
 	fi
 
@@ -386,7 +381,7 @@ install_interactive: pike hilfe pike-module aclocal
 
 # tidy up a bit
 tidy:
-	-rm -f *.o *.obj *.pp *.protos core y.output y.tab.c y.tab.h
+	-rm -f *.fail *.o *.obj *.pp *.protos core y.output y.tab.c y.tab.h
 	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ testsuite
 
 # make clean
@@ -703,7 +698,7 @@ modules/linker_options: modules-stamp
 module.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h
-	$(CPP) $(PREFLAGS) $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }
+	$(CPP) $(PREFLAGS) -DGEN_PROTOS $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }
 
 lex.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
 

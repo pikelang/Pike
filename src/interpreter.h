@@ -9,14 +9,14 @@
 #define GET_ARG() (backlog[backlogp].arg=(\
   instr=prefix,\
   prefix=0,\
-  instr+=EXTRACT_UCHAR(pc++),\
+  instr += (pc++)[0],\
   (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
 #define GET_ARG2() (backlog[backlogp].arg2=(\
   instr=prefix2,\
   prefix2=0,\
-  instr+=EXTRACT_UCHAR(pc++),\
+  instr += (pc++)[0],\
   (t_flag>3 ? sprintf(trace_buffer,"-    Arg2 = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
@@ -27,10 +27,12 @@
 #define SKIPJUMP() (GET_JUMP(), pc+=sizeof(INT32))
 
 #else
-#define GET_ARG() (instr=prefix,prefix=0,instr+EXTRACT_UCHAR(pc++))
-#define GET_ARG2() (instr=prefix2,prefix2=0,instr+EXTRACT_UCHAR(pc++))
+
+#define GET_ARG() (instr=prefix,prefix=0,instr+(pc++)[0])
+#define GET_ARG2() (instr=prefix2,prefix2=0,instr+(pc++)[0])
 #define GET_JUMP() EXTRACT_INT(pc)
 #define SKIPJUMP() pc+=sizeof(INT32)
+
 #endif
 
 #define DOJUMP() \
@@ -40,24 +42,25 @@
 #define STEP_BREAK_LINE
 #endif
 
-static int eval_instruction(unsigned char *pc)
+static int eval_instruction(PIKE_OPCODE_T *pc)
 {
   unsigned INT32 prefix2=0,instr, prefix=0;
   debug_malloc_touch(Pike_fp);
   while(1)
   {
     Pike_fp->pc = pc;
-    instr=EXTRACT_UCHAR(pc++);
+    instr = (pc++)[0];
 
     STEP_BREAK_LINE
     
 #ifdef PIKE_DEBUG
+
     if(t_flag > 2)
     {
       char *file, *f;
       INT32 linep;
 
-      file=get_line(pc-1,Pike_fp->context.prog,&linep);
+      file = get_line(pc-1,Pike_fp->context.prog,&linep);
       while((f=STRCHR(file,'/'))) file=f+1;
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
 	      file,(long)linep,
@@ -159,11 +162,11 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_PREFIX_768); prefix+=768; break;
       CASE(F_PREFIX_1024); prefix+=1024; break;
       CASE(F_PREFIX_24BITX256);
-      prefix+=EXTRACT_UCHAR(pc++)<<24;
+      prefix += (pc++)[0]<<24;
       CASE(F_PREFIX_WORDX256);
-      prefix+=EXTRACT_UCHAR(pc++)<<16;
+      prefix += (pc++)[0]<<16;
       CASE(F_PREFIX_CHARX256);
-      prefix+=EXTRACT_UCHAR(pc++)<<8;
+      prefix += (pc++)[0]<<8;
       break;
 
       /* Support to allow large arguments */
@@ -172,45 +175,52 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_PREFIX2_768); prefix2+=768; break;
       CASE(F_PREFIX2_1024); prefix2+=1024; break;
       CASE(F_PREFIX2_24BITX256);
-      prefix2+=EXTRACT_UCHAR(pc++)<<24;
+      prefix2 += (pc++)[0]<<24;
       CASE(F_PREFIX2_WORDX256);
-      prefix2+=EXTRACT_UCHAR(pc++)<<16;
+      prefix2 += (pc++)[0]<<16;
       CASE(F_PREFIX2_CHARX256);
-      prefix2+=EXTRACT_UCHAR(pc++)<<8;
+      prefix2 += (pc++)[0]<<8;
       break;
 
 
 #define INTERPRETER
 
-#define OPCODE0(OP,DESC) CASE(OP); {
-#define OPCODE1(OP,DESC) CASE(OP); { \
-  INT32 arg1=GET_ARG();
+#define OPCODE0(OP, DESC, CODE) CASE(OP); CODE; break
+#define OPCODE1(OP, DESC, CODE) CASE(OP); { \
+    INT32 arg1=GET_ARG(); \
+    CODE; \
+  } break
 
-#define OPCODE2(OP,DESC) CASE(OP); { \
-  INT32 arg1=GET_ARG(); \
-  INT32 arg2=GET_ARG2();
+#define OPCODE2(OP, DESC, CODE) CASE(OP); { \
+    INT32 arg1=GET_ARG(); \
+    INT32 arg2=GET_ARG2(); \
+    CODE; \
+  } break
 
+#define OPCODE0_TAIL(OP, DESC, CODE) CASE(OP); CODE
+#define OPCODE1_TAIL(OP, DESC, CODE) CASE(OP); CODE
+#define OPCODE2_TAIL(OP, DESC, CODE) CASE(OP); CODE
 
-#define OPCODE0_TAIL(OP,DESC) CASE(OP);
-#define OPCODE1_TAIL(OP,DESC) CASE(OP);
-#define OPCODE2_TAIL(OP,DESC) CASE(OP);
-
-#define OPCODE0_JUMP(OP,DESC) CASE(OP); {
-#define OPCODE0_TAILJUMP(OP,DESC) } CASE(OP) {;
+#define OPCODE0_JUMP(OP, DESC, CODE) CASE(OP); CODE; break
+#define OPCODE0_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
 
 /* These are something of a special case as they
  * requires a POINTER stored explicitly after
  * the instruction itself.
  */
-#define OPCODE1_JUMP(OP,DESC) CASE(OP); { \
-  INT32 arg1=GET_ARG(); \
+#define OPCODE1_JUMP(OP, DESC, CODE) CASE(OP); { \
+    INT32 arg1=GET_ARG(); \
+    CODE; \
+  } break
 
-#define OPCODE2_JUMP(OP,DESC) CASE(OP); { \
-  INT32 arg1=GET_ARG(); \
-  INT32 arg2=GET_ARG2();
+#define OPCODE2_JUMP(OP, DESC, CODE) CASE(OP); { \
+    INT32 arg1=GET_ARG(); \
+    INT32 arg2=GET_ARG2(); \
+    CODE; \
+  } break
 
-#define OPCODE1_TAILJUMP(OP,DESC) } CASE(OP) {; 
-#define OPCODE2_TAILJUMP(OP,DESC) } CASE(OP) {; 
+#define OPCODE1_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
+#define OPCODE2_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
 
 
 #define BREAK break; }
