@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.20 1999/01/21 09:15:10 hubbe Exp $
+ * $Id: object.h,v 1.21 1999/01/31 22:47:20 grubba Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -23,6 +23,7 @@ struct object
   INT32 refs;                    /* Reference count, must be first. */
 #ifdef PIKE_SECURITY
   struct object *prot;
+  char *pad;		/* FIXME: Kluge to get longlong alignment of storage */
 #endif
   struct program *prog;
   struct object *parent;
