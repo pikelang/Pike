@@ -1,5 +1,5 @@
 PIKE 7.5 ANNOUNCEMENT
-$Id: ANNOUNCE,v 1.11 2003/03/19 20:22:56 nilsson Exp $ 
+$Id: ANNOUNCE,v 1.12 2003/04/07 02:35:55 nilsson Exp $ 
 
 Pike is an interpreted, object-oriented programming language with a
 syntax reminiscent of C and Java, and freely available and distributable
@@ -14,16 +14,15 @@ same way.
 
 Some Pike highlights:
 
-    + Freely distributable under GPL
+    + Freely distributable under GPL, LGPL and MPL
     + Interpreted - no compilation and linking needed to run code
     + Object Oriented - straightforward and powerful object
 	  orientation, including multiple inheritance
     + Modular - extendible with modules written in C or Pike
     + Powerful - high-level language, concise code
-    + Incremental - allows on-the-fly modifications and recompilations
     + Source Code Available - promoting sharing of useful code
     + Portable - Platform independent and available on most common
-      flavors of Unix, as well as Windows.
+      flavors of Unix, as well as Windows and Amiga OS.
     + Powerful, Flexible and Efficient Data Types
     + Automatic Memory Management
     + Scalable - as useful for small scripts as for powerful and
@@ -37,12 +36,12 @@ The standard Pike distribution comes with a number of modules for
 various useful purposes. Among these are:
 
     + Image processing with support for several graphic file
-          formats (such as JPEG, PNM, PNG, TIFF and IFF), and
+          formats (such as JPEG, GIF, PNG, Photoshop and Gimp), and
           numerous image manipulation functions
     + Cryptographic functions, including SSL support
     + Database interface to several common SQL databases,
-          including MySQL and Oracle
+          including MySQL, ODBC and Oracle
     + Embedding interfaces for Java and Perl
 
-Some other modules include support for MIME, Gz, Gmp, Gdbm, GTK,
-XML, and regular expressions.
+Some other modules include support for OpenGL, Gz, Gdbm, GTK, XML,
+DVB and SDL.
