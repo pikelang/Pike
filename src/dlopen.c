@@ -85,7 +85,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.21 2001/09/18 22:55:54 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.22 2001/09/18 23:54:57 marcus Exp $");
 
 #endif
 
@@ -581,15 +581,7 @@ static void *low_dlsym(struct DLHandle *handle,
 		       int self)
 {
   void *ptr;
-  char *tmp;
-  if(len > 6 && !memcmp(name,"__imp_",6))
-  {
-    name+=6;
-    len-=6;
-  }else{
-    self=0;
-  }
-  tmp=name;
+  char *tmp=name;
 #ifdef DLDEBUG
   if(name[len])
     fprintf(stderr,"low_dlsym(%c%c%c%c%c%c%c%c)\n",
@@ -1138,6 +1130,21 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    ptr=low_dlsym(ret, name, len, 1);
 	    if(!ptr) 
 	      ptr=low_dlsym(&global_dlhandle, name, len, 0);
+	    if(ptr)
+	      data->symbol_addresses[sym]=ptr;
+	    else if(len > 6 && !memcmp(name,"__imp_",6)) {
+	      ptr=low_dlsym(ret, name+6, len-6, 1);
+	      if(!ptr) 
+		ptr=low_dlsym(&global_dlhandle, name+6, len-6, 0);
+	      /* This is cheating a bit.  We should really put this
+		 value somewhere else, and have symbol_addresses[sym] point
+		 to this somewhere else, but this saves allocating the extra
+		 memory. */
+	      if(ptr) {
+		data->symbol_addresses[sym]=ptr;
+		ptr = (char *)&data->symbol_addresses[sym];
+	      }
+	    }
 	    if(!ptr)
 	    {
 	      static char err[256];
@@ -1166,7 +1173,6 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    return -1;
 	  }
 
-	  data->symbol_addresses[sym]=ptr;
 	}
 
 #ifndef DL_VERBOSE
@@ -1190,20 +1196,10 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 	    /* We may need to support more types here */
 	  case COFFReloc_type_dir32:
-	    if( (SYMBOLS(sym).type >> 4) == 2 && !SYMBOLS(sym).secnum)
-	    {
-#ifdef DLDEBUG
-	      fprintf(stderr,"DL: Indirect *%p = %d secnum=%d value=%d!!!\n", loc, *(INT32 *)loc,SYMBOLS(sym).secnum,SYMBOLS(sym).value);
-	      REALLY_FLUSH();
-#endif
-	      ptr=(char *)(data->symbol_addresses + sym);
-	      ((INT32 *)loc)[0]=(INT32)ptr;
-	    }else{
-	      ((INT32 *)loc)[0]+=(INT32)ptr;
-	    }
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
 #endif
+	    ((INT32 *)loc)[0]+=(INT32)ptr;
 	    break;
 
 #if 0
@@ -1211,7 +1207,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc absolute nb: loc %p = %p\n", loc,ptr);
 #endif
-	      ((INT32 *)loc)[0]+=((INT32)ptr) - global_imagebase;
+	    ((INT32 *)loc)[0]+=((INT32)ptr) - global_imagebase;
 	    break;	   
 #endif
 
