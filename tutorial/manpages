@@ -1,7 +1,12 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.17 1998/05/13 00:49:59 grubba Exp $
+// $Id: manpages,v 1.18 1998/05/21 00:07:00 neotron Exp $
 
 #include "types.h"
+
+#if __VERSION__ >= 0.6
+import ".";
+#endif /* __VERSION__ >= 0.6 */
+
 inherit Stdio.File : out;
 
 int verbose = 0;
