@@ -72,11 +72,11 @@ static void build_pike_fadds( Class cls, int lvl )
     if( cls->name != "_global" )
     {
       exitfun += "  free_program( p"+cls->c_name()+"_program );\n";
-      type_switch +=
+      type_switch =
                   "#ifdef "+cls->c_type_define()+"\n"
                   "  if(PGTK_CHECK_TYPE(widget, "+cls->c_type_define()+"))\n"
                   "     return p"+cls->c_name()+"_program;\n"
-                  "#endif\n";
+                  "#endif\n"+type_switch;
     }
     res = "static void _"+init_n+"()\n{\n";
 
