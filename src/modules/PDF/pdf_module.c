@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.1 2001/01/17 11:52:51 mirar Exp $");
+RCSID("$Id: pdf_module.c,v 1.2 2001/01/17 19:29:17 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -45,6 +45,7 @@ static struct
 #define PDF_CLASS(name,init,exit,prog) { name,init,exit,&prog },
 #define PDF_SUBMODULE(a,b,c)
 #include "initstuff.h"
+  PDF_CLASS(NULL,NULL,NULL,NULL),
 };
 
 static struct 
@@ -59,6 +60,7 @@ static struct
 #define PDF_CLASS(name,init,exit,prog) 
 #define PDF_SUBMODULE(name,init,exit) { name,init,exit },
 #include "initstuff.h"
+  PDF_SUBMODULE(NULL,NULL,NULL),
 };
 
 static struct 
@@ -75,6 +77,7 @@ static struct
 #define PDF_SUBMODULE(a,b,c)
 #define PDF_SUBMODMAG(name,init,exit) { name,init,exit,NULL,NULL },
 #include "initstuff.h"
+  PDF_SUBMODMAG(NULL,NULL,NULL),
 };
 
 /* Avoid loss of precision warnings. */
@@ -185,6 +188,7 @@ void pike_module_init(void)
 
    for (i=0; i<(int)NELEM(initclass); i++)
    {
+      if(!initclass[i].name) continue;
       start_new_program();
 
 #ifdef DEBUG
@@ -203,6 +207,7 @@ void pike_module_init(void)
       struct program *p;
       struct pike_string *s;
 
+      if(!initsubmodule[i].name) continue;
 #ifdef DEBUG
       fprintf(stderr,"PDF: initiating submodule \"PDF.%s\"...\n",
 	      initsubmodule[i].name);
@@ -221,6 +226,7 @@ void pike_module_init(void)
    }
 
    for (i=0; i<(int)NELEM(submagic); i++)
+      if(!submagic[i].name) continue;
       submagic[i].ps=make_shared_string(submagic[i].name);
 
 #undef PDF_FUNCTION
@@ -236,12 +242,16 @@ void pike_module_exit(void)
    int i;
    for (i=0; i<(int)NELEM(initclass); i++)
    {
+      if(!initclass[i].name) continue;
       (initclass[i].exit)();
       free_program(initclass[i].dest[0]);
    }
-   for (i=0; i<(int)NELEM(initsubmodule); i++)
+   for (i=0; i<(int)NELEM(initsubmodule); i++) {
+      if(!initsubmodule[i].name) continue;
       (initsubmodule[i].exit)();
+   }
    for (i=0; i<(int)NELEM(submagic); i++) {
+      if(!submagic[i].name) continue;
       if (submagic[i].o)
       {
 	 (submagic[i].exit)();
