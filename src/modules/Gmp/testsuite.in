@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.26 2003/03/29 03:52:15 mast Exp $
+dnl $Id: testsuite.in,v 1.27 2003/03/30 01:01:27 mast Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -204,27 +204,27 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(Gmp.mpz(-1)->popcount(), -1)
   test_eq(Gmp.mpz(-4711)->popcount(), -1)
 
-  test_eq(1>>Gmp.mpz("100000000000000"), 0)
-  test_eq(-1>>Gmp.mpz("100000000000000"), -1)
-  test_eq(0>>Gmp.mpz("100000000000000"), 0)
-  test_eval_error(1<<Gmp.mpz("100000000000000"))
-  test_eval_error(-1<<Gmp.mpz("100000000000000"))
-  test_eq(0<<Gmp.mpz("100000000000000"), 0)
+  test_eq(1>>Gmp.mpz("100000000000000000000"), 0)
+  test_eq(-1>>Gmp.mpz("100000000000000000000"), -1)
+  test_eq(0>>Gmp.mpz("100000000000000000000"), 0)
+  test_eval_error(1<<Gmp.mpz("100000000000000000000"))
+  test_eval_error(-1<<Gmp.mpz("100000000000000000000"))
+  test_eq(0<<Gmp.mpz("100000000000000000000"), 0)
 
-  test_eq(Gmp.mpz("100000000000000")>>Gmp.mpz("100000000000000"), 0)
-  test_eq(Gmp.mpz("-100000000000000")>>Gmp.mpz("100000000000000"), -1)
-  test_eq(Gmp.mpz(0)>>Gmp.mpz("100000000000000"), 0)
-  test_eval_error(Gmp.mpz("100000000000000")<<Gmp.mpz("100000000000000"))
-  test_eval_error(Gmp.mpz("-100000000000000")<<Gmp.mpz("100000000000000"))
-  test_eq(Gmp.mpz(0)<<Gmp.mpz("100000000000000"), 0)
+  test_eq(Gmp.mpz("100000000000000000000")>>Gmp.mpz("100000000000000000000"), 0)
+  test_eq(Gmp.mpz("-100000000000000000000")>>Gmp.mpz("100000000000000000000"), -1)
+  test_eq(Gmp.mpz(0)>>Gmp.mpz("100000000000000000000"), 0)
+  test_eval_error(Gmp.mpz("100000000000000000000")<<Gmp.mpz("100000000000000000000"))
+  test_eval_error(Gmp.mpz("-100000000000000000000")<<Gmp.mpz("100000000000000000000"))
+  test_eq(Gmp.mpz(0)<<Gmp.mpz("100000000000000000000"), 0)
 
-  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000000")), 0)
-  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000001")), 0)
-  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000000")), 1)
-  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000001")), 1)
-  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000")), 1)
-  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000001")), -1)
-  test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000")))
+  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000000000000")), 0)
+  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000000000001")), 0)
+  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000000000000")), 1)
+  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000000000001")), 1)
+  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000000")), 1)
+  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000001")), -1)
+  test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000000000")))
 
   test_do(random(Gmp.mpz(17)))
   test_eq(Gmp.mpz(64)->sqrt(), 8)
