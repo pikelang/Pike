@@ -13,6 +13,51 @@ AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_FUNCS(socketpair getwd perror fork1)
 
+AC_MSG_CHECKING(for solaris style gethostbyname_r)
+
+AC_CACHE_VAL(pike_cv_have_solaris_gethostbyname_r,
+[
+AC_TRY_LINK([
+#define _REENTRANT
+#include <netdb.h>
+],[
+  char data[2000];
+  int h_errno;
+  struct hostent result,*bar;
+  gethostbyname_r("foo",&result, data, sizeof(data), h_errno)->h_name;
+],pike_cv_have_solaris_gethostbyname_r=yes,
+pike_cv_have_solaris_gethostbyname_r=no)
+])
+
+AC_MSG_RESULT($pike_cv_have_solaris_gethostbyname_r)
+
+if test $pike_cv_have_solaris_gethostbyname_r = yes; then
+  AC_DEFINE(HAVE_SOLARIS_GETHOSTBYNAME_R)
+fi
+
+
+AC_MSG_CHECKING(for OSF1 style gethostbyname_r)
+
+AC_CACHE_VAL(pike_cv_have_osf1_gethostbyname_r,
+[
+AC_TRY_LINK([
+#define _THREAD_SAFE
+#include <netdb.h>
+],[
+  int bar;
+  struct hostent result;
+  struct hostent_data data;
+  bar=gethostbyname_r("foo",&result, &data);
+],pike_cv_have_osf1_gethostbyname_r=yes,
+pike_cv_have_osf1_gethostbyname_r=no)
+])
+
+AC_MSG_RESULT($pike_cv_have_osf1_gethostbyname_r)
+
+if test $pike_cv_have_osf1_gethostbyname_r = yes; then
+  AC_DEFINE(HAVE_OSF1_GETHOSTBYNAME_R)
+fi
+
 AC_MSG_CHECKING(for h_addr_list)
 AC_CACHE_VAL(pike_cv_struct_has_h_addr_list,
 [
