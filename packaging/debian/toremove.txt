@@ -1,0 +1,7 @@
+modules/Ssleay.so
+modules/*Java*
+include/msql.h
+modules/Msql.so
+modules/Sql.pmod/msql.pike
+modules/PDF.so
+modules/_Ffmpeg.so

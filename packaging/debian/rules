@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.9 2002/08/08 18:07:30 grendel Exp $
+# $Id: rules,v 1.10 2002/08/08 23:22:24 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -37,7 +37,10 @@ CFARGS=--without-rtldebug \
        --with-sane \
        --with-postgres \
        --with-postgres-include-dir=/usr/include/postgresql \
-       --with-libpq-dir=/usr/lib 
+       --with-libpq-dir=/usr/lib \
+       --without-ffmpeg \
+       --without-libpdf \
+       --without-libpanda
 
 RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
 
@@ -173,6 +176,11 @@ install: build
 	# temporary hack
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*.o
 	-$(CURDIR)/src/dumpmodule.pike $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*
+
+	# Some cleaning
+	-for f in `cat $(CURDIR)/debian/toremove.txt`; do \
+	    rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$f ; \
+	done
 	
 	# install the docs
 	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual
@@ -219,15 +227,6 @@ install: build
 	  file $$f | grep "script" >/dev/null \
             && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/$(PIKE)@' $$f; \
 	done; exit 0
-
-	# Remove disabled modules
-	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Ssleay.so
-	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/*Java*
-
-        # msql is non-free
-	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/include/msql.h
-	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Msql.so
-	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Sql.pmod/msql.pike
 
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
 

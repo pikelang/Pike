@@ -96,6 +96,13 @@ Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
 Description: SANE module for Pike
  This Pike modules provides access to SANE.
 
+Package: pike7.3-perl
+Architecture: any
+Depends: ${shlibs:Depends}, pike7.3-core (=${Source-Version})
+Description: Perl module for Pike
+ This Pike modules enables one to embed perl in the pike
+ programs.
+
 Package: pike7.3-dev
 Architecture: all
 Depends: ${shlibs:Depends}, pike7.3 (=${Source-Version})
