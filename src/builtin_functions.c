@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.259 2000/04/15 18:18:24 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.260 2000/04/15 18:27:20 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2799,17 +2799,6 @@ void f__optimizer_debug(INT32 args)
   l_flag = l;
 }
 
-void f__describe(INT32 args)
-{
-  struct svalue *s;
-
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_optimizer_debug: permission denied.\n"));
-  get_all_args("_describe", args, "%O", &s);
-  debug_describe_svalue(debug_malloc_pass(s));
-  pop_n_elems(args);
-}
-
 #ifdef YYDEBUG
 
 void f__compiler_trace(INT32 args)
@@ -4760,12 +4749,13 @@ void f__locate_references(INT32 args)
 
 void f__describe(INT32 args)
 {
-  if (!args) {
-    push_int(0);
-  } else {
-    pop_n_elems(args-1);
-  }
-  debug_describe_svalue(sp-1);
+  struct svalue *s;
+
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("_optimizer_debug: permission denied.\n"));
+  get_all_args("_describe", args, "%O", &s);
+  debug_describe_svalue(debug_malloc_pass(s));
+  pop_n_elems(args-1);
 }
 
 #endif
@@ -6120,9 +6110,6 @@ void init_builtin_efuns(void)
   ADD_EFUN("_optimizer_debug",f__optimizer_debug,
 	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
-/* function(mixed:void) */
-  ADD_EFUN("_describe", f__describe, tFunc(tMix,tVoid),
-	   OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #ifdef YYDEBUG
   
 /* function(int:int) */
