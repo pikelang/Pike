@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.85 2003/02/01 18:42:03 mirar Exp $
+|| $Id: layers.c,v 1.86 2003/06/08 06:37:27 mirar Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.85 2003/02/01 18:42:03 mirar Exp $");
+RCSID("$Id: layers.c,v 1.86 2003/06/08 06:37:27 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -3083,7 +3083,7 @@ static void image_layer_crop(INT32 args)
    int zot=0;
    struct image *img = NULL;
 
-   get_all_args("Image.Layer->crop",args,"%d%d%d%d",&x,&y,&xz,&yz);
+   get_all_args("Image.Layer->crop",args,"%i%i%i%i",&x,&y,&xz,&yz);
 
    l=clone_this_layer();
    if (x<=l->xoffs) x=l->xoffs; else zot++;
