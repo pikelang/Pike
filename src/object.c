@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.158 2001/01/18 09:33:35 mast Exp $");
+RCSID("$Id: object.c,v 1.159 2001/01/19 15:18:37 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -635,7 +635,7 @@ PMOD_EXPORT void destruct(struct object *o)
 
 struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
-static int in_destruct_objects_to_destruct = 0;
+static struct object *in_destruct_objects_to_destruct = 0;
 
 /* This function destructs the objects that are scheduled to be
  * destructed by schedule_really_free_object. It links the object back into the
@@ -643,19 +643,18 @@ static int in_destruct_objects_to_destruct = 0;
  */
 PMOD_EXPORT void destruct_objects_to_destruct(void)
 {
-  struct object *my_list=0;
-  struct object *o, *next;
+  struct object *o, *next, *end = in_destruct_objects_to_destruct;
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
 
-  if(in_destruct_objects_to_destruct)
-    return;
-  in_destruct_objects_to_destruct = 1;
-
-  while((o=objects_to_destruct))
+  /* Only process the list down to the first item that was on it
+   * already in an earlier call to destruct_objects_to_destruct. This
+   * way we avoid excessive recursion in this function and also avoid
+   * destructing the objects arbitrarily late. */
+  while((o=objects_to_destruct) != end)
   {
 #ifdef GC_VERBOSE
     if (Pike_in_gc > GC_PASS_PREPARE)
@@ -664,6 +663,7 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
 
     /* Link object back to list of objects */
     DOUBLEUNLINK(objects_to_destruct,o);
+    in_destruct_objects_to_destruct = objects_to_destruct;
     
     /* link */
     DOUBLELINK(first_object,o);
@@ -681,8 +681,6 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback=0;
   }
-
-  in_destruct_objects_to_destruct = 0;
 }
 
 
