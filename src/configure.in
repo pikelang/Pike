@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.326 1999/10/23 13:04:36 noring Exp $")
+AC_REVISION("$Id: configure.in,v 1.327 1999/10/25 06:29:12 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2301,9 +2301,10 @@ if test "x$ac_cv_header_mmx_h" = xyes ; then
     ],[
     {
       int try_use_mmx;
-      mmx_t a;
-      mmx_t b;
-      paddw(a,b);
+      char a[8];
+      movq_m2r( *a, mm0 );
+      paddb_r2r( mm0, mm0 );
+      movq_r2m( mm0, *a );
       try_use_mmx=mmx_ok();
     }
     ], pike_cv_sys_has_working_mmx=yes,pike_cv_sys_has_working_mmx=no)
