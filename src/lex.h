@@ -66,7 +66,7 @@ extern struct instr instrs[];
 /* Prototypes begin here */
 void exit_lex(void);
 struct reserved;
-void init_lex();
+void init_lex(void);
 char *low_get_f_name(int n,struct program *p);
 char *get_f_name(int n);
 char *get_token_name(int n);

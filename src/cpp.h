@@ -18,9 +18,9 @@ void PUSH_STRING(char *str,
 		 dynamic_buffer *buf);
 void free_one_define(struct hash_entry *h);
 void f_cpp(INT32 args);
-void init_cpp();
+void init_cpp(void);
 void add_predefine(char *s);
-void exit_cpp();
+void exit_cpp(void);
 /* Prototypes end here */
 
 #endif
