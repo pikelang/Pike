@@ -43,15 +43,25 @@ void ins_data(INT32 val);
 void ins_f_byte(unsigned int op);
 	Insert the opcode 'op' at the current offset.
 
+	Code to update Pike_fp->pc to point to the current offset
+	should be inserted first, but it's only necessary if the
+	source line or file has changed since the previous opcode.
+
+	Also, if PIKE_DEBUG is defined and the opcode is completely
+	inlined, then a call to simple_debug_instr_prologue_0 should
+	be inserted before the opcode itself but after the Pike_fp->pc
+	update (if there is any).
+
 void ins_f_byte_with_arg(unsigned int op, unsigned INT32 arg);
 	Insert the opcode 'op' with the primary argument 'arg' at
-	the current offset.
+	the current offset. See ins_f_byte for further details.
 
 void ins_f_byte_with_2_args(unsigned int op,
 			    unsigned INT32 arg1,
 			    unsigned INT32 arg2);
 	Insert the opcode 'op' with the primary argument 'arg1' and
-	the secondary argument 'arg2' at the current offset.
+	the secondary argument 'arg2' at the current offset. See
+	ins_f_byte for further details.
 
 void UPDATE_PC(void)
 	Insert code to update Pike_fp->pc to the current position.
@@ -117,7 +127,8 @@ void FLUSH_CODE_GENERATOR_STATE(void)
 void ADJUST_PIKE_PC(PIKE_OPCODE_T *pc)
 	Called after opcodes that modify Pike_fp->pc. The passed
 	argument is the pc they will put there. Useful when UPDATE_PC
-	inserts code that update Pike_fp->pc relatively.
+	inserts code that update Pike_fp->pc relatively. (Note: Not
+	used anymore.)
 
 int ALIGN_PIKE_JUMPS
         This can be defined to a number which will cause Pike to
