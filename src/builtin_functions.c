@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.362 2001/04/14 09:44:19 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.363 2001/04/18 17:12:58 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1548,7 +1548,9 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 {
   struct pike_string *in;
   struct pike_string *out = NULL;
-  ptrdiff_t len;
+  ptrdiff_t len, i, num_surrogates = 0;
+  int swab=0;
+  p_wchar1 surr1, surr2, surrmask, *str0;
 
   get_all_args("unicode_to_string", args, "%S", &in);
 
@@ -1557,30 +1559,117 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 		  "String length is odd.\n");
   }
 
-  /* FIXME: In the future add support for decoding of surrogates. */
-
-  len = in->len / 2;
-
-  out = begin_wide_shared_string(len, 1);
+  /* Check byteorder of UTF data */
+  str0 = (p_wchar1 *)in->str;
+  len = in->len;
+  if (len && str0[0] == 0xfeff) {
+    /* Correct byte order mark.  No swap necessary. */
+    swab = 0;
+    str0 ++;
+    len -= 2;
+  } else if (len && str0[0] == 0xfffe) {
+    /* Reversed byte order mark.  Need to swap. */
+    swab = 1;
+    str0 ++;
+    len -= 2;
+  } else {
+    /* No byte order mark.  Need to swap unless big endian */
 #if (PIKE_BYTEORDER == 4321)
-  /* Big endian
-   *
-   * FIXME: Future optimization: Perform sufficient magic
-   * to do the conversion in place if the ref-count is == 1.
-   */
-  MEMCPY(out->str, in->str, in->len);
+    swab = 0;
 #else
-  /* Little endian */
-  {
-    ptrdiff_t i;
-    p_wchar1 *str1 = STR1(out);
+    swab = 1;
+#endif /* PIKE_BYTEORDER == 4321 */
+  }
 
-    for (i = len; i--;) {
-      str1[i] = (((unsigned char *)in->str)[i*2]<<8) +
-	((unsigned char *)in->str)[i*2 + 1];
+  /* Indentify surrogates by pre-swapped bitmasks, for efficiency */
+  if (swab) {
+    surr1 = 0xd8;
+    surr2 = 0xdc;
+    surrmask = 0xfc;
+  } else {
+    surr1 = 0xd800;
+    surr2 = 0xdc00;
+    surrmask = 0xfc00;
+  }
+
+  /* Count number of surrogates */
+  for (i = len; i >= 4; i -= 2, str0++)
+    if ( (str0[0]&surrmask) == surr1 &&
+	 (str0[1]&surrmask) == surr2 )
+      num_surrogates ++;
+
+  /* Move str0 past the last word */
+  str0++;
+
+  len = len / 2 - num_surrogates;
+
+  out = begin_wide_shared_string(len, (num_surrogates? 2 : 1));
+
+  if (!swab) {
+    /* Native endian */
+    if (num_surrogates) {
+      /* Convert surrogates */
+
+      p_wchar2 *str2 = STR2(out);
+
+      for (i = len; i--; --str0)
+
+	if ((str0[-1]&surrmask) == surr2 && num_surrogates &&
+	    (str0[-2]&surrmask) == surr1) {
+	    
+	  str2[i] = ((str0[-2]&0x3ff)<<10) + (str0[-1]&0x3ff) + 0x10000;
+
+	  --str0;
+	  --num_surrogates;
+
+	} else
+
+	  str2[i] = str0[-1];
+
+    } else
+    /*
+     * FIXME: Future optimization: Perform sufficient magic
+     * to do the conversion in place if the ref-count is == 1.
+     */
+      MEMCPY(out->str, (char *)(str0-len), len*2);
+  } else {
+    /* Reverse endian */
+    
+    if (num_surrogates) {
+      /* Convert surrogates */
+
+      p_wchar2 *str2 = STR2(out);
+
+      for (i = len; i--; --str0)
+
+	if ((str0[-1]&surrmask) == surr2 && num_surrogates &&
+	    (str0[-2]&surrmask) == surr1) {
+	    
+	  str2[i] = ((((unsigned char *)str0)[-4]&3)<<18) +
+	    (((unsigned char *)str0)[-3]<<10) +
+	    ((((unsigned char *)str0)[-2]&3)<<8) +
+	    ((unsigned char *)str0)[-1] +
+	    0x10000;
+
+	  --str0;
+	  --num_surrogates;
+
+	} else
+
+	  str2[i] = (((unsigned char *)str0)[-2]<<8) +
+	    ((unsigned char *)str0)[-1];
+      
+    } else {
+      /* No surrogates */
+
+      p_wchar1 *str1 = STR1(out);
+
+      for (i = len; i--; --str0)
+	
+	str1[i] = (((unsigned char *)str0)[-2]<<8) +
+	  ((unsigned char *)str0)[-1];
     }
   }
-#endif /* PIKE_BYTEORDER == 4321 */
   out = end_shared_string(out);
   pop_n_elems(args);
   push_string(out);
