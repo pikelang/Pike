@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.433 2002/06/25 14:26:40 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.434 2002/08/06 14:18:57 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7697,7 +7697,7 @@ void init_builtin_efuns(void)
 	   tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
 
   ADD_EFUN("random_string",f_random_string,
-	   tFunc(tInt,tString),0);
+	   tFunc(tInt,tString), OPT_EXTERNAL_DEPEND);
   
   ADD_EFUN2("replace", f_replace,
 	    tOr5(tFunc(tStr tStr tStr,tStr),
