@@ -23,6 +23,8 @@ struct program *image_program;
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)<(b)?(b):(a))
 
+#define sq(x) ((x)*(x))
+
 #define CIRCLE_STEPS 128
 static INT32 circle_sin_table[CIRCLE_STEPS];
 #define circle_sin(x) circle_sin_table[((x)+CIRCLE_STEPS)%CIRCLE_STEPS]
@@ -67,7 +69,8 @@ static void exit_image_struct(struct object *obj)
    (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
     0:(setpixel(x,y),0))
 
-static INLINE void getrgb(struct image *img,INT32 args_start,INT32 args,char *name)
+static INLINE void getrgb(struct image *img,
+			  INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
    if (args-args_start<3) return;
@@ -632,35 +635,66 @@ void image_create(INT32 args)
    pop_n_elems(args);
 }
 
-void image_new(INT32 args)
+void image_clone(INT32 args)
 {
    struct object *o;
    struct image *img;
 
-   if (args==0)
-   {
-      push_object(clone(image_program,0));
-      return ;
-   }
-   
-   if (args<2||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT)
-      error("Illegal arguments to image->new()\n");
-
-   if(sp[-args].u.integer < 0 ||
-      sp[1-args].u.integer < 0)
-     error("Illegal size to image->new()\n");
-
-   getrgb(THIS,2,args,"image->new()"); 
+   if (args)
+      if (args<2||
+	  sp[-args].type!=T_INT||
+	  sp[1-args].type!=T_INT)
+	 error("Illegal arguments to image->clone()\n");
 
    o=clone(image_program,0);
    img=(struct image*)(o->storage);
+   *img=*THIS;
 
-   img->xsize=sp[-args].u.integer;
-   img->ysize=sp[1-args].u.integer;
-   if (img->xsize<0) img->xsize=0;
-   if (img->ysize<0) img->ysize=0;
+   if (args)
+   {
+      if(sp[-args].u.integer < 0 ||
+	 sp[1-args].u.integer < 0)
+	 error("Illegal size to image->clone()\n");
+      img->xsize=sp[-args].u.integer;
+      img->ysize=sp[1-args].u.integer;
+   }
+
+   getrgb(img,2,args,"image->clone()"); 
+
+   if (img->xsize<0) img->xsize=1;
+   if (img->ysize<0) img->ysize=1;
+
+   if (THIS->img)
+   {
+      img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+      if (!img->img)
+      {
+	 free_object(o);
+	 error("out of memory\n");
+      }
+      if (img->xsize==THIS->xsize 
+	  && img->ysize==THIS->ysize)
+	 MEMCPY(img->img,THIS->img,sizeof(rgb_group)*img->xsize*img->ysize);
+      else
+	 img_crop(img,THIS,
+		  0,0,img->xsize-1,img->ysize-1);
+	 
+   }
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+void image_clear(INT32 args)
+{
+   struct object *o;
+   struct image *img;
+
+   o=clone(image_program,0);
+   img=(struct image*)(o->storage);
+   *img=*THIS;
+
+   getrgb(img,0,args,"image->clear()"); 
 
    img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    if (!img->img)
@@ -670,6 +704,7 @@ void image_new(INT32 args)
    }
 
    img_clear(img->img,img->rgb,img->xsize*img->ysize);
+
    pop_n_elems(args);
    push_object(o);
 }
@@ -738,24 +773,33 @@ void image_frompnm(INT32 args)
       error("Illegal argument to image->frompnm()\n");
    s=img_frompnm(sp[-args].u.string);
    pop_n_elems(args);
-   if (!s) push_int(0);
+   if (!s) { push_object(THISOBJ); THISOBJ->refs++; }
    else push_string(make_shared_string(s));
 }
 
-void image_crop(INT32 args)
+void image_copy(INT32 args)
 {
    struct object *o;
    struct image *img;
 
-   if (!args) return;
+   if (!args)
+   {
+      o=clone(image_program,0);
+      if (THIS->img) img_clone((struct image*)o->storage,THIS);
+      pop_n_elems(args);
+      push_object(o);
+      return;
+   }
    if (args<4||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("illegal arguments to image->crop()\n");
+      error("illegal arguments to image->copy()\n");
 
-   getrgb(THIS,2,args,"image->new()"); 
+   if (!THIS->img) error("no image\n");
+
+   getrgb(THIS,2,args,"image->crop()"); 
 
    o=clone(image_program,0);
    img=(struct image*)(o->storage);
@@ -850,39 +894,6 @@ void image_autocrop(INT32 args)
    push_object(o);
 }
 
-void image_copy(INT32 args)
-{
-   struct object *o;
-   struct image *newimg;
-
-   if (!args)
-   {
-      o=clone(image_program,0);
-      if (THIS->img) img_clone((struct image*)o->storage,THIS);
-      pop_n_elems(args);
-      push_object(o);
-      return;
-   }
-   if (args<4||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT||
-       sp[2-args].type!=T_INT||
-       sp[3-args].type!=T_INT)
-      error("illegal arguments to image->copy()\n");
-
-   getrgb(THIS,4,args,"image->copy()");
-   o=clone(image_program,0);
-   if (THIS->img)
-   {
-      newimg=(struct image*)o->storage;
-      newimg->rgb=THIS->rgb;
-      img_crop(newimg,THIS,sp[-args].u.integer,sp[1-args].u.integer,
-	       sp[2-args].u.integer,sp[3-args].u.integer);
-   }
-   pop_n_elems(args);
-   push_object(o);
-}
-
 void image_paste(INT32 args)
 {
    struct image *img;
@@ -949,7 +960,6 @@ void image_paste_alpha(INT32 args)
       y1=sp[3-args].u.integer;
    }
    else x1=y1=0;
-   pop_n_elems(args-1);
 
    for (x=0; x<img->xsize; x++)
       for (y=0; y<img->ysize; y++)
@@ -957,6 +967,10 @@ void image_paste_alpha(INT32 args)
 	 THIS->rgb=pixel(img,x,y);
 	 setpixel_test(x1+x,y1+y);
       }
+
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_paste_mask(INT32 args)
@@ -994,8 +1008,6 @@ void image_paste_mask(INT32 args)
    x2=min(THIS->xsize-x1,min(img->xsize,mask->xsize));
    y2=min(THIS->ysize-y1,min(img->ysize,mask->ysize));
 
-   pop_n_elems(args-1);
-
    for (x=max(0,-x1); x<x2; x++)
       for (y=max(0,-y1); y<y2; y++)
       {
@@ -1009,6 +1021,9 @@ void image_paste_mask(INT32 args)
             (unsigned char)((pixel(THIS,x+x1,y+y1).b*(long)(255-pixel(mask,x,y).b)+
 			     pixel(img,x,y).b*(long)pixel(mask,x,y).b)/255);
       }
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_paste_alpha_color(INT32 args)
@@ -1050,8 +1065,6 @@ void image_paste_alpha_color(INT32 args)
    x2=min(THIS->xsize-x1,mask->xsize);
    y2=min(THIS->ysize-y1,mask->ysize);
 
-   pop_n_elems(args-1);
-
    for (x=max(0,-x1); x<x2; x++)
       for (y=max(0,-y1); y<y2; y++)
       {
@@ -1065,6 +1078,9 @@ void image_paste_alpha_color(INT32 args)
             (unsigned char)((pixel(THIS,x+x1,y+y1).b*(long)(255-pixel(mask,x,y).b)+
 			     THIS->rgb.b*(long)pixel(mask,x,y).b)/255);
       }
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_setcolor(INT32 args)
@@ -1072,7 +1088,9 @@ void image_setcolor(INT32 args)
    if (args<3)
       error("illegal arguments to image->setcolor()\n");
    getrgb(THIS,0,args,"image->setcolor()");
-   pop_n_elems(args-1);
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_setpixel(INT32 args)
@@ -1087,8 +1105,10 @@ void image_setpixel(INT32 args)
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
    if (!THIS->img) return;
-   pop_n_elems(args-1);
    setpixel_test(x,y);
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_line(INT32 args)
@@ -1106,7 +1126,9 @@ void image_line(INT32 args)
 	    sp[1-args].u.integer,
 	    sp[2-args].u.integer,
 	    sp[3-args].u.integer);
-   pop_n_elems(args-1);
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_box(INT32 args)
@@ -1124,7 +1146,9 @@ void image_box(INT32 args)
 	   sp[1-args].u.integer,
 	   sp[2-args].u.integer,
 	   sp[3-args].u.integer);
-   pop_n_elems(args-1);
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_circle(INT32 args)
@@ -1151,6 +1175,8 @@ void image_circle(INT32 args)
 	       y+circle_cos_mul(i,ry),
 	       x+circle_sin_mul(i+1,rx),
 	       y+circle_cos_mul(i+1,ry));
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_scale(INT32 args)
@@ -1239,7 +1265,7 @@ static INLINE void get_rgba_group_from_array_index(rgba_group *rgba,struct array
 static INLINE void
    add_to_rgba_sum_with_factor(rgba_group *sum,
 			       rgba_group rgba,
-			       double factor)
+			       float factor)
 {
    sum->r=testrange(sum->r+(INT32)(rgba.r*factor+0.5));
    sum->g=testrange(sum->g+(INT32)(rgba.g*factor+0.5));
@@ -1251,6 +1277,9 @@ void image_tuned_box(INT32 args)
 {
    INT32 x1,y1,x2,y2,xw,yw,x,y;
    rgba_group topleft,topright,bottomleft,bottomright,sum,sumzero={0,0,0,0};
+   rgb_group *img;
+   INT32 mod;
+
    if (args<5||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT||
@@ -1258,9 +1287,10 @@ void image_tuned_box(INT32 args)
        sp[3-args].type!=T_INT||
        sp[4-args].type!=T_ARRAY||
        sp[4-args].u.array->size<4)
-      error("Illegal number of arguments to image->scaled_box()\n");
+      error("Illegal number of arguments to image->tuned_box()\n");
 
-   if (!THIS->img) return;
+   if (!THIS->img)
+      error("no image\n");
 
    x1=sp[-args].u.integer;
    y1=sp[1-args].u.integer;
@@ -1282,25 +1312,33 @@ void image_tuned_box(INT32 args)
 
    xw=x2-x1;
    yw=y2-y1;
-   for (x=0; x<=xw; x++)
-      for (y=0; y<=yw; y++)
-      {
-	 sum=sumzero;
-#define sq(x) ((x)*(x))
-#define tune_factor_from(x,y,xw,yw) \
-	    ((1.0-((double)(x)/(xw)))*(1.0-((double)(y)/(yw))))
-	 add_to_rgba_sum_with_factor(&sum,topleft,tune_factor_from(x,y,xw,yw));
-	 add_to_rgba_sum_with_factor(&sum,topright,tune_factor_from(xw-x,y,xw,yw));
-	 add_to_rgba_sum_with_factor(&sum,bottomleft,tune_factor_from(x,yw-y,xw,yw));
-	 add_to_rgba_sum_with_factor(&sum,bottomright,tune_factor_from(xw-x,yw-y,xw,yw));
-	 THIS->rgb.r=sum.r;
-	 THIS->rgb.g=sum.g;
-	 THIS->rgb.b=sum.b;
-	 THIS->alpha=sum.alpha;
-	 setpixel_test(x+x1,y+y1);
-      }
+   for (x=min(0,-x1); x<=xw && x+x1<THIS->xsize; x++)
+   {
+#define tune_factor(a,aw) (1.0-((float)(a)/(aw)))
+      INT32 ymax;
+      float tfx1=tune_factor(x,xw);
+      float tfx2=tune_factor(xw-x,xw);
 
-   pop_n_elems(args-1);
+      ymax=min(yw,THIS->ysize-y1);
+      img=THIS->img+x+x1+THIS->xsize*max(0,y1);
+      for (y=max(0,-y1); y<ymax; y++)
+      {
+	 float tfy;
+	 sum=sumzero;
+
+	 add_to_rgba_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,yw))*tfx1);
+	 add_to_rgba_sum_with_factor(&sum,topright,tfy*tfx2);
+	 add_to_rgba_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,yw))*tfx1);
+	 add_to_rgba_sum_with_factor(&sum,bottomright,tfy*tfx2);
+
+	 set_rgb_group_alpha(*img, sum,sum.alpha);
+	 img+=THIS->xsize;
+      }
+   }
+
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_xsize(INT32 args)
@@ -1710,25 +1748,6 @@ static void image_quant(INT32 args)
 
 /***************** global init etc *****************************/
 
-/* these functions are destructive, they write (read) in the current 
-  object */
-/*
-string toppm(void);
-void frompnm(string s);
-string togif( [int r,inr g,int b] );
-
-void paste(object img [,int x,int y])
-void paste_alpha(object img, int alpha [,int x, int y]);
-void paste_mask(object img, object alpha_mask [,int x,int y]);
-
-void setcolor(int r,int g,int b);
-void setpixel(int x,int y [,int r,int g,int b] );
-void line(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
-void box(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
-void circle(int x,int y,int radx,int rady [,int r,int b,int g] );
-void tuned_box(int x1,int y1,int x2,int y2,array(array(int)) corner_rgb);
-*/
-
 #define RGB_TYPE "int|void,int|void,int|void,int|void"
 
 void init_font_programs(void);
@@ -1743,8 +1762,10 @@ void init_image_programs()
 
    add_function("create",image_create,
 		"function(int,int,"RGB_TYPE":void)",0);
-   add_function("new",image_new,
+   add_function("clone",image_clone,
 		"function(int,int,"RGB_TYPE":void)",0);
+   add_function("clear",image_clear,
+		"function("RGB_TYPE":void)",0);
    add_function("toppm",image_toppm,
 		"function(:string)",0);
    add_function("frompnm",image_frompnm,
@@ -1755,11 +1776,8 @@ void init_image_programs()
 		"function(:string)",0);
    add_function("togif_fs",image_togif_fs,
 		"function(:string)",0);
-
    add_function("copy",image_copy,
-		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
-   add_function("crop",image_crop,
-		"function(int,int,int,int,"RGB_TYPE":void)",0);
+		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":void)",0);
    add_function("autocrop",image_autocrop,
 		"function(:void)",0);
    add_function("scale",image_scale,

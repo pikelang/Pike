@@ -235,7 +235,10 @@ void font_load(INT32 args)
 
 		  close(fd);
 		  pop_n_elems(args);
-		  push_int(1);   /* success */
+		  THISOBJ->refs++;
+		  push_object(THISOBJ);   /* success */
+		  if (THIS->chars>32)
+		     THIS->charinfo[32].spacing=THIS->height/4;
 		  return;
 	       } /* wrong version */
 	    } /* wrong cookie */

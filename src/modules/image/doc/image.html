@@ -21,9 +21,8 @@ This package adds two Pike progams:
 
 Methods resulting in a new object:
 
-<br><a name=newr><tt>object <a href=#new><b>new</b></a>( </tt>[<tt>int <b>xsize</b>,int <b>ysize</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
+<br><a name=cloner><tt>object <a href=#clone><b>clone</b></a>( </tt>[<tt>int <b>xsize</b>,int <b>ysize</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
 <p><a name=copyr><tt>object <a href=#copy><b>copy</b></a>( </tt>[<tt>int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
-<br><a name=cropr><tt>object <a href=#crop><b>crop</b></a>( </tt>[<tt>int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
 <br><a name=autocropr><tt>object <a href=#autocrop><b>autocrop</b></a>( </tt>[<tt>int <b>border_width</b> </tt>[<tt>,int <b>left</b>,int <b>right</b>,int <b>top</b>,int <b>bottom</b></tt>]<tt></b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
 <p><a name=grayr><tt>object <a href=#gray><b>gray</b></a>();</tt></a>
 <br><a name=colorr><tt>object <a href=#color><b>color</b></a>(int <b>r</b>,int <b>g</b>,int <b>b</b>);</tt></a>
@@ -161,11 +160,12 @@ This function is most usable on a image that has been <a href=#gray>gray</a>ed f
 <dl>
 <dt>METHOD
 <dd><a name=copy><tt>object <a href=#copyr><b>copy</b></a>( </tt>[<tt>int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
-<dd><a name=crop><tt>object <a href=#cropr><b>crop</b></a>( </tt>[<tt>int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
 <dt>DESCRIPTION
-<dd>Copy a part (or more) of the image.
+<dd>Make a copy, or a copy of a part of the image. 
+    It is possible to copy more then the image, to extend the image,
+    this area is filled with the current (or given) color.
 <dt>RETURN VALUE
-<dd>the new object
+<dd>the new image object
 <dt>EXAMPLE
 <dd><pre>copy=image->copy();
 
@@ -243,11 +243,18 @@ to compute the gray level. Default is 87,127,41.
 
 <dl>
 <dt>METHOD
-<dd><a name=new><tt>object <a href=#newr><b>new</b></a>( </tt>[<tt>int <b>xsize</b>,int <b>ysize</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
+<dd><a name=clone><tt>object <a href=#cloner><b>clone</b></a>( </tt>[<tt>int <b>xsize</b>,int <b>ysize</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
 <dt>DESCRIPTION
 <dd>make a new object and return it
+<ul>
+<li>no arguments -> old image is copied
+<li>size is given -> old image is copied cropped
+<li>color is given -> new default color
+</ul>
 <dt>RETURN VALUE
 <dd>the new object
+<dt>SEE ALSO
+<dd><a href=#copy>copy</a>, <a href=#clear>clear</a>
 <dt>EXAMPLE
 <dd>
 <dt>BUGS
@@ -274,7 +281,7 @@ this function doesn't return anything
 image->paste_mask(other_image,alpha_channel_image);</pre>
 Paste a dog on a landscape:<pre>landscape->paste(dog,dog_alpha_channel,xpos,ypos);</pre>
 Write some text:<pre>text=font->write("some text");
-foreground=image->new(text->xsize(),text->ysize(),255,255,255); // white
+foreground=text->clear(255,255,255); // white
 background->paste(foreground,text,xpos,ypos);</pre>
 <dt>BUGS
 <dd>
@@ -450,6 +457,46 @@ this function doesn't return anything
 
 <hr>
 
+<h2>Example program:</h2>
+(pike)
+<pre>
 
+int main()
+{
+   object txt,o;
+   int i;
 
+   txt = 
+      clone((program)"/precompiled/font")
+      ->load("fonts/64/helvetica_bold_r")
+      ->write("The Image Module")
+      ->autocrop(20,0,0,0);
 
+   o=clone((program)"/precompiled/image",
+	   txt->xsize(),txt->ysize(), 0,0,100)
+        ->tuned_box(0,0,txt->xsize(),txt->ysize(),
+		    ({({0,0,0}),({0,0,0}),
+		      ({0,0,255}),({128,128,0})}));
+   
+   o->setcolor(255,255,255,200);
+   for (i=0; i<30; i++)
+      if (random(2))
+	 o->line(random(o->xsize()),o->ysize()-10-random(20+i*3),
+		 o->xsize()-1-random(30),o->ysize()-1);
+      else
+	 o->line(random(o->xsize()),o->ysize()-10-random(20+i),
+		 random(30),o->ysize()-1);
+
+   o -> paste_mask(txt->clear(255,255,0),
+		 txt->apply_matrix(({({1,2,1}),({2,4,2}),({1,2,1})}))
+		 ->apply_matrix(({({1,2,1}),({2,4,2}),({1,2,1})}))
+		 ->modify_by_intensity(1,0,0,0,255,255,255,255,255))
+     -> paste_mask(txt->clone()
+		   ->tuned_box(0,0,txt->xsize()-1,txt->ysize()-1,
+			       ({({128,128,128}),({64,128,0}),
+                                 ({64,128,0}),({255,255,0})})),
+		   txt);
+   write(o->togif_fs());
+   return 0;
+}
+</pre>
