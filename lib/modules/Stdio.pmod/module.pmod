@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.113 2001/12/03 12:22:01 anders Exp $
+// $Id: module.pmod,v 1.114 2001/12/07 10:36:41 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -1881,7 +1881,7 @@ static class nb_sendfile
     werror("Stdio.sendfile(): Blocking writer.\n");
 #endif /* SENDFILE_DEBUG */
 
-    int bytes = to->write(to_write);
+    int bytes = sizeof(to_write) && to->write(to_write);
 
     if (bytes >= 0) {
       sent += bytes;
@@ -1901,7 +1901,7 @@ static class nb_sendfile
 	  }
 	}
       }
-      // Not reached, but...
+
       return 1;
     } else {
 #ifdef SENDFILE_DEBUG
