@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.41 2002/08/15 14:49:21 marcus Exp $");
+RCSID("$Id: fd_control.c,v 1.42 2002/09/02 16:49:16 grubba Exp $");
 
 #else /* TESTING */
 
@@ -241,17 +241,25 @@ int main()
 #endif
 /* a part of the autoconf thingy */
 
-RETSIGTYPE sigalrm_handler0(int tmp) { exit(0); }
+RETSIGTYPE sigalrm_handler0(int tmp)
+{
+  signal(SIGALRM, SIG_IGN);
+  alarm(0);
+  _exit(0);
+}
 RETSIGTYPE sigalrm_handler1(int tmp)
 {
+  alarm(0);
   fprintf(stderr,"Failed in alarm handler 1\n");
-  exit(1);
+  _exit(1);
 }
 
 int main()
 {
   int tmp[2];
   char foo[1000];
+  int res = 0;
+  int e = 0;
 
   tmp[0]=0;
   tmp[1]=0;
@@ -263,12 +271,27 @@ int main()
   set_nonblocking(tmp[0],1);
   signal(SIGALRM, sigalrm_handler1);
   alarm(1);
-  read(tmp[0],foo,999);
+  res = read(tmp[0],foo,999);
+  e = errno;
+  alarm(0);
+  if ((res >= 0) || (e != AGAIN)) {
+    fprintf(stderr,
+	    "Unexpected behaviour of nonblocking read() res:%d, errno:%d\n",
+	    res, e);
+    exit(1);
+  }
+#ifdef SHORT_TEST
+  /* Kludge for broken thread libraries.
+   * eg: Solaris 2.4/-lthread
+   */
+  exit(0);
+#endif /* SHORT_TEST */
   set_nonblocking(tmp[0],0);
   signal(SIGALRM, sigalrm_handler0);
   alarm(1);
-  read(tmp[0],foo,999);
-  fprintf(stderr,"Failed at end of main.\n");
+  res = read(tmp[0],foo,999);
+  e = errno;
+  fprintf(stderr,"Failed at end of main; res:%d, errno:%d\n", res, e);
   exit(1);
 }
 #endif
