@@ -132,6 +132,7 @@ char *alloca ();
 #define TYPE_FIELD unsigned INT16
 
 #define FLOAT_TYPE float
+#define INT_TYPE INT32
 
 #define B1_T char
 
