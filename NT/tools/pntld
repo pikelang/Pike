@@ -1,0 +1,761 @@
+#!/usr/local/bin/pike
+
+/* Partial linker for COFF files, written by Fredrik Hubinette 2000 */
+
+class Reloc
+{
+  Symbol sym;
+  int loc;
+  int type;
+};
+
+class Section
+{
+  string name;
+  string data;
+  array(Reloc) relocs;
+
+  int virtual_size;
+  int characteristics;
+
+  int section_number;
+};
+
+class Symbol
+{
+  string name;
+  int value;
+  Section section;
+  int type;
+  int cls;
+  array(Symbol) aux;
+};
+
+
+mapping(string:Symbol) global_symbols=([]);
+array(Section) global_sections=({});
+array(string) global_directives=({});
+
+class Linker
+{
+  string ret="";
+  string stringtable="";
+  string symboltable="";
+  string sectiondata="";
+  string sectiontable="";
+  int num_symbols;
+
+  int base;
+  mapping(Symbol:int) symbol_to_number=([]);
+
+  mapping(string:int) stringtablecache=([]);
+  int add_string(string s)
+    {
+      int pos;
+      s+="\0";
+      if(pos=stringtablecache[s]) return pos-1;
+      pos=search(stringtable, s);
+      if(pos == -1)
+      {
+	pos=strlen(stringtable);
+	stringtable+=s;
+      }
+      stringtablecache[s]=pos-1;
+      return pos;
+    }
+
+  string add_sym_name(string s)
+    {
+      if(strlen(s) <= 8)
+	return s + "\0"*(8-strlen(s));
+      return sprintf("%-4c%-4c",0,add_string(s));
+    }
+
+  int add_symbol(Symbol s)
+    {
+#ifdef DEBUG
+      werror("Encoding symbol named: %s\n",s->name);
+#endif
+      if(symbol_to_number[s])
+	return symbol_to_number[s]-1;
+
+      num_symbols++;
+      symboltable+=sprintf("%s%-4c%-2c%-2c%c%c",
+			   add_sym_name(s->name),
+			   s->value,
+			   s->section ? s->section->section_number + 1 : 0,
+			   s->type,
+			   s->cls,
+			   0); /* aux symbols not supported */
+      symbol_to_number[s]=sizeof(symbol_to_number)+1;
+      return symbol_to_number[s]-1;
+    }
+
+
+  string out(array(Section) sections,
+	     array(Symbol) exports)
+    {
+      int secnum;
+      base=20 /*coff*/ +
+	sizeof(sections) * 40;
+
+      foreach(sections, Section s)
+	s->section_number = secnum++;
+
+      foreach(sections, Section s)
+	{
+#ifdef DEBUG
+	  werror("Encoding section named: %s\n",s->name);
+#endif
+	  sectiontable+=
+	    sprintf("%s%-4c%-4c%-4c%-4c%-4c%-4c%-2c%-2c%-4c",
+		    add_sym_name(s->name),
+		    s->virtual_size,
+		    0, /* virtual address */
+		    s->data ? sizeof(s->data) : 0,
+		    base + strlen(sectiondata),
+		    base + strlen(sectiondata) + (s->data ? sizeof(s->data) : 0),
+		    0, /* no linenums */
+		    sizeof(s->relocs),
+		    0,
+		    s->characteristics);
+	  sectiondata+=s->data;
+	  foreach(s->relocs, Reloc r)
+	    sectiondata+=sprintf("%-4c%-4c%-2c",
+				 r->loc,
+				 add_symbol(r->sym),
+				 r->type);
+	}
+
+      foreach(exports, Symbol s) add_symbol(s);
+
+      return 
+	sprintf("%-2c%-2c%-4c%-4c%-4c%-2c%-2c" /* coff */
+		"%s%s%s%s" /* the rest */ , 
+		
+		/* coff */
+		0x14c, /* Intel x86 */
+		sizeof(sections),
+		time(),
+		base+strlen(sectiondata),
+		num_symbols,
+		0, /* opt header size */
+		0, /* no character */
+
+		sectiontable,
+		sectiondata,
+		symboltable,
+		stringtable);
+    }
+  
+}
+
+mapping machine_table = ([
+  0:"Unknown",
+  0x14c:"Intel x86",
+  ]);
+
+class Bitfield
+{
+  array(string) names;
+
+  string desc(int num)
+  {
+    int x;
+    array(string) ret=({});
+    while(num && x<sizeof(names))
+    {
+      if(1 & num)
+	ret+=({ names[x] });
+      x++;
+      num>>=1;
+      num&=0x7fffffff;
+    }
+    if(!sizeof(ret) || num)
+      ret+=({ sprintf("%x",num << x) });
+
+    return ret*" | ";
+  }
+  void create(string ... n)
+    {
+      names=n;
+    }
+}
+
+Bitfield character_descriptor=Bitfield(
+  "RELOCS_STRIPPED",
+  "EXECUTABLE_IMAGE",
+  "LINE_NUMS_STRIPPED",
+  "LOCAL_SYMS_STRIPPED",
+  "AGGRESSIVE_WS_TRIM",
+  "LARGE_ADDRESS_AWARE",
+  "16BIT_MACHINE",
+  "BYTES_REVERSED_LO",
+  "32BIT_MACHINE",
+  "DEBUG_STRIPPED",
+  "REMOVABLE_RUN_FROM_SWAP",
+  "FILE_SYSTEM",
+  "DLL",
+  "UP_SYSTE_MONLY",
+  "BYTES_REVERSED_HI" );
+
+Bitfield section_character_descriptor=Bitfield(
+  "DSECT",
+  "NOLOAD",
+  "GROUP",
+  "TYPE_NO_PAD",
+  "*COPY",
+  "*CODE",
+  "INITED_DATA",
+  "UNINITED_DATA",
+  "LNK_OTHER",
+  "LNK_INFO",
+  "TYPE_OVER",
+  "LNK_REMOVE",
+  "LNK_COMDAT",
+  "-",
+  "-",
+  "MEM_FARDATA",
+  "*MEM_PURGEABLE",
+  "*MEM_16BIT",
+  "*MEM_LOCKED",
+  "*MEM_PRELOAD",
+  "ALIGN_1",
+  "ALIGN_2",
+  "ALIGN_4",
+  "ALIGN_8",
+  "LNK_NRELOC_OVFL",
+  "MEM_DISCARDABLE",
+  "MEM_NOT_CACHED",
+  "MEM_NOT_PAGED",
+  "MEM_SHARED",
+  "MEM_EXECUTE",
+  "MEM_READ",
+  "MEM_WRITE",
+);
+
+#define CHR_LINK_INFO 0x200
+#define CHR_LINK_REMOVE 0x800
+#define CHR_LINK_ALIGN_1 0x100000
+#define CHR_LINK_MEM_DISCARDABLE 0x2000000
+
+
+class dumpfile
+{
+  string filename;
+  string data;
+  int base;
+
+  int stringtable;
+  int symboltable, numsymbols;
+  int sections, numsections;
+
+  array(Symbol) file_symbols;
+  array(Section) file_sections;
+
+  void hexdump(int pos)
+    {
+      string x=data[pos..pos+128];
+      foreach(x/8,string line)
+	{
+	  write("%06x: %{%02x %} %O\n",pos,values(line),line);
+	  pos+=strlen(x);
+	}
+    }
+
+  int i4(int pos)
+    {
+      pos+=base;
+      return data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24);
+    }
+
+  int i8(int pos)
+    {
+      pos+=base;
+      return data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24) |
+	(data[pos+4]<<32) | (data[pos+5]<<40) | (data[pos+6]<<48) | (data[pos+7]<<56);
+    
+    }
+
+  int i1(int pos)
+    {
+      pos+=base;
+      return data[pos];
+    }
+
+  int i2(int pos)
+    {
+      pos+=base;
+      return data[pos] | (data[pos+1]<<8);
+    }
+
+  string nulltermstring(int p)
+    {
+      p+=base;
+      int end=search(data,"\0",p);
+      return data[p..end-1];
+    }
+
+  string range(int from, int len)
+    {
+      from+=base;
+      return data[from..from+len-1];
+    }
+
+  string getCOFFstring(int pos)
+    {
+      if(!i4(pos)) 
+      {
+	return nulltermstring(stringtable + i4(pos+4));
+      }
+      return ( range(pos,8)/"\0" )[0];
+    }
+
+  string decodeRelocType(int t)
+    {
+      switch(t)
+      {
+	case 0: return "absolute";
+	case 1: return "dir16";
+	case 2: return "rel16";
+	case 6: return "dir32";
+	case 7: return "dir32nb";
+	case 9: return "seg12";
+	case 10: return "sect";
+	case 11: return "secrel";
+	case 20: return "rel32";
+	default: return sprintf("<%d>",t);
+      }
+    }
+
+
+  array(Reloc) dumpRelocs(int pos, int num_relocs)
+    {
+      array(Reloc) ret=({});
+      for(int e=0;e<num_relocs;e++)
+      {
+#ifdef DEBUG
+	write("  [ %08x = symbol(%5d, %8s) = %s]\n",
+	      i4(pos),
+	      i4(pos+4),
+	      decodeRelocType(i2(pos+8)),
+	      getsymbolname(i4(pos+4)));
+#endif
+	Reloc r=Reloc();
+	r->loc=i4(pos);
+	r->sym=file_symbols[i4(pos+4)];
+	r->type=i2(pos+8);
+	pos+=10;
+
+	ret+=({r});
+      }
+
+      return ret;
+    }
+
+  int translatevaddr(int addr)
+    {
+      int pos=sections;
+      for(int e=0;e<numsections;e++)
+      {
+	int start=i4(pos+12);
+	if(addr >= start && addr < start + i4(pos+8))
+	{
+//	  write("--start=%d-%d-sect=%d--\n",start,i4(pos+20),e);
+	  return addr - start + i4(pos+20);
+	}
+	pos+=40;
+      }
+      return -1;
+    }
+
+  void dumpSECTS()
+    {
+      int pos=sections;
+#ifdef DEBUG
+      write("\n-=SECTIONS=-\n");
+#endif
+      for(int e=0;e<numsections;e++)
+      {
+	string caracter;
+#ifdef DEBUG
+	write("\n");
+	write("Name               : %s\n",getCOFFstring(pos));
+	write("Virtual Size       : %x\n",i4(pos+8));
+	write("Virtual Addres     : %x\n",i4(pos+12));
+	write("RAW data size      : %x\n",i4(pos+16));
+	write("Ptr2RawData        : %x\n",i4(pos+20));
+	write("Ptr2Relocs         : %x\n",i4(pos+24));
+	write("Ptr2Linenums       : %x\n",i4(pos+28));
+	write("num relocs         : %x\n",i2(pos+32));
+	write("num linenums       : %x\n",i2(pos+34));
+	write("characteristics    : %s\n",
+	      caracter=section_character_descriptor->desc(i4(pos+36)));
+#endif
+	
+	file_sections[e]->name=getCOFFstring(pos);
+	file_sections[e]->data=range(i4(pos+20),i4(pos+16));
+	file_sections[e]->virtual_size=i4(pos+8);;
+	file_sections[e]->characteristics=i4(pos+36);
+	file_sections[e]->relocs=dumpRelocs(i4(pos+24), i2(pos+32));
+
+
+	if(file_sections[e]->characteristics & CHR_LINK_INFO)
+	{
+	  foreach(file_sections[e]->data/" ", string directive)
+	    if(search(global_directives, directive) == -1)
+	      global_directives+=({ directive });
+	  
+	}
+	else
+	{
+	  global_sections+=({ file_sections[e] });
+	}
+#ifdef DEBUG
+	if(search(caracter,"LNK_INFO")!=-1)
+	  write("%O\n",range(i4(pos+20),i4(pos+16)));
+#endif
+	pos+=40;
+      }
+    }
+
+  string getvirtualname(int vaddr)
+    {
+      int x=translatevaddr(vaddr);
+      if(x==-1) return sprintf("<out of bounds %x>",vaddr);
+      return nulltermstring(x);
+    }
+
+  /* Symbol table stuff */
+  string decodeCOFFtypeLSB(int t)
+    {
+      switch(t)
+      {
+	case 0: return "null";
+	case 1: return "void";
+	case 2: return "char";
+	case 3: return "short";
+	case 4: return "int";
+	case 5: return "long";
+	case 6: return "float";
+	case 7: return "double";
+	case 8: return "struct";
+	case 9: return "union";
+	case 10: return "enum";
+	case 11: return "MOE";
+	case 12: return "byte";
+	case 13: return "word";
+	case 14: return "uint";
+	case 15: return "dword";
+	default: return sprintf("<%x>",t);
+      }
+    }
+
+  string decodeCOFFtype(int t)
+    {
+      switch(t >> 4)
+      {
+	case 0: return decodeCOFFtypeLSB(t);
+	case 1: return decodeCOFFtypeLSB(t & 15) + "*";
+	case 2: return decodeCOFFtypeLSB(t & 15) + "()";
+	case 3: return decodeCOFFtypeLSB(t & 15) + "[]";
+	default: return sprintf("<%x>",t);
+      }
+    }
+
+  string decodeCOFFstorageclass(int t)
+    {
+      switch(t)
+      {
+	case -1: case 255: return "End of function";
+	case 0: return "null";
+	case 1: return "automatic";
+	case 2: return "external";
+	case 3: return "static";
+	case 4: return "register";
+	case 5: return "external def";
+	case 6: return "label";
+	case 7: return "undef label";
+	case 8: return "member of struct";
+	case 9: return "argument";
+	case 10: return "struct tag";
+	case 11: return "member of union";
+	case 12: return "union tag";
+	case 13: return "type def";
+	case 14: return "undef static";
+	case 15: return "enum tag";
+	case 16: return "member of enum";
+	case 17: return "register param";
+	case 18: return "bit field";
+	case 100: return "block";
+	case 101: return "function";
+	case 102: return "end of struct";
+	case 103: return "file";
+	case 104: return "section";
+	case 105: return "weak external";
+	default: return sprintf("<%x>",t);
+      }
+    }
+
+  string getsymbolname(int x)
+    {
+      if(x >= numsymbols) return sprintf("Out of bound (%d)",x);
+      return getCOFFstring(symboltable + x * 18);
+    }
+
+  void dumpSymTable()
+    {
+      array ret=allocate(numsymbols);
+      int pos=symboltable;
+      for(int e=0;e<numsymbols;e++)
+      {
+	int aux;
+#ifdef DEBUG
+#if 1
+	write("[%5d] %08x %4x  %-9s %-9s %x  %s\n",
+	      e,
+	      i4(pos+8),
+	      i2(pos+12),
+	      decodeCOFFtype(i2(pos+14)),
+	      decodeCOFFstorageclass(i1(pos+16)),
+	      aux=i1(pos+17),
+	      getCOFFstring(pos));
+	      
+#else
+	write("[%5d] name          : %s\n",e,getCOFFstring(pos));
+	write("[%5d] value         : %x\n",e,i4(pos+8));
+	write("[%5d] secnum        : %d\n",e,i2(pos+12));
+	write("[%5d] type          : %s\n",e,decodeCOFFtype(i2(pos+14)));
+	write("[%5d] Storage class : %s\n",e,decodeCOFFstorageclass(i1(pos+16)));
+	write("[%5d] Num Aux syms  : %x\n",e,aux=i1(pos+17));
+#endif
+#endif
+	string name=getCOFFstring(pos);
+	int cls=i1(pos+16);
+	int sect=i2(pos+12);
+	int value=i4(pos+8);
+	int type=i2(pos+14);
+	if(sect > 32768) sect=65536-sect;
+
+	Symbol s=Symbol();
+	s->name=name;
+	s->value=value;
+	s->section=sect>0 ? file_sections[sect-1] : 0;
+	s->type=type;
+	s->cls=cls;
+	s->aux=0;
+
+#define COFFSYM_external 2
+	
+	switch(cls)
+	{
+	  case COFFSYM_external:
+	  if(global_symbols[name])
+	  {
+	    s=global_symbols[name];
+	    if(s->section && sect > 0)
+	      werror("%s: Warning: Symbol %s defined twice.\n",
+		     filename,
+		     name);
+	  }
+
+	  if(sect > 0)
+	  {
+	    s->section = file_sections[sect-1];
+	    s->value = value;
+	    s->type = type;
+	  }
+	  global_symbols[name]=s;
+	}
+	file_symbols[e]=s;
+
+	aux=i1(pos+17);
+
+	pos+=18;
+	for(int a=0;a<aux;a++)
+	{
+	  pos+=18;
+	  e++;
+	}
+      }
+    }
+
+  void dumpCOFF(int pos)
+    {
+#ifdef DEBUG
+      write("-=COFF HEADER=-\n");
+#endif
+      sscanf(reverse(range(pos,20)),
+	     "%2c%2c%4c%4c%4c%2c%2c",
+	     int characteristics,
+	     int sizeofoptheader,
+	     numsymbols,
+	     symboltable,
+	     int timestamp,
+	     numsections,
+	     int machine);
+
+#ifdef DEBUG
+      write("Machine     : %s\n",machine_table[machine] || sprintf("%x",machine));
+      write("Sections    : %x\n",numsections);
+      write("Timesamp    : %s",ctime(timestamp));
+      write("Symbol Table: %x\n",symboltable);
+      write("Symbols     : %d\n",numsymbols);
+      write("Optheadsize : %x\n",sizeofoptheader);
+      write("Character   : %s\n",character_descriptor->desc(characteristics));
+#endif
+
+      stringtable = symboltable + numsymbols*18;
+      sections=pos+20+sizeofoptheader;
+
+      file_symbols=allocate(numsymbols);
+      file_sections=allocate(numsections,Section)();
+
+      dumpSymTable();
+      dumpSECTS();
+    }
+
+  int dumpPE(int pos)
+    {
+#ifdef DEBUG
+      write("Potential PE identifier at 0x%x ... ",pos);
+#endif
+      if(data[pos..pos+3]!="PE\0\0")
+      {
+#ifdef DEBUG
+	write("No.\n");
+#endif
+	return 0;
+      } else {
+#ifdef DEBUG
+	write("Yes.\n");
+#endif
+      }
+      dumpCOFF(pos+4);
+      return 1;
+    }
+
+  void dumpArchive(int pos)
+    {
+      while(pos < strlen(data))
+      {
+	string name=range(pos,16);
+	int size = (int) range(pos+48,10);
+
+#ifdef DEBUG
+	write("\n");
+	write("# name: %s\n",name);
+	write("# date: %s\n",ctime( (int) range(pos+16,12) ) );
+	write("# uid : %s\n",range(pos+28,6));
+	write("# gid : %s\n",range(pos+34,6));
+	write("# mode: %s\n",range(pos+40,8));
+	write("# size: %s\n",range(pos+48,10));
+#endif
+
+	if(name[0]!='/')
+	  dumpfile(data, pos+60,0,name);
+
+	pos+=60;
+	pos+=(size+1)&~1;
+      }
+    }
+
+  void create(string d, void|int p, void|int len, void|string f)
+    {
+      base=p;
+      data=d;
+      filename=f;
+      if(!len) len=strlen(d)-base;
+
+      if(range(0,8) == "!<arch>\n")
+      {
+#ifdef DEBUG
+	write("Archive!\n");
+#endif
+	dumpArchive(8);
+      }else{
+	if(len >=0x40 && !dumpPE(i4(0x3c)))
+	{
+	  dumpCOFF(0);
+	}   
+      }
+    }
+}
+
+int main(int argc, array(string) argv)
+{
+  int strip=0;
+  string output="a.out";
+//  werror("%O\n",argv);
+  werror("Pike Win32 partial linker.\n"
+	 "$Id: pntld,v 1.1 2000/12/23 07:19:49 hubbe Exp $\n"
+	 "Written by Fredrik Hubinette 2000\n");
+
+  foreach(Getopt.find_all_options(argv,aggregate(
+    ({"output",Getopt.HAS_ARG,({"-o"})}),
+    ({"R",Getopt.HAS_ARG,({"-R"})}),
+    ({"L",Getopt.HAS_ARG,({"-L"})}),
+    ({"l",Getopt.HAS_ARG,({"-l"})}),
+    ({"S",Getopt.NO_ARG,({"-S"})}),
+    ({"ignore","Getopt.HAS_ARG",({"-r","-i","-s","-g","-B","-W"})}),
+    )),array opt)
+    {
+      switch(opt[0])
+      {
+	case "S": strip++; break;
+	  
+	case "R":
+	case "L":
+	  global_directives|=({ "-?rpath:"+opt[1] });
+	  break;
+
+	case "l":
+	  switch(opt[1])
+	  {
+	    case "c": case "m": break;
+	    default:
+	      /* FIXME:
+	       * search for *.lib files and link them 'statically'
+	       * if found.
+	       */
+	      global_directives|=({ "-lib:"+opt[1] });
+	  }
+	  break;
+	  
+	case "output":
+	  output=opt[1];
+	  break;
+      }
+    }
+
+  argv=Getopt.get_args(argv);
+
+  foreach(argv[1..],string file)
+    dumpfile(Stdio.read_file(file),0,0,file+":"+file);
+
+  if(strip)
+  {
+    global_sections=Array.filter(global_sections,
+				 lambda(Section s)
+      {
+	return !(s->characteristics  & CHR_LINK_MEM_DISCARDABLE);
+      });
+  }
+
+  if(sizeof(global_directives))
+  {
+    Section s=Section();
+    s->name=".drectve";
+    s->data=global_directives * " ";
+    s->characteristics = CHR_LINK_INFO | CHR_LINK_REMOVE | CHR_LINK_ALIGN_1;
+    s->relocs=({});
+    
+    global_sections= ({s}) + global_sections;
+  }
+
+  rm(output);
+  Stdio.write_file(output,
+		   Linker()->out(global_sections,
+				 values(global_symbols)));
+  exit(0);
+}
