@@ -18,10 +18,10 @@ constant string2hex = __builtin.string2hex;
 constant hex2string = __builtin.hex2string;
 
 //! This function implodes a list of words to a readable string, e.g.
-//! @expr{({"straw","berry","pie"})@} becomes @expr{"straw, berry and
-//! pie"@}.  If the separator is omitted, the default is
-//! @expr{"and"@}. If the words are numbers they are converted to
-//! strings first.
+//! @expr{({"straw","berry","pie"})@} becomes
+//! @expr{"straw, berry and pie"@}. If the separator is omitted, the
+//! default is @expr{"and"@}. If the words are numbers they are
+//! converted to strings first.
 //!
 //! @seealso
 //! @[`*()]

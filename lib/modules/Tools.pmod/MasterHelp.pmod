@@ -15,7 +15,7 @@ Driver options include:
  -t -t#               : Increase trace level
  -x [<tool>]          : Execute a built in tool.
 
- Use --help=options to show all available options.
+ Use --help=options|environment for further help.
 ";
 
 constant options_help =
