@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.261 2003/03/08 17:23:22 grubba Exp $
+// $Id: master.pike.in,v 1.262 2003/03/20 18:00:36 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1903,19 +1903,40 @@ void _main(array(string) orig_argv, array(string) env)
 #ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp", "bignum" );
 #endif /* __AUTO_BIGNUM__ */
-	if(trace) predef::trace(trace);
-	mixed ret;
+
+	program prog;
 	if(currentversion <= Version(7,4))
-	  compile_string(
-            "mixed create(int argc, array(string) argv,array(string) env){"+
-	    opts[1]+";}")(sizeof(argv),argv,env);
+	  prog = compile_string(
+	    "mixed create(int argc, array(string) argv,array(string) env){"+
+	    opts[1]+";}");
 	else
-	  ret = compile_string(
+	  prog = compile_string(
 	    "#define NOT(X) !(X)\n"
 	    "#define CHAR(X) 'X'\n"
-            "mixed run(int argc, array(string) argv,"
-            "mapping(string:string) env){"+
-	    opts[1]+";}")()->run(sizeof(argv),argv,getenv());
+	    "mixed run(int argc, array(string) argv,"
+	    "mapping(string:string) env){"+
+	    opts[1]+";}");
+
+#if constant(_debug)
+	if(debug) _debug(debug);
+#endif
+	if(trace) predef::trace(trace);
+	mixed ret;
+	mixed err = catch {
+	    // One reason for this catch is to get a new call to
+	    // eval_instruction in interpret.c so that the debug and
+	    // trace levels set above take effect in the bytecode
+	    // evaluator.
+	    if(currentversion <= Version(7,4))
+	      prog (sizeof(argv),argv,env);
+	    else
+	      ret = prog()->run(sizeof(argv),argv,getenv());
+	  };
+	if(trace) predef::trace(0);
+	if (err) {
+	  handle_error (err);
+	  ret = 10;
+	}
 	if(stringp(ret)) {
 	  write(ret);
 	  if(ret[-1]!='\n') write("\n");
@@ -2012,17 +2033,24 @@ void _main(array(string) orig_argv, array(string) env)
   if(!prog)
     _error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
 
-  object script=prog();
-
 #if constant(_debug)
   if(debug) _debug(debug);
 #endif
-
-  if(!script->main)
-    _error("Error: %s has no main().\n", argv[0]);
-
   if(trace) predef::trace(trace);
-  i=script->main(sizeof(argv),argv,env);
+  mixed err = catch {
+      // The main reason for this catch is actually to get a new call
+      // to eval_instruction in interpret.c so that the debug and
+      // trace levels set above take effect in the bytecode evaluator.
+      object script=prog();
+      if(!script->main)
+	_error("Error: %s has no main().\n", argv[0]);
+      i=script->main(sizeof(argv),argv,env);
+    };
+  if(trace) predef::trace(0);
+  if (err) {
+    handle_error (err);
+    i = 10;
+  }
   if(i >=0) exit(i);
   _async=1;
   
