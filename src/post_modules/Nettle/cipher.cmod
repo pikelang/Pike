@@ -1,11 +1,12 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.28 2004/02/14 02:54:57 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.29 2004/02/21 02:35:42 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
 #include "operators.h"
+#include "threads.h"
 
 /* For this_object() */
 #include "object.h"
@@ -273,8 +274,9 @@ PIKECLASS CipherState
 	Pike_error("Data must be an integral number of blocks.\n");
 
       s = begin_shared_string(data->len);
-
+      THREADS_ALLOW();
       THIS->crypt(THIS->ctx, data->len, s->str, data->str);
+      THREADS_DISALLOW();
       push_string(end_shared_string(s)); 
     }
 

@@ -1,9 +1,10 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.16 2004/02/14 02:54:57 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.17 2004/02/21 02:35:42 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
+#include "threads.h"
 
 /* For this_object() */
 #include "object.h"
@@ -131,7 +132,9 @@ PIKECLASS HashState
 	Pike_error("HashState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
+      THREADS_ALLOW();
       meta->update(THIS->ctx, data->len, data->str);
+      THREADS_DISALLOW();
 
       push_object(this_object());
     }
