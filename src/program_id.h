@@ -35,6 +35,9 @@
 #define tObjImpl___BUILTIN                    "\003\000\000\000\000\011"
 #define   tObjIs___BUILTIN                    "\003\001\000\000\000\011"
 
+#define     PROG_STDIO_STAT_ID                                      012
+#define tObjImpl_STDIO_STAT                   "\003\000\000\000\000\012"
+#define   tObjIs_STDIO_STAT                   "\003\001\000\000\000\012"
 
 
 #endif
