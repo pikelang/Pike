@@ -31,9 +31,11 @@ void create(int|float|string _lat,void|int|float|string _long)
       if (zero_type(_long))
       {
 	 string tmp;
-	 if (sscanf(_lat,"%sN %s",tmp,_long)==2) _long=tmp+"N";
-	 else if (sscanf(_lat,"%sS %s",tmp,_long)==2) _long=tmp+"N";
-	 else if (sscanf(_lat,"%s %s",tmp,_long)==2) _long=tmp;
+	 if (sscanf(_lat,"%sN %s",tmp,_long)==2) _lat=tmp+"N";
+	 else if (sscanf(_lat,"%sS %s",tmp,_long)==2) _lat=tmp+"S";
+	 else if (sscanf(_lat,"%sW %s",tmp,_lat)==2) _long=tmp+"W";
+	 else if (sscanf(_lat,"%sE %s",tmp,_lat)==2) _long=tmp+"N";
+	 else if (sscanf(_lat,"%s %s",tmp,_long)==2) _lat=tmp;
       }
       _lat=dwim(_lat,"NS");
       if (stringp(_lat))
@@ -165,6 +167,6 @@ int `>(object pos)
 string _sprintf(int t)
 {
    if (t=='O')
-      return "Position("+longitude()+", "+latitude()+")";
+      return "Position("+latitude()+", "+longitude()+")";
    return 0;
 }
