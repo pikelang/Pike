@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.530 2003/11/09 01:10:14 mast Exp $
+|| $Id: program.c,v 1.531 2003/11/10 01:35:45 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.530 2003/11/09 01:10:14 mast Exp $");
+RCSID("$Id: program.c,v 1.531 2003/11/10 01:35:45 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -165,8 +165,8 @@ static char *raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
   tFuncV(tNone,tZero,tVoid),	/* "create", */
   tFuncV(tNone,tVoid,tVoid),	/* "destroy", */
-  tFuncV(tNone,tZero,tMix),	/* "`+", */
-  tFuncV(tNone,tZero,tMix),	/* "`-", */
+  tFuncV(tZero,tZero,tMix),	/* "`+", */
+  tFunc(tOr(tVoid,tZero),tMix),	/* "`-", */
   tFuncV(tNone,tZero,tMix),	/* "`&", */
   tFuncV(tNone,tZero,tMix),	/* "`|", */
   tFuncV(tNone,tZero,tMix),	/* "`^", */
@@ -190,8 +190,8 @@ static char *raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tArray),	/* "_indices", */
   tFuncV(tNone,tVoid,tArray),	/* "_values", */
   tFuncV(tNone,tZero,tMix),	/* "`()", */
-  tFuncV(tNone,tZero,tMix),	/* "``+", */
-  tFuncV(tNone,tZero,tMix),	/* "``-", */
+  tFuncV(tZero,tZero,tMix),	/* "``+", */
+  tFuncV(tZero,tVoid,tMix),	/* "``-", */
   tFuncV(tNone,tZero,tMix),	/* "``&", */
   tFuncV(tNone,tZero,tMix),	/* "``|", */
   tFuncV(tNone,tZero,tMix),	/* "``^", */
@@ -200,7 +200,7 @@ static char *raw_lfun_types[] = {
   tFuncV(tNone,tZero,tMix),	/* "``*", */
   tFuncV(tNone,tZero,tMix),	/* "``/", */
   tFuncV(tNone,tZero,tMix),	/* "``%", */
-  tFuncV(tZero,tVoid,tMix),	/* "`+=", */
+  tFuncV(tZero,tZero,tMix),	/* "`+=", */
   tFuncV(tStr,tVoid,tInt),	/* "_is_type", */
   tFuncV(tInt tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
   tFuncV(tMix,tVoid,tInt),	/* "_equal", */
@@ -340,7 +340,7 @@ static char *raw_lfun_types[] = {
  *!   @[lfun::create()], @[predef::destruct()]
  */
 
-/*! @decl mixed lfun::`+(zero ... args)
+/*! @decl mixed lfun::`+(zero arg, zero ... rest)
  *!
  *!   Left associative addition operator callback.
  *!
@@ -348,7 +348,7 @@ static char *raw_lfun_types[] = {
  *!   @[lfun::``+()], @[lfun::`+=()], @[predef::`+()]
  */
 
-/*! @decl this_program lfun::`+=(zero ... args)
+/*! @decl this_program lfun::`+=(zero arg, zero ... rest)
  *!
  *!   Left associative addition operator callback that destructively
  *!   assigns the result of the addition to this object. It should
@@ -371,7 +371,7 @@ static char *raw_lfun_types[] = {
  *!   @[lfun::`+()], @[predef::`+()]
  */
 
-/*! @decl mixed lfun::`-(zero ... args)
+/*! @decl mixed lfun::``+(zero arg, zero ... rest)
  *!
  *!   Left associative subtraction operator callback.
  *!
