@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 #define BEGIN 32
 
@@ -211,15 +212,13 @@ int(0..100) fuzzymatch(string a, string b)
   int fuzz;
 
   if(a == b)
-  {
-    fuzz = 100;
-  } else {
-    fuzz = low_fuzzymatch(a, b);
-    fuzz += low_fuzzymatch(b, a);
-    fuzz = fuzz*100/(strlen(a)+strlen(b));
-  }
+    return 100;
 
-  return fuzz;
+  fuzz = low_fuzzymatch(a, b);
+  fuzz += low_fuzzymatch(b, a);
+  fuzz = fuzz*100/(strlen(a)+strlen(b));
+
+  return [int(0..100)]fuzz;
 }
 
 //! Returns the soundex value of @[word] according to
