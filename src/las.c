@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.202 2000/09/04 14:49:05 per Exp $");
+RCSID("$Id: las.c,v 1.203 2000/09/08 17:06:29 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -110,7 +110,7 @@ void check_tree(node *n, int depth)
       {
 	int parent_id = n->u.integer.a;
 	int id_no = n->u.integer.b;
-	struct program_state *state = Pike_compiler->previous;
+	struct program_state *state = Pike_compiler;
 	while (state && (state->new_program->id != parent_id)) {
 	  state = state->previous;
 	}
@@ -375,6 +375,7 @@ static node *freeze_node(node *orig)
   }
   orig->node_info &= ~OPT_DEFROSTED;
   add_node(dmalloc_touch(node *, orig));
+  check_tree(orig,0);
   return check_node_hash(orig);
 }
 
@@ -913,7 +914,9 @@ node *debug_mklocalnode(int var, int depth)
 node *debug_mkidentifiernode(int i)
 {
 #if 1
-  return mkexternalnode(Pike_compiler->new_program, i);
+  node *res = mkexternalnode(Pike_compiler->new_program, i);
+  check_tree(res,0);
+  return res;
 #else
   node *res = mkemptynode();
   res->token = F_IDENTIFIER;
@@ -1008,7 +1011,22 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   if(parent_prog != Pike_compiler->new_program)
     Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
 
-  return freeze_node(res);
+  res=freeze_node(res);
+
+#ifdef PIKE_DEBUG
+  if(id->type != res->type)
+  {
+    printf("Type of external node is not matching it's identifier.\nid->type: ");
+    simple_describe_type(id->type);
+    printf("\nres->type : ");
+    simple_describe_type(res->type);
+    printf("\n");
+    
+    fatal("Type of external node is not matching it's identifier.\n");
+  }
+#endif
+
+  return res;
 }
 
 node *debug_mkcastnode(struct pike_string *type,node *n)

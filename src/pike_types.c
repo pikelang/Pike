@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.138 2000/09/08 16:34:49 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.139 2000/09/08 17:06:29 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3299,25 +3299,21 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     struct pike_string *tmp;
     int id;
 
-    if(!s->u.program->identifiers)
+    if(s->u.program->identifiers)
     {
-      a=function_type_string->str;
-      if((tmp=zzap_function_return(a, s->u.program->id)))
-	return tmp;
+      id=FIND_LFUN(s->u.program,LFUN_CREATE);
+      if(id>=0)
+      {
+	a=ID_FROM_INT(s->u.program, id)->type->str;
+	if((tmp=zzap_function_return(a, s->u.program->id)))
+	  return tmp;
+	tmp=describe_type(ID_FROM_INT(s->u.program, id)->type);
+	/* yywarning("Failed to zzap function return for type: %s.", tmp->str);*/
+	free_string(tmp);
+      }
     }
 
-    id=FIND_LFUN(s->u.program,LFUN_CREATE);
-    if(id>=0)
-    {
-      a=ID_FROM_INT(s->u.program, id)->type->str;
-      if((tmp=zzap_function_return(a, s->u.program->id)))
-	return tmp;
-      tmp=describe_type(ID_FROM_INT(s->u.program, id)->type);
-      /* yywarning("Failed to zzap function return for type: %s.", tmp->str);*/
-      free_string(tmp);
-    }
-
-    a=tFunc(tVoid,tObj);
+    a=tFunc( tNone ,tObj);
     if((tmp=zzap_function_return(a, s->u.program->id)))
       return tmp;
 
