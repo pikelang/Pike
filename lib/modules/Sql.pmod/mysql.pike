@@ -1,12 +1,12 @@
 /*
- * $Id: mysql.pike,v 1.5 1998/07/03 20:03:49 mast Exp $
+ * $Id: mysql.pike,v 1.6 1998/10/17 03:05:49 grubba Exp $
  *
  * Glue for the Mysql-module
  */
 
 //.
 //. File:	mysql.pike
-//. RCSID:	$Id: mysql.pike,v 1.5 1998/07/03 20:03:49 mast Exp $
+//. RCSID:	$Id: mysql.pike,v 1.6 1998/10/17 03:05:49 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the glue to the Mysql-module.
@@ -16,6 +16,8 @@
 //. Implements the glue needed to access the Mysql-module from the generic
 //. SQL module.
 //.
+
+#if constant(Mysql.mysql)
 
 inherit Mysql.mysql;
 
@@ -125,3 +127,10 @@ int decode_datetime (string timestr)
       return decode_date (timestr);
   }
 }
+
+#else /* !constant(Mysql.mysql) */
+void create()
+{
+  destruct();
+}
+#endif /* constant(Mysql.mysql) */
