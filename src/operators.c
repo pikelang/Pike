@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.85 2000/02/03 19:09:12 grubba Exp $");
+RCSID("$Id: operators.c,v 1.86 2000/03/01 08:40:52 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -129,7 +129,7 @@ void f_add(INT32 args)
 	    assign_svalues_no_free(sp, sp-args, e, -1);
 	    sp+=e;
 	    apply_lfun(tmp->u.object, LFUN_RADD, e);
-	    if(args - e > 2)
+	    if(args - e > 1)
 	    {
 	      assign_svalue(tmp, sp-1);
 	      pop_stack();
