@@ -474,9 +474,24 @@ class DeferredLocale( static string project,
     return predef::`-(lookup(), @args);
   }
 
+  static string ``-(mixed ... args)
+  {
+    return predef::`-(@args, lookup());
+  }
+
   static string `*(mixed ... args)
   {
     return predef::`*(lookup(), @args);
+  }
+
+  static string ``*(mixed arg)
+  {
+    return predef::`*(arg, lookup());
+  }
+
+  static array(string) `/(mixed arg)
+  {
+    return predef::`/(lookup(), arg);
   }
 
   static int _sizeof()
@@ -490,11 +505,6 @@ class DeferredLocale( static string project,
       return lookup()[a];
     }
     return lookup()[a..b];
-  }
-
-  static array(string) `/(string s)
-  {
-    return lookup()/s;
   }
 
   static array(int) _indices()
