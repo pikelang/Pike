@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.129 1999/04/15 02:40:47 per Exp $ */
+/* $Id: image.c,v 1.130 1999/04/15 18:30:45 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.129 1999/04/15 02:40:47 per Exp $
+**!	$Id: image.c,v 1.130 1999/04/15 18:30:45 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.129 1999/04/15 02:40:47 per Exp $");
+RCSID("$Id: image.c,v 1.130 1999/04/15 18:30:45 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3653,6 +3653,12 @@ static void image_index_magic(INT32 args)
 void pike_module_init(void)
 {
    int i;
+#ifdef PIKE_DEBUG
+   struct svalue *save_sp = sp;
+#define IMAGE_CHECK_STACK()	do { if (save_sp != sp) { fatal("%s:%d: %d droppings on stack!\n", __FILE__, __LINE__, sp - save_sp); } } while(0)
+#else
+#define IMAGE_CHECK_STACK()
+#endif /* PIKE_DEBUG */
 
    magic_JPEG=make_shared_string("JPEG");
    magic_TTF=make_shared_string("TTF");
@@ -3665,6 +3671,8 @@ void pike_module_init(void)
    magic_TIFF=make_shared_string("TIFF");
 
    image_noise_init();
+
+   IMAGE_CHECK_STACK();
 
    start_new_program();
    ADD_STORAGE(struct image);
@@ -3986,26 +3994,41 @@ void pike_module_init(void)
 		tFunc(tStr,tObj),0);
 
    init_image_gif();
+   IMAGE_CHECK_STACK();
    init_image_pnm();
+   IMAGE_CHECK_STACK();
    init_image_bmp();
+   IMAGE_CHECK_STACK();
    init_image_xwd();
+   IMAGE_CHECK_STACK();
    init_image_any();
+   IMAGE_CHECK_STACK();
    init_image_tga();
+   IMAGE_CHECK_STACK();
    init_image_pcx();
+   IMAGE_CHECK_STACK();
    init_image_xbm();
+   IMAGE_CHECK_STACK();
    init_image__xpm();
+   IMAGE_CHECK_STACK();
    init_image_ilbm();
+   IMAGE_CHECK_STACK();
    init_image_xcf();
+   IMAGE_CHECK_STACK();
    init_image_psd();
+   IMAGE_CHECK_STACK();
    init_image_x();
+   IMAGE_CHECK_STACK();
    init_image_hrz();
+   IMAGE_CHECK_STACK();
    init_image_avs();
+   IMAGE_CHECK_STACK();
 }
 
 void pike_module_exit(void) 
-      {
-	 if(image_program)
-	 {
+{
+   if(image_program)
+   {
       free_program(image_program);
       image_program=0;
    }
