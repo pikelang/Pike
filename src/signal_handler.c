@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.256 2003/03/19 14:22:00 grubba Exp $
+|| $Id: signal_handler.c,v 1.257 2003/03/25 20:13:33 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.256 2003/03/19 14:22:00 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.257 2003/03/25 20:13:33 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -234,7 +234,7 @@ RCSID("$Id: signal_handler.c,v 1.256 2003/03/19 14:22:00 grubba Exp $");
 #define PIKE_BADF_LIMIT	1024
 #endif /* !PIKE_BADF_LIMIT */
 
-/* #define PROC_DEBUG */
+#define PROC_DEBUG
 
 #ifndef __NT__
 #define USE_PID_MAPPING
@@ -999,26 +999,34 @@ static void f_signame(int args)
 }
 
 
-#ifdef HAVE_WAIT4
-#define WAITPID(PID,STATUS,OPT) wait4( (PID),(STATUS),(OPT),0 )
-#else
-#ifdef HAVE_WAITPID
-#define WAITPID(PID,STATUS,OPT) waitpid(PID,STATUS,OPT)
-#else
-#define WAITPID(PID,STATUS,OPT) -1
-#endif
+/* Define two macros:
+ *
+ * WAITPID(pid_t PID, WAITSTATUSTYPE *STATUS, int OPT)
+ *	Wait for pid PID.
+ *
+ * MY_WAIT_ANY(WAITSTATUSTYPE *STATUS, int OPT)
+ *	Wait for any child process.
+ */
+#if defined(HAVE_WAIT4) && defined(HAVE_WAITPID) && defined(__FreeBSD__)
+/* waitpid(2) is more broken than wait4(2) on FreeBSD.
+ * wait4(2) is more broken than waitpid(2) on AIX 5L 5.1.0.0/ia64.
+ */
+#undef HAVE_WAITPID
 #endif
 
-#ifdef HAVE_WAIT4
-#define MY_WAIT_ANY(STATUS,OPT) wait4(0,(STATUS),(OPT),0 )
-#else
 #ifdef HAVE_WAITPID
-#define MY_WAIT_ANY(STATUS,OPT) waitpid(-1,STATUS,OPT)
+#define WAITPID(PID,STATUS,OPT) waitpid((PID), (STATUS), (OPT))
+#define MY_WAIT_ANY(STATUS,OPT) waitpid(-1, (STATUS), (OPT))
 #else
+#ifdef HAVE_WAIT4
+#define WAITPID(PID,STATUS,OPT) wait4((PID), (STATUS), (OPT), 0)
+#define MY_WAIT_ANY(STATUS,OPT) wait4(0, (STATUS), (OPT), 0)
+#else
+#define WAITPID(PID,STATUS,OPT) -1
 #ifdef HAVE_WAIT3
-#define MY_WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
+#define MY_WAIT_ANY(STATUS,OPT) wait3((STATUS), (OPT), 0)
 #else
-#define MY_WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
+#define MY_WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP), -1)
 #endif
 #endif
 #endif
