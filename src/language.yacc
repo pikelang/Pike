@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.203 2000/07/13 06:28:05 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.204 2000/07/13 22:32:15 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -630,16 +630,67 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     }
     push_type(T_FUNCTION);
 
-    if ($1 & ID_VARIANT) {
-      /* FIXME: Lookup the type of any existing variant */
-      /* Or the types. */
-    }
-
     {
       struct pike_string *s=compiler_pop_type();
+      int i = isidentifier($4->u.sval.u.string);
+
+      if (Pike_compiler->compiler_pass == 1) {
+	if ($1 & ID_VARIANT) {
+	  /* FIXME: Lookup the type of any existing variant */
+	  /* Or the types. */
+	  fprintf(stderr, "Pass %d: Identifier %s:\n",
+		  Pike_compiler->compiler_pass, $4->u.sval.u.string->str);
+
+	  if (i >= 0) {
+	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
+	    if (id) {
+	      struct pike_string *new_type;
+	      fprintf(stderr, "Defined, type:\n");
+	      simple_describe_type(id->type);
+
+	      new_type = or_pike_types(s, id->type, 1);
+	      free_string(s);
+	      s = new_type;
+
+	      fprintf(stderr, "Resulting type:\n");
+	      simple_describe_type(s);
+	    } else {
+	      my_yyerror("Lost identifier %s (%d).",
+			 $4->u.sval.u.string->str, i);
+	    }
+	  } else {
+	    fprintf(stderr, "Not defined.\n");
+	  }
+	  fprintf(stderr, "New type:\n");
+	  simple_describe_type(s);
+	}
+      } else {
+	/* FIXME: Second pass reuses the type from the end of
+	 * the first pass if this is a variant function.
+	 */
+	if (i >= 0) {
+	  if (Pike_compiler->new_program->identifier_references[i].id_flags &
+	      ID_VARIANT) {
+	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
+	    fprintf(stderr, "Pass %d: Identifier %s:\n",
+		    Pike_compiler->compiler_pass, $4->u.sval.u.string->str);
+
+	    free_string(s);
+	    copy_shared_string(s, id->type);
+
+	    fprintf(stderr, "Resulting type:\n");
+	    simple_describe_type(s);
+	  }
+	} else {
+	  my_yyerror("Identifier %s lost after first pass.",
+		     $4->u.sval.u.string->str);
+	}
+      }
+
       $<n>$=mkstrnode(s);
       free_string(s);
     }
+
 
 /*    if(Pike_compiler->compiler_pass==1) */
     {
@@ -652,6 +703,11 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 			$1 & (~ID_EXTERN),
 			IDENTIFIER_PIKE_FUNCTION,
 			0);
+
+      if ($1 & ID_VARIANT) {
+	fprintf(stderr, "Function number: %d\n",
+		Pike_compiler->compiler_frame->current_function_number);
+      }
     }
   }
   block_or_semi
@@ -722,12 +778,21 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 		  check_node_hash($10),
 		  check_node_hash($<n>9)->u.sval.u.string,
 		  $1);
+
+      if ($1 & ID_VARIANT) {
+	fprintf(stderr, "Function number: %d\n", f);
+      }
+
 #ifdef PIKE_DEBUG
-      if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
+      if(Pike_interpreter.recoveries &&
+	 ((Pike_sp - Pike_interpreter.evaluator_stack) <
+	  Pike_interpreter.recoveries->stack_pointer))
 	fatal("Stack error (underflow)\n");
 
-      if(Pike_compiler->compiler_pass == 1 && f!=Pike_compiler->compiler_frame->current_function_number)
-	fatal("define_function screwed up! %d != %d\n",f,Pike_compiler->compiler_frame->current_function_number);
+      if((Pike_compiler->compiler_pass == 1) &&
+	 (f != Pike_compiler->compiler_frame->current_function_number))
+	fatal("define_function screwed up! %d != %d\n",
+	      f, Pike_compiler->compiler_frame->current_function_number);
 #endif
     }
     pop_compiler_frame();
