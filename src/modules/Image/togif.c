@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.2 1997/03/17 03:08:02 hubbe Exp $ 
+$Id: togif.c,v 1.3 1997/03/18 17:23:21 mirar Exp $ 
 
 */
 
@@ -69,9 +69,9 @@ static void buf_word( unsigned short w, dynamic_buffer *buf )
    low_my_putchar( (w>>8)&0xff, buf );
 }
 
-#define WEIGHT_NEXT(X) (((X)*8)/20)
+#define WEIGHT_NEXT(X)     (((X)*8)/20)
 #define WEIGHT_DOWNNEXT(X) (((X)*3)/20)
-#define WEIGHT_DOWN(X) (((X)*3)/20)
+#define WEIGHT_DOWN(X)     (((X)*3)/20)
 #define WEIGHT_DOWNBACK(X) (((X)*0)/20)
 
 static int floyd_steinberg_add(rgbl_group *errl,
@@ -79,7 +79,8 @@ static int floyd_steinberg_add(rgbl_group *errl,
 			       rgbl_group *errlback,
 			       rgbl_group *err,
 			       rgb_group rgb,
-			       struct colortable *ct)
+			       struct colortable *ct,
+			       int closest)
 {
    rgb_group rgb2,rgb3;
    rgbl_group cerr;
@@ -93,7 +94,10 @@ static int floyd_steinberg_add(rgbl_group *errl,
 	   err->r*1.0/FS_SCALE, err->g*1.0/FS_SCALE, err->b*1.0/FS_SCALE,
 	   rgb2.r*1.0, rgb2.g*1.0, rgb2.b*1.0);
 #endif
-   c=colortable_rgb(ct,rgb2);
+   if (closest)
+      c=colortable_rgb_closest(ct,rgb2);
+   else
+      c=colortable_rgb(ct,rgb2);
    rgb3=ct->clut[c];
    cerr.r=(long)rgb.r*FS_SCALE-(long)rgb3.r*FS_SCALE+err->r;
    cerr.g=(long)rgb.g*FS_SCALE-(long)rgb3.g*FS_SCALE+err->g;
@@ -146,7 +150,8 @@ static int floyd_steinberg_add(rgbl_group *errl,
 void image_floyd_steinberg(rgb_group *rgb,int xsize,
 			   rgbl_group *errl,
 			   int way,int *res,
-			   struct colortable *ct)
+			   struct colortable *ct,
+			   int closest)
 {
    rgbl_group err;
    int x;
@@ -160,7 +165,7 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 	 res[x]=floyd_steinberg_add(errl+x,
 				    (x==0)?NULL:errl+x-1,
 				    (x==xsize-1)?NULL:errl+x+1,
-				    &err,rgb[x],ct);
+				    &err,rgb[x],ct,closest);
    }
    else
    {
@@ -171,14 +176,14 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 	 res[x]=floyd_steinberg_add(errl+x,
 				    (x==xsize-1)?NULL:errl+x+1,
 				    (x==0)?NULL:errl+x-1,
-				    &err,rgb[x],ct);
+				    &err,rgb[x],ct,closest);
    }
 }
 		     
 
 struct pike_string *
    image_encode_gif(struct image *img,struct colortable *ct,
-		    rgb_group *transparent,int fs)
+		    rgb_group *transparent,int fs,int closest)
 {
    dynamic_buffer buf;
    long i;
@@ -271,7 +276,7 @@ THREADS_ALLOW();
       i=img->ysize;
       while (i--)
       {
-	 image_floyd_steinberg(rgb,img->xsize,errb,w=!w,cres,ct);
+	 image_floyd_steinberg(rgb,img->xsize,errb,w=!w,cres,ct,closest);
 	 for (j=0; j<img->xsize; j++)
 	    lzw_add(&lzw,cres[j]);
 	 rgb+=img->xsize;
@@ -497,7 +502,7 @@ void image_togif(INT32 args)
    if (!THIS->img) { error("no image\n");  return; }
 
    if (!ct) ct=colortable_quant(THIS,256);
-   push_string( image_encode_gif( THIS,ct, transparent, 0) );
+   push_string( image_encode_gif( THIS,ct, transparent, 0, 0) );
    colortable_free(ct);
 }
 
@@ -506,9 +511,13 @@ void image_togif_fs(INT32 args)
 {
    rgb_group *transparent=NULL;
    struct colortable *ct=NULL;
+   int closest=0;
 
    if (args>0 && sp[-args].type==T_ARRAY)
+   {
       ct=colortable_from_array(sp[-args].u.array,"image->togif_fs()\n");
+      closest=1;
+   }
    else if (args>0 && args!=3 && sp[-args].type==T_INT)
       ct=colortable_quant(THIS,min(256,max(2,sp[-args].u.integer)));
 
@@ -523,7 +532,7 @@ void image_togif_fs(INT32 args)
 
    if (!ct)
       ct=colortable_quant(THIS,256);
-   push_string( image_encode_gif( THIS,ct, transparent, 1) );
+   push_string( image_encode_gif( THIS,ct, transparent, 1, closest) );
    colortable_free(ct);
 }
 
@@ -617,6 +626,7 @@ static void img_gif_add(INT32 args,int fs,int lm)
    struct colortable *ct=NULL;
    dynamic_buffer buf;
    int colors,bpp;
+   int closest;
 
 CHRONO("gif add init");
 
@@ -635,9 +645,15 @@ CHRONO("gif add init");
 
 
    if (args>2 && sp[2-args].type==T_ARRAY)
+   {
       ct=colortable_from_array(sp[2-args].u.array,"image->gif_add()\n");
+      closest=1;
+   }
    else if (args>3 && sp[2-args].type==T_INT)
+   {
       ct=colortable_quant(THIS,max(256,min(2,sp[2-args].u.integer)));
+      closest=0;
+   }
 
    if (args>2+!!ct)
    {
@@ -721,7 +737,7 @@ CHRONO("begin pack");
       i=THIS->ysize;
       while (i--)
       {
-	 image_floyd_steinberg(rgb,THIS->xsize,errb,w=!w,cres,ct);
+	 image_floyd_steinberg(rgb,THIS->xsize,errb,w=!w,cres,ct,closest);
 	 for (j=0; j<THIS->xsize; j++)
 	    lzw_add(&lzw,cres[j]);
 	 rgb+=THIS->xsize;
