@@ -9,6 +9,8 @@ inherit _Crypto;
 
 import Nettle;
 
+constant HashState = Nettle.HashState;
+
 //!
 class Hash
 {
@@ -119,6 +121,9 @@ class SHA256_Algorithm
 
 SHA256_Algorithm SHA256 = SHA256_Algorithm();
 
+constant CipherState = Nettle.CipherState;
+
+//!
 class Cipher
 {
   inherit CipherInfo;
