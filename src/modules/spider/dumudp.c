@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.20 1997/09/16 00:35:39 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.21 1997/09/29 21:09:41 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -333,6 +333,33 @@ static void udp_set_blocking(INT32 args)
   set_nonblocking(FD,0);
 }
 
+static void udp_query_address(INT32 args)
+{
+  struct sockaddr_in addr;
+  int i,len;
+  char buffer[496],*q;
+
+  if(THIS->fd <0)
+    error("socket->query_address(): Port not bound yet.\n");
+
+  len=sizeof(addr);
+  i=getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
+  pop_n_elems(args);
+  if(i < 0 || len < (int)sizeof(addr))
+  {
+    push_int(0);
+    return;
+  }
+
+  q=inet_ntoa(addr.sin_addr);
+  strncpy(buffer,q,sizeof(buffer)-20);
+  buffer[sizeof(buffer)-20]=0;
+  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
+
+  push_string(make_shared_string(buffer));
+}
+
+
 void init_udp(void)
 {
   start_new_program();
@@ -346,6 +373,7 @@ void init_udp(void)
   add_function( "set_read_callback", udp_set_read_callback,
 		"function(function(void:void):void)", 0 );
   add_function( "set_blocking", udp_set_blocking,"function(void:void)", 0 );
+  add_function("query_address",udp_query_address,"function(:string)",0);
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
   end_class("dumUDP",0);
